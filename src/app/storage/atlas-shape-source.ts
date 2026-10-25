@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from 'node:crypto';
-import type { AtlasRegionSource } from '../atlas-region-contracts';
+import type { AtlasRegionSource } from '../atlas/atlas-region-contracts';
 
 const kind = 'atlas-shape-source',
   geometryKind = 'atlas-geometry-source';

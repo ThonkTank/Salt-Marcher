@@ -4,7 +4,7 @@
 
 Sieben native Inputdateien und sieben Expecteddateien liegen im referenzierten `atlas-e2e-v1`-Verzeichnis. Eine isolierte Testinstanz verwendet ausschließlich die Inputseite als Livebestand; Expected ist das Byteorakel. Die unveränderte Stadt-Expecteddatei ist eine Kontrolle dieses Fixtures, keine Vorgabe für die weitere Stadtentwicklung.
 
-[Die Kompositionsprüfungen](../../core/atlas-e2e-composition.test.ts) decken ab:
+[Die Kompositionsprüfungen](../../shared/core/atlas-e2e-composition.test.ts) decken ab:
 
 - Drei Bereichsmanifest-Hashes, alle 14 Datei-Hashes und Bytezahlen, kanonische Codecs, 21 lokale Identitäten und acht gespeicherte Referenzen. Der reservierte Campaignverweis zählt nicht zu den nativen Identitäten.
 - `AtlasRepository`, `CitySource` und `DungeonAtlasSource` mit derselben `terrain.history`: Ein zusammengesetzter Befehl ändert Gelände, POI-Platzierung, Ortsname und Orts-Key einschließlich Reihenfolge sowie den Dungeon-Raum-Key. Die Stadtquelle beteiligt sich mit unverändertem Dokument.

@@ -9,11 +9,11 @@ const root = process.cwd(),
   output = path.resolve('.build/atlas-material-native', `${Date.now()}-${process.pid}`);
 const native = await createNativeSession({ root, output, name: 'atlas-material-tiles' });
 const files = [
-  'src/app/atlas-material-tile.ts',
-  'src/app/terrain-material.ts',
-  'src/app/terrain-relief.ts',
-  'src/app/landscape-raster.ts',
-  'src/app/atlas-region-contracts.ts',
+  'src/app/atlas/atlas-material-tile.ts',
+  'src/app/atlas/terrain-material.ts',
+  'src/app/atlas/terrain-relief.ts',
+  'src/app/atlas/landscape-raster.ts',
+  'src/app/atlas/atlas-region-contracts.ts',
   'src/app/storage/atlas-tile-cache.ts',
   'src/app/storage/atlas-material-tiles.ts',
   'src/app/storage/terrain-material.ts',

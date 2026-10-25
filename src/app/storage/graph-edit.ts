@@ -1,13 +1,13 @@
 import { readTriggerFields, triggerFieldRow } from './triggers';
-import { validateGraphLayout } from '../graph-contracts';
+import { validateGraphLayout } from '../atlas/graph-contracts';
 import { randomUUID, createHash } from 'node:crypto';
-import type { Room } from '../contracts';
-import type { GraphEdit, GraphLayout } from '../graph-contracts';
-import type { DrawingElement } from '../drawing-contracts';
+import type { Room } from '../shared/contracts';
+import type { GraphEdit, GraphLayout } from '../atlas/graph-contracts';
+import type { DrawingElement } from '../atlas/drawing-contracts';
 import { readDungeonVolumes, rebaseRoomVolume, volumeRow, executeVolumeAction } from './volume';
 import { readDungeonPaths, readDungeonPassages } from './paths';
 import { readDungeonKeys } from './dungeon-key';
-import { volumeProjection } from '../volume-model';
+import { volumeProjection } from '../atlas/volume-model';
 import { graphLayout } from './graph';
 interface Owner {
   apply: (key: { table: string; id: string; scopeId?: string; kind?: string }, row: any) => void;

@@ -3,7 +3,7 @@ import { installCampaignCatalog, noteCampaignCreated } from './campaign-catalog'
 import { readWorld, travelEnvironmentBasis } from './world';
 import { dungeonGeometry, dungeonGeometryBasis } from './dungeon-play';
 import { dungeonTraceById } from './dungeon-senses';
-import { checkedSessionRecapDraft } from '../live-contracts';
+import { checkedSessionRecapDraft } from '../runtime/live-contracts';
 import { readEncounterTables } from './generation';
 import { resolveWorldSources } from './world-sources';
 import {
@@ -18,11 +18,11 @@ import type {
   DefinitionConflict,
   SharedKind,
   ConflictChoice,
-} from '../campaign-contracts';
+} from '../campaign/campaign-contracts';
 import { drawingTables } from './drawing';
 import { validateNpcRecovery, npcFingerprint } from './npcs';
 import { validateWorldRelationPairs, worldRelationPairFingerprint } from './world-relation-pair';
-import { canonicalJson } from '../generation/canonical-json';
+import { canonicalJson } from '../campaign/generation/canonical-json';
 import { checkedAudioRegistry, musicStateAssetCount } from './music';
 export const quote = (s: string) => '"' + s.replace(/"/g, '""') + '"';
 export const digest = (v: string | Buffer) => createHash('sha256').update(v).digest('hex');

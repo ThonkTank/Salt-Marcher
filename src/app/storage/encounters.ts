@@ -14,7 +14,7 @@ import {
   validateEncounterPlanInput,
   type EncounterPlan,
   type EncounterPlanCommand,
-} from '../encounter-contracts';
+} from '../catalog/encounter-contracts';
 const hash = (text: string | Buffer) => createHash('sha256').update(text).digest('hex');
 const effectiveCatalogHash = hash(
   JSON.stringify({

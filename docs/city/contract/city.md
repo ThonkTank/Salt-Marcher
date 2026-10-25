@@ -116,14 +116,14 @@ Familienansicht ist Projektion dieser Beziehungen, keine zweite Stammbaumdatei.
 Unbekannte Originalattribute werden in CITY-00 konkret inventarisiert, nicht
 vorsorglich durch beliebige Metaobjekte ersetzt.
 
-Der kanonische [Paarvertrag](../../../src/app/world-relation-pair-contracts.ts) benennt
+Der kanonische [Paarvertrag](../../../src/app/campaign/world-relation-pair-contracts.ts) benennt
 beide Gegenrichtungen ausdrücklich. Der [Paarwriter](../../../src/app/storage/world-relation-pair.ts)
 legt sie atomisch an oder löst sie gemeinsam; Receipt und gespeicherter Prüfauftrag
 klären verlorene Antworten. Seine persistente Paar-History führt beide Kanten
 gemeinsam zurück oder erneut aus. Eine spätere Änderung an einer beteiligten
 World-Notiz sperrt den Schritt, damit Texte und weitere Beziehungen erhalten bleiben.
 [Familientypen](../../../src/features/world/world-notes.ts) sind Elternteil/Kind, Geschwister
-und Partner. Die [Familienansicht](../../../src/app/world-links-ui.ts) filtert nur ausdrücklich
+und Partner. Die [Familienansicht](../../../src/app/campaign/world-links-ui.ts) filtert nur ausdrücklich
 typisierte Kanten; freie Beziehungsnamen bleiben unverändert. Für den Erhalt von
 Typen, Gegenrichtungen, History und offenen Aufträgen beim Neustart und unabhängigen
 Kopieren gelten die [Transferregeln](../../campaign/contract/authored-text-references.md#beziehungspaare-beim-kampagnentransfer).

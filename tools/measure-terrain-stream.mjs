@@ -54,7 +54,7 @@ if (process.argv[2] === '--child') {
     const bundle = out + '/' + name + '.cjs';
     require('esbuild').buildSync({
       stdin: {
-        contents: `export * from '${source}/src/app/storage/store';export * from '${source}/src/app/storage/atlas-landscape-region';export * from '${source}/src/app/terrain-height';`,
+        contents: `export * from '${source}/src/app/storage/store';export * from '${source}/src/app/storage/atlas-landscape-region';export * from '${source}/src/app/atlas/terrain-height';`,
         resolveDir: root,
       },
       outfile: bundle,
@@ -68,10 +68,10 @@ if (process.argv[2] === '--child') {
   const { CampaignStore, heightRecord } = require(bundles.current),
     report = { profile: dir, runs: [], sourceHashes: {} };
   for (const file of [
-    'src/app/terrain-field-stream.ts',
-    'src/app/terrain-route.ts',
-    'src/app/terrain-height.ts',
-    'src/app/landscape-raster.ts',
+    'src/app/atlas/terrain-field-stream.ts',
+    'src/app/atlas/terrain-route.ts',
+    'src/app/atlas/terrain-height.ts',
+    'src/app/atlas/landscape-raster.ts',
     'src/app/storage/atlas-landscape-region.ts',
     'tools/measure-terrain-stream.mjs',
   ])

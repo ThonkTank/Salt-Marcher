@@ -1,8 +1,8 @@
-import { poseSpace } from '../spatial-3d';
-import type { DungeonTraceRules } from '../dungeon-contracts';
+import { poseSpace } from '../atlas/spatial-3d';
+import type { DungeonTraceRules } from '../atlas/dungeon-contracts';
 import { recordDungeonTrace } from './dungeon-senses';
 import { createHash } from 'node:crypto';
-import type { DungeonGeometry, DungeonPose } from '../dungeon-contracts';
+import type { DungeonGeometry, DungeonPose } from '../atlas/dungeon-contracts';
 import { npcPosition, placeNpc } from './npc-world';
 const hash = (p: string) => createHash('sha256').update(p).digest('hex');
 export function npcDungeonPose(db: any, cam: string, id: string): DungeonPose | null {

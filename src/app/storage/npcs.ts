@@ -6,7 +6,7 @@ import type {
   NpcPage,
   NpcDraft,
   NpcResolution,
-} from '../npc-contracts';
+} from '../campaign/npc-contracts';
 import {
   npcRecord,
   npcDisposition,
@@ -20,9 +20,9 @@ import { readCreature } from './encounters';
 import { syncOpenMaskHealth } from './mask-health';
 import { worldNoteDocument } from '../../features/world/world-notes';
 import { campaignLocalId } from '../../features/campaign/campaign-contracts';
-import { checkedNpcSchedule, npcPlanLocationIds } from '../npc-daily-plan';
+import { checkedNpcSchedule, npcPlanLocationIds } from '../campaign/npc-daily-plan';
 import { readWorldCalendar } from './world';
-import { checkedHealth } from '../progression';
+import { checkedHealth } from '../runtime/progression';
 const hash = (s: string) => createHash('sha256').update(s).digest('hex');
 export const npcFingerprint = (c: NpcCommand) => hash(JSON.stringify({ ...c, token: undefined }));
 function checkedPending(cam: string, d: NpcDraft) {

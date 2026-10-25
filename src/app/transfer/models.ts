@@ -1,108 +1,109 @@
 // Canonical payload types used by the campaign transfer contracts.
-export type room = Pick<import('../contracts').Room, 'polygons' | 'sections'>;
+export type room = Pick<import('../shared/contracts').Room, 'polygons' | 'sections'>;
 export type history =
-  | import('../contracts').Room
+  | import('../shared/contracts').Room
   | { kind: 'drawing'; scope: 'shared'; version: 1 };
-export type room_draft = import('../contracts').WorkingRoomDraft;
-export type world_note = import('../preparation-contracts').Note;
-export type preparation_draft = import('../preparation-contracts').PreparationDraft;
-export type character_profile = import('../live-contracts').CharacterProfile;
-export type live_receipt = import('../live-contracts').LiveAck;
-export type live_moment_draft = import('../live-moment-drafts').LiveMomentDraft;
-export type combat = import('../combat-contracts').CombatState;
-export type combat_undo = import('../combat-contracts').CombatState;
-export type combat_receipt = import('../combat-contracts').CombatView;
-export type combat_working_draft = import('../combat-draft-contracts').CombatWorkingDraft;
-export type chase = import('../chase-contracts').ChaseState;
-export type chase_receipt = import('../chase-contracts').ChaseView;
-export type chase_working_draft = import('../chase-draft-contracts').ChaseWorkingDraft;
+export type room_draft = import('../shared/contracts').WorkingRoomDraft;
+export type world_note = import('../campaign/preparation-contracts').Note;
+export type preparation_draft = import('../campaign/preparation-contracts').PreparationDraft;
+export type character_profile = import('../runtime/live-contracts').CharacterProfile;
+export type live_receipt = import('../runtime/live-contracts').LiveAck;
+export type live_moment_draft = import('../runtime/live-moment-drafts').LiveMomentDraft;
+export type combat = import('../runtime/combat-contracts').CombatState;
+export type combat_undo = import('../runtime/combat-contracts').CombatState;
+export type combat_receipt = import('../runtime/combat-contracts').CombatView;
+export type combat_working_draft = import('../runtime/combat-draft-contracts').CombatWorkingDraft;
+export type chase = import('../runtime/chase-contracts').ChaseState;
+export type chase_receipt = import('../runtime/chase-contracts').ChaseView;
+export type chase_working_draft = import('../runtime/chase-draft-contracts').ChaseWorkingDraft;
 export type mask_reconciliation_receipt =
   import('../storage/mask-reconciliation').MaskReconciliationReceipt;
-export type scene_rule_pin = import('../rule-reference-contracts').SceneRulePin;
-export type scene_rule_receipt = import('../rule-reference-contracts').SceneRules;
-export type scene_check = import('../scene-check-contracts').SceneCheck;
-export type scene_check_receipt = import('../scene-check-contracts').SceneCheck;
-export type character_progress = import('../progression').Progress;
-export type treasure = import('../progression').Treasure;
-export type character_ledger = import('../progression').LedgerItem;
-export type progress_receipt = import('../progression').ProgressAck;
-export type combat_award = import('../progression').CombatReward;
-export type encounter_plan = import('../encounter-contracts').EncounterPlan;
-export type encounter_plan_receipt = import('../encounter-contracts').EncounterPlan;
-export type encounter_table = import('../generation-contracts').EncounterTable;
-export type loot_table = import('../generation-contracts').LootTable;
-export type generator_preset = import('../generation-contracts').GeneratorPreset;
-export type generation_run = import('../generation-contracts').GenerationRun;
-export type world_source = import('../generation-contracts').WorldSource;
-export type generator_registry_receipt = import('../generation-contracts').PresetReceipt;
-export type npc_record = import('../npc-contracts').NpcRecord;
-export type npc_draft = import('../npc-contracts').NpcDraft;
-export type npc_receipt = import('../npc-contracts').NpcView;
-export type session_profile = import('../session-contracts').SessionProfile;
-export type session_visit = import('../session-contracts').VisitDetail;
-export type prepared_group = import('../session-contracts').PreparedGroup;
-export type world_actor = import('../session-contracts').WorldActor;
-export type session_run = import('../session-contracts').SessionRun;
-export type session_receipt = import('../session-contracts').SessionView;
-export type item_definition = import('../items-contracts').ItemDefinition;
-export type item_definition_version = import('../items-contracts').ItemDefinition;
-export type shop = import('../items-contracts').Shop;
-export type shop_event = import('../items-contracts').ShopHistoryEntry;
-export type shop_receipt = import('../items-contracts').ItemShopAck;
-export type scene_position = import('../world-contracts').ScenePosition;
-export type world_journey = import('../world-contracts').Journey;
-export type world_receipt = import('../world-contracts').WorldAck;
-export type audio_asset = import('../music-contracts').AudioAsset;
-export type audio_registry = import('../music-contracts').AudioRegistry;
-export type music_state = import('../music-contracts').MusicState;
-export type scene_music = import('../music-contracts').MusicSceneSettings;
-export type music_subject = import('../music-contracts').MusicSubject;
+export type scene_rule_pin = import('../catalog/rule-reference-contracts').SceneRulePin;
+export type scene_rule_receipt = import('../catalog/rule-reference-contracts').SceneRules;
+export type scene_check = import('../runtime/scene-check-contracts').SceneCheck;
+export type scene_check_receipt = import('../runtime/scene-check-contracts').SceneCheck;
+export type character_progress = import('../runtime/progression').Progress;
+export type treasure = import('../runtime/progression').Treasure;
+export type character_ledger = import('../runtime/progression').LedgerItem;
+export type progress_receipt = import('../runtime/progression').ProgressAck;
+export type combat_award = import('../runtime/progression').CombatReward;
+export type encounter_plan = import('../catalog/encounter-contracts').EncounterPlan;
+export type encounter_plan_receipt = import('../catalog/encounter-contracts').EncounterPlan;
+export type encounter_table = import('../campaign/generation-contracts').EncounterTable;
+export type loot_table = import('../campaign/generation-contracts').LootTable;
+export type generator_preset = import('../campaign/generation-contracts').GeneratorPreset;
+export type generation_run = import('../campaign/generation-contracts').GenerationRun;
+export type world_source = import('../campaign/generation-contracts').WorldSource;
+export type generator_registry_receipt = import('../campaign/generation-contracts').PresetReceipt;
+export type npc_record = import('../campaign/npc-contracts').NpcRecord;
+export type npc_draft = import('../campaign/npc-contracts').NpcDraft;
+export type npc_receipt = import('../campaign/npc-contracts').NpcView;
+export type session_profile = import('../campaign/session-contracts').SessionProfile;
+export type session_visit = import('../campaign/session-contracts').VisitDetail;
+export type prepared_group = import('../campaign/session-contracts').PreparedGroup;
+export type world_actor = import('../campaign/session-contracts').WorldActor;
+export type session_run = import('../campaign/session-contracts').SessionRun;
+export type session_receipt = import('../campaign/session-contracts').SessionView;
+export type item_definition = import('../catalog/items-contracts').ItemDefinition;
+export type item_definition_version = import('../catalog/items-contracts').ItemDefinition;
+export type shop = import('../catalog/items-contracts').Shop;
+export type shop_event = import('../catalog/items-contracts').ShopHistoryEntry;
+export type shop_receipt = import('../catalog/items-contracts').ItemShopAck;
+export type scene_position = import('../runtime/world-contracts').ScenePosition;
+export type world_journey = import('../runtime/world-contracts').Journey;
+export type world_receipt = import('../runtime/world-contracts').WorldAck;
+export type audio_asset = import('../runtime/music-contracts').AudioAsset;
+export type audio_registry = import('../runtime/music-contracts').AudioRegistry;
+export type music_state = import('../runtime/music-contracts').MusicState;
+export type scene_music = import('../runtime/music-contracts').MusicSceneSettings;
+export type music_subject = import('../runtime/music-contracts').MusicSubject;
 export type music_receipt = { applied: true };
-export type city_document = import('../city-contracts').CityHeader;
-export type city_unit = import('../city-contracts').CityUnit;
-export type player_asset = import('../player-contracts').PlayerAsset;
-export type npc_route = import('../autonomy-contracts').NpcRoute;
-export type autonomy_actor = import('../autonomy-contracts').AutonomyActor;
-export type autonomy_job = import('../autonomy-contracts').AutonomyJob;
-export type drawing_profile = import('../drawing-contracts').RoomStyle;
-export type drawing_element = import('../drawing-contracts').DrawingElement;
-export type dungeon_feature_state = import('../drawing-contracts').DrawingView['features'][number];
-export type dungeon_travel_settings = import('../dungeon-pace').DungeonPaceSettings;
-export type dungeon_journey = import('../dungeon-contracts').DungeonJourney;
-export type npc_dungeon_position = import('../dungeon-contracts').DungeonPose;
-export type dungeon_track = import('../dungeon-contracts').DungeonTrace;
-export type dungeon_trace = import('../dungeon-contracts').DungeonTrace;
-export type dungeon_trace_rules = import('../dungeon-contracts').DungeonTraceRules;
-export type dungeon_volume = import('../volume-contracts').DungeonVolume;
-export type dungeon_path = import('../path-contracts').DungeonPath;
-export type dungeon_passage = import('../path-contracts').DungeonPassage;
-export type dungeon_key_content = import('../key-contracts').KeyContent;
-export type dungeon_graph_layout = import('../graph-contracts').GraphLayout;
-export type dungeon_trigger_field = import('../trigger-contracts').TriggerField;
-export type dungeon_trigger_event = import('../trigger-contracts').TriggerEvent;
-export type dungeon_content_state = import('../content-runtime-contracts').ContentState;
-export type narrative_state = import('../narrative-contracts').NarrativeState;
-export type narrative_award = import('../narrative-contracts').NarrativeAward;
-export type narrative_draft = import('../narrative-contracts').NarrativeDraft;
-export type finish_draft = import('../finish-draft-contracts').FinishDraft;
-export type scene_creation_draft = import('../scene-desk-contracts').SceneCreationDraft;
-export type scene_desk = import('../scene-desk-contracts').DeskRef[];
-export type treasury_draft = import('../treasury-contracts').TreasuryDraft;
-export type group_draft = import('../groups-contracts').GroupDraft;
+export type city_document = import('../atlas/city-contracts').CityHeader;
+export type city_unit = import('../atlas/city-contracts').CityUnit;
+export type player_asset = import('../runtime/player-contracts').PlayerAsset;
+export type npc_route = import('../runtime/autonomy-contracts').NpcRoute;
+export type autonomy_actor = import('../runtime/autonomy-contracts').AutonomyActor;
+export type autonomy_job = import('../runtime/autonomy-contracts').AutonomyJob;
+export type drawing_profile = import('../atlas/drawing-contracts').RoomStyle;
+export type drawing_element = import('../atlas/drawing-contracts').DrawingElement;
+export type dungeon_feature_state =
+  import('../atlas/drawing-contracts').DrawingView['features'][number];
+export type dungeon_travel_settings = import('../runtime/dungeon-pace').DungeonPaceSettings;
+export type dungeon_journey = import('../atlas/dungeon-contracts').DungeonJourney;
+export type npc_dungeon_position = import('../atlas/dungeon-contracts').DungeonPose;
+export type dungeon_track = import('../atlas/dungeon-contracts').DungeonTrace;
+export type dungeon_trace = import('../atlas/dungeon-contracts').DungeonTrace;
+export type dungeon_trace_rules = import('../atlas/dungeon-contracts').DungeonTraceRules;
+export type dungeon_volume = import('../atlas/volume-contracts').DungeonVolume;
+export type dungeon_path = import('../atlas/path-contracts').DungeonPath;
+export type dungeon_passage = import('../atlas/path-contracts').DungeonPassage;
+export type dungeon_key_content = import('../campaign/key-contracts').KeyContent;
+export type dungeon_graph_layout = import('../atlas/graph-contracts').GraphLayout;
+export type dungeon_trigger_field = import('../runtime/trigger-contracts').TriggerField;
+export type dungeon_trigger_event = import('../runtime/trigger-contracts').TriggerEvent;
+export type dungeon_content_state = import('../runtime/content-runtime-contracts').ContentState;
+export type narrative_state = import('../runtime/narrative-contracts').NarrativeState;
+export type narrative_award = import('../runtime/narrative-contracts').NarrativeAward;
+export type narrative_draft = import('../runtime/narrative-contracts').NarrativeDraft;
+export type finish_draft = import('../runtime/finish-draft-contracts').FinishDraft;
+export type scene_creation_draft = import('../runtime/scene-desk-contracts').SceneCreationDraft;
+export type scene_desk = import('../runtime/scene-desk-contracts').DeskRef[];
+export type treasury_draft = import('../runtime/treasury-contracts').TreasuryDraft;
+export type group_draft = import('../campaign/groups-contracts').GroupDraft;
 export type world_relation_pair_draft =
-  import('../world-relation-pair-contracts').WorldRelationPairDraft;
+  import('../campaign/world-relation-pair-contracts').WorldRelationPairDraft;
 export type world_relation_pair_receipt =
-  import('../world-relation-pair-contracts').WorldRelationPairAck;
+  import('../campaign/world-relation-pair-contracts').WorldRelationPairAck;
 export type world_relation_pair_history_receipt =
-  import('../world-relation-pair-contracts').WorldRelationPairHistoryView;
-export type atlas_entrance = import('../atlas-travel-contracts').AtlasEntrance;
-export type atlas_local_journey = import('../atlas-travel-contracts').AtlasLocalJourney;
-export type atlas_landscape = import('../atlas-landscape').LandscapeRecord;
-export type atlas_territory_layer = import('../atlas-territories').AtlasTerritoryLayer;
-export type atlas_territory = import('../atlas-territories').AtlasTerritory;
+  import('../campaign/world-relation-pair-contracts').WorldRelationPairHistoryView;
+export type atlas_entrance = import('../atlas/atlas-travel-contracts').AtlasEntrance;
+export type atlas_local_journey = import('../atlas/atlas-travel-contracts').AtlasLocalJourney;
+export type atlas_landscape = import('../atlas/atlas-landscape').LandscapeRecord;
+export type atlas_territory_layer = import('../atlas/atlas-territories').AtlasTerritoryLayer;
+export type atlas_territory = import('../atlas/atlas-territories').AtlasTerritory;
 export type room_group = {
   id: string;
-  recipe: import('../room-group-generator').GroupRecipe;
+  recipe: import('../atlas/room-group-generator').GroupRecipe;
   protected: boolean;
 };
 
@@ -136,14 +137,17 @@ export type player_discovery = {
   position?: { mapId: string; q: number; r: number; revision: number } | null;
   confirmationRevision?: number;
 };
-export type world_record_calendar = import('../world-contracts').FantasyCalendar & { id?: string };
-export type world_record_map = import('../world-contracts').AtlasMap;
-export type world_record_calendar_event = import('../world-contracts').CalendarEvent;
-export type world_record_phenomenon = import('../world-contracts').WeatherPhenomenon;
-export type world_record_place_presentation = import('../world-contracts').MarkerPresentation & {
-  id: string;
-  revision: number;
+export type world_record_calendar = import('../runtime/world-contracts').FantasyCalendar & {
+  id?: string;
 };
+export type world_record_map = import('../runtime/world-contracts').AtlasMap;
+export type world_record_calendar_event = import('../runtime/world-contracts').CalendarEvent;
+export type world_record_phenomenon = import('../runtime/world-contracts').WeatherPhenomenon;
+export type world_record_place_presentation =
+  import('../runtime/world-contracts').MarkerPresentation & {
+    id: string;
+    revision: number;
+  };
 export type world_record_weather_state = {
   revision: number;
   signature: string;
@@ -154,10 +158,10 @@ export type world_record_weather_override = {
   revision: number;
   id: string;
   enabled: boolean;
-  weather: import('../world-contracts').Weather | null;
+  weather: import('../runtime/world-contracts').Weather | null;
 };
-export type player_record_settings = import('../player-contracts').PlayerSettings;
-export type player_record_observer = import('../player-contracts').PlayerObserver & {
+export type player_record_settings = import('../runtime/player-contracts').PlayerSettings;
+export type player_record_observer = import('../runtime/player-contracts').PlayerObserver & {
   revision: number;
 };
 export type player_record_mask = {
@@ -184,8 +188,9 @@ export type world_relation_pair_history = {
   undoSourceRevision: number | null;
   undoTargetRevision: number | null;
 };
-export type campaign_catalog_receipt = import('../campaign-contracts').CampaignCatalogReceipt;
-export type dungeon_memory = { polygons: import('../contracts').Polygon[] };
+export type campaign_catalog_receipt =
+  import('../campaign/campaign-contracts').CampaignCatalogReceipt;
+export type dungeon_memory = { polygons: import('../shared/contracts').Polygon[] };
 export type dungeon_slice_memory = dungeon_memory;
 export type dungeon_track_adjustment = { dc: number; hidden: boolean; publicText: string };
 export type dungeon_npc_knowledge = {
@@ -201,7 +206,7 @@ export type dungeon_sense_settings = {
 };
 export type dungeon_signal = {
   id: string;
-  pose: import('../dungeon-contracts').DungeonPose;
+  pose: import('../atlas/dungeon-contracts').DungeonPose;
   epochId: string;
   instantMs: string;
   publicText: string;
@@ -221,8 +226,8 @@ export type dungeon_perception = {
   dc?: number;
   sourceKnown?: boolean;
   sourceActorId?: string | null;
-  from?: import('../dungeon-contracts').DungeonPose;
-  to?: import('../dungeon-contracts').DungeonPose;
+  from?: import('../atlas/dungeon-contracts').DungeonPose;
+  to?: import('../atlas/dungeon-contracts').DungeonPose;
   profile?: string;
 };
 export type dungeon_content_signal = {
@@ -235,12 +240,12 @@ export type dungeon_content_signal = {
 export type autonomy_receipt = { progressed: number; pending: number };
 export type generation_receipt =
   | {
-      tables: import('../generation-contracts').EncounterTable[];
-      lootTables: import('../generation-contracts').LootTable[];
-      registry: import('../generation-contracts').GeneratorRegistry;
+      tables: import('../campaign/generation-contracts').EncounterTable[];
+      lootTables: import('../campaign/generation-contracts').LootTable[];
+      registry: import('../campaign/generation-contracts').GeneratorRegistry;
     }
-  | import('../generation-contracts').LootRoll
-  | import('../encounter-contracts').EncounterPlan;
+  | import('../campaign/generation-contracts').LootRoll
+  | import('../catalog/encounter-contracts').EncounterPlan;
 export type scene_time_step = {
   epochId: string;
   from: string;
@@ -249,9 +254,9 @@ export type scene_time_step = {
   afterRevision: number;
   calendarVersion: string;
   amount?: number;
-  unit?: import('../live-contracts').TimeUnit;
+  unit?: import('../runtime/live-contracts').TimeUnit;
   calendar?: { revision: number; daySeconds: number };
-  eventTarget?: import('../time-plan-contracts').ClockEventTarget;
+  eventTarget?: import('../runtime/time-plan-contracts').ClockEventTarget;
   reason: string;
   recordedAt: string;
   checkpointId?: string;
@@ -278,16 +283,16 @@ export type travel_checkpoint = {
   epochId: string;
   from: string;
   to: string;
-  fromHex: import('../world-contracts').Hex;
-  toHex: import('../world-contracts').Hex;
+  fromHex: import('../runtime/world-contracts').Hex;
+  toHex: import('../runtime/world-contracts').Hex;
   effects: { table: string; before: unknown; after: unknown }[];
 };
 
 export type progress_event = (
-  | { entry: import('../progression').LedgerItem; shopId: string }
+  | { entry: import('../runtime/progression').LedgerItem; shopId: string }
   | {
-      before: import('../progression').LedgerItem;
-      portion: import('../progression').LedgerItem;
+      before: import('../runtime/progression').LedgerItem;
+      portion: import('../runtime/progression').LedgerItem;
       shopId: string;
       notes: string;
     }
@@ -295,38 +300,38 @@ export type progress_event = (
       commandId: string;
       combatId: string;
       title: string;
-      participant: import('../combat-contracts').Combatant;
+      participant: import('../runtime/combat-contracts').Combatant;
       reason: string;
     }
-  | { groupId: string; after: import('../session-contracts').PreparedGroup }
+  | { groupId: string; after: import('../campaign/session-contracts').PreparedGroup }
   | {
       groupId: string;
-      before: import('../session-contracts').PreparedGroup;
-      after: import('../session-contracts').PreparedGroup;
+      before: import('../campaign/session-contracts').PreparedGroup;
+      after: import('../campaign/session-contracts').PreparedGroup;
     }
-  | { treasure: import('../progression').Treasure }
+  | { treasure: import('../runtime/progression').Treasure }
   | {
       treasureId: string;
-      from: import('../treasury-contracts').TreasureAnchor;
-      to: import('../treasury-contracts').TreasureAnchor;
+      from: import('../runtime/treasury-contracts').TreasureAnchor;
+      to: import('../runtime/treasury-contracts').TreasureAnchor;
       targetName: string;
-      before: import('../progression').Treasure;
-      after: import('../progression').Treasure;
+      before: import('../runtime/progression').Treasure;
+      after: import('../runtime/progression').Treasure;
       reason: string;
     }
   | {
       treasureId: string;
-      before: import('../progression').Treasure;
-      after: import('../progression').Treasure;
+      before: import('../runtime/progression').Treasure;
+      after: import('../runtime/progression').Treasure;
       reason: string;
     }
   | {
       treasureId: string;
       targetTreasureId: string;
-      before: import('../progression').Treasure;
-      after: import('../progression').Treasure;
-      targetBefore: import('../progression').Treasure;
-      targetAfter: import('../progression').Treasure;
+      before: import('../runtime/progression').Treasure;
+      after: import('../runtime/progression').Treasure;
+      targetBefore: import('../runtime/progression').Treasure;
+      targetAfter: import('../runtime/progression').Treasure;
       quantity: number;
       itemId: string;
       reason: string;
@@ -335,35 +340,35 @@ export type progress_event = (
       commandId: string;
       combatId: string;
       title: string;
-      participant: import('../combat-contracts').Combatant;
-      before: import('../progression').Progress;
-      after: import('../progression').Progress;
+      participant: import('../runtime/combat-contracts').Combatant;
+      before: import('../runtime/progression').Progress;
+      after: import('../runtime/progression').Progress;
     }
   | {
       commandId: string;
       combatId: string;
       title: string;
-      participant: import('../combat-contracts').Combatant;
+      participant: import('../runtime/combat-contracts').Combatant;
     }
   | {
       sourceKind: string;
       sourceId: string;
-      before: import('../progression').Progress;
-      after: import('../progression').Progress;
+      before: import('../runtime/progression').Progress;
+      after: import('../runtime/progression').Progress;
       xp: number;
     }
   | {
       awardId: string;
       combatId: string;
-      before: import('../progression').Progress;
-      after: import('../progression').Progress;
+      before: import('../runtime/progression').Progress;
+      after: import('../runtime/progression').Progress;
       xp: number;
       load: number;
     }
-  | { treasureId: string; itemId: string; entry: import('../progression').LedgerItem }
+  | { treasureId: string; itemId: string; entry: import('../runtime/progression').LedgerItem }
   | {
-      before: import('../progression').Progress;
-      after: import('../progression').Progress;
+      before: import('../runtime/progression').Progress;
+      after: import('../runtime/progression').Progress;
       xp: number;
       load: number;
       reason: string;
@@ -382,7 +387,7 @@ export type progress_event = (
     }
   | {
       title: string;
-      before: import('../narrative-contracts').NarrativeState;
+      before: import('../runtime/narrative-contracts').NarrativeState;
       after: {
         revision: number;
         awardId: string | null;
@@ -391,7 +396,7 @@ export type progress_event = (
         locationId?: string | null | undefined;
         contributors: string[];
         poolXp: number;
-        items: import('../progression').ItemInput[];
+        items: import('../runtime/progression').ItemInput[];
       };
     }
   | {
@@ -407,10 +412,10 @@ export type progress_event = (
       recordedAt: string;
     }
   | {
-      before: import('../progression').LedgerItem;
-      sourceBefore: import('../progression').LedgerItem;
-      after: import('../progression').LedgerItem;
-      sourceAfter: import('../progression').LedgerItem;
+      before: import('../runtime/progression').LedgerItem;
+      sourceBefore: import('../runtime/progression').LedgerItem;
+      after: import('../runtime/progression').LedgerItem;
+      sourceAfter: import('../runtime/progression').LedgerItem;
       reason: string;
     }
   | {
@@ -425,9 +430,9 @@ export type progress_event = (
         sourceCharacterId: string;
         provenance: string;
         revision: number;
-        reference: import('../progression').ItemReference;
+        reference: import('../runtime/progression').ItemReference;
         name: string;
-        category: import('../progression').ItemCategory;
+        category: import('../runtime/progression').ItemCategory;
         quantity: number;
         unitCopper: string | null;
         status: 'received' | 'sold' | 'given';
@@ -460,8 +465,8 @@ export type progress_event = (
       reason: string;
     }
   | {
-      before: import('../progression').LedgerItem;
-      after: import('../progression').LedgerItem;
+      before: import('../runtime/progression').LedgerItem;
+      after: import('../runtime/progression').LedgerItem;
       handed: {
         status: 'given';
         counterparty: any;
@@ -470,9 +475,9 @@ export type progress_event = (
         id: string;
         characterId: string;
         revision: number;
-        reference: import('../progression').ItemReference;
+        reference: import('../runtime/progression').ItemReference;
         name: string;
-        category: import('../progression').ItemCategory;
+        category: import('../runtime/progression').ItemCategory;
         quantity: number;
         unitCopper: string | null;
         origin: 'purchase' | 'award' | 'manual' | 'transfer';
@@ -506,22 +511,22 @@ export type progress_event = (
       reason: string;
     }
   | {
-      before: import('../progression').LedgerItem;
-      after: import('../progression').LedgerItem;
-      portion: import('../progression').LedgerItem;
+      before: import('../runtime/progression').LedgerItem;
+      after: import('../runtime/progression').LedgerItem;
+      portion: import('../runtime/progression').LedgerItem;
       reason: string;
     }
   | {
       reason: string;
-      before: import('../progression').Progress;
-      after: import('../progression').Progress;
-      result?: import('../progression').DeathSaveResult | undefined;
+      before: import('../runtime/progression').Progress;
+      after: import('../runtime/progression').Progress;
+      result?: import('../runtime/progression').DeathSaveResult | undefined;
       amount?: number | undefined;
       operation: 'set' | 'damage' | 'heal' | 'death';
     }
   | {
-      before: import('../progression').Progress;
-      after: import('../progression').Progress;
+      before: import('../runtime/progression').Progress;
+      after: import('../runtime/progression').Progress;
       reason: string;
       mode: 'add' | 'set' | 'subtract';
       requestedAmount: number;
@@ -529,26 +534,26 @@ export type progress_event = (
       correctionOf: string | null;
     }
   | {
-      duration?: { amount: number; unit: import('../live-contracts').TimeUnit } | undefined;
+      duration?: { amount: number; unit: import('../runtime/live-contracts').TimeUnit } | undefined;
       sceneId?: string | undefined;
       commandId: string;
       rest: 'short' | 'long';
-      before: import('../progression').Progress;
-      after: import('../progression').Progress;
+      before: import('../runtime/progression').Progress;
+      after: import('../runtime/progression').Progress;
       restoreHp: boolean;
     }
-  | { entry: import('../progression').LedgerItem }
+  | { entry: import('../runtime/progression').LedgerItem }
   | {
       originalId: string;
-      before: import('../progression').LedgerItem;
-      after: import('../progression').LedgerItem;
+      before: import('../runtime/progression').LedgerItem;
+      after: import('../runtime/progression').LedgerItem;
       reason: string;
     }
   | {
       originalId: string;
-      before: import('../progression').LedgerItem;
-      after: import('../progression').LedgerItem;
-      portion: import('../progression').LedgerItem;
+      before: import('../runtime/progression').LedgerItem;
+      after: import('../runtime/progression').LedgerItem;
+      portion: import('../runtime/progression').LedgerItem;
       reason: string;
     }
   | { combatId: string; groupId: string; actorIds: string[] }
@@ -556,26 +561,26 @@ export type progress_event = (
       commandId: string;
       combatId: string;
       title: string;
-      participant: import('../combat-contracts').Combatant;
+      participant: import('../runtime/combat-contracts').Combatant;
       returning: boolean;
     }
 ) & { recordedAt: string };
 
 export type world_history_facts =
   | {
-      before: import('../world-contracts').FantasyCalendar;
-      after: import('../world-contracts').FantasyCalendar;
+      before: import('../runtime/world-contracts').FantasyCalendar;
+      after: import('../runtime/world-contracts').FantasyCalendar;
     }
   | { mapId: string }
-  | { locationId: string; mapId: string; hex: import('../world-contracts').Hex }
-  | { locationId: string; presentation: import('../world-contracts').MarkerPresentation }
-  | { phenomenon: import('../world-contracts').WeatherPhenomenon }
-  | { weather: import('../world-contracts').Weather | null }
+  | { locationId: string; mapId: string; hex: import('../runtime/world-contracts').Hex }
+  | { locationId: string; presentation: import('../runtime/world-contracts').MarkerPresentation }
+  | { phenomenon: import('../runtime/world-contracts').WeatherPhenomenon }
+  | { weather: import('../runtime/world-contracts').Weather | null }
   | {
-      before: import('../world-contracts').ScenePosition;
-      after: Omit<import('../world-contracts').ScenePosition, 'revision'>;
+      before: import('../runtime/world-contracts').ScenePosition;
+      after: Omit<import('../runtime/world-contracts').ScenePosition, 'revision'>;
     }
-  | { preview: import('../world-contracts').TravelPreview; journeyId: string }
+  | { preview: import('../runtime/world-contracts').TravelPreview; journeyId: string }
   | { journeyId: string }
   | { checkpointId: string; retainedShared: any; from: string; to: string; tables: string[] }
   | {
@@ -583,21 +588,21 @@ export type world_history_facts =
       ordinal: number;
       actorIds: string[];
       before: {
-        position: import('../world-contracts').ScenePosition;
+        position: import('../runtime/world-contracts').ScenePosition;
         clock: { epochId: string; instantMs: string; revision: number };
-        weather: import('../world-contracts').Weather | null;
+        weather: import('../runtime/world-contracts').Weather | null;
       };
       after: {
-        position: import('../world-contracts').ScenePosition;
+        position: import('../runtime/world-contracts').ScenePosition;
         clock: { epochId: string; instantMs: string; revision: number };
-        weather: import('../world-contracts').Weather | null;
+        weather: import('../runtime/world-contracts').Weather | null;
       };
       seconds: number;
     }
-  | { journeyId: string; hex: import('../world-contracts').Hex };
+  | { journeyId: string; hex: import('../runtime/world-contracts').Hex };
 
 export type dungeon_perception_log_facts =
-  | { actorId: string | null; rules: import('../dungeon-contracts').DungeonTraceRules }
+  | { actorId: string | null; rules: import('../atlas/dungeon-contracts').DungeonTraceRules }
   | { traceId: string; actorId: string | null; sourceKnown: boolean }
   | { actorIds: string[] }
   | { subjectId: string | null; score: any; hearingMeters: any; profile: string };
@@ -605,14 +610,14 @@ export type dungeon_perception_log_facts =
 export type AutonomyPosition = {
   locationId: string | null;
   revision: number | null;
-  dungeon?: import('../dungeon-contracts').DungeonPose | null;
+  dungeon?: import('../atlas/dungeon-contracts').DungeonPose | null;
 };
 export type autonomy_log_facts = {
   reason?: string;
   jobId?: string | null;
   previousJobId?: string;
   progressSeconds?: number;
-  position?: AutonomyPosition | import('../dungeon-contracts').DungeonPose | null;
+  position?: AutonomyPosition | import('../atlas/dungeon-contracts').DungeonPose | null;
   epochId?: string;
   actorInstantMs?: string;
   sceneInstantMs?: string;
@@ -652,9 +657,9 @@ export type autonomy_log_facts = {
   route?: {
     id?: string;
     seconds: number;
-    routes?: import('../autonomy-contracts').NpcRoute[];
+    routes?: import('../runtime/autonomy-contracts').NpcRoute[];
     places?: (string | null)[];
-    dungeon?: import('../autonomy-contracts').AutonomyDungeonTravel;
+    dungeon?: import('../runtime/autonomy-contracts').AutonomyDungeonTravel;
   };
 };
 
@@ -689,7 +694,7 @@ export type autonomy_dungeon_basis = {
     floors: { id: string; elevation: number }[];
     hidden: { id: string; kind: string; hidden: number; revision: number }[];
   };
-  geometry: import('../dungeon-contracts').DungeonGeometry;
+  geometry: import('../atlas/dungeon-contracts').DungeonGeometry;
 };
 export type world_history = {
   text: string;
@@ -726,11 +731,11 @@ export type world_history = {
         visitId: string | null;
       };
 };
-export type settings_preparation = import('../preparation-contracts').PreparationSelection;
-export type settings_session_recap = import('../live-contracts').SessionRecapDraft;
+export type settings_preparation = import('../campaign/preparation-contracts').PreparationSelection;
+export type settings_session_recap = import('../runtime/live-contracts').SessionRecapDraft;
 
-export type npc_dailyPlan = import('../npc-contracts').NpcDailySlot[];
-export type npc_dailyOverrides = import('../npc-contracts').NpcDailyOverride[];
+export type npc_dailyPlan = import('../campaign/npc-contracts').NpcDailySlot[];
+export type npc_dailyOverrides = import('../campaign/npc-contracts').NpcDailyOverride[];
 
 export type world_record_projection = { epoch: string };
 export type world_record_environment = { revision: number };
@@ -778,9 +783,9 @@ export type party_history_facts =
       planId: string;
       visitId: string;
       locationId: string | null;
-      status: import('../visit-outcome-contracts').VisitOutcomeStatus;
+      status: import('../runtime/visit-outcome-contracts').VisitOutcomeStatus;
       outcome: string;
-      previous: import('../visit-outcome-contracts').VisitOutcome | null;
+      previous: import('../runtime/visit-outcome-contracts').VisitOutcome | null;
       sceneInstantMs: string;
       characterIds: string[];
     };

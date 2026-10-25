@@ -1,10 +1,10 @@
-import { copyKeyPatch, keyCopyDependencies } from '../key-copy-model';
+import { copyKeyPatch, keyCopyDependencies } from '../campaign/key-copy-model';
 import { validateSurfaceGeometry } from './surfaces';
 import { createHash, randomUUID } from 'node:crypto';
-import type { KeyContent, KeyAction } from '../key-contracts';
-import { emptyKey, validateKeyContent } from '../key-contracts';
-import { editKeyText, expandedKeyBlocks, templateBlockId } from '../key-model';
-import { validateRoom, type Room } from '../contracts';
+import type { KeyContent, KeyAction } from '../campaign/key-contracts';
+import { emptyKey, validateKeyContent } from '../campaign/key-contracts';
+import { editKeyText, expandedKeyBlocks, templateBlockId } from '../campaign/key-model';
+import { validateRoom, type Room } from '../shared/contracts';
 const hash = (s: string) => createHash('sha256').update(s).digest('hex');
 export function installDungeonKey(db: any) {
   db.exec(`CREATE TABLE IF NOT EXISTS dungeon_key_content(campaign_id TEXT NOT NULL,id TEXT NOT NULL,scope_id TEXT NOT NULL,kind TEXT NOT NULL,revision INTEGER NOT NULL,payload TEXT NOT NULL,checksum TEXT NOT NULL,PRIMARY KEY(campaign_id,id),FOREIGN KEY(campaign_id,scope_id) REFERENCES scope(campaign_id,id)) STRICT;

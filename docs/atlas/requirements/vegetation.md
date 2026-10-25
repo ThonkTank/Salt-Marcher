@@ -132,14 +132,14 @@ Landschaftsebene wegen zu vieler lokaler Kandidaten verschwinden lassen.
 
 | Verantwortung | Einstieg |
 | --- | --- |
-| Vorlagen, Validierung, stabile Kandidaten und Ausschlüsse | `src/app/vegetation.ts`; verschachtelte Detailstufen: `src/app/vegetation-lod.ts` |
+| Vorlagen, Validierung, stabile Kandidaten und Ausschlüsse | `src/app/atlas/vegetation.ts`; verschachtelte Detailstufen: `src/app/atlas/vegetation-lod.ts` |
 | Kanonische Befehle und räumliche Datenprojektion | `src/app/storage/atlas-landscape.ts`, `src/app/storage/vegetation.ts` |
 | History, Main/Preload und Kampagnenkopie | `src/app/storage/store.ts`, `desktop/main.ts`, `desktop/preload.ts`, `src/app/storage/campaign-data.ts` |
-| Kartenbild, Geländegrund und Bereichsprojektion | `src/app/vegetation-view.ts`, `src/app/landscape-raster.ts`, `src/app/storage/atlas-landscape-region.ts` |
-| Werkzeuge und gemeinsame Einzelbearbeitung | `src/app/atlas-landscape-ui.ts`, `src/app/vegetation-controls.ts` |
-| Bewuchs in der gemeinsamen Hauptkamera und isolierte Bildfixture | `src/app/atlas-deck-vegetation.ts`, `src/app/atlas-vegetation-layer.ts`, `src/app/atlas-cartographic-style.ts`, `tools/vegetation-prototype/app.ts` |
-| Abgeleitetes Geländenetz, Bodenbild und schreibfreie Landpinselvorschau der räumlichen Bewuchsansicht | `src/app/spatial-terrain.ts` |
-| Datenregression, Auswahl und echte Desktop-Bedienung | `tests/vegetation.test.mjs`, `tests/vegetation-spatial.test.mjs`, `tools/test-desktop-vegetation.mjs`, `tools/test-desktop-vegetation-qualification.mjs` |
+| Kartenbild, Geländegrund und Bereichsprojektion | `src/app/atlas/vegetation-view.ts`, `src/app/atlas/landscape-raster.ts`, `src/app/storage/atlas-landscape-region.ts` |
+| Werkzeuge und gemeinsame Einzelbearbeitung | `src/app/atlas/atlas-landscape-ui.ts`, `src/app/atlas/vegetation-controls.ts` |
+| Bewuchs in der gemeinsamen Hauptkamera und isolierte Bildfixture | `src/app/atlas/atlas-deck-vegetation.ts`, `src/app/atlas/atlas-vegetation-layer.ts`, `src/app/atlas/atlas-cartographic-style.ts`, `tools/vegetation-prototype/app.ts` |
+| Abgeleitetes Geländenetz, Bodenbild und schreibfreie Landpinselvorschau der räumlichen Bewuchsansicht | `src/app/atlas/spatial-terrain.ts` |
+| Datenregression, Auswahl und echte Desktop-Bedienung | `tests/atlas/vegetation.test.mjs`, `tests/atlas/vegetation-spatial.test.mjs`, `tools/test-desktop-vegetation.mjs`, `tools/test-desktop-vegetation-qualification.mjs` |
 
 Der [lokale Prüfbeleg](https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/vegetation-20261020/README.md) trennt
 automatische Tests, native Bedienung und Leistungsbeobachtung. Die vollständige

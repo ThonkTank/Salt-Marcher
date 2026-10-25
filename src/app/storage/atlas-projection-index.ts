@@ -2,7 +2,7 @@ import Database from 'better-sqlite3';
 import { createHash, randomUUID } from 'node:crypto';
 import { mkdir, rm, stat, readdir } from 'node:fs/promises';
 import { join } from 'node:path';
-import type { AtlasRegionSource } from '../atlas-region-contracts';
+import type { AtlasRegionSource } from '../atlas/atlas-region-contracts';
 import { AtlasTileCache } from './atlas-tile-cache';
 
 // Bump when metadata columns, bounds, validation or derivation semantics change.

@@ -2,7 +2,10 @@ import { open, rm } from 'node:fs/promises';
 import { renameSync } from 'node:fs';
 import { randomUUID } from 'node:crypto';
 import path from 'node:path';
-import { sessionPacketMarkdown, type SessionPacket } from '../src/app/session-packet-contracts';
+import {
+  sessionPacketMarkdown,
+  type SessionPacket,
+} from '../src/app/campaign/session-packet-contracts';
 
 export async function exportSessionPacketFile(
   destination: string,

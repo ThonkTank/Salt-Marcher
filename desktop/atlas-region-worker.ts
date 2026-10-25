@@ -1,15 +1,15 @@
 import { isProjectionJob, isCachedTileJob, type AtlasWorkerJob } from './atlas-worker-contract';
-import type { AtlasRegionSource } from '../src/app/atlas-region-contracts';
+import type { AtlasRegionSource } from '../src/app/atlas/atlas-region-contracts';
 import { AtlasGeometryTiles } from '../src/app/storage/atlas-geometry-tiles';
 import { AtlasTerrainTiles } from '../src/app/storage/atlas-terrain-tiles';
 import { AtlasMaterialTiles } from '../src/app/storage/atlas-material-tiles';
 import { AtlasProjectionIndex } from '../src/app/storage/atlas-projection-index';
 import { assertAtlasProjectionSource } from '../src/app/storage/atlas-shape-source';
 import { computeTerrainStroke, TerrainScalePyramid } from '../src/app/storage/terrain-scale';
-import { terrainTraceStart } from '../src/app/terrain-timing';
+import { terrainTraceStart } from '../src/app/atlas/terrain-timing';
 import { parentPort, workerData } from 'node:worker_threads';
 import Database from 'better-sqlite3';
-import { takeTerrainTrace } from '../src/app/terrain-timing';
+import { takeTerrainTrace } from '../src/app/atlas/terrain-timing';
 import { AtlasRegionReader } from '../src/app/storage/atlas-region';
 import {
   atlasReadCheckpoint,

@@ -101,7 +101,7 @@ Ein ausgeblendetes Bild bleibt nach Neustart ausgeblendet, bis es erneut bewusst
 gezeigt wird. Die native Ablaufprüfung liegt in
 [test-desktop-npc-portrait.mjs](../../../tools/test-desktop-npc-portrait.mjs);
 Editorwechsel und konkurrierende Aufträge prüfen die
-[Desk-Regressionen](../../../tests/desktop-desk-owner-dom.test.mjs).
+[Desk-Regressionen](../../../tests/runtime/desktop-desk-owner-dom.test.mjs).
 Eine neu ausgewählte Orts-ID
 wird als sichtbarer Auftrag gebunden; erst ihr erfolgreicher Save erlaubt die
 direkte Bild-/Livefreigabe. Ein Savefehler veröffentlicht nichts.
@@ -111,7 +111,7 @@ verhindern die Freigabe; gespeicherte Art bleibt erhalten. Genau ein neues Bild
 mit passendem Typ und Ziel muss die Auswahl bestimmen. Bei parallelen,
 mehrdeutigen Ergänzungen erfolgt keine willkürliche Freigabe; das Bild lässt
 sich im bestehenden Dialog auswählen. Die Gegenproben stehen in
-[desktop-player-focus.test.mjs](../../../tests/desktop-player-focus.test.mjs).
+[desktop-player-focus.test.mjs](../../../tests/runtime/desktop-player-focus.test.mjs).
 Blank benötigt keinen vorgelagerten Previewread und funktioniert auch bei
 ausgefallener oder hängender Steuerungsquery.
 Ein ausdrücklich gewählter neuer visueller Modus ersetzt die alte Einstellung.

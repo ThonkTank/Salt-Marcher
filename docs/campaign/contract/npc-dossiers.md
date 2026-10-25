@@ -23,7 +23,7 @@ von einer Familienklassifikation. Beide Ergebnisnotizen werden vor dem Schreiben
 validiert. Eine Notiz mit Teilnehmerbindung in einer vorbereiteten oder laufenden
 Begegnung kann erst nach Teilnehmerentfernung oder Kampfabschluss in den Papierkorb;
 abgeschlossene Kampfstände bleiben historisch.
-Regression: `tests/desktop-review-integrity.test.mjs`; Grenzen und Befunde im
+Regression: `tests/campaign/desktop-review-integrity.test.mjs`; Grenzen und Befunde im
 [Review vom 24.10.2026](https://github.com/ThonkTank/Salt-Marcher/blob/16eb0aa8807ac21704abfea5412ac3a22033a23a/docs/reference/independent-code-review-20261024-second/README.md).
 
 `storage/npc-cast.ts` liest Ortsliste und Dossier über die Transaktionen von
@@ -205,7 +205,7 @@ Es gibt keine zusätzliche Tabelle oder Schreibgrenze. Neue feste Ziele benötig
 einen aktiven Ort; archivierte Referenzen bleiben als nicht verfügbar lesbar.
 Kampagnenkopien binden auch Ortsziele in gesicherten Entwurfsrohfeldern neu.
 
-Die [Zeitregeln](../../../src/app/npc-daily-plan.ts) gelten für Tages-, Wochen-
+Die [Zeitregeln](../../../src/app/campaign/npc-daily-plan.ts) gelten für Tages-, Wochen-
 und Ausnahmepläne gemeinsam:
 
 - Aktivitäten gelten täglich oder an ausgewählten Wochentagen; maßgeblich ist
@@ -260,10 +260,10 @@ Berechnung; eine Ortsprojektion behält auch Ausnahmen ohne passenden Besuch.
 Eine zusätzliche Uhr, gespeicherte Terminprojektion oder Migration ist dafür
 nicht erforderlich.
 
-`tests/desktop-npc-schedule.test.mjs` prüft diesen Vertrag einschließlich 64
+`tests/campaign/desktop-npc-schedule.test.mjs` prüft diesen Vertrag einschließlich 64
 ausgefallener Termine, unterschiedlicher Wochenlängen, Nachtaktivitäten und
 ferner Einzeltermine gegen eine unabhängige tageweise Referenzrechnung.
-`tests/core/city-people-storage.test.ts` verbindet die drei Leser mit bestätigten
+`tests/shared/core/city-people-storage.test.ts` verbindet die drei Leser mit bestätigten
 Profilen und frischer SQLite-Wiederöffnung. Der native Ablauf
 `tools/test-desktop-npc-weekly-visits.mjs` prüft Wochenplan und unvollständigen
 Ruhetagentwurf → regulärer Neustart → Bestätigung → Dossier und Ortsmappe →

@@ -41,7 +41,7 @@ synchronisiert. Kandidat und Sidecars werden bei Fehlern entfernt. Die Quelle
 wird weder korrigiert noch gelöscht. `backup` behält seine vollständige Prüfung
 und die globale Erasuregrenze.
 
-`tests/desktop-campaign-export-isolation.test.mjs` prüft sechs SQLitefälle:
+`tests/campaign/desktop-campaign-export-isolation.test.mjs` prüft sechs SQLitefälle:
 beide defekten lokalen Extensionrecordarten, unabhängigen Export neben einer
 beschädigten anderen Kampagne, beschädigten ausgewählten Inhalt, Quelllöschung
 während der Kopie und beschädigte ausgewählte Capabilitybytes. Gesunde opaque

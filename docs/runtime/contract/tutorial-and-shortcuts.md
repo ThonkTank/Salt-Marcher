@@ -33,7 +33,7 @@ einer anderen Arbeitsfläche. Native Eingabe-Undo bleibt bei ihrem Inputowner.
 Die Hilfe beschreibt Karten-/Artanzeige ohne Text-/Mechanikkanal; alte Buttons
 und Optionen werden entfernt, nicht durch zusätzliche Lektionen überdeckt.
 
-[desktop-workspace-shortcuts.test.mjs](../../../tests/desktop-workspace-shortcuts.test.mjs)
+[desktop-workspace-shortcuts.test.mjs](../../../tests/workspace/desktop-workspace-shortcuts.test.mjs)
 prüft diese kontrollierten Kontextgrenzen. Vorhandene Tutorial-/Storeprüfungen
 belegen Versionsruns, terminale Zustände und erhaltene Korruption. Das schließt
 weder native Tastatur-/IME-/Screenreaderwirkung noch Feature- oder Localeabnahme.

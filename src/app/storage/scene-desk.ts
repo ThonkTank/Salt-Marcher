@@ -1,8 +1,8 @@
 import { checkedWorldNoteRow } from './world-note-row';
 import { searchNoteChoices } from './note-choice-search';
-import type { PreparationCommand } from '../preparation-contracts';
+import type { PreparationCommand } from '../campaign/preparation-contracts';
 import { saveNarrative, validateNarrativeState } from './narrative';
-import { documentReferences } from '../text-references';
+import { documentReferences } from '../campaign/text-references';
 import { searchTextReferences, referenceEntry } from './text-references';
 import { createHash } from 'node:crypto';
 import type {
@@ -11,7 +11,7 @@ import type {
   DeskContent,
   SceneDesk,
   SceneCreationDraft,
-} from '../scene-desk-contracts';
+} from '../runtime/scene-desk-contracts';
 import { readLiveScene } from './live';
 import { worldNoteDocument } from '../../features/world/world-notes';
 import { checkedLocationDocument } from '../../features/location/location-schema';

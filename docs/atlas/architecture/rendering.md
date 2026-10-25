@@ -32,16 +32,16 @@ keine vollständige Produktabnahme.
 
 | Verhalten | Einstieg | Regression |
 | --- | --- | --- |
-| Arbeitsbereich und Werkzeugwechsel | `src/app/campaign-atlas-ui.ts` | `tools/test-desktop-atlas-cleanup.mjs` |
-| Kamera, GPU-Lebenszyklus und Weltkoordinaten | `src/app/atlas-deck-surface.ts`, `src/app/atlas-metric-camera.ts` | `tests/atlas-deck-surface.test.mjs`, `tools/test-desktop-atlas-deck.mjs` |
-| Zeichenbefehle und genaue Auswahl | `src/app/atlas-deck-drawing.ts`, `src/app/atlas-drawing-geometry.ts` | `tests/atlas-drawing-geometry.test.mjs`, `tools/test-desktop-dungeon-groundplan.mjs` |
-| Maßstab, Waldzeichnung und stabile Instanzen | `src/app/atlas-cartographic-style.ts`, `src/app/atlas-cartographic-texture.ts`, `src/app/atlas-vegetation-layer.ts` | `tests/atlas-cartographic-scale.test.mjs`, `tools/test-desktop-atlas-multiscale.mjs` |
-| Kacheln und gemeinsame Nachladung | `src/app/atlas-surface-tile-stream.ts`, `src/app/atlas-raster-tile-stream.ts` | `tests/atlas-surface-stream.test.mjs` |
-| Quellenauswertung und Material | `src/app/landscape-raster.ts`, `src/app/atlas-raster-kernel.ts` | `tests/atlas-bounded-material.test.mjs`, `tests/atlas-raster-kernel.test.mjs` |
-| Asynchrone Leseaufträge | `desktop/atlas-region.ts`, `desktop/atlas-region-worker.ts` | `tests/atlas-first-product-worker.test.mjs`, `tests/atlas-presentation-source.test.mjs` |
+| Arbeitsbereich und Werkzeugwechsel | `src/app/atlas/campaign-atlas-ui.ts` | `tools/test-desktop-atlas-cleanup.mjs` |
+| Kamera, GPU-Lebenszyklus und Weltkoordinaten | `src/app/atlas/atlas-deck-surface.ts`, `src/app/atlas/atlas-metric-camera.ts` | `tests/atlas/atlas-deck-surface.test.mjs`, `tools/test-desktop-atlas-deck.mjs` |
+| Zeichenbefehle und genaue Auswahl | `src/app/atlas/atlas-deck-drawing.ts`, `src/app/atlas/atlas-drawing-geometry.ts` | `tests/atlas/atlas-drawing-geometry.test.mjs`, `tools/test-desktop-dungeon-groundplan.mjs` |
+| Maßstab, Waldzeichnung und stabile Instanzen | `src/app/atlas/atlas-cartographic-style.ts`, `src/app/atlas/atlas-cartographic-texture.ts`, `src/app/atlas/atlas-vegetation-layer.ts` | `tests/atlas/atlas-cartographic-scale.test.mjs`, `tools/test-desktop-atlas-multiscale.mjs` |
+| Kacheln und gemeinsame Nachladung | `src/app/atlas/atlas-surface-tile-stream.ts`, `src/app/atlas/atlas-raster-tile-stream.ts` | `tests/atlas/atlas-surface-stream.test.mjs` |
+| Quellenauswertung und Material | `src/app/atlas/landscape-raster.ts`, `src/app/atlas/atlas-raster-kernel.ts` | `tests/atlas/atlas-bounded-material.test.mjs`, `tests/atlas/atlas-raster-kernel.test.mjs` |
+| Asynchrone Leseaufträge | `desktop/atlas-region.ts`, `desktop/atlas-region-worker.ts` | `tests/atlas/atlas-first-product-worker.test.mjs`, `tests/atlas/atlas-presentation-source.test.mjs` |
 | Persistente Produkte und Cache | `src/app/storage/atlas-cache-scope.ts`, `src/app/storage/atlas-tile-cache.ts` | Terrain-/Material-/Geometriekacheltests |
-| Pinselentwurf und Bestätigung | `src/app/landscape-brush-session.ts`, `src/app/terrain-stroke-queue.ts` | `tests/terrain-stroke-queue.test.mjs`, native Pinselprobe |
-| Ausgabe | `src/app/atlas-output.ts` | `tools/test-desktop-region-export.mjs`, `tools/test-desktop-atlas-cleanup.mjs` |
+| Pinselentwurf und Bestätigung | `src/app/atlas/landscape-brush-session.ts`, `src/app/atlas/terrain-stroke-queue.ts` | `tests/atlas/terrain-stroke-queue.test.mjs`, native Pinselprobe |
+| Ausgabe | `src/app/atlas/atlas-output.ts` | `tools/test-desktop-region-export.mjs`, `tools/test-desktop-atlas-cleanup.mjs` |
 
 ## Quellenstand und Veröffentlichung
 
@@ -166,9 +166,9 @@ Nachauswahl. Die Nachauswahl darf den Workspace-Flush passieren; Kameraeingaben
 und automatisches Öffnen der Eigenschaften bleiben bis zum Abschluss gesperrt.
 
 Automatische Regressionen für diese Darstellung liegen in
-`tests/atlas-fantasy-cartography.test.mjs`, `tests/atlas-prominence-editor.test.mjs`,
-`tests/atlas-material-tiles.test.mjs`, `tests/atlas-surface-draft.test.mjs` und
-`tests/desktop-terrain-route-units.test.mjs`. Die native Maßstabsprobe nimmt mit
+`tests/atlas/atlas-fantasy-cartography.test.mjs`, `tests/atlas/atlas-prominence-editor.test.mjs`,
+`tests/atlas/atlas-material-tiles.test.mjs`, `tests/atlas/atlas-surface-draft.test.mjs` und
+`tests/atlas/desktop-terrain-route-units.test.mjs`. Die native Maßstabsprobe nimmt mit
 `QA_DRAWN=1 QA_EXACT_SCALE=1` sechs Maßstäbe (2048, 128, 16, 4, 1, 0,25 m/Pixel), drei Neigungen
 (0°, 45°, 75°) und 100/200 % UI-Skalierung auf. `QA_PERF=1` misst Kameragesten;
 `QA_EXPORT=1 QA_EXPORT_SIZES=1024,2048,8192` prüft gekachelte Ausgaben.

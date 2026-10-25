@@ -1,11 +1,11 @@
-import { checkVisitPlanning } from '../session-day';
+import { checkVisitPlanning } from '../runtime/session-day';
 import { checkNoteThread } from './note-thread';
-import { sessionTargets } from '../generation/session-targets';
+import { sessionTargets } from '../campaign/generation/session-targets';
 import { checkedPreparedGroupRow } from './prepared-group';
 export { checkedPreparedGroupRow } from './prepared-group';
 import { captureVisitBinding, readVisitBinding } from './scene-visits';
 import { requiredGenerationNpcs } from './generation-npcs';
-import { canonicalJson } from '../generation/canonical-json';
+import { canonicalJson } from '../campaign/generation/canonical-json';
 import { readItemDefinition } from './item-definitions';
 import {
   applyLootGuidance,
@@ -25,9 +25,9 @@ import {
   assessEncounter,
   validateEncounterPlanInput,
   type EncounterPlan,
-} from '../encounter-contracts';
-import { checkedHealth } from '../progression';
-import { exactWeight } from '../generation-contracts';
+} from '../catalog/encounter-contracts';
+import { checkedHealth } from '../runtime/progression';
+import { exactWeight } from '../campaign/generation-contracts';
 import {
   generateEncounters,
   readGenerationRun,
@@ -49,7 +49,7 @@ import type {
   SessionGenerationRequest,
   SessionRun,
   PlanPublisher,
-} from '../session-contracts';
+} from '../campaign/session-contracts';
 const json = (v: unknown) => JSON.stringify(v),
   hash = (s: string) => createHash('sha256').update(s).digest('hex');
 function decoded<T>(row: any): T {

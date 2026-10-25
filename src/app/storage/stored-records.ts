@@ -4,13 +4,13 @@ import {
   validateRoomDraftContent,
   type Room,
   type WorkingRoomDraft,
-} from '../contracts';
+} from '../shared/contracts';
 import {
   checkedPreparationDraft,
   preparationTarget,
   type PreparationDraft,
   type PreparationEdit,
-} from '../preparation-contracts';
+} from '../campaign/preparation-contracts';
 import { manualPlan, type ManualPlan } from '../../features/planner/manual-planner';
 import { checkedLocationDocument } from '../../features/location/location-schema';
 

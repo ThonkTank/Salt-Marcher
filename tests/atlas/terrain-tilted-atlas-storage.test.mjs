@@ -1,0 +1,179 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { createRequire } from 'node:module';
+import { buildSync } from 'esbuild';
+import { mkdtempSync, mkdirSync, rmSync } from 'node:fs';
+import { homedir } from 'node:os';
+import { randomUUID } from 'node:crypto';
+const require = createRequire(import.meta.url);
+buildSync({
+  stdin: {
+    contents:
+      "export * from './src/app/storage/store';export * from './src/app/atlas/terrain-height';export * from './src/app/atlas/terrain-brush';export {terrainPreview} from './tests/helpers/terrain-preview';",
+    resolveDir: process.cwd(),
+  },
+  outfile: '.build/terrain-tilted-atlas-storage.cjs',
+  bundle: true,
+  platform: 'node',
+  format: 'cjs',
+  external: ['better-sqlite3'],
+});
+const {
+  CampaignStore,
+  heightRecord,
+  terrainPreview,
+} = require('../../.build/terrain-tilted-atlas-storage.cjs');
+const globalView = {
+  box: { x: -96, y: -96, width: 192, height: 192 },
+  frame: { x: -64, y: -64, width: 128, height: 128 },
+  columns: 97,
+  rows: 97,
+  focusM: 100,
+  tilt: 60,
+  rotation: 0,
+  exaggeration: 1,
+};
+for (const projection of [undefined, 'perspective'])
+  test(`canonical ${projection ?? 'orthographic'} commit clips occluders, matches preview, and survives history/reopen`, (t) => {
+    const v = { ...globalView, ...(projection ? { projection } : {}) };
+    const root = homedir() + '/.cache/saltmarcher/tests';
+    mkdirSync(root, { recursive: true });
+    const dir = mkdtempSync(root + '/spatial-');
+    let store = new CampaignStore(dir + '/world.sqlite');
+    const cam = store.create('Spatial');
+    let active = store.activate(cam.id);
+    t.after(() => {
+      store.close();
+      rmSync(dir, { recursive: true, force: true });
+    });
+    const write = (action) =>
+        store.executeAtlasCommit({
+          commandId: randomUUID(),
+          campaignId: cam.id,
+          token: active.token,
+          action,
+        }),
+      read = () => store.atlasMaskRegion(active.token, v.box).records;
+    for (let y = -2; y <= 1; y++)
+      for (let x = -2; x <= 1; x++)
+        write({
+          kind: 'landscape-put',
+          expectedRevision: null,
+          record: heightRecord(
+            x * 64,
+            y * 64,
+            1,
+            Float32Array.from(
+              { length: 4096 },
+              (_, i) => 100 + 50 * Math.max(0, 1 - Math.abs(y * 64 + Math.floor(i / 64)) / 12),
+            ),
+          ),
+        });
+    const original = read(),
+      stroke = {
+        mode: 'lower',
+        radius: 28,
+        strength: 200,
+        feather: 0,
+        visibility: v,
+        samples: [
+          { x: 0, y: -22, t: 0 },
+          { x: 0, y: -22, t: 500 },
+        ],
+      };
+    const job = {
+        generation: 1,
+        source: 'storage',
+        records: original,
+        view: v,
+        box: v.box,
+        width: 64,
+        height: 64,
+        heightStroke: stroke,
+      },
+      preview = terrainPreview(job);
+    write({ kind: 'landscape-height-stroke', stroke });
+    assert.equal(store.atlasHeight(active.token, { x: 0, y: -20 }).heightM, 100);
+    assert(store.atlasHeight(active.token, { x: 0, y: 4 }).heightM < 140);
+    const saved = read(),
+      committed = terrainPreview({ ...job, records: saved, heightStroke: undefined });
+    assert.deepEqual(committed.grid.heights, preview.grid.heights);
+    assert.deepEqual(committed.pixels, preview.pixels);
+    write({ kind: 'undo' });
+    assert.deepEqual(
+      read().map((r) => r.height),
+      original.map((r) => r.height),
+    );
+    write({ kind: 'redo' });
+    assert.deepEqual(
+      read().map((r) => r.height),
+      saved.map((r) => r.height),
+    );
+    const afterHistory = read();
+    assert.throws(
+      () =>
+        write({
+          kind: 'landscape-height-stroke',
+          stroke: { ...stroke, visibility: { ...v, columns: 100000 } },
+        }),
+      /ausschnitt/i,
+    );
+    assert.deepEqual(read(), afterHistory);
+    store.close();
+    store = new CampaignStore(dir + '/world.sqlite');
+    active = store.activate(cam.id);
+    assert.deepEqual(read(), afterHistory);
+    const paint = {
+      id: randomUUID(),
+      revision: 0,
+      kind: 'patch',
+      name: '',
+      width: 0,
+      resolution: 1,
+      points: [{ x: 0, y: 0 }],
+      polygons: [
+        {
+          outer: [
+            { x: -20, y: -30 },
+            { x: 20, y: -30 },
+            { x: 20, y: 30 },
+            { x: -20, y: 30 },
+          ],
+          holes: [],
+        },
+      ],
+      values: {},
+      paint: {
+        version: 2,
+        operation: 'paint',
+        target: 'ground',
+        color: '#ff0000',
+        opacity: 1,
+        flow: 1,
+        tip: 'round',
+        radius: 30,
+        seed: 1,
+        fill: false,
+        visibility: v,
+      },
+    };
+    write({
+      kind: 'landscape-brush',
+      mode: 'ground-color',
+      record: paint,
+      radius: 30,
+      roughness: 0,
+      seed: 1,
+      fill: false,
+    });
+    const persisted = read().find((r) => r.id === paint.id);
+    assert(persisted);
+    assert.equal(persisted.paint.visibility, undefined);
+    assert(persisted.polygons.every((poly) => poly.outer.every((p) => p.y > -20)));
+    assert.deepEqual(
+      read().filter((r) => r.height),
+      afterHistory.filter((r) => r.height),
+    );
+    write({ kind: 'undo' });
+    assert(!read().some((r) => r.id === paint.id));
+  });

@@ -1,12 +1,12 @@
-import { formatDuration } from '../time-plan-model';
-import { formatInstant } from '../live-contracts';
+import { formatDuration } from '../runtime/time-plan-model';
+import { formatInstant } from '../runtime/live-contracts';
 import { createHash } from 'node:crypto';
 import type {
   ChronicleCategory,
   ChronicleEntry,
   ChronicleView,
   ChronicleAfter,
-} from '../chronicle-contracts';
+} from '../runtime/chronicle-contracts';
 
 const hash = (value: string) => createHash('sha256').update(value).digest('hex');
 function payload(row: any): Record<string, any> {

@@ -13,7 +13,7 @@ node_modules/electron/dist/electron .build/relief-r0/main.cjs --ozone-platform=x
 ```
 
 ```sh
-node --test tests/terrain-relief-prototype.test.mjs
+node --test tests/atlas/terrain-relief-prototype.test.mjs
 node tools/test-desktop-relief-prototype.mjs
 ```
 

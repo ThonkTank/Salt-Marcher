@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { writeFile, mkdir, rm, rename, open, access } from 'node:fs/promises';
 import { constants } from 'node:fs';
 import path from 'node:path';
-import type { UpdateStatus } from '../src/app/update-contracts';
+import type { UpdateStatus } from '../src/app/workspace/update-contracts';
 import { atomicJSON, readJSON, requireSpace } from './update-files';
 import {
   manifestName,

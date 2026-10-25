@@ -5,7 +5,7 @@ import type {
   ItemReferenceRecord,
   ItemReferencePage,
   ItemReferenceQuery,
-} from '../item-reference-contracts';
+} from '../catalog/item-reference-contracts';
 const compare = new Intl.Collator('en', { numeric: true, sensitivity: 'base' }),
   rarity = (r: ItemReferenceRecord) => r.rarity?.value ?? r.rarity?.sourceText ?? '';
 const rarityValues = (r: ItemReferenceRecord) =>

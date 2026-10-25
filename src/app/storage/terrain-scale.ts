@@ -1,20 +1,20 @@
-import { type LandscapeBox, type LandscapeRecord } from '../atlas-landscape';
-import type { AtlasRegionSource } from '../atlas-region-contracts';
-import { TerrainCache } from '../terrain-cache';
-import { streamTerrainField, type TerrainStream } from '../terrain-field-stream';
-import { heightRecord, TerrainSampler, DEFAULT_HEIGHT_M } from '../terrain-height';
+import { type LandscapeBox, type LandscapeRecord } from '../atlas/atlas-landscape';
+import type { AtlasRegionSource } from '../atlas/atlas-region-contracts';
+import { TerrainCache } from '../atlas/terrain-cache';
+import { streamTerrainField, type TerrainStream } from '../atlas/terrain-field-stream';
+import { heightRecord, TerrainSampler, DEFAULT_HEIGHT_M } from '../atlas/terrain-height';
 import {
   applyTerrainBrush,
   heightBrushBounds,
   heightBrushPixel,
   validateHeightStroke,
   type HeightStroke,
-} from '../terrain-brush';
-import { coupleRouteEdits } from '../terrain-route-planner';
-import { routeBounds } from '../terrain-route';
+} from '../atlas/terrain-brush';
+import { coupleRouteEdits } from '../atlas/terrain-route-planner';
+import { routeBounds } from '../atlas/terrain-route';
 import { readRouteTerrain } from './terrain-route';
 import { readTerrainGrid } from './terrain-grid';
-import type { TerrainGrid } from '../terrain-spatial-model';
+import type { TerrainGrid } from '../atlas/terrain-spatial-model';
 
 /** Internal worker result. Never part of the renderer action/bridge contract. */
 export interface PreparedTerrainStroke {

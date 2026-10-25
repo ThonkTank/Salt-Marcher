@@ -3,7 +3,7 @@ import { type Point } from "./model";
 import { pathPoints } from "./geometry";
 import { buildPathTextureBand } from "./features/material/path-texture-band";
 import { isNativePathAssetId } from "./features/material/native-path-catalog";
-import type { Visual } from "./renderer";
+import type { Visual } from "./legacy/obsidian/renderer";
 
 function samplePolyline(
   points: readonly Point[],

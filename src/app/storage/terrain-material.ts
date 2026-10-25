@@ -1,13 +1,16 @@
-import { terrainChannelStride } from '../terrain-material';
-import { LandscapeRasterizer } from '../landscape-raster';
-import { streamTerrainFieldSteps } from '../terrain-field-stream';
+import { terrainChannelStride } from '../atlas/terrain-material';
+import { LandscapeRasterizer } from '../atlas/landscape-raster';
+import { streamTerrainFieldSteps } from '../atlas/terrain-field-stream';
 import {
   COVER_CHANNEL_NAMES,
   type TerrainMaterialChannel,
   type TerrainMaterialRaster,
-} from '../terrain-material';
-import { atlasMaterialTileQuery, type AtlasMaterialTileRequest } from '../atlas-material-tile';
-import type { AtlasRegionSource } from '../atlas-region-contracts';
+} from '../atlas/terrain-material';
+import {
+  atlasMaterialTileQuery,
+  type AtlasMaterialTileRequest,
+} from '../atlas/atlas-material-tile';
+import type { AtlasRegionSource } from '../atlas/atlas-region-contracts';
 import { readTerrainSettings, type ProjectionStream } from './terrain-color-raster';
 
 /** Same canonical field/base/cover/pigment arithmetic as the reference raster,

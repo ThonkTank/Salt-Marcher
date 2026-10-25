@@ -2,11 +2,11 @@ import { readLive } from './live';
 import { readProgressCharacter } from './progression';
 import { scenePreparedGroupIds, checkedPreparedGroupRow } from './session';
 import { groupView } from './groups';
-import { groupCombatBasis } from '../groups-contracts';
+import { groupCombatBasis } from '../campaign/groups-contracts';
 import {
   sceneEncounterParty,
   type SceneEncounterSelectionView,
-} from '../scene-encounter-selection';
+} from '../runtime/scene-encounter-selection';
 
 /** One confirmed selection basis; unrelated progression and loot are not dependencies. */
 export function readSceneEncounterSelection(

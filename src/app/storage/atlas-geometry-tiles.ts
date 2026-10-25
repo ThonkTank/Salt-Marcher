@@ -3,17 +3,17 @@ import {
   atlasGeometryTileBox,
   type AtlasGeometryTile,
   type AtlasGeometryTileRequest,
-} from '../atlas-geometry-tile';
-import { AtlasGeometryOverviewBuilder } from '../atlas-geometry-overview';
+} from '../atlas/atlas-geometry-tile';
+import { AtlasGeometryOverviewBuilder } from '../atlas/atlas-geometry-overview';
 import {
   buildAtlasCanonicalSceneModel,
   unmodeledDrawingSourcesWarning,
-} from '../atlas-scene-geometry';
-import { buildAtlasGeometryMesh } from '../atlas-geometry-mesh';
-import type { AtlasSceneView } from '../atlas-scene-geometry';
-import type { AtlasDeckSceneModel } from '../atlas-deck-scene-model';
-import type { AtlasRegionSource } from '../atlas-region-contracts';
-import type { Point } from '../contracts';
+} from '../atlas/atlas-scene-geometry';
+import { buildAtlasGeometryMesh } from '../atlas/atlas-geometry-mesh';
+import type { AtlasSceneView } from '../atlas/atlas-scene-geometry';
+import type { AtlasDeckSceneModel } from '../atlas/atlas-deck-scene-model';
+import type { AtlasRegionSource } from '../atlas/atlas-region-contracts';
+import type { Point } from '../shared/contracts';
 import type { AtlasRegionReader } from './atlas-region';
 import { AtlasCacheScope } from './atlas-cache-scope';
 

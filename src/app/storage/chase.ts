@@ -7,7 +7,7 @@ import {
   type ChaseCommand,
   type ChaseState,
   type ChaseView,
-} from '../chase-contracts';
+} from '../runtime/chase-contracts';
 import { recordMaskReconciliation } from './mask-reconciliation';
 const json = (v: unknown) => JSON.stringify(v),
   hash = (s: string) => createHash('sha256').update(s).digest('hex');

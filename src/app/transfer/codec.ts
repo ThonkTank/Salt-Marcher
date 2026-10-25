@@ -1,5 +1,5 @@
 import contracts from './contracts.json';
-import { remapTextReferences } from '../text-references';
+import { remapTextReferences } from '../campaign/text-references';
 
 export type TransferValue =
   | null

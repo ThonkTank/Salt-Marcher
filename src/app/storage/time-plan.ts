@@ -1,7 +1,7 @@
-import type { TimeRequest, TimePreview, ClockEventTarget } from '../time-plan-contracts';
-import { agendaDuration, agendaOccurrence, unitMs } from '../agenda-model';
+import type { TimeRequest, TimePreview, ClockEventTarget } from '../runtime/time-plan-contracts';
+import { agendaDuration, agendaOccurrence, unitMs } from '../runtime/agenda-model';
 import { calendarEvents, readClockEvent } from './calendar-events';
-import { validInstant } from '../time-plan-model';
+import { validInstant } from '../runtime/time-plan-model';
 import { readWorldCalendar } from './world';
 import { readLiveScene } from './live';
 export function previewSceneTime(db: any, cam: string, r: TimeRequest): TimePreview {

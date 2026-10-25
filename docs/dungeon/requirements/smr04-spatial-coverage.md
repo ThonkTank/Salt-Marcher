@@ -108,16 +108,16 @@ hier gepinnten Anforderungen geprüft.
 Der Quellenabgleich stammt aus `5b57706b68f131c2d292bed6159cd6d3221f2ef8`. Das Volume-Fundament wurde anschließend über [#151](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/151) auf Shared `dd7311e0ca310cee747cc8368fe87165ff2cfad9` integriert. Room-Identität bei Move/Split/Merge bleibt Bedarf in [#166](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/166); generierte Dungeon-Paths, vollständige Passages und die gemeinsame Größen-/Verbraucherqualifikation sind weiter offen. Dieser Quellenabgleich schließt weder #44 noch SMR-04.
 
 Key-Beschreibungen bestimmen Raumgrenzen und Höhen ohne große temporäre Arrays
-oder Argumentlisten. Die [Key-Prüfungen](../../../tests/desktop-key-store.test.mjs)
+oder Argumentlisten. Die [Key-Prüfungen](../../../tests/campaign/desktop-key-store.test.mjs)
 decken 100.000 Volumenspalten mit 200.000 Höhenintervallen, große Konturen,
 Sammeländerungen an 1.001 Räumen mit Undo/Redo sowie den Schutz von privaten Texten
 und gültigen Backups bei beschädigten Key-Daten ab. Die
-[Oberflächenprüfungen](../../../tests/desktop-surface.test.mjs) prüfen diese
+[Oberflächenprüfungen](../../../tests/atlas/desktop-surface.test.mjs) prüfen diese
 Volumengröße auch beim Nachschlagen und Neuverknüpfen von 20.000 markierten
 Flächen. Der Volumenursprung wird je Neuverknüpfung einmal berechnet; Prosa,
 Fragmentkennungen und nicht mehr zuordenbare Flächen bleiben erhalten.
 Pfadanker, Fallenfelder und Oberflächen verwenden dieselbe Ursprungsberechnung
-im Volumenmodell. Die [räumlichen Prüfungen](../../../tests/desktop-volume-spatial.test.mjs)
+im Volumenmodell. Die [räumlichen Prüfungen](../../../tests/atlas/desktop-volume-spatial.test.mjs)
 prüfen Pfadanker und Feldeintritt bei dieser Größe. Die automatische Ankerwahl
 behält nur die nächstgelegene Grenzfläche und erhält die Reihenfolge bei Gleichstand.
 Das sind lokale Prüfungen; eine native Gesamtqualifikation bleibt offen.
@@ -156,7 +156,7 @@ an jeder gewählten Ausgangshöhe; Radieren entfernt 5-Fuß-Zellen.
 
 Der bestehende Store begrenzt einen Zug auf 2000 Zellen. Größere Arbeiten benötigen
 mehrere Züge; eine schwere asynchrone Gesamtvorschau wird damit nicht behauptet.
-Tests: `tests/desktop-volume-stroke.test.mjs` prüft lückenlose Züge, negative
+Tests: `tests/atlas/desktop-volume-stroke.test.mjs` prüft lückenlose Züge, negative
 Koordinaten, Schnittwechsel, Formen und Grenzen sowie echte Store-History und
 Fresh-Reopen mit unveränderter Prosa. Dies erweitert die räumliche Bedienung,
 belegt aber weder die gesamte 100.000-Zellen-Latenzabnahme noch alle geforderten
@@ -176,7 +176,7 @@ Workspace-Aktivierung verwirft dessen UI-Zuständigkeit, auch bei Wiederverwendu
 desselben Workspace-Objekts. Späte Lese- und Speicherantworten können weder den
 neuen Export sperren/freigeben noch dort einen Erfolg oder Fehler anzeigen. Auch
 das Bestätigen offener Eingaben bleibt an dieselbe Aktivierung gebunden. Diese Fälle prüft
-`tests/desktop-atlas-canvas.test.mjs` mit kontrollierten Antworten.
+`tests/atlas/desktop-atlas-canvas.test.mjs` mit kontrollierten Antworten.
 
 `python tools/ui-session.py node tools/test-desktop-dungeon-groundplan.mjs`
 zeichnet drei benannte Räume und zwei Türen, vergrößert eine Wand samt Tür,

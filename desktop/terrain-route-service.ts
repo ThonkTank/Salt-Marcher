@@ -1,9 +1,9 @@
 import { Worker } from 'node:worker_threads';
 import path from 'node:path';
 import type { StoreClient } from './store-client';
-import type { LandscapeBox } from '../src/app/atlas-landscape';
-import type { SpatialTerrainDraft } from '../src/app/spatial-terrain';
-import type { VegetationScene } from '../src/app/vegetation';
+import type { LandscapeBox } from '../src/app/atlas/atlas-landscape';
+import type { SpatialTerrainDraft } from '../src/app/atlas/spatial-terrain';
+import type { VegetationScene } from '../src/app/atlas/vegetation';
 
 let active: Worker | undefined,
   generation = 0,

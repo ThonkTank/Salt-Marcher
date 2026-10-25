@@ -1,14 +1,14 @@
 import { createHash, randomUUID } from 'node:crypto';
-import type { CityUnit } from '../city-contracts';
-import { validateRoom } from '../contracts';
-import { validateDrawingElement } from '../drawing-contracts';
+import type { CityUnit } from '../atlas/city-contracts';
+import { validateRoom } from '../shared/contracts';
+import { validateDrawingElement } from '../atlas/drawing-contracts';
 import {
   checkGroupRecipe,
   generateRoomGroup,
   type GroupRecipe,
   type GroupDraft,
-} from '../room-group-generator';
-import { combineRooms, carveRoom, anchored, inside, nearestAnchor } from '../drawing-model';
+} from '../atlas/room-group-generator';
+import { combineRooms, carveRoom, anchored, inside, nearestAnchor } from '../atlas/drawing-model';
 const hash = (s: string) => createHash('sha256').update(s).digest('hex');
 export function installRoomGroups(db: any) {
   db.exec(

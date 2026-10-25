@@ -13,10 +13,10 @@ import {
 } from './stored-records';
 import { validateDatabase, validateBackupCandidate } from './snapshot-validation';
 import { readSessionRecapDraft, keepSessionRecapDraft } from './session-recap';
-import { profileBounds, terrainProfile } from '../terrain-profile';
+import { profileBounds, terrainProfile } from '../atlas/terrain-profile';
 import { installTravelHistory } from './travel-history';
 import { checkedWorldNoteRow } from './world-note-row';
-import { nearestAnchor } from '../drawing-model';
+import { nearestAnchor } from '../atlas/drawing-model';
 import {
   splitGroupRoom,
   scaleRoomGroup,
@@ -30,12 +30,12 @@ import {
 } from './room-groups';
 import { installTerritories, readTerritories, executeTerritory } from './atlas-territories';
 import { TerrainAuthorCache } from './terrain-author-cache';
-import { terrainTraceMeasure } from '../terrain-timing';
+import { terrainTraceMeasure } from '../atlas/terrain-timing';
 import { vegetationScene } from './vegetation';
-import { TerrainSampler } from '../terrain-height';
+import { TerrainSampler } from '../atlas/terrain-height';
 import { readSceneEncounterSelection } from './scene-encounter-selection';
 import { noteMergeWork } from './note-merge';
-import { REGION_ACTIVE_BYTES } from '../atlas-region-contracts';
+import { REGION_ACTIVE_BYTES } from '../atlas/atlas-region-contracts';
 import { readAtlasScene } from './world';
 import { CommittedSources } from './committed-sources';
 import { atlasReadChanges, narrowTerrainJournal } from './atlas-read-journal';
@@ -44,13 +44,13 @@ import type {
   AtlasRegionGeometry,
   AtlasRegionSource,
   AtlasRegionView,
-} from '../atlas-region-contracts';
+} from '../atlas/atlas-region-contracts';
 import { drawingElement, drawingRoom } from './drawing';
 import { dungeonMapView } from './dungeon-play';
 import { roomGeometries, visibleRoomWhere, roomDirectoryQuery, roomOrder } from './room-reads';
-import type { WorkspaceShell, WorkspaceGeometry, RoomDirectoryQuery } from '../contracts';
+import type { WorkspaceShell, WorkspaceGeometry, RoomDirectoryQuery } from '../shared/contracts';
 import { keepLiveMomentDraft as keepMomentDraft } from './live-moment-drafts';
-import { atlasPartyPoint } from '../atlas-runtime-model';
+import { atlasPartyPoint } from '../atlas/atlas-runtime-model';
 import {
   installLandscape,
   landscapeRegion,
@@ -65,8 +65,8 @@ import {
   readKeyNoteChoices,
   hasNoteTitle,
 } from './key-note-capture';
-import { appendNoteExcerpt } from '../note-excerpt';
-import type { KeyNoteCaptureCommand } from '../key-note-capture-contracts';
+import { appendNoteExcerpt } from '../campaign/note-excerpt';
+import type { KeyNoteCaptureCommand } from '../campaign/key-note-capture-contracts';
 import { readNoteRoomUses } from './note-room-uses';
 import {
   installAtlasTravel,
@@ -78,7 +78,7 @@ import {
   executeAtlasTravel,
   atlasLocalGeometryBasis,
 } from './atlas-travel';
-import { atlasHexAt, atlasFrame, localToAtlas } from '../campaign-atlas-model';
+import { atlasHexAt, atlasFrame, localToAtlas } from '../atlas/campaign-atlas-model';
 import { newLocation } from '../../features/location/location-schema';
 import {
   hasAtlasReceipt,
@@ -91,7 +91,7 @@ import {
   bindAtlas,
   executeAtlasWrite,
 } from './campaign-atlas';
-import type { AtlasCommand, CampaignAtlas } from '../campaign-atlas-contracts';
+import type { AtlasCommand, CampaignAtlas } from '../atlas/campaign-atlas-contracts';
 import {
   catalogOutcome,
   catalogCommand,
@@ -99,7 +99,10 @@ import {
   noteCampaignCreated,
   noteCampaignOpened,
 } from './campaign-catalog';
-import type { CampaignCatalogCommand, CampaignCatalogReceipt } from '../campaign-contracts';
+import type {
+  CampaignCatalogCommand,
+  CampaignCatalogReceipt,
+} from '../campaign/campaign-contracts';
 const roomNumberOrder = new Intl.Collator('de', { numeric: true });
 import { readCombatResolution } from './combat-resolution';
 import { ChronicleReadSession } from './chronicle-pages';
@@ -125,7 +128,7 @@ import type {
   WorldRelationPairCommand,
   WorldRelationPairDraft,
   WorldRelationPairHistoryCommand,
-} from '../world-relation-pair-contracts';
+} from '../campaign/world-relation-pair-contracts';
 import { readNpcCast, readNpcDossier } from './npc-cast';
 import { previewSceneTime } from './time-plan';
 import { readAgenda } from './agenda';
@@ -147,7 +150,7 @@ import {
   discardNpcDraft,
   reconcileNpc,
 } from './npcs';
-import type { NpcCommand, NpcQuery, NpcDraft } from '../npc-contracts';
+import type { NpcCommand, NpcQuery, NpcDraft } from '../campaign/npc-contracts';
 import { readWorldSources } from './world-sources';
 import {
   assertNpcOutsideOpenCombat,
@@ -201,22 +204,22 @@ import {
   keepCombatDraft,
   discardCombatDraft,
 } from './combat-drafts';
-import type { CombatDraftKind, CombatWorkingDraft } from '../combat-draft-contracts';
+import type { CombatDraftKind, CombatWorkingDraft } from '../runtime/combat-draft-contracts';
 import { installContentRuntime } from './content-runtime';
 import { installTriggers, createTriggerEvents } from './triggers';
 import { ExtensionRegistry } from './extensions';
-import type { ExtensionCommand } from '../extension-contracts';
+import type { ExtensionCommand } from '../workspace/extension-contracts';
 import { dungeonBudgetView, validateDungeonPlacement } from './dungeon-budget';
-import type { CommitOutcome } from '../commit-receipt';
+import type { CommitOutcome } from '../shared/commit-receipt';
 import { GraphShadow, graphView, graphLayout, installGraph } from './graph';
-import type { GraphCommand, GraphView } from '../graph-contracts';
-import type { DrawingView } from '../drawing-contracts';
-import type { PathPreview } from '../path-contracts';
+import type { GraphCommand, GraphView } from '../atlas/graph-contracts';
+import type { DrawingView } from '../atlas/drawing-contracts';
+import type { PathPreview } from '../atlas/path-contracts';
 import { installDungeonKey } from './dungeon-key';
 import { installPathSchema, previewDungeonPath } from './paths';
-import type { DungeonPath } from '../path-contracts';
+import type { DungeonPath } from '../atlas/path-contracts';
 import { readCommitReceipt } from './commit-receipt';
-import { checkedCommitReference, type CommitReference } from '../commit-receipt';
+import { checkedCommitReference, type CommitReference } from '../shared/commit-receipt';
 import { installVolumeSchema, readDungeonVolume } from './volume';
 import { installDungeonSenses, evaluateDungeonSenses } from './dungeon-senses';
 import { installAutonomyResources } from './autonomy-resources';
@@ -233,7 +236,7 @@ import {
   dungeonGeometry,
   dungeonGeometryBasis,
 } from './dungeon-play';
-import type { DungeonCommand, DungeonRequest } from '../dungeon-contracts';
+import type { DungeonCommand, DungeonRequest } from '../atlas/dungeon-contracts';
 import {
   installDrawingSchema,
   roomMapStyle,
@@ -245,7 +248,7 @@ import {
   advanceDungeonFeatures,
   validateFeatureStates,
 } from './drawing';
-import type { DrawingCommand } from '../drawing-contracts';
+import type { DrawingCommand } from '../atlas/drawing-contracts';
 import { installNpcWorldSchema } from './npc-world';
 import {
   installAutonomySchema,
@@ -257,7 +260,7 @@ import {
   catchUpAutonomy,
   validateAutonomy,
 } from './autonomy';
-import type { AutonomyCommand } from '../autonomy-contracts';
+import type { AutonomyCommand } from '../runtime/autonomy-contracts';
 import {
   installPlayerSchema,
   playerObservers,
@@ -271,7 +274,7 @@ import {
   setPlayerWindow,
   validatePlayer,
 } from './player';
-import type { PlayerCommand, PlayerAsset, PlayerFrame } from '../player-contracts';
+import type { PlayerCommand, PlayerAsset, PlayerFrame } from '../runtime/player-contracts';
 import {
   installCitySchema,
   cityOverview,
@@ -281,7 +284,7 @@ import {
   readCitySite,
   readCityHeader,
 } from './city';
-import type { CityCommand } from '../city-contracts';
+import type { CityCommand } from '../atlas/city-contracts';
 import {
   installCampaignSchema,
   validateCampaignSnapshotSettings,
@@ -297,8 +300,8 @@ import {
   eraseCampaignRows,
 } from './campaign-data';
 import { openSync as openSnapshot, readSync, closeSync as closeSnapshot } from 'node:fs';
-import type { ConflictChoice } from '../campaign-contracts';
-import { canonicalJson } from '../generation/canonical-json';
+import type { ConflictChoice } from '../campaign/campaign-contracts';
+import { canonicalJson } from '../campaign/generation/canonical-json';
 import {
   installMusicSchema,
   readAudioAssets,
@@ -321,7 +324,7 @@ import type {
   MusicSubject,
   MusicCommand,
   AudioAsset,
-} from '../music-contracts';
+} from '../runtime/music-contracts';
 import {
   installWorldSchema,
   readWorld,
@@ -334,7 +337,7 @@ import {
   validateWorldBackup,
   travelEnvironmentBasis,
 } from './world';
-import type { TravelRequest, WorldCommand } from '../world-contracts';
+import type { TravelRequest, WorldCommand } from '../runtime/world-contracts';
 import {
   installItemsSchema,
   readShop,
@@ -346,7 +349,7 @@ import {
   validateItemsBackup,
 } from './items';
 import { readItemDefinition, readItemDefinitions } from './item-definitions';
-import type { ItemQuery, ItemShopCommand } from '../items-contracts';
+import type { ItemQuery, ItemShopCommand } from '../catalog/items-contracts';
 import { createHash, randomUUID } from 'node:crypto';
 import { noteSearchQuery } from './note-search-query';
 import { noteSearchPreview } from './note-search-preview';
@@ -371,7 +374,7 @@ import {
   type RoomCommit,
   type WorkingRoomDraft,
   type Workspace,
-} from '../contracts';
+} from '../shared/contracts';
 import {
   validatePreparation,
   checkedPreparationDraft,
@@ -383,12 +386,16 @@ import {
   type PreparationChange,
   type PreparationSelection,
   type Note,
-} from '../preparation-contracts';
+} from '../campaign/preparation-contracts';
 import { type ManualPlan } from '../../features/planner/manual-planner';
 import { worldNoteDocument } from '../../features/world/world-notes';
 import { campaignLocalId } from '../../features/campaign/campaign-contracts';
 
-import { tutorialLessonRevision, checkedTutorialRun, type TutorialRun } from '../tutorial';
+import {
+  tutorialLessonRevision,
+  checkedTutorialRun,
+  type TutorialRun,
+} from '../workspace/tutorial';
 import {
   installLiveSchema,
   ensureLiveOwners,
@@ -400,17 +407,17 @@ import {
   executeLive,
   liveStatus,
 } from './live';
-import type { LiveCommand, LiveScene } from '../live-contracts';
+import type { LiveCommand, LiveScene } from '../runtime/live-contracts';
 import { installCombatSchema, readCombat, executeCombat } from './combat';
 
 import { installChaseSchema, readChase, executeChase, reconcileChaseParticipants } from './chase';
 import { installMaskReconciliationSchema } from './mask-reconciliation';
 import { installRuleReferenceSchema, readSceneRules, executeSceneRule } from './rule-references';
-import type { SceneRuleCommand } from '../rule-reference-contracts';
+import type { SceneRuleCommand } from '../catalog/rule-reference-contracts';
 import { installSceneCheckSchema, readSceneChecks, executeSceneCheck } from './scene-checks';
-import type { SceneCheckCommand } from '../scene-check-contracts';
-import type { ChaseCommand } from '../chase-contracts';
-import type { CombatCommand } from '../combat-contracts';
+import type { SceneCheckCommand } from '../runtime/scene-check-contracts';
+import type { ChaseCommand } from '../runtime/chase-contracts';
+import type { CombatCommand } from '../runtime/combat-contracts';
 import {
   installProgressSchema,
   createProgress,
@@ -424,7 +431,7 @@ import {
   readLedgerDetail,
   executeProgress,
 } from './progression';
-import type { ProgressCommand, LedgerQuery, LedgerInventoryQuery } from '../progression';
+import type { ProgressCommand, LedgerQuery, LedgerInventoryQuery } from '../runtime/progression';
 import { readChronicle } from './chronicle';
 import {
   installEncounterSchema,
@@ -432,7 +439,7 @@ import {
   readEncounterPlans,
   saveEncounterPlan,
 } from './encounters';
-import type { EncounterPlanCommand } from '../encounter-contracts';
+import type { EncounterPlanCommand } from '../catalog/encounter-contracts';
 import { readPresetRegistry, executePresetCommand, readPresetOutcome } from './preset-registry';
 import {
   installGenerationSchema,
@@ -450,7 +457,7 @@ import type {
   GenerationCommand,
   GenerationRequest,
   LootRollCommand,
-} from '../generation-contracts';
+} from '../campaign/generation-contracts';
 import {
   installSessionSchema,
   readSession,
@@ -464,7 +471,7 @@ import {
   scenePreparation,
   cleanSessionVisits,
 } from './session';
-import type { SessionCommand, SessionGenerationRequest } from '../session-contracts';
+import type { SessionCommand, SessionGenerationRequest } from '../campaign/session-contracts';
 
 const noteTitleOrder = new Intl.Collator('de', { numeric: true, sensitivity: 'base' });
 const json = (value: unknown) => JSON.stringify(value);
@@ -496,7 +503,7 @@ export class CampaignStore {
   rememberTerrainGrid(
     token: string,
     fence: string,
-    grid: import('../terrain-spatial-model').TerrainGrid,
+    grid: import('../atlas/terrain-spatial-model').TerrainGrid,
   ) {
     const source = this.atlasRegionSource(token);
     if (source.fence === fence) this.terrainAuthorCache.seed(source.campaignId, grid, fence);
@@ -776,7 +783,7 @@ export class CampaignStore {
   private coupleAtlasWall(
     c: AtlasCommand,
     before: Room,
-    elements: import('../drawing-contracts').DrawingElement[],
+    elements: import('../atlas/drawing-contracts').DrawingElement[],
   ) {
     const binding = atlasBindings(this.db, c.campaignId).find(
       (b) => b.kind === 'dungeon' && b.ownerId === before.scopeId,
@@ -784,8 +791,10 @@ export class CampaignStore {
     if (!binding) return;
     const after = this.workspace().rooms.find((r) => r.id === before.id);
     if (!after) return;
-    const pairs: { before: import('../contracts').Point; after: import('../contracts').Point }[] =
-      [];
+    const pairs: {
+      before: import('../shared/contracts').Point;
+      after: import('../shared/contracts').Point;
+    }[] = [];
     before.polygons.forEach((p, pi) => {
       const n = after.polygons[pi];
       if (p.outer.length === n?.outer.length)
@@ -795,11 +804,11 @@ export class CampaignStore {
         });
     });
     if (!pairs.length) return;
-    const move = (p: import('../contracts').Point) => {
+    const move = (p: import('../shared/contracts').Point) => {
       const match = pairs.find((v) => Math.hypot(v.before.x - p.x, v.before.y - p.y) < 1e-7);
       return match ? { ...match.after } : p;
     };
-    const ring = (points: import('../contracts').Point[]) =>
+    const ring = (points: import('../shared/contracts').Point[]) =>
       points.flatMap((a, i) => {
         const b = points[(i + 1) % points.length]!,
           dx = b.x - a.x,
@@ -891,10 +900,10 @@ export class CampaignStore {
     });
     return a;
   }
-  previewAtlasTravel(token: string, destination: import('../contracts').Point) {
+  previewAtlasTravel(token: string, destination: import('../shared/contracts').Point) {
     return previewAtlasLocal(this.travelAtlas(token), destination);
   }
-  private applyAtlasTravel(c: import('../atlas-travel-contracts').AtlasTravelCommand) {
+  private applyAtlasTravel(c: import('../atlas/atlas-travel-contracts').AtlasTravelCommand) {
     this.guard(c.token, c.campaignId);
     executeAtlasTravel(this.db, c, {
       read: () => this.travelAtlas(c.token),
@@ -961,17 +970,21 @@ export class CampaignStore {
       },
     });
   }
-  executeAtlasTravel(c: import('../atlas-travel-contracts').AtlasTravelCommand) {
+  executeAtlasTravel(c: import('../atlas/atlas-travel-contracts').AtlasTravelCommand) {
     this.applyAtlasTravel(c);
     return this.campaignAtlas(c.token);
   }
   executeAtlasTravelCommit(
-    c: import('../atlas-travel-contracts').AtlasTravelCommand,
-  ): import('../atlas-travel-contracts').AtlasTravelCommit {
+    c: import('../atlas/atlas-travel-contracts').AtlasTravelCommand,
+  ): import('../atlas/atlas-travel-contracts').AtlasTravelCommit {
     this.applyAtlasTravel(c);
     return { campaignId: c.campaignId, commandId: c.commandId, sceneId: c.sceneId };
   }
-  atlasVegetationScene(token: string, box: import('../atlas-landscape').LandscapeBox, mpp: number) {
+  atlasVegetationScene(
+    token: string,
+    box: import('../atlas/atlas-landscape').LandscapeBox,
+    mpp: number,
+  ) {
     const cam = this.guard(token);
     return {
       ...vegetationScene(this.db, cam, box, mpp, atlasRoot(this.db, cam).revision),
@@ -980,9 +993,9 @@ export class CampaignStore {
   }
   atlasSpatialScene(
     token: string,
-    box: import('../atlas-landscape').LandscapeBox,
+    box: import('../atlas/atlas-landscape').LandscapeBox,
     mpp: number,
-    draft?: import('../spatial-terrain').SpatialTerrainDraft,
+    draft?: import('../atlas/spatial-terrain').SpatialTerrainDraft,
     fence?: string,
   ) {
     const cam = this.guard(token),
@@ -994,13 +1007,13 @@ export class CampaignStore {
       fence: source.fence,
     };
   }
-  atlasTerrainProfile(token: string, points: import('../contracts').Point[]) {
+  atlasTerrainProfile(token: string, points: import('../shared/contracts').Point[]) {
     const first = this.atlasMaskRegion(token, profileBounds(points));
     const pad = Math.max(1, ...first.records.filter((r) => r.height).map((r) => r.resolution));
     const reply = this.atlasMaskRegion(token, profileBounds(points, pad));
     return { ...terrainProfile(reply.records, points), revision: reply.revision };
   }
-  atlasHeight(token: string, point: import('../contracts').Point) {
+  atlasHeight(token: string, point: import('../shared/contracts').Point) {
     const cam = this.guard(token);
     if (
       !point ||
@@ -1038,7 +1051,7 @@ export class CampaignStore {
       revision: atlasRoot(this.db, cam).revision,
     };
   }
-  atlasMaskRegion(token: string, box: import('../atlas-landscape').LandscapeBox) {
+  atlasMaskRegion(token: string, box: import('../atlas/atlas-landscape').LandscapeBox) {
     const cam = this.guard(token);
     if (
       !box ||
@@ -1069,11 +1082,13 @@ export class CampaignStore {
         "SELECT payload FROM atlas_landscape WHERE campaign_id=? AND json_extract(payload,'$.kind')!='patch' AND (instr(lower(json_extract(payload,'$.name')),lower(?))>0 OR json_extract(payload,'$.locationId')=?) LIMIT 100",
       )
       .all(cam, text, text)
-      .map((r: any) => JSON.parse(r.payload)) as import('../atlas-landscape').LandscapeRecord[];
+      .map((r: any) =>
+        JSON.parse(r.payload),
+      ) as import('../atlas/atlas-landscape').LandscapeRecord[];
   }
   landscapeRegion(
     token: string,
-    box: import('../atlas-landscape').LandscapeBox,
+    box: import('../atlas/atlas-landscape').LandscapeBox,
     metersPerPixel = 0,
     includePatches = true,
   ) {
@@ -1102,7 +1117,7 @@ export class CampaignStore {
     const campaignId = this.guard(token);
     return { campaignId, token, revision: atlasRoot(this.db, campaignId).revision };
   }
-  atlasOverview(token: string): import('../campaign-atlas-contracts').AtlasOverview {
+  atlasOverview(token: string): import('../atlas/campaign-atlas-contracts').AtlasOverview {
     const cam = this.guard(token);
     return this.db.transaction(() => {
       const root = atlasRoot(this.db, cam),
@@ -1136,8 +1151,8 @@ export class CampaignStore {
   }
   atlasObjects(
     token: string,
-    q: import('../campaign-atlas-contracts').AtlasObjectQuery,
-  ): import('../campaign-atlas-contracts').AtlasObjectPage {
+    q: import('../atlas/campaign-atlas-contracts').AtlasObjectQuery,
+  ): import('../atlas/campaign-atlas-contracts').AtlasObjectPage {
     const cam = this.guard(token);
     if (
       !q ||
@@ -1191,7 +1206,10 @@ export class CampaignStore {
       throw new Error('Atlassuche inzwischen geändert. Suche erneut beginnen.');
     return page;
   }
-  atlasLandscapeObject(token: string, id: string): import('../atlas-landscape').LandscapeRecord {
+  atlasLandscapeObject(
+    token: string,
+    id: string,
+  ): import('../atlas/atlas-landscape').LandscapeRecord {
     const cam = this.guard(token);
     if (typeof id !== 'string' || !id) throw new Error('Landschaftskennung prüfen.');
     const row = this.db
@@ -1213,7 +1231,7 @@ export class CampaignStore {
     if (!row) throw new Error('Raum nicht gefunden.');
     return decodeRoom(row);
   }
-  atlasRoomCommit(edit: Edit): import('../contracts').RoomCommit {
+  atlasRoomCommit(edit: Edit): import('../shared/contracts').RoomCommit {
     this.applyAtlas({
       commandId: edit.commandId,
       token: edit.token,
@@ -1238,7 +1256,7 @@ export class CampaignStore {
   }
   terrainStrokeSource(
     c: AtlasCommand,
-    cursor?: import('../atlas-region-contracts').AtlasRegionCursor,
+    cursor?: import('../atlas/atlas-region-contracts').AtlasRegionCursor,
   ) {
     this.guard(c.token, c.campaignId);
     if (
@@ -1254,7 +1272,7 @@ export class CampaignStore {
   executeAtlasCommit(
     c: AtlasCommand,
     prepared?: import('./terrain-scale').PreparedTerrainStroke,
-  ): import('../campaign-atlas-contracts').AtlasCommitAck {
+  ): import('../atlas/campaign-atlas-contracts').AtlasCommitAck {
     const value = terrainTraceMeasure('author.transaction-history', () =>
       prepared ? this.db.transaction(() => this.applyAtlas(c, prepared))() : this.applyAtlas(c),
     ) as { id?: string } | undefined;
@@ -1271,7 +1289,7 @@ export class CampaignStore {
   reconcileAtlasCommit(
     c: AtlasCommand,
     pending = false,
-  ): import('../campaign-atlas-contracts').AtlasCommitOutcome {
+  ): import('../atlas/campaign-atlas-contracts').AtlasCommitOutcome {
     this.guard(c.token, c.campaignId);
     // Main must exclude in-flight async terrain preparation before absence is definitive.
     if (pending) return { outcome: 'unknown' };
@@ -1291,7 +1309,7 @@ export class CampaignStore {
   }
   atlasRegionSource(
     token: string,
-    cursor?: import('../atlas-region-contracts').AtlasRegionCursor,
+    cursor?: import('../atlas/atlas-region-contracts').AtlasRegionCursor,
   ): AtlasRegionSource {
     const campaignId = this.guard(token),
       preview = this.graphShadow,
@@ -1343,7 +1361,7 @@ export class CampaignStore {
     token: string,
     cityId: string,
     id?: string,
-  ): import('../atlas-region-contracts').AtlasCitySite {
+  ): import('../atlas/atlas-region-contracts').AtlasCitySite {
     return this.db.transaction(() => {
       const cam = this.guard(token),
         site = id
@@ -1369,7 +1387,7 @@ export class CampaignStore {
       return this.withGraph(() => this.workspaceInitial(token));
     const cam = this.guard(token),
       shell = this.workspaceShell();
-    let rooms: import('../contracts').RoomGeometry[] = [];
+    let rooms: import('../shared/contracts').RoomGeometry[] = [];
     const problems: WorkspaceGeometry['problems'] = [];
     if (shell.selectedId)
       try {
@@ -1465,7 +1483,7 @@ export class CampaignStore {
           .prepare('SELECT * FROM atlas_binding WHERE campaign_id=? AND kind=? AND owner_id=?')
           .get(cam, owner.kind, owner.id);
         if (row && !bindings.some((b) => b.id === row.id)) {
-          const b: import('../campaign-atlas-contracts').AtlasBinding = {
+          const b: import('../atlas/campaign-atlas-contracts').AtlasBinding = {
             id: row.id,
             kind: row.kind,
             ownerId: row.owner_id,
@@ -1532,7 +1550,7 @@ export class CampaignStore {
       return result;
     })();
   }
-  atlasRenderView(token: string): import('../campaign-atlas-contracts').AtlasRenderView {
+  atlasRenderView(token: string): import('../atlas/campaign-atlas-contracts').AtlasRenderView {
     const cam = this.guard(token);
     return this.db.transaction(() => {
       const root = atlasRoot(this.db, cam),
@@ -1613,7 +1631,7 @@ export class CampaignStore {
       };
     })();
   }
-  atlasTerritories(token: string, box?: import('../atlas-landscape').LandscapeBox) {
+  atlasTerritories(token: string, box?: import('../atlas/atlas-landscape').LandscapeBox) {
     return readTerritories(this.db, this.guard(token), box);
   }
   executeAtlas(c: AtlasCommand) {
@@ -1642,7 +1660,7 @@ export class CampaignStore {
       typeof c.action?.kind === 'string' && c.action.kind.startsWith('landscape-');
     const terrainSourceBefore = landscapeOnly ? this.atlasRegionSource(c.token) : undefined,
       terrainBefore = terrainSourceBefore?.fence;
-    const terrainChange: import('../terrain-frame').TerrainInvalidation = {
+    const terrainChange: import('../atlas/terrain-frame').TerrainInvalidation = {
       reset: false,
       bounds: [],
     };
@@ -2167,7 +2185,7 @@ export class CampaignStore {
           this.reconcileAtlasGeometry(c.token);
           return;
         }
-        const changedBounds = new Map<string, import('../atlas-landscape').LandscapeBox>();
+        const changedBounds = new Map<string, import('../atlas/atlas-landscape').LandscapeBox>();
         for (const delta of this.db
           .prepare(
             "SELECT before_json,after_json FROM atlas_delta WHERE table_name='atlas_landscape'",
@@ -2939,7 +2957,7 @@ export class CampaignStore {
   }
   checkNoteThread(
     token: string,
-    selection: import('../note-thread-contracts').NoteThreadSelection,
+    selection: import('../campaign/note-thread-contracts').NoteThreadSelection,
   ) {
     return checkNoteThread(this.db, this.guard(token), selection);
   }
@@ -2956,7 +2974,7 @@ export class CampaignStore {
     token: string,
     id: string,
     offset = 0,
-  ): import('../preparation-contracts').NoteRoomUsesPage {
+  ): import('../campaign/preparation-contracts').NoteRoomUsesPage {
     if (typeof id !== 'string' || !id || id.length > 1000) throw new Error('Ungültiges Notizziel.');
     const cam = this.guard(token);
     return this.db.transaction(() => {
@@ -3056,37 +3074,37 @@ export class CampaignStore {
   }
   locationActivities(
     token: string,
-    q: import('../location-activity-contracts').LocationActivityQuery,
-  ): import('../location-activity-contracts').LocationActivityPage {
+    q: import('../campaign/location-activity-contracts').LocationActivityQuery,
+  ): import('../campaign/location-activity-contracts').LocationActivityPage {
     const cam = this.guard(token);
     return this.db.transaction(() => readLocationActivities(this.db, cam, q))();
   }
   locationMaterials(
     token: string,
-    q: import('../location-notebook-contracts').LocationMaterialsQuery,
+    q: import('../campaign/location-notebook-contracts').LocationMaterialsQuery,
   ) {
     const cam = this.guard(token);
     return this.db.transaction(() => readLocationMaterials(this.db, cam, q))();
   }
   worldLinks(
     token: string,
-    q: import('../world-links-contracts').WorldLinksQuery,
-  ): import('../world-links-contracts').WorldLinksPage {
+    q: import('../campaign/world-links-contracts').WorldLinksQuery,
+  ): import('../campaign/world-links-contracts').WorldLinksPage {
     const cam = this.guard(token);
     return this.db.transaction(() => readWorldLinks(this.db, cam, q))();
   }
   npcCast(
     token: string,
-    q: import('../npc-cast-contracts').NpcCastQuery,
-  ): import('../npc-cast-contracts').NpcCastPage {
+    q: import('../campaign/npc-cast-contracts').NpcCastQuery,
+  ): import('../campaign/npc-cast-contracts').NpcCastPage {
     const cam = this.guard(token);
     return this.db.transaction(() => readNpcCast(this.db, cam, q))();
   }
   npcBuildingChoices(
     token: string,
     id: string,
-    q: import('../npc-places-contracts').NpcBuildingQuery,
-  ): import('../npc-places-contracts').NpcBuildingChoices {
+    q: import('../campaign/npc-places-contracts').NpcBuildingQuery,
+  ): import('../campaign/npc-places-contracts').NpcBuildingChoices {
     const cam = this.guard(token);
     return this.db.transaction(() => readNpcBuildingChoices(this.db, cam, id, q))();
   }
@@ -3094,7 +3112,7 @@ export class CampaignStore {
     token: string,
     id: string,
     offset: number,
-  ): import('../npc-places-contracts').NpcPlaces {
+  ): import('../campaign/npc-places-contracts').NpcPlaces {
     const cam = this.guard(token);
     return this.db.transaction(() => readNpcPlaces(this.db, cam, id, offset))();
   }
@@ -3105,7 +3123,7 @@ export class CampaignStore {
     token: string,
     sceneId: string,
     id: string,
-  ): import('../npc-cast-contracts').NpcDossier {
+  ): import('../campaign/npc-cast-contracts').NpcDossier {
     const cam = this.guard(token);
     return this.db.transaction(() => readNpcDossier(this.db, cam, sceneId, id))();
   }
@@ -3211,10 +3229,10 @@ export class CampaignStore {
   presetRegistry(campaignId: string | null) {
     return readPresetRegistry(this.db, campaignId);
   }
-  presetCommand(command: import('../generation-contracts').PresetCommand) {
+  presetCommand(command: import('../campaign/generation-contracts').PresetCommand) {
     return executePresetCommand(this.db, command);
   }
-  presetOutcome(command: import('../generation-contracts').PresetCommand) {
+  presetOutcome(command: import('../campaign/generation-contracts').PresetCommand) {
     return readPresetOutcome(this.db, command);
   }
   generatorRegistry(token: string) {
@@ -3260,7 +3278,7 @@ export class CampaignStore {
   }
   keepChaseDraft(
     token: string,
-    draft: import('../chase-draft-contracts').ChaseWorkingDraft,
+    draft: import('../runtime/chase-draft-contracts').ChaseWorkingDraft,
     expected: string | null,
   ) {
     return keepChaseDraft(this.db, this.guard(token), draft, expected);
@@ -3268,7 +3286,7 @@ export class CampaignStore {
   maskHistory(
     token: string,
     sceneId: string,
-    query: import('../mask-history-contracts').MaskHistoryQuery,
+    query: import('../runtime/mask-history-contracts').MaskHistoryQuery,
   ) {
     return readMaskHistory(this.db, this.guard(token), sceneId, query);
   }
@@ -3303,9 +3321,9 @@ export class CampaignStore {
   }
   chroniclePage(
     token: string,
-    category: import('../chronicle-contracts').ChronicleCategory | 'all',
+    category: import('../runtime/chronicle-contracts').ChronicleCategory | 'all',
     search: string,
-    cursor: import('../chronicle-contracts').ChronicleCursor | null,
+    cursor: import('../runtime/chronicle-contracts').ChronicleCursor | null,
   ) {
     const cam = this.guard(token);
     if (!cursor) {
@@ -3332,7 +3350,7 @@ export class CampaignStore {
   }
   chronicle(
     token: string,
-    category: import('../chronicle-contracts').ChronicleCategory | 'all' = 'all',
+    category: import('../runtime/chronicle-contracts').ChronicleCategory | 'all' = 'all',
     search = '',
   ) {
     return readChronicle(this.db, this.guard(token), category, search);
@@ -3346,7 +3364,7 @@ export class CampaignStore {
   treasures(
     token: string,
     after: string | null,
-    query?: import('../treasury-contracts').TreasureQuery,
+    query?: import('../runtime/treasury-contracts').TreasureQuery,
   ) {
     return readTreasures(this.db, this.guard(token), after, query);
   }
@@ -3408,7 +3426,7 @@ export class CampaignStore {
   }
   keepGroupDraft(
     token: string,
-    draft: import('../groups-contracts').GroupDraft,
+    draft: import('../campaign/groups-contracts').GroupDraft,
     expected: string | null,
   ) {
     return keepGroupDraft(this.db, this.guard(token), draft, expected);
@@ -3421,7 +3439,7 @@ export class CampaignStore {
   }
   keepTreasuryDraft(
     token: string,
-    draft: import('../treasury-contracts').TreasuryDraft,
+    draft: import('../runtime/treasury-contracts').TreasuryDraft,
     expected: string | null,
   ) {
     return keepTreasuryDraft(this.db, this.guard(token), draft, expected);
@@ -3438,14 +3456,14 @@ export class CampaignStore {
   searchDesk(token: string, kind: string, search: string, offset: number) {
     return searchDesk(this.db, this.guard(token), kind, search, offset);
   }
-  deskContent(token: string, ref: import('../scene-desk-contracts').DeskRef) {
+  deskContent(token: string, ref: import('../runtime/scene-desk-contracts').DeskRef) {
     return deskContent(this.db, this.guard(token), ref);
   }
   pinSceneDesk(
     token: string,
     id: string,
     revision: number,
-    ref: import('../scene-desk-contracts').DeskRef,
+    ref: import('../runtime/scene-desk-contracts').DeskRef,
     pin: boolean,
   ) {
     return pinSceneDesk(this.db, this.guard(token), id, revision, ref, pin);
@@ -3456,7 +3474,7 @@ export class CampaignStore {
   keepSceneCreationDraft(
     token: string,
     sceneId: string,
-    draft: import('../scene-desk-contracts').SceneCreationDraft | null,
+    draft: import('../runtime/scene-desk-contracts').SceneCreationDraft | null,
     expected: string | null,
   ) {
     return keepSceneCreationDraft(this.db, this.guard(token), sceneId, draft, expected);
@@ -3472,26 +3490,26 @@ export class CampaignStore {
       })
       .immediate();
   }
-  finishDraft(token: string, owner: import('../finish-draft-contracts').FinishOwner) {
+  finishDraft(token: string, owner: import('../runtime/finish-draft-contracts').FinishOwner) {
     return readFinishDraft(this.db, this.guard(token), owner);
   }
   keepFinishDraft(
     token: string,
-    draft: import('../finish-draft-contracts').FinishDraft,
+    draft: import('../runtime/finish-draft-contracts').FinishDraft,
     expected: string | null,
   ) {
     return keepFinishDraft(this.db, this.guard(token), draft, expected);
   }
   discardFinishDraft(
     token: string,
-    owner: import('../finish-draft-contracts').FinishOwner,
+    owner: import('../runtime/finish-draft-contracts').FinishOwner,
     writeId: string,
   ) {
     return discardFinishDraft(this.db, this.guard(token), owner, writeId);
   }
   keepNarrativeDraft(
     token: string,
-    draft: import('../narrative-contracts').NarrativeDraft,
+    draft: import('../runtime/narrative-contracts').NarrativeDraft,
     expected: string | null,
   ) {
     return keepNarrativeDraft(this.db, this.guard(token), draft, expected);
@@ -3501,7 +3519,7 @@ export class CampaignStore {
   }
   narrativeJournal(
     token: string,
-    query: import('../narrative-journal-contracts').NarrativeJournalQuery,
+    query: import('../runtime/narrative-journal-contracts').NarrativeJournalQuery,
   ) {
     return readNarrativeJournal(this.db, this.guard(token), query);
   }
@@ -3510,8 +3528,8 @@ export class CampaignStore {
   }
   adventuringDay(
     token: string,
-    request: import('../adventuring-day-contracts').DayRequest,
-  ): import('../adventuring-day-contracts').DayView {
+    request: import('../runtime/adventuring-day-contracts').DayRequest,
+  ): import('../runtime/adventuring-day-contracts').DayView {
     return this.db.transaction(() => readDay(this.db, this.guard(token), request))();
   }
   executeProgress(command: ProgressCommand) {
@@ -3588,7 +3606,7 @@ export class CampaignStore {
     token: string,
     roomId?: string,
     elementId?: string,
-  ): import('../drawing-contracts').DrawingMapView {
+  ): import('../atlas/drawing-contracts').DrawingMapView {
     if (this.graphShadow && !this.graphRouting)
       return this.withGraph(() => this.drawingMap(token, roomId, elementId));
     const cam = this.guard(token);
@@ -3619,13 +3637,13 @@ export class CampaignStore {
       features,
     };
   }
-  drawingElement(token: string, id: string): import('../drawing-contracts').DrawingElement {
+  drawingElement(token: string, id: string): import('../atlas/drawing-contracts').DrawingElement {
     if (this.graphShadow && !this.graphRouting)
       return this.withGraph(() => this.drawingElement(token, id));
     return drawingElement(this.db, this.guard(token), id);
   }
   /** Authoring needs canonical geometry/content, never live travel or perception. */
-  dungeonAuthoring(token: string): import('../dungeon-contracts').DungeonGeometry {
+  dungeonAuthoring(token: string): import('../atlas/dungeon-contracts').DungeonGeometry {
     if (this.graphShadow && !this.graphRouting)
       return this.withGraph(() => this.dungeonAuthoring(token));
     const cam = this.guard(token);
@@ -3805,13 +3823,13 @@ export class CampaignStore {
           },
         );
       });
-    const saveLayout = (layout: import('../graph-contracts').GraphLayout) => {
+    const saveLayout = (layout: import('../atlas/graph-contracts').GraphLayout) => {
       const current = shadow.db
         .prepare('SELECT revision FROM dungeon_graph_layout WHERE campaign_id=? AND id=?')
         .get(cam, c.scopeId);
       draw({ kind: 'graph-layout', layout, expectedRevision: current?.revision ?? null });
     };
-    const connect = (intent: import('../graph-contracts').GraphIntent) => {
+    const connect = (intent: import('../atlas/graph-contracts').GraphIntent) => {
       let layout = graphLayout(shadow.db, cam, c.scopeId);
       const at = layout.intents.findIndex((i) => i.id === intent.id);
       if (at >= 0) layout.intents[at] = intent;
@@ -3937,7 +3955,7 @@ export class CampaignStore {
       this.guard(c.token, c.campaignId);
     });
   }
-  playerView(token: string, query?: import('../player-contracts').PlayerMapQuery) {
+  playerView(token: string, query?: import('../runtime/player-contracts').PlayerMapQuery) {
     return playerView(this.db, this.guard(token), query);
   }
   executePlayer(c: PlayerCommand) {
@@ -4000,12 +4018,12 @@ export class CampaignStore {
   }
   cityActivities(
     token: string,
-    q: import('../city-activity-contracts').CityActivityQuery,
-  ): import('../city-activity-contracts').CityActivityPage {
+    q: import('../atlas/city-activity-contracts').CityActivityQuery,
+  ): import('../atlas/city-activity-contracts').CityActivityPage {
     const cam = this.guard(token);
     return this.db.transaction(() => readCityActivities(this.db, cam, q))();
   }
-  cityBuildings(token: string, query: import('../city-contracts').CityBuildingQuery) {
+  cityBuildings(token: string, query: import('../atlas/city-contracts').CityBuildingQuery) {
     const c = this.guard(token);
     return this.db.transaction(() => readCityBuildingChoices(this.db, c, query))();
   }
@@ -4442,7 +4460,7 @@ export class CampaignStore {
     if (!asset.available) throw new Error('Mediendatei fehlt oder wurde verändert.');
     return audioFile(this.audioRoot, asset);
   }
-  agenda(token: string, query: import('../agenda-contracts').AgendaQuery) {
+  agenda(token: string, query: import('../runtime/agenda-contracts').AgendaQuery) {
     return this.db.transaction(() => readAgenda(this.db, this.guard(token), query))();
   }
   world(token: string) {
@@ -4620,10 +4638,10 @@ export class CampaignStore {
   archivedRoster(token: string, after: string | null, search: string) {
     return readArchivedRoster(this.db, this.guard(token), after, search);
   }
-  previewTime(token: string, request: import('../time-plan-contracts').TimeRequest) {
+  previewTime(token: string, request: import('../runtime/time-plan-contracts').TimeRequest) {
     return this.db.transaction(() => previewSceneTime(this.db, this.guard(token), request))();
   }
-  live(token: string): import('../live-contracts').LiveView {
+  live(token: string): import('../runtime/live-contracts').LiveView {
     const cam = this.guard(token),
       live = readLive(this.db, cam);
     try {
@@ -4639,8 +4657,8 @@ export class CampaignStore {
   keepLiveMomentDraft(
     token: string,
     sceneId: string,
-    draft: import('../live-moment-drafts').LiveMomentDraft | null,
-    expected: import('../live-moment-drafts').LiveMomentDraft | null,
+    draft: import('../runtime/live-moment-drafts').LiveMomentDraft | null,
+    expected: import('../runtime/live-moment-drafts').LiveMomentDraft | null,
   ) {
     return this.db
       .transaction(() => {
@@ -4653,8 +4671,8 @@ export class CampaignStore {
   }
   keepSessionRecapDraft(
     token: string,
-    draft: import('../live-contracts').SessionRecapDraft,
-    expected: import('../live-contracts').SessionRecapDraft | null,
+    draft: import('../runtime/live-contracts').SessionRecapDraft,
+    expected: import('../runtime/live-contracts').SessionRecapDraft | null,
   ) {
     return this.db
       .transaction(() => keepSessionRecapDraft(this.db, this.guard(token), draft, expected))
@@ -4818,7 +4836,7 @@ export class CampaignStore {
   reconcilePreparationPlan(
     command: PreparationCommand,
     token = command.token,
-  ): import('../preparation-contracts').PlanReconciliation {
+  ): import('../campaign/preparation-contracts').PlanReconciliation {
     if (command.change.kind !== 'plan')
       throw new Error('Gezielte Planklärung benötigt einen Spielabendplan.');
     const change = command.change;

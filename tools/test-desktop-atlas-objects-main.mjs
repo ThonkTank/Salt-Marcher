@@ -13,7 +13,7 @@ require('esbuild').buildSync({
   stdin: {
     resolveDir: root,
     contents:
-      "export * from './src/app/storage/store';export * from './src/app/terrain-height';export * from './src/app/terrain-spatial-model';",
+      "export * from './src/app/storage/store';export * from './src/app/atlas/terrain-height';export * from './src/app/atlas/terrain-spatial-model';",
   },
   outfile: '.build/atlas-objects-native.cjs',
   bundle: true,

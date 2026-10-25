@@ -21,7 +21,7 @@ erfüllt das Ziel nicht. Der erforderliche Candidate-Check bleibt vollständig.
 
 ## Einzelne Abläufe prüfen
 
-`npm test -- tests/desktop-combat-switch.test.mjs` bereitet die gemeinsamen
+`npm test -- tests/runtime/desktop-combat-switch.test.mjs` bereitet die gemeinsamen
 Testartefakte einmal neu vor und führt anschließend die ausgewählten Dateien aus.
 Mehrere explizite Dateipfade sind erlaubt; doppelte Pfade werden nur einmal geprüft.
 Fehlende Dateien, Verzeichnisse, unbekannte Optionen und leere Pfade werden vor dem
@@ -29,7 +29,7 @@ Build abgewiesen. Auch die benannten Node-Testskripte `test:desktop-*` verwenden
 diese Vorbereitung. Native UI-Skripte bleiben separate Prüfwege.
 
 `npm test -- --list` zeigt die vollständige aktive Auswahl ohne Build oder Tests;
-Dateipfade und `--serial` lassen sich damit kombinieren. `tests/core.test.ts`
+Dateipfade und `--serial` lassen sich damit kombinieren. `tests/shared/core.test.ts`
 wählt das gesamte vorbereitete Core-Bundle. Die Standardsuite entdeckt aktive
 Node-Tests im Testwurzelverzeichnis und den Fachordnern `workspace`, `atlas`,
 `campaign`, `runtime`, `catalog` und `shared`; ADR-Tests bleiben ausdrücklich
@@ -80,7 +80,7 @@ Bedienaktionen, Fehlerprovokationen und Fachassertionen. Aufruf weiterhin über
 räumt ausschließlich die eigenen, markierten UI-Prozesse auf. `QA_EVIDENCE_DIR`
 trennt Vergleichsläufe; `GM_QA_ZOOM=2` wiederholt manuelle Timeline und Verstärkung
 bei 200 Prozent. Die Gegenprobe gegen falsche Prozesserfolge steht in
-`tests/desktop-editor-transition.test.mjs`. Native Evidenz und menschliche
+`tests/shared/desktop-editor-transition.test.mjs`. Native Evidenz und menschliche
 Bedienabnahme bleiben getrennt.
 
 
@@ -109,7 +109,7 @@ Die Welt enthält 100.000 Geländequellen, 1.028 Höhenkacheln, 5.000 Ortsmarker
 großen Dungeon. Der kleine parametrische Generator `populateMixedWorld` erzeugt
 nur ein Inventar für isolierte Tests; er ersetzt diese vollständige Welt nicht.
 
-`tests/atlas-reference-fixture.test.mjs` prüft Inhaltstreue über Store-Neuöffnung
+`tests/atlas/atlas-reference-fixture.test.mjs` prüft Inhaltstreue über Store-Neuöffnung
 und gezielte Verluste. Die nativen Vergleiche in
 `tools/test-desktop-atlas-mixed-workbench.mjs` prüfen fünf Maßstäbe bei 100/200 %,
 sichtbare Kartenausschnitte, Neustart und Bildexport. Ihre Referenzbilder unter

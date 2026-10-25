@@ -8,7 +8,7 @@ mkdirSync(output, { recursive: true });
 buildSync({
   stdin: {
     contents:
-      "export * from './src/app/terrain-material';export * from './src/app/terrain-relief';export * from './src/app/landscape-raster';export * from './src/app/terrain-height';export * from './src/app/vegetation';",
+      "export * from './src/app/atlas/terrain-material';export * from './src/app/atlas/terrain-relief';export * from './src/app/atlas/landscape-raster';export * from './src/app/atlas/terrain-height';export * from './src/app/atlas/vegetation';",
     resolveDir: process.cwd(),
   },
   outfile: output + '/probe.cjs',

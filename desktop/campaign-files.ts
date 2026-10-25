@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { createReadStream } from 'node:fs';
 import path from 'node:path';
-import type { CampaignTransferProgress } from '../src/app/campaign-contracts';
+import type { CampaignTransferProgress } from '../src/app/campaign/campaign-contracts';
 import { readArchive, writeArchive, type ArchiveFile } from './zip-files';
 
 export interface CampaignManifest {

@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import type { ItemDefinition } from '../items-contracts';
+import type { ItemDefinition } from '../catalog/items-contracts';
 
 // SRD 5.1, Equipment / Coinage. One definition per denomination; quantities
 // belong to treasures and ledgers, just as they do for other catalog items.

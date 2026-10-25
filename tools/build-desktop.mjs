@@ -94,7 +94,7 @@ await build({
   external: ['electron'],
 });
 await build({
-  entryPoints: ['src/app/player-display.ts'],
+  entryPoints: ['src/app/runtime/player-display.ts'],
   outfile: '.build/desktop/ui/player-display.js',
   bundle: true,
   platform: 'browser',
@@ -103,7 +103,7 @@ await build({
     {
       name: 'player-atlas-runtime',
       setup(build) {
-        build.onResolve({ filter: /^\.\/atlas-deck-runtime$/ }, () => ({
+        build.onResolve({ filter: /(?:^|\/)atlas-deck-runtime$/ }, () => ({
           path: './atlas-deck-runtime.js',
           external: true,
         }));
@@ -120,7 +120,7 @@ await build({
   external: ['electron'],
 });
 await build({
-  entryPoints: ['src/app/atlas-brush-worker.ts'],
+  entryPoints: ['src/app/atlas/atlas-brush-worker.ts'],
   outfile: '.build/desktop/ui/atlas-brush-worker.js',
   bundle: true,
   platform: 'browser',
@@ -128,7 +128,7 @@ await build({
 });
 // The replacement Atlas remains a local lazy module until full tool handover.
 await build({
-  entryPoints: ['src/app/atlas-deck-runtime.ts'],
+  entryPoints: ['src/app/atlas/atlas-deck-runtime.ts'],
   outfile: '.build/desktop/ui/atlas-deck-runtime.js',
   bundle: true,
   platform: 'browser',
@@ -140,7 +140,7 @@ for (const name of ['NotoSans-VF.ttf', 'NotoSansSymbols-VF.ttf'])
 for (const name of ['OFL-1.1.txt', 'PROVENANCE.md'])
   await copyFile(`resources/atlas-fonts/${name}`, `.build/desktop/licenses/atlas/fonts-${name}`);
 await build({
-  entryPoints: ['src/app/renderer.ts'],
+  entryPoints: ['src/app/workspace/renderer.ts'],
   outfile: '.build/desktop/ui/renderer.js',
   bundle: true,
   platform: 'browser',
@@ -149,11 +149,11 @@ await build({
     {
       name: 'lazy-generator-settings',
       setup(build) {
-        build.onResolve({ filter: /^\.\/preset-settings-ui$/ }, () => ({
+        build.onResolve({ filter: /(?:^|\/)preset-settings-ui$/ }, () => ({
           path: './preset-settings.js',
           external: true,
         }));
-        build.onResolve({ filter: /^\.\/atlas-deck-runtime$/ }, () => ({
+        build.onResolve({ filter: /(?:^|\/)atlas-deck-runtime$/ }, () => ({
           path: './atlas-deck-runtime.js',
           external: true,
         }));
@@ -162,24 +162,29 @@ await build({
   ],
 });
 await build({
-  entryPoints: ['src/app/preset-settings-ui.ts'],
+  entryPoints: ['src/app/campaign/preset-settings-ui.ts'],
   outfile: '.build/desktop/ui/preset-settings.js',
   bundle: true,
   platform: 'browser',
   format: 'esm',
 });
-await copyFile('src/app/preset-settings.css', '.build/desktop/ui/preset-settings.css');
-for (const file of ['index.html', 'app.css', 'player-display.html', 'player.css'])
-  await copyFile(`src/app/${file}`, `.build/desktop/ui/${file}`);
+await copyFile('src/app/campaign/preset-settings.css', '.build/desktop/ui/preset-settings.css');
+for (const [directory, file] of [
+  ['workspace', 'index.html'],
+  ['workspace', 'app.css'],
+  ['runtime', 'player-display.html'],
+  ['runtime', 'player.css'],
+])
+  await copyFile(`src/app/${directory}/${file}`, `.build/desktop/ui/${file}`);
 await writeFile(
   '.build/desktop/ui/app.css',
-  (await readFile('src/app/app.css', 'utf8')) +
+  (await readFile('src/app/workspace/app.css', 'utf8')) +
     '\n' +
-    (await readFile('src/app/key-notes.css', 'utf8')) +
+    (await readFile('src/app/campaign/key-notes.css', 'utf8')) +
     '\n' +
-    (await readFile('src/app/markdown-view.css', 'utf8')) +
+    (await readFile('src/app/shared/markdown-view.css', 'utf8')) +
     '\n' +
-    (await readFile('src/app/atlas-workspace.css', 'utf8')),
+    (await readFile('src/app/atlas/atlas-workspace.css', 'utf8')),
 );
 await writeFile(
   '.build/desktop/build-info.json',

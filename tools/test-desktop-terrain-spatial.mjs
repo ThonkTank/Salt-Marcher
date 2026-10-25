@@ -28,7 +28,7 @@ execFileSync(process.execPath, [out + '/build.mjs'], { cwd: root, stdio: 'pipe' 
 buildSync({
   stdin: {
     contents:
-      "export * from './src/app/storage/store';export * from './src/app/atlas-landscape';export * from './src/app/terrain-height';",
+      "export * from './src/app/storage/store';export * from './src/app/atlas/atlas-landscape';export * from './src/app/atlas/terrain-height';",
     resolveDir: root,
   },
   outfile: out + '/store.cjs',
@@ -95,9 +95,9 @@ const result = {
   sourceHashes: {},
 };
 for (const file of [
-  'src/app/spatial-terrain.ts',
+  'src/app/atlas/spatial-terrain.ts',
   'src/app/vegetation-spatial.ts',
-  'src/app/atlas-landscape-ui.ts',
+  'src/app/atlas/atlas-landscape-ui.ts',
   'src/app/storage/vegetation.ts',
   '.build/terrain-spatial-desktop/ui/renderer.js',
   '.build/terrain-spatial-desktop/main.cjs',

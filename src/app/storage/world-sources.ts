@@ -6,7 +6,7 @@ import type {
   WorldSources,
   EncounterTable,
   GenerationRequest,
-} from '../generation-contracts';
+} from '../campaign/generation-contracts';
 const hash = (s: string) => createHash('sha256').update(s).digest('hex');
 export function installWorldSources(db: any) {
   db.exec(
@@ -350,7 +350,7 @@ export function resolveWorldSources(
 }
 
 export function canonicalSourceSnapshot(
-  snapshot: import('../generation-contracts').WorldSourceSnapshot | null,
+  snapshot: import('../campaign/generation-contracts').WorldSourceSnapshot | null,
 ) {
   if (snapshot === null) return null;
   const id = (v: unknown) => typeof v === 'string' && !!v && v.length <= 1000;

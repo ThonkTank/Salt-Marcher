@@ -13,7 +13,7 @@ mkdirSync(out, { recursive: true });
 const exports = [
   'storage/store',
   'storage/atlas-landscape-region',
-  'terrain-height',
+  'atlas/terrain-height',
   'terrain-navigation-plan',
 ]
   .map((file) => `export * from './src/app/${file}';`)

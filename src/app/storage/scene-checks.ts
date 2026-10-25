@@ -1,7 +1,7 @@
 import { createHash, randomInt, randomUUID } from 'node:crypto';
-import type { SceneCheck, SceneCheckCommand, SceneChecks } from '../scene-check-contracts';
+import type { SceneCheck, SceneCheckCommand, SceneChecks } from '../runtime/scene-check-contracts';
 import { readLiveScene } from './live';
-import { formulaOutcome, parseDiceFormula } from '../dice-formula';
+import { formulaOutcome, parseDiceFormula } from '../shared/dice-formula';
 
 const json = (value: unknown) => JSON.stringify(value),
   hash = (text: string) => createHash('sha256').update(text).digest('hex');

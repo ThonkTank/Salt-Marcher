@@ -152,14 +152,14 @@ try {
     external: ['electron'],
   });
   await build({
-    entryPoints: ['src/app/renderer.ts'],
+    entryPoints: ['src/app/workspace/renderer.ts'],
     outfile: path.join(built, 'ui/renderer.js'),
     bundle: true,
     platform: 'browser',
     format: 'iife',
   });
   for (const n of ['index.html', 'app.css'])
-    await copyFile('src/app/' + n, path.join(built, 'ui', n));
+    await copyFile('src/app/workspace/' + n, path.join(built, 'ui', n));
   for (const n of ['srd-5.1.generated.json', 'SRD-5.1-ATTRIBUTION.md'])
     await copyFile(
       path.join('src/features/catalog', n.endsWith('.json') ? 'data/' + n : n),

@@ -1,7 +1,11 @@
-import { streamTerrainFieldSteps, type TerrainStream } from '../terrain-field-stream';
-import { validateTerrainView, type TerrainView, type TerrainGrid } from '../terrain-spatial-model';
-import type { LandscapeRecord } from '../atlas-landscape';
-import { terrainGridLayout } from '../terrain-grid-layout';
+import { streamTerrainFieldSteps, type TerrainStream } from '../atlas/terrain-field-stream';
+import {
+  validateTerrainView,
+  type TerrainView,
+  type TerrainGrid,
+} from '../atlas/terrain-spatial-model';
+import type { LandscapeRecord } from '../atlas/atlas-landscape';
+import { terrainGridLayout } from '../atlas/terrain-grid-layout';
 import { landscapeSampleFilter } from './landscape-record-stream';
 
 /** Authoritative visibility lattice. Never accepts heights supplied by the renderer. */
@@ -10,7 +14,7 @@ export function readTerrainGrid(
   cam: string,
   view: TerrainView,
   stream?: TerrainStream,
-  cache?: import('../terrain-projection-cache').TerrainProjectionCache,
+  cache?: import('../atlas/terrain-projection-cache').TerrainProjectionCache,
   canonicalSettings?: { seaLevelM: number },
 ): TerrainGrid {
   const steps = readTerrainGridSteps(
@@ -36,7 +40,7 @@ export function* readTerrainGridSteps(
   view: TerrainView,
   checkpoint: () => Generator<void>,
   stream?: TerrainStream,
-  cache?: import('../terrain-projection-cache').TerrainProjectionCache,
+  cache?: import('../atlas/terrain-projection-cache').TerrainProjectionCache,
   maxSamples = 4096,
   canonicalSettings?: { seaLevelM: number },
 ): Generator<void, TerrainGrid> {

@@ -1,9 +1,9 @@
 import type { CampaignStore } from '../src/app/storage/store';
 import type { PreparedCampaign } from './campaign-accept';
 import type { CampaignManifest } from './campaign-files';
-import type { ConflictChoice } from '../src/app/campaign-contracts';
+import type { ConflictChoice } from '../src/app/campaign/campaign-contracts';
 import type { ChronicleReadSession } from '../src/app/storage/chronicle-pages';
-import type { SessionPacket } from '../src/app/session-packet-contracts';
+import type { SessionPacket } from '../src/app/campaign/session-packet-contracts';
 
 /** Host-only allowlist. This is never exposed as a renderer IPC channel. */
 export const storeMethods = [
@@ -260,7 +260,7 @@ export interface FileAuthority {
 }
 export interface StoreSpecialOperations {
   executeCity(
-    command: import('../src/app/city-contracts').CityCommand,
+    command: import('../src/app/atlas/city-contracts').CityCommand,
   ): ReturnType<CampaignStore['city']>;
   finishCampaignErasureFiles(id: string): Promise<void>;
   backup(filename: string): Promise<void>;

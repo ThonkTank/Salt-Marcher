@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from 'node:crypto';
-import type { Shop, ShopRestockTable } from '../items-contracts';
+import type { Shop, ShopRestockTable } from '../catalog/items-contracts';
 import { readItemDefinition, matchesItemDefinition } from './item-definitions';
 import { drawRestockChoices, restockSpacing } from './shop-restock';
 

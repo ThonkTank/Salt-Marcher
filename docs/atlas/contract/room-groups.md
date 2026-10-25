@@ -64,11 +64,11 @@ Befehl zurück. Atlas-History und Kampagnenkopien umfassen die neuen Records.
 
 ## Nachweise
 
-`tests/desktop-room-groups.test.mjs` prüft Generatorprofile, Einrichtung,
+`tests/atlas/desktop-room-groups.test.mjs` prüft Generatorprofile, Einrichtung,
 Verbindungen, gemeinsame Identität, abgeleitete Außenkontur, History,
 Wiederöffnung, Skalierung und unabhängigen Kampagnentransfer.
 `tools/test-desktop-room-groups.mjs` spielt Einzelhaus, Krypta, Raumtext und
-Prozessneustart in Electron durch. `tests/atlas-independent-building.test.mjs`
+Prozessneustart in Electron durch. `tests/atlas/atlas-independent-building.test.mjs`
 prüft unabhängige Platzierung mit und ohne historischen Stadtkontext sowie
 Abbruch und Kampagnenwechsel während der Vorschau.
 `tools/test-desktop-world-authoring.mjs` beginnt mit einer leeren Kampagne und

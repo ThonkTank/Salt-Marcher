@@ -2,15 +2,15 @@ import type {
   CityActivityPage,
   CityActivityQuery,
   CityActivitySite,
-} from '../city-activity-contracts';
+} from '../atlas/city-activity-contracts';
 import { readCityHeader, readCitySite } from './city';
 import { readLive, readLiveScene } from './live';
 import { readNpcPlanLocation } from './npc-daily-places';
 import { readNpc } from './npcs';
 import { readNpcPlaces } from './npc-places';
 import { readWorldCalendar } from './world';
-import { calendarDate } from '../world-model';
-import { dailyPlanAt, dailyTime } from '../npc-daily-plan';
+import { calendarDate } from '../runtime/world-model';
+import { dailyPlanAt, dailyTime } from '../campaign/npc-daily-plan';
 export function readCityActivities(db: any, cam: string, q: CityActivityQuery): CityActivityPage {
   if (
     !q ||

@@ -110,7 +110,7 @@ nicht umgeschrieben. Das ersetzt keinen persistenten Wetter-Workingdraft.
 
 ## Lokaler Nachweis und Grenzen
 
-`tests/desktop-weather-integrity.test.mjs` prüft echte SQLite-Wege: ungültige
+`tests/runtime/desktop-weather-integrity.test.mjs` prüft echte SQLite-Wege: ungültige
 Werte und revisionierte Hüllformen ohne Teilwirkung, erhaltene Original-/Backup-/
 Exportbytes, gültiger freier GM-Text über Zeit/Campaignwechsel/Fresh/Freigabe,
 unabhängige Split-Sceneuhren, veraltetes Setzen/Freigeben bei gleicher Uhr und
@@ -118,14 +118,14 @@ Automatik-ABA. Weitere Proben prüfen den GM-Reisefaktor sowie Receiptreplay nac
 Fresh ohne Überschreiben eines späteren Overrides und semantisch beschädigte
 Bestätigung bei gültiger Prüfsumme.
 
-`tests/desktop-weather-authority.test.mjs` benutzt die produktive UI mit
+`tests/runtime/desktop-weather-authority.test.mjs` benutzt die produktive UI mit
 kontrolliertem DOM und echtem Store. Sie prüft offene Eingabe gegen Refresh,
 Campaignwechsel vor Write und vor Ack, spätere Eingabe nach eigener Bestätigung,
 ältere Reads/Acks, ausdrückliches Verwerfen/Freigeben sowie verlorene Antworten
 mit angewendeten und nicht angewendeten Commands. Bestehende Reise-/Welteditor-
 Prüfungen ergänzen die betroffenen Wege. Ausführbar mit `node --test
---test-concurrency=1 tests/desktop-weather-integrity.test.mjs
- tests/desktop-weather-authority.test.mjs` im Repository; Ressourcenlimits des
+--test-concurrency=1 tests/runtime/desktop-weather-integrity.test.mjs
+ tests/runtime/desktop-weather-authority.test.mjs` im Repository; Ressourcenlimits des
 Arbeitsplatzes gelten für den Aufruf.
 
 Das sind lokale Teilbelege. Zeitliche Wiedervereinigung, unterschiedliche

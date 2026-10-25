@@ -1,10 +1,14 @@
 import { readRouteTerrain } from './terrain-route';
-import { resolveTerrainObjects, terrainObjectPoints, type TerrainObject } from '../terrain-objects';
+import {
+  resolveTerrainObjects,
+  terrainObjectPoints,
+  type TerrainObject,
+} from '../atlas/terrain-objects';
 import { readTerrainGridSteps } from './terrain-grid';
 import { readTerrainMaterialSteps } from './terrain-material';
 import { terrainHeightBlocks } from './terrain-height-blocks';
 import { AtlasProjectionIndex } from './atlas-projection-index';
-import { compactVegetation } from '../vegetation-projection';
+import { compactVegetation } from '../atlas/vegetation-projection';
 import {
   LANDSCAPE_BASE_INDEX,
   LANDSCAPE_COLOR_INDEX,
@@ -14,41 +18,41 @@ import {
   landscapeSampleFilter,
   type RasterSamples,
 } from './landscape-record-stream';
-import { TerrainChangeHistory } from '../terrain-change-history';
-import { mapRecordVisible } from '../atlas-scale-policy';
-import { landscapeLabels, boundedLabels, type MapLabelCandidate } from '../atlas-cartography';
+import { TerrainChangeHistory } from '../atlas/terrain-change-history';
+import { mapRecordVisible } from '../atlas/atlas-scale-policy';
+import { landscapeLabels, boundedLabels, type MapLabelCandidate } from '../atlas/atlas-cartography';
 import { readTerrainGrid } from './terrain-grid';
-import { validateTerrainView } from '../terrain-spatial-model';
-import { TerrainProjectionCache } from '../terrain-projection-cache';
+import { validateTerrainView } from '../atlas/terrain-spatial-model';
+import { TerrainProjectionCache } from '../atlas/terrain-projection-cache';
 import { readTerrainColorSteps } from './terrain-color';
 import { readTerrainProjection, readTerrainProjectionSteps } from './terrain-projection';
 import { vegetationEnvironmentReader } from './vegetation';
-import { generateVegetation, VEGETATION_SURFACE_MPP } from '../vegetation';
-import { streamTerrainField } from '../terrain-field-stream';
-import { lineContains } from '../landscape-line';
+import { generateVegetation, VEGETATION_SURFACE_MPP } from '../atlas/vegetation';
+import { streamTerrainField } from '../atlas/terrain-field-stream';
+import { lineContains } from '../atlas/landscape-line';
 import { PNG } from 'pngjs';
-import type { Point } from '../contracts';
+import type { Point } from '../shared/contracts';
 import {
   contains,
   bounds,
   landscapePaintBox,
   type LandscapeRecord,
   type LandscapeBox,
-} from '../atlas-landscape';
+} from '../atlas/atlas-landscape';
 import {
   LandscapeRasterizer,
   LANDSCAPE_RASTER_PAD,
   landscapeRasterBounds,
   landscapeRasterSlice,
   type LandscapeRaster,
-} from '../landscape-raster';
+} from '../atlas/landscape-raster';
 import type {
   AtlasRegionQuery,
   AtlasRegionSource,
   AtlasLandscapeLayer,
   AtlasHitPage,
   AtlasHit,
-} from '../atlas-region-contracts';
+} from '../atlas/atlas-region-contracts';
 const overlap = (a: LandscapeBox, b: LandscapeBox) =>
   a.x <= b.x + b.width && a.x + a.width >= b.x && a.y <= b.y + b.height && a.y + a.height >= b.y;
 const visual = (r: LandscapeRecord): LandscapeRecord => {
@@ -106,7 +110,10 @@ const visual = (r: LandscapeRecord): LandscapeRecord => {
 };
 /** A bounded, disposable landscape layer. Exact edits never consume this projection. */
 export class AtlasLandscapeReader {
-  invalidation: import('../terrain-presentation').TerrainInvalidation = { reset: true, bounds: [] };
+  invalidation: import('../atlas/terrain-presentation').TerrainInvalidation = {
+    reset: true,
+    bounds: [],
+  };
   private colorHistory = new TerrainChangeHistory();
   readonly projectionCache = new TerrainProjectionCache();
   private statements = new Map<string, any>();
@@ -394,7 +401,10 @@ export class AtlasLandscapeReader {
     if (!this.complete) throw Error('Vollständige Landschaft muss zuerst synchronisiert werden.');
   }
 
-  visibility(source: AtlasRegionSource, view: import('../terrain-spatial-model').TerrainView) {
+  visibility(
+    source: AtlasRegionSource,
+    view: import('../atlas/terrain-spatial-model').TerrainView,
+  ) {
     const identity = JSON.stringify([
         source.campaignId,
         source.epoch,
@@ -581,8 +591,8 @@ export class AtlasLandscapeReader {
   }
   *heightSteps(
     source: AtlasRegionSource,
-    q: import('../terrain-projection').TerrainProjectionRequest,
-  ): Generator<void, import('../terrain-projection').TerrainProjection> {
+    q: import('../atlas/terrain-projection').TerrainProjectionRequest,
+  ): Generator<void, import('../atlas/terrain-projection').TerrainProjection> {
     this.requireFull();
     let start = performance.now();
     function* checkpoint() {
@@ -633,13 +643,16 @@ export class AtlasLandscapeReader {
   }
   materialSteps(
     source: AtlasRegionSource,
-    q: import('../atlas-material-tile').AtlasMaterialTileRequest,
-    channels: ReadonlySet<import('../terrain-material').TerrainMaterialChannel>,
+    q: import('../atlas/atlas-material-tile').AtlasMaterialTileRequest,
+    channels: ReadonlySet<import('../atlas/terrain-material').TerrainMaterialChannel>,
   ) {
     this.requireFull();
     return readTerrainMaterialSteps(this.db, source, q, this.terrainStream(source), channels);
   }
-  terrain(source: AtlasRegionSource, q: import('../terrain-projection').TerrainProjectionRequest) {
+  terrain(
+    source: AtlasRegionSource,
+    q: import('../atlas/terrain-projection').TerrainProjectionRequest,
+  ) {
     this.requireFull();
     const projection = readTerrainProjection(
       this.db,
@@ -653,7 +666,7 @@ export class AtlasLandscapeReader {
       colorChange: q.colorBase ? this.colorHistory.since(q.colorBase) : undefined,
     };
   }
-  colorSteps(source: AtlasRegionSource, q: import('../terrain-color').TerrainColorRequest) {
+  colorSteps(source: AtlasRegionSource, q: import('../atlas/terrain-color').TerrainColorRequest) {
     this.requireFull();
     // Leave the first terrain overview unblocked. SQLite owns maintenance and
     // rollback; no separate build cursor or index-validity state is needed.
@@ -668,8 +681,8 @@ export class AtlasLandscapeReader {
   }
   *terrainSteps(
     source: AtlasRegionSource,
-    q: import('../terrain-projection').TerrainProjectionRequest,
-  ): Generator<void, import('../terrain-projection').TerrainProjection> {
+    q: import('../atlas/terrain-projection').TerrainProjectionRequest,
+  ): Generator<void, import('../atlas/terrain-projection').TerrainProjection> {
     this.requireFull();
     if (q.product === 'height') return yield* this.heightSteps(source, q);
     const colorChange = q.colorBase ? this.colorHistory.since(q.colorBase) : undefined;

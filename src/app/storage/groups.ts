@@ -1,8 +1,8 @@
-import type { PreparedGroup, WorldActor } from '../session-contracts';
-import type { EncounterEntry } from '../encounter-contracts';
+import type { PreparedGroup, WorldActor } from '../campaign/session-contracts';
+import type { EncounterEntry } from '../catalog/encounter-contracts';
 import { createHash, randomUUID } from 'node:crypto';
-import type { GroupAction, GroupDraft, GroupView } from '../groups-contracts';
-import { checkedHealth } from '../progression';
+import type { GroupAction, GroupDraft, GroupView } from '../campaign/groups-contracts';
+import { checkedHealth } from '../runtime/progression';
 import { checkedLocationDocument } from '../../features/location/location-schema';
 import { worldNoteDocument } from '../../features/world/world-notes';
 import {

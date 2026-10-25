@@ -9,16 +9,18 @@ main.js.map
 **/fixtures/
 **/reference-images/
 **/evidence/
-src/app/atlas-reference-catalog.ts
+src/app/atlas/atlas-reference-catalog.ts
 resources/
 # Historical adapters, native comparison sources and ADR prototypes
-src/main.ts
-src/editor.ts
-src/renderer.ts
-src/properties.ts
+src/legacy/obsidian/main.ts
+src/legacy/obsidian/editor.ts
+src/legacy/obsidian/renderer.ts
+src/legacy/obsidian/properties.ts
 src/commands.ts
 tests/native-reference/
 tests/adr-prototypes/
 tools/adr-prototypes/
 tools/dungeon-auswertung/
 tools/wonderdraft/
+
+src/legacy/

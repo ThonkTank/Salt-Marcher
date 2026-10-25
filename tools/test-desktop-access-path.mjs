@@ -16,7 +16,7 @@ const require = createRequire(root + '/package.json'),
 require('esbuild').buildSync({
   stdin: {
     contents:
-      "export {CampaignStore} from './src/app/storage/store';export {newElement} from './src/app/drawing-model';",
+      "export {CampaignStore} from './src/app/storage/store';export {newElement} from './src/app/atlas/drawing-model';",
     resolveDir: root,
   },
   outfile: `.build/access-path-store-${process.pid}.cjs`,

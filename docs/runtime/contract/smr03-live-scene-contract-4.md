@@ -14,7 +14,7 @@ Store-/UI-Verhaltenstests sind maßgeblich; eine zweite Implementation der alten
 Class-, Envelope- oder Mehrbesitzerformen ist nicht erforderlich.
 
 Der aktuelle Pfad führt über `LiveAction`/`LiveScene` in
-[`live-contracts.ts`](../../../src/app/live-contracts.ts), `executeLive` und
+[`live-contracts.ts`](../../../src/app/runtime/live-contracts.ts), `executeLive` und
 `readLiveScene` in [`storage/live.ts`](../../../src/app/storage/live.ts) sowie
 `captureVisitDetails` in [`storage/session.ts`](../../../src/app/storage/session.ts).
 `apply-visit` prüft Plan-, Besuchs- und Zielscenebasis in derselben Transaktion,

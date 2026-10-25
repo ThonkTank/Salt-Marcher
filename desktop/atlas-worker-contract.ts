@@ -4,17 +4,29 @@ import type {
   AtlasRegionGeometry,
   AtlasObjectFocus,
   AtlasHitPage,
-} from '../src/app/atlas-region-contracts';
-import type { TerrainProjection, TerrainProjectionRequest } from '../src/app/terrain-projection';
-import type { TerrainColorRequest, TerrainColorTile } from '../src/app/terrain-color';
-import type { TerrainFrame, TerrainFrameQuery } from '../src/app/terrain-presentation';
-import type { TerrainFrameIdentity } from '../src/app/terrain-frame';
-import type { HeightStroke } from '../src/app/terrain-brush';
+} from '../src/app/atlas/atlas-region-contracts';
+import type {
+  TerrainProjection,
+  TerrainProjectionRequest,
+} from '../src/app/atlas/terrain-projection';
+import type { TerrainColorRequest, TerrainColorTile } from '../src/app/atlas/terrain-color';
+import type { TerrainFrame, TerrainFrameQuery } from '../src/app/atlas/terrain-presentation';
+import type { TerrainFrameIdentity } from '../src/app/atlas/terrain-frame';
+import type { HeightStroke } from '../src/app/atlas/terrain-brush';
 import type { PreparedTerrainStroke } from '../src/app/storage/terrain-scale';
-import type { AtlasTerrainTile, AtlasTerrainTileRequest } from '../src/app/atlas-terrain-tile';
-import type { AtlasMaterialTile, AtlasMaterialTileRequest } from '../src/app/atlas-material-tile';
-import type { AtlasGeometryTile, AtlasGeometryTileRequest } from '../src/app/atlas-geometry-tile';
-import type { Point } from '../src/app/contracts';
+import type {
+  AtlasTerrainTile,
+  AtlasTerrainTileRequest,
+} from '../src/app/atlas/atlas-terrain-tile';
+import type {
+  AtlasMaterialTile,
+  AtlasMaterialTileRequest,
+} from '../src/app/atlas/atlas-material-tile';
+import type {
+  AtlasGeometryTile,
+  AtlasGeometryTileRequest,
+} from '../src/app/atlas/atlas-geometry-tile';
+import type { Point } from '../src/app/shared/contracts';
 
 export type AtlasProjectionJob =
   | { kind: 'terrain'; query: TerrainProjectionRequest }

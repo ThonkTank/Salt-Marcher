@@ -12,7 +12,8 @@ const require = createRequire(import.meta.url),
   zoom = Number(process.env.GM_QA_ZOOM ?? 1);
 require('esbuild').buildSync({
   stdin: {
-    contents: "export * from './src/app/storage/store';export * from './src/app/terrain-height';",
+    contents:
+      "export * from './src/app/storage/store';export * from './src/app/atlas/terrain-height';",
     resolveDir: root,
   },
   outfile: '.build/height-workflow-store.cjs',

@@ -1,4 +1,4 @@
-import { checkedSessionRecapDraft, type SessionRecapDraft } from '../live-contracts';
+import { checkedSessionRecapDraft, type SessionRecapDraft } from '../runtime/live-contracts';
 
 export function readSessionRecapDraft(db: any, campaignId: string): SessionRecapDraft | null {
   const value = db

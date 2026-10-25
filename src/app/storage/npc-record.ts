@@ -1,7 +1,11 @@
 import { createHash } from 'node:crypto';
-import type { NpcRecord, NpcRole, NpcView, NpcDraft } from '../npc-contracts';
-import { checkedDailyPlan, checkedDailyOverrides, npcPlanLocationIds } from '../npc-daily-plan';
-import { checkedHealth } from '../progression';
+import type { NpcRecord, NpcRole, NpcView, NpcDraft } from '../campaign/npc-contracts';
+import {
+  checkedDailyPlan,
+  checkedDailyOverrides,
+  npcPlanLocationIds,
+} from '../campaign/npc-daily-plan';
+import { checkedHealth } from '../runtime/progression';
 const hash = (s: string) => createHash('sha256').update(s).digest('hex');
 export function installNpcRecords(db: any) {
   db.exec(`CREATE TABLE IF NOT EXISTS npc_record(campaign_id TEXT NOT NULL REFERENCES campaign(id),id TEXT NOT NULL,faction_id TEXT,revision INTEGER NOT NULL,payload TEXT NOT NULL,checksum TEXT NOT NULL,PRIMARY KEY(campaign_id,id),FOREIGN KEY(campaign_id,id) REFERENCES world_note(campaign_id,id),FOREIGN KEY(campaign_id,faction_id) REFERENCES world_note(campaign_id,id)) STRICT;

@@ -9,5 +9,5 @@ try{
  const page=await native.launch(),source=buildSync({entryPoints:['tools/forest-pattern-prototype/probe.ts'],bundle:true,format:'iife',globalName:'ForestPatternProbe',write:false}).outputFiles[0].text;
  const result=await page.evaluate(`(()=>{${source}\nreturn ForestPatternProbe.run();})()`);
  for(const {name,image}of result.images)await writeFile(path.join(output,name+'.png'),Buffer.from(image.split(',')[1],'base64'));
- delete result.images;result.probeSources={};for(const file of ['src/app/terrain-forest-pattern.ts','src/app/terrain-detail-material.ts','tools/forest-pattern-prototype/probe.ts','src/app/landscape-raster.ts'])result.probeSources[file]=createHash('sha256').update(await readFile(file)).digest('hex');await native.close();await native.finish(result);
+ delete result.images;result.probeSources={};for(const file of ['src/app/terrain-forest-pattern.ts','src/app/terrain-detail-material.ts','tools/forest-pattern-prototype/probe.ts','src/app/atlas/landscape-raster.ts'])result.probeSources[file]=createHash('sha256').update(await readFile(file)).digest('hex');await native.close();await native.finish(result);
 }catch(error){await native.fail(error);throw error;}finally{await native.dispose();}

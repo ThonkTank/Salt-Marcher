@@ -38,7 +38,7 @@ lassen die Sperre bestehen. Ein gültiger unbekannter Command darf nicht so
 zurückgesetzt werden. Kein DBwrite, Grantwechsel oder stilles Löschen;
 Quarantäne gehört weder in Campaigntransfer noch in Packagecode.
 
-[desktop-extension-recovery.test.mjs](../../../tests/desktop-extension-recovery.test.mjs)
+[desktop-extension-recovery.test.mjs](../../../tests/workspace/desktop-extension-recovery.test.mjs)
 prüft diese zehn Store-/DOMfälle einschließlich Originalerhalt, Storagefehlern,
 fehlender Liste, verändertem Vermerk und Receiptbestätigung ohne Writerreplay.
 `python tools/ui-session.py node tools/test-desktop-extension-install.mjs` prüft
@@ -61,7 +61,7 @@ Campaigntransfer und spätere Neuinstallation dürfen Nutzerbytes nicht verliere
 Vollständiges Backup prüft auch Installationseinträge; ein Campaignexport entfernt
 diese Einträge und prüft seinen eigenen Datenstand nach der Abgrenzung.
 Beschädigte fremde Installation darf ihn nicht blockieren.
-[extension-lifecycle.test.ts](../../../tests/core/extension-lifecycle.test.ts)
+[extension-lifecycle.test.ts](../../../tests/shared/core/extension-lifecycle.test.ts)
 prüft Entfernen/Neuinstallation, Byteerhalt, Import ohne Paket, fehlerhafte Commands
 und erhaltene sichere Backups. Paketcode wird noch nicht ausgeführt; Sandbox,
 Runtime-Masken und neue Consumer gehören zur folgenden Lieferung.

@@ -1,4 +1,4 @@
-import type { GenerationRequest } from '../generation-contracts';
+import type { GenerationRequest } from '../campaign/generation-contracts';
 import { readNpc } from './npcs';
 import { searchCreatures, readCreature } from './encounters';
 import { readWorldSources } from './world-sources';

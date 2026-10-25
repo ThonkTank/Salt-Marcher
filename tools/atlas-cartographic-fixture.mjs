@@ -9,7 +9,7 @@ export function createCartographicFixture(profile, { bridge = false } = {}) {
     stdin: {
       resolveDir: process.cwd(),
       contents:
-        "export {CampaignStore} from './src/app/storage/store';export {heightRecord} from './src/app/terrain-height';export {vegetationSpec} from './src/app/vegetation';export {routeSpec} from './src/app/terrain-route';",
+        "export {CampaignStore} from './src/app/storage/store';export {heightRecord} from './src/app/atlas/terrain-height';export {vegetationSpec} from './src/app/atlas/vegetation';export {routeSpec} from './src/app/atlas/terrain-route';",
     },
     outfile: '.build/cartographic-fixture.cjs',
     bundle: true,

@@ -46,7 +46,7 @@ City boundaries (except Tokyo) and Rügen/Sylt: © OpenStreetMap contributors,
 https://www.openstreetmap.org/copyright , available under the Open Database
 License (ODbL), https://opendatacommons.org/licenses/odbl/1-0/ .
 The derived bounding coordinates, source links and rounded dimensions are
-provided in `src/app/atlas-reference-catalog.ts`, retrieved 2026-10-18. The
+provided in `src/app/atlas/atlas-reference-catalog.ts`, retrieved 2026-10-18. The
 OSM-derived subset remains available under ODbL. Natural Earth data retains
 its public-domain status. Dimensions are approximate geographic extents,
 not land areas; separate overseas map units remain separate comparisons.

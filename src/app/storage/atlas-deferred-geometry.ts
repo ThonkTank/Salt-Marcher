@@ -1,4 +1,4 @@
-import type { AtlasRegionSource } from '../atlas-region-contracts';
+import type { AtlasRegionSource } from '../atlas/atlas-region-contracts';
 const tables = new Set([
   'room',
   'drawing_element',

@@ -6,7 +6,7 @@ import {
   fitMagicItems,
   checkedMagicPool,
 } from './session-magic';
-import { budgetRarity, budgetRarities } from '../dungeon-budget-contracts';
+import { budgetRarity, budgetRarities } from '../atlas/dungeon-budget-contracts';
 import type {
   SessionProfile,
   SessionLootGuidance,
@@ -14,11 +14,14 @@ import type {
   SessionGenerationRequest,
   SessionLootBasis,
   SessionRun,
-} from '../session-contracts';
-import { canonicalJson } from '../generation/canonical-json';
-import type { ItemInput } from '../progression';
-import { copper, xpShare } from '../progression';
-import { cumulativeGoldCopper, type RewardGuidanceRules } from '../generation/reward-guidance';
+} from '../campaign/session-contracts';
+import { canonicalJson } from '../campaign/generation/canonical-json';
+import type { ItemInput } from '../runtime/progression';
+import { copper, xpShare } from '../runtime/progression';
+import {
+  cumulativeGoldCopper,
+  type RewardGuidanceRules,
+} from '../campaign/generation/reward-guidance';
 import { readGeneratorRegistry } from './generation';
 import {
   readProgressCharacter,

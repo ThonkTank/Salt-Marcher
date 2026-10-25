@@ -26,7 +26,8 @@ for (const [name, file] of [
 buildSync({
   stdin: {
     resolveDir: root,
-    contents: "export * from './src/app/storage/store';export * from './src/app/terrain-height';",
+    contents:
+      "export * from './src/app/storage/store';export * from './src/app/atlas/terrain-height';",
   },
   outfile: out + '/fixture.cjs',
   bundle: true,

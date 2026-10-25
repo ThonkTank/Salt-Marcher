@@ -1,7 +1,7 @@
 import { createHash, randomUUID } from 'node:crypto';
-import type { TriggerField, TriggerAction, TriggerEvent } from '../trigger-contracts';
-import type { DungeonGeometry, DungeonJourney, DungeonPose } from '../dungeon-contracts';
-import { enteredTrigger } from '../trigger-model';
+import type { TriggerField, TriggerAction, TriggerEvent } from '../runtime/trigger-contracts';
+import type { DungeonGeometry, DungeonJourney, DungeonPose } from '../atlas/dungeon-contracts';
+import { enteredTrigger } from '../runtime/trigger-model';
 const hash = (s: string) => createHash('sha256').update(s).digest('hex'),
   parsed = (r: any) => {
     if (!r || hash(r.payload) !== r.checksum) throw new Error('Triggerfeld / Kontext beschädigt.');
@@ -169,7 +169,7 @@ export function createTriggerEvents(
 export function captureTriggerCells(
   db: any,
   cam: string,
-  volumes: import('../volume-contracts').DungeonVolume[],
+  volumes: import('../atlas/volume-contracts').DungeonVolume[],
 ) {
   const selected = new Map(volumes.filter((v) => v.columns.length).map((v) => [v.id, v]));
   return readTriggerFields(db, cam)
@@ -196,7 +196,7 @@ export function captureTriggerCells(
 export function rebindTriggerCells(
   cam: string,
   captured: ReturnType<typeof captureTriggerCells>,
-  volumes: import('../volume-contracts').DungeonVolume[],
+  volumes: import('../atlas/volume-contracts').DungeonVolume[],
   apply: (key: { table: string; id: string }, row: any) => void,
 ) {
   for (const record of captured) {

@@ -5,7 +5,7 @@ import type {
   WorldRelationPairDraft,
   WorldRelationPairHistoryCommand,
   WorldRelationPairHistoryView,
-} from '../world-relation-pair-contracts';
+} from '../campaign/world-relation-pair-contracts';
 import {
   inverseWorldFamilyRelationKind,
   worldFamilyRelationKinds,

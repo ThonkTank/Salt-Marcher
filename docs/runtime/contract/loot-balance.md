@@ -31,9 +31,9 @@ Figuren; Gleichstand an der Spitze bleibt neutral. `copper` ist bei
 `unknownEntries > 0` nur der bekannte Teilbetrag; `gapCopper` darf dann nicht
 als vollständiger Abstand dargestellt werden.
 
-[Storeprüfungen](../../../tests/desktop-loot-balance.test.mjs) decken aktuelle
+[Storeprüfungen](../../../tests/runtime/desktop-loot-balance.test.mjs) decken aktuelle
 Preise, Weitergaben mit Verkauf, Fresh, Käufe, Nullstapel, unbekannte Werte und
-Profilintegrität ab. [DOM-Prüfungen](../../../tests/desktop-loot-balance-dom.test.mjs)
+Profilintegrität ab. [DOM-Prüfungen](../../../tests/runtime/desktop-loot-balance-dom.test.mjs)
 prüfen Kontextwechsel und die offene Anzeige. Native Bedienabnahme und
 vollständige Rewardqualifikation bleiben offen.
 
@@ -50,8 +50,8 @@ Erzeugung, Lesen und Sicherung prüfen dieselbe gespeicherte Rechnung:
 Presetidentität, Figuren, Erwartung vor/nach dem Abend, erhaltene Beute, Differenz,
 Ziel und Szenenanteile. Spätere XP-, Preis- oder Rewardänderungen schreiben diese
 ursprüngliche Rechnung nicht um. Die Quellledger verwenden `checkedLedgerRow`;
-kein zusätzlicher Ledgerreader. [Vorschlagsprüfungen](../../../tests/desktop-session-proposal-store.test.mjs)
-und [Rewardprüfungen](../../../tests/desktop-session-reward-integrity.test.mjs)
+kein zusätzlicher Ledgerreader. [Vorschlagsprüfungen](../../../tests/campaign/desktop-session-proposal-store.test.mjs)
+und [Rewardprüfungen](../../../tests/runtime/desktop-session-reward-integrity.test.mjs)
 belegen beschädigte Daten, atomaren Generatorrollback, Weitergaben mit Verkauf,
 Käufe, Definition-/Mengenkorrekturen, Überschuss, Fresh und unabhängige Kopie.
 Quellpaket und vorhandene Sicherungen bleiben unverändert.
@@ -82,10 +82,10 @@ keine Budgets oder Autoreninhalte. Bestätigungsreplay und bereits angenommene
 Inhalte behalten den ursprünglichen Ergebnisweg. Ältere geführte Runs ohne
 prüfbare Grundlage bleiben lesbar; eine neue Übernahme verlangt eine neue Vorschau.
 
-[Storeprüfungen](../../../tests/desktop-session-reward-integrity.test.mjs) belegen
+[Storeprüfungen](../../../tests/runtime/desktop-session-reward-integrity.test.mjs) belegen
 geänderte XP, Beute, Katalog-/Poolquellen und Planungsparty ohne Teilwirkung,
 Annahme nach unabhängiger Kopie/Fresh, Replay sowie gültige Übernahme nach
-Schaden, Heilung und kurzer/langer Rast. [Vorschlagsprüfungen](../../../tests/desktop-session-proposal-store.test.mjs)
+Schaden, Heilung und kurzer/langer Rast. [Vorschlagsprüfungen](../../../tests/campaign/desktop-session-proposal-store.test.mjs)
 prüfen Integrität und erhaltene Sicherungen. Native Gesamtabnahme bleibt offen.
 
 `fitMagicItems` öffnet den Katalogiterator erst bei tatsächlichem Kandidatenbedarf.
@@ -108,7 +108,7 @@ Abgabezeile, der Empfang erzeugt keine weitere Zahlung. Verkaufserlös bleibt
 separat maßgeblich für Beute. Alte Kaufereignisse/Receipts bleiben unverändert;
 früher falsch vervielfachte Anteile werden nicht rückwirkend repariert.
 
-[Tradeprüfungen](../../../tests/desktop-trade-paid-price.test.mjs) verwenden echte
+[Tradeprüfungen](../../../tests/runtime/desktop-trade-paid-price.test.mjs) verwenden echte
 SQLitewrites: 101-Kupfer-Rundung, vollständiger Verkauf, Split/Merge, Geschenk,
 Weitergabe, unbekannter Preis, null und großer exakter Betrag. Fresh, Replay,
 Lootausschluss und ein Fehler nach den Ledgerwrites prüfen Rollback und

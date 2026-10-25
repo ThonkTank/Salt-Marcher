@@ -10,8 +10,8 @@ import {
   type RigidFrame,
   type RelativeAtlasCamera,
 } from "./relative-frame";
-import { AtlasCityBuildingPanel } from "../../ui/atlas-city-building-panel";
-import { AtlasRoomKeyPanel } from "../../ui/atlas-room-key-panel";
+import { AtlasCityBuildingPanel } from "../../legacy/obsidian/ui/atlas-city-building-panel";
+import { AtlasRoomKeyPanel } from "../../legacy/obsidian/ui/atlas-room-key-panel";
 import { AtlasRenderer } from "./atlas-renderer";
 import { hexAddressKey, hexAt } from "./hex";
 import type { OverworldDocument, WorldPoint } from "./overworld";
@@ -21,8 +21,8 @@ import {
   type LocationDocument,
 } from "../location/location-schema";
 import type { LocationPlacement } from "./location-placement";
-import { LocationKeyPanel } from "../../ui/location-key-panel";
-import { AtlasDetailEntry, type AtlasDetailEntryModel } from "../../ui/atlas-detail-entry";
+import { LocationKeyPanel } from "../../legacy/obsidian/ui/location-key-panel";
+import { AtlasDetailEntry, type AtlasDetailEntryModel } from "../../legacy/obsidian/ui/atlas-detail-entry";
 import type { AtlasNavigationTarget, AtlasResolvedNavigation } from "./atlas-campaign-navigation";
 import {
   TERRAIN_COLORS,

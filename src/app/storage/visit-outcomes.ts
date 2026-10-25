@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import type { SessionProgress, VisitOutcome } from '../visit-outcome-contracts';
+import type { SessionProgress, VisitOutcome } from '../runtime/visit-outcome-contracts';
 import { readPlan } from './session';
 export function readVisitOutcome(db: any, cam: string, adoptionId: string): VisitOutcome | null {
   const row = db

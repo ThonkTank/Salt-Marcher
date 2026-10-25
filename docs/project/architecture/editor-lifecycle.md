@@ -7,7 +7,7 @@ Source of Truth: Sitzungskern und Übergangsregistrierung; Fachmodule besitzen E
 
 ## Zuständigkeiten
 
-`src/app/editor-session.ts` besitzt ohne DOM, Electron oder Datenbank die
+`src/app/shared/editor-session.ts` besitzt ohne DOM, Electron oder Datenbank die
 Kontextgeneration, Leselaufzeiten, Eingabe-/Sicherungszähler, laufende Operationen
 und ungeklärte Commands. `editor-transition.ts` behält die reine Rückbindung an
 zusätzliche View-Identitäten und die feldweise Annahme bestätigter Werte.
@@ -38,7 +38,7 @@ neueren Sitzung und dürfen deren Controls nicht verändern.
 
 ## Zentrale Registrierung
 
-`src/app/workspace-editors.ts` registriert die bisherigen Aktivierungs- und
+`src/app/workspace/workspace-editors.ts` registriert die bisherigen Aktivierungs- und
 Sicherungsbesitzer einmal. `renderer.ts` bindet die Hostoberfläche und deren
 Eingabeereignisse an `editor-registry.ts` an. Neue Eingabe während eines Drains
 führt vor dem Verlassen zu einem erneuten geordneten Durchlauf. Ein Kontextwechsel
@@ -66,18 +66,18 @@ Buchungsjournal behalten ihre speziellen Commands und Lockgrenzen.
 
 ## Prüfung und Grenzen
 
-- `tests/editor-session.test.mjs`: Generationen, getrennte Entwurfszustände,
+- `tests/shared/editor-session.test.mjs`: Generationen, getrennte Entwurfszustände,
   parallele Writes, verlorene Antworten ohne Wiederholung, Abmeldung, reale
   Auftragsbeendigung und erneuter Drain bei neuer Eingabe.
-- `tests/desktop-editor-activation.test.mjs`: fehlgeschlagenes Laden und erneutes
+- `tests/workspace/desktop-editor-activation.test.mjs`: fehlgeschlagenes Laden und erneutes
   Öffnen, verweigerte Quellsicherung, konkurrierende Wechsel und Öffnen nach
   Entfernen des bisherigen Kontexts.
-- `tests/workspace-editor-registry.test.mjs`: konkrete Reihenfolgen, alle vier
+- `tests/workspace/workspace-editor-registry.test.mjs`: konkrete Reihenfolgen, alle vier
   Grenzarten, Graph-/Aktivierungs-Ausnahmen und Werkzeugvorbereitung.
-- `tests/desktop-npc-switch.test.mjs`: echter Renderer/SQLite-Draft mit alter
+- `tests/campaign/desktop-npc-switch.test.mjs`: echter Renderer/SQLite-Draft mit alter
   Antwort während einer neuen Sicherung, weiterer Eingabe und unveränderten
   Rohbytes; vorhandene Receipt-/Neustartregressionen bleiben erhalten.
-- `tests/desktop-preparation-context.test.mjs`: alte Entwurfsleseantwort während
+- `tests/campaign/desktop-preparation-context.test.mjs`: alte Entwurfsleseantwort während
   einer neuen Aktivierung sowie vorhandene Notiz-/Plan-/Quellenregressionen.
 - Bestehende DOM-/Storeprüfungen für Gruppen, Schatz, Zeichnung, Kampf, Verfolgung,
   Sessionplanung und Abschluss bleiben die fachlichen Anschlussprüfungen.

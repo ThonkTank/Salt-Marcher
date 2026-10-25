@@ -3,7 +3,7 @@ import definitions from './tables.json';
 import { createHash } from 'node:crypto';
 import { transferModel, type TransferRow, type TransferContext, type ReferenceRole } from './codec';
 import { transferCapabilityReferences } from './capability-references';
-import { remapTextReferences } from '../text-references';
+import { remapTextReferences } from '../campaign/text-references';
 
 type ColumnRule =
   | string

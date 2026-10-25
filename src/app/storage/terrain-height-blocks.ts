@@ -1,8 +1,8 @@
-import type { LandscapeBox, LandscapeRecord } from '../atlas-landscape';
-import { decodeHeights } from '../terrain-height';
-import type { TerrainHeightSource } from '../terrain-height-lattice';
-import type { TerrainProjectionCache } from '../terrain-projection-cache';
-import type { TerrainSamples } from '../terrain-field-stream';
+import type { LandscapeBox, LandscapeRecord } from '../atlas/atlas-landscape';
+import { decodeHeights } from '../atlas/terrain-height';
+import type { TerrainHeightSource } from '../atlas/terrain-height-lattice';
+import type { TerrainProjectionCache } from '../atlas/terrain-projection-cache';
+import type { TerrainSamples } from '../atlas/terrain-field-stream';
 import { landscapeSampleFilter } from './landscape-record-stream';
 
 /** Same coarse-to-fine source order as the raw record stream. The consumer's

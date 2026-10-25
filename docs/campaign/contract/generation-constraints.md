@@ -34,7 +34,7 @@ Prüfsumme, Identität und Revision vor Projektion oder Fraktionsfilter. Auch
 bestehende Weltquellen prüfen ihre verknüpften Dokumente; archivierte Bindungen
 bleiben erhalten. Reads verändern weder Quellendaten noch Bestände.
 
-Die [Storeprüfung](../../../tests/desktop-world-source-constraints.test.mjs)
+Die [Storeprüfung](../../../tests/campaign/desktop-world-source-constraints.test.mjs)
 deckt fehlende Quellen, ausgeschlossene Tabellen/Orte, Nullbestand, endliche
 Bestände, geänderte Quellenbasis und beschädigte Auswahlquellen ab.
 

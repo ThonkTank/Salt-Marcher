@@ -21,7 +21,7 @@ require('esbuild').buildSync({
 });
 const { CampaignStore } = require(root + '/.build/atlas-author-store.cjs');
 require('esbuild').buildSync({
-  entryPoints: ['src/app/drawing-model.ts'],
+  entryPoints: ['src/app/atlas/drawing-model.ts'],
   outfile: '.build/atlas-author-elements.cjs',
   bundle: true,
   platform: 'node',

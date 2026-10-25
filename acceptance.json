@@ -4,9 +4,9 @@
     "state": "implemented_native_qualified",
     "scope": "Linux x64: bewusst veröffentlichte stabile GitHub Releases, getrennte Download-/Installationsaktionen, CampaignWorkbench-Datenlinie.",
     "tests": [
-      "tests/desktop-updates.test.mjs",
-      "tests/desktop-update-ui.test.mjs",
-      "tests/desktop-preset-settings.test.mjs",
+      "tests/workspace/desktop-updates.test.mjs",
+      "tests/workspace/desktop-update-ui.test.mjs",
+      "tests/campaign/desktop-preset-settings.test.mjs",
       "tools/test-desktop-updates.mjs"
     ],
     "verified": "25 gezielte Tests einschließlich echter Prozessabbrüche an den dauerhaften Journalphasen; native Paketprobe mit zwei Versionen, Erstinstallation, UI-Download, Installation, Neustart, eigenem Datenordner und Erhalt von Kampagnen und Medien.",
@@ -18,7 +18,7 @@
     "state": "implementation_candidate_pending_independent_review",
     "required": "Ein kanonischer nativer Dungeon mit stabilen Dungeon-/Geschoss-/Raum-/Eingangsroute-/Section-IDs und exakten Markdownbytes nimmt an genau einem externen AtlasHistory-Befehl teil, ohne parallel in Session-History zu committen oder Session.revision zu persistieren.",
     "confirmed": "Input c6fe58d1b5de5c707000a39b0b8da2883d31867b7d8bf347f63830021e2df742 und Erwartung a86e366f64d44c81e797ee8660de3f54e05bf1ad4a09a2db9bb8002e6eac7429 sind kanonische V4-.dungeon-Bytes. Raum-Key-Closure wird daraus abgeleitet. Kombinierte Dungeon-/räumliche Änderungen sind ein AtlasHistory-Schritt; Undo/Redo, Fremdkennung, ungültiges Ziel und stale Snapshot sind fokussiert geprüft. Typprüfung, 333/333 Coretests, 422/422 vollständige Tests und Produktbuild bestanden.",
-    "evidence": "tests/fixtures/atlas-e2e-v1/dungeon-manifest.json; tests/core/dungeon-atlas-source.test.ts; Issue #12 Kommentar 6090859580",
+    "evidence": "tests/fixtures/atlas-e2e-v1/dungeon-manifest.json; tests/shared/core/dungeon-atlas-source.test.ts; Issue #12 Kommentar 6090859580",
     "notConfirmed": "Unabhängiger Review sowie House-Bindung, gemeinsamer Vault-/FileTransaction-Schritt, Renderer/Placement, Native Host, frischer Prozess, physische Eingabe und vollständiger E2E-01-Lauf stehen aus; keine Produkt-, Host- oder Gesamtfreigabe.",
     "geometryPort": {
       "id": "E2E-01-DUNGEON-GEOMETRY-I01",
@@ -26,7 +26,7 @@
       "productCommit": "5675cbd13be6f0fa096c3651743f1eb40d93f845",
       "reviewedCommit": "c8bd27d6d223403b46748d3051409c3e1c498224",
       "confirmed": "Der reine äußere Room31/Floor32-Konturpunktzug nutzt die vorhandenen Building-Punkt-, Kontur- und Portalplaner, projiziert ohne Session-/History-/Dateiwirkung und liefert höchstens einen kanonischen Dungeon-AtlasChange. Die tatsächliche Terrain-/Graph-/Dungeon-/Location-/City-/History-Identität sowie vollständige Placement-/House-/RigidFrame-Basis bleiben bis Preview/Handoff eingefroren; Historyereignisse einschließlich A-B-A und bytegleiche Adapterersetzung invalidieren terminal. Code-R02 schloss Beginpointer und gemeinsame RecordChange-Grenze, Code-R03 den Vor-update-Umrechnungsfehler. Der Cleanup bündelt Proposalwiderruf und verzögerte Koordinatenauflösung in einer fail-closed sample()-Grenze; tatsächliche bind()-Callbacks, later-valid/Fresh Begin, Portal-/ID-/Markdownclosure, 1,524 Meter pro Feld und genau eine Historywirkung bestanden den unabhängigen PRODUCT-CL-R01 ohne Pflichtlücke. Typprüfung, 495/495 Tests und Build bestanden.",
-      "evidence": "src/features/dungeon/geometry-change.ts; src/features/atlas/atlas-editor.ts; tests/core/atlas-spatial.test.ts; ROADMAP-E2E01-DUNGEON-GEOMETRY-PRODUCT-CLEANUP-PLAN.md; PR #26 Kommentare 6093160433, 6093242380 und 6093376162; Issue #12 Kommentar 6093376283; /home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/dungeon-geometry-product-cl-r01/",
+      "evidence": "src/features/dungeon/geometry-change.ts; src/features/atlas/atlas-editor.ts; tests/shared/core/atlas-spatial.test.ts; ROADMAP-E2E01-DUNGEON-GEOMETRY-PRODUCT-CLEANUP-PLAN.md; PR #26 Kommentare 6093160433, 6093242380 und 6093376162; Issue #12 Kommentar 6093376283; /home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/dungeon-geometry-product-cl-r01/",
       "notConfirmed": "Integration in den gemeinsamen Produktstand, persistente House-zu-Dungeon-Bindung, gemeinsamer Vault-/FileTransaction-/Publishschritt, vollständige Mehrownerkomposition, Save/Restart auf dem integrierten Kandidaten, echte GUI-/Hostbedienung, physische Eingabe und vollständiger E2E-01-Lauf bleiben offen; keine Produkt-, Host-, Fach- oder Gesamtfreigabe."
     }
   },
@@ -678,7 +678,7 @@
       "evidence": [
         "tools/catalog-build-asset.mjs",
         "build.mjs",
-        "tests/catalog-build-asset.test.mjs"
+        "tests/catalog/catalog-build-asset.test.mjs"
       ],
       "verified": {
         "gzipBytes": 102021,
@@ -795,7 +795,7 @@
           "scope": "complete-heading-stream-with-owned-roll-gem-tables-conditional-rules-and-page-continuation"
         },
         "focusedTests": {
-          "command": "SRD51_SOURCE_PDF=/tmp/SRD_CC_v5.1.pdf node --test --test-concurrency=1 tests/items-srd51-source.test.mjs tests/items-srd51-bags.test.mjs tests/items-srd51-b-section.test.mjs tests/items-srd51-c-section.test.mjs tests/items-srd51-d-section.test.mjs tests/items-srd51-e-section.test.mjs",
+          "command": "SRD51_SOURCE_PDF=/tmp/SRD_CC_v5.1.pdf node --test --test-concurrency=1 tests/catalog/items-srd51-source.test.mjs tests/catalog/items-srd51-bags.test.mjs tests/catalog/items-srd51-b-section.test.mjs tests/catalog/items-srd51-c-section.test.mjs tests/catalog/items-srd51-d-section.test.mjs tests/catalog/items-srd51-e-section.test.mjs",
           "passed": 191,
           "failed": 0,
           "skipped": 0
@@ -1087,7 +1087,7 @@
         "state": "planned",
         "evidence": [
           "docs/plans/maps/room-groups.md",
-          "tests/desktop-room-groups.test.mjs",
+          "tests/atlas/desktop-room-groups.test.mjs",
           "tools/test-desktop-room-groups.mjs",
           "tools/measure-room-groups.mjs"
         ]
@@ -4934,7 +4934,7 @@
     },
     "buildingNameContribution": {
       "issue": 92,
-      "source": "src/ui/atlas-city-building-panel.ts + src/features/atlas/atlas-editor.ts + src/features/city/edit.ts",
+      "source": "src/legacy/obsidian/ui/atlas-city-building-panel.ts + src/features/atlas/atlas-editor.ts + src/features/city/edit.ts",
       "checks": "2 core countercases and 3 managed DOM cases PASS; exact name/geometry/IDs; shared UndoRedo, native Save/model reopen; invalid/stale/ABA/revoked context and detached old callbacks fail closed",
       "remaining": "PR106 review/integration and GM6105037427 Save/navigation reuse consumed. GM6105664357 adds fresh-process/search/name reuse/second Save on eaf6bd9 and Apply/Discard Enter focus/next Tab on a4c2cb3. PR120 head1262cbf7 has eight durable pictures checked visually and by SHA-256 by City. Semantic after-save file comparison remains tester report, no raw after payloads; no launcher exitcode. Direct-Save focus native check, physical/broad Recovery/full parity remain open.",
       "inspectorReview": "R02 PASS5481432379 on0315b13, Exact-SHA CI38100640175 SUCCESS; no required finding; helper changes do not alter product source",
@@ -4952,7 +4952,7 @@
     },
     "buildingRotationContribution": {
       "issue": 127,
-      "source": "src/ui/atlas-city-building-panel.ts; existing CityEdit set-building-pose",
+      "source": "src/legacy/obsidian/ui/atlas-city-building-panel.ts; existing CityEdit set-building-pose",
       "checks": "Centered-pivot fix: two independent world-space regressions FAIL before/PASS after, complete linked-house/courtyard preservation, shared UndoRedo, exact native Save and new model reopen. Existing pending-name/stale/gesture precision tests PASS. Full suite1084 PASS/0 FAIL/1 optional skip; type/build/repo/diff PASS.",
       "remaining": "Product R01 and Shared25792fb integration consumed. H02 native centered house106 turn/Save/separate Fresh PASS on QA92e4b82/build08537145; portable receipt docs/reference/city-building-rotation-h02/receipt.json. Six foreign spatial bytes retained and full Campaign semantically checked except expected City/registry digest/revision fields. H01 Campaign preservation claim withdrawn; originals unchanged. Narrow H02 QA review, free GM/physical/House105 native/broad Recovery/full parity remain open."
     }
@@ -13336,7 +13336,7 @@
         },
         "landscapeToolExpansion20261019": {
           "implementation": "docs/plans/maps/landscape-tools.md",
-          "automatedProbe": "tests/desktop-landscape-tools.test.mjs",
+          "automatedProbe": "tests/atlas/desktop-landscape-tools.test.mjs",
           "nativeProbe": "tools/test-desktop-landscape-tools.mjs",
           "comparisonState": "original_effect_comparison_open"
         }
@@ -13399,7 +13399,7 @@
         },
         "landscapeToolExpansion20261019": {
           "implementation": "docs/plans/maps/landscape-tools.md",
-          "automatedProbe": "tests/desktop-landscape-tools.test.mjs",
+          "automatedProbe": "tests/atlas/desktop-landscape-tools.test.mjs",
           "nativeProbe": "tools/test-desktop-landscape-tools.mjs",
           "comparisonState": "original_effect_comparison_open"
         }
@@ -13462,7 +13462,7 @@
         },
         "landscapeToolExpansion20261019": {
           "implementation": "docs/plans/maps/landscape-tools.md",
-          "automatedProbe": "tests/desktop-landscape-tools.test.mjs",
+          "automatedProbe": "tests/atlas/desktop-landscape-tools.test.mjs",
           "nativeProbe": "tools/test-desktop-landscape-tools.mjs",
           "comparisonState": "original_effect_comparison_open"
         }
@@ -13525,7 +13525,7 @@
         },
         "landscapeToolExpansion20261019": {
           "implementation": "docs/plans/maps/landscape-tools.md",
-          "automatedProbe": "tests/desktop-landscape-tools.test.mjs",
+          "automatedProbe": "tests/atlas/desktop-landscape-tools.test.mjs",
           "nativeProbe": "tools/test-desktop-landscape-tools.mjs",
           "comparisonState": "original_effect_comparison_open"
         }
@@ -14480,7 +14480,7 @@
         },
         "landscapeToolExpansion20261019": {
           "implementation": "docs/plans/maps/landscape-tools.md",
-          "automatedProbe": "tests/desktop-landscape-tools.test.mjs",
+          "automatedProbe": "tests/atlas/desktop-landscape-tools.test.mjs",
           "nativeProbe": "tools/test-desktop-landscape-tools.mjs",
           "comparisonState": "original_effect_comparison_open"
         }
@@ -14544,7 +14544,7 @@
         },
         "landscapeToolExpansion20261019": {
           "implementation": "docs/plans/maps/landscape-tools.md",
-          "automatedProbe": "tests/desktop-landscape-tools.test.mjs",
+          "automatedProbe": "tests/atlas/desktop-landscape-tools.test.mjs",
           "nativeProbe": "tools/test-desktop-landscape-tools.mjs",
           "comparisonState": "original_effect_comparison_open"
         }
@@ -14607,7 +14607,7 @@
         },
         "landscapeToolExpansion20261019": {
           "implementation": "docs/plans/maps/landscape-tools.md",
-          "automatedProbe": "tests/desktop-landscape-tools.test.mjs",
+          "automatedProbe": "tests/atlas/desktop-landscape-tools.test.mjs",
           "nativeProbe": "tools/test-desktop-landscape-tools.mjs",
           "comparisonState": "original_effect_comparison_open"
         }
@@ -14670,7 +14670,7 @@
         },
         "landscapeToolExpansion20261019": {
           "implementation": "docs/plans/maps/landscape-tools.md",
-          "automatedProbe": "tests/desktop-landscape-tools.test.mjs",
+          "automatedProbe": "tests/atlas/desktop-landscape-tools.test.mjs",
           "nativeProbe": "tools/test-desktop-landscape-tools.mjs",
           "comparisonState": "original_effect_comparison_open"
         }
@@ -14731,7 +14731,7 @@
         },
         "landscapeToolExpansion20261019": {
           "implementation": "docs/plans/maps/landscape-tools.md",
-          "automatedProbe": "tests/desktop-landscape-tools.test.mjs",
+          "automatedProbe": "tests/atlas/desktop-landscape-tools.test.mjs",
           "nativeProbe": "tools/test-desktop-landscape-tools.mjs",
           "comparisonState": "original_effect_comparison_open"
         }
@@ -14792,7 +14792,7 @@
         },
         "landscapeToolExpansion20261019": {
           "implementation": "docs/plans/maps/landscape-tools.md",
-          "automatedProbe": "tests/desktop-landscape-tools.test.mjs",
+          "automatedProbe": "tests/atlas/desktop-landscape-tools.test.mjs",
           "nativeProbe": "tools/test-desktop-landscape-tools.mjs",
           "comparisonState": "original_effect_comparison_open"
         }
@@ -14853,7 +14853,7 @@
         },
         "landscapeToolExpansion20261019": {
           "implementation": "docs/plans/maps/landscape-tools.md",
-          "automatedProbe": "tests/desktop-landscape-tools.test.mjs",
+          "automatedProbe": "tests/atlas/desktop-landscape-tools.test.mjs",
           "nativeProbe": "tools/test-desktop-landscape-tools.mjs",
           "comparisonState": "original_effect_comparison_open"
         }
@@ -14914,7 +14914,7 @@
         },
         "landscapeToolExpansion20261019": {
           "implementation": "docs/plans/maps/landscape-tools.md",
-          "automatedProbe": "tests/desktop-landscape-tools.test.mjs",
+          "automatedProbe": "tests/atlas/desktop-landscape-tools.test.mjs",
           "nativeProbe": "tools/test-desktop-landscape-tools.mjs",
           "comparisonState": "original_effect_comparison_open"
         }
@@ -14991,7 +14991,7 @@
         },
         "landscapeToolExpansion20261019": {
           "implementation": "docs/plans/maps/landscape-tools.md",
-          "automatedProbe": "tests/desktop-landscape-tools.test.mjs",
+          "automatedProbe": "tests/atlas/desktop-landscape-tools.test.mjs",
           "nativeProbe": "tools/test-desktop-landscape-tools.mjs",
           "comparisonState": "original_effect_comparison_open"
         }
@@ -15075,7 +15075,7 @@
         },
         "landscapeToolExpansion20261019": {
           "implementation": "docs/plans/maps/landscape-tools.md",
-          "automatedProbe": "tests/desktop-landscape-tools.test.mjs",
+          "automatedProbe": "tests/atlas/desktop-landscape-tools.test.mjs",
           "nativeProbe": "tools/test-desktop-landscape-tools.mjs",
           "comparisonState": "original_effect_comparison_open"
         }
@@ -15136,7 +15136,7 @@
         },
         "landscapeToolExpansion20261019": {
           "implementation": "docs/plans/maps/landscape-tools.md",
-          "automatedProbe": "tests/desktop-landscape-tools.test.mjs",
+          "automatedProbe": "tests/atlas/desktop-landscape-tools.test.mjs",
           "nativeProbe": "tools/test-desktop-landscape-tools.mjs",
           "comparisonState": "original_effect_comparison_open"
         }
@@ -15418,7 +15418,7 @@
         },
         "landscapeToolExpansion20261019": {
           "implementation": "docs/plans/maps/landscape-tools.md",
-          "automatedProbe": "tests/desktop-landscape-tools.test.mjs",
+          "automatedProbe": "tests/atlas/desktop-landscape-tools.test.mjs",
           "nativeProbe": "tools/test-desktop-landscape-tools.mjs",
           "comparisonState": "original_effect_comparison_open"
         }
@@ -15693,7 +15693,7 @@
         },
         "landscapeToolExpansion20261019": {
           "implementation": "docs/plans/maps/landscape-tools.md",
-          "automatedProbe": "tests/desktop-landscape-tools.test.mjs",
+          "automatedProbe": "tests/atlas/desktop-landscape-tools.test.mjs",
           "nativeProbe": "tools/test-desktop-landscape-tools.mjs",
           "comparisonState": "original_effect_comparison_open"
         }
@@ -25215,7 +25215,7 @@
         "implementation": {
           "state": "installed_partial",
           "changes": [
-            "src/editor.ts"
+            "src/legacy/obsidian/editor.ts"
           ],
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/phase1-room-qa/installed/evidence/1791295816699-phase1-room-edit/phase1-room.json",
@@ -25255,7 +25255,7 @@
         "implementation": {
           "state": "installed_partial",
           "changes": [
-            "src/editor.ts"
+            "src/legacy/obsidian/editor.ts"
           ],
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/phase1-room-qa/installed/evidence/1791295816699-phase1-room-edit/phase1-room.json",
@@ -26248,8 +26248,8 @@
         "implementation": {
           "state": "candidate_partial_uninstalled",
           "changes": [
-            "src/editor.ts",
-            "src/renderer.ts",
+            "src/legacy/obsidian/editor.ts",
+            "src/legacy/obsidian/renderer.ts",
             "src/features/bau/building-point-gestures.ts"
           ],
           "evidence": [
@@ -26309,8 +26309,8 @@
         "implementation": {
           "state": "candidate_partial_uninstalled",
           "changes": [
-            "src/editor.ts",
-            "src/renderer.ts",
+            "src/legacy/obsidian/editor.ts",
+            "src/legacy/obsidian/renderer.ts",
             "src/features/bau/building-point-gestures.ts",
             "src/features/bau/building-edge-portal-preview.ts"
           ],
@@ -27872,8 +27872,8 @@
         "implementation": {
           "state": "candidate_partial_uninstalled",
           "changes": [
-            "src/editor.ts",
-            "src/renderer.ts",
+            "src/legacy/obsidian/editor.ts",
+            "src/legacy/obsidian/renderer.ts",
             "src/features/bau/free-portal-placement.ts"
           ],
           "evidence": [
@@ -28006,8 +28006,8 @@
         "implementation": {
           "state": "candidate_partial_uninstalled",
           "changes": [
-            "src/editor.ts",
-            "src/renderer.ts",
+            "src/legacy/obsidian/editor.ts",
+            "src/legacy/obsidian/renderer.ts",
             "src/features/bau/portal-wheel.ts"
           ],
           "evidence": [
@@ -28046,8 +28046,8 @@
         "implementation": {
           "state": "candidate_partial_uninstalled",
           "changes": [
-            "src/editor.ts",
-            "src/renderer.ts",
+            "src/legacy/obsidian/editor.ts",
+            "src/legacy/obsidian/renderer.ts",
             "src/features/bau/portal-wheel.ts"
           ],
           "evidence": [
@@ -28088,8 +28088,8 @@
         "implementation": {
           "state": "candidate_partial_uninstalled",
           "changes": [
-            "src/editor.ts",
-            "src/renderer.ts",
+            "src/legacy/obsidian/editor.ts",
+            "src/legacy/obsidian/renderer.ts",
             "src/features/bau/portal-wheel.ts"
           ],
           "evidence": [
@@ -28471,7 +28471,7 @@
         "implementation": {
           "state": "candidate_partial_uninstalled",
           "changes": [
-            "src/properties.ts",
+            "src/legacy/obsidian/properties.ts",
             "src/features/bau/cave-ground-override.ts"
           ],
           "evidence": [
@@ -28564,7 +28564,7 @@
           "state": "candidate_partial_uninstalled",
           "changes": [
             "src/features/bau/cave-wall-override.ts",
-            "src/properties.ts"
+            "src/legacy/obsidian/properties.ts"
           ],
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-019-11-DD-024-08-10-24-FOCUSED-HOST-20261006.md"
@@ -29176,7 +29176,7 @@
           "state": "installed_verified",
           "changes": [
             "src/features/material/pattern-appearance.ts",
-            "src/properties.ts"
+            "src/legacy/obsidian/properties.ts"
           ],
           "evidence": [
             "tests/material-pattern.test.ts",
@@ -29487,8 +29487,8 @@
         "implementation": {
           "state": "installed_partial",
           "changes": [
-            "src/editor.ts",
-            "src/renderer.ts",
+            "src/legacy/obsidian/editor.ts",
+            "src/legacy/obsidian/renderer.ts",
             "Pfadplatzierung und native Textur erst nach Abschluss"
           ],
           "evidence": [
@@ -29698,8 +29698,8 @@
         "implementation": {
           "state": "candidate_partial_uninstalled",
           "changes": [
-            "src/properties.ts",
-            "src/renderer.ts",
+            "src/legacy/obsidian/properties.ts",
+            "src/legacy/obsidian/renderer.ts",
             "src/features/material/path-texture-band.ts"
           ],
           "evidence": [
@@ -30150,9 +30150,9 @@
           "state": "installed_partial",
           "changes": [
             "src/features/material/native-path-catalog.ts",
-            "src/main.ts",
-            "src/properties.ts",
-            "src/renderer.ts",
+            "src/legacy/obsidian/main.ts",
+            "src/legacy/obsidian/properties.ts",
+            "src/legacy/obsidian/renderer.ts",
             "verifizierte Original-PCK, native Pfadbibliothek und gerichteter Texturstreifen installiert"
           ],
           "evidence": [
@@ -30409,7 +30409,7 @@
         "implementation": {
           "state": "installed_verified",
           "changes": [
-            "src/editor.ts",
+            "src/legacy/obsidian/editor.ts",
             "eingebaute Battlements-Quelle und Pfad-History im installierten Plugin"
           ],
           "evidence": [
@@ -30465,7 +30465,7 @@
           "state": "installed_partial",
           "changes": [
             "src/features/material/native-path-catalog.ts",
-            "src/renderer.ts",
+            "src/legacy/obsidian/renderer.ts",
             "verifizierte Original-PCK, native Pfadbibliothek und gerichteter Texturstreifen installiert"
           ],
           "evidence": [
@@ -30533,7 +30533,7 @@
         "implementation": {
           "state": "installed_verified",
           "changes": [
-            "src/properties.ts",
+            "src/legacy/obsidian/properties.ts",
             "eingebaute Pfadbibliothek und Return-Suche im installierten Plugin"
           ],
           "evidence": [
@@ -30657,7 +30657,7 @@
           "changes": [
             "src/features/material/path-library-search.ts",
             "src/features/material/path-library-view.ts",
-            "src/properties.ts",
+            "src/legacy/obsidian/properties.ts",
             "tools/host-test.cjs"
           ],
           "evidence": [
@@ -32103,7 +32103,7 @@
             "src/features/material/native-terrain-biomes.ts",
             "src/features/material/terrain-biome-floor.ts",
             "src/features/material/terrain-biome-command.ts",
-            "src/properties.ts",
+            "src/legacy/obsidian/properties.ts",
             "src/session.ts"
           ],
           "evidence": [
@@ -32242,8 +32242,8 @@
           "changes": [
             "src/terrain.ts",
             "src/features/material/terrain-slot-choice.ts",
-            "src/properties.ts",
-            "src/renderer.ts"
+            "src/legacy/obsidian/properties.ts",
+            "src/legacy/obsidian/renderer.ts"
           ],
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-019-11-DD-024-08-10-24-FOCUSED-HOST-20261006.md",
@@ -32372,12 +32372,12 @@
         "implementation": {
           "state": "candidate_partial_uninstalled",
           "changes": [
-            "src/properties.ts",
+            "src/legacy/obsidian/properties.ts",
             "src/features/material/terrain-fill.ts",
             "src/features/material/terrain-fill-command.ts",
             "src/terrain.ts",
             "src/features/material/terrain-composite.ts",
-            "src/renderer.ts"
+            "src/legacy/obsidian/renderer.ts"
           ],
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-019-024-027-FOCUSED-HOST-20261006.md",
@@ -32451,8 +32451,8 @@
             "src/terrain.ts",
             "src/features/material/terrain-slot-choice.ts",
             "src/features/material/terrain-composite.ts",
-            "src/properties.ts",
-            "src/renderer.ts"
+            "src/legacy/obsidian/properties.ts",
+            "src/legacy/obsidian/renderer.ts"
           ],
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-024-11-SMOOTH-BLEND-CANDIDATE-20261006.md",
@@ -32844,7 +32844,7 @@
           "changes": [
             "src/features/material/native-material-catalog.ts",
             "src/features/material/native-material-assets.ts",
-            "src/main.ts"
+            "src/legacy/obsidian/main.ts"
           ],
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-025-06-FOCUSED-HOST-20261006.md"
@@ -33772,7 +33772,7 @@
             "src/features/material/native-terrain-biomes.ts",
             "src/features/material/terrain-biome-floor.ts",
             "src/features/material/terrain-biome-command.ts",
-            "src/properties.ts",
+            "src/legacy/obsidian/properties.ts",
             "src/session.ts"
           ],
           "evidence": [
@@ -33832,7 +33832,7 @@
             "src/features/material/native-terrain-biomes.ts",
             "src/features/material/terrain-biome-floor.ts",
             "src/features/material/terrain-biome-command.ts",
-            "src/properties.ts",
+            "src/legacy/obsidian/properties.ts",
             "src/session.ts"
           ],
           "evidence": [
@@ -33892,7 +33892,7 @@
             "src/features/material/native-terrain-biomes.ts",
             "src/features/material/terrain-biome-floor.ts",
             "src/features/material/terrain-biome-command.ts",
-            "src/properties.ts",
+            "src/legacy/obsidian/properties.ts",
             "src/session.ts"
           ],
           "evidence": [
@@ -33952,7 +33952,7 @@
             "src/features/material/native-terrain-biomes.ts",
             "src/features/material/terrain-biome-floor.ts",
             "src/features/material/terrain-biome-command.ts",
-            "src/properties.ts",
+            "src/legacy/obsidian/properties.ts",
             "src/session.ts"
           ],
           "evidence": [
@@ -34012,7 +34012,7 @@
             "src/features/material/native-terrain-biomes.ts",
             "src/features/material/terrain-biome-floor.ts",
             "src/features/material/terrain-biome-command.ts",
-            "src/properties.ts",
+            "src/legacy/obsidian/properties.ts",
             "src/session.ts"
           ],
           "evidence": [
@@ -34072,7 +34072,7 @@
             "src/features/material/native-terrain-biomes.ts",
             "src/features/material/terrain-biome-floor.ts",
             "src/features/material/terrain-biome-command.ts",
-            "src/properties.ts",
+            "src/legacy/obsidian/properties.ts",
             "src/session.ts"
           ],
           "evidence": [
@@ -34188,8 +34188,8 @@
             "src/terrain.ts",
             "src/features/material/terrain-slot-choice.ts",
             "src/features/material/terrain-composite.ts",
-            "src/properties.ts",
-            "src/renderer.ts"
+            "src/legacy/obsidian/properties.ts",
+            "src/legacy/obsidian/renderer.ts"
           ],
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-019-11-DD-024-08-10-24-FOCUSED-HOST-20261006.md",
@@ -34439,7 +34439,7 @@
         "implementation": {
           "state": "installed_verified",
           "changes": [
-            "src/editor.ts",
+            "src/legacy/obsidian/editor.ts",
             "eingebaute Battlements-Quelle und Pfad-History im installierten Plugin"
           ],
           "evidence": [
@@ -35793,8 +35793,8 @@
         "implementation": {
           "state": "installed_partial",
           "changes": [
-            "src/editor.ts",
-            "src/renderer.ts",
+            "src/legacy/obsidian/editor.ts",
+            "src/legacy/obsidian/renderer.ts",
             "src/features/objekte/object-cursor-preview.ts",
             "tools/host-test.cjs"
           ],
@@ -35862,13 +35862,13 @@
         "implementation": {
           "state": "installed_partial",
           "changes": [
-            "src/editor.ts",
+            "src/legacy/obsidian/editor.ts",
             "src/model.ts",
-            "src/properties.ts",
+            "src/legacy/obsidian/properties.ts",
             "src/features/objekte/native-object-placement.ts",
             "src/features/objekte/native-object-catalog.ts",
             "src/assets.ts",
-            "src/renderer.ts",
+            "src/legacy/obsidian/renderer.ts",
             "tools/host-test.cjs"
           ],
           "evidence": [
@@ -36163,8 +36163,8 @@
         "implementation": {
           "state": "phase6_candidate_implemented",
           "changes": [
-            "src/editor.ts",
-            "src/properties.ts",
+            "src/legacy/obsidian/editor.ts",
+            "src/legacy/obsidian/properties.ts",
             "src/features/objekte/object-shift-wheel-cycle.ts",
             "Phase-6-Object-Tool-Geste im Canvas und in der Bibliothek an die direkt gemessene Originalfolge angeschlossen."
           ],
@@ -36230,7 +36230,7 @@
         "implementation": {
           "state": "phase6_candidate_implemented",
           "changes": [
-            "src/editor.ts",
+            "src/legacy/obsidian/editor.ts",
             "src/features/objekte/object-modifier-release.ts",
             "Phase-6-Object-Tool-Geste im Canvas und in der Bibliothek an die direkt gemessene Originalfolge angeschlossen."
           ],
@@ -36302,7 +36302,7 @@
         "implementation": {
           "state": "phase6_candidate_implemented",
           "changes": [
-            "src/editor.ts",
+            "src/legacy/obsidian/editor.ts",
             "src/features/objekte/object-right-click-rotation.ts",
             "Phase-6-Object-Tool-Geste im Canvas und in der Bibliothek an die direkt gemessene Originalfolge angeschlossen."
           ],
@@ -36367,7 +36367,7 @@
         "implementation": {
           "state": "phase6_candidate_implemented",
           "changes": [
-            "src/editor.ts",
+            "src/legacy/obsidian/editor.ts",
             "src/features/objekte/object-modifier-release.ts",
             "Phase-6-Object-Tool-Geste im Canvas und in der Bibliothek an die direkt gemessene Originalfolge angeschlossen."
           ],
@@ -36432,7 +36432,7 @@
         "implementation": {
           "state": "installed_partial",
           "changes": [
-            "src/editor.ts",
+            "src/legacy/obsidian/editor.ts",
             "src/session.ts",
             "tools/host-test.cjs"
           ],
@@ -36721,9 +36721,9 @@
         "implementation": {
           "state": "candidate_partial_uninstalled",
           "changes": [
-            "src/properties.ts",
+            "src/legacy/obsidian/properties.ts",
             "src/commands.ts",
-            "src/main.ts",
+            "src/legacy/obsidian/main.ts",
             "src/features/objekte/scatter-rotation-migration.ts",
             "src/features/objekte/scatter-preview-consumption.ts"
           ],
@@ -36782,9 +36782,9 @@
         "implementation": {
           "state": "candidate_partial_uninstalled",
           "changes": [
-            "src/properties.ts",
+            "src/legacy/obsidian/properties.ts",
             "src/commands.ts",
-            "src/main.ts",
+            "src/legacy/obsidian/main.ts",
             "src/features/objekte/scatter-rotation-migration.ts",
             "src/features/objekte/scatter-preview-consumption.ts"
           ],
@@ -36960,7 +36960,7 @@
           "changes": [
             "src/commands.ts",
             "src/features/objekte/scatter-spread.ts",
-            "src/properties.ts"
+            "src/legacy/obsidian/properties.ts"
           ],
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-019-024-027-FOCUSED-HOST-20261006.md"
@@ -37716,10 +37716,10 @@
           "state": "installed_verified",
           "changes": [
             "src/model.ts",
-            "src/properties.ts",
+            "src/legacy/obsidian/properties.ts",
             "src/commands.ts",
             "src/assets.ts",
-            "src/renderer.ts",
+            "src/legacy/obsidian/renderer.ts",
             "src/textures.ts",
             "src/features/objekte/color-alpha.ts",
             "src/features/objekte/colorable-tags.ts",
@@ -37728,7 +37728,7 @@
             "Colorable-Bibliothekskachel zeigt RGBA live und nach Panel-Neuaufbau"
           ],
           "evidence": [
-            "tests/object-color-alpha.test.mjs",
+            "tests/atlas/object-color-alpha.test.mjs",
             "tests/object-colorable-tags.test.mjs",
             "tests/object-colorable-pixels.test.mjs",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/object-colorable-final/evidence/1791183820309-object-alpha-edit/result.json",
@@ -37988,17 +37988,17 @@
           "state": "installed_verified",
           "changes": [
             "src/model.ts",
-            "src/properties.ts",
+            "src/legacy/obsidian/properties.ts",
             "src/commands.ts",
             "src/assets.ts",
-            "src/renderer.ts",
+            "src/legacy/obsidian/renderer.ts",
             "src/textures.ts",
             "src/features/objekte/color-alpha.ts",
             "src/features/objekte/colorable-tags.ts",
             "src/features/objekte/colorable-pixels.ts"
           ],
           "evidence": [
-            "tests/object-color-alpha.test.mjs",
+            "tests/atlas/object-color-alpha.test.mjs",
             "tests/object-colorable-tags.test.mjs",
             "tests/object-colorable-pixels.test.mjs",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/object-colorable-final/evidence/1791183820309-object-alpha-edit/result.json",
@@ -38051,17 +38051,17 @@
           "state": "installed_verified",
           "changes": [
             "src/model.ts",
-            "src/properties.ts",
+            "src/legacy/obsidian/properties.ts",
             "src/commands.ts",
             "src/assets.ts",
-            "src/renderer.ts",
+            "src/legacy/obsidian/renderer.ts",
             "src/textures.ts",
             "src/features/objekte/color-alpha.ts",
             "src/features/objekte/colorable-tags.ts",
             "src/features/objekte/colorable-pixels.ts"
           ],
           "evidence": [
-            "tests/object-color-alpha.test.mjs",
+            "tests/atlas/object-color-alpha.test.mjs",
             "tests/object-colorable-tags.test.mjs",
             "tests/object-colorable-pixels.test.mjs",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/object-colorable-final/evidence/1791183820309-object-alpha-edit/result.json",
@@ -38424,10 +38424,10 @@
           "state": "candidate_partial_uninstalled",
           "changes": [
             "src/features/objekte/light-wheel.ts",
-            "src/properties.ts",
-            "src/editor.ts",
+            "src/legacy/obsidian/properties.ts",
+            "src/legacy/obsidian/editor.ts",
             "src/commands.ts",
-            "src/renderer.ts"
+            "src/legacy/obsidian/renderer.ts"
           ],
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-029-02-13-14-ORIGINAL-20261006.md",
@@ -38795,10 +38795,10 @@
           "state": "candidate_partial_uninstalled",
           "changes": [
             "src/features/objekte/light-wheel.ts",
-            "src/properties.ts",
-            "src/editor.ts",
+            "src/legacy/obsidian/properties.ts",
+            "src/legacy/obsidian/editor.ts",
             "src/commands.ts",
-            "src/renderer.ts"
+            "src/legacy/obsidian/renderer.ts"
           ],
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-029-02-13-14-ORIGINAL-20261006.md",
@@ -38857,10 +38857,10 @@
           "state": "candidate_partial_uninstalled",
           "changes": [
             "src/features/objekte/light-wheel.ts",
-            "src/properties.ts",
-            "src/editor.ts",
+            "src/legacy/obsidian/properties.ts",
+            "src/legacy/obsidian/editor.ts",
             "src/commands.ts",
-            "src/renderer.ts"
+            "src/legacy/obsidian/renderer.ts"
           ],
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-029-02-13-14-ORIGINAL-20261006.md",
@@ -40871,7 +40871,7 @@
         "implementation": {
           "state": "installed_verified",
           "changes": [
-            "release/dd04209-inline:src/main.ts"
+            "release/dd04209-inline:src/legacy/obsidian/main.ts"
           ],
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd04209/RELEASE-ACCEPTANCE.md",
@@ -40968,7 +40968,7 @@
         "implementation": {
           "state": "installed_verified",
           "changes": [
-            "src/editor.ts"
+            "src/legacy/obsidian/editor.ts"
           ],
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd04212/RELEASE-ACCEPTANCE.md",
@@ -41016,7 +41016,7 @@
         "implementation": {
           "state": "installed_verified",
           "changes": [
-            "src/editor.ts"
+            "src/legacy/obsidian/editor.ts"
           ],
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd04212/RELEASE-ACCEPTANCE.md",
@@ -41250,8 +41250,8 @@
           "state": "installed_verified",
           "changes": [
             "src/features/objekte/prefab-forget.ts",
-            "src/editor.ts",
-            "src/main.ts",
+            "src/legacy/obsidian/editor.ts",
+            "src/legacy/obsidian/main.ts",
             "styles.css"
           ],
           "evidence": [
@@ -42488,10 +42488,10 @@
         "implementation": {
           "state": "installed_verified",
           "changes": [
-            "candidate/dd039-map-info:src/editor.ts",
-            "candidate/dd039-map-info:src/main.ts",
-            "release/dd039-only:src/editor.ts",
-            "release/dd039-only:src/main.ts"
+            "candidate/dd039-map-info:src/legacy/obsidian/editor.ts",
+            "candidate/dd039-map-info:src/legacy/obsidian/main.ts",
+            "release/dd039-only:src/legacy/obsidian/editor.ts",
+            "release/dd039-only:src/legacy/obsidian/main.ts"
           ],
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/map-information-release.md",
@@ -43158,7 +43158,7 @@
         "implementation": {
           "state": "installed_verified",
           "changes": [
-            "src/main.ts",
+            "src/legacy/obsidian/main.ts",
             "src/features/verwaltung/new-map-size.ts"
           ],
           "evidence": [
@@ -43291,7 +43291,7 @@
         "implementation": {
           "state": "installed_verified",
           "changes": [
-            "src/main.ts"
+            "src/legacy/obsidian/main.ts"
           ],
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd001002/RELEASE-ACCEPTANCE.md",
@@ -47108,8 +47108,8 @@
           "state": "candidate_partial_uninstalled",
           "changes": [
             "src/features/verwaltung/grid-presets.ts",
-            "src/features/verwaltung/export-dialog.ts",
-            "src/main.ts",
+            "src/legacy/obsidian/features/verwaltung/export-dialog.ts",
+            "src/legacy/obsidian/main.ts",
             "Exportdialog speichert Preset/PPI beim Schließen; Laufzeit erhält die Presetwahl, Prozessneustart zeigt Custom beim gespeicherten PPI."
           ],
           "evidence": [
@@ -47186,8 +47186,8 @@
           "state": "candidate_partial_uninstalled",
           "changes": [
             "src/features/verwaltung/grid-presets.ts",
-            "src/features/verwaltung/export-dialog.ts",
-            "src/main.ts"
+            "src/legacy/obsidian/features/verwaltung/export-dialog.ts",
+            "src/legacy/obsidian/main.ts"
           ],
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD04313-PRESET-PERSISTENCE-HOST-20261006.md"
@@ -47257,8 +47257,8 @@
           "state": "installed_partial",
           "changes": [
             "src/features/verwaltung/grid-presets.ts",
-            "src/features/verwaltung/export-dialog.ts",
-            "src/main.ts",
+            "src/legacy/obsidian/features/verwaltung/export-dialog.ts",
+            "src/legacy/obsidian/main.ts",
             "Installierter Release belegt 8×8 bei 256, 128, 300 und 96 Pixel/Feld samt direkter Maßreaktion; 128-PNG misst 1024×1024. Crop fehlt."
           ],
           "evidence": [
@@ -48147,8 +48147,8 @@
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/src/session.ts",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/src/commands.ts",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/src/main.ts",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/tests/core.test.ts",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/src/legacy/obsidian/main.ts",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/tests/shared/core.test.ts",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-038-TERRAIN-RESIZE-NATIVE-STATIC.md",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-024-REVIEW-FOLLOWUP-20261006.md",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/src/features/material/terrain-mask-resize.ts",
@@ -48266,10 +48266,10 @@
         "implementation": {
           "state": "installed_verified",
           "changes": [
-            "candidate/dd039-map-info:src/editor.ts",
-            "candidate/dd039-map-info:src/main.ts",
-            "release/dd039-only:src/editor.ts",
-            "release/dd039-only:src/main.ts"
+            "candidate/dd039-map-info:src/legacy/obsidian/editor.ts",
+            "candidate/dd039-map-info:src/legacy/obsidian/main.ts",
+            "release/dd039-only:src/legacy/obsidian/editor.ts",
+            "release/dd039-only:src/legacy/obsidian/main.ts"
           ],
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/map-information-release.md",
@@ -48369,10 +48369,10 @@
         "implementation": {
           "state": "installed_verified",
           "changes": [
-            "candidate/dd039-map-info:src/editor.ts",
-            "candidate/dd039-map-info:src/main.ts",
-            "release/dd039-only:src/editor.ts",
-            "release/dd039-only:src/main.ts"
+            "candidate/dd039-map-info:src/legacy/obsidian/editor.ts",
+            "candidate/dd039-map-info:src/legacy/obsidian/main.ts",
+            "release/dd039-only:src/legacy/obsidian/editor.ts",
+            "release/dd039-only:src/legacy/obsidian/main.ts"
           ],
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/map-information-release.md",
@@ -48471,10 +48471,10 @@
         "implementation": {
           "state": "installed_verified",
           "changes": [
-            "candidate/dd039-map-info:src/editor.ts",
-            "candidate/dd039-map-info:src/main.ts",
-            "release/dd039-only:src/editor.ts",
-            "release/dd039-only:src/main.ts"
+            "candidate/dd039-map-info:src/legacy/obsidian/editor.ts",
+            "candidate/dd039-map-info:src/legacy/obsidian/main.ts",
+            "release/dd039-only:src/legacy/obsidian/editor.ts",
+            "release/dd039-only:src/legacy/obsidian/main.ts"
           ],
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/map-information-release.md",
@@ -48574,10 +48574,10 @@
         "implementation": {
           "state": "installed_verified",
           "changes": [
-            "candidate/dd039-map-info:src/editor.ts",
-            "candidate/dd039-map-info:src/main.ts",
-            "release/dd039-only:src/editor.ts",
-            "release/dd039-only:src/main.ts"
+            "candidate/dd039-map-info:src/legacy/obsidian/editor.ts",
+            "candidate/dd039-map-info:src/legacy/obsidian/main.ts",
+            "release/dd039-only:src/legacy/obsidian/editor.ts",
+            "release/dd039-only:src/legacy/obsidian/main.ts"
           ],
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/map-information-release.md",
@@ -50161,8 +50161,8 @@
         "implementation": {
           "state": "installed_partial",
           "changes": [
-            "src/editor.ts",
-            "src/renderer.ts"
+            "src/legacy/obsidian/editor.ts",
+            "src/legacy/obsidian/renderer.ts"
           ],
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd041-host/evidence/1791189319550-dd041-navigation-edit/dd041-navigation-result.json",
@@ -50203,8 +50203,8 @@
         "implementation": {
           "state": "installed_partial",
           "changes": [
-            "src/editor.ts",
-            "src/renderer.ts"
+            "src/legacy/obsidian/editor.ts",
+            "src/legacy/obsidian/renderer.ts"
           ],
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd041-host/evidence/1791189319550-dd041-navigation-edit/dd041-navigation-result.json",
@@ -50245,7 +50245,7 @@
           "state": "installed_partial",
           "changes": [
             "src/navigation.ts",
-            "src/editor.ts"
+            "src/legacy/obsidian/editor.ts"
           ],
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd041-host/evidence/1791189319550-dd041-navigation-edit/dd041-navigation-result.json",
@@ -51527,10 +51527,10 @@
         "implementation": {
           "state": "installed_verified",
           "changes": [
-            "candidate/dd039-map-info:src/editor.ts",
-            "candidate/dd039-map-info:src/main.ts",
-            "release/dd039-only:src/editor.ts",
-            "release/dd039-only:src/main.ts"
+            "candidate/dd039-map-info:src/legacy/obsidian/editor.ts",
+            "candidate/dd039-map-info:src/legacy/obsidian/main.ts",
+            "release/dd039-only:src/legacy/obsidian/editor.ts",
+            "release/dd039-only:src/legacy/obsidian/main.ts"
           ],
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/map-information-release.md",
@@ -51912,7 +51912,7 @@
         "implementation": {
           "state": "installed_verified",
           "changes": [
-            "src/main.ts"
+            "src/legacy/obsidian/main.ts"
           ],
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd001002/RELEASE-ACCEPTANCE.md",
@@ -52497,7 +52497,7 @@
         "catalog": "ROADMAP-E2E-GATES-CANDIDATE.md:13",
         "evidence": [
           "tests/fixtures/atlas-e2e-components-v1/manifest.json",
-          "tests/core/atlas-e2e-composition.test.ts",
+          "tests/shared/core/atlas-e2e-composition.test.ts",
           "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/steward-source-integration.json"
         ],
         "observed": "Seven native payloads/14 file byte receipts/21 distinct local IDs/eight actual references; real terrain, placement, Location, City and Dungeon owner adapters share one History. One Undo/Redo reproduces exact input/expected bytes; stale final Dungeon rejects all preceding owner changes. City expected is unchanged. No persisted spatial binding, all-owner Save, Campaign/P02/P04/import, native integrated or total-gate proof."
@@ -52526,7 +52526,7 @@
         "implementationRun": "E2E-01-SPACE-I01a-1",
         "catalog": "ROADMAP-E2E-GATES-CANDIDATE.md:13",
         "evidence": [
-          "tests/core/atlas-spatial.test.ts",
+          "tests/shared/core/atlas-spatial.test.ts",
           "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/space-i01a1/implementation.json"
         ],
         "observed": "13 focused cases within458/458 tests plus check/build. Native Source adapters attach via one Worldowner, compose house/Key/bindings once, restore V1/component bytes by Undo, reject unloaded/wrong/aliased identities and dangling houses/floors/routes/local sections before any mutation; explicit detach preserves Dungeon owner. Relative projections/hits, pixel Pan and Pointer Zoom preserve centimeter detail at±1e16m, house translations stay separate and house scale never deforms physical Dungeon vectors. No active WorldV2 host/storage, fixture activation, native/integrated independent review or E2E approval."
@@ -52552,7 +52552,7 @@
         "sourceCommit": "88babcd2eee05f8d99a914129fd176b264bdcb26",
         "catalog": "ROADMAP-E2E-GATES-CANDIDATE.md:13",
         "evidence": [
-          "tests/core/atlas-spatial-host.test.ts",
+          "tests/shared/core/atlas-spatial-host.test.ts",
           "tools/host/atlas-spatial.cjs",
           "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/space-i01b/implementation.json"
         ],
@@ -52682,7 +52682,7 @@
           "src/features/atlas/atlas-campaign-navigation.ts",
           "src/features/atlas/atlas-repository.ts",
           "tests/core/atlas-campaign-navigation.test.ts",
-          "tests/core.test.ts",
+          "tests/shared/core.test.ts",
           "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-navigation-i01b-20261010/run.json",
           "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-navigation-n01b-20261010/run.json",
           "/home/aaron/.cache/dungeon-native-qa/city-plans/runtime-i01b-r02-20261010/review.json",
@@ -52782,13 +52782,13 @@
           "scope": "Next visible same-Atlas route: select Location/Key, navigate to linked City/building/Dungeon/room, edit Room Key, zoom back, shared Undo/Redo and native Save/fresh start. No separate mode/camera/history.",
           "fileBoundaries": {
             "Hex": [
-              "src/ui/atlas-view.ts",
+              "src/legacy/obsidian/ui/atlas-view.ts",
               "src/features/atlas/atlas-editor.ts",
               "src/features/atlas/atlas-renderer.ts",
               "existing repository/native mount integration"
             ],
             "Stadt": [
-              "new src/ui/atlas-detail-entry.ts",
+              "new src/legacy/obsidian/ui/atlas-detail-entry.ts",
               "new isolated DOM test for that component"
             ]
           },
@@ -52859,11 +52859,11 @@
             "findings": [],
             "sourceBindingsUnchanged": 545,
             "productFiles": [
-              "src/ui/atlas-detail-entry.ts",
+              "src/legacy/obsidian/ui/atlas-detail-entry.ts",
               "tests/atlas-detail-entry.entry.ts"
             ],
             "productSourceBlobs": {
-              "src/ui/atlas-detail-entry.ts": "d77efca70d3a846fb9fbbb1856124eddd3342a27104eedb5fc415cb275c299ec",
+              "src/legacy/obsidian/ui/atlas-detail-entry.ts": "d77efca70d3a846fb9fbbb1856124eddd3342a27104eedb5fc415cb275c299ec",
               "tests/atlas-detail-entry.entry.ts": "3de73ddd87c1dd4406c25d5b861535942bde05a6139bcaf4879347f6ae290392"
             },
             "codeIntegrated": true,
@@ -54159,7 +54159,7 @@
             "earlyFreeGMInputSatisfiedScoped": true,
             "sourceComparisonShared": "d9eda92f8270b364322e3c9a4cb2af5c2c69c8f7",
             "unchangedAtlasPathBlobs": {
-              "src/ui/atlas-view.ts": "6333f3b29ab488c8549400ffb6d587880165ffa3",
+              "src/legacy/obsidian/ui/atlas-view.ts": "6333f3b29ab488c8549400ffb6d587880165ffa3",
               "src/features/atlas/atlas-editor.ts": "e1ae3e5e8954a116cf5a0b331efbf5425a92a85c",
               "styles.css": "95122574d8b8a610fe7d4dc6b80e40098be19751"
             },
@@ -54295,8 +54295,8 @@
             "diff": "PASS",
             "sourceFilesSha256": {
               "src/features/atlas/atlas-editor.ts": "d1da240817863b28286386ad19dd0a61c6ba37908cc8d7d9d86e8325bdd22ef3",
-              "src/ui/location-key-panel.ts": "d0b1bbf922a8bea1acd337436ee2f7eec34beead08f8b615b28a5f68654799b5",
-              "src/ui/atlas-room-key-panel.ts": "d3a7035e47db8fa4d8187b456664eb93a81eb0a6b15f20e0d7c2f58229d73475",
+              "src/legacy/obsidian/ui/location-key-panel.ts": "d0b1bbf922a8bea1acd337436ee2f7eec34beead08f8b615b28a5f68654799b5",
+              "src/legacy/obsidian/ui/atlas-room-key-panel.ts": "d3a7035e47db8fa4d8187b456664eb93a81eb0a6b15f20e0d7c2f58229d73475",
               "tests/atlas-campaign-host.entry.ts": "afa913413023cf85f5cfbbf3783636f0ee75a8952f2b10571c92b12877f3f31e"
             }
           },
@@ -55195,8 +55195,8 @@
             }
           },
           "sourceFilesSha256": {
-            "src/ui/location-key-panel.ts": "91b68930a9d244fb625c39d8687fe4474f219d931aad25d685c33cd793182ae3",
-            "src/ui/atlas-room-key-panel.ts": "d39fd8720ed4faaa44185934f14759141ba919a2a4734f64acba766a480f90a9",
+            "src/legacy/obsidian/ui/location-key-panel.ts": "91b68930a9d244fb625c39d8687fe4474f219d931aad25d685c33cd793182ae3",
+            "src/legacy/obsidian/ui/atlas-room-key-panel.ts": "d39fd8720ed4faaa44185934f14759141ba919a2a4734f64acba766a480f90a9",
             "tests/atlas-campaign-host.entry.ts": "55ed0fc75058cbc8c0f97ef19f25995ca24f379304abe3332cac9110abf1324b"
           },
           "independentIntegration": {
@@ -55493,8 +55493,8 @@
             "guardAndEditorUnchangedFromH01": "5f542ded6f524b9e5a7d3ead48eb61ef5b1934c1",
             "sha256": {
               "src/features/atlas/atlas-editor.ts": "29e33e1ee088986c7d56bab9ddac07e1818524716e35153620bf5a3f7a27833e",
-              "src/ui/location-key-panel.ts": "91b68930a9d244fb625c39d8687fe4474f219d931aad25d685c33cd793182ae3",
-              "src/ui/atlas-room-key-panel.ts": "d39fd8720ed4faaa44185934f14759141ba919a2a4734f64acba766a480f90a9"
+              "src/legacy/obsidian/ui/location-key-panel.ts": "91b68930a9d244fb625c39d8687fe4474f219d931aad25d685c33cd793182ae3",
+              "src/legacy/obsidian/ui/atlas-room-key-panel.ts": "d39fd8720ed4faaa44185934f14759141ba919a2a4734f64acba766a480f90a9"
             },
             "cleanSourceBuild": "PASS",
             "runtime": "Node v22.22.0",
@@ -55670,7 +55670,7 @@
             "historyDepth": 0,
             "protectedOriginalSha256": {
               "checkpoint.json": "296f4db1da1c1dfb0642400fa9e594706756bfaedea020146fbad8d5606f9891",
-              "tests/core/assets.test.ts": "f255c4fad0f5766c533c4da9209420677ef058ed28d83248fbc947cba8c5f2ff",
+              "tests/shared/core/assets.test.ts": "f255c4fad0f5766c533c4da9209420677ef058ed28d83248fbc947cba8c5f2ff",
               "tests/object-colorable-tags.test.mjs": "4b5ec9893f70ce047f901316beb1216f0f469a219e6efc24ec236aaf1f648a95"
             }
           },
@@ -56050,7 +56050,7 @@
             },
             "protectedOriginalSha256": {
               "checkpoint.json": "296f4db1da1c1dfb0642400fa9e594706756bfaedea020146fbad8d5606f9891",
-              "tests/core/assets.test.ts": "f255c4fad0f5766c533c4da9209420677ef058ed28d83248fbc947cba8c5f2ff",
+              "tests/shared/core/assets.test.ts": "f255c4fad0f5766c533c4da9209420677ef058ed28d83248fbc947cba8c5f2ff",
               "tests/object-colorable-tags.test.mjs": "4b5ec9893f70ce047f901316beb1216f0f469a219e6efc24ec236aaf1f648a95"
             }
           },
@@ -56605,10 +56605,10 @@
           "screenshotsReadByHex": "Directly viewed after-shortcut name with Text noch nicht übernommen and unchanged Torheim marker, then visible-button saved name/marker and Gespeichert. Trusted input/History/native hashes come from separate raw oracles.",
           "protectedOriginal": {
             "repo": "/home/aaron/.codex/.chatgpt-projects/g-p-6ac7c644e2008191a7bd985ea68679da/Obsidian-Dungeon-Editor-Phase1",
-            "status": " M checkpoint.json\n M tests/core/assets.test.ts\n M tests/object-colorable-tags.test.mjs\n",
+            "status": " M checkpoint.json\n M tests/shared/core/assets.test.ts\n M tests/object-colorable-tags.test.mjs\n",
             "hashes": {
               "checkpoint.json": "296f4db1da1c1dfb0642400fa9e594706756bfaedea020146fbad8d5606f9891",
-              "tests/core/assets.test.ts": "f255c4fad0f5766c533c4da9209420677ef058ed28d83248fbc947cba8c5f2ff",
+              "tests/shared/core/assets.test.ts": "f255c4fad0f5766c533c4da9209420677ef058ed28d83248fbc947cba8c5f2ff",
               "tests/object-colorable-tags.test.mjs": "4b5ec9893f70ce047f901316beb1216f0f469a219e6efc24ec236aaf1f648a95"
             }
           },
@@ -56677,7 +56677,7 @@
             "diffPreMetadata": "PASS"
           },
           "sourceFilesSha256": {
-            "src/ui/atlas-view.ts": "9907158d45be59749bab477a970dd65e09253b8192621fb2cb1a365d796333d5",
+            "src/legacy/obsidian/ui/atlas-view.ts": "9907158d45be59749bab477a970dd65e09253b8192621fb2cb1a365d796333d5",
             "src/features/atlas/atlas-editor.ts": "dad736acb40601b96b59061c682d5a24053f6088577f8423bd1a012549476108",
             "tests/atlas-campaign-host.entry.ts": "6a6ef492f83aa86d8b56daf9d461d2c99791e01abd79dbc9f9e31eeec67f9b97",
             "tests/fixtures/obsidian-atlas-host-stub.ts": "85dceca020bb00f35201d9715f63c95255633b4168da0a92689017d8e2b17ffc"
@@ -56963,10 +56963,10 @@
           "screenshotsReadByHex": "Directly viewed after-shortcut image: saved exact name in field and marker, Gespeichert, no pending text indicator. Trusted keyboard/History/native hashes established by separate raw oracles.",
           "protectedOriginal": {
             "repo": "/home/aaron/.codex/.chatgpt-projects/g-p-6ac7c644e2008191a7bd985ea68679da/Obsidian-Dungeon-Editor-Phase1",
-            "status": " M checkpoint.json\n M tests/core/assets.test.ts\n M tests/object-colorable-tags.test.mjs\n",
+            "status": " M checkpoint.json\n M tests/shared/core/assets.test.ts\n M tests/object-colorable-tags.test.mjs\n",
             "hashes": {
               "checkpoint.json": "296f4db1da1c1dfb0642400fa9e594706756bfaedea020146fbad8d5606f9891",
-              "tests/core/assets.test.ts": "f255c4fad0f5766c533c4da9209420677ef058ed28d83248fbc947cba8c5f2ff",
+              "tests/shared/core/assets.test.ts": "f255c4fad0f5766c533c4da9209420677ef058ed28d83248fbc947cba8c5f2ff",
               "tests/object-colorable-tags.test.mjs": "4b5ec9893f70ce047f901316beb1216f0f469a219e6efc24ec236aaf1f648a95"
             }
           },
@@ -57028,10 +57028,10 @@
           "authorNativeReceipt": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/inspector-save-routing-r01.json",
           "nativeReceiptUnchanged": true,
           "relevantNativeSourceBlobsUnchanged": {
-            "src/ui/atlas-view.ts": "add61220c8cc3d1a16004f99aae6255e8658244e",
+            "src/legacy/obsidian/ui/atlas-view.ts": "add61220c8cc3d1a16004f99aae6255e8658244e",
             "src/features/atlas/atlas-editor.ts": "6260d61ade859c43b46746c94bdeb3db5a86617c",
-            "src/ui/location-key-panel.ts": "ec9509329480a1920a3d76e2bf36a022f5025cbf",
-            "src/ui/atlas-room-key-panel.ts": "a35052449c69d2b20ebc90d919250f4cdbc924f7",
+            "src/legacy/obsidian/ui/location-key-panel.ts": "ec9509329480a1920a3d76e2bf36a022f5025cbf",
+            "src/legacy/obsidian/ui/atlas-room-key-panel.ts": "a35052449c69d2b20ebc90d919250f4cdbc924f7",
             "tools/host-test.cjs": "9f09e48a564e2b272aee61cf7b64dd7d66fbb4c9",
             "tools/host/hex04-dungeon-at-location.cjs": "07ab80f147c092010e761133c8df0be63ecf3cdb",
             "tests/fixtures/atlas-e2e-spatial-v2/manifest.json": "7bec9054218b4c957ae0e9f3cd3d3497f3b63559"
@@ -58793,10 +58793,10 @@
             "cancelScreenshotDirectlyInspected": true,
             "diagnosis": "Source corroborates repeated renderer teardown: AtlasView.onLoadFile closes Editor via closeEditor/editor.destroy, then campaignHost.destroy/navigation.dispose/retire suspends the same dirty mount. AtlasEditor.suspend calls AtlasRenderer.destroy again; renderer has no destroyed/initialized reset guard, while Pixi ResizePlugin.destroy nulls _cancelResize. This is the repair hypothesis, not an implemented or independently qualified fix.",
             "sourcePaths": [
-              "src/ui/atlas-view.ts",
+              "src/legacy/obsidian/ui/atlas-view.ts",
               "src/features/atlas/atlas-editor.ts",
               "src/features/atlas/atlas-renderer.ts",
-              "src/ui/atlas-campaign-host.ts",
+              "src/legacy/obsidian/ui/atlas-campaign-host.ts",
               "src/features/atlas/atlas-campaign-navigation.ts"
             ],
             "noAutomaticRetry": true
@@ -59045,7 +59045,7 @@
             "trigger": "Existing Campaignmanifest + normal Karte/Speichern unter/Kopie speichern creates standalone Atlas with fresh closure IDs, then actual leaf.openFile invokes AtlasView.onLoadFile.",
             "expected": "Saved independent copy opens and can be reused after fresh process, without pretending to be a Campaign member.",
             "observed": "Renderer teardown now completes; AtlasCampaignServices.campaignHint rejects the legitimate copied world because any Campaignmanifest exists. View shows: Dieser Atlas gehört keinem bestätigten Kampagnenbestand. Bestand ergänzen oder reparieren. No new active editor.",
-            "source": "src/ui/atlas-campaign-services.ts:95-109",
+            "source": "src/legacy/obsidian/ui/atlas-campaign-services.ts:95-109",
             "negativeGuardPreserved": "Existing damaged/foreign manifest must not fall through to an unguarded standalone Atlas. No whitelist, hidden mount or Campaign authority invented.",
             "consumer": "Standalone Copy/fresh-entry requires an explicit Campaign/Atlas membership contract; the remaining product gap is tracked in #80."
           },
@@ -59064,7 +59064,7 @@
             }
           },
           "sourceFilesSha256": {
-            "src/ui/atlas-view.ts": "0314fedcaf66b5f6639d90e4181af1c4c3ac715fcbe6bd0480ccb0829c1abcf4",
+            "src/legacy/obsidian/ui/atlas-view.ts": "0314fedcaf66b5f6639d90e4181af1c4c3ac715fcbe6bd0480ccb0829c1abcf4",
             "src/features/atlas/atlas-renderer.ts": "5fbf6d3e7b15ac838a33fe8e69e97eea13a9f46d1f00d388bc16118d758dc520",
             "tests/atlas-campaign-host.entry.ts": "90b8f00a2b760432d77f6a69678f551c8d5ee179d24fdd87b0427d54d71fe015"
           },
@@ -59177,9 +59177,9 @@
           },
           "sourceFilesSha256": {
             "src/features/atlas/atlas-standalone-entry.ts": "bd0a19fce33deffa999ccf25e68116ad78e3bd4f36a004f320962b9a928bf86e",
-            "src/ui/atlas-view.ts": "c6590226e8858ea36e8acf7dd7569c5cbd2bf990e0d3d6b838deca571c9b6a4e",
-            "src/ui/atlas-campaign-host.ts": "d64a8f43e07a294a0029706ad5c65ba6f4b669dd0edf29515fa8baca3eaf578c",
-            "src/ui/atlas-campaign-services.ts": "bb399a627edf0fa86b6f0534383bf73612dbe1356f09c0a105e145f6a4564e19",
+            "src/legacy/obsidian/ui/atlas-view.ts": "c6590226e8858ea36e8acf7dd7569c5cbd2bf990e0d3d6b838deca571c9b6a4e",
+            "src/legacy/obsidian/ui/atlas-campaign-host.ts": "d64a8f43e07a294a0029706ad5c65ba6f4b669dd0edf29515fa8baca3eaf578c",
+            "src/legacy/obsidian/ui/atlas-campaign-services.ts": "bb399a627edf0fa86b6f0534383bf73612dbe1356f09c0a105e145f6a4564e19",
             "tests/atlas-campaign-host.entry.ts": "0990fe37e7056145d449f2de5697c3c0ca7511f4f3b25e959292e1d56e87f312"
           },
           "localEvidence": {

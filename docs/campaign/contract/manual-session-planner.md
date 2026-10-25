@@ -52,9 +52,9 @@ ungenutzten Verzeichnisread. ID-Indizes ersetzen wiederholte lineare Besuchssuch
 Der Renderer übernimmt den bestätigten Plan und aktualisiert seine Listen,
 erhält aber spätere editierbare Werte über den gemeinsamen Editorübergang.
 Notizen, Ortssuche und fremde Entwürfe werden durch Planantworten nicht ersetzt.
-`tests/desktop-plan-projection.test.mjs` verbietet globale Reads bei wachsendem
+`tests/campaign/desktop-plan-projection.test.mjs` verbietet globale Reads bei wachsendem
 Hintergrundbestand und prüft Replay, Fresh, Konflikte und Rollback;
-`tests/desktop-timeline-search.test.mjs` prüft auch spätere Eingabe während Recovery.
+`tests/campaign/desktop-timeline-search.test.mjs` prüft auch spätere Eingabe während Recovery.
 `tools/test-desktop-manual-timeline.mjs` führt ohne Party drei Besuche, wiederholten
 Ort, Umordnung, späte Eingabe, Antwortverlust, Neustart und unabhängige Liveübernahme
 aus. Dies ist keine vollständige manuelle Sessionplanner-Abnahme.
@@ -180,8 +180,8 @@ Plantexte, Besuchsinhalte und Freigabebasis kommen aus derselben geprüften
 Session-Lesung. Der Dialog hält keine zweite Plankopie; Ersetzen und Mappe
 verwenden denselben gelesenen Plan statt ihn nochmals zu laden. Der Plananteil
 ist eine Lesesicht und wird nicht zusätzlich in historischen Receipts gespeichert.
-[Dialogprüfung](../../../tests/desktop-session-copy-context.test.mjs) und
-[Speicherprüfung](../../../tests/desktop-session-copy-integrity.test.mjs) prüfen
+[Dialogprüfung](../../../tests/campaign/desktop-session-copy-context.test.mjs) und
+[Speicherprüfung](../../../tests/campaign/desktop-session-copy-integrity.test.mjs) prüfen
 Reopen, Auswahl, Antwortreihenfolge, Quellschutz, Append, unabhängige offene
 Rewards, Replay und atomaren Rollback.
 
@@ -198,7 +198,7 @@ und wartet auf eine neue ausdrückliche Bestätigung. Fehlende gewählte Besuche
 bleiben zum bewussten Entfernen sichtbar; sie werden nicht still übersprungen.
 Jeder neue Anlageauftrag bekommt eine neue Plan-ID. Der frühere lokale
 Kopier-Retry und seine vorab reservierte Plan-ID entfallen.
-[Speicher- und Bedienprüfungen](../../../tests/desktop-preparation-context.test.mjs)
+[Speicher- und Bedienprüfungen](../../../tests/campaign/desktop-preparation-context.test.mjs)
 belegen verlorene Antworten, reine Statusabfrage, spätere Texte und genau einen
 Append nach Dialogreset. Ein frischer Store liest denselben Beleg; native
 Prozessende-/Neustartprüfung einschließlich wiedergefundener Referenz bleibt offen.
@@ -209,14 +209,14 @@ benötigen ihre betroffenen Abnahmen.
 
 ## Geprüft und noch offen
 
-[Ersetzung und Kopie](../../../tests/desktop-plan-replacement-copy.test.mjs)
+[Ersetzung und Kopie](../../../tests/campaign/desktop-plan-replacement-copy.test.mjs)
 prüfen den echten Writer, Export/Import, Fresh, Historienverweise und exakte
-Texte. [Worldgruppen und Rewards](../../../tests/desktop-plan-replacement-world.test.mjs)
+Texte. [Worldgruppen und Rewards](../../../tests/campaign/desktop-plan-replacement-world.test.mjs)
 prüfen erhaltene NPC-/Treasure-Identitäten, Vergabestatus, Retry und Rollback.
-[Bereinigung](../../../tests/desktop-session-retention.test.mjs) erhält Rohentwürfe
+[Bereinigung](../../../tests/catalog/desktop-session-retention.test.mjs) erhält Rohentwürfe
 und prüft Ersetzung aus demselben Plan. Das sind Storeprüfungen, keine native
 Bedien-, Crash- oder Undoabnahme.
-[Vorschlagsprüfungen](../../../tests/desktop-session-proposal-store.test.mjs) kontrollieren gemeinsam gelesene und gesicherte Vorschläge, Budget- und Quellenbezüge, unabhängige Generierungskennungen, historischen Beuteausgleich sowie unveränderte Sicherungen bei beschädigten Daten. Ältere Partyprofile und archivierte Wissensverweise bleiben gültige Vorschauhistorie.
+[Vorschlagsprüfungen](../../../tests/campaign/desktop-session-proposal-store.test.mjs) kontrollieren gemeinsam gelesene und gesicherte Vorschläge, Budget- und Quellenbezüge, unabhängige Generierungskennungen, historischen Beuteausgleich sowie unveränderte Sicherungen bei beschädigten Daten. Ältere Partyprofile und archivierte Wissensverweise bleiben gültige Vorschauhistorie.
 
 Die nächsten konkreten Prüfungen und Korrekturen:
 
@@ -256,8 +256,8 @@ der sichtbare Editor ist kein Ersatzowner. Spätere Zieltexte bleiben erhalten.
 Nach neuer Storeinstanz klärt derselbe Beleg angewandt/nicht angewandt ohne
 automatische Wiederholung. Der vorhandene Draftvertrag bleibt unverändert.
 
-[Übergabeprüfungen](../../../tests/desktop-visit-handoff.test.mjs) und
-[Dialogprüfungen](../../../tests/desktop-session-resume-context.test.mjs)
+[Übergabeprüfungen](../../../tests/campaign/desktop-visit-handoff.test.mjs) und
+[Dialogprüfungen](../../../tests/runtime/desktop-session-resume-context.test.mjs)
 prüfen Zielbindung, spätere Eingaben und Originalauftrag. Native Gesamtfreigabe
 und vollständige Wiederaufnahme nach Prozessende bleiben offen.
 

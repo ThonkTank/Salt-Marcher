@@ -1,7 +1,7 @@
 import { checkedPreparedGroupRow } from './prepared-group';
 import { createHash } from 'node:crypto';
-import type { DungeonPose } from '../dungeon-contracts';
-import type { NpcRoute } from '../autonomy-contracts';
+import type { DungeonPose } from '../atlas/dungeon-contracts';
+import type { NpcRoute } from '../runtime/autonomy-contracts';
 const hash = (p: string) => createHash('sha256').update(p).digest('hex');
 export function installNpcWorldSchema(db: any) {
   db.exec(`CREATE TABLE IF NOT EXISTS npc_position(campaign_id TEXT NOT NULL,actor_id TEXT NOT NULL,location_id TEXT,revision INTEGER NOT NULL,PRIMARY KEY(campaign_id,actor_id),FOREIGN KEY(campaign_id,actor_id) REFERENCES world_note(campaign_id,id),FOREIGN KEY(campaign_id,location_id) REFERENCES location(campaign_id,id)) STRICT;

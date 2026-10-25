@@ -1,18 +1,23 @@
 import { readTerrainGrid } from './terrain-grid';
 import { readRouteTerrain } from './terrain-route';
-import { applyHeightStroke, TerrainSampler } from '../terrain-height';
-import { colorSurface } from '../landscape-color-surface';
-import { isLandMode, strokeBox, maskLandSpans } from '../land-mask';
+import { applyHeightStroke, TerrainSampler } from '../atlas/terrain-height';
+import { colorSurface } from '../atlas/landscape-color-surface';
+import { isLandMode, strokeBox, maskLandSpans } from '../atlas/land-mask';
 import { randomUUID } from 'node:crypto';
-import { bounds, contains, type LandscapeRecord, type LandscapeAction } from '../atlas-landscape';
+import {
+  bounds,
+  contains,
+  type LandscapeRecord,
+  type LandscapeAction,
+} from '../atlas/atlas-landscape';
 import {
   intersectPolygons,
   subtractPolygons,
   unionPolygons,
   validateColor,
   colorParts,
-} from '../landscape-brush';
-import type { Polygon } from '../contracts';
+} from '../atlas/landscape-brush';
+import type { Polygon } from '../shared/contracts';
 import { landscapeRegion, putLandscape, landMaskRegion } from './atlas-landscape';
 
 /** Runs inside the existing Atlas transaction/history, never as a renderer-side read/modify/write. */
@@ -21,7 +26,7 @@ export function executeBrush(
   cam: string,
   a: Extract<LandscapeAction, { kind: 'landscape-brush' }>,
   colorRevision: number | null = null,
-  visibilityGrid?: import('../terrain-spatial-model').TerrainGrid,
+  visibilityGrid?: import('../atlas/terrain-spatial-model').TerrainGrid,
 ) {
   if (isLandMode(a.mode)) {
     if (a.record?.paint) throw Error('Landpinsel darf keine Farbmaske enthalten.');

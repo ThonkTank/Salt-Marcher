@@ -4,10 +4,10 @@ import {
   selectedSceneGroup,
   sceneGroupMembers,
   assessSceneGroups,
-} from '../scene-encounter-selection';
-import { areaTargetDamage } from '../area-damage';
+} from '../runtime/scene-encounter-selection';
+import { areaTargetDamage } from '../runtime/area-damage';
 import { confirmCombatNpcLosses } from './combat-world-losses';
-import { isDamageType, adjustedHitDamage } from '../damage-adjustment';
+import { isDamageType, adjustedHitDamage } from '../runtime/damage-adjustment';
 import { npcRecord } from './npc-record';
 import { npcPosition } from './npc-world';
 import { publishCombatHealth, syncOpenMaskHealth } from './mask-health';
@@ -23,7 +23,7 @@ import {
   type CombatView,
   type CombatCommand,
   type Combatant,
-} from '../combat-contracts';
+} from '../runtime/combat-contracts';
 import { readLiveScene, readLive } from './live';
 import {
   readProgressCharacter,
@@ -41,13 +41,13 @@ import {
   checkedHealth,
   xpLevel,
   type DeathSaveResult,
-} from '../progression';
-import { assessEncounter } from '../encounter-contracts';
+} from '../runtime/progression';
+import { assessEncounter } from '../catalog/encounter-contracts';
 import { readCreature, readEncounterPlan } from './encounters';
 import { readGeneratorRegistry, readGenerationRun, acceptGeneration } from './generation';
 import { readWorldActor, readPreparedGroup, scenePreparedGroupIds } from './session';
 import { groupView } from './groups';
-import { groupCombatBasis } from '../groups-contracts';
+import { groupCombatBasis } from '../campaign/groups-contracts';
 import type { Creature } from '../../features/catalog/creature-catalog';
 import {
   creatureActionForRolls,
@@ -56,9 +56,9 @@ import {
   parseDiceFormula,
   criticalDamageFormula,
   legendaryActionCost,
-} from '../dice-formula';
-import { initiativeBasisMatches, initiativeNumber } from '../combat-initiative';
-import { fighterDraftBasisMatches } from '../combat-draft-contracts';
+} from '../shared/dice-formula';
+import { initiativeBasisMatches, initiativeNumber } from '../runtime/combat-initiative';
+import { fighterDraftBasisMatches } from '../runtime/combat-draft-contracts';
 const hash = (s: string) => createHash('sha256').update(s).digest('hex');
 function addNamedActor(
   db: any,
@@ -559,7 +559,8 @@ export function executeCombat(db: any, command: CombatCommand, guard: () => void
       }
       const a = command.action,
         cam = command.campaignId;
-      let consumedDraft: import('../combat-draft-contracts').CombatWorkingDraft | null = null;
+      let consumedDraft: import('../runtime/combat-draft-contracts').CombatWorkingDraft | null =
+        null;
       if (command.draftWriteId !== undefined) {
         if (
           typeof command.draftWriteId !== 'string' ||
@@ -648,7 +649,7 @@ export function executeCombat(db: any, command: CombatCommand, guard: () => void
             partyCombatant(c, progress.get(c.id)!, statuses.get(c.id)),
           ),
         };
-        let generated: import('../encounter-contracts').EncounterPlan | null = null;
+        let generated: import('../catalog/encounter-contracts').EncounterPlan | null = null;
         if (a.generation) {
           const live = readLive(db, cam),
             g = a.generation;

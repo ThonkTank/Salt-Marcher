@@ -2,16 +2,16 @@ import type {
   LocationActivityPage,
   LocationActivityQuery,
   LocationVisit,
-} from '../location-activity-contracts';
-import type { NpcDailySlot } from '../npc-contracts';
+} from '../campaign/location-activity-contracts';
+import type { NpcDailySlot } from '../campaign/npc-contracts';
 import { deskContent } from './scene-desk';
 import { readLive, readLiveScene } from './live';
 import { readWorldCalendar } from './world';
 import { readNpc } from './npcs';
 import { readNpcPlaces } from './npc-places';
 import { readCityHeader } from './city';
-import { calendarDate } from '../world-model';
-import { checkedNpcSchedule, dailyPlanAt, dailyTime } from '../npc-daily-plan';
+import { calendarDate } from '../runtime/world-model';
+import { checkedNpcSchedule, dailyPlanAt, dailyTime } from '../campaign/npc-daily-plan';
 export function readLocationActivities(
   db: any,
   cam: string,

@@ -1,7 +1,11 @@
 import { createHash } from 'node:crypto';
 import { worldNoteDocument, type WorldNoteV1 } from '../../features/world/world-notes';
 import { readLiveScene } from './live';
-import type { SceneRuleCommand, SceneRulePin, SceneRules } from '../rule-reference-contracts';
+import type {
+  SceneRuleCommand,
+  SceneRulePin,
+  SceneRules,
+} from '../catalog/rule-reference-contracts';
 
 const json = (value: unknown) => JSON.stringify(value),
   hash = (text: string) => createHash('sha256').update(text).digest('hex');

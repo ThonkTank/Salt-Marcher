@@ -27,7 +27,7 @@ buildSync({
     contents: `export {CampaignStore} from './src/app/storage/store';
 export {AtlasRegionReader} from './src/app/storage/atlas-region';
 export {AtlasProjectionIndex} from './src/app/storage/atlas-projection-index';
-export {atlasTerrainTileQuery} from './src/app/atlas-terrain-tile';`,
+export {atlasTerrainTileQuery} from './src/app/atlas/atlas-terrain-tile';`,
     resolveDir: root,
   },
   outfile: bundle,

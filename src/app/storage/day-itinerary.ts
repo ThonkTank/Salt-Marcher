@@ -1,8 +1,8 @@
 import { readEncounterPlan } from './encounters';
-import { assessEncounter, type EncounterParty } from '../encounter-contracts';
-import { xpShare, levelXp, restAfter, type Progress } from '../progression';
-import { projectDayPacing, projectDayRestStops } from '../adventuring-day-model';
-import type { DayPlanEntry, DayItinerary } from '../adventuring-day-contracts';
+import { assessEncounter, type EncounterParty } from '../catalog/encounter-contracts';
+import { xpShare, levelXp, restAfter, type Progress } from '../runtime/progression';
+import { projectDayPacing, projectDayRestStops } from '../runtime/adventuring-day-model';
+import type { DayPlanEntry, DayItinerary } from '../runtime/adventuring-day-contracts';
 
 /** Read saved source revisions only. Each fight is rounded separately like a real award. */
 export function readDayItinerary(

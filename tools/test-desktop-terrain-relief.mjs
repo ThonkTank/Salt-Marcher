@@ -19,7 +19,7 @@ const root = process.cwd(),
 require('esbuild').buildSync({
   stdin: {
     contents:
-      "export * from './src/app/storage/store';export * from './src/app/atlas-landscape';export * from './src/app/terrain-height';export {newLocation} from './src/features/location/location-schema';",
+      "export * from './src/app/storage/store';export * from './src/app/atlas/atlas-landscape';export * from './src/app/atlas/terrain-height';export {newLocation} from './src/features/location/location-schema';",
     resolveDir: root,
   },
   outfile: '.build/relief-native-store.cjs',

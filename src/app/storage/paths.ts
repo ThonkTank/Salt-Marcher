@@ -1,17 +1,17 @@
 import { createHash, randomUUID } from 'node:crypto';
-import type { Room } from '../contracts';
-import type { DrawingElement } from '../drawing-contracts';
-import type { DungeonGeometry } from '../dungeon-contracts';
+import type { Room } from '../shared/contracts';
+import type { DrawingElement } from '../atlas/drawing-contracts';
+import type { DungeonGeometry } from '../atlas/dungeon-contracts';
 import type {
   DungeonPath,
   DungeonPassage,
   PathPreview,
   PathAction,
   PassageSide,
-} from '../path-contracts';
-import { validateDungeonPath, validateDungeonPassage } from '../path-contracts';
-import { buildPath, resolvePathAnchor } from '../path-model';
-import { volumeProjection } from '../volume-model';
+} from '../atlas/path-contracts';
+import { validateDungeonPath, validateDungeonPassage } from '../atlas/path-contracts';
+import { buildPath, resolvePathAnchor } from '../atlas/path-model';
+import { volumeProjection } from '../atlas/volume-model';
 import { volumeRow, readDungeonVolume } from './volume';
 const hash = (s: string) => createHash('sha256').update(s).digest('hex'),
   parsed = (r: any) => {

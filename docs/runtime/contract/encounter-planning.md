@@ -15,10 +15,10 @@ Liveübergabe: [Kampf-Recovery](combat-recovery.md).
 
 | Anliegen | Besitzer / vorhandene Prüfung |
 | --- | --- |
-| Vorlagen und Planungsparty | [catalog-ui.ts](../../../src/app/catalog-ui.ts), [generation-ui.ts](../../../src/app/generation-ui.ts); [Generierungskontext](../../../tests/desktop-generation-context.test.mjs) |
-| Tabellen, Loot, Presets und Weltquellen | [generation-ui.ts](../../../src/app/generation-ui.ts), [world-source-ui.ts](../../../src/app/world-source-ui.ts), [storage/generation.ts](../../../src/app/storage/generation.ts); [Gewichte/Save](../../../tests/desktop-table-weights.test.mjs), [Scope](../../../tests/desktop-table-scope.test.mjs), [Weltquellen-UI](../../../tests/desktop-world-source-ui.test.mjs) |
-| Bestehende Vorlage auffüllen | [GenerationRequest/Run](../../../src/app/generation-contracts.ts), [Selector](../../../src/app/generation/selector.ts) und bestehender Vorlagenwriter; [Füll-/Transferfälle](../../../tests/desktop-generation-fill.test.mjs) |
-| Verknüpfte Beute reproduzieren und buchen | `lootItems` in [storage/generation.ts](../../../src/app/storage/generation.ts) berechnet Sessionvorschau und gebuchten Wurf; [Seeds, Gruppierung und Receipts](../../../tests/desktop-generation-loot.test.mjs) |
+| Vorlagen und Planungsparty | [catalog-ui.ts](../../../src/app/catalog/catalog-ui.ts), [generation-ui.ts](../../../src/app/campaign/generation-ui.ts); [Generierungskontext](../../../tests/campaign/desktop-generation-context.test.mjs) |
+| Tabellen, Loot, Presets und Weltquellen | [generation-ui.ts](../../../src/app/campaign/generation-ui.ts), [world-source-ui.ts](../../../src/app/campaign/world-source-ui.ts), [storage/generation.ts](../../../src/app/storage/generation.ts); [Gewichte/Save](../../../tests/campaign/desktop-table-weights.test.mjs), [Scope](../../../tests/catalog/desktop-table-scope.test.mjs), [Weltquellen-UI](../../../tests/campaign/desktop-world-source-ui.test.mjs) |
+| Bestehende Vorlage auffüllen | [GenerationRequest/Run](../../../src/app/campaign/generation-contracts.ts), [Selector](../../../src/app/campaign/generation/selector.ts) und bestehender Vorlagenwriter; [Füll-/Transferfälle](../../../tests/catalog/desktop-generation-fill.test.mjs) |
+| Verknüpfte Beute reproduzieren und buchen | `lootItems` in [storage/generation.ts](../../../src/app/storage/generation.ts) berechnet Sessionvorschau und gebuchten Wurf; [Seeds, Gruppierung und Receipts](../../../tests/campaign/desktop-generation-loot.test.mjs) |
 | Generierung bis zum Folgeabend durchspielen | [Native Bedienprobe](../../../tools/test-desktop-generation-preparation.mjs): gemischte Level, thematische Tabelle, verknüpfte Beute, angepasste Vorlage, Appneustart, veränderte aktuelle Party, Kampfabschluss und erneutes Öffnen; Vorbereitung, Quellenredaktion, Wiederöffnen aus der Vorschauhistorie und aktueller Gruppenstand beim Kampf |
 
 Vorhandene Store-/DOM- und native Einzelläufe qualifizieren ihre geprüften Fälle,

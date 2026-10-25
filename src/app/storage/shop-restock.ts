@@ -1,8 +1,8 @@
-import { validShopInstant as instant } from '../shop-validation';
+import { validShopInstant as instant } from '../runtime/shop-validation';
 import { createHash } from 'node:crypto';
-import { integerWeights } from '../generation-contracts';
-import type { Shop, ShopRestockTable, ShopStock } from '../items-contracts';
-import type { CalendarEvent } from '../world-contracts';
+import { integerWeights } from '../campaign/generation-contracts';
+import type { Shop, ShopRestockTable, ShopStock } from '../catalog/items-contracts';
+import type { CalendarEvent } from '../runtime/world-contracts';
 
 // A display name revises history metadata without restarting the delivery clock.
 const authored = (t: ShopRestockTable) =>

@@ -8,10 +8,10 @@ const root = process.cwd(),
   output = path.resolve('.build/atlas-geometry-native', `${Date.now()}-${process.pid}`);
 const native = await createNativeSession({ root, output, name: 'atlas-geometry-tiles' });
 const files = [
-  'src/app/atlas-geometry-tile.ts',
-  'src/app/atlas-geometry-mesh.ts',
-  'src/app/atlas-scene-geometry.ts',
-  'src/app/atlas-deck-scene-model.ts',
+  'src/app/atlas/atlas-geometry-tile.ts',
+  'src/app/atlas/atlas-geometry-mesh.ts',
+  'src/app/atlas/atlas-scene-geometry.ts',
+  'src/app/atlas/atlas-deck-scene-model.ts',
   'src/app/storage/atlas-geometry-tiles.ts',
   'src/app/storage/atlas-tile-cache.ts',
   'src/app/storage/atlas-projection-index.ts',

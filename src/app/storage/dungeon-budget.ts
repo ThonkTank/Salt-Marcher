@@ -1,22 +1,22 @@
-import { budgetRarity as rarity } from '../dungeon-budget-contracts';
+import { budgetRarity as rarity } from '../atlas/dungeon-budget-contracts';
 import { readPreparedGroup } from './session';
-import { validateDrawingElement } from '../drawing-contracts';
+import { validateDrawingElement } from '../atlas/drawing-contracts';
 import { createHash } from 'node:crypto';
-import type { GraphView } from '../graph-contracts';
-import type { DungeonBudgetView, DungeonFeatureFact } from '../dungeon-budget-contracts';
+import type { GraphView } from '../atlas/graph-contracts';
+import type { DungeonBudgetView, DungeonFeatureFact } from '../atlas/dungeon-budget-contracts';
 import {
   dungeonBudgetSummaries,
   emptyBudgetValues,
   featureBudgetOwner,
-} from '../dungeon-budget-model';
-import { dungeonContentAnchors } from '../dungeon-content-model';
+} from '../atlas/dungeon-budget-model';
+import { dungeonContentAnchors } from '../atlas/dungeon-content-model';
 import { readGeneratorRegistry } from './generation';
 import { readEncounterPlan, readEncounterPlans } from './encounters';
 import { readTreasure } from './progression';
 import { readItemDefinition } from './item-definitions';
-import { assessEncounter } from '../encounter-contracts';
+import { assessEncounter } from '../catalog/encounter-contracts';
 import { readLive } from './live';
-import type { RewardGuidanceRules } from '../generation/reward-guidance';
+import type { RewardGuidanceRules } from '../campaign/generation/reward-guidance';
 export function dungeonBudgetView(
   source: any,
   cam: string,
@@ -156,7 +156,7 @@ export function dungeonBudgetView(
 export function validateDungeonPlacement(
   db: any,
   cam: string,
-  e: import('../drawing-contracts').DrawingElement,
+  e: import('../atlas/drawing-contracts').DrawingElement,
   skipScopeId: string | null = null,
 ) {
   const c = e.content;

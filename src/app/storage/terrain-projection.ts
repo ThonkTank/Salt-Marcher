@@ -1,20 +1,20 @@
-import { terrainTraceMeasure, terrainTraceStart } from '../terrain-timing';
-import { bounds, type LandscapeBox, type LandscapeRecord } from '../atlas-landscape';
-import { gridHeight } from '../terrain-spatial-model';
-import type { TerrainProjectionCache } from '../terrain-projection-cache';
-import { brushPreviewRecords } from '../atlas-brush-worker';
-import { heightBrushBounds } from '../terrain-brush';
-import { TerrainSampler } from '../terrain-height';
-import { resolveTerrainObjects, terrainObjectPoints } from '../terrain-objects';
+import { terrainTraceMeasure, terrainTraceStart } from '../atlas/terrain-timing';
+import { bounds, type LandscapeBox, type LandscapeRecord } from '../atlas/atlas-landscape';
+import { gridHeight } from '../atlas/terrain-spatial-model';
+import type { TerrainProjectionCache } from '../atlas/terrain-projection-cache';
+import { brushPreviewRecords } from '../atlas/atlas-brush-worker';
+import { heightBrushBounds } from '../atlas/terrain-brush';
+import { TerrainSampler } from '../atlas/terrain-height';
+import { resolveTerrainObjects, terrainObjectPoints } from '../atlas/terrain-objects';
 import {
   validateTerrainProjection,
   type TerrainProjectionRequest,
   type TerrainProjection,
-} from '../terrain-projection';
-import type { AtlasRegionSource } from '../atlas-region-contracts';
+} from '../atlas/terrain-projection';
+import type { AtlasRegionSource } from '../atlas/atlas-region-contracts';
 import { readTerrainGrid, readTerrainGridSteps } from './terrain-grid';
 import { readRouteTerrain } from './terrain-route';
-import { terrainDetailDimensions } from '../terrain-detail';
+import { terrainDetailDimensions } from '../atlas/terrain-detail';
 
 export type { ProjectionStream } from './terrain-color-raster';
 import {

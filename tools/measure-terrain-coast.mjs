@@ -14,7 +14,7 @@ for (const mode of ['baseline', 'current'])
     stdin: {
       resolveDir: process.cwd(),
       contents:
-        "export * from './src/app/landscape-raster';export * from './src/app/terrain-height';",
+        "export * from './src/app/atlas/landscape-raster';export * from './src/app/atlas/terrain-height';",
     },
     bundle: true,
     platform: 'node',
@@ -29,7 +29,7 @@ for (const mode of ['baseline', 'current'])
                 b.onLoad({ filter: /landscape-raster\.ts$/ }, () => ({
                   contents: execFileSync(
                     'git',
-                    ['show', baseline + ':src/app/landscape-raster.ts'],
+                    ['show', baseline + ':src/app/atlas/landscape-raster.ts'],
                     { encoding: 'utf8' },
                   ),
                   loader: 'ts',
@@ -58,8 +58,8 @@ const result = {
   measurements: [],
 };
 for (const file of [
-  'src/app/landscape-raster.ts',
-  'src/app/terrain-coast.ts',
+  'src/app/atlas/landscape-raster.ts',
+  'src/app/atlas/terrain-coast.ts',
   'tools/measure-terrain-coast.mjs',
 ])
   result.sourceHashes[file] = hash(Buffer.from(await readFile(file)));

@@ -16,10 +16,10 @@ Für schreibende Vorlagen, Tabellen und Generatoren: [Encounterplanung](encounte
 
 | Anliegen | Besitzer / vorhandene Prüfung |
 | --- | --- |
-| Monsterquery, Detail, Quellenmetadaten | [catalog-ui.ts](../../../src/app/catalog-ui.ts), [encounters.ts](../../../src/app/storage/encounters.ts), [CreatureCatalog](../../../src/features/catalog/creature-catalog.ts); [Query-/Kontexttests](../../../tests/desktop-catalog-query-context.test.mjs) |
-| SRD-Itemquelle und Inhaltswechsel | [item-reference.ts](../../../src/app/storage/item-reference.ts), [item-reference-ui.ts](../../../src/app/item-reference-ui.ts); [Provider-/DOMtests](../../../tests/desktop-item-reference.test.mjs) |
-| Eigene Gegenstandsdefinition: Auswahl, Speichern, Antwortklärung | [items-ui.ts](../../../src/app/items-ui.ts): `selectDefinition`, `flushDrafts`, `recoveredItems`; [storage/items.ts](../../../src/app/storage/items.ts): `executeItemShop`; [Auswahl-/Schreibtests](../../../tests/desktop-item-selection.test.mjs), [native Auswahl-/Schreibprobe](../../../tools/test-desktop-item-selection.mjs) |
-| Gemeinsame Filter im Generator | [generation-ui.ts](../../../src/app/generation-ui.ts); [Generierungskontext](../../../tests/desktop-generation-context.test.mjs) |
+| Monsterquery, Detail, Quellenmetadaten | [catalog-ui.ts](../../../src/app/catalog/catalog-ui.ts), [encounters.ts](../../../src/app/storage/encounters.ts), [CreatureCatalog](../../../src/features/catalog/creature-catalog.ts); [Query-/Kontexttests](../../../tests/catalog/desktop-catalog-query-context.test.mjs) |
+| SRD-Itemquelle und Inhaltswechsel | [item-reference.ts](../../../src/app/storage/item-reference.ts), [item-reference-ui.ts](../../../src/app/catalog/item-reference-ui.ts); [Provider-/DOMtests](../../../tests/catalog/desktop-item-reference.test.mjs) |
+| Eigene Gegenstandsdefinition: Auswahl, Speichern, Antwortklärung | [items-ui.ts](../../../src/app/catalog/items-ui.ts): `selectDefinition`, `flushDrafts`, `recoveredItems`; [storage/items.ts](../../../src/app/storage/items.ts): `executeItemShop`; [Auswahl-/Schreibtests](../../../tests/catalog/desktop-item-selection.test.mjs), [native Auswahl-/Schreibprobe](../../../tools/test-desktop-item-selection.mjs) |
+| Gemeinsame Filter im Generator | [generation-ui.ts](../../../src/app/campaign/generation-ui.ts); [Generierungskontext](../../../tests/campaign/desktop-generation-context.test.mjs) |
 
 Obsidian-Catalogviewtests qualifizieren den Desktopcontroller nicht automatisch.
 Native Lesefluss-, Enter-/Fokus- und Inhaltswechselproben sind begrenzte Belege;
@@ -82,7 +82,7 @@ normalen Weg wieder frei, ohne neue Persistenz.
 
 Eigene Definitionen werden in „Gegenstände und Shops“ bearbeitet. Die öffentliche
 SRD-Referenz bleibt read-only; eine eigene Kopie besitzt ihre eigene Identität.
-[item-definition-validation.ts](../../../src/app/item-definition-validation.ts)
+[item-definition-validation.ts](../../../src/app/catalog/item-definition-validation.ts)
 enthält die gemeinsame Strukturprüfung und die Konstruktion des nächsten eigenen
 Definitionsstands. Renderer und Writer verwenden
 denselben reinen Code. Ein leerer Name oder eine Beschreibung über 100.000 Zeichen

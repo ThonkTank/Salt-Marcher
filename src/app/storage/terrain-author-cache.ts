@@ -1,8 +1,8 @@
-import { TerrainProjectionCache } from '../terrain-projection-cache';
-import type { TerrainGrid, TerrainView } from '../terrain-spatial-model';
-import type { TerrainInvalidation } from '../terrain-frame';
+import { TerrainProjectionCache } from '../atlas/terrain-projection-cache';
+import type { TerrainGrid, TerrainView } from '../atlas/terrain-spatial-model';
+import type { TerrainInvalidation } from '../atlas/terrain-frame';
 import { readTerrainGrid } from './terrain-grid';
-import { terrainGridLayout } from '../terrain-grid-layout';
+import { terrainGridLayout } from '../atlas/terrain-grid-layout';
 /** Main-owned derived surface blocks. The fence must describe committed canonical rows.
  * Seeding comes only from the trusted readonly worker, never from a renderer grid.
  * Advance only after a successful transaction; a rollback never installs its bounds/source.

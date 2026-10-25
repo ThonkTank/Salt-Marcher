@@ -2,8 +2,12 @@ import { performance } from 'node:perf_hooks';
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { standardNeeds, type AutonomyActor, type AutonomyJob } from '../src/app/autonomy-contracts';
-import type { Room } from '../src/app/contracts';
+import {
+  standardNeeds,
+  type AutonomyActor,
+  type AutonomyJob,
+} from '../src/app/runtime/autonomy-contracts';
+import type { Room } from '../src/app/shared/contracts';
 import { createHash } from 'node:crypto';
 import { validateAutonomy } from '../src/app/storage/autonomy';
 import { CampaignStore } from '../src/app/storage/store';

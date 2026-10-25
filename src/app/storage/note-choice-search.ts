@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { checkedWorldNoteRow } from './world-note-row';
 import { noteSearchQuery } from './note-search-query';
 import { noteSearchPreview } from './note-search-preview';
-import type { DeskEntry } from '../scene-desk-contracts';
+import type { DeskEntry } from '../runtime/scene-desk-contracts';
 /** Bounded, canonical note candidates for preparation. Uses the existing derived FTS index. */
 export function searchNoteChoices(
   db: any,

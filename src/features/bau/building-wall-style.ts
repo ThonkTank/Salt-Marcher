@@ -1,5 +1,5 @@
 import type { Building } from "../../model";
-import type { ToolSettings } from "../../properties";
+import type { ToolSettings } from "../../legacy/obsidian/properties";
 
 export type BuildingWallStyle = Pick<Building,
   "wall" | "wallAlpha" | "wallBevel" | "wallWidth" | "wallAssetId">;

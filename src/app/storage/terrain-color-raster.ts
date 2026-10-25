@@ -1,15 +1,15 @@
 import { createHash } from 'node:crypto';
-import { settingsRecord } from '../terrain-height';
-import { terrainTraceMeasure, terrainTraceStart } from '../terrain-timing';
-import type { LandscapeBox, LandscapeRecord } from '../atlas-landscape';
-import { LandscapeRasterizer, landscapeRasterBounds } from '../landscape-raster';
+import { settingsRecord } from '../atlas/terrain-height';
+import { terrainTraceMeasure, terrainTraceStart } from '../atlas/terrain-timing';
+import type { LandscapeBox, LandscapeRecord } from '../atlas/atlas-landscape';
+import { LandscapeRasterizer, landscapeRasterBounds } from '../atlas/landscape-raster';
 import {
   streamTerrainFieldSteps,
   type TerrainSamples,
   type TerrainStream,
-} from '../terrain-field-stream';
-import type { TerrainProjectionCache } from '../terrain-projection-cache';
-import { terrainDirtyRects } from '../terrain-dirty-rects';
+} from '../atlas/terrain-field-stream';
+import type { TerrainProjectionCache } from '../atlas/terrain-projection-cache';
+import { terrainDirtyRects } from '../atlas/terrain-dirty-rects';
 export type ProjectionStream = ((
   kind: 'height' | 'route' | 'lake' | 'base' | 'cover' | 'color' | 'line',
   box: LandscapeBox,

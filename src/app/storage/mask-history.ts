@@ -1,12 +1,12 @@
 import { createHash } from 'node:crypto';
-import { checkedCombat } from '../combat-contracts';
-import { checkedChase } from '../chase-contracts';
+import { checkedCombat } from '../runtime/combat-contracts';
+import { checkedChase } from '../runtime/chase-contracts';
 import {
   checkedMaskHistoryQuery,
   type MaskHistoryQuery,
   type MaskHistoryPage,
   type MaskHistoryItem,
-} from '../mask-history-contracts';
+} from '../runtime/mask-history-contracts';
 import { readLiveScene } from './live';
 const digest = (s: string) => createHash('sha256').update(s).digest('hex');
 const fold = (s: string) =>

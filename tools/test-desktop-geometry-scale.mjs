@@ -16,7 +16,7 @@ buildSync({
   stdin: {
     resolveDir: root,
     contents:
-      "export {CampaignStore} from './src/app/storage/store';export {heightRecord} from './src/app/terrain-height';",
+      "export {CampaignStore} from './src/app/storage/store';export {heightRecord} from './src/app/atlas/terrain-height';",
   },
   outfile: out + '/fixture.cjs',
   bundle: true,

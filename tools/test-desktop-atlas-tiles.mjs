@@ -8,9 +8,9 @@ const root = process.cwd(),
   output = path.resolve('.build/atlas-tile-native', `${Date.now()}-${process.pid}`);
 const native = await createNativeSession({ root, output, name: 'atlas-tiles' });
 const files = [
-  'src/app/atlas-terrain-tile.ts',
-  'src/app/atlas-tile-plan.ts',
-  'src/app/atlas-tile-stream.ts',
+  'src/app/atlas/atlas-terrain-tile.ts',
+  'src/app/atlas/atlas-tile-plan.ts',
+  'src/app/atlas/atlas-tile-stream.ts',
   'src/app/storage/atlas-terrain-tiles.ts',
   'src/app/storage/atlas-tile-cache.ts',
   'desktop/atlas-region-worker.ts',

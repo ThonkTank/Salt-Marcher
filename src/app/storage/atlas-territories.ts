@@ -10,9 +10,9 @@ import {
   type TerritoryAction,
   type AtlasTerritory,
   type AtlasTerritoryLayer,
-} from '../atlas-territories';
-import { subtractPolygons, intersectPolygons } from '../landscape-brush';
-import type { LandscapeBox } from '../atlas-landscape';
+} from '../atlas/atlas-territories';
+import { subtractPolygons, intersectPolygons } from '../atlas/landscape-brush';
+import type { LandscapeBox } from '../atlas/atlas-landscape';
 export function installTerritories(db: any) {
   db.exec(`
  CREATE TABLE IF NOT EXISTS atlas_territory_layer(campaign_id TEXT NOT NULL REFERENCES campaign(id),id TEXT NOT NULL,revision INTEGER NOT NULL,payload TEXT NOT NULL,PRIMARY KEY(campaign_id,id)) STRICT;

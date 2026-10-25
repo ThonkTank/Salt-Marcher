@@ -87,7 +87,7 @@ Navigation und Autorenfakten bleiben erhalten. Die Wiederholung baut die
 aktuelle Szene neu auf, ohne zweite Pointerhandler oder einen anderen
 Kampagnenstand. Eine leere Szene benötigt keine erfundenen Hexes oder Räume.
 
-`tests/desktop-passive-map-canvas.test.mjs` prüft Kamera, Szenen-/Leerzustände und
+`tests/runtime/desktop-passive-map-canvas.test.mjs` prüft Kamera, Szenen-/Leerzustände und
 lokale Wiederholung; die bestehende Reise-DOMprüfung prüft offene Ziel-/Hexdaten
 bei Zoom und Reset. Physische Treffer-/Dragabnahme erfolgt zusätzlich am
 Desktop. Ein vollständig nahtloser Atlas aller Karten, alle weiteren Canvas-

@@ -45,13 +45,13 @@ die externen Einstiegsmethoden und die kanonische Speichergrenze bleiben erhalte
 
 | Änderung | Zuständiger Einstieg |
 | --- | --- |
-| Bereiche, Gruppen und Werkzeugrouten | [atlas-tool-catalog.ts](../../../src/app/atlas-tool-catalog.ts) ordnet vorhandene Controls und Operationswerte zu. Die globale Auswahl verwendet im Dungeon das bestehende Zeichen-Auswahlwerkzeug, damit Raum- und Pfadgriffe erreichbar bleiben. Nicht verfügbare Werkzeuge und leere Gruppen bleiben ausgeblendet. |
-| Leisten, umgehängte Controls, Kontextpanel | [AtlasWorkspaceLayout](../../../src/app/atlas-workspace-layout.ts); Originalcontrols mit ihren Handlern verschieben, nicht kopieren. |
-| Breiten, Anordnung, responsive Darstellung | [atlas-workspace.css](../../../src/app/atlas-workspace.css); der [Desktopbuild](../../../tools/build-desktop.mjs) hängt sie an `app.css` an. |
-| Werkzeug-/Navigationswechsel und offene Eingaben | [CampaignAtlasWorkbench](../../../src/app/campaign-atlas-ui.ts): `new AtlasWorkspaceLayout` verbindet `prepare`/`tool`/`navigation` mit Flush und `setFamily`. Layout ruft diese Fachgrenze auf; Operationswerte ändern sich erst nach erfolgreicher Entwurfsprüfung. |
-| Kartenfläche nach Paneländerung | [AtlasCanvas.resizeViewport](../../../src/app/atlas-canvas.ts) erhält Weltmittelpunkt und Meter pro CSS-Pixel ohne Historyeintrag. |
+| Bereiche, Gruppen und Werkzeugrouten | [atlas-tool-catalog.ts](../../../src/app/atlas/atlas-tool-catalog.ts) ordnet vorhandene Controls und Operationswerte zu. Die globale Auswahl verwendet im Dungeon das bestehende Zeichen-Auswahlwerkzeug, damit Raum- und Pfadgriffe erreichbar bleiben. Nicht verfügbare Werkzeuge und leere Gruppen bleiben ausgeblendet. |
+| Leisten, umgehängte Controls, Kontextpanel | [AtlasWorkspaceLayout](../../../src/app/atlas/atlas-workspace-layout.ts); Originalcontrols mit ihren Handlern verschieben, nicht kopieren. |
+| Breiten, Anordnung, responsive Darstellung | [atlas-workspace.css](../../../src/app/atlas/atlas-workspace.css); der [Desktopbuild](../../../tools/build-desktop.mjs) hängt sie an `app.css` an. |
+| Werkzeug-/Navigationswechsel und offene Eingaben | [CampaignAtlasWorkbench](../../../src/app/atlas/campaign-atlas-ui.ts): `new AtlasWorkspaceLayout` verbindet `prepare`/`tool`/`navigation` mit Flush und `setFamily`. Layout ruft diese Fachgrenze auf; Operationswerte ändern sich erst nach erfolgreicher Entwurfsprüfung. |
+| Kartenfläche nach Paneländerung | [AtlasCanvas.resizeViewport](../../../src/app/atlas/atlas-canvas.ts) erhält Weltmittelpunkt und Meter pro CSS-Pixel ohne Historyeintrag. |
 
-Prüfweg: [Gruppen- und Werkzeugregressionen](../../../tests/desktop-atlas-tool-hierarchy.test.mjs) für Vollständigkeit, Gruppen-/Werkzeugspeicher, abgelehnte und überlappende Wechsel; [Kameraregressionen](../../../tests/desktop-atlas-canvas.test.mjs) für Größenwechsel;
+Prüfweg: [Gruppen- und Werkzeugregressionen](../../../tests/atlas/desktop-atlas-tool-hierarchy.test.mjs) für Vollständigkeit, Gruppen-/Werkzeugspeicher, abgelehnte und überlappende Wechsel; [Kameraregressionen](../../../tests/atlas/desktop-atlas-canvas.test.mjs) für Größenwechsel;
 [Layoutprobe](../../../tools/test-desktop-atlas-layout.mjs) für den nativen Editorablauf
 mit synthetischem Profil, Close und frischem Öffnen. Letztere nach
 `npm run desktop:runtime` und `npm run build:desktop` mit

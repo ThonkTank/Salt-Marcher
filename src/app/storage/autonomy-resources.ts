@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import type { AutonomyJob } from '../autonomy-contracts';
+import type { AutonomyJob } from '../runtime/autonomy-contracts';
 export function installAutonomyResources(db: any) {
   db.exec(`CREATE TABLE IF NOT EXISTS autonomy_target_booking(campaign_id TEXT NOT NULL,id TEXT NOT NULL,job_id TEXT NOT NULL,actor_id TEXT NOT NULL,resource_kind TEXT NOT NULL,resource_id TEXT NOT NULL,epoch_id TEXT NOT NULL,from_ms TEXT NOT NULL,to_ms TEXT NOT NULL,PRIMARY KEY(campaign_id,id),FOREIGN KEY(campaign_id,job_id) REFERENCES autonomy_job(campaign_id,id),FOREIGN KEY(campaign_id,actor_id) REFERENCES autonomy_actor(campaign_id,id)) STRICT;
 CREATE INDEX IF NOT EXISTS autonomy_target_time ON autonomy_target_booking(campaign_id,resource_kind,resource_id,epoch_id,from_ms,to_ms);`);

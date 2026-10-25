@@ -5,7 +5,7 @@ import { Transform } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import path from 'node:path';
 import type { CampaignStore } from '../src/app/storage/store';
-import type { ConflictChoice } from '../src/app/campaign-contracts';
+import type { ConflictChoice } from '../src/app/campaign/campaign-contracts';
 import {
   checkCampaignContents,
   campaignMediaPath,

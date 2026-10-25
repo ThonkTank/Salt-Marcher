@@ -19,6 +19,7 @@ SaltMarcher wird seit dem 16. Oktober 2026 auf Basis der bisherigen Kampagnenwer
 - [Atlas auf einen Blick](docs/atlas/requirements/atlas.md#atlas-auf-einen-blick): integrierter Atlasstand und offene Lücken.
 - [Dokumentationsindex](docs/INDEX.md): Fachanforderungen und Nachweise.
 - [Architektur](docs/project/architecture/overview.md#prozesse-und-verantwortlichkeiten): Prozesse, Fachbesitzer und Schutzgrenzen.
+- [Code nach Zuständigkeit](docs/project/architecture/overview.md#code-nach-zuständigkeit-finden): Appbereiche, Tests und historischer Adapter.
 
 
 ## Lokal entwickeln
@@ -33,7 +34,7 @@ npm run dev -- --data-dir /tmp/campaign-workbench-smoke
 Gezielt prüfen (die gemeinsamen Testartefakte werden automatisch vorbereitet):
 
 ```bash
-npm test -- tests/desktop-combat-switch.test.mjs
+npm test -- tests/runtime/desktop-combat-switch.test.mjs
 npm test -- --list
 npm run check
 npm run check:desktop

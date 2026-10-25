@@ -1,11 +1,11 @@
 import { createHash } from 'node:crypto';
-import { validateRoom } from '../contracts';
+import { validateRoom } from '../shared/contracts';
 import type {
   NpcPlaces,
   NpcPlaceSite,
   NpcBuildingQuery,
   NpcBuildingChoices,
-} from '../npc-places-contracts';
+} from '../campaign/npc-places-contracts';
 import { readNpc } from './npcs';
 import { npcPosition } from './npc-world';
 import { deskContent } from './scene-desk';

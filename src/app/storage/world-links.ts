@@ -1,4 +1,4 @@
-import { documentReferences } from '../text-references';
+import { documentReferences } from '../campaign/text-references';
 import {
   searchTextReferences,
   installTextReferenceReader,
@@ -10,8 +10,8 @@ import type {
   WorldLinkNode,
   WorldLinksQuery,
   WorldLinksPage,
-} from '../world-links-contracts';
-import { worldLinkKey, worldLinkKinds } from '../world-links-contracts';
+} from '../campaign/world-links-contracts';
+import { worldLinkKey, worldLinkKinds } from '../campaign/world-links-contracts';
 import { npcPosition } from './npc-world';
 import { readCreature, searchCreatures, readEncounterPlan } from './encounters';
 import { readItemDefinition } from './item-definitions';

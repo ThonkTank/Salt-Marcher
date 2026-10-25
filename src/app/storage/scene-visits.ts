@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from 'node:crypto';
-import type { SceneVisit, SceneVisitPage } from '../scene-visit-contracts';
+import type { SceneVisit, SceneVisitPage } from '../runtime/scene-visit-contracts';
 import { readVisitOutcome } from './visit-outcomes';
 const hash = (s: string) => createHash('sha256').update(s).digest('hex');
 function decoded(row: any) {

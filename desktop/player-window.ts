@@ -1,6 +1,6 @@
-import { visualPlayerFrame } from '../src/app/player-frame';
+import { visualPlayerFrame } from '../src/app/runtime/player-frame';
 import type { BrowserWindow, Rectangle } from 'electron';
-import type { PlayerFrame, PlayerSettings } from '../src/app/player-contracts';
+import type { PlayerFrame, PlayerSettings } from '../src/app/runtime/player-contracts';
 export interface PlayerDisplayState {
   owner: { id: string; token: string };
   settings: PlayerSettings;

@@ -57,8 +57,8 @@ SaltMarcher-Quellen:
 - `src/core/creatures/catalog.ts`
 - `src/core/creatures/srd-5.1.generated.json`
 - `src/core/encounter/`
-- `src/renderer/features/catalog/`
-- `src/renderer/features/encounter/`
+- `src/legacy/obsidian/renderer/features/catalog/`
+- `src/legacy/obsidian/renderer/features/encounter/`
 
 Offizielle Produktreferenzen für die Mindestabnahme:
 
