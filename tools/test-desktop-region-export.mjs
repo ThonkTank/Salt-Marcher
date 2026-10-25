@@ -316,13 +316,18 @@ try {
     await choose('Klosterweg');
     if (await page.locator('#atlas-secondary').isVisible())
       await page.locator('#atlas-secondary-close').click();
+    // Closing the details pane resizes the canvas. Let ResizeObserver publish
+    // the new view before waiting for geometry and terrain to accept a drag.
+    await page.evaluate(
+      () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))),
+    );
     await atlasCanvasReady(page);
+    await page.waitForFunction(
+      () => document.querySelector('#campaign-map')?.dataset.terrainReady === 'ready',
+    );
     await page.waitForFunction(() => document.querySelector('#land-name')?.value === 'Klosterweg');
-    const view = JSON.parse(await page.locator('#campaign-map').getAttribute('data-atlas-view')),
-      b = await page.locator('#campaign-map').boundingBox(),
-      p = originalRoad.points[1],
-      x = b.x + ((p.x - view.x) / view.width) * b.width,
-      y = b.y + ((p.y - view.y) / view.height) * b.height;
+    const { x, y, target } = await atlasCanvasPoint(page, originalRoad.points[1], false);
+    assert.equal(target, 'campaign-map');
     await page.mouse.move(x, y);
     await page.mouse.down();
     await page.mouse.move(x + 24, y + 28, { steps: 5 });
