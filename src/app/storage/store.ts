@@ -3,125 +3,129 @@ import { installSourceCellIndex } from './atlas-source-cell';
 import DATA_FORMAT from '../data-format.json';
 import { atlasProjectionSource, installAtlasShapeSource } from './atlas-shape-source';
 import {
-  decodeRoom,
-  checkedRoomHistory,
-  decodeRoomDraft,
   decodePreparationDraft,
+  decodeRoom,
+  decodeRoomDraft,
   preparationDraftTable,
-  decodeLocation,
   readStoredPlan,
+  storedAddRoom,
+  storedEdit,
+  storedHistory,
+  storedKeepRoomDraft,
+  storedReconcile,
 } from './stored-records';
-import { validateDatabase, validateBackupCandidate } from './snapshot-validation';
-import { readSessionRecapDraft, keepSessionRecapDraft } from './session-recap';
+import { validateBackupCandidate, validateDatabase } from './snapshot-validation';
+import { keepSessionRecapDraft, readSessionRecapDraft } from './session-recap';
 import { profileBounds, terrainProfile } from '../atlas/terrain-profile';
 import { installTravelHistory } from './travel-history';
 import { checkedWorldNoteRow } from './world-note-row';
-import { nearestAnchor } from '../atlas/drawing-model';
-import {
-  splitGroupRoom,
-  scaleRoomGroup,
-  installRoomGroups,
-  storeGroupDraft,
-  groupRecipeForHouse,
-  refreshChangedGroupHulls,
-  refreshGroupHull,
-  removeGeneratedGroup,
-  validateRoomGroups,
-} from './room-groups';
-import { installTerritories, readTerritories, executeTerritory } from './atlas-territories';
+import { installRoomGroups, validateRoomGroups } from './room-groups';
+import { installTerritories, readTerritories } from './atlas-territories';
 import { TerrainAuthorCache } from './terrain-author-cache';
 import { terrainTraceMeasure } from '../atlas/terrain-timing';
 import { vegetationScene } from './vegetation';
-import { TerrainSampler } from '../atlas/terrain-height';
 import { readSceneEncounterSelection } from './scene-encounter-selection';
 import { noteMergeWork } from './note-merge';
-import { REGION_ACTIVE_BYTES } from '../atlas/atlas-region-contracts';
-import { readAtlasScene } from './world';
-import { CommittedSources } from './committed-sources';
-import { atlasReadChanges, narrowTerrainJournal } from './atlas-read-journal';
-import { changedHeightBounds, unionTerrainBounds } from './terrain-invalidation';
 import type {
   AtlasRegionGeometry,
   AtlasRegionSource,
   AtlasRegionView,
 } from '../atlas/atlas-region-contracts';
+import { storedExecuteWorld } from './world';
+import {
+  installWorldSchema,
+  previewTravel,
+  readWorldCalendar as readNpcPlanCalendar,
+  readSceneWorld,
+  readWorld,
+  reconcileWorld,
+} from './world';
+import { CommittedSources } from './committed-sources';
+import { atlasReadChanges } from './atlas-read-journal';
 import { drawingElement, drawingRoom } from './drawing';
+import {
+  activateDungeonFeature,
+  drawingView,
+  executeDrawing,
+  installDrawingSchema,
+  roomMapStyle,
+} from './drawing';
 import { dungeonMapView } from './dungeon-play';
-import { roomGeometries, visibleRoomWhere, roomDirectoryQuery, roomOrder } from './room-reads';
-import type { WorkspaceShell, WorkspaceGeometry, RoomDirectoryQuery } from '../shared/contracts';
+import {
+  dungeonCommandState,
+  dungeonDisplay,
+  dungeonGeometry,
+  dungeonView,
+  executeDungeon,
+  installDungeonPlaySchema,
+  previewDungeon,
+} from './dungeon-play';
+import { roomDirectoryQuery, roomGeometries, roomOrder, visibleRoomWhere } from './room-reads';
+import type { RoomDirectoryQuery, WorkspaceGeometry, WorkspaceShell } from '../shared/contracts';
+import {
+  type Campaign,
+  type CampaignRename,
+  type Edit,
+  type Room,
+  type RoomCommit,
+  type WorkingRoomDraft,
+  type Workspace,
+} from '../shared/contracts';
 import { keepLiveMomentDraft as keepMomentDraft } from './live-moment-drafts';
 import { atlasPartyPoint } from '../atlas/atlas-runtime-model';
-import {
-  installLandscape,
-  landscapeRegion,
-  executeLandscape,
-  terrainRegion,
-} from './atlas-landscape';
-import { rememberSourceUnlink } from './note-source-history';
-import { readNoteThread, checkNoteThread } from './note-thread';
-import {
-  captureKeyNote,
-  keyNoteCaptureStatus,
-  readKeyNoteChoices,
-  hasNoteTitle,
-} from './key-note-capture';
-import { appendNoteExcerpt } from '../campaign/note-excerpt';
+import { installLandscape, landscapeRegion, terrainRegion } from './atlas-landscape';
+import { checkNoteThread, readNoteThread } from './note-thread';
+import { captureKeyNote, keyNoteCaptureStatus, readKeyNoteChoices } from './key-note-capture';
 import type { KeyNoteCaptureCommand } from '../campaign/key-note-capture-contracts';
 import { readNoteRoomUses } from './note-room-uses';
 import {
-  installAtlasTravel,
   atlasEntrances,
-  atlasDisplayEntrances,
   atlasLocalJourney,
-  putAtlasEntrance,
+  installAtlasTravel,
   previewAtlasLocal,
-  executeAtlasTravel,
-  atlasLocalGeometryBasis,
+  storedApplyAtlasTravel,
 } from './atlas-travel';
-import { atlasHexAt, atlasFrame, localToAtlas } from '../atlas/campaign-atlas-model';
-import { newLocation } from '../../features/location/location-schema';
 import {
-  hasAtlasReceipt,
-  installCampaignAtlas,
-  createCampaignAtlas,
-  atlasRoot,
+  applyAtlasCommand,
   atlasBindings,
   atlasHistoryState,
-  atlasCapturedChanges,
-  bindAtlas,
-  executeAtlasWrite,
+  atlasRoot,
+  hasAtlasReceipt,
+  installCampaignAtlas,
+  storedAtlasCitySite,
+  storedAtlasOverview,
+  storedCampaignAtlas,
+  storedCoupleAtlasWall,
+  storedReconcileAtlasGeometry,
 } from './campaign-atlas';
 import type { AtlasCommand, CampaignAtlas } from '../atlas/campaign-atlas-contracts';
 import {
-  catalogOutcome,
+  applyCampaignCatalog,
   catalogCommand,
-  catalogReceipt,
-  noteCampaignCreated,
+  catalogOutcome,
   noteCampaignOpened,
 } from './campaign-catalog';
 import type {
   CampaignCatalogCommand,
   CampaignCatalogReceipt,
 } from '../campaign/campaign-contracts';
-const roomNumberOrder = new Intl.Collator('de', { numeric: true });
+import type { ConflictChoice } from '../campaign/campaign-contracts';
 import { readCombatResolution } from './combat-resolution';
 import { ChronicleReadSession } from './chronicle-pages';
-
 import { readLocationActivities } from './location-activity';
 import { readCityActivities } from './city-activity';
-import { readWorldCalendar as readNpcPlanCalendar } from './world';
-import { readNpcPlaces, readNpcBuildingChoices } from './npc-places';
+import { readNpcBuildingChoices, readNpcPlaces } from './npc-places';
 import { readLocationMaterials } from './location-notebook';
 import { readWorldLinks } from './world-links';
 import {
-  installWorldRelationPairs,
-  executeWorldRelationPair,
-  reconcileWorldRelationPair,
-  readWorldRelationPairDraft,
-  keepWorldRelationPairDraft,
   discardWorldRelationPairDraft,
-  readWorldRelationPairHistory,
+  executeWorldRelationPair,
   executeWorldRelationPairHistory,
+  installWorldRelationPairs,
+  keepWorldRelationPairDraft,
+  readWorldRelationPairDraft,
+  readWorldRelationPairHistory,
+  reconcileWorldRelationPair,
   reconcileWorldRelationPairHistory,
 } from './world-relation-pair';
 import type {
@@ -136,302 +140,235 @@ import { readSceneVisits } from './scene-visits';
 import { readNarrativeJournal } from './narrative-journal';
 import { readSessionProgress } from './visit-outcomes';
 import { readSessionPacket } from './session-packet';
-import { readMaskHistory, installMaskHistoryIndexes } from './mask-history';
+import { installMaskHistoryIndexes, readMaskHistory } from './mask-history';
 import { keepChaseDraft } from './chase-drafts';
 import { readDay } from './adventuring-day';
 import { installNpcRecords } from './npc-record';
 import {
-  readNpc,
-  readNpcs,
+  discardNpcDraft,
   executeNpc,
+  keepNpcDraft,
   npcDraft,
   npcDrafts,
-  keepNpcDraft,
-  discardNpcDraft,
+  readNpc,
+  readNpcs,
   reconcileNpc,
 } from './npcs';
-import type { NpcCommand, NpcQuery, NpcDraft } from '../campaign/npc-contracts';
+import type { NpcCommand, NpcDraft, NpcQuery } from '../campaign/npc-contracts';
 import { readWorldSources } from './world-sources';
 import {
-  assertNpcOutsideOpenCombat,
-  removePartyFromMasks,
-  syncOpenMaskHealth,
-} from './mask-health';
-import {
-  installGroups,
-  groupView,
-  preparedGroups,
-  groupDraft,
-  keepGroupDraft,
   discardGroupDraft,
+  groupDraft,
+  groupView,
+  installGroups,
+  keepGroupDraft,
+  preparedGroups,
 } from './groups';
 import {
-  installTreasury,
-  readTreasuryDraft,
-  keepTreasuryDraft,
   discardTreasuryDraft,
+  installTreasury,
+  keepTreasuryDraft,
+  readTreasuryDraft,
   treasureHistory,
 } from './treasury';
 import {
+  deskContent,
   installSceneDesk,
+  keepSceneCreationDraft,
+  pinSceneDesk,
+  readSceneCreationDraft,
   readSceneDesk,
   searchDesk,
-  deskContent,
-  pinSceneDesk,
-  applySceneCreation,
-  readSceneCreationDraft,
-  keepSceneCreationDraft,
 } from './scene-desk';
 import {
-  installFinishDrafts,
-  readFinishDraft,
-  keepFinishDraft,
   discardFinishDraft,
+  installFinishDrafts,
+  keepFinishDraft,
+  readFinishDraft,
 } from './finish-drafts';
 import {
-  installNarrative,
-  readNarrative,
-  saveNarrative,
-  validateNarrativeState,
-  keepNarrativeDraft,
   discardNarrativeDraft,
+  installNarrative,
+  keepNarrativeDraft,
+  readNarrative,
 } from './narrative';
 import { readPreparedGroup } from './session';
 import {
-  installCombatDraftSchema,
-  readCombatDraft,
+  executeSession,
+  generateSession,
+  installSessionSchema,
+  readSession,
+  readSessionRun,
+  readSessionRuns,
+  regenerateSessionProposal,
+  regenerateSessionReward,
+  scenePreparation,
+} from './session';
+import {
   combatDrafts,
-  keepCombatDraft,
   discardCombatDraft,
+  installCombatDraftSchema,
+  keepCombatDraft,
+  readCombatDraft,
 } from './combat-drafts';
 import type { CombatDraftKind, CombatWorkingDraft } from '../runtime/combat-draft-contracts';
 import { installContentRuntime } from './content-runtime';
-import { installTriggers, createTriggerEvents } from './triggers';
+import { installTriggers } from './triggers';
 import { ExtensionRegistry } from './extensions';
 import type { ExtensionCommand } from '../workspace/extension-contracts';
 import { dungeonBudgetView, validateDungeonPlacement } from './dungeon-budget';
 import type { CommitOutcome } from '../shared/commit-receipt';
-import { GraphShadow, graphView, graphLayout, installGraph } from './graph';
+import { checkedCommitReference, type CommitReference } from '../shared/commit-receipt';
+import { graphLayout, GraphShadow, graphView, installGraph } from './graph';
 import type { GraphCommand, GraphView } from '../atlas/graph-contracts';
-import type { DrawingView } from '../atlas/drawing-contracts';
-import type { PathPreview } from '../atlas/path-contracts';
+import type { DrawingCommand, DrawingView } from '../atlas/drawing-contracts';
+import type { DungeonPath, PathPreview } from '../atlas/path-contracts';
 import { installDungeonKey } from './dungeon-key';
 import { installPathSchema, previewDungeonPath } from './paths';
-import type { DungeonPath } from '../atlas/path-contracts';
 import { readCommitReceipt } from './commit-receipt';
-import { checkedCommitReference, type CommitReference } from '../shared/commit-receipt';
 import { installVolumeSchema, readDungeonVolume } from './volume';
-import { installDungeonSenses, evaluateDungeonSenses } from './dungeon-senses';
+import { installDungeonSenses } from './dungeon-senses';
 import { installAutonomyResources } from './autonomy-resources';
 import { installNpcDungeonSchema } from './npc-dungeon';
 import { installAutonomyDungeonSchema } from './autonomy-dungeon';
-import {
-  installDungeonPlaySchema,
-  dungeonCommandState,
-  dungeonDisplay,
-  dungeonView,
-  previewDungeon,
-  executeDungeon,
-  validateDungeonPlay,
-  dungeonGeometry,
-  dungeonGeometryBasis,
-} from './dungeon-play';
 import type { DungeonCommand, DungeonRequest } from '../atlas/dungeon-contracts';
-import {
-  installDrawingSchema,
-  roomMapStyle,
-  drawingView,
-  executeDrawing,
-  drawingHistory,
-  rebaseDrawingRoomHistory,
-  activateDungeonFeature,
-  advanceDungeonFeatures,
-  validateFeatureStates,
-} from './drawing';
-import type { DrawingCommand } from '../atlas/drawing-contracts';
 import { installNpcWorldSchema } from './npc-world';
 import {
-  installAutonomySchema,
-  autonomyView,
   autonomyDecision,
-  executeAutonomy,
+  autonomyView,
   captureAutonomyBasis,
-  recordAutonomyTime,
-  catchUpAutonomy,
-  validateAutonomy,
+  executeAutonomy,
+  installAutonomySchema,
 } from './autonomy';
 import type { AutonomyCommand } from '../runtime/autonomy-contracts';
 import {
+  executePlayer,
   installPlayerSchema,
+  playerAssets,
+  playerMediaFiles,
   playerObservers,
   playerSettings,
   playerView,
   projectPlayer,
-  executePlayer,
   savePlayerAsset,
-  playerAssets,
-  playerMediaFiles,
   setPlayerWindow,
-  validatePlayer,
 } from './player';
-import type { PlayerCommand, PlayerAsset, PlayerFrame } from '../runtime/player-contracts';
+import type { PlayerAsset, PlayerCommand, PlayerFrame } from '../runtime/player-contracts';
 import {
-  installCitySchema,
   cityOverview,
-  readCity,
   executeCity,
+  installCitySchema,
+  readCity,
   readCityBuildingChoices,
-  readCitySite,
-  readCityHeader,
 } from './city';
 import type { CityCommand } from '../atlas/city-contracts';
+import { storedCreate, storedRenameCampaign } from './campaign-data';
 import {
-  installCampaignSchema,
-  validateCampaignSnapshotSettings,
-  campaignOverview,
-  pruneCampaignSnapshot,
-  snapshotCounts,
-  definitionConflicts,
-  sharedPlan,
   archiveSourceChoices,
-  remapSnapshot,
-  publishSnapshot,
-  trashCampaign,
+  campaignOverview,
+  definitionConflicts,
   eraseCampaignRows,
+  installCampaignSchema,
+  pruneCampaignSnapshot,
+  publishSnapshot,
+  remapSnapshot,
+  sharedPlan,
+  snapshotCounts,
+  trashCampaign,
+  validateCampaignSnapshotSettings,
 } from './campaign-data';
-import { openSync as openSnapshot, readSync, closeSync as closeSnapshot } from 'node:fs';
-import type { ConflictChoice } from '../campaign/campaign-contracts';
+import {
+  closeSync as closeSnapshot,
+  closeSync,
+  copyFileSync,
+  fsyncSync,
+  mkdirSync,
+  mkdtempSync,
+  openSync as openSnapshot,
+  openSync,
+  readSync,
+  renameSync,
+  rmSync,
+} from 'node:fs';
 import { canonicalJson } from '../campaign/generation/canonical-json';
 import {
+  audioFile,
+  audioLibrarySnapshot,
+  audioMediaFiles,
+  executeMusic,
+  ingestAudio,
   installMusicSchema,
-  readAudioAssets,
+  mergeAudioLibrary,
   readAudioAsset,
+  readAudioAssets,
   readMusic,
   readMusicFavorites,
   readMusicSubject,
-  executeMusic,
-  saveMusicPosition,
   refreshMusicContext,
-  ingestAudio,
-  audioLibrarySnapshot,
-  mergeAudioLibrary,
-  audioFile,
-  audioMediaFiles,
+  saveMusicPosition,
 } from './music';
 import type {
-  MusicView,
-  AudioQuery,
-  MusicSubject,
-  MusicCommand,
   AudioAsset,
+  AudioQuery,
+  MusicCommand,
+  MusicSubject,
+  MusicView,
 } from '../runtime/music-contracts';
-import {
-  installWorldSchema,
-  readWorld,
-  readSceneWorld,
-  previewTravel,
-  executeWorld,
-  reconcileWorld,
-  syncSceneWorld,
-  inheritScenePosition,
-  validateWorldBackup,
-  travelEnvironmentBasis,
-} from './world';
 import type { TravelRequest, WorldCommand } from '../runtime/world-contracts';
 import {
+  executeItemShop,
   installItemsSchema,
   readShop,
   readShopHistory,
   readShops,
   sceneShops,
-  executeItemShop,
-  restockDue,
-  validateItemsBackup,
 } from './items';
 import { readItemDefinition, readItemDefinitions } from './item-definitions';
 import type { ItemQuery, ItemShopCommand } from '../catalog/items-contracts';
 import { createHash, randomUUID } from 'node:crypto';
-import { noteSearchQuery } from './note-search-query';
-import { noteSearchPreview } from './note-search-preview';
-import {
-  mkdirSync,
-  mkdtempSync,
-  copyFileSync,
-  openSync,
-  closeSync,
-  fsyncSync,
-  renameSync,
-  rmSync,
-} from 'node:fs';
 import { dirname } from 'node:path';
 import Database from 'better-sqlite3';
 import {
-  validateRoom,
-  type Campaign,
-  type CampaignRename,
-  type Edit,
-  type Room,
-  type RoomCommit,
-  type WorkingRoomDraft,
-  type Workspace,
-} from '../shared/contracts';
-import {
-  validatePreparation,
-  checkedPreparationDraft,
   preparationTarget,
-  type PreparationDraft,
-  type PreparationEdit,
   type Preparation,
   type PreparationCommand,
-  type PreparationChange,
+  type PreparationDraft,
+  type PreparationEdit,
   type PreparationSelection,
-  type Note,
 } from '../campaign/preparation-contracts';
 import { type ManualPlan } from '../../features/planner/manual-planner';
-import { worldNoteDocument } from '../../features/world/world-notes';
-import { campaignLocalId } from '../../features/campaign/campaign-contracts';
-
-import {
-  tutorialLessonRevision,
-  checkedTutorialRun,
-  type TutorialRun,
-} from '../workspace/tutorial';
+import { applyLiveCommand, consumeSceneTime } from './live';
 import {
   installLiveSchema,
-  ensureLiveOwners,
+  liveStatus,
+  readArchivedRoster,
+  readArchives,
   readLive,
   readLiveScene,
-  readArchives,
-  readArchivedRoster,
-  validateLiveBackup,
-  executeLive,
-  liveStatus,
 } from './live';
 import type { LiveCommand, LiveScene } from '../runtime/live-contracts';
-import { installCombatSchema, readCombat, executeCombat } from './combat';
-
-import { installChaseSchema, readChase, executeChase, reconcileChaseParticipants } from './chase';
+import { executeCombat, installCombatSchema, readCombat } from './combat';
+import { executeChase, installChaseSchema, readChase } from './chase';
 import { installMaskReconciliationSchema } from './mask-reconciliation';
-import { installRuleReferenceSchema, readSceneRules, executeSceneRule } from './rule-references';
+import { executeSceneRule, installRuleReferenceSchema, readSceneRules } from './rule-references';
 import type { SceneRuleCommand } from '../catalog/rule-reference-contracts';
-import { installSceneCheckSchema, readSceneChecks, executeSceneCheck } from './scene-checks';
+import { executeSceneCheck, installSceneCheckSchema, readSceneChecks } from './scene-checks';
 import type { SceneCheckCommand } from '../runtime/scene-check-contracts';
 import type { ChaseCommand } from '../runtime/chase-contracts';
 import type { CombatCommand } from '../runtime/combat-contracts';
+import { storedExecuteProgress } from './progression';
 import {
   installProgressSchema,
-  createProgress,
+  readLedger,
+  readLedgerDetail,
+  readLedgerInventory,
+  readLootBalance,
   readProgress,
   readProgressHistory,
-  readLootBalance,
-  readTreasures,
   readTreasure,
-  readLedger,
-  readLedgerInventory,
-  readLedgerDetail,
-  executeProgress,
+  readTreasures,
 } from './progression';
-import type { ProgressCommand, LedgerQuery, LedgerInventoryQuery } from '../runtime/progression';
+import type { LedgerInventoryQuery, LedgerQuery, ProgressCommand } from '../runtime/progression';
 import { readChronicle } from './chronicle';
 import {
   installEncounterSchema,
@@ -440,17 +377,17 @@ import {
   saveEncounterPlan,
 } from './encounters';
 import type { EncounterPlanCommand } from '../catalog/encounter-contracts';
-import { readPresetRegistry, executePresetCommand, readPresetOutcome } from './preset-registry';
+import { executePresetCommand, readPresetOutcome, readPresetRegistry } from './preset-registry';
 import {
-  installGenerationSchema,
-  readEncounterTables,
-  readLootTables,
-  readGeneratorRegistry,
+  acceptGeneration,
   executeGeneration,
   generateEncounters,
-  acceptGeneration,
-  readGenerationRuns,
+  installGenerationSchema,
+  readEncounterTables,
   readGenerationRun,
+  readGenerationRuns,
+  readGeneratorRegistry,
+  readLootTables,
   rollLoot,
 } from './generation';
 import type {
@@ -458,22 +395,23 @@ import type {
   GenerationRequest,
   LootRollCommand,
 } from '../campaign/generation-contracts';
-import {
-  installSessionSchema,
-  readSession,
-  executeSession,
-  generateSession,
-  regenerateSessionProposal,
-  regenerateSessionReward,
-  readSessionRuns,
-  readSessionRun,
-  readWorldActor,
-  scenePreparation,
-  cleanSessionVisits,
-} from './session';
 import type { SessionCommand, SessionGenerationRequest } from '../campaign/session-contracts';
+import { storedAtlasRegionView } from './atlas-region';
+import {
+  commitPreparation,
+  storedKeepPreparationDrafts,
+  storedPreparation,
+  storedReconcilePreparationPlan,
+  storedSelectPreparation,
+} from './preparation';
+import { storedAtlasHeight } from './terrain-grid';
+import {
+  checkedTutorialRun,
+  tutorialLessonRevision,
+  type TutorialRun,
+} from '../workspace/tutorial-contracts';
+const roomNumberOrder = new Intl.Collator('de', { numeric: true });
 
-const noteTitleOrder = new Intl.Collator('de', { numeric: true, sensitivity: 'base' });
 const json = (value: unknown) => JSON.stringify(value);
 const hash = (value: string | Buffer) => createHash('sha256').update(value).digest('hex');
 const commandFingerprint = (command: object) => hash(json({ ...command, token: undefined }));
@@ -679,215 +617,29 @@ export class CampaignStore {
     );
   }
   private reconcileAtlasGeometry(token: string) {
-    const cam = this.guard(token);
-    if (
-      !this.db
-        .prepare(
-          "SELECT 1 FROM scene_position WHERE campaign_id=? AND (json_type(payload,'$.dungeon')='object' OR json_type(payload,'$.city')='object') LIMIT 1",
-        )
-        .get(cam) &&
-      !['world_journey', 'dungeon_journey', 'atlas_local_journey'].some((table) =>
-        this.db
-          .prepare(
-            'SELECT 1 FROM ' +
-              table +
-              " WHERE campaign_id=? AND json_extract(payload,'$.status')='active' LIMIT 1",
-          )
-          .get(cam),
-      )
-    )
-      return;
-    const root = atlasRoot(this.db, cam),
-      geometry = dungeonGeometry(this.db, cam);
-    // Reconcile spatial facts only; descriptions, perceptions and traces are consumers.
-    const a = {
-      terrain: JSON.parse(
-        this.db
-          .prepare("SELECT payload FROM world_record WHERE campaign_id=? AND kind='map' AND id=?")
-          .get(cam, root.map_id).payload,
-      ),
-      bindings: atlasBindings(this.db, cam),
-      cities: this.cities(token).cities.map((h) => this.city(token, h.id)),
-    };
-    for (const row of this.db
-      .prepare('SELECT * FROM scene_position WHERE campaign_id=?')
-      .all(cam)) {
-      const p = JSON.parse(row.payload),
-        binding = p.dungeon
-          ? a.bindings.find((b) => b.kind === 'dungeon' && b.ownerId === p.dungeon.scopeId)
-          : p.city
-            ? a.bindings.find((b) => b.kind === 'city' && b.ownerId === p.city.cityId)
-            : null;
-      if (!binding) continue;
-      const point = localToAtlas(p.dungeon ?? p.city, atlasFrame(a, binding)),
-        basis = hash(json(point));
-      if (p.spatialBasis === basis) continue;
-      const next = {
-          ...p,
-          ...atlasHexAt(point, a.terrain.hexMeters),
-          spatialBasis: basis,
-          revision: p.revision + 1,
-        },
-        payload = json(next);
-      this.db
-        .prepare(
-          'UPDATE scene_position SET revision=?,payload=?,checksum=? WHERE campaign_id=? AND scene_id=?',
-        )
-        .run(next.revision, payload, hash(payload), cam, row.scene_id);
-    }
-    for (const table of ['world_journey', 'dungeon_journey', 'atlas_local_journey'])
-      for (const row of this.db
-        .prepare('SELECT * FROM ' + table + ' WHERE campaign_id=?')
-        .all(cam)) {
-        const j = JSON.parse(row.payload);
-        if (j.status !== 'active') continue;
-        const stale =
-          table === 'world_journey'
-            ? j.environmentBasis !==
-              travelEnvironmentBasis(
-                this.db,
-                cam,
-                j.sceneId,
-                j.mapId,
-                readWorld(this.db, cam, false),
-                j.usePartyPace,
-              )
-            : table === 'dungeon_journey'
-              ? j.basis !== dungeonGeometryBasis(geometry, j.request.destination.scopeId)
-              : j.basis !== atlasLocalGeometryBasis(a);
-        if (!stale) continue;
-        j.status = 'paused';
-        j.reason = 'Atlasgeometrie geändert. Reise vor Fortsetzung neu planen.';
-        j.revision++;
-        const payload = json(j);
-        this.db
-          .prepare(
-            'UPDATE ' +
-              table +
-              ' SET ' +
-              (table === 'world_journey' ? "status='paused'," : '') +
-              (table !== 'atlas_local_journey' ? 'revision=?,' : '') +
-              'payload=?,checksum=? WHERE campaign_id=? AND ' +
-              (table === 'atlas_local_journey' ? 'scene_id' : 'id') +
-              '=?',
-          )
-          .run(
-            ...(table !== 'atlas_local_journey' ? [j.revision] : []),
-            payload,
-            hash(payload),
-            cam,
-            table === 'atlas_local_journey' ? j.sceneId : j.id,
-          );
-      }
+    return storedReconcileAtlasGeometry(
+      this.db,
+      { guard: this.guard.bind(this), cities: this.cities.bind(this), city: this.city.bind(this) },
+      token,
+    );
   }
   private coupleAtlasWall(
     c: AtlasCommand,
     before: Room,
     elements: import('../atlas/drawing-contracts').DrawingElement[],
   ) {
-    const binding = atlasBindings(this.db, c.campaignId).find(
-      (b) => b.kind === 'dungeon' && b.ownerId === before.scopeId,
+    return storedCoupleAtlasWall(
+      this.db,
+      {
+        workspace: this.workspace.bind(this),
+        edit: this.edit.bind(this),
+        drawing: this.drawing.bind(this),
+        executeDrawing: this.executeDrawing.bind(this),
+      },
+      c,
+      before,
+      elements,
     );
-    if (!binding) return;
-    const after = this.workspace().rooms.find((r) => r.id === before.id);
-    if (!after) return;
-    const pairs: {
-      before: import('../shared/contracts').Point;
-      after: import('../shared/contracts').Point;
-    }[] = [];
-    before.polygons.forEach((p, pi) => {
-      const n = after.polygons[pi];
-      if (p.outer.length === n?.outer.length)
-        p.outer.forEach((v, i) => {
-          const next = n.outer[i]!;
-          if (v.x !== next.x || v.y !== next.y) pairs.push({ before: v, after: next });
-        });
-    });
-    if (!pairs.length) return;
-    const move = (p: import('../shared/contracts').Point) => {
-      const match = pairs.find((v) => Math.hypot(v.before.x - p.x, v.before.y - p.y) < 1e-7);
-      return match ? { ...match.after } : p;
-    };
-    const ring = (points: import('../shared/contracts').Point[]) =>
-      points.flatMap((a, i) => {
-        const b = points[(i + 1) % points.length]!,
-          dx = b.x - a.x,
-          dy = b.y - a.y,
-          l = dx * dx + dy * dy;
-        return [
-          a,
-          ...pairs
-            .map((p) => p.before)
-            .filter((p) => {
-              const t = ((p.x - a.x) * dx + (p.y - a.y) * dy) / (l || 1);
-              return (
-                t > 1e-7 && t < 1 - 1e-7 && Math.abs((p.x - a.x) * dy - (p.y - a.y) * dx) < 1e-7
-              );
-            })
-            .sort((p, q) => (p.x - q.x) * dx + (p.y - q.y) * dy),
-        ].map(move);
-      });
-    const changedRooms = new Map<string, { before: Room; after: Room }>([
-      [before.id, { before, after }],
-    ]);
-    for (const r of this.workspace().rooms.filter(
-      (r) => r.scopeId === before.scopeId && r.floorId === before.floorId && r.id !== before.id,
-    )) {
-      const polygons = r.polygons.map((p) => ({ outer: ring(p.outer), holes: p.holes.map(ring) }));
-      if (JSON.stringify(polygons) !== JSON.stringify(r.polygons)) {
-        changedRooms.set(r.id, { before: r, after: { ...r, polygons } });
-        this.edit({
-          commandId: c.commandId + ':shared-wall:' + r.id,
-          token: c.token,
-          campaignId: c.campaignId,
-          roomId: r.id,
-          expectedRevision: r.revision,
-          name: r.name,
-          sections: r.sections,
-          polygons,
-        });
-      }
-    }
-    for (const original of elements.filter(
-      (e) => e.anchor && changedRooms.has(e.anchor.roomId) && !e.archived,
-    )) {
-      const changed = changedRooms.get(original.anchor!.roomId)!,
-        oldRing = changed.before.polygons[original.anchor!.polygon]?.outer;
-      if (!oldRing) continue;
-      const start = oldRing[original.anchor!.edge],
-        end = oldRing[(original.anchor!.edge + 1) % oldRing.length];
-      if (!start || !end) continue;
-      const a = move(start),
-        b = move(end),
-        point = {
-          x: a.x + (b.x - a.x) * original.anchor!.t,
-          y: a.y + (b.y - a.y) * original.anchor!.t,
-        },
-        anchor = nearestAnchor(point, changed.after);
-      if (!anchor) continue;
-      const current = this.drawing(c.token).elements.find((e) => e.id === original.id);
-      if (!current) continue;
-      this.executeDrawing({
-        commandId: c.commandId + ':anchor:' + original.id,
-        token: c.token,
-        campaignId: c.campaignId,
-        action: {
-          kind: 'element',
-          expectedRevision: current.revision,
-          element: {
-            ...current,
-            roomId: changed.after.id,
-            anchor: {
-              roomId: anchor.roomId,
-              polygon: anchor.polygon,
-              edge: anchor.edge,
-              t: anchor.t,
-            },
-            points: [point],
-          },
-        },
-      });
-    }
   }
   private travelAtlas(token: string) {
     const a = this.campaignAtlas(token),
@@ -904,71 +656,18 @@ export class CampaignStore {
     return previewAtlasLocal(this.travelAtlas(token), destination);
   }
   private applyAtlasTravel(c: import('../atlas/atlas-travel-contracts').AtlasTravelCommand) {
-    this.guard(c.token, c.campaignId);
-    executeAtlasTravel(this.db, c, {
-      read: () => this.travelAtlas(c.token),
-      advance: (seconds, revision) => {
-        this.executeLive({
-          commandId: c.commandId + ':clock',
-          token: c.token,
-          campaignId: c.campaignId,
-          action: {
-            kind: 'advance-clock',
-            sceneId: c.sceneId,
-            expectedRevision: revision,
-            amount: seconds,
-            unit: 'seconds',
-            calendarVersion: 'relative-v1',
-            reason: 'Bestätigte lokale Atlasbewegung',
-          },
-        });
+    return storedApplyAtlasTravel(
+      this.db,
+      {
+        guard: this.guard.bind(this),
+        travelAtlas: this.travelAtlas.bind(this),
+        executeLive: this.executeLive.bind(this),
+        liveScene: this.liveScene.bind(this),
+        dungeon: this.dungeon.bind(this),
+        executeDungeon: this.executeDungeon.bind(this),
       },
-      location: (id) => {
-        const s = this.liveScene(c.token, c.sceneId);
-        if (s.locationId !== id)
-          this.executeLive({
-            commandId: c.commandId + ':location',
-            token: c.token,
-            campaignId: c.campaignId,
-            action: {
-              kind: 'scene-content',
-              sceneId: c.sceneId,
-              expectedRevision: s.revision,
-              title: s.title,
-              notes: s.notes,
-              readAloud: s.readAloud ?? '',
-              locationId: id,
-            },
-          });
-      },
-      crossing: (from, to) => {
-        const g = dungeonGeometry(this.db, c.campaignId),
-          scene = this.liveScene(c.token, c.sceneId);
-        createTriggerEvents(
-          this.db,
-          c.campaignId,
-          g,
-          { id: 'atlas:' + c.commandId, nextIndex: 1, request: { sceneId: c.sceneId } },
-          from,
-          to,
-          scene.clock.instantMs,
-        );
-      },
-      dungeon: (pose) => {
-        const d = this.dungeon(c.token);
-        this.executeDungeon({
-          commandId: c.commandId + ':dungeon',
-          token: c.token,
-          campaignId: c.campaignId,
-          action: {
-            kind: 'place',
-            sceneId: c.sceneId,
-            expectedPositionRevision: d.positionRevision,
-            pose,
-          },
-        });
-      },
-    });
+      c,
+    );
   }
   executeAtlasTravel(c: import('../atlas/atlas-travel-contracts').AtlasTravelCommand) {
     this.applyAtlasTravel(c);
@@ -1014,42 +713,7 @@ export class CampaignStore {
     return { ...terrainProfile(reply.records, points), revision: reply.revision };
   }
   atlasHeight(token: string, point: import('../shared/contracts').Point) {
-    const cam = this.guard(token);
-    if (
-      !point ||
-      !Number.isFinite(point.x) ||
-      !Number.isFinite(point.y) ||
-      Math.max(Math.abs(point.x), Math.abs(point.y)) > 1e12
-    )
-      throw Error('Höhenpunkt prüfen.');
-    const nearby = terrainRegion(this.db, cam, {
-        x: point.x - 1,
-        y: point.y - 1,
-        width: 2,
-        height: 2,
-      }),
-      step = new TerrainSampler(nearby).sample(point).resolutionM ?? 1;
-    const records = [
-      ...new Map(
-        [
-          nearby,
-          ...[
-            { x: point.x - step, y: point.y },
-            { x: point.x + step, y: point.y },
-            { x: point.x, y: point.y - step },
-            { x: point.x, y: point.y + step },
-          ].map((p) =>
-            terrainRegion(this.db, cam, { x: p.x - 1, y: p.y - 1, width: 2, height: 2 }),
-          ),
-        ]
-          .flat()
-          .map((r) => [r.id, r]),
-      ).values(),
-    ];
-    return {
-      ...new TerrainSampler(records).query(point),
-      revision: atlasRoot(this.db, cam).revision,
-    };
+    return storedAtlasHeight(this.db, { guard: this.guard.bind(this) }, token, point);
   }
   atlasMaskRegion(token: string, box: import('../atlas/atlas-landscape').LandscapeBox) {
     const cam = this.guard(token);
@@ -1118,36 +782,7 @@ export class CampaignStore {
     return { campaignId, token, revision: atlasRoot(this.db, campaignId).revision };
   }
   atlasOverview(token: string): import('../atlas/campaign-atlas-contracts').AtlasOverview {
-    const cam = this.guard(token);
-    return this.db.transaction(() => {
-      const root = atlasRoot(this.db, cam),
-        b = this.db
-          .prepare(
-            "SELECT min(min_x) x,max(max_x) xmax,min(min_y) y,max(max_y) ymax FROM atlas_landscape WHERE campaign_id=? AND json_extract(payload,'$.terrainSettings') IS NULL",
-          )
-          .get(cam);
-      return {
-        campaignId: cam,
-        token,
-        revision: root.revision,
-        ...atlasHistoryState(this.db, cam),
-        counts: {
-          rooms: this.db
-            .prepare(
-              "SELECT count(*) n FROM room r WHERE campaign_id=? AND NOT EXISTS(SELECT 1 FROM drawing_hidden h WHERE h.campaign_id=r.campaign_id AND h.id=r.id AND h.kind='room' AND h.hidden=1) AND NOT EXISTS(SELECT 1 FROM drawing_hidden h WHERE h.campaign_id=r.campaign_id AND h.id=r.floor_id AND h.scope_id=r.scope_id AND h.kind='floor' AND h.hidden=1)",
-            )
-            .get(cam).n,
-          cities: this.db
-            .prepare('SELECT count(*) n FROM city_document WHERE campaign_id=?')
-            .get(cam).n,
-          landscape: this.db
-            .prepare('SELECT count(*) n FROM atlas_landscape WHERE campaign_id=?')
-            .get(cam).n,
-        },
-        landscapeBounds:
-          b.x === null ? null : { x: b.x, y: b.y, width: b.xmax - b.x, height: b.ymax - b.y },
-      };
-    })();
+    return storedAtlasOverview(this.db, { guard: this.guard.bind(this) }, token);
   }
   atlasObjects(
     token: string,
@@ -1362,25 +997,7 @@ export class CampaignStore {
     cityId: string,
     id?: string,
   ): import('../atlas/atlas-region-contracts').AtlasCitySite {
-    return this.db.transaction(() => {
-      const cam = this.guard(token),
-        site = id
-          ? readCitySite(this.db, cam, cityId, id)
-          : { header: readCityHeader(this.db, cam, cityId), unit: null };
-      const related = (site.unit?.nodeIds ?? []).map(
-        (n) => readCitySite(this.db, cam, cityId, n).unit,
-      );
-      const faction = site.unit?.factionId
-        ? this.db
-            .prepare('SELECT id,payload,checksum FROM world_note WHERE campaign_id=? AND id=?')
-            .get(cam, site.unit.factionId)
-        : null;
-      const factions =
-        faction && hash(faction.payload) === faction.checksum
-          ? [{ id: faction.id, name: JSON.parse(faction.payload).title }]
-          : [];
-      return { ...site, related, factions, ...atlasHistoryState(this.db, cam) };
-    })();
+    return storedAtlasCitySite(this.db, { guard: this.guard.bind(this) }, token, cityId, id);
   }
   workspaceInitial(token: string): WorkspaceGeometry {
     if (this.graphShadow && !this.graphRouting)
@@ -1414,141 +1031,18 @@ export class CampaignStore {
     withPerception = false,
     entranceId?: string,
   ): AtlasRegionView {
-    const cam = this.guard(token);
-    if (
-      region.token !== token ||
-      region.campaignId !== cam ||
-      region.fence !== this.atlasRegionSource(token).fence
-    )
-      throw new Error('Atlas inzwischen geändert. Ausschnitt erneut laden.');
-    return this.db.transaction(() => {
-      const root = atlasRoot(this.db, cam),
-        workspace = {
-          ...this.workspaceShell(),
-          rooms: region.rooms,
-          floors: region.floors,
-          problems: [],
-        },
-        geometry = dungeonMapView(this.db, cam, workspace, region.drawing);
-      // Perception retains its exact canonical reader; viewport geometry never supplies rule truth.
-      const exact =
-        withPerception && geometry.position
-          ? {
-              ...roomGeometries(this.db, cam),
-              floors: this.db
-                .prepare(
-                  "SELECT f.id,f.scope_id scopeId,f.name,f.source_elevation elevation FROM drawing_floor f WHERE campaign_id=? AND NOT EXISTS(SELECT 1 FROM drawing_hidden h WHERE h.campaign_id=f.campaign_id AND h.id=f.id AND h.scope_id=f.scope_id AND h.kind='floor' AND h.hidden=1)",
-                )
-                .all(cam),
-              drawing: drawingView(this.db, cam, true),
-            }
-          : null;
-      const perception =
-        exact && geometry.sceneId
-          ? dungeonDisplay(
-              this.db,
-              cam,
-              geometry.sceneId,
-              playerSettings(this.db, cam),
-              playerObservers(this.db, cam).list,
-              exact,
-            )
-          : null;
-      const row = this.db
-          .prepare(
-            "SELECT json_remove(payload,'$.cells','$.landscape') payload FROM world_record WHERE campaign_id=? AND kind='map' AND id=?",
-          )
-          .get(cam, root.map_id),
-        terrain = JSON.parse(row.payload);
-      const {
-        rooms: unusedRooms,
-        floors: unusedFloors,
-        drawing: unusedDrawing,
-        cities: unusedCities,
-        bindings: unusedBindings,
-        scopes: unusedScopes,
-        ...coverage
-      } = region;
-      const bindings = [...region.bindings],
-        frames = Object.assign(Object.create(null), region.frames),
-        scene = geometry.sceneId ? readAtlasScene(this.db, cam, geometry.sceneId) : null;
-      // Party placement and the 'to party' action remain exact even outside the loaded viewport.
-      const owner = geometry.position
-        ? { kind: 'dungeon', id: geometry.position.scopeId }
-        : scene?.position.city
-          ? { kind: 'city', id: scene.position.city.cityId }
-          : null;
-      if (owner) {
-        const row = this.db
-          .prepare('SELECT * FROM atlas_binding WHERE campaign_id=? AND kind=? AND owner_id=?')
-          .get(cam, owner.kind, owner.id);
-        if (row && !bindings.some((b) => b.id === row.id)) {
-          const b: import('../atlas/campaign-atlas-contracts').AtlasBinding = {
-            id: row.id,
-            kind: row.kind,
-            ownerId: row.owner_id,
-            parent: row.parent,
-            parentId: row.parent_id,
-            x: row.x,
-            y: row.y,
-            angle: row.angle,
-            revision: row.revision,
-          };
-          if (b.parent === 'world') {
-            bindings.push(b);
-            frames[b.id] = { x: b.x, y: b.y, angle: b.angle };
-          } else {
-            const unit = this.db
-                .prepare('SELECT city_id FROM city_unit WHERE campaign_id=? AND id=?')
-                .get(cam, b.parentId),
-              parent = unit
-                ? this.db
-                    .prepare(
-                      "SELECT * FROM atlas_binding WHERE campaign_id=? AND kind='city' AND owner_id=?",
-                    )
-                    .get(cam, unit.city_id)
-                : null;
-            if (unit && parent) {
-              const site = readCitySite(this.db, cam, unit.city_id, b.parentId!),
-                u = site.unit;
-              if (u.position) {
-                const p = localToAtlas(u.position, parent),
-                  pose = { ...p, angle: parent.angle + (u.angle ?? 0) },
-                  point = localToAtlas(b, pose);
-                bindings.push(b);
-                frames[b.id] = { ...point, angle: pose.angle + b.angle };
-              }
-            }
-          }
-        }
-      }
-      const result: AtlasRegionView = {
-        campaignId: cam,
-        revision: root.revision,
-        workspace,
-        geometry,
-        terrain,
-        perception,
-        scopes: region.scopes,
-        cities: region.cities,
-        bindings,
-        region: { ...coverage, frames },
-        entrances: atlasDisplayEntrances(
-          this.db,
-          cam,
-          bindings.filter((b) => b.kind === 'dungeon').map((b) => b.ownerId),
-          entranceId,
-        ),
-        localJourney: geometry.sceneId ? atlasLocalJourney(this.db, cam, geometry.sceneId) : null,
-        scene,
-        ...atlasHistoryState(this.db, cam),
-      };
-      if (Buffer.byteLength(JSON.stringify(result)) > REGION_ACTIVE_BYTES)
-        throw new Error(
-          'Laufender Atlas-Kontext überschreitet das aktive Darstellungsbudget. Exakte Fachansicht verwenden.',
-        );
-      return result;
-    })();
+    return storedAtlasRegionView(
+      this.db,
+      {
+        guard: this.guard.bind(this),
+        atlasRegionSource: this.atlasRegionSource.bind(this),
+        workspaceShell: this.workspaceShell.bind(this),
+      },
+      token,
+      region,
+      withPerception,
+      entranceId,
+    );
   }
   atlasRenderView(token: string): import('../atlas/campaign-atlas-contracts').AtlasRenderView {
     const cam = this.guard(token);
@@ -1593,43 +1087,18 @@ export class CampaignStore {
     })();
   }
   campaignAtlas(token: string): CampaignAtlas {
-    const cam = this.guard(token);
-    return this.db.transaction(() => {
-      const root = atlasRoot(this.db, cam),
-        terrain = JSON.parse(
-          this.db
-            .prepare("SELECT payload FROM world_record WHERE campaign_id=? AND kind='map' AND id=?")
-            .get(cam, root.map_id).payload,
-        );
-      if (!terrain) throw new Error('Kampagnenatlas fehlt.');
-      const geometry = this.dungeon(token),
-        scene = geometry.sceneId ? this.sceneWorld(token, geometry.sceneId) : null;
-      const perception =
-        geometry.position && geometry.sceneId
-          ? dungeonDisplay(
-              this.db,
-              cam,
-              geometry.sceneId,
-              playerSettings(this.db, cam),
-              playerObservers(this.db, cam).list,
-            )
-          : null;
-      return {
-        scopes: this.db.prepare('SELECT id,name FROM scope WHERE campaign_id=?').all(cam),
-        perception,
-        entrances: atlasEntrances(this.db, cam),
-        localJourney: geometry.sceneId ? atlasLocalJourney(this.db, cam, geometry.sceneId) : null,
-        campaignId: cam,
-        revision: root.revision,
-        terrain,
-        bindings: atlasBindings(this.db, cam),
-        cities: this.cities(token).cities.map((h) => this.city(token, h.id)),
-        geometry,
-        workspace: this.workspace(),
-        scene,
-        ...atlasHistoryState(this.db, cam),
-      };
-    })();
+    return storedCampaignAtlas(
+      this.db,
+      {
+        guard: this.guard.bind(this),
+        dungeon: this.dungeon.bind(this),
+        sceneWorld: this.sceneWorld.bind(this),
+        cities: this.cities.bind(this),
+        city: this.city.bind(this),
+        workspace: this.workspace.bind(this),
+      },
+      token,
+    );
   }
   atlasTerritories(token: string, box?: import('../atlas/atlas-landscape').LandscapeBox) {
     return readTerritories(this.db, this.guard(token), box);
@@ -1639,625 +1108,31 @@ export class CampaignStore {
     return { atlas: this.campaignAtlas(c.token), result };
   }
   private applyAtlas(c: AtlasCommand, prepared?: import('./terrain-scale').PreparedTerrainStroke) {
-    this.guard(c.token, c.campaignId);
-    if (
-      c.sourceFence !== undefined &&
-      (typeof c.sourceFence !== 'string' ||
-        (!this.db.prepare('SELECT 1 FROM atlas_receipt WHERE command_id=?').get(c.commandId) &&
-          this.atlasRegionSource(c.token).fence !== c.sourceFence))
-    )
-      throw new Error('Atlas inzwischen geändert. Ausschnitt vor dem Zeichnen erneut laden.');
-    if (
-      prepared &&
-      (c.action.kind !== 'landscape-height-stroke' ||
-        prepared.stroke !== JSON.stringify(c.action.stroke) ||
-        prepared.fence !== this.atlasRegionSource(c.token).fence ||
-        prepared.revision !== atlasRoot(this.db, c.campaignId).revision)
-    )
-      throw Error('Gelände inzwischen geändert. Ausschnitt erneut laden.');
-    let landscapeEnvironment = false;
-    const landscapeOnly =
-      typeof c.action?.kind === 'string' && c.action.kind.startsWith('landscape-');
-    const terrainSourceBefore = landscapeOnly ? this.atlasRegionSource(c.token) : undefined,
-      terrainBefore = terrainSourceBefore?.fence;
-    const terrainChange: import('../atlas/terrain-frame').TerrainInvalidation = {
-      reset: false,
-      bounds: [],
-    };
-    const visibility =
-      c.action.kind === 'landscape-height-stroke'
-        ? c.action.stroke.visibility
-        : c.action.kind === 'landscape-color-stroke'
-          ? c.action.record.paint?.visibility
-          : undefined;
-    const visibilityGrid =
-      !prepared &&
-      visibility &&
-      !this.db.prepare('SELECT 1 FROM atlas_receipt WHERE command_id=?').get(c.commandId)
-        ? terrainTraceMeasure('author.visibility', () =>
-            this.terrainAuthorCache.read(this.db, c.campaignId, visibility, terrainBefore!),
-          )
-        : undefined;
-    const nested = (v: { token: string; campaignId: string; commandId: string }) => {
-      if (v.token !== c.token || v.campaignId !== c.campaignId || v.commandId !== c.commandId)
-        throw new Error('Atlasbefehl gehört zu einem anderen Kontext.');
-    };
-    const result = executeAtlasWrite(
+    return applyAtlasCommand(
       this.db,
+      {
+        guard: this.guard.bind(this),
+        atlasRegionSource: this.atlasRegionSource.bind(this),
+        terrainAuthorCache: this.terrainAuthorCache,
+        commitPreparation: this.commitPreparation.bind(this),
+        executeWorld: this.executeWorld.bind(this),
+        addRoom: this.addRoom.bind(this),
+        insertRoom: this.insertRoom.bind(this),
+        executeGraph: this.executeGraph.bind(this),
+        workspace: this.workspace.bind(this),
+        drawing: this.drawing.bind(this),
+        executeDrawing: this.executeDrawing.bind(this),
+        coupleAtlasWall: this.coupleAtlasWall.bind(this),
+        atlasRoom: this.atlasRoom.bind(this),
+        edit: this.edit.bind(this),
+        city: this.city.bind(this),
+        executeCity: this.executeCity.bind(this),
+        campaignAtlas: this.campaignAtlas.bind(this),
+        reconcileAtlasGeometry: this.reconcileAtlasGeometry.bind(this),
+      },
       c,
-      () => {
-        const a = c.action,
-          cam = c.campaignId;
-        if (
-          a.kind === 'territory-layer' ||
-          a.kind === 'territory-put' ||
-          a.kind === 'territory-remove' ||
-          a.kind === 'territory-stroke' ||
-          a.kind === 'territory-vertex'
-        )
-          return executeTerritory(this.db, cam, a);
-        if (
-          a.kind === 'landscape-prominence' ||
-          a.kind === 'landscape-route' ||
-          a.kind === 'landscape-terrain-style' ||
-          a.kind === 'landscape-vegetation-edit' ||
-          a.kind === 'landscape-height-stroke' ||
-          a.kind === 'landscape-sea-level' ||
-          a.kind === 'landscape-land-stroke' ||
-          a.kind === 'landscape-color-stroke' ||
-          a.kind === 'landscape-brush' ||
-          a.kind === 'landscape-batch' ||
-          a.kind === 'landscape-put' ||
-          a.kind === 'landscape-reset' ||
-          a.kind === 'landscape-remove' ||
-          a.kind === 'landscape-place'
-        ) {
-          if (a.kind === 'landscape-place')
-            this.commitPreparation({
-              commandId: c.commandId + ':key',
-              token: c.token,
-              campaignId: cam,
-              change: {
-                kind: 'location',
-                document: a.document,
-                expectedRevision: a.expectedLocationRevision,
-              },
-            });
-          const physical = (kind: string | undefined) =>
-            kind !== undefined && ['patch', 'road', 'river', 'vegetation'].includes(kind);
-          const wasPhysical = (id: string) =>
-            physical(
-              this.db
-                .prepare(
-                  "SELECT json_extract(payload,'$.kind') kind FROM atlas_landscape WHERE campaign_id=? AND id=?",
-                )
-                .get(cam, id)?.kind,
-            );
-          landscapeEnvironment =
-            a.kind === 'landscape-terrain-style' || a.kind === 'landscape-prominence'
-              ? false
-              : a.kind === 'landscape-vegetation-edit' ||
-                a.kind === 'landscape-height-stroke' ||
-                a.kind === 'landscape-sea-level' ||
-                a.kind === 'landscape-land-stroke' ||
-                a.kind === 'landscape-color-stroke' ||
-                a.kind === 'landscape-brush' ||
-                a.kind === 'landscape-reset' ||
-                (a.kind === 'landscape-remove'
-                  ? wasPhysical(a.id)
-                  : a.kind === 'landscape-batch'
-                    ? a.records.some((x) => physical(x.record.kind) || wasPhysical(x.record.id)) ||
-                      (a.remove ?? []).some((x) => wasPhysical(x.id))
-                    : physical(a.record.kind) || wasPhysical(a.record.id));
-          let liveColorRevision: number | null = null;
-          if (c.terrainStroke && a.kind === 'landscape-color-stroke') {
-            if (a.record.id !== c.terrainStroke.id)
-              throw Error('Farbzug gehört zu einer anderen Pinselgeste.');
-            const prior = this.db
-              .prepare('SELECT revision FROM atlas_landscape WHERE campaign_id=? AND id=?')
-              .get(cam, a.record.id);
-            if (
-              prior &&
-              !this.db
-                .prepare('SELECT 1 FROM atlas_command WHERE campaign_id=? AND command_id=?')
-                .get(cam, c.terrainStroke.id)
-            )
-              throw Error('Farbzugkennung bereits verwendet.');
-            liveColorRevision = prior?.revision ?? null;
-          }
-          executeLandscape(this.db, cam, a, liveColorRevision, visibilityGrid, prepared);
-          if (c.terrainStroke && !atlasCapturedChanges(this.db)) {
-            landscapeEnvironment = false;
-            return;
-          }
-          if (a.kind === 'landscape-place') {
-            const root = atlasRoot(this.db, cam),
-              m = JSON.parse(
-                this.db
-                  .prepare(
-                    "SELECT payload FROM world_record WHERE campaign_id=? AND kind='map' AND id=?",
-                  )
-                  .get(cam, root.map_id).payload,
-              ),
-              old = this.db
-                .prepare('SELECT revision FROM atlas_place WHERE campaign_id=? AND location_id=?')
-                .get(cam, a.document.id);
-            this.executeWorld({
-              commandId: c.commandId + ':place',
-              token: c.token,
-              campaignId: cam,
-              action: {
-                kind: 'place',
-                mapId: m.id,
-                locationId: a.document.id,
-                expectedRevision: old?.revision ?? null,
-                hex: atlasHexAt(a.point ?? a.record.points[0]!, m.hexMeters),
-              },
-            });
-          }
-
-          return;
-        }
-        if (a.kind === 'room-default') return this.addRoom(c.token, true);
-        if (a.kind === 'drawing-import') {
-          const doc = JSON.parse(a.source),
-            ids = new Map<string, string>();
-          const id = (s: string) => {
-            if (!ids.has(s)) ids.set(s, randomUUID());
-            return ids.get(s)!;
-          };
-          for (const r of a.rooms) {
-            id(r.scopeId);
-            id(r.floorId);
-            id(r.id);
-            for (const section of r.sections) id(section.id);
-          }
-          for (const f of doc.floors ?? []) id(f.id);
-          if (doc.id) id(doc.id);
-          // Identity fields are references; authored prose and room numbers are not.
-          const rewrite = (room: Room): Room => ({
-            ...room,
-            id: id(room.id),
-            scopeId: id(room.scopeId),
-            floorId: id(room.floorId),
-            sections: room.sections.map((section) => ({
-              ...section,
-              id: id(section.id),
-              ...(section.doorId ? { doorId: ids.get(section.doorId) ?? section.doorId } : {}),
-            })),
-          });
-          const scopes = new Set(a.rooms.map((r) => r.scopeId));
-          for (const original of scopes) {
-            const scopeId = id(original);
-            this.db.prepare('INSERT INTO scope VALUES(?,?,?)').run(cam, scopeId, a.name);
-            const floors = new Map(
-              (doc.floors ?? [])
-                .filter((f: any) => Number.isFinite(f.elevation))
-                .map((f: any) => [f.id, { id: id(f.id), name: f.name, elevation: f.elevation }]),
-            );
-            for (const r of a.rooms.filter((r) => r.scopeId === original))
-              if (!floors.has(r.floorId))
-                floors.set(r.floorId, { id: id(r.floorId), name: 'Geschoss', elevation: 0 });
-            for (const f of floors.values() as Iterable<{
-              id: string;
-              name: string;
-              elevation: number;
-            }>)
-              this.db
-                .prepare('INSERT INTO drawing_floor VALUES(?,?,?,?,?)')
-                .run(cam, scopeId, f.id, f.name, f.elevation);
-            bindAtlas(
-              this.db,
-              cam,
-              {
-                id: randomUUID(),
-                kind: 'dungeon',
-                ownerId: scopeId,
-                parent: 'world',
-                parentId: null,
-                x: a.x,
-                y: a.y,
-                angle: 0,
-                revision: 0,
-              },
-              null,
-            );
-          }
-          for (const original of a.rooms) {
-            const room = rewrite(original) as Room;
-            validateRoom(room);
-            this.insertRoom(cam, room);
-          }
-          this.db
-            .prepare('INSERT INTO atlas_import_source VALUES(?,?,?,?)')
-            .run(cam, c.commandId, a.source, hash(a.source));
-          return { roomId: a.rooms.length ? id(a.rooms[0]!.id) : null };
-        }
-        if (a.kind === 'graph-accept') {
-          nested(a.command);
-          if (a.command.action.kind !== 'accept') throw new Error('Nur bestätigte Graphübernahme.');
-          return this.executeGraph(a.command);
-        }
-        if (a.kind === 'world') {
-          nested(a.command);
-          if (
-            a.command.action.kind === 'map' &&
-            a.command.action.map.id !== atlasRoot(this.db, cam).map_id
-          )
-            throw new Error(
-              'Jede Kampagne besitzt genau einen Atlas. Inhalte in die bestehende Welt einfügen.',
-            );
-          return this.executeWorld(a.command);
-        }
-        if (a.kind === 'drawing') {
-          nested(a.command);
-          const action = a.command.action,
-            before =
-              action.kind === 'shape'
-                ? this.workspace().rooms.find((r) => r.id === action.roomId)
-                : null,
-            elements = before ? this.drawing(c.token).elements : [];
-          const result = this.executeDrawing(a.command);
-          if (before) this.coupleAtlasWall(c, before, elements);
-          return result;
-        }
-        if (a.kind === 'room-edit') {
-          nested(a.edit);
-          const before = this.atlasRoom(c.token, a.edit.roomId),
-            elements = before ? this.drawing(c.token).elements : [];
-          const result = this.edit(a.edit);
-          if (before) this.coupleAtlasWall(c, before, elements);
-          return result;
-        }
-        if (a.kind === 'city') {
-          nested(a.command);
-          const before =
-            a.command.action.kind === 'change' ? this.city(c.token, a.command.cityId) : null;
-          if (a.command.action.kind === 'change')
-            for (const id of a.command.action.remove)
-              removeGeneratedGroup(this.db, cam, id, a.command.action.removeGroups === true);
-          const result = this.executeCity(a.command);
-          if (a.command.action.kind === 'change')
-            for (const u of a.command.action.upsert)
-              if (
-                u.kind === 'building' &&
-                !this.db.prepare('SELECT 1 FROM scope WHERE campaign_id=? AND id=?').get(cam, u.id)
-              ) {
-                storeGroupDraft(
-                  this.db,
-                  cam,
-                  u.id,
-                  u.name || u.use || 'Gebäude',
-                  groupRecipeForHouse(u),
-                );
-                const locationId = this.db
-                  .prepare('SELECT location_id FROM city_document WHERE campaign_id=? AND id=?')
-                  .get(cam, a.command.cityId).location_id;
-                this.db
-                  .prepare('INSERT INTO location_map VALUES(?,?,?)')
-                  .run(cam, u.id, locationId);
-                bindAtlas(
-                  this.db,
-                  cam,
-                  {
-                    id: randomUUID(),
-                    kind: 'dungeon',
-                    ownerId: u.id,
-                    parent: 'building',
-                    parentId: u.id,
-                    x: 0,
-                    y: 0,
-                    angle: 0,
-                    revision: 0,
-                  },
-                  null,
-                );
-                refreshGroupHull(this.db, cam, u.id, u.protected);
-              }
-          // Building pose is inherited by its interiors. Scale their local geometry
-          // in the very same command, retaining heights and room IDs/text.
-          const oldUnits = new Map(before?.units.map((u) => [u.id, u]) ?? []),
-            houseBindings = new Map(
-              atlasBindings(this.db, cam)
-                .filter((b) => b.parent === 'building')
-                .map((b) => [b.parentId, b]),
-            );
-          if (before && a.command.action.kind === 'change')
-            for (const u of a.command.action.upsert) {
-              const old = oldUnits.get(u.id),
-                binding = houseBindings.get(u.id);
-              if (!old?.outline || !u.outline || !binding) continue;
-              const bounds = (p: { x: number; y: number }[]) => ({
-                  x: Math.max(...p.map((p) => p.x)) - Math.min(...p.map((p) => p.x)),
-                  y: Math.max(...p.map((p) => p.y)) - Math.min(...p.map((p) => p.y)),
-                }),
-                o = bounds(old.outline),
-                n = bounds(u.outline),
-                sx = n.x / o.x,
-                sy = n.y / o.y;
-              if (!Number.isFinite(sx + sy) || sx <= 0 || sy <= 0)
-                throw new Error('Ungültige Gebäudeskalierung.');
-              if (
-                u.outline.length !== old.outline.length ||
-                u.outline.some(
-                  (p, i) =>
-                    Math.abs(p.x - old.outline![i]!.x * sx) > 1e-6 ||
-                    Math.abs(p.y - old.outline![i]!.y * sy) > 1e-6,
-                )
-              )
-                throw Error('Gebäudeform an den gemeinsamen Räumen bearbeiten.');
-              if (Math.abs(sx - sy) > 1e-7)
-                throw Error('Die gesamte Raumgruppe proportional skalieren.');
-              if (Math.abs(sx - 1) > 1e-7) scaleRoomGroup(this.db, cam, binding.ownerId, sx);
-            }
-          if (a.command.action.kind === 'change')
-            for (const u of a.command.action.upsert)
-              if (u.kind === 'building') {
-                this.db
-                  .prepare('UPDATE scope SET name=? WHERE campaign_id=? AND id=?')
-                  .run(u.name || u.use || 'Gebäude', cam, u.id);
-                refreshGroupHull(this.db, cam, u.id, u.protected);
-              }
-          return result;
-        }
-        if (a.kind === 'entrance') {
-          putAtlasEntrance(this.db, this.campaignAtlas(c.token), a.entrance);
-          return;
-        }
-        if (a.kind === 'bind') {
-          bindAtlas(this.db, cam, a.binding, a.expectedRevision);
-          return;
-        }
-        if (a.kind === 'city-create') {
-          const id = randomUUID(),
-            locationId = randomUUID();
-          this.commitPreparation({
-            commandId: c.commandId + ':location',
-            token: c.token,
-            campaignId: cam,
-            change: {
-              kind: 'location',
-              document: newLocation(locationId, a.name, 'city', [randomUUID(), randomUUID()]),
-              expectedRevision: null,
-            },
-          });
-          this.executeCity({
-            commandId: c.commandId + ':city',
-            token: c.token,
-            campaignId: cam,
-            cityId: id,
-            expectedRevision: 0,
-            action: {
-              kind: 'create',
-              header: {
-                id,
-                locationId,
-                revision: 1,
-                name: a.name,
-                width: a.width,
-                height: a.height,
-                paper: '#e9dfc8',
-                roof: '#9c604c',
-              },
-            },
-          });
-          bindAtlas(
-            this.db,
-            cam,
-            {
-              id: randomUUID(),
-              kind: 'city',
-              ownerId: id,
-              parent: 'world',
-              parentId: null,
-              x: a.x,
-              y: a.y,
-              angle: 0,
-              revision: 0,
-            },
-            null,
-          );
-          const root = this.campaignAtlas(c.token);
-          this.executeWorld({
-            commandId: c.commandId + ':anchor',
-            token: c.token,
-            campaignId: cam,
-            action: {
-              kind: 'place',
-              locationId,
-              mapId: root.terrain.id,
-              expectedRevision: null,
-              hex: atlasHexAt({ x: a.x, y: a.y }, root.terrain.hexMeters),
-            },
-          });
-          return { id };
-        }
-        if (a.kind === 'group-room-split')
-          return splitGroupRoom(this.db, cam, a.roomId, a.expectedRevision, a.axis, a.ratio);
-        if (a.kind === 'group-scale') {
-          scaleRoomGroup(this.db, cam, a.scopeId, a.factor);
-          return;
-        }
-        if (a.kind === 'group-generate') {
-          if (typeof a.name !== 'string' || !a.name.trim()) throw Error('Name benötigt.');
-          const id = randomUUID(),
-            locationId = randomUUID();
-          storeGroupDraft(this.db, cam, id, a.name, a.recipe);
-          this.commitPreparation({
-            commandId: c.commandId + ':location',
-            token: c.token,
-            campaignId: cam,
-            change: {
-              kind: 'location',
-              document: newLocation(locationId, a.name, 'poi', [randomUUID(), randomUUID()]),
-              expectedRevision: null,
-            },
-          });
-          this.db.prepare('INSERT INTO location_map VALUES(?,?,?)').run(cam, id, locationId);
-          bindAtlas(
-            this.db,
-            cam,
-            {
-              id: randomUUID(),
-              kind: 'dungeon',
-              ownerId: id,
-              parent: 'world',
-              parentId: null,
-              x: a.x,
-              y: a.y,
-              angle: 0,
-              revision: 0,
-            },
-            null,
-          );
-          return { id };
-        }
-        if (a.kind === 'dungeon-create') {
-          const id = randomUUID();
-          if (!a.name.trim()) throw new Error('Name benötigt.');
-          this.db.prepare('INSERT INTO scope VALUES(?,?,?)').run(cam, id, a.name);
-          this.db
-            .prepare('INSERT INTO drawing_floor VALUES(?,?,?,?,?)')
-            .run(cam, id, 'ground', 'Erdgeschoss', 0);
-          if ('buildingId' in a)
-            throw Error('Gebäude besitzen bereits dieselbe Raumgruppe. Direkt Räume bearbeiten.');
-          const locationId = randomUUID();
-          this.commitPreparation({
-            commandId: c.commandId + ':location',
-            token: c.token,
-            campaignId: cam,
-            change: {
-              kind: 'location',
-              document: newLocation(locationId, a.name, 'poi', [randomUUID(), randomUUID()]),
-              expectedRevision: null,
-            },
-          });
-          this.db.prepare('INSERT INTO location_map VALUES(?,?,?)').run(cam, id, locationId);
-          bindAtlas(
-            this.db,
-            cam,
-            {
-              id: randomUUID(),
-              kind: 'dungeon',
-              ownerId: id,
-              parent: 'world',
-              parentId: null,
-              x: a.x,
-              y: a.y,
-              angle: 0,
-              revision: 0,
-            },
-            null,
-          );
-          return { id };
-        }
-        if (a.kind === 'room-create') {
-          if (
-            !this.db
-              .prepare('SELECT 1 FROM drawing_floor WHERE campaign_id=? AND scope_id=? AND id=?')
-              .get(cam, a.scopeId, a.floorId)
-          )
-            throw new Error('Geschoss fehlt.');
-          const room: Room = {
-            id: randomUUID(),
-            scopeId: a.scopeId,
-            floorId: a.floorId,
-            name: a.name,
-            number: String(
-              this.db.prepare('SELECT count(*) n FROM room WHERE campaign_id=?').get(cam).n + 1,
-            ),
-            revision: 0,
-            polygons: a.polygons,
-            sections: [{ id: randomUUID(), kind: 'markdown', markdown: '' }],
-          };
-          validateRoom(room);
-          this.insertRoom(cam, room);
-          return { id: room.id };
-        }
-      },
-      () => {
-        if (!landscapeOnly) {
-          refreshChangedGroupHulls(
-            this.db,
-            c.campaignId,
-            !['city', 'group-generate', 'dungeon-create', 'drawing-import'].includes(c.action.kind),
-          );
-          this.reconcileAtlasGeometry(c.token);
-          return;
-        }
-        const changedBounds = new Map<string, import('../atlas/atlas-landscape').LandscapeBox>();
-        for (const delta of this.db
-          .prepare(
-            "SELECT before_json,after_json FROM atlas_delta WHERE table_name='atlas_landscape'",
-          )
-          .iterate()) {
-          if (delta.before_json === delta.after_json) continue;
-          const rows = [delta.before_json, delta.after_json].map((value) =>
-            value ? JSON.parse(value) : undefined,
-          );
-          let malformed = false;
-          const records = rows.map((row) => {
-            try {
-              return row ? JSON.parse(row.payload) : undefined;
-            } catch {
-              malformed = true;
-              terrainChange.reset = true;
-              return undefined;
-            }
-          });
-          const precise = malformed ? undefined : changedHeightBounds(records[0], records[1]);
-          const boxes = precise
-            ? [precise]
-            : rows.filter(Boolean).map((row) => ({
-                x: row.min_x,
-                y: row.min_y,
-                width: row.max_x - row.min_x,
-                height: row.max_y - row.min_y,
-              }));
-          for (const b of boxes) {
-            if (terrainChange.bounds.length >= 2048) terrainChange.reset = true;
-            else terrainChange.bounds.push(b);
-            const id = (rows[1] ?? rows[0]).id,
-              previous = changedBounds.get(id);
-            changedBounds.set(id, previous ? unionTerrainBounds(previous, b) : b);
-          }
-          if (records.some((r) => r?.terrainSettings)) terrainChange.reset = true;
-        }
-        narrowTerrainJournal(this.db, c.campaignId, terrainSourceBefore!.sequence, changedBounds);
-        if (!landscapeEnvironment) return;
-        // Terrain cannot move an indoor actor or change a room boundary. It can
-        // invalidate outdoor routes; pause them atomically without loading rooms.
-        for (const table of ['world_journey', 'atlas_local_journey'])
-          for (const row of this.db
-            .prepare('SELECT rowid,payload FROM ' + table + ' WHERE campaign_id=?')
-            .all(c.campaignId)) {
-            const journey = JSON.parse(row.payload);
-            if (!['active', 'paused'].includes(journey.status)) continue;
-            journey.status = 'paused';
-            journey.reason = 'Atlaslandschaft geändert. Reise vor Fortsetzung neu planen.';
-            journey.revision++;
-            const payload = json(journey);
-            if (table === 'world_journey')
-              this.db
-                .prepare(
-                  "UPDATE world_journey SET status='paused',revision=?,payload=?,checksum=? WHERE rowid=?",
-                )
-                .run(journey.revision, payload, hash(payload), row.rowid);
-            else
-              this.db
-                .prepare('UPDATE atlas_local_journey SET payload=?,checksum=? WHERE rowid=?')
-                .run(payload, hash(payload), row.rowid);
-          }
-      },
-      !landscapeOnly,
+      prepared,
     );
-    if (terrainBefore)
-      this.terrainAuthorCache.advance(
-        terrainBefore,
-        this.atlasRegionSource(c.token).fence,
-        terrainChange,
-      );
-    return result;
   }
   extensionPreview(bytes: Buffer) {
     return this.extensionRegistry.preview(bytes);
@@ -2292,55 +1167,7 @@ export class CampaignStore {
     };
   }
   create(name: string, rooms: Room[] = [], source?: Buffer): Campaign {
-    if (typeof name !== 'string' || !name.trim() || name.length > 1000)
-      throw new Error('Bitte einen Kampagnennamen eingeben.');
-    const campaign = { id: randomUUID(), name, revision: 0 };
-    this.db
-      .transaction(() => {
-        this.db.prepare('INSERT INTO campaign(id,name) VALUES(?,?)').run(campaign.id, name);
-        noteCampaignCreated(this.db, campaign.id);
-        this.db.prepare('INSERT INTO campaign_lifecycle VALUES(?,0,0)').run(campaign.id);
-        ensureLiveOwners(this.db, campaign.id);
-        createCampaignAtlas(this.db, campaign.id);
-        const scopes = new Set(rooms.map((r) => r.scopeId));
-        scopes.add('local');
-        for (const id of scopes)
-          this.db.prepare('INSERT INTO scope VALUES(?,?,?)').run(campaign.id, id, 'Dungeon');
-        this.db
-          .prepare("UPDATE scope SET name='Neue Zeichnung' WHERE campaign_id=? AND id='local'")
-          .run(campaign.id);
-        this.db
-          .prepare("INSERT INTO drawing_floor VALUES(?,'local','ground','Erdgeschoss',0)")
-          .run(campaign.id);
-        if (source) {
-          const document = JSON.parse(source.toString('utf8'));
-          this.db
-            .prepare('UPDATE scope SET name=? WHERE campaign_id=? AND id=?')
-            .run(document.settings.name, campaign.id, document.id);
-          for (const floor of document.floors)
-            this.db
-              .prepare('INSERT INTO drawing_floor VALUES(?,?,?,?,?)')
-              .run(campaign.id, document.id, floor.id, floor.name, floor.elevation);
-        }
-        for (const room of rooms)
-          this.db
-            .prepare('INSERT OR IGNORE INTO drawing_floor VALUES(?,?,?,?,0)')
-            .run(campaign.id, room.scopeId, room.floorId, 'Geschoss');
-        for (const scopeId of scopes)
-          this.db
-            .prepare('INSERT INTO atlas_binding VALUES(?,?,?,?,?,?,?,?,?,?)')
-            .run(campaign.id, randomUUID(), 'dungeon', scopeId, 'world', null, 0, 0, 0, 1);
-        for (const room of rooms) {
-          validateRoom(room);
-          this.insertRoom(campaign.id, room);
-        }
-        if (source)
-          this.db
-            .prepare('INSERT INTO source VALUES(?,?,?)')
-            .run(campaign.id, source, hash(source));
-      })
-      .immediate();
-    return campaign;
+    return storedCreate(this.db, { insertRoom: this.insertRoom.bind(this) }, name, rooms, source);
   }
   private insertRoom(campaignId: string, room: Room) {
     const payload = json({ polygons: room.polygons, sections: room.sections });
@@ -2413,59 +1240,7 @@ export class CampaignStore {
     return row ? decodePreparationDraft(row) : null;
   }
   keepPreparationDrafts(token: string, drafts: PreparationDraft[]) {
-    if (!Array.isArray(drafts)) throw new Error('Ungültige Entwurfsliste.');
-    this.db
-      .transaction(() => {
-        const campaignId = this.guard(token),
-          targets = new Set<string>();
-        for (const value of drafts) {
-          const draft = checkedPreparationDraft(value),
-            target = preparationTarget(draft.change),
-            table = preparationDraftTable(target.kind);
-          const key = json(target);
-          if (targets.has(key)) throw new Error('Doppeltes Entwurfsziel.');
-          targets.add(key);
-          if (
-            !this.db
-              .prepare(`SELECT 1 FROM ${table} WHERE campaign_id=? AND id=?`)
-              .get(campaignId, target.id)
-          )
-            throw new Error('Entwurfsziel nicht vorhanden.');
-          const old = this.db
-            .prepare(
-              'SELECT * FROM preparation_draft WHERE campaign_id=? AND kind=? AND target_id=?',
-            )
-            .get(campaignId, target.kind, target.id);
-          if (old) {
-            const existing = decodePreparationDraft(old);
-            if (
-              draft.change.kind === 'note' &&
-              draft.change.excerpt &&
-              existing.writeId !== draft.writeId &&
-              (!draft.failedCommand ||
-                existing.failedCommand?.commandId !== draft.failedCommand.commandId)
-            )
-              throw new Error('Ein anderer Arbeitsentwurf dieses Originals bleibt erhalten.');
-            if (existing.writeId === draft.writeId && json(existing) !== json(draft))
-              throw new Error('Entwurfskennung bereits anders verwendet.');
-          }
-          const payload = json(draft),
-            checksum = hash(payload);
-          decodePreparationDraft({
-            campaign_id: campaignId,
-            kind: target.kind,
-            target_id: target.id,
-            payload,
-            checksum,
-          });
-          this.db
-            .prepare(
-              'INSERT INTO preparation_draft(campaign_id,kind,target_id,payload,checksum) VALUES(?,?,?,?,?) ON CONFLICT(campaign_id,kind,target_id) DO UPDATE SET payload=excluded.payload,checksum=excluded.checksum',
-            )
-            .run(campaignId, target.kind, target.id, payload, checksum);
-        }
-      })
-      .immediate();
+    return storedKeepPreparationDrafts(this.db, { guard: this.guard.bind(this) }, token, drafts);
   }
   discardPreparationDraft(
     token: string,
@@ -2630,182 +1405,24 @@ export class CampaignStore {
       }).atlas.workspace;
     }
     if (this.graphShadow && !this.graphRouting) return this.withGraph(() => this.addRoom(token));
-    this.db
-      .transaction(() => {
-        const campaignId = this.guard(token);
-        const n =
-          this.db.prepare('SELECT count(*) n FROM room WHERE campaign_id=?').get(campaignId).n + 1;
-        const current = this.workspace(),
-          selected = current.rooms.find((r) => r.id === current.selectedId);
-        const scopeId =
-            selected?.scopeId ??
-            this.db
-              .prepare('SELECT value FROM settings WHERE key=?')
-              .get('default-scope:' + campaignId)?.value ??
-            'local',
-          floorId =
-            selected?.floorId ??
-            this.db
-              .prepare(
-                'SELECT id FROM drawing_floor WHERE campaign_id=? AND scope_id=? ORDER BY rowid LIMIT 1',
-              )
-              .get(campaignId, scopeId)?.id ??
-            'ground';
-        // A default room is immediately usable geometry, not an overlapping placeholder.
-        const bounds = (r: Room) => {
-          let minX = Infinity,
-            minY = Infinity,
-            maxX = -Infinity,
-            maxY = -Infinity;
-          for (const p of r.polygons)
-            for (const v of p.outer) {
-              minX = Math.min(minX, v.x);
-              minY = Math.min(minY, v.y);
-              maxX = Math.max(maxX, v.x);
-              maxY = Math.max(maxY, v.y);
-            }
-          return { minX, minY, maxX, maxY };
-        };
-        const grid = 1.524,
-          width = 4 * grid,
-          height = 3 * grid,
-          anchor = selected ? bounds(selected) : null,
-          y = anchor ? Math.round(anchor.minY / grid) * grid : 0;
-        let x = anchor ? Math.ceil((anchor.maxX + grid) / grid - 1e-8) * grid : 0;
-        const occupied = current.rooms
-          .filter((r) => r.scopeId === scopeId && r.floorId === floorId)
-          .map(bounds)
-          .sort((a, b) => a.minX - b.minX);
-        for (const b of occupied)
-          if (
-            y < b.maxY + grid &&
-            y + height > b.minY - grid &&
-            x < b.maxX + grid &&
-            x + width > b.minX - grid
-          )
-            x = Math.ceil((b.maxX + grid) / grid - 1e-8) * grid;
-        const room: Room = {
-          id: randomUUID(),
-          scopeId,
-          floorId,
-          name: 'Neuer Raum',
-          number: String(n),
-          revision: 0,
-          polygons: [
-            {
-              outer: [
-                { x, y },
-                { x: x + width, y },
-                { x: x + width, y: y + height },
-                { x, y: y + height },
-              ],
-              holes: [],
-            },
-          ],
-          sections: [{ id: randomUUID(), kind: 'markdown', markdown: '' }],
-        };
-        validateRoom(room);
-        if (
-          atlasBindings(this.db, campaignId).some(
-            (b) => b.ownerId === scopeId && b.parent === 'building',
-          )
-        ) {
-          this.insertRoom(campaignId, room);
-          this.db.prepare('UPDATE campaign SET selected_id=? WHERE id=?').run(room.id, campaignId);
-        } else
-          this.executeDrawing({
-            commandId: randomUUID(),
-            token,
-            campaignId,
-            action: {
-              kind: 'create-room',
-              scopeId,
-              floorId,
-              name: room.name,
-              polygons: room.polygons,
-            },
-          });
-      })
-      .immediate();
-    return this.workspace();
+    return storedAddRoom(
+      this.db,
+      {
+        guard: this.guard.bind(this),
+        workspace: this.workspace.bind(this),
+        insertRoom: this.insertRoom.bind(this),
+        executeDrawing: this.executeDrawing.bind(this),
+      },
+      token,
+    );
   }
   edit(edit: Edit): RoomCommit {
     if (this.graphShadow && !this.graphRouting) return this.withGraph(() => this.edit(edit));
-    validateRoom(edit);
-    if (
-      typeof edit.commandId !== 'string' ||
-      !edit.commandId ||
-      !Number.isSafeInteger(edit.expectedRevision)
-    )
-      throw new Error('Ungültiger Änderungsauftrag.');
-    const fingerprint = commandFingerprint(edit);
-    this.db
-      .transaction(() => {
-        const campaignId = this.guard(edit.token, edit.campaignId);
-        const receipt = this.db
-          .prepare('SELECT * FROM receipt WHERE command_id=?')
-          .get(edit.commandId);
-        if (receipt) {
-          if (receipt.campaign_id !== campaignId || !matchesReceipt(receipt, edit))
-            throw new Error('Änderungskennung bereits anders verwendet.');
-          return;
-        }
-        const before = decodeRoom(
-          this.db
-            .prepare('SELECT * FROM room WHERE campaign_id=? AND id=?')
-            .get(campaignId, edit.roomId) ?? {},
-        );
-        if (before.revision !== edit.expectedRevision)
-          throw new Error('Konflikt: Der Raum wurde inzwischen geändert. Entwurf bleibt offen.');
-        if (
-          json(before.sections.map((s) => [s.id, s.kind, s.doorId])) !==
-          json(edit.sections.map((s) => [s.id, s.kind, s.doorId]))
-        )
-          throw new Error('Abschnittsbindungen dürfen bei Textbearbeitung nicht geändert werden.');
-        const after = {
-          ...before,
-          name: edit.name,
-          polygons: edit.polygons,
-          sections: edit.sections,
-          revision: before.revision + 1,
-        };
-        const cursor = this.db
-          .prepare('SELECT cursor FROM campaign WHERE id=?')
-          .get(campaignId).cursor;
-        this.writeRoom(campaignId, after);
-        this.db
-          .prepare('DELETE FROM history WHERE campaign_id=? AND ordinal>?')
-          .run(campaignId, cursor);
-        this.db
-          .prepare('INSERT INTO history VALUES(?,?,?,?,?,?)')
-          .run(campaignId, cursor + 1, before.id, json(before), json(after), after.revision);
-        this.db.prepare('UPDATE campaign SET cursor=? WHERE id=?').run(cursor + 1, campaignId);
-        this.db
-          .prepare('INSERT INTO receipt VALUES(?,?,?,?,?)')
-          .run(edit.commandId, fingerprint, campaignId, before.id, after.revision);
-        this.db
-          .prepare('DELETE FROM room_draft WHERE campaign_id=? AND room_id=?')
-          .run(campaignId, before.id);
-      })
-      .immediate();
-    return this.db.transaction(() => {
-      const campaignId = this.guard(edit.token, edit.campaignId),
-        cursor = this.db.prepare('SELECT cursor FROM campaign WHERE id=?').get(campaignId).cursor;
-      return {
-        room: decodeRoom(
-          this.db
-            .prepare('SELECT * FROM room WHERE campaign_id=? AND id=?')
-            .get(campaignId, edit.roomId),
-        ),
-        token: edit.token,
-        canUndo: !!this.db
-          .prepare('SELECT 1 FROM history WHERE campaign_id=? AND ordinal=?')
-          .get(campaignId, cursor),
-        canRedo: !!this.db
-          .prepare('SELECT 1 FROM history WHERE campaign_id=? AND ordinal=?')
-          .get(campaignId, cursor + 1),
-      };
-    })();
+    return storedEdit(
+      this.db,
+      { guard: this.guard.bind(this), writeRoom: this.writeRoom.bind(this) },
+      edit,
+    );
   }
   private writeRoom(campaignId: string, room: Room) {
     const payload = json({ polygons: room.polygons, sections: room.sections });
@@ -2818,57 +1435,16 @@ export class CampaignStore {
   history(token: string, direction: 'undo' | 'redo'): Workspace {
     if (this.graphShadow && !this.graphRouting)
       return this.withGraph(() => this.history(token, direction));
-    if (direction !== 'undo' && direction !== 'redo') throw new Error('Ungültige Historyaktion.');
-    this.db
-      .transaction(() => {
-        const campaignId = this.guard(token),
-          cursor = this.db.prepare('SELECT cursor FROM campaign WHERE id=?').get(campaignId).cursor;
-        const ordinal = direction === 'undo' ? cursor : cursor + 1;
-        const entry = this.db
-          .prepare('SELECT * FROM history WHERE campaign_id=? AND ordinal=?')
-          .get(campaignId, ordinal);
-        if (!entry) return;
-        if (drawingHistory(this.db, campaignId, ordinal, direction)) {
-          this.db
-            .prepare('UPDATE campaign SET cursor=? WHERE id=?')
-            .run(direction === 'undo' ? cursor - 1 : cursor + 1, campaignId);
-          return;
-        }
-        const row = this.db
-          .prepare('SELECT * FROM room WHERE campaign_id=? AND id=?')
-          .get(campaignId, entry.room_id);
-        if (!row)
-          throw new Error(
-            'Raumhistory enthält ein fehlendes Ziel. Originaldaten bleiben erhalten.',
-          );
-        const current = decodeRoom(row);
-        if (current.revision !== entry.guard_revision)
-          throw new Error('Undo-Konflikt: Raumrevision stimmt nicht mehr.');
-        const values = checkedRoomHistory(entry, current);
-        const target = direction === 'undo' ? values.before : values.after;
-        validateRoom(target);
-        target.revision = current.revision + 1;
-        this.writeRoom(campaignId, target);
-        this.db
-          .prepare('UPDATE history SET guard_revision=? WHERE campaign_id=? AND ordinal=?')
-          .run(target.revision, campaignId, ordinal);
-        rebaseDrawingRoomHistory(this.db, campaignId, current.id, ordinal, direction);
-        // Earlier/later deltas of the same causal group now expect this monotonically newer revision.
-        const neighbor = this.db
-          .prepare(
-            `SELECT ordinal FROM history WHERE campaign_id=? AND room_id=? AND ordinal ${direction === 'undo' ? '<' : '>'} ? ORDER BY ordinal ${direction === 'undo' ? 'DESC' : 'ASC'} LIMIT 1`,
-          )
-          .get(campaignId, entry.room_id, ordinal);
-        if (neighbor)
-          this.db
-            .prepare('UPDATE history SET guard_revision=? WHERE campaign_id=? AND ordinal=?')
-            .run(target.revision, campaignId, neighbor.ordinal);
-        this.db
-          .prepare('UPDATE campaign SET cursor=?,selected_id=? WHERE id=?')
-          .run(direction === 'undo' ? cursor - 1 : cursor + 1, current.id, campaignId);
-      })
-      .immediate();
-    return this.workspace();
+    return storedHistory(
+      this.db,
+      {
+        guard: this.guard.bind(this),
+        writeRoom: this.writeRoom.bind(this),
+        workspace: this.workspace.bind(this),
+      },
+      token,
+      direction,
+    );
   }
   async backup(filename: string, validateCandidate?: (filename: string) => Promise<void>) {
     const epoch = this.backupEpoch,
@@ -2911,30 +1487,12 @@ export class CampaignStore {
   } {
     if (this.graphShadow && !this.graphRouting)
       return this.withGraph(() => this.reconcile(edit, token));
-    return this.db.transaction(() => {
-      const campaignId = this.guard(token, edit.campaignId);
-      const receipt = this.db
-        .prepare('SELECT * FROM receipt WHERE command_id=?')
-        .get(edit.commandId);
-      if (receipt && (receipt.campaign_id !== campaignId || !matchesReceipt(receipt, edit)))
-        throw new Error('Änderungskennung bereits anders verwendet.');
-      const current = this.db
-        .prepare('SELECT revision FROM room WHERE campaign_id=? AND id=?')
-        .get(campaignId, edit.roomId);
-      if (!current) throw new Error('Raum nicht verfügbar.');
-      const workspace = this.workspace();
-      return {
-        outcome: receipt
-          ? 'applied'
-          : current.revision === edit.expectedRevision
-            ? 'not-applied'
-            : 'conflict',
-        targetChanged:
-          current.revision !== (receipt?.revision ?? edit.expectedRevision) ||
-          !workspace.rooms.some((room) => room.id === edit.roomId),
-        workspace,
-      };
-    })();
+    return storedReconcile(
+      this.db,
+      { guard: this.guard.bind(this), workspace: this.workspace.bind(this) },
+      edit,
+      token,
+    );
   }
   captureKeyNote(c: KeyNoteCaptureCommand) {
     return captureKeyNote(
@@ -2995,82 +1553,12 @@ export class CampaignStore {
     })();
   }
   preparation(token: string, search = ''): Preparation {
-    if (typeof search !== 'string' || search.length > 1000)
-      throw new Error('Ungültige Suchanfrage.');
-    return this.db.transaction(() => {
-      const campaignId = this.guard(token),
-        problems: string[] = [];
-      const nonce = randomUUID(),
-        marks = { start: `⟦${nonce}:hit⟧`, end: `⟦${nonce}:end⟧`, clip: `⟦${nonce}:clip⟧` };
-      const rows = search.trim()
-        ? this.db
-            .prepare(
-              'SELECT n.*, snippet(note_search,3,?,?,?,24) AS search_preview FROM world_note n JOIN note_search s ON s.campaign_id=n.campaign_id AND s.note_id=n.id WHERE n.campaign_id=? AND note_search MATCH ? ORDER BY n.id',
-            )
-            .all(marks.start, marks.end, marks.clip, campaignId, noteSearchQuery(search))
-        : this.db
-            .prepare('SELECT * FROM world_note WHERE campaign_id=? ORDER BY id')
-            .all(campaignId);
-      const notes: Preparation['notes'] = [];
-      for (const row of rows) {
-        try {
-          const note = checkedWorldNoteRow(row),
-            searchPreview = noteSearchPreview(row.search_preview, note, marks);
-          notes.push({ note, trashed: !!row.trashed, ...(searchPreview ? { searchPreview } : {}) });
-        } catch {
-          problems.push(`Notiz ${row.id} ist gesperrt. Originalbytes bleiben erhalten.`);
-        }
-      }
-      notes.sort(
-        (a, b) =>
-          noteTitleOrder.compare(a.note.title, b.note.title) || a.note.id.localeCompare(b.note.id),
-      );
-      const plans: ManualPlan[] = [];
-      for (const row of this.db
-        .prepare('SELECT * FROM plan WHERE campaign_id=? ORDER BY name,id')
-        .all(campaignId)) {
-        try {
-          plans.push(this.readPlan(campaignId, row.id));
-        } catch {
-          problems.push(`Plan ${row.id} ist gesperrt. Originalbytes bleiben erhalten.`);
-        }
-      }
-      const locations: Preparation['locations'] = [];
-      for (const row of this.db
-        .prepare('SELECT * FROM location WHERE campaign_id=? ORDER BY id')
-        .all(campaignId)) {
-        try {
-          locations.push({
-            document: decodeLocation(row),
-            revision: row.revision,
-            trashed: !!row.trashed,
-          });
-        } catch {
-          problems.push(`Ort ${row.id} ist gesperrt. Originalbytes bleiben erhalten.`);
-        }
-      }
-      let selection: PreparationSelection = { noteId: null, planId: null, sceneId: null };
-      const saved = this.db
-        .prepare('SELECT value FROM settings WHERE key=?')
-        .get(`preparation:${campaignId}`);
-      if (saved) {
-        try {
-          selection = JSON.parse(saved.value);
-        } catch {
-          problems.push('Auswahlcheckpoint ist beschädigt.');
-        }
-      }
-      return {
-        notes,
-        plans,
-        locations,
-        maps: this.db
-          .prepare('SELECT id,name FROM scope WHERE campaign_id=? ORDER BY name,id')
-          .all(campaignId),
-        problems,
-        selection,
-      };
-    })();
+    return storedPreparation(
+      this.db,
+      { guard: this.guard.bind(this), readPlan: this.readPlan.bind(this) },
+      token,
+      search,
+    );
   }
   locationActivities(
     token: string,
@@ -3533,71 +2021,11 @@ export class CampaignStore {
     return this.db.transaction(() => readDay(this.db, this.guard(token), request))();
   }
   executeProgress(command: ProgressCommand) {
-    return this.db
-      .transaction(() => {
-        this.guard(command.token, command.campaignId);
-        const a = command.action,
-          guard = () => {
-            this.guard(command.token, command.campaignId);
-          };
-        if (
-          a.kind !== 'rest' ||
-          !a.scene ||
-          this.db
-            .prepare('SELECT 1 FROM progress_receipt WHERE command_id=?')
-            .get(command.commandId)
-        )
-          return executeProgress(this.db, command, guard);
-        const current = readLive(this.db, command.campaignId),
-          scene = current.scene;
-        if (
-          !scene ||
-          scene.id !== a.scene.id ||
-          current.focusRevision !== a.scene.expectedFocusRevision ||
-          scene.membershipRevision !== a.scene.expectedMembershipRevision ||
-          scene.clock.revision !== a.scene.expectedClockRevision ||
-          scene.retired
-        )
-          throw new Error('Rastgruppe oder Szenenzeit geändert. Aktuellen Spieltisch laden.');
-        if (!a.recipients.every((r) => scene.members.includes(r.characterId)))
-          throw new Error('Rast nur mit Figuren dieser Szene.');
-        if ((a.scene.amount === undefined) !== (a.scene.unit === undefined))
-          throw new Error('Rastdauer und Zeiteinheit gemeinsam angeben.');
-        // Scene ownership is required even when the user deliberately keeps time.
-        if (a.scene.amount === undefined) return executeProgress(this.db, command, guard);
-        if (
-          this.db
-            .prepare("SELECT 1 FROM chase WHERE campaign_id=? AND scene_id=? AND status='running'")
-            .get(command.campaignId, scene.id)
-        )
-          throw new Error('Verfolgung vor der zeitgebundenen Rast abschließen.');
-        const result = executeProgress(this.db, command, guard),
-          clock = this.executeLive({
-            commandId: command.commandId + '|rest-clock',
-            campaignId: command.campaignId,
-            token: command.token,
-            action: {
-              kind: 'advance-clock',
-              sceneId: scene.id,
-              expectedRevision: a.scene.expectedClockRevision,
-              amount: a.scene.amount,
-              unit: a.scene.unit,
-              calendarVersion: 'relative-v1',
-              reason:
-                (a.rest === 'long' ? 'Lange' : 'Kurze') +
-                ' Rast · ' +
-                a.recipients.length +
-                ' Figuren',
-            },
-          });
-        result.restScene = clock.scene;
-        const payload = json(result);
-        this.db
-          .prepare('UPDATE progress_receipt SET payload=?,checksum=? WHERE command_id=?')
-          .run(payload, hash(payload), command.commandId);
-        return result;
-      })
-      .immediate();
+    return storedExecuteProgress(
+      this.db,
+      { guard: this.guard.bind(this), executeLive: this.executeLive.bind(this) },
+      command,
+    );
   }
   preparedGroup(token: string, id: string) {
     return readPreparedGroup(this.db, this.guard(token), id);
@@ -4054,66 +2482,7 @@ export class CampaignStore {
       .transaction(() => {
         const prior = catalogOutcome(this.db, command);
         if (prior) return prior;
-        let campaign: Campaign;
-        if (command.kind === 'create') campaign = this.create(command.name.trim());
-        else {
-          const row = this.db
-            .prepare(
-              'SELECT c.*,l.trashed,l.revision trashRevision FROM campaign c JOIN campaign_lifecycle l ON l.campaign_id=c.id WHERE c.id=?',
-            )
-            .get(command.id);
-          if (!row) throw new Error('Kampagne fehlt.');
-          campaign = { id: row.id, name: row.name, revision: row.revision };
-          if (
-            (command.kind === 'open' && row.trashed) ||
-            (command.kind === 'rename' && row.trashed)
-          )
-            throw new Error('Kampagne zuerst wiederherstellen.');
-          if (command.kind === 'rename') {
-            if (row.revision !== command.expectedRevision)
-              throw new Error('Kampagnenname inzwischen geändert.');
-            this.db
-              .prepare('UPDATE campaign SET name=?,revision=revision+1 WHERE id=?')
-              .run(command.name.trim(), command.id);
-            campaign.name = command.name.trim();
-          }
-          if (command.kind === 'trash')
-            trashCampaign(this.db, {
-              commandId: command.commandId,
-              id: command.id,
-              expectedRevision: command.expectedRevision,
-              trashed: command.trashed,
-            });
-          if (command.kind === 'erase')
-            eraseCampaignRows(this.db, {
-              commandId: command.commandId,
-              id: command.id,
-              expectedRevision: command.expectedRevision,
-              confirmName: command.confirmName,
-            });
-        }
-        if (command.kind === 'open' || command.kind === 'create') {
-          noteCampaignOpened(this.db, campaign.id);
-          this.db
-            .prepare(
-              "INSERT INTO settings VALUES('active',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
-            )
-            .run(campaign.id);
-        }
-        if (command.kind === 'trash' && command.trashed)
-          this.db.prepare("DELETE FROM settings WHERE key='active' AND value=?").run(campaign.id);
-        const usage = this.db
-          .prepare('SELECT created_at,last_opened_at FROM campaign_usage WHERE campaign_id=?')
-          .get(campaign.id);
-        const receipt: CampaignCatalogReceipt = {
-          commandId: command.commandId,
-          kind: command.kind,
-          campaignId: campaign.id,
-          name: command.kind === 'erase' ? '' : campaign.name,
-          createdAt: usage?.created_at ?? null,
-          lastOpenedAt: usage?.last_opened_at ?? null,
-        };
-        catalogReceipt(this.db, command, receipt);
+        const receipt = applyCampaignCatalog(this.db, command, (name) => this.create(name));
         changed = true;
         return receipt;
       })
@@ -4485,95 +2854,18 @@ export class CampaignStore {
     after: LiveScene,
     basis: ReturnType<typeof captureAutonomyBasis>,
   ) {
-    if (after.clock.instantMs === before.clock.instantMs) return;
-    advanceDungeonFeatures(this.db, cam, after.clock.epochId, after.clock.instantMs);
-    recordAutonomyTime(
-      this.db,
-      cam,
-      commandId,
-      after.id,
-      after.clock.epochId,
-      before.clock.instantMs,
-      after.clock.instantMs,
-      basis,
-    );
-    const locations = new Set(
-      [before.locationId, after.locationId].filter((id): id is string => id !== null),
-    );
-    if (locations.size) {
-      const active = autonomyView(this.db, cam)
-        .actors.filter(
-          (a) => a.enabled && !a.paused && a.locationId !== null && locations.has(a.locationId),
-        )
-        .map((a) => a.id);
-      if (active.length)
-        catchUpAutonomy(this.db, cam, active, 12, {
-          epochId: after.clock.epochId,
-          instantMs: after.clock.instantMs,
-        });
-    }
-    const spatialScenes = this.db
-      .prepare(
-        "SELECT scene_id FROM scene_position WHERE campaign_id=? AND json_extract(payload,'$.dungeon.roomId') IS NOT NULL",
-      )
-      .all(cam);
-    if (spatialScenes.length) {
-      const geometry = dungeonGeometry(this.db, cam);
-      for (const row of spatialScenes) evaluateDungeonSenses(this.db, cam, row.scene_id, geometry);
-    }
+    return consumeSceneTime(this.db, cam, commandId, before, after, basis);
   }
   executeWorld(command: WorldCommand) {
-    if (command.action.kind === 'map') {
-      const root = this.db
-        .prepare('SELECT map_id FROM campaign_atlas WHERE campaign_id=?')
-        .get(command.campaignId);
-      if (root && command.action.map.id !== root.map_id)
-        throw new Error('Pro Kampagne gibt es genau einen Atlas.');
-      if (root && command.action.map.hexMeters !== 4828.032)
-        throw new Error('Die kleinste Hexgröße ist 3 Meilen Kante zu Kante.');
-    }
-    return this.db
-      .transaction(() => {
-        const ack = executeWorld(
-          this.db,
-          command,
-          () => {
-            this.guard(command.token, command.campaignId);
-          },
-          {
-            capture: () => captureAutonomyBasis(this.db, command.campaignId),
-            confirm: (commandId, before, after, basis) =>
-              this.consumeSceneTime(
-                command.campaignId,
-                commandId,
-                before.scene,
-                after.scene,
-                basis,
-              ),
-            validateHistory: (_sceneId, tables) => {
-              // Validate the restored runtime with its owning decoders before commit.
-              // A forged historical payload must never bypass today's domain rules.
-              validateLiveBackup(this.db, command.campaignId);
-              validateWorldBackup(this.db);
-              if (tables.some((t) => t.startsWith('autonomy_') || t.startsWith('npc_')))
-                validateAutonomy(this.db);
-              if (tables.some((t) => t === 'shop' || t === 'shop_event'))
-                validateItemsBackup(this.db);
-              if (tables.includes('dungeon_feature_state')) validateFeatureStates(this.db);
-              if (tables.some((t) => t.startsWith('dungeon_'))) validateDungeonPlay(this.db);
-              if (tables.some((t) => t === 'player_hex_memory')) validatePlayer(this.db);
-              if (tables.includes('world_actor'))
-                for (const row of this.db
-                  .prepare('SELECT id FROM world_actor WHERE campaign_id=?')
-                  .all(command.campaignId))
-                  readWorldActor(this.db, command.campaignId, row.id);
-            },
-          },
-        );
-        this.updateMusic(command.campaignId);
-        return ack;
-      })
-      .immediate();
+    return storedExecuteWorld(
+      this.db,
+      {
+        guard: this.guard.bind(this),
+        consumeSceneTime: this.consumeSceneTime.bind(this),
+        updateMusic: this.updateMusic.bind(this),
+      },
+      command,
+    );
   }
   itemDefinitions(query: ItemQuery) {
     return readItemDefinitions(this.db, query);
@@ -4686,129 +2978,15 @@ export class CampaignStore {
   }
   executeLive(command: LiveCommand) {
     return this.db
-      .transaction(() => {
-        const replay = !!this.db
-          .prepare('SELECT 1 FROM live_receipt WHERE command_id=?')
-          .get(command.commandId);
-        const basis =
-            command.action.kind === 'advance-clock' && !replay
-              ? captureAutonomyBasis(this.db, command.campaignId)
-              : null,
-          oldScene =
-            command.action.kind === 'advance-clock' ||
-            (command.action.kind === 'scene-content' && !replay)
-              ? readLiveScene(this.db, command.campaignId, command.action.sceneId)
-              : null;
-        const ack = executeLive(this.db, command, () => {
-          this.guard(command.token, command.campaignId);
-        });
-        if (!replay && command.action.kind === 'live-moment' && command.action.followUp) {
-          const a = command.action,
-            followUp = a.followUp!,
-            noteId = campaignLocalId(followUp.id),
-            scene = ack.scene;
-          if (!scene || scene.id !== a.sceneId)
-            throw new Error('Folgespur konnte nicht an die laufende Gruppe gebunden werden.');
-          this.commitPreparation({
-            commandId: command.commandId + '|follow-up',
-            campaignId: command.campaignId,
-            token: command.token,
-            change: {
-              kind: 'note',
-              expectedRevision: null,
-              note: {
-                version: 1,
-                id: noteId,
-                revision: 1,
-                kind: followUp.kind,
-                title: a.title.trim(),
-                readAloud: '',
-                gmNotes: a.summary,
-                relations: [],
-                creatureId: null,
-                deleted: false,
-              },
-            },
-          });
-          const locationId =
-              scene.locationId &&
-              this.db
-                .prepare('SELECT 1 FROM location WHERE campaign_id=? AND id=? AND trashed=0')
-                .get(command.campaignId, scene.locationId)
-                ? scene.locationId
-                : null,
-            state = {
-              noteId,
-              revision: 1,
-              status: 'open' as const,
-              locationId,
-              contributors: scene.members,
-              poolXp: 0,
-              items: [],
-              awardId: null,
-            };
-          validateNarrativeState(this.db, command.campaignId, state);
-          saveNarrative(this.db, command.campaignId, state);
-        }
-        if (basis && oldScene && ack.scene)
-          this.consumeSceneTime(command.campaignId, command.commandId, oldScene, ack.scene, basis);
-        if (command.action.kind === 'advance-clock' && !replay)
-          restockDue(this.db, command.campaignId, ack.scene!.clock.instantMs);
-        if (!replay) {
-          const a = command.action;
-          if (a.kind === 'scene-roster') {
-            const ids = ack.session?.members.filter((m) => !m.active).map((m) => m.id) ?? [],
-              retired = new Set(ack.session?.retired.map((s) => s.id) ?? []);
-            removePartyFromMasks(this.db, command.campaignId, ids, command.commandId, retired);
-            reconcileChaseParticipants(
-              this.db,
-              command.campaignId,
-              ids,
-              command.commandId,
-              retired,
-            );
-          }
-          if (
-            a.kind === 'move' ||
-            (a.kind === 'membership' && !a.active) ||
-            (a.kind === 'archive-character' && a.archived)
-          ) {
-            const ids = a.kind === 'move' ? a.memberIds : [a.characterId],
-              retired = new Set(ack.session?.retired.map((scene) => scene.id) ?? []);
-            removePartyFromMasks(this.db, command.campaignId, ids, command.commandId, retired);
-            reconcileChaseParticipants(
-              this.db,
-              command.campaignId,
-              ids,
-              command.commandId,
-              retired,
-            );
-          }
-          if (a.kind === 'move' && ack.session?.createdScene)
-            inheritScenePosition(
-              this.db,
-              command.campaignId,
-              a.sceneId,
-              ack.session.createdScene.id,
-            );
-          // Title/notes alone have no World consequence; broken optional weather cannot veto their save.
-          const sceneId =
-            a.kind === 'advance-clock' ||
-            a.kind === 'apply-visit' ||
-            (a.kind === 'scene-content' && oldScene?.locationId !== ack.scene?.locationId)
-              ? a.sceneId
-              : a.kind === 'initialize'
-                ? ack.scene?.id
-                : a.kind === 'move'
-                  ? ack.session?.createdScene?.id
-                  : null;
-          if (sceneId) syncSceneWorld(this.db, command.campaignId, sceneId);
-        }
-        if (command.action.kind === 'create-character' && ack.character)
-          createProgress(this.db, command.campaignId, ack.character.id);
-        if (!replay) this.updateMusic(command.campaignId);
-        return ack;
-      })
+      .transaction(() =>
+        applyLiveCommand(this.db, command, {
+          guard: () => {
+            this.guard(command.token, command.campaignId);
+          },
+          commitPreparation: (command) => this.commitPreparation(command),
+          updateMusic: (campaignId) => this.updateMusic(campaignId),
+        }),
+      )
       .immediate();
   }
   liveStatus(command: LiveCommand, token: string) {
@@ -4837,36 +3015,12 @@ export class CampaignStore {
     command: PreparationCommand,
     token = command.token,
   ): import('../campaign/preparation-contracts').PlanReconciliation {
-    if (command.change.kind !== 'plan')
-      throw new Error('Gezielte Planklärung benötigt einen Spielabendplan.');
-    const change = command.change;
-    return this.db.transaction(() => {
-      const cam = this.guard(token, command.campaignId ?? this.active?.campaignId);
-      const prior = this.db
-        .prepare('SELECT fingerprint,campaign_id,revision FROM receipt WHERE command_id=?')
-        .get(command.commandId);
-      if (prior && (prior.campaign_id !== cam || !matchesReceipt(prior, command)))
-        throw new Error('Änderungskennung bereits anders verwendet.');
-      if (!prior && command.campaignId === undefined && command.token !== token)
-        throw new Error('Der alte Auftrag besitzt keine eindeutige Kampagnenbindung.');
-      const row = this.db
-        .prepare('SELECT revision FROM plan WHERE campaign_id=? AND id=?')
-        .get(cam, change.plan.id);
-      const unchanged =
-        change.expectedRevision === null ? !row : row?.revision === change.expectedRevision;
-      let plan: ManualPlan | null = null;
-      if (row)
-        try {
-          plan = this.readPlan(cam, change.plan.id);
-        } catch {
-          /* Keep unreadable original bytes and the unresolved draft. */
-        }
-      return {
-        outcome: prior ? 'applied' : unchanged ? 'not-applied' : 'conflict',
-        targetChanged: (prior ? row?.revision !== prior.revision : !unchanged) || (!!row && !plan),
-        plan,
-      };
-    })();
+    return storedReconcilePreparationPlan(
+      this.db,
+      { guard: this.guard.bind(this), active: this.active, readPlan: this.readPlan.bind(this) },
+      command,
+      token,
+    );
   }
   changePreparationContent(command: PreparationCommand) {
     if (command.change.kind !== 'note' && command.change.kind !== 'location')
@@ -4943,468 +3097,16 @@ export class CampaignStore {
     );
   }
   private commitPreparation(command: PreparationCommand): void {
-    if (typeof command.commandId !== 'string' || !command.commandId)
-      throw new Error('Änderungskennung fehlt.');
-    const change = validatePreparation(command.change),
-      fingerprint = commandFingerprint(command);
-    this.db
-      .transaction(() => {
-        const campaignId = this.guard(command.token, command.campaignId ?? this.active?.campaignId);
-        const prior = this.db
-          .prepare('SELECT fingerprint,campaign_id FROM receipt WHERE command_id=?')
-          .get(command.commandId);
-        if (prior) {
-          if (prior.campaign_id !== campaignId || !matchesReceipt(prior, command))
-            throw new Error('Änderungskennung bereits anders verwendet.');
-          return;
-        }
-        let targetId: string, revision: number;
-        if (change.kind === 'note-merge') {
-          if (this.graphShadow) throw new Error('Die offene Dungeonvorschau zuerst abschließen.');
-          const work = noteMergeWork(this.db, campaignId, change.id, change.targetId),
-            p = work.preview;
-          if (
-            work.source.revision !== change.expectedRevision ||
-            work.target.revision !== change.expectedTargetRevision ||
-            p.basis !== change.basis
-          )
-            throw new Error(
-              'Zusammenführungskonflikt: Originale oder Verweise wurden geändert. Vorschau erneut prüfen.',
-            );
-          if (p.blockers.length) throw new Error(p.blockers.join(' '));
-          let index = 0;
-          const nested = (next: PreparationChange) =>
-            this.commitPreparation({
-              commandId: command.commandId + '|merge:' + index++,
-              campaignId,
-              token: command.token,
-              change: next,
-            });
-          nested({
-            kind: 'note',
-            expectedRevision: work.target.revision,
-            note: {
-              ...work.target,
-              readAloud: work.remap(change.readAloud),
-              gmNotes: work.remap(change.gmNotes),
-              relations: work.targetRelations,
-            },
-          });
-          for (const note of work.notes)
-            nested({ kind: 'note', expectedRevision: note.revision, note });
-          for (const location of work.locations) nested({ kind: 'location', ...location });
-          for (const { key, refs } of work.keys)
-            executeDrawing(
-              this.db,
-              {
-                commandId: command.commandId + '|merge:key:' + key.id,
-                campaignId,
-                token: command.token,
-                action: {
-                  kind: 'key-content',
-                  expectedRevision: key.revision,
-                  content: { ...key, references: refs },
-                },
-              },
-              () => {
-                this.guard(command.token, campaignId);
-              },
-            );
-          for (const v of work.visits)
-            this.executeSession({
-              commandId: command.commandId + '|merge:visit:' + v.detail.visitId,
-              campaignId,
-              token: command.token,
-              action: {
-                kind: 'visit',
-                planId: v.planId,
-                expectedRevision: v.detail.revision,
-                detail: {
-                  ...v.detail,
-                  noteIds: [
-                    ...new Set(
-                      v.detail.noteIds.map((id) => (id === change.id ? change.targetId : id)),
-                    ),
-                  ],
-                },
-              },
-            });
-          nested({
-            kind: 'note-trash',
-            id: change.id,
-            expectedRevision: work.source.revision,
-            trashed: true,
-          });
-          targetId = change.id;
-          revision = work.source.revision + 1;
-        } else if (change.kind === 'note') {
-          targetId = change.note.id;
-          const old = this.db
-            .prepare('SELECT * FROM world_note WHERE campaign_id=? AND id=?')
-            .get(campaignId, targetId);
-          if (
-            change.expectedRevision === null
-              ? !!old
-              : !old || old.revision !== change.expectedRevision || old.trashed
-          )
-            throw new Error('Notizkonflikt: Der gespeicherte Stand hat sich geändert.');
-          const oldNote = old
-            ? checkedWorldNoteRow(old, 'Beschädigte Notiz darf nicht überschrieben werden.')
-            : null;
-          const source = change.excerpt;
-          let sourceNote: Note | null = null;
-          if (source) {
-            const row = this.db
-              .prepare('SELECT * FROM world_note WHERE campaign_id=? AND id=?')
-              .get(campaignId, source.id);
-            if (!row || row.trashed || row.revision !== source.revision)
-              throw new Error(
-                'Auszugskonflikt: Die Quelle wurde geändert oder ist nicht verfügbar.',
-              );
-            sourceNote = checkedWorldNoteRow(row, 'Beschädigte Quelle bleibt unverändert.');
-            const selected = sourceNote[source.field].slice(source.start, source.end),
-              other = source.field === 'gmNotes' ? 'readAloud' : 'gmNotes';
-            if (source.end > sourceNote[source.field].length || !selected.trim())
-              throw new Error('Der Auszug stimmt nicht mit der markierten Quelle überein.');
-            if (oldNote) {
-              if (
-                this.db
-                  .prepare(
-                    "SELECT 1 FROM preparation_draft WHERE campaign_id=? AND kind='note' AND target_id=?",
-                  )
-                  .get(campaignId, oldNote.id)
-              )
-                throw new Error(
-                  'Dieses Original hat einen offenen Arbeitsentwurf. Erst im Originaleditor aufklären.',
-                );
-              const expected = worldNoteDocument(
-                appendNoteExcerpt(oldNote, sourceNote, source.field, selected),
-              );
-              if (json(expected) !== json(change.note))
-                throw new Error(
-                  'Die Ergänzung stimmt nicht mit Original und markierter Quelle überein.',
-                );
-            } else {
-              if (
-                change.note[source.field] !== selected ||
-                change.note[other] !== '' ||
-                change.note.relations.length !== 1 ||
-                change.note.relations[0]?.targetId !== source.id ||
-                change.note.relations[0]?.label !== 'Quelle' ||
-                change.note.relations[0]?.familyKind !== undefined
-              )
-                throw new Error('Der Auszug stimmt nicht mit der markierten Quelle überein.');
-              if (!source.allowSameTitle && hasNoteTitle(this.db, campaignId, change.note.title))
-                throw new Error(
-                  'Diesen Namen gibt es bereits. Vorhandene Notiz wählen oder ausdrücklich eigenständig neu anlegen.',
-                );
-            }
-          }
-          if (oldNote && oldNote.kind !== change.note.kind)
-            throw new Error('Die Notizart bleibt an ihrer Identität gebunden.');
-          if (
-            oldNote?.relations.some(
-              (relation) =>
-                relation.familyKind &&
-                !change.note.relations.some(
-                  (next) =>
-                    next.targetId === relation.targetId &&
-                    next.label === relation.label &&
-                    next.familyKind === relation.familyKind,
-                ),
-            )
-          )
-            throw new Error('Familienbeziehungen werden nur als vollständiges Paar geändert.');
-          for (const relation of change.note.relations) {
-            const target = this.db
-              .prepare('SELECT trashed FROM world_note WHERE campaign_id=? AND id=?')
-              .get(campaignId, relation.targetId);
-            const retained = oldNote?.relations.some(
-              (r) =>
-                r.targetId === relation.targetId &&
-                r.label === relation.label &&
-                r.familyKind === relation.familyKind,
-            );
-            if (relation.familyKind && !retained)
-              throw new Error('Familienbeziehungen werden atomar im Zusammenhangsplan angelegt.');
-            if (!target || (target.trashed && !retained))
-              throw new Error('Beziehung zeigt nicht auf eine verfügbare Notiz.');
-          }
-          revision = (old?.revision ?? 0) + 1;
-          const note: Note = { ...change.note, revision },
-            payload = json(note);
-          rememberSourceUnlink(this.db, campaignId, command.commandId, oldNote, note);
-          this.db
-            .prepare(
-              'INSERT INTO world_note VALUES(?,?,?,0,?,?) ON CONFLICT(campaign_id,id) DO UPDATE SET revision=excluded.revision,payload=excluded.payload,checksum=excluded.checksum',
-            )
-            .run(campaignId, targetId, revision, payload, hash(payload));
-          this.db
-            .prepare('DELETE FROM note_search WHERE campaign_id=? AND note_id=?')
-            .run(campaignId, targetId);
-          this.db
-            .prepare('INSERT INTO note_search(campaign_id,note_id,title,body) VALUES(?,?,?,?)')
-            .run(campaignId, targetId, note.title, note.readAloud + '\n' + note.gmNotes);
-          if (
-            sourceNote &&
-            !sourceNote.relations.some((r) => r.targetId === note.id && r.label === 'Auszug')
-          ) {
-            // Reuse the canonical writer inside this transaction: index, checksum,
-            // receipt and both directions either all publish or all roll back.
-            this.commitPreparation({
-              commandId: command.commandId + '|excerpt-source',
-              campaignId,
-              token: command.token,
-              change: {
-                kind: 'note',
-                expectedRevision: sourceNote.revision,
-                note: {
-                  ...sourceNote,
-                  relations: [...sourceNote.relations, { targetId: note.id, label: 'Auszug' }],
-                },
-              },
-            });
-          }
-          if (oldNote?.kind === 'npc' && oldNote.title !== note.title)
-            syncOpenMaskHealth(
-              this.db,
-              campaignId,
-              undefined,
-              new Map([[targetId, { before: oldNote.title, after: note.title }]]),
-            );
-        } else if (change.kind === 'note-trash') {
-          targetId = change.id;
-          const old = this.db
-            .prepare('SELECT * FROM world_note WHERE campaign_id=? AND id=?')
-            .get(campaignId, targetId);
-          if (!old || old.revision !== change.expectedRevision || !!old.trashed === change.trashed)
-            throw new Error('Papierkorbkonflikt: Notizstand hat sich geändert.');
-          const note = checkedWorldNoteRow(old, 'Beschädigte Notiz bleibt gesperrt.');
-          revision = old.revision + 1;
-          if (
-            change.trashed &&
-            note.kind === 'npc' &&
-            this.db
-              .prepare(
-                `SELECT 1 FROM city_unit WHERE campaign_id=? AND (EXISTS(SELECT 1 FROM json_each(city_unit.payload,'$.residentIds') WHERE value=?) OR EXISTS(SELECT 1 FROM json_each(city_unit.payload,'$.workerIds') WHERE value=?)) LIMIT 1`,
-              )
-              .get(campaignId, targetId, targetId)
-          )
-            throw new Error(
-              'NPC ist noch als Stadtbewohner oder Arbeitsplatzbindung verwendet. Bindung zuerst am Haus lösen.',
-            );
-          if (change.trashed && note.kind === 'npc')
-            assertNpcOutsideOpenCombat(this.db, campaignId, targetId);
-          const payload = json({ ...note, revision });
-          this.db
-            .prepare(
-              'UPDATE world_note SET trashed=?,revision=?,payload=?,checksum=? WHERE campaign_id=? AND id=?',
-            )
-            .run(Number(change.trashed), revision, payload, hash(payload), campaignId, targetId);
-        } else if (change.kind === 'location') {
-          targetId = change.document.id;
-          const old = this.db
-            .prepare('SELECT * FROM location WHERE campaign_id=? AND id=?')
-            .get(campaignId, targetId);
-          if (
-            change.expectedRevision === null
-              ? !!old
-              : !old || old.revision !== change.expectedRevision || old.trashed
-          )
-            throw new Error('Ortskonflikt: Der gespeicherte Stand hat sich geändert.');
-          if (old) decodeLocation(old, 'Beschädigter Ort darf nicht überschrieben werden.');
-          for (const map of change.document.detailMaps) {
-            if (
-              map.kind !== 'dungeon' ||
-              !this.db
-                .prepare('SELECT 1 FROM scope WHERE campaign_id=? AND id=?')
-                .get(campaignId, map.documentId)
-            )
-              throw new Error('Die gewählte Karte gehört nicht zu dieser Kampagne.');
-            const bound = this.db
-              .prepare('SELECT location_id FROM location_map WHERE campaign_id=? AND scope_id=?')
-              .get(campaignId, map.documentId);
-            if (bound && bound.location_id !== targetId)
-              throw new Error(
-                'Diese Dungeonzeichnung gehört bereits zu einem anderen Ort. Bindung zuerst dort ausdrücklich lösen.',
-              );
-          }
-          revision = (old?.revision ?? 0) + 1;
-          const payload = json(change.document);
-          this.db
-            .prepare(
-              'INSERT INTO location VALUES(?,?,?,0,?,?) ON CONFLICT(campaign_id,id) DO UPDATE SET revision=excluded.revision,payload=excluded.payload,checksum=excluded.checksum',
-            )
-            .run(campaignId, targetId, revision, payload, hash(payload));
-          this.db
-            .prepare('DELETE FROM location_map WHERE campaign_id=? AND location_id=?')
-            .run(campaignId, targetId);
-          for (const map of change.document.detailMaps)
-            this.db
-              .prepare('INSERT INTO location_map VALUES(?,?,?)')
-              .run(campaignId, map.documentId, targetId);
-        } else if (change.kind === 'location-trash') {
-          targetId = change.id;
-          const old = this.db
-            .prepare('SELECT * FROM location WHERE campaign_id=? AND id=?')
-            .get(campaignId, targetId);
-          if (!old || old.revision !== change.expectedRevision || !!old.trashed === change.trashed)
-            throw new Error('Orts-Papierkorbkonflikt: Stand hat sich geändert.');
-          decodeLocation(old, 'Beschädigter Ort bleibt gesperrt.');
-          revision = old.revision + 1;
-          this.db
-            .prepare('UPDATE location SET trashed=?,revision=? WHERE campaign_id=? AND id=?')
-            .run(Number(change.trashed), revision, campaignId, targetId);
-        } else {
-          targetId = change.plan.id;
-          const old = this.db
-            .prepare('SELECT revision FROM plan WHERE campaign_id=? AND id=?')
-            .get(campaignId, targetId);
-          if (
-            change.expectedRevision === null
-              ? !!old
-              : !old || old.revision !== change.expectedRevision
-          )
-            throw new Error('Plankonflikt: Der gespeicherte Stand hat sich geändert.');
-          const beforePlan = old ? this.readPlan(campaignId, targetId) : null;
-          const beforeVisits = new Map(beforePlan?.scenes.map((scene) => [scene.id, scene]));
-          const nextIds = new Set(change.plan.scenes.map((scene) => scene.id));
-          const locationState = this.db.prepare(
-            'SELECT trashed FROM location WHERE campaign_id=? AND id=?',
-          );
-          for (const scene of change.plan.scenes)
-            if (scene.locationId !== null) {
-              const location = locationState.get(campaignId, scene.locationId);
-              const retained = beforeVisits.get(scene.id)?.locationId === scene.locationId;
-              if (!location || (location.trashed && !retained))
-                throw new Error(
-                  'Szenenort ist nicht verfügbar. Wähle einen aktuellen Ort oder lasse die Szene ortlos.',
-                );
-            }
-          revision = (old?.revision ?? 0) + 1;
-          this.db
-            .prepare(
-              'INSERT INTO plan VALUES(?,?,?,?) ON CONFLICT(campaign_id,id) DO UPDATE SET revision=excluded.revision,name=excluded.name',
-            )
-            .run(campaignId, targetId, revision, change.plan.name);
-          const existing = this.db
-            .prepare('SELECT * FROM planned_visit WHERE campaign_id=? AND plan_id=?')
-            .all(campaignId, targetId) as Row[];
-          const existingVisits = new Map(existing.map((visit) => [visit.id, visit]));
-          for (const visit of existing)
-            if (!nextIds.has(visit.id))
-              this.db
-                .prepare('DELETE FROM planned_visit WHERE campaign_id=? AND id=?')
-                .run(campaignId, visit.id);
-          change.plan.scenes.forEach((scene, ordinal) => {
-            const foreign = this.db
-              .prepare('SELECT plan_id FROM planned_visit WHERE campaign_id=? AND id=?')
-              .get(campaignId, scene.id);
-            if (foreign && foreign.plan_id !== targetId)
-              throw new Error('Szenenidentität gehört zu einem anderen Plan.');
-            const payload = json(scene),
-              before = existingVisits.get(scene.id);
-            if (!before || before.ordinal !== ordinal || before.payload !== payload)
-              this.db
-                .prepare(
-                  'INSERT INTO planned_visit VALUES(?,?,?,?,?,?) ON CONFLICT(campaign_id,id) DO UPDATE SET ordinal=excluded.ordinal,payload=excluded.payload,checksum=excluded.checksum',
-                )
-                .run(campaignId, targetId, scene.id, ordinal, payload, hash(payload));
-          });
-        }
-        if (change.kind === 'plan')
-          cleanSessionVisits(
-            this.db,
-            campaignId,
-            change.plan.id,
-            change.plan.scenes.map((s) => s.id),
-          );
-        if (change.kind === 'plan' && change.opening) {
-          const o = change.opening;
-          if (o.noteThread !== undefined) {
-            checkNoteThread(this.db, campaignId, o.noteThread);
-            const ids = [
-              ...o.noteThread.entries.map((e) => e.id),
-              ...(o.noteThread.includeRoot ? [o.noteThread.rootId] : []),
-            ];
-            if (ids.some((id) => !o.noteIds.includes(id)))
-              throw new Error('Notizmappenauswahl passt nicht zum neuen Besuch.');
-          }
-          this.executeSession({
-            commandId: command.commandId + '|opening',
-            campaignId,
-            token: command.token,
-            action: {
-              kind: 'visit',
-              planId: change.plan.id,
-              expectedRevision: 0,
-              detail: {
-                visitId: o.visitId,
-                revision: 0,
-                readAloud: o.readAloud,
-                noteIds: o.noteIds,
-                groupIds: [],
-                reward: null,
-              },
-            },
-          });
-        }
-        applySceneCreation(this.db, campaignId, command);
-        this.db
-          .prepare('INSERT INTO receipt VALUES(?,?,?,?,?)')
-          .run(command.commandId, fingerprint, campaignId, targetId, revision);
-        const target = preparationTarget(command.change),
-          savedDraft = this.db
-            .prepare(
-              'SELECT * FROM preparation_draft WHERE campaign_id=? AND kind=? AND target_id=?',
-            )
-            .get(campaignId, target.kind, target.id);
-        if (savedDraft && decodePreparationDraft(savedDraft).writeId === command.draftWriteId)
-          this.db
-            .prepare('DELETE FROM preparation_draft WHERE campaign_id=? AND kind=? AND target_id=?')
-            .run(campaignId, target.kind, target.id);
-      })
-      .immediate();
+    commitPreparation(this.db, command, {
+      activeCampaignId: this.active?.campaignId,
+      graphPreviewOpen: !!this.graphShadow,
+      guard: this.guard.bind(this),
+      commitPreparation: this.commitPreparation.bind(this),
+      executeSession: this.executeSession.bind(this),
+    });
   }
   selectPreparation(token: string, selection: PreparationSelection): void {
-    this.db
-      .transaction(() => {
-        const campaignId = this.guard(token);
-        if (
-          selection.noteId !== null &&
-          !this.db
-            .prepare('SELECT 1 FROM world_note WHERE campaign_id=? AND id=?')
-            .get(campaignId, selection.noteId)
-        )
-          throw new Error('Notizauswahl ist nicht verfügbar.');
-        if (
-          selection.planId !== null &&
-          !this.db
-            .prepare('SELECT 1 FROM plan WHERE campaign_id=? AND id=?')
-            .get(campaignId, selection.planId)
-        )
-          throw new Error('Planauswahl ist nicht verfügbar.');
-        if (
-          selection.sceneId !== null &&
-          !this.db
-            .prepare('SELECT 1 FROM planned_visit WHERE campaign_id=? AND plan_id=? AND id=?')
-            .get(campaignId, selection.planId, selection.sceneId)
-        )
-          throw new Error('Szenenauswahl gehört nicht zu diesem Plan.');
-        if (
-          selection.locationId != null &&
-          !this.db
-            .prepare('SELECT 1 FROM location WHERE campaign_id=? AND id=?')
-            .get(campaignId, selection.locationId)
-        )
-          throw new Error('Ortsauswahl gehört nicht zur Kampagne.');
-        this.db
-          .prepare(
-            'INSERT INTO settings VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value',
-          )
-          .run(`preparation:${campaignId}`, json(selection));
-      })
-      .immediate();
+    return storedSelectPreparation(this.db, { guard: this.guard.bind(this) }, token, selection);
   }
   reconcilePreparation(
     command: PreparationCommand,
@@ -5481,30 +3183,7 @@ export class CampaignStore {
   keepRoomDraft(token: string, roomId: string, draft: WorkingRoomDraft | null) {
     if (this.graphShadow && !this.graphRouting)
       return this.withGraph<void>(() => this.keepRoomDraft(token, roomId, draft));
-    const campaignId = this.guard(token);
-    if (draft === null) {
-      this.db
-        .prepare('DELETE FROM room_draft WHERE campaign_id=? AND room_id=?')
-        .run(campaignId, roomId);
-      return;
-    }
-    if (!this.db.prepare('SELECT 1 FROM room WHERE campaign_id=? AND id=?').get(campaignId, roomId))
-      throw new Error('Entwurf gehört nicht zum aktuellen Raum.');
-    const existing = this.db
-      .prepare('SELECT * FROM room_draft WHERE campaign_id=? AND room_id=?')
-      .get(campaignId, roomId);
-    if (existing) decodeRoomDraft(existing);
-    const payload = json(draft);
-    if (payload.length > 64 * 1024 * 1024)
-      throw new Error('Dieser Entwurf ist für den ersten Anschluss zu groß.');
-    const checksum = hash(payload);
-    // Validate the persisted envelope without treating unfinished text as author truth.
-    decodeRoomDraft({ campaign_id: campaignId, room_id: roomId, payload, checksum });
-    this.db
-      .prepare(
-        'INSERT INTO room_draft VALUES(?,?,?,?) ON CONFLICT(campaign_id,room_id) DO UPDATE SET payload=excluded.payload,checksum=excluded.checksum',
-      )
-      .run(campaignId, roomId, payload, checksum);
+    return storedKeepRoomDraft(this.db, { guard: this.guard.bind(this) }, token, roomId, draft);
   }
   roomDraft(token: string, roomId: string): WorkingRoomDraft | null {
     if (this.graphShadow && !this.graphRouting)
@@ -5545,39 +3224,6 @@ export class CampaignStore {
       .immediate();
   }
   renameCampaign(command: CampaignRename): Campaign {
-    if (
-      !command.commandId ||
-      typeof command.name !== 'string' ||
-      !command.name.trim() ||
-      command.name.length > 1000 ||
-      !Number.isSafeInteger(command.expectedRevision)
-    )
-      throw new Error('Ungültige Kampagnenumbenennung.');
-    this.db
-      .transaction(() => {
-        const campaignId = this.guard(command.token, command.campaignId),
-          fingerprint = commandFingerprint(command);
-        const receipt = this.db
-          .prepare('SELECT fingerprint,campaign_id FROM receipt WHERE command_id=?')
-          .get(command.commandId);
-        if (receipt) {
-          if (receipt.campaign_id !== campaignId || !matchesReceipt(receipt, command))
-            throw new Error('Änderungskennung bereits anders verwendet.');
-          return;
-        }
-        const current = this.db.prepare('SELECT revision FROM campaign WHERE id=?').get(campaignId);
-        if (current.revision !== command.expectedRevision)
-          throw new Error('Kampagnenname wurde inzwischen geändert.');
-        this.db
-          .prepare('UPDATE campaign SET name=?,revision=revision+1 WHERE id=?')
-          .run(command.name, campaignId);
-        this.db
-          .prepare('INSERT INTO receipt VALUES(?,?,?,?,?)')
-          .run(command.commandId, fingerprint, campaignId, campaignId, current.revision + 1);
-      })
-      .immediate();
-    return this.db
-      .prepare('SELECT id,name,revision FROM campaign WHERE id=?')
-      .get(command.campaignId);
+    return storedRenameCampaign(this.db, { guard: this.guard.bind(this) }, command);
   }
 }

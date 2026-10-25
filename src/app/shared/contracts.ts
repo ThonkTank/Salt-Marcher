@@ -221,7 +221,7 @@ export interface DesktopAPI
   backupStatus(): Promise<Result<string | null>>;
   tutorial(
     state?: 'shown' | 'finished' | 'skipped',
-  ): Promise<Result<import('../workspace/tutorial').TutorialRun>>;
+  ): Promise<Result<import('../workspace/tutorial-contracts').TutorialRun>>;
 }
 declare global {
   interface Window {

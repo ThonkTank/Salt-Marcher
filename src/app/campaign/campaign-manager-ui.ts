@@ -1,4 +1,4 @@
-import type { WorkspaceGeometry, Result } from '../shared/contracts';
+import type { Result, WorkspaceGeometry } from '../shared/contracts';
 import type { CampaignTransferPreview, ConflictChoice } from './campaign-contracts';
 const el = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const unwrap = <T>(r: Result<T>): T => {
@@ -412,4 +412,165 @@ export function initCampaignManager(
       p.phase + (p.busy ? ' · ' + (p.bytes / 1048576).toFixed(1) + ' MB' : '');
     lock();
   });
+}
+
+interface CampaignActionsHost {
+  readonly workspace: WorkspaceGeometry | null;
+  readonly transitionPending: boolean;
+  workspaceContextCurrent(token: string): boolean;
+  beginIntent(): () => boolean;
+  cancelIntent(): void;
+  flushAll(): Promise<boolean>;
+  refreshCampaigns(): Promise<unknown>;
+  activate(id: string): Promise<void>;
+  insertionPoint(): import('../shared/contracts').Point;
+  showAtlas(): void;
+  navigateRoom(id: string): Promise<void> | undefined;
+  status(text: string, error?: boolean): void;
+}
+/** Campaign dialogs own their input and import ticket; navigation owns activation. */
+export function initCampaignActions(host: CampaignActionsHost) {
+  const api = window.campaign;
+  let dungeonImportPreview: import('../shared/contracts').DungeonImportPreview | null = null;
+  let renameBasis: Omit<import('../shared/contracts').CampaignRename, 'commandId' | 'name'> | null =
+    null;
+  el('new-campaign').onclick = () => {
+    el<HTMLDialogElement>('create-dialog').showModal();
+  };
+  el('workspace-new-campaign').onclick = () => el<HTMLButtonElement>('new-campaign').click();
+  el('cancel-create').onclick = () => el<HTMLDialogElement>('create-dialog').close();
+  el('rename-campaign').onclick = () => {
+    if (!host.workspace) return;
+    renameBasis = {
+      token: host.workspace.token,
+      campaignId: host.workspace.campaign.id,
+      expectedRevision: host.workspace.campaign.revision,
+    };
+    el<HTMLInputElement>('rename-name').value = host.workspace.campaign.name;
+    el<HTMLDialogElement>('rename-dialog').showModal();
+    el('rename-name').focus();
+  };
+  el('rename-cancel').onclick = () => el<HTMLDialogElement>('rename-dialog').close();
+  el('rename-form').onsubmit = (event) => {
+    event.preventDefault();
+    void (async () => {
+      const basis = renameBasis;
+      if (!basis || !host.workspaceContextCurrent(basis.token)) return;
+      const name = el<HTMLInputElement>('rename-name').value;
+      try {
+        const response = await api.renameCampaign({
+          ...basis,
+          commandId: crypto.randomUUID(),
+          name,
+        });
+        if (!host.workspaceContextCurrent(basis.token)) return;
+        const campaign = unwrap(response);
+        host.workspace!.campaign = campaign;
+        if (renameBasis === basis && el<HTMLInputElement>('rename-name').value === name)
+          el<HTMLDialogElement>('rename-dialog').close();
+        await host.refreshCampaigns();
+        if (!host.workspaceContextCurrent(basis.token)) return;
+        el('map-title').textContent = campaign.name;
+        if (renameBasis === basis && el<HTMLInputElement>('rename-name').value === name)
+          host.status('Kampagnenname gespeichert.');
+      } catch (error) {
+        if (host.workspaceContextCurrent(basis.token) && renameBasis === basis)
+          host.status((error as Error).message, true);
+      }
+    })();
+  };
+  el('create-form').addEventListener('submit', (event) => {
+    event.preventDefault();
+    const owns = host.beginIntent(),
+      name = el<HTMLInputElement>('campaign-name').value;
+    void (async () => {
+      if (!owns() || !(await host.flushAll()) || !owns()) return;
+      try {
+        const response = await api.create(name);
+        if (!response.ok) {
+          if (owns()) unwrap(response);
+          return;
+        }
+        const campaign = response.value;
+        if (owns()) el<HTMLDialogElement>('create-dialog').close();
+        await host.refreshCampaigns();
+        if (owns()) await host.activate(campaign.id);
+      } catch (error) {
+        if (owns()) host.status((error as Error).message, true);
+      }
+    })();
+  });
+  el('import').onclick = () => {
+    const owns = host.beginIntent();
+    void (async () => {
+      if (!owns() || !(await host.flushAll()) || !owns()) return;
+      try {
+        const response = await api.previewDungeonImport();
+        if (!owns()) return;
+        const preview = unwrap(response);
+        dungeonImportPreview = preview;
+        if (!preview) return;
+        const detail = el('import-detail');
+        detail.replaceChildren();
+        for (const line of [
+          `${preview.name}: ${preview.roomCount} Räume${host.workspace ? ' werden in diese Kampagnenwelt eingefügt' : ' in einer neuen Kampagne'}.`,
+          ...preview.warnings,
+        ]) {
+          const p = document.createElement('p');
+          p.textContent = line;
+          detail.append(p);
+        }
+        el<HTMLDialogElement>('import-dialog').showModal();
+      } catch (error) {
+        if (owns()) host.status((error as Error).message, true);
+      }
+    })();
+  };
+  el('workspace-import').onclick = () => el<HTMLButtonElement>('import').click();
+  el('cancel-import').onclick = () => {
+    dungeonImportPreview = null;
+    host.cancelIntent();
+    el<HTMLDialogElement>('import-dialog').close();
+  };
+  el('confirm-import').onclick = () => {
+    const preview = dungeonImportPreview;
+    if (!preview || host.transitionPending) return;
+    const owns = host.beginIntent();
+    void (async () => {
+      try {
+        if (host.workspace) {
+          const owner = host.workspace,
+            response = await api.importAtlas({
+              commandId: 'atlas-import:' + preview.ticket,
+              token: owner.token,
+              campaignId: owner.campaign.id,
+              ticket: preview.ticket,
+              ...host.insertionPoint(),
+            });
+          if (!owns()) return;
+          const result = unwrap(response);
+          dungeonImportPreview = null;
+          el<HTMLDialogElement>('import-dialog').close();
+          await host.activate(owner.campaign.id);
+          host.showAtlas();
+          if (result.roomId) await host.navigateRoom(result.roomId);
+          return;
+        }
+        const response = await api.createCampaignFromDungeon(preview.ticket);
+        if (!response.ok) {
+          if (owns()) unwrap(response);
+          return;
+        }
+        const campaign = response.value;
+        if (owns() && dungeonImportPreview === preview) {
+          dungeonImportPreview = null;
+          el<HTMLDialogElement>('import-dialog').close();
+        }
+        await host.refreshCampaigns();
+        if (owns()) await host.activate(campaign.id);
+      } catch (error) {
+        if (owns()) host.status((error as Error).message, true);
+      }
+    })();
+  };
 }

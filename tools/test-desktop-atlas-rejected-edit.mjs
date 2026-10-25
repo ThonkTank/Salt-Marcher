@@ -102,6 +102,9 @@ try {
   await atlasCanvasReady(page);
   assert.equal(road().width, 6);
   const expected = road();
+  // A published canvas can precede the final write/render drain. Wait for the
+  // author controls to unlock before asking the application to close.
+  await page.waitForFunction(() => !document.querySelector('#atlas-undo').disabled);
   await native.close();
   await start();
   assert.deepEqual(road(), expected);

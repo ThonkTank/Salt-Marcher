@@ -1,75 +1,65 @@
 import { atlasPathPreview } from './atlas-path-draft';
-import { atlasPaint as shape } from './atlas-canvas-scene';
+import { AtlasPaint, atlasPaint as shape } from './atlas-canvas-scene';
 import { atlasElement as get } from './atlas-dom';
-import type { AtlasRegions } from './atlas-regions';
-import type { AtlasOutput } from './atlas-output';
 import { mapExtentVisible } from './atlas-scale-policy';
 import { atlasWorkplaneData, type AtlasWorkplane } from './atlas-workplane';
-import { posedFootprint } from './city-model';
+import { cityObjectsPaint, posedFootprint, roadPoints } from './city-model';
 import {
+  drawTerritories,
   MapLabelLayout,
   measureMapText,
   paintMapLabels,
-  drawTerritories,
 } from './atlas-cartography';
 import type { AtlasRasterPresentation } from './atlas-raster-presentation';
 import {
-  drawMeasurements,
   areaMeasures,
+  drawMeasurements,
+  elementMeasures,
   pathMeasures,
   radiusMeasures,
-  elementMeasures,
 } from './atlas-measurements';
 import { atlasFieldValue } from './atlas-units';
 import { regionValue } from './atlas-region-contracts';
-import { atlasDrawingMeasurement } from './drawing-ui';
+import {
+  atlasDrawingDraft,
+  atlasDrawingMeasurement,
+  atlasDrawingSnapPoint,
+  drawingOverlay,
+} from './drawing-ui';
 import { dungeonTravelRoute } from '../runtime/dungeon-travel-console';
 import type { LandscapeWorkbench } from './atlas-landscape-ui';
 import { appendRoomNumber } from './room-number-label';
 import { atlasPartyPoint, atlasWorldRoute } from './atlas-runtime-model';
 import type { CanvasBox } from '../runtime/passive-map-canvas';
 import type { AtlasCanvas } from './atlas-canvas';
-import { AtlasPaint } from './atlas-canvas-scene';
 import {
   atlasFrame,
-  localToAtlas,
+  atlasHexPoint,
   atlasToLocal,
   frameMatrix,
-  atlasHexPoint,
+  localToAtlas,
 } from './campaign-atlas-model';
-import type { AtlasBinding } from './campaign-atlas-contracts';
+import type { AtlasBinding, AtlasRenderView } from './campaign-atlas-contracts';
 import type { Point, Room } from '../shared/contracts';
-import { roadPoints, cityObjectsPaint } from './city-model';
 import { volumeProjection } from './volume-model';
 import { elementPaint, roomFacePaint } from './drawing-model';
 import { atlasCityMeasurement, atlasCityState } from './city-ui';
-import { atlasDrawingSnapPoint, atlasDrawingDraft, drawingOverlay } from './drawing-ui';
 import { atlasDungeonState } from './dungeon-ui';
-import type { AtlasRenderView } from './campaign-atlas-contracts';
-import type { AtlasAuthor } from './atlas-author';
-import type { AtlasJourney } from './atlas-journey';
 import type { TerritoryWorkbench } from './atlas-territories-ui';
 import { atlasWorldTravelState } from '../runtime/world-ui';
+import type {
+  AtlasAuthorView,
+  AtlasJourneyView,
+  AtlasOutputView,
+  AtlasRegionView,
+} from './atlas-workbench-types';
 interface AtlasDrawingHost {
-  readonly author: Readonly<
-    Pick<
-      AtlasAuthor,
-      'drag' | 'measurementHover' | 'roomDrag' | 'draft' | 'selection' | 'pathDrag' | 'partyDrag'
-    >
-  >;
+  readonly author: AtlasAuthorView;
   readonly territories: Pick<TerritoryWorkbench, 'selectedLabel' | 'draw'>;
-  readonly journey: Pick<AtlasJourney, 'localPreview'>;
+  readonly journey: AtlasJourneyView;
   readonly scheduleRender: () => void;
-  readonly regions: Pick<AtlasRegions, 'data' | 'geometryCurrent'>;
-  readonly output: Pick<
-    AtlasOutput,
-    | 'exportOpen'
-    | 'exportDrag'
-    | 'exportRectangle'
-    | 'exportDungeon'
-    | 'dungeonOutputBox'
-    | 'exportBox'
-  >;
+  readonly regions: AtlasRegionView;
+  readonly output: AtlasOutputView;
   readonly landscape: Pick<
     LandscapeWorkbench,
     'livePainting' | 'drawMeasurements' | 'draw' | 'selectedLabel'
@@ -392,14 +382,7 @@ export class AtlasDrawing {
       this.host.territories.draw(root, box, mpp);
     }
     if (this.host.output.exportOpen) {
-      const b = this.host.output.exportDrag?.moved
-        ? this.host.output.exportRectangle(
-            this.host.output.exportDrag.start,
-            this.host.output.exportDrag.last,
-          )
-        : this.host.output.exportDungeon
-          ? this.host.output.dungeonOutputBox()
-          : this.host.output.exportBox;
+      const b = this.host.output.selectionBox();
       if (b)
         root.append(
           shape('rect', {

@@ -68,6 +68,37 @@ Die Desktop-Bundlepfade für Worker, Lazy-Module, Assets und Spieleranzeige blei
 unverändert. Diese Gliederung ändert weder IPC-Verträge noch Archive oder Schema.
 
 
+### Zusammensetzen und fachliche Eigentümer
+
+`workspace/renderer.ts` verbindet Start, Kampagnenaktivierung, Navigation und
+Fachoberflächen. `atlas/room-editor-ui.ts` besitzt Raumeingaben, Konturvorschau,
+Autosave, gespeicherte Rohentwürfe, Speicherklärung und Raumhistory. Die
+Kampagnendialoge samt Importticket liegen bei `campaign/campaign-manager-ui.ts`.
+Beide erhalten einen ausdrücklichen Hostvertrag; sie importieren den Renderer nicht.
+
+Die Atlas-Verantwortlichen für Bearbeitung, Regionen, Reise und Ausgabe bleiben
+erhalten. Ihre Zusammenarbeit verwendet fachliche Schnittstellen aus
+`atlas/atlas-workbench-types.ts`. Die Zeichnung konsumiert Leseansichten; die
+Ausgabe entscheidet selbst über ihre Zeigerereignisse und den Auswahlrahmen.
+Ein anderer Verantwortlicher schreibt nicht in ihren Export-Drag.
+
+Der Store hält Verbindungen, aktive Tokens, Graphvorschau-Verbindungen,
+Transaktionskoordination und die Weiterleitung zu Fachmodulen. Atlasoperationen,
+Regionprojektionen, Reise, Fortschritt, Weltfolgen und Kampagnenmutationen liegen
+in ihren Speichermodulen. Raumänderungen verwenden die bestehenden geprüften
+Records in `storage/stored-records.ts`; `storage/preparation.ts` bündelt die zuvor
+im Store verteilte Vorbereitung. Fachübergreifende Aufträge erhalten benannte,
+typisierte Funktionen ihrer bestehenden Eigentümer. Verschachtelte Transaktionen,
+Receipt-Auswertung und Recovery bleiben Teil derselben Schreiboperation.
+
+`tools/check-module-boundaries.mjs` ist Bestandteil von `check:repo`. Es verfolgt
+Imports, Re-Exports, Typ-Imports und dynamische Modulpfade auch indirekt:
+Renderer dürfen weder Speicherimplementierungen noch privilegierte Hostmodule
+importieren, gemeinsame Fachlogik keine Oberfläche, aktiver Desktopcode keine
+historischen Obsidian-Adapter. Die ausdrücklich benannten gemeinsamen
+Bedienelemente bleiben Präsentationscode. Diese Prüfungen ergänzen den
+Browser-Bundlecheck; IPC-Verträge und Datenformate werden dadurch nicht erweitert.
+
 ### Atlas
 
 Der [Atlasplan](../../atlas/architecture/unified-spatial-atlas.md) beschreibt den vollständigen

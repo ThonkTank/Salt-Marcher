@@ -8,22 +8,25 @@ import { readEncounterTables } from './generation';
 import { resolveWorldSources } from './world-sources';
 import {
   assertTransferCoverage,
-  transferRow,
   transferContext,
+  transferRow,
   transferTables,
 } from '../transfer/registry';
-import { randomUUID, createHash } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import type {
   CampaignOverview,
+  ConflictChoice,
   DefinitionConflict,
   SharedKind,
-  ConflictChoice,
 } from '../campaign/campaign-contracts';
 import { drawingTables } from './drawing';
-import { validateNpcRecovery, npcFingerprint } from './npcs';
+import { npcFingerprint, validateNpcRecovery } from './npcs';
 import { validateWorldRelationPairs, worldRelationPairFingerprint } from './world-relation-pair';
 import { canonicalJson } from '../campaign/generation/canonical-json';
 import { checkedAudioRegistry, musicStateAssetCount } from './music';
+import { validateRoom, type CampaignRename, type Room } from '../shared/contracts';
+import { createCampaignAtlas } from './campaign-atlas';
+import { ensureLiveOwners } from './live';
 export const quote = (s: string) => '"' + s.replace(/"/g, '""') + '"';
 export const digest = (v: string | Buffer) => createHash('sha256').update(v).digest('hex');
 export function installCampaignSchema(db: any) {
@@ -933,3 +936,130 @@ export function remapSnapshot(
   }
   return { campaignId: cid, local, shared, historical };
 }
+
+const hash = (value: string | Buffer) => createHash('sha256').update(value).digest('hex');
+const commandFingerprint = (command: object) => hash(json({ ...command, token: undefined }));
+const matchesReceipt = (receipt: Row, command: object) =>
+  receipt.fingerprint === commandFingerprint(command) ||
+  receipt.fingerprint === hash(json(command));
+interface CreateContext {
+  insertRoom: (campaignId: string, room: import('./../shared/contracts').Room) => void;
+}
+export function storedCreate(
+  db: any,
+  context: CreateContext,
+  name: string,
+  rooms: Room[] = [],
+  source?: Buffer,
+): import('./../shared/contracts').Campaign {
+  if (typeof name !== 'string' || !name.trim() || name.length > 1000)
+    throw new Error('Bitte einen Kampagnennamen eingeben.');
+  const campaign = { id: randomUUID(), name, revision: 0 };
+  db.transaction(() => {
+    db.prepare('INSERT INTO campaign(id,name) VALUES(?,?)').run(campaign.id, name);
+    noteCampaignCreated(db, campaign.id);
+    db.prepare('INSERT INTO campaign_lifecycle VALUES(?,0,0)').run(campaign.id);
+    ensureLiveOwners(db, campaign.id);
+    createCampaignAtlas(db, campaign.id);
+    const scopes = new Set(rooms.map((r) => r.scopeId));
+    scopes.add('local');
+    for (const id of scopes)
+      db.prepare('INSERT INTO scope VALUES(?,?,?)').run(campaign.id, id, 'Dungeon');
+    db.prepare("UPDATE scope SET name='Neue Zeichnung' WHERE campaign_id=? AND id='local'").run(
+      campaign.id,
+    );
+    db.prepare("INSERT INTO drawing_floor VALUES(?,'local','ground','Erdgeschoss',0)").run(
+      campaign.id,
+    );
+    if (source) {
+      const document = JSON.parse(source.toString('utf8'));
+      db.prepare('UPDATE scope SET name=? WHERE campaign_id=? AND id=?').run(
+        document.settings.name,
+        campaign.id,
+        document.id,
+      );
+      for (const floor of document.floors)
+        db.prepare('INSERT INTO drawing_floor VALUES(?,?,?,?,?)').run(
+          campaign.id,
+          document.id,
+          floor.id,
+          floor.name,
+          floor.elevation,
+        );
+    }
+    for (const room of rooms)
+      db.prepare('INSERT OR IGNORE INTO drawing_floor VALUES(?,?,?,?,0)').run(
+        campaign.id,
+        room.scopeId,
+        room.floorId,
+        'Geschoss',
+      );
+    for (const scopeId of scopes)
+      db.prepare('INSERT INTO atlas_binding VALUES(?,?,?,?,?,?,?,?,?,?)').run(
+        campaign.id,
+        randomUUID(),
+        'dungeon',
+        scopeId,
+        'world',
+        null,
+        0,
+        0,
+        0,
+        1,
+      );
+    for (const room of rooms) {
+      validateRoom(room);
+      context.insertRoom(campaign.id, room);
+    }
+    if (source)
+      db.prepare('INSERT INTO source VALUES(?,?,?)').run(campaign.id, source, hash(source));
+  }).immediate();
+  return campaign;
+}
+interface RenameCampaignContext {
+  guard: (token: string, campaignId?: string | undefined) => string;
+}
+export function storedRenameCampaign(
+  db: any,
+  context: RenameCampaignContext,
+  command: CampaignRename,
+): import('./../shared/contracts').Campaign {
+  if (
+    !command.commandId ||
+    typeof command.name !== 'string' ||
+    !command.name.trim() ||
+    command.name.length > 1000 ||
+    !Number.isSafeInteger(command.expectedRevision)
+  )
+    throw new Error('Ungültige Kampagnenumbenennung.');
+  db.transaction(() => {
+    const campaignId = context.guard(command.token, command.campaignId),
+      fingerprint = commandFingerprint(command);
+    const receipt = db
+      .prepare('SELECT fingerprint,campaign_id FROM receipt WHERE command_id=?')
+      .get(command.commandId);
+    if (receipt) {
+      if (receipt.campaign_id !== campaignId || !matchesReceipt(receipt, command))
+        throw new Error('Änderungskennung bereits anders verwendet.');
+      return;
+    }
+    const current = db.prepare('SELECT revision FROM campaign WHERE id=?').get(campaignId);
+    if (current.revision !== command.expectedRevision)
+      throw new Error('Kampagnenname wurde inzwischen geändert.');
+    db.prepare('UPDATE campaign SET name=?,revision=revision+1 WHERE id=?').run(
+      command.name,
+      campaignId,
+    );
+    db.prepare('INSERT INTO receipt VALUES(?,?,?,?,?)').run(
+      command.commandId,
+      fingerprint,
+      campaignId,
+      campaignId,
+      current.revision + 1,
+    );
+  }).immediate();
+  return db.prepare('SELECT id,name,revision FROM campaign WHERE id=?').get(command.campaignId);
+}
+
+const json = (value: unknown) => JSON.stringify(value);
+type Row = Record<string, any>;

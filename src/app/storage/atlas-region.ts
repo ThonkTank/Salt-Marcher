@@ -5,40 +5,42 @@ import { assertAtlasProjectionSource } from './atlas-shape-source';
 import { AtlasProjectionIndex } from './atlas-projection-index';
 import { mapExtentVisible } from '../atlas/atlas-scale-policy';
 import {
-  labelFromPolygon,
-  lineLabels,
   boundedLabels,
+  labelFromPolygon,
+  labelScaleLimits,
+  lineLabels,
   styledLabels,
   territoryLabels,
-  labelScaleLimits,
   type MapLabelCandidate,
 } from '../atlas/atlas-cartography';
 import { readTerritories } from './atlas-territories';
 import { validateTerrainDetail } from '../atlas/terrain-detail';
 import { TerrainCache } from '../atlas/terrain-cache';
 import {
-  terrainFrameDelta,
   terrainFrameBytes,
-  type TerrainFullFrame,
+  terrainFrameDelta,
   type TerrainFrameIdentity,
+  type TerrainFullFrame,
 } from '../atlas/terrain-frame';
 import { AtlasLandscapeReader } from './atlas-landscape-region';
-import { roomMapStyle } from './drawing';
+import { drawingView, roomMapStyle } from './drawing';
 import { readDungeonVolume } from './volume';
 import { dungeonContentAnchor } from '../atlas/dungeon-content-model';
-import { readCityHeader, checkedUnit } from './city';
+import { checkedUnit, readCityHeader, readCitySite } from './city';
 import { validateDrawingElement } from '../atlas/drawing-contracts';
 import { createHash } from 'node:crypto';
 import { PNG } from 'pngjs';
 import type {
-  AtlasRegionSource,
-  AtlasRegionQuery,
-  AtlasRegionGeometry,
-  AtlasObjectFocus,
   AtlasHit,
   AtlasHitPage,
+  AtlasObjectFocus,
+  AtlasRegionGeometry,
+  AtlasRegionQuery,
+  AtlasRegionSource,
+  AtlasRegionView,
 } from '../atlas/atlas-region-contracts';
 import {
+  REGION_ACTIVE_BYTES,
   REGION_REPLY_BYTES,
   REGION_VECTOR_OBJECTS,
   emptyDrawing,
@@ -52,6 +54,13 @@ import { volumeProjection } from '../atlas/volume-model';
 import { LandscapeRasterizer } from '../atlas/landscape-raster';
 import type { AtlasBinding } from '../atlas/campaign-atlas-contracts';
 import type { CityHeader } from '../atlas/city-contracts';
+import { localToAtlas } from '../atlas/campaign-atlas-model';
+import { atlasDisplayEntrances, atlasLocalJourney } from './atlas-travel';
+import { atlasHistoryState, atlasRoot } from './campaign-atlas';
+import { dungeonDisplay, dungeonMapView } from './dungeon-play';
+import { playerObservers, playerSettings } from './player';
+import { roomGeometries } from './room-reads';
+import { readAtlasScene } from './world';
 const digest = (s: string) => createHash('sha256').update(s).digest('hex');
 const parse = (r: any) => {
   if (!r || digest(r.payload) !== r.checksum)
@@ -1819,4 +1828,157 @@ export class AtlasRegionReader {
     });
     return hit;
   }
+}
+
+interface AtlasRegionViewContext {
+  guard: (token: string, campaignId?: string | undefined) => string;
+  atlasRegionSource: (
+    token: string,
+    cursor?: import('./../atlas/atlas-region-contracts').AtlasRegionCursor | undefined,
+  ) => import('./../atlas/atlas-region-contracts').AtlasRegionSource;
+  workspaceShell: () => import('./../shared/contracts').WorkspaceShell;
+}
+export function storedAtlasRegionView(
+  db: any,
+  context: AtlasRegionViewContext,
+  token: string,
+  region: AtlasRegionGeometry,
+  withPerception = false,
+  entranceId?: string,
+): import('./../atlas/atlas-region-contracts').AtlasRegionView {
+  const cam = context.guard(token);
+  if (
+    region.token !== token ||
+    region.campaignId !== cam ||
+    region.fence !== context.atlasRegionSource(token).fence
+  )
+    throw new Error('Atlas inzwischen geändert. Ausschnitt erneut laden.');
+  return db.transaction(() => {
+    const root = atlasRoot(db, cam),
+      workspace = {
+        ...context.workspaceShell(),
+        rooms: region.rooms,
+        floors: region.floors,
+        problems: [],
+      },
+      geometry = dungeonMapView(db, cam, workspace, region.drawing);
+    // Perception retains its exact canonical reader; viewport geometry never supplies rule truth.
+    const exact =
+      withPerception && geometry.position
+        ? {
+            ...roomGeometries(db, cam),
+            floors: db
+              .prepare(
+                "SELECT f.id,f.scope_id scopeId,f.name,f.source_elevation elevation FROM drawing_floor f WHERE campaign_id=? AND NOT EXISTS(SELECT 1 FROM drawing_hidden h WHERE h.campaign_id=f.campaign_id AND h.id=f.id AND h.scope_id=f.scope_id AND h.kind='floor' AND h.hidden=1)",
+              )
+              .all(cam),
+            drawing: drawingView(db, cam, true),
+          }
+        : null;
+    const perception =
+      exact && geometry.sceneId
+        ? dungeonDisplay(
+            db,
+            cam,
+            geometry.sceneId,
+            playerSettings(db, cam),
+            playerObservers(db, cam).list,
+            exact,
+          )
+        : null;
+    const row = db
+        .prepare(
+          "SELECT json_remove(payload,'$.cells','$.landscape') payload FROM world_record WHERE campaign_id=? AND kind='map' AND id=?",
+        )
+        .get(cam, root.map_id),
+      terrain = JSON.parse(row.payload);
+    const {
+      rooms: unusedRooms,
+      floors: unusedFloors,
+      drawing: unusedDrawing,
+      cities: unusedCities,
+      bindings: unusedBindings,
+      scopes: unusedScopes,
+      ...coverage
+    } = region;
+    const bindings = [...region.bindings],
+      frames = Object.assign(Object.create(null), region.frames),
+      scene = geometry.sceneId ? readAtlasScene(db, cam, geometry.sceneId) : null;
+    // Party placement and the 'to party' action remain exact even outside the loaded viewport.
+    const owner = geometry.position
+      ? { kind: 'dungeon', id: geometry.position.scopeId }
+      : scene?.position.city
+        ? { kind: 'city', id: scene.position.city.cityId }
+        : null;
+    if (owner) {
+      const row = db
+        .prepare('SELECT * FROM atlas_binding WHERE campaign_id=? AND kind=? AND owner_id=?')
+        .get(cam, owner.kind, owner.id);
+      if (row && !bindings.some((b) => b.id === row.id)) {
+        const b: import('../atlas/campaign-atlas-contracts').AtlasBinding = {
+          id: row.id,
+          kind: row.kind,
+          ownerId: row.owner_id,
+          parent: row.parent,
+          parentId: row.parent_id,
+          x: row.x,
+          y: row.y,
+          angle: row.angle,
+          revision: row.revision,
+        };
+        if (b.parent === 'world') {
+          bindings.push(b);
+          frames[b.id] = { x: b.x, y: b.y, angle: b.angle };
+        } else {
+          const unit = db
+              .prepare('SELECT city_id FROM city_unit WHERE campaign_id=? AND id=?')
+              .get(cam, b.parentId),
+            parent = unit
+              ? db
+                  .prepare(
+                    "SELECT * FROM atlas_binding WHERE campaign_id=? AND kind='city' AND owner_id=?",
+                  )
+                  .get(cam, unit.city_id)
+              : null;
+          if (unit && parent) {
+            const site = readCitySite(db, cam, unit.city_id, b.parentId!),
+              u = site.unit;
+            if (u.position) {
+              const p = localToAtlas(u.position, parent),
+                pose = { ...p, angle: parent.angle + (u.angle ?? 0) },
+                point = localToAtlas(b, pose);
+              bindings.push(b);
+              frames[b.id] = { ...point, angle: pose.angle + b.angle };
+            }
+          }
+        }
+      }
+    }
+    const result: AtlasRegionView = {
+      campaignId: cam,
+      revision: root.revision,
+      workspace,
+      geometry,
+      terrain,
+      perception,
+      scopes: region.scopes,
+      cities: region.cities,
+      bindings,
+      region: { ...coverage, frames },
+      entrances: atlasDisplayEntrances(
+        db,
+        cam,
+        bindings.filter((b) => b.kind === 'dungeon').map((b) => b.ownerId),
+        entranceId,
+      ),
+      localJourney: geometry.sceneId ? atlasLocalJourney(db, cam, geometry.sceneId) : null,
+      scene,
+      ...atlasHistoryState(db, cam),
+    };
+    if (Buffer.byteLength(JSON.stringify(result)) > REGION_ACTIVE_BYTES)
+      throw new Error(
+        'Laufender Atlas-Kontext überschreitet das aktive Darstellungsbudget. Exakte Fachansicht verwenden.',
+      );
+    return result;
+  })();
 }

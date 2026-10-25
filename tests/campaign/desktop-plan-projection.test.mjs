@@ -187,13 +187,19 @@ test('foreign visits and a late receipt failure roll back the entire plan change
 });
 test('the targeted confirmation is read inside the same write transaction and read failure rolls it back', (t) => {
   const x = fixture(t),
-    read = x.store.readPlan.bind(x.store),
+    prepare = x.store.db.prepare.bind(x.store.db),
     before = x.store.db.serialize();
   let reads = 0;
-  x.store.readPlan = (...args) => {
-    assert.equal(x.store.db.inTransaction, true);
-    if (++reads === 2) throw Error('Confirmation read failed');
-    return read(...args);
+  x.store.db.prepare = (sql) => {
+    // Fail the second complete plan read at the real storage boundary, regardless
+    // of which module owns that read.
+    if (
+      /SELECT \* FROM planned_visit WHERE campaign_id=\? AND plan_id=\? ORDER BY ordinal/.test(sql)
+    ) {
+      assert.equal(x.store.db.inTransaction, true);
+      if (++reads === 2) throw Error('Confirmation read failed');
+    }
+    return prepare(sql);
   };
   assert.throws(
     () =>

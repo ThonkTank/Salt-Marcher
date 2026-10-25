@@ -1,7 +1,8 @@
-import { createHash } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import {
   validateRoom,
   validateRoomDraftContent,
+  type Edit,
   type Room,
   type WorkingRoomDraft,
 } from '../shared/contracts';
@@ -13,7 +14,8 @@ import {
 } from '../campaign/preparation-contracts';
 import { manualPlan, type ManualPlan } from '../../features/planner/manual-planner';
 import { checkedLocationDocument } from '../../features/location/location-schema';
-
+import { atlasBindings } from './campaign-atlas';
+import { drawingHistory, rebaseDrawingRoomHistory } from './drawing';
 const hash = (value: string | Buffer) => createHash('sha256').update(value).digest('hex');
 type Row = Record<string, any>;
 
@@ -168,4 +170,338 @@ export function readStoredPlan(db: any, campaignId: string, id: string): ManualP
       return JSON.parse(visit.payload);
     });
   return manualPlan({ version: 1, id: row.id, revision: row.revision, name: row.name, scenes });
+}
+
+const json = (value: unknown) => JSON.stringify(value);
+const commandFingerprint = (command: object) => hash(json({ ...command, token: undefined }));
+const matchesReceipt = (receipt: Row, command: object) =>
+  receipt.fingerprint === commandFingerprint(command) ||
+  receipt.fingerprint === hash(json(command));
+interface AddRoomContext {
+  guard: (token: string, campaignId?: string | undefined) => string;
+  workspace: () => import('./../shared/contracts').Workspace;
+  insertRoom: (campaignId: string, room: import('./../shared/contracts').Room) => void;
+  executeDrawing: (c: import('./../atlas/drawing-contracts').DrawingCommand) => {
+    workspace: import('./../shared/contracts').Workspace;
+    view: import('./../atlas/drawing-contracts').DrawingView<
+      import('./../shared/contracts').Room,
+      import('./../atlas/drawing-contracts').DrawingElement
+    >;
+  };
+}
+export function storedAddRoom(
+  db: any,
+  context: AddRoomContext,
+  token: string,
+): import('./../shared/contracts').Workspace {
+  db.transaction(() => {
+    const campaignId = context.guard(token);
+    const n = db.prepare('SELECT count(*) n FROM room WHERE campaign_id=?').get(campaignId).n + 1;
+    const current = context.workspace(),
+      selected = current.rooms.find((r) => r.id === current.selectedId);
+    const scopeId =
+        selected?.scopeId ??
+        db.prepare('SELECT value FROM settings WHERE key=?').get('default-scope:' + campaignId)
+          ?.value ??
+        'local',
+      floorId =
+        selected?.floorId ??
+        db
+          .prepare(
+            'SELECT id FROM drawing_floor WHERE campaign_id=? AND scope_id=? ORDER BY rowid LIMIT 1',
+          )
+          .get(campaignId, scopeId)?.id ??
+        'ground';
+    // A default room is immediately usable geometry, not an overlapping placeholder.
+    const bounds = (r: Room) => {
+      let minX = Infinity,
+        minY = Infinity,
+        maxX = -Infinity,
+        maxY = -Infinity;
+      for (const p of r.polygons)
+        for (const v of p.outer) {
+          minX = Math.min(minX, v.x);
+          minY = Math.min(minY, v.y);
+          maxX = Math.max(maxX, v.x);
+          maxY = Math.max(maxY, v.y);
+        }
+      return { minX, minY, maxX, maxY };
+    };
+    const grid = 1.524,
+      width = 4 * grid,
+      height = 3 * grid,
+      anchor = selected ? bounds(selected) : null,
+      y = anchor ? Math.round(anchor.minY / grid) * grid : 0;
+    let x = anchor ? Math.ceil((anchor.maxX + grid) / grid - 1e-8) * grid : 0;
+    const occupied = current.rooms
+      .filter((r) => r.scopeId === scopeId && r.floorId === floorId)
+      .map(bounds)
+      .sort((a, b) => a.minX - b.minX);
+    for (const b of occupied)
+      if (
+        y < b.maxY + grid &&
+        y + height > b.minY - grid &&
+        x < b.maxX + grid &&
+        x + width > b.minX - grid
+      )
+        x = Math.ceil((b.maxX + grid) / grid - 1e-8) * grid;
+    const room: Room = {
+      id: randomUUID(),
+      scopeId,
+      floorId,
+      name: 'Neuer Raum',
+      number: String(n),
+      revision: 0,
+      polygons: [
+        {
+          outer: [
+            { x, y },
+            { x: x + width, y },
+            { x: x + width, y: y + height },
+            { x, y: y + height },
+          ],
+          holes: [],
+        },
+      ],
+      sections: [{ id: randomUUID(), kind: 'markdown', markdown: '' }],
+    };
+    validateRoom(room);
+    if (
+      atlasBindings(db, campaignId).some((b) => b.ownerId === scopeId && b.parent === 'building')
+    ) {
+      context.insertRoom(campaignId, room);
+      db.prepare('UPDATE campaign SET selected_id=? WHERE id=?').run(room.id, campaignId);
+    } else
+      context.executeDrawing({
+        commandId: randomUUID(),
+        token,
+        campaignId,
+        action: {
+          kind: 'create-room',
+          scopeId,
+          floorId,
+          name: room.name,
+          polygons: room.polygons,
+        },
+      });
+  }).immediate();
+  return context.workspace();
+}
+interface EditContext {
+  guard: (token: string, campaignId?: string | undefined) => string;
+  writeRoom: (campaignId: string, room: import('./../shared/contracts').Room) => void;
+}
+export function storedEdit(
+  db: any,
+  context: EditContext,
+  edit: Edit,
+): import('./../shared/contracts').RoomCommit {
+  validateRoom(edit);
+  if (
+    typeof edit.commandId !== 'string' ||
+    !edit.commandId ||
+    !Number.isSafeInteger(edit.expectedRevision)
+  )
+    throw new Error('Ungültiger Änderungsauftrag.');
+  const fingerprint = commandFingerprint(edit);
+  db.transaction(() => {
+    const campaignId = context.guard(edit.token, edit.campaignId);
+    const receipt = db.prepare('SELECT * FROM receipt WHERE command_id=?').get(edit.commandId);
+    if (receipt) {
+      if (receipt.campaign_id !== campaignId || !matchesReceipt(receipt, edit))
+        throw new Error('Änderungskennung bereits anders verwendet.');
+      return;
+    }
+    const before = decodeRoom(
+      db.prepare('SELECT * FROM room WHERE campaign_id=? AND id=?').get(campaignId, edit.roomId) ??
+        {},
+    );
+    if (before.revision !== edit.expectedRevision)
+      throw new Error('Konflikt: Der Raum wurde inzwischen geändert. Entwurf bleibt offen.');
+    if (
+      json(before.sections.map((s) => [s.id, s.kind, s.doorId])) !==
+      json(edit.sections.map((s) => [s.id, s.kind, s.doorId]))
+    )
+      throw new Error('Abschnittsbindungen dürfen bei Textbearbeitung nicht geändert werden.');
+    const after = {
+      ...before,
+      name: edit.name,
+      polygons: edit.polygons,
+      sections: edit.sections,
+      revision: before.revision + 1,
+    };
+    const cursor = db.prepare('SELECT cursor FROM campaign WHERE id=?').get(campaignId).cursor;
+    context.writeRoom(campaignId, after);
+    db.prepare('DELETE FROM history WHERE campaign_id=? AND ordinal>?').run(campaignId, cursor);
+    db.prepare('INSERT INTO history VALUES(?,?,?,?,?,?)').run(
+      campaignId,
+      cursor + 1,
+      before.id,
+      json(before),
+      json(after),
+      after.revision,
+    );
+    db.prepare('UPDATE campaign SET cursor=? WHERE id=?').run(cursor + 1, campaignId);
+    db.prepare('INSERT INTO receipt VALUES(?,?,?,?,?)').run(
+      edit.commandId,
+      fingerprint,
+      campaignId,
+      before.id,
+      after.revision,
+    );
+    db.prepare('DELETE FROM room_draft WHERE campaign_id=? AND room_id=?').run(
+      campaignId,
+      before.id,
+    );
+  }).immediate();
+  return db.transaction(() => {
+    const campaignId = context.guard(edit.token, edit.campaignId),
+      cursor = db.prepare('SELECT cursor FROM campaign WHERE id=?').get(campaignId).cursor;
+    return {
+      room: decodeRoom(
+        db.prepare('SELECT * FROM room WHERE campaign_id=? AND id=?').get(campaignId, edit.roomId),
+      ),
+      token: edit.token,
+      canUndo: !!db
+        .prepare('SELECT 1 FROM history WHERE campaign_id=? AND ordinal=?')
+        .get(campaignId, cursor),
+      canRedo: !!db
+        .prepare('SELECT 1 FROM history WHERE campaign_id=? AND ordinal=?')
+        .get(campaignId, cursor + 1),
+    };
+  })();
+}
+interface HistoryContext {
+  guard: (token: string, campaignId?: string | undefined) => string;
+  writeRoom: (campaignId: string, room: import('./../shared/contracts').Room) => void;
+  workspace: () => import('./../shared/contracts').Workspace;
+}
+export function storedHistory(
+  db: any,
+  context: HistoryContext,
+  token: string,
+  direction: 'undo' | 'redo',
+): import('./../shared/contracts').Workspace {
+  if (direction !== 'undo' && direction !== 'redo') throw new Error('Ungültige Historyaktion.');
+  db.transaction(() => {
+    const campaignId = context.guard(token),
+      cursor = db.prepare('SELECT cursor FROM campaign WHERE id=?').get(campaignId).cursor;
+    const ordinal = direction === 'undo' ? cursor : cursor + 1;
+    const entry = db
+      .prepare('SELECT * FROM history WHERE campaign_id=? AND ordinal=?')
+      .get(campaignId, ordinal);
+    if (!entry) return;
+    if (drawingHistory(db, campaignId, ordinal, direction)) {
+      db.prepare('UPDATE campaign SET cursor=? WHERE id=?').run(
+        direction === 'undo' ? cursor - 1 : cursor + 1,
+        campaignId,
+      );
+      return;
+    }
+    const row = db
+      .prepare('SELECT * FROM room WHERE campaign_id=? AND id=?')
+      .get(campaignId, entry.room_id);
+    if (!row)
+      throw new Error('Raumhistory enthält ein fehlendes Ziel. Originaldaten bleiben erhalten.');
+    const current = decodeRoom(row);
+    if (current.revision !== entry.guard_revision)
+      throw new Error('Undo-Konflikt: Raumrevision stimmt nicht mehr.');
+    const values = checkedRoomHistory(entry, current);
+    const target = direction === 'undo' ? values.before : values.after;
+    validateRoom(target);
+    target.revision = current.revision + 1;
+    context.writeRoom(campaignId, target);
+    db.prepare('UPDATE history SET guard_revision=? WHERE campaign_id=? AND ordinal=?').run(
+      target.revision,
+      campaignId,
+      ordinal,
+    );
+    rebaseDrawingRoomHistory(db, campaignId, current.id, ordinal, direction);
+    // Earlier/later deltas of the same causal group now expect this monotonically newer revision.
+    const neighbor = db
+      .prepare(
+        `SELECT ordinal FROM history WHERE campaign_id=? AND room_id=? AND ordinal ${direction === 'undo' ? '<' : '>'} ? ORDER BY ordinal ${direction === 'undo' ? 'DESC' : 'ASC'} LIMIT 1`,
+      )
+      .get(campaignId, entry.room_id, ordinal);
+    if (neighbor)
+      db.prepare('UPDATE history SET guard_revision=? WHERE campaign_id=? AND ordinal=?').run(
+        target.revision,
+        campaignId,
+        neighbor.ordinal,
+      );
+    db.prepare('UPDATE campaign SET cursor=?,selected_id=? WHERE id=?').run(
+      direction === 'undo' ? cursor - 1 : cursor + 1,
+      current.id,
+      campaignId,
+    );
+  }).immediate();
+  return context.workspace();
+}
+interface ReconcileContext {
+  guard: (token: string, campaignId?: string | undefined) => string;
+  workspace: () => import('./../shared/contracts').Workspace;
+}
+export function storedReconcile(
+  db: any,
+  context: ReconcileContext,
+  edit: Edit,
+  token = edit.token,
+): {
+  outcome: 'applied' | 'not-applied' | 'conflict';
+  targetChanged: boolean;
+  workspace: import('./../shared/contracts').Workspace;
+} {
+  return db.transaction(() => {
+    const campaignId = context.guard(token, edit.campaignId);
+    const receipt = db.prepare('SELECT * FROM receipt WHERE command_id=?').get(edit.commandId);
+    if (receipt && (receipt.campaign_id !== campaignId || !matchesReceipt(receipt, edit)))
+      throw new Error('Änderungskennung bereits anders verwendet.');
+    const current = db
+      .prepare('SELECT revision FROM room WHERE campaign_id=? AND id=?')
+      .get(campaignId, edit.roomId);
+    if (!current) throw new Error('Raum nicht verfügbar.');
+    const workspace = context.workspace();
+    return {
+      outcome: receipt
+        ? 'applied'
+        : current.revision === edit.expectedRevision
+          ? 'not-applied'
+          : 'conflict',
+      targetChanged:
+        current.revision !== (receipt?.revision ?? edit.expectedRevision) ||
+        !workspace.rooms.some((room) => room.id === edit.roomId),
+      workspace,
+    };
+  })();
+}
+interface KeepRoomDraftContext {
+  guard: (token: string, campaignId?: string | undefined) => string;
+}
+export function storedKeepRoomDraft(
+  db: any,
+  context: KeepRoomDraftContext,
+  token: string,
+  roomId: string,
+  draft: WorkingRoomDraft | null,
+): void {
+  const campaignId = context.guard(token);
+  if (draft === null) {
+    db.prepare('DELETE FROM room_draft WHERE campaign_id=? AND room_id=?').run(campaignId, roomId);
+    return;
+  }
+  if (!db.prepare('SELECT 1 FROM room WHERE campaign_id=? AND id=?').get(campaignId, roomId))
+    throw new Error('Entwurf gehört nicht zum aktuellen Raum.');
+  const existing = db
+    .prepare('SELECT * FROM room_draft WHERE campaign_id=? AND room_id=?')
+    .get(campaignId, roomId);
+  if (existing) decodeRoomDraft(existing);
+  const payload = json(draft);
+  if (payload.length > 64 * 1024 * 1024)
+    throw new Error('Dieser Entwurf ist für den ersten Anschluss zu groß.');
+  const checksum = hash(payload);
+  // Validate the persisted envelope without treating unfinished text as author truth.
+  decodeRoomDraft({ campaign_id: campaignId, room_id: roomId, payload, checksum });
+  db.prepare(
+    'INSERT INTO room_draft VALUES(?,?,?,?) ON CONFLICT(campaign_id,room_id) DO UPDATE SET payload=excluded.payload,checksum=excluded.checksum',
+  ).run(campaignId, roomId, payload, checksum);
 }

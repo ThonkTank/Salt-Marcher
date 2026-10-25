@@ -2,65 +2,72 @@ import { createWorkspaceEditors } from './workspace-editors';
 import { editorSession as atlasEditorSession } from '../atlas/campaign-atlas-author';
 import { EditorSession } from '../shared/editor-session';
 import { initUpdateUI } from './update-ui';
-import { atlasFieldValue, setAtlasFieldValue } from '../atlas/atlas-units';
-import { editTextareaText } from '../campaign/key-reading-model';
 import { initNumberInputScroll } from '../shared/number-input-scroll';
 import { workspaceGeometryOnly as geometryOnly } from '../atlas/atlas-render-view';
-import { RoomDirectoryView } from '../atlas/room-directory-ui';
-import { atlasDefaultRoomWrite } from '../atlas/campaign-atlas-author';
 import { setLiveAtlasSurface } from '../runtime/live-hex-surface';
 import { CampaignAtlasWorkbench } from '../atlas/campaign-atlas-ui';
-import { atlasRoomWrite, atlasHistoryWrite } from '../atlas/campaign-atlas-author';
 import {
+  hideCampaignScreen,
   initCampaignScreen,
   openCampaignScreen,
-  hideCampaignScreen,
 } from '../campaign/campaign-screen-ui';
-import { PassiveMapCanvas } from '../runtime/passive-map-canvas';
-import { roomCameraBox } from '../atlas/room-camera';
-import { appendRoomNumber } from '../atlas/room-number-label';
 import { initWorkspaceNavigation, syncWorkspaceNavigation } from './workspace-navigation';
 import {
-  WorkspacePositions,
-  workspaceTabs,
   readWorkspaceView,
   rememberWorkspaceView,
+  WorkspacePositions,
+  workspaceTabs,
   type WorkspaceTab,
 } from './workspace-view';
 import { bindAtlasHistoryShortcut } from './workspace-shortcuts';
 import { chooseNpcPlace } from '../campaign/npc-places-ui';
 import { openGenerationSource } from '../campaign/generation-ui';
-import { setLocationNotebookNavigation } from '../campaign/preparation';
+import {
+  createNarrativeAtLocation,
+  ensurePreparation,
+  flushPreparation,
+  initPreparation,
+  openPreparedLocation,
+  openPreparedNote,
+  openPreparedPlan,
+  openPreparedVisit,
+  preparationHasDrafts,
+  prepareNextVisit,
+  prepareNoteLocation,
+  setLocationNotebookNavigation,
+  setNoteRoomNavigation,
+  showDayPreparation,
+} from '../campaign/preparation';
 import { LocationNotebook } from '../campaign/location-notebook-ui';
 import { WorldLinksWorkbench } from '../campaign/world-links-ui';
 import { CampaignAgenda } from '../runtime/agenda-ui';
-import { initSoundboard, activateSoundboard } from '../runtime/live-soundboard-ui';
+import { activateSoundboard, initSoundboard } from '../runtime/live-soundboard-ui';
 import {
-  initQuickReference,
   activateQuickReference,
+  initQuickReference,
   inspectQuickReference,
 } from '../catalog/quick-reference-ui';
-import { initNarrativeJournal, activateNarrativeJournal } from '../runtime/narrative-journal-ui';
+import { activateNarrativeJournal, initNarrativeJournal } from '../runtime/narrative-journal-ui';
 import {
   closeSessionPacket,
   openPreparationSessionPacket,
   setSessionPacketSurface,
 } from '../campaign/session-packet-ui';
-import { initPartyTopbar, activatePartyTopbar } from '../runtime/party-topbar-ui';
-import { initDayCalculator, activateDayCalculator } from '../runtime/adventuring-day-ui';
+import { activatePartyTopbar, initPartyTopbar } from '../runtime/party-topbar-ui';
+import { activateDayCalculator, initDayCalculator } from '../runtime/adventuring-day-ui';
 import {
-  initNpcs,
-  openNpcs,
-  openNpcProfile,
   createNpcAtLocation,
+  initNpcs,
+  openNpcProfile,
+  openNpcs,
   prepareNpcLocation,
   setNpcPlaceNavigation,
 } from '../campaign/npc-ui';
 import {
+  createGroupAtLocation,
   initGroups,
   openGroups,
   prepareGroupLocation,
-  createGroupAtLocation,
 } from '../campaign/groups-ui';
 import { refreshProgress } from '../runtime/progression-ui';
 import { initTreasury, openTreasury } from '../runtime/treasury-ui';
@@ -68,26 +75,18 @@ import { openExistingCombat, setCombatNpcNavigation } from '../runtime/combat';
 import { initTriggers } from '../runtime/trigger-ui';
 import { initExtensions } from './extensions-ui';
 import { initDungeonContent } from '../atlas/dungeon-content-ui';
-import { initGraph, syncGraphBanner, refreshOpenGraph } from '../atlas/graph-ui';
-import { initKeys } from '../campaign/key-ui';
-import { setKeyReferenceStatus, openNoteRoomKey, openRoomKey } from '../campaign/key-ui';
+import { initGraph, refreshOpenGraph } from '../atlas/graph-ui';
+import { initKeys, openNoteRoomKey, openRoomKey, setKeyReferenceStatus } from '../campaign/key-ui';
 import { initPaths } from '../atlas/path-ui';
 import { initCommitControls } from '../shared/commit-confirmation';
 import { initVolume } from '../atlas/volume-ui';
 import { DungeonBinder } from '../atlas/dungeon-binder-ui';
 import { initDungeon, openDungeon, selectDungeonRoom } from '../atlas/dungeon-ui';
-import {
-  initDrawing,
-  reloadDrawing,
-  drawingOverlay,
-  syncDrawingControls,
-  roomDrawingStyle,
-  flushDrawing,
-} from '../atlas/drawing-ui';
+import { initDrawing, reloadDrawing } from '../atlas/drawing-ui';
 import { initAutonomy, openAutonomy } from '../runtime/autonomy-ui';
-import { initPlayerUI, deactivatePlayer } from '../runtime/player-ui';
+import { deactivatePlayer, initPlayerUI } from '../runtime/player-ui';
 import { initCity, openCity, prepareCityPersonBinding } from '../atlas/city-ui';
-import { initCampaignManager } from '../campaign/campaign-manager-ui';
+import { initCampaignActions, initCampaignManager } from '../campaign/campaign-manager-ui';
 import { initMusic, openMusic } from '../runtime/music-ui';
 import {
   initWorld,
@@ -97,67 +96,41 @@ import {
   stopWorldPlayback,
 } from '../runtime/world-ui';
 import {
-  initItems,
-  openItems,
-  openItemReference,
   createShopAtLocation,
+  initItems,
+  openItemReference,
+  openItems,
   prepareShopLocation,
 } from '../catalog/items-ui';
+import { type Result, type WorkspaceGeometry } from '../shared/contracts';
 import {
-  validateRoom,
-  type Room,
-  type RoomGeometry,
-  type WorkspaceGeometry,
-  type Result,
-  type DungeonImportPreview,
-  type Edit,
-  type CampaignRename,
-} from '../shared/contracts';
-import {
-  ensurePreparation,
-  initPreparation,
-  flushPreparation,
-  preparationHasDrafts,
-  openPreparedLocation,
-  openPreparedNote,
-  createNarrativeAtLocation,
-  prepareNoteLocation,
-  openPreparedVisit,
-  openPreparedPlan,
-  prepareNextVisit,
-  showDayPreparation,
-} from '../campaign/preparation';
-import { setNoteRoomNavigation } from '../campaign/preparation';
-import {
-  initLive,
+  addLiveCreature,
+  addLiveNpc,
   flushLive,
+  initLive,
+  openLive,
+  openLiveCharacterLoot,
+  openLiveSoundboard,
+  openPlannedVisitReview,
+  openTimeNavigator,
+  openTravelRest,
+  prepareLiveEncounter,
   refreshScenePreparation,
   setGroupNavigation,
   setNpcNavigation,
   setTreasureNavigation,
-  openLive,
-  openLiveCharacterLoot,
-  openPlannedVisitReview,
-  prepareLiveEncounter,
-  addLiveCreature,
-  addLiveNpc,
-  openLiveSoundboard,
-  openTimeNavigator,
-  openTravelRest,
   useLiveReferenceReadAloud,
 } from '../runtime/live';
 import { initTutorial } from './tutorial';
 import { initCatalog, openCatalog, openCatalogReference } from '../catalog/catalog-ui';
 import {
-  suspendChronicle,
-  initChronicle,
   activateChronicle,
+  initChronicle,
   openChronicle,
+  suspendChronicle,
 } from '../runtime/chronicle-ui';
+import { createRoomEditor } from '../atlas/room-editor-ui';
 export const editorSession = new EditorSession();
-const failedEditState = editorSession.command<Edit>();
-const pendingWork = editorSession.operation<Promise<boolean>>();
-
 const el = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const api = window.campaign;
 initNumberInputScroll(document);
@@ -207,44 +180,54 @@ function rememberView() {
     liveCombat,
   });
 }
-let draft: Room | null = null;
-let confirmedRoom: Room | null = null;
-let timer: ReturnType<typeof setTimeout> | null = null;
-
-let composing = false;
-let writeBlocked = false;
-
-let hasRetainedDraft = false;
-let roomDraftLoading = false,
-  roomDraftReadFailed = false;
 let activating = false,
   activationFailed = false;
 let activationJob: Promise<void> | null = null,
   queuedActivation: { id: string; entryCommandId?: string } | null = null;
 let activationIntent = 0,
   campaignListRequest = 0;
-let pointer: { index: number; id: number; before: Room['polygons'] } | null = null;
-let dungeonImportPreview: DungeonImportPreview | null = null;
-let renameBasis: Omit<CampaignRename, 'commandId' | 'name'> | null = null;
 const status = (text: string, error = false) => {
   el('status').textContent = text;
   el('status').dataset.error = String(error);
 };
+const roomEditor = createRoomEditor(
+  {
+    get workspace() {
+      return workspace;
+    },
+    set workspace(value) {
+      workspace = value;
+    },
+    get transitionPending() {
+      return !!activationJob;
+    },
+    get activating() {
+      return activating;
+    },
+    get activationFailed() {
+      return activationFailed;
+    },
+    leaveWorkspace,
+    navigateRoom: (id) => campaignAtlas?.navigate('room', id),
+    status,
+  },
+  editorSession,
+);
 const editors = createWorkspaceEditors({
   atlas: {
     session: atlasEditorSession,
     activate: (w) => campaignAtlas?.activate(w),
     flush: async () => !campaignAtlas || (await campaignAtlas.flush()),
   },
-  room: { session: editorSession, flush, leave: leaveRoom },
-  beforeTool: () => !activating && !activationFailed && !roomDraftLoading,
+  room: { session: editorSession, flush: roomEditor.flush, leave: roomEditor.leaveRoom },
+  beforeTool: () => !activating && !activationFailed && !roomEditor.loading,
   gate: () => {
     if (activating) {
       status('Kampagne wird noch geladen.');
       return false;
     }
     if (activationFailed) return 'complete'; // Source input was drained before the failed read.
-    if (roomDraftLoading) {
+    if (roomEditor.loading) {
       status('Arbeitsentwurf wird noch geprüft und geladen.');
       return false;
     }
@@ -315,7 +298,7 @@ initPreparation(
       status('Diese Zeichnung enthält noch keinen verfügbaren Raum.', true);
       return;
     }
-    await selectRoom(room.id);
+    await roomEditor.selectRoom(room.id);
     showTab('atlas');
   },
   async (planId, visitId, sourceCurrent = () => true) => {
@@ -500,7 +483,7 @@ async function openNpcRoom(id: string) {
   const owner = workspace,
     current = () => workspace === owner;
   if (!owner?.rooms.some((r) => r.id === id)) throw new Error('Raum nicht mehr verfügbar.');
-  await selectRoom(id);
+  await roomEditor.selectRoom(id);
   if (!current()) return;
   if (workspace?.selectedId !== id) throw new Error('Raum konnte nicht geöffnet werden.');
   showTab('atlas');
@@ -677,97 +660,92 @@ initItems(status, async (id) => {
   showTab('items');
   await openItems(id);
 });
-const dungeonCanvas = new PassiveMapCanvas(el<SVGSVGElement & HTMLElement>('map'), {
-  initial: { x: 0, y: 0, width: 24, height: 18 },
-  locked: () => !!pointer,
-  changed: () => draw(),
-});
 initDrawing(
   status,
   () => workspace,
-  () => draft,
+  () => roomEditor.draft,
   () => editors.before('drawing'),
   async (next) => {
     workspace = geometryOnly(next);
-    await setDraft();
-    renderList(true);
-    updateHistory();
+    await roomEditor.setDraft();
+    roomEditor.renderList(true);
+    roomEditor.updateHistory();
   },
-  draw,
+  roomEditor.draw,
 );
 initVolume(
   status,
   () => workspace,
-  () => draft,
+  () => roomEditor.draft,
   () => editors.before('volume'),
   async (next) => {
     workspace = geometryOnly(next);
-    await setDraft();
-    renderList(true);
-    updateHistory();
+    await roomEditor.setDraft();
+    roomEditor.renderList(true);
+    roomEditor.updateHistory();
     await reloadDrawing();
-    draw();
+    roomEditor.draw();
   },
 );
 initTriggers(
   status,
   () => workspace,
-  () => draft,
+  () => roomEditor.draft,
   () => editors.before('triggers'),
   async (next) => {
     workspace = geometryOnly(next);
-    await setDraft();
-    renderList(true);
-    updateHistory();
+    await roomEditor.setDraft();
+    roomEditor.renderList(true);
+    roomEditor.updateHistory();
     await reloadDrawing();
-    draw();
+    roomEditor.draw();
   },
 );
 initDungeonContent(
   status,
   () => workspace,
-  () => draft,
+  () => roomEditor.draft,
   () => editors.before('content'),
   async (next) => {
     workspace = geometryOnly(next);
-    await setDraft();
-    renderList(true);
-    updateHistory();
+    await roomEditor.setDraft();
+    roomEditor.renderList(true);
+    roomEditor.updateHistory();
     await reloadDrawing();
-    draw();
+    roomEditor.draw();
   },
   refreshOpenGraph,
 );
 initGraph(
   status,
   () => workspace,
-  () => draft,
+  () => roomEditor.draft,
   () => editors.before('graph'),
   async (next) => {
     workspace = geometryOnly(next);
-    await setDraft();
-    renderList(true);
-    updateHistory();
+    await roomEditor.setDraft();
+    roomEditor.renderList(true);
+    roomEditor.updateHistory();
     await reloadDrawing();
-    draw();
+    roomEditor.draw();
   },
   () => showTab('atlas'),
-  selectRoom,
+  roomEditor.selectRoom,
 );
 initKeys(
   status,
   () => workspace,
-  () => draft,
+  () => roomEditor.draft,
   () => editors.before('keys'),
   async (next) => {
     workspace = geometryOnly(next);
-    await setDraft();
-    renderList(true);
-    updateHistory();
+    await roomEditor.setDraft();
+    roomEditor.renderList(true);
+    roomEditor.updateHistory();
     await reloadDrawing();
-    draw();
+    roomEditor.draw();
   },
-  selectRoom,
+  roomEditor.selectRoom,
   {
     open: openPreparedNote,
     flush: flushPreparation,
@@ -807,15 +785,15 @@ setNoteRoomNavigation((id, current, restore, source) =>
 initPaths(
   status,
   () => workspace,
-  () => draft,
+  () => roomEditor.draft,
   () => editors.before('paths'),
   async (next) => {
     workspace = geometryOnly(next);
-    await setDraft();
-    renderList(true);
-    updateHistory();
+    await roomEditor.setDraft();
+    roomEditor.renderList(true);
+    roomEditor.updateHistory();
     await reloadDrawing();
-    draw();
+    roomEditor.draw();
   },
 );
 initDungeon(status, (id) => {
@@ -958,14 +936,14 @@ campaignAtlas = new CampaignAtlasWorkbench({
   exit: async () => {
     if (await openCampaignScreen()) showTab('preparation');
   },
-  selectRoom,
-  roomDraft: () => draft,
+  selectRoom: roomEditor.selectRoom,
+  roomDraft: () => roomEditor.draft,
   flush: leaveWorkspace,
   updated: async (next) => {
     workspace = geometryOnly(next);
-    await setDraft();
-    renderList(true);
-    updateHistory();
+    await roomEditor.setDraft();
+    roomEditor.renderList(true);
+    roomEditor.updateHistory();
     await reloadDrawing();
   },
   status,
@@ -1086,9 +1064,7 @@ async function refreshCampaignShell() {
   if (!list) return null;
   if (workspace && !list.campaigns.some((c) => c.id === workspace!.campaign.id)) {
     workspace = null;
-    draft = null;
-    confirmedRoom = null;
-    editorSession.generation++;
+    roomEditor.clear();
     setWorkspaceAvailable(false);
     editors.deactivate();
     campaignAtlas?.hide();
@@ -1113,6 +1089,10 @@ initCampaignManager(
   },
 );
 void initTutorial();
+const unwrap = <T>(result: Result<T>): T => {
+  if (!result.ok) throw new Error(result.error);
+  return result.value;
+};
 async function flushAll() {
   return !workspace || editors.flush('checkpoint');
 }
@@ -1122,667 +1102,6 @@ async function leaveCampaign() {
 async function leaveWorkspace() {
   return !workspace || editors.flush('navigation');
 }
-async function leaveRoom() {
-  if (await flush()) return true;
-  if (!workspace || !draft || pointer || composing) return false;
-  try {
-    unwrap(
-      await api.keepRoomDraft(workspace.token, draft.id, {
-        room: draft,
-        points: atlasFieldValue(el<HTMLTextAreaElement>('points')),
-        pointsChanged: el('points').dataset.changed === 'true',
-        failedEdit: failedEditState.value,
-      }),
-    );
-    hasRetainedDraft = true;
-    return true;
-  } catch (error) {
-    status('Entwurf konnte nicht gesichert werden: ' + (error as Error).message, true);
-    return false;
-  }
-}
-const unwrap = <T>(result: Result<T>): T => {
-  if (!result.ok) throw new Error(result.error);
-  return result.value;
-};
-const selected = () => (confirmedRoom?.id === workspace?.selectedId ? confirmedRoom : undefined);
-const roomContextCurrent = (token: string) =>
-  workspace?.token === token && !activationJob && !activating && !activationFailed;
-const same = (a: Room, b: Room) =>
-  JSON.stringify([a.name, a.polygons, a.sections]) ===
-  JSON.stringify([b.name, b.polygons, b.sections]);
-function cancelTimer() {
-  if (timer) clearTimeout(timer);
-  timer = null;
-}
-function schedule() {
-  if (writeBlocked) {
-    status('Schreiben gesperrt. Entwurf bleibt offen; zuerst den Speicherstatus prüfen.', true);
-    return;
-  }
-  editorSession.input.version++;
-  status('Eingabe offen – noch nicht gespeichert.');
-  cancelTimer();
-  if (!composing && !pointer)
-    timer = setTimeout(() => {
-      void flush();
-    }, 700);
-}
-async function flush(): Promise<boolean> {
-  cancelTimer();
-  if (activating || activationFailed) return false;
-  if (roomDraftLoading) {
-    status('Arbeitsentwurf wird noch geprüft und geladen.');
-    return false;
-  }
-  // A failed draft read is kept intact; its read-only room must not overwrite it.
-  if (roomDraftReadFailed) return true;
-  if (writeBlocked) return false;
-  if (pendingWork.value) {
-    const okay = await pendingWork.value;
-    return okay ? flush() : false;
-  }
-  if (composing || pointer) {
-    status('Bitte die laufende Eingabe abschließen.', true);
-    return false;
-  }
-  const before = selected(),
-    inputRevision = editorSession.input.version;
-  if (!workspace || !draft || !before) return true;
-  try {
-    readPoints();
-    validateRoom(draft);
-  } catch (error) {
-    status(String((error as Error).message) + ' Entwurf bleibt offen.', true);
-    return false;
-  }
-  if (same(before, draft)) {
-    if (hasRetainedDraft) {
-      unwrap(await api.keepRoomDraft(workspace.token, draft.id, null));
-      hasRetainedDraft = false;
-    }
-    editorSession.input.retained = inputRevision;
-    status('Gespeichert.');
-    return true;
-  }
-  const after = structuredClone(draft),
-    token = workspace.token,
-    current = editorSession.capture();
-  const request: Edit = {
-    commandId: crypto.randomUUID(),
-    token,
-    campaignId: workspace.campaign.id,
-    roomId: after.id,
-    expectedRevision: after.revision,
-    name: after.name,
-    polygons: after.polygons,
-    sections: after.sections,
-  };
-  status('Wird gespeichert…');
-  pendingWork.value = editorSession.run(async () => {
-    let acknowledged = false;
-    try {
-      const next = unwrap(await atlasRoomWrite(request));
-      acknowledged = true;
-      if (!current() || workspace?.token !== token) return false;
-      confirmedRoom = next.room;
-      workspace = geometryOnly({
-        ...workspace,
-        rooms: workspace.rooms.map((room) => (room.id === next.room.id ? next.room : room)),
-        canUndo: next.canUndo,
-        canRedo: next.canRedo,
-        selectedId: after.id,
-      });
-      if (draft?.id === after.id) draft.revision = next.room.revision;
-      hasRetainedDraft = false;
-      editorSession.input.retained = inputRevision;
-      // A confirmed edit updates the scene without moving the user's camera.
-      renderList(true);
-      updateHistory();
-      draw();
-      status(
-        draft && !same(after, draft)
-          ? 'Weitere Eingabe offen – noch nicht gespeichert.'
-          : 'Gespeichert.',
-      );
-      return true;
-    } catch (error) {
-      if (!current() || workspace?.token !== token) return false;
-      if (acknowledged) {
-        status(
-          'Änderung gespeichert. Ansicht konnte nicht aktualisiert werden: ' +
-            (error as Error).message,
-          true,
-        );
-        return true;
-      }
-      writeBlocked = true;
-      failedEditState.value = request;
-      el('error-actions').hidden = false;
-      status(
-        (error as Error).message + ' Entwurf bleibt offen; Schreiben gesperrt bis zur Aufklärung.',
-        true,
-      );
-      return false;
-    }
-  });
-  const okay = await pendingWork.value;
-  return okay ? flush() : false;
-}
-function readPoints() {
-  if (!draft) return;
-  const input = el<HTMLTextAreaElement>('points');
-  if (input.dataset.changed !== 'true') return;
-  const points = atlasFieldValue(input)
-    .split('\n')
-    .filter((line) => line.trim())
-    .map((line) => {
-      const values = line.trim().split(/[,;\s]+/);
-      if (values.length !== 2 || values.some((v) => !v || !Number.isFinite(Number(v))))
-        throw new Error('Koordinaten als x, y eingeben.');
-      return { x: Number(values[0]), y: Number(values[1]) };
-    });
-  const candidate = {
-    ...draft,
-    polygons: [{ ...draft.polygons[0]!, outer: points }, ...draft.polygons.slice(1)],
-  };
-  validateRoom(candidate);
-  draft = candidate;
-}
-function renderRoomInputs(room: Room, token: string | undefined) {
-  el<HTMLInputElement>('room-name').value = room.name;
-  el('keys').replaceChildren();
-  room.sections.forEach((section, index) => {
-    const label = document.createElement('label');
-    label.textContent =
-      section.kind === 'markdown' ? `GM-Text ${index + 1}` : `Passage ${index + 1}`;
-    if (section.kind !== 'markdown') {
-      const text = document.createElement('p');
-      text.textContent = `Türbindung: ${section.doorId} (hier noch nicht bearbeitbar)`;
-      el('keys').append(label, text);
-      return;
-    }
-    const input = document.createElement('textarea');
-    input.id = `key-${index}`;
-    label.htmlFor = input.id;
-    input.rows = 8;
-    input.value = section.markdown!;
-    input.addEventListener('input', () => {
-      if (
-        roomDraftLoading ||
-        roomDraftReadFailed ||
-        activationJob ||
-        activating ||
-        activationFailed ||
-        workspace?.token !== token ||
-        draft?.id !== room.id
-      )
-        return;
-      draft!.sections[index]!.markdown = editTextareaText(
-        draft!.sections[index]!.markdown!,
-        input.value,
-      );
-      schedule();
-    });
-    input.addEventListener('blur', () => {
-      if (!composing && workspace?.token === token && draft?.id === room.id) void flush();
-    });
-    el('keys').append(label, input);
-  });
-}
-function roomEditable(editable: boolean) {
-  for (const id of ['room-name', 'points', 'apply']) el<HTMLInputElement>(id).disabled = !editable;
-  for (const input of el('keys').querySelectorAll<HTMLTextAreaElement>('textarea'))
-    input.disabled = !editable;
-}
-async function setDraft() {
-  const token = workspace?.token,
-    id = workspace?.selectedId,
-    request = ++editorSession.generation;
-  const current = () =>
-    workspace?.token === token &&
-    workspace?.selectedId === id &&
-    request === editorSession.generation;
-  confirmedRoom = null;
-  draft = null;
-  roomDraftReadFailed = false;
-  writeBlocked = false;
-  failedEditState.value = null;
-  hasRetainedDraft = false;
-  el('error-actions').hidden = true;
-  el('keys').replaceChildren();
-  el<HTMLInputElement>('room-name').value = '';
-  el('empty').textContent = 'Lege einen Raum an oder übernimm eine Dungeondatei.';
-  el('editor').hidden = true;
-  el('empty').hidden = false;
-  roomEditable(false);
-  if (!token || !id) {
-    roomDraftLoading = false;
-    draw();
-    return;
-  }
-  roomDraftLoading = true;
-  updateHistory();
-  status('Raum wird geladen.');
-  let room: Room;
-  try {
-    room = unwrap(await api.atlasRoom(token, id));
-    if (!current()) return;
-    confirmedRoom = room;
-    draft = structuredClone(room);
-    const { sections: unused, ...shape } = room;
-    workspace!.rooms =
-      workspace!.geometryCoverage === 'selected'
-        ? [shape]
-        : [...workspace!.rooms.filter((r) => r.id !== room.id), shape];
-  } catch (error) {
-    if (current()) {
-      roomDraftLoading = false;
-      roomDraftReadFailed = true;
-      writeBlocked = true;
-      status(
-        'Raum konnte nicht geladen werden. Originaldaten bleiben erhalten: ' +
-          (error as Error).message,
-        true,
-      );
-      el('empty').textContent = 'Raum nicht verfügbar. Anderen Raum wählen oder erneut öffnen.';
-      updateHistory();
-    }
-    return;
-  }
-  writeBlocked = false;
-  failedEditState.value = null;
-  roomDraftReadFailed = false;
-  el('error-actions').hidden = true;
-  hasRetainedDraft = false;
-  el('editor').hidden = !room;
-  el('empty').hidden = !!room;
-  el('keys').replaceChildren();
-  if (!room) {
-    roomEditable(false);
-    draw();
-    return;
-  }
-  const floors = el<HTMLSelectElement>('floors');
-  floors.replaceChildren();
-  for (const floor of workspace!.floors) {
-    const option = document.createElement('option');
-    option.value = JSON.stringify([floor.scopeId, floor.id]);
-    option.textContent = floor.name;
-    floors.append(option);
-  }
-  floors.value = JSON.stringify([room.scopeId, room.floorId]);
-  renderRoomInputs(room, token);
-  updatePoints();
-  if (
-    dungeonCanvas.context(workspace!.campaign.id + ':' + floors.value, {
-      x: 0,
-      y: 0,
-      width: 24,
-      height: 18,
-    }) &&
-    !dungeonCanvas.contextRestored
-  ) {
-    fit(true);
-    dungeonCanvas.defaultView(dungeonCanvas.view);
-  }
-  draw();
-  if (room && token) {
-    roomDraftLoading = true;
-    roomEditable(false);
-    updateHistory();
-    status('Arbeitsentwurf wird geprüft und geladen.');
-    try {
-      const retained = unwrap(await api.roomDraft(token, room.id));
-      if (!retained || !current()) return;
-      draft = structuredClone(retained.room);
-      hasRetainedDraft = true;
-      renderRoomInputs(draft, token);
-      setAtlasFieldValue(el<HTMLTextAreaElement>('points'), retained.points);
-      el('points').dataset.changed = String(retained.pointsChanged);
-      failedEditState.value = retained.failedEdit;
-      writeBlocked = !!failedEditState.value;
-      el('error-actions').hidden = !writeBlocked;
-      draw();
-      status(
-        'Arbeitsentwurf wiederaufgenommen. Die Änderung ist noch nicht als Autorenstand gespeichert.',
-        true,
-      );
-    } catch (error) {
-      if (!current()) return;
-      roomDraftReadFailed = true;
-      writeBlocked = true;
-      status(
-        'Arbeitsentwurf konnte nicht gelesen werden. Originalbytes bleiben erhalten; dieser Raum bleibt schreibgeschützt: ' +
-          (error as Error).message,
-        true,
-      );
-    } finally {
-      if (current()) {
-        roomDraftLoading = false;
-        roomEditable(!roomDraftReadFailed);
-        updateHistory();
-      }
-    }
-  }
-}
-function updatePoints() {
-  if (draft) {
-    const field = el<HTMLTextAreaElement>('points');
-    setAtlasFieldValue(field, draft.polygons[0]!.outer.map((p) => `${p.x}, ${p.y}`).join('\n'));
-    field.dataset.changed = 'false';
-  }
-}
-function updateHistory() {
-  el<HTMLButtonElement>('undo').disabled =
-    roomDraftLoading || roomDraftReadFailed || !workspace?.canUndo;
-  el<HTMLButtonElement>('redo').disabled =
-    roomDraftLoading || roomDraftReadFailed || !workspace?.canRedo;
-  el<HTMLButtonElement>('add-room').disabled = !workspace;
-  el<HTMLButtonElement>('rename-campaign').disabled = !workspace;
-}
-const roomDirectory = new RoomDirectoryView(el('rooms'), (id) => {
-  void campaignAtlas?.navigate('room', id);
-});
-function renderList(refresh = false) {
-  roomDirectory.context(
-    workspace?.token ?? null,
-    el<HTMLInputElement>('search').value,
-    workspace?.selectedId ?? null,
-    workspace?.problems ?? [],
-    refresh,
-  );
-}
-async function selectRoom(id: string) {
-  if (!(await flushDrawing())) return;
-  const token = workspace?.token;
-  if (
-    !token ||
-    !roomContextCurrent(token) ||
-    !(await leaveWorkspace()) ||
-    !roomContextCurrent(token)
-  )
-    return;
-  try {
-    const response = await api.select(token, id);
-    if (!roomContextCurrent(token)) return;
-    unwrap(response);
-    workspace!.selectedId = id;
-    await setDraft();
-    if (!roomContextCurrent(token)) return;
-    renderList();
-    if (
-      !roomDraftReadFailed &&
-      (!draft || (same(draft, selected()!) && el('points').dataset.changed !== 'true'))
-    )
-      status('Gespeichert.');
-  } catch (error) {
-    if (roomContextCurrent(token)) status((error as Error).message, true);
-  }
-}
-const svgNS = 'http://www.w3.org/2000/svg';
-function svgElement(name: string, attributes: Record<string, string>) {
-  const item = document.createElementNS(svgNS, name);
-  Object.entries(attributes).forEach(([key, value]) => item.setAttribute(key, value));
-  return item;
-}
-function draw() {
-  syncGraphBanner(workspace);
-  syncDrawingControls();
-  document.dispatchEvent(new Event('atlas-draft'));
-  const visible = workspace?.rooms.some(
-    (r) => JSON.stringify([r.scopeId, r.floorId]) === el<HTMLSelectElement>('floors').value,
-  );
-  dungeonCanvas.render(
-    drawScene,
-    visible
-      ? ''
-      : 'Noch keine Geometrie in dieser Ansicht. Raum anlegen oder eine andere Ebene wählen.',
-  );
-}
-function drawScene(map: SVGGElement) {
-  const visible: RoomGeometry[] = [];
-  for (const saved of workspace?.rooms ?? []) {
-    const room = draft?.id === saved.id ? draft : saved;
-    if (JSON.stringify([room.scopeId, room.floorId]) !== el<HTMLSelectElement>('floors').value)
-      continue;
-    visible.push(room);
-    const path = room.polygons
-      .flatMap((p) => [p.outer, ...p.holes])
-      .map((ring) => 'M' + ring.map((p) => `${p.x},${p.y}`).join('L') + 'Z')
-      .join(' ');
-    const style = roomDrawingStyle(room.id);
-    const isSelected = room.id === draft?.id;
-    const shape = svgElement('path', {
-      d: path,
-      fill: isSelected ? '#aecfdf' : (style?.fill ?? '#d7e1e9'),
-      stroke: isSelected ? '#234d74' : (style?.wall ?? '#576c80'),
-      'stroke-width': isSelected ? '.13' : '.08',
-      'fill-rule': 'evenodd',
-      cursor: 'pointer',
-    });
-    shape.setAttribute('data-room-id', room.id);
-    const title = svgElement('title', {});
-    title.textContent = `${room.number}. ${room.name}`;
-    shape.append(title);
-    shape.addEventListener('click', () => {
-      void selectRoom(room.id);
-    });
-    map.append(shape);
-  }
-  drawingOverlay(map);
-  const host = el<SVGSVGElement & HTMLElement>('map'),
-    box = dungeonCanvas.view;
-  const unitsPerPixel = Math.max(box.width / host.clientWidth, box.height / host.clientHeight);
-  for (const room of visible) appendRoomNumber(map, room, unitsPerPixel);
-  if (
-    !draft ||
-    JSON.stringify([draft.scopeId, draft.floorId]) !== el<HTMLSelectElement>('floors').value
-  )
-    return;
-  draft.polygons[0]!.outer.forEach((p, index) => {
-    const handle = svgElement('circle', {
-      cx: String(p.x),
-      cy: String(p.y),
-      r: String(box.width / 85),
-      class: 'handle',
-    });
-    handle.addEventListener('pointerdown', (event) => {
-      if (
-        (event as PointerEvent).button !== 0 ||
-        pendingWork.value ||
-        composing ||
-        pointer ||
-        roomDraftLoading ||
-        roomDraftReadFailed ||
-        activationJob ||
-        activating ||
-        activationFailed
-      )
-        return;
-      pointer = {
-        index,
-        id: (event as PointerEvent).pointerId,
-        before: structuredClone(draft!.polygons),
-      };
-      host.setPointerCapture(pointer.id);
-      event.preventDefault();
-    });
-    map.append(handle);
-  });
-}
-new ResizeObserver(() => draw()).observe(el('map'));
-function fit(all = false) {
-  const visible = (workspace?.rooms ?? [])
-    .map((saved) => (draft?.id === saved.id ? draft : saved))
-    .filter(
-      (room) =>
-        JSON.stringify([room.scopeId, room.floorId]) === el<HTMLSelectElement>('floors').value,
-    );
-  const box = roomCameraBox(all ? visible : draft ? [draft] : visible);
-  if (box) {
-    const [x, y, width, height] = box.split(' ').map(Number);
-    dungeonCanvas.set({ x: x!, y: y!, width: width!, height: height! });
-  }
-}
-el('map').addEventListener('pointermove', (event) => {
-  if (!pointer || !draft || event.pointerId !== pointer.id) return;
-  const svg = el('map') as unknown as SVGSVGElement,
-    matrix = svg.getScreenCTM();
-  if (!matrix) return;
-  const position = new DOMPoint(event.clientX, event.clientY).matrixTransform(matrix.inverse());
-  draft.polygons[0]!.outer[pointer.index] = {
-    x: Math.round(position.x * 1000) / 1000,
-    y: Math.round(position.y * 1000) / 1000,
-  };
-  updatePoints();
-  draw();
-  status('Konturvorschau – noch nicht gespeichert.');
-});
-el('map').addEventListener('pointerup', (event) => {
-  if (pointer?.id !== event.pointerId) return;
-  pointer = null;
-  void flush();
-});
-el('map').addEventListener('pointercancel', () => {
-  if (pointer && draft) draft.polygons = pointer.before;
-  pointer = null;
-  updatePoints();
-  draw();
-  schedule();
-});
-el('floors').addEventListener('change', () => {
-  void (async () => {
-    if (!workspace || !(await flush())) return;
-    const key = el<HTMLSelectElement>('floors').value;
-    if (
-      workspace.rooms.some(
-        (r) => r.id === workspace!.selectedId && JSON.stringify([r.scopeId, r.floorId]) === key,
-      )
-    ) {
-      draw();
-      return;
-    }
-    const room = workspace.rooms.find((r) => JSON.stringify([r.scopeId, r.floorId]) === key);
-    if (room) await selectRoom(room.id);
-    else {
-      draft = null;
-      el('editor').hidden = true;
-      el('empty').hidden = false;
-      draw();
-    }
-  })();
-});
-el('fit').onclick = () => {
-  fit();
-  draw();
-};
-el('fit-all').onclick = () => {
-  fit(true);
-  draw();
-};
-el('map-zoom-in').onclick = () => dungeonCanvas.zoom(1 / 1.2);
-el('map-zoom-out').onclick = () => dungeonCanvas.zoom(1.2);
-el('search').addEventListener('input', () => renderList());
-el('room-name').addEventListener('input', () => {
-  if (roomDraftLoading || roomDraftReadFailed || activationJob || activating || activationFailed)
-    return;
-  if (draft) draft.name = el<HTMLInputElement>('room-name').value;
-  schedule();
-});
-el('room-name').addEventListener('blur', () => {
-  void flush();
-});
-el('points').addEventListener('input', () => {
-  if (roomDraftLoading || roomDraftReadFailed || activationJob || activating || activationFailed)
-    return;
-  el('points').dataset.changed = 'true';
-  schedule();
-});
-el('points').addEventListener('blur', () => {
-  void flush();
-});
-el('apply').onclick = () => {
-  void flush();
-};
-el('editor').addEventListener('submit', (event) => {
-  event.preventDefault();
-  void flush();
-});
-el('reconcile').onclick = () => {
-  void (async () => {
-    const edit = failedEditState.value,
-      token = workspace?.token;
-    if (!edit || !token || !roomContextCurrent(token)) return;
-    const owns = () => roomContextCurrent(token) && failedEditState.value === edit;
-    try {
-      const response = await api.reconcile(edit, token);
-      if (!owns()) return;
-      const result = unwrap(response);
-      if (result.targetChanged || result.outcome === 'conflict') {
-        status(
-          result.outcome === 'applied'
-            ? 'Speicherung bestätigt, aber der aktuelle Raumstand ist verändert oder nicht verlässlich lesbar. Entwurf bleibt offen. Übertrage den Text vor dem Verwerfen.'
-            : 'Konflikt bestätigt. Entwurf bleibt offen. Übertrage den Text vor dem Verwerfen.',
-          true,
-        );
-        return;
-      }
-      workspace = geometryOnly({ ...result.workspace, selectedId: edit.roomId });
-      if (draft) draft.revision = selected()!.revision;
-      writeBlocked = false;
-      failedEditState.value = null;
-      el('error-actions').hidden = true;
-      updateHistory();
-      renderList();
-      status(
-        result.outcome === 'applied'
-          ? 'Speicherung bestätigt. Weitere Eingaben bleiben offen.'
-          : 'Diese Änderung wurde nicht gespeichert. Eingabe abschließen, um sie erneut zu übernehmen.',
-      );
-    } catch (error) {
-      if (owns()) status((error as Error).message + ' Status bleibt ungeklärt.', true);
-    }
-  })();
-};
-el('discard').onclick = () => {
-  void (async () => {
-    const edit = failedEditState.value,
-      token = workspace?.token,
-      roomId = draft?.id;
-    if (!edit || !token || !roomContextCurrent(token)) return;
-    const owns = () => roomContextCurrent(token) && failedEditState.value === edit;
-    try {
-      const response = await api.reconcile(edit, token);
-      if (!owns()) return;
-      const current = unwrap(response).workspace;
-      if (roomId) {
-        const cleared = await api.keepRoomDraft(token, roomId, null);
-        if (!owns()) return;
-        unwrap(cleared);
-      }
-      workspace = geometryOnly(current);
-      writeBlocked = false;
-      failedEditState.value = null;
-      el('error-actions').hidden = true;
-      await setDraft();
-      if (!roomContextCurrent(token)) return;
-      renderList();
-      updateHistory();
-      status('Aktueller gespeicherter Stand geöffnet. Entwurf verworfen.');
-    } catch (error) {
-      if (owns()) status((error as Error).message, true);
-    }
-  })();
-};
-el('atlas').addEventListener('compositionstart', () => {
-  composing = true;
-  cancelTimer();
-});
-el('atlas').addEventListener('compositionend', () => {
-  composing = false;
-  schedule();
-});
 async function refreshCampaigns() {
   const request = ++campaignListRequest,
     list = unwrap(await api.list());
@@ -1802,6 +1121,8 @@ async function refreshCampaigns() {
   select.value = workspace?.campaign.id ?? '';
   return list;
 }
+const workspaceContextCurrent = (token: string) =>
+  workspace?.token === token && !activationJob && !activating && !activationFailed;
 function activate(id: string, entryCommandId?: string): Promise<void> {
   activationIntent++;
   queuedActivation = { id, entryCommandId };
@@ -1849,22 +1170,16 @@ async function drainActivation(): Promise<void> {
         if (queuedActivation !== null) continue;
         el('map-title').textContent = next.campaign.name;
         el<HTMLInputElement>('search').value = '';
-        await setDraft();
+        await roomEditor.setDraft();
         if (queuedActivation !== null) continue;
-        renderList();
-        updateHistory();
+        roomEditor.renderList();
+        roomEditor.updateHistory();
         const view = readWorkspaceView(viewStorage, next.campaign.id);
         await reopenView(view.tab, view.scrollY, view.liveNotesTop, view.liveCombat);
         if (queuedActivation !== null) continue;
         if (preparationHasDrafts())
           status('Vorbereitung enthält offene oder gesperrte Entwürfe.', true);
-        else if (
-          !roomDraftReadFailed &&
-          (!draft ||
-            !selected() ||
-            (same(draft, selected()!) && el('points').dataset.changed !== 'true'))
-        )
-          status('Gespeichert.');
+        else if (roomEditor.saved) status('Gespeichert.');
       } catch (error) {
         if (queuedActivation !== null) continue;
         activationFailed = true;
@@ -1892,199 +1207,39 @@ el('campaigns').addEventListener('change', () => {
   const id = el<HTMLSelectElement>('campaigns').value;
   if (id) void activate(id);
 });
-el('new-campaign').onclick = () => {
-  el<HTMLDialogElement>('create-dialog').showModal();
-};
-el('workspace-new-campaign').onclick = () => el<HTMLButtonElement>('new-campaign').click();
-el('cancel-create').onclick = () => el<HTMLDialogElement>('create-dialog').close();
-el('rename-campaign').onclick = () => {
-  if (!workspace) return;
-  renameBasis = {
-    token: workspace.token,
-    campaignId: workspace.campaign.id,
-    expectedRevision: workspace.campaign.revision,
-  };
-  el<HTMLInputElement>('rename-name').value = workspace.campaign.name;
-  el<HTMLDialogElement>('rename-dialog').showModal();
-  el('rename-name').focus();
-};
-el('rename-cancel').onclick = () => el<HTMLDialogElement>('rename-dialog').close();
-el('rename-form').onsubmit = (event) => {
-  event.preventDefault();
-  void (async () => {
-    const basis = renameBasis;
-    if (!basis || !roomContextCurrent(basis.token)) return;
-    const name = el<HTMLInputElement>('rename-name').value;
-    try {
-      const response = await api.renameCampaign({ ...basis, commandId: crypto.randomUUID(), name });
-      if (!roomContextCurrent(basis.token)) return;
-      const campaign = unwrap(response);
-      workspace!.campaign = campaign;
-      if (renameBasis === basis && el<HTMLInputElement>('rename-name').value === name)
-        el<HTMLDialogElement>('rename-dialog').close();
-      await refreshCampaigns();
-      if (!roomContextCurrent(basis.token)) return;
-      el('map-title').textContent = campaign.name;
-      if (renameBasis === basis && el<HTMLInputElement>('rename-name').value === name)
-        status('Kampagnenname gespeichert.');
-    } catch (error) {
-      if (roomContextCurrent(basis.token) && renameBasis === basis)
-        status((error as Error).message, true);
-    }
-  })();
-};
-el('create-form').addEventListener('submit', (event) => {
-  event.preventDefault();
-  const intent = ++activationIntent,
-    token = workspace?.token,
-    name = el<HTMLInputElement>('campaign-name').value;
-  const owns = () => intent === activationIntent && token === workspace?.token && !activationJob;
-  void (async () => {
-    if (!owns() || !(await flushAll()) || !owns()) return;
-    try {
-      const response = await api.create(name);
-      if (!response.ok) {
-        if (owns()) unwrap(response);
-        return;
-      }
-      const campaign = response.value;
-      if (owns()) el<HTMLDialogElement>('create-dialog').close();
-      await refreshCampaigns();
-      if (owns()) await activate(campaign.id);
-    } catch (error) {
-      if (owns()) status((error as Error).message, true);
-    }
-  })();
-});
-el('add-room').onclick = () => {
-  void (async () => {
-    const token = workspace?.token;
-    if (!token || !roomContextCurrent(token) || !(await flush()) || !roomContextCurrent(token))
-      return;
-    try {
-      const response = await atlasDefaultRoomWrite(token, workspace!.campaign.id);
-      if (!roomContextCurrent(token)) return;
-      workspace = geometryOnly(unwrap(response));
-      await reloadDrawing();
-      await setDraft();
-      if (!roomContextCurrent(token)) return;
-      renderList(true);
-      updateHistory();
-      status('Raum angelegt und gespeichert.');
-    } catch (error) {
-      if (roomContextCurrent(token)) status((error as Error).message, true);
-    }
-  })();
-};
-async function history(direction: 'undo' | 'redo') {
-  if (!(await flushDrawing())) return;
-  const token = workspace?.token;
-  if (!token || !roomContextCurrent(token) || !(await flush()) || !roomContextCurrent(token))
-    return;
-  try {
-    const response = await atlasHistoryWrite(token, workspace!.campaign.id, direction);
-    if (!roomContextCurrent(token)) return;
-    workspace = geometryOnly(unwrap(response));
-    await reloadDrawing();
-    await setDraft();
-    if (!roomContextCurrent(token)) return;
-    renderList(true);
-    updateHistory();
-    status('Gespeichert.');
-  } catch (error) {
-    if (roomContextCurrent(token)) status((error as Error).message, true);
-  }
-}
-el('undo').onclick = () => {
-  void history('undo');
-};
-el('redo').onclick = () => {
-  void history('redo');
-};
 bindAtlasHistoryShortcut(
   () => !!campaignAtlas && !campaignAtlas.root.hidden,
-  () => composing,
+  () => roomEditor.composing,
   (direction) => {
-    void history(direction);
+    void roomEditor.history(direction);
   },
 );
-el('import').onclick = () => {
-  const intent = ++activationIntent,
-    token = workspace?.token;
-  const owns = () => intent === activationIntent && token === workspace?.token && !activationJob;
-  void (async () => {
-    if (!owns() || !(await flushAll()) || !owns()) return;
-    try {
-      const response = await api.previewDungeonImport();
-      if (!owns()) return;
-      const preview = unwrap(response);
-      dungeonImportPreview = preview;
-      if (!preview) return;
-      const detail = el('import-detail');
-      detail.replaceChildren();
-      for (const line of [
-        `${preview.name}: ${preview.roomCount} Räume${workspace ? ' werden in diese Kampagnenwelt eingefügt' : ' in einer neuen Kampagne'}.`,
-        ...preview.warnings,
-      ]) {
-        const p = document.createElement('p');
-        p.textContent = line;
-        detail.append(p);
-      }
-      el<HTMLDialogElement>('import-dialog').showModal();
-    } catch (error) {
-      if (owns()) status((error as Error).message, true);
-    }
-  })();
-};
-el('workspace-import').onclick = () => el<HTMLButtonElement>('import').click();
-el('cancel-import').onclick = () => {
-  dungeonImportPreview = null;
-  activationIntent++;
-  el<HTMLDialogElement>('import-dialog').close();
-};
-el('confirm-import').onclick = () => {
-  const preview = dungeonImportPreview;
-  if (!preview || activationJob) return;
-  const intent = ++activationIntent,
-    token = workspace?.token;
-  const owns = () => intent === activationIntent && token === workspace?.token && !activationJob;
-  void (async () => {
-    try {
-      if (workspace) {
-        const owner = workspace,
-          response = await api.importAtlas({
-            commandId: 'atlas-import:' + preview.ticket,
-            token: owner.token,
-            campaignId: owner.campaign.id,
-            ticket: preview.ticket,
-            ...(campaignAtlas?.insertionPoint ?? { x: 0, y: 0 }),
-          });
-        if (!owns()) return;
-        const result = unwrap(response);
-        dungeonImportPreview = null;
-        el<HTMLDialogElement>('import-dialog').close();
-        await activate(owner.campaign.id);
-        showTab('atlas');
-        if (result.roomId) await campaignAtlas?.navigate('room', result.roomId);
-        return;
-      }
-      const response = await api.createCampaignFromDungeon(preview.ticket);
-      if (!response.ok) {
-        if (owns()) unwrap(response);
-        return;
-      }
-      const campaign = response.value;
-      if (owns() && dungeonImportPreview === preview) {
-        dungeonImportPreview = null;
-        el<HTMLDialogElement>('import-dialog').close();
-      }
-      await refreshCampaigns();
-      if (owns()) await activate(campaign.id);
-    } catch (error) {
-      if (owns()) status((error as Error).message, true);
-    }
-  })();
-};
+initCampaignActions({
+  get workspace() {
+    return workspace;
+  },
+  get transitionPending() {
+    return !!activationJob;
+  },
+  workspaceContextCurrent,
+  beginIntent() {
+    const intent = ++activationIntent,
+      token = workspace?.token;
+    return () => intent === activationIntent && token === workspace?.token && !activationJob;
+  },
+  cancelIntent() {
+    activationIntent++;
+  },
+  flushAll,
+  refreshCampaigns,
+  activate,
+  status,
+  insertionPoint: () => campaignAtlas?.insertionPoint ?? { x: 0, y: 0 },
+  showAtlas: () => {
+    showTab('atlas');
+  },
+  navigateRoom: (id) => campaignAtlas?.navigate('room', id),
+});
 initCommitControls(() => workspace, status);
 api.onClose(() => {
   void (async () => {
@@ -2147,17 +1302,3 @@ document.addEventListener('atlas-location-request', (e) => {
     await campaignAtlas!.navigateLocation(ref.id, ref.sectionId);
   })().catch((e) => status(e.message, true));
 });
-
-editorSession.onDeactivate(() => {
-  if (timer) clearTimeout(timer);
-  timer = null;
-});
-
-editorSession.observeDraft(() => ({
-  openInput:
-    !!draft &&
-    !!selected() &&
-    (!same(draft, selected()!) || el('points').dataset.changed === 'true'),
-  retainedDraft: hasRetainedDraft,
-  unresolvedCommand: !!failedEditState.value,
-}));

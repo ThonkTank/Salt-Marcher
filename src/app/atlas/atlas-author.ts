@@ -1,59 +1,42 @@
 import { atlasPathPreview } from './atlas-path-draft';
 import { atlasElement as get } from './atlas-dom';
 import type {
-  AtlasSelection as Selection,
-  AtlasFamily as Family,
-  AtlasRoomDrag,
+  AtlasJourneySelection,
+  AtlasOutputSelection,
   AtlasPathDrag,
+  AtlasRegionEditing,
+  AtlasRoomDrag,
+  AtlasFamily as Family,
+  AtlasSelection as Selection,
 } from './atlas-workbench-types';
-import type { AtlasRegions } from './atlas-regions';
-import type { AtlasJourney } from './atlas-journey';
-import type { AtlasOutput } from './atlas-output';
 import { vegetationInstances } from './vegetation-projection';
 import { atlasFieldValue } from './atlas-units';
 import { regionValue } from './atlas-region-contracts';
-import { selectElement } from './drawing-ui';
+import {
+  atlasDrawingDraft,
+  atlasDrawingPoint,
+  atlasDrawingRectangle,
+  atlasDrawingSnapPoint,
+  selectElement,
+} from './drawing-ui';
 import type { LandscapeWorkbench } from './atlas-landscape-ui';
 import { atlasPartyPoint } from './atlas-runtime-model';
 import { atlasWorldTarget } from '../runtime/world-ui';
 import type { AtlasCanvas } from './atlas-canvas';
-import { atlasFrame, localToAtlas, atlasToLocal, atlasHexAt } from './campaign-atlas-model';
+import { atlasFrame, atlasHexAt, atlasToLocal, localToAtlas } from './campaign-atlas-model';
 import type { AtlasAction } from './campaign-atlas-contracts';
-import type { WorkspaceGeometry, Point, Room } from '../shared/contracts';
+import type { Point, Room, WorkspaceGeometry } from '../shared/contracts';
 import { atlasCityPoint, openCityReference } from './city-ui';
-import {
-  atlasDrawingPoint,
-  atlasDrawingRectangle,
-  atlasDrawingSnapPoint,
-  atlasDrawingDraft,
-} from './drawing-ui';
 import { atlasDungeonTarget } from './dungeon-ui';
 interface AtlasAuthorHost {
   creation: 'city' | 'dungeon' | null;
   readonly root: HTMLElement;
   readonly family: Family;
-  readonly output: Pick<
-    AtlasOutput,
-    | 'exportOpen'
-    | 'exportChoosing'
-    | 'exporting'
-    | 'exportDrag'
-    | 'exportCorner'
-    | 'exportDungeon'
-    | 'exportBox'
-    | 'exportRectangle'
-    | 'exportAreaStatus'
-    | 'beginArea'
-    | 'moveArea'
-    | 'endArea'
-  >;
+  readonly output: AtlasOutputSelection;
   readonly busy: boolean;
   readonly spacePan: boolean;
   readonly camera: Pick<AtlasCanvas, 'ready' | 'hitAt' | 'stopZoom' | 'redrawOverlay'>;
-  readonly regions: Pick<
-    AtlasRegions,
-    'data' | 'geometryCurrent' | 'refresh' | 'loadedRegionQuery' | 'scheduleRegion'
-  >;
+  readonly regions: AtlasRegionEditing;
   readonly opts: {
     selectRoom: (id: string) => Promise<void>;
     roomDraft: () => Room | null;
@@ -89,16 +72,7 @@ interface AtlasAuthorHost {
     ack: import('./campaign-atlas-contracts').AtlasCommitAck;
   } | null>;
   readonly render: (preview?: boolean) => void;
-  readonly journey: Pick<
-    AtlasJourney,
-    | 'entranceId'
-    | 'localPreview'
-    | 'travelReadState'
-    | 'invalidatePreview'
-    | 'selectEntrance'
-    | 'travel'
-    | 'renderTravel'
-  >;
+  readonly journey: AtlasJourneySelection;
   cityId: string | null;
   readonly doorRoomAt: (point: Point) => Promise<{
     room: import('../shared/contracts').RoomGeometry;
@@ -706,7 +680,7 @@ export class AtlasAuthor {
   }
   async up(e: PointerEvent) {
     if (
-      this.host.output.exportDrag?.id === e.pointerId &&
+      this.host.output.ownsAreaPointer(e.pointerId) &&
       this.host.output.endArea(e, this.host.point(e))
     ) {
       this.suppressClick();
