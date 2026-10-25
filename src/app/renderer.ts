@@ -106,7 +106,7 @@ let dungeonImportPreview: DungeonImportPreview | null = null;
 let renameBasis: Omit<CampaignRename, 'commandId' | 'name'> | null = null;
 const status = (text: string, error = false) => { el('status').textContent = text; el('status').dataset.error = String(error); };
 const editors = createWorkspaceEditors({
-  atlas:{session:atlasEditorSession,activate:w=>campaignAtlas?.activate(w),flush:async()=>!campaignAtlas||await campaignAtlas.flush()},
+  atlas:{session:atlasEditorSession,activate:w=>campaignAtlas?.activate(w),flush:async()=>!campaignAtlas||await campaignAtlas.flush(),deactivate:()=>campaignAtlas?.hide()},
   room:{session:editorSession,flush,leave:leaveRoom},
   beforeTool:()=>!activating&&!activationFailed&&!roomDraftLoading,
   gate:()=>{

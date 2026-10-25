@@ -30,7 +30,7 @@ import {editorSession as planningSession} from './session-ui';
 import {editorSession as generationSession} from './generation-ui';
 
 type Host = {
-  atlas: {session: EditorSession; activate: (w: WorkspaceGeometry) => void; flush: () => Promise<boolean>};
+  atlas: {session: EditorSession; activate: (w: WorkspaceGeometry) => void; flush: () => Promise<boolean>; deactivate: () => void};
   room: {session: EditorSession; flush: () => Promise<boolean>; leave: () => Promise<boolean>};
   gate: () => EditorBoundary;
   beforeTool: () => boolean;
@@ -41,7 +41,8 @@ type Host = {
  * intentionally (Live owns the subeditors; preparation activates last). */
 export function createWorkspaceEditors(host: Host) {
   const registry = new EditorRegistry<WorkspaceGeometry, string>([
-    {id:'atlas',session:host.atlas.session,activate:{order:0,run:host.atlas.activate},flush:r=>r==='checkpoint'||host.atlas.flush()},
+    // A settled editor session alone does not retire disposable Atlas readers.
+    {id:'atlas',session:host.atlas.session,activate:{order:0,run:host.atlas.activate},flush:r=>r==='checkpoint'||host.atlas.flush(),deactivate:host.atlas.deactivate},
     {id:'playback',flush:async r=>{if(r!=='checkpoint')await world.stopWorldPlayback();return true;}},
     {id:'npcs',session:npcs.editorSession,activate:{order:12,run:npcs.activateNpcs},flush:npcs.flushNpcs},
     {id:'groups',session:groups.editorSession,activate:{order:11,run:groups.activateGroups},flush:groups.flushGroups},

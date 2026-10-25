@@ -28,10 +28,10 @@ const {createWorkspaceEditors}=require('../.build/workspace-editor-registry-test
 // A host session needs the same interface, but no DOM or storage capability.
 const session=()=>({settle:async()=>{},deactivate(){},status:{}});
 function fixture(){
- const calls=[];let gate=true,refuse=null;
+ const calls=[];let gate=true,refuse=null,atlasFlush=async()=>true;
  globalThis.editorBoundaryTest=(name,args)=>{calls.push(name);if(name===refuse)return false;return name.startsWith('activate')||name.startsWith('deactivate')?undefined:true;};
- const host={atlas:{session:session(),activate:()=>calls.push('atlas'),flush:async()=>{calls.push('atlasFlush');return true;}},room:{session:session(),flush:async()=>{calls.push('roomCheckpoint');return true;},leave:async()=>{calls.push('roomRetain');return true;}},gate:()=>gate,beforeTool:()=>true,views:[{id:'view',order:2,activate:()=>calls.push('view')}]};
- return{calls,editors:createWorkspaceEditors(host),gate:value=>{gate=value;},refuse:value=>{refuse=value;}};
+ const host={atlas:{session:{...session(),deactivate:()=>calls.push('atlasSessionStop')},activate:()=>calls.push('atlas'),deactivate:()=>calls.push('atlasStop'),flush:async()=>{calls.push('atlasFlush');return atlasFlush();}},room:{session:session(),flush:async()=>{calls.push('roomCheckpoint');return true;},leave:async()=>{calls.push('roomRetain');return true;}},gate:()=>gate,beforeTool:()=>true,views:[{id:'view',order:2,activate:()=>calls.push('view')}]};
+ return{calls,editors:createWorkspaceEditors(host),atlasFlush:value=>{atlasFlush=value;},gate:value=>{gate=value;},refuse:value=>{refuse=value;}};
 }
 const prefix=['flushNpcs','flushGroups','flushTreasury','flushTriggers','flushDungeonContent','flushGraph','flushKeys','flushPaths','flushVolume','flushDungeon','flushDrawing','flushAutonomy','flushCity'];
 const tail=['flushMusic','flushWorld','flushItems','flushCatalog','flushLive'];
@@ -55,4 +55,17 @@ test('tool preflight excludes its own in-flight task and retains its exact suffi
  const order=['triggers','content','graph','keys','paths','volume','drawing'];
  const flush=['flushTriggers','flushDungeonContent','flushGraph','flushKeys','flushPaths','flushVolume','flushDrawing'];
  for(let i=0;i<order.length;i++){const x=fixture();assert.equal(await x.editors.before(order[i]),true);assert.deepEqual(x.calls,[...flush.slice(i+1),'flushAutonomy','flushCity',...tail,'leavePreparation','roomCheckpoint']);}
+});
+
+for(const acknowledged of [true,false])test(`close retires Atlas readers only after writers acknowledge (acknowledged=${acknowledged})`,async()=>{
+ const f=fixture();let settle;f.atlasFlush(()=>new Promise(resolve=>settle=resolve));
+ // The real renderer calls deactivate only after the complete registry drain.
+ const closing=(async()=>{if(await f.editors.flush('close'))f.editors.deactivate();})();
+ await new Promise(resolve=>setImmediate(resolve));assert.deepEqual(f.calls,['atlasFlush']);
+ settle(acknowledged);await closing;
+ if(acknowledged){
+  assert(f.calls.indexOf('atlasStop')>f.calls.indexOf('roomRetain'),'native read disposal follows all editor acknowledgements');
+  assert.equal(f.calls.filter(x=>x==='atlasStop').length,1);assert(f.calls.indexOf('atlasSessionStop')<f.calls.indexOf('atlasStop'));
+  f.calls.length=0;await f.editors.activate({token:'next'});assert.equal(f.calls[0],'atlas','a later activation still starts the Atlas owner');
+ }else assert.deepEqual(f.calls,['atlasFlush'],'a refused close preserves the live owner and its pending data');
 });
