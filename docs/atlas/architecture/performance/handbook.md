@@ -199,7 +199,7 @@ sichtbar als inaktive Alternativen.
 | A0.04 | audit_atlas_boundaries | Implementiert in `1e2c629601d2cf2b96584e9f83ae4e1acbcd071c`; 97/97 Tests, Type-/Desktopcheck bestanden ([Übergabe](../../../../.build/atlas-performance-plan/A0.04-handoff.json)); native Qualifikation und R0 offen |
 | A0.05 | audit_atlas_boundaries | Implementiert in `6235ca15`; 30/30 Tests, Type-/Desktopcheck bestanden ([Übergabe](../../../../.build/atlas-performance-plan/A0.05-handoff.json)); native Qualifikation und R0 offen |
 | A0.12 | plan_final_review | In Arbeit: freigegebener Canvas-/Raster-Verbundretry, getrennte Besitzer gegenüber A0.06 |
-| A0.10 | review_packages | Implementiert in `0494bf17`; 79/79 Tests und vier native Fälle bestanden ([Übergabe](../../../../.build/atlas-performance-plan/A0.10-handoff.json)); unabhängiges Review und gemeinsame A0.11-Qualifikation offen |
+| A0.10 | review_packages | Implementiert in `0494bf17`; 79/79 Tests und vier native Fälle bestanden ([Übergabe](../../../../.build/atlas-performance-plan/A0.10-handoff.json)); unabhängiges Zwischenreview akzeptabel; gemeinsame A0.11-Qualifikation und R0 offen |
 | A0.06 | audit_atlas_boundaries | In Arbeit: typisierter unbekannter Schreibausgang über StoreClient, Main und Preload |
 
 Die parallelen Pakete bearbeiten getrennte Besitzer. Native Läufe beginnen
@@ -267,7 +267,16 @@ und das abschließende `app.quit()` kontrolliert zurück; sie behauptet weder ei
 physischen Datenträgerfehler noch eine allgemeine native Produktabnahme.
 
 Nach expliziter Hostfreigabe arbeiten A0.06 und A0.12 an getrennten Codebesitzern.
-A0.10 erhält ein unabhängiges Zwischenreview; das vollständige R0 bleibt erforderlich.
+Das unabhängige A0.10-Zwischenreview durch `a0_interim_review` akzeptiert den
+Codepin `0494bf17` ohne offene erforderliche Befunde. Der Reviewer verifizierte
+alle 917 Inputhashes gegen diesen Commit und prüfte Bestätigungsreihenfolge,
+Reaktivierung und native Probegrenzen. Die einzige zusätzliche Harnessänderung
+zwischen Vorher-/Nachherlauf entfernt `state.armed=false;` ausschließlich aus der
+Fehlergegenprobe. Die Rückeinfügung rekonstruiert exakt den gespeicherten Vorherhash
+`56b8a53bd42b74dc8c1c5ae91871af8a306716a88dcb881555fbebcef4c0e9a7`;
+Root reproduzierte diesen Abgleich. Die Schließzweige sind unverändert.
+Dies ist eine hashbestätigte Rekonstruktion, kein erhaltenes Originalskript.
+Das vollständige R0 bleibt erforderlich.
 
 ## Abschlussgrenzen
 

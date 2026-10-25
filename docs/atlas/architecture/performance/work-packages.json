@@ -369,7 +369,7 @@
         "commit": "0494bf177cc73805ba6a6f08ea73485185bb19a7",
         "tests": "79/79; npm run check and build:desktop passed",
         "evidence": ".build/atlas-performance-plan/A0.10-handoff.json",
-        "independentReview": "interim running; full R0 pending"
+        "independentReview": "a0_interim_review: acceptable on 0494bf17, no required findings; full R0 pending"
       }
     },
     {

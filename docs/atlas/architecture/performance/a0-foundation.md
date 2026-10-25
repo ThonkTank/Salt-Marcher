@@ -1,6 +1,6 @@
 # A0: Architekturgrundlage absichern – Arbeitspakete
 
-Status: Executing; A0.01–A0.05 lokal implementiert, native Qualifikation und unabhängige Meilensteinprüfung offen.
+Status: Executing; A0.01–A0.05 lokal implementiert, A0.10 nativ geprüft; gemeinsame Qualifikation und unabhängige Meilensteinprüfung offen.
 Owner: atlas
 Last Reviewed: 2026-10-25 (Zerlegung nach unabhängiger Architekturprüfung)
 Source of Truth: Paketumfang für A0; Begründung in der [Architekturprüfung](architecture-audit.md), gemeinsame Regeln in der [Roadmap](../performance-roadmap.md).
