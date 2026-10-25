@@ -328,7 +328,7 @@
       "lane": "A0",
       "conditional": false,
       "slots": 1,
-      "status": "in_progress",
+      "status": "complete",
       "resources": [],
       "activationRequires": [],
       "returnGates": [],
@@ -357,12 +357,15 @@
         "commit": "950b79eb5914b7e32d91120eb90771d2896388c6",
         "tests": "81/81 (11 new); npm run check and check:desktop passed",
         "evidence": ".build/atlas-performance-plan/A0.09-handoff.json",
-        "independentReview": "required rework: graph preview shadow edit can persist while main Atlas receipt rolls back",
+        "independentReview": "Bounded local correction accepted through A0.15 review plus R2/R3/R4 preview integration reviews; no open required local finding",
         "rework": {
           "agent": "/root/review_packages",
-          "status": "implementation held for reviewed v1.6 owner correction A0.15-A0.17",
+          "status": "complete locally via A0.15-A0.17; owner recovery and native qualification remain separate",
           "finding": "Room/Drawing shadow changes survive main rollback after immediate or later geometry reads; two independent commits cannot supply one receipt boundary",
-          "nativeQualification": "pending A0.11"
+          "nativeQualification": "pending A0.11",
+          "commit": "0d6f54ed",
+          "evidence": ".build/atlas-performance-plan/A0.16-17-r4-build-handoff.json",
+          "verification": "A0.15 independent25/25; R2 independent15/15 includes real postcommit/rollback/Prepared boundary; R3/R4 subsequent deltas accepted"
         }
       }
     },
@@ -4740,7 +4743,7 @@
       "lane": "A0",
       "conditional": false,
       "slots": 1,
-      "status": "planned",
+      "status": "in_progress",
       "resources": [],
       "activationRequires": [],
       "returnGates": [],
@@ -4757,7 +4760,8 @@
         "desktop/store-operations.ts",
         "desktop/atlas-write-activity.ts",
         "tests/desktop-atlas-write-receipt.test.mjs",
-        "tests/atlas-write-recovery.test.mjs"
+        "tests/atlas-write-recovery.test.mjs",
+        "src/app/storage/graph-preview-commands.ts"
       ],
       "writesBuildInputs": true,
       "nativeBuild": false,
@@ -4766,7 +4770,16 @@
         "profile": "implementation",
         "waitConfidence": "planning-assumption"
       },
-      "actual": null
+      "actual": {
+        "agent": "/root/a0_receipt_reference",
+        "startedAt": "2026-10-25T14:35:03.549912+00:00",
+        "inputCommit": "0d6f54ed",
+        "activeHours": null,
+        "prerequisites": "A0.06/A0.09 and bounded A0.15-17 correction locally accepted; R4 final sources/build hashes verified",
+        "implementation": "assigned compact durable references and read-only Atlas/Graph/Travel status bridge; owner wiring follows A0.07/A0.08",
+        "scopeAddition": "graph-preview-commands.ts shares existing preview fingerprint input with compact reference helper; no new writer or canonical archive format",
+        "nativeQualification": "pending A0.14/A0.11"
+      }
     },
     {
       "id": "A0.14",
@@ -4865,13 +4878,13 @@
         "planCommit": "25260921",
         "planReview": "v1.6 independently accepted by a0_interim_review; graph160 and tests7/7 reproduced",
         "nativeQualification": "pending A0.14/A0.11",
-        "contract": "explicit GraphPreviewTarget and local transactional receipt; persistent restart A0.16 and author wiring A0.17 remain open",
+        "contract": "explicit GraphPreviewTarget and local transactional receipt; persistent restart A0.16 and author wiring A0.17 locally accepted; native qualification remains open",
         "endedAt": "2026-10-25T13:40:53.390635Z",
         "commit": "5c1e878d",
         "handoff": ".build/atlas-performance-plan/A0.15-handoff.json",
         "verification": "155 targeted tests; independent preview/postcommit repeat25/25; source17/dependency3/log15 hashes verified",
         "independentReview": "a0_15_review accepted bounded A0.15; no open required findings",
-        "typecheck": "both Exit2 solely graph-ui.ts:38; required A0.17 connection, not a complete typecheck pass",
+        "typecheck": "Initial Exit2 for planned graph-ui.ts attachment; resolved by A0.17, final shared R4 check and check:desktop Exit0",
         "transferFollowup": "Root missing-role correction: three local preview identity declarations; generated145 models/603 shapes; check:repo and transfer11/11 passed after fresh test assets. a0_15_review accepts semantic/code/evidence review; active-preview export remains A0.16."
       }
     },
@@ -4926,7 +4939,8 @@
         "boundedCorrection": "Canonical passage lookup, Accept projection, broken symlink and missing active-pointer guards verified. Remaining preview contents cannot be silently replaced. Native A0.14/A0.11 remains open.",
         "handoff": ".build/atlas-performance-plan/A0.16-handoff.json",
         "review": "a0_preview_review_r3 accepted local A0.16 delta after fresh architecture and testing reviews; original missing-pointer repro now blocked",
-        "verification": "28/28 final restart cases plus prior unchanged compatibility evidence; independent R3 18/18; shared R4 typechecks and production builds passed"
+        "verification": "28/28 final restart cases plus prior unchanged compatibility evidence; independent R3 18/18; shared R4 typechecks and production builds passed",
+        "commit": "0d6f54ed"
       }
     },
     {
@@ -4940,7 +4954,7 @@
       "lane": "A0",
       "conditional": false,
       "slots": 1,
-      "status": "in_progress",
+      "status": "complete",
       "resources": [],
       "activationRequires": [],
       "returnGates": [],
@@ -4981,8 +4995,11 @@
         "startedAt": "2026-10-25T13:42:54.760084+00:00",
         "inputCommit": "5c1e878d",
         "handoff": ".build/atlas-performance-plan/A0.17-handoff.json",
-        "review": "R3 confirms definitive rejection fix; structured store-outcome-unknown must also exclude its new readback",
-        "boundedCorrection": "Root adds only the structured errorKind exclusion to the new first-rejection readback and one existing-file DOM regression asserting zero readers/publish and one dispatch. Scope graph-ui.ts+desktop-graph-preview-owner.test.mjs. Definitive error correction, missing-pointer fix and direct documentation entry are already independently checked; fresh review required for this delta. Full typed Unknown pending/recovery remains A0.07/A0.13, native A0.14."
+        "review": "a0_preview_review_r4 accepted final bounded delta; R2/R3 findings resolved and architecture/documentation/testing reviews completed",
+        "boundedCorrection": "Definitive first rejection rebinds only matching preview; structured Unknown and transport exceptions cannot use that readback. No automatic writer replay. Full Pending/durable recovery remains A0.07/A0.13.",
+        "commit": "0d6f54ed",
+        "verification": "Initial101/101; post-readback65/65; final Root3/3 and independent3/3 plus committed-unknown1/1. Final source bound to both typechecks and both production builds.",
+        "buildEvidence": ".build/atlas-performance-plan/A0.16-17-r4-build-handoff.json"
       }
     }
   ],

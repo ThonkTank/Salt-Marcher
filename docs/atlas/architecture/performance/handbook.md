@@ -236,10 +236,10 @@ sichtbar als inaktive Alternativen.
 | A0.12 | plan_final_review | Nacharbeit in `4859dadee`; 115/115 Tests und Typecheck bestanden; unabhängige Nachprüfung lokal akzeptabel; A0.11/R0 offen |
 | A0.10 | review_packages | Implementiert in `0494bf17`; 79/79 Tests und vier native Fälle bestanden (Übergabe `.build/atlas-performance-plan/A0.10-handoff.json`); unabhängiges Zwischenreview akzeptabel; gemeinsame A0.11-Qualifikation und R0 offen |
 | A0.06 | audit_atlas_boundaries | Implementiert in `da8f63cb`; 76/76 Tests und beide Typechecks bestanden (Übergabe `.build/atlas-performance-plan/A0.06-handoff.json`); Besitzerreaktionen A0.07/08 und R0 offen |
-| A0.09 | review_packages | Implementiert in `950b79eb`; 81/81 Tests und beide Typechecks bestanden (Übergabe `.build/atlas-performance-plan/A0.09-handoff.json`); unabhängiges Zwischenreview verlangt Graphpreview-Nacharbeit; A0.11/R0 offen |
-| A0.15 | review_packages | Implementiert in `5c1e878d`; 155 gezielte Tests und unabhängig 25/25 bestanden; `a0_15_review` lokal akzeptiert; Typanschluss A0.17 und Neustart A0.16 offen |
+| A0.09 | review_packages | Storefix `950b79eb` und Graphnacharbeit bis `0d6f54ed` lokal geprüft und akzeptiert; A0.13 freigegeben, native A0.11/R0 offen |
+| A0.15 | review_packages | Implementiert in `5c1e878d`; 155 gezielte Tests und unabhängig 25/25 bestanden; `a0_15_review` lokal akzeptiert; Typanschluss A0.17 und Neustart A0.16 inzwischen lokal akzeptiert; native Qualifikation offen |
 | A0.16 | a0_interim_review | Lokal akzeptiert durch `a0_preview_review_r3`: 28/28 finale Restartfälle, unabhängig 18/18; frühere unveränderte Verbundfälle bleiben belegt; gemeinsame Typ-/Produktionsbuilds bestanden; native A0.14/A0.11 offen |
-| A0.17 | plan_final_review | Eingefrorene Übergabe `A0.17-handoff.json`: 101/101 und beide Typchecks bestanden; Autoren-/DOM-Anschluss in unabhängiger Nachprüfung |
+| A0.17 | plan_final_review / Root | `0d6f54ed`, lokal akzeptiert durch R2–R4 nach Korrekturen; finale Typ-/Buildchecks grün; vollständige Recovery A0.07/A0.13 und native Qualifikation offen |
 
 Die parallelen Pakete bearbeiten getrennte Besitzer. Native Läufe beginnen
 erst bei gesperrten Buildinputs. Testassets einmal mit `node build.mjs --test`
@@ -349,79 +349,45 @@ dafür A0.13/A0.14; Inhalt und Abhängigkeiten stehen oben und in A0. Die unabh�
 Planprüfung bestätigte nach Korrekturen aktuelle Schedulerprüfungen und expliziten
 Schreibbesitz am gemeinsamen UI-Recoveryhandler.
 
-A0.09 lief von 12:42:49 bis 12:49:47 UTC. Postcommit-Projektionsfehler werden im
-Worker typisiert in den Unknown-Kanal übersetzt. RoomCommit liest ohne zweiten
-Edit; Graphvorschau bleibt erhalten. Die Terraincache-Nachlese innerhalb einer
-äußeren Prepared-Transaktion bleibt ein definitiver Rollback, außerhalb davon
-bleibt der gespeicherte Auftrag über seinen Receipt klärbar. Elf neue Produktions-
-regressionen bestanden im Lauf mit 81 Tests; beide Typechecks bestanden. Root
-verifizierte sechs Quelldateien, den verwendeten Hosthelper und fünf Belegdateien
-gegen die Übergabe. Der erste Testversuch hatte zwei falsche Fixturepfade und ist
-separat erhalten. Das unabhängige Zwischenreview fand eine noch fehlerhafte Graphpreview-Grenze:
-Nach Shadow-DB-Raumcommit kann dessen Nachlese scheitern, während nur der Haupt-DB-
-Atlasreceipt zurückrollt. Die Vorschau enthält dann die Änderung, die Klärung meldet
-aber „nicht angewandt“. Auch ein späterer SQLite-Lesefehler in `reconcileAtlasGeometry` reproduziert
-diesen Splitzustand nach erfolgreichem unmittelbarem Leser. Der enge Readerwrapper
-reicht deshalb nicht. A0.09 bleibt zur Nachprüfung offen; zuerst wird der begrenzte
-Besitzeranschluss A0.15–A0.17 umgesetzt. A0.15 ist lokal unabhängig akzeptiert; A0.16/A0.17 laufen. A0.13 wartet auf die gesamte Nachprüfung. Die bisherigen Erfolgstests dieser Vorschau
-belegen den Fehlerfall nicht. Native Qualifikation und R0 bleiben offen; kein frisch
-gestarteter Renderer ist durch die vorhandenen Hosttests belegt.
+A0.09 und der Besitzeranschluss A0.15–A0.17 sind lokal abgeschlossen. Der erste
+Storefix `950b79eb` typisiert Postcommit-Projektionsfehler, liest RoomCommit ohne
+zweiten Edit und erhält den Rollback innerhalb der äußeren Prepared-Transaktion.
+Der anschließende Graphfix `5c1e878d` bündelt Vorschauänderung, Kopplung, History und
+Receipt in einer Shadowtransaktion; Accept und Lifecycle teilen den Maincommit.
+`0d6f54ed` ergänzt Persistenz, profilgebundene Wiederöffnung und ausdrückliche
+Autoren-/Historyziele. Fehlende oder beschädigte Zuordnungen erlauben keinen
+Ersatzbestand. Die erste definitiv abgelehnte Graphaktion bleibt nach Korrektur
+unter derselben Vorschau bearbeitbar. Ungeklärte Resultate benutzen diesen
+Rücklesepfad nicht. Ortslinks lesen kanonische Existenz ohne Schema-Vollkopie.
 
-A0.15 bündelt Vorschauänderung, Kopplung, gruppierte History und Receipt in einer
-Shadowtransaktion. Kanonische Übernahme und Lifecyclebeleg teilen den äußersten
-Maincommit; Entsorgung folgt danach. Root verifizierte die 17 Dateihashes, drei
-unveränderten Abhängigkeiten und 15 Belegdateien aus
-`.build/atlas-performance-plan/A0.15-handoff.json`. 155 Implementierertests und
-die unabhängig wiederholten 25 Preview-/Postcommitfälle bestanden. Der Reviewer
-`a0_15_review` akzeptiert den begrenzten Besitzeranschluss ohne offenen Befund.
-Beide Typchecks melden ausschließlich den geplanten UI-Anschluss `graph-ui.ts:38`;
-sie gelten bis A0.17 als nicht bestanden. Persistenz, native Wiederaufnahme und
-R0 bleiben offen. Kataloglinks wurden nach tatsächlichem Testinhalt ergänzt.
-Die anschließende Repositoryprüfung verlangte drei Transferrollen für neue lokale
-Vorschaukennungen. Deklarationen und generierte Verträge wurden ergänzt;
-`check:repo` und 11 Transferfälle bestanden. Der neue Fall prüft Snapshot, unabhängige
-Kopie, frisches Öffnen und verweigerten kanonischen Fallback eines fehlenden
-Previewziels. `a0_15_review` akzeptiert diesen begrenzten Nachweis. Der erste Lauf
-benutzte noch den alten gemeinsamen Store-Testbuild und ist als Fehlversuch erhalten.
-Aktive Previewartefakte und ihre Archivgrenze bleiben A0.16.
+Die unabhängigen R2–R4-Prüfungen sind einschließlich Architektur-, Dokumentations-
+und Testfachreviews abgeschlossen; ihre erforderlichen Befunde wurden behoben.
+A0.15 bestand 155 Implementierertests und unabhängig 25 Preview-/Postcommitfälle.
+Die erste A0.16/A0.17-Verbundprüfung bestand 46 beziehungsweise 101 Tests;
+nach den begrenzten Korrekturen bestanden 28 Restart- und 65 Autorenfälle.
+R3 wiederholte unabhängig 18 Speicher- und 17 UI-Fälle. Das letzte Marker-Delta
+bestand Root 3/3 sowie laut unabhängigem Fachreview 3/3 und eine zusätzliche
+Gegenprobe mit zuvor wirklich angewandter Graphänderung. Dessen temporäre
+Gegenproben wurden bereinigt; der Bericht und die Root-Vorher-/Nachher-TAPs bleiben
+als Belege erhalten. Diese Zahlen betreffen unterschiedliche
+Prüfstände und werden nicht zu einer Vollqualifikation addiert.
 
-Die echte A0.17-Passagenprobe fand einen fehlenden Ortslookup in der begrenzten
-Shadow-DB. A0.16 ergänzt am Vorschau-Lebenszyklus einen ausschließlich lesenden
-Lookup auf kanonische Ortsexistenz; keine Ortstabellenkopie. Der originale
-DOM-Dispatchfall besteht in `A0.17-owner-r6.log`. Der anschließende Integrationstest
-belegt eine fehlende `workspace/view`-Antwort nach erfolgreichem `executeAtlas`
-mit `graph-accept` (74/75 in `A0.17-regressions-r1.log`). A0.16 korrigiert die
-bestehende Postcommit-Projektion und prüft Replay sowie Rücklesefehler. Außerdem
-muss eine gebrochene Sidecar-Verknüpfung ausdrücklich abgewiesen werden; sie darf
-nicht als fehlende Vorschau gelten. Die erste Übergabe bleibt erhalten; beide
-Korrekturen sind in der neuen eingefrorenen Übergabe enthalten. Root verifizierte
-sämtliche Quellen-, Abhängigkeits- und Loghashes beider Pakete. Beide gemeinsamen
-Produktionsbuilds bestanden; ihre 918 Eingaben und 88 Desktopdateien stehen in
-`.build/atlas-performance-plan/A0.16-17-build-handoff.json`. Das unabhängige Review
-`a0_preview_review_r2` reproduziert jedoch einen weiteren offenen Persistenzfehler:
-Fehlt `active.json`, bleibt die vorhandene Vorschau-DB unsichtbar und eine zweite
-Vorschau lässt sich anlegen (`A0.16-review-r2-missing-pointer.log`). Dieser Bestand
-muss vor einer Neuanlage als beschädigte Zuordnung erkannt werden. Die reale
-Graph-DOM-Gegenprobe findet außerdem: Eine definitiv abgelehnte erste Raumaktion
-legt bereits eine Vorschau an, deren Kennung die UI nicht übernimmt; die korrigierte
-Eingabe adressiert anschließend eine zweite ID und scheitert erneut
-(`A0.17-review-r2-first-rejected.tap`). A0.17 muss den vorhandenen Besitzer rein
-lesend zurückbinden und den ursprünglichen Eingabefehler sichtbar erhalten.
-Keine automatische Schreibwiederholung. Beide Maßnahmen bleiben in den bestehenden
-Paketen; A0.09 und seine Nachfolger warten auf die Nachprüfung. Der Fachleseweg
-bekommt danach einen direkten Paketlink zum Vorschauvertrag und dessen zentralen
-UI-/DOM-Testeinstieg. Die tatsächlichen neuen
-Autoren-/History-/Antwortverlusttests sind im Capability-Katalog verknüpft.
-R3 bestätigt die beiden Fehlerkorrekturen und den direkten Doku-Leseweg. Ein
-enger Restbefund bleibt im neuen UI-Rücklesepfad: Der strukturierte Resultmarker
-`store-outcome-unknown` löst noch zwei Leser und eine Veröffentlichung aus,
-obwohl er keine definitive Ablehnung ist (`A0.17-review-r3-typed-unknown.tap`).
-Root ergänzt ausschließlich die Ausschlussbedingung und eine DOM-Regression;
-vollständiges Pending und dauerhafte Recovery bleiben A0.07/A0.13. Die 18
-unabhängigen A0.16-Deltafälle bestehen (`A0.16-review-r3-targeted.tap`).
-Für A0.11 ist nach
-unabhängiger Quellenprüfung ein fokussierter nativer Runner im bestehenden Paket
-benannt; seine Umsetzung beginnt erst nach den bisherigen Vorgängergates.
+Die endgültigen Quellen-, Abhängigkeits- und Loghashes stehen in
+`.build/atlas-performance-plan/A0.16-handoff.json` und `A0.17-handoff.json`.
+Die gemeinsamen Typprüfungen und beide Produktionsbuilds sind grün; R4 hat die
+918 Eingaben, 88 Desktopartefakte und vier Logs aus
+`A0.16-17-r4-build-handoff.json` unabhängig nachgerechnet. Frühere rote Repros,
+Übergaben und Fehlversuche bleiben in `.build/atlas-performance-plan/` erhalten;
+die Befundübernahme ist zusätzlich im Gitstand `0d6f54ed` gesichert. Der direkte
+Paket-/Fachquellen-/UI-Testleseweg und die tatsächlichen Capability-Testlinks sind
+gepflegt. Transferrollen für lokale Previewidentitäten sind mit `26446391`
+und 11 Transferfällen belegt; aktive Vorschauen bleiben außerhalb von Archiven.
+
+A0.13 ist nach Freigabe von `0d6f54ed` an `a0_receipt_reference` vergeben und
+liefert dauerhafte Klärungsreferenzen und reine Statusleser.
+Danach folgen A0.07/A0.08 mit vollständigen Besitzerreaktionen, A0.14 mit echter
+nativer Wiederaufnahme und A0.11 mit der gemeinsamen Fehlerprobe. Keine dieser
+Grenzen ist durch die lokalen Vorschauprüfungen ersetzt. R0 und A1 bleiben offen.
 
 ## Abschlussgrenzen
 
