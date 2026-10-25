@@ -80,6 +80,29 @@ test('copy and preflight reject undeclared payload fields and variants instead o
  assert.throws(()=>transferModel('drawing_element',JSON.parse('{"__proto__":{"id":"unsafe"}}'),context()),/__proto__/);
 });
 
+test('copied room draft remaps its missing preview target and cannot fall back to canonical writing after reopen',async t=>{
+ const {root,store}=fixture(t),room={id:randomUUID(),scopeId:randomUUID(),floorId:randomUUID(),number:'1',name:'Original',revision:0,polygons:[{outer:[{x:0,y:0},{x:6,y:0},{x:6,y:6},{x:0,y:6}],holes:[]}],sections:[]};
+ const campaign=store.create('Preview draft source',[room]),w=store.activate(campaign.id),previewId=randomUUID();
+ const failedEdit={commandId:randomUUID(),token:w.token,campaignId:campaign.id,roomId:room.id,expectedRevision:0,name:'Retained edit',polygons:room.polygons,sections:[],target:{kind:'graph-preview',previewId,scopeId:room.scopeId,revision:3}};
+ const draft={room,points:'unfinished '+previewId,pointsChanged:true,failedEdit};
+ store.keepRoomDraft(w.token,room.id,draft);
+ const snapshot=path.join(root,'source.sqlite');await store.campaignSnapshot(w.token,snapshot);const sourceBytes=readFileSync(snapshot);
+ const filename=path.join(root,'independent.sqlite');let copy=new CampaignStore(filename);
+ try{
+  const copied=copy.acceptCampaignSnapshot(snapshot,'Independent',{});copy.close();copy=new CampaignStore(filename);
+  const active=copy.activate(copied.id),copiedRoom=active.rooms[0],saved=copy.roomDraft(active.token,copiedRoom.id),edit=saved.failedEdit;
+  assert.notEqual(copiedRoom.id,room.id);assert.notEqual(copiedRoom.scopeId,room.scopeId);
+  assert.equal(saved.points,draft.points);assert.equal(edit.campaignId,copied.id);assert.equal(edit.roomId,copiedRoom.id);
+  assert.equal(edit.target.scopeId,copiedRoom.scopeId);assert.notEqual(edit.target.previewId,previewId);assert.notEqual(edit.commandId,failedEdit.commandId);
+  assert.equal(edit.target.revision,3);assert.equal(edit.token,'portable-context-requires-activation');assert.equal(copy.graphShadow,null);
+  const before=copy.db.serialize();assert.throws(()=>copy.atlasRoomCommit(edit));
+  assert.throws(()=>copy.atlasRoomCommit({...edit,token:active.token}),/Graphvorschau.*nicht verfügbar/);
+  assert.deepEqual(copy.db.serialize(),before);assert.equal(copy.graphShadow,null);
+  assert.equal(copy.db.prepare("SELECT count(*) n FROM settings WHERE key LIKE 'graph-preview-lifecycle:%'").get().n,0);
+  assert.deepEqual(store.roomDraft(w.token,room.id),draft);assert.deepEqual(readFileSync(snapshot),sourceBytes);
+ }finally{copy.close();}
+});
+
 for(const corruption of ['field','variant','table'])test(`unsupported ${corruption} leaves import input and destination unchanged`,async t=>{
  const {root,store}=fixture(t),cam=store.create('Source'),w=store.activate(cam.id),file=path.join(root,'source.sqlite');await store.campaignSnapshot(w.token,file);
  const db=new Database(file);

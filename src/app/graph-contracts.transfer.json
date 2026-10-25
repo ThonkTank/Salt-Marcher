@@ -10,6 +10,9 @@
   "GraphLayout.id": "local",
   "GraphLayout.positions[].roomId": "local",
   "GraphLayout.scopeId": "local",
-  "GraphPreviewState.scopeId": "local"
+  "GraphPreviewState.id": "local",
+  "GraphPreviewState.scopeId": "local",
+  "GraphPreviewTarget.previewId": "local",
+  "GraphPreviewTarget.scopeId": "local"
  }
 }
