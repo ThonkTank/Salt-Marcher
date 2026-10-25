@@ -6,6 +6,7 @@ import {drapeAtlasGeometry, type AtlasSpatialSurface} from './atlas-spatial-surf
 import {atlasSpatialColor} from './atlas-spatial-color';
 import {atlasWorkplaneHeight} from './atlas-workplane';
 import {routeSegmentRange} from './terrain-route-clip';
+import {atlasImageAlpha, type AtlasImageAlpha} from './atlas-image-alpha';
 import type {AtlasCanvasScene, AtlasPaintCommand} from './atlas-canvas-scene';
 import type {Point} from './contracts';
 
@@ -16,7 +17,7 @@ export interface AtlasDrawingMesh {
   colors?: Float32Array;
   color: [number,number,number,number];
   texture?: CanvasImageSource;
-  hitAlpha?:{pixels:Uint8ClampedArray;width:number;height:number};
+  hitAlpha?:AtlasImageAlpha;
   command?: AtlasPaintCommand;
   target?: Record<string,string>;
   solid?: boolean;
@@ -59,10 +60,12 @@ export function atlasDrawingGeometry(source:AtlasCanvasScene,origin:Point,images
       const canvas=document.createElement('canvas');canvas.width=1024;canvas.height=Math.max(1,Math.min(1024,Math.round(1024*b.height/b.width)));
       const ctx=canvas.getContext('2d')!;
       source.draw(ctx,new DOMMatrix().scale(canvas.width/b.width,canvas.height/b.height).translate(origin.x-b.x,origin.y-b.y),new Map(images),{x:0,y:0},command=>command===c);
-      add(quad(b.x,b.y,b.width,b.height),'white',1,canvas,(x,y)=>({x,y}));meshes.at(-1)!.hitAlpha={pixels:ctx.getImageData(0,0,canvas.width,canvas.height).data,width:canvas.width,height:canvas.height};continue;
+      add(quad(b.x,b.y,b.width,b.height),'white',1,canvas,(x,y)=>({x,y}));meshes.at(-1)!.hitAlpha=atlasImageAlpha(canvas);continue;
     }
     if(node.kind==='image'){
-      const image=images.get(g.source??'');if(image)add(quad(g.x??0,g.y??0,g.width??0,g.height??0),'white',c.alpha,image);continue;
+      const image=images.get(g.source??'');
+      if(image){add(quad(g.x??0,g.y??0,g.width??0,g.height??0),'white',c.alpha,image);if(c.pointer)meshes.at(-1)!.hitAlpha=atlasImageAlpha(image);}
+      continue;
     }
     if(node.kind==='text'){
       const font=s.fontSize??16;if(!font||!node.text)continue;

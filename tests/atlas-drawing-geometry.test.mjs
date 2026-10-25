@@ -2,12 +2,79 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {buildSync} from 'esbuild';
 import {createRequire} from 'node:module';
-buildSync({stdin:{resolveDir:process.cwd(),contents:`export * from './src/app/atlas-drawing-geometry';export * from './src/app/atlas-deck-drawing';export * from './src/app/atlas-paint';export * from './src/app/atlas-metric-camera';`},bundle:true,platform:'node',format:'cjs',outfile:'.build/atlas-drawing-geometry.cjs'});
-const {atlasDrawingGeometry,AtlasDeckDrawing,atlasPaint,atlasMetricFrame}=createRequire(import.meta.url)('../.build/atlas-drawing-geometry.cjs');
+buildSync({stdin:{resolveDir:process.cwd(),contents:`export * from './src/app/atlas-drawing-geometry';export * from './src/app/atlas-deck-drawing';export * from './src/app/atlas-paint';export * from './src/app/atlas-metric-camera';export * from './src/app/atlas-image-alpha';export * from './src/app/atlas-canvas';`},bundle:true,platform:'node',format:'cjs',outfile:'.build/atlas-drawing-geometry.cjs'});
+const {atlasDrawingGeometry,AtlasDeckDrawing,atlasPaint,atlasMetricFrame,atlasImageAlpha,releaseAtlasImageAlpha,AtlasCanvas}=createRequire(import.meta.url)('../.build/atlas-drawing-geometry.cjs');
 const flat={origin:{x:0,y:0},focusM:0,exaggeration:1,segment:10,height:()=>0};
 const command=(node,extra={})=>({node,matrix:{a:1,b:0,c:0,d:1,e:0,f:0},style:{fill:'#d8c59d',stroke:null,...node.style},alpha:1,pointer:true,hud:false,title:'',ancestry:[node],...extra});
 const frame={ray:p=>[[p.x,p.y,100],[p.x,p.y,-100]]};
 const triangleZ=meshes=>meshes.flatMap(m=>Array.from(m.positions).filter((_,i)=>i%3===2));
+function pixelAsset(width,height,alpha=()=>255){
+ const rgba=new Uint8ClampedArray(width*height*4);
+ for(let y=0;y<height;y++)for(let x=0;x<width;x++)rgba.set([21,72,133,alpha(x,y)],(y*width+x)*4);
+ return{width,height,rgba,closed:0,close(){this.closed++;}};
+}
+// A pixel-backed Canvas API boundary: production code must draw the actual asset
+// before reading it. Tests never attach hitAlpha to generated image meshes.
+function pixelCanvas(t){
+ const old=globalThis.document,state={reads:0,draws:0,canvases:[],failRead:false};
+ globalThis.document={createElement(tag){
+  assert.equal(tag,'canvas');const canvas={width:0,height:0};let drawn;
+  canvas.getContext=()=>({clearRect(){drawn=undefined;},drawImage(image,sx,sy,w,h,dx,dy,dw,dh){
+   assert.equal(dw,w);assert.equal(dh,h);assert.equal(dx,0);assert.equal(dy,0);assert(image.rgba);state.draws++;drawn={image,sx,sy,w,h};
+  },getImageData(x,y,w,h){
+   state.reads++;if(state.failRead)throw Error('readback failed');assert(drawn);assert.equal(x,0);assert.equal(y,0);
+   const data=new Uint8ClampedArray(w*h*4),{image,sx,sy}=drawn;
+   for(let row=0;row<h;row++)for(let column=0;column<w;column++)data.set(image.rgba.subarray(((sy+row)*image.width+sx+column)*4,((sy+row)*image.width+sx+column)*4+4),(row*w+column)*4);
+   return{data};
+  }});state.canvases.push(canvas);return canvas;
+ }};t.after(()=>globalThis.document=old);return state;
+}
+
+test('normal image commands select through alpha holes after transform, terrain draping and camera tilt',t=>{
+ const state=pixelCanvas(t),asset=pixelAsset(4,4,(x,y)=>x===1&&y===1?0:x===3?96:255);
+ const image=atlasPaint('image',{width:20,height:12,source:'reference',data:{atlasObject:'true',id:'image'}});
+ const backdrop=atlasPaint('rect',{x:-100,y:-100,width:200,height:200,data:{atlasObject:'true',id:'background'}});
+ const surface={...flat,segment:2,height:p=>p.x/8+p.y/16};
+ for(const matrix of [{a:1,b:0,c:0,d:1,e:10,f:20},{a:0,b:2,c:-1.5,d:0,e:20,f:10},{a:-1,b:0,c:0,d:1,e:30,f:20}]){
+  const source={commands:[command(backdrop),command(image,{matrix})]},images=new Map([['reference',asset]]);
+  const meshes=atlasDrawingGeometry(source,{x:0,y:0},images,surface);
+  assert.equal(meshes.at(-1).texture,asset);assert.equal(meshes.at(-1).hitAlpha,atlasImageAlpha(asset));assert(meshes.at(-1).positions.length>18);
+  const drawing=new AtlasDeckDrawing(source,{x:0,y:0},images,surface);
+  for(const tilt of [0,45,75])for(const rotation of [0,40]){
+   const f=atlasMetricFrame({focus:{x:20,y:20},focusHeightM:surface.height({x:20,y:20}),metersPerPixel:.2,tilt,rotation,exaggeration:2},800,600);
+   for(const [x,y,expected] of [[7.5,4.5,'background'],[2.5,1.5,'image'],[17.5,1.5,'image']]){
+    const world={x:matrix.a*x+matrix.c*y+matrix.e,y:matrix.b*x+matrix.d*y+matrix.f};
+    const pixel=f.project({...world,heightM:surface.height(world)});
+    assert.equal(drawing.hit(f,pixel,['atlasObject'])?.data.id,expected,JSON.stringify({matrix,tilt,rotation,x,y}));
+   }
+  }
+  drawing.dispose();assert.equal(drawing.hit(frame,{x:12,y:21},['atlasObject']),null);
+ }
+ assert.equal(state.reads,1,'one asset read across geometry rebuilds, triangles and hit queries');
+ assert.equal(state.draws,1);assert(state.canvases.every(c=>c.width===0&&c.height===0));
+});
+
+test('alpha extraction retains exact pixels and bounds its temporary readback surface',t=>{
+ const state=pixelCanvas(t),asset=pixelAsset(1025,3,(x,y)=>(x+y)%256),alpha=atlasImageAlpha(asset);
+ assert.equal(alpha.width,1025);assert.equal(alpha.height,3);assert.equal(alpha.pixels.length,1025*3);
+ for(let y=0;y<3;y++)for(let x=0;x<1025;x++)assert.equal(alpha.pixels[y*1025+x],(x+y)%256);
+ assert.equal(state.reads,2);assert.equal(atlasImageAlpha(asset),alpha);assert.equal(state.reads,2);
+ releaseAtlasImageAlpha(asset);assert.notEqual(atlasImageAlpha(asset),alpha);assert.equal(state.reads,4);
+});
+
+test('asset prune and clear release alpha; failed readback does not cache partial results',t=>{
+ const state=pixelCanvas(t),removed=pixelAsset(2,2),kept=pixelAsset(2,2),pending=pixelAsset(2,2);
+ const before=new Map([removed,kept,pending].map(asset=>[asset,atlasImageAlpha(asset)]));
+ const canvas=Object.create(AtlasCanvas.prototype);
+ Object.assign(canvas,{root:{dataset:{}},unavailableImages:new Set(),decoded:new Map([['removed',removed],['kept',kept],['pending',pending]]),compiled:{images:new Set(['kept'])},pending:{compiled:{images:new Set(['pending'])}}});
+ canvas.pruneImages();assert.equal(removed.closed,1);assert.equal(kept.closed,0);assert.equal(pending.closed,0);
+ assert.notEqual(atlasImageAlpha(removed),before.get(removed));assert.equal(atlasImageAlpha(kept),before.get(kept));assert.equal(atlasImageAlpha(pending),before.get(pending));
+ canvas.clearImages();assert.equal(kept.closed,1);assert.equal(pending.closed,1);assert.equal(canvas.decoded.size,0);
+ assert.notEqual(atlasImageAlpha(kept),before.get(kept));assert.notEqual(atlasImageAlpha(pending),before.get(pending));
+ const failed=pixelAsset(2,2);state.failRead=true;
+ assert.throws(()=>atlasImageAlpha(failed),/readback failed/);assert(state.canvases.every(c=>c.width===0&&c.height===0));
+ state.failRead=false;const reads=state.reads;assert.equal(atlasImageAlpha(failed).pixels.length,4);assert.equal(state.reads,reads+1);
+});
 test('shared drawing buffers preserve holes, transparent grips, ancestry and terrain occlusion',()=>{
  const room=atlasPaint('polygons',{polygons:[{outer:[{x:0,y:0},{x:20,y:0},{x:20,y:20},{x:0,y:20}],holes:[[{x:8,y:8},{x:12,y:8},{x:12,y:12},{x:8,y:12}]]}],data:{atlasObject:'true',id:'room'}});
  const grip=atlasPaint('circle',{x:2,y:2,radius:1,style:{fill:'transparent'},data:{atlasVertex:'7'}});
@@ -34,9 +101,10 @@ test('draped surfaces sample interior heights while floors and grips remain hori
   assert(triangleZ(meshes).every(z=>z===(bases.size?21:36)));
  }
 });
-test('terrain-owned rasters and HUD stay out of GPU map buffers; dense object imagery stays draped',()=>{
+test('terrain-owned rasters and HUD stay out of GPU map buffers; dense object imagery stays draped',t=>{
+ pixelCanvas(t);
  const image=atlasPaint('image',{width:20,height:20,source:'objects'}),rect=atlasPaint('rect',{width:20,height:20});
- const meshes=atlasDrawingGeometry({commands:[command(rect,{hud:true}),command(rect,{ancestry:[{data:{landscapeRaster:'true'}}]}),command(image)]},{x:0,y:0},new Map([['objects',{width:16,height:16}]]),{...flat,height:p=>p.x/2});
+ const meshes=atlasDrawingGeometry({commands:[command(rect,{hud:true}),command(rect,{ancestry:[{data:{landscapeRaster:'true'}}]}),command(image)]},{x:0,y:0},new Map([['objects',pixelAsset(16,16)]]),{...flat,height:p=>p.x/2});
  assert.equal(meshes.length,1);assert.equal(meshes[0].texture.width,16);assert(meshes[0].positions.length>18);assert(triangleZ(meshes).some(z=>z>0));
 });
 test('billboard labels stay screen-aligned at high tilt and rotated cameras',t=>{
@@ -55,7 +123,7 @@ test('billboard labels stay screen-aligned at high tilt and rotated cameras',t=>
  drawing.dispose();
 });
 test('transparent mask pixels never become selectable rectangles',()=>{
- const mesh={positions:new Float32Array([0,0,0,10,0,0,0,10,0,10,0,0,10,10,0,0,10,0]),indices:new Uint32Array([0,1,2,3,4,5]),uv:new Float32Array([0,0,1,0,0,1,1,0,1,1,0,1]),color:[255,255,255,255],target:{atlasObject:'true',id:'masked'},hitAlpha:{pixels:new Uint8ClampedArray([0,0,0,0,0,0,0,255,0,0,0,255,0,0,0,255]),width:2,height:2}};
+ const mesh={positions:new Float32Array([0,0,0,10,0,0,0,10,0,10,0,0,10,10,0,0,10,0]),indices:new Uint32Array([0,1,2,3,4,5]),uv:new Float32Array([0,0,1,0,0,1,1,0,1,1,0,1]),color:[255,255,255,255],target:{atlasObject:'true',id:'masked'},hitAlpha:{pixels:new Uint8Array([0,255,255,255]),width:2,height:2}};
  const drawing=new AtlasDeckDrawing({commands:[]},{x:0,y:0},new Map(),flat,[mesh]);
  assert.equal(drawing.hit(frame,{x:2,y:2},['atlasObject']),null);assert.equal(drawing.hit(frame,{x:8,y:2},['atlasObject']).data.id,'masked');drawing.dispose();
 });

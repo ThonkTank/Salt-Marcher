@@ -1,5 +1,6 @@
 import { wheelZoomFactor, zoomBox } from "./atlas-navigation-scale";
 import { AtlasPaint, AtlasCanvasScene } from "./atlas-canvas-scene";
+import { releaseAtlasImageAlpha } from "./atlas-image-alpha";
 /** Shared Atlas camera/input, retained paint commands and bounded decoded images. */
 import type { CanvasBox } from "./passive-map-canvas";
 export type CameraReason = "pan" | "zoom" | "reset" | "set" | "history";
@@ -408,7 +409,7 @@ export class AtlasCanvas {
     this.unavailableImages.clear();
     this.root.dataset.imageErrors = "0";
     this.root.dataset.decodedBytes = "0";
-    for (const image of this.decoded.values()) image.close();
+    for (const image of this.decoded.values()) { releaseAtlasImageAlpha(image); image.close(); }
     this.decoded.clear();
   }
   private paint() {
@@ -747,6 +748,7 @@ export class AtlasCanvas {
     for(const source of this.unavailableImages)if(!keep.has(source)&&!this.pending?.compiled.images.has(source))this.unavailableImages.delete(source);
     for (const [key, image] of this.decoded)
       if (!keep.has(key) && !this.pending?.compiled.images.has(key)) {
+        releaseAtlasImageAlpha(image);
         image.close();
         this.decoded.delete(key);
       }

@@ -49,7 +49,7 @@ export class AtlasDeckDrawing {
           const bary=Triangle.getBarycoord(point,v0,v1,v2,new Vector3());if(!bary)continue;
           const uv=[0,1].map(axis=>[bary.x,bary.y,bary.z].reduce((sum,weight,j)=>sum+weight*e.uv![e.indices[t+j]!*2+axis]!,0));
           const {pixels,width,height}=e.hitAlpha,x=Math.max(0,Math.min(width-1,Math.floor(uv[0]!*width))),y=Math.max(0,Math.min(height-1,Math.floor(uv[1]!*height)));
-          if(pixels[(y*width+x)*4+3]===0)continue;
+          if(pixels[y*width+x]===0)continue;
         }
         const distance=a.distanceTo(point);if(distance>terrainDistance+Math.max(1e-6,terrainDistance*1e-5))continue;
         if(e.target){if(!objectHit||distance<objectHit.distance)objectHit={target:e.target,distance};}
