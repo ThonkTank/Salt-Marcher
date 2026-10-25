@@ -9,7 +9,7 @@ import {atlasWorkplaneHeight} from './atlas-workplane';
 import type {AtlasReadRequest} from './atlas-read-request';
 import {terrainTraceMeasure} from './terrain-timing';
 import type {AtlasPresentationHost} from './atlas-presentation-host';
-import type {AtlasPresentation} from './atlas-presentation';
+import {AtlasPresentationFrameError,type AtlasPresentation} from './atlas-presentation';
 import type {AtlasCanvasScene} from './atlas-canvas-scene';
 import type {LandscapeBox,LandscapeRecord} from './atlas-landscape';
 import type {AtlasRenderView} from './campaign-atlas-contracts';
@@ -57,6 +57,8 @@ export class AtlasRasterPresentation implements AtlasPresentation {
   private map:AtlasDeckDrawing|null=null;private transient:AtlasDeckDrawing|null=null;
   private scene:{scene:AtlasCanvasScene;origin:Point;images:ReadonlyMap<string,CanvasImageSource>}|null=null;
   private lastPoint:Point={x:0,y:0};private failed=false;
+  private frameOwner=0;
+  private failureMessage:string|null=null;
   private Vegetation:typeof AtlasDeckVegetation|null=null;private vegetation:AtlasDeckVegetation|null=null;private vegetationRecords:LandscapeRecord[]|undefined;
   private objectLayer=new AtlasObjectGeometry();private objects:TerrainObject[]=[];private objectKey='';
   private objectRead:{token:string;control:AtlasReadRequest}|null=null;
@@ -95,7 +97,8 @@ export class AtlasRasterPresentation implements AtlasPresentation {
   private place(){if(this.container)Object.assign(this.container.style,{left:this.input.offsetLeft+'px',top:this.input.offsetTop+'px',width:this.input.clientWidth+'px',height:this.input.clientHeight+'px'});}
   setActive(active:boolean){
     if(active===this.active)return;
-    this.active=active;this.generation++;
+    this.active=active;this.generation++;this.frameOwner++;
+    if(!active)this.failureMessage=null;
     if(!active){this.creating=null;this.recovery=null;this.retry.hidden=true;this.retry.disabled=false;this.rejectedPress=false;this.pauseReads();this.objects=[];this.pickTiles=null;this.frozen=null;this.gesturing=false;this.objectKey='';this.objectLayer.dispose();this.vegetation?.dispose();this.vegetationRecords=undefined;this.settleFirst(false);this.surfaceReady=false;this.stream.dispose();this.stream=new AtlasSurfaceTileStream({maxTiles:32,maxRetainedTiles:64,maxBytes:64*1024*1024});this.surface?.dispose();this.surface=null;this.container?.remove();this.container=null;this.tiles=[];this.draft=null;this.dirty=false;this.preferDetail=false;this.scene=null;this.map?.dispose();this.map=null;this.transient?.dispose();this.transient=null;this.request='';this.revision=-1;this.fence='';this.input.style.background='';delete this.input.dataset.terrainReady;delete this.input.dataset.terrainDraft;return;}
     this.startSurface();
   }
@@ -130,10 +133,12 @@ export class AtlasRasterPresentation implements AtlasPresentation {
     if(this.gesturing||this.host.hasDraft())this.host.cancel();
     this.gesture(false);
   }
-  private fail(error:unknown){if(this.failed)return;this.failed=true;this.retry.hidden=false;this.pauseReads();if(this.gesturing)this.host.cancel();this.settleFirst(false);console.error(error);this.surfaceReady=false;this.input.dataset.terrainReady='failed';this.host.error(error);}
+  private fail(error:unknown){if(this.failed)return;this.failed=true;this.frameOwner++;this.failureMessage=error instanceof Error?error.message:String(error);this.retry.hidden=false;this.pauseReads();if(this.gesturing)this.host.cancel();this.settleFirst(false);console.error(error);this.surfaceReady=false;this.input.dataset.terrainReady='failed';this.host.error(error);}
   private recover(){
     if(!this.active)return Promise.resolve();
     if(this.recovery)return this.recovery;
+    this.frameOwner++;
+    const failureMessage=this.failureMessage;
     this.retry.disabled=true;this.retry.hidden=true;this.failed=false;this.surfaceReady=false;
     const surface=this.surface;
     if(!surface)this.startSurface();
@@ -142,15 +147,16 @@ export class AtlasRasterPresentation implements AtlasPresentation {
     const run=(async()=>{
       try{
         if(surface){
-          await surface.recover();if(!current()||this.surface!==surface)return;
-          this.failed=false;this.show();this.repaint();await surface.waitForFrame();
-          if(!current()||this.surface!==surface)return;
+          await surface.recover();if(!current()||this.surface!==surface||this.failed)return;
+          this.show();this.repaint();await surface.waitForFrame();
+          if(!current()||this.surface!==surface||this.failed)return;
           this.surfaceReady=true;this.retry.hidden=true;this.input.dataset.terrainReady='ready';this.settleFirst(true);this.host.redraw();
         }else{
           await this.creating;if(!current()||this.failed||!this.surface)return;
           if(this.perception)await this.finishPerception(container);
         }
-        if(!current())return;
+        if(!current()||this.failed)return;
+        if(failureMessage!==null&&this.failureMessage===failureMessage){this.failureMessage=null;this.host.recovered?.(failureMessage);}
         this.request='';this.objectKey='';void this.load();
       }catch(error){if(current())this.fail(error);}
       finally{if(current()){this.retry.disabled=false;this.recovery=null;}}
@@ -284,6 +290,19 @@ export class AtlasRasterPresentation implements AtlasPresentation {
   paint(scene:AtlasCanvasScene,origin:Point,images:ReadonlyMap<string,CanvasImageSource>){if(this.scene?.scene===scene)return;this.scene={scene,origin,images};if(!this.Drawing)return;try{const next=new this.Drawing(scene,origin,images,this.drawingSurface(),this.objectLayer.meshes);this.map?.dispose();this.map=next;this.drawings();}catch(e){this.fail(e);}}
   overlay(scene:AtlasCanvasScene,origin:Point){if(!this.Drawing)return;try{const next=new this.Drawing(scene,origin,new Map(),this.drawingSurface());this.transient?.dispose();this.transient=next;this.drawings();}catch(e){this.fail(e);}}
   hitAt(e:{clientX:number;clientY:number},keys:string[]){const frame=this.surface?.frame;if(!frame||!this.ready||!this.surface?.frameUsable)return null;const p=this.pixel(e.clientX,e.clientY),segment=frame.ray(p),hit=this.terrainHit(e.clientX,e.clientY);const distance=segment&&hit?Math.hypot(...segment[1].map((v,i)=>v-segment[0][i]!))*hit.segmentFraction:Infinity;return this.transient?.hit(frame,p,keys,distance)??this.vegetation?.hit(frame,p,keys,distance)??this.map?.hit(frame,p,keys,distance)??null;}
-  batch(paint:()=>void){paint();return this.surface?.waitForFrame();}
+  batch(paint:()=>void){
+    // A synchronous failure in the supplied Canvas paint is not a GPU failure.
+    paint();
+    const surface=this.surface,owner=this.frameOwner;
+    if(!surface)return;
+    const failure=(error:unknown)=>{
+      // Timeout rejection has no Surface.onError callback. Report it here,
+      // but never let a retired batch fail a replacement/recovered owner.
+      if(this.active&&this.surface===surface&&this.frameOwner===owner)this.fail(error);
+      return new AtlasPresentationFrameError(this,error);
+    };
+    try{return surface.waitForFrame().catch(error=>{throw failure(error);});}
+    catch(error){return Promise.reject(failure(error));}
+  }
   refreshBrushCursor(x:number,y:number){const point=this.authorPoint(x,y),label=document.getElementById('land-cursor-height');if(label)label.textContent=point?'Höhe: '+lengthLabel(this.height(point)):'Höhe: –';}
 }

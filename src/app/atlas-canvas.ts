@@ -1,6 +1,7 @@
 import { wheelZoomFactor, zoomBox } from "./atlas-navigation-scale";
 import { AtlasPaint, AtlasCanvasScene } from "./atlas-canvas-scene";
 import { releaseAtlasImageAlpha } from "./atlas-image-alpha";
+import { AtlasPresentationFrameError } from "./atlas-presentation";
 /** Shared Atlas camera/input, retained paint commands and bounded decoded images. */
 import type { CanvasBox } from "./passive-map-canvas";
 export type CameraReason = "pan" | "zoom" | "reset" | "set" | "history";
@@ -465,12 +466,20 @@ export class AtlasCanvas {
     const version=++this.paintVersion;
     const frame={generation:this.publishedGeneration,cameraVersion:this.cameraVersion,...rect};
     const current=()=>version===this.paintVersion&&frame.generation===this.generation&&frame.cameraVersion===this.cameraVersion&&
-      frame.width===this.root.clientWidth&&frame.height===this.root.clientHeight&&!this.failed&&!this.lost;
+      frame.width===this.root.clientWidth&&frame.height===this.root.clientHeight&&!this.failed&&!this.lost&&
+      presentation===this.options.presentation?.();
     const acknowledge=()=>{if(current()){this.painted=frame;this.root.dataset.canvasState=this.ready?(this.emptyText?'empty':'loaded'):'loading';}};
     const completion=presentation?.batch?presentation.batch(paint):paint();
     if (ctx.isContextLost?.()) throw Error("Zeichenfläche beim Zeichnen verloren.");
     // GPU map publication is asynchronous; a finished HUD alone grants no hits.
-    if(completion){this.painted=null;void completion.then(acknowledge,error=>{if(current())this.fail(error);});}
+    if(completion){this.painted=null;void completion.then(acknowledge,error=>{
+      if(!current())return;
+      if(error instanceof AtlasPresentationFrameError&&error.presentation===presentation){
+        // Raster owns the visible error and camera retry. Keep the healthy
+        // Canvas scene so that its next matching batch can finish that retry.
+        this.painted=null;this.root.dataset.canvasState='unavailable';
+      }else this.fail(error);
+    });}
     else acknowledge();
     this.root.dataset.paintCommands = String(this.compiled.commands.length);
     this.root.dataset.decodedBytes = String(

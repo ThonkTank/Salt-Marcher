@@ -976,18 +976,18 @@ test('PNG output applies the same subpixel group rule to a retained detailed fra
 // Exercise all production owners; only the GPU/DOM platform is replaced. The
 // callbacks are deliberately manual, so HUD painting cannot stand in for GPU completion.
 async function rasterFixture(t){
- const f=fixture(t),decks=[],errors=[],prior={ResizeObserver:globalThis.ResizeObserver,createAtlasTestDeck:globalThis.createAtlasTestDeck};
+ const f=fixture(t),decks=[],errors=[],recoveries=[],prior={ResizeObserver:globalThis.ResizeObserver,createAtlasTestDeck:globalThis.createAtlasTestDeck};
  globalThis.ResizeObserver=class{observe(){}disconnect(){}};
  globalThis.createAtlasTestDeck=props=>{
   const attachment=format=>({texture:{format}}),deck={props,
    deckPicker:{_resizeBuffer(){},device:{isTextureFormatSupported:()=>true,isTextureFormatRenderable:()=>true},pickingFBO:{colorAttachments:[attachment('rgba8unorm')],depthStencilAttachment:attachment('depth24plus')},depthFBO:{colorAttachments:[attachment('rgba32float')],depthStencilAttachment:attachment('depth24plus')}},
-   setProps(next){this.props={...this.props,...next};},redraw(){},finalize(){},
+   setProps(next){this.props={...this.props,...next};},redraw(){},finalize(){this.finalized=true;},
    load(){this.props.onLoad();},render(){this.props.onBeforeRender();for(const layer of this.props.layers??[])Object.defineProperty(layer,'isLoaded',{value:true,configurable:true});this.props.onAfterRender();}};
   decks.push(deck);return deck;
  };
  const controls=f.document.createElement('div');controls.innerHTML='<div id="atlas-view-popup"></div><input id="atlas-perception">';f.document.body.append(controls);f.document.getElementById('atlas-perception').checked=true;
  let cancellations=0;
- const raster=new AtlasRasterPresentation(f.root,{navigation:e=>e.button===1,hasDraft:()=>false,writing:()=>false,cancel:()=>{cancellations++;raster.cancelDraft();raster.gesture(false);},draft:()=>null,tool:()=> 'draw',panning:()=>false,live:()=>false,error:e=>errors.push(e),selection:()=>null,redraw:()=>f.canvas.redrawOverlay()});
+ const raster=new AtlasRasterPresentation(f.root,{navigation:e=>e.button===1,hasDraft:()=>false,writing:()=>false,cancel:()=>{cancellations++;raster.cancelDraft();raster.gesture(false);},draft:()=>null,tool:()=> 'draw',panning:()=>false,live:()=>false,error:e=>errors.push(e),recovered:message=>recoveries.push(message),selection:()=>null,redraw:()=>f.canvas.redrawOverlay()});
  f.canvas.options.presentation=()=>raster;f.canvas.options.overlay=()=>{};
  f.canvas.options.changed=()=>raster.reframe(f.canvas.view);
  raster.sync('campaign',f.canvas.view,1,[],0);
@@ -998,7 +998,7 @@ async function rasterFixture(t){
  t.after(()=>{raster.setActive(false);Object.assign(globalThis,prior);});
  const event=(type,x=15,y=25,button=0)=>{const e=new f.window.Event(type,{bubbles:true,cancelable:true});Object.assign(e,{clientX:x,clientY:y,pointerId:1,button});f.root.dispatchEvent(e);return e;};
  const hitPoint=()=>{const p=raster.surface.frame.project({x:f.canvas.sceneOrigin.x+5,y:f.canvas.sceneOrigin.y+5,heightM:0});return{clientX:p.x+10,clientY:p.y+20};};
- return {...f,raster,decks,errors,event,hitPoint,get cancellations(){return cancellations;}};
+ return {...f,raster,decks,errors,recoveries,event,hitPoint,get cancellations(){return cancellations;}};
 }
 
 test('production raster and Canvas revoke hits until the current camera and GPU batch complete',async t=>{
@@ -1040,4 +1040,104 @@ test('frozen author gesture survives its preview frame but GPU loss retires it b
  assert.equal(f.raster.ready,true);assert.equal(f.cancellations,1,'recovery must not replay input');
  assert.equal(f.event('click').defaultPrevented,true,'a lost press cannot become an author click after recovery');
  assert.deepEqual(f.errors,[]);
+});
+
+async function finishCameraRetry(f){
+ const deck=f.decks.at(-1);deck.load();deck.render();await settle();
+ deck.render();await settle();f.flush();await settle();deck.render();await settle();return deck;
+}
+
+test('one camera retry restores the Canvas and Raster after a pending GPU batch fails',async t=>{
+ const f=await rasterFixture(t),original=f.decks[0],old={...original.props};
+ f.canvas.set({...f.canvas.view,x:101},true);f.flush();await settle();
+ assert.equal(f.canvas.ready,false);original.props.onError(Error('GPU pending batch failed'));await settle();
+ assert.equal(f.raster.ready,false);assert.equal(f.canvas.hitAt(f.hitPoint()),null);
+ const retry=f.document.getElementById('atlas-camera-retry');assert.equal(retry.hidden,false);
+ retry.click();await settle();assert.equal(f.decks.length,2);
+ const recovered=await finishCameraRetry(f);
+ assert.equal(f.raster.ready,true);assert.equal(f.canvas.failed,false,'camera recovery must not leave Canvas permanently failed');
+ assert.equal(f.canvas.ready,true);assert.equal(retry.hidden,true);assert.equal(f.document.querySelector('.map-canvas-state').hidden,true);
+ assert.equal(f.canvas.hitAt(f.hitPoint())?.data.id,'room');assert.equal(f.event('pointerdown').defaultPrevented,false);
+ old.onBeforeRender();old.onAfterRender();old.onError(Error('retired GPU failure'));await settle();
+ assert.equal(f.canvas.ready,true);assert.equal(f.decks.at(-1),recovered);assert.equal(f.errors.length,1);
+ assert.deepEqual(f.recoveries,['GPU pending batch failed']);
+});
+
+test('camera retry publishes the latest scene, source revision and camera before author input',async t=>{
+ const f=await rasterFixture(t),original=f.decks[0];
+ f.canvas.redrawOverlay();f.flush();await settle();original.props.onError(Error('GPU before source update'));await settle();
+ f.canvas.set({...f.canvas.view,x:160,y:230},true);
+ f.raster.sync('campaign',f.canvas.view,2,[],0);
+ f.canvas.render(root=>root.append(rect('current-source')));await settle();
+ const retired={...original.props},retry=f.document.getElementById('atlas-camera-retry');retry.click();retry.click();await settle();
+ assert.equal(f.decks.length,2,'one recovery despite a repeated button press');
+ const current=f.decks[1];assert.equal(f.raster.revision,2);assert.deepEqual(f.raster.surface.camera.focus,{x:320,y:320});
+ current.load();current.render();await settle();
+ assert.equal(f.canvas.ready,false);assert.equal(f.canvas.hitAt(f.hitPoint()),null);assert.equal(f.event('pointerdown').defaultPrevented,true);
+ retired.onBeforeRender();retired.onAfterRender();retired.onError(Error('old source error'));await settle();
+ assert.equal(f.canvas.ready,false);assert.equal(f.errors.length,1);
+ current.render();await settle();f.flush();await settle();
+ assert.equal(f.canvas.ready,false,'HUD repaint does not finish the new map batch');
+ current.render();await settle();
+ assert.equal(f.canvas.ready,true);assert.equal(f.canvas.hitAt(f.hitPoint())?.data.id,'current-source');
+ assert.equal(f.event('pointerdown').defaultPrevented,false);
+});
+
+test('a late rejected batch cannot fail the recovered Canvas or Raster owner',async t=>{
+ const f=await rasterFixture(t),surface=f.raster.surface,wait=surface.waitForFrame.bind(surface);let reject;
+ surface.waitForFrame=()=>new Promise((_resolve,fail)=>{reject=fail;});
+ f.canvas.redrawOverlay();f.flush();await settle();surface.waitForFrame=wait;
+ f.decks[0].props.onError(Error('GPU retires delayed batch'));await settle();
+ f.document.getElementById('atlas-camera-retry').click();await settle();await finishCameraRetry(f);
+ assert.equal(f.canvas.ready,true);reject(Error('late rejected old batch'));await settle();
+ assert.equal(f.canvas.ready,true);assert.equal(f.raster.ready,true);assert.equal(f.errors.length,1);
+ assert.equal(f.document.getElementById('atlas-camera-retry').hidden,true);
+});
+
+test('a second GPU failure during camera retry remains visible and supports one further retry',async t=>{
+ const f=await rasterFixture(t),retry=f.document.getElementById('atlas-camera-retry');
+ f.canvas.redrawOverlay();f.flush();await settle();f.decks[0].props.onError(Error('first GPU failure'));await settle();
+ retry.click();await settle();const second=f.decks[1];
+ second.load();second.render();await settle();second.props.onError(Error('second GPU failure'));await settle();
+ assert.equal(f.raster.ready,false);assert.equal(f.canvas.failed,false);assert.equal(f.canvas.ready,false);
+ assert.equal(retry.hidden,false);assert.equal(retry.disabled,false);assert.equal(f.errors.length,2);assert.deepEqual(f.recoveries,[]);
+ retry.click();await settle();assert.equal(f.decks.length,3);await finishCameraRetry(f);
+ assert.equal(f.canvas.ready,true);assert.equal(retry.hidden,true);assert.equal(f.canvas.hitAt(f.hitPoint())?.data.id,'room');
+ assert.deepEqual(f.recoveries,['second GPU failure']);
+});
+
+for(const late of ['frame','error'])test(`deactivating a Canvas camera retry ignores its late ${late}`,async t=>{
+ const f=await rasterFixture(t),retry=f.document.getElementById('atlas-camera-retry');
+ f.canvas.redrawOverlay();f.flush();await settle();f.decks[0].props.onError(Error('GPU before deactivation'));await settle();
+ retry.click();await settle();const old=f.decks[1];f.raster.setActive(false);await settle();
+ if(late==='frame'){old.load();old.render();}else old.props.onError(Error('retired recovery failure'));
+ await settle();f.flush();await settle();
+ assert.equal(f.canvas.ready,false);assert.equal(f.canvas.failed,false);assert.equal(f.canvas.hitAt({clientX:15,clientY:25}),null);
+ assert.equal(f.raster.surface,null);assert.equal(old.finalized,true);assert.equal(retry.hidden,true);assert.equal(retry.disabled,false);
+ assert.equal(f.document.querySelectorAll('#atlas-terrain-spatial').length,0);assert.equal(f.errors.length,1);assert.deepEqual(f.recoveries,[]);
+});
+
+test('a current GPU frame timeout is visible and recoverable without failing the Canvas',async t=>{
+ const f=await rasterFixture(t);f.raster.surface.options.timeoutMs=10;
+ f.canvas.set({...f.canvas.view,x:101},true);f.flush();await new Promise(resolve=>setTimeout(resolve,25));await settle();
+ assert.equal(f.raster.surface.failure,null,'the waiter timeout does not issue Surface.onError');
+ assert.equal(f.errors.length,1);assert.match(f.errors[0].message,/Atlas frame readiness timeout/);
+ assert.equal(f.canvas.failed,false);assert.equal(f.canvas.ready,false);assert.equal(f.raster.ready,false);
+ const retry=f.document.getElementById('atlas-camera-retry');assert.equal(retry.hidden,false);
+ f.raster.surface.options.timeoutMs=15000;retry.click();await settle();await finishCameraRetry(f);
+ assert.equal(f.canvas.ready,true);assert.equal(f.canvas.hitAt(f.hitPoint())?.data.id,'room');assert.equal(f.recoveries.length,1);
+});
+
+for(const failure of ['canvas','image'])test(`camera retry does not conceal an independent ${failure} failure`,async t=>{
+ const f=await rasterFixture(t);
+ f.canvas.redrawOverlay();f.flush();await settle();f.decks[0].props.onError(Error('GPU before local failure'));await settle();
+ if(failure==='canvas'){
+  const draw=f.ctx.fillText;f.ctx.fillText=()=>{throw Error('Canvas HUD draw failed');};
+  f.canvas.render(root=>root.append(atlasPaint('text',{hud:true},'HUD')));await settle();f.ctx.fillText=draw;
+ }else{f.canvas.render(root=>root.append(atlasPaint('image',{source:'bad',width:2,height:2})));await settle();}
+ assert.equal(f.canvas.failed,true);const panel=f.document.querySelector('.map-canvas-state'),message=panel.textContent;
+ assert.equal(panel.hidden,false);assert.match(message,failure==='canvas'?/Canvas HUD draw failed/:/decode failed/);
+ f.document.getElementById('atlas-camera-retry').click();await settle();await finishCameraRetry(f);
+ assert.equal(f.raster.ready,true);assert.equal(f.canvas.failed,true);assert.equal(f.canvas.ready,false);assert.equal(panel.hidden,false);assert.equal(panel.textContent,message);
+ assert.equal(f.canvas.hitAt(f.hitPoint()),null);
 });
