@@ -278,7 +278,9 @@
         "src/app/graph-ui.ts",
         "tests/desktop-atlas-commit-recovery.test.mjs",
         "tests/desktop-graph-preview-owner.test.mjs",
-        "tests/desktop-room-authoring.test.mjs"
+        "tests/desktop-room-authoring.test.mjs",
+        "tests/desktop-marker-selection.test.mjs",
+        "tests/helpers/atlas-author-recovery.mjs"
       ],
       "writesBuildInputs": true,
       "nativeBuild": false,
@@ -4826,6 +4828,8 @@
       "returnGates": [],
       "writeScopes": [
         "src/app/campaign-atlas-ui.ts",
+        "src/app/campaign-atlas-author.ts",
+        "src/app/graph-ui.ts",
         "src/app/workspace-editors.ts",
         "src/app/renderer.ts",
         "desktop/main.ts",
