@@ -1,18 +1,43 @@
 import { ensureAtlasShapeSource } from './atlas-shape-source';
 import { advanceTerrainEnvironment } from './terrain-environment';
-import { validateTerritories } from './atlas-territories';
+import { executeTerritory, validateTerritories } from './atlas-territories';
 import { validateRoute } from '../atlas/terrain-route';
 import { validateVegetation } from '../atlas/vegetation';
 import { validateTerrain } from '../atlas/terrain-height';
 import { validateMask } from '../atlas/land-mask';
 import { validateLine } from '../atlas/landscape-line';
 import { validateColor } from '../atlas/landscape-brush';
-import { dungeonGeometry } from './dungeon-play';
+import { dungeonDisplay, dungeonGeometry, dungeonGeometryBasis } from './dungeon-play';
 import { poseSpace } from '../atlas/spatial-3d';
-import { inside } from '../atlas/drawing-model';
+import { inside, nearestAnchor } from '../atlas/drawing-model';
 import { createHash, randomUUID } from 'node:crypto';
 import type { AtlasBinding, AtlasCommand } from '../atlas/campaign-atlas-contracts';
 import type { AtlasMap } from '../runtime/world-contracts';
+import { newLocation } from '../../features/location/location-schema';
+import { atlasFrame, atlasHexAt, localToAtlas } from '../atlas/campaign-atlas-model';
+import { terrainTraceMeasure } from '../atlas/terrain-timing';
+import { validateRoom, type Room } from '../shared/contracts';
+import { executeLandscape } from './atlas-landscape';
+import { narrowTerrainJournal } from './atlas-read-journal';
+import {
+  atlasEntrances,
+  atlasLocalGeometryBasis,
+  atlasLocalJourney,
+  putAtlasEntrance,
+} from './atlas-travel';
+import { readCityHeader, readCitySite } from './city';
+import { playerObservers, playerSettings } from './player';
+import {
+  groupRecipeForHouse,
+  refreshChangedGroupHulls,
+  refreshGroupHull,
+  removeGeneratedGroup,
+  scaleRoomGroup,
+  splitGroupRoom,
+  storeGroupDraft,
+} from './room-groups';
+import { changedHeightBounds, unionTerrainBounds } from './terrain-invalidation';
+import { readWorld, travelEnvironmentBasis } from './world';
 const hash = (v: string) => createHash('sha256').update(v).digest('hex'),
   json = JSON.stringify;
 export function installCampaignAtlas(db: any) {
@@ -676,4 +701,1044 @@ export function validateCampaignAtlases(db: any) {
   }
   for (const r of db.prepare('SELECT source,checksum FROM atlas_import_source').iterate())
     if (hash(r.source) !== r.checksum) throw new Error('Dungeonimport-Original beschädigt.');
+}
+
+/** Cross-domain commands keep their existing guards and receipt owners. */
+interface AtlasCommandEffects {
+  reconcileAtlasGeometry: (token: string) => void;
+  coupleAtlasWall: (
+    c: import('../atlas/campaign-atlas-contracts').AtlasCommand,
+    before: import('../shared/contracts').Room,
+    elements: import('../atlas/drawing-contracts').DrawingElement[],
+  ) => void;
+  atlasRoom: (token: string, id: string) => import('../shared/contracts').Room;
+  atlasRegionSource: (
+    token: string,
+    cursor?: import('../atlas/atlas-region-contracts').AtlasRegionCursor | undefined,
+  ) => import('../atlas/atlas-region-contracts').AtlasRegionSource;
+  campaignAtlas: (
+    token: string,
+  ) => import('../atlas/campaign-atlas-contracts').CampaignAtlas<
+    import('../shared/contracts').Room,
+    import('../atlas/drawing-contracts').DrawingElement,
+    import('../atlas/city-contracts').CityView
+  >;
+  insertRoom: (campaignId: string, room: import('../shared/contracts').Room) => void;
+  guard: (token: string, campaignId?: string | undefined) => string;
+  workspace: () => import('../shared/contracts').Workspace;
+  addRoom: (token: string, atlasInternal?: boolean) => import('../shared/contracts').Workspace;
+  edit: (edit: import('../shared/contracts').Edit) => import('../shared/contracts').RoomCommit;
+  drawing: (
+    token: string,
+  ) => import('../atlas/drawing-contracts').DrawingView<
+    import('../shared/contracts').Room,
+    import('../atlas/drawing-contracts').DrawingElement
+  >;
+  executeDrawing: (c: import('../atlas/drawing-contracts').DrawingCommand) => {
+    workspace: import('../shared/contracts').Workspace;
+    view: import('../atlas/drawing-contracts').DrawingView<
+      import('../shared/contracts').Room,
+      import('../atlas/drawing-contracts').DrawingElement
+    >;
+  };
+  executeGraph: (c: import('../atlas/graph-contracts').GraphCommand) => {
+    workspace: import('../shared/contracts').Workspace;
+    view: import('../atlas/graph-contracts').GraphView;
+  };
+  city: (token: string, id: string) => import('../atlas/city-contracts').CityView;
+  executeCity: (
+    command: import('../atlas/city-contracts').CityCommand,
+  ) => import('../atlas/city-contracts').CityView;
+  executeWorld: (command: import('../runtime/world-contracts').WorldCommand) => any;
+  commitPreparation: (
+    command: import('../campaign/preparation-contracts').PreparationCommand,
+  ) => void;
+  readonly terrainAuthorCache: import('./terrain-author-cache').TerrainAuthorCache;
+}
+export function applyAtlasCommand(
+  db: any,
+  effects: AtlasCommandEffects,
+  c: AtlasCommand,
+  prepared?: import('./terrain-scale').PreparedTerrainStroke,
+) {
+  effects.guard(c.token, c.campaignId);
+  if (
+    c.sourceFence !== undefined &&
+    (typeof c.sourceFence !== 'string' ||
+      (!db.prepare('SELECT 1 FROM atlas_receipt WHERE command_id=?').get(c.commandId) &&
+        effects.atlasRegionSource(c.token).fence !== c.sourceFence))
+  )
+    throw new Error('Atlas inzwischen geändert. Ausschnitt vor dem Zeichnen erneut laden.');
+  if (
+    prepared &&
+    (c.action.kind !== 'landscape-height-stroke' ||
+      prepared.stroke !== JSON.stringify(c.action.stroke) ||
+      prepared.fence !== effects.atlasRegionSource(c.token).fence ||
+      prepared.revision !== atlasRoot(db, c.campaignId).revision)
+  )
+    throw Error('Gelände inzwischen geändert. Ausschnitt erneut laden.');
+  let landscapeEnvironment = false;
+  const landscapeOnly =
+    typeof c.action?.kind === 'string' && c.action.kind.startsWith('landscape-');
+  const terrainSourceBefore = landscapeOnly ? effects.atlasRegionSource(c.token) : undefined,
+    terrainBefore = terrainSourceBefore?.fence;
+  const terrainChange: import('../atlas/terrain-frame').TerrainInvalidation = {
+    reset: false,
+    bounds: [],
+  };
+  const visibility =
+    c.action.kind === 'landscape-height-stroke'
+      ? c.action.stroke.visibility
+      : c.action.kind === 'landscape-color-stroke'
+        ? c.action.record.paint?.visibility
+        : undefined;
+  const visibilityGrid =
+    !prepared &&
+    visibility &&
+    !db.prepare('SELECT 1 FROM atlas_receipt WHERE command_id=?').get(c.commandId)
+      ? terrainTraceMeasure('author.visibility', () =>
+          effects.terrainAuthorCache.read(db, c.campaignId, visibility, terrainBefore!),
+        )
+      : undefined;
+  const nested = (v: { token: string; campaignId: string; commandId: string }) => {
+    if (v.token !== c.token || v.campaignId !== c.campaignId || v.commandId !== c.commandId)
+      throw new Error('Atlasbefehl gehört zu einem anderen Kontext.');
+  };
+  const result = executeAtlasWrite(
+    db,
+    c,
+    () => {
+      const a = c.action,
+        cam = c.campaignId;
+      if (
+        a.kind === 'territory-layer' ||
+        a.kind === 'territory-put' ||
+        a.kind === 'territory-remove' ||
+        a.kind === 'territory-stroke' ||
+        a.kind === 'territory-vertex'
+      )
+        return executeTerritory(db, cam, a);
+      if (
+        a.kind === 'landscape-prominence' ||
+        a.kind === 'landscape-route' ||
+        a.kind === 'landscape-terrain-style' ||
+        a.kind === 'landscape-vegetation-edit' ||
+        a.kind === 'landscape-height-stroke' ||
+        a.kind === 'landscape-sea-level' ||
+        a.kind === 'landscape-land-stroke' ||
+        a.kind === 'landscape-color-stroke' ||
+        a.kind === 'landscape-brush' ||
+        a.kind === 'landscape-batch' ||
+        a.kind === 'landscape-put' ||
+        a.kind === 'landscape-reset' ||
+        a.kind === 'landscape-remove' ||
+        a.kind === 'landscape-place'
+      ) {
+        if (a.kind === 'landscape-place')
+          effects.commitPreparation({
+            commandId: c.commandId + ':key',
+            token: c.token,
+            campaignId: cam,
+            change: {
+              kind: 'location',
+              document: a.document,
+              expectedRevision: a.expectedLocationRevision,
+            },
+          });
+        const physical = (kind: string | undefined) =>
+          kind !== undefined && ['patch', 'road', 'river', 'vegetation'].includes(kind);
+        const wasPhysical = (id: string) =>
+          physical(
+            db
+              .prepare(
+                "SELECT json_extract(payload,'$.kind') kind FROM atlas_landscape WHERE campaign_id=? AND id=?",
+              )
+              .get(cam, id)?.kind,
+          );
+        landscapeEnvironment =
+          a.kind === 'landscape-terrain-style' || a.kind === 'landscape-prominence'
+            ? false
+            : a.kind === 'landscape-vegetation-edit' ||
+              a.kind === 'landscape-height-stroke' ||
+              a.kind === 'landscape-sea-level' ||
+              a.kind === 'landscape-land-stroke' ||
+              a.kind === 'landscape-color-stroke' ||
+              a.kind === 'landscape-brush' ||
+              a.kind === 'landscape-reset' ||
+              (a.kind === 'landscape-remove'
+                ? wasPhysical(a.id)
+                : a.kind === 'landscape-batch'
+                  ? a.records.some((x) => physical(x.record.kind) || wasPhysical(x.record.id)) ||
+                    (a.remove ?? []).some((x) => wasPhysical(x.id))
+                  : physical(a.record.kind) || wasPhysical(a.record.id));
+        let liveColorRevision: number | null = null;
+        if (c.terrainStroke && a.kind === 'landscape-color-stroke') {
+          if (a.record.id !== c.terrainStroke.id)
+            throw Error('Farbzug gehört zu einer anderen Pinselgeste.');
+          const prior = db
+            .prepare('SELECT revision FROM atlas_landscape WHERE campaign_id=? AND id=?')
+            .get(cam, a.record.id);
+          if (
+            prior &&
+            !db
+              .prepare('SELECT 1 FROM atlas_command WHERE campaign_id=? AND command_id=?')
+              .get(cam, c.terrainStroke.id)
+          )
+            throw Error('Farbzugkennung bereits verwendet.');
+          liveColorRevision = prior?.revision ?? null;
+        }
+        executeLandscape(db, cam, a, liveColorRevision, visibilityGrid, prepared);
+        if (c.terrainStroke && !atlasCapturedChanges(db)) {
+          landscapeEnvironment = false;
+          return;
+        }
+        if (a.kind === 'landscape-place') {
+          const root = atlasRoot(db, cam),
+            m = JSON.parse(
+              db
+                .prepare(
+                  "SELECT payload FROM world_record WHERE campaign_id=? AND kind='map' AND id=?",
+                )
+                .get(cam, root.map_id).payload,
+            ),
+            old = db
+              .prepare('SELECT revision FROM atlas_place WHERE campaign_id=? AND location_id=?')
+              .get(cam, a.document.id);
+          effects.executeWorld({
+            commandId: c.commandId + ':place',
+            token: c.token,
+            campaignId: cam,
+            action: {
+              kind: 'place',
+              mapId: m.id,
+              locationId: a.document.id,
+              expectedRevision: old?.revision ?? null,
+              hex: atlasHexAt(a.point ?? a.record.points[0]!, m.hexMeters),
+            },
+          });
+        }
+
+        return;
+      }
+      if (a.kind === 'room-default') return effects.addRoom(c.token, true);
+      if (a.kind === 'drawing-import') {
+        const doc = JSON.parse(a.source),
+          ids = new Map<string, string>();
+        const id = (s: string) => {
+          if (!ids.has(s)) ids.set(s, randomUUID());
+          return ids.get(s)!;
+        };
+        for (const r of a.rooms) {
+          id(r.scopeId);
+          id(r.floorId);
+          id(r.id);
+          for (const section of r.sections) id(section.id);
+        }
+        for (const f of doc.floors ?? []) id(f.id);
+        if (doc.id) id(doc.id);
+        // Identity fields are references; authored prose and room numbers are not.
+        const rewrite = (room: Room): Room => ({
+          ...room,
+          id: id(room.id),
+          scopeId: id(room.scopeId),
+          floorId: id(room.floorId),
+          sections: room.sections.map((section) => ({
+            ...section,
+            id: id(section.id),
+            ...(section.doorId ? { doorId: ids.get(section.doorId) ?? section.doorId } : {}),
+          })),
+        });
+        const scopes = new Set(a.rooms.map((r) => r.scopeId));
+        for (const original of scopes) {
+          const scopeId = id(original);
+          db.prepare('INSERT INTO scope VALUES(?,?,?)').run(cam, scopeId, a.name);
+          const floors = new Map(
+            (doc.floors ?? [])
+              .filter((f: any) => Number.isFinite(f.elevation))
+              .map((f: any) => [f.id, { id: id(f.id), name: f.name, elevation: f.elevation }]),
+          );
+          for (const r of a.rooms.filter((r) => r.scopeId === original))
+            if (!floors.has(r.floorId))
+              floors.set(r.floorId, { id: id(r.floorId), name: 'Geschoss', elevation: 0 });
+          for (const f of floors.values() as Iterable<{
+            id: string;
+            name: string;
+            elevation: number;
+          }>)
+            db.prepare('INSERT INTO drawing_floor VALUES(?,?,?,?,?)').run(
+              cam,
+              scopeId,
+              f.id,
+              f.name,
+              f.elevation,
+            );
+          bindAtlas(
+            db,
+            cam,
+            {
+              id: randomUUID(),
+              kind: 'dungeon',
+              ownerId: scopeId,
+              parent: 'world',
+              parentId: null,
+              x: a.x,
+              y: a.y,
+              angle: 0,
+              revision: 0,
+            },
+            null,
+          );
+        }
+        for (const original of a.rooms) {
+          const room = rewrite(original) as Room;
+          validateRoom(room);
+          effects.insertRoom(cam, room);
+        }
+        db.prepare('INSERT INTO atlas_import_source VALUES(?,?,?,?)').run(
+          cam,
+          c.commandId,
+          a.source,
+          hash(a.source),
+        );
+        return { roomId: a.rooms.length ? id(a.rooms[0]!.id) : null };
+      }
+      if (a.kind === 'graph-accept') {
+        nested(a.command);
+        if (a.command.action.kind !== 'accept') throw new Error('Nur bestätigte Graphübernahme.');
+        return effects.executeGraph(a.command);
+      }
+      if (a.kind === 'world') {
+        nested(a.command);
+        if (
+          a.command.action.kind === 'map' &&
+          a.command.action.map.id !== atlasRoot(db, cam).map_id
+        )
+          throw new Error(
+            'Jede Kampagne besitzt genau einen Atlas. Inhalte in die bestehende Welt einfügen.',
+          );
+        return effects.executeWorld(a.command);
+      }
+      if (a.kind === 'drawing') {
+        nested(a.command);
+        const action = a.command.action,
+          before =
+            action.kind === 'shape'
+              ? effects.workspace().rooms.find((r) => r.id === action.roomId)
+              : null,
+          elements = before ? effects.drawing(c.token).elements : [];
+        const result = effects.executeDrawing(a.command);
+        if (before) effects.coupleAtlasWall(c, before, elements);
+        return result;
+      }
+      if (a.kind === 'room-edit') {
+        nested(a.edit);
+        const before = effects.atlasRoom(c.token, a.edit.roomId),
+          elements = before ? effects.drawing(c.token).elements : [];
+        const result = effects.edit(a.edit);
+        if (before) effects.coupleAtlasWall(c, before, elements);
+        return result;
+      }
+      if (a.kind === 'city') {
+        nested(a.command);
+        const before =
+          a.command.action.kind === 'change' ? effects.city(c.token, a.command.cityId) : null;
+        if (a.command.action.kind === 'change')
+          for (const id of a.command.action.remove)
+            removeGeneratedGroup(db, cam, id, a.command.action.removeGroups === true);
+        const result = effects.executeCity(a.command);
+        if (a.command.action.kind === 'change')
+          for (const u of a.command.action.upsert)
+            if (
+              u.kind === 'building' &&
+              !db.prepare('SELECT 1 FROM scope WHERE campaign_id=? AND id=?').get(cam, u.id)
+            ) {
+              storeGroupDraft(db, cam, u.id, u.name || u.use || 'Gebäude', groupRecipeForHouse(u));
+              const locationId = db
+                .prepare('SELECT location_id FROM city_document WHERE campaign_id=? AND id=?')
+                .get(cam, a.command.cityId).location_id;
+              db.prepare('INSERT INTO location_map VALUES(?,?,?)').run(cam, u.id, locationId);
+              bindAtlas(
+                db,
+                cam,
+                {
+                  id: randomUUID(),
+                  kind: 'dungeon',
+                  ownerId: u.id,
+                  parent: 'building',
+                  parentId: u.id,
+                  x: 0,
+                  y: 0,
+                  angle: 0,
+                  revision: 0,
+                },
+                null,
+              );
+              refreshGroupHull(db, cam, u.id, u.protected);
+            }
+        // Building pose is inherited by its interiors. Scale their local geometry
+        // in the very same command, retaining heights and room IDs/text.
+        const oldUnits = new Map(before?.units.map((u) => [u.id, u]) ?? []),
+          houseBindings = new Map(
+            atlasBindings(db, cam)
+              .filter((b) => b.parent === 'building')
+              .map((b) => [b.parentId, b]),
+          );
+        if (before && a.command.action.kind === 'change')
+          for (const u of a.command.action.upsert) {
+            const old = oldUnits.get(u.id),
+              binding = houseBindings.get(u.id);
+            if (!old?.outline || !u.outline || !binding) continue;
+            const bounds = (p: { x: number; y: number }[]) => ({
+                x: Math.max(...p.map((p) => p.x)) - Math.min(...p.map((p) => p.x)),
+                y: Math.max(...p.map((p) => p.y)) - Math.min(...p.map((p) => p.y)),
+              }),
+              o = bounds(old.outline),
+              n = bounds(u.outline),
+              sx = n.x / o.x,
+              sy = n.y / o.y;
+            if (!Number.isFinite(sx + sy) || sx <= 0 || sy <= 0)
+              throw new Error('Ungültige Gebäudeskalierung.');
+            if (
+              u.outline.length !== old.outline.length ||
+              u.outline.some(
+                (p, i) =>
+                  Math.abs(p.x - old.outline![i]!.x * sx) > 1e-6 ||
+                  Math.abs(p.y - old.outline![i]!.y * sy) > 1e-6,
+              )
+            )
+              throw Error('Gebäudeform an den gemeinsamen Räumen bearbeiten.');
+            if (Math.abs(sx - sy) > 1e-7)
+              throw Error('Die gesamte Raumgruppe proportional skalieren.');
+            if (Math.abs(sx - 1) > 1e-7) scaleRoomGroup(db, cam, binding.ownerId, sx);
+          }
+        if (a.command.action.kind === 'change')
+          for (const u of a.command.action.upsert)
+            if (u.kind === 'building') {
+              db.prepare('UPDATE scope SET name=? WHERE campaign_id=? AND id=?').run(
+                u.name || u.use || 'Gebäude',
+                cam,
+                u.id,
+              );
+              refreshGroupHull(db, cam, u.id, u.protected);
+            }
+        return result;
+      }
+      if (a.kind === 'entrance') {
+        putAtlasEntrance(db, effects.campaignAtlas(c.token), a.entrance);
+        return;
+      }
+      if (a.kind === 'bind') {
+        bindAtlas(db, cam, a.binding, a.expectedRevision);
+        return;
+      }
+      if (a.kind === 'city-create') {
+        const id = randomUUID(),
+          locationId = randomUUID();
+        effects.commitPreparation({
+          commandId: c.commandId + ':location',
+          token: c.token,
+          campaignId: cam,
+          change: {
+            kind: 'location',
+            document: newLocation(locationId, a.name, 'city', [randomUUID(), randomUUID()]),
+            expectedRevision: null,
+          },
+        });
+        effects.executeCity({
+          commandId: c.commandId + ':city',
+          token: c.token,
+          campaignId: cam,
+          cityId: id,
+          expectedRevision: 0,
+          action: {
+            kind: 'create',
+            header: {
+              id,
+              locationId,
+              revision: 1,
+              name: a.name,
+              width: a.width,
+              height: a.height,
+              paper: '#e9dfc8',
+              roof: '#9c604c',
+            },
+          },
+        });
+        bindAtlas(
+          db,
+          cam,
+          {
+            id: randomUUID(),
+            kind: 'city',
+            ownerId: id,
+            parent: 'world',
+            parentId: null,
+            x: a.x,
+            y: a.y,
+            angle: 0,
+            revision: 0,
+          },
+          null,
+        );
+        const root = effects.campaignAtlas(c.token);
+        effects.executeWorld({
+          commandId: c.commandId + ':anchor',
+          token: c.token,
+          campaignId: cam,
+          action: {
+            kind: 'place',
+            locationId,
+            mapId: root.terrain.id,
+            expectedRevision: null,
+            hex: atlasHexAt({ x: a.x, y: a.y }, root.terrain.hexMeters),
+          },
+        });
+        return { id };
+      }
+      if (a.kind === 'group-room-split')
+        return splitGroupRoom(db, cam, a.roomId, a.expectedRevision, a.axis, a.ratio);
+      if (a.kind === 'group-scale') {
+        scaleRoomGroup(db, cam, a.scopeId, a.factor);
+        return;
+      }
+      if (a.kind === 'group-generate') {
+        if (typeof a.name !== 'string' || !a.name.trim()) throw Error('Name benötigt.');
+        const id = randomUUID(),
+          locationId = randomUUID();
+        storeGroupDraft(db, cam, id, a.name, a.recipe);
+        effects.commitPreparation({
+          commandId: c.commandId + ':location',
+          token: c.token,
+          campaignId: cam,
+          change: {
+            kind: 'location',
+            document: newLocation(locationId, a.name, 'poi', [randomUUID(), randomUUID()]),
+            expectedRevision: null,
+          },
+        });
+        db.prepare('INSERT INTO location_map VALUES(?,?,?)').run(cam, id, locationId);
+        bindAtlas(
+          db,
+          cam,
+          {
+            id: randomUUID(),
+            kind: 'dungeon',
+            ownerId: id,
+            parent: 'world',
+            parentId: null,
+            x: a.x,
+            y: a.y,
+            angle: 0,
+            revision: 0,
+          },
+          null,
+        );
+        return { id };
+      }
+      if (a.kind === 'dungeon-create') {
+        const id = randomUUID();
+        if (!a.name.trim()) throw new Error('Name benötigt.');
+        db.prepare('INSERT INTO scope VALUES(?,?,?)').run(cam, id, a.name);
+        db.prepare('INSERT INTO drawing_floor VALUES(?,?,?,?,?)').run(
+          cam,
+          id,
+          'ground',
+          'Erdgeschoss',
+          0,
+        );
+        if ('buildingId' in a)
+          throw Error('Gebäude besitzen bereits dieselbe Raumgruppe. Direkt Räume bearbeiten.');
+        const locationId = randomUUID();
+        effects.commitPreparation({
+          commandId: c.commandId + ':location',
+          token: c.token,
+          campaignId: cam,
+          change: {
+            kind: 'location',
+            document: newLocation(locationId, a.name, 'poi', [randomUUID(), randomUUID()]),
+            expectedRevision: null,
+          },
+        });
+        db.prepare('INSERT INTO location_map VALUES(?,?,?)').run(cam, id, locationId);
+        bindAtlas(
+          db,
+          cam,
+          {
+            id: randomUUID(),
+            kind: 'dungeon',
+            ownerId: id,
+            parent: 'world',
+            parentId: null,
+            x: a.x,
+            y: a.y,
+            angle: 0,
+            revision: 0,
+          },
+          null,
+        );
+        return { id };
+      }
+      if (a.kind === 'room-create') {
+        if (
+          !db
+            .prepare('SELECT 1 FROM drawing_floor WHERE campaign_id=? AND scope_id=? AND id=?')
+            .get(cam, a.scopeId, a.floorId)
+        )
+          throw new Error('Geschoss fehlt.');
+        const room: Room = {
+          id: randomUUID(),
+          scopeId: a.scopeId,
+          floorId: a.floorId,
+          name: a.name,
+          number: String(
+            db.prepare('SELECT count(*) n FROM room WHERE campaign_id=?').get(cam).n + 1,
+          ),
+          revision: 0,
+          polygons: a.polygons,
+          sections: [{ id: randomUUID(), kind: 'markdown', markdown: '' }],
+        };
+        validateRoom(room);
+        effects.insertRoom(cam, room);
+        return { id: room.id };
+      }
+    },
+    () => {
+      if (!landscapeOnly) {
+        refreshChangedGroupHulls(
+          db,
+          c.campaignId,
+          !['city', 'group-generate', 'dungeon-create', 'drawing-import'].includes(c.action.kind),
+        );
+        effects.reconcileAtlasGeometry(c.token);
+        return;
+      }
+      const changedBounds = new Map<string, import('../atlas/atlas-landscape').LandscapeBox>();
+      for (const delta of db
+        .prepare(
+          "SELECT before_json,after_json FROM atlas_delta WHERE table_name='atlas_landscape'",
+        )
+        .iterate()) {
+        if (delta.before_json === delta.after_json) continue;
+        const rows = [delta.before_json, delta.after_json].map((value) =>
+          value ? JSON.parse(value) : undefined,
+        );
+        let malformed = false;
+        const records = rows.map((row) => {
+          try {
+            return row ? JSON.parse(row.payload) : undefined;
+          } catch {
+            malformed = true;
+            terrainChange.reset = true;
+            return undefined;
+          }
+        });
+        const precise = malformed ? undefined : changedHeightBounds(records[0], records[1]);
+        const boxes = precise
+          ? [precise]
+          : rows.filter(Boolean).map((row) => ({
+              x: row.min_x,
+              y: row.min_y,
+              width: row.max_x - row.min_x,
+              height: row.max_y - row.min_y,
+            }));
+        for (const b of boxes) {
+          if (terrainChange.bounds.length >= 2048) terrainChange.reset = true;
+          else terrainChange.bounds.push(b);
+          const id = (rows[1] ?? rows[0]).id,
+            previous = changedBounds.get(id);
+          changedBounds.set(id, previous ? unionTerrainBounds(previous, b) : b);
+        }
+        if (records.some((r) => r?.terrainSettings)) terrainChange.reset = true;
+      }
+      narrowTerrainJournal(db, c.campaignId, terrainSourceBefore!.sequence, changedBounds);
+      if (!landscapeEnvironment) return;
+      // Terrain cannot move an indoor actor or change a room boundary. It can
+      // invalidate outdoor routes; pause them atomically without loading rooms.
+      for (const table of ['world_journey', 'atlas_local_journey'])
+        for (const row of db
+          .prepare('SELECT rowid,payload FROM ' + table + ' WHERE campaign_id=?')
+          .all(c.campaignId)) {
+          const journey = JSON.parse(row.payload);
+          if (!['active', 'paused'].includes(journey.status)) continue;
+          journey.status = 'paused';
+          journey.reason = 'Atlaslandschaft geändert. Reise vor Fortsetzung neu planen.';
+          journey.revision++;
+          const payload = json(journey);
+          if (table === 'world_journey')
+            db.prepare(
+              "UPDATE world_journey SET status='paused',revision=?,payload=?,checksum=? WHERE rowid=?",
+            ).run(journey.revision, payload, hash(payload), row.rowid);
+          else
+            db.prepare('UPDATE atlas_local_journey SET payload=?,checksum=? WHERE rowid=?').run(
+              payload,
+              hash(payload),
+              row.rowid,
+            );
+        }
+    },
+    !landscapeOnly,
+  );
+  if (terrainBefore)
+    effects.terrainAuthorCache.advance(
+      terrainBefore,
+      effects.atlasRegionSource(c.token).fence,
+      terrainChange,
+    );
+  return result;
+}
+
+interface ReconcileAtlasGeometryContext {
+  guard: (token: string, campaignId?: string | undefined) => string;
+  cities: (token: string) => import('./../atlas/city-contracts').CityOverview;
+  city: (token: string, id: string) => import('./../atlas/city-contracts').CityView;
+}
+export function storedReconcileAtlasGeometry(
+  db: any,
+  context: ReconcileAtlasGeometryContext,
+  token: string,
+): void {
+  const cam = context.guard(token);
+  if (
+    !db
+      .prepare(
+        "SELECT 1 FROM scene_position WHERE campaign_id=? AND (json_type(payload,'$.dungeon')='object' OR json_type(payload,'$.city')='object') LIMIT 1",
+      )
+      .get(cam) &&
+    !['world_journey', 'dungeon_journey', 'atlas_local_journey'].some((table) =>
+      db
+        .prepare(
+          'SELECT 1 FROM ' +
+            table +
+            " WHERE campaign_id=? AND json_extract(payload,'$.status')='active' LIMIT 1",
+        )
+        .get(cam),
+    )
+  )
+    return;
+  const root = atlasRoot(db, cam),
+    geometry = dungeonGeometry(db, cam);
+  // Reconcile spatial facts only; descriptions, perceptions and traces are consumers.
+  const a = {
+    terrain: JSON.parse(
+      db
+        .prepare("SELECT payload FROM world_record WHERE campaign_id=? AND kind='map' AND id=?")
+        .get(cam, root.map_id).payload,
+    ),
+    bindings: atlasBindings(db, cam),
+    cities: context.cities(token).cities.map((h) => context.city(token, h.id)),
+  };
+  for (const row of db.prepare('SELECT * FROM scene_position WHERE campaign_id=?').all(cam)) {
+    const p = JSON.parse(row.payload),
+      binding = p.dungeon
+        ? a.bindings.find((b) => b.kind === 'dungeon' && b.ownerId === p.dungeon.scopeId)
+        : p.city
+          ? a.bindings.find((b) => b.kind === 'city' && b.ownerId === p.city.cityId)
+          : null;
+    if (!binding) continue;
+    const point = localToAtlas(p.dungeon ?? p.city, atlasFrame(a, binding)),
+      basis = hash(json(point));
+    if (p.spatialBasis === basis) continue;
+    const next = {
+        ...p,
+        ...atlasHexAt(point, a.terrain.hexMeters),
+        spatialBasis: basis,
+        revision: p.revision + 1,
+      },
+      payload = json(next);
+    db.prepare(
+      'UPDATE scene_position SET revision=?,payload=?,checksum=? WHERE campaign_id=? AND scene_id=?',
+    ).run(next.revision, payload, hash(payload), cam, row.scene_id);
+  }
+  for (const table of ['world_journey', 'dungeon_journey', 'atlas_local_journey'])
+    for (const row of db.prepare('SELECT * FROM ' + table + ' WHERE campaign_id=?').all(cam)) {
+      const j = JSON.parse(row.payload);
+      if (j.status !== 'active') continue;
+      const stale =
+        table === 'world_journey'
+          ? j.environmentBasis !==
+            travelEnvironmentBasis(
+              db,
+              cam,
+              j.sceneId,
+              j.mapId,
+              readWorld(db, cam, false),
+              j.usePartyPace,
+            )
+          : table === 'dungeon_journey'
+            ? j.basis !== dungeonGeometryBasis(geometry, j.request.destination.scopeId)
+            : j.basis !== atlasLocalGeometryBasis(a);
+      if (!stale) continue;
+      j.status = 'paused';
+      j.reason = 'Atlasgeometrie geändert. Reise vor Fortsetzung neu planen.';
+      j.revision++;
+      const payload = json(j);
+      db.prepare(
+        'UPDATE ' +
+          table +
+          ' SET ' +
+          (table === 'world_journey' ? "status='paused'," : '') +
+          (table !== 'atlas_local_journey' ? 'revision=?,' : '') +
+          'payload=?,checksum=? WHERE campaign_id=? AND ' +
+          (table === 'atlas_local_journey' ? 'scene_id' : 'id') +
+          '=?',
+      ).run(
+        ...(table !== 'atlas_local_journey' ? [j.revision] : []),
+        payload,
+        hash(payload),
+        cam,
+        table === 'atlas_local_journey' ? j.sceneId : j.id,
+      );
+    }
+}
+interface CoupleAtlasWallContext {
+  workspace: () => import('./../shared/contracts').Workspace;
+  edit: (edit: import('./../shared/contracts').Edit) => import('./../shared/contracts').RoomCommit;
+  drawing: (
+    token: string,
+  ) => import('./../atlas/drawing-contracts').DrawingView<
+    import('./../shared/contracts').Room,
+    import('./../atlas/drawing-contracts').DrawingElement
+  >;
+  executeDrawing: (c: import('./../atlas/drawing-contracts').DrawingCommand) => {
+    workspace: import('./../shared/contracts').Workspace;
+    view: import('./../atlas/drawing-contracts').DrawingView<
+      import('./../shared/contracts').Room,
+      import('./../atlas/drawing-contracts').DrawingElement
+    >;
+  };
+}
+export function storedCoupleAtlasWall(
+  db: any,
+  context: CoupleAtlasWallContext,
+  c: AtlasCommand,
+  before: Room,
+  elements: import('../atlas/drawing-contracts').DrawingElement[],
+): void {
+  const binding = atlasBindings(db, c.campaignId).find(
+    (b) => b.kind === 'dungeon' && b.ownerId === before.scopeId,
+  );
+  if (!binding) return;
+  const after = context.workspace().rooms.find((r) => r.id === before.id);
+  if (!after) return;
+  const pairs: {
+    before: import('../shared/contracts').Point;
+    after: import('../shared/contracts').Point;
+  }[] = [];
+  before.polygons.forEach((p, pi) => {
+    const n = after.polygons[pi];
+    if (p.outer.length === n?.outer.length)
+      p.outer.forEach((v, i) => {
+        const next = n.outer[i]!;
+        if (v.x !== next.x || v.y !== next.y) pairs.push({ before: v, after: next });
+      });
+  });
+  if (!pairs.length) return;
+  const move = (p: import('../shared/contracts').Point) => {
+    const match = pairs.find((v) => Math.hypot(v.before.x - p.x, v.before.y - p.y) < 1e-7);
+    return match ? { ...match.after } : p;
+  };
+  const ring = (points: import('../shared/contracts').Point[]) =>
+    points.flatMap((a, i) => {
+      const b = points[(i + 1) % points.length]!,
+        dx = b.x - a.x,
+        dy = b.y - a.y,
+        l = dx * dx + dy * dy;
+      return [
+        a,
+        ...pairs
+          .map((p) => p.before)
+          .filter((p) => {
+            const t = ((p.x - a.x) * dx + (p.y - a.y) * dy) / (l || 1);
+            return t > 1e-7 && t < 1 - 1e-7 && Math.abs((p.x - a.x) * dy - (p.y - a.y) * dx) < 1e-7;
+          })
+          .sort((p, q) => (p.x - q.x) * dx + (p.y - q.y) * dy),
+      ].map(move);
+    });
+  const changedRooms = new Map<string, { before: Room; after: Room }>([
+    [before.id, { before, after }],
+  ]);
+  for (const r of context
+    .workspace()
+    .rooms.filter(
+      (r) => r.scopeId === before.scopeId && r.floorId === before.floorId && r.id !== before.id,
+    )) {
+    const polygons = r.polygons.map((p) => ({ outer: ring(p.outer), holes: p.holes.map(ring) }));
+    if (JSON.stringify(polygons) !== JSON.stringify(r.polygons)) {
+      changedRooms.set(r.id, { before: r, after: { ...r, polygons } });
+      context.edit({
+        commandId: c.commandId + ':shared-wall:' + r.id,
+        token: c.token,
+        campaignId: c.campaignId,
+        roomId: r.id,
+        expectedRevision: r.revision,
+        name: r.name,
+        sections: r.sections,
+        polygons,
+      });
+    }
+  }
+  for (const original of elements.filter(
+    (e) => e.anchor && changedRooms.has(e.anchor.roomId) && !e.archived,
+  )) {
+    const changed = changedRooms.get(original.anchor!.roomId)!,
+      oldRing = changed.before.polygons[original.anchor!.polygon]?.outer;
+    if (!oldRing) continue;
+    const start = oldRing[original.anchor!.edge],
+      end = oldRing[(original.anchor!.edge + 1) % oldRing.length];
+    if (!start || !end) continue;
+    const a = move(start),
+      b = move(end),
+      point = {
+        x: a.x + (b.x - a.x) * original.anchor!.t,
+        y: a.y + (b.y - a.y) * original.anchor!.t,
+      },
+      anchor = nearestAnchor(point, changed.after);
+    if (!anchor) continue;
+    const current = context.drawing(c.token).elements.find((e) => e.id === original.id);
+    if (!current) continue;
+    context.executeDrawing({
+      commandId: c.commandId + ':anchor:' + original.id,
+      token: c.token,
+      campaignId: c.campaignId,
+      action: {
+        kind: 'element',
+        expectedRevision: current.revision,
+        element: {
+          ...current,
+          roomId: changed.after.id,
+          anchor: {
+            roomId: anchor.roomId,
+            polygon: anchor.polygon,
+            edge: anchor.edge,
+            t: anchor.t,
+          },
+          points: [point],
+        },
+      },
+    });
+  }
+}
+interface AtlasOverviewContext {
+  guard: (token: string, campaignId?: string | undefined) => string;
+}
+export function storedAtlasOverview(
+  db: any,
+  context: AtlasOverviewContext,
+  token: string,
+): import('./../atlas/campaign-atlas-contracts').AtlasOverview {
+  const cam = context.guard(token);
+  return db.transaction(() => {
+    const root = atlasRoot(db, cam),
+      b = db
+        .prepare(
+          "SELECT min(min_x) x,max(max_x) xmax,min(min_y) y,max(max_y) ymax FROM atlas_landscape WHERE campaign_id=? AND json_extract(payload,'$.terrainSettings') IS NULL",
+        )
+        .get(cam);
+    return {
+      campaignId: cam,
+      token,
+      revision: root.revision,
+      ...atlasHistoryState(db, cam),
+      counts: {
+        rooms: db
+          .prepare(
+            "SELECT count(*) n FROM room r WHERE campaign_id=? AND NOT EXISTS(SELECT 1 FROM drawing_hidden h WHERE h.campaign_id=r.campaign_id AND h.id=r.id AND h.kind='room' AND h.hidden=1) AND NOT EXISTS(SELECT 1 FROM drawing_hidden h WHERE h.campaign_id=r.campaign_id AND h.id=r.floor_id AND h.scope_id=r.scope_id AND h.kind='floor' AND h.hidden=1)",
+          )
+          .get(cam).n,
+        cities: db.prepare('SELECT count(*) n FROM city_document WHERE campaign_id=?').get(cam).n,
+        landscape: db.prepare('SELECT count(*) n FROM atlas_landscape WHERE campaign_id=?').get(cam)
+          .n,
+      },
+      landscapeBounds:
+        b.x === null ? null : { x: b.x, y: b.y, width: b.xmax - b.x, height: b.ymax - b.y },
+    };
+  })();
+}
+interface AtlasCitySiteContext {
+  guard: (token: string, campaignId?: string | undefined) => string;
+}
+export function storedAtlasCitySite(
+  db: any,
+  context: AtlasCitySiteContext,
+  token: string,
+  cityId: string,
+  id?: string,
+): import('./../atlas/atlas-region-contracts').AtlasCitySite {
+  return db.transaction(() => {
+    const cam = context.guard(token),
+      site = id
+        ? readCitySite(db, cam, cityId, id)
+        : { header: readCityHeader(db, cam, cityId), unit: null };
+    const related = (site.unit?.nodeIds ?? []).map((n) => readCitySite(db, cam, cityId, n).unit);
+    const faction = site.unit?.factionId
+      ? db
+          .prepare('SELECT id,payload,checksum FROM world_note WHERE campaign_id=? AND id=?')
+          .get(cam, site.unit.factionId)
+      : null;
+    const factions =
+      faction && hash(faction.payload) === faction.checksum
+        ? [{ id: faction.id, name: JSON.parse(faction.payload).title }]
+        : [];
+    return { ...site, related, factions, ...atlasHistoryState(db, cam) };
+  })();
+}
+interface CampaignAtlasContext {
+  guard: (token: string, campaignId?: string | undefined) => string;
+  dungeon: (
+    token: string,
+  ) => import('./../atlas/dungeon-contracts').DungeonView<
+    import('./../shared/contracts').Room,
+    import('./../atlas/drawing-contracts').DrawingElement
+  >;
+  sceneWorld: (token: string, id: string) => any;
+  cities: (token: string) => import('./../atlas/city-contracts').CityOverview;
+  city: (token: string, id: string) => import('./../atlas/city-contracts').CityView;
+  workspace: () => import('./../shared/contracts').Workspace;
+}
+export function storedCampaignAtlas(
+  db: any,
+  context: CampaignAtlasContext,
+  token: string,
+): import('./../atlas/campaign-atlas-contracts').CampaignAtlas<
+  import('./../shared/contracts').Room,
+  import('./../atlas/drawing-contracts').DrawingElement,
+  import('./../atlas/city-contracts').CityView
+> {
+  const cam = context.guard(token);
+  return db.transaction(() => {
+    const root = atlasRoot(db, cam),
+      terrain = JSON.parse(
+        db
+          .prepare("SELECT payload FROM world_record WHERE campaign_id=? AND kind='map' AND id=?")
+          .get(cam, root.map_id).payload,
+      );
+    if (!terrain) throw new Error('Kampagnenatlas fehlt.');
+    const geometry = context.dungeon(token),
+      scene = geometry.sceneId ? context.sceneWorld(token, geometry.sceneId) : null;
+    const perception =
+      geometry.position && geometry.sceneId
+        ? dungeonDisplay(
+            db,
+            cam,
+            geometry.sceneId,
+            playerSettings(db, cam),
+            playerObservers(db, cam).list,
+          )
+        : null;
+    return {
+      scopes: db.prepare('SELECT id,name FROM scope WHERE campaign_id=?').all(cam),
+      perception,
+      entrances: atlasEntrances(db, cam),
+      localJourney: geometry.sceneId ? atlasLocalJourney(db, cam, geometry.sceneId) : null,
+      campaignId: cam,
+      revision: root.revision,
+      terrain,
+      bindings: atlasBindings(db, cam),
+      cities: context.cities(token).cities.map((h) => context.city(token, h.id)),
+      geometry,
+      workspace: context.workspace(),
+      scene,
+      ...atlasHistoryState(db, cam),
+    };
+  })();
 }

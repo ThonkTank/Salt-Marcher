@@ -1,3 +1,4 @@
+import { checkSourceModuleBoundaries } from './check-module-boundaries.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
@@ -76,6 +77,7 @@ export function checkRepository(root, suppliedFiles) {
         .split('\0')
         .filter((f) => f && fs.existsSync(path.join(root, f))),
   );
+  errors.push(...checkSourceModuleBoundaries(root, [...files]));
   const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');
   const exists = (file) =>
     typeof file === 'string' &&

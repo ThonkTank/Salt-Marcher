@@ -1,13 +1,15 @@
 import { streamTerrainFieldSteps, type TerrainStream } from '../atlas/terrain-field-stream';
 import {
   validateTerrainView,
-  type TerrainView,
   type TerrainGrid,
+  type TerrainView,
 } from '../atlas/terrain-spatial-model';
 import type { LandscapeRecord } from '../atlas/atlas-landscape';
 import { terrainGridLayout } from '../atlas/terrain-grid-layout';
 import { landscapeSampleFilter } from './landscape-record-stream';
-
+import { TerrainSampler } from '../atlas/terrain-height';
+import { terrainRegion } from './atlas-landscape';
+import { atlasRoot } from './campaign-atlas';
 /** Authoritative visibility lattice. Never accepts heights supplied by the renderer. */
 export function readTerrainGrid(
   db: any,
@@ -120,4 +122,57 @@ export function* readTerrainGridSteps(
     yield* checkpoint();
   }
   return { view, heights, seaLevelM, editing: { ground, water } };
+}
+
+interface AtlasHeightContext {
+  guard: (token: string, campaignId?: string | undefined) => string;
+}
+export function storedAtlasHeight(
+  db: any,
+  context: AtlasHeightContext,
+  token: string,
+  point: import('../shared/contracts').Point,
+): {
+  revision: any;
+  seaLevelM: number;
+  water: boolean;
+  slopeDegrees: number;
+  normal: { x: number; y: number; z: number };
+  heightM: number;
+  resolutionM: number | null;
+} {
+  const cam = context.guard(token);
+  if (
+    !point ||
+    !Number.isFinite(point.x) ||
+    !Number.isFinite(point.y) ||
+    Math.max(Math.abs(point.x), Math.abs(point.y)) > 1e12
+  )
+    throw Error('Höhenpunkt prüfen.');
+  const nearby = terrainRegion(db, cam, {
+      x: point.x - 1,
+      y: point.y - 1,
+      width: 2,
+      height: 2,
+    }),
+    step = new TerrainSampler(nearby).sample(point).resolutionM ?? 1;
+  const records = [
+    ...new Map(
+      [
+        nearby,
+        ...[
+          { x: point.x - step, y: point.y },
+          { x: point.x + step, y: point.y },
+          { x: point.x, y: point.y - step },
+          { x: point.x, y: point.y + step },
+        ].map((p) => terrainRegion(db, cam, { x: p.x - 1, y: p.y - 1, width: 2, height: 2 })),
+      ]
+        .flat()
+        .map((r) => [r.id, r]),
+    ).values(),
+  ];
+  return {
+    ...new TerrainSampler(records).query(point),
+    revision: atlasRoot(db, cam).revision,
+  };
 }

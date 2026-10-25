@@ -2,11 +2,11 @@ import { validateAtlasShapeSources } from './atlas-shape-source';
 import { terrainEnvironmentRevision, validateTerrainEnvironment } from './terrain-environment';
 import { sourceCellLookup } from './atlas-source-cell';
 import {
-  installTravelHistory,
+  applyTravelHistory,
   captureTravelEffects,
+  installTravelHistory,
   recordTravelCheckpoint,
   travelHistory,
-  applyTravelHistory,
   validateTravelHistory,
 } from './travel-history';
 import { checkedCalendarEventRow } from './calendar-events';
@@ -22,37 +22,43 @@ import { createHash, randomUUID } from 'node:crypto';
 import type {
   AtlasMap,
   FantasyCalendar,
-  Weather,
-  WorldView,
-  SceneWorld,
-  ScenePosition,
-  Journey,
-  WorldCommand,
-  WorldAck,
-  TravelRequest,
-  TravelPreview,
   Hex,
+  Journey,
+  ScenePosition,
+  SceneWorld,
+  TravelPreview,
+  TravelRequest,
+  Weather,
+  WorldAck,
+  WorldCommand,
+  WorldView,
 } from '../runtime/world-contracts';
 import {
-  calendarDate,
-  checkedCalendarEvent,
-  weatherAt,
-  checkedWeather,
-  relevantEvent,
-  cellAt,
   authoredCellAt,
-  hexPoint,
-  hexKey,
-  hexDistance,
+  calendarDate,
+  cellAt,
+  checkedCalendarEvent,
+  checkedWeather,
   findRoute,
+  hexDistance,
+  hexKey,
+  hexPoint,
+  relevantEvent,
   terrainFactor,
   terrainNames,
+  weatherAt,
 } from '../runtime/world-model';
-
-import { readLiveScene, readRoster, executeLive } from './live';
+import { validateLiveBackup } from './live';
+import { executeLive, readLiveScene, readRoster } from './live';
 import type { LiveScene } from '../runtime/live-contracts';
 import { partyTravelPace } from '../runtime/travel-pace';
+import { validateItemsBackup } from './items';
 import { restockDue } from './items';
+import { captureAutonomyBasis, validateAutonomy } from './autonomy';
+import { validateFeatureStates } from './drawing';
+import { validateDungeonPlay } from './dungeon-play';
+import { validatePlayer } from './player';
+import { readWorldActor } from './session';
 const json = (v: unknown) => JSON.stringify(v),
   hash = (s: string) => createHash('sha256').update(s).digest('hex');
 function decoded<T>(r: any): T {
@@ -1463,4 +1469,101 @@ export function validateWorldBackup(db: any) {
       if (table === 'world_record' && row.kind === 'place-presentation')
         checkedMarkerPresentation(value);
     }
+}
+
+interface ExecuteWorldContext {
+  guard: (token: string, campaignId?: string | undefined) => string;
+  consumeSceneTime: (
+    cam: string,
+    commandId: string,
+    before: import('./../runtime/live-contracts').LiveScene,
+    after: import('./../runtime/live-contracts').LiveScene,
+    basis: {
+      spatial: { scopeId: string; snapshotId: string }[];
+      actors: {
+        id: string;
+        positionBasis:
+          | {
+              locationId: string | null;
+              revision: number | null;
+              dungeon?: import('./../atlas/dungeon-contracts').DungeonPose | null | undefined;
+            }
+          | undefined;
+        traceRules: import('./../atlas/dungeon-contracts').DungeonTraceRules;
+        sightMeters: number;
+        darkvisionMeters: number;
+        hearingMeters: number;
+        passivePerception: number;
+        stealthDc: number;
+        role: string;
+        needs: { id: string; enabled: boolean; ratePerHour: number; weight: number }[];
+        jobPriorities: Record<string, number>;
+        assignedJobId: string | null;
+        allowConflict: boolean;
+        defense: number;
+        attackBonus: number;
+        maxHpLossPercent: number;
+      }[];
+      jobs: import('./../runtime/autonomy-contracts').AutonomyJob[];
+      routes: import('./../runtime/autonomy-contracts').NpcRoute[];
+      features: any;
+    },
+  ) => void;
+  updateMusic: (campaignId: string) => void;
+}
+export function storedExecuteWorld(
+  db: any,
+  context: ExecuteWorldContext,
+  command: WorldCommand,
+): any {
+  if (command.action.kind === 'map') {
+    const root = db
+      .prepare('SELECT map_id FROM campaign_atlas WHERE campaign_id=?')
+      .get(command.campaignId);
+    if (root && command.action.map.id !== root.map_id)
+      throw new Error('Pro Kampagne gibt es genau einen Atlas.');
+    if (root && command.action.map.hexMeters !== 4828.032)
+      throw new Error('Die kleinste Hexgröße ist 3 Meilen Kante zu Kante.');
+  }
+  return db
+    .transaction(() => {
+      const ack = executeWorld(
+        db,
+        command,
+        () => {
+          context.guard(command.token, command.campaignId);
+        },
+        {
+          capture: () => captureAutonomyBasis(db, command.campaignId),
+          confirm: (commandId, before, after, basis) =>
+            context.consumeSceneTime(
+              command.campaignId,
+              commandId,
+              before.scene,
+              after.scene,
+              basis,
+            ),
+          validateHistory: (_sceneId, tables) => {
+            // Validate the restored runtime with its owning decoders before commit.
+            // A forged historical payload must never bypass today's domain rules.
+            validateLiveBackup(db, command.campaignId);
+            validateWorldBackup(db);
+            if (tables.some((t) => t.startsWith('autonomy_') || t.startsWith('npc_')))
+              validateAutonomy(db);
+            if (tables.some((t) => t === 'shop' || t === 'shop_event')) validateItemsBackup(db);
+            if (tables.includes('dungeon_feature_state')) validateFeatureStates(db);
+            if (tables.some((t) => t.startsWith('dungeon_'))) validateDungeonPlay(db);
+            if (tables.some((t) => t === 'player_hex_memory')) validatePlayer(db);
+            if (tables.includes('world_actor'))
+              for (const row of db
+                .prepare('SELECT id FROM world_actor WHERE campaign_id=?')
+                .all(command.campaignId))
+                readWorldActor(db, command.campaignId, row.id);
+          },
+        },
+      );
+      context.updateMusic(command.campaignId);
+      return ack;
+    })
+    .immediate();
 }

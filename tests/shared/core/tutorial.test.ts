@@ -14,8 +14,8 @@ import {initNpcs} from '../../../src/app/campaign/npc-ui';
 import {initMusic} from '../../../src/app/runtime/music-ui';
 import {initSoundboard} from '../../../src/app/runtime/live-soundboard-ui';
 import {CampaignStore} from '../../../src/app/storage/store';
-import {lessons,tutorialCapabilityLessons,tutorialLessonRevision,tutorialSurfaceLessons} from '../../../src/app/workspace/tutorial';
-
+import {lessons,tutorialCapabilityLessons,tutorialSurfaceLessons} from '../../../src/app/workspace/tutorial';
+import {tutorialLessonRevision} from '../../../src/app/workspace/tutorial-contracts';
 const capabilityExists=(sources:string,id:string)=>{
  const escaped=id.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
  return new RegExp(String.raw`\bid\s*=\s*["']${escaped}["']`).test(sources);

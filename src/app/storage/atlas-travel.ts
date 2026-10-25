@@ -10,13 +10,15 @@ import type {
   AtlasLocalPreview,
   AtlasTravelCommand,
 } from '../atlas/atlas-travel-contracts';
-import { atlasFrame, localToAtlas, atlasToLocal, atlasHexAt } from '../atlas/campaign-atlas-model';
+import { atlasFrame, atlasHexAt, atlasToLocal, localToAtlas } from '../atlas/campaign-atlas-model';
 import { cellAt } from '../runtime/world-model';
 import { hexAccessProblem } from '../runtime/hex-access';
 import { posed, roadPoints } from '../atlas/city-model';
 import { inside } from '../atlas/drawing-model';
 import { atlasLocalRoute } from '../atlas/atlas-local-route';
 import { position, savePosition } from './world';
+import { dungeonGeometry } from './dungeon-play';
+import { createTriggerEvents } from './triggers';
 const hash = (v: unknown) => createHash('sha256').update(JSON.stringify(v)).digest('hex');
 export function installAtlasTravel(db: any) {
   db.exec(
@@ -440,4 +442,95 @@ export function executeAtlasTravel(db: any, c: AtlasTravelCommand, ports: AtlasT
       );
     })
     .immediate();
+}
+
+interface ApplyAtlasTravelContext {
+  guard: (token: string, campaignId?: string | undefined) => string;
+  travelAtlas: (
+    token: string,
+  ) => import('./../atlas/campaign-atlas-contracts').CampaignAtlas<
+    import('./../shared/contracts').Room,
+    import('./../atlas/drawing-contracts').DrawingElement,
+    import('./../atlas/city-contracts').CityView
+  >;
+  executeLive: (command: import('./../runtime/live-contracts').LiveCommand) => any;
+  liveScene: (token: string, id: string) => any;
+  dungeon: (
+    token: string,
+  ) => import('./../atlas/dungeon-contracts').DungeonView<
+    import('./../shared/contracts').Room,
+    import('./../atlas/drawing-contracts').DrawingElement
+  >;
+  executeDungeon: (c: import('./../atlas/dungeon-contracts').DungeonCommand) => any;
+}
+export function storedApplyAtlasTravel(
+  db: any,
+  context: ApplyAtlasTravelContext,
+  c: import('../atlas/atlas-travel-contracts').AtlasTravelCommand,
+): void {
+  context.guard(c.token, c.campaignId);
+  executeAtlasTravel(db, c, {
+    read: () => context.travelAtlas(c.token),
+    advance: (seconds, revision) => {
+      context.executeLive({
+        commandId: c.commandId + ':clock',
+        token: c.token,
+        campaignId: c.campaignId,
+        action: {
+          kind: 'advance-clock',
+          sceneId: c.sceneId,
+          expectedRevision: revision,
+          amount: seconds,
+          unit: 'seconds',
+          calendarVersion: 'relative-v1',
+          reason: 'Bestätigte lokale Atlasbewegung',
+        },
+      });
+    },
+    location: (id) => {
+      const s = context.liveScene(c.token, c.sceneId);
+      if (s.locationId !== id)
+        context.executeLive({
+          commandId: c.commandId + ':location',
+          token: c.token,
+          campaignId: c.campaignId,
+          action: {
+            kind: 'scene-content',
+            sceneId: c.sceneId,
+            expectedRevision: s.revision,
+            title: s.title,
+            notes: s.notes,
+            readAloud: s.readAloud ?? '',
+            locationId: id,
+          },
+        });
+    },
+    crossing: (from, to) => {
+      const g = dungeonGeometry(db, c.campaignId),
+        scene = context.liveScene(c.token, c.sceneId);
+      createTriggerEvents(
+        db,
+        c.campaignId,
+        g,
+        { id: 'atlas:' + c.commandId, nextIndex: 1, request: { sceneId: c.sceneId } },
+        from,
+        to,
+        scene.clock.instantMs,
+      );
+    },
+    dungeon: (pose) => {
+      const d = context.dungeon(c.token);
+      context.executeDungeon({
+        commandId: c.commandId + ':dungeon',
+        token: c.token,
+        campaignId: c.campaignId,
+        action: {
+          kind: 'place',
+          sceneId: c.sceneId,
+          expectedPositionRevision: d.positionRevision,
+          pose,
+        },
+      });
+    },
+  });
 }

@@ -24,6 +24,7 @@ export function fixture({failures=0,empty=false}={}){
  const editors={flush:(reason)=>registry.flush(reason),activate:w=>registry.activate(w),deactivate:()=>registry.deactivate(),suspend:()=>registry.suspend()};
  const api={activateShell:async id=>{attempts.push(id);if(shellHook)return shellHook(id);if(failures-->0)return{ok:false,error:'held source unavailable'};return{ok:true,value:{token:id}};},workspaceInitial:async token=>({ok:true,value:{token,campaign:{id:token,name:token}}})};
  const unwrap=r=>{if(!r.ok)throw Error(r.error);return r.value;},status=(text,error)=>messages.push({text,error}),rememberView=()=>{},geometryOnly=w=>w,setWorkspaceAvailable=()=>{},setDraft=async()=>{},renderList=()=>{},updateHistory=()=>{},viewStorage={},readWorkspaceView=()=>({tab:'atlas',scrollY:0}),reopenView=async()=>{},preparationHasDrafts=()=>false,roomDraftReadFailed=false,draft=null,selected=()=>null;
+ const roomEditor={setDraft,renderList,updateHistory,saved:true};
  ${boundaries}
  ${activation}
  return{activate,session,main,attempts,messages,allow:v=>allowed=v,shell:fn=>shellHook=fn,state:()=>({workspace,activationFailed,paused})};

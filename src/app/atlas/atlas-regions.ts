@@ -1,5 +1,4 @@
 import { atlasElement as get, setAtlasText as setText } from './atlas-dom';
-import type { AtlasJourney } from './atlas-journey';
 import type { TerrainIdentity } from './terrain-frame';
 import type { AtlasRasterPresentation } from './atlas-raster-presentation';
 import { atlasFieldValue } from './atlas-units';
@@ -7,8 +6,9 @@ import type { AtlasRegionQuery } from './atlas-region-contracts';
 import { atlasGeometryOnly } from './atlas-render-view';
 import type { LandscapeWorkbench } from './atlas-landscape-ui';
 import type { AtlasCanvas } from './atlas-canvas';
-import type { AtlasRenderView, AtlasCommitAck } from './campaign-atlas-contracts';
+import type { AtlasCommitAck, AtlasRenderView } from './campaign-atlas-contracts';
 import type { WorkspaceGeometry } from '../shared/contracts';
+import type { AtlasJourneyContext } from './atlas-workbench-types';
 interface AtlasRegionsHost {
   readonly spatial:
     | Pick<AtlasRasterPresentation, 'needsTerrainRaster' | 'openSurface' | 'pauseReads'>
@@ -17,10 +17,7 @@ interface AtlasRegionsHost {
   readonly canvas: HTMLCanvasElement;
   readonly scopeId: string | null;
   readonly floorId: string;
-  readonly journey: Pick<
-    AtlasJourney,
-    'entranceId' | 'beginContextRead' | 'completeContextRead' | 'failContextRead' | 'renderTravel'
-  >;
+  readonly journey: AtlasJourneyContext;
   readonly landscape: Pick<LandscapeWorkbench, 'contours' | 'livePainting' | 'load'>;
   readonly scheduleRender: () => void;
   readonly root: HTMLElement;

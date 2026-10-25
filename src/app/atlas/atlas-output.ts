@@ -2,7 +2,7 @@ import { terrainCoverageBox, terrainCoverageLevel } from './terrain-coverage';
 import { atlasElement as get } from './atlas-dom';
 import { atlasTerrainExport } from './atlas-terrain-export';
 import type { AtlasRasterPresentation } from './atlas-raster-presentation';
-import { lengthLabel, atlasUnits } from './atlas-units';
+import { atlasUnits, lengthLabel } from './atlas-units';
 import type { AtlasWorkspaceLayout } from './atlas-workspace-layout';
 import type { AtlasReferenceUI } from './atlas-reference-ui';
 import type { AtlasRegionQuery } from './atlas-region-contracts';
@@ -11,7 +11,7 @@ import { atlasExportScale, dungeonExportBox } from './campaign-atlas-export';
 import type { CanvasBox } from '../runtime/passive-map-canvas';
 import type { AtlasCanvas } from './atlas-canvas';
 import type { AtlasRenderView } from './campaign-atlas-contracts';
-import type { WorkspaceGeometry, Point } from '../shared/contracts';
+import type { Point, WorkspaceGeometry } from '../shared/contracts';
 interface AtlasOutputHost {
   readonly reference: Pick<AtlasReferenceUI, 'active' | 'close'>;
   readonly flush: () => Promise<boolean>;
@@ -131,6 +131,9 @@ export class AtlasOutput {
     this.host.render();
     return true;
   }
+  ownsAreaPointer(pointerId: number) {
+    return this.exportDrag?.id === pointerId;
+  }
   endArea(event: PointerEvent, end: Point) {
     const drag = this.exportDrag;
     if (drag?.id !== event.pointerId) return false;
@@ -207,6 +210,14 @@ export class AtlasOutput {
         this.exportAreaStatus();
       }
     }
+  }
+  /** The paint surface receives the selected box, not mutable gesture state. */
+  selectionBox(): CanvasBox | null {
+    return this.exportDrag?.moved
+      ? this.exportRectangle(this.exportDrag.start, this.exportDrag.last)
+      : this.exportDungeon
+        ? this.dungeonOutputBox()
+        : this.exportBox;
   }
   dungeonOutputBox() {
     const size = Number(get<HTMLInputElement>('atlas-export-size')?.value),

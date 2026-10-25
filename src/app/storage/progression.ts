@@ -7,46 +7,46 @@ import { editTreasury } from './treasury';
 import { consumeFinishDraft } from './finish-drafts';
 import {
   consumeNarrativeDraft,
+  narrativeNote,
   readNarrative,
   saveNarrative,
   saveNarrativeAward,
   validateNarrativeState,
-  narrativeNote,
 } from './narrative';
-import { randomUUID, createHash } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import {
-  restAfter,
+  applyDeathSave,
   applyHealthDamage,
   applyHealthHealing,
-  applyDeathSave,
   checkedHealth,
   checkedHealthStatus,
-  lootBalanceSuggestions,
-  xpLevel,
-  xpShare,
   copper,
-  partitionLedgerPaidPrice,
   ledgerCopper,
   ledgerDefinitionId,
   ledgerStacksMatch,
-  type Progress,
-  type ProgressView,
-  type ProgressAck,
-  type ProgressCommand,
-  type ProgressAction,
+  lootBalanceSuggestions,
+  partitionLedgerPaidPrice,
+  restAfter,
+  xpLevel,
+  xpShare,
+  type CombatReward,
+  type FinishRewards,
   type ItemInput,
+  type LedgerInventoryPage,
+  type LedgerInventoryQuery,
+  type LedgerItem,
+  type LedgerPage,
+  type LedgerQuery,
+  type Progress,
+  type ProgressAck,
+  type ProgressAction,
+  type ProgressCommand,
+  type ProgressView,
   type Treasure,
   type TreasurePage,
-  type LedgerItem,
-  type LedgerQuery,
-  type LedgerPage,
-  type LedgerInventoryQuery,
-  type LedgerInventoryPage,
-  type FinishRewards,
-  type CombatReward,
 } from '../runtime/progression';
 import { checkedCombat, type CombatState } from '../runtime/combat-contracts';
-import { readLiveScene, readRoster } from './live';
+import { readLive, readLiveScene, readRoster } from './live';
 import { readItemDefinition, recordItemDefinitionVersion } from './item-definitions';
 const json = (v: unknown) => JSON.stringify(v),
   hash = (s: string) => createHash('sha256').update(s).digest('hex');
@@ -1992,6 +1992,82 @@ export function executeProgress(db: any, command: ProgressCommand, guard: () => 
         fp,
         payload,
         hash(payload),
+      );
+      return result;
+    })
+    .immediate();
+}
+
+interface ExecuteProgressContext {
+  guard: (token: string, campaignId?: string | undefined) => string;
+  executeLive: (command: import('./../runtime/live-contracts').LiveCommand) => any;
+}
+export function storedExecuteProgress(
+  db: any,
+  context: ExecuteProgressContext,
+  command: ProgressCommand,
+): any {
+  return db
+    .transaction(() => {
+      context.guard(command.token, command.campaignId);
+      const a = command.action,
+        guard = () => {
+          context.guard(command.token, command.campaignId);
+        };
+      if (
+        a.kind !== 'rest' ||
+        !a.scene ||
+        db.prepare('SELECT 1 FROM progress_receipt WHERE command_id=?').get(command.commandId)
+      )
+        return executeProgress(db, command, guard);
+      const current = readLive(db, command.campaignId),
+        scene = current.scene;
+      if (
+        !scene ||
+        scene.id !== a.scene.id ||
+        current.focusRevision !== a.scene.expectedFocusRevision ||
+        scene.membershipRevision !== a.scene.expectedMembershipRevision ||
+        scene.clock.revision !== a.scene.expectedClockRevision ||
+        scene.retired
+      )
+        throw new Error('Rastgruppe oder Szenenzeit geändert. Aktuellen Spieltisch laden.');
+      if (!a.recipients.every((r) => scene.members.includes(r.characterId)))
+        throw new Error('Rast nur mit Figuren dieser Szene.');
+      if ((a.scene.amount === undefined) !== (a.scene.unit === undefined))
+        throw new Error('Rastdauer und Zeiteinheit gemeinsam angeben.');
+      // Scene ownership is required even when the user deliberately keeps time.
+      if (a.scene.amount === undefined) return executeProgress(db, command, guard);
+      if (
+        db
+          .prepare("SELECT 1 FROM chase WHERE campaign_id=? AND scene_id=? AND status='running'")
+          .get(command.campaignId, scene.id)
+      )
+        throw new Error('Verfolgung vor der zeitgebundenen Rast abschließen.');
+      const result = executeProgress(db, command, guard),
+        clock = context.executeLive({
+          commandId: command.commandId + '|rest-clock',
+          campaignId: command.campaignId,
+          token: command.token,
+          action: {
+            kind: 'advance-clock',
+            sceneId: scene.id,
+            expectedRevision: a.scene.expectedClockRevision,
+            amount: a.scene.amount,
+            unit: a.scene.unit,
+            calendarVersion: 'relative-v1',
+            reason:
+              (a.rest === 'long' ? 'Lange' : 'Kurze') +
+              ' Rast · ' +
+              a.recipients.length +
+              ' Figuren',
+          },
+        });
+      result.restScene = clock.scene;
+      const payload = json(result);
+      db.prepare('UPDATE progress_receipt SET payload=?,checksum=? WHERE command_id=?').run(
+        payload,
+        hash(payload),
+        command.commandId,
       );
       return result;
     })

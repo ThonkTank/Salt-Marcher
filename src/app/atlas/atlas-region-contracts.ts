@@ -47,7 +47,7 @@ export interface AtlasRegionQuery {
   fence?: string;
 }
 export interface AtlasLandscapeLayer {
-  labels?: import('./atlas-cartography').MapLabelCandidate[];
+  labels?: import('./atlas-label-source').MapLabelCandidate[];
   seaLevelM?: number;
   terrainStyle?: import('./terrain-relief').TerrainStyle;
   state: 'ready' | 'error';
@@ -69,7 +69,7 @@ export interface AtlasHitPage {
   unavailable?: ('geometry' | 'landscape')[];
 }
 export interface AtlasRegionGeometry {
-  labels?: import('./atlas-cartography').MapLabelCandidate[];
+  labels?: import('./atlas-label-source').MapLabelCandidate[];
   territoryRaster?: { box: LandscapeBox; width: number; height: number; data: string };
   territories?: import('./atlas-territories').TerritoryState;
   campaignId: string;
