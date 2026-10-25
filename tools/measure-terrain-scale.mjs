@@ -105,7 +105,7 @@ if (process.argv[2] === '--child') {
     const bundle = root + '/.build/terrain-scale-benchmark-' + name + '.cjs';
     require('esbuild').buildSync({
       stdin: {
-        contents: `export * from '${source}/src/app/storage/store';export * from '${source}/src/app/terrain-height';`,
+        contents: `export * from '${source}/src/app/storage/store';export * from '${source}/src/app/atlas/terrain-height';`,
         resolveDir: root,
       },
       nodePaths: [root + '/node_modules'],

@@ -3,10 +3,10 @@ import {
   atlasTerrainTileQuery,
   type AtlasTerrainTileRequest,
   type AtlasTerrainTile,
-} from '../atlas-terrain-tile';
-import type { AtlasRegionSource } from '../atlas-region-contracts';
-import type { TerrainProjection } from '../terrain-projection';
-import { landscapeRasterBounds } from '../landscape-raster';
+} from '../atlas/atlas-terrain-tile';
+import type { AtlasRegionSource } from '../atlas/atlas-region-contracts';
+import type { TerrainProjection } from '../atlas/terrain-projection';
+import { landscapeRasterBounds } from '../atlas/landscape-raster';
 import { AtlasCacheScope } from './atlas-cache-scope';
 import type { AtlasRegionReader } from './atlas-region';
 

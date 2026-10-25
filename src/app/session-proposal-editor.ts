@@ -1,4 +1,4 @@
-import { budgetRarities } from './dungeon-budget-contracts';
+import { budgetRarities } from './atlas/dungeon-budget-contracts';
 import type { Preparation } from './preparation-contracts';
 import type { SessionProposal, SessionAction } from './session-contracts';
 import type { ItemInput } from './progression';

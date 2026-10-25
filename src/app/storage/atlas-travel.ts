@@ -1,21 +1,21 @@
-import { validateTerrainAnchor } from '../terrain-objects';
-import { effectiveLandscape } from '../atlas-landscape';
-import { atlasPartyPoint } from '../atlas-runtime-model';
+import { validateTerrainAnchor } from '../atlas/terrain-objects';
+import { effectiveLandscape } from '../atlas/atlas-landscape';
+import { atlasPartyPoint } from '../atlas/atlas-runtime-model';
 import { createHash } from 'node:crypto';
 import type { Point } from '../contracts';
-import type { CampaignAtlas } from '../campaign-atlas-contracts';
+import type { CampaignAtlas } from '../atlas/campaign-atlas-contracts';
 import type {
   AtlasEntrance,
   AtlasLocalJourney,
   AtlasLocalPreview,
   AtlasTravelCommand,
-} from '../atlas-travel-contracts';
-import { atlasFrame, localToAtlas, atlasToLocal, atlasHexAt } from '../campaign-atlas-model';
+} from '../atlas/atlas-travel-contracts';
+import { atlasFrame, localToAtlas, atlasToLocal, atlasHexAt } from '../atlas/campaign-atlas-model';
 import { cellAt } from '../world-model';
 import { hexAccessProblem } from '../hex-access';
-import { posed, roadPoints } from '../city-model';
-import { inside } from '../drawing-model';
-import { atlasLocalRoute } from '../atlas-local-route';
+import { posed, roadPoints } from '../atlas/city-model';
+import { inside } from '../atlas/drawing-model';
+import { atlasLocalRoute } from '../atlas/atlas-local-route';
 import { position, savePosition } from './world';
 const hash = (v: unknown) => createHash('sha256').update(JSON.stringify(v)).digest('hex');
 export function installAtlasTravel(db: any) {
@@ -229,13 +229,13 @@ function saveOutdoor(
 }
 export interface AtlasTravelPorts {
   crossing: (
-    from: import('../dungeon-contracts').DungeonPose,
-    to: import('../dungeon-contracts').DungeonPose,
+    from: import('../atlas/dungeon-contracts').DungeonPose,
+    to: import('../atlas/dungeon-contracts').DungeonPose,
   ) => void;
   read: () => CampaignAtlas;
   advance: (seconds: number, revision: number) => void;
   location: (id: string | null) => void;
-  dungeon: (pose: import('../dungeon-contracts').DungeonPose | null) => void;
+  dungeon: (pose: import('../atlas/dungeon-contracts').DungeonPose | null) => void;
 }
 export function executeAtlasTravel(db: any, c: AtlasTravelCommand, ports: AtlasTravelPorts) {
   return db

@@ -8,7 +8,7 @@ import {
 } from './atlas-knowledge';
 import { dungeonDisplay } from './dungeon-play';
 import { createHash, randomUUID } from 'node:crypto';
-import { contains } from '../atlas-landscape';
+import { contains } from '../atlas/atlas-landscape';
 import type {
   PlayerMapQuery,
   PlayerMapCell,

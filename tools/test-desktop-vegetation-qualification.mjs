@@ -29,7 +29,7 @@ execFileSync(process.execPath, [out + '/build.mjs'], { cwd: root, stdio: 'pipe' 
 buildSync({
   stdin: {
     contents:
-      "export * from './src/app/storage/store';export * from './src/app/atlas-landscape';export * from './src/app/terrain-height';export * from './src/app/vegetation';",
+      "export * from './src/app/storage/store';export * from './src/app/atlas/atlas-landscape';export * from './src/app/atlas/terrain-height';export * from './src/app/atlas/vegetation';",
     resolveDir: root,
   },
   outfile: out + '/store.cjs',
@@ -153,13 +153,13 @@ const result = {
 };
 for (const file of [
   'tools/test-desktop-vegetation-qualification.mjs',
-  'src/app/vegetation.ts',
+  'src/app/atlas/vegetation.ts',
   'src/app/vegetation-spatial.ts',
-  'src/app/atlas-landscape-ui.ts',
+  'src/app/atlas/atlas-landscape-ui.ts',
   'src/app/storage/vegetation.ts',
   'src/app/storage/atlas-landscape-region.ts',
-  'src/app/vegetation-view.ts',
-  'src/app/atlas-tool-catalog.ts',
+  'src/app/atlas/vegetation-view.ts',
+  'src/app/atlas/atlas-tool-catalog.ts',
   '.build/vegetation-qualification-desktop/ui/renderer.js',
   '.build/vegetation-qualification-desktop/main.cjs',
 ])

@@ -1,17 +1,17 @@
 import { ensureAtlasShapeSource } from './atlas-shape-source';
 import { advanceTerrainEnvironment } from './terrain-environment';
 import { validateTerritories } from './atlas-territories';
-import { validateRoute } from '../terrain-route';
-import { validateVegetation } from '../vegetation';
-import { validateTerrain } from '../terrain-height';
-import { validateMask } from '../land-mask';
-import { validateLine } from '../landscape-line';
-import { validateColor } from '../landscape-brush';
+import { validateRoute } from '../atlas/terrain-route';
+import { validateVegetation } from '../atlas/vegetation';
+import { validateTerrain } from '../atlas/terrain-height';
+import { validateMask } from '../atlas/land-mask';
+import { validateLine } from '../atlas/landscape-line';
+import { validateColor } from '../atlas/landscape-brush';
 import { dungeonGeometry } from './dungeon-play';
-import { poseSpace } from '../spatial-3d';
-import { inside } from '../drawing-model';
+import { poseSpace } from '../atlas/spatial-3d';
+import { inside } from '../atlas/drawing-model';
 import { createHash, randomUUID } from 'node:crypto';
-import type { AtlasBinding, AtlasCommand } from '../campaign-atlas-contracts';
+import type { AtlasBinding, AtlasCommand } from '../atlas/campaign-atlas-contracts';
 import type { AtlasMap } from '../world-contracts';
 const hash = (v: string) => createHash('sha256').update(v).digest('hex'),
   json = JSON.stringify;

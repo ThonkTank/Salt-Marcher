@@ -2,7 +2,7 @@ import type {
   CityActivityPage,
   CityActivityQuery,
   CityActivitySite,
-} from '../city-activity-contracts';
+} from '../atlas/city-activity-contracts';
 import { readCityHeader, readCitySite } from './city';
 import { readLive, readLiveScene } from './live';
 import { readNpcPlanLocation } from './npc-daily-places';

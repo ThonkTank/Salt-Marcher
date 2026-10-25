@@ -1,8 +1,8 @@
-import { volumeOrigin } from './volume-model';
-import type { DungeonGeometry, DungeonPose, DungeonWaypoint } from './dungeon-contracts';
+import { volumeOrigin } from './atlas/volume-model';
+import type { DungeonGeometry, DungeonPose, DungeonWaypoint } from './atlas/dungeon-contracts';
 import type { TriggerField, TriggerFragment } from './trigger-contracts';
-import { poseOwner, bodyHeight } from './spatial-3d';
-import { annotatePathRoute } from './path-spatial';
+import { poseOwner, bodyHeight } from './atlas/spatial-3d';
+import { annotatePathRoute } from './atlas/path-spatial';
 const U = 1.524;
 const columnIndex = new WeakMap<
   DungeonGeometry,
@@ -183,7 +183,7 @@ export function refineTriggerRoute(
   g: DungeonGeometry,
   start: DungeonPose,
   route: DungeonWaypoint[],
-  movement?: import('./volume-contracts').DungeonMovement,
+  movement?: import('./atlas/volume-contracts').DungeonMovement,
 ) {
   if (!g.drawing.triggerFields?.some((f) => !f.archived)) return route;
   const out: DungeonWaypoint[] = [],

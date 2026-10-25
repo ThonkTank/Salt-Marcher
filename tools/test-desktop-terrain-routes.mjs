@@ -18,7 +18,7 @@ const native = await createNativeSession({ root, output: out, name: 'terrain-rou
 buildSync({
   stdin: {
     contents:
-      "export * from './src/app/storage/store';export * from './src/app/terrain-height';export * from './src/app/atlas-landscape';export * from './src/app/landscape-line';export * from './src/app/terrain-spatial-model';",
+      "export * from './src/app/storage/store';export * from './src/app/atlas/terrain-height';export * from './src/app/atlas/atlas-landscape';export * from './src/app/atlas/landscape-line';export * from './src/app/atlas/terrain-spatial-model';",
     resolveDir: root,
   },
   outfile: root + '/.build/route-store.cjs',

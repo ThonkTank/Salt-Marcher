@@ -1,4 +1,4 @@
-import type { SurfaceRegion } from './surface-model';
+import type { SurfaceRegion } from './atlas/surface-model';
 import type { Room } from './contracts';
 export type KeyVisibility = 'public' | 'gm' | 'secret';
 export interface KeyBlock {

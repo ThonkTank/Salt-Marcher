@@ -58,26 +58,26 @@ export type music_state = import('../music-contracts').MusicState;
 export type scene_music = import('../music-contracts').MusicSceneSettings;
 export type music_subject = import('../music-contracts').MusicSubject;
 export type music_receipt = { applied: true };
-export type city_document = import('../city-contracts').CityHeader;
-export type city_unit = import('../city-contracts').CityUnit;
+export type city_document = import('../atlas/city-contracts').CityHeader;
+export type city_unit = import('../atlas/city-contracts').CityUnit;
 export type player_asset = import('../player-contracts').PlayerAsset;
 export type npc_route = import('../autonomy-contracts').NpcRoute;
 export type autonomy_actor = import('../autonomy-contracts').AutonomyActor;
 export type autonomy_job = import('../autonomy-contracts').AutonomyJob;
-export type drawing_profile = import('../drawing-contracts').RoomStyle;
-export type drawing_element = import('../drawing-contracts').DrawingElement;
-export type dungeon_feature_state = import('../drawing-contracts').DrawingView['features'][number];
+export type drawing_profile = import('../atlas/drawing-contracts').RoomStyle;
+export type drawing_element = import('../atlas/drawing-contracts').DrawingElement;
+export type dungeon_feature_state = import('../atlas/drawing-contracts').DrawingView['features'][number];
 export type dungeon_travel_settings = import('../dungeon-pace').DungeonPaceSettings;
-export type dungeon_journey = import('../dungeon-contracts').DungeonJourney;
-export type npc_dungeon_position = import('../dungeon-contracts').DungeonPose;
-export type dungeon_track = import('../dungeon-contracts').DungeonTrace;
-export type dungeon_trace = import('../dungeon-contracts').DungeonTrace;
-export type dungeon_trace_rules = import('../dungeon-contracts').DungeonTraceRules;
-export type dungeon_volume = import('../volume-contracts').DungeonVolume;
-export type dungeon_path = import('../path-contracts').DungeonPath;
-export type dungeon_passage = import('../path-contracts').DungeonPassage;
+export type dungeon_journey = import('../atlas/dungeon-contracts').DungeonJourney;
+export type npc_dungeon_position = import('../atlas/dungeon-contracts').DungeonPose;
+export type dungeon_track = import('../atlas/dungeon-contracts').DungeonTrace;
+export type dungeon_trace = import('../atlas/dungeon-contracts').DungeonTrace;
+export type dungeon_trace_rules = import('../atlas/dungeon-contracts').DungeonTraceRules;
+export type dungeon_volume = import('../atlas/volume-contracts').DungeonVolume;
+export type dungeon_path = import('../atlas/path-contracts').DungeonPath;
+export type dungeon_passage = import('../atlas/path-contracts').DungeonPassage;
 export type dungeon_key_content = import('../key-contracts').KeyContent;
-export type dungeon_graph_layout = import('../graph-contracts').GraphLayout;
+export type dungeon_graph_layout = import('../atlas/graph-contracts').GraphLayout;
 export type dungeon_trigger_field = import('../trigger-contracts').TriggerField;
 export type dungeon_trigger_event = import('../trigger-contracts').TriggerEvent;
 export type dungeon_content_state = import('../content-runtime-contracts').ContentState;
@@ -95,14 +95,14 @@ export type world_relation_pair_receipt =
   import('../world-relation-pair-contracts').WorldRelationPairAck;
 export type world_relation_pair_history_receipt =
   import('../world-relation-pair-contracts').WorldRelationPairHistoryView;
-export type atlas_entrance = import('../atlas-travel-contracts').AtlasEntrance;
-export type atlas_local_journey = import('../atlas-travel-contracts').AtlasLocalJourney;
-export type atlas_landscape = import('../atlas-landscape').LandscapeRecord;
-export type atlas_territory_layer = import('../atlas-territories').AtlasTerritoryLayer;
-export type atlas_territory = import('../atlas-territories').AtlasTerritory;
+export type atlas_entrance = import('../atlas/atlas-travel-contracts').AtlasEntrance;
+export type atlas_local_journey = import('../atlas/atlas-travel-contracts').AtlasLocalJourney;
+export type atlas_landscape = import('../atlas/atlas-landscape').LandscapeRecord;
+export type atlas_territory_layer = import('../atlas/atlas-territories').AtlasTerritoryLayer;
+export type atlas_territory = import('../atlas/atlas-territories').AtlasTerritory;
 export type room_group = {
   id: string;
-  recipe: import('../room-group-generator').GroupRecipe;
+  recipe: import('../atlas/room-group-generator').GroupRecipe;
   protected: boolean;
 };
 
@@ -201,7 +201,7 @@ export type dungeon_sense_settings = {
 };
 export type dungeon_signal = {
   id: string;
-  pose: import('../dungeon-contracts').DungeonPose;
+  pose: import('../atlas/dungeon-contracts').DungeonPose;
   epochId: string;
   instantMs: string;
   publicText: string;
@@ -221,8 +221,8 @@ export type dungeon_perception = {
   dc?: number;
   sourceKnown?: boolean;
   sourceActorId?: string | null;
-  from?: import('../dungeon-contracts').DungeonPose;
-  to?: import('../dungeon-contracts').DungeonPose;
+  from?: import('../atlas/dungeon-contracts').DungeonPose;
+  to?: import('../atlas/dungeon-contracts').DungeonPose;
   profile?: string;
 };
 export type dungeon_content_signal = {
@@ -597,7 +597,7 @@ export type world_history_facts =
   | { journeyId: string; hex: import('../world-contracts').Hex };
 
 export type dungeon_perception_log_facts =
-  | { actorId: string | null; rules: import('../dungeon-contracts').DungeonTraceRules }
+  | { actorId: string | null; rules: import('../atlas/dungeon-contracts').DungeonTraceRules }
   | { traceId: string; actorId: string | null; sourceKnown: boolean }
   | { actorIds: string[] }
   | { subjectId: string | null; score: any; hearingMeters: any; profile: string };
@@ -605,14 +605,14 @@ export type dungeon_perception_log_facts =
 export type AutonomyPosition = {
   locationId: string | null;
   revision: number | null;
-  dungeon?: import('../dungeon-contracts').DungeonPose | null;
+  dungeon?: import('../atlas/dungeon-contracts').DungeonPose | null;
 };
 export type autonomy_log_facts = {
   reason?: string;
   jobId?: string | null;
   previousJobId?: string;
   progressSeconds?: number;
-  position?: AutonomyPosition | import('../dungeon-contracts').DungeonPose | null;
+  position?: AutonomyPosition | import('../atlas/dungeon-contracts').DungeonPose | null;
   epochId?: string;
   actorInstantMs?: string;
   sceneInstantMs?: string;
@@ -689,7 +689,7 @@ export type autonomy_dungeon_basis = {
     floors: { id: string; elevation: number }[];
     hidden: { id: string; kind: string; hidden: number; revision: number }[];
   };
-  geometry: import('../dungeon-contracts').DungeonGeometry;
+  geometry: import('../atlas/dungeon-contracts').DungeonGeometry;
 };
 export type world_history = {
   text: string;

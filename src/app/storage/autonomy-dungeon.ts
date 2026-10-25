@@ -1,17 +1,17 @@
 import { readTriggerFields } from './triggers';
 import { readDungeonPaths, readDungeonPassages } from './paths';
-import { seen3D } from '../spatial-3d';
+import { seen3D } from '../atlas/spatial-3d';
 import { readDungeonVolumes } from './volume';
 import { npcHearsParty, rememberNpcParty, recordDungeonTrace } from './dungeon-senses';
 import { createHash, randomUUID } from 'node:crypto';
-import type { DungeonGeometry, DungeonPose, DungeonTraceRules } from '../dungeon-contracts';
+import type { DungeonGeometry, DungeonPose, DungeonTraceRules } from '../atlas/dungeon-contracts';
 import type { AutonomyActor, AutonomyJob, AutonomyDungeonTravel } from '../autonomy-contracts';
-import { planDungeon, centerInRoom, trapEntry } from '../dungeon-model';
-import { inside } from '../drawing-model';
+import { planDungeon, centerInRoom, trapEntry } from '../atlas/dungeon-model';
+import { inside } from '../atlas/drawing-model';
 import { validateRoom } from '../contracts';
-import { validateDrawingElement } from '../drawing-contracts';
-import { validateDungeonPath, validateDungeonPassage } from '../path-contracts';
-import { MAX_VOLUME_COLUMNS, MAX_VOLUME_CELLS } from '../volume-contracts';
+import { validateDrawingElement } from '../atlas/drawing-contracts';
+import { validateDungeonPath, validateDungeonPassage } from '../atlas/path-contracts';
+import { MAX_VOLUME_COLUMNS, MAX_VOLUME_CELLS } from '../atlas/volume-contracts';
 import { npcPosition } from './npc-world';
 import { placeNpcDungeon } from './npc-dungeon';
 const hash = (p: string) => createHash('sha256').update(p).digest('hex'),

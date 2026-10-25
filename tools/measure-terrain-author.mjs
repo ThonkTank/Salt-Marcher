@@ -150,7 +150,7 @@ if (process.argv[2] === '--child') {
     const bundle = path.join(root, '.build', 'terrain-author-' + name + '.cjs');
     require('esbuild').buildSync({
       stdin: {
-        contents: `export * from '${source}/src/app/storage/store';export * from '${source}/src/app/terrain-height';export * from '${source}/src/app/storage/terrain-grid';`,
+        contents: `export * from '${source}/src/app/storage/store';export * from '${source}/src/app/atlas/terrain-height';export * from '${source}/src/app/storage/terrain-grid';`,
         resolveDir: root,
       },
       nodePaths: [root + '/node_modules'],

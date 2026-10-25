@@ -10,11 +10,11 @@ import {
   validateTravelHistory,
 } from './travel-history';
 import { checkedCalendarEventRow } from './calendar-events';
-import { hexPolygon } from '../atlas-landscape';
+import { hexPolygon } from '../atlas/atlas-landscape';
 import { executeLandscape, landscapeRegion, putLandscape } from './atlas-landscape';
 import { atlasLocalJourney } from './atlas-travel';
 import { checkedHexAccess, checkedTravelSupplies, hexAccessProblem } from '../hex-access';
-import { checkedMarkerPresentation, defaultMarkerPresentation } from '../atlas-marker';
+import { checkedMarkerPresentation, defaultMarkerPresentation } from '../atlas/atlas-marker';
 import { agendaOccurrence } from '../agenda-model';
 import { installAtlasMemory, rememberAtlasHex } from './atlas-knowledge';
 import { canonicalJson } from '../generation/canonical-json';

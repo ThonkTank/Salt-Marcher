@@ -103,7 +103,7 @@ await build({
     {
       name: 'player-atlas-runtime',
       setup(build) {
-        build.onResolve({ filter: /^\.\/atlas-deck-runtime$/ }, () => ({
+        build.onResolve({ filter: /(?:^|\/)atlas-deck-runtime$/ }, () => ({
           path: './atlas-deck-runtime.js',
           external: true,
         }));
@@ -120,7 +120,7 @@ await build({
   external: ['electron'],
 });
 await build({
-  entryPoints: ['src/app/atlas-brush-worker.ts'],
+  entryPoints: ['src/app/atlas/atlas-brush-worker.ts'],
   outfile: '.build/desktop/ui/atlas-brush-worker.js',
   bundle: true,
   platform: 'browser',
@@ -128,7 +128,7 @@ await build({
 });
 // The replacement Atlas remains a local lazy module until full tool handover.
 await build({
-  entryPoints: ['src/app/atlas-deck-runtime.ts'],
+  entryPoints: ['src/app/atlas/atlas-deck-runtime.ts'],
   outfile: '.build/desktop/ui/atlas-deck-runtime.js',
   bundle: true,
   platform: 'browser',
@@ -149,11 +149,11 @@ await build({
     {
       name: 'lazy-generator-settings',
       setup(build) {
-        build.onResolve({ filter: /^\.\/preset-settings-ui$/ }, () => ({
+        build.onResolve({ filter: /(?:^|\/)preset-settings-ui$/ }, () => ({
           path: './preset-settings.js',
           external: true,
         }));
-        build.onResolve({ filter: /^\.\/atlas-deck-runtime$/ }, () => ({
+        build.onResolve({ filter: /(?:^|\/)atlas-deck-runtime$/ }, () => ({
           path: './atlas-deck-runtime.js',
           external: true,
         }));
@@ -179,7 +179,7 @@ await writeFile(
     '\n' +
     (await readFile('src/app/markdown-view.css', 'utf8')) +
     '\n' +
-    (await readFile('src/app/atlas-workspace.css', 'utf8')),
+    (await readFile('src/app/atlas/atlas-workspace.css', 'utf8')),
 );
 await writeFile(
   '.build/desktop/build-info.json',

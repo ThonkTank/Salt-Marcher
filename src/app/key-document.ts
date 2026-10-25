@@ -1,7 +1,7 @@
-import type { DungeonGeometry } from './dungeon-contracts';
+import type { DungeonGeometry } from './atlas/dungeon-contracts';
 import type { Room } from './contracts';
 import { renderDungeonKey } from './key-model';
-import { dungeonSvg } from './drawing-model';
+import { dungeonSvg } from './atlas/drawing-model';
 const escape = (s: string) =>
   s.replace(
     /[&<>"']/g,

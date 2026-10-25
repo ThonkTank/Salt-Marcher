@@ -1,9 +1,9 @@
 import { EditorSession } from './editor-session';
-import { atlasDrawingWrite } from './campaign-atlas-author';
+import { atlasDrawingWrite } from './atlas/campaign-atlas-author';
 import type { WorkspaceGeometry, Room } from './contracts';
-import type { DungeonView } from './dungeon-contracts';
+import type { DungeonView } from './atlas/dungeon-contracts';
 import type { TriggerField } from './trigger-contracts';
-import type { DrawingElement, DrawingAction } from './drawing-contracts';
+import type { DrawingElement, DrawingAction } from './atlas/drawing-contracts';
 export const editorSession = new EditorSession();
 const pendingWork = editorSession.operation<Promise<void>>();
 

@@ -1,5 +1,5 @@
 import type { HexAccess } from './hex-access';
-import type { DungeonPose } from './dungeon-contracts';
+import type { DungeonPose } from './atlas/dungeon-contracts';
 import type { Result } from './contracts';
 import type { LiveScene } from './live-contracts';
 export type Terrain =
@@ -36,7 +36,7 @@ export interface AtlasMap {
   climate: Climate;
   seed: string;
   metricVersion?: number;
-  landscape?: import('./atlas-landscape').LandscapeRecord[];
+  landscape?: import('./atlas/atlas-landscape').LandscapeRecord[];
   cells: AtlasCell[];
 }
 export interface MarkerPresentation {

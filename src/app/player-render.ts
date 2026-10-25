@@ -1,6 +1,6 @@
 import type { PlayerFrame } from './player-contracts';
 import { playerAtlas } from './player-atlas';
-import { AtlasCanvasScene } from './atlas-canvas-scene';
+import { AtlasCanvasScene } from './atlas/atlas-canvas-scene';
 
 const displays = new WeakMap<HTMLElement, () => void>();
 export function renderPlayer(
@@ -46,7 +46,7 @@ export function renderPlayer(
     disposed = true;
     release();
   });
-  return import('./atlas-deck-runtime')
+  return import('./atlas/atlas-deck-runtime')
     .then(async ({ AtlasDeckSurface, AtlasDeckDrawing }) => {
       if (disposed) return;
       const { box } = projection,

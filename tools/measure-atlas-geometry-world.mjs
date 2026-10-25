@@ -178,7 +178,7 @@ try {
   const files = [
     'src/app/storage/atlas-region.ts',
     'src/app/storage/atlas-geometry-tiles.ts',
-    'src/app/atlas-geometry-overview.ts',
+    'src/app/atlas/atlas-geometry-overview.ts',
     'tools/measure-atlas-geometry-world.mjs',
   ];
   const hashes = Object.fromEntries(

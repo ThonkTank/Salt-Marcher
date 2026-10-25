@@ -6,7 +6,7 @@ import {
   fitMagicItems,
   checkedMagicPool,
 } from './session-magic';
-import { budgetRarity, budgetRarities } from '../dungeon-budget-contracts';
+import { budgetRarity, budgetRarities } from '../atlas/dungeon-budget-contracts';
 import type {
   SessionProfile,
   SessionLootGuidance,

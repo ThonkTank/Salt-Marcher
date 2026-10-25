@@ -5,7 +5,7 @@ import {execFileSync} from 'node:child_process';
 import {createHash} from 'node:crypto';
 import {readFileSync,writeFileSync,mkdirSync} from 'node:fs';
 const require=createRequire(import.meta.url),{PNG}=require('pngjs'),out='.build/contour-fixed-goldens';mkdirSync(out,{recursive:true});
-const contents="export * from './src/app/storage/terrain-color';export * from './src/app/terrain-projection-cache';export * from './src/app/terrain-height';";
+const contents="export * from './src/app/storage/terrain-color';export * from './src/app/atlas/terrain-projection-cache';export * from './src/app/atlas/terrain-height';";
 // Freeze the former slope-derived raster and ink together for an honest comparison.
 const baseline='02673afb2e04e828a32cf17b22e86cac45fc48ea';
 for(const mode of ['baseline','production'])await build({stdin:{contents,resolveDir:process.cwd()},bundle:true,platform:'node',format:'cjs',outfile:'.build/contour-golden-'+mode+'.cjs',plugins:mode==='baseline'?[{name:'baseline-contours',setup(b){b.onLoad({filter:/(landscape-raster|terrain-contour-style)\.ts$/},args=>({contents:execFileSync('git',['show',baseline+':src/app/'+args.path.split('/').at(-1)],{encoding:'utf8'}),loader:'ts'}));}}]:[]});

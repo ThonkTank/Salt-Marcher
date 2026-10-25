@@ -1,5 +1,5 @@
 import type { SessionProgress } from './visit-outcome-contracts';
-import type { BudgetRarity } from './dungeon-budget-contracts';
+import type { BudgetRarity } from './atlas/dungeon-budget-contracts';
 import type { Result } from './contracts';
 import type { EncounterParty, EncounterPlan, EncounterAssessment } from './encounter-contracts';
 import type { ItemInput, ProgressGuard } from './progression';

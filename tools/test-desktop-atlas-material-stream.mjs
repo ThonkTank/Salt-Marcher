@@ -24,11 +24,11 @@ const frozenFixture = {
   compressedBytes: 40236558,
 };
 const files = [
-  'src/app/atlas-material-tile-stream.ts',
-  'src/app/atlas-raster-tile-stream.ts',
-  'src/app/atlas-tile-stream.ts',
-  'src/app/atlas-deck-runtime.ts',
-  'src/app/atlas-material-tile.ts',
+  'src/app/atlas/atlas-material-tile-stream.ts',
+  'src/app/atlas/atlas-raster-tile-stream.ts',
+  'src/app/atlas/atlas-tile-stream.ts',
+  'src/app/atlas/atlas-deck-runtime.ts',
+  'src/app/atlas/atlas-material-tile.ts',
   'src/app/storage/atlas-material-tiles.ts',
   'desktop/main.ts',
   'desktop/preload.ts',

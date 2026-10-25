@@ -1,20 +1,20 @@
 import { createWorkspaceEditors } from './workspace-editors';
-import { editorSession as atlasEditorSession } from './campaign-atlas-author';
+import { editorSession as atlasEditorSession } from './atlas/campaign-atlas-author';
 import { EditorSession } from './editor-session';
 import { initUpdateUI } from './update-ui';
-import { atlasFieldValue, setAtlasFieldValue } from './atlas-units';
+import { atlasFieldValue, setAtlasFieldValue } from './atlas/atlas-units';
 import { editTextareaText } from './key-reading-model';
 import { initNumberInputScroll } from './number-input-scroll';
-import { workspaceGeometryOnly as geometryOnly } from './atlas-render-view';
-import { RoomDirectoryView } from './room-directory-ui';
-import { atlasDefaultRoomWrite } from './campaign-atlas-author';
+import { workspaceGeometryOnly as geometryOnly } from './atlas/atlas-render-view';
+import { RoomDirectoryView } from './atlas/room-directory-ui';
+import { atlasDefaultRoomWrite } from './atlas/campaign-atlas-author';
 import { setLiveAtlasSurface } from './live-hex-surface';
-import { CampaignAtlasWorkbench } from './campaign-atlas-ui';
-import { atlasRoomWrite, atlasHistoryWrite } from './campaign-atlas-author';
+import { CampaignAtlasWorkbench } from './atlas/campaign-atlas-ui';
+import { atlasRoomWrite, atlasHistoryWrite } from './atlas/campaign-atlas-author';
 import { initCampaignScreen, openCampaignScreen, hideCampaignScreen } from './campaign-screen-ui';
 import { PassiveMapCanvas } from './passive-map-canvas';
-import { roomCameraBox } from './room-camera';
-import { appendRoomNumber } from './room-number-label';
+import { roomCameraBox } from './atlas/room-camera';
+import { appendRoomNumber } from './atlas/room-number-label';
 import { initWorkspaceNavigation, syncWorkspaceNavigation } from './workspace-navigation';
 import {
   WorkspacePositions,
@@ -58,15 +58,15 @@ import { initTreasury, openTreasury } from './treasury-ui';
 import { openExistingCombat, setCombatNpcNavigation } from './combat';
 import { initTriggers } from './trigger-ui';
 import { initExtensions } from './extensions-ui';
-import { initDungeonContent } from './dungeon-content-ui';
-import { initGraph, syncGraphBanner, refreshOpenGraph } from './graph-ui';
+import { initDungeonContent } from './atlas/dungeon-content-ui';
+import { initGraph, syncGraphBanner, refreshOpenGraph } from './atlas/graph-ui';
 import { initKeys } from './key-ui';
 import { setKeyReferenceStatus, openNoteRoomKey, openRoomKey } from './key-ui';
-import { initPaths } from './path-ui';
+import { initPaths } from './atlas/path-ui';
 import { initCommitControls } from './commit-confirmation';
-import { initVolume } from './volume-ui';
-import { DungeonBinder } from './dungeon-binder-ui';
-import { initDungeon, openDungeon, selectDungeonRoom } from './dungeon-ui';
+import { initVolume } from './atlas/volume-ui';
+import { DungeonBinder } from './atlas/dungeon-binder-ui';
+import { initDungeon, openDungeon, selectDungeonRoom } from './atlas/dungeon-ui';
 import {
   initDrawing,
   reloadDrawing,
@@ -74,10 +74,10 @@ import {
   syncDrawingControls,
   roomDrawingStyle,
   flushDrawing,
-} from './drawing-ui';
+} from './atlas/drawing-ui';
 import { initAutonomy, openAutonomy } from './autonomy-ui';
 import { initPlayerUI, deactivatePlayer } from './player-ui';
-import { initCity, openCity, prepareCityPersonBinding } from './city-ui';
+import { initCity, openCity, prepareCityPersonBinding } from './atlas/city-ui';
 import { initCampaignManager } from './campaign-manager-ui';
 import { initMusic, openMusic } from './music-ui';
 import {

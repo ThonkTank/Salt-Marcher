@@ -1,4 +1,4 @@
-import type { AtlasRegionSource } from '../atlas-region-contracts';
+import type { AtlasRegionSource } from '../atlas/atlas-region-contracts';
 import { AtlasTileCache } from './atlas-tile-cache';
 import { projectionKey } from './atlas-projection-index';
 

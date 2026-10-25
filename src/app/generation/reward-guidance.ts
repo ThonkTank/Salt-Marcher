@@ -9,7 +9,7 @@ import {
   toNumber,
   type Rational,
 } from './rational';
-import { budgetRarities, type BudgetRarity } from '../dungeon-budget-contracts';
+import { budgetRarities, type BudgetRarity } from '../atlas/dungeon-budget-contracts';
 export interface RewardProgression {
   level: number;
   xpAtLevel: number;

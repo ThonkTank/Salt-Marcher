@@ -1,4 +1,4 @@
-import { budgetRarities, budgetRarity } from './dungeon-budget-contracts';
+import { budgetRarities, budgetRarity } from './atlas/dungeon-budget-contracts';
 import type { SessionGenerationRequest } from './session-contracts';
 
 export function magicPoolPicker(

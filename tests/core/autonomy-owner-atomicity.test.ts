@@ -5,7 +5,7 @@ import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import test from 'node:test';
 import {standardNeeds,type AutonomyActor,type AutonomyCommand,type AutonomyJob} from '../../src/app/autonomy-contracts';
-import type {DrawingElement} from '../../src/app/drawing-contracts';
+import type {DrawingElement} from '../../src/app/atlas/drawing-contracts';
 import type {Room} from '../../src/app/contracts';
 import {CampaignStore} from '../../src/app/storage/store';
 import {campaignLocalId} from '../../src/features/campaign/campaign-contracts';

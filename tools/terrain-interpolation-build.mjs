@@ -7,10 +7,10 @@ export function interpolationStreamPlugin(mode='monotone'){return {name:'monoton
  build.onLoad({filter:/(terrain-field-stream|terrain-height-lattice)\.ts$/},async({path})=>{
   if(mode==='lattice'){
    if(!path.endsWith('terrain-height-lattice.ts'))return;
-   return {contents:execFileSync('git',['show',LATTICE_BASELINE+':src/app/terrain-height-lattice.ts'],{encoding:'utf8'}),loader:'ts'};
+   return {contents:execFileSync('git',['show',LATTICE_BASELINE+':src/app/atlas/terrain-height-lattice.ts'],{encoding:'utf8'}),loader:'ts'};
   }
   if(!path.endsWith('terrain-field-stream.ts'))return;
-  let source=execFileSync('git',['show',INTERPOLATION_BASELINE+':src/app/terrain-field-stream.ts'],{encoding:'utf8'});
+  let source=execFileSync('git',['show',INTERPOLATION_BASELINE+':src/app/atlas/terrain-field-stream.ts'],{encoding:'utf8'});
   if(mode==='baseline')return {contents:source,loader:'ts'};
   const replace=(from,to)=>{if(source.split(from).length!==2)throw Error('Interpolation experiment no longer matches '+from);source=source.replace(from,to);};
   source="import {reconstruct} from '../../tools/terrain-interpolation-probe.mjs';\n"+source;

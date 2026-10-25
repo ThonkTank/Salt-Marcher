@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {drawingToolControls} from '../../src/app/drawing-tool-controls';
+import {drawingToolControls} from '../../src/app/atlas/drawing-tool-controls';
 
 test('selection mode hides drawing-only controls and actions', () => {
   assert.deepEqual(drawingToolControls('select', false, false, 0), {

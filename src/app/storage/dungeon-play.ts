@@ -5,8 +5,8 @@ import {
   saveDungeonPace,
   validateDungeonPaces,
 } from './dungeon-pace';
-import { seen3D } from '../spatial-3d';
-import { surfaceWorldFaces } from '../surface-model';
+import { seen3D } from '../atlas/spatial-3d';
+import { surfaceWorldFaces } from '../atlas/surface-model';
 import {
   dungeonContentContexts,
   evaluateContents,
@@ -21,8 +21,8 @@ import { readTriggerEvents, saveTriggerEvent, createTriggerEvents } from './trig
 import { refineTriggerRoute } from '../trigger-model';
 import { keyDiscoveries, revealKey } from './dungeon-key';
 import { renderDungeonKey } from '../key-model';
-import { passageLanding } from '../path-spatial';
-import { poseSpace } from '../spatial-3d';
+import { passageLanding } from '../atlas/path-spatial';
+import { poseSpace } from '../atlas/spatial-3d';
 import { startPursuit, continuePursuit, pursuitGuard } from './dungeon-pursuit';
 import {
   dungeonTraces,
@@ -49,15 +49,15 @@ import type {
   DungeonRequest,
   DungeonView,
   DungeonDisplay,
-} from '../dungeon-contracts';
+} from '../atlas/dungeon-contracts';
 import type { PlayerObserver, PlayerSettings } from '../player-contracts';
 import type { LiveCommand } from '../live-contracts';
 import { readLive, readLiveScene } from './live';
 import { position, savePosition } from './world';
 import { drawingRoom, drawingView, activateDungeonFeature } from './drawing';
 import { npcPosition } from './npc-world';
-import { planDungeon, perception, centerInRoom, unionPerception } from '../dungeon-model';
-import { inside, carveRoom } from '../drawing-model';
+import { planDungeon, perception, centerInRoom, unionPerception } from '../atlas/dungeon-model';
+import { inside, carveRoom } from '../atlas/drawing-model';
 const hash = (s: string) => createHash('sha256').update(s).digest('hex'),
   parsed = (r: any) => {
     if (!r || hash(r.payload) !== r.checksum) throw new Error('Dungeonlaufstand beschädigt.');
@@ -75,13 +75,13 @@ export function dungeonMapView(
   db: any,
   cam: string,
   shape?: import('../contracts').WorkspaceGeometry,
-  drawingOverride?: import('../drawing-contracts').DrawingView<
+  drawingOverride?: import('../atlas/drawing-contracts').DrawingView<
     import('../contracts').RoomGeometry,
-    import('../drawing-contracts').DrawingElementGeometry
+    import('../atlas/drawing-contracts').DrawingElementGeometry
   >,
-): import('../dungeon-contracts').DungeonView<
+): import('../atlas/dungeon-contracts').DungeonView<
   import('../contracts').RoomGeometry,
-  import('../drawing-contracts').DrawingElementGeometry
+  import('../atlas/drawing-contracts').DrawingElementGeometry
 > {
   const drawing = drawingOverride ?? drawingView(db, cam, true),
     live = readLive(db, cam),
@@ -342,7 +342,7 @@ export function previewDungeon(db: any, cam: string, r: DungeonRequest): Dungeon
       (!Number.isSafeInteger(r.finalSeconds) || r.finalSeconds < 1 || r.finalSeconds > 100000000))
   )
     throw new Error('Gruppe, Tempo und Zeit prüfen.');
-  let route: import('../dungeon-contracts').DungeonWaypoint[] = [],
+  let route: import('../atlas/dungeon-contracts').DungeonWaypoint[] = [],
     start = p.dungeon;
   for (const destination of [...(r.waypoints ?? []), r.destination]) {
     checkedPose(g, destination);
@@ -473,7 +473,7 @@ export function dungeonDisplay(
   sceneId: string,
   s: PlayerSettings,
   list: PlayerObserver[],
-  mapGeometry?: import('../dungeon-contracts').SpatialGeometry,
+  mapGeometry?: import('../atlas/dungeon-contracts').SpatialGeometry,
 ): DungeonDisplay | null {
   const p = position(db, cam, sceneId).dungeon;
   if (!p) return null;
@@ -648,8 +648,8 @@ export function dungeonDisplay(
 /** The receipt is authoritative even if rebuilding the travel view currently fails. */
 export function dungeonCommandState(
   db: any,
-  c: import('../dungeon-contracts').DungeonCommand,
-): import('../dungeon-contracts').DungeonCommandState {
+  c: import('../atlas/dungeon-contracts').DungeonCommand,
+): import('../atlas/dungeon-contracts').DungeonCommandState {
   if (typeof c.commandId !== 'string' || !c.commandId)
     throw new Error('Dungeonauftragskennung prüfen.');
   const row = db
@@ -889,7 +889,7 @@ export function executeDungeon(
             throw new Error('Gruppe zuerst an die Passage bringen.');
           if (side.target.kind === 'geometry')
             throw new Error('Geometrische Passage über den normalen Dungeonweg nutzen.');
-          let landing: import('../dungeon-contracts').DungeonPose | null = null,
+          let landing: import('../atlas/dungeon-contracts').DungeonPose | null = null,
             locationId: string | null = null;
           if (side.target.kind === 'passage') {
             const target = g.drawing.passages?.find((p) => p.id === side.target.id && p.assigned);

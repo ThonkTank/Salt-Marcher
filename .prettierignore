@@ -9,7 +9,7 @@ main.js.map
 **/fixtures/
 **/reference-images/
 **/evidence/
-src/app/atlas-reference-catalog.ts
+src/app/atlas/atlas-reference-catalog.ts
 resources/
 # Historical adapters, native comparison sources and ADR prototypes
 src/main.ts

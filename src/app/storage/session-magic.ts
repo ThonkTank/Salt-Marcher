@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { budgetRarities, budgetRarity, type BudgetRarity } from '../dungeon-budget-contracts';
+import { budgetRarities, budgetRarity, type BudgetRarity } from '../atlas/dungeon-budget-contracts';
 import type {
   SessionLootGuidance,
   SessionMagicGuidance,

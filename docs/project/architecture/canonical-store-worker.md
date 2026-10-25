@@ -63,7 +63,7 @@ deren Quellenabfrage erst während der Sperre aus dem Store zurückkommt.
 
 - `tests/desktop-store-worker.test.mjs`: echte Worker, Binärdaten, Doppelzustellung,
   Abbruch vor/nach Commit, Receipt-Auflösung, Pending-Rennen, Backup-Epoche und Exit.
-- `tests/desktop-review-data-retention.test.mjs`: Ticketentzug ohne vorzeitiges Löschen aktiver Stagingdateien.
+- `tests/atlas/desktop-review-data-retention.test.mjs`: Ticketentzug ohne vorzeitiges Löschen aktiver Stagingdateien.
 - `tests/desktop-player-visual-host.test.mjs`: verspätete Antworten und Fensterwechsel.
 - `tests/desktop-backup-worker.test.mjs`: unabhängige Snapshotprüfung und Veröffentlichung.
 - `tools/test-desktop-store-responsiveness.mjs`: Main-Timerverzögerung während einer

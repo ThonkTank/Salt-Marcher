@@ -1087,7 +1087,7 @@
         "state": "planned",
         "evidence": [
           "docs/plans/maps/room-groups.md",
-          "tests/desktop-room-groups.test.mjs",
+          "tests/atlas/desktop-room-groups.test.mjs",
           "tools/test-desktop-room-groups.mjs",
           "tools/measure-room-groups.mjs"
         ]
@@ -13336,7 +13336,7 @@
         },
         "landscapeToolExpansion20261019": {
           "implementation": "docs/plans/maps/landscape-tools.md",
-          "automatedProbe": "tests/desktop-landscape-tools.test.mjs",
+          "automatedProbe": "tests/atlas/desktop-landscape-tools.test.mjs",
           "nativeProbe": "tools/test-desktop-landscape-tools.mjs",
           "comparisonState": "original_effect_comparison_open"
         }
@@ -13399,7 +13399,7 @@
         },
         "landscapeToolExpansion20261019": {
           "implementation": "docs/plans/maps/landscape-tools.md",
-          "automatedProbe": "tests/desktop-landscape-tools.test.mjs",
+          "automatedProbe": "tests/atlas/desktop-landscape-tools.test.mjs",
           "nativeProbe": "tools/test-desktop-landscape-tools.mjs",
           "comparisonState": "original_effect_comparison_open"
         }
@@ -13462,7 +13462,7 @@
         },
         "landscapeToolExpansion20261019": {
           "implementation": "docs/plans/maps/landscape-tools.md",
-          "automatedProbe": "tests/desktop-landscape-tools.test.mjs",
+          "automatedProbe": "tests/atlas/desktop-landscape-tools.test.mjs",
           "nativeProbe": "tools/test-desktop-landscape-tools.mjs",
           "comparisonState": "original_effect_comparison_open"
         }
@@ -13525,7 +13525,7 @@
         },
         "landscapeToolExpansion20261019": {
           "implementation": "docs/plans/maps/landscape-tools.md",
-          "automatedProbe": "tests/desktop-landscape-tools.test.mjs",
+          "automatedProbe": "tests/atlas/desktop-landscape-tools.test.mjs",
           "nativeProbe": "tools/test-desktop-landscape-tools.mjs",
           "comparisonState": "original_effect_comparison_open"
         }
@@ -14480,7 +14480,7 @@
         },
         "landscapeToolExpansion20261019": {
           "implementation": "docs/plans/maps/landscape-tools.md",
-          "automatedProbe": "tests/desktop-landscape-tools.test.mjs",
+          "automatedProbe": "tests/atlas/desktop-landscape-tools.test.mjs",
           "nativeProbe": "tools/test-desktop-landscape-tools.mjs",
           "comparisonState": "original_effect_comparison_open"
         }
@@ -14544,7 +14544,7 @@
         },
         "landscapeToolExpansion20261019": {
           "implementation": "docs/plans/maps/landscape-tools.md",
-          "automatedProbe": "tests/desktop-landscape-tools.test.mjs",
+          "automatedProbe": "tests/atlas/desktop-landscape-tools.test.mjs",
           "nativeProbe": "tools/test-desktop-landscape-tools.mjs",
           "comparisonState": "original_effect_comparison_open"
         }
@@ -14607,7 +14607,7 @@
         },
         "landscapeToolExpansion20261019": {
           "implementation": "docs/plans/maps/landscape-tools.md",
-          "automatedProbe": "tests/desktop-landscape-tools.test.mjs",
+          "automatedProbe": "tests/atlas/desktop-landscape-tools.test.mjs",
           "nativeProbe": "tools/test-desktop-landscape-tools.mjs",
           "comparisonState": "original_effect_comparison_open"
         }
@@ -14670,7 +14670,7 @@
         },
         "landscapeToolExpansion20261019": {
           "implementation": "docs/plans/maps/landscape-tools.md",
-          "automatedProbe": "tests/desktop-landscape-tools.test.mjs",
+          "automatedProbe": "tests/atlas/desktop-landscape-tools.test.mjs",
           "nativeProbe": "tools/test-desktop-landscape-tools.mjs",
           "comparisonState": "original_effect_comparison_open"
         }
@@ -14731,7 +14731,7 @@
         },
         "landscapeToolExpansion20261019": {
           "implementation": "docs/plans/maps/landscape-tools.md",
-          "automatedProbe": "tests/desktop-landscape-tools.test.mjs",
+          "automatedProbe": "tests/atlas/desktop-landscape-tools.test.mjs",
           "nativeProbe": "tools/test-desktop-landscape-tools.mjs",
           "comparisonState": "original_effect_comparison_open"
         }
@@ -14792,7 +14792,7 @@
         },
         "landscapeToolExpansion20261019": {
           "implementation": "docs/plans/maps/landscape-tools.md",
-          "automatedProbe": "tests/desktop-landscape-tools.test.mjs",
+          "automatedProbe": "tests/atlas/desktop-landscape-tools.test.mjs",
           "nativeProbe": "tools/test-desktop-landscape-tools.mjs",
           "comparisonState": "original_effect_comparison_open"
         }
@@ -14853,7 +14853,7 @@
         },
         "landscapeToolExpansion20261019": {
           "implementation": "docs/plans/maps/landscape-tools.md",
-          "automatedProbe": "tests/desktop-landscape-tools.test.mjs",
+          "automatedProbe": "tests/atlas/desktop-landscape-tools.test.mjs",
           "nativeProbe": "tools/test-desktop-landscape-tools.mjs",
           "comparisonState": "original_effect_comparison_open"
         }
@@ -14914,7 +14914,7 @@
         },
         "landscapeToolExpansion20261019": {
           "implementation": "docs/plans/maps/landscape-tools.md",
-          "automatedProbe": "tests/desktop-landscape-tools.test.mjs",
+          "automatedProbe": "tests/atlas/desktop-landscape-tools.test.mjs",
           "nativeProbe": "tools/test-desktop-landscape-tools.mjs",
           "comparisonState": "original_effect_comparison_open"
         }
@@ -14991,7 +14991,7 @@
         },
         "landscapeToolExpansion20261019": {
           "implementation": "docs/plans/maps/landscape-tools.md",
-          "automatedProbe": "tests/desktop-landscape-tools.test.mjs",
+          "automatedProbe": "tests/atlas/desktop-landscape-tools.test.mjs",
           "nativeProbe": "tools/test-desktop-landscape-tools.mjs",
           "comparisonState": "original_effect_comparison_open"
         }
@@ -15075,7 +15075,7 @@
         },
         "landscapeToolExpansion20261019": {
           "implementation": "docs/plans/maps/landscape-tools.md",
-          "automatedProbe": "tests/desktop-landscape-tools.test.mjs",
+          "automatedProbe": "tests/atlas/desktop-landscape-tools.test.mjs",
           "nativeProbe": "tools/test-desktop-landscape-tools.mjs",
           "comparisonState": "original_effect_comparison_open"
         }
@@ -15136,7 +15136,7 @@
         },
         "landscapeToolExpansion20261019": {
           "implementation": "docs/plans/maps/landscape-tools.md",
-          "automatedProbe": "tests/desktop-landscape-tools.test.mjs",
+          "automatedProbe": "tests/atlas/desktop-landscape-tools.test.mjs",
           "nativeProbe": "tools/test-desktop-landscape-tools.mjs",
           "comparisonState": "original_effect_comparison_open"
         }
@@ -15418,7 +15418,7 @@
         },
         "landscapeToolExpansion20261019": {
           "implementation": "docs/plans/maps/landscape-tools.md",
-          "automatedProbe": "tests/desktop-landscape-tools.test.mjs",
+          "automatedProbe": "tests/atlas/desktop-landscape-tools.test.mjs",
           "nativeProbe": "tools/test-desktop-landscape-tools.mjs",
           "comparisonState": "original_effect_comparison_open"
         }
@@ -15693,7 +15693,7 @@
         },
         "landscapeToolExpansion20261019": {
           "implementation": "docs/plans/maps/landscape-tools.md",
-          "automatedProbe": "tests/desktop-landscape-tools.test.mjs",
+          "automatedProbe": "tests/atlas/desktop-landscape-tools.test.mjs",
           "nativeProbe": "tools/test-desktop-landscape-tools.mjs",
           "comparisonState": "original_effect_comparison_open"
         }
@@ -37728,7 +37728,7 @@
             "Colorable-Bibliothekskachel zeigt RGBA live und nach Panel-Neuaufbau"
           ],
           "evidence": [
-            "tests/object-color-alpha.test.mjs",
+            "tests/atlas/object-color-alpha.test.mjs",
             "tests/object-colorable-tags.test.mjs",
             "tests/object-colorable-pixels.test.mjs",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/object-colorable-final/evidence/1791183820309-object-alpha-edit/result.json",
@@ -37998,7 +37998,7 @@
             "src/features/objekte/colorable-pixels.ts"
           ],
           "evidence": [
-            "tests/object-color-alpha.test.mjs",
+            "tests/atlas/object-color-alpha.test.mjs",
             "tests/object-colorable-tags.test.mjs",
             "tests/object-colorable-pixels.test.mjs",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/object-colorable-final/evidence/1791183820309-object-alpha-edit/result.json",
@@ -38061,7 +38061,7 @@
             "src/features/objekte/colorable-pixels.ts"
           ],
           "evidence": [
-            "tests/object-color-alpha.test.mjs",
+            "tests/atlas/object-color-alpha.test.mjs",
             "tests/object-colorable-tags.test.mjs",
             "tests/object-colorable-pixels.test.mjs",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/object-colorable-final/evidence/1791183820309-object-alpha-edit/result.json",

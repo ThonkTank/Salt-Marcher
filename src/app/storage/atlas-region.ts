@@ -3,7 +3,7 @@ import { AtlasReadCancelled, atlasReadCheckpoint } from './atlas-read-cancellati
 import { AtlasDeferredGeometry } from './atlas-deferred-geometry';
 import { assertAtlasProjectionSource } from './atlas-shape-source';
 import { AtlasProjectionIndex } from './atlas-projection-index';
-import { mapExtentVisible } from '../atlas-scale-policy';
+import { mapExtentVisible } from '../atlas/atlas-scale-policy';
 import {
   labelFromPolygon,
   lineLabels,
@@ -12,22 +12,22 @@ import {
   territoryLabels,
   labelScaleLimits,
   type MapLabelCandidate,
-} from '../atlas-cartography';
+} from '../atlas/atlas-cartography';
 import { readTerritories } from './atlas-territories';
-import { validateTerrainDetail } from '../terrain-detail';
-import { TerrainCache } from '../terrain-cache';
+import { validateTerrainDetail } from '../atlas/terrain-detail';
+import { TerrainCache } from '../atlas/terrain-cache';
 import {
   terrainFrameDelta,
   terrainFrameBytes,
   type TerrainFullFrame,
   type TerrainFrameIdentity,
-} from '../terrain-frame';
+} from '../atlas/terrain-frame';
 import { AtlasLandscapeReader } from './atlas-landscape-region';
 import { roomMapStyle } from './drawing';
 import { readDungeonVolume } from './volume';
-import { dungeonContentAnchor } from '../dungeon-content-model';
+import { dungeonContentAnchor } from '../atlas/dungeon-content-model';
 import { readCityHeader, checkedUnit } from './city';
-import { validateDrawingElement } from '../drawing-contracts';
+import { validateDrawingElement } from '../atlas/drawing-contracts';
 import { createHash } from 'node:crypto';
 import { PNG } from 'pngjs';
 import type {
@@ -37,21 +37,21 @@ import type {
   AtlasObjectFocus,
   AtlasHit,
   AtlasHitPage,
-} from '../atlas-region-contracts';
+} from '../atlas/atlas-region-contracts';
 import {
   REGION_REPLY_BYTES,
   REGION_VECTOR_OBJECTS,
   emptyDrawing,
   validateRegion,
-} from '../atlas-region-contracts';
+} from '../atlas/atlas-region-contracts';
 import type { Point, Polygon, RoomGeometry } from '../contracts';
 import { validateRoom } from '../contracts';
-import { posedFootprint, roadPoints } from '../city-model';
-import { anchored, inside } from '../drawing-model';
-import { volumeProjection } from '../volume-model';
-import { LandscapeRasterizer } from '../landscape-raster';
-import type { AtlasBinding } from '../campaign-atlas-contracts';
-import type { CityHeader } from '../city-contracts';
+import { posedFootprint, roadPoints } from '../atlas/city-model';
+import { anchored, inside } from '../atlas/drawing-model';
+import { volumeProjection } from '../atlas/volume-model';
+import { LandscapeRasterizer } from '../atlas/landscape-raster';
+import type { AtlasBinding } from '../atlas/campaign-atlas-contracts';
+import type { CityHeader } from '../atlas/city-contracts';
 const digest = (s: string) => createHash('sha256').update(s).digest('hex');
 const parse = (r: any) => {
   if (!r || digest(r.payload) !== r.checksum)
@@ -227,7 +227,7 @@ export class AtlasRegionReader {
   }
   terrainVisibility(
     source: AtlasRegionSource,
-    view: import('../terrain-spatial-model').TerrainView,
+    view: import('../atlas/terrain-spatial-model').TerrainView,
   ) {
     if (this.landscapeFailure) throw Error('Geländequelle konnte nicht gelesen werden.');
     return this.landscape.visibility(source, view);
@@ -239,36 +239,36 @@ export class AtlasRegionReader {
     this.landscape.projectionCache.tiles.clearRetained();
     return this.landscape;
   }
-  terrain(source: AtlasRegionSource, q: import('../terrain-projection').TerrainProjectionRequest) {
+  terrain(source: AtlasRegionSource, q: import('../atlas/terrain-projection').TerrainProjectionRequest) {
     return this.navigationTerrain().terrain(source, q);
   }
-  colorSteps(source: AtlasRegionSource, q: import('../terrain-color').TerrainColorRequest) {
+  colorSteps(source: AtlasRegionSource, q: import('../atlas/terrain-color').TerrainColorRequest) {
     return this.navigationTerrain().colorSteps(source, q);
   }
   heightSteps(
     source: AtlasRegionSource,
-    q: import('../terrain-projection').TerrainProjectionRequest,
+    q: import('../atlas/terrain-projection').TerrainProjectionRequest,
   ) {
     return this.navigationTerrain().heightSteps(source, q);
   }
   materialSteps(
     source: AtlasRegionSource,
-    q: import('../atlas-material-tile').AtlasMaterialTileRequest,
-    channels: ReadonlySet<import('../terrain-material').TerrainMaterialChannel>,
+    q: import('../atlas/atlas-material-tile').AtlasMaterialTileRequest,
+    channels: ReadonlySet<import('../atlas/terrain-material').TerrainMaterialChannel>,
   ) {
     return this.navigationTerrain().materialSteps(source, q, channels);
   }
   terrainSteps(
     source: AtlasRegionSource,
-    q: import('../terrain-projection').TerrainProjectionRequest,
+    q: import('../atlas/terrain-projection').TerrainProjectionRequest,
   ) {
     return this.navigationTerrain().terrainSteps(source, q);
   }
   liveTerrain(
     source: AtlasRegionSource,
-    q: import('../terrain-presentation').TerrainFrameQuery,
+    q: import('../atlas/terrain-presentation').TerrainFrameQuery,
     base?: TerrainFrameIdentity,
-  ): import('../terrain-presentation').TerrainFrame {
+  ): import('../atlas/terrain-presentation').TerrainFrame {
     const steps = this.liveTerrainSteps(source, q, base, false);
     for (;;) {
       const step = steps.next();
@@ -277,10 +277,10 @@ export class AtlasRegionReader {
   }
   *liveTerrainSteps(
     source: AtlasRegionSource,
-    q: import('../terrain-presentation').TerrainFrameQuery,
+    q: import('../atlas/terrain-presentation').TerrainFrameQuery,
     base?: TerrainFrameIdentity,
     cooperative = true,
-  ): Generator<void, import('../terrain-presentation').TerrainFrame> {
+  ): Generator<void, import('../atlas/terrain-presentation').TerrainFrame> {
     if (this.landscapeFailure) throw Error('Geländequelle konnte nicht gelesen werden.');
     const query =
       q.kind === 'tilted'
@@ -983,7 +983,7 @@ export class AtlasRegionReader {
     source: AtlasRegionSource,
     box: Box,
     coreOnly = false,
-  ): import('../atlas-scene-geometry').AtlasSceneView {
+  ): import('../atlas/atlas-scene-geometry').AtlasSceneView {
     if (!coreOnly) this.requireFullGeometry();
     const step = this.geometryTileSourceBatches(source, box, false, coreOnly).next();
     if (step.done) throw Error('Geometriequelle fehlt.');
@@ -1073,7 +1073,7 @@ export class AtlasRegionReader {
     stream = true,
     coreOnly = stream,
   ): Generator<{
-    view: import('../atlas-scene-geometry').AtlasSceneView;
+    view: import('../atlas/atlas-scene-geometry').AtlasSceneView;
     anchorBuildings: boolean;
     unsupportedElements: number;
   }> {
@@ -1198,7 +1198,7 @@ export class AtlasRegionReader {
     };
     const batch = (anchorBuildings: boolean, unsupportedElements = 0) => {
       region.coverage.complete = region.coverage.unreadable === 0;
-      const view: import('../atlas-scene-geometry').AtlasSceneView = {
+      const view: import('../atlas/atlas-scene-geometry').AtlasSceneView = {
         cities: region.cities,
         bindings: region.bindings,
         region: { ...region, coverage: { ...region.coverage } },

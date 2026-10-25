@@ -1,4 +1,4 @@
-import type { LandscapeBox, LandscapeRecord } from '../atlas-landscape';
+import type { LandscapeBox, LandscapeRecord } from '../atlas/atlas-landscape';
 export type RasterSamples = number | { width: number; height: number };
 /** Reject patches without a supersample centre, including rectangular rasters. */
 export function landscapeSampleFilter(box: LandscapeBox, pixels: RasterSamples, enabled: boolean) {

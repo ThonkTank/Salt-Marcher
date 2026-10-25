@@ -16,7 +16,7 @@ export function populateMixedWorld(store, campaign, sizes = {}) {
     export {storeGroupDraft} from './src/app/storage/room-groups';
     export {bindAtlas} from './src/app/storage/campaign-atlas';
     export {putLandscape} from './src/app/storage/atlas-landscape';
-    export {hexPolygon} from './src/app/atlas-landscape';
+    export {hexPolygon} from './src/app/atlas/atlas-landscape';
     export {newLocation} from './src/features/location/location-schema';
     export {validateRoom} from './src/app/contracts';
   `,

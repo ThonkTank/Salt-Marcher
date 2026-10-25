@@ -1,4 +1,4 @@
-import { seen3D, spatialRay } from '../spatial-3d';
+import { seen3D, spatialRay } from '../atlas/spatial-3d';
 import {
   defaultTraceRules,
   traceProfile,
@@ -6,7 +6,7 @@ import {
   movementModes,
   trackSurfaces,
 } from '../track-model';
-import type { DungeonTraceRules } from '../dungeon-contracts';
+import type { DungeonTraceRules } from '../atlas/dungeon-contracts';
 import { readPreparedGroup } from './session';
 import { createHash, randomUUID } from 'node:crypto';
 import type {
@@ -16,9 +16,9 @@ import type {
   DungeonSenseAction,
   DungeonTrace,
   DungeonSenseView,
-} from '../dungeon-contracts';
-import { perception, planDungeon } from '../dungeon-model';
-import { inside } from '../drawing-model';
+} from '../atlas/dungeon-contracts';
+import { perception, planDungeon } from '../atlas/dungeon-model';
+import { inside } from '../atlas/drawing-model';
 import { readLiveScene } from './live';
 import { position } from './world';
 const hash = (s: string) => createHash('sha256').update(s).digest('hex'),

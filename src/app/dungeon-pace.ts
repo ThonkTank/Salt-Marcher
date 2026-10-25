@@ -1,4 +1,4 @@
-import type { DungeonMovement } from './volume-contracts';
+import type { DungeonMovement } from './atlas/volume-contracts';
 export interface DungeonPaceSettings {
   explorationRoundSeconds?: number;
   sceneId: string;

@@ -1,13 +1,13 @@
-import { volumeOrigin } from '../volume-model';
+import { volumeOrigin } from '../atlas/volume-model';
 import { createHash, randomUUID } from 'node:crypto';
 import type { KeyContent } from '../key-contracts';
-import type { DungeonVolume } from '../volume-contracts';
+import type { DungeonVolume } from '../atlas/volume-contracts';
 import {
   isSurfaceFace,
   connectedSurface,
   surfaceFaceKey,
   type SurfaceFace,
-} from '../surface-model';
+} from '../atlas/surface-model';
 import { readDungeonKeys } from './dungeon-key';
 const keyRow = (cam: string, c: KeyContent) => {
   const payload = JSON.stringify(c);

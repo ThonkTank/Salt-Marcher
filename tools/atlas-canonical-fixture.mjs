@@ -14,7 +14,7 @@ await mkdir(bundleDir, { recursive: true });
 buildSync({
   stdin: {
     contents:
-      "export {CampaignStore} from './src/app/storage/store';export {heightRecord} from './src/app/terrain-height';export {terrainObjectSources,resolveTerrainObjects} from './src/app/terrain-objects';export {AtlasRegionReader} from './src/app/storage/atlas-region';",
+      "export {CampaignStore} from './src/app/storage/store';export {heightRecord} from './src/app/atlas/terrain-height';export {terrainObjectSources,resolveTerrainObjects} from './src/app/atlas/terrain-objects';export {AtlasRegionReader} from './src/app/storage/atlas-region';",
     resolveDir: root,
   },
   outfile: join(bundleDir, 'store.cjs'),

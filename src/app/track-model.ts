@@ -1,4 +1,4 @@
-import type { DungeonTrace, DungeonTraceRules } from './dungeon-contracts';
+import type { DungeonTrace, DungeonTraceRules } from './atlas/dungeon-contracts';
 export const trackSurfaces = ['stone', 'mud', 'sand', 'snow', 'water', 'vegetation'] as const;
 export const movementModes = ['walk', 'sneak', 'run', 'crawl', 'swim', 'fly'] as const;
 export function defaultTraceRules(): DungeonTraceRules {

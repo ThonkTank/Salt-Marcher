@@ -109,7 +109,7 @@ Die Welt enthält 100.000 Geländequellen, 1.028 Höhenkacheln, 5.000 Ortsmarker
 großen Dungeon. Der kleine parametrische Generator `populateMixedWorld` erzeugt
 nur ein Inventar für isolierte Tests; er ersetzt diese vollständige Welt nicht.
 
-`tests/atlas-reference-fixture.test.mjs` prüft Inhaltstreue über Store-Neuöffnung
+`tests/atlas/atlas-reference-fixture.test.mjs` prüft Inhaltstreue über Store-Neuöffnung
 und gezielte Verluste. Die nativen Vergleiche in
 `tools/test-desktop-atlas-mixed-workbench.mjs` prüfen fünf Maßstäbe bei 100/200 %,
 sichtbare Kartenausschnitte, Neustart und Bildexport. Ihre Referenzbilder unter

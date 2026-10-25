@@ -1,4 +1,4 @@
-import { effectiveLandscape } from './atlas-landscape';
+import { effectiveLandscape } from './atlas/atlas-landscape';
 import { hexAccessProblem, checkedTravelSupplies } from './hex-access';
 import type {
   Hex,

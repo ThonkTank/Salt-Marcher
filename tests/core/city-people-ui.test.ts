@@ -3,8 +3,8 @@ import {readFileSync} from 'node:fs';
 import {join} from 'node:path';
 import test from 'node:test';
 import {parseHTML} from 'linkedom';
-import {activateCity,initCity,openCity} from '../../src/app/city-ui';
-import type {CityOverview,CityView} from '../../src/app/city-contracts';
+import {activateCity,initCity,openCity} from '../../src/app/atlas/city-ui';
+import type {CityOverview,CityView} from '../../src/app/atlas/city-contracts';
 import type {NpcQuery} from '../../src/app/npc-contracts';
 
 const wait=(ms=0)=>new Promise<void>(resolve=>setTimeout(resolve,ms));

@@ -6,10 +6,10 @@ import {
   type AtlasWorkerValue,
   type AtlasWorkerReply,
 } from './atlas-worker-contract';
-import { validateAtlasReadRequest, type AtlasReadRequest } from '../src/app/atlas-read-request';
+import { validateAtlasReadRequest, type AtlasReadRequest } from '../src/app/atlas/atlas-read-request';
 import { randomUUID } from 'node:crypto';
 import { eraseProjectionWork } from '../src/app/storage/atlas-projection-index';
-import { terrainTraceStart } from '../src/app/terrain-timing';
+import { terrainTraceStart } from '../src/app/atlas/terrain-timing';
 import { Worker } from 'node:worker_threads';
 import { join } from 'node:path';
 import type {
@@ -18,8 +18,8 @@ import type {
   AtlasRegionGeometry,
   AtlasObjectFocus,
   AtlasHitPage,
-} from '../src/app/atlas-region-contracts';
-import { REGION_CACHE_BYTES } from '../src/app/atlas-region-contracts';
+} from '../src/app/atlas/atlas-region-contracts';
+import { REGION_CACHE_BYTES } from '../src/app/atlas/atlas-region-contracts';
 
 type Queued = {
   control?: AtlasReadRequest;
@@ -371,51 +371,51 @@ export class AtlasRegionService {
 
   prepareTerrainStroke(
     source: AtlasRegionSource,
-    stroke: import('../src/app/terrain-brush').HeightStroke,
+    stroke: import('../src/app/atlas/terrain-brush').HeightStroke,
   ): Promise<import('../src/app/storage/terrain-scale').PreparedTerrainStroke> {
     return this.enqueue(source, { kind: 'terrain-stroke', stroke }, 'author');
   }
 
   geometryTile(
     source: AtlasRegionSource,
-    query: import('../src/app/atlas-geometry-tile').AtlasGeometryTileRequest,
-  ): Promise<import('../src/app/atlas-geometry-tile').AtlasGeometryTile> {
+    query: import('../src/app/atlas/atlas-geometry-tile').AtlasGeometryTileRequest,
+  ): Promise<import('../src/app/atlas/atlas-geometry-tile').AtlasGeometryTile> {
     return this.enqueue(source, { kind: 'geometry-tile', query }, 'terrain');
   }
   terrainTile(
     source: AtlasRegionSource,
-    query: import('../src/app/atlas-terrain-tile').AtlasTerrainTileRequest,
+    query: import('../src/app/atlas/atlas-terrain-tile').AtlasTerrainTileRequest,
     control?: AtlasReadRequest,
-  ): Promise<import('../src/app/atlas-terrain-tile').AtlasTerrainTile> {
+  ): Promise<import('../src/app/atlas/atlas-terrain-tile').AtlasTerrainTile> {
     return this.enqueue(source, { kind: 'terrain-tile', query }, 'terrain', control);
   }
   materialTile(
     source: AtlasRegionSource,
-    query: import('../src/app/atlas-material-tile').AtlasMaterialTileRequest,
+    query: import('../src/app/atlas/atlas-material-tile').AtlasMaterialTileRequest,
     control?: AtlasReadRequest,
-  ): Promise<import('../src/app/atlas-material-tile').AtlasMaterialTile> {
+  ): Promise<import('../src/app/atlas/atlas-material-tile').AtlasMaterialTile> {
     return this.enqueue(source, { kind: 'material-tile', query }, 'terrain', control);
   }
   terrainColor(
     source: AtlasRegionSource,
-    query: import('../src/app/terrain-color').TerrainColorRequest,
-  ): Promise<import('../src/app/terrain-color').TerrainColorTile> {
+    query: import('../src/app/atlas/terrain-color').TerrainColorRequest,
+  ): Promise<import('../src/app/atlas/terrain-color').TerrainColorTile> {
     return this.enqueue(source, { kind: 'terrain-color', query }, 'terrain');
   }
   terrain(
     source: AtlasRegionSource,
-    query: import('../src/app/terrain-projection').TerrainProjectionRequest,
+    query: import('../src/app/atlas/terrain-projection').TerrainProjectionRequest,
     control?: AtlasReadRequest,
-  ): Promise<import('../src/app/terrain-projection').TerrainProjection> {
+  ): Promise<import('../src/app/atlas/terrain-projection').TerrainProjection> {
     return this.enqueue(source, { kind: 'terrain', query }, 'terrain', control);
   }
 
   liveTerrain(
     source: AtlasRegionSource,
-    query: import('../src/app/terrain-presentation').TerrainFrameQuery,
-    base?: import('../src/app/terrain-frame').TerrainFrameIdentity,
+    query: import('../src/app/atlas/terrain-presentation').TerrainFrameQuery,
+    base?: import('../src/app/atlas/terrain-frame').TerrainFrameIdentity,
     refinement = false,
-  ): Promise<import('../src/app/terrain-presentation').TerrainFrame> {
+  ): Promise<import('../src/app/atlas/terrain-presentation').TerrainFrame> {
     return this.enqueue(
       source,
       { kind: refinement ? 'terrain-refine' : 'terrain-live', query, base },

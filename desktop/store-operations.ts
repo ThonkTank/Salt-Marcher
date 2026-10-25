@@ -260,7 +260,7 @@ export interface FileAuthority {
 }
 export interface StoreSpecialOperations {
   executeCity(
-    command: import('../src/app/city-contracts').CityCommand,
+    command: import('../src/app/atlas/city-contracts').CityCommand,
   ): ReturnType<CampaignStore['city']>;
   finishCampaignErasureFiles(id: string): Promise<void>;
   backup(filename: string): Promise<void>;

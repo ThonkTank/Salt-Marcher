@@ -1,4 +1,4 @@
-import type { DungeonPose } from './dungeon-contracts';
+import type { DungeonPose } from './atlas/dungeon-contracts';
 export interface TriggerFragment {
   id: string;
   volumeId: string;

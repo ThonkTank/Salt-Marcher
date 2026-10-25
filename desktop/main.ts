@@ -1,23 +1,23 @@
-import { validateAtlasReadRequest, type AtlasReadRequest } from '../src/app/atlas-read-request';
+import { validateAtlasReadRequest, type AtlasReadRequest } from '../src/app/atlas/atlas-read-request';
 import { AtlasWriteActivity } from './atlas-write-activity';
 import {
   clearCampaignStaging,
   discardCampaignTickets,
   cancelCampaignTicket,
 } from './campaign-erasure';
-import { atlasGeometryTileBox } from '../src/app/atlas-geometry-tile';
+import { atlasGeometryTileBox } from '../src/app/atlas/atlas-geometry-tile';
 import { clearCorruptAtlasTileCaches } from '../src/app/storage/atlas-tile-cache';
-import { atlasTerrainTileQuery } from '../src/app/atlas-terrain-tile';
-import { atlasMaterialTileQuery } from '../src/app/atlas-material-tile';
+import { atlasTerrainTileQuery } from '../src/app/atlas/atlas-terrain-tile';
+import { atlasMaterialTileQuery } from '../src/app/atlas/atlas-material-tile';
 import { clearProjectionWork } from '../src/app/storage/atlas-projection-index';
 import { openUpdateRuntime } from './update-runtime';
 import { UpdateService } from './update-service';
-import { terrainSnapshotStillValid } from '../src/app/terrain-presentation';
-import { validateTerrainColor } from '../src/app/terrain-color';
-import { validateTerrainProjection } from '../src/app/terrain-projection';
+import { terrainSnapshotStillValid } from '../src/app/atlas/terrain-presentation';
+import { validateTerrainColor } from '../src/app/atlas/terrain-color';
+import { validateTerrainProjection } from '../src/app/atlas/terrain-projection';
 import { spatialRoutePreview, closeSpatialRoutePreview } from './terrain-route-service';
 import { AtlasRegionService } from './atlas-region';
-import { validateRegion } from '../src/app/atlas-region-contracts';
+import { validateRegion } from '../src/app/atlas/atlas-region-contracts';
 import { RoomDirectoryService } from './room-directory';
 import { readItemReferenceCatalog } from '../src/app/storage/item-reference';
 import type { NpcCommand, NpcQuery, NpcDraft } from '../src/app/npc-contracts';
@@ -25,10 +25,10 @@ import { audioResponse } from './audio-response';
 import { extensionPackageLimit } from '../src/app/storage/extensions';
 import { dungeonKeyMarkdown, dungeonKeyDocument } from '../src/app/key-document';
 import { CommitTracker } from './commit-tracker';
-import { dungeonSvg } from '../src/app/drawing-model';
+import { dungeonSvg } from '../src/app/atlas/drawing-model';
 import { PlayerDisplay } from './player-window';
 import { installPlayerResources } from './player-resources';
-import { citySvg } from '../src/app/city-model';
+import { citySvg } from '../src/app/atlas/city-model';
 import { writeFile, mkdir, open } from 'node:fs/promises';
 import { checkCampaignContents, campaignMediaPath, type CampaignManifest } from './campaign-files';
 import { mkdtemp, stat, rm } from 'node:fs/promises';
@@ -50,7 +50,7 @@ import { readFileSync, mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { StoreClient } from './store-client';
-import { inspectDungeon } from '../src/app/import-dungeon';
+import { inspectDungeon } from '../src/app/atlas/import-dungeon';
 import type {
   Edit,
   DungeonImportPreview,
@@ -1361,19 +1361,19 @@ else {
       );
       handle(
         'dungeon:command-state',
-        async (command: import('../src/app/dungeon-contracts').DungeonCommand) =>
+        async (command: import('../src/app/atlas/dungeon-contracts').DungeonCommand) =>
           await store.dungeonCommandState(command),
       );
       handle('dungeon:authoring', async (token: string) => await store.dungeonAuthoring(token));
       handle('dungeon:view', async (token: string) => await store.dungeon(token));
       handle(
         'dungeon:preview',
-        async (token: string, r: import('../src/app/dungeon-contracts').DungeonRequest) =>
+        async (token: string, r: import('../src/app/atlas/dungeon-contracts').DungeonRequest) =>
           await store.previewDungeon(token, r),
       );
       handle(
         'dungeon:execute',
-        async (c: import('../src/app/dungeon-contracts').DungeonCommand) =>
+        async (c: import('../src/app/atlas/dungeon-contracts').DungeonCommand) =>
           await store.executeDungeon(c),
       );
       handle(
@@ -1410,14 +1410,14 @@ else {
         'graph:view',
         async (token: string, scopeId: string) => await store.graph(token, scopeId),
       );
-      handle('graph:execute', async (c: import('../src/app/graph-contracts').GraphCommand) => {
+      handle('graph:execute', async (c: import('../src/app/atlas/graph-contracts').GraphCommand) => {
         if (['restore', 'accept'].includes(c.action?.kind))
           return withGraphSourceReadBarrier(async () => await store.executeGraph(c));
         return await store.executeGraph(c);
       });
       handle(
         'drawing:path-preview',
-        async (token: string, p: import('../src/app/path-contracts').DungeonPath) =>
+        async (token: string, p: import('../src/app/atlas/path-contracts').DungeonPath) =>
           await store.previewPath(token, p),
       );
       handle(
@@ -1432,7 +1432,7 @@ else {
       handle('drawing:view', async (token: string) => await store.drawing(token));
       handle(
         'drawing:execute',
-        async (c: import('../src/app/drawing-contracts').DrawingCommand) =>
+        async (c: import('../src/app/atlas/drawing-contracts').DrawingCommand) =>
           await store.executeDrawing(c),
       );
       handle(
@@ -1606,12 +1606,12 @@ else {
       );
       handle(
         'city:activities',
-        async (token: string, q: import('../src/app/city-activity-contracts').CityActivityQuery) =>
+        async (token: string, q: import('../src/app/atlas/city-activity-contracts').CityActivityQuery) =>
           await store.cityActivities(token, q),
       );
       handle(
         'city:buildings',
-        async (token: string, q: import('../src/app/city-contracts').CityBuildingQuery) =>
+        async (token: string, q: import('../src/app/atlas/city-contracts').CityBuildingQuery) =>
           await store.cityBuildings(token, q),
       );
       handle(
@@ -1621,12 +1621,12 @@ else {
       );
       handle(
         'atlas:travel-commit',
-        async (c: import('../src/app/atlas-travel-contracts').AtlasTravelCommand) =>
+        async (c: import('../src/app/atlas/atlas-travel-contracts').AtlasTravelCommand) =>
           await store.executeAtlasTravelCommit(c),
       );
       handle(
         'atlas:travel',
-        async (c: import('../src/app/atlas-travel-contracts').AtlasTravelCommand) =>
+        async (c: import('../src/app/atlas/atlas-travel-contracts').AtlasTravelCommand) =>
           await store.executeAtlasTravel(c),
       );
       handle(
@@ -1775,20 +1775,20 @@ else {
       );
       handle(
         'atlas:territories',
-        async (token: string, box?: import('../src/app/atlas-landscape').LandscapeBox) =>
+        async (token: string, box?: import('../src/app/atlas/atlas-landscape').LandscapeBox) =>
           await store.atlasTerritories(token, box),
       );
       handle('atlas:overview', async (token: string) => await store.atlasOverview(token));
       handle(
         'atlas:objects',
-        async (token: string, q: import('../src/app/campaign-atlas-contracts').AtlasObjectQuery) =>
+        async (token: string, q: import('../src/app/atlas/campaign-atlas-contracts').AtlasObjectQuery) =>
           await store.atlasObjects(token, q),
       );
       handle(
         'atlas:vegetation-scene',
         async (
           token: string,
-          box: import('../src/app/atlas-landscape').LandscapeBox,
+          box: import('../src/app/atlas/atlas-landscape').LandscapeBox,
           mpp: number,
         ) => await store.atlasVegetationScene(token, box, mpp),
       );
@@ -1796,9 +1796,9 @@ else {
         'atlas:spatial-scene',
         async (
           token: string,
-          box: import('../src/app/atlas-landscape').LandscapeBox,
+          box: import('../src/app/atlas/atlas-landscape').LandscapeBox,
           mpp: number,
-          draft?: import('../src/app/spatial-terrain').SpatialTerrainDraft,
+          draft?: import('../src/app/atlas/spatial-terrain').SpatialTerrainDraft,
           fence?: string,
         ) =>
           draft
@@ -1819,7 +1819,7 @@ else {
         'atlas:terrain-frame',
         async (
           token: string,
-          request: import('../src/app/terrain-presentation').TerrainFrameRequest,
+          request: import('../src/app/atlas/terrain-presentation').TerrainFrameRequest,
         ) => {
           const q = request?.frame;
           if (request?.refinement !== undefined && typeof request.refinement !== 'boolean')
@@ -1848,7 +1848,7 @@ else {
       );
       handle(
         'atlas:terrain-color',
-        async (token: string, q: import('../src/app/terrain-color').TerrainColorRequest) => {
+        async (token: string, q: import('../src/app/atlas/terrain-color').TerrainColorRequest) => {
           if (graphSourceReadBarrierDepth) throw Error('Graphwechsel läuft.');
           validateTerrainColor(q);
           const source = await store.atlasRegionSource(token, atlasRegions.cursor);
@@ -1865,7 +1865,7 @@ else {
         'atlas:geometry-tile',
         async (
           token: string,
-          q: import('../src/app/atlas-geometry-tile').AtlasGeometryTileRequest,
+          q: import('../src/app/atlas/atlas-geometry-tile').AtlasGeometryTileRequest,
         ) => {
           if (graphSourceReadBarrierDepth) throw Error('Graphwechsel läuft.');
           atlasGeometryTileBox(q);
@@ -1889,7 +1889,7 @@ else {
         'atlas:terrain-tile',
         async (
           token: string,
-          q: import('../src/app/atlas-terrain-tile').AtlasTerrainTileRequest,
+          q: import('../src/app/atlas/atlas-terrain-tile').AtlasTerrainTileRequest,
           control?: AtlasReadRequest,
         ) => {
           validateAtlasReadRequest(control);
@@ -1908,7 +1908,7 @@ else {
         'atlas:material-tile',
         async (
           token: string,
-          q: import('../src/app/atlas-material-tile').AtlasMaterialTileRequest,
+          q: import('../src/app/atlas/atlas-material-tile').AtlasMaterialTileRequest,
           control?: AtlasReadRequest,
         ) => {
           validateAtlasReadRequest(control);
@@ -1932,7 +1932,7 @@ else {
         'atlas:terrain-projection',
         async (
           token: string,
-          q: import('../src/app/terrain-projection').TerrainProjectionRequest,
+          q: import('../src/app/atlas/terrain-projection').TerrainProjectionRequest,
           consumer: 'view' | 'export' = 'view',
           control?: AtlasReadRequest,
         ) => {
@@ -1954,7 +1954,7 @@ else {
       );
       handle(
         'atlas:mask-region',
-        async (token: string, box: import('../src/app/atlas-landscape').LandscapeBox) =>
+        async (token: string, box: import('../src/app/atlas/atlas-landscape').LandscapeBox) =>
           await store.atlasMaskRegion(token, box),
       );
       handle(
@@ -1967,7 +1967,7 @@ else {
       handle('atlas:room', async (token: string, id: string) => await store.atlasRoom(token, id));
       handle(
         'atlas:drawing-commit',
-        (command: import('../src/app/drawing-contracts').DrawingCommand) =>
+        (command: import('../src/app/atlas/drawing-contracts').DrawingCommand) =>
           atlasWriteActivity.run(
             command.commandId,
             async () => await store.atlasDrawingCommit(command),
@@ -1975,10 +1975,10 @@ else {
       );
       handle(
         'atlas:reconcile-commit',
-        async (c: import('../src/app/campaign-atlas-contracts').AtlasCommand) =>
+        async (c: import('../src/app/atlas/campaign-atlas-contracts').AtlasCommand) =>
           await store.reconcileAtlasCommit(c, atlasWriteActivity.has(c.commandId)),
       );
-      handle('atlas:commit', (c: import('../src/app/campaign-atlas-contracts').AtlasCommand) =>
+      handle('atlas:commit', (c: import('../src/app/atlas/campaign-atlas-contracts').AtlasCommand) =>
         atlasWriteActivity.run(c.commandId, async () => {
           if (c.action?.kind === 'graph-accept')
             return withGraphSourceReadBarrier(async () => await store.executeAtlasCommit(c));
@@ -2005,7 +2005,7 @@ else {
         'atlas:geometry-region',
         async (
           token: string,
-          query: import('../src/app/atlas-region-contracts').AtlasRegionQuery,
+          query: import('../src/app/atlas/atlas-region-contracts').AtlasRegionQuery,
           consumer: 'view' | 'export' = 'view',
         ) => {
           if (graphSourceReadBarrierDepth)
@@ -2050,7 +2050,7 @@ else {
         'atlas:region-candidates',
         async (
           token: string,
-          query: import('../src/app/atlas-region-contracts').AtlasRegionQuery,
+          query: import('../src/app/atlas/atlas-region-contracts').AtlasRegionQuery,
           point: import('../src/app/contracts').Point,
           fence: string,
           offset = 0,
@@ -2091,7 +2091,7 @@ else {
         'atlas:region-hit',
         async (
           token: string,
-          query: import('../src/app/atlas-region-contracts').AtlasRegionQuery,
+          query: import('../src/app/atlas/atlas-region-contracts').AtlasRegionQuery,
           point: import('../src/app/contracts').Point,
           fence: string,
         ) => {
@@ -2114,7 +2114,7 @@ else {
       );
       handle('atlas:render-view', async (token: string) => await store.atlasRenderView(token));
       handle('atlas:view', async (token: string) => await store.campaignAtlas(token));
-      handle('atlas:execute', (c: import('../src/app/campaign-atlas-contracts').AtlasCommand) =>
+      handle('atlas:execute', (c: import('../src/app/atlas/campaign-atlas-contracts').AtlasCommand) =>
         atlasWriteActivity.run(c.commandId, async () => {
           if (c.action?.kind === 'graph-accept')
             return withGraphSourceReadBarrier(async () => await store.executeAtlas(c));
@@ -2123,7 +2123,7 @@ else {
       );
       handle('city:list', async (token: string) => await store.cities(token));
       handle('city:view', async (token: string, id: string) => await store.city(token, id));
-      handle('city:execute', (c: import('../src/app/city-contracts').CityCommand) =>
+      handle('city:execute', (c: import('../src/app/atlas/city-contracts').CityCommand) =>
         atlasWriteActivity.run(c.commandId, () => store.executeCity(c)),
       );
       handle('city:export', async (token: string, id: string, format: 'svg' | 'json') => {

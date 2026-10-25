@@ -24,7 +24,7 @@ import { SessionCopy } from './session-copy-ui';
 import { initSessionPacket, closePreparationPacket } from './session-packet-ui';
 import { magicPoolPicker } from './session-magic-pool-ui';
 import { requiredNpcPicker } from './required-npc-picker';
-import { budgetRarities } from './dungeon-budget-contracts';
+import { budgetRarities } from './atlas/dungeon-budget-contracts';
 import { encounterEntryLabel } from './encounter-contracts';
 import {
   initProposalEditor,

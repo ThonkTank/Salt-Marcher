@@ -1,10 +1,10 @@
-import { validateGraphLayout } from '../graph-contracts';
+import { validateGraphLayout } from '../atlas/graph-contracts';
 import Database from 'better-sqlite3';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createHash } from 'node:crypto';
-import type { GraphLayout, GraphPreviewState, GraphView } from '../graph-contracts';
+import type { GraphLayout, GraphPreviewState, GraphView } from '../atlas/graph-contracts';
 import { dungeonGeometry } from './dungeon-play';
 export const graphTables = [
   'drawing_floor',

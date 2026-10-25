@@ -1,5 +1,5 @@
 import { checkedDefinition, nextAuthoredDefinition } from '../item-definition-validation';
-import { budgetRarity } from '../dungeon-budget-contracts';
+import { budgetRarity } from '../atlas/dungeon-budget-contracts';
 import { srdItemDefinitions, srdItemSourceStatus } from './srd-items';
 import { coinDefinitions } from './coin-definitions';
 import { createHash } from 'node:crypto';

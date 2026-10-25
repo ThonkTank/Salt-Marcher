@@ -14,7 +14,7 @@ const root = process.cwd(),
 require('esbuild').buildSync({
   stdin: {
     contents:
-      "export * from './src/app/storage/store';export * from './src/app/atlas-landscape';export * from './src/app/land-mask';",
+      "export * from './src/app/storage/store';export * from './src/app/atlas/atlas-landscape';export * from './src/app/atlas/land-mask';",
     resolveDir: root,
   },
   outfile: '.build/fractal-strokes-native-store.cjs',

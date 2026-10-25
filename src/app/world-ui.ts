@@ -1,12 +1,12 @@
 import { EditorSession } from './editor-session';
-import { syncDungeonLiveContext } from './dungeon-ui';
-import { atlasWorldWrite, settleAtlasWorldWrite } from './campaign-atlas-author';
+import { syncDungeonLiveContext } from './atlas/dungeon-ui';
+import { atlasWorldWrite, settleAtlasWorldWrite } from './atlas/campaign-atlas-author';
 import { hexAccessLabel } from './hex-access';
 import { HexAccessChoices } from './hex-access-ui';
 import { canonicalJson } from './generation/canonical-json';
 import { installHexPartyDrag } from './hex-party-drag';
 import { liveHexSurface } from './live-hex-surface';
-import { markerSymbols, defaultMarkerPresentation } from './atlas-marker';
+import { markerSymbols, defaultMarkerPresentation } from './atlas/atlas-marker';
 import { PassiveMapCanvas, type CanvasBox } from './passive-map-canvas';
 import { journeyPlayback, journeySpeeds } from './journey-playback';
 import { installHexMapGestures } from './hex-map-gestures';

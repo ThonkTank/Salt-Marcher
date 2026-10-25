@@ -23,7 +23,7 @@ const bundle = join(output, 'probe.cjs');
 buildSync({
   stdin: {
     contents:
-      "export {CampaignStore} from './src/app/storage/store';export {AtlasRegionReader} from './src/app/storage/atlas-region';export {AtlasGeometryTiles} from './src/app/storage/atlas-geometry-tiles';export {AtlasGeometryOverviewBuilder} from './src/app/atlas-geometry-overview';",
+      "export {CampaignStore} from './src/app/storage/store';export {AtlasRegionReader} from './src/app/storage/atlas-region';export {AtlasGeometryTiles} from './src/app/storage/atlas-geometry-tiles';export {AtlasGeometryOverviewBuilder} from './src/app/atlas/atlas-geometry-overview';",
     resolveDir: root,
   },
   outfile: bundle,

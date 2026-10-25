@@ -1,5 +1,5 @@
-import { decodeHeights } from '../terrain-height';
-import type { LandscapeBox, LandscapeRecord } from '../atlas-landscape';
+import { decodeHeights } from '../atlas/terrain-height';
+import type { LandscapeBox, LandscapeRecord } from '../atlas/atlas-landscape';
 
 export function unionTerrainBounds(a: LandscapeBox, b: LandscapeBox): LandscapeBox {
   const x = Math.min(a.x, b.x),

@@ -1,9 +1,9 @@
 import { createHash } from 'node:crypto';
 import type { ContentContext, ContentState } from '../content-runtime-contracts';
-import type { DungeonGeometry, DungeonPose } from '../dungeon-contracts';
-import type { DrawingElement } from '../drawing-contracts';
-import { dungeonContentAnchor } from '../dungeon-content-model';
-import { seen3D } from '../spatial-3d';
+import type { DungeonGeometry, DungeonPose } from '../atlas/dungeon-contracts';
+import type { DrawingElement } from '../atlas/drawing-contracts';
+import { dungeonContentAnchor } from '../atlas/dungeon-content-model';
+import { seen3D } from '../atlas/spatial-3d';
 import { readLiveScene } from './live';
 import { position } from './world';
 import { readPreparedGroup, createDungeonGroup } from './session';

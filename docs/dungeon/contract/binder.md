@@ -32,7 +32,7 @@ keine neue Autorität geben. Entfernte
 Featuredetails lösen keine Reads früherer Schatz-/Encounterbindungen aus.
 Verspätete Antworten ersetzen keinen neueren Inhalt; Fehler bleiben lokal.
 
-`tests/desktop-dungeon-binder-context.test.mjs` verwendet echte SQLite-Räume
+`tests/atlas/desktop-dungeon-binder-context.test.mjs` verwendet echte SQLite-Räume
 und kontrollierte DOM-/IPC-Verzögerungen. Gegenproben betreffen Öffnen vor Flush,
 Reset/Wiederöffnung, entfernte Raum-/Kartenbuttons, Aktualisierung und alte
 Featuredetails und verspätete Navigationsfehler; aktuelle Navigation bleibt nutzbar. Das sind lokale Teilbelege,

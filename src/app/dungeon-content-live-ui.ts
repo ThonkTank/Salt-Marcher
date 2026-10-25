@@ -1,4 +1,4 @@
-import type { DungeonView, DungeonAction } from './dungeon-contracts';
+import type { DungeonView, DungeonAction } from './atlas/dungeon-contracts';
 const el = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 export function drawDungeonContents(
   data: DungeonView,

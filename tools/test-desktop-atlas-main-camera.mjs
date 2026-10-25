@@ -16,7 +16,7 @@ const root = process.cwd(),
 require('esbuild').buildSync({
   stdin: {
     resolveDir: root,
-    contents: `export * from './src/app/storage/store';export {newElement} from './src/app/drawing-model';export {atlasProject,atlasPlanePoint} from './src/app/atlas-camera';`,
+    contents: `export * from './src/app/storage/store';export {newElement} from './src/app/atlas/drawing-model';export {atlasProject,atlasPlanePoint} from './src/app/atlas/atlas-camera';`,
   },
   bundle: true,
   platform: 'node',
@@ -126,23 +126,23 @@ const result = {
 };
 for (const file of [
   'src/app/storage/drawing.ts',
-  'src/app/drawing-ui.ts',
-  'src/app/atlas-workplane.ts',
+  'src/app/atlas/drawing-ui.ts',
+  'src/app/atlas/atlas-workplane.ts',
 
-  'src/app/atlas-label-source.ts',
-  'src/app/atlas-region-export.ts',
-  'src/app/atlas-presentation.ts',
-  'src/app/atlas-spatial-geometry.ts',
-  'src/app/atlas-spatial-surface.ts',
+  'src/app/atlas/atlas-label-source.ts',
+  'src/app/atlas/atlas-region-export.ts',
+  'src/app/atlas/atlas-presentation.ts',
+  'src/app/atlas/atlas-spatial-geometry.ts',
+  'src/app/atlas/atlas-spatial-surface.ts',
 
-  'src/app/atlas-spatial-color.ts',
+  'src/app/atlas/atlas-spatial-color.ts',
 
-  'src/app/city-model.ts',
+  'src/app/atlas/city-model.ts',
   'src/app/storage/atlas-region.ts',
 
-  'src/app/atlas-canvas.ts',
+  'src/app/atlas/atlas-canvas.ts',
 
-  'src/app/campaign-atlas-ui.ts',
+  'src/app/atlas/campaign-atlas-ui.ts',
   '.build/desktop/ui/renderer.js',
 ])
   result.hashes[file] = createHash('sha256')

@@ -5,7 +5,7 @@ import type {
   DungeonPursuit,
   DungeonPreview,
   DungeonRequest,
-} from '../dungeon-contracts';
+} from '../atlas/dungeon-contracts';
 import { readLiveScene } from './live';
 import { position } from './world';
 import { dungeonTraces, discoverDungeonTrack, dungeonTraceById } from './dungeon-senses';

@@ -1,5 +1,5 @@
 import type { Result } from './contracts';
-import type { CityActivitySite } from './city-activity-contracts';
+import type { CityActivitySite } from './atlas/city-activity-contracts';
 export interface LocationActivityQuery {
   locationId: string;
   sceneId: string | null;

@@ -370,24 +370,24 @@ contextBridge.exposeInMainWorld(
     onAudioTransfer: (
       callback: (p: import('../src/app/music-contracts').AudioTransferProgress) => void,
     ) => ipcRenderer.on('music:progress', (_event, p) => callback(p)),
-    dungeonCommandState: (command: import('../src/app/dungeon-contracts').DungeonCommand) =>
+    dungeonCommandState: (command: import('../src/app/atlas/dungeon-contracts').DungeonCommand) =>
       ipcRenderer.invoke('dungeon:command-state', command),
     dungeonAuthoring: (token: string) => ipcRenderer.invoke('dungeon:authoring', token),
     dungeon: (token: string) => ipcRenderer.invoke('dungeon:view', token),
-    previewDungeon: (token: string, r: import('../src/app/dungeon-contracts').DungeonRequest) =>
+    previewDungeon: (token: string, r: import('../src/app/atlas/dungeon-contracts').DungeonRequest) =>
       ipcRenderer.invoke('dungeon:preview', token, r),
-    executeDungeon: (c: import('../src/app/dungeon-contracts').DungeonCommand) =>
+    executeDungeon: (c: import('../src/app/atlas/dungeon-contracts').DungeonCommand) =>
       ipcRenderer.invoke('dungeon:execute', c),
     graph: (token: string, scopeId: string) => ipcRenderer.invoke('graph:view', token, scopeId),
-    executeGraph: (command: import('../src/app/graph-contracts').GraphCommand) =>
+    executeGraph: (command: import('../src/app/atlas/graph-contracts').GraphCommand) =>
       ipcRenderer.invoke('graph:execute', command),
-    previewPath: (token: string, p: import('../src/app/path-contracts').DungeonPath) =>
+    previewPath: (token: string, p: import('../src/app/atlas/path-contracts').DungeonPath) =>
       ipcRenderer.invoke('drawing:path-preview', token, p),
     drawingMap: (token, roomId, elementId) =>
       ipcRenderer.invoke('drawing:map', token, roomId, elementId),
     drawingElement: (token, id) => ipcRenderer.invoke('drawing:element', token, id),
     drawing: (token: string) => ipcRenderer.invoke('drawing:view', token),
-    executeDrawing: (c: import('../src/app/drawing-contracts').DrawingCommand) =>
+    executeDrawing: (c: import('../src/app/atlas/drawing-contracts').DrawingCommand) =>
       ipcRenderer.invoke('drawing:execute', c),
     activateFeature: (
       token: string,
@@ -431,13 +431,13 @@ contextBridge.exposeInMainWorld(
     playerScreens: () => ipcRenderer.invoke('player:screens'),
     cityActivities: (
       token: string,
-      q: import('../src/app/city-activity-contracts').CityActivityQuery,
+      q: import('../src/app/atlas/city-activity-contracts').CityActivityQuery,
     ) => ipcRenderer.invoke('city:activities', token, q),
-    cityBuildings: (token: string, q: import('../src/app/city-contracts').CityBuildingQuery) =>
+    cityBuildings: (token: string, q: import('../src/app/atlas/city-contracts').CityBuildingQuery) =>
       ipcRenderer.invoke('city:buildings', token, q),
     cities: (token: string) => ipcRenderer.invoke('city:list', token),
     city: (token: string, id: string) => ipcRenderer.invoke('city:view', token, id),
-    executeCity: (command: import('../src/app/city-contracts').CityCommand) =>
+    executeCity: (command: import('../src/app/atlas/city-contracts').CityCommand) =>
       ipcRenderer.invoke('city:execute', command),
     exportCity: (token: string, id: string, format: string) =>
       ipcRenderer.invoke('city:export', token, id, format),
@@ -448,7 +448,7 @@ contextBridge.exposeInMainWorld(
     previewAtlasTravel: (token: string, p: import('../src/app/contracts').Point) =>
       ipcRenderer.invoke('atlas:travel-preview', token, p),
     executeAtlasTravelCommit: (c) => ipcRenderer.invoke('atlas:travel-commit', c),
-    executeAtlasTravel: (c: import('../src/app/atlas-travel-contracts').AtlasTravelCommand) =>
+    executeAtlasTravel: (c: import('../src/app/atlas/atlas-travel-contracts').AtlasTravelCommand) =>
       ipcRenderer.invoke('atlas:travel', c),
     landscapeFind: (token, text) => ipcRenderer.invoke('atlas:find', token, text),
     referenceImage: (token) => ipcRenderer.invoke('atlas:reference-import', token),
@@ -478,7 +478,7 @@ contextBridge.exposeInMainWorld(
     executeAtlasCommit: (command) => ipcRenderer.invoke('atlas:commit', command),
     reconcileAtlasCommit: (command) => ipcRenderer.invoke('atlas:reconcile-commit', command),
     campaignAtlas: (token: string) => ipcRenderer.invoke('atlas:view', token),
-    executeAtlas: (c: import('../src/app/campaign-atlas-contracts').AtlasCommand) =>
+    executeAtlas: (c: import('../src/app/atlas/campaign-atlas-contracts').AtlasCommand) =>
       ipcRenderer.invoke('atlas:execute', c),
     world: (token: string) => ipcRenderer.invoke('world:view', token),
     sceneWorld: (token: string, id: string) => ipcRenderer.invoke('world:scene', token, id),

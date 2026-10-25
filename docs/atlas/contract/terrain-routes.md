@@ -42,8 +42,8 @@ Bereiche werden um betroffene Verläufe und ihre Anschlüsse erweitert. Grenzen:
 
 ## Prüfanschluss
 
-- `tests/terrain-route.test.mjs`: Trasse, Pflichtpunkte, Steigung, Flussbett, Anschlüsse/Zyklen, Schutz/Konflikt, Bauwerke, gemeinsame Geometrie, Revisionen, Transaktion, Undo/Redo, Löschen und Neustart.
-- `tests/desktop-terrain-route-units.test.mjs`: gemeinsame Umrechnung, volle Koordinatengenauigkeit, passive Einheitenwechsel, Vorschau/Übernahme und erneutes Öffnen.
+- `tests/atlas/terrain-route.test.mjs`: Trasse, Pflichtpunkte, Steigung, Flussbett, Anschlüsse/Zyklen, Schutz/Konflikt, Bauwerke, gemeinsame Geometrie, Revisionen, Transaktion, Undo/Redo, Löschen und Neustart.
+- `tests/atlas/desktop-terrain-route-units.test.mjs`: gemeinsame Umrechnung, volle Koordinatengenauigkeit, passive Einheitenwechsel, Vorschau/Übernahme und erneutes Öffnen.
 - `tools/test-desktop-terrain-routes.mjs`: echte native Eingaben, Einheitenwechsel, Vorschau/Übernahme, Neigung derselben Hauptkamera, 200-%-Seitenleiste, PNG, Schutzwechsel, Löschen/Undo, Geländepinsel und frischer Prozess.
 - `tests/terrain-route-display.test.mjs` und `tools/test-desktop-atlas-line-scales.mjs`: unmittelbare Bildschirmbreite, weiche Sichtbarkeit, Auswahl, Tunnelunterbrechungen und begrenzte Unterteilung langer Verläufe; [native Belege](https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-route-scale-20261021/README.md).
 - `tools/render-terrain-routes.mjs`: isolierter Bildvergleich mit Hangstraße, Fluss, Tunnel, Brücke und Furt.

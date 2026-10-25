@@ -2,7 +2,7 @@ import {createRequire} from 'node:module';
 import {mkdirSync,writeFileSync} from 'node:fs';
 import {sculptRelief,RELIEF_VIEWS} from './terrain-relief-scene.mjs';
 const require=createRequire(import.meta.url);
-require('esbuild').buildSync({stdin:{contents:"export * from './src/app/terrain-brush';export * from './src/app/terrain-height';export * from './src/app/landscape-raster';export * from './src/app/terrain-relief';",resolveDir:process.cwd()},outfile:'.build/r4-render.cjs',bundle:true,platform:'node',format:'cjs'});
+require('esbuild').buildSync({stdin:{contents:"export * from './src/app/atlas/terrain-brush';export * from './src/app/atlas/terrain-height';export * from './src/app/atlas/landscape-raster';export * from './src/app/atlas/terrain-relief';",resolveDir:process.cwd()},outfile:'.build/r4-render.cjs',bundle:true,platform:'node',format:'cjs'});
 const {applyTerrainBrush,settingsRecord,DEFAULT_TERRAIN_STYLE,LandscapeRasterizer}=require('../.build/r4-render.cjs'),{PNG}=require('pngjs');
 const records=sculptRelief(applyTerrainBrush),out=process.env.QA_EVIDENCE_DIR??'.build/r4-visual';mkdirSync(out,{recursive:true});
 const timings=[];

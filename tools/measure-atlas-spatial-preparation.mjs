@@ -28,8 +28,8 @@ buildSync({
 export {AtlasRegionReader} from './src/app/storage/atlas-region';
 export {AtlasProjectionIndex} from './src/app/storage/atlas-projection-index';
 export {AtlasGeometryTiles} from './src/app/storage/atlas-geometry-tiles';
-export {atlasGeometryTileBox} from './src/app/atlas-geometry-tile';
-export {heightRecord} from './src/app/terrain-height';`,
+export {atlasGeometryTileBox} from './src/app/atlas/atlas-geometry-tile';
+export {heightRecord} from './src/app/atlas/terrain-height';`,
     resolveDir: root,
   },
   outfile: bundle,

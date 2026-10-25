@@ -14,7 +14,7 @@ const root = process.cwd(),
 const ref = process.argv[2];
 if (!ref) throw Error('Pass the baseline Git ref explicitly.');
 mkdirSync(out, { recursive: true });
-const files = ['src/app/landscape-raster.ts', 'src/app/storage/atlas-landscape-region.ts'];
+const files = ['src/app/atlas/landscape-raster.ts', 'src/app/storage/atlas-landscape-region.ts'];
 const baseline = new Map(
   files.map((file) => [
     path.join(root, file),
@@ -28,7 +28,7 @@ for (const version of ['baseline', 'current']) {
     stdin: {
       resolveDir: root,
       contents:
-        "export * from './src/app/storage/store';export * from './src/app/storage/atlas-landscape-region';export * from './src/app/terrain-height';",
+        "export * from './src/app/storage/store';export * from './src/app/storage/atlas-landscape-region';export * from './src/app/atlas/terrain-height';",
     },
     outfile: filename,
     bundle: true,

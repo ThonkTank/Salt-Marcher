@@ -1,4 +1,4 @@
-import type { DungeonDisplay } from './dungeon-contracts';
+import type { DungeonDisplay } from './atlas/dungeon-contracts';
 import type { Result } from './contracts';
 /** Stored 'scene' is read-only legacy compatibility and always projects blank. */
 export interface PlayerSettings {

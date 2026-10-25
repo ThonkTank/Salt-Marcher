@@ -2,9 +2,9 @@ import {
   validateTerrainColor,
   type TerrainColorRequest,
   type TerrainColorTile,
-} from '../terrain-color';
-import type { AtlasRegionSource } from '../atlas-region-contracts';
-import type { TerrainProjectionCache } from '../terrain-projection-cache';
+} from '../atlas/terrain-color';
+import type { AtlasRegionSource } from '../atlas/atlas-region-contracts';
+import type { TerrainProjectionCache } from '../atlas/terrain-projection-cache';
 import {
   readTerrainSettings,
   terrainColorRoutes,

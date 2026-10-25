@@ -13,7 +13,7 @@ nicht anhand von Feldnamen oder `_id`-Endungen über Identitäten.
 ## Wo eine Änderung hingehört
 
 Neben den verwendeten Fachtypen liegen `.transfer.json`-Dateien. Beispielsweise
-besitzt [drawing-contracts.transfer.json](../../../src/app/drawing-contracts.transfer.json)
+besitzt [drawing-contracts.transfer.json](../../../src/app/atlas/drawing-contracts.transfer.json)
 die Bedeutung von `DrawingElement.targetFloorId`, während
 [music-contracts.transfer.json](../../../src/app/music-contracts.transfer.json)
 Audioverweise auf gemeinsame Definitionen bindet. Eine identische Zeichenfolge
@@ -68,7 +68,7 @@ Ihre Providerdaten werden nicht in Core-Fachtypen umgedeutet.
    eingecheckten Ergebnis. Ein neues Feld kann deshalb nicht unbemerkt in einem
    veralteten Transfervertrag fehlen.
 4. Den betroffenen vollständigen Kopier-/Importablauf einschließlich frischem
-   Öffnen prüfen. [Transferregressionen](../../../tests/desktop-transfer-contracts.test.mjs)
+   Öffnen prüfen. [Transferregressionen](../../../tests/atlas/desktop-transfer-contracts.test.mjs)
    sichern unterschiedliche Rollen gleicher Zeichenfolgen, Historienzeilen,
    Schemaergänzungen und unveränderte Eingangs-/Zieldaten bei Ablehnung.
 

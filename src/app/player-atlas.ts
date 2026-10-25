@@ -1,4 +1,4 @@
-import { atlasPaint, type AtlasPaint } from './atlas-paint';
+import { atlasPaint, type AtlasPaint } from './atlas/atlas-paint';
 import type { PlayerFrame } from './player-contracts';
 import { hexPoint, terrainColors } from './world-model';
 import type { Terrain } from './world-contracts';

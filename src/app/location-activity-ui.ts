@@ -1,6 +1,6 @@
 import type { WorkspaceGeometry } from './contracts';
 import type { LocationActivityPage, LocationVisit } from './location-activity-contracts';
-import type { CityActivitySite } from './city-activity-contracts';
+import type { CityActivitySite } from './atlas/city-activity-contracts';
 const node = <K extends keyof HTMLElementTagNameMap>(tag: K, text?: string) => {
   const e = document.createElement(tag);
   if (text !== undefined) e.textContent = text;

@@ -4,7 +4,7 @@ import {mkdtempSync,rmSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import test from 'node:test';
-import type {CityHeader,CityUnit} from '../../src/app/city-contracts';
+import type {CityHeader,CityUnit} from '../../src/app/atlas/city-contracts';
 import type {NpcDailyOverride,NpcDailySlot} from '../../src/app/npc-contracts';
 import {CampaignStore} from '../../src/app/storage/store';
 import {campaignLocalId} from '../../src/features/campaign/campaign-contracts';

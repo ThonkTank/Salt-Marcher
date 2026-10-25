@@ -1,9 +1,9 @@
-import type { LandscapeRecord } from "../../src/app/atlas-landscape";
+import type { LandscapeRecord } from "../../src/app/atlas/atlas-landscape";
 import type { Polygon } from "../../src/app/contracts";
-import type { AtlasTerritory } from "../../src/app/atlas-territories";
-import type { CityUnit } from "../../src/app/city-contracts";
-import { heightRecord, settingsRecord } from "../../src/app/terrain-height";
-import { vegetationSpec } from "../../src/app/vegetation";
+import type { AtlasTerritory } from "../../src/app/atlas/atlas-territories";
+import type { CityUnit } from "../../src/app/atlas/city-contracts";
+import { heightRecord, settingsRecord } from "../../src/app/atlas/terrain-height";
+import { vegetationSpec } from "../../src/app/atlas/vegetation";
 
 /** Renderer-independent authored scene. Meters, positive y south, sea level zero.
  * IDs/geometry are stable; canonical creation assigns campaign/city IDs separately.

@@ -47,7 +47,7 @@ Die ursprünglichen Fälle WD-005–007 und WD-009–012 bleiben erhalten. Wasse
 | Land und Süßwasser | WD-005.01–02, WD-006.01–02, WD-009.01–02 | Küste erweitern/zurückdrängen, Radierung legt Originalgelände frei |
 | Farbpinsel | WD-007.01–02, WD-008.01–02 | Drei Spitzen, getrennte Spielwerte, Wasser-/Landmaske, Auftragsstärke/Deckkraft, Füllen, Radieren, Archivkopie |
 
-Automatische Regression: `tests/desktop-landscape-tools.test.mjs`, vorhandene Atlas-Region-/Frame-/Landschaftstests. Native Prüfung: `tools/test-desktop-landscape-tools.mjs` startet eine synthetische Kampagne in einem eigenen Datenordner und prüft echte Eingaben, Abschluss, Abbruch, Neustart, Bearbeitung und PNG-Ausgabe. `ATLAS_PACKAGE` richtet dieselbe Probe auf die installierte Kopie. Ergebnisse liegen unter dem durch `QA_EVIDENCE_DIR` bestimmten Verzeichnis.
+Automatische Regression: `tests/atlas/desktop-landscape-tools.test.mjs`, vorhandene Atlas-Region-/Frame-/Landschaftstests. Native Prüfung: `tools/test-desktop-landscape-tools.mjs` startet eine synthetische Kampagne in einem eigenen Datenordner und prüft echte Eingaben, Abschluss, Abbruch, Neustart, Bearbeitung und PNG-Ausgabe. `ATLAS_PACKAGE` richtet dieselbe Probe auf die installierte Kopie. Ergebnisse liegen unter dem durch `QA_EVIDENCE_DIR` bestimmten Verzeichnis.
 
 Direkte Referenz: Wonderdraft 1.1.8.2 unter `/opt/Wonderdraft/Wonderdraft.x86_64`. Die isolierte Optionssitzung `/tmp/wonderdraft-options-bssu1c` zeigt erneut zehn Pfadvorschauen sowie Farbe, Breite, Rauheit und Zeichenebene (`path-options.png`). Dies ist ein Oberflächenbeleg. Die zuvor abgestürzte Wirkungsprobe bleibt fehlgeschlagen; die Optionssitzung liefert keinen abgeschlossenen Vorher-/Nachher-/Wiederöffnungsvergleich. Exakte Originalwirkungen von Rauheit, Mäanderabstand, Spitzen und Übergängen sowie vollständige grafische Gleichwertigkeit bleiben offen. Installation und bestandene Hostprüfungen allein schließen diese Paritätsabnahme nicht ab.
 
@@ -60,7 +60,7 @@ Dieser Ausbau ersetzt die oben beschriebene polygonbasierte Land-/Küstenbearbei
 
 Vier direkte Schalter, getrennte Größen für Land und Radierer sowie gemeinsame Größe/Rauheit für die Fraktalpinsel. Rauheit 0,1–2, Vorgabe 1; Größen in Weltmetern. Loslassen speichert einen Undo-Schritt, Escape verwirft. Stationäre Eingaben und zusammengefasste Pointerereignisse behalten ihre tatsächlichen Zeitstempel. Ein gescheiterter Schreibversuch behält die unveränderte Eingabe zum Wiederholen.
 
-Gezielte Regression: `tests/desktop-land-mask.test.mjs`. Native Probe: `tools/test-desktop-land-mask.mjs`, auch mit `ATLAS_PACKAGE` auf einer gepackten Installation. Originalvergleich: Wonderdraft 1.1.8.2, vier Pinsel einschließlich schneller/langsamer Bewegung, Halten, Undo/Redo, Wiederöffnen und offiziell extrahierter Maskendaten. Die Originalimplementierung ist unbekannt; Verhalten und Formwirkung werden verglichen, keine identischen Pixel oder vollständige Wonderdraft-Parität behauptet.
+Gezielte Regression: `tests/atlas/desktop-land-mask.test.mjs`. Native Probe: `tools/test-desktop-land-mask.mjs`, auch mit `ATLAS_PACKAGE` auf einer gepackten Installation. Originalvergleich: Wonderdraft 1.1.8.2, vier Pinsel einschließlich schneller/langsamer Bewegung, Halten, Undo/Redo, Wiederöffnen und offiziell extrahierter Maskendaten. Die Originalimplementierung ist unbekannt; Verhalten und Formwirkung werden verglichen, keine identischen Pixel oder vollständige Wonderdraft-Parität behauptet.
 
 
 ### Küstenkontur und unbemaltes Land

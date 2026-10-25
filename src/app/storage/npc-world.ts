@@ -1,6 +1,6 @@
 import { checkedPreparedGroupRow } from './prepared-group';
 import { createHash } from 'node:crypto';
-import type { DungeonPose } from '../dungeon-contracts';
+import type { DungeonPose } from '../atlas/dungeon-contracts';
 import type { NpcRoute } from '../autonomy-contracts';
 const hash = (p: string) => createHash('sha256').update(p).digest('hex');
 export function installNpcWorldSchema(db: any) {

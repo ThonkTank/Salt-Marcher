@@ -1,10 +1,10 @@
-import { terrainChannelStride } from '../terrain-material';
+import { terrainChannelStride } from '../atlas/terrain-material';
 import { createHash } from 'node:crypto';
 import {
   atlasMaterialTileQuery,
   type AtlasMaterialTileRequest,
   type AtlasMaterialTile,
-} from '../atlas-material-tile';
+} from '../atlas/atlas-material-tile';
 import {
   SURFACE_CHANNEL_NAMES,
   COVER_CHANNEL_NAMES,
@@ -12,11 +12,11 @@ import {
   type TerrainMaterialChannel,
   type TerrainMaterialChannels,
   type TerrainMaterialRaster,
-} from '../terrain-material';
-import { DEFAULT_TERRAIN_STYLE } from '../terrain-relief';
-import { landscapeRasterBounds } from '../landscape-raster';
-import type { LandscapeRecord } from '../atlas-landscape';
-import type { AtlasRegionSource } from '../atlas-region-contracts';
+} from '../atlas/terrain-material';
+import { DEFAULT_TERRAIN_STYLE } from '../atlas/terrain-relief';
+import { landscapeRasterBounds } from '../atlas/landscape-raster';
+import type { LandscapeRecord } from '../atlas/atlas-landscape';
+import type { AtlasRegionSource } from '../atlas/atlas-region-contracts';
 import { AtlasCacheScope } from './atlas-cache-scope';
 import { readTerrainSettings } from './terrain-color-raster';
 import type { AtlasRegionReader } from './atlas-region';

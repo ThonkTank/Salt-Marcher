@@ -1,11 +1,11 @@
-import { validateProminence } from '../atlas-prominence';
+import { validateProminence } from '../atlas/atlas-prominence';
 import { installSourceCellIndex } from './atlas-source-cell';
-import { validateMapLabelStyle } from '../map-label-style';
-import { terrainTraceMeasure } from '../terrain-timing';
+import { validateMapLabelStyle } from '../atlas/map-label-style';
+import { terrainTraceMeasure } from '../atlas/terrain-timing';
 import { readRouteTerrain, routeProposal } from './terrain-route';
-import { validateRoute } from '../terrain-route';
-import { validateVegetation } from '../vegetation';
-import { eraseVegetation } from '../vegetation-erase';
+import { validateRoute } from '../atlas/terrain-route';
+import { validateVegetation } from '../atlas/vegetation';
+import { eraseVegetation } from '../atlas/vegetation-erase';
 import { computeTerrainStroke } from './terrain-scale';
 import {
   applyHeightArea,
@@ -13,12 +13,12 @@ import {
   decodeHeights,
   validateTerrain,
   settingsRecord,
-} from '../terrain-height';
-import { validateMask } from '../land-mask';
+} from '../atlas/terrain-height';
+import { validateMask } from '../atlas/land-mask';
 import { executeBrush } from './landscape-brush-edit';
-import { validateLine } from '../landscape-line';
-import { validateColor } from '../landscape-brush';
-import { REGION_REPLY_BYTES } from '../atlas-region-contracts';
+import { validateLine } from '../atlas/landscape-line';
+import { validateColor } from '../atlas/landscape-brush';
+import { REGION_REPLY_BYTES } from '../atlas/atlas-region-contracts';
 import { randomUUID } from 'node:crypto';
 import polygonClipping from 'polygon-clipping';
 import type { Polygon } from '../contracts';
@@ -28,7 +28,7 @@ import {
   type LandscapeRecord,
   type LandscapeBox,
   type LandscapeAction,
-} from '../atlas-landscape';
+} from '../atlas/atlas-landscape';
 const clip = (polys: Polygon[]) =>
   polys.map((p) => [p.outer, ...p.holes].map((r) => r.map((p) => [p.x, p.y] as [number, number])));
 const unclip = (a: ReturnType<typeof polygonClipping.difference>): Polygon[] =>
@@ -359,7 +359,7 @@ export function executeLandscape(
   cam: string,
   a: LandscapeAction,
   liveColorRevision: number | null = null,
-  visibilityGrid?: import('../terrain-spatial-model').TerrainGrid,
+  visibilityGrid?: import('../atlas/terrain-spatial-model').TerrainGrid,
   prepared?: import('./terrain-scale').PreparedTerrainStroke,
 ) {
   if (a.kind === 'landscape-prominence') {

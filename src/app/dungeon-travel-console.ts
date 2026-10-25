@@ -1,4 +1,4 @@
-import type { DungeonView, DungeonJourney, DungeonPreview } from './dungeon-contracts';
+import type { DungeonView, DungeonJourney, DungeonPreview } from './atlas/dungeon-contracts';
 
 /** Rehome existing GM controls; the legacy Dungeon canvas never becomes another map. */
 export function mountDungeonTravelConsole(host: HTMLElement) {

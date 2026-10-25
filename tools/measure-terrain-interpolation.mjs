@@ -15,7 +15,7 @@ const out = process.env.QA_EVIDENCE_DIR ?? '.build/terrain-interpolation/kernel'
 await mkdir(out, { recursive: true });
 const require = createRequire(import.meta.url),
   contents =
-    "export * from './src/app/terrain-field-stream';export * from './src/app/terrain-height';";
+    "export * from './src/app/atlas/terrain-field-stream';export * from './src/app/atlas/terrain-height';";
 for (const name of ['baseline', 'monotone', 'lattice', 'monotone-lattice'])
   await build({
     stdin: { resolveDir: process.cwd(), contents },
@@ -90,10 +90,10 @@ const result = {
 result.dirty = !!execFileSync('git', ['status', '--porcelain'], { encoding: 'utf8' }).trim();
 result.sourceHashes = {};
 for (const file of [
-  'src/app/terrain-height.ts',
-  'src/app/terrain-height-lattice.ts',
-  'src/app/terrain-interpolation.ts',
-  'src/app/terrain-field-stream.ts',
+  'src/app/atlas/terrain-height.ts',
+  'src/app/atlas/terrain-height-lattice.ts',
+  'src/app/atlas/terrain-interpolation.ts',
+  'src/app/atlas/terrain-field-stream.ts',
   'tools/measure-terrain-interpolation.mjs',
   'tools/terrain-interpolation-build.mjs',
   'tools/terrain-interpolation-probe.mjs',
