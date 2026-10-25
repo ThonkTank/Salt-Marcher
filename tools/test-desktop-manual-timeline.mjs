@@ -62,11 +62,17 @@ async function launch() {
     .locator('.campaign-card[data-campaign-id="' + campaign.id + '"]')
     .getByRole('button', { name: /Öffnen|Fortsetzen/ })
     .click();
-  await page.waitForFunction(() => !document.querySelector('#workspace-navigation').inert);
+  await page.waitForFunction(
+    () =>
+      document.body.classList.contains('has-workspace') &&
+      !document.querySelector('main').inert &&
+      !document.querySelector('header').inert,
+  );
   return page;
 }
 async function planning(page) {
-  await nav(page, 'preparation-tab');
+  if (!(await page.locator('#preparation-planning').isVisible()))
+    await nav(page, 'preparation-tab');
   await page.locator('#preparation-planning').click();
 }
 async function visit(page, title) {

@@ -79,6 +79,12 @@ function fixture() {
     return name.startsWith('activate') || name.startsWith('deactivate') ? undefined : true;
   };
   const host = {
+    preparation: {
+      editorSession: session(),
+      activatePreparation: (...args) => globalThis.editorBoundaryTest('activatePreparation', args),
+      flushPreparation: (...args) => globalThis.editorBoundaryTest('flushPreparation', args),
+      leavePreparation: (...args) => globalThis.editorBoundaryTest('leavePreparation', args),
+    },
     atlas: {
       session: session(),
       activate: () => calls.push('atlas'),

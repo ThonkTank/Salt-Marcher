@@ -1,3 +1,4 @@
+import { preparationInstance } from '../helpers/preparation.mjs';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
@@ -159,7 +160,7 @@ async function fixture() {
     return response(() => store.changePreparationPlan(c));
   };
   delete require.cache[require.resolve('../../.build/timeline-search-ui.cjs')];
-  const ui = require('../../.build/timeline-search-ui.cjs');
+  const ui = preparationInstance(require('../../.build/timeline-search-ui.cjs'), document, window);
   ui.initPreparation(
     (text) => messages.push(text),
     async () => {},

@@ -1,3 +1,4 @@
+import { preparationInstance } from '../helpers/preparation.mjs';
 import { aliasSourceImport } from '../helpers/source.mjs';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -238,14 +239,22 @@ test('cancel preserves an empty result even when the verification later fails', 
 const prepSource = readFileSync('src/app/campaign/preparation.ts', 'utf8');
 buildSync({
   stdin: {
-    contents:
-      aliasSourceImport(
-        prepSource,
-        './text-reference-picker',
-        'chooseTextReference',
-        'realChooseTextReference',
-      ) +
-      `\nlet chooseTextReference=realChooseTextReference;export const __referenceProbe={set(w,n){context=w;selectedNote=n.id;noteDraft=n;blocked=false;editorSession.generation++;tell=text=>globalThis.__referenceMessages.push(text);},ports(p){flushPreparation=p.flush;chooseTextReference=p.pick;schedule=()=>{};},draft(){return noteDraft;},reload(){noteEditorGeneration++;},location(w,row){context=w;editorSession.generation++;selectedLocation=row.document.id;locationDraft=row;renderLocationSections();},locationDraft(){return locationDraft;}};`,
+    contents: aliasSourceImport(
+      prepSource,
+      './text-reference-picker',
+      'chooseTextReference',
+      'realChooseTextReference',
+    )
+      .replace(
+        '  const { document, get }',
+        '  let chooseTextReference = realChooseTextReference;\n  const { document, get }',
+      )
+      .replace(
+        '    editorSession,\n    showDayPreparation,',
+        `    __referenceProbe: {set(w,n){context=w;selectedNote=n.id;noteDraft=n;blocked=false;editorSession.generation++;tell=text=>globalThis.__referenceMessages.push(text);},ports(p){flushPreparation=p.flush;chooseTextReference=p.pick;schedule=()=>{};},draft(){return noteDraft;},reload(){noteEditorGeneration++;},location(w,row){context=w;editorSession.generation++;selectedLocation=row.document.id;locationDraft=row;renderLocationSections();},locationDraft(){return locationDraft;}},
+    editorSession,
+    showDayPreparation,`,
+      ),
     resolveDir: path.resolve('src/app/campaign'),
     sourcefile: 'preparation-reference-review.ts',
     loader: 'ts',
@@ -268,7 +277,11 @@ function prepFixture(t) {
     .replace(/<\/body>[\s\S]*$/, '');
   x.window.campaign.onAudioTransfer = () => {};
   delete require.cache[require.resolve('../../.build/preparation-reference-review.cjs')];
-  const module = require('../../.build/preparation-reference-review.cjs'),
+  const module = preparationInstance(
+      require('../../.build/preparation-reference-review.cjs'),
+      x.document,
+      x.window,
+    ),
     ui = module.__referenceProbe,
     w = { token: 'token', campaign: { id: 'campaign' } },
     note = { id: 'note', gmNotes: 'A\r\nB', revision: 1 };
