@@ -124,7 +124,11 @@ export class AtlasRasterPresentation implements AtlasPresentation {
     const surface=this.surface;if(!surface)return;
     this.show();this.repaint();await surface.waitForFrame();
     if(this.container!==container||this.surface!==surface||!this.perception||this.failed)return;
+    this.publishReady();
+  }
+  private publishReady(){
     this.surfaceReady=true;this.retry.hidden=true;this.input.dataset.terrainReady='ready';this.settleFirst(true);this.host.redraw();
+    const message=this.failureMessage;if(message!==null){this.failureMessage=null;this.host.recovered?.(message);}
   }
   private contextLost(){
     this.rejectedPress=true;
@@ -138,7 +142,6 @@ export class AtlasRasterPresentation implements AtlasPresentation {
     if(!this.active)return Promise.resolve();
     if(this.recovery)return this.recovery;
     this.frameOwner++;
-    const failureMessage=this.failureMessage;
     this.retry.disabled=true;this.retry.hidden=true;this.failed=false;this.surfaceReady=false;
     const surface=this.surface;
     if(!surface)this.startSurface();
@@ -150,13 +153,14 @@ export class AtlasRasterPresentation implements AtlasPresentation {
           await surface.recover();if(!current()||this.surface!==surface||this.failed)return;
           this.show();this.repaint();await surface.waitForFrame();
           if(!current()||this.surface!==surface||this.failed)return;
-          this.surfaceReady=true;this.retry.hidden=true;this.input.dataset.terrainReady='ready';this.settleFirst(true);this.host.redraw();
+          // Restoring the device may draw retained tiles from an older source.
+          // Terrain readiness belongs to the current stream generation below.
+          if(this.perception)this.publishReady();
         }else{
           await this.creating;if(!current()||this.failed||!this.surface)return;
           if(this.perception)await this.finishPerception(container);
         }
         if(!current()||this.failed)return;
-        if(failureMessage!==null&&this.failureMessage===failureMessage){this.failureMessage=null;this.host.recovered?.(failureMessage);}
         this.request='';this.objectKey='';void this.load();
       }catch(error){if(current())this.fail(error);}
       finally{if(current()){this.retry.disabled=false;this.recovery=null;}}
@@ -165,6 +169,7 @@ export class AtlasRasterPresentation implements AtlasPresentation {
   }
   openSurface(token:string,frame:LandscapeBox,revision:number,contours:number,fence?:string){
     if(this.active&&(this.token!==token||this.fence!==(fence??'')))this.setActive(false);
+    if(this.revision!==revision){this.surfaceReady=false;if(!this.failed)this.input.dataset.terrainReady='loading';}
     this.token=token;this.revision=revision;this.fence=fence??'';this.frame={...frame};this.contours=contours;this.setActive(true);
     if(!this.fence||this.failed)return Promise.resolve(false);
     const container=this.container;
@@ -193,7 +198,9 @@ export class AtlasRasterPresentation implements AtlasPresentation {
     if(this.gesturing||this.dirty||this.host.writing()||revision<this.revision){
       if(!this.gesturing)this.reframe(frame);return;
     }
-    this.revision=revision;this.fence=atlas?.region?.fence??this.fence;
+    const fence=atlas?.region?.fence??this.fence;
+    if(this.revision!==revision||this.fence!==fence){this.surfaceReady=false;if(!this.failed)this.input.dataset.terrainReady='loading';}
+    this.revision=revision;this.fence=fence;
     this.reframe(frame);
     const style=atlas?.region?.landscape?.terrainStyle??_objects.find(r=>r.terrainSettings?.style)?.terrainSettings?.style;if(style&&style!==this.style){this.style=style;this.show();}
     if(this.vegetationRecords!==_objects){this.vegetationRecords=_objects;this.vegetation?.dispose();this.vegetation=this.Vegetation?new this.Vegetation(_objects):null;this.drawings();}
@@ -221,7 +228,7 @@ export class AtlasRasterPresentation implements AtlasPresentation {
         if(frame.complete&&this.scene){const scene=this.scene;this.scene=null;this.paint(scene.scene,scene.origin,scene.images);}
         this.input.dataset.terrainCache=JSON.stringify(this.stream.statistics);
         this.input.dataset.terrainGpu=JSON.stringify(this.surface?.gpuMemory);
-        if(!this.surfaceReady&&frame.overviewComplete)void this.surface?.waitForFrame().then(()=>{if(generation===this.generation&&!this.failed){this.surfaceReady=true;this.retry.hidden=true;this.settleFirst(true);this.input.dataset.terrainReady='ready';this.host.redraw();}}).catch(e=>{if(generation===this.generation)this.fail(e);});
+        if(!this.surfaceReady&&frame.overviewComplete)void this.surface?.waitForFrame().then(()=>{if(generation===this.generation&&!this.failed)this.publishReady();}).catch(e=>{if(generation===this.generation)this.fail(e);});
       });
       if(generation===this.generation)this.input.dataset.terrainCache=JSON.stringify(this.stream.statistics);
     }catch(e){

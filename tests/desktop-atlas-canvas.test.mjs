@@ -1,4 +1,5 @@
 import {atlasFixture} from './helpers/atlas-workbench.mjs';
+import {emptyMaterialChannels} from './helpers/atlas-material-channels.mjs';
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { build } from "esbuild";
@@ -975,7 +976,7 @@ test('PNG output applies the same subpixel group rule to a retained detailed fra
 
 // Exercise all production owners; only the GPU/DOM platform is replaced. The
 // callbacks are deliberately manual, so HUD painting cannot stand in for GPU completion.
-async function rasterFixture(t){
+async function rasterFixture(t,{terrain=false}={}){
  const f=fixture(t),decks=[],errors=[],recoveries=[],prior={ResizeObserver:globalThis.ResizeObserver,createAtlasTestDeck:globalThis.createAtlasTestDeck};
  globalThis.ResizeObserver=class{observe(){}disconnect(){}};
  globalThis.createAtlasTestDeck=props=>{
@@ -985,14 +986,21 @@ async function rasterFixture(t){
    load(){this.props.onLoad();},render(){this.props.onBeforeRender();for(const layer of this.props.layers??[])Object.defineProperty(layer,'isLoaded',{value:true,configurable:true});this.props.onAfterRender();}};
   decks.push(deck);return deck;
  };
- const controls=f.document.createElement('div');controls.innerHTML='<div id="atlas-view-popup"></div><input id="atlas-perception">';f.document.body.append(controls);f.document.getElementById('atlas-perception').checked=true;
+ const controls=f.document.createElement('div');controls.innerHTML='<div id="atlas-view-popup"></div><input id="atlas-perception">';f.document.body.append(controls);f.document.getElementById('atlas-perception').checked=!terrain;
+ const channels=emptyMaterialChannels(256*256);
+ if(terrain)f.window.campaign={atlasCancelRead:async()=>{},atlasTerrainTile:async(_token,q)=>{
+  const size=256*2**q.tile.lod,fence='source-'+q.revision,view={box:{x:q.tile.x*size,y:q.tile.y*size,width:size,height:size},columns:65,rows:65};
+  return{ok:true,value:{tile:q.tile,revision:q.revision,fence,projection:{heightOnly:true,fence,revision:q.revision,grid:{view,heights:new Float32Array(65*65).fill(q.revision-1),seaLevelM:0}}}};
+ },atlasMaterialTile:async(_token,q)=>({ok:true,value:{tile:q.tile,revision:q.revision,fence:'source-'+q.revision,width:256,height:256,channels}})};
  let cancellations=0;
  const raster=new AtlasRasterPresentation(f.root,{navigation:e=>e.button===1,hasDraft:()=>false,writing:()=>false,cancel:()=>{cancellations++;raster.cancelDraft();raster.gesture(false);},draft:()=>null,tool:()=> 'draw',panning:()=>false,live:()=>false,error:e=>errors.push(e),recovered:message=>recoveries.push(message),selection:()=>null,redraw:()=>f.canvas.redrawOverlay()});
  f.canvas.options.presentation=()=>raster;f.canvas.options.overlay=()=>{};
  f.canvas.options.changed=()=>raster.reframe(f.canvas.view);
- raster.sync('campaign',f.canvas.view,1,[],0);
+ const opening=terrain?raster.openSurface('campaign',f.canvas.view,1,0,'source-1'):undefined;
+ if(!terrain)raster.sync('campaign',f.canvas.view,1,[],0);
  Object.defineProperties(raster.container,{clientWidth:{get:()=>f.root.clientWidth},clientHeight:{get:()=>f.root.clientHeight}});
  await settle();assert.equal(decks.length,1);decks[0].load();decks[0].render();await settle();decks[0].render();await settle();
+ if(opening)await opening;
  f.canvas.render(root=>root.append(rect('room')));await settle();decks[0].render();await settle();
  assert.equal(raster.ready,true);assert.equal(f.canvas.ready,true);
  t.after(()=>{raster.setActive(false);Object.assign(globalThis,prior);});
@@ -1140,4 +1148,71 @@ for(const failure of ['canvas','image'])test(`camera retry does not conceal an i
  f.document.getElementById('atlas-camera-retry').click();await settle();await finishCameraRetry(f);
  assert.equal(f.raster.ready,true);assert.equal(f.canvas.failed,true);assert.equal(f.canvas.ready,false);assert.equal(panel.hidden,false);assert.equal(panel.textContent,message);
  assert.equal(f.canvas.hitAt(f.hitPoint()),null);
+});
+
+
+test('terrain camera retry waits for current height and material tiles and their completed frame',async t=>{
+ const f=await rasterFixture(t,{terrain:true}),original=f.decks[0];
+ f.canvas.redrawOverlay();f.flush();await settle();original.props.onError(Error('GPU before terrain source update'));await settle();
+ const api=f.window.campaign,height=api.atlasTerrainTile,material=api.atlasMaterialTile,heldHeight=[],heldMaterial=[];
+ let holdHeight=true,holdMaterial=true;
+ api.atlasTerrainTile=(...args)=>holdHeight?new Promise(resolve=>heldHeight.push(()=>resolve(height(...args)))):height(...args);
+ api.atlasMaterialTile=(...args)=>holdMaterial?new Promise(resolve=>heldMaterial.push(()=>resolve(material(...args)))):material(...args);
+ f.canvas.set({...f.canvas.view,x:160,y:230},true);
+ f.raster.sync('campaign',f.canvas.view,2,[],0,{region:{fence:'source-2'},cities:[],entrances:[]});
+ f.canvas.render(root=>root.append(rect('current-terrain-source')));await settle();
+ f.document.getElementById('atlas-camera-retry').click();await settle();const deck=await finishCameraRetry(f);
+ assert.equal(heldHeight.length,1,'the current source is really delayed at the production tile API');
+ assert(f.raster.tiles.length>0);assert(f.raster.tiles.every(tile=>tile.revision===1));
+ assert.equal(f.raster.ready,false,'redrawing old source tiles cannot qualify the recovered camera');
+ assert.equal(f.canvas.ready,false);assert.equal(f.canvas.hitAt(f.hitPoint()),null);assert.equal(f.event('pointerdown').defaultPrevented,true);
+ assert(f.raster.navigationPoint(f.hitPoint()),'navigation remains usable while current terrain loads');
+ assert.deepEqual(f.recoveries,[],'the source failure is not reported recovered before current tiles');
+ const old={...deck.props};holdHeight=false;heldHeight.splice(0).forEach(release=>release());await settle();
+ assert.equal(heldMaterial.length,1);deck.render();await settle();assert.equal(f.raster.ready,false,'height alone cannot authorize current terrain');
+ holdMaterial=false;heldMaterial.splice(0).forEach(release=>release());await settle();
+ assert(f.raster.tiles.length>0);assert(f.raster.tiles.every(tile=>tile.revision===2&&tile.fence==='source-2'));
+ assert(f.raster.tiles.every(tile=>tile.terrain.projection.grid.heights[0]===1&&tile.material.revision===2));
+ assert.equal(f.raster.ready,false,'current tiles still need their matching GPU frame');
+ old.onBeforeRender();old.onAfterRender();await settle();assert.equal(f.raster.ready,false);
+ deck.render();await settle();f.flush();await settle();deck.render();await settle();
+ assert.equal(f.raster.ready,true);assert.equal(f.canvas.ready,true);assert.equal(f.event('pointerdown').defaultPrevented,false);
+ assert.equal(f.canvas.hitAt(f.hitPoint())?.data.id,'current-terrain-source');
+ assert.deepEqual(f.raster.surface.camera.focus,{x:320,y:320});
+ assert.deepEqual(f.recoveries,['GPU before terrain source update']);assert.equal(f.errors.length,1);
+});
+
+for(const late of ['success','failure'])test(`terrain camera retry ignores a late ${late} from the retired tile generation`,async t=>{
+ const f=await rasterFixture(t,{terrain:true});
+ f.decks[0].props.onError(Error('GPU before delayed terrain'));await settle();
+ const api=f.window.campaign,height=api.atlasTerrainTile,held=[];let hold=true;
+ api.atlasTerrainTile=(...args)=>hold?new Promise(resolve=>held.push({revision:args[1].revision,release:()=>resolve(height(...args)),fail:()=>resolve({ok:false,error:'retired terrain read failed'})})):height(...args);
+ f.raster.sync('campaign',f.canvas.view,2,[],0,{region:{fence:'source-2'},cities:[],entrances:[]});
+ f.document.getElementById('atlas-camera-retry').click();await settle();const deck=await finishCameraRetry(f);
+ assert.equal(held[0].revision,2);assert.equal(f.raster.ready,false);
+ f.raster.sync('campaign',{...f.canvas.view,x:160},3,[],0,{region:{fence:'source-3'},cities:[],entrances:[]});
+ const stale=held.shift();late==='success'?stale.release():stale.fail();await settle();
+ deck.render();await settle();
+ assert.equal(held[0].revision,3);assert.equal(f.raster.ready,false);assert.equal(f.canvas.ready,false);
+ assert.equal(f.errors.length,1);assert.deepEqual(f.recoveries,[]);
+ assert(!f.raster.tiles.some(tile=>tile.revision===2),'the retired response cannot replace retained tiles');
+ hold=false;held.splice(0).forEach(read=>read.release());await settle();
+ assert(f.raster.tiles.every(tile=>tile.revision===3&&tile.fence==='source-3'));
+ assert.equal(f.raster.ready,false);assert.equal(f.event('pointerdown').defaultPrevented,true);
+ deck.render();await settle();f.flush();await settle();deck.render();await settle();
+ assert.equal(f.raster.ready,true);assert.equal(f.canvas.ready,true);assert.equal(f.errors.length,1);
+ assert.deepEqual(f.recoveries,['GPU before delayed terrain']);
+});
+
+for(const product of ['height','material'])test(`terrain camera retry preserves a current ${product} read failure`,async t=>{
+ const f=await rasterFixture(t,{terrain:true});
+ f.decks[0].props.onError(Error('GPU before failed terrain read'));await settle();
+ const api=f.window.campaign,method=product==='height'?'atlasTerrainTile':'atlasMaterialTile';let release;
+ api[method]=()=>new Promise(resolve=>{release=()=>resolve({ok:false,error:'current '+product+' unavailable'});});
+ f.raster.sync('campaign',f.canvas.view,2,[],0,{region:{fence:'source-2'},cities:[],entrances:[]});
+ const retry=f.document.getElementById('atlas-camera-retry');retry.click();await settle();const deck=await finishCameraRetry(f);
+ assert.equal(f.raster.ready,false);assert.equal(typeof release,'function');release();await settle();deck.render();await settle();
+ assert.equal(f.raster.ready,false);assert.equal(f.canvas.ready,false);assert.equal(f.canvas.hitAt(f.hitPoint()),null);
+ assert.equal(f.event('pointerdown').defaultPrevented,true);assert.equal(retry.hidden,false);assert.equal(retry.disabled,false);
+ assert.equal(f.errors.at(-1).message,'current '+product+' unavailable');assert.deepEqual(f.recoveries,[]);
 });
