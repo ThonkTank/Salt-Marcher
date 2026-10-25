@@ -4850,7 +4850,8 @@
         "activeHours": null,
         "planCommit": "25260921",
         "planReview": "v1.6 independently accepted by a0_interim_review; graph160 and tests7/7 reproduced",
-        "nativeQualification": "pending A0.14/A0.11"
+        "nativeQualification": "pending A0.14/A0.11",
+        "contract": "GraphPreviewTarget and GraphPreviewState public shape stable; source/commit tests still in progress"
       }
     },
     {
@@ -4892,7 +4893,13 @@
         "reserveHours": 1,
         "basis": "Begrenzte Korrektur des belegten Graphpreview-Speicherbesitzes; keine Kampagnenvollkopie."
       },
-      "actual": null
+      "actual": {
+        "agent": "/root/a0_interim_review",
+        "activeHours": null,
+        "preparation": "read-only profile, backup, archive, erasure and persistent receipt handoff prepared",
+        "implementation": "not started; waiting for verified A0.15 handoff",
+        "nativeQualification": "pending A0.14/A0.11"
+      }
     },
     {
       "id": "A0.17",
@@ -4937,7 +4944,13 @@
         "reserveHours": 1,
         "basis": "Begrenzte Korrektur des belegten Graphpreview-Speicherbesitzes; keine Kampagnenvollkopie."
       },
-      "actual": null
+      "actual": {
+        "agent": "/root/plan_final_review",
+        "activeHours": null,
+        "preparation": "read-only explicit target capture, owner switch and local revision handoff prepared",
+        "implementation": "not started; waiting for verified A0.15 handoff",
+        "nativeQualification": "pending A0.14/A0.11"
+      }
     }
   ],
   "resourcePolicy": "Gemeinsame Schreibpfade sind exklusiv. Native Prüfungen sperren den Host und parallel geänderte Buildinputs für den gesamten Paketlauf; Teilparallelität erfordert getrennte Pakete.",
