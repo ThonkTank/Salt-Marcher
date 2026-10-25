@@ -34,7 +34,7 @@ export async function atlasTerrainExport(token:string,snapshot:AtlasRenderView,v
   const stream=new AtlasSurfaceTileStream({maxTiles:32,maxRetainedTiles:64,maxBytes:64*1024*1024}),objects=new AtlasObjectGeometry();
   try{
     let tiles:readonly AtlasSurfaceTile[]=[];
-    const fetch=atlasSurfaceTileFetcher(window.campaign,token,'export:'+crypto.randomUUID());
+    const fetch=atlasSurfaceTileFetcher(window.campaign,token,'export:'+crypto.randomUUID(),'export');
     await stream.load({box,focus:view.tilt?view.frame:undefined,metersPerPixel:camera.metersPerPixel,revision:snapshot.revision,source:snapshot.region!.fence},async(request,signal)=>{check();const reply=await fetch(request,signal);check();return reply;},frame=>{if(frame.complete)tiles=frame.tiles;});check();
     if(!tiles.length)throw Error('Geländeausgabe nicht vollständig.');
     const source=terrainObjectSources(snapshot,{mpp:camera.metersPerPixel,roofs:options.roofs,scopeId:snapshot.region?.scopeId??null});

@@ -446,22 +446,24 @@ else {
       if((await store.atlasRegionSource(token)).fence!==source.fence)throw Error('Geometriekachel inzwischen geändert.');
       return value;
     });
-    handle('atlas:cancel-read',async (token:string,control:AtlasReadRequest)=>{(await store.atlasRegionSource(token));if(!control)throw Error('Kartenleseauftrag fehlt.');validateAtlasReadRequest(control);atlasRegions.cancelRead(control,token);atlasExportRegions.cancelRead(control,token);});
-    handle('atlas:terrain-tile',async(token:string,q:import('../src/app/atlas-terrain-tile').AtlasTerrainTileRequest,control?:AtlasReadRequest)=>{
-      validateAtlasReadRequest(control);
+    handle('atlas:cancel-read',async (token:string,control:AtlasReadRequest,consumer:'view'|'export'='view')=>{(await store.atlasRegionSource(token));if(!control)throw Error('Kartenleseauftrag fehlt.');validateAtlasReadRequest(control);if(!['view','export'].includes(consumer))throw Error('Kartenleser prüfen.');(consumer==='view'?atlasRegions:atlasExportRegions).cancelRead(control,token);});
+    handle('atlas:terrain-tile',async(token:string,q:import('../src/app/atlas-terrain-tile').AtlasTerrainTileRequest,control?:AtlasReadRequest,consumer:'view'|'export'='view')=>{
+      validateAtlasReadRequest(control);if(!['view','export'].includes(consumer))throw Error('Kartenleser prüfen.');
+      const reader=consumer==='view'?atlasRegions:atlasExportRegions;
       if(graphSourceReadBarrierDepth)throw Error('Graphwechsel läuft.');atlasTerrainTileQuery(q);
-      const source=(await store.atlasRegionSource(token,atlasExportRegions.cursor));if(graphSourceReadBarrierDepth)throw Error('Graphwechsel läuft.');
+      const source=(await store.atlasRegionSource(token,reader.cursor));if(graphSourceReadBarrierDepth)throw Error('Graphwechsel läuft.');
       if(source.revision!==q.revision)throw Error('Atlaskachel inzwischen geändert.');
-      const value=await atlasExportRegions.terrainTile(source,q,control);
+      const value=await reader.terrainTile(source,q,control);
       if((await store.atlasRegionSource(token)).fence!==source.fence)throw Error('Atlaskachel inzwischen geändert.');
       return value;
     });
-    handle('atlas:material-tile',async(token:string,q:import('../src/app/atlas-material-tile').AtlasMaterialTileRequest,control?:AtlasReadRequest)=>{
-      validateAtlasReadRequest(control);
+    handle('atlas:material-tile',async(token:string,q:import('../src/app/atlas-material-tile').AtlasMaterialTileRequest,control?:AtlasReadRequest,consumer:'view'|'export'='view')=>{
+      validateAtlasReadRequest(control);if(!['view','export'].includes(consumer))throw Error('Kartenleser prüfen.');
+      const reader=consumer==='view'?atlasRegions:atlasExportRegions;
       if(graphSourceReadBarrierDepth)throw Error('Graphwechsel läuft.');atlasMaterialTileQuery(q);
-      const source=(await store.atlasRegionSource(token,atlasExportRegions.cursor));if(graphSourceReadBarrierDepth)throw Error('Graphwechsel läuft.');
+      const source=(await store.atlasRegionSource(token,reader.cursor));if(graphSourceReadBarrierDepth)throw Error('Graphwechsel läuft.');
       if(source.revision!==q.revision)throw Error('Materialkachel inzwischen geändert.');
-      const value=await atlasExportRegions.materialTile(source,q,control);
+      const value=await reader.materialTile(source,q,control);
       if((await store.atlasRegionSource(token)).fence!==source.fence)throw Error('Materialkachel inzwischen geändert.');
       return value;
     });

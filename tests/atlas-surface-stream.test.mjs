@@ -73,3 +73,14 @@ test('optional prefetch failure preserves the fully published viewport without a
  assert.equal(optionalReads,1);assert(frames.at(-1).complete);assert(frames.at(-1).tiles.length>0);
  stream.dispose();
 });
+
+for(const consumer of ['view','export'])test(`paired fetcher forwards ${consumer} ownership through both reads and cancellation`,async()=>{
+ const calls=[],controller=new AbortController(),q={tile:{lod:0,x:0,y:0},revision:2},product=pair(q);
+ const api={atlasTerrainTile:async(token,request,control,owner)=>{calls.push(['height',owner,control]);return{ok:true,value:product.terrain};},
+  atlasMaterialTile:async(token,request,control,owner)=>{calls.push(['material',owner,control]);controller.abort();return{ok:true,value:product.material};},
+  atlasCancelRead:async(token,control,owner)=>{calls.push(['cancel',owner,control]);return{ok:true};}};
+ const fetch=consumer==='view'?atlasSurfaceTileFetcher(api,'token','owner'):atlasSurfaceTileFetcher(api,'token','owner',consumer);
+ await assert.rejects(fetch(q,controller.signal),{name:'AbortError'});
+ assert.deepEqual(calls.map(c=>c.slice(0,2)),[['height',consumer],['material',consumer],['cancel',consumer]]);
+ assert.deepEqual(calls.map(c=>c[2]),[calls[0][2],calls[0][2],calls[0][2]]);
+});

@@ -11,6 +11,7 @@ import type {
 import { REGION_CACHE_BYTES } from '../src/app/atlas-region-contracts';
 
 type Queued = {
+  generation:number;
   control?:AtlasReadRequest;
   cancellation?:Int32Array;
   endQueue:()=>void;
@@ -19,10 +20,12 @@ type Queued = {
   resolve: (value: AtlasWorkerValue) => void;
   reject: (error: Error) => void;
 };
-type Lane='selection'|'camera'|'terrain'|'author'|'live';
-const LANE_PRIORITY:readonly Lane[]=['selection','live','camera','author','terrain'];
+type Lane='selection'|'camera'|'terrain'|'author'|'live'|'geometry'|'surface';
+const retainedProjection=(q:Queued)=>q.job.kind==='terrain-tile'||q.job.kind==='material-tile'||q.job.kind==='geometry-tile'||q.job.kind==='terrain'&&!!q.control;
+const LANE_PRIORITY:readonly Lane[]=['selection','live','camera','author','geometry','surface','terrain'];
 
-/** One readonly worker/index; bounded successors for selection, camera and terrain, with selection first. */
+/** One readonly worker/index; one bounded successor per fixed lane, with selection first.
+ * Surface pairs and geometry tiles belong to independent editor streams. */
 export class AtlasRegionService {
   private worker: Worker | null = null;
   private identity = '';
@@ -122,13 +125,13 @@ export class AtlasRegionService {
     if (this.worker && this.sourceIdentity(source) !== this.identity) {
       this.cancel();
     }
-    if(lane==='camera'||lane==='live'||lane==='author'){
+    if((lane==='camera'||lane==='live'||lane==='author')&&!this.queued.get('terrain')?.control){
       this.queued.get('terrain')?.reject(new Error('Geländeberechnung durch neuere Anfrage ersetzt.'));
       this.queued.delete('terrain');
     }
     this.queued.get(lane)?.reject(new Error('Kartenausschnitt durch neuere Anfrage ersetzt.'));
     const promise = new Promise<AtlasJobResults[J['kind']]>((resolve, reject) => {
-      this.queued.set(lane, { source, job, control, cancellation:control?new Int32Array(new SharedArrayBuffer(4)):undefined, resolve:value=>resolve(value as AtlasJobResults[J['kind']]), reject, endQueue:terrainTraceStart("region.queue",source.revision) });
+      this.queued.set(lane, { generation:this.generation, source, job, control, cancellation:control?new Int32Array(new SharedArrayBuffer(4)):undefined, resolve:value=>resolve(value as AtlasJobResults[J['kind']]), reject, endQueue:terrainTraceStart("region.queue",source.revision) });
     });
     void this.drain();
     return promise;
@@ -144,17 +147,28 @@ export class AtlasRegionService {
         const lane = LANE_PRIORITY.find(lane=>this.queued.has(lane))!,
           request = this.queued.get(lane)!;
         this.queued.delete(lane);request.endQueue();
+        // The worker owns one projection generator. An intervening projection or
+        // camera can replace it. Retain unrelated tiles and owned object projections;
+        // restart their generator when the lane runs again. No extra worker or queue.
+        if(lane!=='selection')for(const waiting of this.queued.values()){
+          if(retainedProjection(waiting))waiting.job={...waiting.job,continuation:false};
+        }
         const cancellation=request.cancellation??(lane==='camera'?new Int32Array(new SharedArrayBuffer(4)):null);
         if(request.control&&cancellation)this.activeRead={token:request.source.token,control:request.control,signal:cancellation};
-        if(cancellation)this.regionCancellation=cancellation;
+        if(cancellation&&!retainedProjection(request))this.regionCancellation=cancellation;
         try {
+          if(request.generation!==this.generation)throw new Error('Kartenausschnitt abgebrochen.');
           const value=await this.run(request.source, cancellation?{...request.job,cancellation}:request.job);
+          if(request.generation!==this.generation)throw new Error('Kartenausschnitt abgebrochen.');
           if(cancellation&&(Atomics.load(cancellation,0)||isWorkerControl(value,'regionReadCancelled'))){
             this.regionCancelled++;
             request.reject(new Error('Kartenausschnitt durch neuere Anfrage ersetzt.'));
           }else if(isWorkerControl(value,'terrainProjectionContinuation')&&isProjectionJob(request.job)){
             this.terrainYields++;
-            if(['terrain','live','camera','author'].some(lane=>this.queued.has(lane as Lane)))request.reject(new Error('Geländeberechnung durch neuere Anfrage ersetzt.'));
+            if(retainedProjection(request)){
+              if(this.queued.has(lane))request.reject(new Error('Kartenausschnitt durch neuere Anfrage ersetzt.'));
+              else this.queued.set(lane,{...request,job:{...request.job,continuation:true},endQueue:()=>{}});
+            }else if(['terrain','live','camera','author','surface','geometry'].some(lane=>this.queued.has(lane as Lane)))request.reject(new Error('Geländeberechnung durch neuere Anfrage ersetzt.'));
             else this.queued.set('terrain',{...request,job:{...request.job,continuation:true},endQueue:()=>{}});
           }else if(isWorkerControl(value,'terrainContinuation')&&request.job.kind==='terrain-stroke'){
             if(this.queued.has('author'))request.reject(new Error('Geländeberechnung durch neueren Auftrag ersetzt.'));
@@ -266,9 +280,9 @@ export class AtlasRegionService {
 
   prepareTerrainStroke(source:AtlasRegionSource,stroke:import('../src/app/terrain-brush').HeightStroke):Promise<import('../src/app/storage/terrain-scale').PreparedTerrainStroke>{return this.enqueue(source,{kind:'terrain-stroke',stroke},'author');}
 
-  geometryTile(source:AtlasRegionSource,query:import('../src/app/atlas-geometry-tile').AtlasGeometryTileRequest):Promise<import('../src/app/atlas-geometry-tile').AtlasGeometryTile>{return this.enqueue(source,{kind:'geometry-tile',query},'terrain');}
-  terrainTile(source:AtlasRegionSource,query:import('../src/app/atlas-terrain-tile').AtlasTerrainTileRequest,control?:AtlasReadRequest):Promise<import('../src/app/atlas-terrain-tile').AtlasTerrainTile>{return this.enqueue(source,{kind:'terrain-tile',query},'terrain',control);}
-  materialTile(source:AtlasRegionSource,query:import('../src/app/atlas-material-tile').AtlasMaterialTileRequest,control?:AtlasReadRequest):Promise<import('../src/app/atlas-material-tile').AtlasMaterialTile>{return this.enqueue(source,{kind:'material-tile',query},'terrain',control);}
+  geometryTile(source:AtlasRegionSource,query:import('../src/app/atlas-geometry-tile').AtlasGeometryTileRequest):Promise<import('../src/app/atlas-geometry-tile').AtlasGeometryTile>{return this.enqueue(source,{kind:'geometry-tile',query},'geometry');}
+  terrainTile(source:AtlasRegionSource,query:import('../src/app/atlas-terrain-tile').AtlasTerrainTileRequest,control?:AtlasReadRequest):Promise<import('../src/app/atlas-terrain-tile').AtlasTerrainTile>{return this.enqueue(source,{kind:'terrain-tile',query},'surface',control);}
+  materialTile(source:AtlasRegionSource,query:import('../src/app/atlas-material-tile').AtlasMaterialTileRequest,control?:AtlasReadRequest):Promise<import('../src/app/atlas-material-tile').AtlasMaterialTile>{return this.enqueue(source,{kind:'material-tile',query},'surface',control);}
   terrainColor(source:AtlasRegionSource,query:import('../src/app/terrain-color').TerrainColorRequest):Promise<import('../src/app/terrain-color').TerrainColorTile>{return this.enqueue(source,{kind:'terrain-color',query},'terrain');}
   terrain(source:AtlasRegionSource,query:import('../src/app/terrain-projection').TerrainProjectionRequest,control?:AtlasReadRequest):Promise<import('../src/app/terrain-projection').TerrainProjection>{return this.enqueue(source,{kind:'terrain',query},'terrain',control);}
 

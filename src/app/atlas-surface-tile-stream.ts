@@ -32,16 +32,16 @@ function validateSurfaceTile(reply:AtlasSurfaceTile,request:AtlasTerrainTileRequ
 type ReadPort=Pick<AtlasRegionAPI,'atlasTerrainTile'|'atlasMaterialTile'|'atlasCancelRead'>;
 /** Restricted preload adapter. Cancellation only addresses a disposable read.
  * Await physical completion before another stream job; never retry a failed read. */
-export function atlasSurfaceTileFetcher(api:ReadPort,token:string,owner:string){
+export function atlasSurfaceTileFetcher(api:ReadPort,token:string,owner:string,consumer:'view'|'export'='view'){
   return async(request:AtlasTerrainTileRequest,signal:AbortSignal):Promise<AtlasSurfaceTile>=>{
     const control:AtlasReadRequest={owner,id:crypto.randomUUID()};
     const check=()=>{if(signal.aborted)throw new DOMException('Kartenleseauftrag abgebrochen.','AbortError');};
-    const cancel=()=>{void api.atlasCancelRead(token,control).catch(()=>{});};
+    const cancel=()=>{void api.atlasCancelRead(token,control,consumer).catch(()=>{});};
     check();signal.addEventListener('abort',cancel,{once:true});
     try{
-      const height=await api.atlasTerrainTile(token,{tile:request.tile,revision:request.revision,product:'height'},control);
+      const height=await api.atlasTerrainTile(token,{tile:request.tile,revision:request.revision,product:'height'},control,consumer);
       check();if(!height.ok)throw Error(height.error);
-      const material=await api.atlasMaterialTile(token,{tile:request.tile,revision:request.revision,product:'surface'},control);
+      const material=await api.atlasMaterialTile(token,{tile:request.tile,revision:request.revision,product:'surface'},control,consumer);
       check();if(!material.ok)throw Error(material.error);
       return {tile:request.tile,revision:request.revision,fence:height.value.fence,terrain:height.value,material:material.value};
     }finally{signal.removeEventListener('abort',cancel);}
