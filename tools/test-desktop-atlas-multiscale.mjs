@@ -65,12 +65,15 @@ try{
    const b=await page.locator('#campaign-map').boundingBox();await page.mouse.move(b.x+b.width/2,b.y+b.height/2);
    const scale=()=>page.locator('#campaign-map').evaluate(c=>JSON.parse(c.dataset.atlasView).width/c.clientWidth);
    const before=await scale();const positions=[before];
-   for(const direction of [1,-1])for(let i=0;i<18;i++){await page.mouse.wheel(0,direction*250);await page.waitForTimeout(100);positions.push(await scale());}
+   for(const direction of [1,-1])for(let i=0;i<18;i++){await page.mouse.wheel(0,direction*250*zoom);await page.waitForTimeout(100);positions.push(await scale());}
    await page.waitForFunction(()=>document.querySelector('#campaign-map').dataset.terrainQuality==='detail',null,{timeout:120000});
    assert.deepEqual(shaderErrors,[]);const after=await scale();assert(Math.max(...positions)/Math.min(...positions)>1000,'zoom sweep must traverse the actual scale hierarchy');
    sweeps.push({zoom,positions,before,after});await native.capture(page,'continuous-zoom-'+zoom);
   }
   if(process.env.QA_EXPORT==='1'){
+   // Keep the sampled woodland inside the view at both UI zoom factors.
+   // The closest village camera can otherwise sample only its cleared square.
+   await open(16);
    await page.locator('#atlas-output-open').click();
    await page.locator('#atlas-output summary').filter({hasText:'Bildoptionen'}).click();
    await page.locator('#atlas-export-grid').uncheck();
