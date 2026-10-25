@@ -27,7 +27,7 @@ class FakeDeck {
   setProps(props){this.setPropsCalls.push(props);this.props={...this.props,...props};}
   redraw(reason){this.redrawCalls.push(reason);}
   fireLoad(){this.props.onLoad?.();}
-  fireRender(){for(const layer of this.props.layers??[])Object.defineProperty(layer,'isLoaded',{value:true,configurable:true});this.props.onAfterRender?.();}
+  fireRender(){this.props.onBeforeRender?.();for(const layer of this.props.layers??[])Object.defineProperty(layer,'isLoaded',{value:true,configurable:true});this.props.onAfterRender?.();}
   fireError(error=new Error('fake Deck failure')){this.props.onError?.(error);}
   pickObject(args){this.pickCalls.push(args);return this.pickResult;}
   finalize(){this.finalizeCalls++;}
@@ -181,8 +181,18 @@ test('pending textures delay readiness and the original GPU failure rejects late
  surface.setCamera({...camera,rotation:20});
  let done=false;const pending=surface.waitForFrame().then(()=>{done=true;});
  // Deck has not yet uploaded this layer's asynchronous texture.
- deck.props.onAfterRender();await Promise.resolve();assert.equal(done,false);
+ deck.props.onBeforeRender();deck.props.onAfterRender();await Promise.resolve();assert.equal(done,false);
  deck.fireRender();await pending;assert.equal(done,true);
  const error=new Error('texture allocation failed');deck.fireError(error);
  await assert.rejects(surface.waitForFrame(),e=>e===error);assert.equal(surface.frameUsable,false);surface.dispose();
+});
+
+test('a newer callback cannot finish a render that began with older props',async t=>{
+ const {surface,deck}=await readySurface(t);
+ deck.props.onBeforeRender();
+ surface.setCamera({...camera,focus:{x:200,y:300}});
+ deck.props.onAfterRender();
+ assert.equal(surface.frameUsable,false,'Deck reads current props for afterRender, so a matching render start is required');
+ deck.fireRender();assert.equal(surface.frameUsable,true);
+ surface.dispose();
 });

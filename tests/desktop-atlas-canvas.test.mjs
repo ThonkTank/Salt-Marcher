@@ -7,7 +7,7 @@ import { parseHTML } from './helpers/dom.mjs';
 await build({
   stdin: {
     contents:
-      "export * from './src/app/atlas-canvas';export * from './src/app/atlas-canvas-scene';export * from './src/app/campaign-atlas-export';export * from './src/app/atlas-landscape-export';export {atlasRegionPaint} from './src/app/atlas-region-export';export {CampaignAtlasWorkbench} from './src/app/campaign-atlas-ui';",
+      "export * from './src/app/atlas-raster-presentation';export * from './src/app/atlas-canvas';export * from './src/app/atlas-canvas-scene';export * from './src/app/campaign-atlas-export';export * from './src/app/atlas-landscape-export';export {atlasRegionPaint} from './src/app/atlas-region-export';export {CampaignAtlasWorkbench} from './src/app/campaign-atlas-ui';",
     resolveDir: process.cwd(),
   },
   outfile: ".build/atlas-canvas-test.cjs",
@@ -15,11 +15,13 @@ await build({
   platform: "node",
   format: "cjs",
   plugins:[{name:'output-boundary',setup(b){
+    b.onResolve({filter:/^\.\/atlas-deck-runtime$/},()=>({path:'runtime',namespace:'deck-probe'}));
+    b.onLoad({filter:/.*/,namespace:'deck-probe'},()=>({resolveDir:process.cwd(),contents:"import {AtlasDeckSurface as Surface} from './src/app/atlas-deck-surface';export {AtlasDeckDrawing} from './src/app/atlas-deck-drawing';export {AtlasDeckVegetation} from './src/app/atlas-deck-vegetation';export const AtlasDeckSurface={create:options=>Surface.create({...options,createDeck:globalThis.createAtlasTestDeck})};"}));
     b.onResolve({filter:/^\.\/atlas-terrain-export$/},()=>({path:'output',namespace:'probe'}));
     b.onLoad({filter:/.*/,namespace:'probe'},()=>({contents:'export async function atlasTerrainExport(...args){return globalThis.captureAtlasOutput?.(...args)??new Uint8Array([1,2,3]);}'}));
   }}],
 });
-const { AtlasCanvas, AtlasCanvasScene, atlasPaint, atlasImage, dungeonExportBox, atlasExportScale, atlasExportTiles, atlasRegionPaint, CampaignAtlasWorkbench } = createRequire(
+const { AtlasRasterPresentation, AtlasCanvas, AtlasCanvasScene, atlasPaint, atlasImage, dungeonExportBox, atlasExportScale, atlasExportTiles, atlasRegionPaint, CampaignAtlasWorkbench } = createRequire(
   import.meta.url,
 )("../.build/atlas-canvas-test.cjs");
 class Matrix {
@@ -969,4 +971,73 @@ test('PNG output applies the same subpixel group rule to a retained detailed fra
  assert(!far.children.some(n=>n.data.spatialScope==='local'));
  const near=atlasRegionPaint(data,[],{x:0,y:0,width:12,height:6},120,new Map(),options),face=near.children.flatMap(n=>n.children).find(n=>n.kind==='polygons');
  assert.deepEqual(face.geometry.polygons,room.polygons);assert.equal(data.workspace.rooms[0],room);
+});
+
+// Exercise all production owners; only the GPU/DOM platform is replaced. The
+// callbacks are deliberately manual, so HUD painting cannot stand in for GPU completion.
+async function rasterFixture(t){
+ const f=fixture(t),decks=[],errors=[],prior={ResizeObserver:globalThis.ResizeObserver,createAtlasTestDeck:globalThis.createAtlasTestDeck};
+ globalThis.ResizeObserver=class{observe(){}disconnect(){}};
+ globalThis.createAtlasTestDeck=props=>{
+  const attachment=format=>({texture:{format}}),deck={props,
+   deckPicker:{_resizeBuffer(){},device:{isTextureFormatSupported:()=>true,isTextureFormatRenderable:()=>true},pickingFBO:{colorAttachments:[attachment('rgba8unorm')],depthStencilAttachment:attachment('depth24plus')},depthFBO:{colorAttachments:[attachment('rgba32float')],depthStencilAttachment:attachment('depth24plus')}},
+   setProps(next){this.props={...this.props,...next};},redraw(){},finalize(){},
+   load(){this.props.onLoad();},render(){this.props.onBeforeRender();for(const layer of this.props.layers??[])Object.defineProperty(layer,'isLoaded',{value:true,configurable:true});this.props.onAfterRender();}};
+  decks.push(deck);return deck;
+ };
+ const controls=f.document.createElement('div');controls.innerHTML='<div id="atlas-view-popup"></div><input id="atlas-perception">';f.document.body.append(controls);f.document.getElementById('atlas-perception').checked=true;
+ let cancellations=0;
+ const raster=new AtlasRasterPresentation(f.root,{navigation:e=>e.button===1,hasDraft:()=>false,writing:()=>false,cancel:()=>{cancellations++;raster.cancelDraft();raster.gesture(false);},draft:()=>null,tool:()=> 'draw',panning:()=>false,live:()=>false,error:e=>errors.push(e),selection:()=>null,redraw:()=>f.canvas.redrawOverlay()});
+ f.canvas.options.presentation=()=>raster;f.canvas.options.overlay=()=>{};
+ f.canvas.options.changed=()=>raster.reframe(f.canvas.view);
+ raster.sync('campaign',f.canvas.view,1,[],0);
+ Object.defineProperties(raster.container,{clientWidth:{get:()=>f.root.clientWidth},clientHeight:{get:()=>f.root.clientHeight}});
+ await settle();assert.equal(decks.length,1);decks[0].load();decks[0].render();await settle();decks[0].render();await settle();
+ f.canvas.render(root=>root.append(rect('room')));await settle();decks[0].render();await settle();
+ assert.equal(raster.ready,true);assert.equal(f.canvas.ready,true);
+ t.after(()=>{raster.setActive(false);Object.assign(globalThis,prior);});
+ const event=(type,x=15,y=25,button=0)=>{const e=new f.window.Event(type,{bubbles:true,cancelable:true});Object.assign(e,{clientX:x,clientY:y,pointerId:1,button});f.root.dispatchEvent(e);return e;};
+ const hitPoint=()=>{const p=raster.surface.frame.project({x:f.canvas.sceneOrigin.x+5,y:f.canvas.sceneOrigin.y+5,heightM:0});return{clientX:p.x+10,clientY:p.y+20};};
+ return {...f,raster,decks,errors,event,hitPoint,get cancellations(){return cancellations;}};
+}
+
+test('production raster and Canvas revoke hits until the current camera and GPU batch complete',async t=>{
+ const f=await rasterFixture(t),deck=f.decks[0],point=f.hitPoint();
+ assert.equal(f.canvas.hitAt(point)?.data.id,'room','real retained drawing is selectable');
+ const old={...deck.props};
+ f.canvas.set({...f.canvas.view,x:110},true);f.flush();await settle();
+ assert.equal(f.raster.surface.camera.focus.x,270,'Canvas change follows the production camera-to-presentation callback');
+ assert.equal(f.raster.ready,false);assert.equal(f.canvas.ready,false);assert.equal(f.canvas.hitAt(point),null);assert.equal(f.raster.hitAt(point,['atlasObject']),null);
+ assert.equal(f.event('pointerdown').defaultPrevented,true,'new author input is stopped at the production capture guard');
+ assert(f.raster.navigationPoint(point),'navigation remains available while a frame is pending');
+ f.event('pointerdown',15,25,1);assert(f.canvas.drag,'pending GPU frame still permits the real Canvas pan owner to start');f.event('pointerup',15,25,1);
+ old.onBeforeRender();old.onAfterRender();await settle();assert.equal(f.canvas.ready,false,'old camera completion cannot release the current batch');
+ // A rejected author press must remain rejected even if its subsequent click
+ // arrives after GPU readiness is restored.
+ assert.equal(f.event('pointerdown').defaultPrevented,true);
+ deck.render();assert.equal(f.raster.ready,true);assert.equal(f.canvas.ready,false,'Canvas must await the batch acknowledgement, even after Surface completion');await settle();assert.equal(f.canvas.ready,true);
+ assert.equal(f.event('click').defaultPrevented,true);
+ assert.equal(f.event('pointerdown').defaultPrevented,false);assert.equal(f.event('click').defaultPrevented,false);
+ const oldScene={...deck.props};f.canvas.render(root=>root.append(rect('replacement')));await settle();
+ assert.equal(f.canvas.ready,false);assert.equal(f.raster.hitAt(point,['atlasObject']),null);
+ oldScene.onBeforeRender();oldScene.onAfterRender();await settle();assert.equal(f.canvas.ready,false,'old drawing cannot qualify a replacement scene');
+ deck.render();await settle();assert.equal(f.canvas.ready,true);
+ assert.equal(f.canvas.hitAt(f.hitPoint())?.data.id,'replacement');
+ assert.deepEqual(f.errors,[]);
+});
+
+test('frozen author gesture survives its preview frame but GPU loss retires it before recovery',async t=>{
+ const f=await rasterFixture(t),deck=f.decks[0],point=f.hitPoint(),before=f.raster.point(point);
+ f.raster.gesture(true);f.raster.surface.setTerrain([]);
+ assert.equal(f.raster.surface.frameUsable,false);assert.equal(f.raster.ready,true,'ongoing brush can sample its frozen input frame');
+ assert.deepEqual(f.raster.point(point),before);assert.equal(f.raster.hitAt(point,['atlasObject']),null,'new selection cannot use the pending preview');
+ assert.equal(f.event('pointerdown').defaultPrevented,true,'another author gesture cannot start while frozen input is owned');
+ const old={...deck.props};f.raster.surface.canvas.dispatchEvent(new f.window.Event('webglcontextlost',{cancelable:true}));
+ assert.equal(f.cancellations,1);assert.equal(f.raster.gesturing,false);assert.equal(f.raster.frozen,null);assert.equal(f.raster.ready,false);
+ old.onBeforeRender();old.onAfterRender();assert.equal(f.raster.ready,false);
+ assert(f.raster.navigationPoint(point),'navigation needs no live GPU context');
+ await settle();assert.equal(f.decks.length,2);const recovered=f.decks[1];recovered.load();recovered.render();await settle();
+ assert.equal(f.raster.ready,true);assert.equal(f.cancellations,1,'recovery must not replay input');
+ assert.equal(f.event('click').defaultPrevented,true,'a lost press cannot become an author click after recovery');
+ assert.deepEqual(f.errors,[]);
 });

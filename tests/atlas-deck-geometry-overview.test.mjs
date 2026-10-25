@@ -25,7 +25,7 @@ class FakeDeck {
     pickingFBO:fmt('rgba8unorm'),depthFBO:fmt('rgba32float')};this.pickResult=null;}
   setProps(props){this.props={...this.props,...props};}
   fireLoad(){this.props.onLoad?.();}
-  fireRender(){for(const layer of this.props.layers??[])Object.defineProperty(layer,'isLoaded',{value:true,configurable:true});this.props.onAfterRender?.();}
+  fireRender(){this.props.onBeforeRender?.();for(const layer of this.props.layers??[])Object.defineProperty(layer,'isLoaded',{value:true,configurable:true});this.props.onAfterRender?.();}
   pickObject(){return this.pickResult;}
   finalize(){}
 }

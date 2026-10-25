@@ -27,6 +27,6 @@ test('pausing reads retires the object response before a canonical write starts'
 
 test('a superseded surface read retains the useful frame and waits for the newer owner',async t=>{
  const f=fixture(t);Object.defineProperty(f.ui,'needsTerrainRaster',{value:false});
- Object.assign(f.ui,{active:true,ready:true,generation:0,request:'',host:{...f.ui.host,writing:()=>false},stream:{async load(){throw Error('Kartenausschnitt durch neuere Anfrage ersetzt.');}}});
+ Object.assign(f.ui,{active:true,surfaceReady:true,surface:{frameUsable:true},generation:0,request:'',host:{...f.ui.host,writing:()=>false},stream:{async load(){throw Error('Kartenausschnitt durch neuere Anfrage ersetzt.');}}});
  const pending=f.ui.load();assert.equal(f.ui.input.dataset.terrainQuality,'overview','the previous camera cannot qualify the new read');await pending;assert.equal(f.ui.ready,true);assert.equal(f.ui.request,'');assert.deepEqual(f.calls.errors,[]);assert.equal(f.calls.refresh,0);
 });

@@ -28,6 +28,8 @@ export interface AtlasDeckSurfaceOptions {
   labels?: readonly AtlasDeckLabel[];
   onCamera?: (camera: AtlasMetricCamera) => void;
   onError?: (error: Error) => void;
+  /** Input owner retires frozen gestures before context recovery starts. */
+  onContextLost?: () => void;
   timeoutMs?: number;
   /** Existing Workbench owns input when used through AtlasPresentation. */
   externalInput?:boolean;
@@ -125,6 +127,7 @@ export class AtlasDeckSurface {
   private generation = 0;
   private revision = 0;
   private renderedRevision = -1;
+  private renderingRevision = -1;
   private recovery: Promise<void> | null = null;
   private observer: ResizeObserver;
   private listeners: (() => void)[] = [];
@@ -153,7 +156,8 @@ export class AtlasDeckSurface {
     const stats=this.gpuDevice?.statsManager.getStats('GPU Time and Memory');
     return {bytes:stats?.get('GPU Memory').count??0,buffers:stats?.get('Buffer Memory').count??0,textures:stats?.get('Texture Memory').count??0};
   }
-  get frameUsable(): boolean { return !this.disposed && !this.lost && this.loaded && this.renderedRevision === this.revision; }
+  get contextAvailable(): boolean { return !this.disposed && !this.lost && this.loaded && !this.failure; }
+  get frameUsable(): boolean { return this.contextAvailable && this.renderedRevision === this.revision; }
 
   private makeCanvas(): HTMLCanvasElement {
     const canvas = this.options.container.ownerDocument.createElement('canvas');
@@ -172,9 +176,11 @@ export class AtlasDeckSurface {
     this.guard();
     this.frameValue = atlasMetricFrame(this.cameraValue, Math.max(1, this.options.container.clientWidth), Math.max(1, this.options.container.clientHeight),undefined,{crop:this.crop});
     this.revision++;
+    this.renderingRevision = -1;
     if (!this.loaded || this.lost) return;
     this.deckValue!.setProps({width: this.frameValue.viewport.width, height: this.frameValue.viewport.height,
       views: [new AtlasMetricView({id: 'atlas-metric', frame: this.frameValue})],
+      ...this.renderCallbacks(this.generation, this.revision),
       viewState: {}, layers: [...this.terrainLayers(), ...atlasDeckSceneLayers(this.modelValue, this.frameValue), ...this.labelLayers(),...(this.drawing?.(this.frameValue)??[])].map(layer=>this.cameraValue.tilt>60&&layer instanceof SimpleMeshLayer?layer.clone({extensions:[ATLAS_HORIZON_EXTENSION],atlasHorizon:atlasHorizonRange(this.frameValue,this.crop?.width,this.crop?.height)}):layer)});
   }
   setViewportCrop(crop:{width:number;height:number;x:number;y:number}){this.crop=crop;this.publish();}
@@ -270,16 +276,27 @@ export class AtlasDeckSurface {
           try { ensureAtlasDeckPickingDepth(this.deckValue!); this.publish(); }
           catch (error) { this.fail(error); }
         },
-        onAfterRender: () => {
-          if (this.disposed || !this.loaded || this.lost || generation !== this.generation) return;
-          if((this.deckValue?.props.layers??[]).some(layer=>layer&&'isLoaded' in layer&&layer.isLoaded===false))return;
-          this.renderedRevision = this.revision;
-          for (const waiter of [...this.waiters]) waiter.resolve();
-        },
+        ...this.renderCallbacks(generation, this.revision),
         onError: error => { if (!this.lost && !this.disposed && generation === this.generation) this.fail(error); }
       });
     } catch (error) { this.fail(error); }
     await ready;
+  }
+  /** A completion belongs to the props that began drawing, not whichever props
+   * are current when an old callback eventually returns. */
+  private renderCallbacks(generation:number,revision:number) {
+    return {
+      onBeforeRender:()=>{
+        if(generation===this.generation&&revision===this.revision&&this.contextAvailable)this.renderingRevision=revision;
+      },
+      onAfterRender:()=>{
+        if(generation!==this.generation||revision!==this.revision||!this.contextAvailable||this.renderingRevision!==revision)return;
+        this.renderingRevision=-1;
+        if((this.deckValue?.props.layers??[]).some(layer=>layer&&'isLoaded' in layer&&layer.isLoaded===false))return;
+        this.renderedRevision=revision;
+        for(const waiter of [...this.waiters])waiter.resolve();
+      }
+    };
   }
   private fail(value: unknown): void {
     const error = value instanceof Error ? value : new Error(String(value));
@@ -331,7 +348,8 @@ export class AtlasDeckSurface {
       else if (event.key === '+' || event.key === '-') { event.preventDefault(); this.setCamera(atlasMetricZoomAt(this.cameraValue, this.frameValue.viewport.width, this.frameValue.viewport.height, center, event.key === '+' ? .8 : 1.25)); }
     });
     listen('webglcontextlost', event => {
-      event.preventDefault(); this.lost = true; this.renderedRevision = -1; this.drag = null;
+      event.preventDefault(); this.lost = true; this.renderedRevision = -1; this.renderingRevision = -1; this.drag = null;
+      this.options.onContextLost?.();
       // No persistence operation is retried. Only disposable GPU state is rebuilt.
       queueMicrotask(() => { if (!this.disposed) void this.recover().catch(error => this.fail(error)); });
     });

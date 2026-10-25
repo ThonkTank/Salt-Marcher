@@ -48,6 +48,7 @@ export class AtlasCanvas {
   private tooltipAnimation = 0;
   private publishedGeneration = 0;
   private cameraVersion = 0;
+  private paintVersion = 0;
   private painted: { generation: number; cameraVersion: number; width: number; height: number } | null = null;
   private compiled: AtlasCanvasScene | null = null;
   private paths:import("./atlas-canvas-scene").AtlasPathCache=new WeakMap();
@@ -460,10 +461,16 @@ export class AtlasCanvas {
         if (again) this.redrawOverlay();
       }
     };
-    if(presentation?.batch)presentation.batch(paint);else paint();
+    const version=++this.paintVersion;
+    const frame={generation:this.publishedGeneration,cameraVersion:this.cameraVersion,...rect};
+    const current=()=>version===this.paintVersion&&frame.generation===this.generation&&frame.cameraVersion===this.cameraVersion&&
+      frame.width===this.root.clientWidth&&frame.height===this.root.clientHeight&&!this.failed&&!this.lost;
+    const acknowledge=()=>{if(current()){this.painted=frame;this.root.dataset.canvasState=this.ready?(this.emptyText?'empty':'loaded'):'loading';}};
+    const completion=presentation?.batch?presentation.batch(paint):paint();
     if (ctx.isContextLost?.()) throw Error("Zeichenfläche beim Zeichnen verloren.");
-    // Drawing is synchronous inside this animation frame. Authorize hits only after it completes.
-    this.painted = { generation: this.publishedGeneration, cameraVersion: this.cameraVersion, ...rect };
+    // GPU map publication is asynchronous; a finished HUD alone grants no hits.
+    if(completion){this.painted=null;void completion.then(acknowledge,error=>{if(current())this.fail(error);});}
+    else acknowledge();
     this.root.dataset.paintCommands = String(this.compiled.commands.length);
     this.root.dataset.decodedBytes = String(
       [...this.decoded.values()].reduce(
