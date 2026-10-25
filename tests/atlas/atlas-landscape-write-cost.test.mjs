@@ -3,7 +3,10 @@ import assert from 'node:assert/strict';
 import { buildSync } from '../helpers/build.mjs';
 import { createRequire } from 'node:module';
 buildSync({
-  entryPoints: ['src/app/storage/atlas-landscape.ts', 'src/app/atlas/terrain-height.ts'],
+  entryPoints: {
+    'storage/atlas-landscape': 'src/app/storage/atlas-landscape.ts',
+    'terrain-height': 'src/app/atlas/terrain-height.ts',
+  },
   outdir: '.build/landscape-write-cost',
   bundle: true,
   platform: 'node',

@@ -6,13 +6,13 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { randomUUID } from 'node:crypto';
 buildSync({
-  entryPoints: [
-    'src/app/atlas/room-group-generator.ts',
-    'src/app/storage/store.ts',
-    'src/app/atlas/drawing-model.ts',
-    'src/app/atlas/dungeon-model.ts',
-    'src/app/atlas/spatial-3d.ts',
-  ],
+  entryPoints: {
+    'room-group-generator': 'src/app/atlas/room-group-generator.ts',
+    'storage/store': 'src/app/storage/store.ts',
+    'drawing-model': 'src/app/atlas/drawing-model.ts',
+    'dungeon-model': 'src/app/atlas/dungeon-model.ts',
+    'spatial-3d': 'src/app/atlas/spatial-3d.ts',
+  },
   outdir: '.build/room-groups',
   bundle: true,
   platform: 'node',
