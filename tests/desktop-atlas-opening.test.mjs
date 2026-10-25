@@ -1,3 +1,4 @@
+import {sourceFunctions} from './helpers/source.mjs';
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -5,9 +6,7 @@ import {transformSync} from 'esbuild';
 
 // Execute the real entry coordinator without booting unrelated renderer panels.
 const renderer=readFileSync('src/app/renderer.ts','utf8');
-const start=renderer.indexOf('async function reopenView('),end=renderer.indexOf('\ninitPlayerUI(',start);
-assert(start>=0&&end>start);
-const coordinator=renderer.slice(start,end);
+const coordinator=sourceFunctions(renderer, ['reopenView']);
 const {code}=transformSync(`
   export function fixture(){
     let workspace={},activationIntent=1,viewRequest=0,activationFailed=false;

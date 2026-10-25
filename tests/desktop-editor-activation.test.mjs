@@ -1,12 +1,12 @@
+import {sourceFunctions} from './helpers/source.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {createRequire} from 'node:module';
 import {buildSync} from 'esbuild';
 const source=readFileSync('src/app/renderer.ts','utf8');
-const activation=source.slice(source.indexOf('function activate(id:'),source.indexOf("el('campaigns').addEventListener('change'"));
-const boundaries=source.slice(source.indexOf('async function flushAll()'),source.indexOf('async function leaveRoom()'));
-assert(activation.includes('async function drainActivation()'));assert(boundaries.includes('leaveCampaign'));
+const activation=sourceFunctions(source, ['activate', 'drainActivation']);
+const boundaries=sourceFunctions(source, ['flushAll', 'leaveCampaign', 'leaveWorkspace']);
 buildSync({stdin:{resolveDir:process.cwd(),loader:'ts',contents:`
 import {EditorSession} from './src/app/editor-session';
 import {EditorRegistry} from './src/app/editor-registry';

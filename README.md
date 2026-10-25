@@ -58,6 +58,18 @@ beschreibt Auswahl, serielle Diagnose und Laufberichte.
 Native GUI-Prüfungen bleiben getrennte Aufrufe.
 Die Tests in `tests/native-reference/` benötigen zusätzlich die ursprünglichen Dungeondraft-Dateien im Nachbarverzeichnis `../dungeon-auswertung/`; mit diesen Quellen separat ausführen: `node --test --test-concurrency=1 "tests/native-reference/*.test.mjs"`.
 
+### Lesbarer Code
+
+`npm run format` formatiert den aktiven App- und Desktopcode sowie die zugehörigen
+Node-Tests und Entwicklungswerkzeuge mit der gemeinsamen Prettier-Konfiguration.
+`npm run format:check` prüft dieselbe Auswahl, ohne Dateien zu ändern; der
+Candidate-Check führt diese Prüfung ebenfalls aus.
+
+Die Auswahl steht in `package.json`; `.prettierignore` schützt generierte Daten,
+Katalogreferenzen, Fixtures und historische Quellen. HTML und eingebettete
+Sprachen werden nicht pauschal umgeschrieben. Formatierungsänderungen separat
+von fachlichen Änderungen und Verschiebungen committen.
+
 ### Desktop-Testlauf
 
 ```bash
