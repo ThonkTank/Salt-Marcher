@@ -221,7 +221,7 @@
       "lane": "A0",
       "conditional": false,
       "slots": 1,
-      "status": "planned",
+      "status": "in_progress",
       "resources": [],
       "activationRequires": [],
       "returnGates": [],
@@ -238,7 +238,11 @@
         "profile": "implementation",
         "waitConfidence": "planning-assumption"
       },
-      "actual": null
+      "actual": {
+        "agent": "/root/audit_atlas_boundaries",
+        "activeHours": null,
+        "nativeQualification": "pending A0.11"
+      }
     },
     {
       "id": "A0.07",
@@ -337,19 +341,17 @@
       "lane": "A0",
       "conditional": false,
       "slots": 1,
-      "status": "in_progress",
+      "status": "complete",
       "resources": [
         "native-host"
       ],
       "activationRequires": [],
       "returnGates": [],
       "writeScopes": [
-        "src/app/atlas-raster-presentation.ts",
-        "desktop/atlas-region.ts",
-        "desktop/main.ts",
-        "src/app/workspace-editors.ts",
         "src/app/renderer.ts",
-        "tests/workspace-editor-registry.test.mjs"
+        "src/app/workspace-editors.ts",
+        "tests/workspace-editor-registry.test.mjs",
+        "tools/test-desktop-atlas-close.mjs"
       ],
       "writesBuildInputs": true,
       "nativeBuild": true,
@@ -361,7 +363,13 @@
       "actual": {
         "agent": "/root/review_packages",
         "activeHours": null,
-        "nativeQualification": "exclusive build window; pending"
+        "nativeQualification": "4 cases passed on identity SHA256 650e702c5f2634848da0079ffa73356e10981d249fa8167227e06c40f1c6b7af",
+        "startedAt": "2026-10-25T12:13:39Z",
+        "finishedAt": "2026-10-25T12:27:46.766Z",
+        "commit": "0494bf177cc73805ba6a6f08ea73485185bb19a7",
+        "tests": "79/79; npm run check and build:desktop passed",
+        "evidence": ".build/atlas-performance-plan/A0.10-handoff.json",
+        "independentReview": "interim running; full R0 pending"
       }
     },
     {
@@ -376,7 +384,7 @@
       "lane": "A0",
       "conditional": false,
       "slots": 1,
-      "status": "planned",
+      "status": "in_progress",
       "resources": [],
       "activationRequires": [],
       "returnGates": [],
@@ -394,7 +402,11 @@
         "profile": "implementation",
         "waitConfidence": "planning-assumption"
       },
-      "actual": null
+      "actual": {
+        "agent": "/root/plan_final_review",
+        "activeHours": null,
+        "nativeQualification": "pending A0.11"
+      }
     },
     {
       "id": "A0.11",

@@ -198,8 +198,9 @@ sichtbar als inaktive Alternativen.
 | A0.03 | plan_final_review | Implementiert in `cdbdd3ff2`; 11/11 Zeichnungs- und 77/77 Canvastests, finaler Typecheck bestanden ([Dateibindung](../../../../.build/atlas-performance-plan/A0.03-files.sha256)); native Qualifikation und R0 offen |
 | A0.04 | audit_atlas_boundaries | Implementiert in `1e2c629601d2cf2b96584e9f83ae4e1acbcd071c`; 97/97 Tests, Type-/Desktopcheck bestanden ([Übergabe](../../../../.build/atlas-performance-plan/A0.04-handoff.json)); native Qualifikation und R0 offen |
 | A0.05 | audit_atlas_boundaries | Implementiert in `6235ca15`; 30/30 Tests, Type-/Desktopcheck bestanden ([Übergabe](../../../../.build/atlas-performance-plan/A0.05-handoff.json)); native Qualifikation und R0 offen |
-| A0.12 | Noch nicht zugewiesen | Geplant: Canvas-/Raster-Verbundretry; Planergänzung unabhängig freigegeben, Umsetzung nach exklusivem A0.10-Fenster |
-| A0.10 | review_packages | In Arbeit: erwarteter Appstopp; exklusives natives Buildfenster, andere Produktwriter ruhen |
+| A0.12 | plan_final_review | In Arbeit: freigegebener Canvas-/Raster-Verbundretry, getrennte Besitzer gegenüber A0.06 |
+| A0.10 | review_packages | Implementiert in `0494bf17`; 79/79 Tests und vier native Fälle bestanden ([Übergabe](../../../../.build/atlas-performance-plan/A0.10-handoff.json)); unabhängiges Review und gemeinsame A0.11-Qualifikation offen |
+| A0.06 | audit_atlas_boundaries | In Arbeit: typisierter unbekannter Schreibausgang über StoreClient, Main und Preload |
 
 Die parallelen Pakete bearbeiten getrennte Besitzer. Native Läufe beginnen
 erst bei gesperrten Buildinputs. Testassets einmal mit `node build.mjs --test`
@@ -247,6 +248,26 @@ Die betroffenen Retry-, Alpha- und Graphwechselabläufe sind seriell im gemeinsa
 Capability-Katalog mit den tatsächlichen Testdateien und Prüfdatum verknüpft.
 Eine unabhängige lesende Zwischenprüfung von A0.01–A0.05 auf Commit `6235ca15`
 läuft parallel zu A0.10; sie ersetzt nicht R0 auf dem vollständigen A0-Stand.
+
+A0.10 lief von 12:13:39 bis 12:27:46 UTC. Ursache war der fehlende
+Atlas-Deactivate-Hook in der gemeinsamen Editorregistrierung. Die vorhandene
+`hide()`-Methode wird jetzt erst nach erfolgreichem Abschluss der Schreibsicherung
+aufgerufen; abgelehnte oder noch ausstehende Schreibbestätigungen werden geschützt.
+Der native Vorherlauf reproduzierte beide Stoppfehler. Der
+[native Nachherbeleg](../../../../.build/atlas-performance-plan/A0.10-native-r2/result.json)
+enthält getrennt Material-/Geometrieschließen und echte injizierte Material-/
+Geometriefehler: vier normale Exits (Code 0), je acht erfasste PIDs danach abwesend.
+Die Fehlergegenproben blieben sichtbar, die Schließfälle ohne falschen Ladefehler.
+Root prüfte 917 Buildinput- und 88 Runtimehashes aus der
+[Identität](../../../../.build/atlas-performance-plan/A0.10-native-r2/identity.json)
+gegen den unveränderten Stand vor dem Commit sowie alle vier Prozessnachweise.
+107 ursprüngliche Messdateien blieben unverändert. Fehlgeschlagene Harnessversuche
+sind separat erhalten und geben keine Freigabe. Die native Probe hält IPC-Antworten
+und das abschließende `app.quit()` kontrolliert zurück; sie behauptet weder einen
+physischen Datenträgerfehler noch eine allgemeine native Produktabnahme.
+
+Nach expliziter Hostfreigabe arbeiten A0.06 und A0.12 an getrennten Codebesitzern.
+A0.10 erhält ein unabhängiges Zwischenreview; das vollständige R0 bleibt erforderlich.
 
 ## Abschlussgrenzen
 
