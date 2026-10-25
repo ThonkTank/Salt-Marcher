@@ -21,7 +21,7 @@ import * as catalog from '../catalog/catalog-ui';
 import type { LiveEditor } from '../runtime/live';
 import type { PreparationEditor } from '../campaign/preparation';
 import { editorSession as finishSession } from '../runtime/finish-draft-ui';
-import { editorSession as combatSession } from '../runtime/combat';
+import type { CombatEditor } from '../runtime/combat';
 import { editorSession as chaseSession } from '../runtime/chase-ui';
 import { editorSession as progressionSession } from '../runtime/progression-ui';
 import { editorSession as deskSession } from '../runtime/scene-desk-ui';
@@ -32,6 +32,7 @@ import { editorSession as generationSession } from '../campaign/generation-ui';
 type Host = {
   preparation: PreparationEditor;
   live: LiveEditor;
+  combat: CombatEditor;
   atlas: {
     session: EditorSession;
     activate: (w: WorkspaceGeometry) => void;
@@ -194,7 +195,7 @@ export function createWorkspaceEditors(host: Host) {
     // Subeditor flush/context hooks stay with their parent and keep its lock scope.
     ...[
       finishSession,
-      combatSession,
+      host.combat.editorSession,
       chaseSession,
       progressionSession,
       deskSession,

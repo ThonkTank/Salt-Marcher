@@ -79,6 +79,7 @@ function fixture() {
     return name.startsWith('activate') || name.startsWith('deactivate') ? undefined : true;
   };
   const host = {
+    combat: { editorSession: session() },
     live: {
       editorSession: session(),
       activateLive: (...args) => globalThis.editorBoundaryTest('activateLive', args),

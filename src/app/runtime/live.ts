@@ -41,18 +41,7 @@ import {
   type LiveAck,
 } from './live-contracts';
 import type { Preparation } from '../campaign/preparation-contracts';
-import {
-  reinforceWorldGroup,
-  prepareGeneratedCombat,
-  addWorldNpc,
-  initCombat,
-  combatContext,
-  flushCombat,
-  prepareCombatPlan,
-  addCatalogCreature,
-  prepareWorldGroup,
-  openExistingCombat,
-} from './combat';
+import type { CombatEditor } from './combat';
 import { initChase, chaseContext, flushChase, openExistingChase } from './chase-ui';
 import { initLiveArchives } from './live-archive-ui';
 import type { EncounterPlan } from '../catalog/encounter-contracts';
@@ -105,6 +94,7 @@ import type { SceneWorld } from './world-contracts';
 import type { SessionPacket, SessionPacketVisit } from '../campaign/session-packet-contracts';
 import { restFrame } from './progression';
 export type LiveHost = {
+  combat: CombatEditor;
   roots: readonly HTMLElement[];
   dialogHost: HTMLElement;
   api: Window['campaign'];
@@ -125,6 +115,18 @@ export type LiveHost = {
 };
 
 export function createLive(host: LiveHost) {
+  const {
+    reinforceWorldGroup,
+    prepareGeneratedCombat,
+    addWorldNpc,
+    initCombat,
+    combatContext,
+    flushCombat,
+    prepareCombatPlan,
+    addCatalogCreature,
+    prepareWorldGroup,
+    openExistingCombat,
+  } = host.combat;
   const { document, get } = createEditorSurface(host.roots);
   const window = {
     campaign: host.api,

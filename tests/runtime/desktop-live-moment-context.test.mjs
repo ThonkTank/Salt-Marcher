@@ -27,7 +27,7 @@ buildSync({
 buildSync({
   stdin: {
     contents:
-      "export {newLocation} from './src/features/location/location-schema';export * from './src/app/runtime/live';export {initSessionPacket,setSessionPacketSurface} from './src/app/campaign/session-packet-ui';",
+      "export {newLocation} from './src/features/location/location-schema';export * from './src/app/runtime/live';export {createCombat} from './src/app/runtime/combat';export {initSessionPacket,setSessionPacketSurface} from './src/app/campaign/session-packet-ui';",
     resolveDir: process.cwd(),
     sourcefile: 'live-packet-fixture.ts',
   },

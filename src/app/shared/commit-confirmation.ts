@@ -75,9 +75,15 @@ export function updateCommitControls() {
 }
 export function onCommitState(listener: () => void) {
   stateListeners.add(listener);
+  return () => {
+    stateListeners.delete(listener);
+  };
 }
 export function onCommitResolved(listener: (event: CommitResolution) => void | Promise<void>) {
   resolutionListeners.add(listener);
+  return () => {
+    resolutionListeners.delete(listener);
+  };
 }
 export function initCommitControls(getContext: typeof context, status: typeof tell) {
   context = getContext;
