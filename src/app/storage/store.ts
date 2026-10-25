@@ -2482,7 +2482,11 @@ export class CampaignStore {
       .transaction(() => {
         const prior = catalogOutcome(this.db, command);
         if (prior) return prior;
-        const receipt = applyCampaignCatalog(this.db, command, (name) => this.create(name));
+        const receipt = applyCampaignCatalog(this.db, command, {
+          create: (name) => this.create(name),
+          trash: (command) => trashCampaign(this.db, command),
+          erase: (command) => eraseCampaignRows(this.db, command),
+        });
         changed = true;
         return receipt;
       })

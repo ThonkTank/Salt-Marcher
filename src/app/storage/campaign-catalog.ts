@@ -6,7 +6,6 @@ import type {
 } from '../campaign/campaign-contracts';
 import { validateCampaignCatalogCommand } from '../campaign/campaign-catalog-command';
 import type { Campaign } from '../shared/contracts';
-import { eraseCampaignRows, trashCampaign } from './campaign-data';
 const hash = (s: string) => createHash('sha256').update(s).digest('hex');
 export function installCampaignCatalog(db: any) {
   db.exec(
@@ -44,14 +43,20 @@ export function noteCampaignOpened(db: any, id: string) {
   ).run(id, new Date().toISOString());
 }
 
+interface CampaignCatalogLifecycle {
+  create(name: string): Campaign;
+  trash(command: Omit<Extract<CampaignCatalogCommand, { kind: 'trash' }>, 'kind'>): void;
+  erase(command: Omit<Extract<CampaignCatalogCommand, { kind: 'erase' }>, 'kind'>): void;
+}
+
 /** Apply the catalog mutation inside the caller's immediate transaction. */
 export function applyCampaignCatalog(
   db: any,
   command: CampaignCatalogCommand,
-  create: (name: string) => import('../shared/contracts').Campaign,
+  lifecycle: CampaignCatalogLifecycle,
 ): CampaignCatalogReceipt {
   let campaign: Campaign;
-  if (command.kind === 'create') campaign = create(command.name.trim());
+  if (command.kind === 'create') campaign = lifecycle.create(command.name.trim());
   else {
     const row = db
       .prepare(
@@ -72,14 +77,14 @@ export function applyCampaignCatalog(
       campaign.name = command.name.trim();
     }
     if (command.kind === 'trash')
-      trashCampaign(db, {
+      lifecycle.trash({
         commandId: command.commandId,
         id: command.id,
         expectedRevision: command.expectedRevision,
         trashed: command.trashed,
       });
     if (command.kind === 'erase')
-      eraseCampaignRows(db, {
+      lifecycle.erase({
         commandId: command.commandId,
         id: command.id,
         expectedRevision: command.expectedRevision,
