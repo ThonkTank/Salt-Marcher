@@ -1,6 +1,6 @@
 {
   "name": "saltmarcher",
-  "version": "0.190.1",
+  "version": "0.191.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -116,5 +116,5 @@
     "typescript": "^5.9.0"
   },
   "productName": "SaltMarcher",
-  "description": "Lokaler Arbeitsraum f\u00fcr Kampagnen, Atlas und Spielleitung"
+  "description": "Lokaler Arbeitsraum für Kampagnen, Atlas und Spielleitung"
 }
