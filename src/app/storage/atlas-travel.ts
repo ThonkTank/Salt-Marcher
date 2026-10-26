@@ -1,3 +1,4 @@
+import { type SqliteDatabase, checkedQuery, checkedRow } from './sqlite-connection';
 import { validateTerrainAnchor } from '../atlas/terrain-objects';
 import { effectiveLandscape } from '../atlas/atlas-landscape';
 import { atlasPartyPoint } from '../atlas/atlas-runtime-model';
@@ -20,12 +21,12 @@ import { position, savePosition } from './world';
 import { dungeonGeometry } from './dungeon-play';
 import { createTriggerEvents } from './triggers';
 const hash = (v: unknown) => createHash('sha256').update(JSON.stringify(v)).digest('hex');
-export function installAtlasTravel(db: any) {
+export function installAtlasTravel(db: SqliteDatabase) {
   db.exec(
     `CREATE TABLE IF NOT EXISTS atlas_entrance(campaign_id TEXT NOT NULL REFERENCES campaign(id),id TEXT NOT NULL,payload TEXT NOT NULL,checksum TEXT NOT NULL,PRIMARY KEY(campaign_id,id)) STRICT;CREATE TABLE IF NOT EXISTS atlas_local_journey(campaign_id TEXT NOT NULL,scene_id TEXT NOT NULL,payload TEXT NOT NULL,checksum TEXT NOT NULL,PRIMARY KEY(campaign_id,scene_id)) STRICT;CREATE TABLE IF NOT EXISTS atlas_travel_receipt(command_id TEXT PRIMARY KEY,campaign_id TEXT NOT NULL,fingerprint TEXT NOT NULL) STRICT;`,
   );
 }
-export function atlasEntrances(db: any, cam: string): AtlasEntrance[] {
+export function atlasEntrances(db: SqliteDatabase, cam: string): AtlasEntrance[] {
   return db
     .prepare('SELECT payload,checksum FROM atlas_entrance WHERE campaign_id=?')
     .all(cam)
@@ -33,7 +34,7 @@ export function atlasEntrances(db: any, cam: string): AtlasEntrance[] {
 }
 /** Display projection only. Canonical travel commands still read all entrances. */
 export function atlasDisplayEntrances(
-  db: any,
+  db: SqliteDatabase,
   cam: string,
   scopeIds: string[],
   selectedId?: string,
@@ -53,23 +54,28 @@ export function atlasDisplayEntrances(
     .all(cam, selectedId ?? null, JSON.stringify([...new Set(scopeIds)]))
     .map(decode);
 }
-function decode(row: any) {
+function decode(value: unknown) {
+  const row = checkedRow(value, { payload: 'text', checksum: 'text' });
   if (!row || hash(JSON.parse(row.payload)) !== row.checksum)
     throw new Error('Atlaslaufstand beschädigt.');
   return JSON.parse(row.payload);
 }
-export function atlasLocalJourney(db: any, cam: string, sceneId: string): AtlasLocalJourney | null {
+export function atlasLocalJourney(
+  db: SqliteDatabase,
+  cam: string,
+  sceneId: string,
+): AtlasLocalJourney | null {
   const r = db
     .prepare('SELECT payload,checksum FROM atlas_local_journey WHERE campaign_id=? AND scene_id=?')
     .get(cam, sceneId);
   return r ? decode(r) : null;
 }
-function saveJourney(db: any, cam: string, j: AtlasLocalJourney) {
+function saveJourney(db: SqliteDatabase, cam: string, j: AtlasLocalJourney) {
   db.prepare(
     'INSERT INTO atlas_local_journey VALUES(?,?,?,?) ON CONFLICT(campaign_id,scene_id) DO UPDATE SET payload=excluded.payload,checksum=excluded.checksum',
   ).run(cam, j.sceneId, JSON.stringify(j), hash(j));
 }
-export function putAtlasEntrance(db: any, a: CampaignAtlas, e: AtlasEntrance) {
+export function putAtlasEntrance(db: SqliteDatabase, a: CampaignAtlas, e: AtlasEntrance) {
   validateTerrainAnchor(e.terrain);
   const room = a.workspace.rooms.find(
       (r) => r.id === e.roomId && r.scopeId === e.scopeId && r.floorId === e.floorId,
@@ -201,7 +207,7 @@ export function previewAtlasLocal(a: CampaignAtlas, end: Point): AtlasLocalPrevi
   };
 }
 function saveOutdoor(
-  db: any,
+  db: SqliteDatabase,
   a: CampaignAtlas,
   p: Point,
   changeLocation: (id: string | null) => void,
@@ -239,16 +245,21 @@ export interface AtlasTravelPorts {
   location: (id: string | null) => void;
   dungeon: (pose: import('../atlas/dungeon-contracts').DungeonPose | null) => void;
 }
-export function executeAtlasTravel(db: any, c: AtlasTravelCommand, ports: AtlasTravelPorts) {
+export function executeAtlasTravel(
+  db: SqliteDatabase,
+  c: AtlasTravelCommand,
+  ports: AtlasTravelPorts,
+) {
   return db
     .transaction(() => {
       let a = ports.read();
       if (!a.scene || a.scene.scene.id !== c.sceneId || !a.scene.scene.members.length)
         throw new Error('Fokusgruppe geändert oder leer.');
       const fingerprint = hash(c.action),
-        prior = db
-          .prepare('SELECT * FROM atlas_travel_receipt WHERE command_id=?')
-          .get(c.commandId);
+        prior = checkedQuery(db, 'SELECT * FROM atlas_travel_receipt WHERE command_id=?', {
+          campaign_id: 'text',
+          fingerprint: 'text',
+        }).get(c.commandId);
       if (prior) {
         if (prior.campaign_id !== c.campaignId || prior.fingerprint !== fingerprint)
           throw new Error('Reisebefehlskennung anders verwendet.');
@@ -453,18 +464,18 @@ interface ApplyAtlasTravelContext {
     import('./../atlas/drawing-contracts').DrawingElement,
     import('./../atlas/city-contracts').CityView
   >;
-  executeLive: (command: import('./../runtime/live-contracts').LiveCommand) => any;
-  liveScene: (token: string, id: string) => any;
+  executeLive: (command: import('../runtime/live-contracts').LiveCommand) => void;
+  liveScene: (token: string, id: string) => import('../runtime/live-contracts').LiveScene;
   dungeon: (
     token: string,
   ) => import('./../atlas/dungeon-contracts').DungeonView<
     import('./../shared/contracts').Room,
     import('./../atlas/drawing-contracts').DrawingElement
   >;
-  executeDungeon: (c: import('./../atlas/dungeon-contracts').DungeonCommand) => any;
+  executeDungeon: (c: import('../atlas/dungeon-contracts').DungeonCommand) => void;
 }
 export function storedApplyAtlasTravel(
-  db: any,
+  db: SqliteDatabase,
   context: ApplyAtlasTravelContext,
   c: import('../atlas/atlas-travel-contracts').AtlasTravelCommand,
 ): void {

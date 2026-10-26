@@ -1,3 +1,4 @@
+import { type SqliteDatabase, checkedQuery, checkedRow } from './sqlite-connection';
 import { ensureAtlasShapeSource } from './atlas-shape-source';
 import { advanceTerrainEnvironment } from './terrain-environment';
 import { executeTerritory, validateTerritories } from './atlas-territories';
@@ -40,7 +41,7 @@ import { changedHeightBounds, unionTerrainBounds } from './terrain-invalidation'
 import { readWorld, travelEnvironmentBasis } from './world';
 const hash = (v: string) => createHash('sha256').update(v).digest('hex'),
   json = JSON.stringify;
-export function installCampaignAtlas(db: any) {
+export function installCampaignAtlas(db: SqliteDatabase) {
   db.exec(`
  CREATE TABLE IF NOT EXISTS atlas_import_source(campaign_id TEXT NOT NULL REFERENCES campaign(id),id TEXT NOT NULL,source TEXT NOT NULL,checksum TEXT NOT NULL,PRIMARY KEY(campaign_id,id)) STRICT;
  CREATE TABLE IF NOT EXISTS campaign_atlas(campaign_id TEXT PRIMARY KEY REFERENCES campaign(id),map_id TEXT NOT NULL,revision INTEGER NOT NULL DEFAULT 0,cursor INTEGER NOT NULL DEFAULT 0) STRICT;
@@ -49,7 +50,7 @@ export function installCampaignAtlas(db: any) {
  CREATE TABLE IF NOT EXISTS atlas_receipt(command_id TEXT PRIMARY KEY,campaign_id TEXT NOT NULL,fingerprint TEXT NOT NULL) STRICT;
  `);
 }
-export function createCampaignAtlas(db: any, cam: string) {
+export function createCampaignAtlas(db: SqliteDatabase, cam: string) {
   const id = randomUUID(),
     m: AtlasMap = {
       id,
@@ -73,31 +74,60 @@ export function createCampaignAtlas(db: any, cam: string) {
   db.prepare('INSERT INTO campaign_atlas(campaign_id,map_id) VALUES(?,?)').run(cam, id);
   ensureAtlasShapeSource(db, cam);
 }
-export function atlasRoot(db: any, cam: string) {
-  const root = db.prepare('SELECT * FROM campaign_atlas WHERE campaign_id=?').get(cam);
+export function atlasRoot(db: SqliteDatabase, cam: string) {
+  const root = checkedQuery(db, 'SELECT * FROM campaign_atlas WHERE campaign_id=?', {
+    campaign_id: 'text',
+    map_id: 'text',
+    revision: 'integer',
+    cursor: 'integer',
+  }).get(cam);
   if (!root)
     throw new Error(
       'Dieser alte Testbestand besitzt noch keinen gemeinsamen Atlas. Neue Kampagne anlegen.',
     );
   return root;
 }
-export function atlasBindings(db: any, cam: string): AtlasBinding[] {
+export function decodeAtlasBinding(value: unknown): AtlasBinding {
+  const r = checkedRow(value, {
+    id: 'text',
+    kind: 'text',
+    owner_id: 'text',
+    parent: 'text',
+    parent_id: 'nullable-text',
+    x: 'number',
+    y: 'number',
+    angle: 'number',
+    revision: 'integer',
+  });
+  if (
+    (r.kind !== 'city' && r.kind !== 'dungeon') ||
+    (r.parent !== 'world' && r.parent !== 'building')
+  )
+    throw Error('Räumliche Einordnung prüfen.');
+  return {
+    id: r.id,
+    kind: r.kind,
+    ownerId: r.owner_id,
+    parent: r.parent,
+    parentId: r.parent_id,
+    x: r.x,
+    y: r.y,
+    angle: r.angle,
+    revision: r.revision,
+  };
+}
+export function atlasBindings(db: SqliteDatabase, cam: string): AtlasBinding[] {
   return db
     .prepare('SELECT * FROM atlas_binding WHERE campaign_id=? ORDER BY rowid')
     .all(cam)
-    .map((r: any) => ({
-      id: r.id,
-      kind: r.kind,
-      ownerId: r.owner_id,
-      parent: r.parent,
-      parentId: r.parent_id,
-      x: r.x,
-      y: r.y,
-      angle: r.angle,
-      revision: r.revision,
-    }));
+    .map(decodeAtlasBinding);
 }
-export function bindAtlas(db: any, cam: string, b: AtlasBinding, expected: number | null) {
+export function bindAtlas(
+  db: SqliteDatabase,
+  cam: string,
+  b: AtlasBinding,
+  expected: number | null,
+) {
   if (
     !b ||
     !['city', 'dungeon'].includes(b.kind) ||
@@ -107,9 +137,9 @@ export function bindAtlas(db: any, cam: string, b: AtlasBinding, expected: numbe
     ![b.x, b.y, b.angle].every(Number.isFinite)
   )
     throw new Error('Räumliche Einordnung prüfen.');
-  const old = db
-    .prepare('SELECT revision FROM atlas_binding WHERE campaign_id=? AND id=?')
-    .get(cam, b.id);
+  const old = checkedQuery(db, 'SELECT revision FROM atlas_binding WHERE campaign_id=? AND id=?', {
+    revision: 'integer',
+  }).get(cam, b.id);
   if ((old?.revision ?? null) !== expected)
     throw new Error('Räumliche Einordnung inzwischen geändert.');
   const owner = db
@@ -123,9 +153,11 @@ export function bindAtlas(db: any, cam: string, b: AtlasBinding, expected: numbe
   if (
     b.parent === 'building' &&
     (b.kind !== 'dungeon' ||
-      !db
-        .prepare("SELECT id FROM city_unit WHERE campaign_id=? AND id=? AND kind='building'")
-        .get(cam, b.parentId))
+      !checkedQuery(
+        db,
+        "SELECT id FROM city_unit WHERE campaign_id=? AND id=? AND kind='building'",
+        { id: 'text' },
+      ).get(cam, b.parentId))
   )
     throw new Error('Gebäude fehlt.');
   db.prepare(
@@ -168,26 +200,62 @@ const tracked = [
   'world_journey',
   'dungeon_journey',
 ];
+type CapturedRow = Record<string, string | number | null>;
+function capturedRow(value: unknown): CapturedRow {
+  if (
+    !value ||
+    typeof value !== 'object' ||
+    Array.isArray(value) ||
+    Object.values(value).some(
+      (v) => v !== null && typeof v !== 'string' && !(typeof v === 'number' && Number.isFinite(v)),
+    )
+  )
+    throw Error(
+      'Atlasänderung enthält eine ungültige Datenbankzeile. Originaldaten bleiben erhalten.',
+    );
+  return value as CapturedRow;
+}
 interface Delta {
   table: string;
-  key: Record<string, unknown>;
-  before: any;
-  after: any;
+  key: CapturedRow;
+  before: CapturedRow | null;
+  after: CapturedRow | null;
   guard: string;
 }
-const initialized = new WeakSet<object>();
-function captureSetup(db: any) {
-  if (initialized.has(db)) return;
+function readDeltas(payload: string): Delta[] {
+  const values: unknown = JSON.parse(payload);
+  if (!Array.isArray(values)) throw Error('Atlasverlauf ist beschädigt.');
+  return values.map((value) => {
+    const r = checkedRow(value, { table: 'text', guard: 'text' });
+    if (!tracked.includes(r.table)) throw Error('Atlasverlauf enthält eine unbekannte Tabelle.');
+    const fields = value as Record<string, unknown>;
+    capturedRow(fields.key);
+    if (fields.before !== null) capturedRow(fields.before);
+    if (fields.after !== null) capturedRow(fields.after);
+    // Preserve the original property order and any retained historical fields.
+    return value as Delta;
+  });
+}
+function captureSetup(db: SqliteDatabase) {
+  // TEMP DDL participates in an enclosing transaction. A JavaScript cache can
+  // survive its rollback even though SQLite removed every capture table/trigger.
+  if (
+    db.prepare("SELECT 1 FROM temp.sqlite_schema WHERE type='table' AND name='atlas_capture'").get()
+  )
+    return;
   db.exec(
     'CREATE TEMP TABLE atlas_capture(campaign_id TEXT); CREATE TEMP TABLE atlas_delta(table_name TEXT,key_json TEXT,before_json TEXT,after_json TEXT);',
   );
   for (const table of tracked) {
-    const cols = db.prepare('PRAGMA table_info(' + table + ')').all();
+    const cols = checkedQuery(db, 'PRAGMA table_info(' + table + ')', {
+      name: 'text',
+      pk: 'integer',
+    }).all();
     if (!cols.length) continue;
-    const pk = cols.filter((c: any) => c.pk).sort((a: any, b: any) => a.pk - b.pk);
-    const object = (prefix: string, fields: any[]) =>
+    const pk = cols.filter((c) => c.pk).sort((a, b) => a.pk - b.pk);
+    const object = (prefix: string, fields: { name: string }[]) =>
       'json_object(' +
-      fields.flatMap((c: any) => ["'" + c.name + "'", prefix + '."' + c.name + '"']).join(',') +
+      fields.flatMap((c) => ["'" + c.name + "'", prefix + '."' + c.name + '"']).join(',') +
       ')';
     // INSERT OR REPLACE does not emit DELETE triggers with SQLite's default
     // recursive_triggers setting. Capture the existing row before INSERT too.
@@ -198,7 +266,7 @@ function captureSetup(db: any) {
         ' FROM main.' +
         table +
         ' AS prior WHERE ' +
-        pk.map((c: any) => 'prior."' + c.name + '"=NEW."' + c.name + '"').join(' AND ') +
+        pk.map((c) => 'prior."' + c.name + '"=NEW."' + c.name + '"').join(' AND ') +
         ')',
       insertFilter =
         table === 'world_record' ? " AND NEW.kind IN ('map','place-presentation')" : '';
@@ -214,10 +282,9 @@ function captureSetup(db: any) {
       );
     }
   }
-  initialized.add(db);
 }
-function currentRow(db: any, d: Pick<Delta, 'table' | 'key'>) {
-  return (
+function currentRow(db: SqliteDatabase, d: Pick<Delta, 'table' | 'key'>) {
+  const row =
     db
       .prepare(
         'SELECT * FROM ' +
@@ -227,13 +294,13 @@ function currentRow(db: any, d: Pick<Delta, 'table' | 'key'>) {
             .map((k) => k + '=?')
             .join(' AND '),
       )
-      .get(...Object.values(d.key)) ?? null
-  );
+      .get(...Object.values(d.key)) ?? null;
+  return row === null ? null : capturedRow(row);
 }
-function fp(v: any) {
+function fp(v: object | null) {
   return hash(json(v));
 }
-function restore(db: any, d: Delta, row: any) {
+function restore(db: SqliteDatabase, d: Delta, row: CapturedRow | null) {
   const current = currentRow(db, d);
   if (!row) {
     db.prepare(
@@ -247,7 +314,7 @@ function restore(db: any, d: Delta, row: any) {
     return;
   }
   const next = { ...row };
-  if (d.table.endsWith('_journey') && next.payload) {
+  if (d.table.endsWith('_journey') && typeof next.payload === 'string') {
     const p = JSON.parse(next.payload);
     if (p.status === 'active') {
       p.status = 'paused';
@@ -258,8 +325,9 @@ function restore(db: any, d: Delta, row: any) {
     }
   }
   if (typeof next.revision === 'number') {
-    next.revision = Math.max(current?.revision ?? 0, row.revision) + 1;
-    if (next.payload) {
+    next.revision =
+      Math.max(typeof current?.revision === 'number' ? current.revision : 0, next.revision) + 1;
+    if (typeof next.payload === 'string') {
       const p = JSON.parse(next.payload);
       if (typeof p.revision === 'number') {
         p.revision = next.revision;
@@ -268,10 +336,10 @@ function restore(db: any, d: Delta, row: any) {
       }
     }
   }
-  if (next.payload && typeof next.revision !== 'number') {
+  if (typeof next.payload === 'string' && typeof next.revision !== 'number') {
     const p = JSON.parse(next.payload);
     if (typeof p.revision === 'number') {
-      const old = current?.payload ? JSON.parse(current.payload) : null;
+      const old = typeof current?.payload === 'string' ? JSON.parse(current.payload) : null;
       p.revision = Math.max(p.revision, old?.revision ?? 0) + 1;
       next.payload = json(p);
       if (next.checksum) next.checksum = hash(next.payload);
@@ -290,28 +358,32 @@ function restore(db: any, d: Delta, row: any) {
       Object.keys(d.key).join(',') +
       ') DO UPDATE SET ' +
       nonKeys.map((k) => k + '=excluded.' + k).join(','),
-  ).run(...cols.map((k) => next[k]));
+  ).run(...cols.map((k) => next[k]!));
 }
 /** Used only inside an active Atlas capture, before secondary map/environment updates. */
-export function atlasCapturedChanges(db: any) {
+export function atlasCapturedChanges(db: SqliteDatabase) {
   return !!db
     .prepare('SELECT 1 FROM temp.atlas_delta WHERE before_json IS NOT after_json LIMIT 1')
     .get();
 }
-export function atlasHistoryState(db: any, cam: string) {
+export function atlasHistoryState(db: SqliteDatabase, cam: string) {
   const root = atlasRoot(db, cam),
     max =
-      db.prepare('SELECT max(ordinal) n FROM atlas_command WHERE campaign_id=?').get(cam).n ?? 0;
+      checkedQuery(db, 'SELECT max(ordinal) n FROM atlas_command WHERE campaign_id=?', {
+        n: 'nullable-integer',
+      }).required(cam).n ?? 0;
   return { canUndo: root.cursor > 0, canRedo: root.cursor < max };
 }
-function history(db: any, cam: string, direction: 'undo' | 'redo') {
+function history(db: SqliteDatabase, cam: string, direction: 'undo' | 'redo') {
   const root = atlasRoot(db, cam),
     ordinal = direction === 'undo' ? root.cursor : root.cursor + 1,
-    row = db
-      .prepare('SELECT * FROM atlas_command WHERE campaign_id=? AND ordinal=?')
-      .get(cam, ordinal);
+    row = checkedQuery(db, 'SELECT * FROM atlas_command WHERE campaign_id=? AND ordinal=?', {
+      ordinal: 'integer',
+      payload: 'text',
+      label: 'text',
+    }).get(cam, ordinal);
   if (!row) throw new Error('Keine weitere Atlasänderung.');
-  const changes: Delta[] = JSON.parse(row.payload);
+  const changes: Delta[] = readDeltas(row.payload);
   for (const d of changes)
     if (fp(currentRow(db, d)) !== d.guard)
       throw new Error('Spätere Änderung an ' + d.table + ' verhindert die gemeinsame Rücknahme.');
@@ -328,15 +400,15 @@ function history(db: any, cam: string, direction: 'undo' | 'redo') {
       ['<=', 'DESC'],
       ['>', 'ASC'],
     ]) {
-      for (const candidate of db
-        .prepare(
-          'SELECT ordinal,payload FROM atlas_command WHERE campaign_id=? AND ordinal ' +
-            sign +
-            '? ORDER BY ordinal ' +
-            order,
-        )
-        .all(cam, cursor)) {
-        const items: Delta[] = JSON.parse(candidate.payload),
+      for (const candidate of checkedQuery(
+        db,
+        'SELECT ordinal,payload FROM atlas_command WHERE campaign_id=? AND ordinal ' +
+          sign +
+          '? ORDER BY ordinal ' +
+          order,
+        { ordinal: 'integer', payload: 'text' },
+      ).all(cam, cursor)) {
+        const items: Delta[] = readDeltas(candidate.payload),
           target = items.find((x) => x.table === d.table && json(x.key) === json(d.key));
         if (!target) continue;
         target.guard = guard;
@@ -350,7 +422,7 @@ function history(db: any, cam: string, direction: 'undo' | 'redo') {
     }
   }
 }
-function checkPositions(db: any, cam: string) {
+function checkPositions(db: SqliteDatabase, cam: string) {
   const geometry = dungeonGeometry(db, cam);
   // Check each position against its own room group. A generated town can have
   // thousands of entrances; scanning all furnishing for each is quadratic.
@@ -379,11 +451,19 @@ function checkPositions(db: any, cam: string) {
     for (const item of geometry.drawing[kind] ?? [])
       (groups.get(item.scopeId)?.drawing[kind] as any[])?.push(item);
 
-  const rooms = new Map<string, any>(
-    db
-      .prepare('SELECT * FROM room WHERE campaign_id=?')
+  const rooms = new Map(
+    checkedQuery(db, 'SELECT * FROM room WHERE campaign_id=?', {
+      id: 'text',
+      scope_id: 'text',
+      floor_id: 'text',
+      number: 'text',
+      name: 'text',
+      revision: 'integer',
+      payload: 'text',
+      checksum: 'text',
+    })
       .all(cam)
-      .map((r: any) => [r.id, r]),
+      .map((r) => [r.id, r] as const),
   );
   const check = (p: any) => {
     if (!p) return;
@@ -409,13 +489,17 @@ function checkPositions(db: any, cam: string) {
         'Änderung würde eine Gruppe oder einen NPC außerhalb ihres Raums zurücklassen. Position zuerst klären.',
       );
   };
-  for (const r of db.prepare('SELECT payload FROM scene_position WHERE campaign_id=?').all(cam))
+  for (const r of checkedQuery(db, 'SELECT payload FROM scene_position WHERE campaign_id=?', {
+    payload: 'text',
+  }).all(cam))
     check(JSON.parse(r.payload).dungeon);
-  for (const r of db
-    .prepare('SELECT payload FROM npc_dungeon_position WHERE campaign_id=?')
-    .all(cam))
+  for (const r of checkedQuery(db, 'SELECT payload FROM npc_dungeon_position WHERE campaign_id=?', {
+    payload: 'text',
+  }).all(cam))
     check(JSON.parse(r.payload));
-  for (const r of db.prepare('SELECT payload FROM atlas_entrance WHERE campaign_id=?').all(cam)) {
+  for (const r of checkedQuery(db, 'SELECT payload FROM atlas_entrance WHERE campaign_id=?', {
+    payload: 'text',
+  }).all(cam)) {
     const e = JSON.parse(r.payload);
     check({
       ...e.inside,
@@ -466,7 +550,7 @@ const atlasActionKinds: Record<AtlasCommand['action']['kind'], true> = {
 export const atlasCommandFingerprint = (c: AtlasCommand) =>
   fp(c.terrainStroke ? { action: c.action, terrainStroke: c.terrainStroke } : c.action);
 /** No replay or projection reads: the transaction receipt alone establishes application. */
-export function hasAtlasReceipt(db: any, c: AtlasCommand): boolean {
+export function hasAtlasReceipt(db: SqliteDatabase, c: AtlasCommand): boolean {
   if (
     !c ||
     typeof c.commandId !== 'string' ||
@@ -475,14 +559,17 @@ export function hasAtlasReceipt(db: any, c: AtlasCommand): boolean {
     !Object.hasOwn(atlasActionKinds, c.action.kind)
   )
     throw new Error('Unbekannten oder unvollständigen Atlasauftrag nicht geprüft.');
-  const row = db.prepare('SELECT * FROM atlas_receipt WHERE command_id=?').get(c.commandId);
+  const row = checkedQuery(db, 'SELECT * FROM atlas_receipt WHERE command_id=?', {
+    campaign_id: 'text',
+    fingerprint: 'text',
+  }).get(c.commandId);
   if (!row) return false;
   if (row.campaign_id !== c.campaignId || row.fingerprint !== atlasCommandFingerprint(c))
     throw new Error('Atlasbefehlskennung anders verwendet.');
   return true;
 }
 export function executeAtlasWrite(
-  db: any,
+  db: SqliteDatabase,
   c: AtlasCommand,
   apply: () => unknown,
   after?: () => void,
@@ -500,7 +587,10 @@ export function executeAtlasWrite(
   return db
     .transaction(() => {
       const fingerprint = atlasCommandFingerprint(c),
-        old = db.prepare('SELECT * FROM atlas_receipt WHERE command_id=?').get(c.commandId);
+        old = checkedQuery(db, 'SELECT * FROM atlas_receipt WHERE command_id=?', {
+          campaign_id: 'text',
+          fingerprint: 'text',
+        }).get(c.commandId);
       if (old) {
         if (old.campaign_id !== c.campaignId || old.fingerprint !== fingerprint)
           throw new Error('Atlasbefehlskennung anders verwendet.');
@@ -521,22 +611,24 @@ export function executeAtlasWrite(
           Object.keys(stroke).some((k) => !['id', 'expectedRevision'].includes(k))
         )
           throw Error('Geländezug inzwischen geändert. Neuen Pinselzug beginnen.');
-        continuation = db
-          .prepare(
-            'SELECT ordinal,payload,label FROM atlas_command WHERE campaign_id=? AND command_id=?',
-          )
-          .get(c.campaignId, stroke.id);
+        continuation = checkedQuery(
+          db,
+          'SELECT ordinal,payload,label FROM atlas_command WHERE campaign_id=? AND command_id=?',
+          { ordinal: 'integer', payload: 'text', label: 'text' },
+        ).get(c.campaignId, stroke.id);
         if (continuation) {
-          const last = db
-            .prepare('SELECT max(ordinal) n FROM atlas_command WHERE campaign_id=?')
-            .get(c.campaignId).n;
+          const last = checkedQuery(
+            db,
+            'SELECT max(ordinal) n FROM atlas_command WHERE campaign_id=?',
+            { n: 'nullable-integer' },
+          ).required(c.campaignId).n;
           if (
             continuation.ordinal !== rootBefore.cursor ||
             last !== rootBefore.cursor ||
             continuation.label !== c.action.kind
           )
             throw Error('Geländezug bereits abgeschlossen. Neuen Pinselzug beginnen.');
-          for (const delta of JSON.parse(continuation.payload) as Delta[])
+          for (const delta of readDeltas(continuation.payload))
             if (fp(currentRow(db, delta)) !== delta.guard)
               throw Error('Gelände inzwischen anderweitig geändert. Neuen Pinselzug beginnen.');
         }
@@ -556,14 +648,23 @@ export function executeAtlasWrite(
           db.prepare('DELETE FROM atlas_capture').run();
         }
         const changes = new Map<string, Delta>();
-        for (const row of db.prepare('SELECT * FROM atlas_delta ORDER BY rowid').all()) {
+        for (const row of checkedQuery(db, 'SELECT * FROM atlas_delta ORDER BY rowid', {
+          table_name: 'text',
+          key_json: 'text',
+          before_json: 'nullable-text',
+          after_json: 'nullable-text',
+        }).all()) {
           const key = row.table_name + ':' + row.key_json,
             old = changes.get(key),
-            after = row.after_json ? JSON.parse(row.after_json) : null;
+            after = row.after_json ? capturedRow(JSON.parse(row.after_json)) : null;
           changes.set(key, {
             table: row.table_name,
-            key: JSON.parse(row.key_json),
-            before: old ? old.before : row.before_json ? JSON.parse(row.before_json) : null,
+            key: capturedRow(JSON.parse(row.key_json)),
+            before: old
+              ? old.before
+              : row.before_json
+                ? capturedRow(JSON.parse(row.before_json))
+                : null,
             after,
             guard: fp(after),
           });
@@ -576,8 +677,7 @@ export function executeAtlasWrite(
           if (continuation) {
             const combined = new Map<string, Delta>();
             const key = (d: Delta) => d.table + ':' + json(d.key);
-            for (const delta of JSON.parse(continuation.payload) as Delta[])
-              combined.set(key(delta), delta);
+            for (const delta of readDeltas(continuation.payload)) combined.set(key(delta), delta);
             for (const delta of meaningful) {
               const prior = combined.get(key(delta));
               combined.set(key(delta), { ...delta, before: prior ? prior.before : delta.before });
@@ -620,7 +720,7 @@ export function executeAtlasWrite(
 }
 
 /** Atlas invariants also apply to snapshots before they are published. */
-export function validateCampaignAtlases(db: any) {
+export function validateCampaignAtlases(db: SqliteDatabase) {
   validateTerritories(db);
   for (const table of [
     'campaign_atlas',
@@ -636,11 +736,11 @@ export function validateCampaignAtlases(db: any) {
   ])
     if (!db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name=?").get(table))
       throw new Error('Atlasstore unvollständig: ' + table);
-  for (const row of db
-    .prepare(
-      "SELECT payload FROM atlas_landscape WHERE json_extract(payload,'$.line') IS NOT NULL OR json_extract(payload,'$.paint') IS NOT NULL OR json_extract(payload,'$.surface') IS NOT NULL OR json_extract(payload,'$.mask') IS NOT NULL OR json_extract(payload,'$.propertyOnly') IS NOT NULL OR json_extract(payload,'$.height') IS NOT NULL OR json_extract(payload,'$.terrainSettings') IS NOT NULL OR json_extract(payload,'$.vegetation') IS NOT NULL OR json_extract(payload,'$.route') IS NOT NULL OR json_extract(payload,'$.kind')='vegetation'",
-    )
-    .iterate()) {
+  for (const row of checkedQuery(
+    db,
+    "SELECT payload FROM atlas_landscape WHERE json_extract(payload,'$.line') IS NOT NULL OR json_extract(payload,'$.paint') IS NOT NULL OR json_extract(payload,'$.surface') IS NOT NULL OR json_extract(payload,'$.mask') IS NOT NULL OR json_extract(payload,'$.propertyOnly') IS NOT NULL OR json_extract(payload,'$.height') IS NOT NULL OR json_extract(payload,'$.terrainSettings') IS NOT NULL OR json_extract(payload,'$.vegetation') IS NOT NULL OR json_extract(payload,'$.route') IS NOT NULL OR json_extract(payload,'$.kind')='vegetation'",
+    { payload: 'text' },
+  ).iterate()) {
     const record = JSON.parse(row.payload);
     validateLine(record);
     validateColor(record);
@@ -651,31 +751,38 @@ export function validateCampaignAtlases(db: any) {
   }
   {
     if (
-      db
-        .prepare(
-          "SELECT campaign_id FROM atlas_landscape WHERE json_extract(payload,'$.terrainSettings') IS NOT NULL GROUP BY campaign_id HAVING count(*)>1",
-        )
-        .get()
+      checkedQuery(
+        db,
+        "SELECT campaign_id FROM atlas_landscape WHERE json_extract(payload,'$.terrainSettings') IS NOT NULL GROUP BY campaign_id HAVING count(*)>1",
+        { campaign_id: 'text' },
+      ).get()
     )
       throw Error('Doppelter Meeresspiegel.');
     if (
-      db
-        .prepare(
-          "SELECT campaign_id FROM atlas_landscape WHERE json_extract(payload,'$.height') IS NOT NULL GROUP BY campaign_id,json_extract(payload,'$.height.version'),json_extract(payload,'$.height.pixel'),json_extract(payload,'$.height.x'),json_extract(payload,'$.height.y') HAVING count(*)>1",
-        )
-        .get()
+      checkedQuery(
+        db,
+        "SELECT campaign_id FROM atlas_landscape WHERE json_extract(payload,'$.height') IS NOT NULL GROUP BY campaign_id,json_extract(payload,'$.height.version'),json_extract(payload,'$.height.pixel'),json_extract(payload,'$.height.x'),json_extract(payload,'$.height.y') HAVING count(*)>1",
+        { campaign_id: 'text' },
+      ).get()
     )
       throw Error('Doppelte Höhenkachel.');
   }
-  for (const root of db.prepare('SELECT * FROM campaign_atlas').iterate()) {
-    const maps = db
-      .prepare("SELECT id FROM world_record WHERE campaign_id=? AND kind='map'")
-      .all(root.campaign_id);
-    if (maps.length !== 1 || maps[0].id !== root.map_id)
+  for (const root of checkedQuery(db, 'SELECT * FROM campaign_atlas', {
+    campaign_id: 'text',
+    map_id: 'text',
+    revision: 'integer',
+    cursor: 'integer',
+  }).iterate()) {
+    const maps = checkedQuery(
+      db,
+      "SELECT id FROM world_record WHERE campaign_id=? AND kind='map'",
+      { id: 'text' },
+    ).all(root.campaign_id);
+    if (maps.length !== 1 || maps[0]?.id !== root.map_id)
       throw new Error('Kampagne besitzt nicht genau eine Atlaswurzel.');
-    const count = db
-      .prepare('SELECT count(*) n FROM atlas_command WHERE campaign_id=?')
-      .get(root.campaign_id).n;
+    const count = checkedQuery(db, 'SELECT count(*) n FROM atlas_command WHERE campaign_id=?', {
+      n: 'integer',
+    }).required(root.campaign_id).n;
     if (root.cursor < 0 || root.cursor > count) throw new Error('Atlashistorie widersprüchlich.');
     for (const b of atlasBindings(db, root.campaign_id)) {
       if (![b.x, b.y, b.angle].every(Number.isFinite) || !['world', 'building'].includes(b.parent))
@@ -699,7 +806,10 @@ export function validateCampaignAtlases(db: any) {
         throw new Error('Gebäudeanker fehlt.');
     }
   }
-  for (const r of db.prepare('SELECT source,checksum FROM atlas_import_source').iterate())
+  for (const r of checkedQuery(db, 'SELECT source,checksum FROM atlas_import_source', {
+    source: 'text',
+    checksum: 'text',
+  }).iterate())
     if (hash(r.source) !== r.checksum) throw new Error('Dungeonimport-Original beschädigt.');
 }
 
@@ -749,14 +859,16 @@ interface AtlasCommandEffects {
   executeCity: (
     command: import('../atlas/city-contracts').CityCommand,
   ) => import('../atlas/city-contracts').CityView;
-  executeWorld: (command: import('../runtime/world-contracts').WorldCommand) => any;
+  executeWorld: (
+    command: import('../runtime/world-contracts').WorldCommand,
+  ) => import('../runtime/world-contracts').WorldAck;
   commitPreparation: (
     command: import('../campaign/preparation-contracts').PreparationCommand,
   ) => void;
   readonly terrainAuthorCache: import('./terrain-author-cache').TerrainAuthorCache;
 }
 export function applyAtlasCommand(
-  db: any,
+  db: SqliteDatabase,
   effects: AtlasCommandEffects,
   c: AtlasCommand,
   prepared?: import('./terrain-scale').PreparedTerrainStroke,
@@ -849,11 +961,11 @@ export function applyAtlasCommand(
           kind !== undefined && ['patch', 'road', 'river', 'vegetation'].includes(kind);
         const wasPhysical = (id: string) =>
           physical(
-            db
-              .prepare(
-                "SELECT json_extract(payload,'$.kind') kind FROM atlas_landscape WHERE campaign_id=? AND id=?",
-              )
-              .get(cam, id)?.kind,
+            checkedQuery(
+              db,
+              "SELECT json_extract(payload,'$.kind') kind FROM atlas_landscape WHERE campaign_id=? AND id=?",
+              { kind: 'nullable-text' },
+            ).get(cam, id)?.kind ?? undefined,
           );
         landscapeEnvironment =
           a.kind === 'landscape-terrain-style' || a.kind === 'landscape-prominence'
@@ -875,9 +987,11 @@ export function applyAtlasCommand(
         if (c.terrainStroke && a.kind === 'landscape-color-stroke') {
           if (a.record.id !== c.terrainStroke.id)
             throw Error('Farbzug gehört zu einer anderen Pinselgeste.');
-          const prior = db
-            .prepare('SELECT revision FROM atlas_landscape WHERE campaign_id=? AND id=?')
-            .get(cam, a.record.id);
+          const prior = checkedQuery(
+            db,
+            'SELECT revision FROM atlas_landscape WHERE campaign_id=? AND id=?',
+            { revision: 'integer' },
+          ).get(cam, a.record.id);
           if (
             prior &&
             !db
@@ -895,15 +1009,17 @@ export function applyAtlasCommand(
         if (a.kind === 'landscape-place') {
           const root = atlasRoot(db, cam),
             m = JSON.parse(
-              db
-                .prepare(
-                  "SELECT payload FROM world_record WHERE campaign_id=? AND kind='map' AND id=?",
-                )
-                .get(cam, root.map_id).payload,
+              checkedQuery(
+                db,
+                "SELECT payload FROM world_record WHERE campaign_id=? AND kind='map' AND id=?",
+                { payload: 'text' },
+              ).required(cam, root.map_id).payload,
             ),
-            old = db
-              .prepare('SELECT revision FROM atlas_place WHERE campaign_id=? AND location_id=?')
-              .get(cam, a.document.id);
+            old = checkedQuery(
+              db,
+              'SELECT revision FROM atlas_place WHERE campaign_id=? AND location_id=?',
+              { revision: 'integer' },
+            ).get(cam, a.document.id);
           effects.executeWorld({
             commandId: c.commandId + ':place',
             token: c.token,
@@ -1053,9 +1169,11 @@ export function applyAtlasCommand(
               !db.prepare('SELECT 1 FROM scope WHERE campaign_id=? AND id=?').get(cam, u.id)
             ) {
               storeGroupDraft(db, cam, u.id, u.name || u.use || 'Gebäude', groupRecipeForHouse(u));
-              const locationId = db
-                .prepare('SELECT location_id FROM city_document WHERE campaign_id=? AND id=?')
-                .get(cam, a.command.cityId).location_id;
+              const locationId = checkedQuery(
+                db,
+                'SELECT location_id FROM city_document WHERE campaign_id=? AND id=?',
+                { location_id: 'text' },
+              ).required(cam, a.command.cityId).location_id;
               db.prepare('INSERT INTO location_map VALUES(?,?,?)').run(cam, u.id, locationId);
               bindAtlas(
                 db,
@@ -1291,7 +1409,9 @@ export function applyAtlasCommand(
           floorId: a.floorId,
           name: a.name,
           number: String(
-            db.prepare('SELECT count(*) n FROM room WHERE campaign_id=?').get(cam).n + 1,
+            checkedQuery(db, 'SELECT count(*) n FROM room WHERE campaign_id=?', {
+              n: 'integer',
+            }).required(cam).n + 1,
           ),
           revision: 0,
           polygons: a.polygons,
@@ -1313,11 +1433,11 @@ export function applyAtlasCommand(
         return;
       }
       const changedBounds = new Map<string, import('../atlas/atlas-landscape').LandscapeBox>();
-      for (const delta of db
-        .prepare(
-          "SELECT before_json,after_json FROM atlas_delta WHERE table_name='atlas_landscape'",
-        )
-        .iterate()) {
+      for (const delta of checkedQuery(
+        db,
+        "SELECT before_json,after_json FROM atlas_delta WHERE table_name='atlas_landscape'",
+        { before_json: 'nullable-text', after_json: 'nullable-text' },
+      ).iterate()) {
         if (delta.before_json === delta.after_json) continue;
         const rows = [delta.before_json, delta.after_json].map((value) =>
           value ? JSON.parse(value) : undefined,
@@ -1355,9 +1475,11 @@ export function applyAtlasCommand(
       // Terrain cannot move an indoor actor or change a room boundary. It can
       // invalidate outdoor routes; pause them atomically without loading rooms.
       for (const table of ['world_journey', 'atlas_local_journey'])
-        for (const row of db
-          .prepare('SELECT rowid,payload FROM ' + table + ' WHERE campaign_id=?')
-          .all(c.campaignId)) {
+        for (const row of checkedQuery(
+          db,
+          'SELECT rowid,payload FROM ' + table + ' WHERE campaign_id=?',
+          { rowid: 'integer', payload: 'text' },
+        ).all(c.campaignId)) {
           const journey = JSON.parse(row.payload);
           if (!['active', 'paused'].includes(journey.status)) continue;
           journey.status = 'paused';
@@ -1393,7 +1515,7 @@ interface ReconcileAtlasGeometryContext {
   city: (token: string, id: string) => import('./../atlas/city-contracts').CityView;
 }
 export function storedReconcileAtlasGeometry(
-  db: any,
+  db: SqliteDatabase,
   context: ReconcileAtlasGeometryContext,
   token: string,
 ): void {
@@ -1420,14 +1542,21 @@ export function storedReconcileAtlasGeometry(
   // Reconcile spatial facts only; descriptions, perceptions and traces are consumers.
   const a = {
     terrain: JSON.parse(
-      db
-        .prepare("SELECT payload FROM world_record WHERE campaign_id=? AND kind='map' AND id=?")
-        .get(cam, root.map_id).payload,
+      checkedQuery(
+        db,
+        "SELECT payload FROM world_record WHERE campaign_id=? AND kind='map' AND id=?",
+        { payload: 'text' },
+      ).required(cam, root.map_id).payload,
     ),
     bindings: atlasBindings(db, cam),
     cities: context.cities(token).cities.map((h) => context.city(token, h.id)),
   };
-  for (const row of db.prepare('SELECT * FROM scene_position WHERE campaign_id=?').all(cam)) {
+  for (const row of checkedQuery(db, 'SELECT * FROM scene_position WHERE campaign_id=?', {
+    scene_id: 'text',
+    revision: 'integer',
+    payload: 'text',
+    checksum: 'text',
+  }).all(cam)) {
     const p = JSON.parse(row.payload),
       binding = p.dungeon
         ? a.bindings.find((b) => b.kind === 'dungeon' && b.ownerId === p.dungeon.scopeId)
@@ -1450,7 +1579,9 @@ export function storedReconcileAtlasGeometry(
     ).run(next.revision, payload, hash(payload), cam, row.scene_id);
   }
   for (const table of ['world_journey', 'dungeon_journey', 'atlas_local_journey'])
-    for (const row of db.prepare('SELECT * FROM ' + table + ' WHERE campaign_id=?').all(cam)) {
+    for (const row of checkedQuery(db, 'SELECT * FROM ' + table + ' WHERE campaign_id=?', {
+      payload: 'text',
+    }).all(cam)) {
       const j = JSON.parse(row.payload);
       if (j.status !== 'active') continue;
       const stale =
@@ -1508,7 +1639,7 @@ interface CoupleAtlasWallContext {
   };
 }
 export function storedCoupleAtlasWall(
-  db: any,
+  db: SqliteDatabase,
   context: CoupleAtlasWallContext,
   c: AtlasCommand,
   before: Room,
@@ -1622,7 +1753,7 @@ interface AtlasOverviewContext {
   guard: (token: string, campaignId?: string | undefined) => string;
 }
 export function storedAtlasOverview(
-  db: any,
+  db: SqliteDatabase,
   context: AtlasOverviewContext,
   token: string,
 ): import('./../atlas/campaign-atlas-contracts').AtlasOverview {
@@ -1634,23 +1765,37 @@ export function storedAtlasOverview(
           "SELECT min(min_x) x,max(max_x) xmax,min(min_y) y,max(max_y) ymax FROM atlas_landscape WHERE campaign_id=? AND json_extract(payload,'$.terrainSettings') IS NULL",
         )
         .get(cam);
+    const bounds =
+      b?.x === null
+        ? null
+        : checkedRow(b, { x: 'number', y: 'number', xmax: 'number', ymax: 'number' });
     return {
       campaignId: cam,
       token,
       revision: root.revision,
       ...atlasHistoryState(db, cam),
       counts: {
-        rooms: db
-          .prepare(
-            "SELECT count(*) n FROM room r WHERE campaign_id=? AND NOT EXISTS(SELECT 1 FROM drawing_hidden h WHERE h.campaign_id=r.campaign_id AND h.id=r.id AND h.kind='room' AND h.hidden=1) AND NOT EXISTS(SELECT 1 FROM drawing_hidden h WHERE h.campaign_id=r.campaign_id AND h.id=r.floor_id AND h.scope_id=r.scope_id AND h.kind='floor' AND h.hidden=1)",
-          )
-          .get(cam).n,
-        cities: db.prepare('SELECT count(*) n FROM city_document WHERE campaign_id=?').get(cam).n,
-        landscape: db.prepare('SELECT count(*) n FROM atlas_landscape WHERE campaign_id=?').get(cam)
-          .n,
+        rooms: checkedQuery(
+          db,
+          "SELECT count(*) n FROM room r WHERE campaign_id=? AND NOT EXISTS(SELECT 1 FROM drawing_hidden h WHERE h.campaign_id=r.campaign_id AND h.id=r.id AND h.kind='room' AND h.hidden=1) AND NOT EXISTS(SELECT 1 FROM drawing_hidden h WHERE h.campaign_id=r.campaign_id AND h.id=r.floor_id AND h.scope_id=r.scope_id AND h.kind='floor' AND h.hidden=1)",
+          { n: 'integer' },
+        ).required(cam).n,
+        cities: checkedQuery(db, 'SELECT count(*) n FROM city_document WHERE campaign_id=?', {
+          n: 'integer',
+        }).required(cam).n,
+        landscape: checkedQuery(db, 'SELECT count(*) n FROM atlas_landscape WHERE campaign_id=?', {
+          n: 'integer',
+        }).required(cam).n,
       },
       landscapeBounds:
-        b.x === null ? null : { x: b.x, y: b.y, width: b.xmax - b.x, height: b.ymax - b.y },
+        bounds === null
+          ? null
+          : {
+              x: bounds.x,
+              y: bounds.y,
+              width: bounds.xmax - bounds.x,
+              height: bounds.ymax - bounds.y,
+            },
     };
   })();
 }
@@ -1658,7 +1803,7 @@ interface AtlasCitySiteContext {
   guard: (token: string, campaignId?: string | undefined) => string;
 }
 export function storedAtlasCitySite(
-  db: any,
+  db: SqliteDatabase,
   context: AtlasCitySiteContext,
   token: string,
   cityId: string,
@@ -1671,9 +1816,11 @@ export function storedAtlasCitySite(
         : { header: readCityHeader(db, cam, cityId), unit: null };
     const related = (site.unit?.nodeIds ?? []).map((n) => readCitySite(db, cam, cityId, n).unit);
     const faction = site.unit?.factionId
-      ? db
-          .prepare('SELECT id,payload,checksum FROM world_note WHERE campaign_id=? AND id=?')
-          .get(cam, site.unit.factionId)
+      ? checkedQuery(
+          db,
+          'SELECT id,payload,checksum FROM world_note WHERE campaign_id=? AND id=?',
+          { id: 'text', payload: 'text', checksum: 'text' },
+        ).get(cam, site.unit.factionId)
       : null;
     const factions =
       faction && hash(faction.payload) === faction.checksum
@@ -1690,13 +1837,13 @@ interface CampaignAtlasContext {
     import('./../shared/contracts').Room,
     import('./../atlas/drawing-contracts').DrawingElement
   >;
-  sceneWorld: (token: string, id: string) => any;
+  sceneWorld: (token: string, id: string) => import('../runtime/world-contracts').SceneWorld;
   cities: (token: string) => import('./../atlas/city-contracts').CityOverview;
   city: (token: string, id: string) => import('./../atlas/city-contracts').CityView;
   workspace: () => import('./../shared/contracts').Workspace;
 }
 export function storedCampaignAtlas(
-  db: any,
+  db: SqliteDatabase,
   context: CampaignAtlasContext,
   token: string,
 ): import('./../atlas/campaign-atlas-contracts').CampaignAtlas<
@@ -1708,9 +1855,11 @@ export function storedCampaignAtlas(
   return db.transaction(() => {
     const root = atlasRoot(db, cam),
       terrain = JSON.parse(
-        db
-          .prepare("SELECT payload FROM world_record WHERE campaign_id=? AND kind='map' AND id=?")
-          .get(cam, root.map_id).payload,
+        checkedQuery(
+          db,
+          "SELECT payload FROM world_record WHERE campaign_id=? AND kind='map' AND id=?",
+          { payload: 'text' },
+        ).required(cam, root.map_id).payload,
       );
     if (!terrain) throw new Error('Kampagnenatlas fehlt.');
     const geometry = context.dungeon(token),
@@ -1726,7 +1875,10 @@ export function storedCampaignAtlas(
           )
         : null;
     return {
-      scopes: db.prepare('SELECT id,name FROM scope WHERE campaign_id=?').all(cam),
+      scopes: checkedQuery(db, 'SELECT id,name FROM scope WHERE campaign_id=?', {
+        id: 'text',
+        name: 'text',
+      }).all(cam),
       perception,
       entrances: atlasEntrances(db, cam),
       localJourney: geometry.sceneId ? atlasLocalJourney(db, cam, geometry.sceneId) : null,

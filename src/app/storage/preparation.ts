@@ -1,3 +1,5 @@
+import { type SqliteDatabase, checkedQuery, checkedRow } from './sqlite-connection';
+import { commandFingerprint, matchesReceipt } from './command-fingerprint';
 import { createHash, randomUUID } from 'node:crypto';
 import { type ManualPlan } from '../../features/planner/manual-planner';
 import { worldNoteDocument } from '../../features/world/world-notes';
@@ -30,13 +32,9 @@ import {
   readStoredPlan,
 } from './stored-records';
 import { checkedWorldNoteRow } from './world-note-row';
-type Row = Record<string, any>;
 const json = (value: unknown) => JSON.stringify(value);
 const hash = (value: string | Buffer) => createHash('sha256').update(value).digest('hex');
-const commandFingerprint = (command: object) => hash(json({ ...command, token: undefined }));
-const matchesReceipt = (receipt: { fingerprint: string }, command: object) =>
-  receipt.fingerprint === commandFingerprint(command) ||
-  receipt.fingerprint === hash(json(command));
+
 interface PreparationWriteContext {
   readonly activeCampaignId: string | undefined;
   readonly graphPreviewOpen: boolean;
@@ -46,7 +44,7 @@ interface PreparationWriteContext {
 }
 
 export function commitPreparation(
-  db: any,
+  db: SqliteDatabase,
   command: PreparationCommand,
   context: PreparationWriteContext,
 ): void {
@@ -56,9 +54,11 @@ export function commitPreparation(
     fingerprint = commandFingerprint(command);
   db.transaction(() => {
     const campaignId = context.guard(command.token, command.campaignId ?? context.activeCampaignId);
-    const prior = db
-      .prepare('SELECT fingerprint,campaign_id FROM receipt WHERE command_id=?')
-      .get(command.commandId);
+    const prior = checkedQuery(
+      db,
+      'SELECT fingerprint,campaign_id FROM receipt WHERE command_id=?',
+      { fingerprint: 'text', campaign_id: 'text' },
+    ).get(command.commandId);
     if (prior) {
       if (prior.campaign_id !== campaignId || !matchesReceipt(prior, command))
         throw new Error('Änderungskennung bereits anders verwendet.');
@@ -144,9 +144,13 @@ export function commitPreparation(
       revision = work.source.revision + 1;
     } else if (change.kind === 'note') {
       targetId = change.note.id;
-      const old = db
-        .prepare('SELECT * FROM world_note WHERE campaign_id=? AND id=?')
-        .get(campaignId, targetId);
+      const old = checkedQuery(db, 'SELECT * FROM world_note WHERE campaign_id=? AND id=?', {
+        id: 'text',
+        revision: 'integer',
+        trashed: 'integer',
+        payload: 'text',
+        checksum: 'text',
+      }).get(campaignId, targetId);
       if (
         change.expectedRevision === null
           ? !!old
@@ -159,9 +163,13 @@ export function commitPreparation(
       const source = change.excerpt;
       let sourceNote: Note | null = null;
       if (source) {
-        const row = db
-          .prepare('SELECT * FROM world_note WHERE campaign_id=? AND id=?')
-          .get(campaignId, source.id);
+        const row = checkedQuery(db, 'SELECT * FROM world_note WHERE campaign_id=? AND id=?', {
+          id: 'text',
+          revision: 'integer',
+          trashed: 'integer',
+          payload: 'text',
+          checksum: 'text',
+        }).get(campaignId, source.id);
         if (!row || row.trashed || row.revision !== source.revision)
           throw new Error('Auszugskonflikt: Die Quelle wurde geändert oder ist nicht verfügbar.');
         sourceNote = checkedWorldNoteRow(row, 'Beschädigte Quelle bleibt unverändert.');
@@ -219,9 +227,11 @@ export function commitPreparation(
       )
         throw new Error('Familienbeziehungen werden nur als vollständiges Paar geändert.');
       for (const relation of change.note.relations) {
-        const target = db
-          .prepare('SELECT trashed FROM world_note WHERE campaign_id=? AND id=?')
-          .get(campaignId, relation.targetId);
+        const target = checkedQuery(
+          db,
+          'SELECT trashed FROM world_note WHERE campaign_id=? AND id=?',
+          { trashed: 'integer' },
+        ).get(campaignId, relation.targetId);
         const retained = oldNote?.relations.some(
           (r) =>
             r.targetId === relation.targetId &&
@@ -279,9 +289,13 @@ export function commitPreparation(
         );
     } else if (change.kind === 'note-trash') {
       targetId = change.id;
-      const old = db
-        .prepare('SELECT * FROM world_note WHERE campaign_id=? AND id=?')
-        .get(campaignId, targetId);
+      const old = checkedQuery(db, 'SELECT * FROM world_note WHERE campaign_id=? AND id=?', {
+        id: 'text',
+        revision: 'integer',
+        trashed: 'integer',
+        payload: 'text',
+        checksum: 'text',
+      }).get(campaignId, targetId);
       if (!old || old.revision !== change.expectedRevision || !!old.trashed === change.trashed)
         throw new Error('Papierkorbkonflikt: Notizstand hat sich geändert.');
       const note = checkedWorldNoteRow(old, 'Beschädigte Notiz bleibt gesperrt.');
@@ -306,9 +320,13 @@ export function commitPreparation(
       ).run(Number(change.trashed), revision, payload, hash(payload), campaignId, targetId);
     } else if (change.kind === 'location') {
       targetId = change.document.id;
-      const old = db
-        .prepare('SELECT * FROM location WHERE campaign_id=? AND id=?')
-        .get(campaignId, targetId);
+      const old = checkedQuery(db, 'SELECT * FROM location WHERE campaign_id=? AND id=?', {
+        id: 'text',
+        revision: 'integer',
+        trashed: 'integer',
+        payload: 'text',
+        checksum: 'text',
+      }).get(campaignId, targetId);
       if (
         change.expectedRevision === null
           ? !!old
@@ -324,9 +342,11 @@ export function commitPreparation(
             .get(campaignId, map.documentId)
         )
           throw new Error('Die gewählte Karte gehört nicht zu dieser Kampagne.');
-        const bound = db
-          .prepare('SELECT location_id FROM location_map WHERE campaign_id=? AND scope_id=?')
-          .get(campaignId, map.documentId);
+        const bound = checkedQuery(
+          db,
+          'SELECT location_id FROM location_map WHERE campaign_id=? AND scope_id=?',
+          { location_id: 'text' },
+        ).get(campaignId, map.documentId);
         if (bound && bound.location_id !== targetId)
           throw new Error(
             'Diese Dungeonzeichnung gehört bereits zu einem anderen Ort. Bindung zuerst dort ausdrücklich lösen.',
@@ -349,9 +369,13 @@ export function commitPreparation(
         );
     } else if (change.kind === 'location-trash') {
       targetId = change.id;
-      const old = db
-        .prepare('SELECT * FROM location WHERE campaign_id=? AND id=?')
-        .get(campaignId, targetId);
+      const old = checkedQuery(db, 'SELECT * FROM location WHERE campaign_id=? AND id=?', {
+        id: 'text',
+        revision: 'integer',
+        trashed: 'integer',
+        payload: 'text',
+        checksum: 'text',
+      }).get(campaignId, targetId);
       if (!old || old.revision !== change.expectedRevision || !!old.trashed === change.trashed)
         throw new Error('Orts-Papierkorbkonflikt: Stand hat sich geändert.');
       decodeLocation(old, 'Beschädigter Ort bleibt gesperrt.');
@@ -364,17 +388,21 @@ export function commitPreparation(
       );
     } else {
       targetId = change.plan.id;
-      const old = db
-        .prepare('SELECT revision FROM plan WHERE campaign_id=? AND id=?')
-        .get(campaignId, targetId);
+      const old = checkedQuery(db, 'SELECT revision FROM plan WHERE campaign_id=? AND id=?', {
+        revision: 'integer',
+      }).get(campaignId, targetId);
       if (
         change.expectedRevision === null ? !!old : !old || old.revision !== change.expectedRevision
       )
         throw new Error('Plankonflikt: Der gespeicherte Stand hat sich geändert.');
       const beforePlan = old ? readStoredPlan(db, campaignId, targetId) : null;
       const beforeVisits = new Map(beforePlan?.scenes.map((scene) => [scene.id, scene]));
-      const nextIds = new Set(change.plan.scenes.map((scene) => scene.id));
-      const locationState = db.prepare('SELECT trashed FROM location WHERE campaign_id=? AND id=?');
+      const nextIds = new Set<string>(change.plan.scenes.map((scene) => scene.id));
+      const locationState = checkedQuery(
+        db,
+        'SELECT trashed FROM location WHERE campaign_id=? AND id=?',
+        { trashed: 'integer' },
+      );
       for (const scene of change.plan.scenes)
         if (scene.locationId !== null) {
           const location = locationState.get(campaignId, scene.locationId);
@@ -388,9 +416,11 @@ export function commitPreparation(
       db.prepare(
         'INSERT INTO plan VALUES(?,?,?,?) ON CONFLICT(campaign_id,id) DO UPDATE SET revision=excluded.revision,name=excluded.name',
       ).run(campaignId, targetId, revision, change.plan.name);
-      const existing = db
-        .prepare('SELECT * FROM planned_visit WHERE campaign_id=? AND plan_id=?')
-        .all(campaignId, targetId) as Row[];
+      const existing = checkedQuery(
+        db,
+        'SELECT * FROM planned_visit WHERE campaign_id=? AND plan_id=?',
+        { id: 'text', ordinal: 'integer', payload: 'text', checksum: 'text' },
+      ).all(campaignId, targetId);
       const existingVisits = new Map(existing.map((visit) => [visit.id, visit]));
       for (const visit of existing)
         if (!nextIds.has(visit.id))
@@ -399,9 +429,11 @@ export function commitPreparation(
             visit.id,
           );
       change.plan.scenes.forEach((scene, ordinal) => {
-        const foreign = db
-          .prepare('SELECT plan_id FROM planned_visit WHERE campaign_id=? AND id=?')
-          .get(campaignId, scene.id);
+        const foreign = checkedQuery(
+          db,
+          'SELECT plan_id FROM planned_visit WHERE campaign_id=? AND id=?',
+          { plan_id: 'text' },
+        ).get(campaignId, scene.id);
         if (foreign && foreign.plan_id !== targetId)
           throw new Error('Szenenidentität gehört zu einem anderen Plan.');
         const payload = json(scene),
@@ -473,7 +505,7 @@ interface KeepPreparationDraftsContext {
   guard: (token: string, campaignId?: string | undefined) => string;
 }
 export function storedKeepPreparationDrafts(
-  db: any,
+  db: SqliteDatabase,
   context: KeepPreparationDraftsContext,
   token: string,
   drafts: PreparationDraft[],
@@ -531,11 +563,10 @@ interface PreparationContext {
   readPlan: (
     campaignId: string,
     id: string,
-    db?: any,
   ) => import('./../../features/planner/manual-planner').ManualPlan;
 }
 export function storedPreparation(
-  db: any,
+  db: SqliteDatabase,
   context: PreparationContext,
   token: string,
   search = '',
@@ -554,13 +585,20 @@ export function storedPreparation(
           .all(marks.start, marks.end, marks.clip, campaignId, noteSearchQuery(search))
       : db.prepare('SELECT * FROM world_note WHERE campaign_id=? ORDER BY id').all(campaignId);
     const notes: Preparation['notes'] = [];
-    for (const row of rows) {
+    for (const raw of rows) {
       try {
+        const row = checkedRow(raw, {
+          id: 'text',
+          revision: 'integer',
+          trashed: 'integer',
+          payload: 'text',
+          checksum: 'text',
+        });
         const note = checkedWorldNoteRow(row),
-          searchPreview = noteSearchPreview(row.search_preview, note, marks);
+          searchPreview = noteSearchPreview(raw.search_preview, note, marks);
         notes.push({ note, trashed: !!row.trashed, ...(searchPreview ? { searchPreview } : {}) });
       } catch {
-        problems.push(`Notiz ${row.id} ist gesperrt. Originalbytes bleiben erhalten.`);
+        problems.push(`Notiz ${raw.id} ist gesperrt. Originalbytes bleiben erhalten.`);
       }
     }
     notes.sort(
@@ -572,7 +610,7 @@ export function storedPreparation(
       .prepare('SELECT * FROM plan WHERE campaign_id=? ORDER BY name,id')
       .all(campaignId)) {
       try {
-        plans.push(context.readPlan(campaignId, row.id));
+        plans.push(context.readPlan(campaignId, checkedRow(row, { id: 'text' }).id));
       } catch {
         problems.push(`Plan ${row.id} ist gesperrt. Originalbytes bleiben erhalten.`);
       }
@@ -584,17 +622,17 @@ export function storedPreparation(
       try {
         locations.push({
           document: decodeLocation(row),
-          revision: row.revision,
-          trashed: !!row.trashed,
+          revision: checkedRow(row, { revision: 'integer' }).revision,
+          trashed: !!checkedRow(row, { trashed: 'integer' }).trashed,
         });
       } catch {
         problems.push(`Ort ${row.id} ist gesperrt. Originalbytes bleiben erhalten.`);
       }
     }
     let selection: PreparationSelection = { noteId: null, planId: null, sceneId: null };
-    const saved = db
-      .prepare('SELECT value FROM settings WHERE key=?')
-      .get(`preparation:${campaignId}`);
+    const saved = checkedQuery(db, 'SELECT value FROM settings WHERE key=?', { value: 'text' }).get(
+      `preparation:${campaignId}`,
+    );
     if (saved) {
       try {
         selection = JSON.parse(saved.value);
@@ -606,9 +644,10 @@ export function storedPreparation(
       notes,
       plans,
       locations,
-      maps: db
-        .prepare('SELECT id,name FROM scope WHERE campaign_id=? ORDER BY name,id')
-        .all(campaignId),
+      maps: checkedQuery(db, 'SELECT id,name FROM scope WHERE campaign_id=? ORDER BY name,id', {
+        id: 'text',
+        name: 'text',
+      }).all(campaignId),
       problems,
       selection,
     };
@@ -618,7 +657,7 @@ interface SelectPreparationContext {
   guard: (token: string, campaignId?: string | undefined) => string;
 }
 export function storedSelectPreparation(
-  db: any,
+  db: SqliteDatabase,
   context: SelectPreparationContext,
   token: string,
   selection: PreparationSelection,
@@ -660,15 +699,14 @@ export function storedSelectPreparation(
 }
 interface ReconcilePreparationPlanContext {
   guard: (token: string, campaignId?: string | undefined) => string;
-  active: { campaignId: string; token: string } | null;
+  readonly activeCampaignId: string | undefined;
   readPlan: (
     campaignId: string,
     id: string,
-    db?: any,
   ) => import('./../../features/planner/manual-planner').ManualPlan;
 }
 export function storedReconcilePreparationPlan(
-  db: any,
+  db: SqliteDatabase,
   context: ReconcilePreparationPlanContext,
   command: PreparationCommand,
   token = command.token,
@@ -676,18 +714,20 @@ export function storedReconcilePreparationPlan(
   if (command.change.kind !== 'plan')
     throw new Error('Gezielte Planklärung benötigt einen Spielabendplan.');
   const change = command.change;
-  return db.transaction(() => {
-    const cam = context.guard(token, command.campaignId ?? context.active?.campaignId);
-    const prior = db
-      .prepare('SELECT fingerprint,campaign_id,revision FROM receipt WHERE command_id=?')
-      .get(command.commandId);
+  return db.transaction((): import('../campaign/preparation-contracts').PlanReconciliation => {
+    const cam = context.guard(token, command.campaignId ?? context.activeCampaignId);
+    const prior = checkedQuery(
+      db,
+      'SELECT fingerprint,campaign_id,revision FROM receipt WHERE command_id=?',
+      { fingerprint: 'text', campaign_id: 'text', revision: 'integer' },
+    ).get(command.commandId);
     if (prior && (prior.campaign_id !== cam || !matchesReceipt(prior, command)))
       throw new Error('Änderungskennung bereits anders verwendet.');
     if (!prior && command.campaignId === undefined && command.token !== token)
       throw new Error('Der alte Auftrag besitzt keine eindeutige Kampagnenbindung.');
-    const row = db
-      .prepare('SELECT revision FROM plan WHERE campaign_id=? AND id=?')
-      .get(cam, change.plan.id);
+    const row = checkedQuery(db, 'SELECT revision FROM plan WHERE campaign_id=? AND id=?', {
+      revision: 'integer',
+    }).get(cam, change.plan.id);
     const unchanged =
       change.expectedRevision === null ? !row : row?.revision === change.expectedRevision;
     let plan: ManualPlan | null = null;

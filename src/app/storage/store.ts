@@ -1,3 +1,4 @@
+import { matchesReceipt } from './command-fingerprint';
 import { validateTransferSnapshot } from '../transfer/registry';
 import { installSourceCellIndex } from './atlas-source-cell';
 import DATA_FORMAT from '../data-format.json';
@@ -414,11 +415,6 @@ const roomNumberOrder = new Intl.Collator('de', { numeric: true });
 
 const json = (value: unknown) => JSON.stringify(value);
 const hash = (value: string | Buffer) => createHash('sha256').update(value).digest('hex');
-const commandFingerprint = (command: object) => hash(json({ ...command, token: undefined }));
-const matchesReceipt = (receipt: Row, command: object) =>
-  receipt.fingerprint === commandFingerprint(command) ||
-  receipt.fingerprint === hash(json(command));
-type Row = Record<string, any>;
 
 /** Only the privileged host owns this connection. All command guards run inside BEGIN IMMEDIATE. */
 // Hash the source without retaining a second, potentially huge database in memory.
@@ -3021,7 +3017,11 @@ export class CampaignStore {
   ): import('../campaign/preparation-contracts').PlanReconciliation {
     return storedReconcilePreparationPlan(
       this.db,
-      { guard: this.guard.bind(this), active: this.active, readPlan: this.readPlan.bind(this) },
+      {
+        guard: this.guard.bind(this),
+        activeCampaignId: this.active?.campaignId,
+        readPlan: this.readPlan.bind(this),
+      },
       command,
       token,
     );

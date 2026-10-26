@@ -90,6 +90,8 @@ Records in `storage/stored-records.ts`; `storage/preparation.ts` bündelt die zu
 im Store verteilte Vorbereitung. Fachübergreifende Aufträge erhalten benannte,
 typisierte Funktionen ihrer bestehenden Eigentümer. Verschachtelte Transaktionen,
 Receipt-Auswertung und Recovery bleiben Teil derselben Schreiboperation.
+[Typisierte Speicheranschlüsse und Belegverträge](storage-ports.md) beschreiben
+SQL-Lesegrenzen, historische Fingerprints und verschachtelten Rollback.
 
 `tools/check-module-boundaries.mjs` ist Bestandteil von `check:repo`. Es verfolgt
 Imports, Re-Exports, Typ-Imports und dynamische Modulpfade auch indirekt:

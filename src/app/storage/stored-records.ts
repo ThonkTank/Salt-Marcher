@@ -1,3 +1,5 @@
+import { type SqliteDatabase, checkedQuery, checkedRow } from './sqlite-connection';
+import { commandFingerprint, matchesReceipt } from './command-fingerprint';
 import { createHash, randomUUID } from 'node:crypto';
 import {
   validateRoom,
@@ -17,10 +19,19 @@ import { checkedLocationDocument } from '../../features/location/location-schema
 import { atlasBindings } from './campaign-atlas';
 import { drawingHistory, rebaseDrawingRoomHistory } from './drawing';
 const hash = (value: string | Buffer) => createHash('sha256').update(value).digest('hex');
-type Row = Record<string, any>;
 
 /** Shared checks for stored payloads and snapshot validation. No active store state. */
-export function decodeRoom(row: Row): Room {
+export function decodeRoom(value: unknown): Room {
+  const row = checkedRow(value, {
+    id: 'text',
+    scope_id: 'text',
+    floor_id: 'text',
+    number: 'text',
+    name: 'text',
+    revision: 'integer',
+    payload: 'text',
+    checksum: 'text',
+  });
   if (hash(row.payload) !== row.checksum)
     throw new Error(
       `Raum ${row.number}: Datenprüfung fehlgeschlagen. Originaldaten bleiben erhalten.`,
@@ -48,9 +59,16 @@ export function decodeRoom(row: Row): Room {
 }
 
 export function checkedRoomHistory(
-  entry: Row,
+  value: unknown,
   room: Pick<Room, 'id' | 'scopeId' | 'floorId' | 'number'>,
 ): { before: Room; after: Room } {
+  const entry = checkedRow(value, {
+    room_id: 'text',
+    ordinal: 'integer',
+    guard_revision: 'integer',
+    before_json: 'text',
+    after_json: 'text',
+  });
   if (
     !entry ||
     entry.room_id !== room.id ||
@@ -84,7 +102,13 @@ export function checkedRoomHistory(
   return { before, after };
 }
 
-export function decodeRoomDraft(row: Row): WorkingRoomDraft {
+export function decodeRoomDraft(value: unknown): WorkingRoomDraft {
+  const row = checkedRow(value, {
+    room_id: 'text',
+    campaign_id: 'text',
+    payload: 'text',
+    checksum: 'text',
+  });
   if (hash(row.payload) !== row.checksum)
     throw new Error('Arbeitsentwurf ist beschädigt. Originalbytes bleiben erhalten.');
   const draft = JSON.parse(row.payload) as WorkingRoomDraft;
@@ -132,7 +156,14 @@ export function decodeRoomDraft(row: Row): WorkingRoomDraft {
   return draft;
 }
 
-export function decodePreparationDraft(row: Row): PreparationDraft {
+export function decodePreparationDraft(value: unknown): PreparationDraft {
+  const row = checkedRow(value, {
+    campaign_id: 'text',
+    kind: 'text',
+    target_id: 'text',
+    payload: 'text',
+    checksum: 'text',
+  });
   if (hash(row.payload) !== row.checksum)
     throw new Error('Vorbereitungsentwurf ist beschädigt. Originalbytes bleiben erhalten.');
   const draft = checkedPreparationDraft(JSON.parse(row.payload)),
@@ -151,7 +182,13 @@ export function preparationDraftTable(kind: PreparationEdit['kind']) {
   return kind === 'note' ? 'world_note' : kind;
 }
 
-export function decodeLocation(row: Row, checksumError = 'Ortsprüfung fehlgeschlagen.') {
+export function decodeLocation(value: unknown, checksumError = 'Ortsprüfung fehlgeschlagen.') {
+  const row = checkedRow(value, {
+    id: 'text',
+    revision: 'integer',
+    payload: 'text',
+    checksum: 'text',
+  });
   if (hash(row.payload) !== row.checksum) throw new Error(checksumError);
   const document = checkedLocationDocument(JSON.parse(row.payload));
   if (document.id !== row.id || !Number.isSafeInteger(row.revision) || row.revision < 1)
@@ -159,13 +196,20 @@ export function decodeLocation(row: Row, checksumError = 'Ortsprüfung fehlgesch
   return document;
 }
 
-export function readStoredPlan(db: any, campaignId: string, id: string): ManualPlan {
-  const row = db.prepare('SELECT * FROM plan WHERE campaign_id=? AND id=?').get(campaignId, id);
+export function readStoredPlan(db: SqliteDatabase, campaignId: string, id: string): ManualPlan {
+  const row = checkedQuery(db, 'SELECT * FROM plan WHERE campaign_id=? AND id=?', {
+    id: 'text',
+    revision: 'integer',
+    name: 'text',
+  }).get(campaignId, id);
   if (!row) throw new Error('Plan nicht gefunden.');
-  const scenes = db
-    .prepare('SELECT * FROM planned_visit WHERE campaign_id=? AND plan_id=? ORDER BY ordinal')
+  const scenes = checkedQuery(
+    db,
+    'SELECT * FROM planned_visit WHERE campaign_id=? AND plan_id=? ORDER BY ordinal',
+    { id: 'text', ordinal: 'integer', payload: 'text', checksum: 'text' },
+  )
     .all(campaignId, id)
-    .map((visit: Row) => {
+    .map((visit) => {
       if (hash(visit.payload) !== visit.checksum) throw new Error('Szenenprüfung fehlgeschlagen.');
       return JSON.parse(visit.payload);
     });
@@ -173,44 +217,39 @@ export function readStoredPlan(db: any, campaignId: string, id: string): ManualP
 }
 
 const json = (value: unknown) => JSON.stringify(value);
-const commandFingerprint = (command: object) => hash(json({ ...command, token: undefined }));
-const matchesReceipt = (receipt: Row, command: object) =>
-  receipt.fingerprint === commandFingerprint(command) ||
-  receipt.fingerprint === hash(json(command));
+
 interface AddRoomContext {
   guard: (token: string, campaignId?: string | undefined) => string;
   workspace: () => import('./../shared/contracts').Workspace;
   insertRoom: (campaignId: string, room: import('./../shared/contracts').Room) => void;
-  executeDrawing: (c: import('./../atlas/drawing-contracts').DrawingCommand) => {
-    workspace: import('./../shared/contracts').Workspace;
-    view: import('./../atlas/drawing-contracts').DrawingView<
-      import('./../shared/contracts').Room,
-      import('./../atlas/drawing-contracts').DrawingElement
-    >;
-  };
+  executeDrawing: (command: import('../atlas/drawing-contracts').DrawingCommand) => void;
 }
 export function storedAddRoom(
-  db: any,
+  db: SqliteDatabase,
   context: AddRoomContext,
   token: string,
 ): import('./../shared/contracts').Workspace {
   db.transaction(() => {
     const campaignId = context.guard(token);
-    const n = db.prepare('SELECT count(*) n FROM room WHERE campaign_id=?').get(campaignId).n + 1;
+    const n =
+      checkedQuery(db, 'SELECT count(*) n FROM room WHERE campaign_id=?', {
+        n: 'integer',
+      }).required(campaignId).n + 1;
     const current = context.workspace(),
       selected = current.rooms.find((r) => r.id === current.selectedId);
     const scopeId =
         selected?.scopeId ??
-        db.prepare('SELECT value FROM settings WHERE key=?').get('default-scope:' + campaignId)
-          ?.value ??
+        checkedQuery(db, 'SELECT value FROM settings WHERE key=?', { value: 'text' }).get(
+          'default-scope:' + campaignId,
+        )?.value ??
         'local',
       floorId =
         selected?.floorId ??
-        db
-          .prepare(
-            'SELECT id FROM drawing_floor WHERE campaign_id=? AND scope_id=? ORDER BY rowid LIMIT 1',
-          )
-          .get(campaignId, scopeId)?.id ??
+        checkedQuery(
+          db,
+          'SELECT id FROM drawing_floor WHERE campaign_id=? AND scope_id=? ORDER BY rowid LIMIT 1',
+          { id: 'text' },
+        ).get(campaignId, scopeId)?.id ??
         'ground';
     // A default room is immediately usable geometry, not an overlapping placeholder.
     const bounds = (r: Room) => {
@@ -292,7 +331,7 @@ interface EditContext {
   writeRoom: (campaignId: string, room: import('./../shared/contracts').Room) => void;
 }
 export function storedEdit(
-  db: any,
+  db: SqliteDatabase,
   context: EditContext,
   edit: Edit,
 ): import('./../shared/contracts').RoomCommit {
@@ -306,7 +345,11 @@ export function storedEdit(
   const fingerprint = commandFingerprint(edit);
   db.transaction(() => {
     const campaignId = context.guard(edit.token, edit.campaignId);
-    const receipt = db.prepare('SELECT * FROM receipt WHERE command_id=?').get(edit.commandId);
+    const receipt = checkedQuery(db, 'SELECT * FROM receipt WHERE command_id=?', {
+      campaign_id: 'text',
+      fingerprint: 'text',
+      revision: 'integer',
+    }).get(edit.commandId);
     if (receipt) {
       if (receipt.campaign_id !== campaignId || !matchesReceipt(receipt, edit))
         throw new Error('Änderungskennung bereits anders verwendet.');
@@ -330,7 +373,9 @@ export function storedEdit(
       sections: edit.sections,
       revision: before.revision + 1,
     };
-    const cursor = db.prepare('SELECT cursor FROM campaign WHERE id=?').get(campaignId).cursor;
+    const cursor = checkedQuery(db, 'SELECT cursor FROM campaign WHERE id=?', {
+      cursor: 'integer',
+    }).required(campaignId).cursor;
     context.writeRoom(campaignId, after);
     db.prepare('DELETE FROM history WHERE campaign_id=? AND ordinal>?').run(campaignId, cursor);
     db.prepare('INSERT INTO history VALUES(?,?,?,?,?,?)').run(
@@ -356,7 +401,9 @@ export function storedEdit(
   }).immediate();
   return db.transaction(() => {
     const campaignId = context.guard(edit.token, edit.campaignId),
-      cursor = db.prepare('SELECT cursor FROM campaign WHERE id=?').get(campaignId).cursor;
+      cursor = checkedQuery(db, 'SELECT cursor FROM campaign WHERE id=?', {
+        cursor: 'integer',
+      }).required(campaignId).cursor;
     return {
       room: decodeRoom(
         db.prepare('SELECT * FROM room WHERE campaign_id=? AND id=?').get(campaignId, edit.roomId),
@@ -377,7 +424,7 @@ interface HistoryContext {
   workspace: () => import('./../shared/contracts').Workspace;
 }
 export function storedHistory(
-  db: any,
+  db: SqliteDatabase,
   context: HistoryContext,
   token: string,
   direction: 'undo' | 'redo',
@@ -385,11 +432,17 @@ export function storedHistory(
   if (direction !== 'undo' && direction !== 'redo') throw new Error('Ungültige Historyaktion.');
   db.transaction(() => {
     const campaignId = context.guard(token),
-      cursor = db.prepare('SELECT cursor FROM campaign WHERE id=?').get(campaignId).cursor;
+      cursor = checkedQuery(db, 'SELECT cursor FROM campaign WHERE id=?', {
+        cursor: 'integer',
+      }).required(campaignId).cursor;
     const ordinal = direction === 'undo' ? cursor : cursor + 1;
-    const entry = db
-      .prepare('SELECT * FROM history WHERE campaign_id=? AND ordinal=?')
-      .get(campaignId, ordinal);
+    const entry = checkedQuery(db, 'SELECT * FROM history WHERE campaign_id=? AND ordinal=?', {
+      room_id: 'text',
+      ordinal: 'integer',
+      guard_revision: 'integer',
+      before_json: 'text',
+      after_json: 'text',
+    }).get(campaignId, ordinal);
     if (!entry) return;
     if (drawingHistory(db, campaignId, ordinal, direction)) {
       db.prepare('UPDATE campaign SET cursor=? WHERE id=?').run(
@@ -418,11 +471,11 @@ export function storedHistory(
     );
     rebaseDrawingRoomHistory(db, campaignId, current.id, ordinal, direction);
     // Earlier/later deltas of the same causal group now expect this monotonically newer revision.
-    const neighbor = db
-      .prepare(
-        `SELECT ordinal FROM history WHERE campaign_id=? AND room_id=? AND ordinal ${direction === 'undo' ? '<' : '>'} ? ORDER BY ordinal ${direction === 'undo' ? 'DESC' : 'ASC'} LIMIT 1`,
-      )
-      .get(campaignId, entry.room_id, ordinal);
+    const neighbor = checkedQuery(
+      db,
+      `SELECT ordinal FROM history WHERE campaign_id=? AND room_id=? AND ordinal ${direction === 'undo' ? '<' : '>'} ? ORDER BY ordinal ${direction === 'undo' ? 'DESC' : 'ASC'} LIMIT 1`,
+      { ordinal: 'integer' },
+    ).get(campaignId, entry.room_id, ordinal);
     if (neighbor)
       db.prepare('UPDATE history SET guard_revision=? WHERE campaign_id=? AND ordinal=?').run(
         target.revision,
@@ -442,7 +495,7 @@ interface ReconcileContext {
   workspace: () => import('./../shared/contracts').Workspace;
 }
 export function storedReconcile(
-  db: any,
+  db: SqliteDatabase,
   context: ReconcileContext,
   edit: Edit,
   token = edit.token,
@@ -451,14 +504,18 @@ export function storedReconcile(
   targetChanged: boolean;
   workspace: import('./../shared/contracts').Workspace;
 } {
-  return db.transaction(() => {
+  return db.transaction((): ReturnType<typeof storedReconcile> => {
     const campaignId = context.guard(token, edit.campaignId);
-    const receipt = db.prepare('SELECT * FROM receipt WHERE command_id=?').get(edit.commandId);
+    const receipt = checkedQuery(db, 'SELECT * FROM receipt WHERE command_id=?', {
+      campaign_id: 'text',
+      fingerprint: 'text',
+      revision: 'integer',
+    }).get(edit.commandId);
     if (receipt && (receipt.campaign_id !== campaignId || !matchesReceipt(receipt, edit)))
       throw new Error('Änderungskennung bereits anders verwendet.');
-    const current = db
-      .prepare('SELECT revision FROM room WHERE campaign_id=? AND id=?')
-      .get(campaignId, edit.roomId);
+    const current = checkedQuery(db, 'SELECT revision FROM room WHERE campaign_id=? AND id=?', {
+      revision: 'integer',
+    }).get(campaignId, edit.roomId);
     if (!current) throw new Error('Raum nicht verfügbar.');
     const workspace = context.workspace();
     return {
@@ -478,7 +535,7 @@ interface KeepRoomDraftContext {
   guard: (token: string, campaignId?: string | undefined) => string;
 }
 export function storedKeepRoomDraft(
-  db: any,
+  db: SqliteDatabase,
   context: KeepRoomDraftContext,
   token: string,
   roomId: string,

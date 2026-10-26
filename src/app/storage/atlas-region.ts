@@ -1,3 +1,5 @@
+import { decodeAtlasBinding } from './campaign-atlas';
+import { type SqliteDatabase, checkedQuery, checkedRow } from './sqlite-connection';
 import { AtlasGeometryRaster } from './atlas-geometry-raster';
 import { AtlasReadCancelled, atlasReadCheckpoint } from './atlas-read-cancellation';
 import { AtlasDeferredGeometry } from './atlas-deferred-geometry';
@@ -62,7 +64,8 @@ import { playerObservers, playerSettings } from './player';
 import { roomGeometries } from './room-reads';
 import { readAtlasScene } from './world';
 const digest = (s: string) => createHash('sha256').update(s).digest('hex');
-const parse = (r: any) => {
+const parse = (value: unknown) => {
+  const r = checkedRow(value, { payload: 'text', checksum: 'text' });
   if (!r || digest(r.payload) !== r.checksum)
     throw new Error('Kartendaten beschädigt. Originaldaten bleiben erhalten.');
   return JSON.parse(r.payload);
@@ -186,7 +189,7 @@ export class AtlasRegionReader {
   private campaign = '';
   private count = 0;
   constructor(
-    private db: any,
+    private db: SqliteDatabase,
     shadow?: { filename: string; scopeId: string },
     projection?: AtlasProjectionIndex,
   ) {
@@ -1839,7 +1842,7 @@ interface AtlasRegionViewContext {
   workspaceShell: () => import('./../shared/contracts').WorkspaceShell;
 }
 export function storedAtlasRegionView(
-  db: any,
+  db: SqliteDatabase,
   context: AtlasRegionViewContext,
   token: string,
   region: AtlasRegionGeometry,
@@ -1867,11 +1870,11 @@ export function storedAtlasRegionView(
       withPerception && geometry.position
         ? {
             ...roomGeometries(db, cam),
-            floors: db
-              .prepare(
-                "SELECT f.id,f.scope_id scopeId,f.name,f.source_elevation elevation FROM drawing_floor f WHERE campaign_id=? AND NOT EXISTS(SELECT 1 FROM drawing_hidden h WHERE h.campaign_id=f.campaign_id AND h.id=f.id AND h.scope_id=f.scope_id AND h.kind='floor' AND h.hidden=1)",
-              )
-              .all(cam),
+            floors: checkedQuery(
+              db,
+              "SELECT f.id,f.scope_id scopeId,f.name,f.source_elevation elevation FROM drawing_floor f WHERE campaign_id=? AND NOT EXISTS(SELECT 1 FROM drawing_hidden h WHERE h.campaign_id=f.campaign_id AND h.id=f.id AND h.scope_id=f.scope_id AND h.kind='floor' AND h.hidden=1)",
+              { id: 'text', scopeId: 'text', name: 'text', elevation: 'number' },
+            ).all(cam),
             drawing: drawingView(db, cam, true),
           }
         : null;
@@ -1886,11 +1889,11 @@ export function storedAtlasRegionView(
             exact,
           )
         : null;
-    const row = db
-        .prepare(
-          "SELECT json_remove(payload,'$.cells','$.landscape') payload FROM world_record WHERE campaign_id=? AND kind='map' AND id=?",
-        )
-        .get(cam, root.map_id),
+    const row = checkedQuery(
+        db,
+        "SELECT json_remove(payload,'$.cells','$.landscape') payload FROM world_record WHERE campaign_id=? AND kind='map' AND id=?",
+        { payload: 'text' },
+      ).required(cam, root.map_id),
       terrain = JSON.parse(row.payload);
     const {
       rooms: unusedRooms,
@@ -1915,32 +1918,25 @@ export function storedAtlasRegionView(
         .prepare('SELECT * FROM atlas_binding WHERE campaign_id=? AND kind=? AND owner_id=?')
         .get(cam, owner.kind, owner.id);
       if (row && !bindings.some((b) => b.id === row.id)) {
-        const b: import('../atlas/campaign-atlas-contracts').AtlasBinding = {
-          id: row.id,
-          kind: row.kind,
-          ownerId: row.owner_id,
-          parent: row.parent,
-          parentId: row.parent_id,
-          x: row.x,
-          y: row.y,
-          angle: row.angle,
-          revision: row.revision,
-        };
+        const b = decodeAtlasBinding(row);
         if (b.parent === 'world') {
           bindings.push(b);
           frames[b.id] = { x: b.x, y: b.y, angle: b.angle };
         } else {
-          const unit = db
-              .prepare('SELECT city_id FROM city_unit WHERE campaign_id=? AND id=?')
-              .get(cam, b.parentId),
-            parent = unit
+          const unit = checkedQuery(
+              db,
+              'SELECT city_id FROM city_unit WHERE campaign_id=? AND id=?',
+              { city_id: 'text' },
+            ).get(cam, b.parentId),
+            parentRow = unit
               ? db
                   .prepare(
                     "SELECT * FROM atlas_binding WHERE campaign_id=? AND kind='city' AND owner_id=?",
                   )
                   .get(cam, unit.city_id)
               : null;
-          if (unit && parent) {
+          if (unit && parentRow) {
+            const parent = decodeAtlasBinding(parentRow);
             const site = readCitySite(db, cam, unit.city_id, b.parentId!),
               u = site.unit;
             if (u.position) {
