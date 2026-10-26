@@ -1,0 +1,154 @@
+{
+  "environment": {
+    "cpu": "Intel Pentium Gold 7505 @ 2.00GHz",
+    "physicalCores": 2,
+    "logicalCpus": 4,
+    "memoryKiB": 7657568,
+    "workspaceFilesystem": "btrfs",
+    "temporaryFilesystem": "tmpfs",
+    "node": "v22.19.0",
+    "os": "Linux x86_64",
+    "parallelism": 4
+  },
+  "measurement": "Complete npm test including preparation; same host, one before and one after run; no concurrent builds or native probes. GNU time plus external one-second /proc sampling. Per-file values are sampled lower bounds. Host pressure is system-wide, not attributed to a single test.",
+  "before": {
+    "commit": "e9dc577da7845efd6e4ba57b4dddb401aedbec99",
+    "dirty": false,
+    "node": "v22.19.0",
+    "concurrency": 4,
+    "prepareMs": 856.409201,
+    "testMs": 423712.10676199995,
+    "totalMs": 424568.51596299995,
+    "code": 0,
+    "fileCount": 408,
+    "selectionSha256": "16478b76f80e3bf3d0672a7833b1beeb1ce2114a225d2abee7e868a069aa357a",
+    "counts": {
+      "tests": 4656,
+      "pass": 4655,
+      "fail": 0,
+      "skipped": 1
+    },
+    "cpuSeconds": {
+      "User": 1354.24,
+      "System": 95.06
+    },
+    "maxRssKiB": 1176000,
+    "pressureSeconds": {
+      "cpu": {
+        "some": 160.971451,
+        "full": 0.0
+      },
+      "io": {
+        "some": 5.148063,
+        "full": 0.882072
+      },
+      "memory": {
+        "some": 1.64107,
+        "full": 0.737397
+      }
+    },
+    "filesSampledLongest": [
+      {
+        "file": ".build/tests.cjs",
+        "observedWallSeconds": 67.641
+      },
+      {
+        "file": "tests/atlas/desktop-atlas-regions.test.mjs",
+        "observedWallSeconds": 54.274
+      },
+      {
+        "file": "tests/runtime/desktop-live-moment-context.test.mjs",
+        "observedWallSeconds": 41.584
+      },
+      {
+        "file": "tests/runtime/desktop-travel-target-dom.test.mjs",
+        "observedWallSeconds": 38.93
+      },
+      {
+        "file": "tests/runtime/desktop-travel.test.mjs",
+        "observedWallSeconds": 32.669
+      },
+      {
+        "file": "tests/atlas/atlas-reference-fixture.test.mjs",
+        "observedWallSeconds": 26.15
+      }
+    ]
+  },
+  "after": {
+    "commit": "e9dc577da7845efd6e4ba57b4dddb401aedbec99",
+    "dirty": true,
+    "node": "v22.19.0",
+    "concurrency": 4,
+    "prepareMs": 788.637034,
+    "testMs": 387291.72544799995,
+    "totalMs": 388080.36248199997,
+    "code": 0,
+    "fileCount": 408,
+    "selectionSha256": "16478b76f80e3bf3d0672a7833b1beeb1ce2114a225d2abee7e868a069aa357a",
+    "counts": {
+      "tests": 4657,
+      "pass": 4656,
+      "fail": 0,
+      "skipped": 1
+    },
+    "cpuSeconds": {
+      "User": 1214.13,
+      "System": 92.85
+    },
+    "maxRssKiB": 1148276,
+    "pressureSeconds": {
+      "cpu": {
+        "some": 155.151457,
+        "full": 0.0
+      },
+      "io": {
+        "some": 4.125103,
+        "full": 0.884798
+      },
+      "memory": {
+        "some": 1.36552,
+        "full": 1.220092
+      }
+    },
+    "filesSampledLongest": [
+      {
+        "file": ".build/tests.cjs",
+        "observedWallSeconds": 55.902
+      },
+      {
+        "file": "tests/atlas/desktop-atlas-regions.test.mjs",
+        "observedWallSeconds": 49.985
+      },
+      {
+        "file": "tests/runtime/desktop-live-moment-context.test.mjs",
+        "observedWallSeconds": 39.596
+      },
+      {
+        "file": "tests/runtime/desktop-travel-target-dom.test.mjs",
+        "observedWallSeconds": 35.873
+      },
+      {
+        "file": "tests/runtime/desktop-travel.test.mjs",
+        "observedWallSeconds": 29.605
+      },
+      {
+        "file": "tests/atlas/atlas-reference-fixture.test.mjs",
+        "observedWallSeconds": 27.634
+      }
+    ]
+  },
+  "addedTopLevelTests": [
+    "complete SRD installation prepares a bounded batch and rolls back every row on failure"
+  ],
+  "sourceSha256": {
+    "src/app/storage/item-definitions.ts": "c0174e484a4b44dcb0756302841249c118efbe29dbe1811f6391c4f794b9a15b",
+    "src/app/storage/store.ts": "c67d2cd7d1cd193d45a6ff4a49aaae2a5d4d91dbd79c47725067721d0cc4de01",
+    "tests/catalog/desktop-srd-item-projection.test.mjs": "93eb3d828fb61c74a6b36c99ff89ef284f857be859e29e8c9dfa2a9453a3580f"
+  },
+  "limits": [
+    "After run is the SQL patch on e9dc577 before the release version bump.",
+    "One controlled full comparison, not a statistical latency distribution.",
+    "300-second target remains unmet.",
+    "CI hardware and times are separate from this local comparison."
+  ]
+}

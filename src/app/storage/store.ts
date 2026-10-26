@@ -492,10 +492,11 @@ export class CampaignStore {
       );
     }
     if (schema === DATA_FORMAT.schema) {
+      const findTable = this.db.prepare(
+        "SELECT 1 FROM sqlite_schema WHERE type='table' AND name=?",
+      );
       for (const table of DATA_FORMAT.tables) {
-        if (
-          !this.db.prepare("SELECT 1 FROM sqlite_schema WHERE type='table' AND name=?").get(table)
-        ) {
+        if (!findTable.get(table)) {
           const message: Record<string, string> = {
             travel_checkpoint: 'Reisecheckpoint-Speicher fehlt.',
             room_group: 'Raumgruppenspeicher fehlt.',

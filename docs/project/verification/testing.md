@@ -19,6 +19,18 @@ Dateiauswahl, Parallelität, Vorbereitung, Gesamtdauer und Ergebnis sowie
 unter vergleichbarer Last vergleichen. Ein schneller fehlgeschlagener Lauf
 erfüllt das Ziel nicht. Der erforderliche Candidate-Check bleibt vollständig.
 
+## Gemessene Initialisierungskosten
+
+Der [Vergleich vom 26.10.2026](../../reference/test-suite-costs-20261026/README.md)
+misst auf demselben Vier-Thread-Host 424,6 → 388,1 Sekunden einschließlich
+Vorbereitung, mit unveränderter Dateiauswahl und einer zusätzlichen Regression.
+Die SRD-Installation und Tabellenprüfung verwenden ihre SQL-Anweisungen nun
+innerhalb desselben Aufbaus wieder. Echte neue SQLite-Dateien, Konstruktoren,
+Validierung und Reopen bleiben erhalten. Das Ziel unter 300 Sekunden bleibt
+offen; die Evidenz beschreibt verbleibende CPU-Arbeit und Hostgrenzen.
+`python3 tools/measure-test-suite.py .build/neue-messung` zeichnet den normalen
+Gesamtlauf einschließlich Vorbereitung und Linux-Hostlast auf.
+
 ## Einzelne Abläufe prüfen
 
 `npm test -- tests/runtime/desktop-combat-switch.test.mjs` bereitet die gemeinsamen
