@@ -171,3 +171,20 @@ wurde nicht gelockert und der optionale Lauf wird nicht als bestanden gewertet.
 `npm run check` führt die vollständige Typprüfung und die drei zusätzlichen
 Umgebungsprüfungen aus; `check:repo` prüft die benannten Modulgrenzen einschließlich
 neuer zyklischer Kanten. Testzuordnungen bleiben im Capability-Katalog.
+
+Die Main-Zusammensetzungsprobe wartet auf das tatsächliche Lade-/Fehlersignal
+mit einer Zeitgrenze, nicht auf eine feste Anzahl Event-Loop-Durchläufe. Der
+Gesamtlauf nach `fd62011ae` zeigte lokal einen Startfehler nach nur 100 Durchläufen
+(55 ms); weil die Fixture ihr Cleanup erst anschließend registrierte, hielt der
+später gestartete Backup-Timer den Prozess offen. Der diagnostische Lauf wurde
+nach 525 Sekunden durch gezieltes Beenden dieses Testkindes beendet und zählt
+nicht als bestanden. Cleanup wird nun vor dem Start registriert; ein späterer
+Start nach Fixturefreigabe ist gesperrt. Zwei Regressionen prüfen verzögerte
+Bereitschaft und Aufräumen nach Startfehler. Die fachlichen IPC-/Drain-Assertions
+und der tatsächliche Main-Einstieg bleiben erhalten.
+
+Die erfolgreiche Candidate-Suite für `76703e1b4` benötigte 434 Sekunden; sie
+belegt das Ziel unter 300 Sekunden nicht. Auch breit unveränderte Tests waren
+langsamer als im vorherigen CI-Lauf. Ein einzelner Lauf erlaubt deshalb keine
+isolierte Leistungszuschreibung an die Architekturprüfung. Funktionsergebnis,
+Testbereitschaft und Laufzeitziel werden getrennt berichtet.
