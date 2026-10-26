@@ -1,3 +1,4 @@
+import { freshFixtureModule } from '../helpers/fixture-lifecycle.mjs';
 import { fixtureStore } from '../helpers/store.mjs';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -165,8 +166,7 @@ async function fixture() {
       return result;
     },
   };
-  delete require.cache[require.resolve('../../.build/world-dom.cjs')];
-  const ui = require('../../.build/world-dom.cjs');
+  const ui = freshFixtureModule(require, '../../.build/world-dom.cjs');
   ui.initWorld(
     (text) => statuses.push(text),
     async () => {

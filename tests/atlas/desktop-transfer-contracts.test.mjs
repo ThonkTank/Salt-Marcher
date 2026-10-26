@@ -253,3 +253,73 @@ for (const corruption of ['field', 'variant', 'table'])
     assert.deepEqual(readFileSync(file), original);
     assert.deepEqual(store.db.serialize(), before);
   });
+
+test('primitive transfer variants preserve exact values and reject unknown variants without reference effects', () => {
+  const record = (fields) => Object.assign(Object.create(null), fields);
+  const noReferences = {
+    reference: () => {
+      throw Error('primitive value must not collect a reference');
+    },
+    row: () => {
+      throw Error('primitive value must not transfer a row');
+    },
+  };
+  for (const [model, field, values] of [
+    ['item_definition', 'category', ['coins', 'equipment', 'trade-goods', 'magic', 'other']],
+    ['item_definition', 'attunement', ['no', 'yes', 'unspecified']],
+    ['music_state', 'status', ['paused', 'playing', 'stopped']],
+    [
+      'drawing_element',
+      'kind',
+      [
+        'object',
+        'terrain',
+        'water',
+        'path',
+        'wall',
+        'door',
+        'stairs',
+        'light',
+        'roof',
+        'text',
+        'feature',
+      ],
+    ],
+    ['drawing_element', 'state', ['open', 'closed', 'locked']],
+    ['drawing_element', 'zOffsetMeters', [0, -0, -2.5, 1000000]],
+  ]) {
+    for (const value of values)
+      assert.deepEqual(
+        transferModel(model, { [field]: value }, noReferences),
+        record({ [field]: value }),
+      );
+    for (const value of ['unknown-variant', null, false, {}, []])
+      assert.throws(
+        () => transferModel(model, { [field]: value }, noReferences),
+        (error) =>
+          error.message ===
+          `Nicht unterstützter Transferinhalt: ${model}.${field}. Originaldaten bleiben erhalten.`,
+      );
+  }
+  const references = [];
+  const c = {
+    ...noReferences,
+    reference: (value, role) => {
+      references.push([value, role]);
+      return 'copy:' + value;
+    },
+  };
+  assert.deepEqual(transferModel('drawing_element', { roomId: null }, c), record({ roomId: null }));
+  assert.deepEqual(references, []);
+  assert.deepEqual(
+    transferModel('drawing_element', { roomId: 'room' }, c),
+    record({
+      roomId: 'copy:room',
+    }),
+  );
+  assert.deepEqual(
+    references,
+    [['room', 'local']],
+    'a nonprimitive union still collects only its selected branch',
+  );
+});

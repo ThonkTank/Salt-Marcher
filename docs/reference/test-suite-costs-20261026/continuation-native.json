@@ -1,0 +1,70 @@
+{
+  "head": "a0aa36fe8dc4e079897fb61d378dcdaa72540c6c",
+  "dirty": true,
+  "profile": "/tmp/campaign-copy-ui-NKvU7U",
+  "launches": [
+    {
+      "pid": 257949,
+      "zoom": 1,
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-2927.scope",
+      "exit": {
+        "code": 0,
+        "signal": null
+      },
+      "pidAbsent": true
+    },
+    {
+      "pid": 258100,
+      "zoom": 1,
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-2927.scope",
+      "exit": {
+        "code": 0,
+        "signal": null
+      },
+      "pidAbsent": true
+    }
+  ],
+  "exits": [
+    {
+      "code": 0,
+      "signal": null
+    },
+    {
+      "code": 0,
+      "signal": null
+    }
+  ],
+  "artifactHashes": {
+    "main.cjs": "78023aaf4893744575126aaff4b179e631ddbb8acc3c6350902ae3fe365c259b",
+    "preload.cjs": "6604ea932590874aebdba5187dbb71391a3cbb7cb273a43719b807a1f4110620",
+    "ui/renderer.js": "ee4800e54a6a485de0c434dc80ab0f29a815a2bcbbb49465ddb97cf1db905d45",
+    "ui/index.html": "86ad43fe210bd1c23fab901655bec943a0e86f8b28b90a2c73444b53009527a3",
+    "ui/app.css": "9e2015b533f4e90ce23b69146408c511a9ee6e8499e6302d4bee04e268788416"
+  },
+  "observations": {
+    "runtime": {
+      "version": "0.0",
+      "electron": "44.7.0",
+      "node": "24.21.0"
+    },
+    "preview": "Kampagnenpaket importieren\n\nQuelle: Nebelmark Original\n\n1 Dungeonzeichnung \u00b7 1 Raum \u00b7 2 Wissenseintr\u00e4ge \u00b7 0 Mediendateien\n\nDie neue Kampagne l\u00e4sst sich getrennt bearbeiten. Vorhandene Kampagnen bleiben erhalten.\n\nName der neuen Kampagne\nInhalt des Pakets\n\nAbbrechen\nImportieren und \u00f6ffnen",
+    "previewFitsWidth": {
+      "right": 1065,
+      "viewport": 1280,
+      "scroll": 848,
+      "width": 848
+    },
+    "activeCampaignLabel": {
+      "right": 299.796875,
+      "viewport": 1280,
+      "scroll": 164,
+      "width": 164,
+      "hit": true
+    },
+    "activeCampaignVisible": true,
+    "normalCampaignViewRetained": true
+  },
+  "linkedNotesAndMapIndependent": true,
+  "archiveUnchanged": true,
+  "errors": []
+}
