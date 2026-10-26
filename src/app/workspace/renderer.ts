@@ -1009,8 +1009,13 @@ function showTab(selected: WorkspaceTab, restored?: number) {
   setWorldSurface(selected);
   setSessionPacketSurface(selected);
   if (campaignAtlas) {
-    if (atlasSurface) void campaignAtlas.open();
-    else if (selected !== 'live' || !campaignAtlas.liveDocked) campaignAtlas.hide();
+    if (atlasSurface) {
+      const owner = workspace,
+        request = viewRequest;
+      void campaignAtlas.open().catch((error) => {
+        if (workspace === owner && viewRequest === request) status(error.message, true);
+      });
+    } else if (selected !== 'live' || !campaignAtlas.liveDocked) campaignAtlas.hide();
   }
   for (const id of workspaceTabs) {
     el(id).hidden = atlasSurface ? true : id !== selected;
