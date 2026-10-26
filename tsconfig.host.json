@@ -1,0 +1,20 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "types": [
+      "node"
+    ],
+    "lib": [
+      "ES2022"
+    ]
+  },
+  "files": [
+    "desktop/commit-tracker.ts",
+    "desktop/store-transport.ts",
+    "desktop/atlas-write-activity.ts",
+    "desktop/update-manifest.ts",
+    "src/app/storage/sqlite-connection.ts"
+  ],
+  "include": [],
+  "exclude": []
+}

@@ -1,0 +1,16 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "types": [],
+    "lib": [
+      "ES2022"
+    ]
+  },
+  "files": [
+    "src/app/shared/editor-transition.ts",
+    "src/app/shared/commit-receipt.ts",
+    "src/app/shared/dice-formula.ts"
+  ],
+  "include": [],
+  "exclude": []
+}

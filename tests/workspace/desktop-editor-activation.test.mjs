@@ -1,41 +1,95 @@
-import { sourceFunctions } from '../helpers/source.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { buildSync } from 'esbuild';
-const source = readFileSync('src/app/workspace/renderer.ts', 'utf8');
-const activation = sourceFunctions(source, ['activate', 'drainActivation']);
-const boundaries = sourceFunctions(source, ['flushAll', 'leaveCampaign', 'leaveWorkspace']);
-buildSync({
-  stdin: {
-    resolveDir: process.cwd(),
-    loader: 'ts',
-    contents: `
-import {EditorSession} from './src/app/shared/editor-session';
-import {EditorRegistry} from './src/app/shared/editor-registry';
-export function fixture({failures=0,empty=false}={}){
- const session=new EditorSession(),controls=new Map(),main={inert:false},header={inert:false},nav={inert:false};
- const document={querySelector:id=>({main,header,nav})[id]},el=id=>{if(!controls.has(id))controls.set(id,{value:'',textContent:'',dataset:{}});return controls.get(id);};
- let workspace=empty?null:{token:'A',campaign:{id:'A',name:'A'}},activationIntent=0,queuedActivation=null,activationJob=null,activating=false,activationFailed=false;
- let allowed=true,paused=0,shellHook=null;const attempts=[],messages=[];
- if(empty)session.deactivate();
- const registry=new EditorRegistry([{id:'writer',session,flush:()=>allowed&&session.capture()(),activate:{order:0,run:()=>session.generation++},deactivate:()=>{paused++;},suspendBeforeActivation:true}]);
- const editors={flush:(reason)=>registry.flush(reason),activate:w=>registry.activate(w),deactivate:()=>registry.deactivate(),suspend:()=>registry.suspend()};
- const api={activateShell:async id=>{attempts.push(id);if(shellHook)return shellHook(id);if(failures-->0)return{ok:false,error:'held source unavailable'};return{ok:true,value:{token:id}};},workspaceInitial:async token=>({ok:true,value:{token,campaign:{id:token,name:token}}})};
- const unwrap=r=>{if(!r.ok)throw Error(r.error);return r.value;},status=(text,error)=>messages.push({text,error}),rememberView=()=>{},geometryOnly=w=>w,setWorkspaceAvailable=()=>{},setDraft=async()=>{},renderList=()=>{},updateHistory=()=>{},viewStorage={},readWorkspaceView=()=>({tab:'atlas',scrollY:0}),reopenView=async()=>{},preparationHasDrafts=()=>false,roomDraftReadFailed=false,draft=null,selected=()=>null;
- const roomEditor={setDraft,renderList,updateHistory,saved:true};
- ${boundaries}
- ${activation}
- return{activate,session,main,attempts,messages,allow:v=>allowed=v,shell:fn=>shellHook=fn,state:()=>({workspace,activationFailed,paused})};
-}`,
-  },
-  outfile: '.build/editor-activation-tests.cjs',
-  bundle: true,
-  platform: 'node',
-  format: 'cjs',
-});
-const { fixture } = createRequire(import.meta.url)('../../.build/editor-activation-tests.cjs');
+for (const [entry, name] of [
+  ['src/app/workspace/workspace-activation.ts', 'workspace-activation'],
+  ['src/app/shared/editor-session.ts', 'activation-session'],
+  ['src/app/shared/editor-registry.ts', 'activation-registry'],
+])
+  buildSync({
+    entryPoints: [entry],
+    outfile: '.build/' + name + '.cjs',
+    bundle: true,
+    platform: 'node',
+    format: 'cjs',
+  });
+const require = createRequire(import.meta.url);
+const { createWorkspaceActivation } = require('../../.build/workspace-activation.cjs');
+const { EditorSession } = require('../../.build/activation-session.cjs');
+const { EditorRegistry } = require('../../.build/activation-registry.cjs');
+function fixture({ failures = 0, empty = false } = {}) {
+  const session = new EditorSession(),
+    controls = new Map(),
+    main = { inert: false },
+    header = { inert: false },
+    nav = { inert: false };
+  const el = (id) => {
+    if (!controls.has(id)) controls.set(id, { value: '', textContent: '' });
+    return controls.get(id);
+  };
+  let workspace = empty ? null : { token: 'A', campaign: { id: 'A', name: 'A' } };
+  let allowed = true,
+    paused = 0,
+    shellHook = null;
+  const attempts = [],
+    messages = [];
+  if (empty) session.deactivate();
+  const editors = new EditorRegistry([
+    {
+      id: 'writer',
+      session,
+      flush: () => allowed && session.capture()(),
+      activate: { order: 0, run: () => session.generation++ },
+      deactivate: () => {
+        paused++;
+      },
+      suspendBeforeActivation: true,
+    },
+  ]);
+  const api = {
+    activateShell: async (id) => {
+      attempts.push(id);
+      if (shellHook) return shellHook(id);
+      if (failures-- > 0) return { ok: false, error: 'held source unavailable' };
+      return { ok: true, value: { token: id } };
+    },
+    workspaceInitial: async (token) => ({
+      ok: true,
+      value: { token, campaign: { id: token, name: token } },
+    }),
+  };
+  const activation = createWorkspaceActivation({
+    get workspace() {
+      return workspace;
+    },
+    set workspace(value) {
+      workspace = value;
+    },
+    controls: { main, header, nav },
+    el,
+    editors,
+    api,
+    roomEditor: { setDraft: async () => {}, renderList() {}, updateHistory() {}, saved: true },
+    rememberView() {},
+    geometryOnly: (w) => w,
+    setWorkspaceAvailable() {},
+    readView: () => ({ tab: 'atlas', scrollY: 0 }),
+    reopenView: async () => {},
+    preparationHasDrafts: () => false,
+    status: (text, error) => messages.push({ text, error }),
+  });
+  return {
+    activate: activation.activate,
+    session,
+    main,
+    attempts,
+    messages,
+    allow: (v) => (allowed = v),
+    shell: (fn) => (shellHook = fn),
+    state: () => ({ workspace, activationFailed: activation.failed, paused }),
+  };
+}
 const tick = () => new Promise((resolve) => setImmediate(resolve));
 test('a failed campaign load remains read-only but can retry the drained source session', async () => {
   const x = fixture({ failures: 1 }),

@@ -60,15 +60,14 @@ test('active desktop code rejects legacy through pure-code intermediaries', () =
     }).some((error) => error.includes('Active code imports historical adapter')),
   );
 });
-test('cycles terminate and pure domain imports remain allowed', () => {
-  assert.deepEqual(
-    check({
-      'src/app/workspace/renderer.ts': "import '../shared/contracts';",
-      'src/app/shared/contracts.ts': "import '../campaign/model';",
-      'src/app/campaign/model.ts': "import '../shared/contracts';",
-    }),
-    [],
-  );
+test('new cycles are rejected even when every module is pure', () => {
+  const errors = check({
+    'src/app/workspace/renderer.ts': "import '../shared/contracts';",
+    'src/app/shared/contracts.ts': "import '../campaign/model';",
+    'src/app/campaign/model.ts': "import '../shared/contracts';",
+  });
+  assert(errors.length >= 2);
+  assert(errors.every((error) => error.startsWith('New cyclic dependency:')));
 });
 
 test('presentation checks do not depend only on a UI filename suffix', () => {
@@ -89,5 +88,57 @@ test('a document payload parameter is not the browser document', () => {
         'export function refs(document: any) { return document.gmNotes; }',
     }),
     [],
+  );
+});
+
+test('explicit storage responsibility overrides the old preparation/live filename heuristic', () => {
+  assert.deepEqual(
+    check({
+      'src/app/storage/preparation.ts': "import './live';",
+      'src/app/storage/live.ts': '',
+    }),
+    [],
+  );
+});
+for (const entry of ['src/app/shared/editor-session.ts', 'src/app/storage/preparation.ts'])
+  test(`named owner rejects the combat presentation even without a UI suffix: ${entry}`, () => {
+    assert(
+      check({ [entry]: "import '../runtime/combat';", 'src/app/runtime/combat.ts': '' }).some(
+        (error) => /imports.*(capability|presentation)/.test(error),
+      ),
+    );
+  });
+test('reviewed cyclic edges may be removed but a new edge within an old component is rejected', () => {
+  const base = {
+    'src/app/atlas/path-model.ts': "import './spatial-3d';",
+    'src/app/atlas/spatial-3d.ts': "import './path-spatial';",
+    'src/app/atlas/path-spatial.ts': "import './path-model';",
+  };
+  assert.deepEqual(check(base), []);
+  assert.deepEqual(check({ ...base, 'src/app/atlas/path-model.ts': '' }), []);
+  const changed = check({
+    ...base,
+    'src/app/atlas/path-model.ts': "import './spatial-3d'; import './path-spatial';",
+  });
+  assert(changed.some((error) => error.includes('New cyclic dependency:')));
+});
+
+test('a reviewed type cycle does not authorize a new value cycle', () => {
+  const typeCycle = {
+    'src/app/shared/contracts.ts': "import type { A } from '../campaign/preparation-contracts';",
+    'src/app/campaign/preparation-contracts.ts': "import type { B } from '../shared/contracts';",
+  };
+  assert.deepEqual(check(typeCycle), []);
+  const values = Object.fromEntries(
+    Object.entries(typeCycle).map(([file, text]) => [file, text.replace('import type', 'import')]),
+  );
+  assert(check(values).some((error) => error.includes('(values)')));
+});
+
+test('an explicitly named domain owner cannot quietly acquire browser globals', () => {
+  assert(
+    check({ 'src/app/shared/editor-session.ts': "document.querySelector('main');" }).some((error) =>
+      error.includes('Domain owner uses presentation globals'),
+    ),
   );
 });

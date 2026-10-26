@@ -13,21 +13,6 @@ function parse(source) {
   return file;
 }
 
-// Run the real named coordinator in a controlled host, independently of layout.
-export function sourceFunctions(source, names) {
-  const file = parse(source);
-  return names
-    .map((name) => {
-      const matches = file.statements.filter(
-        (node) => ts.isFunctionDeclaration(node) && node.name?.text === name,
-      );
-      assert.equal(matches.length, 1, `Expected one top-level function ${name}`);
-      assert(matches[0].body, `Expected an implementation for ${name}`);
-      return matches[0].getText(file);
-    })
-    .join('\n');
-}
-
 // Replace only the requested import binding; strings, comments and calls stay intact.
 export function aliasSourceImport(source, moduleName, imported, localName) {
   const file = parse(source),

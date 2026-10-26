@@ -164,3 +164,10 @@ image`: Im nativen Screenshot bleibt die Stadtfläche leer. Das Fixture enthält
 Ob zusätzlich fehlende Raumgruppen im älteren Fixture beitragen, ist noch nicht
 abschließend geklärt. Dieser Bild-/Fixturebefund bleibt offen, die Assertion
 wurde nicht gelockert und der optionale Lauf wird nicht als bestanden gewertet.
+
+## Architekturprüfungen und Fachanschlüsse
+
+[Tests an Fachinstanzen, Zyklusgrenzen und getrennte TypeScript-Umgebungen](../architecture/test-boundaries.md) beschreiben die aktuellen Regeln und ihre Grenzen.
+`npm run check` führt die vollständige Typprüfung und die drei zusätzlichen
+Umgebungsprüfungen aus; `check:repo` prüft die benannten Modulgrenzen einschließlich
+neuer zyklischer Kanten. Testzuordnungen bleiben im Capability-Katalog.

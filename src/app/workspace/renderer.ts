@@ -90,6 +90,8 @@ import {
 import { type Result, type WorkspaceGeometry } from '../shared/contracts';
 import { createLive } from '../runtime/live';
 import { initTutorial } from './tutorial';
+import { createWorkspaceActivation } from './workspace-activation';
+import { createWorkspaceViewOpener } from './workspace-opening';
 import { initCatalog, openCatalog, openCatalogReference } from '../catalog/catalog-ui';
 import {
   activateChronicle,
@@ -148,12 +150,7 @@ function rememberView() {
     liveCombat,
   });
 }
-let activating = false,
-  activationFailed = false;
-let activationJob: Promise<void> | null = null,
-  queuedActivation: { id: string; entryCommandId?: string } | null = null;
-let activationIntent = 0,
-  campaignListRequest = 0;
+let campaignListRequest = 0;
 const status = (text: string, error = false) => {
   el('status').textContent = text;
   el('status').dataset.error = String(error);
@@ -167,13 +164,13 @@ const roomEditor = createRoomEditor(
       workspace = value;
     },
     get transitionPending() {
-      return !!activationJob;
+      return !!activation.pending;
     },
     get activating() {
-      return activating;
+      return activation.activating;
     },
     get activationFailed() {
-      return activationFailed;
+      return activation.failed;
     },
     leaveWorkspace,
     navigateRoom: (id) => campaignAtlas?.navigate('room', id),
@@ -305,13 +302,13 @@ const editors = createWorkspaceEditors({
     flush: async () => !campaignAtlas || (await campaignAtlas.flush()),
   },
   room: { session: editorSession, flush: roomEditor.flush, leave: roomEditor.leaveRoom },
-  beforeTool: () => !activating && !activationFailed && !roomEditor.loading,
+  beforeTool: () => !activation.activating && !activation.failed && !roomEditor.loading,
   gate: () => {
-    if (activating) {
+    if (activation.activating) {
       status('Kampagne wird noch geladen.');
       return false;
     }
-    if (activationFailed) return 'complete'; // Source input was drained before the failed read.
+    if (activation.failed) return 'complete'; // Source input was drained before the failed read.
     if (roomEditor.loading) {
       status('Arbeitsentwurf wird noch geprüft und geladen.');
       return false;
@@ -1023,72 +1020,45 @@ function showTab(selected: WorkspaceTab, restored?: number) {
   window.scrollTo(0, 0);
   return scrollY;
 }
-async function reopenView(
-  tab: WorkspaceTab,
-  restored?: number,
-  liveNotesTop?: number,
-  liveCombat?: boolean,
-) {
-  const owner = workspace,
-    intent = activationIntent,
-    scrollY = showTab(tab, restored),
-    request = viewRequest;
-  switch (tab) {
-    case 'live':
-      await openLive();
-      break;
-    case 'atlas':
-      // The Atlas owns its loading/error state and author-hit fence. Its first
-      // region can take much longer than opening the workspace shell; do not
-      // keep the campaign screen and all camera input inert until it arrives.
-      void campaignAtlas?.open().catch((error) => {
-        if (workspace === owner && activationIntent === intent && viewRequest === request)
-          status((error as Error).message, true);
-      });
-      break;
-    case 'groups':
+const reopenView = createWorkspaceViewOpener({
+  get owner() {
+    return workspace;
+  },
+  get intent() {
+    return activation.intent;
+  },
+  get request() {
+    return viewRequest;
+  },
+  get failed() {
+    return activation.failed;
+  },
+  show: showTab,
+  atlas: async () => {
+    await campaignAtlas?.open();
+  },
+  areas: {
+    live: () => openLive(),
+    groups: async () => {
       await openGroups();
       await openNpcs();
-      break;
-    case 'treasury':
-      await openTreasury();
-      break;
-    case 'chronicle':
-      await openChronicle();
-      break;
-    case 'catalog':
-      await openCatalog();
-      break;
-    case 'items':
-      await openItems();
-      break;
-    case 'world':
-      await openWorld();
-      break;
-    case 'music':
-      await openMusic();
-      break;
-    case 'city':
-      await openCity();
-      break;
-    case 'autonomy':
-      await openAutonomy();
-      break;
-    case 'dungeon':
-      await openDungeon();
-      break;
-    case 'preparation':
+    },
+    treasury: () => openTreasury(),
+    chronicle: () => openChronicle(),
+    catalog: () => openCatalog(),
+    items: () => openItems(),
+    world: () => openWorld(),
+    music: () => openMusic(),
+    city: () => openCity(),
+    autonomy: () => openAutonomy(),
+    dungeon: () => openDungeon(),
+    preparation: async (owner) => {
       if (owner) await ensurePreparation(owner);
-      break;
-  }
-  window.requestAnimationFrame(() => {
-    if (
-      workspace !== owner ||
-      activationIntent !== intent ||
-      viewRequest !== request ||
-      activationFailed
-    )
-      return;
+    },
+  },
+  status,
+  frame: (callback) => window.requestAnimationFrame(callback),
+  restore(tab, scrollY, liveNotesTop, liveCombat) {
     const notes =
       tab === 'live' && liveNotesTop !== undefined
         ? el('running-notes').getBoundingClientRect()
@@ -1101,8 +1071,8 @@ async function reopenView(
         notes && notes.height > 0 ? window.scrollY + notes.top - liveNotesTop! : scrollY,
       );
     rememberView();
-  });
-}
+  },
+});
 initPlayerUI(status, () => workspace, leaveWorkspace);
 async function refreshCampaignShell() {
   const list = await refreshCampaigns();
@@ -1129,7 +1099,7 @@ initCampaignManager(
     await refreshCampaignShell();
     if (id) {
       await activate(id);
-      if (!activationFailed) hideCampaignScreen();
+      if (!activation.failed) hideCampaignScreen();
     }
   },
 );
@@ -1139,13 +1109,13 @@ const unwrap = <T>(result: Result<T>): T => {
   return result.value;
 };
 async function flushAll() {
-  return !workspace || editors.flush('checkpoint');
+  return activation.leave('checkpoint');
 }
 async function leaveCampaign() {
-  return !workspace || editors.flush('campaign');
+  return activation.leave('campaign');
 }
 async function leaveWorkspace() {
-  return !workspace || editors.flush('navigation');
+  return activation.leave('navigation');
 }
 async function refreshCampaigns() {
   const request = ++campaignListRequest,
@@ -1166,88 +1136,33 @@ async function refreshCampaigns() {
   select.value = workspace?.campaign.id ?? '';
   return list;
 }
+const activation = createWorkspaceActivation({
+  get workspace() {
+    return workspace;
+  },
+  set workspace(value) {
+    workspace = value;
+  },
+  api,
+  el,
+  editors,
+  roomEditor,
+  rememberView,
+  geometryOnly,
+  setWorkspaceAvailable,
+  controls: {
+    main: document.querySelector('main')!,
+    header: document.querySelector('header')!,
+    nav: document.querySelector('nav')!,
+  },
+  readView: (id) => readWorkspaceView(viewStorage, id),
+  reopenView,
+  preparationHasDrafts,
+  status,
+});
+const activate = activation.activate;
 const workspaceContextCurrent = (token: string) =>
-  workspace?.token === token && !activationJob && !activating && !activationFailed;
-function activate(id: string, entryCommandId?: string): Promise<void> {
-  activationIntent++;
-  queuedActivation = { id, entryCommandId };
-  if (activationJob) return activationJob;
-  activationJob = drainActivation();
-  return activationJob;
-}
-async function drainActivation(): Promise<void> {
-  const main = document.querySelector('main')!,
-    header = document.querySelector('header')!,
-    nav = document.querySelector('nav')!;
-  const wasInert = main.inert;
-  main.inert = true;
-  header.inert = true;
-  nav.inert = true;
-  try {
-    // Reserve the transition before this asynchronous drain, so a second request joins it.
-    if (!queuedActivation?.entryCommandId && !(await leaveCampaign())) {
-      el<HTMLSelectElement>('campaigns').value = workspace?.campaign.id ?? '';
-      return;
-    }
-    rememberView();
-    activating = true;
-    activationFailed = false;
-    editors.suspend();
-    status('Kampagne wird geladen.');
-    while (queuedActivation !== null) {
-      const { id, entryCommandId } = queuedActivation;
-      queuedActivation = null;
-      try {
-        const shell = unwrap(
-          entryCommandId
-            ? await api.campaignCatalogShell(entryCommandId)
-            : await api.activateShell(id),
-        );
-        if (queuedActivation !== null) continue;
-        const next = unwrap(await api.workspaceInitial(shell.token));
-        if (queuedActivation !== null) continue; // A newer intent owns the forthcoming projection.
-        editors.deactivate();
-        workspace = geometryOnly(next);
-        el('campaign-header-name').textContent = next.campaign.name;
-        setWorkspaceAvailable(true);
-        el<HTMLSelectElement>('campaigns').value = id;
-        await editors.activate(next);
-        if (queuedActivation !== null) continue;
-        el('map-title').textContent = next.campaign.name;
-        el<HTMLInputElement>('search').value = '';
-        await roomEditor.setDraft();
-        if (queuedActivation !== null) continue;
-        roomEditor.renderList();
-        roomEditor.updateHistory();
-        const view = readWorkspaceView(viewStorage, next.campaign.id);
-        await reopenView(view.tab, view.scrollY, view.liveNotesTop, view.liveCombat);
-        if (queuedActivation !== null) continue;
-        if (preparationHasDrafts())
-          status('Vorbereitung enthält offene oder gesperrte Entwürfe.', true);
-        else if (roomEditor.saved) status('Gespeichert.');
-      } catch (error) {
-        if (queuedActivation !== null) continue;
-        activationFailed = true;
-        status(
-          (error as Error).message +
-            ' Die Arbeitsfläche bleibt schreibgeschützt; öffne eine Kampagne erneut.',
-          true,
-        );
-      }
-    }
-  } catch (error) {
-    // A failed source drain preserves the current editable context and its pending input.
-    if (activating) activationFailed = true;
-    status((error as Error).message + ' Kampagnenwechsel nicht abgeschlossen.', true);
-  } finally {
-    main.inert = activationFailed || (!activating && wasInert);
-    activating = false;
-    queuedActivation = null;
-    activationJob = null;
-    header.inert = false;
-    nav.inert = false;
-  }
-}
+  workspace?.token === token && !activation.pending && !activation.activating && !activation.failed;
 el('campaigns').addEventListener('change', () => {
   const id = el<HTMLSelectElement>('campaigns').value;
   if (id) void activate(id);
@@ -1264,16 +1179,16 @@ initCampaignActions({
     return workspace;
   },
   get transitionPending() {
-    return !!activationJob;
+    return !!activation.pending;
   },
   workspaceContextCurrent,
   beginIntent() {
-    const intent = ++activationIntent,
+    const intent = activation.invalidate(),
       token = workspace?.token;
-    return () => intent === activationIntent && token === workspace?.token && !activationJob;
+    return () => intent === activation.intent && token === workspace?.token && !activation.pending;
   },
   cancelIntent() {
-    activationIntent++;
+    activation.invalidate();
   },
   flushAll,
   refreshCampaigns,
@@ -1289,7 +1204,7 @@ initCommitControls(() => workspace, status);
 api.onClose(() => {
   void (async () => {
     await stopWorldPlayback();
-    await activationJob;
+    await activation.pending;
     rememberView();
     if (!workspace || (await editors.flush('close'))) {
       editors.deactivate();
@@ -1308,17 +1223,17 @@ for (const id of workspaceTabs)
 initWorkspaceNavigation();
 initCampaignScreen({
   currentCampaign: () => workspace?.campaign.id ?? null,
-  before: async () => !workspace || activationFailed || (await leaveCampaign()),
+  before: async () => !workspace || activation.failed || (await leaveCampaign()),
   changed: async () => {
     await refreshCampaignShell();
   },
   enter: async (receipt) => {
     await activate(receipt.campaignId, receipt.commandId);
-    return !activationFailed && workspace?.campaign.id === receipt.campaignId;
+    return !activation.failed && workspace?.campaign.id === receipt.campaignId;
   },
 });
 initUpdateUI(async () => {
-  await activationJob;
+  await activation.pending;
   rememberView();
   return leaveCampaign();
 });
