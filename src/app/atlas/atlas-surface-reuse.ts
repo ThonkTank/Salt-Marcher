@@ -29,7 +29,14 @@ export function reuseAtlasSurfaceTile(
     JSON.stringify(a.view) === JSON.stringify(b.view) &&
     same(a.heights, b.heights) &&
     same(a.editing?.ground, b.editing?.ground) &&
-    same(a.editing?.water, b.editing?.water)
+    same(a.editing?.water, b.editing?.water) &&
+    same(a.editing?.source?.base, b.editing?.source?.base) &&
+    (a.editing?.source?.bands.length ?? 0) === (b.editing?.source?.bands.length ?? 0) &&
+    (a.editing?.source?.bands ?? []).every(
+      (band, i) =>
+        band.pixel === b.editing?.source?.bands[i]?.pixel &&
+        same(band.heights, b.editing?.source?.bands[i]?.heights),
+    )
       ? a
       : b;
   const channels = { ...next.material.channels };

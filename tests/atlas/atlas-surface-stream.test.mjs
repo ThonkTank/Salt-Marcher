@@ -28,7 +28,15 @@ function pair(q) {
         heightOnly: true,
         fence: 'fence',
         revision: q.revision,
-        grid: { view: { columns: 65, rows: 65 }, heights: new Float32Array(65 * 65) },
+        grid: {
+          view: { columns: 65, rows: 65 },
+          heights: new Float32Array(65 * 65),
+          editing: {
+            ground: new Float32Array(65 * 65),
+            water: new Float32Array(65 * 65),
+            source: { base: new Float32Array(65 * 65), bands: [] },
+          },
+        },
       },
     },
     material: { ...identity, width: 256, height: 256, channels: emptyMaterialChannels(256 * 256) },
@@ -240,4 +248,31 @@ test('optional prefetch failure preserves the fully published viewport without a
   assert(frames.at(-1).complete);
   assert(frames.at(-1).tiles.length > 0);
   stream.dispose();
+});
+
+test('surface transport rejects missing or malformed editing scales before local authoring', async () => {
+  for (const breakSource of [
+    (p) => delete p.terrain.projection.grid.editing.source,
+    (p) => (p.terrain.projection.grid.editing.source.base = new Float32Array(1)),
+    (p) =>
+      (p.terrain.projection.grid.editing.source.bands = [
+        { pixel: 3, heights: new Float32Array(65 * 65) },
+      ]),
+  ]) {
+    const stream = new AtlasSurfaceTileStream();
+    await assert.rejects(
+      () =>
+        stream.load(
+          input,
+          async (q) => {
+            const p = pair(q);
+            breakSource(p);
+            return p;
+          },
+          () => {},
+        ),
+      /vollständige Kacheln/,
+    );
+    stream.dispose();
+  }
 });

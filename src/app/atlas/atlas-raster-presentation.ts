@@ -69,6 +69,7 @@ export class AtlasRasterPresentation implements AtlasPresentation {
   private fence = '';
   private request = '';
   private generation = 0;
+  private displayedFrame = 0;
   private style: Readonly<TerrainStyle> = DEFAULT_TERRAIN_STYLE;
   private map: AtlasDeckDrawing | null = null;
   private transient: AtlasDeckDrawing | null = null;
@@ -445,6 +446,7 @@ export class AtlasRasterPresentation implements AtlasPresentation {
     const generation = ++this.generation;
     // Retain the useful old image, but its detail flag cannot qualify the new camera.
     this.input.dataset.terrainQuality = 'overview';
+    delete this.input.dataset.terrainRendered;
     try {
       await this.creating;
       if (generation !== this.generation) return;
@@ -630,6 +632,31 @@ export class AtlasRasterPresentation implements AtlasPresentation {
       { contours: this.contours, seaLevelM: this.tiles[0]?.terrain.projection.grid.seaLevelM ?? 0 },
     );
     this.input.dataset.terrainRevision = String(this.revision);
+    // Data arrival is not a rendered frame. Bind native capture/readiness to
+    // the actual GPU completion of this exact publication and source request.
+    const frame = ++this.displayedFrame,
+      request = this.request,
+      generation = this.generation;
+    const identity = JSON.stringify({
+      frame,
+      revision: this.revision,
+      fence: this.fence,
+      quality: this.input.dataset.terrainQuality,
+    });
+    delete this.input.dataset.terrainRendered;
+    void this.surface
+      .waitForFrame()
+      .then(() => {
+        if (
+          frame === this.displayedFrame &&
+          request === this.request &&
+          generation === this.generation
+        )
+          this.input.dataset.terrainRendered = identity;
+      })
+      .catch((error) => {
+        if (generation === this.generation && this.active) this.fail(error);
+      });
   }
   private height(p: Point) {
     const tile = this.tiles.find((t) => {

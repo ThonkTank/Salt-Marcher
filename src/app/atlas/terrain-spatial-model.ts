@@ -21,7 +21,11 @@ export interface TerrainGrid {
   view: TerrainView;
   heights: Float32Array;
   seaLevelM: number;
-  editing?: { ground: Float32Array; water: Float32Array };
+  editing?: {
+    ground: Float32Array;
+    water: Float32Array;
+    source?: import('./terrain-editing-source').TerrainEditingSource;
+  };
 }
 export function validateTerrainView(v: TerrainView) {
   if (

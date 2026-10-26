@@ -309,3 +309,31 @@ test('forest-only edits patch base and detail masks without resending RGBA or mu
   delete before.projection.forest;
   assert.throws(() => applyTerrainFrame(before, delta), /Basis/);
 });
+
+test('scale-only changes survive frame transport even when total heights are identical', () => {
+  const before = tilted(1),
+    after = tilted(2),
+    n = 65 * 65;
+  before.projection.grid.editing = {
+    ground: new Float32Array(n).fill(300),
+    water: new Float32Array(n),
+    source: {
+      base: new Float32Array(n).fill(-100),
+      bands: [{ pixel: 16, heights: new Float32Array(n).fill(400) }],
+    },
+  };
+  after.projection.grid.editing = structuredClone(before.projection.grid.editing);
+  after.projection.grid.editing.source.bands = [
+    { pixel: 16, heights: new Float32Array(n).fill(250) },
+    { pixel: 2, heights: new Float32Array(n).fill(150) },
+  ];
+  const delta = terrainFrameDelta(before, after, before.target);
+  assert.equal(delta.kind, 'delta');
+  assert.equal(delta.heights.length, 0);
+  assert.equal(delta.editing.ground.length, 0);
+  assert.deepEqual(
+    applyTerrainFrame(before, structuredClone(delta)).projection.grid,
+    after.projection.grid,
+  );
+  assert.equal(before.projection.grid.editing.source.bands.length, 1);
+});

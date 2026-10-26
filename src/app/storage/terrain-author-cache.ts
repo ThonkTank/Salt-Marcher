@@ -28,7 +28,16 @@ export class TerrainAuthorCache {
     for (const { x, y, lattice } of terrainGridLayout(v).blocks) {
       const heights = new Float32Array(lattice.columns * lattice.rows),
         ground = grid.editing ? new Float32Array(heights.length) : undefined,
-        water = ground ? new Float32Array(heights.length) : undefined;
+        water = ground ? new Float32Array(heights.length) : undefined,
+        source = grid.editing?.source
+          ? {
+              base: new Float32Array(heights.length),
+              bands: grid.editing.source.bands.map((b) => ({
+                pixel: b.pixel,
+                heights: new Float32Array(heights.length),
+              })),
+            }
+          : undefined;
       for (let row = 0; row < lattice.rows; row++) {
         const start = (y + row) * v.columns + x,
           end = start + lattice.columns,
@@ -36,8 +45,14 @@ export class TerrainAuthorCache {
         heights.set(grid.heights.subarray(start, end), offset);
         ground?.set(grid.editing!.ground.subarray(start, end), offset);
         water?.set(grid.editing!.water.subarray(start, end), offset);
+        if (source) {
+          source.base.set(grid.editing!.source!.base.subarray(start, end), offset);
+          source.bands.forEach((b, i) =>
+            b.heights.set(grid.editing!.source!.bands[i]!.heights.subarray(start, end), offset),
+          );
+        }
       }
-      this.cache.seedGrid(lattice, grid.seaLevelM, heights, ground, water);
+      this.cache.seedGrid(lattice, grid.seaLevelM, heights, ground, water, undefined, source);
     }
   }
   advance(before: string, after: string, change: TerrainInvalidation) {

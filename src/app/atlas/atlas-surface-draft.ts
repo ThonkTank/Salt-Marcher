@@ -42,23 +42,30 @@ export class AtlasSurfaceDraft {
       let draft = this.heights.get(tile);
       if (!draft) {
         const g = tile.terrain.projection.grid;
-        draft = new TerrainBrushDraft({
-          ...g,
-          view: {
-            ...g.view,
-            ...this.visibility,
-            box: g.view.box,
-            rows: g.view.rows,
-            columns: g.view.columns,
+        draft = new TerrainBrushDraft(
+          {
+            ...g,
+            view: {
+              ...g.view,
+              ...this.visibility,
+              box: g.view.box,
+              rows: g.view.rows,
+              columns: g.view.columns,
+            },
           },
-        });
+          this.bases.map((t) => t.terrain.projection.grid),
+        );
         this.heights.set(tile, draft);
       }
       if (!draft.update(stroke)) return old;
       changed = true;
       const grid = {
         ...draft.grid,
-        editing: { ground: draft.ground, water: tile.terrain.projection.grid.editing!.water },
+        editing: {
+          ground: draft.ground,
+          water: tile.terrain.projection.grid.editing!.water,
+          source: draft.editingSource,
+        },
       };
       const { width, height, channels } = tile.material,
         current = old.material.channels,

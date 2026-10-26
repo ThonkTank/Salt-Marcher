@@ -1,3 +1,4 @@
+import { copyEditingBlock, type TerrainEditingSource } from '../atlas/terrain-editing-source';
 import { streamTerrainFieldSteps, type TerrainStream } from '../atlas/terrain-field-stream';
 import {
   validateTerrainView,
@@ -95,9 +96,15 @@ export function* readTerrainGridSteps(
     };
   const heights = new Float32Array(view.columns * view.rows),
     ground = new Float32Array(heights.length),
-    water = new Float32Array(heights.length);
+    water = new Float32Array(heights.length),
+    source: TerrainEditingSource = { base: new Float32Array(heights.length), bands: [] };
   for (const { x, y, lattice } of terrainGridLayout(view).blocks) {
-    let field: { surface: Float32Array; ground?: Float32Array; levels?: Float32Array };
+    let field: {
+      surface: Float32Array;
+      ground?: Float32Array;
+      levels?: Float32Array;
+      source?: TerrainEditingSource;
+    };
     if (cache)
       field = yield* cache.gridDataSteps(lattice, seaLevelM, records, checkpoint, true, maxSamples);
     else {
@@ -108,9 +115,16 @@ export function* readTerrainGridSteps(
         true,
         checkpoint,
         maxSamples,
+        true,
       );
-      field = { surface: sampled.surface!, ground: sampled.heights, levels: sampled.levels };
+      field = {
+        surface: sampled.surface!,
+        ground: sampled.heights,
+        levels: sampled.levels,
+        source: sampled.source,
+      };
     }
+    copyEditingBlock(source, field.source!, view.columns, x, y, lattice.columns, lattice.rows);
     for (let row = 0; row < lattice.rows; row++) {
       const start = row * lattice.columns,
         end = (row + 1) * lattice.columns,
@@ -121,7 +135,7 @@ export function* readTerrainGridSteps(
     }
     yield* checkpoint();
   }
-  return { view, heights, seaLevelM, editing: { ground, water } };
+  return { view, heights, seaLevelM, editing: { ground, water, source } };
 }
 
 interface AtlasHeightContext {
