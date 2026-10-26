@@ -157,6 +157,14 @@ node tools/test-desktop-player-map-reveal.mjs
 
 Native Proben verwenden isolierte, erzeugte Testkampagnen. Verglichen werden
 sichtbare Ergebnisse, erste Eingabereaktion, Folgezug, Undo/Redo und Wiederöffnung.
+Die dichte Stadtprobe `tools/test-desktop-room-reads.mjs --regions --zoom=1`
+(ebenso `--zoom=2`) erzeugt 5.000 Häuser über den gemeinsamen Fachwriter auf
+trockenem Gelände. Einzelne SQL-Hauszeilen ohne Raumgruppen, Geschosse und
+Eingangsbindungen bilden diesen Bestand nicht ab. Gebäude und Eingangsanker
+teilen das Projektionsbudget; der Regionsleser wechselt vor dessen Überschreitung
+auf begrenzte Bildgeometrie. Die Probe trennt bestätigte Rasterdaten,
+Kameramaßstab und Dachpixel im nativen Bild. Stadtpapier ist keine Weltgeometrie;
+Häuser unter zwei CSS-Pixeln werden nach der bestehenden Maßstabsregel ausgeblendet.
 Die große Mischwelt prüft Last; kleine Szenen lokalisieren Fehler. Ein Link oder
 eine Testanzahl belegt keine vollständige Produktabnahme. Tatsächliche Testdateien
 und geprüfte Abläufe stehen im gemeinsamen Capability-Katalog.

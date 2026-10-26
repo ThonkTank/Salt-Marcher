@@ -3258,3 +3258,87 @@ test('bounded visual records preserve explicit route prominence and whole author
       .every((l) => l.rank === 5),
   );
 });
+
+test('generated roofs and entrance anchors share the terrain projection budget', async (t) => {
+  const f = fixture(t, 1);
+  const write = (action) => {
+    const commandId = randomUUID();
+    if (action.command) action.command.commandId = commandId;
+    return f.store.executeAtlasCommit({
+      commandId,
+      token: f.shell.token,
+      campaignId: f.campaign.id,
+      action,
+    });
+  };
+  const cityId = write({
+    kind: 'city-create',
+    name: 'Dichte Stadt',
+    x: 50000,
+    y: 40000,
+    width: 2000,
+    height: 2000,
+  }).result.id;
+  const houses = Array.from({ length: 751 }, (_, i) => ({
+    id: 'budget-house-' + i,
+    kind: 'building',
+    name: 'Haus ' + i,
+    protected: true,
+    position: { x: (i % 100) * 12 + 10, y: Math.floor(i / 100) * 12 + 10 },
+    angle: 0,
+    outline: [
+      { x: -3, y: -3 },
+      { x: 3, y: -3 },
+      { x: 3, y: 3 },
+      { x: -3, y: 3 },
+    ],
+    use: 'Werkstatt',
+    notes: 'PRIVATE-HOUSE-' + i,
+  }));
+  write({
+    kind: 'city',
+    command: {
+      token: f.shell.token,
+      campaignId: f.campaign.id,
+      cityId,
+      expectedRevision: f.store.city(f.shell.token, cityId).header.revision,
+      action: { kind: 'change', upsert: houses, remove: [], label: 'Häuser' },
+    },
+  });
+  const read = (width) =>
+    f.read({
+      ...query({ x: 50000, y: 40000, width, height: 100 }),
+      scopeId: null,
+      width: 1200,
+      height: 100,
+    });
+  const bounded = await read(610);
+  assert.equal(bounded.coverage.mode, 'detail');
+  const view = f.store.atlasRegionView(f.shell.token, bounded);
+  const buildings = view.cities.flatMap((c) => c.units).filter((u) => u.kind === 'building');
+  assert(buildings.length > 0);
+  assert.equal(view.entrances.length, buildings.length);
+  assert(buildings.length + view.entrances.length <= 1500);
+  const dense = await read(1200);
+  assert.equal(dense.coverage.objects, 751, 'roofs alone still fit the vector budget');
+  assert.equal(dense.coverage.mode, 'raster', 'entrance anchors must trigger bounded imagery');
+  const png = require('pngjs').PNG.sync.read(
+    Buffer.from(dense.raster.data.split(',')[1], 'base64'),
+  );
+  assert(
+    png.data.some((v, i) => i % 4 === 3 && v > 0),
+    'fallback retains visible roof imagery',
+  );
+  const hit = f.reader.hit(
+    f.source,
+    {
+      ...query({ x: 50000, y: 40000, width: 1200, height: 100 }),
+      scopeId: null,
+      width: 1200,
+      height: 100,
+    },
+    { x: 50610, y: 40094 },
+  );
+  assert.equal(hit.id, 'budget-house-750');
+  assert(!JSON.stringify(dense).includes('PRIVATE-HOUSE-'));
+});

@@ -20,14 +20,20 @@ const native = await createNativeSession({
 });
 try {
   require('esbuild').buildSync({
-    entryPoints: ['src/app/storage/store.ts'],
+    stdin: {
+      contents:
+        "export { CampaignStore } from './src/app/storage/store'; export { heightRecord, TerrainSampler } from './src/app/atlas/terrain-height';",
+      resolveDir: root,
+    },
     outfile: '.build/room-native-store.cjs',
     bundle: true,
     platform: 'node',
     format: 'cjs',
     external: ['better-sqlite3'],
   });
-  const { CampaignStore } = require(root + '/.build/room-native-store.cjs');
+  const { CampaignStore, heightRecord, TerrainSampler } = require(
+    root + '/.build/room-native-store.cjs',
+  );
 
   const profile = native.profile,
     file = profile + '/workbench.sqlite',
@@ -64,7 +70,26 @@ try {
   store.tutorial('skipped');
   store.db.prepare("INSERT INTO drawing_hidden VALUES(?,'hidden','local','floor',1,1)").run(cam.id);
   let cityId = null,
-    sceneId = null;
+    sceneId = null,
+    cityFixture = null;
+  const citySnapshot = (store) => {
+    const facts = Object.fromEntries(
+      ['room_group', 'drawing_floor', 'drawing_element', 'atlas_binding', 'atlas_entrance'].map(
+        (table) => [table, store.db.prepare('SELECT * FROM ' + table + ' ORDER BY rowid').all()],
+      ),
+    );
+    facts.rooms = store.db
+      .prepare("SELECT * FROM room WHERE scope_id LIKE 'building-%' ORDER BY id")
+      .all();
+    facts.units = store.db
+      .prepare('SELECT payload FROM city_unit ORDER BY id')
+      .all()
+      .map(({ payload }) => {
+        const { name, terrain, ...unit } = JSON.parse(payload);
+        return { ...unit, terrain: terrain ?? { mode: 'ground', offsetM: 0, wallM: 3, roofM: 2 } };
+      });
+    return createHash('sha256').update(JSON.stringify(facts)).digest('hex');
+  };
   if (spatial) {
     const token = store.activateShell(cam.id).token,
       ack = store.executeAtlasCommit({
@@ -81,43 +106,97 @@ try {
         },
       });
     cityId = ack.result.id;
-    store.db.transaction(() => {
-      for (let i = 0; i < 5000; i++) {
-        const unit = {
-            id: 'building-' + i,
-            kind: 'building',
-            name: 'Haus ' + i,
-            protected: true,
-            position: { x: (i % 100) * 12 + 10, y: Math.floor(i / 100) * 12 + 10 },
-            angle: 0,
-            outline: [
-              { x: -3, y: -3 },
-              { x: 3, y: -3 },
-              { x: 3, y: 3 },
-              { x: -3, y: 3 },
-            ],
-            notes: 'PRIVATE-HOUSE-' + i + '\r\n' + 'Stadtnotiz '.repeat(400),
-            recipe: { seed: 'keep-seed', algorithm: 'street-infill-v1' },
-            externalExtension: { keep: 'yes' },
-            use: 'Werkstatt',
-            residentIds: [],
-            workerIds: [],
-            households: [],
-            jobs: [],
+    // The empty Atlas is seabed (-100 m). This city workflow needs dry land,
+    // including the pre-existing room fixture; do not test submerged floor imagery.
+    for (let y = -1; y < 1; y++)
+      for (let x = -1; x < 1; x++)
+        store.executeAtlasCommit({
+          commandId: randomUUID(),
+          token,
+          campaignId: cam.id,
+          action: {
+            kind: 'landscape-put',
+            expectedRevision: null,
+            record: heightRecord(x * 131072, y * 131072, 2048, new Float32Array(4096).fill(20)),
           },
-          payload = JSON.stringify(unit);
-        store.db
-          .prepare('INSERT INTO city_unit VALUES(?,?,?,?,?,?)')
-          .run(
-            cam.id,
-            cityId,
-            unit.id,
-            unit.kind,
-            payload,
-            createHash('sha256').update(payload).digest('hex'),
-          );
-      }
-    })();
+        });
+    const units = [];
+    for (let i = 0; i < 5000; i++) {
+      const unit = {
+        id: 'building-' + i,
+        kind: 'building',
+        name: 'Haus ' + i,
+        protected: true,
+        position: { x: (i % 100) * 12 + 10, y: Math.floor(i / 100) * 12 + 10 },
+        angle: 0,
+        outline: [
+          { x: -3, y: -3 },
+          { x: 3, y: -3 },
+          { x: 3, y: 3 },
+          { x: -3, y: 3 },
+        ],
+        notes: 'PRIVATE-HOUSE-' + i + '\r\n' + 'Stadtnotiz '.repeat(400),
+        recipe: { seed: 'keep-seed', algorithm: 'street-infill-v1' },
+        externalExtension: { keep: 'yes' },
+        use: 'Werkstatt',
+        residentIds: [],
+        workerIds: [],
+        households: [],
+        jobs: [],
+      };
+      units.push(unit);
+    }
+    const commandId = randomUUID();
+    store.executeAtlasCommit({
+      commandId,
+      token,
+      campaignId: cam.id,
+      action: {
+        kind: 'city',
+        command: {
+          commandId,
+          token,
+          campaignId: cam.id,
+          cityId,
+          expectedRevision: store.city(token, cityId).header.revision,
+          action: { kind: 'change', upsert: units, remove: [], label: 'Dichte gültige Stadt' },
+        },
+      },
+    });
+    const counts = Object.fromEntries(
+      ['room_group', 'drawing_floor', 'atlas_entrance'].map((table) => [
+        table,
+        store.db.prepare('SELECT count(*) n FROM ' + table).get().n,
+      ]),
+    );
+    assert.equal(counts.room_group, 5000);
+    assert.equal(counts.atlas_entrance, 5000);
+    assert(counts.drawing_floor >= 5000);
+    assert.equal(
+      store.db.prepare("SELECT count(*) n FROM atlas_binding WHERE parent='building'").get().n,
+      5000,
+    );
+    for (const row of store.db.prepare('SELECT payload FROM city_unit').all()) {
+      const unit = JSON.parse(row.payload),
+        original = units.find((u) => u.id === unit.id);
+      assert.equal(unit.groupId, unit.id);
+      assert(unit.interior && unit.footprint.length);
+      for (const key of ['id', 'position', 'notes', 'recipe', 'externalExtension'])
+        assert.deepEqual(unit[key], original[key]);
+    }
+    const sampler = new TerrainSampler(
+      store.db
+        .prepare('SELECT payload FROM atlas_landscape')
+        .all()
+        .map((r) => JSON.parse(r.payload)),
+    );
+    const heights = [
+      { x: 50010, y: 40010 },
+      { x: 51198, y: 40598 },
+      { x: 19995.6, y: 0.6 },
+    ].map((p) => sampler.sample(p).heightM);
+    assert(heights.every((height) => height > sampler.seaLevelM));
+    cityFixture = { counts, heights, seaLevelM: sampler.seaLevelM, snapshot: citySnapshot(store) };
     const command = (action) => ({ commandId: randomUUID(), token, campaignId: cam.id, action }),
       character = store.executeLive(
         command({ kind: 'create-character', profile: { name: 'Iri', speedFeet: 30 } }),
@@ -141,7 +220,7 @@ try {
   store.close();
   let app;
   const errors = native.errors,
-    results = { profile, campaignId: cam.id, longId, launches: native.launches };
+    results = { cityFixture, profile, campaignId: cam.id, longId, launches: native.launches };
   async function launch() {
     const page = await native.launch(zoom);
     app = native.app;
@@ -181,41 +260,6 @@ try {
       }
       window.scrollBy({ top, behavior: 'instant' });
     });
-  }
-  async function dragHouse(page, position) {
-    const point = await atlasCanvasPoint(page, { x: 50000 + position.x, y: 40000 + position.y });
-    assert.equal(point.target, 'campaign-map', 'The native pointer must reach the visible Canvas');
-    await page.evaluate(() => {
-      window.__roomPointer = null;
-      document.addEventListener(
-        'pointermove',
-        (e) => (window.__roomPointer = { x: e.clientX, y: e.clientY, target: e.target.id }),
-        { capture: true },
-      );
-    });
-    await page.mouse.move(point.x - 1, point.y - 1);
-    await page.mouse.move(point.x, point.y);
-    let actual = await page.evaluate(() => window.__roomPointer),
-      factor = 1;
-    if (!actual || Math.hypot(actual.x - point.x, actual.y - point.y) > 2) {
-      factor = zoom;
-      await page.mouse.move(point.x * factor, point.y * factor);
-      actual = await page.evaluate(() => window.__roomPointer);
-    }
-    results.pointer = {
-      requested: point,
-      observed: actual,
-      factor,
-      expectedDelta: { x: 20 * point.unitsPerPixel, y: 10 * point.unitsPerPixel },
-    };
-    assert(
-      actual &&
-        Math.hypot(actual.x - point.x, actual.y - point.y) <= 2 &&
-        actual.target === 'campaign-map',
-    );
-    await page.mouse.down();
-    await page.mouse.move((point.x + 20) * factor, (point.y + 10) * factor, { steps: 5 });
-    await page.mouse.up();
   }
   async function finish() {
     await native.close();
@@ -284,6 +328,8 @@ try {
           )
             throw new Error('Legacy full read forbidden in probe');
           const value = await previous(event, ...args);
+          if (name === 'atlas:geometry-region' && value.ok)
+            global.__denseRegion = value.value.region;
           const text = JSON.stringify(value);
           global.__roomProbe.responses.push({
             name,
@@ -520,12 +566,9 @@ try {
         document.querySelector('#campaign-atlas').dataset.regionState === 'ready' &&
         document.querySelector('#campaign-map').dataset.canvasState === 'loaded',
     );
-    await dragHouse(page, site.value.unit.position);
-    await page.waitForFunction(
-      () => document.querySelector('#atlas-save-status').textContent === 'Gespeichert',
-      null,
-      { timeout: 30000 },
-    );
+    await page.locator('#atlas-units').selectOption('metric');
+    await page.locator('#city-x').fill(String(site.value.unit.position.x + 2));
+    await page.locator('#city-unit-name').click();
     await waitForHouse(
       page,
       token,
@@ -541,21 +584,14 @@ try {
     for (const axis of ['x', 'y'])
       assert(
         Math.abs(
-          moved.value.unit.position[axis] -
-            site.value.unit.position[axis] -
-            results.pointer.expectedDelta[axis],
+          moved.value.unit.position[axis] - site.value.unit.position[axis] - { x: 2, y: 0 }[axis],
         ) < 0.03,
-        'House movement follows the displayed meter scale at ' + zoom + '× zoom',
+        'House inspector movement follows the displayed meter scale at ' + zoom + '× zoom',
       );
     assert.equal(moved.value.unit.notes, site.value.unit.notes);
     assert.deepEqual(moved.value.unit.recipe, site.value.unit.recipe);
     assert.deepEqual(moved.value.unit.externalExtension, { keep: 'yes' });
     await page.locator('#atlas-undo').click();
-    await page.waitForFunction(
-      () => document.querySelector('#atlas-save-status').textContent === 'Gespeichert',
-      null,
-      { timeout: 30000 },
-    );
     await waitForHouse(
       page,
       token,
@@ -575,7 +611,14 @@ try {
       y: 40000 + site.value.unit.position.y,
     });
     await page.mouse.move(center.x, center.y);
-    for (let i = 0; i < 24; i++) await page.mouse.wheel(0, 100);
+    // Six-metre houses must remain above the existing two-CSS-pixel cutoff.
+    // Zoom to 2.5 m/CSS pixel at either UI scale instead of overshooting it.
+    let logarithmicZoom = Math.log(2.5 / center.unitsPerPixel);
+    while (Math.abs(logarithmicZoom) > 1e-8) {
+      const step = Math.max(-1, Math.min(1, logarithmicZoom));
+      await page.mouse.wheel(0, step / 0.002);
+      logarithmicZoom -= step;
+    }
     await page.waitForFunction(
       () =>
         document.querySelector('#campaign-atlas').dataset.regionState === 'ready' &&
@@ -583,29 +626,170 @@ try {
       null,
       { timeout: 60000 },
     );
+    await atlasCanvasReady(page);
+    await page.waitForFunction(
+      () =>
+        document.querySelector('#campaign-map').dataset.terrainQuality === 'detail' &&
+        document.querySelector('#campaign-map').dataset.terrainReady === 'ready',
+      null,
+      { timeout: 60000 },
+    );
     await scrollVisible(page.locator('#campaign-map'));
+    results.denseReadiness = await page.evaluate(() => ({
+      regionState: document.querySelector('#campaign-atlas').dataset.regionState,
+      canvas: { ...document.querySelector('#campaign-map').dataset },
+      width: innerWidth,
+      height: innerHeight,
+    }));
+    const denseRegion = await app.evaluate(() => global.__denseRegion);
+    assert(denseRegion.coverage.complete && denseRegion.coverage.mode === 'raster');
+    assert.equal(denseRegion.revision, Number(results.denseReadiness.canvas.atlasRegionRevision));
+    results.denseSource = {
+      revision: denseRegion.revision,
+      coverage: denseRegion.coverage,
+      box: denseRegion.raster.box,
+    };
+    const sourcePng = require('pngjs').PNG.sync.read(
+      Buffer.from(denseRegion.raster.data.split(',')[1], 'base64'),
+    );
+    assert(
+      sourcePng.data.some((v, i) => i % 4 === 3 && v > 0),
+      'Confirmed dense data contains roof pixels',
+    );
     await capture(page, output + '/dense-region.png');
-    const denseImage = require('pngjs').PNG.sync.read(await readFile(output + '/dense-region.png')),
-      paper = [1, 3, 5].map((i) => parseInt(site.value.header.paper.slice(i, i + 2), 16));
-    let paperPixels = 0;
-    for (let i = 0; i < denseImage.data.length; i += 4)
-      if (paper.every((v, c) => Math.abs(denseImage.data[i + c] - v) < 2)) paperPixels++;
-    assert(paperPixels > 100, 'Actual native screen paints the dense geometry image');
-    results.denseRasterPixels = paperPixels;
+    const denseImage = require('pngjs').PNG.sync.read(await readFile(output + '/dense-region.png'));
+    results.denseSamples = [];
+    const visible = await page.evaluate(() => {
+      const canvas = document.querySelector('#campaign-map'),
+        r = canvas.getBoundingClientRect(),
+        view = JSON.parse(canvas.dataset.atlasView);
+      const scale = Math.min(canvas.clientWidth / view.width, canvas.clientHeight / view.height);
+      const points = Array.from({ length: 5000 }, (_, index) => ({
+        index,
+        x:
+          r.x +
+          (canvas.clientWidth - view.width * scale) / 2 +
+          (50010 + (index % 100) * 12 - view.x) * scale,
+        y:
+          r.y +
+          (canvas.clientHeight - view.height * scale) / 2 +
+          (40010 + Math.floor(index / 100) * 12 - view.y) * scale,
+      })).filter(
+        (p) =>
+          p.x > r.left + 10 &&
+          p.x < r.right - 10 &&
+          p.y > r.top + 10 &&
+          p.y < Math.min(r.bottom, innerHeight) - 10 &&
+          document.elementFromPoint(p.x, p.y) === canvas,
+      );
+      return {
+        mpp: 1 / scale,
+        view,
+        rect: { x: r.x, y: r.y, width: canvas.clientWidth, height: canvas.clientHeight },
+        points: [0, 1 / 3, 2 / 3, 1].map((f) => points[Math.floor((points.length - 1) * f)]),
+      };
+    });
+    assert(Math.abs(visible.mpp - 2.5) < 0.01, 'Dense camera retains readable six-metre houses');
+    const scaleX = denseImage.width / results.denseReadiness.width,
+      scaleY = denseImage.height / results.denseReadiness.height;
+    const worldAt = (x, y) => ({
+      x: visible.view.x + (x / scaleX - visible.rect.x) * visible.mpp,
+      y: visible.view.y + (y / scaleY - visible.rect.y) * visible.mpp,
+    });
+    const sourceAt = (world) => {
+      const box = denseRegion.raster.box,
+        x = Math.floor(((world.x - box.x) / box.width) * sourcePng.width),
+        y = Math.floor(((world.y - box.y) / box.height) * sourcePng.height);
+      return x >= 0 && y >= 0 && x < sourcePng.width && y < sourcePng.height
+        ? (y * sourcePng.width + x) * 4
+        : -1;
+    };
+    // Flat, dry terrain is the control. Count changed native pixels only where
+    // the confirmed raster contains roof coverage; alpha-blended roofs need not
+    // have the uncomposited source RGB. Labels elsewhere cannot satisfy this.
+    const groundPoint = await atlasCanvasPoint(page, { x: 51198, y: 40998 }, false);
+    assert.equal(groundPoint.target, 'campaign-map');
+    const groundOffset =
+      (Math.round(groundPoint.y * scaleY) * denseImage.width + Math.round(groundPoint.x * scaleX)) *
+      4;
+    const ground = [...denseImage.data.slice(groundOffset, groundOffset + 3)];
+    const groundSource = sourceAt({ x: 51198, y: 40998 });
+    assert(
+      groundSource >= 0 && sourcePng.data[groundSource + 3] === 0,
+      'Control is outside roof imagery',
+    );
+    const roof = [1, 3, 5].map((i) => parseInt(site.value.header.roof.slice(i, i + 2), 16));
+    const roofPixel = (x, y) => {
+      if (
+        x / scaleX <= visible.rect.x ||
+        x / scaleX >= visible.rect.x + visible.rect.width ||
+        y / scaleY <= visible.rect.y ||
+        y / scaleY >= visible.rect.y + visible.rect.height
+      )
+        return false;
+      const source = sourceAt(worldAt(x, y)),
+        offset = (y * denseImage.width + x) * 4;
+      return (
+        source >= 0 &&
+        sourcePng.data[source + 3] > 0 &&
+        roof.every((v, c) => Math.abs(sourcePng.data[source + c] - v) < 2) &&
+        ground.some((v, c) => Math.abs(denseImage.data[offset + c] - v) > 2)
+      );
+    };
+    let roofPixels = 0;
+    for (let y = 0; y < denseImage.height; y++)
+      for (let x = 0; x < denseImage.width; x++) if (roofPixel(x, y)) roofPixels++;
+    assert(roofPixels > 100, 'Actual native screen paints the dense geometry image');
+    results.denseRasterPixels = roofPixels;
+
+    for (const point of visible.points) {
+      assert(point, 'Dense city has visible house positions');
+      const scaleX = denseImage.width / results.denseReadiness.width,
+        scaleY = denseImage.height / results.denseReadiness.height;
+      const sx = Math.round(point.x * scaleX),
+        sy = Math.round(point.y * scaleY);
+      const radius = Math.ceil(
+        (denseRegion.raster.box.width / sourcePng.width / visible.mpp) * Math.max(scaleX, scaleY),
+      );
+      let pixels = 0;
+      for (let y = Math.max(0, sy - radius); y <= Math.min(denseImage.height - 1, sy + radius); y++)
+        for (
+          let x = Math.max(0, sx - radius);
+          x <= Math.min(denseImage.width - 1, sx + radius);
+          x++
+        ) {
+          if (roofPixel(x, y)) pixels++;
+        }
+      results.denseSamples.push({ id: 'building-' + point.index, sx, sy, radius, pixels });
+      assert(pixels > 0, 'Roof pixels at projected house building-' + point.index);
+    }
+    await writeFile(
+      output + '/dense-evidence.json',
+      JSON.stringify(
+        {
+          source: results.denseSource,
+          readiness: results.denseReadiness,
+          roofPixels,
+          samples: results.denseSamples,
+        },
+        null,
+        2,
+      ),
+    );
     const hitPoint = await atlasCanvasPoint(page, {
-      x: 50000 + site.value.unit.position.x,
-      y: 40000 + site.value.unit.position.y,
+      x: 50010 + 98 * 12,
+      y: 40010 + 48 * 12,
     });
     await page.mouse.click(hitPoint.x, hitPoint.y);
     await page.waitForFunction(
       () =>
         document.querySelector('#campaign-atlas').dataset.regionState === 'ready' &&
         !document.querySelector('#atlas-hint').textContent.startsWith('Dichte Kartengeometrie') &&
-        document.querySelector('#city-unit-name').value === 'Korrigierte Werkstatt',
+        document.querySelector('#city-unit-name').value === 'Haus 4898',
       null,
       { timeout: 60000 },
     );
-    results.exactRasterHit = true;
+    results.exactRasterHit = 'building-4898';
     await capture(page, output + '/city-region.png');
     await page.locator('#atlas-search').fill('Geänderte Spur');
     await page.locator('#atlas-search-results button').filter({ hasText: '4000' }).click();
@@ -787,6 +971,18 @@ try {
       .payload,
     '{broken',
   );
+  if (spatial) {
+    assert.equal(
+      citySnapshot(verify),
+      cityFixture.snapshot,
+      'Fresh preserves every house, group, floor, binding, geometry and private text after move/undo',
+    );
+    const unit = JSON.parse(
+      verify.db.prepare("SELECT payload FROM city_unit WHERE id='building-4999'").get().payload,
+    );
+    assert.equal(unit.name, 'Korrigierte Werkstatt');
+    results.freshPreservesCity = true;
+  }
   verify.close();
   results.damagedBytesPreserved = true;
   results.errors = errors;
