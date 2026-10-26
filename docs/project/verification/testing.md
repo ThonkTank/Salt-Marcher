@@ -188,6 +188,11 @@ Gelände-/Objektprojektion gehen und deren Fehlerzustand verriegeln.
 `tests/atlas/atlas-presentation-source.test.mjs` prüft beide Lesewege und die
 Wiederaufnahme mit neuer bestätigter Quelle.
 
+Der parallel gestartete Atlas beim Bereichswechsel behandelt abgewiesene
+Leseantworten über den Status des noch aktuellen Arbeitsbereichs. Auch die
+reguläre Schließsperre darf dabei keinen unbehandelten Promise-Fehler erzeugen.
+Die native Raumlese-Probe behält ihre Fehler- und Prozessabschlussprüfungen.
+
 Die Probe setzt die Maßeinheit vor Koordinateneingaben ausdrücklich auf Meter.
 Hausbewegung erfolgt über den Inspektor; Undo und frischer Prozess müssen alle
 Gebäude-, Raumgruppen-, Geschoss-, Bindungs-, Geometrie- und privaten Textdaten
