@@ -1,0 +1,701 @@
+{
+  "baseCommit": "822fab25172ecaf207e1cee26368619e96cb2ef3",
+  "fullDiagnostic": {
+    "files": 234,
+    "meta": {
+      "connections": 5259,
+      "closed": 5257,
+      "active": 2,
+      "scopeCount": 115142,
+      "overflow": 301976,
+      "constructorSeconds": 6.192349869999999,
+      "constructorErrors": 0,
+      "measuredProbeOverheadSeconds": 286.569979016
+    },
+    "totals": {
+      "prepares": 3137781,
+      "executes": 8546329,
+      "prepareNs": 142462344033,
+      "executeNs": 254672026925,
+      "errors": 186,
+      "duplicatePreparesWithinConnection": 1888744,
+      "duplicatePreparesWithinScope": 1296614
+    },
+    "topQueries": [
+      {
+        "hash": "36ea0eed0ba8e16324d4b090d7d7e0a78e6525f459c375a91c70c72da455e611",
+        "kind": "SELECT",
+        "prepares": 306147,
+        "executes": 989717,
+        "prepareNs": 12176828937,
+        "executeNs": 8906534814,
+        "duplicatePreparesWithinConnection": 300636,
+        "duplicatePreparesWithinScope": 243051,
+        "maxPreparesPerConnection": 1188,
+        "maxPreparesPerScope": 416,
+        "fileCount": 214,
+        "ownerExamples": [
+          [
+            "    at readItemDefinition (.build/test-shared/store.cjs:23564:67) <-     at validateItemsBackup (.build/test-shared/store.cjs:33967:5) <-     at validateDatabase (.build/test-shared/store.cjs:53601:3) <-     at CampaignStore.inspectCampaignDatabase (.build/test-shared/store.cjs:60557:5)",
+            1321398873
+          ],
+          [
+            "    at readItemDefinition (.build/test-shared/store.cjs:23564:67) <-     at validateItemsBackup (.build/test-shared/store.cjs:33967:5) <-     at validateDatabase (.build/test-shared/store.cjs:53601:3) <-     at CampaignStore.acceptCampaignSnapshot (.build/test-shared/store.cjs:60618:7)",
+            1157772351
+          ]
+        ]
+      },
+      {
+        "hash": "2767be42426482f094d2bbd48ce87f406012915c26a68dbcce3bccbd1e305954",
+        "kind": "SELECT",
+        "prepares": 305380,
+        "executes": 989538,
+        "prepareNs": 11958507036,
+        "executeNs": 8921413321,
+        "duplicatePreparesWithinConnection": 300712,
+        "duplicatePreparesWithinScope": 243494,
+        "maxPreparesPerConnection": 1188,
+        "maxPreparesPerScope": 416,
+        "fileCount": 214,
+        "ownerExamples": [
+          [
+            "    at readItemDefinition (.build/test-shared/store.cjs:23562:19) <-     at validateItemsBackup (.build/test-shared/store.cjs:33967:5) <-     at validateDatabase (.build/test-shared/store.cjs:53601:3) <-     at CampaignStore.inspectCampaignDatabase (.build/test-shared/store.cjs:60557:5)",
+            1326275404
+          ],
+          [
+            "    at readItemDefinition (.build/test-shared/store.cjs:23562:19) <-     at validateItemsBackup (.build/test-shared/store.cjs:33967:5) <-     at validateDatabase (.build/test-shared/store.cjs:53601:3) <-     at CampaignStore.acceptCampaignSnapshot (.build/test-shared/store.cjs:60618:7)",
+            1122453378
+          ]
+        ]
+      },
+      {
+        "hash": "867ececdb38bfd41d15e8e6981d18d02bcff7838eaca6c78de387c2a953bf7fe",
+        "kind": "SELECT",
+        "prepares": 176514,
+        "executes": 176514,
+        "prepareNs": 6113379699,
+        "executeNs": 9239216797,
+        "duplicatePreparesWithinConnection": 175571,
+        "duplicatePreparesWithinScope": 171495,
+        "maxPreparesPerConnection": 372,
+        "maxPreparesPerScope": 186,
+        "fileCount": 77,
+        "ownerExamples": [
+          [
+            "    at .build/test-shared/store.cjs:50850:17 <-     at Array.map (<anonymous>) <-     at tableInfo (.build/test-shared/store.cjs:50848:11) <-     at snapshotCounts (.build/test-shared/store.cjs:50889:10) <-     at CampaignStore.inspectCampaignDatabase (.build/test-shared/store.cjs:60567:15)",
+            651028276
+          ],
+          [
+            "    at .build/test-shared/store.cjs:50850:17 <-     at Array.map (<anonymous>) <-     at tableInfo (.build/test-shared/store.cjs:50848:11) <-     at publishSnapshot (.build/test-shared/store.cjs:51066:19) <-     at CampaignStore.acceptCampaignSnapshot (.build/test-shared/store.cjs:60619:14)",
+            649165788
+          ]
+        ]
+      },
+      {
+        "hash": "f987ea78de8d64c24d42de793a5ca76b1e3860b1d82e709223c26574878c2307",
+        "kind": "SELECT",
+        "prepares": 139046,
+        "executes": 139046,
+        "prepareNs": 4440370608,
+        "executeNs": 6949707292,
+        "duplicatePreparesWithinConnection": 138318,
+        "duplicatePreparesWithinScope": 134898,
+        "maxPreparesPerConnection": 192,
+        "maxPreparesPerScope": 192,
+        "fileCount": 86,
+        "ownerExamples": [
+          [
+            "    at validateDatabase (.build/test-shared/store.cjs:53619:25) <-     at CampaignStore.inspectCampaignDatabase (.build/test-shared/store.cjs:60557:5) <-     at CampaignStore.acceptCampaignSnapshot (.build/test-shared/store.cjs:60606:22)",
+            628969306
+          ],
+          [
+            "    at validateDatabase (.build/test-shared/store.cjs:53619:25) <-     at validateBackupCandidate (.build/test-shared/store.cjs:53633:5) <-     at CampaignStore.backup (.build/test-shared/store.cjs:59623:12) <-     at async TestContext.<anonymous> (file://tests/runtime/desktop-restock-journey.test.mjs:453:7)",
+            112686070
+          ]
+        ]
+      },
+      {
+        "hash": "fbea71c72c4a57d47a7355ab2821b13beb57c4193c5bf8ee52ecef7bbebc72bd",
+        "kind": "SELECT",
+        "prepares": 122815,
+        "executes": 122815,
+        "prepareNs": 4342530039,
+        "executeNs": 6607514541,
+        "duplicatePreparesWithinConnection": 122171,
+        "duplicatePreparesWithinScope": 119320,
+        "maxPreparesPerConnection": 191,
+        "maxPreparesPerScope": 191,
+        "fileCount": 77,
+        "ownerExamples": [
+          [
+            "    at assertTransferCoverage (.build/test-shared/store.cjs:10744:25) <-     at validateTransferSnapshot (.build/test-shared/store.cjs:10844:3) <-     at CampaignStore.inspectCampaignDatabase (.build/test-shared/store.cjs:60563:5) <-     at CampaignStore.acceptCampaignSnapshot (.build/test-shared/store.cjs:60606:22)",
+            681793727
+          ],
+          [
+            "    at assertTransferCoverage (.build/test-shared/store.cjs:10744:25) <-     at validateTransferSnapshot (.build/test-shared/store.cjs:10844:3) <-     at CampaignStore.campaignSnapshot (.build/test-shared/store.cjs:60520:9) <-     at async TestContext.<anonymous> (file://tests/catalog/desktop-session-retention.test.mjs:151:5)",
+            49325513
+          ]
+        ]
+      },
+      {
+        "hash": "28cf1545fbc3dfdeef08d9699d1e0be0980743b4b85f74bdb7d5d7ddffffc75a",
+        "kind": "SELECT",
+        "prepares": 58747,
+        "executes": 58747,
+        "prepareNs": 3012080982,
+        "executeNs": 1991352236,
+        "duplicatePreparesWithinConnection": 25414,
+        "duplicatePreparesWithinScope": 12,
+        "maxPreparesPerConnection": 2005,
+        "maxPreparesPerScope": 2,
+        "fileCount": 207,
+        "ownerExamples": [
+          [
+            "    at CampaignStore.guard (.build/test-shared/store.cjs:59441:18) <-     at .build/test-shared/store.cjs:58668:34 <-     at sqliteTransaction (node_modules/better-sqlite3/lib/methods/transaction.js:65:24) <-     at storedPreparation (.build/test-shared/store.cjs:58734:5)",
+            235900736
+          ],
+          [
+            "    at CampaignStore.guard (.build/test-shared/store.cjs:59441:18) <-     at Object.guard (.build/test-shared/store.cjs:60859:16) <-     at .build/test-shared/store.cjs:43614:13 <-     at Function.<anonymous> (.build/test-shared/store.cjs:42954:5)",
+            223212247
+          ]
+        ]
+      },
+      {
+        "hash": "1c71fa059951518898a21480d538de4af498b7c987a15f378277c76e3f45559d",
+        "kind": "INSERT",
+        "prepares": 31172,
+        "executes": 32452,
+        "prepareNs": 2434882642,
+        "executeNs": 1288653608,
+        "duplicatePreparesWithinConnection": 30787,
+        "duplicatePreparesWithinScope": 30780,
+        "maxPreparesPerConnection": 5000,
+        "maxPreparesPerScope": 5000,
+        "fileCount": 43,
+        "ownerExamples": [
+          [
+            "    at CampaignStore.insertRoom (.build/test-shared/store.cjs:59404:13) <-     at Function.<anonymous> (.build/test-shared/store.cjs:51509:16) <-     at Function.sqliteTransaction (node_modules/better-sqlite3/lib/methods/transaction.js:65:24) <-     at storedCreate (.build/test-shared/store.cjs:51513:6)",
+            1788970694
+          ],
+          [
+            "    at CampaignStore.insertRoom (.build/transition-store.cjs:59404:13) <-     at Function.<anonymous> (.build/transition-store.cjs:51509:16) <-     at Function.sqliteTransaction (node_modules/better-sqlite3/lib/methods/transaction.js:65:24) <-     at storedCreate (.build/transition-store.cjs:51513:6)",
+            293263311
+          ]
+        ]
+      },
+      {
+        "hash": "f7115d5192bf44c80993f7c9f1b0c7aeef9aa55aa96ceafb8148066ffd719d77",
+        "kind": "SELECT",
+        "prepares": 38132,
+        "executes": 38132,
+        "prepareNs": 2284608528,
+        "executeNs": 922224266,
+        "duplicatePreparesWithinConnection": 18095,
+        "duplicatePreparesWithinScope": 1074,
+        "maxPreparesPerConnection": 2004,
+        "maxPreparesPerScope": 17,
+        "fileCount": 85,
+        "ownerExamples": [
+          [
+            "    at readLiveScene (.build/test-shared/store.cjs:42636:22) <-     at .build/test-shared/store.cjs:42691:20 <-     at sqliteTransaction (node_modules/better-sqlite3/lib/methods/transaction.js:65:24) <-     at readLive (.build/test-shared/store.cjs:42725:5)",
+            320400521
+          ],
+          [
+            "    at readLiveScene (.build/test-shared/store.cjs:42636:22) <-     at targetRevision (.build/test-shared/store.cjs:42858:22) <-     at .build/test-shared/store.cjs:42879:74 <-     at sqliteTransaction (node_modules/better-sqlite3/lib/methods/transaction.js:65:24)",
+            146773442
+          ]
+        ]
+      },
+      {
+        "hash": "afc3936099189c1edfa83e51bcf4a74c71deac83feb6c89436099ff33c64163f",
+        "kind": "SELECT",
+        "prepares": 56418,
+        "executes": 56418,
+        "prepareNs": 2283009174,
+        "executeNs": 1405362108,
+        "duplicatePreparesWithinConnection": 27962,
+        "duplicatePreparesWithinScope": 2851,
+        "maxPreparesPerConnection": 2004,
+        "maxPreparesPerScope": 17,
+        "fileCount": 85,
+        "ownerExamples": [
+          [
+            "    at clock (.build/test-shared/store.cjs:42618:19) <-     at .build/test-shared/store.cjs:42696:7 <-     at sqliteTransaction (node_modules/better-sqlite3/lib/methods/transaction.js:65:24) <-     at readLive (.build/test-shared/store.cjs:42725:5)",
+            257349468
+          ],
+          [
+            "    at clock (.build/test-shared/store.cjs:42618:19) <-     at .build/test-shared/store.cjs:42755:14 <-     at Array.map (<anonymous>) <-     at activeSummaries (.build/test-shared/store.cjs:42744:22) <-     at .build/test-shared/store.cjs:42721:15",
+            238377578
+          ]
+        ]
+      },
+      {
+        "hash": "25eec49eaab96275478eddeb38f22e66572bdaa6b59288fab4c758bb323605a8",
+        "kind": "SELECT",
+        "prepares": 886,
+        "executes": 886,
+        "prepareNs": 2214358567,
+        "executeNs": 91831842,
+        "duplicatePreparesWithinConnection": 0,
+        "duplicatePreparesWithinScope": 0,
+        "maxPreparesPerConnection": 1,
+        "maxPreparesPerScope": 1,
+        "fileCount": 87,
+        "ownerExamples": [
+          [
+            "    at validateDatabase (.build/test-shared/store.cjs:53543:11) <-     at CampaignStore.inspectCampaignDatabase (.build/test-shared/store.cjs:60557:5) <-     at CampaignStore.acceptCampaignSnapshot (.build/test-shared/store.cjs:60606:22)",
+            306661091
+          ],
+          [
+            "    at validateDatabase (.build/test-shared/store.cjs:53543:11) <-     at validateBackupCandidate (.build/test-shared/store.cjs:53633:5) <-     at CampaignStore.backup (.build/test-shared/store.cjs:59623:12) <-     at async TestContext.<anonymous> (file://tests/runtime/desktop-restock-journey.test.mjs:453:7)",
+            59367904
+          ]
+        ]
+      },
+      {
+        "hash": "f21e9085f00788b59678d92b7434cf03d810fa5387b64cecd7a603a3c5eabadf",
+        "kind": "SELECT",
+        "prepares": 56408,
+        "executes": 56408,
+        "prepareNs": 1936810664,
+        "executeNs": 1014101886,
+        "duplicatePreparesWithinConnection": 28184,
+        "duplicatePreparesWithinScope": 2851,
+        "maxPreparesPerConnection": 2004,
+        "maxPreparesPerScope": 17,
+        "fileCount": 85,
+        "ownerExamples": [
+          [
+            "    at readCampaignTime (.build/test-shared/store.cjs:42612:21) <-     at clock (.build/test-shared/store.cjs:42621:18) <-     at .build/test-shared/store.cjs:42755:14 <-     at Array.map (<anonymous>) <-     at activeSummaries (.build/test-shared/store.cjs:42744:22) <-     at .build/test-shared/store.cjs:42721:15",
+            192993630
+          ],
+          [
+            "    at readCampaignTime (.build/test-shared/store.cjs:42612:21) <-     at clock (.build/test-shared/store.cjs:42621:18) <-     at .build/test-shared/store.cjs:42696:7 <-     at sqliteTransaction (node_modules/better-sqlite3/lib/methods/transaction.js:65:24)",
+            188093477
+          ]
+        ]
+      },
+      {
+        "hash": "3d186f31527af03ec331e88fd0297e4bb78f8cd8e968698d3c59008618dd0d96",
+        "kind": "SELECT",
+        "prepares": 40162,
+        "executes": 40162,
+        "prepareNs": 1922262527,
+        "executeNs": 820256720,
+        "duplicatePreparesWithinConnection": 20100,
+        "duplicatePreparesWithinScope": 1074,
+        "maxPreparesPerConnection": 2004,
+        "maxPreparesPerScope": 17,
+        "fileCount": 85,
+        "ownerExamples": [
+          [
+            "    at readLiveScene (.build/test-shared/store.cjs:42657:17) <-     at .build/test-shared/store.cjs:42691:20 <-     at sqliteTransaction (node_modules/better-sqlite3/lib/methods/transaction.js:65:24) <-     at readLive (.build/test-shared/store.cjs:42725:5)",
+            257805947
+          ],
+          [
+            "    at readLiveScene (.build/test-shared/store.cjs:42657:17) <-     at targetRevision (.build/test-shared/store.cjs:42858:22) <-     at .build/test-shared/store.cjs:42879:74 <-     at sqliteTransaction (node_modules/better-sqlite3/lib/methods/transaction.js:65:24)",
+            115312164
+          ]
+        ]
+      }
+    ]
+  },
+  "recoveredDiagnostic": {
+    "files": 234,
+    "meta": {
+      "connections": 5259,
+      "closed": 5257,
+      "active": 2,
+      "scopeCount": 115142,
+      "overflow": 0,
+      "constructorSeconds": 6.010232685,
+      "constructorErrors": 0,
+      "measuredProbeOverheadSeconds": 249.61716202200006
+    },
+    "totals": {
+      "prepares": 3405483,
+      "executes": 8995292,
+      "prepareNs": 132880518231,
+      "executeNs": 241726850282,
+      "errors": 191,
+      "duplicatePreparesWithinConnection": 2169006,
+      "duplicatePreparesWithinScope": 1396879
+    },
+    "topQueries": [
+      {
+        "hash": "36ea0eed0ba8e16324d4b090d7d7e0a78e6525f459c375a91c70c72da455e611",
+        "kind": "SELECT",
+        "prepares": 326300,
+        "executes": 1010164,
+        "prepareNs": 11392733059,
+        "executeNs": 8248477009,
+        "duplicatePreparesWithinConnection": 320766,
+        "duplicatePreparesWithinScope": 243997,
+        "maxPreparesPerConnection": 1188,
+        "maxPreparesPerScope": 416,
+        "fileCount": 214,
+        "ownerExamples": [
+          [
+            "    at readItemDefinition (.build/test-shared/store.cjs:23564:67) <-     at validateItemsBackup (.build/test-shared/store.cjs:33967:5) <-     at validateDatabase (.build/test-shared/store.cjs:53601:3) <-     at CampaignStore.inspectCampaignDatabase (.build/test-shared/store.cjs:60557:5)",
+            1177736707
+          ],
+          [
+            "    at readItemDefinition (.build/test-shared/store.cjs:23564:67) <-     at validateItemsBackup (.build/test-shared/store.cjs:33967:5) <-     at validateDatabase (.build/test-shared/store.cjs:53601:3) <-     at CampaignStore.acceptCampaignSnapshot (.build/test-shared/store.cjs:60618:7)",
+            1029392197
+          ]
+        ]
+      },
+      {
+        "hash": "2767be42426482f094d2bbd48ce87f406012915c26a68dbcce3bccbd1e305954",
+        "kind": "SELECT",
+        "prepares": 325523,
+        "executes": 1009975,
+        "prepareNs": 11109210209,
+        "executeNs": 8295211648,
+        "duplicatePreparesWithinConnection": 320834,
+        "duplicatePreparesWithinScope": 244433,
+        "maxPreparesPerConnection": 1188,
+        "maxPreparesPerScope": 416,
+        "fileCount": 214,
+        "ownerExamples": [
+          [
+            "    at readItemDefinition (.build/test-shared/store.cjs:23562:19) <-     at validateItemsBackup (.build/test-shared/store.cjs:33967:5) <-     at validateDatabase (.build/test-shared/store.cjs:53601:3) <-     at CampaignStore.inspectCampaignDatabase (.build/test-shared/store.cjs:60557:5)",
+            1181898997
+          ],
+          [
+            "    at readItemDefinition (.build/test-shared/store.cjs:23562:19) <-     at validateItemsBackup (.build/test-shared/store.cjs:33967:5) <-     at validateDatabase (.build/test-shared/store.cjs:53601:3) <-     at CampaignStore.acceptCampaignSnapshot (.build/test-shared/store.cjs:60618:7)",
+            1000222690
+          ]
+        ]
+      },
+      {
+        "hash": "867ececdb38bfd41d15e8e6981d18d02bcff7838eaca6c78de387c2a953bf7fe",
+        "kind": "SELECT",
+        "prepares": 197532,
+        "executes": 197532,
+        "prepareNs": 6048256174,
+        "executeNs": 8985251224,
+        "duplicatePreparesWithinConnection": 196583,
+        "duplicatePreparesWithinScope": 172092,
+        "maxPreparesPerConnection": 558,
+        "maxPreparesPerScope": 372,
+        "fileCount": 77,
+        "ownerExamples": [
+          [
+            "    at .build/test-shared/store.cjs:50850:17 <-     at Array.map (<anonymous>) <-     at tableInfo (.build/test-shared/store.cjs:50848:11) <-     at publishSnapshot (.build/test-shared/store.cjs:51066:19) <-     at CampaignStore.acceptCampaignSnapshot (.build/test-shared/store.cjs:60619:14)",
+            572112104
+          ],
+          [
+            "    at .build/test-shared/store.cjs:50850:17 <-     at Array.map (<anonymous>) <-     at tableInfo (.build/test-shared/store.cjs:50848:11) <-     at snapshotCounts (.build/test-shared/store.cjs:50889:10) <-     at CampaignStore.inspectCampaignDatabase (.build/test-shared/store.cjs:60567:15)",
+            558347977
+          ]
+        ]
+      },
+      {
+        "hash": "fbea71c72c4a57d47a7355ab2821b13beb57c4193c5bf8ee52ecef7bbebc72bd",
+        "kind": "SELECT",
+        "prepares": 139050,
+        "executes": 139050,
+        "prepareNs": 4343152720,
+        "executeNs": 6576101921,
+        "duplicatePreparesWithinConnection": 138321,
+        "duplicatePreparesWithinScope": 120270,
+        "maxPreparesPerConnection": 191,
+        "maxPreparesPerScope": 191,
+        "fileCount": 77,
+        "ownerExamples": [
+          [
+            "    at assertTransferCoverage (.build/test-shared/store.cjs:10744:25) <-     at validateTransferSnapshot (.build/test-shared/store.cjs:10844:3) <-     at CampaignStore.inspectCampaignDatabase (.build/test-shared/store.cjs:60563:5) <-     at CampaignStore.acceptCampaignSnapshot (.build/test-shared/store.cjs:60606:22)",
+            597020378
+          ],
+          [
+            "    at p.prepare (.build/section2d/sql-probe-core.cjs:17:63) <-     at assertTransferCoverage (.build/tests.cjs:46619:26) <-     at validateTransferSnapshot (.build/tests.cjs:46719:3)",
+            138100346
+          ]
+        ]
+      },
+      {
+        "hash": "f987ea78de8d64c24d42de793a5ca76b1e3860b1d82e709223c26574878c2307",
+        "kind": "SELECT",
+        "prepares": 151461,
+        "executes": 151461,
+        "prepareNs": 4179748039,
+        "executeNs": 6497122647,
+        "duplicatePreparesWithinConnection": 150668,
+        "duplicatePreparesWithinScope": 136038,
+        "maxPreparesPerConnection": 192,
+        "maxPreparesPerScope": 192,
+        "fileCount": 86,
+        "ownerExamples": [
+          [
+            "    at validateDatabase (.build/test-shared/store.cjs:53619:25) <-     at CampaignStore.inspectCampaignDatabase (.build/test-shared/store.cjs:60557:5) <-     at CampaignStore.acceptCampaignSnapshot (.build/test-shared/store.cjs:60606:22)",
+            549538111
+          ],
+          [
+            "    at p.prepare (.build/section2d/sql-probe-coarse.cjs:17:63) <-     at validateDatabase (.build/session-proposal-store.cjs:53620:25) <-     at validateBackupCandidate (.build/session-proposal-store.cjs:53634:5)",
+            134036776
+          ]
+        ]
+      },
+      {
+        "hash": "28cf1545fbc3dfdeef08d9699d1e0be0980743b4b85f74bdb7d5d7ddffffc75a",
+        "kind": "SELECT",
+        "prepares": 62104,
+        "executes": 62104,
+        "prepareNs": 2753199359,
+        "executeNs": 1767323406,
+        "duplicatePreparesWithinConnection": 31937,
+        "duplicatePreparesWithinScope": 14,
+        "maxPreparesPerConnection": 2005,
+        "maxPreparesPerScope": 2,
+        "fileCount": 207,
+        "ownerExamples": [
+          [
+            "    at CampaignStore.guard (.build/test-shared/store.cjs:59441:18) <-     at Object.guard (.build/test-shared/store.cjs:60859:16) <-     at .build/test-shared/store.cjs:43614:13 <-     at Function.<anonymous> (.build/test-shared/store.cjs:42954:5)",
+            152936472
+          ],
+          [
+            "    at CampaignStore.guard (.build/test-shared/store.cjs:59441:18) <-     at .build/test-shared/store.cjs:58668:34 <-     at sqliteTransaction (node_modules/better-sqlite3/lib/methods/transaction.js:65:24) <-     at storedPreparation (.build/test-shared/store.cjs:58734:5)",
+            147645827
+          ]
+        ]
+      },
+      {
+        "hash": "1c71fa059951518898a21480d538de4af498b7c987a15f378277c76e3f45559d",
+        "kind": "INSERT",
+        "prepares": 37725,
+        "executes": 39025,
+        "prepareNs": 2242199833,
+        "executeNs": 1127223978,
+        "duplicatePreparesWithinConnection": 37319,
+        "duplicatePreparesWithinScope": 37293,
+        "maxPreparesPerConnection": 5000,
+        "maxPreparesPerScope": 5000,
+        "fileCount": 43,
+        "ownerExamples": [
+          [
+            "    at p.prepare (.build/section2d/sql-probe-coarse.cjs:17:63) <-     at CampaignStore.insertRoom (.build/test-shared/store.cjs:59404:13) <-     at Function.<anonymous> (.build/test-shared/store.cjs:51509:16)",
+            757547250
+          ],
+          [
+            "    at CampaignStore.insertRoom (.build/test-shared/store.cjs:59404:13) <-     at Function.<anonymous> (.build/test-shared/store.cjs:51509:16) <-     at Function.sqliteTransaction (node_modules/better-sqlite3/lib/methods/transaction.js:65:24) <-     at storedCreate (.build/test-shared/store.cjs:51513:6)",
+            741231316
+          ]
+        ]
+      },
+      {
+        "hash": "25eec49eaab96275478eddeb38f22e66572bdaa6b59288fab4c758bb323605a8",
+        "kind": "SELECT",
+        "prepares": 974,
+        "executes": 974,
+        "prepareNs": 2021901295,
+        "executeNs": 79094614,
+        "duplicatePreparesWithinConnection": 0,
+        "duplicatePreparesWithinScope": 0,
+        "maxPreparesPerConnection": 1,
+        "maxPreparesPerScope": 1,
+        "fileCount": 87,
+        "ownerExamples": [
+          [
+            "    at validateDatabase (.build/test-shared/store.cjs:53543:11) <-     at CampaignStore.inspectCampaignDatabase (.build/test-shared/store.cjs:60557:5) <-     at CampaignStore.acceptCampaignSnapshot (.build/test-shared/store.cjs:60606:22)",
+            270721057
+          ],
+          [
+            "    at p.prepare (.build/section2d/sql-probe-coarse.cjs:17:63) <-     at validateDatabase (.build/session-proposal-store.cjs:53544:11) <-     at validateBackupCandidate (.build/session-proposal-store.cjs:53634:5)",
+            130874469
+          ]
+        ]
+      },
+      {
+        "hash": "f7115d5192bf44c80993f7c9f1b0c7aeef9aa55aa96ceafb8148066ffd719d77",
+        "kind": "SELECT",
+        "prepares": 39771,
+        "executes": 39771,
+        "prepareNs": 1974355117,
+        "executeNs": 805947991,
+        "duplicatePreparesWithinConnection": 22547,
+        "duplicatePreparesWithinScope": 2320,
+        "maxPreparesPerConnection": 2004,
+        "maxPreparesPerScope": 17,
+        "fileCount": 85,
+        "ownerExamples": [
+          [
+            "    at readLiveScene (.build/test-shared/store.cjs:42636:22) <-     at .build/test-shared/store.cjs:42691:20 <-     at sqliteTransaction (node_modules/better-sqlite3/lib/methods/transaction.js:65:24) <-     at readLive (.build/test-shared/store.cjs:42725:5)",
+            226833635
+          ],
+          [
+            "    at readLiveScene (.build/test-shared/store.cjs:42636:22) <-     at targetRevision (.build/test-shared/store.cjs:42858:22) <-     at .build/test-shared/store.cjs:42879:74 <-     at sqliteTransaction (node_modules/better-sqlite3/lib/methods/transaction.js:65:24)",
+            129920825
+          ]
+        ]
+      },
+      {
+        "hash": "afc3936099189c1edfa83e51bcf4a74c71deac83feb6c89436099ff33c64163f",
+        "kind": "SELECT",
+        "prepares": 59269,
+        "executes": 59269,
+        "prepareNs": 1960236534,
+        "executeNs": 1224965338,
+        "duplicatePreparesWithinConnection": 37348,
+        "duplicatePreparesWithinScope": 7353,
+        "maxPreparesPerConnection": 2004,
+        "maxPreparesPerScope": 27,
+        "fileCount": 85,
+        "ownerExamples": [
+          [
+            "    at p.prepare (.build/section2d/sql-probe-coarse.cjs:17:63) <-     at clock (.build/test-shared/store.cjs:42618:19) <-     at readLiveScene (.build/test-shared/store.cjs:42656:12)",
+            260347618
+          ],
+          [
+            "    at clock (.build/test-shared/store.cjs:42618:19) <-     at .build/test-shared/store.cjs:42696:7 <-     at sqliteTransaction (node_modules/better-sqlite3/lib/methods/transaction.js:65:24) <-     at readLive (.build/test-shared/store.cjs:42725:5)",
+            175940949
+          ]
+        ]
+      },
+      {
+        "hash": "0f6168782ebfcba8cf4b168ac71bb88ec96b48292b1fd453093dde2b06f99862",
+        "kind": "SELECT",
+        "prepares": 46094,
+        "executes": 46094,
+        "prepareNs": 1861085717,
+        "executeNs": 1143807224,
+        "duplicatePreparesWithinConnection": 43491,
+        "duplicatePreparesWithinScope": 42565,
+        "maxPreparesPerConnection": 1502,
+        "maxPreparesPerScope": 1502,
+        "fileCount": 40,
+        "ownerExamples": [
+          [
+            "    at drawingRoom (.build/atlas-benchmark-test.cjs:38622:8) <-     at .build/atlas-benchmark-test.cjs:44497:25 <-     at Array.map (<anonymous>) <-     at dungeonGeometry (.build/atlas-benchmark-test.cjs:44497:14) <-     at dungeonView (.build/atlas-benchmark-test.cjs:44556:110) <-     at CampaignStore.dungeon (.build/atlas-benchmark-test.cjs:60449:43) <-     at .build/atlas-benchmark-test.cjs:48119:31",
+            142213937
+          ],
+          [
+            "    at drawingRoom (.build/overview-service-store.cjs:38300:8) <-     at .build/overview-service-store.cjs:44175:25 <-     at Array.map (<anonymous>) <-     at dungeonGeometry (.build/overview-service-store.cjs:44175:14) <-     at checkPositions (.build/overview-service-store.cjs:46742:20) <-     at Function.<anonymous> (.build/overview-service-store.cjs:46912:32)",
+            128745048
+          ]
+        ]
+      },
+      {
+        "hash": "f21e9085f00788b59678d92b7434cf03d810fa5387b64cecd7a603a3c5eabadf",
+        "kind": "SELECT",
+        "prepares": 59245,
+        "executes": 59245,
+        "prepareNs": 1699707149,
+        "executeNs": 866740499,
+        "duplicatePreparesWithinConnection": 39662,
+        "duplicatePreparesWithinScope": 12879,
+        "maxPreparesPerConnection": 2004,
+        "maxPreparesPerScope": 27,
+        "fileCount": 85,
+        "ownerExamples": [
+          [
+            "    at p.prepare (.build/section2d/sql-probe-coarse.cjs:17:63) <-     at readCampaignTime (.build/test-shared/store.cjs:42612:21) <-     at clock (.build/test-shared/store.cjs:42621:18)",
+            303511016
+          ],
+          [
+            "    at readCampaignTime (.build/test-shared/store.cjs:42612:21) <-     at clock (.build/test-shared/store.cjs:42621:18) <-     at .build/test-shared/store.cjs:42696:7 <-     at sqliteTransaction (node_modules/better-sqlite3/lib/methods/transaction.js:65:24)",
+            139999470
+          ]
+        ]
+      }
+    ]
+  },
+  "recoveredFileNames": [
+    ".build/tests.cjs",
+    "tests/atlas/desktop-dungeon-pace.test.mjs",
+    "tests/atlas/desktop-atlas-regions.test.mjs",
+    "tests/campaign/desktop-preparation-context.test.mjs",
+    "tests/campaign/desktop-session-proposal-store.test.mjs",
+    "tests/runtime/desktop-autonomy-disable-time.test.mjs",
+    "tests/runtime/desktop-live-moment-context.test.mjs",
+    "tests/runtime/desktop-restock-journey.test.mjs",
+    "tests/runtime/desktop-travel-target-dom.test.mjs",
+    "tests/runtime/desktop-travel.test.mjs"
+  ],
+  "limits": [
+    "Diagnostic timing includes instrumentation and scheduling effects.",
+    "Recovered figures combine the suite with targeted replacements and are not a second full-suite duration.",
+    "Public wrappers omit native internal transaction-control statements.",
+    "Connection lifetime starts at constructor when wrapped, otherwise first public operation.",
+    "Statement delay measures prepare to last execution, not GC/finalization.",
+    "Named Store validation API scopes and transaction callbacks are counted; internal free-function validation ownership uses stack attribution, not a separately instrumented invocation boundary.",
+    "SQL text, filenames of databases and bind values are not recorded.",
+    "Native pragma/backup/serialize internals are not covered; multi-statement exec counts one public API execution."
+  ],
+  "selectedValidationQueries": [
+    {
+      "hash": "36ea0eed0ba8e16324d4b090d7d7e0a78e6525f459c375a91c70c72da455e611",
+      "validationPrepares": 267824,
+      "validationPrepareNs": 8939650452,
+      "validationExecuteNs": 5231762611
+    },
+    {
+      "hash": "2767be42426482f094d2bbd48ce87f406012915c26a68dbcce3bccbd1e305954",
+      "validationPrepares": 267824,
+      "validationPrepareNs": 8741179253,
+      "validationExecuteNs": 5390880972
+    }
+  ],
+  "directBefore": {
+    "iterations": 100,
+    "milliseconds": 2440.121908,
+    "prepares": 59100,
+    "prepareMs": 797.003670000008
+  },
+  "directAfter": {
+    "iterations": 100,
+    "milliseconds": 1078.123271,
+    "prepares": 300,
+    "prepareMs": 11.46051199999944
+  },
+  "instrumentationSha256": {
+    ".build/section2d/sql-probe.cjs": "bff15b50498b96d23f022511725aaa364b17dfa400d7922a7029a3776dba9688",
+    ".build/section2d/sql-probe-coarse.cjs": "f7bab71f72f3abb9dc8728b21d0f582da7dee19c2f562d3e68134da52530a54b",
+    ".build/section2d/sql-probe-core.cjs": "fd7316ca15204d9c1c901c34bba8d891adb58bb0bfcdf2e199b01e0b61965a04"
+  },
+  "sourceSha256": {
+    "src/app/storage/item-definitions.ts": "a77da9cc011cbe51f094ba7083ce985694587df15a0f40ae0056a49b04df2dca",
+    "src/app/storage/items.ts": "2aa1c263e2d5507be4a3128c8d87a72ed322df65ccdd56c953fb299caf74aa59",
+    "tests/catalog/desktop-srd-item-projection.test.mjs": "02a28f76c2d8a4eca6ec9307488501399fed7ae1be8bef77d3f9eeb6eb112958"
+  },
+  "unmodifiedFullCommandComparison": {
+    "before": {
+      "commit": "a0aa36fe8dc4e079897fb61d378dcdaa72540c6c",
+      "dirty": true,
+      "node": "v22.19.0",
+      "concurrency": 4,
+      "prepareMs": 767.969514,
+      "totalMs": 377014.582168,
+      "testMs": 376246.612654,
+      "code": 0,
+      "signal": null,
+      "fileCount": 409,
+      "fileSelectionSha256": "4c76383a21ed07645a9e14b99e541b228b9de097ec4a7b507eb4b3c93307b103",
+      "resourceUsage": "\tCommand being timed: \"npm test\"\n\tUser time (seconds): 1184.41\n\tSystem time (seconds): 91.50\n\tPercent of CPU this job got: 338%\n\tElapsed (wall clock) time (h:mm:ss or m:ss): 6:17.13\n\tAverage shared text size (kbytes): 0\n\tAverage unshared data size (kbytes): 0\n\tAverage stack size (kbytes): 0\n\tAverage total size (kbytes): 0\n\tMaximum resident set size (kbytes): 1026912\n\tAverage resident set size (kbytes): 0\n\tMajor (requiring I/O) page faults: 123\n\tMinor (reclaiming a frame) page faults: 16890517\n\tVoluntary context switches: 420444\n\tInvoluntary context switches: 683435\n\tSwaps: 0\n\tFile system inputs: 320880\n\tFile system outputs: 4818840\n\tSocket messages sent: 0\n\tSocket messages received: 0\n\tSignals delivered: 0\n\tPage size (bytes): 4096\n\tExit status: 0\n",
+      "rawDirectory": ".build/section2b/full-after"
+    },
+    "after": {
+      "commit": "822fab25172ecaf207e1cee26368619e96cb2ef3",
+      "dirty": true,
+      "node": "v22.19.0",
+      "concurrency": 4,
+      "prepareMs": 821.42971,
+      "totalMs": 370561.802743,
+      "testMs": 369740.373033,
+      "code": 0,
+      "signal": null,
+      "fileCount": 409,
+      "fileSelectionSha256": "4c76383a21ed07645a9e14b99e541b228b9de097ec4a7b507eb4b3c93307b103",
+      "resourceUsage": "\tCommand being timed: \"npm test\"\n\tUser time (seconds): 1159.65\n\tSystem time (seconds): 90.97\n\tPercent of CPU this job got: 337%\n\tElapsed (wall clock) time (h:mm:ss or m:ss): 6:10.69\n\tAverage shared text size (kbytes): 0\n\tAverage unshared data size (kbytes): 0\n\tAverage stack size (kbytes): 0\n\tAverage total size (kbytes): 0\n\tMaximum resident set size (kbytes): 1023776\n\tAverage resident set size (kbytes): 0\n\tMajor (requiring I/O) page faults: 40\n\tMinor (reclaiming a frame) page faults: 16754087\n\tVoluntary context switches: 405254\n\tInvoluntary context switches: 657620\n\tSwaps: 0\n\tFile system inputs: 224480\n\tFile system outputs: 4849576\n\tSocket messages sent: 0\n\tSocket messages received: 0\n\tSignals delivered: 0\n\tPage size (bytes): 4096\n\tExit status: 0\n",
+      "rawDirectory": ".build/section2d/full-after"
+    },
+    "testNames": {
+      "removed": [],
+      "added": [
+        "current-definition validation prepares once per query and releases its statement scope after each call",
+        "batched validation retains corruption checks and a failed transaction rolls back before a fresh validation",
+        "definition validation statements stay on their own connection across close and readonly reopen"
+      ]
+    }
+  }
+}

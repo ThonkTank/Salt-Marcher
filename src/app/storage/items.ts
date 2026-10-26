@@ -21,6 +21,7 @@ import {
   saveItemDefinition,
   installItemDefinitions,
   validateItemDefinitionVersions,
+  validateCurrentItemDefinitions,
 } from './item-definitions';
 import { scenePreparation } from './session';
 import { readLiveScene, readCampaignTime } from './live';
@@ -686,10 +687,7 @@ export function executeItemShop(db: any, c: ItemShopCommand, guard: () => void):
     .immediate();
 }
 export function validateItemsBackup(db: any) {
-  for (const row of db
-    .prepare('SELECT id FROM item_definition UNION SELECT id FROM authored_item')
-    .iterate())
-    readItemDefinition(db, row.id);
+  validateCurrentItemDefinitions(db);
   validateItemDefinitionVersions(db);
   for (const row of db.prepare('SELECT campaign_id,id FROM shop').iterate())
     readShop(db, row.campaign_id, row.id);

@@ -101,6 +101,30 @@ function installSrdItems(db: any) {
   }).immediate();
 }
 export function readItemDefinition(db: any, id: string, revision?: number): ItemDefinition {
+  return readDefinition((sql) => db.prepare(sql), id, revision);
+}
+
+/** Statements live only for this validation and its connection; all rows are still decoded. */
+export function validateCurrentItemDefinitions(db: any): void {
+  const statements = new Map<string, any>();
+  const prepare = (sql: string) => {
+    let statement = statements.get(sql);
+    if (!statement) {
+      statement = db.prepare(sql);
+      statements.set(sql, statement);
+    }
+    return statement;
+  };
+  for (const row of db
+    .prepare('SELECT id FROM item_definition UNION SELECT id FROM authored_item')
+    .iterate())
+    readDefinition(prepare, row.id);
+}
+function readDefinition(
+  prepare: (sql: string) => any,
+  id: string,
+  revision?: number,
+): ItemDefinition {
   if (
     typeof id !== 'string' ||
     !id ||
@@ -108,34 +132,35 @@ export function readItemDefinition(db: any, id: string, revision?: number): Item
   )
     throw new Error('Ungültige Gegenstandsreferenz.');
   if (revision !== undefined) {
-    const old = db
-      .prepare('SELECT * FROM item_definition_version WHERE id=? AND revision=?')
-      .get(id, revision);
+    const old = prepare('SELECT * FROM item_definition_version WHERE id=? AND revision=?').get(
+      id,
+      revision,
+    );
     if (old) return decoded(old, id, revision);
-    const legacy = db
-      .prepare(
-        'SELECT * FROM authored_item WHERE id=? AND revision=? AND NOT EXISTS(SELECT 1 FROM item_definition WHERE id=?)',
-      )
-      .get(id, revision, id);
+    const legacy = prepare(
+      'SELECT * FROM authored_item WHERE id=? AND revision=? AND NOT EXISTS(SELECT 1 FROM item_definition WHERE id=?)',
+    ).get(id, revision, id);
     if (legacy) return legacyDefinition(legacy);
     throw new Error('Diese historische Gegenstandsversion ist nicht verfügbar.');
   }
-  const row = db.prepare('SELECT * FROM item_definition WHERE id=?').get(id);
+  const row = prepare('SELECT * FROM item_definition WHERE id=?').get(id);
   if (row) {
     const d = decoded(row, id, row.revision),
-      recorded = db
-        .prepare('SELECT * FROM item_definition_version WHERE id=? AND revision=?')
-        .get(id, row.revision);
+      recorded = prepare('SELECT * FROM item_definition_version WHERE id=? AND revision=?').get(
+        id,
+        row.revision,
+      );
     if (recorded && canonicalJson(decoded(recorded, id, row.revision)) !== canonicalJson(d))
       throw new Error('Aktuelle Gegenstandsdefinition widerspricht ihrer aufgezeichneten Version.');
     return d;
   }
-  const legacy = db.prepare('SELECT * FROM authored_item WHERE id=?').get(id);
+  const legacy = prepare('SELECT * FROM authored_item WHERE id=?').get(id);
   if (!legacy) throw new Error('Gegenstand nicht gefunden.');
   const d = legacyDefinition(legacy),
-    recorded = db
-      .prepare('SELECT * FROM item_definition_version WHERE id=? AND revision=?')
-      .get(id, legacy.revision);
+    recorded = prepare('SELECT * FROM item_definition_version WHERE id=? AND revision=?').get(
+      id,
+      legacy.revision,
+    );
   if (recorded && canonicalJson(decoded(recorded, id, legacy.revision)) !== canonicalJson(d))
     throw new Error('Legacy-Gegenstand widerspricht seinem aufgezeichneten Stand.');
   return d;

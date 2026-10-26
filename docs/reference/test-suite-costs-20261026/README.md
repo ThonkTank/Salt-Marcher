@@ -8,6 +8,9 @@ Source of Truth: [Messdaten](measurements.json), `tools/measure-test-suite.py` u
 Die anschließende [begrenzte Fortsetzung](continuation.md) untersucht UI-Retention
 und primitive Transfervarianten; sie enthält einen weiteren vollständigen Vergleich.
 
+Die folgende [suiteweite SQL-Aufnahme](sql-validation.md) begründet genau eine
+weitere, auf den Validierungsaufruf beschränkte Statementwiederverwendung.
+
 ## Vergleich und Grenze
 
 Ein vollständiger Vorher-/Nachherlauf auf demselben Linux-Rechner: Pentium Gold

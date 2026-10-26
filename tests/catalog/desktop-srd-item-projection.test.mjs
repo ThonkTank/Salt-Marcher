@@ -2,7 +2,9 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { createHash } from 'node:crypto';
-import { readFileSync } from 'node:fs';
+import { readFileSync, mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
 import { buildSync } from 'esbuild';
 const require = createRequire(import.meta.url),
   Database = require('better-sqlite3');
@@ -16,6 +18,7 @@ buildSync({
 const {
   installItemDefinitions,
   readItemDefinition,
+  validateCurrentItemDefinitions,
 } = require('../../.build/srd-item-projection.cjs');
 const source = JSON.parse(
   readFileSync('src/features/catalog/data/items-srd51-transcript.json', 'utf8'),
@@ -139,4 +142,105 @@ test('complete SRD installation prepares a bounded batch and rolls back every ro
   db.exec('DROP TRIGGER reject_install');
   installItemDefinitions(db);
   assert.deepEqual(rows(), expected, 'retry retains every source byte, checksum and revision');
+});
+
+test('current-definition validation prepares once per query and releases its statement scope after each call', (t) => {
+  const db = fixture(t),
+    original = db.prepare,
+    statements = [];
+  db.prepare = function (...args) {
+    const statement = Reflect.apply(original, this, args);
+    assert.equal(statement.database, db);
+    statements.push(statement);
+    return statement;
+  };
+  const before = db.serialize();
+  validateCurrentItemDefinitions(db);
+  assert.equal(statements.length, 3, 'one ID cursor and two reusable definition reads');
+  const first = new Set(statements);
+  statements.length = 0;
+  validateCurrentItemDefinitions(db);
+  assert.equal(statements.length, 3);
+  assert(
+    statements.every((statement) => !first.has(statement)),
+    'a later validation owns fresh statements',
+  );
+  assert.deepEqual(db.serialize(), before, 'validation remains read-only');
+});
+
+test('batched validation retains corruption checks and a failed transaction rolls back before a fresh validation', (t) => {
+  const db = fixture(t),
+    id = byName('Abacus'),
+    current = readItemDefinition(db, id);
+  const before = db.serialize();
+  const corruptions = [
+    () => db.prepare('UPDATE item_definition SET checksum=? WHERE id=?').run('damaged', id),
+    () => db.prepare('UPDATE item_definition_version SET checksum=? WHERE id=?').run('damaged', id),
+    () => {
+      const payload = JSON.stringify({ ...current, name: 'Changed without matching history' });
+      db.prepare('UPDATE item_definition SET payload=?,checksum=? WHERE id=?').run(
+        payload,
+        createHash('sha256').update(payload).digest('hex'),
+        id,
+      );
+    },
+    () => db.prepare('UPDATE item_definition SET revision=revision+1 WHERE id=?').run(id),
+  ];
+  for (const corrupt of corruptions) {
+    assert.throws(
+      db.transaction(() => {
+        corrupt();
+        validateCurrentItemDefinitions(db);
+      }),
+      /beschädigt|widerspricht|widersprüchlich/,
+    );
+    assert.deepEqual(db.serialize(), before);
+    validateCurrentItemDefinitions(db);
+  }
+  db.prepare('INSERT INTO authored_item VALUES(?,?,?,?,?)').run(
+    'legacy-only',
+    1,
+    'Legacy item',
+    'equipment',
+    '5',
+  );
+  validateCurrentItemDefinitions(db);
+  assert.equal(readItemDefinition(db, 'legacy-only').name, 'Legacy item');
+  const legacy = readItemDefinition(db, 'legacy-only');
+  const payload = JSON.stringify({ ...legacy, name: 'Conflicting historical item' });
+  db.prepare('INSERT INTO item_definition_version VALUES(?,?,?,?)').run(
+    legacy.id,
+    legacy.revision,
+    payload,
+    createHash('sha256').update(payload).digest('hex'),
+  );
+  assert.throws(() => validateCurrentItemDefinitions(db), /Legacy-Gegenstand widerspricht/);
+});
+
+test('definition validation statements stay on their own connection across close and readonly reopen', async (t) => {
+  const source = fixture(t),
+    dir = mkdtempSync(path.join(tmpdir(), 'item-validation-')),
+    file = path.join(dir, 'definitions.sqlite');
+  t.after(() => rmSync(dir, { recursive: true, force: true }));
+  await source.backup(file);
+  validateCurrentItemDefinitions(source);
+  const bytes = readFileSync(file);
+  for (let i = 0; i < 2; i++) {
+    const db = new Database(file, { readonly: true, fileMustExist: true }),
+      original = db.prepare;
+    let prepares = 0;
+    db.prepare = function (...args) {
+      const statement = Reflect.apply(original, this, args);
+      assert.equal(statement.database, db);
+      prepares++;
+      return statement;
+    };
+    try {
+      validateCurrentItemDefinitions(db);
+      assert.equal(prepares, 3);
+    } finally {
+      db.close();
+    }
+    assert.deepEqual(readFileSync(file), bytes);
+  }
 });
