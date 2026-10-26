@@ -1513,7 +1513,7 @@ export class AtlasRegionReader {
     checkpoint?.();
     if (bytes(result) > REGION_REPLY_BYTES - 800 * 1024) dense = true;
     if (!dense) {
-      // The terrain projection consumes both roof bodies and entrance anchors.
+      // The terrain projection consumes roofs, entrances and free floor anchors.
       // Generated houses contribute one of each even when their rooms are hidden.
       const buildings = result.cities.reduce(
         (count, city) => count + city.units.filter((u) => u.kind === 'building').length,
@@ -1523,7 +1523,10 @@ export class AtlasRegionReader {
       const entrances = this.sql(
         "SELECT count(*) n FROM atlas_entrance WHERE campaign_id=? AND json_extract(payload,'$.scopeId') IN (SELECT value FROM json_each(?))",
       ).get(this.campaign, JSON.stringify(scopes)).n;
-      if (buildings + entrances > REGION_VECTOR_OBJECTS) dense = true;
+      const freeScopes = result.bindings.filter(
+        (b) => b.kind === 'dungeon' && b.parent === 'world',
+      ).length;
+      if (buildings + entrances + freeScopes > REGION_VECTOR_OBJECTS) dense = true;
     }
     if (dense) {
       this.countFaults = false;
