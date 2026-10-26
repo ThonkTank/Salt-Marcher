@@ -1,3 +1,4 @@
+import { validEditingSource } from '../atlas/terrain-editing-source';
 import { createHash } from 'node:crypto';
 import {
   atlasTerrainTileQuery,
@@ -11,7 +12,7 @@ import { AtlasCacheScope } from './atlas-cache-scope';
 import type { AtlasRegionReader } from './atlas-region';
 
 // Change for any lattice, material, source-selection or serialization semantic change.
-const FORMAT = 'terrain-tiles-v1';
+const FORMAT = 'terrain-tiles-v2-scale-source';
 const tileKey = (request: AtlasTerrainTileRequest) =>
   JSON.stringify([
     request.tile.lod,
@@ -95,6 +96,7 @@ export class AtlasTerrainTiles {
           p.forest.length === q.width * q.height) &&
       p.grid?.heights instanceof Float32Array &&
       p.grid.heights.length === q.view.columns * q.view.rows &&
+      validEditingSource(p.grid.editing?.source, q.view.columns * q.view.rows) &&
       JSON.stringify(p.grid.view.box) === JSON.stringify(q.view.box) &&
       p.grid.view.columns === q.view.columns &&
       p.grid.view.rows === q.view.rows

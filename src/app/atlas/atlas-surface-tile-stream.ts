@@ -1,3 +1,4 @@
+import { validEditingSource } from './terrain-editing-source';
 import { terrainChannelStride } from './terrain-material';
 import { AtlasRasterTileStream, type AtlasRasterStreamOptions } from './atlas-raster-tile-stream';
 import type { AtlasTerrainTile, AtlasTerrainTileRequest } from './atlas-terrain-tile';
@@ -56,6 +57,7 @@ function validateSurfaceTile(
     p.grid.view.rows !== 65 ||
     !(p.grid.heights instanceof Float32Array) ||
     p.grid.heights.length !== 65 * 65 ||
+    !validEditingSource(p.grid.editing?.source, 65 * 65) ||
     m.width !== 256 ||
     m.height !== 256 ||
     SURFACE_CHANNEL_NAMES.some(

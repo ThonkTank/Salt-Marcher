@@ -101,7 +101,11 @@ class HeightLevel {
       }
     }
   }
-  apply(ground: Float64Array, additions: Float64Array) {
+  apply(
+    ground: Float64Array,
+    additions: Float64Array,
+    band?: (pixel: number, heights: Float32Array) => void,
+  ) {
     if (!this.absolute && !this.additive) return;
     const x = this.x,
       y = this.y,
@@ -131,7 +135,8 @@ class HeightLevel {
       return out;
     };
     const absolute = horizontal(this.absolute, true),
-      additive = horizontal(this.additive, false);
+      additive = horizontal(this.additive, false),
+      values = additive && band ? new Float32Array(ground.length) : undefined;
     for (let row = 0; row < y.starts.length; row++)
       for (let col = 0; col < columns; col++) {
         const index = row * columns + col,
@@ -160,17 +165,19 @@ class HeightLevel {
             );
           }
         }
-        if (additive)
-          additions[index] =
-            additions[index]! +
-            interpolateHeight(
-              additive[at]!,
-              additive[at + columns]!,
-              additive[at + 2 * columns]!,
-              additive[at + 3 * columns]!,
-              fy,
-            );
+        if (additive) {
+          const value = interpolateHeight(
+            additive[at]!,
+            additive[at + columns]!,
+            additive[at + 2 * columns]!,
+            additive[at + 3 * columns]!,
+            fy,
+          );
+          additions[index] = additions[index]! + value;
+          if (values) values[index] = value;
+        }
       }
+    if (values) band!(this.pixel, values);
   }
 }
 /** Input tiles are unique and coarse-to-fine, as required by the readonly reader. */
@@ -180,16 +187,17 @@ export function accumulateHeightSources(
   tiles: Iterable<TerrainHeightSource>,
   ground: Float64Array,
   additions: Float64Array,
+  band?: (pixel: number, heights: Float32Array) => void,
 ) {
   let level: HeightLevel | undefined;
   for (const tile of tiles) {
     if (level && tile.pixel > level.pixel)
       throw Error('Höhenkacheln müssen von grob nach fein gelesen werden.');
     if (!level || tile.pixel !== level.pixel) {
-      level?.apply(ground, additions);
+      level?.apply(ground, additions, band);
       level = new HeightLevel(tile.pixel, x, y);
     }
     level.read(tile);
   }
-  level?.apply(ground, additions);
+  level?.apply(ground, additions, band);
 }

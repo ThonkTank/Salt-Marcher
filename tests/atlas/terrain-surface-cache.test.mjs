@@ -218,7 +218,7 @@ test('editable cache retains raw ground and potential water without an extra sou
   assert.deepEqual(changed.surface, cold.surface);
   assert.equal(
     cache.tiles.bytes,
-    JSON.stringify(['surface', lattice, 150]).length * 2 + 19 * 17 * 12 + 5 * 5 + 128,
+    JSON.stringify(['surface', lattice, 150]).length * 2 + 19 * 17 * 16 + 5 * 5 + 128,
   );
   // Old trusted surface-only seeds must not be misrepresented as ground.
   cache.seedGrid(lattice, 150, snapshot.surface);
@@ -321,7 +321,7 @@ test('cancelling a dirty grid preserves all dirty bits and previous buffers unti
   assert.deepEqual(actual, new TerrainProjectionCache().gridData(largeLattice, 0, stream));
   assert.notDeepEqual(actual.surface, before.surface);
   assert.deepEqual(before.surface, heights);
-  assert(!retained.dirty.some(Boolean));
+  assert(!cache.tiles.get(key).dirty.some(Boolean));
 });
 test('source failure or invalidation during a paused grid cannot publish stale surface data', () => {
   for (const warm of [false, true])

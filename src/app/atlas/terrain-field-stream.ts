@@ -1,3 +1,4 @@
+import { copyEditingBlock, type TerrainEditingSource } from './terrain-editing-source';
 import { bounds, contains, type LandscapeBox, type LandscapeRecord } from './atlas-landscape';
 import { DEFAULT_HEIGHT_M } from './terrain-height';
 import {
@@ -22,6 +23,7 @@ export interface TerrainField {
   water: Uint8Array;
   surface?: Float32Array;
   levels?: Float32Array;
+  source?: TerrainEditingSource;
 }
 /** Uniform sample centres inside the query box, including its half-cell border. */
 export interface TerrainSamples {
@@ -69,6 +71,7 @@ export function streamTerrainFieldBlock(
   sea: number,
   records: TerrainStream,
   surface = true,
+  editable = false,
 ): TerrainField {
   if (
     ![rect.x, rect.y, rect.width, rect.height].every(Number.isInteger) ||
@@ -88,6 +91,7 @@ export function streamTerrainFieldBlock(
     records,
     surface,
     rect.x,
+    editable,
   );
 }
 export function streamTerrainField(
@@ -117,6 +121,7 @@ export function* streamTerrainFieldSteps(
   withSurface: boolean,
   checkpoint: () => Generator<void>,
   maxSamples = 16384,
+  editable = false,
 ): Generator<void, TerrainField> {
   const { x, y, dx, dy, columns, rows } = lattice,
     n = columns * rows;
@@ -141,11 +146,23 @@ export function* streamTerrainFieldSteps(
     water = new Uint8Array(n),
     surface = withSurface ? new Float32Array(n) : undefined,
     levels = withSurface ? new Float32Array(n) : undefined,
-    bandRows = Math.floor(maxSamples / columns);
+    bandRows = Math.floor(maxSamples / columns),
+    source: TerrainEditingSource | undefined = editable
+      ? { base: new Float32Array(n), bands: [] }
+      : undefined;
   for (let row = 0; row < rows; row += bandRows) {
     const count = Math.min(bandRows, rows - row),
-      band = terrainBand({ ...lattice, rows: count }, row, seaLevelM, records, withSurface),
+      band = terrainBand(
+        { ...lattice, rows: count },
+        row,
+        seaLevelM,
+        records,
+        withSurface,
+        0,
+        editable,
+      ),
       offset = row * columns;
+    if (source) copyEditingBlock(source, band.source!, columns, 0, row, columns, count);
     heights.set(band.heights, offset);
     water.set(band.water, offset);
     if (surface) {
@@ -154,7 +171,7 @@ export function* streamTerrainFieldSteps(
     }
     yield* checkpoint();
   }
-  return { heights, water, surface, levels };
+  return { heights, water, surface, levels, ...(source ? { source } : {}) };
 }
 function terrainBand(
   lattice: TerrainLattice,
@@ -163,6 +180,7 @@ function terrainBand(
   records: TerrainStream,
   withSurface: boolean,
   startColumn = 0,
+  editable = false,
 ): TerrainField {
   const { x, y, dx, dy, columns, rows } = lattice,
     n = columns * rows,
@@ -170,7 +188,8 @@ function terrainBand(
     atY = (row: number) => y + (startRow + row) * dy;
   const query = { x: atX(0) - dx / 2, y: atY(0) - dy / 2, width: columns * dx, height: rows * dy };
   const ground = new Float64Array(n).fill(DEFAULT_HEIGHT_M),
-    additions = new Float64Array(n);
+    additions = new Float64Array(n),
+    bands: TerrainEditingSource['bands'] = [];
   const each = (box: LandscapeBox, visit: (i: number, px: number, py: number) => void) => {
     const left = Math.max(0, Math.ceil((box.x - x) / dx) - startColumn),
       right = Math.min(columns - 1, Math.floor((box.x + box.width - x) / dx) - startColumn),
@@ -190,7 +209,9 @@ function terrainBand(
     sources,
     ground,
     additions,
+    editable ? (pixel, heights) => bands.push({ pixel, heights }) : undefined,
   );
+  const source = editable ? { base: new Float32Array(ground), bands } : undefined;
   for (let i = 0; i < n; i++) ground[i] = ground[i]! + additions[i]!;
   let weighted: Float64Array | undefined,
     total: Float64Array | undefined,
@@ -243,5 +264,5 @@ function terrainBand(
     water[i] = level !== -Infinity ? 1 : 0;
     if (surface) surface[i] = Math.max(ground[i]!, level, seaLevelM);
   }
-  return { heights, water, surface, levels: waterLevels };
+  return { heights, water, surface, levels: waterLevels, ...(source ? { source } : {}) };
 }

@@ -110,6 +110,19 @@ verwenden weiterhin physische Höhen und Hänge. Höhenfarben und Schattierungsm
 bekommen keine zusätzliche Zeichnung. Der Höhenpinsel aktualisiert die sichtbare
 Reliefableitung bereits lokal; die Bestätigung ersetzt sie durch kanonische Daten.
 
+Bearbeitbare Anzeigekacheln übertragen zusätzlich begrenzte Rasterproben der
+absoluten Basis und der additiven Höhenbänder mit ihrem jeweiligen Maßstab.
+Zielhöhe und Glättung wählen daraus dieselben Bänder wie der kanonische Pinsel;
+die Summe aller Höhen allein reicht hierfür nicht aus. Folgegesten, Cache- und
+Frame-Aktualisierungen erhalten diese Trennung. Autorenquellen und Schreibrechte
+bleiben im Host. Die Vorschau bleibt eine interpolierte Anzeigeannäherung; dies
+entscheidet nicht den offenen Produktvertrag zum Schutz absoluter Feinhöhen.
+`tests/atlas/terrain-draft-scale.test.mjs` prüft den echten Kacheltransport gegen
+den Store einschließlich Historie und erneutem Öffnen. Die native Probe
+`tools/test-desktop-terrain-scale.mjs` prüft gemischte Maßstäbe mit
+`MIXED_MODE=lower|smooth` und `GM_QA_ZOOM=1|2`. Ihre Aufnahmen warten auf die
+GPU-Bestätigung derselben Revision und Detailstufe statt auf feste Pausen.
+
 Instanzdaten und physische Matrizen bleiben beim Zoomen erhalten. Automatische
 Kronen wachsen höchstens auf das Doppelte; geschützte Objekte bleiben maßhaltig.
 Linien verwenden die [Kartenprominenz](../contract/atlas-cartography.md#kartenprominenz)

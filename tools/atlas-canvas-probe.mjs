@@ -43,3 +43,29 @@ export async function atlasCanvasPoint(page, point, scroll = true) {
     { point, scroll },
   );
 }
+
+/** Wait for the exact source revision and completed GPU publication, not data arrival. */
+export async function atlasTerrainRendered(page, revision, timeout = 90000) {
+  await page.waitForFunction(
+    (revision) => {
+      const root = document.querySelector('#campaign-atlas'),
+        canvas = document.querySelector('#campaign-map');
+      if (
+        root?.dataset.regionState !== 'ready' ||
+        canvas?.dataset.canvasState !== 'loaded' ||
+        canvas.dataset.terrainDraft
+      )
+        return false;
+      const rendered = JSON.parse(canvas.dataset.terrainRendered ?? 'null');
+      return (
+        rendered?.revision === revision &&
+        rendered.quality === 'detail' &&
+        canvas.dataset.terrainQuality === 'detail' &&
+        Number(canvas.dataset.atlasRegionRevision) === revision
+      );
+    },
+    revision,
+    { timeout },
+  );
+  return page.locator('#campaign-map').getAttribute('data-terrain-rendered');
+}

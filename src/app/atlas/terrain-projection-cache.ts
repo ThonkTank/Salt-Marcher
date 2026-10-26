@@ -1,3 +1,9 @@
+import {
+  copyEditingSource,
+  copyEditingBlock,
+  editingSourceBytes,
+  type TerrainEditingSource,
+} from './terrain-editing-source';
 import type { TerrainHeightSource } from './terrain-height-lattice';
 import { TerrainCache, terrainBoxesOverlap } from './terrain-cache';
 import {
@@ -16,6 +22,7 @@ type Surface = {
   lattice: TerrainLattice;
   heights: Float32Array;
   ground?: Float32Array;
+  source?: TerrainEditingSource;
   levels?: Float32Array;
   water?: Uint8Array;
   dirty: Uint8Array;
@@ -30,6 +37,7 @@ type Tile =
 type GridData = {
   surface: Float32Array;
   ground?: Float32Array;
+  source?: TerrainEditingSource;
   levels?: Float32Array;
   water?: Uint8Array;
 };
@@ -145,6 +153,7 @@ export class TerrainProjectionCache {
     ground?: Float32Array,
     levels?: Float32Array,
     water?: Uint8Array,
+    source?: TerrainEditingSource,
   ) {
     if (
       heights.length !== lattice.columns * lattice.rows ||
@@ -172,6 +181,7 @@ export class TerrainProjectionCache {
         lattice: { ...lattice },
         heights: heights.slice(),
         ground: ground?.slice(),
+        source: source && copyEditingSource(source),
         levels: levels?.slice(),
         water: water?.slice(),
         dirty,
@@ -179,6 +189,7 @@ export class TerrainProjectionCache {
       key.length * 2 +
         heights.byteLength +
         (ground?.byteLength ?? 0) +
+        editingSourceBytes(source) +
         (levels?.byteLength ?? 0) +
         (water?.byteLength ?? 0) +
         dirty.byteLength +
@@ -233,23 +244,35 @@ export class TerrainProjectionCache {
     if (
       hit?.kind !== 'surface' ||
       (editable && !hit.ground) ||
+      (editable && !withWater && !hit.source) ||
       (withWater && !hit.water) ||
       hit.dirty.reduce((sum, v) => sum + v, 0) > hit.dirty.length / 2
     ) {
-      const full = yield* streamTerrainFieldSteps(lattice, sea, stream, true, pause, maxSamples);
+      const full = yield* streamTerrainFieldSteps(
+        lattice,
+        sea,
+        stream,
+        true,
+        pause,
+        maxSamples,
+        editable && !withWater,
+      );
       const ground = editable ? full.heights : undefined,
         levels = editable ? full.levels : undefined;
       const water = withWater ? full.water : undefined;
-      this.seedGrid(lattice, sea, full.surface!, ground, levels, water);
-      return { surface: full.surface!, ground, levels, water };
+      this.seedGrid(lattice, sea, full.surface!, ground, levels, water, full.source);
+      return { surface: full.surface!, ground, levels, water, source: full.source };
     }
     const heights = hit.heights.slice(),
       ground = hit.ground?.slice(),
+      source = hit.source && copyEditingSource(hit.source),
       levels = hit.levels?.slice(),
       water = hit.water?.slice();
-    if (!hit.dirty.some(Boolean)) return { surface: heights, ground, levels, water };
+    if (!hit.dirty.some(Boolean)) return { surface: heights, ground, levels, water, source };
     for (const r of terrainDirtyRects(hit.dirty, lattice.columns, lattice.rows, 4, maxSamples)) {
-      const part = streamTerrainFieldBlock(lattice, r, sea, stream);
+      const part = streamTerrainFieldBlock(lattice, r, sea, stream, true, !!source);
+      if (source)
+        copyEditingBlock(source, part.source!, lattice.columns, r.x, r.y, r.width, r.height);
       for (let y = 0; y < r.height; y++) {
         const start = y * r.width,
           end = (y + 1) * r.width,
@@ -263,12 +286,9 @@ export class TerrainProjectionCache {
     }
     // Publish only after every dirty block succeeded. A failed source read leaves
     // the old grid dirty, and previously returned frames remain immutable.
-    hit.heights.set(heights);
-    if (ground) hit.ground!.set(ground);
-    if (levels) hit.levels!.set(levels);
-    if (water) hit.water!.set(water);
-    hit.dirty.fill(0);
-    return { surface: heights, ground, levels, water };
+    // Re-account band additions/removals in the same bounded LRU budget.
+    this.seedGrid(lattice, sea, heights, ground, levels, water, source);
+    return { surface: heights, ground, levels, water, source };
   }
   pixels(key: string, box: LandscapeBox, create: () => Uint8Array) {
     const hit = this.cachedPixels(key);
