@@ -107,3 +107,36 @@ test('a corrected projection advances only its current SRD head and preserves ob
     'unchanged startup writes no new versions',
   );
 });
+
+test('complete SRD installation prepares a bounded batch and rolls back every row on failure', (t) => {
+  const db = new Database(':memory:');
+  t.after(() => db.close());
+  db.exec(
+    'CREATE TABLE authored_item(id TEXT PRIMARY KEY,revision INTEGER NOT NULL,name TEXT NOT NULL,category TEXT NOT NULL,unit_copper TEXT NOT NULL) STRICT',
+  );
+  const prepare = db.prepare.bind(db);
+  let preparations = 0;
+  db.prepare = (...args) => {
+    preparations++;
+    return prepare(...args);
+  };
+  try {
+    installItemDefinitions(db);
+  } finally {
+    db.prepare = prepare;
+  }
+  assert(preparations <= 12, `Batch prepared ${preparations} statements for a fixed source`);
+  const tables = ['item_definition', 'item_definition_version', 'authored_item'];
+  const rows = () => tables.map((table) => db.prepare(`SELECT * FROM ${table} ORDER BY id`).all());
+  const expected = rows();
+  assert(expected.every((entries) => entries.length >= source.records.length));
+  for (const table of tables) db.exec(`DELETE FROM ${table}`);
+  db.exec(`CREATE TRIGGER reject_install BEFORE INSERT ON authored_item
+    WHEN (SELECT count(*) FROM authored_item)=20
+    BEGIN SELECT RAISE(ABORT,'controlled installation failure'); END;`);
+  assert.throws(() => installItemDefinitions(db), /controlled installation failure/);
+  assert.deepEqual(rows(), [[], [], []], 'no partial definitions or version history survive');
+  db.exec('DROP TRIGGER reject_install');
+  installItemDefinitions(db);
+  assert.deepEqual(rows(), expected, 'retry retains every source byte, checksum and revision');
+});
