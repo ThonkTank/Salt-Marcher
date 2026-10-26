@@ -286,6 +286,7 @@ export class AtlasRasterPresentation implements AtlasPresentation {
       this.show();
       this.request = '';
       this.objectKey = '';
+      this.refreshFence = '';
       void this.load();
       this.host.redraw();
     } catch (error) {
@@ -410,6 +411,7 @@ export class AtlasRasterPresentation implements AtlasPresentation {
       this.needsTerrainRaster ||
       !this.active ||
       !this.fence ||
+      this.refreshFence === this.fence ||
       this.failed ||
       this.gesturing ||
       this.dirty ||
@@ -536,7 +538,8 @@ export class AtlasRasterPresentation implements AtlasPresentation {
     atlas: AtlasRenderView,
     display?: { mpp: number; roofs: boolean; scopeId: string | null },
   ) {
-    if (this.failed) return;
+    // A pending geometry read owns recovery of this obsolete source.
+    if (this.failed || this.refreshFence === this.fence) return;
     const sources = terrainObjectSources(atlas, display);
     const key = JSON.stringify([this.fence, sources]);
     if (key === this.objectKey) return;

@@ -31,10 +31,13 @@ const { AtlasRasterPresentation } = createRequire(import.meta.url)(
 function fixture(t) {
   const previous = globalThis.window;
   let release;
-  const calls = { refresh: 0, redraw: 0, errors: [], cancel: 0 };
+  const calls = { projection: 0, refresh: 0, redraw: 0, errors: [], cancel: 0 };
   globalThis.window = {
     campaign: {
-      atlasTerrainProjection: () => new Promise((r) => (release = r)),
+      atlasTerrainProjection: () => {
+        calls.projection++;
+        return new Promise((r) => (release = r));
+      },
       atlasCancelRead: async () => {
         calls.cancel++;
       },
@@ -136,4 +139,64 @@ test('a superseded surface read retains the useful frame and waits for the newer
   assert.equal(f.ui.request, '');
   assert.deepEqual(f.calls.errors, []);
   assert.equal(f.calls.refresh, 0);
+});
+
+test('a stale floor source waits for the pending geometry owner before issuing another read', async (t) => {
+  const f = fixture(t);
+  f.ui.host.refresh = async () => {
+    f.calls.refresh++;
+    return false;
+  };
+  const first = f.ui.loadObjects({});
+  f.release({ ok: false, error: 'Gelände inzwischen geändert. Ausschnitt erneut laden.' });
+  await first;
+  const repeated = f.ui.loadObjects({});
+  f.release({ ok: false, error: 'Gelände inzwischen geändert. Ausschnitt erneut laden.' });
+  await repeated;
+  assert.equal(
+    f.calls.projection,
+    1,
+    'Do not retry the obsolete source while geometry owns refresh',
+  );
+  assert.equal(f.calls.refresh, 1);
+  assert.deepEqual(f.calls.errors, []);
+  f.ui.fence = 'second';
+  f.ui.revision = 8;
+  const current = f.ui.loadObjects({});
+  f.release({ ok: true, value: { revision: 8, fence: 'second', objects: [] } });
+  await current;
+  assert.equal(f.calls.projection, 2);
+  assert.equal(f.calls.redraw, 1);
+});
+
+test('surface tiles also wait for a new confirmed fence after a deferred source refresh', async (t) => {
+  const f = fixture(t);
+  let reads = 0;
+  Object.defineProperty(f.ui, 'needsTerrainRaster', { value: false });
+  Object.assign(f.ui, {
+    active: true,
+    ready: true,
+    generation: 0,
+    request: '',
+    host: { ...f.ui.host, writing: () => false },
+    settleFirst() {},
+    stream: {
+      cancel() {},
+      async load() {
+        reads++;
+        throw Error('Gelände inzwischen geändert');
+      },
+    },
+  });
+  await f.ui.load();
+  await f.ui.load();
+  assert.equal(reads, 1);
+  assert.equal(f.calls.refresh, 1);
+  assert.deepEqual(f.calls.errors, []);
+  f.ui.fence = 'second';
+  f.ui.revision = 8;
+  await f.ui.load();
+  assert.equal(reads, 2, 'A newly confirmed fence reopens tile loading');
+  assert.equal(f.calls.refresh, 2);
+  assert.deepEqual(f.calls.errors, []);
 });

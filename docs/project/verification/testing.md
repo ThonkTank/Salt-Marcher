@@ -182,6 +182,12 @@ sie erzeugen weder Körper noch Marker oder Trefferziele. Anzeige und Export
 verwenden diese gemeinsame Geschossbasis. `tests/atlas/terrain-objects.test.mjs`
 prüft den entfernten Ursprung, Höhenänderung und ausbleibende Scheingeometrie.
 
+Die Quellenwiederaufnahme wartet außerdem auf den bereits lesenden
+Geometrieeigentümer: Derselbe überholte Quellenstand darf nicht erneut an
+Gelände-/Objektprojektion gehen und deren Fehlerzustand verriegeln.
+`tests/atlas/atlas-presentation-source.test.mjs` prüft beide Lesewege und die
+Wiederaufnahme mit neuer bestätigter Quelle.
+
 Die Probe setzt die Maßeinheit vor Koordinateneingaben ausdrücklich auf Meter.
 Hausbewegung erfolgt über den Inspektor; Undo und frischer Prozess müssen alle
 Gebäude-, Raumgruppen-, Geschoss-, Bindungs-, Geometrie- und privaten Textdaten
