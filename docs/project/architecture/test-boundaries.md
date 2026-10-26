@@ -143,3 +143,20 @@ Capability-Katalog verknüpft und mit `--geprueft` fortgeschrieben. Native
 Raumöffnung, Atlasexport bei 100/200 % und passive Spielerfreigabe prüfen die
 Rendererzusammensetzung. Die optionale dichte Stadt-/Regionsprobe, Installation,
 veröffentlichte Pakete und menschliche Produktabnahme sind dadurch nicht belegt.
+
+### Native Browsertrennung (2026-10-26)
+
+`tools/test-desktop-brush-worker.mjs` lädt den ausgelieferten Worker im echten
+Electron-App-Protokoll und prüft Pixelantwort, Fehlerantwort und einen weiteren
+Auftrag nach dem Fehler, einschließlich regulärem Prozessende. Exportproben bei
+100/200 % samt frischer Wiederöffnung und die normale Raumprobe bestehen.
+
+Die umfassende Höhenprobe bleibt offen: `test-desktop-height-workflow.mjs:178`
+meldet am geschützten Punkt 50 statt 300 Meter. Derselbe Fehler wurde auf dem
+sauberen, frisch gebauten Basiscommit `57d2f2f2f` reproduziert. Die ältere
+`test-desktop-terrain-brush.mjs:285` läuft beim Warten auf den Text „Vorschau“ in
+einen Timeout; die aktuelle Oberfläche malt direkt, und ihr Höhenvorschauwert
+wird nur zurückgesetzt. Beide Proben zählen nicht als bestanden. Die Raumprobe
+protokolliert beim Schließen IPC-/Shutdown-Meldungen trotz bestandener Assertions
+und drei regulärer Prozessenden. Die gezielte Workerprobe ersetzt weder diese
+offenen Abläufe noch Verpackung, Installation oder menschliche Produktabnahme.
