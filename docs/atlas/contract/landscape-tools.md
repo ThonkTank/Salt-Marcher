@@ -99,4 +99,12 @@ Die historischen Landmasken- und Vierpinselbeschreibungen oben werden für die a
 Die aktuelle native Prüfung ist `tools/test-desktop-terrain-brush.mjs`: Insel aus leerem Meer, Hügel, Hochfläche, Bucht, Glätten, sichtbare Farbe/Radierung, History, Abbruch, Speicherfehler, Export und Neustart. `tools/test-desktop-terrain-height.mjs` und die Landaktion der Layoutprobe verwenden ebenfalls die neue Bedienung. Ältere Vierpinsel-/Fraktalproben dokumentieren historische Operationsverträge und sind keine Qualifikation der drei neuen Werkzeuge. [Prüfbeleg](https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/terrain-land-tools-20261020/README.md).
 
 
+Die begrenzte native UI-Qualifikation `tools/test-desktop-terrain-brush.mjs
+--preview-only` prüft sichtbare Wasserbildung bei gedrücktem Zeiger vor dem
+Speichern, Pointer-up sowie Pixel- und Datenwiederherstellung mit Undo/Redo.
+Sie verwendet die aktuelle lokale Rastervorschau (`AtlasSurfaceDraft`), nicht
+den veralteten Text „Vorschau“ am Höhenwert. Die separate Browserworker-Probe
+belegt dessen Protokollanschluss. Der begrenzte Modus behauptet keine erneute
+Abnahme sämtlicher oben genannter R2-Abläufe oder des Feindetailschutzes.
+
 Die gemeinsame [Formatpolitik](../../project/contract/data-format.md) ersetzt frühere Schema- und Migrationsangaben.

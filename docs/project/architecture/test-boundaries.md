@@ -151,12 +151,33 @@ Electron-App-Protokoll und prüft Pixelantwort, Fehlerantwort und einen weiteren
 Auftrag nach dem Fehler, einschließlich regulärem Prozessende. Exportproben bei
 100/200 % samt frischer Wiederöffnung und die normale Raumprobe bestehen.
 
+Die relevante UI-Grenze prüft `tools/test-desktop-terrain-brush.mjs --preview-only`:
+Eine native Geste senkt eine einfache, ungeschützte Insel unter den Meeresspiegel.
+Der Pixelvergleich misst einen inneren Bereich oberhalb des Zeigers, außerhalb
+von Cursor, Pinselrand und Tooltip, sowie einen unberührten Kontrollbereich.
+Sichtbares Land muss bereits bei gedrücktem Zeiger zur Wasserfarbe des
+Kontrollbereichs wechseln, während die kanonischen Höhendaten unverändert sind.
+Pointer-up schreibt die Geste; ein Undo stellt Daten und Pixel wieder her,
+Redo stellt beides erneut her. Kamera und Zielhöhe werden über die tatsächliche
+Ansicht beziehungsweise stabile Fensterpixel begrenzt. Ready-Flags dienen nur
+der Synchronisation, nicht als Sichtbarkeitsnachweis. Ein Gegenversuch mit
+vorübergehend unterbrochenem `previewHeight`-Anschluss ausschließlich im lokalen
+Testbundle scheitert an der Pixelassertion; das Originalbundle wurde danach
+wiederhergestellt.
+
+Die frühere Textannahme „Vorschau“ ist überholt. Der tatsächliche UI-Pfad läuft
+über `LandscapeBrushSession` → `previewHeight` → `AtlasSurfaceDraft` und die
+Rasterdarstellung. `TerrainDraftStroke` übergibt erst bei Pointer-up an die
+Speicherqueue. „Malt direkt“ beschreibt lokale sichtbare Rückmeldung, keine
+vorzeitige Speicherung. Der isolierte Browserworker besitzt einen separaten
+Protokollnachweis und ersetzt diese UI-Probe nicht. Der begrenzte Modus lässt
+die weiteren Assertions der umfassenden Probe bestehen, qualifiziert sie aber
+nicht mit.
+
 Die umfassende Höhenprobe bleibt offen: `test-desktop-height-workflow.mjs:178`
 meldet am geschützten Punkt 50 statt 300 Meter. Derselbe Fehler wurde auf dem
-sauberen, frisch gebauten Basiscommit `57d2f2f2f` reproduziert. Die ältere
-`test-desktop-terrain-brush.mjs:285` läuft beim Warten auf den Text „Vorschau“ in
-einen Timeout; die aktuelle Oberfläche malt direkt, und ihr Höhenvorschauwert
-wird nur zurückgesetzt. Beide Proben zählen nicht als bestanden. Die Raumprobe
+sauberen, frisch gebauten Basiscommit `57d2f2f2f` reproduziert. Das unabhängige
+Vorschau-Fixture benötigt diesen Feindetailschutz nicht. Die Raumprobe
 protokolliert beim Schließen IPC-/Shutdown-Meldungen trotz bestandener Assertions
-und drei regulärer Prozessenden. Die gezielte Workerprobe ersetzt weder diese
-offenen Abläufe noch Verpackung, Installation oder menschliche Produktabnahme.
+und drei regulärer Prozessenden. Verpackung, Installation und menschliche
+Produktabnahme sind weiterhin nicht belegt.
