@@ -9,7 +9,7 @@ const require = createRequire(import.meta.url);
 buildSync({
   stdin: {
     contents:
-      "export * from './src/app/atlas/terrain-spatial-model';export * from './src/app/atlas/terrain-objects';export * from './src/app/atlas/atlas-object-geometry';export * from './src/app/atlas/terrain-profile';export * from './src/app/atlas/terrain-height';export * from './src/app/runtime/world-model';export * from './src/app/storage/store';export * from './src/app/storage/atlas-region';",
+      "export * from './src/app/atlas/terrain-spatial-model';export * from './src/app/atlas/terrain-objects';export * from './src/app/atlas/atlas-object-geometry';export * from './src/app/atlas/terrain-profile';export * from './src/app/atlas/atlas-workplane';export * from './src/app/atlas/terrain-height';export * from './src/app/runtime/world-model';export * from './src/app/storage/store';export * from './src/app/storage/atlas-region';",
     resolveDir: process.cwd(),
   },
   bundle: true,
@@ -19,6 +19,7 @@ buildSync({
   outfile: '.build/terrain-objects-test.cjs',
 });
 const {
+  atlasWorkplaneHeight,
   terrainObjectSources,
   resolveTerrainObjects,
   atlasObjectGeometry,
@@ -528,4 +529,38 @@ test('bounded lake and sea surfaces share canonical water levels in the tilted v
   assert.equal(grid.heights[2 * 33 + 22], 117.5);
   const sea = terrainGrid([], view);
   assert(sea.heights.every((h) => h === 0));
+});
+
+test('free room floors retain canonical origin height outside visible terrain tiles', () => {
+  const view = {
+    cities: [],
+    entrances: [],
+    workspace: { rooms: [] },
+    geometry: { floors: [] },
+    bindings: [
+      { id: 'binding', kind: 'dungeon', ownerId: 'free', parent: 'world', x: 20, y: 20, angle: 0 },
+    ],
+  };
+  const sources = terrainObjectSources(view);
+  assert.equal(sources.length, 1);
+  assert.equal(sources[0].kind, 'scope');
+  const objects = resolveTerrainObjects(sources, [heights()]);
+  const layer = new AtlasObjectGeometry();
+  layer.update(objects, { x: 20000, y: 0, z: 0 }, 1);
+  assert.equal(layer.meshes.length, 0, 'A floor reference invents no body or marker');
+  assert.equal(layer.closedIds.size, 0);
+  assert.equal(layer.heights.size, 0);
+  const plane = { scopeId: 'free', anchor: { x: 20, y: 20 }, elevationM: 4 };
+  assert.equal(
+    atlasWorkplaneHeight(plane, {
+      scopeBases: layer.scopeBases,
+      height: () => {
+        throw Error('Offscreen anchor must not fall back to viewport tiles');
+      },
+    }),
+    119,
+  );
+  layer.update(resolveTerrainObjects(sources, [heights(20)]), { x: 0, y: 0, z: 0 }, 1);
+  assert.equal(atlasWorkplaneHeight(plane, { scopeBases: layer.scopeBases, height: () => 0 }), 139);
+  layer.dispose();
 });

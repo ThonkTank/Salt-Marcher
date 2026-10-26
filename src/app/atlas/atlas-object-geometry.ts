@@ -10,7 +10,7 @@ export function atlasObjectGeometry(
   exaggeration: number,
 ) {
   const meshes: AtlasDrawingMesh[] = [];
-  if (object.closed === false || object.kind === 'entrance') return meshes;
+  if (object.closed === false || object.kind !== 'building') return meshes;
   const add = (vertices: number[], color: string) => {
     if (!vertices.length) return;
     const geometry = new THREE.BufferGeometry();

@@ -146,7 +146,7 @@ export function validateTerrainProjection(q: TerrainProjectionRequest) {
       )
         throw Error('Baukörperansicht prüfen.');
       if (
-        !['building', 'entrance'].includes(o.kind) ||
+        !['building', 'entrance', 'scope'].includes(o.kind) ||
         typeof o.id !== 'string' ||
         typeof o.name !== 'string' ||
         !Array.isArray(o.outline) ||

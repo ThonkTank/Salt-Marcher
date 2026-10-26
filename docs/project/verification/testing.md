@@ -155,15 +155,44 @@ für Stärke in Metern/Sekunde, keine Bereitschaftspause.
 Der Basissatz ersetzt weder die große Mischwelt noch sämtliche optionalen
 Raum-/Stadtprüfungen, Paket-/Installationsprüfung oder menschliche Produktabnahme.
 
-Offener Befund aus Abschnitt 1: `tools/test-desktop-room-reads.mjs --regions`
-erreicht nach der Navigationskorrektur Suchtreffer, gezieltes Haus-Edit samt
-Detailread-Fehlerklärung sowie Verschieben und Undo. Beim Herauszoomen auf die
-dichte Stadt scheitert weiterhin `Actual native screen paints the dense geometry
-image`: Im nativen Screenshot bleibt die Stadtfläche leer. Das Fixture enthält
-5.000 direkt eingesetzte Stadtobjekte; die nähere Ansicht zeigt deren Dächer.
-Ob zusätzlich fehlende Raumgruppen im älteren Fixture beitragen, ist noch nicht
-abschließend geklärt. Dieser Bild-/Fixturebefund bleibt offen, die Assertion
-wurde nicht gelockert und der optionale Lauf wird nicht als bestanden gewertet.
+Die dichte Stadtprobe (`tools/test-desktop-room-reads.mjs --regions --zoom=1`
+und `--zoom=2`) legt 5.000 Gebäude mit unveränderten Haus-IDs, Positionen und
+privaten Texten über den Fachwriter an. Die frühere SQL-Fixture ließ Raumgruppen,
+Geschosse und Eingänge aus. Der gültige Bestand deckte einen Produktfehler auf:
+Gebäude und Eingangsanker überschritten gemeinsam das Projektionsbudget, obwohl
+die Gebäude allein noch hineinpassten. Die Regionsregression erzeugt 751 Häuser
+und prüft den Wechsel auf Rastergeometrie samt sichtbaren Daten und genauem Treffer.
+
+Weitere Ursachen des früheren Bildbefunds waren Testannahmen: leeres Gelände liegt
+bei −100 m unter Meeresspiegel; Stadtpapier ist keine Atlasgeometrie; 24 feste
+Zoomschritte unterschritten die vorhandene Zwei-Pixel-Grenze für Gebäude.
+Die Probe erzeugt trockenes Gelände und prüft 2,5 m je CSS-Pixel. Erst nach
+bestätigten Rasterdaten und vollständig geladener aktueller Geländekamera nimmt
+sie das native Bild auf. Mehr als 100 sichtbare Pixel müssen innerhalb der
+bestätigten Dachflächen vom benachbarten unbebauten Gelände abweichen; zusätzlich
+werden vier projizierte Hauspositionen geprüft. Dieser Vergleich berücksichtigt
+die vorhandene Flächenalpha-Mischung statt eine ungemischte Papier-/Dachfarbe
+zu verlangen. Bereitschaftsflags allein erfüllen den Bildnachweis nicht.
+
+Die trockene Fixture deckte außerdem eine fehlende Höhenauflösung freier
+Raumgruppen auf: Liegt deren Ursprung außerhalb geladener Geländekacheln, darf
+das Geschoss nicht auf Höhe 0 zurückfallen. Höhenreferenzen vom Typ `scope`
+werden deshalb über denselben begrenzten Main-Projektionsweg kanonisch aufgelöst;
+sie erzeugen weder Körper noch Marker oder Trefferziele. Anzeige und Export
+verwenden diese gemeinsame Geschossbasis. `tests/atlas/terrain-objects.test.mjs`
+prüft den entfernten Ursprung, Höhenänderung und ausbleibende Scheingeometrie.
+
+Die Probe setzt die Maßeinheit vor Koordinateneingaben ausdrücklich auf Meter.
+Hausbewegung erfolgt über den Inspektor; Undo und frischer Prozess müssen alle
+Gebäude-, Raumgruppen-, Geschoss-, Bindungs-, Geometrie- und privaten Textdaten
+erhalten. Der Rasterklick wählt ein anderes Haus als den zuvor geöffneten
+Innenraum. Beim Umhängen derselben Canvas in Live bleiben Weltmittelpunkt und
+horizontaler Maßstab erhalten; die obere Kante darf sich mit dem Seitenverhältnis
+ändern. Vor dem Wechsel wartet die Probe auf die Zielkamera des gewählten
+Raums, nicht nur dessen bereits aktualisierten Namen. Vier Innenpunkte der
+Live-Raumfläche müssen sich sichtbar vom benachbarten unbebauten Gelände
+abheben; ein Raumname allein genügt nicht. Native Ergebnisdateien, vollständige Candidate-CI und Produktabnahme
+bleiben getrennte Aussagen.
 
 ## Architekturprüfungen und Fachanschlüsse
 

@@ -44,7 +44,7 @@ export function validateTerrainBuilding(b: TerrainBuilding | undefined) {
     throw Error('Wandhöhe (0,1–1000 m) und Dachhöhe (0–1000 m) prüfen.');
 }
 export interface TerrainObjectSource {
-  kind: 'building' | 'entrance';
+  kind: 'building' | 'entrance' | 'scope';
   id: string;
   name: string;
   cityId?: string;
@@ -107,6 +107,27 @@ export function terrainObjectSources(
         color: city.header.roof,
       });
     }
+  }
+  // Free room groups need the canonical ground at their frame origin even when
+  // that origin is outside the viewport's terrain tiles. These are height-only
+  // references: they never create a footprint, marker or hit target.
+  for (const binding of a.bindings) {
+    if (binding.kind !== 'dungeon' || binding.parent !== 'world') continue;
+    const frame = atlasFrame(a, binding);
+    objects.push({
+      kind: 'scope',
+      id: binding.id,
+      scopeId: binding.ownerId,
+      name: '',
+      closed: false,
+      anchor: { x: frame.x, y: frame.y },
+      outline: [],
+      binding: { mode: 'ground', offsetM: 0 },
+      wallM: 0,
+      roofM: 0,
+      floorElevations: [],
+      color: '#000000',
+    });
   }
   for (const e of a.entrances) {
     const binding = a.bindings.find((b) => b.kind === 'dungeon' && b.ownerId === e.scopeId);

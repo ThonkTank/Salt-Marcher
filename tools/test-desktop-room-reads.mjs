@@ -261,6 +261,35 @@ try {
       window.scrollBy({ top, behavior: 'instant' });
     });
   }
+  async function moveAtlasPointer(page, point) {
+    await page.evaluate(() => {
+      window.__roomPointer = null;
+      window.__roomPointerListener = (event) => {
+        window.__roomPointer = { x: event.clientX, y: event.clientY, target: event.target.id };
+      };
+      document.addEventListener('pointermove', window.__roomPointerListener, true);
+    });
+    try {
+      await page.mouse.move(point.x - 1, point.y - 1);
+      let actual = await page.evaluate(() => window.__roomPointer),
+        factor = 1;
+      if (!actual || Math.hypot(actual.x - (point.x - 1), actual.y - (point.y - 1)) > 2)
+        factor = zoom;
+      await page.mouse.move(point.x * factor, point.y * factor);
+      actual = await page.evaluate(() => window.__roomPointer);
+      assert(
+        actual &&
+          Math.hypot(actual.x - point.x, actual.y - point.y) < 2 &&
+          actual.target === 'campaign-map',
+        'Native pointer reaches the projected Atlas point',
+      );
+      return factor;
+    } finally {
+      await page.evaluate(() =>
+        document.removeEventListener('pointermove', window.__roomPointerListener, true),
+      );
+    }
+  }
   async function finish() {
     await native.close();
   }
@@ -363,6 +392,7 @@ try {
   let page = await launch();
   await instrument();
   await enter(page);
+  await page.locator('#atlas-units').selectOption('metric');
   await page.waitForFunction(() => document.querySelector('#rooms button'), { timeout: 30000 });
   const legacyMaps = async () => {
     const counts = await page.evaluate(() =>
@@ -610,7 +640,8 @@ try {
       x: 50000 + site.value.unit.position.x,
       y: 40000 + site.value.unit.position.y,
     });
-    await page.mouse.move(center.x, center.y);
+    const pointerFactor = await moveAtlasPointer(page, center);
+    results.pointerFactor = pointerFactor;
     // Six-metre houses must remain above the existing two-CSS-pixel cutoff.
     // Zoom to 2.5 m/CSS pixel at either UI scale instead of overshooting it.
     let logarithmicZoom = Math.log(2.5 / center.unitsPerPixel);
@@ -780,7 +811,8 @@ try {
       x: 50010 + 98 * 12,
       y: 40010 + 48 * 12,
     });
-    await page.mouse.click(hitPoint.x, hitPoint.y);
+    const hitFactor = await moveAtlasPointer(page, hitPoint);
+    await page.mouse.click(hitPoint.x * hitFactor, hitPoint.y * hitFactor);
     await page.waitForFunction(
       () =>
         document.querySelector('#campaign-atlas').dataset.regionState === 'ready' &&
@@ -790,6 +822,12 @@ try {
       { timeout: 60000 },
     );
     results.exactRasterHit = 'building-4898';
+    await atlasCanvasReady(page);
+    await page.waitForFunction(
+      () => document.querySelector('#campaign-map').dataset.terrainQuality === 'detail',
+      null,
+      { timeout: 60000 },
+    );
     await capture(page, output + '/city-region.png');
     await page.locator('#atlas-search').fill('Geänderte Spur');
     await page.locator('#atlas-search-results button').filter({ hasText: '4000' }).click();
@@ -797,10 +835,19 @@ try {
     await page.waitForFunction(
       () =>
         document.querySelector('#campaign-atlas').dataset.regionState === 'ready' &&
-        document.querySelector('#campaign-map').dataset.canvasState === 'loaded',
+        document.querySelector('#campaign-map').dataset.canvasState === 'loaded' &&
+        (() => {
+          const view = JSON.parse(document.querySelector('#campaign-map').dataset.atlasView);
+          return (
+            Math.abs(view.x + view.width / 2 - 19996.5) < 1e-9 &&
+            Math.abs(view.y + view.height / 2 - 1.5) < 1e-9 &&
+            view.width === 30
+          );
+        })(),
       null,
       { timeout: 60000 },
     );
+    native.mark('shared Live canvas and room pixels');
     const beforeLive = await page.evaluate(
       async ({ token, sceneId }) => window.campaign.sceneWorld(token, sceneId),
       { token, sceneId },
@@ -808,10 +855,11 @@ try {
     assert(beforeLive.ok);
     await page.evaluate(() => {
       window.__regionMap = document.querySelector('#campaign-map');
+      const view = JSON.parse(window.__regionMap.dataset.atlasView);
       window.__regionCamera = {
-        x: window.__regionMap.dataset.atlasOriginX,
-        y: window.__regionMap.dataset.atlasOriginY,
-        width: JSON.parse(window.__regionMap.dataset.atlasView).width,
+        x: view.x + view.width / 2,
+        y: view.y + view.height / 2,
+        width: view.width,
       };
     });
     await nav(page, 'live-tab');
@@ -829,37 +877,66 @@ try {
         () => window.__regionMap === document.querySelector('#live-center-map #campaign-map'),
       ),
     );
-    const camera = await page.evaluate(() => ({
-      before: window.__regionCamera,
-      after: {
-        x: window.__regionMap.dataset.atlasOriginX,
-        y: window.__regionMap.dataset.atlasOriginY,
-        width: JSON.parse(window.__regionMap.dataset.atlasView).width,
-      },
-    }));
-    assert.deepEqual(camera.before, camera.after);
-    const liveSample = {
-      ...(await atlasCanvasPoint(page, { x: 19995.6, y: 0.6 })),
-      fill: '#e8d8ac',
-      ...(await page.evaluate(() => ({ width: innerWidth, height: innerHeight }))),
-    };
-    await capture(page, output + '/live-region.png');
-    const livePixels = require('pngjs').PNG.sync.read(await readFile(output + '/live-region.png')),
-      expected = [1, 3, 5].map((i) => parseInt(liveSample.fill.slice(i, i + 2), 16)),
-      sx = Math.round((liveSample.x * livePixels.width) / liveSample.width),
-      sy = Math.round((liveSample.y * livePixels.height) / liveSample.height);
-    let visibleRoomPixels = 0;
-    for (let y = sy - 2; y <= sy + 2; y++)
-      for (let x = sx - 2; x <= sx + 2; x++) {
-        const i = (y * livePixels.width + x) * 4;
-        if (expected.every((v, c) => Math.abs(livePixels.data[i + c] - v) < 3)) visibleRoomPixels++;
-      }
-    results.liveSample = { ...liveSample, sx, sy, matches: visibleRoomPixels };
-    assert(
-      visibleRoomPixels >= 5,
-      'Actual native Live screen paints the displayed room at its expected location',
+    await atlasCanvasReady(page);
+    await page.waitForFunction(
+      () => document.querySelector('#campaign-map').dataset.terrainQuality === 'detail',
+      null,
+      { timeout: 60000 },
     );
-    results.visibleLiveRoomPixels = visibleRoomPixels;
+    const camera = await page.evaluate(() => {
+      const view = JSON.parse(window.__regionMap.dataset.atlasView);
+      return {
+        before: window.__regionCamera,
+        after: { x: view.x + view.width / 2, y: view.y + view.height / 2, width: view.width },
+      };
+    });
+    results.liveCamera = camera;
+    await writeFile(output + '/live-camera.json', JSON.stringify(camera, null, 2));
+    for (const key of ['x', 'y', 'width'])
+      assert(
+        Math.abs(camera.before[key] - camera.after[key]) < 1e-9,
+        'Docking preserves the world camera center and horizontal scale',
+      );
+    // Test the room face spatially. Native color composition need not preserve
+    // the raw paint RGB; blank land or a centered room label must still fail.
+    await atlasCanvasPoint(page, { x: 19995.6, y: 0.6 });
+    const livePoints = [];
+    for (const point of [
+      { x: 19995.6, y: 0.6 },
+      { x: 19997.4, y: 0.6 },
+      { x: 19995.6, y: 2.4 },
+      { x: 19997.4, y: 2.4 },
+    ])
+      livePoints.push(await atlasCanvasPoint(page, point, false));
+    const liveGround = await atlasCanvasPoint(page, { x: 19994, y: 0.6 }, false);
+    assert([...livePoints, liveGround].every((p) => p.target === 'campaign-map'));
+    const screen = await page.evaluate(() => ({ width: innerWidth, height: innerHeight }));
+    await capture(page, output + '/live-region.png');
+    const livePixels = require('pngjs').PNG.sync.read(await readFile(output + '/live-region.png'));
+    const pixelAt = (p) => ({
+      x: Math.round((p.x * livePixels.width) / screen.width),
+      y: Math.round((p.y * livePixels.height) / screen.height),
+    });
+    const liveGroundPixel = pixelAt(liveGround),
+      gi = (liveGroundPixel.y * livePixels.width + liveGroundPixel.x) * 4,
+      background = [...livePixels.data.subarray(gi, gi + 3)];
+    const samples = livePoints.map((point) => {
+      const p = pixelAt(point);
+      let matches = 0;
+      for (let y = p.y - 2; y <= p.y + 2; y++)
+        for (let x = p.x - 2; x <= p.x + 2; x++) {
+          const i = (y * livePixels.width + x) * 4;
+          if (background.some((v, c) => Math.abs(livePixels.data[i + c] - v) > 10)) matches++;
+        }
+      return { ...p, matches };
+    });
+    results.liveSample = { background, samples };
+    await writeFile(output + '/live-evidence.json', JSON.stringify(results.liveSample, null, 2));
+    assert(
+      samples.every((p) => p.matches >= 5),
+      'Actual native Live screen paints all four room interiors against adjacent unbuilt terrain',
+    );
+    results.visibleLiveRoomPixels = samples.reduce((sum, p) => sum + p.matches, 0);
     await nav(page, 'atlas-tab');
     await page.waitForFunction(
       () =>
@@ -879,6 +956,7 @@ try {
     assert.deepEqual(afterLive.value.position, beforeLive.value.position);
     assert.equal(afterLive.value.scene.clock.instantMs, beforeLive.value.scene.clock.instantMs);
     results.sharedLiveCanvasAndFacts = true;
+    native.mark('export room geometry');
     const exportFile = output + '/region-export.png';
     await app.evaluate(({ dialog }, file) => {
       const original = dialog.showSaveDialog;
@@ -905,9 +983,9 @@ try {
     let roomPixels = 0;
     for (let i = 0; i < png.data.length; i += 4)
       if (
-        Math.abs(png.data[i] - 222) < 3 &&
-        Math.abs(png.data[i + 1] - 215) < 3 &&
-        Math.abs(png.data[i + 2] - 189) < 3
+        Math.abs(png.data[i] - 226) < 3 &&
+        Math.abs(png.data[i + 1] - 218) < 3 &&
+        Math.abs(png.data[i + 2] - 196) < 3
       )
         roomPixels++;
     assert(roomPixels > 50, 'Actual exported PNG contains room geometry');
