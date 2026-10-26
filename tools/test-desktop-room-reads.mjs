@@ -223,6 +223,9 @@ try {
     results = { cityFixture, profile, campaignId: cam.id, longId, launches: native.launches };
   async function launch() {
     const page = await native.launch(zoom);
+    page.on('console', (message) => {
+      if (message.type() === 'error') console.error('[renderer] ' + message.text());
+    });
     app = native.app;
     if (await page.locator('#tutorial-dialog').isVisible())
       await page.locator('#tutorial-skip').click();
@@ -295,9 +298,13 @@ try {
   }
   async function nav(page, id) {
     if (!(await page.locator('#' + id).isVisible())) {
-      if (await page.locator('#atlas-navigation').isVisible())
+      if (
+        (await page.locator('#atlas-navigation').isVisible()) &&
+        !(await page.locator('#atlas-navigation-popup').isVisible())
+      )
         await page.locator('#atlas-navigation').click();
-      else await page.locator('#workspace-nav-summary').click();
+      if (!(await page.locator('#' + id).isVisible()))
+        await page.locator('#workspace-nav-summary').click();
     }
     await page.locator('#' + id).click();
   }
@@ -311,7 +318,7 @@ try {
       () =>
         document.body.classList.contains('has-workspace') && !document.querySelector('main').inert,
     );
-    await nav(page, 'atlas-tab');
+    if (await page.locator('#campaign-atlas').isHidden()) await nav(page, 'atlas-tab');
     await page.waitForFunction(
       () =>
         document.querySelector('#campaign-atlas') &&
@@ -588,7 +595,7 @@ try {
     await atlasCanvasReady(page);
     results.targetedHouseEditPreservesNotes = true;
     native.mark('move house and undo');
-    await page.locator('#atlas-section').selectOption('city');
+    assert.equal(await page.locator('#atlas-section').inputValue(), 'city');
     await page.locator('#atlas-select').click();
     await page.waitForFunction(
       () =>
@@ -647,7 +654,7 @@ try {
     let logarithmicZoom = Math.log(2.5 / center.unitsPerPixel);
     while (Math.abs(logarithmicZoom) > 1e-8) {
       const step = Math.max(-1, Math.min(1, logarithmicZoom));
-      await page.mouse.wheel(0, step / 0.002);
+      await page.mouse.wheel(0, (step / 0.002) * pointerFactor);
       logarithmicZoom -= step;
     }
     await page.waitForFunction(
@@ -738,13 +745,13 @@ try {
     // Flat, dry terrain is the control. Count changed native pixels only where
     // the confirmed raster contains roof coverage; alpha-blended roofs need not
     // have the uncomposited source RGB. Labels elsewhere cannot satisfy this.
-    const groundPoint = await atlasCanvasPoint(page, { x: 51198, y: 40998 }, false);
+    const groundPoint = await atlasCanvasPoint(page, { x: 51228, y: 40598 }, false);
     assert.equal(groundPoint.target, 'campaign-map');
     const groundOffset =
       (Math.round(groundPoint.y * scaleY) * denseImage.width + Math.round(groundPoint.x * scaleX)) *
       4;
     const ground = [...denseImage.data.slice(groundOffset, groundOffset + 3)];
-    const groundSource = sourceAt({ x: 51198, y: 40998 });
+    const groundSource = sourceAt({ x: 51228, y: 40598 });
     assert(
       groundSource >= 0 && sourcePng.data[groundSource + 3] === 0,
       'Control is outside roof imagery',
@@ -965,6 +972,10 @@ try {
         return { canceled: false, filePath: file };
       };
     }, exportFile);
+    if (await page.locator('#atlas-secondary').isVisible())
+      await page.locator('#atlas-secondary-close').click();
+    await page.locator('#atlas-output-open').click();
+    await page.locator('#atlas-output-back').waitFor({ state: 'visible' });
     const details = page
       .locator('details')
       .filter({ has: page.locator('#atlas-export-size') })
@@ -991,6 +1002,7 @@ try {
     assert(roomPixels > 50, 'Actual exported PNG contains room geometry');
     results.exportedGeometryPixels = roomPixels;
     results.zoom = zoom;
+    await page.locator('#atlas-output-back').click();
   }
   await legacyMaps();
   results.beforeClose = await app.evaluate(() => global.__roomProbe);
