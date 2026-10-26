@@ -779,17 +779,28 @@ try {
     // Flat, dry terrain is the control. Count changed native pixels only where
     // the confirmed raster contains roof coverage; alpha-blended roofs need not
     // have the uncomposited source RGB. Labels elsewhere cannot satisfy this.
-    const groundPoint = await atlasCanvasPoint(page, { x: 51228, y: 40598 }, false);
+    const groundPoint = await atlasCanvasPoint(page, { x: 51228, y: 40638 }, false);
     assert.equal(groundPoint.target, 'campaign-map');
     const groundOffset =
       (Math.round(groundPoint.y * scaleY) * denseImage.width + Math.round(groundPoint.x * scaleX)) *
       4;
     const ground = [...denseImage.data.slice(groundOffset, groundOffset + 3)];
-    const groundSource = sourceAt({ x: 51228, y: 40598 });
+    const groundSource = sourceAt({ x: 51228, y: 40638 });
     assert(
       groundSource >= 0 && sourcePng.data[groundSource + 3] === 0,
       'Control is outside roof imagery',
     );
+    const gx = Math.round(groundPoint.x * scaleX),
+      gy = Math.round(groundPoint.y * scaleY);
+    for (let y = gy - 2; y <= gy + 2; y++)
+      for (let x = gx - 2; x <= gx + 2; x++) {
+        const offset = (y * denseImage.width + x) * 4;
+        assert(
+          ground.every((v, c) => Math.abs(denseImage.data[offset + c] - v) <= 1),
+          'Unbuilt control is uniform terrain, outside labels and markers',
+        );
+      }
+    results.denseControl = { world: { x: 51228, y: 40638 }, rgb: ground, uniformPixels: 25 };
     const roof = [1, 3, 5].map((i) => parseInt(site.value.header.roof.slice(i, i + 2), 16));
     const roofPixel = (x, y) => {
       if (
@@ -842,6 +853,7 @@ try {
           source: results.denseSource,
           readiness: results.denseReadiness,
           roofPixels,
+          control: results.denseControl,
           samples: results.denseSamples,
         },
         null,
