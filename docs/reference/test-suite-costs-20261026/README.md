@@ -5,6 +5,9 @@ Owner: project
 Last Reviewed: 2026-10-26
 Source of Truth: [Messdaten](measurements.json), `tools/measure-test-suite.py` und die unveränderte Auswahl von `tools/run-tests.mjs`.
 
+Die anschließende [begrenzte Fortsetzung](continuation.md) untersucht UI-Retention
+und primitive Transfervarianten; sie enthält einen weiteren vollständigen Vergleich.
+
 ## Vergleich und Grenze
 
 Ein vollständiger Vorher-/Nachherlauf auf demselben Linux-Rechner: Pentium Gold

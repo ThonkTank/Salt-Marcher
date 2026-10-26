@@ -157,6 +157,20 @@ function visit(
     );
   }
   if ('union' in rule) {
+    // Primitive alternatives cannot collect or rewrite references. Check their
+    // membership directly instead of constructing errors for each valid enum's
+    // preceding alternatives. Structural/reference unions still use the probe.
+    if (rule.union.every((candidate) => 'literal' in candidate || 'scalar' in candidate)) {
+      if (
+        rule.union.some((candidate) =>
+          'literal' in candidate
+            ? value === candidate.literal
+            : 'scalar' in candidate && typeof value === candidate.scalar,
+        )
+      )
+        return value;
+      return unsupported(path);
+    }
     // Try structurally matching branches without exposing speculative references to
     // the collector. Only the selected branch participates in identity closure.
     const probe: TransferContext = {

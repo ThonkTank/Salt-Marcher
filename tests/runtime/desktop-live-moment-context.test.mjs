@@ -1,3 +1,4 @@
+import { afterFixture, freshFixtureModule } from '../helpers/fixture-lifecycle.mjs';
 import { liveInstance } from '../helpers/live.mjs';
 import { fixtureStore } from '../helpers/store.mjs';
 import { test } from 'node:test';
@@ -217,8 +218,7 @@ async function setup(t, resume = true, initialize = true, recapRaw, browserTexta
     'liveScene',
   ])
     window.campaign[method] = async (...args) => wrap(() => store[method](...args));
-  delete require.cache[require.resolve('../../' + base + '/ui.cjs')];
-  x.ui = liveInstance(require('../../' + base + '/ui.cjs'), document, window);
+  x.ui = liveInstance(freshFixtureModule(require, '../../' + base + '/ui.cjs'), document, window);
   x.ui.initSessionPacket(
     (text, error) => x.messages.push({ text, error }),
     () => null,
@@ -315,7 +315,7 @@ async function setup(t, resume = true, initialize = true, recapRaw, browserTexta
     await x.ui.openLive();
     return id;
   };
-  t.after(async () => {
+  afterFixture(t, async () => {
     for (const release of x.releases) release();
     await settle();
     x.ui.activateLive(null);
