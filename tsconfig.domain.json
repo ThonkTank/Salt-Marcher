@@ -9,7 +9,9 @@
   "files": [
     "src/app/shared/editor-transition.ts",
     "src/app/shared/commit-receipt.ts",
-    "src/app/shared/dice-formula.ts"
+    "src/app/shared/dice-formula.ts",
+    "src/app/atlas/atlas-camera.ts",
+    "src/app/atlas/atlas-raster-kernel.ts"
   ],
   "include": [],
   "exclude": []

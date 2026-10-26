@@ -7,8 +7,16 @@ import ts from 'typescript';
 // that leaks a forbidden global will make the expected diagnostic disappear.
 for (const [environment, allowed, forbidden] of [
   ['renderer', ['document', 'window', 'AbortController'], ['process', 'Buffer', 'require']],
-  ['host', ['process', 'Buffer', 'AbortController'], ['document', 'window']],
-  ['domain', ['JSON', 'Promise', 'Map'], ['process', 'Buffer', 'document', 'window']],
+  [
+    'host',
+    ['process', 'Buffer', 'AbortController'],
+    ['document', 'window', 'CanvasRenderingContext2D', 'SVGElement', 'self'],
+  ],
+  [
+    'domain',
+    ['JSON', 'Promise', 'Map'],
+    ['process', 'Buffer', 'document', 'window', 'CanvasRenderingContext2D', 'SVGElement', 'self'],
+  ],
 ])
   test(`${environment} compiler scope accepts its capabilities and rejects foreign globals`, () => {
     const config = ts.readConfigFile(`tsconfig.${environment}.json`, ts.sys.readFile);

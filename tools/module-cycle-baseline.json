@@ -1,6 +1,5 @@
 {
   "declared": {
-    "src/app/atlas/atlas-camera.ts": ["src/app/shared/contracts.ts"],
     "src/app/atlas/atlas-deck-scene-model.ts": ["src/app/atlas/atlas-geometry-overview.ts","src/app/atlas/atlas-scene-geometry.ts","src/app/atlas/terrain-spatial-model.ts"],
     "src/app/atlas/atlas-drawing-geometry.ts": ["src/app/atlas/atlas-route-geometry.ts"],
     "src/app/atlas/atlas-geometry-overview.ts": ["src/app/atlas/atlas-scene-geometry.ts"],
@@ -50,7 +49,7 @@
     "src/app/atlas/terrain-change-history.ts": ["src/app/atlas/terrain-frame.ts"],
     "src/app/atlas/terrain-color-visibility.ts": ["src/app/atlas/atlas-landscape.ts","src/app/atlas/landscape-brush.ts","src/app/atlas/terrain-spatial-model.ts","src/app/shared/contracts.ts"],
     "src/app/atlas/terrain-color.ts": ["src/app/atlas/atlas-landscape.ts","src/app/atlas/terrain-detail.ts"],
-    "src/app/atlas/terrain-coverage.ts": ["src/app/atlas/atlas-camera.ts","src/app/atlas/atlas-landscape.ts","src/app/atlas/terrain-spatial-model.ts"],
+    "src/app/atlas/terrain-coverage.ts": ["src/app/atlas/atlas-landscape.ts","src/app/atlas/terrain-spatial-model.ts"],
     "src/app/atlas/terrain-detail.ts": ["src/app/atlas/atlas-landscape.ts","src/app/shared/contracts.ts"],
     "src/app/atlas/terrain-field-stream.ts": ["src/app/atlas/atlas-landscape.ts","src/app/atlas/terrain-height-lattice.ts","src/app/atlas/terrain-height.ts","src/app/atlas/terrain-route.ts"],
     "src/app/atlas/terrain-frame.ts": ["src/app/atlas/atlas-landscape.ts","src/app/atlas/atlas-region-contracts.ts","src/app/atlas/terrain-detail.ts","src/app/atlas/terrain-projection.ts","src/app/atlas/terrain-spatial-model.ts"],
@@ -64,7 +63,7 @@
     "src/app/atlas/terrain-relief.ts": ["src/app/shared/contracts.ts"],
     "src/app/atlas/terrain-route-planner.ts": ["src/app/atlas/atlas-landscape.ts","src/app/atlas/terrain-height.ts","src/app/atlas/terrain-route.ts","src/app/shared/contracts.ts"],
     "src/app/atlas/terrain-route.ts": ["src/app/atlas/atlas-landscape.ts","src/app/shared/contracts.ts"],
-    "src/app/atlas/terrain-spatial-model.ts": ["src/app/atlas/atlas-camera.ts","src/app/atlas/atlas-landscape.ts","src/app/atlas/terrain-coverage.ts","src/app/atlas/terrain-grid-layout.ts","src/app/atlas/terrain-height.ts","src/app/shared/contracts.ts"],
+    "src/app/atlas/terrain-spatial-model.ts": ["src/app/atlas/atlas-landscape.ts","src/app/atlas/terrain-coverage.ts","src/app/atlas/terrain-grid-layout.ts","src/app/atlas/terrain-height.ts","src/app/shared/contracts.ts"],
     "src/app/atlas/vegetation-lod.ts": ["src/app/atlas/vegetation.ts"],
     "src/app/atlas/vegetation-projection.ts": ["src/app/atlas/vegetation.ts"],
     "src/app/atlas/vegetation.ts": ["src/app/atlas/atlas-landscape.ts","src/app/atlas/landscape-line.ts","src/app/atlas/terrain-height.ts","src/app/atlas/vegetation-lod.ts","src/app/runtime/world-contracts.ts","src/app/shared/contracts.ts"],

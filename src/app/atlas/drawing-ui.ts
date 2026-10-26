@@ -1,7 +1,7 @@
 import { EditorSession } from '../shared/editor-session';
 import { atlasFieldValue, setAtlasFieldValue } from './atlas-units';
 import { AtlasPaint, atlasPaint } from './atlas-paint';
-import { appendPaint, paintElement, type PaintTarget } from './atlas-paint-svg';
+import { appendPaint, paintElement, type PaintTarget } from './atlas-paint-dom';
 import { drawingGeometryOnly } from './atlas-render-view';
 import { atlasDrawingWrite } from './campaign-atlas-author';
 import type {

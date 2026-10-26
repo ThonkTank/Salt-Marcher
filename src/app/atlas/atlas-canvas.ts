@@ -1,7 +1,7 @@
 import { wheelZoomFactor, zoomBox } from './atlas-navigation-scale';
 import { AtlasPaint, AtlasCanvasScene } from './atlas-canvas-scene';
 /** Shared Atlas camera/input, retained paint commands and bounded decoded images. */
-import type { CanvasBox } from '../runtime/passive-map-canvas';
+import type { CanvasBox } from './atlas-camera';
 export type CameraReason = 'pan' | 'zoom' | 'reset' | 'set' | 'history';
 type SavedView = {
   box: CanvasBox;

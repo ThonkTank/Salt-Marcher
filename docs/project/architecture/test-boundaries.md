@@ -61,7 +61,7 @@ bei einem Prüflauf automatisch erweitert.
 
 | Vorhandene stark verbundene Komponente | Einordnung |
 | --- | --- |
-| 120 Fach-/Vertragsdateien einschließlich `shared/contracts` | Typgraph verbindet breite API- und Modellimporte; erschwert Umgebungsisolierung. Kein entsprechender 120-Dateien-Wertzyklus. |
+| 119 Fach-/Vertragsdateien einschließlich `shared/contracts` | Typgraph verbindet breite API- und Modellimporte; erschwert Umgebungsisolierung. Kein entsprechender 119-Dateien-Wertzyklus. |
 | `atlas-drawing-geometry` / `atlas-route-geometry` | Gegenseitige Typabhängigkeit; keine Wertkomponente. |
 | `live` / `party-topbar-ui` | Typabhängigkeit der UI-Anschlüsse; keine Wertkomponente. |
 | `atlas-landscape` / `land-mask` / `terrain-height` | Drei Dateien im Wertgraphen; Daten-/Geometriehilfen greifen zurück. Bestehende Kopplung, nicht bereinigt. |
@@ -69,9 +69,12 @@ bei einem Prüflauf automatisch erweitert.
 | Speichergruppe um `campaign-atlas`, `live`, `session`, `world` | 36 Dateien im Gesamtgraphen, 35 im Wertgraphen; unterschiedliche Writer und Projektionen sind weiterhin gekoppelt. Kein neuer allgemeiner Befehlsläufer als Umgehung. |
 | `storage/dungeon-key` / `storage/surfaces` | Gegenseitige Speicherabhängigkeit in beiden Graphen. |
 
-Insgesamt: sechs Komponenten mit 165 Dateien/536 internen Kanten einschließlich
+Insgesamt: sechs Komponenten mit 164 Dateien/533 internen Kanten einschließlich
 Typimports; vier Wertkomponenten mit 43 Dateien/117 Kanten. Die neue
-Arbeitsflächenaktivierung/-öffnung erzeugt keinen Zyklus. Die Baseline ist eine
+Arbeitsflächenaktivierung/-öffnung erzeugt keinen Zyklus. Bei der Browsertrennung entfielen ausschließlich die drei zyklischen Kanten
+`atlas-camera → shared/contracts`, `terrain-coverage → atlas-camera` und
+`terrain-spatial-model → atlas-camera`; die Baseline wurde entsprechend verkleinert.
+Die Baseline ist eine
 Architekturgrenze, keine zweite Test- oder Capability-Zuordnung.
 
 ## TypeScript-Umgebungen: gemessener Nutzen und Grenze
@@ -82,23 +85,41 @@ Einstiege **einschließlich transitiver Imports**:
 
 | Konfiguration | Tatsächlich isolierter Umfang | Verfügbare Globals |
 | --- | --- | --- |
-| `tsconfig.renderer.json` | Editoroberfläche, Textposition, Zahlenrad, Popup und Arbeitsflächenposition | ES2022 und DOM, keine Node-Typen |
-| `tsconfig.host.json` | CommitTracker, Storetransport, Atlas-Writeaktivität, Update-Manifest und SQLite-Anschluss | ES2022 und Node, kein DOM |
-| `tsconfig.domain.json` | Editorübergang, Buchungsbeleg und Würfelformel | ES2022, weder DOM noch Node |
+| `tsconfig.renderer.json` | Editoroberfläche, Textposition, Zahlenrad, Popup und Arbeitsflächenposition und passiver Karten-Canvas | ES2022 und DOM, keine Node-Typen |
+| `tsconfig.host.json` | CommitTracker, Storetransport, Atlas-Writeaktivität, Update-Manifest, SQLite-Anschluss, SVG-Markup, Raum-/Stadtgeometrie und reine Brush-Vorschau | ES2022 und Node, kein DOM |
+| `tsconfig.domain.json` | Editorübergang, Buchungsbeleg, Würfelformel, Atlaskamera und Rasterkernel | ES2022, weder DOM noch Node |
+
+Die transitive Prüfung umfasst nach dieser Trennung 9 eigene Quelldateien im
+Fachbereich, 161 im Hostbereich und 7 im Rendererbereich. Fachbereich und Host
+laden keine DOM-Bibliothek; Fachbereich und Renderer laden keine Node-Deklarationen.
+Diese Zahlen zählen Quellabschlüsse der expliziten Einstiege, keine vollständige
+Produktqualifikation.
 
 `typescript-environments.test.mjs` kompiliert jede echte Konfiguration mit einer
 zusätzlichen virtuellen Prüfdatei. Browsercode akzeptiert `document` und weist
 `process`, `Buffer`, `require` ab; Hostcode akzeptiert Node und weist `document`/
-`window` ab; reine Fachlogik weist beides ab. Die Tests erwarten echte
+`window`, Canvas-/SVG-Globals und `self` ab; reine Fachlogik weist beides ab. Die Tests erwarten echte
 Compilerdiagnosen. Eine neue transitive Typbibliothek, die verbotene Globals
 wieder einführt, lässt diese Tests scheitern. Es gibt keine nachgebauten
 Produktfunktionen und keine pauschalen globalen Attrappen.
 
 Ein Versuch mit den **vollständigen** Renderer-Einstiegen und `types: []` ließ
 `process` und `Buffer` weiterhin zu: Die Deklarationen von `apache-arrow` führen
-über die Atlasdarstellung `@types/node` erneut ein. Ein vollständiger Host ohne
-DOM scheiterte an gemeinsam importierten Canvas-/SVG-Modellen und dem
-Browser-Brushworker. Auch `literal-text-edit` zieht über `DeskRef` den breiten
+über die Atlasdarstellung `@types/node` erneut ein. Die konkreten Canvas-/SVG-/Worker-Bindungen der gemeinsamen Geometrie sind
+jetzt getrennt: `CanvasBox` gehört `atlas-camera`, das Paint-Protokoll verwendet
+eigene literale Datenwerte, `atlas-paint-svg` serialisiert ausschließlich Markup,
+`atlas-paint-dom` erzeugt DOM-Knoten und nur `atlas-brush-worker` registriert
+Browsernachrichten. Speicherprojektion und Tests verwenden `atlas-brush-preview`.
+Die genannten produktiven Geometrie-/Markup-/Vorschaueinstiege bestehen mit
+transitiven Imports ohne DOM. Dafür wurden keine Ersatzglobals, `any`-Shims oder
+weiteren Typbibliotheken zugeschaltet.
+
+Die vollständigen Store-/Regionsworker sind damit noch nicht isoliert: Sie
+erreichen weiterhin die vorhandene schwache `better-sqlite3`-Deklaration und die
+Canvas-Textmessung in `atlas-cartography`. Auch eine vollständige Node-freie
+Rendererprüfung bleibt offen: Neben `apache-arrow` verwendet der transitive
+Höhencodec `terrain-height` einen direkten `Buffer`-Schnellpfad mit Browserfallback.
+Dieser Abschnitt ändert weder Codec noch Textmessung. Auch `literal-text-edit` zieht über `DeskRef` den breiten
 Vertragsgraphen ein; `EditorSession` benötigt `AbortController`, das nicht zu
 ES2022 gehört. Deshalb werden diese Bereiche nicht als rein umgebungsisoliert
 ausgegeben. Globale Ersatzdeklarationen oder pauschales Wiederzuschalten von DOM
@@ -111,7 +132,10 @@ Importgrenzen bleiben für den übrigen Code bestehen.
 `tests/workspace/module-boundaries.test.mjs` und `module-graph.test.mjs` prüfen
 positive und negative Strukturbeispiele, indirekte Grenzen, vorhandene und neue
 Zyklen sowie Typ-/Wertunterschiede. `renderer-boundary.test.mjs` baut weiterhin
-den tatsächlichen Renderer für den Browser. Host-, Speicher- und Editorprüfungen
+den tatsächlichen Renderer für den Browser. `atlas-brush-boundary.test.mjs` lädt die echten Browserbundles und prüft
+registrierungsfreie Vorschau, Worker-Registrierung, Pixeltransfer und Fehlerantwort.
+`desktop-atlas-paint.test.mjs` vergleicht Geometrie, Markup und DOM mit den
+bestehenden Referenzen. Host-, Speicher- und Editorprüfungen
 bleiben an ihren bisherigen Fachanschlüssen.
 
 Benutzerabläufe und ihre tatsächlichen Testdateien werden ausschließlich im

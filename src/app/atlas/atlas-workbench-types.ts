@@ -88,7 +88,7 @@ export interface AtlasOutputSelection {
 }
 export interface AtlasOutputView {
   readonly exportOpen: boolean;
-  selectionBox(): import('../runtime/passive-map-canvas').CanvasBox | null;
+  selectionBox(): import('./atlas-camera').CanvasBox | null;
 }
 export interface AtlasAuthorView {
   readonly drag: Readonly<{

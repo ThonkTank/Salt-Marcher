@@ -9,7 +9,7 @@ const require = createRequire(import.meta.url);
 buildSync({
   stdin: {
     contents:
-      "export * from './src/app/atlas/terrain-brush';export * from './src/app/atlas/terrain-height';export * from './src/app/atlas/atlas-brush-worker';export * from './src/app/atlas/landscape-raster';export * from './src/app/storage/store';export * from './src/app/storage/atlas-landscape-region';export {validateRegion} from './src/app/atlas/atlas-region-contracts';",
+      "export * from './src/app/atlas/terrain-brush';export * from './src/app/atlas/terrain-height';export * from './src/app/atlas/atlas-brush-preview';export * from './src/app/atlas/landscape-raster';export * from './src/app/storage/store';export * from './src/app/storage/atlas-landscape-region';export {validateRegion} from './src/app/atlas/atlas-region-contracts';",
     resolveDir: process.cwd(),
   },
   outfile: '.build/terrain-brush-test.cjs',

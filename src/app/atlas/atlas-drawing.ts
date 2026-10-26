@@ -30,7 +30,7 @@ import { dungeonTravelRoute } from '../runtime/dungeon-travel-console';
 import type { LandscapeWorkbench } from './atlas-landscape-ui';
 import { appendRoomNumber } from './room-number-label';
 import { atlasPartyPoint, atlasWorldRoute } from './atlas-runtime-model';
-import type { CanvasBox } from '../runtime/passive-map-canvas';
+import type { CanvasBox } from './atlas-camera';
 import type { AtlasCanvas } from './atlas-canvas';
 import {
   atlasFrame,

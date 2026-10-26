@@ -1,10 +1,6 @@
+import type { CanvasBox } from '../atlas/atlas-camera';
+export type { CanvasBox } from '../atlas/atlas-camera';
 /** Presentation only. Scene units, elements and DOM hits are interpreted by the adopter. */
-export interface CanvasBox {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-}
 export type CameraReason = 'pan' | 'zoom' | 'reset' | 'set' | 'history';
 type SavedView = { box: CanvasBox; initial: CanvasBox; past: CanvasBox[]; future: CanvasBox[] };
 const same = (a: CanvasBox, b: CanvasBox) =>

@@ -13,7 +13,11 @@
     "desktop/store-transport.ts",
     "desktop/atlas-write-activity.ts",
     "desktop/update-manifest.ts",
-    "src/app/storage/sqlite-connection.ts"
+    "src/app/storage/sqlite-connection.ts",
+    "src/app/atlas/atlas-paint-svg.ts",
+    "src/app/atlas/drawing-model.ts",
+    "src/app/atlas/city-model.ts",
+    "src/app/atlas/atlas-brush-preview.ts"
   ],
   "include": [],
   "exclude": []
