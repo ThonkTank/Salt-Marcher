@@ -85,8 +85,12 @@ try {
       .prepare('SELECT payload FROM city_unit ORDER BY id')
       .all()
       .map(({ payload }) => {
-        const { name, terrain, ...unit } = JSON.parse(payload);
-        return { ...unit, terrain: terrain ?? { mode: 'ground', offsetM: 0, wallM: 3, roofM: 2 } };
+        const { name, terrain, factionId, ...unit } = JSON.parse(payload);
+        return {
+          ...unit,
+          factionId: factionId ?? null,
+          terrain: terrain ?? { mode: 'ground', offsetM: 0, wallM: 3, roofM: 2 },
+        };
       });
     return createHash('sha256').update(JSON.stringify(facts)).digest('hex');
   };
@@ -651,11 +655,40 @@ try {
     results.pointerFactor = pointerFactor;
     // Six-metre houses must remain above the existing two-CSS-pixel cutoff.
     // Zoom to 2.5 m/CSS pixel at either UI scale instead of overshooting it.
-    let logarithmicZoom = Math.log(2.5 / center.unitsPerPixel);
-    while (Math.abs(logarithmicZoom) > 1e-8) {
-      const step = Math.max(-1, Math.min(1, logarithmicZoom));
-      await page.mouse.wheel(0, (step / 0.002) * pointerFactor);
-      logarithmicZoom -= step;
+    let logarithmicZoom = Math.log(2.5 / center.unitsPerPixel),
+      wheelFactor = 1;
+    await page.evaluate(() => {
+      window.__roomWheelListener = (event) => {
+        window.__roomWheel = {
+          delta: event.deltaY,
+          mode: event.deltaMode,
+          target: event.target.id,
+        };
+      };
+      document.addEventListener('wheel', window.__roomWheelListener, true);
+    });
+    try {
+      for (let turn = 0; Math.abs(logarithmicZoom) > 1e-8; turn++) {
+        assert(turn < 12, 'Native wheel reaches the requested metric scale');
+        const step = Math.max(-1, Math.min(1, logarithmicZoom)),
+          delta = (step / 0.002) * wheelFactor;
+        await page.evaluate(() => {
+          window.__roomWheel = null;
+        });
+        await page.mouse.wheel(0, delta);
+        await page.waitForFunction(() => window.__roomWheel !== null);
+        const event = await page.evaluate(() => window.__roomWheel);
+        assert.equal(event.mode, 0);
+        assert.equal(event.target, 'campaign-map');
+        assert(event.delta !== 0);
+        wheelFactor = delta / event.delta;
+        logarithmicZoom -= Math.max(-1.2, Math.min(1.2, event.delta * 0.002));
+      }
+      results.wheelFactor = wheelFactor;
+    } finally {
+      await page.evaluate(() =>
+        document.removeEventListener('wheel', window.__roomWheelListener, true),
+      );
     }
     await page.waitForFunction(
       () =>
@@ -724,7 +757,8 @@ try {
         mpp: 1 / scale,
         view,
         rect: { x: r.x, y: r.y, width: canvas.clientWidth, height: canvas.clientHeight },
-        points: [0, 1 / 3, 2 / 3, 1].map((f) => points[Math.floor((points.length - 1) * f)]),
+        // Interior quantiles avoid the selected open house/entrance at the city edge.
+        points: [0.05, 0.3, 0.55, 0.8].map((f) => points[Math.floor((points.length - 1) * f)]),
       };
     });
     assert(Math.abs(visible.mpp - 2.5) < 0.01, 'Dense camera retains readable six-metre houses');
