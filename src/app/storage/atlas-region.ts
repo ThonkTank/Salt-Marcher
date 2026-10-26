@@ -1512,6 +1512,19 @@ export class AtlasRegionReader {
     );
     checkpoint?.();
     if (bytes(result) > REGION_REPLY_BYTES - 800 * 1024) dense = true;
+    if (!dense) {
+      // The terrain projection consumes both roof bodies and entrance anchors.
+      // Generated houses contribute one of each even when their rooms are hidden.
+      const buildings = result.cities.reduce(
+        (count, city) => count + city.units.filter((u) => u.kind === 'building').length,
+        0,
+      );
+      const scopes = result.bindings.filter((b) => b.kind === 'dungeon').map((b) => b.ownerId);
+      const entrances = this.sql(
+        "SELECT count(*) n FROM atlas_entrance WHERE campaign_id=? AND json_extract(payload,'$.scopeId') IN (SELECT value FROM json_each(?))",
+      ).get(this.campaign, JSON.stringify(scopes)).n;
+      if (buildings + entrances > REGION_VECTOR_OBJECTS) dense = true;
+    }
     if (dense) {
       this.countFaults = false;
       result.rooms = [];
