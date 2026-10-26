@@ -1,0 +1,20 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "types": [],
+    "lib": [
+      "ES2022",
+      "DOM",
+      "DOM.Iterable"
+    ]
+  },
+  "files": [
+    "src/app/shared/editor-surface.ts",
+    "src/app/shared/textarea-position.ts",
+    "src/app/shared/number-input-scroll.ts",
+    "src/app/shared/anchored-popup.ts",
+    "src/app/workspace/workspace-view.ts"
+  ],
+  "include": [],
+  "exclude": []
+}

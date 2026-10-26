@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "node build.mjs",
-    "check": "tsc --noEmit",
+    "check": "tsc --noEmit && npm run check:environments",
     "test": "node tools/run-tests.mjs",
     "test:desktop-weather": "node tools/run-tests.mjs --serial tests/runtime/desktop-weather-integrity.test.mjs tests/runtime/desktop-weather-authority.test.mjs",
     "test:desktop-live-moment": "node tools/run-tests.mjs --serial tests/runtime/desktop-live-moment-context.test.mjs",
@@ -79,8 +79,9 @@
     "test:desktop-note-room-uses-ui": "npm run build:desktop && node tools/test-desktop-note-room-uses.mjs",
     "test:desktop-key-lookup-ui": "npm run build:desktop && node tools/test-desktop-key-lookup.mjs",
     "dev": "npm run start:desktop --",
-    "format": "prettier --write \"src/app/**/*.{ts,css}\" \"desktop/**/*.ts\" \"tests/{workspace,atlas,campaign,runtime,catalog,shared}/**/*.test.mjs\" \"tests/helpers/**/*.{mjs,ts}\" \"tools/{build-desktop,build-transfer-contracts,check-repository,check-module-boundaries,run-tests,test-selection,package-desktop,release-desktop,verify-release-source,native-session,atlas-*,test-desktop-*,measure-*,run-autonomy-scale}.{mjs,ts}\"",
-    "format:check": "prettier --check \"src/app/**/*.{ts,css}\" \"desktop/**/*.ts\" \"tests/{workspace,atlas,campaign,runtime,catalog,shared}/**/*.test.mjs\" \"tests/helpers/**/*.{mjs,ts}\" \"tools/{build-desktop,build-transfer-contracts,check-repository,check-module-boundaries,run-tests,test-selection,package-desktop,release-desktop,verify-release-source,native-session,atlas-*,test-desktop-*,measure-*,run-autonomy-scale}.{mjs,ts}\""
+    "format": "prettier --write \"src/app/**/*.{ts,css}\" \"desktop/**/*.ts\" \"tests/{workspace,atlas,campaign,runtime,catalog,shared}/**/*.test.mjs\" \"tests/helpers/**/*.{mjs,ts}\" \"tools/{build-desktop,build-transfer-contracts,check-repository,check-module-boundaries,run-tests,test-selection,package-desktop,release-desktop,verify-release-source,native-session,atlas-*,test-desktop-*,measure-*,run-autonomy-scale}.{mjs,ts}\" \"tools/module-{graph,responsibilities}.mjs\"",
+    "format:check": "prettier --check \"src/app/**/*.{ts,css}\" \"desktop/**/*.ts\" \"tests/{workspace,atlas,campaign,runtime,catalog,shared}/**/*.test.mjs\" \"tests/helpers/**/*.{mjs,ts}\" \"tools/{build-desktop,build-transfer-contracts,check-repository,check-module-boundaries,run-tests,test-selection,package-desktop,release-desktop,verify-release-source,native-session,atlas-*,test-desktop-*,measure-*,run-autonomy-scale}.{mjs,ts}\" \"tools/module-{graph,responsibilities}.mjs\"",
+    "check:environments": "tsc -p tsconfig.renderer.json && tsc -p tsconfig.host.json && tsc -p tsconfig.domain.json"
   },
   "dependencies": {
     "@deck.gl/core": "9.4.0",

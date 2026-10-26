@@ -2,6 +2,11 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { builtinModules } from 'node:module';
 import ts from 'typescript';
+import { moduleEdges, dependencyGraph, dependencyCycles } from './module-graph.mjs';
+import { responsibility, rendererEntries } from './module-responsibilities.mjs';
+const cycleBaseline = JSON.parse(
+  fs.readFileSync(new URL('./module-cycle-baseline.json', import.meta.url), 'utf8'),
+);
 
 // Shared controls are presentation code; the remaining shared modules are domain/lifecycle code.
 const sharedControls = new Set([
@@ -18,31 +23,17 @@ const privileged = new Set([
   'obsidian',
   'better-sqlite3',
 ]);
-const ui = (file) =>
-  /(?:-ui|renderer|preparation|live)\.tsx?$/.test(file) ||
-  (file.startsWith('src/app/shared/') && sharedControls.has(path.posix.basename(file, '.ts')));
+const ui = (file) => {
+  const owner = responsibility(file);
+  if (owner) return owner.kind === 'presentation';
+  return (
+    /(?:-ui|renderer|preparation|live)\.tsx?$/.test(file) ||
+    (file.startsWith('src/app/shared/') && sharedControls.has(path.posix.basename(file, '.ts')))
+  );
+};
 
 export function moduleImports(file, text) {
-  const source = ts.createSourceFile(file, text, ts.ScriptTarget.Latest, true);
-  const result = [];
-  function visit(node) {
-    const specifier =
-      ts.isImportDeclaration(node) || ts.isExportDeclaration(node)
-        ? node.moduleSpecifier
-        : ts.isCallExpression(node) &&
-            (node.expression.kind === ts.SyntaxKind.ImportKeyword ||
-              (ts.isIdentifier(node.expression) && node.expression.text === 'require'))
-          ? node.arguments[0]
-          : ts.isExternalModuleReference(node)
-            ? node.expression
-            : ts.isImportTypeNode(node) && ts.isLiteralTypeNode(node.argument)
-              ? node.argument.literal
-              : null;
-    if (specifier && ts.isStringLiteralLike(specifier)) result.push(specifier.text);
-    ts.forEachChild(node, visit);
-  }
-  visit(source);
-  return [...new Set(result)];
+  return [...new Set(moduleEdges(file, text).map((edge) => edge.specifier))];
 }
 
 /** Inspect source edges, including type imports, lazy imports and re-exports. */
@@ -77,26 +68,21 @@ function usesPresentationGlobals(file, text) {
 export function checkModuleBoundaries(sources) {
   const presentation = new Set(
     [...sources]
-      .filter(([file, text]) => ui(file) || usesPresentationGlobals(file, text))
+      .filter(
+        ([file, text]) =>
+          ui(file) || (!responsibility(file) && usesPresentationGlobals(file, text)),
+      )
       .map(([file]) => file),
   );
-  const graph = new Map([...sources].map(([file, text]) => [file, moduleImports(file, text)]));
-  const resolve = (from, specifier) => {
-    if (!specifier.startsWith('.')) return specifier;
-    const base = path.posix.normalize(path.posix.join(path.posix.dirname(from), specifier));
-    return (
-      [base, base + '.ts', base + '.tsx', base + '/index.ts'].find((p) => graph.has(p)) ?? base
-    );
-  };
+  const graph = dependencyGraph(sources);
   const errors = new Set();
   function check(start, rule, forbidden) {
     const visited = new Set();
     function walk(file, chain) {
       if (visited.has(file)) return;
       visited.add(file);
-      for (const specifier of graph.get(file) ?? []) {
-        const target = resolve(file, specifier),
-          next = [...chain, target];
+      for (const target of graph.get(file) ?? []) {
+        const next = [...chain, target];
         if (forbidden(target)) errors.add(`${rule}: ${next.join(' -> ')}`);
         else walk(target, next);
       }
@@ -117,7 +103,7 @@ export function checkModuleBoundaries(sources) {
         (target) => ui(target) || presentation.has(target),
       );
   }
-  for (const entry of ['src/app/workspace/renderer.ts', 'src/app/runtime/player-display.ts'])
+  for (const entry of rendererEntries)
     check(
       entry,
       'Renderer crosses privileged boundary',
@@ -127,6 +113,37 @@ export function checkModuleBoundaries(sources) {
         target.startsWith('desktop/') ||
         privileged.has(target.replace(/^node:/, '').split('/')[0]),
     );
+  for (const file of graph.keys()) {
+    const owner = responsibility(file);
+    if (owner?.kind === 'domain' && usesPresentationGlobals(file, sources.get(file)))
+      errors.add(`Domain owner uses presentation globals: ${file}`);
+    if (owner?.kind === 'domain')
+      check(
+        file,
+        'Domain owner imports a capability',
+        (target) =>
+          ['presentation', 'storage', 'host'].includes(responsibility(target)?.kind) ||
+          presentation.has(target) ||
+          target.startsWith('node:') ||
+          privileged.has(target),
+      );
+    if (owner?.kind === 'storage')
+      check(file, 'Storage imports presentation or native host', (target) =>
+        ['host', 'presentation'].includes(responsibility(target)?.kind),
+      );
+  }
+  for (const [kind, edges] of [
+    ['declared', graph],
+    ['values', dependencyGraph(sources, true)],
+  ]) {
+    for (const cycle of dependencyCycles(edges)) {
+      if (!cycle.some((file) => /^(src\/app|desktop)\//.test(file))) continue;
+      for (const from of cycle)
+        for (const to of edges.get(from))
+          if (cycle.includes(to) && !cycleBaseline[kind][from]?.includes(to))
+            errors.add(`New cyclic dependency: ${from} -> ${to} (${kind})`);
+    }
+  }
   return [...errors];
 }
 

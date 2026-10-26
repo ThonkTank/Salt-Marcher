@@ -20,7 +20,7 @@ Gesamtprodukt: [Produktziele](project/requirements/product.md), [Umfang](project
 | eine verlorene Buchungsantwort klären | [Bestätigungsbesitzer und modale Rückbindung](project/architecture/overview.md#buchungsantworten-klären) | Fachvertrag des betroffenen Writers |
 | eine Lieferung prüfen | Betroffene Fachabnahme und [gemeinsame E2E-Kriterien](project/verification/end-to-end.md) | [Atlas-Bedienproben](atlas/requirements/atlas-2.md#spätere-bedienabnahme), [GM-Aufgaben](project/verification/gm-workflows.md) und `acceptance.json` |
 | Datenfelder oder unabhängige Kampagnenkopien ändern | [Transferverträge bei den Fachmodellen](campaign/contract/transfer-ownership.md) | [Archivvertrag](campaign/contract/archive.md) und Fachtests |
-| Tests ausführen oder ihren Aufwand beurteilen | [Testvorbereitung, Laufzeiten und Bereinigung](project/verification/testing.md) | Betroffene Fachabnahme und tatsächliche Testdateien im Capability-Katalog |
+| Tests ausführen oder ihren Aufwand beurteilen | [Testvorbereitung, Laufzeiten und Bereinigung](project/verification/testing.md), [Fachanschlüsse und Modulgrenzen](project/architecture/test-boundaries.md) | Betroffene Fachabnahme und tatsächliche Testdateien im Capability-Katalog |
 
 | Thema | Fachliche Quellen |
 | --- | --- |
