@@ -1,4 +1,4 @@
-import { brushPreviewRecords, type BrushPreviewJob } from '../../src/app/atlas/atlas-brush-worker';
+import { brushPreviewRecords, type BrushPreviewJob } from '../../src/app/atlas/atlas-brush-preview';
 import { terrainGrid, type TerrainView } from '../../src/app/atlas/terrain-spatial-model';
 import { LandscapeRasterizer } from '../../src/app/atlas/landscape-raster';
 import { orderedColors } from '../../src/app/atlas/landscape-brush';

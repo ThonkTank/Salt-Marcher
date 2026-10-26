@@ -7,7 +7,7 @@ import { DOMParser } from 'linkedom';
 buildSync({
   stdin: {
     contents:
-      "export * from './src/app/atlas/drawing-model';export {cityPaint,cityObjectsPaint,citySvg} from './src/app/atlas/city-model';export * from './src/app/atlas/atlas-paint-svg';",
+      "export * from './src/app/atlas/drawing-model';export {cityPaint,cityObjectsPaint,citySvg} from './src/app/atlas/city-model';export * from './src/app/atlas/atlas-paint-svg';export * from './src/app/atlas/atlas-paint-dom';",
     resolveDir: process.cwd(),
   },
   bundle: true,

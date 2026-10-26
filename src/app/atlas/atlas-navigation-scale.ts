@@ -6,7 +6,7 @@ import {
   lengthLabel,
   type AtlasUnits,
 } from './atlas-units';
-import type { CanvasBox } from '../runtime/passive-map-canvas';
+import type { CanvasBox } from './atlas-camera';
 import { hexSize } from './atlas-landscape';
 
 export const travelHexSizes = [

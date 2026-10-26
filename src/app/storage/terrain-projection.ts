@@ -2,7 +2,7 @@ import { terrainTraceMeasure, terrainTraceStart } from '../atlas/terrain-timing'
 import { bounds, type LandscapeBox, type LandscapeRecord } from '../atlas/atlas-landscape';
 import { gridHeight } from '../atlas/terrain-spatial-model';
 import type { TerrainProjectionCache } from '../atlas/terrain-projection-cache';
-import { brushPreviewRecords } from '../atlas/atlas-brush-worker';
+import { brushPreviewRecords } from '../atlas/atlas-brush-preview';
 import { heightBrushBounds } from '../atlas/terrain-brush';
 import { TerrainSampler } from '../atlas/terrain-height';
 import { resolveTerrainObjects, terrainObjectPoints } from '../atlas/terrain-objects';

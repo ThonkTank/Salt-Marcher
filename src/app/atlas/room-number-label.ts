@@ -1,5 +1,5 @@
 import { atlasPaint } from './atlas-paint';
-import { appendPaint, type PaintTarget } from './atlas-paint-svg';
+import { appendPaint, type PaintTarget } from './atlas-paint-dom';
 import type { RoomGeometry } from '../shared/contracts';
 import { centerInRoom } from './dungeon-model';
 /** A passive key to the room list, readable at every camera scale. */

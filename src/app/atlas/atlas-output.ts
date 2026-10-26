@@ -8,7 +8,7 @@ import type { AtlasReferenceUI } from './atlas-reference-ui';
 import type { AtlasRegionQuery } from './atlas-region-contracts';
 import type { LandscapeWorkbench } from './atlas-landscape-ui';
 import { atlasExportScale, dungeonExportBox } from './campaign-atlas-export';
-import type { CanvasBox } from '../runtime/passive-map-canvas';
+import type { CanvasBox } from './atlas-camera';
 import type { AtlasCanvas } from './atlas-canvas';
 import type { AtlasRenderView } from './campaign-atlas-contracts';
 import type { Point, WorkspaceGeometry } from '../shared/contracts';

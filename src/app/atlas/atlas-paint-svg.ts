@@ -1,6 +1,6 @@
 import type { Polygon } from '../shared/contracts';
 import { AtlasPaint } from './atlas-paint';
-const ns = 'http://www.w3.org/2000/svg';
+export const svgNamespace = 'http://www.w3.org/2000/svg';
 const escapeXML = (value: unknown) =>
   String(value).replace(
     /[&<>"']/g,
@@ -20,7 +20,7 @@ export function polygonMarkupPath(polygons: Polygon[]) {
     .map((r) => 'M' + r.map((p) => p.x + ',' + p.y).join('L') + 'Z')
     .join(' ');
 }
-function attributes(n: AtlasPaint) {
+export function paintSvgAttributes(n: AtlasPaint) {
   const p = n.geometry,
     a: Record<string, string | number> = {};
   const coords =
@@ -44,7 +44,7 @@ function attributes(n: AtlasPaint) {
   if (p.hidden) a.visibility = 'hidden';
   if (p.size)
     Object.assign(a, {
-      xmlns: ns,
+      xmlns: svgNamespace,
       viewBox: `0 0 ${p.size.width} ${p.size.height}`,
       width: p.size.width,
       height: p.size.height,
@@ -78,30 +78,13 @@ function attributes(n: AtlasPaint) {
     a['data-' + k.replace(/[A-Z]/g, (c) => '-' + c.toLowerCase())] = v;
   return a;
 }
-const tag = (n: AtlasPaint) =>
+export const paintSvgTag = (n: AtlasPaint) =>
   n.geometry.size ? 'svg' : n.kind === 'group' ? 'g' : n.kind === 'polygons' ? 'path' : n.kind;
 /** Adapter for historical standalone hosts and their existing vector/document interfaces. Atlas screen and raster export never serialize SVG. */
 export function paintMarkup(n: AtlasPaint): string {
-  const name = tag(n),
-    a = Object.entries(attributes(n))
+  const name = paintSvgTag(n),
+    a = Object.entries(paintSvgAttributes(n))
       .map(([k, v]) => ` ${k}="${escapeXML(v)}"`)
       .join('');
   return `<${name}${a}>${n.title ? '<title>' + escapeXML(n.title) + '</title>' : ''}${escapeXML(n.text)}${n.children.map(paintMarkup).join('')}</${name}>`;
-}
-export function paintElement(n: AtlasPaint, doc: Document): SVGElement {
-  const e = doc.createElementNS(ns, tag(n));
-  for (const [k, v] of Object.entries(attributes(n))) e.setAttribute(k, String(v));
-  if (n.title) {
-    const t = doc.createElementNS(ns, 'title');
-    t.textContent = n.title;
-    e.append(t);
-  }
-  if (n.text) e.append(doc.createTextNode(n.text));
-  for (const c of n.children) e.append(paintElement(c, doc));
-  return e;
-}
-export type PaintTarget = SVGElement | AtlasPaint;
-export function appendPaint(root: PaintTarget, ...nodes: AtlasPaint[]) {
-  if (root instanceof AtlasPaint) root.append(...nodes);
-  else root.append(...nodes.map((n) => paintElement(n, root.ownerDocument)));
 }

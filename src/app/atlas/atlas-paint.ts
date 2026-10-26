@@ -18,16 +18,16 @@ export interface PaintStyle {
   fill?: string | null;
   stroke?: string | null;
   lineWidth?: number;
-  fillRule?: CanvasFillRule;
-  lineCap?: CanvasLineCap;
-  lineJoin?: CanvasLineJoin;
+  fillRule?: 'evenodd' | 'nonzero';
+  lineCap?: 'butt' | 'round' | 'square';
+  lineJoin?: 'bevel' | 'miter' | 'round';
   lineDash?: number[];
   lineDashOffset?: number;
   fontSize?: number;
   fontFamily?: string;
   fontWeight?: string | number;
-  textAlign?: CanvasTextAlign;
-  textBaseline?: CanvasTextBaseline;
+  textAlign?: 'center' | 'end' | 'left' | 'right' | 'start';
+  textBaseline?: 'alphabetic' | 'bottom' | 'hanging' | 'ideographic' | 'middle' | 'top';
   fillOpacity?: number;
   strokeOpacity?: number;
 }
