@@ -6,6 +6,7 @@ import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { build } from 'esbuild';
+import { setTimeout as delay } from 'node:timers/promises';
 const require = createRequire(import.meta.url);
 const output = path.resolve('.build/host-capabilities.cjs');
 await build({
@@ -40,7 +41,8 @@ await build({
 });
 const tick = () => new Promise((resolve) => setImmediate(resolve));
 async function until(check) {
-  for (let i = 0; i < 100 && !check(); i++) await tick();
+  const deadline = Date.now() + 5000;
+  while (!check() && Date.now() < deadline) await delay(5);
   assert(check(), 'Host did not reach expected state');
 }
 function deferred() {
@@ -48,12 +50,14 @@ function deferred() {
   const promise = new Promise((r) => (resolve = r));
   return { promise, resolve };
 }
-async function fixture(t) {
+async function fixture(t, { ready = Promise.resolve() } = {}) {
   const dir = mkdtempSync(path.join(tmpdir(), 'host-capabilities-')),
     calls = [],
     handlers = new Map(),
     windows = [],
     errors = [];
+  const started = deferred();
+  let disposed = false;
   const previous = globalThis.__hostFixture,
     argv = process.argv;
   const ipcMain = new EventEmitter();
@@ -90,15 +94,17 @@ async function fixture(t) {
     setPath() {},
     getPath: () => dir,
     requestSingleInstanceLock: () => true,
-    whenReady: async () => {},
+    whenReady: () => ready,
     quit: () => calls.push('quit'),
     exit: (code) => {
       errors.push(code);
+      started.resolve();
     },
   });
   class BrowserWindow extends EventEmitter {
     constructor(options) {
       super();
+      if (disposed) throw Error('Host fixture already disposed');
       this.options = options;
       this.webContents = new EventEmitter();
       Object.assign(this.webContents, {
@@ -116,6 +122,7 @@ async function fixture(t) {
     async loadURL(url) {
       this.webContents.mainFrame.url = url;
       calls.push('loaded');
+      started.resolve();
     }
     show() {
       calls.push('show');
@@ -168,24 +175,45 @@ async function fixture(t) {
     nativeImage: {},
     shell: {},
   };
+  // Register ownership before starting any async initialization or assertion.
+  t.after(async () => {
+    try {
+      const win = windows[0];
+      if (win && !calls.includes('quit')) {
+        ipcMain.emit('campaign:close-ready', {
+          sender: win.webContents,
+          senderFrame: win.webContents.mainFrame,
+        });
+        await until(() => calls.includes('quit'));
+      }
+    } finally {
+      disposed = true;
+      // Failure cleanup must release the backup interval even when graceful close failed.
+      for (const win of windows) win.emit('closed');
+      globalThis.__hostFixture = previous;
+      process.argv = argv;
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
   globalThis.__hostFixture = { electron, store, updates, updateRuntime };
   process.argv = [...argv, '--data-dir', dir];
   delete require.cache[output];
   require(output);
-  await until(() => calls.includes('loaded') || errors.length > 0);
+  let timeout;
+  try {
+    await Promise.race([
+      started.promise,
+      new Promise((_, reject) => {
+        timeout = setTimeout(() => reject(Error('Host startup timed out')), 5000);
+      }),
+    ]);
+  } finally {
+    clearTimeout(timeout);
+  }
   assert.deepEqual(errors, []);
   const win = windows[0],
     event = { sender: win.webContents, senderFrame: win.webContents.mainFrame };
   const invoke = (name, ...args) => handlers.get(name)(event, ...args);
-  t.after(async () => {
-    if (!calls.includes('quit')) {
-      ipcMain.emit('campaign:close-ready', event);
-      await until(() => calls.includes('quit'));
-    }
-    globalThis.__hostFixture = previous;
-    process.argv = argv;
-    rmSync(dir, { recursive: true, force: true });
-  });
   return {
     calls,
     handlers,
@@ -334,4 +362,46 @@ test('failed update preparation leaves normal IPC usable and does not close the 
   });
   assert(!x.calls.includes('store.close'));
   assert.deepEqual(await x.invoke('campaign:list'), { ok: true, value: { campaigns: [] } });
+});
+
+test('host startup waits for readiness beyond a fixed number of event-loop turns', async (t) => {
+  const ready = deferred();
+  let settled = false;
+  const opening = fixture(t, { ready: ready.promise });
+  // Attach both outcomes immediately so a premature rejection is observable, not unhandled.
+  void opening.then(
+    () => {
+      settled = true;
+    },
+    () => {
+      settled = true;
+    },
+  );
+  try {
+    for (let i = 0; i < 200; i++) await tick();
+    assert.equal(settled, false);
+  } finally {
+    ready.resolve();
+  }
+  const x = await opening;
+  assert(x.calls.includes('loaded'));
+  assert.deepEqual(await x.invoke('campaign:list'), { ok: true, value: { campaigns: [] } });
+});
+
+test('startup failure has already registered cleanup and restores the surrounding process', async () => {
+  const cleanup = [],
+    argv = process.argv,
+    previous = globalThis.__hostFixture;
+  await assert.rejects(
+    fixture(
+      { after: (hook) => cleanup.push(hook) },
+      {
+        ready: Promise.reject(Error('Controlled startup failure')),
+      },
+    ),
+  );
+  assert.equal(cleanup.length, 1);
+  for (const close of cleanup) await close();
+  assert.equal(process.argv, argv);
+  assert.equal(globalThis.__hostFixture, previous);
 });
