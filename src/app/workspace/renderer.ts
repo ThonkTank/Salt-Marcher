@@ -300,6 +300,7 @@ const editors = createWorkspaceEditors({
     session: atlasEditorSession,
     activate: (w) => campaignAtlas?.activate(w),
     flush: async () => !campaignAtlas || (await campaignAtlas.flush()),
+    deactivate: () => campaignAtlas?.hide(),
   },
   room: { session: editorSession, flush: roomEditor.flush, leave: roomEditor.leaveRoom },
   beforeTool: () => !activation.activating && !activation.failed && !roomEditor.loading,

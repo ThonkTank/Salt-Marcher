@@ -37,7 +37,7 @@ const Database = require('better-sqlite3');
  * scene check. The returned profile directory is ready to pass to Electron as
  * `--data-dir`; this function closes and reopens CampaignStore before returning.
  *
- * @param {{profilePath?:string,campaignName?:string}} options
+ * @param {{profilePath?:string,campaignName?:string,includeCity?:boolean,peak?:{x:number,y:number},baseHeightM?:number,peakRiseM?:number,hillScale?:number}} options
  */
 export async function createAtlasCanonicalFixture(options = {}) {
   const cache = join(homedir(), '.cache/saltmarcher');
@@ -90,10 +90,12 @@ export async function createAtlasCanonicalFixture(options = {}) {
         action,
       });
 
-    // A smooth, known hill centered below the authored building footprint.
-    const peak = { x: 24, y: 24 },
-      baseHeightM = 20,
-      peakRiseM = 120;
+    // Defaults retain the mixed city fixture; focused terrain probes may request
+    // a quiet, terrain-only patch with a smaller relief.
+    const peak = options.peak ?? { x: 24, y: 24 };
+    const baseHeightM = options.baseHeightM ?? 20;
+    const peakRiseM = options.peakRiseM ?? 120;
+    const hillScale = options.hillScale ?? 100;
     const hill = heightRecord(
       0,
       0,
@@ -102,86 +104,94 @@ export async function createAtlasCanonicalFixture(options = {}) {
         const x = i % 64,
           y = Math.floor(i / 64),
           distance2 = (x - peak.x) ** 2 + (y - peak.y) ** 2;
-        return baseHeightM + peakRiseM * Math.exp(-distance2 / 100);
+        return baseHeightM + peakRiseM * Math.exp(-distance2 / hillScale);
       }),
     );
     write({ kind: 'landscape-put', record: hill, expectedRevision: null });
 
-    const cityId = write({
-      kind: 'city-create',
-      name: 'Hügelwacht',
-      x: 0,
-      y: 0,
-      width: 64,
-      height: 64,
-    }).result.id;
-    const buildingId = 'atlas-maplibre-watchtower';
-    const building = {
-      id: buildingId,
-      kind: 'building',
-      name: 'Hügelwacht',
-      protected: true,
-      position: peak,
-      angle: 0,
-      outline: [
-        { x: -4, y: -4 },
-        { x: 4, y: -4 },
-        { x: 4, y: 4 },
-        { x: -4, y: 4 },
-      ],
-      notes: '',
-      residentIds: [],
-      workerIds: [],
-      terrain: { mode: 'ground', offsetM: 1, wallM: 5, roofM: 2 },
-    };
-    const city = () => store.city(active.token, cityId);
-    const cityCommand = {
-      commandId: commandId(),
-      campaignId: campaign.id,
-      token: active.token,
-      cityId,
-      expectedRevision: city().header.revision,
-      action: { kind: 'change', upsert: [building], remove: [], label: 'Kanonisches Atlasgebäude' },
-    };
-    store.executeAtlasCommit({
-      commandId: cityCommand.commandId,
-      campaignId: campaign.id,
-      token: active.token,
-      action: { kind: 'city', command: cityCommand },
-    });
+    let cityId, buildingId, interiorScopeId, groundRoom, upperFloorId, upperRoom;
+    if (options.includeCity !== false) {
+      cityId = write({
+        kind: 'city-create',
+        name: 'Hügelwacht',
+        x: 0,
+        y: 0,
+        width: 64,
+        height: 64,
+      }).result.id;
+      buildingId = 'atlas-maplibre-watchtower';
+      const building = {
+        id: buildingId,
+        kind: 'building',
+        name: 'Hügelwacht',
+        protected: true,
+        position: peak,
+        angle: 0,
+        outline: [
+          { x: -4, y: -4 },
+          { x: 4, y: -4 },
+          { x: 4, y: 4 },
+          { x: -4, y: 4 },
+        ],
+        notes: '',
+        residentIds: [],
+        workerIds: [],
+        terrain: { mode: 'ground', offsetM: 1, wallM: 5, roofM: 2 },
+      };
+      const city = () => store.city(active.token, cityId);
+      const cityCommand = {
+        commandId: commandId(),
+        campaignId: campaign.id,
+        token: active.token,
+        cityId,
+        expectedRevision: city().header.revision,
+        action: {
+          kind: 'change',
+          upsert: [building],
+          remove: [],
+          label: 'Kanonisches Atlasgebäude',
+        },
+      };
+      store.executeAtlasCommit({
+        commandId: cityCommand.commandId,
+        campaignId: campaign.id,
+        token: active.token,
+        action: { kind: 'city', command: cityCommand },
+      });
 
-    const savedBuilding = city().units.find((unit) => unit.id === buildingId);
-    assert(savedBuilding?.groupId, 'City building must own a canonical interior scope');
-    const interiorScopeId = savedBuilding.groupId;
-    const groundRoom = store
-      .campaignAtlas(active.token)
-      .workspace.rooms.find(
-        (room) => room.scopeId === interiorScopeId && room.floorId === 'ground',
-      );
-    assert(groundRoom, 'Building interior must have a canonical ground-floor room');
+      const savedBuilding = city().units.find((unit) => unit.id === buildingId);
+      assert(savedBuilding?.groupId, 'City building must own a canonical interior scope');
+      interiorScopeId = savedBuilding.groupId;
+      groundRoom = store
+        .campaignAtlas(active.token)
+        .workspace.rooms.find(
+          (room) => room.scopeId === interiorScopeId && room.floorId === 'ground',
+        );
+      assert(groundRoom, 'Building interior must have a canonical ground-floor room');
 
-    const upperFloorId = 'atlas-maplibre-upper-floor';
-    store.executeDrawing({
-      commandId: commandId(),
-      token: active.token,
-      campaignId: campaign.id,
-      action: {
-        kind: 'floor',
-        scopeId: interiorScopeId,
-        id: upperFloorId,
-        name: 'Obergeschoss',
-        elevation: 4,
-        cloneId: 'ground',
-        copyKeys: false,
-        hidden: false,
-      },
-    });
-    const upperRoom = store
-      .campaignAtlas(active.token)
-      .workspace.rooms.find(
-        (room) => room.scopeId === interiorScopeId && room.floorId === upperFloorId,
-      );
-    assert(upperRoom, 'Second floor must contain a canonical cloned room');
+      upperFloorId = 'atlas-maplibre-upper-floor';
+      store.executeDrawing({
+        commandId: commandId(),
+        token: active.token,
+        campaignId: campaign.id,
+        action: {
+          kind: 'floor',
+          scopeId: interiorScopeId,
+          id: upperFloorId,
+          name: 'Obergeschoss',
+          elevation: 4,
+          cloneId: 'ground',
+          copyKeys: false,
+          hidden: false,
+        },
+      });
+      upperRoom = store
+        .campaignAtlas(active.token)
+        .workspace.rooms.find(
+          (room) => room.scopeId === interiorScopeId && room.floorId === upperFloorId,
+        );
+      assert(upperRoom, 'Second floor must contain a canonical cloned room');
+    }
 
     const tutorial = store.tutorial('skipped');
     assert(tutorial, 'Disposable profile must skip first-run UI for the desktop harness');
@@ -191,35 +201,38 @@ export async function createAtlasCanonicalFixture(options = {}) {
     // Reopen the actual SQLite store and rebuild the checks from persisted data.
     store = new CampaignStore(filename);
     active = store.activate(campaign.id);
-    const records = store.atlasMaskRegion(active.token, {
-      x: 0,
-      y: 0,
-      width: 64,
-      height: 64,
-    }).records;
-    const sources = terrainObjectSources(store.campaignAtlas(active.token));
-    const resolved = resolveTerrainObjects(sources, records).find(
-      (object) => object.id === buildingId,
-    );
-    assert(resolved, 'Reopened canonical Atlas view must resolve the saved building');
-    const expected = {
-      hillPeakM: 140,
-      buildingBaseM: 141,
-      floorHeightsM: [141, 145],
-      wallTopM: 150,
-      roofTopM: 152,
-    };
-    assert.equal(resolved.baseM, expected.buildingBaseM);
-    assert.deepEqual(
-      [...resolved.floorsM].sort((a, b) => a - b),
-      expected.floorHeightsM,
-    );
-    assert.equal(resolved.topM, expected.wallTopM);
-    assert.equal(resolved.topM + resolved.roofM, expected.roofTopM);
-    assert.deepEqual(
-      [...resolved.floorElevations].sort((a, b) => a - b),
-      [0, 4],
-    );
+    let expected;
+    if (options.includeCity !== false) {
+      const records = store.atlasMaskRegion(active.token, {
+        x: 0,
+        y: 0,
+        width: 64,
+        height: 64,
+      }).records;
+      const sources = terrainObjectSources(store.campaignAtlas(active.token));
+      const resolved = resolveTerrainObjects(sources, records).find(
+        (object) => object.id === buildingId,
+      );
+      assert(resolved, 'Reopened canonical Atlas view must resolve the saved building');
+      expected = {
+        hillPeakM: 140,
+        buildingBaseM: 141,
+        floorHeightsM: [141, 145],
+        wallTopM: 150,
+        roofTopM: 152,
+      };
+      assert.equal(resolved.baseM, expected.buildingBaseM);
+      assert.deepEqual(
+        [...resolved.floorsM].sort((a, b) => a - b),
+        expected.floorHeightsM,
+      );
+      assert.equal(resolved.topM, expected.wallTopM);
+      assert.equal(resolved.topM + resolved.roofM, expected.roofTopM);
+      assert.deepEqual(
+        [...resolved.floorElevations].sort((a, b) => a - b),
+        [0, 4],
+      );
+    }
 
     const source = store.atlasRegionSource(active.token);
     readerDb = new Database(filename, { readonly: true });
@@ -236,28 +249,30 @@ export async function createAtlasCanonicalFixture(options = {}) {
       roofs: true,
     };
     const region = reader.read(source, query);
-    const upperRegion = reader.read(source, {
-      ...query,
-      scopeId: interiorScopeId,
-      floorId: upperFloorId,
-    });
-    const regionBuilding = region.cities
-      .find((entry) => entry.header.id === cityId)
-      ?.units.find((unit) => unit.id === buildingId);
-    assert(regionBuilding, 'Reopened region read must include canonical city building');
-    assert(
-      regionBuilding.floorElevations?.includes(4),
-      'Region reader must expose the second interior floor elevation',
-    );
-    assert.equal(region.interiors[buildingId], interiorScopeId);
-    assert(
-      region.rooms.some((room) => room.scopeId === interiorScopeId && room.floorId === 'ground'),
-    );
-    assert(
-      upperRegion.rooms.some(
-        (room) => room.scopeId === interiorScopeId && room.floorId === upperFloorId,
-      ),
-    );
+    if (options.includeCity !== false) {
+      const upperRegion = reader.read(source, {
+        ...query,
+        scopeId: interiorScopeId,
+        floorId: upperFloorId,
+      });
+      const regionBuilding = region.cities
+        .find((entry) => entry.header.id === cityId)
+        ?.units.find((unit) => unit.id === buildingId);
+      assert(regionBuilding, 'Reopened region read must include canonical city building');
+      assert(
+        regionBuilding.floorElevations?.includes(4),
+        'Region reader must expose the second interior floor elevation',
+      );
+      assert.equal(region.interiors[buildingId], interiorScopeId);
+      assert(
+        region.rooms.some((room) => room.scopeId === interiorScopeId && room.floorId === 'ground'),
+      );
+      assert(
+        upperRegion.rooms.some(
+          (room) => room.scopeId === interiorScopeId && room.floorId === upperFloorId,
+        ),
+      );
+    }
     const view = store.atlasRegionView(active.token, region);
     assert.equal(view.region.fence, source.fence);
 
@@ -265,7 +280,7 @@ export async function createAtlasCanonicalFixture(options = {}) {
     const ix = Math.round(((peak.x - query.box.x) / query.box.width) * (terrain.grid.columns - 1));
     const iy = Math.round(((peak.y - query.box.y) / query.box.height) * (terrain.grid.rows - 1));
     const peakIndex = iy * terrain.grid.columns + ix;
-    assert.equal(terrain.grid.heights[peakIndex], expected.hillPeakM);
+    assert.equal(terrain.grid.heights[peakIndex], baseHeightM + peakRiseM);
     readerDb.close();
     readerDb = null;
     store.close();
@@ -276,13 +291,10 @@ export async function createAtlasCanonicalFixture(options = {}) {
       filename,
       campaignId: campaign.id,
       campaignName,
-      cityId,
-      buildingId,
-      scopeId: interiorScopeId,
-      interiorScopeId,
-      groundRoomId: groundRoom.id,
+      ...(cityId ? { cityId, buildingId, scopeId: interiorScopeId, interiorScopeId } : {}),
+      ...(groundRoom ? { groundRoomId: groundRoom.id } : {}),
       upperFloorId,
-      upperRoomId: upperRoom.id,
+      ...(upperRoom ? { upperRoomId: upperRoom.id } : {}),
       buildingAnchor: peak,
       viewBox: query.box,
       sourceFence: source.fence,
@@ -290,6 +302,7 @@ export async function createAtlasCanonicalFixture(options = {}) {
       query,
       expected,
       expectedMeters: expected,
+      hill: { peak, baseHeightM, peakRiseM, hillScale },
       terrainGrid: { columns: terrain.grid.columns, rows: terrain.grid.rows, peakIndex },
     };
   } finally {
