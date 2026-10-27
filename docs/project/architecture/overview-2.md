@@ -187,7 +187,7 @@ ihre eigenen Einstiege.
 [desktop-styles.mjs](../../../tools/desktop-styles.mjs) bündelt mit esbuild alle
 lokalen Imports in die weiterhin ausgelieferte `ui/app.css`. Der
 [Buildtest](../../../tests/shared/desktop-styles.test.mjs) prüft die vollständige
-lokale Ausgabe. Die [Reise-DOM-Probe](../../../tests/runtime/desktop-travel-target-dom.test.mjs)
+lokale Ausgabe. Die [Reise-DOM-Probe (historisch)](https://github.com/ThonkTank/Salt-Marcher/blob/05e8f2f97fc729dba8b6fef3830c566cdc47adad/tests/runtime/desktop-travel-target-dom.test.mjs)
 konsumiert dieselbe Zusammensetzung und schützt weiterhin vor Atlas-Hideregeln
 auf der Live-Reisekarte.
 
