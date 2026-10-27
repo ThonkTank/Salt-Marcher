@@ -6,7 +6,7 @@ buildSync({
   stdin: {
     resolveDir: process.cwd(),
     contents:
-      "export * from './src/app/atlas/landscape-raster';export * from './src/app/atlas/vegetation';export * from './src/app/atlas/landscape-cover-feather';export {segmentDistance} from './src/app/atlas/atlas-landscape';",
+      "export * from './src/app/atlas/landscape-raster';export * from './src/app/atlas/vegetation';export * from './src/app/atlas/landscape-cover-feather';export {segmentDistance} from './src/app/atlas/landscape-geometry';",
   },
   outfile: '.build/cover-feather-test.cjs',
   bundle: true,
