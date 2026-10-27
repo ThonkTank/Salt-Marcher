@@ -10,7 +10,7 @@ const require = createRequire(import.meta.url);
 buildSync({
   stdin: {
     contents:
-      "export * from './src/app/storage/store';export * from './src/app/atlas/terrain-height';export * from './desktop/atlas-region';",
+      "export * from './src/app/storage/store';export * from './src/app/atlas/terrain-height';export * from './src/app/atlas/terrain-brush';export * from './desktop/atlas-region';",
     resolveDir: process.cwd(),
   },
   outfile: '.build/terrain-scale-worker-test.cjs',
@@ -31,6 +31,8 @@ const {
   CampaignStore,
   AtlasRegionService,
   heightRecord,
+  applyTerrainBrush,
+  TerrainSampler,
 } = require('../../.build/terrain-scale-worker-test.cjs');
 async function fixture(t) {
   const base = homedir() + '/.cache/saltmarcher/tests';
@@ -165,4 +167,84 @@ test('scale preparation yields to queued selection work and cancellation never a
   await rejected;
   assert.equal(f.service.diagnostics.active, false);
   assert.equal(f.store.db.prepare('SELECT count(*) n FROM atlas_landscape').get().n, 0);
+});
+
+test('all form commands cross the real worker boundary and preserve undo, redo, restart and fine bands', async (t) => {
+  const f = await fixture(t);
+  const rows = () =>
+    f.store.db
+      .prepare('SELECT payload FROM atlas_landscape ORDER BY id')
+      .all()
+      .map((r) => JSON.parse(r.payload));
+  const heights = (rs) => rs.map((r) => [r.id, r.height]);
+  const fine = f.command();
+  fine.action.stroke = {
+    mode: 'roughen',
+    radius: 4,
+    strength: 10,
+    feather: 0.8,
+    seed: 72,
+    samples: [
+      { x: 0, y: 0, t: 0 },
+      { x: 0, y: 0, t: 1000 },
+    ],
+  };
+  f.store.executeAtlasCommit(fine);
+  const originalFine = heights(rows());
+  for (const form of ['hills', 'mountains', 'canyon']) {
+    const c = f.command();
+    c.action.stroke = {
+      form,
+      mode: form === 'canyon' ? 'lower' : 'raise',
+      seed: 0x51a7c3,
+      radius: 32,
+      strength: 120,
+      feather: 0.7,
+      samples: [
+        { x: -80, y: -12, t: 0 },
+        { x: -24, y: 8, t: 800 },
+        { x: 24, y: -8, t: 1600 },
+        { x: 80, y: 12, t: 2400 },
+      ],
+    };
+    const before = rows(),
+      expected = applyTerrainBrush(before, c.action.stroke),
+      source = f.store.terrainStrokeSource(c, f.service.cursor),
+      prepared = await f.service.prepareTerrainStroke(source, c.action.stroke);
+    assert.deepEqual(heights(prepared.records), heights(expected));
+    f.store.executeAtlasCommit(c, prepared);
+    const after = rows();
+    assert.deepEqual(
+      heights(after).filter(([id]) => originalFine.some(([old]) => id === old)),
+      originalFine,
+    );
+    const a = new TerrainSampler(after),
+      b = new TerrainSampler(before),
+      sign = form === 'canyon' ? -1 : 1;
+    for (const p of [
+      { x: -64, y: -6 },
+      { x: 0, y: 0 },
+      { x: 64, y: 6 },
+    ])
+      assert(
+        sign * (a.sample(p).heightM - b.sample(p).heightM) > 1,
+        form + ' effect across signed tile joins',
+      );
+    f.store.executeAtlasCommit({ ...f.command(), action: { kind: 'undo' } });
+    assert.deepEqual(heights(rows()), heights(before));
+    f.store.executeAtlasCommit({ ...f.command(), action: { kind: 'redo' } });
+    assert.deepEqual(heights(rows()), heights(after));
+    const fresh = new CampaignStore(f.store.db.name);
+    try {
+      const token = fresh.activateShell(f.cam.id).token;
+      for (const p of [
+        { x: -64, y: -6 },
+        { x: 0, y: 0 },
+        { x: 64, y: 6 },
+      ])
+        assert.equal(fresh.atlasHeight(token, p).heightM, a.sample(p).heightM);
+    } finally {
+      fresh.close();
+    }
+  }
 });

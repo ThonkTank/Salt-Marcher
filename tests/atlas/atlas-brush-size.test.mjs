@@ -18,7 +18,7 @@ const {
   BrushSizes,
   BrushSizeControl,
   LandscapeToolSettings,
-  HEIGHT_PRESETS,
+  TERRAIN_FORMS,
   initAtlasUnits,
   setAtlasUnits,
   atlasFieldValue,
@@ -109,29 +109,41 @@ test('actual controls keep slider, typed units, locked drafts and preset paramet
   f('land-height-strength-slider').value = '3';
   f('land-height-strength-slider').dispatchEvent(new Event('input', { bubbles: true }));
   assert.equal(settings.height().strength, 1000);
-  for (const [i, p] of HEIGHT_PRESETS.entries()) {
+  for (const p of TERRAIN_FORMS) {
     f('land-height-target-enabled').checked = true;
-    f('land-height-preset').value = String(i);
-    f('land-height-preset').dispatchEvent(new Event('input', { bubbles: true }));
-    f('land-height-preset').dispatchEvent(new Event('change', { bubbles: true }));
+    document.querySelector(`[data-form="${p.form}"]`).click();
     assert.deepEqual(settings.height(), {
-      mode: p.direction,
-      strength: p.strength,
+      mode: p.form === 'canyon' ? 'lower' : 'raise',
+      form: p.form,
+      seed: 0x51a7c3,
+      strength: Number((p.radius * 10 * p.rate).toPrecision(3)),
       feather: p.feather,
-      roughness: p.roughness,
     });
+    assert(f('land-shape-options').hidden);
+    assert.equal(document.querySelectorAll('[data-form][aria-pressed="true"]').length, 1);
     assert.equal(Number(atlasFieldValue(f('land-radius'))), p.radius * 10);
   }
   f('land-radius-fixed').checked = true;
   f('land-radius-fixed').dispatchEvent(new Event('change'));
-  assert.equal(Number(atlasFieldValue(f('land-radius'))), 200);
+  assert.equal(Number(atlasFieldValue(f('land-radius'))), 450);
   setAtlasUnits('metric');
   control.sync('dom-height', 2, false);
-  assert.equal(f('land-radius-value').value, '200');
+  assert.equal(f('land-radius-value').value, '450');
   f('land-radius-value').value = '123';
   f('land-radius-value').dispatchEvent(new Event('change'));
   assert.equal(Number(atlasFieldValue(f('land-radius'))), 123);
-  assert.equal(f('land-height-preset').value, '');
+  assert.equal(settings.height().form, 'canyon'); // Radius/strength edits retain the tool.
+  document.querySelector('[data-direction="raise"]').click();
+  assert.equal(settings.height().form, undefined);
+  assert.equal(settings.height().mode, 'raise');
+  assert(!f('land-shape-options').hidden);
+  document.querySelector('[data-direction="roughen"]').click();
+  assert(f('land-shape-options').hidden);
+  assert.equal(settings.height().roughness, undefined);
+  settings.show('smooth');
+  assert(f('land-height-forms').hidden);
+  assert.equal(settings.height().form, undefined);
+  assert.equal(settings.height().mode, 'smooth');
   setAtlasUnits('dnd');
   control.sync('dom-height', 2, false);
   assert(Math.abs(Number(f('land-radius-value').value) * 0.3048 - 123) < 0.002);

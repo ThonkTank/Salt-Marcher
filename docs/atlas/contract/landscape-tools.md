@@ -108,3 +108,35 @@ belegt dessen Protokollanschluss. Der begrenzte Modus behauptet keine erneute
 Abnahme sämtlicher oben genannter R2-Abläufe oder des Feindetailschutzes.
 
 Die gemeinsame [Formatpolitik](../../project/contract/data-format.md) ersetzt frühere Schema- und Migrationsangaben.
+
+## Direkte Terrainformpinsel · 27.10.2026
+
+**Hügel**, **Berge** und **Schlucht** sind direkt wählbare Formwerkzeuge innerhalb
+von Land formen. Radius, Stärke in Metern pro Sekunde und weicher Rand bleiben
+änderbar, ohne die Formauswahl zu verlieren. Die anfängliche Stärke folgt dem
+tatsächlichen Weltradius; nachträgliche Eingaben bleiben ausdrücklich gesetzt.
+Erhöhen, Absenken und Aufrauen
+wechseln zurück zum jeweiligen Grundpinsel; Glätten bleibt direkt erreichbar.
+Die früheren gleichnamigen radialen Parameter-Vorlagen entfallen.
+
+Der unveränderliche Höhenauftrag trägt `form` und einen festen Seed. Ein
+räumlich gleichmäßig abgetasteter, an Kurven leicht geglätteter Korridor verbindet
+die ganze Geste. Weltgebundene Kuppen füllen das Hügelfeld; Berge besitzen einen
+positiven Hauptkamm mit breiten Hängen und begrenzt ungleichen Gipfeln; Schluchten
+einen schmalen Boden mit seitlich auslaufenden Böschungen. Halten verstärkt die
+bestehende Form, Folgezüge verwenden dasselbe Weltfeld. Überlappungen addieren
+Höhe beziehungsweise Tiefe mit weichen Rändern. Eine Formgeste wird im Livebild
+vollständig aus ihrer festen Ausgangsfläche berechnet und verwendet dieselbe
+Auswertung wie der kanonische Writer. Bestehende additive Höhenbänder,
+Sichtbarkeit, Trassenschutz und die Speichergrenze in Main bleiben zuständig.
+
+Gezielte numerische Belege: `tests/atlas/terrain-form-brush.test.mjs`
+(Form, Kurven, Kreuzung, Folgezug, Eventdichte, Halten, Rand, Live/Writer und
+Grundkorrekturen), `tests/atlas/terrain-scale-worker.test.mjs` (Worker, Store,
+History und Wiederöffnung) sowie `tests/atlas/atlas-brush-size.test.mjs`
+(tatsächliche Formauswahl und Parametereingaben). Der bestehende native Ablauf
+`tools/test-desktop-atlas-terrain-stroke.mjs --forms --scale=1` beziehungsweise
+`--scale=2` prüft direkte Formzüge, überlappende Anschlüsse, Wirkung vor Loslassen,
+kanonische Daten, Grundkorrekturen, Undo/Redo und reguläre Wiederöffnung.
+Funktionsbelege ersetzen weder die spätere Darstellungs-/LOD- und
+Leistungsqualifikation noch Paket-, Integrations- oder Nutzerabnahme.

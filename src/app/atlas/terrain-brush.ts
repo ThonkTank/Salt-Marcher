@@ -8,6 +8,7 @@ import {
   type TerrainGrid,
 } from './terrain-spatial-model';
 import { terrainRoughness } from './terrain-relief';
+import { prepareTerrainForm, type TerrainForm } from './terrain-form-brush';
 import type { LandscapeRecord } from './atlas-landscape';
 import { strokeBox, validateStroke, type MaskSample } from './land-mask';
 import { editHeight, TerrainSampler } from './terrain-height';
@@ -15,6 +16,7 @@ import { editHeight, TerrainSampler } from './terrain-height';
 /** Strength is metres per second, feather is the soft fraction of the radius. */
 export interface HeightStroke {
   mode: 'raise' | 'lower' | 'roughen' | 'smooth' | 'level';
+  form?: TerrainForm;
   radius: number;
   strength: number;
   feather: number;
@@ -37,6 +39,12 @@ export function validateHeightStroke(s: HeightStroke) {
     (s.targetM !== undefined && (!Number.isFinite(s.targetM) || Math.abs(s.targetM) > 1e6)) ||
     (s.mode === 'level' && s.targetM === undefined) ||
     (s.mode === 'roughen' && s.targetM !== undefined) ||
+    (s.form !== undefined &&
+      (!['hills', 'mountains', 'canyon'].includes(s.form) ||
+        s.mode !== (s.form === 'canyon' ? 'lower' : 'raise') ||
+        s.targetM !== undefined ||
+        s.roughness !== undefined ||
+        s.seed === undefined)) ||
     (s.roughness !== undefined &&
       (!Number.isFinite(s.roughness) || s.roughness < 0 || s.roughness > 2)) ||
     (s.seed !== undefined && (!Number.isInteger(s.seed) || s.seed < 0 || s.seed > 0xffffffff)) ||
@@ -44,6 +52,7 @@ export function validateHeightStroke(s: HeightStroke) {
       (k) =>
         ![
           'mode',
+          'form',
           'radius',
           'strength',
           'feather',
@@ -114,6 +123,24 @@ export function heightBrushDabs(s: Pick<HeightStroke, 'samples' | 'radius'>) {
   return dabs;
 }
 
+/** Prepared once per complete gesture; shared by live forms and canonical edits. */
+export function prepareHeightBrush(s: HeightStroke) {
+  const dabs = heightBrushDabs(s);
+  const dose = s.form
+    ? prepareTerrainForm(s, dabs)
+    : (p: { x: number; y: number }) => {
+        let total = 0;
+        for (const d of dabs) {
+          const r = Math.hypot(p.x - d.x, p.y - d.y) / s.radius;
+          if (r >= 1) continue;
+          const t = s.feather === 0 ? 1 : Math.min(1, (1 - r) / s.feather);
+          total += d.seconds * t * t * (3 - 2 * t);
+        }
+        return total;
+      };
+  return { dabs, dose };
+}
+
 /** Shared numeric effect; the caller owns the source snapshot and visibility. */
 export function heightBrushAmount(
   s: HeightStroke,
@@ -161,7 +188,7 @@ export function applyTerrainBrush(
   const box = strokeBox(s),
     pixel = heightBrushPixel(s.radius),
     edge = 64 * pixel;
-  const dabs = heightBrushDabs(s);
+  const { dabs, dose } = prepareHeightBrush(s);
   const tiles =
     (Math.floor((box.x + box.width) / edge) - Math.floor(box.x / edge) + 1) *
     (Math.floor((box.y + box.height) / edge) - Math.floor(box.y / edge) + 1);
@@ -176,15 +203,9 @@ export function applyTerrainBrush(
     box,
     pixel,
     (p, prior) => {
-      let dose = 0;
-      for (const d of dabs) {
-        const r = Math.hypot(p.x - d.x, p.y - d.y) / s.radius;
-        if (r >= 1) continue;
-        const t = s.feather === 0 ? 1 : Math.min(1, (1 - r) / s.feather);
-        dose += d.seconds * t * t * (3 - 2 * t);
-      }
-      if (!dose || (visible && !visible(p))) return undefined;
-      return prior + heightBrushAmount(s, p, dose, source);
+      const exposure = dose(p);
+      if (!exposure || (visible && !visible(p))) return undefined;
+      return prior + heightBrushAmount(s, p, exposure, source);
     },
     2,
   );

@@ -506,9 +506,9 @@ export class LandscapeWorkbench {
           if (this.tool === 'height' || this.tool === 'smooth') {
             this.brush.maskStart = e.timeStamp;
             this.brush.maskStroke = {
+              seed: this.draftSeed,
               ...this.settings.height(),
               visibility: this.host.visibility?.(),
-              seed: this.draftSeed,
               radius: Number(atlasFieldValue(html<HTMLInputElement>('land-radius'))),
               samples: [{ ...this.lastPoint, t: 0 }],
             };
