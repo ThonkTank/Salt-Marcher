@@ -17,7 +17,7 @@ for (const [name, entry] of [
 }
 const require = createRequire(import.meta.url);
 const { proposePathAnchor } = require('../../.build/volume-spatial-path.cjs');
-const {resolvePathAnchor}=require('../../.build/volume-spatial-anchor.cjs');
+const { resolvePathAnchor } = require('../../.build/volume-spatial-anchor.cjs');
 const { triggerIntervals } = require('../../.build/volume-spatial-trigger.cjs');
 const U = 1.524;
 const span = (z) => ({ z, height: 2, floor: true, ceiling: true, medium: 'air' });

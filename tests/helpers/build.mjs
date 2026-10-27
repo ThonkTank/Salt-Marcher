@@ -1,4 +1,4 @@
-import {ensureTestAsset,publishTestAlias} from '../../tools/test-assets.mjs';
+import { ensureTestAsset, publishTestAlias } from '../../tools/test-assets.mjs';
 import { buildSync as compile } from 'esbuild';
 import path from 'node:path';
 export { build } from 'esbuild';
@@ -18,6 +18,6 @@ export function buildSync(options) {
   )
     return compile(options);
   const source = ensureTestAsset('store');
-  publishTestAlias(source,path.resolve(options.outfile));
+  publishTestAlias(source, path.resolve(options.outfile));
   return { errors: [], warnings: [] };
 }

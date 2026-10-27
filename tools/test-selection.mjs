@@ -46,9 +46,11 @@ export function selectTests(args, root = process.cwd()) {
   const selected = [];
   for (const arg of args) {
     if (arg.startsWith('--concurrency=')) {
-      const value=arg.slice('--concurrency='.length);
-      if(!/^[1-9][0-9]*$/.test(value)||!Number.isSafeInteger(Number(value)))throw Error('Invalid concurrency: '+value);
-      concurrency=Number(value);continue;
+      const value = arg.slice('--concurrency='.length);
+      if (!/^[1-9][0-9]*$/.test(value) || !Number.isSafeInteger(Number(value)))
+        throw Error('Invalid concurrency: ' + value);
+      concurrency = Number(value);
+      continue;
     }
     if (arg === '--serial') {
       serial = true;
@@ -78,6 +80,7 @@ export function selectTests(args, root = process.cwd()) {
   }
   const files = [...new Set(selected.length ? selected : activeTests(root))];
   if (!files.length) throw new Error('No tests selected.');
-  if(serial&&concurrency!==undefined&&concurrency!==1)throw Error('--serial conflicts with --concurrency.');
-  return { serial, list, files, ...(concurrency===undefined?{}:{concurrency}) };
+  if (serial && concurrency !== undefined && concurrency !== 1)
+    throw Error('--serial conflicts with --concurrency.');
+  return { serial, list, files, ...(concurrency === undefined ? {} : { concurrency }) };
 }
