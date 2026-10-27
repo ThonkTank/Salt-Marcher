@@ -10,6 +10,8 @@ export const vegetationColors = {
   pine: '#3e6654',
   shrub: '#7f945b',
   grass: '#96a564',
+  reed: '#747a3e',
+  crop: '#c0ae54',
   rock: '#8e8778',
 };
 export function drawVegetation(

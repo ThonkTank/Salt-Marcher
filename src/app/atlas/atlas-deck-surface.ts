@@ -326,6 +326,7 @@ export class AtlasDeckSurface {
           baseColor: tile.texture,
           masks: tile.masks,
           cover: tile.cover,
+          biome: tile.biome,
           relief: tile.relief,
           terrainStyle: this.terrainStyle,
           heightOrigin: tile.object.origin.heightM,

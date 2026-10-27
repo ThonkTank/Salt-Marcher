@@ -2,7 +2,7 @@
 
 Status: Verbindlicher Zielumfang; historische Umsetzungsbelege sind keine aktuelle Abnahme.
 Owner: atlas
-Last Reviewed: 2026-10-27 (Biompinsel und aktueller Prüfweg; Fachabnahme separat)
+Last Reviewed: 2026-10-28 (Biombibliothek und aktueller Prüfweg; Fachabnahme separat)
 Source of Truth: Dieses Dokument besitzt das benannte Thema; Code belegt den Iststand, das Abnahmeregister den Prüfstand.
 
 Nutzerentscheidung vom 20.10.2026: Landschaftsflächen setzen Vorlage, Bodenbild
@@ -26,11 +26,11 @@ Die folgende Tabelle dokumentiert die frühere lokale Phasenqualifikation.
 Für die weitere Umsetzung gilt die [gemeinsame Atlas-Roadmap](../architecture/unified-spatial-atlas.md);
 insbesondere ersetzt sie die damals getrennten Ansichten durch die Hauptkamera.
 
-| Phase | Umfang und notwendiger Beleg | Stand |
-| --- | --- | --- |
-| V0 – Prototyp | Wald am Hang, Lichtung mit Straße und Geröll; stilisierte Modelle; gleiche Bestände in Draufsicht und räumlich | Prototyp vorhanden und nativ geprüft; drei Maßstäbe zusätzlich im Produkt unter V3 geprüft. |
-| V1 – Landschaftsbestand | Sechs Vorlagen mit Boden und Geländeart; stabile Flächen, lokale Korrekturen, geschützte Einzelobjekte, Ortsverknüpfung; Wasser, Straßen, Gebäude und Hangneigung; Vorlagenschnappschuss; Main/SQLite, History und begrenzte Bereichsabfrage | Implementiert; lokale Daten- und Bedienbelege vorhanden. |
-| V2 – Linien | Natürliche Säume und regelmäßige Reihen mit Breite und Meterabstand; gleicher Bestand und dieselbe History | Implementiert; lokale Daten- und Bedienbelege vorhanden. |
+| Phase                                    | Umfang und notwendiger Beleg                                                                                                                                                                                                                                                                                                   | Stand                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| V0 – Prototyp                            | Wald am Hang, Lichtung mit Straße und Geröll; stilisierte Modelle; gleiche Bestände in Draufsicht und räumlich                                                                                                                                                                                                                 | Prototyp vorhanden und nativ geprüft; drei Maßstäbe zusätzlich im Produkt unter V3 geprüft.                                                                                                                                                                                                                                                                                                                                                                   |
+| V1 – Landschaftsbestand                  | Sechs Vorlagen mit Boden und Geländeart; stabile Flächen, lokale Korrekturen, geschützte Einzelobjekte, Ortsverknüpfung; Wasser, Straßen, Gebäude und Hangneigung; Vorlagenschnappschuss; Main/SQLite, History und begrenzte Bereichsabfrage                                                                                   | Implementiert; lokale Daten- und Bedienbelege vorhanden.                                                                                                                                                                                                                                                                                                                                                                                                      |
+| V2 – Linien                              | Natürliche Säume und regelmäßige Reihen mit Breite und Meterabstand; gleicher Bestand und dieselbe History                                                                                                                                                                                                                     | Implementiert; lokale Daten- und Bedienbelege vorhanden.                                                                                                                                                                                                                                                                                                                                                                                                      |
 | V3 – Darstellung und Bedienqualifikation | Drei Maßstäbe und beide Ansichten; brauchbare Auswahl unter Baumkronen; Editor-/Exportgleichheit; Anpassung nach Gelände-, Straßen- und Gebäudeänderungen; Erhalt feiner Bereiche, Lichtungen und Einzelkorrekturen; Undo/Redo, Neustart und Transfer; Navigation mindestens 30 FPS, Pinselrückmeldung höchstens 100 ms messen | Lokal funktional qualifiziert; 58–60 FPS bei geladenen Kameragesten, beide Pinsel unter 38 ms. Folgegesten bleiben beim Nachladen erhalten. [Vollständiger Zielabgleich](https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/vegetation-20261020/qualification/README.md). Kaltes Öffnen der großen Prüfkarte dauerte 34–97 s, Karten-PNG 54 s; diese Ladezeiten bleiben eine wesentliche Leistungsgrenze. |
 
 Zum Abschluss ist jede ursprüngliche Regel nochmals einzeln abzugleichen:
@@ -44,9 +44,10 @@ von der lokalen Phasenqualifikation berichtet.
 
 ## Bedienung
 
-Unter **Landschaft → Bewuchs & Felsen** stehen sechs Vorlagen zur Verfügung:
-Laubwald, Nadelwald, Wiese, Buschland, Geröllfeld und felsiger Boden.
-Baumart, Dichte, Höhe, Unterwuchs, Steinanteil, Gruppierung, Rand und maximale
+Unter **Landschaft → Bewuchs & Felsen** stehen neun Vorlagen zur Verfügung:
+Laubwald, Nadelwald, Wiese, Buschland, Geröllfeld, felsiger Boden, Sumpf, Wüste
+und Landwirtschaft. Alle verwenden dieselbe Auswahl und denselben Malpinsel.
+Hauptbewuchs, Dichte, Höhe, Unterwuchs, Steinanteil, Gruppierung, Rand und maximale
 Hangneigung lassen sich vor dem Malen oder an einer bestehenden Fläche ändern.
 Zahlenfelder übernehmen auch leere oder ungültige Eingaben in den Entwurf;
 Speichern verwendet niemals stillschweigend den letzten gültigen Wert.
@@ -55,15 +56,15 @@ denselben fachlichen Vertrag wie Main. Nach einer Korrektur lässt sich der
 erhaltene Entwurf abschließen. Gültige Dezimalwerte sind innerhalb der
 Fachgrenzen frei wählbar, beispielsweise eine Baumdichte von `0,33`.
 
-| Werkzeug | Wirkung |
-| --- | --- |
-| Landschaft malen | Ein gedrückter Pinselzug speichert eine Fläche als einen Undo-Schritt. |
-| Landschaft umgrenzen | Eckpunkte anklicken und den Punktzug abschließen. |
-| Hecke / Baumreihe | Verlauf zeichnen; natürlicher Saum oder regelmäßige Reihe mit Meterabstand. |
-| Gelände radieren | Entfernt Geländeauftrag einschließlich Boden und zugehörigem Bewuchs. Keine dauerhafte Freihaltefläche; erneutes Malen funktioniert dort normal. Höhen, Straßen und Gebäude bleiben unabhängig. |
-| Ausdünnen / Verdichten | Lokale Dichtekorrektur, ohne den restlichen Bestand neu zu würfeln. |
-| Einzelbaum / Felsen | Innerhalb einer Landschaftsfläche ein geschütztes Objekt setzen und abschließen. |
-| Bewuchs auswählen | Baum oder Felsen anklicken; Typ, X/Y, Größe und Drehung ändern, entfernen oder Einzelkorrektur zurücksetzen. Der Typfilter erreicht Felsen oder Unterwuchs auch unter Baumkronen. |
+| Werkzeug               | Wirkung                                                                                                                                                                                         |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Landschaft malen       | Ein gedrückter Pinselzug speichert eine Fläche als einen Undo-Schritt.                                                                                                                          |
+| Landschaft umgrenzen   | Eckpunkte anklicken und den Punktzug abschließen.                                                                                                                                               |
+| Hecke / Baumreihe      | Verlauf zeichnen; natürlicher Saum oder regelmäßige Reihe mit Meterabstand.                                                                                                                     |
+| Gelände radieren       | Entfernt Geländeauftrag einschließlich Boden und zugehörigem Bewuchs. Keine dauerhafte Freihaltefläche; erneutes Malen funktioniert dort normal. Höhen, Straßen und Gebäude bleiben unabhängig. |
+| Ausdünnen / Verdichten | Lokale Dichtekorrektur, ohne den restlichen Bestand neu zu würfeln.                                                                                                                             |
+| Einzelbaum / Felsen    | Innerhalb einer Landschaftsfläche ein geschütztes Objekt setzen und abschließen.                                                                                                                |
+| Bewuchs auswählen      | Baum oder Felsen anklicken; Typ, X/Y, Größe und Drehung ändern, entfernen oder Einzelkorrektur zurücksetzen. Der Typfilter erreicht Felsen oder Unterwuchs auch unter Baumkronen.               |
 
 **Als besonderen Ort anlegen** verknüpft das Einzelobjekt mit einem normalen
 Kampagnenort. Ortsprosa und Bewuchs bleiben getrennte Datensätze; eine
@@ -85,6 +86,21 @@ nativen Speicheranschluss und prüft den Quellenstand.
 Vorlagenschnappschuss, Seed, Verteilungsart, Abstand, Korrekturflächen und
 Einzelkorrekturen. Format 52 schützt diese Inhalte vor älteren Apps; der
 Übergang von Main-Format 51 verändert weder vorhandene Höhen noch den Undo-Verlauf.
+
+Der Vorlagenschnappschuss benennt Haupt- und Unterwuchsasset, natürliche
+Verteilung oder Reihen innerhalb der Fläche, natürliches Bodenbild oder
+Ackerfurchen und die erlaubte Wassertiefe je Assetgruppe. Gültige eigene
+Definitionen werden strukturell geprüft; ihre Kennung muss nicht in der
+mitgelieferten Bibliothek stehen. Bibliotheksänderungen überschreiben keine
+bearbeiteten Schnappschüsse. Es gibt keinen zusätzlichen Materialeditor.
+
+Sumpf verwendet trockene Sträucher und Schilf auf trockenem Boden oder in
+höchstens 0,5 m tiefem Wasser. Schilf wurzelt auf dem Boden. Tiefere Abschnitte
+bleiben automatisch frei; der Sumpfpinsel verändert weder Wasserflächen noch
+Pegel. Wüste verwendet wenige Sträucher und Felsen auf sandfarbenem Boden.
+Landwirtschaft verwendet Kulturpflanzen in weltfesten Flächenreihen und
+parallele Furchen mit dem gespeicherten Meterabstand. Die gezeichnete
+**Hecke / Baumreihe** bleibt davon unabhängig eine Reihe entlang des Verlaufs.
 
 Automatische Kandidaten besitzen weltadressierte Kennungen. Kamera,
 Kachelgrenzen und Dichteänderungen ändern ihre Positionen nicht. Geländehöhe,
@@ -117,7 +133,10 @@ bleiben unverändert. [Detailzoom-Regression](https://github.com/ThonkTank/Salt-
 Geschützte Einzelobjekte behalten ihre Maße und bleiben erhalten. Der
 Canvas-Fallback verwendet dieselben Ausblendschwellen. Die Hauptansicht verwendet
 instanzierte, geometrisch erzeugte Low-Poly-Meshes. Gras und Unterwuchs sind
-kleine geometrische Büschel. Es gibt keine importierten Fremdassets und keine
+kleine geometrische Büschel. Schilf und Kulturpflanzen besitzen eigene
+prozedurale Halme und Blätter mit sichtbarer Fläche auch in der Draufsicht.
+Ihre Bodenzeichnung übernimmt vor dem Ausblenden der lokalen Pflanzen;
+auf Weltmaßstab bleiben Flächenfarben statt vergrößerter Einzelpflanzen. Es gibt keine importierten Fremdassets und keine
 Wachstums- oder Ökosystemsimulation.
 
 Höhen bleiben kanonisch in den vorhandenen Höhenkacheln. Die räumliche
@@ -128,22 +147,24 @@ Prototyp verwenden weiterhin 65 × 65 Punkte. Diese Gitter schreiben niemals
 in die Höhenkacheln zurück.
 Eine Ansicht ist auf 20.000 sichtbare Bestandsobjekte und 4 MiB begrenzt.
 Zu große Anfragen werden mit einer erklärten Zoomaufforderung abgewiesen.
-Dies ist noch kein Nachweis für beliebig große Welten.
+Die obere funktionale Zielgröße ist eine erdgroße Weltkarte mit etwa 40.000 km
+sichtbarer Breite in der vorhandenen flachen Kartenprojektion. Dies ist kein
+Nachweis für beliebige Datenmengen oder eine neue Kugelprojektion.
 Bei dichter Kartenbelegung bleibt die Rasterübersicht begrenzt; geschützte
 Objekte werden innerhalb des Antwortbudgets zusätzlich als auswählbare
 Einzelobjekte übertragen. Der Übergang zur Übersicht darf keine vollständige
 Landschaftsebene wegen zu vieler lokaler Kandidaten verschwinden lassen.
 
-| Verantwortung | Einstieg |
-| --- | --- |
-| Vorlagen, Validierung, stabile Kandidaten und Ausschlüsse | `src/app/atlas/vegetation.ts`; verschachtelte Detailstufen: `src/app/atlas/vegetation-lod.ts` |
-| Kanonische Befehle und räumliche Datenprojektion | `src/app/storage/atlas-landscape.ts`, `src/app/storage/vegetation.ts` |
-| History, Main/Preload und Kampagnenkopie | `src/app/storage/store.ts`, `desktop/main.ts`, `desktop/preload.ts`, `src/app/storage/campaign-data.ts` |
-| Kartenbild, Geländegrund und Bereichsprojektion | `src/app/atlas/vegetation-view.ts`, `src/app/atlas/landscape-raster.ts`, `src/app/storage/atlas-landscape-region.ts` |
-| Werkzeuge und gemeinsame Einzelbearbeitung | `src/app/atlas/atlas-landscape-ui.ts`, `src/app/atlas/vegetation-controls.ts` |
-| Bewuchs in der gemeinsamen Hauptkamera und isolierte Bildfixture | `src/app/atlas/atlas-deck-vegetation.ts`, `src/app/atlas/atlas-vegetation-layer.ts`, `src/app/atlas/atlas-cartographic-style.ts`, `tools/vegetation-prototype/app.ts` |
-| Abgeleitetes Geländenetz, Bodenbild und schreibfreie Landpinselvorschau der räumlichen Bewuchsansicht | `src/app/atlas/spatial-terrain.ts` |
-| Datenregression, Auswahl und echte Desktop-Bedienung | `tests/atlas/vegetation.test.mjs`, `tests/atlas/vegetation-spatial.test.mjs`, `tests/atlas/vegetation-geometry.test.mjs`, `tools/test-desktop-atlas-biome-stroke.mjs` |
+| Verantwortung                                                                                         | Einstieg                                                                                                                                                                                                    |
+| ----------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Vorlagen, Validierung, stabile Kandidaten und Ausschlüsse                                             | `src/app/atlas/vegetation.ts`; verschachtelte Detailstufen: `src/app/atlas/vegetation-lod.ts`; schreibfreie Wasser-/Furchenregeln: `src/app/atlas/vegetation-surface.ts`                                    |
+| Kanonische Befehle und räumliche Datenprojektion                                                      | `src/app/storage/atlas-landscape.ts`, `src/app/storage/vegetation.ts`                                                                                                                                       |
+| History, Main/Preload und Kampagnenkopie                                                              | `src/app/storage/store.ts`, `desktop/main.ts`, `desktop/preload.ts`, `src/app/storage/campaign-data.ts`                                                                                                     |
+| Kartenbild, Geländegrund und Bereichsprojektion                                                       | `src/app/atlas/vegetation-view.ts`, `src/app/atlas/landscape-raster.ts`, `src/app/storage/atlas-landscape-region.ts`                                                                                        |
+| Werkzeuge und gemeinsame Einzelbearbeitung                                                            | `src/app/atlas/atlas-landscape-ui.ts`, `src/app/atlas/vegetation-controls.ts`                                                                                                                               |
+| Bewuchs in der gemeinsamen Hauptkamera und isolierte Bildfixture                                      | `src/app/atlas/atlas-deck-vegetation.ts`, `src/app/atlas/atlas-vegetation-layer.ts`, `src/app/atlas/atlas-cartographic-style.ts`, `tools/vegetation-prototype/app.ts`                                       |
+| Abgeleitetes Geländenetz, Bodenbild und schreibfreie Landpinselvorschau der räumlichen Bewuchsansicht | `src/app/atlas/spatial-terrain.ts`                                                                                                                                                                          |
+| Datenregression, Auswahl und echte Desktop-Bedienung                                                  | `tests/atlas/vegetation.test.mjs`, `tests/atlas/vegetation-spatial.test.mjs`, `tests/atlas/vegetation-geometry.test.mjs`, `tests/atlas/biome-library.test.mjs`, `tools/test-desktop-atlas-biome-stroke.mjs` |
 
 Die gezielte native Probe `tools/test-desktop-atlas-biome-stroke.mjs --scale=1`
 (bzw. `--scale=2`) erzeugt eine flache Testkampagne und prüft Laubwald mit 25 m
@@ -152,6 +173,25 @@ Materialkanäle, vollständige Modellränder, getrennte Bereichsreads, Undo/Redo
 ein frischer Prozess gehören zum selben Ablauf. Die vorhandene Waldzeichnung
 wird zusätzlich im Übersichtsmaßstab geprüft; dies ist keine Leistungs- oder
 Gestaltungsabnahme. Ergebnisse und native Bilder liegen unter `.build/cycle2-point1/native/`.
+
+Der begrenzte Modus `tools/test-desktop-atlas-biome-stroke.mjs --library --scale=1`
+(bzw. `--scale=2`) prüft Sumpf, Laubwald, Wüste und Landwirtschaft im gemeinsamen
+Maler, je einen Historyschritt, Undo/Redo und frische Prozesse. Das Sumpf-Fixture
+enthält trockenen Boden sowie 0,25 m und 2 m Wasser; es benutzt keinen neuen
+Wasserpinsel. Gezielt protokollierte Übergänge um 2 und 8 m/Pixel und Ausschnitte
+von 10 m bis 1.000 km verwenden dieselbe Hauptkamera. Große Flächen sind
+synthetische Testdaten; kleine Autorenflächen bleiben maßhaltig. Ergebnisse
+liegen unter `.build/cycle2-point2/native/`. Das ist eine funktionale
+Bibliotheks-/Maßstabsprüfung, keine Leistungs-, Gestaltungs- oder Nutzerabnahme.
+
+`--earth-only --scale=1` beziehungsweise `--scale=2` ergänzt den oberen
+Weltüberblick mit 40.000 km Breite, vier großen synthetischen Biomflächen,
+tatsächlichen Metern pro CSS-Pixel, gezeichneten Farben und einem frischen
+Prozess. Ein zusätzliches 150-m-Feld behält seine physische Ausdehnung und
+wird nicht künstlich als großes Symbol dargestellt. Dieser begrenzte Zusatz
+verwendet denselben App-Build; Detail-, Pinsel- und Historynachweise werden
+aus dem Bibliothekslauf übernommen. Einstieg und Fixture liegen in
+`tools/atlas-biome-earth-probe.mjs`.
 
 Der [lokale Prüfbeleg](https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/vegetation-20261020/README.md) trennt
 automatische Tests, native Bedienung und Leistungsbeobachtung. Die vollständige

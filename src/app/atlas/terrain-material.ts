@@ -1,5 +1,13 @@
 /** Independently derived, unlit terrain products. Byte channels use 0..255 coverage. */
-export const COVER_CHANNEL_NAMES = ['deciduous', 'conifer', 'grass', 'shrub', 'debris'] as const;
+export const COVER_CHANNEL_NAMES = [
+  'deciduous',
+  'conifer',
+  'grass',
+  'shrub',
+  'debris',
+  'reed',
+  'furrows',
+] as const;
 export type TerrainCoverChannel = (typeof COVER_CHANNEL_NAMES)[number];
 export const SURFACE_CHANNEL_NAMES = [
   'baseColor',

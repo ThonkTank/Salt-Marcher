@@ -44,7 +44,7 @@ test('shared tree models keep finite metre bounds and bounded triangle budgets',
 });
 
 test('automatic placement envelope contains rendered models at every crown display scale and rock orientation', () => {
-  for (const asset of ['oak', 'pine', 'shrub', 'grass', 'rock']) {
+  for (const asset of ['oak', 'pine', 'shrub', 'grass', 'rock', 'reed', 'crop']) {
     const g = vegetationGeometry(asset, 'crown'),
       positions = g.getAttribute('position'),
       size = 17;
@@ -63,6 +63,26 @@ test('automatic placement envelope contains rendered models at every crown displ
           );
         }
       }
+    } finally {
+      g.dispose();
+    }
+  }
+});
+
+test('reed and crop tufts have visible area from the ordinary top-down camera', () => {
+  for (const asset of ['reed', 'crop']) {
+    const g = vegetationGeometry(asset, 'crown'),
+      p = g.getAttribute('position');
+    try {
+      let area = 0;
+      for (let n = 0; n < p.count; n += 3)
+        area +=
+          Math.abs(
+            (p.getX(n + 1) - p.getX(n)) * (p.getY(n + 2) - p.getY(n)) -
+              (p.getY(n + 1) - p.getY(n)) * (p.getX(n + 2) - p.getX(n)),
+          ) / 2;
+      assert(area > 0.01, asset + ' must remain actual geometry in plan view');
+      assert(p.count / 3 <= 56, 'bounded procedural tuft');
     } finally {
       g.dispose();
     }

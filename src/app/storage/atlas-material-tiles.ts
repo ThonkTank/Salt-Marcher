@@ -21,7 +21,7 @@ import { AtlasCacheScope } from './atlas-cache-scope';
 import { readTerrainSettings } from './terrain-color-raster';
 import type { AtlasRegionReader } from './atlas-region';
 
-const FORMAT = 'material-tiles-v4-fantasy-cover';
+const FORMAT = 'material-tiles-v5-biome-cover';
 const digest = (value: string | Uint8Array) => createHash('sha256').update(value).digest('hex');
 type Stored = {
   version: string;
@@ -111,6 +111,7 @@ export class AtlasMaterialTiles {
   ): Generator<void, Inputs> {
     const q = atlasMaterialTileQuery(request),
       box = landscapeRasterBounds(q.view.box, q.width, q.height);
+    let depthSensitive = false;
     const settings = readTerrainSettings(this.db, source.campaignId).terrainSettings!,
       style = settings.style ?? DEFAULT_TERRAIN_STYLE;
     const field = createHash('sha256').update(FORMAT + JSON.stringify(settings.seaLevelM));
@@ -158,7 +159,7 @@ export class AtlasMaterialTiles {
           cover.update(
             JSON.stringify([
               shape,
-              p.id,
+              p,
               p.tree,
               p.edge,
               p.density,
@@ -167,8 +168,18 @@ export class AtlasMaterialTiles {
               r.vegetation.edits,
             ]),
           );
-          base.update(JSON.stringify([shape, p.edge, p.ground]));
-          forest.update(JSON.stringify([shape, p.edge, p.density, r.vegetation.edits]));
+          base.update(
+            JSON.stringify([
+              shape,
+              p.edge,
+              p.ground,
+              p.waterDepth,
+              p.groundPattern,
+              p.groundPattern === 'furrows' ? r.vegetation.spacing : null,
+            ]),
+          );
+          if (Object.values(p.waterDepth).some((d) => d > 0)) depthSensitive = true;
+          forest.update(JSON.stringify([shape, p.edge, p.tree, p.density, r.vegetation.edits]));
         } else if (r.kind === 'patch' && (r.values.terrain || r.mask) && !r.terrainSettings) {
           cover.update(
             JSON.stringify([shape, r.values.terrain, r.mask, r.maskManaged, r.propertyOnly]),
@@ -209,15 +220,17 @@ export class AtlasMaterialTiles {
     const terrain = field.digest('hex'),
       water = digest(JSON.stringify([terrain, waterBase.digest('hex')]));
     const coverHash = cover.digest('hex'),
-      coverInputs = Object.fromEntries(COVER_CHANNEL_NAMES.map((c) => [c, coverHash])) as Record<
-        (typeof COVER_CHANNEL_NAMES)[number],
-        string
-      >;
+      coverInputs = Object.fromEntries(
+        COVER_CHANNEL_NAMES.map((c) => [
+          c,
+          depthSensitive ? digest(coverHash + terrain) : coverHash,
+        ]),
+      ) as Record<(typeof COVER_CHANNEL_NAMES)[number], string>;
     return {
       ...coverInputs,
       relief: terrain,
       water,
-      baseColor: base.digest('hex'),
+      baseColor: digest(base.digest('hex') + (depthSensitive ? terrain : '')),
       forest: forest.digest('hex'),
       rock: digest(JSON.stringify([terrain, !!style.mountains])),
       snow: digest(JSON.stringify([terrain, !!style.mountains, style.snowlineM ?? 2500])),

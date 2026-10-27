@@ -59,6 +59,8 @@ export function vegetationScaleLimit(i: VegetationInstance, spec?: VegetationSpe
   if (i.protected || !spec) return 0; // zero means an explicitly retained object
   if (
     i.asset === 'grass' ||
+    i.asset === 'reed' ||
+    i.asset === 'crop' ||
     i.asset === 'shrub' ||
     (i.asset === 'rock' && (spec.preset.density > 0 || spec.preset.rocks <= 0.2))
   )

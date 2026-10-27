@@ -198,7 +198,7 @@ export class TerrainProjectionCache {
     checkpoint: () => Generator<void>,
   ): Generator<void, TerrainField> {
     const data = yield* this.gridDataSteps(lattice, sea, stream, checkpoint, true, 16384, true);
-    return { heights: data.ground!, water: data.water! };
+    return { heights: data.ground!, water: data.water!, levels: data.levels };
   }
   /** Editable ground and potential water levels share the surface's reads and invalidation. */
   gridData(lattice: TerrainLattice, sea: number, stream: TerrainStream, editable = true): GridData {

@@ -7,13 +7,21 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { build } from 'esbuild';
 import { runNativeProbe } from './native-session.mjs';
 import { createAtlasCanonicalFixture } from './atlas-canonical-fixture.mjs';
+import { qualifyBiomeLibrary } from './atlas-biome-library-probe.mjs';
+import { qualifyBiomeEarth, writeBiomeOverview } from './atlas-biome-earth-probe.mjs';
 import { setBrushWorldRadius } from './atlas-brush-probe.mjs';
 
 const root = process.cwd();
+const earthOnly = process.argv.includes('--earth-only');
+const library = process.argv.includes('--library') || earthOnly;
+const marshOnly = process.argv.includes('--marsh-only');
 const surfaceOnly = process.argv.includes('--surface-only');
 const scale = Number(process.argv.find((a) => a.startsWith('--scale='))?.split('=')[1] ?? 1);
 assert([1, 2].includes(scale));
-const output = path.resolve('.build/cycle2-point1/native', `${Date.now()}-${process.pid}`);
+const output = path.resolve(
+  library ? '.build/cycle2-point2/native' : '.build/cycle2-point1/native',
+  `${Date.now()}-${process.pid}`,
+);
 await mkdir(output, { recursive: true });
 const require = createRequire(import.meta.url),
   Database = require('better-sqlite3');
@@ -21,7 +29,7 @@ const sha = (value) => createHash('sha256').update(value).digest('hex');
 const bundle = await build({
   stdin: {
     contents:
-      "export {brushFootprint} from './src/app/atlas/landscape-brush';export {contains,segmentDistance,bounds} from './src/app/atlas/landscape-geometry';export {vegetationEnvironment,generateVegetation} from './src/app/atlas/vegetation';export {vegetationGeometry} from './src/app/atlas/vegetation-geometry';export {vegetationCrownScale} from './src/app/atlas/vegetation-lod';",
+      "export {brushFootprint} from './src/app/atlas/landscape-brush';export {contains,segmentDistance,bounds} from './src/app/atlas/landscape-geometry';export {vegetationSpec,vegetationEnvironment,generateVegetation} from './src/app/atlas/vegetation';export {vegetationGeometry} from './src/app/atlas/vegetation-geometry';export {vegetationCrownScale} from './src/app/atlas/vegetation-lod';",
     resolveDir: root,
   },
   bundle: true,
@@ -34,6 +42,7 @@ const {
   contains,
   segmentDistance,
   bounds,
+  vegetationSpec,
   vegetationEnvironment,
   generateVegetation,
   vegetationGeometry,
@@ -43,9 +52,25 @@ const {
 );
 const sources = [
   'tools/test-desktop-atlas-biome-stroke.mjs',
+  'tools/atlas-biome-library-probe.mjs',
+  'tools/atlas-biome-earth-probe.mjs',
+  'src/app/atlas/terrain-field-stream.ts',
+  'src/app/atlas/terrain-material.ts',
+  'src/app/atlas/terrain-projection-cache.ts',
+  'src/app/atlas/atlas-terrain-tile-model.ts',
+  'src/app/atlas/atlas-terrain-material-layer.ts',
+  'src/app/storage/atlas-material-tiles.ts',
+  'src/app/atlas/vegetation-projection.ts',
+  'src/app/atlas/vegetation-view.ts',
+  'src/app/atlas/vegetation-lod.ts',
+  'src/app/atlas/atlas-deck-vegetation.ts',
+  'src/app/atlas/vegetation-controls.ts',
+  'src/app/atlas/atlas-raster-kernel.ts',
   'tools/atlas-canonical-fixture.mjs',
   'src/app/atlas/atlas-landscape-ui.ts',
+  'src/app/atlas/atlas-deck-surface.ts',
   'src/app/atlas/vegetation.ts',
+  'src/app/atlas/vegetation-surface.ts',
   'src/app/atlas/vegetation-shape.ts',
   'src/app/atlas/vegetation-geometry.ts',
   'src/app/atlas/landscape-raster.ts',
@@ -57,7 +82,15 @@ const sourceHashes = Object.fromEntries(
 );
 const results = {
   scale,
-  scope: surfaceOnly ? 'surface-only' : 'full',
+  scope: earthOnly
+    ? 'biome-earth-upper-bound'
+    : library
+      ? marshOnly
+        ? 'marsh-vertical'
+        : 'biome-library-scales'
+      : surfaceOnly
+        ? 'surface-only'
+        : 'full',
   wheelGestures: [],
   node: process.version,
   sourceHashes,
@@ -106,9 +139,66 @@ try {
       includeRoom: false,
       baseHeightM: 30,
       peakRiseM: 0,
-      flatTileSizeM: 512,
+      flatTileSizeM: earthOnly ? 67108864 : 512,
     });
     results.fixture = fixture;
+    const { CampaignStore: fixtureStore, heightRecord: fixtureHeightRecord } = require(
+      path.join(root, '.build/atlas-canonical-fixture/store.cjs'),
+    );
+    if (library && !earthOnly) {
+      const store = new fixtureStore(fixture.filename),
+        token = store.activate(fixture.campaignId).token;
+      try {
+        for (const [id, y, waterLevelM] of [
+          ['shallow', -20, 30.25],
+          ['deep', 40, 32],
+        ])
+          store.executeAtlasCommit({
+            commandId: crypto.randomUUID(),
+            campaignId: fixture.campaignId,
+            token,
+            action: {
+              kind: 'landscape-put',
+              expectedRevision: null,
+              record: {
+                id,
+                revision: 0,
+                kind: 'patch',
+                name: id,
+                points: [],
+                width: 0,
+                resolution: 1,
+                values: {},
+                surface: 'freshwater',
+                waterLevelM,
+                polygons: [
+                  {
+                    outer: [
+                      { x: -220, y },
+                      { x: -140, y },
+                      { x: -140, y: y + 60 },
+                      { x: -220, y: y + 60 },
+                    ],
+                    holes: [],
+                  },
+                ],
+              },
+            },
+          });
+      } finally {
+        store.close();
+      }
+    }
+    if (earthOnly)
+      writeBiomeOverview({
+        fixture,
+        fixtureStore,
+        fixtureHeightRecord,
+        vegetationSpec,
+        side: 33554432,
+        heightPixelSize: 0,
+        smallPatch: true,
+      });
     let page;
     const query = () => {
       const db = new Database(fixture.filename, { readonly: true });
@@ -143,7 +233,17 @@ try {
         revision,
         { timeout: 90000 },
       );
-      await page.evaluate(() => window.__qaRaster.surface.waitForFrame());
+      await page.evaluate(() =>
+        Promise.race([
+          window.__qaRaster.surface.waitForFrame(),
+          new Promise((_, reject) =>
+            setTimeout(
+              () => reject(new Error('Atlas frame did not complete within 60 seconds')),
+              60000,
+            ),
+          ),
+        ]),
+      );
     }
     async function open() {
       page = await native.launch(scale);
@@ -180,12 +280,16 @@ try {
         scale,
       );
       await page.evaluate(
-        (id) =>
+        ({ id, earthOnly }) =>
           localStorage.setItem(
             'atlas-camera:' + id,
-            JSON.stringify({ x: -260, y: -200, width: 520, height: 400 }),
+            JSON.stringify(
+              earthOnly
+                ? { x: -19000000, y: -12000000, width: 38000000, height: 24000000 }
+                : { x: -260, y: -200, width: 520, height: 400 },
+            ),
           ),
-        fixture.campaignId,
+        { id: fixture.campaignId, earthOnly },
       );
       await page.reload();
       await page.waitForFunction(() => document.body.dataset.tutorialReady === 'true');
@@ -282,7 +386,11 @@ try {
             ),
           };
         });
-        return { camera: r.cameraPose(), tiles, samples };
+        return {
+          camera: { ...r.cameraPose(), metersPerPixel: r.surface.frame.camera.metersPerPixel },
+          tiles,
+          samples,
+        };
       }, points);
     }
     function materialAt(f, p) {
@@ -292,7 +400,17 @@ try {
     }
     async function pixels(points) {
       await page.mouse.move(20, 20);
-      await page.evaluate(() => window.__qaRaster.surface.waitForFrame());
+      await page.evaluate(() =>
+        Promise.race([
+          window.__qaRaster.surface.waitForFrame(),
+          new Promise((_, reject) =>
+            setTimeout(
+              () => reject(new Error('Atlas frame did not complete within 60 seconds')),
+              60000,
+            ),
+          ),
+        ]),
+      );
       return page.evaluate((points) => {
         const r = window.__qaRaster,
           c = document.querySelector('#atlas-terrain-spatial canvas'),
@@ -380,13 +498,13 @@ try {
           ),
       );
     }
-    async function zoomTo(target) {
-      for (let n = 0; n < 4; n++) {
+    async function zoomTo(target, focusPoint = { x: 0, y: 0 }) {
+      for (let n = 0; n < 20; n++) {
         const mpp = await page.evaluate(
           () => window.__qaRaster.surface.frame.camera.metersPerPixel,
         );
         if (Math.abs(Math.log(mpp / target)) < 1e-5) break;
-        const at = await project({ x: 0, y: 0 });
+        const at = await project(focusPoint);
         await page.mouse.move(at.x, at.y);
         await page.evaluate(() => {
           window.__qaBiomeWheel = null;
@@ -500,16 +618,58 @@ try {
       'fixture-four-flat-height-tiles',
       baseline.records.filter((r) => r.height).length === 4 &&
         baseline.records.every(
-          (r) => !r.vegetation && !['road', 'river', 'building'].includes(r.kind),
+          (r) => (earthOnly || !r.vegetation) && !['road', 'river', 'building'].includes(r.kind),
         ),
     );
-    for (const [radius, edge] of surfaceOnly
-      ? [[75, 16]]
-      : [
-          [25, 0],
-          [75, 0],
-          [75, 16],
-        ]) {
+    if (earthOnly)
+      await qualifyBiomeEarth({
+        native,
+        getPage: () => page,
+        open,
+        query,
+        canonical,
+        frame,
+        pixels,
+        project,
+        zoomTo,
+        check,
+        results,
+        save,
+      });
+    else if (library)
+      await qualifyBiomeLibrary({
+        native,
+        getPage: () => page,
+        open,
+        ready,
+        query,
+        project,
+        frame,
+        pixels,
+        sceneRead,
+        history,
+        mapImageHash,
+        zoomTo,
+        check,
+        canonical,
+        results,
+        save,
+        vegetationSpec,
+        fixture,
+        fixtureStore,
+        fixtureHeightRecord,
+        output,
+        marshOnly,
+      });
+    for (const [radius, edge] of library
+      ? []
+      : surfaceOnly
+        ? [[75, 16]]
+        : [
+            [25, 0],
+            [75, 0],
+            [75, 16],
+          ]) {
       const label = `r${radius}-edge${edge}`;
       native.mark(label + ' real paint/history/fresh workflow');
       const before = query();

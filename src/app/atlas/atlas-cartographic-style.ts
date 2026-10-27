@@ -40,7 +40,21 @@ float atlasCoverInk(vec2 world,float mpp,vec4 cover,float forest,float debris){
  float trees=dot(ink.rg,cover.rg)+generic*ink.r;
  float undergrowth=ink.b*cover.b*0.22+ink.a*cover.a*0.5;
  float stone=atlasPattern(atlasMarkInk,world,mpp).r*debris*0.7;
- return (trees+undergrowth+stone)*atlasPatternFade(mpp)*atlasForestSurface(mpp);
+ return ((trees+stone)*atlasForestSurface(mpp)+undergrowth*smoothstep(0.5,2.0,mpp))*atlasPatternFade(mpp);
+}
+// Physical crop rows use the same world axes as the area generator. Once
+// individual furrows are subpixel, retain a quiet, coarser parallel field mark.
+float atlasFurrowBand(float y,float pitch){
+ float phase=abs(fract(y/pitch)-0.5);
+ return 1.0-smoothstep(0.035,0.035+max(fwidth(y/pitch),0.01),phase);
+}
+float atlasBiomeInk(vec2 world,float mpp,vec2 biome){
+ float level=clamp(log2(max(32.0,mpp*12.0)/32.0),0.0,7.0);
+ float pitch=32.0*exp2(floor(level));
+ float coarse=mix(atlasFurrowBand(world.y,pitch),atlasFurrowBand(world.y,pitch*2.0),smoothstep(0.0,1.0,fract(level)));
+ float furrow=coarse*smoothstep(0.5,2.0,mpp);
+ float reed=atlasPattern(atlasPlantInk,world,mpp).b;
+ return (reed*biome.r*0.65+furrow*biome.g*0.65)*smoothstep(0.2,1.5,mpp)*atlasPatternFade(mpp);
 }
 float atlasSlopeInk(vec2 world,float mpp,vec2 slope){
  float sum=abs(slope.x)+abs(slope.y);

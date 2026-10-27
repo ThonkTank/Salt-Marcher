@@ -1,3 +1,5 @@
+import { vegetationWaterSuitable } from './vegetation-surface';
+export { vegetationWaterSuitable, vegetationFurrowShade } from './vegetation-surface';
 import type { Terrain } from '../runtime/world-contracts';
 import type { Point, Polygon } from '../shared/contracts';
 import { type LandscapeBox, type LandscapeRecord } from './atlas-landscape';
@@ -13,13 +15,19 @@ import {
 } from './vegetation-lod';
 export { vegetationRandom } from './vegetation-lod';
 
-export type PlantAsset = 'oak' | 'pine' | 'shrub' | 'grass' | 'rock';
+export const plantAssets = ['oak', 'pine', 'shrub', 'grass', 'rock', 'reed', 'crop'] as const;
+export type PlantAsset = (typeof plantAssets)[number];
 export interface VegetationPreset {
   id: string;
   name: string;
   terrain: Terrain;
   ground: string;
-  tree: 'oak' | 'pine';
+  tree: 'oak' | 'pine' | 'shrub';
+  undergrowthAsset: 'shrub' | 'grass' | 'reed' | 'crop';
+  distribution: 'natural' | 'rows';
+  groundPattern: 'natural' | 'furrows';
+  /** Maximum water depth in metres. Zero requires dry ground. */
+  waterDepth: { trees: number; undergrowth: number; rocks: number };
   density: number;
   size: number;
   undergrowth: number;
@@ -36,6 +44,10 @@ export const vegetationPresets: readonly VegetationPreset[] = [
     terrain: 'forest',
     ground: '#89956b',
     tree: 'oak',
+    undergrowthAsset: 'shrub',
+    distribution: 'natural',
+    groundPattern: 'natural',
+    waterDepth: { trees: 0, undergrowth: 0, rocks: 0 },
     density: 0.8,
     size: 14,
     undergrowth: 0.45,
@@ -50,6 +62,10 @@ export const vegetationPresets: readonly VegetationPreset[] = [
     terrain: 'forest',
     ground: '#768c71',
     tree: 'pine',
+    undergrowthAsset: 'shrub',
+    distribution: 'natural',
+    groundPattern: 'natural',
+    waterDepth: { trees: 0, undergrowth: 0, rocks: 0 },
     density: 0.85,
     size: 18,
     undergrowth: 0.3,
@@ -64,6 +80,10 @@ export const vegetationPresets: readonly VegetationPreset[] = [
     terrain: 'plains',
     ground: '#b3bb7c',
     tree: 'oak',
+    undergrowthAsset: 'grass',
+    distribution: 'natural',
+    groundPattern: 'natural',
+    waterDepth: { trees: 0, undergrowth: 0, rocks: 0 },
     density: 0,
     size: 12,
     undergrowth: 0.8,
@@ -78,6 +98,10 @@ export const vegetationPresets: readonly VegetationPreset[] = [
     terrain: 'plains',
     ground: '#a2a579',
     tree: 'oak',
+    undergrowthAsset: 'shrub',
+    distribution: 'natural',
+    groundPattern: 'natural',
+    waterDepth: { trees: 0, undergrowth: 0, rocks: 0 },
     density: 0.08,
     size: 9,
     undergrowth: 0.85,
@@ -92,6 +116,10 @@ export const vegetationPresets: readonly VegetationPreset[] = [
     terrain: 'hills',
     ground: '#aaa18c',
     tree: 'pine',
+    undergrowthAsset: 'shrub',
+    distribution: 'natural',
+    groundPattern: 'natural',
+    waterDepth: { trees: 0, undergrowth: 0, rocks: 0 },
     density: 0,
     size: 10,
     undergrowth: 0.08,
@@ -106,6 +134,10 @@ export const vegetationPresets: readonly VegetationPreset[] = [
     terrain: 'hills',
     ground: '#a49c87',
     tree: 'oak',
+    undergrowthAsset: 'shrub',
+    distribution: 'natural',
+    groundPattern: 'natural',
+    waterDepth: { trees: 0, undergrowth: 0, rocks: 0 },
     density: 0.03,
     size: 12,
     undergrowth: 0.2,
@@ -113,6 +145,60 @@ export const vegetationPresets: readonly VegetationPreset[] = [
     grouping: 0.5,
     edge: 8,
     slope: 70,
+  },
+  {
+    id: 'marsh',
+    name: 'Sumpf',
+    terrain: 'marsh',
+    ground: '#737f58',
+    tree: 'shrub',
+    undergrowthAsset: 'reed',
+    distribution: 'natural',
+    groundPattern: 'natural',
+    waterDepth: { trees: 0, undergrowth: 0.5, rocks: 0 },
+    density: 0.3,
+    size: 2,
+    undergrowth: 0.95,
+    rocks: 0.02,
+    grouping: 0.1,
+    edge: 4,
+    slope: 15,
+  },
+  {
+    id: 'desert',
+    name: 'Wüste',
+    terrain: 'desert',
+    ground: '#d5bd87',
+    tree: 'oak',
+    undergrowthAsset: 'shrub',
+    distribution: 'natural',
+    groundPattern: 'natural',
+    waterDepth: { trees: 0, undergrowth: 0, rocks: 0 },
+    density: 0,
+    size: 8,
+    undergrowth: 0.1,
+    rocks: 0.18,
+    grouping: 0.2,
+    edge: 4,
+    slope: 55,
+  },
+  {
+    id: 'farmland',
+    name: 'Landwirtschaft',
+    terrain: 'plains',
+    ground: '#b0a76b',
+    tree: 'oak',
+    undergrowthAsset: 'crop',
+    distribution: 'rows',
+    groundPattern: 'furrows',
+    waterDepth: { trees: 0, undergrowth: 0, rocks: 0 },
+    density: 0,
+    size: 8,
+    undergrowth: 1,
+    rocks: 0,
+    grouping: 0,
+    edge: 0,
+    slope: 25,
   },
 ];
 export interface VegetationEdit {
@@ -173,7 +259,6 @@ export const vegetationSpec = (id = 'deciduous', seed = 1): VegetationSpec => ({
 const finite = (v: unknown, min: number, max: number) =>
   typeof v === 'number' && Number.isFinite(v) && v >= min && v <= max;
 const validPoint = (p: Point) => p && finite(p.x, -1e12, 1e12) && finite(p.y, -1e12, 1e12);
-const assets: PlantAsset[] = ['oak', 'pine', 'shrub', 'grass', 'rock'];
 export function validateVegetation(r: LandscapeRecord) {
   if (!r.vegetation) {
     if (r.kind === 'vegetation') throw Error('Landschaftsvorlage fehlt.');
@@ -187,12 +272,24 @@ export function validateVegetation(r: LandscapeRecord) {
     !Number.isInteger(v.seed) ||
     !finite(v.seed, 0, 4294967295) ||
     !p ||
-    !vegetationPresets.some((x) => x.id === p.id && x.terrain === p.terrain) ||
+    typeof p.id !== 'string' ||
+    !p.id.length ||
+    p.id.length > 100 ||
+    !['plains', 'forest', 'hills', 'mountains', 'water', 'marsh', 'desert', 'snow'].includes(
+      p.terrain,
+    ) ||
     r.values.terrain !== p.terrain ||
     !/^#[a-fA-F0-9]{6}$/.test(p.ground) ||
     typeof p.name !== 'string' ||
     p.name.length > 100 ||
-    !['oak', 'pine'].includes(p.tree) ||
+    !['oak', 'pine', 'shrub'].includes(p.tree) ||
+    !['shrub', 'grass', 'reed', 'crop'].includes(p.undergrowthAsset) ||
+    !['natural', 'rows'].includes(p.distribution) ||
+    !['natural', 'furrows'].includes(p.groundPattern) ||
+    !p.waterDepth ||
+    !['trees', 'undergrowth', 'rocks'].every((k) =>
+      finite(p.waterDepth[k as keyof typeof p.waterDepth], 0, 2),
+    ) ||
     !['natural', 'row'].includes(v.layout) ||
     !finite(v.spacing, 2, 1000) ||
     !finite(p.size, 1, 60) ||
@@ -243,7 +340,7 @@ export function validateVegetation(r: LandscapeRecord) {
       o.id.length > 150 ||
       ids.has(o.id) ||
       !validPoint(o) ||
-      !assets.includes(o.asset) ||
+      !plantAssets.includes(o.asset) ||
       !finite(o.size, 0.2, 100) ||
       !finite(o.angle, -Math.PI * 100, Math.PI * 100) ||
       (o.removed !== undefined && typeof o.removed !== 'boolean') ||
@@ -287,8 +384,26 @@ export function vegetationOwner(env: VegetationEnvironment, p: Point) {
   for (const r of env.covers) if (contains(p, r.polygons)) owner = r;
   return owner;
 }
-export function vegetationBlocked(env: VegetationEnvironment, p: Point, radius = 0) {
-  if (env.terrain.water(p)) return true;
+export function vegetationAssetWaterDepth(preset: VegetationPreset, asset: PlantAsset) {
+  // A shallow-water policy belongs only to the definition's selected family.
+  return asset === preset.tree
+    ? preset.waterDepth.trees
+    : asset === 'rock'
+      ? preset.waterDepth.rocks
+      : asset === preset.undergrowthAsset
+        ? preset.waterDepth.undergrowth
+        : 0;
+}
+export function vegetationBlocked(
+  env: VegetationEnvironment,
+  p: Point,
+  radius = 0,
+  maximumWaterDepth = 0,
+) {
+  const height = env.terrain.sample(p).heightM,
+    level = env.terrain.waterLevel(p, height);
+  if (!vegetationWaterSuitable(level === undefined ? undefined : level - height, maximumWaterDepth))
+    return true;
   for (const r of env.roads) {
     const pts = linePoints(r);
     if (pts.some((b, i) => i > 0 && segmentDistance(p, pts[i - 1]!, b) <= r.width / 2 + radius + 1))
@@ -342,9 +457,13 @@ export function generateVegetation(
     if (edge < vegetationFootprintRadius(asset, size)) return;
     const surface = env.terrain.query(at);
     if (
-      surface.water ||
       surface.slopeDegrees > p.slope ||
-      vegetationBlocked(env, at, asset === 'rock' ? size * 0.25 : size * 0.12)
+      vegetationBlocked(
+        env,
+        at,
+        asset === 'rock' ? size * 0.25 : size * 0.12,
+        vegetationAssetWaterDepth(p, asset),
+      )
     )
       return;
     let density = chance;
@@ -357,7 +476,7 @@ export function generateVegetation(
               ? density * 0.3
               : Math.min(1, density + 0.5);
     if (p.edge) density *= Math.min(1, edge / p.edge);
-    if (random > density) return;
+    if (density <= 0 || random > density) return;
     instances.push({ id, ...at, asset, size, angle, z: surface.heightM, normal: surface.normal });
   };
   if (mode !== 'surface') {
@@ -459,10 +578,18 @@ export function generateVegetation(
             );
             emit(
               `under:${x}:${y}`,
-              { x: (x + rand(11)) * base, y: (y + rand(12)) * base },
-              p.id === 'meadow' ? 'grass' : 'shrub',
-              p.id === 'meadow' ? 0.7 : 1 + rand(13) * 2,
-              rand(14) * Math.PI * 2,
+              p.distribution === 'rows'
+                ? { x: (x + 0.5) * base, y: (y + 0.5) * base }
+                : { x: (x + rand(11)) * base, y: (y + rand(12)) * base },
+              p.undergrowthAsset,
+              p.undergrowthAsset === 'grass'
+                ? 0.7
+                : p.undergrowthAsset === 'crop'
+                  ? 1.2
+                  : p.undergrowthAsset === 'reed'
+                    ? 2
+                    : 1 + rand(13) * 2,
+              p.distribution === 'rows' ? 0 : rand(14) * Math.PI * 2,
               p.undergrowth * cluster,
               rand(15),
             );
@@ -490,7 +617,9 @@ export function generateVegetation(
         z: surface.heightM,
         normal: surface.normal,
         protected: true,
-        conflict: vegetationBlocked(env, o, o.size * 0.15) || surface.slopeDegrees > p.slope,
+        conflict:
+          vegetationBlocked(env, o, o.size * 0.15, vegetationAssetWaterDepth(p, o.asset)) ||
+          surface.slopeDegrees > p.slope,
       });
     }
   return { instances, mode };

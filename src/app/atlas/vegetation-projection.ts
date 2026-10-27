@@ -10,7 +10,7 @@ export type VegetationProjection =
       packed: { version: 1; ids: string[]; data: string };
       tail: VegetationInstance[];
     };
-const assets: PlantAsset[] = ['oak', 'pine', 'rock', 'shrub', 'grass'];
+const assets: PlantAsset[] = ['oak', 'pine', 'rock', 'shrub', 'grass', 'reed', 'crop'];
 const stride = 65,
   maximum = 72000; // Three generated objects per bounded candidate cell.
 const fields = new Set(['id', 'asset', 'x', 'y', 'z', 'size', 'angle', 'normal']);

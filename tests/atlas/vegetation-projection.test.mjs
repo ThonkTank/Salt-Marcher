@@ -25,7 +25,7 @@ const {
 } = createRequire(import.meta.url)('../../.build/vegetation-projection-test.cjs');
 const plant = (n = 0) => ({
   id: 'tree:' + n,
-  asset: ['oak', 'pine', 'rock', 'shrub', 'grass'][n % 5],
+  asset: ['oak', 'pine', 'rock', 'shrub', 'grass', 'reed', 'crop'][n % 7],
   x: n * 11.625,
   y: n * 12.1875,
   z: 50.123456789,

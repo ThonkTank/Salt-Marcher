@@ -26,7 +26,7 @@ export class AtlasDeckVegetation {
         limit: vegetationScaleLimit(i, r.vegetation),
       })),
     );
-    return (['oak', 'pine', 'rock', 'shrub', 'grass'] as const).flatMap((asset) => {
+    return (['oak', 'pine', 'rock', 'shrub', 'grass', 'reed', 'crop'] as const).flatMap((asset) => {
       const data = instances.filter((i) => i.asset === asset);
       if (!data.length) return [];
       return (

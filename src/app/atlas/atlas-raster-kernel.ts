@@ -74,7 +74,9 @@ export function reduceAtlasMaterialRows(
             topology |= 1 << (sy * scale + sx);
           } else {
             cover += forest?.[i] ?? 0;
-            for (let c = 0; c < covers.length; c++)
+          }
+          for (let c = 0; c < covers.length; c++) {
+            if (!water[i] || covers[c] === 'reed')
               coverSums[c] = coverSums[c]! + (input.covers?.[covers[c]!]?.[i] ?? 0);
           }
         }
