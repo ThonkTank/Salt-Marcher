@@ -2,7 +2,7 @@
 
 Status: Current; offene Ziele sind als solche beschrieben.
 Owner: atlas
-Last Reviewed: 2026-10-27 (Preflight und übernommener Umsetzungsplan; Fachabnahme separat)
+Last Reviewed: 2026-10-27 (Grundwerkzeuge und Recovery funktional geprüft; Fachabnahme separat)
 Source of Truth: Dieses Dokument besitzt das benannte Thema; Code belegt den Iststand, das Abnahmeregister den Prüfstand.
 
 ## Ziel
@@ -54,50 +54,33 @@ integriert und in diesem Checkout übernommen; keine neuen Main-Commits offen.
 Die [sechs bestätigten Ziele TW-G1–6 und der Messvertrag](../requirements/terrain-relief.md#ziele-und-abnahme-dieser-etappe)
 gelten unverändert. Hier stehen Ausführung und Entscheidungen, keine zweite Anforderungsliste.
 
-### Nächster Produktnachweis und Entscheidung
+### Grundwerkzeuge: aktueller Funktionsnachweis
 
-**Nächster Produktnachweis P03:** verlässliche Grundpinsel und Meer einschließlich
-Undo/Redo, Abbruchregeln, Folgezug und Neustart. Der Unknown-/Postcommit-Anschluss
-ist unabhängig geprüft und integriert: ursprünglicher Auftrag und Unsicherheit
-bleiben über Worker/Host/Preload bis zur Atlas-Klärung erhalten. Noch offen ist
-ein konkret beobachteter G1-Verlust: Ein bereits geschlossener abhängiger Zug
-wird nach Unknown ohne Dispatch abgewiesen und beim Klären verworfen, weder
-gehalten noch wiederaufgenommen. Der nächste Produktnachweis muss diesen Zug
-erhalten; blockierter Dispatch und eine später neu gemalte Geste genügen nicht.
-Die übrigen G1-Werkzeug-/Parameter-/Abbruchkriterien bleiben ebenfalls offen.
-M1 hat den frühen Ablauf Malen → Speichern/Folgezug → Fresh funktional belegt;
-eine statistische Leistungsfreigabe oder vollständige Produktabnahme fehlt.
-P03 begann am 27.10.2026 um 13:18 mit `gpt-6.1-sol` / `high`; der Shutdown-
-Anschluss wurde vor seinem Kontrollpunkt 14:03 integriert. Derselbe Implementierer
-begann den Unknown-/Postcommit-Anschluss um 13:35 und setzt seit 14:07 den
-Folgezugerhalt um. Die Teilkontrolle bleibt 14:20;
-die gemeinsame Paketentscheidung bleibt 17:18, ohne Neustart der P03-Laufzeit.
+Die begrenzte `TerrainStrokeQueue` erhält geschlossene Gesten mit unveränderlicher
+Kennung und Reihenfolge. Unknown wird unter der Originalkennung geklärt;
+Nachladefehler erhalten Folgezüge. Sicher abgewiesene oder noch ungesendete Züge
+bei einer inzwischen geänderten Quelle erlauben ausdrückliches Retry/Discard.
+Escape verwirft ausschließlich die aktive Geste. Meeresspiegel und andere
+Autorenaufträge können die gehaltene Queue nicht überholen.
 
-Ansatzentscheidung: Die begrenzte Queue hält geschlossene Gesten mit unveränderlicher
-Identität. Nach bestätigtem Original und frischer kanonischer Quelle setzt sie
-dieselben Folgezüge in Reihenfolge genau einmal fort. Ungeklärter Ausgang,
-sichere Ablehnung und bestätigter Commit mit fehlgeschlagener Nachladung bleiben
-unterschiedliche Zustände; weder Reload noch Escape dürfen geschlossene Eingaben
-stillschweigend verwerfen. Prüfnachweis: zwei erhaltene Wirkungen ohne Neumalen,
-je ein Undo-Schritt, Fresh, wiederholtes Unknown und Nachladefehler ohne Replay.
-Kein neues dauerhaftes Journal; übrige G1-Kriterien bleiben danach Pflicht.
+Die native Grundwerkzeugprobe vom 27.10.2026 besteht bei 100 % und 200 %:
+vier Werkzeuge mit sichtbarer Wirkung vor Pointerup, wirksame Parameter,
+ein Historyschritt je Geste, Undo/Redo, Escape, echte Pointercancel-/Fokusereignisse,
+Unknown mit erhaltenem Folgezug, Quellreload, Retry/Discard und Meer mit
+unveränderten Bodenhöhen; Fresh erhält Höhen, Meeresspiegel und History.
+Belege: `.build/atlas-terrain-stroke/1793109327446-400411/result.json` und
+`1793109754331-401586/result.json`, jeweils 48 Prüfungen. Nach dem gezielten Fix
+für eine inzwischen weitergeschriebene Quelle wurde ausschließlich Recovery
+am endgültigen Produktstand erneut geprüft: `1793110361998-403333/result.json`
+und `1793110483055-403798/result.json`, jeweils 23 Prüfungen. Alle acht
+Electron-Starts enden normal. Intel UHD 620, 1920 × 1080 native Bildgröße und
+Quell-/Runtimebindung sind dokumentiert. Keine p95-, Gestaltungs-, Paket- oder
+Nutzerabnahme; Kamera, Spezialformen und weitere Darstellung bleiben offen.
 
-Unknown-Teilbefund: 44 gezielte Tests prüfen den tatsächlichen Worker-/Host-/
-Preload-/Author-/Queue-Pfad; rote Gegenchecks erkennen verlorenen Marker und
-falsche Postcommit-Klassifizierung. Typ-/Repository-/Build-/Formatchecks bestehen.
-Native Wiederholung `.build/atlas-terrain-stroke/1793105250360-389635/result.json`
-ist PASS für einmalige Klärung des Originalauftrags, gesperrten Reset/Folgezug,
-anschließende neue unabhängige Geste, Fresh mit 17 bytegleichen Kacheln/Revision 5
-und zwei normale Exits. Die UI-Probe ersetzt eine echte erfolgreiche Mainantwort
-durch Unknown; die Fehlerklassifizierung belegen separat die Grenztests. Der
-erste Lauf `1793105110282-389173/` scheiterte am ungeöffneten Statusmenü und wurde
-nach verweigertem Close mit SIGKILL beendet; er bleibt unverändert dokumentiert.
-`handoff-report.json` nennt den verworfenen abhängigen Zug ausdrücklich als
-offene G1-Pflicht. Die unabhängige Nachprüfung gab den engen Fix frei.
-[PR #1421](https://github.com/ThonkTank/Salt-Marcher/pull/1421) ist nach grüner
-[Candidate-CI](https://github.com/ThonkTank/Salt-Marcher/actions/runs/40507562171)
-auf `345a496b2e9b9ac9d018c48012fffe89aebf0681` integriert; der Main-Baum ist
-inhaltlich identisch. Die zusätzliche Main-CI läuft noch. Keine G1-Gesamtfreigabe.
+### Frühere Paketplanung
+
+Die folgende ursprüngliche Paketplanung hält Ausgangsannahmen fest; der jüngere
+Nutzerauftrag für den Analyse-/Umsetzungszyklus ersetzt ihren Steuerungsablauf.
 
 **Beginn T0:** 27.10.2026, 12:38 Uhr Europe/Berlin (11:38 UTC), tatsächlicher
 P01-Start nach Main-, Plan- und Umsetzungsfreigabe. Implementierer: Subagent

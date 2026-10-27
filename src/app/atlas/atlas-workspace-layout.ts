@@ -456,7 +456,12 @@ export class AtlasWorkspaceLayout {
     this.importMenu.append(reference);
     status.setAttribute('aria-live', 'polite');
     status.setAttribute('aria-label', 'Speicherstatus und Meldungen');
-    this.notices.append(el('atlas-recover'), el('atlas-region-retry'));
+    this.notices.append(
+      el('atlas-recover'),
+      el('atlas-region-retry'),
+      el('atlas-strokes-retry'),
+      el('atlas-strokes-discard'),
+    );
     el('atlas-output-open').textContent = 'Export';
     const players = button('atlas-player-open-controls', 'Spieleranzeige');
     players.onclick = () => el('player-open-controls').click();

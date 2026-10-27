@@ -1,5 +1,5 @@
 import type { LandscapeHost } from './landscape-workbench-types';
-import { TerrainDraftStroke } from './terrain-stroke-queue';
+import { TerrainDraftStroke, TerrainStrokeDiscardedError } from './terrain-stroke-queue';
 import { terrainTraceMeasure } from './terrain-timing';
 import { TerrainLiveStroke } from './terrain-live-stroke';
 import { type HeightStroke } from './terrain-brush';
@@ -154,6 +154,11 @@ export class LandscapeBrushSession {
         await completion;
         if (!this.live) this.host.say('Gespeichert');
       } catch (error) {
+        if (error instanceof TerrainStrokeDiscardedError) {
+          this.host.disable(false);
+          this.host.say('Gehaltene Pinselzüge verworfen.');
+          return;
+        }
         this.liveFailureMessage = error instanceof Error ? error.message : String(error);
         this.host.disable(true);
         this.host.effects.error(error);

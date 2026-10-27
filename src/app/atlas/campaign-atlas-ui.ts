@@ -14,7 +14,11 @@ import { chooseRoomGroup } from './room-group-ui';
 import { MapLabelLayout } from './atlas-cartography';
 import { TerritoryWorkbench } from './atlas-territories-ui';
 import { AtlasRasterPresentation } from './atlas-raster-presentation';
-import { TerrainStrokeQueue } from './terrain-stroke-queue';
+import {
+  TerrainStrokeQueue,
+  TerrainStrokeWriteError,
+  TerrainStrokeDiscardedError,
+} from './terrain-stroke-queue';
 import { atlasFieldValue, setAtlasFieldValue, lengthLabel, atlasUnits } from './atlas-units';
 import { AtlasWorkspaceLayout } from './atlas-workspace-layout';
 import { AtlasReferenceUI } from './atlas-reference-ui';
@@ -29,7 +33,12 @@ import { atlasPartyPoint } from './atlas-runtime-model';
 import { openWorld } from '../runtime/world-ui';
 import { AtlasCanvas } from './atlas-canvas';
 import { atlasFrame, localToAtlas, atlasToLocal } from './campaign-atlas-model';
-import { writeAtlasCommit, pendingAtlasWrite, recoverAtlasCommit } from './campaign-atlas-author';
+import {
+  writeAtlasCommit,
+  pendingAtlasWrite,
+  recoverAtlasCommit,
+  reconcilePendingAtlasCommit,
+} from './campaign-atlas-author';
 import type { AtlasRenderView, AtlasAction } from './campaign-atlas-contracts';
 import type { WorkspaceGeometry, Point, Room } from '../shared/contracts';
 import { terrainNames } from '../runtime/world-model';
@@ -331,6 +340,11 @@ export class CampaignAtlasWorkbench {
       data = this.regions.data;
     if (!owner || !data?.region) throw Error('Kartenausschnitt fehlt. Erneut laden.');
     if (this.strokeOwner !== owner.token) {
+      if (this.strokeQueue?.pending || this.strokeQueue?.failed)
+        throw new TerrainStrokeWriteError(
+          'Gehaltene Pinselzüge zuerst in ihrer Kampagne klären.',
+          'rejected',
+        );
       this.strokeQueue = null;
       this.strokeOwner = owner.token;
     }
@@ -345,20 +359,23 @@ export class CampaignAtlasWorkbench {
     this.strokeQueue ??= new TerrainStrokeQueue(
       { expectedRevision: data.revision, sourceFence: data.region.fence },
       async (a, c) => {
-        if (this.owner !== owner) throw Error('Kampagne inzwischen gewechselt.');
+        if (this.owner !== owner)
+          throw new TerrainStrokeWriteError('Kampagne inzwischen gewechselt.', 'rejected');
         const result = await this.write(a, false, true, c);
-        if (!result) throw Error('Pinselzug nicht gespeichert.');
+        if (!result) throw new TerrainStrokeWriteError('Pinselzug nicht gespeichert.', 'rejected');
         return result.ack;
       },
     );
     try {
       await this.strokeQueue.enqueue(action, id);
     } catch (error) {
+      if (error instanceof TerrainStrokeDiscardedError) throw error;
       if (this.owner === owner) {
-        this.landscape.cancel();
         get('atlas-region-retry').hidden = false;
         this.opts.status(
-          'Pinsel gestoppt. Nicht bestätigte Folgezüge sind nicht gespeichert. Speicherstand klären oder Ansicht erneut laden.',
+          this.strokeQueue.failureKind === 'rejected'
+            ? 'Pinselzug nicht gespeichert. Gehaltene Züge ausdrücklich erneut speichern oder verwerfen.'
+            : 'Pinselzüge bleiben gehalten. Speicherstand klären; Folgezüge werden bis dahin nicht gesendet.',
           true,
         );
       }
@@ -368,6 +385,92 @@ export class CampaignAtlasWorkbench {
       const source = this.strokeQueue.confirmedSource;
       this.raster?.reconcile(source.expectedRevision, source.sourceFence);
       await this.regions.refresh();
+    }
+  }
+  private async continueTerrainQueue(retry = false, discard = false) {
+    const queue = this.strokeQueue,
+      owner = this.owner;
+    if (!queue || !owner || this.busy || this.landscape.livePainting) return;
+    this.writing = true;
+    try {
+      if (queue.failureKind === 'unknown') {
+        const head = queue.head;
+        if (!head?.context) throw Error('Gehaltene Pinselkennung fehlt.');
+        const result = await reconcilePendingAtlasCommit(owner.token, {
+          commandId: head.context.commandId!,
+          token: owner.token,
+          campaignId: owner.campaign.id,
+          action: head.action,
+          sourceFence: head.context.sourceFence,
+          terrainStroke: { id: head.id, expectedRevision: head.context.expectedRevision },
+        });
+        if (this.owner !== owner || this.strokeQueue !== queue) return;
+        if (!result?.ok) throw Error(result?.error ?? 'Speicherstand weiter ungeklärt.');
+        if (result.value.outcome === 'unknown')
+          throw Error('Pinselauftrag läuft noch. Alle Züge bleiben gehalten.');
+        if (result.value.outcome === 'not-applied') {
+          queue.notApplied();
+          this.opts.status(
+            'Pinselzug wurde nicht gespeichert. Gehaltene Züge erneut speichern oder verwerfen.',
+            true,
+          );
+          return;
+        }
+        queue.confirm(result.value.ack);
+      }
+      if (queue.failureKind === 'rejected' && !retry && !discard) return;
+      const result = await window.campaign.atlasTerrainSource(owner.token);
+      if (this.owner !== owner || this.strokeQueue !== queue) return;
+      if (!result.ok)
+        throw Error('Geländequelle erneut laden. Alle Folgezüge bleiben erhalten: ' + result.error);
+      const source = { expectedRevision: result.value.revision, sourceFence: result.value.fence };
+      if (
+        queue.failureKind === 'source' &&
+        queue.pending &&
+        source.expectedRevision !== queue.confirmedSource.expectedRevision
+      ) {
+        queue.sourceConflict();
+        throw Error(
+          'Gelände inzwischen geändert. Gehaltene Folgezüge ausdrücklich erneut speichern oder verwerfen.',
+        );
+      }
+      if (
+        queue.failureKind === 'source' &&
+        queue.confirmedReceipt?.revision === source.expectedRevision
+      )
+        this.regions.acceptCommit(
+          { ...queue.confirmedReceipt, sourceFence: source.sourceFence },
+          true,
+        );
+      // Release the UI writer before the queue dispatches its next real write.
+      this.writing = false;
+      if (discard) {
+        queue.discard(source);
+        this.raster?.reconcile(source.expectedRevision, source.sourceFence);
+        this.landscape.releaseHeld();
+        await this.regions.refresh();
+      } else {
+        if (retry) queue.retry(source);
+        else queue.resume(source);
+        await queue.finish();
+        if (this.owner !== owner || this.strokeQueue !== queue) return;
+        const confirmed = queue.confirmedSource;
+        this.raster?.reconcile(confirmed.expectedRevision, confirmed.sourceFence);
+        this.landscape.releaseHeld();
+        await this.regions.refresh();
+      }
+      get('atlas-save-status').textContent = discard
+        ? 'Gehaltene Züge verworfen'
+        : 'Alle Pinselzüge gespeichert';
+      get('atlas-save-status').dataset.error = 'false';
+      this.opts.status(get('atlas-save-status').textContent!);
+    } catch (error) {
+      if (this.owner === owner) this.error(error);
+    } finally {
+      if (this.owner === owner) {
+        this.writing = false;
+        this.render();
+      }
     }
   }
   private terrainAnalysis?: TerrainAnalysisUI;
@@ -417,7 +520,7 @@ export class CampaignAtlasWorkbench {
     this.root.id = 'campaign-atlas';
     this.root.dataset.family = this.family;
     this.root.hidden = true;
-    this.root.innerHTML = `<div class="atlas-command-bar"><strong>Atlas</strong><button id="atlas-output-open">Bild ausgeben</button><button id="atlas-reference-open">Größe vergleichen</button><button id="atlas-overview">Weltübersicht</button><button id="atlas-to-party">Zur Gruppe</button><button id="atlas-region-retry" hidden>Ansicht erneut laden</button><label>Ort finden<input id="atlas-search" type="search" placeholder="Stadt, Haus oder Raum"></label><button id="atlas-recover" hidden>Speicherstand klären</button><button id="atlas-undo" disabled>↶ Rückgängig</button><button id="atlas-redo" disabled>↷ Wiederholen</button></div><div id="atlas-search-results"></div><dialog id="atlas-place-confirm"><h2>Gruppe versetzen</h2><p>Die Fokusgruppe wird an den gewählten Punkt gesetzt. Dabei vergeht keine Reisezeit.</p><div class="toolbar"><button id="atlas-place-accept">Platzieren</button><button id="atlas-place-cancel">Abbrechen</button></div></dialog><div class="atlas-layout"><div class="atlas-stage"><canvas id="campaign-map" tabindex="0" role="application" aria-label="Gemeinsamer Kampagnenatlas">Atlas: Auswahl und Navigation über Ortsuche und Objektliste.</canvas><p id="atlas-save-status" role="status"></p></div><aside id="atlas-panel"><div id="atlas-edit-panel"><nav id="atlas-families" aria-label="Atlaswerkzeuge"></nav><h2 id="atlas-selection-title">Deine Kampagnenwelt</h2><p id="atlas-hint" data-idle="true">Zoome von der Landschaft bis zum Innenraum. Ziehen verschiebt die Ansicht.</p><section id="atlas-tool-fields"><label>Terrain<select id="atlas-terrain">${Object.entries(
+    this.root.innerHTML = `<div class="atlas-command-bar"><strong>Atlas</strong><button id="atlas-output-open">Bild ausgeben</button><button id="atlas-reference-open">Größe vergleichen</button><button id="atlas-overview">Weltübersicht</button><button id="atlas-to-party">Zur Gruppe</button><button id="atlas-region-retry" hidden>Ansicht erneut laden</button><label>Ort finden<input id="atlas-search" type="search" placeholder="Stadt, Haus oder Raum"></label><button id="atlas-recover" hidden>Speicherstand klären</button><button id="atlas-strokes-retry" hidden>Gehaltene Züge erneut speichern</button><button id="atlas-strokes-discard" hidden>Gehaltene Züge verwerfen</button><button id="atlas-undo" disabled>↶ Rückgängig</button><button id="atlas-redo" disabled>↷ Wiederholen</button></div><div id="atlas-search-results"></div><dialog id="atlas-place-confirm"><h2>Gruppe versetzen</h2><p>Die Fokusgruppe wird an den gewählten Punkt gesetzt. Dabei vergeht keine Reisezeit.</p><div class="toolbar"><button id="atlas-place-accept">Platzieren</button><button id="atlas-place-cancel">Abbrechen</button></div></dialog><div class="atlas-layout"><div class="atlas-stage"><canvas id="campaign-map" tabindex="0" role="application" aria-label="Gemeinsamer Kampagnenatlas">Atlas: Auswahl und Navigation über Ortsuche und Objektliste.</canvas><p id="atlas-save-status" role="status"></p></div><aside id="atlas-panel"><div id="atlas-edit-panel"><nav id="atlas-families" aria-label="Atlaswerkzeuge"></nav><h2 id="atlas-selection-title">Deine Kampagnenwelt</h2><p id="atlas-hint" data-idle="true">Zoome von der Landschaft bis zum Innenraum. Ziehen verschiebt die Ansicht.</p><section id="atlas-tool-fields"><label>Terrain<select id="atlas-terrain">${Object.entries(
       terrainNames,
     )
       .map(([id, title]) => `<option value="${id}">${title}</option>`)
@@ -624,6 +727,7 @@ export class CampaignAtlasWorkbench {
       current: () =>
         this.raster?.active && ['height', 'smooth', 'color'].includes(this.landscape.spatialTool)
           ? this.raster.ready &&
+            (this.strokeQueue?.hasCapacity ?? true) &&
             !(this.strokeOwner === this.owner?.token && this.strokeQueue?.failed)
           : this.regions.geometryCurrent() &&
             this.camera.ready &&
@@ -680,16 +784,19 @@ export class CampaignAtlasWorkbench {
     get('atlas-region-retry').onclick = () =>
       void (async () => {
         if (this.raster && this.strokeQueue?.failed) {
-          if (this.owner && pendingAtlasWrite(this.owner.token)) {
+          if (this.strokeQueue.failureKind === 'unknown') {
             this.opts.status('Zuerst Speicherstand klären.', true);
             return;
           }
-          this.strokeQueue = null;
-          this.raster.setActive(false);
-          this.landscape.recovered();
+          if (this.strokeQueue.failureKind === 'source') await this.continueTerrainQueue();
+          else
+            this.opts.status('Gehaltene Züge ausdrücklich erneut speichern oder verwerfen.', true);
+          return;
         }
         await this.regions.refresh();
       })();
+    get('atlas-strokes-retry').onclick = () => void this.continueTerrainQueue(true);
+    get('atlas-strokes-discard').onclick = () => void this.continueTerrainQueue(false, true);
     get('atlas-export-png').onclick = () => void this.output.exportPNG();
     for (const id of ['atlas-binding-x', 'atlas-binding-y', 'atlas-binding-angle'])
       get(id).oninput = () => {
@@ -763,6 +870,10 @@ export class CampaignAtlasWorkbench {
     };
     get('atlas-recover').onclick = () =>
       void (async () => {
+        if (this.strokeQueue?.failed && this.strokeOwner === this.owner?.token) {
+          await this.continueTerrainQueue();
+          return;
+        }
         if (!this.owner || this.busy) return;
         this.writing = true;
         const owner = this.owner;
@@ -1166,6 +1277,8 @@ export class CampaignAtlasWorkbench {
     this.layout?.setActive(false);
   }
   activate(w: WorkspaceGeometry) {
+    if (this.owner?.token !== w.token && (this.strokeQueue?.pending || this.strokeQueue?.failed))
+      throw Error('Gehaltene Pinselzüge vor dem Kampagnenwechsel klären.');
     atlasEditorSession.generation++;
     this.regions.resetContext();
     this.hitVersion++;
@@ -1332,7 +1445,7 @@ export class CampaignAtlasWorkbench {
     this.writing = true;
     get('atlas-save-status').textContent = 'Wird gespeichert…';
     try {
-      const commandId = crypto.randomUUID(),
+      const commandId = terrain?.commandId ?? crypto.randomUUID(),
         a = structuredClone(action);
       if (a.kind === 'city' || a.kind === 'world' || a.kind === 'drawing')
         a.command.commandId = commandId;
@@ -1356,7 +1469,14 @@ export class CampaignAtlasWorkbench {
       );
       endCommit();
       if (this.owner !== w) return null;
-      if (!ack.ok) throw new Error(ack.error);
+      if (!ack.ok) {
+        if (terrain)
+          throw new TerrainStrokeWriteError(
+            ack.error,
+            ack.errorKind === 'store-outcome-unknown' ? 'unknown' : 'rejected',
+          );
+        throw new Error(ack.error);
+      }
       get('atlas-save-status').textContent = 'Gespeichert';
       get('atlas-save-status').dataset.error = 'false';
       this.opts.status('Gespeichert');
@@ -2175,6 +2295,7 @@ export class CampaignAtlasWorkbench {
       this.landscape.livePainting,
       this.journey.pendingTravel,
       pendingAtlasWrite(this.owner?.token ?? ''),
+      this.strokeQueue?.failureKind,
       this.bindingDirty,
       get('atlas-placement').contains(document.activeElement),
       this.opts.roomDraft()?.name,
@@ -2183,7 +2304,11 @@ export class CampaignAtlasWorkbench {
     if (this.panelKey?.length === key.length && this.panelKey.every((v, i) => v === key[i])) return;
     this.panelKey = key;
     get('atlas-recover').hidden =
-      !this.journey.pendingTravel && (!this.owner || !pendingAtlasWrite(this.owner.token));
+      !this.journey.pendingTravel &&
+      (!this.owner ||
+        (!pendingAtlasWrite(this.owner.token) && this.strokeQueue?.failureKind !== 'unknown'));
+    get('atlas-strokes-retry').hidden = get('atlas-strokes-discard').hidden =
+      this.strokeQueue?.failureKind !== 'rejected';
     const selectedBinding = this.selectedBinding();
     get('atlas-placement').hidden = !selectedBinding && !this.selectedGroupBinding();
     get('atlas-binding-pose').hidden = !selectedBinding;

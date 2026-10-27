@@ -1838,6 +1838,11 @@ export class LandscapeWorkbench {
     this.cancel();
     this.disable(false);
   }
+  releaseHeld() {
+    if (this.brush.live) return;
+    this.brush.liveFailureMessage = undefined;
+    this.disable(false);
+  }
   private disable(value: boolean) {
     for (const root of [this.panel, this.inspectorRoot])
       root

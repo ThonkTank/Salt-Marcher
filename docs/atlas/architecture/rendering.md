@@ -143,6 +143,8 @@ node build.mjs --test
 npm run check
 npm run check:desktop
 npm run build:desktop
+node tools/test-desktop-atlas-terrain-stroke.mjs --basic-tools --scale=1
+node tools/test-desktop-atlas-terrain-stroke.mjs --recovery --source-conflict --scale=2
 QA_DRAWN=1 QA_EXACT_SCALE=1 node tools/test-desktop-atlas-multiscale.mjs
 node tools/test-desktop-atlas-prominence.mjs
 node tools/test-desktop-atlas-raster-workbench.mjs
