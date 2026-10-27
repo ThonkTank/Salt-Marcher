@@ -2,7 +2,7 @@
 
 Status: Verbindlicher Zielumfang; historische Umsetzungsbelege sind keine aktuelle Abnahme.
 Owner: atlas
-Last Reviewed: 2026-10-24 (Struktur und Quellen; Fachabnahme separat)
+Last Reviewed: 2026-10-27 (Biompinsel und aktueller Prüfweg; Fachabnahme separat)
 Source of Truth: Dieses Dokument besitzt das benannte Thema; Code belegt den Iststand, das Abnahmeregister den Prüfstand.
 
 Nutzerentscheidung vom 20.10.2026: Landschaftsflächen setzen Vorlage, Bodenbild
@@ -89,7 +89,11 @@ Einzelkorrekturen. Format 52 schützt diese Inhalte vor älteren Apps; der
 Automatische Kandidaten besitzen weltadressierte Kennungen. Kamera,
 Kachelgrenzen und Dichteänderungen ändern ihre Positionen nicht. Geländehöhe,
 Hangneigung, Land/Wasser, Straßenbreite und Stadtgebäude bestimmen ihre
-Eignung. Bäume bleiben aufrecht, Felsen richten sich an der Bodennormale aus.
+Eignung. Automatische Modelle bleiben mit ihrer vollständigen horizontalen
+Ausdehnung in der Autorenfläche; zu Löchern gilt derselbe Randabstand. Die
+maximale vorhandene Kronenvergrößerung ist dabei bereits berücksichtigt. Das ändert weder Radius
+noch Autorenpolygon. Geschützte Einzelkorrekturen behalten ihre ausdrücklich
+gesetzte Position. Bäume bleiben aufrecht, Felsen richten sich an der Bodennormale aus.
 Feiner definierte Landschaften haben Vorrang vor gröberen. Einzelkorrekturen
 und Löschvermerke sind dauerhaft; ungeeignete geschützte Objekte werden als
 Konflikt markiert und nicht automatisch entfernt.
@@ -139,7 +143,15 @@ Landschaftsebene wegen zu vieler lokaler Kandidaten verschwinden lassen.
 | Werkzeuge und gemeinsame Einzelbearbeitung | `src/app/atlas/atlas-landscape-ui.ts`, `src/app/atlas/vegetation-controls.ts` |
 | Bewuchs in der gemeinsamen Hauptkamera und isolierte Bildfixture | `src/app/atlas/atlas-deck-vegetation.ts`, `src/app/atlas/atlas-vegetation-layer.ts`, `src/app/atlas/atlas-cartographic-style.ts`, `tools/vegetation-prototype/app.ts` |
 | Abgeleitetes Geländenetz, Bodenbild und schreibfreie Landpinselvorschau der räumlichen Bewuchsansicht | `src/app/atlas/spatial-terrain.ts` |
-| Datenregression, Auswahl und echte Desktop-Bedienung | `tests/atlas/vegetation.test.mjs`, `tests/atlas/vegetation-spatial.test.mjs`, `tools/test-desktop-vegetation.mjs`, `tools/test-desktop-vegetation-qualification.mjs` |
+| Datenregression, Auswahl und echte Desktop-Bedienung | `tests/atlas/vegetation.test.mjs`, `tests/atlas/vegetation-spatial.test.mjs`, `tests/atlas/vegetation-geometry.test.mjs`, `tools/test-desktop-atlas-biome-stroke.mjs` |
+
+Die gezielte native Probe `tools/test-desktop-atlas-biome-stroke.mjs --scale=1`
+(bzw. `--scale=2`) erzeugt eine flache Testkampagne und prüft Laubwald mit 25 m
+und 75 m Radius über einer tatsächlich geladenen Renderkachelgrenze. Bodenbild,
+Materialkanäle, vollständige Modellränder, getrennte Bereichsreads, Undo/Redo und
+ein frischer Prozess gehören zum selben Ablauf. Die vorhandene Waldzeichnung
+wird zusätzlich im Übersichtsmaßstab geprüft; dies ist keine Leistungs- oder
+Gestaltungsabnahme. Ergebnisse und native Bilder liegen unter `.build/cycle2-point1/native/`.
 
 Der [lokale Prüfbeleg](https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/vegetation-20261020/README.md) trennt
 automatische Tests, native Bedienung und Leistungsbeobachtung. Die vollständige

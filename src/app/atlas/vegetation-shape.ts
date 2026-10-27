@@ -12,3 +12,19 @@ export function crownTone(id: string) {
   for (let i = 0; i < id.length; i++) hash = Math.imul(hash ^ id.charCodeAt(i), 16777619);
   return 0.88 + ((hash >>> 0) / 4294967295) * 0.22;
 }
+
+/** Conservative horizontal envelope of the existing models. Automatic crowns
+ * may double at overview scales; rocks can tilt with the surface normal.
+ * Placement uses that maximum once, so zoom never changes candidate identity.
+ */
+export function vegetationFootprintRadius(asset: string, size: number) {
+  const radius =
+    asset === 'oak'
+      ? 0.36 * (0.95 + 0.09 + 0.04) * 2
+      : asset === 'pine'
+        ? 0.32 * 2
+        : asset === 'rock'
+          ? 0.55 + 0.14
+          : 0.5;
+  return size * radius;
+}

@@ -13,7 +13,7 @@ const require = createRequire(import.meta.url);
 buildSync({
   stdin: {
     contents:
-      "export * from './src/app/atlas/vegetation';export * from './src/app/atlas/vegetation-projection';export * from './src/app/atlas/vegetation-controls';export {LandscapeWorkbench} from './src/app/atlas/atlas-landscape-ui';export * from './src/app/atlas/terrain-height';export * from './src/app/atlas/atlas-landscape';export * from './src/app/atlas/landscape-geometry';export * from './src/app/storage/store';export * from './src/app/storage/atlas-landscape-region';export {readVegetationEnvironment} from './src/app/storage/vegetation';export * from './src/app/atlas/landscape-raster';export * from './src/app/atlas/vegetation-view';export * from './src/app/atlas/atlas-paint';",
+      "export {brushFootprint} from './src/app/atlas/landscape-brush';export {vegetationFootprintRadius} from './src/app/atlas/vegetation-shape';export * from './src/app/atlas/vegetation';export * from './src/app/atlas/vegetation-projection';export * from './src/app/atlas/vegetation-controls';export {LandscapeWorkbench} from './src/app/atlas/atlas-landscape-ui';export * from './src/app/atlas/terrain-height';export * from './src/app/atlas/atlas-landscape';export * from './src/app/atlas/landscape-geometry';export * from './src/app/storage/store';export * from './src/app/storage/atlas-landscape-region';export {readVegetationEnvironment} from './src/app/storage/vegetation';export * from './src/app/atlas/landscape-raster';export * from './src/app/atlas/vegetation-view';export * from './src/app/atlas/atlas-paint';",
     resolveDir: process.cwd(),
   },
   outfile: '.build/vegetation-test.cjs',
@@ -23,6 +23,8 @@ buildSync({
   external: ['better-sqlite3'],
 });
 const {
+  brushFootprint,
+  vegetationFootprintRadius,
   readVegetationEnvironment,
   vegetationInstances,
   LandscapeWorkbench,
@@ -36,6 +38,7 @@ const {
   heightRecord,
   emptyRecord,
   contains,
+  segmentDistance,
   CampaignStore,
   AtlasLandscapeReader,
   effectiveLandscape,
@@ -1138,4 +1141,106 @@ test('terrain eraser removes ground and vegetation, supports repaint and preserv
       }),
     /prüfen/,
   );
+});
+
+test('painted deciduous radii retain authored footprint, ground, bounded assets and one history step through reopen', (t) => {
+  const f = setup(t),
+    queryBox = { x: -240, y: -125, width: 480, height: 250 };
+  const records = () => f.store.landscapeRegion(f.token, queryBox).records;
+  const payload = (rs) =>
+    rs.map(({ revision, ...r }) => r).sort((a, b) => a.id.localeCompare(b.id));
+  const cursor = () =>
+    f.store.db.prepare('SELECT cursor FROM campaign_atlas WHERE campaign_id=?').get(f.cam.id)
+      .cursor;
+  const initial = payload(records()),
+    initialCursor = cursor();
+  const originalGeometry = [];
+  for (const [radius, edge] of [
+    [25, 0],
+    [75, 0],
+    [75, 16],
+  ]) {
+    const r = area('painted-radius', 'deciduous');
+    r.points = [
+      { x: -150, y: 0 },
+      { x: 150, y: 0 },
+    ];
+    r.polygons = brushFootprint(r.points, radius);
+    r.resolution = radius / 10;
+    r.width = radius * 2;
+    r.vegetation.preset.edge = edge;
+    f.save(r);
+    const saved = f.store.atlasLandscapeObject(f.token, r.id),
+      canonical = payload([saved]);
+    assert.equal(cursor(), initialCursor + 1, 'one stroke is one history step');
+    assert.deepEqual(saved.polygons, r.polygons);
+    const all = f.store.atlasVegetationScene(f.token, queryBox, 1).instances;
+    assert(all.some((i) => i.asset === 'oak'));
+    assert(all.some((i) => i.asset === 'shrub'));
+    assert(all.some((i) => i.asset === 'rock'));
+    assert(!all.some((i) => i.asset === 'pine'));
+    for (const i of all) {
+      assert(contains(i, saved.polygons));
+      const distance = Math.min(
+        ...saved.polygons.flatMap((p) =>
+          [p.outer, ...p.holes].flatMap((ring) =>
+            ring.map((a, n) => segmentDistance(i, a, ring[(n + 1) % ring.length])),
+          ),
+        ),
+      );
+      assert(
+        distance >= vegetationFootprintRadius(i.asset, i.size),
+        i.id + ' full crown/rock stays inside',
+      );
+    }
+    const left = f.store.atlasVegetationScene(f.token, { ...queryBox, width: 240 }, 1).instances;
+    const right = f.store.atlasVegetationScene(
+      f.token,
+      { ...queryBox, x: 0, width: 240 },
+      1,
+    ).instances;
+    const combined = new Map();
+    for (const i of [...left, ...right]) {
+      if (combined.has(i.id)) assert.deepEqual(combined.get(i.id), i);
+      combined.set(i.id, i);
+    }
+    assert.deepEqual(
+      [...combined.values()].sort((a, b) => a.id.localeCompare(b.id)),
+      [...all].sort((a, b) => a.id.localeCompare(b.id)),
+    );
+    assert.equal(effectiveLandscape(records(), { x: -2, y: 0 }).terrain, 'forest');
+    assert.equal(effectiveLandscape(records(), { x: 2, y: 0 }).terrain, 'forest');
+    assert.notEqual(effectiveLandscape(records(), { x: 0, y: radius + 10 }).terrain, 'forest');
+    const raster = new LandscapeRasterizer(queryBox, 480, 250);
+    for (const record of records()) raster.paint(record);
+    const pixels = raster.finish();
+    const color = (x, y) => [
+      ...pixels.slice(((y + 125) * 480 + x + 240) * 4, ((y + 125) * 480 + x + 240) * 4 + 3),
+    ];
+    assert.deepEqual(color(-2, 0), [159, 167, 129]);
+    assert.deepEqual(color(2, 0), [159, 167, 129]);
+    assert.notDeepEqual(color(0, radius + 10), color(0, 0));
+    if (edge === 0) originalGeometry.push(saved.polygons);
+    else
+      assert.deepEqual(
+        saved.polygons,
+        originalGeometry[1],
+        'edge softness never changes authored radius',
+      );
+    f.write({ kind: 'undo' });
+    assert.equal(cursor(), initialCursor);
+    assert.deepEqual(payload(records()), initial);
+    assert.equal(f.store.atlasVegetationScene(f.token, queryBox, 1).instances.length, 0);
+    f.write({ kind: 'redo' });
+    assert.deepEqual(payload([f.store.atlasLandscapeObject(f.token, r.id)]), canonical);
+    assert.deepEqual(f.store.atlasVegetationScene(f.token, queryBox, 1).instances, all);
+    f.reopen();
+    assert.equal(cursor(), initialCursor + 1);
+    assert.deepEqual(payload([f.store.atlasLandscapeObject(f.token, r.id)]), canonical);
+    assert.deepEqual(f.store.atlasVegetationScene(f.token, queryBox, 1).instances, all);
+    const reopenedRaster = new LandscapeRasterizer(queryBox, 480, 250);
+    for (const record of records()) reopenedRaster.paint(record);
+    assert.deepEqual(reopenedRaster.finish(), pixels);
+    f.write({ kind: 'undo' });
+  }
 });
