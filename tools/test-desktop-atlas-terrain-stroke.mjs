@@ -1498,6 +1498,26 @@ async function exerciseFormTools() {
       { maxError, positive, negative, samples },
     );
     if (form === 'canyon') {
+      const before = new TerrainSampler(original),
+        drops = [],
+        knots = command.action.stroke.samples;
+      for (let i = 1; i < knots.length; i++) {
+        const a = knots[i - 1],
+          b = knots[i],
+          n = Math.max(1, Math.ceil(Math.hypot(b.x - a.x, b.y - a.y) / (radius / 4)));
+        for (let j = 0; j < n; j++) {
+          const f = j / n,
+            p = { x: a.x + (b.x - a.x) * f, y: a.y + (b.y - a.y) * f };
+          drops.push(before.sample(p).heightM - actual.sample(p).heightM);
+        }
+      }
+      // Sample the spaces between pointer events as well as the event centres.
+      // A connected trench cannot have deep event pits with shallow gaps.
+      check(
+        label + '-continuous-floor-amplitude',
+        drops.length > 2 && Math.min(...drops) > Math.max(...drops) * 0.7,
+        { minDropM: Math.min(...drops), maxDropM: Math.max(...drops), sampleCount: drops.length },
+      );
       const path = command.action.stroke.samples.filter(
           (p, i, ps) => !i || Math.hypot(p.x - ps[i - 1].x, p.y - ps[i - 1].y) > radius / 5,
         ),
@@ -1523,14 +1543,12 @@ async function exerciseFormTools() {
         incised,
       });
     }
-    const displayed = await page
-      .locator('#campaign-map')
-      .evaluate((n) => ({
-        revision: Number(n.dataset.terrainRevision),
-        quality: n.dataset.terrainQuality,
-        ready: n.dataset.terrainReady,
-        cache: JSON.parse(n.dataset.terrainCache),
-      }));
+    const displayed = await page.locator('#campaign-map').evaluate((n) => ({
+      revision: Number(n.dataset.terrainRevision),
+      quality: n.dataset.terrainQuality,
+      ready: n.dataset.terrainReady,
+      cache: JSON.parse(n.dataset.terrainCache),
+    }));
     check(
       label + '-canonical-display-adopted',
       displayed.revision === after.revision && displayed.quality === 'detail',
