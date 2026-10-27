@@ -1,0 +1,301 @@
+/* runtime/session.css — styles owned by this surface; shared controls live in shared/. */
+
+#live-session-close-dialog {
+  width: min(56rem, calc(100vw - 2rem));
+  max-width: 56rem;
+  max-height: 90vh;
+  overflow: auto;
+}
+
+#live-session-close-dialog h2,
+#live-session-close-dialog h3 {
+  margin: 0.2rem 0;
+}
+
+#live-session-close-dialog textarea {
+  display: block;
+  width: 100%;
+  min-height: 5rem;
+  margin-top: 0.35rem;
+}
+
+.session-close-facts {
+  padding: 0.75rem;
+  background: var(--soft, #f1eee6);
+  border-radius: 5px;
+}
+
+#live-session-close-masks article,
+.session-close-check {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: 0.55rem 0;
+  padding: 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+}
+
+#live-session-close-masks p,
+.session-close-check p {
+  margin: 0.25rem 0;
+}
+
+.session-close-check > div {
+  min-width: 0;
+  flex: 1;
+}
+
+#live-session-resume-dialog {
+  width: min(68rem, calc(100vw - 2rem));
+  max-width: 68rem;
+  max-height: 90vh;
+  overflow: auto;
+}
+
+#live-session-resume-dialog h2,
+#live-session-resume-dialog h3 {
+  margin: 0.2rem 0;
+}
+
+.session-resume-handoff {
+  padding: 0.8rem;
+  border-left: 4px solid var(--blue);
+  background: var(--soft, #f1eee6);
+  white-space: pre-wrap;
+}
+
+.session-resume-handoff p {
+  margin: 0.35rem 0 0;
+}
+
+#live-session-resume-groups,
+#live-session-resume-readiness,
+#live-session-resume-visits,
+#live-session-resume-masks,
+#live-session-resume-worlds {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 24rem), 1fr));
+  gap: 0.55rem;
+  margin: 0.55rem 0 1rem;
+}
+
+#live-session-resume-groups article,
+#live-session-resume-masks article {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+  padding: 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+}
+
+#live-session-resume-groups p,
+#live-session-resume-visits p,
+#live-session-resume-masks p {
+  margin: 0.25rem 0;
+}
+
+#live-session-resume-readiness article,
+#live-session-resume-visits article,
+#live-session-resume-worlds article {
+  padding: 0.8rem;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: var(--paper, #fff);
+}
+
+#live-session-resume-readiness ul {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0.55rem 0;
+  padding: 0;
+  list-style: none;
+}
+
+#live-session-resume-readiness li {
+  display: grid;
+  gap: 0.1rem;
+  padding: 0.35rem 0.45rem;
+  border-left: 3px solid var(--line);
+}
+
+#live-session-resume-readiness li span {
+  font-size: 0.9rem;
+}
+
+.session-resume-character-warning {
+  border-left-color: #b87022 !important;
+  background: #b8702212;
+}
+
+#live-session-resume-visits details {
+  margin: 0.6rem 0;
+}
+
+#live-session-resume-visits blockquote {
+  margin: 0.5rem 0;
+  padding: 0.65rem;
+  border-left: 4px solid var(--accent, #8b582b);
+  background: var(--soft, #f1eee6);
+  white-space: pre-wrap;
+}
+
+#live-session-resume-visits blockquote p {
+  margin: 0.35rem 0 0;
+}
+
+#live-session-resume-worlds p,
+#live-session-resume-worlds ul {
+  margin: 0.35rem 0;
+}
+
+#live-session-resume-worlds ul {
+  padding-left: 1.3rem;
+}
+
+.session-resume-warning {
+  padding: 0.5rem;
+  border-left: 3px solid #b87022;
+  background: #b8702212;
+}
+
+.session-resume-narrative {
+  margin: 1rem 0;
+  padding: 0.8rem;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+}
+
+.session-resume-narrative > .toolbar > div {
+  flex: 1;
+}
+
+.session-resume-narrative p {
+  margin: 0.3rem 0;
+}
+
+#handoff-visit-dialog {
+  width: min(42rem, calc(100vw - 2rem));
+  max-width: 42rem;
+  max-height: 90vh;
+  overflow: auto;
+}
+
+#handoff-visit-form {
+  display: grid;
+  gap: 0.65rem;
+}
+
+#handoff-visit-form h2 {
+  margin: 0.1rem 0;
+}
+
+#handoff-visit-form label {
+  display: grid;
+  gap: 0.3rem;
+}
+
+#handoff-visit-form textarea {
+  resize: vertical;
+}
+
+.session-resume-start {
+  font-weight: 700;
+  border-color: var(--accent, #8b582b);
+}
+
+.session-close-suggestion {
+  margin: 1rem 0;
+  padding: 0.8rem;
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--blue);
+  background: var(--soft, #f1eee6);
+}
+
+.session-close-suggestion h3 {
+  flex: 1;
+}
+
+.session-close-suggestion pre {
+  margin: 0.7rem 0 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font: inherit;
+  line-height: 1.5;
+}
+
+#live-session-resume-groups article.session-resume-briefing {
+  display: block;
+  padding: 0.85rem;
+  background: var(--paper, #fff);
+}
+
+.session-resume-briefing > div:first-child {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.15rem 0.75rem;
+  align-items: center;
+}
+
+.session-resume-briefing h4 {
+  margin: 0;
+}
+
+.session-resume-briefing > div:first-child p {
+  grid-column: 1;
+  margin: 0.15rem 0;
+}
+
+.session-resume-briefing > div:first-child > strong {
+  grid-column: 2;
+  grid-row: 1/3;
+}
+
+.session-resume-briefing-alert {
+  color: #8c2b24;
+}
+
+.session-resume-briefing-ready {
+  color: #357347;
+}
+
+.session-resume-briefing details {
+  margin: 0.65rem 0;
+}
+
+.session-resume-briefing summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.session-resume-briefing-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
+  gap: 0.5rem;
+  margin-top: 0.55rem;
+}
+
+.session-resume-briefing-grid section {
+  padding: 0.55rem;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--soft, #f1eee6);
+}
+
+.session-resume-briefing-grid ul {
+  margin: 0.35rem 0 0;
+  padding-left: 1.15rem;
+}
+
+.session-resume-briefing-grid li {
+  margin: 0.2rem 0;
+  white-space: pre-wrap;
+}
+
+.session-resume-briefing > .toolbar {
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}

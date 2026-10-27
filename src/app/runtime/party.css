@@ -1,0 +1,689 @@
+/* runtime/party.css — styles owned by this surface; shared controls live in shared/. */
+
+#character-editor details {
+  margin: 1rem 0;
+}
+
+#live-party {
+  font-weight: 600;
+}
+
+#move-members input {
+  width: auto;
+}
+
+#archive-detail {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+#archive-dialog {
+  max-height: 90vh;
+  overflow: auto;
+}
+
+#group-move {
+  margin-top: 0.6rem;
+}
+
+#group-list button {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+#group-list small {
+  font-size: 0.85rem;
+  color: #4b6074;
+}
+
+#character-progression {
+  border-top: 1px solid var(--line);
+  margin-top: 1rem;
+  padding-top: 0.6rem;
+}
+
+#character-progression progress {
+  width: 100%;
+  height: 1rem;
+  accent-color: var(--blue);
+}
+
+#progress-notices:empty {
+  display: none;
+}
+
+#live-party-quick h3 {
+  margin: 0.1rem 0 0.55rem;
+  font-size: 1rem;
+}
+
+#live-party-reference {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  gap: 0.45rem;
+}
+
+#live-party-reference button {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+}
+
+#live-party-reference span {
+  font-size: 0.82rem;
+  color: #4b6074;
+  margin-top: 0.2rem;
+}
+
+#health-summary {
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin: 0.6rem 0;
+}
+
+#health-adjust {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin-bottom: 0.75rem;
+}
+
+#health-adjust label {
+  margin: 0;
+}
+
+#health-amount {
+  width: 6rem;
+}
+
+#health-adjust .actions {
+  margin: 0;
+}
+
+#party-popover {
+  overflow: auto;
+  resize: both;
+  height: 220px;
+  min-height: 160px;
+  min-width: min(240px, calc(100vw - 16px));
+  max-width: calc(100vw - 16px);
+  background: var(--white);
+  color: var(--ink);
+  padding: 0.6rem;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  box-shadow: 0 12px 36px #142c3c33;
+  font-size: 0.85rem;
+  container-type: inline-size;
+}
+
+#party-popover h2 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+#party-popover button {
+  padding: 0.3rem 0.4rem;
+}
+
+#party-popover :is(p, small, dt, dd, button) {
+  overflow-wrap: anywhere;
+}
+
+#party-popover .party-card {
+  margin: 0.4rem 0;
+  padding: 0.35rem 0;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+}
+
+#party-popover .party-card p {
+  margin: 0.3rem 0;
+  font-size: 0.8rem;
+}
+
+#party-popover small {
+  display: block;
+  color: #4b6074;
+}
+
+#party-popover .party-level-meter {
+  background: linear-gradient(
+    90deg,
+    #cee0ed var(--party-xp-fill, 0%),
+    #fff var(--party-xp-fill, 0%)
+  );
+  color: var(--ink);
+  min-width: 0;
+  font-size: 0.75rem;
+}
+
+#party-popover .party-card-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 5.3em 5.3em;
+  gap: 0.3rem;
+  align-items: center;
+}
+
+#party-popover .party-member-toggle {
+  text-align: left;
+  border-color: transparent;
+  font-weight: 700;
+  min-width: 0;
+}
+
+#party-popover .party-member-toggle::before {
+  content: '▸ ';
+  font-size: 0.75em;
+}
+
+#party-popover .party-member-toggle[aria-expanded='true']::before {
+  content: '▾ ';
+}
+
+#party-popover .party-card dl {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 0.2rem 0.5rem;
+  margin: 0.4rem 0;
+}
+
+#party-popover dd {
+  margin: 0;
+}
+
+#party-popover dt {
+  color: #4b6074;
+}
+
+#party-popover .party-window-heading {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  position: sticky;
+  top: -0.6rem;
+  z-index: 2;
+  background: var(--white);
+  padding: 0.3rem 0;
+  border-bottom: 1px solid var(--line);
+}
+
+#party-heading {
+  flex: 1;
+}
+
+#party-popover details {
+  border-top: 1px solid var(--line);
+  padding: 0.4rem 0;
+}
+
+#party-popover summary {
+  cursor: pointer;
+}
+
+#party-popover .party-rest-meter {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 5.3em;
+  padding: 0.3rem 0.2rem;
+  font-size: 0.75rem;
+  border: 1px solid #8095aa;
+  border-radius: 4px;
+  isolation: isolate;
+  overflow: hidden;
+  background: linear-gradient(
+    90deg,
+    #d3e4cf var(--party-rest-fill, 0%),
+    #fff var(--party-rest-fill, 0%)
+  );
+}
+
+#party-popover .party-rest-meter[data-unknown='true'] {
+  border-style: dashed;
+  background: #fff;
+}
+
+#party-popover .party-rest-meter i {
+  position: absolute;
+  inset-block: 0;
+  width: 1px;
+  background: #526b4a;
+  z-index: -1;
+}
+
+#party-popover .party-quick-facts {
+  color: #4b6074;
+}
+
+#party-popover #party-quick-fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+
+#party-popover .check-label {
+  font-size: 0.85rem;
+}
+
+#party-popover :is(.toolbar, .combat-fields) > * {
+  min-width: 0;
+  max-width: 100%;
+}
+
+#party-popover .combat-fields {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+#party-popover :is(#party-status, #party-quick-status, #party-rest-status):empty {
+  display: none;
+}
+
+#party-popover .error {
+  color: var(--error);
+}
+
+#party-popover #party-rest-members {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+#party-editor,
+#party-xp-editor {
+  background: var(--white);
+  border-top: 2px solid var(--blue);
+  padding: 0.6rem 0;
+}
+
+#party-popover :focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+}
+
+@container (max-width:260px) {
+  #party-popover .party-card-head {
+    grid-template-columns: minmax(0, 1fr) 5.3em;
+  }
+}
+
+@container (max-width:260px) {
+  #party-popover .party-member-toggle {
+    grid-column: 1/-1;
+  }
+}
+
+@container (max-width:260px) {
+  #party-popover #party-quick-fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+#party-archive-confirm {
+  position: sticky;
+  bottom: -1.3rem;
+  background: var(--paper, #fff);
+  border-top: 3px solid #9b3e31;
+  padding: 1rem;
+  box-shadow: 0 -8px 20px #142c3c22;
+}
+
+#party-archive-list strong {
+  display: block;
+}
+
+#party-archive {
+  border-top: 1px solid var(--line);
+  margin-top: 1rem;
+  padding-top: 1rem;
+}
+
+#mask-history-dialog {
+  width: min(94vw, 900px);
+  max-width: 94vw;
+  max-height: 90vh;
+  overflow: auto;
+}
+
+#mask-history-results {
+  max-height: 50vh;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+#mask-history-results button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  margin: 0.4rem 0;
+}
+
+#party-award-panel {
+  border: 2px solid var(--accent, #8b582b);
+  border-radius: 5px;
+  padding: 1rem;
+  margin: 1rem 0;
+  background: var(--paper, #fff);
+}
+
+.party-award-row {
+  display: grid;
+  grid-template-columns: 80px 125px 1fr;
+  align-items: center;
+  gap: 0.5rem;
+  border-bottom: 1px solid var(--line);
+  padding: 0.5rem 0;
+}
+
+#party-award-preview {
+  border-left: 3px solid #699060;
+  padding: 0.3rem 0.8rem;
+  margin: 0.8rem 0;
+}
+
+#party-award-preview p {
+  font-size: 0.9rem;
+  margin: 0.3rem 0;
+}
+
+/* A bounded health desk uses the original controls beside the live writing column. */
+#live-party-reference button small {
+  display: block;
+  margin-top: 0.35rem;
+  color: var(--blue);
+  font-weight: 600;
+}
+
+#live-party-quick {
+  margin: 0.7rem 0;
+  padding: 0.7rem;
+  border: 1px solid var(--line);
+  background: #f7f9fc;
+  scroll-margin-top: calc(var(--workspace-content-offset) + var(--live-sticky-height));
+}
+
+.live-party-quick-card {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 0.25rem;
+  background: #fff;
+}
+
+#live-party-reference .live-party-quick-card > [data-character-id] {
+  width: 100%;
+  border: 0;
+  background: transparent;
+}
+
+#live-party-reference .live-party-quick-card strong {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#live-party-reference .live-party-loot {
+  margin: 0.15rem 0.65rem 0.6rem;
+  font-size: 0.85rem;
+  padding: 0.35rem 0.6rem;
+}
+
+#live-party-reference .live-party-passives {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+  width: 100%;
+}
+
+#live-party-reference .live-party-passives > span {
+  font-size: 0.75rem;
+  overflow-wrap: anywhere;
+}
+
+#live-party-reference .live-party-passives b {
+  display: block;
+  font-size: 0.9rem;
+  color: var(--ink);
+}
+
+/* Keep a single XP decision in view instead of scrolling through the roster. */
+#party-popover.party-editing-xp > :not(.party-window-heading):not(#party-xp-editor) {
+  display: none;
+}
+
+#party-popover #party-xp-editor {
+  border: 0;
+  padding: 0.3rem 0;
+}
+
+#party-popover .party-xp-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+#party-popover .party-xp-heading h3 {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+#party-popover #party-xp-current {
+  margin: 0.2rem 0;
+  font-size: 0.8rem;
+}
+
+#party-popover .party-xp-amount {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.2rem 0;
+}
+
+#party-popover .party-xp-amount input {
+  width: 7rem;
+  min-width: 0;
+  margin: 0;
+  padding: 0.25rem;
+}
+
+#party-popover .party-xp-actions {
+  display: flex;
+  gap: 0.3rem;
+  flex-wrap: wrap;
+}
+
+#party-popover #party-xp-preview {
+  margin: 0.3rem 0;
+  font-size: 0.75rem;
+}
+
+#party-popover #party-xp-status:empty {
+  display: none;
+}
+
+#party-popover.party-editing-roster > :not(.party-window-heading):not(#party-membership-editor) {
+  display: none;
+}
+
+#party-popover.party-editing-roster:popover-open {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0.3rem;
+}
+
+#party-popover.party-editing-roster .party-window-heading {
+  flex: none;
+  padding: 0;
+  border-bottom: 1px solid var(--line);
+}
+
+#party-popover.party-editing-roster .party-rest-meter {
+  padding: 0.2rem 0.25rem;
+  font-size: 0.7rem;
+}
+
+#party-membership-editor:not([hidden]) {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+#party-membership-editor .toolbar {
+  gap: 0.3rem;
+  background: var(--white);
+}
+
+#party-membership-editor > .toolbar {
+  flex: none;
+  position: static;
+  margin: 0;
+  padding: 0;
+}
+
+#party-membership-editor .toolbar h3 {
+  flex: 1;
+  font-size: 0.9rem;
+  margin: 0.2rem 0;
+}
+
+#party-membership-editor .toolbar button {
+  padding: 0.25rem 0.35rem;
+  font-size: 0.75rem;
+}
+
+#party-membership-editor input[type='search'] {
+  width: 100%;
+  box-sizing: border-box;
+  flex: none;
+  height: 1.7rem;
+  padding: 0.2rem;
+  font-size: 0.8rem;
+  margin: 0.1rem 0;
+}
+
+#party-membership-editor > .party-membership-list {
+  flex: 1;
+  min-height: 2.8rem;
+  overflow: auto;
+  border-block: 1px solid var(--line);
+}
+
+.party-membership-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.1rem;
+  margin: 0;
+}
+
+.party-membership-row input {
+  width: auto;
+  flex: none;
+}
+
+.party-membership-row span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.party-membership-row strong,
+.party-membership-row small {
+  display: block;
+}
+
+.party-membership-row small {
+  font-size: 0.7rem;
+}
+
+#party-membership-editor p {
+  font-size: 0.8rem;
+  margin: 0.3rem 0;
+}
+
+#party-membership-editor > .toolbar p {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: 0.72rem;
+  white-space: nowrap;
+}
+
+#party-membership-editor > p:empty {
+  display: none;
+}
+
+#party-roster-back {
+  display: none;
+}
+
+#party-popover.party-editing-roster #party-roster-back {
+  display: block;
+  padding: 0.2rem 0.4rem;
+}
+
+#move-members {
+  max-height: 40vh;
+  overflow: auto;
+}
+
+#move-dialog {
+  width: min(360px, calc(100vw - 2rem));
+}
+
+/* Personal ledger stays bound to the chosen Party member in the compact window. */
+#party-popover.party-editing-loot > :not(.party-window-heading):not(#party-loot-panel) {
+  display: none;
+}
+
+#party-loot-panel h3 {
+  font-size: 0.9rem;
+  margin: 0.3rem 0;
+  min-width: 0;
+}
+
+#party-loot-panel input,
+#party-loot-panel select {
+  max-width: 100%;
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+#party-loot-panel label {
+  display: block;
+  margin: 0.5rem 0;
+}
+
+#party-loot-panel .party-loot-list {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0.5rem 0;
+}
+
+#party-loot-panel .party-loot-list button {
+  text-align: left;
+  white-space: normal;
+}
+
+#party-loot-panel form {
+  border-top: 1px solid var(--line);
+  padding-top: 0.5rem;
+}
+
+#party-loot-panel p {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+#party-loot-panel [hidden] {
+  display: none !important;
+}

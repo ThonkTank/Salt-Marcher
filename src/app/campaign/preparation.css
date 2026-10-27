@@ -1,0 +1,486 @@
+/* campaign/preparation.css — styles owned by this surface; shared controls live in shared/. */
+
+#preparation {
+  padding: 1.5rem;
+  max-width: 1300px;
+  margin: auto;
+}
+
+#world-trash {
+  width: auto;
+}
+
+#world-create,
+#scene-add,
+#preparation-apply {
+  margin-top: 0.8rem;
+}
+
+#location-maps input,
+#location-trash {
+  width: auto;
+}
+
+#note-relations > div {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+#note-relations > div > button:first-child {
+  flex: 1;
+}
+
+#session-panel {
+  margin: 1rem 0;
+  padding: 1rem;
+  border: 1px solid var(--line);
+  background: #fff;
+}
+
+.session-party-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: 0.5rem;
+  align-items: center;
+  margin: 0.5rem 0;
+}
+
+.session-item-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr auto;
+  gap: 0.5rem;
+  margin: 0.5rem 0;
+}
+
+.session-group-card,
+.session-proposal {
+  border: 1px solid var(--line);
+  padding: 1rem;
+  margin: 1rem 0;
+  background: #fff;
+}
+
+.session-group-card .toolbar,
+.session-group-card > button {
+  margin-top: 0.5rem;
+}
+
+#session-budget {
+  font-weight: 600;
+}
+
+#visit-preparation {
+  border-top: 1px solid var(--line);
+  padding-top: 1rem;
+  margin-top: 1rem;
+}
+
+#visit-preparation select {
+  min-width: 0;
+}
+
+#visit-preparation > .toolbar select {
+  flex: 1;
+  width: auto;
+}
+
+#session-panel details {
+  margin: 0.6rem 0;
+}
+
+#scene-preparation-panel {
+  border-top: 1px solid var(--line);
+  margin-top: 1rem;
+  padding-top: 0.5rem;
+}
+
+#scene-preparation-panel .toolbar h3 {
+  margin-right: auto;
+}
+
+#session-preview p {
+  white-space: pre-wrap;
+}
+
+@media (max-width: 650px) {
+  .session-item-row {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 650px) {
+  .session-party-row {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.note-result-excerpt {
+  display: block;
+  margin-top: 0.35rem;
+  font-size: 0.9em;
+  font-weight: normal;
+  line-height: 1.4;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-align: left;
+}
+
+.note-result-excerpt mark {
+  background: #ffeb7f;
+  color: #1c2e3d;
+}
+
+/* Review the generated evening before publishing its selected visits. */
+.session-review-toolbar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  position: sticky;
+  top: 0;
+  background: #fff;
+  padding: 10px 0;
+  z-index: 1;
+  border-bottom: 1px solid #dce2e8;
+}
+
+.session-review-toolbar input[type='search'] {
+  flex: 1;
+  min-width: 200px;
+}
+
+.session-proposal.selected {
+  border-color: #2365a0;
+  background: #f4f9fd;
+}
+
+.session-proposal-choice {
+  font-weight: 600;
+}
+
+.session-proposal-read-aloud {
+  white-space: pre-wrap;
+  border-left: 3px solid #38855c;
+  padding: 8px 12px;
+  background: #f1f8f3;
+}
+
+.session-proposal > p {
+  white-space: pre-wrap;
+}
+
+.session-selection-dialog {
+  width: min(780px, calc(100vw - 48px));
+  max-height: 85vh;
+  overflow: auto;
+}
+
+.session-selection-dialog li {
+  padding: 8px 0;
+  border-bottom: 1px solid #dce2e8;
+}
+
+.session-selection-dialog li p {
+  white-space: pre-wrap;
+  margin: 6px 0;
+}
+
+.session-copy-dialog {
+  width: min(1240px, 95vw);
+  max-width: min(1240px, 95vw);
+}
+
+.session-copy-columns {
+  display: grid;
+  grid-template-columns: 3fr 2fr;
+  gap: 24px;
+}
+
+.session-copy-columns section {
+  min-width: 0;
+}
+
+.session-copy-columns pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.session-copy-columns article {
+  padding: 12px;
+  margin: 8px 0;
+  border: 1px solid var(--border, #555);
+  border-radius: 6px;
+}
+
+.session-copy-columns li {
+  padding: 8px;
+}
+
+.session-copy-columns li button {
+  margin-left: 6px;
+}
+
+@media (max-width: 900px) {
+  .session-copy-columns {
+    grid-template-columns: 1fr;
+  }
+}
+
+#location-material-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 75vh;
+  overflow: auto;
+}
+
+/* Preparation keeps the chosen GM task wide; source editors retain their own nodes. */
+#preparation-workspace > section {
+  min-width: 0;
+  background: #f7f9fc;
+  border: 1px solid var(--line);
+  padding: 1.25rem;
+}
+
+.preparation-modes {
+  margin-bottom: 1rem;
+}
+
+.preparation-modes button[aria-pressed='true'] {
+  background: var(--selected);
+  border-color: var(--blue);
+}
+
+.session-setup {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+.session-setup > form {
+  min-width: 0;
+}
+
+.session-setup h3 {
+  margin-top: 0.7rem;
+}
+
+#session-generation-feedback:empty {
+  display: none;
+}
+
+#session-generation-feedback {
+  white-space: pre-wrap;
+}
+
+#session-generation-feedback.error {
+  color: var(--error);
+}
+
+@media (max-width: 1050px) {
+  .session-setup {
+    grid-template-columns: 1fr;
+  }
+}
+
+#session-party-levels .session-party-row {
+  grid-template-columns: minmax(0, 1fr) 5rem 5rem 5.5rem;
+}
+
+#session-party-levels input {
+  min-width: 0;
+}
+
+#session-party-levels button {
+  padding: 0.4rem;
+}
+
+@media (max-width: 620px) {
+  #session-party-levels .session-party-row {
+    grid-template-columns: minmax(0, 1fr) 4rem 4rem;
+  }
+}
+
+@media (max-width: 620px) {
+  #session-party-levels .session-party-row button {
+    grid-column: 1/-1;
+    justify-self: start;
+  }
+}
+
+.session-target-table {
+  width: min(100%, 40rem);
+  border-collapse: collapse;
+  margin: 0.75rem 0;
+}
+
+.session-target-table :is(th, td) {
+  padding: 0.35rem 0.65rem;
+  text-align: right;
+  border-bottom: 1px solid #ccd6df;
+}
+
+.session-target-table :is(th, td):first-child {
+  text-align: left;
+}
+
+#session-day-plan {
+  margin: 1rem 0;
+  border-block: 1px solid var(--line);
+  padding: 0.8rem 0;
+}
+
+.session-day-scroll {
+  overflow: auto;
+}
+
+#session-day-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+#session-day-table th,
+#session-day-table td {
+  text-align: left;
+  padding: 0.65rem;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+
+#session-day-table td:first-child {
+  min-width: 11rem;
+}
+
+#session-day-table td:nth-child(3) {
+  min-width: 10rem;
+}
+
+#session-day-table small {
+  display: block;
+  margin-top: 0.3rem;
+}
+
+#session-day-table input {
+  min-width: 6rem;
+}
+
+#session-day-table .session-day-gap td {
+  background: var(--white);
+  border-left: 3px solid var(--blue);
+}
+
+.session-day-gap select {
+  width: auto;
+  max-width: 100%;
+}
+
+/* Keep the plan outline available while authoring a scene. */
+.session-scenes {
+  display: grid;
+  grid-template-columns: minmax(12rem, 16rem) minmax(0, 1fr);
+  gap: 1.25rem;
+  align-items: start;
+  margin-top: 1rem;
+}
+
+.session-scene-nav {
+  position: sticky;
+  top: var(--workspace-content-offset, 1rem);
+  max-height: calc(100dvh - var(--workspace-content-offset, 1rem) - 5rem);
+  overflow: auto;
+}
+
+.session-scene-nav > button {
+  width: 100%;
+  margin-bottom: 0.7rem;
+}
+
+.session-scene-nav .selection-list {
+  margin: 0.6rem 0;
+}
+
+.session-scene-nav .selection-list button {
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+
+.session-plan-tools {
+  border-top: 1px solid var(--line);
+  padding-top: 0.7rem;
+}
+
+.session-plan-tools summary {
+  cursor: pointer;
+}
+
+.session-plan-tools button {
+  width: 100%;
+  margin-top: 0.5rem;
+}
+
+#scene-editor {
+  min-width: 0;
+}
+
+#scene-editor > .actions {
+  justify-content: flex-start;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  margin: 0.5rem 0 1rem;
+}
+
+#session-day-plan > summary {
+  cursor: pointer;
+  font-weight: 400;
+  font-size: 0.9rem;
+}
+
+@media (max-width: 850px) {
+  .session-scenes {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 850px) {
+  .session-scene-nav {
+    position: static;
+    max-height: none;
+  }
+}
+
+@media (max-width: 850px) {
+  .session-scene-nav .selection-list {
+    max-height: 16rem;
+    overflow: auto;
+  }
+}
+
+#visit-preparation > .toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+}
+
+#visit-preparation > .toolbar > label,
+#visit-encounter-status {
+  grid-column: 1/-1;
+}
+
+#visit-encounter {
+  width: 100%;
+  min-width: 0;
+}
+
+@media (max-width: 850px) {
+  #visit-preparation > .toolbar {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 850px) {
+  #visit-preparation > .toolbar > button {
+    white-space: normal;
+  }
+}

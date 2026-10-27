@@ -1,0 +1,659 @@
+/* runtime/world.css — styles owned by this surface; shared controls live in shared/. */
+
+#world {
+  padding: 1.5rem;
+  max-width: 1500px;
+  margin: auto;
+}
+
+.world-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(280px, 1fr);
+  gap: 1.5rem;
+  margin: 1.5rem 0;
+}
+
+.world-columns > section,
+.world-travel {
+  min-width: 0;
+  padding: 1.25rem;
+  background: #f7f9fc;
+  border: 1px solid var(--line);
+}
+
+#world-map {
+  display: block;
+  width: 100%;
+  height: 520px;
+  background: #e4e7dc;
+  border: 1px solid #a4b29b;
+  border-radius: 8px;
+  margin: 1rem 0;
+  touch-action: none;
+}
+
+.atlas-hex {
+  cursor: pointer;
+}
+
+.atlas-hex:hover {
+  filter: brightness(1.08);
+}
+
+#world .toolbar select {
+  width: auto;
+  max-width: 100%;
+}
+
+#world .toolbar label {
+  margin: 0.4rem 0;
+}
+
+#world .toolbar input[type='number'] {
+  width: 5rem;
+}
+
+#world .caption {
+  overflow-wrap: anywhere;
+}
+
+#world .catalog-heading {
+  flex-wrap: wrap;
+}
+
+#world details {
+  margin: 1rem 0;
+}
+
+#live-world-panel {
+  margin: 1rem 0;
+  border-left: 3px solid #759170;
+  padding: 0.8rem 1rem;
+  background: #f0f5ed;
+}
+
+#live-world-notices p {
+  border: 1px solid #bdcaa7;
+  padding: 0.7rem;
+}
+
+#live-world-notices button {
+  margin-left: 0.7rem;
+}
+
+@media (max-width: 950px) {
+  .world-columns {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 950px) {
+  #world-map {
+    height: 460px;
+  }
+}
+
+#travel-stops {
+  padding-left: 1.5rem;
+}
+
+#travel-stops li {
+  padding: 0.3rem 0;
+  overflow-wrap: anywhere;
+}
+
+#travel-stops button {
+  padding: 0.2rem 0.45rem;
+  margin-left: 0.3rem;
+}
+
+#travel-evaluation {
+  border-left: 3px solid #699060;
+  padding: 0.6rem;
+  background: #6990600b;
+}
+
+#world-map:focus-visible {
+  outline: 3px solid #9d6b39;
+  outline-offset: 3px;
+}
+
+.live-travel-owner .world-authoring,
+.live-travel-owner .world-scene-selection,
+.live-travel-owner #world-map-new,
+.live-travel-owner #world-map-copy,
+.live-travel-owner #travel-mode-edit,
+.live-travel-owner .world-map-pan > :not([data-world-pan]) {
+  display: none;
+}
+
+#live-travel-host .world-columns {
+  grid-template-columns: minmax(0, 1.25fr) minmax(290px, 1fr);
+  gap: 1rem;
+  margin: 1rem 0;
+}
+
+#live-travel-host #world-map {
+  height: 420px;
+}
+
+#live-travel-host select {
+  max-width: 100%;
+}
+
+#live-travel-context {
+  font-weight: 600;
+}
+
+@media (max-width: 1100px) {
+  #live-travel-host .world-columns {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 1100px) {
+  #live-travel-host #world-map {
+    height: 380px;
+  }
+}
+
+#travel-preview-dialog {
+  width: min(1060px, calc(100vw - 2rem));
+  max-width: none;
+  max-height: calc(100vh - 2rem);
+  overflow: auto;
+}
+
+#travel-preview-itinerary table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+#travel-preview-itinerary th,
+#travel-preview-itinerary td {
+  text-align: left;
+  padding: 0.6rem;
+  border-bottom: 1px solid #ccd5df;
+  vertical-align: top;
+}
+
+#travel-preview-itinerary td strong,
+#travel-preview-itinerary td span {
+  display: block;
+  margin-top: 0.3rem;
+}
+
+.travel-stage-scroll {
+  max-height: 45vh;
+  overflow: auto;
+}
+
+#world-journey-refresh:not(:empty) {
+  padding: 0.7rem;
+  border-left: 3px solid #9b7440;
+  background: #f5f0e5;
+}
+
+/* Authoring controls must be reachable while the working map stays visible. */
+.world-map-columns {
+  grid-template-columns: minmax(0, 1fr) 280px;
+  gap: 1rem;
+  align-items: start;
+}
+
+.world-map-columns > section {
+  padding: 0.8rem;
+}
+
+.world-map-title {
+  display: flex;
+  gap: 0.6rem;
+  align-items: end;
+  margin-bottom: 0.6rem;
+}
+
+.world-map-title label {
+  flex: 1;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  white-space: nowrap;
+}
+
+.world-map-title button {
+  flex: none;
+}
+
+#hex-author-tools {
+  padding: 0.35rem 0;
+  border-top: 1px solid var(--line);
+  margin-top: 0.5rem;
+  gap: 0.5rem;
+}
+
+#hex-author-tools label {
+  margin: 0;
+}
+
+#hex-author-tools select {
+  max-width: 12rem;
+}
+
+#hex-author-tools input[type='number'] {
+  width: 4rem;
+}
+
+#world .world-map-canvas #world-map {
+  height: clamp(280px, 36vh, 520px);
+  margin: 0.5rem 0;
+}
+
+#world .world-map-navigation {
+  margin: 0.5rem 0;
+}
+
+.world-map-columns .world-authoring h3 {
+  margin: 0.3rem 0 0.7rem;
+}
+
+@media (max-width: 950px) {
+  .world-map-columns {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 950px) {
+  .world-map-title {
+    flex-wrap: wrap;
+  }
+}
+
+#world > .catalog-heading h2 {
+  margin: 0.2rem 0 0.7rem;
+}
+
+#world-current {
+  margin: 0.4rem 0;
+}
+
+#world .world-map-columns {
+  margin: 0.7rem 0;
+}
+
+#hex-author-tools button {
+  padding: 0.4rem 0.65rem;
+}
+
+#hex-paint-status {
+  display: block;
+  flex-basis: 100%;
+  min-height: 1.1em;
+  font-size: 0.8rem;
+  overflow-wrap: anywhere;
+}
+
+.world-marker-editor {
+  border-top: 1px solid var(--border, #c3cbd1);
+  margin-top: 1rem;
+  padding-top: 0.5rem;
+}
+
+.world-marker-editor fieldset {
+  margin: 0;
+  padding: 0.5rem;
+  border: 1px solid var(--border, #c3cbd1);
+  border-radius: 6px;
+  min-width: 0;
+}
+
+.world-marker-editor input[type='range'] {
+  width: 100%;
+}
+
+.world-marker-editor .toolbar {
+  flex-wrap: wrap;
+}
+
+.world-marker-editor .caption {
+  overflow-wrap: anywhere;
+}
+
+/* Keep the map in sight while planning and operating a journey. */
+#world-map-modes {
+  margin: 0.5rem 0;
+}
+
+#world-map-modes button[aria-pressed='true'] {
+  background: var(--selected);
+  border-color: var(--blue);
+  font-weight: 600;
+}
+
+#world-travel-owner:not(.travel-planning) .world-travel {
+  display: none;
+}
+
+.travel-planning .world-authoring {
+  display: none;
+}
+
+.travel-planning .world-map-columns {
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 0.7fr);
+}
+
+.travel-planning .world-travel {
+  margin: 0;
+  padding: 0.8rem;
+}
+
+.travel-planning .world-travel h3 {
+  margin: 0.2rem 0 0.7rem;
+}
+
+.travel-planning .world-travel label {
+  margin: 0.5rem 0 0.25rem;
+}
+
+.travel-planning .world-travel .combat-fields,
+.travel-planning .world-travel .time-fields {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+#travel-advanced {
+  margin: 0.65rem 0;
+}
+
+#travel-advanced summary {
+  cursor: pointer;
+}
+
+#travel-stops:empty {
+  display: none;
+}
+
+@media (min-width: 1101px) {
+  .travel-planning .world-map-canvas {
+    position: sticky;
+    top: var(--workspace-content-offset);
+  }
+}
+
+@media (max-width: 1100px) {
+  .travel-planning .world-map-columns {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 1100px) {
+  .travel-planning .world-map-canvas {
+    position: static;
+  }
+}
+
+#world-journey-console {
+  scroll-margin-top: var(--workspace-content-offset);
+}
+
+#world-journey-console > p:first-child {
+  font-weight: 600;
+}
+
+.travel-evaluation-facts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+  margin: 0.75rem 0;
+}
+
+.travel-evaluation-facts > div {
+  min-width: 0;
+  padding: 0.5rem;
+  border: 1px solid var(--line, #ccd6df);
+  border-radius: 0.35rem;
+}
+
+.travel-evaluation-facts dt {
+  font-size: 0.85rem;
+  overflow-wrap: anywhere;
+}
+
+.travel-evaluation-facts dd {
+  margin: 0.25rem 0 0;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 600px) {
+  .travel-evaluation-facts {
+    grid-template-columns: 1fr;
+  }
+}
+
+.dungeon-pace-member {
+  display: grid;
+  grid-template-columns: minmax(10rem, 1fr) minmax(8rem, 12rem) minmax(12rem, 2fr);
+  gap: 0.75rem;
+  align-items: center;
+  border-top: 1px solid var(--line);
+  padding: 0.6rem 0;
+}
+
+.dungeon-pace-member small {
+  overflow-wrap: anywhere;
+}
+
+#dungeon-pace-controls {
+  margin: 0.75rem 0;
+}
+
+#dungeon-pace-controls > label {
+  max-width: 24rem;
+}
+
+@media (max-width: 700px) {
+  .dungeon-pace-member {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 700px) {
+  .dungeon-pace-member small {
+    grid-column: 1/-1;
+  }
+}
+
+.dungeon-pace-member > label:first-child {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.dungeon-pace-member input[type='checkbox'] {
+  width: auto;
+  margin: 0;
+  flex: none;
+}
+
+#live-travel-host.live-travel-owner
+  :is(#world-map-new, #world-map-copy, .world-scene-selection, #travel-mode-edit) {
+  display: none;
+}
+
+#live-travel-host .world-map-selection {
+  flex-wrap: wrap;
+  display: block;
+}
+
+#live-travel-host .world-map-selection label {
+  display: block;
+}
+
+#live-travel-host .world-travel {
+  padding: 0.6rem 0;
+  border: 0;
+  background: transparent;
+}
+
+#live-travel-host :is(.toolbar, .map-canvas-controls) {
+  flex-wrap: wrap;
+}
+
+#live-travel-host .map-canvas-controls span {
+  display: none;
+}
+
+#live-travel-host .travel-evaluation-facts {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.3rem;
+}
+
+#live-travel-host .travel-evaluation-facts > div {
+  padding: 0.35rem;
+}
+
+#live-travel-host #travel-selected-hex {
+  padding: 0.4rem;
+  border-left: 3px solid var(--blue);
+}
+
+#live-travel-host .world-travel > h3 {
+  font-size: 1rem;
+}
+
+#live-travel-host #travel-stops {
+  padding-left: 1.3rem;
+}
+
+#live-travel-host #world-current {
+  white-space: normal;
+}
+
+#live-travel-map-open {
+  margin: 0.4rem 0;
+}
+
+#live-travel-weather {
+  margin-top: 0.5rem;
+}
+
+#live-travel-weather > summary {
+  font-weight: 600;
+}
+
+#live-travel-host.live-travel-owner {
+  min-width: 0;
+  font-size: 0.875rem;
+}
+
+#live-travel-host.live-travel-owner :is(button, input, select) {
+  min-height: 28px;
+  padding: 0.25rem 0.4rem;
+  font-size: inherit;
+}
+
+#live-travel-host.live-travel-owner p {
+  margin: 0.45rem 0;
+}
+
+#live-travel-host.live-travel-owner .world-travel > h3 {
+  margin: 0.5rem 0;
+}
+
+#live-travel-host.live-travel-owner .world-map-selection label {
+  margin: 0;
+}
+
+#live-travel-host.live-travel-owner .world-map-selection select {
+  max-width: 100%;
+}
+
+#live-travel-host.live-travel-owner #live-travel-context {
+  margin-top: 0;
+}
+
+#journey-feedback:not([hidden]) {
+  color: #a51c30;
+  font-weight: 600;
+  border-left: 3px solid currentColor;
+  padding: 0.4rem 0.5rem;
+  background: #fff;
+}
+
+#world-map[data-party-dragging='true'],
+#world-map[data-party-dragging='true'] [data-party-token] {
+  cursor: grabbing;
+}
+
+#world-map [data-placement-draft] {
+  stroke-dasharray: 5 3;
+}
+
+#travel-placement-status[data-error='true'] {
+  color: var(--error);
+  font-weight: 600;
+}
+
+#live-travel-host[data-shared-atlas='true'] .legacy-hex-camera,
+#live-travel-host[data-shared-atlas='true'] .world-map-selection {
+  display: none !important;
+}
+
+#live-atlas-local-travel {
+  margin: 0.75rem 0;
+}
+
+#live-atlas-local-travel .toolbar {
+  flex-wrap: wrap;
+}
+
+/* One GM Dungeon console, available beside either Live centre presentation. */
+#dungeon-travel-console {
+  border-top: 1px solid var(--line);
+  padding-top: 0.7rem;
+  margin-top: 0.8rem;
+}
+
+#dungeon-travel-console > summary {
+  font-weight: 700;
+  cursor: pointer;
+}
+
+#dungeon-travel-console #dungeon-edit {
+  display: none !important;
+}
+
+#dungeon-travel-console #dungeon-current-key {
+  margin: 0.7rem 0;
+  padding: 0.6rem;
+  border: 1px solid var(--line);
+}
+
+#dungeon-travel-console pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-family: inherit;
+}
+
+#dungeon-travel-console .toolbar {
+  flex-wrap: wrap;
+}
+
+#dungeon-travel-console input,
+#dungeon-travel-console select {
+  max-width: 100%;
+  min-width: 0;
+}
+
+#dungeon-travel-console #dungeon-pace-controls {
+  min-width: 0;
+}
+
+#dungeon-read-status:not(:empty) {
+  padding: 0.5rem;
+  background: var(--selected);
+}
+
+#dungeon-travel-controls[inert] {
+  opacity: 0.6;
+}

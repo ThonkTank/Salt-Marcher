@@ -3,6 +3,9 @@ export function liveInstance(module, document, window) {
   return {
     ...module,
     ...module.createLive({
+      // This fixture owns Live; tool navigation/output is qualified by its editor tests.
+      items: { renderSceneShops: async () => {} },
+      music: { refreshMusic: async () => {} },
       combat: combatInstance(module, document, window),
       roots: [
         'live',

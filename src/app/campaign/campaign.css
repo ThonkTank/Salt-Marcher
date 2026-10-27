@@ -1,0 +1,166 @@
+/* campaign/campaign.css — styles owned by this surface; shared controls live in shared/. */
+
+#campaign-manager-dialog,
+#campaign-transfer-dialog {
+  max-width: 850px;
+  max-height: 90vh;
+  overflow: auto;
+}
+
+.campaign-card pre {
+  max-height: 220px;
+  overflow: auto;
+  padding: 1rem;
+  background: #edf1f6;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 0.85rem;
+}
+
+.campaign-card select {
+  margin: 0.75rem 0;
+}
+
+#campaign-transfer-problems {
+  color: var(--error);
+  white-space: pre-wrap;
+}
+
+#campaign-screen-list,
+#campaign-trash-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
+  gap: 1rem;
+}
+
+#campaign-screen .toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.7rem;
+}
+
+#campaign-screen h2 {
+  margin-right: auto;
+}
+
+.campaign-card {
+  border-bottom: 1px solid var(--line);
+  padding: 1rem;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--white);
+  overflow-wrap: anywhere;
+}
+
+.campaign-card h3 {
+  margin: 0.2rem 0 0.8rem;
+}
+
+.campaign-card .toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+body.campaign-screen-open
+  :is(
+    #workspace-navigation,
+    main,
+    #live,
+    #catalog,
+    #preparation,
+    #world,
+    #city,
+    #dungeon,
+    #music,
+    #items,
+    #treasury,
+    #groups,
+    #autonomy,
+    #chronicle,
+    #music-mini,
+    #workspace-empty,
+    #workspace-tools,
+    #day-trigger,
+    #party-shortcut,
+    #narrative-journal-open,
+    #quick-reference-open,
+    #location-notebook-open,
+    #location-material-return
+  ) {
+  display: none !important;
+}
+
+body.campaign-screen-open {
+  padding-left: 0 !important;
+}
+
+body.campaign-screen-open #campaign-screen {
+  display: block;
+}
+
+#campaign-identity-dialog .toolbar,
+#campaign-trash-dialog > .toolbar,
+#campaign-delete-dialog .toolbar {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+#campaign-identity-dialog h2,
+#campaign-trash-dialog h2,
+#campaign-delete-dialog h2 {
+  margin-right: auto;
+}
+
+#campaign-screen {
+  max-width: 1400px;
+  padding: 1.5rem;
+  margin: 0 auto;
+  grid-column: 1/-1;
+}
+
+body.campaign-screen-open #campaign-header-name {
+  display: none;
+}
+
+body.campaign-screen-open #status {
+  grid-column: 1/-1;
+}
+
+#campaign-identity-dialog,
+#campaign-delete-dialog {
+  max-width: min(95vw, 36rem);
+}
+
+#campaign-trash-dialog {
+  max-width: min(95vw, 70rem);
+  width: 65rem;
+}
+
+body.campaign-screen-open #campaign-atlas {
+  display: none !important;
+}
+
+.campaign-search {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 1rem;
+  margin: 1rem 0;
+}
+
+.campaign-search label {
+  flex: 1;
+  max-width: 36rem;
+}
+
+.campaign-search p {
+  margin: 0.5rem 0;
+}
+
+#campaign-transfer-origin,
+#campaign-transfer-source {
+  overflow-wrap: anywhere;
+}

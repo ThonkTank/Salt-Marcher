@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 """Own native UI children, including Electron's detached process sessions."""
 import os
+import json
+from pathlib import Path
+import tempfile
 import signal
 import subprocess
 import sys
@@ -41,9 +44,23 @@ def signal_owned(group, signum):
         except ProcessLookupError:
             pass
 
+# Sessions register exact success paths here, including custom result names.
+# This registry belongs to one wrapper invocation and is removed on exit.
+registry = tempfile.TemporaryDirectory(prefix='saltmarcher-ui-evidence-')
+os.environ['CODEX_UI_EVIDENCE_REGISTRY'] = registry.name
 child = None
+code = 1
+cleaning = False
+interruption_requested = False
 
 def interrupted(signum, frame):
+    global interruption_requested, code
+    if interruption_requested:
+        return
+    interruption_requested = True
+    if cleaning:
+        code = 130
+        return
     raise KeyboardInterrupt
 
 signal.signal(signal.SIGINT, interrupted)
@@ -54,7 +71,12 @@ try:
 except KeyboardInterrupt:
     code = 130
 finally:
+    cleaning = True
     if child is not None:
+        leaked = list(owned_processes(child.pid))
+        if leaked and code == 0:
+            code = 1
+            print('Native wrapper found surviving owned processes: '+str(leaked), file=sys.stderr)
         signal_owned(child.pid, signal.SIGTERM)
         try:
             child.wait(timeout=3)
@@ -68,4 +90,32 @@ finally:
         deadline=time.monotonic()+1
         while any(owned_processes(child.pid)) and time.monotonic()<deadline:
             time.sleep(.02)
+        remaining = list(owned_processes(child.pid))
+        if remaining:
+            code = 1
+            print('Native cleanup incomplete: '+str(remaining), file=sys.stderr)
+    if code != 0:
+        files = set()
+        for record in Path(registry.name).glob('*.json'):
+            try:
+                value = json.loads(record.read_text())
+                files.add(Path(value['file']))
+            except (OSError, ValueError, KeyError, TypeError):
+                pass
+        for variable in ('QA_EVIDENCE_DIR', 'GM_QA_OUT'):
+            if os.environ.get(variable):
+                files.add(Path(os.environ[variable]).resolve() / 'result.json')
+        for result in files:
+            try:
+                result.unlink(missing_ok=True)
+                result.parent.mkdir(parents=True, exist_ok=True)
+                (result.parent / 'wrapper-failure.json').write_text(json.dumps({
+                    'exitCode': code,
+                    'invalidatedSuccess': str(result),
+                    'leakedOwnedPids': leaked if child is not None else [],
+                    'remainingOwnedPids': remaining if child is not None else [],
+                }, indent=2))
+            except OSError as error:
+                print('Cannot invalidate native success '+str(result)+': '+str(error), file=sys.stderr)
+    registry.cleanup()
 sys.exit(code)

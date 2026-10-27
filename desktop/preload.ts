@@ -381,7 +381,16 @@ contextBridge.exposeInMainWorld(
     cancelAudioTransfer: () => ipcRenderer.invoke('music:cancel'),
     onAudioTransfer: (
       callback: (p: import('../src/app/runtime/music-contracts').AudioTransferProgress) => void,
-    ) => ipcRenderer.on('music:progress', (_event, p) => callback(p)),
+    ) => {
+      const listener = (
+        _event: Electron.IpcRendererEvent,
+        p: import('../src/app/runtime/music-contracts').AudioTransferProgress,
+      ) => callback(p);
+      ipcRenderer.on('music:progress', listener);
+      return () => {
+        ipcRenderer.removeListener('music:progress', listener);
+      };
+    },
     dungeonCommandState: (command: import('../src/app/atlas/dungeon-contracts').DungeonCommand) =>
       ipcRenderer.invoke('dungeon:command-state', command),
     dungeonAuthoring: (token: string) => ipcRenderer.invoke('dungeon:authoring', token),

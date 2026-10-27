@@ -1,0 +1,286 @@
+/* runtime/treasure.css — styles owned by this surface; shared controls live in shared/. */
+
+#reward-panel {
+  margin-top: 1.5rem;
+  padding: 1.25rem;
+  background: #f7f9fc;
+  border: 1px solid var(--line);
+}
+
+#reward-panel > .preparation-columns {
+  gap: 1.25rem;
+}
+
+#reward-panel details {
+  margin: 1rem 0;
+}
+
+#reward-panel .combat-fields {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.treasure-distribution-dialog {
+  width: min(1400px, 95vw);
+  max-width: min(1400px, 95vw);
+}
+
+#distribution-people {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 12px 0;
+}
+
+#distribution-grid {
+  overflow: auto;
+  margin: 16px 0;
+}
+
+#distribution-grid table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+#distribution-grid th,
+#distribution-grid td {
+  padding: 10px;
+  border-bottom: 1px solid var(--border, #aaa);
+  vertical-align: top;
+}
+
+#distribution-grid input {
+  width: 100px;
+}
+
+#distribution-grid td:first-child {
+  min-width: 190px;
+}
+
+#distribution-grid td:last-child {
+  min-width: 190px;
+}
+
+.distribution-invalid {
+  background: #ffe5e5;
+}
+
+#distribution-review {
+  padding: 16px;
+  border: 1px solid var(--border, #aaa);
+  border-radius: 8px;
+  margin: 16px 0;
+}
+
+#treasury-allocated {
+  white-space: pre-wrap;
+}
+
+#treasury {
+  padding: 1.25rem;
+  max-width: 1500px;
+  margin: auto;
+}
+
+#treasury > .preparation-columns {
+  grid-template-columns: minmax(15rem, 22rem) minmax(0, 1fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+#treasury-editor {
+  min-width: 0;
+}
+
+#treasury-draft-status {
+  min-height: 3.2em;
+  margin: 0.5rem 0;
+}
+
+#treasury-actions {
+  position: sticky;
+  top: var(--workspace-header-height, 64px);
+  z-index: 3;
+  padding: 0.55rem 0;
+  background: #edf1f6;
+  border-bottom: 1px solid var(--line);
+}
+
+.treasury-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 0.75rem;
+}
+
+.treasury-fields > label:first-child {
+  grid-column: 1/-1;
+}
+
+#treasury-catalog-picker {
+  margin: 0.75rem 0;
+  padding: 0.65rem;
+  border: 1px solid var(--line);
+  background: #f7f9fc;
+}
+
+#treasury-catalog-form {
+  display: flex;
+  gap: 0.5rem;
+  align-items: end;
+}
+
+#treasury-catalog-form label {
+  flex: 1;
+  margin: 0.5rem 0 0;
+  min-width: 0;
+}
+
+#treasury-catalog-results {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin-top: 0.5rem;
+  max-height: 14rem;
+  overflow: auto;
+}
+
+#treasury .reward-item-row {
+  margin: 0 0 0.75rem;
+  padding: 0.65rem;
+  border: 1px solid var(--line);
+  grid-template-columns: minmax(0, 1fr) 6rem auto;
+  gap: 0.3rem 0.6rem;
+  align-items: center;
+}
+
+#treasury .reward-item-row .reward-item-facts {
+  grid-column: auto;
+}
+
+#treasury .reward-item-row > legend {
+  overflow-wrap: anywhere;
+}
+
+#treasury .reward-item-row > button {
+  align-self: center;
+}
+
+@media (max-width: 1050px) {
+  #treasury > .preparation-columns {
+    grid-template-columns: minmax(13rem, 17rem) minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 1050px) {
+  #treasury .reward-item-row {
+    grid-template-columns: minmax(0, 1fr) 6rem;
+  }
+}
+
+@media (max-width: 1050px) {
+  #treasury .reward-item-row > button {
+    grid-column: 1/-1;
+  }
+}
+
+@media (max-width: 850px) {
+  #treasury > .preparation-columns {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 850px) {
+  .treasury-fields {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 850px) {
+  #treasury-actions {
+    position: static;
+  }
+}
+
+.reward-item-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.reward-item-row label {
+  margin: 0;
+  min-width: 0;
+}
+
+.reward-item-row input,
+.reward-item-row select {
+  margin: 0;
+  width: 100%;
+}
+
+.reward-item-row .reward-item-facts {
+  grid-column: 1/-1;
+  margin: 0;
+  font-size: 0.85rem;
+  color: #4b6074;
+}
+
+.reward-item-row > button {
+  align-self: end;
+  justify-self: start;
+}
+
+#ledger-character-heading {
+  scroll-margin-top: calc(var(--workspace-content-offset) + var(--live-sticky-height));
+}
+
+/* A member's loot action keeps the allocation workspace behind the explicit return. */
+#reward-panel.is-personal-loot > .preparation-columns {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+#reward-panel.is-personal-loot > .preparation-columns > section:first-child {
+  display: none;
+}
+
+#ledger-stack-tools {
+  max-width: 38rem;
+}
+
+#distribution-receipt article {
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--border, #ccd3db);
+}
+
+#distribution-receipt h4 {
+  margin: 0.5rem 0;
+}
+
+#ledger-editor {
+  scroll-margin-top: var(--workspace-content-offset);
+}
+
+.ledger-transfer-fields {
+  display: grid;
+  grid-template-columns: 5rem minmax(8rem, 1fr) minmax(10rem, 1fr);
+  gap: 0.75rem;
+}
+
+.ledger-transfer-fields[data-operation='split'] {
+  grid-template-columns: 5rem minmax(10rem, 1fr);
+}
+
+.ledger-transfer-fields[data-operation='merge'] {
+  grid-template-columns: minmax(8rem, 1fr) minmax(10rem, 1fr);
+}
+
+.ledger-transfer-fields :is(input, select) {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+@media (max-width: 650px) {
+  .ledger-transfer-fields,
+  .ledger-transfer-fields[data-operation] {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

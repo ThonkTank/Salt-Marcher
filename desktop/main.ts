@@ -1,3 +1,4 @@
+import { reportError } from './error-diagnostics';
 import { app, BrowserWindow, dialog, ipcMain, protocol } from 'electron';
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
@@ -8,6 +9,7 @@ import { registerAtlasHost } from './atlas-host';
 import { clearCampaignStaging } from './campaign-erasure';
 import { registerCampaignHost } from './campaign-host';
 import { registerCatalogHost } from './catalog-host';
+import { connectDevelopment } from './development';
 import { HostIpc } from './host-ipc';
 import { registerMediaHost } from './media-host';
 import { registerPlayerHost } from './player-host';
@@ -19,6 +21,7 @@ import { UpdateService } from './update-service';
 import { registerUpdatesHost } from './updates-host';
 import { registerWorkspaceHost } from './workspace-host';
 declare const __APP_VERSION__: string;
+declare const __SALT_DEV__: boolean;
 app.setName('SaltMarcher');
 const dataFlag = process.argv.indexOf('--data-dir');
 const dataDir =
@@ -35,6 +38,7 @@ protocol.registerSchemesAsPrivileged([
 ]);
 if (!app.requestSingleInstanceLock()) app.quit();
 else {
+  let development: ReturnType<typeof connectDevelopment> = null;
   let win: BrowserWindow;
   let store: StoreClient;
   let closeAllowed = false;
@@ -69,6 +73,7 @@ else {
       });
       await updatesService.init();
       store = new StoreClient(path.join(dataDir, 'workbench.sqlite'), __APP_VERSION__);
+      store.on('failure', (error) => reportError(error, { phase: 'store-lifecycle' }));
       await store.ready;
       await clearProjectionWork(path.join(dataDir, 'atlas-region-cache'));
       await clearCorruptAtlasTileCaches(path.join(dataDir, 'atlas-region-cache'));
@@ -180,11 +185,13 @@ else {
         await updateRuntime!.close();
         closeAllowed = true;
         ipcMain.removeListener('campaign:close-ready', closeReady);
+        development?.closed(ended.databaseClosed);
         app.quit();
       }
       function closeReady(event: Electron.IpcMainEvent) {
         if (ipc.trusted(event))
           void finishClose().catch((error) => {
+            reportError(error, { phase: 'host-close' });
             dialog.showErrorBox('Schließen fehlgeschlagen', String(error));
           });
       }
@@ -204,7 +211,8 @@ else {
             () => {
               backupError = null;
             },
-            () => {
+            (error) => {
+              reportError(error, { phase: 'background-backup' });
               backupError =
                 'Wiederherstellungskopie fehlgeschlagen. Die gespeicherten Änderungen liegen im Arbeitsstore.';
             },
@@ -218,6 +226,8 @@ else {
         player.close();
       });
       await win.loadURL(origin);
+      if (typeof __SALT_DEV__ !== 'undefined' && __SALT_DEV__)
+        development = connectDevelopment(win, root);
       app.on('before-quit', (event) => {
         if (!closeAllowed && win && !win.isDestroyed()) {
           event.preventDefault();
@@ -226,7 +236,7 @@ else {
       });
     })
     .catch((error) => {
-      console.error(error);
+      reportError(error, { phase: 'host-start' });
       dialog.showErrorBox('SaltMarcher kann nicht starten', String(error));
       app.exit(1);
     });

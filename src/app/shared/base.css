@@ -1,0 +1,47 @@
+/* shared/base.css — styles owned by this surface; shared controls live in shared/. */
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding-bottom: var(--workspace-footer-height, 58px);
+}
+
+:root {
+  font-family: 'Noto Sans', sans-serif;
+  color: #243449;
+  background: #edf1f6;
+  font-size: 15px;
+  --ink: #243449;
+  --blue: #305e88;
+  --line: #b1c0d0;
+  --white: #fff;
+  --selected: #cee0ed;
+  --error: #9a2838;
+  --workspace-content-offset: calc(var(--workspace-header-height, 64px) + 1rem);
+}
+
+@media (max-width: 850px) {
+  :root {
+    --workspace-content-offset: calc(var(--workspace-header-height, 64px) + 3.5rem);
+  }
+}
+
+:root {
+  --workspace-content-offset: calc(
+    var(--workspace-header-height, 64px) + var(--workspace-nav-height, 0px) + 1rem
+  );
+  --live-sticky-height: 0px;
+}
+
+@media (min-height: 740px) {
+  :root {
+    --live-sticky-height: var(--live-focus-height, 0px);
+  }
+}
+
+html {
+  scroll-padding-bottom: calc(var(--workspace-footer-height, 58px) + 1rem);
+}

@@ -22,13 +22,7 @@ buildSync({
   format: 'cjs',
 });
 const { CampaignStore } = require('../../.build/region-store.cjs'),
-  {
-    hexPolygon,
-    hexSize,
-    HEX_METERS,
-    earthView,
-    effectiveLandscape,
-  } = require('../../.build/region-model.cjs');
+  { earthView, effectiveLandscape } = require('../../.build/region-model.cjs');
 function fixture(t) {
   const dir = mkdtempSync(tmpdir() + '/atlas-region-');
   let store = new CampaignStore(dir + '/campaign.sqlite');
@@ -59,25 +53,27 @@ function fixture(t) {
   });
   return result;
 }
+const polygon = (radius) => ({
+  outer: [
+    { x: -radius, y: -radius * 0.7 },
+    { x: radius * 0.8, y: -radius },
+    { x: radius, y: radius * 0.6 },
+    { x: -radius * 0.4, y: radius },
+  ],
+  holes: [],
+});
 const patch = (values, level = 0) => ({
   id: randomUUID(),
   revision: 0,
   kind: 'patch',
   name: 'Gelände',
   points: [],
-  polygons: [hexPolygon(0, 0, hexSize(level))],
-  resolution: hexSize(level),
+  polygons: [polygon(level ? 7000 : 2400)],
+  resolution: level ? 7000 : 2400,
   width: 0,
   values,
 });
-test('3 miles across flats, factor three and an Earth-size overview at all window aspects', () => {
-  const h = hexPolygon(0, 0, HEX_METERS);
-  assert(
-    Math.abs(
-      Math.max(...h.outer.map((p) => p.x)) - Math.min(...h.outer.map((p) => p.x)) - 4828.032,
-    ) < 1e-8,
-  );
-  for (let i = 0; i < 8; i++) assert(Math.abs(hexSize(i + 1) / hexSize(i) - 3) < 1e-12);
+test('Earth-size overview preserves every window aspect without terrain cell sizes', () => {
   for (const aspect of [0.6, 1, 2.2]) {
     const b = earthView(aspect);
     assert(b.width >= 4e7 && b.height >= 2e7);
@@ -101,8 +97,8 @@ test('property inheritance, partial reset, shared undo/redo and Fresh preserve f
   f.write({ kind: 'landscape-put', record: { ...fine, id: randomUUID() }, expectedRevision: null });
   f.write({
     kind: 'landscape-reset',
-    polygons: [hexPolygon(0, 0, 100)],
-    resolution: HEX_METERS,
+    polygons: [polygon(100)],
+    resolution: 2400,
     field: 'terrain',
   });
   assert.equal(effectiveLandscape(f.records(), { x: 0, y: 0 }).terrain, 'water');

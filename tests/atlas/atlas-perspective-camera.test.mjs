@@ -25,7 +25,6 @@ const {
   TerrainSpatialView,
   TerrainRing,
   TerrainRouteVisibility,
-  TerrainHexGrid,
   AtlasSpatialLabels,
   THREE,
   ATLAS_CAMERA_FOV,

@@ -32,6 +32,6 @@ Indizes und Caches dürfen unabhängig davon neu aufgebaut werden.
 ## Reproduzierbare Lastdaten
 
 `node tools/create-atlas-mixed-fixture.mjs tests/fixtures/atlas/mixed-world.sqlite.gz`
-erzeugt die große Mischwelt aus einem frischen Store. Kleine native Proben legen
+erzeugt die große Mischwelt aus der gebundenen historischen Testquelle neu und ersetzt deren alte Gelände-Zellen durch freie kontinuierliche Flächen. Die Herkunft und alle übrigen kanonischen Inhalte bleiben prüfsummengebunden. Kleine native Proben legen
 eigene Profile an. Archiv-Rundlauf, Undo/Redo und frische Wiederöffnung werden am
 aktuellen Format geprüft; alte Formate erhalten Ablehnungstests.

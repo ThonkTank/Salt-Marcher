@@ -402,7 +402,7 @@ verpflichtend gemacht.
 | Gruppe | Zu erhaltende Werkzeuge und Abläufe | Fachquelle |
 | --- | --- | --- |
 | Navigation und Auswahl | Zoomen am Weltpunkt, Schieben, Rücksprung, Übersicht, Suche, präzise/mehrdeutige Treffer, Griffe, Größenvergleich, Maße und Einheiten, 200 % | HEX-05/08/22, [Darstellungsregeln](rendering.md) |
-| Land und Daten | Formen, Glätten, Bodenfarbe, Geländeeigenschaften, Hexfüllung, Zurücksetzen, Maßstabswahl, Meeresspiegel | HEX-06/16, [Relief](../requirements/terrain-relief.md) |
+| Land und Daten | Formen, Glätten, Bodenfarbe, Geländeeigenschaften, kontinuierliche Pinselstriche, Zurücksetzen, Maßstabswahl, Meeresspiegel | HEX-06/16, [Relief](../requirements/terrain-relief.md) |
 | Bewuchs | Landschaft malen/umgrenzen, Baumreihe, Freihalten, Ausdünnen, Verdichten, Einzelbaum/Felsen, Einzelkorrektur/Auswahl | HEX-18, [Bewuchs](../requirements/vegetation.md) |
 | Gewässer und Trassen | Wasser setzen/entfernen/färben/radieren, Fluss und Straße zeichnen, Geländeprofil und Verlauf korrigieren | HEX-14/15/17, [Trassen](../contract/terrain-routes.md), [Landschaftswerkzeuge](../contract/landscape-tools.md) |
 | Regionen und Namen | Regionenpinsel, Grenzen und Hierarchie, freie/gebundene Namen, Stil/Anker, Orte und Schlüssel | HEX-20, [Kartografie](../contract/atlas-cartography.md) |

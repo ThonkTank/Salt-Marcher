@@ -1,0 +1,82 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { inspectNativeProbe, nativeProbeInventory } from '../../tools/native-probes.mjs';
+test('every current native entry has a classified process owner', () => {
+  const entries = nativeProbeInventory(process.cwd());
+  assert(entries.length > 100);
+  assert.deepEqual(
+    entries.filter((entry) => entry.errors.length),
+    [],
+  );
+  assert.equal(entries.filter((entry) => entry.kind === 'historical').length, 1);
+});
+test('unregistered direct starters and local cleanup cannot silently enter product qualification', () => {
+  assert(
+    inspectNativeProbe('tools/test-desktop-new.mjs', 'await _electron.launch({});').errors.length,
+  );
+  assert(
+    inspectNativeProbe(
+      'tools/test-desktop-new.mjs',
+      "import {createNativeSession} from './native-session.mjs'; await app.close();",
+    ).errors.length,
+  );
+  assert.deepEqual(
+    inspectNativeProbe(
+      'tools/test-desktop-new.mjs',
+      "import {runNativeProbe} from './native-session.mjs';",
+    ).errors,
+    [],
+  );
+});
+test('baseline wrappers require their registered process owner', () => {
+  assert(
+    inspectNativeProbe('tools/test-desktop-baseline.mjs', 'spawn(command,args)').errors.length,
+  );
+  assert.deepEqual(
+    inspectNativeProbe(
+      'tools/test-desktop-baseline.mjs',
+      "import {stopOwnedChild} from './native-process.mjs'; spawn(command,args)",
+    ).errors,
+    [],
+  );
+});
+
+test('special protocols require their shared process primitives; historical status is explicit', () => {
+  assert(
+    inspectNativeProbe('tools/test-desktop-updates.mjs', 'await _electron.launch({});').errors
+      .length,
+  );
+  assert.equal(
+    inspectNativeProbe('tools/test-desktop-relief-prototype.mjs', 'await _electron.launch({});')
+      .kind,
+    'historical',
+  );
+  assert(
+    inspectNativeProbe('tools/test-desktop-baseline.mjs', 'await _electron.launch({});').errors
+      .length,
+  );
+});
+
+test('an unused session import cannot mask independent child spawning or termination', () => {
+  const imported = "import {runNativeProbe} from './native-session.mjs';\n";
+  for (const control of [
+    'spawn(executable,args)',
+    'spawnSync(executable,args)',
+    'fork(file)',
+    'child.kill()',
+    'process.kill(pid, 15)',
+    'app.evaluate(({app})=>app.exit(0))',
+    'app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].close())',
+  ])
+    assert(
+      inspectNativeProbe('tools/test-desktop-unowned.mjs', imported + control).errors.length,
+      control,
+    );
+  assert.deepEqual(
+    inspectNativeProbe(
+      'tools/test-desktop-owned.mjs',
+      imported + 'assert.throws(()=>process.kill(pid,0))',
+    ).errors,
+    [],
+  );
+});

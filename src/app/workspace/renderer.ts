@@ -26,7 +26,7 @@ import { createPreparation } from '../campaign/preparation';
 import { LocationNotebook } from '../campaign/location-notebook-ui';
 import { WorldLinksWorkbench } from '../campaign/world-links-ui';
 import { CampaignAgenda } from '../runtime/agenda-ui';
-import { activateSoundboard, initSoundboard } from '../runtime/live-soundboard-ui';
+import { createSoundboard } from '../runtime/live-soundboard-ui';
 import {
   activateQuickReference,
   initQuickReference,
@@ -40,14 +40,7 @@ import {
 } from '../campaign/session-packet-ui';
 import { activatePartyTopbar, initPartyTopbar } from '../runtime/party-topbar-ui';
 import { activateDayCalculator, initDayCalculator } from '../runtime/adventuring-day-ui';
-import {
-  createNpcAtLocation,
-  initNpcs,
-  openNpcProfile,
-  openNpcs,
-  prepareNpcLocation,
-  setNpcPlaceNavigation,
-} from '../campaign/npc-ui';
+import { createNpcEditor } from '../campaign/npc-ui';
 import {
   createGroupAtLocation,
   initGroups,
@@ -64,6 +57,7 @@ import { initGraph, refreshOpenGraph } from '../atlas/graph-ui';
 import { initKeys, openNoteRoomKey, openRoomKey, setKeyReferenceStatus } from '../campaign/key-ui';
 import { initPaths } from '../atlas/path-ui';
 import { initCommitControls } from '../shared/commit-confirmation';
+import * as commits from '../shared/commit-confirmation';
 import { initVolume } from '../atlas/volume-ui';
 import { DungeonBinder } from '../atlas/dungeon-binder-ui';
 import { initDungeon, openDungeon, selectDungeonRoom } from '../atlas/dungeon-ui';
@@ -72,7 +66,7 @@ import { initAutonomy, openAutonomy } from '../runtime/autonomy-ui';
 import { deactivatePlayer, initPlayerUI } from '../runtime/player-ui';
 import { initCity, openCity, prepareCityPersonBinding } from '../atlas/city-ui';
 import { initCampaignActions, initCampaignManager } from '../campaign/campaign-manager-ui';
-import { initMusic, openMusic } from '../runtime/music-ui';
+import { createMusicEditor } from '../runtime/music-ui';
 import {
   initWorld,
   openWorld,
@@ -80,13 +74,7 @@ import {
   setWorldSurface,
   stopWorldPlayback,
 } from '../runtime/world-ui';
-import {
-  createShopAtLocation,
-  initItems,
-  openItemReference,
-  openItems,
-  prepareShopLocation,
-} from '../catalog/items-ui';
+import { createItemsEditor } from '../catalog/items-ui';
 import { type Result, type WorkspaceGeometry } from '../shared/contracts';
 import { createLive } from '../runtime/live';
 import { initTutorial } from './tutorial';
@@ -232,7 +220,29 @@ const combatEditor = createCombat({
 });
 const { openExistingCombat } = combatEditor;
 el('combat-resume').onclick = () => combatEditor.revealCombat();
+const npcEditor = createNpcEditor({ roots: [el('groups')], api });
+const {
+  createNpcAtLocation,
+  initNpcs,
+  openNpcProfile,
+  openNpcs,
+  prepareNpcLocation,
+  setNpcPlaceNavigation,
+} = npcEditor;
+const musicEditor = createMusicEditor({ roots: [el('music'), el('music-mini')], api });
+const { initMusic, openMusic } = musicEditor;
+const itemsEditor = createItemsEditor({ roots: [el('items')], api, commits, refreshProgress });
+const { createShopAtLocation, initItems, openItemReference, openItems, prepareShopLocation } =
+  itemsEditor;
+const soundboard = createSoundboard({
+  roots: [el('running-editor'), el('music-mini')],
+  api,
+  music: musicEditor,
+});
+const { activateSoundboard, initSoundboard } = soundboard;
 const liveEditor = createLive({
+  items: itemsEditor,
+  music: musicEditor,
   combat: combatEditor,
   roots: [
     'live',
@@ -293,6 +303,9 @@ const {
   useLiveReferenceReadAloud,
 } = liveEditor;
 const editors = createWorkspaceEditors({
+  npcs: npcEditor,
+  music: musicEditor,
+  items: itemsEditor,
   combat: combatEditor,
   live: liveEditor,
   preparation: preparationEditor,

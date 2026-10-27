@@ -8,7 +8,7 @@ import {
   type LivePacketSource,
 } from '../campaign/session-packet-ui';
 import type { EncounterPlan } from '../catalog/encounter-contracts';
-import { renderSceneShops } from '../catalog/items-ui';
+import type { ItemsEditor } from '../catalog/items-ui';
 import {
   activateRuleReferences,
   initRuleReferences,
@@ -47,7 +47,7 @@ import { createLiveSessionReaders } from './live-session-readers';
 import { liveActionUpdatesRecap, liveSessionRecap } from './live-session-recap';
 import { createLiveSessionResumeUI } from './live-session-resume-ui';
 import { LiveTimeControls } from './live-time-controls';
-import { refreshMusic } from './music-ui';
+import type { MusicEditor } from './music-ui';
 import { partySceneLabels } from './party-overview';
 import { openPartyRest } from './party-topbar-ui';
 import { cuePlayer, cuePlayerImage } from './player-ui';
@@ -72,6 +72,8 @@ import { TimeNavigator } from './time-plan-ui';
 import { openTreasureDistribution } from './treasury-ui';
 import { renderLiveWorld } from './world-ui';
 export type LiveHost = {
+  items: Pick<ItemsEditor, 'renderSceneShops'>;
+  music: Pick<MusicEditor, 'refreshMusic'>;
   combat: CombatEditor;
   roots: readonly HTMLElement[];
   dialogHost: HTMLElement;
@@ -93,6 +95,8 @@ export type LiveHost = {
 };
 
 export function createLive(host: LiveHost) {
+  const { renderSceneShops } = host.items;
+  const { refreshMusic } = host.music;
   const {
     reinforceWorldGroup,
     prepareGeneratedCombat,

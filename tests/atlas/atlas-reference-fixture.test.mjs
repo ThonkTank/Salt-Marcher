@@ -30,7 +30,7 @@ buildSync({
 });
 const { CampaignStore } = require('../../.build/reference-fixture-store.cjs');
 
-test('complete reference world retains every original canonical row through current-store reopen', () => {
+test('complete reference world retains every current canonical row through current-store reopen', () => {
   const dir = mkdtempSync(join(tmpdir(), 'atlas-reference-test-')),
     file = join(dir, 'world.sqlite');
   let store;
@@ -77,6 +77,8 @@ test('native map oracle accepts its baseline and rejects the formerly passing wa
     readFileSync(new URL('../fixtures/atlas/reference-images/manifest.json', import.meta.url)),
   );
   assert.equal(images.sourceCommit, manifest.sourceCommit);
+  assert.equal(images.model, manifest.model);
+  assert.equal(images.fixtureSha256, manifest.fixtureSha256);
   for (const view of images.views) {
     const bytes = readFileSync(
       new URL(`../fixtures/atlas/reference-images/width-${view.target}.png`, import.meta.url),
@@ -87,36 +89,62 @@ test('native map oracle accepts its baseline and rejects the formerly passing wa
     readFileSync(new URL('../fixtures/atlas/reference-images/width-32768.png', import.meta.url)),
   );
   const baseline = assertReferenceMapImage(expected, expected);
+  for (const [key, minimum] of Object.entries({
+    land: 1000,
+    forest: 100,
+    forestTexture: 100,
+    road: 100,
+    marker: 4,
+  }))
+    assert(baseline.populations[key].expected >= minimum, `Frozen oracle lacks visible ${key}`);
   const shaded = { ...expected, data: Buffer.from(expected.data) };
   for (let i = 0; i < shaded.data.length; i += 4)
-    if ([159, 167, 129].every((v, c) => Math.abs(expected.data[i + c] - v) <= 4))
+    if ([154, 174, 129].every((v, c) => Math.abs(expected.data[i + c] - v) <= 4))
       for (let c = 0; c < 3; c++) shaded.data[i + c] = Math.round(shaded.data[i + c] * 0.88);
   const accepted = assertReferenceMapImage(shaded, expected);
   assert(
     accepted.populations.forest.actual >= baseline.populations.forest.expected * 0.95,
     'shading retains the frozen forest footprint',
   );
+  for (const shade of [1, 0.88]) {
+    const flat = { ...expected, data: Buffer.from(expected.data) };
+    for (let i = 0; i < flat.data.length; i += 4)
+      if (expected.data[i + 1] > expected.data[i] && expected.data[i + 1] > expected.data[i + 2])
+        flat.data.set(
+          [154, 174, 129].map((v) => Math.round(v * shade)),
+          i,
+        );
+    assert.throws(
+      () => assertReferenceMapImage(flat, expected),
+      /Visible forest texture missing/,
+      'Flat forest fill must not replace canopy texture',
+    );
+  }
   const blendedRoad = { ...expected, data: Buffer.from(expected.data) };
   for (let i = 0; i < blendedRoad.data.length; i += 4)
-    if ([163, 126, 81].every((v, c) => Math.abs(expected.data[i + c] - v) <= 4)) {
-      blendedRoad.data.set([160, 133, 90], i);
+    if ([168, 130, 75].every((v, c) => Math.abs(expected.data[i + c] - v) <= 4)) {
+      blendedRoad.data.set([165, 134, 83], i);
     }
   assertReferenceMapImage(blendedRoad, expected);
   // A road replaced by its forest background must fail even when that
   // background is shaded; the widened brown palette cannot mask its loss.
   for (let i = 0; i < blendedRoad.data.length; i += 4)
-    if ([163, 126, 81].every((v, c) => Math.abs(expected.data[i + c] - v) <= 4))
+    if ([168, 130, 75].every((v, c) => Math.abs(expected.data[i + c] - v) <= 4))
       blendedRoad.data.set([140, 147, 114], i);
   assert.throws(() => assertReferenceMapImage(blendedRoad, expected), /Visible road missing/);
   for (const color of [
     [238, 229, 207],
-    [159, 167, 129],
-    [163, 126, 81],
+    [154, 174, 129],
+    [168, 130, 75],
     [91, 67, 56],
   ]) {
     const missing = { ...expected, data: Buffer.from(expected.data) };
     for (let i = 0; i < missing.data.length; i += 4)
-      if (color.every((v, c) => Math.abs(expected.data[i + c] - v) <= 4)) {
+      if (
+        color[0] === 154
+          ? expected.data[i + 1] > expected.data[i] && expected.data[i + 1] > expected.data[i + 2]
+          : color.every((v, c) => Math.abs(expected.data[i + c] - v) <= 4)
+      ) {
         missing.data[i] = 129;
         missing.data[i + 1] = 168;
         missing.data[i + 2] = 185;
@@ -124,6 +152,7 @@ test('native map oracle accepts its baseline and rejects the formerly passing wa
     assert.throws(
       () => assertReferenceMapImage(missing, expected),
       /Reference map changed|Visible .* missing/,
+      'Removing visible palette ' + color.join(','),
     );
   }
   const blank = { ...expected, data: Buffer.from(expected.data) };

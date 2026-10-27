@@ -2,18 +2,19 @@ import { rawDailyPlan, readDailyPlanRaw, readDailyOverridesRaw } from './npc-dai
 import type { NpcDailyRaw, NpcDailyOverrideRaw } from './npc-daily-plan';
 import type { FantasyCalendar } from '../runtime/world-contracts';
 import { calendarDate } from '../runtime/world-model';
-const node = <K extends keyof HTMLElementTagNameMap>(tag: K, text?: string) => {
-  const e = document.createElement(tag);
-  if (text !== undefined) e.textContent = text;
-  return e;
-};
 export function drawNpcDailyPlan(
   input: HTMLInputElement,
   overrideInput: HTMLInputElement,
   calendar: FantasyCalendar,
   locations: { id: string; name: string }[] = [],
 ) {
-  let root = document.getElementById('npc-daily-plan');
+  const document = input.ownerDocument;
+  const node = <K extends keyof HTMLElementTagNameMap>(tag: K, text?: string) => {
+    const e = document.createElement(tag);
+    if (text !== undefined) e.textContent = text;
+    return e;
+  };
+  let root = input.parentElement!.parentElement!.querySelector<HTMLElement>('#npc-daily-plan');
   if (!root) {
     root = node('section');
     root.id = 'npc-daily-plan';
@@ -52,7 +53,7 @@ export function drawNpcDailyPlan(
     },
     emit = () => {
       sync();
-      input.dispatchEvent(new Event('input', { bubbles: true }));
+      input.dispatchEvent(new document.defaultView!.Event('input', { bubbles: true }));
     },
     redraw = () => drawNpcDailyPlan(input, overrideInput, calendar, locations);
   const newSlot = () =>
@@ -202,7 +203,7 @@ export function drawNpcDailyPlan(
     rows.push(newSlot());
     emit();
     redraw();
-    document
+    root!
       .querySelector<HTMLElement>('#npc-daily-base fieldset:last-of-type')
       ?.scrollIntoView({ block: 'center' });
   };
@@ -300,7 +301,7 @@ export function drawNpcDailyPlan(
     overrides.push({ day: '', label: 'Ruhetag', slots: [] });
     emit();
     redraw();
-    document
+    root!
       .querySelector<HTMLElement>('#npc-daily-overrides section:last-child')
       ?.scrollIntoView({ block: 'center' });
   };

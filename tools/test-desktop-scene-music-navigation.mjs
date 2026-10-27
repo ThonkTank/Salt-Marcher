@@ -298,12 +298,10 @@ try {
       await input.press(intensity === 20 ? 'Home' : 'End');
       for (let i = 0; i < 20; i++) await input.press(intensity === 20 ? 'ArrowRight' : 'ArrowLeft');
       await page.getByRole('button', { name: 'Szenenmusik speichern', exact: true }).click();
-      await until(
-        () =>
-          JSON.parse(
-            db.prepare('SELECT payload FROM scene_music WHERE scene_id=?').get(scene.id).payload,
-          ).intensity === intensity,
-      );
+      await until(() => {
+        const saved = db.prepare('SELECT payload FROM scene_music WHERE scene_id=?').get(scene.id);
+        return !!saved && JSON.parse(saved.payload).intensity === intensity;
+      });
     }
     async function select(name) {
       const id = originalAssets.find((r) => JSON.parse(r.payload).name === name).id;

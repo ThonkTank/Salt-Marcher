@@ -47,7 +47,7 @@ die externen Einstiegsmethoden und die kanonische Speichergrenze bleiben erhalte
 | --- | --- |
 | Bereiche, Gruppen und Werkzeugrouten | [atlas-tool-catalog.ts](../../../src/app/atlas/atlas-tool-catalog.ts) ordnet vorhandene Controls und Operationswerte zu. Die globale Auswahl verwendet im Dungeon das bestehende Zeichen-Auswahlwerkzeug, damit Raum- und Pfadgriffe erreichbar bleiben. Nicht verfügbare Werkzeuge und leere Gruppen bleiben ausgeblendet. |
 | Leisten, umgehängte Controls, Kontextpanel | [AtlasWorkspaceLayout](../../../src/app/atlas/atlas-workspace-layout.ts); Originalcontrols mit ihren Handlern verschieben, nicht kopieren. |
-| Breiten, Anordnung, responsive Darstellung | [atlas-workspace.css](../../../src/app/atlas/atlas-workspace.css); der [Desktopbuild](../../../tools/build-desktop.mjs) hängt sie an `app.css` an. |
+| Breiten, Anordnung, responsive Darstellung | [atlas-workspace.css](../../../src/app/atlas/atlas-workspace.css); [app.css](../../../src/app/workspace/app.css) importiert sie nach den Atlas-Fachregeln. Der [Desktopbuild](../../../tools/build-desktop.mjs) bündelt den lokalen CSS-Einstieg. |
 | Werkzeug-/Navigationswechsel und offene Eingaben | [CampaignAtlasWorkbench](../../../src/app/atlas/campaign-atlas-ui.ts): `new AtlasWorkspaceLayout` verbindet `prepare`/`tool`/`navigation` mit Flush und `setFamily`. Layout ruft diese Fachgrenze auf; Operationswerte ändern sich erst nach erfolgreicher Entwurfsprüfung. |
 | Kartenfläche nach Paneländerung | [AtlasCanvas.resizeViewport](../../../src/app/atlas/atlas-canvas.ts) erhält Weltmittelpunkt und Meter pro CSS-Pixel ohne Historyeintrag. |
 
@@ -160,3 +160,44 @@ werden vor Aktivierung mit dem neuen Store auf einer vollständigen Profilkopie
 geprüft. Der neue Prozess bleibt bis zur dauerhaften Erststartfreigabe unsichtbar;
 nach dieser Freigabe gibt es kein automatisches Datenrollback. Der bisherige
 Kampagnenarchivvertrag und der Datenordner CampaignWorkbench bleiben bestehen.
+
+
+## Styles einer Oberfläche ändern
+
+[app.css](../../../src/app/workspace/app.css) ist ausschließlich der explizite
+CSS-Einstieg. [base.css](../../../src/app/shared/base.css) besitzt Schrift und
+Farben, [controls.css](../../../src/app/shared/controls.css) gemeinsam verwendete
+Controls. Shell und Navigation liegen in
+[workspace.css](../../../src/app/workspace/workspace.css). Fachregeln stehen bei
+ihren Oberflächen: etwa [Katalog](../../../src/app/catalog/catalog.css),
+[NSCs](../../../src/app/campaign/npc.css), [Kampf](../../../src/app/runtime/combat.css),
+[Musik](../../../src/app/runtime/music.css) und [Reise](../../../src/app/runtime/world.css).
+Die übrigen Besitzer sind in der Importliste sichtbar. Gruppen von Selektoren
+verschiedener Besitzer stehen getrennt in deren Dateien; gemeinsam benutzte
+Controls bleiben in `shared/controls.css`.
+
+Neue Fachregeln werden beim vorhandenen Element einschließlich seiner Zustände
+und Breitenbedingungen gepflegt. Keine Nachtragsdatei für globale Overrides.
+Die normalen Browserregeln für Spezifität, Bedingungen und Quellreihenfolge
+bleiben wirksam; die Aufteilung führt keine Cascade Layers ein. Bestehende
+Key-, Markdown- und Atlas-Workspace-Regeln behalten ihre abschließende
+Importposition. `player.css` und das separat geladene Preset-Stylesheet behalten
+ihre eigenen Einstiege.
+
+[desktop-styles.mjs](../../../tools/desktop-styles.mjs) bündelt mit esbuild alle
+lokalen Imports in die weiterhin ausgelieferte `ui/app.css`. Der
+[Buildtest](../../../tests/shared/desktop-styles.test.mjs) prüft die vollständige
+lokale Ausgabe. Die [Reise-DOM-Probe](../../../tests/runtime/desktop-travel-target-dom.test.mjs)
+konsumiert dieselbe Zusammensetzung und schützt weiterhin vor Atlas-Hideregeln
+auf der Live-Reisekarte.
+
+Bei einer Kaskadenänderung vor dem Umbau die bisher ausgelieferte `ui/app.css`
+außerhalb des Desktop-Buildordners sichern. Nach dem Build vergleicht
+`npm run verify:local -- python3 tools/ui-session.py node tools/test-desktop-style-ownership.mjs --baseline-css PFAD`
+diese Datei im echten Electronfenster mit der neuen Ausgabe. Die
+[Vergleichsprobe](../../../tools/test-desktop-style-ownership.mjs) verwendet
+synthetische Kampagnendaten und prüft berechnete Styles sowie Geometrie der
+vorhandenen Oberflächen bei breitem und schmalem Fenster sowie 200 Prozent Zoom;
+sie speichert Vorher-/Nachher-Aufnahmen und verlangt normales Prozessende.
+Das ist eine begrenzte Layoutregression, keine vollständige Produkt- oder
+menschliche Bedienabnahme. Fachliche Abläufe behalten ihre eigenen nativen Proben.

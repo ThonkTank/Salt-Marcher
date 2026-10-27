@@ -1,0 +1,249 @@
+/* runtime/agenda.css — styles owned by this surface; shared controls live in shared/. */
+
+.campaign-agenda {
+  max-width: 1320px;
+  height: min(850px, 92vh);
+  padding: 1.3rem;
+}
+
+.agenda-columns {
+  display: grid;
+  grid-template-columns: 300px minmax(0, 1fr);
+  gap: 1.5rem;
+  height: calc(100% - 130px);
+  min-height: 260px;
+}
+
+.agenda-nav {
+  overflow: auto;
+  border-right: 1px solid var(--line);
+  padding-right: 1rem;
+}
+
+.agenda-filter-field {
+  display: block;
+  margin: 0.5rem 0;
+  font-weight: 600;
+}
+
+.agenda-filter-field > input,
+.agenda-filter-field > select {
+  width: 100%;
+  margin: 0.25rem 0 0;
+  font-weight: 400;
+}
+
+.agenda-past-field {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.8rem 0;
+}
+
+.agenda-past-field > input {
+  width: auto;
+  margin: 0;
+}
+
+#agenda-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+#agenda-list button {
+  text-align: left;
+}
+
+#agenda-list small {
+  display: block;
+  color: #4b6074;
+  font-weight: 400;
+  margin-top: 0.3rem;
+}
+
+#agenda-list button[aria-pressed='true'] {
+  background: var(--selected);
+  border-color: var(--blue);
+}
+
+#agenda-document {
+  overflow: auto;
+  min-width: 0;
+  padding: 0 1rem 1rem 0;
+}
+
+#agenda-document h3 {
+  font-size: 1.5rem;
+  margin: 1.3rem 0 0.8rem;
+}
+
+#agenda-document pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font: inherit;
+  line-height: 1.6;
+}
+
+#agenda-event-form > label {
+  display: block;
+  margin: 0.8rem 0;
+}
+
+#agenda-event-form > label > input,
+#agenda-event-form > label > select,
+#agenda-event-form textarea {
+  width: 100%;
+}
+
+#agenda-event-form .toolbar label {
+  flex: 1;
+  min-width: 130px;
+}
+
+#agenda-event-form .toolbar input,
+#agenda-event-form .toolbar select {
+  width: 100%;
+}
+
+.agenda-date-fields {
+  display: grid;
+  grid-template-columns: 1fr 2fr 1fr 1fr 1fr;
+  gap: 0.5rem;
+}
+
+.agenda-date-fields input,
+.agenda-date-fields select {
+  width: 100%;
+}
+
+#agenda-event-preview {
+  background: #e8f0f6;
+  border-left: 3px solid var(--blue);
+  padding: 0.8rem;
+}
+
+#agenda-status button {
+  margin-left: 1rem;
+}
+
+@media (max-width: 850px) {
+  .agenda-columns {
+    grid-template-columns: 1fr;
+    height: auto;
+  }
+}
+
+@media (max-width: 850px) {
+  .agenda-nav {
+    max-height: 35vh;
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+    padding: 0 0 1rem;
+  }
+}
+
+@media (max-width: 850px) {
+  #agenda-document {
+    overflow: visible;
+  }
+}
+
+@media (max-width: 850px) {
+  .campaign-agenda {
+    overflow: auto;
+    height: 92vh;
+  }
+}
+
+@media (max-width: 850px) {
+  .agenda-date-fields {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.time-navigator {
+  max-width: 960px;
+  max-height: 92vh;
+  overflow: auto;
+}
+
+.time-navigator > label {
+  margin: 0.7rem 0;
+}
+
+.time-navigator-fields {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 0.5rem;
+}
+
+.time-navigator-fields label {
+  margin: 0.35rem 0;
+}
+
+.time-navigator-date {
+  display: grid;
+  grid-template-columns: 1fr 2fr 1fr 1fr 1fr;
+  gap: 0.5rem;
+  margin: 1rem 0;
+}
+
+.time-navigator-date input,
+.time-navigator-date select {
+  width: 100%;
+}
+
+#time-navigator-events {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  max-height: 230px;
+  overflow: auto;
+  margin: 0.75rem 0;
+}
+
+#time-navigator-events button {
+  text-align: left;
+}
+
+#time-navigator-events button[aria-pressed='true'] {
+  background: var(--selected);
+  border-color: var(--blue);
+}
+
+#time-navigator-preview {
+  border-left: 3px solid var(--blue);
+  background: #f7f9fc;
+  padding: 1rem;
+  margin-top: 1rem;
+}
+
+#time-navigator-preview strong {
+  font-size: 1.2rem;
+}
+
+#time-navigator-status {
+  min-height: 1.3em;
+}
+
+@media (max-width: 650px) {
+  .time-navigator-fields,
+  .time-navigator-date {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.calendar-rules {
+  width: min(48rem, calc(100vw - 2rem));
+  max-width: calc(100vw - 2rem);
+  max-height: 90vh;
+  overflow: auto;
+  box-sizing: border-box;
+}
+
+.calendar-rules textarea {
+  width: 100%;
+  box-sizing: border-box;
+}

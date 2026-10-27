@@ -1,3 +1,4 @@
+import { checkNativeProbes } from './native-probes.mjs';
 import { checkSourceModuleBoundaries } from './check-module-boundaries.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -78,6 +79,7 @@ export function checkRepository(root, suppliedFiles) {
         .filter((f) => f && fs.existsSync(path.join(root, f))),
   );
   errors.push(...checkSourceModuleBoundaries(root, [...files]));
+  errors.push(...checkNativeProbes(root, [...files]));
   const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');
   const exists = (file) =>
     typeof file === 'string' &&

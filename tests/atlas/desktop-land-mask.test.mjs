@@ -299,65 +299,68 @@ test('a zero-time fractal click does not allocate inherited child tiles', () => 
   assert.deepEqual(applyMaskStroke(rs, stroke('lower', 0)), []);
 });
 
-test('legacy cell edits keep labels scoped and remove their mask footprint after archive remapping', async (t) => {
-  const f = fixture(t);
-  const writeWorld = (token, campaignId, action) =>
-    f.store.executeWorld({
+test('continuous property areas survive archive remapping and independent edits and deletion', async (t) => {
+  const f = fixture(t),
+    area = {
+      id: randomUUID(),
+      revision: 0,
+      kind: 'patch',
+      name: 'Freier Wald',
+      points: [],
+      polygons: [
+        {
+          outer: [
+            { x: -90, y: -60 },
+            { x: 80, y: -70 },
+            { x: 95, y: 20 },
+            { x: 10, y: 90 },
+            { x: -80, y: 50 },
+          ],
+          holes: [],
+        },
+      ],
+      resolution: 30,
+      width: 0,
+      propertyOnly: true,
+      values: { terrain: 'forest', elevationM: 12 },
+    };
+  f.write({ kind: 'landscape-put', record: area, expectedRevision: null });
+  assert.equal(terrain(f.records()), 'forest');
+  const file = f.dir + '/continuous.sqlite';
+  await f.store.campaignSnapshot(f.token, file);
+  const copy = f.store.acceptCampaignSnapshot(file, 'Continuous copy', {}),
+    active = f.store.activate(copy.id);
+  const records = () =>
+    f.store.landscapeRegion(active.token, { x: -100, y: -100, width: 200, height: 200 }).records;
+  const copied = records().find((r) => r.name === area.name);
+  assert(copied);
+  assert.notEqual(copied.id, area.id);
+  assert.deepEqual(copied.polygons, area.polygons);
+  assert.equal(copied.sourceCell, undefined);
+  const write = (action) =>
+    f.store.executeAtlasCommit({
       commandId: randomUUID(),
-      token,
-      campaignId,
+      token: active.token,
+      campaignId: copy.id,
       action,
     });
-  let map = f.store.world(f.token).maps[0];
-  const cell = {
-    q: 0,
-    r: 0,
-    level: 0,
-    terrain: 'forest',
-    elevationM: 12,
-    climate: null,
-    road: false,
-    river: false,
-    label: 'Original label',
-    faction: '',
-    interrupt: '',
-  };
-  writeWorld(f.token, f.cam.id, {
-    kind: 'map',
-    map: { ...map, cells: [cell] },
-    expectedRevision: map.revision,
+  write({
+    kind: 'landscape-put',
+    record: { ...copied, values: { terrain: 'hills', elevationM: 35 } },
+    expectedRevision: copied.revision,
   });
-  assert.equal(terrain(f.records()), 'forest');
-  assert.equal(effectiveLandscape(f.records(), { x: 0, y: 0 }).label, undefined);
-  assert.equal(f.store.world(f.token).maps[0].cells[0].label, cell.label);
-  const file = f.dir + '/cells.sqlite';
-  await f.store.campaignSnapshot(f.token, file);
-  const copy = f.store.acceptCampaignSnapshot(file, 'Cell copy', {}),
-    active = f.store.activate(copy.id);
-  map = f.store.world(active.token).maps[0];
-  const source = f.store
-    .landscapeRegion(active.token, {
-      x: -100,
-      y: -100,
-      width: 200,
-      height: 200,
-    })
-    .records.find((r) => r.sourceCell);
-  assert.equal(source.sourceCell.mapId, map.id);
-  writeWorld(active.token, copy.id, {
-    kind: 'cell',
-    mapId: map.id,
-    cell: { ...cell, terrain: 'plains' },
-    expectedRevision: map.revision,
-  });
-  map = f.store.world(active.token).maps[0];
-  assert.equal(map.landscape.filter((r) => r.sourceCell).length, 1);
-  writeWorld(active.token, copy.id, {
-    kind: 'map',
-    map: { ...map, cells: [] },
-    expectedRevision: map.revision,
-  });
-  map = f.store.world(active.token).maps[0];
-  assert.equal(terrain(map.landscape), 'water');
-  assert.equal(map.landscape.filter((r) => r.sourceCell).length, 0);
+  assert.equal(terrain(records()), 'hills');
+  write({ kind: 'landscape-remove', id: copied.id, expectedRevision: copied.revision + 1 });
+  assert.equal(
+    records().find((r) => r.id === copied.id),
+    undefined,
+  );
+  const original = f.store.activate(f.cam.id);
+  assert.equal(
+    terrain(
+      f.store.landscapeRegion(original.token, { x: -100, y: -100, width: 200, height: 200 })
+        .records,
+    ),
+    'forest',
+  );
 });

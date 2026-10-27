@@ -172,3 +172,35 @@ Operation-/Receipt-Mechanik; der Cache verwirft keine offenen Rohwerte.
 mit gleichen IDs ohne globale ID-Abfragen, prüft getrennte Rohwerte und eine
 alte Antwort während eines neuen Reads. Die bestehenden Wechsel-, Recovery-,
 Verstärkungs-, Initiative-, Konzentrations- und Abschlussprüfungen bleiben erhalten.
+
+## Instanzen für NPCs, Musik und Gegenstände
+
+`createNpcEditor`, `createMusicEditor` und `createItemsEditor` besitzen jeweils
+Sitzung, Entwürfe, Auswahl, Anfragen und Timer. Der Workspace erzeugt sie und
+übergibt sie an die Editorregistry. Live erhält Shopdarstellung und Musikrefresh
+als Host-Ports; das Soundboard erhält die konkrete Musikinstanz. Die Hosts liefern
+Preload-API und eigene DOM-Wurzeln. `createEditorSurface` hält die Elementidentitäten
+innerhalb dieser Wurzeln; eine fehlende Control wird nicht im Gesamtdokument gesucht.
+Initialisierung erfolgt einmal je Instanz. Die bestehenden produktiven IDs und
+Aktivierungs-/Drain-Reihenfolgen bleiben erhalten.
+
+`dispose()` der drei Editoren prüft zuerst den fachlichen Flush und entwässert
+angenommene Operationen. Bei `false` bleibt die Instanz verwendbar und behält ihre
+Eingaben. Erfolgreicher Abbau entwertet die Sitzung und entfernt eigene Timer,
+Beobachtungen und erzeugte Controls; eine abgebaute Instanz wird nicht reaktiviert.
+Der Host führt den Abbau an einer geordneten Übergangsgrenze aus und unterbindet
+währenddessen neue Eingaben, wie beim bestehenden Workspace-Drain. Normale
+Kampagnenwechsel verwenden weiterhin die bisherigen Aktivierungsgrenzen.
+
+Der Audio-Player hält seinen eigenen Container; Transferbeobachter im Preload
+liefern eine Abmeldefunktion. Items erhält den gemeinsamen Buchungsdienst als
+Port, statt beim Aufbau dessen Workspace-Kontext umzusetzen. Kampagnenweite
+Buchungssperren und gespeicherte Receipts bleiben absichtlich gemeinsam; eine
+weitere Oberfläche darf eine ungeklärte Buchung nicht umgehen.
+
+Die Instanzprüfung liegt in
+`tests/shared/desktop-tool-editor-instances.test.mjs`. Sie ergänzt die bestehenden
+NPC-, Musik-, Item- und Shop-Fachtests. Getrennte Instanzen in getrennten
+DOM-Dokumenten sind der hier geprüfte Zusammensetzungsfall. Mehrere vollständige
+Workspaces mit ihren heutigen identischen HTML-IDs in einem Dokument sowie eine
+neue Mehrfensterfunktion sind damit nicht geliefert.

@@ -1,6 +1,7 @@
+import { readFileSync as readWorkspaceSource } from 'node:fs';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import path from 'node:path';
 import { tmpdir } from 'node:os';
 import { randomUUID, createHash } from 'node:crypto';
@@ -26,22 +27,6 @@ await build({
   bundle: true,
   platform: 'node',
   format: 'cjs',
-  plugins: [
-    {
-      name: 'music-port',
-      setup(b) {
-        b.onResolve({ filter: /^\.\/music-ui$/ }, () => ({
-          path: 'music-port',
-          namespace: 'fixture',
-        }));
-        b.onLoad({ filter: /.*/, namespace: 'fixture' }, () => ({
-          contents:
-            'export const onMusicChanged=f=>globalThis.soundboardMusic.listen(f);export const refreshMusic=()=>globalThis.soundboardMusic.refresh();export const runLiveMusic=(...a)=>globalThis.soundboardMusic.run(...a);',
-          loader: 'js',
-        }));
-      },
-    },
-  ],
 });
 async function fixture(t) {
   const root = mkdtempSync(path.join(tmpdir(), 'soundboard-')),
@@ -66,7 +51,7 @@ async function fixture(t) {
         globalThis[k],
       ]),
     ),
-    { window, document } = parseHTML(readFileSync('src/app/workspace/index.html', 'utf8'));
+    { window, document } = parseHTML(readWorkspaceSource('src/app/workspace/index.html', 'utf8'));
   Object.assign(globalThis, { window, document, setTimeout: () => 1, clearTimeout: () => {} });
   Object.defineProperty(window.HTMLSelectElement.prototype, 'value', {
     configurable: true,
@@ -106,7 +91,20 @@ async function fixture(t) {
     }),
   };
   delete require.cache[require.resolve('../../' + base + '/ui.cjs')];
-  x.ui = require('../../' + base + '/ui.cjs');
+  x.ui = require('../../' + base + '/ui.cjs').createSoundboard({
+    roots: [document.body],
+    api: window.campaign,
+    music: {
+      onMusicChanged: (f) => {
+        listener = f;
+        return () => {
+          listener = () => {};
+        };
+      },
+      refreshMusic: globalThis.soundboardMusic.refresh,
+      runLiveMusic: globalThis.soundboardMusic.run,
+    },
+  });
   x.ui.initSoundboard(
     () => {},
     async () => {},

@@ -179,5 +179,5 @@ export interface MusicAPI {
   exportAudioLibrary(token: string): Promise<Result<{ cancelled: boolean }>>;
   importAudioLibrary(token: string): Promise<Result<{ cancelled: boolean; ids: string[] }>>;
   cancelAudioTransfer(): Promise<Result<void>>;
-  onAudioTransfer(callback: (progress: AudioTransferProgress) => void): void;
+  onAudioTransfer(callback: (progress: AudioTransferProgress) => void): () => void;
 }

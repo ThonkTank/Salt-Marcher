@@ -19,7 +19,7 @@ const require = createRequire(import.meta.url),
   { CampaignStore } = require('../../.build/mixed-world-test/store.cjs'),
   { AtlasRegionReader } = require('../../.build/mixed-world-test/atlas-region.cjs'),
   Database = require('better-sqlite3');
-test('mixed world fixture preserves real hex sources, independent furnished buildings and readable detail geometry after reopen', async () => {
+test('mixed world fixture preserves continuous free-form terrain, independent furnished buildings and readable detail geometry after reopen', async () => {
   const cache = path.join(homedir(), '.cache/saltmarcher/test');
   mkdirSync(cache, { recursive: true });
   const dir = mkdtempSync(path.join(cache, 'mixed-world-'));
@@ -30,7 +30,7 @@ test('mixed world fixture preserves real hex sources, independent furnished buil
       token = store.activateShell(campaign.id).token;
     const before = mixedWorldInventory(store.db, campaign.id);
     const fixture = populateMixedWorld(store, campaign, {
-      hexes: 24,
+      terrainAreas: 24,
       buildings: 2,
       details: 2,
       dungeonRooms: 12,
@@ -41,18 +41,16 @@ test('mixed world fixture preserves real hex sources, independent furnished buil
     assert.equal(fixture.inventory.locations - before.locations, 5);
     const rows = store.db
       .prepare(
-        "SELECT payload FROM atlas_landscape WHERE campaign_id=? AND json_extract(payload,'$.sourceCell.mapId') IS NOT NULL",
+        "SELECT payload FROM atlas_landscape WHERE campaign_id=? AND json_extract(payload,'$.propertyOnly')=1 AND json_extract(payload,'$.kind')='patch'",
       )
       .all(campaign.id);
-    assert.equal(
-      new Set(
-        rows.map((r) => {
-          const c = JSON.parse(r.payload).sourceCell;
-          return `${c.mapId}:${c.level}:${c.q}:${c.r}`;
-        }),
-      ).size,
-      24,
-    );
+    assert.equal(rows.length, 24);
+    for (const row of rows) {
+      const area = JSON.parse(row.payload);
+      assert.equal(area.sourceCell, undefined);
+      assert.equal(area.polygons[0].outer.length, 9);
+    }
+    assert.equal(fixture.inventory.terrainSourceCells, 0);
     store.close();
     store = new CampaignStore(dir + '/world.sqlite');
     assert.deepEqual(mixedWorldInventory(store.db, campaign.id), fixture.inventory);

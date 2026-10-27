@@ -79,7 +79,16 @@ function fixture() {
     if (name === refuse) return false;
     return name.startsWith('activate') || name.startsWith('deactivate') ? undefined : true;
   };
+  const owner = (name) => ({
+    editorSession: session(),
+    ['activate' + name]: (...args) => globalThis.editorBoundaryTest('activate' + name, args),
+    ['flush' + name]: (...args) => globalThis.editorBoundaryTest('flush' + name, args),
+    ['deactivate' + name]: (...args) => globalThis.editorBoundaryTest('deactivate' + name, args),
+  });
   const host = {
+    npcs: owner('Npcs'),
+    music: owner('Music'),
+    items: owner('Items'),
     combat: { editorSession: session() },
     live: {
       editorSession: session(),

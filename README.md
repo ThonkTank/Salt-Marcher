@@ -81,6 +81,10 @@ von fachlichen Änderungen und Verschiebungen committen.
 npm run start:desktop -- --data-dir /tmp/campaign-workbench-smoke
 ```
 
+Für laufende Produktarbeit startet `npm run dev` einen inkrementellen Watch-Zyklus
+mit CSS-Aktualisierung, sicheren Neustarts und eigenem dauerhaftem Entwicklungsprofil.
+Details und Grenzen: [Kurzer Entwicklungszyklus](docs/project/verification/testing.md#kurzer-desktop-entwicklungszyklus).
+
 Die Desktopanwendung speichert ohne `--data-dir` im lokalen Appdatenordner `CampaignWorkbench`. Er verbindet Kampagnenverwaltung, Vorbereitung, Live-Spiel, Katalog, Gegenstände, einen gemeinsamen Atlas für Landschaft, Städte und Dungeonräume, Musik und eine getrennte Spieleranzeige. Die Desktopfunktion ist ein Entwicklungsstand; offene Produktlücken und Abnahmen stehen in den Fachplänen.
 
 Ein lokales Linux-x64-Paket entsteht mit:

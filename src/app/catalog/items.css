@@ -1,0 +1,268 @@
+/* catalog/items.css — styles owned by this surface; shared controls live in shared/. */
+
+.items-columns {
+  display: grid;
+  grid-template-columns: minmax(250px, 0.8fr) minmax(350px, 1.2fr);
+  gap: 28px;
+  margin: 20px 0;
+}
+
+.item-list {
+  display: grid;
+  gap: 6px;
+  max-height: 520px;
+  overflow: auto;
+  margin: 16px 0;
+}
+
+.item-list button {
+  text-align: left;
+  padding: 12px;
+}
+
+.items-columns input,
+.items-columns select,
+.items-columns textarea {
+  width: 100%;
+}
+
+.items-columns input[type='checkbox'] {
+  width: auto;
+}
+
+#shop-stock .session-group-card {
+  margin: 18px 0;
+  padding: 18px;
+}
+
+#items hr {
+  margin: 36px 0;
+}
+
+@media (max-width: 850px) {
+  .items-columns {
+    grid-template-columns: 1fr;
+  }
+}
+
+#items {
+  padding: 1.5rem;
+  max-width: 1300px;
+  margin: auto;
+}
+
+.items-columns > section {
+  min-width: 0;
+  padding: 1.25rem;
+  background: #f7f9fc;
+  border: 1px solid var(--line);
+}
+
+#items .catalog-heading {
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+#items .catalog-heading p {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+.items-columns label {
+  display: block;
+  margin: 8px 0;
+  min-width: 0;
+}
+
+#shop-stock details {
+  margin: 0.75rem 0;
+}
+
+#shop-stock details label {
+  display: inline-block;
+  width: calc(50% - 0.5rem);
+  vertical-align: top;
+  margin-right: 0.5rem;
+}
+
+#shop-stock h4 {
+  margin: 0.2rem 0 0.7rem;
+}
+
+#shop-stock .time-fields {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@media (max-width: 600px) {
+  #shop-stock details label {
+    width: 100%;
+  }
+}
+
+#shop-sale-problem-list {
+  white-space: pre-line;
+}
+
+/* Item lookup reads like a reference; authoring and transactions remain explicit. */
+#item-reference-title {
+  font-family: 'Noto Serif', serif;
+  font-size: 1.45rem;
+  margin: 0 0 0.6rem;
+  overflow-wrap: anywhere;
+}
+
+#item-reference-description {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 1.65;
+  user-select: text;
+  margin: 1rem 0;
+}
+
+#item-reference-facts {
+  margin: 0.5rem 0;
+}
+
+#item-reference-properties {
+  font-weight: 600;
+}
+
+#item-reference .caption {
+  font-weight: 400;
+}
+
+#item-filters {
+  margin: 1rem 0;
+}
+
+#item-filters .combat-fields {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+#item-editing,
+#item-usage {
+  border-top: 1px solid var(--line);
+  padding: 0.9rem 0;
+  margin-top: 0.8rem;
+}
+
+#items-results button[aria-pressed='true'] {
+  background: var(--selected);
+  border-color: var(--blue);
+  box-shadow: inset 3px 0 var(--blue);
+}
+
+#items-source {
+  font-size: 0.85rem;
+  margin: 0.4rem 0;
+}
+
+#item-editor:has(#item-editing[open]) #item-reference {
+  display: none;
+}
+
+#item-reference-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: 0.5rem;
+}
+
+#item-reference-form label {
+  font-size: 0.8rem;
+}
+
+#item-reference-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+#item-reference-table td,
+#item-reference-table th {
+  padding: 0.35rem;
+  border-bottom: 1px solid var(--line);
+  font-size: 0.85rem;
+}
+
+#item-reference-table button {
+  text-align: left;
+}
+
+#item-reference-detail p {
+  white-space: pre-wrap;
+}
+
+#item-reference-detail dt {
+  font-weight: 600;
+}
+
+#item-reference-detail dd {
+  margin: 0 0 0.5rem;
+}
+
+#item-reference-detail {
+  overflow-wrap: anywhere;
+  scroll-margin-top: var(--workspace-content-offset);
+}
+
+#item-reference-table [aria-pressed='true'] {
+  font-weight: 700;
+  border-color: var(--blue);
+  background: var(--selected);
+}
+
+/* Pair each imported fact with its value without separating the lookup controls. */
+#item-reference-detail dl {
+  display: grid;
+  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+  column-gap: 0.8rem;
+  row-gap: 0.4rem;
+}
+
+#item-reference-detail dl dd {
+  margin: 0;
+}
+
+#item-reference-inspector {
+  scroll-margin-top: var(--workspace-content-offset);
+}
+
+#item-reference-results-return {
+  display: none;
+}
+
+@media (max-width: 1100px) {
+  #item-reference-results-return {
+    display: inline-block;
+    margin-bottom: 0.6rem;
+  }
+}
+
+#item-reference-extra {
+  grid-column: 1/-1;
+}
+
+#item-reference-extra summary {
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+#item-reference-extra .item-reference-extra-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+#item-reference-credit {
+  margin: 0.8rem 0;
+  font-size: 0.85rem;
+}
+
+#item-reference-credit summary {
+  cursor: pointer;
+}
+
+#item-reference-detail > h3 {
+  margin: 0.5rem 0;
+}

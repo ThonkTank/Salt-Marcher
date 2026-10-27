@@ -21,6 +21,9 @@ function fixture() {
     audio = [],
     failures = [];
   class Element {
+    get ownerDocument() {
+      return globalThis.document;
+    }
     children = [];
     dataset = {};
     parent = null;
@@ -94,11 +97,14 @@ function fixture() {
     },
     cancelAnimationFrame: (id) => frames.delete(id),
   });
-  const player = new LocalAudioPlayer({
-    ended: () => {},
-    failed: (...args) => failures.push(args),
-    timing: () => {},
-  });
+  const player = new LocalAudioPlayer(
+    {
+      ended: () => {},
+      failed: (...args) => failures.push(args),
+      timing: () => {},
+    },
+    document.body,
+  );
   const view = (id = 'A', changes = {}, layers = []) => ({
     state: {
       revision: 1,

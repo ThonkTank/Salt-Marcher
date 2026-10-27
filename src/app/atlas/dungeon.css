@@ -1,0 +1,661 @@
+/* atlas/dungeon.css — styles owned by this surface; shared controls live in shared/. */
+
+#inspector {
+  padding: 1.25rem;
+  background: #f7f9fc;
+  border-left: 1px solid var(--line);
+}
+
+#search {
+  margin-bottom: 0.8rem;
+}
+
+#rooms {
+  margin-top: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+#rooms button {
+  text-align: left;
+}
+
+#rooms button[aria-pressed='true'] {
+  background: var(--selected);
+  border-color: var(--blue);
+  box-shadow: inset 3px 0 var(--blue);
+}
+
+#drawing {
+  padding: 1.25rem;
+  min-width: 0;
+}
+
+#map {
+  width: 100%;
+  height: 55vh;
+  min-height: 280px;
+  background: #fdfefe;
+  border: 1px solid var(--line);
+  touch-action: none;
+}
+
+.room-shape.selected {
+  fill: #aecfdf;
+  stroke: #234d74;
+  stroke-width: 0.13;
+}
+
+.handle {
+  fill: #fff;
+  stroke: #234d74;
+  stroke-width: 0.08;
+  cursor: move;
+}
+
+#editor p {
+  font-size: 0.85rem;
+  color: #4b6074;
+}
+
+#editor details {
+  margin: 1rem 0;
+}
+
+#editor details p {
+  margin: 0.6rem 0;
+}
+
+#apply {
+  margin-top: 0.75rem;
+}
+
+@media (max-width: 1050px) {
+  #inspector {
+    grid-column: 1/-1;
+    border-top: 1px solid var(--line);
+    border-left: 0;
+  }
+}
+
+@media (max-width: 1050px) {
+  #editor {
+    max-width: 850px;
+  }
+}
+
+@media (max-width: 1050px) {
+  #map {
+    height: 45vh;
+  }
+}
+
+@media (max-width: 620px) {
+  #rooms {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+}
+
+.room-shape {
+  stroke-width: 0.08;
+  fill-rule: evenodd;
+  cursor: pointer;
+  fill: var(--drawing-room-fill, #d8cbb5);
+  stroke: var(--drawing-room-wall, #574b3f);
+}
+
+.drawing-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px 0;
+}
+
+.drawing-toolbar label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.drawing-toolbar input[type='number'] {
+  width: 80px;
+}
+
+.drawing-tools {
+  border-top: 1px solid #c7cfd8;
+  margin-top: 12px;
+  padding-top: 12px;
+}
+
+.drawing-tools label {
+  display: block;
+  margin: 8px 0;
+}
+
+.drawing-tools input:not([type='checkbox']),
+.drawing-tools select,
+.drawing-tools textarea {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+#drawing-section {
+  width: 100%;
+  height: 190px;
+  border: 1px solid #b8b2a4;
+  background: #f2ede1;
+}
+
+#drawing-element-form {
+  padding: 10px;
+  border: 1px solid #c7cfd8;
+}
+
+#drawing-archive button {
+  display: block;
+  margin: 6px 0;
+}
+
+#map {
+  touch-action: none;
+}
+
+#dungeon .toolbar {
+  flex-wrap: wrap;
+}
+
+#dungeon input[type='number'] {
+  width: 7rem;
+}
+
+#dungeon-route-status {
+  font-weight: 600;
+}
+
+#volume-dialog {
+  width: min(95vw, 1300px);
+  max-width: min(95vw, 1300px);
+  max-height: 92vh;
+  overflow: auto;
+}
+
+#volume-dialog > .toolbar:first-child {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: #fff;
+  padding: 0.3rem 0;
+}
+
+#volume-dialog .toolbar label {
+  margin: 0.3rem 0;
+}
+
+.volume-views svg:focus-visible {
+  outline-offset: -3px;
+}
+
+.volume-views {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.volume-views svg {
+  height: 45vh;
+  width: 100%;
+  background: #e6e9e1;
+  border: 1px solid #8aa39f;
+  touch-action: none;
+}
+
+#volume-slice-map {
+  cursor: crosshair;
+}
+
+#volume-dialog .toolbar {
+  flex-wrap: wrap;
+}
+
+#volume-dialog input[type='number'] {
+  width: 6rem;
+}
+
+#path-dialog {
+  width: min(95vw, 1250px);
+  max-height: 92vh;
+  overflow: auto;
+}
+
+#path-dialog .toolbar {
+  flex-wrap: wrap;
+}
+
+#path-map {
+  width: 100%;
+  height: 35vh;
+  background: #e8e5d8;
+  border: 1px solid #a1aaa8;
+}
+
+#path-passages fieldset {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+#path-passages textarea {
+  width: 100%;
+  min-height: 4rem;
+}
+
+#graph-dialog {
+  width: min(96vw, 1500px);
+  max-width: 1500px;
+  max-height: 94vh;
+}
+
+#graph-map {
+  display: block;
+  width: 100%;
+  height: 52vh;
+  min-height: 340px;
+  background: #f4eee0;
+  border: 1px solid #baac91;
+  touch-action: none;
+}
+
+#graph-map g {
+  cursor: grab;
+}
+
+#graph-map text {
+  user-select: none;
+}
+
+#graph-map line {
+  cursor: pointer;
+}
+
+#graph-preview-banner {
+  padding: 0.6rem 1rem;
+  background: #efe0b9;
+  border: 2px solid #a67532;
+  position: sticky;
+  top: 0;
+  z-index: 6;
+}
+
+#graph-preview-banner p {
+  margin: 0.3rem;
+}
+
+#graph-intents fieldset {
+  margin: 0.7rem 0;
+}
+
+#graph-dialog input[type='number'] {
+  width: 6rem;
+}
+
+#content-dialog {
+  width: min(94vw, 1200px);
+  max-width: 1200px;
+  max-height: 94vh;
+}
+
+#content-dialog label {
+  display: block;
+  margin: 0.6rem 0;
+}
+
+#content-dialog textarea {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+#content-dialog pre {
+  white-space: pre-wrap;
+  font: inherit;
+}
+
+#content-list article,
+#graph-budget-results article {
+  border-top: 1px solid #a89b83;
+  padding: 1rem 0;
+}
+
+#graph-budget-results table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+#graph-budget-results th,
+#graph-budget-results td {
+  padding: 0.4rem;
+  text-align: left;
+  border-bottom: 1px solid #c8bda8;
+}
+
+#graph-budget-results caption {
+  text-align: left;
+  font-size: 0.9em;
+  margin: 0.5rem 0;
+}
+
+#graph-budget-results details {
+  padding: 0.5rem;
+  background: #eee1c7;
+}
+
+#dungeon {
+  padding: 1.25rem;
+  max-width: 1600px;
+  margin: auto;
+}
+
+#trigger-dialog {
+  width: min(95vw, 1450px);
+  max-width: 1450px;
+  max-height: 94vh;
+}
+
+#trigger-canvas {
+  display: block;
+  width: 100%;
+  max-height: 58vh;
+  object-fit: contain;
+  touch-action: none;
+  background: #f2ebdd;
+  border: 1px solid #b6a98e;
+}
+
+#trigger-dialog input[type='number'] {
+  width: 6rem;
+}
+
+#dungeon-trigger-events article {
+  border-left: 4px solid #ac633f;
+  padding: 1rem;
+  margin: 1rem 0;
+  background: #eee1c9;
+}
+
+#dungeon-trigger-events pre {
+  white-space: pre-wrap;
+  font: inherit;
+}
+
+#dungeon-content-contexts article {
+  border-left: 4px solid #717d64;
+  padding: 1rem;
+  margin: 1rem 0;
+  background: #eae5d7;
+}
+
+#dungeon-content-contexts pre {
+  white-space: pre-wrap;
+  font: inherit;
+}
+
+#dungeon-content-contexts fieldset {
+  margin: 0.7rem 0;
+}
+
+#dungeon-content-contexts button {
+  margin: 0.3rem;
+}
+
+.dungeon-binder {
+  max-width: 1320px;
+  height: min(880px, 92vh);
+  padding: 1.3rem;
+  background: #fff;
+}
+
+.dungeon-binder-columns {
+  display: grid;
+  grid-template-columns: 300px minmax(0, 1fr);
+  gap: 1.5rem;
+  height: calc(100% - 110px);
+  min-height: 260px;
+}
+
+.dungeon-binder-nav {
+  overflow: auto;
+  min-width: 0;
+  padding-right: 1rem;
+  border-right: 1px solid var(--line);
+}
+
+.dungeon-binder-nav > input,
+.dungeon-binder-nav > select {
+  width: 100%;
+  margin: 0.25rem 0;
+}
+
+#dungeon-binder-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+#dungeon-binder-list button {
+  text-align: left;
+}
+
+#dungeon-binder-list small {
+  display: block;
+  color: #4b6074;
+  font-weight: 400;
+  margin-top: 0.3rem;
+}
+
+#dungeon-binder-list button[aria-pressed='true'] {
+  background: var(--selected);
+  border-color: var(--blue);
+}
+
+#dungeon-binder-document {
+  overflow: auto;
+  min-width: 0;
+  padding: 0 1rem 2rem 0;
+}
+
+#dungeon-binder-document h3 {
+  font-size: 1.7rem;
+  margin: 0.2rem 0 1rem;
+}
+
+#dungeon-binder-document h4 {
+  margin: 1.5rem 0 0.6rem;
+}
+
+#dungeon-binder-document h5 {
+  font-size: 0.9rem;
+  margin: 0 0 0.5rem;
+}
+
+#dungeon-binder-document pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font: inherit;
+  line-height: 1.6;
+  margin: 0.4rem 0;
+  max-width: 78ch;
+}
+
+#dungeon-binder-document details {
+  margin: 0.75rem 0;
+  border: 1px solid var(--line);
+  padding: 0.75rem;
+}
+
+#dungeon-binder-document summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.dungeon-binder-block {
+  padding: 0.9rem 1rem;
+  margin: 0.6rem 0;
+  background: #f7f9fc;
+  border-left: 3px solid #aac5d6;
+}
+
+.dungeon-binder-block.key-gm-block {
+  border-left-color: #64758c;
+}
+
+.dungeon-binder-block.key-secret-block {
+  border-left-color: #996a88;
+  background: #f8f3f7;
+}
+
+.dungeon-binder-exit {
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--line);
+}
+
+@media (max-width: 850px) {
+  .dungeon-binder-columns {
+    grid-template-columns: 1fr;
+    height: auto;
+  }
+}
+
+@media (max-width: 850px) {
+  .dungeon-binder-nav {
+    max-height: 35vh;
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+    padding: 0 0 1rem;
+  }
+}
+
+@media (max-width: 850px) {
+  #dungeon-binder-document {
+    overflow: visible;
+  }
+}
+
+@media (max-width: 850px) {
+  .dungeon-binder {
+    height: 92vh;
+    overflow: auto;
+  }
+}
+
+#drawing .dungeon-more-tools {
+  margin: 0.45rem 0 0.8rem;
+}
+
+#drawing .dungeon-more-tools > .toolbar {
+  margin-top: 0.6rem;
+}
+
+#drawing .dungeon-grid-options {
+  flex-basis: 100%;
+  margin: 0.2rem 0;
+}
+
+#drawing .dungeon-grid-options[open] {
+  padding: 0.5rem;
+  border: 1px solid var(--line);
+}
+
+@media (max-width: 760px) {
+  #volume-dialog .volume-views {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  #volume-dialog .volume-views svg {
+    height: 32vh;
+    min-height: 220px;
+  }
+}
+
+/* Keep ordinary drawing and its result together; occasional tools remain below it. */
+#drawing #map-hint {
+  font-size: 0.85rem;
+  margin: 0.35rem 0;
+}
+
+#drawing #drawing-path-status {
+  margin: 0.35rem 0;
+}
+
+#drawing #drawing-path-status:empty {
+  display: none;
+}
+
+#drawing .drawing-toolbar {
+  align-items: center;
+  padding: 0.25rem 0;
+}
+
+#drawing .drawing-toolbar label {
+  margin: 0.25rem 0;
+}
+
+#drawing .drawing-floor-field select {
+  width: auto;
+  max-width: 13rem;
+}
+
+#drawing #map {
+  height: clamp(280px, 40vh, 520px);
+}
+
+@media (min-width: 1051px) {
+  #drawing {
+    padding: 1rem;
+  }
+}
+
+#graph-connection-result {
+  flex-basis: 100%;
+  margin: 0.4rem 0;
+  padding: 0.6rem;
+  border-left: 3px solid var(--blue);
+  background: #eef4f8;
+}
+
+@media (min-height: 740px) {
+  #graph-dialog > .toolbar:first-child {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: #fff;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--line);
+  }
+}
+
+#graph-preview-banner:not([hidden]) ~ main #map {
+  height: clamp(220px, calc(40vh - 120px), 400px);
+  min-height: 220px;
+}
+
+.map-canvas-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  padding: 0.5rem 0;
+}
+
+.map-canvas-controls button {
+  font-size: 0.85rem;
+  padding: 0.4rem 0.6rem;
+}
+
+.map-canvas-controls span {
+  font-size: 0.8rem;
+  color: var(--ink);
+  margin-left: auto;
+}

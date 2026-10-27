@@ -1,6 +1,7 @@
+import { readFileSync as readWorkspaceSource } from 'node:fs';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { randomUUID, createHash } from 'node:crypto';
@@ -81,7 +82,7 @@ async function fixture() {
       Event: globalThis.Event,
       Option: globalThis.Option,
     },
-    { window, document } = parseHTML(readFileSync('src/app/workspace/index.html', 'utf8')),
+    { window, document } = parseHTML(readWorkspaceSource('src/app/workspace/index.html', 'utf8')),
     selectValues = new WeakMap();
   Object.defineProperty(window.HTMLSelectElement.prototype, 'value', {
     configurable: true,
@@ -137,7 +138,10 @@ async function fixture() {
     return response(() => store.executeNpc(command));
   };
   delete require.cache[require.resolve('../../.build/npc-switch-ui.cjs')];
-  const ui = require('../../.build/npc-switch-ui.cjs');
+  const ui = require('../../.build/npc-switch-ui.cjs').createNpcEditor({
+    roots: [document.body],
+    api: window.campaign,
+  });
   ui.initNpcs(
     (text) => messages.push(text),
     async () => {},

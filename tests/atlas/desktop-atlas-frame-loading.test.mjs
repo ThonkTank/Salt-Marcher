@@ -7,7 +7,7 @@ import { parseHTML } from '../helpers/dom.mjs';
 buildSync({
   stdin: {
     contents:
-      "export {setAtlasUnits} from './src/app/atlas/atlas-units';export {LandscapeWorkbench} from './src/app/atlas/atlas-landscape-ui';export {AtlasPaint} from './src/app/atlas/atlas-paint';export {HEX_METERS} from './src/app/atlas/atlas-landscape';export {contains} from './src/app/atlas/landscape-geometry';",
+      "export {setAtlasUnits} from './src/app/atlas/atlas-units';export {LandscapeWorkbench} from './src/app/atlas/atlas-landscape-ui';export {AtlasPaint} from './src/app/atlas/atlas-paint';export {contains} from './src/app/atlas/landscape-geometry';",
     resolveDir: process.cwd(),
   },
   outfile: '.build/atlas-frame-loading.cjs',
@@ -15,9 +15,9 @@ buildSync({
   platform: 'node',
   format: 'cjs',
 });
-const { setAtlasUnits, LandscapeWorkbench, AtlasPaint, HEX_METERS, contains } = createRequire(
-  import.meta.url,
-)('../../.build/atlas-frame-loading.cjs');
+const { setAtlasUnits, LandscapeWorkbench, AtlasPaint, contains } = createRequire(import.meta.url)(
+  '../../.build/atlas-frame-loading.cjs',
+);
 function fixture(t) {
   const { window, document } = parseHTML(
       '<html><body><div id="atlas-tool-fields"></div><select id="atlas-hex-level"><option value="0">0</option></select><canvas></canvas></body></html>',
@@ -330,20 +330,22 @@ test('a selected reference keeps its original slot below terrain and updates wit
   assert.equal(next.children[0].children[0].geometry.width, 2);
 });
 
-test('Hex fill previews every crossed cell and commits each released stroke exactly once', async (t) => {
-  const f = fixture(t);
+test('continuous property strokes cover crossed space and commit once per release without joining gestures', async (t) => {
+  const f = fixture(t),
+    writes = [];
   f.set([]);
-  const writes = [];
   f.host.write = async (action) => {
     writes.push(action);
     return true;
   };
+  f.host.hit = () => null;
   f.ui.setActive(true);
   const tool = f.document.querySelector('#land-tool');
-  tool.value = 'hex';
-  tool.dispatchEvent(new f.window.Event('change'));
-  f.host.hit = () => null;
-  f.host.point = (e) => ({ x: e.clientX, y: e.clientY });
+  tool.value = 'property';
+  tool.onchange();
+  f.document.querySelector('#land-field').value = 'elevationM';
+  f.document.querySelector('#land-value').value = '321';
+  f.document.querySelector('#land-radius').value = '5';
   const canvas = f.document.querySelector('canvas');
   canvas.setPointerCapture = () => {};
   canvas.hasPointerCapture = () => false;
@@ -352,52 +354,25 @@ test('Hex fill previews every crossed cell and commits each released stroke exac
     Object.assign(e, { button: 0, pointerId: 1, clientX: x, clientY: 0 });
     canvas.dispatchEvent(e);
   };
-  const palette = f.document.createElement('select');
-  palette.id = 'atlas-terrain';
-  palette.append(new Option('Wald', 'forest'));
-  f.document.body.append(palette);
-  f.document.querySelector('#land-radius').value = '1000000';
-  f.document.querySelector('#land-auto-level').checked = false;
-  pointer('pointerdown', -4 * HEX_METERS);
-  pointer('pointermove', 4 * HEX_METERS);
-  pointer('pointermove', 0);
-  f.ui.draw(
-    f.scene,
-    { x: -5 * HEX_METERS, y: -HEX_METERS, width: 10 * HEX_METERS, height: 2 * HEX_METERS },
-    10,
-  );
+  pointer('pointerdown', -100);
+  pointer('pointermove', 100);
   assert.equal(writes.length, 0);
-  const preview = f.scene.children.find((n) => n.data.landHexDraft === 'true');
-  pointer('pointerup', 0);
-  await new Promise((r) => setImmediate(r));
+  pointer('pointerup', 100);
+  await new Promise(setImmediate);
   assert.equal(writes.length, 1);
-  const patch = writes[0].record;
-  assert.equal(patch.values.terrain, 'forest');
-  for (let q = -4; q <= 4; q++)
-    assert(contains({ x: q * HEX_METERS, y: 0 }, patch.polygons), 'Missing intermediate hex ' + q);
-  assert(!contains({ x: 5 * HEX_METERS, y: 0 }, patch.polygons));
-  assert(preview);
-  const relativePatch = patch.polygons.map((p) => ({
-    ...p,
-    outer: p.outer.map((v) => ({ x: v.x + 5 * HEX_METERS, y: v.y + HEX_METERS })),
-  }));
-  assert.deepEqual(
-    preview.geometry.polygons,
-    relativePatch,
-    'Preview and committed footprint must match',
-  );
-  pointer('pointerdown', 10 * HEX_METERS);
-  pointer('pointermove', 11 * HEX_METERS);
+  assert.equal(writes[0].record.propertyOnly, true);
+  assert.deepEqual(writes[0].record.values, { elevationM: 321 });
+  for (const x of [-100, -50, 0, 50, 100]) assert(contains({ x, y: 0 }, writes[0].record.polygons));
+  assert(!contains({ x: 0, y: 6 }, writes[0].record.polygons));
+  pointer('pointerdown', 300);
+  pointer('pointermove', 320);
   assert.equal(writes.length, 1);
-  pointer('pointerup', 11 * HEX_METERS);
-  await new Promise((r) => setImmediate(r));
+  pointer('pointerup', 320);
+  await new Promise(setImmediate);
   assert.equal(writes.length, 2);
-  for (const q of [10, 11])
-    assert(contains({ x: q * HEX_METERS, y: 0 }, writes[1].record.polygons));
-  assert(
-    !contains({ x: 5 * HEX_METERS, y: 0 }, writes[1].record.polygons),
-    'Distinct strokes must not become a connecting line',
-  );
+  assert(contains({ x: 310, y: 0 }, writes[1].record.polygons));
+  assert(!contains({ x: 200, y: 0 }, writes[1].record.polygons));
+  assert.deepEqual(f.errors, []);
 });
 
 for (const tool of ['property', 'reset'])
@@ -452,74 +427,6 @@ for (const tool of ['property', 'reset'])
     assert.equal(f.ui.hasDraft(), false);
     assert.deepEqual(f.errors, []);
   });
-
-test('automatic Hex grid follows the draft size through zoom and resumes after cancellation', (t) => {
-  const f = fixture(t);
-  f.set([]);
-  f.ui.setActive(true);
-  f.document.querySelector('#land-auto-level').checked = true;
-  f.document.querySelector('#land-grid').checked = true;
-  const tool = f.document.querySelector('#land-tool');
-  tool.value = 'hex';
-  tool.onchange();
-  const draw = (width) => {
-    const scene = new AtlasPaint('group'),
-      box = { x: -width / 2, y: -width / 2, width, height: width };
-    f.ui.drawOverlay(scene, box, width / 800);
-    f.ui.draw(scene, box, width / 800);
-    return scene;
-  };
-  const gridWidth = (scene) => {
-    const points = scene.children
-      .flatMap((n) => (n.kind === 'group' ? n.children : [n]))
-      .find((n) => n.data.landscapeGrid === 'true').geometry.points;
-    return Math.max(...points.map((p) => p.x)) - Math.min(...points.map((p) => p.x));
-  };
-  assert(Math.abs(gridWidth(draw(12 * HEX_METERS)) - HEX_METERS) < 0.001);
-  f.ui.points = [{ x: 0, y: 0 }];
-  const zoomed = draw(36 * HEX_METERS);
-  assert.equal(f.document.querySelector('#atlas-hex-level').value, 'hour');
-  const footprint = zoomed.children.find((n) => n.data.landHexDraft === 'true').geometry.polygons[0]
-    .outer;
-  assert(
-    Math.abs(
-      gridWidth(zoomed) -
-        (Math.max(...footprint.map((p) => p.x)) - Math.min(...footprint.map((p) => p.x))),
-    ) < 0.001,
-    'Visible grid and authored footprint must use one Hex size',
-  );
-  f.ui.cancel();
-  draw(96 * HEX_METERS);
-  f.ui.gridFade = null;
-  assert(
-    Math.abs(gridWidth(draw(96 * HEX_METERS)) - 8 * HEX_METERS) < 0.001,
-    'Automatic grid resumes with the day preset when no draft is open',
-  );
-  assert.equal(f.document.querySelector('#atlas-hex-level').value, 'day');
-});
-
-test('an oversized Hex draft fails visibly without saving or discarding its points', async (t) => {
-  const f = fixture(t);
-  f.set([]);
-  let writes = 0;
-  f.host.write = async () => {
-    writes++;
-    return true;
-  };
-  f.ui.tool = 'hex';
-  f.ui.points = [
-    { x: 0, y: 0 },
-    { x: 6000 * HEX_METERS, y: 0 },
-  ];
-  f.document.querySelector('#land-auto-level').checked = false;
-  f.ui.draw(f.scene, { x: 0, y: 0, width: HEX_METERS, height: HEX_METERS }, 10);
-  assert.match(f.document.querySelector('#land-status').textContent, /5.000 Hexes/);
-  await assert.rejects(f.ui.finish(), /5.000 Hexes/);
-  assert.equal(writes, 0);
-  assert(f.ui.hasDraft());
-  f.ui.cancel();
-  assert.equal(f.ui.hasDraft(), false);
-});
 
 test('a missing shared landscape frame never starts an independent read and has a local reload', async (t) => {
   const f = fixture(t);
@@ -607,7 +514,7 @@ test('an unavailable bounded preview never falls back to loading the complete or
   assert.equal(originals, 0);
 });
 
-test('line and selection tools hide irrelevant palettes but keep manual grid level and terrain painting reachable', (t) => {
+test('line and selection tools hide irrelevant palettes and keep continuous property painting reachable', (t) => {
   const f = fixture(t),
     palette = f.document.createElement('label');
   palette.innerHTML = '<select id="atlas-terrain"><option value="plain">Ebene</option></select>';
@@ -631,7 +538,7 @@ test('line and selection tools hide irrelevant palettes but keep manual grid lev
   auto.checked = false;
   auto.onchange();
   assert.equal(levelLabel.hidden, false);
-  choose('hex');
+  choose('property');
   assert.equal(palette.hidden, false);
   assert.equal(levelLabel.hidden, false);
   f.document.querySelector('#land-field').value = 'elevationM';
