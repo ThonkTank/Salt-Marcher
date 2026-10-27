@@ -18,7 +18,7 @@ buildSync({
   platform: 'node',
   format: 'esm',
 });
-const { atlasProject, atlasPlanePoint, ATLAS_CAMERA_FOV } = await import(
+const { atlasProject, atlasPlanePoint, atlasAnchorCamera, ATLAS_CAMERA_FOV } = await import(
   '../../.build/atlas-camera-reference-test.mjs'
 );
 
@@ -251,5 +251,53 @@ test('output crops retain the full camera projection and the same world ray at t
       for (let end = 0; end < 2; end++)
         for (let axis = 0; axis < 3; axis++) close(ray[end][axis], reference[end][axis], 1e-4);
     }
+  }
+});
+
+test('terrain-anchored combined orbit and zoom retain the same Deck pixel above the focus plane', () => {
+  const width = 913,
+    height = 647;
+  for (const tilt of [0, 45, 75]) {
+    const camera = fixture({ tilt });
+    const point = {
+      x: camera.focus.x + 15,
+      y: camera.focus.y - 10,
+      heightM: camera.focusHeightM + 20,
+    };
+    const projected = atlasMetricFrame(camera, width, height).project(point);
+    const pose = {
+      frame: {
+        x: camera.focus.x - (width * camera.metersPerPixel) / 2,
+        y: camera.focus.y - (height * camera.metersPerPixel) / 2,
+        width: width * camera.metersPerPixel,
+        height: height * camera.metersPerPixel,
+      },
+      focusM: camera.focusHeightM,
+      tilt: Math.min(75, tilt + 12),
+      rotation: camera.rotation + 30,
+      exaggeration: camera.exaggeration,
+      projection: 'perspective',
+    };
+    const next = atlasAnchorCamera(
+      {
+        ...pose,
+        frame: { ...pose.frame, width: pose.frame.width * 0.7, height: pose.frame.height * 0.7 },
+      },
+      { point, screen: { x: projected.x / width, y: projected.y / height } },
+    );
+    const frame = atlasMetricFrame(
+      {
+        ...camera,
+        tilt: next.tilt,
+        rotation: next.rotation,
+        metersPerPixel: next.frame.width / width,
+        focus: { x: next.frame.x + next.frame.width / 2, y: next.frame.y + next.frame.height / 2 },
+      },
+      width,
+      height,
+    );
+    const actual = frame.project(point);
+    close(actual.x, projected.x, 1e-6);
+    close(actual.y, projected.y, 1e-6);
   }
 });

@@ -1,3 +1,12 @@
+import {
+  atlasAnchorCamera,
+  atlasCameraWorldEye,
+  atlasNormalizeRotation,
+  atlasRefocusCamera,
+  atlasSafeCameraMove,
+  type AtlasCameraAnchor,
+  type AtlasCameraPose,
+} from './atlas-camera';
 import { terrainCoverageBox, terrainCoverageLevel } from './terrain-coverage';
 import type { AtlasDeckVegetation } from './atlas-deck-vegetation';
 import { lengthLabel } from './atlas-units';
@@ -58,6 +67,7 @@ export class AtlasRasterPresentation implements AtlasPresentation {
   private pickTiles: readonly AtlasSurfaceTile[] | null = null;
   private frame: LandscapeBox = { x: 0, y: 0, width: 256, height: 256 };
   private focusHeightM = 0;
+  private navigating = false;
   private perception = false;
   private tilt = 0;
   private rotation = 0;
@@ -128,10 +138,12 @@ export class AtlasRasterPresentation implements AtlasPresentation {
     }
     for (const name of ['tilt', 'rotation', 'exaggeration'] as const)
       this.controls.querySelector<HTMLInputElement>('#terrain-' + name)!.oninput = (e) => {
-        if (this.gesturing || this.host.hasDraft()) return;
-        this[name] = Number((e.target as HTMLInputElement).value);
-        this.reframe(this.frame);
-        this.host.redraw();
+        const value = Number((e.target as HTMLInputElement).value);
+        this.setPose(
+          name === 'tilt' ? value : this.tilt,
+          name === 'rotation' ? value : this.rotation,
+          name === 'exaggeration' ? value : this.exaggeration,
+        );
       };
     input.parentElement!.addEventListener(
       'pointerdown',
@@ -390,16 +402,8 @@ export class AtlasRasterPresentation implements AtlasPresentation {
       frame.height !== this.frame.height
     )
       this.preferDetail = false;
-    if (
-      !this.gesturing &&
-      (frame.x + frame.width / 2 !== this.frame.x + this.frame.width / 2 ||
-        frame.y + frame.height / 2 !== this.frame.y + this.frame.height / 2)
-    )
-      this.focusHeightM = this.height({
-        x: frame.x + frame.width / 2,
-        y: frame.y + frame.height / 2,
-      });
     this.frame = { ...frame };
+    this.input.dataset.terrainProjection = JSON.stringify(this.cameraPose());
     this.place();
     if (this.surface) {
       this.surface.setCamera(this.pose());
@@ -476,13 +480,15 @@ export class AtlasRasterPresentation implements AtlasPresentation {
           this.tiles = frame.tiles.map((t) =>
             reuseAtlasSurfaceTile(previous.get(JSON.stringify(t.tile)), t),
           );
-          if (!this.ready) {
+          if (!this.ready && !this.navigating) {
             this.focusHeightM = this.height({
               x: this.frame.x + this.frame.width / 2,
               y: this.frame.y + this.frame.height / 2,
             });
             this.surface?.setCamera(this.pose());
           }
+          this.reconcileCamera();
+          this.refocusCamera();
           this.input.dataset.terrainQuality = frame.complete ? 'detail' : 'overview';
           this.show();
           if (frame.complete && this.scene) {
@@ -631,12 +637,15 @@ export class AtlasRasterPresentation implements AtlasPresentation {
     );
     this.input.dataset.terrainRevision = String(this.revision);
   }
-  private height(p: Point) {
+  private loadedHeight(p: Point): number | null {
     const tile = this.tiles.find((t) => {
       const b = t.terrain.projection.grid.view.box;
       return p.x >= b.x && p.y >= b.y && p.x <= b.x + b.width && p.y <= b.y + b.height;
     });
-    return tile ? gridHeight(tile.terrain.projection.grid, p) : 0;
+    return tile ? gridHeight(tile.terrain.projection.grid, p) : null;
+  }
+  private height(p: Point) {
+    return this.loadedHeight(p) ?? 0;
   }
   visibility(): TerrainView | undefined {
     return this.tiles.length
@@ -699,14 +708,116 @@ export class AtlasRasterPresentation implements AtlasPresentation {
     if (p) this.lastPoint = { x: p.x, y: p.y };
     return this.lastPoint;
   }
+  navigationAnchor(e: { clientX: number; clientY: number }): AtlasCameraAnchor | null {
+    const hit = this.terrainHit(e.clientX, e.clientY);
+    const fallback = hit ? null : this.planePoint(e.clientX, e.clientY, this.focusHeightM, false);
+    const point = hit?.point ?? (fallback ? { ...fallback, heightM: this.focusHeightM } : null);
+    if (!point) return null;
+    const pixel = this.pixel(e.clientX, e.clientY);
+    const anchor = {
+      point,
+      screen: { x: pixel.x / this.input.clientWidth, y: pixel.y / this.input.clientHeight },
+    };
+    this.input.dataset.navigationAnchor = JSON.stringify({
+      ...anchor,
+      source: hit ? 'terrain' : 'focus-plane',
+    });
+    return anchor;
+  }
   navigationPoint(e: { clientX: number; clientY: number }) {
-    const plane = this.host.workplane?.();
-    return this.planePoint(
-      e.clientX,
-      e.clientY,
-      plane ? atlasWorkplaneHeight(plane, this.drawingSurface()) : this.focusHeightM,
-      false,
-    );
+    return this.navigationAnchor(e)?.point ?? null;
+  }
+  get cameraAngles() {
+    return { tilt: this.tilt, rotation: this.rotation };
+  }
+  navigationGesture(active: boolean) {
+    const ended = this.navigating && !active;
+    this.navigating = active;
+    if (ended) this.refocusCamera();
+  }
+  private refocusCamera() {
+    if (this.navigating || this.gesturing || !this.surface || !this.ready) return;
+    const rect = this.input.getBoundingClientRect();
+    const hit = this.terrainHit(rect.left + rect.width / 2, rect.top + rect.height / 2);
+    if (!hit) return;
+    const before = this.cameraPose(),
+      next = atlasRefocusCamera(before, hit.point.heightM);
+    if (next === before) return;
+    this.applyCameraPose(next);
+    this.host.navigate?.(next.frame, true);
+  }
+  private cameraPose(): AtlasCameraPose {
+    return {
+      frame: { ...this.frame },
+      focusM: this.focusHeightM,
+      tilt: this.tilt,
+      rotation: this.rotation,
+      exaggeration: this.exaggeration,
+      projection: 'perspective',
+    };
+  }
+  private eyeIntersects = (
+    from: ReturnType<typeof atlasCameraWorldEye>,
+    to: ReturnType<typeof atlasCameraWorldEye>,
+  ) => {
+    const segment = [
+      [from.x, from.y, from.heightM],
+      [to.x, to.y, to.heightM],
+    ] as const;
+    return this.tiles.some((tile) => !!atlasTerrainRay(tile.terrain.projection.grid, segment));
+  };
+  private applyCameraPose(pose: AtlasCameraPose) {
+    this.frame = { ...pose.frame };
+    this.focusHeightM = pose.focusM;
+    this.tilt = pose.tilt;
+    this.rotation = pose.rotation;
+    this.exaggeration = pose.exaggeration;
+    this.toggle.textContent = this.tilt ? 'Senkrecht ausrichten' : 'Atlas kippen';
+    for (const name of ['tilt', 'rotation', 'exaggeration'] as const)
+      (this.controls.querySelector('#terrain-' + name) as HTMLInputElement).value = String(
+        this[name],
+      );
+    this.input.dataset.terrainProjection = JSON.stringify(this.cameraPose());
+    this.surface?.setCamera(this.pose());
+  }
+  cameraFrame(
+    frame: LandscapeBox,
+    anchor?: AtlasCameraAnchor,
+    angles?: { tilt: number; rotation: number },
+  ) {
+    const before = this.cameraPose();
+    let next = { ...before, frame: { ...frame }, ...angles };
+    next.tilt = Math.max(0, Math.min(75, next.tilt));
+    next.rotation = atlasNormalizeRotation(next.rotation);
+    if (anchor) next = atlasAnchorCamera(next, anchor);
+    const safe = atlasSafeCameraMove(before, next, (p) => this.loadedHeight(p), this.eyeIntersects);
+    this.applyCameraPose(safe);
+    return { ...safe.frame };
+  }
+  /** New coverage may reveal terrain under a previously unknown eye position.
+   * Retreat along the existing view direction; never change terrain or exaggeration. */
+  private reconcileCamera() {
+    if (!this.surface || this.gesturing) return;
+    const before = this.cameraPose(),
+      eye = atlasCameraWorldEye(before);
+    const ground = this.loadedHeight(eye);
+    if (ground === null || eye.heightM > ground + 0.02) return;
+    let safe = before;
+    for (let i = 0; i < 40; i++) {
+      safe = {
+        ...safe,
+        frame: {
+          x: before.frame.x + before.frame.width / 2 - safe.frame.width * 0.6,
+          y: before.frame.y + before.frame.height / 2 - safe.frame.height * 0.6,
+          width: safe.frame.width * 1.2,
+          height: safe.frame.height * 1.2,
+        },
+      };
+      const at = atlasCameraWorldEye(safe);
+      if (at.heightM > (this.loadedHeight(at) ?? Math.max(ground, before.focusM)) + 0.02) break;
+    }
+    this.applyCameraPose(safe);
+    this.host.navigate?.(safe.frame);
   }
   screenAnchor(p: Point) {
     const projected = this.surface?.frame.project({
@@ -789,16 +900,26 @@ export class AtlasRasterPresentation implements AtlasPresentation {
     this.contours = interval;
     this.show();
   }
-  setPose(tilt: number, rotation = this.rotation) {
-    if (this.gesturing || this.host.hasDraft()) return;
-    this.tilt = tilt;
-    this.rotation = rotation;
-    this.toggle.textContent = tilt ? 'Senkrecht ausrichten' : 'Atlas kippen';
-    for (const name of ['tilt', 'rotation'] as const)
-      (this.controls.querySelector('#terrain-' + name) as HTMLInputElement).value = String(
-        this[name],
-      );
-    this.reframe(this.frame);
+  setPose(tilt: number, rotation = this.rotation, exaggeration = this.exaggeration) {
+    if (this.gesturing || (this.host.navigationLocked?.() ?? this.host.hasDraft())) return;
+    const before = this.cameraPose();
+    const rect = this.input.getBoundingClientRect();
+    const anchor = this.navigationAnchor({
+      clientX: rect.left + rect.width / 2,
+      clientY: rect.top + rect.height / 2,
+    });
+    let next = {
+      ...before,
+      tilt: Math.max(0, Math.min(75, tilt)),
+      rotation: atlasNormalizeRotation(rotation),
+      exaggeration,
+    };
+    if (anchor) next = atlasAnchorCamera(next, anchor);
+    const safe = atlasSafeCameraMove(before, next, (p) => this.loadedHeight(p), this.eyeIntersects);
+    this.applyCameraPose(safe);
+    if (this.host.navigate) this.host.navigate(safe.frame);
+    else this.reframe(safe.frame);
+    this.refocusCamera();
     this.host.redraw();
   }
   private drawingSurface() {

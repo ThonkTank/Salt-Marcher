@@ -18,6 +18,11 @@ const {
   zoomBox,
   atlasProject,
   atlasPlanePoint,
+  atlasAnchorCamera,
+  atlasCameraWorldEye,
+  atlasNormalizeRotation,
+  atlasSafeCameraMove,
+  atlasRefocusCamera,
   terrainVisible,
   terrainHorizon,
   gridHeight,
@@ -114,4 +119,122 @@ test('zoom stays anchored on elevated terrain using the corresponding work-plane
         close(projected.x, screen.x);
         close(projected.y, screen.y);
       }
+});
+
+test('physical terrain anchors retain CSS position across combined orbit and zoom above the focus plane', () => {
+  for (const scale of [1, 2])
+    for (const offset of [0, 1e9])
+      for (const tilt of [0, 45, 75])
+        for (const rotation of [-170, 0, 90, 175]) {
+          const before = { ...pose(offset), tilt, rotation };
+          const point = { x: offset + 15, y: -offset + 20, heightM: 80 };
+          const screen = atlasProject(before, point, point.heightM);
+          const requested = {
+            ...before,
+            tilt: Math.min(75, tilt + 13),
+            rotation: rotation + 37,
+            frame: { ...before.frame, width: 280, height: 224 },
+          };
+          const next = atlasAnchorCamera(requested, { point, screen });
+          const actual = atlasProject(next, point, point.heightM);
+          close(actual.x * 800, screen.x * 800, 0.001 / scale);
+          close(actual.y * 640, screen.y * 640, 0.001 / scale);
+        }
+  assert.equal(atlasNormalizeRotation(540), -180);
+  assert.equal(atlasNormalizeRotation(-721), -1);
+});
+
+test('collision constrains aggressive zoom and a pan whose endpoints clear a ridge', () => {
+  const before = { ...pose(), focusM: 0, tilt: 75 };
+  const eye = atlasCameraWorldEye(before);
+  const ground = eye.heightM - 10;
+  const zoom = atlasSafeCameraMove(
+    before,
+    { ...before, frame: { ...before.frame, width: 0.1, height: 0.08 } },
+    () => ground,
+    () => false,
+  );
+  assert(zoom.frame.width > 0.1);
+  assert(atlasCameraWorldEye(zoom).heightM > ground + 0.02);
+  let checkedPath = false;
+  const pan = atlasSafeCameraMove(
+    before,
+    { ...before, frame: { ...before.frame, y: before.frame.y + 100 } },
+    () => 0,
+    (a, b) => {
+      checkedPath = true;
+      return a.y < eye.y + 50 && b.y > eye.y + 50;
+    },
+  );
+  assert(checkedPath);
+  assert.equal(
+    pan.frame.y,
+    before.frame.y,
+    'a high ridge between safe endpoints blocks the eye path',
+  );
+});
+
+test('unknown terrain keeps the last known ground plane and orbit checks intermediate eyes', () => {
+  const before = { ...pose(), focusM: 100, tilt: 75 };
+  const requested = { ...before, rotation: 180 };
+  const safe = atlasSafeCameraMove(
+    before,
+    requested,
+    (p) => (Math.abs(p.x) > 300 ? 1000 : null),
+    () => false,
+  );
+  assert(
+    Math.abs(safe.rotation) < 180 && Math.abs(safe.rotation) > 0,
+    'orbit stops before the intermediate mountain',
+  );
+  const fallback = atlasSafeCameraMove(
+    before,
+    { ...before, focusM: -1000 },
+    () => null,
+    () => false,
+  );
+  assert(
+    atlasCameraWorldEye(fallback).heightM > before.focusM,
+    'missing coverage does not authorize descent through the focus plane',
+  );
+});
+
+test('adopting a new terrain focus keeps the real eye and every world projection unchanged', () => {
+  for (const tilt of [0, 45, 75]) {
+    const before = { ...pose(), tilt };
+    const eye = atlasCameraWorldEye(before);
+    const next = atlasRefocusCamera(before, -100);
+    const afterEye = atlasCameraWorldEye(next);
+    for (const axis of ['x', 'y', 'heightM']) close(afterEye[axis], eye[axis]);
+    assert.equal(next.focusM, -100);
+    for (const point of [
+      { x: 15, y: 20, heightM: 80 },
+      { x: -30, y: 40, heightM: -100 },
+    ]) {
+      const a = atlasProject(before, point, point.heightM),
+        b = atlasProject(next, point, point.heightM);
+      close(a.x, b.x);
+      close(a.y, b.y);
+      close(a.depth, b.depth);
+    }
+  }
+});
+
+test('retreat from close ground to overview uses each endpoint own scale clearance', () => {
+  const before = { ...pose(0, 0.1), focusM: 0, tilt: 75 };
+  const requested = {
+    ...before,
+    frame: { x: -500000, y: -400000, width: 1000000, height: 800000 },
+  };
+  const safe = atlasSafeCameraMove(
+    before,
+    requested,
+    () => 0,
+    (a, b) => a.heightM <= 0 && b.heightM >= 0,
+  );
+  assert.equal(
+    safe.frame.width,
+    requested.frame.width,
+    'larger clearance must not trap an otherwise safe retreat',
+  );
 });

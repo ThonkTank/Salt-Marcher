@@ -539,6 +539,7 @@ export class CampaignAtlasWorkbench {
       presentation: () => (this.spatial?.active ? this.spatial : null),
       relative: true,
       smoothZoom: true,
+      keyboard: true,
       overlay: (root, box, mpp) => {
         this.syncBrushSizes(mpp);
         const again = this.landscape?.drawOverlay(root, box, mpp);
@@ -553,6 +554,7 @@ export class CampaignAtlasWorkbench {
       pan: (e) => {
         if (
           e.button === 1 ||
+          e.button === 2 ||
           (e.button === 0 && (this.root.dataset.panMode === 'true' || this.spacePan || e.altKey))
         )
           return 'explicit';
@@ -1083,11 +1085,12 @@ export class CampaignAtlasWorkbench {
         await this.setFamily('terrain', false);
         if (this.family === 'terrain') await this.landscape.planTerrainRoute(kind);
       },
+      navigate: (box, coalesce) => this.camera.set(box, true, 'set', coalesce),
       live: () => this.landscape.livePainting,
       draft: () => this.landscape.spatialDraft(),
       writing: () => this.busy || this.regions.reading,
       hasDraft: () => this.cameraDraftPending(),
-      navigationLocked: () => this.cameraDraftPending(true),
+      navigationLocked: () => this.camera.navigationLocked,
       cancel: () => {
         this.landscape.cancel();
         this.cancel();
@@ -1636,7 +1639,11 @@ export class CampaignAtlasWorkbench {
   private async setNavigationMode(pan: boolean) {
     // Hand mode only changes camera input. The released stroke retains its writer
     // and tool until settlement; changing author families still requires flush.
-    if (pan && this.landscape.livePainting && !this.landscape.blocksNavigation()) {
+    if (
+      pan &&
+      (this.landscape.livePainting || !!this.strokeQueue?.pending) &&
+      !this.landscape.blocksNavigation()
+    ) {
       this.root.dataset.panMode = 'true';
       this.landscape.setActive(false);
       this.layout.sync();

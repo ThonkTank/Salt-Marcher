@@ -1,4 +1,5 @@
 import type { AtlasWorkplane } from './atlas-workplane';
+import type { CanvasBox } from './atlas-camera';
 import type { Point } from '../shared/contracts';
 import type { LandscapeRecord } from './atlas-landscape';
 export interface TerrainDraft {
@@ -14,6 +15,7 @@ export type AtlasPresentationHost = {
   tool: () => string;
   workplane?: () => AtlasWorkplane | null;
   objectPicking?: () => boolean;
+  navigate?: (box: CanvasBox, coalesce?: boolean) => void;
   navigation: (event: PointerEvent) => boolean;
   panning: () => boolean;
   redraw: () => void;
