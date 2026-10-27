@@ -46,25 +46,28 @@ Kampagnenarchive und Build-Metadaten. Frühere Testbestände werden nicht migrie
 
 Planungsstand: 27.10.2026, übernommen; Umsetzung durch den Koordinationschat freigegeben.
 Preflight-Basis ist Main `a87b8e99ba8a3954f664a10b0e7a9c141c65eb22`.
-Aktuelle Arbeitsbasis: `a87b8e99ba8a3954f664a10b0e7a9c141c65eb22`; letzter
-erfolgreicher GitHub-Abgleich 27.10.2026, 14:26 Uhr Europe/Berlin. Keine neuen
-Main-Commits offen; erster P03-Lieferteil auf Checkpoint `bf76682c7` gesichert.
+Aktuelle Arbeitsbasis: `613c012f00c99f0e110d081285049399173c4d11`; letzter
+erfolgreicher GitHub-Abgleich 27.10.2026, 14:34 Uhr Europe/Berlin. PR #1420
+integriert und in diesem Checkout übernommen; keine neuen Main-Commits offen.
 Die [sechs bestätigten Ziele TW-G1–6 und der Messvertrag](../requirements/terrain-relief.md#ziele-und-abnahme-dieser-etappe)
 gelten unverändert. Hier stehen Ausführung und Entscheidungen, keine zweite Anforderungsliste.
 
 ### Nächster Produktnachweis und Entscheidung
 
 **Nächster Produktnachweis P03:** verlässliche Grundpinsel und Meer einschließlich
-Undo/Redo, Abbruchregeln, Folgezug und Neustart. Der erste kohärente
-Teil behebt den beobachteten Shutdown-Handlerfehler und das Berichtsstatusfeld;
-der vollständige native Ablauf besteht jetzt ohne Consolefehler. Nach gezielter
-Nachprüfung und Candidate-Integration die übrigen G1-Kriterien prüfen und nur
-belegte Lücken beheben.
+Undo/Redo, Abbruchregeln, Folgezug und Neustart. Nach dem integrierten Shutdownfix
+folgt die konkret belegte Unknown-/Postcommit-Lücke: Unsicherheit geht derzeit
+zwischen Worker, Host, Preload und Atlas-Author verloren. Ein Fehler beim
+Antwortaufbau nach dem Commit darf keine gewöhnliche Ablehnung vortäuschen;
+Originalauftrag und Klärungsbesitzer müssen erhalten bleiben, Folgezug/Reset
+dürfen keinen unbekannten Commit übergehen oder wiederholen. Erst danach die
+übrigen G1-Gestenanschlüsse mit aktuellen Tests/nativer Probe vervollständigen.
 M1 hat den frühen Ablauf Malen → Speichern/Folgezug → Fresh funktional belegt;
 eine statistische Leistungsfreigabe oder vollständige Produktabnahme fehlt.
-P03 startet am 27.10.2026 um 14:18 mit `gpt-6.1-sol` / `high`; erster
-Kontrollpunkt für den Shutdown-Anschluss spätestens 15:03, Paketentscheidung
-spätestens 18:18. Beide Zeiten liegen innerhalb des bestehenden Lieferrahmens.
+P03 begann am 27.10.2026 um 14:18 mit `gpt-6.1-sol` / `high`; der Shutdown-
+Anschluss wurde vor seinem Kontrollpunkt 15:03 integriert. Derselbe Implementierer
+beginnt den Unknown-/Postcommit-Anschluss um 14:35, Kontrolle spätestens 15:20;
+die gemeinsame Paketentscheidung bleibt 18:18, ohne Neustart der P03-Laufzeit.
 
 **Beginn T0:** 27.10.2026, 13:38 Uhr Europe/Berlin (11:38 UTC), tatsächlicher
 P01-Start nach Main-, Plan- und Umsetzungsfreigabe. Implementierer: Subagent
@@ -110,8 +113,11 @@ angeschlossen. Die Registrierung ruft nach erfolgreichem Flush den vorhandenen
 `CampaignAtlas.hide()` auf; verweigertes Schließen erhält den aktiven Besitzer.
 Der Reportstatus ist gegen Überschreiben durch UI-Text geschützt. Gezielt 19
 Tests, App-/Desktop-Typprüfung, Repositoryprüfung, frischer Desktopbuild,
-Formatierung und Syntaxprüfung bestehen. Der Implementierer ist zur gezielten
-Nachprüfung und Candidate-Integration angehalten; übriges P03/G1 bleibt offen.
+Formatierung und Syntaxprüfung bestehen. Die unabhängige Nachprüfung gab den
+engen Teil frei. [PR #1420](https://github.com/ThonkTank/Salt-Marcher/pull/1420)
+ist nach grüner [exakter Candidate-CI](https://github.com/ThonkTank/Salt-Marcher/actions/runs/40503939602)
+auf `307defac26704ecafb1eb474a7f546bb53db1957` integriert; der Main-Baum ist
+inhaltlich identisch. Die zusätzliche Main-CI läuft noch; übriges P03/G1 bleibt offen.
 
 Aktueller Produktfixlauf: `.build/atlas-terrain-stroke/1793103792143-385146/`.
 `handoff-report.json` bindet den unveränderten Originalbericht `result.json`
@@ -333,8 +339,9 @@ und keine 14 obligatorischen Vorpakete. Gezielte Zuordnung:
 - P13: Exportcancel, Alpha-Picking und Reader-Shutdown bei Eingriff oder konkretem Befund.
 - Vor P02 nur ein konkret sicherheits- oder aussagekritischer Defekt; keine pauschale Vorqualifikation.
 
-Nach **jeder** Integration GitHub-Releasezählung prüfen. Beim Planstart gemeldete
-Basis: `v0.192.0`, sechs PRs; vor weiterer Integration live aktualisieren.
+Nach **jeder** Integration GitHub-Releasezählung prüfen. Live geprüft am
+27.10.2026 um 14:34: Basistag `v0.192.0`, **7 PRs** mit Mergecommit nach diesem
+Tag in Main (#1413–1416, #1418–1420); Schwelle 10 noch nicht erreicht.
 Eine früher erreichte Pflichtschwelle zieht P15 bzw. die nötigen Releaseanteile
 vor, statt bis M5 zu warten. Zusätzliche Veröffentlichung und CI-Zeit erscheinen
 dann in der betroffenen Timeline. Fehlende Signierung/GPU-/Paketbelege sind
