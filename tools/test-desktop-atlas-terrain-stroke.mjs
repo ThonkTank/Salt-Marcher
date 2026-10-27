@@ -1269,19 +1269,25 @@ async function exerciseFormTools() {
   );
   const records = () => queryHeights().map((height) => ({ height, id: height.id, revision: 0 }));
   const terrain = () => new TerrainSampler(records());
-  const ready = async () =>
-    page.waitForFunction(
-      () => {
+  const ready = async (revision = queryRevision()) => {
+    await page.waitForFunction(
+      (revision) => {
         const m = document.querySelector('#campaign-map');
         return (
           m.dataset.terrainReady === 'ready' &&
+          m.dataset.terrainQuality === 'detail' &&
+          Number(m.dataset.terrainRevision) >= revision &&
           !m.dataset.terrainDraft &&
           !document.querySelector('#land-tool').disabled
         );
       },
-      null,
+      revision,
       { timeout: 60000 },
     );
+    await page.evaluate(
+      () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))),
+    );
+  };
   const geometry = async () => {
     const box = await page.locator('#campaign-map').boundingBox(),
       view = await page.locator('#campaign-map').evaluate((n) => JSON.parse(n.dataset.atlasView));
@@ -1422,7 +1428,7 @@ async function exerciseFormTools() {
       return canvas.toDataURL('image/png').split(',')[1];
     });
     await writeFile(path.join(output, label + '-live.png'), Buffer.from(livePng, 'base64'));
-    await ready();
+    await ready(escape ? before.revision : before.revision + 1);
     const after = recoveryState();
     if (escape) {
       check(
@@ -1517,6 +1523,19 @@ async function exerciseFormTools() {
         incised,
       });
     }
+    const displayed = await page
+      .locator('#campaign-map')
+      .evaluate((n) => ({
+        revision: Number(n.dataset.terrainRevision),
+        quality: n.dataset.terrainQuality,
+        ready: n.dataset.terrainReady,
+        cache: JSON.parse(n.dataset.terrainCache),
+      }));
+    check(
+      label + '-canonical-display-adopted',
+      displayed.revision === after.revision && displayed.quality === 'detail',
+      { displayed, canonicalRevision: after.revision },
+    );
     const savedPatch = await sample(page, watch.x, watch.y);
     await savePatch(label + '-saved.png', savedPatch.bytes);
     await native.capture(page, label + '-committed.png');
@@ -1530,6 +1549,7 @@ async function exerciseFormTools() {
       preupChanged: pixelDelta(baseline.bytes, preup.bytes),
       liveCommitChanged: pixelDelta(preup.bytes, savedPatch.bytes),
       liveFrame,
+      displayed,
     });
     await history('undo', before, label + '-undo');
     await history('redo', after, label + '-redo');
