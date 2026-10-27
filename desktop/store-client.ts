@@ -45,6 +45,7 @@ interface Pending {
 /** Exactly one worker per host lifetime; failure is terminal until an ordered app restart. */
 export class StoreClient extends EventEmitter {
   private worker: Worker;
+  private workerError: Error | null = null;
   private pending = new Map<number, Pending>();
   private sequence = 0;
   private state: 'starting' | 'ready' | 'closing' | 'failed' | 'closed' = 'starting';
@@ -94,7 +95,7 @@ export class StoreClient extends EventEmitter {
         diagnostic?: ErrorDiagnostic;
       }) => {
         if (message.kind === 'ready') {
-          if (this.state === 'starting') {
+          if (this.state === 'starting' && !this.workerError) {
             this.state = 'ready';
             readyResolve();
           }
@@ -147,9 +148,14 @@ export class StoreClient extends EventEmitter {
           );
       },
     );
-    this.worker.once('error', (error) => failed(error.message, error));
+    this.worker.once('error', (error) => {
+      // A native error can overtake the structured fatal message. Node drains
+      // worker messages before exit; block calls now and choose the cause then.
+      this.workerError = error;
+    });
     this.stopped = new Promise((resolve) =>
       this.worker.once('exit', (exitCode) => {
+        if (this.workerError) failed(this.workerError.message, this.workerError);
         if (!this.databaseClosed || exitCode !== 0 || this.pending.size)
           failed(
             'Speicherprozess unerwartet beendet.',
@@ -167,7 +173,7 @@ export class StoreClient extends EventEmitter {
     );
   }
   call<K extends StoreOperation>(method: K, ...args: StoreArguments<K>): Promise<StoreResult<K>> {
-    if (this.state !== 'ready')
+    if (this.state !== 'ready' || this.workerError)
       return Promise.reject(
         new StoreOutcomeUnknownError('Speicherprozess ist nicht aufnahmebereit.'),
       );
@@ -198,7 +204,7 @@ export class StoreClient extends EventEmitter {
   }
   close(): Promise<StoreShutdown> {
     if (this.closeTask) return this.closeTask;
-    if (this.state === 'ready' || this.state === 'starting') {
+    if (!this.workerError && (this.state === 'ready' || this.state === 'starting')) {
       if (this.state === 'starting') this.rejectReady(new Error('Speicherstart beendet.'));
       this.state = 'closing';
       this.worker.postMessage({ kind: 'close' });
