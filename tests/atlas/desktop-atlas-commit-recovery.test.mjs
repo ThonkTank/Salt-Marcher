@@ -410,7 +410,7 @@ for (const fault of ['projection', 'encoding'])
       { expectedRevision: source.revision, sourceFence: source.fence },
       async (action, context) => {
         const result = await x.boundary.writeAtlasCommit({
-          commandId: randomUUID(),
+          commandId: context.commandId,
           token: x.token,
           campaignId: x.campaign.id,
           action,
@@ -424,11 +424,15 @@ for (const fault of ['projection', 'encoding'])
         return result.value;
       },
     );
-    const results = await Promise.allSettled([
-      queue.enqueue(action, 'first'),
-      queue.enqueue(action, 'dependent'),
-    ]);
-    assert(results.every((r) => r.status === 'rejected'));
+    const firstFailed = assert.rejects(queue.enqueue(action, 'first'));
+    let dependentCompleted = false;
+    const dependent = queue.enqueue(action, 'dependent').then(() => {
+      dependentCompleted = true;
+    });
+    await firstFailed;
+    await assert.rejects(queue.finish());
+    assert.equal(queue.pending, 2);
+    assert.equal(dependentCompleted, false);
     assert(queue.failed);
     const writes = () => x.calls.filter((c) => c.name === 'atlas:commit');
     assert.equal(writes().length, 1, 'dependent gesture never reaches the preload');
@@ -455,6 +459,29 @@ for (const fault of ['projection', 'encoding'])
     assert.deepEqual(await x.store.campaignAtlas(x.token), before);
     assert.deepEqual(await x.store.atlasHeight(x.token, { x: 0, y: 0 }), height);
     assert.equal(writes().length, 1, 'receipt inspection cannot replay the commit');
+    queue.confirm(recovered.value);
+    const freshSource = await x.store.atlasRegionSource(x.token);
+    queue.resume({ expectedRevision: freshSource.revision, sourceFence: freshSource.fence });
+    await dependent;
+    await queue.finish();
+    assert.equal(writes().length, 2);
+    assert.equal(writes()[1].args[0].commandId, 'dependent');
+    assert.equal(writes()[1].args[0].terrainStroke.id, 'dependent');
+    const both = await x.store.atlasHeight(x.token, { x: 0, y: 0 });
+    assert(both.heightM > height.heightM);
+    assert.equal((await x.store.campaignAtlas(x.token)).revision, before.revision + 1);
+    const history = async (kind) =>
+      x.boundary.writeAtlasCommit({
+        commandId: randomUUID(),
+        token: x.token,
+        campaignId: x.campaign.id,
+        action: { kind },
+      });
+    assert.equal((await history('undo')).ok, true);
+    assert.equal((await x.store.atlasHeight(x.token, { x: 0, y: 0 })).heightM, height.heightM);
+    assert.equal((await history('redo')).ok, true);
+    assert.equal((await x.store.atlasHeight(x.token, { x: 0, y: 0 })).heightM, both.heightM);
+    const beforeNext = (await x.store.campaignAtlas(x.token)).revision;
     const safe = await x.boundary.writeAtlasCommit({
       ...original,
       commandId: randomUUID(),
@@ -470,5 +497,30 @@ for (const fault of ['projection', 'encoding'])
       action: { kind: 'landscape-sea-level', seaLevelM: 12 },
     });
     assert.equal(next.ok, true, 'work is usable again after explicit receipt resolution');
-    assert.equal(next.value.revision, before.revision + 1);
+    assert.equal(next.value.revision, beforeNext + 1);
   });
+
+test('typed receipt resolution distinguishes still unknown from confirmed not-applied without dispatch', async (t) => {
+  const x = fixture(t),
+    c = x.command();
+  x.api.executeAtlasCommit = async () => ({
+    ok: false,
+    error: 'Lost result',
+    errorKind: 'store-outcome-unknown',
+  });
+  await author.writeAtlasCommit(c);
+  const original = x.api.reconcileAtlasCommit;
+  x.api.reconcileAtlasCommit = async () => ({ ok: true, value: { outcome: 'unknown' } });
+  assert.deepEqual(await author.reconcilePendingAtlasCommit(c.token), {
+    ok: true,
+    value: { outcome: 'unknown' },
+  });
+  assert.deepEqual(author.pendingAtlasWrite(c.token), c);
+  x.api.reconcileAtlasCommit = original;
+  assert.deepEqual(await author.reconcilePendingAtlasCommit(c.token), {
+    ok: true,
+    value: { outcome: 'not-applied' },
+  });
+  assert.equal(author.pendingAtlasWrite(c.token), null);
+  assert.equal(x.calls.writes, 0);
+});

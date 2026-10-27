@@ -6,6 +6,7 @@ export type TerrainLiveAction = Extract<
 >;
 export interface TerrainLiveContext {
   id: string;
+  commandId?: string;
   expectedRevision: number;
   sourceFence: string;
 }

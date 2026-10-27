@@ -67,6 +67,7 @@ export async function writeAtlasCommit(
     document.dispatchEvent(new Event('atlas-write-state'));
     return {
       ok: false,
+      errorKind: 'store-outcome-unknown',
       error:
         'Ausgang des Atlasauftrags unbekannt. Der Auftrag bleibt mit derselben Kennung für Speicherstand klären erhalten. ' +
         (e as Error).message,
@@ -74,37 +75,55 @@ export async function writeAtlasCommit(
   }
 }
 
-export async function recoverAtlasCommit(
+export async function reconcilePendingAtlasCommit(
   token: string,
-): Promise<Result<import('./campaign-atlas-contracts').AtlasCommitAck> | null> {
+  retained?: AtlasCommand,
+): Promise<Result<import('./campaign-atlas-contracts').AtlasCommitOutcome> | null> {
+  if (retained && !pending.has(token)) {
+    if (retained.token !== token)
+      return { ok: false, error: 'Pinselauftrag gehört zu einer anderen Kampagne.' };
+    pending.set(token, structuredClone(retained));
+  }
   const command = pending.get(token);
   if (!command) return null;
+  if (retained && retained.commandId !== command.commandId)
+    return { ok: false, error: 'Ein anderer Atlasauftrag bleibt ungeklärt.' };
   try {
     const result = await editorSession.run(() => window.campaign.reconcileAtlasCommit(command));
     if (pending.get(token) !== command)
       return { ok: false, error: 'Atlasauftrag inzwischen geändert. Speicherstand erneut klären.' };
     if (!result.ok) return result;
-    if (result.value.outcome === 'unknown')
-      return {
-        ok: false,
-        error: 'Atlasauftrag läuft noch. Speicherstand anschließend erneut klären.',
-      };
+    if (result.value.outcome === 'unknown') return result;
     pending.delete(token);
     document.dispatchEvent(new Event('atlas-write-state'));
-    if (result.value.outcome === 'not-applied')
-      return {
-        ok: false,
-        error:
-          'Atlasauftrag wurde nicht gespeichert. Eingaben bleiben erhalten; Stand aktualisieren und erneut speichern.',
-      };
-    document.dispatchEvent(new CustomEvent('atlas-invalidated', { detail: result.value.ack }));
-    return { ok: true, value: result.value.ack };
+    if (result.value.outcome === 'applied')
+      document.dispatchEvent(new CustomEvent('atlas-invalidated', { detail: result.value.ack }));
+    return result;
   } catch (e) {
     return {
       ok: false,
       error: 'Ausgang des Atlasauftrags weiter unbekannt. ' + (e as Error).message,
     };
   }
+}
+
+export async function recoverAtlasCommit(
+  token: string,
+): Promise<Result<import('./campaign-atlas-contracts').AtlasCommitAck> | null> {
+  const result = await reconcilePendingAtlasCommit(token);
+  if (!result || !result.ok) return result;
+  if (result.value.outcome === 'unknown')
+    return {
+      ok: false,
+      error: 'Atlasauftrag läuft noch. Speicherstand anschließend erneut klären.',
+    };
+  if (result.value.outcome === 'not-applied')
+    return {
+      ok: false,
+      error:
+        'Atlasauftrag wurde nicht gespeichert. Eingaben bleiben erhalten; Stand aktualisieren und erneut speichern.',
+    };
+  return { ok: true, value: result.value.ack };
 }
 
 const wrap = (c: { commandId: string; token: string; campaignId: string }, action: AtlasAction) =>
