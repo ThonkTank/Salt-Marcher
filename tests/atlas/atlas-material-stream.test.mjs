@@ -227,10 +227,31 @@ test('stale material revision, fence, and address replies are rejected before pu
   }
 });
 
-test('same-source pan retains intersecting material tiles while newly exposed detail loads', async () => {
+test('same-source pan keeps complete parent coverage until cached and newly exposed material detail is ready', async () => {
   const stream = new AtlasMaterialTileStream(),
     frames = [],
+    detailReads = [],
     blocked = deferred();
+  const assertCoverage = (frame, box) => {
+    assertMaterialFrame(frame);
+    assertNoOverlap(frame);
+    let area = 0;
+    for (const tile of frame.tiles) {
+      assert.equal(tile.revision, 19);
+      assert.equal(tile.fence, 'terrain-materials');
+      const edge = 256 * 2 ** tile.tile.lod;
+      const x = tile.tile.x * edge,
+        y = tile.tile.y * edge;
+      area +=
+        Math.max(0, Math.min(x + edge, box.x + box.width) - Math.max(x, box.x)) *
+        Math.max(0, Math.min(y + edge, box.y + box.height) - Math.max(y, box.y));
+    }
+    assert.equal(
+      area,
+      box.width * box.height,
+      'every transition covers the full requested viewport',
+    );
+  };
   await stream.load(
     input(),
     async (request) => materialReply(request),
@@ -244,6 +265,7 @@ test('same-source pan retains intersecting material tiles while newly exposed de
   const moving = stream.load(
     input({ x: 128, y: 0, width: 512, height: 256 }),
     async (request) => {
+      if (request.tile.lod === 0) detailReads.push(address(request.tile));
       if (request.tile.lod === 0 && request.tile.x === 2) return blocked.promise;
       return materialReply(request);
     },
@@ -252,7 +274,7 @@ test('same-source pan retains intersecting material tiles while newly exposed de
   const retained = frames.at(-1);
   assert.deepEqual(
     retained.tiles.map((tile) => address(tile.tile)),
-    ['0/0/0', '0/1/0'],
+    ['2/0/0'],
   );
   assertMaterialFrame(retained);
   await turn();
@@ -269,14 +291,15 @@ test('same-source pan retains intersecting material tiles while newly exposed de
     ['0/1/0', '0/0/0', '0/2/0'],
   );
   for (const frame of frames.filter((frame) => frame.generation === retained.generation)) {
-    assertMaterialFrame(frame);
-    assertNoOverlap(frame);
+    assertCoverage(frame, { x: 128, y: 0, width: 512, height: 256 });
   }
+  assert.deepEqual(detailReads, ['0/2/0'], 'intersecting detail is reused from cache');
 
   const secondBlocked = deferred();
   const secondMove = stream.load(
     input({ x: 384, y: 0, width: 512, height: 256 }),
     async (request) => {
+      if (request.tile.lod === 0) detailReads.push(address(request.tile));
       if (request.tile.lod === 0 && request.tile.x === 3) return secondBlocked.promise;
       return materialReply(request);
     },
@@ -285,7 +308,7 @@ test('same-source pan retains intersecting material tiles while newly exposed de
   const secondRetained = frames.at(-1);
   assert.deepEqual(
     secondRetained.tiles.map((tile) => address(tile.tile)),
-    ['0/1/0', '0/2/0'],
+    ['2/0/0'],
   );
   await turn();
   assert.ok(
@@ -304,9 +327,9 @@ test('same-source pan retains intersecting material tiles while newly exposed de
     ['0/1/0', '0/2/0', '0/3/0'],
   );
   for (const frame of frames.filter((frame) => frame.generation === secondRetained.generation)) {
-    assertMaterialFrame(frame);
-    assertNoOverlap(frame);
+    assertCoverage(frame, { x: 384, y: 0, width: 512, height: 256 });
   }
+  assert.deepEqual(detailReads, ['0/2/0', '0/3/0']);
 });
 
 test('default tile cap coarsens a dense viewport to a bounded completed material frame', async () => {

@@ -10,7 +10,7 @@ const require = createRequire(import.meta.url);
 buildSync({
   stdin: {
     contents:
-      "export * from './src/app/storage/store';export * from './src/app/atlas/terrain-height';export * from './src/app/storage/terrain-scale';export * from './src/app/atlas/atlas-landscape';export * from './src/app/atlas/landscape-geometry';",
+      "export * from './src/app/storage/store';export * from './src/app/atlas/terrain-height';export * from './src/app/storage/terrain-scale';export * from './src/app/atlas/terrain-brush';export * from './src/app/atlas/atlas-landscape';export * from './src/app/atlas/landscape-geometry';",
     resolveDir: process.cwd(),
   },
   outfile: '.build/terrain-covered-brush-test.cjs',
@@ -23,7 +23,7 @@ const {
   CampaignStore,
   heightRecord,
   TerrainSampler,
-  TerrainScalePyramid,
+  applyTerrainBrush,
   computeTerrainStroke,
   bounds,
 } = require('../../.build/terrain-covered-brush-test.cjs');
@@ -191,27 +191,31 @@ test('coarse target retains fine additive peaks and does not rewrite them', (t) 
     fine,
   );
 });
-test('derived legacy tiles reuse additive edits, invalidate legacy edits, and remain source-fenced', (t) => {
+test('exact author smoothing reads current legacy and additive edits and remains source-fenced', (t) => {
   const f = setup(t),
-    pyramid = new TerrainScalePyramid();
-  let source = f.store.atlasRegionSource(f.token);
-  pyramid.sync(f.store.db, source);
-  const action = stroke('smooth', 64);
-  computeTerrainStroke(f.store.db, f.cam.id, action.stroke, pyramid);
-  const cold = pyramid.diagnostics;
-  const cursor = { epoch: source.epoch, sequence: source.sequence };
+    action = stroke('smooth', 64);
+  // The writer uses exact author records, not the former filtered pyramid.
+  // Check the resulting patch against the common kernel on the full source.
+  const currentPatch = () => {
+    const records = computeTerrainStroke(f.store.db, f.cam.id, action.stroke);
+    assert.deepEqual(
+      records,
+      applyTerrainBrush(
+        f.rows().map((r) => JSON.parse(r.payload)),
+        action.stroke,
+      ),
+    );
+    return records;
+  };
+  currentPatch();
   f.write(stroke());
-  source = f.store.atlasRegionSource(f.token, cursor);
-  pyramid.sync(f.store.db, source);
-  computeTerrainStroke(f.store.db, f.cam.id, action.stroke, pyramid);
-  assert.equal(pyramid.diagnostics.misses, cold.misses);
-  assert(pyramid.diagnostics.hits > cold.hits);
-  assert(pyramid.diagnostics.bytes <= 8 * 1024 * 1024);
+  const source = f.store.atlasRegionSource(f.token),
+    beforeLegacyEdit = currentPatch();
   const prepared = {
     fence: source.fence,
     revision: source.revision,
     stroke: JSON.stringify(action.stroke),
-    records: computeTerrainStroke(f.store.db, f.cam.id, action.stroke, pyramid),
+    records: beforeLegacyEdit,
   };
   f.write(stroke('lower'));
   const rows = f.rows();
@@ -227,13 +231,15 @@ test('derived legacy tiles reuse additive edits, invalidate legacy edits, and re
   const old = f.rows().find((r) => r.id === 'height:0:0:0'),
     r = JSON.parse(old.payload),
     next = heightRecord(0, 0, 1, new Float32Array(4096).fill(500));
-  const prior = f.store.atlasRegionSource(f.token);
+  const previous = currentPatch();
   f.write({ kind: 'landscape-put', record: next, expectedRevision: r.revision });
-  source = f.store.atlasRegionSource(f.token, { epoch: prior.epoch, sequence: prior.sequence });
-  pyramid.sync(f.store.db, source);
-  computeTerrainStroke(f.store.db, f.cam.id, action.stroke, pyramid);
-  assert(pyramid.diagnostics.misses > cold.misses);
+  assert.notDeepEqual(
+    currentPatch(),
+    previous,
+    'legacy edits must change the exact smoothing source',
+  );
 });
+
 test('prepared patches check tile revisions and roll back atomically', (t) => {
   const f = setup(t),
     a = stroke(),
