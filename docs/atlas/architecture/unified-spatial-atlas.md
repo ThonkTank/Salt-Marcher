@@ -47,18 +47,19 @@ Kampagnenarchive und Build-Metadaten. Frühere Testbestände werden nicht migrie
 Planungsstand: 27.10.2026, übernommen; Umsetzung durch den Koordinationschat freigegeben.
 Preflight-Basis ist Main `a87b8e99ba8a3954f664a10b0e7a9c141c65eb22`.
 Aktuelle Arbeitsbasis: `a87b8e99ba8a3954f664a10b0e7a9c141c65eb22`; letzter
-erfolgreicher GitHub-Abgleich 27.10.2026, 14:18 Uhr Europe/Berlin. Keine neuen
-Main-Commits offen; Arbeitsstand auf eigenem Checkpoint `0b7f72d77` gesichert.
+erfolgreicher GitHub-Abgleich 27.10.2026, 14:26 Uhr Europe/Berlin. Keine neuen
+Main-Commits offen; erster P03-Lieferteil auf Checkpoint `bf76682c7` gesichert.
 Die [sechs bestätigten Ziele TW-G1–6 und der Messvertrag](../requirements/terrain-relief.md#ziele-und-abnahme-dieser-etappe)
 gelten unverändert. Hier stehen Ausführung und Entscheidungen, keine zweite Anforderungsliste.
 
 ### Nächster Produktnachweis und Entscheidung
 
 **Nächster Produktnachweis P03:** verlässliche Grundpinsel und Meer einschließlich
-Undo/Redo, Abbruchregeln, Folgezug und Neustart. Zuerst den konkret beobachteten
-Shutdown-Handlerfehler ursächlich beheben und den vollständigen frühen Ablauf
-ohne Consolefehler wiederholen; das bekannte Berichtsstatusfeld mitkorrigieren.
-Danach die übrigen G1-Kriterien gezielt prüfen und nur belegte Lücken beheben.
+Undo/Redo, Abbruchregeln, Folgezug und Neustart. Der erste kohärente
+Teil behebt den beobachteten Shutdown-Handlerfehler und das Berichtsstatusfeld;
+der vollständige native Ablauf besteht jetzt ohne Consolefehler. Nach gezielter
+Nachprüfung und Candidate-Integration die übrigen G1-Kriterien prüfen und nur
+belegte Lücken beheben.
 M1 hat den frühen Ablauf Malen → Speichern/Folgezug → Fresh funktional belegt;
 eine statistische Leistungsfreigabe oder vollständige Produktabnahme fehlt.
 P03 startet am 27.10.2026 um 14:18 mit `gpt-6.1-sol` / `high`; erster
@@ -103,34 +104,33 @@ auszuschließen. Kein Erfolg nur aus Revisionszähler oder `terrainDraft`-Attrib
 Nachprüfung von `0b7f72d77` im Reviewchat
 `01a17d32-1d64-7ce3-8b48-93d53429877a` als begrenzter fachlicher Frühdurchstich
 und Ansatzentscheidung erfüllt, vor der ursprünglichen Grenze 15:08.
-Der Gesamtlauf bleibt FAIL; Shutdownfehler, Darstellung und Leistung bleiben
-offen. A fortsetzen und P03 ohne zusätzliche Messrunde beginnen. Der gekoppelte
-Host-/Schreibpfad rechtfertigt den dafür geplanten Implementierer I-S. Fertige
-zusammenhängende Korrekturen nach Prüfung zeitnah über Candidate integrieren.
+Der damalige M1-Gesamtlauf blieb wegen Shutdownfehler rot. Der erste P03-Teil
+behebt nun dessen Ursache: Der Atlas war nicht an die gemeinsame Abmeldung
+angeschlossen. Die Registrierung ruft nach erfolgreichem Flush den vorhandenen
+`CampaignAtlas.hide()` auf; verweigertes Schließen erhält den aktiven Besitzer.
+Der Reportstatus ist gegen Überschreiben durch UI-Text geschützt. Gezielt 19
+Tests, App-/Desktop-Typprüfung, Repositoryprüfung, frischer Desktopbuild,
+Formatierung und Syntaxprüfung bestehen. Der Implementierer ist zur gezielten
+Nachprüfung und Candidate-Integration angehalten; übriges P03/G1 bleibt offen.
 
-Aktueller Lauf: `.build/atlas-terrain-stroke/1793103145919-382361/`.
-`handoff-report.json` verweist auf unveränderte Primärbelege in `failure.json`,
-`evidence.partial.json`, `height-before.json`, `height-after.json` und
-`canonical-diff.json` sowie getrennte Vor-up-PNGs und `03-fresh-reopen.png`.
-Bei Stärke 1 m/s und Radius 8 m dauerte die erste Geste 4,115 s, die zweite
-2,429 s; der Folgezug begann 833 ms nach Pointerup ohne Speicherantwort-Wartepunkt.
-Beide cursorfreien Patchänderungen wurden vor Pointerup gespeichert. Direkte
-regionale Höhenvergleiche fanden 15.409 bzw. 13.894 angehobene Knoten; Fresh
-bestätigte identische Höhenbytes aller 17 Kacheln bei Revision 3. Der lebende
-App-WebGL2-Kontext nennt Intel UHD 620/ANGLE. Dies sind Funktionsbelege, keine
-First-visible-Latenz, p95- oder Qualitätsfreigabe.
+Aktueller Produktfixlauf: `.build/atlas-terrain-stroke/1793103792143-385146/`.
+`handoff-report.json` bindet den unveränderten Originalbericht `result.json`
+(**PASS**), Quell-/Runtimehashes, Vor-up-PNGs, kanonische Höhenvergleiche und
+`03-fresh-reopen.png`. Beide Züge ändern das Terrain vor Pointerup; beide
+räumlichen Höhenvergleiche bestehen. Fresh bestätigt identische Höhenbytes von
+17 Kacheln bei Revision 3. `phase-errors.json` ist leer; beide Electron-Prozesse
+enden mit Code 0, ohne Signal und mit bestätigter PID-Abwesenheit, Launcher mit
+Code 0. Keine eigenen Restprozesse. Die App ist an Intel UHD 620/ANGLE gebunden.
+Typchecks liefen anfangs parallel zur Probe; dies ist ausschließlich ein
+Funktionsnachweis, keine First-visible-/p95-/Leistungsfreigabe.
 
-Gesamtstatus bleibt **FAIL**: In Phase `close initial app` meldet der Renderer
-einen fehlenden `atlas:terrain-tile`-Handler. Beide App-Prozesse endeten trotzdem
-mit Code 0, ohne Signal und mit bestätigter PID-Abwesenheit. Der Bericht hat
-zusätzlich einen bekannten Feldfehler: `terrain-save-state.status` enthält den
-UI-Text `Gespeichert` statt PASS; die Speicherwartebedingung wurde erreicht.
-Das wird in P03 vor Verwendung als allgemeines automatisches Gate korrigiert;
-für die belegte fachliche Fortsetzung ist kein zusätzlicher Lauf erforderlich.
-Sichtbare Kachelübergänge und stempelartige Formen bleiben Darstellungsbefunde.
-Kein Filter des Shutdownfehlers und kein zusammengesetzter Erfolg aus alten
-Läufen. Frühere Harnessabbrüche und ihre Ansatzentscheidung sind in Checkpoint
-`83d488c9b` gesichert; sie setzen die Zeitgrenze nicht zurück.
+Die zuvor rote M1-Probe `1793103145919-382361/` und ihre Rohbelege bleiben
+unverändert. Ihre funktionalen Ergebnisse wurden unabhängig bestätigt; das
+überschriebene Speicherstatusfeld und der Close-Handlerfehler sind nun durch
+den Produktfixlauf gezielt nachgeprüft. Sichtbare Übergänge und stempelartige
+Formen bleiben Darstellungsbefunde; sie sind nicht durch diese Korrektur gelöst.
+Keine zusammengesetzten Leistungs- oder Qualitätsaussagen aus verschiedenen
+Läufen. Frühere Harnessabbrüche bleiben in den gesicherten Checkpoints erhalten.
 
 Der historische
 saubere Stand `e5882ae09d70bb38eede86c28a9ae453f8024a06` hat einen nativen
