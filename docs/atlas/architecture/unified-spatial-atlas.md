@@ -47,19 +47,23 @@ Kampagnenarchive und Build-Metadaten. Frühere Testbestände werden nicht migrie
 Planungsstand: 27.10.2026, übernommen; Umsetzung durch den Koordinationschat freigegeben.
 Preflight-Basis ist Main `a87b8e99ba8a3954f664a10b0e7a9c141c65eb22`.
 Aktuelle Arbeitsbasis: `a87b8e99ba8a3954f664a10b0e7a9c141c65eb22`; letzter
-erfolgreicher GitHub-Abgleich 27.10.2026, 14:07 Uhr Europe/Berlin. Keine neuen
-Main-Commits offen; Arbeitsstand auf eigenem Checkpoint `83d488c9b` gesichert.
+erfolgreicher GitHub-Abgleich 27.10.2026, 14:18 Uhr Europe/Berlin. Keine neuen
+Main-Commits offen; Arbeitsstand auf eigenem Checkpoint `0b7f72d77` gesichert.
 Die [sechs bestätigten Ziele TW-G1–6 und der Messvertrag](../requirements/terrain-relief.md#ziele-und-abnahme-dieser-etappe)
 gelten unverändert. Hier stehen Ausführung und Entscheidungen, keine zweite Anforderungsliste.
 
 ### Nächster Produktnachweis und Entscheidung
 
-**Früher Bediencheck P01–P02:** kontinuierlich malen → echte Terrainänderung
-während gedrückter Eingabe → loslassen und speichern → sofort weitermalen →
-bestätigten Zustand frisch öffnen. Er prüft die Tragfähigkeit durch alle Schichten;
-er liefert weder statistische Leistungsfreigabe noch vollständige Produktabnahme.
-Funktion, sichere Ausführung und zuverlässige Beobachtung sind Voraussetzung.
-Vollständige Messmatrix und unabhängige Lieferbefunde sind davor keine Pflicht.
+**Nächster Produktnachweis P03:** verlässliche Grundpinsel und Meer einschließlich
+Undo/Redo, Abbruchregeln, Folgezug und Neustart. Zuerst den konkret beobachteten
+Shutdown-Handlerfehler ursächlich beheben und den vollständigen frühen Ablauf
+ohne Consolefehler wiederholen; das bekannte Berichtsstatusfeld mitkorrigieren.
+Danach die übrigen G1-Kriterien gezielt prüfen und nur belegte Lücken beheben.
+M1 hat den frühen Ablauf Malen → Speichern/Folgezug → Fresh funktional belegt;
+eine statistische Leistungsfreigabe oder vollständige Produktabnahme fehlt.
+P03 startet am 27.10.2026 um 14:18 mit `gpt-6.1-sol` / `high`; erster
+Kontrollpunkt für den Shutdown-Anschluss spätestens 15:03, Paketentscheidung
+spätestens 18:18. Beide Zeiten liegen innerhalb des bestehenden Lieferrahmens.
 
 **Beginn T0:** 27.10.2026, 13:38 Uhr Europe/Berlin (11:38 UTC), tatsächlicher
 P01-Start nach Main-, Plan- und Umsetzungsfreigabe. Implementierer: Subagent
@@ -95,12 +99,14 @@ ohne Warten auf die erste Speicherantwort; anschließend müssen beide bestätig
 Falls nötig hilft ein identischer Kontrollablauf ohne Höhenwirkung, Störeinflüsse
 auszuschließen. Kein Erfolg nur aus Revisionszähler oder `terrainDraft`-Attribut.
 
-**Aktuelle Entscheidung:** Der gebündelte Anschluss ist vor der Kontrolle
-14:25 vollständig durchgelaufen. M1 wartet auf die gezielte Ergebnisnachprüfung
-im Reviewchat `01a17d32-1d64-7ce3-8b48-93d53429877a`; keine weitere Probe oder
-Produktänderung währenddessen. Gemeinsame Entscheidungsgrenze bleibt 15:08.
-A bleibt begründet: Der fachliche Durchstich ist nun in einem Lauf beobachtet,
-ein Renderer-/Datenkernersatz ist durch die bisherigen Befunde nicht begründet.
+**Aktuelle Entscheidung:** M1 ist am 27.10.2026 um 14:18 nach unabhängiger
+Nachprüfung von `0b7f72d77` im Reviewchat
+`01a17d32-1d64-7ce3-8b48-93d53429877a` als begrenzter fachlicher Frühdurchstich
+und Ansatzentscheidung erfüllt, vor der ursprünglichen Grenze 15:08.
+Der Gesamtlauf bleibt FAIL; Shutdownfehler, Darstellung und Leistung bleiben
+offen. A fortsetzen und P03 ohne zusätzliche Messrunde beginnen. Der gekoppelte
+Host-/Schreibpfad rechtfertigt den dafür geplanten Implementierer I-S. Fertige
+zusammenhängende Korrekturen nach Prüfung zeitnah über Candidate integrieren.
 
 Aktueller Lauf: `.build/atlas-terrain-stroke/1793103145919-382361/`.
 `handoff-report.json` verweist auf unveränderte Primärbelege in `failure.json`,
@@ -119,7 +125,8 @@ einen fehlenden `atlas:terrain-tile`-Handler. Beide App-Prozesse endeten trotzde
 mit Code 0, ohne Signal und mit bestätigter PID-Abwesenheit. Der Bericht hat
 zusätzlich einen bekannten Feldfehler: `terrain-save-state.status` enthält den
 UI-Text `Gespeichert` statt PASS; die Speicherwartebedingung wurde erreicht.
-Das muss vor Verwendung als allgemeines automatisches Gate korrigiert werden.
+Das wird in P03 vor Verwendung als allgemeines automatisches Gate korrigiert;
+für die belegte fachliche Fortsetzung ist kein zusätzlicher Lauf erforderlich.
 Sichtbare Kachelübergänge und stempelartige Formen bleiben Darstellungsbefunde.
 Kein Filter des Shutdownfehlers und kein zusammengesetzter Erfolg aus alten
 Läufen. Frühere Harnessabbrüche und ihre Ansatzentscheidung sind in Checkpoint
@@ -199,9 +206,10 @@ führt ergänzende Code-/Testbesitzer.
 ### Vollständig zerlegte Pakete
 
 Jede Zeile ist ein Agentenauftrag zusammen mit den obigen Eingaben/Rollen.
-Voraussetzungen stehen in der Reihenfolge-/Terminspalte unten; P02 korrigiert die
-konkreten M1-Prüfbefunde, Folgepakete sind noch nicht begonnen.
-Aufwandsspannen ab M2 sind vorläufig und werden an P02 gezielt nachgeschärft.
+Voraussetzungen stehen in der Reihenfolge-/Terminspalte unten. M1 ist als früher
+Funktionsbefund geprüft; P03 beginnt mit dem konkret beobachteten Shutdownfehler.
+Die übrige Aufwandsspanne für P03 bleibt 2–4 Stunden; P04 und spätere Pakete sind
+noch nicht begonnen. Der frühere P03-Start nutzt den M1-Vorsprung ohne Wartezeit.
 
 | Paket / Kompetenz | Ergebnis und Eingaben | Prüfkriterium / Schnittstelle |
 | --- | --- | --- |
