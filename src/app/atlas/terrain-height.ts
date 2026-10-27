@@ -1,15 +1,10 @@
-import { heightPatch } from './terrain-interpolation';
-import { RouteSurface } from './terrain-route';
-import {
-  bounds,
-  contains,
-  segmentDistance,
-  type LandscapeRecord,
-  type LandscapeBox,
-} from './atlas-landscape';
 import type { Point, Polygon } from '../shared/contracts';
+import { type LandscapeBox, type LandscapeRecord } from './atlas-landscape';
+import { strokeBox, validateStroke, type MaskStroke } from './land-mask';
+import { bounds, contains, segmentDistance } from './landscape-geometry';
+import { heightPatch } from './terrain-interpolation';
 import { validateTerrainStyle, type TerrainStyle } from './terrain-relief';
-import { validateStroke, strokeBox, type MaskStroke } from './land-mask';
+import { RouteSurface } from './terrain-route';
 
 /** Metres, independent of hexes and camera. NaN nodes inherit the coarser field. */
 export interface HeightTile {
@@ -28,14 +23,8 @@ export const HEIGHT_EDGE = 64,
   DEFAULT_HEIGHT_M = -100;
 export const TERRAIN_SETTINGS_ID = 'terrain-settings';
 const cache = new WeakMap<HeightTile, Float32Array>();
-/** Node readers decode directly into bytes. The renderer retains the browser
- * path; no Node import or capability is added to its bundle. Buffer is lenient,
- * so an exact roundtrip proves the alphabet/padding; atob validates all others. */
+/** Portable codec shared by browser and Node workers. */
 function heightBytes(data: string): Uint8Array {
-  if (typeof Buffer !== 'undefined') {
-    const bytes = Buffer.from(data, 'base64');
-    if (bytes.length === 16384 && bytes.toString('base64') === data) return bytes;
-  }
   const raw = atob(data);
   if (raw.length !== 16384) throw Error('Höhenkachel prüfen.');
   const bytes = new Uint8Array(raw.length);

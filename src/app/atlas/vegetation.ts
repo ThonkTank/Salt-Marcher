@@ -1,21 +1,16 @@
+import type { Terrain } from '../runtime/world-contracts';
+import type { Point, Polygon } from '../shared/contracts';
+import { type LandscapeBox, type LandscapeRecord } from './atlas-landscape';
+import { bounds, contains, segmentDistance } from './landscape-geometry';
+import { linePoints } from './landscape-line';
+import { TerrainSampler } from './terrain-height';
 import {
+  vegetationGrid,
   vegetationRandom,
   vegetationRepresentative,
   vegetationStride,
-  vegetationGrid,
 } from './vegetation-lod';
 export { vegetationRandom } from './vegetation-lod';
-import type { Point, Polygon } from '../shared/contracts';
-import {
-  contains,
-  segmentDistance,
-  bounds,
-  type LandscapeRecord,
-  type LandscapeBox,
-} from './atlas-landscape';
-import type { Terrain } from '../runtime/world-contracts';
-import { TerrainSampler } from './terrain-height';
-import { linePoints } from './landscape-line';
 
 export type PlantAsset = 'oak' | 'pine' | 'shrub' | 'grass' | 'rock';
 export interface VegetationPreset {

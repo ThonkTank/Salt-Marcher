@@ -1,41 +1,43 @@
-import { MACRO_RELIEF_RADIUS, MACRO_RIDGE_GAIN } from './terrain-material';
+import { terrainColors } from '../runtime/world-model';
+import type { Polygon } from '../shared/contracts';
+import { type LandscapeBox, type LandscapeRecord } from './atlas-landscape';
 import { reduceAtlasMaterialRows } from './atlas-raster-kernel';
-import { polygonCoverageRows } from './raster-polygon-coverage';
+import { mapLineWidth, mapRecordOpacity, mapRecordVisible } from './atlas-scale-policy';
+import { MASK_SEA_LEVEL, maskAt } from './land-mask';
+import { colorParts, mergePolygons } from './landscape-brush';
 import {
-  coverFeatherSamplerSteps,
   coverDisplayPolygons,
+  coverFeatherSamplerSteps,
   coverViewParts,
 } from './landscape-cover-feather';
+import { bounds } from './landscape-geometry';
+import { lineParts } from './landscape-line';
 import { pigmentStrokeCoverage } from './landscape-pigment-coverage';
-import { mapRecordVisible, mapLineWidth, mapRecordOpacity } from './atlas-scale-policy';
+import { polygonCoverageRows } from './raster-polygon-coverage';
 import { paintTerrainCoast } from './terrain-coast';
 import { terrainContourInk, terrainContourStep } from './terrain-contour-style';
 import type { TerrainField, TerrainLattice } from './terrain-field-stream';
+import { DEFAULT_HEIGHT_M, TerrainSampler } from './terrain-height';
+import {
+  CHANNEL_NAMES,
+  COVER_CHANNEL_NAMES,
+  MACRO_RELIEF_RADIUS,
+  MACRO_RIDGE_GAIN,
+  type TerrainCoverChannel,
+  type TerrainMaterialChannel,
+  type TerrainMaterialRaster,
+} from './terrain-material';
 import {
   DEFAULT_TERRAIN_STYLE,
-  reliefRgb,
-  reliefLighting,
-  reliefMarks,
   elevationColor,
   mountainMaterial,
+  reliefLighting,
+  reliefMarks,
+  reliefRgb,
   rockCoverage,
   snowCoverage,
   type TerrainStyle,
 } from './terrain-relief';
-import { TerrainSampler, DEFAULT_HEIGHT_M } from './terrain-height';
-import { maskAt, MASK_SEA_LEVEL } from './land-mask';
-import { lineParts } from './landscape-line';
-import { colorParts, mergePolygons } from './landscape-brush';
-import { bounds, type LandscapeBox, type LandscapeRecord } from './atlas-landscape';
-import type { Polygon } from '../shared/contracts';
-import { terrainColors } from '../runtime/world-model';
-import {
-  COVER_CHANNEL_NAMES,
-  type TerrainCoverChannel,
-  CHANNEL_NAMES,
-  type TerrainMaterialChannel,
-  type TerrainMaterialRaster,
-} from './terrain-material';
 
 // Read a halo as well as the visible tile: a tile edge is never a coastline.
 export const LANDSCAPE_RASTER_PAD = 16;

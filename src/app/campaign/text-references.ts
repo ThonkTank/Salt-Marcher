@@ -1,4 +1,4 @@
-import type { DeskRef } from '../runtime/scene-desk-contracts';
+import type { DeskRef } from '../shared/desk-reference';
 export interface TextReference {
   ref: DeskRef;
   label: string;
@@ -156,17 +156,6 @@ export function remapTextReferences(text: string, map: (ref: DeskRef) => string)
     }
   }
   return out + text.slice(cursor);
-}
-
-export function rawTextOffset(text: string, offset: number) {
-  let normalized = 0,
-    index = 0;
-  while (index < text.length && normalized < offset) {
-    if (text[index] === '\r' && text[index + 1] === '\n') index++;
-    index++;
-    normalized++;
-  }
-  return index;
 }
 export function documentReferences(
   document: any,

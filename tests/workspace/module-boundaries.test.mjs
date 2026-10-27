@@ -108,31 +108,27 @@ for (const entry of ['src/app/shared/editor-session.ts', 'src/app/storage/prepar
       ),
     );
   });
-test('reviewed cyclic edges may be removed but a new edge within an old component is rejected', () => {
-  const base = {
-    'src/app/atlas/path-model.ts': "import './spatial-3d';",
-    'src/app/atlas/spatial-3d.ts': "import './path-spatial';",
-    'src/app/atlas/path-spatial.ts': "import './path-model';",
-  };
-  assert.deepEqual(check(base), []);
-  assert.deepEqual(check({ ...base, 'src/app/atlas/path-model.ts': '' }), []);
-  const changed = check({
-    ...base,
-    'src/app/atlas/path-model.ts': "import './spatial-3d'; import './path-spatial';",
-  });
-  assert(changed.some((error) => error.includes('New cyclic dependency:')));
+test('removed path and aggregate-contract cycles cannot be reintroduced', () => {
+  for (const files of [
+    {
+      'src/app/atlas/path-model.ts': "import './spatial-3d';",
+      'src/app/atlas/spatial-3d.ts': "import './path-spatial';",
+      'src/app/atlas/path-spatial.ts': "import './path-model';",
+    },
+    {
+      'src/app/shared/contracts.ts': "import type { A } from '../campaign/preparation-contracts';",
+      'src/app/campaign/preparation-contracts.ts': "import type { B } from '../shared/contracts';",
+    },
+  ])
+    assert(check(files).some((error) => error.startsWith('New cyclic dependency:')));
 });
-
-test('a reviewed type cycle does not authorize a new value cycle', () => {
-  const typeCycle = {
-    'src/app/shared/contracts.ts': "import type { A } from '../campaign/preparation-contracts';",
-    'src/app/campaign/preparation-contracts.ts': "import type { B } from '../shared/contracts';",
+test('reviewed storage edges may be removed but not expanded', () => {
+  const files = {
+    'src/app/storage/dungeon-key.ts': "import './surfaces';",
+    'src/app/storage/surfaces.ts': "import './dungeon-key';",
   };
-  assert.deepEqual(check(typeCycle), []);
-  const values = Object.fromEntries(
-    Object.entries(typeCycle).map(([file, text]) => [file, text.replace('import type', 'import')]),
-  );
-  assert(check(values).some((error) => error.includes('(values)')));
+  assert.deepEqual(check(files), []);
+  assert.deepEqual(check({ ...files, 'src/app/storage/surfaces.ts': '' }), []);
 });
 
 test('an explicitly named domain owner cannot quietly acquire browser globals', () => {

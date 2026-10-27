@@ -1,16 +1,16 @@
 import { createHash } from 'node:crypto';
+import { worldNoteDocument } from '../../features/world/world-notes';
 import {
+  normalizedNoteTitle,
   validateKeyNoteCapture,
   type KeyNoteCaptureCommand,
   type KeyNoteCaptureStatus,
-  normalizedNoteTitle,
   type KeyNoteChoices,
 } from '../campaign/key-note-capture-contracts';
-import { checkedKeyRow } from './dungeon-key';
-import { drawingRoom, executeDrawing } from './drawing';
-import { validateRoom } from '../shared/contracts';
 import type { Note } from '../campaign/preparation-contracts';
-import { worldNoteDocument } from '../../features/world/world-notes';
+import { validateRoom } from '../shared/room-validation';
+import { drawingRoom, executeDrawing } from './drawing';
+import { checkedKeyRow } from './dungeon-key';
 const hash = (s: string) => createHash('sha256').update(s).digest('hex');
 const fingerprint = (c: KeyNoteCaptureCommand) => hash(JSON.stringify({ ...c, token: undefined }));
 function prior(db: any, c: KeyNoteCaptureCommand) {

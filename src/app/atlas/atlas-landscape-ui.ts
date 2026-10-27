@@ -1,12 +1,42 @@
+import { LandscapeBrushSession } from './landscape-brush-session';
 import { LandscapeInspector } from './landscape-inspector';
 import { LandscapeRoutes } from './landscape-routes';
-import { LandscapeBrushSession } from './landscape-brush-session';
 import type { LandscapeHost, LandscapeTool as Tool } from './landscape-workbench-types';
 import { vegetationInstances } from './vegetation-projection';
 
 import { AUTO_CONTOURS } from './terrain-contour-style';
 import { terrainDetailBox } from './terrain-detail';
 
+import { newLocation } from '../../features/location/location-schema';
+import type { Point, Polygon } from '../shared/contracts';
+import {
+  distance,
+  emptyRecord,
+  hexPolygon,
+  hexStrokesPolygons,
+  type LandscapeBox,
+  type LandscapeField,
+  type LandscapeRecord,
+} from './atlas-landscape';
+import { drawLandscape, drawLandscapeGrid, drawScale } from './atlas-landscape-view';
+import { areaMeasures, drawMeasurements, pathMeasures, radiusMeasures } from './atlas-measurements';
+import { automaticGrid, gridMeters, travelHexSizes } from './atlas-navigation-scale';
+import { AtlasPaint, atlasPaint } from './atlas-paint';
+import {
+  atlasFieldValue,
+  lengthLabel,
+  setAtlasElevationField,
+  setAtlasFieldValue,
+} from './atlas-units';
+import { pendingAtlasWrite } from './campaign-atlas-author';
+import type { AtlasAction } from './campaign-atlas-contracts';
+import { atlasHexAt } from './campaign-atlas-model';
+import { brushFootprint, type BrushMode } from './landscape-brush';
+import { contains } from './landscape-geometry';
+import { linePoints, translateLine } from './landscape-line';
+import { LandscapeToolSettings } from './landscape-tool-settings';
+import { heightBrushResolution } from './terrain-brush';
+import { DEFAULT_TERRAIN_STYLE, type TerrainStyle } from './terrain-relief';
 import {
   validateVegetation,
   vegetationSpec,
@@ -14,36 +44,6 @@ import {
   type VegetationOverride,
 } from './vegetation';
 import { vegetationControls } from './vegetation-controls';
-import { DEFAULT_TERRAIN_STYLE, type TerrainStyle } from './terrain-relief';
-import { heightBrushResolution } from './terrain-brush';
-import { drawMeasurements, areaMeasures, pathMeasures, radiusMeasures } from './atlas-measurements';
-import {
-  atlasFieldValue,
-  setAtlasFieldValue,
-  setAtlasElevationField,
-  lengthLabel,
-} from './atlas-units';
-import { LandscapeToolSettings } from './landscape-tool-settings';
-import { brushFootprint, type BrushMode } from './landscape-brush';
-import { linePoints, translateLine } from './landscape-line';
-import { automaticGrid, gridMeters, travelHexSizes } from './atlas-navigation-scale';
-import { AtlasPaint, atlasPaint } from './atlas-paint';
-import { pendingAtlasWrite } from './campaign-atlas-author';
-import type { AtlasAction } from './campaign-atlas-contracts';
-import type { Point, Polygon } from '../shared/contracts';
-import {
-  contains,
-  emptyRecord,
-  hexStrokesPolygons,
-  distance,
-  hexPolygon,
-  type LandscapeBox,
-  type LandscapeRecord,
-  type LandscapeField,
-} from './atlas-landscape';
-import { drawLandscape, drawLandscapeGrid, drawScale } from './atlas-landscape-view';
-import { newLocation } from '../../features/location/location-schema';
-import { atlasHexAt } from './campaign-atlas-model';
 const html = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 
 export class LandscapeWorkbench {

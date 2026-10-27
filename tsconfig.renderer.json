@@ -9,12 +9,11 @@
     ]
   },
   "files": [
-    "src/app/shared/editor-surface.ts",
-    "src/app/shared/textarea-position.ts",
-    "src/app/shared/number-input-scroll.ts",
-    "src/app/shared/anchored-popup.ts",
-    "src/app/workspace/workspace-view.ts",
-    "src/app/runtime/passive-map-canvas.ts"
+    "src/app/shared/campaign-window.d.ts",
+    "src/app/workspace/renderer.ts",
+    "src/app/runtime/player-display.ts",
+    "src/app/campaign/preset-settings-ui.ts",
+    "src/app/atlas/atlas-deck-runtime.ts"
   ],
   "include": [],
   "exclude": []

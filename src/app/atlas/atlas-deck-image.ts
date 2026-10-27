@@ -1,15 +1,15 @@
-import { AtlasDeckVegetation } from './atlas-deck-vegetation';
-import type { LandscapeRecord } from './atlas-landscape';
-import { AtlasDeckSurface } from './atlas-deck-surface';
-import { AtlasDeckDrawing } from './atlas-deck-drawing';
 import { AtlasCanvasScene } from './atlas-canvas-scene';
-import { atlasCanvasBytes, drawScene } from './campaign-atlas-export';
-import type { AtlasPaint } from './atlas-paint';
+import { AtlasDeckDrawing } from './atlas-deck-drawing';
+import { AtlasDeckSurface } from './atlas-deck-surface';
+import { AtlasDeckVegetation } from './atlas-deck-vegetation';
+import type { AtlasDrawingMesh } from './atlas-drawing-mesh';
+import type { LandscapeRecord } from './atlas-landscape';
 import type { AtlasMetricCamera } from './atlas-metric-camera';
-import type { AtlasTerrainTileModel } from './atlas-terrain-tile-model';
+import type { AtlasPaint } from './atlas-paint';
 import type { AtlasSpatialSurface } from './atlas-spatial-surface';
+import type { AtlasTerrainTileModel } from './atlas-terrain-tile-model';
+import { atlasCanvasBytes, drawScene } from './campaign-atlas-export';
 import type { TerrainStyle } from './terrain-relief';
-import type { AtlasDrawingMesh } from './atlas-drawing-geometry';
 
 /** Same layers and camera as the editor; the GPU framebuffer stays at most 1024². */
 export async function atlasDeckImage(

@@ -155,3 +155,15 @@ test('Screen-cell collisions agree with a direct rectangle oracle across cell bo
   assert.equal(edge.overlaps({ x: 64, y: 0, w: 64, h: 64 }), false);
   assert.equal(edge.overlaps({ x: 63.99, y: 0, w: 64, h: 64 }), true);
 });
+
+test('worker text measurement remains deterministic while browser measurement uses its canvas', async () => {
+ const {runInNewContext}=await import('node:vm');
+ const bundle = (entry) => buildSync({entryPoints:[entry],bundle:true,write:false,format:'iife',globalName:'measurement',platform:'browser'}).outputFiles[0].text;
+ const host = runInNewContext(bundle('src/app/atlas/atlas-cartography.ts')+';measurement',{});
+ assert.equal(host.measureMapText('A😀',10),12.4);
+ let calls=0;
+ const context={font:'',measureText(text){calls++;assert.equal(text,'Atlas');return {width:123};}};
+ const browser=runInNewContext(bundle('src/app/atlas/map-text-measure.ts')+';measurement',{document:{createElement(tag){assert.equal(tag,'canvas');return {getContext(){return context;}};}}});
+ assert.equal(browser.measureMapText('Atlas',13),123);
+ assert.equal(context.font,'13px sans-serif');assert.equal(calls,1);
+});

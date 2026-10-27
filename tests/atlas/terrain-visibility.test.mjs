@@ -6,7 +6,7 @@ const require = createRequire(import.meta.url);
 buildSync({
   stdin: {
     contents:
-      "export * from './src/app/atlas/terrain-spatial-model';export * from './src/app/atlas/terrain-color-visibility';export * from './src/app/atlas/landscape-brush';export * from './src/app/atlas/atlas-landscape';",
+      "export * from './src/app/atlas/terrain-spatial-model';export * from './src/app/atlas/terrain-color-visibility';export * from './src/app/atlas/landscape-brush';export * from './src/app/atlas/atlas-landscape';export * from './src/app/atlas/landscape-geometry';",
     resolveDir: process.cwd(),
   },
   outfile: '.build/terrain-visibility-test.cjs',

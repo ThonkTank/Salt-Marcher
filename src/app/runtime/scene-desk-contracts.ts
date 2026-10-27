@@ -1,14 +1,10 @@
-import type { Result } from '../shared/contracts';
-import type { Note, PreparationDraft, PreparationCommand } from '../campaign/preparation-contracts';
-import type { LocationDocument } from '../../features/location/location-schema';
 import type { Creature } from '../../features/catalog/creature-catalog';
-import type { ItemDefinition } from '../catalog/items-contracts';
+import type { LocationDocument } from '../../features/location/location-schema';
+import type { Note, PreparationCommand, PreparationDraft } from '../campaign/preparation-contracts';
 import type { EncounterPlan } from '../catalog/encounter-contracts';
-export type DeskRef = {
-  sectionId?: string;
-  kind: 'note' | 'location' | 'creature' | 'item' | 'encounter';
-  id: string;
-};
+import type { ItemDefinition } from '../catalog/items-contracts';
+import type { Result } from '../shared/contracts';
+import { DeskRef } from '../shared/desk-reference';
 export interface DeskEntry {
   ref: DeskRef;
   title: string;

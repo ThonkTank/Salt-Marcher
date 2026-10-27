@@ -1,16 +1,17 @@
-import type { AtlasAction, AtlasRenderView } from './campaign-atlas-contracts';
 import type { Point } from '../shared/contracts';
-import { contains, type LandscapeBox } from './atlas-landscape';
+import { type LandscapeBox } from './atlas-landscape';
 import { atlasPaint, type AtlasPaint } from './atlas-paint';
 import {
   defaultTerritoryLayers,
+  territoryBounds,
   territoryStroke,
   territoryVertex,
-  territoryBounds,
   type AtlasTerritory,
-  type TerritoryState,
   type TerritoryAction,
+  type TerritoryState,
 } from './atlas-territories';
+import type { AtlasAction, AtlasRenderView } from './campaign-atlas-contracts';
+import { contains } from './landscape-geometry';
 const el = <T extends HTMLElement>(root: ParentNode, id: string) =>
   root.querySelector<T>('#' + id)!;
 const propertyFields = {

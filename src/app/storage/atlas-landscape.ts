@@ -1,34 +1,34 @@
-import { validateProminence } from '../atlas/atlas-prominence';
-import { installSourceCellIndex } from './atlas-source-cell';
-import { validateMapLabelStyle } from '../atlas/map-label-style';
-import { terrainTraceMeasure } from '../atlas/terrain-timing';
-import { readRouteTerrain, routeProposal } from './terrain-route';
-import { validateRoute } from '../atlas/terrain-route';
-import { validateVegetation } from '../atlas/vegetation';
-import { eraseVegetation } from '../atlas/vegetation-erase';
-import { computeTerrainStroke } from './terrain-scale';
-import {
-  applyHeightArea,
-  resetHeightArea,
-  decodeHeights,
-  validateTerrain,
-  settingsRecord,
-} from '../atlas/terrain-height';
-import { validateMask } from '../atlas/land-mask';
-import { executeBrush } from './landscape-brush-edit';
-import { validateLine } from '../atlas/landscape-line';
-import { validateColor } from '../atlas/landscape-brush';
-import { REGION_REPLY_BYTES } from '../atlas/atlas-region-contracts';
 import { randomUUID } from 'node:crypto';
 import polygonClipping from 'polygon-clipping';
-import type { Polygon } from '../shared/contracts';
 import {
-  bounds,
   terrainValue,
-  type LandscapeRecord,
-  type LandscapeBox,
   type LandscapeAction,
+  type LandscapeBox,
+  type LandscapeRecord,
 } from '../atlas/atlas-landscape';
+import { validateProminence } from '../atlas/atlas-prominence';
+import { REGION_REPLY_BYTES } from '../atlas/atlas-region-contracts';
+import { validateMask } from '../atlas/land-mask';
+import { validateColor } from '../atlas/landscape-brush';
+import { bounds } from '../atlas/landscape-geometry';
+import { validateLine } from '../atlas/landscape-line';
+import { validateMapLabelStyle } from '../atlas/map-label-style';
+import {
+  applyHeightArea,
+  decodeHeights,
+  resetHeightArea,
+  settingsRecord,
+  validateTerrain,
+} from '../atlas/terrain-height';
+import { validateRoute } from '../atlas/terrain-route';
+import { terrainTraceMeasure } from '../atlas/terrain-timing';
+import { validateVegetation } from '../atlas/vegetation';
+import { eraseVegetation } from '../atlas/vegetation-erase';
+import type { Polygon } from '../shared/contracts';
+import { installSourceCellIndex } from './atlas-source-cell';
+import { executeBrush } from './landscape-brush-edit';
+import { readRouteTerrain, routeProposal } from './terrain-route';
+import { computeTerrainStroke } from './terrain-scale';
 const clip = (polys: Polygon[]) =>
   polys.map((p) => [p.outer, ...p.holes].map((r) => r.map((p) => [p.x, p.y] as [number, number])));
 const unclip = (a: ReturnType<typeof polygonClipping.difference>): Polygon[] =>

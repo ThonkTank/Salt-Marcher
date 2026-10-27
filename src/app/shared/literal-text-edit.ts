@@ -1,4 +1,4 @@
-import { rawTextOffset } from '../campaign/text-references';
+import { rawTextOffset } from './raw-text-offset';
 
 /** Textareas expose LF even when the saved source uses CRLF or CR. */
 export function preserveLiteralEdit(before: string, input: string): string {

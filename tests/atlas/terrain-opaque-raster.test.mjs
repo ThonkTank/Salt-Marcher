@@ -6,7 +6,7 @@ buildSync({
   stdin: {
     resolveDir: process.cwd(),
     contents:
-      "export * from './src/app/atlas/landscape-raster';export {contains} from './src/app/atlas/atlas-landscape';",
+      "export * from './src/app/atlas/landscape-raster';export {contains} from './src/app/atlas/landscape-geometry';",
   },
   outfile: '.build/terrain-opaque-raster-test.cjs',
   bundle: true,

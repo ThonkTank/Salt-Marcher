@@ -1,11 +1,12 @@
-import { routeBounds, validateRoute } from './terrain-route';
-import { planRoute, replanRoutes } from './terrain-route-planner';
-import { bounds, contains, type LandscapeRecord, type LandscapeBox } from './atlas-landscape';
-import { applyTerrainBrush, heightBrushBounds, type HeightStroke } from './terrain-brush';
-import { TerrainSampler } from './terrain-height';
+import { type LandscapeBox, type LandscapeRecord } from './atlas-landscape';
 import { orderedColors, validateColor } from './landscape-brush';
 import { colorSurface } from './landscape-color-surface';
+import { bounds, contains } from './landscape-geometry';
 import { LandscapeRasterizer } from './landscape-raster';
+import { applyTerrainBrush, heightBrushBounds, type HeightStroke } from './terrain-brush';
+import { TerrainSampler } from './terrain-height';
+import { routeBounds, validateRoute } from './terrain-route';
+import { planRoute, replanRoutes } from './terrain-route-planner';
 
 /** A draft is an ordinary atlas command evaluated against a readonly snapshot. */
 export type SpatialTerrainDraft =

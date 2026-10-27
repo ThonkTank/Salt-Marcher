@@ -83,3 +83,8 @@ test('listing CLI runs without dependencies or build preparation', (t) => {
   assert.match(failure.stderr, /does not exist/);
   assert.deepEqual(readdirSync(root), ['tests']);
 });
+test('explicit concurrency accepts positive integers and rejects ambiguous combinations',t=>{
+ const root=fixture(t);assert.equal(selectTests(['--concurrency=2'],root).concurrency,2);
+ for(const flag of ['--concurrency=0','--concurrency=-1','--concurrency=1.5','--concurrency=NaN'])assert.throws(()=>selectTests([flag],root));
+ assert.throws(()=>selectTests(['--serial','--concurrency=2'],root));
+});

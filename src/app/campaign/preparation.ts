@@ -1,46 +1,46 @@
-import { PreparationNoteDirectory } from './preparation-note-directory';
-import { createEditorSurface } from '../shared/editor-surface';
-import { EditorSession } from '../shared/editor-session';
-import { acknowledgeFields } from '../shared/editor-transition';
-import { NoteMergeUI } from './note-merge-ui';
-import { registerPreparationPacketEditor, packetNoteFeedback } from './session-packet-ui';
-import { NoteThreadDialog } from './note-thread-ui';
-import { detachNoteSource, restoreNoteSource } from './note-thread-edit';
-import { hasPendingCommit } from '../shared/commit-confirmation';
-import { NoteRoomUses } from './note-room-uses';
-import { chooseTextReference } from './text-reference-picker';
-import { rawTextOffset } from './text-references';
-import { appendNoteExcerpt } from './note-excerpt';
-import { normalizedNoteTitle, type KeyNoteChoices } from './key-note-capture-contracts';
-import { preserveLiteralEdit } from '../shared/literal-text-edit';
-import {
-  showNarrative,
-  flushNarrative,
-  prepareNarrativeLocation,
-  acceptNarrativeNoteReceipt,
-} from '../runtime/narrative-ui';
-import type { WorkspaceGeometry, Result } from '../shared/contracts';
-import {
-  preparationTarget,
-  type PreparationDraft,
-  type PreparationEdit,
-  type Preparation,
-  type PreparationChange,
-  type PreparationCommand,
-  type Note,
-  type LocationRow,
-} from './preparation-contracts';
+import { campaignLocalId } from '../../features/campaign/campaign-contracts';
 import { newLocation } from '../../features/location/location-schema';
 import type { ManualPlan } from '../../features/planner/manual-planner';
 import {
+  acceptNarrativeNoteReceipt,
+  flushNarrative,
+  prepareNarrativeLocation,
+  showNarrative,
+} from '../runtime/narrative-ui';
+import { hasPendingCommit } from '../shared/commit-confirmation';
+import type { Result, WorkspaceGeometry } from '../shared/contracts';
+import { EditorSession } from '../shared/editor-session';
+import { createEditorSurface } from '../shared/editor-surface';
+import { acknowledgeFields } from '../shared/editor-transition';
+import { preserveLiteralEdit } from '../shared/literal-text-edit';
+import { rawTextOffset } from '../shared/raw-text-offset';
+import { normalizedNoteTitle, type KeyNoteChoices } from './key-note-capture-contracts';
+import { appendNoteExcerpt } from './note-excerpt';
+import { NoteMergeUI } from './note-merge-ui';
+import { NoteRoomUses } from './note-room-uses';
+import { detachNoteSource, restoreNoteSource } from './note-thread-edit';
+import { NoteThreadDialog } from './note-thread-ui';
+import {
+  preparationTarget,
+  type LocationRow,
+  type Note,
+  type Preparation,
+  type PreparationChange,
+  type PreparationCommand,
+  type PreparationDraft,
+  type PreparationEdit,
+} from './preparation-contracts';
+import { PreparationNoteDirectory } from './preparation-note-directory';
+import { packetNoteFeedback, registerPreparationPacketEditor } from './session-packet-ui';
+import {
+  clearSessionTimeline,
+  flushSession,
   initSession,
+  linkVisitNoteThread,
   sessionContext,
   sessionVisitReadAlouds,
-  flushSession,
-  clearSessionTimeline,
-  linkVisitNoteThread,
 } from './session-ui';
-import { campaignLocalId } from '../../features/campaign/campaign-contracts';
+import { chooseTextReference } from './text-reference-picker';
 const defaultPlanning = {
   initSession,
   sessionContext,

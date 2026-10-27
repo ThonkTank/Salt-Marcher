@@ -1,5 +1,6 @@
-import { bounds, type LandscapeBox, type LandscapeRecord } from './atlas-landscape';
 import type { Point } from '../shared/contracts';
+import { type LandscapeBox, type LandscapeRecord } from './atlas-landscape';
+import { bounds } from './landscape-geometry';
 
 export const MASK_EDGE = 256,
   MASK_MAX = 65535,

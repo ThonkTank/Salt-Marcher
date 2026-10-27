@@ -13,7 +13,7 @@ const require = createRequire(import.meta.url);
 buildSync({
   stdin: {
     contents:
-      "export * from './src/app/atlas/vegetation';export * from './src/app/atlas/vegetation-projection';export * from './src/app/atlas/vegetation-controls';export {LandscapeWorkbench} from './src/app/atlas/atlas-landscape-ui';export * from './src/app/atlas/terrain-height';export * from './src/app/atlas/atlas-landscape';export * from './src/app/storage/store';export * from './src/app/storage/atlas-landscape-region';export {readVegetationEnvironment} from './src/app/storage/vegetation';export * from './src/app/atlas/landscape-raster';export * from './src/app/atlas/vegetation-view';export * from './src/app/atlas/atlas-paint';",
+      "export * from './src/app/atlas/vegetation';export * from './src/app/atlas/vegetation-projection';export * from './src/app/atlas/vegetation-controls';export {LandscapeWorkbench} from './src/app/atlas/atlas-landscape-ui';export * from './src/app/atlas/terrain-height';export * from './src/app/atlas/atlas-landscape';export * from './src/app/atlas/landscape-geometry';export * from './src/app/storage/store';export * from './src/app/storage/atlas-landscape-region';export {readVegetationEnvironment} from './src/app/storage/vegetation';export * from './src/app/atlas/landscape-raster';export * from './src/app/atlas/vegetation-view';export * from './src/app/atlas/atlas-paint';",
     resolveDir: process.cwd(),
   },
   outfile: '.build/vegetation-test.cjs',

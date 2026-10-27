@@ -1,5 +1,17 @@
 import { execFileSync } from 'node:child_process';
-import { build } from 'esbuild';
+import { build as esbuild } from 'esbuild';
+import {desktopEntryEnvironments} from './desktop-entry-environments.mjs';
+const builtEntries = new Set();
+async function build(options) {
+ for (const entry of options.entryPoints) {
+  if (!(entry in desktopEntryEnvironments)) throw Error('Unqualified desktop entry: '+entry);
+  const expected = ['renderer','browser-worker'].includes(desktopEntryEnvironments[entry]) ? 'browser' : 'node';
+  if(options.platform !== expected) throw Error('Wrong entry environment: '+entry);
+  builtEntries.add(entry);
+ }
+ return esbuild(options);
+}
+
 import { mkdir, copyFile, rm, readFile, writeFile } from 'node:fs/promises';
 import { copyAtlasRuntimeLicenses } from './atlas-runtime-licenses.mjs';
 const commit = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
@@ -197,3 +209,6 @@ await writeFile(
   }) + '\n',
 );
 console.log('Desktop build ready: .build/desktop/main.cjs');
+
+for (const entry of Object.keys(desktopEntryEnvironments))
+ if(!builtEntries.has(entry)) throw Error('Declared desktop entry was not built: '+entry);

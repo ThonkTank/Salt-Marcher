@@ -1,0 +1,107 @@
+import { build } from 'esbuild';
+import { mkdir, stat, writeFile } from 'node:fs/promises';
+import { execFileSync } from 'node:child_process';
+import {
+  assertCatalogMainJsBudget,
+  catalogMainJsGrowth,
+  catalogPayloadMainJsBytes,
+  prepareCatalogBuildAsset,
+} from './catalog-build-asset.mjs';
+const catalogAsset = await prepareCatalogBuildAsset();
+
+const productBuild = await build({
+  entryPoints: ['src/legacy/obsidian/main.ts'],
+  outfile: '.build/legacy-obsidian/main.js',
+  bundle: true,
+  format: 'cjs',
+  platform: 'browser',
+  target: 'es2022',
+  external: [
+    'obsidian',
+    'electron',
+    'better-sqlite3',
+    'node:*',
+    'util',
+    'stream',
+    'zlib',
+    'assert',
+    'buffer',
+  ],
+  sourcemap: true,
+  logLevel: 'info',
+  metafile: true,
+  minify: true,
+  plugins: [
+    {
+      name: 'catalog-srd-5.1-gzip',
+      setup(builder) {
+        builder.onResolve({ filter: /^catalog:srd-5\.1-gzip$/ }, () => ({
+          path: 'srd-5.1-gzip',
+          namespace: 'catalog-asset',
+        }));
+        builder.onLoad({ filter: /.*/, namespace: 'catalog-asset' }, () => ({
+          contents: `export default ${JSON.stringify(catalogAsset.payload)};`,
+          loader: 'js',
+        }));
+      },
+    },
+    {
+      name: 'compute-worker',
+      setup(builder) {
+        builder.onResolve({ filter: /^dungeon-compute-worker$/ }, () => ({
+          path: 'compute-worker',
+          namespace: 'worker',
+        }));
+        builder.onLoad({ filter: /.*/, namespace: 'worker' }, async () => {
+          const worker = await build({
+            entryPoints: ['src/compute-worker.ts'],
+            bundle: true,
+            write: false,
+            format: 'iife',
+            platform: 'browser',
+            target: 'es2022',
+            minify: true,
+          });
+          return {
+            contents: 'export default ' + JSON.stringify(worker.outputFiles[0].text),
+            loader: 'js',
+          };
+        });
+      },
+    },
+  ],
+});
+{
+  const mainBytes = (await stat('.build/legacy-obsidian/main.js')).size;
+  const mainJsGrowthBytes = catalogMainJsGrowth(mainBytes, catalogAsset.identity);
+  const catalogPayloadBytes = assertCatalogMainJsBudget(
+    catalogPayloadMainJsBytes(productBuild.metafile),
+    catalogAsset.identity,
+  );
+  const commit = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
+  const dirty =
+    execFileSync('git', ['status', '--porcelain', '--untracked-files=no'], {
+      encoding: 'utf8',
+    }).trim().length > 0;
+  const inventory = {
+    ...catalogAsset.inventory,
+    baselineCommit: catalogAsset.identity.baseline.commit,
+    baselineMainBytes: catalogAsset.identity.baseline.mainBytes,
+    mainBytes,
+    mainJsGrowthBytes,
+    catalogPayloadBytes,
+    catalogPayloadLimitBytes: catalogAsset.identity.limits.mainJsGrowthBytes,
+    node: process.version,
+    commit,
+    dirty,
+    sourceRevision: dirty ? `${commit}+dirty` : commit,
+    command: 'npm run build:legacy:obsidian',
+    target: 'historical-obsidian-reference',
+  };
+  await mkdir('.build', { recursive: true });
+  await writeFile(
+    '.build/legacy-obsidian/catalog-build-inventory.json',
+    JSON.stringify(inventory, null, 2) + '\n',
+  );
+  console.log('catalog inventory', inventory);
+}

@@ -8,7 +8,7 @@ const require = createRequire(import.meta.url);
 buildSync({
   stdin: {
     contents:
-      "export * from './src/app/storage/store';export * from './src/app/storage/atlas-landscape-region';export * from './src/app/storage/terrain-color-raster';export * from './src/app/atlas/atlas-landscape';export * from './src/app/atlas/landscape-raster';export * from './src/app/atlas/terrain-height';export * from './src/app/atlas/land-mask';",
+      "export * from './src/app/storage/store';export * from './src/app/storage/atlas-landscape-region';export * from './src/app/storage/terrain-color-raster';export * from './src/app/atlas/atlas-landscape';export * from './src/app/atlas/landscape-geometry';export * from './src/app/atlas/landscape-raster';export * from './src/app/atlas/terrain-height';export * from './src/app/atlas/land-mask';",
     resolveDir: process.cwd(),
   },
   bundle: true,

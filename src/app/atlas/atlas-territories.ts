@@ -1,11 +1,12 @@
 import type { Point, Polygon } from '../shared/contracts';
-import { contains, type LandscapeBox } from './atlas-landscape';
+import { type LandscapeBox } from './atlas-landscape';
 import {
   brushFootprint,
   intersectPolygons,
   subtractPolygons,
   unionPolygons,
 } from './landscape-brush';
+import { contains } from './landscape-geometry';
 export interface TerritoryType {
   id: string;
   name: string;

@@ -1,3 +1,4 @@
+import { sqliteInteger } from './sqlite-connection';
 import Database from 'better-sqlite3';
 import { createHash, randomUUID } from 'node:crypto';
 import { mkdir, rm, stat, readdir } from 'node:fs/promises';
@@ -89,8 +90,8 @@ export class AtlasProjectionIndex {
             throw Error('Cacheformat passt nicht.');
           if (
             (await stat(file)).size !==
-            checked.pragma('page_size', { simple: true }) *
-              checked.pragma('page_count', { simple: true })
+            sqliteInteger(checked.pragma('page_size', { simple: true })) *
+              sqliteInteger(checked.pragma('page_count', { simple: true }))
           )
             throw Error('Cachedatei ist unvollständig.');
           if (

@@ -1,3 +1,4 @@
+import {measureMapText} from './map-text-measure';
 import { publicTerrainGrid } from '../runtime/player-terrain';
 import type { AtlasRenderView } from './campaign-atlas-contracts';
 import { gridHeight, type TerrainView } from './terrain-spatial-model';
@@ -11,7 +12,6 @@ import {
   drawTerritories,
   MapLabelLayout,
   paintMapLabels,
-  measureMapText,
 } from './atlas-cartography';
 import {
   AtlasSurfaceTileStream,

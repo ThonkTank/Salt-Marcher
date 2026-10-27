@@ -2,16 +2,16 @@
 
 Status: Current; offene Ziele sind als solche beschrieben.
 Owner: project
-Last Reviewed: 2026-10-24 (Struktur und Quellen; Fachabnahme separat)
+Last Reviewed: 2026-10-27 (Übergabeeinstieg; Fachabnahme separat)
 Source of Truth: Dieses Dokument besitzt das benannte Thema; Code belegt den Iststand, das Abnahmeregister den Prüfstand.
 
 Gesamtprodukt: [Produktziele](project/requirements/product.md), [Umfang](project/requirements/scope.md) und [Lieferfolge](project/delivery/roadmap.md). Technische Entscheidungen: [ARCHITECTURE](project/architecture/overview.md). Die Fachpläne ergänzen konkrete Abläufe und Datenregeln; aktueller Code ist Istbefund. Abnahmen und direkte Belege: `acceptance.json`; dort angegebene historische Belege bleiben unter ihren festen Git-Revisionen erreichbar.
 
 | Ich möchte … | Hier beginnen | Danach nur bei Bedarf |
 | --- | --- | --- |
-| den aktuellen Stand verstehen | [Produktstand](project/requirements/product.md#gegenwärtiger-stand-und-offene-entscheidungen) und [Atlasübersicht](atlas/requirements/atlas.md#atlas-auf-einen-blick) | Datierte Fachbelege in `acceptance.json` |
+| den aktuellen Stand verstehen | [Vorhandene Umsetzung und nächste Anschlüsse](project/delivery/roadmap.md#vorhandene-umsetzung-und-nächste-anschlüsse) und [Produktziele](project/requirements/product.md) | Datierte Fachbelege in `acceptance.json` |
 | selbstständig am Atlas weiterarbeiten | [Atlasumstieg und offene Aufgaben](atlas/architecture/unified-spatial-atlas.md#aktueller-arbeitsstand) | Gültige Technik, verbleibende Übernahme und gemeinsame Abnahme |
-| den nächsten Lieferabschluss umsetzen | [Gemeinsamer technischer Einstieg](project/delivery/roadmap.md#technischer-übergang) und [Fachabhängigkeiten](project/delivery/roadmap.md#fachliche-lieferabhängigkeiten) | [Atlaspakete](atlas/requirements/atlas.md#lieferpakete-und-codeanschlüsse), Fachquelle und passende Tests |
+| den nächsten Lieferabschluss umsetzen | [Nächster gemeinsamer E2E-01-Abschluss](project/delivery/roadmap.md#kritischer-pfad-für-e2e-01) und [Fachabhängigkeiten](project/delivery/roadmap.md#fachliche-lieferabhängigkeiten) | [Atlaspakete](atlas/requirements/atlas.md#lieferpakete-und-codeanschlüsse), Fachquelle und passende Tests |
 | die Oberfläche bauen | [Atlas-Besitzer und Prüfweg](project/architecture/overview-2.md#atlasoberfläche-ändern), [gemeinsame Darstellung und Suche](project/architecture/overview-2.md#darstellung-suche-und-spieleranzeige) und Fachplan des gewählten Ablaufs | [Atlasoberfläche](atlas/requirements/atlas.md#informationsarchitektur-der-oberfläche), [Bedienregeln](atlas/requirements/atlas-2.md#gemeinsame-bedienung), Werkzeugkatalog und Objektaktionen |
 | Atlasdarstellung, Auswahl oder Bildausgabe ändern | [Codebesitzer und Schutzregeln](atlas/architecture/rendering.md#wo-ändern-und-prüfen) | [Prüfwege und offene Qualifikation](atlas/architecture/rendering.md#prüfwege-und-offene-qualifikation) |
 | den Nutzerzweck oder die Priorität klären | [Produktziele](project/requirements/product.md) und [fachliche Lieferfolge](project/delivery/roadmap.md) | [Atlasabläufe und Work → Efficient → Beautiful / KISS](atlas/requirements/atlas.md#wie-kommen-wir-zum-ziel), konkreter Fachplan |

@@ -1,0 +1,15 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "types": [],
+    "lib": [
+      "ES2022",
+      "WebWorker"
+    ]
+  },
+  "files": [
+    "src/app/atlas/atlas-brush-worker.ts"
+  ],
+  "include": [],
+  "exclude": []
+}

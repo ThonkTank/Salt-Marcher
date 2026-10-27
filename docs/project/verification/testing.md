@@ -5,19 +5,29 @@ Owner: project
 Last Reviewed: 2026-10-24 (Struktur und Quellen; Fachabnahme separat)
 Source of Truth: Dieses Dokument besitzt das benannte Thema; Code belegt den Iststand, das Abnahmeregister den Prüfstand.
 
-`npm test` bereitet die Testartefakte neu vor und führt alle aktiven Node-Tests
-mit höchstens vier getrennten Testprozessen aus, begrenzt durch die verfügbaren
-CPU-Kapazitäten. Ziel: weniger als 300 Sekunden
-einschließlich Vorbereitung auf einem unbelasteten Entwicklungsrechner und im
-Candidate-Job. Installation, Typprüfungen, Produktbuilds und native UI-Proben
-haben eigene Zeiten. `npm test -- --serial` dient der Diagnose von Isolation
-und Parallelisierung; es wählt dieselben Dateien aus.
+`npm test` führt die aktive Auswahl lokal standardmäßig mit einem Testprozess aus.
+Auf Linux startet der Runner dafür eine eigene systemd-Benutzerscope mit
+`MemoryHigh=2G` und `MemoryMax=3G`, sofern bereits geerbte tatsächliche
+Cgroup-Grenzen nicht mindestens ebenso eng sind. Ein Startfehler führt zum
+Abbruch; es gibt keinen unbeschränkten Ersatzstart. Der bestehende
+`codex-chat-protection@UID`-Dienst schützt die App separat und wird nicht verändert.
+Andere schwere Prüfungen laufen mit `npm run verify:local -- npm run check`
+(entsprechend für `check:desktop`, `build` und `build:desktop`).
 
-Der Lauf schreibt `.build/test-run.json` mit Commit, Dirty-Status, Node-Version,
-Dateiauswahl, Parallelität, Vorbereitung, Gesamtdauer und Ergebnis sowie
-`.build/tests.tap` mit den einzelnen Ergebnissen. Nur Zeiten desselben Standes
-unter vergleichbarer Last vergleichen. Ein schneller fehlgeschlagener Lauf
-erfüllt das Ziel nicht. Der erforderliche Candidate-Check bleibt vollständig.
+`--concurrency=N` verlangt eine positive ganze Zahl innerhalb des ermittelten
+CPU-/Speicherbudgets; `--serial` erzwingt eins. CI bleibt ohne systemd-Abhängigkeit
+und verwendet höchstens vier Prozesse, begrenzt durch CPU und verfügbaren
+Speicher inklusive geerbter Cgroup-Grenzen. Nicht-Linux-Systeme laufen portabel;
+der Launcher behauptet dort keine Betriebssystem-Speichergrenze.
+
+Jeder Lauf schreibt `.build/test-runs/UUID/report.json` und `tests.tap` mit
+Commit, Dirty-Status, Auswahl, Parallelität, effektiven Speichergrenzen,
+Vorbereitungs-/Test-/Gesamtdauer und Ergebnis. Asset-Einträge enthalten
+Cachetreffer, Grund, Schlüssel und Zeit. Unter Linux enthält der Bericht außerdem
+die Cgroup und ihren Speicherhöchststand. `.build/test-run.json` verweist durch
+seinen Inhalt auf den letzten abgeschlossenen Lauf. Nur Zeiten desselben Standes
+unter vergleichbarer Last vergleichen. Ziel unter 300 Sekunden für die gesamte
+Suite bleibt offen; der vollständige Candidate-Check bleibt erforderlich.
 
 ## Gemessene Initialisierungskosten
 
@@ -31,10 +41,35 @@ offen; die Evidenz beschreibt verbleibende CPU-Arbeit und Hostgrenzen.
 `python3 tools/measure-test-suite.py .build/neue-messung` zeichnet den normalen
 Gesamtlauf einschließlich Vorbereitung und Linux-Hostlast auf.
 
+### Gezielte Cachemessung am 27.10.2026
+
+Gleicher Dirty-Checkout auf Basis `ee58456ab`, Node 22, ein Prozess,
+Linux-Scope 2/3 GiB. „Kalt“ bedeutet noch kein Artefakt zum aktuellen
+Inhaltsschlüssel, nicht geleerten Betriebssystem-Dateicache. Zeiten beginnen
+im Runner nach dem Scope-Start; eine systemd-Startwartezeit ist nicht enthalten.
+
+| Auswahl | Kalt / warm gesamt | Asset-Vorbereitung kalt / warm | Tests je Lauf |
+| --- | --- | --- | --- |
+| Core | 36,39 / 34,73 s | 1375 / 93 ms | 414 bestanden |
+| Note-Merge + Schema-Isolation | 3,09 / 3,28 s | Store 520 / 49 ms, weiterer Treffer 59 / 78 ms | 17 bestanden |
+| Runner-/Cache-Regressionen | 1,59 s | kein Core-/Store-Build | 16 bestanden |
+
+Core erzeugte kalt genau ein Core-Bundle und warm keines; Store-Auswahl kalt
+nur ein Store-Bundle und warm keines. Die Store-Gesamtzeit wurde trotz
+vermiedenen Builds nicht kürzer; daraus folgt keine allgemeine Beschleunigung
+der Fachtests. Höchster gemessener Scope-Speicher: 725 MiB (Core kalt).
+Diese Stichprobe ist kein neuer vollständiger Suite-Benchmark und keine native
+Produktabnahme. Die lokalen Detailbelege liegen unter `.build/test-runs/`:
+`5322173f-ee3a-4eeb-8e2c-deae5377876b`,
+`af798b82-aae7-4f62-8a01-696f0fc406ae`,
+`7b8d55dd-a205-4e1f-a954-a3310a9d2b74`,
+`c6522471-24d4-4a8c-b442-e889352f55bb` und
+`f4061def-682c-4cec-a918-4e47f4a7e86f`.
+
 ## Einzelne Abläufe prüfen
 
-`npm test -- tests/runtime/desktop-combat-switch.test.mjs` bereitet die gemeinsamen
-Testartefakte einmal neu vor und führt anschließend die ausgewählten Dateien aus.
+`npm test -- tests/runtime/desktop-combat-switch.test.mjs` bereitet nur tatsächlich benötigte gemeinsame
+Testartefakte vor und führt anschließend die ausgewählten Dateien aus.
 Mehrere explizite Dateipfade sind erlaubt; doppelte Pfade werden nur einmal geprüft.
 Fehlende Dateien, Verzeichnisse, unbekannte Optionen und leere Pfade werden vor dem
 Build abgewiesen. Auch die benannten Node-Testskripte `test:desktop-*` verwenden
@@ -46,12 +81,26 @@ wählt das gesamte vorbereitete Core-Bundle. Die Standardsuite entdeckt aktive
 Node-Tests im Testwurzelverzeichnis und den Fachordnern `workspace`, `atlas`,
 `campaign`, `runtime`, `catalog` und `shared`; ADR-Tests bleiben ausdrücklich
 aufgelistet. Fixtures und native Referenztests werden nicht automatisch entdeckt.
-Für direkte `node --test`-Aufrufe bleibt `node build.mjs --test` erforderlich.
+Für direkte `node --test`-Aufrufe bereitet `node build.mjs --test` weiterhin
+Core, Store und Katalog vollständig vor (unter Linux über `verify:local`).
 
-- Die unveränderte Storage-Buildkonfiguration verwendet ein gemeinsam
-  vorbereitetes Bundle. Der Helfer schreibt atomare Weiterleitungen in die
-  bisherigen Fixturepfade; abweichende Buildoptionen werden normal kompiliert.
-  Jede Testdatei läuft weiterhin in einem eigenen Prozess.
+- Core wird nur für die Core-Auswahl vorbereitet, Store erst beim tatsächlichen
+  Standard-Store-Build im Testhelfer. Katalogdateien für individuelle Fixtures
+  werden ohne Bundle-Build bereitgestellt. Abweichende Buildoptionen bleiben
+  individuelle esbuild-Aufrufe; jede Testdatei läuft in einem eigenen Prozess.
+- `.build/test-assets` enthält nach Inhalten adressierte Artefakte. Schlüssel
+  berücksichtigen Quelldateien einschließlich Hinzufügen/Entfernen, Helfer,
+  Konfiguration, Lockfile, Node und esbuild. Ausgabehashes werden vor jedem
+  Treffer geprüft. Ein fehlgeschlagener oder während Quelländerung erzeugter
+  Build wird nicht veröffentlicht. Kurze Locks koordinieren nur die jeweilige
+  Asset-Vorbereitung; sie sperren keine Rollen oder Testläufe. Verwaiste Locks
+  mit nachweislich beendetem Besitzer werden zurückgewonnen; unklare Besitzer
+  führen nach 30 Sekunden zum Fehler. Automatische Cachebereinigung gibt es
+  nicht; bei beendeten Prüfungen kann `.build/test-assets` entfernt werden.
+- Gemeinsame Fixture-Ausgabepfade individueller Builds sind weiterhin nicht für
+  mehrere gleichzeitig laufende vollständige Suiten isoliert. Schwere lokale
+  Prüfungen deshalb nacheinander ausführen. Änderungen direkt in `node_modules`
+  ohne passende Lockfile-/Versionsänderung gehören nicht zum Cachevertrag.
 - Die DOM-Hilfe verwendet das vollständige Original-HTML und die echten
   UI-Module. Ein mutationsgebundener ID-Index ersetzt lediglich die lineare
   Suche von linkedom. Er wird auch vor synchronen Abfragen aktualisiert;
@@ -240,3 +289,19 @@ belegt das Ziel unter 300 Sekunden nicht. Auch breit unveränderte Tests waren
 langsamer als im vorherigen CI-Lauf. Ein einzelner Lauf erlaubt deshalb keine
 isolierte Leistungszuschreibung an die Architekturprüfung. Funktionsergebnis,
 Testbereitschaft und Laufzeitziel werden getrennt berichtet.
+
+## Aktiver Build und historische Referenz
+
+`npm run build` baut dieselbe Electron-Anwendung wie `npm run build:desktop`
+unter `.build/desktop`. Der Candidate führt entsprechend den geltenden
+Integrationsregeln weiterhin beide Befehle aus; keiner baut den Obsidian-Adapter.
+`node build.mjs --test` bleibt die gemeinsame Testvorbereitung.
+
+Der historische Adapter ist mit `npm run build:legacy:obsidian` ausdrücklich
+baubar; Bundle, Sourcemap und historisches Kataloginventar liegen getrennt unter
+`.build/legacy-obsidian`. `npm run test:legacy:obsidian` baut und prüft diese
+Referenz. Die Datei `tests/legacy-reference/obsidian-build.test.mjs` gehört nicht
+zur automatisch entdeckten Suite. Allgemeine Katalogidentitäts-, Quellhash- und
+Payloadprüfungen bleiben in `tests/catalog/catalog-build-asset.test.mjs` aktiv.
+Historische `main.js`-Budgetwerte sind keine Budgets der Desktopanwendung.
+Auch diese optionalen schweren Aufrufe lokal über `verify:local` ausführen.

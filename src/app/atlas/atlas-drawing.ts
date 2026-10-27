@@ -1,16 +1,13 @@
-import { atlasPathPreview } from './atlas-path-draft';
+import { measureMapText } from './map-text-measure';
+import { dungeonTravelRoute } from '../runtime/dungeon-travel-console';
+import { atlasWorldTravelState } from '../runtime/world-ui';
+import type { Point, Room } from '../shared/contracts';
+import type { CanvasBox } from './atlas-camera';
+import type { AtlasCanvas } from './atlas-canvas';
 import { AtlasPaint, atlasPaint as shape } from './atlas-canvas-scene';
+import { drawTerritories, MapLabelLayout, paintMapLabels } from './atlas-cartography';
 import { atlasElement as get } from './atlas-dom';
-import { mapExtentVisible } from './atlas-scale-policy';
-import { atlasWorkplaneData, type AtlasWorkplane } from './atlas-workplane';
-import { cityObjectsPaint, posedFootprint, roadPoints } from './city-model';
-import {
-  drawTerritories,
-  MapLabelLayout,
-  measureMapText,
-  paintMapLabels,
-} from './atlas-cartography';
-import type { AtlasRasterPresentation } from './atlas-raster-presentation';
+import type { LandscapeWorkbench } from './atlas-landscape-ui';
 import {
   areaMeasures,
   drawMeasurements,
@@ -18,20 +15,21 @@ import {
   pathMeasures,
   radiusMeasures,
 } from './atlas-measurements';
-import { atlasFieldValue } from './atlas-units';
+import { atlasPathPreview } from './atlas-path-draft';
+import type { AtlasRasterPresentation } from './atlas-raster-presentation';
 import { regionValue } from './atlas-region-contracts';
-import {
-  atlasDrawingDraft,
-  atlasDrawingMeasurement,
-  atlasDrawingSnapPoint,
-  drawingOverlay,
-} from './drawing-ui';
-import { dungeonTravelRoute } from '../runtime/dungeon-travel-console';
-import type { LandscapeWorkbench } from './atlas-landscape-ui';
-import { appendRoomNumber } from './room-number-label';
 import { atlasPartyPoint, atlasWorldRoute } from './atlas-runtime-model';
-import type { CanvasBox } from './atlas-camera';
-import type { AtlasCanvas } from './atlas-canvas';
+import { mapExtentVisible } from './atlas-scale-policy';
+import type { TerritoryWorkbench } from './atlas-territories-ui';
+import { atlasFieldValue } from './atlas-units';
+import type {
+  AtlasAuthorView,
+  AtlasJourneyView,
+  AtlasOutputView,
+  AtlasRegionView,
+} from './atlas-workbench-types';
+import { atlasWorkplaneData, type AtlasWorkplane } from './atlas-workplane';
+import type { AtlasBinding, AtlasRenderView } from './campaign-atlas-contracts';
 import {
   atlasFrame,
   atlasHexPoint,
@@ -39,20 +37,18 @@ import {
   frameMatrix,
   localToAtlas,
 } from './campaign-atlas-model';
-import type { AtlasBinding, AtlasRenderView } from './campaign-atlas-contracts';
-import type { Point, Room } from '../shared/contracts';
-import { volumeProjection } from './volume-model';
-import { elementPaint, roomFacePaint } from './drawing-model';
+import { cityObjectsPaint, posedFootprint, roadPoints } from './city-model';
 import { atlasCityMeasurement, atlasCityState } from './city-ui';
+import { elementPaint, roomFacePaint } from './drawing-model';
+import {
+  atlasDrawingDraft,
+  atlasDrawingMeasurement,
+  atlasDrawingSnapPoint,
+  drawingOverlay,
+} from './drawing-ui';
 import { atlasDungeonState } from './dungeon-ui';
-import type { TerritoryWorkbench } from './atlas-territories-ui';
-import { atlasWorldTravelState } from '../runtime/world-ui';
-import type {
-  AtlasAuthorView,
-  AtlasJourneyView,
-  AtlasOutputView,
-  AtlasRegionView,
-} from './atlas-workbench-types';
+import { appendRoomNumber } from './room-number-label';
+import { volumeProjection } from './volume-model';
 interface AtlasDrawingHost {
   readonly author: AtlasAuthorView;
   readonly territories: Pick<TerritoryWorkbench, 'selectedLabel' | 'draw'>;

@@ -1,7 +1,7 @@
 import type { Room } from '../shared/contracts';
-import type { KeyContent, KeyBlock, KeyRendered } from './key-contracts';
+import { rawTextOffset } from '../shared/raw-text-offset';
+import type { KeyBlock, KeyContent, KeyRendered } from './key-contracts';
 import { templateBlockId } from './key-model';
-import { rawTextOffset } from './text-references';
 export type KeyPassageSource =
   | { kind: 'legacy'; sectionId: string; expectedText: string }
   | { kind: 'text'; ownerId: string; blockId: string; expectedText: string };

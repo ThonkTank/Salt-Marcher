@@ -11,7 +11,9 @@
     "src/app/shared/commit-receipt.ts",
     "src/app/shared/dice-formula.ts",
     "src/app/atlas/atlas-camera.ts",
-    "src/app/atlas/atlas-raster-kernel.ts"
+    "src/app/atlas/atlas-raster-kernel.ts",
+    "src/app/shared/literal-text-edit.ts",
+    "src/app/shared/room-validation.ts"
   ],
   "include": [],
   "exclude": []

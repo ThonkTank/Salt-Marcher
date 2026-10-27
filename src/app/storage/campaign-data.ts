@@ -1,17 +1,3 @@
-import { installNoteSourceHistory, validateNoteSourceHistory } from './note-source-history';
-import { installCampaignCatalog, noteCampaignCreated } from './campaign-catalog';
-import { readWorld, travelEnvironmentBasis } from './world';
-import { dungeonGeometry, dungeonGeometryBasis } from './dungeon-play';
-import { dungeonTraceById } from './dungeon-senses';
-import { checkedSessionRecapDraft } from '../runtime/live-contracts';
-import { readEncounterTables } from './generation';
-import { resolveWorldSources } from './world-sources';
-import {
-  assertTransferCoverage,
-  transferContext,
-  transferRow,
-  transferTables,
-} from '../transfer/registry';
 import { createHash, randomUUID } from 'node:crypto';
 import type {
   CampaignOverview,
@@ -19,14 +5,29 @@ import type {
   DefinitionConflict,
   SharedKind,
 } from '../campaign/campaign-contracts';
-import { drawingTables } from './drawing';
-import { npcFingerprint, validateNpcRecovery } from './npcs';
-import { validateWorldRelationPairs, worldRelationPairFingerprint } from './world-relation-pair';
 import { canonicalJson } from '../campaign/generation/canonical-json';
-import { checkedAudioRegistry, musicStateAssetCount } from './music';
-import { validateRoom, type CampaignRename, type Room } from '../shared/contracts';
+import { checkedSessionRecapDraft } from '../runtime/live-contracts';
+import { type CampaignRename, type Room } from '../shared/contracts';
+import { validateRoom } from '../shared/room-validation';
+import {
+  assertTransferCoverage,
+  transferContext,
+  transferRow,
+  transferTables,
+} from '../transfer/registry';
 import { createCampaignAtlas } from './campaign-atlas';
+import { installCampaignCatalog, noteCampaignCreated } from './campaign-catalog';
+import { drawingTables } from './drawing';
+import { dungeonGeometry, dungeonGeometryBasis } from './dungeon-play';
+import { dungeonTraceById } from './dungeon-senses';
+import { readEncounterTables } from './generation';
 import { ensureLiveOwners } from './live';
+import { checkedAudioRegistry, musicStateAssetCount } from './music';
+import { installNoteSourceHistory, validateNoteSourceHistory } from './note-source-history';
+import { npcFingerprint, validateNpcRecovery } from './npcs';
+import { readWorld, travelEnvironmentBasis } from './world';
+import { validateWorldRelationPairs, worldRelationPairFingerprint } from './world-relation-pair';
+import { resolveWorldSources } from './world-sources';
 export const quote = (s: string) => '"' + s.replace(/"/g, '""') + '"';
 export const digest = (v: string | Buffer) => createHash('sha256').update(v).digest('hex');
 export function installCampaignSchema(db: any) {

@@ -1,11 +1,11 @@
 import * as THREE from 'three';
 import type { Point } from '../shared/contracts';
-import type { LandscapeRecord, LandscapeBox } from './atlas-landscape';
+import type { AtlasDrawingMesh } from './atlas-drawing-mesh';
+import type { LandscapeBox, LandscapeRecord } from './atlas-landscape';
+import { mapLineWidth } from './atlas-scale-policy';
 import { lineParts, linePoints } from './landscape-line';
 import { nearestRoute } from './terrain-route';
-import type { AtlasDrawingMesh } from './atlas-drawing-geometry';
-import { routeSegmentRange, routeSampleSections } from './terrain-route-clip';
-import { mapLineWidth } from './atlas-scale-policy';
+import { routeSampleSections, routeSegmentRange } from './terrain-route-clip';
 
 export function atlasRouteGeometry(
   r: LandscapeRecord,

@@ -7,7 +7,7 @@ import { parseHTML } from '../helpers/dom.mjs';
 buildSync({
   stdin: {
     contents:
-      "export {setAtlasUnits} from './src/app/atlas/atlas-units';export {LandscapeWorkbench} from './src/app/atlas/atlas-landscape-ui';export {AtlasPaint} from './src/app/atlas/atlas-paint';export {HEX_METERS,contains} from './src/app/atlas/atlas-landscape';",
+      "export {setAtlasUnits} from './src/app/atlas/atlas-units';export {LandscapeWorkbench} from './src/app/atlas/atlas-landscape-ui';export {AtlasPaint} from './src/app/atlas/atlas-paint';export {HEX_METERS} from './src/app/atlas/atlas-landscape';export {contains} from './src/app/atlas/landscape-geometry';",
     resolveDir: process.cwd(),
   },
   outfile: '.build/atlas-frame-loading.cjs',

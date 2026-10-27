@@ -1,18 +1,19 @@
 import { createHash, randomUUID } from 'node:crypto';
-import type { Room } from '../shared/contracts';
 import type { DrawingElement } from '../atlas/drawing-contracts';
 import type { DungeonGeometry } from '../atlas/dungeon-contracts';
+import { resolvePathAnchor } from '../atlas/path-anchor';
 import type {
-  DungeonPath,
   DungeonPassage,
-  PathPreview,
-  PathAction,
+  DungeonPath,
   PassageSide,
+  PathAction,
+  PathPreview,
 } from '../atlas/path-contracts';
-import { validateDungeonPath, validateDungeonPassage } from '../atlas/path-contracts';
-import { buildPath, resolvePathAnchor } from '../atlas/path-model';
+import { validateDungeonPassage, validateDungeonPath } from '../atlas/path-contracts';
+import { buildPath } from '../atlas/path-model';
 import { volumeProjection } from '../atlas/volume-model';
-import { volumeRow, readDungeonVolume } from './volume';
+import type { Room } from '../shared/contracts';
+import { readDungeonVolume, volumeRow } from './volume';
 const hash = (s: string) => createHash('sha256').update(s).digest('hex'),
   parsed = (r: any) => {
     if (!r || hash(r.payload) !== r.checksum) throw new Error('3D-Pfad oder Passage beschädigt.');

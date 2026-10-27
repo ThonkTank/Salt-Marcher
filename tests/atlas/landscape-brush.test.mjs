@@ -6,7 +6,7 @@ import { readFileSync } from 'node:fs';
 buildSync({
   stdin: {
     contents:
-      "export {brushFootprint} from './src/app/atlas/landscape-brush';export {contains} from './src/app/atlas/atlas-landscape';export {eraseVegetation} from './src/app/atlas/vegetation-erase';",
+      "export {brushFootprint} from './src/app/atlas/landscape-brush';export {contains} from './src/app/atlas/landscape-geometry';export {eraseVegetation} from './src/app/atlas/vegetation-erase';",
     resolveDir: process.cwd(),
   },
   outfile: '.build/landscape-brush-test.cjs',

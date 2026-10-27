@@ -6,7 +6,8 @@ import path from 'node:path';
 import { createRequire } from 'node:module';
 import { fixtureStore } from '../helpers/store.mjs';
 
-const { CampaignStore } = createRequire(import.meta.url)('../../.build/test-shared/store.cjs');
+import { ensureTestAsset } from '../../tools/test-assets.mjs';
+const { CampaignStore } = createRequire(import.meta.url)(ensureTestAsset('store'));
 
 test('schema copies are independent durable databases and cannot overwrite a reopen target', (t) => {
   const root = mkdtempSync(path.join(tmpdir(), 'fixture-isolation-'));

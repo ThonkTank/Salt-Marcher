@@ -2,7 +2,7 @@
 
 Status: Current; native und automatisierte Nachweise bleiben von Produktabnahme getrennt.
 Owner: project
-Last Reviewed: 2026-10-25
+Last Reviewed: 2026-10-27
 Source of Truth: Sitzungskern und Übergangsregistrierung; Fachmodule besitzen Entwürfe und Receipts.
 
 ## Zuständigkeiten
@@ -114,12 +114,36 @@ Notizquellen, ungeklärte Commands, Planungsübergaben und CRLF-Text bleiben erh
 
 ## Live-Instanz
 
-`createLive` besitzt Szenen-/Figurenentwürfe, Rückblick, Moment, Leseaufträge und
-Command-Recovery pro Instanz. Der Renderer übergibt DOM-Wurzeln, Preload und
-benannte Navigation und verbindet dieselbe Instanz mit Workspace und Party.
-Die Party erhält ihre drei Schreib-/Verschiebeaktionen ausdrücklich; sie
-importiert keinen globalen Live-Writer mehr. Mappenübergaben laufen über benannte
-Funktionen des Mappenbesitzers statt über dessen Button-Suche.
+`createLive` komponiert die Live-Oberfläche und besitzt weiterhin Kontext,
+bestätigten `LiveView`, Figuren-/Szenenentwürfe, Command-Recovery und die gemeinsame
+Schreibgrenze. Der Renderer übergibt DOM-Wurzeln, Preload und benannte Navigation
+und verbindet dieselbe Instanz mit Workspace und Party. Die Party erhält ihre
+drei Schreib-/Verschiebeaktionen ausdrücklich.
+
+| Besitzer in `src/app/runtime/` | Privater Zustand und Übergabe |
+| --- | --- |
+| `live-recap-editor.ts` | Kampagnengebundene Rückblickentwürfe, CAS-Basis, Fehler und laufende Sicherung; Abschluss hält die Publish-Sperre bis zur Ack-Annahme. Spätere Prosa bleibt erhalten. |
+| `live-moment-editor.ts` | Szenengebundene Momententwürfe, Sicherungsoperationen und Formularaktionen; bestätigte Folgeaktionen bleiben an ihren ursprünglichen Kontext gebunden. |
+| `live-session-close-ui.ts` | Abschlussaudit, Reviewgeneration, Dialoge und Übergabeentwurf; Änderungen am geprüften Gruppenstand entwerten die Bestätigung. |
+| `live-session-resume-ui.ts` | Wiederaufnahmedialog und eigene Anfragegeneration; Aktionen erhalten eine geprüfte Lease für Fokus, Navigation und Beginn. |
+| `live-knowledge-ui.ts` | Narrative Lesegeneration, Cache, Fehler und Suchdarstellung; eine alte Antwort gibt keinen neueren Leseauftrag frei. |
+| `live-session-readers.ts` | Gemeinsame Audit-/Vorbereitungsabfragen mit expliziten Leseranschlüssen; kein eigener langlebiger Zustand oder Writer. |
+
+Diese Besitzer erhalten die benötigten Projektionen und benannte Aktionen.
+Kein Untermodul importiert den Live-Kompositionsroot zurück oder erhält dessen
+veränderlichen Gesamtzustand. `EditorSession` bleibt die gemeinsame Drain-Grenze;
+angenommene Writes werden beim Wechsel nicht abgebrochen. `flushLive` sichert
+weiterhin Moment, Rückblick, Scene-Desk, Fortschritt/Kampf/Chase und danach
+Figuren-/Szenenentwürfe in dieser Reihenfolge. Ein Entwurf mit Fehler blockiert
+die erfolgreiche Navigation. Mappenübergaben verwenden benannte Funktionen.
+
+`tests/runtime/desktop-live-owner-lifecycle.test.mjs` prüft getrennte Besitzer
+mit identischen IDs, spätere Rohtexte während einer Sicherung, Drain nach
+Abmeldung, fehlgeschlagene Sicherung und überholte narrative Reads. Die
+bestehenden Live-Moment-/Wiederaufnahmeprüfungen behalten die durchgängigen
+Receipt-, Wechsel-, Abschluss- und Textorakel. Der native Spielabend-Prüfweg
+`tools/test-desktop-evening-handoff.mjs` ergänzt Abschluss, Übergabe und frischen
+Prozess; diese Zuordnung allein behauptet keinen neuen Lauf oder Produkt-PASS.
 
 `LiveTimeControls` besitzt literale Zeitfelder je Szene und Kalender-Vorschauen.
 Ein Read gehört zur `EditorSession`; Abmeldung und neue Generationen verwerfen

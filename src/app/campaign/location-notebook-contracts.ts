@@ -1,6 +1,6 @@
-import type { LocationActivityAPI as importLocationActivityAPI } from './location-activity-contracts';
 import type { Result } from '../shared/contracts';
-import type { DeskRef } from '../runtime/scene-desk-contracts';
+import type { DeskRef } from '../shared/desk-reference';
+import type { LocationActivityAPI as importLocationActivityAPI } from './location-activity-contracts';
 export type LocationMaterialKind =
   | 'directory'
   | 'npc'

@@ -1,25 +1,21 @@
-import { readRouteTerrain } from './terrain-route';
-import type { Point, Polygon } from '../shared/contracts';
-import {
-  bounds,
-  contains,
-  type LandscapeBox,
-  type LandscapeRecord,
-} from '../atlas/atlas-landscape';
+import { type LandscapeBox, type LandscapeRecord } from '../atlas/atlas-landscape';
 import { posed, roadPoints } from '../atlas/city-model';
-import {
-  generateVegetation,
-  vegetationEnvironment,
-  vegetationOwner,
-  VEGETATION_SURFACE_MPP,
-  type VegetationScene,
-} from '../atlas/vegetation';
+import { bounds, contains } from '../atlas/landscape-geometry';
 import {
   previewSpatialTerrain,
   spatialDraftBounds,
   spatialTerrainSurface,
   type SpatialTerrainDraft,
 } from '../atlas/spatial-terrain';
+import {
+  generateVegetation,
+  VEGETATION_SURFACE_MPP,
+  vegetationEnvironment,
+  vegetationOwner,
+  type VegetationScene,
+} from '../atlas/vegetation';
+import type { Point, Polygon } from '../shared/contracts';
+import { readRouteTerrain } from './terrain-route';
 
 const overlap = (a: LandscapeBox, b: LandscapeBox) =>
   a.x <= b.x + b.width && a.x + a.width >= b.x && a.y <= b.y + b.height && a.y + a.height >= b.y;

@@ -1,9 +1,10 @@
-import { visibleTerrainColor } from './terrain-color-visibility';
-import { terrainLandSpans, terrainSettings, DEFAULT_HEIGHT_M } from './terrain-height';
-import { contains, type LandscapeRecord } from './atlas-landscape';
+import type { Polygon } from '../shared/contracts';
+import { type LandscapeRecord } from './atlas-landscape';
 import { maskLandSpans } from './land-mask';
 import { intersectPolygons, subtractPolygons, unionPolygons } from './landscape-brush';
-import type { Polygon } from '../shared/contracts';
+import { contains } from './landscape-geometry';
+import { visibleTerrainColor } from './terrain-color-visibility';
+import { DEFAULT_HEIGHT_M, terrainLandSpans, terrainSettings } from './terrain-height';
 
 /** Snapshot of the surface at authorship; later coast changes cannot reveal paint laid over sea. */
 export function landSurface(records: LandscapeRecord[]): Polygon[] {

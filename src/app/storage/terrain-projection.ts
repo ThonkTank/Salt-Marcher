@@ -1,28 +1,29 @@
-import { terrainTraceMeasure, terrainTraceStart } from '../atlas/terrain-timing';
-import { bounds, type LandscapeBox, type LandscapeRecord } from '../atlas/atlas-landscape';
-import { gridHeight } from '../atlas/terrain-spatial-model';
-import type { TerrainProjectionCache } from '../atlas/terrain-projection-cache';
 import { brushPreviewRecords } from '../atlas/atlas-brush-preview';
+import { type LandscapeBox, type LandscapeRecord } from '../atlas/atlas-landscape';
+import type { AtlasRegionSource } from '../atlas/atlas-region-contracts';
+import { bounds } from '../atlas/landscape-geometry';
 import { heightBrushBounds } from '../atlas/terrain-brush';
+import { terrainDetailDimensions } from '../atlas/terrain-detail';
 import { TerrainSampler } from '../atlas/terrain-height';
 import { resolveTerrainObjects, terrainObjectPoints } from '../atlas/terrain-objects';
 import {
   validateTerrainProjection,
-  type TerrainProjectionRequest,
   type TerrainProjection,
+  type TerrainProjectionRequest,
 } from '../atlas/terrain-projection';
-import type { AtlasRegionSource } from '../atlas/atlas-region-contracts';
-import { readTerrainGrid, readTerrainGridSteps } from './terrain-grid';
-import { readRouteTerrain } from './terrain-route';
-import { terrainDetailDimensions } from '../atlas/terrain-detail';
-
-export type { ProjectionStream } from './terrain-color-raster';
+import type { TerrainProjectionCache } from '../atlas/terrain-projection-cache';
+import { gridHeight } from '../atlas/terrain-spatial-model';
+import { terrainTraceMeasure, terrainTraceStart } from '../atlas/terrain-timing';
 import {
-  renderTerrainColor,
   readTerrainSettings,
+  renderTerrainColor,
   terrainColorRoutes,
   type ProjectionStream,
 } from './terrain-color-raster';
+import { readTerrainGrid, readTerrainGridSteps } from './terrain-grid';
+import { readRouteTerrain } from './terrain-route';
+
+export type { ProjectionStream } from './terrain-color-raster';
 const overlap = (r: LandscapeRecord, b: LandscapeBox) => {
   const a = bounds(r);
   return (

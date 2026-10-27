@@ -1,6 +1,6 @@
-import { validateBudgetSettings } from './dungeon-budget-contracts';
+import type { GraphPreviewState, Point, Result, Workspace } from '../shared/contracts';
 import type { DungeonBudgetSetting } from './dungeon-budget-contracts';
-import type { Result, Workspace, Point } from '../shared/contracts';
+import { validateBudgetSettings } from './dungeon-budget-contracts';
 import type { DungeonGeometry } from './dungeon-contracts';
 export interface GraphIntent {
   id: string;
@@ -21,11 +21,7 @@ export interface GraphLayout {
   positions: { roomId: string; x: number; y: number }[];
   intents: GraphIntent[];
 }
-export interface GraphPreviewState {
-  scopeId: string;
-  phase: 'graph' | 'raster';
-  protected: true;
-}
+
 export interface GraphView {
   geometry: DungeonGeometry;
   layout: GraphLayout;
