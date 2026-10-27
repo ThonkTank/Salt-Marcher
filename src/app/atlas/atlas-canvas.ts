@@ -646,6 +646,7 @@ export class AtlasCanvas {
     this.refreshControls();
   }
   set(box: CanvasBox, notify = false, reason: CameraReason = 'set', coalesce = false) {
+    if (notify && this.options.locked?.()) return;
     if (!Object.values(box).every(Number.isFinite) || box.width <= 0 || box.height <= 0)
       throw new Error('Kartenausschnitt benötigt endliche positive Maße.');
     if (typeof this.options.maxWidth === 'function') {
