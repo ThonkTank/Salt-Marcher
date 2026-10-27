@@ -29,6 +29,8 @@ let page;
 
 const sha = (data) => createHash('sha256').update(data).digest('hex');
 const sourceFiles = [
+  './src/app/workspace/renderer.ts',
+  './src/app/workspace/workspace-editors.ts',
   './tools/test-desktop-atlas-terrain-stroke.mjs',
   './tools/atlas-canonical-fixture.mjs',
   './tools/native-session.mjs',
@@ -43,7 +45,7 @@ function mark(name) {
 }
 function check(name, passed, details = {}) {
   const status = passed ? 'PASS' : 'FAIL';
-  evidence.checks[name] = { status, ...details };
+  evidence.checks[name] = { ...details, status };
   if (!passed)
     evidence.failures.push({ phase, check: name, at: new Date().toISOString(), ...details });
 }
@@ -646,12 +648,12 @@ try {
       { timeout: 60000 },
     );
     check('terrain-save-state', true, {
-      status: await page.locator('#atlas-save-status').textContent(),
+      uiText: await page.locator('#atlas-save-status').textContent(),
     });
   } catch (error) {
     check('terrain-save-state', false, {
       error: error.message,
-      status: await page
+      uiText: await page
         .locator('#atlas-save-status')
         .textContent()
         .catch(() => null),

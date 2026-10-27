@@ -37,6 +37,7 @@ type Host = {
     session: EditorSession;
     activate: (w: WorkspaceGeometry) => void;
     flush: () => Promise<boolean>;
+    deactivate: () => void;
   };
   room: { session: EditorSession; flush: () => Promise<boolean>; leave: () => Promise<boolean> };
   gate: () => EditorBoundary;
@@ -59,6 +60,7 @@ export function createWorkspaceEditors(host: Host) {
       session: host.atlas.session,
       activate: { order: 0, run: host.atlas.activate },
       flush: (r) => r === 'checkpoint' || host.atlas.flush(),
+      deactivate: host.atlas.deactivate,
     },
     {
       id: 'playback',

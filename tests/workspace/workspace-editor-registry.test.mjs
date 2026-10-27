@@ -72,7 +72,8 @@ const session = () => ({ settle: async () => {}, deactivate() {}, status: {} });
 function fixture() {
   const calls = [];
   let gate = true,
-    refuse = null;
+    refuse = null,
+    atlasFlush = async () => true;
   globalThis.editorBoundaryTest = (name, args) => {
     calls.push(name);
     if (name === refuse) return false;
@@ -92,11 +93,12 @@ function fixture() {
       leavePreparation: (...args) => globalThis.editorBoundaryTest('leavePreparation', args),
     },
     atlas: {
-      session: session(),
+      session: { ...session(), deactivate: () => calls.push('atlasSessionStop') },
       activate: () => calls.push('atlas'),
+      deactivate: () => calls.push('atlasStop'),
       flush: async () => {
         calls.push('atlasFlush');
-        return true;
+        return atlasFlush();
       },
     },
     room: {
@@ -117,6 +119,9 @@ function fixture() {
   return {
     calls,
     editors: createWorkspaceEditors(host),
+    atlasFlush: (value) => {
+      atlasFlush = value;
+    },
     gate: (value) => {
       gate = value;
     },
@@ -222,3 +227,28 @@ test('tool preflight excludes its own in-flight task and retains its exact suffi
     ]);
   }
 });
+
+for (const acknowledged of [true, false])
+  test(`close retires Atlas readers after every writer acknowledges (acknowledged=${acknowledged})`, async () => {
+    const x = fixture();
+    let settle;
+    x.atlasFlush(() => new Promise((resolve) => (settle = resolve)));
+    // Match the renderer boundary: a refused drain keeps the live Atlas attached.
+    const closing = (async () => {
+      if (await x.editors.flush('close')) x.editors.deactivate();
+    })();
+    await new Promise((resolve) => setImmediate(resolve));
+    assert.deepEqual(x.calls, ['atlasFlush']);
+    settle(acknowledged);
+    await closing;
+    if (!acknowledged) {
+      assert.deepEqual(x.calls, ['atlasFlush']);
+      return;
+    }
+    assert(x.calls.indexOf('atlasStop') > x.calls.indexOf('canLeaveGraphPreview'));
+    assert(x.calls.indexOf('atlasSessionStop') < x.calls.indexOf('atlasStop'));
+    assert.equal(x.calls.filter((call) => call === 'atlasStop').length, 1);
+    x.calls.length = 0;
+    await x.editors.activate({ token: 'next' });
+    assert.equal(x.calls[0], 'atlas');
+  });
