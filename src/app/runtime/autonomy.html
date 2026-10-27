@@ -1,0 +1,257 @@
+<section id="autonomy" hidden>
+  <div class="toolbar">
+    <h2>NPC-Verhalten</h2>
+    <button id="autonomy-refresh">Aktualisieren</button>
+  </div>
+  <p id="autonomy-summary"></p>
+  <p>
+    Nur ausdrücklich aktivierte NPCs handeln. Zeit entsteht ausschließlich aus bestätigter
+    Szenen-/Reisezeit. Jobs, deren benötigte Werkzeuge fehlen, werden übersprungen.
+  </p>
+  <div class="toolbar">
+    <label
+      >Kontext
+      <select id="autonomy-context"></select></label
+    ><button id="autonomy-catchup">Bestätigte Zeit nachholen</button
+    ><button id="autonomy-cancel-run">Nachholen anhalten</button>
+  </div>
+  <p id="autonomy-progress" role="status"></p>
+  <p class="caption">
+    Gültige Formulareingaben werden beim Wechsel des Arbeitsbereichs gespeichert. Nachholen ändert
+    nur ausdrücklich aktivierte NPCs.
+  </p>
+  <div class="autonomy-columns">
+    <section>
+      <h3>Individuen und Gruppen</h3>
+      <label
+        >Bestehender NPC
+        <select id="autonomy-actor"></select
+      ></label>
+      <form id="autonomy-actor-form" hidden>
+        <h3 id="autonomy-actor-title"></h3>
+        <label><input id="autonomy-enabled" type="checkbox" /> Autonomie aktivieren</label
+        ><label><input id="autonomy-paused" type="checkbox" /> Pausiert</label
+        ><label>Rolle <input id="autonomy-role" /></label
+        ><label id="autonomy-initial-place-label"
+          >Initialer Standort
+          <select id="autonomy-initial-place"></select></label
+        ><label
+          >Direkter Jobauftrag
+          <select id="autonomy-assign-job"></select></label
+        ><button type="submit">NPC-Konfiguration speichern</button>
+        <details id="autonomy-needs-settings">
+          <summary>Bedürfnisse anpassen</summary>
+          <div id="autonomy-needs"></div>
+          <label>Eigenes Bedürfnis <input id="autonomy-new-need-name" /></label
+          ><button id="autonomy-add-need" type="button">Bedürfnis ergänzen</button>
+        </details>
+        <details>
+          <summary>Jobprioritäten für diesen NPC</summary>
+          <div id="autonomy-priorities"></div>
+        </details>
+        <details>
+          <summary>Begrenzte Konfliktfolgen</summary>
+          <label
+            ><input id="autonomy-conflict" type="checkbox" /> Nicht-Party-Konflikte erlauben</label
+          ><label
+            >Abstrakte Verteidigung <input id="autonomy-defense" type="number" value="12" /></label
+          ><label>Wurfbonus <input id="autonomy-bonus" type="number" value="0" /></label
+          ><label
+            >Max. HP-Verlust je Schritt in %
+            <input id="autonomy-loss" type="number" min="0" max="25" value="10" /></label
+          ><label
+            >Sichtweite m
+            <input
+              id="autonomy-sight"
+              type="number"
+              min="0"
+              max="1000"
+              value="20"
+              step="any" /></label
+          ><label
+            >Dunkelsicht m
+            <input
+              id="autonomy-darkvision"
+              type="number"
+              min="0"
+              max="1000"
+              value="0"
+              step="any" /></label
+          ><label
+            >Hörweite m
+            <input
+              id="autonomy-hearing"
+              type="number"
+              value="18"
+              min="0"
+              max="1000"
+              step="any" /></label
+          ><label
+            >Passive Wahrnehmung
+            <input id="autonomy-perception" type="number" value="10" step="any" /></label
+          ><label
+            >Heimlichkeits-SG <input id="autonomy-stealth" type="number" value="10" step="any"
+          /></label>
+          <p>
+            Nur NPCs mit gespeicherten HP; keine Todesfolge. Partybeteiligung und
+            Konzentrationsfolge halten vor Wirkung an.
+          </p>
+        </details>
+      </form>
+      <details>
+        <summary>NPC als GM direkt platzieren</summary>
+        <label
+          >Ort
+          <select id="autonomy-direct-place"></select></label
+        ><label>Grund <input id="autonomy-place-reason" /></label
+        ><button id="autonomy-place-now">NPC-Ort ausdrücklich setzen</button>
+      </details>
+      <div id="autonomy-groups"></div>
+      <div class="toolbar">
+        <label
+          >NPCs filtern
+          <input id="autonomy-filter" type="search" placeholder="Name, Rolle oder Ort" /></label
+        ><label
+          >Zustand
+          <select id="autonomy-state-filter">
+            <option value="all">Alle</option>
+            <option value="active">Aktiv</option>
+            <option value="remaining">Mit ausstehender Zeit</option>
+            <option value="pending">Entscheidung nötig</option>
+            <option value="paused">Pausiert</option>
+            <option value="disabled">Ausgeschaltet</option>
+          </select></label
+        >
+      </div>
+      <p id="autonomy-actor-result" class="caption" role="status"></p>
+      <div id="autonomy-actors"></div>
+    </section>
+    <section>
+      <div class="toolbar">
+        <h3>Jobangebote</h3>
+        <button id="autonomy-job-new">Job anlegen</button>
+      </div>
+      <div id="autonomy-jobs"></div>
+      <form id="autonomy-job-form" hidden>
+        <label>Name <input id="autonomy-job-name" required /></label
+        ><label
+          >Job
+          <select id="autonomy-job-kind">
+            <option value="wait">Warten</option>
+            <option value="guard">Wachen</option>
+            <option value="rest">Ruhen</option>
+            <option value="eat">Essensdienst</option>
+            <option value="drink">Trinkdienst</option>
+            <option value="work">Arbeiten</option>
+            <option value="social">Gesellschaft</option>
+            <option value="move">Reisen</option>
+            <option value="patrol">Patrouille</option>
+            <option value="conflict">Begrenzter NPC-Konflikt</option>
+            <option value="reset">Mechanik-Reset (benötigt verfügbares Werkzeug)</option>
+          </select></label
+        ><label
+          >Zielort
+          <select id="autonomy-job-place"></select></label
+        ><label>Grundpriorität <input id="autonomy-job-priority" type="number" value="10" /></label
+        ><label
+          >Dauer in Minuten
+          <input id="autonomy-job-duration" type="number" min="0.1" step="0.1" value="60"
+        /></label>
+        <details id="autonomy-job-special">
+          <summary>Patrouille, Dungeon und Konflikt</summary>
+          <label
+            >Patrouillenweg
+            <select id="autonomy-job-route"></select></label
+          ><label
+            >Konfliktziel
+            <select id="autonomy-job-target"></select></label
+          ><label
+            >Zielraum
+            <select id="autonomy-job-room"></select></label
+          ><label
+            >Zweiter Patrouillenraum
+            <select id="autonomy-patrol-room"></select></label
+          ><label
+            >Dungeon-Tempo m/min
+            <input
+              id="autonomy-job-speed"
+              type="number"
+              min=".1"
+              max="1000"
+              step="any"
+              value="18" /></label
+          ><label
+            >Falle für Reset
+            <select id="autonomy-job-feature"></select></label
+          ><label
+            >Maximaler Konfliktschaden
+            <input id="autonomy-job-damage" type="number" min="0" max="100" value="1"
+          /></label>
+        </details>
+        <label>Rollen (kommagetrennt, leer = alle) <input id="autonomy-job-roles" /></label
+        ><label><input id="autonomy-job-exclusive" type="checkbox" /> Exklusives Angebot</label
+        ><label><input id="autonomy-job-enabled" type="checkbox" /> Angebot aktiv</label>
+        <details>
+          <summary>Bedarf nach Abschluss senken</summary>
+          <label
+            >Hunger
+            <input id="autonomy-effect-hunger" type="number" min="0" max="100" value="0" /></label
+          ><label
+            >Durst
+            <input id="autonomy-effect-thirst" type="number" min="0" max="100" value="0" /></label
+          ><label
+            >Ruhe
+            <input id="autonomy-effect-rest" type="number" min="0" max="100" value="0" /></label
+          ><label
+            >Sicherheit
+            <input id="autonomy-effect-safety" type="number" min="0" max="100" value="0" /></label
+          ><label
+            >Nähe <input id="autonomy-effect-social" type="number" min="0" max="100" value="0"
+          /></label>
+          <div id="autonomy-custom-effects"></div>
+        </details>
+        <button type="submit">Jobangebot speichern</button>
+      </form>
+      <div class="toolbar">
+        <h3>Verbindungen zwischen Orten</h3>
+        <button id="autonomy-route-new">Weg anlegen</button>
+      </div>
+      <div id="autonomy-routes"></div>
+      <form id="autonomy-route-form" hidden>
+        <label>Name <input id="autonomy-route-name" required /></label
+        ><label
+          >Von
+          <select id="autonomy-route-from" required></select></label
+        ><label
+          >Nach
+          <select id="autonomy-route-to" required></select></label
+        ><label
+          >Dauer in Minuten
+          <input
+            id="autonomy-route-duration"
+            type="number"
+            min="0.1"
+            step="0.1"
+            value="10" /></label
+        ><label><input id="autonomy-route-enabled" type="checkbox" /> Weg verfügbar</label
+        ><button type="submit">Weg speichern</button>
+      </form>
+    </section>
+    <section class="autonomy-history">
+      <h3>Entscheidungen und Verlauf</h3>
+      <label
+        >Begründung der GM-Entscheidung
+        <input
+          id="autonomy-decision-reason"
+          maxlength="1000"
+          placeholder="Was wurde geprüft und warum wird fortgesetzt oder ausgelassen?"
+      /></label>
+      <p>
+        Ein ausstehender Konflikt wird ausdrücklich und begründet fortgesetzt oder ausgelassen. Beim
+        Nachholen gelten die damaligen Regeln und Angebote; geänderte Voraussetzungen werden als
+        Konflikt sichtbar.
+      </p>
+      <div id="autonomy-log"></div>
+    </section>
+  </div>
+</section>

@@ -1,0 +1,128 @@
+<dialog id="graph-dialog">
+  <div class="toolbar">
+    <h2>Dungeon-Graph</h2>
+    <button id="graph-close">Schließen</button
+    ><button id="graph-raster">Zur Rastervorschau / zum Atlas</button
+    ><button id="graph-fit">Einpassen</button
+    ><button id="graph-content">Inhalt platzieren / zuordnen</button
+    ><button id="graph-reroute">Veraltete Paths neu übersetzen</button>
+  </div>
+  <div class="toolbar">
+    <label
+      >Detail
+      <select id="graph-detail">
+        <option value="rooms">Räume / einzelne Verbindungen</option>
+        <option value="routes">Unverzweigte Wege zusammenfassen</option>
+        <option value="groups">Raumgruppen</option>
+        <option value="melan">Navigationsentscheidungen / Melan</option>
+      </select></label
+    ><label>Gehtempo m/min <input id="graph-pace" type="number" value="30" min="1" /></label
+    ><label
+      >Heatmap
+      <select id="graph-amount">
+        <option value="amount">Anzahl</option>
+        <option value="density">Konzentration pro Wegminute</option>
+      </select></label
+    >
+  </div>
+  <div class="toolbar">
+    <label><input id="graph-layer-danger" type="checkbox" checked /> Gefahr</label
+    ><label><input id="graph-layer-encounters" type="checkbox" checked /> Encounter</label
+    ><label><input id="graph-layer-treasure" type="checkbox" checked /> Treasure</label
+    ><label><input id="graph-layer-rewards" type="checkbox" /> Beute</label
+    ><label><input id="graph-layer-curiosities" type="checkbox" checked /> Curiosities</label
+    ><label><input id="graph-layer-puzzles" type="checkbox" checked /> Rätsel</label
+    ><label><input id="graph-layer-secrets" type="checkbox" checked /> Geheimnisse</label>
+  </div>
+  <p id="graph-status"></p>
+  <p id="graph-legend"></p>
+  <svg id="graph-map" aria-label="Bearbeitbares Netz der Dungeonräume und Verbindungen"></svg>
+  <p id="graph-selection"></p>
+  <div class="toolbar">
+    <label
+      >Verschiebung X in 5-Fuß-Schritten
+      <input id="graph-dx" type="number" value="4" step="1" /></label
+    ><label>Y <input id="graph-dy" type="number" value="0" step="1" /></label
+    ><button id="graph-move">Auswahl verschieben</button
+    ><button id="graph-duplicate">Auswahl unabhängig kopieren</button
+    ><button id="graph-hide">Auswahl von Geometrie lösen</button
+    ><button id="graph-key">Raum im Atlas / Key auswählen</button>
+  </div>
+  <details open>
+    <summary>Raum grob entwerfen</summary>
+    <div class="toolbar">
+      <label>Name <input id="graph-room-name" value="Neuer Graphraum" /></label
+      ><label
+        >Kartenebene
+        <select id="graph-floor"></select></label
+      ><label>X Raster <input id="graph-x" type="number" value="15" step="1" /></label
+      ><label>Y Raster <input id="graph-y" type="number" value="0" step="1" /></label
+      ><label>Breite <input id="graph-width" type="number" value="3" min="1" /></label
+      ><label>Tiefe <input id="graph-depth" type="number" value="3" min="1" /></label
+      ><label>Höhe <input id="graph-height" type="number" value="2" min="1" /></label
+      ><button id="graph-create">Raum in geschützter Vorschau erzeugen</button>
+    </div>
+  </details>
+  <details open>
+    <summary>Verbindung / Route planen</summary>
+    <div class="toolbar">
+      <select id="graph-from"></select
+      ><span>nach</span
+      ><select id="graph-to"></select
+      ><label>Name <input id="graph-connection-name" value="Neue Route" /></label
+      ><select id="graph-form">
+        <option value="corridor">Korridor</option>
+        <option value="stairs">Treppe</option>
+        <option value="ramp">Rampe</option>
+        <option value="ladder">Leiter</option>
+        <option value="shaft">Schacht</option></select
+      ><button id="graph-connect">Verbindung planen und übersetzen</button>
+      <p id="graph-connection-result" role="status" hidden></p>
+    </div>
+  </details>
+  <div id="graph-intents"></div>
+  <details open>
+    <summary>Ziellevel, Spielabendanteile und Dungeon-Budgets</summary>
+    <p id="graph-budget-preset"></p>
+    <div class="toolbar">
+      <label
+        >Bereich
+        <select id="graph-budget-scope"></select></label
+      ><label
+        >Ziellevel
+        <input id="graph-budget-level" type="number" min="1" max="20" placeholder="erben" /></label
+      ><label
+        >Spielabendanteil
+        <input
+          id="graph-budget-sessions"
+          type="number"
+          min="0"
+          step="any"
+          placeholder="nicht zugeteilt" /></label
+      ><label
+        >Charakteranzahl
+        <input id="graph-budget-party" type="number" min="1" placeholder="erben" /></label
+      ><label>Adventure Day pro Abend <input id="graph-budget-day" placeholder="erben" /></label
+      ><label
+        >Beute-XP pro Abend
+        <input id="graph-budget-reward" type="number" min="0" placeholder="Tagesguidance" /></label
+      ><label><input id="graph-budget-mute" type="checkbox" /> Hinweise ausblenden</label
+      ><button id="graph-budget-save">Budgetplanung in Vorschau übernehmen</button
+      ><button id="graph-budget-clear">Eigene Budgetplanung entfernen</button
+      ><button id="graph-budget-discard">Offene Budgeteingaben verwerfen</button>
+    </div>
+    <p id="graph-budget-inheritance"></p>
+    <p>
+      Spielabendanteile werden ausdrücklich auf Unterbereiche verteilt. Der Rest bleibt sichtbar.
+      Diese Hinweise bewerten keine Geschichte und erzeugen keine Encounter, Beute oder Regeln.
+    </p>
+    <div id="graph-budget-results"></div>
+    <div id="graph-budget-feature-problems"></div>
+  </details>
+  <p>
+    Graphänderungen erzeugen eine eigene Arbeitskopie. Zur Rastervorschau wechseln, dort mit den
+    normalen Werkzeugen korrigieren und ausdrücklich übernehmen. Bis dahin stellt „Ursprung
+    vollständig wiederherstellen“ den unveränderten Dungeon her – unabhängig von der normalen
+    Undo-History. Gestrichelte Verbindungen bleiben erhaltener Planungsinhalt.
+  </p>
+</dialog>

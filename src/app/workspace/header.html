@@ -1,0 +1,48 @@
+<header>
+  <div id="application-menu">
+    <button id="application-trigger" type="button" aria-label="Anwendungsmenü">☰</button>
+    <div id="application-popup" popover="auto" aria-label="Anwendungsnavigation">
+      <button id="campaign-screen-open" type="button">Kampagnen</button
+      ><button id="application-settings" type="button">Einstellungen</button>
+    </div>
+  </div>
+  <h1>SaltMarcher</h1>
+  <button id="campaign-header-name" type="button">Kampagnen</button
+  ><label hidden
+    >Kampagne
+    <select id="campaigns">
+      <option value="">Kampagne öffnen</option>
+    </select></label
+  ><button
+    id="day-trigger"
+    disabled
+    aria-haspopup="dialog"
+    aria-expanded="false"
+    aria-controls="day-popover"
+  >
+    Rastbudget</button
+  ><button
+    id="party-shortcut"
+    disabled
+    aria-haspopup="dialog"
+    aria-controls="party-popover"
+    aria-expanded="false"
+    accesskey="p"
+  >
+    Party öffnen</button
+  ><button id="player-open-controls">Spieleranzeige</button>
+  <details id="workspace-tools">
+    <summary>Werkzeuge</summary>
+    <div id="workspace-tools-content">
+      <button id="rename-campaign" disabled>Name ändern…</button
+      ><button id="new-campaign">Neue Kampagne</button
+      ><button id="campaign-manager">Pakete und Kopien…</button
+      ><button id="import">Dungeon übernehmen…</button
+      ><button id="agenda-open" type="button">Kalender / Fristen</button
+      ><button id="world-links-open" type="button">Zusammenhänge</button>
+    </div>
+  </details>
+  <button id="help" title="Hilfe (F1 zur fokussierten Funktion)" aria-keyshortcuts="F1">
+    Hilfe
+  </button>
+</header>

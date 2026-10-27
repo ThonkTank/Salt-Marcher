@@ -1,0 +1,55 @@
+<dialog id="combat-initiative-dialog" aria-label="Initiative eintragen"></dialog>
+<dialog id="combat-finish-dialog">
+  <form id="combat-finish-form">
+    <h2>Kampf abschließen</h2>
+    <label for="combat-outcome">Ergebnis</label
+    ><textarea
+      id="combat-outcome"
+      rows="3"
+      required
+      maxlength="10000"
+      placeholder="Die Goblins sind geflohen. Die Gruppe hat das Tor gesichert."
+    ></textarea>
+    <div class="finish-draft-tools">
+      <p id="finish-draft-status" role="status"></p>
+      <button id="finish-draft-discard" type="button">Entwurf verwerfen</button
+      ><button id="finish-draft-adopt" type="button" hidden>
+        Geprüfte Eingabe auf aktuellen Stand übernehmen
+      </button>
+    </div>
+    <div class="finish-layout">
+      <fieldset>
+        <legend>XP und Tagesbelastung</legend>
+        <label class="check-label"
+          ><input id="finish-no-xp" type="checkbox" checked /> Keine XP vergeben</label
+        >
+        <div id="finish-xp-fields" hidden>
+          <label for="finish-xp">XP-Pool</label
+          ><input id="finish-xp" type="text" inputmode="numeric" min="0" step="1" value="0" />
+          <div id="finish-recipients"></div>
+        </div>
+        <p id="finish-xp-preview" role="status"></p>
+        <label for="finish-load">Tagesbelastung des Kampfes (angepasste XP, optional)</label
+        ><input id="finish-load" type="text" inputmode="numeric" min="0" step="1" value="0" />
+        <p class="caption">
+          Wird auf die teilnehmenden PCs verteilt. XP-Empfänger und Rastbelastung sind unabhängig.
+        </p>
+      </fieldset>
+      <fieldset>
+        <legend>Beute</legend>
+        <label class="check-label"
+          ><input id="finish-has-loot" type="checkbox" /> Unverteilte Beute anlegen</label
+        >
+        <div id="finish-loot-fields" hidden><div id="finish-item-list"></div></div>
+      </fieldset>
+    </div>
+    <p>
+      Ergebnis, HP, XP und Beute werden gemeinsam gespeichert. Die Beute weist du anschließend
+      ausdrücklich zu.
+    </p>
+    <div class="actions finish-actions">
+      <button id="combat-finish-cancel" type="button">Schließen · Eingabe behalten</button
+      ><button type="submit">Ergebnis speichern und abschließen</button>
+    </div>
+  </form>
+</dialog>

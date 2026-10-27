@@ -339,7 +339,38 @@ try {
   await waitEvent('restart', mark);
   page = await currentPage();
   assert.equal(await page.locator('body').getAttribute('data-development-markup'), 'updated');
-  report.checks.push({ name: 'Desktop document build consumed changed markup' });
+  report.checks.push({ name: 'Shared HTML reader consumed changed document frame' });
+  const fragment = 'src/app/campaign/campaign-screen.html',
+    fragmentPid = session.pid,
+    frameHash = await digest(path.join(fixture, 'src/app/workspace/index.html')),
+    documentHash = await digest(path.join(session.runtime, 'ui/index.html'));
+  mark = events.length;
+  await edit(fragment, (s) =>
+    s.replace(
+      '<h2 id="campaign-screen-heading">Kampagnen</h2>',
+      '<h2 id="campaign-screen-heading" data-development-fragment="updated">Development campaigns</h2>',
+    ),
+  );
+  const fragmentEvent = await waitEvent('restart', mark);
+  page = await currentPage();
+  assert.notEqual(session.pid, fragmentPid);
+  assert.equal(await digest(path.join(fixture, 'src/app/workspace/index.html')), frameHash);
+  assert.notEqual(await digest(path.join(session.runtime, 'ui/index.html')), documentHash);
+  assert(fragmentEvent.files.includes(fragment));
+  assert(fragmentEvent.outputs.includes('ui/index.html'));
+  const fragmentHeading = page.locator('#campaign-screen-heading');
+  assert.equal(await fragmentHeading.getAttribute('data-development-fragment'), 'updated');
+  assert.equal(await fragmentHeading.innerText(), 'Development campaigns');
+  assert.equal(await fragmentHeading.isVisible(), true);
+  report.checks.push({
+    name: 'Included campaign fragment reached the visible window through filesystem watch and normal publication',
+    fragment,
+    frameSha256: frameHash,
+    documentBeforeSha256: documentHash,
+    documentAfterSha256: await digest(path.join(session.runtime, 'ui/index.html')),
+    previousPid: fragmentPid,
+    pid: session.pid,
+  });
   // Dependency graph tracks additions, deletion errors and creation after failed resolution.
   mark = events.length;
   await edit(

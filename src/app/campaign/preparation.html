@@ -1,0 +1,348 @@
+<section id="preparation" hidden>
+  <div id="preparation-problems" role="alert" hidden></div>
+  <div class="toolbar preparation-modes" aria-label="Vorbereitungsbereich">
+    <button id="preparation-knowledge" aria-pressed="true">Weltwissen und Orte</button
+    ><button id="key-workspace-open" type="button">Raum-Keys</button
+    ><button id="preparation-planning" aria-pressed="false">Spielabend planen</button>
+  </div>
+  <div id="preparation-workspace">
+    <section id="preparation-knowledge-workspace">
+      <h2>Weltwissen</h2>
+      <div class="toolbar">
+        <button id="knowledge-tab" aria-pressed="true">Personen und Wissen</button
+        ><button id="locations-tab" aria-pressed="false">Orte</button>
+      </div>
+      <div id="knowledge-panel">
+        <p>
+          Notizen, NSCs, Fraktionen, Quests, Gerüchte und Regelreferenzen für diese Kampagne
+          vorbereiten.
+        </p>
+        <label for="world-search">Notizen durchsuchen</label
+        ><input id="world-search" type="search" placeholder="Name und Stichwort" />
+        <div class="actions">
+          <label><input id="world-trash" type="checkbox" /> Papierkorb</label>
+        </div>
+        <div id="world-list" class="selection-list"></div>
+        <button id="world-new">Eintrag anlegen…</button>
+        <p id="note-empty">Eintrag auswählen oder neu anlegen.</p>
+        <div id="note-editor" hidden tabindex="-1" role="region" aria-label="Ausgewählte Notiz">
+          <div class="toolbar">
+            <h3 id="note-kind"></h3>
+            <button id="note-back" type="button">Zur Notizsuche</button
+            ><button id="note-restore" hidden>Wiederherstellen</button>
+          </div>
+          <label for="note-title">Titel</label><input id="note-title" /><label for="note-gm"
+            >Notizen für die Spielleitung</label
+          ><textarea id="note-gm" rows="8"></textarea>
+          <div id="note-selection-actions">
+            <button id="note-excerpt" type="button" hidden>
+              Markierten Text als Notiz übernehmen…
+            </button>
+            <p id="note-excerpt-status" class="caption" role="status"></p>
+          </div>
+          <section id="narrative-editor" hidden></section>
+          <details id="note-read-aloud-details">
+            <summary id="note-read-aloud-summary">Zum Vorlesen</summary>
+            <textarea
+              id="note-read-aloud"
+              aria-labelledby="note-read-aloud-summary"
+              rows="5"
+            ></textarea>
+          </details>
+          <details id="note-text-tools">
+            <summary>Textverweise</summary>
+            <button id="note-text-reference" type="button">Textverweis einfügen…</button>
+          </details>
+          <section id="note-room-uses" hidden aria-label="Verwendet in Räumen"></section>
+          <h3>Beziehungen</h3>
+          <div id="note-relations" class="selection-list"></div>
+          <div id="relation-create">
+            <label for="relation-target">Zu einem Eintrag</label
+            ><select id="relation-target"></select
+            ><label for="relation-label">Beziehung</label
+            ><input id="relation-label" placeholder="z. B. arbeitet für" /><button
+              id="relation-add"
+            >
+              Beziehung hinzufügen
+            </button>
+          </div>
+          <div id="note-incoming" class="selection-list"></div>
+          <button id="note-remove">In den Papierkorb</button>
+        </div>
+      </div>
+      <div id="locations-panel" hidden>
+        <label for="location-search">Orte durchsuchen</label
+        ><input id="location-search" type="search" /><label
+          ><input id="location-trash" type="checkbox" /> Papierkorb</label
+        >
+        <div id="location-list" class="selection-list"></div>
+        <button id="location-new">Ort anlegen…</button>
+        <p id="location-empty">Eintrag auswählen oder einen Ort anlegen.</p>
+        <div id="location-editor" hidden>
+          <label for="location-name">Ortsname</label><input id="location-name" maxlength="200" />
+          <div id="location-sections"></div>
+          <h3>Dungeonzeichnungen</h3>
+          <div id="location-maps"></div>
+          <div id="location-map-actions" class="actions"></div>
+          <button id="location-remove">In den Papierkorb</button
+          ><button id="location-restore" hidden>Wiederherstellen</button>
+        </div>
+      </div>
+    </section>
+    <section id="preparation-planning-workspace" hidden>
+      <h2>Spielabend planen</h2>
+      <p>
+        Szenen selbst schreiben oder Vorschläge erzeugen. Der laufende Spielabend bleibt unabhängig.
+      </p>
+      <div class="actions">
+        <label for="plans">Plan</label
+        ><select id="plans"></select
+        ><button id="plan-create">Plan anlegen</button>
+      </div>
+      <p id="plan-empty">Lege einen Plan an und füge die ersten Szenen hinzu.</p>
+      <div id="plan-controls" hidden>
+        <label for="plan-name">Planname (optional)</label><input id="plan-name" />
+        <details id="session-panel" hidden>
+          <summary>Vorschläge für diesen Spielabend</summary>
+          <div class="session-setup">
+            <form id="session-profile-form">
+              <h3>Geplante Gruppe und Umfang</h3>
+              <p>
+                Nur für diese Vorbereitung. Aktivierung und Gruppen am Spieltisch bleiben
+                unabhängig.
+              </p>
+              <div id="session-party"></div>
+              <button id="session-free-party" type="button">Freie Planungszeile hinzufügen</button>
+              <div id="session-party-levels"></div>
+              <div class="time-fields">
+                <div>
+                  <label for="session-fraction">Anteil am Abenteuertag</label
+                  ><input id="session-fraction" value="0.5" inputmode="decimal" required />
+                </div>
+                <div>
+                  <label for="session-seed">Seed</label
+                  ><input id="session-seed" value="spielabend-1" required maxlength="1000" /><button
+                    id="session-new-seed"
+                    type="button"
+                  >
+                    Neuer Seed für weiteren Entwurf
+                  </button>
+                </div>
+              </div>
+              <p class="caption">
+                0.5 entspricht einem halben Tagesbudget. Die Figuren am Spieltisch werden dadurch
+                nicht geändert.
+              </p>
+              <p id="session-budget"></p>
+              <button type="submit">Planungsprofil speichern</button
+              ><button id="session-refresh" type="button">Spielabend-Inhalte aktualisieren</button>
+            </form>
+            <form id="session-generate-form">
+              <h3>Szenenvorschläge</h3>
+              <div class="time-fields">
+                <div>
+                  <label for="session-scene-count">Begegnungen (leer = automatisch)</label
+                  ><input
+                    id="session-scene-count"
+                    type="number"
+                    min="1"
+                    max="10"
+                    placeholder="Automatik"
+                    aria-describedby="session-budget"
+                  />
+                </div>
+                <div>
+                  <label for="session-monster-filter">Monstername einschränken (optional)</label
+                  ><input id="session-monster-filter" />
+                </div>
+              </div>
+              <div id="session-composition-preferences" class="composition-preferences"></div>
+              <p class="caption">
+                Vorlieben für die Komposition; die XP-Ziele folgen weiter dem geplanten
+                Abenteuertag. Ohne eigene Wahl gilt das wirksame Preset.
+              </p>
+              <details id="session-generation-options">
+                <summary>Beute, Weltquellen und verbindliche Inhalte</summary>
+                <label class="check-label"
+                  ><input id="session-magic-compensate" type="checkbox" /> Magische Gegenstände nach
+                  Seltenheit ausgleichen und aus dem Katalog vorschlagen</label
+                >
+                <p class="caption">
+                  Opt-in für Münz- und Magiebeute: braucht bekannte Seltenheiten erhaltener
+                  magischer Gegenstände. Käufe und Weitergaben zählen nicht doppelt. Fehlende
+                  Katalogquellen erscheinen als offene Kontingente.
+                </p>
+                <details>
+                  <summary>Magiebeute für diesen Spielabend auswählen</summary>
+                  <div id="session-magic-pool">
+                    <label class="check-label"
+                      ><input id="session-magic-pool-enabled" type="checkbox" /> Nur meinen
+                      Gegenstandspool verwenden</label
+                    >
+                    <p class="caption">
+                      Ohne Auswahl bleiben die Kontingente offen. Eine spätere Beute-Neugenerierung
+                      verwendet die gespeicherten Gegenstandsversionen dieses Pools. Eigene
+                      Änderungen am Szenenvorschlag bleiben möglich.
+                    </p>
+                    <div id="session-magic-pool-selected"></div>
+                    <button id="session-magic-pool-clear" type="button">Auswahl leeren</button
+                    ><label>Suche <input id="session-magic-pool-search" maxlength="1000" /></label
+                    ><label
+                      >Seltenheit
+                      <select id="session-magic-pool-rarity">
+                        <option value="">Alle Seltenheiten</option>
+                      </select></label
+                    ><button id="session-magic-pool-find" type="button">Im Katalog suchen</button>
+                    <div id="session-magic-pool-results"></div>
+                    <button id="session-magic-pool-next" type="button" hidden>
+                      Weitere Gegenstände
+                    </button>
+                    <p id="session-magic-pool-status" role="status"></p>
+                  </div>
+                </details>
+                <label class="check-label"
+                  ><input id="session-loot-compensate" type="checkbox" /> Beute anhand bestätigter
+                  XP und bisher erhaltener Werte ausgleichen</label
+                >
+                <p class="caption">
+                  Benötigt einzelne Roster-Figuren mit bekannten XP und bewerteten Ledger-Einträgen.
+                  Freie Planungszeilen bleiben ohne diesen Modus nutzbar. Magiebeute lässt sich mit
+                  dem zusätzlichen Modus nach Seltenheit vorschlagen.
+                </p>
+                <details>
+                  <summary>Orte, die vorkommen müssen</summary>
+                  <div id="session-locations"></div>
+                </details>
+                <details>
+                  <summary>NPCs, Fraktionen, Quests und Gerüchte</summary>
+                  <div id="session-notes"></div>
+                </details>
+                <fieldset>
+                  <legend>Weltquellen für die Begegnungen</legend>
+                  <label class="check-label"
+                    ><input id="session-npc-only" type="checkbox" /> Begegnungen aus vorhandenen
+                    feindlichen NPCs bilden</label
+                  >
+                  <details>
+                    <summary>Verbindliche NPC-Gegner</summary>
+                    <p class="caption">
+                      Diese Gegner kommen sicher vor, auch wenn ihr Kreaturentyp nicht im
+                      Monsterfilter oder in der Begegnungstabelle steht. Ihre XP zählen zum Ziel.
+                      Jeder hat einen eigenen Initiativeplatz. Ort, Fraktion, Zustand und verfügbare
+                      Bestände bleiben bindend. Im Spielabend erscheint jeder gewählte NPC einmal;
+                      wähle bei verorteten Szenen auch seinen tatsächlichen Ort.
+                    </p>
+                    <div id="session-required-npcs"></div>
+                  </details>
+                  <label class="check-label"
+                    ><input id="session-npc-mixed" type="checkbox" /> Vorhandene NPCs und neue
+                    Tabellengegner mischen</label
+                  ><label class="check-label"
+                    ><input id="session-world-sources" type="checkbox" checked /> Encounter-Quellen
+                    des jeweiligen Szenenorts verwenden</label
+                  >
+                  <p class="caption">
+                    Im Katalogmodus benötigen Orte verknüpfte Tabellen oder Fraktionen. Im NPC-Modus
+                    begrenzen Szenenorte den tatsächlichen Standort der Figuren. Ausgewählte
+                    Fraktionen und Tabellen schränken die Auswahl weiter ein. Vorschläge reservieren
+                    keinen Weltbestand.
+                  </p>
+                  <div id="session-faction-picks"></div>
+                </fieldset>
+                <details>
+                  <summary>Encounter-Tabellen</summary>
+                  <div id="session-table-picks"></div>
+                </details>
+              </details>
+              <button id="session-generate" type="submit">Spielabend-Vorschau erzeugen</button>
+              <p id="session-generation-feedback" role="status" aria-live="polite"></p>
+            </form>
+          </div>
+          <label for="session-history">Gespeicherte Vorschauen</label
+          ><select id="session-history"></select>
+          <div id="session-preview"></div>
+        </details>
+        <div class="session-scenes">
+          <aside class="session-scene-nav" aria-label="Szenen dieses Spielabends">
+            <button id="scene-add">Szene hinzufügen</button
+            ><label for="scene-search">Szenen durchsuchen</label>
+            <div class="toolbar">
+              <input
+                id="scene-search"
+                type="search"
+                placeholder="Titel, Notizen, Vorlesetext oder Ort"
+              /><button id="scene-search-clear" type="button" hidden>Suche leeren</button>
+            </div>
+            <p id="scene-search-status" class="caption" role="status" aria-live="polite"></p>
+            <div id="scene-list" class="selection-list"></div>
+            <details class="session-plan-tools">
+              <summary>Plan ersetzen oder wiederverwenden</summary>
+              <button id="plan-replace">Plan ersetzen / wiederverwenden…</button
+              ><button id="plan-clear">Timeline leeren</button>
+            </details>
+          </aside>
+          <div id="scene-editor" hidden>
+            <label for="scene-title">Szenentitel</label><input id="scene-title" />
+            <div class="actions">
+              <button id="scene-remove">Besuch entfernen</button
+              ><button id="scene-up">Nach oben</button><button id="scene-down">Nach unten</button
+              ><button id="scene-adopt">Zum Leiten öffnen</button>
+            </div>
+            <label for="scene-location">Ort (optional)</label
+            ><select id="scene-location"></select
+            ><button id="scene-open-location">Ort öffnen</button
+            ><label for="scene-notes">Szenennotizen</label
+            ><textarea id="scene-notes" rows="6"></textarea>
+            <section id="visit-preparation" hidden>
+              <label for="visit-read-aloud">Zum Vorlesen</label
+              ><textarea id="visit-read-aloud" rows="4"></textarea>
+              <details>
+                <summary>Verknüpftes Weltwissen</summary>
+                <div id="visit-note-refs"></div>
+              </details>
+              <h3>Vorbereitete Monstergruppen</h3>
+              <div class="toolbar">
+                <label
+                  >Gespeicherte Begegnung suchen<input
+                    id="visit-encounter-search"
+                    type="search"
+                    maxlength="1000"
+                    placeholder="Mindestens zwei Zeichen"
+                /></label>
+                <p id="visit-encounter-status" role="status"></p>
+                <select id="visit-encounter" aria-label="Encounter-Vorlage"></select
+                ><button id="visit-attach" type="button">Unabhängige Gruppe anhängen</button>
+              </div>
+              <div id="visit-groups"></div>
+              <h3>Besuchsbelohnung</h3>
+              <label class="check-label"
+                ><input id="visit-has-reward" type="checkbox" /> XP oder Beute vorbereiten</label
+              >
+              <div id="visit-reward-fields" hidden>
+                <label for="visit-reward-xp">XP-Pool</label
+                ><input id="visit-reward-xp" type="number" min="0" step="1" value="0" />
+                <div id="visit-reward-items"></div>
+                <button id="visit-item-add" type="button">Beuteposten hinzufügen</button>
+                <div class="toolbar">
+                  <button id="visit-reward-save" type="button">Belohnung speichern</button
+                  ><button id="visit-reward-place" type="button">
+                    Beute am Besuchsort platzieren</button
+                  ><button id="visit-reward-award" type="button">
+                    Belohnung ausdrücklich vergeben…
+                  </button>
+                </div>
+                <p class="caption">
+                  Vorbereitung und Platzierung vergeben keine XP oder Gegenstände automatisch.
+                  Platzierte Beute bleibt am Ort erhalten.
+                </p>
+              </div>
+            </section>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+  <button id="preparation-apply" hidden>Jetzt speichern</button
+  ><button id="preparation-reconcile" hidden>Speicherstatus der Vorbereitung prüfen</button
+  ><button id="preparation-refresh" hidden>Vorbereitungsentwurf verwerfen und aktualisieren</button>
+</section>

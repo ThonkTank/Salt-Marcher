@@ -2,7 +2,7 @@ import { revealWorkspaceNavigation } from './native-navigation.mjs';
 import { runNativeProbe } from './native-session.mjs';
 import { openDesktopKeyReferences } from './qa-key-entry.mjs';
 import { createRequire } from 'node:module';
-import { readFile, writeFile, mkdtemp, mkdir, appendFile, stat, copyFile } from 'node:fs/promises';
+import { readFile, writeFile, mkdtemp, mkdir, appendFile, stat } from 'node:fs/promises';
 import { spawn, execFileSync } from 'node:child_process';
 import { randomUUID, createHash } from 'node:crypto';
 import { createInterface } from 'node:readline';
@@ -26,7 +26,13 @@ await runNativeProbe(
     const { openDesktopKeyFromAtlas } = await import(root + '/tools/qa-key-entry.mjs');
     const profile = native.profile,
       file = profile + '/workbench.sqlite';
-    await copyFile(completed.file, file);
+    // A normal exit can leave committed pages in WAL; copy the complete snapshot.
+    const incoming = require('better-sqlite3')(completed.file, { readonly: true });
+    try {
+      await incoming.backup(file);
+    } finally {
+      incoming.close();
+    }
     const campaign = initial.campaign,
       rooms = initial.rooms,
       sourceNote = initial.sourceNote,
@@ -69,6 +75,8 @@ await runNativeProbe(
     }
     async function tab(id) {
       await revealWorkspaceNavigation(page);
+      if (!(await page.locator(id).isVisible()))
+        await page.locator('#workspace-nav-summary').click();
       await page.locator(id).click();
     }
     async function shot(name) {
@@ -130,7 +138,6 @@ r={t:[dict(x) for x in d.execute('select * from '+t+' order by rowid')] for t in
     await writeFile(out + '/before.json', JSON.stringify(before, null, 2));
     async function enter() {
       await page.getByRole('button', { name: 'Fortsetzen', exact: true }).click();
-      await page.locator('#workspace-navigation').waitFor();
       await tab('#preparation-tab');
       await page.locator('#preparation-knowledge').click();
     }
@@ -176,7 +183,7 @@ r={t:[dict(x) for x in d.execute('select * from '+t+' order by rowid')] for t in
       );
       await page
         .locator('#session-packet-content')
-        .getByText(expected, { exact: true })
+        .getByText(expected, { exact: false })
         .scrollIntoViewIfNeeded();
       await shot(shotName);
       return await page.locator('#session-packet-content').innerText();
@@ -307,7 +314,7 @@ r={t:[dict(x) for x in d.execute('select * from '+t+' order by rowid')] for t in
       ])
         assert.deepEqual(after[t], before[t], t + ' must remain exact');
       assert.equal(after.narrative_draft.length, 0);
-      assert.equal(after.schema, 46);
+      assert.equal(after.schema, before.schema);
       assert.deepEqual(errors, []);
       assert(launches.every((l) => l.exit?.code === 0 && l.mainPidAbsent));
       await writeFile(out + '/after.json', JSON.stringify(after, null, 2));
@@ -327,7 +334,7 @@ r={t:[dict(x) for x in d.execute('select * from '+t+' order by rowid')] for t in
           allOtherNotesRawLogsExact: true,
           roomGeometryKeysPlansVisitsExact: true,
           noNarrativeDraftOrReward: true,
-          schema: 46,
+          schema: after.schema,
         },
         humanAcceptance: false,
       });

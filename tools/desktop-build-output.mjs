@@ -3,6 +3,7 @@ import { mkdir, copyFile, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { desktopAssets } from './desktop-build-plan.mjs';
 import { copyAtlasRuntimeLicenses } from './atlas-runtime-licenses.mjs';
+import { readWorkspaceMarkup } from './desktop-markup.mjs';
 
 export async function desktopBuildMetadata(root = process.cwd()) {
   const { schema } = JSON.parse(
@@ -31,9 +32,6 @@ export async function copyDesktopAssets(outdir, { root = process.cwd(), changes 
 }
 export async function writeDesktopDocuments(outdir, metadata, root = process.cwd()) {
   await mkdir(path.join(outdir, 'ui'), { recursive: true });
-  await writeFile(
-    path.join(outdir, 'ui/index.html'),
-    await readFile(path.join(root, 'src/app/workspace/index.html'), 'utf8'),
-  );
+  await writeFile(path.join(outdir, 'ui/index.html'), readWorkspaceMarkup(root));
   await writeFile(path.join(outdir, 'build-info.json'), JSON.stringify(metadata) + '\n');
 }

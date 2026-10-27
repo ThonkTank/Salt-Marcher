@@ -1,0 +1,38 @@
+<section id="chronicle" hidden>
+  <div class="catalog-heading">
+    <div>
+      <h2>Kampagnenchronik</h2>
+      <p>
+        Bestätigte Kämpfe, Ergebnisse, Belohnungen, Reisen und Partyänderungen in zeitlicher Folge.
+      </p>
+    </div>
+    <div class="toolbar">
+      <button id="chronicle-refresh" type="button">Aktualisieren</button
+      ><button id="chronicle-export" type="button">Markdown ausgeben…</button>
+    </div>
+  </div>
+  <div class="chronicle-filters">
+    <label
+      >Suchen<input
+        id="chronicle-search"
+        type="search"
+        placeholder="Titel, Ergebnis, Figur, Gruppe oder Ort" /></label
+    ><label
+      >Bereich<select id="chronicle-category">
+        <option value="all">Alle Ereignisse</option>
+        <option value="combat">Kampf</option>
+        <option value="narrative">Quest</option>
+        <option value="reward">Beute</option>
+        <option value="travel">Reise</option>
+        <option value="party">Party</option>
+        <option value="world">Welt</option>
+      </select></label
+    >
+  </div>
+  <p class="caption">
+    Die Markdownausgabe enthält alle Treffer der aktuellen Suche und Bereichsauswahl, auch auf
+    weiteren Seiten.
+  </p>
+  <p id="chronicle-count" class="caption" role="status"></p>
+  <div id="chronicle-list"></div>
+</section>

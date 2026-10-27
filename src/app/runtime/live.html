@@ -1,0 +1,27 @@
+<section id="live" hidden>
+  <div id="live-focus-bar" class="live-focus-bar" hidden>
+    <label for="scene-focus">Gruppe im Fokus</label
+    ><select id="scene-focus"></select
+    ><button id="combat-resume" type="button" hidden>Begegnung</button
+    ><button id="group-move">Party aufteilen / zusammenführen…</button>
+    <div
+      id="group-list"
+      class="selection-list"
+      role="navigation"
+      aria-label="Andere laufende Gruppen"
+      hidden
+    ></div>
+  </div>
+  <p id="live-empty">
+    Öffne eine Kampagne, um ihre Party vorzubereiten und den Spielabend zu leiten.
+  </p>
+  <!-- workspace:include live-workspace.html -->
+
+  <!-- workspace:include combat.html -->
+  <!-- workspace:include rewards.html -->
+  <div class="actions">
+    <button id="live-apply">Eingabe abschließen</button
+    ><button id="live-reconcile" hidden>Speicherstatus der Sitzung prüfen</button
+    ><button id="live-refresh" hidden>Entwurf verwerfen und aktualisieren</button>
+  </div>
+</section>

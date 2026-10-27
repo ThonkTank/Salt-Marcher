@@ -1,0 +1,181 @@
+<section id="reward-panel" hidden>
+  <div class="toolbar">
+    <h2>Beute und persönlicher Verlauf</h2>
+    <button id="treasury-open">Schatzverwaltung öffnen</button
+    ><button id="progress-refresh">Fortschritt aktualisieren</button>
+  </div>
+  <div id="progress-notices" role="status"></div>
+  <div class="preparation-columns">
+    <section>
+      <h3>Unverteilte Beute</h3>
+      <label for="treasure-list">Fund / Belohnung</label
+      ><select id="treasure-list"></select
+      ><button id="treasure-more" hidden>Ältere Beute laden</button>
+      <p id="treasure-provenance" class="caption"></p>
+      <form id="loot-allocate-form">
+        <label for="treasure-item">Gegenstand</label
+        ><select id="treasure-item"></select>
+        <div class="time-fields">
+          <div>
+            <label for="loot-quantity">Menge zuweisen</label
+            ><input id="loot-quantity" type="number" min="1" step="1" value="1" required />
+          </div>
+          <div>
+            <label for="loot-recipient">Aktiver Empfänger</label
+            ><select id="loot-recipient" required></select>
+          </div>
+        </div>
+        <button type="submit">Beute zuweisen</button>
+      </form>
+      <details>
+        <summary>Fund oder Questbelohnung eintragen</summary>
+        <form id="treasure-create-form">
+          <label for="treasure-title">Herkunft / Titel</label
+          ><input
+            id="treasure-title"
+            required
+            maxlength="1000"
+            placeholder="Belohnung des Torhauptmanns"
+          />
+          <div class="combat-fields">
+            <div>
+              <label for="treasure-new-name">Gegenstand</label
+              ><input id="treasure-new-name" maxlength="1000" required />
+            </div>
+            <div>
+              <label for="treasure-new-category">Kategorie</label
+              ><select id="treasure-new-category">
+                <option value="coins">Münzen</option>
+                <option value="equipment" selected>Ausrüstung</option>
+                <option value="trade-goods">Handelsgut</option>
+                <option value="magic">Magischer Gegenstand</option>
+                <option value="other">Sonstiges</option>
+              </select>
+            </div>
+            <div>
+              <label for="treasure-new-quantity">Menge</label
+              ><input
+                id="treasure-new-quantity"
+                type="number"
+                min="1"
+                step="1"
+                value="1"
+                required
+              />
+            </div>
+            <div>
+              <label for="treasure-new-value">Wert pro Stück (Gold)</label
+              ><input id="treasure-new-value" inputmode="decimal" value="0" required />
+            </div>
+          </div>
+          <button type="submit">Als unverteilte Beute speichern</button>
+        </form>
+      </details>
+      <details>
+        <summary>Persönlichen Eintrag hinzufügen</summary>
+        <form id="manual-loot-form">
+          <label for="manual-loot-recipient">Figur</label
+          ><select id="manual-loot-recipient" required></select
+          ><label for="manual-loot-origin">Herkunft</label
+          ><select id="manual-loot-origin">
+            <option value="manual">Manuell erhalten</option>
+            <option value="award">Belohnung</option>
+            <option value="purchase">Gekauft</option>
+          </select>
+          <div class="combat-fields">
+            <div>
+              <label for="manual-loot-name">Gegenstand</label
+              ><input id="manual-loot-name" maxlength="1000" required />
+            </div>
+            <div>
+              <label for="manual-loot-category">Kategorie</label
+              ><select id="manual-loot-category">
+                <option value="coins">Münzen</option>
+                <option value="equipment" selected>Ausrüstung</option>
+                <option value="trade-goods">Handelsgut</option>
+                <option value="magic">Magischer Gegenstand</option>
+                <option value="other">Sonstiges</option>
+              </select>
+            </div>
+            <div>
+              <label for="manual-loot-quantity">Menge</label
+              ><input id="manual-loot-quantity" type="number" min="1" step="1" value="1" required />
+            </div>
+            <div>
+              <label for="manual-loot-value">Wert pro Stück (Gold)</label
+              ><input id="manual-loot-value" inputmode="decimal" value="0" required />
+            </div>
+          </div>
+          <label for="manual-loot-note">Händler / Herkunft</label
+          ><input id="manual-loot-note" maxlength="10000" /><button type="submit">
+            Eintrag speichern
+          </button>
+        </form>
+      </details>
+    </section>
+    <section>
+      <div class="toolbar">
+        <h3 id="ledger-character-heading">Beute · Figur auswählen</h3>
+        <button id="live-loot-back" type="button" hidden>Zur aktuellen Gruppe</button>
+      </div>
+      <p id="ledger-summary"></p>
+      <div class="time-fields">
+        <div>
+          <label for="ledger-search">Suchen</label><input id="ledger-search" type="search" />
+        </div>
+        <div>
+          <label for="ledger-filter">Status</label
+          ><select id="ledger-filter">
+            <option value="">Alle</option>
+            <option value="received">Erhalten</option>
+            <option value="sold">Verkauft</option>
+            <option value="given">Weitergegeben</option>
+          </select>
+        </div>
+      </div>
+      <div id="ledger-list" class="selection-list"></div>
+      <button id="ledger-more" hidden>Weitere Einträge laden</button>
+      <p id="ledger-load-status" role="status" hidden></p>
+      <button id="ledger-retry" type="button" hidden>Beuteeintrag erneut laden</button>
+      <div id="ledger-editor" hidden>
+        <p id="ledger-detail" class="caption"></p>
+        <fieldset id="ledger-stack-tools"></fieldset>
+        <details id="ledger-adjustments">
+          <summary>Verkauf, externe Weitergabe und Mengenkorrektur</summary>
+          <form id="ledger-form">
+            <label for="ledger-operation">Änderung</label
+            ><select id="ledger-operation">
+              <option value="sold">Teilmenge verkaufen</option>
+              <option value="given">Teilmenge weitergeben</option>
+              <option value="correct">Gesamtmenge korrigieren</option>
+            </select>
+            <div class="time-fields">
+              <div>
+                <label id="ledger-quantity-label" for="ledger-quantity">Teilmenge</label
+                ><input id="ledger-quantity" type="number" min="0" step="1" value="1" required />
+              </div>
+              <div id="ledger-price-field">
+                <label for="ledger-price">Tatsächlicher Gesamtverkaufspreis (Gold)</label
+                ><input id="ledger-price" inputmode="decimal" value="0" />
+              </div>
+            </div>
+            <label for="ledger-counterparty">Händler / Empfänger</label
+            ><input id="ledger-counterparty" maxlength="1000" /><label
+              for="ledger-linked-counterparty"
+              >Vorhandener Händler / Empfänger</label
+            ><select id="ledger-linked-counterparty">
+              <option value="">Nur Freitext</option></select
+            ><label for="ledger-reason">Grund</label
+            ><input id="ledger-reason" required maxlength="10000" /><button type="submit">
+              Änderung speichern
+            </button>
+            <p class="caption">
+              Verkäufe und Weitergaben bleiben im erhaltenen Loot sichtbar. Eine Korrektur hält den
+              vorherigen Stand im Verlauf fest. Münzen werden nicht automatisch gebucht.
+            </p>
+          </form>
+        </details>
+      </div>
+    </section>
+  </div>
+</section>

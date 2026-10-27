@@ -1,0 +1,101 @@
+<div id="day-popover" popover role="dialog" aria-labelledby="day-heading">
+  <div class="toolbar">
+    <h2 id="day-heading">Abenteuertag planen</h2>
+    <button id="day-close" type="button" aria-label="Rechner schließen">Schließen</button>
+  </div>
+  <div class="day-workspace">
+    <div class="day-inputs">
+      <p id="day-source"></p>
+      <div class="toolbar">
+        <small id="day-draft-status" role="status"></small
+        ><button id="day-draft-reset" type="button">Planung zurücksetzen</button>
+      </div>
+      <div class="toolbar">
+        <button id="day-active" type="button" aria-pressed="true">Aktive Party</button
+        ><button id="day-custom" type="button" aria-pressed="false">Eigene Planung</button
+        ><button id="day-add" type="button">+ Levelgruppe</button
+        ><button id="day-clear" type="button">Eigene Zeilen leeren</button
+        ><button id="day-party-open" type="button">Party / Rasten öffnen</button>
+      </div>
+      <div id="day-rows"></div>
+      <div class="toolbar">
+        <button id="day-mode-budget" type="button" aria-pressed="true">Budget</button
+        ><button id="day-mode-progress" type="button" aria-pressed="false">XP → Tage</button>
+      </div>
+      <details id="day-plan-panel">
+        <summary>Tagesplan aus Encounter-Vorlagen</summary>
+        <label class="check-label"
+          ><input id="day-use-encounters" type="checkbox" /> XP aus gespeicherten Begegnungen
+          berechnen</label
+        ><button id="day-plan-open-encounters" type="button">Encounter-Vorlagen bearbeiten</button>
+        <div id="day-plan-controls" hidden>
+          <p>
+            Reihenfolge, Wiederholungen und Rasten gelten nur für diesen Rechner. Aktuelle
+            Rechnerparty statt der Party in der Vorlage; keine Kämpfe, Rasten oder XP werden
+            gebucht.
+          </p>
+          <label
+            >Vorlagen suchen<input id="day-plan-search" type="search" maxlength="1000"
+          /></label>
+          <p id="day-plan-search-status" role="status"></p>
+          <div id="day-plan-matches"></div>
+          <div class="toolbar">
+            <button id="day-plan-reload" type="button">Vorlagen aktualisieren</button
+            ><button id="day-plan-clear" type="button">Tagesplan leeren</button>
+          </div>
+          <div id="day-plan-selected"></div>
+          <p id="day-plan-edit-status" role="status"></p>
+        </div>
+        <div id="day-plan-result"></div>
+      </details>
+      <div id="day-progress-inputs" hidden>
+        <label
+          >Gruppen-XP / Tagesbelastung<input
+            id="day-total-xp"
+            type="number"
+            min="0"
+            max="1000000000000"
+            step="1"
+            value="0" /></label
+        ><label class="check-label"
+          ><input id="day-separate-reward" type="checkbox" /> XP-Verdienst getrennt rechnen</label
+        ><label id="day-reward-field" hidden
+          >Verdienst-XP der Gruppe<input
+            id="day-reward-xp"
+            type="number"
+            min="0"
+            max="1000000000000"
+            step="1"
+            value="0"
+        /></label>
+      </div>
+    </div>
+    <div class="day-output">
+      <p id="day-status" role="status"></p>
+      <div id="day-results">
+        <section id="day-pacing" aria-label="Rastplanung ab jetzt"></section>
+        <section id="day-summary"></section>
+        <section id="day-levels" hidden></section>
+        <section id="day-timeline-card" hidden>
+          <h3>Etappen</h3>
+          <ol id="day-timeline"></ol>
+        </section>
+        <details id="day-current-details">
+          <summary>Aktuelle Raststände der aktiven Party</summary>
+          <div id="day-current"></div>
+        </details>
+        <details>
+          <summary>Rechenannahmen</summary>
+          <p class="caption">
+            Eigene Zeilen ändern den Rechner. Das Tagesmodell nimmt feste Tagesbudgets der
+            Startlevel und zwei kurze Rasten pro Tag an. Der Encounter-Tagesplan berücksichtigt
+            dagegen die von dir gesetzten Rasten vor jeder Zeile. Eigene Levelgruppen beginnen die
+            XP-Prognose am Levelminimum. Bei Kämpfen können angepasste XP als Belastung und Basis-XP
+            als Verdienst getrennt eingegeben werden. XP, Rasten und Weltzeit bestätigst du
+            anschließend am Spieltisch.
+          </p>
+        </details>
+      </div>
+    </div>
+  </div>
+</div>

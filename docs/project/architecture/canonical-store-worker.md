@@ -2,7 +2,7 @@
 
 Status: Current; technische Nachweise und Produktabnahme bleiben getrennt.
 Owner: project
-Last Reviewed: 2026-10-24
+Last Reviewed: 2026-10-27 (interne Storebesitzer und Fehlerpfade; Fachabnahme separat)
 Source of Truth: Prozessvertrag; Implementierung in `desktop/store-worker.ts` und `desktop/store-client.ts`.
 
 Hostzusammensetzung und IPC-Besitzer: [Desktop-Host nach Fähigkeiten](desktop-host.md).
@@ -35,6 +35,31 @@ Referenzprüfung und Löschen gibt es keinen asynchronen Unterbrechungspunkt.
 Main entzieht abgebrochenen Transfer-Tickets sofort ihre Berechtigung; ihre
 Stagingdateien werden erst nach Ende einer bereits angenommenen Übernahme entfernt.
 
+## Interne Speicherbesitzer
+
+`CampaignStore` bleibt die öffentliche Fassade und besitzt Verbindung, Aktivierung,
+Guards, Graphvorschau, Backup-Epoche und Schließreihenfolge. Seine Fachmodule
+arbeiten mit der beim Aufruf übergebenen Verbindung; sie halten keinen zweiten
+kanonischen Store und importieren die Fassade nicht. Das gilt insbesondere beim
+vorübergehenden Wechsel auf die Graphvorschau-Verbindung.
+
+- `storage/store-bootstrap.ts` öffnet die Verbindung, prüft Format und SQLite,
+  richtet Pragmas sowie das Schema ein und schließt einen fehlgeschlagenen Start.
+  Die bisherigen zentralen Tabellen besitzen dort ihre Transferdeklarationen.
+- `storage/backup.ts` erzeugt und validiert den privaten Wiederherstellungskandidaten,
+  synchronisiert ihn und veröffentlicht ihn erst nach der vom Store gehaltenen
+  Epochenprüfung. Zwischen dieser Prüfung und Rename liegt kein Await.
+- `storage/campaign-snapshots.ts` besitzt Exportkandidaten, Paketprüfung und private
+  Importkopien. Die Store-Fassade prüft die Aktivierung; der Snapshotablauf prüft
+  den Lebenszyklus-Fence vor Bearbeitung und unmittelbar vor Veröffentlichung.
+  Fachliche Kopie, Remapping und atomare Annahme bleiben in `campaign-data.ts`,
+  die vollständige Prüfung in `snapshot-validation.ts` und den Transferverträgen.
+- `storage/tutorial.ts` speichert den Lauf je installierter Appversion. Terminale
+  Zustände und beschädigte Originalwerte behalten ihre bisherigen Schutzregeln.
+
+Öffentliche Store-Signaturen, Worker-Allowlist und Preload-Fähigkeiten ändern sich
+hierdurch nicht. Diese interne Aufteilung ist kein neuer Transport oder Fehlerkanal.
+
 ## Aufträge, Fehler und Schließen
 
 Der Client registriert Pending-Aufträge vor `postMessage`. Monotone Transport-IDs
@@ -63,6 +88,11 @@ deren Quellenabfrage erst während der Sperre aus dem Store zurückkommt.
 
 ## Prüfwege und Grenzen
 
+- `tests/shared/desktop-store-persistence.test.mjs`: geschlossene Verbindung und
+  unveränderte Daten nach Bootstrapfehler, erhaltene beschädigte Tutorialwerte über
+  erneutes Öffnen, unveränderte Paketquelle bei Digestabweichung und idempotente
+  Annahme. Export-Fences verwerfen eine geänderte Quellkampagne vor Bearbeitung
+  sowie unmittelbar vor Veröffentlichung und erhalten das bisherige Exportziel.
 - `tests/catalog/desktop-store-worker.test.mjs`: echte Worker, Binärdaten, Doppelzustellung,
   Abbruch vor/nach Commit, Receipt-Auflösung, Pending-Rennen, Backup-Epoche und Exit.
 - `tests/atlas/desktop-review-data-retention.test.mjs`: Ticketentzug ohne vorzeitiges Löschen aktiver Stagingdateien.

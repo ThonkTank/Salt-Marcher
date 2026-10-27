@@ -2,12 +2,16 @@ import { revealWorkspaceNavigation } from './native-navigation.mjs';
 import { runNativeProbe } from './native-session.mjs';
 import { openDesktopKeyReferences } from './qa-key-entry.mjs';
 import { createRequire } from 'node:module';
-import { readFile, writeFile, mkdtemp, mkdir, stat, copyFile } from 'node:fs/promises';
+import { readFile, writeFile, mkdtemp, mkdir, stat } from 'node:fs/promises';
 import { spawn, execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import path from 'node:path';
 import os from 'node:os';
-import { openDesktopKeyFromAtlas } from './qa-key-entry.mjs';
+import {
+  selectDesktopKeyRoom,
+  searchDesktopKeyRooms,
+  openDesktopKeyFromAtlas,
+} from './qa-key-entry.mjs';
 const root = process.cwd(),
   require = createRequire(root + '/package.json'),
   { _electron } = require('playwright-core');
@@ -27,7 +31,13 @@ await runNativeProbe(
       throw Error('Starting fixture was not normally closed.');
     const profile = native.profile,
       file = profile + '/workbench.sqlite';
-    await copyFile(completed.file, file);
+    // A normal exit can leave committed pages in WAL; copy the complete snapshot.
+    const incoming = require('better-sqlite3')(completed.file, { readonly: true });
+    try {
+      await incoming.backup(file);
+    } finally {
+      incoming.close();
+    }
     const campaign = initial.campaign,
       rooms = initial.rooms,
       sourceNote = initial.sourceNote,
@@ -53,7 +63,8 @@ await runNativeProbe(
       errors = [],
       captures = [],
       freshUses = [],
-      finalUses = [];
+      finalUses = [],
+      searchChecks = [];
     const zoom = Number(process.env.GM_QA_ZOOM ?? 2),
       title = 'Abmachung am Schrank · Dritte Nacht',
       decision =
@@ -111,6 +122,8 @@ await runNativeProbe(
     }
     async function tab(id) {
       await revealWorkspaceNavigation(page);
+      if (!(await page.locator(id).isVisible()))
+        await page.locator('#workspace-nav-summary').click();
       await page.locator(id).click();
     }
     async function key() {
@@ -119,10 +132,7 @@ await runNativeProbe(
       await page.locator('#key-dialog').waitFor({ state: 'visible' });
     }
     async function room(name) {
-      await page
-        .locator('#key-room-list')
-        .getByRole('button', { name: new RegExp(name) })
-        .click();
+      await selectDesktopKeyRoom(page, name);
       await page.waitForFunction((t) => document.getElementById('key-name').value === t, name);
     }
     async function referencePanel() {
@@ -161,24 +171,26 @@ await runNativeProbe(
       await writeFile(out + '/' + prefix + '-evening.txt', text);
       await page
         .locator('#session-packet-content .packet-runway button')
-        .filter({ hasText: title + ' · Notiz' })
+        .filter({ hasText: title })
         .click();
       await page.waitForFunction((t) => {
         const e = [...document.querySelectorAll('#session-packet-content h4')]
           .find((e) => e.textContent === t)
           ?.closest('.packet-block');
         return (
-          !!e && e.getBoundingClientRect().top >= 0 && e.getBoundingClientRect().top < innerHeight
+          !!e &&
+          e.textContent.includes('GM · Notiz') &&
+          e.getBoundingClientRect().top >= 0 &&
+          e.getBoundingClientRect().top < innerHeight
         );
-      }, title + ' · Notiz');
+      }, title);
       await shot(prefix + '-evening');
       await page.locator('#session-packet-close').click();
     }
     async function bothRooms(prefix, expected, checks) {
       await key();
-      await page.locator('#key-search').fill('Abmachung');
-      await page.waitForFunction(
-        () => document.querySelectorAll('#key-room-list button').length === 2,
+      searchChecks.push(
+        await searchDesktopKeyRooms(page, 'Abmachung', ['Fährsteg', 'Salzscheune']),
       );
       for (const name of ['Fährsteg', 'Salzscheune']) {
         await room(name);
@@ -209,6 +221,14 @@ await runNativeProbe(
         for (const b of before)
           if (after.find((n) => n.id === b.id)?.payload !== b.payload)
             throw Error('Prior note changed');
+        const originals = ['Siv die Fährfrau', 'Der Schrank in der Salzscheune'].map((title, i) => {
+          const matches = before
+            .map((row) => JSON.parse(row.payload))
+            .filter((note) => note.title === title && note.kind === (i ? 'quest' : 'npc'));
+          if (matches.length !== 1)
+            throw Error('Starting fixture original is not unique: ' + title);
+          return matches[0];
+        });
         const n = JSON.parse(added[0].payload);
         if (
           n.kind !== 'note' ||
@@ -216,8 +236,7 @@ await runNativeProbe(
           n.readAloud !== publicLine ||
           n.gmNotes !== decision + '\n\n' + followup ||
           n.relations.length !== 2 ||
-          !n.relations.some((r) => r.targetId === 'f7b74c4e-2237-4c0e-b10f-79dcb567eb1e') ||
-          !n.relations.some((r) => r.targetId === 'b0e321ca-bea5-4127-b235-9063e2285641')
+          !originals.every((note) => n.relations.some((relation) => relation.targetId === note.id))
         )
           throw Error('Decision payload mismatch');
         for (const t of ['room', 'plan', 'planned_visit', 'session_visit'])
@@ -286,6 +305,8 @@ await runNativeProbe(
       await page.locator('#key-note-submit').click();
       await page.locator('#key-note-capture-dialog').waitFor({ state: 'hidden' });
       await page.waitForFunction((t) => document.getElementById('note-title').value === t, title);
+      if (!(await page.locator('#note-read-aloud').isVisible()))
+        await page.locator('#note-read-aloud-summary').click();
       await page.locator('#note-read-aloud').fill(publicLine);
       for (const target of ['Siv die Fährfrau', 'Der Schrank in der Salzscheune']) {
         await page.locator('#relation-target').selectOption({ label: target });
@@ -369,6 +390,7 @@ await runNativeProbe(
         captures,
         freshUses,
         finalUses,
+        searchChecks,
         launches,
         errors,
         audit: checked,

@@ -87,6 +87,28 @@ export function assertReferenceMapImage(actual, expected, { markerVisible = true
     'Reference viewport aspect ratio',
   );
   const scale = actual.width / expected.width;
+  assert([1, 2].includes(scale), 'Reference capture must use 100% or 200% native pixels');
+  if (scale === 2) {
+    // A reference pixel covers one CSS pixel. Integrate its complete 2×2 native
+    // footprint before measuring color or adjacent-pixel contrast. Selecting one
+    // subpixel aliases AA coverage (especially text/room edges at close scales)
+    // into missing green texture, even when the visible surface is unchanged.
+    const data = new Uint8Array(expected.width * expected.height * 4);
+    for (let y = 0; y < expected.height; y++)
+      for (let x = 0; x < expected.width; x++) {
+        const source = (y * 2 * actual.width + x * 2) * 4,
+          target = (y * expected.width + x) * 4;
+        for (let c = 0; c < 4; c++)
+          data[target + c] = Math.round(
+            (actual.data[source + c] +
+              actual.data[source + 4 + c] +
+              actual.data[source + actual.width * 4 + c] +
+              actual.data[source + actual.width * 4 + 4 + c]) /
+              4,
+          );
+      }
+    actual = { width: expected.width, height: expected.height, data };
+  }
   const colors = {
     land: [238, 229, 207],
     forest: [154, 174, 129],
@@ -97,6 +119,8 @@ export function assertReferenceMapImage(actual, expected, { markerVisible = true
     Object.keys(colors).map((k) => [k, { expected: 0, actual: 0 }]),
   );
   populations.forestTexture = { expected: 0, actual: 0 };
+  // This green-contrast guard also sees text/room outlines in close views; it
+  // supplements forest coverage, rather than classifying semantic canopy pixels.
   const textureEdge = (image, i, j) => {
     const p = image.data;
     return (
@@ -111,7 +135,7 @@ export function assertReferenceMapImage(actual, expected, { markerVisible = true
     pixels = 0;
   for (let y = 250; y < 610; y++)
     for (let x = 575; x < 1280; x++) {
-      const a = (Math.floor((y + 0.5) * scale) * actual.width + Math.floor((x + 0.5) * scale)) * 4,
+      const a = (y * actual.width + x) * 4,
         b = (y * expected.width + x) * 4;
       for (let c = 0; c < 3; c++) error += Math.abs(actual.data[a + c] - expected.data[b + c]);
       for (const [key, color] of Object.entries(colors)) {
@@ -137,8 +161,7 @@ export function assertReferenceMapImage(actual, expected, { markerVisible = true
         if (near(actual, a, true)) populations[key].actual++;
       }
       if (x < 1279) {
-        const nextA =
-          (Math.floor((y + 0.5) * scale) * actual.width + Math.floor((x + 1.5) * scale)) * 4;
+        const nextA = (y * actual.width + x + 1) * 4;
         const nextB = (y * expected.width + x + 1) * 4;
         if (textureEdge(expected, b, nextB)) populations.forestTexture.expected++;
         if (textureEdge(actual, a, nextA)) populations.forestTexture.actual++;

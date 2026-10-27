@@ -1,0 +1,117 @@
+<section id="treasury" hidden>
+  <h2>Schätze · Vorbereitung und Verteilung</h2>
+  <p>
+    Unverteilte Mengen bearbeiten oder verschieben. Persönliche Ledger und bereits vergebene Mengen
+    bleiben erhalten.
+  </p>
+  <div class="toolbar">
+    <button id="treasury-new">Neuen Schatz anlegen</button
+    ><button id="treasury-refresh">Aktualisieren</button>
+  </div>
+  <div class="preparation-columns">
+    <section>
+      <form id="treasury-filter-form">
+        <label
+          >Schätze suchen<input
+            id="treasury-filter-search"
+            type="search"
+            placeholder="Titel oder Zuordnung" /></label
+        ><label
+          >Zuordnung<select
+            id="treasury-filter-anchor"
+            aria-label="Schätze nach Zuordnung"
+          ></select></label
+        ><label class="check-label"
+          ><input id="treasury-filter-remaining" type="checkbox" /> Nur mit unverteilten
+          Mengen</label
+        ><button type="submit">Schätze suchen</button>
+      </form>
+      <p id="treasury-list-status" role="status"></p>
+      <div id="treasury-list" class="item-list"></div>
+      <button id="treasury-more" hidden>Weitere Schätze</button>
+    </section>
+    <article id="treasury-editor" hidden>
+      <p id="treasury-origin" class="caption"></p>
+      <details>
+        <summary>Ganzen Schatz einer Gruppe oder einem Ort zuordnen</summary>
+        <p>
+          Der Schatz behält seine Identität, Gegenstände und bereits vergebenen Mengen. Die
+          ursprüngliche Belohnungsherkunft bleibt nachvollziehbar.
+        </p>
+        <label
+          >Zielzuordnung<select
+            id="treasury-anchor-target"
+            aria-label="Zielzuordnung des ganzen Schatzes"
+          ></select></label
+        ><label>Grund der neuen Zuordnung<input id="treasury-anchor-reason" /></label
+        ><button id="treasury-anchor-apply" type="button">Ganzen Schatz umhängen</button>
+      </details>
+      <p id="treasury-draft-status" role="status"></p>
+      <div class="toolbar" id="treasury-actions">
+        <button id="treasury-apply">Schatzangaben übernehmen</button
+        ><button id="treasury-reload">Entwurf verwerfen</button>
+      </div>
+      <div class="treasury-fields">
+        <label>Titel<input id="treasury-title" maxlength="1000" aria-label="Schatztitel" /></label
+        ><label>Ort<select id="treasury-place" aria-label="Schatzort"></select></label
+        ><label
+          >Änderungsgrund<input id="treasury-reason" aria-label="Schatzänderungsgrund"
+        /></label>
+      </div>
+      <p id="treasury-allocated"></p>
+      <details id="treasury-catalog-picker">
+        <summary>Gegenstände aus dem Katalog hinzufügen</summary>
+        <form id="treasury-catalog-form">
+          <label
+            >Suchen<input
+              id="treasury-catalog-search"
+              type="search"
+              placeholder="Name oder Beschreibung" /></label
+          ><button>Suchen</button>
+        </form>
+        <div id="treasury-catalog-results"></div>
+      </details>
+      <h3>Unverteilte Gegenstände</h3>
+      <div id="treasury-rows"></div>
+      <h3>Verfügbare Teilmenge</h3>
+      <p class="caption">Vor Zuweisung oder Verschiebung offene Schatzangaben übernehmen.</p>
+      <label
+        >Gegenstand<select id="treasury-move-item" aria-label="Verfügbare Schatzbeute"></select
+      ></label>
+      <details>
+        <summary>In anderen Schatz verschieben</summary>
+        <form id="treasury-move-form">
+          <label
+            >Menge<input
+              id="treasury-move-quantity"
+              type="number"
+              value="1"
+              min="1"
+              required /></label
+          ><label>Ziel<select id="treasury-target" aria-label="Zielschatz"></select></label
+          ><label
+            >Neuer Zielschatz-Titel<input
+              id="treasury-target-title"
+              value="Verschobene Beute" /></label
+          ><label>Ort des neuen Zielschatzes<select id="treasury-target-place"></select></label
+          ><label>Grund<input id="treasury-move-reason" value="GM-Umverteilung" required /></label
+          ><button>Teilmenge verschieben</button>
+        </form>
+      </details>
+      <form id="treasury-allocate-form">
+        <label>Aktive Figur<select id="treasury-recipient"></select></label
+        ><label
+          >Menge<input
+            id="treasury-allocate-quantity"
+            type="number"
+            value="1"
+            min="1"
+            required /></label
+        ><button>Ausgewählte Beute zuweisen</button>
+      </form>
+      <h3>Schatzverlauf</h3>
+      <div id="treasury-history"></div>
+      <button id="treasury-history-more" hidden>Älterer Verlauf</button>
+    </article>
+  </div>
+</section>

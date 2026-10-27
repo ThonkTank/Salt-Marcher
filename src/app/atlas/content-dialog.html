@@ -1,0 +1,79 @@
+<dialog id="content-dialog">
+  <div class="toolbar">
+    <h2>Dungeon-Inhalte und Voxelanker</h2>
+    <button id="content-close">Schließen</button><button id="content-new">Neuer Inhalt</button
+    ><button id="content-discard">Offene Eingaben verwerfen</button>
+  </div>
+  <div class="toolbar">
+    <label
+      >Raum
+      <select id="content-room"></select></label
+    ><label
+      >Art
+      <select id="content-kind">
+        <option value="encounter">Encounter</option>
+        <option value="loot">Loot / Beute</option>
+        <option value="trap">Trap / Gefahr</option>
+        <option value="curiosity">Curiosity / Einrichtung</option>
+        <option value="puzzle">Rätsel</option>
+      </select></label
+    ><label>Name <input id="content-name" /></label
+    ><label><input id="content-secret" type="checkbox" /> Geheim</label>
+  </div>
+  <label
+    >Encounterquelle
+    <select id="content-encounter-owner">
+      <option value="encounter">Vorlage für unabhängige NPC-Gruppe</option>
+      <option value="group">Vorhandene NPC-Gruppe</option>
+    </select></label
+  ><label
+    >Konkreter Encounter / Loot
+    <select id="content-reference"></select
+  ></label>
+  <p id="content-source-copy"></p>
+  <div class="toolbar">
+    <label
+      >Voxel X relativ zur Volumenecke
+      <input id="content-x" type="number" value="0" step="1" /></label
+    ><label>Y <input id="content-y" type="number" value="0" step="1" /></label
+    ><label>Z in 5-Fuß-Schritten <input id="content-z" type="number" value="0" step="1" /></label
+    ><label
+      >Trap-XP als ausdrücklicher GM-Ansatz
+      <input id="content-xp" type="number" min="0" placeholder="unbekannt"
+    /></label>
+  </div>
+  <label
+    >Vorlesetext / öffentliche Beschreibung
+    <textarea id="content-public" rows="5"></textarea></label
+  ><label
+    >GM-Notizen, Bedienung oder Lösung <textarea id="content-notes" rows="5"></textarea>
+  </label>
+  <div class="toolbar">
+    <label
+      >Kategorien <input id="content-categories" placeholder="Einrichtung, Ritual, Gefahr" /></label
+    ><label>Tags <input id="content-tags" placeholder="Puzzle, Brunnen" /></label>
+  </div>
+  <details>
+    <summary>Verborgene Entdeckung / Suche</summary>
+    <label>Suchmethode <input id="content-search-method" /></label
+    ><label
+      >Privater DC
+      <input id="content-search-dc" type="number" placeholder="keine automatische Prüfung" /></label
+    ><label>Private Entdeckungshinweise <textarea id="content-search-notes"></textarea></label
+    ><label
+      >Vorlesetext nach bestätigter Entdeckung <textarea id="content-revealed"></textarea>
+    </label>
+    <p>
+      Passiv-/Aktivwerte können den GM benachrichtigen. Spielerkenntnis ändert sich erst nach
+      ausdrücklicher Bestätigung.
+    </p>
+  </details>
+  <button id="content-save">Inhalt / Platzierung übernehmen</button>
+  <p>
+    Ein Encounter oder Loot besitzt höchstens eine aktuelle Dungeonplatzierung. Räume bewegen den
+    relativen Voxelanker mit; bei verlorener Geometrie bleibt der Inhalt zur Neuzuordnung erhalten.
+    Rätsel haben freie GM-Notizen und keine programmierten Lösungen.
+  </p>
+  <div id="content-list"></div>
+  <pre id="content-reference-detail"></pre>
+</dialog>

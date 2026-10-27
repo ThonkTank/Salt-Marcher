@@ -1,0 +1,27 @@
+<dialog id="extensions-dialog" aria-labelledby="extensions-heading">
+  <h2 id="extensions-heading" tabindex="-1">Erweiterungen</h2>
+  <p>
+    Lokale Paketinstallation mit ausdrücklich bestätigten Rechten. Die Ausführung zusätzlicher
+    Inhaltsarten ist noch nicht verfügbar.
+  </p>
+  <section id="extension-recovery" hidden>
+    <p role="alert">
+      Ein früherer Installationsauftrag ist beschädigt oder nicht lesbar. Prüfe zuerst den aktuellen
+      Installationsstand. Danach kannst du den unveränderten Vermerk sichern und zurücksetzen.
+    </p>
+    <button id="extension-reset-recovery" disabled>
+      Beschädigten Auftrag sichern und zurücksetzen
+    </button>
+  </section>
+  <button id="extension-pick">Paketdatei prüfen…</button>
+  <section id="extension-preview" hidden>
+    <p id="extension-description"></p>
+    <p>Pakethash: <code id="extension-hash"></code></p>
+    <div id="extension-rights"></div>
+    <button id="extension-install" disabled>Paket installieren</button>
+  </section>
+  <button id="extension-outcome" hidden>Ergebnis prüfen</button>
+  <div id="extension-list"></div>
+  <button id="extension-more" hidden>Weitere Installationen</button>
+  <div class="actions"><button id="extensions-close">Schließen</button></div>
+</dialog>

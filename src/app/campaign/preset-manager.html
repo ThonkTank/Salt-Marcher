@@ -1,0 +1,335 @@
+<dialog id="preset-manager">
+  <div class="toolbar">
+    <h2>Einstellungen</h2>
+    <button id="extensions-open">Erweiterungen</button
+    ><button id="preset-close" type="button">Schließen</button>
+  </div>
+  <div class="preset-scroll">
+    <h3>Begegnungsgenerator</h3>
+    <div class="preset-selection-fields">
+      <div>
+        <label for="preset-context">Kampagne für die Zuweisung</label
+        ><select id="preset-context"></select>
+      </div>
+      <div>
+        <label for="preset-selection">Installationsweites Preset</label
+        ><select id="preset-selection"></select>
+      </div>
+    </div>
+    <p id="preset-effective" class="caption"></p>
+    <form id="preset-form">
+      <label for="preset-name">Name</label><input id="preset-name" maxlength="1000" required />
+      <h3>Vorgaben für neue Begegnungen</h3>
+      <div class="combat-fields">
+        <div>
+          <label for="preset-default-difficulty">Schwierigkeit</label
+          ><select id="preset-default-difficulty">
+            <option value="weighted">Gewichtet</option>
+            <option value="trivial">Trivial</option>
+            <option value="easy">Leicht</option>
+            <option value="medium">Mittel</option>
+            <option value="hard">Schwer</option>
+            <option value="deadly">Tödlich</option>
+          </select>
+        </div>
+        <div>
+          <label for="preset-default-amount">Menge</label
+          ><select id="preset-default-amount">
+            <option value="neutral">Neutral</option>
+            <option value="few">Wenige</option>
+            <option value="standard">Standard</option>
+            <option value="many">Viele</option>
+          </select>
+        </div>
+        <div>
+          <label for="preset-default-balance">Balance</label
+          ><select id="preset-default-balance">
+            <option value="neutral">Neutral</option>
+            <option value="even">Gleichmäßig</option>
+            <option value="varied">Gemischt</option>
+          </select>
+        </div>
+        <div>
+          <label for="preset-default-diversity">Vielfalt</label
+          ><select id="preset-default-diversity">
+            <option value="neutral">Neutral</option>
+            <option value="low">Niedrig</option>
+            <option value="high">Hoch</option>
+          </select>
+        </div>
+      </div>
+      <div class="preset-combat-default">
+        <label for="preset-fixed-count">Schnellvorgabe: feste Gegnerzahl gleicher Stärke</label>
+        <div class="toolbar">
+          <input id="preset-fixed-count" type="text" inputmode="numeric" value="2" /><button
+            id="preset-fixed-apply"
+            type="button"
+          >
+            Feste Anzahl verwenden
+          </button>
+        </div>
+        <p class="caption">
+          Ersetzt die bisherigen Misch- und Mengenregeln. Beim Auffüllen gilt die Zahl für die
+          Ergänzung.
+        </p>
+      </div>
+      <div class="preset-combat-default">
+        <label for="preset-mob">Ab wie vielen Monstern je Eintrag als Mob führen?</label
+        ><input id="preset-mob" type="number" min="0" max="999" />
+        <p class="caption">
+          0 führt alle Monster einzeln. Gilt für neu vorbereitete Kämpfe; laufende Kämpfe behalten
+          ihre Aufteilung.
+        </p>
+      </div>
+      <details class="preset-advanced">
+        <summary>Schwierigkeit gewichten</summary>
+        <p class="caption">Diese Gewichte werden bei „Gewichtet“ verwendet.</p>
+        <h3>Schwierigkeitsgewichte (Summe 100)</h3>
+        <div id="preset-weight-track"></div>
+        <div class="preset-weight-fields">
+          <div>
+            <label for="preset-weight-trivial">Trivial</label
+            ><input id="preset-weight-trivial" type="number" min="0" max="100" />
+          </div>
+          <div>
+            <label for="preset-weight-easy">Leicht</label
+            ><input id="preset-weight-easy" type="number" min="0" max="100" />
+          </div>
+          <div>
+            <label for="preset-weight-medium">Mittel</label
+            ><input id="preset-weight-medium" type="number" min="0" max="100" />
+          </div>
+          <div>
+            <label for="preset-weight-hard">Schwer</label
+            ><input id="preset-weight-hard" type="number" min="0" max="100" />
+          </div>
+          <div>
+            <label for="preset-weight-deadly">Tödlich</label
+            ><input id="preset-weight-deadly" type="number" min="0" max="100" />
+          </div>
+        </div>
+      </details>
+      <details class="preset-advanced">
+        <summary>Kompositionsregeln: Rollen, Mengen und Zielbereiche</summary>
+        <h3>Rollenmatrix</h3>
+        <div id="preset-brushes" class="toolbar">
+          <button type="button" data-role="none" aria-pressed="false">Leer</button
+          ><button type="button" data-role="minion" aria-pressed="false">Minion</button
+          ><button type="button" data-role="support" aria-pressed="false">Support</button
+          ><button type="button" data-role="standard" aria-pressed="true">Standard</button
+          ><button type="button" data-role="elite" aria-pressed="false">Elite</button
+          ><button type="button" data-role="boss" aria-pressed="false">Boss</button>
+        </div>
+        <p class="caption">
+          Pinsel wählen und Zellen malen. Rechtsklick leert. Pfeiltasten navigieren; Enter/Leertaste
+          malt.
+        </p>
+        <div id="preset-matrix"></div>
+        <div class="preset-rule-columns">
+          <fieldset>
+            <legend>Mengen je Rolle</legend>
+            <div>
+              <label>Minions</label>
+              <div class="time-fields">
+                <input
+                  id="preset-minion-min"
+                  type="number"
+                  min="1"
+                  max="999"
+                  aria-label="Minions Minimum"
+                /><input
+                  id="preset-minion-max"
+                  type="number"
+                  min="1"
+                  max="999"
+                  aria-label="Minions Maximum"
+                />
+              </div>
+            </div>
+            <div>
+              <label>Support</label>
+              <div class="time-fields">
+                <input
+                  id="preset-support-min"
+                  type="number"
+                  min="1"
+                  max="999"
+                  aria-label="Support Minimum"
+                /><input
+                  id="preset-support-max"
+                  type="number"
+                  min="1"
+                  max="999"
+                  aria-label="Support Maximum"
+                />
+              </div>
+            </div>
+            <div>
+              <label>Standard</label>
+              <div class="time-fields">
+                <input
+                  id="preset-standard-min"
+                  type="number"
+                  min="1"
+                  max="999"
+                  aria-label="Standard Minimum"
+                /><input
+                  id="preset-standard-max"
+                  type="number"
+                  min="1"
+                  max="999"
+                  aria-label="Standard Maximum"
+                />
+              </div>
+            </div>
+            <div>
+              <label>Elite</label>
+              <div class="time-fields">
+                <input
+                  id="preset-elite-min"
+                  type="number"
+                  min="1"
+                  max="999"
+                  aria-label="Elite Minimum"
+                /><input
+                  id="preset-elite-max"
+                  type="number"
+                  min="1"
+                  max="999"
+                  aria-label="Elite Maximum"
+                />
+              </div>
+            </div>
+            <div>
+              <label>Boss</label>
+              <div class="time-fields">
+                <input
+                  id="preset-boss-min"
+                  type="number"
+                  min="1"
+                  max="999"
+                  aria-label="Boss Minimum"
+                /><input
+                  id="preset-boss-max"
+                  type="number"
+                  min="1"
+                  max="999"
+                  aria-label="Boss Maximum"
+                />
+              </div>
+            </div>
+          </fieldset>
+          <fieldset>
+            <legend>Komposition</legend>
+            <div>
+              <label>CR-Blöcke</label>
+              <div class="time-fields">
+                <input
+                  id="preset-crBlocks-min"
+                  type="number"
+                  min="1"
+                  max="999"
+                  aria-label="CR-Blöcke Minimum"
+                /><input
+                  id="preset-crBlocks-max"
+                  type="number"
+                  min="1"
+                  max="999"
+                  aria-label="CR-Blöcke Maximum"
+                />
+              </div>
+            </div>
+            <div>
+              <label>Statblocks</label>
+              <div class="time-fields">
+                <input
+                  id="preset-statblocks-min"
+                  type="number"
+                  min="1"
+                  max="999"
+                  aria-label="Statblocks Minimum"
+                /><input
+                  id="preset-statblocks-max"
+                  type="number"
+                  min="1"
+                  max="999"
+                  aria-label="Statblocks Maximum"
+                />
+              </div>
+            </div>
+            <label for="preset-mixing">Mischung</label
+            ><select id="preset-mixing">
+              <option value="mixed-within-cr-block">Mehrere Statblocks pro CR-Block</option>
+              <option value="one-per-cr-block">Ein Statblock pro CR-Block</option></select
+            ><label for="preset-combinations">Erlaubte Rollenkombinationen (eine je Zeile)</label
+            ><textarea
+              id="preset-combinations"
+              rows="6"
+              placeholder="standard + support"
+            ></textarea>
+          </fieldset>
+          <fieldset>
+            <legend>Skalierte Zielbereiche</legend>
+            <div class="time-fields">
+              <div>
+                <label>Monster min</label
+                ><input id="preset-monsters-min" type="number" min="0" max="999" step="0.1" /><label
+                  class="check-label"
+                  ><input id="preset-monsters-min-scaled" type="checkbox" /> Pro Spieler</label
+                >
+              </div>
+              <div>
+                <label>Monster max</label
+                ><input id="preset-monsters-max" type="number" min="0" max="999" step="0.1" /><label
+                  class="check-label"
+                  ><input id="preset-monsters-max-scaled" type="checkbox" /> Pro Spieler</label
+                >
+              </div>
+              <div>
+                <label>Initiativeplätze min</label
+                ><input
+                  id="preset-initiativeSlots-min"
+                  type="number"
+                  min="0"
+                  max="999"
+                  step="0.1"
+                /><label class="check-label"
+                  ><input id="preset-initiativeSlots-min-scaled" type="checkbox" /> Pro
+                  Spieler</label
+                >
+              </div>
+              <div>
+                <label>Initiativeplätze max</label
+                ><input
+                  id="preset-initiativeSlots-max"
+                  type="number"
+                  min="0"
+                  max="999"
+                  step="0.1"
+                /><label class="check-label"
+                  ><input id="preset-initiativeSlots-max-scaled" type="checkbox" /> Pro
+                  Spieler</label
+                >
+              </div>
+            </div>
+          </fieldset>
+        </div>
+      </details>
+    </form>
+  </div>
+  <div class="preset-feedback">
+    <p id="preset-status" role="status" aria-live="polite"></p>
+    <button id="preset-check" type="button" hidden>Buchungsstatus prüfen</button>
+    <div id="preset-conflict" hidden>
+      <button id="preset-conflict-load" type="button">Neueste Version laden</button
+      ><button id="preset-conflict-copy" type="button">Als Kopie speichern</button>
+    </div>
+  </div>
+  <div class="actions preset-actions">
+    <button id="preset-copy" type="button">Als Kopie bearbeiten</button
+    ><button id="preset-reset" type="button">Auf Systemwerte zurücksetzen</button
+    ><button id="preset-delete" type="button">Preset löschen</button
+    ><button id="preset-save" type="submit" form="preset-form">Preset speichern</button
+    ><button id="preset-assign" type="button">Dieser Kampagne zuweisen</button>
+  </div>
+</dialog>

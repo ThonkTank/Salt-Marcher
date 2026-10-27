@@ -13,28 +13,6 @@ function parse(source) {
   return file;
 }
 
-// Replace only the requested import binding; strings, comments and calls stay intact.
-export function aliasSourceImport(source, moduleName, imported, localName) {
-  const file = parse(source),
-    matches = [];
-  for (const statement of file.statements) {
-    if (!ts.isImportDeclaration(statement) || statement.moduleSpecifier.text !== moduleName)
-      continue;
-    const bindings = statement.importClause?.namedBindings;
-    if (!bindings || !ts.isNamedImports(bindings)) continue;
-    for (const binding of bindings.elements) {
-      if ((binding.propertyName ?? binding.name).text === imported) matches.push(binding);
-    }
-  }
-  assert.equal(matches.length, 1, `Expected one import of ${imported} from ${moduleName}`);
-  const binding = matches[0];
-  return (
-    source.slice(0, binding.getStart(file)) +
-    `${binding.isTypeOnly ? 'type ' : ''}${imported} as ${localName}` +
-    source.slice(binding.end)
-  );
-}
-
 // Read literal form markup without depending on assignment spacing or quote style.
 export function sourceAssignedLiteral(source, propertyPath) {
   const file = parse(source),

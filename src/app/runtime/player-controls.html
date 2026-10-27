@@ -1,0 +1,110 @@
+<dialog id="player-dialog">
+  <div class="toolbar">
+    <h2>Spieleranzeige</h2>
+    <button id="player-refresh">Aktualisieren</button
+    ><button id="player-close-controls">Schließen</button>
+  </div>
+  <p id="player-target"></p>
+  <p id="player-state" role="status"></p>
+  <p id="player-feedback" role="alert" hidden></p>
+  <div class="toolbar player-display-actions">
+    <button id="player-show-follow">Karte / Ortsbild anzeigen</button
+    ><button id="player-blank">Anzeige ausblenden</button>
+  </div>
+  <div class="player-controls">
+    <section aria-label="Kartenfreigabe">
+      <h3>Hexe für die Gruppe freigeben</h3>
+      <label
+        >Karte
+        <select id="player-map"></select></label
+      ><label
+        >Hex finden <input id="player-map-search" type="search" placeholder="GM-Name oder Q, R"
+      /></label>
+      <div id="player-map-matches" class="player-map-matches"></div>
+      <div id="player-map-picker" aria-label="GM-Karte · Hex auswählen"></div>
+      <p id="player-map-keyboard-help" class="caption">
+        Pfeiltasten bewegen den Kartenfokus, Enter wählt. Tab führt zur Beschriftung.
+      </p>
+      <p id="player-cell-selection" role="status"></p>
+      <label>Öffentliche Beschriftung <input id="player-public-label" maxlength="1000" /></label
+      ><button id="player-copy-label" type="button">GM-Namen ausdrücklich übernehmen</button>
+      <p class="caption">
+        GM-Namen bleiben privat. Nur die hier bestätigte Beschriftung wird freigegeben.
+      </p>
+      <div class="toolbar">
+        <button id="player-discover">Für Gruppe freigeben</button
+        ><button id="player-forget">Kenntnis entfernen</button>
+      </div>
+      <p id="player-knowledge-state" class="caption"></p>
+      <details>
+        <summary>Koordinaten, Orte und Maskierung</summary>
+        <label>Hex Q <input id="player-q" type="number" value="0" /></label
+        ><label>Hex R <input id="player-r" type="number" value="0" /></label
+        ><label
+          >Optional bekannten Ort binden
+          <select id="player-place"></select></label
+        ><label
+          ><input id="player-cell-hidden" type="checkbox" /> Zelle auf der Anzeige verdecken</label
+        ><label
+          ><input id="player-cell-blocks" type="checkbox" /> Zelle blockiert Sicht dahinter</label
+        ><button id="player-mask-save">Maskierung und öffentliche Beschriftung speichern</button>
+      </details>
+      <details>
+        <summary>Charaktere und automatische Sicht</summary>
+        <p>
+          Freigaben gelten zunächst für alle Charaktere der Fokusgruppe. Hier kannst du einzelne
+          Empfänger und ihre aktuelle Sicht ändern. Dauerhafte Kenntnis bleibt beim Ausblenden
+          erhalten.
+        </p>
+        <div id="player-observers"></div>
+      </details>
+    </section>
+    <section aria-label="Gesendete Spieleransicht">
+      <h3>Vorschau der tatsächlich gesendeten Anzeige</h3>
+      <div id="player-preview" class="player-preview"></div>
+      <label><input id="player-labels" type="checkbox" /> Freigegebene Beschriftungen zeigen</label>
+      <details>
+        <summary>Anzeige einrichten</summary>
+        <label
+          >Öffentlicher Titel
+          <input id="player-title" maxlength="1000" aria-describedby="player-title-help"
+        /></label>
+        <p id="player-title-help" class="caption">
+          Ohne öffentlichen Titel wird kein interner Scene- oder Maskenname übernommen.
+        </p>
+        <label
+          >Licht
+          <select id="player-light">
+            <option value="auto">Kalender-/Szenenzeit</option>
+            <option value="daylight">Tageslicht</option>
+            <option value="dim">Dämmerlicht</option>
+            <option value="darkness">Dunkelheit</option>
+          </select></label
+        ><label
+          >Bildschirm
+          <select id="player-screen"></select></label
+        ><label><input id="player-fullscreen" type="checkbox" /> Vollbild</label
+        ><button id="player-close-window">Spielerfenster schließen</button>
+      </details>
+      <details>
+        <summary>Bild oder Handout zeigen</summary>
+        <label
+          >Manuell hervorzuhebendes Bild
+          <select id="player-image"></select></label
+        ><button id="player-show-image">Dieses Bild der fokussierten Gruppe zeigen</button
+        ><label
+          >Bildart
+          <select id="player-art-kind">
+            <option value="location">Ortsbild</option>
+            <option value="npc">NPC-Bild</option>
+            <option value="custom">Freies Bild</option>
+          </select></label
+        ><label id="player-art-subject-label"
+          >Ziel
+          <select id="player-art-subject"></select></label
+        ><label>Öffentlicher Bildtitel <input id="player-art-title" maxlength="1000" /></label
+        ><button id="player-pick-art">Lokales Bild auswählen</button>
+      </details>
+    </section>
+  </div>
+</dialog>

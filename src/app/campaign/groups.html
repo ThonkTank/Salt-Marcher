@@ -1,0 +1,47 @@
+<section id="groups" hidden>
+  <div class="toolbar">
+    <h2>Monstergruppen</h2>
+    <label for="groups-template">Aus Vorlage</label
+    ><select id="groups-template"></select
+    ><button id="groups-new">Gruppe anlegen</button>
+  </div>
+  <p>
+    Bereite Figuren unabhängig vom Spielabendplan vor und lege sie an ihren Ort. Die Szene bietet
+    sie dort zur Auswahl an.
+  </p>
+  <form id="groups-search-form" class="toolbar">
+    <label for="groups-search">Gruppen suchen</label
+    ><input id="groups-search" maxlength="1000" /><button>Suchen</button>
+  </form>
+  <p id="groups-search-status" class="caption" role="status"></p>
+  <div id="groups-list" class="toolbar"></div>
+  <button id="groups-more" disabled>Weitere Gruppen</button>
+  <div id="groups-editor" hidden>
+    <label for="groups-title">Gruppenname</label><input id="groups-title" maxlength="1000" /><label
+      for="groups-place"
+      >Standort</label
+    ><select id="groups-place"></select
+    ><label for="groups-notes">Gruppennotizen</label
+    ><textarea id="groups-notes" rows="4"></textarea>
+    <p id="groups-origin" class="caption"></p>
+    <div class="toolbar">
+      <button id="groups-apply">Gruppenangaben übernehmen</button
+      ><button id="groups-reload">Gespeicherten Stand laden</button
+      ><span id="groups-draft-status" role="status"></span>
+    </div>
+    <p class="caption">
+      Änderungen werden zuerst als Entwurf gesichert. Übernehmen bestätigt Figuren und Standort als
+      dauerhaften Weltinhalt. „Aus Gruppe entfernen“ erhält die NPC-Figur, ihre Notizen und ihren
+      Kampfverlauf.
+    </p>
+    <details>
+      <summary>Figuren aus dem Katalog hinzufügen</summary>
+      <form id="groups-creature-form" class="toolbar">
+        <label for="groups-creature-search">Kreatur suchen</label
+        ><input id="groups-creature-search" maxlength="1000" /><button>Suchen</button>
+      </form>
+      <div id="groups-creature-results" class="toolbar"></div>
+    </details>
+    <div id="groups-actors"></div>
+  </div>
+</section>

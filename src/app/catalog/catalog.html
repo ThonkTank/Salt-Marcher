@@ -1,0 +1,447 @@
+<section id="catalog" hidden>
+  <div class="catalog-heading">
+    <h2>Katalog und Begegnungen</h2>
+    <p>SRD 5.1 · D&D 2014 · lokal verfügbar</p>
+    <button id="catalog-day-plan" type="button">Abenteuertag mit Beute planen…</button
+    ><button id="catalog-tables" type="button">Begegnungstabellen und Generator</button>
+  </div>
+  <div id="catalog-content-strip" class="toolbar" role="tablist" aria-label="Kataloginhalt">
+    <button
+      id="catalog-monsters-tab"
+      role="tab"
+      aria-selected="true"
+      aria-controls="catalog-monsters"
+    >
+      Monster</button
+    ><button
+      id="catalog-items-tab"
+      role="tab"
+      aria-selected="false"
+      aria-controls="catalog-item-reference"
+      tabindex="-1"
+    >
+      Gegenstände
+    </button>
+  </div>
+  <div id="catalog-monsters" role="tabpanel" class="catalog-columns">
+    <section id="catalog-browser" class="catalog-browser">
+      <form id="catalog-form">
+        <div id="catalog-filters">
+          <div class="catalog-quick-filters">
+            <div>
+              <label for="catalog-search">Monstername</label
+              ><input id="catalog-search" type="search" placeholder="Monster suchen …" />
+            </div>
+            <div>
+              <label for="catalog-type">Typ</label
+              ><select id="catalog-type">
+                <option value="">Alle Typen</option>
+              </select>
+            </div>
+            <div>
+              <label for="catalog-cr-min">HG von</label
+              ><input id="catalog-cr-min" type="number" min="0" step="0.125" placeholder="HG ab" />
+            </div>
+            <div>
+              <label for="catalog-cr-max">HG bis</label
+              ><input id="catalog-cr-max" type="number" min="0" step="0.125" placeholder="HG bis" />
+            </div>
+          </div>
+          <details>
+            <summary>Weitere Filter</summary>
+            <div class="combat-fields">
+              <div>
+                <label for="catalog-size">Größe</label
+                ><select id="catalog-size">
+                  <option value="">Größe: alle</option>
+                </select>
+              </div>
+              <div>
+                <label for="catalog-subtype">Subtyp</label
+                ><select id="catalog-subtype">
+                  <option value="">Subtyp: alle</option>
+                </select>
+              </div>
+              <div>
+                <label for="catalog-habitat">Habitat</label
+                ><select id="catalog-habitat">
+                  <option value="">Habitat: alle</option>
+                </select>
+              </div>
+              <div>
+                <label for="catalog-alignment">Gesinnung</label
+                ><select id="catalog-alignment">
+                  <option value="">Gesinnung: alle</option>
+                </select>
+              </div>
+              <div>
+                <label for="catalog-ac-min">RK min.</label
+                ><input id="catalog-ac-min" type="number" min="0" placeholder="RK ab" />
+              </div>
+              <div>
+                <label for="catalog-ac-max">RK max.</label
+                ><input id="catalog-ac-max" type="number" min="0" placeholder="RK bis" />
+              </div>
+              <div>
+                <label for="catalog-hp-min">HP min.</label
+                ><input id="catalog-hp-min" type="number" min="0" placeholder="HP ab" />
+              </div>
+              <div>
+                <label for="catalog-hp-max">HP max.</label
+                ><input id="catalog-hp-max" type="number" min="0" placeholder="HP bis" />
+              </div>
+              <div>
+                <label for="catalog-movement">Bewegung</label
+                ><input id="catalog-movement" placeholder="Bewegung: Fly, Swim …" />
+              </div>
+              <div>
+                <label for="catalog-senses">Sinne</label
+                ><input id="catalog-senses" placeholder="Sinne: Darkvision …" />
+              </div>
+              <div>
+                <label for="catalog-vulnerabilities">Verwundbarkeit</label
+                ><input id="catalog-vulnerabilities" placeholder="Verwundbarkeit" />
+              </div>
+              <div>
+                <label for="catalog-resistances">Resistenz</label
+                ><input id="catalog-resistances" placeholder="Resistenz" />
+              </div>
+              <div>
+                <label for="catalog-immunities">Schadensimmunität</label
+                ><input id="catalog-immunities" placeholder="Schadensimmunität" />
+              </div>
+              <div>
+                <label for="catalog-condition-immunities">Zustandsimmunität</label
+                ><input id="catalog-condition-immunities" placeholder="Zustandsimmunität" />
+              </div>
+            </div>
+          </details>
+          <input id="catalog-direction" type="hidden" value="asc" />
+        </div>
+        <div class="toolbar">
+          <button type="submit">Suchen</button
+          ><button id="catalog-reset" type="button">Filter zurücksetzen</button>
+        </div>
+      </form>
+      <div
+        id="catalog-filter-chips"
+        class="catalog-filter-chips"
+        aria-label="Aktive Monsterfilter"
+        hidden
+      ></div>
+      <button id="catalog-plan-open" type="button">Encounter-Vorlage ↓</button>
+      <p id="catalog-plan-roster" hidden></p>
+      <div class="catalog-table-scroll">
+        <table id="catalog-table">
+          <thead>
+            <tr>
+              <th><button type="button" data-sort="name">Name</button></th>
+              <th><button type="button" data-sort="cr">HG</button></th>
+              <th>Typ</th>
+              <th>Größe</th>
+              <th><button type="button" data-sort="ac">RK</button></th>
+              <th><button type="button" data-sort="hp">HP</button></th>
+              <th><button type="button" data-sort="xp">XP</button></th>
+            </tr>
+          </thead>
+          <tbody id="catalog-rows"></tbody>
+        </table>
+      </div>
+      <div class="toolbar">
+        <button id="catalog-prev">← Vorherige</button>
+        <p id="catalog-page" role="status"></p>
+        <button id="catalog-next">Nächste →</button>
+      </div>
+      <details>
+        <summary>Quellen und Lizenz</summary>
+        <p id="catalog-credit"></p>
+      </details>
+    </section>
+    <section id="catalog-inspector" class="catalog-inspector">
+      <button id="catalog-results-return" type="button">← Zur Trefferliste</button>
+      <div class="catalog-add-controls">
+        <div class="time-fields">
+          <div>
+            <label for="catalog-quantity">Anzahl</label
+            ><input id="catalog-quantity" type="number" min="1" max="1000" step="1" value="1" />
+          </div>
+          <div>
+            <label class="check-label"
+              ><input id="catalog-grouped" type="checkbox" /> Gemeinsame Initiative</label
+            >
+          </div>
+        </div>
+        <div class="toolbar">
+          <button id="catalog-add" disabled>Zur Vorlage hinzufügen</button
+          ><button id="catalog-live-add" disabled>Für aktuelle Gruppe vorbereiten</button>
+        </div>
+      </div>
+      <p id="catalog-add-result" role="status" hidden></p>
+      <nav id="creature-reading-navigation" class="toolbar" aria-label="Statblock-Leseverlauf">
+        <button id="creature-reading-back" type="button" disabled>← Voriger Statblock</button
+        ><button id="creature-reading-forward" type="button" disabled>Nächster Statblock →</button>
+      </nav>
+      <p id="creature-reading-source" class="caption" role="status"></p>
+      <div class="toolbar">
+        <button id="creature-reading-current" type="button" hidden>
+          Aktuellen Katalogstand ansehen</button
+        ><button id="creature-reading-retry" type="button" hidden>Statblock erneut laden</button>
+      </div>
+      <div id="catalog-detail">
+        <p>Wähle eine Kreatur, um ihren vollständigen Statblock anzusehen.</p>
+      </div>
+    </section>
+  </div>
+  <div id="catalog-item-reference" hidden></div>
+  <section id="encounter-builder">
+    <div class="toolbar">
+      <h2>Encounter zusammenstellen</h2>
+      <button id="catalog-search-open" type="button">Zur Kreatursuche ↑</button>
+    </div>
+    <details id="encounter-library" open>
+      <summary>Gespeicherte Vorlagen</summary>
+      <div class="toolbar"><button id="encounter-new">Neue Vorlage</button></div>
+      <div class="time-fields">
+        <div>
+          <label for="encounter-search">Vorlagen suchen</label
+          ><input id="encounter-search" type="search" />
+        </div>
+        <div>
+          <label for="encounter-list">Vorlage</label
+          ><select id="encounter-list">
+            <option value="">Vorlage auswählen</option>
+          </select>
+        </div>
+      </div>
+    </details>
+    <div id="encounter-editor" hidden>
+      <label for="encounter-name">Name</label><input id="encounter-name" maxlength="1000" />
+      <p id="encounter-assessment" role="status"></p>
+      <p id="encounter-thresholds" class="caption"></p>
+      <div class="toolbar">
+        <button id="encounter-prepare">Mit aktueller Gruppe vorbereiten →</button>
+      </div>
+      <details>
+        <summary>Beschreibung und GM-Notizen</summary>
+        <label for="encounter-notes">Beschreibung und GM-Notizen</label
+        ><textarea id="encounter-notes" rows="3"></textarea>
+      </details>
+      <details id="encounter-party-details">
+        <summary id="encounter-party-summary">Erwartete Party für diese Planung</summary>
+        <div class="toolbar">
+          <button id="encounter-party-current">Aktuelle Party übernehmen</button>
+        </div>
+        <p class="caption">
+          Diese Zeilen dienen nur der Berechnung. Sie ändern keine Figur und keine laufende Gruppe.
+        </p>
+        <div class="toolbar">
+          <button id="encounter-party-add">Freie Partyzeile</button
+          ><button id="encounter-generate" type="button">Vorschläge für diese Party</button>
+        </div>
+        <div id="encounter-party"></div>
+      </details>
+      <h3>Kreaturen</h3>
+      <div id="encounter-entries"></div>
+      <details>
+        <summary>Vorlage kopieren und wiederherstellen</summary>
+        <div class="toolbar">
+          <button id="encounter-save">Eingabe abschließen</button
+          ><button id="encounter-copy">Als unabhängige Kopie speichern</button
+          ><button id="encounter-load">Gespeicherten Stand laden</button>
+        </div>
+      </details>
+      <p class="caption">
+        Änderungen werden automatisch gespeichert. Die Übernahme legt eine eigene Begegnung an; die
+        Vorlage bleibt Vorbereitung. Initiative, Trefferpunkte und Zustände des Kampfes verändern
+        sie nicht.
+      </p>
+    </div>
+  </section>
+
+  <details id="generation-tools">
+    <summary>Begegnungstabellen, Beute und Generator</summary>
+    <section id="generation-workspace" hidden>
+      <div class="toolbar">
+        <h2>Encounter-Tabellen und Generierung</h2>
+        <button id="generation-refresh">Tabellen und Presets aktualisieren</button>
+      </div>
+      <p id="generation-source-status" class="generation-warning" role="status" hidden></p>
+      <div class="preparation-columns">
+        <section>
+          <h3>Gewichtete Quellen</h3>
+          <label for="encounter-table-list">Tabelle</label
+          ><select id="encounter-table-list"></select>
+          <div class="toolbar">
+            <button id="encounter-table-new">Neue Tabelle…</button
+            ><button id="encounter-table-open">Bearbeiten…</button
+            ><button
+              id="encounter-table-use"
+              type="button"
+              aria-label="Nur diese Tabelle für Vorschläge verwenden"
+              disabled
+            >
+              Nur diese nutzen ↓</button
+            ><button id="encounter-table-trash">Papierkorb / Wiederherstellen</button>
+          </div>
+          <label class="check-label"
+            ><input id="tables-trash-visible" type="checkbox" /> Tabellen im Papierkorb
+            zeigen</label
+          >
+          <h3>Wirksames Generatorpreset</h3>
+          <p id="generator-effective"></p>
+          <label for="generator-preset-list">Preset zum Ansehen / Bearbeiten</label
+          ><select id="generator-preset-list"></select
+          ><button id="generator-settings">Generator-Einstellungen…</button>
+          <p class="caption">
+            Kopieren und Speichern weisen ein Preset keiner Kampagne zu. Die Zuweisung bestätigst du
+            im Editor ausdrücklich.
+          </p>
+        </section>
+        <section>
+          <form id="generation-form">
+            <div id="generation-fields">
+              <h3>Neue Vorschläge</h3>
+              <label class="check-label"
+                ><input id="generation-fill" type="checkbox" /> Aktuelle Vorlage auffüllen ·
+                vorhandene Gegner beibehalten</label
+              >
+              <p class="caption">
+                Auffüllen bewertet den festen Bestand zusammen mit den Ergänzungen. Filter gelten
+                nur neuen Gegnern. Jeder Vorschlag wird als unabhängige neue Vorlage übernommen; die
+                Ausgangsvorlage bleibt erhalten.
+              </p>
+              <label class="check-label"
+                ><input id="generation-npc-only" type="checkbox" /> Vorhandene feindliche NPCs
+                verwenden</label
+              >
+              <details>
+                <summary>Verbindliche NPC-Gegner</summary>
+                <p class="caption">
+                  Diese Gegner kommen sicher vor, auch wenn ihr Kreaturentyp nicht im Monsterfilter
+                  oder in der Begegnungstabelle steht. Ihre XP zählen zum Ziel. Jeder hat einen
+                  eigenen Initiativeplatz. Ort, Fraktion, Zustand und verfügbare Bestände bleiben
+                  bindend. Bei mehreren Begegnungsvorschlägen erscheint die Auswahl in jeder
+                  Alternative.
+                </p>
+                <div id="generation-required-npcs"></div>
+              </details>
+              <label class="check-label"
+                ><input id="generation-npc-mixed" type="checkbox" /> Vorhandene NPCs in passenden
+                Tabellengruppen bevorzugen</label
+              >
+              <p class="caption">
+                Gemischter Modus übernimmt verfügbare Namen und ergänzt die übrige Menge aus den
+                gewählten Quellen. Der gesamte Eintrag bleibt innerhalb des Fraktionsbestands.
+              </p>
+              <p class="caption">
+                Benannte Weltfiguren mit Statblock und positiven HP. Ort und Fraktion begrenzen die
+                tatsächlichen Figuren; Tabellen schränken ihre Kreaturtypen ein. Vorschläge kopieren
+                oder reservieren keine NPCs.
+              </p>
+              <label for="generation-title">Titel</label
+              ><input id="generation-title" value="Generierte Begegnung" maxlength="1000" />
+              <div class="time-fields">
+                <div>
+                  <label for="generation-seed">Seed</label
+                  ><input id="generation-seed" value="basalttor-1" required maxlength="1000" />
+                </div>
+                <div>
+                  <label for="generation-count">Vorschläge</label
+                  ><input
+                    id="generation-count"
+                    type="number"
+                    min="1"
+                    max="20"
+                    step="1"
+                    value="1"
+                    required
+                  />
+                </div>
+              </div>
+              <div class="combat-fields">
+                <div>
+                  <label for="generation-difficulty">Schwierigkeit</label
+                  ><select id="generation-difficulty">
+                    <option value="weighted">Nach Preset-Gewichten</option>
+                    <option value="trivial">Trivial</option>
+                    <option value="easy">Leicht</option>
+                    <option value="medium" selected>Mittel</option>
+                    <option value="hard">Schwer</option>
+                    <option value="deadly">Tödlich</option>
+                  </select>
+                </div>
+                <div>
+                  <label for="generation-amount">Menge</label
+                  ><select id="generation-amount">
+                    <option value="standard">Standard</option>
+                    <option value="few">Wenige</option>
+                    <option value="many">Viele</option>
+                    <option value="neutral">Neutral</option>
+                  </select>
+                </div>
+                <div>
+                  <label for="generation-balance">Balance</label
+                  ><select id="generation-balance">
+                    <option value="neutral">Neutral</option>
+                    <option value="even">Gleichmäßig</option>
+                    <option value="varied">Gemischt</option>
+                  </select>
+                </div>
+                <div>
+                  <label for="generation-diversity">Vielfalt</label
+                  ><select id="generation-diversity">
+                    <option value="neutral">Neutral</option>
+                    <option value="low">Niedrig</option>
+                    <option value="high">Hoch</option>
+                  </select>
+                </div>
+              </div>
+              <button id="generation-use-defaults" type="button">Presetvorgaben übernehmen</button>
+              <p id="generation-defaults-source" class="caption"></p>
+              <div class="time-fields">
+                <div>
+                  <label for="generation-habitat">Umgebung</label
+                  ><select id="generation-habitat">
+                    <option value="">Keine Vorgabe</option>
+                  </select>
+                </div>
+                <div>
+                  <label for="generation-time">Tageszeit</label
+                  ><select id="generation-time">
+                    <option value="any">Keine Vorgabe</option>
+                    <option value="day">Tag</option>
+                    <option value="night">Nacht</option>
+                  </select>
+                </div>
+              </div>
+              <label for="generation-xp-ceiling">Maximale XP pro Kreatur (optional)</label
+              ><input id="generation-xp-ceiling" type="number" min="0" step="1" />
+              <fieldset>
+                <legend>Encounter-Tabellen</legend>
+                <div id="generation-tables"></div>
+                <p id="generation-source" class="caption"></p>
+                <p id="generation-catalog-summary" class="caption"></p>
+                <div class="toolbar">
+                  <button id="generation-clear-catalog" type="button" hidden>
+                    Nur Katalogfilter zurücksetzen
+                  </button>
+                </div>
+              </fieldset>
+            </div>
+            <div id="generation-actions">
+              <p id="generation-party-context">
+                Für Vorschläge zuerst eine Vorlage mit Planungsparty öffnen.
+              </p>
+              <button id="generation-plan-open" type="button">Zur Planungsparty</button
+              ><button type="submit">Vorschläge erzeugen</button>
+              <p id="generation-feedback" role="status" aria-live="polite"></p>
+            </div>
+          </form>
+        </section>
+      </div>
+      <label for="generation-history">Gespeicherte Vorschauen</label
+      ><select id="generation-history"></select>
+      <div id="generation-preview"></div>
+    </section>
+  </details>
+</section>

@@ -1,3 +1,4 @@
+import { readWorkspaceMarkup } from '../../tools/desktop-markup.mjs';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtempSync, rmSync, mkdirSync, copyFileSync, readFileSync } from 'node:fs';
@@ -750,7 +751,7 @@ test('failure while recording the second batch member rolls back the entire adop
 
 test('a delayed accepted batch read cannot populate the next plan in the real session UI', async (t) => {
   const x = fixture(t),
-    { window, document } = parseHTML(readFileSync('src/app/workspace/index.html', 'utf8')),
+    { window, document } = parseHTML(readWorkspaceMarkup()),
     saved = { window: globalThis.window, document: globalThis.document };
   Object.assign(globalThis, { window, document });
   const storage = new Map();

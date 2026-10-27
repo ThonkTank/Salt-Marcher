@@ -1,0 +1,264 @@
+<section id="dungeon" hidden>
+  <div class="toolbar">
+    <h2>Dungeon leiten</h2>
+    <button id="dungeon-refresh">Aktualisieren</button
+    ><button id="dungeon-reconcile" hidden>Speicherstand klären</button
+    ><button id="dungeon-binder-live" type="button">Dungeon-Binder lesen…</button
+    ><button id="dungeon-input-discard">Offene Einstellungen verwerfen</button
+    ><button id="dungeon-edit">Zeichnung bearbeiten</button>
+  </div>
+  <p id="dungeon-context"></p>
+  <div class="toolbar">
+    <label
+      >Zielraum
+      <select id="dungeon-room"></select></label
+    ><button id="dungeon-place">Gruppe am Ziel platzieren</button
+    ><button id="dungeon-leave">Dungeon verlassen</button
+    ><button id="dungeon-reveal">Zielraum der Gruppe offenlegen</button>
+  </div>
+  <p id="dungeon-target"></p>
+  <article id="dungeon-current-key" aria-labelledby="dungeon-key-heading">
+    <h3 id="dungeon-key-heading">Aktueller Raum</h3>
+    <div id="dungeon-key-description"></div>
+  </article>
+  <div class="toolbar">
+    <label
+      >Bewegung
+      <select id="dungeon-movement">
+        <option value="walk">Gehen</option>
+        <option value="crawl">Kriechen</option>
+        <option value="fly">Fliegen</option>
+        <option value="swim">Schwimmen</option>
+        <option value="climb">Klettern</option>
+      </select></label
+    ><label
+      >Zielhöhe in 5-Fuß-Schritten
+      <input id="dungeon-height-step" type="number" value="0" step="1" /></label
+    ><label
+      >Wirksames Tempo m/min
+      <input id="dungeon-speed" type="number" value="18" min=".1" step="any" /></label
+    ><label
+      >Zeitfaktor <input id="dungeon-factor" type="number" value="1" min=".01" step="any" /></label
+    ><label>Gesamtdauer s (optional) <input id="dungeon-duration" type="number" min="1" /></label
+    ><button id="dungeon-plan">Weg vorbereiten</button
+    ><button id="dungeon-confirm" disabled>Route bestätigen</button>
+  </div>
+  <fieldset id="dungeon-pace-controls" hidden>
+    <legend>Gruppentempo und Erkundungsrunde</legend>
+    <div class="toolbar">
+      <label
+        >Erkundungsrunde<select id="dungeon-round-preset">
+          <option value="60">1 Minute</option>
+          <option value="300">5 Minuten</option>
+          <option value="600" selected>10 Minuten</option>
+          <option value="900">15 Minuten</option>
+          <option value="1800">30 Minuten</option>
+          <option value="custom">Eigene Dauer</option>
+        </select></label
+      ><label
+        >Rundendauer in Sekunden<input
+          id="dungeon-round-seconds"
+          type="number"
+          min="1"
+          step="1"
+          value="600"
+      /></label>
+    </div>
+    <p id="dungeon-pace-summary" role="status"></p>
+    <label
+      >Gruppenvorgabe m/min (leer: langsamste Figur)<input
+        id="dungeon-group-speed"
+        type="number"
+        min="0"
+        max="1000"
+        step="any"
+        placeholder="Automatisch"
+    /></label>
+    <div id="dungeon-pace-members"></div>
+    <button id="dungeon-pace-save" type="button">Reisevorgaben übernehmen</button>
+    <p class="caption">
+      Ausgenommene Figuren reisen weiter mit. Kläre Tragen und Transport am Tisch. Einzel- und
+      Gruppenvorgaben sind effektive m/min für die gewählte Bewegung. Ohne Vorgabe: Profilbewegung
+      in ft × 3,048; Kriechen, Klettern und Schwimmen kosten doppelte Bewegung. Für Flug oder
+      besondere Bewegungsraten ein effektives Tempo vorgeben. Vorgaben ändern keine
+      Charakterprofile.
+    </p>
+  </fieldset>
+  <p id="dungeon-preview"></p>
+  <p id="dungeon-route-status"></p>
+  <p id="dungeon-round-status" role="status"></p>
+  <p class="caption">
+    Wiedergabe: nominal eine Echtsekunde je Erkundungsrunde bei 1×. Nur Bewegung bucht ihre
+    berechnete Zeit; Ankunft oder GM-Hinweis beendet die Runde früher. Ein langer Rasterabschnitt
+    bleibt bis zum Erreichen der nächsten Zelle als Teilfortschritt gespeichert. Freie
+    Tischhandlungen erhalten keine automatischen Zeitkosten.
+  </p>
+  <div class="toolbar">
+    <button id="dungeon-play" type="button">Wiedergabe starten</button
+    ><button id="dungeon-round-step" type="button">Eine Erkundungsrunde</button
+    ><label
+      >Wiedergabe<select id="dungeon-play-speed">
+        <option value="1">1×</option>
+        <option value="2">2×</option>
+        <option value="5">5×</option>
+        <option value="10">10×</option>
+      </select></label
+    ><button id="dungeon-step">Ein Rasterpunkt + Zeit</button
+    ><button id="dungeon-pause">Pause</button><button id="dungeon-end">Route beenden</button
+    ><button id="dungeon-trigger">Falle auslösen</button
+    ><button id="dungeon-authorize">Passage als GM freigeben</button>
+  </div>
+  <div class="toolbar">
+    <label
+      >NPC
+      <select id="dungeon-npc"></select></label
+    ><button id="dungeon-npc-place">NPC am Ziel platzieren</button>
+  </div>
+  <details id="dungeon-senses">
+    <summary>Wahrnehmung, Geräusche und Spuren</summary>
+    <div class="toolbar">
+      <label
+        >Aktives Ergebnis
+        <input id="dungeon-sense-score" type="number" min="-100" max="100" step="any" /></label
+      ><label
+        >Hörweite m
+        <input id="dungeon-hearing" type="number" min="0" max="1000" value="18" step="any" /></label
+      ><label
+        >Spuren-SG Override
+        <input id="dungeon-track-dc" type="number" min="0" max="100" step="any" /></label
+      ><label>GM-Grund <input id="dungeon-sense-reason" maxlength="1000" /></label>
+    </div>
+    <div class="toolbar">
+      <button id="dungeon-perceive">Passiv auswerten</button
+      ><button id="dungeon-active-score">Aktives Ergebnis verwenden</button
+      ><button id="dungeon-clear-score">Aktives Ergebnis löschen</button
+      ><button id="dungeon-search-tracks">Spuren suchen und Entdeckung bestätigen</button
+      ><button id="dungeon-force-known">Gewählten NPC als bekannt setzen</button
+      ><button id="dungeon-force-unknown">Gewählten NPC verbergen</button
+      ><button id="dungeon-reevaluate">NPC-Override aufheben</button>
+    </div>
+    <div class="toolbar">
+      <label
+        >Geräusch am Ziel
+        <input
+          id="dungeon-sound-text"
+          maxlength="1000"
+          value="Ein Ruf hallt durch den Dungeon" /></label
+      ><label
+        >Reichweite m
+        <input
+          id="dungeon-sound-range"
+          type="number"
+          min="0"
+          max="1000"
+          value="18"
+          step="any" /></label
+      ><label>SG <input id="dungeon-sound-dc" type="number" value="10" step="any" /></label
+      ><button id="dungeon-sound-emit">Geräusch bestätigen</button>
+    </div>
+    <fieldset id="dungeon-trace-rules">
+      <legend>Bewegungs- und Spurenprofil</legend>
+      <label
+        >Für
+        <select id="dungeon-trace-owner">
+          <option value="party">Fokussierte Gruppe</option>
+          <option value="npc">Gewählter NPC</option>
+        </select></label
+      ><label><input id="dungeon-trace-generate" type="checkbox" checked /> Spuren erzeugen</label
+      ><label
+        >Bewegung
+        <select id="dungeon-trace-movement">
+          <option value="walk">Gehen</option>
+          <option value="sneak">Schleichen</option>
+          <option value="run">Rennen</option>
+          <option value="crawl">Kriechen</option>
+          <option value="swim">Schwimmen</option>
+          <option value="fly">Fliegen</option>
+        </select></label
+      ><label
+        >Oberfläche
+        <select id="dungeon-trace-surface">
+          <option value="auto">Raum / Terrain</option>
+          <option value="stone">Stein</option>
+          <option value="mud">Schlamm</option>
+          <option value="sand">Sand</option>
+          <option value="snow">Schnee</option>
+          <option value="water">Wasser</option>
+          <option value="vegetation">Vegetation</option>
+        </select></label
+      ><label
+        >Umwelt
+        <select id="dungeon-trace-environment">
+          <option value="dry">Trocken</option>
+          <option value="rain">Regen</option>
+          <option value="wind">Wind</option>
+          <option value="snow">Schneefall</option>
+        </select></label
+      ><label
+        >Stärke 0–100
+        <input id="dungeon-trace-strength" type="number" value="100" min="0" max="100" /></label
+      ><label>SG Override <input id="dungeon-trace-sg" type="number" min="0" max="100" /></label
+      ><label>Lebensdauer s Override <input id="dungeon-trace-life" type="number" min="1" /></label
+      ><label
+        >Verlust je Stunde Override
+        <input id="dungeon-trace-decay" type="number" min="0" step="any" /></label
+      ><button id="dungeon-trace-rules-save">Profil übernehmen</button>
+    </fieldset>
+    <fieldset>
+      <legend>Manuelle Fährte und Verfolgung</legend>
+      <button id="dungeon-trace-start">Gewähltes Ziel als Spuranfang merken</button
+      ><span id="dungeon-trace-start-label"></span
+      ><label
+        >Spielertext
+        <input id="dungeon-manual-trace-text" value="Krallenspuren" maxlength="1000" /></label
+      ><label
+        >SG <input id="dungeon-manual-trace-dc" type="number" value="10" min="0" max="100" /></label
+      ><label
+        >Stärke
+        <input
+          id="dungeon-manual-trace-strength"
+          type="number"
+          value="100"
+          min="0"
+          max="100" /></label
+      ><label
+        ><input id="dungeon-trace-source-known" type="checkbox" /> Gewählter NPC ist bekannte
+        Quelle</label
+      ><button id="dungeon-trace-add">Spur bis zum gewählten Ziel ergänzen</button
+      ><label
+        >Verfolgungs-Ergebnis
+        <input id="dungeon-pursuit-score" type="number" value="15" min="-100" max="100" /></label
+      ><label
+        >Prüfung
+        <select id="dungeon-pursuit-skill">
+          <option value="perception">Wahrnehmung</option>
+          <option value="survival">Überleben</option>
+        </select></label
+      ><label
+        >Richtung
+        <select id="dungeon-pursuit-direction">
+          <option value="forward">Vorwärts</option>
+          <option value="backward">Rückwärts</option>
+        </select></label
+      >
+      <div id="dungeon-pursuit-state"></div>
+      <button id="dungeon-pursuit-check">Neue Prüfung / Fortsetzung bestätigen</button>
+    </fieldset>
+    <div id="dungeon-observations"></div>
+    <div id="dungeon-tracks"></div>
+    <div id="dungeon-passage-links"></div>
+    <section id="dungeon-trigger-events"></section>
+    <section id="dungeon-content-contexts"></section>
+    <div id="dungeon-encounters"></div>
+    <div id="dungeon-sense-log"></div>
+  </details>
+  <details>
+    <summary>NPC-Wege und Spuren</summary>
+    <div id="dungeon-activity"></div>
+  </details>
+  <p>
+    NPC-Raumpositionen benötigen eine Ortszuordnung der Zeichnung in Welt und Spielabend. Spieler
+    sehen bekannte Geometrie und aktuelle Wahrnehmung. Automatisches Licht bedeutet im Dungeon
+    Dunkelheit; Lichtquellen und Dunkelsicht gelten.
+  </p>
+</section>

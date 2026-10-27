@@ -1,31 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { format } from 'prettier';
-import { aliasSourceImport, sourceAssignedLiteral } from '../helpers/source.mjs';
-
-test('import probes match module and binding rather than quotes or spacing', async () => {
-  const source = `import {other, chooseTextReference} from './text-reference-ui';const text='chooseTextReference';`;
-  for (const code of [
-    source,
-    await format(source, { parser: 'typescript', singleQuote: false, printWidth: 25 }),
-  ]) {
-    const aliased = aliasSourceImport(
-      code,
-      './text-reference-ui',
-      'chooseTextReference',
-      'realChooseTextReference',
-    );
-    assert.match(aliased, /chooseTextReference as realChooseTextReference/);
-    assert.match(
-      aliased,
-      /const text =?\s*['"]chooseTextReference['"]|const text=['"]chooseTextReference['"]/,
-    );
-    assert.throws(
-      () => aliasSourceImport(code, './wrong', 'chooseTextReference', 'real'),
-      /Expected one import/,
-    );
-  }
-});
+import { sourceAssignedLiteral } from '../helpers/source.mjs';
 
 test('form probes read the exact literal and reject missing or dynamic markup', async () => {
   const source = 'class Form { mount(){ this.panel.innerHTML=`<p>Kept text</p>`; } }';

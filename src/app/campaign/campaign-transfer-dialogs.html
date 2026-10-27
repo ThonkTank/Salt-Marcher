@@ -1,0 +1,37 @@
+<dialog id="campaign-manager-dialog">
+  <div class="toolbar">
+    <h2>Kampagnenpakete und Kopien</h2>
+    <button id="campaign-manager-close">Schließen</button>
+  </div>
+  <p id="campaign-transfer-source"></p>
+  <div class="toolbar">
+    <button id="campaign-export">Geöffnete Kampagne exportieren</button
+    ><button id="campaign-copy">Unabhängige Kopie</button
+    ><button id="campaign-import-package">Kampagnenpaket importieren</button
+    ><button id="campaign-transfer-cancel-job" hidden>Übertragung abbrechen</button
+    ><button id="campaign-transfer-check" hidden>Übernahme prüfen</button>
+  </div>
+  <p id="campaign-transfer-progress" role="status"></p>
+</dialog>
+<dialog id="campaign-transfer-dialog">
+  <h2 id="campaign-transfer-heading">Kampagne unabhängig übernehmen</h2>
+  <p id="campaign-transfer-origin"></p>
+  <p id="campaign-transfer-summary"></p>
+  <p>Die neue Kampagne lässt sich getrennt bearbeiten. Vorhandene Kampagnen bleiben erhalten.</p>
+  <form id="campaign-transfer-form">
+    <label for="campaign-transfer-name">Name der neuen Kampagne</label
+    ><input id="campaign-transfer-name" required maxlength="1000" />
+    <details>
+      <summary>Inhalt des Pakets</summary>
+      <p id="campaign-transfer-metadata" class="caption"></p>
+      <div id="campaign-transfer-contents"></div>
+    </details>
+    <p id="campaign-transfer-problems"></p>
+    <div id="campaign-transfer-conflicts"></div>
+    <div class="actions">
+      <button id="campaign-transfer-cancel" type="button">Abbrechen</button
+      ><button id="campaign-transfer-check-preview" type="button" hidden>Übernahme prüfen</button
+      ><button id="campaign-transfer-accept" type="submit">Neue Kampagne übernehmen</button>
+    </div>
+  </form>
+</dialog>

@@ -1,0 +1,528 @@
+<section id="combat-panel" hidden>
+  <div class="toolbar combat-heading">
+    <h2 id="combat-title">Begegnung führen</h2>
+    <button id="combat-scene" type="button">Zur Szene</button>
+    <details id="combat-history-details">
+      <summary>Andere Kämpfe / aktualisieren</summary>
+      <div class="toolbar">
+        <select id="combat-history" aria-label="Begegnung auswählen" hidden></select
+        ><button id="combat-history-open" type="button">Alle Kämpfe suchen</button
+        ><button id="combat-refresh">Kampf aktualisieren</button>
+      </div>
+    </details>
+  </div>
+  <p id="combat-load-status" role="status" hidden></p>
+  <button id="combat-load-retry" type="button" hidden>Erneut laden</button>
+  <p id="combat-status" role="status"></p>
+  <p id="combat-assessment" class="caption"></p>
+  <p id="combat-shared-notice" class="caption" role="status"></p>
+  <details id="combat-creation"><summary>Weitere Begegnung vorbereiten</summary></details>
+  <section id="combat-resolution" hidden></section>
+  <div id="combat-workspace" hidden>
+    <form id="combat-party-form" hidden>
+      <div class="toolbar">
+        <label for="combat-party-select">Party-Figur hinzufügen</label
+        ><select id="combat-party-select"></select
+        ><label for="combat-party-initiative">Initiative (optional)</label
+        ><input
+          id="combat-party-initiative"
+          type="number"
+          step="1"
+          min="-1000000"
+          max="1000000"
+          placeholder="Bisherige / 0"
+        /><button type="submit">Zur Initiative hinzufügen</button>
+      </div>
+      <p class="caption">
+        Aktuelle HP und Zustände werden übernommen. Ohne neue Initiative erhält eine Rückkehr den
+        früheren Wert; neue Figuren beginnen bei 0. Der laufende Zug bleibt erhalten.
+      </p>
+    </form>
+    <div id="combat-controls" class="toolbar">
+      <button id="combat-initiative-open" type="button">Initiative eintragen…</button
+      ><button id="combat-start">Kampf beginnen</button
+      ><button id="combat-area-open" type="button">Flächenschaden…</button
+      ><button id="combat-next">Nächster Zug →</button><button id="combat-undo">Rückgängig</button
+      ><button id="combat-finish">Kampf abschließen…</button>
+    </div>
+    <dialog id="combat-add-dialog" aria-labelledby="combat-add-title">
+      <div class="toolbar">
+        <h2 id="combat-add-title">Verstärkung hinzufügen</h2>
+        <button id="combat-add-close" type="button">Schließen</button>
+      </div>
+      <p id="combat-add-context" class="caption"></p>
+      <p id="combat-add-status" class="caption" role="status"></p>
+      <div id="combat-reinforcement">
+        <label for="combat-creature-source">Verstärkung aus</label
+        ><select id="combat-creature-source">
+          <option value="group">Vorhandenen Trupp verstärken</option>
+          <option value="catalog">Kreatur aus dem Katalog hinzufügen</option>
+        </select>
+        <form id="combat-creature-search-form">
+          <div class="toolbar">
+            <label for="combat-creature-search">Monstername</label
+            ><input
+              id="combat-creature-search"
+              type="search"
+              maxlength="1000"
+              placeholder="Goblin, Bugbear …"
+            /><button type="submit">Monster suchen</button>
+          </div>
+        </form>
+        <p id="combat-creature-status" class="caption" role="status"></p>
+        <form id="combat-creature-form">
+          <div class="reinforcement-pick">
+            <div>
+              <label id="combat-creature-select-label" for="combat-creature-select"
+                >Vorhandener Trupp</label
+              ><select id="combat-creature-select"></select>
+            </div>
+            <div>
+              <label for="combat-creature-count">Anzahl</label
+              ><input
+                id="combat-creature-count"
+                type="number"
+                min="1"
+                max="1000"
+                step="1"
+                value="1"
+                required
+              />
+            </div>
+          </div>
+          <label id="combat-creature-grouped-field" class="check-label"
+            ><input id="combat-creature-grouped" type="checkbox" /> Neue Teilnehmer teilen eine
+            Initiative</label
+          >
+          <div class="reinforcement-confirm">
+            <div id="combat-creature-initiative-field">
+              <label for="combat-creature-initiative">Initiative (optional)</label
+              ><input
+                id="combat-creature-initiative"
+                type="number"
+                min="-1000000"
+                max="1000000"
+                step="1"
+                placeholder="0"
+              />
+            </div>
+            <button id="combat-creature-add" type="submit">Verstärkung hinzufügen</button
+            ><button id="combat-preparation-initiative" type="button" hidden>
+              Initiative eintragen…
+            </button>
+          </div>
+          <p id="combat-creature-explanation" class="caption"></p>
+        </form>
+      </div>
+      <details>
+        <summary>Freier Eintrag ohne Statblock</summary>
+        <p class="caption">
+          Für eigene Werte. XP sind zunächst unbekannt und können am Teilnehmer ergänzt werden.
+        </p>
+        <form id="combat-add-form">
+          <div class="combat-fields">
+            <div>
+              <label for="enemy-name">Name</label
+              ><input id="enemy-name" required maxlength="900" placeholder="Goblin" />
+            </div>
+            <div>
+              <label for="enemy-count">Anzahl</label
+              ><input
+                id="enemy-count"
+                type="number"
+                min="1"
+                max="100"
+                step="1"
+                value="1"
+                required
+              />
+            </div>
+            <div>
+              <label for="enemy-hp">HP pro Teilnehmer</label
+              ><input id="enemy-hp" type="number" min="1" step="1" value="7" required />
+            </div>
+            <div>
+              <label for="enemy-ac">Rüstungsklasse</label
+              ><input id="enemy-ac" type="number" min="0" step="1" value="15" required />
+            </div>
+            <div>
+              <label for="enemy-bonus">Initiativebonus</label
+              ><input id="enemy-bonus" type="number" step="1" value="2" required />
+            </div>
+          </div>
+          <label class="check-label"
+            ><input id="enemy-grouped" type="checkbox" /> Gemeinsame Initiative, individuelle
+            HP</label
+          ><button type="submit">Teilnehmer hinzufügen</button>
+        </form>
+      </details>
+    </dialog>
+    <div class="combat-desk">
+      <div class="combat-roster">
+        <button id="combat-add-open" type="button">Verstärkung hinzufügen…</button>
+        <div class="combat-table-scroll">
+          <table id="combat-table">
+            <thead>
+              <tr>
+                <th>Teilnehmer</th>
+                <th>Init.</th>
+                <th>RK</th>
+                <th>HP</th>
+                <th>Zustand</th>
+              </tr>
+            </thead>
+            <tbody id="combat-rows"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="combat-detail">
+        <p id="combat-selection-hint" class="caption">
+          Init. anklicken oder „Initiative eintragen“ öffnen; ein Feld je Figur oder Trupp. Monster
+          würfeln ändert keine Party-Werte. HP anklicken für Schaden oder Heilung.
+        </p>
+        <section id="combat-hit-effect" hidden></section>
+        <dialog id="combat-area-effect" aria-label="Flächenschaden" hidden></dialog>
+        <section id="combat-attack-effect" hidden>
+          <h3 id="combat-attack-result"></h3>
+          <div class="toolbar">
+            <label for="combat-attack-target">Ziel</label
+            ><select id="combat-attack-target"></select
+            ><button id="combat-attack-roll" type="button">Angriff würfeln</button
+            ><span id="combat-attack-damage" class="toolbar"></span
+            ><button id="combat-attack-discard" type="button">Verwerfen</button>
+          </div>
+          <p id="combat-attack-hint" class="caption"></p>
+        </section>
+        <section id="combat-save-effect" hidden>
+          <h3 id="combat-save-result"></h3>
+          <div class="toolbar">
+            <label for="combat-save-target">Ziel</label
+            ><select id="combat-save-target"></select
+            ><label for="combat-save-modifier">Modifikator</label
+            ><input
+              id="combat-save-modifier"
+              type="number"
+              min="-1000"
+              max="1000"
+              step="1"
+              value="0"
+            /><button id="combat-save-roll" type="button">W20 würfeln</button
+            ><span id="combat-save-damage" class="toolbar"></span
+            ><button id="combat-save-repeat" type="button">Weiteres Ziel</button
+            ><button id="combat-save-discard" type="button">Abschließen</button>
+          </div>
+          <p class="caption">
+            Wähle das Ziel der Statblock-Aktion und trage seinen Rettungswurf- oder
+            Probenmodifikator ein. Für Flächeneffekte kannst du danach weitere Ziele mit demselben
+            SG abhandeln.
+          </p>
+        </section>
+        <section id="combat-roll-effect" hidden>
+          <h3 id="combat-roll-effect-result"></h3>
+          <div class="toolbar">
+            <label for="combat-roll-target">Ziel</label
+            ><select id="combat-roll-target"></select
+            ><button id="combat-roll-damage" type="button">Vollen Schaden anwenden</button
+            ><button id="combat-roll-half" type="button">Halbieren</button
+            ><button id="combat-roll-double" type="button">Verdoppeln</button
+            ><label class="check-label"
+              ><input id="combat-roll-keep" type="checkbox" /> Für weitere Ziele offen halten</label
+            ><button id="combat-roll-discard" type="button">Verwerfen</button>
+          </div>
+          <p class="caption">
+            Wähle das Ziel und entscheide ausdrücklich, wie der gewürfelte Schaden angewendet wird.
+            Bei Flächenschaden bleibt derselbe Wurf auf Wunsch für weitere Ziele verfügbar.
+            Temporäre HP werden zuerst verbraucht.
+          </p>
+        </section>
+        <section id="combat-concentration-effect" hidden>
+          <h3 id="combat-concentration-result"></h3>
+          <div class="toolbar">
+            <label for="combat-concentration-modifier">Konstitutions-Rettungswurf</label
+            ><input
+              id="combat-concentration-modifier"
+              type="number"
+              min="-1000"
+              max="1000"
+              step="1"
+              value="0"
+              aria-label="Modifikator"
+            /><button id="combat-concentration-roll" type="button">W20 würfeln</button
+            ><button id="combat-concentration-pass" type="button">Bestanden</button
+            ><button id="combat-concentration-fail" type="button">Konzentration verloren</button>
+          </div>
+          <p class="caption">
+            Der SG ist 10 oder die Hälfte des einzelnen Schadens, je nachdem, welcher Wert höher
+            ist. Mehrere Treffer bleiben als einzelne Prüfungen erhalten.
+          </p>
+        </section>
+        <details id="combat-drafts">
+          <summary>Offene Kampfeingaben</summary>
+          <p>
+            Eingaben bleiben als Entwurf erhalten, bis du sie übernimmst oder verwirfst. Auch
+            entfernte Teilnehmer behalten ihre offenen Werte.
+          </p>
+          <button id="combat-draft-refresh" type="button">Liste aktualisieren</button
+          ><button id="combat-draft-retry" type="button">Entwürfe sichern</button>
+          <div id="combat-draft-list"></div>
+          <button id="combat-draft-more" type="button" hidden>Weitere Entwürfe</button
+          ><textarea
+            id="combat-draft-preview"
+            aria-label="Gesicherte Entwurfswerte zum Kopieren"
+            readonly
+            rows="10"
+            hidden
+          ></textarea>
+        </details>
+        <div id="combat-participant" hidden>
+          <h3 id="combat-selected-name"></h3>
+          <p id="fighter-quick-health" role="status"></p>
+          <div class="combat-editor-columns">
+            <div class="combat-hp-actions">
+              <label for="fighter-amount">Schaden / Heilung</label
+              ><input id="fighter-amount" type="number" min="1" step="1" value="1" />
+              <div class="toolbar">
+                <button id="fighter-damage">Schaden</button
+                ><button id="fighter-heal">Heilen</button>
+              </div>
+              <section id="fighter-death-saves" hidden>
+                <h4>Todesrettungswürfe</h4>
+                <p id="fighter-death-summary" role="status"></p>
+                <div class="toolbar">
+                  <button id="fighter-death-roll" type="button">W20 würfeln</button
+                  ><button
+                    id="fighter-death-success"
+                    type="button"
+                    aria-label="Todesrettung: Erfolg eintragen"
+                  >
+                    Erfolg</button
+                  ><button
+                    id="fighter-death-failure"
+                    type="button"
+                    aria-label="Todesrettung: Fehlschlag eintragen"
+                  >
+                    Fehlschlag
+                  </button>
+                </div>
+                <details id="fighter-death-other">
+                  <summary>Sonderfälle und Korrektur</summary>
+                  <p class="caption">
+                    Wirksamer Schaden bei 0 HP zählt als ein Fehlschlag. Bei „Treffer eintragen“
+                    zählt ein kritischer Treffer automatisch doppelt; bei freiem Schaden den zweiten
+                    Fehlschlag ergänzen. Restschaden ab den maximalen HP markiert den Tod.
+                  </p>
+                  <div class="toolbar">
+                    <button id="fighter-death-natural-20" type="button">Natürliche 20</button
+                    ><button id="fighter-death-natural-1" type="button">Natürliche 1</button
+                    ><button id="fighter-death-stabilize" type="button">Stabilisieren</button
+                    ><button id="fighter-death-dead" type="button">Als tot markieren</button
+                    ><button id="fighter-death-reset" type="button">Zurücksetzen</button>
+                  </div>
+                </details>
+              </section>
+              <section id="fighter-revival" hidden>
+                <h4>Ins Leben zurückholen</h4>
+                <p>
+                  Erst verwenden, wenn ein Zauber oder anderer Effekt die Figur wiederbelebt hat.
+                  Voraussetzungen und weitere Folgen am Tisch klären.
+                </p>
+                <label for="fighter-revive-hp">HP nach Wiederbelebung</label
+                ><input id="fighter-revive-hp" type="number" min="1" step="1" value="1" /><button
+                  id="fighter-revive"
+                  type="button"
+                >
+                  Ins Leben zurückholen
+                </button>
+              </section>
+              <details id="fighter-condition-panel">
+                <summary>Zustände und Konzentration</summary>
+                <div
+                  id="fighter-condition-shortcuts"
+                  class="condition-shortcuts toolbar"
+                  aria-label="Standardzustände"
+                ></div>
+                <p id="fighter-condition-immunity" class="caption" hidden></p>
+                <p id="fighter-condition-draft-hint" class="caption" role="status" hidden>
+                  Offene Werte zuerst übernehmen oder gespeicherte Werte laden. Danach sind die
+                  Zustandskürzel wieder verfügbar.
+                </p>
+              </details>
+              <p id="fighter-healing-hint" class="caption">
+                Schaden verbraucht zuerst temporäre HP. Heilung endet bei den maximalen HP.
+              </p>
+              <section id="fighter-actions" hidden aria-label="Monsteraktionen"></section>
+              <details id="fighter-values">
+                <summary>Initiative und Werte bearbeiten</summary>
+                <form id="combat-participant-form">
+                  <div class="combat-fields">
+                    <div id="fighter-group-name-field">
+                      <label for="fighter-group-name">Truppname · gesamte Initiativegruppe</label
+                      ><input
+                        id="fighter-group-name"
+                        maxlength="120"
+                        placeholder="z. B. Schützen"
+                      />
+                    </div>
+                    <div>
+                      <label for="fighter-name">Name</label
+                      ><input id="fighter-name" required maxlength="1000" />
+                    </div>
+                    <div>
+                      <label for="fighter-initiative">Initiative</label
+                      ><input
+                        id="fighter-initiative"
+                        type="text"
+                        inputmode="numeric"
+                        step="1"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label for="fighter-bonus">Initiativebonus</label
+                      ><input
+                        id="fighter-bonus"
+                        type="text"
+                        inputmode="numeric"
+                        step="1"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label for="fighter-ac">Rüstungsklasse</label
+                      ><input
+                        id="fighter-ac"
+                        placeholder="offen"
+                        type="text"
+                        inputmode="numeric"
+                        min="0"
+                        step="1"
+                      />
+                    </div>
+                    <div>
+                      <label for="fighter-hp">Aktuelle HP</label
+                      ><input
+                        id="fighter-hp"
+                        type="text"
+                        inputmode="numeric"
+                        min="0"
+                        step="1"
+                        placeholder="noch offen"
+                      />
+                    </div>
+                    <div>
+                      <label for="fighter-max-hp">Maximale HP</label
+                      ><input
+                        id="fighter-max-hp"
+                        type="text"
+                        inputmode="numeric"
+                        min="1"
+                        step="1"
+                        placeholder="noch offen"
+                      />
+                    </div>
+                    <div>
+                      <label for="fighter-temp-hp">Temporäre HP</label
+                      ><input
+                        id="fighter-temp-hp"
+                        type="text"
+                        inputmode="numeric"
+                        min="0"
+                        step="1"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label for="fighter-conditions">Zustände / Effekte</label
+                      ><input
+                        id="fighter-conditions"
+                        maxlength="4000"
+                        placeholder="Liegend, vergiftet …"
+                      />
+                    </div>
+                  </div>
+                  <div class="time-fields">
+                    <div>
+                      <label for="fighter-xp">XP pro Kreatur (optional)</label
+                      ><input id="fighter-xp" type="text" inputmode="numeric" min="0" step="1" />
+                    </div>
+                    <div>
+                      <label class="check-label"
+                        ><input id="fighter-counted" type="checkbox" checked /> Für Gegneranzahl
+                        mitzählen</label
+                      >
+                    </div>
+                  </div>
+                  <label class="check-label"
+                    ><input id="fighter-concentration" type="checkbox" /> Konzentriert sich</label
+                  >
+                  <p id="fighter-health-hint" role="status" hidden>
+                    HP noch offen. Initiative und Zustände kannst du führen; für Schaden oder
+                    Heilung aktuelle und maximale HP eintragen.
+                  </p>
+                  <p id="fighter-draft-status" role="status"></p>
+                  <button type="submit">Werte übernehmen</button
+                  ><button id="fighter-reload" type="button">Gespeicherte Werte laden</button>
+                  <p class="caption">
+                    Änderungen an diesen Feldern werden mit „Werte übernehmen“ gespeichert.
+                  </p>
+                </form>
+              </details>
+              <details id="fighter-statblock" hidden>
+                <summary>Vollständiger Statblock</summary>
+                <div id="fighter-statblock-content"></div>
+              </details>
+              <p id="fighter-concentration-hint" hidden>
+                Konzentration: Nach Schaden erscheint die Rettungsprüfung oben im Kampf. Kläre sie
+                vor dem nächsten Zug.
+              </p>
+              <section id="fighter-effects" hidden>
+                <h4>Rundeneffekte</h4>
+                <div id="fighter-effect-list"></div>
+                <form id="fighter-effect-form">
+                  <label for="fighter-effect-name">Effekt</label
+                  ><input
+                    id="fighter-effect-name"
+                    maxlength="500"
+                    required
+                    placeholder="Gesegnet, verlangsamt …"
+                  />
+                  <div class="toolbar">
+                    <label for="fighter-effect-rounds">Runden</label
+                    ><input
+                      id="fighter-effect-rounds"
+                      type="number"
+                      min="1"
+                      max="1000"
+                      step="1"
+                      value="1"
+                      required
+                    /><label for="fighter-effect-tick">Ablauf</label
+                    ><select id="fighter-effect-tick">
+                      <option value="end">Am Ende dieses Zugs</option>
+                      <option value="start">Am Anfang dieses Zugs</option></select
+                    ><button type="submit">Timer hinzufügen</button>
+                  </div>
+                </form>
+              </section>
+              <button id="fighter-visibility" type="button" hidden>
+                Auf Spieleranzeige verbergen</button
+              ><button id="fighter-remove">Aus Initiative entfernen</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <details id="combat-notes-details">
+      <summary>Titel und Kampfnotizen</summary>
+      <form id="combat-notes-form">
+        <label for="combat-edit-title">Titel</label
+        ><input id="combat-edit-title" maxlength="1000" /><label for="combat-notes">Notizen</label
+        ><textarea id="combat-notes" rows="4"></textarea>
+        <p id="combat-notes-draft-status" role="status"></p>
+        <button type="submit">Kampfnotizen speichern</button
+        ><button id="combat-notes-reload" type="button">Gespeicherten Stand laden</button>
+      </form>
+    </details>
+    <p id="combat-final-notes" hidden></p>
+  </div>
+</section>

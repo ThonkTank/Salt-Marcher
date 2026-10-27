@@ -7,7 +7,12 @@ import { spawn, execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import path from 'node:path';
 import os from 'node:os';
-import { openDesktopKeyFromAtlas } from './qa-key-entry.mjs';
+import {
+  selectDesktopKeyRoom,
+  addDesktopKeyRoom,
+  searchDesktopKeyRooms,
+  openDesktopKeyFromAtlas,
+} from './qa-key-entry.mjs';
 const root = process.cwd(),
   require = createRequire(root + '/package.json'),
   { _electron } = require('playwright-core');
@@ -53,7 +58,8 @@ await runNativeProbe(
       errors = [],
       inspections = [],
       keyChecks = [],
-      freshChecks = [];
+      freshChecks = [],
+      searchChecks = [];
     const zoom = Number(process.env.GM_QA_ZOOM ?? 2),
       sivCorrection = 'Dritte Nacht am Fährsteg: Siv spricht erst, wenn Varo außer Hörweite ist.',
       questCorrection =
@@ -148,7 +154,7 @@ await runNativeProbe(
     async function inspect(origin, passage, name, escape = false) {
       const a = page.locator('#note-gm'),
         body = await a.inputValue(),
-        query = await page.locator('#key-search').inputValue(),
+        query = await page.locator('#atlas-search').inputValue(),
         roomText = await page.locator('#key-gm-notes').inputValue();
       await a.click();
       await a.press('Control+Home');
@@ -186,7 +192,7 @@ await runNativeProbe(
         !(await page.locator('#key-dialog').evaluate((e) => e.open)) ||
         (await page.locator('#note-title').inputValue()) !== origin ||
         (await a.inputValue()) !== body ||
-        (await page.locator('#key-search').inputValue()) !== query ||
+        (await page.locator('#atlas-search').inputValue()) !== query ||
         (await page.locator('#key-gm-notes').inputValue()) !== roomText ||
         JSON.stringify(await a.evaluate((e) => [e.selectionStart, e.selectionEnd])) !==
           JSON.stringify(selection)
@@ -239,11 +245,20 @@ await runNativeProbe(
           throw Error('Old room geometry/prose changed');
         const ks = rows(db, 'dungeon_key_content').map((r) => JSON.parse(r.payload));
         if (ks.length !== 2) throw Error('Room count mismatch');
+        const originals = notes.map(([title], i) => {
+          const matches = before.filter(
+            (note) => note.title === title && note.kind === (i ? 'quest' : 'npc'),
+          );
+          if (matches.length !== 1)
+            throw Error('Starting fixture original is not unique: ' + title);
+          return matches[0];
+        });
         for (const k of ks)
           if (
             k.references.length !== 2 ||
-            !k.references.some((r) => r.id === 'f7b74c4e-2237-4c0e-b10f-79dcb567eb1e') ||
-            !k.references.some((r) => r.id === 'b0e321ca-bea5-4127-b235-9063e2285641')
+            !originals.every((note) =>
+              k.references.some((ref) => ref.id === note.id && ref.kind === note.kind),
+            )
           )
             throw Error('Shared original binding mismatch');
         return {
@@ -265,16 +280,12 @@ await runNativeProbe(
       await launch();
       for (const [i, [name, readAloud, gm]] of keys.entries()) {
         if (i) {
-          await page.locator('#key-add-room').click();
+          await addDesktopKeyRoom(page);
           await page.waitForFunction(
             () => document.getElementById('key-name').value !== 'Fährsteg',
           );
           await page.locator('#key-name').fill(name);
-        } else
-          await page
-            .locator('#key-room-list')
-            .getByRole('button', { name: /Fährsteg/ })
-            .click();
+        }
         await page.locator('#key-read-aloud').fill(readAloud);
         await page.locator('#key-gm-notes').fill(gm);
         await page.locator('#key-name').click();
@@ -285,17 +296,11 @@ await runNativeProbe(
           await saved();
         }
       }
-      await page
-        .locator('#key-room-list')
-        .getByRole('button', { name: /Fährsteg/ })
-        .click();
+      await selectDesktopKeyRoom(page, 'Fährsteg');
       await openNote(notes[0][0]);
       await inspect(notes[0][0], 'das Signalfeuer freiwillig verlassen', 'siv-source');
       await append(sivCorrection);
-      await page
-        .locator('#key-room-list')
-        .getByRole('button', { name: /Salzscheune/ })
-        .click();
+      await selectDesktopKeyRoom(page, 'Salzscheune');
       await openNote(notes[1][0]);
       await inspect(
         notes[1][0],
@@ -305,10 +310,7 @@ await runNativeProbe(
       );
       await append(questCorrection);
       for (const [name, readAloud, gm] of keys) {
-        await page
-          .locator('#key-room-list')
-          .getByRole('button', { name: new RegExp(name) })
-          .click();
+        await selectDesktopKeyRoom(page, name);
         if ((await page.locator('#key-preview').getAttribute('open')) === null)
           await page.locator('#key-preview summary').click();
         await page.locator('#key-audience').selectOption('public');
@@ -318,7 +320,10 @@ await runNativeProbe(
         );
         const publicRender = await page.locator('#key-rendered').innerText();
         if (/Varo|Versteck|unbestätigt/.test(publicRender)) throw Error('Private room cue leaked');
-        await page.locator('#key-rendered').scrollIntoViewIfNeeded();
+        // The preview is one pre containing the entire key, not a child per passage.
+        await page
+          .locator('#key-rendered')
+          .evaluate((element) => element.scrollIntoView({ block: 'start' }));
         await shot(name === 'Fährsteg' ? 'faehrsteg-public' : 'salzscheune-public');
         await page.locator('#key-audience').selectOption('gm');
         await page.waitForFunction(
@@ -336,15 +341,15 @@ await runNativeProbe(
       await page.locator('#key-close').click();
       await close();
       await launch();
-      await page.locator('#key-search').fill('Varo');
-      await page.waitForFunction(
-        () => document.querySelectorAll('#key-room-list button').length === 2,
+      searchChecks.push(
+        await searchDesktopKeyRooms(
+          page,
+          'Varo',
+          keys.map(([name]) => name),
+        ),
       );
       for (const [name, readAloud, gm] of keys) {
-        await page
-          .locator('#key-room-list')
-          .getByRole('button', { name: new RegExp(name) })
-          .click();
+        await selectDesktopKeyRoom(page, name);
         if (
           (await page.locator('#key-read-aloud').inputValue()) !== readAloud ||
           (await page.locator('#key-gm-notes').inputValue()) !== gm
@@ -354,7 +359,8 @@ await runNativeProbe(
           await openNote(title);
           const body = await page.locator('#note-gm').inputValue();
           if (!body.includes(correction)) throw Error('Fresh shared update missing');
-          await page.locator('#note-gm').scrollIntoViewIfNeeded();
+          await page.locator('#note-gm').click();
+          await page.locator('#note-gm').press('Control+End');
           await shot(
             'fresh-' +
               (name === 'Fährsteg' ? 'faehrsteg' : 'salzscheune') +
@@ -390,6 +396,7 @@ await runNativeProbe(
         questCorrection,
         keyChecks,
         freshChecks,
+        searchChecks,
         inspections,
         launches,
         errors,

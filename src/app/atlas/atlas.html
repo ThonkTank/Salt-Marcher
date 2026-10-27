@@ -1,0 +1,322 @@
+<div id="graph-preview-banner" hidden>
+  <p id="graph-preview-label"></p>
+  <div class="toolbar">
+    <button id="graph-accept" disabled>Graph- und Rastervorschau übernehmen</button
+    ><button id="graph-restore">Ursprung vollständig wiederherstellen</button>
+  </div>
+</div>
+<main id="atlas">
+  <aside>
+    <h2>Räume</h2>
+    <label for="search">Raum oder Key durchsuchen</label
+    ><input id="search" type="search" placeholder="Name, Nummer, Text" /><button
+      id="add-room"
+      disabled
+    >
+      Raum anlegen
+    </button>
+    <div id="rooms" aria-label="Raumauswahl"></div>
+  </aside>
+  <section id="drawing">
+    <div class="toolbar">
+      <h2 id="map-title">Dungeonzeichnung</h2>
+      <button id="undo" disabled>Rückgängig</button><button id="redo" disabled>Wiederholen</button
+      ><button id="fit" title="Ausgewählten Raum einpassen">Einpassen</button>
+    </div>
+    <div class="toolbar dungeon-navigation">
+      <button id="dungeon-binder-open" type="button">Binder lesen</button
+      ><button id="graph-open">Graph</button
+      ><button id="map-zoom-in" type="button" aria-label="Dungeonkarte vergrößern">＋</button
+      ><button id="map-zoom-out" type="button" aria-label="Dungeonkarte verkleinern">−</button
+      ><button id="fit-all" title="Alle Räume im sichtbaren Geschoss zeigen">Übersicht</button>
+    </div>
+    <p id="map-hint">Wähle einen Raum. Ziehe seine Eckpunkte oder bearbeite die Koordinaten.</p>
+    <div id="drawing-toolbar" class="drawing-toolbar">
+      <label class="drawing-floor-field"
+        >Geschoss
+        <select id="floors"></select></label
+      ><label
+        >Werkzeug
+        <select id="drawing-tool">
+          <option value="select">Auswahl / Eckpunkte</option>
+          <option value="room-rectangle">Raumrechteck</option>
+          <option value="room-polygon">Freier Raum</option>
+          <option value="room-cave">Höhlenpinsel</option>
+          <option value="room-erase">Höhle radieren</option>
+          <option value="room-hole">Aussparung</option>
+          <option value="wall">Freie Wand</option>
+          <option value="door">Tür / Portal</option>
+          <option value="stairs">Geschossverbindung</option>
+          <option value="light">Licht</option>
+          <option value="object">Objekt</option>
+          <option value="scatter">Objekte streuen</option>
+          <option value="path">Pfad</option>
+          <option value="terrain">Terrainfläche</option>
+          <option value="water">Wasserfläche</option>
+          <option value="roof">Dachfläche</option>
+          <option value="text">Text</option>
+          <option value="feature">Falle / Feature</option>
+        </select></label
+      ><label><input id="drawing-snap" type="checkbox" checked /> Rasterfang</label
+      ><label id="drawing-brush-field" hidden
+        >Pinselradius m
+        <input id="drawing-brush" type="number" min="0.01" step="any" value="1.524" /></label
+      ><label id="drawing-append-field" hidden
+        ><input id="drawing-append" type="checkbox" /> An gewählten Raum anfügen</label
+      ><label id="drawing-room-name-field" hidden
+        >Name für neuen Raum <input id="drawing-room-name" value="Neuer Raum" /></label
+      ><button id="drawing-finish" hidden disabled>Zug übernehmen</button
+      ><button id="drawing-cancel" hidden disabled>Vorschau verwerfen</button>
+    </div>
+    <p id="drawing-path-status" class="caption"></p>
+    <details id="drawing-tool-options" hidden>
+      <summary>Werkzeugeinstellungen</summary>
+      <label id="drawing-object-field"
+        >Symbol
+        <select id="drawing-object">
+          <option value="chest">Truhe</option>
+          <option value="table">Tisch</option>
+          <option value="bed">Bett</option>
+          <option value="barrel">Fass</option>
+          <option value="pillar">Säule</option>
+        </select></label
+      ><label id="drawing-element-size-field"
+        >Objektgröße m
+        <input id="drawing-element-size" type="number" value="1.524" min="0.01" step="any" /></label
+      ><label id="drawing-light-radius-field"
+        >Lichtradius m
+        <input id="drawing-light-radius" type="number" value="6.096" min="0.01" step="any" /></label
+      ><label id="drawing-text-field">Text <input id="drawing-text" value="Beschriftung" /></label>
+    </details>
+    <svg
+      id="map"
+      tabindex="0"
+      viewBox="0 0 24 18"
+      role="img"
+      aria-label="Raumkonturen in Metern"
+    ></svg>
+    <details class="dungeon-more-tools">
+      <summary>3D, Verbindungen und Rauminhalte</summary>
+      <div class="toolbar">
+        <button id="volume-open">3D-Volumen</button
+        ><button id="trigger-fields-open">Fallen / Triggerfelder</button
+        ><button id="dungeon-content-open">Dungeon-Inhalte / Voxelanker</button
+        ><button id="path-open">3D-Verbindungen / Passagen</button>
+      </div>
+    </details>
+    <details class="dungeon-grid-options">
+      <summary>Raster und Aktualisierung</summary>
+      <label
+        >Raster m
+        <input id="drawing-grid" type="number" min="0.01" step="any" value="1.524" /></label
+      ><button id="drawing-refresh">Werkzeugdaten aktualisieren</button>
+    </details>
+    <label><input id="drawing-show-section" type="checkbox" /> Höhenschnitt zeigen</label
+    ><label
+      >Schnitt bei Y in m <input id="drawing-slice-y" type="number" step="any" value="0" /></label
+    ><svg id="drawing-section" hidden></svg>
+    <p class="caption">
+      Metermaß. Mittlere Maustaste verschiebt, Mausrad zoomt am Zeiger. Auswahl und Bearbeitung
+      erhalten den Ausschnitt. Neue Räume erhalten Boden, Wände und eine 10-Fuß-Decke.
+    </p>
+  </section>
+  <section id="inspector">
+    <h2>Raumtexte und Kontur</h2>
+    <button id="key-open" type="button">Vorlesetext, GM-Notizen und Geheimnisse bearbeiten…</button>
+    <p id="empty">Lege einen Raum an oder übernimm eine Dungeondatei.</p>
+    <form id="editor" hidden>
+      <label for="room-name">Raumname</label><input id="room-name" />
+      <details id="room-extra-notes">
+        <summary>Zusätzliche GM-Texte</summary>
+        <div id="keys"></div>
+      </details>
+      <details>
+        <summary id="room-points-heading">Eckpunkte</summary>
+        <p>Ein Punkt pro Zeile: x, y. Weitere Konturen und Aussparungen bleiben erhalten.</p>
+        <label for="points">Erste Außenkontur</label
+        ><textarea id="points" rows="7" spellcheck="false"></textarea>
+      </details>
+      <button type="button" id="apply">Eingabe abschließen</button>
+      <p>
+        Gültige Eingaben werden automatisch gespeichert. Strg+Z / Strg+Umschalt+Z außerhalb der
+        Textfelder.
+      </p>
+    </form>
+    <div class="drawing-tools">
+      <details>
+        <summary>Raumgeometrie und Darstellung</summary>
+        <label>Verschiebung X m <input id="drawing-dx" type="number" step="any" value="0" /></label
+        ><label>Verschiebung Y m <input id="drawing-dy" type="number" step="any" value="0" /></label
+        ><label
+          >Skalierungsfaktor
+          <input id="drawing-scale" type="number" step="any" min="0.01" value="1" /></label
+        ><label>Drehung ° <input id="drawing-rotate" type="number" step="any" value="0" /></label
+        ><button id="drawing-transform">Raum transformieren</button
+        ><label
+          >Geometrie verbinden mit
+          <select id="drawing-merge-room"></select></label
+        ><button id="drawing-merge">Verbinden – zweiter Raum-Key bleibt archiviert</button
+        ><button id="drawing-hide-room">Raum mit Key archivieren</button
+        ><label
+          >Deckenhöhe m
+          <input id="drawing-ceiling" type="number" min="0.01" step="any" value="3.048" /></label
+        ><label>Bodenfarbe <input id="drawing-fill" type="color" value="#d8cbb5" /></label
+        ><label>Wandfarbe <input id="drawing-wall-color" type="color" value="#574b3f" /></label
+        ><label>Öffentliche Beschriftung <input id="drawing-public-label" /></label
+        ><label
+          ><input id="drawing-room-secret" type="checkbox" /> Raum in öffentlicher Ausgabe
+          verbergen</label
+        ><label
+          >Spurenoberfläche
+          <select id="drawing-track-surface">
+            <option value="stone">Stein</option>
+            <option value="mud">Schlamm</option>
+            <option value="sand">Sand</option>
+            <option value="snow">Schnee</option>
+            <option value="water">Wasser</option>
+            <option value="vegetation">Vegetation</option>
+          </select></label
+        ><button id="drawing-save-style">Raumdarstellung übernehmen</button>
+      </details>
+      <details>
+        <summary>Geschosse</summary>
+        <label>Name <input id="drawing-floor-name" value="Neues Geschoss" /></label
+        ><label
+          >Höhe m <input id="drawing-floor-elevation" type="number" step="any" value="3.048"
+        /></label>
+        <div class="toolbar">
+          <button id="drawing-floor-add">Geschoss anlegen</button
+          ><button id="drawing-floor-clone">Nur Geschossgeometrie klonen</button
+          ><button id="drawing-floor-clone-all">Geschoss einschließlich Keys klonen</button
+          ><button id="drawing-floor-rename">Name / Höhe übernehmen</button
+          ><button id="drawing-floor-hide">Geschoss archivieren</button>
+        </div>
+        <p>
+          Beide Kopien erhalten neue Raum-IDs. Geometrie-Kopien starten mit leeren Keys;
+          vollständige Kopien erhalten eigene Key-IDs. Originaltexte und IDs bleiben erhalten.
+        </p>
+      </details>
+      <form id="drawing-element-form" hidden>
+        <h3 id="drawing-element-kind"></h3>
+        <label>Name / Text <input id="drawing-element-name" /></label
+        ><label>GM-Notiz <textarea id="drawing-element-notes" rows="3"></textarea></label
+        ><label
+          >Position / Pfadpunkte in m
+          <textarea id="drawing-element-points" rows="4"></textarea></label
+        ><label
+          >Breite / Radius m <input id="drawing-width" type="number" step="any" min="0.01" /></label
+        ><label
+          >Höhe / Textgröße m
+          <input id="drawing-height" type="number" step="any" min="0.01" /></label
+        ><label
+          >3D-Unterkante relativ zum Zeichnungsanker m
+          <input id="drawing-z-offset" type="number" value="0" step="any" /></label
+        ><label
+          >Vertikale Ausdehnung m
+          <input id="drawing-vertical" type="number" min=".01" value="1" step="any" /></label
+        ><label>Drehung ° <input id="drawing-angle" type="number" step="any" /></label
+        ><label>Farbe <input id="drawing-color" type="color" /></label
+        ><label>Symbol <input id="drawing-variant" /></label
+        ><label
+          >Raumbindung
+          <select id="drawing-room-bind"></select></label
+        ><label
+          >Verbundener Raum
+          <select id="drawing-target-room"></select></label
+        ><label
+          >Zielgeschoss
+          <select id="drawing-target-floor"></select></label
+        ><label
+          >Zustand
+          <select id="drawing-state">
+            <option value="open">Offen</option>
+            <option value="closed">Geschlossen</option>
+            <option value="locked">Verschlossen</option>
+          </select></label
+        ><label><input id="drawing-secret" type="checkbox" /> Verborgen</label
+        ><label><input id="drawing-blocks-sight" type="checkbox" /> Blockiert Sicht / Licht</label
+        ><label><input id="drawing-blocks-sound" type="checkbox" /> Blockiert Schall</label>
+        <fieldset>
+          <legend>Persistente Geräuschquelle</legend>
+          <label><input id="drawing-sound-enabled" type="checkbox" /> Aktiv</label
+          ><label
+            >Reichweite m
+            <input
+              id="drawing-sound-range"
+              type="number"
+              min="0"
+              max="1000"
+              value="18"
+              step="any" /></label
+          ><label
+            >Wahrnehmungs-SG
+            <input id="drawing-sound-dc" type="number" value="10" step="any" /></label
+          ><label
+            >Spielertext
+            <input
+              id="drawing-sound-text"
+              maxlength="1000"
+              placeholder="Wasser tropft hinter der Tür"
+          /></label>
+        </fieldset>
+        <label><input id="drawing-passable" type="checkbox" /> Passierbar</label>
+        <div id="drawing-feature-fields" hidden>
+          <label
+            >Featuretyp
+            <select id="drawing-feature-type">
+              <option value="trap">Falle</option>
+              <option value="puzzle">Rätsel</option>
+              <option value="curiosity">Besonderheit</option>
+              <option value="encounter">Begegnungsanker</option>
+              <option value="loot">Beuteanker</option>
+            </select></label
+          ><label
+            >Maximale Charges
+            <input id="drawing-max-charges" type="number" min="0" value="1" /></label
+          ><label
+            >Reset nach Minuten (0 = manuell)
+            <input id="drawing-reset-minutes" type="number" min="0" step="any" value="0" /></label
+          ><label
+            >Reset beginnt
+            <select id="drawing-reset-mode">
+              <option value="empty">Wenn alle Charges verbraucht sind</option>
+              <option value="used">Nach erster verbrauchter Charge</option>
+            </select></label
+          ><label
+            >Trigger-Radius m
+            <input id="drawing-trigger-radius" type="number" min="0" step="any" value="1.524"
+          /></label>
+        </div>
+        <button type="submit">Elementeingabe abschließen</button
+        ><button type="button" id="drawing-element-hide">Element archivieren</button>
+      </form>
+      <div id="drawing-feature-runtime" class="drawing-tools" hidden>
+        <p id="drawing-feature-status"></p>
+        <button id="drawing-feature-activate">Tatsächliche Aktivierung bestätigen</button
+        ><button id="drawing-feature-reset">Als GM zurücksetzen</button
+        ><label
+          >Charges korrigieren
+          <input id="drawing-correct-charges" type="number" min="0" value="0" /></label
+        ><button id="drawing-feature-correct">Korrektur übernehmen</button>
+        <p>
+          Charges und Reset gehören zum Laufzustand. Autoren-Undo setzt keine bestätigten
+          Featurewirkungen zurück.
+        </p>
+      </div>
+      <details>
+        <summary>Archiv und Ausgabe</summary>
+        <div id="drawing-archive"></div>
+        <label
+          ><input id="drawing-public-export" type="checkbox" checked /> Öffentliche Ausgabe:
+          verborgene Räume, Blöcke und GM-Notizen aussparen</label
+        >
+        <div class="toolbar">
+          <button id="drawing-export-svg">SVG</button
+          ><button id="drawing-export-json">Dungeondaten</button
+          ><button id="drawing-export-keys">Raum-Keys als Markdown</button
+          ><button id="drawing-export-document">Karte + Key als druckbares Dokument</button>
+        </div>
+      </details>
+    </div>
+  </section>
+</main>

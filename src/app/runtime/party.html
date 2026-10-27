@@ -1,0 +1,186 @@
+<div id="party-popover" popover role="dialog" aria-labelledby="party-heading">
+  <div class="party-window-heading">
+    <h2 id="party-heading">Party</h2>
+    <div id="party-rest-average"></div>
+    <button id="party-close" type="button" aria-label="Party schließen">×</button>
+  </div>
+  <p id="party-status" role="status"></p>
+  <div id="party-active"></div>
+  <details id="party-actions">
+    <summary>Aktionen</summary>
+    <div class="toolbar">
+      <button id="party-roster-open" type="button">Aktives Szenenroster bearbeiten…</button
+      ><button id="party-move-open" type="button">Figuren gemeinsam verschieben…</button
+      ><button id="party-live" type="button">Spieltisch öffnen</button
+      ><button id="party-award-open" type="button">Spielabend-XP abrechnen…</button
+      ><button id="party-refresh" type="button">Aktualisieren</button>
+    </div>
+  </details>
+  <details id="party-quick">
+    <summary>Schnellwerte auswählen</summary>
+    <div id="party-quick-fields"></div>
+    <p id="party-quick-status" role="status"></p>
+  </details>
+  <details id="party-rest">
+    <summary>Mit der Gruppe im Fokus rasten</summary>
+    <p id="party-focus"></p>
+    <div id="party-rest-members"></div>
+    <label class="check-label"
+      ><input id="party-rest-time" type="checkbox" checked /> Szenenzeit fortschreiben</label
+    >
+    <div class="toolbar">
+      <label
+        >Kurze Rast (Minuten)<input id="party-rest-short" type="number" min="1" value="60" /></label
+      ><label
+        >Lange Rast (Stunden)<input id="party-rest-long" type="number" min="1" value="8"
+      /></label>
+    </div>
+    <label class="check-label"
+      ><input id="party-rest-hp" type="checkbox" /> Bei langer Rast bekannte positive HP vollständig
+      heilen</label
+    >
+    <div class="toolbar">
+      <button id="party-short-rest" type="button">Kurze Rast</button
+      ><button id="party-long-rest" type="button">Lange Rast</button
+      ><button id="party-rest-cancel" type="button" hidden>Vormerkung verwerfen</button>
+    </div>
+    <p id="party-rest-status" role="status"></p>
+  </details>
+  <details id="party-roster-panel">
+    <summary>Charakter-Roster bearbeiten</summary>
+    <button id="party-create" type="button">Figur anlegen</button
+    ><label for="party-search">Roster durchsuchen</label
+    ><input id="party-search" type="search" placeholder="Name, Spieler, Profil, Sprache oder ID" />
+    <div id="party-roster"></div>
+  </details>
+  <details id="party-archive">
+    <summary id="party-archive-heading">Archivierte Figuren</summary>
+    <label
+      >Archiv durchsuchen<input
+        id="party-archive-search"
+        type="search"
+        placeholder="Name, Profil oder ID"
+    /></label>
+    <div id="party-archive-list"></div>
+    <button id="party-archive-more" type="button" hidden>Weitere archivierte Figuren</button>
+    <p id="party-archive-status" role="status"></p>
+  </details>
+  <section id="party-archive-confirm" hidden>
+    <h3>Figur archivieren</h3>
+    <p id="party-archive-description"></p>
+    <p>
+      Die Figur verlässt Party, Gruppen und offene Kampf-/Verfolgungsmasken. XP, Inventar,
+      Erinnerungen und Historie bleiben erhalten. Wiederherstellen bringt sie inaktiv zurück.
+    </p>
+    <form id="party-archive-form">
+      <label
+        >Genauen Figurennamen bestätigen<input
+          id="party-archive-name"
+          required
+          autocomplete="off" /></label
+      ><label>Grund (optional)<input id="party-archive-reason" maxlength="4000" /></label>
+      <p id="party-archive-error" role="status"></p>
+      <button type="submit">Archivieren bestätigen</button
+      ><button id="party-archive-cancel" type="button">Abbrechen</button>
+    </form>
+  </section>
+  <section id="party-award-panel" hidden>
+    <div class="toolbar">
+      <h3>Spielabend-XP und Tagesbelastung</h3>
+      <button id="party-award-close" type="button">Schließen</button>
+    </div>
+    <p id="party-award-basis"></p>
+    <form id="party-award-form">
+      <div class="toolbar">
+        <label
+          >Gruppen-XP (Verdienst)<input
+            id="party-award-xp"
+            type="number"
+            min="0"
+            step="1"
+            value="0"
+            required /></label
+        ><label
+          >Gruppen-XP (Tagesbelastung)<input
+            id="party-award-load"
+            type="number"
+            min="0"
+            step="1"
+            value="0"
+            required
+        /></label>
+      </div>
+      <label
+        >Grund / Spielabendtitel<input
+          id="party-award-reason"
+          required
+          maxlength="10000"
+          value="Spielabend abgeschlossen"
+      /></label>
+      <div class="toolbar">
+        <button id="party-award-focus" type="button">Fokusgruppe</button
+        ><button id="party-award-active" type="button">Alle aktiven Figuren</button
+        ><button id="party-award-none" type="button">Keine</button
+        ><button id="party-award-reload" type="button">Stand neu laden</button>
+      </div>
+      <label
+        >Figuren suchen<input
+          id="party-award-search"
+          type="search"
+          placeholder="Name, Profil oder ID"
+      /></label>
+      <div id="party-award-members"></div>
+      <div id="party-award-preview"></div>
+      <p>
+        XP und Belastung werden jeweils auf ihre ausgewählten Empfänger aufgeteilt und je Figur
+        aufgerundet. Reservefiguren erhalten nur ausdrücklich ausgewählte XP. Mitgliedschaft und
+        Szenenzeit bleiben erhalten.
+      </p>
+      <p id="party-award-status" role="status"></p>
+      <button id="party-award-submit" type="submit">Abrechnung bestätigen</button>
+    </form>
+  </section>
+  <section id="party-editor" hidden>
+    <h3 id="party-editor-title">Figur bearbeiten</h3>
+    <form id="party-profile-form">
+      <label>Name<input id="party-name" required maxlength="1000" /></label>
+      <div id="party-profile-fields" class="combat-fields"></div>
+      <p id="party-editor-status" role="status"></p>
+      <button type="submit">Profil speichern</button
+      ><button id="party-editor-cancel" type="button">Schließen</button>
+    </form>
+  </section>
+  <section id="party-xp-editor" hidden>
+    <div class="party-xp-heading">
+      <h3 id="party-xp-title">XP ändern</h3>
+      <button id="party-xp-cancel" type="button" aria-label="Zurück zur Party">Zurück</button>
+    </div>
+    <p id="party-xp-current"></p>
+    <form id="party-xp-form">
+      <select id="party-xp-mode" hidden aria-hidden="true">
+        <option value="add">+XP</option>
+        <option value="subtract">−XP (bis 0)</option>
+        <option value="set">Gesamtstand korrigieren</option></select
+      ><label class="party-xp-amount"
+        >Betrag<input id="party-xp-amount" type="number" min="0" step="1" value="0" required
+      /></label>
+      <div class="party-xp-actions">
+        <button id="party-xp-add" type="button">+ XP</button
+        ><button id="party-xp-subtract" type="button">− XP</button
+        ><button type="submit">Gesamtstand setzen</button>
+      </div>
+      <p id="party-xp-preview" aria-live="polite"></p>
+      <p id="party-xp-status" role="status"></p>
+      <details>
+        <summary>Levelvorgabe / Buchungsgrund</summary>
+        <label
+          >Level als Ausgangsstand setzen<select id="party-level">
+            <option value="">Keinen Level vorgeben</option>
+          </select></label
+        ><label
+          >Grund<input id="party-xp-reason" required maxlength="10000" value="Manuelle XP-Änderung"
+        /></label>
+      </details>
+    </form>
+  </section>
+</div>
