@@ -18,7 +18,7 @@ export function populateMixedWorld(store, campaign, sizes = {}) {
     export {putLandscape} from './src/app/storage/atlas-landscape';
     export {hexPolygon} from './src/app/atlas/atlas-landscape';
     export {newLocation} from './src/features/location/location-schema';
-    export {validateRoom} from './src/app/shared/contracts';
+    export {validateRoom} from './src/app/shared/room-validation';
   `,
     },
     outfile: '.build/atlas-mixed-world-fixture.cjs',
