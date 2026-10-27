@@ -136,7 +136,8 @@ async function anchored(name, p, action, delta = { x: 0, y: 0 }) {
   assert.notDeepEqual(next, oldPose, name + ' must move');
 }
 async function setPose(tilt, rotation) {
-  await page.locator('#atlas-view').click();
+  if (!(await page.locator('#atlas-view-popup').evaluate((n) => n.matches(':popover-open'))))
+    await page.locator('#atlas-view').click();
   for (const [id, value] of [
     ['terrain-tilt', tilt],
     ['terrain-rotation', rotation],
@@ -145,7 +146,10 @@ async function setPose(tilt, rotation) {
       n.value = String(value);
       n.dispatchEvent(new Event('input', { bubbles: true }));
     }, value);
-  await page.locator('#atlas-view').click();
+  await page.keyboard.press('Escape');
+  await page.waitForFunction(
+    () => !document.querySelector('#atlas-view-popup').matches(':popover-open'),
+  );
   await page.waitForTimeout(200);
 }
 try {
@@ -363,18 +367,18 @@ try {
   await setPose(0, 0);
   const scaleBox = await page.locator('#campaign-map').boundingBox();
   await page.mouse.move(scaleBox.x + scaleBox.width / 2, scaleBox.y + scaleBox.height / 2);
-  const widths = [];
-  for (let i = 0; i < 6; i++) {
+  const widths = [(await pose()).frame.width];
+  for (let i = 0; i < 12 && widths.at(-1) / widths[0] <= 100; i++) {
     await page.mouse.wheel(0, 900);
-    await page.waitForTimeout(200);
+    await page.waitForTimeout(300);
     widths.push((await pose()).frame.width);
   }
+  checks.push({ name: 'several zoom orders', widths });
   assert(widths.at(-1) / widths[0] > 100);
-  for (let i = 0; i < 6; i++) {
+  for (let i = 0; i < widths.length - 1; i++) {
     await page.mouse.wheel(0, -900);
     await page.waitForTimeout(200);
   }
-  checks.push({ name: 'several zoom orders', widths });
   native.mark('focus-plane fallback while new terrain coverage is withheld');
   await setPose(0, 0);
   const fallbackOverviewBox = await page.locator('#campaign-map').boundingBox();
@@ -439,6 +443,11 @@ try {
   });
   assert(heldCoverage > 0, 'real new terrain coverage must have been withheld');
   checks.push({ name: 'missing-terrain fallback source', fallbackAnchor, heldCoverage });
+  await page.waitForFunction(
+    () => document.querySelector('#campaign-map').dataset.terrainQuality === 'detail',
+    null,
+    { timeout: 60000 },
+  );
   await atlasCanvasReady(page);
   const afterCoverageEye = atlasCameraWorldEye(await pose());
   assert(

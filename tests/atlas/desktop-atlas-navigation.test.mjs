@@ -5,6 +5,7 @@ import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
 for (const entry of [
   'atlas-navigation-scale',
+  'atlas-canvas',
   'atlas-reference-catalog',
   'atlas-landscape-view',
   'atlas-paint',
@@ -165,4 +166,36 @@ test('metric measurement and scale labels retain fine distances and legacy forma
     assert.equal(distanceLabel(meters, 'metric'), expected.split(' · ')[0]);
     assert.equal(formatDistance(meters), expected);
   }
+});
+
+test('shared camera writes reject all notified navigation while author input is active, then allow the closed stroke', () => {
+  const { AtlasCanvas } = require('../../.build/atlas-canvas.cjs');
+  const canvas = Object.create(AtlasCanvas.prototype);
+  const initial = { x: 0, y: 0, width: 100, height: 80 },
+    next = { x: 10, y: 20, width: 200, height: 160 };
+  let active = true,
+    changes = 0;
+  Object.assign(canvas, {
+    box: initial,
+    options: { locked: () => active, changed: () => changes++ },
+    apply() {},
+    refreshControls() {},
+    remember() {},
+    stopZoom() {},
+  });
+  canvas.set(next, true);
+  assert.deepEqual(
+    canvas.view,
+    initial,
+    'overview/search/programmatic navigation shares the active-stroke lock',
+  );
+  assert.equal(changes, 0);
+  active = false;
+  canvas.set(next, true);
+  assert.deepEqual(
+    canvas.view,
+    next,
+    'a closed stroke awaiting storage must not retain camera ownership',
+  );
+  assert.equal(changes, 1);
 });

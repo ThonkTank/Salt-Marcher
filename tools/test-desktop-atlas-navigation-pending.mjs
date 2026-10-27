@@ -214,6 +214,9 @@ try {
     n.dispatchEvent(new Event('input', { bubbles: true }));
   });
   assert.deepEqual(await pose(), heldPose, 'pose controls must not move active brush');
+  await page.locator('#atlas-overview').evaluate((n) => n.click());
+  await page.getByRole('button', { name: 'Vergrößern', exact: true }).evaluate((n) => n.click());
+  assert.deepEqual(await pose(), heldPose, 'overview and zoom controls must not move active brush');
   assert.equal((await writes()).length, 0, 'camera input must not close/commit the active brush');
   await page.mouse.up();
   await waitMain('qaNavigationHeld');
@@ -240,7 +243,10 @@ try {
       n.dispatchEvent(new Event('input', { bubbles: true }));
     }),
   );
-  await page.locator('#atlas-view').click();
+  await page.keyboard.press('Escape');
+  await page.waitForFunction(
+    () => !document.querySelector('#atlas-view-popup').matches(':popover-open'),
+  );
   assert.equal((await writes()).length, 1, 'navigation must never create author writes');
   await session.capture(page, 'pending-navigation');
   await session.app.evaluate(() => globalThis.qaNavigationRelease());
