@@ -46,6 +46,9 @@ Kampagnenarchive und Build-Metadaten. Frühere Testbestände werden nicht migrie
 
 Planungsstand: 27.10.2026, übernommen; Umsetzung durch den Koordinationschat freigegeben.
 Preflight-Basis ist Main `a87b8e99ba8a3954f664a10b0e7a9c141c65eb22`.
+Aktuelle Arbeitsbasis: `a87b8e99ba8a3954f664a10b0e7a9c141c65eb22`; letzter
+erfolgreicher GitHub-Abgleich 27.10.2026, 13:46 Uhr Europe/Berlin. Keine neuen
+Main-Commits offen; Arbeitsbranch enthält den eigenen Plancommit `40cb7c8bd`.
 Die [sechs bestätigten Ziele TW-G1–6 und der Messvertrag](../requirements/terrain-relief.md#ziele-und-abnahme-dieser-etappe)
 gelten unverändert. Hier stehen Ausführung und Entscheidungen, keine zweite Anforderungsliste.
 
@@ -58,11 +61,13 @@ er liefert weder statistische Leistungsfreigabe noch vollständige Produktabnahm
 Funktion, sichere Ausführung und zuverlässige Beobachtung sind Voraussetzung.
 Vollständige Messmatrix und unabhängige Lieferbefunde sind davor keine Pflicht.
 
-**Beginn T0:** tatsächlicher Start von P01 nach Planübernahme und Umsetzungsfreigabe;
-Zeitpunkt dann hier eintragen. Main-, Plan- und Umsetzungsfreigabe liegen vor; T0 folgt beim Paketstart.
+**Beginn T0:** 27.10.2026, 13:38 Uhr Europe/Berlin (11:38 UTC), tatsächlicher
+P01-Start nach Main-, Plan- und Umsetzungsfreigabe. Implementierer: Subagent
+`terrain_native_implementer`, `gpt-6-luna` / `high`; P01/P02 gemeinsam delegiert.
 Erster Beleg geschätzt nach **45–75 Minuten**, gemeinsame Entscheidungsgrenze
 **T0 + 90 Minuten**. Setup, Build, Ausführung, Fix, Prüfung und Warten zählen mit;
-Unterpakete setzen diese Grenze nicht zurück.
+Unterpakete setzen diese Grenze nicht zurück. Konkrete gemeinsame Grenze:
+**27.10.2026, 15:08 Uhr Europe/Berlin**; Setup-Entscheidung spätestens 13:58 Uhr.
 
 P01 benötigt geschätzt 15–25 Minuten: Session/GPU/Prozessbesitz 5–10,
 aktueller Desktopbuild und kleine kanonische Testfixture 10–15.
@@ -87,7 +92,20 @@ ohne Warten auf die erste Speicherantwort; anschließend müssen beide bestätig
 Falls nötig hilft ein identischer Kontrollablauf ohne Höhenwirkung, Störeinflüsse
 auszuschließen. Kein Erfolg nur aus Revisionszähler oder `terrainDraft`-Attribut.
 
-**Aktuelle Entscheidung:** A, vorhandenen Durchstich nutzen. Der historische
+**Aktuelle Entscheidung:** P01/P02 nach erstem nativen Kontakt zur M1-Prüfung
+angehalten, keine Produktdateien geändert. Der Lauf
+`.build/atlas-terrain-stroke/1793101396292-374648/` besitzt Vorher-/Zug-/Folgezug-/
+Wiederöffnungsbilder und zwei normale Prozessenden, ist aber wegen eines
+fehlenden `atlas:terrain-tile`-Handlers fehlgeschlagen. Der getrennte Phasenlauf
+`1793101529427-375950/phase-errors.json` ordnet den Fehler dem Schließen zu;
+dieser Lauf scheiterte anschließend zusätzlich an Berichtscode auf einer
+geschlossenen Page. App-GPU-Bindung und vollständiger gespeicherter Messbericht
+bleiben offen. Kein zusammengefügter Gesamterfolg aus verschiedenen Läufen.
+Die Wiederöffnungsansicht zeigt außerdem eine stark zugespitzte, weit aus der
+Ansicht ragende Geländeform; eine überzeugende Darstellung ist damit nicht belegt.
+A bleibt die vorläufige Richtung; nächste Entscheidung nach gezieltem M1-Review.
+
+Der historische
 saubere Stand `e5882ae09d70bb38eede86c28a9ae453f8024a06` hat einen nativen
 Rasterablauf mit Folgezug, Undo/Redo und Wiederöffnung; das ist keine aktuelle
 Abnahme. Hauptunsicherheit ist der aktuelle Übergang von lokaler Bildwirkung zu
@@ -161,7 +179,8 @@ führt ergänzende Code-/Testbesitzer.
 ### Vollständig zerlegte Pakete
 
 Jede Zeile ist ein Agentenauftrag zusammen mit den obigen Eingaben/Rollen.
-Voraussetzungen stehen in der Reihenfolge-/Terminspalte unten; alle sind noch geplant.
+Voraussetzungen stehen in der Reihenfolge-/Terminspalte unten; P01/P02 liegen
+mit offenen Befunden zur M1-Prüfung, Folgepakete sind noch nicht begonnen.
 Aufwandsspannen ab M2 sind vorläufig und werden an P02 gezielt nachgeschärft.
 
 | Paket / Kompetenz | Ergebnis und Eingaben | Prüfkriterium / Schnittstelle |
@@ -258,6 +277,21 @@ eine neue begründete Spanne der betroffenen Folgearbeit, keine stille
 Verlängerung und keine eigenmächtige Zielsenkung.
 
 ### Wiederverwendung, Release und Ablage
+
+Git-Synchronisation gemäß Nutzerauftrag: H führt bei jedem Heartbeat, vor
+Paketstart sowie vor/nach Integration `git fetch origin` und Basisvergleich aus.
+Neue Main-Commits am sicheren Paketübergang übernehmen, spätestens vor dem
+nächsten Umsetzungspaket; bei Langpaketen innerhalb von zwei Stunden einen
+sicheren Punkt herstellen, betroffene Schnittstellen früher beachten. Vor
+Basiswechsel eigene Änderungen sichern, Schreiber geordnet anhalten und
+Builds/native Läufe abwarten. Kein Checkoutwechsel während gebundener Messung.
+Sauberes Main nur fast-forward, unveröffentlichte eigene Branches rebasen;
+geteilte Historie nicht umschreiben, gegebenenfalls frischer Integrationsbranch
+mit nur eigenen fertigen Änderungen. Keine fremden Dirtyfiles verwerfen oder
+pauschal stashen. Konflikte gezielt lösen/prüfen und Quelländerungen an Belegen
+kenntlich machen. Fertige kohärente Pakete zeitnah über Candidate integrieren.
+Fetch allein ist kein abgeschlossener Basisabgleich; Netzfehler/Aufschubgrund
+und nächster sicherer Synchronisationspunkt ersetzen den aktuellen Status oben.
 
 [Recovery-Snapshot](https://github.com/ThonkTank/Salt-Marcher/tree/d555635c5757a9494d4d556c61f4245b1cc5f712)
 ist Reserve, keine aktuelle Architektur oder Abnahme. Vor jeweils berührter
