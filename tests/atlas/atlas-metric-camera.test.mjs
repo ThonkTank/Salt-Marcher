@@ -18,9 +18,14 @@ buildSync({
   platform: 'node',
   format: 'esm',
 });
-const { atlasProject, atlasPlanePoint, atlasAnchorCamera, ATLAS_CAMERA_FOV } = await import(
-  '../../.build/atlas-camera-reference-test.mjs'
-);
+const {
+  atlasProject,
+  atlasPlanePoint,
+  atlasAnchorCamera,
+  atlasSafeCameraMove,
+  atlasCameraWorldEye,
+  ATLAS_CAMERA_FOV,
+} = await import('../../.build/atlas-camera-reference-test.mjs');
 
 function fixture(overrides = {}) {
   return {
@@ -299,5 +304,55 @@ test('terrain-anchored combined orbit and zoom retain the same Deck pixel above 
     const actual = frame.project(point);
     close(actual.x, projected.x, 1e-6);
     close(actual.y, projected.y, 1e-6);
+  }
+});
+
+test('world-to-room wheel scale sequence retains one elevated off-centre anchor at signed and remote coordinates', () => {
+  for (const [x, y] of [
+    [-0.25, 0.25],
+    [67108864.25, -33554432.25],
+  ]) {
+    const anchor = { point: { x, y, heightM: 125 }, screen: { x: 0.61, y: 0.43 } };
+    let pose = {
+      frame: { x: x - 500000, y: y - 281250, width: 1000000, height: 562500 },
+      focusM: 125,
+      tilt: 35,
+      rotation: 17,
+      exaggeration: 1,
+      projection: 'perspective',
+    };
+    const widths = Array.from({ length: 101 }, (_, i) => 1000000 * 10 ** (-i / 20));
+    for (const width of [...widths, ...widths.toReversed()]) {
+      const next = atlasAnchorCamera(
+        { ...pose, frame: { ...pose.frame, width, height: (width * 9) / 16 } },
+        anchor,
+      );
+      pose = atlasSafeCameraMove(
+        pose,
+        next,
+        () => 125,
+        () => false,
+      );
+      const eye = atlasCameraWorldEye(pose);
+      assert(eye.heightM > 125);
+      const frame = atlasMetricFrame(
+        {
+          focus: { x: pose.frame.x + width / 2, y: pose.frame.y + pose.frame.height / 2 },
+          focusHeightM: pose.focusM,
+          metersPerPixel: width / 1920,
+          tilt: pose.tilt,
+          rotation: pose.rotation,
+          exaggeration: 1,
+        },
+        1920,
+        1080,
+      );
+      const p = frame.project(anchor.point);
+      assert(p.visible);
+      assert(Number.isFinite(p.depthM));
+      assert(Math.hypot(p.x - 0.61 * 1920, p.y - 0.43 * 1080) < 0.001);
+      assert(frame.ray({ x: p.x, y: p.y }).flat().every(Number.isFinite));
+      assert(frame.near > 0 && frame.far > frame.near);
+    }
   }
 });

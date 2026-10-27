@@ -39,6 +39,7 @@ export class AtlasCanvas {
   private future: CanvasBox[] = [];
   private views = new Map<string, SavedView>();
   private wheelAt = 0;
+  private wheelAnchor: { x: number; y: number; terrain: AtlasCameraAnchor } | null = null;
   private zoomPrevious = 0;
   private zoomTarget: CanvasBox | null = null;
   private zoomGeneration = 0;
@@ -156,6 +157,7 @@ export class AtlasCanvas {
           return;
         }
         this.stopZoom();
+        this.wheelAnchor = null;
         this.suppressClick = false;
         this.tooltipPoint = null;
         root.title = '';
@@ -293,8 +295,16 @@ export class AtlasCanvas {
         e.preventDefault();
         e.stopImmediatePropagation();
         if (this.failed || this.options.locked?.() || this.drag) return;
-        const presentation = this.options.presentation?.(),
-          anchor = presentation?.navigationPoint(e);
+        const presentation = this.options.presentation?.();
+        if (
+          this.wheelAnchor &&
+          Math.hypot(e.clientX - this.wheelAnchor.x, e.clientY - this.wheelAnchor.y) > 1
+        )
+          this.wheelAnchor = null;
+        const terrain =
+          this.wheelAnchor?.terrain ?? presentation?.navigationAnchor?.(e) ?? undefined;
+        if (terrain) this.wheelAnchor = { x: e.clientX, y: e.clientY, terrain };
+        const anchor = terrain?.point ?? presentation?.navigationPoint(e);
         const matrix = this.screenMatrix();
         const p = matrix
           ? new DOMPoint(e.clientX, e.clientY).matrixTransform(matrix.inverse())
@@ -308,13 +318,18 @@ export class AtlasCanvas {
               ? { x: p.x + this.box.x, y: p.y + this.box.y }
               : p,
           burst,
-          presentation?.navigationAnchor?.(e) ?? undefined,
+          terrain,
         );
         this.wheelAt = Date.now();
       },
       { capture: true, passive: false },
     );
     root.addEventListener('pointermove', (e) => {
+      if (
+        this.wheelAnchor &&
+        Math.hypot(e.clientX - this.wheelAnchor.x, e.clientY - this.wheelAnchor.y) > 1
+      )
+        this.wheelAnchor = null;
       this.tooltipPoint = { clientX: e.clientX, clientY: e.clientY };
       if (!this.tooltipAnimation)
         this.tooltipAnimation = requestAnimationFrame(() => {
@@ -661,7 +676,10 @@ export class AtlasCanvas {
         };
       }
     }
-    if (reason !== 'zoom') this.stopZoom();
+    if (reason !== 'zoom') {
+      if (reason !== 'set' || !coalesce) this.wheelAnchor = null;
+      this.stopZoom();
+    }
     const before = this.box;
     box =
       this.options

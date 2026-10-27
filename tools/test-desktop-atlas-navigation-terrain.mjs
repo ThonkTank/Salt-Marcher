@@ -1,3 +1,7 @@
+if (process.argv.includes('--world-room')) {
+  await import('./atlas-world-room-probe.mjs');
+  process.exit(0);
+}
 // Focused native camera qualification on the durable terrain fixture.
 import assert from 'node:assert/strict';
 import path from 'node:path';

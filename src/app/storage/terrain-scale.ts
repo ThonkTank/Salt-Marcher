@@ -13,7 +13,7 @@ import {
 import { coupleRouteEdits } from '../atlas/terrain-route-planner';
 import { routeBounds } from '../atlas/terrain-route';
 import { readRouteTerrain } from './terrain-route';
-import { readTerrainEditingRecords } from './terrain-editing-source';
+import { readTerrainEditingPackets } from './terrain-editing-source';
 import { readTerrainGrid } from './terrain-grid';
 import type { TerrainGrid } from '../atlas/terrain-spatial-model';
 
@@ -234,7 +234,7 @@ export function computeTerrainStroke(
   const needsSource = stroke.mode === 'smooth' || stroke.targetM !== undefined;
   const records =
     stroke.preserveDetails === false || needsSource
-      ? readTerrainEditingRecords(
+      ? readTerrainEditingPackets(
           db,
           cam,
           box,

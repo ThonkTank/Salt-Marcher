@@ -125,7 +125,7 @@ test('cold start publishes the first overview tile while a later overview tile i
   assert.ok(frames.at(-1).tiles.every((entry) => entry.tile.lod === 0));
 });
 
-test('same-source pan keeps intersecting tiles visible while the new detail set loads', async () => {
+test('same-source pan keeps a covering parent visible while the new detail set loads', async () => {
   const stream = new AtlasTileStream(),
     frames = [],
     blocked = deferred();
@@ -155,8 +155,9 @@ test('same-source pan keeps intersecting tiles visible while the new detail set 
   );
   assert.deepEqual(
     retained.tiles.map((tile) => address(tile.tile)),
-    ['0/0/0', '0/1/0'],
+    ['2/0/0'],
   );
+  assert.equal(retained.overviewComplete, true);
   await turn();
   const movingFrames = frames.filter((frame) => frame.generation === retained.generation);
   assert.ok(
@@ -478,5 +479,62 @@ test('mixed LOD refinement preserves full coverage without parent overlap in eve
   }
   assert(frames.at(-1).complete);
   assert(new Set(frames.at(-1).tiles.map((t) => t.tile.lod)).size > 2);
+  stream.dispose();
+});
+
+test('a retained world ancestor covers outward zoom immediately while new parents are delayed', async () => {
+  const stream = new AtlasTileStream({ maxTiles: 32, maxRetainedTiles: 64, maxBytes: 1024 * 1024 });
+  const make = (width) => ({
+    ...input(),
+    box: { x: 1048576 - width * 0.61, y: -width * 0.5, width, height: width * 0.6 },
+    metersPerPixel: width / 1920,
+  });
+  for (const width of [1000000, 100000, 10000, 1000, 100, 10])
+    await stream.load(
+      make(width),
+      async (q) => reply(q),
+      () => {},
+    );
+  const held = deferred(),
+    frames = [];
+  const loading = stream.load(
+    make(1000),
+    async (q) => {
+      await held.promise;
+      return reply(q);
+    },
+    (f) => frames.push(f),
+  );
+  await turn();
+  assert(frames.length);
+  assert(frames[0].overviewComplete);
+  const box = make(1000).box;
+  for (const x of [box.x + 1, box.x + box.width - 1])
+    for (const y of [box.y + 1, box.y + box.height - 1])
+      assert(
+        frames[0].tiles.some((t) => {
+          const s = 256 * 2 ** t.tile.lod;
+          return (
+            x >= t.tile.x * s &&
+            x < (t.tile.x + 1) * s &&
+            y >= t.tile.y * s &&
+            y < (t.tile.y + 1) * s
+          );
+        }),
+      );
+  assertNoOverlap(frames[0]);
+  held.resolve();
+  await loading;
+  assert(frames.at(-1).complete);
+  assert(stream.statistics.tiles <= 64);
+  assert(stream.statistics.bytes <= 1024 * 1024);
+  const revoked = [];
+  const changed = stream.load(
+    { ...make(1000), source: 'new', revision: 8 },
+    async (q) => reply(q, 'new'),
+    (f) => revoked.push(f),
+  );
+  await changed;
+  assert(revoked.every((f) => f.tiles.every((t) => t.revision === 8 && t.fence === 'new')));
   stream.dispose();
 });

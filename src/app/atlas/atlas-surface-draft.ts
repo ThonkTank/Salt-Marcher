@@ -10,6 +10,7 @@ import type { AtlasSurfaceTile } from './atlas-surface-tile-stream';
 import { TerrainBrushDraft } from './terrain-brush-draft';
 import { applyTerrainBrush, type HeightStroke } from './terrain-brush';
 import { gridHeight, terrainVisibility, type TerrainView } from './terrain-spatial-model';
+import type { TerrainEditingSource } from './terrain-spatial-model';
 import type { LandscapeRecord } from './atlas-landscape';
 import { atlasWorldTileBounds } from './atlas-world-tiles';
 import { LandscapeRasterizer } from './landscape-raster';
@@ -24,6 +25,7 @@ export class AtlasSurfaceDraft {
   private bases: readonly AtlasSurfaceTile[];
   private authorRecords: LandscapeRecord[];
   private consumed = 1;
+  private source?: TerrainEditingSource;
   tiles: readonly AtlasSurfaceTile[];
   get baseTiles() {
     return this.bases;
@@ -32,7 +34,31 @@ export class AtlasSurfaceDraft {
     tiles: readonly AtlasSurfaceTile[],
     private visibility: TerrainView,
     private land = DEFAULT_TERRAIN_STYLE.land,
+    source?: TerrainEditingSource,
   ) {
+    // Install the independently loaded author snapshot only for this draft.
+    // Existing local successors override its canonical records.
+    const local = tiles.flatMap((t) => t.terrain.projection.grid.editing?.author?.records ?? []);
+    if (source) {
+      const records = [...new Map([...source.records, ...local].map((r) => [r.id, r])).values()];
+      tiles = tiles.map((t) => ({
+        ...t,
+        terrain: {
+          ...t.terrain,
+          projection: {
+            ...t.terrain.projection,
+            grid: {
+              ...t.terrain.projection.grid,
+              editing: {
+                ...t.terrain.projection.grid.editing!,
+                author: { ...source, records },
+              },
+            },
+          },
+        },
+      }));
+    }
+    this.source = source;
     this.bases = tiles;
     this.tiles = tiles;
     this.authorRecords = [
@@ -47,7 +73,9 @@ export class AtlasSurfaceDraft {
     const view = this.visibility,
       heights = new Float32Array(view.columns * view.rows);
     const layout = terrainGridLayout(view),
-      sampler = new TerrainSampler(this.authorRecords, false);
+      sampler = new TerrainSampler(this.authorRecords, false),
+      canonical = this.source?.visibility,
+      original = canonical ? new TerrainSampler(this.source!.records, false) : null;
     for (let y = 0; y < view.rows; y++)
       for (let x = 0; x < view.columns; x++) {
         const p = { x: layout.x.values[x]!, y: layout.y.values[y]! };
@@ -59,7 +87,27 @@ export class AtlasSurfaceDraft {
         const water = g?.editing
           ? gridHeight({ ...g, heights: g.editing.water }, p)
           : this.bases[0]!.terrain.projection.grid.seaLevelM;
-        heights[y * view.columns + x] = Math.max(sampler.sample(p).heightM, water);
+        if (canonical && original) {
+          const ground = canonical.editing
+            ? gridHeight({ ...canonical, heights: canonical.editing.ground }, p)
+            : gridHeight(canonical, p);
+          const level = canonical.editing
+            ? gridHeight({ ...canonical, heights: canonical.editing.water }, p)
+            : canonical.seaLevelM;
+          heights[y * view.columns + x] = Math.max(
+            level,
+            ground + sampler.sample(p).heightM - original.sample(p).heightM,
+          );
+        } else {
+          const b = this.source?.box;
+          const local =
+            !b || (p.x >= b.x && p.x <= b.x + b.width && p.y >= b.y && p.y <= b.y + b.height);
+          heights[y * view.columns + x] = local
+            ? Math.max(sampler.sample(p).heightM, water)
+            : g
+              ? gridHeight(g, p)
+              : water;
+        }
       }
     return { view, heights, seaLevelM: this.bases[0]!.terrain.projection.grid.seaLevelM };
   }

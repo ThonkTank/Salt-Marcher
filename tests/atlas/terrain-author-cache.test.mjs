@@ -9,7 +9,7 @@ const require = createRequire(import.meta.url);
 buildSync({
   stdin: {
     contents:
-      "export {terrainGridLayout} from './src/app/atlas/terrain-grid-layout';export * from './src/app/storage/store';export * from './src/app/storage/terrain-grid';export * from './src/app/storage/atlas-landscape';export * from './src/app/storage/terrain-route';export * from './src/app/atlas/terrain-height';",
+      "export * from './src/app/storage/terrain-editing-source';export * from './src/app/atlas/atlas-terrain-editing-source';export * from './src/app/atlas/terrain-brush';export {terrainGridLayout} from './src/app/atlas/terrain-grid-layout';export * from './src/app/storage/store';export * from './src/app/storage/terrain-grid';export * from './src/app/storage/atlas-landscape';export * from './src/app/storage/terrain-route';export * from './src/app/atlas/terrain-height';",
     resolveDir: process.cwd(),
   },
   outfile: '.build/terrain-author-cache-test.cjs',
@@ -19,6 +19,12 @@ buildSync({
   external: ['better-sqlite3'],
 });
 const {
+  readTerrainEditingRecords,
+  readTerrainEditingPage,
+  readTerrainEditingPackets,
+  AtlasTerrainEditingSource,
+  applyTerrainBrush,
+  TerrainSampler,
   terrainGridLayout,
   CampaignStore,
   readTerrainGrid,
@@ -258,4 +264,150 @@ test('derived indexes tolerate corrupt JSON while canonical reads fail closed; m
     'UNION ordering must not turn settings into a full author-payload scan',
   );
   assert.deepEqual(f.read(), f.canonical());
+});
+
+test('dense author region uses complete revision-bound packets; room source and protected edit remain exact', async (t) => {
+  const f = fixture(t),
+    db = f.store.db;
+  const put = db.prepare('INSERT INTO atlas_landscape VALUES(?,?,?,?,?,?,?,?)');
+  let bytes = 0;
+  db.transaction(() => {
+    for (let y = -15; y < 15; y++)
+      for (let x = -15; x < 15; x++) {
+        const r = heightRecord(
+          x * 8,
+          y * 8,
+          0.125,
+          Float32Array.from({ length: 4096 }, (_, i) => 0.2 * Math.sin(i / 37)),
+          2,
+        );
+        const payload = JSON.stringify(r);
+        bytes += payload.length * 2;
+        put.run(f.cam.id, r.id, 0, x * 8, (x + 1) * 8, y * 8, (y + 1) * 8, payload);
+      }
+  })();
+  assert(bytes > 32 * 1024 * 1024);
+  const box = { x: -128, y: -128, width: 256, height: 256 };
+  assert.throws(() => readTerrainEditingRecords(db, f.cam.id, box), /Zu viele/);
+  const identity = { revision: 1, fence: f.fence(), radius: 1 };
+  const source = new AtlasTerrainEditingSource();
+  let packets = 0;
+  const full = await source.load(identity, box, async (after) => {
+    const packet = readTerrainEditingPage(db, f.cam.id, box, after);
+    packets++;
+    assert(JSON.stringify(packet.records).length * 2 < 2 * 1024 * 1024);
+    assert.equal(source.ready(identity, box), false, 'no partial packet authorizes a gesture');
+    return { ...identity, box, pixel: 1 / 32, ...packet };
+  });
+  assert(packets > 16);
+  assert.equal(full.records.length, 901);
+  assert(source.ready(identity, box));
+  const room = { x: 28, y: 28, width: 8, height: 8 };
+  const local = readTerrainEditingPage(db, f.cam.id, room);
+  assert(local.complete);
+  assert(local.records.length < 12);
+  const stroke = {
+    mode: 'raise',
+    radius: 1,
+    strength: 2,
+    feather: 0.5,
+    preserveDetails: true,
+    samples: [
+      { x: 32, y: 32, t: 0 },
+      { x: 32.25, y: 32, t: 250 },
+    ],
+  };
+  const expected = applyTerrainBrush(full.records, stroke);
+  assert.deepEqual(applyTerrainBrush(local.records, stroke), expected);
+  f.write({ kind: 'landscape-height-stroke', stroke });
+  const actual = new TerrainSampler(readTerrainEditingPage(db, f.cam.id, room).records);
+  const expectedSampler = new TerrainSampler([
+    ...new Map([...local.records, ...expected].map((r) => [r.id, r])).values(),
+  ]);
+  for (let x = 31; x <= 33; x += 0.125)
+    assert.equal(actual.sample({ x, y: 32 }).heightM, expectedSampler.sample({ x, y: 32 }).heightM);
+});
+test('editing packets reject missing continuation, stale identity and superseded spatial requests', async () => {
+  const source = new AtlasTerrainEditingSource(),
+    identity = { revision: 1, fence: 'one', radius: 1 },
+    box = { x: 0, y: 0, width: 4, height: 4 };
+  const page = { ...identity, box, pixel: 1 / 32, records: [], complete: true };
+  await assert.rejects(
+    source.load(identity, box, async () => ({ ...page, complete: false })),
+    /Fortsetzung/,
+  );
+  assert.equal(source.ready(identity, box), false);
+  await assert.rejects(
+    source.load(identity, box, async () => ({ ...page, revision: 2 })),
+    /angeforderten/,
+  );
+  let release;
+  const old = source.load(identity, box, () => new Promise((r) => (release = r)));
+  const nextBox = { ...box, x: 10 };
+  const current = await source.load(identity, nextBox, async () => ({ ...page, box: nextBox }));
+  release(page);
+  assert.equal(await old, null);
+  assert.equal(source.source, current);
+  source.clear();
+  assert.equal(source.ready(identity, nextBox), false);
+});
+
+test('a sub-metre author source above the old cap remains complete through canonical detail removal', (t) => {
+  const f = fixture(t),
+    db = f.store.db;
+  const put = db.prepare('INSERT INTO atlas_landscape VALUES(?,?,?,?,?,?,?,?)');
+  const pixel = 2 ** -12,
+    side = pixel * 64;
+  let bytes = 0;
+  db.transaction(() => {
+    for (let y = -15; y < 15; y++)
+      for (let x = -15; x < 15; x++) {
+        const r = heightRecord(
+          32 + x * side,
+          32 + y * side,
+          pixel,
+          new Float32Array(4096).fill(0.25),
+          2,
+        );
+        r.revision = 1;
+        const p = JSON.stringify(r);
+        bytes += p.length * 2;
+        put.run(
+          f.cam.id,
+          r.id,
+          r.revision,
+          r.height.x - pixel,
+          r.height.x + 64 * pixel,
+          r.height.y - pixel,
+          r.height.y + 64 * pixel,
+          p,
+        );
+      }
+  })();
+  assert(bytes > 32 * 1024 * 1024);
+  const box = { x: 31.5, y: 31.5, width: 1, height: 1 };
+  assert.throws(() => readTerrainEditingRecords(db, f.cam.id, box), /Zu viele/);
+  const complete = readTerrainEditingPackets(db, f.cam.id, box);
+  assert.equal(complete.length, 901);
+  const stroke = {
+    mode: 'lower',
+    radius: 0.5,
+    strength: 0.1,
+    feather: 0.5,
+    preserveDetails: false,
+    samples: [
+      { x: 32, y: 32, t: 0 },
+      { x: 32, y: 32, t: 50 },
+    ],
+  };
+  const expected = applyTerrainBrush(complete, stroke);
+  assert(expected.length > 1);
+  f.write({ kind: 'landscape-height-stroke', stroke });
+  const actual = readTerrainEditingPackets(db, f.cam.id, box);
+  const byId = new Map(actual.map((r) => [r.id, r]));
+  for (const r of expected) {
+    const revision = (complete.find((old) => old.id === r.id)?.revision ?? 0) + 1;
+    assert.equal(byId.get(r.id)?.revision, revision);
+    assert.deepEqual(byId.get(r.id)?.height, r.height);
+  }
 });

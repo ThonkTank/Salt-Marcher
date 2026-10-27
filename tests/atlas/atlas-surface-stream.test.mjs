@@ -241,3 +241,57 @@ test('optional prefetch failure preserves the fully published viewport without a
   assert(frames.at(-1).tiles.length > 0);
   stream.dispose();
 });
+
+test('world-to-room navigation carries paired display data without author snapshots through slow refinement', async () => {
+  const stream = new AtlasSurfaceTileStream({
+    maxTiles: 32,
+    maxRetainedTiles: 64,
+    maxBytes: 64 * 1024 * 1024,
+  });
+  for (const width of [1000000, 100000, 10000, 1000, 100, 10, 100, 1000, 10000, 100000, 1000000]) {
+    const box = {
+      x: 1048576.25 - width * 0.61,
+      y: -0.25 - (width * 0.43 * 9) / 16,
+      width,
+      height: (width * 9) / 16,
+    };
+    let complete = false,
+      requests = 0;
+    await stream.load(
+      { ...input, box, metersPerPixel: width / 1920 },
+      async (q) => {
+        assert.equal(q.editingRadius, undefined);
+        requests++;
+        await new Promise((resolve) => setImmediate(resolve));
+        return pair(q);
+      },
+      (frame) => {
+        assert(frame.tiles.every((t) => t.terrain.revision === 2 && t.material.revision === 2));
+        if (!frame.overviewComplete) return;
+        for (const dx of [0.01, 0.5, 0.99])
+          for (const dy of [0.01, 0.5, 0.99]) {
+            const x = box.x + box.width * dx,
+              y = box.y + box.height * dy;
+            assert(
+              frame.tiles.some((t) => {
+                const s = 256 * 2 ** t.tile.lod;
+                return (
+                  x >= t.tile.x * s &&
+                  x < (t.tile.x + 1) * s &&
+                  y >= t.tile.y * s &&
+                  y < (t.tile.y + 1) * s
+                );
+              }),
+              'complete published coverage',
+            );
+          }
+        complete ||= frame.complete;
+      },
+    );
+    assert(complete);
+    assert(requests <= 64);
+    assert(stream.statistics.bytes <= 64 * 1024 * 1024);
+    assert(stream.statistics.tiles <= 64);
+  }
+  stream.dispose();
+});

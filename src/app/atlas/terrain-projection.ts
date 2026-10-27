@@ -43,6 +43,9 @@ export interface TerrainProjectionData {
 
 export interface TerrainProjectionRequest {
   editingRadius?: number;
+  /** Cursor for an exact, bounded author-source packet. Empty starts a read. */
+  editingPage?: string;
+  editingBox?: import('./atlas-landscape').LandscapeBox;
   product?: 'height';
   colorBase?: import('./terrain-frame').TerrainIdentity;
   detail?: import('./atlas-landscape').LandscapeBox;
@@ -81,8 +84,17 @@ export function validateTerrainProjection(q: TerrainProjectionRequest) {
   )
     throw Error('Geländefarbbasis prüfen.');
   validateTerrainView(q.view);
+  if (q.editingBox !== undefined) {
+    if (q.editingPage === undefined) throw Error('Autorenbereich benötigt eine Paketanfrage.');
+    validateTerrainView({ ...q.view, box: q.editingBox });
+  }
   validateTerrainDetail(q.detail, q.view.box);
   if (
+    (q.editingPage !== undefined &&
+      (q.product !== 'height' ||
+        q.editingRadius === undefined ||
+        typeof q.editingPage !== 'string' ||
+        q.editingPage.length > 512)) ||
     (q.editingRadius !== undefined &&
       (!Number.isFinite(q.editingRadius) || q.editingRadius <= 0 || q.editingRadius > 1e10)) ||
     !Number.isSafeInteger(q.revision) ||
@@ -105,6 +117,8 @@ export function validateTerrainProjection(q: TerrainProjectionRequest) {
         ![
           'product',
           'editingRadius',
+          'editingPage',
+          'editingBox',
           'colorBase',
           'detail',
           'detailResolution',

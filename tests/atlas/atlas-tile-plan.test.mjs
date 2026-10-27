@@ -147,3 +147,37 @@ test('tilted coverage keeps distant ground and refines the focus within one boun
       }),
     );
 });
+
+test('six world-to-room endpoints and intermediate scales are bounded and covered across signed remote tiles', () => {
+  for (const centre of [
+    { x: 0, y: 0 },
+    { x: 1048576.25, y: -0.25 },
+  ]) {
+    const widths = Array.from({ length: 51 }, (_, i) => 1000000 * 10 ** (-i / 10));
+    for (const width of [...widths, ...widths.toReversed()]) {
+      const box = {
+        x: centre.x - width * 0.61,
+        y: centre.y - (width * 0.43 * 9) / 16,
+        width,
+        height: (width * 9) / 16,
+      };
+      const plan = atlasTilePlan(box, width / 1920, { maxTiles: 32 });
+      assert(plan.detail.length <= 32);
+      assert(plan.overview.length <= 32);
+      for (const group of [plan.detail, plan.overview])
+        for (const dx of [0, 0.1, 0.5, 0.9, 1 - 1e-10])
+          for (const dy of [0, 0.5, 1 - 1e-10]) {
+            const x = box.x + dx * box.width,
+              y = box.y + dy * box.height;
+            assert(
+              group.some((t) => {
+                const size = 256 * 2 ** t.lod;
+                return (
+                  x >= t.x * size && x < (t.x + 1) * size && y >= t.y * size && y < (t.y + 1) * size
+                );
+              }),
+            );
+          }
+    }
+  }
+});

@@ -1,4 +1,4 @@
-import { readTerrainEditingRecords } from './terrain-editing-source';
+import { readTerrainEditingPage, readTerrainEditingRecords } from './terrain-editing-source';
 import { heightBrushResolution } from '../atlas/terrain-brush';
 import { PNG } from 'pngjs';
 import { boundedLabels, landscapeLabels, type MapLabelCandidate } from '../atlas/atlas-cartography';
@@ -615,7 +615,7 @@ export class AtlasLandscapeReader {
       // Every visible author node plus the fixed smoothing stencil and
       // interpolation support, independent of screen sampling density.
       const pad = radius / 2 + 3 * pixel,
-        b = q.view.box;
+        b = q.editingBox ?? q.view.box;
       const box = {
         x: b.x - pad,
         y: b.y - pad,
@@ -628,7 +628,12 @@ export class AtlasLandscapeReader {
         pixel,
         radius,
         box,
-        records: readTerrainEditingRecords(this.db, source.campaignId, box),
+        ...(q.editingPage !== undefined
+          ? readTerrainEditingPage(this.db, source.campaignId, box, q.editingPage)
+          : {
+              records: readTerrainEditingRecords(this.db, source.campaignId, box),
+              complete: true,
+            }),
       };
       yield* checkpoint();
     }

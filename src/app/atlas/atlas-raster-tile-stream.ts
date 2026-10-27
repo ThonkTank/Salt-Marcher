@@ -67,6 +67,9 @@ export class AtlasRasterTileStream<T extends AtlasRasterTile, R extends AtlasRas
   private identity: string | undefined;
   private visible = new Map<string, CachedTile<T>>();
   private staged = new Map<string, CachedTile<T>>();
+  /** A small coarse coverage reserve survives a room-scale visit. It belongs
+   * to the same cache budget and source, never to an independent image layer. */
+  private fallback = new Map<string, CachedTile<T>>();
   /** Insertion order is LRU order, oldest first. */
   private readonly cache = new Map<string, CachedTile<T>>();
 
@@ -132,13 +135,25 @@ export class AtlasRasterTileStream<T extends AtlasRasterTile, R extends AtlasRas
       );
     } else {
       this.visible = new Map();
+      this.fallback.clear();
+    }
+    // Outward zoom can expose space beyond the current children. Publish the
+    // retained complete ancestor immediately, before any asynchronous fetch.
+    if (
+      compatible &&
+      !coversBox(this.visible.values(), input.box) &&
+      coversBox(this.fallback.values(), input.box)
+    ) {
+      this.visible = new Map(this.fallback);
+      this.overviewComplete = true;
     }
     this.staged = new Map();
     this.emit(generation, false, publish);
 
     const detailsByParent = groupChildren(plan.detail, plan.overview);
     const parentTileKeys = new Map(plan.overview.map((tile) => [worldTileKey(tile), tile]));
-    const protectedKeys = () => this.activeKeys();
+    const protectedKeys = () =>
+      new Set([...this.activeKeys(), ...[...this.fallback.values()].map((e) => e.key)]);
     const bridgeExistingFrame = this.visible.size > 0;
 
     // With an existing valid frame, assemble a complete new overview off-screen
@@ -159,6 +174,18 @@ export class AtlasRasterTileStream<T extends AtlasRasterTile, R extends AtlasRas
         this.emit(generation, false, publish);
       }
     }
+
+    const overviewEntries = bridgeExistingFrame ? this.staged : this.visible;
+    if (
+      plan.overview.length &&
+      overviewEntries.size === plan.overview.length &&
+      overviewEntries.size <= Math.min(8, Math.floor(this.maxRetainedTiles / 4)) &&
+      [...overviewEntries.values()].reduce((sum, e) => sum + e.bytes, 0) <= this.maxBytes / 4 &&
+      (!this.fallback.size ||
+        Math.min(...plan.overview.map((t) => t.lod)) >=
+          Math.max(...[...this.fallback.values()].map((e) => e.tile.tile.lod)))
+    )
+      this.fallback = new Map(overviewEntries);
 
     if (bridgeExistingFrame && plan.overview.length > 0) {
       this.visible = new Map(this.staged);
@@ -289,6 +316,7 @@ export class AtlasRasterTileStream<T extends AtlasRasterTile, R extends AtlasRas
     this.visible.clear();
     this.staged.clear();
     this.cache.clear();
+    this.fallback.clear();
     this.identity = undefined;
   }
 
@@ -498,4 +526,44 @@ function estimateBytes(value: unknown): number {
     return bytes;
   };
   return Math.max(TILE_OBJECT_OVERHEAD, visit(value));
+}
+
+/** Exact union coverage for the bounded, axis-aligned non-overlapping tiles.
+ * Intersections partition the view into vertical strips; no sampling can hide
+ * a narrow gap at a signed tile boundary. */
+function coversBox<T extends AtlasRasterTile>(
+  entries: Iterable<CachedTile<T>>,
+  box: LandscapeBox,
+): boolean {
+  const bounds = [...entries]
+    .map((e) => atlasWorldTileBounds(e.tile.tile))
+    .filter(
+      (b) =>
+        b.maxX > box.x &&
+        b.minX < box.x + box.width &&
+        b.maxY > box.y &&
+        b.minY < box.y + box.height,
+    );
+  const xs = [
+    ...new Set([
+      box.x,
+      box.x + box.width,
+      ...bounds.flatMap((b) => [Math.max(box.x, b.minX), Math.min(box.x + box.width, b.maxX)]),
+    ]),
+  ].sort((a, b) => a - b);
+  for (let i = 1; i < xs.length; i++) {
+    const left = xs[i - 1]!,
+      right = xs[i]!;
+    const bands = bounds
+      .filter((b) => b.minX <= left && b.maxX >= right)
+      .sort((a, b) => a.minY - b.minY);
+    let end = box.y;
+    for (const b of bands) {
+      if (b.minY > end) return false;
+      end = Math.max(end, b.maxY);
+      if (end >= box.y + box.height) break;
+    }
+    if (end < box.y + box.height) return false;
+  }
+  return bounds.length > 0;
 }
