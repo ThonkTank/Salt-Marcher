@@ -4,6 +4,7 @@ export interface AtlasRasterTileRequest {
   tile: AtlasWorldTile;
   revision: number;
   contours?: number;
+  editingRadius?: number;
 }
 export interface AtlasRasterTile {
   tile: AtlasWorldTile;
@@ -14,7 +15,7 @@ export interface AtlasRasterTileAdapter<
   T extends AtlasRasterTile,
   R extends AtlasRasterTileRequest,
 > {
-  request(tile: AtlasWorldTile, revision: number, contours?: number): R;
+  request(tile: AtlasWorldTile, revision: number, contours?: number, editingRadius?: number): R;
   validate(reply: T, request: R, source: string): void;
 }
 import type { LandscapeBox } from './atlas-landscape.js';
@@ -39,6 +40,7 @@ export interface AtlasRasterStreamInput {
   readonly revision: number;
   readonly source: string;
   readonly contours?: number;
+  readonly editingRadius?: number;
 }
 export interface AtlasRasterStreamFrame<T extends AtlasRasterTile> {
   readonly tiles: readonly T[];
@@ -118,7 +120,7 @@ export class AtlasRasterTileStream<T extends AtlasRasterTile, R extends AtlasRas
       maxTiles: Math.min(input.maxTiles ?? this.maxTiles, this.maxTiles),
       focus: input.focus,
     });
-    const identity = sourceIdentity(input.source, input.revision, contours);
+    const identity = sourceIdentity(input.source, input.revision, contours, input.editingRadius);
     const compatible = this.identity === identity;
     this.identity = identity;
 
@@ -144,7 +146,7 @@ export class AtlasRasterTileStream<T extends AtlasRasterTile, R extends AtlasRas
     // as soon as it arrives so the first useful view is not delayed.
     for (const tile of plan.overview) {
       if (!this.isCurrent(generation)) return;
-      const request = this.adapter.request(tile, input.revision, contours);
+      const request = this.adapter.request(tile, input.revision, contours, input.editingRadius);
       const loaded = await this.getTile(request, input.source, fetch, generation, protectedKeys());
       if (!this.isCurrent(generation)) return;
       if (!loaded) return;
@@ -169,7 +171,7 @@ export class AtlasRasterTileStream<T extends AtlasRasterTile, R extends AtlasRas
       // Assemble the requested tiles before replacing the retained frame.
       for (const tile of plan.detail) {
         if (!this.isCurrent(generation)) return;
-        const request = this.adapter.request(tile, input.revision, contours);
+        const request = this.adapter.request(tile, input.revision, contours, input.editingRadius);
         const key = cacheKey(input.source, request);
         const loaded = await this.getTile(
           request,
@@ -193,7 +195,7 @@ export class AtlasRasterTileStream<T extends AtlasRasterTile, R extends AtlasRas
 
     for (const tile of plan.detail) {
       if (!this.isCurrent(generation)) return;
-      const request = this.adapter.request(tile, input.revision, contours);
+      const request = this.adapter.request(tile, input.revision, contours, input.editingRadius);
       const key = cacheKey(input.source, request);
       const loaded = await this.getTile(
         request,
@@ -243,7 +245,7 @@ export class AtlasRasterTileStream<T extends AtlasRasterTile, R extends AtlasRas
         if (this.activeKeys().size >= this.maxRetainedTiles) break;
         try {
           await this.getTile(
-            this.adapter.request(tile, input.revision, contours),
+            this.adapter.request(tile, input.revision, contours, input.editingRadius),
             input.source,
             fetch,
             generation,
@@ -397,8 +399,13 @@ export class AtlasRasterTileStream<T extends AtlasRasterTile, R extends AtlasRas
   }
 }
 
-function sourceIdentity(source: string, revision: number, contours?: number): string {
-  return JSON.stringify([source, revision, contours ?? 0]);
+function sourceIdentity(
+  source: string,
+  revision: number,
+  contours?: number,
+  editingRadius?: number,
+): string {
+  return JSON.stringify([source, revision, contours ?? 0, editingRadius]);
 }
 
 function intersectsBox(tile: AtlasWorldTile, box: LandscapeBox): boolean {
@@ -416,6 +423,7 @@ function cacheKey(source: string, request: AtlasRasterTileRequest): string {
     source,
     request.revision,
     request.contours ?? 0,
+    request.editingRadius,
     request.tile.lod,
     request.tile.x,
     request.tile.y,

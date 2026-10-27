@@ -29,6 +29,7 @@ export interface LandscapeHost {
     previewColor: (record: LandscapeRecord) => void;
   } | null;
   previewHeight?: (stroke: HeightStroke) => void;
+  editingReady?: (radius: number) => boolean;
   terrainGesture: (active: boolean) => void | Promise<void>;
   writeTerrain: (
     a: TerrainLiveAction,

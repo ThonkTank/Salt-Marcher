@@ -10,7 +10,7 @@ const require = createRequire(import.meta.url);
 buildSync({
   stdin: {
     contents:
-      "export * from './src/app/storage/store';export * from './src/app/atlas/terrain-height';export * from './src/app/atlas/terrain-brush';export * from './desktop/atlas-region';",
+      "export * from './src/app/storage/store';export * from './src/app/atlas/terrain-height';export * from './src/app/atlas/terrain-brush';export * from './desktop/atlas-region';export * from './src/app/atlas/terrain-brush-draft';export * from './src/app/atlas/terrain-stroke-queue';",
     resolveDir: process.cwd(),
   },
   outfile: '.build/terrain-scale-worker-test.cjs',
@@ -33,6 +33,8 @@ const {
   heightRecord,
   applyTerrainBrush,
   TerrainSampler,
+  TerrainBrushDraft,
+  TerrainStrokeQueue,
 } = require('../../.build/terrain-scale-worker-test.cjs');
 async function fixture(t) {
   const base = homedir() + '/.cache/saltmarcher/tests';
@@ -247,4 +249,162 @@ test('all form commands cross the real worker boundary and preserve undo, redo, 
       fresh.close();
     }
   }
+});
+
+test('real editing packet, pending successor and writer preserve multiscale heights through receipts, undo/redo and fresh open', async (t) => {
+  const f = await fixture(t),
+    rows = () =>
+      f.store.db
+        .prepare('SELECT payload FROM atlas_landscape ORDER BY id')
+        .all()
+        .map((r) => JSON.parse(r.payload));
+  const bytes = () =>
+    rows()
+      .filter((r) => r.height)
+      .map((r) => [r.id, r.height.data]);
+  for (const pixel of [2, 0.25])
+    for (let y = -1; y <= 1; y++)
+      for (let x = -1; x <= 1; x++) {
+        const record = heightRecord(
+          x * 64 * pixel,
+          y * 64 * pixel,
+          pixel,
+          Float32Array.from({ length: 4096 }, (_, i) => {
+            const xx = (x * 64 + (i % 64)) * pixel,
+              yy = (y * 64 + Math.floor(i / 64)) * pixel;
+            return pixel === 2
+              ? 230 + 0.15 * xx + 12 * Math.cos(yy / 10)
+              : 8 * Math.exp(-((xx - 16) ** 2) / 2) -
+                  6 * Math.exp(-((xx - 16) ** 2 + (yy - 12) ** 2) / 6);
+          }),
+          2,
+        );
+        f.store.executeAtlasCommit({
+          ...f.command(),
+          action: { kind: 'landscape-put', record, expectedRevision: null },
+        });
+      }
+  const source = f.store.atlasRegionSource(f.token, f.service.cursor);
+  const tile = await f.service.terrainTile(source, {
+    tile: { lod: -2, x: 0, y: 0 },
+    revision: source.revision,
+    product: 'height',
+    editingRadius: 32,
+  });
+  assert.equal(tile.projection.grid.editing.author.revision, source.revision);
+  assert.equal(tile.projection.grid.editing.author.fence, source.fence);
+  assert.equal(tile.projection.grid.editing.author.pixel, 1);
+  assert(tile.projection.grid.editing.author.records.some((r) => r.height.pixel === 0.25));
+  const first = {
+    mode: 'smooth',
+    radius: 32,
+    strength: 10,
+    feather: 0.8,
+    preserveDetails: true,
+    samples: [
+      { x: 16, y: 12, t: 0 },
+      { x: 24, y: 20, t: 1000 },
+    ],
+    visibility: tile.projection.grid.view,
+  };
+  const second = { ...first, mode: 'raise', strength: 8, preserveDetails: false };
+  const a = new TerrainBrushDraft(tile.projection.grid);
+  a.update(first);
+  const b = new TerrainBrushDraft(a.grid);
+  b.update(second);
+  const before = bytes(),
+    calls = [];
+  let release;
+  const hold = new Promise((resolve) => (release = resolve));
+  const queue = new TerrainStrokeQueue(
+    { expectedRevision: source.revision, sourceFence: source.fence },
+    async (action, context) => {
+      calls.push(structuredClone({ action, context }));
+      if (calls.length === 1) await hold;
+      const command = {
+        ...f.command(),
+        commandId: context.commandId,
+        action,
+        sourceFence: context.sourceFence,
+        terrainStroke: { id: context.id, expectedRevision: context.expectedRevision },
+      };
+      const src = f.store.terrainStrokeSource(command, f.service.cursor),
+        patch = await f.service.prepareTerrainStroke(src, action.stroke);
+      const ack = f.store.executeAtlasCommit(command, patch);
+      const saved = bytes();
+      f.store.executeAtlasCommit(command);
+      assert.deepEqual(bytes(), saved, 'same receipt never repeats smoothing or relaxation');
+      return ack;
+    },
+  );
+  const p1 = queue.enqueue({ kind: 'landscape-height-stroke', stroke: first }, randomUUID());
+  const p2 = queue.enqueue({ kind: 'landscape-height-stroke', stroke: second }, randomUUID());
+  second.preserveDetails = true;
+  assert.equal(queue.pending, 2);
+  assert.deepEqual(bytes(), before);
+  release();
+  await Promise.all([p1, p2]);
+  assert.equal(calls.length, 2);
+  assert.equal(queue.pending, 0);
+  assert.equal(calls[1].action.stroke.preserveDetails, false);
+  const expected = new Map(b.records.map((r) => [r.id, r.height?.data]));
+  for (const r of rows())
+    if (expected.has(r.id))
+      assert(r.height.data === expected.get(r.id), 'exact author bytes ' + r.id);
+  const canonical = new TerrainSampler(rows(), false);
+  let maximum = 0;
+  for (let y = 0; y < 65; y++)
+    for (let x = 0; x < 65; x++)
+      maximum = Math.max(
+        maximum,
+        Math.abs(b.ground[y * 65 + x] - canonical.sample({ x, y }).heightM),
+      );
+  assert(maximum <= 2 * 2 ** -16, 'two Float32 additions below 256m: ' + maximum);
+  const saved = bytes();
+  f.store.executeAtlasCommit({ ...f.command(), action: { kind: 'undo' } });
+  const firstResult = new Map(a.records.map((r) => [r.id, r.height?.data]));
+  for (const r of rows())
+    if (firstResult.has(r.id)) assert(r.height.data === firstResult.get(r.id));
+  f.store.executeAtlasCommit({ ...f.command(), action: { kind: 'redo' } });
+  assert.deepEqual(bytes(), saved);
+  const current = f.store.atlasRegionSource(f.token, f.service.cursor);
+  const canonicalTile = await f.service.terrainTile(current, {
+    tile: { lod: -2, x: 0, y: 0 },
+    revision: current.revision,
+    product: 'height',
+    editingRadius: 32,
+  });
+  assert.equal(canonicalTile.projection.grid.editing.author.revision, current.revision);
+  for (let i = 0; i < b.ground.length; i++)
+    assert(Math.abs(b.ground[i] - canonicalTile.projection.grid.editing.ground[i]) <= 2 * 2 ** -16);
+  const fresh = new CampaignStore(f.store.db.name);
+  try {
+    const tok = fresh.activateShell(f.cam.id).token;
+    assert.deepEqual(
+      fresh.db
+        .prepare('SELECT payload FROM atlas_landscape ORDER BY id')
+        .all()
+        .map((r) => {
+          const v = JSON.parse(r.payload);
+          return [v.id, v.height.data];
+        }),
+      saved,
+    );
+    for (const point of [
+      { x: 15.9, y: 12.3 },
+      { x: 16.1, y: 20.7 },
+      { x: 32.1, y: 31.9 },
+    ])
+      assert.equal(fresh.atlasHeight(tok, point).heightM, canonical.sample(point).heightM);
+  } finally {
+    fresh.close();
+  }
+  console.log(
+    JSON.stringify({
+      pendingGestures: calls.length,
+      maximumHeightErrorM: maximum,
+      sourceRevision: source.revision,
+      canonicalRevision: current.revision,
+    }),
+  );
 });

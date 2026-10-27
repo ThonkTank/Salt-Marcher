@@ -8,6 +8,7 @@ export interface AtlasTerrainTileRequest {
   revision: number;
   contours?: number;
   product?: 'height';
+  editingRadius?: number;
 }
 export interface AtlasTerrainTile {
   tile: AtlasWorldTile;
@@ -23,8 +24,14 @@ export function atlasTerrainTileQuery(
 ): TerrainProjectionRequest {
   if (
     !request ||
-    Object.keys(request).some((k) => !['tile', 'revision', 'contours', 'product'].includes(k)) ||
+    Object.keys(request).some(
+      (k) => !['tile', 'revision', 'contours', 'product', 'editingRadius'].includes(k),
+    ) ||
     (request.product !== undefined && request.product !== 'height') ||
+    (request.editingRadius !== undefined &&
+      (!Number.isFinite(request.editingRadius) ||
+        request.editingRadius <= 0 ||
+        request.editingRadius > 1e10)) ||
     !request.tile ||
     Object.keys(request.tile).some((k) => !['lod', 'x', 'y'].includes(k)) ||
     !Number.isSafeInteger(request.revision) ||
@@ -61,6 +68,7 @@ export function atlasTerrainTileQuery(
     displayMpp: b.sizeM / ATLAS_TERRAIN_TILE_PIXELS,
     contours: request.contours ?? 0,
     revision: request.revision,
+    editingRadius: request.editingRadius,
     fence,
   };
 }

@@ -1,3 +1,5 @@
+import { readTerrainEditingRecords } from './terrain-editing-source';
+import { heightBrushResolution } from '../atlas/terrain-brush';
 import { PNG } from 'pngjs';
 import { boundedLabels, landscapeLabels, type MapLabelCandidate } from '../atlas/atlas-cartography';
 import {
@@ -607,6 +609,29 @@ export class AtlasLandscapeReader {
       this.terrainStream(source),
       this.projectionCache,
     );
+    if (q.editingRadius !== undefined) {
+      const radius = q.editingRadius,
+        pixel = heightBrushResolution(radius);
+      // Every visible author node plus the fixed smoothing stencil and
+      // interpolation support, independent of screen sampling density.
+      const pad = radius / 2 + 3 * pixel,
+        b = q.view.box;
+      const box = {
+        x: b.x - pad,
+        y: b.y - pad,
+        width: b.width + 2 * pad,
+        height: b.height + 2 * pad,
+      };
+      grid.editing!.author = {
+        revision: source.revision,
+        fence: source.fence,
+        pixel,
+        radius,
+        box,
+        records: readTerrainEditingRecords(this.db, source.campaignId, box),
+      };
+      yield* checkpoint();
+    }
     const objects: TerrainObject[] = [];
     for (const object of q.objects ?? []) {
       const points = terrainObjectPoints(object),

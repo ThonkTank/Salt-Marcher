@@ -7,6 +7,7 @@ export interface TerrainDraft {
 }
 export type AtlasPresentationHost = {
   draft: () => TerrainDraft | null;
+  editingRadius?: () => number;
   live: () => boolean;
   hasDraft: () => boolean;
   navigationLocked?: () => boolean;

@@ -21,7 +21,20 @@ export interface TerrainGrid {
   view: TerrainView;
   heights: Float32Array;
   seaLevelM: number;
-  editing?: { ground: Float32Array; water: Float32Array };
+  editing?: {
+    ground: Float32Array;
+    water: Float32Array;
+    author?: TerrainEditingSource;
+  };
+}
+/** Read-only author snapshot. Main remains the sole storage writer. */
+export interface TerrainEditingSource {
+  revision: number;
+  fence: string;
+  pixel: number;
+  radius: number;
+  box: LandscapeBox;
+  records: LandscapeRecord[];
 }
 export function validateTerrainView(v: TerrainView) {
   if (

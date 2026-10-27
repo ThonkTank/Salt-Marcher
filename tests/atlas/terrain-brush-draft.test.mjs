@@ -1,11 +1,12 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { buildSync } from 'esbuild';
 import { createRequire } from 'node:module';
 buildSync({
   stdin: {
     contents:
-      "export * from './src/app/atlas/terrain-brush-draft';export * from './src/app/atlas/terrain-brush';export * from './src/app/atlas/terrain-height';",
+      "export * from './src/app/atlas/terrain-brush-draft';export * from './src/app/atlas/terrain-brush';export * from './src/app/atlas/terrain-height';export * from './src/app/atlas/terrain-spatial-model';",
     resolveDir: process.cwd(),
   },
   outfile: '.build/terrain-brush-draft-test.cjs',
@@ -13,9 +14,8 @@ buildSync({
   platform: 'node',
   format: 'cjs',
 });
-const { TerrainBrushDraft, applyTerrainBrush, TerrainSampler } = createRequire(import.meta.url)(
-  '../../.build/terrain-brush-draft-test.cjs',
-);
+const { TerrainBrushDraft, applyTerrainBrush, TerrainSampler, heightRecord, gridHeight } =
+  createRequire(import.meta.url)('../../.build/terrain-brush-draft-test.cjs');
 function grid(height = -100) {
   const view = {
     box: { x: -64, y: -64, width: 128, height: 128 },
@@ -32,6 +32,13 @@ function grid(height = -100) {
     heights: new Float32Array(129 * 129).fill(Math.max(0, height)),
     seaLevelM: 0,
     editing: {
+      author: {
+        records: [-1, 0].flatMap((y) =>
+          [-1, 0].map((x) =>
+            heightRecord(x * 256, y * 256, 4, new Float32Array(4096).fill(height)),
+          ),
+        ),
+      },
       ground: new Float32Array(129 * 129).fill(height),
       water: new Float32Array(129 * 129),
     },
@@ -100,4 +107,127 @@ test('offscreen nodes remain untouched and the display allocation is independent
   draft.update(stroke);
   assert.equal(draft.ground[64 * 129 + 84], -100);
   assert.equal(draft.ground.length, base.heights.length);
+});
+
+test('overlapping forms and multiscale smoothing share exact author nodes across seams, display resolutions and pending successors', () => {
+  const merge = (records, changes) => [
+    ...new Map([...records, ...changes].map((r) => [r.id, r])).values(),
+  ];
+  let original = [];
+  for (let y = -2; y <= 1; y++)
+    for (let x = -2; x <= 1; x++) {
+      original.push(
+        heightRecord(
+          x * 256,
+          y * 256,
+          4,
+          Float32Array.from(
+            { length: 4096 },
+            (_, i) =>
+              220 +
+              0.12 * (x * 256 + (i % 64) * 4) +
+              15 * Math.cos((y * 256 + Math.floor(i / 64) * 4) / 25),
+          ),
+          2,
+        ),
+      );
+      original.push(
+        heightRecord(
+          x * 64,
+          y * 64,
+          1,
+          Float32Array.from(
+            { length: 4096 },
+            (_, i) => 6 * Math.sin((y * 64 + Math.floor(i / 64)) / 3),
+          ),
+          2,
+        ),
+      );
+    }
+  const makeGrid = (records, columns) => {
+    const view = {
+      ...grid().view,
+      box: { x: -63.7, y: -63.3, width: 127.1, height: 126.7 },
+      frame: { x: -63.7, y: -63.3, width: 127.1, height: 126.7 },
+      columns,
+      rows: columns,
+    };
+    const sampler = new TerrainSampler(records, false),
+      ground = Float32Array.from(
+        { length: columns * columns },
+        (_, i) =>
+          sampler.sample({
+            x: view.box.x + ((i % columns) * view.box.width) / (columns - 1),
+            y: view.box.y + (Math.floor(i / columns) * view.box.height) / (columns - 1),
+          }).heightM,
+      );
+    return {
+      view,
+      heights: ground.slice(),
+      seaLevelM: 0,
+      editing: { ground, water: new Float32Array(ground.length), author: { records } },
+    };
+  };
+  const curve = [
+    { x: -30, y: -15, t: 0 },
+    { x: 0, y: 5, t: 500 },
+    { x: 30, y: 12, t: 1100 },
+  ];
+  const sequence = ['hills', 'mountains', 'canyon'].map((form, i) => ({
+    mode: form === 'canyon' ? 'lower' : 'raise',
+    form,
+    seed: 0x51a7c3,
+    radius: i === 2 ? 8 : 32,
+    strength: 45,
+    feather: 0.7,
+    samples: curve.map((p) => ({ ...p, x: p.y, y: p.x })),
+  }));
+  for (const preserveDetails of [true, false]) {
+    const actions = [
+      ...sequence,
+      ...[64, 16].map((radius) => ({
+        mode: 'smooth',
+        radius,
+        strength: 50,
+        feather: 0.8,
+        samples: curve,
+      })),
+      { mode: 'raise', radius: 64, strength: 30, feather: 0.8, samples: curve },
+    ].map((s) => ({ ...s, preserveDetails }));
+    let canonical = original;
+    const drafts = [67, 98].map((n) => makeGrid(original, n));
+    let maximum = 0;
+    for (const action of actions) {
+      canonical = merge(
+        canonical,
+        applyTerrainBrush(canonical, { ...action, visibility: drafts[0].view }),
+      );
+      for (let k = 0; k < drafts.length; k++) {
+        const draft = new TerrainBrushDraft(drafts[k]);
+        assert(draft.update(action));
+        const expected = makeGrid(canonical, drafts[k].view.columns);
+        for (let i = 0; i < draft.ground.length; i++)
+          maximum = Math.max(maximum, Math.abs(draft.ground[i] - expected.editing.ground[i]));
+        // Both display planes interpolate the same canonical authored surface.
+        for (const p of [
+          { x: -0.13, y: 0.27 },
+          { x: 31.83, y: -0.27 },
+          { x: -31.91, y: 20.23 },
+        ])
+          assert(Math.abs(gridHeight(draft.grid, p) - gridHeight(expected, p)) <= 0.0001);
+        const hash = (rs) =>
+          createHash('sha256')
+            .update(JSON.stringify(rs.map((r) => [r.id, r.height.data]).sort()))
+            .digest('hex');
+        assert.equal(hash(draft.records), hash(canonical));
+        assert.equal(draft.update(action), false, 'response adoption cannot apply the dose twice');
+        drafts[k] = draft.grid;
+      }
+    }
+    // Six f32 additions at heights below 500 m: <= 6 * 2^-15 m, well below 1 mm.
+    assert(maximum <= 6 * 2 ** -15, 'Float32 forward error: ' + maximum);
+    console.log(
+      JSON.stringify({ preserveDetails, maximumHeightErrorM: maximum, gestures: actions.length }),
+    );
+  }
 });

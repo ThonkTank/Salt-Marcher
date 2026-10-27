@@ -434,16 +434,20 @@ export class AtlasRasterPresentation implements AtlasPresentation {
           width: this.frame.width * 2,
           height: this.frame.height * 2,
         };
-    const key = atlasSurfaceRequestKey(
-      this.token,
-      this.revision,
-      this.fence,
-      box,
-      pose.metersPerPixel,
-      32,
-      this.tilt ? this.frame : undefined,
-      preload,
-    );
+    const editingRadius = this.host.editingRadius?.();
+    const key = JSON.stringify([
+      editingRadius,
+      atlasSurfaceRequestKey(
+        this.token,
+        this.revision,
+        this.fence,
+        box,
+        pose.metersPerPixel,
+        32,
+        this.tilt ? this.frame : undefined,
+        preload,
+      ),
+    ]);
     if (key === this.request) return;
     this.request = key;
     const generation = ++this.generation;
@@ -461,6 +465,7 @@ export class AtlasRasterPresentation implements AtlasPresentation {
           metersPerPixel: pose.metersPerPixel,
           revision: this.revision,
           source: this.fence,
+          editingRadius,
         },
         atlasSurfaceTileFetcher(window.campaign, this.token, 'workbench-surface'),
         (frame) => {
@@ -635,7 +640,14 @@ export class AtlasRasterPresentation implements AtlasPresentation {
       this.style,
       { contours: this.contours, seaLevelM: this.tiles[0]?.terrain.projection.grid.seaLevelM ?? 0 },
     );
-    this.input.dataset.terrainRevision = String(this.revision);
+    this.input.dataset.terrainRevision = String(
+      this.tiles.length ? Math.min(...this.tiles.map((t) => t.revision)) : -1,
+    );
+    this.input.dataset.terrainEditingRadius = String(
+      this.tiles.length
+        ? Math.min(...this.tiles.map((t) => t.terrain.projection.grid.editing?.author?.radius ?? 0))
+        : 0,
+    );
   }
   private loadedHeight(p: Point): number | null {
     const tile = this.tiles.find((t) => {
@@ -844,6 +856,16 @@ export class AtlasRasterPresentation implements AtlasPresentation {
       this.objectRead = null;
       this.objectKey = '';
     }
+  }
+  editingReady(radius: number) {
+    const ready =
+      this.tiles.length > 0 &&
+      this.tiles.every((tile) => {
+        const a = tile.terrain.projection.grid.editing?.author;
+        return a && a.radius >= radius && a.revision === tile.revision && a.fence === tile.fence;
+      });
+    if (!ready) void this.load();
+    return ready;
   }
   gesture(active: boolean) {
     this.gesturing = active;

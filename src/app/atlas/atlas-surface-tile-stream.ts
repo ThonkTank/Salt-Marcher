@@ -23,7 +23,12 @@ export class AtlasSurfaceTileStream extends AtlasRasterTileStream<
   constructor(options: AtlasRasterStreamOptions = {}) {
     super(
       {
-        request: (tile, revision) => ({ tile, revision, product: 'height' }),
+        request: (tile, revision, _contours, editingRadius) => ({
+          tile,
+          revision,
+          product: 'height',
+          editingRadius,
+        }),
         validate: validateSurfaceTile,
       },
       { maxTiles: 32, ...options },
@@ -49,6 +54,10 @@ function validateSurfaceTile(
     !matches(reply) ||
     !matches(reply.terrain) ||
     !matches(m) ||
+    (request.editingRadius !== undefined &&
+      (p?.grid.editing?.author?.radius !== request.editingRadius ||
+        p.grid.editing.author.revision !== request.revision ||
+        p.grid.editing.author.fence !== source)) ||
     !p?.heightOnly ||
     p.fence !== source ||
     p.revision !== request.revision ||
@@ -87,7 +96,12 @@ export function atlasSurfaceTileFetcher(api: ReadPort, token: string, owner: str
     try {
       const height = await api.atlasTerrainTile(
         token,
-        { tile: request.tile, revision: request.revision, product: 'height' },
+        {
+          tile: request.tile,
+          revision: request.revision,
+          product: 'height',
+          editingRadius: request.editingRadius,
+        },
         control,
       );
       check();
