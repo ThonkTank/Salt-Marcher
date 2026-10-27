@@ -1385,7 +1385,19 @@ async function exerciseFormTools() {
     const preup = await sample(page, watch.x, watch.y),
       held = recoveryState();
     await savePatch(label + '-preup.png', preup.bytes);
-    await native.capture(page, label + '-live.png');
+    const liveFrame = await page.evaluate(() => {
+      const canvas = document.querySelector('#atlas-terrain-spatial canvas'),
+        gl = canvas.getContext('webgl2'),
+        width = gl.drawingBufferWidth,
+        height = gl.drawingBufferHeight,
+        pixels = new Uint8Array(width * height * 4),
+        previous = gl.getParameter(gl.READ_FRAMEBUFFER_BINDING);
+      gl.bindFramebuffer(gl.READ_FRAMEBUFFER, null);
+      gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+      gl.bindFramebuffer(gl.READ_FRAMEBUFFER, previous);
+      window.__qaFormLiveFrame = { width, height, pixels };
+      return { width, height, sampledAt: performance.now() };
+    });
     check(
       label + '-not-written-before-up',
       held.heights === before.heights && held.cursor === before.cursor,
@@ -1393,6 +1405,23 @@ async function exerciseFormTools() {
     );
     if (escape) await page.keyboard.press('Escape');
     await page.mouse.up();
+    const livePng = await page.evaluate(() => {
+      const { width, height, pixels } = window.__qaFormLiveFrame,
+        canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const context = canvas.getContext('2d'),
+        image = context.createImageData(width, height);
+      for (let y = 0; y < height; y++)
+        image.data.set(
+          pixels.subarray((height - 1 - y) * width * 4, (height - y) * width * 4),
+          y * width * 4,
+        );
+      context.putImageData(image, 0, 0);
+      delete window.__qaFormLiveFrame;
+      return canvas.toDataURL('image/png').split(',')[1];
+    });
+    await writeFile(path.join(output, label + '-live.png'), Buffer.from(livePng, 'base64'));
     await ready();
     const after = recoveryState();
     if (escape) {
@@ -1413,10 +1442,14 @@ async function exerciseFormTools() {
       up = observed.input.find((e) => e.type === 'pointerup');
     check(
       label + '-visible-before-up',
-      !!observed.first && observed.first.sampledAt < up?.at && observed.first.changedPixels > 10,
+      !!observed.first &&
+        observed.first.sampledAt < up?.at &&
+        liveFrame.sampledAt < up?.at &&
+        observed.first.changedPixels > 10,
       {
         sampledAt: observed.first?.sampledAt,
         upAt: up?.at,
+        liveFrame,
         changedPixels: observed.first?.changedPixels ?? 0,
       },
     );
@@ -1458,6 +1491,32 @@ async function exerciseFormTools() {
         (form === 'canyon' ? negative > 0 && positive === 0 : positive > 0 && negative === 0),
       { maxError, positive, negative, samples },
     );
+    if (form === 'canyon') {
+      const path = command.action.stroke.samples.filter(
+          (p, i, ps) => !i || Math.hypot(p.x - ps[i - 1].x, p.y - ps[i - 1].y) > radius / 5,
+        ),
+        profile = [];
+      for (let i = 1; i < path.length - 1; i++) {
+        const a = path[i - 1],
+          p = path[i],
+          b = path[i + 1],
+          length = Math.hypot(b.x - a.x, b.y - a.y);
+        if (!length) continue;
+        const nx = (-(b.y - a.y) / length) * radius * 0.5,
+          ny = ((b.x - a.x) / length) * radius * 0.5,
+          centre = actual.sample(p).heightM,
+          banks =
+            (actual.sample({ x: p.x + nx, y: p.y + ny }).heightM +
+              actual.sample({ x: p.x - nx, y: p.y - ny }).heightM) /
+            2;
+        profile.push({ x: p.x, y: p.y, centre, banks, incisionM: banks - centre });
+      }
+      const incised = profile.filter((p) => p.incisionM > 0.05).length;
+      check(label + '-floor-between-banks', profile.length > 2 && incised / profile.length > 0.7, {
+        profile,
+        incised,
+      });
+    }
     const savedPatch = await sample(page, watch.x, watch.y);
     await savePatch(label + '-saved.png', savedPatch.bytes);
     await native.capture(page, label + '-committed.png');
@@ -1470,6 +1529,7 @@ async function exerciseFormTools() {
       samples,
       preupChanged: pixelDelta(baseline.bytes, preup.bytes),
       liveCommitChanged: pixelDelta(preup.bytes, savedPatch.bytes),
+      liveFrame,
     });
     await history('undo', before, label + '-undo');
     await history('redo', after, label + '-redo');
@@ -1523,13 +1583,13 @@ async function exerciseFormTools() {
   await draw(
     'forms-canyon',
     [
-      [0.16, 0.72],
-      [0.32, 0.61],
-      [0.48, 0.74],
-      [0.64, 0.66],
-      [0.82, 0.7],
+      [0.16, 0.66],
+      [0.32, 0.55],
+      [0.48, 0.68],
+      [0.64, 0.6],
+      [0.82, 0.64],
     ],
-    { form: 'canyon', radius: 3, strength: 5 },
+    { form: 'canyon', radius: 3, strength: 7.5 },
   );
   mark('forms: Escape and immediate successor retain selected form');
   await draw(
@@ -1539,17 +1599,17 @@ async function exerciseFormTools() {
       [0.35, 0.45],
       [0.65, 0.45],
     ],
-    { form: 'canyon', radius: 3, strength: 5, escape: true, followup: true },
+    { form: 'canyon', radius: 3, strength: 7.5, escape: true, followup: true },
   );
   await draw(
     'forms-canyon-followup',
     [
-      [0.62, 0.66],
-      [0.71, 0.69],
-      [0.8, 0.7],
-      [0.87, 0.65],
+      [0.62, 0.6],
+      [0.71, 0.63],
+      [0.8, 0.64],
+      [0.87, 0.59],
     ],
-    { form: 'canyon', radius: 3, strength: 5, duration: 1200, followup: true },
+    { form: 'canyon', radius: 3, strength: 7.5, duration: 1200, followup: true },
   );
   mark('forms: local corrections through raise, lower and smooth');
   for (const mode of ['raise', 'lower', 'smooth']) {
@@ -2019,4 +2079,5 @@ try {
   const reportPath = path.join(output, evidence.status === 'PASS' ? 'result.json' : 'failure.json');
   await writeFile(reportPath, JSON.stringify(report, null, 2) + '\n');
   console.log(JSON.stringify({ output, reportPath, status: evidence.status }));
+  if (formsProbe && evidence.status !== 'PASS') process.exitCode = 1;
 }
