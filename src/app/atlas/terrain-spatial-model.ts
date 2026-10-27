@@ -29,6 +29,11 @@ export interface TerrainGrid {
 }
 /** Read-only author snapshot. Main remains the sole storage writer. */
 export interface TerrainEditingSource {
+  /** Only the last packet closes this exact spatial snapshot. */
+  complete?: boolean;
+  next?: string;
+  /** Canonical bounded visibility samples, independent of exact brush records. */
+  visibility?: TerrainGrid;
   revision: number;
   fence: string;
   pixel: number;

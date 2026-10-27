@@ -703,7 +703,7 @@ export class CampaignAtlasWorkbench {
       selected: (id, kind) => this.layout?.landscapeSelectionChanged(id, kind),
       terrainGesture: (active) => this.terrainGesture(active),
       previewHeight: (stroke) => this.spatial?.previewHeight(stroke),
-      editingReady: (radius) => this.raster?.editingReady(radius) ?? true,
+      editingReady: (radius, point) => this.raster?.editingReady(radius, point) ?? true,
       writeTerrain: async (a, c) => {
         const r = await this.write(a, false, true, c);
         if (!r) throw Error('Pinselzug nicht gespeichert.');
@@ -1325,8 +1325,10 @@ export class CampaignAtlasWorkbench {
         ['x', 'y', 'width', 'height'].every((k) => Number.isFinite(p[k])) &&
         p.width > 0 &&
         p.height > 0
-      )
-        this.camera.set(p, false);
+      ) {
+        this.camera.set({ x: p.x, y: p.y, width: p.width, height: p.height }, false);
+        this.raster?.restoreCameraPose(p.pose);
+      }
     } catch {
       /* local view preference */
     }
@@ -1357,7 +1359,7 @@ export class CampaignAtlasWorkbench {
     try {
       localStorage.setItem(
         'atlas-camera:' + this.owner.campaign.id,
-        JSON.stringify(this.camera.view),
+        JSON.stringify({ ...this.camera.view, pose: this.raster?.savedCameraPose }),
       );
     } catch {
       /* author saving remains independent */

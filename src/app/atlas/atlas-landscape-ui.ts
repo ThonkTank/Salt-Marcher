@@ -496,7 +496,7 @@ export class LandscapeWorkbench {
           }
           if (
             (this.tool === 'height' || this.tool === 'smooth') &&
-            this.host.editingReady?.(this.editingRadius()) === false
+            this.host.editingReady?.(this.editingRadius(), this.lastPoint) === false
           ) {
             this.say('Höhendaten für diesen Pinsel werden geladen.');
             this.host.redraw();
