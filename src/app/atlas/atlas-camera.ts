@@ -90,3 +90,122 @@ export function atlasPlanePoint(
     y: pose.frame.y + pose.frame.height / 2 + eye.y + (plane.y - eye.y) * u,
   };
 }
+
+export interface AtlasCameraAnchor {
+  point: Point & { heightM: number };
+  /** Normalized CSS viewport position, independent of device scale. */
+  screen: Point;
+}
+
+export function atlasNormalizeRotation(rotation: number) {
+  return ((((rotation + 180) % 360) + 360) % 360) - 180;
+}
+
+/** Translate a pose so a physical terrain point retains its screen position. */
+export function atlasAnchorCamera(
+  pose: AtlasCameraPose,
+  anchor: AtlasCameraAnchor,
+): AtlasCameraPose {
+  const at = atlasPlanePoint(pose, anchor.screen, anchor.point.heightM);
+  if (!at) return pose;
+  return {
+    ...pose,
+    frame: {
+      ...pose.frame,
+      x: pose.frame.x + anchor.point.x - at.x,
+      y: pose.frame.y + anchor.point.y - at.y,
+    },
+  };
+}
+
+export function atlasCameraWorldEye(pose: AtlasCameraPose) {
+  const offset = atlasCameraEye(pose);
+  return {
+    x: pose.frame.x + pose.frame.width / 2 + offset.x,
+    y: pose.frame.y + pose.frame.height / 2 + offset.y,
+    heightM: pose.focusM + offset.z / pose.exaggeration,
+  };
+}
+
+/** Follow the eye's path, including intermediate orbit/zoom poses. Unknown
+ * terrain retains the last known ground plane; it never certifies free flight. */
+export function atlasSafeCameraMove(
+  before: AtlasCameraPose,
+  requested: AtlasCameraPose,
+  height: (point: Point) => number | null,
+  intersects: (
+    from: ReturnType<typeof atlasCameraWorldEye>,
+    to: ReturnType<typeof atlasCameraWorldEye>,
+  ) => boolean,
+): AtlasCameraPose {
+  const rotation = atlasNormalizeRotation(requested.rotation - before.rotation);
+  const steps = Math.max(
+    1,
+    Math.ceil(Math.abs(rotation) / 2),
+    Math.ceil(Math.abs(requested.tilt - before.tilt) / 2),
+    Math.ceil(Math.abs(Math.log(requested.frame.width / before.frame.width)) / 0.04),
+  );
+  let safe = before;
+  let eye = atlasCameraWorldEye(before);
+  let ground = height(eye) ?? before.focusM;
+  const clearance = (p: AtlasCameraPose) => Math.max(0.02, Math.min(2, p.frame.height * 1e-5));
+  const poseAt = (t: number): AtlasCameraPose => {
+    const mix = (a: number, b: number) => a + (b - a) * t;
+    return {
+      ...requested,
+      frame: {
+        x: mix(before.frame.x, requested.frame.x),
+        y: mix(before.frame.y, requested.frame.y),
+        width: mix(before.frame.width, requested.frame.width),
+        height: mix(before.frame.height, requested.frame.height),
+      },
+      focusM: mix(before.focusM, requested.focusM),
+      tilt: mix(before.tilt, requested.tilt),
+      rotation: atlasNormalizeRotation(before.rotation + rotation * t),
+      exaggeration: mix(before.exaggeration, requested.exaggeration),
+    };
+  };
+  for (let step = 1; step <= steps; step++) {
+    const next = poseAt(step / steps),
+      nextEye = atlasCameraWorldEye(next);
+    const nextGround = height(nextEye) ?? ground;
+    const margin = clearance(next);
+    if (
+      nextEye.heightM <= nextGround + margin ||
+      intersects(
+        { ...eye, heightM: eye.heightM - clearance(safe) },
+        { ...nextEye, heightM: nextEye.heightM - margin },
+      )
+    )
+      return safe;
+    safe = next;
+    eye = nextEye;
+    ground = nextGround;
+  }
+  return safe;
+}
+
+/** Rebase the focus-height plane without moving the eye, orientation or any
+ * projected world point. This keeps close zoom useful after crossing relief. */
+export function atlasRefocusCamera(pose: AtlasCameraPose, focusM: number): AtlasCameraPose {
+  const eye = atlasCameraWorldEye(pose);
+  const distance =
+    ((eye.heightM - focusM) * pose.exaggeration) / Math.cos((pose.tilt * Math.PI) / 180);
+  const oldDistance = pose.frame.height / (2 * halfFovTan);
+  if (!Number.isFinite(distance) || distance <= 0 || Math.abs(focusM - pose.focusM) < 1e-8)
+    return pose;
+  const ratio = distance / oldDistance;
+  const offset = atlasCameraEye(pose);
+  const width = pose.frame.width * ratio,
+    height = pose.frame.height * ratio;
+  return {
+    ...pose,
+    focusM,
+    frame: {
+      x: eye.x - offset.x * ratio - width / 2,
+      y: eye.y - offset.y * ratio - height / 2,
+      width,
+      height,
+    },
+  };
+}

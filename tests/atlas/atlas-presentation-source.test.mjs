@@ -200,3 +200,66 @@ test('surface tiles also wait for a new confirmed fence after a deferred source 
   assert.equal(f.calls.refresh, 2);
   assert.deepEqual(f.calls.errors, []);
 });
+
+test('navigation anchors prefer physical terrain and use the focus plane only for absent coverage', (t) => {
+  const { ui } = fixture(t);
+  Object.assign(ui, {
+    input: { clientWidth: 800, clientHeight: 600, dataset: {} },
+    focusHeightM: 125,
+    pixel: () => ({ x: 240, y: 420 }),
+    terrainHit: () => ({ point: { x: 12, y: 34, heightM: 180 } }),
+    planePoint: () => {
+      throw Error('Terrain must own the anchor when it is hit');
+    },
+  });
+  const terrain = ui.navigationAnchor({ clientX: 0, clientY: 0 });
+  assert.deepEqual(terrain, { point: { x: 12, y: 34, heightM: 180 }, screen: { x: 0.3, y: 0.7 } });
+  assert.equal(JSON.parse(ui.input.dataset.navigationAnchor).source, 'terrain');
+  ui.terrainHit = () => null;
+  ui.planePoint = (x, y, height, occlude) => {
+    assert.equal(height, 125);
+    assert.equal(occlude, false);
+    return { x: 50, y: 60 };
+  };
+  const fallback = ui.navigationAnchor({ clientX: 0, clientY: 0 });
+  assert.deepEqual(fallback.point, { x: 50, y: 60, heightM: 125 });
+  assert.equal(JSON.parse(ui.input.dataset.navigationAnchor).source, 'focus-plane');
+  ui.planePoint = () => null;
+  assert.equal(
+    ui.navigationAnchor({ clientX: 0, clientY: 0 }),
+    null,
+    'sky does not invent an infinite plane point',
+  );
+});
+
+test('pose controls use the navigation lock rather than a closed stroke awaiting acknowledgement', (t) => {
+  const { ui } = fixture(t),
+    calls = [];
+  let locked = true;
+  Object.assign(ui, {
+    gesturing: false,
+    input: { getBoundingClientRect: () => ({ left: 0, top: 0, width: 800, height: 600 }) },
+    host: {
+      hasDraft: () => true,
+      navigationLocked: () => locked,
+      navigate: (box) => calls.push(box),
+      redraw() {},
+    },
+    navigationAnchor: () => null,
+    loadedHeight: () => 0,
+    eyeIntersects: () => false,
+    applyCameraPose(pose) {
+      this.tilt = pose.tilt;
+      this.rotation = pose.rotation;
+    },
+    refocusCamera() {},
+  });
+  ui.setPose(35, 25);
+  assert.equal(ui.tilt, 0);
+  assert.equal(calls.length, 0);
+  locked = false;
+  ui.setPose(35, 25);
+  assert.equal(ui.tilt, 35);
+  assert.equal(ui.rotation, 25);
+  assert.equal(calls.length, 1);
+});
