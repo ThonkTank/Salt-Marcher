@@ -61,13 +61,17 @@ function buckets<T>(items: readonly T[], box: (item: T) => number[], size: numbe
         cell.push(item);
       }
   }
-  return (p: Point) =>
-    cells.get(Math.floor((p.x - origin.x) / size) + ':' + Math.floor((p.y - origin.y) / size)) ??
-    [];
+  return {
+    cells,
+    at: (p: Point) =>
+      cells.get(Math.floor((p.x - origin.x) / size) + ':' + Math.floor((p.y - origin.y) / size)) ??
+      [],
+  };
 }
 
-/** Time exposure and a continuous corridor profile. Crossings combine through
- * continuous distance and additive exposure, never a conflicting segment label.
+/** The complete painted corridor shares its time exposure. Normalising by its
+ * union area makes retracing build up while pointer pauses cannot cut a necklace
+ * of separate pits. Crossings use continuous distance, never a segment label.
  * No intermediate terrain or event-indexed random phase enters this function. */
 export function prepareTerrainForm(
   s: {
@@ -93,27 +97,41 @@ export function prepareTerrainForm(
       r,
       points[0]!,
     ),
-    nearbyDabs = buckets(dabs, (d) => [d.x - r, d.y - r, d.x + r, d.y + r], r, points[0]!),
     seed = s.seed ?? TERRAIN_FORM_SEED;
-  return (p: Point) => {
-    let distance2 = r * r,
-      dose = 0;
-    for (const { a, b } of nearbySegments(p)) {
+  const distance = (p: Point) => {
+    let distance2 = r * r;
+    for (const { a, b } of nearbySegments.at(p)) {
       const dx = b.x - a.x,
         dy = b.y - a.y,
         length2 = dx * dx + dy * dy,
         t = length2 ? Math.max(0, Math.min(1, ((p.x - a.x) * dx + (p.y - a.y) * dy) / length2)) : 0;
       distance2 = Math.min(distance2, (p.x - a.x - t * dx) ** 2 + (p.y - a.y - t * dy) ** 2);
     }
-    const d = Math.sqrt(distance2) / r;
-    if (d >= 1) return 0;
-    for (const dab of nearbyDabs(p)) {
-      const radial = Math.hypot(p.x - dab.x, p.y - dab.y) / r;
-      if (radial >= 1) continue;
-      // Form tools always have a soft outer edge, including feather=0.
-      dose += dab.seconds * smooth(Math.min(1, (1 - radial) / Math.max(0.12, s.feather)));
-    }
-    if (!dose) return 0;
+    return Math.sqrt(distance2) / r;
+  };
+  // Integrate only occupied index cells, not the path's potentially huge box.
+  // A fixed soft coverage boundary keeps the normalisation continuous as the
+  // endpoint moves. The radial reference integral is pi*(1-f+0.3*f*f).
+  const coverageFeather = 0.2,
+    referenceArea = Math.PI * (1 - coverageFeather + 0.3 * coverageFeather ** 2);
+  let area = 0;
+  for (const key of nearbySegments.cells.keys()) {
+    const [x, y] = key.split(':').map(Number) as [number, number];
+    for (let j = 0; j < 4; j++)
+      for (let i = 0; i < 4; i++) {
+        const d = distance({
+          x: points[0]!.x + (x + (i + 0.5) / 4) * r,
+          y: points[0]!.y + (y + (j + 0.5) / 4) * r,
+        });
+        area += smooth(Math.max(0, Math.min(1, (1 - d) / coverageFeather))) / 16;
+      }
+  }
+  const exposure = (dabs.reduce((total, dab) => total + dab.seconds, 0) * referenceArea) / area;
+  return (p: Point) => {
+    const d = distance(p);
+    if (d >= 1 || !exposure) return 0;
+    // Every form has a soft outer edge, including feather=0.
+    const dose = exposure * smooth(Math.min(1, (1 - d) / Math.max(0.12, s.feather)));
     const field = terrainRoughness(p.x / (r * 2), p.y / (r * 2), seed);
     if (s.form === 'hills') {
       // Broad, world-bound knolls and shallow hollows across the whole area.

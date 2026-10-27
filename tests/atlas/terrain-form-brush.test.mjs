@@ -197,6 +197,41 @@ test('sample density does not set form geometry or exposure; stationary duration
         assert(Math.abs(2 * once(x, y) - twice(x, y)) < 0.0001, form + ' fixed stationary field');
   }
 });
+test('pauses cannot stamp separate pits into a form corridor; retracing builds the same form', () => {
+  const path = [-96, -48, 0, 48, 96],
+    continuous = path.map((x, i) => ({ x, y: 0, t: i * 500 })),
+    paused = path.flatMap((x, i) => [
+      { x, y: 0, t: i * 400 },
+      { x, y: 0, t: (i + 1) * 400 },
+    ]),
+    retraced = [
+      ...continuous,
+      ...continuous
+        .slice(0, -1)
+        .reverse()
+        .map((p, i) => ({ ...p, t: 2500 + i * 500 })),
+    ];
+  for (const form of forms) {
+    const a = sample(edit([], stroke(form, continuous))),
+      b = sample(edit([], stroke(form, paused))),
+      c = sample(edit([], stroke(form, retraced)));
+    for (let x = -90; x <= 90; x++) {
+      assert(Math.abs(a(x) - b(x)) < 0.0001, form + ' continuous amplitude despite pauses');
+      // The bounded corner round shortens a reversal by at most radius/24.
+      assert(
+        Math.abs(2 * a(x) - c(x)) < Math.abs(a(x)) * 0.02 + 0.0002,
+        form + ' same corridor reinforces on retracing',
+      );
+    }
+    if (form === 'canyon') {
+      const depths = Array.from({ length: 181 }, (_, i) => -b(i - 90));
+      assert(
+        Math.min(...depths) > Math.max(...depths) * 0.85,
+        'one continuous floor, no bead pits',
+      );
+    }
+  }
+});
 test('live forms recompute joins from the fixed ground and match canonical lattice nodes', () => {
   for (const form of forms) {
     const view = {

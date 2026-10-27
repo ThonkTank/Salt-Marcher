@@ -130,6 +130,11 @@ vollständig aus ihrer festen Ausgangsfläche berechnet und verwendet dieselbe
 Auswertung wie der kanonische Writer. Bestehende additive Höhenbänder,
 Sichtbarkeit, Trassenschutz und die Speichergrenze in Main bleiben zuständig.
 
+Formzüge verteilen ihre Wirkzeit über die zusammenhängende überstrichene Fläche.
+Haltezeiten ändern die Stärke der bestehenden Form; sie erzeugen keine einzelnen
+Lochstempel. Erneutes Überstreichen verstärkt die Form, während Weltfeld und
+Randprofil erhalten bleiben.
+
 Gezielte numerische Belege: `tests/atlas/terrain-form-brush.test.mjs`
 (Form, Kurven, Kreuzung, Folgezug, Eventdichte, Halten, Rand, Live/Writer und
 Grundkorrekturen), `tests/atlas/terrain-scale-worker.test.mjs` (Worker, Store,
