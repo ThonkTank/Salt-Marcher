@@ -36,18 +36,20 @@ jobs:
         env:
           SALTMARCHER_UPDATE_PRIVATE_KEY: ${{ secrets.SALTMARCHER_UPDATE_PRIVATE_KEY }}
       - name: Install native test prerequisites
-        run: npx playwright-core install-deps chromium
+        run: |
+          npx playwright-core install-deps chromium
+          sudo apt-get install -y dbus xdg-dbus-proxy
       - name: Allow the Electron sandbox in the ephemeral runner
         run: |
           if test -e /proc/sys/kernel/apparmor_restrict_unprivileged_userns; then
             sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
           fi
       - name: Test packaged update from the start screen through Settings
-        run: xvfb-run -a node tools/test-desktop-updates.mjs .build/release-package --software-gpu
+        run: dbus-run-session -- xvfb-run -a node tools/test-desktop-updates.mjs .build/release-package --software-gpu
       - name: Test packaged update with an open workspace through Settings
-        run: xvfb-run -a node tools/test-desktop-updates.mjs .build/release-package --workspace --software-gpu
+        run: dbus-run-session -- xvfb-run -a node tools/test-desktop-updates.mjs .build/release-package --workspace --software-gpu
       - name: Test explicitly confirmed update after a blocked editor
-        run: xvfb-run -a node tools/test-desktop-updates.mjs .build/release-package --workspace --force --software-gpu
+        run: dbus-run-session -- xvfb-run -a node tools/test-desktop-updates.mjs .build/release-package --workspace --force --software-gpu
       - name: Upload verified assets as a draft
         run: gh release create "$GITHUB_REF_NAME" .build/release-assets/* --draft --verify-tag --title "SaltMarcher $GITHUB_REF_NAME" --generate-notes
         env:
