@@ -48,8 +48,8 @@ Planungsstand: 27.10.2026, übernommen; Umsetzung durch den Koordinationschat fr
 Alle lokalen Uhrzeiten gelten in Europe/Berlin (CET, UTC+1). Frühere UTC+2-
 Umrechnungen wurden korrigiert; UTC-Anker und verstrichene Zeitbudgets bleiben gleich.
 Preflight-Basis ist Main `a87b8e99ba8a3954f664a10b0e7a9c141c65eb22`.
-Aktuelle Arbeitsbasis: `613c012f00c99f0e110d081285049399173c4d11`; letzter
-erfolgreicher GitHub-Abgleich 27.10.2026, 13:52 Uhr Europe/Berlin. PR #1420
+Aktuelle Arbeitsbasis: `2668d40757d7997a1406e5bb0a8d1fc81661a732`; letzter
+erfolgreicher GitHub-Abgleich 27.10.2026, 14:07 Uhr Europe/Berlin. PR #1421
 integriert und in diesem Checkout übernommen; keine neuen Main-Commits offen.
 Die [sechs bestätigten Ziele TW-G1–6 und der Messvertrag](../requirements/terrain-relief.md#ziele-und-abnahme-dieser-etappe)
 gelten unverändert. Hier stehen Ausführung und Entscheidungen, keine zweite Anforderungsliste.
@@ -58,7 +58,7 @@ gelten unverändert. Hier stehen Ausführung und Entscheidungen, keine zweite An
 
 **Nächster Produktnachweis P03:** verlässliche Grundpinsel und Meer einschließlich
 Undo/Redo, Abbruchregeln, Folgezug und Neustart. Der Unknown-/Postcommit-Anschluss
-liegt zur gezielten Nachprüfung bereit: ursprünglicher Auftrag und Unsicherheit
+ist unabhängig geprüft und integriert: ursprünglicher Auftrag und Unsicherheit
 bleiben über Worker/Host/Preload bis zur Atlas-Klärung erhalten. Noch offen ist
 ein konkret beobachteter G1-Verlust: Ein bereits geschlossener abhängiger Zug
 wird nach Unknown ohne Dispatch abgewiesen und beim Klären verworfen, weder
@@ -69,8 +69,18 @@ M1 hat den frühen Ablauf Malen → Speichern/Folgezug → Fresh funktional bele
 eine statistische Leistungsfreigabe oder vollständige Produktabnahme fehlt.
 P03 begann am 27.10.2026 um 13:18 mit `gpt-6.1-sol` / `high`; der Shutdown-
 Anschluss wurde vor seinem Kontrollpunkt 14:03 integriert. Derselbe Implementierer
-beginnt den Unknown-/Postcommit-Anschluss um 13:35, Kontrolle spätestens 14:20;
+begann den Unknown-/Postcommit-Anschluss um 13:35 und setzt seit 14:07 den
+Folgezugerhalt um. Die Teilkontrolle bleibt 14:20;
 die gemeinsame Paketentscheidung bleibt 17:18, ohne Neustart der P03-Laufzeit.
+
+Ansatzentscheidung: Die begrenzte Queue hält geschlossene Gesten mit unveränderlicher
+Identität. Nach bestätigtem Original und frischer kanonischer Quelle setzt sie
+dieselben Folgezüge in Reihenfolge genau einmal fort. Ungeklärter Ausgang,
+sichere Ablehnung und bestätigter Commit mit fehlgeschlagener Nachladung bleiben
+unterschiedliche Zustände; weder Reload noch Escape dürfen geschlossene Eingaben
+stillschweigend verwerfen. Prüfnachweis: zwei erhaltene Wirkungen ohne Neumalen,
+je ein Undo-Schritt, Fresh, wiederholtes Unknown und Nachladefehler ohne Replay.
+Kein neues dauerhaftes Journal; übrige G1-Kriterien bleiben danach Pflicht.
 
 Unknown-Teilbefund: 44 gezielte Tests prüfen den tatsächlichen Worker-/Host-/
 Preload-/Author-/Queue-Pfad; rote Gegenchecks erkennen verlorenen Marker und
@@ -83,8 +93,11 @@ durch Unknown; die Fehlerklassifizierung belegen separat die Grenztests. Der
 erste Lauf `1793105110282-389173/` scheiterte am ungeöffneten Statusmenü und wurde
 nach verweigertem Close mit SIGKILL beendet; er bleibt unverändert dokumentiert.
 `handoff-report.json` nennt den verworfenen abhängigen Zug ausdrücklich als
-offene G1-Pflicht. Keine Gesamtfreigabe; Nachprüfung beurteilt den engen Fix und
-die sichere Reihenfolge zum vollständigen Folgezugnachweis.
+offene G1-Pflicht. Die unabhängige Nachprüfung gab den engen Fix frei.
+[PR #1421](https://github.com/ThonkTank/Salt-Marcher/pull/1421) ist nach grüner
+[Candidate-CI](https://github.com/ThonkTank/Salt-Marcher/actions/runs/40507562171)
+auf `345a496b2e9b9ac9d018c48012fffe89aebf0681` integriert; der Main-Baum ist
+inhaltlich identisch. Die zusätzliche Main-CI läuft noch. Keine G1-Gesamtfreigabe.
 
 **Beginn T0:** 27.10.2026, 12:38 Uhr Europe/Berlin (11:38 UTC), tatsächlicher
 P01-Start nach Main-, Plan- und Umsetzungsfreigabe. Implementierer: Subagent
@@ -358,8 +371,8 @@ und keine 14 obligatorischen Vorpakete. Gezielte Zuordnung:
 - Vor P02 nur ein konkret sicherheits- oder aussagekritischer Defekt; keine pauschale Vorqualifikation.
 
 Nach **jeder** Integration GitHub-Releasezählung prüfen. Live geprüft am
-27.10.2026 um 14:34: Basistag `v0.192.0`, **7 PRs** mit Mergecommit nach diesem
-Tag in Main (#1413–1416, #1418–1420); Schwelle 10 noch nicht erreicht.
+27.10.2026 um 14:07: Basistag `v0.192.0`, **8 PRs** mit Mergecommit nach diesem
+Tag in Main (#1413–1416, #1418–1421); Schwelle 10 noch nicht erreicht.
 Eine früher erreichte Pflichtschwelle zieht P15 bzw. die nötigen Releaseanteile
 vor, statt bis M5 zu warten. Zusätzliche Veröffentlichung und CI-Zeit erscheinen
 dann in der betroffenen Timeline. Fehlende Signierung/GPU-/Paketbelege sind
