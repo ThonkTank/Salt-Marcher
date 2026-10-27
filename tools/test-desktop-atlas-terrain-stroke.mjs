@@ -1824,6 +1824,28 @@ async function exerciseMultiscaleTools() {
     const r = window.__qaRaster;
     window.__qaHeightSnapshot = () => ({
       camera: r.cameraPose(),
+      meshMaximumErrorM: Math.max(
+        0,
+        ...r.tiles.map((t) => {
+          const address = t.tile,
+            model = r.surface.terrain.find(
+              (m) => m.object.id === `terrain-tile:${address.lod}/${address.x}/${address.y}`,
+            ),
+            heights = t.terrain.projection.grid.heights;
+          if (!model) return Infinity;
+          let error = 0;
+          for (let i = 0; i < heights.length; i++)
+            error = Math.max(
+              error,
+              Math.abs(
+                model.object.origin.heightM +
+                  model.mesh.attributes.POSITION.value[i * 3 + 2] -
+                  heights[i],
+              ),
+            );
+          return error;
+        }),
+      ),
       tiles: r.tiles.map((t) => ({
         tile: t.tile,
         revision: t.revision,
@@ -1929,6 +1951,7 @@ async function exerciseMultiscaleTools() {
       [0.72, 0.52],
     ],
   ) => {
+    mark('multiscale ' + label);
     await choose(options);
     const before = recoveryState(),
       original = records(),
@@ -1964,7 +1987,8 @@ async function exerciseMultiscaleTools() {
     check(
       label + '-one-command',
       after.cursor === before.cursor + 1 &&
-        after.commands === before.commands + 1 &&
+        after.commands === before.cursor + 1 &&
+        after.receipts === before.receipts + 1 &&
         command.action.stroke.preserveDetails === (options.preserveDetails !== false),
       { before, after, stroke: command.action.stroke },
     );
@@ -1980,6 +2004,7 @@ async function exerciseMultiscaleTools() {
       { changedTiles: expected.length },
     );
     let maximum = 0,
+      maximumHeight = 0,
       pointsCompared = 0;
     const tiles = new Map(canonical.tiles.map((t) => [JSON.stringify(t.tile), t]));
     for (const t of live.tiles) {
@@ -1987,11 +2012,27 @@ async function exerciseMultiscaleTools() {
       if (!c) continue;
       for (let i = 0; i < t.ground.length; i++) {
         maximum = Math.max(maximum, Math.abs(t.ground[i] - c.ground[i]));
+        maximumHeight = Math.max(maximumHeight, Math.abs(t.ground[i]), Math.abs(c.ground[i]));
         pointsCompared++;
       }
     }
-    check(label + '-live-canonical-heights', pointsCompared > 0 && maximum <= 0.001, {
+    // Two Float32 roundings, followed by the same interpolation; cap the
+    // acceptance at 1 mm rather than expanding it for a failing observation.
+    const toleranceM = Math.min(
+      0.001,
+      2 * Math.max(2 ** -149, 2 ** (Math.floor(Math.log2(maximumHeight || 1)) - 23)),
+    );
+    check(
+      label + '-displayed-mesh-heights',
+      live.meshMaximumErrorM <= toleranceM && canonical.meshMaximumErrorM <= toleranceM,
+      {
+        liveMaximumErrorM: live.meshMaximumErrorM,
+        canonicalMaximumErrorM: canonical.meshMaximumErrorM,
+      },
+    );
+    check(label + '-live-canonical-heights', pointsCompared > 0 && maximum <= toleranceM, {
       maximumErrorM: maximum,
+      toleranceM,
       pointsCompared,
     });
     check(
@@ -2017,7 +2058,8 @@ async function exerciseMultiscaleTools() {
     check(
       label + '-fixed-world-samples',
       measurements.every(
-        (p) => p.live !== null && p.canonical !== null && Math.abs(p.live - p.canonical) <= 0.001,
+        (p) =>
+          p.live !== null && p.canonical !== null && Math.abs(p.live - p.canonical) <= toleranceM,
       ),
       { measurements },
     );
@@ -2038,6 +2080,13 @@ async function exerciseMultiscaleTools() {
       sampleBefore.sample({ x: 2, y: 2 }).heightM === sampleAfter.sample({ x: 2, y: 2 }).heightM,
     );
     await native.capture(page, label + '-canonical.png');
+    const liveEye = atlasCameraWorldEye(live.camera),
+      canonicalEye = atlasCameraWorldEye(canonical.camera);
+    check(
+      label + '-same-world-camera',
+      ['x', 'y', 'heightM'].every((key) => Math.abs(liveEye[key] - canonicalEye[key]) < 1e-9),
+      { liveEye, canonicalEye },
+    );
     const item = {
       label,
       before,

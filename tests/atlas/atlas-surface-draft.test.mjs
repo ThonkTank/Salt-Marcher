@@ -3,13 +3,17 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { build } from 'esbuild';
 const { outputFiles } = await build({
-  entryPoints: ['src/app/atlas/atlas-surface-draft.ts'],
+  stdin: {
+    contents:
+      "export * from './src/app/atlas/atlas-surface-draft';export * from './src/app/atlas/atlas-terrain-tile-model';",
+    resolveDir: process.cwd(),
+  },
   bundle: true,
   write: false,
   platform: 'node',
   format: 'esm',
 });
-const { AtlasSurfaceDraft } = await import(
+const { AtlasSurfaceDraft, atlasTerrainTileModel } = await import(
   'data:text/javascript;base64,' + Buffer.from(outputFiles[0].text).toString('base64')
 );
 const view = {
@@ -188,4 +192,29 @@ test('incremental height feedback preserves earlier relief and clears semantic c
   lowered.height({ ...stroke, mode: 'lower', strength: 100 });
   assert.equal(lowered.tiles[0].material.channels.conifer[128 * 256 + 128], 0);
   assert.equal(base.material.channels.conifer[128 * 256 + 128], 200);
+});
+
+test('each live update rebuilds mesh heights even when its author projection reuses the mutable height array', () => {
+  const draft = new AtlasSurfaceDraft([tile()], view);
+  draft.height(stroke);
+  const first = draft.tiles[0],
+    firstModel = atlasTerrainTileModel(first.terrain, first.material),
+    centre = 32 * 65 + 32;
+  assert.equal(
+    firstModel.object.origin.heightM + firstModel.mesh.attributes.POSITION.value[centre * 3 + 2],
+    30,
+  );
+  draft.height({ ...stroke, samples: [...stroke.samples, { x: 32, y: 32, t: 2000 }] });
+  const next = draft.tiles[0],
+    nextModel = atlasTerrainTileModel(next.terrain, next.material);
+  assert.equal(first.terrain.projection.grid.heights, next.terrain.projection.grid.heights);
+  assert.notEqual(firstModel.mesh, nextModel.mesh);
+  assert.equal(
+    nextModel.object.origin.heightM + nextModel.mesh.attributes.POSITION.value[centre * 3 + 2],
+    40,
+  );
+  assert.equal(
+    firstModel.object.origin.heightM + firstModel.mesh.attributes.POSITION.value[centre * 3 + 2],
+    30,
+  );
 });

@@ -8,8 +8,8 @@ function same(a: Uint8Array | Float32Array | undefined, b: typeof a) {
   for (let i = 0; i < aa.length; i++) if (aa[i] !== bb[i]) return false;
   return true;
 }
-/** Adopt the new validated identity while retaining byte-identical display
- * buffers. A canonical receipt must not rebuild every unchanged world tile. */
+/** Adopt the new validated identity and edit snapshot while retaining
+ * byte-identical display buffers. */
 export function reuseAtlasSurfaceTile(
   previous: AtlasSurfaceTile | undefined,
   next: AtlasSurfaceTile,
@@ -30,12 +30,14 @@ export function reuseAtlasSurfaceTile(
     same(a.heights, b.heights) &&
     same(a.editing?.ground, b.editing?.ground) &&
     same(a.editing?.water, b.editing?.water)
-      ? {
-          ...a,
-          editing: b.editing
-            ? { ...b.editing, ground: a.editing!.ground, water: a.editing!.water }
-            : undefined,
-        }
+      ? a.editing?.author === b.editing?.author
+        ? a
+        : {
+            ...a,
+            editing: b.editing
+              ? { ...b.editing, ground: a.editing!.ground, water: a.editing!.water }
+              : undefined,
+          }
       : b;
   const channels = { ...next.material.channels };
   for (const c of CHANNEL_NAMES)
