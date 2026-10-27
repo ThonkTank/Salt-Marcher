@@ -476,7 +476,7 @@ async function sample(page, x, y) {
     { x, y },
   );
 }
-async function openCampaign() {
+async function openCampaign(resetView = true) {
   page = await native.launch(scale);
   if (multiscaleProbe) {
     // Read-only debugger binding to the actual presentation instance. It does
@@ -525,16 +525,22 @@ async function openCampaign() {
       at: new Date().toISOString(),
     });
   });
-  await native.app.evaluate(({ BrowserWindow }) =>
-    BrowserWindow.getAllWindows()[0].setContentSize(1920, 1080),
+  await native.app.evaluate(
+    ({ BrowserWindow }, factor) =>
+      BrowserWindow.getAllWindows()[0].setContentSize(1920 * factor, 1080 * factor),
+    multiscaleProbe ? scale : 1,
   );
-  await page.evaluate((id) => {
-    sessionStorage.setItem('atlas-raster-workbench', 'true');
-    localStorage.setItem(
-      'atlas-camera:' + id,
-      JSON.stringify({ x: 0, y: 0, width: 64, height: 64 }),
-    );
-  }, fixture.campaignId);
+  await page.evaluate(
+    ({ id, resetView }) => {
+      sessionStorage.setItem('atlas-raster-workbench', 'true');
+      if (resetView)
+        localStorage.setItem(
+          'atlas-camera:' + id,
+          JSON.stringify({ x: 0, y: 0, width: 64, height: 64 }),
+        );
+    },
+    { id: fixture.campaignId, resetView },
+  );
   await page.reload();
   await page.waitForFunction(() => document.body.dataset.tutorialReady === 'true');
   await page
@@ -1776,6 +1782,13 @@ async function exerciseFormTools() {
 /** The same small multiscale task on the real native renderer and writer. */
 async function exerciseMultiscaleTools() {
   await page.waitForFunction(() => !!window.__qaRaster);
+  check(
+    'multi-same-logical-viewport',
+    evidence.runtime.contentSize[0] === 1920 &&
+      evidence.runtime.contentSize[1] === 1080 &&
+      evidence.runtime.dpr === scale,
+    { contentSize: evidence.runtime.contentSize, dpr: evidence.runtime.dpr },
+  );
   const bundle = await build({
     stdin: {
       contents:
@@ -2150,12 +2163,21 @@ async function exerciseMultiscaleTools() {
     await history('redo', unprotectedRun.after, 'multi-' + mode + '-unprotected-redo');
   }
   const saved = recoveryState(),
+    savedCamera = await page.evaluate(() => window.__qaRaster.cameraPose()),
     savedSamples = new TerrainSampler(records());
   const samples = samplePoints.map((p) => ({ ...p, height: savedSamples.sample(p).heightM }));
   await native.capture(page, 'multi-saved.png');
   await native.close();
-  await openCampaign();
+  await openCampaign(false);
   await ready();
+  const freshCamera = await page.evaluate(() => window.__qaRaster.cameraPose()),
+    savedEye = atlasCameraWorldEye(savedCamera),
+    freshEye = atlasCameraWorldEye(freshCamera);
+  check(
+    'multi-fresh-same-world-camera',
+    ['x', 'y', 'heightM'].every((key) => Math.abs(savedEye[key] - freshEye[key]) < 1e-9),
+    { savedCamera, freshCamera, savedEye, freshEye },
+  );
   const fresh = recoveryState(),
     freshSampler = new TerrainSampler(records());
   check(
@@ -2169,6 +2191,8 @@ async function exerciseMultiscaleTools() {
   await native.capture(page, 'multi-fresh.png');
   evidence.multiscale.saved = saved;
   evidence.multiscale.fresh = fresh;
+  evidence.multiscale.savedCamera = savedCamera;
+  evidence.multiscale.freshCamera = freshCamera;
   await persist();
 }
 
