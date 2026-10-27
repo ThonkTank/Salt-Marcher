@@ -1342,13 +1342,13 @@ async function exerciseFormTools() {
   });
   const draw = async (
     label,
-    path,
+    knots,
     { form, radius = 8, strength = 4, duration = 2400, escape = false, followup = false } = {},
   ) => {
     await ready();
     if (form && !followup) await choose(form, radius, strength);
     const g = await geometry(),
-      points = path.map(g.screen),
+      points = knots.map(g.screen),
       watch = points[1],
       before = recoveryState(),
       original = records();
