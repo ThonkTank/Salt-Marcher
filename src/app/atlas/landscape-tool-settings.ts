@@ -1,5 +1,6 @@
 import { brushSizeControl } from './atlas-brush-size';
 import type { HeightStroke } from './terrain-brush';
+import { TERRAIN_FORM_SEED, type TerrainForm } from './terrain-form-brush';
 import { atlasFieldValue } from './atlas-units';
 import { newLine, lineParts, roadStyles, type LandscapeLine } from './landscape-line';
 import type { BrushMode, LandscapeColor } from './landscape-brush';
@@ -123,68 +124,62 @@ export class LandscapeToolSettings {
     this.brushRoot.id = 'land-brush-options';
     panel.querySelector('#land-width')!.closest('label')!.after(this.lineRoot);
     panel.querySelector('#land-radius')!.closest('label')!.before(this.brushRoot);
-    this.brushRoot.innerHTML = `<div id="land-height-options"><div id="land-height-direction" role="group" aria-label="Wirkung"><span>Wirkung</span><input id="land-height-mode" type="hidden" value="raise"><div class="toolbar"><button type="button" data-direction="raise" aria-pressed="true">Erhöhen</button><button type="button" data-direction="lower" aria-pressed="false">Absenken</button><button type="button" data-direction="roughen" aria-pressed="false">Aufrauen</button></div></div><label class="atlas-brush-range"><span>Stärke <small>m/s</small></span><input id="land-height-strength-slider" aria-label="Stärke" type="range" min="0" max="5" step="0.01" value="2.47712125472"><input id="land-height-strength" type="number" min="1" max="100000" value="300"></label><label class="atlas-brush-range"><span>Weicher Rand</span> <output id="land-height-feather-value">80 %</output><input id="land-height-feather" type="range" min="0" max="1" step="0.05" value="0.8"></label><div id="land-shape-options"><label class="atlas-brush-range"><span>Roughness</span> <output id="land-roughness-value">0 · gleichmäßig</output><input id="land-coast-roughness" type="range" min="0" max="2" step="0.1" value="0"></label><label><input id="land-height-target-enabled" type="checkbox"> Zielhöhe begrenzen</label><label>Zielhöhe in m<input id="land-height-target" type="number" step="any" min="-1000000" max="1000000" value="300"></label></div></div><div id="land-freshwater-options"><label>Wirkung<select id="land-freshwater-operation"><option value="add">Süßwasser hinzufügen</option><option value="erase">Süßwasser radieren</option></select></label><label>Wasserstand in m<input id="land-water-level" type="number" placeholder="Am ersten Punkt + 1 m" step="any"></label></div><div id="land-color-options"><label>Ziel<select id="land-color-target"><option value="ground">Landfarbe</option><option value="water">Wasserfarbe</option></select></label><label>Wirkung<select id="land-color-operation"><option value="paint">Farbe auftragen</option><option value="erase">Farbe radieren</option></select></label><label>Pinselspitze<select id="land-tip"><option value="soft">Weich</option><option value="round">Fest rund</option><option value="textured">Strukturiert</option></select></label><label>Farbe<input id="land-paint-color" type="color" value="#739355"></label><div id="land-palette" class="toolbar"></div><button id="land-palette-add" type="button">Farbe merken</button><button id="land-pipette" type="button">Farbe aufnehmen</button><label>Deckkraft<input id="land-paint-opacity" type="range" min="0.1" max="1" step="0.05" value="1"></label><label>Auftragsstärke<input id="land-paint-flow" type="range" min="0.1" max="1" step="0.05" value="1"></label><label>Auftrag<select id="land-fill"><option value="stroke">Pinselzug</option><option value="connected">Zusammenhängende Fläche füllen</option><option value="all">Alle Landflächen füllen</option></select></label></div>`;
+    this.brushRoot.innerHTML = `<div id="land-height-options"><div id="land-height-direction" role="group" aria-label="Wirkung"><span>Wirkung</span><input id="land-height-mode" type="hidden" value="raise"><div class="toolbar"><button type="button" data-direction="raise" aria-pressed="true">Erhöhen</button><button type="button" data-direction="lower" aria-pressed="false">Absenken</button><button type="button" data-direction="roughen" aria-pressed="false">Aufrauen</button></div></div><label class="atlas-brush-range"><span>Stärke <small>m/s</small></span><input id="land-height-strength-slider" aria-label="Stärke" type="range" min="-3" max="5" step="0.01" value="2.47712125472"><input id="land-height-strength" type="number" min="0.001" step="any" max="100000" value="300"></label><label class="atlas-brush-range"><span>Weicher Rand</span> <output id="land-height-feather-value">80 %</output><input id="land-height-feather" type="range" min="0" max="1" step="0.05" value="0.8"></label><div id="land-shape-options"><label class="atlas-brush-range"><span>Roughness</span> <output id="land-roughness-value">0 · gleichmäßig</output><input id="land-coast-roughness" type="range" min="0" max="2" step="0.1" value="0"></label><label><input id="land-height-target-enabled" type="checkbox"> Zielhöhe begrenzen</label><label>Zielhöhe in m<input id="land-height-target" type="number" step="any" min="-1000000" max="1000000" value="300"></label></div></div><div id="land-freshwater-options"><label>Wirkung<select id="land-freshwater-operation"><option value="add">Süßwasser hinzufügen</option><option value="erase">Süßwasser radieren</option></select></label><label>Wasserstand in m<input id="land-water-level" type="number" placeholder="Am ersten Punkt + 1 m" step="any"></label></div><div id="land-color-options"><label>Ziel<select id="land-color-target"><option value="ground">Landfarbe</option><option value="water">Wasserfarbe</option></select></label><label>Wirkung<select id="land-color-operation"><option value="paint">Farbe auftragen</option><option value="erase">Farbe radieren</option></select></label><label>Pinselspitze<select id="land-tip"><option value="soft">Weich</option><option value="round">Fest rund</option><option value="textured">Strukturiert</option></select></label><label>Farbe<input id="land-paint-color" type="color" value="#739355"></label><div id="land-palette" class="toolbar"></div><button id="land-palette-add" type="button">Farbe merken</button><button id="land-pipette" type="button">Farbe aufnehmen</button><label>Deckkraft<input id="land-paint-opacity" type="range" min="0.1" max="1" step="0.05" value="1"></label><label>Auftragsstärke<input id="land-paint-flow" type="range" min="0.1" max="1" step="0.05" value="1"></label><label>Auftrag<select id="land-fill"><option value="stroke">Pinselzug</option><option value="connected">Zusammenhängende Fläche füllen</option><option value="all">Alle Landflächen füllen</option></select></label></div>`;
     this.precisionRoot.id = 'land-height-precision';
     this.precisionRoot.className = 'caption';
     this.precisionRoot.innerHTML =
       '<output id="land-brush-resolution"></output><p id="land-height-protection" role="status" hidden></p>';
-    const presets = document.createElement('div');
-    presets.id = 'land-height-presets';
-    presets.innerHTML =
-      '<div class="atlas-preset-heading"><span>Pinselvorlagen</span><output id="land-preset-status">Benutzerdefiniert</output></div><input id="land-height-preset" type="hidden" value=""><div class="atlas-preset-buttons">' +
-      HEIGHT_PRESETS.map(
-        (p, i) =>
-          `<button type="button" data-preset="${i}" aria-pressed="false">${p.name}</button>`,
+    const forms = document.createElement('div');
+    forms.id = 'land-height-forms';
+    forms.setAttribute('role', 'group');
+    forms.setAttribute('aria-label', 'Geländeform');
+    forms.innerHTML =
+      '<input id="land-height-form" type="hidden" value=""><div class="atlas-form-buttons">' +
+      TERRAIN_FORMS.map(
+        (p) =>
+          `<button type="button" data-form="${p.form}" aria-pressed="false">${p.name}</button>`,
       ).join('') +
       '</div>';
-    this.brushRoot.querySelector('#land-shape-options')!.append(presets);
-    const preset = presets.querySelector('input')!;
-    const applyPreset = () => {
-      if (!this.canChange()) return;
-      const p = HEIGHT_PRESETS[Number(preset.value)];
-      if (preset.value === '' || !p) return;
-      for (const [id, value] of Object.entries({
-        mode: p.direction,
-        strength: p.strength,
-        feather: p.feather,
-      }))
-        field(this.brushRoot, 'land-height-' + id).value = String(value);
-      field(this.brushRoot, 'land-coast-roughness').value = String(p.roughness);
-      check(this.brushRoot, 'land-height-target-enabled').checked = false;
-      brushSizeControl(this.radius)?.preset(p.radius);
-      this.show(this.last);
-      this.changed();
-    };
-    preset.onchange = (e) => {
-      e.stopPropagation();
-      applyPreset();
-    };
-    for (const b of presets.querySelectorAll<HTMLButtonElement>('[data-preset]'))
+    this.brushRoot.querySelector('#land-height-direction')!.before(forms);
+    for (const b of forms.querySelectorAll<HTMLButtonElement>('[data-form]'))
       b.onclick = () => {
         if (!this.canChange()) return;
-        preset.value = b.dataset.preset!;
-        applyPreset();
+        const p = TERRAIN_FORMS.find((p) => p.form === b.dataset.form)!;
+        field(this.brushRoot, 'land-height-form').value = p.form;
+        field(this.brushRoot, 'land-height-mode').value = p.form === 'canyon' ? 'lower' : 'raise';
+        field(this.brushRoot, 'land-height-feather').value = String(p.feather);
+        check(this.brushRoot, 'land-height-target-enabled').checked = false;
+        brushSizeControl(this.radius)?.preset(p.radius);
+        field(this.brushRoot, 'land-height-strength').value = String(
+          Number(
+            Math.max(
+              0.001,
+              Math.min(100000, Number(atlasFieldValue(this.radius)) * p.rate),
+            ).toPrecision(3),
+          ),
+        );
+        this.show(this.last);
+        this.changed();
       };
     for (const b of this.brushRoot.querySelectorAll<HTMLButtonElement>('[data-direction]'))
       b.onclick = () => {
         if (!this.canChange()) return;
+        field(this.brushRoot, 'land-height-form').value = '';
         field(this.brushRoot, 'land-height-mode').value = b.dataset.direction!;
-        preset.value = '';
         this.show(this.last);
         this.changed();
       };
     const strength = field(this.brushRoot, 'land-height-strength'),
       slider = field(this.brushRoot, 'land-height-strength-slider');
     slider.oninput = () => {
-      if (this.canChange()) strength.value = String(Math.round(10 ** Number(slider.value)));
+      if (this.canChange())
+        strength.value = String(Number((10 ** Number(slider.value)).toPrecision(3)));
     };
     this.radius.addEventListener('brush-size-change', () => {
-      preset.value = '';
       this.show(this.last);
     });
-    this.brushRoot.oninput = this.brushRoot.onchange = (e) => {
-      if (e.target === preset || !this.canChange()) return;
-      preset.value = '';
+    this.brushRoot.oninput = this.brushRoot.onchange = () => {
+      if (!this.canChange()) return;
       this.show(this.last);
       this.changed();
     };
@@ -248,16 +243,21 @@ export class LandscapeToolSettings {
         : 'freshwater';
     return 'terrain';
   }
-  height(): Omit<HeightStroke, 'samples' | 'radius' | 'seed'> {
+  height(): Omit<HeightStroke, 'samples' | 'radius'> {
     const mode =
       this.last === 'smooth'
         ? 'smooth'
         : (field(this.brushRoot, 'land-height-mode').value as 'raise' | 'lower' | 'roughen');
+    const form =
+      this.last === 'height'
+        ? (field(this.brushRoot, 'land-height-form').value as TerrainForm | '')
+        : '';
     return {
       mode,
+      ...(form ? { form, seed: TERRAIN_FORM_SEED } : {}),
       strength: Number(field(this.brushRoot, 'land-height-strength').value),
       feather: Number(field(this.brushRoot, 'land-height-feather').value),
-      ...(mode === 'raise' || mode === 'lower'
+      ...(!form && (mode === 'raise' || mode === 'lower')
         ? {
             roughness: this.roughness(),
             ...(check(this.brushRoot, 'land-height-target-enabled').checked
@@ -320,11 +320,10 @@ export class LandscapeToolSettings {
       if (tool === 'road' || tool === 'river')
         lineControls(this.lineRoot, 'land-new', this.lines[tool], tool === 'river', this.changed);
     }
-    const selected = field(this.brushRoot, 'land-height-preset').value;
-    for (const b of this.brushRoot.querySelectorAll<HTMLButtonElement>('[data-preset]'))
-      b.setAttribute('aria-pressed', String(b.dataset.preset === selected));
-    this.brushRoot.querySelector('#land-preset-status')!.textContent =
-      selected === '' ? 'Benutzerdefiniert' : '';
+    const selected = tool === 'height' ? field(this.brushRoot, 'land-height-form').value : '';
+    for (const b of this.brushRoot.querySelectorAll<HTMLButtonElement>('[data-form]'))
+      b.setAttribute('aria-pressed', String(b.dataset.form === selected));
+    this.brushRoot.querySelector<HTMLElement>('#land-height-forms')!.hidden = tool !== 'height';
     this.lineRoot.hidden = !['river', 'road'].includes(tool);
     this.brushRoot.hidden = !['height', 'smooth', 'color', 'freshwater'].includes(tool);
     this.brushRoot.querySelector<HTMLElement>('#land-height-options')!.hidden = ![
@@ -335,7 +334,9 @@ export class LandscapeToolSettings {
     for (const b of this.brushRoot.querySelectorAll<HTMLButtonElement>('[data-direction]'))
       b.setAttribute(
         'aria-pressed',
-        String(b.dataset.direction === field(this.brushRoot, 'land-height-mode').value),
+        String(
+          !selected && b.dataset.direction === field(this.brushRoot, 'land-height-mode').value,
+        ),
       );
     field(this.brushRoot, 'land-height-strength-slider').value = String(
       Math.log10(Number(field(this.brushRoot, 'land-height-strength').value)),
@@ -357,7 +358,9 @@ export class LandscapeToolSettings {
     this.brushRoot.querySelector('#land-height-feather-value')!.textContent =
       Math.round(Number(field(this.brushRoot, 'land-height-feather').value) * 100) + ' %';
     this.brushRoot.querySelector<HTMLElement>('#land-shape-options')!.hidden =
-      tool !== 'height' || field(this.brushRoot, 'land-height-mode').value === 'roughen';
+      tool !== 'height' ||
+      !!selected ||
+      field(this.brushRoot, 'land-height-mode').value === 'roughen';
     this.brushRoot.querySelector<HTMLElement>('#land-color-options')!.hidden = tool !== 'color';
     this.brushRoot.querySelector<HTMLElement>('#land-freshwater-options')!.hidden =
       tool !== 'freshwater';
@@ -370,24 +373,8 @@ export class LandscapeToolSettings {
   }
 }
 
-export const HEIGHT_PRESETS = [
-  { name: 'Hügel', direction: 'raise', strength: 100, radius: 40, feather: 0.85, roughness: 0.2 },
-  { name: 'Berg', direction: 'raise', strength: 350, radius: 65, feather: 0.6, roughness: 0.8 },
-  {
-    name: 'Großer Berg',
-    direction: 'raise',
-    strength: 1000,
-    radius: 100,
-    feather: 0.5,
-    roughness: 1,
-  },
-  { name: 'Tal', direction: 'lower', strength: 200, radius: 70, feather: 0.85, roughness: 0.1 },
-  {
-    name: 'Schlucht',
-    direction: 'lower',
-    strength: 700,
-    radius: 20,
-    feather: 0.15,
-    roughness: 0.6,
-  },
+export const TERRAIN_FORMS = [
+  { name: 'Hügel', form: 'hills', rate: 0.5, radius: 65, feather: 0.8 },
+  { name: 'Berge', form: 'mountains', rate: 0.85, radius: 65, feather: 0.65 },
+  { name: 'Schlucht', form: 'canyon', rate: 0.75, radius: 45, feather: 0.6 },
 ] as const;

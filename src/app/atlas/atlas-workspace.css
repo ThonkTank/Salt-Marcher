@@ -1120,39 +1120,22 @@ body.atlas-workspace .atlas-units-control select {
   box-shadow: 0 1px 3px #24344926;
   font-weight: 600;
 }
-#land-height-presets {
-  border-top: 1px solid #d7dde2;
-  margin-top: 14px;
-  padding-top: 12px;
+#land-height-forms {
+  margin-bottom: 10px;
 }
-.atlas-preset-heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  margin-bottom: 8px;
-  font-size: 12px;
-  font-weight: 600;
-}
-.atlas-preset-heading output {
-  font-size: 10px;
-  font-weight: 400;
-  color: #62717c;
-}
-.atlas-preset-buttons {
-  display: flex;
-  flex-wrap: wrap;
+.atlas-form-buttons {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 5px;
 }
-.atlas-preset-buttons button {
-  flex: 1 1 auto;
-  padding: 6px 9px;
+.atlas-form-buttons button {
+  min-width: 0;
+  padding: 6px 3px;
   font-size: 11px;
-  white-space: nowrap;
   border-color: #c7d1d9;
   background: transparent;
 }
-.atlas-preset-buttons button[aria-pressed='true'] {
+.atlas-form-buttons button[aria-pressed='true'] {
   color: #234d74;
   border-color: #779ab7;
   background: #e3edf5;
@@ -1209,16 +1192,4 @@ body.atlas-workspace .atlas-units-control select {
   max-width: 180px;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-.atlas-preset-buttons {
-  display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-}
-.atlas-preset-buttons button {
-  grid-column: span 2;
-  padding: 6px 3px;
-  font-size: 10.5px;
-}
-.atlas-preset-buttons button:nth-child(n + 4) {
-  grid-column: span 3;
 }

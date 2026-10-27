@@ -1,4 +1,11 @@
-import { heightBrushDabs, heightBrushAmount, type HeightStroke } from './terrain-brush';
+import {
+  heightBrushDabs,
+  heightBrushAmount,
+  prepareHeightBrush,
+  validateHeightStroke,
+  type HeightStroke,
+} from './terrain-brush';
+import { strokeBox } from './land-mask';
 import { gridHeight, terrainVisibility, type TerrainGrid } from './terrain-spatial-model';
 import { terrainGridLayout, terrainGridCoordinate } from './terrain-grid-layout';
 
@@ -27,6 +34,7 @@ export class TerrainBrushDraft {
   }
   update(stroke: HeightStroke) {
     if (stroke.samples.length <= this.consumed) return false;
+    if (stroke.form) return this.updateForm(stroke);
     const samples = stroke.samples.slice(this.consumed - 1);
     this.consumed = stroke.samples.length;
     const layout = terrainGridLayout(this.base.view),
@@ -74,6 +82,40 @@ export class TerrainBrushDraft {
         }
     }
     this.changedRect = { x: minX, y: minY, width: maxX - minX + 1, height: maxY - minY + 1 };
+    return changed;
+  }
+
+  /** The complete corridor can change at a join. Always start from the fixed
+   * pre-gesture field; never integrate a revised profile into an old preview. */
+  private updateForm(stroke: HeightStroke) {
+    validateHeightStroke(stroke);
+    const prepared = prepareHeightBrush(stroke),
+      box = strokeBox(stroke),
+      layout = terrainGridLayout(this.base.view),
+      v = this.base.view,
+      left = Math.ceil(terrainGridCoordinate(layout.x, box.x)),
+      right = Math.floor(terrainGridCoordinate(layout.x, box.x + box.width)),
+      top = Math.ceil(terrainGridCoordinate(layout.y, box.y)),
+      bottom = Math.floor(terrainGridCoordinate(layout.y, box.y + box.height));
+    let changed = false;
+    for (let y = top; y <= bottom; y++)
+      for (let x = left; x <= right; x++) {
+        const i = y * v.columns + x,
+          p = { x: layout.x.values[x]!, y: layout.y.values[y]! };
+        if (!this.visible[i]) this.visible[i] = this.visibility(p) ? 1 : 2;
+        if (this.visible[i] === 2) continue;
+        const next = this.base.editing!.ground[i]! + heightBrushAmount(stroke, p, prepared.dose(p));
+        if (this.ground[i] === Math.fround(next)) continue;
+        this.ground[i] = next;
+        this.grid.heights[i] = Math.max(this.ground[i]!, this.base.editing!.water[i]!);
+        this.maximumHeight = Math.max(
+          this.maximumHeight,
+          Math.abs(this.grid.heights[i]! - v.focusM),
+        );
+        changed = true;
+      }
+    this.consumed = stroke.samples.length;
+    this.changedRect = { x: left, y: top, width: right - left + 1, height: bottom - top + 1 };
     return changed;
   }
 }

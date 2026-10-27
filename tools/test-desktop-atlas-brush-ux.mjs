@@ -161,20 +161,18 @@ try {
   assert(await page.locator('#land-sea-options').isHidden());
   assert(await page.locator('#land-relief-style').isHidden());
   for (const [name, radius] of [
-    ['Hügel', 40],
-    ['Berg', 65],
-    ['Großer Berg', 100],
-    ['Tal', 70],
-    ['Schlucht', 20],
+    ['Hügel', 65],
+    ['Berge', 65],
+    ['Schlucht', 45],
   ]) {
     await page
-      .locator('#land-height-presets button')
+      .locator('#land-height-forms button')
       .filter({ hasText: new RegExp('^' + name + '$') })
       .click();
     assert.equal((await size()).pixels, radius);
     assert.equal(await page.locator('#land-height-target-enabled').isChecked(), false);
   }
-  await page.locator('#land-height-presets button').filter({ hasText: 'Hügel' }).click();
+  await page.locator('#land-height-forms button').filter({ hasText: 'Hügel' }).click();
   await session.capture(page, 'land-controls');
   for (const [width, height, zoomFactor] of [
     [640, 480, 1],
@@ -236,7 +234,7 @@ try {
   await page.keyboard.press('ArrowLeft');
   assert.equal((await size()).pixels, 40);
   await shiftRadius();
-  assert.equal(await page.locator('#land-height-preset').inputValue(), '');
+  assert.equal(await page.locator('#land-height-form').inputValue(), 'hills');
   const before = await size();
   await zoom();
   const after = await size();

@@ -11,6 +11,7 @@ const root = process.cwd();
 const recoveryProbe = process.argv.includes('--recovery');
 const conflictProbe = process.argv.includes('--source-conflict');
 const basicToolsProbe = process.argv.includes('--basic-tools');
+const formsProbe = process.argv.includes('--forms');
 if (conflictProbe && !recoveryProbe) throw Error('--source-conflict requires --recovery.');
 const scale = Number(process.argv.find((a) => a.startsWith('--scale='))?.split('=')[1] ?? 1);
 if (![1, 2].includes(scale)) throw Error('Supported UI scales: 1 or 2.');
@@ -48,10 +49,12 @@ const sourceFiles = [
   './src/app/atlas/terrain-live-stroke.ts',
   './src/app/atlas/landscape-tool-settings.ts',
   './src/app/atlas/terrain-brush.ts',
+  './src/app/atlas/terrain-form-brush.ts',
   './src/app/atlas/terrain-brush-draft.ts',
   './src/app/atlas/atlas-surface-draft.ts',
   './src/app/atlas/atlas-landscape-ui.ts',
   './src/app/atlas/atlas-workspace-layout.ts',
+  './src/app/atlas/atlas-workspace.css',
   './src/app/workspace/renderer.ts',
   './src/app/workspace/workspace-editors.ts',
   './tools/test-desktop-atlas-terrain-stroke.mjs',
@@ -1248,6 +1251,386 @@ async function exerciseBasicTools() {
   await persist();
 }
 
+/** Direct form task on the existing native terrain fixture and lifecycle. */
+async function exerciseFormTools() {
+  const bundle = await build({
+    stdin: {
+      contents:
+        "export {TerrainSampler} from './src/app/atlas/terrain-height';export {applyTerrainBrush} from './src/app/atlas/terrain-brush';",
+      resolveDir: root,
+    },
+    bundle: true,
+    write: false,
+    platform: 'node',
+    format: 'esm',
+  });
+  const { TerrainSampler, applyTerrainBrush } = await import(
+    'data:text/javascript;base64,' + Buffer.from(bundle.outputFiles[0].text).toString('base64')
+  );
+  const records = () => queryHeights().map((height) => ({ height, id: height.id, revision: 0 }));
+  const terrain = () => new TerrainSampler(records());
+  const ready = async () =>
+    page.waitForFunction(
+      () => {
+        const m = document.querySelector('#campaign-map');
+        return (
+          m.dataset.terrainReady === 'ready' &&
+          !m.dataset.terrainDraft &&
+          !document.querySelector('#land-tool').disabled
+        );
+      },
+      null,
+      { timeout: 60000 },
+    );
+  const geometry = async () => {
+    const box = await page.locator('#campaign-map').boundingBox(),
+      view = await page.locator('#campaign-map').evaluate((n) => JSON.parse(n.dataset.atlasView));
+    return {
+      box,
+      view,
+      screen: ([x, y]) => ({ x: box.x + x * box.width, y: box.y + y * box.height }),
+      world: ([x, y]) => ({ x: view.x + x * view.width, y: view.y + y * view.height }),
+    };
+  };
+  const choose = async (form, radius = 8, strength = 4) => {
+    await page.locator('[data-tool-select="land-tool"][data-tool-value="height"]').first().click();
+    await page.locator(`[data-form="${form}"]`).click();
+    const defaultRadius = Number(await page.locator('#land-radius').inputValue()),
+      defaultStrength = Number(await page.locator('#land-height-strength').inputValue()),
+      rate = { hills: 0.5, mountains: 0.85, canyon: 0.75 }[form];
+    check(
+      'form-' + form + '-scale-default',
+      Math.abs(defaultStrength - defaultRadius * rate) <
+        Math.max(0.001, defaultRadius * rate * 0.005),
+      { defaultRadius, defaultStrength, rate },
+    );
+    await setBrushWorldRadius(page, 'land-radius', radius);
+    await page.locator('#land-height-strength').fill(String(strength));
+    await page.locator('#land-height-strength').press('Tab');
+    check(
+      'form-' + form + '-controls-active',
+      (await page.locator('#land-height-form').inputValue()) === form &&
+        (await page.locator('#land-shape-options').isHidden()),
+    );
+  };
+  const history = async (kind, expected, label) => {
+    const revision = queryRevision();
+    await page.locator('#atlas-' + kind).click();
+    await page.waitForFunction(
+      (r) =>
+        document.querySelector('#campaign-map').dataset.terrainReady === 'ready' &&
+        Number(document.querySelector('#campaign-map').dataset.terrainRevision) > r,
+      revision,
+      { timeout: 60000 },
+    );
+    await ready();
+    const actual = recoveryState();
+    check(label, actual.heights === expected.heights && actual.cursor === expected.cursor, {
+      expected,
+      actual,
+    });
+  };
+  evidence.forms = { scale, tools: [], sampleLatencyClaim: 'none; functional pre-up observation' };
+  await native.app.evaluate(({ ipcMain }) => {
+    const original = ipcMain._invokeHandlers.get('atlas:commit');
+    globalThis.__qaFormCommands = [];
+    ipcMain.removeHandler('atlas:commit');
+    ipcMain.handle('atlas:commit', (...args) => {
+      globalThis.__qaFormCommands.push(structuredClone(args[1]));
+      return original(...args);
+    });
+  });
+  const draw = async (
+    label,
+    path,
+    { form, radius = 8, strength = 4, duration = 2400, escape = false, followup = false } = {},
+  ) => {
+    await ready();
+    if (form && !followup) await choose(form, radius, strength);
+    const g = await geometry(),
+      points = path.map(g.screen),
+      watch = points[1],
+      before = recoveryState(),
+      original = records();
+    await page.mouse.move(g.box.x + 4, g.box.y + 4);
+    await page.waitForTimeout(150);
+    const baseline = await sample(page, watch.x, watch.y);
+    await savePatch(label + '-before.png', baseline.bytes);
+    await beginPixelObserver(
+      label,
+      baseline.bytes,
+      watch,
+      Math.max(30, ((g.box.width * radius) / g.view.width) * 1.4),
+    );
+    await page.evaluate(() => {
+      const s = window.__qaTerrainStrokes[window.__qaTerrainCurrentStroke];
+      s.active = true;
+      s.frame = requestAnimationFrame(s.tick);
+    });
+    await page.mouse.move(points[0].x, points[0].y);
+    await page.mouse.down();
+    for (let segment = 1; segment < points.length; segment++) {
+      const a = points[segment - 1],
+        b = points[segment],
+        started = Date.now(),
+        ms = duration / (points.length - 1);
+      while (Date.now() - started < ms) {
+        const f = Math.min(1, (Date.now() - started) / ms);
+        await page.mouse.move(a.x + (b.x - a.x) * f, a.y + (b.y - a.y) * f);
+        await page.waitForTimeout(55);
+      }
+      await page.mouse.move(b.x, b.y);
+    }
+    await page.waitForTimeout(180);
+    const preup = await sample(page, watch.x, watch.y),
+      held = recoveryState();
+    await savePatch(label + '-preup.png', preup.bytes);
+    await native.capture(page, label + '-live.png');
+    check(
+      label + '-not-written-before-up',
+      held.heights === before.heights && held.cursor === before.cursor,
+      { before, held },
+    );
+    if (escape) await page.keyboard.press('Escape');
+    await page.mouse.up();
+    await ready();
+    const after = recoveryState();
+    if (escape) {
+      check(
+        label + '-escape-discards-form',
+        after.heights === before.heights && after.cursor === before.cursor,
+        { before, after },
+      );
+      return;
+    }
+    const observed = await page.evaluate((label) => {
+        const s = window.__qaTerrainStrokes[label];
+        return {
+          first: s.first,
+          input: window.__qaTerrainStrokeInputs.filter((e) => e.label === label),
+        };
+      }, label),
+      up = observed.input.find((e) => e.type === 'pointerup');
+    check(
+      label + '-visible-before-up',
+      !!observed.first && observed.first.sampledAt < up?.at && observed.first.changedPixels > 10,
+      {
+        sampledAt: observed.first?.sampledAt,
+        upAt: up?.at,
+        changedPixels: observed.first?.changedPixels ?? 0,
+      },
+    );
+    const command = await native.app.evaluate(() => globalThis.__qaFormCommands.at(-1));
+    check(
+      label + '-immutable-form-command',
+      command.action.stroke.form === form &&
+        command.action.stroke.seed === 0x51a7c3 &&
+        command.action.stroke.radius === radius,
+      { stroke: command.action.stroke },
+    );
+    check(
+      label + '-one-history-step',
+      after.cursor === before.cursor + 1 && after.commands === before.commands + 1,
+      { before, after },
+    );
+    const computed = applyTerrainBrush(original, command.action.stroke),
+      ids = new Set(computed.map((r) => r.id)),
+      expected = new TerrainSampler([...original.filter((r) => !ids.has(r.id)), ...computed]),
+      actual = terrain();
+    const samples = [];
+    let maxError = 0,
+      positive = 0,
+      negative = 0;
+    for (const point of command.action.stroke.samples.filter(
+      (_, i) => i % Math.max(1, Math.floor(command.action.stroke.samples.length / 20)) === 0,
+    )) {
+      const z = actual.sample(point).heightM,
+        want = expected.sample(point).heightM,
+        prior = new TerrainSampler(original).sample(point).heightM;
+      maxError = Math.max(maxError, Math.abs(z - want));
+      positive += z > prior + 1e-5;
+      negative += z < prior - 1e-5;
+      samples.push({ ...point, prior, z, want });
+    }
+    check(
+      label + '-canonical-corridor',
+      maxError < 0.0001 &&
+        (form === 'canyon' ? negative > 0 && positive === 0 : positive > 0 && negative === 0),
+      { maxError, positive, negative, samples },
+    );
+    const savedPatch = await sample(page, watch.x, watch.y);
+    await savePatch(label + '-saved.png', savedPatch.bytes);
+    await native.capture(page, label + '-committed.png');
+    evidence.forms.tools.push({
+      label,
+      form,
+      before,
+      after,
+      command,
+      samples,
+      preupChanged: pixelDelta(baseline.bytes, preup.bytes),
+      liveCommitChanged: pixelDelta(preup.bytes, savedPatch.bytes),
+    });
+    await history('undo', before, label + '-undo');
+    await history('redo', after, label + '-redo');
+    await persist();
+  };
+  await ready();
+  await native.capture(page, 'forms-00-before.png');
+  mark('forms: broad hills and overlapping continuation');
+  await draw(
+    'forms-hills',
+    [
+      [0.15, 0.3],
+      [0.35, 0.3],
+      [0.6, 0.27],
+      [0.83, 0.32],
+    ],
+    { form: 'hills' },
+  );
+  await draw(
+    'forms-hills-overlap',
+    [
+      [0.2, 0.35],
+      [0.42, 0.34],
+      [0.66, 0.35],
+      [0.84, 0.3],
+    ],
+    { form: 'hills', followup: true },
+  );
+  mark('forms: curved mountain range and connected continuation');
+  await draw(
+    'forms-mountains',
+    [
+      [0.15, 0.72],
+      [0.32, 0.61],
+      [0.48, 0.74],
+      [0.63, 0.66],
+    ],
+    { form: 'mountains', strength: 5 },
+  );
+  await draw(
+    'forms-mountains-join',
+    [
+      [0.55, 0.7],
+      [0.67, 0.66],
+      [0.78, 0.72],
+      [0.88, 0.64],
+    ],
+    { form: 'mountains', strength: 5, duration: 1600, followup: true },
+  );
+  mark('forms: continuous canyon cut into the mountain hillside');
+  await draw(
+    'forms-canyon',
+    [
+      [0.16, 0.72],
+      [0.32, 0.61],
+      [0.48, 0.74],
+      [0.64, 0.66],
+      [0.82, 0.7],
+    ],
+    { form: 'canyon', radius: 3, strength: 5 },
+  );
+  mark('forms: Escape and immediate successor retain selected form');
+  await draw(
+    'forms-escape',
+    [
+      [0.15, 0.45],
+      [0.35, 0.45],
+      [0.65, 0.45],
+    ],
+    { form: 'canyon', radius: 3, strength: 5, escape: true, followup: true },
+  );
+  await draw(
+    'forms-canyon-followup',
+    [
+      [0.62, 0.66],
+      [0.71, 0.69],
+      [0.8, 0.7],
+      [0.87, 0.65],
+    ],
+    { form: 'canyon', radius: 3, strength: 5, duration: 1200, followup: true },
+  );
+  mark('forms: local corrections through raise, lower and smooth');
+  for (const mode of ['raise', 'lower', 'smooth']) {
+    const tool = mode === 'smooth' ? 'smooth' : 'height';
+    await page.locator(`[data-tool-select="land-tool"][data-tool-value="${tool}"]`).first().click();
+    if (tool === 'height') await setHeightDirection(page, mode);
+    await setBrushWorldRadius(page, 'land-radius', 8);
+    await page.locator('#land-height-strength').fill('3');
+    await page.locator('#land-height-strength').press('Tab');
+    const g = await geometry(),
+      p = g.screen([0.48, 0.74]),
+      before = recoveryState(),
+      old = terrain(),
+      world = g.world([0.48, 0.74]);
+    await page.mouse.move(p.x, p.y);
+    await page.mouse.down();
+    await page.waitForTimeout(650);
+    await page.mouse.up();
+    await ready();
+    const command = await native.app.evaluate(() => globalThis.__qaFormCommands.at(-1)),
+      next = terrain(),
+      after = recoveryState();
+    check(
+      'forms-correction-' + mode,
+      command.action.stroke.mode === mode &&
+        command.action.stroke.form === undefined &&
+        before.heights !== after.heights &&
+        Math.abs(next.sample(world).heightM - old.sample(world).heightM) > 1e-5,
+      { command, deltaM: next.sample(world).heightM - old.sample(world).heightM },
+    );
+  }
+  const saved = recoveryState();
+  await saveJson('forms-height-saved.json', queryHeights());
+  mark('forms: top view and tilted near/far inspection');
+  for (const [tilt, rotation, zoom] of [
+    [0, 0, 0],
+    [45, 20, 0],
+    [45, 20, -240],
+    [45, 20, 480],
+  ]) {
+    await page.locator('#atlas-view').click();
+    for (const [id, value] of [
+      ['terrain-tilt', tilt],
+      ['terrain-rotation', rotation],
+    ])
+      await page.locator('#' + id).evaluate((n, v) => {
+        n.value = String(v);
+        n.dispatchEvent(new Event('input', { bubbles: true }));
+      }, value);
+    await page.keyboard.press('Escape');
+    const g = await geometry(),
+      p = g.screen([0.5, 0.5]);
+    await page.mouse.move(p.x, p.y);
+    if (zoom) await page.mouse.wheel(0, zoom);
+    await page.waitForTimeout(350);
+    await ready();
+    await native.capture(page, `forms-inspect-${tilt}-${zoom}.png`);
+    const pose = await page
+      .locator('#campaign-map')
+      .evaluate((n) => JSON.parse(n.dataset.terrainProjection));
+    check(`forms-inspect-${tilt}-${zoom}-same-data`, recoveryState().heights === saved.heights, {
+      pose,
+    });
+  }
+  mark('forms: regular close and fresh reopen');
+  await native.close();
+  page = null;
+  await openCampaign();
+  await ready();
+  const reopened = recoveryState();
+  check(
+    'forms-fresh-identical',
+    saved.heights === reopened.heights && saved.cursor === reopened.cursor,
+    { saved, reopened },
+  );
+  await native.capture(page, 'forms-fresh.png');
+  evidence.forms.saved = saved;
+  evidence.forms.reopened = reopened;
+  await persist();
+}
+
 try {
   mark('fixture creation');
   fixture = await createAtlasCanonicalFixture({
@@ -1281,7 +1664,9 @@ try {
 
   mark('open initial campaign');
   await openCampaign();
-  if (basicToolsProbe) {
+  if (formsProbe) {
+    await exerciseFormTools();
+  } else if (basicToolsProbe) {
     await exerciseBasicTools();
   } else {
     mark('capture baselines and quiet-start control');
@@ -1585,7 +1970,7 @@ try {
   mark('cleanup: dispose session');
   await native.dispose();
   await new Promise((resolve) => setTimeout(resolve, 250));
-  for (const name of basicToolsProbe
+  for (const name of basicToolsProbe || formsProbe
     ? []
     : [
         'gesture-one-duration-3-to-5s',
