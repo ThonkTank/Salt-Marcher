@@ -25,14 +25,37 @@ nicht blockierende Atlasöffnung und verspätete Fehler. Zusätzlich prüfen sie
 Eigentümerschaft verzögerter Scrollwiederherstellung. Native Proben prüfen die
 Zusammensetzung des tatsächlichen Renderers, die isolierten Tests den Fehlerpfad.
 
-Fachliche Fixtures und Assertions bleiben in ihren bisherigen Testdateien.
-Gemeinsame Helfer bauen Module, stellen DOM-Technik bereit oder prüfen echte
-Quellstruktur. Der ungenutzte Funktionsausschneider `sourceFunctions` entfällt.
+Fachliche Assertions liegen in den jeweiligen Testdateien. Gemeinsame Helfer
+bauen vollständige Module, stellen DOM-Technik und echte Store-/Editor-Fixtures
+bereit oder prüfen lesend die Quellstruktur. Der ungenutzte Funktionsausschneider `sourceFunctions` entfällt.
 Quellprüfung für verbotene Imports, Preload-/Sicherheitsgrenzen, Einstiegspunkte
 und deklarierte Markupstruktur bleibt sinnvoll. Die historische Obsidian-
 Hostprobe verwendet noch einen ausgeschnittenen Shutdown-Ablauf; sie gehört
 nicht zum aktiven Desktop-Anschluss und wurde hier nicht umgebaut. Das ist keine
 Behauptung, sämtliche historische Quellproben seien bereits beseitigt.
+
+## Verhaltensprüfungen ohne private Probe-Exports
+
+Die Wiederaufnahme- und Übergabetests laden die vollständigen Fabriken
+`createLiveSessionReaders`, `createLiveSessionResumeUI` und
+`createLiveSessionCloseUI`. `tests/helpers/session-owners.mjs` kontrolliert
+explizite Hostdaten und Callbacks; Produktionsquelltext und private lokale
+Funktionen werden dabei nicht umgeschrieben oder nachträglich exportiert.
+
+`desktop-session-resume-owner.test.mjs` prüft Quellenpriorität, unbekannte
+Teilstände und die Gültigkeit angezeigter Eröffnungen.
+`desktop-session-handoff-owner.test.mjs` prüft Dialoge und Übergabecallbacks.
+Die Fälle unterscheiden übernommene Besuche von bloßer Planwahl, teilen
+Mappenreads und widerrufen verspätete Antworten beim Kampagnenwechsel.
+
+Die parallel integrierte Suitebereinigung in PR #1423 entfernte die früheren
+breiten Live-/Preparation-Kontextmatrizen und Autorenverweistests. Ihre lokale
+Umstellung und damaligen Prüfergebnisse werden deshalb nicht als aktuelle
+Suiteabdeckung behauptet; die nicht mehr benötigten gemeinsamen Fixtures
+werden nicht neu eingeführt. Der ungenutzte Import-Umschreibhelfer entfällt.
+`sourceAssignedLiteral` bleibt eine lesende Strukturprüfung. Die nativen
+Raum-/Quellen-, Scene- und Quest-Proben prüfen die konkrete Zusammensetzung;
+isolierte Ownerfälle allein ersetzen keine Produktabnahme.
 
 ## Benannte Zuständigkeiten und Zyklen
 

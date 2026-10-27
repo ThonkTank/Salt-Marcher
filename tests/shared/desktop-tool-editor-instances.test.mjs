@@ -1,4 +1,3 @@
-import { readFileSync as readWorkspaceSource } from 'node:fs';
 import test from 'node:test';
 import { EventEmitter } from 'node:events';
 import { runInNewContext } from 'node:vm';
@@ -9,6 +8,7 @@ import path from 'node:path';
 import { createRequire } from 'node:module';
 import { buildSync } from '../helpers/build.mjs';
 import { parseHTML } from '../helpers/dom.mjs';
+import { readWorkspaceMarkup } from '../../tools/desktop-markup.mjs';
 const require = createRequire(import.meta.url);
 for (const [entry, name] of [
   ['src/app/campaign/npc-ui.ts', 'npc'],
@@ -33,9 +33,7 @@ function fixture(t, name) {
   const root = mkdtempSync(path.join(tmpdir(), 'tool-instances-'));
   const store = new CampaignStore(root + '/workbench.sqlite');
   const w = store.activate(store.create(name).id);
-  const { document, window } = parseHTML(
-    readWorkspaceSource('src/app/workspace/index.html', 'utf8'),
-  );
+  const { document, window } = parseHTML(readWorkspaceMarkup());
   Object.defineProperty(window.HTMLSelectElement.prototype, 'value', {
     configurable: true,
     get() {

@@ -1,0 +1,51 @@
+<dialog id="session-proposal-editor">
+  <form id="proposal-edit-form">
+    <h2>Spielabend-Vorschlag bearbeiten</h2>
+    <label>Titel <input id="proposal-edit-title" maxlength="1000" required /></label
+    ><label
+      >Ort
+      <select id="proposal-edit-location"></select></label
+    ><label>Zum Vorlesen <textarea id="proposal-edit-public" rows="4"></textarea></label
+    ><label>GM-Notizen <textarea id="proposal-edit-notes" rows="6"></textarea></label>
+    <details>
+      <summary>Wissensverweise</summary>
+      <div id="proposal-edit-refs"></div>
+    </details>
+    <label class="check-label"
+      ><input id="proposal-edit-has-reward" type="checkbox" /> Eigene Belohnung vorbereiten</label
+    >
+    <div id="proposal-edit-reward">
+      <label>Story-XP <input id="proposal-edit-xp" type="number" min="0" value="0" /></label>
+      <div id="proposal-edit-items"></div>
+      <button id="proposal-edit-item-add" type="button">Beuteeintrag ergänzen</button>
+      <details id="proposal-catalog">
+        <summary>Gegenstände aus dem Katalog ergänzen</summary>
+        <label>Suche <input id="proposal-catalog-search" maxlength="1000" /></label
+        ><label
+          >Magie
+          <select id="proposal-catalog-magic">
+            <option value="">Alle Gegenstände</option>
+            <option value="yes">Nur magische Gegenstände</option>
+          </select></label
+        ><label
+          >Seltenheit
+          <select id="proposal-catalog-rarity">
+            <option value="">Alle Seltenheiten</option>
+          </select></label
+        ><button id="proposal-catalog-find" type="button">Im Katalog suchen</button>
+        <div id="proposal-catalog-results"></div>
+        <button id="proposal-catalog-next" type="button" hidden>Weitere Katalogtreffer</button>
+        <p id="proposal-catalog-status" role="status"></p>
+      </details>
+    </div>
+    <p class="caption">
+      Speichern ändert nur diesen Vorschlag. Die Timeline, World-Gruppen und platzierte Schätze
+      entstehen durch ihre ausdrücklichen Übergaben.
+    </p>
+    <p id="proposal-edit-status" role="status"></p>
+    <div class="toolbar">
+      <button type="submit">Vorschlag speichern</button
+      ><button id="proposal-edit-cancel" type="button">Abbrechen</button>
+    </div>
+  </form>
+</dialog>

@@ -1,6 +1,7 @@
+import { readWorkspaceMarkup } from '../../tools/desktop-markup.mjs';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, rmSync } from 'node:fs';
 import path from 'node:path';
 import { tmpdir } from 'node:os';
 import { createRequire } from 'node:module';
@@ -65,7 +66,7 @@ async function fixture(t, journal) {
     });
   store.create('Eigene Kampagne');
   if (typeof journal === 'function') journal = journal({ store, installed });
-  const { window, document } = parseHTML(readFileSync('src/app/workspace/index.html', 'utf8')),
+  const { window, document } = parseHTML(readWorkspaceMarkup()),
     saved = { window: globalThis.window, document: globalThis.document },
     storage = new Map(journal === undefined ? [] : [['extension-pending-write', journal]]),
     commands = [],

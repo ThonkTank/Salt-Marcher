@@ -1,6 +1,6 @@
+import { readWorkspaceMarkup } from '../../tools/desktop-markup.mjs';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { buildSync } from 'esbuild';
 import { parseHTML } from '../helpers/dom.mjs';
@@ -19,7 +19,7 @@ buildSync({
 });
 const require = createRequire(import.meta.url);
 function setup(t) {
-  const { window, document } = parseHTML(readFileSync('src/app/workspace/index.html', 'utf8')),
+  const { window, document } = parseHTML(readWorkspaceMarkup()),
     saved = {
       window: globalThis.window,
       document: globalThis.document,

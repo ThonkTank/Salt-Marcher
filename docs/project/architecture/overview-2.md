@@ -5,6 +5,37 @@ Owner: project
 Last Reviewed: 2026-10-24 (Struktur und Quellen; Fachabnahme separat)
 Source of Truth: Dieses Dokument besitzt das benannte Thema; Code belegt den Iststand, das Abnahmeregister den Prüfstand.
 
+## Statisches Workspace-Markup ändern
+
+`src/app/workspace/index.html` besitzt Dokumentrahmen, CSP, Ressourcen und die
+Reihenfolge der Arbeitsbereiche. Vollständige fachliche Teilbäume liegen als
+lesbare HTML-Fragmente neben ihren UI-Besitzern in `campaign/`, `runtime/`,
+`catalog/`, `atlas/` und `workspace/`. Ein Bereich kann seine Dialoge an getrennten
+Dokumentpositionen einbinden; Öffnungs- und Schließtags gehören immer in dieselbe
+Datei. IDs, Formularzuordnung und Reihenfolge sind bestehende UI-Verträge.
+
+Ein Kommentar wie `<!-- workspace:include ../runtime/live.html -->` bindet eine
+Datei relativ zum enthaltenden Fragment ein. `tools/desktop-markup.mjs` löst diese
+Marker synchron auf; fehlende, doppelte, zyklische oder außerhalb von `src/app`
+liegende Fragmente werden mit Quellkontext abgewiesen. Es gibt keine Variablen,
+Laufzeitnachladung oder zweite eingecheckte Gesamtdatei. Der Desktopbuild schreibt
+das Ergebnis nach `.build/desktop/ui/index.html`. Formatierungsbefehle erfassen
+die HTML-Quellen; Texte und Leerzeichen in Eingabewerten bleiben fachlicher Inhalt.
+
+DOM-Tests verwenden ausdrücklich `readWorkspaceMarkup()` aus demselben Werkzeug,
+bevor sie das Ergebnis parsen. Native Prüfungen laden das gebaute Dokument.
+`tests/shared/desktop-markup.test.mjs` prüft Fragmentfehler, Text-/Werterhalt,
+eindeutige IDs und den bestehenden Offline-Dokumentrahmen. Dynamisch erzeugte
+Oberflächen bleiben bei ihren jeweiligen TypeScript-Besitzern.
+
+Der normale Entwicklungswatcher verarbeitet auch Änderungen an eingebundenen
+Fachfragmenten. `tools/test-desktop-development.mjs` prüft diesen Anschluss mit
+kopierten Quellen: unverändertes Hauptdokument, neue publizierte HTML-Ausgabe
+und sichtbarer Fachtext im neu gestarteten Electronfenster. Der Reader und seine
+Buildkonfiguration werden wie andere Buildwerkzeuge erst nach explizitem
+Neustart des Entwicklungsbefehls geändert; Fragmentänderungen benötigen diesen
+Konfigurationsneustart nicht.
+
 ## Darstellung, Suche und Spieleranzeige
 
 Kamera, Werkzeugauswahl und Objektauswahl führen die Atlasdetails getrennt vom Layoutzustand. `AtlasWorkspaceLayout` ordnet bestehende Controls einer festen Befehlsleiste, der linken Symbolleiste, ihrer unabhängig klappbaren Einstellungsleiste und dem optionalen rechten Kontext zu; fachliche Ereignisse und Speichergrenzen bleiben bei ihren bisherigen Eigentümern. Größenänderungen der Kartenfläche erhalten Mittelpunkt und Meter pro CSS-Pixel ohne Ansichtsverlauf. Die Spielleitungssteuerung bleibt außerhalb des Editors. Das Atlas-Menü stellt den vorhandenen `workspace-navigation`-Knoten bereit; dessen ursprüngliche Handler prüfen offene Eingaben und wechseln innerhalb derselben Kampagne. Beim Verlassen des Editors wird der Knoten zurückgestellt. Kampagnenwechsel und Arbeitsbereichswechsel bleiben verschiedene Aktionen. Zoom ändert

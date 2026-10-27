@@ -1,0 +1,75 @@
+<dialog id="live-health-dialog" aria-labelledby="live-health-title">
+  <div class="toolbar">
+    <h2 id="live-health-title">HP und Zustände</h2>
+    <button id="live-health-close" type="button" aria-label="HP-Ansicht schließen">
+      Schließen
+    </button>
+  </div>
+  <p id="live-health-group" class="caption"></p>
+  <div id="live-health-slot"></div>
+  <p id="live-health-status" role="status" class="caption"></p>
+  <div class="toolbar">
+    <button id="live-health-profile" type="button">Profil und Fortschritt öffnen</button>
+  </div>
+</dialog>
+<dialog id="character-dialog">
+  <form id="character-form">
+    <h2>Figur anlegen</h2>
+    <label for="new-character-name">Charaktername</label
+    ><input id="new-character-name" required maxlength="1000" />
+    <p id="character-create-target" class="caption"></p>
+    <p>HP und weitere Profilwerte kannst du anschließend ergänzen.</p>
+    <p id="character-create-status" role="status"></p>
+    <div class="actions">
+      <button id="character-create-active" type="submit">Anlegen und heute aktivieren</button
+      ><button id="character-create" type="submit">Nur ins Roster</button
+      ><button id="character-cancel" type="button">Abbrechen</button>
+    </div>
+  </form>
+</dialog>
+<dialog id="adoption-dialog">
+  <h2>Besuch am Spieltisch übernehmen</h2>
+  <p>
+    Titel, GM-Notizen, Ort und Vorlesetext gehen in die laufende Scene. Vorbereitete Quellen und
+    Begegnungsgruppen werden an diesen Besuch gebunden. Party, Uhr, Kampf und Belohnungen bleiben
+    unverändert, bis du sie ausdrücklich bearbeitest.
+  </p>
+  <div id="adoption-content" class="adoption-review"></div>
+  <div class="actions">
+    <button id="adoption-cancel" type="button">Abbrechen</button
+    ><button id="adoption-confirm" type="button">Nur Inhalte übernehmen</button
+    ><button id="adoption-confirm-packet" type="button">Übernehmen + Mappe öffnen</button>
+  </div>
+</dialog>
+<dialog id="move-dialog">
+  <form id="move-form">
+    <h2>Party aufteilen / zusammenführen</h2>
+    <p id="move-source"></p>
+    <fieldset>
+      <legend>Figuren aus dieser Gruppe</legend>
+      <button id="move-all" type="button">Alle auswählen</button>
+      <div id="move-members"></div>
+    </fieldset>
+    <label for="move-target">Ziel</label
+    ><select id="move-target"></select>
+    <div id="move-new-fields">
+      <label for="move-title">Name der neuen Gruppe (optional)</label
+      ><input id="move-title" maxlength="1000" />
+      <p>
+        Die neue Gruppe beginnt am aktuellen Ort und Zeitpunkt. Ihre Uhr läuft danach unabhängig.
+      </p>
+    </div>
+    <p id="move-time" hidden></p>
+    <div class="actions">
+      <button id="move-cancel" type="button">Abbrechen</button
+      ><button id="move-confirm" type="submit">Figuren verschieben</button>
+    </div>
+  </form>
+</dialog>
+<dialog id="archive-dialog">
+  <h2>Frühere Gruppen</h2>
+  <div id="archive-list" class="selection-list"></div>
+  <button id="archive-more" hidden>Weitere Gruppen</button>
+  <div id="archive-detail"></div>
+  <div class="actions"><button id="archive-close">Schließen</button></div>
+</dialog>

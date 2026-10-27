@@ -1,0 +1,39 @@
+<dialog id="plan-replacement-dialog">
+  <h2>Plan ersetzen oder wiederverwenden</h2>
+  <p>
+    Die aktuelle Timeline mit Besuchsnotizen und noch nicht angenommener Vorbereitung wird ersetzt.
+    Platzierte Gruppen, NPCs, Schätze und laufende Scenes bleiben erhalten.
+  </p>
+  <form id="plan-replacement-form">
+    <label for="plan-replacement-source">Neue Timeline</label
+    ><select id="plan-replacement-source"></select
+    ><label for="plan-replacement-name">Planname (optional)</label
+    ><input id="plan-replacement-name" maxlength="1000" /><label class="check-label"
+      ><input id="plan-replacement-party" type="checkbox" />Planungsparty und Adventure Day aus der
+      Vorlage übernehmen</label
+    >
+    <p id="plan-replacement-summary" role="status"></p>
+    <p>
+      Besuche und noch nicht platzierte Gruppen werden als eigene Vorbereitung kopiert. Angenommene
+      Weltinhalte bleiben dieselben. Bereits vergebene Besuchsbelohnungen bleiben abgeschlossen;
+      offene Belohnungen werden als neue Vorbereitung übernommen.
+    </p>
+    <div class="toolbar">
+      <button id="plan-replacement-confirm" type="submit">Diesen Plan ersetzen</button
+      ><button id="plan-replacement-cancel" type="button">Abbrechen</button>
+    </div>
+  </form>
+</dialog>
+<dialog id="story-award-dialog">
+  <form id="story-award-form">
+    <h2>Besuchsbelohnung vergeben</h2>
+    <p id="story-award-source"></p>
+    <label class="check-label"><input id="story-no-xp" type="checkbox" /> Keine XP vergeben</label>
+    <div id="story-recipients"></div>
+    <p id="story-xp-preview" role="status"></p>
+    <div class="actions">
+      <button id="story-award-cancel" type="button">Abbrechen</button
+      ><button type="submit">Belohnung bestätigen</button>
+    </div>
+  </form>
+</dialog>

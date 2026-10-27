@@ -109,6 +109,17 @@ Produktabnahme. Die lokalen Detailbelege liegen unter `.build/test-runs/`:
 `c6522471-24d4-4a8c-b442-e889352f55bb` und
 `f4061def-682c-4cec-a918-4e47f4a7e86f`.
 
+## Workspace-Markup in DOM-Tests
+
+Das Quell-`src/app/workspace/index.html` ist die Shell mit lokalen Fragmentmarkern.
+Tests lesen das vollständige Markup mit `readWorkspaceMarkup()` aus
+`tools/desktop-markup.mjs`, genau wie der Desktopbuild. Keine Shell direkt an
+`parseHTML` übergeben und keine gebaute HTML-Datei als Voraussetzung für einen
+DOM-Test verwenden. Alle HTML-Quellen liegen unter `src/app/` und sind damit
+Teil des vorhandenen Testasset-Fingerprints. DOM-Fixtures importieren den
+Reader direkt. Native Tests bleiben Verbraucher der
+fertigen `.build/desktop/ui/index.html`.
+
 ## Einzelne Abläufe prüfen
 
 `npm test -- tests/atlas/desktop-atlas-commit-recovery.test.mjs` bereitet nur tatsächlich benötigte gemeinsame
@@ -449,7 +460,7 @@ Profil unter `$XDG_DATA_HOME/saltmarcher/development/<Checkout-Hash>` (ersatzwei
 
 CSS wird nach erfolgreichem Build an seiner vorhandenen Kaskadenposition ersetzt;
 auch entfernte Regeln verschwinden. DOM, Fokus und offene Eingaben bleiben erhalten.
-TypeScript, HTML-Dokumente, Preloads und Worker starten die Anwendung erst nach
+TypeScript, HTML-Fragmente, Preloads und Worker starten die Anwendung erst nach
 einem erfolgreichen vollständigen Änderungsstand neu. Der normale Schließpfad
 sichert Entwürfe und wartet auf laufende Speicheraufträge. Ein blockierter
 Schließvorgang wartet auf dessen fachliche Klärung; der Starter erzwingt keinen
@@ -468,7 +479,7 @@ Starter bleibt gegebenenfalls `.build/desktop-dev/session.lock`: erst den dort
 vermerkten Prozess prüfen und die Datei nur entfernen, wenn dieser beendet ist.
 
 Die gemeinsame Bundleliste in `tools/desktop-build-plan.mjs`, der vorhandene
-Dokumentausgabe und die CSS-Bündelung dienen sowohl Produktions- als auch Devbuild.
+Markup-Reader und die CSS-Bündelung dienen sowohl Produktions- als auch Devbuild.
 Dev-Bundles enthalten eingebettete Sourcemaps; Node-Stacks werden auf TypeScript
 zurückgeführt. Der Entwicklungsanschluss nutzt ausschließlich geerbte Prozesspipes;
 es gibt keinen Entwicklungsserver und keine zusätzliche Renderer-/Preload-API.
@@ -478,7 +489,11 @@ Produktionsbuilds enthalten diesen Anschluss und die Sourcemaps nicht.
 Serialisierung und bestätigtes Schließen. Die native Probe
 `tools/test-desktop-development.mjs` arbeitet mit kopierten Quellen und einem
 eigenen Profil: CSS/Fokus, ungültiger NPC-Entwurf beim Neustart, Syntaxfehler und
-Korrektur, HTML, neue/gelöschte Imports, Preload, Worker und Sourcemaps. Sie wird
+Korrektur, HTML-Dokumentrahmen sowie ein eingebundenes Kampagnenfragment,
+neue/gelöschte Imports, Preload, Worker und Sourcemaps. Die Fragmentprobe ändert
+nur die kopierte Fachdatei, prüft unveränderte Rahmenbytes und die neue
+Dokumentausgabe und liest den geänderten sichtbaren Text nach dem regulären
+Watch-/Publish-Neustart im echten Fenster. Sie wird
 wie andere native Prüfungen im Ressourcenrahmen und unter `tools/ui-session.py`
 gestartet. Ergebnisse und gemessene Zeiten liegen unter
 `.build/development-evidence/`; sie sind technische Nachweise, keine Fachabnahme.

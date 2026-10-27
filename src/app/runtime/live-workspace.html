@@ -1,0 +1,516 @@
+<div id="live-workspace" hidden class="preparation-columns">
+  <section id="live-play-panel">
+    <div id="live-party-start">
+      <section id="live-party-panel">
+        <details id="live-party-details">
+          <summary>Figuren, HP und Fortschritt bearbeiten</summary>
+          <p>
+            Wähle, wer heute dabei ist. Neue Figuren kannst du direkt für die aktuelle Gruppe
+            aktivieren oder nur im Roster vormerken. Deaktivieren entfernt keine Profildaten,
+            Fortschritte oder Erinnerungen.
+          </p>
+          <button id="character-new">Figur anlegen…</button>
+          <div id="roster-list" class="selection-list"></div>
+          <div id="character-editor" hidden>
+            <label for="character-name">Charaktername</label
+            ><input id="character-name" maxlength="1000" />
+            <div class="toolbar">
+              <p id="character-membership"></p>
+              <button id="character-toggle"></button>
+            </div>
+            <p id="character-result" class="caption" role="status"></p>
+            <details>
+              <summary>Profilwerte (optional)</summary>
+              <label for="character-player">Spielername</label
+              ><input id="character-player" maxlength="1000" /><label for="character-species"
+                >Volk</label
+              ><input id="character-species" maxlength="1000" /><label for="character-class"
+                >Klasse</label
+              ><input id="character-class" maxlength="1000" /><label for="character-ac"
+                >Rüstungsklasse</label
+              ><input id="character-ac" type="number" min="0" step="1" /><label
+                for="character-perception"
+                >Passive Wahrnehmung</label
+              ><input id="character-perception" type="number" min="0" step="1" /><label
+                for="character-speed"
+                >Bewegungsrate (Fuß)</label
+              ><input id="character-speed" type="number" min="0" step="1" />
+            </details>
+          </div>
+          <div id="character-progression" hidden>
+            <div id="character-health-home">
+              <section id="character-health">
+                <h3>Lebenspunkte</h3>
+                <p id="health-summary"></p>
+                <div id="health-adjust">
+                  <label for="health-amount">Betrag</label
+                  ><input
+                    id="health-amount"
+                    type="number"
+                    min="1"
+                    max="1000000"
+                    step="1"
+                    value="1"
+                  />
+                  <div class="actions">
+                    <button id="health-damage" type="button">Schaden</button
+                    ><button id="health-heal" type="button">Heilung</button>
+                  </div>
+                </div>
+                <p id="health-context" role="status"></p>
+                <details id="health-controls">
+                  <summary>HP eintragen / korrigieren</summary>
+                  <form id="health-form">
+                    <div class="combat-fields">
+                      <div>
+                        <label for="health-current">Aktuelle HP</label
+                        ><input
+                          id="health-current"
+                          type="number"
+                          min="0"
+                          max="1000000"
+                          step="1"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label for="health-maximum">Maximale HP</label
+                        ><input
+                          id="health-maximum"
+                          type="number"
+                          min="1"
+                          max="1000000"
+                          step="1"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label for="health-temporary">Temporäre HP</label
+                        ><input
+                          id="health-temporary"
+                          type="number"
+                          min="0"
+                          max="1000000"
+                          step="1"
+                          value="0"
+                          required
+                        />
+                      </div>
+                    </div>
+                    <label for="health-conditions">Zustände</label
+                    ><input id="health-conditions" maxlength="4000" /><label class="check-label"
+                      ><input id="health-concentration" type="checkbox" /> Konzentriert sich</label
+                    ><label for="health-reason">Grund (optional)</label
+                    ><input id="health-reason" maxlength="2000" /><button type="submit">
+                      HP speichern</button
+                    ><button id="health-reload" type="button">Gespeicherten Stand laden</button>
+                    <p id="health-draft-status" role="status"></p>
+                  </form>
+                  <p class="caption">
+                    Änderungen an den Werten mit „HP speichern“ bestätigen. Initiative und Kämpfe
+                    können auch mit offenen HP geführt werden.
+                  </p>
+                </details>
+              </section>
+            </div>
+            <h3>Fortschritt und Rast</h3>
+            <p id="progress-summary"></p>
+            <progress id="xp-meter" aria-label="Fortschritt zum nächsten Level"></progress>
+            <details id="xp-controls">
+              <summary>XP ändern / korrigieren</summary>
+              <form id="xp-form">
+                <div class="time-fields">
+                  <div>
+                    <label for="xp-mode">XP ändern</label
+                    ><select id="xp-mode">
+                      <option value="add">Hinzufügen</option>
+                      <option value="subtract">Abziehen</option>
+                      <option value="set">Gesamtstand setzen</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label for="xp-amount">Betrag</label
+                    ><input id="xp-amount" type="number" min="0" step="1" value="0" required />
+                  </div>
+                </div>
+                <label for="xp-reason">Grund / Korrektur</label
+                ><input
+                  id="xp-reason"
+                  value="Manuelle XP-Änderung"
+                  required
+                  maxlength="10000"
+                /><label for="xp-correction-source"
+                  >Korrektur eines früheren Eintrags (optional)</label
+                ><select id="xp-correction-source">
+                  <option value="">Keine Originalreferenz</option>
+                </select>
+                <p id="xp-preview" class="caption"></p>
+                <button type="submit">XP übernehmen</button>
+              </form>
+            </details>
+            <p id="rest-summary"></p>
+            <progress id="rest-meter" aria-label="Verbrauch im aktuellen Rastabschnitt"></progress>
+            <details>
+              <summary>Fortschritts- und Beuteverlauf</summary>
+              <div id="progress-history-list"></div>
+              <button id="progress-history-more" hidden>Ältere Einträge laden</button>
+            </details>
+            <details>
+              <summary>Mit der Gruppe rasten</summary>
+              <div id="rest-members"></div>
+              <label class="check-label"
+                ><input id="rest-time" type="checkbox" checked /> Rast und Szenenzeit gemeinsam
+                fortschreiben</label
+              >
+              <div class="time-fields">
+                <label
+                  >Kurze Rast (Minuten)<input
+                    id="rest-short-duration"
+                    type="number"
+                    min="1"
+                    max="1000000"
+                    step="1"
+                    value="60" /></label
+                ><label
+                  >Lange Rast (Stunden)<input
+                    id="rest-long-duration"
+                    type="number"
+                    min="1"
+                    max="1000000"
+                    step="1"
+                    value="8"
+                /></label>
+              </div>
+              <p id="rest-time-preview" class="caption"></p>
+              <label class="check-label"
+                ><input id="rest-restore-hp" type="checkbox" /> Bei langer Rast bekannte Figuren mit
+                positiven HP vollständig heilen</label
+              >
+              <div class="toolbar">
+                <button id="rest-short" type="button">Kurze Rast bestätigen</button
+                ><button id="rest-long" type="button">Lange Rast bestätigen</button>
+              </div>
+              <p class="caption">
+                Zeit und Rastbudget werden zusammen übernommen. Wetter, Nachschub und freigegebene
+                Weltfolgen benutzen den gemeinsamen Zeitablauf. Die optionale Heilung lässt Figuren
+                mit 0 HP oder unbekannten HP unverändert; Zustände, temporäre HP und weitere
+                Ressourcen bearbeitest du selbst.
+              </p>
+            </details>
+          </div>
+        </details>
+      </section>
+    </div>
+    <div id="live-play-heading" class="toolbar">
+      <h2>Spielabend leiten</h2>
+      <button id="live-continue">Gruppe am Spieltisch öffnen</button>
+    </div>
+    <p id="live-start-hint">
+      Öffne eine erste Gruppe am Spieltisch. Einen neuen Spielabend beginnst du anschließend
+      ausdrücklich.
+    </p>
+    <div id="running-editor" hidden>
+      <div class="live-context">
+        <p id="live-party"></p>
+        <p id="live-clock" class="caption"></p>
+        <button id="time-plan-open" type="button">Warten bis Datum / Ereignis…</button>
+        <details id="time-controls">
+          <summary>Zeit verstreichen lassen</summary>
+          <form id="time-form">
+            <div class="time-fields">
+              <div>
+                <label for="time-amount">Dauer</label
+                ><input id="time-amount" type="number" min="1" step="1" value="10" required />
+              </div>
+              <div>
+                <label for="time-unit">Einheit</label
+                ><select id="time-unit">
+                  <option value="seconds">Sekunden</option>
+                  <option value="minutes" selected>Minuten</option>
+                  <option value="hours">Stunden</option>
+                  <option value="days">Tage</option>
+                </select>
+              </div>
+            </div>
+            <label for="time-reason">Grund (optional)</label
+            ><input id="time-reason" maxlength="2000" />
+            <p id="time-preview" role="status"></p>
+            <button id="time-advance" type="submit">Zeit verstreichen lassen</button>
+          </form>
+        </details>
+      </div>
+      <div class="live-desk-columns">
+        <div class="live-desk-writing">
+          <section id="live-session-panel">
+            <div class="toolbar">
+              <h3>Spielabend</h3>
+              <button id="live-moment-open" type="button">Moment festhalten…</button
+              ><button id="live-session-start" type="button">Spielabend beginnen</button
+              ><button id="live-session-end" type="button" hidden>Spielabend beenden</button>
+            </div>
+            <p id="live-session-status" class="caption"></p>
+            <details id="live-recap-details">
+              <summary>Rückblick, Übergabe und Ereignisse</summary>
+              <aside id="live-session-handoff-preview" hidden>
+                <strong>Übergabe vom letzten Spielabend</strong>
+                <p id="live-session-handoff-text"></p>
+              </aside>
+              <ol id="live-session-events"></ol>
+              <p id="live-session-more" class="caption" hidden>
+                Weitere Ereignisse stehen in der Kampagnenchronik.
+              </p>
+              <label id="live-session-summary-label" hidden
+                >Rückblick<textarea
+                  id="live-session-summary"
+                  rows="3"
+                  maxlength="10000"
+                  placeholder="Was ist heute geschehen?"
+                  aria-label="Abschlussnotiz"
+                ></textarea></label
+              ><label id="live-session-handoff-label" hidden
+                >Nächster Spielabend<textarea
+                  id="live-session-handoff"
+                  rows="4"
+                  maxlength="10000"
+                  placeholder="Wo steigen wir ein, was bleibt offen, was muss vorbereitet werden?"
+                ></textarea>
+              </label>
+              <p id="live-session-draft-status" class="caption" role="status"></p>
+              <button id="live-session-draft-retry" type="button" hidden>
+                Eigene Fassung erneut sichern…
+              </button>
+            </details>
+            <p id="live-session-result" class="caption" role="status"></p>
+          </section>
+          <section class="live-scene-writing" aria-label="Aktuelle Szene">
+            <details id="running-context-details">
+              <summary id="running-context-summary">Titel und Ort ändern</summary>
+              <label for="running-title">Laufender Titel</label
+              ><input id="running-title" maxlength="1000" /><label for="running-location"
+                >Aktueller Ort</label
+              ><select id="running-location"></select
+              ><button id="running-open-location">Ort und Karten öffnen</button>
+            </details>
+            <label for="running-notes">Notizen während des Spiels</label
+            ><textarea id="running-notes" rows="6"></textarea>
+            <details id="running-read-aloud-details">
+              <summary id="running-read-aloud-summary">Zum Vorlesen</summary>
+              <textarea
+                id="running-read-aloud"
+                aria-labelledby="running-read-aloud-summary"
+                rows="4"
+              ></textarea>
+            </details>
+            <button id="live-archives" hidden>Frühere Gruppen ansehen</button>
+            <details id="live-display-details">
+              <summary>Bilder und Handouts für die Spieler</summary>
+              <div class="toolbar live-player-cues" aria-label="Spieleranzeige steuern">
+                <button id="running-player-location" type="button">Ortsbild zeigen</button
+                ><input
+                  id="running-player-npc-filter"
+                  type="search"
+                  placeholder="NSC suchen"
+                  aria-label="NSC für Spieleranzeige suchen"
+                /><select id="running-player-npc" aria-label="NSC-Bild auswählen">
+                  <option value="">NSC auswählen</option></select
+                ><button id="running-player-npc-show" type="button" disabled>NSC zeigen</button
+                ><span id="running-player-npc-result" class="caption" role="status"></span
+                ><button id="running-player-handout" type="button">Handout zeigen…</button
+                ><button id="running-player-follow" type="button">Live-Automatik</button
+                ><button id="running-player-blank" type="button">Anzeige leeren</button>
+              </div>
+              <p class="caption">
+                Öffnet Ortsbild, NSC-Porträt oder ein spontanes Handout direkt für die geprüfte
+                Gruppe. Beim ersten Bild wählst du eine Datei; danach genügt ein Klick. GM-Notizen
+                bleiben privat.
+              </p>
+            </details>
+          </section>
+          <details id="live-moment-panel">
+            <summary>Moment festhalten</summary>
+            <form id="live-moment-form">
+              <div class="live-moment-fields">
+                <label
+                  >Bereich<select id="live-moment-category">
+                    <option value="world">Welt und Handlung</option>
+                    <option value="party">Party</option>
+                    <option value="narrative">Quest</option>
+                    <option value="travel">Reise</option>
+                    <option value="combat">Kampf</option>
+                    <option value="reward">Beute</option>
+                  </select></label
+                ><label
+                  >Titel<input
+                    id="live-moment-title"
+                    maxlength="1000"
+                    placeholder="Was ist gerade passiert?"
+                    required
+                /></label>
+              </div>
+              <label
+                >Kurze Notiz<textarea
+                  id="live-moment-summary"
+                  rows="3"
+                  maxlength="10000"
+                  placeholder="Entscheidung, Konsequenz oder offene Spur"
+                ></textarea></label
+              ><label
+                >Folgespur<select id="live-moment-follow-up">
+                  <option value="">Nur in der Chronik</option>
+                  <option value="quest">Als offene Quest vorbereiten</option>
+                  <option value="rumor">Als Gerücht vorbereiten</option>
+                  <option value="deadline">Ortsfrist vorbereiten</option>
+                  <option value="visit">Nächsten Besuch vorbereiten</option>
+                </select></label
+              >
+              <p id="live-moment-draft-status" class="caption" role="status"></p>
+              <button id="live-moment-retry" type="button" hidden>
+                Eigene Eingabe erneut sichern…</button
+              ><button id="live-moment-save" type="submit">Moment festhalten</button>
+              <p id="live-moment-result" class="caption" role="status"></p>
+            </form>
+          </details>
+        </div>
+        <div class="live-desk-reference">
+          <section id="live-party-quick">
+            <div class="toolbar">
+              <h3>Aktuelle Party</h3>
+              <button id="live-party-new" type="button">Neue Figur…</button>
+            </div>
+            <div id="live-party-reference" class="selection-list"></div>
+            <p id="live-party-reference-empty" class="caption">
+              Keine aktive Figur in dieser Gruppe.
+            </p>
+            <form id="live-passive-form" class="toolbar">
+              <label for="live-passive-dc">Wahrnehmungs-SG</label
+              ><input
+                id="live-passive-dc"
+                type="number"
+                min="-1000"
+                max="1000"
+                step="1"
+                value="15"
+                required
+              /><button id="live-passive-check" type="submit">Passiv prüfen</button>
+            </form>
+            <p id="live-passive-result" class="caption" role="status"></p>
+          </section>
+          <div id="live-party-at-table"></div>
+          <section id="scene-desk" hidden>
+            <h3>Wissen nachschlagen</h3>
+            <p class="caption">
+              Suche in der Kampagne. Angeheftete Inhalte bleiben für diese Gruppe griffbereit.
+            </p>
+            <button id="desk-refresh">Szenentisch aktualisieren</button>
+            <div id="desk-place-material" hidden></div>
+            <div id="desk-pins"></div>
+            <article id="desk-editor" hidden>
+              <h3 id="desk-title"></h3>
+              <p id="desk-note-status" role="status"></p>
+              <div
+                id="desk-player-actions"
+                class="toolbar"
+                hidden
+                aria-label="NSC-Porträt für die Spieler"
+              >
+                <button id="desk-player-show" type="button">Porträt für Spieler zeigen</button
+                ><button id="desk-player-blank" type="button">Anzeige leeren</button
+                ><span id="desk-player-status" class="caption" role="status"></span>
+              </div>
+              <div id="desk-note-preview" hidden></div>
+              <details id="desk-editing" open>
+                <summary id="desk-edit-summary">Angaben bearbeiten</summary>
+                <div id="desk-fields"></div>
+                <div class="actions">
+                  <button id="desk-save">Angaben übernehmen</button
+                  ><button id="desk-reload">Gespeicherten Stand laden · Eingabe verwerfen</button>
+                </div>
+              </details>
+              <section id="desk-narrative" hidden></section>
+            </article>
+            <form id="desk-search-form" class="toolbar">
+              <select id="desk-search-kind" aria-label="Szenentisch-Suchbereich">
+                <option value="world">NPCs, Fraktionen, Quests, Gerüchte und Orte</option>
+                <option value="item">Gegenstände</option>
+                <option value="creature">Kreaturen</option>
+                <option value="encounter">Encountervorlagen</option></select
+              ><input
+                id="desk-search"
+                aria-label="Kampagnenwissen suchen"
+                placeholder="Titel oder Notiztext"
+              /><button>Suchen</button>
+            </form>
+            <p id="desk-search-status" role="status"></p>
+            <div id="desk-results"></div>
+            <button id="desk-more" hidden>Weitere Treffer</button>
+            <details>
+              <summary>Inhalt direkt am Tisch anlegen</summary>
+              <form id="desk-create-form">
+                <select id="desk-new-kind" aria-label="Neuer Szeneninhalt">
+                  <option value="npc">NPC</option>
+                  <option value="faction">Fraktion</option>
+                  <option value="quest">Quest</option>
+                  <option value="rumor">Gerücht</option>
+                  <option value="location">Ort</option></select
+                ><label
+                  >Titel oder Name<input id="desk-new-title" required maxlength="1000" /></label
+                ><label>Notizen<textarea id="desk-new-notes" rows="3"></textarea></label
+                ><label class="check-label"
+                  ><input id="desk-new-pin" type="checkbox" checked /> An diese Szene heften</label
+                ><label class="check-label" id="desk-new-contributors-label" hidden
+                  ><input id="desk-new-contributors" type="checkbox" /> Aktuelle Gruppenmitglieder
+                  als Quest-Mitwirkende</label
+                ><button id="desk-create-submit" type="submit">Inhalt anlegen</button
+                ><button id="desk-create-check" type="button" hidden>Originalauftrag prüfen</button
+                ><button id="desk-create-edit" type="button" hidden>Eingabe weiterbearbeiten</button
+                ><button id="desk-create-reload" type="button" hidden>
+                  Gesicherte Eingabe laden · ungesicherte Änderungen verwerfen
+                </button>
+                <p id="desk-create-status" role="status"></p>
+              </form>
+            </details>
+          </section>
+          <details id="live-prepared-details">
+            <summary>Vorbereitetes Wissen am Tisch</summary>
+            <section id="live-knowledge-panel">
+              <div class="toolbar">
+                <h3>Wissensbinder am Tisch</h3>
+                <input
+                  id="live-knowledge-search"
+                  type="search"
+                  placeholder="NSC, Quest, Gerücht …"
+                  aria-label="Vorbereitetes Wissen durchsuchen"
+                />
+              </div>
+              <p id="live-knowledge-result" class="caption" role="status"></p>
+              <div id="live-knowledge-results"></div>
+            </section>
+          </details>
+        </div>
+      </div>
+      <details>
+        <summary>Herkunft der übernommenen Inhalte</summary>
+        <div id="running-origin"></div>
+      </details>
+      <section id="live-world-panel"></section>
+      <section id="scene-preparation-panel">
+        <div class="toolbar">
+          <h3>Vorbereiteter Inhalt am aktuellen Ort</h3>
+          <button id="scene-preparation-refresh">Inhalte aktualisieren</button
+          ><button id="live-next-visit" hidden>Nächsten Besuch ansehen…</button>
+        </div>
+        <div id="scene-shops" class="toolbar"></div>
+        <div id="scene-prepared-groups"></div>
+        <div id="scene-prepared-treasures"></div>
+      </section>
+      <details id="adoption-picker">
+        <summary>Vorbereitung übernehmen</summary>
+        <label for="adoption-plan">Plan</label
+        ><select id="adoption-plan"></select
+        ><label for="adoption-visit">Vorbereiteter Besuch</label
+        ><select id="adoption-visit"></select
+        ><button id="adoption-preview">Übernahme ansehen…</button>
+      </details>
+    </div>
+  </section>
+</div>

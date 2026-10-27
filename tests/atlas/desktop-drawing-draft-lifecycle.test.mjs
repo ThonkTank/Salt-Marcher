@@ -1,6 +1,6 @@
+import { readWorkspaceMarkup } from '../../tools/desktop-markup.mjs';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
 import { buildSync } from 'esbuild';
 import { createRequire } from 'node:module';
 import { parseHTML } from '../helpers/dom.mjs';
@@ -19,7 +19,7 @@ buildSync({
 const require = createRequire(import.meta.url),
   file = require.resolve('../../.build/drawing-draft-lifecycle.cjs');
 async function fixture(t) {
-  const { window, document } = parseHTML(readFileSync('src/app/workspace/index.html', 'utf8')),
+  const { window, document } = parseHTML(readWorkspaceMarkup()),
     previous = {
       window: global.window,
       document: global.document,

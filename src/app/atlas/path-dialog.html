@@ -1,0 +1,85 @@
+<dialog id="path-dialog">
+  <div class="toolbar">
+    <h2>3D-Verbindungen und Passagen</h2>
+    <button id="path-close">Schließen</button><button id="path-refresh">Aktualisieren</button
+    ><button id="path-discard">Offene Eingaben verwerfen</button
+    ><button id="path-new">Neuer Pfad</button
+    ><button id="passage-create">Eigenständige Passage an Anker A</button>
+  </div>
+  <div class="toolbar">
+    <label>Name <input id="path-name" maxlength="1000" /></label
+    ><label
+      >Von
+      <select id="path-from"></select></label
+    ><label><input id="path-from-pin" type="checkbox" /> Anker A pinnen</label
+    ><label
+      >Nach
+      <select id="path-to"></select></label
+    ><label><input id="path-to-pin" type="checkbox" /> Anker B pinnen</label>
+  </div>
+  <fieldset>
+    <legend>Gepinnter Anker A – relativ zur Volumenecke in 5-Fuß-Schritten</legend>
+    <label>X <input id="path-from-x" type="number" step="1" /></label
+    ><label>Y <input id="path-from-y" type="number" step="1" /></label
+    ><label>Z <input id="path-from-z" type="number" step="1" /></label
+    ><label
+      >Fläche
+      <select id="path-from-face">
+        <option value="north">Nord</option>
+        <option value="east">Ost</option>
+        <option value="south">Süd</option>
+        <option value="west">West</option>
+        <option value="up">Decke</option>
+        <option value="down">Boden</option>
+      </select></label
+    >
+  </fieldset>
+  <fieldset>
+    <legend>Gepinnter Anker B – relativ zur Volumenecke in 5-Fuß-Schritten</legend>
+    <label>X <input id="path-to-x" type="number" step="1" /></label
+    ><label>Y <input id="path-to-y" type="number" step="1" /></label
+    ><label>Z <input id="path-to-z" type="number" step="1" /></label
+    ><label
+      >Fläche
+      <select id="path-to-face">
+        <option value="north">Nord</option>
+        <option value="east">Ost</option>
+        <option value="south">Süd</option>
+        <option value="west">West</option>
+        <option value="up">Decke</option>
+        <option value="down">Boden</option>
+      </select></label
+    >
+  </fieldset>
+  <label>Pfadnotizen <textarea id="path-notes"></textarea></label
+  ><label
+    >Wegpunkte – je Zeile X, Y, Höhe in Metern <textarea id="path-waypoints" rows="3"></textarea>
+  </label>
+  <div class="toolbar">
+    <label
+      >Formen je Abschnitt
+      <input
+        id="path-forms"
+        value="Korridor"
+        placeholder="Korridor, Treppe, Rampe, Leiter, Schacht" /></label
+    ><label>Breiten in 5-Fuß-Schritten <input id="path-widths" value="1" /></label
+    ><label>Höhen in 5-Fuß-Schritten <input id="path-heights" value="2" /></label
+    ><label>Zeitfaktoren <input id="path-factors" value="1" /></label
+    ><label
+      >Medium
+      <select id="path-medium">
+        <option value="air">Luft</option>
+        <option value="water">Wasser</option>
+      </select></label
+    ><button id="path-preview">Verbindung vorschlagen</button
+    ><button id="path-commit" disabled>Vorschau übernehmen</button>
+  </div>
+  <p id="path-preview-status"></p>
+  <svg id="path-map" aria-label="Pfadvorschau mit Endhöhen"></svg>
+  <p>
+    Ein einzelner Wert gilt für alle folgenden Abschnitte. Erst Vorschau, dann Übernahme. Bewegte
+    Endpunkte ändern das gespeicherte Volumen nicht automatisch.
+  </p>
+  <div id="path-list"></div>
+  <div id="path-passages"></div>
+</dialog>

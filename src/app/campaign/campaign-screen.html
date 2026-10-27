@@ -1,0 +1,93 @@
+<section id="campaign-screen" aria-labelledby="campaign-screen-heading">
+  <div class="toolbar">
+    <h2 id="campaign-screen-heading">Kampagnen</h2>
+    <button id="campaign-screen-create" type="button">Neue Kampagne</button
+    ><button id="campaign-screen-import" type="button">Paket importieren…</button
+    ><button id="campaign-trash-open" type="button">Papierkorb (0)</button
+    ><button id="campaign-screen-packages" type="button">Pakete und Kopien…</button
+    ><button id="campaign-screen-refresh" type="button">Aktualisieren</button>
+  </div>
+  <p id="campaign-screen-status" role="status"></p>
+  <section id="campaign-pending-recovery" hidden aria-label="Auftragsvermerk wiederherstellen">
+    <p>
+      Neue Kampagnenaufträge sind gesperrt, solange der alte Auftragsvermerk nicht gelesen werden
+      kann. Erneut lesen prüft bei gültigen Daten den Buchungsstatus. Bei beschädigten Daten kannst
+      du das Original getrennt auf diesem Gerät sichern und die Liste freigeben. Dabei wird keine
+      Buchung rückgängig gemacht oder wiederholt.
+    </p>
+    <textarea id="campaign-pending-raw" readonly aria-label="Unlesbarer Originalvermerk"></textarea
+    ><button id="campaign-pending-preserve" type="button">
+      Beschädigten Vermerk sichern und freigeben
+    </button>
+  </section>
+  <button data-catalog-check hidden type="button">Buchungsstatus prüfen</button
+  ><button id="campaign-load-retry" hidden type="button">Arbeitsfläche erneut laden</button>
+  <div class="campaign-search">
+    <label
+      >Kampagnen finden<input
+        id="campaign-screen-search"
+        type="search"
+        placeholder="Name oder Kennung"
+        maxlength="100"
+        aria-controls="campaign-screen-list"
+    /></label>
+    <p id="campaign-screen-count" role="status" aria-live="polite"></p>
+  </div>
+  <div id="campaign-screen-list"></div>
+</section>
+
+<dialog id="campaign-identity-dialog">
+  <form id="campaign-identity-form">
+    <div class="toolbar">
+      <h2 id="campaign-identity-heading">Kampagne bearbeiten</h2>
+      <button id="campaign-identity-close" type="button" aria-label="Namenseditor schließen">
+        ×
+      </button>
+    </div>
+    <p id="campaign-identity-context" class="caption" hidden></p>
+    <label>Name<input id="campaign-identity-name" maxlength="100" required autofocus /></label>
+    <p id="campaign-identity-status" role="status"></p>
+    <button data-catalog-check hidden type="button">Buchungsstatus prüfen</button>
+    <div class="actions">
+      <button id="campaign-identity-trash" type="button">In Papierkorb verschieben</button
+      ><button type="submit">Speichern</button>
+    </div>
+  </form>
+</dialog>
+<dialog id="campaign-trash-dialog">
+  <div class="toolbar">
+    <h2>Papierkorb</h2>
+    <button id="campaign-trash-close" type="button" aria-label="Papierkorb schließen">×</button>
+  </div>
+  <p id="campaign-trash-status" role="status"></p>
+  <button data-catalog-check hidden type="button">Buchungsstatus prüfen</button>
+  <div class="campaign-search">
+    <label
+      >Im Papierkorb finden<input
+        id="campaign-trash-search"
+        type="search"
+        placeholder="Name oder Kennung"
+        maxlength="100"
+        aria-controls="campaign-trash-list"
+    /></label>
+    <p id="campaign-trash-count" role="status" aria-live="polite"></p>
+  </div>
+  <div id="campaign-trash-list"></div>
+</dialog>
+<dialog id="campaign-delete-dialog">
+  <form id="campaign-delete-form">
+    <div class="toolbar">
+      <h2>Dauerhaft löschen</h2>
+      <button id="campaign-delete-close" type="button" aria-label="Löschdialog schließen">×</button>
+    </div>
+    <p>
+      Diese Kampagne und ihre Daten werden unwiderruflich entfernt. Gib ihren exakten Namen ein:
+    </p>
+    <strong id="campaign-delete-label"></strong>
+    <p id="campaign-delete-context" class="caption" hidden></p>
+    <label>Kampagnenname<input id="campaign-delete-name" required autocomplete="off" /></label>
+    <p id="campaign-delete-status" role="status"></p>
+    <button data-catalog-check hidden type="button">Buchungsstatus prüfen</button
+    ><button type="submit">Dauerhaft löschen</button>
+  </form>
+</dialog>

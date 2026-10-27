@@ -17,6 +17,7 @@ export const developmentConfiguration = new Set([
   'tools/desktop-build-output.mjs',
   'tools/desktop-entry-environments.mjs',
   'tools/atlas-runtime-licenses.mjs',
+  'tools/desktop-markup.mjs',
   'tools/desktop-styles.mjs',
   'tools/desktop-development-build.mjs',
   'tools/dev-desktop.mjs',

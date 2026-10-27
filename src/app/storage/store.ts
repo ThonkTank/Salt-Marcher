@@ -1,20 +1,15 @@
-import { checkedRow, sqliteInteger } from './sqlite-connection';
 import { AtlasCommitProjectionError } from './atlas-commit-projection';
-import Database from 'better-sqlite3';
-import { createHash, randomUUID } from 'node:crypto';
+import { openStoreDatabase } from './store-bootstrap';
+import { writeBackup } from './backup';
 import {
-  closeSync as closeSnapshot,
-  closeSync,
-  copyFileSync,
-  fsyncSync,
-  mkdirSync,
-  mkdtempSync,
-  openSync as openSnapshot,
-  openSync,
-  readSync,
-  renameSync,
-  rmSync,
-} from 'node:fs';
+  writeCampaignSnapshot,
+  previewCampaignSnapshot,
+  readCampaignTransferOutcome,
+  acceptCampaignSnapshot,
+} from './campaign-snapshots';
+import { storedTutorial } from './tutorial';
+import { checkedRow } from './sqlite-connection';
+import { createHash, randomUUID } from 'node:crypto';
 import { dirname } from 'node:path';
 import { type ManualPlan } from '../../features/planner/manual-planner';
 import type {
@@ -41,7 +36,6 @@ import type {
   GenerationRequest,
   LootRollCommand,
 } from '../campaign/generation-contracts';
-import { canonicalJson } from '../campaign/generation/canonical-json';
 import type { KeyNoteCaptureCommand } from '../campaign/key-note-capture-contracts';
 import type { NpcCommand, NpcDraft, NpcQuery } from '../campaign/npc-contracts';
 import {
@@ -61,7 +55,6 @@ import type {
 import type { EncounterPlanCommand } from '../catalog/encounter-contracts';
 import type { ItemQuery, ItemShopCommand } from '../catalog/items-contracts';
 import type { SceneRuleCommand } from '../catalog/rule-reference-contracts';
-import DATA_FORMAT from '../data-format.json';
 import type { AutonomyCommand } from '../runtime/autonomy-contracts';
 import type { ChaseCommand } from '../runtime/chase-contracts';
 import type { CombatCommand } from '../runtime/combat-contracts';
@@ -90,44 +83,28 @@ import {
   type WorkingRoomDraft,
   type Workspace,
 } from '../shared/contracts';
-import { validateTransferSnapshot } from '../transfer/registry';
 import type { ExtensionCommand } from '../workspace/extension-contracts';
-import {
-  checkedTutorialRun,
-  tutorialLessonRevision,
-  type TutorialRun,
-} from '../workspace/tutorial-contracts';
+import { type TutorialRun } from '../workspace/tutorial-contracts';
 import { readDay } from './adventuring-day';
 import { readAgenda } from './agenda';
-import { installLandscape, landscapeRegion, terrainRegion } from './atlas-landscape';
+import { landscapeRegion, terrainRegion } from './atlas-landscape';
 import { atlasReadChanges } from './atlas-read-journal';
 import { storedAtlasRegionView } from './atlas-region';
-import { atlasProjectionSource, installAtlasShapeSource } from './atlas-shape-source';
-import { installSourceCellIndex } from './atlas-source-cell';
-import { installTerritories, readTerritories } from './atlas-territories';
+import { atlasProjectionSource } from './atlas-shape-source';
+import { readTerritories } from './atlas-territories';
 import {
   atlasEntrances,
   atlasLocalJourney,
-  installAtlasTravel,
   previewAtlasLocal,
   storedApplyAtlasTravel,
 } from './atlas-travel';
-import {
-  autonomyDecision,
-  autonomyView,
-  captureAutonomyBasis,
-  executeAutonomy,
-  installAutonomySchema,
-} from './autonomy';
-import { installAutonomyDungeonSchema } from './autonomy-dungeon';
-import { installAutonomyResources } from './autonomy-resources';
+import { autonomyDecision, autonomyView, captureAutonomyBasis, executeAutonomy } from './autonomy';
 import {
   applyAtlasCommand,
   atlasBindings,
   atlasHistoryState,
   atlasRoot,
   hasAtlasReceipt,
-  installCampaignAtlas,
   storedAtlasCitySite,
   storedAtlasOverview,
   storedCampaignAtlas,
@@ -141,38 +118,22 @@ import {
   noteCampaignOpened,
 } from './campaign-catalog';
 import {
-  archiveSourceChoices,
   campaignOverview,
-  definitionConflicts,
   eraseCampaignRows,
-  installCampaignSchema,
-  pruneCampaignSnapshot,
-  publishSnapshot,
-  remapSnapshot,
-  sharedPlan,
-  snapshotCounts,
   storedCreate,
   storedRenameCampaign,
   trashCampaign,
-  validateCampaignSnapshotSettings,
 } from './campaign-data';
-import { executeChase, installChaseSchema, readChase } from './chase';
+import { executeChase, readChase } from './chase';
 import { keepChaseDraft } from './chase-drafts';
 import { readChronicle } from './chronicle';
 import { ChronicleReadSession } from './chronicle-pages';
-import {
-  cityOverview,
-  executeCity,
-  installCitySchema,
-  readCity,
-  readCityBuildingChoices,
-} from './city';
+import { cityOverview, executeCity, readCity, readCityBuildingChoices } from './city';
 import { readCityActivities } from './city-activity';
-import { executeCombat, installCombatSchema, readCombat } from './combat';
+import { executeCombat, readCombat } from './combat';
 import {
   combatDrafts,
   discardCombatDraft,
-  installCombatDraftSchema,
   keepCombatDraft,
   readCombatDraft,
 } from './combat-drafts';
@@ -180,18 +141,15 @@ import { readCombatResolution } from './combat-resolution';
 import { matchesReceipt } from './command-fingerprint';
 import { readCommitReceipt } from './commit-receipt';
 import { CommittedSources } from './committed-sources';
-import { installContentRuntime } from './content-runtime';
 import {
   activateDungeonFeature,
   drawingElement,
   drawingRoom,
   drawingView,
   executeDrawing,
-  installDrawingSchema,
   roomMapStyle,
 } from './drawing';
 import { dungeonBudgetView, validateDungeonPlacement } from './dungeon-budget';
-import { installDungeonKey } from './dungeon-key';
 import {
   dungeonCommandState,
   dungeonDisplay,
@@ -199,28 +157,15 @@ import {
   dungeonMapView,
   dungeonView,
   executeDungeon,
-  installDungeonPlaySchema,
   previewDungeon,
 } from './dungeon-play';
-import { installDungeonSenses } from './dungeon-senses';
-import {
-  installEncounterSchema,
-  readEncounterPlan,
-  readEncounterPlans,
-  saveEncounterPlan,
-} from './encounters';
+import { readEncounterPlan, readEncounterPlans, saveEncounterPlan } from './encounters';
 import { ExtensionRegistry } from './extensions';
-import {
-  discardFinishDraft,
-  installFinishDrafts,
-  keepFinishDraft,
-  readFinishDraft,
-} from './finish-drafts';
+import { discardFinishDraft, keepFinishDraft, readFinishDraft } from './finish-drafts';
 import {
   acceptGeneration,
   executeGeneration,
   generateEncounters,
-  installGenerationSchema,
   readEncounterTables,
   readGenerationRun,
   readGenerationRuns,
@@ -228,29 +173,14 @@ import {
   readLootTables,
   rollLoot,
 } from './generation';
-import { graphLayout, GraphShadow, graphView, installGraph } from './graph';
-import {
-  discardGroupDraft,
-  groupDraft,
-  groupView,
-  installGroups,
-  keepGroupDraft,
-  preparedGroups,
-} from './groups';
+import { graphLayout, GraphShadow, graphView } from './graph';
+import { discardGroupDraft, groupDraft, groupView, keepGroupDraft, preparedGroups } from './groups';
 import { readItemDefinition, readItemDefinitions } from './item-definitions';
-import {
-  executeItemShop,
-  installItemsSchema,
-  readShop,
-  readShopHistory,
-  readShops,
-  sceneShops,
-} from './items';
+import { executeItemShop, readShop, readShopHistory, readShops, sceneShops } from './items';
 import { captureKeyNote, keyNoteCaptureStatus, readKeyNoteChoices } from './key-note-capture';
 import {
   applyLiveCommand,
   consumeSceneTime,
-  installLiveSchema,
   liveStatus,
   readArchivedRoster,
   readArchives,
@@ -260,15 +190,12 @@ import {
 import { keepLiveMomentDraft as keepMomentDraft } from './live-moment-drafts';
 import { readLocationActivities } from './location-activity';
 import { readLocationMaterials } from './location-notebook';
-import { installMaskHistoryIndexes, readMaskHistory } from './mask-history';
-import { installMaskReconciliationSchema } from './mask-reconciliation';
+import { readMaskHistory } from './mask-history';
 import {
   audioFile,
   audioLibrarySnapshot,
-  audioMediaFiles,
   executeMusic,
   ingestAudio,
-  installMusicSchema,
   mergeAudioLibrary,
   readAudioAsset,
   readAudioAssets,
@@ -278,21 +205,13 @@ import {
   refreshMusicContext,
   saveMusicPosition,
 } from './music';
-import {
-  discardNarrativeDraft,
-  installNarrative,
-  keepNarrativeDraft,
-  readNarrative,
-} from './narrative';
+import { discardNarrativeDraft, keepNarrativeDraft, readNarrative } from './narrative';
 import { readNarrativeJournal } from './narrative-journal';
 import { noteMergeWork } from './note-merge';
 import { readNoteRoomUses } from './note-room-uses';
 import { checkNoteThread, readNoteThread } from './note-thread';
 import { readNpcCast, readNpcDossier } from './npc-cast';
-import { installNpcDungeonSchema } from './npc-dungeon';
 import { readNpcBuildingChoices, readNpcPlaces } from './npc-places';
-import { installNpcRecords } from './npc-record';
-import { installNpcWorldSchema } from './npc-world';
 import {
   discardNpcDraft,
   executeNpc,
@@ -303,12 +222,10 @@ import {
   readNpcs,
   reconcileNpc,
 } from './npcs';
-import { installPathSchema, previewDungeonPath } from './paths';
+import { previewDungeonPath } from './paths';
 import {
   executePlayer,
-  installPlayerSchema,
   playerAssets,
-  playerMediaFiles,
   playerObservers,
   playerSettings,
   playerView,
@@ -325,7 +242,6 @@ import {
 } from './preparation';
 import { executePresetCommand, readPresetOutcome, readPresetRegistry } from './preset-registry';
 import {
-  installProgressSchema,
   readLedger,
   readLedgerDetail,
   readLedgerInventory,
@@ -336,13 +252,11 @@ import {
   readTreasures,
   storedExecuteProgress,
 } from './progression';
-import { installRoomGroups, validateRoomGroups } from './room-groups';
 import { roomDirectoryQuery, roomGeometries, roomOrder, visibleRoomWhere } from './room-reads';
-import { executeSceneRule, installRuleReferenceSchema, readSceneRules } from './rule-references';
-import { executeSceneCheck, installSceneCheckSchema, readSceneChecks } from './scene-checks';
+import { executeSceneRule, readSceneRules } from './rule-references';
+import { executeSceneCheck, readSceneChecks } from './scene-checks';
 import {
   deskContent,
-  installSceneDesk,
   keepSceneCreationDraft,
   pinSceneDesk,
   readSceneCreationDraft,
@@ -354,7 +268,6 @@ import { readSceneVisits } from './scene-visits';
 import {
   executeSession,
   generateSession,
-  installSessionSchema,
   readPreparedGroup,
   readSession,
   readSessionRun,
@@ -365,7 +278,6 @@ import {
 } from './session';
 import { readSessionPacket } from './session-packet';
 import { keepSessionRecapDraft, readSessionRecapDraft } from './session-recap';
-import { validateBackupCandidate, validateDatabase } from './snapshot-validation';
 import {
   decodePreparationDraft,
   decodeRoom,
@@ -381,20 +293,16 @@ import {
 import { TerrainAuthorCache } from './terrain-author-cache';
 import { storedAtlasHeight } from './terrain-grid';
 import { previewSceneTime } from './time-plan';
-import { installTravelHistory } from './travel-history';
 import {
   discardTreasuryDraft,
-  installTreasury,
   keepTreasuryDraft,
   readTreasuryDraft,
   treasureHistory,
 } from './treasury';
-import { installTriggers } from './triggers';
 import { vegetationScene } from './vegetation';
 import { readSessionProgress } from './visit-outcomes';
-import { installVolumeSchema, readDungeonVolume } from './volume';
+import { readDungeonVolume } from './volume';
 import {
-  installWorldSchema,
   previewTravel,
   readWorldCalendar as readNpcPlanCalendar,
   readSceneWorld,
@@ -408,7 +316,6 @@ import {
   discardWorldRelationPairDraft,
   executeWorldRelationPair,
   executeWorldRelationPairHistory,
-  installWorldRelationPairs,
   keepWorldRelationPairDraft,
   readWorldRelationPairDraft,
   readWorldRelationPairHistory,
@@ -422,19 +329,6 @@ const json = (value: unknown) => JSON.stringify(value);
 const hash = (value: string | Buffer) => createHash('sha256').update(value).digest('hex');
 
 /** Only the privileged host owns this connection. All command guards run inside BEGIN IMMEDIATE. */
-// Hash the source without retaining a second, potentially huge database in memory.
-function snapshotDigest(filename: string) {
-  const fd = openSnapshot(filename, 'r'),
-    hash = createHash('sha256'),
-    chunk = Buffer.allocUnsafe(65536);
-  try {
-    let n: number;
-    while ((n = readSync(fd, chunk, 0, chunk.length, null)) > 0) hash.update(chunk.subarray(0, n));
-    return hash.digest('hex');
-  } finally {
-    closeSnapshot(fd);
-  }
-}
 
 export class CampaignStore {
   private terrainAuthorCache = new TerrainAuthorCache();
@@ -477,146 +371,8 @@ export class CampaignStore {
     readonly filename: string,
     readonly applicationVersion = 'development',
   ) {
-    if (
-      typeof applicationVersion !== 'string' ||
-      !applicationVersion.trim() ||
-      applicationVersion.length > 128
-    )
-      throw new Error('Anwendungsversion fehlt.');
-    mkdirSync(dirname(filename), { recursive: true });
-    this.db = new Database(filename);
-    const schema = this.db.pragma('user_version', { simple: true });
-    if (
-      (schema !== 0 && schema !== DATA_FORMAT.schema) ||
-      (schema === 0 &&
-        this.db.prepare("SELECT 1 FROM sqlite_schema WHERE name NOT LIKE 'sqlite_%' LIMIT 1").get())
-    ) {
-      this.db.close();
-      throw new Error(
-        'Nicht unterstütztes Testdatenformat. Eine neue Kampagne im aktuellen Format anlegen. Originaldatei bleibt erhalten.',
-      );
-    }
-    if (schema === DATA_FORMAT.schema) {
-      const findTable = this.db.prepare(
-        "SELECT 1 FROM sqlite_schema WHERE type='table' AND name=?",
-      );
-      for (const table of DATA_FORMAT.tables) {
-        if (!findTable.get(table)) {
-          const message: Record<string, string> = {
-            travel_checkpoint: 'Reisecheckpoint-Speicher fehlt.',
-            room_group: 'Raumgruppenspeicher fehlt.',
-            scene_opponent_group: 'Szenengegner-Zuordnung fehlt.',
-            atlas_territory: 'Regionsspeicher fehlt.',
-            atlas_territory_layer: 'Regionsspeicher fehlt.',
-            chase_working_draft: 'Verfolgungsentwurfsspeicher fehlt.',
-          };
-          this.db.close();
-          throw new Error(message[table] ?? 'Kampagnenspeicher ist unvollständig: ' + table);
-        }
-      }
-    }
+    this.db = openStoreDatabase(filename, applicationVersion);
     this.extensionRegistry = new ExtensionRegistry(this.db);
-    const version = this.db.prepare('SELECT sqlite_version() v').get().v as string;
-    if (version.localeCompare('3.53.4', undefined, { numeric: true }) < 0) {
-      this.db.close();
-      throw new Error('SQLite-Wartungsstand zu alt.');
-    }
-    this.db.pragma('foreign_keys=ON');
-    this.db.pragma('journal_mode=WAL');
-    this.db.pragma('synchronous=FULL');
-    this.db.pragma('secure_delete=ON');
-    this.db.pragma('busy_timeout=5000');
-
-    try {
-      this.db
-        .transaction(() => {
-          if (schema === 0) {
-            this.db.exec(`
-      CREATE TABLE IF NOT EXISTS campaign(id TEXT PRIMARY KEY, name TEXT NOT NULL, selected_id TEXT, cursor INTEGER NOT NULL DEFAULT 0, revision INTEGER NOT NULL DEFAULT 0) STRICT;
-      CREATE TABLE IF NOT EXISTS scope(campaign_id TEXT NOT NULL REFERENCES campaign(id), id TEXT NOT NULL, name TEXT NOT NULL, PRIMARY KEY(campaign_id,id)) STRICT;
-      CREATE TABLE IF NOT EXISTS room(campaign_id TEXT NOT NULL, id TEXT NOT NULL, scope_id TEXT NOT NULL, number TEXT NOT NULL, name TEXT NOT NULL, revision INTEGER NOT NULL, payload TEXT NOT NULL, checksum TEXT NOT NULL, floor_id TEXT NOT NULL DEFAULT 'ground', PRIMARY KEY(campaign_id,id), FOREIGN KEY(campaign_id,scope_id) REFERENCES scope(campaign_id,id)) STRICT;
-      CREATE TABLE IF NOT EXISTS history(campaign_id TEXT NOT NULL REFERENCES campaign(id), ordinal INTEGER NOT NULL, room_id TEXT NOT NULL, before_json TEXT NOT NULL, after_json TEXT NOT NULL, guard_revision INTEGER NOT NULL, PRIMARY KEY(campaign_id,ordinal)) STRICT;
-      CREATE TABLE IF NOT EXISTS receipt(command_id TEXT PRIMARY KEY, fingerprint TEXT NOT NULL, campaign_id TEXT NOT NULL REFERENCES campaign(id), room_id TEXT NOT NULL, revision INTEGER NOT NULL) STRICT;
-      CREATE TABLE IF NOT EXISTS source(campaign_id TEXT PRIMARY KEY REFERENCES campaign(id), bytes BLOB NOT NULL, checksum TEXT NOT NULL) STRICT;
-      CREATE TABLE IF NOT EXISTS settings(key TEXT PRIMARY KEY, value TEXT NOT NULL) STRICT;
-    `);
-            this.db.exec(`
-      CREATE TABLE IF NOT EXISTS world_note(campaign_id TEXT NOT NULL REFERENCES campaign(id), id TEXT NOT NULL, revision INTEGER NOT NULL, trashed INTEGER NOT NULL DEFAULT 0, payload TEXT NOT NULL, checksum TEXT NOT NULL, PRIMARY KEY(campaign_id,id)) STRICT;
-      CREATE TABLE IF NOT EXISTS plan(campaign_id TEXT NOT NULL REFERENCES campaign(id), id TEXT NOT NULL, revision INTEGER NOT NULL, name TEXT NOT NULL, PRIMARY KEY(campaign_id,id)) STRICT;
-      CREATE TABLE IF NOT EXISTS planned_visit(campaign_id TEXT NOT NULL, plan_id TEXT NOT NULL, id TEXT NOT NULL, ordinal INTEGER NOT NULL, payload TEXT NOT NULL, checksum TEXT NOT NULL, PRIMARY KEY(campaign_id,id), FOREIGN KEY(campaign_id,plan_id) REFERENCES plan(campaign_id,id)) STRICT;
-      CREATE VIRTUAL TABLE IF NOT EXISTS note_search USING fts5(campaign_id UNINDEXED, note_id UNINDEXED, title, body);
-      INSERT INTO note_search(note_search,rank) VALUES('secure-delete',1);
-    `);
-            this.db.exec(
-              'CREATE TABLE IF NOT EXISTS drawing_floor(campaign_id TEXT NOT NULL, scope_id TEXT NOT NULL, id TEXT NOT NULL, name TEXT NOT NULL, source_elevation REAL NOT NULL, PRIMARY KEY(campaign_id,scope_id,id), FOREIGN KEY(campaign_id,scope_id) REFERENCES scope(campaign_id,id)) STRICT;',
-            );
-            this.db.exec(
-              'CREATE TABLE IF NOT EXISTS room_draft(campaign_id TEXT NOT NULL, room_id TEXT NOT NULL, payload TEXT NOT NULL, checksum TEXT NOT NULL, PRIMARY KEY(campaign_id,room_id), FOREIGN KEY(campaign_id,room_id) REFERENCES room(campaign_id,id)) STRICT;',
-            );
-            this.db
-              .exec(`CREATE TABLE IF NOT EXISTS location(campaign_id TEXT NOT NULL REFERENCES campaign(id), id TEXT NOT NULL, revision INTEGER NOT NULL, trashed INTEGER NOT NULL DEFAULT 0, payload TEXT NOT NULL, checksum TEXT NOT NULL, PRIMARY KEY(campaign_id,id)) STRICT;
-        CREATE TABLE IF NOT EXISTS location_map(campaign_id TEXT NOT NULL, scope_id TEXT NOT NULL, location_id TEXT NOT NULL, PRIMARY KEY(campaign_id,scope_id), FOREIGN KEY(campaign_id,scope_id) REFERENCES scope(campaign_id,id), FOREIGN KEY(campaign_id,location_id) REFERENCES location(campaign_id,id)) STRICT;`);
-            installLiveSchema(this.db);
-            installCombatSchema(this.db);
-            installCombatDraftSchema(this.db);
-            installChaseSchema(this.db);
-            installMaskHistoryIndexes(this.db);
-            installMaskReconciliationSchema(this.db);
-            installRuleReferenceSchema(this.db);
-            installSceneCheckSchema(this.db);
-            installProgressSchema(this.db);
-            installEncounterSchema(this.db);
-            installGenerationSchema(this.db);
-            installNpcRecords(this.db);
-            this.db.exec(
-              "CREATE TABLE IF NOT EXISTS preparation_draft(campaign_id TEXT NOT NULL REFERENCES campaign(id), kind TEXT NOT NULL CHECK(kind IN ('note','plan','location')), target_id TEXT NOT NULL, payload TEXT NOT NULL, checksum TEXT NOT NULL, PRIMARY KEY(campaign_id,kind,target_id)) STRICT;",
-            );
-            installSessionSchema(this.db);
-            installItemsSchema(this.db);
-            installWorldSchema(this.db);
-            installMusicSchema(this.db);
-            installCampaignSchema(this.db);
-            installCitySchema(this.db);
-            installPlayerSchema(this.db);
-            installNpcWorldSchema(this.db);
-            installAutonomySchema(this.db);
-            installDrawingSchema(this.db);
-            installDungeonPlaySchema(this.db);
-            installNpcDungeonSchema(this.db);
-            installAutonomyDungeonSchema(this.db);
-            installAutonomyResources(this.db);
-            installDungeonSenses(this.db);
-            installVolumeSchema(this.db);
-            installPathSchema(this.db);
-            installDungeonKey(this.db);
-            installGraph(this.db);
-            installTriggers(this.db);
-            installContentRuntime(this.db);
-            installNarrative(this.db);
-            installFinishDrafts(this.db);
-            installSceneDesk(this.db);
-            installTreasury(this.db);
-            installGroups(this.db);
-            installWorldRelationPairs(this.db);
-            installCampaignAtlas(this.db);
-            installAtlasTravel(this.db);
-            installLandscape(this.db);
-            installTerritories(this.db);
-            installRoomGroups(this.db);
-            installTravelHistory(this.db);
-            this.db.pragma('user_version=' + DATA_FORMAT.schema);
-          }
-          installSourceCellIndex(this.db);
-          installAtlasShapeSource(this.db);
-        })
-        .immediate();
-    } catch (error) {
-      this.db.close();
-      throw error;
-    }
-    this.db.function('atlas_lower', { deterministic: true }, (text: unknown) =>
-      typeof text === 'string' ? text.normalize('NFC').toLocaleLowerCase('de') : '',
-    );
   }
   private reconcileAtlasGeometry(token: string) {
     return storedReconcileAtlasGeometry(
@@ -1453,35 +1209,8 @@ export class CampaignStore {
     );
   }
   async backup(filename: string, validateCandidate?: (filename: string) => Promise<void>) {
-    const epoch = this.backupEpoch,
-      candidate = filename + '.candidate-' + randomUUID();
-    try {
-      await this.db.backup(candidate);
-      if (validateCandidate) await validateCandidate(candidate);
-      else validateBackupCandidate(candidate);
-      const fd = openSync(candidate, 'r');
-      try {
-        fsyncSync(fd);
-      } finally {
-        closeSync(fd);
-      }
-      if (epoch !== this.backupEpoch)
-        throw new Error('Wiederherstellungskopie durch Löschung überholt.');
-      renameSync(candidate, filename);
-      const directory = openSync(dirname(filename), 'r');
-      try {
-        fsyncSync(directory);
-      } finally {
-        closeSync(directory);
-      }
-    } catch (error) {
-      rmSync(candidate, { force: true });
-      throw error;
-    } finally {
-      // Read-only validation of a WAL-mode copy can create these sidecars too.
-      // The unique candidate is closed and never shared with another connection.
-      for (const suffix of ['-wal', '-shm']) rmSync(candidate + suffix, { force: true });
-    }
+    const epoch = this.backupEpoch;
+    return writeBackup(this.db, filename, () => epoch === this.backupEpoch, validateCandidate);
   }
   reconcile(
     edit: Edit,
@@ -2557,103 +2286,17 @@ export class CampaignStore {
     const id = this.guard(token),
       fence = this.db
         .prepare('SELECT revision FROM campaign_lifecycle WHERE campaign_id=?')
-        .get(id).revision,
-      candidate = filename + '.snapshot-' + randomUUID();
-    try {
-      await this.db.backup(candidate);
-      this.campaignFence(id, fence);
-      const db = new Database(candidate, { fileMustExist: true });
-      let snapshot;
-      try {
-        db.pragma('journal_mode=DELETE');
-        pruneCampaignSnapshot(db, id);
-        validateDatabase(db);
-        validateTransferSnapshot(db);
-        const c = checkedRow(db.prepare('SELECT id,name FROM campaign').get(), {
-          id: 'text',
-          name: 'text',
-        });
-        snapshot = {
-          ...c,
-          fence,
-          schema: sqliteInteger(db.pragma('user_version', { simple: true })),
-          counts: snapshotCounts(db),
-          media: [...audioMediaFiles(db), ...playerMediaFiles(db, id)],
-        };
-      } finally {
-        db.close();
-      }
-      const fd = openSync(candidate, 'r');
-      try {
-        fsyncSync(fd);
-      } finally {
-        closeSync(fd);
-      }
-      this.campaignFence(id, fence);
-      renameSync(candidate, filename);
-      const directory = openSync(dirname(filename), 'r');
-      try {
-        fsyncSync(directory);
-      } finally {
-        closeSync(directory);
-      }
-      return snapshot;
-    } finally {
-      for (const suffix of ['', '-wal', '-shm']) rmSync(candidate + suffix, { force: true });
-    }
-  }
-  private inspectCampaignDatabase(db: any) {
-    const schema = db.pragma('user_version', { simple: true });
-    if (schema !== DATA_FORMAT.schema)
-      throw new Error(
-        'Dieses Paket gehört zum alten Testformat oder benötigt eine neuere Appversion. Originaldatei bleibt erhalten.',
-      );
-    validateDatabase(db);
-    validateRoomGroups(db);
-    const rows = db.prepare('SELECT id,name FROM campaign').all();
-    if (rows.length !== 1) throw new Error('Paket muss genau eine Kampagne enthalten.');
-    const c: Pick<Campaign, 'id' | 'name'> = rows[0];
-    validateCampaignSnapshotSettings(db, c.id);
-    validateTransferSnapshot(db);
-    return {
-      ...c,
-      schema,
-      counts: snapshotCounts(db),
-      media: [...audioMediaFiles(db), ...playerMediaFiles(db, rows[0].id)],
-      conflicts: definitionConflicts(this.db, db),
-    };
+        .get(id).revision;
+    return writeCampaignSnapshot(this.db, id, fence, () => this.campaignFence(id, fence), filename);
   }
   campaignPreview(filename: string) {
-    const db = new Database(filename, { readonly: true, fileMustExist: true });
-    try {
-      return this.inspectCampaignDatabase(db);
-    } finally {
-      db.close();
-    }
+    return previewCampaignSnapshot(this.db, filename);
   }
   campaignTransferOutcome(
     ticket: string,
     expected?: { name: string; choices: Record<string, ConflictChoice> },
   ): Campaign | null {
-    if (typeof ticket !== 'string' || !ticket || ticket.length > 128)
-      throw new Error('Übernahmekennung fehlt.');
-    const receipt = this.db
-      .prepare('SELECT subject_id,fingerprint FROM campaign_management_receipt WHERE command_id=?')
-      .get(ticket);
-    if (!receipt) return null;
-    if (
-      !receipt.fingerprint.startsWith('transfer:') ||
-      (expected &&
-        receipt.fingerprint !== this.transferFingerprint(expected.name, expected.choices))
-    )
-      throw new Error('Verwaltungskennung anders verwendet.');
-    return (
-      this.db.prepare('SELECT id,name,revision FROM campaign WHERE id=?').get(receipt.subject_id) ??
-      null
-    );
-  }
-  private transferFingerprint(name: string, choices: Record<string, ConflictChoice>) {
-    return 'transfer:' + hash(canonicalJson({ name, choices }));
+    return readCampaignTransferOutcome(this.db, ticket, expected);
   }
   acceptCampaignSnapshot(
     filename: string,
@@ -2662,55 +2305,7 @@ export class CampaignStore {
     ticket?: string,
     expectedDigest?: string,
   ) {
-    if (!name.trim() || name.length > 1000) throw new Error('Kampagnenname fehlt.');
-    if (ticket !== undefined) {
-      const confirmed = this.campaignTransferOutcome(ticket, { name, choices });
-      if (confirmed) return confirmed;
-    }
-    // Remapping must never consume or mutate the reviewed input, even when publication fails.
-    const staging = mkdtempSync(filename + '.accept-'),
-      candidate = staging + '/campaign.sqlite';
-    let source: any;
-    try {
-      copyFileSync(filename, candidate);
-      source = new Database(candidate, { fileMustExist: true });
-      const sha256 = snapshotDigest(candidate);
-      if (expectedDigest !== undefined && sha256 !== expectedDigest)
-        throw new Error('Geprüfte Paketdatenbank wurde verändert.');
-      const c = this.inspectCampaignDatabase(source),
-        original = Buffer.from(
-          JSON.stringify({
-            format: 'Campaign provenance',
-            version: 1,
-            campaignId: c.id,
-            name: c.name,
-            schema: c.schema,
-            sha256,
-          }),
-        ),
-        plan = sharedPlan(this.db, source, choices);
-      archiveSourceChoices(source, plan);
-      const remap = remapSnapshot(source, c.id, name, plan.mapping, plan.history);
-      validateDatabase(source);
-      return publishSnapshot(
-        this.db,
-        source,
-        remap,
-        plan,
-        original,
-        c.id,
-        c.name,
-        ticket === undefined
-          ? undefined
-          : { commandId: ticket, fingerprint: this.transferFingerprint(name, choices) },
-      );
-    } finally {
-      try {
-        source?.close();
-      } finally {
-        rmSync(staging, { recursive: true, force: true });
-      }
-    }
+    return acceptCampaignSnapshot(this.db, filename, name, choices, ticket, expectedDigest);
   }
 
   trashCampaign(command: {
@@ -3217,32 +2812,7 @@ export class CampaignStore {
     return decodeRoomDraft(row);
   }
   tutorial(state?: 'shown' | 'finished' | 'skipped'): TutorialRun {
-    if (state !== undefined && !['shown', 'finished', 'skipped'].includes(state))
-      throw new Error('Ungültiger Tutorialstatus.');
-    return this.db
-      .transaction(() => {
-        const key = `tutorial:app:${this.applicationVersion}`,
-          saved = this.db.prepare('SELECT value FROM settings WHERE key=?').get(key);
-        const prior: TutorialRun | null = saved
-          ? checkedTutorialRun(JSON.parse(saved.value), this.applicationVersion)
-          : null;
-        // Onboarding belongs to an installed app version. Edited help stays available
-        // without resetting this version's completed or dismissed run.
-        const run: TutorialRun = prior ?? {
-          version: this.applicationVersion,
-          lessonRevision: tutorialLessonRevision,
-          runId: randomUUID(),
-          state: 'new',
-        };
-        if (state && run.state !== 'finished' && run.state !== 'skipped') run.state = state;
-        this.db
-          .prepare(
-            'INSERT INTO settings VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value',
-          )
-          .run(key, json(run));
-        return run;
-      })
-      .immediate();
+    return storedTutorial(this.db, this.applicationVersion, state);
   }
   renameCampaign(command: CampaignRename): Campaign {
     return storedRenameCampaign(this.db, { guard: this.guard.bind(this) }, command);

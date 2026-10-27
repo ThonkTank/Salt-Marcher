@@ -1,0 +1,96 @@
+<dialog id="volume-dialog">
+  <div class="toolbar">
+    <h2>5-Fuß-Volumen und Flächen</h2>
+    <button id="volume-close">Schließen</button>
+  </div>
+  <p id="volume-status"></p>
+  <div class="toolbar">
+    <label
+      >Höhe in 5-Fuß-Schritten
+      <input id="volume-height" type="number" min="1" max="40" value="2" /></label
+    ><button id="volume-initialize">Kontur / Höhe als Volumen übernehmen</button
+    ><button id="volume-lower">Schnitt −5 Fuß</button
+    ><label>Schnittschritt <input id="volume-slice" type="number" value="0" step="1" /></label
+    ><button id="volume-higher">Schnitt +5 Fuß</button>
+  </div>
+  <div class="toolbar">
+    <button id="volume-zoom-in" aria-label="Volumenschnitt vergrößern">＋</button
+    ><button id="volume-zoom-out" aria-label="Volumenschnitt verkleinern">−</button
+    ><button id="volume-fit">Volumen einpassen</button
+    ><button id="volume-reload">Gespeicherten Stand neu laden</button>
+  </div>
+  <div class="volume-views">
+    <svg id="volume-slice-map" tabindex="0" aria-label="Volumenschnitt zum Zeichnen"></svg
+    ><svg id="volume-isometric" aria-label="3D-Volumendarstellung"></svg>
+  </div>
+  <div class="toolbar">
+    <label
+      >Form
+      <select id="volume-tool">
+        <option value="brush">Pinselzug</option>
+        <option value="rectangle">Rechteckfläche</option>
+        <option value="ellipse">Ellipsenfläche</option>
+      </select></label
+    ><label
+      >Pinselform
+      <select id="volume-brush-shape">
+        <option value="circle">Rund</option>
+        <option value="square">Quadratisch</option>
+      </select></label
+    ><label
+      >Radius in Rasterzellen
+      <input id="volume-brush-radius" type="number" min="0" max="10" step="1" value="0" /></label
+    ><label
+      >Bearbeiten
+      <select id="volume-operation">
+        <option value="fill">Raumzellen hinzufügen (10 Fuß)</option>
+        <option value="erase">Raumzelle entfernen (5 Fuß)</option>
+        <option value="floor">Bodenfläche am Fuß der Spanne</option>
+        <option value="ceiling">Deckenfläche am Kopf der Spanne</option>
+        <option value="wall">Wandfläche</option>
+      </select></label
+    ><label><input id="volume-enabled" type="checkbox" checked /> Fläche geschlossen</label
+    ><label
+      >Wandseite
+      <select id="volume-side">
+        <option value="north">Nord</option>
+        <option value="east">Ost</option>
+        <option value="south">Süd</option>
+        <option value="west">West</option>
+      </select></label
+    ><label
+      >Medium
+      <select id="volume-medium">
+        <option value="air">Luft</option>
+        <option value="water">Wasser</option>
+      </select></label
+    ><button id="volume-apply" disabled>Bereichsvorschau übernehmen</button
+    ><button id="volume-discard" disabled>Vorschau verwerfen</button>
+  </div>
+  <p id="volume-stroke-status" role="status"></p>
+  <details>
+    <summary>Genauen 3D-Rasterbereich vorbereiten</summary>
+    <p>
+      Absolute X-/Y-Rasterzellen; Z relativ zum Zeichnungsanker. Alle Grenzen einschließlich.
+      Rechteck oder gewählte Ellipse; maximal 2000 Zellen. Bei Hinzufügen entsteht an jeder
+      markierten Höhe die 10-Fuß-Standardschale.
+    </p>
+    <div class="toolbar">
+      <label>X von <input id="volume-box-x0" type="number" step="1" value="0" /></label
+      ><label>bis <input id="volume-box-x1" type="number" step="1" value="0" /></label
+      ><label>Y von <input id="volume-box-y0" type="number" step="1" value="0" /></label
+      ><label>bis <input id="volume-box-y1" type="number" step="1" value="0" /></label
+      ><label>Z von <input id="volume-box-z0" type="number" step="1" value="0" /></label
+      ><label>bis <input id="volume-box-z1" type="number" step="1" value="0" /></label
+      ><button id="volume-box-preview">Bereich als Vorschau markieren</button>
+    </div>
+  </details>
+  <p>
+    Ziehen und Loslassen speichert einen ganzen Zug direkt. Escape verwirft ihn vor dem Loslassen.
+    Pinsel und Radierer verwenden dieselben Formen und Radien. Mausrad zoomt, mittlere Maustaste
+    verschiebt, Pfeiltasten bewegen den fokussierten Schnitt. Grün markiert Böden, Braun Decken.
+    Ober- und Untergeschoss erscheinen transparent. PageUp / PageDown wechselt auch während eines
+    Zugs den Schnitt. Abgeteilte Volumen erhalten leere Räume; bestehende Keys bleiben bei der
+    bestpassenden Raumidentität.
+  </p>
+</dialog>

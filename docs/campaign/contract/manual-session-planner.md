@@ -257,7 +257,7 @@ Nach neuer Storeinstanz klärt derselbe Beleg angewandt/nicht angewandt ohne
 automatische Wiederholung. Der vorhandene Draftvertrag bleibt unverändert.
 
 [Übergabeprüfungen (historisch)](https://github.com/ThonkTank/Salt-Marcher/blob/05e8f2f97fc729dba8b6fef3830c566cdc47adad/tests/campaign/desktop-visit-handoff.test.mjs) und
-[Dialogprüfungen (historisch)](https://github.com/ThonkTank/Salt-Marcher/blob/05e8f2f97fc729dba8b6fef3830c566cdc47adad/tests/runtime/desktop-session-resume-context.test.mjs)
+[Dialogprüfungen](../../../tests/runtime/desktop-session-handoff-owner.test.mjs)
 prüfen Zielbindung, spätere Eingaben und Originalauftrag. Native Gesamtfreigabe
 und vollständige Wiederaufnahme nach Prozessende bleiben offen.
 

@@ -1,0 +1,99 @@
+<dialog id="create-dialog">
+  <form id="create-form">
+    <h2>Neue Kampagne</h2>
+    <label for="campaign-name">Name</label
+    ><input id="campaign-name" required maxlength="1000" autofocus />
+    <div class="actions">
+      <button type="button" id="cancel-create">Abbrechen</button
+      ><button type="submit">Anlegen</button>
+    </div>
+  </form>
+</dialog>
+<dialog id="rename-dialog">
+  <form id="rename-form">
+    <h2>Kampagnenname ändern</h2>
+    <label for="rename-name">Name</label><input id="rename-name" required maxlength="1000" />
+    <div class="actions">
+      <button id="rename-cancel" type="button">Abbrechen</button
+      ><button type="submit">Umbenennen</button>
+    </div>
+  </form>
+</dialog>
+<dialog id="note-excerpt-dialog" aria-labelledby="note-excerpt-heading">
+  <form id="note-excerpt-form">
+    <h2 id="note-excerpt-heading">Auszug übernehmen</h2>
+    <p id="note-excerpt-origin"></p>
+    <label for="note-excerpt-title">Name oder Titel</label
+    ><input id="note-excerpt-title" required maxlength="1000" />
+    <p id="note-excerpt-choices-status" role="status"></p>
+    <div id="note-excerpt-choices" class="selection-list"></div>
+    <button id="note-excerpt-new" type="button" hidden>Eigenständige neue Notiz</button>
+    <div id="note-excerpt-new-kind">
+      <label for="note-excerpt-kind">Art der neuen Notiz</label
+      ><select id="note-excerpt-kind">
+        <option value="note">Notiz</option>
+        <option value="npc">NSC</option>
+        <option value="faction">Fraktion</option>
+        <option value="quest">Quest</option>
+        <option value="rumor">Gerücht</option>
+        <option value="rule">Regelreferenz</option>
+      </select>
+    </div>
+    <details id="note-excerpt-existing" hidden>
+      <summary>Bisherigen Text der vorhandenen Notiz prüfen</summary>
+      <pre id="note-excerpt-existing-text"></pre>
+    </details>
+    <label id="note-excerpt-text-label" for="note-excerpt-text">Markierter Originaltext</label
+    ><textarea id="note-excerpt-text" rows="7" readonly></textarea>
+    <p id="note-excerpt-help">
+      Der Originaltext bleibt erhalten. Quelle und Auszug werden miteinander verknüpft; weitere
+      Auszüge kannst du direkt in der Quelle markieren.
+    </p>
+    <div class="actions">
+      <button id="note-excerpt-cancel" type="button">Abbrechen</button
+      ><button id="note-excerpt-save" type="submit">Notiz mit Herkunft anlegen</button>
+    </div>
+  </form>
+</dialog>
+<dialog id="world-dialog">
+  <form id="world-form">
+    <h2>Weltwissen anlegen</h2>
+    <label for="world-kind">Art</label
+    ><select id="world-kind">
+      <option value="note">Notiz</option>
+      <option value="npc">NSC</option>
+      <option value="faction">Fraktion</option>
+      <option value="quest">Quest</option>
+      <option value="rumor">Gerücht</option></select
+    ><label for="world-name">Name oder Titel</label
+    ><input id="world-name" required maxlength="1000" />
+    <div class="actions">
+      <button type="button" id="world-cancel">Abbrechen</button
+      ><button id="world-create" type="submit">Anlegen</button>
+    </div>
+  </form>
+</dialog>
+<dialog id="location-dialog">
+  <form id="location-form">
+    <h2>Ort anlegen</h2>
+    <label for="new-location-name">Name</label
+    ><input id="new-location-name" required maxlength="200" /><label for="new-location-type"
+      >Art</label
+    ><select id="new-location-type">
+      <option value="poi">Ort</option>
+      <option value="city">Stadt</option>
+    </select>
+    <div class="actions">
+      <button id="location-cancel" type="button">Abbrechen</button
+      ><button id="location-create" type="submit">Anlegen</button>
+    </div>
+  </form>
+</dialog>
+<dialog id="import-dialog">
+  <h2>Dungeon übernehmen</h2>
+  <div id="import-detail"></div>
+  <div class="actions">
+    <button id="cancel-import">Abbrechen</button
+    ><button id="confirm-import">Als neue Kampagne übernehmen</button>
+  </div>
+</dialog>

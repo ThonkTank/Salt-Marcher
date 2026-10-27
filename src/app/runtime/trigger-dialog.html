@@ -1,0 +1,92 @@
+<dialog id="trigger-dialog">
+  <div class="toolbar">
+    <h2>Fallen und Triggerfelder</h2>
+    <button id="trigger-close">Schließen</button>
+  </div>
+  <label
+    >Falle
+    <select id="trigger-trap"></select
+  ></label>
+  <fieldset>
+    <legend>Charges und Reset</legend>
+    <div class="toolbar">
+      <label>Maximum <input id="trigger-max" type="number" min="0" value="1" /></label
+      ><label
+        >Resetdauer Sekunden <input id="trigger-reset" type="number" min="0" value="0" /></label
+      ><select id="trigger-reset-mode">
+        <option value="empty">Countdown erst bei null Charges</option>
+        <option value="used">Countdown unter Maximum</option></select
+      ><button id="trigger-config-save">Fallenregel übernehmen</button>
+    </div>
+    <p id="trigger-state"></p>
+    <div class="toolbar">
+      <label>Aktuelle Charges <input id="trigger-charges" type="number" min="0" /></label
+      ><button id="trigger-correct">Chargestand manuell korrigieren</button
+      ><button id="trigger-refill">Alle Charges zurücksetzen</button
+      ><button id="trigger-manual-activate">Tatsächliche Aktivierung bestätigen</button>
+    </div>
+    <p>
+      Feldbetreten verbraucht keine Charge. Ein laufender Countdown beginnt bei weiterer Aktivierung
+      nicht erneut. Reset lädt alle Charges gemeinsam auf.
+    </p>
+  </fieldset>
+  <fieldset>
+    <legend>Unabhängige Triggerfelder</legend>
+    <div class="toolbar">
+      <select id="trigger-existing"></select
+      ><button id="trigger-new">Neues Feld</button><label>Name <input id="trigger-name" /></label
+      ><select id="trigger-behavior">
+        <option value="interrupt">Reise anhalten und Kontext öffnen</option>
+        <option value="notify">Nur GM benachrichtigen</option></select
+      ><label><input id="trigger-archived" type="checkbox" /> Feld deaktiviert</label>
+    </div>
+    <div class="toolbar">
+      <label
+        >Volumen
+        <select id="trigger-volume"></select></label
+      ><label
+        >Schnitt relativ zur Volumenecke
+        <input id="trigger-slice" type="number" value="0" step="1" /></label
+      ><select id="trigger-tool">
+        <option value="paint">Zellen pinseln</option>
+        <option value="erase">Zellen entfernen</option>
+        <option value="range">Rechteckauswahl</option></select
+      ><label
+        >Pinselradius <input id="trigger-brush" type="number" min="1" max="11" value="1" /></label
+      ><select id="trigger-shape">
+        <option value="circle">Rund</option>
+        <option value="square">Quadratisch</option>
+      </select>
+    </div>
+    <p id="trigger-slice-label"></p>
+    <canvas
+      id="trigger-canvas"
+      width="1200"
+      height="600"
+      aria-label="Frei markierbare Triggerzellen im gewählten Volumenschnitt"
+    ></canvas>
+    <details>
+      <summary>3D-Rasterbereich hinzufügen oder entfernen</summary>
+      <div class="toolbar">
+        <label>X von <input id="trigger-box-x0" type="number" value="0" step="1" /></label
+        ><label>bis <input id="trigger-box-x1" type="number" value="0" step="1" /></label
+        ><label>Y von <input id="trigger-box-y0" type="number" value="0" step="1" /></label
+        ><label>bis <input id="trigger-box-y1" type="number" value="0" step="1" /></label
+        ><label>Z von <input id="trigger-box-z0" type="number" value="0" step="1" /></label
+        ><label>bis <input id="trigger-box-z1" type="number" value="0" step="1" /></label
+        ><button id="trigger-box-apply">Bereich in Vorschau bearbeiten</button>
+      </div>
+    </details>
+    <p id="trigger-summary"></p>
+    <div class="toolbar">
+      <button id="trigger-clear-volume">Zellen dieses Volumens leeren</button
+      ><button id="trigger-remove-unbound">Ungebundene Fragmente ausdrücklich entfernen</button
+      ><button id="trigger-save">Triggerfeld übernehmen</button>
+    </div>
+    <p>
+      Ein Feld kann beliebige Zellen in mehreren Volumen enthalten. Volumen und Höhenschnitt
+      wechseln erweitert dieselbe Feldvorschau. Ohne Feld bleibt die Falle manuell. Felder verändern
+      keine Begehbarkeit oder fiktionale Wirkung.
+    </p>
+  </fieldset>
+</dialog>

@@ -1,0 +1,86 @@
+<dialog id="table-manager" aria-labelledby="table-title">
+  <div class="toolbar table-manager-heading">
+    <h2 id="table-title">Begegnungstabelle bearbeiten</h2>
+    <button id="table-close" type="button">Abbrechen / schließen</button>
+  </div>
+  <div class="table-manager-columns">
+    <div id="table-catalog-slot">
+      <p class="caption">
+        Suche für diese Tabelle. Deine Katalogfilter bleiben beim Schließen erhalten.
+      </p>
+    </div>
+    <form id="table-form">
+      <label for="table-name">Tabellenname</label
+      ><input id="table-name" required maxlength="1000" /><label for="table-scope"
+        >Gültigkeitsbereich</label
+      ><select id="table-scope" aria-describedby="table-scope-help">
+        <option value="campaign">Diese Kampagne</option>
+        <option value="installation">Gesamte Installation</option>
+      </select>
+      <p id="table-scope-help" class="caption"></p>
+      <p id="table-selected-creature">Wähle links eine Kreatur.</p>
+      <button id="table-add-creature" type="button" disabled>Gewählte Kreatur hinzufügen</button>
+      <h3>Kreaturen und Chancen</h3>
+      <div id="table-entries"></div>
+      <p class="caption">
+        Gewicht = relative Häufigkeit von 1 bis 10, etwa 3 zu 1 = 75 % zu 25 %. Neue oder geänderte
+        Gewichte müssen ganze Zahlen sein. Unveränderte Altgewichte bleiben erhalten.
+      </p>
+      <details id="table-options">
+        <summary>Beschreibung, Bedingungen und Beute</summary>
+        <label for="table-description">Beschreibung</label
+        ><textarea id="table-description" rows="3"></textarea>
+        <div class="time-fields">
+          <div>
+            <label for="table-habitats">Umgebungen (kommagetrennt, optional)</label
+            ><input id="table-habitats" placeholder="Forest, Hills" />
+          </div>
+          <div>
+            <label for="table-time">Tageszeit</label
+            ><select id="table-time">
+              <option value="any">Jederzeit</option>
+              <option value="day">Tag</option>
+              <option value="night">Nacht</option>
+            </select>
+          </div>
+        </div>
+        <label for="table-loot-link">Loot-Tabellen-ID (optional)</label
+        ><input id="table-loot-link" maxlength="1000" />
+      </details>
+      <div class="table-save-actions">
+        <p id="table-save-status" class="caption" role="status"></p>
+        <button id="table-save" type="submit" disabled>Tabelle speichern</button>
+      </div>
+    </form>
+  </div>
+</dialog>
+<dialog id="loot-table-manager">
+  <div class="toolbar">
+    <h2>Beutetabelle bearbeiten</h2>
+    <button id="loot-close" type="button">Abbrechen / schließen</button>
+  </div>
+  <form id="loot-form">
+    <label for="loot-name">Name</label><input id="loot-name" required maxlength="1000" /><label
+      for="loot-description"
+      >Beschreibung</label
+    ><textarea id="loot-description" rows="3"></textarea
+    ><label for="loot-rolls">Würfe pro Schatz</label
+    ><input id="loot-rolls" type="number" min="1" max="100" value="1" required />
+    <h3>Gewichtete Einträge</h3>
+    <div id="loot-entries"></div>
+    <button id="loot-entry-add" type="button">Eintrag hinzufügen</button>
+    <p class="caption">
+      Jeder Wurf wählt einen Eintrag. Gleiche Ergebnisse werden zusammengefasst; der Seed macht das
+      Ergebnis reproduzierbar.
+    </p>
+    <div class="actions"><button type="submit">Beutetabelle speichern</button></div>
+  </form>
+</dialog>
+<dialog id="generation-discard">
+  <h2>Ungespeicherter Entwurf</h2>
+  <p>Der offene Entwurf wurde geändert.</p>
+  <div class="actions">
+    <button id="generation-discard-keep">Weiterbearbeiten</button
+    ><button id="generation-discard-confirm">Entwurf verwerfen</button>
+  </div>
+</dialog>

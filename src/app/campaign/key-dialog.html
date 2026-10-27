@@ -1,0 +1,278 @@
+<dialog id="key-dialog">
+  <p id="key-save-status" role="status" class="caption">Eingaben werden automatisch gespeichert.</p>
+  <div class="toolbar">
+    <h2>Dungeon-Key</h2>
+    <button id="key-close">Schließen</button><button id="key-map">Raum im Atlas auswählen</button>
+  </div>
+  <div class="key-layout">
+    <aside>
+      <label
+        >Volltext / Nummer
+        <input id="key-search" type="search" aria-describedby="key-search-help" /><span
+          id="key-search-help"
+          class="caption"
+          >Auch Vorlagentexte und Verweisnamen. Enter öffnet den ersten Treffer.</span
+        ></label
+      ><button id="key-add-room" type="button">Raum anlegen</button>
+      <details id="key-list-options">
+        <summary>Filter und Mehrfachauswahl</summary>
+        <label
+          >Level
+          <select id="key-filter-level"></select></label
+        ><label
+          >Gruppe
+          <select id="key-filter-group"></select></label
+        ><label
+          >Filter
+          <select id="key-filter">
+            <option value="">Alle Räume</option>
+            <option value="secret">Geheim</option>
+            <option value="ready">Bereit</option>
+            <option value="draft">In Vorbereitung</option>
+            <option value="feature">Mit Dungeon-Feature</option>
+          </select></label
+        >
+        <div class="toolbar">
+          <button id="key-select-visible">Alle Treffer auswählen</button
+          ><button id="key-select-none">Auswahl leeren</button>
+        </div>
+      </details>
+      <p id="key-list-range" class="caption" role="status"></p>
+      <div id="key-list-pages" class="toolbar" hidden>
+        <button id="key-list-prev" type="button">Vorherige Räume</button
+        ><button id="key-list-next" type="button">Weitere Räume</button>
+      </div>
+      <p id="key-selection-count" role="status" hidden></p>
+      <div id="key-room-list"></div>
+    </aside>
+    <section>
+      <label
+        >Inhalt bearbeiten
+        <select id="key-owner"></select
+      ></label>
+      <details>
+        <summary>Level, Gruppe oder Textvorlage anlegen</summary>
+        <div class="toolbar">
+          <select id="key-new-kind">
+            <option value="level">Konzeptuelles Level</option>
+            <option value="group">Erbende Raumgruppe</option>
+            <option value="template">Textvorlage</option>
+            <option value="surface">Beschriebene Oberfläche</option></select
+          ><input id="key-new-name" placeholder="Name" /><button id="key-create-owner">
+            Inhalt anlegen</button
+          ><button id="key-template-from-room">Raumprosa als verknüpfte Vorlage</button>
+        </div>
+      </details>
+      <div class="key-identity">
+        <label>Anzeigezahl <input id="key-number" /></label
+        ><label>Name <input id="key-name" /></label>
+      </div>
+      <label>Vorlesetext <textarea id="key-read-aloud" rows="5"></textarea></label
+      ><label>GM-Notizen <textarea id="key-gm-notes" rows="5"></textarea></label>
+      <section id="key-reference-section" aria-label="Verknüpfte Inhalte">
+        <h3>Verknüpfte Notizen und Inhalte</h3>
+        <div id="key-references"></div>
+        <details id="key-reference-picker">
+          <summary>Notiz, Ort oder Spielabend verknüpfen…</summary>
+          <label for="key-reference-query">Inhalte suchen</label
+          ><input
+            id="key-reference-query"
+            type="search"
+            maxlength="1000"
+            placeholder="Name oder Stichwort"
+          />
+          <p id="key-reference-search-status" class="caption" role="status"></p>
+          <div id="key-reference-matches" class="selection-list"></div>
+        </details>
+      </section>
+      <section id="key-template-panel" aria-label="Gemeinsame Raumtexte">
+        <h3>Gemeinsame Raumtexte</h3>
+        <p>
+          Eine verknüpfte Textvorlage bleibt gemeinsam bearbeitbar. Individuelle Texte, Geheimnisse
+          und Verweise bleiben erhalten.
+        </p>
+        <label
+          >Textvorlage
+          <select id="key-template-choice"></select
+        ></label>
+        <p id="key-template-targets"></p>
+        <div class="toolbar">
+          <button type="button" id="key-template-link">Mit Raum verknüpfen</button
+          ><button type="button" id="key-template-edit">Vorlagentext bearbeiten</button
+          ><button type="button" id="key-template-new">Textvorlage anlegen…</button>
+        </div>
+        <p id="key-template-status" role="status"></p>
+      </section>
+      <details id="key-copy-panel">
+        <summary>Rauminhalte unabhängig auf andere Räume kopieren</summary>
+        <p>
+          Öffne den Quellraum und markiere links die Zielräume. Gewählte Texte werden unabhängig
+          kopiert; Vorlagenlinks werden aufgelöst. Raum-IDs, Anzeigezahlen, Geometrie,
+          Level-/Gruppenzuordnung und Entdeckungen werden nicht kopiert.
+        </p>
+        <fieldset id="key-copy-fields"><legend>Inhalte auswählen</legend></fieldset>
+        <div class="toolbar">
+          <label
+            >Übernahme<select id="key-copy-mode">
+              <option value="append">Ergänzen · bestehende Inhalte behalten</option>
+              <option value="replace">Gewählte Inhalte ersetzen</option>
+            </select></label
+          ><label
+            >Attribute<select id="key-copy-attributes">
+              <option value="own">Nur lokale Werte</option>
+              <option value="effective">Wirksame Werte einschließlich Vererbung</option>
+            </select></label
+          >
+        </div>
+        <p>
+          Namen, Geheim- und Vorbereitungsstatus werden bei Auswahl immer ersetzt. Beim Ersetzen
+          einzelner Textarten bleiben andere Sichtbarkeiten erhalten.
+        </p>
+        <div class="toolbar">
+          <button id="key-copy-show" type="button">Kopiervorschau erstellen</button
+          ><button id="key-copy-apply" type="button" disabled>
+            Gezeigte Inhalte auf Zielräume übernehmen
+          </button>
+        </div>
+        <p id="key-copy-status" role="status"></p>
+        <div id="key-copy-preview"></div>
+      </details>
+      <details id="key-preview">
+        <summary>Beschreibungsvorschau</summary>
+        <fieldset>
+          <legend>Beschreibungsvorschau</legend>
+          <div class="toolbar">
+            <label
+              >Ausgabe
+              <select id="key-audience">
+                <option value="gm">GM mit privaten Blöcken</option>
+                <option value="public">Vorlesbar / Spieler</option>
+              </select></label
+            ><label
+              >Ankunftsrichtung Grad
+              <input id="key-heading" type="number" placeholder="Leer: Kartenrichtungen" /></label
+            ><label
+              ><input id="key-discovered" type="checkbox" /> Verborgene Blöcke als entdeckt
+              ansehen</label
+            >
+          </div>
+          <p>0° blickt nach Norden, 90° nach Osten. Diese Vorschau ändert keine Gruppenkenntnis.</p>
+          <pre id="key-rendered"></pre>
+        </fieldset>
+      </details>
+      <details id="key-metadata">
+        <summary>Raumzuordnung und Metadaten</summary>
+        <div class="toolbar">
+          <label
+            >Konzeptuelles Level
+            <select id="key-level"></select></label
+          ><label
+            >Erbende Gruppe
+            <select id="key-group"></select
+          ></label>
+        </div>
+        <label
+          >Levelhöhen – absolute 5-Fuß-Schritte <input id="key-zsteps" placeholder="0, 1, 2, 3"
+        /></label>
+        <div class="toolbar">
+          <label>Tags <input id="key-tags" placeholder="Gruft, Rätsel" /></label
+          ><label
+            >Vorbereitungsstatus
+            <input id="key-status" placeholder="ready, draft oder eigene Bezeichnung" /></label
+          ><label><input id="key-secret" type="checkbox" /> Geheimer Raum</label>
+        </div>
+      </details>
+      <details>
+        <summary>Vorhandener Raumkey</summary>
+        <div id="key-original"></div>
+        <p>Die ursprünglichen Markdown-Abschnitte bleiben eigenständige Textblöcke.</p>
+      </details>
+      <details id="key-inheritance">
+        <summary>Beschreibungseigenschaften und Vererbung</summary>
+        <label
+          >Beschreibungseigenschaften – Name = Wert; !Name unterdrückt Vererbung
+          <textarea
+            id="key-attributes"
+            rows="5"
+            placeholder="Material = Basalt&#10;Atmosphäre = feucht und kalt"
+          ></textarea>
+        </label>
+        <p>
+          Eine lokale Zeile entfernen stellt die Vererbung wieder her. Die Werte beschreiben den
+          Raum; Spielregeln werden daraus nicht erzeugt.
+        </p>
+        <fieldset id="key-surface-editor" hidden>
+          <legend>Beschriebene Wand-, Boden- oder Deckenregion</legend>
+          <p>
+            Flächen anklicken oder ziehen; Alt oder rechte Maustaste entfernt. Der Bereich verwendet
+            die Raumwerte und ergänzt nur eigene Beschreibungen. Ungebundene Inhalte bleiben
+            erhalten.
+          </p>
+          <div class="toolbar">
+            <label
+              >Volumen
+              <select id="key-surface-volume"></select></label
+            ><label
+              >Fläche
+              <select id="key-surface-side">
+                <option value="floor">Boden</option>
+                <option value="ceiling">Decke</option>
+                <option value="north">Nordwand</option>
+                <option value="east">Ostwand</option>
+                <option value="south">Südwand</option>
+                <option value="west">Westwand</option>
+              </select></label
+            ><label>Höhenschritt <input id="key-surface-z" type="number" value="0" /></label
+            ><button id="key-surface-all">Zusammenhängende Fläche im Schnitt markieren</button
+            ><button id="key-surface-clear">Volumenmarkierung entfernen</button
+            ><button id="key-surface-remove-orphans">Ungebundene Markierungen entfernen</button>
+          </div>
+          <p id="key-surface-status"></p>
+          <canvas id="key-surface-canvas" width="1000" height="420"></canvas>
+        </fieldset>
+        <pre id="key-effective"></pre>
+      </details>
+      <details id="key-block-options">
+        <summary>Reihenfolge und Sichtbarkeit der Beschreibungsblöcke</summary>
+        <div id="key-blocks"></div>
+        <button id="key-add-block">Prosa / Übergang hinzufügen</button>
+      </details>
+      <div class="toolbar">
+        <button id="key-save">Jetzt übernehmen</button
+        ><button id="key-reload" type="button">
+          Gespeicherten Stand laden / Eingabe verwerfen
+        </button>
+      </div>
+      <details>
+        <summary>Sammeländerung für ausgewählte Räume</summary>
+        <div class="toolbar">
+          <select id="key-batch-field">
+            <option value="name">Namen</option>
+            <option value="number">Fortlaufende Anzeigezahlen ab Wert</option>
+            <option value="readAloud">Vorlesetext</option>
+            <option value="gmNotes">GM-Notizen</option>
+            <option value="legacyText">Vorhandener Markdown-Key</option>
+            <option value="attributes">Attribute ergänzen</option>
+            <option value="levelId">Aktuell gewähltes Level</option>
+            <option value="groupId">Aktuell gewählte Gruppe</option>
+            <option value="tags">Tags ersetzen</option>
+            <option value="secret">Geheim: ja / nein</option>
+            <option value="status">Status ersetzen</option>
+            <option value="blocks">Beschreibungsblöcke dieses Inhalts kopieren</option>
+            <option value="references">Referenzen dieses Inhalts kopieren</option></select
+          ><select id="key-batch-mode">
+            <option value="replace">Ersetzen</option>
+            <option value="prepend">Voranstellen</option>
+            <option value="append">Anhängen</option>
+            <option value="search-replace">Suchen und ersetzen</option></select
+          ><input id="key-batch-search" placeholder="Suchtext" />
+        </div>
+        <textarea id="key-batch-text" rows="4" placeholder="Text / Attribute / Werte"></textarea
+        ><button id="key-batch-apply">Sammeländerung unmittelbar übernehmen</button>
+        <p>
+          Alle ausgewählten Räume werden als eine gemeinsame rückgängig machbare Aktion geändert.
+        </p>
+      </details>
+    </section>
+  </div>
+</dialog>
