@@ -1,4 +1,4 @@
-import {measureMapText} from './map-text-measure';
+import { measureMapText } from './map-text-measure';
 import { publicTerrainGrid } from '../runtime/player-terrain';
 import type { AtlasRenderView } from './campaign-atlas-contracts';
 import { gridHeight, type TerrainView } from './terrain-spatial-model';
@@ -8,11 +8,7 @@ import { terrainObjectSources } from './terrain-objects';
 import { AtlasObjectGeometry } from './atlas-object-geometry';
 import { publicAtlasPaint } from './campaign-atlas-export';
 import { atlasRegionPaint } from './atlas-region-export';
-import {
-  drawTerritories,
-  MapLabelLayout,
-  paintMapLabels,
-} from './atlas-cartography';
+import { drawTerritories, MapLabelLayout, paintMapLabels } from './atlas-cartography';
 import {
   AtlasSurfaceTileStream,
   atlasSurfaceTileFetcher,
