@@ -5,16 +5,26 @@
     "height": 852
   },
   "artifacts": {
-    "main.cjs": "ff59135ad2469a12a6c417d54573ab4a521e4e1f079e51e06428b9bd0bc8db71",
-    "preload.cjs": "92995db547b3aae307d7b84af9d469ad14d8ede7b73a110d2d146332a91b9c35",
-    "atlas-region-worker.cjs": "5a63b36f6d9e4a997025135e6521e3a68cf8ab98cf408beabd77b3620d6ff7cf",
-    "room-directory-worker.cjs": "b61b58757865fc64921204032a5ced3953e07f3c081e17022c44be4e663bc968",
-    "terrain-route-worker.cjs": "2505e179f0ae02bb15da3ea6cf02f50e844be01f418b215edc0b1c09d259db4c",
-    "backup-validation-worker.cjs": "7e2d6ae9728e2488dc63c48fb9b1b6a85b4fb1ba733fa54101704e38263fc903",
-    "ui/renderer.js": "c691ac4dea23c2faf7e3b60670b1e8a008897650b92104a4366a9499625d94ae",
-    "ui/atlas-brush-worker.js": "22a04376ccd39a4c8b431e80ed32c4f366e9cf65ae8a2a5f244fd0b3d736ef65",
-    "ui/index.html": "86ad43fe210bd1c23fab901655bec943a0e86f8b28b90a2c73444b53009527a3",
-    "ui/app.css": "c004535d90f8b9256ac903048a42b94f61ca40364c12cfbe773ac7b6a6199bb5"
+    "main.cjs": "2c0c21299b0ea7c25e5ffd78ae1d1e439f2cdaf832190d66b2574f82fc65482c",
+    "preload.cjs": "0bb79c61dfcd3b629056519bb0be022e3ba156978cc6c0169f22c8910ced46eb",
+    "player-preload.cjs": "2298bcbc665e510444c6e8b8e4d202ce2cec8bfcde8d328c7121e3c1043091b4",
+    "store-worker.cjs": "9c3f61bda447dca1f38c80cffcdcd9c4d6bcf130ebb3540622521085a84796a9",
+    "atlas-region-worker.cjs": "13445a5764fe3a27b502828c1905def799725c172258940ff2cfddcf71599c33",
+    "room-directory-worker.cjs": "592b6e06096e5c779acce355c95ff2b921cee55b86998d14636acb73c86dc226",
+    "terrain-route-worker.cjs": "554fa9a52139b222785cef38f7d86342e3cf0f6c3843a9055bd3e6b7820c7761",
+    "backup-validation-worker.cjs": "e3812d3d907293eb3c396bdd26a39d60fa5e3422d1ecced817055cd0e9d88eb3",
+    "update-helper.cjs": "fb360030c815848b6eed9de396accc59f8d4c0ae2ebf50bed3d04449a4b5542a",
+    "update-probe.cjs": "22553b0f1e091ce61bd3b8c70ab709bfd0bd43077cedd12c165a86cd17a507ef",
+    "ui/renderer.js": "73ffc1e96cb8af9290f82463b5eda99d71cdcbfaad821201ab65fcdb8b10768e",
+    "ui/atlas-brush-worker.js": "d4dfe704094fbc0724ffd03ecfd28028bb26cddc29c735ba7cfcc9178dde418d",
+    "ui/atlas-deck-runtime.js": "3d6c6666c629cdfb4fb86bebab3e425dae47d39da714f10b83797fbe75cad3f0",
+    "ui/preset-settings.js": "3981d8dc1a1310dd6fb8d141ffe67931c3071ccb0721d08bbdf1002a3935678a",
+    "ui/index.html": "09f9cfe0402cb3cbe4df6c7d5538b7649257023b66246cba8141f99ecf51ced3",
+    "ui/app.css": "d98805ed1a1f73aa67be8b7444a0e7cc42e857b206cb761b26cb18b5f07e0388",
+    "ui/player-display.js": "dc6e45207607ca5ddf222c94f58daa8f9d48e21ba231953ae713753a2d5e11ee",
+    "ui/player-display.html": "7ab27610046c99bd1a829dc9e0b4b0d43686775c51b0971c1392d79de14bbf52",
+    "ui/player.css": "7f82fb6e91227d97b83a8d1421374c74e9f9a5289452b2f1cdf6e032214a8be5",
+    "ui/preset-settings.css": "13c1bf91476633ea63c00700a3440f01a5cdf6e4bc6e447929a3016b3dfdd35b"
   },
   "views": [
     {
@@ -25,7 +35,7 @@
         "width": 32768,
         "height": 26557.935483870966
       },
-      "imageSha256": "0aab7a333added58855e804509c7fdb24c3435efd024376d95a94cbf7cc26ceb"
+      "imageSha256": "26f3855c3be370051ff227cdd64b88347f145f106b5bd633057652b5d0c749d6"
     },
     {
       "target": 4096,
@@ -35,7 +45,7 @@
         "width": 2220.3715271351084,
         "height": 1799.575310299019
       },
-      "imageSha256": "0f1aec4e1e8d4582898d7358e6701890bde6edf6ee318388d6d2188449671ef7"
+      "imageSha256": "01062a3a55eb00b01e2c70614335dbf3e949262ce31a5a5ec72e85bf7c8acc70"
     },
     {
       "target": 512,
@@ -45,7 +55,7 @@
         "width": 294.888227791873,
         "height": 239.00215236357445
       },
-      "imageSha256": "7664db04488ab81a3d4c3fa22bf16b4563460c58afda964685a594d777a65a38"
+      "imageSha256": "fa8b6a2cf0bece3278f91797c6d08035165b6cc429c2e956862a2ce3e00b9438"
     },
     {
       "target": 64,
@@ -55,7 +65,7 @@
         "width": 39.16419654436516,
         "height": 31.741949618618545
       },
-      "imageSha256": "9862d7ec746e40f459bef29d26493923ba65fbc86857b0cc08b115b25c09849e"
+      "imageSha256": "2b788b39c81e4e26ef9192d1f63658218f656d01da894e9101c9f47e0e111bf2"
     },
     {
       "target": 16,
@@ -65,7 +75,12 @@
         "width": 10.194761699387017,
         "height": 8.262689925712866
       },
-      "imageSha256": "117c7581735d53d6164b2d4112a7963eae8dfa5f2df8e689f9cf1c458f5ecb94"
+      "imageSha256": "597da9367630797a49d3e1ef671923b824f86fa8ed5858d70bb0ff4bbe13e13a"
     }
-  ]
+  ],
+  "model": "continuous-terrain-v1",
+  "fixtureSha256": "476a8d6b3000ac5935c3962ca6bc0ed5323bebf106de116179e0f0690e7cc5bc",
+  "rendererSource": "ee58456ab98ee74b064dc711284e3fbb972e693d",
+  "rendererDirty": true,
+  "refreshedAt": "2026-10-27T14:33:44.601Z"
 }

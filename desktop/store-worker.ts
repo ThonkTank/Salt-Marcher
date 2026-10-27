@@ -1,3 +1,4 @@
+import { errorDiagnostic, errorText } from './error-diagnostics';
 import { parentPort, workerData } from 'node:worker_threads';
 import { dirname } from 'node:path';
 import { CampaignStore } from '../src/app/storage/store';
@@ -22,7 +23,19 @@ import {
 import { encodeStoreValue, decodeStoreValue, type StoreWire } from './store-transport';
 
 const port = parentPort!;
-const store = new CampaignStore(workerData.filename, workerData.applicationVersion);
+function openStore() {
+  try {
+    return new CampaignStore(workerData.filename, workerData.applicationVersion);
+  } catch (error) {
+    port.postMessage({
+      kind: 'fatal',
+      error: errorText(error),
+      diagnostic: errorDiagnostic(error, { phase: 'store-start' }),
+    });
+    throw error; // Let the worker report its native failure and exit; never start a dispatcher.
+  }
+}
+const store = openStore();
 const validation = new BackupValidationService(),
   snapshots = new Map<string, ChronicleReadSession>();
 const active = new Set<Promise<void>>();
@@ -99,7 +112,11 @@ async function close() {
     port.postMessage({ kind: 'closed' });
   } catch (error) {
     process.exitCode = 1;
-    port.postMessage({ kind: 'fatal', error: String(error) });
+    port.postMessage({
+      kind: 'fatal',
+      error: errorText(error, true),
+      diagnostic: errorDiagnostic(error, { phase: 'store-close' }),
+    });
   } finally {
     port.close();
   }
@@ -124,14 +141,28 @@ port.on('message', (message: { kind: string; id: number; method: string; value: 
         port.postMessage({
           kind: error instanceof AtlasCommitProjectionError ? 'unknown' : 'error',
           id: message.id,
-          error: error instanceof Error ? error.message : String(error),
+          error: errorText(error),
+          diagnostic: errorDiagnostic(error, {
+            phase: 'store-operation',
+            method: message.method,
+            requestId: message.id,
+          }),
         });
         return;
       }
       try {
         port.postMessage({ kind: 'result', id: message.id, value: encodeStoreValue(value) });
       } catch (error) {
-        port.postMessage({ kind: 'unknown', id: message.id, error: String(error) });
+        port.postMessage({
+          kind: 'unknown',
+          id: message.id,
+          error: errorText(error, true),
+          diagnostic: errorDiagnostic(error, {
+            phase: 'store-result-encode',
+            method: message.method,
+            requestId: message.id,
+          }),
+        });
       }
     })
     .finally(() => active.delete(task));

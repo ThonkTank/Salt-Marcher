@@ -1,3 +1,4 @@
+import { revealWorkspaceNavigation } from './native-navigation.mjs';
 import { createNativeSession } from './native-session.mjs';
 // Complete GM task from a seeded running encounter. All subsequent actions use native UI.
 import { createRequire } from 'node:module';
@@ -90,13 +91,7 @@ async function launch(expected = 'running') {
     .locator('.campaign-card[data-campaign-id="' + campaign.id + '"]')
     .getByRole('button', { name: /Öffnen|Fortsetzen/ })
     .click();
-  await page.waitForFunction(() => !document.querySelector('#workspace-navigation').inert);
-  if (!(await page.locator('#live-tab').isVisible())) {
-    if (await page.locator('#atlas-navigation').isVisible())
-      await page.locator('#atlas-navigation').click();
-    if (!(await page.getByRole('button', { name: 'Party und Leiten', exact: true }).isVisible()))
-      await page.locator('#workspace-nav-summary').click();
-  }
+  await revealWorkspaceNavigation(page);
   await page.getByRole('button', { name: 'Party und Leiten', exact: true }).click();
   await page.waitForFunction(
     (expected) =>

@@ -26,7 +26,7 @@ Gesamtprodukt: [Produktziele](project/requirements/product.md), [Umfang](project
 | Thema | Fachliche Quellen |
 | --- | --- |
 | Gesamtprodukt | [Produktziele](project/requirements/product.md), [Lieferfolge](project/delivery/roadmap.md), [vollständiger Umfang](project/requirements/scope.md), [Quellenregister](project/requirements/sources.json) |
-| Hex-Atlas und gemeinsame Karte | [Hex-Atlas](atlas/requirements/atlas.md), [Wonderdraft-Vergleich](atlas/verification/reference-comparison.md), [gemeinsamer Speicher-/Hostanschluss](atlas/contract/spatial-runtime.md) |
+| Räumlicher Atlas und gemeinsame Karte | [Atlas](atlas/requirements/atlas.md), [Wonderdraft-Vergleich](atlas/verification/reference-comparison.md), [gemeinsamer Speicher-/Hostanschluss](atlas/contract/spatial-runtime.md) |
 | Gemeinsamer räumlicher Atlas und semantischer Zoom | [Atlasumstieg](atlas/architecture/unified-spatial-atlas.md), [historische Ausgangsbasis und Werkzeugumfang](atlas/architecture/unified-spatial-atlas.md#funktionsumfang) |
 | Regionen und Kartenbeschriftung | [Pinselablauf, Maßstab, Hierarchie und Nachweise](atlas/contract/atlas-cartography.md) |
 | Straßen, Flüsse und Landschaftspinsel | [Bedienung, Datenvertrag und offene Referenzabnahmen](atlas/contract/landscape-tools.md), [geländegebundene Trassen, Flussbetten und Schutz](atlas/contract/terrain-routes.md) |

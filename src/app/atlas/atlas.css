@@ -1,0 +1,624 @@
+/* atlas/atlas.css — styles owned by this surface; shared controls live in shared/. */
+
+#campaign-atlas[hidden] {
+  display: none !important;
+}
+
+.atlas-command-bar label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+}
+
+.atlas-command-bar strong {
+  font-size: 1.2rem;
+}
+
+.atlas-command-bar input {
+  max-width: 16rem;
+}
+
+.atlas-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 1rem;
+  align-items: start;
+}
+
+.atlas-stage {
+  position: sticky;
+  top: var(--workspace-header-height, 64px);
+  min-width: 0;
+}
+
+#campaign-map {
+  display: block;
+  width: 100%;
+  height: calc(100vh - 200px);
+  min-height: 400px;
+  background: #d5dbc8;
+  border: 1px solid var(--line);
+  touch-action: none;
+}
+
+#atlas-panel {
+  height: calc(100vh - 155px);
+  overflow: auto;
+  padding: 0.7rem;
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+
+#atlas-families {
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+#atlas-families button {
+  padding: 0.4rem 0.5rem;
+}
+
+#atlas-families button[aria-pressed='true'] {
+  background: var(--selected);
+  border-color: var(--blue);
+}
+
+#atlas-search-results {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+#atlas-save-status {
+  min-height: 1.5em;
+  margin: 0.3rem 0;
+}
+
+#atlas-save-status[data-error='true'] {
+  color: var(--error);
+}
+
+#atlas-tool-fields > label {
+  margin: 0.6rem 0;
+}
+
+#atlas-tool-fields:not([data-family='terrain']) > label:has(#atlas-terrain),
+#atlas-tool-fields:not([data-family='terrain']) > label:has(#atlas-hex-level) {
+  display: none;
+}
+
+#atlas-panel #atlas,
+#atlas-panel #city,
+#atlas-panel #world,
+#atlas-panel #dungeon {
+  padding: 0 !important;
+  margin: 0 !important;
+  max-width: none !important;
+  display: block;
+}
+
+#atlas-panel [hidden] {
+  display: none !important;
+}
+
+#atlas-panel #atlas {
+  grid-template-columns: 1fr !important;
+}
+
+#atlas-panel #atlas > aside {
+  display: block;
+  padding: 0;
+  min-width: 0;
+}
+
+#atlas-panel #atlas > aside #rooms {
+  max-height: 18rem;
+  overflow: auto;
+}
+
+#atlas-panel #atlas #map,
+#atlas-panel #atlas #map-title,
+#atlas-panel #atlas #map-zoom-in,
+#atlas-panel #atlas #map-zoom-out,
+#atlas-panel #atlas #fit,
+#atlas-panel #atlas #fit-all,
+#atlas-panel #city-map,
+#atlas-panel #world-map,
+#atlas-panel .map-canvas-controls,
+#atlas-panel .map-canvas-state,
+#atlas-panel #city-zoom {
+  display: none !important;
+}
+
+#atlas-panel .world-columns,
+#atlas-panel .city-columns,
+#atlas-panel .drawing-toolbar,
+#atlas-panel .city-toolbar {
+  display: block !important;
+}
+
+#atlas-panel .time-fields,
+#atlas-panel .combat-fields {
+  grid-template-columns: minmax(0, 1fr) !important;
+}
+
+#atlas-panel svg:not(#drawing-section-map) {
+  max-height: 180px;
+}
+
+#atlas-panel .world-map-selection label:has(#world-map-select),
+#atlas-panel #world-map-new,
+#atlas-panel #world-map-copy,
+#atlas-panel #world-map-json,
+#atlas-panel #world-map-import,
+#atlas-panel #world-map-export,
+#atlas-panel #city-new-open,
+#atlas-panel .world-map-navigation,
+#atlas-panel #city-select,
+#atlas-panel #city-refresh {
+  display: none !important;
+}
+
+#atlas-panel #drawing,
+#atlas-panel #inspector {
+  padding: 0;
+  overflow: visible;
+  min-width: 0;
+}
+
+#atlas-panel #drawing h2,
+#atlas-panel #city > h2,
+#atlas-panel #world > .catalog-heading {
+  display: none;
+}
+
+#atlas-panel #city-workbench > .toolbar:has(#city-zoom) {
+  display: none;
+}
+
+#atlas-panel details {
+  margin: 0.7rem 0;
+}
+
+#atlas-advanced-fields .toolbar {
+  flex-wrap: wrap;
+}
+
+#atlas-panel input,
+#atlas-panel select,
+#atlas-panel textarea {
+  max-width: 100%;
+}
+
+#atlas-panel .city-columns > * {
+  min-width: 0;
+}
+
+#atlas-panel #city-undo,
+#atlas-panel #city-redo,
+#atlas-panel #undo,
+#atlas-panel #redo {
+  display: none !important;
+}
+
+@media (max-width: 1000px) {
+  .atlas-layout {
+    grid-template-columns: minmax(0, 1fr) 290px;
+  }
+}
+
+@media (max-width: 750px) {
+  .atlas-layout {
+    display: block;
+  }
+}
+
+@media (max-width: 750px) {
+  .atlas-stage {
+    position: static;
+  }
+}
+
+@media (max-width: 750px) {
+  #campaign-map {
+    height: 55vh;
+    min-height: 300px;
+  }
+}
+
+@media (max-width: 750px) {
+  #atlas-panel {
+    height: auto;
+    max-height: none;
+  }
+}
+
+/* One campaign, one spatial surface. Existing owner controls dock in its inspector. */
+#campaign-atlas {
+  padding: 0 1rem 1rem;
+  max-width: none;
+  height: calc(100vh - var(--workspace-header-height, 64px) - 58px);
+  overflow: hidden;
+}
+
+.atlas-command-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.6rem 0;
+  min-height: 60px;
+}
+
+.atlas-layout {
+  height: calc(100% - 60px);
+}
+
+.atlas-stage {
+  position: relative;
+  top: auto;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+#campaign-map {
+  height: 100%;
+  min-height: 0;
+  flex: 1;
+}
+
+#atlas-panel {
+  height: 100%;
+  scroll-padding: 0.7rem;
+}
+
+#atlas-panel label:has(input[type='checkbox']) {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+#atlas-panel .map-canvas-controls {
+  display: none;
+}
+
+#campaign-atlas > .atlas-command-bar {
+  background: var(--white);
+  border-bottom: 1px solid var(--line);
+}
+
+#campaign-atlas .map-canvas-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+}
+
+#campaign-atlas .map-canvas-controls button {
+  padding: 0.3rem 0.45rem;
+}
+
+#atlas-search-results:empty {
+  display: none;
+}
+
+@media (max-width: 750px) {
+  #campaign-atlas {
+    height: auto;
+    overflow: visible;
+  }
+}
+
+@media (max-width: 750px) {
+  .atlas-layout {
+    height: auto;
+  }
+}
+
+@media (max-width: 750px) {
+  #campaign-map {
+    height: 55vh;
+    min-height: 300px;
+  }
+}
+
+@media (max-width: 750px) {
+  #atlas-panel {
+    height: auto;
+  }
+}
+
+#atlas-local-console .toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+#atlas-local-console h3 {
+  margin: 1rem 0 0.4rem;
+}
+
+#atlas-local-console button {
+  padding: 0.4rem 0.55rem;
+}
+
+#atlas-panel input[type='checkbox'] {
+  width: auto;
+  margin: 0;
+  flex: 0 0 auto;
+}
+
+#atlas-panel #dungeon-plan,
+#atlas-panel #dungeon-confirm,
+#atlas-panel #dungeon-step,
+#atlas-panel #dungeon-round-step,
+#atlas-panel #dungeon-play,
+#atlas-panel #dungeon-pause,
+#atlas-panel #dungeon-end,
+#atlas-panel #journey-play,
+#atlas-panel #journey-step,
+#atlas-panel #journey-many,
+#atlas-panel #journey-pause,
+#atlas-panel #journey-end {
+  display: none;
+}
+
+/* Region creation belongs to the single Atlas surface. */
+#campaign-atlas #world-map-new,
+#campaign-atlas #world-map-select,
+#campaign-atlas #city-new-open {
+  display: none !important;
+}
+
+#campaign-atlas[data-family='navigation'] #atlas-tool-fields > label:first-child,
+#campaign-atlas[data-family='navigation'] #atlas-tool-fields > label:nth-child(2) {
+  display: none;
+}
+
+#atlas-entrance-field select {
+  width: 100%;
+}
+
+#atlas-landscape-tools label {
+  display: block;
+  margin: 0.45rem 0;
+}
+
+#atlas-landscape-tools input,
+#atlas-landscape-tools select,
+#atlas-landscape-tools textarea {
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+#land-selection textarea {
+  display: block;
+  width: 100%;
+  min-height: 7rem;
+}
+
+#land-status {
+  font-size: 0.9rem;
+  color: #45604b;
+}
+
+#land-selection {
+  display: grid;
+  gap: 0.4rem;
+}
+
+#atlas-landscape-tools .toolbar {
+  flex-wrap: wrap;
+}
+
+#atlas-tool-fields[data-family='terrain'] #atlas-create-tools,
+#atlas-tool-fields[data-family='terrain'] #atlas-room-draw,
+#atlas-tool-fields[data-family='terrain'] > label:has(#atlas-floor),
+#atlas-tool-fields[data-family='terrain'] > label:has(#atlas-roofs),
+#atlas-tool-fields[data-family='terrain'] > label:has(#atlas-slice-enabled),
+#atlas-tool-fields[data-family='terrain'] > label:has(#atlas-slice) {
+  display: none;
+}
+
+#campaign-atlas[data-live-surface='true'] > .atlas-command-bar,
+#campaign-atlas[data-live-surface='true'] > #atlas-search-results,
+#campaign-atlas[data-live-surface='true'] #atlas-panel {
+  display: none !important;
+}
+
+#campaign-atlas[data-live-surface='true'] .atlas-layout {
+  display: block;
+  height: 100%;
+}
+
+#campaign-atlas[data-live-surface='true'] .atlas-stage {
+  position: relative;
+  height: 100%;
+  min-height: 0;
+}
+
+#campaign-atlas[data-live-surface='true'] #campaign-map {
+  height: 100%;
+  width: 100%;
+  min-height: 0;
+  border: 0;
+  border-radius: 0;
+}
+
+#atlas-panel #dungeon-travel-console #dungeon-plan,
+#atlas-panel #dungeon-travel-console #dungeon-confirm,
+#atlas-panel #dungeon-travel-console #dungeon-step,
+#atlas-panel #dungeon-travel-console #dungeon-round-step,
+#atlas-panel #dungeon-travel-console #dungeon-play,
+#atlas-panel #dungeon-travel-console #dungeon-pause,
+#atlas-panel #dungeon-travel-console #dungeon-end {
+  display: inline-block;
+}
+
+#atlas-local-console[data-dungeon='true'] > .toolbar {
+  display: none;
+}
+
+#campaign-atlas[data-family='terrain'] #atlas-selection-title,
+#campaign-atlas[data-family='terrain'] #atlas-hint {
+  display: none;
+}
+
+#atlas-landscape-tools {
+  border-block: 1px solid #9ca999;
+  padding: 0.5rem 0;
+  margin: 0.5rem 0;
+}
+
+/* Keep map composition beside its output controls, without authoring actions. */
+#campaign-atlas[data-output='true'] #atlas-output-open,
+#campaign-atlas[data-output='true'] #atlas-overview,
+#campaign-atlas[data-output='true'] #atlas-to-party,
+#campaign-atlas[data-output='true'] .atlas-command-bar label,
+#campaign-atlas[data-output='true'] #atlas-undo,
+#campaign-atlas[data-output='true'] #atlas-redo {
+  display: none;
+}
+
+/* Core interior tools stay beside the canvas; detailed room lists remain below. */
+#atlas-drawing-tools .drawing-floor-field {
+  display: none !important;
+}
+
+#atlas-drawing-tools .drawing-toolbar {
+  padding: 0.5rem 0;
+}
+
+#atlas-drawing-tools #map-hint,
+#atlas-drawing-tools #drawing-path-status {
+  font-size: 0.85rem;
+  margin: 0.3rem 0;
+}
+
+#atlas-drawing-tools #drawing-path-status:empty {
+  display: none;
+}
+
+#atlas-drawing-tools label:has(#drawing-tool) {
+  display: block;
+}
+
+#atlas-drawing-tools label:has(#drawing-tool) select {
+  width: 100%;
+}
+
+#atlas-room-view summary {
+  font-size: 0.9rem;
+}
+
+#campaign-atlas:is([data-family='interior'], [data-family='decoration'])
+  #atlas-hint[data-idle='true'] {
+  display: none;
+}
+
+#campaign-atlas[data-drawing-tool='door'] #atlas-tool-fields > label:has(#atlas-new-name),
+#campaign-atlas[data-drawing-tool='door'] #atlas-room-draw {
+  display: none;
+}
+
+@media (min-width: 751px) {
+  body.atlas-workspace > header,
+  body.atlas-workspace > #status,
+  body.atlas-workspace > #backup-status,
+  body.atlas-workspace > #graph-preview-banner {
+    flex: none;
+  }
+}
+
+@media (min-width: 751px) {
+  body > #campaign-atlas {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    height: auto;
+    overflow: hidden;
+  }
+}
+
+@media (min-width: 751px) {
+  body > #campaign-atlas > .atlas-command-bar {
+    flex: none;
+  }
+}
+
+@media (min-width: 751px) {
+  body > #campaign-atlas > #atlas-search-results {
+    flex: none;
+    max-height: 20vh;
+    overflow: auto;
+  }
+}
+
+@media (min-width: 751px) {
+  body > #campaign-atlas > .atlas-layout {
+    flex: 1;
+    min-height: 0;
+    height: auto;
+    align-items: stretch;
+    overflow: hidden;
+  }
+}
+
+@media (min-width: 751px) {
+  body > #campaign-atlas .atlas-stage {
+    position: static;
+    min-height: 0;
+    height: auto;
+  }
+}
+
+@media (min-width: 751px) {
+  body > #campaign-atlas #campaign-map {
+    flex: 1 1 0;
+    height: 0;
+    min-height: 0;
+  }
+}
+
+@media (min-width: 751px) {
+  body > #campaign-atlas #atlas-panel {
+    min-height: 0;
+    height: auto;
+  }
+}
+
+/* Geographic comparisons stay alongside the map and require no network. */
+#atlas-reference-panel[hidden] {
+  display: none;
+}
+
+#atlas-reference-results {
+  display: grid;
+  gap: 0.35rem;
+  max-height: 32vh;
+  overflow: auto;
+}
+
+#atlas-reference-results button {
+  text-align: left;
+  white-space: normal;
+  font-size: 0.85rem;
+}
+
+#atlas-reference-results button[aria-pressed='true'] {
+  outline: 2px solid var(--accent, #8c3b14);
+}
+
+#atlas-reference-panel .toolbar {
+  flex-wrap: wrap;
+}
+
+#atlas-scale {
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+}

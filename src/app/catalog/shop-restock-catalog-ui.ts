@@ -12,10 +12,12 @@ export function renderRestockCatalog(
   root: HTMLElement,
   catalog: ShopRestockCatalog,
   options: {
+    api: Pick<Window['campaign'], 'itemDefinitions'>;
     changed: () => void;
     button: (title: string, action: () => Promise<unknown> | void) => HTMLButtonElement;
   },
 ) {
+  const document = root.ownerDocument;
   const fields = document.createElement('div');
   fields.className = 'time-fields';
   root.append(fields);
@@ -153,7 +155,7 @@ export function renderRestockCatalog(
     const filter = structuredClone(catalog.filter),
       basis = JSON.stringify(catalog);
     status.textContent = 'Katalog wird durchsucht …';
-    const response = await window.campaign.itemDefinitions({
+    const response = await options.api.itemDefinitions({
       ...filter,
       sort: 'name',
       direction: 'asc',

@@ -28,6 +28,8 @@
     "build:desktop": "node tools/build-desktop.mjs",
     "package:desktop": "npm run desktop:runtime && npm run build:desktop && node tools/package-desktop.mjs",
     "check:desktop": "tsc --noEmit -p desktop/tsconfig.json",
+    "dev": "npm run desktop:runtime && node tools/run-local-check.mjs node tools/dev-desktop.mjs",
+    "test:desktop-development": "node tools/test-desktop-development.mjs",
     "start:desktop": "npm run desktop:runtime && npm run build:desktop && electron .build/desktop/main.cjs",
     "test:desktop-rule-context": "node tools/run-tests.mjs --serial tests/runtime/desktop-mask-integration.test.mjs tests/catalog/desktop-rule-reference-store.test.mjs tests/catalog/desktop-rule-reference-authority.test.mjs tests/runtime/desktop-chase-transfer.test.mjs",
     "test:desktop-rule-context-ui": "node tools/test-desktop-rule-reading.mjs",
@@ -78,9 +80,8 @@
     "test:desktop-key-note-capture-ui": "npm run build:desktop && node tools/test-desktop-key-note-capture.mjs",
     "test:desktop-note-room-uses-ui": "npm run build:desktop && node tools/test-desktop-note-room-uses.mjs",
     "test:desktop-key-lookup-ui": "npm run build:desktop && node tools/test-desktop-key-lookup.mjs",
-    "dev": "npm run start:desktop --",
-    "format": "prettier --write \"src/app/**/*.{ts,css}\" \"desktop/**/*.ts\" \"tests/{workspace,atlas,campaign,runtime,catalog,shared}/**/*.test.mjs\" \"tests/helpers/**/*.{mjs,ts}\" \"tools/{build-desktop,build-transfer-contracts,check-repository,check-module-boundaries,run-tests,test-selection,package-desktop,release-desktop,verify-release-source,native-session,atlas-*,test-desktop-*,measure-*,run-autonomy-scale}.{mjs,ts}\" \"tools/module-{graph,responsibilities}.mjs\"",
-    "format:check": "prettier --check \"src/app/**/*.{ts,css}\" \"desktop/**/*.ts\" \"tests/{workspace,atlas,campaign,runtime,catalog,shared}/**/*.test.mjs\" \"tests/helpers/**/*.{mjs,ts}\" \"tools/{build-desktop,build-transfer-contracts,check-repository,check-module-boundaries,run-tests,test-selection,package-desktop,release-desktop,verify-release-source,native-session,atlas-*,test-desktop-*,measure-*,run-autonomy-scale}.{mjs,ts}\" \"tools/module-{graph,responsibilities}.mjs\"",
+    "format": "prettier --write \"src/app/**/*.{ts,css}\" \"desktop/**/*.ts\" \"tests/{workspace,atlas,campaign,runtime,catalog,shared}/**/*.test.mjs\" \"tests/helpers/**/*.{mjs,ts}\" \"tools/{build-desktop,build-transfer-contracts,check-repository,check-module-boundaries,run-tests,test-selection,package-desktop,release-desktop,verify-release-source,native-*,atlas-*,test-desktop-*,measure-*,run-autonomy-scale}.{mjs,ts}\" \"tools/module-{graph,responsibilities}.mjs\" \"tools/{desktop-build-*,desktop-development-build,development-*,dev-desktop,desktop-styles}.{mjs,ts}\"",
+    "format:check": "prettier --check \"src/app/**/*.{ts,css}\" \"desktop/**/*.ts\" \"tests/{workspace,atlas,campaign,runtime,catalog,shared}/**/*.test.mjs\" \"tests/helpers/**/*.{mjs,ts}\" \"tools/{build-desktop,build-transfer-contracts,check-repository,check-module-boundaries,run-tests,test-selection,package-desktop,release-desktop,verify-release-source,native-*,atlas-*,test-desktop-*,measure-*,run-autonomy-scale}.{mjs,ts}\" \"tools/module-{graph,responsibilities}.mjs\" \"tools/{desktop-build-*,desktop-development-build,development-*,dev-desktop,desktop-styles}.{mjs,ts}\"",
     "check:environments": "node tools/check-environment-capabilities.mjs tsconfig.renderer.json && tsc -p tsconfig.worker.json && tsc -p tsconfig.browser-worker.json && tsc -p tsconfig.host.json && tsc -p tsconfig.domain.json",
     "verify:local": "node tools/run-local-check.mjs",
     "build:legacy:obsidian": "node tools/build-legacy-obsidian.mjs",
@@ -120,5 +121,5 @@
     "typescript": "^5.9.0"
   },
   "productName": "SaltMarcher",
-  "description": "Lokaler Arbeitsraum f\u00fcr Kampagnen, Atlas und Spielleitung"
+  "description": "Lokaler Arbeitsraum für Kampagnen, Atlas und Spielleitung"
 }

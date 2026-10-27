@@ -1,0 +1,212 @@
+/* runtime/music.css — styles owned by this surface; shared controls live in shared/. */
+
+#music {
+  padding: 1.5rem;
+  max-width: 1400px;
+  margin: auto;
+}
+
+#music .catalog-heading {
+  flex-wrap: wrap;
+}
+
+.music-console {
+  padding: 1.5rem;
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--blue);
+  background: #f7f9fc;
+}
+
+.music-console h3 {
+  font-family: 'Noto Serif', serif;
+  font-size: 1.2rem;
+  margin: 0 0 1rem;
+}
+
+.music-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  gap: 1.5rem;
+  margin: 1.5rem 0;
+}
+
+.music-columns > section {
+  min-width: 0;
+  padding: 1.2rem;
+  background: #f7f9fc;
+  border: 1px solid var(--line);
+}
+
+.music-library-tools {
+  margin: 1.5rem 0;
+}
+
+.audio-card {
+  padding: 1rem 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.audio-card h4 {
+  margin: 0.3rem 0;
+}
+
+.audio-card p {
+  font-size: 0.9rem;
+  margin: 0.6rem 0;
+  overflow-wrap: anywhere;
+}
+
+.music-queue-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.music-queue-row span {
+  flex: 1;
+  min-width: 150px;
+}
+
+.music-axis-row {
+  display: grid;
+  grid-template-columns: 1.3fr 1fr 1fr auto;
+  gap: 0.4rem;
+  margin: 0.7rem 0;
+}
+
+.music-timeline {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  margin: 1rem 0;
+}
+
+.music-timeline span {
+  white-space: nowrap;
+}
+
+#music .check-label input {
+  width: auto;
+}
+
+#music-error,
+#audio-problems {
+  color: var(--error);
+}
+
+#music-mini {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 8;
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+  padding: 0.5rem 1.5rem;
+  background: #dbe5ef;
+  border-top: 1px solid var(--line);
+  box-shadow: 0 -2px 14px #24344912;
+}
+
+#music-mini-title {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#music-mini-open {
+  font-size: 1.2rem;
+  padding: 0.25rem 0.7rem;
+}
+
+#music-context-description {
+  overflow-wrap: anywhere;
+}
+
+#audio-list {
+  max-height: 650px;
+  overflow: auto;
+}
+
+@media (max-width: 900px) {
+  .music-columns {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 900px) {
+  .music-axis-row {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 900px) {
+  #music-mini {
+    padding: 0.5rem;
+    gap: 0.35rem;
+  }
+}
+
+@media (max-width: 900px) {
+  #music-mini button {
+    padding: 0.4rem 0.5rem;
+  }
+}
+
+#live-soundboard {
+  margin-top: 22px;
+  border-top: 1px solid #dce2e8;
+  padding-top: 14px;
+}
+
+#live-soundboard > summary {
+  font-weight: 600;
+  font-size: 17px;
+}
+
+.soundboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 10px;
+  margin: 12px 0;
+}
+
+.soundboard-card {
+  border: 1px solid #dce2e8;
+  border-radius: 8px;
+  padding: 12px;
+  background: #fff;
+  min-width: 0;
+}
+
+.soundboard-card h4 {
+  margin: 0 0 6px;
+}
+
+.soundboard-card p {
+  font-size: 13px;
+  color: #526478;
+}
+
+.soundboard-card button {
+  white-space: normal;
+}
+
+.soundboard-queue-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 7px 0;
+}
+
+.soundboard-queue-row span {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}

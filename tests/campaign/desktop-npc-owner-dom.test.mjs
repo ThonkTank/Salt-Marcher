@@ -154,7 +154,7 @@ async function fixture(t, { unavailable = false } = {}) {
   };
   const file = require.resolve('../../.build/npc-owner.cjs');
   delete require.cache[file];
-  const ui = require(file);
+  const ui = require(file).createNpcEditor({ roots: [document.body], api: window.campaign });
   ui.initNpcs(
     (text, error) => messages.push({ text, error }),
     async () => {},

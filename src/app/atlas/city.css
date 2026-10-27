@@ -1,0 +1,97 @@
+/* atlas/city.css — styles owned by this surface; shared controls live in shared/. */
+
+.city-layout {
+  display: grid;
+  grid-template-columns: 240px minmax(340px, 1fr) 250px;
+  gap: 16px;
+  align-items: start;
+}
+
+.city-layout aside {
+  padding: 12px;
+  border: 1px solid #cfbfa1;
+  border-radius: 8px;
+  background: #faf6ed;
+}
+
+.city-layout label {
+  display: block;
+  margin: 8px 0;
+}
+
+.city-layout input:not([type='checkbox']),
+.city-layout select,
+.city-layout textarea {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.city-canvas {
+  overflow: auto;
+  background: #e9dfc8;
+  border: 1px solid #bfae8c;
+}
+
+.city-canvas svg {
+  display: block;
+  width: 100%;
+  min-width: 500px;
+  min-height: 400px;
+  max-height: 72vh;
+}
+
+.city-layout h3 {
+  margin-top: 8px;
+}
+
+@media (max-width: 1100px) {
+  .city-layout {
+    grid-template-columns: 210px minmax(300px, 1fr);
+  }
+}
+
+@media (max-width: 1100px) {
+  #city-inspector {
+    grid-column: 1/-1;
+  }
+}
+
+.city-activity {
+  margin-block: 1rem;
+}
+
+.city-activity-row {
+  padding: 1rem;
+  margin-block: 0.8rem;
+  border: 1px solid #b6c9cb;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.city-activity-row h3 {
+  margin-top: 0;
+}
+
+.city-activity-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  gap: 1.5rem;
+}
+
+.city-activity-columns h4 {
+  margin-top: 0.25rem;
+}
+
+.city-activity-columns p {
+  white-space: pre-wrap;
+}
+
+.city-activity input[type='checkbox'] {
+  width: auto;
+}
+
+@media (max-width: 900px) {
+  .city-activity-columns {
+    grid-template-columns: 1fr;
+  }
+}

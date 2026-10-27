@@ -99,3 +99,24 @@ Ausgangsbuild: `a559e21bc2f7cb66466981d473433c13ef3a4fcd`, Main-SHA256
 `44c4073159278edb4e3d6e75b5705fb613d1012308ef320ef68f78283e33ce90`.
 Die native Probe schreibt Build-Hashes, Prozess-Exits und Messwerte nach
 `.build/store-responsiveness/result.json` beziehungsweise `QA_EVIDENCE_DIR`.
+
+### Fehlerursprung über die Workergrenze
+
+Worker-Nachrichten `error`, `unknown` und `fatal` behalten ihren bisherigen Text und
+tragen zusätzlich eine interne Diagnose. Sie enthält den ursprünglichen Stack,
+Fehlername, optionalen Code und die Ursache, ergänzt um Phase, Store-Methode und
+Transport-ID, soweit vorhanden. Der Client rekonstruiert gewöhnliche Error-Objekte;
+übertragene Namen führen nie zur Instanziierung entfernter Klassen. Native Worker-
+Fehler, Exitcodes sowie lokale Encode-/Decode-/Sendefehler bleiben als Ursachen
+zuordenbar. Die Transport-ID ist kein Ersatz für fachliche Command-IDs oder Receipts.
+
+Die Diagnose ist strukturiert klonbar und begrenzt: maximal fünf Ursachenebenen,
+4096 Zeichen je Nachricht, 16384 Zeichen je Stack sowie kurze Namens-/Kontextfelder;
+Nachrichten-/Stackkürzungen und abgeschnittene Ursachen werden markiert. Zyklen und beliebige geworfene Werte dürfen keine zweite
+Transportstörung erzeugen. Fremde Getter und `toJSON` werden nicht für Diagnosen
+ausgeführt; der native lazy Error-Stackgetter wird gezielt unterstützt.
+
+Insbesondere bleibt eine nicht übertragbare Antwort **nach** Ausführung ein
+`StoreOutcomeUnknownError`, mit der Übertragungsstörung als Ursache. Diagnose und
+Protokollierung lösen weder Retry noch Workerersatz aus und ändern keine
+Schreibbestätigung, Fences oder Schließreihenfolge.

@@ -1,8 +1,10 @@
+import { readFileSync as readWorkspaceSource } from 'node:fs';
+import { itemCommitHost } from '../helpers/item-editor.mjs';
 import { mockCustomValidity } from '../helpers/input-validity.mjs';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { setTimeout as pause } from 'node:timers/promises';
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
@@ -171,7 +173,7 @@ async function fixture({ withShops = false } = {}) {
     );
   }
   const previous = { window: globalThis.window, document: globalThis.document },
-    { window, document } = parseHTML(readFileSync('src/app/workspace/index.html', 'utf8'));
+    { window, document } = parseHTML(readWorkspaceSource('src/app/workspace/index.html', 'utf8'));
   Object.assign(globalThis, { window, document });
   const restoreValidity = mockCustomValidity(window);
   Object.defineProperty(window.HTMLSelectElement.prototype, 'value', {
@@ -220,7 +222,14 @@ async function fixture({ withShops = false } = {}) {
     return response(() => store.executeProgress(c));
   };
   delete require.cache[require.resolve('../../.build/item-selection-ui.cjs')];
-  const ui = require('../../.build/item-selection-ui.cjs');
+  const ui = require('../../.build/item-selection-ui.cjs').createItemsEditor({
+    roots: [document.body],
+    api: window.campaign,
+    ...itemCommitHost(
+      () => w,
+      (text) => messages.push(text),
+    ),
+  });
   ui.initItems(
     (text) => messages.push(text),
     async () => {},

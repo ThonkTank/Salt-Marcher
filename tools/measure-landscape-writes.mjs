@@ -29,7 +29,7 @@ try {
   const before = process.memoryUsage(),
     start = performance.now();
   const fixture = populateMixedWorld(store, campaign, {
-    hexes: 5000,
+    terrainAreas: 5000,
     buildings: 1,
     details: 1,
     dungeonRooms: 1,
@@ -49,7 +49,7 @@ try {
     durationMs,
     fixture,
     method:
-      'Fresh Node process; RSS sampled after setup, not peak RSS, native UI latency or memory plateau. Hex timings cover the property writer transaction.',
+      'Fresh Node process; RSS sampled after setup, not peak RSS, native UI latency or memory plateau. Terrain timings cover free-form property writer transactions.',
   };
   writeFileSync(
     process.env.QA_EVIDENCE_FILE ?? '.build/landscape-write-memory.json',

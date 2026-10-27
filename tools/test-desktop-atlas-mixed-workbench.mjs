@@ -1,5 +1,6 @@
+import { createHash } from 'node:crypto';
 import assert from 'node:assert/strict';
-import { readFile, writeFile } from 'node:fs/promises';
+import { readFile, writeFile, copyFile } from 'node:fs/promises';
 import { gunzipSync } from 'node:zlib';
 import { createRequire } from 'node:module';
 import { createNativeSession } from './native-session.mjs';
@@ -20,8 +21,17 @@ const imageManifest = JSON.parse(
 const manifest = JSON.parse(
   await readFile(root + '/tests/fixtures/atlas/mixed-world-manifest.json', 'utf8'),
 );
-for (const zoom of [1, 2]) {
-  const output = root + '/.build/atlas-mixed-workbench/' + zoom;
+const refresh = process.argv.includes('--refresh-reference');
+const referenceDirectory = root + '/tests/fixtures/atlas/reference-images';
+if (!refresh) {
+  assert.equal(imageManifest.model, manifest.model);
+  assert.equal(imageManifest.fixtureSha256, manifest.fixtureSha256);
+}
+const requestedZoom = process.env.GM_QA_ZOOM ? Number(process.env.GM_QA_ZOOM) : null;
+assert(requestedZoom === null || [1, 2].includes(requestedZoom), 'GM_QA_ZOOM must be1 or2');
+for (const zoom of refresh ? [1] : requestedZoom === null ? [2, 1] : [requestedZoom]) {
+  const output =
+    (process.env.QA_EVIDENCE_DIR ?? root + '/.build/atlas-mixed-workbench') + '/' + zoom;
   const native = await createNativeSession({ root, output, name: 'atlas-mixed-workbench' }),
     results = [],
     errors = [];
@@ -44,11 +54,35 @@ for (const zoom of [1, 2]) {
     const open = async () => {
       const page = await native.launch(zoom);
       page.on('pageerror', (e) => errors.push(String(e)));
-      await native.app.evaluate(
-        ({ BrowserWindow }, { zoom }) =>
-          BrowserWindow.getAllWindows()[0].setContentSize(1280 * zoom, 852 * zoom),
-        { zoom },
+      const sizeWindow = () =>
+        native.app.evaluate(
+          ({ BrowserWindow }, { zoom }) => {
+            const window = BrowserWindow.getAllWindows()[0],
+              outer = window.getSize(),
+              content = window.getContentSize();
+            window.setFullScreen(false);
+            window.unmaximize();
+            window.setMinimumSize(
+              1280 * zoom + outer[0] - content[0],
+              852 * zoom + outer[1] - content[1],
+            );
+            window.setMaximumSize(
+              1280 * zoom + outer[0] - content[0],
+              852 * zoom + outer[1] - content[1],
+            );
+            window.setContentSize(1280 * zoom, 852 * zoom);
+          },
+          { zoom },
+        );
+      await sizeWindow();
+      assert.deepEqual(
+        await native.app.evaluate(({ BrowserWindow }) =>
+          BrowserWindow.getAllWindows()[0].getContentSize(),
+        ),
+        [1280 * zoom, 852 * zoom],
+        'Actual native content dimensions',
       );
+      await page.waitForFunction(() => innerWidth === 1280 && innerHeight === 852);
       await page.evaluate(
         (id) =>
           localStorage.setItem(
@@ -63,13 +97,39 @@ for (const zoom of [1, 2]) {
         .getByRole('button', { name: /Öffnen|Fortsetzen/ })
         .click();
       await atlasCanvasReady(page);
+      await sizeWindow();
+      console.log(
+        'Native window sizing',
+        await native.app.evaluate(({ BrowserWindow }) => {
+          const window = BrowserWindow.getAllWindows()[0];
+          return {
+            bounds: window.getBounds(),
+            content: window.getContentSize(),
+            minimum: window.getMinimumSize(),
+            maximum: window.getMaximumSize(),
+            zoom: window.webContents.getZoomFactor(),
+            maximized: window.isMaximized(),
+          };
+        }),
+      );
+      await page.waitForFunction(() => innerWidth === 1280 && innerHeight === 852);
+      console.log('Actual native image viewport', {
+        zoom,
+        ...(await page.evaluate(() => ({
+          width: innerWidth,
+          height: innerHeight,
+          ratio: devicePixelRatio,
+          canvas: document.querySelector('#campaign-map').getBoundingClientRect().toJSON(),
+        }))),
+      });
       return page;
     };
     let page = await open();
     async function checkImage(target, name) {
-      const expected = PNG.sync.read(
-        await readFile(root + `/tests/fixtures/atlas/reference-images/width-${target}.png`),
-      );
+      const expected =
+        refresh && name === 'reopened'
+          ? PNG.sync.read(await readFile(output + '/width-' + target + '.png'))
+          : PNG.sync.read(await readFile(referenceDirectory + `/width-${target}.png`));
       const view = imageManifest.views.find((v) => v.target === target).view;
       // Ort 2550 is at (0,0). At room-scale views it is offscreen; similar
       // brown roof pixels are not evidence of a missing place marker.
@@ -79,11 +139,25 @@ for (const zoom of [1, 2]) {
       for (let attempt = 0; attempt < 20; attempt++) {
         await native.capture(page, name);
         try {
+          const actual = PNG.sync.read(await readFile(output + '/' + name + '.png'));
           comparison = assertReferenceMapImage(
-            PNG.sync.read(await readFile(output + '/' + name + '.png')),
-            expected,
+            actual,
+            refresh && name !== 'reopened' ? actual : expected,
             { markerVisible },
           );
+          if (refresh && target === 32768) {
+            for (const [key, minimum] of Object.entries({
+              land: 1000,
+              forest: 100,
+              forestTexture: 100,
+              road: 100,
+              marker: 4,
+            }))
+              assert(
+                comparison.populations[key].actual >= minimum,
+                `Continuous baseline lacks visible ${key}`,
+              );
+          }
           break;
         } catch (error) {
           lastError = error;
@@ -108,6 +182,17 @@ for (const zoom of [1, 2]) {
             ) <
             width * 1e-7,
           nextWidth,
+        );
+        native.mark('zoom publication ' + nextWidth);
+        await page.evaluate(
+          () =>
+            new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))),
+        );
+        await atlasCanvasReady(page);
+        await page.waitForFunction(
+          () => document.querySelector('#campaign-map').dataset.terrainQuality === 'detail',
+          null,
+          { timeout: 120000 },
         );
       }
       await atlasCanvasReady(page);
@@ -189,12 +274,40 @@ for (const zoom of [1, 2]) {
     assert.deepEqual(errors, []);
     await native.close();
     await native.finish({
+      referenceRefresh: refresh,
       zoom,
       results,
       reopened,
       export: { width: png.width, height: png.height, landPixels: land },
       canonicalRevision: before,
     });
+    if (refresh) {
+      const evidence = JSON.parse(await readFile(output + '/result.json', 'utf8'));
+      for (const item of imageManifest.views) {
+        const name = '/width-' + item.target + '.png';
+        await copyFile(output + name, referenceDirectory + name);
+        item.imageSha256 = createHash('sha256')
+          .update(await readFile(output + name))
+          .digest('hex');
+      }
+      await writeFile(
+        referenceDirectory + '/manifest.json',
+        JSON.stringify(
+          {
+            ...imageManifest,
+            sourceCommit: manifest.sourceCommit,
+            model: manifest.model,
+            fixtureSha256: manifest.fixtureSha256,
+            rendererSource: evidence.source,
+            rendererDirty: evidence.dirty,
+            artifacts: evidence.artifacts,
+            refreshedAt: new Date().toISOString(),
+          },
+          null,
+          2,
+        ) + '\n',
+      );
+    }
   } catch (e) {
     await native.fail(e);
     throw e;

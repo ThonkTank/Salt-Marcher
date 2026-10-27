@@ -26,12 +26,19 @@ export class LocalAudioPlayer {
   private playGeneration = 0;
   private playPending = false;
   private layers = new Map<string, AmbienceLayer>();
-  constructor(private hooks: PlayerHooks) {
+  private readonly root: HTMLElement;
+  constructor(
+    private hooks: PlayerHooks,
+    mount: HTMLElement,
+  ) {
+    const document = mount.ownerDocument;
     const root = document.createElement('div');
+    this.root = root;
+    root.dataset.musicAudioRuntime = '';
     root.id = 'music-audio-runtime';
     root.hidden = true;
     for (let i = 0; i < 2; i++) {
-      const a = document.createElement('audio');
+      const a = this.root.ownerDocument.createElement('audio');
       a.preload = 'metadata';
       a.dataset.musicSlot = String(i);
       a.ontimeupdate = () => {
@@ -41,7 +48,14 @@ export class LocalAudioPlayer {
       root.append(a);
       this.slots.push(a);
     }
-    document.body.append(root);
+    mount.append(root);
+  }
+  dispose() {
+    this.reset();
+    for (const audio of this.slots) {
+      audio.onended = audio.onerror = audio.ontimeupdate = null;
+    }
+    this.root.remove();
   }
   position() {
     const a = this.slots[this.active]!;
@@ -218,13 +232,13 @@ export class LocalAudioPlayer {
     for (const [id, target] of desired) {
       let layer = this.layers.get(id);
       if (!layer) {
-        const a = document.createElement('audio');
+        const a = this.root.ownerDocument.createElement('audio');
         a.dataset.ambienceId = id;
         a.loop = true;
         a.preload = 'metadata';
         a.src = 'campaign://app/audio/' + encodeURIComponent(id);
         a.volume = 0;
-        document.getElementById('music-audio-runtime')!.append(a);
+        this.root.append(a);
         layer = {
           audio: a,
           fade: null,

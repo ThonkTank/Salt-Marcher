@@ -1,0 +1,1146 @@
+/* runtime/combat.css — styles owned by this surface; shared controls live in shared/. */
+
+#combat-panel .toolbar select {
+  width: auto;
+  max-width: 100%;
+}
+
+#combat-status {
+  font-weight: 600;
+}
+
+#combat-table .current-turn {
+  background: #cee0ed;
+  box-shadow: inset 4px 0 var(--blue);
+}
+
+#combat-table button[aria-pressed='true'] {
+  border-color: var(--blue);
+  font-weight: 600;
+}
+
+.combat-table-scroll {
+  overflow-x: auto;
+}
+
+#combat-attack-effect,
+#combat-save-effect,
+#combat-roll-effect,
+#combat-concentration-effect {
+  margin: 1rem 0;
+  padding: 1rem;
+  border: 2px solid var(--blue);
+  background: #fff;
+}
+
+#combat-attack-effect h3,
+#combat-save-effect h3,
+#combat-roll-effect h3,
+#combat-concentration-effect h3 {
+  margin-top: 0;
+}
+
+.combat-editor-columns {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 1.5rem;
+}
+
+.combat-fields {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.condition-shortcuts {
+  margin: 0.75rem 0;
+}
+
+.condition-shortcuts button[aria-pressed='true'] {
+  border-color: var(--blue);
+  background: #cee0ed;
+  font-weight: 600;
+}
+
+#combat-panel details {
+  margin: 1rem 0;
+}
+
+#combat-participant {
+  padding: 1rem;
+  border: 1px solid var(--line);
+  background: #fff;
+}
+
+#combat-final-notes {
+  white-space: pre-wrap;
+}
+
+.combat-hp-actions .toolbar {
+  margin-top: 0.65rem;
+}
+
+#fighter-death-saves,
+#fighter-effects {
+  margin: 1rem 0;
+  padding: 0.85rem;
+  border: 1px solid var(--line);
+  background: #f7f9fc;
+}
+
+#fighter-death-saves h4,
+#fighter-effects h4 {
+  margin-top: 0;
+}
+
+#fighter-effect-list p {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+@media (max-width: 850px) {
+  .combat-fields {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 850px) {
+  .combat-editor-columns {
+    grid-template-columns: 1fr;
+  }
+}
+
+#finish-xp-preview {
+  white-space: pre-wrap;
+}
+
+#combat-finish-dialog {
+  width: min(880px, calc(100vw - 2rem));
+  max-width: calc(100vw - 2rem);
+  max-height: calc(100dvh - 2rem);
+  overflow: auto;
+  padding: 1.2rem;
+}
+
+#combat-finish-dialog .finish-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+#combat-finish-dialog .finish-draft-tools {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin: 0.5rem 0;
+}
+
+#combat-finish-dialog .finish-draft-tools p {
+  flex: 1;
+  margin: 0;
+  font-size: 0.8rem;
+}
+
+#combat-finish-dialog .finish-draft-tools button {
+  font-size: 0.8rem;
+  padding: 0.4rem 0.6rem;
+}
+
+@media (max-width: 680px) {
+  #combat-finish-dialog .finish-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+#combat-finish-dialog .finish-actions {
+  position: sticky;
+  bottom: -1.2rem;
+  background: #fff;
+  padding: 1rem 0;
+}
+
+#combat-finish-dialog fieldset {
+  min-width: 0;
+  margin: 1rem 0;
+  border: 1px solid var(--line);
+}
+
+#combat-party-form {
+  padding: 0.8rem;
+  margin: 0.8rem 0;
+  border: 1px solid var(--line);
+  background: #f7f9fc;
+}
+
+#combat-party-form .toolbar label {
+  margin: 0;
+}
+
+#combat-party-select {
+  flex: 1;
+  width: auto;
+  min-width: 12rem;
+}
+
+#fighter-draft-status {
+  font-size: 0.85rem;
+  color: #4b6074;
+}
+
+#combat-party-initiative {
+  width: 7rem;
+}
+
+#combat-panel {
+  margin-top: 1.5rem;
+  padding: 1.25rem;
+  background: #f7f9fc;
+  border: 1px solid var(--line);
+  scroll-margin-top: calc(var(--workspace-content-offset) + var(--live-sticky-height));
+}
+
+#combat-attack-effect {
+  scroll-margin-top: calc(var(--workspace-content-offset) + var(--live-sticky-height, 0px));
+}
+
+.combat-desk {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.combat-roster,
+.combat-detail {
+  min-width: 0;
+}
+
+#combat-table button {
+  padding: 0.35rem 0.45rem;
+  white-space: normal;
+  text-align: left;
+}
+
+#combat-table td:nth-child(4) {
+  white-space: nowrap;
+}
+
+.combat-editor-columns {
+  display: block;
+}
+
+.combat-detail #combat-participant {
+  padding: 0.85rem;
+}
+
+#combat-selected-name {
+  margin: 0;
+}
+
+#fighter-quick-health {
+  font-weight: 600;
+  margin: 0.4rem 0;
+}
+
+#combat-participant .combat-fields {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+#combat-participant .condition-shortcuts {
+  gap: 0.3rem;
+}
+
+#combat-participant .condition-shortcuts button {
+  padding: 0.3rem 0.45rem;
+  font-size: 0.8rem;
+}
+
+#fighter-statblock-content {
+  overflow: auto;
+  font-size: 0.9rem;
+  max-height: 45vh;
+}
+
+#fighter-statblock-content h3 {
+  font-family: 'Noto Serif', serif;
+  color: var(--blue);
+  font-size: 1.5rem;
+  margin: 0.5rem 0;
+}
+
+#combat-creature-form .combat-fields {
+  grid-template-columns: 1fr 1fr;
+}
+
+#combat-creature-search-form .toolbar {
+  flex-wrap: wrap;
+}
+
+#combat-creature-search {
+  width: auto;
+  flex: 1;
+  min-width: 140px;
+}
+
+@media (min-width: 1100px) and (min-height: 740px) {
+  .combat-roster {
+    position: sticky;
+    top: calc(var(--workspace-content-offset) + var(--live-sticky-height, 0px));
+    max-height: calc(
+      100dvh - var(--workspace-content-offset) - var(--live-sticky-height, 0px) - 5rem
+    );
+    overflow: auto;
+  }
+}
+
+@media (max-width: 1099px) {
+  .combat-desk {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 1099px) {
+  .combat-table-scroll {
+    max-height: 45vh;
+    overflow: auto;
+  }
+}
+
+@media (max-width: 1099px) {
+  #combat-table thead {
+    position: sticky;
+    top: 0;
+    background: #f7f9fc;
+  }
+}
+
+.combat-roster #combat-add-details {
+  margin: 0.3rem 0 0.65rem;
+}
+
+.combat-roster #combat-add-details > summary {
+  cursor: pointer;
+  font-weight: 600;
+  padding: 0.5rem;
+  border: 1px solid var(--line);
+  background: #fff;
+}
+
+.combat-roster #combat-add-details[open] {
+  padding: 0.6rem;
+  background: #fff;
+  border: 1px solid var(--line);
+}
+
+.combat-roster #combat-add-form .combat-fields {
+  grid-template-columns: 1fr 1fr;
+}
+
+#combat-controls {
+  background: #f7f9fc;
+  padding: 0.5rem 0;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  border-bottom: 1px solid var(--line);
+}
+
+#combat-selection-hint {
+  margin-top: 0;
+  padding: 0.5rem;
+  background: #edf1f6;
+}
+
+#combat-table th:nth-child(1) {
+  width: 48%;
+}
+
+#combat-table th:nth-child(2),
+#combat-table th:nth-child(3) {
+  width: 2.7rem;
+  white-space: nowrap;
+}
+
+#combat-table th:nth-child(3) {
+  width: 3.5rem;
+}
+
+#combat-table .combat-value {
+  padding: 0.3rem 0.4rem;
+  text-align: center;
+  border-color: #8aa5bd;
+  white-space: normal;
+}
+
+#combat-table .combat-value:hover {
+  background: #e5eff7;
+}
+
+#combat-table .combat-armor {
+  white-space: nowrap;
+}
+
+.combat-resolution {
+  margin: 1rem 0;
+  padding: 1rem;
+  border: 1px solid #b9cbd5;
+  border-radius: 6px;
+  background: #f6f9fc;
+}
+
+.combat-resolution-treasure {
+  padding: 0.65rem 0;
+  border-top: 1px solid #d1dce4;
+}
+
+.combat-resolution-treasure p {
+  margin: 0.3rem 0;
+}
+
+/* Keep action decisions near the roster; reference prose is optional. */
+#fighter-actions {
+  padding: 0.65rem 0;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 0.8rem;
+}
+
+#fighter-actions select {
+  width: 100%;
+}
+
+#fighter-actions .toolbar {
+  margin: 0.6rem 0;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+#fighter-actions details p {
+  white-space: pre-wrap;
+  font-size: 0.9rem;
+}
+
+.combat-area {
+  padding: 0.85rem;
+  background: #eef4f8;
+  border: 1px solid var(--blue);
+  margin-bottom: 0.8rem;
+}
+
+.combat-area h3 {
+  margin: 0 0 0.7rem;
+}
+
+.combat-area > p {
+  font-size: 0.85rem;
+}
+
+.combat-area-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(90px, 1fr) auto;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0.5rem 0;
+}
+
+.combat-area-row > span {
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+.combat-area .toolbar {
+  flex-wrap: wrap;
+}
+
+.combat-area input[type='number'] {
+  max-width: 100px;
+}
+
+@media (max-width: 650px) {
+  .combat-area-row {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 650px) {
+  .combat-area-row > span {
+    grid-column: 2;
+  }
+}
+
+/* Keep the operational roster scannable without duplicating the HP editor. */
+#combat-table {
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.88rem;
+  margin: 0.25rem 0;
+  table-layout: fixed;
+  width: 100%;
+}
+
+#combat-table th:first-child {
+  width: 32%;
+}
+
+#combat-table th:nth-child(4) {
+  width: 21%;
+}
+
+#combat-table th:last-child {
+  width: 27%;
+}
+
+#combat-table td:last-child {
+  overflow-wrap: normal;
+  hyphens: auto;
+  font-size: 0.8rem;
+}
+
+#combat-table td:first-child button {
+  max-width: 100%;
+  overflow-wrap: normal;
+}
+
+.combat-hit {
+  padding: 0.85rem;
+  background: #eef4f8;
+  border: 1px solid var(--blue);
+  margin-bottom: 0.8rem;
+}
+
+.combat-hit h3 {
+  margin: 0 0 0.6rem;
+}
+
+.combat-hit > p {
+  font-size: 0.85rem;
+}
+
+.combat-hit > .toolbar {
+  margin: 0.5rem 0;
+  flex-wrap: wrap;
+}
+
+.combat-hit > .toolbar select {
+  flex: 1;
+  min-width: 120px;
+}
+
+.combat-hit-part {
+  padding: 0.5rem 0;
+  border-top: 1px solid var(--line);
+}
+
+.combat-hit-part .check-label {
+  margin: 0 0 0.3rem;
+  font-size: 0.85rem;
+}
+
+.combat-hit-part .toolbar {
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.combat-hit-part input[type='number'] {
+  width: 80px;
+}
+
+.combat-hit-part select {
+  width: 105px;
+}
+
+.combat-hit-part small {
+  min-width: 70px;
+}
+
+.combat-hit-part button {
+  padding: 0.45rem;
+}
+
+.combat-hit > .check-label {
+  margin: 0.5rem 0;
+}
+
+#combat-hit-effect {
+  scroll-margin-top: var(--workspace-content-offset);
+}
+
+/* Keep a mixed encounter readable without repeating the initiative explanation below every name. */
+#combat-table td small {
+  color: #4b6074;
+  font-size: 0.72rem;
+  margin: 0.1rem 0 0;
+  display: inline;
+  margin-left: 0.4rem;
+  overflow-wrap: anywhere;
+}
+
+#combat-table td:first-child {
+  min-width: 8rem;
+}
+
+#combat-table th,
+#combat-table td {
+  border-bottom: 1px solid var(--line);
+  overflow-wrap: anywhere;
+  padding: 0.25rem 0.3rem;
+}
+
+#fighter-group-name-field {
+  grid-column: 1/-1;
+}
+
+#combat-table td:first-child > button {
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+#combat-initiative-dialog {
+  width: min(760px, calc(100vw - 2rem));
+  max-width: calc(100vw - 2rem);
+  max-height: calc(100dvh - 2rem);
+  overflow: auto;
+  padding: 1.2rem;
+}
+
+#combat-initiative-dialog::backdrop {
+  background: #172b405c;
+}
+
+#combat-initiative-dialog h2 {
+  margin: 0;
+  flex: 1;
+}
+
+#combat-initiative-dialog .toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+#combat-initiative-dialog .toolbar label {
+  margin: 0;
+}
+
+#combat-initiative-dialog select {
+  width: auto;
+}
+
+#initiative-rows {
+  margin: 1rem 0;
+}
+
+.initiative-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 7rem;
+  gap: 1rem;
+  align-items: center;
+  margin: 0;
+  padding: 0.4rem 0.2rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.initiative-row small {
+  display: block;
+  font-weight: 400;
+  font-size: 0.8rem;
+  color: #4b6074;
+  overflow-wrap: anywhere;
+}
+
+.initiative-row input {
+  font-size: 1.1rem;
+  text-align: center;
+}
+
+#initiative-status {
+  min-height: 1.5em;
+}
+
+.initiative-actions {
+  margin-top: 1rem;
+}
+
+#initiative-preserved {
+  width: 100%;
+}
+
+@media (max-width: 520px) {
+  #combat-initiative-dialog {
+    padding: 0.8rem;
+  }
+}
+
+@media (max-width: 520px) {
+  .initiative-row {
+    grid-template-columns: minmax(0, 1fr) 5rem;
+    gap: 0.5rem;
+  }
+}
+
+#combat-area-effect {
+  margin: auto;
+  width: min(880px, calc(100vw - 2rem));
+  max-width: calc(100vw - 2rem);
+  max-height: calc(100dvh - 2rem);
+  padding: 1.2rem;
+  overflow: auto;
+}
+
+#combat-area-effect::backdrop {
+  background: #172b405c;
+}
+
+.combat-area-tools {
+  display: grid;
+  grid-template-columns: 9rem minmax(12rem, 1fr) auto;
+  gap: 0.7rem;
+  align-items: end;
+}
+
+.combat-area-tools > button {
+  margin-bottom: 0;
+}
+
+.combat-area-row {
+  display: grid;
+  grid-template-columns: minmax(12rem, 1fr) minmax(9rem, 11rem) minmax(9rem, 11rem);
+  align-items: center;
+  gap: 0.4rem 0.7rem;
+  margin: 0;
+  padding: 0.45rem 0.1rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.combat-area-row .check-label {
+  margin: 0;
+}
+
+.combat-area-row select {
+  font-size: 0.85rem;
+  width: 100%;
+  min-width: 0;
+}
+
+.combat-area-preview {
+  display: block;
+  margin: 0;
+  font-size: 0.85rem;
+  color: #314b63;
+  overflow-wrap: anywhere;
+}
+
+.combat-area-head {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #314b63;
+}
+
+#combat-area-effect > .toolbar {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 680px) {
+  .combat-area-tools {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 680px) {
+  .combat-area-tools > button {
+    grid-column: 1/-1;
+  }
+}
+
+@media (max-width: 680px) {
+  .combat-area-row {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 680px) {
+  .combat-area-row > label {
+    grid-column: 1/-1;
+  }
+}
+
+@media (max-width: 680px) {
+  .combat-area-head {
+    display: none;
+  }
+}
+
+#combat-area-effect h2 {
+  margin: 0 0 0.8rem;
+}
+
+#combat-area-effect .combat-area-head > span {
+  grid-column: auto;
+}
+
+#combat-area-amount {
+  max-width: none;
+  width: 100%;
+}
+
+.combat-group-dialog {
+  width: min(760px, 92vw);
+  max-width: 760px;
+  max-height: 88vh;
+  overflow: auto;
+}
+
+.combat-group-dialog > label {
+  display: block;
+  margin-block: 1rem;
+}
+
+.combat-group-dialog select {
+  display: block;
+  width: 100%;
+}
+
+#combat-group-members {
+  max-height: 34vh;
+  overflow: auto;
+  display: grid;
+  gap: 0.6rem;
+  margin-block: 1rem;
+}
+
+#combat-group-members .check-label {
+  margin: 0;
+  padding: 0.5rem;
+  border-bottom: 1px solid var(--line);
+}
+
+#combat-group-status {
+  white-space: pre-wrap;
+}
+
+.combat-scene-group-card {
+  margin: 0.7rem 0;
+  padding: 0.7rem;
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--blue);
+}
+
+.combat-scene-group-card p {
+  margin: 0.3rem 0;
+  font-size: 0.85rem;
+}
+
+.combat-group-actions {
+  position: sticky;
+  bottom: -1.7rem;
+  padding: 0.7rem 0;
+  background: var(--white);
+  border-top: 1px solid var(--line);
+}
+
+/* Saved monster partitions project as compact cards; individual actors remain reachable. */
+#combat-table .combat-mob-row > td {
+  padding: 0.6rem 0.2rem;
+}
+
+.combat-mob-card {
+  border: 1px solid #8aa5bd;
+  border-radius: 0.4rem;
+  padding: 0.65rem;
+  background: #f1f5fa;
+}
+
+.combat-mob-card .toolbar {
+  gap: 0.45rem;
+  margin: 0.25rem 0;
+}
+
+.combat-mob-card p {
+  font-size: 0.8rem;
+  margin: 0.35rem 0;
+}
+
+.combat-mob-card strong {
+  flex: 1;
+}
+
+.combat-mob-card button {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+.combat-mob-card button[aria-pressed='true'] {
+  background: #d2e3ef;
+}
+
+#combat-table .completed-turn:not(.current-turn) {
+  background: #edf0f2;
+}
+
+#combat-table tr[hidden] {
+  display: none;
+}
+
+.combat-npc-losses {
+  border-block: 1px solid var(--border);
+  margin-block: 1rem;
+  padding-block: 0.75rem;
+}
+
+.combat-npc-loss-list {
+  max-height: 20rem;
+  overflow: auto;
+}
+
+.combat-npc-loss-list article {
+  padding: 0.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.combat-selection-group {
+  padding: 0.55rem;
+  border-bottom: 1px solid var(--border);
+  overflow-wrap: anywhere;
+}
+
+.combat-selection-group > label {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+}
+
+.combat-selection-group details {
+  margin: 0.5rem 0 0 1.6rem;
+}
+
+.combat-selection-group input[type='checkbox'] {
+  flex: 0 0 1rem;
+  width: 1rem;
+  height: 1rem;
+  margin: 0.2rem 0 0;
+}
+
+.combat-selection-group span {
+  flex: 1;
+  min-width: 0;
+}
+
+#combat-selection-meter {
+  width: 100%;
+  height: 1rem;
+}
+
+#combat-selection-result {
+  font-weight: 600;
+}
+
+/* Keep the current fight ahead of encounter browsing and repair actions. */
+#combat-panel .combat-heading {
+  align-items: center;
+  gap: 0.65rem;
+}
+
+#combat-panel .combat-heading h2 {
+  margin: 0.3rem auto 0.3rem 0;
+}
+
+#combat-panel #combat-history-details {
+  margin: 0;
+  position: relative;
+}
+
+#combat-history-details > summary {
+  cursor: pointer;
+  padding: 0.6rem;
+}
+
+#combat-history-details[open] > .toolbar {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  z-index: 6;
+  background: var(--white);
+  border: 1px solid var(--line);
+  padding: 0.75rem;
+  box-shadow: 0 5px 15px #24344924;
+  min-width: min(32rem, 70vw);
+}
+
+/* Only selected area targets need save and defense controls. */
+.combat-area:not(.show-defenses) .combat-area-row {
+  grid-template-columns: minmax(12rem, 1fr) minmax(9rem, 11rem);
+}
+
+.combat-area-footer {
+  position: sticky;
+  bottom: -1.2rem;
+  background: #eef4f8;
+  padding: 0.65rem 0;
+  border-top: 1px solid var(--line);
+  z-index: 1;
+}
+
+.combat-area-footer > p {
+  margin: 0 0 0.5rem;
+  font-size: 0.85rem;
+  min-height: 3.2em;
+}
+
+.combat-area-footer > .toolbar {
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+#combat-area-overrides {
+  width: auto;
+}
+
+@media (max-width: 680px) {
+  .combat-area:not(.show-defenses) .combat-area-row {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+#combat-area-targets > .combat-area-row {
+  min-height: 3.6rem;
+}
+
+#combat-add-dialog {
+  width: min(42rem, calc(100vw - 1rem));
+  max-width: calc(100vw - 1rem);
+  max-height: calc(100dvh - 1rem);
+  overflow: auto;
+  padding: 1rem;
+}
+
+#combat-add-dialog > .toolbar {
+  justify-content: space-between;
+  align-items: center;
+}
+
+#combat-add-title {
+  margin: 0;
+}
+
+#combat-add-dialog #combat-creature-source {
+  margin-bottom: 1rem;
+}
+
+#combat-add-dialog #combat-creature-search-form .toolbar {
+  flex-wrap: nowrap;
+}
+
+#combat-add-dialog details {
+  margin-top: 1rem;
+}
+
+#combat-add-open {
+  width: 100%;
+  text-align: left;
+  margin-bottom: 0.75rem;
+}
+
+/* Reinforcement keeps the selected troop, quantity and confirmation together. */
+#combat-add-dialog > .toolbar h2 {
+  margin: 0;
+}
+
+#combat-add-context {
+  margin: 0.4rem 0 0.7rem;
+  line-height: 1.3;
+}
+
+#combat-reinforcement {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0.5rem 0.7rem;
+}
+
+#combat-reinforcement > label {
+  margin: 0;
+}
+
+#combat-reinforcement > form,
+#combat-creature-status {
+  grid-column: 1/-1;
+  min-width: 0;
+}
+
+#combat-creature-status {
+  margin: 0;
+  line-height: 1.3;
+}
+
+#combat-creature-form .reinforcement-pick {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 5.5rem;
+  gap: 0.7rem;
+  align-items: end;
+}
+
+#combat-creature-form label {
+  margin: 0.25rem 0;
+}
+
+#combat-creature-form .reinforcement-confirm {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+  align-items: end;
+  margin-top: 0.6rem;
+}
+
+#combat-creature-initiative-field {
+  flex: 1 1 10rem;
+}
+
+#combat-creature-add {
+  flex: 1 1 auto;
+}
+
+#combat-creature-explanation {
+  margin: 0.35rem 0;
+  line-height: 1.3;
+}
+
+#combat-add-dialog > details {
+  margin-top: 0.5rem;
+}
+
+@media (max-height: 600px) {
+  .combat-roster {
+    position: static;
+    max-height: none;
+    overflow: visible;
+  }
+}
+
+@media (max-height: 600px) {
+  .combat-table-scroll {
+    max-height: none;
+  }
+}
+
+#combat-area-selection {
+  min-width: 0;
+  max-width: 18rem;
+}
+
+@media (max-width: 680px) {
+  #combat-area-selection {
+    grid-column: 1/-1;
+    width: 100%;
+    max-width: none;
+  }
+}

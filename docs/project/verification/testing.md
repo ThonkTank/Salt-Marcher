@@ -2,7 +2,7 @@
 
 Status: Current; offene Ziele sind als solche beschrieben.
 Owner: project
-Last Reviewed: 2026-10-24 (Struktur und Quellen; Fachabnahme separat)
+Last Reviewed: 2026-10-27 (native Sitzungen und Einstiegskatalog; Fachabnahme separat)
 Source of Truth: Dieses Dokument besitzt das benannte Thema; Code belegt den Iststand, das Abnahmeregister den Prüfstand.
 
 `npm test` führt die aktive Auswahl lokal standardmäßig mit einem Testprozess aus.
@@ -122,7 +122,7 @@ Bedienabnahme oder Owner-Abnahme.
 `tools/native-session.mjs` besitzt das isolierte Profil, den Busproxy, Start,
 echten Browserzoom, frische Fensteraufnahmen und reguläres Close/Fresh. Ein
 Ergebnis wird erst nach normalen Prozessenden, verschwundenen PIDs, fehlerfreiem
-Renderer und unveränderten elf Runtimeartefakten veröffentlicht. Ein neuer
+Renderer und unveränderten zwanzig Runtimeartefakten veröffentlicht. Ein neuer
 Lauf entfernt vorherige Erfolgsdaten bereits vor dem Fixtureaufbau. Notfall-Cleanup
 ist kein normaler Prozessabschluss. Profile liegen unter `~/.cache/saltmarcher/ui/` auf Disk, unabhängig vom
 RAM-basierten `/tmp`.
@@ -145,13 +145,96 @@ bei 200 Prozent. Die Gegenprobe gegen falsche Prozesserfolge steht in
 Bedienabnahme bleiben getrennt.
 
 
+### Einheitlicher Prozessbesitz und Sonderprotokolle
+
+`runNativeProbe` veröffentlicht den Erfolgsbeleg erst nach Rückkehr des ganzen
+Szenarios. Auch SQLite-Assert nach dem Schließen und die vollständige
+Busproxy-Bereinigung gehören damit vor den Erfolg. Der gemeinsame Unterbau
+nimmt vor jedem normalen Schließen ein frisches, nicht leeres Fensterbild auf.
+Notfallbeendigung wartet auf Prozessende und PID-Verschwinden und bleibt ein
+Fehlerpfad. Fehlerbelege werden nach dem Cleanup mit dessen tatsächlichem
+Ergebnis aktualisiert, auch bei manuellen Sitzungsaufrufen mit `fail` vor `finally`/`dispose`; Profile bleiben zur Diagnose erhalten. Wiederholtes
+oder gleichzeitiges `dispose` wartet auf dasselbe vollständige Cleanup. Ein
+vorzeitig beendeter Busproxy und eine erforderliche SIGKILL-Eskalation verhindern
+die Qualifikation auch dann, wenn die Fachassertionen bereits bestanden haben.
+
+`tools/native-process.mjs` besitzt begrenztes Warten, beobachtetes ChildProcess-Ende,
+exakten Profilbesitz und eskalierendes Cleanup. Electron schreibt unter Linux
+seinen Prozesstitel um; auch diese Form wird nur mit vollständigem Profilpfad
+zugeordnet. Der Update-Adapter registriert seinen vom Produkt gestarteten
+Nachfolger zusätzlich mit PID-Startidentität. `tools/ui-session.py` bleibt die
+äußere Absicherung und meldet einen vermeintlich erfolgreichen Lauf mit noch
+lebenden eigenen Prozessen als Fehler. Native Sitzungen registrieren ihre genauen
+Erfolgsdateien beim Wrapper, einschließlich eigener Ergebnisnamen. Bei Fehler,
+Abbruch oder nötiger äußerer Bereinigung entfernt er diese Dateien und schreibt
+`wrapper-failure.json`; die temporäre Registrierung endet mit diesem Wrapper.
+Fachliche Fehlerbelege und Screenshots bleiben erhalten.
+
+`node tools/native-probes.mjs` liefert die aktuelle Einstiegsübersicht.
+`check:repo` verbietet direkte Starter und eigene Kill-/Close-Pfade in normalen
+Produktproben. Ausnahmen sind ausdrücklich im selben Modul beschrieben:
+Entwicklung nutzt das stdin-Neustartprotokoll; Paketupdates beobachten den vom
+Updater gestarteten Nachfolger. Beide verwenden die gemeinsamen Prozessprimitive.
+Entwicklung bindet jeden gestarteten Prozess an die Artefakthashes seiner
+Generation und ein frisches sichtbares Bild. Der Update-Adapter bindet die
+signierten Testpakete, installierten Laufzeiten und beide Prozessenden an den
+Beleg. Die Baseline orchestriert nur andere Proben. Sie registriert jedes Wrapperkind,
+leitet Abbruch genau einmal weiter und wartet dessen begrenzte Bereinigung ab. `test-desktop-relief-prototype.mjs`
+ist ein historischer R0-Prototyp und zählt nicht als aktuelle Produktqualifikation.
+Die gemeinsame Artefaktliste umfasst auch nachgeladene Atlas-/Einstellungsbundle
+und die getrennte Spieleranzeige. Kopierte vollständige Laufzeiten und Paketläufe benötigen explizite
+`launchConfigured`-Adapter; ihre tatsächlich gestarteten Dateien werden gehasht
+und bei Neustart sowie Abschluss erneut verglichen.
+
+Jeder angeforderte Start wird vor seinen Vorbedingungen aufgezeichnet. Auch ein
+von der Fachprobe abgefangener Start- oder Neustartfehler verhindert einen
+Erfolgsbeleg; nur vollständig bereit gewordene Starts können qualifiziert werden.
+
+Gezielte technische Gegenproben stehen in
+`tests/shared/native-process.test.mjs`, `tests/shared/native-probes.test.mjs`
+und `tools/native-session-check.mjs`. Die letzte läuft wie eine Produktprobe
+seriell unter `verify:local` und `ui-session.py`; sie provoziert Fixture-, Start-,
+Renderer-, nachgelagerte Assert- und Notfallfehler (einschließlich erzwungenem
+SIGKILL bei verweigertem SIGTERM) sowie unerwartetes Ende,
+Close-Timeout, fehlgeschlagenen oder abgefangenen Neustart, Orchestratorabbruch,
+manuelles Fehlerprotokoll vor dem Cleanup,
+verlorenen Proxy und einen gleichzeitig
+lebenden fremden Prozess. Die Node-Gegenprobe prüft zusätzlich, dass der äußere
+Wrapper auch einen bereits geschriebenen Erfolg nach Prozessleck oder späterem
+Abbruch zurücknimmt. Ein grüner Unterbautest ersetzt
+keine erfolgreiche Fachprobe. Veraltete Selektoren, fachliche Erwartungsfehler
+und nicht abgeschlossene Ausgangsfixtures werden als solche berichtet.
+
+
+### Abgrenzung der nativen Umstellungsbelege vom 27.10.2026
+
+Alle 80 direkt migrierten Produktproben wurden aufgerufen: 32 bestanden,
+46 scheiterten an fachlichen beziehungsweise Fixture-/UI-Erwartungen und zwei
+blieben an Ausgangsfixtures blockiert; 77 erreichten einen nativen Startauftrag.
+Bei 26 roten Fällen belegt der Vergleich mit dem ursprünglichen Skript keinen
+identischen Vorfehler. Diese Fälle sind offen, nicht als regressionsfrei freigegeben.
+Die letzte zentrale Fehlerbelegkorrektur wurde mit 29 Unterbautests und 15 echten
+nativen Negativfällen geprüft; danach wurden nicht sämtliche 80 Fachproben erneut
+aufgerufen. Die positiven Fachbelege gehören daher zu ihren jeweiligen Laufständen.
+
+Der erneuerte kontinuierliche Referenzwelt-Bildlauf bestand bei 100 Prozent.
+Bei 200 Prozent blieb der Maßstab 64 rot: 2534 gemessene statt 4461 erwarteter
+Kontrastkanten unterschreiten die unverändert verlangten 65 Prozent. Ob Ursache
+im Renderer oder in der DPI-abhängigen Vergleichsmethode liegt, ist offen.
+Technische Prozessqualifikation und diese Teilbelege sind keine vollständige
+Produkt-, Darstellungs- oder menschliche Bedienabnahme.
+
+
 ## Vollständige Atlas-Referenzwelt
 
-`tests/fixtures/atlas/mixed-world.sqlite.gz` bewahrt die fachlichen Inhalte der
+`tests/fixtures/atlas/mixed-world.sqlite.gz` verwendet die übrigen fachlichen Inhalte der
 Referenzwelt aus Commit `16eb0aa8807ac21704abfea5412ac3a22033a23a` im aktuellen
 Schema 55. `mixed-world-manifest.json` daneben bindet die ursprüngliche Datei
 per SHA-256 und alle kanonischen Tabellen per Anzahl und Inhaltsprüfsumme.
-IDs, Payloads, Verknüpfungen und History gehören zur Referenz.
+Die 100.000 alten hexagonalen Gelände-Zellen werden durch unregelmäßige freie
+Eigenschaftsflächen ersetzt; alte Zellquellen bleiben nicht Teil des Prüfszenarios.
+`originalTables` bindet die Herkunft, `tables` die aktuelle kontinuierliche Testwelt.
+Übrige IDs, Payloads, Verknüpfungen und History bleiben erhalten.
 
 Wiederherstellung aus dem lokal vorhandenen Git-Objekt:
 
@@ -160,12 +243,12 @@ node tools/create-atlas-mixed-fixture.mjs tests/fixtures/atlas/mixed-world.sqlit
 ```
 
 Das Werkzeug akzeptiert ausschließlich diese bekannte Schema-54-Testdatei,
-entfernt deren historische Migrationstabelle und setzt Schema 55. Es ist kein
+entfernt deren historische Migrationstabelle, ersetzt das alte Gelände und setzt Schema 55. Es ist kein
 Produktimport und erweitert nicht die unterstützten Anwendungsformate. Ein
 Checkout ohne das historische Git-Objekt kann die eingecheckte Testwelt prüfen,
 aber erst nach Beschaffung dieses Commits neu erzeugen.
 
-Die Welt enthält 100.000 Geländequellen, 1.028 Höhenkacheln, 5.000 Ortsmarker,
+Die Welt enthält 100.000 kontinuierliche Geländeflächen, 1.028 Höhenkacheln, 5.000 Ortsmarker,
 1.024 Straßen, 1.024 Vegetationsobjekte, 5.000 Raumgruppen und 4.001 Räume im
 großen Dungeon. Der kleine parametrische Generator `populateMixedWorld` erzeugt
 nur ein Inventar für isolierte Tests; er ersetzt diese vollständige Welt nicht.
@@ -174,13 +257,23 @@ nur ein Inventar für isolierte Tests; er ersetzt diese vollständige Welt nicht
 und gezielte Verluste. Die nativen Vergleiche in
 `tools/test-desktop-atlas-mixed-workbench.mjs` prüfen fünf Maßstäbe bei 100/200 %,
 sichtbare Kartenausschnitte, Neustart und Bildexport. Ihre Referenzbilder unter
-`tests/fixtures/atlas/reference-images/` stammen vom Baseline-Lauf des genannten
-Commits vor der Bereinigung; sie werden nicht aus dem Prüfling aktualisiert.
+`tests/fixtures/atlas/reference-images/` gehören zur kontinuierlichen Testwelt. Eine ausdrückliche Neuerzeugung mit
+`--refresh-reference` prüft zuerst Inventar, sichtbare Populationen, Neustart und
+Export; normale Prüfläufe ändern diese Bildreferenzen nicht.
+Ohne Auswahl läuft die Probe bei 200 und 100 Prozent; `GM_QA_ZOOM=1` oder `2`
+prüft einen Zoomfaktor, ohne Fachassertionen zu ändern. Der neue technische
+Referenzstand ersetzt keine Besitzerabnahme der Darstellung.
 Die Bildmetadaten binden Runtime-Hashes, PNG-Prüfsummen und tatsächliche
 Kameraausschnitte; jeder Zoomschritt muss vor dem nächsten abgeschlossen sein.
+Der 200-%-Vergleich braucht reale 2560 × 1704 Inhaltspixel bei unverändertem
+CSS-Viewport. Die Probe setzt dazu die tatsächlichen nativen Mindest- und Höchstmaße
+(einschließlich gemessenem Fensterrahmen) und prüft Inhaltsmaße, CSS-Viewport,
+Kamera und Zoom erneut nach dem Öffnen. Dadurch kann die Fensterverwaltung das
+Vergleichsfenster nicht nachträglich auf die Bildschirmgröße begrenzen.
+
 Die Bildprüfung vergleicht einen festen Kartenausschnitt ohne Bedienoberfläche,
-mit begrenzter RGB-Abweichung und Mindestanteilen für Land, Wald, Straße und
-Ortsmarker. Ladebereitschaft und Objektzahlen allein sind kein Bildnachweis.
+mit begrenzter RGB-Abweichung, Mindestanteilen für Land, Wald, Straße und
+Ortsmarker sowie einer zusätzlichen Waldstrukturprüfung. Ladebereitschaft und Objektzahlen allein sind kein Bildnachweis.
 
 ## Kleiner nativer Basissatz
 
@@ -305,3 +398,48 @@ zur automatisch entdeckten Suite. Allgemeine Katalogidentitäts-, Quellhash- und
 Payloadprüfungen bleiben in `tests/catalog/catalog-build-asset.test.mjs` aktiv.
 Historische `main.js`-Budgetwerte sind keine Budgets der Desktopanwendung.
 Auch diese optionalen schweren Aufrufe lokal über `verify:local` ausführen.
+
+## Kurzer Desktop-Entwicklungszyklus
+
+`npm run dev` installiert bei Bedarf die deklarierte Electron-Runtime, startet den
+vorhandenen lokalen Ressourcenrahmen und beobachtet `src/`, `desktop/` und
+`resources/`. Der erste Build und spätere Änderungen laufen seriell. Die Anwendung
+verwendet `.build/desktop-dev/runtime` und ein dauerhaftes, pro Checkout getrenntes
+Profil unter `$XDG_DATA_HOME/saltmarcher/development/<Checkout-Hash>` (ersatzweise
+`~/.local/share`). Produktprofile und `.build/desktop` werden dabei nicht verwendet.
+
+CSS wird nach erfolgreichem Build an seiner vorhandenen Kaskadenposition ersetzt;
+auch entfernte Regeln verschwinden. DOM, Fokus und offene Eingaben bleiben erhalten.
+TypeScript, HTML-Dokumente, Preloads und Worker starten die Anwendung erst nach
+einem erfolgreichen vollständigen Änderungsstand neu. Der normale Schließpfad
+sichert Entwürfe und wartet auf laufende Speicheraufträge. Ein blockierter
+Schließvorgang wartet auf dessen fachliche Klärung; der Starter erzwingt keinen
+Prozessabbruch. Ein Neustart setzt die normale Startoberfläche voraus; flüchtige
+Navigation und nicht von einem Entwurfsbesitzer gesicherte Eingaben werden nicht
+zusätzlich gespeichert.
+
+Buildfehler lassen den letzten erfolgreichen Stand laufen; ein korrigierter oder
+neu angelegter Import löst den nächsten Versuch aus. Änderungen werden gebündelt,
+und ein während des Builds überholter Stand wird verworfen. Konsolenmeldungen
+zeigen geänderte Dateien sowie Build- und Gesamtzeit. Änderungen an Paket-/Lock-,
+Datenformat- und Buildkonfiguration verlangen einen Neustart des Entwicklungsbefehls;
+der laufende Watcher übernimmt danach keine weiteren Generationen. `Ctrl+C` und
+das normale Schließen des Fensters beenden auch den Watcher. Nach einem abgestürzten
+Starter bleibt gegebenenfalls `.build/desktop-dev/session.lock`: erst den dort
+vermerkten Prozess prüfen und die Datei nur entfernen, wenn dieser beendet ist.
+
+Die gemeinsame Bundleliste in `tools/desktop-build-plan.mjs`, der vorhandene
+Dokumentausgabe und die CSS-Bündelung dienen sowohl Produktions- als auch Devbuild.
+Dev-Bundles enthalten eingebettete Sourcemaps; Node-Stacks werden auf TypeScript
+zurückgeführt. Der Entwicklungsanschluss nutzt ausschließlich geerbte Prozesspipes;
+es gibt keinen Entwicklungsserver und keine zusätzliche Renderer-/Preload-API.
+Produktionsbuilds enthalten diesen Anschluss und die Sourcemaps nicht.
+
+`tests/shared/development-{queue,child}.test.mjs` prüft Bündelung, Fehlererholung,
+Serialisierung und bestätigtes Schließen. Die native Probe
+`tools/test-desktop-development.mjs` arbeitet mit kopierten Quellen und einem
+eigenen Profil: CSS/Fokus, ungültiger NPC-Entwurf beim Neustart, Syntaxfehler und
+Korrektur, HTML, neue/gelöschte Imports, Preload, Worker und Sourcemaps. Sie wird
+wie andere native Prüfungen im Ressourcenrahmen und unter `tools/ui-session.py`
+gestartet. Ergebnisse und gemessene Zeiten liegen unter
+`.build/development-evidence/`; sie sind technische Nachweise, keine Fachabnahme.

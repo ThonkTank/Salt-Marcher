@@ -1,3 +1,4 @@
+import { revealWorkspaceNavigation } from './native-navigation.mjs';
 // Native task: unfinished recap -> normal Fresh -> confirmed ending with no
 // separate cleanup writer -> cancelled preparation -> Fresh -> prepare from
 // historic handoff -> Fresh -> edit the same saved visit.
@@ -62,20 +63,7 @@ try {
   s.close();
   let page;
   async function tab(id) {
-    await page.waitForFunction(() => !document.querySelector('#workspace-navigation').inert);
-    if (
-      !(await page.locator(id).isVisible()) &&
-      (await page.locator('#atlas-navigation').isVisible())
-    )
-      await page.locator('#atlas-navigation').click();
-    // Fresh activation restores the last area asynchronously. The wide sidebar
-    // hides its compact summary; wait for the requested tab instead of clicking
-    // that hidden summary while restoration is still in flight.
-    if (
-      !(await page.locator(id).isVisible()) &&
-      (await page.locator('#workspace-nav-summary').isVisible())
-    )
-      await page.locator('#workspace-nav-summary').click();
+    await revealWorkspaceNavigation(page);
     await page.locator(id).click();
   }
   async function launch() {

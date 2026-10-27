@@ -5,7 +5,7 @@ Owner: atlas
 Last Reviewed: 2026-10-24 (Struktur und Quellen; Fachabnahme separat)
 Source of Truth: Dieses Dokument besitzt das benannte Thema; Code belegt den Iststand, das Abnahmeregister den Prüfstand.
 
-Die Desktopanwendung verwendet eine Kampagnenwelt. Hexgelände, Städte, Gebäude und Dungeonräume liegen in derselben metrischen Fläche. Stadt und Dungeon sind räumliche Bereiche mit eigenen fachlichen Werkzeugen; sie besitzen keine unabhängig auswählbaren Karten. Die Kamera und die Auswahl bleiben beim Werkzeugwechsel erhalten. Zoomen erzeugt weder Geometrie noch Reisezeit.
+Die Desktopanwendung verwendet eine Kampagnenwelt. Kontinuierliches Gelände, Städte, Gebäude und Dungeonräume liegen in derselben metrischen Fläche. Stadt und Dungeon sind räumliche Bereiche mit eigenen fachlichen Werkzeugen; sie besitzen keine unabhängig auswählbaren Karten. Die Kamera und die Auswahl bleiben beim Werkzeugwechsel erhalten. Zoomen erzeugt weder Geometrie noch Reisezeit.
 
 ## Arbeitsplatz und Kartenfläche
 
@@ -23,7 +23,7 @@ Das Mausrad zoomt am Zeiger. Mittlere Maustaste oder **Leertaste + Ziehen** vers
 
 ## Vorbereiten
 
-1. Kampagne öffnen und **Atlas** wählen. Unter **Landschaft** die Hexstufe und das Terrain wählen; ein gedrückter Pinselzug ist eine gemeinsame Änderung.
+1. Kampagne öffnen und **Atlas** wählen. Unter **Land** Landform oder Farbe wählen und einen metrischen Pinselradius einstellen; ein gedrückter Pinselzug ist eine gemeinsame Änderung.
 2. Unter **Stadt** einen Namen eingeben, **Stadt platzieren** wählen und den Punkt auf der Karte anklicken. Die Stadt liegt jetzt an diesem Weltpunkt. Unter **Stadt** Straßen, Viertel und Plätze zeichnen; **Viertel bebauen…** öffnet die Erzeugungsoptionen und Vorschau. Bebauung vorschlagen und übernehmen. Häuser einzeln korrigieren.
 3. **Einzelhaus** oder **Raumgruppe anlegen** wählen. Die gemeinsame Vorschau erzeugt je nach Art passende Räume, Geschosse, Türen und Einrichtung. Übernehmen speichert sie zusammen; hineinzoomen zeigt dieselben bearbeitbaren Räume. Gebäude und Raumgruppe haben dieselbe Kennung. Außenformen werden aus den Räumen abgeleitet. [Details und Schutzregeln](contract/room-groups.md).
 4. **Geschoss**, **Dächer anzeigen** und **Höhenschnitt** verändern die Ansicht. Die Fachwerkzeuge behalten Raumtexte, Keys, Türen, Ausstattung, Volumen, Graph und Passagen. **Ort finden** findet auch benannte Ortsmarken sowie Städte, Häuser und Räume innerhalb derselben Karte. Ein gefundener Ort öffnet seine vorhandene Beschreibung direkt in den Eigenschaften. Unter **Objekte → Objekt auswählen** bleibt die Auswahl beim Ortskontext; Bewuchs besitzt weiterhin seine eigene Auswahl. Bei Ortsmarken stehen Name und Beschreibung vor der aufklappbaren **Position**. **Vorige Ansicht** kehrt nach dem Speichern zum vorherigen Kartenausschnitt zurück.
@@ -71,7 +71,7 @@ Die kleinste Hexstufe misst **3 Meilen / 4828,032 m zwischen gegenüberliegenden
 
 Im Atlas den Bereich **Landschaft** wählen. **Maße** bestimmt die angezeigten Einheiten; gespeicherte Geometrie bleibt in Metern:
 
-1. Unter **Land → Land formen** mit Anheben/Absenken, Stärke, Radius und optionaler Zielhöhe die Landfläche anlegen. Loslassen speichert einen rücknehmbaren Pinselzug. **Geländedaten** bietet getrennte Eigenschaften und Hexflächen; Gelände, Höhe und Klima bleiben eigene Eingaben. **Eigenschaft zurücksetzen** entfernt nur die gewählte Eigenschaft im bemalten Bereich der gewählten Stufe. Feinere Vorgaben bleiben bestehen.
+1. Unter **Land → Land formen** mit Anheben/Absenken, Stärke, Radius und optionaler Zielhöhe die Landfläche anlegen. Loslassen speichert einen rücknehmbaren Pinselzug. **Geländedaten** bietet freie Eigenschaftspinsel; Gelände, Höhe und Klima bleiben eigene Eingaben. **Eigenschaft zurücksetzen** entfernt nur die gewählte Eigenschaft im bemalten Bereich. Feinere Vorgaben bleiben bestehen.
 2. Unter **Wasser → Fluss zeichnen** oder **Wege & Flächen → Weg zeichnen** Punkte setzen und abschließen. Unter Auswahl einen Verlauf anklicken oder aus der Objektliste wählen. Punkte ziehen speichert den Verlauf beim Loslassen; er bleibt für die nächste Punktkorrektur ausgewählt. Punkte einfügen/entfernen, am inneren Punkt teilen oder die Breite ändern und anschließend Auswahl speichern. Eine gezeichnete Straßenquerung ist keine Brücke.
 3. Unter **Objekte → Ort platzieren** einen Namen eingeben, den Ort setzen und abschließen. Die Koordinaten einer Auswahl stehen unter **Position**. Im selben Panel die geordneten Markdown-Abschnitte bearbeiten. Die Abschnitte besitzen stabile Links; Umbenennen und Verschieben ändern ihre Kennungen nicht. Entfernen aus dem Atlas löscht die Ortsprosa nicht. Die vorhandenen Orts- und Weltfunktionen verwenden dieselben Ortskennungen.
 4. Unter Nachzeichenvorlage ein PNG/JPEG/WebP laden, zwei Punkte im Bild anklicken und deren reale Entfernung in der angezeigten Einheit eingeben. Abschließen übernimmt die Kalibrierung. Über die Objektliste die Vorlage auswählen; Deckkraft, Sichtbarkeit, Sperre und Lage bearbeiten. Nach Entsperren dienen der Ursprung und der gegenüberliegende Griff zum Verschieben beziehungsweise Skalieren/Drehen. Die importierte Vorlage wird innerhalb der Kampagne gespeichert und mitkopiert.

@@ -6,12 +6,14 @@ export function renderShopRestockTables(
   root: HTMLElement,
   view: ShopView,
   options: {
+    api: Pick<Window['campaign'], 'itemDefinitions'>;
     changed: () => void;
     rebuild: () => void;
     button: (title: string, action: () => Promise<unknown> | void) => HTMLButtonElement;
     roll: (id: string) => Promise<void>;
   },
 ) {
+  const document = root.ownerDocument;
   const section = document.createElement('section');
   section.className = 'session-group-card';
   const heading = document.createElement('h3');
@@ -140,7 +142,11 @@ export function renderShopRestockTables(
       options.rebuild();
     };
     if (table.catalog)
-      renderRestockCatalog(details, table.catalog, { changed: change, button: options.button });
+      renderRestockCatalog(details, table.catalog, {
+        api: options.api,
+        changed: change,
+        button: options.button,
+      });
     else {
       let shares: string[] = [];
       try {

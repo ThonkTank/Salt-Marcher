@@ -1,3 +1,4 @@
+import { continuousTerrainPatch } from './atlas-terrain-fixture.mjs';
 // Synthetic canonical inventory for the normal Atlas. This is load evidence,
 // not a substitute for authoring a visually convincing world through the UI.
 import assert from 'node:assert/strict';
@@ -6,7 +7,13 @@ import { createRequire } from 'node:module';
 import { buildSync } from 'esbuild';
 
 export function populateMixedWorld(store, campaign, sizes = {}) {
-  const counts = { hexes: 100000, buildings: 5000, details: 50, dungeonRooms: 4001, ...sizes };
+  const counts = {
+    terrainAreas: 100000,
+    buildings: 5000,
+    details: 50,
+    dungeonRooms: 4001,
+    ...sizes,
+  };
   for (const n of Object.values(counts)) assert(Number.isSafeInteger(n) && n > 0);
   const require = createRequire(import.meta.url);
   buildSync({
@@ -16,7 +23,6 @@ export function populateMixedWorld(store, campaign, sizes = {}) {
     export {storeGroupDraft} from './src/app/storage/room-groups';
     export {bindAtlas} from './src/app/storage/campaign-atlas';
     export {putLandscape} from './src/app/storage/atlas-landscape';
-    export {hexPolygon} from './src/app/atlas/atlas-landscape';
     export {newLocation} from './src/features/location/location-schema';
     export {validateRoom} from './src/app/shared/room-validation';
   `,
@@ -30,7 +36,6 @@ export function populateMixedWorld(store, campaign, sizes = {}) {
     storeGroupDraft,
     bindAtlas,
     putLandscape,
-    hexPolygon,
     newLocation,
     validateRoom,
   } = require('../.build/atlas-mixed-world-fixture.cjs');
@@ -47,52 +52,26 @@ export function populateMixedWorld(store, campaign, sizes = {}) {
     db.prepare("SELECT payload FROM world_record WHERE campaign_id=? AND kind='map'").get(cam)
       .payload,
   );
-  // 500 columns x 200 rows cover the target world without changing its metric.
-  // These are biome/property edits on the independently sculpted height field.
-  // The old world-map writer also sculpts each hex: that is a different, much
-  // denser height workload and is deliberately not claimed by this fixture.
+  // Property regions overlap the independent height field in metric space.
+  // Their irregular outlines and rotations do not encode a terrain grid.
   const terrains = ['plains', 'forest', 'hills', 'mountains', 'marsh', 'desert'];
-  map.cells = Array.from({ length: counts.hexes }, (_, i) => {
-    const row = Math.floor(i / 500),
-      r = Math.round((-10000000 + row * 100000) / ((map.hexMeters * Math.sqrt(3)) / 2));
-    return {
-      q: Math.round((-20000000 + (i % 500) * 80000) / map.hexMeters - r / 2),
-      r,
-      level: 0,
-      terrain: terrains[i % terrains.length],
-      elevationM: 0,
-      climate: null,
-      road: false,
-      river: false,
-      label: '',
-      faction: '',
-      interrupt: '',
-    };
-  });
-  timed('hexesMs', () =>
+  map.cells = [];
+  timed('terrainAreasMs', () =>
     db.transaction(() => {
-      for (const [i, cell] of map.cells.entries()) {
-        const { q, r, level } = cell,
-          size = map.hexMeters * 3 ** level;
+      for (let i = 0; i < counts.terrainAreas; i++)
         putLandscape(
           db,
           cam,
-          {
-            id: 'mixed-cell:' + i,
-            revision: 0,
-            kind: 'patch',
-            name: 'Geländehex ' + i,
-            points: [],
-            polygons: [hexPolygon(q, r, size)],
-            resolution: size,
-            width: 0,
-            values: { terrain: cell.terrain },
-            propertyOnly: true,
-            sourceCell: { mapId: map.id, q, r, level },
-          },
+          continuousTerrainPatch(
+            'mixed-terrain:' + i,
+            -20000000 + (i % 500) * 80000,
+            -10000000 + Math.floor(i / 500) * 100000,
+            12000 + (i % 3) * 4000,
+            { terrain: terrains[i % terrains.length] },
+            i,
+          ),
           null,
         );
-      }
       map.revision++;
       const payload = JSON.stringify(map);
       db.prepare(
@@ -192,8 +171,8 @@ export function populateMixedWorld(store, campaign, sizes = {}) {
   );
   assert.deepEqual(db.pragma('foreign_key_check'), []);
   const inventory = mixedWorldInventory(db, cam);
-  assert.equal(inventory.hexes, counts.hexes);
-  assert.equal(inventory.sourceCells, counts.hexes);
+  assert.equal(inventory.terrainAreas, counts.terrainAreas);
+  assert.equal(inventory.terrainSourceCells, 0);
   assert.equal(inventory.buildings, counts.buildings);
   assert.equal(inventory.details, counts.details);
   assert.equal(inventory.dungeonRooms, counts.dungeonRooms);
@@ -202,7 +181,7 @@ export function populateMixedWorld(store, campaign, sizes = {}) {
     counts,
     inventory,
     timings,
-    hexWorkload: 'Biome properties; height authored independently, not 100000 fine relief edits',
+    terrainWorkload: `${counts.terrainAreas} free-form property regions; independently authored continuous height field`,
     city: { x: 0, y: 0, width: 3100, height: 1600 },
     building: { id: 'mixed-house:0', x: 30, y: 30 },
     dungeon: { id: 'mixed-dungeon', x: 10000, y: 10000 },
@@ -213,12 +192,14 @@ export function mixedWorldInventory(db, cam) {
   const count = (table, condition = '1') =>
     db.prepare(`SELECT count(*) n FROM ${table} WHERE campaign_id=? AND ${condition}`).get(cam).n;
   return {
-    hexes: db
-      .prepare(
-        "SELECT json_array_length(payload,'$.cells') n FROM world_record WHERE campaign_id=? AND kind='map'",
-      )
-      .get(cam).n,
-    sourceCells: count('atlas_landscape', "json_extract(payload,'$.sourceCell.mapId') IS NOT NULL"),
+    terrainAreas: count(
+      'atlas_landscape',
+      "json_extract(payload,'$.kind')='patch' AND json_extract(payload,'$.propertyOnly')=1",
+    ),
+    terrainSourceCells: count(
+      'atlas_landscape',
+      "json_extract(payload,'$.sourceCell') IS NOT NULL",
+    ),
     places: count('atlas_landscape', "json_extract(payload,'$.kind')='place'"),
     heightTiles: count('atlas_landscape', "json_extract(payload,'$.height') IS NOT NULL"),
     buildings: count('room_group'),

@@ -94,9 +94,9 @@ Vollständige Plattform-, 200%- und Langroutenqualifikation bleiben offen.
 
 Hexe besitzen optional `access`: eine ausdrückliche Sperre mit Begründung oder
 benannte Voraussetzung wie „Boot“. Fehlende Vorgabe bedeutet passierbar; auch
-ungezeichnetes Gelände bleibt Ebene. Der bestehende Hexeditor schreibt dieselbe
-Karte. Terrainmalen erhält die Vorgabe, gröbere authored Vorgaben werden wie
-andere Hexfakten geerbt. Frei passierbar entfernt die lokale Vorgabe.
+ungezeichnetes Gelände bleibt Ebene. Reisevorgaben bleiben vom kontinuierlichen Gelände getrennt; Landschaftspinsel
+ändern diese Vorgaben nicht. Gröbere Reisevorgaben werden wie andere Reisefakten
+geerbt. Frei passierbar entfernt die lokale Vorgabe.
 
 Der GM markiert für eine konkrete Reise vorhandene Voraussetzungen. Diese
 Angabe ist keine Inventarprüfung und verändert kein Ledger. Die Auswahl gehört

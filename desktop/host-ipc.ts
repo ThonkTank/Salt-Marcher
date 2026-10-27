@@ -1,3 +1,4 @@
+import { reportError, stderrDiagnostics, type DiagnosticSink } from './error-diagnostics';
 import type { IpcMain, IpcMainInvokeEvent, WebContents } from 'electron';
 import type { Result } from '../src/app/shared/contracts';
 import { StoreOutcomeUnknownError } from './store-client';
@@ -18,6 +19,7 @@ export class HostIpc {
   constructor(
     private readonly ipc: Pick<IpcMain, 'handle' | 'removeHandler'>,
     private readonly authority: Authority,
+    private readonly diagnostics: DiagnosticSink = stderrDiagnostics,
   ) {}
   trusted(event: Pick<IpcMainInvokeEvent, 'sender' | 'senderFrame'>) {
     const contents = this.authority.contents();
@@ -42,6 +44,7 @@ export class HostIpc {
         if (disposed || !this.trusted(event)) return { ok: false, error: 'Zugriff verweigert.' };
         if (this.authority.stopping() && !name.startsWith('update:'))
           return { ok: false, error: stopped };
+        let phase = 'host-operation';
         const task = Promise.resolve().then(async () => {
           if (this.authority.erasing())
             throw Error('Kampagnenlöschung läuft. Danach erneut versuchen.');
@@ -62,14 +65,17 @@ export class HostIpc {
               'player:window',
               'player:art',
             ].includes(name)
-          )
+          ) {
+            phase = 'player-sync';
             await this.authority.syncPlayer();
+          }
           return value;
         });
         if (!name.startsWith('update:')) this.operations.add(task);
         try {
           return { ok: true, value: await task };
         } catch (error) {
+          reportError(error, { phase, channel: name }, this.diagnostics);
           return {
             ok: false,
             error: error instanceof Error ? error.message : 'Vorgang fehlgeschlagen.',

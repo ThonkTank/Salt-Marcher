@@ -37,9 +37,23 @@ export function assertReferenceInventory(db) {
     ['place', "json_extract(payload,'$.kind')='place'", 5000],
     ['road', "json_extract(payload,'$.kind')='road'", 1024],
     ['vegetation', "json_extract(payload,'$.kind')='vegetation'", 1024],
-    ['source cells', "json_extract(payload,'$.sourceCell') IS NOT NULL", 100000],
+    [
+      'continuous property areas',
+      "json_extract(payload,'$.kind')='patch' AND json_extract(payload,'$.propertyOnly')=1",
+      100000,
+    ],
+    ['obsolete terrain source cells', "json_extract(payload,'$.sourceCell') IS NOT NULL", 0],
   ])
     assert.equal(count(where), expected, `Reference world: ${name}`);
+  assert.equal(
+    db
+      .prepare(
+        "SELECT sum(json_array_length(payload,'$.cells')) n FROM world_record WHERE kind='map'",
+      )
+      .get().n,
+    0,
+    'Travel grids must not author terrain cells',
+  );
   assert.equal(db.prepare('SELECT count(*) n FROM room_group').get().n, 5000);
   assert.equal(db.prepare('SELECT count(*) n FROM room').get().n, 15701);
   assert.equal(
@@ -51,13 +65,14 @@ export function assertReferenceInventory(db) {
 }
 
 export function assertReferenceContents(db, manifest) {
+  assert.equal(manifest.model, 'continuous-terrain-v1');
   assert.equal(manifest.sourceCommit, referenceCommit);
   assert.equal(manifest.sourcePath, referencePath);
   assertReferenceInventory(db);
   assert.deepEqual(
     referenceContents(db),
     manifest.tables,
-    'The complete reference world must retain its original stored contents',
+    'The complete reference world must retain its current continuous stored contents',
   );
 }
 
@@ -74,13 +89,24 @@ export function assertReferenceMapImage(actual, expected, { markerVisible = true
   const scale = actual.width / expected.width;
   const colors = {
     land: [238, 229, 207],
-    forest: [159, 167, 129],
-    road: [163, 126, 81],
+    forest: [154, 174, 129],
+    road: [168, 130, 75],
     marker: [91, 67, 56],
   };
   const populations = Object.fromEntries(
     Object.keys(colors).map((k) => [k, { expected: 0, actual: 0 }]),
   );
+  populations.forestTexture = { expected: 0, actual: 0 };
+  const textureEdge = (image, i, j) => {
+    const p = image.data;
+    return (
+      p[i + 1] > p[i] &&
+      p[i + 1] > p[i + 2] &&
+      p[j + 1] > p[j] &&
+      p[j + 1] > p[j + 2] &&
+      Math.max(...[0, 1, 2].map((c) => Math.abs(p[i + c] - p[j + c]))) >= 4
+    );
+  };
   let error = 0,
     pixels = 0;
   for (let y = 250; y < 610; y++)
@@ -110,13 +136,23 @@ export function assertReferenceMapImage(actual, expected, { markerVisible = true
         if (near(expected, b)) populations[key].expected++;
         if (near(actual, a, true)) populations[key].actual++;
       }
+      if (x < 1279) {
+        const nextA =
+          (Math.floor((y + 0.5) * scale) * actual.width + Math.floor((x + 1.5) * scale)) * 4;
+        const nextB = (y * expected.width + x + 1) * 4;
+        if (textureEdge(expected, b, nextB)) populations.forestTexture.expected++;
+        if (textureEdge(actual, a, nextA)) populations.forestTexture.actual++;
+      }
       pixels++;
     }
   const meanChannelError = error / (pixels * 3);
   assert(meanChannelError <= 12, `Reference map changed: mean RGB error ${meanChannelError}`);
   for (const [key, p] of Object.entries(populations))
     if ((key !== 'marker' || markerVisible) && p.expected >= (key === 'marker' ? 4 : 100)) {
-      assert(p.actual >= p.expected * 0.65, `Visible ${key} missing: ${JSON.stringify(p)}`);
+      assert(
+        p.actual >= p.expected * 0.65,
+        `Visible ${key === 'forestTexture' ? 'forest texture' : key} missing: ${JSON.stringify(p)}`,
+      );
     }
   return { meanChannelError, populations };
 }

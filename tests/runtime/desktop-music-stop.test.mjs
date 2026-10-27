@@ -1,6 +1,7 @@
+import { readFileSync as readWorkspaceSource } from 'node:fs';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import path from 'node:path';
 import { tmpdir } from 'node:os';
 import { randomUUID, createHash } from 'node:crypto';
@@ -86,7 +87,9 @@ async function fixture() {
       'cancelAnimationFrame',
     ].map((k) => [k, globalThis[k]]),
   );
-  const { window, document } = parseHTML(readFileSync('src/app/workspace/index.html', 'utf8'));
+  const { window, document } = parseHTML(
+    readWorkspaceSource('src/app/workspace/index.html', 'utf8'),
+  );
   Object.assign(globalThis, {
     window,
     document,
@@ -135,7 +138,7 @@ async function fixture() {
     positionCalls = 0;
   const commands = [];
   window.campaign = {
-    onAudioTransfer: () => {},
+    onAudioTransfer: () => () => {},
     music: async (token) => result(() => store.music(token)),
     musicPosition: async () => {
       positionCalls++;
@@ -162,7 +165,10 @@ async function fixture() {
     },
   };
   delete require.cache[require.resolve('../../.build/music-stop-ui.cjs')];
-  const ui = require('../../.build/music-stop-ui.cjs');
+  const ui = require('../../.build/music-stop-ui.cjs').createMusicEditor({
+    roots: [document.body],
+    api: window.campaign,
+  });
   ui.initMusic(
     () => {},
     async () => {},

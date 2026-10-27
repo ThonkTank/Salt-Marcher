@@ -59,3 +59,26 @@ Die echten Worker-/Receipt-/Backupprüfungen bleiben in
 `tools/test-desktop-baseline.mjs`, `tools/test-desktop-campaign-transfer-visit.mjs`,
 `tools/test-desktop-audio-copy.mjs` und `tools/test-desktop-updates.mjs`.
 Ein lokaler Prüfstand ist keine Owner-Abnahme oder veröffentlichte Installation.
+
+## Technische Fehlerdiagnose
+
+`error-diagnostics.ts` bewahrt intern Fehlername, Nachricht, Stack, optionalen Code
+und eine begrenzte Ursachenfolge. `HostIpc` schreibt für einen abgefangenen Fehler
+einen strukturierten `desktop-error`-Datensatz nach stderr, einschließlich Kanal
+und Phase (`host-operation` oder `player-sync`). Der Diagnoseanschluss ist für
+Tests injizierbar; ein fehlerhafter Anschluss ersetzt niemals das Operationsergebnis.
+Main erfasst zusätzlich Start, Store-Lebenszyklus, Hintergrundbackup und Schließen.
+Lifecycle- und IPC-Einträge beschreiben unterschiedliche Beobachtungspunkte desselben
+Ausfalls; sie sind keine wiederholten Speicheraufträge.
+
+Die Renderer-Antwort bleibt `{ ok: false, error: string }`. Stacks, Ursachen und
+Auftragskontext werden nicht an Preload oder Renderer weitergegeben. Die Diagnose
+nimmt keine Auftragsargumente oder Ergebnisobjekte auf. Fehlermeldungen und Stacks
+können ihre bereits vorhandenen technischen Details enthalten. Es gibt keinen neuen
+Logdateidienst oder Diagnose-Dialog; stderr kann beim Start aus einem Terminal bzw.
+im Entwicklungsstarter erfasst werden.
+
+Gezielte Nachweise: `tests/shared/desktop-error-diagnostics.test.mjs`, die bestehenden
+Host-/Worker-Prüfungen sowie `tools/test-desktop-error-diagnostics.mjs`. Die native
+Probe erzeugt einen echten Versionskonflikt beim Umbenennen und prüft sichtbare
+Meldung, Worker-Ursprung in Main und normalen Abschluss getrennt.

@@ -1,7 +1,7 @@
 import type { WorkspaceGeometry } from '../shared/contracts';
 import { EditorRegistry, type EditorBoundary } from '../shared/editor-registry';
 import type { EditorSession } from '../shared/editor-session';
-import * as npcs from '../campaign/npc-ui';
+import type { NpcEditor } from '../campaign/npc-ui';
 import * as groups from '../campaign/groups-ui';
 import * as treasury from '../runtime/treasury-ui';
 import * as triggers from '../runtime/trigger-ui';
@@ -14,9 +14,9 @@ import * as dungeon from '../atlas/dungeon-ui';
 import * as drawing from '../atlas/drawing-ui';
 import * as autonomy from '../runtime/autonomy-ui';
 import * as city from '../atlas/city-ui';
-import * as music from '../runtime/music-ui';
+import type { MusicEditor } from '../runtime/music-ui';
 import * as world from '../runtime/world-ui';
-import * as items from '../catalog/items-ui';
+import type { ItemsEditor } from '../catalog/items-ui';
 import * as catalog from '../catalog/catalog-ui';
 import type { LiveEditor } from '../runtime/live';
 import type { PreparationEditor } from '../campaign/preparation';
@@ -30,6 +30,9 @@ import { editorSession as planningSession } from '../campaign/session-ui';
 import { editorSession as generationSession } from '../campaign/generation-ui';
 
 type Host = {
+  items: ItemsEditor;
+  music: MusicEditor;
+  npcs: NpcEditor;
   preparation: PreparationEditor;
   live: LiveEditor;
   combat: CombatEditor;
@@ -71,9 +74,9 @@ export function createWorkspaceEditors(host: Host) {
     },
     {
       id: 'npcs',
-      session: npcs.editorSession,
-      activate: { order: 12, run: npcs.activateNpcs },
-      flush: npcs.flushNpcs,
+      session: host.npcs.editorSession,
+      activate: { order: 12, run: host.npcs.activateNpcs },
+      flush: host.npcs.flushNpcs,
     },
     {
       id: 'groups',
@@ -150,10 +153,10 @@ export function createWorkspaceEditors(host: Host) {
     { id: 'activation-gate', flush: (r) => r === 'checkpoint' || host.gate() },
     {
       id: 'music',
-      session: music.editorSession,
-      activate: { order: 28, run: music.activateMusic },
-      flush: music.flushMusic,
-      deactivate: music.deactivateMusic,
+      session: host.music.editorSession,
+      activate: { order: 28, run: host.music.activateMusic },
+      flush: host.music.flushMusic,
+      deactivate: host.music.deactivateMusic,
       suspendBeforeActivation: true,
     },
     {
@@ -164,9 +167,9 @@ export function createWorkspaceEditors(host: Host) {
     },
     {
       id: 'items',
-      session: items.editorSession,
-      activate: { order: 9, run: items.activateItems },
-      flush: items.flushItems,
+      session: host.items.editorSession,
+      activate: { order: 9, run: host.items.activateItems },
+      flush: host.items.flushItems,
     },
     {
       id: 'catalog',

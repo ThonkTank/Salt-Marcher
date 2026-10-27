@@ -1,0 +1,168 @@
+/* campaign/npc.css — styles owned by this surface; shared controls live in shared/. */
+
+#groups {
+  padding: 1.5rem;
+  max-width: 1300px;
+  margin: auto;
+}
+
+#groups-actors {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+  gap: 1rem;
+}
+
+#groups-actors .session-group-card {
+  min-width: 0;
+  margin: 0;
+}
+
+.group-health {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.7rem;
+}
+
+#groups-actors label {
+  display: block;
+  margin-top: 0.5rem;
+}
+
+#groups-actors input,
+#groups-actors textarea {
+  max-width: 100%;
+}
+
+.npc-cast {
+  width: min(1200px, calc(100vw - 2rem));
+  max-width: none;
+  max-height: calc(100vh - 2rem);
+  overflow: auto;
+}
+
+.npc-cast-columns {
+  display: grid;
+  grid-template-columns: minmax(250px, 1fr) minmax(0, 2fr);
+  gap: 1.2rem;
+}
+
+#npc-cast-list {
+  display: grid;
+  gap: 0.4rem;
+  max-height: 65vh;
+  overflow: auto;
+}
+
+#npc-cast-list button {
+  text-align: left;
+}
+
+#npc-cast-document {
+  min-width: 0;
+}
+
+#npc-cast-document pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  background: #f4f7fa;
+  padding: 0.8rem;
+}
+
+#npc-cast-document > button {
+  margin: 0.25rem;
+}
+
+#npc-cast-list button[aria-pressed='true'] {
+  border-color: #285b80;
+  background: #e7eff5;
+}
+
+@media (max-width: 850px) {
+  .npc-cast-columns {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 850px) {
+  #npc-cast-list {
+    max-height: 30vh;
+  }
+}
+
+.location-group-roster {
+  width: min(1000px, 94vw);
+  max-width: 94vw;
+  max-height: 90vh;
+  overflow: auto;
+}
+
+.location-group-member {
+  border-top: 1px solid var(--line);
+  padding: 0.75rem 0;
+}
+
+.location-group-member h4 {
+  margin: 0.25rem 0;
+}
+
+.npc-daily-plan {
+  grid-column: 1/-1;
+  margin-block: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--border, #c5cdd4);
+  border-radius: 8px;
+}
+
+.npc-daily-plan fieldset {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin-block: 0.6rem;
+}
+
+.npc-daily-plan fieldset label {
+  flex: 1 1 10rem;
+}
+
+.npc-daily-plan fieldset label:has([data-daily-field='notes']) {
+  flex-basis: 100%;
+}
+
+#npc-cast-daily-plan {
+  padding: 1rem;
+  margin-block: 1rem;
+  border: 1px solid #b6c9cb;
+  border-left: 4px solid #176c74;
+  border-radius: 6px;
+}
+
+#npc-cast-daily-plan pre {
+  white-space: pre-wrap;
+}
+
+.npc-daily-weekdays {
+  flex-basis: 100%;
+}
+
+.npc-daily-weekdays label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-right: 0.8rem;
+}
+
+.npc-daily-weekdays input[type='checkbox'] {
+  width: auto;
+}
+
+.npc-daily-exception {
+  padding: 1rem;
+  margin-block: 0.8rem;
+  border: 1px solid #b6c9cb;
+  border-radius: 6px;
+}
+
+.npc-daily-exception > label {
+  display: inline-block;
+  margin-right: 1rem;
+}

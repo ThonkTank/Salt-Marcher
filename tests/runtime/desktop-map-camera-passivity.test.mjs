@@ -1,6 +1,7 @@
+import { readFileSync as readWorkspaceSource } from 'node:fs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, mkdtempSync, rmSync } from 'node:fs';
+import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { randomUUID, createHash } from 'node:crypto';
@@ -61,7 +62,7 @@ async function fixture(t) {
       Event: globalThis.Event,
       CustomEvent: globalThis.CustomEvent,
     },
-    { window, document } = parseHTML(readFileSync('src/app/workspace/index.html', 'utf8'));
+    { window, document } = parseHTML(readWorkspaceSource('src/app/workspace/index.html', 'utf8'));
   class Matrix {
     inverse() {
       return new Matrix();
@@ -169,19 +170,12 @@ async function fixture(t) {
     digest,
     sent,
     messages,
-    paint() {
-      get('hex-paint').checked = true;
-      get('hex-brush').value = 'forest';
-      get('hex-brush-radius').value = '0';
-      event('pointerdown', { pointerId: 11, button: 0, clientX: 0, clientY: 0 });
-      event('pointermove', { pointerId: 11, clientX: 200, clientY: 0 });
-    },
     async saved() {
       for (let i = 0; i < 60; i++) {
         if (sent.length && store.world(w.token).maps[0].cells.length) return;
         await tick();
       }
-      assert.fail('Explicit save did not arrive');
+      assert.fail('Explicit metadata save did not arrive');
     },
   };
 }
@@ -192,7 +186,7 @@ for (const kind of ['pan', 'alt', 'zoom', 'wheel', 'resize', 'reset'])
       const x = await fixture(t);
       if (kind === 'reset') x.camera.pan();
       await tick();
-      x.enter('hex-elevation', 'invalid');
+
       x.enter('hex-label', '  Ungespeicherte Notiz\r\n');
       x.enter('calendar-name', '');
       const before = x.digest(),
@@ -203,7 +197,7 @@ for (const kind of ['pan', 'alt', 'zoom', 'wheel', 'resize', 'reset'])
       await tick();
       assert.equal(x.sent.length, 0, 'Passive camera must not attempt a world command');
       assert.equal(x.digest(), before);
-      assert.equal(x.get('hex-elevation').value, 'invalid');
+
       assert.equal(x.get('hex-label').value, '  Ungespeicherte Notiz\r\n');
       assert.equal(x.get('calendar-name').value, '');
       assert.equal(x.get('hex-selected').textContent, selection);
@@ -215,52 +209,6 @@ for (const kind of ['pan', 'alt', 'zoom', 'wheel', 'resize', 'reset'])
         );
     },
   );
-for (const kind of ['pan', 'alt', 'zoom', 'wheel', 'resize', 'reset'])
-  test(
-    'camera ' +
-      kind +
-      ' ends the old pointer transform without persisting or losing a pending terrain stroke',
-    async (t) => {
-      const x = await fixture(t),
-        before = x.digest();
-      x.paint();
-      const selection = x.get('hex-selected').textContent;
-      x.camera[kind]();
-      x.event('pointerup', { pointerId: 11 });
-      await tick();
-      await tick();
-      assert.equal(x.sent.length, 0);
-      assert.equal(x.digest(), before);
-      assert.equal(x.get('hex-selected').textContent, selection);
-      assert.match(x.get('hex-paint-status').textContent, /ungespeichert/);
-      assert.equal(x.get('hex-paint-undo').disabled, false);
-      x.get('hex-form').onsubmit({ preventDefault() {} });
-      await x.saved();
-      assert.equal(x.sent.length, 1);
-      assert.ok(x.store.world(x.w.token).maps[0].cells.length >= 2);
-      assert.ok(x.store.world(x.w.token).maps[0].cells.every((c) => c.terrain === 'forest'));
-    },
-  );
-test('ordinary pointer release still saves exactly one terrain stroke; middle drag remains passive with an active brush', async (t) => {
-  const x = await fixture(t);
-  x.paint();
-  x.event('pointerup', { pointerId: 11 });
-  await x.saved();
-  assert.equal(x.sent.length, 1);
-  const bytes = x.digest(),
-    cells = x.store.world(x.w.token).maps[0].cells,
-    box = x.canvas.getAttribute('viewBox');
-  x.event('pointerdown', { pointerId: 12, button: 1, clientX: 0, clientY: 0 });
-  x.event('pointermove', { pointerId: 12, clientX: 300, clientY: 0 });
-  x.event('pointerup', { pointerId: 12 });
-  await tick();
-  await tick();
-  assert.notEqual(x.canvas.getAttribute('viewBox'), box);
-  assert.equal(x.sent.length, 1);
-  assert.equal(x.digest(), bytes);
-  assert.deepEqual(x.store.world(x.w.token).maps[0].cells, cells);
-});
-
 test('pan buttons preserve valid dirty cell and calendar edits until an explicit save', async (t) => {
   const x = await fixture(t);
   x.enter('hex-label', '  Unbestätigte Prosa\r\n');
@@ -280,37 +228,6 @@ test('pan buttons preserve valid dirty cell and calendar edits until an explicit
   assert.equal(x.store.world(x.w.token).maps[0].cells[0].label, '  Unbestätigte Prosa\r\n');
   assert.equal(x.store.world(x.w.token).calendar.name, 'Anderer Kalender');
 });
-test('camera interruption releases the old transform and retains one exact undo/redo step', async (t) => {
-  const x = await fixture(t);
-  x.paint();
-  x.camera.zoom();
-  const selection = x.get('hex-selected').textContent;
-  x.event('pointermove', { pointerId: 11, clientX: 1200, clientY: 0 });
-  x.event('pointerup', { pointerId: 11 });
-  await tick();
-  assert.equal(x.get('hex-selected').textContent, selection);
-  assert.equal(x.sent.length, 0);
-  x.get('hex-form').onsubmit({ preventDefault() {} });
-  await x.saved();
-  const saved = x.store.world(x.w.token).maps[0].cells;
-  assert.deepEqual(
-    saved.map((c) => [c.q, c.r]).sort((a, b) => a[0] - b[0]),
-    [
-      [0, 0],
-      [1, 0],
-      [2, 0],
-    ],
-  );
-  x.get('hex-paint-undo').onclick();
-  for (let i = 0; i < 60 && x.store.world(x.w.token).maps[0].cells.length; i++) await tick();
-  assert.deepEqual(x.store.world(x.w.token).maps[0].cells, []);
-  assert.equal(x.sent.length, 2);
-  x.get('hex-paint-redo').onclick();
-  for (let i = 0; i < 60 && x.sent.length < 3; i++) await tick();
-  assert.deepEqual(x.store.world(x.w.token).maps[0].cells, saved);
-  assert.equal(x.sent.length, 3);
-});
-
 test('Alt arrows retain a fractional camera position and resize releases a shared middle drag', async (t) => {
   const x = await fixture(t),
     before = x.digest();
@@ -342,14 +259,14 @@ for (const action of ['previous', 'next', 'reset'])
       const controls = document.querySelector('.map-canvas-controls[data-canvas-for="world-map"]'),
         buttons = controls.querySelectorAll('button');
       if (action === 'next') buttons[0].onclick();
-      x.enter('hex-elevation', 'invalid');
+
       x.enter('hex-label', 'Originaler Entwurf');
       const before = x.digest(),
         box = x.canvas.getAttribute('viewBox');
       buttons[action === 'previous' ? 0 : action === 'next' ? 1 : 2].onclick();
       await tick();
       assert.notEqual(x.canvas.getAttribute('viewBox'), box);
-      assert.equal(x.get('hex-elevation').value, 'invalid');
+
       assert.equal(x.get('hex-label').value, 'Originaler Entwurf');
       assert.equal(x.sent.length, 0);
       assert.equal(x.digest(), before);

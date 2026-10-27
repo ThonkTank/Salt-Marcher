@@ -1,3 +1,4 @@
+import { continuousTerrainPatch } from '../../tools/atlas-terrain-fixture.mjs';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { buildSync } from 'esbuild';
@@ -284,31 +285,35 @@ test('the live writer feeds zero-based incremental durations into the real stora
   assert.equal(f.height(), initial);
 });
 
-test('100k unchanged source hexes never enter terrain history or map writes; undo, redo and receipts keep a durable monotonic travel guard', (t) => {
+test('100k unchanged continuous terrain areas never enter terrain history or map writes; undo, redo and receipts keep a durable monotonic travel guard', (t) => {
   const f = setup(t);
-  f.reopen(); // Complete the empty legacy-landscape migration before seeding source cells.
+  f.reopen();
   const db = f.store.db,
     map = db.prepare("SELECT * FROM world_record WHERE campaign_id=? AND kind='map'").get(f.cam.id),
     m = JSON.parse(map.payload);
-  m.cells = Array.from({ length: 100000 }, (_, i) => ({
-    q: 10000 + (i % 1000),
-    r: 10000 + Math.floor(i / 1000),
-    level: 0,
-    terrain: 'plains',
-    elevationM: 0,
-    climate: null,
-    road: false,
-    river: false,
-    label: 'Unchanged source hex ' + i,
-    faction: '',
-    interrupt: '',
-  }));
-  const payload = JSON.stringify(m),
-    checksum = createHash('sha256').update(payload).digest('hex');
-  db.prepare("UPDATE world_record SET payload=?,checksum=? WHERE campaign_id=? AND kind='map'").run(
-    payload,
-    checksum,
-    f.cam.id,
+  const insert = db.prepare(
+    'INSERT INTO atlas_landscape(campaign_id,id,revision,min_x,max_x,min_y,max_y,payload) VALUES(?,?,0,?,?,?,?,?)',
+  );
+  db.transaction(() => {
+    for (let i = 0; i < 100000; i++) {
+      const x = 100000 + (i % 1000) * 100,
+        y = 100000 + Math.floor(i / 1000) * 100;
+      const area = continuousTerrainPatch('unchanged:' + i, x, y, 20, { terrain: 'plains' }, i);
+      const points = area.polygons[0].outer;
+      insert.run(
+        f.cam.id,
+        area.id,
+        Math.min(...points.map((p) => p.x)),
+        Math.max(...points.map((p) => p.x)),
+        Math.min(...points.map((p) => p.y)),
+        Math.max(...points.map((p) => p.y)),
+        JSON.stringify(area),
+      );
+    }
+  })();
+  const checksum = map.checksum;
+  db.exec(
+    "CREATE TEMP TRIGGER forbid_area_rewrite BEFORE UPDATE ON atlas_landscape WHEN OLD.id LIKE 'unchanged:%' BEGIN SELECT RAISE(ABORT,'unchanged terrain area rewritten'); END",
   );
   // Fail at the actual SQL boundary, even if a rewrite would produce equal bytes.
   db.exec(
@@ -336,7 +341,7 @@ test('100k unchanged source hexes never enter terrain history or map writes; und
   assert(history.every((d) => d.table === 'atlas_landscape'));
   assert(
     Buffer.byteLength(JSON.stringify(history)) < 1024 * 1024,
-    'history grows with changed tiles, not 100k source cells',
+    'history grows with changed tiles, not 100k terrain areas',
   );
   assert.equal(
     db.prepare("SELECT checksum FROM world_record WHERE campaign_id=? AND kind='map'").get(f.cam.id)
