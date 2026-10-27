@@ -74,10 +74,10 @@ Buchungsjournal behalten ihre speziellen Commands und Lockgrenzen.
   Entfernen des bisherigen Kontexts.
 - `tests/workspace/workspace-editor-registry.test.mjs`: konkrete Reihenfolgen, alle vier
   Grenzarten, Graph-/Aktivierungs-Ausnahmen und Werkzeugvorbereitung.
-- `tests/campaign/desktop-npc-switch.test.mjs`: echter Renderer/SQLite-Draft mit alter
+- [desktop-npc-switch.test.mjs (historisch)](https://github.com/ThonkTank/Salt-Marcher/blob/05e8f2f97fc729dba8b6fef3830c566cdc47adad/tests/campaign/desktop-npc-switch.test.mjs): echter Renderer/SQLite-Draft mit alter
   Antwort während einer neuen Sicherung, weiterer Eingabe und unveränderten
   Rohbytes; vorhandene Receipt-/Neustartregressionen bleiben erhalten.
-- `tests/campaign/desktop-preparation-context.test.mjs`: alte Entwurfsleseantwort während
+- [desktop-preparation-context.test.mjs (historisch)](https://github.com/ThonkTank/Salt-Marcher/blob/05e8f2f97fc729dba8b6fef3830c566cdc47adad/tests/campaign/desktop-preparation-context.test.mjs): alte Entwurfsleseantwort während
   einer neuen Aktivierung sowie vorhandene Notiz-/Plan-/Quellenregressionen.
 - Bestehende DOM-/Storeprüfungen für Gruppen, Schatz, Zeichnung, Kampf, Verfolgung,
   Sessionplanung und Abschluss bleiben die fachlichen Anschlussprüfungen.
@@ -149,7 +149,7 @@ Prozess; diese Zuordnung allein behauptet keinen neuen Lauf oder Produkt-PASS.
 Ein Read gehört zur `EditorSession`; Abmeldung und neue Generationen verwerfen
 seine Veröffentlichung, ohne die nächste Anfrage freizugeben. Zeitbuchungen,
 Flush und Receipts bleiben im Live-Writer. Der isolierte Test
-`tests/runtime/desktop-live-time-controls.test.mjs` prüft zwei Oberflächen mit
+[desktop-live-time-controls.test.mjs (historisch)](https://github.com/ThonkTank/Salt-Marcher/blob/05e8f2f97fc729dba8b6fef3830c566cdc47adad/tests/runtime/desktop-live-time-controls.test.mjs) prüft zwei Oberflächen mit
 gleichen IDs, Szenenwechsel, Rohtexte und alte Antworten nach Wiederöffnung.
 Die Live-/Wiederaufnahme- und Partytests verwenden die erzeugte Instanz bzw.
 explizite Writer-Ports; bestehende Recovery- und Textregressionen bleiben erhalten.
@@ -168,7 +168,7 @@ Reads und schließt die abhängigen Panel-Kontexte. Wiederanmeldung bindet sie n
 und lädt die aktuelle Auswahl. Angenommene Writes bleiben in der bisherigen
 Operation-/Receipt-Mechanik; der Cache verwirft keine offenen Rohwerte.
 
-`tests/runtime/desktop-combat-switch.test.mjs` initialisiert zwei echte Instanzen
+[desktop-combat-switch.test.mjs (historisch)](https://github.com/ThonkTank/Salt-Marcher/blob/05e8f2f97fc729dba8b6fef3830c566cdc47adad/tests/runtime/desktop-combat-switch.test.mjs) initialisiert zwei echte Instanzen
 mit gleichen IDs ohne globale ID-Abfragen, prüft getrennte Rohwerte und eine
 alte Antwort während eines neuen Reads. Die bestehenden Wechsel-, Recovery-,
 Verstärkungs-, Initiative-, Konzentrations- und Abschlussprüfungen bleiben erhalten.

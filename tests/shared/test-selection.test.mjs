@@ -28,7 +28,7 @@ test('active discovery includes domain tests but excludes reference and fixture 
   assert(files.includes('tests/direct.test.mjs'));
   for (const domain of ['workspace', 'atlas', 'campaign', 'runtime', 'catalog', 'shared'])
     assert(files.includes(`tests/${domain}/nested/view.test.mjs`));
-  assert(!files.some((file) => /native-reference|fixtures|p03-process/.test(file)));
+  assert(!files.some((file) => /native-reference|fixtures|adr-prototypes|tests.cjs/.test(file)));
   assert.equal(new Set(files).size, files.length);
 });
 test('explicit selection is validated, normalized and deduplicated', (t) => {
@@ -44,7 +44,8 @@ test('explicit selection is validated, normalized and deduplicated', (t) => {
       files: ['tests/direct.test.mjs'],
     },
   );
-  assert.deepEqual(selectTests(['tests/shared/core.test.ts'], root).files, ['.build/tests.cjs']);
+  assert.throws(() => selectTests(['tests/shared/core.test.ts'], root));
+  assert.throws(() => selectTests(['.build/tests.cjs'], root));
   assert.deepEqual(selectTests(['tests/native-reference/source.test.mjs'], root).files, [
     'tests/native-reference/source.test.mjs',
   ]);

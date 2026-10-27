@@ -33,7 +33,7 @@ als vollständiger Abstand dargestellt werden.
 
 [Storeprüfungen](../../../tests/runtime/desktop-loot-balance.test.mjs) decken aktuelle
 Preise, Weitergaben mit Verkauf, Fresh, Käufe, Nullstapel, unbekannte Werte und
-Profilintegrität ab. [DOM-Prüfungen](../../../tests/runtime/desktop-loot-balance-dom.test.mjs)
+Profilintegrität ab. [DOM-Prüfungen (historisch)](https://github.com/ThonkTank/Salt-Marcher/blob/05e8f2f97fc729dba8b6fef3830c566cdc47adad/tests/runtime/desktop-loot-balance-dom.test.mjs)
 prüfen Kontextwechsel und die offene Anzeige. Native Bedienabnahme und
 vollständige Rewardqualifikation bleiben offen.
 

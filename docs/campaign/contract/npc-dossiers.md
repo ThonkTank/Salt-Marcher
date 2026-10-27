@@ -263,7 +263,7 @@ nicht erforderlich.
 `tests/campaign/desktop-npc-schedule.test.mjs` prüft diesen Vertrag einschließlich 64
 ausgefallener Termine, unterschiedlicher Wochenlängen, Nachtaktivitäten und
 ferner Einzeltermine gegen eine unabhängige tageweise Referenzrechnung.
-`tests/shared/core/city-people-storage.test.ts` verbindet die drei Leser mit bestätigten
+[city-people-storage.test.ts (historisch)](https://github.com/ThonkTank/Salt-Marcher/blob/05e8f2f97fc729dba8b6fef3830c566cdc47adad/tests/shared/core/city-people-storage.test.ts) verbindet die drei Leser mit bestätigten
 Profilen und frischer SQLite-Wiederöffnung. Der native Ablauf
 `tools/test-desktop-npc-weekly-visits.mjs` prüft Wochenplan und unvollständigen
 Ruhetagentwurf → regulärer Neustart → Bestätigung → Dossier und Ortsmappe →

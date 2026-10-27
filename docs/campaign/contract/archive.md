@@ -71,7 +71,7 @@ aktiven Zeiger noch den Zeitpunkt der letzten Öffnung. Erst ausdrückliches Öf
 oder Fortsetzen aktiviert die Kampagne; der nächste Appstart zeigt erneut die
 Auswahl.
 
-[Store-/DOM-Regressionsfälle](../../../tests/campaign/desktop-campaign-catalog.test.mjs) prüfen
+[Store-/DOM-Regressionsfälle (historisch)](https://github.com/ThonkTank/Salt-Marcher/blob/05e8f2f97fc729dba8b6fef3830c566cdc47adad/tests/campaign/desktop-campaign-catalog.test.mjs) prüfen
 Befehlsquittungen, unklare Antworten, lokale Auftragsvermerke und Kontextwechsel.
 Die [native Dialogprobe](../../../tools/test-desktop-campaign-trash.mjs) ergänzt zwei
 gleichnamige Kampagnen mit unterschiedlichen Raum-Keys: Namensentwurf abbrechen,

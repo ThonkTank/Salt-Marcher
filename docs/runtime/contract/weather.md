@@ -118,7 +118,7 @@ Automatik-ABA. Weitere Proben prüfen den GM-Reisefaktor sowie Receiptreplay nac
 Fresh ohne Überschreiben eines späteren Overrides und semantisch beschädigte
 Bestätigung bei gültiger Prüfsumme.
 
-`tests/runtime/desktop-weather-authority.test.mjs` benutzt die produktive UI mit
+[desktop-weather-authority.test.mjs (historisch)](https://github.com/ThonkTank/Salt-Marcher/blob/05e8f2f97fc729dba8b6fef3830c566cdc47adad/tests/runtime/desktop-weather-authority.test.mjs) benutzt die produktive UI mit
 kontrolliertem DOM und echtem Store. Sie prüft offene Eingabe gegen Refresh,
 Campaignwechsel vor Write und vor Ack, spätere Eingabe nach eigener Bestätigung,
 ältere Reads/Acks, ausdrückliches Verwerfen/Freigeben sowie verlorene Antworten

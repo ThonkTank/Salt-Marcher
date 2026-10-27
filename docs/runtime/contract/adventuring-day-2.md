@@ -38,7 +38,7 @@ keine bekannte XP-Basis. `party-award-member` hält damalige Vorher-/Nachherwert
 ein späterer manueller XP-Command mit `correctionOf` hängt einen eigenen Eintrag
 an. Er ändert weder den referenzierten Award noch dessen Belastungsfakten.
 
-Vier Fälle in `tests/runtime/desktop-xp-rest-corrections.test.mjs` prüfen den echten Store:
+Vier Fälle in [desktop-xp-rest-corrections.test.mjs (historisch)](https://github.com/ThonkTank/Salt-Marcher/blob/05e8f2f97fc729dba8b6fef3830c566cdc47adad/tests/runtime/desktop-xp-rest-corrections.test.mjs) prüfen den echten Store:
 Abwärtskorrektur über Levelgrenzen bis null, erhaltene frühe/zweite/zusätzliche
 Shortsections und Longreset, Vorschau/Writer-Gleichheit, unveränderte verlinkte
 Herkunft, Replay ohne zweite Wirkung und Fresh. Belastung ohne bekannte XP und
@@ -50,11 +50,11 @@ XP-/Rast-/Abrechnungsabnahme.
 Die direkten Abrechnungs-/Copyprüfungen stehen in
 [desktop-party-xp.test.mjs](../../../tests/runtime/desktop-party-xp.test.mjs),
 späte Speicherbestätigungen in
-[desktop-party-award-dom.test.mjs](../../../tests/runtime/desktop-party-award-dom.test.mjs).
+[desktop-party-award-dom.test.mjs (historisch)](https://github.com/ThonkTank/Salt-Marcher/blob/05e8f2f97fc729dba8b6fef3830c566cdc47adad/tests/runtime/desktop-party-award-dom.test.mjs).
 
 ## Lokale Belege und Grenzen
 
-Neun Fälle in `tests/runtime/desktop-day-calculator.test.mjs` verwenden den echten Store,
+Neun Fälle in [desktop-day-calculator.test.mjs (historisch)](https://github.com/ThonkTank/Salt-Marcher/blob/05e8f2f97fc729dba8b6fef3830c566cdc47adad/tests/runtime/desktop-day-calculator.test.mjs) verwenden den echten Store,
 den echten Rechner und die tatsächliche HTML-/UIoberfläche in Linkedom:
 
 - beschädigter inaktiver Fortschritt blockiert die gesunde Party nicht;

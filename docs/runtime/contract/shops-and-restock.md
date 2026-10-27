@@ -20,7 +20,7 @@ manuelles, fixes und gewichtetes Auffüllen. Kaufpreis-/Ledgerregeln stehen im
 | Handel verbindlich buchen oder Belege lesen | [storage/items.ts](../../../src/app/storage/items.ts): `executeItemShop` mit Ledger, Bestand und Receipt in einer Transaktion; `history` speichert Belegfakten, `readShopHistory` liest sie seitenweise |
 
 Die [Preis-/Teilverkaufsprüfung](../../../tests/runtime/desktop-trade-paid-price.test.mjs)
-sichert Rundung, Replay und Fresh; die [Oberflächenprüfung](../../../tests/catalog/desktop-shop-switch.test.mjs)
+sichert Rundung, Replay und Fresh; die [Oberflächenprüfung (historisch)](https://github.com/ThonkTank/Salt-Marcher/blob/05e8f2f97fc729dba8b6fef3830c566cdc47adad/tests/catalog/desktop-shop-switch.test.mjs)
 prüft Vorschlag und Verlaufsanzeige. Der native Gesamtweg und seine Grenzen stehen unten.
 Für die gemeinsame Belohnungsbewertung gilt der verlinkte Lootfachplan.
 

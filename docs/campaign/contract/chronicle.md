@@ -82,8 +82,8 @@ Produkten; menschliche Abnahme und ein allgemeines Überlegenheitsurteil bleiben
 
 [Storeprüfung](../../../tests/runtime/desktop-chronicle-store.test.mjs),
 [Fenstergrenzen](../../../tests/runtime/desktop-chronicle-window.test.mjs),
-[UI-Suche](../../../tests/runtime/desktop-chronicle-search.test.mjs),
-[Momentkontext](../../../tests/runtime/desktop-live-moment-context.test.mjs) und
+[UI-Suche (historisch)](https://github.com/ThonkTank/Salt-Marcher/blob/05e8f2f97fc729dba8b6fef3830c566cdc47adad/tests/runtime/desktop-chronicle-search.test.mjs),
+[Momentkontext (historisch)](https://github.com/ThonkTank/Salt-Marcher/blob/05e8f2f97fc729dba8b6fef3830c566cdc47adad/tests/runtime/desktop-live-moment-context.test.mjs) und
 [Gruppenkopie](../../../tests/runtime/desktop-party-history-copy.test.mjs) prüfen reale
 Speicher-/Controllerpfade, Replay, Rollback, Fresh, Kopie, Filter und verspätete
 Antworten. Der [native Suchnachweis](https://github.com/ThonkTank/Salt-Marcher/blob/16eb0aa8807ac21704abfea5412ac3a22033a23a/docs/reference/gm-ux-qa/2026-10-13-chronicle-search.md)

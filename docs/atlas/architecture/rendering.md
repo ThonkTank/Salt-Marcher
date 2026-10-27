@@ -174,9 +174,9 @@ Nachauswahl. Die Nachauswahl darf den Workspace-Flush passieren; Kameraeingaben
 und automatisches Öffnen der Eigenschaften bleiben bis zum Abschluss gesperrt.
 
 Automatische Regressionen für diese Darstellung liegen in
-`tests/atlas/atlas-fantasy-cartography.test.mjs`, `tests/atlas/atlas-prominence-editor.test.mjs`,
+`tests/atlas/atlas-fantasy-cartography.test.mjs`, [atlas-prominence-editor.test.mjs (historisch)](https://github.com/ThonkTank/Salt-Marcher/blob/05e8f2f97fc729dba8b6fef3830c566cdc47adad/tests/atlas/atlas-prominence-editor.test.mjs),
 `tests/atlas/atlas-material-tiles.test.mjs`, `tests/atlas/atlas-surface-draft.test.mjs` und
-`tests/atlas/desktop-terrain-route-units.test.mjs`. Die native Maßstabsprobe nimmt mit
+[desktop-terrain-route-units.test.mjs (historisch)](https://github.com/ThonkTank/Salt-Marcher/blob/05e8f2f97fc729dba8b6fef3830c566cdc47adad/tests/atlas/desktop-terrain-route-units.test.mjs). Die native Maßstabsprobe nimmt mit
 `QA_DRAWN=1 QA_EXACT_SCALE=1` sechs Maßstäbe (2048, 128, 16, 4, 1, 0,25 m/Pixel), drei Neigungen
 (0°, 45°, 75°) und 100/200 % UI-Skalierung auf. `QA_PERF=1` misst Kameragesten;
 `QA_EXPORT=1 QA_EXPORT_SIZES=1024,2048,8192` prüft gekachelte Ausgaben.

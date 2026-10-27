@@ -99,12 +99,12 @@ Bedienung und eine unterbrochene räumliche Dungeonroute bleiben eigene Abnahmen
 
 | Verhalten | Bestehende Prüfungen |
 | --- | --- |
-| Historische Jobs, Regeln, Positionen, Routen, Features und Dungeonstruktur; unveränderte Fakten und Backupschutz | `tests/shared/core/autonomy-persistence-integrity.test.ts`, `tests/runtime/desktop-autonomy-interval-integrity.test.mjs` |
+| Historische Jobs, Regeln, Positionen, Routen, Features und Dungeonstruktur; unveränderte Fakten und Backupschutz | [autonomy-persistence-integrity.test.ts (historisch)](https://github.com/ThonkTank/Salt-Marcher/blob/05e8f2f97fc729dba8b6fef3830c566cdc47adad/tests/shared/core/autonomy-persistence-integrity.test.ts), `tests/runtime/desktop-autonomy-interval-integrity.test.mjs` |
 | Aktuelle Jobidentität und Steuerwerte; Zeitbestätigung, Backup/Export und rein lesende Fallenangebote | `tests/runtime/desktop-autonomy-jobs-integrity.test.mjs` |
-| Unabhängige Sceneuhren, begrenzte Fortsetzung, persistente Pause und begründete Auflösung nach Fresh | `tests/shared/core/autonomy-scene-time-boundary.test.ts`, `tests/shared/core/autonomy-time-conflict-ui.test.ts` |
-| Kampagnen-/Aktivierungswechsel, verspätete Reads und Commands, gemeinsame Flushes und Abbruch vor oder nach dem ersten Schritt | `tests/runtime/desktop-autonomy-context.test.mjs` |
+| Unabhängige Sceneuhren, begrenzte Fortsetzung, persistente Pause und begründete Auflösung nach Fresh | [autonomy-scene-time-boundary.test.ts (historisch)](https://github.com/ThonkTank/Salt-Marcher/blob/05e8f2f97fc729dba8b6fef3830c566cdc47adad/tests/shared/core/autonomy-scene-time-boundary.test.ts), [autonomy-time-conflict-ui.test.ts (historisch)](https://github.com/ThonkTank/Salt-Marcher/blob/05e8f2f97fc729dba8b6fef3830c566cdc47adad/tests/shared/core/autonomy-time-conflict-ui.test.ts) |
+| Kampagnen-/Aktivierungswechsel, verspätete Reads und Commands, gemeinsame Flushes und Abbruch vor oder nach dem ersten Schritt | [desktop-autonomy-context.test.mjs (historisch)](https://github.com/ThonkTank/Salt-Marcher/blob/05e8f2f97fc729dba8b6fef3830c566cdc47adad/tests/runtime/desktop-autonomy-context.test.mjs) |
 | Sprachunabhängige Job-/Routenreihenfolge in Vorschau, Ausführung, Replay und Fresh | `tests/campaign/desktop-autonomy-order.test.mjs` |
-| Bewegung, Trap-Reset und Konfliktwirkung mit spätem Logfehler; vollständiger Rollback, Retry und Replay | `tests/shared/core/autonomy-owner-atomicity.test.ts` |
+| Bewegung, Trap-Reset und Konfliktwirkung mit spätem Logfehler; vollständiger Rollback, Retry und Replay | [autonomy-owner-atomicity.test.ts (historisch)](https://github.com/ThonkTank/Salt-Marcher/blob/05e8f2f97fc729dba8b6fef3830c566cdc47adad/tests/shared/core/autonomy-owner-atomicity.test.ts) |
 | Inaktive Zeit übersprungen, Standard-/Custom-Needs bei Kopie erhalten, Einzel-/Gruppenreservierungen sowie Pending-Zeitkonflikte freigegeben; neue Buchung durch anderen NPC, spätes Log-Fault/Rollback und atomare Rasten | `tests/runtime/desktop-autonomy-disable-time.test.mjs` |
 
 Diese SQLite-/kontrollierten DOMbelege schließen weder alle Ownerwirkungen noch

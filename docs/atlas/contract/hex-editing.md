@@ -29,7 +29,7 @@ gebunden; der Wechsel des technischen Modells entfernt keinen Landschaftsumfang.
 
 ## Prüfwege
 
-`tests/atlas/desktop-atlas-frame-loading.test.mjs` prüft freie Eigenschafts- und
+[desktop-atlas-frame-loading.test.mjs (historisch)](https://github.com/ThonkTank/Salt-Marcher/blob/05e8f2f97fc729dba8b6fef3830c566cdc47adad/tests/atlas/desktop-atlas-frame-loading.test.mjs) prüft freie Eigenschafts- und
 Resetkonturen, lückenlose Pinselabdeckung, genau einen Releaseauftrag und die
 Trennung mehrerer Gesten. `tests/atlas/desktop-atlas-region.test.mjs` prüft
 Eigenschaftsvererbung, gezieltes Zurücksetzen, gemeinsame Rücknahme und Fresh.
@@ -38,7 +38,7 @@ Archivkopie kontinuierlicher Flächen einschließlich Änderung und Löschung.
 `tests/atlas/terrain-live-history.test.mjs` schützt kleine History-Deltas und
 unveränderte andere Flächen bei 100.000 kontinuierlichen Geländeobjekten.
 
-`tests/runtime/desktop-map-camera-passivity.test.mjs` bleibt eine begrenzte
+[desktop-map-camera-passivity.test.mjs (historisch)](https://github.com/ThonkTank/Salt-Marcher/blob/05e8f2f97fc729dba8b6fef3830c566cdc47adad/tests/runtime/desktop-map-camera-passivity.test.mjs) bleibt eine begrenzte
 Prüfung der Kamera sowie unabhängiger Beschriftungs- und Kalendereingaben im
 Reiseadapter. Sie behauptet keine Prüfung eines alten Gelände-Zellpinsels.
 Native Atlasproben besitzen zusätzliche Kamera-, Neustart- und Bildnachweise;

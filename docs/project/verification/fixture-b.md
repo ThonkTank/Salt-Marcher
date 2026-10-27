@@ -10,10 +10,9 @@ Das synthetische [`e2e01-campaign-b-v1`](../../../tests/fixtures/atlas-e2e-campa
 ```bash
 node tools/materialize-campaign-b-fixture.mjs
 git diff --exit-code -- tests/fixtures/atlas-e2e-campaign-b-v1
-node build.mjs --test
-node --test --test-name-pattern='Campaign B' .build/tests.cjs
 ```
 
-Erwartet: bytegleiches Materialisieren und zwei bestandene Tests. Der [Fixture-Test](../../../tests/shared/core/campaign-b-fixture.test.ts) prüft acht Dateien samt Manifest, Bytes/Hashes, parsebare Inhalte, Campaign-/Namespace-/Registry-/Owneridentitäten und ihre Digests, die Trennung von Campaign A sowie die Auffindbarkeit beider Kampagnen über die produktive Runtimequelle.
+Erwartet: bytegleiches Materialisieren. Die früheren Core-Tests wurden bei der
+Suitebereinigung entfernt; ihre Assertions sind nur noch historische Belege. Der [Fixture-Test (historisch)](https://github.com/ThonkTank/Salt-Marcher/blob/05e8f2f97fc729dba8b6fef3830c566cdc47adad/tests/shared/core/campaign-b-fixture.test.ts) prüfte acht Dateien samt Manifest, Bytes/Hashes, parsebare Inhalte, Campaign-/Namespace-/Registry-/Owneridentitäten und ihre Digests, die Trennung von Campaign A sowie die Auffindbarkeit beider Kampagnen über die produktive Runtimequelle.
 
 Das ist ein Modell- und Dateinachweis; ein tatsächlicher A→B→A-Hostlauf, Installation und physische Eingabe bleiben separat zu prüfen.

@@ -176,7 +176,7 @@ Workspace-Aktivierung verwirft dessen UI-Zuständigkeit, auch bei Wiederverwendu
 desselben Workspace-Objekts. Späte Lese- und Speicherantworten können weder den
 neuen Export sperren/freigeben noch dort einen Erfolg oder Fehler anzeigen. Auch
 das Bestätigen offener Eingaben bleibt an dieselbe Aktivierung gebunden. Diese Fälle prüft
-`tests/atlas/desktop-atlas-canvas.test.mjs` mit kontrollierten Antworten.
+[desktop-atlas-canvas.test.mjs (historisch)](https://github.com/ThonkTank/Salt-Marcher/blob/05e8f2f97fc729dba8b6fef3830c566cdc47adad/tests/atlas/desktop-atlas-canvas.test.mjs) mit kontrollierten Antworten.
 
 `python tools/ui-session.py node tools/test-desktop-dungeon-groundplan.mjs`
 zeichnet drei benannte Räume und zwei Türen, vergrößert eine Wand samt Tür,

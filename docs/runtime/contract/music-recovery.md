@@ -78,7 +78,7 @@ Das Live-Soundboard verwendet denselben Musikstand und Writer für Transport,
 Favoriten, gemeinsame Queueauswahl und Ambience. Seine paginierte Bibliothek
 bleibt installationweit; Favoriten gehören zur Campaign. Suchwechsel entfernen
 alte Treffer sofort, entfernte Controls dürfen keine andere Campaign bedienen.
-Die [Soundboardprüfung](../../../tests/runtime/desktop-soundboard-context.test.mjs)
+Die [Soundboardprüfung (historisch)](https://github.com/ThonkTank/Salt-Marcher/blob/05e8f2f97fc729dba8b6fef3830c566cdc47adad/tests/runtime/desktop-soundboard-context.test.mjs)
 verbindet den echten Controller mit dem Store; der Audioport ist kontrolliert.
 Das beweist keine hörbare native Ausgabe.
 
@@ -145,7 +145,7 @@ Treffer sowie entfernte, wiederhergestellte und veränderte Mediendateien.
 
 [Runtime-Prüfungen](../../../tests/runtime/desktop-audio-layer-recovery.test.mjs) prüfen
 Freigabe, erneute Auswahl, fehlenden stillen Retry und unabhängige Schichten.
-[Store-/UI-Prüfungen](../../../tests/runtime/desktop-music-stop.test.mjs) verbinden Assetfehler
+[Store-/UI-Prüfungen (historisch)](https://github.com/ThonkTank/Salt-Marcher/blob/05e8f2f97fc729dba8b6fef3830c566cdc47adad/tests/runtime/desktop-music-stop.test.mjs) verbinden Assetfehler
 und Retry mit diesen Wirkungen. Die Coreprüfungen zu Musik-Kontext, -Zustand und
 -Records prüfen Sceneuhren, defektes Wetter, Identität/Revision, Receipts,
 Positionen und Campaignkopien. Kontrollierte Mediaelemente belegen keine nativen

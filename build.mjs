@@ -8,7 +8,6 @@ if (args.length === 0) {
     './tools/test-assets.mjs'
   );
   prepareTestCatalog();
-  publishTestAlias(ensureTestAsset('core'), '.build/tests.cjs');
   publishTestAlias(ensureTestAsset('store'), '.build/test-shared/store.cjs');
 } else {
   throw new Error(

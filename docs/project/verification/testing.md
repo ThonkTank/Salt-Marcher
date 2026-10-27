@@ -2,7 +2,7 @@
 
 Status: Current; offene Ziele sind als solche beschrieben.
 Owner: project
-Last Reviewed: 2026-10-27 (native Sitzungen und Einstiegskatalog; Fachabnahme separat)
+Last Reviewed: 2026-10-27 (native Sitzungen, Einstiegskatalog und Suitebereinigung; Fachabnahme separat)
 Source of Truth: Dieses Dokument besitzt das benannte Thema; Code belegt den Iststand, das Abnahmeregister den Prüfstand.
 
 `npm test` führt die aktive Auswahl lokal standardmäßig mit einem Testprozess aus.
@@ -28,6 +28,49 @@ die Cgroup und ihren Speicherhöchststand. `.build/test-run.json` verweist durch
 seinen Inhalt auf den letzten abgeschlossenen Lauf. Nur Zeiten desselben Standes
 unter vergleichbarer Last vergleichen. Ziel unter 300 Sekunden für die gesamte
 Suite bleibt offen; der vollständige Candidate-Check bleibt erforderlich.
+
+## Pauschale Bereinigung vom 27.10.2026
+
+Der Nutzerauftrag verlangt höchstens die Hälfte von Testcode und Testdefinitionen,
+mit einem groben Schnitt statt einer vollständigen Einzelprüfung aller Fälle.
+Entfernt wurden der historische TypeScript-Core-Sammelrunner samt ausschließlich
+zugehöriger Helfer, ADR-/Hostreferenztests, externe Referenzwerkzeugtests und breite
+synthetische UI-Matrizen aus Atlas, Kampagne, Katalog und Live-Spiel. Manche dieser
+Matrizen prüften weiterhin vorhandene Funktionen: die Kürzung ist ausdrücklich
+keine Behauptung, alle entfernten Tests seien fachlich überholt oder redundant.
+
+Erhalten bleiben die aktuellen Terrain-/Deck-Grenzen, Commit-Recovery,
+Store-/Transferverträge, Host-/Renderertrennung, Workspace-Aktivierung und die
+separaten nativen Desktopproben. Die früheren Detailprüfungen von UI-Races,
+Entwürfen und Kontextwechseln werden dadurch nicht vollständig ersetzt.
+Historische Testverweise sind auf den Ausgangscommit gepinnt; das Quellenregister
+und Abnahmebehauptungen wurden nicht umgeschrieben. Entfernte Testdateien sind
+wirklich gelöscht, nicht lediglich ausgeblendet oder als Skip markiert.
+
+Die Messung zählt `.mjs`- und `.ts`-Quellen unter `tests/` einschließlich Helfern,
+aber keine Binärfixtures, nativen Skripte unter `tools/` oder Buildausgaben.
+Testdefinitionen sind syntaktische `test`-/`it`-/`t.test`-Aufrufe; parametrisch
+entstehende Laufzeitfälle werden gesondert durch den Runner berichtet.
+
+| Maß | Ausgangsstand `4eab71004` | Bereinigt | Restumfang |
+| --- | ---: | ---: | ---: |
+| Testcode einschließlich Helfer | 158.888 Zeilen | 75.294 Zeilen | 47,4 % |
+| Statische Testdefinitionen | 3.916 | 1.704 | 43,5 % |
+
+Die früheren Laufzeiten unten gehören zum früheren Bestand und sind kein
+Beschleunigungsnachweis für die verkleinerte Suite.
+
+Lokale Prüfung: alle 280 aktiven Dateien, 2.213 bestandene Laufzeitfälle,
+keine Fehler und ein optionaler SRD-PDF-Fall ohne `SRD51_SOURCE_PDF` übersprungen.
+Node 22.22.0, ein Testprozess, 836,0 Sekunden einschließlich Vorbereitung;
+Report `.build/test-runs/349fb8ed-c1ae-42c4-8a2f-e37aa45b13f0/report.json`.
+Der blockierte systemd-Scope-Start wurde nicht verändert: ausschließlich der
+Prüfprozess lief in einer temporären Cgroup mit nachgewiesenen 2/3-GiB-Grenzen;
+Speicherhöchststand 1.444.696.064 Bytes, regulärer Exit 0, Cgroup danach entfernt.
+Repositoryprüfung, vollständige Typ-/Umgebungsprüfung, tatsächliche Store-Testvorbereitung,
+Formatprüfung der geänderten JS-Dateien und `git diff --check` bestehen ebenfalls.
+Dies ist lokale Testqualifikation, keine neue native Produkt- oder Candidate-Abnahme.
+
 
 ## Gemessene Initialisierungskosten
 
@@ -68,7 +111,7 @@ Produktabnahme. Die lokalen Detailbelege liegen unter `.build/test-runs/`:
 
 ## Einzelne Abläufe prüfen
 
-`npm test -- tests/runtime/desktop-combat-switch.test.mjs` bereitet nur tatsächlich benötigte gemeinsame
+`npm test -- tests/atlas/desktop-atlas-commit-recovery.test.mjs` bereitet nur tatsächlich benötigte gemeinsame
 Testartefakte vor und führt anschließend die ausgewählten Dateien aus.
 Mehrere explizite Dateipfade sind erlaubt; doppelte Pfade werden nur einmal geprüft.
 Fehlende Dateien, Verzeichnisse, unbekannte Optionen und leere Pfade werden vor dem
@@ -76,18 +119,18 @@ Build abgewiesen. Auch die benannten Node-Testskripte `test:desktop-*` verwenden
 diese Vorbereitung. Native UI-Skripte bleiben separate Prüfwege.
 
 `npm test -- --list` zeigt die vollständige aktive Auswahl ohne Build oder Tests;
-Dateipfade und `--serial` lassen sich damit kombinieren. `tests/shared/core.test.ts`
-wählt das gesamte vorbereitete Core-Bundle. Die Standardsuite entdeckt aktive
-Node-Tests im Testwurzelverzeichnis und den Fachordnern `workspace`, `atlas`,
-`campaign`, `runtime`, `catalog` und `shared`; ADR-Tests bleiben ausdrücklich
-aufgelistet. Fixtures und native Referenztests werden nicht automatisch entdeckt.
+Dateipfade und `--serial` lassen sich damit kombinieren. Die Standardsuite entdeckt
+aktive Node-Tests im Testwurzelverzeichnis und den Fachordnern `workspace`, `atlas`,
+`campaign`, `runtime`, `catalog` und `shared`. Es gibt keinen Core-Sammelrunner und
+keine zusätzlich eingeschleusten ADR-Tests mehr. Alle verbleibenden aktiven Tests
+sind direkt auswählbare `.test.mjs`-Dateien; Fixtures werden nicht als Tests entdeckt.
 Für direkte `node --test`-Aufrufe bereitet `node build.mjs --test` weiterhin
-Core, Store und Katalog vollständig vor (unter Linux über `verify:local`).
+Store und Katalog vor (unter Linux über `verify:local`).
 
-- Core wird nur für die Core-Auswahl vorbereitet, Store erst beim tatsächlichen
-  Standard-Store-Build im Testhelfer. Katalogdateien für individuelle Fixtures
-  werden ohne Bundle-Build bereitgestellt. Abweichende Buildoptionen bleiben
-  individuelle esbuild-Aufrufe; jede Testdatei läuft in einem eigenen Prozess.
+- Store wird erst beim tatsächlichen Standard-Store-Build im Testhelfer vorbereitet.
+  Katalogdateien für individuelle Fixtures werden ohne Bundle-Build bereitgestellt.
+  Abweichende Buildoptionen bleiben individuelle esbuild-Aufrufe; jede Testdatei
+  läuft in einem eigenen Prozess.
 - `.build/test-assets` enthält nach Inhalten adressierte Artefakte. Schlüssel
   berücksichtigen Quelldateien einschließlich Hinzufügen/Entfernen, Helfer,
   Konfiguration, Lockfile, Node und esbuild. Ausgabehashes werden vor jedem
@@ -106,11 +149,9 @@ Core, Store und Katalog vollständig vor (unter Linux über `verify:local`).
   Suche von linkedom. Er wird auch vor synchronen Abfragen aktualisiert;
   doppelte IDs nutzen weiterhin die ursprüngliche Suche. Die Regressionen
   prüfen Ersetzen, Verschieben, Umbenennen, Entfernen und Fragmente.
-- Die drei umfangreichen Live-/Reise-/Vorbereitungs-Fixtures kopieren ein im
-  selben Prozess erzeugtes, geschlossenes leeres Datenbankschema. Jede Kopie
-  erhält einen eigenen Dateipfad und eigene Verbindungen. WAL und FULL-Sync
-  bleiben aktiv. Initialisierungs-, Formatgrenzen- und Reopen-Tests verwenden
-  weiterhin die tatsächlichen Konstruktorpfade.
+- Die verbleibende Schema-Fixture kopiert ein im selben Prozess erzeugtes,
+  geschlossenes leeres Datenbankschema. Jede Kopie erhält einen eigenen Dateipfad
+  und eigene Verbindungen. WAL, FULL-Sync und die Reopen-Isolationsprüfung bleiben.
 
 Testdateien dem geprüften Ablauf im gemeinsamen Capability-Katalog zuordnen.
 Umbenennungen einschließlich alter Links nachführen. Fehlende Zuordnung ist
@@ -392,9 +433,7 @@ Integrationsregeln weiterhin beide Befehle aus; keiner baut den Obsidian-Adapter
 
 Der historische Adapter ist mit `npm run build:legacy:obsidian` ausdrücklich
 baubar; Bundle, Sourcemap und historisches Kataloginventar liegen getrennt unter
-`.build/legacy-obsidian`. `npm run test:legacy:obsidian` baut und prüft diese
-Referenz. Die Datei `tests/legacy-reference/obsidian-build.test.mjs` gehört nicht
-zur automatisch entdeckten Suite. Allgemeine Katalogidentitäts-, Quellhash- und
+`.build/legacy-obsidian`. Der optionale Adapter-Testaufruf wurde entfernt. Die Datei [obsidian-build.test.mjs (historisch)](https://github.com/ThonkTank/Salt-Marcher/blob/05e8f2f97fc729dba8b6fef3830c566cdc47adad/tests/legacy-reference/obsidian-build.test.mjs) ist nur noch über die Git-Historie verfügbar. Allgemeine Katalogidentitäts-, Quellhash- und
 Payloadprüfungen bleiben in `tests/catalog/catalog-build-asset.test.mjs` aktiv.
 Historische `main.js`-Budgetwerte sind keine Budgets der Desktopanwendung.
 Auch diese optionalen schweren Aufrufe lokal über `verify:local` ausführen.

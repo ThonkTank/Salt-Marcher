@@ -74,10 +74,10 @@ Host-/Workergrenze aus [canonical-store-worker.md](canonical-store-worker.md).
 - `tests/shared/desktop-storage-ports.test.mjs`: echte SQLite-Verbindungen, alte
   Receipts ohne Migration, Wiederholung nach Neustart, äußerer Mehrbesitzer-Rollback,
   Receipt-Insertfehler, Atlas-Capture-Rollback und unveränderte beschädigte Records.
-- Bestehende Fachprüfungen: `tests/campaign/desktop-preparation-context.test.mjs`,
+- Bestehende Fachprüfungen: [desktop-preparation-context.test.mjs (historisch)](https://github.com/ThonkTank/Salt-Marcher/blob/05e8f2f97fc729dba8b6fef3830c566cdc47adad/tests/campaign/desktop-preparation-context.test.mjs),
   `tests/atlas/desktop-room-renumber-history.test.mjs`,
   `tests/atlas/desktop-campaign-atlas.test.mjs`,
-  `tests/atlas/desktop-atlas-travel-context.test.mjs` und
+  [desktop-atlas-travel-context.test.mjs (historisch)](https://github.com/ThonkTank/Salt-Marcher/blob/05e8f2f97fc729dba8b6fef3830c566cdc47adad/tests/atlas/desktop-atlas-travel-context.test.mjs) und
   `tests/catalog/desktop-store-worker.test.mjs`.
 - Native Proben: `tools/test-desktop-room-reads.mjs`,
   `tools/test-desktop-region-export.mjs`, `tools/test-desktop-npc-switch.mjs` und

@@ -51,7 +51,7 @@ die externen Einstiegsmethoden und die kanonische Speichergrenze bleiben erhalte
 | Werkzeug-/Navigationswechsel und offene Eingaben | [CampaignAtlasWorkbench](../../../src/app/atlas/campaign-atlas-ui.ts): `new AtlasWorkspaceLayout` verbindet `prepare`/`tool`/`navigation` mit Flush und `setFamily`. Layout ruft diese Fachgrenze auf; Operationswerte ändern sich erst nach erfolgreicher Entwurfsprüfung. |
 | Kartenfläche nach Paneländerung | [AtlasCanvas.resizeViewport](../../../src/app/atlas/atlas-canvas.ts) erhält Weltmittelpunkt und Meter pro CSS-Pixel ohne Historyeintrag. |
 
-Prüfweg: [Gruppen- und Werkzeugregressionen](../../../tests/atlas/desktop-atlas-tool-hierarchy.test.mjs) für Vollständigkeit, Gruppen-/Werkzeugspeicher, abgelehnte und überlappende Wechsel; [Kameraregressionen](../../../tests/atlas/desktop-atlas-canvas.test.mjs) für Größenwechsel;
+Prüfweg: [Gruppen- und Werkzeugregressionen (historisch)](https://github.com/ThonkTank/Salt-Marcher/blob/05e8f2f97fc729dba8b6fef3830c566cdc47adad/tests/atlas/desktop-atlas-tool-hierarchy.test.mjs) für Vollständigkeit, Gruppen-/Werkzeugspeicher, abgelehnte und überlappende Wechsel; [Kameraregressionen (historisch)](https://github.com/ThonkTank/Salt-Marcher/blob/05e8f2f97fc729dba8b6fef3830c566cdc47adad/tests/atlas/desktop-atlas-canvas.test.mjs) für Größenwechsel;
 [Layoutprobe](../../../tools/test-desktop-atlas-layout.mjs) für den nativen Editorablauf
 mit synthetischem Profil, Close und frischem Öffnen. Letztere nach
 `npm run desktop:runtime` und `npm run build:desktop` mit

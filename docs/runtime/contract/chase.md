@@ -62,7 +62,7 @@ bleibt beim ursprünglichen Ziel; sein Reply zeichnet und meldet nur im weiterhi
 passenden Kontext. Aktuelle IPCfehler bleiben sichtbar und Refresh bleibt möglich.
 Anlage nach abgeschlossenem Tracker sendet außerdem keine alte Chase-ID/Basis.
 
-`tests/runtime/desktop-chase-authority-dom.test.mjs` enthält elf kontrollierte DOMfälle
+[desktop-chase-authority-dom.test.mjs (historisch)](https://github.com/ThonkTank/Salt-Marcher/blob/05e8f2f97fc729dba8b6fef3830c566cdc47adad/tests/runtime/desktop-chase-authority-dom.test.mjs) enthält elf kontrollierte DOMfälle
 mit verzögerten/ersetzten IPCantworten. Zusammen mit den betroffenen
 Szenensuche-/Reiseziel-, Codec-, Store-/Transfer- und Draftmigrationprüfungen
 bestanden 35 lokale Prüfungen und Desktop-Typecheck.

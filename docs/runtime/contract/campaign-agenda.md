@@ -90,7 +90,7 @@ Ein unbekannter Ausgang lässt sich im selben Dialog über den ursprünglichen
 Worldreceipt klären, ohne erneutes Senden. Spätere Eingaben bleiben erhalten.
 Die Kalenderrevision bleibt an den sichtbaren Entwurf gebunden; ein paralleles
 Weltlesen überschreibt weder Rohfelder noch die Konfliktbasis.
-`tests/runtime/desktop-calendar-rules.test.mjs` prüft diese Übergänge mit dem echten Store.
+[desktop-calendar-rules.test.mjs (historisch)](https://github.com/ThonkTank/Salt-Marcher/blob/05e8f2f97fc729dba8b6fef3830c566cdc47adad/tests/runtime/desktop-calendar-rules.test.mjs) prüft diese Übergänge mit dem echten Store.
 
 `tools/test-desktop-agenda-deadline.mjs` prüft nativ bei tatsächlichem 100-/200-%-Zoom:
 90-Minuten-Tag konfigurieren, verlorene Speicherantwort klären, eine Frist sechs

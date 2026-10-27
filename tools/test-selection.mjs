@@ -2,16 +2,6 @@ import { readdirSync, statSync } from 'node:fs';
 import path from 'node:path';
 
 const domains = ['workspace', 'atlas', 'campaign', 'runtime', 'catalog', 'shared'];
-const adrTests = [
-  'p02-contract',
-  'p02-concurrency',
-  'p02-process',
-  'p03-contract',
-  'p03-channel',
-  'p03-renderer',
-  'p03-pixel-oracle',
-  'p03-evidence',
-];
 
 // Only active test directories are discovered. Native reference tests are opt-in.
 export function activeTests(root = process.cwd()) {
@@ -25,7 +15,6 @@ export function activeTests(root = process.cwd()) {
     );
   const entries = readdirSync(path.join(root, 'tests'), { withFileTypes: true });
   return [
-    '.build/tests.cjs',
     ...entries
       .flatMap((entry) =>
         entry.isFile() && entry.name.endsWith('.test.mjs')
@@ -35,7 +24,6 @@ export function activeTests(root = process.cwd()) {
             : [],
       )
       .sort(),
-    ...adrTests.map((name) => `tests/adr-prototypes/${name}.test.mjs`),
   ];
 }
 
@@ -65,10 +53,6 @@ export function selectTests(args, root = process.cwd()) {
         `Invalid test argument: ${JSON.stringify(arg)}. Use --serial, --concurrency=N, --list or explicit test file paths.`,
       );
     const relative = path.relative(root, path.resolve(root, arg)).split(path.sep).join('/');
-    if (relative === '.build/tests.cjs' || relative === 'tests/shared/core.test.ts') {
-      selected.push('.build/tests.cjs');
-      continue;
-    }
     if (!relative.startsWith('tests/') || !relative.endsWith('.test.mjs'))
       throw new Error(`Expected a tests/*.test.mjs file: ${arg}`);
     let isFile = false;

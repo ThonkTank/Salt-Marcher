@@ -152,7 +152,7 @@ Tempo, Gelände und Wetter weiterhin separat. Automatische Stufenwechsel
 aktualisieren die Anzeige; ohne Raster entfällt die Hexinformation. Im Bildexport
 erscheint sie nur zusammen mit Raster und Maßstab.
 
-Gezielte Prüfungen: `tests/atlas/desktop-atlas-measurements.test.mjs`,
+Gezielte Prüfungen: [desktop-atlas-measurements.test.mjs (historisch)](https://github.com/ThonkTank/Salt-Marcher/blob/05e8f2f97fc729dba8b6fef3830c566cdc47adad/tests/atlas/desktop-atlas-measurements.test.mjs),
 `tests/atlas/desktop-atlas-navigation.test.mjs` und
 `tools/test-desktop-atlas-measurements.mjs`. Der native Ablauf verwendet eine
 synthetische Kampagne und prüft Wegentwurf, Einheitenwechsel, Raumzug mit
@@ -166,5 +166,5 @@ Planungsgrenzen, Punktkoordinaten und Höhenprofil. Sein Dialog bietet dieselbe
 Auswahl; Prozentsteigungen bleiben unverändert. Einheitenwechsel benötigen weder
 eine neue Geländeplanung noch einen Schreibvorgang. Unbearbeitete Koordinaten
 behalten ihre volle Genauigkeit. Zugehörige Prüfungen stehen in
-`tests/atlas/desktop-terrain-route-units.test.mjs` und
+[desktop-terrain-route-units.test.mjs (historisch)](https://github.com/ThonkTank/Salt-Marcher/blob/05e8f2f97fc729dba8b6fef3830c566cdc47adad/tests/atlas/desktop-terrain-route-units.test.mjs) und
 `tools/test-desktop-terrain-routes.mjs`.

@@ -336,8 +336,8 @@ Neue Öffnung oder Ownerwechsel entwerten alte Antworten; deren Fehler und
 Buchungswahrheit. Fachpläne ergänzen nur Eingabe-/Zielbindung und die Anzeige
 nach der Klärung, etwa [Flächenschaden](../../runtime/contract/combat-recovery.md#flächenschaden-eine-gebundene-entscheidung).
 Gezielte Gegenproben: [Öffnung und Replyverlust](../../../tests/shared/desktop-editor-transition.test.mjs),
-[Schadensdialog](../../../tests/runtime/desktop-combat-area.test.mjs),
-[gemeinsame Bestätigung](../../../tests/runtime/desktop-chase-switch.test.mjs).
+[Schadensdialog (historisch)](https://github.com/ThonkTank/Salt-Marcher/blob/05e8f2f97fc729dba8b6fef3830c566cdc47adad/tests/runtime/desktop-combat-area.test.mjs),
+[gemeinsame Bestätigung (historisch)](https://github.com/ThonkTank/Salt-Marcher/blob/05e8f2f97fc729dba8b6fef3830c566cdc47adad/tests/runtime/desktop-chase-switch.test.mjs).
 
 ### Gemeinsame Editor- und Dialogübergänge
 

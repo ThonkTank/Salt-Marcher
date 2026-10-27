@@ -54,7 +54,7 @@ erhält aber spätere editierbare Werte über den gemeinsamen Editorübergang.
 Notizen, Ortssuche und fremde Entwürfe werden durch Planantworten nicht ersetzt.
 `tests/campaign/desktop-plan-projection.test.mjs` verbietet globale Reads bei wachsendem
 Hintergrundbestand und prüft Replay, Fresh, Konflikte und Rollback;
-`tests/campaign/desktop-timeline-search.test.mjs` prüft auch spätere Eingabe während Recovery.
+[desktop-timeline-search.test.mjs (historisch)](https://github.com/ThonkTank/Salt-Marcher/blob/05e8f2f97fc729dba8b6fef3830c566cdc47adad/tests/campaign/desktop-timeline-search.test.mjs) prüft auch spätere Eingabe während Recovery.
 `tools/test-desktop-manual-timeline.mjs` führt ohne Party drei Besuche, wiederholten
 Ort, Umordnung, späte Eingabe, Antwortverlust, Neustart und unabhängige Liveübernahme
 aus. Dies ist keine vollständige manuelle Sessionplanner-Abnahme.
@@ -180,7 +180,7 @@ Plantexte, Besuchsinhalte und Freigabebasis kommen aus derselben geprüften
 Session-Lesung. Der Dialog hält keine zweite Plankopie; Ersetzen und Mappe
 verwenden denselben gelesenen Plan statt ihn nochmals zu laden. Der Plananteil
 ist eine Lesesicht und wird nicht zusätzlich in historischen Receipts gespeichert.
-[Dialogprüfung](../../../tests/campaign/desktop-session-copy-context.test.mjs) und
+[Dialogprüfung (historisch)](https://github.com/ThonkTank/Salt-Marcher/blob/05e8f2f97fc729dba8b6fef3830c566cdc47adad/tests/campaign/desktop-session-copy-context.test.mjs) und
 [Speicherprüfung](../../../tests/campaign/desktop-session-copy-integrity.test.mjs) prüfen
 Reopen, Auswahl, Antwortreihenfolge, Quellschutz, Append, unabhängige offene
 Rewards, Replay und atomaren Rollback.
@@ -198,7 +198,7 @@ und wartet auf eine neue ausdrückliche Bestätigung. Fehlende gewählte Besuche
 bleiben zum bewussten Entfernen sichtbar; sie werden nicht still übersprungen.
 Jeder neue Anlageauftrag bekommt eine neue Plan-ID. Der frühere lokale
 Kopier-Retry und seine vorab reservierte Plan-ID entfallen.
-[Speicher- und Bedienprüfungen](../../../tests/campaign/desktop-preparation-context.test.mjs)
+[Speicher- und Bedienprüfungen (historisch)](https://github.com/ThonkTank/Salt-Marcher/blob/05e8f2f97fc729dba8b6fef3830c566cdc47adad/tests/campaign/desktop-preparation-context.test.mjs)
 belegen verlorene Antworten, reine Statusabfrage, spätere Texte und genau einen
 Append nach Dialogreset. Ein frischer Store liest denselben Beleg; native
 Prozessende-/Neustartprüfung einschließlich wiedergefundener Referenz bleibt offen.
@@ -256,8 +256,8 @@ der sichtbare Editor ist kein Ersatzowner. Spätere Zieltexte bleiben erhalten.
 Nach neuer Storeinstanz klärt derselbe Beleg angewandt/nicht angewandt ohne
 automatische Wiederholung. Der vorhandene Draftvertrag bleibt unverändert.
 
-[Übergabeprüfungen](../../../tests/campaign/desktop-visit-handoff.test.mjs) und
-[Dialogprüfungen](../../../tests/runtime/desktop-session-resume-context.test.mjs)
+[Übergabeprüfungen (historisch)](https://github.com/ThonkTank/Salt-Marcher/blob/05e8f2f97fc729dba8b6fef3830c566cdc47adad/tests/campaign/desktop-visit-handoff.test.mjs) und
+[Dialogprüfungen (historisch)](https://github.com/ThonkTank/Salt-Marcher/blob/05e8f2f97fc729dba8b6fef3830c566cdc47adad/tests/runtime/desktop-session-resume-context.test.mjs)
 prüfen Zielbindung, spätere Eingaben und Originalauftrag. Native Gesamtfreigabe
 und vollständige Wiederaufnahme nach Prozessende bleiben offen.
 

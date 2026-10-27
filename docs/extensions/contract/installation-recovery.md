@@ -61,7 +61,7 @@ Campaigntransfer und spätere Neuinstallation dürfen Nutzerbytes nicht verliere
 Vollständiges Backup prüft auch Installationseinträge; ein Campaignexport entfernt
 diese Einträge und prüft seinen eigenen Datenstand nach der Abgrenzung.
 Beschädigte fremde Installation darf ihn nicht blockieren.
-[extension-lifecycle.test.ts](../../../tests/shared/core/extension-lifecycle.test.ts)
+[extension-lifecycle.test.ts (historisch)](https://github.com/ThonkTank/Salt-Marcher/blob/05e8f2f97fc729dba8b6fef3830c566cdc47adad/tests/shared/core/extension-lifecycle.test.ts)
 prüft Entfernen/Neuinstallation, Byteerhalt, Import ohne Paket, fehlerhafte Commands
 und erhaltene sichere Backups. Paketcode wird noch nicht ausgeführt; Sandbox,
 Runtime-Masken und neue Consumer gehören zur folgenden Lieferung.

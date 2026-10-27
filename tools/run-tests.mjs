@@ -63,10 +63,6 @@ if (process.platform === 'linux' && !process.env.CI && !isMemoryBounded()) {
   try {
     const { prepareTestCatalog } = await import('./test-assets.mjs');
     prepareTestCatalog();
-    if (selection.files.includes('.build/tests.cjs')) {
-      const { ensureTestAsset, publishTestAlias } = await import('./test-assets.mjs');
-      publishTestAlias(ensureTestAsset('core'), '.build/tests.cjs');
-    }
     report.prepareMs = performance.now() - start;
     result = await new Promise((resolve, reject) => {
       const child = spawn(

@@ -97,8 +97,8 @@ Native Qualifikation und exakte Candidate-CI bleiben separate Lieferbelege.
 `python3 tools/measure-test-suite.py .build/test-suite-next` führt unverändert
 `npm test` einschließlich Vorbereitung aus. Der Ausgabeordner muss neu sein.
 Rohdaten dieser Fortsetzung: `.build/section2b/full-after`. Gezielte Dateien:
-`tests/runtime/desktop-live-moment-context.test.mjs`,
-`tests/runtime/desktop-travel-target-dom.test.mjs`,
+[desktop-live-moment-context.test.mjs (historisch)](https://github.com/ThonkTank/Salt-Marcher/blob/05e8f2f97fc729dba8b6fef3830c566cdc47adad/tests/runtime/desktop-live-moment-context.test.mjs),
+[desktop-travel-target-dom.test.mjs (historisch)](https://github.com/ThonkTank/Salt-Marcher/blob/05e8f2f97fc729dba8b6fef3830c566cdc47adad/tests/runtime/desktop-travel-target-dom.test.mjs),
 `tests/atlas/desktop-transfer-contracts.test.mjs` und
 `tests/shared/fixture-lifecycle.test.mjs`; vorher einmal `node build.mjs --test`.
 Die Diagnoseprofile verändern nicht die produktive Testauswahl. Es wurden

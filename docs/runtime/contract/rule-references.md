@@ -58,10 +58,10 @@ Regelrevisionen. Installationsweite Definitionen bleiben eine getrennte Lieferun
 
 ## Nachgewiesenes Verhalten und Grenzen
 
-[Schnellsuche](../../../tests/catalog/desktop-quick-reference.test.mjs) prüft mit echtem
+[Schnellsuche (historisch)](https://github.com/ThonkTank/Salt-Marcher/blob/05e8f2f97fc729dba8b6fef3830c566cdc47adad/tests/catalog/desktop-quick-reference.test.mjs) prüft mit echtem
 Store und DOM entfernte Treffer, überholte Enter-Anfragen, Quellenänderungen beim
 Speichern, unveränderte Textübergaben und Pins ohne Zeit-/Fortschrittswirkung.
-[Regel-UI](../../../tests/catalog/desktop-rule-reference-authority.test.mjs) und
+[Regel-UI (historisch)](https://github.com/ThonkTank/Salt-Marcher/blob/05e8f2f97fc729dba8b6fef3830c566cdc47adad/tests/catalog/desktop-rule-reference-authority.test.mjs) und
 [Regelspeicher](../../../tests/catalog/desktop-rule-reference-store.test.mjs) prüfen
 Campaign-/Scenewechsel, Revisionsschutz, erste State-Anlage, Proben, Replay, Fresh
 und unabhängige Kopien. Reads und readonly Snapshotprüfung schreiben keinen State.

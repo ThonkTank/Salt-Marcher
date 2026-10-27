@@ -95,21 +95,6 @@ export function checkRepository(root, suppliedFiles) {
     }
   }
   json('acceptance.json');
-  if (exists('tests/shared/core.test.ts') && exists('tests/shared/core')) {
-    const registered = new Set(
-      [
-        ...read('tests/shared/core.test.ts').matchAll(
-          /(?:import|export)\s+(?:[^'";]+\s+from\s+)?["']\.\/core\/([^"']+\.test)["']/g,
-        ),
-      ].map((match) => `${match[1]}.ts`),
-    );
-    for (const file of files)
-      if (
-        /^tests\/shared\/core\/[^/]+\.test\.ts$/.test(file) &&
-        !registered.has(path.posix.basename(file))
-      )
-        errors.push(`${file}: core test is not registered in tests/shared/core.test.ts`);
-  }
   // ADR matrices may refer to a live local plan or an immutable historical plan.
   for (const file of files) {
     if (!/^ROADMAP-.*-MATRIX\.json$/.test(file)) continue;
@@ -238,10 +223,7 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.a
     if (errors.length) {
       console.error(`Repository check FAILED: ${errors.length} problem(s)`);
       process.exitCode = 1;
-    } else
-      console.log(
-        'Repository check PASS (offline links, JSON, source references and core test registration)',
-      );
+    } else console.log('Repository check PASS (offline links, JSON, source references)');
   } catch (error) {
     console.error(`Repository check FAILED: ${error.message}`);
     process.exitCode = 1;

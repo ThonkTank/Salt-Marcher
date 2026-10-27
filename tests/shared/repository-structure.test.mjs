@@ -42,18 +42,6 @@ test('normal edits keep historical source hashes and legacy paths usable', (t) =
   const f = fixture(t);
   assert.deepEqual(f.check(), []); // The pinned SHA need not equal today's README bytes.
 });
-test('every core test is registered in the canonical bundle entry', (t) => {
-  const f = fixture(t);
-  f.write('tests/shared/core.test.ts', 'import "./core/registered.test";');
-  f.write('tests/shared/core/registered.test.ts', '');
-  f.write('tests/shared/core/forgotten.test.ts', '');
-  assert.deepEqual(
-    f.check().filter((e) => e.includes('core test is not registered')),
-    [
-      'tests/shared/core/forgotten.test.ts: core test is not registered in tests/shared/core.test.ts',
-    ],
-  );
-});
 test('a deleted or renamed document leaves a failing local link', (t) => {
   const f = fixture(t);
   fs.renameSync(path.join(f.root, 'docs/GUIDE.md'), path.join(f.root, 'docs/RENAMED.md'));

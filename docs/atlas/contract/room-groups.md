@@ -68,7 +68,7 @@ Befehl zurück. Atlas-History und Kampagnenkopien umfassen die neuen Records.
 Verbindungen, gemeinsame Identität, abgeleitete Außenkontur, History,
 Wiederöffnung, Skalierung und unabhängigen Kampagnentransfer.
 `tools/test-desktop-room-groups.mjs` spielt Einzelhaus, Krypta, Raumtext und
-Prozessneustart in Electron durch. `tests/atlas/atlas-independent-building.test.mjs`
+Prozessneustart in Electron durch. [atlas-independent-building.test.mjs (historisch)](https://github.com/ThonkTank/Salt-Marcher/blob/05e8f2f97fc729dba8b6fef3830c566cdc47adad/tests/atlas/atlas-independent-building.test.mjs)
 prüft unabhängige Platzierung mit und ohne historischen Stadtkontext sowie
 Abbruch und Kampagnenwechsel während der Vorschau.
 `tools/test-desktop-world-authoring.mjs` beginnt mit einer leeren Kampagne und

@@ -57,7 +57,7 @@ stehen auch in der GM-Mappe. Umordnen entfernt nur auseinandergerissene
 Rastbindungen; Kopieren und Ersetzen binden erhaltene Nachbarpaare an neue IDs.
 Der Schreibauftrag prüft angezeigte Plan- und Besuchsrevision atomar.
 
-[Gezielte Prüfungen](../../../tests/runtime/desktop-session-day.test.mjs) decken Budget,
+[Gezielte Prüfungen (historisch)](https://github.com/ThonkTank/Salt-Marcher/blob/05e8f2f97fc729dba8b6fef3830c566cdc47adad/tests/runtime/desktop-session-day.test.mjs) decken Budget,
 Restbindung, Quelle, Reopen, Replay, Kopie und entfernte Controls ab. Der
 vollständige ursprüngliche Session-Planner-Umfang, insbesondere die asynchrone
 Ein-Schritt-Generierung und strukturierte Reward-Orchestrierung, bleibt offen.
