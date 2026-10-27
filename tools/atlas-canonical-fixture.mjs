@@ -112,79 +112,84 @@ export async function createAtlasCanonicalFixture(options = {}) {
     let cityId, buildingId, interiorScopeId, groundRoom, upperFloorId, upperRoom;
     if (options.includeCity !== false) {
       cityId = write({
-      kind: 'city-create',
-      name: 'Hügelwacht',
-      x: 0,
-      y: 0,
-      width: 64,
-      height: 64,
+        kind: 'city-create',
+        name: 'Hügelwacht',
+        x: 0,
+        y: 0,
+        width: 64,
+        height: 64,
       }).result.id;
       buildingId = 'atlas-maplibre-watchtower';
-    const building = {
-      id: buildingId,
-      kind: 'building',
-      name: 'Hügelwacht',
-      protected: true,
-      position: peak,
-      angle: 0,
-      outline: [
-        { x: -4, y: -4 },
-        { x: 4, y: -4 },
-        { x: 4, y: 4 },
-        { x: -4, y: 4 },
-      ],
-      notes: '',
-      residentIds: [],
-      workerIds: [],
-      terrain: { mode: 'ground', offsetM: 1, wallM: 5, roofM: 2 },
-    };
-    const city = () => store.city(active.token, cityId);
-    const cityCommand = {
-      commandId: commandId(),
-      campaignId: campaign.id,
-      token: active.token,
-      cityId,
-      expectedRevision: city().header.revision,
-      action: { kind: 'change', upsert: [building], remove: [], label: 'Kanonisches Atlasgebäude' },
-    };
-    store.executeAtlasCommit({
-      commandId: cityCommand.commandId,
-      campaignId: campaign.id,
-      token: active.token,
-      action: { kind: 'city', command: cityCommand },
-    });
+      const building = {
+        id: buildingId,
+        kind: 'building',
+        name: 'Hügelwacht',
+        protected: true,
+        position: peak,
+        angle: 0,
+        outline: [
+          { x: -4, y: -4 },
+          { x: 4, y: -4 },
+          { x: 4, y: 4 },
+          { x: -4, y: 4 },
+        ],
+        notes: '',
+        residentIds: [],
+        workerIds: [],
+        terrain: { mode: 'ground', offsetM: 1, wallM: 5, roofM: 2 },
+      };
+      const city = () => store.city(active.token, cityId);
+      const cityCommand = {
+        commandId: commandId(),
+        campaignId: campaign.id,
+        token: active.token,
+        cityId,
+        expectedRevision: city().header.revision,
+        action: {
+          kind: 'change',
+          upsert: [building],
+          remove: [],
+          label: 'Kanonisches Atlasgebäude',
+        },
+      };
+      store.executeAtlasCommit({
+        commandId: cityCommand.commandId,
+        campaignId: campaign.id,
+        token: active.token,
+        action: { kind: 'city', command: cityCommand },
+      });
 
-    const savedBuilding = city().units.find((unit) => unit.id === buildingId);
-    assert(savedBuilding?.groupId, 'City building must own a canonical interior scope');
+      const savedBuilding = city().units.find((unit) => unit.id === buildingId);
+      assert(savedBuilding?.groupId, 'City building must own a canonical interior scope');
       interiorScopeId = savedBuilding.groupId;
       groundRoom = store
-      .campaignAtlas(active.token)
-      .workspace.rooms.find(
-        (room) => room.scopeId === interiorScopeId && room.floorId === 'ground',
-      );
-    assert(groundRoom, 'Building interior must have a canonical ground-floor room');
+        .campaignAtlas(active.token)
+        .workspace.rooms.find(
+          (room) => room.scopeId === interiorScopeId && room.floorId === 'ground',
+        );
+      assert(groundRoom, 'Building interior must have a canonical ground-floor room');
 
       upperFloorId = 'atlas-maplibre-upper-floor';
-    store.executeDrawing({
-      commandId: commandId(),
-      token: active.token,
-      campaignId: campaign.id,
-      action: {
-        kind: 'floor',
-        scopeId: interiorScopeId,
-        id: upperFloorId,
-        name: 'Obergeschoss',
-        elevation: 4,
-        cloneId: 'ground',
-        copyKeys: false,
-        hidden: false,
-      },
-    });
+      store.executeDrawing({
+        commandId: commandId(),
+        token: active.token,
+        campaignId: campaign.id,
+        action: {
+          kind: 'floor',
+          scopeId: interiorScopeId,
+          id: upperFloorId,
+          name: 'Obergeschoss',
+          elevation: 4,
+          cloneId: 'ground',
+          copyKeys: false,
+          hidden: false,
+        },
+      });
       upperRoom = store
-      .campaignAtlas(active.token)
-      .workspace.rooms.find(
-        (room) => room.scopeId === interiorScopeId && room.floorId === upperFloorId,
-      );
+        .campaignAtlas(active.token)
+        .workspace.rooms.find(
+          (room) => room.scopeId === interiorScopeId && room.floorId === upperFloorId,
+        );
       assert(upperRoom, 'Second floor must contain a canonical cloned room');
     }
 

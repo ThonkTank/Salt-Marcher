@@ -47,8 +47,8 @@ Kampagnenarchive und Build-Metadaten. Frühere Testbestände werden nicht migrie
 Planungsstand: 27.10.2026, übernommen; Umsetzung durch den Koordinationschat freigegeben.
 Preflight-Basis ist Main `a87b8e99ba8a3954f664a10b0e7a9c141c65eb22`.
 Aktuelle Arbeitsbasis: `a87b8e99ba8a3954f664a10b0e7a9c141c65eb22`; letzter
-erfolgreicher GitHub-Abgleich 27.10.2026, 13:59 Uhr Europe/Berlin. Keine neuen
-Main-Commits offen; Arbeitsstand auf eigenem Checkpoint `95c0fc5c8` gesichert.
+erfolgreicher GitHub-Abgleich 27.10.2026, 14:07 Uhr Europe/Berlin. Keine neuen
+Main-Commits offen; Arbeitsstand auf eigenem Checkpoint `83d488c9b` gesichert.
 Die [sechs bestätigten Ziele TW-G1–6 und der Messvertrag](../requirements/terrain-relief.md#ziele-und-abnahme-dieser-etappe)
 gelten unverändert. Hier stehen Ausführung und Entscheidungen, keine zweite Anforderungsliste.
 
@@ -95,36 +95,35 @@ ohne Warten auf die erste Speicherantwort; anschließend müssen beide bestätig
 Falls nötig hilft ein identischer Kontrollablauf ohne Höhenwirkung, Störeinflüsse
 auszuschließen. Kein Erfolg nur aus Revisionszähler oder `terrainDraft`-Attribut.
 
-**Aktuelle Entscheidung:** M1 bleibt offen. Nach dem M1-Review am Checkpoint
-`95c0fc5c8` wurde genau ein korrigierter Lauf ausgeführt; weitere Ausführung ist
-bis zur Ansatzentscheidung angehalten. Reviewchat
-`01a17d32-1d64-7ce3-8b48-93d53429877a` prüft die vier Befunde und den kleinsten
-nötigen Anschluss am neuen gesicherten Stand nach. Kein neuer Zeitrahmen;
-gemeinsame Grenze bleibt 15:08. A bleibt die Richtung, B/C sind bisher nicht
-durch widerlegte Produktgrundlagen begründet.
+**Aktuelle Entscheidung:** Der gebündelte Anschluss ist vor der Kontrolle
+14:25 vollständig durchgelaufen. M1 wartet auf die gezielte Ergebnisnachprüfung
+im Reviewchat `01a17d32-1d64-7ce3-8b48-93d53429877a`; keine weitere Probe oder
+Produktänderung währenddessen. Gemeinsame Entscheidungsgrenze bleibt 15:08.
+A bleibt begründet: Der fachliche Durchstich ist nun in einem Lauf beobachtet,
+ein Renderer-/Datenkernersatz ist durch die bisherigen Befunde nicht begründet.
 
-Aktueller Lauf: `.build/atlas-terrain-stroke/1793102431128-380640/`.
-`evidence.partial.json` und getrennte Baseline-/Änderungsbilder belegen für beide
-Züge cursorfreie Pixeländerung während Pointerdown, mit moderater Stärke 1 m/s
-und Radius 8 m. Der zweite Zug begann 292 ms nach dem ersten Pointerup. Die
-App-GPU ist am lebenden WebGL2-Kontext als Intel UHD 620/ANGLE gebunden; die
-räumlich verzögerte Beobachtung liefert keine First-visible-Latenz. Die erste
-Geste dauerte durch Beobachter-Roundtrips 5,356 s statt höchstens 5 s; eine
-Harness-Assertion brach danach den kanonischen Vergleich und Fresh-Reopen ab.
-Der nachträgliche SQLite-Audit weist Änderungen in beiden Bändern nach, ersetzt
-aber keinen zeitgebundenen Harness-Vergleich oder Wiederöffnungsbeleg.
+Aktueller Lauf: `.build/atlas-terrain-stroke/1793103145919-382361/`.
+`handoff-report.json` verweist auf unveränderte Primärbelege in `failure.json`,
+`evidence.partial.json`, `height-before.json`, `height-after.json` und
+`canonical-diff.json` sowie getrennte Vor-up-PNGs und `03-fresh-reopen.png`.
+Bei Stärke 1 m/s und Radius 8 m dauerte die erste Geste 4,115 s, die zweite
+2,429 s; der Folgezug begann 833 ms nach Pointerup ohne Speicherantwort-Wartepunkt.
+Beide cursorfreien Patchänderungen wurden vor Pointerup gespeichert. Direkte
+regionale Höhenvergleiche fanden 15.409 bzw. 13.894 angehobene Knoten; Fresh
+bestätigte identische Höhenbytes aller 17 Kacheln bei Revision 3. Der lebende
+App-WebGL2-Kontext nennt Intel UHD 620/ANGLE. Dies sind Funktionsbelege, keine
+First-visible-Latenz, p95- oder Qualitätsfreigabe.
 
-Der `atlas:terrain-tile`-Handlerfehler wurde in diesem Lauf erst nach der
-Assertion bei Fehlerbehandlung/Fallback-Capture erfasst; das Phasenlabel blieb
-fälschlich beim zweiten Zug. Der Prozessaudit bestätigt PID-Abwesenheit, aber
-keinen gespeicherten normalen Exit. Diese Belegfehler sowie Fresh-Reopen bleiben
-offen; kein zusammengefügter Erfolg aus früheren Läufen. Vorläuferlauf
-`1793101396292-374648/` hatte Wiederöffnungsbilder und normale Exits, jedoch
-keinen haltbaren vollständigen Bericht; die damals gemeldeten 2,54 s waren
-wegen des Beobachterfilters keine First-visible-Messung. Der getrennte alte
-Phasenlauf `1793101529427-375950/` scheiterte außerdem an einer geschlossenen
-Page. Die neue Korrektur darf nicht erneut nach einem kleinen Prüfdetail
-alle späteren fachlichen und Prozessbelege verlieren.
+Gesamtstatus bleibt **FAIL**: In Phase `close initial app` meldet der Renderer
+einen fehlenden `atlas:terrain-tile`-Handler. Beide App-Prozesse endeten trotzdem
+mit Code 0, ohne Signal und mit bestätigter PID-Abwesenheit. Der Bericht hat
+zusätzlich einen bekannten Feldfehler: `terrain-save-state.status` enthält den
+UI-Text `Gespeichert` statt PASS; die Speicherwartebedingung wurde erreicht.
+Das muss vor Verwendung als allgemeines automatisches Gate korrigiert werden.
+Sichtbare Kachelübergänge und stempelartige Formen bleiben Darstellungsbefunde.
+Kein Filter des Shutdownfehlers und kein zusammengesetzter Erfolg aus alten
+Läufen. Frühere Harnessabbrüche und ihre Ansatzentscheidung sind in Checkpoint
+`83d488c9b` gesichert; sie setzen die Zeitgrenze nicht zurück.
 
 Der historische
 saubere Stand `e5882ae09d70bb38eede86c28a9ae453f8024a06` hat einen nativen
