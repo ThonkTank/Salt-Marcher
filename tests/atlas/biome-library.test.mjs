@@ -198,6 +198,17 @@ test('structural definitions accept a fifth authored biome and reject unsafe ass
   }
 });
 
+test('shared main and undergrowth material coverage saturates instead of wrapping', () => {
+  const r = area('marsh');
+  r.vegetation.preset.undergrowthAsset = 'shrub';
+  r.vegetation.preset.waterDepth.undergrowth = 0;
+  r.vegetation.preset.density = 0.8;
+  r.vegetation.preset.undergrowth = 0.8;
+  assert.doesNotThrow(() => validateVegetation(r));
+  const channels = raster([...ground(), r], true);
+  assert.equal(channels.shrub[30 * 100 + 50], 255);
+});
+
 test('all four biomes and an independent fifth snapshot retain seeds and a single history step across undo, redo and fresh storage', (t) => {
   const dir = mkdtempSync(tmpdir() + '/biome-library-');
   let store = new CampaignStore(dir + '/workbench.sqlite');
