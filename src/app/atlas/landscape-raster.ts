@@ -252,10 +252,13 @@ export class LandscapeRasterizer {
           : c === underChannel
             ? preset.waterDepth.undergrowth
             : preset.waterDepth.rocks,
-      value:
+      // Two definition families can share one byte coverage channel.
+      value: Math.min(
+        1,
         (c === mainChannel ? preset.density : 0) +
-        (c === underChannel ? preset.undergrowth : 0) +
-        (c === 'debris' ? preset.rocks : 0),
+          (c === underChannel ? preset.undergrowth : 0) +
+          (c === 'debris' ? preset.rocks : 0),
+      ),
     }));
     // Edits apply to every candidate family, exactly as the individual generator.
     const corrected = coverEntries.map((entry) => {
