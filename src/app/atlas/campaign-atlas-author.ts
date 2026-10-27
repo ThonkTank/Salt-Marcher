@@ -46,6 +46,7 @@ async function writeAtlas(
 export async function writeAtlasCommit(
   c: AtlasCommand,
 ): Promise<Result<import('./campaign-atlas-contracts').AtlasCommitAck>> {
+  c = structuredClone(c);
   if (pending.has(c.token))
     return {
       ok: false,
@@ -53,6 +54,8 @@ export async function writeAtlasCommit(
     };
   try {
     const result = await editorSession.run(() => window.campaign.executeAtlasCommit(c));
+    if (!result.ok && result.errorKind === 'store-outcome-unknown')
+      pending.set(c.token, structuredClone(c));
     if (result.ok) {
       pending.delete(c.token);
       document.dispatchEvent(new CustomEvent('atlas-invalidated', { detail: result.value }));

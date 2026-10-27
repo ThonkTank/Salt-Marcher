@@ -1,5 +1,6 @@
 import type { IpcMain, IpcMainInvokeEvent, WebContents } from 'electron';
 import type { Result } from '../src/app/shared/contracts';
+import { StoreOutcomeUnknownError } from './store-client';
 
 type Authority = {
   contents: () => WebContents;
@@ -72,6 +73,9 @@ export class HostIpc {
           return {
             ok: false,
             error: error instanceof Error ? error.message : 'Vorgang fehlgeschlagen.',
+            ...(error instanceof StoreOutcomeUnknownError
+              ? { errorKind: 'store-outcome-unknown' as const }
+              : {}),
           };
         } finally {
           this.operations.delete(task);

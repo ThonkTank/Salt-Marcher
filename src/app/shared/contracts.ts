@@ -109,4 +109,6 @@ export interface DungeonImportPreview {
   sourceHash: string;
   warnings: string[];
 }
-export type Result<T> = { ok: true; value: T } | { ok: false; error: string };
+export type Result<T> =
+  | { ok: true; value: T }
+  | { ok: false; error: string; errorKind?: 'store-outcome-unknown' };

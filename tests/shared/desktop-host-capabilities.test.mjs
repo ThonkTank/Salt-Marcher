@@ -30,7 +30,7 @@ await build({
             args.path === 'electron'
               ? 'module.exports=globalThis.__hostFixture.electron'
               : args.path === './store-client'
-                ? 'exports.StoreClient=class {constructor(){return globalThis.__hostFixture.store}}'
+                ? 'exports.StoreClient=class {constructor(){return globalThis.__hostFixture.store}};exports.StoreOutcomeUnknownError=class StoreOutcomeUnknownError extends Error{}'
                 : args.path === './update-runtime'
                   ? 'exports.openUpdateRuntime=async()=>globalThis.__hostFixture.updateRuntime'
                   : 'exports.UpdateService=class {constructor(){return globalThis.__hostFixture.updates}}',

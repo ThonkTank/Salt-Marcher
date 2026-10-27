@@ -45,34 +45,54 @@ Kampagnenarchive und Build-Metadaten. Frühere Testbestände werden nicht migrie
 ## Terrain-/Wasserlieferung: Umsetzungsplan
 
 Planungsstand: 27.10.2026, übernommen; Umsetzung durch den Koordinationschat freigegeben.
+Alle lokalen Uhrzeiten gelten in Europe/Berlin (CET, UTC+1). Frühere UTC+2-
+Umrechnungen wurden korrigiert; UTC-Anker und verstrichene Zeitbudgets bleiben gleich.
 Preflight-Basis ist Main `a87b8e99ba8a3954f664a10b0e7a9c141c65eb22`.
-Aktuelle Arbeitsbasis: `a87b8e99ba8a3954f664a10b0e7a9c141c65eb22`; letzter
-erfolgreicher GitHub-Abgleich 27.10.2026, 14:26 Uhr Europe/Berlin. Keine neuen
-Main-Commits offen; erster P03-Lieferteil auf Checkpoint `bf76682c7` gesichert.
+Aktuelle Arbeitsbasis: `613c012f00c99f0e110d081285049399173c4d11`; letzter
+erfolgreicher GitHub-Abgleich 27.10.2026, 13:52 Uhr Europe/Berlin. PR #1420
+integriert und in diesem Checkout übernommen; keine neuen Main-Commits offen.
 Die [sechs bestätigten Ziele TW-G1–6 und der Messvertrag](../requirements/terrain-relief.md#ziele-und-abnahme-dieser-etappe)
 gelten unverändert. Hier stehen Ausführung und Entscheidungen, keine zweite Anforderungsliste.
 
 ### Nächster Produktnachweis und Entscheidung
 
 **Nächster Produktnachweis P03:** verlässliche Grundpinsel und Meer einschließlich
-Undo/Redo, Abbruchregeln, Folgezug und Neustart. Der erste kohärente
-Teil behebt den beobachteten Shutdown-Handlerfehler und das Berichtsstatusfeld;
-der vollständige native Ablauf besteht jetzt ohne Consolefehler. Nach gezielter
-Nachprüfung und Candidate-Integration die übrigen G1-Kriterien prüfen und nur
-belegte Lücken beheben.
+Undo/Redo, Abbruchregeln, Folgezug und Neustart. Der Unknown-/Postcommit-Anschluss
+liegt zur gezielten Nachprüfung bereit: ursprünglicher Auftrag und Unsicherheit
+bleiben über Worker/Host/Preload bis zur Atlas-Klärung erhalten. Noch offen ist
+ein konkret beobachteter G1-Verlust: Ein bereits geschlossener abhängiger Zug
+wird nach Unknown ohne Dispatch abgewiesen und beim Klären verworfen, weder
+gehalten noch wiederaufgenommen. Der nächste Produktnachweis muss diesen Zug
+erhalten; blockierter Dispatch und eine später neu gemalte Geste genügen nicht.
+Die übrigen G1-Werkzeug-/Parameter-/Abbruchkriterien bleiben ebenfalls offen.
 M1 hat den frühen Ablauf Malen → Speichern/Folgezug → Fresh funktional belegt;
 eine statistische Leistungsfreigabe oder vollständige Produktabnahme fehlt.
-P03 startet am 27.10.2026 um 14:18 mit `gpt-6.1-sol` / `high`; erster
-Kontrollpunkt für den Shutdown-Anschluss spätestens 15:03, Paketentscheidung
-spätestens 18:18. Beide Zeiten liegen innerhalb des bestehenden Lieferrahmens.
+P03 begann am 27.10.2026 um 13:18 mit `gpt-6.1-sol` / `high`; der Shutdown-
+Anschluss wurde vor seinem Kontrollpunkt 14:03 integriert. Derselbe Implementierer
+beginnt den Unknown-/Postcommit-Anschluss um 13:35, Kontrolle spätestens 14:20;
+die gemeinsame Paketentscheidung bleibt 17:18, ohne Neustart der P03-Laufzeit.
 
-**Beginn T0:** 27.10.2026, 13:38 Uhr Europe/Berlin (11:38 UTC), tatsächlicher
+Unknown-Teilbefund: 44 gezielte Tests prüfen den tatsächlichen Worker-/Host-/
+Preload-/Author-/Queue-Pfad; rote Gegenchecks erkennen verlorenen Marker und
+falsche Postcommit-Klassifizierung. Typ-/Repository-/Build-/Formatchecks bestehen.
+Native Wiederholung `.build/atlas-terrain-stroke/1793105250360-389635/result.json`
+ist PASS für einmalige Klärung des Originalauftrags, gesperrten Reset/Folgezug,
+anschließende neue unabhängige Geste, Fresh mit 17 bytegleichen Kacheln/Revision 5
+und zwei normale Exits. Die UI-Probe ersetzt eine echte erfolgreiche Mainantwort
+durch Unknown; die Fehlerklassifizierung belegen separat die Grenztests. Der
+erste Lauf `1793105110282-389173/` scheiterte am ungeöffneten Statusmenü und wurde
+nach verweigertem Close mit SIGKILL beendet; er bleibt unverändert dokumentiert.
+`handoff-report.json` nennt den verworfenen abhängigen Zug ausdrücklich als
+offene G1-Pflicht. Keine Gesamtfreigabe; Nachprüfung beurteilt den engen Fix und
+die sichere Reihenfolge zum vollständigen Folgezugnachweis.
+
+**Beginn T0:** 27.10.2026, 12:38 Uhr Europe/Berlin (11:38 UTC), tatsächlicher
 P01-Start nach Main-, Plan- und Umsetzungsfreigabe. Implementierer: Subagent
 `terrain_native_implementer`, `gpt-6-luna` / `high`; P01/P02 gemeinsam delegiert.
 Erster Beleg geschätzt nach **45–75 Minuten**, gemeinsame Entscheidungsgrenze
 **T0 + 90 Minuten**. Setup, Build, Ausführung, Fix, Prüfung und Warten zählen mit;
 Unterpakete setzen diese Grenze nicht zurück. Konkrete gemeinsame Grenze:
-**27.10.2026, 15:08 Uhr Europe/Berlin**; Setup-Entscheidung spätestens 13:58 Uhr.
+**27.10.2026, 14:08 Uhr Europe/Berlin**; Setup-Entscheidung spätestens 12:58 Uhr.
 
 P01 benötigt geschätzt 15–25 Minuten: Session/GPU/Prozessbesitz 5–10,
 aktueller Desktopbuild und kleine kanonische Testfixture 10–15.
@@ -100,18 +120,22 @@ ohne Warten auf die erste Speicherantwort; anschließend müssen beide bestätig
 Falls nötig hilft ein identischer Kontrollablauf ohne Höhenwirkung, Störeinflüsse
 auszuschließen. Kein Erfolg nur aus Revisionszähler oder `terrainDraft`-Attribut.
 
-**Aktuelle Entscheidung:** M1 ist am 27.10.2026 um 14:18 nach unabhängiger
+**Aktuelle Entscheidung:** M1 ist am 27.10.2026 um 13:18 nach unabhängiger
 Nachprüfung von `0b7f72d77` im Reviewchat
 `01a17d32-1d64-7ce3-8b48-93d53429877a` als begrenzter fachlicher Frühdurchstich
-und Ansatzentscheidung erfüllt, vor der ursprünglichen Grenze 15:08.
+und Ansatzentscheidung erfüllt, vor der ursprünglichen Grenze 14:08.
 Der damalige M1-Gesamtlauf blieb wegen Shutdownfehler rot. Der erste P03-Teil
 behebt nun dessen Ursache: Der Atlas war nicht an die gemeinsame Abmeldung
 angeschlossen. Die Registrierung ruft nach erfolgreichem Flush den vorhandenen
 `CampaignAtlas.hide()` auf; verweigertes Schließen erhält den aktiven Besitzer.
 Der Reportstatus ist gegen Überschreiben durch UI-Text geschützt. Gezielt 19
 Tests, App-/Desktop-Typprüfung, Repositoryprüfung, frischer Desktopbuild,
-Formatierung und Syntaxprüfung bestehen. Der Implementierer ist zur gezielten
-Nachprüfung und Candidate-Integration angehalten; übriges P03/G1 bleibt offen.
+Formatierung und Syntaxprüfung bestehen. Die unabhängige Nachprüfung gab den
+engen Teil frei. [PR #1420](https://github.com/ThonkTank/Salt-Marcher/pull/1420)
+ist nach grüner [exakter Candidate-CI](https://github.com/ThonkTank/Salt-Marcher/actions/runs/40503939602)
+auf `307defac26704ecafb1eb474a7f546bb53db1957` integriert; der Main-Baum ist
+inhaltlich identisch. Auch die [zusätzliche Main-CI](https://github.com/ThonkTank/Salt-Marcher/actions/runs/40504782207)
+auf `613c012f00c99f0e110d081285049399173c4d11` ist grün; übriges P03/G1 bleibt offen.
 
 Aktueller Produktfixlauf: `.build/atlas-terrain-stroke/1793103792143-385146/`.
 `handoff-report.json` bindet den unveränderten Originalbericht `result.json`
@@ -333,8 +357,9 @@ und keine 14 obligatorischen Vorpakete. Gezielte Zuordnung:
 - P13: Exportcancel, Alpha-Picking und Reader-Shutdown bei Eingriff oder konkretem Befund.
 - Vor P02 nur ein konkret sicherheits- oder aussagekritischer Defekt; keine pauschale Vorqualifikation.
 
-Nach **jeder** Integration GitHub-Releasezählung prüfen. Beim Planstart gemeldete
-Basis: `v0.192.0`, sechs PRs; vor weiterer Integration live aktualisieren.
+Nach **jeder** Integration GitHub-Releasezählung prüfen. Live geprüft am
+27.10.2026 um 14:34: Basistag `v0.192.0`, **7 PRs** mit Mergecommit nach diesem
+Tag in Main (#1413–1416, #1418–1420); Schwelle 10 noch nicht erreicht.
 Eine früher erreichte Pflichtschwelle zieht P15 bzw. die nötigen Releaseanteile
 vor, statt bis M5 zu warten. Zusätzliche Veröffentlichung und CI-Zeit erscheinen
 dann in der betroffenen Timeline. Fehlende Signierung/GPU-/Paketbelege sind

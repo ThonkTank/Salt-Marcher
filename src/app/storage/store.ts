@@ -1,4 +1,5 @@
 import { checkedRow, sqliteInteger } from './sqlite-connection';
+import { AtlasCommitProjectionError } from './atlas-commit-projection';
 import Database from 'better-sqlite3';
 import { createHash, randomUUID } from 'node:crypto';
 import {
@@ -912,15 +913,19 @@ export class CampaignStore {
     const value = terrainTraceMeasure('author.transaction-history', () =>
       prepared ? this.db.transaction(() => this.applyAtlas(c, prepared))() : this.applyAtlas(c),
     ) as { id?: string } | undefined;
-    const root = atlasRoot(this.db, c.campaignId);
-    return {
-      campaignId: c.campaignId,
-      commandId: c.commandId,
-      revision: root.revision,
-      ...(c.terrainStroke ? { sourceFence: this.atlasRegionSource(c.token).fence } : {}),
-      ...(typeof value?.id === 'string' ? { result: { id: value.id } } : {}),
-      ...atlasHistoryState(this.db, c.campaignId),
-    };
+    try {
+      const root = atlasRoot(this.db, c.campaignId);
+      return {
+        campaignId: c.campaignId,
+        commandId: c.commandId,
+        revision: root.revision,
+        ...(c.terrainStroke ? { sourceFence: this.atlasRegionSource(c.token).fence } : {}),
+        ...(typeof value?.id === 'string' ? { result: { id: value.id } } : {}),
+        ...atlasHistoryState(this.db, c.campaignId),
+      };
+    } catch (error) {
+      throw new AtlasCommitProjectionError(c.commandId, error);
+    }
   }
   reconcileAtlasCommit(
     c: AtlasCommand,

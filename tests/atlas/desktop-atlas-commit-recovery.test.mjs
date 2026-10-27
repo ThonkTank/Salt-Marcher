@@ -2,8 +2,11 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { createRequire } from 'node:module';
-import { buildSync } from '../helpers/build.mjs';
+import { build, buildSync } from '../helpers/build.mjs';
 import { parseHTML } from '../helpers/dom.mjs';
+import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import path from 'node:path';
+import { tmpdir } from 'node:os';
 buildSync({
   entryPoints: ['src/app/storage/store.ts'],
   outfile: '.build/atlas-commit-recovery-store.cjs',
@@ -217,3 +220,255 @@ test('receipt inspection binds exact identity and payload and does not run post-
     outcome: 'unknown',
   });
 });
+
+const boundaryRoot = path.resolve('.build/atlas-commit-boundary');
+mkdirSync(path.join(boundaryRoot, 'catalog'), { recursive: true });
+copyFileSync(
+  'src/features/catalog/data/srd-5.1.generated.json',
+  path.join(boundaryRoot, 'catalog/srd-5.1.generated.json'),
+);
+await build({
+  stdin: {
+    resolveDir: process.cwd(),
+    contents: `export {HostIpc} from './desktop/host-ipc';
+export {registerAtlasHost} from './desktop/atlas-host';
+export {StoreClient} from './desktop/store-client';
+export {TerrainStrokeQueue} from './src/app/atlas/terrain-stroke-queue';
+export * from './src/app/atlas/campaign-atlas-author';`,
+  },
+  outfile: path.join(boundaryRoot, 'host.cjs'),
+  bundle: true,
+  platform: 'node',
+  format: 'cjs',
+  external: ['better-sqlite3'],
+  plugins: [
+    {
+      name: 'electron-transport',
+      setup(b) {
+        b.onResolve({ filter: /^electron$/ }, () => ({ path: 'electron', namespace: 'boundary' }));
+        b.onLoad({ filter: /.*/, namespace: 'boundary' }, () => ({
+          contents: 'module.exports=globalThis.__atlasBoundaryElectron',
+        }));
+      },
+    },
+  ],
+});
+await build({
+  entryPoints: ['desktop/preload.ts'],
+  outfile: path.join(boundaryRoot, 'preload.cjs'),
+  bundle: true,
+  platform: 'node',
+  format: 'cjs',
+  external: ['electron'],
+  plugins: [
+    {
+      name: 'electron-preload',
+      setup(b) {
+        b.onResolve({ filter: /^electron$/ }, () => ({ path: 'electron', namespace: 'boundary' }));
+        b.onLoad({ filter: /.*/, namespace: 'boundary' }, () => ({
+          contents: 'module.exports=globalThis.__atlasBoundaryElectron',
+        }));
+      },
+    },
+  ],
+});
+buildSync({
+  entryPoints: ['desktop/atlas-region-worker.ts'],
+  outfile: path.join(boundaryRoot, 'atlas-region-worker.cjs'),
+  bundle: true,
+  platform: 'node',
+  format: 'cjs',
+  external: ['better-sqlite3'],
+});
+for (const fault of ['projection', 'encoding'])
+  buildSync({
+    stdin: {
+      resolveDir: process.cwd(),
+      contents: `import {CampaignStore} from './src/app/storage/store';
+import {appendFileSync} from 'node:fs';
+import {workerData} from 'node:worker_threads';
+let command, used=false;
+const execute=CampaignStore.prototype.executeAtlasCommit;
+CampaignStore.prototype.executeAtlasCommit=function(c,...args){
+ command=c;
+ try{
+  const result=execute.call(this,c,...args);
+  if(${JSON.stringify(fault)}==='encoding'&&!used){used=true;result.untransferable=()=>{};}
+  return result;
+ }finally{command=undefined;}
+};
+const source=CampaignStore.prototype.atlasRegionSource;
+CampaignStore.prototype.atlasRegionSource=function(...args){
+ const receipt=command&&this.db.prepare('SELECT 1 FROM atlas_receipt WHERE command_id=?').get(command.commandId);
+ if(${JSON.stringify(fault)}==='projection'&&!used&&receipt&&!this.db.inTransaction){
+  used=true;appendFileSync(workerData.filename+'.fault',JSON.stringify({commandId:command.commandId,receipt:!!receipt,inTransaction:this.db.inTransaction}));
+  throw Error('Controlled postcommit source read failure');
+ }
+ return source.apply(this,args);
+};
+require('./desktop/store-worker');`,
+    },
+    outfile: path.join(boundaryRoot, fault + '.cjs'),
+    bundle: true,
+    platform: 'node',
+    format: 'cjs',
+    external: ['better-sqlite3'],
+  });
+
+async function boundaryFixture(t, fault) {
+  const dir = mkdtempSync(path.join(tmpdir(), 'atlas-boundary-'));
+  const dom = parseHTML('<html><body></body></html>');
+  const previous = Object.fromEntries(
+    ['window', 'document', 'Event', 'CustomEvent', '__atlasBoundaryElectron'].map((k) => [
+      k,
+      globalThis[k],
+    ]),
+  );
+  Object.assign(globalThis, {
+    window: dom.window,
+    document: dom.document,
+    Event: dom.window.Event,
+    CustomEvent: dom.window.CustomEvent,
+  });
+  const handlers = new Map();
+  const contents = { mainFrame: { url: 'campaign://app/index.html' } };
+  const event = { sender: contents, senderFrame: contents.mainFrame };
+  const calls = [];
+  globalThis.__atlasBoundaryElectron = {
+    contextBridge: {
+      exposeInMainWorld: (name, api) => {
+        window[name] = api;
+      },
+    },
+    ipcRenderer: {
+      invoke: (name, ...args) => {
+        calls.push({ name, args: structuredClone(args) });
+        return handlers.get(name)(event, ...args);
+      },
+    },
+  };
+  delete require.cache[path.join(boundaryRoot, 'host.cjs')];
+  const boundary = require(path.join(boundaryRoot, 'host.cjs'));
+  const store = new boundary.StoreClient(
+    path.join(dir, 'workbench.sqlite'),
+    'test',
+    path.join(boundaryRoot, fault + '.cjs'),
+  );
+  const ipc = new boundary.HostIpc(
+    {
+      handle: (name, fn) => handlers.set(name, fn),
+      removeHandler: (name) => handlers.delete(name),
+    },
+    {
+      contents: () => contents,
+      origin: contents.mainFrame.url,
+      stopping: () => false,
+      erasing: () => false,
+      syncPlayer: async () => {},
+    },
+  );
+  const atlas = boundary.registerAtlasHost({
+    ipc,
+    store,
+    dataDir: dir,
+    win: {},
+    dungeonImport: () => undefined,
+  });
+  t.after(async () => {
+    await ipc.drain();
+    await atlas.close();
+    await store.close();
+    Object.assign(globalThis, previous);
+    rmSync(dir, { recursive: true, force: true });
+  });
+  await store.ready;
+  const campaign = await store.create('Boundary');
+  const active = await store.activate(campaign.id);
+  delete require.cache[path.join(boundaryRoot, 'preload.cjs')];
+  require(path.join(boundaryRoot, 'preload.cjs'));
+  return { boundary, store, campaign, token: active.token, calls, dir };
+}
+
+for (const fault of ['projection', 'encoding'])
+  test(`real worker, HostIpc, preload and author retain ${fault} uncertainty without replay`, async (t) => {
+    const x = await boundaryFixture(t, fault);
+    const source = await x.store.atlasRegionSource(x.token);
+    const action = {
+      kind: 'landscape-height-stroke',
+      stroke: {
+        mode: 'raise',
+        radius: 8,
+        strength: 10,
+        feather: 0.8,
+        samples: [
+          { x: 0, y: 0, t: 0 },
+          { x: 0, y: 0, t: 1000 },
+        ],
+      },
+    };
+    const queue = new x.boundary.TerrainStrokeQueue(
+      { expectedRevision: source.revision, sourceFence: source.fence },
+      async (action, context) => {
+        const result = await x.boundary.writeAtlasCommit({
+          commandId: randomUUID(),
+          token: x.token,
+          campaignId: x.campaign.id,
+          action,
+          sourceFence: context.sourceFence,
+          terrainStroke: { id: context.id, expectedRevision: context.expectedRevision },
+        });
+        if (!result.ok) {
+          assert.equal(result.errorKind, 'store-outcome-unknown');
+          throw Error(result.error);
+        }
+        return result.value;
+      },
+    );
+    const results = await Promise.allSettled([
+      queue.enqueue(action, 'first'),
+      queue.enqueue(action, 'dependent'),
+    ]);
+    assert(results.every((r) => r.status === 'rejected'));
+    assert(queue.failed);
+    const writes = () => x.calls.filter((c) => c.name === 'atlas:commit');
+    assert.equal(writes().length, 1, 'dependent gesture never reaches the preload');
+    const original = writes()[0].args[0];
+    assert.deepEqual(x.boundary.pendingAtlasWrite(x.token), original);
+    if (fault === 'projection')
+      assert.deepEqual(JSON.parse(readFileSync(path.join(x.dir, 'workbench.sqlite.fault'))), {
+        commandId: original.commandId,
+        receipt: true,
+        inTransaction: false,
+      });
+    const before = await x.store.campaignAtlas(x.token);
+    const height = await x.store.atlasHeight(x.token, { x: 0, y: 0 });
+    assert.equal(before.revision, source.revision + 1);
+    assert.equal(
+      (await x.boundary.writeAtlasCommit({ ...original, commandId: randomUUID() })).ok,
+      false,
+    );
+    assert.equal(writes().length, 1);
+    const recovered = await x.boundary.recoverAtlasCommit(x.token);
+    assert.equal(recovered.ok, true);
+    assert.equal(recovered.value.commandId, original.commandId);
+    assert.equal(x.boundary.pendingAtlasWrite(x.token), null);
+    assert.deepEqual(await x.store.campaignAtlas(x.token), before);
+    assert.deepEqual(await x.store.atlasHeight(x.token, { x: 0, y: 0 }), height);
+    assert.equal(writes().length, 1, 'receipt inspection cannot replay the commit');
+    const safe = await x.boundary.writeAtlasCommit({
+      ...original,
+      commandId: randomUUID(),
+      action: { ...action, stroke: { ...action.stroke, strength: 0 } },
+    });
+    assert.equal(safe.ok, false);
+    assert.equal(safe.errorKind, undefined);
+    assert.equal(x.boundary.pendingAtlasWrite(x.token), null);
+    const next = await x.boundary.writeAtlasCommit({
+      commandId: randomUUID(),
+      token: x.token,
+      campaignId: x.campaign.id,
+      action: { kind: 'landscape-sea-level', seaLevelM: 12 },
+    });
+    assert.equal(next.ok, true, 'work is usable again after explicit receipt resolution');
+    assert.equal(next.value.revision, before.revision + 1);
+  });
