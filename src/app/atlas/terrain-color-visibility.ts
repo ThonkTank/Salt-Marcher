@@ -1,7 +1,8 @@
-import { bounds, type LandscapeRecord } from './atlas-landscape';
-import { intersectPolygons, mergePolygons } from './landscape-brush';
-import { terrainGrid, terrainVisibility, type TerrainGrid } from './terrain-spatial-model';
 import type { Polygon } from '../shared/contracts';
+import { type LandscapeRecord } from './atlas-landscape';
+import { intersectPolygons, mergePolygons } from './landscape-brush';
+import { bounds } from './landscape-geometry';
+import { terrainGrid, terrainVisibility, type TerrainGrid } from './terrain-spatial-model';
 /** Bake the visible footprint once; later camera/height changes cannot move authored pigment. */
 export function visibleTerrainColor(
   record: LandscapeRecord,

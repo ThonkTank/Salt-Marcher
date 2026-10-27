@@ -1,14 +1,40 @@
-import { readRouteTerrain } from './terrain-route';
+import { PNG } from 'pngjs';
+import { boundedLabels, landscapeLabels, type MapLabelCandidate } from '../atlas/atlas-cartography';
+import {
+  landscapePaintBox,
+  type LandscapeBox,
+  type LandscapeRecord,
+} from '../atlas/atlas-landscape';
+import type {
+  AtlasHit,
+  AtlasHitPage,
+  AtlasLandscapeLayer,
+  AtlasRegionQuery,
+  AtlasRegionSource,
+} from '../atlas/atlas-region-contracts';
+import { mapRecordVisible } from '../atlas/atlas-scale-policy';
+import { bounds, contains } from '../atlas/landscape-geometry';
+import { lineContains } from '../atlas/landscape-line';
+import {
+  LANDSCAPE_RASTER_PAD,
+  landscapeRasterBounds,
+  LandscapeRasterizer,
+  landscapeRasterSlice,
+  type LandscapeRaster,
+} from '../atlas/landscape-raster';
+import { TerrainChangeHistory } from '../atlas/terrain-change-history';
+import { streamTerrainField } from '../atlas/terrain-field-stream';
 import {
   resolveTerrainObjects,
   terrainObjectPoints,
   type TerrainObject,
 } from '../atlas/terrain-objects';
-import { readTerrainGridSteps } from './terrain-grid';
-import { readTerrainMaterialSteps } from './terrain-material';
-import { terrainHeightBlocks } from './terrain-height-blocks';
-import { AtlasProjectionIndex } from './atlas-projection-index';
+import { TerrainProjectionCache } from '../atlas/terrain-projection-cache';
+import { validateTerrainView } from '../atlas/terrain-spatial-model';
+import { generateVegetation, VEGETATION_SURFACE_MPP } from '../atlas/vegetation';
 import { compactVegetation } from '../atlas/vegetation-projection';
+import type { Point } from '../shared/contracts';
+import { AtlasProjectionIndex } from './atlas-projection-index';
 import {
   LANDSCAPE_BASE_INDEX,
   LANDSCAPE_COLOR_INDEX,
@@ -18,41 +44,13 @@ import {
   landscapeSampleFilter,
   type RasterSamples,
 } from './landscape-record-stream';
-import { TerrainChangeHistory } from '../atlas/terrain-change-history';
-import { mapRecordVisible } from '../atlas/atlas-scale-policy';
-import { landscapeLabels, boundedLabels, type MapLabelCandidate } from '../atlas/atlas-cartography';
-import { readTerrainGrid } from './terrain-grid';
-import { validateTerrainView } from '../atlas/terrain-spatial-model';
-import { TerrainProjectionCache } from '../atlas/terrain-projection-cache';
 import { readTerrainColorSteps } from './terrain-color';
+import { readTerrainGrid, readTerrainGridSteps } from './terrain-grid';
+import { terrainHeightBlocks } from './terrain-height-blocks';
+import { readTerrainMaterialSteps } from './terrain-material';
 import { readTerrainProjection, readTerrainProjectionSteps } from './terrain-projection';
+import { readRouteTerrain } from './terrain-route';
 import { vegetationEnvironmentReader } from './vegetation';
-import { generateVegetation, VEGETATION_SURFACE_MPP } from '../atlas/vegetation';
-import { streamTerrainField } from '../atlas/terrain-field-stream';
-import { lineContains } from '../atlas/landscape-line';
-import { PNG } from 'pngjs';
-import type { Point } from '../shared/contracts';
-import {
-  contains,
-  bounds,
-  landscapePaintBox,
-  type LandscapeRecord,
-  type LandscapeBox,
-} from '../atlas/atlas-landscape';
-import {
-  LandscapeRasterizer,
-  LANDSCAPE_RASTER_PAD,
-  landscapeRasterBounds,
-  landscapeRasterSlice,
-  type LandscapeRaster,
-} from '../atlas/landscape-raster';
-import type {
-  AtlasRegionQuery,
-  AtlasRegionSource,
-  AtlasLandscapeLayer,
-  AtlasHitPage,
-  AtlasHit,
-} from '../atlas/atlas-region-contracts';
 const overlap = (a: LandscapeBox, b: LandscapeBox) =>
   a.x <= b.x + b.width && a.x + a.width >= b.x && a.y <= b.y + b.height && a.y + a.height >= b.y;
 const visual = (r: LandscapeRecord): LandscapeRecord => {

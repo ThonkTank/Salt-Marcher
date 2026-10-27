@@ -1,5 +1,5 @@
+import {ensureTestAsset,publishTestAlias} from '../../tools/test-assets.mjs';
 import { buildSync as compile } from 'esbuild';
-import { existsSync, mkdirSync, writeFileSync, renameSync } from 'node:fs';
 import path from 'node:path';
 export { build } from 'esbuild';
 
@@ -17,14 +17,7 @@ export function buildSync(options) {
     JSON.stringify(options.external) !== JSON.stringify(['better-sqlite3'])
   )
     return compile(options);
-  const source = path.resolve('.build/test-shared/store.cjs');
-  if (!existsSync(source)) throw new Error('Prepare test assets first: node build.mjs --test');
-  const destination = path.resolve(options.outfile);
-  mkdirSync(path.dirname(destination), { recursive: true });
-  const relative =
-    './' + path.relative(path.dirname(destination), source).split(path.sep).join('/');
-  const temporary = `${destination}.${process.pid}.tmp`;
-  writeFileSync(temporary, `module.exports = require(${JSON.stringify(relative)});\n`);
-  renameSync(temporary, destination);
+  const source = ensureTestAsset('store');
+  publishTestAlias(source,path.resolve(options.outfile));
   return { errors: [], warnings: [] };
 }

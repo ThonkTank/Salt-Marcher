@@ -1,4 +1,5 @@
-import type { DesktopAPI, WorkspaceGeometry } from '../shared/contracts';
+import type { WorkspaceGeometry } from '../shared/contracts';
+import type { DesktopAPI } from '../shared/desktop-api';
 import type { EditorTransition } from '../shared/editor-registry';
 import type { WorkspaceView } from './workspace-view';
 

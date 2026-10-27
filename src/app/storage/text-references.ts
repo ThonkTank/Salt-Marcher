@@ -1,8 +1,9 @@
-import type { DeskRef, DeskEntry } from '../runtime/scene-desk-contracts';
-import { documentReferences } from '../campaign/text-references';
 import { createHash } from 'node:crypto';
-import { worldNoteDocument } from '../../features/world/world-notes';
 import { checkedLocationDocument } from '../../features/location/location-schema';
+import { worldNoteDocument } from '../../features/world/world-notes';
+import { documentReferences } from '../campaign/text-references';
+import type { DeskEntry } from '../runtime/scene-desk-contracts';
+import type { DeskRef } from '../shared/desk-reference';
 import { readCreature, readEncounterPlan } from './encounters';
 import { readItemDefinition } from './item-definitions';
 const registered = new WeakSet<object>();

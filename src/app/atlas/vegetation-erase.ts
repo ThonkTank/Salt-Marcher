@@ -1,5 +1,6 @@
 import type { Polygon } from '../shared/contracts';
-import { contains, type LandscapeRecord } from './atlas-landscape';
+import { type LandscapeRecord } from './atlas-landscape';
+import { contains } from './landscape-geometry';
 import { clipLandscapePolygons } from './landscape-polygon-clipping';
 
 /** Remove authored cover, rather than storing a mask that suppresses future trees. */

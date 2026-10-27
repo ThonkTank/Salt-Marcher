@@ -13,6 +13,7 @@
   "Section.doorId": "local",
   "Section.id": "local",
   "Section.markdown": "text",
-  "WorkingRoomDraft.points": "text"
+  "WorkingRoomDraft.points": "text",
+  "GraphPreviewState.scopeId": "local"
  }
 }

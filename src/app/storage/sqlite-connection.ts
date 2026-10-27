@@ -76,3 +76,10 @@ export function checkedQuery<const S extends Columns>(db: SqliteDatabase, sql: s
     },
   };
 }
+
+/** PRAGMA scalar values are untrusted just like row fields. */
+export function sqliteInteger(value: unknown): number {
+  if (typeof value !== 'number' || !Number.isSafeInteger(value))
+    throw new Error('Ungültiger ganzzahliger Datenbankwert.');
+  return value;
+}

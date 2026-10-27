@@ -1,7 +1,7 @@
-import { type SqliteDatabase, checkedRow } from './sqlite-connection';
 import { createHash } from 'node:crypto';
-import { validateRoom } from '../shared/contracts';
-import type { RoomGeometry, RoomSummary, RoomDirectoryQuery } from '../shared/contracts';
+import type { RoomDirectoryQuery, RoomGeometry, RoomSummary } from '../shared/contracts';
+import { validateRoom } from '../shared/room-validation';
+import { type SqliteDatabase, checkedRow } from './sqlite-connection';
 
 export const visibleRoomWhere = `r.campaign_id=? AND NOT EXISTS(SELECT 1 FROM drawing_hidden h WHERE h.campaign_id=r.campaign_id AND h.id=r.id AND h.kind='room' AND h.hidden=1) AND NOT EXISTS(SELECT 1 FROM drawing_hidden h WHERE h.campaign_id=r.campaign_id AND h.id=r.floor_id AND h.scope_id=r.scope_id AND h.kind='floor' AND h.hidden=1)`;
 const columns = 'r.id,r.scope_id scopeId,r.floor_id floorId,r.number,r.name,r.revision';

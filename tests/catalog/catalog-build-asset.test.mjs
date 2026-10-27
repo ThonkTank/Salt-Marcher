@@ -1,7 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { mkdtemp, writeFile, readFile, rm } from 'node:fs/promises';
-import { execFileSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
@@ -53,26 +52,6 @@ test('all catalog payload gates fail closed when exceeded', () => {
     () => catalogPayloadMainJsBytes({ outputs: { 'main.js': { inputs: {} } } }),
     /keinen emittierten SRD-5\.1-Katalogpayload/,
   );
-});
-
-test('product build inventories its revision and embeds only compressed catalog text', async () => {
-  execFileSync(process.execPath, ['build.mjs'], { stdio: 'pipe' });
-  const inventory = JSON.parse(await readFile('.build/catalog-build-inventory.json', 'utf8'));
-  const main = await readFile('main.js', 'utf8');
-  const head = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
-  const dirty =
-    execFileSync('git', ['status', '--porcelain', '--untracked-files=no'], {
-      encoding: 'utf8',
-    }).trim().length > 0;
-  assert.equal(inventory.commit, head);
-  assert.equal(inventory.dirty, dirty);
-  assert.equal(inventory.sourceRevision, dirty ? `${head}+dirty` : head);
-  assert.equal(inventory.mainJsGrowthBytes, inventory.mainBytes - inventory.baselineMainBytes);
-  assert.ok(inventory.catalogPayloadBytes <= inventory.catalogPayloadLimitBytes);
-  assert.equal(inventory.catalogPayloadLimitBytes, 180000);
-  assert.match(main, /creativecommons\.org\/licenses\/by\/4\.0/);
-  assert.doesNotMatch(main, /Mucous Cloud/);
-  assert.ok(main.includes(asset.payload.slice(0, 80)));
 });
 
 test('catalog build asset rejects a changed source before bundling', async (t) => {

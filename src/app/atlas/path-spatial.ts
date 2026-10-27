@@ -1,6 +1,6 @@
-import type { SpatialGeometry, DungeonPose, DungeonWaypoint } from './dungeon-contracts';
+import type { DungeonPose, DungeonWaypoint, SpatialGeometry } from './dungeon-contracts';
+import { resolvePathAnchor } from './path-anchor';
 import type { DungeonPassage } from './path-contracts';
-import { resolvePathAnchor } from './path-model';
 import { VOXEL_METERS as U } from './volume-contracts';
 export function passageOpening(
   g: SpatialGeometry,

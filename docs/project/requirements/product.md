@@ -2,7 +2,7 @@
 
 Status: Verbindlicher Zielumfang; historische Umsetzungsbelege sind keine aktuelle Abnahme.
 Owner: project
-Last Reviewed: 2026-10-24 (Struktur und Quellen; Fachabnahme separat)
+Last Reviewed: 2026-10-27 (Übergabeeinstieg; Fachabnahme separat)
 Source of Truth: Dieses Dokument besitzt das benannte Thema; Code belegt den Iststand, das Abnahmeregister den Prüfstand.
 
 ## Für wen und wozu?
@@ -48,4 +48,4 @@ Dungeonzeichnung, Raum-Keys und Speicher-/Hostfälle sind innerhalb ihres jeweil
 
 Offen bleiben unter anderem Verteilungen für neue Bewohner, Religion, Lebensstandard, Regierung/Wachen, weitergehende Fraktionswirkungen und Sammeländerungen; siehe [CITY-06-Anforderungen](scope.md#ftg-lebensdaten-zuordnung). Diese Teilstände ersetzen keine vollständige E2E-Freigabe. Weitere Produktimplementation sowie OS-, Recovery-, Capability- und Cutovernachweise und konkrete Featurecodecs bleiben zu liefern.
 
-Der erste Lieferfokus ist E2E-01; der vollständige Umfang einschließlich Planner, World Planner, Actor Autonomy, Erweiterungen und Tutorials bleibt verbindlich. Lieferreihenfolge und offene Eingänge: [Roadmap](../delivery/roadmap.md).
+Der erste Lieferfokus ist E2E-01; der vollständige Umfang einschließlich Planner, World Planner, Actor Autonomy, Erweiterungen und Tutorials bleibt verbindlich. Die [Übergabeübersicht](../delivery/roadmap.md#vorhandene-umsetzung-und-nächste-anschlüsse) trennt vorhandene Umsetzung, begrenzte Prüfbelege und offene Lieferungen. Der [nächste gemeinsame Abschluss](../delivery/roadmap.md#kritischer-pfad-für-e2e-01) verbindet die vorhandenen Atlas-, Speicher- und Importanschlüsse auf demselben Produktstand; eine vollständige E2E- oder Ownerabnahme wird daraus nicht abgeleitet.

@@ -1,11 +1,5 @@
-import { decodeAtlasBinding } from './campaign-atlas';
-import { type SqliteDatabase, checkedQuery, checkedRow } from './sqlite-connection';
-import { AtlasGeometryRaster } from './atlas-geometry-raster';
-import { AtlasReadCancelled, atlasReadCheckpoint } from './atlas-read-cancellation';
-import { AtlasDeferredGeometry } from './atlas-deferred-geometry';
-import { assertAtlasProjectionSource } from './atlas-shape-source';
-import { AtlasProjectionIndex } from './atlas-projection-index';
-import { mapExtentVisible } from '../atlas/atlas-scale-policy';
+import { createHash } from 'node:crypto';
+import { PNG } from 'pngjs';
 import {
   boundedLabels,
   labelFromPolygon,
@@ -15,23 +9,6 @@ import {
   territoryLabels,
   type MapLabelCandidate,
 } from '../atlas/atlas-cartography';
-import { readTerritories } from './atlas-territories';
-import { validateTerrainDetail } from '../atlas/terrain-detail';
-import { TerrainCache } from '../atlas/terrain-cache';
-import {
-  terrainFrameBytes,
-  terrainFrameDelta,
-  type TerrainFrameIdentity,
-  type TerrainFullFrame,
-} from '../atlas/terrain-frame';
-import { AtlasLandscapeReader } from './atlas-landscape-region';
-import { drawingView, roomMapStyle } from './drawing';
-import { readDungeonVolume } from './volume';
-import { dungeonContentAnchor } from '../atlas/dungeon-content-model';
-import { checkedUnit, readCityHeader, readCitySite } from './city';
-import { validateDrawingElement } from '../atlas/drawing-contracts';
-import { createHash } from 'node:crypto';
-import { PNG } from 'pngjs';
 import type {
   AtlasHit,
   AtlasHitPage,
@@ -48,20 +25,42 @@ import {
   emptyDrawing,
   validateRegion,
 } from '../atlas/atlas-region-contracts';
-import type { Point, Polygon, RoomGeometry } from '../shared/contracts';
-import { validateRoom } from '../shared/contracts';
-import { posedFootprint, roadPoints } from '../atlas/city-model';
-import { anchored, inside } from '../atlas/drawing-model';
-import { volumeProjection } from '../atlas/volume-model';
-import { LandscapeRasterizer } from '../atlas/landscape-raster';
+import { mapExtentVisible } from '../atlas/atlas-scale-policy';
 import type { AtlasBinding } from '../atlas/campaign-atlas-contracts';
-import type { CityHeader } from '../atlas/city-contracts';
 import { localToAtlas } from '../atlas/campaign-atlas-model';
+import type { CityHeader } from '../atlas/city-contracts';
+import { posedFootprint, roadPoints } from '../atlas/city-model';
+import { validateDrawingElement } from '../atlas/drawing-contracts';
+import { anchored, inside } from '../atlas/drawing-model';
+import { dungeonContentAnchor } from '../atlas/dungeon-content-model';
+import { LandscapeRasterizer } from '../atlas/landscape-raster';
+import { TerrainCache } from '../atlas/terrain-cache';
+import { validateTerrainDetail } from '../atlas/terrain-detail';
+import {
+  terrainFrameBytes,
+  terrainFrameDelta,
+  type TerrainFrameIdentity,
+  type TerrainFullFrame,
+} from '../atlas/terrain-frame';
+import { volumeProjection } from '../atlas/volume-model';
+import type { Point, Polygon, RoomGeometry } from '../shared/contracts';
+import { validateRoom } from '../shared/room-validation';
+import { AtlasDeferredGeometry } from './atlas-deferred-geometry';
+import { AtlasGeometryRaster } from './atlas-geometry-raster';
+import { AtlasLandscapeReader } from './atlas-landscape-region';
+import { AtlasProjectionIndex } from './atlas-projection-index';
+import { AtlasReadCancelled, atlasReadCheckpoint } from './atlas-read-cancellation';
+import { assertAtlasProjectionSource } from './atlas-shape-source';
+import { readTerritories } from './atlas-territories';
 import { atlasDisplayEntrances, atlasLocalJourney } from './atlas-travel';
-import { atlasHistoryState, atlasRoot } from './campaign-atlas';
+import { atlasHistoryState, atlasRoot, decodeAtlasBinding } from './campaign-atlas';
+import { checkedUnit, readCityHeader, readCitySite } from './city';
+import { drawingView, roomMapStyle } from './drawing';
 import { dungeonDisplay, dungeonMapView } from './dungeon-play';
 import { playerObservers, playerSettings } from './player';
 import { roomGeometries } from './room-reads';
+import { checkedQuery, checkedRow, type SqliteDatabase } from './sqlite-connection';
+import { readDungeonVolume } from './volume';
 import { readAtlasScene } from './world';
 const digest = (s: string) => createHash('sha256').update(s).digest('hex');
 const parse = (value: unknown) => {

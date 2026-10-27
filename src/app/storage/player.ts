@@ -1,29 +1,29 @@
+import { createHash, randomUUID } from 'node:crypto';
+import { contains } from '../atlas/landscape-geometry';
+import type {
+  PlayerAction,
+  PlayerAsset,
+  PlayerCommand,
+  PlayerFrame,
+  PlayerMapCell,
+  PlayerMapQuery,
+  PlayerObserver,
+  PlayerSettings,
+  PlayerView,
+} from '../runtime/player-contracts';
+import type { Hex, SceneWorld } from '../runtime/world-contracts';
+import { authoredCellAt, cellAt, hexDistance, hexPoint, pointHex } from '../runtime/world-model';
 import {
+  addMemory,
   checkedMemory,
   rememberAtlasHex,
-  validateAtlasMemory,
-  addMemory,
   unionMemory,
+  validateAtlasMemory,
   type RememberedHex,
 } from './atlas-knowledge';
 import { dungeonDisplay } from './dungeon-play';
-import { createHash, randomUUID } from 'node:crypto';
-import { contains } from '../atlas/atlas-landscape';
-import type {
-  PlayerMapQuery,
-  PlayerMapCell,
-  PlayerSettings,
-  PlayerObserver,
-  PlayerAsset,
-  PlayerView,
-  PlayerFrame,
-  PlayerCommand,
-  PlayerAction,
-} from '../runtime/player-contracts';
-import type { Hex, SceneWorld } from '../runtime/world-contracts';
 import { readLive } from './live';
-import { position as scenePosition, readSceneWorld, readWorld } from './world';
-import { authoredCellAt, cellAt, hexDistance, hexPoint, pointHex } from '../runtime/world-model';
+import { readSceneWorld, readWorld, position as scenePosition } from './world';
 const hash = (p: string) => createHash('sha256').update(p).digest('hex');
 export function installPlayerSchema(db: any) {
   db.exec(`CREATE TABLE IF NOT EXISTS player_record(campaign_id TEXT NOT NULL REFERENCES campaign(id),kind TEXT NOT NULL,id TEXT NOT NULL,revision INTEGER NOT NULL,payload TEXT NOT NULL,checksum TEXT NOT NULL,PRIMARY KEY(campaign_id,kind,id)) STRICT;

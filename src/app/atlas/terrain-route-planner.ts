@@ -1,5 +1,6 @@
 import type { Point } from '../shared/contracts';
-import { contains, type LandscapeRecord } from './atlas-landscape';
+import { type LandscapeRecord } from './atlas-landscape';
+import { contains } from './landscape-geometry';
 import { TerrainSampler, decodeHeights, heightRecord } from './terrain-height';
 import { nearestRoute, validateRoute, type RouteNode, type RouteStructure } from './terrain-route';
 

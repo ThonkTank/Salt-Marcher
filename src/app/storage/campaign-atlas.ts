@@ -1,25 +1,23 @@
-import { type SqliteDatabase, checkedQuery, checkedRow } from './sqlite-connection';
-import { ensureAtlasShapeSource } from './atlas-shape-source';
-import { advanceTerrainEnvironment } from './terrain-environment';
-import { executeTerritory, validateTerritories } from './atlas-territories';
-import { validateRoute } from '../atlas/terrain-route';
-import { validateVegetation } from '../atlas/vegetation';
-import { validateTerrain } from '../atlas/terrain-height';
-import { validateMask } from '../atlas/land-mask';
-import { validateLine } from '../atlas/landscape-line';
-import { validateColor } from '../atlas/landscape-brush';
-import { dungeonDisplay, dungeonGeometry, dungeonGeometryBasis } from './dungeon-play';
-import { poseSpace } from '../atlas/spatial-3d';
-import { inside, nearestAnchor } from '../atlas/drawing-model';
 import { createHash, randomUUID } from 'node:crypto';
-import type { AtlasBinding, AtlasCommand } from '../atlas/campaign-atlas-contracts';
-import type { AtlasMap } from '../runtime/world-contracts';
 import { newLocation } from '../../features/location/location-schema';
+import type { AtlasBinding, AtlasCommand } from '../atlas/campaign-atlas-contracts';
 import { atlasFrame, atlasHexAt, localToAtlas } from '../atlas/campaign-atlas-model';
+import { inside, nearestAnchor } from '../atlas/drawing-model';
+import { validateMask } from '../atlas/land-mask';
+import { validateColor } from '../atlas/landscape-brush';
+import { validateLine } from '../atlas/landscape-line';
+import { poseSpace } from '../atlas/spatial-3d';
+import { validateTerrain } from '../atlas/terrain-height';
+import { validateRoute } from '../atlas/terrain-route';
 import { terrainTraceMeasure } from '../atlas/terrain-timing';
-import { validateRoom, type Room } from '../shared/contracts';
+import { validateVegetation } from '../atlas/vegetation';
+import type { AtlasMap } from '../runtime/world-contracts';
+import { type Room } from '../shared/contracts';
+import { validateRoom } from '../shared/room-validation';
 import { executeLandscape } from './atlas-landscape';
 import { narrowTerrainJournal } from './atlas-read-journal';
+import { ensureAtlasShapeSource } from './atlas-shape-source';
+import { executeTerritory, validateTerritories } from './atlas-territories';
 import {
   atlasEntrances,
   atlasLocalGeometryBasis,
@@ -27,6 +25,7 @@ import {
   putAtlasEntrance,
 } from './atlas-travel';
 import { readCityHeader, readCitySite } from './city';
+import { dungeonDisplay, dungeonGeometry, dungeonGeometryBasis } from './dungeon-play';
 import { playerObservers, playerSettings } from './player';
 import {
   groupRecipeForHouse,
@@ -37,6 +36,8 @@ import {
   splitGroupRoom,
   storeGroupDraft,
 } from './room-groups';
+import { type SqliteDatabase, checkedQuery, checkedRow } from './sqlite-connection';
+import { advanceTerrainEnvironment } from './terrain-environment';
 import { changedHeightBounds, unionTerrainBounds } from './terrain-invalidation';
 import { readWorld, travelEnvironmentBasis } from './world';
 const hash = (v: string) => createHash('sha256').update(v).digest('hex'),

@@ -11,7 +11,7 @@ const require = createRequire(import.meta.url),
 buildSync({
   stdin: {
     contents:
-      "export * from './src/app/storage/store';export * from './src/app/storage/atlas-region';export * from './src/app/atlas/terrain-field-stream';export * from './src/app/atlas/terrain-height';export * from './src/app/atlas/terrain-route';export * from './src/app/atlas/atlas-landscape';",
+      "export * from './src/app/storage/store';export * from './src/app/storage/atlas-region';export * from './src/app/atlas/terrain-field-stream';export * from './src/app/atlas/terrain-height';export * from './src/app/atlas/terrain-route';export * from './src/app/atlas/atlas-landscape';export * from './src/app/atlas/landscape-geometry';",
     resolveDir: process.cwd(),
   },
   outfile: '.build/atlas-geometry-point-sampling-test.cjs',

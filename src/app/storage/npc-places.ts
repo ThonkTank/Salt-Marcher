@@ -1,15 +1,15 @@
 import { createHash } from 'node:crypto';
-import { validateRoom } from '../shared/contracts';
 import type {
+  NpcBuildingChoices,
+  NpcBuildingQuery,
   NpcPlaces,
   NpcPlaceSite,
-  NpcBuildingQuery,
-  NpcBuildingChoices,
 } from '../campaign/npc-places-contracts';
-import { readNpc } from './npcs';
+import { validateRoom } from '../shared/room-validation';
+import { readCityBuildingChoices, readCitySite } from './city';
 import { npcPosition } from './npc-world';
+import { readNpc } from './npcs';
 import { deskContent } from './scene-desk';
-import { readCitySite, readCityBuildingChoices } from './city';
 export function readNpcPlaces(db: any, cam: string, id: string, offset: number): NpcPlaces {
   if (
     typeof id !== 'string' ||

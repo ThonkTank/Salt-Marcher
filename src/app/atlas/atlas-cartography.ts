@@ -1,13 +1,14 @@
+import type { Point, Polygon } from '../shared/contracts';
+import type { MapLabelCandidate, MapLabelKind, MapLabelSource } from './atlas-label-source';
+import { type LandscapeBox, type LandscapeRecord } from './atlas-landscape';
+import { atlasPaint, type AtlasPaint, type PaintStyle } from './atlas-paint';
 import { effectiveProminence, PROMINENCE_LIMITS } from './atlas-prominence';
+import { territoryAnchor, territoryBounds, type TerritoryState } from './atlas-territories';
+import { contains } from './landscape-geometry';
+import { linePoints } from './landscape-line';
 import { MapLabelCollisions, type MapLabelRect as Rect } from './map-label-collisions';
 import type { MapLabelStyle } from './map-label-style';
-import { atlasPaint, type AtlasPaint, type PaintStyle } from './atlas-paint';
-import type { Point, Polygon } from '../shared/contracts';
-import { contains, type LandscapeBox, type LandscapeRecord } from './atlas-landscape';
-import { linePoints } from './landscape-line';
-import { territoryAnchor, territoryBounds, type TerritoryState } from './atlas-territories';
-export type { MapLabelKind, MapLabelCandidate } from './atlas-label-source';
-import type { MapLabelKind, MapLabelCandidate, MapLabelSource } from './atlas-label-source';
+export type { MapLabelCandidate, MapLabelKind } from './atlas-label-source';
 export const labelScaleLimits = [2, 12, 100, 1000, 10000, Infinity];
 const footprintVisible = (width: number, mpp: number) => width / mpp >= 2;
 export function labelFromPolygon(
@@ -440,15 +441,7 @@ export class MapLabelLayout {
     return placed;
   }
 }
-let context: CanvasRenderingContext2D | null | undefined;
 export function measureMapText(text: string, font: number) {
-  if (context === undefined)
-    context =
-      typeof document === 'undefined' ? null : document.createElement('canvas').getContext('2d');
-  if (context) {
-    context.font = `${font}px sans-serif`;
-    return context.measureText(text).width;
-  }
   return Array.from(text).length * font * 0.62;
 }
 export const mapLabelFont = (c: MapLabelCandidate) =>

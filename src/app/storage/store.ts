@@ -1,283 +1,6 @@
-import { matchesReceipt } from './command-fingerprint';
-import { validateTransferSnapshot } from '../transfer/registry';
-import { installSourceCellIndex } from './atlas-source-cell';
-import DATA_FORMAT from '../data-format.json';
-import { atlasProjectionSource, installAtlasShapeSource } from './atlas-shape-source';
-import {
-  decodePreparationDraft,
-  decodeRoom,
-  decodeRoomDraft,
-  preparationDraftTable,
-  readStoredPlan,
-  storedAddRoom,
-  storedEdit,
-  storedHistory,
-  storedKeepRoomDraft,
-  storedReconcile,
-} from './stored-records';
-import { validateBackupCandidate, validateDatabase } from './snapshot-validation';
-import { keepSessionRecapDraft, readSessionRecapDraft } from './session-recap';
-import { profileBounds, terrainProfile } from '../atlas/terrain-profile';
-import { installTravelHistory } from './travel-history';
-import { checkedWorldNoteRow } from './world-note-row';
-import { installRoomGroups, validateRoomGroups } from './room-groups';
-import { installTerritories, readTerritories } from './atlas-territories';
-import { TerrainAuthorCache } from './terrain-author-cache';
-import { terrainTraceMeasure } from '../atlas/terrain-timing';
-import { vegetationScene } from './vegetation';
-import { readSceneEncounterSelection } from './scene-encounter-selection';
-import { noteMergeWork } from './note-merge';
-import type {
-  AtlasRegionGeometry,
-  AtlasRegionSource,
-  AtlasRegionView,
-} from '../atlas/atlas-region-contracts';
-import { storedExecuteWorld } from './world';
-import {
-  installWorldSchema,
-  previewTravel,
-  readWorldCalendar as readNpcPlanCalendar,
-  readSceneWorld,
-  readWorld,
-  reconcileWorld,
-} from './world';
-import { CommittedSources } from './committed-sources';
-import { atlasReadChanges } from './atlas-read-journal';
-import { drawingElement, drawingRoom } from './drawing';
-import {
-  activateDungeonFeature,
-  drawingView,
-  executeDrawing,
-  installDrawingSchema,
-  roomMapStyle,
-} from './drawing';
-import { dungeonMapView } from './dungeon-play';
-import {
-  dungeonCommandState,
-  dungeonDisplay,
-  dungeonGeometry,
-  dungeonView,
-  executeDungeon,
-  installDungeonPlaySchema,
-  previewDungeon,
-} from './dungeon-play';
-import { roomDirectoryQuery, roomGeometries, roomOrder, visibleRoomWhere } from './room-reads';
-import type { RoomDirectoryQuery, WorkspaceGeometry, WorkspaceShell } from '../shared/contracts';
-import {
-  type Campaign,
-  type CampaignRename,
-  type Edit,
-  type Room,
-  type RoomCommit,
-  type WorkingRoomDraft,
-  type Workspace,
-} from '../shared/contracts';
-import { keepLiveMomentDraft as keepMomentDraft } from './live-moment-drafts';
-import { atlasPartyPoint } from '../atlas/atlas-runtime-model';
-import { installLandscape, landscapeRegion, terrainRegion } from './atlas-landscape';
-import { checkNoteThread, readNoteThread } from './note-thread';
-import { captureKeyNote, keyNoteCaptureStatus, readKeyNoteChoices } from './key-note-capture';
-import type { KeyNoteCaptureCommand } from '../campaign/key-note-capture-contracts';
-import { readNoteRoomUses } from './note-room-uses';
-import {
-  atlasEntrances,
-  atlasLocalJourney,
-  installAtlasTravel,
-  previewAtlasLocal,
-  storedApplyAtlasTravel,
-} from './atlas-travel';
-import {
-  applyAtlasCommand,
-  atlasBindings,
-  atlasHistoryState,
-  atlasRoot,
-  hasAtlasReceipt,
-  installCampaignAtlas,
-  storedAtlasCitySite,
-  storedAtlasOverview,
-  storedCampaignAtlas,
-  storedCoupleAtlasWall,
-  storedReconcileAtlasGeometry,
-} from './campaign-atlas';
-import type { AtlasCommand, CampaignAtlas } from '../atlas/campaign-atlas-contracts';
-import {
-  applyCampaignCatalog,
-  catalogCommand,
-  catalogOutcome,
-  noteCampaignOpened,
-} from './campaign-catalog';
-import type {
-  CampaignCatalogCommand,
-  CampaignCatalogReceipt,
-} from '../campaign/campaign-contracts';
-import type { ConflictChoice } from '../campaign/campaign-contracts';
-import { readCombatResolution } from './combat-resolution';
-import { ChronicleReadSession } from './chronicle-pages';
-import { readLocationActivities } from './location-activity';
-import { readCityActivities } from './city-activity';
-import { readNpcBuildingChoices, readNpcPlaces } from './npc-places';
-import { readLocationMaterials } from './location-notebook';
-import { readWorldLinks } from './world-links';
-import {
-  discardWorldRelationPairDraft,
-  executeWorldRelationPair,
-  executeWorldRelationPairHistory,
-  installWorldRelationPairs,
-  keepWorldRelationPairDraft,
-  readWorldRelationPairDraft,
-  readWorldRelationPairHistory,
-  reconcileWorldRelationPair,
-  reconcileWorldRelationPairHistory,
-} from './world-relation-pair';
-import type {
-  WorldRelationPairCommand,
-  WorldRelationPairDraft,
-  WorldRelationPairHistoryCommand,
-} from '../campaign/world-relation-pair-contracts';
-import { readNpcCast, readNpcDossier } from './npc-cast';
-import { previewSceneTime } from './time-plan';
-import { readAgenda } from './agenda';
-import { readSceneVisits } from './scene-visits';
-import { readNarrativeJournal } from './narrative-journal';
-import { readSessionProgress } from './visit-outcomes';
-import { readSessionPacket } from './session-packet';
-import { installMaskHistoryIndexes, readMaskHistory } from './mask-history';
-import { keepChaseDraft } from './chase-drafts';
-import { readDay } from './adventuring-day';
-import { installNpcRecords } from './npc-record';
-import {
-  discardNpcDraft,
-  executeNpc,
-  keepNpcDraft,
-  npcDraft,
-  npcDrafts,
-  readNpc,
-  readNpcs,
-  reconcileNpc,
-} from './npcs';
-import type { NpcCommand, NpcDraft, NpcQuery } from '../campaign/npc-contracts';
-import { readWorldSources } from './world-sources';
-import {
-  discardGroupDraft,
-  groupDraft,
-  groupView,
-  installGroups,
-  keepGroupDraft,
-  preparedGroups,
-} from './groups';
-import {
-  discardTreasuryDraft,
-  installTreasury,
-  keepTreasuryDraft,
-  readTreasuryDraft,
-  treasureHistory,
-} from './treasury';
-import {
-  deskContent,
-  installSceneDesk,
-  keepSceneCreationDraft,
-  pinSceneDesk,
-  readSceneCreationDraft,
-  readSceneDesk,
-  searchDesk,
-} from './scene-desk';
-import {
-  discardFinishDraft,
-  installFinishDrafts,
-  keepFinishDraft,
-  readFinishDraft,
-} from './finish-drafts';
-import {
-  discardNarrativeDraft,
-  installNarrative,
-  keepNarrativeDraft,
-  readNarrative,
-} from './narrative';
-import { readPreparedGroup } from './session';
-import {
-  executeSession,
-  generateSession,
-  installSessionSchema,
-  readSession,
-  readSessionRun,
-  readSessionRuns,
-  regenerateSessionProposal,
-  regenerateSessionReward,
-  scenePreparation,
-} from './session';
-import {
-  combatDrafts,
-  discardCombatDraft,
-  installCombatDraftSchema,
-  keepCombatDraft,
-  readCombatDraft,
-} from './combat-drafts';
-import type { CombatDraftKind, CombatWorkingDraft } from '../runtime/combat-draft-contracts';
-import { installContentRuntime } from './content-runtime';
-import { installTriggers } from './triggers';
-import { ExtensionRegistry } from './extensions';
-import type { ExtensionCommand } from '../workspace/extension-contracts';
-import { dungeonBudgetView, validateDungeonPlacement } from './dungeon-budget';
-import type { CommitOutcome } from '../shared/commit-receipt';
-import { checkedCommitReference, type CommitReference } from '../shared/commit-receipt';
-import { graphLayout, GraphShadow, graphView, installGraph } from './graph';
-import type { GraphCommand, GraphView } from '../atlas/graph-contracts';
-import type { DrawingCommand, DrawingView } from '../atlas/drawing-contracts';
-import type { DungeonPath, PathPreview } from '../atlas/path-contracts';
-import { installDungeonKey } from './dungeon-key';
-import { installPathSchema, previewDungeonPath } from './paths';
-import { readCommitReceipt } from './commit-receipt';
-import { installVolumeSchema, readDungeonVolume } from './volume';
-import { installDungeonSenses } from './dungeon-senses';
-import { installAutonomyResources } from './autonomy-resources';
-import { installNpcDungeonSchema } from './npc-dungeon';
-import { installAutonomyDungeonSchema } from './autonomy-dungeon';
-import type { DungeonCommand, DungeonRequest } from '../atlas/dungeon-contracts';
-import { installNpcWorldSchema } from './npc-world';
-import {
-  autonomyDecision,
-  autonomyView,
-  captureAutonomyBasis,
-  executeAutonomy,
-  installAutonomySchema,
-} from './autonomy';
-import type { AutonomyCommand } from '../runtime/autonomy-contracts';
-import {
-  executePlayer,
-  installPlayerSchema,
-  playerAssets,
-  playerMediaFiles,
-  playerObservers,
-  playerSettings,
-  playerView,
-  projectPlayer,
-  savePlayerAsset,
-  setPlayerWindow,
-} from './player';
-import type { PlayerAsset, PlayerCommand, PlayerFrame } from '../runtime/player-contracts';
-import {
-  cityOverview,
-  executeCity,
-  installCitySchema,
-  readCity,
-  readCityBuildingChoices,
-} from './city';
-import type { CityCommand } from '../atlas/city-contracts';
-import { storedCreate, storedRenameCampaign } from './campaign-data';
-import {
-  archiveSourceChoices,
-  campaignOverview,
-  definitionConflicts,
-  eraseCampaignRows,
-  installCampaignSchema,
-  pruneCampaignSnapshot,
-  publishSnapshot,
-  remapSnapshot,
-  sharedPlan,
-  snapshotCounts,
-  trashCampaign,
-  validateCampaignSnapshotSettings,
-} from './campaign-data';
+import { checkedRow, sqliteInteger } from './sqlite-connection';
+import Database from 'better-sqlite3';
+import { createHash, randomUUID } from 'node:crypto';
 import {
   closeSync as closeSnapshot,
   closeSync,
@@ -291,7 +14,253 @@ import {
   renameSync,
   rmSync,
 } from 'node:fs';
+import { dirname } from 'node:path';
+import { type ManualPlan } from '../../features/planner/manual-planner';
+import type {
+  AtlasRegionGeometry,
+  AtlasRegionSource,
+  AtlasRegionView,
+} from '../atlas/atlas-region-contracts';
+import { atlasPartyPoint } from '../atlas/atlas-runtime-model';
+import type { AtlasCommand, CampaignAtlas } from '../atlas/campaign-atlas-contracts';
+import type { CityCommand } from '../atlas/city-contracts';
+import type { DrawingCommand, DrawingView } from '../atlas/drawing-contracts';
+import type { DungeonCommand, DungeonRequest } from '../atlas/dungeon-contracts';
+import type { GraphCommand, GraphView } from '../atlas/graph-contracts';
+import type { DungeonPath, PathPreview } from '../atlas/path-contracts';
+import { profileBounds, terrainProfile } from '../atlas/terrain-profile';
+import { terrainTraceMeasure } from '../atlas/terrain-timing';
+import type {
+  CampaignCatalogCommand,
+  CampaignCatalogReceipt,
+  ConflictChoice,
+} from '../campaign/campaign-contracts';
+import type {
+  GenerationCommand,
+  GenerationRequest,
+  LootRollCommand,
+} from '../campaign/generation-contracts';
 import { canonicalJson } from '../campaign/generation/canonical-json';
+import type { KeyNoteCaptureCommand } from '../campaign/key-note-capture-contracts';
+import type { NpcCommand, NpcDraft, NpcQuery } from '../campaign/npc-contracts';
+import {
+  preparationTarget,
+  type Preparation,
+  type PreparationCommand,
+  type PreparationDraft,
+  type PreparationEdit,
+  type PreparationSelection,
+} from '../campaign/preparation-contracts';
+import type { SessionCommand, SessionGenerationRequest } from '../campaign/session-contracts';
+import type {
+  WorldRelationPairCommand,
+  WorldRelationPairDraft,
+  WorldRelationPairHistoryCommand,
+} from '../campaign/world-relation-pair-contracts';
+import type { EncounterPlanCommand } from '../catalog/encounter-contracts';
+import type { ItemQuery, ItemShopCommand } from '../catalog/items-contracts';
+import type { SceneRuleCommand } from '../catalog/rule-reference-contracts';
+import DATA_FORMAT from '../data-format.json';
+import type { AutonomyCommand } from '../runtime/autonomy-contracts';
+import type { ChaseCommand } from '../runtime/chase-contracts';
+import type { CombatCommand } from '../runtime/combat-contracts';
+import type { CombatDraftKind, CombatWorkingDraft } from '../runtime/combat-draft-contracts';
+import type { LiveCommand, LiveScene } from '../runtime/live-contracts';
+import type {
+  AudioAsset,
+  AudioQuery,
+  MusicCommand,
+  MusicSubject,
+  MusicView,
+} from '../runtime/music-contracts';
+import type { PlayerAsset, PlayerCommand, PlayerFrame } from '../runtime/player-contracts';
+import type { LedgerInventoryQuery, LedgerQuery, ProgressCommand } from '../runtime/progression';
+import type { SceneCheckCommand } from '../runtime/scene-check-contracts';
+import type { TravelRequest, WorldCommand } from '../runtime/world-contracts';
+import type { CommitOutcome } from '../shared/commit-receipt';
+import { checkedCommitReference, type CommitReference } from '../shared/commit-receipt';
+import type { RoomDirectoryQuery, WorkspaceGeometry, WorkspaceShell } from '../shared/contracts';
+import {
+  type Campaign,
+  type CampaignRename,
+  type Edit,
+  type Room,
+  type RoomCommit,
+  type WorkingRoomDraft,
+  type Workspace,
+} from '../shared/contracts';
+import { validateTransferSnapshot } from '../transfer/registry';
+import type { ExtensionCommand } from '../workspace/extension-contracts';
+import {
+  checkedTutorialRun,
+  tutorialLessonRevision,
+  type TutorialRun,
+} from '../workspace/tutorial-contracts';
+import { readDay } from './adventuring-day';
+import { readAgenda } from './agenda';
+import { installLandscape, landscapeRegion, terrainRegion } from './atlas-landscape';
+import { atlasReadChanges } from './atlas-read-journal';
+import { storedAtlasRegionView } from './atlas-region';
+import { atlasProjectionSource, installAtlasShapeSource } from './atlas-shape-source';
+import { installSourceCellIndex } from './atlas-source-cell';
+import { installTerritories, readTerritories } from './atlas-territories';
+import {
+  atlasEntrances,
+  atlasLocalJourney,
+  installAtlasTravel,
+  previewAtlasLocal,
+  storedApplyAtlasTravel,
+} from './atlas-travel';
+import {
+  autonomyDecision,
+  autonomyView,
+  captureAutonomyBasis,
+  executeAutonomy,
+  installAutonomySchema,
+} from './autonomy';
+import { installAutonomyDungeonSchema } from './autonomy-dungeon';
+import { installAutonomyResources } from './autonomy-resources';
+import {
+  applyAtlasCommand,
+  atlasBindings,
+  atlasHistoryState,
+  atlasRoot,
+  hasAtlasReceipt,
+  installCampaignAtlas,
+  storedAtlasCitySite,
+  storedAtlasOverview,
+  storedCampaignAtlas,
+  storedCoupleAtlasWall,
+  storedReconcileAtlasGeometry,
+} from './campaign-atlas';
+import {
+  applyCampaignCatalog,
+  catalogCommand,
+  catalogOutcome,
+  noteCampaignOpened,
+} from './campaign-catalog';
+import {
+  archiveSourceChoices,
+  campaignOverview,
+  definitionConflicts,
+  eraseCampaignRows,
+  installCampaignSchema,
+  pruneCampaignSnapshot,
+  publishSnapshot,
+  remapSnapshot,
+  sharedPlan,
+  snapshotCounts,
+  storedCreate,
+  storedRenameCampaign,
+  trashCampaign,
+  validateCampaignSnapshotSettings,
+} from './campaign-data';
+import { executeChase, installChaseSchema, readChase } from './chase';
+import { keepChaseDraft } from './chase-drafts';
+import { readChronicle } from './chronicle';
+import { ChronicleReadSession } from './chronicle-pages';
+import {
+  cityOverview,
+  executeCity,
+  installCitySchema,
+  readCity,
+  readCityBuildingChoices,
+} from './city';
+import { readCityActivities } from './city-activity';
+import { executeCombat, installCombatSchema, readCombat } from './combat';
+import {
+  combatDrafts,
+  discardCombatDraft,
+  installCombatDraftSchema,
+  keepCombatDraft,
+  readCombatDraft,
+} from './combat-drafts';
+import { readCombatResolution } from './combat-resolution';
+import { matchesReceipt } from './command-fingerprint';
+import { readCommitReceipt } from './commit-receipt';
+import { CommittedSources } from './committed-sources';
+import { installContentRuntime } from './content-runtime';
+import {
+  activateDungeonFeature,
+  drawingElement,
+  drawingRoom,
+  drawingView,
+  executeDrawing,
+  installDrawingSchema,
+  roomMapStyle,
+} from './drawing';
+import { dungeonBudgetView, validateDungeonPlacement } from './dungeon-budget';
+import { installDungeonKey } from './dungeon-key';
+import {
+  dungeonCommandState,
+  dungeonDisplay,
+  dungeonGeometry,
+  dungeonMapView,
+  dungeonView,
+  executeDungeon,
+  installDungeonPlaySchema,
+  previewDungeon,
+} from './dungeon-play';
+import { installDungeonSenses } from './dungeon-senses';
+import {
+  installEncounterSchema,
+  readEncounterPlan,
+  readEncounterPlans,
+  saveEncounterPlan,
+} from './encounters';
+import { ExtensionRegistry } from './extensions';
+import {
+  discardFinishDraft,
+  installFinishDrafts,
+  keepFinishDraft,
+  readFinishDraft,
+} from './finish-drafts';
+import {
+  acceptGeneration,
+  executeGeneration,
+  generateEncounters,
+  installGenerationSchema,
+  readEncounterTables,
+  readGenerationRun,
+  readGenerationRuns,
+  readGeneratorRegistry,
+  readLootTables,
+  rollLoot,
+} from './generation';
+import { graphLayout, GraphShadow, graphView, installGraph } from './graph';
+import {
+  discardGroupDraft,
+  groupDraft,
+  groupView,
+  installGroups,
+  keepGroupDraft,
+  preparedGroups,
+} from './groups';
+import { readItemDefinition, readItemDefinitions } from './item-definitions';
+import {
+  executeItemShop,
+  installItemsSchema,
+  readShop,
+  readShopHistory,
+  readShops,
+  sceneShops,
+} from './items';
+import { captureKeyNote, keyNoteCaptureStatus, readKeyNoteChoices } from './key-note-capture';
+import {
+  applyLiveCommand,
+  consumeSceneTime,
+  installLiveSchema,
+  liveStatus,
+  readArchivedRoster,
+  readArchives,
+  readLive,
+  readLiveScene,
+} from './live';
+import { keepLiveMomentDraft as keepMomentDraft } from './live-moment-drafts';
+import { readLocationActivities } from './location-activity';
+import { readLocationMaterials } from './location-notebook';
+import { installMaskHistoryIndexes, readMaskHistory } from './mask-history';
+import { installMaskReconciliationSchema } from './mask-reconciliation';
 import {
   audioFile,
   audioLibrarySnapshot,
@@ -308,56 +277,52 @@ import {
   refreshMusicContext,
   saveMusicPosition,
 } from './music';
-import type {
-  AudioAsset,
-  AudioQuery,
-  MusicCommand,
-  MusicSubject,
-  MusicView,
-} from '../runtime/music-contracts';
-import type { TravelRequest, WorldCommand } from '../runtime/world-contracts';
 import {
-  executeItemShop,
-  installItemsSchema,
-  readShop,
-  readShopHistory,
-  readShops,
-  sceneShops,
-} from './items';
-import { readItemDefinition, readItemDefinitions } from './item-definitions';
-import type { ItemQuery, ItemShopCommand } from '../catalog/items-contracts';
-import { createHash, randomUUID } from 'node:crypto';
-import { dirname } from 'node:path';
-import Database from 'better-sqlite3';
+  discardNarrativeDraft,
+  installNarrative,
+  keepNarrativeDraft,
+  readNarrative,
+} from './narrative';
+import { readNarrativeJournal } from './narrative-journal';
+import { noteMergeWork } from './note-merge';
+import { readNoteRoomUses } from './note-room-uses';
+import { checkNoteThread, readNoteThread } from './note-thread';
+import { readNpcCast, readNpcDossier } from './npc-cast';
+import { installNpcDungeonSchema } from './npc-dungeon';
+import { readNpcBuildingChoices, readNpcPlaces } from './npc-places';
+import { installNpcRecords } from './npc-record';
+import { installNpcWorldSchema } from './npc-world';
 import {
-  preparationTarget,
-  type Preparation,
-  type PreparationCommand,
-  type PreparationDraft,
-  type PreparationEdit,
-  type PreparationSelection,
-} from '../campaign/preparation-contracts';
-import { type ManualPlan } from '../../features/planner/manual-planner';
-import { applyLiveCommand, consumeSceneTime } from './live';
+  discardNpcDraft,
+  executeNpc,
+  keepNpcDraft,
+  npcDraft,
+  npcDrafts,
+  readNpc,
+  readNpcs,
+  reconcileNpc,
+} from './npcs';
+import { installPathSchema, previewDungeonPath } from './paths';
 import {
-  installLiveSchema,
-  liveStatus,
-  readArchivedRoster,
-  readArchives,
-  readLive,
-  readLiveScene,
-} from './live';
-import type { LiveCommand, LiveScene } from '../runtime/live-contracts';
-import { executeCombat, installCombatSchema, readCombat } from './combat';
-import { executeChase, installChaseSchema, readChase } from './chase';
-import { installMaskReconciliationSchema } from './mask-reconciliation';
-import { executeSceneRule, installRuleReferenceSchema, readSceneRules } from './rule-references';
-import type { SceneRuleCommand } from '../catalog/rule-reference-contracts';
-import { executeSceneCheck, installSceneCheckSchema, readSceneChecks } from './scene-checks';
-import type { SceneCheckCommand } from '../runtime/scene-check-contracts';
-import type { ChaseCommand } from '../runtime/chase-contracts';
-import type { CombatCommand } from '../runtime/combat-contracts';
-import { storedExecuteProgress } from './progression';
+  executePlayer,
+  installPlayerSchema,
+  playerAssets,
+  playerMediaFiles,
+  playerObservers,
+  playerSettings,
+  playerView,
+  projectPlayer,
+  savePlayerAsset,
+  setPlayerWindow,
+} from './player';
+import {
+  commitPreparation,
+  storedKeepPreparationDrafts,
+  storedPreparation,
+  storedReconcilePreparationPlan,
+  storedSelectPreparation,
+} from './preparation';
+import { executePresetCommand, readPresetOutcome, readPresetRegistry } from './preset-registry';
 import {
   installProgressSchema,
   readLedger,
@@ -368,49 +333,88 @@ import {
   readProgressHistory,
   readTreasure,
   readTreasures,
+  storedExecuteProgress,
 } from './progression';
-import type { LedgerInventoryQuery, LedgerQuery, ProgressCommand } from '../runtime/progression';
-import { readChronicle } from './chronicle';
+import { installRoomGroups, validateRoomGroups } from './room-groups';
+import { roomDirectoryQuery, roomGeometries, roomOrder, visibleRoomWhere } from './room-reads';
+import { executeSceneRule, installRuleReferenceSchema, readSceneRules } from './rule-references';
+import { executeSceneCheck, installSceneCheckSchema, readSceneChecks } from './scene-checks';
 import {
-  installEncounterSchema,
-  readEncounterPlan,
-  readEncounterPlans,
-  saveEncounterPlan,
-} from './encounters';
-import type { EncounterPlanCommand } from '../catalog/encounter-contracts';
-import { executePresetCommand, readPresetOutcome, readPresetRegistry } from './preset-registry';
+  deskContent,
+  installSceneDesk,
+  keepSceneCreationDraft,
+  pinSceneDesk,
+  readSceneCreationDraft,
+  readSceneDesk,
+  searchDesk,
+} from './scene-desk';
+import { readSceneEncounterSelection } from './scene-encounter-selection';
+import { readSceneVisits } from './scene-visits';
 import {
-  acceptGeneration,
-  executeGeneration,
-  generateEncounters,
-  installGenerationSchema,
-  readEncounterTables,
-  readGenerationRun,
-  readGenerationRuns,
-  readGeneratorRegistry,
-  readLootTables,
-  rollLoot,
-} from './generation';
-import type {
-  GenerationCommand,
-  GenerationRequest,
-  LootRollCommand,
-} from '../campaign/generation-contracts';
-import type { SessionCommand, SessionGenerationRequest } from '../campaign/session-contracts';
-import { storedAtlasRegionView } from './atlas-region';
+  executeSession,
+  generateSession,
+  installSessionSchema,
+  readPreparedGroup,
+  readSession,
+  readSessionRun,
+  readSessionRuns,
+  regenerateSessionProposal,
+  regenerateSessionReward,
+  scenePreparation,
+} from './session';
+import { readSessionPacket } from './session-packet';
+import { keepSessionRecapDraft, readSessionRecapDraft } from './session-recap';
+import { validateBackupCandidate, validateDatabase } from './snapshot-validation';
 import {
-  commitPreparation,
-  storedKeepPreparationDrafts,
-  storedPreparation,
-  storedReconcilePreparationPlan,
-  storedSelectPreparation,
-} from './preparation';
+  decodePreparationDraft,
+  decodeRoom,
+  decodeRoomDraft,
+  preparationDraftTable,
+  readStoredPlan,
+  storedAddRoom,
+  storedEdit,
+  storedHistory,
+  storedKeepRoomDraft,
+  storedReconcile,
+} from './stored-records';
+import { TerrainAuthorCache } from './terrain-author-cache';
 import { storedAtlasHeight } from './terrain-grid';
+import { previewSceneTime } from './time-plan';
+import { installTravelHistory } from './travel-history';
 import {
-  checkedTutorialRun,
-  tutorialLessonRevision,
-  type TutorialRun,
-} from '../workspace/tutorial-contracts';
+  discardTreasuryDraft,
+  installTreasury,
+  keepTreasuryDraft,
+  readTreasuryDraft,
+  treasureHistory,
+} from './treasury';
+import { installTriggers } from './triggers';
+import { vegetationScene } from './vegetation';
+import { readSessionProgress } from './visit-outcomes';
+import { installVolumeSchema, readDungeonVolume } from './volume';
+import {
+  installWorldSchema,
+  previewTravel,
+  readWorldCalendar as readNpcPlanCalendar,
+  readSceneWorld,
+  readWorld,
+  reconcileWorld,
+  storedExecuteWorld,
+} from './world';
+import { readWorldLinks } from './world-links';
+import { checkedWorldNoteRow } from './world-note-row';
+import {
+  discardWorldRelationPairDraft,
+  executeWorldRelationPair,
+  executeWorldRelationPairHistory,
+  installWorldRelationPairs,
+  keepWorldRelationPairDraft,
+  readWorldRelationPairDraft,
+  readWorldRelationPairHistory,
+  reconcileWorldRelationPair,
+  reconcileWorldRelationPairHistory,
+} from './world-relation-pair';
+import { readWorldSources } from './world-sources';
 const roomNumberOrder = new Intl.Collator('de', { numeric: true });
 
 const json = (value: unknown) => JSON.stringify(value);
@@ -1941,14 +1945,14 @@ export class CampaignStore {
   searchDesk(token: string, kind: string, search: string, offset: number) {
     return searchDesk(this.db, this.guard(token), kind, search, offset);
   }
-  deskContent(token: string, ref: import('../runtime/scene-desk-contracts').DeskRef) {
+  deskContent(token: string, ref: import('../shared/desk-reference').DeskRef) {
     return deskContent(this.db, this.guard(token), ref);
   }
   pinSceneDesk(
     token: string,
     id: string,
     revision: number,
-    ref: import('../runtime/scene-desk-contracts').DeskRef,
+    ref: import('../shared/desk-reference').DeskRef,
     pin: boolean,
   ) {
     return pinSceneDesk(this.db, this.guard(token), id, revision, ref, pin);
@@ -2252,7 +2256,11 @@ export class CampaignStore {
       const current = shadow.db
         .prepare('SELECT revision FROM dungeon_graph_layout WHERE campaign_id=? AND id=?')
         .get(cam, c.scopeId);
-      draw({ kind: 'graph-layout', layout, expectedRevision: current?.revision ?? null });
+      draw({
+        kind: 'graph-layout',
+        layout,
+        expectedRevision: current ? checkedRow(current, { revision: 'integer' }).revision : null,
+      });
     };
     const connect = (intent: import('../atlas/graph-contracts').GraphIntent) => {
       let layout = graphLayout(shadow.db, cam, c.scopeId);
@@ -2556,11 +2564,14 @@ export class CampaignStore {
         pruneCampaignSnapshot(db, id);
         validateDatabase(db);
         validateTransferSnapshot(db);
-        const c: Pick<Campaign, 'id' | 'name'> = db.prepare('SELECT id,name FROM campaign').get();
+        const c = checkedRow(db.prepare('SELECT id,name FROM campaign').get(), {
+          id: 'text',
+          name: 'text',
+        });
         snapshot = {
           ...c,
           fence,
-          schema: db.pragma('user_version', { simple: true }),
+          schema: sqliteInteger(db.pragma('user_version', { simple: true })),
           counts: snapshotCounts(db),
           media: [...audioMediaFiles(db), ...playerMediaFiles(db, id)],
         };

@@ -1,28 +1,14 @@
-import { atlasRouteGeometry } from './atlas-route-geometry';
-import { ShapeGeometry, Vector3, BufferGeometry, Float32BufferAttribute, Color } from 'three';
+import { BufferGeometry, Color, Float32BufferAttribute, ShapeGeometry, Vector3 } from 'three';
 import { SVGLoader } from 'three/examples/jsm/loaders/SVGLoader.js';
+import type { Point } from '../shared/contracts';
+import type { AtlasCanvasScene } from './atlas-canvas-scene';
+import { AtlasDrawingMesh } from './atlas-drawing-mesh';
+import { atlasRouteGeometry } from './atlas-route-geometry';
+import { atlasSpatialColor } from './atlas-spatial-color';
 import { atlasSpatialPaths, atlasStrokeParts } from './atlas-spatial-geometry';
 import { drapeAtlasGeometry, type AtlasSpatialSurface } from './atlas-spatial-surface';
-import { atlasSpatialColor } from './atlas-spatial-color';
 import { atlasWorkplaneHeight } from './atlas-workplane';
 import { routeSegmentRange } from './terrain-route-clip';
-import type { AtlasCanvasScene, AtlasPaintCommand } from './atlas-canvas-scene';
-import type { Point } from '../shared/contracts';
-
-export interface AtlasDrawingMesh {
-  positions: Float32Array;
-  indices: Uint32Array;
-  uv?: Float32Array;
-  colors?: Float32Array;
-  color: [number, number, number, number];
-  texture?: CanvasImageSource;
-  hitAlpha?: { pixels: Uint8ClampedArray; width: number; height: number };
-  command?: AtlasPaintCommand;
-  target?: Record<string, string>;
-  solid?: boolean;
-  publicForestScale?: number;
-  billboard?: { anchor: [number, number, number]; offsets: Float32Array };
-}
 
 /** CPU triangulation produces plain local-metre buffers, never a second scene graph. */
 export function atlasDrawingGeometry(

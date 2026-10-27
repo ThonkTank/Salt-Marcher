@@ -4,6 +4,7 @@ import { createRequire } from 'node:module';
 import { buildSync } from 'esbuild';
 for (const [name, entry] of [
   ['path', 'atlas/path-model'],
+  ['anchor', 'atlas/path-anchor'],
   ['trigger', 'runtime/trigger-model'],
 ]) {
   buildSync({
@@ -15,7 +16,8 @@ for (const [name, entry] of [
   });
 }
 const require = createRequire(import.meta.url);
-const { resolvePathAnchor, proposePathAnchor } = require('../../.build/volume-spatial-path.cjs');
+const { proposePathAnchor } = require('../../.build/volume-spatial-path.cjs');
+const {resolvePathAnchor}=require('../../.build/volume-spatial-anchor.cjs');
 const { triggerIntervals } = require('../../.build/volume-spatial-trigger.cjs');
 const U = 1.524;
 const span = (z) => ({ z, height: 2, floor: true, ceiling: true, medium: 'air' });

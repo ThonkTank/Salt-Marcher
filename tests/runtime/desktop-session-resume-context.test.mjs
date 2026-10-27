@@ -9,7 +9,7 @@ import { parseHTML } from '../helpers/dom.mjs';
 const require = createRequire(import.meta.url),
   source =
     "export {createCombat} from './combat';\n" + readFileSync('src/app/runtime/live.ts', 'utf8');
-const hooks = `\nconst originalStart=startLiveSession;export const __resumeProbe={initHandoff:initHandoffVisitDialog,readSessionResumePrep,renderSessionResume,openSessionResume,packetSource(){resumed=true;return livePacketSource();},setState(w,v,p){context=w;data=v;sources=p;sceneDraft=structuredClone(v.scene);sessionChronicle={entries:[]};tell=(text,error)=>globalThis.__resumeMessages.push({text,error});},history(entries){sessionChronicle={entries};},ports(p){if(p.visit)openMomentVisit=p.visit;if(p.start===false)startLiveSession=originalStart;if(p.execute)execute=p.execute;if(p.start)startLiveSession=p.start;if(p.flush)flushLive=p.flush;if(p.packet)openLivePacket=p.packet;},draft(){return sceneDraft;}};`;
+const hooks = `\nconst originalStart=startLiveSession;export const __resumeProbe={initHandoff:sessionCloseUI.initHandoffVisitDialog,readSessionResumePrep,renderSessionResume:sessionResumeUI.renderSessionResume,openSessionResume:sessionResumeUI.openSessionResume,packetSource(){resumed=true;return livePacketSource();},setState(w,v,p){context=w;data=v;sources=p;sceneDraft=structuredClone(v.scene);sessionChronicle={entries:[]};tell=(text,error)=>globalThis.__resumeMessages.push({text,error});},history(entries){sessionChronicle={entries};},ports(p){if(p.visit)openMomentVisit=p.visit;if(p.start===false)startLiveSession=originalStart;if(p.execute)execute=p.execute;if(p.start)startLiveSession=p.start;if(p.flush)flushLive=p.flush;if(p.packet)openLivePacket=p.packet;},draft(){return sceneDraft;}};`;
 buildSync({
   stdin: {
     contents: source.replace(

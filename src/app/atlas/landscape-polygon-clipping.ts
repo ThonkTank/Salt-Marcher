@@ -1,6 +1,6 @@
 import ClipperLib from 'clipper-lib';
 import type { Point, Polygon } from '../shared/contracts';
-import { segmentDistance } from './atlas-landscape';
+import { segmentDistance } from './landscape-geometry';
 
 /** Keep the centreline within 1/1024 of the brush radius. Coalesced pointer
  * samples on almost straight segments must not multiply clipping work.

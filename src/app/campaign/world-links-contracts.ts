@@ -1,8 +1,9 @@
+import type { WorldFamilyRelationKind } from '../../features/world/world-notes';
+import type { DeskContent } from '../runtime/scene-desk-contracts';
 import type { Result } from '../shared/contracts';
-import type { DeskContent, DeskRef } from '../runtime/scene-desk-contracts';
+import type { DeskRef } from '../shared/desk-reference';
 import type { PreparationCommand } from './preparation-contracts';
 import type { WorldRelationPairAPI } from './world-relation-pair-contracts';
-import type { WorldFamilyRelationKind } from '../../features/world/world-notes';
 export type WorldLinkRef = DeskRef;
 export interface WorldLinkNode {
   ref: WorldLinkRef;

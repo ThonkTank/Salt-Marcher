@@ -81,7 +81,10 @@
     "dev": "npm run start:desktop --",
     "format": "prettier --write \"src/app/**/*.{ts,css}\" \"desktop/**/*.ts\" \"tests/{workspace,atlas,campaign,runtime,catalog,shared}/**/*.test.mjs\" \"tests/helpers/**/*.{mjs,ts}\" \"tools/{build-desktop,build-transfer-contracts,check-repository,check-module-boundaries,run-tests,test-selection,package-desktop,release-desktop,verify-release-source,native-session,atlas-*,test-desktop-*,measure-*,run-autonomy-scale}.{mjs,ts}\" \"tools/module-{graph,responsibilities}.mjs\"",
     "format:check": "prettier --check \"src/app/**/*.{ts,css}\" \"desktop/**/*.ts\" \"tests/{workspace,atlas,campaign,runtime,catalog,shared}/**/*.test.mjs\" \"tests/helpers/**/*.{mjs,ts}\" \"tools/{build-desktop,build-transfer-contracts,check-repository,check-module-boundaries,run-tests,test-selection,package-desktop,release-desktop,verify-release-source,native-session,atlas-*,test-desktop-*,measure-*,run-autonomy-scale}.{mjs,ts}\" \"tools/module-{graph,responsibilities}.mjs\"",
-    "check:environments": "tsc -p tsconfig.renderer.json && tsc -p tsconfig.host.json && tsc -p tsconfig.domain.json"
+    "check:environments": "node tools/check-environment-capabilities.mjs tsconfig.renderer.json && tsc -p tsconfig.worker.json && tsc -p tsconfig.browser-worker.json && tsc -p tsconfig.host.json && tsc -p tsconfig.domain.json",
+    "verify:local": "node tools/run-local-check.mjs",
+    "build:legacy:obsidian": "node tools/build-legacy-obsidian.mjs",
+    "test:legacy:obsidian": "node --test tests/legacy-reference/obsidian-build.test.mjs"
   },
   "dependencies": {
     "@deck.gl/core": "9.4.0",
@@ -117,5 +120,5 @@
     "typescript": "^5.9.0"
   },
   "productName": "SaltMarcher",
-  "description": "Lokaler Arbeitsraum für Kampagnen, Atlas und Spielleitung"
+  "description": "Lokaler Arbeitsraum f\u00fcr Kampagnen, Atlas und Spielleitung"
 }

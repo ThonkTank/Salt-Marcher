@@ -1,7 +1,8 @@
 import { textReferences } from '../campaign/text-references';
+import type { DeskContent, DeskEntry } from '../runtime/scene-desk-contracts';
 import { refreshSceneDeskPins } from '../runtime/scene-desk-ui';
-import type { WorkspaceGeometry, Result } from '../shared/contracts';
-import type { DeskRef, DeskEntry, DeskContent } from '../runtime/scene-desk-contracts';
+import type { Result, WorkspaceGeometry } from '../shared/contracts';
+import type { DeskRef } from '../shared/desk-reference';
 import { renderCreatureDetail } from './creature-detail-ui';
 import { encounterEntryLabel } from './encounter-contracts';
 const el = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;

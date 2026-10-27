@@ -2,8 +2,8 @@
 
 Status: Current; bestehende Kopplungen und offene Qualifikation ausdrücklich benannt.
 Owner: project
-Last Reviewed: 2026-10-26
-Source of Truth: Benannte Produktionsanschlüsse, `tools/module-responsibilities.mjs`, `tools/check-module-boundaries.mjs` und die drei zusätzlichen TypeScript-Konfigurationen.
+Last Reviewed: 2026-10-27
+Source of Truth: Benannte Produktionsanschlüsse, `tools/module-responsibilities.mjs`, `tools/check-module-boundaries.mjs` und die ausführbaren TypeScript-Umgebungsprüfungen.
 
 ## Ausführbare Fachinstanzen
 
@@ -50,82 +50,82 @@ Darstellung, Speicher- oder Hostfähigkeit. Speicher darf keinen ausdrücklich
 benannten Oberflächen-/Hostbesitzer erreichen. Diese Ergänzung ersetzt keine
 vollständige Typtrennung sämtlicher historischer Darstellungsmodelle.
 
-Der geprüfte Ausgangspunkt ist `7ef54e44c295f4adf6cf3800e27f45aa8ad0a0b3`.
-`module-cycle-baseline.json` bewahrt ausschließlich seine zyklischen Kanten,
-getrennt nach sämtlichen deklarierten Imports und nicht ausdrücklich typreinen
-Imports. Letztere sind eine konservative Wertimportanalyse, kein Nachweis, dass
-TypeScript jede dieser Kanten im Bundle erhält. Beide Graphen werden geprüft:
-Neue Kanten innerhalb alter Komponenten und die Umwandlung reiner Typzyklen in
-Wertzyklen sind ebenfalls Fehler. Entfernen ist erlaubt; die Baseline wird nicht
-bei einem Prüflauf automatisch erweitert.
+Der ursprüngliche Ausgangspunkt ist `7ef54e44c295f4adf6cf3800e27f45aa8ad0a0b3`.
+Die Baseline wurde nach der Trennung ausdrücklich verkleinert; sie wird bei
+Prüfläufen niemals automatisch erweitert. Neue zyklische Kanten, einschließlich
+neuer Kanten innerhalb einer bekannten Komponente, bleiben Fehler.
 
-| Vorhandene stark verbundene Komponente | Einordnung |
+`shared/contracts.ts` enthält nur grundlegende Datenverträge. Die Zusammensetzung
+aller Fach-APIs gehört `shared/desktop-api.ts`, die Browserdeklaration
+`shared/campaign-window.d.ts`, Raumvalidierung `shared/room-validation.ts`.
+`DeskRef` und rohe Textpositionen haben eigene kleine Module. Keines dieser
+Grundmodule zieht den vollständigen Desktopvertrag zurück in seine Abhängigkeiten.
+
+Die Wertzyklen Landschaft/Höhen/Masken und Pfadmodell/räumliche Auswertung sind
+aufgelöst: `landscape-geometry.ts` besitzt gemeinsame Geometrie,
+`path-anchor.ts` gemeinsame Pfadanker. `atlas-drawing-mesh.ts` besitzt den
+Meshvertrag, `party-command-contracts.ts` die benötigten Live-Befehle; die
+bisherigen Drawing/Route- und Live/Party-Typzyklen entfallen.
+
+| Verbleibende Komponente | Grenze |
 | --- | --- |
-| 119 Fach-/Vertragsdateien einschließlich `shared/contracts` | Typgraph verbindet breite API- und Modellimporte; erschwert Umgebungsisolierung. Kein entsprechender 119-Dateien-Wertzyklus. |
-| `atlas-drawing-geometry` / `atlas-route-geometry` | Gegenseitige Typabhängigkeit; keine Wertkomponente. |
-| `live` / `party-topbar-ui` | Typabhängigkeit der UI-Anschlüsse; keine Wertkomponente. |
-| `atlas-landscape` / `land-mask` / `terrain-height` | Drei Dateien im Wertgraphen; Daten-/Geometriehilfen greifen zurück. Bestehende Kopplung, nicht bereinigt. |
-| `path-model` / `path-spatial` / `spatial-3d` | Drei Dateien in beiden Graphen; gemeinsame räumliche Auswertung. |
-| Speichergruppe um `campaign-atlas`, `live`, `session`, `world` | 36 Dateien im Gesamtgraphen, 35 im Wertgraphen; unterschiedliche Writer und Projektionen sind weiterhin gekoppelt. Kein neuer allgemeiner Befehlsläufer als Umgehung. |
-| `storage/dungeon-key` / `storage/surfaces` | Gegenseitige Speicherabhängigkeit in beiden Graphen. |
+| 79 Fach-/Atlas-/Vertragsdateien | Der frühere 119-Dateien-Verbund ist kleiner; `shared/contracts` und die Desktop-API gehören nicht mehr dazu. Gegenseitige Fachmodelltypen bleiben gekoppelt. Dies ist keine Behauptung eines vollständig azyklischen Typgraphen. |
+| Notiz-/Vorbereitungsverträge (4 Dateien) und Kampfverträge/-initiative (3 Dateien) | Aus dem alten großen Verbund abgetrennte Typkomponenten; keine neuen Wertzyklen. |
+| Speichergruppe um `campaign-atlas`, `live`, `session`, `world` | 36 Dateien im Gesamtgraphen, 35 im Wertgraphen. Die fachübergreifenden Writer wurden nicht neu entworfen. |
+| `storage/dungeon-key` / `storage/surfaces` | Bestehende Speicherabhängigkeit bleibt. |
 
-Insgesamt: sechs Komponenten mit 164 Dateien/533 internen Kanten einschließlich
-Typimports; vier Wertkomponenten mit 43 Dateien/117 Kanten. Die neue
-Arbeitsflächenaktivierung/-öffnung erzeugt keinen Zyklus. Bei der Browsertrennung entfielen ausschließlich die drei zyklischen Kanten
-`atlas-camera → shared/contracts`, `terrain-coverage → atlas-camera` und
-`terrain-spatial-model → atlas-camera`; die Baseline wurde entsprechend verkleinert.
-Die Baseline ist eine
-Architekturgrenze, keine zweite Test- oder Capability-Zuordnung.
+Der aktuelle Gesamtgraph hat fünf Komponenten mit 124 Dateien und 368 internen
+Kanten; der Wertgraph zwei Komponenten mit 37 Dateien und 109 Kanten. Zuvor waren
+es 164 Dateien/533 Kanten beziehungsweise 43 Dateien/117 Kanten. Im Gesamtgraphen
+ersetzen 15 Kanten zum/aus dem ausgezogenen Geometrieeigentümer frühere
+Landschaftskanten; dies ist eine explizite Eigentümerverschiebung, keine pauschale
+Freigabe neuer Kopplungen. Der Wertgraph enthält ausschließlich eine echte
+Teilmenge der alten Baseline. Die Baseline ist keine zweite Testzuordnung.
 
-## TypeScript-Umgebungen: gemessener Nutzen und Grenze
+## Vollständige Einstiegspunkte und Umgebungsprüfung
 
-`npm run check` behält die bisherige vollständige Typprüfung und führt zusätzlich
-`check:environments` aus. Die drei Konfigurationen prüfen jeweils ihre expliziten
-Einstiege **einschließlich transitiver Imports**:
+`npm run check` führt die vollständige Projektprüfung und `check:environments`
+aus. Jede Konfiguration prüft die folgenden produktiven Einstiege einschließlich
+ihrer gesamten transitiven Quellen:
 
-| Konfiguration | Tatsächlich isolierter Umfang | Verfügbare Globals |
+| Konfiguration | Einstiege | Fähigkeiten |
 | --- | --- | --- |
-| `tsconfig.renderer.json` | Editoroberfläche, Textposition, Zahlenrad, Popup und Arbeitsflächenposition und passiver Karten-Canvas | ES2022 und DOM, keine Node-Typen |
-| `tsconfig.host.json` | CommitTracker, Storetransport, Atlas-Writeaktivität, Update-Manifest, SQLite-Anschluss, SVG-Markup, Raum-/Stadtgeometrie und reine Brush-Vorschau | ES2022 und Node, kein DOM |
-| `tsconfig.domain.json` | Editorübergang, Buchungsbeleg, Würfelformel, Atlaskamera und Rasterkernel | ES2022, weder DOM noch Node |
+| `tsconfig.renderer.json` | Spielleiter, Spieleranzeige, Preseteinstellungen, Atlas-Deck-Runtime | ES2022/DOM; eigene Quellen zusätzlich semantisch gegen Node-Fähigkeiten geprüft |
+| `tsconfig.worker.json` | Store-, Regions-, Raumverzeichnis-, Terrainroute- und Backupvalidierungsworker | ES2022/Node, kein DOM |
+| `tsconfig.browser-worker.json` | Atlas-Brush-Worker | ES2022/WebWorker, kein Window/Document oder Node |
+| `tsconfig.host.json` | Main, beide Preloads, Updatehelper und Updateprobe | ES2022/Node und Electron-Verträge; getrennt von Node-Workern |
+| `tsconfig.domain.json` | Editorübergang, Belege, Würfel, Atlaskamera, Rasterkernel, Literaltexte und Raumvalidierung | ES2022, weder Node noch DOM |
 
-Die transitive Prüfung umfasst nach dieser Trennung 9 eigene Quelldateien im
-Fachbereich, 161 im Hostbereich und 7 im Rendererbereich. Fachbereich und Host
-laden keine DOM-Bibliothek; Fachbereich und Renderer laden keine Node-Deklarationen.
-Diese Zahlen zählen Quellabschlüsse der expliziten Einstiege, keine vollständige
-Produktqualifikation.
+Die Build-Einstiegsinventur `desktop-entry-environments.mjs` wird vom echten
+Desktopbuild geprüft: unbekannte, falsch zugeordnete oder nicht gebaute Einstiege
+brechen ab. Der Umgebungstest verlangt jeden Einstieg in seiner Konfiguration.
 
-`typescript-environments.test.mjs` kompiliert jede echte Konfiguration mit einer
-zusätzlichen virtuellen Prüfdatei. Browsercode akzeptiert `document` und weist
-`process`, `Buffer`, `require` ab; Hostcode akzeptiert Node und weist `document`/
-`window`, Canvas-/SVG-Globals und `self` ab; reine Fachlogik weist beides ab. Die Tests erwarten echte
-Compilerdiagnosen. Eine neue transitive Typbibliothek, die verbotene Globals
-wieder einführt, lässt diese Tests scheitern. Es gibt keine nachgebauten
-Produktfunktionen und keine pauschalen globalen Attrappen.
+Die vollständigen Browserquellen erreichen weiterhin transitive Node-Deklarationen
+über die Fremdbibliothek `apache-arrow`. `types: []` alleine ist deshalb kein
+Schutznachweis. `check-environment-capabilities.mjs` prüft mit dem echten
+TypeScript-Symbolauflöser sämtliche eigenen Browserquellen auf Verwendung von
+Node-Deklarationen und native Imports, auch bei globalen Eigenschafts-/Indexzugriffen.
+Fremdbibliotheksdeklarationen werden nicht als eigene Browserfähigkeiten zugelassen.
+Die produktiven Atlasquellen werden weder ausgeschlossen noch durch `any`-Attrappen
+ersetzt. Typprüfung und semantische Fähigkeitsprüfung bilden gemeinsam das Gate.
+Die Negativtests verwenden die echte vollständige Konfiguration und injizierte
+Prüfquellen; sie prüfen direkte, aliasierte und indizierte Node-Zugriffe sowie
+unzulässige Globals in den anderen Umgebungen.
 
-Ein Versuch mit den **vollständigen** Renderer-Einstiegen und `types: []` ließ
-`process` und `Buffer` weiterhin zu: Die Deklarationen von `apache-arrow` führen
-über die Atlasdarstellung `@types/node` erneut ein. Die konkreten Canvas-/SVG-/Worker-Bindungen der gemeinsamen Geometrie sind
-jetzt getrennt: `CanvasBox` gehört `atlas-camera`, das Paint-Protokoll verwendet
-eigene literale Datenwerte, `atlas-paint-svg` serialisiert ausschließlich Markup,
-`atlas-paint-dom` erzeugt DOM-Knoten und nur `atlas-brush-worker` registriert
-Browsernachrichten. Speicherprojektion und Tests verwenden `atlas-brush-preview`.
-Die genannten produktiven Geometrie-/Markup-/Vorschaueinstiege bestehen mit
-transitiven Imports ohne DOM. Dafür wurden keine Ersatzglobals, `any`-Shims oder
-weiteren Typbibliotheken zugeschaltet.
+Der Höhenkachelcodec verwendet nun in Node und Browser denselben `atob`-Pfad;
+Bytes, Validierung und gespeichertes Format bleiben gleich. Canvas-Textmessung
+gehört ausschließlich `map-text-measure.ts`; die Browseransicht und ihr Export
+verwenden diese Messung, umgebungsfreie Leser behalten die deterministische
+Ersatzmessung in `atlas-cartography.ts`.
+Der Browser-Brush-Worker schützt seine Registrierung durch eine reine
+Eigenschaftsprüfung; er benötigt dafür keine DOM-Deklaration von `document`.
 
-Die vollständigen Store-/Regionsworker sind damit noch nicht isoliert: Sie
-erreichen weiterhin die vorhandene schwache `better-sqlite3`-Deklaration und die
-Canvas-Textmessung in `atlas-cartography`. Auch eine vollständige Node-freie
-Rendererprüfung bleibt offen: Neben `apache-arrow` verwendet der transitive
-Höhencodec `terrain-height` einen direkten `Buffer`-Schnellpfad mit Browserfallback.
-Dieser Abschnitt ändert weder Codec noch Textmessung. Auch `literal-text-edit` zieht über `DeskRef` den breiten
-Vertragsgraphen ein; `EditorSession` benötigt `AbortController`, das nicht zu
-ES2022 gehört. Deshalb werden diese Bereiche nicht als rein umgebungsisoliert
-ausgegeben. Globale Ersatzdeklarationen oder pauschales Wiederzuschalten von DOM
-würden den gewünschten Fehlernachweis aufheben. Die benannten Teilprüfungen
-bringen den oben gemessenen Nutzen; die bisherigen vollständigen Checks und
-Importgrenzen bleiben für den übrigen Code bestehen.
+Die `better-sqlite3`-Deklaration beschreibt den strukturellen Anschluss und gibt
+ungeprüfte Zeilen/PRAGMA-Werte als `unknown` zurück. Betroffene Leser validieren
+Felder mit `checkedRow`/`sqliteInteger`. Das beseitigt die pauschale Treiberattrappe;
+ältere explizite `any`-Felder etwa im großen Store sind damit nicht vollständig
+migriert. Editorlebenszyklus benötigt weiterhin `AbortController` und wird nicht
+als reine ES2022-Fachlogik ausgegeben.
 
 ## Nachweise und Zuordnung
 
@@ -181,3 +181,51 @@ Vorschau-Fixture benötigt diesen Feindetailschutz nicht. Die Raumprobe
 protokolliert beim Schließen IPC-/Shutdown-Meldungen trotz bestandener Assertions
 und drei regulärer Prozessenden. Verpackung, Installation und menschliche
 Produktabnahme sind weiterhin nicht belegt.
+
+### Prüfung der vollständigen Umgebungen (2026-10-27)
+
+Die vier produktiven Browser-Einstiege und fünf Node-Worker werden vollständig
+geprüft. Die Browserprüfung kombiniert echte Typdiagnosen und semantische
+Fähigkeitsdiagnosen; sie behauptet keine Node-freie Fremdbibliotheksdeklaration.
+`tests/shared/sqlite-driver.types.ts` sichert ab, dass native Zeilen und PRAGMA
+keine ungeprüften Strings/Zahlen liefern. Der Transfervertrag behält alle
+145 Modelle/602 Formen; nur der Quellname von `GraphPreviewState` wandert.
+
+Der frühere Terrain-Fresh-Pixelvergleich wurde mit identischer Probe auf einem
+frisch gebauten Export von `ee58456ab98ee74b064dc711284e3fbb972e693d` reproduziert.
+Alle 2.109 exportierten Dateien wurden gegen ihre Git-Blob-IDs geprüft; einzig
+die identische Probe enthält die bereits vorhandenen fremden Ergänzungen.
+Auch dieser Ausgangsstand scheitert an derselben Fresh-Pixelassertion. Die
+Abweichung wurde deshalb nicht durch die Vertrag-/Umgebungstrennung eingeführt.
+Belege: `.build/qa-point3-baseline-fresh/source-provenance.json` und
+`failure.json` (lokale, nicht versionierte Prüfarbeitsdaten).
+
+Die Probe verglich nach erneutem Such-/Zoomablauf weiterhin die alten
+Bildschirmkoordinaten. `terrain-pixel-comparison.mjs` ordnet nun die Messpunkte
+anhand unabhängig gemessener Position und Maßstab beider Kameras denselben
+Weltpositionen zu. Abtastbereich, Farbgrenze und zulässiger mittlerer Fehler
+bleiben unverändert; fehlende Bildabdeckung bricht ab. Der Fresh-Kontrollbereich
+wird zusätzlich verglichen. Vier Regressionstests prüfen Translation, Skalierung
+mit räumlichem Farbverlauf, echte Terrainänderungen und fehlende Abdeckung.
+Alle 20 zuvor vorhandenen fremden Ergänzungszeilen bleiben wörtlich erhalten.
+
+Die korrigierte native Probe bei 100 % bestand auf dem aktuellen Produktbundle:
+Vorschau vor Speicherung, Commit, unveränderte Kontrolle, Undo/Redo, frischer
+Prozess, gespeicherte Höhen und identischer Kachelhash. Beide Fresh-Pixelvergleiche
+meldeten mittleren Fehler 0; beide Prozesse schlossen regulär mit Exit 0 und
+verschwundenem PID. Beleg: `.build/qa-point3-fresh-fixed/result.json`.
+Dieser Lauf belegt den Modus Absenken bei 100 %, nicht sämtliche Pinselmodi.
+
+Die native Spieler-Szenenprobe bestand anschließend auf dem neu gebauten Stand:
+getrennte Spieler-API ohne Kampagnenbridge, wörtliche öffentliche Titel,
+100/200-%-Layout, Blank und erneute Freigabe nach Neustart, unveränderte Quelle
+und reguläres Schließen (`.build/qa-point3-player/privacy-scene-after.json`).
+Sie qualifiziert diesen konkreten Ablauf, nicht sämtliche Atlasausgaben oder
+alle Neustartpfade. Verpackung, Installation und menschliche Produktabnahme
+wurden in diesem Änderungsschritt nicht durchgeführt.
+
+Die oben dokumentierte Terrain-Fresh-Probe gehört zum gesonderten
+Terrain-Skalierungsstand `ee58456ab`; dessen noch nicht integrierte Probe und
+Kamerakorrektur bleiben im ursprünglichen Checkout erhalten. Der gemeinsame
+Pixelvergleichshelfer und seine Regression sind unabhängig davon verfügbar.
+Die Übergabeintegration übernimmt keine fremden Terrain-Skalierungsänderungen.

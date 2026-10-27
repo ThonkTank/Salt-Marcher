@@ -58,7 +58,7 @@ jobs:
       - name: Type-check desktop
         run: npm run check:desktop
 
-      - name: Build historical adapter
+      - name: Build default application target
         run: npm run build
 
       - name: Build desktop application

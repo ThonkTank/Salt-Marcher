@@ -1,24 +1,20 @@
-import { readTerrainGrid } from './terrain-grid';
-import { readRouteTerrain } from './terrain-route';
-import { applyHeightStroke, TerrainSampler } from '../atlas/terrain-height';
-import { colorSurface } from '../atlas/landscape-color-surface';
-import { isLandMode, strokeBox, maskLandSpans } from '../atlas/land-mask';
 import { randomUUID } from 'node:crypto';
+import { type LandscapeAction, type LandscapeRecord } from '../atlas/atlas-landscape';
+import { isLandMode, maskLandSpans, strokeBox } from '../atlas/land-mask';
 import {
-  bounds,
-  contains,
-  type LandscapeRecord,
-  type LandscapeAction,
-} from '../atlas/atlas-landscape';
-import {
+  colorParts,
   intersectPolygons,
   subtractPolygons,
   unionPolygons,
   validateColor,
-  colorParts,
 } from '../atlas/landscape-brush';
+import { colorSurface } from '../atlas/landscape-color-surface';
+import { bounds, contains } from '../atlas/landscape-geometry';
+import { applyHeightStroke, TerrainSampler } from '../atlas/terrain-height';
 import type { Polygon } from '../shared/contracts';
-import { landscapeRegion, putLandscape, landMaskRegion } from './atlas-landscape';
+import { landMaskRegion, landscapeRegion, putLandscape } from './atlas-landscape';
+import { readTerrainGrid } from './terrain-grid';
+import { readRouteTerrain } from './terrain-route';
 
 /** Runs inside the existing Atlas transaction/history, never as a renderer-side read/modify/write. */
 export function executeBrush(

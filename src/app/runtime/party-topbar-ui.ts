@@ -1,37 +1,37 @@
-import { checkPendingCommit } from '../shared/commit-confirmation';
-import { PartyLootPanel } from './party-loot-ui';
-import { PartyRosterPanel } from './party-roster-ui';
-import {
-  partyMemberLabels,
-  partyQuickFields,
-  defaultPartyQuickFields,
-  checkedPartyQuickFields,
-  partyQuickFacts,
-  partyRestOverview,
-  characterRestHint,
-  type PartyQuickField,
-} from './party-overview';
 import { bindAnchoredPopup } from '../shared/anchored-popup';
+import { checkPendingCommit } from '../shared/commit-confirmation';
+import type { Result, WorkspaceGeometry } from '../shared/contracts';
 import { workspaceShortcutAvailable } from '../workspace/workspace-shortcuts';
-import { initPartyAwards, resetPartyAwards } from './party-award-ui';
-import { changeCharacterXp } from './party-xp-model';
-import type { WorkspaceGeometry, Result } from '../shared/contracts';
 import {
   checkedCharacterProfile,
   type Character,
   type CharacterProfile,
   type LiveView,
 } from './live-contracts';
+import { initPartyAwards, resetPartyAwards } from './party-award-ui';
+import type { PartyCommands } from './party-command-contracts';
+import { PartyLootPanel } from './party-loot-ui';
 import {
-  xpInput,
-  xpLevel,
+  characterRestHint,
+  checkedPartyQuickFields,
+  defaultPartyQuickFields,
+  partyMemberLabels,
+  partyQuickFacts,
+  partyQuickFields,
+  partyRestOverview,
+  type PartyQuickField,
+} from './party-overview';
+import { PartyRosterPanel } from './party-roster-ui';
+import { changeCharacterXp } from './party-xp-model';
+import {
   levelXp,
   restFrame,
-  type ProgressView,
+  xpInput,
+  xpLevel,
   type ProgressAction,
+  type ProgressView,
 } from './progression';
-import type { LiveEditor } from './live';
-type PartyCommands = Pick<LiveEditor, 'runPartyLive' | 'runPartyProgress' | 'openPartyMove'>;
+import { onProgressChanged } from './progression-ui';
 let liveCommands: PartyCommands | undefined;
 const commands = () => {
   if (!liveCommands) throw new Error('Party-Writer ist nicht verbunden.');
@@ -42,7 +42,6 @@ const runPartyProgress: PartyCommands['runPartyProgress'] = (...args) =>
   commands().runPartyProgress(...args);
 const openPartyMove: PartyCommands['openPartyMove'] = (...args) =>
   commands().openPartyMove(...args);
-import { onProgressChanged } from './progression-ui';
 
 const el = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const value = (id: string) => el<HTMLInputElement>(id).value;

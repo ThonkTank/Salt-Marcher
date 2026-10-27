@@ -9,7 +9,6 @@
   "GraphIntent.toRoomId": "local",
   "GraphLayout.id": "local",
   "GraphLayout.positions[].roomId": "local",
-  "GraphLayout.scopeId": "local",
-  "GraphPreviewState.scopeId": "local"
+  "GraphLayout.scopeId": "local"
  }
 }

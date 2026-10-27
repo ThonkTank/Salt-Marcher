@@ -1,0 +1,21 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "types": [
+      "node"
+    ],
+    "lib": [
+      "ES2022"
+    ]
+  },
+  "files": [
+    "src/app/storage/sqlite.d.ts",
+    "desktop/terrain-route-worker.ts",
+    "desktop/atlas-region-worker.ts",
+    "desktop/room-directory-worker.ts",
+    "desktop/store-worker.ts",
+    "desktop/backup-validation-worker.ts"
+  ],
+  "include": [],
+  "exclude": []
+}

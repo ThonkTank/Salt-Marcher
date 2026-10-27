@@ -1,23 +1,18 @@
-import { type SqliteDatabase, checkedQuery, checkedRow } from './sqlite-connection';
-import { commandFingerprint, matchesReceipt } from './command-fingerprint';
 import { createHash, randomUUID } from 'node:crypto';
-import {
-  validateRoom,
-  validateRoomDraftContent,
-  type Edit,
-  type Room,
-  type WorkingRoomDraft,
-} from '../shared/contracts';
+import { checkedLocationDocument } from '../../features/location/location-schema';
+import { manualPlan, type ManualPlan } from '../../features/planner/manual-planner';
 import {
   checkedPreparationDraft,
   preparationTarget,
   type PreparationDraft,
   type PreparationEdit,
 } from '../campaign/preparation-contracts';
-import { manualPlan, type ManualPlan } from '../../features/planner/manual-planner';
-import { checkedLocationDocument } from '../../features/location/location-schema';
+import { type Edit, type Room, type WorkingRoomDraft } from '../shared/contracts';
+import { validateRoom, validateRoomDraftContent } from '../shared/room-validation';
 import { atlasBindings } from './campaign-atlas';
+import { commandFingerprint, matchesReceipt } from './command-fingerprint';
 import { drawingHistory, rebaseDrawingRoomHistory } from './drawing';
+import { checkedQuery, checkedRow, type SqliteDatabase } from './sqlite-connection';
 const hash = (value: string | Buffer) => createHash('sha256').update(value).digest('hex');
 
 /** Shared checks for stored payloads and snapshot validation. No active store state. */

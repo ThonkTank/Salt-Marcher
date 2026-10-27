@@ -10,7 +10,7 @@ const require = createRequire(import.meta.url);
 buildSync({
   stdin: {
     contents:
-      "export * from './src/app/storage/store';export * from './src/app/atlas/terrain-height';export * from './src/app/storage/terrain-scale';export * from './src/app/atlas/atlas-landscape';",
+      "export * from './src/app/storage/store';export * from './src/app/atlas/terrain-height';export * from './src/app/storage/terrain-scale';export * from './src/app/atlas/atlas-landscape';export * from './src/app/atlas/landscape-geometry';",
     resolveDir: process.cwd(),
   },
   outfile: '.build/terrain-covered-brush-test.cjs',

@@ -1,50 +1,51 @@
-import { roomGeometries } from './room-reads';
-import { readTriggerFields, executeTriggerAction } from './triggers';
-import { validateDrawingElement } from '../atlas/drawing-contracts';
-import { validateGraphLayouts, validateGraphHistoryRow } from './graph';
-import { dungeonContentAnchors } from '../atlas/dungeon-content-model';
-import { validateDungeonPlacement } from './dungeon-budget';
-import { executeGraphEdit } from './graph-edit';
-import {
-  readDungeonKeys,
-  executeKeyAction,
-  validateDungeonKeys,
-  validateKeyHistoryRow,
-} from './dungeon-key';
-import {
-  readDungeonPaths,
-  readDungeonPassages,
-  validateDungeonPaths,
-  validatePathHistoryRow,
-  pathState,
-  executePathAction,
-  passageStatuses,
-} from './paths';
-import { dungeonGeometry } from './dungeon-play';
-import { volumeProjection } from '../atlas/volume-model';
-import {
-  readDungeonVolumes,
-  readDungeonVolume,
-  validateDungeonVolumes,
-  validateVolumeHistoryRow,
-  executeVolumeAction,
-  rebaseRoomVolume,
-  volumeRow,
-} from './volume';
 import { createHash, randomUUID } from 'node:crypto';
-import { validateRoom, type Room, type Polygon } from '../shared/contracts';
 import type {
   DrawingCommand,
   DrawingElement,
   DrawingView,
   RoomStyle,
 } from '../atlas/drawing-contracts';
+import { validateDrawingElement } from '../atlas/drawing-contracts';
 import {
-  combineRooms,
   anchored,
+  combineRooms,
   deformedBoundaryPoints,
   nearestAnchor,
 } from '../atlas/drawing-model';
+import { dungeonContentAnchors } from '../atlas/dungeon-content-model';
+import { volumeProjection } from '../atlas/volume-model';
+import { type Polygon, type Room } from '../shared/contracts';
+import { validateRoom } from '../shared/room-validation';
+import { validateDungeonPlacement } from './dungeon-budget';
+import {
+  executeKeyAction,
+  readDungeonKeys,
+  validateDungeonKeys,
+  validateKeyHistoryRow,
+} from './dungeon-key';
+import { dungeonGeometry } from './dungeon-play';
+import { validateGraphHistoryRow, validateGraphLayouts } from './graph';
+import { executeGraphEdit } from './graph-edit';
+import {
+  executePathAction,
+  passageStatuses,
+  pathState,
+  readDungeonPassages,
+  readDungeonPaths,
+  validateDungeonPaths,
+  validatePathHistoryRow,
+} from './paths';
+import { roomGeometries } from './room-reads';
+import { executeTriggerAction, readTriggerFields } from './triggers';
+import {
+  executeVolumeAction,
+  readDungeonVolume,
+  readDungeonVolumes,
+  rebaseRoomVolume,
+  validateDungeonVolumes,
+  validateVolumeHistoryRow,
+  volumeRow,
+} from './volume';
 const hash = (s: string) => createHash('sha256').update(s).digest('hex'),
   json = (v: any) => JSON.stringify(v);
 export function installDrawingSchema(db: any) {

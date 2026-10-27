@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import type { AtlasDrawingMesh } from './atlas-drawing-geometry';
+import type { AtlasDrawingMesh } from './atlas-drawing-mesh';
 import type { TerrainObject } from './terrain-objects';
 
 /** Room-derived footprints retain disconnected components and courtyard holes.

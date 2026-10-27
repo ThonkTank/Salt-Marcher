@@ -1,14 +1,15 @@
-import { ATLAS_UNLIT_MATERIAL } from './atlas-deck-material';
-import { Ray, Vector3, Triangle } from 'three';
-import { SimpleMeshLayer } from '@deck.gl/mesh-layers';
-import { AtlasPublicForestLayer } from './atlas-public-forest-layer';
-import { cartographicPhase } from './atlas-cartographic-style';
 import { COORDINATE_SYSTEM, type Layer } from '@deck.gl/core';
-import { atlasDrawingGeometry, type AtlasDrawingMesh } from './atlas-drawing-geometry';
-import type { AtlasCanvasScene, PaintHit } from './atlas-canvas-scene';
-import type { AtlasSpatialSurface } from './atlas-spatial-surface';
-import type { AtlasMetricFrame } from './atlas-metric-camera';
+import { SimpleMeshLayer } from '@deck.gl/mesh-layers';
+import { Ray, Triangle, Vector3 } from 'three';
 import type { Point } from '../shared/contracts';
+import type { AtlasCanvasScene, PaintHit } from './atlas-canvas-scene';
+import { cartographicPhase } from './atlas-cartographic-style';
+import { ATLAS_UNLIT_MATERIAL } from './atlas-deck-material';
+import { atlasDrawingGeometry } from './atlas-drawing-geometry';
+import { type AtlasDrawingMesh } from './atlas-drawing-mesh';
+import type { AtlasMetricFrame } from './atlas-metric-camera';
+import { AtlasPublicForestLayer } from './atlas-public-forest-layer';
+import type { AtlasSpatialSurface } from './atlas-spatial-surface';
 
 /** Deck receives the same local buffers used by exact author hit testing. */
 export class AtlasDeckDrawing {

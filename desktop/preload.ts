@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import type { DesktopAPI } from '../src/app/shared/contracts';
+import type { DesktopAPI } from '../src/app/shared/desktop-api';
 contextBridge.exposeInMainWorld(
   'campaign',
   Object.freeze({

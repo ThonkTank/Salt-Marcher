@@ -1,5 +1,6 @@
-import { validateDocument, isStructuredRoom, type MapDocument } from '../../model';
-import { validateRoom, type Room } from '../shared/contracts';
+import { isStructuredRoom, validateDocument, type MapDocument } from '../../model';
+import { type Room } from '../shared/contracts';
+import { validateRoom } from '../shared/room-validation';
 
 /** A read-only v4 drawing adapter. It never infers physical 3D volumes from drawn contours. */
 export function inspectDungeon(text: string): { name: string; rooms: Room[]; warnings: string[] } {

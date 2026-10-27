@@ -1,9 +1,9 @@
-import type { WorkspaceGeometry } from '../shared/contracts';
-import type { DeskRef } from './scene-desk-contracts';
 import type {
-  LocationMaterialKind,
   LocationMaterial,
+  LocationMaterialKind,
 } from '../campaign/location-notebook-contracts';
+import type { WorkspaceGeometry } from '../shared/contracts';
+import type { DeskRef } from '../shared/desk-reference';
 const node = <K extends keyof HTMLElementTagNameMap>(tag: K, text?: string) => {
   const n = document.createElement(tag);
   if (text !== undefined) n.textContent = text;

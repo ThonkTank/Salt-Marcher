@@ -1,9 +1,9 @@
-import { PacketNoteEditor, type PreparationPacketEditor } from './packet-note-editor';
+import type { LiveMomentCategory } from '../runtime/live-moment-drafts';
+import type { DeskRef } from '../shared/desk-reference';
 import { markdownView } from '../shared/markdown-view';
+import { PacketNoteEditor, type PreparationPacketEditor } from './packet-note-editor';
 import { packetReadingBlocks } from './packet-reading-blocks';
 import type { SessionPacket } from './session-packet-contracts';
-import type { DeskRef } from '../runtime/scene-desk-contracts';
-import type { LiveMomentCategory } from '../runtime/live-moment-drafts';
 const el = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 export interface LivePacketSource {
   sceneId: string;

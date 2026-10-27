@@ -1,5 +1,6 @@
-import type { DeskRef, DeskContent } from '../runtime/scene-desk-contracts';
-import { referenceMarkdown, plainReferenceText } from './text-references';
+import type { DeskContent } from '../runtime/scene-desk-contracts';
+import type { DeskRef } from '../shared/desk-reference';
+import { plainReferenceText, referenceMarkdown } from './text-references';
 const node = <K extends keyof HTMLElementTagNameMap>(tag: K, text?: string) => {
   const n = document.createElement(tag);
   if (text !== undefined) n.textContent = text;

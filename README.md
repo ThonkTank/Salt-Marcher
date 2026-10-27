@@ -51,10 +51,14 @@ npm run build
 npm run build:desktop
 ```
 
-`npm run build` prüft weiterhin den historischen Obsidian-Adapter.
-Der aktive Desktopbuild entsteht mit `npm run build:desktop` unter `.build/desktop`.
-`npm test` führt ohne Dateiauswahl die vollständige aktive Suite mit bis zu vier
-Testprozessen aus. Die [Testanleitung](docs/project/verification/testing.md)
+`npm run build` und `npm run build:desktop` bauen dieselbe aktive Anwendung
+unter `.build/desktop`. Beide Befehle bleiben Teil des vorgeschriebenen Candidate.
+Der historische Adapter wird nur ausdrücklich mit `npm run build:legacy:obsidian`
+gebaut; seine Ausgaben liegen unter `.build/legacy-obsidian`. Der optionale
+Referenztest läuft mit `npm run test:legacy:obsidian` und gehört nicht zur aktiven
+Testsuite oder zum Candidate.
+`npm test` führt ohne Dateiauswahl die vollständige aktive Suite lokal mit einem
+Testprozess aus. Die [Testanleitung](docs/project/verification/testing.md)
 beschreibt Auswahl, serielle Diagnose und Laufberichte.
 Native GUI-Prüfungen bleiben getrennte Aufrufe.
 Die Tests in `tests/native-reference/` benötigen zusätzlich die ursprünglichen Dungeondraft-Dateien im Nachbarverzeichnis `../dungeon-auswertung/`; mit diesen Quellen separat ausführen: `node --test --test-concurrency=1 "tests/native-reference/*.test.mjs"`.

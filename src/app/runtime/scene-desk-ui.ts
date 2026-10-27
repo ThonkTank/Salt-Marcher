@@ -1,25 +1,25 @@
-import { EditorSession } from '../shared/editor-session';
-import { ScenePlaceBinder } from './scene-place-binder';
 import { campaignLocalId } from '../../features/campaign/campaign-contracts';
+import { newLocation } from '../../features/location/location-schema';
 import { worldNoteDocument } from '../../features/world/world-notes';
-import type { WorkspaceGeometry, Result } from '../shared/contracts';
 import type {
-  DeskRef,
-  DeskContent,
-  SceneDesk,
-  SceneCreationInput,
-  SceneCreationDraft,
-} from './scene-desk-contracts';
-import type {
+  PreparationCommand,
   PreparationDraft,
   PreparationEdit,
-  PreparationCommand,
 } from '../campaign/preparation-contracts';
-import type { LiveScene } from './live-contracts';
-import { newLocation } from '../../features/location/location-schema';
-import { showNarrative, flushNarrative } from './narrative-ui';
 import { renderCreatureDetail } from '../catalog/creature-detail-ui';
 import type { EncounterPlan } from '../catalog/encounter-contracts';
+import type { Result, WorkspaceGeometry } from '../shared/contracts';
+import type { DeskRef } from '../shared/desk-reference';
+import { EditorSession } from '../shared/editor-session';
+import type { LiveScene } from './live-contracts';
+import { flushNarrative, showNarrative } from './narrative-ui';
+import type {
+  DeskContent,
+  SceneCreationDraft,
+  SceneCreationInput,
+  SceneDesk,
+} from './scene-desk-contracts';
+import { ScenePlaceBinder } from './scene-place-binder';
 export const editorSession = new EditorSession();
 const savingWork = editorSession.operation<Promise<boolean>>();
 const applyingWork = editorSession.operation<Promise<boolean>>();

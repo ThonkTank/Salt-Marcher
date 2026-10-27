@@ -1,5 +1,5 @@
 import type { Result } from '../shared/contracts';
-import type { DeskRef } from '../runtime/scene-desk-contracts';
+import type { DeskRef } from '../shared/desk-reference';
 export type SessionPacketAction =
   | { kind: 'reference'; ref: DeskRef }
   | { kind: 'encounter'; groupId: string; groupRevision?: number }

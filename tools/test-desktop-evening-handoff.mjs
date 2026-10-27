@@ -68,7 +68,14 @@ try {
       (await page.locator('#atlas-navigation').isVisible())
     )
       await page.locator('#atlas-navigation').click();
-    if (!(await page.locator(id).isVisible())) await page.locator('#workspace-nav-summary').click();
+    // Fresh activation restores the last area asynchronously. The wide sidebar
+    // hides its compact summary; wait for the requested tab instead of clicking
+    // that hidden summary while restoration is still in flight.
+    if (
+      !(await page.locator(id).isVisible()) &&
+      (await page.locator('#workspace-nav-summary').isVisible())
+    )
+      await page.locator('#workspace-nav-summary').click();
     await page.locator(id).click();
   }
   async function launch() {

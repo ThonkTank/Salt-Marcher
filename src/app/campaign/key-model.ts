@@ -1,11 +1,11 @@
 import { sha256 } from '@noble/hashes/sha2.js';
 import { bytesToHex } from '@noble/hashes/utils.js';
-import { validateKeyContent } from './key-contracts';
-import type { Room } from '../shared/contracts';
-import type { DungeonGeometry } from '../atlas/dungeon-contracts';
-import type { KeyContent, KeyBlock, KeyRendered } from './key-contracts';
 import { anchored } from '../atlas/drawing-model';
-import { resolvePathAnchor } from '../atlas/path-model';
+import type { DungeonGeometry } from '../atlas/dungeon-contracts';
+import { resolvePathAnchor } from '../atlas/path-anchor';
+import type { Room } from '../shared/contracts';
+import type { KeyBlock, KeyContent, KeyRendered } from './key-contracts';
+import { validateKeyContent } from './key-contracts';
 export function keyAncestors(content: KeyContent, records: KeyContent[]): KeyContent[] {
   validateKeyContent(content);
   if (content.kind === 'surface') {

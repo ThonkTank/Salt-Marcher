@@ -1,22 +1,22 @@
-import { checkedWorldNoteRow } from './world-note-row';
-import { searchNoteChoices } from './note-choice-search';
-import type { PreparationCommand } from '../campaign/preparation-contracts';
-import { saveNarrative, validateNarrativeState } from './narrative';
-import { documentReferences } from '../campaign/text-references';
-import { searchTextReferences, referenceEntry } from './text-references';
 import { createHash } from 'node:crypto';
-import type {
-  DeskRef,
-  DeskEntry,
-  DeskContent,
-  SceneDesk,
-  SceneCreationDraft,
-} from '../runtime/scene-desk-contracts';
-import { readLiveScene } from './live';
-import { worldNoteDocument } from '../../features/world/world-notes';
 import { checkedLocationDocument } from '../../features/location/location-schema';
-import { readCreature, searchCreatures, readEncounterPlan } from './encounters';
+import { worldNoteDocument } from '../../features/world/world-notes';
+import type { PreparationCommand } from '../campaign/preparation-contracts';
+import { documentReferences } from '../campaign/text-references';
+import type {
+  DeskContent,
+  DeskEntry,
+  SceneCreationDraft,
+  SceneDesk,
+} from '../runtime/scene-desk-contracts';
+import type { DeskRef } from '../shared/desk-reference';
+import { readCreature, readEncounterPlan, searchCreatures } from './encounters';
 import { readItemDefinition, readItemDefinitions } from './item-definitions';
+import { readLiveScene } from './live';
+import { saveNarrative, validateNarrativeState } from './narrative';
+import { searchNoteChoices } from './note-choice-search';
+import { referenceEntry, searchTextReferences } from './text-references';
+import { checkedWorldNoteRow } from './world-note-row';
 const hash = (s: string) => createHash('sha256').update(s).digest('hex');
 export function installSceneDesk(db: any) {
   db.exec(

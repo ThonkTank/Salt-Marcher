@@ -1,7 +1,6 @@
 import { editTextareaText } from '../campaign/key-reading-model';
 import { PassiveMapCanvas } from '../runtime/passive-map-canvas';
 import {
-  validateRoom,
   type Edit,
   type Result,
   type Room,
@@ -9,6 +8,7 @@ import {
   type WorkspaceGeometry,
 } from '../shared/contracts';
 import { EditorSession } from '../shared/editor-session';
+import { validateRoom } from '../shared/room-validation';
 import { workspaceGeometryOnly as geometryOnly } from './atlas-render-view';
 import { atlasFieldValue, setAtlasFieldValue } from './atlas-units';
 import { atlasDefaultRoomWrite, atlasHistoryWrite, atlasRoomWrite } from './campaign-atlas-author';

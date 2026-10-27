@@ -10,7 +10,17 @@ export const responsibilities = {
     ],
   },
   'preparation editor': { kind: 'presentation', files: ['src/app/campaign/preparation.ts'] },
-  'live editor': { kind: 'presentation', files: ['src/app/runtime/live.ts'] },
+  'live editor': {
+    kind: 'presentation',
+    files: [
+      'src/app/runtime/live.ts',
+      'src/app/runtime/live-recap-editor.ts',
+      'src/app/runtime/live-moment-editor.ts',
+      'src/app/runtime/live-knowledge-ui.ts',
+      'src/app/runtime/live-session-close-ui.ts',
+      'src/app/runtime/live-session-resume-ui.ts',
+    ],
+  },
   'combat editor': { kind: 'presentation', files: ['src/app/runtime/combat.ts'] },
   'editor surface': { kind: 'presentation', files: ['src/app/shared/editor-surface.ts'] },
   'editor lifecycle': {
@@ -21,6 +31,15 @@ export const responsibilities = {
       'src/app/shared/editor-transition.ts',
     ],
   },
+  'basic contracts and text': {
+    kind: 'domain',
+    files: [
+      'src/app/shared/contracts.ts',
+      'src/app/shared/desk-reference.ts',
+      'src/app/shared/raw-text-offset.ts',
+      'src/app/shared/room-validation.ts',
+    ],
+  },
   'command receipts': { kind: 'domain', files: ['src/app/shared/commit-receipt.ts'] },
   'canonical storage': { kind: 'storage', prefixes: ['src/app/storage/'] },
   'native host': { kind: 'host', prefixes: ['desktop/'] },
@@ -28,6 +47,9 @@ export const responsibilities = {
 export const rendererEntries = [
   'src/app/workspace/renderer.ts',
   'src/app/runtime/player-display.ts',
+  'src/app/campaign/preset-settings-ui.ts',
+  'src/app/atlas/atlas-deck-runtime.ts',
+  'src/app/atlas/atlas-brush-worker.ts',
 ];
 export function responsibility(file) {
   for (const [name, owner] of Object.entries(responsibilities))

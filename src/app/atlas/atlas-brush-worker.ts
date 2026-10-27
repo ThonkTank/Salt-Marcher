@@ -1,7 +1,11 @@
 import { renderBrushPreview, type BrushPreviewJob } from './atlas-brush-preview';
 
 // Browser entry: pure previews are owned by atlas-brush-preview.
-if (typeof self !== 'undefined' && typeof document === 'undefined')
+const registrationScope: object = globalThis;
+if (
+  typeof self !== 'undefined' &&
+  (!('document' in registrationScope) || registrationScope.document === undefined)
+)
   self.onmessage = (event: MessageEvent<BrushPreviewJob>) => {
     try {
       let heightM: number | undefined, protectedLimit: number | undefined;
