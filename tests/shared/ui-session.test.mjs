@@ -31,7 +31,7 @@ test('UI session preserves child status and isolates inherited ownership', () =>
 });
 for (const detached of [false, true])
   test(
-    'UI cleanup removes a TERM-resistant ' +
+    'UI cleanup rejects and removes a TERM-resistant ' +
       (detached ? 'detached session' : 'descendant') +
       ' and preserves an unrelated process',
     () => {
@@ -46,7 +46,8 @@ for (const detached of [false, true])
           encoding: 'utf8',
           timeout: 10000,
         });
-        assert.equal(result.status, 0, result.stderr);
+        assert.equal(result.status, 1, result.stderr);
+        assert.match(result.stderr, /Native wrapper found surviving owned processes/);
         assert.equal(live(Number(readFileSync(pidfile, 'utf8'))), false);
         assert.equal(live(foreign.pid), true);
       } finally {
