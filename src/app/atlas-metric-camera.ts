@@ -44,6 +44,81 @@ export interface AtlasMetricProjectedPoint extends AtlasMetricPixel {
   readonly visible: boolean;
 }
 
+/** Local render metres, including the actual binary32 clip transform. This is
+ * a bounded camera-clearance calculation, not another terrain sampler. */
+export interface AtlasMetricClearanceVolume {
+  readonly box:readonly [number,number,number,number];
+  readonly minimumZ:number;
+  readonly roundingZ:number;
+}
+export function atlasMetricClearanceVolume(frame:AtlasMetricFrame):AtlasMetricClearanceVolume {
+  const matrix=Array.from(frame.viewport.viewProjectionMatrix,Math.fround),inverse=Array.from(new Matrix4(matrix).invert());
+  const gamma=(n:number,u:number)=>n*u/(1-n*u),doubleError=gamma(8,2**-53),floatError=gamma(7,2**-24);
+  let residual=0;const inverseNorms:number[]=[];
+  for(let row=0;row<4;row++){
+    let rowError=0,rowNorm=0;
+    for(let column=0;column<4;column++){
+      let value=0,magnitude=0;
+      for(let k=0;k<4;k++){const product=matrix[k*4+row]!*inverse[column*4+k]!;value+=product;magnitude+=Math.abs(product);}
+      rowError+=Math.abs(value-(row===column?1:0))+doubleError*(magnitude+1);rowNorm+=Math.abs(inverse[column*4+row]!);
+    }
+    residual=Math.max(residual,rowError);inverseNorms.push(rowNorm);
+  }
+  if(!Number.isFinite(residual)||residual>=.01)throw Error('Terrain-Kamera: Clipinverse nicht sicher begrenzbar.');
+  // ||M^-1 - X|| <= ||X|| ||I-MX|| / (1-||I-MX||).
+  const inverseErrors=inverseNorms.map(norm=>norm*residual/(1-residual));
+  const clipPoint=(clip:readonly number[])=>{
+    const value:number[]=[],error:number[]=[];
+    for(let row=0;row<4;row++){
+      let sum=0,magnitude=0;for(let k=0;k<4;k++){const product=inverse[k*4+row]!*clip[k]!;sum+=product;magnitude+=Math.abs(product);}
+      value.push(sum);error.push(doubleError*magnitude+inverseErrors[row]!*clip.reduce((s,v)=>s+Math.abs(v),0));
+    }
+    const lo=value[3]!-error[3]!,hi=value[3]!+error[3]!;
+    if(lo<=0&&hi>=0)throw Error('Terrain-Kamera: Nahbereich nicht endlich begrenzbar.');
+    return [0,1,2].map(axis=>{
+      const a=value[axis]!-error[axis]!,b=value[axis]!+error[axis]!;
+      const values=[a/lo,a/hi,b/lo,b/hi],padding=doubleError*Math.max(1,...values.map(Math.abs));
+      return [Math.min(...values)-padding,Math.max(...values)+padding] as const;
+    });
+  };
+  const points=[clipPoint([0,0,1,0]),...[-1,1].flatMap(x=>[-1,1].map(y=>clipPoint([x,y,-1,1])))];
+  // Also enclose the CPU pointer frame, whose double matrices are deliberately
+  // retained. Binary32 shader uniforms and CPU rays share the same safe body.
+  for(const x of [0,frame.width])for(const y of [0,frame.height]){
+    const near=frame.ray({x,y})?.[0];if(!near)throw Error('Terrain-Kamera: Nahstrahl fehlt.');
+    const p=frame.toLocal({x:near[0],y:near[1],heightM:near[2]});points.push(p.map(v=>[v-doubleError*Math.max(1,Math.abs(v)),v+doubleError*Math.max(1,Math.abs(v))] as const));
+  }
+  const enclose=(position:readonly [number,number,number])=>{
+    const homogeneous=[...position,1],clipError=[0,1,2,3].map(row=>{
+      let magnitude=0;for(let k=0;k<4;k++)magnitude+=Math.abs(matrix[k*4+row]!*homogeneous[k]!);
+      return floatError*magnitude+8*2**-149;
+    });
+    const errors=[0,1,2,3].map(row=>{
+      let error=0;for(let k=0;k<4;k++)error+=(Math.abs(inverse[k*4+row]!)+inverseErrors[row]!)*clipError[k]!;
+      return error+doubleError*Math.max(1,Math.abs(homogeneous[row]!));
+    });
+    if(errors[3]!>=.5)throw Error('Terrain-Kamera: Cliprundung nicht sicher begrenzbar.');
+    const min:number[]=[],max:number[]=[];
+    for(let i=0;i<3;i++){
+      const a=position[i]!-errors[i]!,b=position[i]!+errors[i]!,lo=1-errors[3]!,hi=1+errors[3]!;
+      const values=[a/lo,a/hi,b/lo,b/hi],padding=doubleError*Math.max(1,...values.map(Math.abs));
+      min.push(Math.min(...values)-padding);max.push(Math.max(...values)+padding);
+    }
+    return {min,max};
+  };
+  // Enclose uniform quantization, near unprojection and the seven rounded
+  // operations of each clip-space dot product at the small camera body.
+  const expanded=points.map(p=>{
+    const corners=p[0]!.flatMap(x=>p[1]!.flatMap(y=>p[2]!.map(z=>enclose([x,y,z]))));
+    return [0,1,2].map(i=>[Math.min(...corners.map(c=>c.min[i]!)),Math.max(...corners.map(c=>c.max[i]!))] as const);
+  });
+  const box=[Math.min(...expanded.map(p=>p[0]![0])),Math.min(...expanded.map(p=>p[1]![0])),Math.max(...expanded.map(p=>p[0]![1])),Math.max(...expanded.map(p=>p[1]![1]))] as const;
+  const minimumZ=Math.min(...expanded.map(p=>p[2]![0]));
+  const roundingZ=Math.max(0,Math.min(...points.map(p=>p[2]![0]))-minimumZ);
+  if(![...box,minimumZ,...inverseErrors].every(Number.isFinite))throw Error('Terrain-Kamera: Nahhülle nicht endlich.');
+  return {box,minimumZ,roundingZ};
+}
+
 const ORIGIN_GRID_METERS = 256;
 const FOV_RADIANS = ATLAS_CAMERA_FOV * Math.PI / 180;
 const DEFAULT_NEAR = 0.01;

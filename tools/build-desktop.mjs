@@ -28,6 +28,7 @@ await build({entryPoints:['desktop/player-preload.ts'],outfile:'.build/desktop/p
 await build({entryPoints:['src/app/player-display.ts'],outfile:'.build/desktop/ui/player-display.js',bundle:true,platform:'browser',format:'iife',plugins:[{name:'player-atlas-runtime',setup(build){build.onResolve({filter:/^\.\/atlas-deck-runtime$/},()=>({path:'./atlas-deck-runtime.js',external:true}));}}]});
 await build({ entryPoints: ['desktop/preload.ts'], outfile: '.build/desktop/preload.cjs', bundle: true, platform: 'node', format: 'cjs', external: ['electron'] });
 await build({entryPoints:['src/app/atlas-brush-worker.ts'],outfile:'.build/desktop/ui/atlas-brush-worker.js',bundle:true,platform:'browser',format:'iife'});
+await build({entryPoints:['src/app/atlas-terrain-model-worker.ts'],outfile:'.build/desktop/ui/atlas-terrain-model-worker.js',bundle:true,platform:'browser',format:'iife'});
 // The replacement Atlas remains a local lazy module until full tool handover.
 await build({entryPoints:['src/app/atlas-deck-runtime.ts'],outfile:'.build/desktop/ui/atlas-deck-runtime.js',bundle:true,platform:'browser',format:'esm'});
 await mkdir('.build/desktop/ui/atlas-fonts',{recursive:true});

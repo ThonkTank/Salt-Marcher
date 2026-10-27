@@ -60,3 +60,16 @@ test('a failed write cancels future height frames without retrying an uncertain 
  assert.deepEqual(f.errors,[failure]);assert.equal(f.ui.live,null);assert.equal(f.frames.size,0);
  const shown=f.previews.length;f.advance(64);assert.equal(f.previews.length,shown);assert.equal(f.writes.length,1);
 });
+
+
+test('one handler reuses only consecutive pixels while preserving Raster hit and miss fallback effects',()=>{
+ const sequences=[[0,1,0,3],[1,2,1,0],[1,1,2,2,1,0,0]];
+ for(const pixels of sequences){
+  const run=memo=>{let fallback={x:5,y:6},calls=0;const ui=Object.create(LandscapeWorkbench.prototype);ui.host={point:e=>{calls++;if(e.clientX===1||e.clientX===2)fallback={x:e.clientX*10,y:7};return fallback;}};
+   const point=memo?ui.pointerProjector():e=>ui.point(e),samples=pixels.map((x,i)=>({...point({clientX:x,clientY:0}),t:i*8}));return{samples,fallback,calls};};
+  const expected=run(false),actual=run(true);assert.deepEqual(actual.samples,expected.samples);assert.deepEqual(actual.fallback,expected.fallback);
+  assert.equal(actual.calls,pixels.filter((x,i)=>i===0||x!==pixels[i-1]).length);if(pixels.length===7)assert.equal(actual.calls,4);
+ }
+ // A new handler cannot borrow a preceding handler's stale projection.
+ const ui=Object.create(LandscapeWorkbench.prototype);let calls=0;ui.host={point:()=>({x:++calls,y:0})};assert.equal(ui.pointerProjector()({clientX:1,clientY:1}).x,1);assert.equal(ui.pointerProjector()({clientX:1,clientY:1}).x,2);
+});

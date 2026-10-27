@@ -1,3 +1,4 @@
+import {terrainAuthorWindow,type TerrainAuthorQuery} from '../src/app/terrain-author-checkpoint';
 import {AtlasWriteReferences} from './atlas-write-references';
 import {checkedAtlasWriteReference,graphReceiptCommand,atlasReceiptFamily,atlasWriteFingerprintInput,sameAtlasWriteReference,type AtlasWriteReference,type AtlasWriteStatus} from '../src/app/atlas-write-receipt';
 import {validateAtlasReadRequest,type AtlasReadRequest} from '../src/app/atlas-read-request';
@@ -95,7 +96,7 @@ else {
       const name = url.pathname.slice(1);
 
       if (url.host !== 'app' || !['index.html', 'renderer.js', 'atlas-brush-worker.js', 'preset-settings.js','preset-settings.css','app.css','player.css',
-        'atlas-deck-runtime.js',
+        'atlas-deck-runtime.js', 'atlas-terrain-model-worker.js',
         'atlas-fonts/NotoSans-VF.ttf','atlas-fonts/NotoSansSymbols-VF.ttf'].includes(name)) return new Response('Not found', { status: 404 });
       return net.fetch(pathToFileURL(path.join(root, name)).href);
     });
@@ -499,6 +500,16 @@ else {
       if(source.revision!==q.revision)throw Error('Materialkachel inzwischen geändert.');
       const value=await reader.materialTile(source,q,control);
       if((await store.atlasRegionSource(token)).fence!==source.fence)throw Error('Materialkachel inzwischen geändert.');
+      return value;
+    });
+    handle('atlas:author-checkpoint',async(token:string,q:TerrainAuthorQuery)=>{
+      terrainAuthorWindow(q);if(q.token!==token)throw Error('Autorenbesitzer prüfen.');
+      if(graphSourceReadBarrierDepth)throw Error('Graphwechsel läuft.');
+      const source=await store.atlasRegionSource(token,atlasRegions.cursor);
+      if(graphSourceReadBarrierDepth||source.fence!==q.fence||source.revision!==q.revision)throw Error('Autorenquelle inzwischen geändert.');
+      const value=await atlasRegions.authorCheckpoint(source,q);
+      const current=await store.atlasRegionSource(token);
+      if(graphSourceReadBarrierDepth||current.fence!==source.fence||current.revision!==source.revision)throw Error('Autorenquelle inzwischen geändert.');
       return value;
     });
     handle('atlas:terrain-source',async (token:string)=>{if(graphSourceReadBarrierDepth)throw Error('Graphwechsel läuft.');const source=(await store.atlasRegionSource(token));if(graphSourceReadBarrierDepth)throw Error('Graphwechsel läuft.');return{revision:source.revision,fence:source.fence};});

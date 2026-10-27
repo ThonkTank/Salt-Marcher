@@ -21,11 +21,14 @@ export function validateTerrainView(v:TerrainView){
   const r=v.refinement,b=v.box;
   if(r!==undefined&&(!r||![r.x,r.y,r.width,r.height].every(Number.isFinite)||r.width<=0||r.height<=0||r.x<=b.x||r.y<=b.y||r.x+r.width>=b.x+b.width||r.y+r.height>=b.y+b.height||v.columns<9||v.rows<9||Object.keys(r).some(k=>!['x','y','width','height'].includes(k))))throw Error('Geländeverfeinerung prüfen.');
 }
-export function terrainGrid(records:LandscapeRecord[],view:TerrainView):TerrainGrid{
-  validateTerrainView(view);const sampler=new TerrainSampler(records),heights=new Float32Array(view.columns*view.rows),l=terrainGridLayout(view);
-  for(let y=0;y<view.rows;y++)for(let x=0;x<view.columns;x++){const p={x:l.x.values[x]!,y:l.y.values[y]!},h=sampler.sample(p).heightM;heights[y*view.columns+x]=Math.max(sampler.waterLevel(p,h)??sampler.seaLevelM,h);}
+export function* terrainGridSteps(records:LandscapeRecord[],view:TerrainView):Generator<void,TerrainGrid>{
+  validateTerrainView(view);const sampler=yield* TerrainSampler.steps(records),heights=new Float32Array(view.columns*view.rows),l=terrainGridLayout(view);
+  for(let y=0;y<view.rows;y++){yield;for(let x=0;x<view.columns;x++){const p={x:l.x.values[x]!,y:l.y.values[y]!},h=sampler.sample(p).heightM;heights[y*view.columns+x]=Math.max(sampler.waterLevel(p,h)??sampler.seaLevelM,h);}
+  }
   return {view,heights,seaLevelM:sampler.seaLevelM};
 }
+export function terrainGrid(records:LandscapeRecord[],view:TerrainView):TerrainGrid{const work=terrainGridSteps(records,view);let step=work.next();while(!step.done)step=work.next();return step.value;}
+
 /** Triangular interpolation matches the exact GPU index order, not a bilinear surrogate. */
 export function gridHeight(g:TerrainGrid,p:Point){
   const {view:v,heights:h}=g,l=terrainGridLayout(v),x=terrainGridCoordinate(l.x,p.x),y=terrainGridCoordinate(l.y,p.y),ix=Math.min(v.columns-2,Math.floor(x)),iy=Math.min(v.rows-2,Math.floor(y)),u=x-ix,w=y-iy,i=iy*v.columns+ix;

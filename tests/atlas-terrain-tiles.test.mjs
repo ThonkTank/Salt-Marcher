@@ -8,7 +8,7 @@ import {createHash,randomUUID} from 'node:crypto';
 import {readFileSync} from 'node:fs';
 const require=createRequire(import.meta.url),Database=require('better-sqlite3');
 buildSync({stdin:{contents:`export {vegetationSpec} from './src/app/vegetation';export {emptyRecord} from './src/app/atlas-landscape';export * from './src/app/storage/store';export * from './src/app/storage/atlas-region';export * from './src/app/storage/atlas-terrain-tiles';export * from './src/app/storage/atlas-tile-cache';export * from './src/app/terrain-height';export * from './src/app/landscape-raster';export * from './src/app/atlas-terrain-tile';export * from './src/app/storage/atlas-projection-index';`,resolveDir:process.cwd()},outfile:'.build/atlas-terrain-tiles-test.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
-const {CampaignStore,AtlasRegionReader,AtlasTerrainTiles,AtlasTileCache,heightRecord,vegetationSpec,emptyRecord,LandscapeRasterizer,atlasTerrainTileQuery,projectionKey,eraseAtlasProjection}=require('../.build/atlas-terrain-tiles-test.cjs');
+const {CampaignStore,AtlasRegionReader,AtlasTerrainTiles,AtlasTileCache,heightRecord,vegetationSpec,emptyRecord,LandscapeRasterizer,atlasTerrainTileQuery,validateAtlasTerrainTileProjection,projectionKey,eraseAtlasProjection}=require('../.build/atlas-terrain-tiles-test.cjs');
 function fixture(t){
   const base=homedir()+'/.cache/saltmarcher/tests';mkdirSync(base,{recursive:true});const dir=mkdtempSync(base+'/atlas-tiles-');
   const store=new CampaignStore(dir+'/world.sqlite'),campaign=store.create('Persistent tiles'),token=store.activateShell(campaign.id).token;
@@ -22,7 +22,13 @@ function fixture(t){
       for(;;){const step=steps.next();if(step.done){db.exec('COMMIT');return step.value;}}
     }catch(e){db.exec('ROLLBACK');throw e;}
   };
-  return {dir,store,campaign,token,write,read,reopen,revision:id=>db.prepare('SELECT revision FROM atlas_landscape WHERE campaign_id=? AND id=?').get(campaign.id,id)?.revision??null};
+  const mutateCache=(tile,product,mutate)=>{
+    tiles.close();db.close();const cache=AtlasTileCache.open(dir+'/cache',projectionKey(store.filename,campaign.id));
+    const key=JSON.stringify([tile.lod,tile.x,tile.y,0,...(product?['height']:[])]),format='terrain-tiles-v2-uniform';
+    const stored=cache.get(key,format);assert(stored,'fixture must have a durable product');mutate(stored.projection);cache.put(key,format,stored);cache.close();reopen();
+  };
+  const cached=(tile,product)=>{const source=store.atlasRegionSource(token);return tiles.cached(source,{tile,revision:source.revision,...(product?{product}:{})});};
+  return {dir,store,campaign,token,write,read,reopen,mutateCache,cached,revision:id=>db.prepare('SELECT revision FROM atlas_landscape WHERE campaign_id=? AND id=?').get(campaign.id,id)?.revision??null};
 }
 test('warm reopen reuses binary products; local edits rebuild affected leaf and parent only; Undo restores pixels',async t=>{
   const f=fixture(t),near={lod:0,x:0,y:0},far={lod:0,x:8,y:0},parent={lod:2,x:0,y:0};
@@ -32,6 +38,7 @@ test('warm reopen reuses binary products; local edits rebuild affected leaf and 
   LandscapeRasterizer.prototype.finish=function(...args){finishes++;return finish.apply(this,args);};
   t.after(()=>{LandscapeRasterizer.prototype.finish=finish;});
   const original=await f.read(near),remote=await f.read(far),coarse=await f.read(parent),cold=finishes;
+  assert.equal(original.projection.grid.view.focusM,100,'the real full producer centers its neutral raw frame vertically on terrain');
   assert.equal(original.cache,'built');assert.equal(coarse.cache,'built');assert(cold>0);
   f.reopen();const warm=await f.read(near);assert.equal(warm.cache,'hit');assert.equal(finishes,cold);
   assert.deepEqual(warm.projection.grid.heights,original.projection.grid.heights);assert.deepEqual(warm.projection.pixels,original.projection.pixels);
@@ -45,6 +52,37 @@ test('warm reopen reuses binary products; local edits rebuild affected leaf and 
   assert.equal((await f.read(far)).cache,'hit');
   f.write({kind:'redo'});const redone=await f.read(near);assert.deepEqual(redone.projection.grid.heights,updated.projection.grid.heights);
   t.diagnostic(JSON.stringify({coldRasterCalls:cold,totalRasterCalls:finishes,cacheFileNamespace:projectionKey(f.store.filename,f.campaign.id)}));
+});
+
+test('nonuniform, shifted and nonfinite durable products are cache misses; fresh invalid projections fail before publication',async t=>{
+  const f=fixture(t),tile={lod:0,x:-1,y:0};
+  const original=await f.read(tile,{},'height');assert.equal(original.cache,'built');
+  for(const corrupt of [
+    p=>{p.grid.view.refinement={x:-224,y:32,width:32,height:32};},
+    p=>{p.grid.view.box={...p.grid.view.box,x:p.grid.view.box.x+1};},
+    p=>{p.grid.editing.ground[0]=NaN;},
+    p=>{delete p.grid.editing.water;},
+  ]){
+    f.mutateCache(tile,true,corrupt);
+    assert.equal(f.cached(tile,'height'),undefined,'the fast durable lookup must reject malformed content too');
+    const rebuilt=await f.read(tile,{},'height');assert.equal(rebuilt.cache,'built');
+    assert.deepEqual(rebuilt.projection.grid.heights,original.projection.grid.heights);
+  }
+  const source=f.store.atlasRegionSource(f.token),bad=structuredClone(original.projection);
+  bad.grid.view.refinement={x:-224,y:32,width:32,height:32};
+  const reader={*heightSteps(){return bad;}};
+  const steps=new AtlasTerrainTiles(null).read(source,{tile,revision:source.revision,product:'height'},reader);
+  assert.throws(()=>steps.next(),/Atlas-Terrainquelle ungültig/);
+  assert.throws(()=>validateAtlasTerrainTileProjection(bad,{tile,revision:source.revision,product:'height'},source.fence));
+});
+
+test('negative and large signed dyadic addresses retain exact canonical boxes',()=>{
+  for(const tile of [{lod:-8,x:-4096,y:8192},{lod:0,x:-3_000_000_000,y:3_000_000_000},{lod:20,x:-2,y:1}]){
+    const q=atlasTerrainTileQuery({tile,revision:1});
+    assert.equal(q.view.box.x,tile.x*256*2**tile.lod);assert.equal(q.view.box.y,tile.y*256*2**tile.lod);
+    assert.deepEqual(q.view.frame,q.view.box);
+  }
+  assert.throws(()=>atlasTerrainTileQuery({tile:{lod:0,x:3_906_250_000,y:0},revision:1}),/darstellbaren Bereichs/);
 });
 
 test('untracked or shadow sources never publish; malformed request and stale revision reject',async t=>{

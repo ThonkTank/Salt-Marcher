@@ -1,16 +1,24 @@
 # Atlas: Meilensteine für die Architekturentscheidung und Umsetzung
 
-Status: Executing A0; Planbasis v1 unabhängig freigegeben. A0–A7 sind noch nicht abgenommen.
+Status: Bisheriger breiter Planstand: A0 begonnen, Planbasis v1 unabhängig freigegeben; A0–A7 nicht abgenommen. Die nächste Lieferetappe bestimmt der Terrain-/Wasserplan.
 Owner: atlas
 Last Reviewed: 2026-10-25 (Roadmap aus dem Nutzerauftrag; Fachabnahme separat)
 Source of Truth: Dieses Dokument besitzt die Reihenfolge und Entscheidungskriterien der Performance-Arbeit; Code belegt den Iststand, das Abnahmeregister den Prüfstand.
 
-Der Gesamtauftrag wird mit project-preflight → practical-planner →
-project-steering → project-closure fortgesetzt. Die Paketplanung und Timeline
+Die bisherige Gesamtplanung folgt project-preflight → practical-planner →
+project-steering → project-closure. Ihre weitere Ausführung richtet sich nach dem
+unten verlinkten jüngeren Lieferfokus. Die Paketplanung und Timeline
 sind als Planbasis v1 unabhängig geprüft; Reviewbelege und Durchführungsstand stehen
 im [Projekthandbuch](performance/handbook.md#abschluss-der-planreviews).
 
 ## Ziel und Reihenfolge
+
+Für die nächste Lieferung hat der jüngere
+[Terrain-/Wasserfokus](../requirements/terrain-relief.md#aktueller-lieferfokus-terrain-und-wasser)
+Vorrang. Die folgende breite A0–A7-Reihenfolge ist für diese begrenzte Etappe
+kein vorgeschalteter Gesamtauftrag; notwendige technische Arbeiten werden an
+deren konkreten Bearbeitungs- und Darstellungszielen ausgerichtet.
+Ausführungsreihenfolge und Planfreigabe stehen im [Terrain-/Wasserplan](terrain-water/plan.md).
 
 Bei vollständiger Bildqualität soll der Atlas von der Welt- bis zur Dorfkarte
 flüssig navigierbar und unmittelbar bearbeitbar sein.

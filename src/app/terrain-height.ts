@@ -182,17 +182,20 @@ export interface HeightSample {
 type SampleTile = { values: Float32Array; revision: number };
 type HeightGrid = Map<number, Map<number, SampleTile>>;
 export class TerrainSampler {
-  readonly seaLevelM: number;
+  seaLevelM=0;
   private levels: { pixel: number; tiles: HeightGrid; additive: boolean; cell?: {gx:number;gy:number;values:Float64Array;revisions:number[];revision:number} }[] = [];
-  private lakes: LandscapeRecord[];
-  private routes:RouteSurface;
+  private lakes: LandscapeRecord[]=[];
+  private routes!:RouteSurface;
   private directHeight=false;
-  constructor(records: LandscapeRecord[],effective=true) {
+  constructor(records: LandscapeRecord[],effective=true) {const work=this.initialize(records,effective);let step=work.next();while(!step.done)step=work.next();}
+  static *steps(records:LandscapeRecord[],effective=true):Generator<void,TerrainSampler>{const sampler=new TerrainSampler([]);yield* sampler.initialize(records,effective);return sampler;}
+  private *initialize(records:LandscapeRecord[],effective:boolean):Generator<void>{
     this.routes=new RouteSurface(effective?records:[]);
     this.directHeight=!effective||!records.some(r=>r.route?.nodes.length&&!r.route.conflict);
     this.seaLevelM = terrainSettings(records).seaLevelM;
     const levels = new Map<string, {pixel:number; tiles:HeightGrid; additive:boolean}>();
-    for (const r of records)
+    for (const r of records){
+      yield;
       if (r.height) {
         const t = r.height;
         const key=t.version+":"+t.pixel;
@@ -206,6 +209,7 @@ export class TerrainSampler {
         if (column.has(ty)) throw Error("Doppelte Höhenkachel.");
         column.set(ty, { values: decodeHeights(t), revision: r.revision });
       }
+    }
     this.levels = [...levels.values()].sort((a,b)=>Number(a.additive)-Number(b.additive)||b.pixel-a.pixel);
     this.lakes = records.filter((r) => r.surface === "freshwater");
   }
@@ -273,13 +277,13 @@ export class TerrainSampler {
     };
   }
 }
-export function editHeight(
+export function* editHeightSteps(
   records: LandscapeRecord[],
   box: LandscapeBox,
   pixel: number,
-  edit: (p: Point, old: number) => number | undefined,
+  edit: (p: Point, old: number) => number | undefined | Generator<void,number|undefined>,
   version: 1 | 2 = 1,
-): LandscapeRecord[] {
+): Generator<void,LandscapeRecord[]> {
   const edge = 64 * pixel,
     x0 = Math.floor(box.x / edge),
     x1 = Math.floor((box.x + box.width) / edge),
@@ -311,6 +315,7 @@ export function editHeight(
       let changed = false;
       for (let iy = 0; iy < 64; iy++)
         for (let ix = 0; ix < 64; ix++) {
+          if((ix&15)===0)yield;
           const p = { x: x + ix * pixel, y: y + iy * pixel };
           if (
             p.x < box.x ||
@@ -322,7 +327,7 @@ export function editHeight(
           const index = iy * 64 + ix,
             prior = values[index]!,
             before = Number.isNaN(prior) ? sampler?.sample(p).heightM??0 : prior,
-            value = edit(p, before);
+            pending = edit(p, before),value = typeof pending==='object'?yield* pending:pending;
           if (value === undefined || value === before) continue;
           values[index] = Math.max(-1e6, Math.min(1e6, value));
           changed = true;
@@ -335,6 +340,9 @@ export function editHeight(
         });
     }
   return result;
+}
+export function editHeight(records:LandscapeRecord[],box:LandscapeBox,pixel:number,edit:(p:Point,old:number)=>number|undefined,version:1|2=1):LandscapeRecord[]{
+ const work=editHeightSteps(records,box,pixel,edit,version);let step=work.next();while(!step.done)step=work.next();return step.value;
 }
 /** Existing land tools author metres; no writable occupancy mask is produced. */
 export function applyHeightStroke(

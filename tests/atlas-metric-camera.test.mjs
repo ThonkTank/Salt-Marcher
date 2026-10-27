@@ -114,3 +114,15 @@ test('output crops retain the full camera projection and the same world ray at t
   }
  }
 });
+
+test('clearance encloses actual near corners across physical exaggeration, origins and scales',()=>{
+ for(const metersPerPixel of [.002,.4,250,100000])for(const exaggeration of [.25,1.23456,2,8])for(const tilt of [0,45,75]){
+  const frame=atlasMetricFrame(fixture({metersPerPixel,exaggeration,tilt,focus:{x:-90_000_256.25,y:70_000_256.5},focusHeightM:-500.25}),640,480);
+  const volume=cameraMath.atlasMetricClearanceVolume(frame);
+  assert(volume.roundingZ>=0);assert(volume.minimumZ<Infinity);
+  for(const x of [0,640])for(const y of[0,480]){
+   const p=frame.ray({x,y})[0],local=frame.toLocal({x:p[0],y:p[1],heightM:p[2]});
+   assert(local[0]>=volume.box[0]&&local[0]<=volume.box[2]);assert(local[1]>=volume.box[1]&&local[1]<=volume.box[3]);assert(local[2]>=volume.minimumZ);
+  }
+ }
+});

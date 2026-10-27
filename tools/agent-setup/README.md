@@ -2,28 +2,24 @@
 
 Status: Aktuell
 Owner: SaltMarcher
-Last Reviewed: 2026-10-16
+Last Reviewed: 2026-10-25
 Source of Truth: tools/agent-setup/README.md
 
-Die vier Hauptrollen arbeiten unabhängig am vollständigen Produkt. Jede Rolle liest ihren Skill; andere Quellen nur nach Bedarf.
+Die folgenden Rollen arbeiten am Produkt. Jede Rolle liest ihren Skill; andere Quellen nur nach Bedarf.
 
 | Rolle | Rollenauftrag |
 |---|---|
 | Idealist Implementer: Produktambition und Tempo | $idealist-implementer |
 | Practical Planner: Voraussicht und Tragfähigkeit | $practical-planner |
-| Restrained Realist: Einfachheit und dauerhafter Aufwand | $restrained-realist |
 | GM-UX-QA: tatsächliche Gebrauchstauglichkeit | $gm-ux-qa |
-| Zusätzliche Code-/Doku-Pflege: Entwicklerverständlichkeit und gezielte Lesewege | $code-and-docs-maintainer |
 
 - Gemeinsame Ausführung: [HEARTBEAT-RULES.md](HEARTBEAT-RULES.md).
 - Lokale Betriebsangaben: PROJECT.json enthält Repositoryidentität, gemeinsamen Integrationszweig, Projektzuordnung sowie Launcher-/UI-Pfade. Der gemeinsame Repositorypfad ist keine Schreibfreigabe für fremde Arbeit.
 - Produktquellen: docs/PRODUCT.md, docs/SCOPE.md, docs/INDEX.md und relevante aktuelle Planung in der eigenen synchronisierten Produktkopie. Maßgeblich ist der gemeinsame Integrationsstand, keine zufällige lokale Änderung einer anderen Rolle.
 - Originalanforderungs-Auswahl für den Implementer: Nach dem Git-Abgleich einmal `codex-dungeon-focus .` in der eigenen Produktkopie ausführen. Das Skript zieht eine Originalanforderung samt Thema und fest gebundener Quelle als Schwerpunkt; die Rollenperspektive bleibt erhalten. Einzelheiten stehen in den gemeinsamen Projektregeln.
-- Capability-Auswahl: `select-capability.py` wird als `codex-dungeon-capability` installiert. Planner, Realist und GM UX QA verwenden `all --rolle planner|realist|qa`; Bereichstester wählen `map|notes|encounter` und die gleichnamige Rolle. Der gemeinsame Katalog liegt unter `~/.local/share/saltmarcher/capabilities/capabilities.json`. Einzelheiten stehen unten und im jeweiligen Rollen-Skill.
+- Capability-Auswahl: `select-capability.py` wird als `codex-dungeon-capability` installiert. Planner und GM UX QA verwenden `all --rolle planner|qa`; Bereichstester wählen `map|notes|encounter` und die gleichnamige Rolle. Der gemeinsame Katalog liegt unter `~/.local/share/saltmarcher/capabilities/capabilities.json`. Einzelheiten stehen unten und im jeweiligen Rollen-Skill.
 - Native Bedienhilfe: [OPERATIONS.md](OPERATIONS.md). Zeitplan, Aktivierung und Berechtigungen: tatsächliche Automation/Chatkonfiguration.
 - Arbeitsstand und nächste Schritte bleiben im Chat. Neue Chats beginnen nur mit ihrem Auftrag am aktuellen Produktstand; alte Arbeitsstände und Rollenbranches werden nicht übernommen. Keine Checkpoint- oder Übergabedateien pflegen.
-
-Die zusätzliche Pflege lädt nur ihre aktuelle Arbeitsanleitung: Aussagen aktuell halten → Doku bereinigen → Code auffindbarer → Code verständlicher → Wissenslücken schließen → Einstiege/Lesewege. Eine offene Aufgabe einschließlich Prüfung und Veröffentlichung zuerst abschließen. `roles.maintainer` in PROJECT.json benennt eigene Kopie und Checkpoint; der im Skill enthaltene Helfer verwaltet lokale Git-Durchsicht und zählt bei Bedarf Zeichen ohne Inhaltsausgabe. Das stillgelegte Studienledger bleibt unberührt.
 
 ## Capability-Katalog
 
@@ -42,7 +38,7 @@ Dateizugänge werden gegen `--repo` beziehungsweise die Git-Wurzel des aktuellen
 
 ## Struktureller Rückblick nach zehn Läufen
 
-QA, Realist, Planner und Code-/Doku-Pflege prüfen zu Beginn eines Automationslaufs mit `codex-dungeon-review --automation AUTOMATIONS_ID` ihren Rhythmus. `heartbeat-review.py` wird dafür als `codex-dungeon-review` installiert. Der Helfer liest nur die native Chat-Historie unter `CODEX_HOME` beziehungsweise `~/.codex`; `CODEX_THREAD_ID` bestimmt den eigenen Chat. Für gezielte Prüfung sind `--thread` und `--history` verfügbar.
+QA und Planner prüfen zu Beginn eines Automationslaufs mit `codex-dungeon-review --automation AUTOMATIONS_ID` ihren Rhythmus. `heartbeat-review.py` wird dafür als `codex-dungeon-review` installiert. Der Helfer liest nur die native Chat-Historie unter `CODEX_HOME` beziehungsweise `~/.codex`; `CODEX_THREAD_ID` bestimmt den eigenen Chat. Für gezielte Prüfung sind `--thread` und `--history` verfügbar.
 
 Gezählt werden tatsächliche Heartbeat-Aufrufe der genannten Automation im aktuellen Chat, einschließlich laufender, fehlgeschlagener und abgebrochener Läufe. Manuelle Nachrichten und fremde Chats zählen nicht. Die Ausgabe enthält `lauf`, `strukturrueckblick` und `naechster_rueckblick_bei`. Bei Lauf 10, 20, 30 usw. hat der Rollenauftrag zum strukturellen Rückblick Vorrang vor einer neuen Themenwahl. Maßgeblich sind die letzten rund zwölf selbst gefundenen Probleme, kein künstlich gefüllter Katalog oder zusätzlicher Pflichtbericht. Eine gestartete strukturelle Korrektur wird bis zum Abschluss weitergeführt.
 

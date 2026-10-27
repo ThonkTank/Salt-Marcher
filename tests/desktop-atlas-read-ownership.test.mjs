@@ -249,3 +249,17 @@ for(const [label,channel,method,args] of sourceBarrierCases)test(`source-await g
  const normal=ok(await f.invoke(channel,f.shell.token,...args(f)));assert(normal,'same valid read works once the barrier ends');
  if(method)assert.equal(calls,1,'normal request enters its real reader once');
 });
+
+
+const authorQuery=f=>({owner:'author',series:1,request:1,prefix:0,token:f.shell.token,fence:f.source.fence,revision:f.source.revision,box:{x:-10,y:-10,width:20,height:20},pixel:1,lattices:[{id:0,x:-32,y:-32,dx:1,dy:1}]});
+test('actual author checkpoint IPC projects typed pages and keeps token/sender/numerical guards',async t=>{
+ const f=await fixture(t),q=authorQuery(f);
+ for(const bad of[{...q,token:'foreign'},{...q,lattices:Array.from({length:33},(_,id)=>({id,x:0,y:0,dx:1,dy:1}))},{...q,box:{x:0,y:0,width:256*64,height:0}}])assert.equal((await f.api.atlasAuthorCheckpoint(f.shell.token,bad)).ok,false);
+ const forbidden=await f.handlers.get('atlas:author-checkpoint')({sender:{},senderFrame:{}},f.shell.token,q);assert.equal(forbidden.ok,false);assert.match(forbidden.error,/Zugriff verweigert/);assert.equal(f.services[0].diagnostics.workerStarts,0);
+ const reading=f.api.atlasAuthorCheckpoint(f.shell.token,q);await f.started(0);f.release(0);const value=ok(await reading);assert.equal(value.pages.length,4);assert.equal(value.ground.length,1);assert.equal(value.ground[0].values.length,4225);assert.equal(value.query.owner,q.owner);assert.equal(value.query.fence,q.fence);assert(value.ground[0].values.every(v=>v===-100));
+});
+test('actual author IPC rechecks the canonical source after awaited readonly completion',async t=>{
+ const f=await fixture(t),q=authorQuery(f),service=f.services[0],original=service.authorCheckpoint.bind(service);
+ service.authorCheckpoint=async(source,query)=>{const value=await original(source,query);f.store.db.prepare('UPDATE campaign_atlas SET revision=revision+1 WHERE campaign_id=?').run(f.campaign.id);return value;};
+ const read=f.api.atlasAuthorCheckpoint(f.shell.token,q);await f.started(0);f.release(0);const result=await read;assert.equal(result.ok,false);assert.match(result.error,/Autorenquelle inzwischen geändert/);assert.equal(service.diagnostics.workerStarts,1);
+});

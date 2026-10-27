@@ -6,8 +6,17 @@ import {parseHTML} from './helpers/dom.mjs';
 import {emptyMaterialChannels} from './helpers/atlas-material-channels.mjs';
 
 await build({entryPoints:['src/app/atlas-raster-presentation.ts'],outfile:'.build/atlas-presentation-retry.cjs',bundle:true,platform:'node',format:'cjs',plugins:[{name:'controlled-gpu',setup(b){
+ b.onResolve({filter:/^\.\/atlas-terrain-prepared-session$/},()=>({path:'prepared-session',namespace:'gpu'}));
+ b.onLoad({filter:/^prepared-session$/,namespace:'gpu'},()=>({contents:`// Surface recovery is isolated here; the real A/C/Screen chain runs in terrain-commit-display.test.mjs.
+ export class AtlasTerrainPreparedSession {
+  constructor(surface,tiles,style,options,changed){this.surface=surface;this.options=options;this.changed=changed;this.disposed=false;this.author={journal:{size:0},canonicalSource:options.source};this.queue={failed:false,pending:0,async finish(){}};this.client={epoch:0};Object.defineProperty(surface,'preparedInputUsable',{configurable:true,get:()=>surface.frameUsable});}
+  get source(){return this.options.source;}
+  canonical(){this.surface.publish(false);void this.surface.waitForFrame().then(()=>{if(!this.disposed)this.changed({endFrame:true,alpha:1,content:1});}).catch(()=>{});}
+  matchesSource(s){return s.token===this.source.token&&s.fence===this.source.fence&&s.revision===this.source.revision;}
+  async dispose(){this.disposed=true;}
+ }` }));
  b.onResolve({filter:/^\.\/atlas-deck-runtime$/},()=>({path:'runtime',namespace:'gpu'}));
- b.onLoad({filter:/.*/,namespace:'gpu'},()=>({resolveDir:process.cwd(),contents:"import {AtlasDeckSurface as Surface} from './src/app/atlas-deck-surface';export {AtlasDeckDrawing} from './src/app/atlas-deck-drawing';export {AtlasDeckVegetation} from './src/app/atlas-deck-vegetation';export const AtlasDeckSurface={create:options=>Surface.create({...options,createDeck:globalThis.createRetryDeck})};"}));
+ b.onLoad({filter:/^runtime$/,namespace:'gpu'},()=>({resolveDir:process.cwd(),contents:"import {AtlasDeckSurface as Surface} from './src/app/atlas-deck-surface';export {AtlasDeckDrawing} from './src/app/atlas-deck-drawing';export {AtlasDeckVegetation} from './src/app/atlas-deck-vegetation';export const AtlasDeckSurface={create:options=>Surface.create({...options,createDeck:globalThis.createRetryDeck})};"}));
 }}]});
 const {AtlasRasterPresentation}=createRequire(import.meta.url)('../.build/atlas-presentation-retry.cjs');
 const settle=()=>new Promise(resolve=>setImmediate(resolve));
@@ -24,11 +33,12 @@ function fixture(t){
  Object.defineProperties(window.HTMLElement.prototype,{clientWidth:{configurable:true,get:()=>256},clientHeight:{configurable:true,get:()=>256}});
  const channels=emptyMaterialChannels(256*256);
  window.campaign={atlasCancelRead:async()=>{},atlasTerrainTile:async(token,q)=>{
-  reads.push({token,...q});const size=256*2**q.tile.lod,view={box:{x:q.tile.x*size,y:q.tile.y*size,width:size,height:size},columns:65,rows:65};
-  return{ok:true,value:{tile:q.tile,revision:q.revision,fence:token,projection:{heightOnly:true,fence:token,revision:q.revision,grid:{view,heights:new Float32Array(65*65),seaLevelM:0}}}};
+  reads.push({token,...q});const size=256*2**q.tile.lod,view={box:{x:q.tile.x*size,y:q.tile.y*size,width:size,height:size},frame:{x:q.tile.x*size,y:q.tile.y*size,width:size,height:size},columns:65,rows:65,focusM:0,tilt:0,rotation:0,exaggeration:1};
+  return{ok:true,value:{tile:q.tile,revision:q.revision,fence:token,projection:{heightOnly:true,source:token,fence:token,revision:q.revision,draft:false,generation:0,width:0,height:0,pixels:new Uint8Array(),grid:{view,heights:new Float32Array(65*65),seaLevelM:0,editing:{ground:new Float32Array(4225),water:new Float32Array(4225)}}}}};
  },atlasMaterialTile:async(token,q)=>({ok:true,value:{tile:q.tile,revision:q.revision,fence:token,width:256,height:256,channels}})};
  let navigationCalls=0,redraws=0;
  const ui=new AtlasRasterPresentation(input,{draft:()=>null,live:()=>false,hasDraft:()=>false,writing:()=>false,cancel(){},tool:()=> 'height',navigation:()=>{navigationCalls++;return false;},panning:()=>false,redraw:()=>redraws++,selection:()=>null,error:e=>errors.push(e)});
+ ui.bindAuthorWriter(async()=>{throw Error('Surface recovery fixture never writes terrain');});
  const priorError=console.error;console.error=()=>{};
  t.after(()=>{ui.setActive(false);for(const deck of decks)if(!deck.finalized)deck.fail();console.error=priorError;Object.assign(globalThis,prior);});
  const open=(token='a',frame=box)=>ui.openSurface(token,frame,1,0,token);
@@ -71,7 +81,7 @@ test('perception initialization retries without terrain reads and ignores a reti
  const f=fixture(t);f.document.getElementById('atlas-perception').checked=true;
  f.ui.sync('a',box,1,[],0);await settle();f.decks[0].fail();await settle();
  f.document.getElementById('atlas-camera-retry').click();await settle();const old=f.decks[1];old.load();old.render();await settle();
- assert.equal(f.ui.ready,false,'post-creation map publication still awaits its own frame');
+ assert.equal(f.ui.ready,true,'the empty perception scene uses its already confirmed creation frame');
  f.ui.sync('b',box,1,[],0);await settle();const current=f.decks[2];await f.finish(current);
  assert.equal(f.ui.ready,true);assert.equal(f.errors.length,1,'retired frame rejection does not fail the new source');assert.equal(f.reads.length,0);
 });
@@ -99,6 +109,6 @@ test('an explicit retry of an already published Surface retains current source a
  const f=fixture(t),opening=f.open();await settle();await f.finish(f.decks[0]);assert.equal(await opening,true);
  f.decks[0].fail();assert.equal(f.ui.ready,false);const retry=f.document.getElementById('atlas-camera-retry');retry.click();await settle();
  assert.equal(f.decks.length,2);assert.equal(f.ui.ready,false);await f.finish(f.decks[1]);
- assert.equal(f.ui.ready,false,'reloaded source tiles require their own completed frame');f.decks[1].render();await settle();
+ assert.equal(f.ui.ready,true,'the prepared adapter fixture confirms its own completed recovery frame');
  assert.equal(f.ui.ready,true);assert.equal(retry.hidden,true);assert.equal(retry.disabled,false);assert.equal(f.errors.length,1);assert.equal(f.ui.token,'a');assert.equal(f.ui.fence,'a');
 });

@@ -27,6 +27,31 @@ test('pausing reads retires the object response before a canonical write starts'
 
 test('a superseded surface read retains the useful frame and waits for the newer owner',async t=>{
  const f=fixture(t);Object.defineProperty(f.ui,'needsTerrainRaster',{value:false});
- Object.assign(f.ui,{active:true,surfaceReady:true,surface:{frameUsable:true},generation:0,request:'',host:{...f.ui.host,writing:()=>false},stream:{async load(){throw Error('Kartenausschnitt durch neuere Anfrage ersetzt.');}}});
+ Object.assign(f.ui,{active:true,surfaceReady:true,surface:{frameUsable:true,preparedInputUsable:true},generation:0,request:'',host:{...f.ui.host,writing:()=>false},stream:{async load(){throw Error('Kartenausschnitt durch neuere Anfrage ersetzt.');}}});
  const pending=f.ui.load();assert.equal(f.ui.input.dataset.terrainQuality,'overview','the previous camera cannot qualify the new read');await pending;assert.equal(f.ui.ready,true);assert.equal(f.ui.request,'');assert.deepEqual(f.calls.errors,[]);assert.equal(f.calls.refresh,0);
+});
+
+function syncSourceFixture(){
+ const calls=[],author={canonicalSource:{token:'t',revision:9,fence:'own9'}};
+ const ui=Object.assign(Object.create(AtlasRasterPresentation.prototype),{
+  token:'t',revision:7,fence:'own7',perception:false,active:true,contours:10,
+  frame:{x:0,y:0,width:100,height:100},prepared:{author,matchesSource:s=>s.token===author.canonicalSource.token&&s.revision===author.canonicalSource.revision&&s.fence===author.canonicalSource.fence},
+  host:{writing:()=>true},setActive(active){this.active=active;calls.push('active:'+active);},
+  invalidateTerrainSource(){calls.push('invalidate');},reframe(){calls.push('frame');},
+ });
+ Object.defineProperty(ui,'needsTerrainRaster',{value:false});
+ return{ui,calls,author};
+}
+test('older same-token projections are classified before any source, frame or contour effect',()=>{
+ for(const revision of[0,7,8]){
+  const f=syncSourceFixture(),frame=f.ui.frame;
+  f.ui.sync('t',{x:1,y:2,width:50,height:50},revision,[],99,{region:{fence:'old'+revision}});
+  assert.deepEqual(f.calls,[]);assert.equal(f.ui.revision,7);assert.equal(f.ui.fence,'own7');assert.equal(f.ui.contours,10);assert.equal(f.ui.frame,frame);assert.equal(f.ui.authorOwner,f.author);
+ }
+});
+test('equal or higher foreign fences still invalidate during writing while the exact own source does not',()=>{
+ for(const [token,revision,fence]of[['t',9,'foreign9'],['t',10,'foreign10'],['other',9,'foreign9']]){
+  const f=syncSourceFixture();f.ui.sync(token,f.ui.frame,revision,[],10,{region:{fence}});assert(f.calls.includes('invalidate'),`${token}/${revision}/${fence}`);
+ }
+ const f=syncSourceFixture();f.ui.sync('t',f.ui.frame,9,[],10,{region:{fence:'own9'}});assert(!f.calls.includes('invalidate'));
 });

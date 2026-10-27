@@ -177,10 +177,10 @@ test('unchanged toolbar updates preserve accessible labels and pressed state; sw
  layout.tools=document.createElement('div');layout.active=true;root.dataset.family='terrain';layout.renderGroups();
  const sync=()=>AtlasWorkspaceLayout.prototype.sync.call(layout),tool=document.getElementById('land-tool');tool.value='height';sync();
  const caption=document.getElementById('atlas-active-tool'),text=caption.firstChild,group=layout.groups.querySelector('[data-tool-group="land"]');
- assert.equal(caption.textContent,'Land formen');assert.equal(group.getAttribute('aria-pressed'),'true');
+ assert.equal(caption.textContent,'Land formen');assert.equal(group.getAttribute('aria-pressed'),'true');assert.equal(document.getElementById('land-sea-options').hidden,false,'sea level stays reachable alongside the active land brush');
  let catalogReads=0;const catalog=layout.catalog.bind(layout);layout.catalog=(...args)=>{catalogReads++;return catalog(...args);};
  sync();assert.equal(catalogReads,1,'one current availability snapshot serves all buttons');assert.equal(caption.firstChild,text,'an unchanged label must retain its text node');
  tool.value='river';sync();assert.equal(caption.textContent,'Fluss zeichnen');assert.equal(layout.groups.querySelector('[data-tool-group="water"]').getAttribute('aria-pressed'),'true');
  tool.disabled=true;sync();assert.equal(layout.toolList.querySelector('[data-atlas-tool="river"]').disabled,true,'domain control changes reach the visible toolbar');
- root.dataset.panMode='true';sync();assert.equal(caption.textContent,'Hand');assert.equal(document.getElementById('atlas-pan').getAttribute('aria-pressed'),'true');
+ root.dataset.panMode='true';sync();assert.equal(caption.textContent,'Hand');assert.equal(document.getElementById('atlas-pan').getAttribute('aria-pressed'),'true');assert.equal(document.getElementById('land-sea-options').hidden,true);
 });

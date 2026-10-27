@@ -1,5 +1,5 @@
 import {AtlasRasterTileStream, type AtlasRasterStreamOptions, type AtlasRasterStreamInput, type AtlasRasterStreamFrame} from './atlas-raster-tile-stream.js';
-import type {AtlasTerrainTile, AtlasTerrainTileRequest} from './atlas-terrain-tile.js';
+import {validateAtlasTerrainTileReply,type AtlasTerrainTile, type AtlasTerrainTileRequest} from './atlas-terrain-tile.js';
 import type {AtlasWorldTile} from './atlas-world-tiles.js';
 
 export type AtlasTileStreamOptions = AtlasRasterStreamOptions;
@@ -16,12 +16,7 @@ export class AtlasTileStream extends AtlasRasterTileStream<AtlasTerrainTile,Atla
 }
 
 function validateReply(reply: AtlasTerrainTile, request: AtlasTerrainTileRequest, source: string): void {
-  if (!reply || !reply.tile || reply.tile.lod !== request.tile.lod || reply.tile.x !== request.tile.x || reply.tile.y !== request.tile.y
-    || reply.revision !== request.revision || reply.fence !== source
-    || !reply.projection || reply.projection.revision !== request.revision
-    || reply.projection.source !== source || reply.projection.fence !== source) {
-    throw new Error('Atlas terrain tile reply does not match its requested source, revision, fence, or address');
-  }
+  validateAtlasTerrainTileReply(reply,request,source);
 }
 
 function makeRequest(tile: AtlasWorldTile, revision: number, contours?: number): AtlasTerrainTileRequest {

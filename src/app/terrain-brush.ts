@@ -1,15 +1,18 @@
+import {terrainBrushFormSteps} from './terrain-brush-form';
 import {coupleRouteEdits} from './terrain-route-planner';
-import {terrainGrid,terrainVisibility,terrainSourceBounds,validateTerrainView,type TerrainView,type TerrainGrid} from './terrain-spatial-model';
+import {terrainGridSteps,terrainVisibility,terrainSourceBounds,validateTerrainView,type TerrainView,type TerrainGrid} from './terrain-spatial-model';
 import {terrainRoughness} from './terrain-relief';
 import type {LandscapeRecord} from './atlas-landscape';
 import {strokeBox,validateStroke,type MaskSample} from './land-mask';
-import {editHeight,TerrainSampler} from './terrain-height';
+import {editHeightSteps,TerrainSampler} from './terrain-height';
 
-/** Strength is metres per second, feather is the soft fraction of the radius. */
+/** Basic strength is metres/second; forms use relief metres. Feather is the soft radius fraction. */
 export interface HeightStroke {
   mode:'raise'|'lower'|'roughen'|'smooth'|'level';
   radius:number; strength:number; feather:number; targetM?:number;
   roughness?:number; seed?:number;
+  /** Specialist swept relief; strength is the relief height in metres. */
+  form?:'mountain'|'hills'|'canyon';
   samples:MaskSample[];
   visibility?:TerrainView;
 }
@@ -19,10 +22,11 @@ export function validateHeightStroke(s:HeightStroke){
     !Number.isFinite(s.feather)||s.feather<0||s.feather>1||
     (s.targetM!==undefined&&(!Number.isFinite(s.targetM)||Math.abs(s.targetM)>1e6))||
     (s.mode==='level'&&s.targetM===undefined)||
+    (s.form!==undefined&&(!['mountain','hills','canyon'].includes(s.form)||s.mode!==(s.form==='canyon'?'lower':'raise')||s.targetM!==undefined))||
     (s.mode==='roughen'&&s.targetM!==undefined)||
     (s.roughness!==undefined&&(!Number.isFinite(s.roughness)||s.roughness<0||s.roughness>2))||
     (s.seed!==undefined&&(!Number.isInteger(s.seed)||s.seed<0||s.seed>0xffffffff))||
-    Object.keys(s).some(k=>!['mode','radius','strength','feather','targetM','roughness','seed','samples','visibility'].includes(k)))
+    Object.keys(s).some(k=>!['mode','radius','strength','feather','targetM','roughness','seed','form','samples','visibility'].includes(k)))
     throw Error('Höhenpinsel prüfen.');
   if(s.visibility)validateTerrainView(s.visibility);
   validateStroke({...s,mode:'raise',roughness:0,seed:0});
@@ -46,14 +50,14 @@ export function scaleHeightSampler(records:LandscapeRecord[],pixel:number){
     return height+bands.sample(p).heightM+100;
   };
 }
-export function heightBrushDabs(s:Pick<HeightStroke,'samples'|'radius'>){
+export function* heightBrushDabsSteps(s:Pick<HeightStroke,'samples'|'radius'>):Generator<void,{x:number;y:number;seconds:number}[]>{
   // Midpoint integration along the whole gesture, independent of event frequency.
   const dabs:{x:number;y:number;seconds:number}[]=[];
-  for(let i=1;i<s.samples.length;i++){
+  for(let i=1;i<s.samples.length;i++){if((i&63)===0)yield;
     const a=s.samples[i-1]!,b=s.samples[i]!,dt=(b.t-a.t)/1000;
     const n=Math.max(1,Math.ceil(Math.hypot(b.x-a.x,b.y-a.y)/(s.radius/8)),Math.ceil(dt*30));
     if(n+dabs.length>20000)throw Error('Höhenzug zu lang. In kürzeren Zügen bearbeiten.');
-    for(let j=0;j<n;j++){
+    for(let j=0;j<n;j++){if((j&63)===0)yield;
       const t=(j+.5)/n,x=a.x+(b.x-a.x)*t,y=a.y+(b.y-a.y)*t,last=dabs.at(-1);
       // Holding the brush still adds duration, not thousands of identical evaluations.
       if(last&&last.x===x&&last.y===y)last.seconds+=dt/n;else dabs.push({x,y,seconds:dt/n});
@@ -88,17 +92,18 @@ export function heightBrushAmount(s:HeightStroke,p:{x:number;y:number},dose:numb
     return Math.sign(target-old)*Math.min(Math.abs(target-old),amount);
 }
 
-export function applyTerrainBrush(records:LandscapeRecord[],s:HeightStroke,limited?:(factor:number)=>void,canonicalVisibility?:TerrainGrid,scaleHeight?:(p:{x:number;y:number})=>number,uncoupled=false):LandscapeRecord[]{
+export function* applyTerrainBrushSteps(records:LandscapeRecord[],s:HeightStroke,limited?:(factor:number)=>void,canonicalVisibility?:TerrainGrid,scaleHeight?:(p:{x:number;y:number})=>number,uncoupled=false):Generator<void,LandscapeRecord[]>{
   validateHeightStroke(s);
   const box=strokeBox(s),pixel=heightBrushPixel(s.radius),edge=64*pixel;
-  const dabs=heightBrushDabs(s);
+  const form=s.form?yield* terrainBrushFormSteps(s):undefined,dabs=form?[]:yield* heightBrushDabsSteps(s);
   const tiles=(Math.floor((box.x+box.width)/edge)-Math.floor(box.x/edge)+1)*(Math.floor((box.y+box.height)/edge)-Math.floor(box.y/edge)+1);
-  if(dabs.length*tiles*4096>60000000)throw Error('Höhenzug zu lang. In kürzeren Zügen bearbeiten.');
-  const needsSource=s.mode==='smooth'||s.targetM!==undefined,source=needsSource?(scaleHeight??scaleHeightSampler(records,pixel)):undefined,visibility=s.visibility?(canonicalVisibility??terrainGrid(records,s.visibility)):null;
+  if((form?.segments??dabs.length)*tiles*4096>60000000)throw Error('Höhenzug zu lang. In kürzeren Zügen bearbeiten.');
+  const needsSource=s.mode==='smooth'||s.targetM!==undefined,source=needsSource?(scaleHeight??scaleHeightSampler(records,pixel)):undefined,visibility=s.visibility?(canonicalVisibility??(yield* terrainGridSteps(records,s.visibility))):null;
   const visible=visibility?terrainVisibility(visibility):undefined;
-  const edited=editHeight(records,box,pixel,(p,prior)=>{
+  const edited=yield* editHeightSteps(records,box,pixel,function*(p,prior):Generator<void,number|undefined>{
+    if(form){const amount=yield* form.amountSteps(p);return amount&&(!visible||visible(p))?prior+amount:undefined;}
     let dose=0;
-    for(const d of dabs){
+    let work=0;for(const d of dabs){if((++work&63)===0)yield;
       const r=Math.hypot(p.x-d.x,p.y-d.y)/s.radius;if(r>=1)continue;
       const t=s.feather===0?1:Math.min(1,(1-r)/s.feather);
       dose+=d.seconds*t*t*(3-2*t);
@@ -108,3 +113,8 @@ export function applyTerrainBrush(records:LandscapeRecord[],s:HeightStroke,limit
   },2);
   return uncoupled?edited:coupleRouteEdits(records,edited,limited);
 }
+
+export function applyTerrainBrush(...args:Parameters<typeof applyTerrainBrushSteps>):LandscapeRecord[]{return complete(applyTerrainBrushSteps(...args));}
+
+function complete<T>(work:Generator<void,T>):T{let step=work.next();while(!step.done)step=work.next();return step.value;}
+export function heightBrushDabs(s:Pick<HeightStroke,'samples'|'radius'>){return complete(heightBrushDabsSteps(s));}

@@ -1,5 +1,6 @@
 import {isProjectionJob,isWorkerControl,type AtlasJob,type AtlasJobResults,type AtlasWorkerValue,type AtlasWorkerReply} from './atlas-worker-contract';
 import {validateAtlasReadRequest,type AtlasReadRequest} from '../src/app/atlas-read-request';
+import {terrainAuthorWindow,type TerrainAuthorQuery,type TerrainAuthorCheckpoint} from '../src/app/terrain-author-checkpoint';
 import {randomUUID} from 'node:crypto';
 import {eraseProjectionWork} from '../src/app/storage/atlas-projection-index';
 import {terrainTraceStart} from '../src/app/terrain-timing';
@@ -243,7 +244,10 @@ export class AtlasRegionService {
     if (this.closed || generation !== this.generation) {
       throw new Error('Kartenausschnitt abgebrochen.');
     }
-    endRoundtrip();this.source = source;
+    endRoundtrip();
+    // Height-only checkpoints skip the general projection sync. Retaining its
+    // cursor keeps every intervening write in the next regular read's delta.
+    if(job.kind!=='author-checkpoint')this.source = source;
     return value;
   }
 
@@ -277,6 +281,8 @@ export class AtlasRegionService {
     }
     return value;
   }
+
+  authorCheckpoint(source:AtlasRegionSource,query:TerrainAuthorQuery):Promise<TerrainAuthorCheckpoint>{terrainAuthorWindow(query);return this.enqueue(source,{kind:'author-checkpoint',query},'author');}
 
   prepareTerrainStroke(source:AtlasRegionSource,stroke:import('../src/app/terrain-brush').HeightStroke):Promise<import('../src/app/storage/terrain-scale').PreparedTerrainStroke>{return this.enqueue(source,{kind:'terrain-stroke',stroke},'author');}
 

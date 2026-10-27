@@ -47,3 +47,37 @@ test('incremental height feedback preserves earlier relief and clears semantic c
  const lowered=new AtlasSurfaceDraft([base],view);lowered.height({...stroke,mode:'lower',strength:100});
  assert.equal(lowered.tiles[0].material.channels.conifer[128*256+128],0);assert.equal(base.material.channels.conifer[128*256+128],200);
 });
+
+test('local macro lighting crosses signed tile edges with neighbour heights and is independent of tile order',()=>{
+ const a=tile(-1),b=tile(0),s={...stroke,radius:30,strength:25,samples:[{x:-18,y:32,t:0},{x:20,y:32,t:1000}]};
+ const draft=new AtlasSurfaceDraft([a,b],{...view,frame:{x:-64,y:0,width:128,height:64}});
+ const reversed=new AtlasSurfaceDraft([b,a],{...view,frame:{x:-64,y:0,width:128,height:64}});
+ assert(draft.height(s));assert(reversed.height(s));
+ for(let n=0;n<2;n++)assert.deepEqual(draft.tiles[n].material.channels.relief,reversed.tiles[1-n].material.channels.relief);
+ const heights=draft.tiles.map(t=>t.terrain.projection.grid.heights);
+ // At y=32 the world-anchored mesh has a node every metre. Reconstruct its
+ // triangular interpolation independently at the four macro support points.
+ const sample=(x,y)=>{const side=x<0?0:1,g=heights[side],xx=x+(side===0?64:0),ix=Math.floor(xx),iy=Math.floor(y),u=xx-ix,w=y-iy,i=iy*65+ix;
+  return u+w<=1?g[i]*(1-u-w)+g[i+1]*u+g[i+65]*w:g[i+66]*(u+w-1)+g[i+1]*(1-w)+g[i+65]*(1-u);};
+ for(const side of [0,1])for(const x of side===0?[252,253,254,255]:[0,1,2,3]){
+  const px=(side===0?-64:0)+(x+.5)/4,py=32.125;
+  const h=sample(px,py),l=sample(px-1,py),r=sample(px+1,py),t=sample(px,py-1),b=sample(px,py+1);
+  const sx=(r-l)/2,sy=(b-t)/2,n=Math.hypot(sx,sy,1),ridge=Math.max(0,(4*h-l-r-t-b)/2);
+  const expected=[Math.round((1-sx/n)*127.5),Math.round((1-sy/n)*127.5),Math.round((1+1/n)*127.5),Math.round(Math.min(1,ridge*24)*255)];
+  assert.deepEqual([...draft.tiles[side].material.channels.relief.subarray((128*256+x)*4,(128*256+x+1)*4)],expected,`macro support crosses x=0 at tile ${side} texel ${x}`);
+ }
+ assert.equal(a.terrain.projection.grid.heights[32*65+64],20,'Canonical source remains immutable');
+});
+
+
+test('a first local height update leaves every material channel outside its relief halo on the frozen mixture',()=>{
+ const base=tile(-1),neighbour=tile(0);for(const [name,values] of Object.entries(base.material.channels))for(let i=0;i<values.length;i++)values[i]=(i*7+name.length*13)%256;
+ const before=Object.fromEntries(Object.entries(base.material.channels).map(([name,values])=>[name,values.slice()])),draft=new AtlasSurfaceDraft([base,neighbour],{...view,frame:{x:-64,y:0,width:128,height:64}});
+ const local={...stroke,radius:4,samples:[{x:-32,y:32,t:0},{x:-32,y:32,t:1000}]};assert(draft.height(local));assert.equal(draft.tiles[1],neighbour);
+ for(const [name,canonical] of Object.entries(before)){const current=draft.tiles[0].material.channels[name],channels=canonical.length/(256*256);
+  for(const [x,y] of [[4,4],[128,4],[4,128],[252,252]])for(let c=0;c<channels;c++){const i=(y*256+x)*channels+c;assert.equal(current[i],canonical[i],`${name} remains unchanged outside the independently chosen distant samples`);
+   for(const alpha of [0,.5,1]){const old=255-canonical[i],frozen=old*(1-alpha)+canonical[i]*alpha;assert.equal(frozen+(current[i]-canonical[i]),frozen);}
+  }
+ }
+ assert.notDeepEqual(draft.tiles[0].material.channels.relief,before.relief);assert.deepEqual(base.material.channels.relief,before.relief);
+});

@@ -1,3 +1,4 @@
+import type {AtlasNavigationAnchor} from "./atlas-camera-navigation";
 import { wheelZoomFactor, zoomBox } from "./atlas-navigation-scale";
 import { AtlasPaint, AtlasCanvasScene } from "./atlas-canvas-scene";
 import { releaseAtlasImageAlpha } from "./atlas-image-alpha";
@@ -26,8 +27,14 @@ export class AtlasCanvas {
     start: DOMPoint;
     box: CanvasBox;
     moved: boolean;
-    anchor?: {x:number;y:number};
+    anchor?: AtlasNavigationAnchor;
+    orbit: boolean;
+    button:number;
+    clientX:number; clientY:number;
   } | null = null;
+  private keys=new Set<string>();
+  private keyPrevious=0;
+  private keyStart:CanvasBox|null=null;
   private suppressClick = false;
   private readonly panel: HTMLDivElement;
   private readonly note: HTMLSpanElement;
@@ -42,7 +49,7 @@ export class AtlasCanvas {
   private zoomPrevious = 0;
   private zoomTarget: CanvasBox | null = null;
   private zoomGeneration = 0;
-  private zoomAnchor = { x: 0, y: 0 };
+  private zoomAnchor:AtlasNavigationAnchor = { x: 0, y: 0 };
   private zoomUpdatedAt = 0;
   private sceneOrigin = { x: 0, y: 0 };
   private sceneVersion = 0;
@@ -115,7 +122,7 @@ export class AtlasCanvas {
     this.forward = action("Nächste Ansicht →", () => this.next());
     this.resetButton = action("Ansicht zurücksetzen", () => this.reset());
     const hint = doc.createElement("span");
-    hint.textContent = "Mittlere Maustaste: verschieben · Mausrad: zoomen";
+    hint.textContent = "Links: malen · Mitte: schieben · Rechts: drehen/neigen · Rad: zoomen · WASD: schieben";
     this.controls.append(hint);
     root.before(this.controls);
     this.refreshControls();
@@ -162,13 +169,15 @@ export class AtlasCanvas {
         if(presentation&&!anchor)return;
         this.drag = {
           anchor:anchor??undefined,
+          orbit:e.button===2,button:e.button, clientX:e.clientX, clientY:e.clientY,
           id: e.pointerId,
           inverse,
           start: new DOMPoint(e.clientX, e.clientY).matrixTransform(inverse),
           box: { ...this.box },
           moved: false,
         };
-        if (e.button === 1) {
+        root.focus?.({preventScroll:true});
+        if (e.button === 1 || e.button === 2) {
           root.setPointerCapture(e.pointerId);
           e.preventDefault();
           e.stopImmediatePropagation();
@@ -192,7 +201,15 @@ export class AtlasCanvas {
         drag.moved = true;
         this.suppressClick = true;
         root.setPointerCapture(e.pointerId);
-        if(drag.anchor){
+        const dx=e.clientX-drag.clientX,dy=e.clientY-drag.clientY;
+        drag.clientX=e.clientX;drag.clientY=e.clientY;
+        const presentation=this.options.presentation?.();
+        if(drag.orbit){
+          const box=drag.anchor&&presentation?.navigationOrbit?.(drag.anchor,dx,dy);
+          if(box)this.set(box,true,"pan");
+        }else if(drag.anchor&&presentation?.navigationPan){
+          const box=presentation.navigationPan(drag.anchor,e,dx,dy);if(box)this.set(box,true,"pan");
+        }else if(drag.anchor){
           const at=this.options.presentation?.()?.navigationPoint(e);
           if(at)this.set({...this.box,x:this.box.x+drag.anchor.x-at.x,y:this.box.y+drag.anchor.y-at.y},true,"pan");
         }else{
@@ -205,10 +222,10 @@ export class AtlasCanvas {
       true,
     );
     const finish = (e: PointerEvent) => {
-      if (this.drag?.id !== e.pointerId) return;
+      if (this.drag?.id !== e.pointerId || e.type!=="pointercancel"&&e.button!==this.drag.button) return;
       const moved = this.drag.moved;
       this.cancel();
-      if (moved || e.button === 1) {
+      if (moved || e.button === 1 || e.button === 2) {
         e.preventDefault();
         e.stopImmediatePropagation();
       }
@@ -280,6 +297,18 @@ export class AtlasCanvas {
       this.tooltipPoint = null;
       root.title = "";
     });
+    root.addEventListener("contextmenu",e=>{if(this.options.presentation?.()?.navigationOrbit){e.preventDefault();e.stopImmediatePropagation();}});
+    root.addEventListener("keydown",e=>{
+      if(!["KeyW","KeyA","KeyS","KeyD"].includes(e.code)||e.ctrlKey||e.metaKey||e.altKey||doc.activeElement!==root)return;
+      e.preventDefault();e.stopImmediatePropagation();
+      if(this.failed||this.options.locked?.()||this.drag)return;
+      if(!this.keys.size){this.keyPrevious=performance.now();this.keyStart=this.view;this.stopZoom();}
+      this.keys.add(e.code);this.requestFrame();
+    },true);
+    doc.defaultView?.addEventListener("keyup",e=>{if(this.keys.delete(e.code)){e.preventDefault();if(!this.keys.size)this.stopKeys();}});
+    root.addEventListener("blur",()=>this.stopKeys());
+    doc.defaultView?.addEventListener("blur",()=>{this.stopKeys();this.cancel();});
+    doc.addEventListener("visibilitychange",()=>{if(doc.hidden){this.stopKeys();this.cancel();}});
     this.acquireContext();
   }
   private acquireContext() {
@@ -326,7 +355,7 @@ export class AtlasCanvas {
   get destination() {
     return { ...(this.zoomTarget ?? this.box) };
   }
-  navigationRequested(e:PointerEvent){return !!(this.options.pan?.(e)??e.button===1);}
+  navigationRequested(e:PointerEvent){return e.button===2&&!!this.options.presentation?.()?.navigationOrbit||!!(this.options.pan?.(e)??e.button===1);}
   get panning() {
     return !!this.drag;
   }
@@ -371,9 +400,10 @@ export class AtlasCanvas {
     this.animation=requestAnimationFrame(now=>{
       try{
         this.advanceZoom(now);
+        this.advanceKeys(now);
         this.animation=0;
         this.paint();
-        if(this.zoomTarget)this.requestFrame();
+        if(this.zoomTarget||this.keys.size)this.requestFrame();
       }catch(error){this.animation=0;this.fail(error);}
     });
   }
@@ -548,7 +578,7 @@ export class AtlasCanvas {
   /** Opaque presentation contexts never contain adopter-owned map data. At most 32 are cached. */
   context(key: string, initial: CanvasBox, restore = true) {
     if (key === this.contextKey) return false;
-    this.cancel();
+    this.stopKeys();this.cancel();
     this.renderScene=null;this.emptyText="";this.restored=false;
     this.root.title = "";
     this.generation++;
@@ -595,7 +625,7 @@ export class AtlasCanvas {
   }
   zoom(
     factor: number,
-    anchor = {
+    anchor:AtlasNavigationAnchor = {
       x: this.box.x + this.box.width / 2,
       y: this.box.y + this.box.height / 2,
     },
@@ -613,7 +643,7 @@ export class AtlasCanvas {
     // has not yet been reached and the user moves the pointer during a burst.
     const target = zoomBox(this.box, width, anchor);
     const smooth = this.options.smoothZoom && !window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-    if (!smooth) { this.stopZoom(); this.set(target, true, "zoom", coalesce); return; }
+    if (!smooth) { this.stopZoom(); this.set(this.options.presentation?.()?.navigationZoom?.(width,anchor)??target, true, "zoom", coalesce); return; }
     const before = this.view, running = !!this.zoomTarget;
     this.zoomTarget = target;
     this.zoomAnchor = anchor;
@@ -635,9 +665,22 @@ export class AtlasCanvas {
     const current=this.view;
     const done=now-this.zoomUpdatedAt>=160 || Math.abs(Math.log(target.width/current.width))<1e-7;
     const progress=done?1:1-Math.exp(-elapsed/40);
-    this.set(zoomBox(current,current.width*(target.width/current.width)**progress,this.zoomAnchor),true,"zoom",true);
+    const width=current.width*(target.width/current.width)**progress;
+    this.set(this.options.presentation?.()?.navigationZoom?.(width,this.zoomAnchor)??zoomBox(current,width,this.zoomAnchor),true,"zoom",true);
     // A changed callback may replace/cancel this animation or its destination.
     if(done&&this.zoomGeneration===generation&&this.zoomTarget===target)this.zoomTarget=null;
+  }
+  private stopKeys(){
+    this.keys.clear();const before=this.keyStart;this.keyStart=null;if(before)this.remember(before);
+  }
+  private advanceKeys(now:number){
+    if(!this.keys.size)return;
+    if(this.root.ownerDocument.activeElement!==this.root||this.options.locked?.()||this.drag||this.failed){this.stopKeys();return;}
+    now=Math.max(now,performance.now());const dt=Math.min(50,Math.max(0,now-this.keyPrevious));this.keyPrevious=now;
+    let dx=Number(this.keys.has('KeyD'))-Number(this.keys.has('KeyA')),dy=Number(this.keys.has('KeyS'))-Number(this.keys.has('KeyW'));
+    const length=Math.hypot(dx,dy);if(!length)return;
+    const step=this.box.width*.65*dt/1000/length;dx*=step;dy*=step;
+    this.set(this.options.presentation?.()?.navigationShift?.(dx,dy)??{...this.box,x:this.box.x+dx,y:this.box.y+dy},true,'pan',true);
   }
   stopZoom() {
     this.zoomGeneration++;

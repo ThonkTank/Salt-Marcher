@@ -32,6 +32,7 @@ export class LandscapeToolSettings{
   private radius:HTMLInputElement;
   private radiusHome:Comment;
   private heightSettings:Record<string,{strength:string;feather:string}>={height:{strength:'300',feather:'0.8'},smooth:{strength:'300',feather:'0.8'}};
+  private form:HeightStroke['form'];private formRatio=.7;
   private last='';private lines={road:newLine('road'),river:newLine('river')};
   eyedropper=false;
   constructor(panel:HTMLElement,private changed:()=>void,private canChange:()=>boolean=()=>true){
@@ -46,18 +47,20 @@ export class LandscapeToolSettings{
     this.brushRoot.querySelector('#land-shape-options')!.append(presets);
     const preset=presets.querySelector('input')!;
     const applyPreset=()=>{if(!this.canChange())return;const p=HEIGHT_PRESETS[Number(preset.value)];if(preset.value===''||!p)return;
+      this.form='form' in p?p.form:undefined;if('heightRatio' in p)this.formRatio=p.heightRatio;
       for(const [id,value] of Object.entries({mode:p.direction,strength:p.strength,feather:p.feather}))field(this.brushRoot,'land-height-'+id).value=String(value);
       field(this.brushRoot,'land-coast-roughness').value=String(p.roughness);check(this.brushRoot,'land-height-target-enabled').checked=false;
       brushSizeControl(this.radius)?.preset(p.radius);this.show(this.last);this.changed();
     };
     preset.onchange=e=>{e.stopPropagation();applyPreset();};
     for(const b of presets.querySelectorAll<HTMLButtonElement>('[data-preset]'))b.onclick=()=>{if(!this.canChange())return;preset.value=b.dataset.preset!;applyPreset();};
-    for(const b of this.brushRoot.querySelectorAll<HTMLButtonElement>('[data-direction]'))b.onclick=()=>{if(!this.canChange())return;field(this.brushRoot,'land-height-mode').value=b.dataset.direction!;preset.value='';this.show(this.last);this.changed();};
+    for(const b of this.brushRoot.querySelectorAll<HTMLButtonElement>('[data-direction]'))b.onclick=()=>{if(!this.canChange())return;field(this.brushRoot,'land-height-mode').value=b.dataset.direction!;this.form=undefined;preset.value='';this.show(this.last);this.changed();};
     const strength=field(this.brushRoot,'land-height-strength'),slider=field(this.brushRoot,'land-height-strength-slider');
     slider.oninput=()=>{if(this.canChange())strength.value=String(Math.round(10**Number(slider.value)));};
     this.radius.addEventListener('brush-size-change',()=>{preset.value='';this.show(this.last);});
     this.brushRoot.oninput=this.brushRoot.onchange=e=>{
       if(e.target===preset||!this.canChange())return;
+      if(this.form&&this.last==='height'&&(e.target===strength||e.target===slider)&&Number(strength.value)>0)this.formRatio=Number(strength.value)/Number(this.radius.value);
       preset.value='';this.show(this.last);this.changed();
     };
     const palette=this.brushRoot.querySelector('#land-palette')!,add=(color:string)=>{if(palette.querySelector(`[data-color="${color}"]`))return;const b=document.createElement('button');b.type='button';b.dataset.color=color;b.title=color;b.setAttribute('aria-label','Farbe '+color);b.textContent='●';b.style.color=color;b.onclick=()=>{field(this.brushRoot,'land-paint-color').value=color;this.changed();};palette.append(b);};
@@ -73,10 +76,11 @@ export class LandscapeToolSettings{
   }
   height():Omit<HeightStroke,'samples'|'radius'|'seed'>{
     const mode=this.last==='smooth'?'smooth':field(this.brushRoot,'land-height-mode').value as 'raise'|'lower'|'roughen';
-    return {mode,
-      strength:Number(field(this.brushRoot,'land-height-strength').value),feather:Number(field(this.brushRoot,'land-height-feather').value),
-      ...(mode==='raise'||mode==='lower'?{roughness:this.roughness(),...(check(this.brushRoot,'land-height-target-enabled').checked?{targetM:Number(atlasFieldValue(field(this.brushRoot,'land-height-target')))}:{})}:{})};
+    return {mode,...(this.last==='height'&&this.form?{form:this.form}:{}),
+      strength:this.last==='height'&&this.form?this.formHeight():Number(field(this.brushRoot,'land-height-strength').value),feather:Number(field(this.brushRoot,'land-height-feather').value),
+      ...(mode==='raise'||mode==='lower'?{roughness:this.roughness(),...(!this.form&&check(this.brushRoot,'land-height-target-enabled').checked?{targetM:Number(atlasFieldValue(field(this.brushRoot,'land-height-target')))}:{})}:{})};
   }
+  private formHeight(){return Math.max(.000001,Math.min(100000,Number(this.radius.value)*this.formRatio));}
   roughness(){return Number(field(this.brushRoot,'land-coast-roughness').value);}
   fill(){return this.last==='color'&&field(this.brushRoot,'land-fill').value!=='stroke';}
   color(radius:number,seed:number):LandscapeColor{return {version:2,target:field(this.brushRoot,'land-color-target').value as 'water'|'ground',operation:field(this.brushRoot,'land-color-operation').value as 'paint'|'erase',color:field(this.brushRoot,'land-paint-color').value,
@@ -93,7 +97,14 @@ export class LandscapeToolSettings{
     }
     const selected=field(this.brushRoot,'land-height-preset').value;
     for(const b of this.brushRoot.querySelectorAll<HTMLButtonElement>('[data-preset]'))b.setAttribute('aria-pressed',String(b.dataset.preset===selected));
-    this.brushRoot.querySelector('#land-preset-status')!.textContent=selected===''?'Benutzerdefiniert':'';
+    this.brushRoot.querySelector('#land-preset-status')!.textContent=this.form?(this.form==='canyon'?'Schluchtenpinsel':this.form==='hills'?'Hügelpinsel':'Bergpinsel'):selected===''?'Benutzerdefiniert':'';
+    const specialist=tool==='height'&&!!this.form;
+    if(specialist&&document.activeElement!==field(this.brushRoot,'land-height-strength'))field(this.brushRoot,'land-height-strength').value=String(Number(this.formHeight().toPrecision(8)));
+    check(this.brushRoot,'land-height-strength').min=specialist?'0.000001':'1';
+    check(this.brushRoot,'land-height-strength').step='any';
+    check(this.brushRoot,'land-height-strength-slider').min=specialist?'-6':'0';
+    field(this.brushRoot,'land-height-strength').closest('label')!.querySelector('span')!.innerHTML=specialist?'Reliefhöhe <small>m</small>':'Stärke <small>m/s</small>';
+    for(const id of ['land-height-feather','land-coast-roughness','land-height-target-enabled'])field(this.brushRoot,id).closest('label')!.hidden=specialist;
     this.lineRoot.hidden=!['river','road'].includes(tool);this.brushRoot.hidden=!['height','smooth','color','freshwater'].includes(tool);
     this.brushRoot.querySelector<HTMLElement>('#land-height-options')!.hidden=!['height','smooth'].includes(tool);
     this.brushRoot.querySelector<HTMLElement>('#land-height-direction')!.hidden=tool!=='height';
@@ -103,7 +114,7 @@ export class LandscapeToolSettings{
     if(radiusAnchor.nextSibling!==radiusLabel)radiusAnchor.after(radiusLabel);
     this.precisionRoot.hidden=!['height','smooth'].includes(tool);
     if(!this.precisionRoot.hidden&&radiusLabel.nextSibling!==this.precisionRoot)radiusLabel.after(this.precisionRoot);
-    field(this.brushRoot,'land-height-target').closest('label')!.hidden=!check(this.brushRoot,'land-height-target-enabled').checked;
+    field(this.brushRoot,'land-height-target').closest('label')!.hidden=specialist||!check(this.brushRoot,'land-height-target-enabled').checked;
     this.brushRoot.querySelector('#land-height-feather-value')!.textContent=Math.round(Number(field(this.brushRoot,'land-height-feather').value)*100)+' %';
     this.brushRoot.querySelector<HTMLElement>('#land-shape-options')!.hidden=tool!=='height'||field(this.brushRoot,'land-height-mode').value==='roughen';
     this.brushRoot.querySelector<HTMLElement>('#land-color-options')!.hidden=tool!=='color';
@@ -116,9 +127,9 @@ export class LandscapeToolSettings{
 }
 
 export const HEIGHT_PRESETS = [
-  {name:'Hügel',direction:'raise',strength:100,radius:40,feather:.85,roughness:.2},
-  {name:'Berg',direction:'raise',strength:350,radius:65,feather:.6,roughness:.8},
-  {name:'Großer Berg',direction:'raise',strength:1000,radius:100,feather:.5,roughness:1},
+  {name:'Hügel',direction:'raise',form:'hills',heightRatio:.32,strength:100,radius:40,feather:.85,roughness:.2},
+  {name:'Berg',direction:'raise',form:'mountain',heightRatio:.7,strength:500,radius:65,feather:.6,roughness:.8},
+  {name:'Großer Berg',direction:'raise',form:'mountain',heightRatio:.85,strength:1000,radius:100,feather:.5,roughness:1},
   {name:'Tal',direction:'lower',strength:200,radius:70,feather:.85,roughness:.1},
-  {name:'Schlucht',direction:'lower',strength:700,radius:20,feather:.15,roughness:.6},
+  {name:'Schlucht',direction:'lower',form:'canyon',heightRatio:.55,strength:700,radius:32,feather:.15,roughness:.6},
 ] as const;

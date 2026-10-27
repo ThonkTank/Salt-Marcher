@@ -14,7 +14,10 @@ import {chooseRoomGroup} from './room-group-ui';
 import {MapLabelLayout} from './atlas-cartography';
 import {TerritoryWorkbench} from './atlas-territories-ui';
 import {AtlasRasterPresentation} from './atlas-raster-presentation';
-import {TerrainStrokeQueue} from './terrain-stroke-queue';
+import type {TerrainStrokeQueue} from './terrain-stroke-queue';
+import {atlasWriteReference} from './atlas-write-recovery';
+import {captureTerrainWriteRecovery} from './campaign-atlas-author';
+import type {TerrainAuthorState,TerrainAuthorRecovery} from './terrain-author-state';
 import {atlasFieldValue,setAtlasFieldValue,lengthLabel,atlasUnits} from './atlas-units';
 import {AtlasWorkspaceLayout} from './atlas-workspace-layout';
 import { AtlasReferenceUI } from "./atlas-reference-ui";
@@ -42,6 +45,7 @@ import {nearestAnchor} from "./drawing-model";
 import {atlasCityState,atlasCityUndoPoint,openCityReference} from "./city-ui";
 import {selectedDrawingElementId,atlasDrawingDraft,atlasDrawingHasDraft,atlasDrawingUndoPoint,reloadDrawing} from "./drawing-ui";
 import {openDungeon,stopDungeonPlayback} from "./dungeon-ui";
+type TerrainRecoveryContext={absence?:import('./terrain-stroke-queue').TerrainQueueAbsence;owner:WorkspaceGeometry;author:TerrainAuthorState;binding:TerrainAuthorRecovery;write:NonNullable<ReturnType<typeof captureTerrainWriteRecovery>>;sourceGeneration:number};
 export class CampaignAtlasWorkbench {
   private output: AtlasOutput = this.createAtlasOutput();
   private createAtlasOutput(): AtlasOutput {
@@ -83,7 +87,9 @@ export class CampaignAtlasWorkbench {
           error: (...args) => this.error(...args),
           get root() { return source.root; },
           get lastPoint() { return source.author.lastPoint; },
-          get canvas() { return source.canvas; }
+          get canvas() { return source.canvas; },
+          confirmed: () => { this.recoveryProjection=this.owner;this.recoveryTravel=true; },
+          projected: () => { if(this.recoveryTravel){this.recoveryProjection=null;this.recoveryTravel=false;} }
       });
   }
 
@@ -180,24 +186,28 @@ export class CampaignAtlasWorkbench {
   private spatial?:AtlasRasterPresentation;
   private strokeQueue:TerrainStrokeQueue|null=null;
   private strokeOwner:string|null=null;
+  private terrainSourceGeneration=0;
+  private terrainRecoveryTask:Promise<void>|null=null;
+  private terrainRecoveryContext:TerrainRecoveryContext|null=null;
+  private terrainRecoveryReload:{owner:WorkspaceGeometry;discarded:number;absent?:boolean}|null=null;
+  private terrainDiscardDialog:HTMLDialogElement|null=null;
+  private terrainDiscardTask:Promise<void>|null=null;
+  private heightDispatch:{readonly commandId:string;readonly token:string;readonly campaignId:string;readonly expectedRevision:number}|null=null;
   private get raster(){return this.spatial??null;}
   private async enqueueRasterStroke(action:import('./terrain-live-stroke').TerrainLiveAction,id:string){
-    const owner=this.owner,data=this.regions.data;
-    if(!owner||!data?.region)throw Error('Kartenausschnitt fehlt. Erneut laden.');
-    if(this.strokeOwner!==owner.token){this.strokeQueue=null;this.strokeOwner=owner.token;}
-    if(this.strokeQueue&&!this.strokeQueue.pending&&!this.strokeQueue.failed&&data.region.revision===data.revision&&data.revision>=this.strokeQueue.confirmedSource.expectedRevision)this.strokeQueue=null;
-    this.strokeQueue??=new TerrainStrokeQueue({expectedRevision:data.revision,sourceFence:data.region.fence},async(a,c)=>{
-      if(this.owner!==owner)throw Error('Kampagne inzwischen gewechselt.');
-      const result=await this.write(a,false,true,c);if(!result)throw Error('Pinselzug nicht gespeichert.');return result.ack;
-    });
-    try{await this.strokeQueue.enqueue(action,id);}catch(error){
-      if(this.owner===owner){this.landscape.cancel();get('atlas-region-retry').hidden=false;this.opts.status('Pinsel gestoppt. Nicht bestätigte Folgezüge sind nicht gespeichert. Speicherstand klären oder Ansicht erneut laden.',true);}
-      throw error;
-    }
-    if(this.owner===owner&&!this.strokeQueue.pending&&!this.landscape.livePainting){
-      const source=this.strokeQueue.confirmedSource;this.raster?.reconcile(source.expectedRevision,source.sourceFence);
-      await this.regions.refresh();
-    }
+    const owner=this.owner;if(!owner||!this.raster)throw Error('Terrainautor fehlt.');
+    this.strokeOwner=owner.token;this.strokeQueue=this.raster.authorQueue;
+    await this.raster.enqueueHeight(action,id);
+    if(this.owner===owner&&!this.strokeQueue?.pending&&!this.landscape.livePainting)await this.regions.refresh();
+  }
+
+  private onAtlasInvalidated(detail:{campaignId:string;token?:string;commandId?:string;revision?:number;sourceFence?:string}){
+    if(detail?.campaignId!==this.owner?.campaign.id||detail.token&&detail.token!==this.owner?.token)return;
+    const own=this.heightDispatch;
+    if(own&&own.commandId===detail.commandId&&own.token===this.owner?.token&&own.campaignId===detail.campaignId&&Number.isSafeInteger(detail.revision)&&detail.revision!>=own.expectedRevision&&!!detail.sourceFence){this.regions.invalidate();return;}
+    this.terrainSourceGeneration=(this.terrainSourceGeneration??0)+1;this.raster?.invalidateTerrainSource();this.landscape.cancel();this.regions.invalidate();
+    if(detail.revision!==undefined)this.landscape.invalidate(detail.revision);
+    if(!this.busy&&!this.root.hidden)void this.regions.refresh();
   }
   private terrainAnalysis?:TerrainAnalysisUI;
   private reference: AtlasReferenceUI;
@@ -211,6 +221,7 @@ export class CampaignAtlasWorkbench {
   private writing=false;
   private recoveryProjection:WorkspaceGeometry|null=null;
   private recoveryCommandId:string|null=null;
+  private recoveryTravel=false;
   private get busy(){return this.writing||this.journey.busy||!!this.recoveryProjection;}
   private bindingDirty = false;
   private family: Family = "navigation";
@@ -329,7 +340,7 @@ export class CampaignAtlasWorkbench {
       get('atlas-reference-open').setAttribute('aria-expanded','true');
     })().catch(e=>this.error(e));
     this.territories=new TerritoryWorkbench(this.canvas,{focus:b=>{const aspect=this.canvas.clientWidth/Math.max(1,this.canvas.clientHeight),width=Math.max(b.width,b.height*aspect,10)*1.2,height=width/aspect;this.camera.set({x:b.x+b.width/2-width/2,y:b.y+b.height/2-height/2,width,height},true);},data:()=>this.regions.data,enabled:()=>this.family==='terrain'&&!this.output.exportOpen,point:e=>this.camera.point(e),box:()=>this.camera.view,current:()=>this.regions.geometryCurrent()&&this.camera.ready,write:a=>this.write(a,false,true),redraw:()=>this.scheduleRender(),error:e=>this.error(e)});
-    this.landscape=new LandscapeWorkbench(this.canvas,{localTerrain:()=>this.raster?.active?{cancel:()=>this.raster?.cancelDraft(),enqueue:(a,id)=>this.enqueueRasterStroke(a,id),previewColor:r=>this.raster?.previewColor(r)}:null,selected:(id,kind)=>this.layout?.landscapeSelectionChanged(id,kind),terrainGesture:active=>this.terrainGesture(active),previewHeight:stroke=>this.spatial?.previewHeight(stroke),writeTerrain:async(a,c)=>{const r=await this.write(a,false,true,c);if(!r)throw Error('Pinselzug nicht gespeichert.');return r.ack;},planning:()=>{this.author.selection=null;this.layout?.selectionChanged(null);this.layout?.showPane('tool');},navigation:e=>this.camera.navigationRequested(e),hit:(e,s)=>this.camera.hitAt(e,s),point:e=>this.camera.point(e),visibility:()=>this.spatial?.visibility(),box:()=>this.camera.view,navigate:b=>this.camera.set(b,true),redraw:()=>this.scheduleRender(),redrawOverlay:()=>this.camera.redrawOverlay(),write:a=>this.write(a,false,true),error:e=>this.error(e),data:()=>this.regions.data,refresh:()=>this.regions.refresh(),choose:p=>this.chooseAt(p,'landscape'),current:()=>this.raster?.active&&['height','smooth','color'].includes(this.landscape.spatialTool)?this.raster.ready&&!(this.strokeOwner===this.owner?.token&&this.strokeQueue?.failed):this.regions.geometryCurrent()&&this.camera.ready&&(!this.spatial?.active||this.spatial.ready)});
+    this.landscape=new LandscapeWorkbench(this.canvas,{localTerrain:()=>this.raster?.active?{beginHeight:(id,stroke)=>{this.raster!.beginHeight(id,stroke);this.strokeQueue=this.raster!.authorQueue;this.strokeOwner=this.owner?.token??null;},cancel:()=>this.raster?.cancelDraft(),enqueue:(a,id)=>this.enqueueRasterStroke(a,id),previewColor:r=>this.raster?.previewColor(r)}:null,selected:(id,kind)=>this.layout?.landscapeSelectionChanged(id,kind),terrainGesture:active=>this.terrainGesture(active),previewHeight:stroke=>this.spatial?.previewHeight(stroke),writeTerrain:async(a,c)=>{const r=await this.write(a,false,true,c);if(!r)throw Error('Pinselzug nicht gespeichert.');return r.ack;},planning:()=>{this.author.selection=null;this.layout?.selectionChanged(null);this.layout?.showPane('tool');},navigation:e=>this.camera.navigationRequested(e),hit:(e,s)=>this.camera.hitAt(e,s),point:e=>this.camera.point(e),visibility:()=>this.spatial?.visibility(),box:()=>this.camera.view,navigate:b=>this.camera.set(b,true),redraw:()=>this.scheduleRender(),redrawOverlay:()=>this.camera.redrawOverlay(),write:a=>this.write(a,false,true),error:e=>this.error(e),data:()=>this.regions.data,refresh:()=>this.regions.refresh(),choose:p=>this.chooseAt(p,'landscape'),current:()=>this.raster?.active&&['height','smooth','color'].includes(this.landscape.spatialTool)?this.raster.ready&&!(this.strokeOwner===this.owner?.token&&this.strokeQueue?.failed):this.regions.geometryCurrent()&&this.camera.ready&&(!this.spatial?.active||this.spatial.ready)});
     this.landscape.panel.append(this.territories.panel);
     get<HTMLSelectElement>('land-tool').add(new Option('Regionen','territory'));
     get('land-tool').addEventListener('change',e=>{if(this.territories.hasDraft()){get<HTMLSelectElement>('land-tool').value='territory';e.stopImmediatePropagation();this.opts.status('Regionsänderung zuerst übernehmen oder verwerfen.');}else this.territories.sync(this.owner?.token??'');},true);
@@ -359,6 +370,7 @@ export class CampaignAtlasWorkbench {
     get("atlas-region-retry").onclick=()=>void (async()=>{
       if(this.raster&&this.strokeQueue?.failed){
         if(this.owner&&pendingAtlasWrite(this.owner.token)){this.opts.status('Zuerst Speicherstand klären.',true);return;}
+        if(this.raster.heldAcceptedInput){this.opts.status('Nicht bestätigte Folgezüge bleiben gehalten. Speicherstand klären.',true);return;}
         this.strokeQueue=null;this.raster.setActive(false);this.landscape.recovered();
       }
       await this.regions.refresh();
@@ -539,7 +551,9 @@ export class CampaignAtlasWorkbench {
       workplane:()=>['interior','decoration'].includes(this.family)&&!this.creation?this.floorPlane():null,
       objectPicking:()=>!this.author.pointToolActive()&&['navigation','interior','decoration','city'].includes(this.family),tool:()=>this.family==='terrain'?this.landscape.spatialTool:'select',navigation:e=>this.camera.navigationRequested(e),panning:()=>this.camera.panning,
       refresh:()=>this.regions.refreshSpatialSource(),redraw:()=>this.redrawSpatial(),error:e=>this.error(e),recovered:message=>this.recoverPresentation(message),selection:()=>this.landscape.spatialSelection,
-    });
+    },()=>this.remember());
+    this.spatial.bindAuthorWriter(async(action,context)=>{const result=await this.write(action,false,true,context);if(!result?.receipt)throw Error('Pinselreceipt fehlt.');return{ack:result.ack,receipt:result.receipt};});
+    const pigment=get<HTMLSelectElement>('land-tool').querySelector<HTMLOptionElement>('option[value="color"]');if(pigment){pigment.disabled=true;pigment.hidden=true;}
     this.terrainAnalysis=new TerrainAnalysisUI(this.canvas,{
       token:()=>this.owner?.token,revision:()=>this.regions.data?.revision??-1,hasDraft:()=>this.cameraDraftPending(),
       point:e=>this.camera.ready?this.camera.point(e):null,error:e=>this.error(e),
@@ -569,16 +583,11 @@ export class CampaignAtlasWorkbench {
     document.addEventListener("atlas-written", (e) => {
       const a = (e as CustomEvent<AtlasRenderView>).detail;
       if (a?.workspace.token !== this.owner?.token) return;
-      this.landscape.invalidate(a.revision);
+      this.terrainSourceGeneration=(this.terrainSourceGeneration??0)+1;this.raster?.invalidateTerrainSource();this.landscape.cancel();this.landscape.invalidate(a.revision);
       this.regions.invalidate();
       if(!this.root.hidden)void this.regions.refresh();
     });
-    document.addEventListener('atlas-invalidated',e=>{
-      const detail=(e as CustomEvent<{campaignId:string;token?:string;revision?:number}>).detail;
-      if(detail?.campaignId!==this.owner?.campaign.id||detail.token&&detail.token!==this.owner?.token)return;
-      this.regions.invalidate();if(detail.revision!==undefined)this.landscape.invalidate(detail.revision);
-      if(!this.busy&&!this.root.hidden)void this.regions.refresh();
-    });
+    document.addEventListener('atlas-invalidated',e=>this.onAtlasInvalidated((e as CustomEvent<{campaignId:string;token?:string;commandId?:string;revision?:number;sourceFence?:string}>).detail));
     document.addEventListener("atlas-draft", () => this.scheduleRender());
     document.addEventListener("atlas-runtime", () => {
       if (this.root.hidden) return;this.regions.invalidate();
@@ -631,15 +640,63 @@ export class CampaignAtlasWorkbench {
     },factor=>this.camera.zoom(factor),mounted=>{if(mounted)void openDungeon().catch(error=>this.error(error));else stopDungeonPlayback();});
   }
   /** A confirmed receipt and a readable view are separate outcomes. */
-  private async recoverWrite() {
+  private recoverWrite():Promise<void>{
+    if(this.terrainRecoveryTask)return this.terrainRecoveryTask;
+    if(this.terrainRecoveryReload||this.raster?.authorOwner?.failed){const task=this.terrainRecoveryReload?this.projectTerrainRecovery(this.terrainRecoveryReload):this.recoverTerrainWrite();this.terrainRecoveryTask=task;void task.finally(()=>{if(this.terrainRecoveryTask===task)this.terrainRecoveryTask=null;}).catch(()=>{});return task;}
+    return this.recoverWriteOther();
+  }
+  private terrainRecoveryCurrent(c:TerrainRecoveryContext){return this.terrainRecoveryContext===c&&this.owner===c.owner&&this.raster?.authorOwner===c.author&&(this.terrainSourceGeneration??0)===c.sourceGeneration&&c.author.recoveryCurrent(c.binding)&&c.write.current();}
+  private async recoverTerrainWrite(){
+    if(!this.owner||this.writing||this.journey.busy)return;const owner=this.owner;this.writing=true;
+    try{
+      const author=this.raster?.authorOwner,binding=author?.captureRecovery(),write=captureTerrainWriteRecovery(owner.token);
+      if(!author||!binding||!write)throw Error('Die ursprüngliche Pinselbindung fehlt. Angenommene Züge bleiben gehalten.');
+      const command=write.command,head=binding.queue.head,context:TerrainRecoveryContext={owner,author,binding,write,sourceGeneration:this.terrainSourceGeneration??0};this.terrainRecoveryContext=context;
+      const reference=await atlasWriteReference({kind:'atlas',command});
+      if(!this.terrainRecoveryCurrent(context)||command.token!==owner.token||command.campaignId!==owner.campaign.id||command.terrainStroke?.id!==head.id||command.terrainStroke.expectedRevision!==binding.queue.source.expectedRevision||command.sourceFence!==binding.queue.source.sourceFence||JSON.stringify(command.action)!==JSON.stringify(head.action)||reference.fingerprint!==write.receipt.fingerprint||reference.commandId!==write.receipt.commandId)throw Error('Speicherbeleg gehört nicht zu den gehaltenen Zügen.');
+      this.terrainRecoveryContext=context;
+      await author.queue.finish().catch(()=>{});if(!this.terrainRecoveryCurrent(context))throw Error('Speicherklärung inzwischen geändert.');
+      const result=await write.read();if(!this.terrainRecoveryCurrent(context))throw Error('Speicherklärung inzwischen geändert.');if(result.outcome==='not-applied'){context.absence=result.absence;this.showTerrainRecoveryConflict(context);return;}
+      const initial=await window.campaign.workspaceInitial(owner.token);if(!this.terrainRecoveryCurrent(context))throw Error('Speicherklärung inzwischen geändert.');if(!initial.ok)throw Error(initial.error);
+      if(binding.retired||initial.value.graphPreview||this.regions.data?.workspace.graphPreview||result.ack.revision!==command.terrainStroke.expectedRevision+1||result.source.revision!==result.ack.revision){this.showTerrainRecoveryConflict(context);return;}
+      await author.recoverApplied(binding,result.source,result.ack,{commandId:write.receipt.commandId,fingerprint:write.receipt.fingerprint},()=>this.terrainRecoveryCurrent(context),()=>write.clear(),()=>{write.release();this.writing=false;});
+      if(this.owner!==owner||this.raster?.authorOwner!==author||(this.terrainSourceGeneration??0)!==context.sourceGeneration)return;
+      this.terrainRecoveryContext=null;this.hideTerrainRecoveryConflict();this.strokeQueue=author.queue;this.raster.resumeAuthorRecovery(author);this.landscape.recovered(false);if(!author.queue.pending&&!author.active)await this.regions.refresh();
+      if(this.owner===owner){get('atlas-save-status').textContent='Speicherstand geklärt. Angenommene Folgezüge gespeichert.';this.opts.status('Speicherstand geklärt. Weiterzeichnen möglich.');}
+    }catch(e){if(this.owner===owner)this.error(e);}
+    finally{if(this.owner===owner){if(!this.heightDispatch)this.writing=false;this.render();}}
+  }
+  private hideTerrainRecoveryConflict(){document.getElementById('atlas-terrain-recovery-conflict')?.remove();}
+  private showTerrainRecoveryConflict(context:TerrainRecoveryContext){
+    const unwritten=context.absence?context.binding.queue.entries:context.author.queue.unwritten(context.binding.queue).filter(e=>e!==context.binding.queue.head);if(context.absence?!context.author.queue.absenceCurrent(context.binding.queue,context.absence):unwritten.length!==context.binding.queue.entries.length-1)throw Error('Ein weiterer Auftrag benötigt zuerst seine eigene Speicherklärung.');
+    get('atlas-save-status').textContent=context.absence?'Keiner dieser Züge wurde gespeichert. '+unwritten.length+' ungespeicherte Züge bleiben erhalten.':'Der ursprüngliche Zug ist gespeichert. Die Karte wurde inzwischen geändert; '+unwritten.length+' ungespeicherte Folgezüge bleiben erhalten.';
+    this.hideTerrainRecoveryConflict();const button=document.createElement('button');button.id='atlas-terrain-recovery-conflict';button.textContent=unwritten.length+' ungespeicherte Folgezüge verwerfen und aktuelle Karte laden';button.onclick=()=>{if(!this.terrainDiscardTask){const task=this.discardTerrainRecovery(context,unwritten);this.terrainDiscardTask=task;void task.finally(()=>{if(this.terrainDiscardTask===task)this.terrainDiscardTask=null;}).catch(()=>{});}};get('atlas-save-status').after(button);
+  }
+  private async discardTerrainRecovery(context:TerrainRecoveryContext,unwritten:readonly import('./terrain-stroke-queue').TerrainQueueCapture[]){
+    const dialog=document.createElement('dialog');dialog.innerHTML='<p>'+(context.absence?'Keiner dieser Züge wurde gespeichert. ':'Der bereits gespeicherte Zug bleibt erhalten. ')+unwritten.length+' ungespeicherte Folgezüge'+(context.binding.active?' und die offene Geste':'')+' verwerfen?</p><button data-cancel>Abbrechen</button><button data-discard>Folgezüge verwerfen und aktuelle Karte laden</button>';
+    const accepted=await new Promise<boolean>(resolve=>{const done=(value:boolean)=>{if(this.terrainDiscardDialog===dialog)this.terrainDiscardDialog=null;dialog.remove();resolve(value);};dialog.querySelector('[data-cancel]')!.addEventListener('click',()=>done(false),{once:true});dialog.querySelector('[data-discard]')!.addEventListener('click',()=>done(true),{once:true});dialog.addEventListener('cancel',event=>{event.preventDefault();done(false);},{once:true});this.terrainDiscardDialog=dialog;document.body.append(dialog);dialog.showModal();});
+    if(!accepted)return;
+    try{if(!this.terrainRecoveryCurrent(context))throw Error('Die gehaltenen Züge haben sich geändert. Speicherstand erneut klären.');if(context.absence){await context.write.absent();if(!this.terrainRecoveryCurrent(context))throw Error('Speicherklärung inzwischen geändert.');}await context.write.clear();if(!this.terrainRecoveryCurrent(context))throw Error('Speicherklärung inzwischen geändert.');const absence=context.absence?await context.write.absent():undefined;if(!this.terrainRecoveryCurrent(context))throw Error('Speicherklärung inzwischen geändert.');context.author.discardRecovery(context.binding,unwritten,absence);context.write.release();this.terrainRecoveryContext=null;this.hideTerrainRecoveryConflict();this.strokeQueue=null;this.raster?.invalidateTerrainSource();await this.raster?.releaseAuthorRecovery(context.author);if(this.owner!==context.owner)return;this.landscape.recovered(false);const reload={owner:context.owner,discarded:unwritten.length,absent:!!context.absence};this.terrainRecoveryReload=reload;get('atlas-save-status').textContent=unwritten.length+' ungespeicherte Züge verworfen.'+(context.absence?' Keiner dieser Züge wurde gespeichert.':' Ursprünglicher Zug bleibt gespeichert.');await this.projectTerrainRecovery(reload);}catch(e){if(this.owner===context.owner)this.error(e);}
+  }
+  private async projectTerrainRecovery(reload:{owner:WorkspaceGeometry;discarded:number;absent?:boolean}){
+    const current=()=>this.owner===reload.owner&&this.terrainRecoveryReload===reload;this.writing=true;
+    try{const initial=await window.campaign.workspaceInitial(reload.owner.token);if(!current())return;if(!initial.ok)throw Error(initial.error);await this.opts.updated(initial.value,{preserveDraft:true});if(!current())return;const loaded=await this.regions.refresh();if(!current())return;if(!loaded)throw Error('Aktuelle Kartenansicht erneut laden.');this.terrainRecoveryReload=null;get('atlas-save-status').textContent=reload.discarded+' ungespeicherte '+(reload.absent?'Züge verworfen. Keiner dieser Züge wurde gespeichert; aktuelle Karte geladen.':'Folgezüge verworfen. Gespeicherter Zug bleibt erhalten; aktuelle Karte geladen.');}catch(e){if(current())this.error(Error(reload.discarded+' Züge wurden ausdrücklich verworfen. '+(reload.absent?'Keiner dieser Züge wurde gespeichert. ':'Gespeicherter Zug bleibt erhalten. ')+(e instanceof Error?e.message:String(e))));}finally{if(this.owner===reload.owner){if(!this.heightDispatch)this.writing=false;this.render();}}
+  }
+  private async recoverWriteOther() {
     if(!this.owner||this.writing||this.journey.busy)return;
     const owner=this.owner;this.writing=true;
     try {
-      if(this.journey.pendingTravel) {
-        const r=await window.campaign.executeAtlasTravelCommit(this.journey.pendingTravel);
+      if(this.journey.pendingTravel || (this.recoveryProjection===owner && this.recoveryTravel)) {
+        if(this.journey.pendingTravel) {
+          const outcome=await this.journey.recover();
+          if(this.owner!==owner||!outcome)return;
+          if(outcome==='not-applied') {
+            get('atlas-save-status').textContent='Reiseauftrag wurde nicht gespeichert. Eingaben bleiben erhalten.';
+            return;
+          }
+        }
+        await this.journey.projectTravel(owner);
         if(this.owner!==owner)return;
-        if(!r.ok)throw Error(r.error);
-        this.journey.pendingTravel=null;await this.regions.refresh();
       } else {
         if(this.recoveryProjection!==owner) {
           const pending=pendingAtlasWrite(owner.token),commandId=pending&&'commandId' in pending?pending.commandId:null;
@@ -662,6 +719,7 @@ export class CampaignAtlasWorkbench {
         if(this.owner!==owner)return;
         if(!loaded)throw Error('Gespeichert. Kartenansicht erneut laden.');
         this.author.completeRectangleRecovery(this.recoveryCommandId,'applied');
+        if(this.raster?.heldAcceptedInput){this.opts.status('Gespeicherter Auftrag bestätigt. Weitere angenommene Züge bleiben unverändert gehalten; keine automatische Wiederholung.',true);return;}
         this.strokeQueue=null;this.raster?.setActive(false);this.landscape.recovered(false);
         this.recoveryProjection=null;this.recoveryCommandId=null;
       }
@@ -670,6 +728,7 @@ export class CampaignAtlasWorkbench {
     finally {if(this.owner===owner){this.writing=false;this.render();}}
   }
   hide() {
+    this.terrainSourceGeneration=(this.terrainSourceGeneration??0)+1;this.terrainDiscardDialog?.dispatchEvent(new Event('cancel'));
     this.terrainAnalysis?.cancel();
 
     this.spatial?.setActive(false);
@@ -685,8 +744,9 @@ export class CampaignAtlasWorkbench {
     this.regions.resetContext();
     this.hitVersion++;this.hitDialog.close();
     this.owner = w;
-    this.recoveryProjection=null;this.recoveryCommandId=null;
-    this.journey.activate();
+    this.writing=false;
+    this.terrainSourceGeneration=(this.terrainSourceGeneration??0)+1;this.terrainRecoveryContext=null;this.terrainRecoveryReload=null;this.terrainDiscardDialog?.dispatchEvent(new Event('cancel'));this.hideTerrainRecoveryConflict();this.recoveryProjection=null;this.recoveryCommandId=null;this.recoveryTravel=false;
+    const travelRestored=this.journey.activate();
     this.root.dataset.regionState='loading';this.canvas.setAttribute('aria-busy','true');
     this.author.entranceDraft = null;
     this.bindingDirty = false;
@@ -710,6 +770,7 @@ export class CampaignAtlasWorkbench {
       width: 30000,
       height: 20000,
     });
+    this.spatial?.restoreCameraPreference();
     try {
       const p = JSON.parse(
         localStorage.getItem("atlas-camera:" + w.campaign.id) ?? "null",
@@ -719,12 +780,14 @@ export class CampaignAtlasWorkbench {
         ["x", "y", "width", "height"].every((k) => Number.isFinite(p[k])) &&
         p.width > 0 &&
         p.height > 0
-      )
-        this.camera.set(p, false);
+      ){
+        this.camera.set({x:p.x,y:p.y,width:p.width,height:p.height}, false);
+        this.spatial?.restoreCameraPreference(p.pose,this.camera.view);
+      }
     } catch {
       /* local view preference */
     }
-    const restored=await restoreAtlasWrites(w.campaign.id,w.token);
+    const [restored]=await Promise.all([restoreAtlasWrites(w.campaign.id,w.token),travelRestored]);
     if(this.owner!==w)return;
     if(!restored.ok)this.error(new Error(restored.error));
     this.scheduleRender();
@@ -742,7 +805,7 @@ export class CampaignAtlasWorkbench {
     try {
       localStorage.setItem(
         "atlas-camera:" + this.owner.campaign.id,
-        JSON.stringify(this.camera.view),
+        JSON.stringify({...this.camera.view,pose:this.spatial?.cameraPreference}),
       );
     } catch {
       /* author saving remains independent */
@@ -793,6 +856,7 @@ export class CampaignAtlasWorkbench {
     this.raster?.pauseReads();
     this.writing = true;
     get("atlas-save-status").textContent = "Wird gespeichert…";
+    let heightCommand:string|undefined;
     try {
       const commandId = crypto.randomUUID(),
         a = structuredClone(action);
@@ -805,18 +869,21 @@ export class CampaignAtlasWorkbench {
       if(supplied&&!graphPreviewMatches(supplied,source?.graphPreview,true))throw new Error('Atlasauftrag gehört zu einer anderen Vorschauquelle.');
       if(a.kind==='drawing')a.command.target=destination;
       if(a.kind==='room-edit')a.edit.target=destination;
-      const command={commandId,token:w.token,campaignId:w.campaign.id,target:destination,action:a,...(this.regions.data?.region?{sourceFence:this.regions.data.region.fence}:{})};
+      const command={commandId,token:w.token,campaignId:w.campaign.id,target:destination,action:a,...(this.regions.data?.region?{sourceFence:this.regions.data.region.fence}:{}),...(terrain?{sourceFence:terrain.sourceFence,terrainStroke:{id:terrain.id,expectedRevision:terrain.expectedRevision}}:{})};
+      if(terrain){heightCommand=commandId;this.heightDispatch=Object.freeze({commandId,token:w.token,campaignId:w.campaign.id,expectedRevision:terrain.expectedRevision});}
+      const receipt=terrain?await atlasWriteReference({kind:'atlas',command}):undefined;
       const endCommit=terrainTraceStart("commit.roundtrip",terrain?.expectedRevision);
-      const ack=await writeAtlasCommit(terrain?{...command,sourceFence:terrain.sourceFence,terrainStroke:{id:terrain.id,expectedRevision:terrain.expectedRevision}}:command);
+      const ack=await writeAtlasCommit(command);
       endCommit();
       if(!current(true))return null;if(!ack.ok)throw new Error(ack.error);
+      if(terrain)terrainTraceStart('prepared.writer.receipt',ack.value.revision)();
       if(destination&&!graphPreviewMatches(destination,ack.value.preview))throw new Error('Atlasantwort gehört zu einer anderen Vorschau.');
       get('atlas-save-status').textContent='Gespeichert';get('atlas-save-status').dataset.error='false';this.opts.status('Gespeichert');
       this.journey.invalidatePreview();
       if(destination&&this.regions.data)this.regions.data.workspace={...this.regions.data.workspace,graphPreview:ack.value.preview};
       this.regions.acceptCommit(ack.value, !!terrain);
       if(terrain){
-        return{atlas:this.regions.data!,result:ack.value.result??null,ack:ack.value};
+        return{atlas:this.regions.data!,result:ack.value.result??null,ack:ack.value,...(receipt?{receipt:{commandId:receipt.commandId,fingerprint:receipt.fingerprint}}:{})};
       }
       try{
         if(applyWorkspace){const initial=await window.campaign.workspaceInitial(w.token);if(!current())return null;if(!initial.ok)throw new Error(initial.error);if(!graphPreviewMatches(target,initial.value.graphPreview))return null;await this.opts.updated(initial.value);if(!current())return null;}
@@ -824,12 +891,13 @@ export class CampaignAtlasWorkbench {
         const loaded=await this.regions.refresh().finally(endRefresh);if(!loaded&&this.owner===w){get('atlas-save-status').textContent='Gespeichert. Kartenansicht erneut laden.';this.opts.status('Gespeichert. Kartenansicht erneut laden.',true);}
         if(a.kind==='city'&&(this.author.selection?.kind==='building'||this.author.selection?.kind==='city-unit'))await openCityReference(a.command.cityId,this.author.selection.id,true,true);
       }catch(error){if(this.owner===w)this.opts.status('Gespeichert. Kartenansicht erneut laden: '+(error as Error).message,true);}
-      return{atlas:this.regions.data!,result:ack.value.result??null,ack:ack.value};
+      return{atlas:this.regions.data!,result:ack.value.result??null,ack:ack.value,...(receipt?{receipt:{commandId:receipt.commandId,fingerprint:receipt.fingerprint}}:{})};
     } catch (e) {
       if (this.owner === w) this.error(e);
       if (propagateError) throw e;
       return null;
     } finally {
+      if(this.heightDispatch?.commandId===heightCommand)this.heightDispatch=null;
       if (this.owner === w) {
         this.writing = false;
         // A local stroke already owns its pixels; queue drain refreshes the
@@ -845,6 +913,7 @@ export class CampaignAtlasWorkbench {
     if(this.raster&&this.strokeQueue){try{await this.strokeQueue.finish();if(!await this.regions.refresh())return;this.strokeQueue=null;}catch(e){this.error(e);return;}}
     if(this.landscape.routeHistory(kind))return;
     if (!current() || !(await this.opts.flush()) || !current()) return;
+    this.raster?.invalidateTerrainSource();
     const result = await this.write({ kind }, true);
     if (result && this.cityId) await openCityReference(this.cityId,this.author.selection?.kind==='building'||this.author.selection?.kind==='city-unit'?this.author.selection.id:undefined,true,true);
   }
@@ -1211,7 +1280,7 @@ export class CampaignAtlasWorkbench {
     this.panelKey=key;
     get("atlas-recover").hidden =
       !this.journey.pendingTravel && !this.recoveryProjection &&
-      (!this.owner || !pendingAtlasWrite(this.owner.token));
+      (!this.owner || !pendingAtlasWrite(this.owner.token))&&!this.raster?.heldAcceptedInput&&!this.terrainRecoveryReload;
     const selectedBinding = this.selectedBinding();
     get("atlas-placement").hidden = !selectedBinding&&!this.selectedGroupBinding();
     get("atlas-binding-pose").hidden=!selectedBinding;

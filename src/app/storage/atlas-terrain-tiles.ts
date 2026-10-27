@@ -1,5 +1,5 @@
 import {createHash} from 'node:crypto';
-import {atlasTerrainTileQuery,type AtlasTerrainTileRequest,type AtlasTerrainTile} from '../atlas-terrain-tile';
+import {atlasTerrainTileQuery,validateAtlasTerrainTileProjection,type AtlasTerrainTileRequest,type AtlasTerrainTile} from '../atlas-terrain-tile';
 import type {AtlasRegionSource} from '../atlas-region-contracts';
 import type {TerrainProjection} from '../terrain-projection';
 import {landscapeRasterBounds} from '../landscape-raster';
@@ -7,7 +7,7 @@ import {AtlasCacheScope} from './atlas-cache-scope';
 import type {AtlasRegionReader} from './atlas-region';
 
 // Change for any lattice, material, source-selection or serialization semantic change.
-const FORMAT='terrain-tiles-v1';
+const FORMAT='terrain-tiles-v2-uniform';
 const tileKey=(request:AtlasTerrainTileRequest)=>JSON.stringify([request.tile.lod,request.tile.x,request.tile.y,request.contours??0,...(request.product?['height']:[])]);
 interface StoredTile {version:string;fingerprint:string;projection:TerrainProjection}
 
@@ -35,12 +35,7 @@ export class AtlasTerrainTiles {
   }
   private valid(value:StoredTile|undefined,request:AtlasTerrainTileRequest):value is StoredTile {
     if(!value||typeof value.version!=='string'||typeof value.fingerprint!=='string')return false;
-    const p=value.projection,q=atlasTerrainTileQuery(request);
-    return !!p&&!p.draft&&(request.product==='height'
-      ?p.heightOnly===true&&p.width===0&&p.height===0&&p.pixels instanceof Uint8Array&&p.pixels.length===0
-      :!p.heightOnly&&p.width===q.width&&p.height===q.height&&p.pixels instanceof Uint8Array&&p.pixels.length===q.width*q.height*4&&p.forest instanceof Uint8Array&&p.forest.length===q.width*q.height)&&
-      p.grid?.heights instanceof Float32Array&&p.grid.heights.length===q.view.columns*q.view.rows&&
-      JSON.stringify(p.grid.view.box)===JSON.stringify(q.view.box)&&p.grid.view.columns===q.view.columns&&p.grid.view.rows===q.view.rows;
+    try{validateAtlasTerrainTileProjection(value.projection,request);return true;}catch{return false;}
   }
   /** Exact durable-stamp lookup for callers that already validated the pinned
    * source. It deliberately skips the local content fingerprint scan. */
@@ -70,6 +65,7 @@ export class AtlasTerrainTiles {
     const projection=yield* (request.product==='height'?reader.heightSteps(source,query):reader.terrainSteps(source,query));
     // Only complete projections are published. Every resumed worker step pins
     // and revalidates the source snapshot before reaching this point.
+    validateAtlasTerrainTileProjection(projection,request,source.fence);
     if(cache)cache.put(key,FORMAT,{version:source.shapeVersion!,fingerprint:fingerprint!,projection});
     return {tile:{...request.tile},revision:source.revision,fence:source.fence,cache:cache?'built':'disabled',projection};
   }

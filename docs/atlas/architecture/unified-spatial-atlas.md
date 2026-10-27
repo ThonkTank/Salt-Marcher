@@ -21,8 +21,15 @@ in die Git-Historie, nicht in den aktuellen Arbeitsplan.
 
 ## Aktueller Arbeitsstand
 
-Die [Performance-Roadmap A0–A7](performance-roadmap.md) legt den nächsten
-Architekturvergleich, die Reihenfolge der Umsetzung und die Messziele fest.
+Für die nächste Lieferung gilt der am 25.10.2026 eingegrenzte
+[Terrain-/Wasserfokus](../requirements/terrain-relief.md#aktueller-lieferfokus-terrain-und-wasser).
+Andere Atlasfunktionen sind vorerst zurückgestellt. Umfang und Istbefund sind
+geklärt; der [Terrain-/Wasserplan](terrain-water/plan.md) führt die konkrete
+Reihenfolge und den Stand seiner unabhängigen Planprüfung. Produktabnahme bleibt offen.
+
+Die [Performance-Roadmap A0–A7](performance-roadmap.md) beschreibt den breiteren
+Gesamtplan für Architekturvergleich, Umsetzung und Messziele. Für den nächsten
+Lieferumfang und dessen Reihenfolge ist der Terrain-/Wasserplan maßgeblich.
 Alle Meilensteine sind offen; die Roadmap ist keine Umsetzungs- oder Abnahmebehauptung.
 
 Der gemeinsame metrische deck.gl-Pfad zeichnet Weltgeometrie, Gebäude, Räume

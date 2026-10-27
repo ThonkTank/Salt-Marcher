@@ -133,6 +133,7 @@ export class LandscapeWorkbench {
   private lineDragChanged = false;
   private releaseClick = false;
   private saving = false;
+  private seaLevelM=0;
   private measurement: Point[] = [];
   private calibration: {
     record: LandscapeRecord;
@@ -145,9 +146,17 @@ export class LandscapeWorkbench {
   ) {
     this.panel.id = "atlas-landscape-tools";
     this.panel.hidden = true;
-    this.panel.innerHTML = `<label>Werkzeug<select id="land-tool"><option value="select">Auswählen / Verlauf korrigieren</option><option value="height">Land formen</option><option value="smooth">Glätten</option><option value="color">Farbe auftragen / radieren</option><option value="property">Eigenschaften bearbeiten</option><option value="freshwater">Süßwasser bearbeiten</option><option value="hex">Hexfläche füllen</option><option value="reset">Eigenschaft zur Vorgabe zurücksetzen</option><option value="river">Fluss zeichnen</option><option value="road">Weg zeichnen</option><option value="place">Ort platzieren</option><option value="measure">Strecke messen</option></select></label><label>Eigenschaft<select id="land-field"><option value="terrain">Gelände</option><option value="elevationM">Höhe</option><option value="climate">Klima</option></select></label><label id="land-value-field">Wert<input id="land-value" placeholder="Höhe" value="0"></label><label>Pinselradius in m<input id="land-radius" type="number" min="1" value="500"></label><label>Verlaufstil<select id="land-line-style"><option value="path">Pfad / Bach</option><option value="road">Straße / Fluss</option></select></label><label>Verlaufbreite in m<input id="land-width" type="number" min="0.1" step="any" value="30"></label><p id="land-status" role="status">3 Meilen von Kante zu Kante. Orts-/Verlaufpunkte anklicken, dann abschließen.</p><div class="toolbar"><button id="land-finish">Zug abschließen</button><button id="land-cancel">Verwerfen</button><button id="land-reload" hidden>Ansicht erneut laden</button></div><label><input id="land-auto-level" type="checkbox" checked> Hexstufe automatisch anzeigen</label><label><input id="land-grid" type="checkbox" checked> Hexraster anzeigen</label><label>Objekt auswählen<select id="land-object"><option value="">Auf der Karte auswählen</option></select></label><div id="land-selection"></div><details><summary>Nachzeichenvorlage</summary><button id="land-reference">Bild laden und kalibrieren</button><label>Abstand der Bildpunkte in m<input id="land-calibration-distance" type="number" min="0.1" value="10000"></label><p>Nach dem Laden zwei Punkte im Bild anklicken. Anschließend Lage und Drehung bearbeiten.</p></details>`;
-    const sea=document.createElement('details');sea.id='land-sea-options';sea.hidden=true;sea.innerHTML='<summary>Meeresspiegel</summary><label>Höhe in m<input id="land-sea-level" type="number" value="0" step="any"></label><button id="land-sea-apply" type="button">Meeresspiegel übernehmen</button>';this.panel.append(sea);
-    sea.querySelector<HTMLButtonElement>('#land-sea-apply')!.onclick=()=>{if(this.hasDraft()){this.say('Zuerst abschließen oder verwerfen.');return;}void this.commit({kind:'landscape-sea-level',seaLevelM:Number(html<HTMLInputElement>('land-sea-level').value)});};
+    this.panel.innerHTML = `<label>Werkzeug<select id="land-tool"><option value="select">Auswählen / Verlauf korrigieren</option><option value="height">Land formen</option><option value="smooth">Glätten</option><option value="color">Farbe auftragen / radieren</option><option value="property">Eigenschaften bearbeiten</option><option value="freshwater">Süßwasser bearbeiten</option><option value="hex">Hexfläche füllen</option><option value="reset">Eigenschaft zur Vorgabe zurücksetzen</option><option value="river">Fluss zeichnen</option><option value="road">Weg zeichnen</option><option value="place">Ort platzieren</option><option value="measure">Strecke messen</option></select></label><label>Eigenschaft<select id="land-field"><option value="terrain">Gelände</option><option value="elevationM">Höhe</option><option value="climate">Klima</option></select></label><label id="land-value-field">Wert<input id="land-value" placeholder="Höhe" value="0"></label><label>Pinselradius in m<input id="land-radius" type="number" min="1" value="500"></label><label>Verlaufstil<select id="land-line-style"><option value="path">Pfad / Bach</option><option value="road">Straße / Fluss</option></select></label><label>Verlaufbreite in m<input id="land-width" type="number" min="0.1" step="any" value="30"></label><p id="land-status" role="status">3 Meilen von Kante zu Kante. Orts-/Verlaufpunkte anklicken, dann abschließen.</p><div class="toolbar"><button id="land-finish" hidden>Zug abschließen</button><button id="land-cancel" hidden>Verwerfen</button><button id="land-reload" hidden>Ansicht erneut laden</button></div><label><input id="land-auto-level" type="checkbox" checked> Hexstufe automatisch anzeigen</label><label><input id="land-grid" type="checkbox" checked> Hexraster anzeigen</label><label>Objekt auswählen<select id="land-object"><option value="">Auf der Karte auswählen</option></select></label><div id="land-selection"></div><details><summary>Nachzeichenvorlage</summary><button id="land-reference">Bild laden und kalibrieren</button><label>Abstand der Bildpunkte in m<input id="land-calibration-distance" type="number" min="0.1" value="10000"></label><p>Nach dem Laden zwei Punkte im Bild anklicken. Anschließend Lage und Drehung bearbeiten.</p></details>`;
+    const sea=document.createElement('details');sea.id='land-sea-options';sea.hidden=true;sea.open=true;sea.innerHTML='<summary>Meeresspiegel</summary><label>Höhe in m<input id="land-sea-level" type="number" value="0" step="any"></label><button id="land-sea-apply" type="button">Meeresspiegel übernehmen</button>';this.panel.append(sea);
+    const applySea=()=>{
+      const field=html<HTMLInputElement>('land-sea-level'),value=Number(field.value);
+      if(!field.value.trim()||!Number.isFinite(value)){this.say('Meeresspiegel benötigt eine endliche Höhe.');return;}
+      if(this.hasDraft()){this.say('Meeresspiegel nach dem Pinselzug ändern.');return;}
+      if(value===this.seaLevelM)return;
+      void this.commit({kind:'landscape-sea-level',seaLevelM:value});
+    };
+    sea.querySelector<HTMLInputElement>('#land-sea-level')!.onchange=applySea;
+    sea.querySelector<HTMLButtonElement>('#land-sea-apply')!.onclick=applySea;
     const relief=document.createElement('div');relief.innerHTML='<label>Höhenlinien<select id="land-contours"><option value="-1">Automatisch</option><option value="0">Aus</option><option value="10">Alle 10 m</option><option value="50">Alle 50 m</option><option value="100">Alle 100 m</option><option value="500">Alle 500 m</option></select></label><output id="land-cursor-height" aria-live="off">Höhe: –</output>';this.panel.append(relief);
     this.installReliefStyle();
     relief.querySelector('select')!.onchange=()=>{if(this.hasDraft()){this.say('Höhenlinien nach dem Pinselzug ändern.');html<HTMLSelectElement>('land-contours').value=String(this.contourInterval);return;}this.contourInterval=Number(html<HTMLSelectElement>('land-contours').value);this.panel.dispatchEvent(new Event('terrain-display-change',{bubbles:true}));};
@@ -287,11 +296,15 @@ export class LandscapeWorkbench {
       (e) => {
         if(this.active&&this.pointer===null){this.lastPoint=this.point(e);this.hovering=true;this.cursorHeight();if(['height','smooth','color','property','freshwater','reset','vegetation','vegetation-erase','vegetation-thin','vegetation-dense'].includes(this.tool)||this.points.length)this.redrawPointer();}
         if (this.pointer !== e.pointerId) return;
+        // Releasing LMB while another button remains down is a pointermove,
+        // not pointerup. End the brush at the actual paint-button boundary.
+        if(e.buttons!==undefined&&!(e.buttons&1)){finishPointer(e);return;}
         e.stopImmediatePropagation();
         e.preventDefault();
-        const p = this.point(e);
+        const point=this.brush.maskStroke?this.pointerProjector():((sample:MouseEvent)=>this.point(sample));
+        const p = point(e);
         this.lastPoint = p;
-        if(this.brush.maskStroke){const events=e.getCoalescedEvents?.()??[];for(const sample of events.length?events:[e])if(this.brush.maskStroke.samples.length<20000)this.brush.maskStroke.samples.push({...this.point(sample),t:Math.min(300000,Math.max(this.brush.maskStroke.samples.at(-1)!.t,sample.timeStamp-this.brush.maskStart))});}
+        if(this.brush.maskStroke){const events=e.getCoalescedEvents?.()??[];for(const sample of events.length?events:[e])if(this.brush.maskStroke.samples.length<20000)this.brush.maskStroke.samples.push({...point(sample),t:Math.min(300000,Math.max(this.brush.maskStroke.samples.at(-1)!.t,sample.timeStamp-this.brush.maskStart))});}
         if (this.dragging && this.details.selected) {
           if (this.details.selected.kind === "reference" && this.details.vertex === -1) {
             const o = this.details.selected.points[0]!,
@@ -327,7 +340,7 @@ export class LandscapeWorkbench {
         } else {
           const events=this.tool==='color'?(e.getCoalescedEvents?.()??[]):[];
           for(const sample of events.length?events:[e]){
-          const p=this.point(sample);
+          const p=point(sample);
           const previous = this.points.at(-1), size = gridMeters(html<HTMLSelectElement>("atlas-hex-level").value);
           const a = previous && atlasHexAt(previous, size), b = atlasHexAt(p, size);
           const changed = !previous || (this.tool === "hex"
@@ -343,17 +356,16 @@ export class LandscapeWorkbench {
       },
       true,
     );
-    canvas.addEventListener(
-      "pointerup",
-      (e) => {
+    const finishPointer=(e:PointerEvent)=>{
         if (this.pointer !== e.pointerId) return;
         e.stopImmediatePropagation();
         e.preventDefault();
-        if(this.brush.maskStroke)this.brush.maskStroke.samples.push({...this.point(e),t:Math.min(300000,Math.max(this.brush.maskStroke.samples.at(-1)!.t,e.timeStamp-this.brush.maskStart))});
+        const point=this.brush.maskStroke?this.pointerProjector():((sample:MouseEvent)=>this.point(sample));
+        if(this.brush.maskStroke)this.brush.maskStroke.samples.push({...point(e),t:Math.min(300000,Math.max(this.brush.maskStroke.samples.at(-1)!.t,e.timeStamp-this.brush.maskStart))});
         clearTimeout(this.brush.maskTimer);
         const commitLine = this.dragging && this.lineDragChanged &&
           (this.details.selected?.kind === "road" || this.details.selected?.kind === "river");
-        if(!this.dragging&&['height','smooth','color','property','freshwater','hex','reset','vegetation','vegetation-erase','vegetation-thin','vegetation-dense'].includes(this.tool)&&this.brushPointCount()<1000){const p=this.point(e),last=this.points.at(-1);if(last&&(last.x!==p.x||last.y!==p.y))this.points.push(p);}
+        if(!this.dragging&&['height','smooth','color','property','freshwater','hex','reset','vegetation','vegetation-erase','vegetation-thin','vegetation-dense'].includes(this.tool)&&this.brushPointCount()<1000){const p=point(e),last=this.points.at(-1);if(last&&(last.x!==p.x||last.y!==p.y))this.points.push(p);}
         this.pointer = null;
         this.dragging = false;
         this.lineDragChanged = false;
@@ -366,9 +378,8 @@ export class LandscapeWorkbench {
         if (canvas.hasPointerCapture(e.pointerId))
           canvas.releasePointerCapture(e.pointerId);
         this.host.redraw();
-      },
-      true,
-    );
+    };
+    canvas.addEventListener("pointerup",finishPointer,true);
     canvas.addEventListener("pointercancel", () => {
       if(this.brush.live){this.brush.endLiveInput();void this.brush.finishLive();return;}
       if(this.brush.maskStroke)this.brush.maskStroke.samples.push({...this.lastPoint,t:Math.min(300000,performance.now()-this.brush.maskStart)});
@@ -523,6 +534,13 @@ export class LandscapeWorkbench {
     },100);
   }
   private hit(e:MouseEvent,keys:string[]){return this.host.hit(e,keys);}
+  /** One synchronous handler only. Another pixel replaces the slot because
+   * Raster.point updates the fallback used by subsequent misses. */
+  private pointerProjector(){
+    let last:{x:number;y:number;point:Point}|null=null;
+    return(e:MouseEvent)=>{if(last&&last.x===e.clientX&&last.y===e.clientY)return last.point;
+      const point=this.point(e);last={x:e.clientX,y:e.clientY,point};return point;};
+  }
   private point(e: MouseEvent) {
     return this.host.point(e);
   }
@@ -668,7 +686,7 @@ export class LandscapeWorkbench {
       }
       this.key=frameKey;
       this.request++;const generation=this.request;
-      this.records=layer.records;this.raster=layer.tiles;if(document.activeElement!==html('land-sea-level'))html<HTMLInputElement>('land-sea-level').value=String(layer.seaLevelM??0);html('land-reload').hidden=layer.state==='ready';
+      this.records=layer.records;this.raster=layer.tiles;this.seaLevelM=layer.seaLevelM??0;if(document.activeElement!==html('land-sea-level'))html<HTMLInputElement>('land-sea-level').value=String(layer.seaLevelM??0);html('land-reload').hidden=layer.state==='ready';
       if(layer.state==='error'||!this.brush.liveFailureMessage)this.say(layer.state==='error'?layer.error??'Landschaft nicht verfügbar.':layer.coverage.mode==='raster'?'Dichte Landschaft als Übersicht. Anklicken liest das genaue Objekt.'+(layer.coverage.references>layer.records.filter(r=>r.kind==='reference').length?' Vorlagen sind als Umrisse dargestellt.':''):'Landschaft geladen.');
       this.objectOptions();this.host.redraw();
       const visibleAssets=new Set(this.records.filter(r=>r.kind==='reference'&&r.visible!==false).map(r=>r.assetId));

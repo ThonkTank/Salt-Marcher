@@ -1,3 +1,5 @@
+import {readTerrainAuthorCheckpoint} from '../src/app/storage/terrain-author-window';
+import {terrainAuthorWindow} from '../src/app/terrain-author-checkpoint';
 import {isProjectionJob,isCachedTileJob,type AtlasWorkerJob} from './atlas-worker-contract';
 import type {AtlasRegionSource} from '../src/app/atlas-region-contracts';
 import {AtlasGeometryTiles} from '../src/app/storage/atlas-geometry-tiles';
@@ -30,6 +32,14 @@ parentPort!.on('message', async (job: AtlasWorkerJob) => {
   const geometry=job.kind==='geometry-tile'?'core':['region','focus','candidates','hit','geometry-tile'].includes(job.kind);
   let syncStarted=false,readStarted=false,endRead:(()=>void)|undefined;
   try {
+    if(job.kind==='author-checkpoint'){
+      terrainAuthorWindow(job.query);
+      // This numerical read needs neither geometry nor full author records.
+      // Service deliberately retains the general reader cursor for its next sync.
+      db.exec('BEGIN');assertTerrainRevision(job.source);assertAtlasProjectionSource(db,job.source);
+      const value=readTerrainAuthorCheckpoint(db,job.source,job.query);db.exec('COMMIT');
+      parentPort!.postMessage({value});return;
+    }
     // An exact retained product needs no global projection. Validate it against
     // a pinned canonical snapshot before decoding the cache. Once a reader has
     // observed changes, keep the ordinary synchronization path: skipping later

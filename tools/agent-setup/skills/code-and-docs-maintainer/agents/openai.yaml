@@ -1,4 +1,0 @@
-interface:
-  display_name: "Code- und Doku-Pflege"
-  short_description: "Code verständlicher machen und Dokumentation gezielt pflegen"
-  default_prompt: "Nutze $code-and-docs-maintainer, um den aktiven Pflegeauftrag im festen Wechsel der sechs Arbeitsarten vollständig abzuschließen."

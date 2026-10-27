@@ -11,6 +11,7 @@ let page;const errors=[],openTimes=[];
 try{
  const fixture=await createAtlasCanonicalFixture({profilePath:native.profile,campaignName:'Raster Workbench'});
  const revision=()=>{const db=new Database(native.profile+'/workbench.sqlite',{readonly:true});try{return db.prepare('SELECT revision FROM campaign_atlas WHERE campaign_id=?').get(fixture.campaignId).revision;}finally{db.close();}};
+ const terrainReady=async()=>{const expected=revision();await page.waitForFunction(expected=>{const map=document.querySelector('#campaign-map');return map?.dataset.terrainReady==='ready'&&map.dataset.terrainQuality==='detail'&&map.dataset.terrainDraft===undefined&&Number(map.dataset.terrainRevision)===expected;},expected,{timeout:60000});};
  const open=async()=>{
   page=await native.launch();page.on('console',m=>{if(m.type()==='error'){errors.push(m.text());console.log(m.text());}});
   await native.app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].setContentSize(1280,900));
@@ -57,6 +58,9 @@ try{
  const undone=revision();assert(undone>after);
  await page.locator('#atlas-redo').click();await page.waitForFunction(()=>!document.querySelector('#atlas-undo').disabled,null,{timeout:60000});
  await native.capture(page,'04-redo.png');
+ // Undo/Redo changes the canonical terrain source. Button availability alone
+ // does not prove that source is available to the authoring surface.
+ await terrainReady();
  await page.locator('[data-atlas-tool="land-color"]').click();
  await setBrushWorldRadius(page,'land-radius',8);await page.locator('#land-tip').selectOption('round');await page.locator('#land-paint-color').fill('#d644aa');
  const colorBefore=revision();
@@ -134,4 +138,4 @@ try{
  await page.waitForFunction(()=>document.querySelector('#campaign-map').dataset.terrainQuality==='detail',null,{timeout:60000});
  await native.close();await open();assert.equal(revision(),saved);await native.capture(page,'05-reopened.png');await page.waitForFunction(()=>document.querySelector('#campaign-map').dataset.terrainQuality==='detail',null,{timeout:60000});await native.close();assert.deepEqual(errors,[]);
  await native.finish({before,after,undone,saved,measurements,openTimes,navigation,idle,displays,loss,failures,scope:'Native Workbench raster opt-in: two height and two pigment gestures, immediate follow-up input, Undo/Redo, fresh reopen.'});console.log(output);
-}catch(error){if(page)console.log(await page.evaluate(()=>({status:document.querySelector('#land-status')?.textContent,save:document.querySelector('#atlas-save-status')?.textContent,canvas:document.querySelector('#campaign-map')?.dataset,error:document.querySelector('#status')?.textContent})).catch(()=>null));await native.fail(error);throw error;}finally{await native.dispose();}
+}catch(error){if(page)console.log(await page.evaluate(()=>({status:document.querySelector('#land-status')?.textContent,save:document.querySelector('#atlas-save-status')?.textContent,canvas:document.querySelector('#campaign-map')?.dataset,error:document.querySelector('#status')?.textContent,reactions:window.__reactions,pointerSources:window.__pointerSources,trace:window.__saltTerrainTrace})).catch(()=>null));await native.fail(error);throw error;}finally{await native.dispose();}

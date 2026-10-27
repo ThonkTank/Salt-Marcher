@@ -1,6 +1,7 @@
 import {dispatchRecoverableAtlasWrite,atlasWriteReference,newGraphPreviewTarget} from './atlas-write-recovery';
 import {sameAtlasWriteReference} from './atlas-write-receipt';
 import type {AtlasWriteReference,AtlasWriteStatus,AtlasWriteInput} from './atlas-write-receipt';
+import type {TerrainQueueAbsence} from './terrain-stroke-queue';
 import {EditorSession} from './editor-session';
 import type {GraphPreviewState,GraphPreviewTarget} from './graph-contracts';
 
@@ -117,6 +118,25 @@ export async function writeAtlasCommit(c:AtlasCommand):Promise<Result<import('./
     document.dispatchEvent(new CustomEvent('atlas-invalidated',{detail:value}));
   });
 }
+/** Local in-memory binding for a held terrain journal. No command is replayed;
+ * clearing the durable witness and releasing the writer slot are separate so
+ * A can install its complete checkpoint before the existing suffix writes. */
+export function captureTerrainWriteRecovery(token:string){
+ const owner=pending.get(token),command=owner?.command,reference=owner?.reference;
+ if(!owner||owner.loading||owner.running||!command||!reference||command.action.kind!=='landscape-height-stroke'||!command.terrainStroke||command.target)return null;
+ const captured=structuredClone(command),receipt=structuredClone(reference);
+ const current=()=>owns(token,owner)&&!owner.running&&owner.command===command&&owner.reference===reference;
+ let latestProof:TerrainQueueAbsence|null=null;
+ const readReceipt=async()=>{latestProof=null;if(!current())throw Error('Speicherklärung inzwischen geändert.');const result=await window.campaign.reconcileAtlasCommit(captured);if(!current())throw Error('Speicherklärung inzwischen geändert.');if(!result.ok)throw Error(result.error);if(result.value.outcome==='unknown')throw Error('Ausgang des Auftrags weiter ungeklärt.');return result.value;};
+ const proof=()=>{const witness:TerrainQueueAbsence=Object.freeze({outcome:'not-applied',command:captured,receipt,current:()=>latestProof===witness&&current()});latestProof=witness;return witness;};
+ return Object.freeze({command:captured,receipt,current,
+  async read(){const result=await readReceipt();if(result.outcome==='not-applied')return{outcome:'not-applied' as const,absence:proof()};const source=await window.campaign.atlasTerrainSource(token);if(!current())throw Error('Speicherklärung inzwischen geändert.');if(!source.ok)throw Error(source.error);return{outcome:'applied' as const,ack:{...result.ack,sourceFence:source.value.fence},source:{token,...source.value}};},
+  async absent(){const result=await readReceipt();if(result.outcome!=='not-applied')throw Error('Ausgang des ursprünglichen Auftrags hat sich geändert. Speicherstand erneut klären.');return proof();},
+  async clear(){if(!current())throw Error('Speicherklärung inzwischen geändert.');const result=await window.campaign.clearAtlasWriteReference(receipt,token);if(!current())throw Error('Speicherklärung inzwischen geändert.');if(!result.ok)throw Error(result.error);},
+  release(){if(!current())throw Error('Speicherklärung inzwischen geändert.');pending.delete(token);changed();}
+ });
+}
+
 /** Read the original receipt using current activation authority; never replay. */
 export async function recoverAtlasCommit(token:string):Promise<Result<AtlasWriteStatus>|null> {
   let p=pending.get(token);if(!p)return null;

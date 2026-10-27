@@ -20,7 +20,7 @@ export interface LandscapeHost {
     redraw: () => void;
     redrawOverlay?: () => void;
     write: (a: AtlasAction) => Promise<unknown>;
-    localTerrain?: () => {cancel:()=>void;enqueue:(action:TerrainLiveAction,id:string)=>Promise<void>;previewColor:(record:LandscapeRecord)=>void}|null;
+    localTerrain?: () => {beginHeight?:(id:string,stroke:HeightStroke)=>void;cancel:()=>void;enqueue:(action:TerrainLiveAction,id:string)=>Promise<void>;previewColor:(record:LandscapeRecord)=>void}|null;
     previewHeight?: (stroke: HeightStroke) => void;
     terrainGesture: (active: boolean) => void | Promise<void>;
     writeTerrain: (a: TerrainLiveAction, c: TerrainLiveContext) => Promise<import("./campaign-atlas-contracts").AtlasCommitAck>;

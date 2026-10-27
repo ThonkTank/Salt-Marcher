@@ -213,3 +213,156 @@ export function intersectAtlasMetricMeshSegment(query:{object:AtlasMetricMeshObj
   if(!hit)return null;
   return hit.point.every(Number.isFinite)?{point:hit.point,segmentFraction:hit.distance}:null;
 }
+
+import type {AtlasTerrainTileModel} from './atlas-terrain-tile-model';
+import type {AtlasTerrainFieldGeometry} from './atlas-terrain-field-presentation';
+import {atlasTerrainFieldSample} from './atlas-terrain-tile-model';
+import {terrainGridCoordinate,terrainGridLayout} from './terrain-grid-layout';
+import type {TerrainPreparedDraw} from './atlas-terrain-prepared-contract';
+import {terrainEvaluateVertex,TERRAIN_PREPARED_LAYOUT} from './atlas-terrain-prepared-field';
+
+export interface AtlasTerrainFieldRayHit extends AtlasMetricMeshHit {model:AtlasTerrainTileModel}
+export interface AtlasTerrainFieldRayIndex {intersect(segment:AtlasMetricSegment,alpha:number):AtlasTerrainFieldRayHit|null}
+
+export interface AtlasTerrainPreparedRayGeometry {
+  readonly basis:Float32Array;readonly draft:Float32Array|null;readonly indices:Uint32Array;
+  readonly draws:readonly TerrainPreparedDraw[];readonly rayNodes:Uint32Array;readonly rayTriangles:Uint32Array;
+}
+export interface AtlasTerrainPreparedRayHit extends AtlasMetricMeshHit {readonly sourceIndex:number;readonly sourceBank:'old'|'new'}
+type ClearanceInterval=readonly [number,number];
+type ClearanceVertex=readonly ClearanceInterval[];
+const clearanceBits=new DataView(new ArrayBuffer(8));
+function clearanceOut(value:number,up:boolean){
+  if(!Number.isFinite(value))throw Error('Terrain-Nahprüfung nicht endlich.');
+  if(value===0)return up?Number.MIN_VALUE:-Number.MIN_VALUE;
+  clearanceBits.setFloat64(0,value);let bits=clearanceBits.getBigUint64(0);
+  bits+=(value>0)===up?1n:-1n;clearanceBits.setBigUint64(0,bits);return clearanceBits.getFloat64(0);
+}
+const clearanceSub=(a:ClearanceInterval,b:ClearanceInterval):ClearanceInterval=>[clearanceOut(a[0]-b[1],false),clearanceOut(a[1]-b[0],true)];
+function clearanceLerp(a:ClearanceInterval,b:ClearanceInterval,t:ClearanceInterval):ClearanceInterval{
+  const d=clearanceSub(b,a),v=[d[0]*t[0],d[0]*t[1],d[1]*t[0],d[1]*t[1]];
+  return[clearanceOut(a[0]+clearanceOut(Math.min(...v),false),false),clearanceOut(a[1]+clearanceOut(Math.max(...v),true),true)];
+}
+/** Outward interval clipping keeps uncertain boundary vertices. It can only
+ * enlarge the height hull; a narrow/degenerate edge never creates a hole. */
+function clearanceClipMaximum(points:ClearanceVertex[],box:readonly number[]){
+  const fullMaximum=Math.max(...points.map(p=>p[2]![1]));let scratch:ClearanceVertex[]=[];
+  for(const [axis,bound,lower] of [[0,box[0]!,true],[1,box[1]!,true],[0,box[2]!,false],[1,box[3]!,false]] as const){
+    const output=scratch;output.length=0;
+    for(let i=0;i<points.length;i++){
+      const a=points[i]!,b=points[(i+1)%points.length]!,inside=(p:ClearanceVertex)=>lower?p[axis]![1]>=bound:p[axis]![0]<=bound,ai=inside(a),bi=inside(b);
+      if(ai!==bi){
+        const numerator=clearanceSub([bound,bound],a[axis]!),denominator=clearanceSub(b[axis]!,a[axis]!);let t:ClearanceInterval=[0,1];
+        if(denominator[0]>0||denominator[1]<0){const v=[numerator[0]/denominator[0],numerator[0]/denominator[1],numerator[1]/denominator[0],numerator[1]/denominator[1]];t=[Math.max(0,clearanceOut(Math.min(...v),false)),Math.min(1,clearanceOut(Math.max(...v),true))];}
+        if(t[0]<=t[1])output.push(a.map((v,k)=>k===axis?[bound,bound]:clearanceLerp(v,b[k]!,t)));
+      }
+      if(bi)output.push(b);
+      // Ordinary convex triangle/rectangle clipping has at most seven points.
+      // If interval ambiguity enlarges that topology, use the original face's
+      // height hull instead of growing scratch state or dropping a boundary.
+      if(output.length>7)return fullMaximum;
+    }
+    scratch=points;points=output;if(!points.length)break;
+  }
+  return points.length?Math.max(...points.map(p=>p[2]![1])):null;
+}
+/** C's XY-only BVH is used without resampling any source raster. Heights are
+ * reconstructed at the exact K2 triangle vertices with B's screen arithmetic. */
+export function createAtlasTerrainPreparedRayIndex(geometry:AtlasTerrainPreparedRayGeometry){
+  const {basis,draft,indices,draws,rayNodes,rayTriangles}=geometry;
+  if(basis.length%TERRAIN_PREPARED_LAYOUT.basisFloats||draft&&draft.length/6!==basis.length/14||
+    indices.length%3||rayNodes.length%8)throw Error('Terrain-Pickgeometrie ungültig.');
+  const bounds=new Float32Array(rayNodes.buffer,rayNodes.byteOffset,rayNodes.length),nodeCount=rayNodes.length/8;
+  const xyEntry=(node:number,start:Vec3,direction:Vec3,limit:number):number|null=>{
+    const at=node*8;let enter=0,exit=limit;
+    for(let axis=0;axis<2;axis++){
+      const low=bounds[at+axis]!,high=bounds[at+axis+2]!,delta=direction[axis]!,value=start[axis]!;
+      if(delta===0){if(value<low||value>high)return null;continue;}
+      const a=(low-value)/delta,b=(high-value)/delta;
+      enter=Math.max(enter,Math.min(a,b));exit=Math.min(exit,Math.max(a,b));
+      if(enter>exit)return null;
+    }return enter;
+  };
+  return{heightEnvelope(box:readonly [number,number,number,number],alpha:number,origin:{x:number;y:number;z:number},exaggeration:number,retireOldOnly=false){
+    if(![...box,alpha,origin.x,origin.y,origin.z,exaggeration].every(Number.isFinite)||Math.fround(alpha)!==alpha||alpha<0||alpha>1||exaggeration<=0)throw Error('Terrain-Nahprüfung ungültig.');
+    let maximum:number|null=null,visits=0,triangles=0;
+    const e=Math.fround(exaggeration);
+    for(const draw of draws){
+      if(retireOldOnly&&draw.newSlot<0)continue;
+      const offset=[Math.fround(draw.origin[0]-origin.x),Math.fround(draw.origin[1]-origin.y)],root=draw.rayRoot;
+      if(root>=nodeCount)throw Error('Terrain-Nahindex außerhalb.');
+      // The BVH stores basis-local XY. Account for the actual uploaded offset
+      // and the final binary32 addition before rejecting a whole node.
+      const rootAt=root*8,pad=[0,1].map(axis=>2**-24*(Math.abs(offset[axis]!)+Math.max(Math.abs(bounds[rootAt+axis]!),Math.abs(bounds[rootAt+axis+2]!)))+2**-149);
+      const local=[box[0]-offset[0]!-pad[0]!,box[1]-offset[1]!-pad[1]!,box[2]-offset[0]!+pad[0]!,box[3]-offset[1]!+pad[1]!];
+      const stack=[root],seen=new Set<number>();
+      while(stack.length){
+        const node=stack.pop()!;if(node>=nodeCount)throw Error('Terrain-Nahindex außerhalb.');if(seen.has(node))continue;seen.add(node);visits++;
+        const at=node*8;if(bounds[at]!>local[2]!||bounds[at+2]!<local[0]!||bounds[at+1]!>local[3]!||bounds[at+3]!<local[1]!)continue;
+        const count=rayNodes[at+7]!;if(!count){stack.push(rayNodes[at+4]!,rayNodes[at+5]!);continue;}
+        if(count>8||rayNodes[at+6]!+count>rayTriangles.length)throw Error('Terrain-Nahblatt ungültig.');
+        for(let i=0;i<count;i++){
+          const triangle=rayTriangles[rayNodes[at+6]!+i]!;if(triangle<draw.firstIndex/3||triangle>=(draw.firstIndex+draw.indexCount)/3)throw Error('Terrain-Nahdreieck gehört nicht zum Draw.');triangles++;
+          const points:ClearanceVertex[]=[0,1,2].map(corner=>{
+            const vertex=indices[triangle*3+corner]!,at=vertex*14,h=terrainEvaluateVertex(basis,draft,vertex,alpha,origin.z).height;
+            const relative=h-origin.z,undoError=Number.EPSILON*(Math.abs(h)+Math.abs(origin.z))+Number.MIN_VALUE;
+            const x=Math.fround(offset[0]!+basis[at]!),y=Math.fround(offset[1]!+basis[at+1]!);
+            const lo=Math.fround(Math.fround(relative-undoError)*e),hi=Math.fround(Math.fround(relative+undoError)*e);
+            return[[x,x],[y,y],[clearanceOut(lo,false),clearanceOut(hi,true)]];
+          });
+          const height=clearanceClipMaximum(points,box);if(height!==null)maximum=Math.max(maximum??-Infinity,height);
+        }
+      }
+    }
+    return{maximum,visits,triangles};
+  },intersect(segment:AtlasMetricSegment,alpha:number,verticalOrigin:number):AtlasTerrainPreparedRayHit|null{
+    if(!Number.isFinite(verticalOrigin)||!Number.isFinite(alpha)||alpha<0||alpha>1||Math.fround(alpha)!==alpha||
+      segment.length!==2||segment.some(point=>point.length!==3||!point.every(Number.isFinite)))throw Error('Terrain-Pickstrahl ungültig.');
+    let best:(AtlasTerrainPreparedRayHit&{distance:number})|null=null;
+    for(const draw of draws){
+      if(alpha===1&&draw.newSlot<0)continue; // The confirmed endframe retires old-only screen partitions.
+      if(draw.rayRoot>=nodeCount)throw Error('Terrain-Pickindex ungültig.');
+      const origin=draw.origin,start:Vec3=[segment[0][0]-origin[0],segment[0][1]-origin[1],segment[0][2]],
+        direction:Vec3=[segment[1][0]-segment[0][0],segment[1][1]-segment[0][1],segment[1][2]-segment[0][2]];
+      const stack=[draw.rayRoot],visited=new Set<number>();
+      while(stack.length){const node=stack.pop()!;
+        if(node>=nodeCount)throw Error('Terrain-Pickindex außerhalb.');
+        if(visited.has(node))continue;
+        visited.add(node);
+        if(xyEntry(node,start,direction,best?.distance??1)===null)continue;
+        const at=node*8,count=rayNodes[at+7]!;
+        if(count===0){stack.push(rayNodes[at+4]!,rayNodes[at+5]!);continue;}
+        if(count>8||rayNodes[at+6]!+count>rayTriangles.length)throw Error('Terrain-Pickblatt ungültig.');
+        for(let i=0;i<count;i++){
+          const triangle=rayTriangles[rayNodes[at+6]!+i]!;
+          if(triangle<draw.firstIndex/3||triangle>=(draw.firstIndex+draw.indexCount)/3)throw Error('Terrain-Pickdreieck gehört nicht zum Draw.');
+          const point=(corner:number):Vec3=>{
+            const vertex=indices[triangle*3+corner]!,offset=vertex*14;
+            const value=terrainEvaluateVertex(basis,draft,vertex,alpha,verticalOrigin);
+            return[basis[offset]!,basis[offset+1]!,value.height];
+          };
+          const hit=intersectTriangle(start,direction,point(0),point(1),point(2),1e-8);
+          if(hit&&(!best||hit.distance<best.distance)){
+            const sourceBank=draw.newSlot>=0?'new':'old',sourceIndex=sourceBank==='new'?draw.newSlot:draw.oldSlot;
+            best={point:[hit.point[0]+origin[0],hit.point[1]+origin[1],hit.point[2]],segmentFraction:hit.distance,distance:hit.distance,sourceBank,sourceIndex};
+          }
+        }
+      }
+    }
+    return best&&{point:best.point,segmentFraction:best.segmentFraction,sourceBank:best.sourceBank,sourceIndex:best.sourceIndex};
+  }};
+}
+
+/** Immutable owner-region index for one published field. A query walks the
+ * already prepared old/new lattice breakpoints; input never derives a mesh. */
+export function createAtlasTerrainFieldRayIndex(geometry:AtlasTerrainFieldGeometry,oldModels:readonly AtlasTerrainTileModel[],newModels:readonly AtlasTerrainTileModel[],draftModels:readonly AtlasTerrainTileModel[]=[]):AtlasTerrainFieldRayIndex{
+  const regions=geometry.draws.map(draw=>{const old=draw.oldSlot<0?undefined:oldModels[draw.oldSlot],next=draw.newSlot<0?undefined:newModels[draw.newSlot];return{draw,old,next,layouts:[old&&terrainGridLayout(old.grid.view),next&&terrainGridLayout(next.grid.view)]};});
+  const sample=atlasTerrainFieldSample;
+  return{intersect(segment,alpha){if(!Number.isFinite(alpha)||alpha<0||alpha>1)throw Error('Terrainfeld-Ray-Alpha ungültig.');const a=segment[0],d=segment[1].map((v,i)=>v-a[i]!),at=(t:number)=>({x:a[0]+d[0]!*t,y:a[1]+d[1]!*t});let best:AtlasTerrainFieldRayHit|null=null;
+    for(const region of regions){const b=region.draw.bounds;let enter=0,exit=best?.segmentFraction??1;for(const [axis,min,max]of [[0,b.x,b.x+b.width],[1,b.y,b.y+b.height]] as const){if(d[axis]===0){if(a[axis]<min||a[axis]>max){enter=1;exit=0;break;}continue;}const t=(min-a[axis])/d[axis]!,u=(max-a[axis])/d[axis]!;enter=Math.max(enter,Math.min(t,u));exit=Math.min(exit,Math.max(t,u));}if(exit<enter)continue;
+      const crossings=[enter,exit];for(const layout of region.layouts)if(layout)for(const [axis,values]of [[0,layout.x.values],[1,layout.y.values]] as const)if(d[axis])for(const value of values){const t=(value-a[axis])/d[axis]!;if(t>enter&&t<exit)crossings.push(t);}crossings.sort((x,y)=>x-y);
+      const height=(t:number)=>{const p=at(t),old=region.old,next=region.next;let value=next?(!old||alpha>=1?sample(newModels,region.draw.newSlot,p):alpha<=0?sample(oldModels,region.draw.oldSlot,p):sample(oldModels,region.draw.oldSlot,p)*(1-alpha)+sample(newModels,region.draw.newSlot,p)*alpha):sample(oldModels,region.draw.oldSlot,p),draft=next&&draftModels[region.draw.newSlot];if(draft)value+=sample(draftModels,region.draw.newSlot,p)-sample(newModels,region.draw.newSlot,p);return value;};
+      const intervals:number[]=[...crossings];for(let i=1;i<crossings.length;i++){const start=crossings[i-1]!,end=crossings[i]!,middle=at((start+end)/2);for(const [model,layout]of [[region.old,region.layouts[0]],[region.next,region.layouts[1]]] as const)if(model&&layout){const x=Math.min(model.grid.view.columns-2,Math.floor(terrainGridCoordinate(layout.x,middle.x))),y=Math.min(model.grid.view.rows-2,Math.floor(terrainGridCoordinate(layout.y,middle.y))),sx=layout.x.values[x+1]!-layout.x.values[x]!,sy=layout.y.values[y+1]!-layout.y.values[y]!,slope=d[0]!/sx+d[1]!/sy,t=slope?(1-(a[0]-layout.x.values[x]!)/sx-(a[1]-layout.y.values[y]!)/sy)/slope:Infinity;if(t>start&&t<end)intervals.push(t);}}intervals.sort((x,y)=>x-y);
+      for(let i=1;i<intervals.length;i++){const start=intervals[i-1]!,end=intervals[i]!,f=a[2]+d[2]!*start-height(start),g=a[2]+d[2]!*end-height(end);if(f*g>0||f===g)continue;const t=Math.abs(f)<1e-8?start:start+(end-start)*f/(f-g);if(t<start||t>end)continue;const p=at(t),h=height(t),model=(region.next??region.old)!;best={point:[p.x,p.y,h],segmentFraction:t,model};break;}
+    }return best;}};
+}

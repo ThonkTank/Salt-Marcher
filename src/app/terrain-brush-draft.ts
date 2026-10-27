@@ -1,3 +1,4 @@
+import {terrainBrushForm} from './terrain-brush-form';
 import {heightBrushDabs,heightBrushAmount,type HeightStroke} from './terrain-brush';
 import {gridHeight,terrainVisibility,type TerrainGrid} from './terrain-spatial-model';
 import {terrainGridLayout,terrainGridCoordinate} from './terrain-grid-layout';
@@ -25,9 +26,23 @@ export class TerrainBrushDraft {
   }
   update(stroke:HeightStroke){
     if(stroke.samples.length<=this.consumed)return false;
-    const samples=stroke.samples.slice(this.consumed-1);this.consumed=stroke.samples.length;
+    const consumed=this.consumed,samples=stroke.samples.slice(consumed-1);this.consumed=stroke.samples.length;
+    if(stroke.form&&consumed>1&&samples.every(p=>p.x===samples[0]!.x&&p.y===samples[0]!.y))return false;
     const layout=terrainGridLayout(this.base.view),v=this.base.view,water=this.base.editing!.water;
     let changed=false,minX=v.columns,minY=v.rows,maxX=-1,maxY=-1;
+    if(stroke.form){
+      const form=terrainBrushForm(stroke);
+      for(let y=0;y<v.rows;y++)for(let x=0;x<v.columns;x++){
+        const p={x:layout.x.values[x]!,y:layout.y.values[y]!},amount=form.amount(p),i=y*v.columns+x;
+        if((!amount&&this.ground[i]===this.base.editing!.ground[i])||!this.visibility(p))continue;
+        const height=this.base.editing!.ground[i]!+amount;
+        if(this.ground[i]===Math.fround(height))continue;
+        this.ground[i]=height;this.grid.heights[i]=Math.max(this.ground[i]!,water[i]!);changed=true;
+        minX=Math.min(minX,x);minY=Math.min(minY,y);maxX=Math.max(maxX,x);maxY=Math.max(maxY,y);
+        this.maximumHeight=Math.max(this.maximumHeight,Math.abs(this.grid.heights[i]!-v.focusM));
+      }
+      this.changedRect={x:minX,y:minY,width:maxX-minX+1,height:maxY-minY+1};return changed;
+    }
     for(const dab of heightBrushDabs({...stroke,samples})){
       if(dab.seconds<=0)continue;
       const left=Math.ceil(terrainGridCoordinate(layout.x,dab.x-stroke.radius)),right=Math.floor(terrainGridCoordinate(layout.x,dab.x+stroke.radius));

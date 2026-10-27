@@ -45,6 +45,7 @@ export class LandscapeBrushSession {
         this.liveColorCount = 0;
         this.liveFailureMessage = undefined;
         const local=this.host.effects.localTerrain?.(),id=this.liveId;
+        if(local&&this.maskStroke)local.beginHeight?.(id,this.maskStroke);
         this.live = local ? new TerrainDraftStroke(a=>local.enqueue(a,id)) : new TerrainLiveStroke({ id: this.liveId, expectedRevision: data.revision, sourceFence: data.region.fence }, (a, c) => this.host.effects.writeTerrain(a, c), error => {
             this.liveFailureMessage = error instanceof Error ? error.message : String(error);
             this.host.endInput();

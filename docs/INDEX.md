@@ -10,6 +10,7 @@ Gesamtprodukt: [Produktziele](project/requirements/product.md), [Umfang](project
 | Ich möchte … | Hier beginnen | Danach nur bei Bedarf |
 | --- | --- | --- |
 | den aktuellen Stand verstehen | [Produktstand](project/requirements/product.md#gegenwärtiger-stand-und-offene-entscheidungen) und [Atlasübersicht](atlas/requirements/atlas.md#atlas-auf-einen-blick) | Datierte Fachbelege in `acceptance.json` |
+| Terrain und Wasser zuerst nutzbar machen | [Ziele und Messvertrag](atlas/requirements/terrain-relief.md#aktueller-lieferfokus-terrain-und-wasser) und [aktueller Umsetzungsplan](atlas/architecture/terrain-water/plan.md) | Pakete, Abhängigkeiten und jeweiliger Prüfstand |
 | selbstständig am Atlas weiterarbeiten | [Atlasumstieg und offene Aufgaben](atlas/architecture/unified-spatial-atlas.md#aktueller-arbeitsstand) | Gültige Technik, verbleibende Übernahme und gemeinsame Abnahme |
 | die Atlas-Performance verbessern oder den Renderer auswählen | [Performance-Roadmap A0–A7](atlas/architecture/performance-roadmap.md) | Vergleich, Entscheidungskriterien, Umsetzung und Leistungsabnahme |
 | den nächsten Lieferabschluss umsetzen | [Gemeinsamer technischer Einstieg](project/delivery/roadmap.md#technischer-übergang) und [Fachabhängigkeiten](project/delivery/roadmap.md#fachliche-lieferabhängigkeiten) | [Atlaspakete](atlas/requirements/atlas.md#lieferpakete-und-codeanschlüsse), Fachquelle und passende Tests |

@@ -1,3 +1,4 @@
+import {attachAtlasAuthorRecovery} from './helpers/atlas-author-recovery.mjs';
 import {atlasFixture} from './helpers/atlas-workbench.mjs';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -7,7 +8,7 @@ import { mkdtempSync, rmSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { randomUUID } from 'node:crypto';
 import { parseHTML } from './helpers/dom.mjs';
-buildSync({ stdin: {contents: "export {CampaignAtlasWorkbench} from './src/app/campaign-atlas-ui'; export * from './src/app/world-ui';",resolveDir:process.cwd()}, outfile: '.build/atlas-context-ui.cjs', bundle: true, platform: 'node', format: 'cjs' });
+buildSync({ stdin: {contents: "export {atlasWriteReference} from './src/app/atlas-write-recovery'; export {CampaignAtlasWorkbench} from './src/app/campaign-atlas-ui'; export * from './src/app/world-ui';",resolveDir:process.cwd()}, outfile: '.build/atlas-context-ui.cjs', bundle: true, platform: 'node', format: 'cjs' });
 buildSync({ entryPoints: ['src/app/storage/store.ts'], outfile: '.build/atlas-context-store.cjs', bundle: true, platform: 'node', format: 'cjs', external: ['better-sqlite3'] });
 const require = createRequire(import.meta.url), worldUI = require('../.build/atlas-context-ui.cjs'), { CampaignAtlasWorkbench } = worldUI, { CampaignStore } = require('../.build/atlas-context-store.cjs');
 function fixture(t) {
@@ -17,13 +18,14 @@ function fixture(t) {
     const character = store.executeLive(command({ kind: 'create-character', profile: { name: 'Ada', speedFeet: 30 } })).character, live = store.live(w.token);
     store.executeLive(command({ kind: 'membership', characterId: character.id, expectedRevision: character.membershipRevision, expectedRosterRevision: live.rosterRevision, active: true, targetSceneId: a.id, expectedFocusRevision: live.focusRevision }));
     const beforeGlobals = { window: globalThis.window, document: globalThis.document, Event:globalThis.Event, CustomEvent:globalThis.CustomEvent };
-    const { window, document } = parseHTML(readFileSync('src/app/index.html','utf8')+'<div id="atlas-context-fields"></div><p id="atlas-local-status"></p><p id="atlas-save-status"></p><p id="atlas-hint"></p><button id="atlas-region-retry"></button><div id="atlas-entrance-field"></div><select id="atlas-entrance-choice"></select>' + ['start', 'preview', 'refresh', 'place', 'entrance', 'step', 'round', 'play', 'pause', 'end'].map(k => `<button id="atlas-local-${k}"></button>`).join(''));
+    const { window, document } = parseHTML(readFileSync('src/app/index.html','utf8')+'<div id="atlas-context-fields"></div><p id="atlas-local-status"></p><p id="atlas-save-status"></p><button id="atlas-recover"></button><p id="atlas-hint"></p><button id="atlas-region-retry"></button><div id="atlas-entrance-field"></div><select id="atlas-entrance-choice"></select>' + ['start', 'preview', 'refresh', 'place', 'entrance', 'step', 'round', 'play', 'pause', 'end'].map(k => `<button id="atlas-local-${k}"></button>`).join(''));
     Object.assign(globalThis, { window, document, Event:window.Event, CustomEvent:window.CustomEvent });
     for (const select of document.querySelectorAll('select'))
         Object.defineProperty(select, 'value', { value: '', writable: true });
     const sent = [];
     const snapshot=()=>({...store.atlasRenderView(w.token),region:{coverage:{mode:'detail',unreadable:0}}});
     window.campaign = { cancelAtlasRegion:async()=>({ok:true,value:null}),atlasRegion: async () => ({ ok: true, value: snapshot() }), previewAtlasTravel: async (token, end) => ({ ok: true, value: store.previewAtlasTravel(token, end) }), executeAtlasTravelCommit: async (c) => { sent.push(c); return { ok: true, value: store.executeAtlasTravelCommit(c) }; } };
+    attachAtlasAuthorRecovery(window.campaign,store,dir);
     // Exercise the production controller/render methods with real SQLite snapshots.
     // Whole-workbench mounting and click wiring are covered by the native probe.
     const ui = Object.assign(atlasFixture(CampaignAtlasWorkbench), { owner: w, data: snapshot(), root: document.createElement('section'),svg:document.createElement('svg'),regionQuery:()=>({box:{x:0,y:0,width:100,height:100},width:1024,height:768,scopeId:'local',floorId:'ground',slice:null,roofs:true}), request: 0, hitVersion:0,hitDialog:{open:true,close(){this.open=false;}},landscape:{load:async()=>{},contours:()=>0}, previewRequest: 0, busy: false, pendingTravel: null, localPreview: null, lastPoint: { x: 20, y: 0 }, entranceId: null, travelReadState: 'ready', family: 'travel', playback: { running: false, stop() { }, async settled() { } }, opts: { status() { } } });
@@ -301,4 +303,183 @@ test('stale terrain waits for an existing geometry owner without replacing or au
  assert.equal(await x.ui.refreshSpatialSource(),false);assert.equal(reads,2,'without an owner, stale terrain still requests a source');assert.equal(x.ui.travelReadState,'failed');
  window.campaign.atlasRegion=async()=>{reads++;return{ok:true,value:{...x.store.atlasRenderView(x.w.token),region:{fence:'retry',coverage:{mode:'detail',unreadable:0}}}};};
  assert.equal(await x.ui.refreshSpatialSource(),true);assert.equal(reads,3);assert.equal(x.ui.data.region.fence,'retry');
+});
+
+// A0.08: controller evidence crosses actual Main registrations, preload and worker.
+// Electron's native shell is substituted; whole-process/native restart is A0.14.
+import {desktopMainHost,storeFaultWorker} from './helpers/desktop-main-host.mjs';
+import Database from 'better-sqlite3';
+const ok=r=>{assert.equal(r.ok,true,r.error);return r.value;};
+const response=fn=>{try{return{ok:true,value:fn()};}catch(error){return{ok:false,error:error.message};}};
+function productionBusy(ui){delete ui.busy;}
+function stepFixture(x){
+ productionBusy(x.ui);
+ const preview=x.store.previewAtlasTravel(x.w.token,{x:20,y:0});
+ x.store.executeAtlasTravel({...x.command({kind:'start',preview}),sceneId:x.a.id});
+ x.ui.data={...x.store.atlasRenderView(x.w.token),region:{fence:'travel',coverage:{mode:'detail',unreadable:0}}};
+ const j=x.ui.data.localJourney;
+ x.window.campaign.executeAtlasTravelCommit=async c=>{x.sent.push(c);return response(()=>x.store.executeAtlasTravelCommit(c));};
+ x.ui.refresh=async()=>{x.ui.data={...x.store.atlasRenderView(x.w.token),region:{fence:'travel',coverage:{mode:'detail',unreadable:0}}};return true;};
+ return{kind:'step',id:j.id,expectedRevision:j.revision};
+}
+function facts(filename){const db=new Database(filename,{readonly:true});try{return Object.fromEntries(['scene_clock','scene_position','atlas_local_journey','atlas_travel_receipt','scene_time_step','atlas_command','campaign_atlas'].map(table=>[table,db.prepare('SELECT * FROM '+table).all()]));}finally{db.close();}}
+function deferred(){let resolve;const promise=new Promise(r=>resolve=r);return{promise,resolve};}
+async function hostTravel(t,mode){
+ const dom=fixture(t),host=await desktopMainHost(t,{workerFile:storeFaultWorker('executeAtlasTravelCommit',mode)}),cam=ok(await host.api.create('Reiseantwort')),w=ok(await host.api.activateShell(cam.id)),command=action=>({campaignId:cam.id,token:w.token,commandId:randomUUID(),action});
+ ok(await host.api.executeAtlasCommit(command({kind:'landscape-put',record:{id:randomUUID(),revision:0,kind:'patch',name:'Land',points:[],polygons:[{outer:[{x:-100,y:-100},{x:100,y:-100},{x:100,y:100},{x:-100,y:100}],holes:[]}],resolution:1,width:0,values:{terrain:'plains'}},expectedRevision:null})));
+ const initial=ok(await host.api.live(w.token)),scene=ok(await host.api.executeLive(command({kind:'initialize',expectedRosterRevision:initial.rosterRevision}))).scene;
+ const character=ok(await host.api.executeLive(command({kind:'create-character',profile:{name:'Ada',speedFeet:30}}))).character,live=ok(await host.api.live(w.token));
+ ok(await host.api.executeLive(command({kind:'membership',characterId:character.id,expectedRevision:character.membershipRevision,expectedRosterRevision:live.rosterRevision,active:true,targetSceneId:scene.id,expectedFocusRevision:live.focusRevision})));
+ const preview=ok(await host.api.previewAtlasTravel(w.token,{x:20,y:0})),started=ok(await host.api.executeAtlasTravel({...command({kind:'start',preview}),sceneId:scene.id}));
+ const action={kind:'step',id:started.localJourney.id,expectedRevision:started.localJourney.revision};
+ const snapshot=await host.api.campaignAtlas(w.token);
+ return{...dom,host,cam,w,action,snapshot:ok(snapshot)};
+}
+function freshTravelOwner(x,w,api,snapshot){
+ x.window.campaign=api;
+ const ui=Object.assign(atlasFixture(CampaignAtlasWorkbench),{owner:w,data:snapshot,root:x.document.createElement('section'),svg:x.document.createElement('canvas'),family:'travel',lastPoint:{x:20,y:0},opts:{status(){},updated(){throw Error('Travel must preserve independent author inputs');}}});
+ productionBusy(ui);
+ ui.error=e=>{x.document.getElementById('atlas-save-status').textContent=e.message;};
+ ui.render=()=>ui.renderTravel();
+ ui.refresh=async()=>{const r=await api.campaignAtlas(w.token);if(r.ok)ui.data=r.value;return r.ok;};
+ return ui;
+}
+for(const mode of ['before-execution','lost-response','uncloneable-response'])for(const thrown of [false,true])test(`travel owner: real ${mode}, ${thrown?'thrown transport':'structured unknown'}, new owner restores disk identity and never repeats a step`,async t=>{
+ const x=await hostTravel(t,mode),api=thrown?{...x.host.api,executeAtlasTravelCommit:async c=>{const r=await x.host.api.executeAtlasTravelCommit(c);assert.equal(r.errorKind,'store-outcome-unknown');throw Error('IPC-Antwort verloren');}}:x.host.api;
+ const first=freshTravelOwner(x,x.w,api,x.snapshot);await first.journey.activate();first.travelReadState='ready';const before=facts(x.host.store.filename);
+ const travel=first.travel(x.action);assert.ok(first.pendingTravel,'reserved synchronously before first await');
+ assert.equal(await first.travel(x.action),false);assert.equal(await travel,false);
+ assert.equal(first.journey.recoveryState.durableConfirmed,true,'successful keep survives terminal worker failure');
+ const original=first.pendingTravel;assert.equal(original.token,x.w.token);assert.deepEqual(original.action,x.action);
+ assert.equal(x.host.dispatches.filter(d=>d.method==='executeAtlasTravelCommit').length,1);
+ const fresh=await x.host.restart(),active=ok(await fresh.api.activateShell(x.cam.id)),after=facts(fresh.store.filename);
+ if(mode==='before-execution')assert.deepEqual(after,before);else{
+  assert.notDeepEqual(after.scene_clock,before.scene_clock);assert.notDeepEqual(after.scene_position,before.scene_position);
+  assert.equal(after.scene_time_step.length,before.scene_time_step.length+1);
+ }
+ // A genuinely new controller receives campaign+current authorization only.
+ // Its saved reference is discovered by activate(), never supplied by this test.
+ const second=freshTravelOwner(x,active,fresh.api,null),loading=second.journey.activate();
+ assert.ok(second.pendingTravel);assert.equal(second.journey.recoveryState.phase,'loading');await loading;
+ assert.notEqual(active.token,x.w.token);assert.equal(second.pendingTravel.action,undefined);assert.equal(second.pendingTravel.commandId,original.commandId);
+ assert.equal(second.pendingTravel.token,undefined);assert.equal(second.journey.playback.running,false);
+ const db=new Database(fresh.store.filename);db.prepare('DELETE FROM live_state WHERE campaign_id=?').run(x.cam.id);db.close();
+ const noFocus=facts(fresh.store.filename),count=fresh.dispatches.filter(d=>d.method==='executeAtlasTravelCommit').length;
+ await second.recoverWrite();assert.equal(second.pendingTravel,null);
+ if(mode!=='before-execution')assert.equal(second.recoveryProjection,active,'confirmed result survives missing focus projection');
+ for(let i=0;i<3;i++)await second.recoverWrite();
+ assert.deepEqual(facts(fresh.store.filename),noFocus,'status/projection recovery must not change position, clock, receipts or history');
+ assert.equal(fresh.dispatches.filter(d=>d.method==='executeAtlasTravelCommit').length,count);
+ assert.deepEqual(ok(await fresh.api.atlasWriteReferences(x.cam.id,active.token)),[]);
+ assert.equal(second.journey.playback.running,false);
+});
+
+test('unknown, failed status and failed clear retain the exact command and preserve independent inputs',async t=>{
+ const x=fixture(t),action=stepFixture(x),api=x.window.campaign,write=api.executeAtlasTravelCommit,status=api.atlasWriteStatus,clear=api.clearAtlasWriteReference;
+ x.document.body.insertAdjacentHTML('beforeend','<textarea id="a08-draft">Offene Autoren-, Raum- und Landschaftseingabe</textarea>');
+ const authorDraft=[{x:5,y:8}],roomDraft={name:'Offener Raum'},landscapeDraft={name:'Offene Landschaft'};
+ x.ui.author.draft=authorDraft;x.ui.opts.roomDraft=()=>roomDraft;x.ui.landscape.doc=landscapeDraft;
+ api.executeAtlasTravelCommit=async c=>{ok(await write(c));return{ok:false,error:'Antwort verloren',errorKind:'store-outcome-unknown'};};
+ assert.equal(await x.ui.travel(action),false);const command=x.ui.pendingTravel,bytes=x.store.db.serialize();
+ for(const reader of [async()=>({ok:true,value:{outcome:'unknown'}}),async()=>({ok:false,error:'Status nicht lesbar'}),async()=>{throw Error('Leseantwort verloren');}]){
+  api.atlasWriteStatus=reader;await x.ui.recoverWrite();assert.equal(x.ui.pendingTravel,command);assert.equal(x.get('step').disabled,true);
+ }
+ api.atlasWriteStatus=status;api.clearAtlasWriteReference=async()=>({ok:false,error:'Clear nicht dauerhaft'});
+ await x.ui.recoverWrite();assert.equal(x.ui.pendingTravel,command);assert.equal(x.ui.journey.recoveryState.outcome,'applied');assert.equal(x.ui.journey.recoveryState.durableConfirmed,true);
+ api.clearAtlasWriteReference=clear;await x.ui.recoverWrite();assert.equal(x.ui.pendingTravel,null);
+ for(let i=0;i<3;i++)await x.ui.recoverWrite();
+ assert.equal(x.ui.author.draft,authorDraft);assert.equal(x.ui.opts.roomDraft(),roomDraft);assert.equal(x.ui.landscape.doc,landscapeDraft);
+ assert.equal(x.sent.length,1);assert.ok(x.store.db.serialize().equals(bytes));assert.equal(x.document.getElementById('a08-draft').textContent,'Offene Autoren-, Raum- und Landschaftseingabe');
+});
+
+test('keep failure prevents dispatch and recovery reads an occupied slot instead of overwriting it',async t=>{
+ const x=fixture(t),action=stepFixture(x),api=x.window.campaign,keep=api.keepAtlasWriteReference;
+ api.keepAtlasWriteReference=async()=>({ok:false,error:'fsync fehlgeschlagen'});
+ assert.equal(await x.ui.travel(action),false);assert.equal(x.sent.length,0);assert.equal(x.ui.journey.recoveryState.durableConfirmed,false);
+ assert.equal(await x.ui.travel(action),false);await x.ui.recoverWrite();assert.equal(x.ui.pendingTravel,null);
+ api.keepAtlasWriteReference=keep;
+ // Save an older command through the same real reference helper, then try a new one.
+ const older={commandId:randomUUID(),campaignId:x.w.campaign.id,token:x.w.token,sceneId:x.a.id,action};
+ const {atlasWriteReference}=require('../.build/atlas-context-ui.cjs');
+ ok(await keep(await atlasWriteReference({kind:'travel',command:older}),x.w.token));
+ assert.equal(await x.ui.travel(action),false);assert.equal(x.sent.length,0);
+ await x.ui.recoverWrite();assert.equal(x.ui.pendingTravel,null);assert.equal(x.sent.length,0,'missing receipt is not a first application');
+});
+
+test('definitive rejection stays correctable; confirmed commit with failed projection retries only reads',async t=>{
+ const x=fixture(t),action=stepFixture(x),api=x.window.campaign,refresh=x.ui.refresh;
+ assert.equal(await x.ui.travel({...action,expectedRevision:999}),false);assert.equal(x.ui.pendingTravel,null);
+ x.ui.refresh=async()=>false;assert.equal(await x.ui.travel(action),false);assert.equal(x.ui.pendingTravel,null);assert.equal(x.ui.recoveryProjection,x.w);assert.equal(x.ui.recoveryTravel,true);assert.equal(x.ui.busy,true);assert.equal(await x.ui.travel(action),false);
+ const bytes=x.store.db.serialize(),count=x.sent.length;api.atlasWriteStatus=async()=>{throw Error('confirmed projection cannot reread receipt');};
+ await x.ui.recoverWrite();assert.equal(x.ui.recoveryProjection,x.w);x.ui.refresh=refresh;
+ await x.ui.recoverWrite();assert.equal(x.ui.recoveryProjection,null);assert.equal(x.sent.length,count);assert.ok(x.store.db.serialize().equals(bytes));
+});
+
+test('captured command is reserved before keep, playback stops on unknown and paused resume never starts playback after failure',async t=>{
+ const x=fixture(t),action=stepFixture(x),api=x.window.campaign,keep=api.keepAtlasWriteReference,gate=deferred();
+ api.keepAtlasWriteReference=async(ref,token)=>{await gate.promise;return keep(ref,token);};
+ const original=structuredClone(action),travel=x.ui.travel(action);action.expectedRevision=999;assert.deepEqual(x.ui.pendingTravel.action,original);
+ assert.equal(x.sent.length,0);assert.equal(await x.ui.travel(original),false);gate.resolve();assert.equal(await travel,true);assert.deepEqual(x.sent[0].action,original);
+ x.ui.data.localJourney.status='paused';let plays=0,stops=0;x.ui.playback={running:false,stop(){stops++;},settled:async()=>{},play(){plays++;}};
+ api.executeAtlasTravelCommit=async()=>({ok:false,error:'unknown',errorKind:'store-outcome-unknown'});
+ await x.ui.travelControl('play');assert.equal(plays,0);assert.ok(stops>0);assert.ok(x.ui.pendingTravel);
+});
+
+test('late keep waits at same-campaign activation and cannot dispatch; foreign campaign gets only its own slot',async t=>{
+ const x=fixture(t),action=stepFixture(x),api=x.window.campaign,keep=api.keepAtlasWriteReference,gate=deferred();let entered=false;
+ api.keepAtlasWriteReference=async(ref,token)=>{entered=true;await gate.promise;return keep(ref,token);};
+ const old=x.ui.travel(action);await until(()=>entered);const same={...x.w};x.ui.owner=same;
+ const loading=x.ui.journey.activate();assert.ok(x.ui.pendingTravel);assert.equal(x.ui.journey.recoveryState.phase,'loading');
+ await tick();assert.equal(x.sent.length,0);gate.resolve();await old;await loading;
+ assert.equal(x.sent.length,0);assert.equal(x.ui.pendingTravel.action,undefined);assert.equal(x.ui.journey.recoveryState.durableConfirmed,true);
+ const other=x.store.create('Andere Reise'),foreign=x.store.activateShell(other.id);x.ui.owner=foreign;await x.ui.journey.activate();assert.equal(x.ui.pendingTravel,null);
+ const fresh=x.store.activateShell(x.w.campaign.id);x.ui.owner=fresh;await x.ui.journey.activate();assert.ok(x.ui.pendingTravel);assert.equal(x.ui.pendingTravel.campaignId,x.w.campaign.id);
+ assert.equal(await x.ui.journey.recover(),'not-applied');assert.equal(x.sent.length,0);
+});
+
+for(const phase of ['read','status','clear','write'])test(`late ${phase} answer belongs to its activation and never unlocks a new campaign`,async t=>{
+ const x=fixture(t),action=stepFixture(x),api=x.window.campaign,gate=deferred();let entered=false,old;
+ const read=api.atlasWriteReferences;
+ if(phase==='read'){
+  api.atlasWriteReferences=async(campaignId,token)=>{const r=await read(campaignId,token);entered=true;await gate.promise;return r;};old=x.ui.journey.activate();
+ }else{
+  const write=api.executeAtlasTravelCommit;
+  api.executeAtlasTravelCommit=async c=>{if(phase==='write'){const r=await write(c);entered=true;await gate.promise;return r;}return{ok:false,error:'unknown',errorKind:'store-outcome-unknown'};};
+  if(phase==='write')old=x.ui.travel(action);
+  else{await x.ui.travel(action);const method=phase==='status'?'atlasWriteStatus':'clearAtlasWriteReference',run=api[method];api[method]=async(...args)=>{const r=await run(...args);entered=true;await gate.promise;return r;};old=x.ui.recoverWrite();}
+ }
+ await until(()=>entered);
+ const other=x.store.create('Fremd'),foreign=x.store.activateShell(other.id);x.ui.owner=foreign;api.atlasWriteReferences=read;
+ await x.ui.journey.activate();assert.equal(x.ui.pendingTravel,null);assert.equal(x.ui.journey.recoveryState,null);
+ gate.resolve();await old;assert.equal(x.ui.pendingTravel,null);assert.equal(x.ui.journey.recoveryState,null);assert.equal(x.ui.owner,foreign);assert.equal(x.ui.journey.busy,false);
+ const fresh=x.store.activateShell(x.w.campaign.id);x.ui.owner=fresh;await x.ui.journey.activate();
+ if(phase==='read'||phase==='clear')assert.equal(x.ui.pendingTravel,null);else{assert.ok(x.ui.pendingTravel);assert.equal(x.ui.pendingTravel.campaignId,x.w.campaign.id);assert.equal(x.ui.pendingTravel.token,undefined);}
+});
+
+test('failed reference reads remain blocked until a successful explicit reload; competing activation reads cannot replace the newest slot',async t=>{
+ const x=fixture(t),api=x.window.campaign,read=api.atlasWriteReferences,gate=deferred();
+ api.atlasWriteReferences=async()=>({ok:false,error:'Referenz nicht lesbar'});await x.ui.journey.activate();assert.ok(x.ui.pendingTravel);assert.equal(x.ui.journey.recoveryState.phase,'error');
+ await x.ui.recoverWrite();assert.ok(x.ui.pendingTravel);
+ api.atlasWriteReferences=async()=>{await gate.promise;return{ok:false,error:'Alter Lesefehler'};};const old=x.ui.journey.activate();await tick();
+ x.ui.owner={...x.w};api.atlasWriteReferences=read;await x.ui.journey.activate();assert.equal(x.ui.pendingTravel,null);gate.resolve();await old;assert.equal(x.ui.pendingTravel,null);
+});
+
+test('Workbench activation awaits the travel reference read before completing and uses the new owner',async t=>{
+ const x=fixture(t),api=x.window.campaign,read=api.atlasWriteReferences,gate=deferred();let reads=0,complete=false;
+ x.document.body.insertAdjacentHTML('beforeend','<div id="atlas-search-results"></div>');
+ // Unrelated view controllers are inert; activation and Journey stay production code.
+ x.ui.output.reset=()=>{};x.ui.reference={close(){}};x.ui.landscape.context=()=>{};x.ui.camera={context(){},set(){}};x.ui.scheduleRender=()=>{};
+ api.atlasWriteReferences=async(campaignId,token)=>{assert.equal(x.ui.owner,next);const r=await read(campaignId,token);if(++reads===1)await gate.promise;return r;};
+ const next={...x.w},activation=x.ui.activate(next).then(()=>complete=true);
+ await until(()=>reads===2);assert.equal(complete,false);assert.ok(x.ui.pendingTravel);assert.equal(x.ui.journey.recoveryState.phase,'loading');
+ gate.resolve();await activation;assert.equal(complete,true);assert.equal(x.ui.pendingTravel,null);assert.equal(x.ui.owner,next);
+});
+
+test('travel restoration and clearing leave the independent Atlas slot untouched',async t=>{
+ const x=fixture(t),action=stepFixture(x),api=x.window.campaign,{atlasWriteReference}=require('../.build/atlas-context-ui.cjs');
+ const authorRef=await atlasWriteReference({kind:'atlas',command:x.command({kind:'dungeon-create',name:'Ungeklärt',x:0,y:0})});
+ ok(await api.keepAtlasWriteReference(authorRef,x.w.token));api.executeAtlasTravelCommit=async()=>({ok:false,error:'unknown',errorKind:'store-outcome-unknown'});
+ await x.ui.travel(action);assert.equal(ok(await api.atlasWriteReferences(x.w.campaign.id,x.w.token)).length,2);
+ await x.ui.journey.activate();assert.equal(x.ui.pendingTravel.family,'travel');assert.equal(await x.ui.journey.recover(),'not-applied');
+ assert.deepEqual(ok(await api.atlasWriteReferences(x.w.campaign.id,x.w.token)),[authorRef]);assert.equal(x.sent.length,0);
 });

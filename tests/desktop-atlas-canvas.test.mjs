@@ -8,7 +8,7 @@ import { parseHTML } from './helpers/dom.mjs';
 await build({
   stdin: {
     contents:
-      "export * from './src/app/atlas-raster-presentation';export * from './src/app/atlas-canvas';export * from './src/app/atlas-canvas-scene';export * from './src/app/campaign-atlas-export';export * from './src/app/atlas-landscape-export';export {atlasRegionPaint} from './src/app/atlas-region-export';export {CampaignAtlasWorkbench} from './src/app/campaign-atlas-ui';",
+      "export {atlasCameraEye} from './src/app/atlas-camera';export * from './src/app/atlas-raster-presentation';export * from './src/app/atlas-canvas';export * from './src/app/atlas-canvas-scene';export * from './src/app/campaign-atlas-export';export * from './src/app/atlas-landscape-export';export {atlasRegionPaint} from './src/app/atlas-region-export';export {CampaignAtlasWorkbench} from './src/app/campaign-atlas-ui';",
     resolveDir: process.cwd(),
   },
   outfile: ".build/atlas-canvas-test.cjs",
@@ -22,7 +22,7 @@ await build({
     b.onLoad({filter:/.*/,namespace:'probe'},()=>({contents:'export async function atlasTerrainExport(...args){return globalThis.captureAtlasOutput?.(...args)??new Uint8Array([1,2,3]);}'}));
   }}],
 });
-const { AtlasRasterPresentation, AtlasCanvas, AtlasCanvasScene, atlasPaint, atlasImage, dungeonExportBox, atlasExportScale, atlasExportTiles, atlasRegionPaint, CampaignAtlasWorkbench } = createRequire(
+const { atlasCameraEye, AtlasRasterPresentation, AtlasCanvas, AtlasCanvasScene, atlasPaint, atlasImage, dungeonExportBox, atlasExportScale, atlasExportTiles, atlasRegionPaint, CampaignAtlasWorkbench } = createRequire(
   import.meta.url,
 )("../.build/atlas-canvas-test.cjs");
 class Matrix {
@@ -127,6 +127,8 @@ function fixture(t, { available = true } = {}) {
     [
       "window",
       "document",
+      "Event",
+      "CustomEvent",
       "DOMMatrix",
       "DOMPoint",
       "Path2D",
@@ -177,6 +179,8 @@ function fixture(t, { available = true } = {}) {
   Object.assign(global, {
     window,
     document,
+    Event: window.Event,
+    CustomEvent: window.CustomEvent,
     DOMMatrix: Matrix,
     DOMPoint: Point,
     Path2D: Path,
@@ -865,7 +869,7 @@ for(const transition of ['other','same','A–B–A'])for(const heldStage of ['re
  const box={x:0,y:0,width:10,height:10},owner={token:'first',campaign:{id:'campaign'}},next=sameToken?owner:{token:'second',campaign:{id:'other'}},frame=(token,q)=>({campaignId:token==='second'?'other':'campaign',revision:7,region:{box:q.box,fence:'f-'+token,scopeId:null,floorId:q.floorId,landscape:{state:'ready',coverage:{complete:true,mode:'detail'},records:[],tiles:[]}},cities:[],bindings:[],workspace:{rooms:[]},geometry:{drawing:{elements:[]}}});
  const ui=Object.assign(atlasFixture(CampaignAtlasWorkbench),{root:f.root,svg:f.root,hitVersion:0,previewRequest:0,searchRequest:0,request:0,hitDialog:{close(){}},playback:{stop(){}},reference:{close(){}},projection:{},owner,outputRun:null,floorId:'ground',landscape:{context(){},contours:()=>0},camera:{view:box,context(){}},opts:{flush:async()=>true,status:s=>messages.push(s)},regionQuery:()=>({box,width:256,height:256,scopeId:null,floorId:'ground',slice:null,roofs:true}),error:e=>errors.push(e.message)});
  let initial=0;
- f.window.campaign={cancelAtlasRegion:async()=>{},atlasRegion:async(token,q)=>{if(q.revision===undefined){initial++;if((initial===1&&heldStage==='read')||initial===2)return new Promise(resolve=>held.push(()=>resolve({ok:true,value:frame(token,q)})));}return{ok:true,value:frame(token,q)};},exportAtlasPNG:async token=>{saved.push(token);if(saved.length===1&&heldStage==='save')return new Promise(resolve=>held.push(()=>resolve({ok:true,value:{cancelled:false}})));return{ok:true,value:{cancelled:false}};}};
+ f.window.campaign={atlasWriteReferences:async()=>({ok:true,value:[]}),cancelAtlasRegion:async()=>{},atlasRegion:async(token,q)=>{if(q.revision===undefined){initial++;if((initial===1&&heldStage==='read')||initial===2)return new Promise(resolve=>held.push(()=>resolve({ok:true,value:frame(token,q)})));}return{ok:true,value:frame(token,q)};},exportAtlasPNG:async token=>{saved.push(token);if(saved.length===1&&heldStage==='save')return new Promise(resolve=>held.push(()=>resolve({ok:true,value:{cancelled:false}})));return{ok:true,value:{cancelled:false}};}};
  const until=async check=>{for(let i=0;i<50&&!check();i++)await settle();assert(check(),'Expected held export stage');};
  const old=ui.exportPNG();let current;
  try{
@@ -882,7 +886,7 @@ function editableExportFixture(t){
  controls.innerHTML='<section id="atlas-output"></section><button id="atlas-output-open"></button><input id="atlas-export-kind" value="campaign"><div id="atlas-output-editable"></div><div id="atlas-output-image"></div><button id="atlas-output-save-campaign"></button><p id="atlas-output-save-status"></p><button id="atlas-export-png"></button><button id="atlas-export-cancel"></button><p id="atlas-save-status"></p><p id="atlas-output-area"></p><div id="atlas-search-results"></div><input id="atlas-export-size" value="256"><input id="atlas-export-audience" value="gm"><input id="atlas-export-format" value="png"><input id="atlas-export-grid"><input id="atlas-hex-level" value="0"><input id="atlas-export-reference">';
  f.document.body.append(controls);const get=id=>f.document.getElementById(id),messages=[],errors=[],held=[],saved=[],box={x:0,y:0,width:10,height:10},owner={token:'first',campaign:{id:'first'}};
  const ui=Object.assign(atlasFixture(CampaignAtlasWorkbench),{root:f.root,svg:f.root,hitVersion:0,previewRequest:0,searchRequest:0,request:0,hitDialog:{close(){}},playback:{stop(){}},reference:{close(){}},projection:{workspace:{floors:[]}},owner,outputRun:null,floorId:'ground',landscape:{context(){},contours:()=>0},camera:{view:box,context(){}},flush:async()=>true,opts:{flush:async()=>true,status:s=>messages.push(s)},regionQuery:()=>({box,width:256,height:256,scopeId:null,floorId:'ground',slice:null,roofs:true}),error:e=>errors.push(e.message)});
- f.window.campaign={cancelAtlasRegion:async()=>{},exportCampaign:token=>{saved.push(token);return new Promise(resolve=>held.push(resolve));}};
+ f.window.campaign={atlasWriteReferences:async()=>({ok:true,value:[]}),cancelAtlasRegion:async()=>{},exportCampaign:token=>{saved.push(token);return new Promise(resolve=>held.push(resolve));}};
  const until=async check=>{for(let i=0;i<50&&!check();i++)await settle();assert(check(),'Expected held campaign export');};
  return{...f,ui,get,messages,errors,held,saved,owner,until};
 }
@@ -976,7 +980,7 @@ test('PNG output applies the same subpixel group rule to a retained detailed fra
 
 // Exercise all production owners; only the GPU/DOM platform is replaced. The
 // callbacks are deliberately manual, so HUD painting cannot stand in for GPU completion.
-async function rasterFixture(t,{terrain=false}={}){
+async function rasterFixture(t,{terrain=false,terrainHeight}={}){
  const f=fixture(t),decks=[],errors=[],recoveries=[],prior={ResizeObserver:globalThis.ResizeObserver,createAtlasTestDeck:globalThis.createAtlasTestDeck};
  globalThis.ResizeObserver=class{observe(){}disconnect(){}};
  globalThis.createAtlasTestDeck=props=>{
@@ -990,7 +994,7 @@ async function rasterFixture(t,{terrain=false}={}){
  const channels=emptyMaterialChannels(256*256);
  if(terrain)f.window.campaign={atlasCancelRead:async()=>{},atlasTerrainTile:async(_token,q)=>{
   const size=256*2**q.tile.lod,fence='source-'+q.revision,view={box:{x:q.tile.x*size,y:q.tile.y*size,width:size,height:size},columns:65,rows:65};
-  return{ok:true,value:{tile:q.tile,revision:q.revision,fence,projection:{heightOnly:true,fence,revision:q.revision,grid:{view,heights:new Float32Array(65*65).fill(q.revision-1),seaLevelM:0}}}};
+  return{ok:true,value:{tile:q.tile,revision:q.revision,fence,projection:{heightOnly:true,fence,revision:q.revision,grid:{view,heights:terrainHeight?Float32Array.from({length:65*65},(_,i)=>terrainHeight({x:view.box.x+(i%65)*size/64,y:view.box.y+Math.floor(i/65)*size/64},q)):new Float32Array(65*65).fill(q.revision-1),seaLevelM:0}}}};
  },atlasMaterialTile:async(_token,q)=>({ok:true,value:{tile:q.tile,revision:q.revision,fence:'source-'+q.revision,width:256,height:256,channels}})};
  let cancellations=0;
  const raster=new AtlasRasterPresentation(f.root,{navigation:e=>e.button===1,hasDraft:()=>false,writing:()=>false,cancel:()=>{cancellations++;raster.cancelDraft();raster.gesture(false);},draft:()=>null,tool:()=> 'draw',panning:()=>false,live:()=>false,error:e=>errors.push(e),recovered:message=>recoveries.push(message),selection:()=>null,redraw:()=>f.canvas.redrawOverlay()});
@@ -1047,6 +1051,26 @@ test('frozen author gesture survives its preview frame but GPU loss retires it b
  await settle();assert.equal(f.decks.length,2);const recovered=f.decks[1];recovered.load();recovered.render();await settle();
  assert.equal(f.raster.ready,true);assert.equal(f.cancellations,1,'recovery must not replay input');
  assert.equal(f.event('click').defaultPrevented,true,'a lost press cannot become an author click after recovery');
+ assert.deepEqual(f.errors,[]);
+});
+
+test('production hover cannot reject a valid terrain press while selection awaits its drawing frame',async t=>{
+ const f=await rasterFixture(t,{terrain:true}),deck=f.decks[0];
+ const p=f.raster.surface.frame.project({x:f.canvas.view.x+f.canvas.view.width/2,y:f.canvas.view.y+f.canvas.view.height/2,heightM:0});
+ const point={clientX:p.x+10,clientY:p.y+20};
+ f.raster.overlay(new AtlasCanvasScene(atlasPaint("group")),{x:0,y:0});
+ assert.equal(f.raster.surface.frameUsable,false,'the original ancestor guard would reject this hover-only frame');
+ assert.equal(f.raster.ready,true);
+ assert.equal(f.raster.hitAt(point,['atlasObject']),null);
+ assert.equal(f.event('pointerdown',point.clientX,point.clientY).defaultPrevented,false);
+ f.raster.gesture(true);f.raster.gesture(false);
+ f.raster.surface.setTerrain([],undefined,undefined,true);
+ assert.equal(f.event('pointerdown',point.clientX,point.clientY).defaultPrevented,false,'released local terrain continues before its GPU frame');
+ f.raster.overlay(new AtlasCanvasScene(atlasPaint("group")),{x:0,y:0});
+ assert.equal(f.event('pointerdown',point.clientX,point.clientY).defaultPrevented,false,'next released gesture accepts pending hover');
+ f.raster.sync('campaign',f.canvas.view,2,[],0);
+ assert.equal(f.raster.ready,false);assert.equal(f.event('pointerdown',point.clientX,point.clientY).defaultPrevented,true,'source replacement stays closed');
+ f.raster.pauseReads();await settle();deck.render();await settle();
  assert.deepEqual(f.errors,[]);
 });
 
@@ -1215,4 +1239,139 @@ for(const product of ['height','material'])test(`terrain camera retry preserves 
  assert.equal(f.raster.ready,false);assert.equal(f.canvas.ready,false);assert.equal(f.canvas.hitAt(f.hitPoint()),null);
  assert.equal(f.event('pointerdown').defaultPrevented,true);assert.equal(retry.hidden,false);assert.equal(retry.disabled,false);
  assert.equal(f.errors.at(-1).message,'current '+product+' unavailable');assert.deepEqual(f.recoveries,[]);
+});
+
+test('RMB uses the shared camera during pending geometry, and a held brush blocks every navigation input',async t=>{
+ const f=await rasterFixture(t,{terrain:true});
+ const before=f.canvas.view;f.pointer('pointerdown',130,110,2);f.pointer('pointermove',190,155,2);f.pointer('pointerup',190,155,2);
+ assert(f.raster.tilt>0);assert.notEqual(f.raster.rotation,0);assert.equal(f.raster.surface.camera.tilt,f.raster.tilt);
+ assert.equal(f.canvas.drag,null);
+ // The next gesture starts without waiting for the prior camera's drawing acknowledgement.
+ f.pointer('pointerdown',130,110,1);assert(f.canvas.drag);f.pointer('pointermove',150,120,1);f.pointer('pointerup',150,120,1);
+ assert.notDeepEqual(f.canvas.view,before);
+ f.canvas.options.locked=()=>true;const locked=f.canvas.view,tilt=f.raster.tilt;
+ f.pointer('pointerdown',130,110,2);f.pointer('pointermove',190,170,2);f.pointer('pointerup',190,170,2);
+ assert.deepEqual(f.canvas.view,locked);assert.equal(f.raster.tilt,tilt);
+});
+
+test('WASD requires canvas focus, follows presentation direction, and releases on blur or a brush lock',t=>{
+ const f=fixture(t);let active=f.root;Object.defineProperty(f.document,'activeElement',{get:()=>active,configurable:true});
+ f.canvas.options.presentation=()=>({navigationShift:(dx,dy)=>({...f.canvas.view,x:f.canvas.view.x-dy,y:f.canvas.view.y+dx})});
+ const key=(type,code,target=f.root)=>{const e=new f.window.Event(type,{cancelable:true});Object.assign(e,{code});target.dispatchEvent(e);return e;};
+ assert(key('keydown','KeyW').defaultPrevented);let now=f.canvas.keyPrevious+40;f.canvas.advanceKeys(now);assert(f.canvas.view.x>100);assert.equal(f.canvas.view.y,200);
+ key('keyup','KeyW',f.window);assert.equal(f.canvas.keys.size,0);
+ active=f.document.createElement('input');assert.equal(key('keydown','KeyA').defaultPrevented,false);assert.equal(f.canvas.keys.size,0);
+ active=f.root;key('keydown','KeyD');f.root.dispatchEvent(new f.window.Event('blur'));assert.equal(f.canvas.keys.size,0);
+ key('keydown','KeyS');f.canvas.options.locked=()=>true;const before=f.canvas.view;f.canvas.advanceKeys(now+40);assert.deepEqual(f.canvas.view,before);assert.equal(f.canvas.keys.size,0);
+});
+
+
+test('sky navigation uses a finite bounded focus-plane fallback while author hits stay absent',async t=>{
+ const f=await rasterFixture(t,{terrain:true});f.raster.setPose(75);f.decks[0].render();await settle();const b=f.root.getBoundingClientRect(),event={clientX:b.left+f.root.clientWidth/2,clientY:b.top+1};
+ const anchor=f.raster.navigationPoint(event),box=f.raster.frame;
+ assert(anchor);assert(Object.values(anchor).every(Number.isFinite));assert(Math.hypot(anchor.x-box.x-box.width/2,anchor.y-box.y-box.height/2)<=box.width*2);
+ assert.equal(f.raster.authorPoint(event.clientX,event.clientY),null,'sky cannot authorize painting');
+ const zoom=f.raster.navigationZoom(box.width/2,anchor);assert(Object.values(zoom).every(Number.isFinite));assert.equal(zoom.width,box.width/2);
+});
+
+
+test('arriving finer terrain cannot leave the physical camera eye below a newly loaded slope',async t=>{
+ const f=await rasterFixture(t,{terrain:true,terrainHeight:(p,q)=>q.revision===1?0:p.x});
+ f.raster.setPose(75,90);const box=f.raster.navigationZoom(20,{x:f.canvas.view.x+f.canvas.view.width/2,y:f.canvas.view.y+f.canvas.view.height/2,heightM:0});f.canvas.set(box,true);
+ f.raster.reconcile(2,'source-2');
+ for(let i=0;i<100&&f.root.dataset.terrainRevision!=='2';i++)await settle();
+ assert.equal(f.root.dataset.terrainRevision,'2');
+ const camera=f.raster.surface.camera,distance=f.root.clientHeight*camera.metersPerPixel*1.5,tilt=camera.tilt*Math.PI/180,a=camera.rotation*Math.PI/180;
+ const eye={x:camera.focus.x+Math.sin(a)*Math.sin(tilt)*distance,y:camera.focus.y+Math.cos(a)*Math.sin(tilt)*distance};
+ const eyeHeight=camera.focusHeightM+Math.cos(tilt)*distance/camera.exaggeration;
+ assert(eyeHeight>=f.raster.height(eye)+.05-1e-6,'new terrain source must recheck physical eye clearance');
+});
+
+
+test('history, reset and direct reframe publish a cleared camera on an already loaded slope',()=>{
+ const raster=Object.create(AtlasRasterPresentation.prototype),published=[];
+ Object.assign(raster,{frame:{x:-10,y:-6,width:20,height:12},focusHeightM:0,tilt:75,rotation:90,exaggeration:1,gesturing:false,dirty:true,input:{clientWidth:1000,dataset:{}},height:p=>p.x,place:()=>{},surface:{setCamera:camera=>published.push(camera)}});
+ const check=()=>{
+  assert(published.length,'a synchronous camera publication is required');
+  for(const camera of published.splice(0)){
+   const eye=atlasCameraEye({frame:raster.frame,focusM:camera.focusHeightM,tilt:camera.tilt,rotation:camera.rotation,exaggeration:camera.exaggeration,projection:'perspective'});
+   const ground=raster.height({x:camera.focus.x+eye.x,y:camera.focus.y+eye.y});
+   assert(camera.focusHeightM+eye.z/camera.exaggeration>=ground+.05-1e-9,'every publication clears loaded terrain without a new source reply');
+  }
+ };
+ raster.reframe(raster.frame);check();
+ const canvas=Object.create(AtlasCanvas.prototype);
+ Object.assign(canvas,{box:{...raster.frame},initial:{...raster.frame,x:-8},past:[{...raster.frame,x:-9}],future:[],options:{changed:()=>raster.reframe(canvas.view)},apply:()=>{},refreshControls:()=>{},stopZoom:()=>{},cancel:()=>{}});
+ canvas.previous();check();canvas.next();check();canvas.reset();check();
+ raster.reframe({...raster.frame,x:-7});check();
+ raster.reframe({...raster.frame,width:2,height:1.2});check();
+});
+
+
+test('campaign camera preference restores pose and frame, accepts old defaults and isolates campaigns',async t=>{
+ const f=await rasterFixture(t,{terrain:true}),stored=new Map(),prior=globalThis.localStorage;
+ t.after(()=>{globalThis.localStorage=prior;});globalThis.localStorage={getItem:key=>stored.get(key)??null,setItem:(key,value)=>stored.set(key,value)};
+ const results=f.document.createElement('div');results.id='atlas-search-results';f.document.body.append(results);
+ const ui=Object.assign(Object.create(CampaignAtlasWorkbench.prototype),{camera:f.canvas,spatial:f.raster,root:f.root,canvas:f.root,regions:{resetContext(){}},journey:{activate:async()=>{}},output:{reset(){}},hitDialog:{close(){}},reference:{close(){}},landscape:{context(){}},author:{resetContext(){}},drawing:{},scheduleRender(){},error:e=>{throw e;}});
+ f.window.campaign.atlasWriteReferences=async()=>({ok:true,value:[]});
+ const owner={token:'first',campaign:{id:'campaign'}};
+ ui.owner=owner;f.raster.cameraChanged=()=>ui.remember();
+ f.canvas.set({...f.canvas.view,x:125,y:250},false);f.raster.reframe(f.canvas.view);f.raster.setPose(45,37);
+ const expected=f.raster.cameraPreference;
+ assert.deepEqual(JSON.parse(stored.get('atlas-camera:campaign')).pose,expected,'a pose-only control change saves the campaign preference');
+ await ui.activate(owner);assert.equal(f.canvas.view.x,125);assert.equal(f.canvas.view.y,250);assert.deepEqual(f.raster.cameraPreference,expected);
+ stored.set('atlas-camera:legacy',JSON.stringify({x:1,y:2,width:20,height:12}));await ui.activate({token:'legacy',campaign:{id:'legacy'}});
+ assert.deepEqual(f.canvas.view,{x:1,y:2,width:20,height:12});assert.deepEqual(f.raster.cameraPreference,{tilt:0,rotation:0,exaggeration:1,focusHeightM:0});
+ for(const invalid of ['null','{bad',JSON.stringify({x:0,y:0,width:0,height:12,pose:{tilt:45,rotation:37}})]){
+  stored.set('atlas-camera:invalid',invalid);await ui.activate({token:'invalid',campaign:{id:'invalid'}});
+  assert.deepEqual(f.raster.cameraPreference,{tilt:0,rotation:0,exaggeration:1,focusHeightM:0});
+ }
+ f.raster.restoreCameraPreference({tilt:100,rotation:397,exaggeration:0,focusHeightM:NaN});
+ assert.deepEqual(f.raster.cameraPreference,{tilt:75,rotation:37,exaggeration:.25,focusHeightM:0});
+ f.raster.restoreCameraPreference({tilt:'45',rotation:Infinity,exaggeration:null});
+ assert.deepEqual(f.raster.cameraPreference,{tilt:0,rotation:0,exaggeration:1,focusHeightM:0});
+});
+
+
+test('fresh loaded terrain preserves restored focus height and only raises it for eye clearance',async t=>{
+ const f=await rasterFixture(t,{terrain:true});
+ f.raster.setActive(false);f.raster.restoreCameraPreference({tilt:45,rotation:37,exaggeration:2,focusHeightM:500});
+ const opening=f.raster.openSurface('reopened',f.canvas.view,1,0,'source-1');
+ Object.defineProperties(f.raster.container,{clientWidth:{get:()=>f.root.clientWidth},clientHeight:{get:()=>f.root.clientHeight}});await settle();
+ const deck=f.decks.at(-1);deck.load();deck.render();await settle();deck.render();await settle();await opening;
+ assert.deepEqual(f.raster.cameraPreference,{tilt:45,rotation:37,exaggeration:2,focusHeightM:500});
+ assert.equal(f.raster.surface.camera.focusHeightM,500);
+});
+
+
+test('layout rounding during fresh view restoration preserves the saved camera focus',async t=>{
+ const f=await rasterFixture(t,{terrain:true,terrainHeight:()=>1000});
+ f.raster.restoreCameraPreference({tilt:45,rotation:37,exaggeration:1,focusHeightM:1500});
+ f.raster.reframe({...f.raster.frame,height:f.raster.frame.height+Number.EPSILON*f.raster.frame.height*2});
+ assert.equal(f.raster.cameraPreference.focusHeightM,1500,'floating-point layout noise is not a new terrain focus');
+});
+
+
+test('campaign activation restores frame and pose together before the first host reframe',async t=>{
+ const f=await rasterFixture(t,{terrain:true});f.raster.setActive(false);
+ const frame={x:1000,y:2000,width:320,height:180};
+ f.raster.restoreCameraPreference({tilt:45,rotation:37,exaggeration:1,focusHeightM:500},frame);
+ f.raster.reframe(frame);
+ assert.equal(f.raster.cameraPreference.focusHeightM,500,'first host frame must not reinterpret the restored camera as a pan');
+ assert.deepEqual(f.raster.frame,frame);
+});
+
+
+for(const axis of ['x','y'])test(`production viewport resize preserves focus near a cancelled ${axis} center and still refocuses a real move`,()=>{
+ const frame=axis==='y'?{x:-5000,y:-4049.877,width:12150,height:8100}:{x:-4049.877,y:-5000,width:8100,height:12150};
+ const canvas=Object.assign(Object.create(AtlasCanvas.prototype),{box:frame,set(box){this.box=box;}});
+ canvas.resizeViewport(axis==='y'?{width:1500,height:1000}:{width:1000,height:1500},axis==='y'?{width:1500,height:1032}:{width:1032,height:1500});
+ const raster=Object.assign(Object.create(AtlasRasterPresentation.prototype),{frame:{...frame},focusHeightM:1500,focusInitialized:true,tilt:45,rotation:37,exaggeration:1,gesturing:false,surface:null,tiles:[{}],height:()=>1000,place(){}});
+ const center=box=>box[axis]+box[axis==='x'?'width':'height']/2;
+ assert(Math.abs(center(canvas.view)-center(frame))<1e-12,'production resize only introduces floating-point rounding');
+ raster.reframe(canvas.view);assert.equal(raster.cameraPreference.focusHeightM,1500,'near-zero center must retain the saved focus after layout resize');
+ raster.reframe({...canvas.view,[axis]:canvas.view[axis]+1});
+ assert.equal(raster.cameraPreference.focusHeightM,1000,'an actual one-metre pan still refocuses on terrain');
+ const eye=atlasCameraEye({frame:raster.frame,focusM:raster.focusHeightM,tilt:raster.tilt,rotation:raster.rotation,exaggeration:raster.exaggeration,projection:'perspective'});
+ assert(raster.focusHeightM+eye.z>=raster.height({x:raster.frame.x+raster.frame.width/2+eye.x,y:raster.frame.y+raster.frame.height/2+eye.y})+.05,'a real move still keeps the eye above loaded terrain');
 });

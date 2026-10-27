@@ -9,6 +9,7 @@ import {LandscapeRasterizer} from './landscape-raster';
 import {pigmentStrokeCoverage} from './landscape-pigment-coverage';
 import {reliefRgb,DEFAULT_TERRAIN_STYLE} from './terrain-relief';
 import {terrainColors} from './world-model';
+import {terrainGridRect} from './terrain-grid-layout';
 
 /** Display-only draft. Each new gesture starts from the previous local result,
  * including its editing ground; canonical receipt adoption happens separately. */
@@ -20,6 +21,7 @@ export class AtlasSurfaceDraft {
   constructor(tiles:readonly AtlasSurfaceTile[],private visibility:TerrainView,private land=DEFAULT_TERRAIN_STYLE.land){this.bases=tiles;this.tiles=tiles;}
   height(stroke:HeightStroke):boolean{
     let changed=false;
+    const regions:{x:number;y:number;width:number;height:number}[]=[];
     this.tiles=this.bases.map((tile,index)=>{
       const old=this.tiles[index]!,b=tile.terrain.projection.grid.view.box;
       if(!touches(stroke.samples,stroke.radius,b.x,b.y,b.x+b.width,b.y+b.height))return old;
@@ -28,29 +30,25 @@ export class AtlasSurfaceDraft {
       if(!draft.update(stroke))return old;
       changed=true;
       const grid={...draft.grid,editing:{ground:draft.ground,water:tile.terrain.projection.grid.editing!.water}};
-      const {width,height,channels}=tile.material,current=old.material.channels,r=draft.changedRect;
-      const raw={...grid,heights:draft.ground},before={...grid,heights:tile.terrain.projection.grid.editing!.ground},waterGrid={...grid,heights:grid.editing.water};
-      let water:Uint8Array|undefined,baseColor:Uint8Array|undefined,forest:Uint8Array|undefined;
-      const covers:Partial<Record<TerrainCoverChannel,Uint8Array>>={};
-      const relief=current.relief.slice(),radius=b.width/width*MACRO_RELIEF_RADIUS;
-      const land=reliefRgb(this.land),sea=reliefRgb(terrainColors.water),v=grid.view;
-      const left=Math.max(0,Math.floor((r.x-1)/(v.columns-1)*width)),right=Math.min(width,Math.ceil((r.x+r.width)/(v.columns-1)*width));
-      const top=Math.max(0,Math.floor((r.y-1)/(v.rows-1)*height)),bottom=Math.min(height,Math.ceil((r.y+r.height)/(v.rows-1)*height));
-      for(let y=top;y<bottom;y++)for(let x=left;x<right;x++){
-        const p={x:b.x+(x+.5)/width*b.width,y:b.y+(y+.5)/height*b.height},level=gridHeight(waterGrid,p);
-        const wet=gridHeight(raw,p)<=level,wasWet=gridHeight(before,p)<=level,i=y*width+x,crossed=wet!==wasWet;
-        const mask=crossed?(wet?255:0):channels.water[i]!,cover=crossed&&wet?0:channels.forest[i]!;
-        const rgb=crossed?(wet?sea:land):channels.baseColor.subarray(i*4,i*4+3);
-        const h=gridHeight(grid,p),leftH=gridHeight(grid,{x:p.x-radius,y:p.y}),rightH=gridHeight(grid,{x:p.x+radius,y:p.y}),topH=gridHeight(grid,{x:p.x,y:p.y-radius}),bottomH=gridHeight(grid,{x:p.x,y:p.y+radius});
-        const sx=(rightH-leftH)/(2*radius),sy=(bottomH-topH)/(2*radius),n=Math.hypot(sx,sy,1),ridge=Math.max(0,(4*h-leftH-rightH-topH-bottomH)/(2*radius));
-        relief.set([Math.round((1-sx/n)*127.5),Math.round((1-sy/n)*127.5),Math.round((1+1/n)*127.5),Math.round(Math.min(1,ridge*MACRO_RIDGE_GAIN)*255)],i*4);
-        for(const c of COVER_CHANNEL_NAMES){const value=crossed&&wet?0:channels[c][i]!;if(current[c][i]!==value){covers[c]??=current[c].slice();covers[c]![i]=value;}}
-        if(current.water[i]===mask&&current.forest[i]===cover&&rgb.every((v,c)=>v===current.baseColor[i*4+c]))continue;
-        water??=current.water.slice();baseColor??=current.baseColor.slice();forest??=current.forest.slice();
-        water[i]=mask;forest[i]=cover;for(let c=0;c<3;c++)baseColor[i*4+c]=rgb[c]!;
-      }
-      return {...tile,terrain:{...tile.terrain,projection:{...tile.terrain.projection,grid}},
-        material:{...tile.material,channels:{...current,...covers,relief,...(water?{water,baseColor:baseColor!,forest:forest!}:{})}}};
+      regions.push(terrainGridRect(grid.view,draft.changedRect,1));
+      return {...old,terrain:{...tile.terrain,projection:{...tile.terrain.projection,grid}}};
+    });
+    if(!changed)return false;
+    // Finish all neighbouring heights before deriving their lighting. Sampling
+    // a tile in isolation clamps the macro normal at its edge and draws a
+    // rectangular bright ridge, even when the height field itself is continuous.
+    const heights=this.tiles.map(t=>t.terrain.projection.grid);
+    const sample=(p:{x:number;y:number},fallback:typeof heights[number])=>{
+      let selected:typeof fallback|undefined;
+      for(const g of heights){const b=g.view.box;if(p.x>=b.x&&p.x<=b.x+b.width&&p.y>=b.y&&p.y<=b.y+b.height&&(!selected||b.width<selected.view.box.width))selected=g;}
+      return gridHeight(selected??fallback,p);
+    };
+    this.tiles=this.tiles.map((old,index)=>{
+      const tile=this.bases[index]!,grid=old.terrain.projection.grid,b=grid.view.box;
+      const radius=b.width/tile.material.width*MACRO_RELIEF_RADIUS;
+      const affected=regions.filter(r=>r.x<=b.x+b.width+radius&&r.x+r.width>=b.x-radius&&r.y<=b.y+b.height+radius&&r.y+r.height>=b.y-radius);
+      if(!affected.length)return old;
+      const work=atlasSurfaceHeightMaterialSteps(tile,old,affected,sample,this.land);let step=work.next();while(!step.done)step=work.next();return step.value;
     });return changed;
   }
   color(record:LandscapeRecord):boolean{
@@ -91,4 +89,33 @@ function touches(points:readonly {x:number;y:number}[],radius:number,left:number
     const a=points[Math.max(0,i-1)]!,b=points[i]!;
     if(Math.max(a.x,b.x)+radius>=left&&Math.min(a.x,b.x)-radius<=right&&Math.max(a.y,b.y)+radius>=top&&Math.min(a.y,b.y)-radius<=bottom)return true;
   }return false;
+}
+
+/** Shared unchanged coastal/relief rule. A worker may yield once per texel row. */
+export function* atlasSurfaceHeightMaterialSteps(tile:AtlasSurfaceTile,old:AtlasSurfaceTile,affected:readonly {x:number;y:number;width:number;height:number}[],sample:(p:{x:number;y:number},fallback:AtlasSurfaceTile['terrain']['projection']['grid'])=>number,landColor=DEFAULT_TERRAIN_STYLE.land):Generator<void,AtlasSurfaceTile>{
+ const grid=old.terrain.projection.grid,b=grid.view.box,radius=b.width/tile.material.width*MACRO_RELIEF_RADIUS;
+      const {width,height,channels}=tile.material,current=old.material.channels;
+      const raw={...grid,heights:grid.editing!.ground},before={...grid,heights:tile.terrain.projection.grid.editing!.ground},waterGrid={...grid,heights:grid.editing!.water};
+      let water:Uint8Array|undefined,baseColor:Uint8Array|undefined,forest:Uint8Array|undefined;
+      const covers:Partial<Record<TerrainCoverChannel,Uint8Array>>={};
+      const relief=current.relief.slice();
+      const land=reliefRgb(landColor),sea=reliefRgb(terrainColors.water);
+      const left=Math.max(0,Math.floor((Math.min(...affected.map(r=>r.x))-radius-b.x)/b.width*width)),right=Math.min(width,Math.ceil((Math.max(...affected.map(r=>r.x+r.width))+radius-b.x)/b.width*width));
+      const top=Math.max(0,Math.floor((Math.min(...affected.map(r=>r.y))-radius-b.y)/b.height*height)),bottom=Math.min(height,Math.ceil((Math.max(...affected.map(r=>r.y+r.height))+radius-b.y)/b.height*height));
+      for(let y=top;y<bottom;y++){yield;for(let x=left;x<right;x++){
+        const p={x:b.x+(x+.5)/width*b.width,y:b.y+(y+.5)/height*b.height},level=gridHeight(waterGrid,p);
+        const wet=gridHeight(raw,p)<=level,wasWet=gridHeight(before,p)<=level,i=y*width+x,crossed=wet!==wasWet;
+        const mask=crossed?(wet?255:0):channels.water[i]!,cover=crossed&&wet?0:channels.forest[i]!;
+        const rgb=crossed?(wet?sea:land):channels.baseColor.subarray(i*4,i*4+3);
+        const h=sample(p,grid),leftH=sample({x:p.x-radius,y:p.y},grid),rightH=sample({x:p.x+radius,y:p.y},grid),topH=sample({x:p.x,y:p.y-radius},grid),bottomH=sample({x:p.x,y:p.y+radius},grid);
+        const sx=(rightH-leftH)/(2*radius),sy=(bottomH-topH)/(2*radius),n=Math.hypot(sx,sy,1),ridge=Math.max(0,(4*h-leftH-rightH-topH-bottomH)/(2*radius));
+        relief.set([Math.round((1-sx/n)*127.5),Math.round((1-sy/n)*127.5),Math.round((1+1/n)*127.5),Math.round(Math.min(1,ridge*MACRO_RIDGE_GAIN)*255)],i*4);
+        for(const c of COVER_CHANNEL_NAMES){const value=crossed&&wet?0:channels[c][i]!;if(current[c][i]!==value){covers[c]??=current[c].slice();covers[c]![i]=value;}}
+        if(current.water[i]===mask&&current.forest[i]===cover&&rgb.every((v,c)=>v===current.baseColor[i*4+c]))continue;
+        water??=current.water.slice();baseColor??=current.baseColor.slice();forest??=current.forest.slice();
+        water[i]=mask;forest[i]=cover;for(let c=0;c<3;c++)baseColor[i*4+c]=rgb[c]!;
+      }
+      }
+      return {...old,
+        material:{...tile.material,channels:{...current,...covers,relief,...(water?{water,baseColor:baseColor!,forest:forest!}:{})}}};
 }

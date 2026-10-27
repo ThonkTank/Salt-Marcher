@@ -17,9 +17,10 @@ function assertNoOverlap(frame){
     assert.equal(overlaps(frame.tiles[i].tile,frame.tiles[j].tile),false,`overlap in frame: ${address(frame.tiles[i].tile)} and ${address(frame.tiles[j].tile)}`);
 }
 function reply(request,source='world',size=1024){
+  const width=256*2**request.tile.lod,box={x:request.tile.x*width,y:request.tile.y*width,width,height:width};
   return {tile:{...request.tile},revision:request.revision,fence:source,cache:'built',projection:{
-    revision:request.revision,fence:source,source,width:256,height:256,pixels:new Uint8Array(size),
-    grid:{heights:new Float32Array(16),view:{box:{x:0,y:0,width:1,height:1}}},
+    revision:request.revision,fence:source,source,generation:0,width:256,height:256,pixels:new Uint8Array(256*256*4),forest:new Uint8Array(256*256),draft:false,
+    grid:{heights:new Float32Array(65*65),seaLevelM:0,editing:{ground:new Float32Array(65*65),water:new Float32Array(65*65)},view:{box,frame:box,columns:65,rows:65,focusM:0,tilt:0,rotation:0,exaggeration:1}},
   }};
 }
 function deferred(){let resolve,reject;const promise=new Promise((a,b)=>{resolve=a;reject=b;});return {promise,resolve,reject};}
@@ -182,10 +183,23 @@ test('reply address, revision, top-level fence and projection fence are all chec
       attempts++;
       const valid=reply(request);
       return attempts===1?corrupt(valid):valid;
-    },()=>{}),/reply does not match/);
+    },()=>{}),/Atlas-Terrainquelle ungültig/);
     await stream.load(input('world',{x:0,y:0,width:256,height:256}),async request=>{attempts++;return reply(request);},()=>{});
     assert.equal(attempts,3,'invalid overview reply must not enter the cache; retry reloads overview and detail');
   }
+});
+test('the terrain stream rejects nonuniform and incomplete raw tiles before publication',async()=>{
+ for(const corrupt of [
+  p=>{p.projection.grid.view.refinement={x:32,y:32,width:32,height:32};},
+  p=>{p.projection.grid.view.frame={...p.projection.grid.view.frame,x:1};},
+  p=>{p.projection.grid.heights[0]=Infinity;},
+  p=>{p.projection.grid.editing.ground=new Float32Array(1);},
+  p=>{p.projection.forest=new Uint8Array(1);},
+ ]){
+  const stream=new AtlasTileStream(),frames=[];
+  await assert.rejects(stream.load(input('world',{x:0,y:0,width:256,height:256}),async request=>{const p=reply(request);corrupt(p);return p;},f=>frames.push(f)),/Atlas-Terrainquelle ungültig/);
+  assert(frames.every(f=>f.tiles.length===0));stream.dispose();
+ }
 });
 
 test('dispose invalidates an in-flight result and stops later publication',async()=>{
@@ -201,7 +215,7 @@ test('dispose invalidates an in-flight result and stops later publication',async
 });
 
 test('same-key revisits hit the LRU cache and source churn stays within its byte budget',async()=>{
-  const stream=new AtlasTileStream({maxBytes:20_000}),calls=[];
+  const stream=new AtlasTileStream({maxBytes:800_000}),calls=[];
   const loadSource=source=>stream.load(input(source,{x:0,y:0,width:256,height:256}),async request=>{
     calls.push(`${source}:${address(request.tile)}`);
     return reply(request,source,8192);

@@ -1,7 +1,9 @@
 import { atlasElement as get, setAtlasText as setText } from './atlas-dom';
 import { journeyPlayback } from "./journey-playback";
 import { atlasPartyPoint } from "./atlas-runtime-model";
-import type { AtlasLocalPreview, AtlasTravelAction, } from "./atlas-travel-contracts";
+import {atlasWriteReference} from "./atlas-write-recovery";
+import type {AtlasWriteReference,AtlasWriteStatus} from "./atlas-write-receipt";
+import type { AtlasTravelCommand, AtlasLocalPreview, AtlasTravelAction, } from "./atlas-travel-contracts";
 import { openWorld, atlasWorldTravelState, previewAtlasWorldTravel, startAtlasWorldTravel, refreshWorldAfterAtlasTravel } from "./world-ui";
 import { atlasFrame, localToAtlas } from "./campaign-atlas-model";
 import type { AtlasRenderView } from "./campaign-atlas-contracts";
@@ -19,6 +21,8 @@ interface AtlasJourneyHost {
         status: (text: string, error?: boolean) => void;
     };
     readonly error: (error: unknown) => void;
+    readonly confirmed: () => void;
+    readonly projected: () => void;
     readonly root: HTMLElement;
     readonly lastPoint: Point;
     readonly canvas: HTMLCanvasElement;
@@ -56,13 +60,125 @@ export class AtlasJourney {
         this.invalidatePreview();
         this.entranceId = id;
     }
-    activate() {
+    /** A new authorization never changes the saved receipt identity. */
+    async activate() {
         this.invalidatePreview();
         this.travelReadState = 'loading';
         this.entranceId = null;
         this.entranceOptions = '';
+        this.busy = false;
+        this.activation++;
+        const owner = this.host.owner;
+        if (!owner) return;
+        const state = this.newRecovery(owner, 'loading');
+        try {
+            // An older activation may still be publishing/clearing this campaign's
+            // slot. Read after it settles, never authorize travel from an early empty read.
+            await this.referenceOperations.get(owner.campaign.id);
+            if (!this.current(state)) return;
+            await this.loadReference(state);
+        } catch (error) {
+            if (this.current(state)) this.failRecovery(state, error);
+        }
     }
-    pendingTravel: import("./atlas-travel-contracts").AtlasTravelCommand | null = null;
+    pendingTravel: AtlasTravelCommand | AtlasWriteReference | {campaignId:string;state:'loading'|'error'} | null = null;
+    private recovery: {
+        owner: WorkspaceGeometry;
+        activation: number;
+        phase: 'running'|'loading'|'confirmed-durable-reference'|'error';
+        reference: AtlasWriteReference|null;
+        durableConfirmed: boolean;
+        outcome: AtlasWriteStatus['outcome'];
+        error?: string;
+    } | null = null;
+    private activation = 0;
+    private referenceOperations = new Map<string, Promise<unknown>>();
+    /** A0.14 can distinguish a completed keep from an attempted/failed keep,
+     * even when the worker no longer accepts authorization reads. */
+    get recoveryState() {
+        const s = this.recovery;
+        return s ? {phase:s.phase, running:this.busy, durableConfirmed:s.durableConfirmed,
+            reference:s.reference ? structuredClone(s.reference) : null, outcome:s.outcome, error:s.error} : null;
+    }
+    private newRecovery(owner:WorkspaceGeometry, phase:'loading'|'running') {
+        const state = {owner,activation:this.activation,phase,reference:null as AtlasWriteReference|null,durableConfirmed:false,outcome:'unknown' as AtlasWriteStatus['outcome']};
+        this.recovery = state;
+        this.pendingTravel = {campaignId:owner.campaign.id,state:'loading'};
+        return state as NonNullable<AtlasJourney['recovery']>;
+    }
+    private current(state:NonNullable<AtlasJourney['recovery']>) {
+        return this.recovery === state && this.ownsActivation(state);
+    }
+    private ownsActivation(state:NonNullable<AtlasJourney['recovery']>) {
+        return this.host.owner===state.owner && this.activation===state.activation;
+    }
+    private track<T>(campaignId:string, task:Promise<T>):Promise<T> {
+        this.referenceOperations.set(campaignId,task);
+        void task.finally(()=>{if(this.referenceOperations.get(campaignId)===task)this.referenceOperations.delete(campaignId);}).catch(()=>{});
+        return task;
+    }
+    private failRecovery(state:NonNullable<AtlasJourney['recovery']>, error:unknown) {
+        state.phase = 'error'; state.error = (error as Error).message;
+        get('atlas-recover').hidden = false;
+        this.playback.stop();
+        this.host.error(error);
+    }
+    private async loadReference(state:NonNullable<AtlasJourney['recovery']>) {
+        const r = await window.campaign.atlasWriteReferences(state.owner.campaign.id,state.owner.token);
+        if (!this.current(state)) return;
+        if (!r.ok) throw Error(r.error);
+        const ref = r.value.find(ref=>ref.family==='travel' && ref.campaignId===state.owner.campaign.id);
+        state.reference = ref ?? null;
+        state.durableConfirmed = !!ref;
+        if (ref) {this.pendingTravel=ref;state.phase='confirmed-durable-reference';}
+        else {this.pendingTravel=null;this.recovery=null;}
+    }
+    /** Read the receipt and clear its exact durable slot. Never replay a writer. */
+    async recover():Promise<AtlasWriteStatus['outcome']|null> {
+        const state = this.recovery;
+        if (!state || !this.current(state) || this.busy) return null;
+        this.playback.stop(); this.busy=true;
+        const task = (async()=>{
+            try {
+                if (!state.reference || !state.durableConfirmed) {
+                    await this.loadReference(state);
+                    if (!this.current(state)) return this.recovery===null && this.ownsActivation(state) ? 'not-applied' as const : null;
+                }
+                const ref = state.reference!;
+                const status = await window.campaign.atlasWriteStatus(ref,state.owner.token);
+                if (!this.current(state)) return null;
+                if (!status.ok) throw Error(status.error);
+                state.outcome = status.value.outcome;
+                if (state.outcome==='unknown') throw Error('Ausgang des Reiseauftrags weiterhin unbekannt. Speicherstand erneut klären.');
+                const cleared = await window.campaign.clearAtlasWriteReference(ref,state.owner.token);
+                if (!this.current(state)) return null;
+                if (!cleared.ok) throw Error(cleared.error);
+                this.pendingTravel=null;this.recovery=null;
+                if (state.outcome==='applied') this.host.confirmed();
+                return state.outcome;
+            } catch(error) {
+                if(this.current(state))this.failRecovery(state,error);
+                return null;
+            } finally {
+                if(this.ownsActivation(state) && (!this.recovery || this.recovery===state)) {this.busy=false;this.renderTravel();}
+            }
+        })();
+        return this.track(state.owner.campaign.id,task);
+    }
+    /** Projection failures retain the confirmed outcome in the Workbench. */
+    async projectTravel(owner:WorkspaceGeometry, activation=this.activation) {
+        const loaded = await this.host.refresh();
+        if(this.host.owner!==owner || this.activation!==activation)return false;
+        if(!loaded)throw Error('Reisestand gespeichert. Ansicht erneut laden.');
+        await openDungeon();
+        if(this.host.owner!==owner || this.activation!==activation)return false;
+        await refreshWorldAfterAtlasTravel(owner.token,this.host.data?.geometry.sceneId ?? '');
+        if(this.host.owner!==owner || this.activation!==activation)return false;
+        this.host.projected();
+        get('atlas-save-status').textContent='Reisestand gespeichert';
+        this.host.render();
+        return true;
+    }
     entranceOptions = '';
     travelReadState: "loading" | "ready" | "failed" = "loading";
     previewRequest = 0;
@@ -178,57 +294,47 @@ export class AtlasJourney {
                     ![j?.status, dp?.status, hp?.status].some((s) => s === "active" || s === "paused");
     }
     async travel(action: AtlasTravelAction) {
-        const w = this.host.owner, sceneId = this.host.data?.geometry.sceneId;
-        if (!w || !sceneId || this.host.busy || this.pendingTravel || this.travelReadState !== "ready")
-            return false;
-        const command = {
-            commandId: crypto.randomUUID(),
-            campaignId: w.campaign.id,
-            token: w.token,
-            sceneId,
-            action,
-        };
-        let acknowledged = false;
-        this.busy = true;
-        try {
-            const r = await window.campaign.executeAtlasTravelCommit(command);
-            acknowledged = true;
-            if (this.host.owner !== w)
-                return false;
-            if (!r.ok)
-                throw new Error(r.error);
-            this.localPreview = null;
-            const loaded = await this.host.refresh();
-            if (this.host.owner !== w)
-                return false;
-            get("atlas-save-status").textContent = loaded ? "Reisestand gespeichert" : "Reisestand gespeichert. Ansicht erneut laden.";
-            this.host.render();
+        const owner = this.host.owner, sceneId = this.host.data?.geometry.sceneId;
+        if (!owner || !sceneId || this.host.busy || this.pendingTravel || this.travelReadState !== 'ready') return false;
+        // Reserve and capture before hashing/persistence yields control.
+        const command:AtlasTravelCommand = structuredClone({commandId:crypto.randomUUID(),campaignId:owner.campaign.id,token:owner.token,sceneId,action});
+        const state = this.newRecovery(owner,'running');
+        this.pendingTravel=structuredClone(command);this.busy=true;
+        const task = (async()=>{
             try {
-                await openDungeon();
-                await refreshWorldAfterAtlasTravel(w.token, sceneId);
+                state.reference = await atlasWriteReference({kind:'travel',command});
+                if(!this.current(state))return false;
+                const kept = await window.campaign.keepAtlasWriteReference(state.reference,owner.token);
+                if(!kept.ok)throw Error('Reiseauftrag nicht gesendet: '+kept.error);
+                state.durableConfirmed=true;state.phase='confirmed-durable-reference';
+                if(!this.current(state))return false;
+                const r = await window.campaign.executeAtlasTravelCommit(command);
+                if(!this.current(state))return false;
+                if(!r.ok) {
+                    if(r.errorKind==='store-outcome-unknown')throw Error('Ausgang des Reiseauftrags unbekannt. Speicherstand klären, bevor du weiterreist.');
+                    // Even an ordinary error can follow a commit. Read the receipt.
+                    const status=await window.campaign.atlasWriteStatus(state.reference,owner.token);
+                    if(!this.current(state))return false;
+                    if(!status.ok)throw Error(status.error);
+                    state.outcome=status.value.outcome;
+                    if(state.outcome==='unknown')throw Error('Ausgang des Reiseauftrags unbekannt. Speicherstand klären, bevor du weiterreist.');
+                } else state.outcome='applied';
+                const cleared=await window.campaign.clearAtlasWriteReference(state.reference,owner.token);
+                if(!this.current(state))return false;
+                if(!cleared.ok)throw Error(cleared.error);
+                this.pendingTravel=null;this.recovery=null;
+                if(state.outcome==='not-applied') {this.host.error(new Error(!r.ok?r.error:'Reiseauftrag nicht gespeichert.'));return false;}
+                this.localPreview=null;this.host.confirmed();
+                return await this.projectTravel(owner,state.activation);
+            } catch(error) {
+                if(this.current(state))this.failRecovery(state,error);
+                else if(this.ownsActivation(state) && !this.recovery)this.host.error(error);
+                return false;
+            } finally {
+                if(this.ownsActivation(state) && (!this.recovery || this.recovery===state)) {this.busy=false;this.renderTravel();}
             }
-            catch (error) {
-                if (this.host.owner === w)
-                    this.host.opts.status('Reisestand gespeichert. Weltkontext erneut laden: ' + (error as Error).message, true);
-            }
-            return true;
-        }
-        catch (e) {
-            if (this.host.owner === w && !acknowledged) {
-                this.pendingTravel = command;
-                get("atlas-recover").hidden = false;
-                this.host.error(new Error("Ausgang des Reiseauftrags unbekannt. Speicherstand klären, bevor du weiterreist."));
-            }
-            else if (this.host.owner === w)
-                this.host.error(e);
-            return false;
-        }
-        finally {
-            if (this.host.owner === w) {
-                this.busy = false;
-                this.renderTravel();
-            }
-        }
+        })();
+        return this.track(owner.campaign.id,task);
     }
     async travelControl(kind: string) {
         if (kind === "play" && this.playback.running) {
@@ -314,12 +420,11 @@ export class AtlasJourney {
             const j = a.localJourney;
             if (j && ["active", "paused"].includes(j.status)) {
                 if (kind === "play") {
-                    if (j.status === "paused")
-                        await this.travel({
+                    if (j.status === "paused" && !await this.travel({
                             kind: "resume",
                             id: j.id,
                             expectedRevision: j.revision,
-                        });
+                        })) return;
                     this.playback.play();
                     return;
                 }
@@ -368,7 +473,7 @@ export class AtlasJourney {
                 this.host.root.hidden ||
                 document.hidden ||
                 !this.host.owner ||
-                this.travelReadState !== "ready")
+                this.travelReadState !== "ready" || this.pendingTravel || this.host.busy)
                 return null;
             return {
                 key: this.host.owner.token + ":" + j.id,

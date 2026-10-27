@@ -20,6 +20,7 @@ export type AtlasProjectionJob =
 export type AtlasJob = (AtlasProjectionJob
  | {kind:'terrain-live';query:TerrainFrameQuery;base?:TerrainFrameIdentity}
  | {kind:'terrain-stroke';stroke:HeightStroke}
+ | {kind:'author-checkpoint';query:import('../src/app/terrain-author-checkpoint').TerrainAuthorQuery}
  | {kind:'region';query:AtlasRegionQuery}
  | {kind:'focus';objectKind:'room'|'city'|'building'|'element'|'scope';id:string}
  | {kind:'hit';query:AtlasRegionQuery;point:Point}
@@ -27,6 +28,7 @@ export type AtlasJob = (AtlasProjectionJob
 ) & {continuation?:boolean;cancellation?:Int32Array};
 export type AtlasWorkerJob = AtlasJob & {source:AtlasRegionSource};
 export interface AtlasJobResults {
+ 'author-checkpoint':import('../src/app/terrain-author-checkpoint').TerrainAuthorCheckpoint;
  'terrain':TerrainProjection;'terrain-color':TerrainColorTile;
  'terrain-refine':TerrainFrame;'terrain-live':TerrainFrame;'terrain-stroke':PreparedTerrainStroke;
  'terrain-tile':AtlasTerrainTile;'material-tile':AtlasMaterialTile;'geometry-tile':AtlasGeometryTile;

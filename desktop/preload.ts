@@ -43,6 +43,7 @@ contextBridge.exposeInMainWorld('campaign', Object.freeze({
   atlasCancelRead:(token,control,consumer)=>ipcRenderer.invoke('atlas:cancel-read',token,control,consumer),
   atlasTerrainTile:(token,request,control,consumer)=>ipcRenderer.invoke('atlas:terrain-tile',token,request,control,consumer),
   atlasMaterialTile:(token,request,control,consumer)=>ipcRenderer.invoke('atlas:material-tile',token,request,control,consumer),
+  atlasAuthorCheckpoint:(token,query)=>ipcRenderer.invoke('atlas:author-checkpoint',token,query),
   atlasTerrainSource:token=>ipcRenderer.invoke('atlas:terrain-source',token),
   atlasRegion:(token,query,consumer)=>ipcRenderer.invoke('atlas:geometry-region',token,query,consumer),
   atlasObjectFocus:(token,kind,id)=>ipcRenderer.invoke('atlas:focus',token,kind,id),

@@ -19,7 +19,11 @@ export interface AtlasPresentation {
    * Owned asynchronous failures are reported by the presentation and rejected as
    * AtlasPresentationFrameError; synchronous paint/Canvas failures remain local. */
   batch?(paint: () => void): void | Promise<void>;
-  navigationPoint(event:{clientX:number;clientY:number}):Point|null;
+  navigationPoint(event:{clientX:number;clientY:number}):import('./atlas-camera-navigation').AtlasNavigationAnchor|null;
+  navigationOrbit?(anchor:import('./atlas-camera-navigation').AtlasNavigationAnchor,dx:number,dy:number):import('./passive-map-canvas').CanvasBox|null;
+  navigationPan?(anchor:import('./atlas-camera-navigation').AtlasNavigationAnchor,event:{clientX:number;clientY:number},dx:number,dy:number):import('./passive-map-canvas').CanvasBox|null;
+  navigationZoom?(width:number,anchor:import('./atlas-camera-navigation').AtlasNavigationAnchor):import('./passive-map-canvas').CanvasBox;
+  navigationShift?(dx:number,dy:number):import('./passive-map-canvas').CanvasBox;
   paint(
     scene: AtlasCanvasScene,
     origin: Point,

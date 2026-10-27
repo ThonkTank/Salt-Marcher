@@ -58,6 +58,7 @@ export interface AtlasRegionSource {
 }
 export interface AtlasCitySite {header:CityHeader;unit:CityUnit|null;related:CityUnit[];factions:{id:string;name:string}[];canUndo:boolean;canRedo:boolean}
 export interface AtlasRegionAPI {
+ atlasAuthorCheckpoint(token:string,query:import('./terrain-author-checkpoint').TerrainAuthorQuery):Promise<import('./contracts').Result<import('./terrain-author-checkpoint').TerrainAuthorCheckpoint>>;
  atlasGeometryTile(token:string,request:import('./atlas-geometry-tile').AtlasGeometryTileRequest):Promise<import('./contracts').Result<import('./atlas-geometry-tile').AtlasGeometryTile>>;
  /** Consumer defaults to the editor; export reads and their cancellation select export explicitly. */
  atlasCancelRead(token:string,control:import('./atlas-read-request').AtlasReadRequest,consumer?:'view'|'export'):Promise<import('./contracts').Result<void>>;
