@@ -1,6 +1,7 @@
 import { parentPort, workerData } from 'node:worker_threads';
 import { dirname } from 'node:path';
 import { CampaignStore } from '../src/app/storage/store';
+import { AtlasCommitProjectionError } from '../src/app/storage/atlas-commit-projection';
 import type { ChronicleReadSession } from '../src/app/storage/chronicle-pages';
 import { BackupValidationService } from './backup-validation';
 import { finishCampaignErasure } from './campaign-erasure';
@@ -121,7 +122,7 @@ port.on('message', (message: { kind: string; id: number; method: string; value: 
         value = await operations[message.method]!(...args);
       } catch (error) {
         port.postMessage({
-          kind: 'error',
+          kind: error instanceof AtlasCommitProjectionError ? 'unknown' : 'error',
           id: message.id,
           error: error instanceof Error ? error.message : String(error),
         });

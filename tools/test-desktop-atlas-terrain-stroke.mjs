@@ -7,6 +7,7 @@ import { createAtlasCanonicalFixture } from './atlas-canonical-fixture.mjs';
 import { setBrushWorldRadius, setHeightDirection } from './atlas-brush-probe.mjs';
 
 const root = process.cwd();
+const recoveryProbe = process.argv.includes('--recovery');
 const output = path.resolve('.build/atlas-terrain-stroke', `${Date.now()}-${process.pid}`);
 await mkdir(output, { recursive: true });
 const native = await createNativeSession({ root, output, name: 'atlas-terrain-stroke' });
@@ -29,6 +30,12 @@ let page;
 
 const sha = (data) => createHash('sha256').update(data).digest('hex');
 const sourceFiles = [
+  './desktop/host-ipc.ts',
+  './desktop/store-worker.ts',
+  './src/app/shared/contracts.ts',
+  './src/app/storage/store.ts',
+  './src/app/storage/atlas-commit-projection.ts',
+  './src/app/atlas/campaign-atlas-author.ts',
   './src/app/workspace/renderer.ts',
   './src/app/workspace/workspace-editors.ts',
   './tools/test-desktop-atlas-terrain-stroke.mjs',
@@ -92,6 +99,166 @@ function queryHeights() {
   } finally {
     db.close();
   }
+}
+function recoveryState() {
+  const db = new Database(path.join(native.profile, 'workbench.sqlite'), { readonly: true });
+  try {
+    return {
+      ...db
+        .prepare('SELECT revision,cursor FROM campaign_atlas WHERE campaign_id=?')
+        .get(fixture.campaignId),
+      commands: db
+        .prepare('SELECT count(*) n FROM atlas_command WHERE campaign_id=?')
+        .get(fixture.campaignId).n,
+      receipts: db
+        .prepare('SELECT count(*) n FROM atlas_receipt WHERE campaign_id=?')
+        .get(fixture.campaignId).n,
+      heights: sha(JSON.stringify(queryHeights())),
+    };
+  } finally {
+    db.close();
+  }
+}
+async function exerciseRecovery() {
+  mark('recovery: hold a committed reply while a dependent gesture closes');
+  const before = recoveryState();
+  await native.app.evaluate(({ ipcMain }) => {
+    const state = (globalThis.__qaRecovery = {
+      calls: [],
+      resolutions: [],
+      held: false,
+      release: null,
+    });
+    const original = ipcMain._invokeHandlers.get('atlas:commit');
+    ipcMain.removeHandler('atlas:commit');
+    ipcMain.handle('atlas:commit', async (...args) => {
+      state.calls.push(structuredClone(args[1]));
+      const result = await original(...args);
+      if (state.calls.length !== 1 || !result.ok) return result;
+      state.held = true;
+      await new Promise((resolve) => {
+        state.release = resolve;
+      });
+      // Native UI fault only: lose the successful reply after the real commit.
+      // The real worker→HostIpc→preload marker is proved by the boundary tests.
+      return {
+        ok: false,
+        error: 'Controlled lost postcommit reply; Speicherstand klären.',
+        errorKind: 'store-outcome-unknown',
+      };
+    });
+    const reconcile = ipcMain._invokeHandlers.get('atlas:reconcile-commit');
+    ipcMain.removeHandler('atlas:reconcile-commit');
+    ipcMain.handle('atlas:reconcile-commit', async (...args) => {
+      state.resolutions.push(structuredClone(args[1]));
+      return reconcile(...args);
+    });
+  });
+  const stroke = async (fraction) => {
+    const box = await page.locator('#campaign-map').boundingBox();
+    await page.mouse.move(box.x + box.width * 0.5, box.y + box.height * fraction);
+    await page.mouse.down();
+    await page.waitForTimeout(400);
+    await page.mouse.up();
+  };
+  await stroke(0.4);
+  await native.app.evaluate(async () => {
+    const end = Date.now() + 15000;
+    while (!globalThis.__qaRecovery.held && Date.now() < end)
+      await new Promise((r) => setTimeout(r, 10));
+    if (!globalThis.__qaRecovery.held)
+      throw Error('Committed reply did not reach the controlled hold');
+  });
+  const committed = recoveryState();
+  await stroke(0.65);
+  await native.app.evaluate(() => globalThis.__qaRecovery.release());
+  await page.waitForFunction(() => !document.querySelector('#atlas-recover').hidden);
+  await page.locator('#atlas-status').click();
+  await page.locator('#atlas-recover').waitFor({ state: 'visible' });
+  await page.waitForFunction(() => !document.querySelector('#atlas-recover').disabled);
+  await page.locator('#atlas-region-retry').click();
+  const blocked = recoveryState();
+  const held = await native.app.evaluate(() => ({
+    calls: globalThis.__qaRecovery.calls,
+    resolutions: globalThis.__qaRecovery.resolutions,
+  }));
+  check(
+    'unknown-keeps-original-and-blocks-dependent-reset',
+    held.calls.length === 1 &&
+      held.resolutions.length === 0 &&
+      committed.revision === before.revision + 1 &&
+      committed.cursor === before.cursor + 1 &&
+      JSON.stringify(blocked) === JSON.stringify(committed) &&
+      (await page.locator('#atlas-recover').isVisible()),
+    {
+      before,
+      committed,
+      blocked,
+      commandId: held.calls[0]?.commandId,
+      dispatches: held.calls.length,
+    },
+  );
+  await native.capture(page, '04-recovery-blocked.png');
+  mark('recovery: resolve the original receipt without replay');
+  await page.locator('#atlas-recover').click();
+  await page.waitForFunction(
+    () =>
+      document.querySelector('#atlas-recover').hidden &&
+      document.querySelector('#campaign-map').dataset.terrainReady === 'ready' &&
+      !document.querySelector('#land-tool').disabled,
+    null,
+    { timeout: 60000 },
+  );
+  const resolved = recoveryState();
+  const resolution = await native.app.evaluate(() => ({
+    calls: globalThis.__qaRecovery.calls,
+    resolutions: globalThis.__qaRecovery.resolutions,
+  }));
+  check(
+    'unknown-resolution-never-duplicates-commit',
+    JSON.stringify(resolved) === JSON.stringify(committed) &&
+      resolution.calls.length === 1 &&
+      resolution.resolutions.length === 1 &&
+      JSON.stringify(resolution.resolutions[0]) === JSON.stringify(resolution.calls[0]),
+    {
+      committed,
+      resolved,
+      dispatches: resolution.calls.length,
+      originalCommandId: resolution.calls[0]?.commandId,
+      resolvedCommandId: resolution.resolutions[0]?.commandId,
+    },
+  );
+  mark('recovery: accept a new independent terrain gesture');
+  if ((await page.locator('#atlas-status').getAttribute('aria-expanded')) === 'true')
+    await page.locator('#atlas-status').click();
+  await stroke(0.5);
+  await page.waitForFunction(
+    () =>
+      !document.querySelector('#land-tool').disabled &&
+      document.querySelector('#campaign-map').dataset.terrainReady === 'ready' &&
+      document.querySelector('#campaign-map').dataset.terrainDraft === undefined,
+    null,
+    { timeout: 60000 },
+  );
+  const after = recoveryState();
+  check(
+    'unknown-recovery-allows-next-gesture',
+    after.revision === committed.revision + 1 &&
+      after.cursor === committed.cursor + 1 &&
+      after.commands === committed.commands + 1 &&
+      after.heights !== committed.heights,
+    { committed, after },
+  );
+  evidence.recovery = {
+    before,
+    committed,
+    blocked,
+    resolved,
+    after,
+    injection:
+      'One successful real Main reply withheld and replaced by the typed unknown marker; worker classification verified separately by actual boundary tests.',
+  };
+  await native.capture(page, '05-recovery-resumed.png');
 }
 async function saveJson(name, value) {
   const bytes = Buffer.from(JSON.stringify(value, null, 2) + '\n');
@@ -680,6 +847,12 @@ try {
   } catch (error) {
     noteError('canonical readback', error);
     check('canonical-height-readback', false, { error: error.message });
+  }
+  if (recoveryProbe) {
+    await exerciseRecovery();
+    savedHeights = queryHeights();
+    savedRevision = queryRevision();
+    evidence.recoveryHeightFile = await saveJson('height-after-recovery.json', savedHeights);
   }
   await persist();
   mark('close initial app');
