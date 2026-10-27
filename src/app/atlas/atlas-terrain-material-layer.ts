@@ -18,6 +18,7 @@ type MaterialProps = {
   pixelRatio: number;
   materialOrigin: readonly number[];
   masks: { data: Uint8Array; width: number; height: number };
+  biome: { data: Uint8Array; width: number; height: number };
   cover: { data: Uint8Array; width: number; height: number };
   relief: { data: Uint8Array; width: number; height: number };
   baseColor: { data: Uint8Array; width: number; height: number };
@@ -73,6 +74,7 @@ export class AtlasTerrainMaterialLayer extends SimpleMeshLayer<unknown, Material
     masks: { type: 'object', value: null },
     baseColor: { type: 'object', value: null },
     cover: { type: 'object', value: null },
+    biome: { type: 'object', value: null },
     relief: { type: 'object', value: null },
   };
   private get maskTexture(): Texture | undefined {
@@ -84,6 +86,7 @@ export class AtlasTerrainMaterialLayer extends SimpleMeshLayer<unknown, Material
   private get extras() {
     return this.state as typeof this.state & {
       atlasCoverTexture?: Texture;
+      atlasBiomeTexture?: Texture;
       atlasReliefTexture?: Texture;
       ink?: ReturnType<typeof acquireCartographicTextures>;
     };
@@ -98,7 +101,7 @@ export class AtlasTerrainMaterialLayer extends SimpleMeshLayer<unknown, Material
         'vs:#decl': 'out float atlasHeight; out vec3 atlasPhysicalNormal; out vec2 atlasWorld;',
         'vs:#main-end':
           'atlasHeight=positions.z+atlasMaterial.heightOrigin; atlasPhysicalNormal=normals; atlasWorld=positions.xy+atlasMaterial.materialOrigin;',
-        'fs:#decl': `in float atlasHeight; in vec3 atlasPhysicalNormal; in vec2 atlasWorld; uniform sampler2D atlasMasks; uniform sampler2D atlasCover; uniform sampler2D atlasRelief;
+        'fs:#decl': `in float atlasHeight; in vec3 atlasPhysicalNormal; in vec2 atlasWorld; uniform sampler2D atlasMasks; uniform sampler2D atlasCover; uniform sampler2D atlasBiome; uniform sampler2D atlasRelief;
         ${CARTOGRAPHIC_GLSL}
         float atlasContour(float step,float gradient,float halfWidth){
           if(floor(atlasHeight/step+.5)*step<=atlasMaterial.seaLevel)return 0.0;
@@ -114,6 +117,7 @@ export class AtlasTerrainMaterialLayer extends SimpleMeshLayer<unknown, Material
         'fs:DECKGL_FILTER_COLOR': `
         vec3 masks=texture(atlasMasks,geometry.uv).rgb;
         vec4 cover=texture(atlasCover,geometry.uv);
+        vec2 biome=texture(atlasBiome,geometry.uv).rg;
         vec4 relief=texture(atlasRelief,geometry.uv);
         vec3 physicalNormal=normalize(atlasPhysicalNormal);
         float slope=length(physicalNormal.xy)/max(abs(physicalNormal.z),0.00001);
@@ -128,6 +132,7 @@ export class AtlasTerrainMaterialLayer extends SimpleMeshLayer<unknown, Material
         if(atlasMaterial.drawn>0.5){
           float ink=atlasCoverInk(atlasWorld,mpp,cover,forest,masks.b);
           color.rgb=mix(color.rgb,atlasMaterial.ink,ink*0.3*land*(1.0-snow));
+          color.rgb=mix(color.rgb,atlasMaterial.ink,atlasBiomeInk(atlasWorld,mpp,biome)*0.3*(1.0-snow));
           float edge=1.0-smoothstep(0.0,max(fwidth(masks.r)*atlasMaterial.pixelRatio,0.05),abs(masks.r-0.5));
           color.rgb=mix(color.rgb,atlasMaterial.ink,edge*0.16);
           vec3 macro=normalize(relief.rgb*2.0-1.0);
@@ -247,6 +252,12 @@ export class AtlasTerrainMaterialLayer extends SimpleMeshLayer<unknown, Material
       this.extras.atlasCoverTexture,
     );
     this.updateTexture(
+      'atlasBiomeTexture',
+      this.props.biome,
+      params.oldProps.biome,
+      this.extras.atlasBiomeTexture,
+    );
+    this.updateTexture(
       'atlasReliefTexture',
       this.props.relief,
       params.oldProps.relief,
@@ -321,9 +332,10 @@ export class AtlasTerrainMaterialLayer extends SimpleMeshLayer<unknown, Material
       });
     if (this.maskTexture) this.state.model?.setBindings({ atlasMasks: this.maskTexture });
     const extra = this.extras;
-    if (extra.atlasCoverTexture && extra.atlasReliefTexture && extra.ink)
+    if (extra.atlasCoverTexture && extra.atlasBiomeTexture && extra.atlasReliefTexture && extra.ink)
       this.state.model?.setBindings({
         atlasCover: extra.atlasCoverTexture,
+        atlasBiome: extra.atlasBiomeTexture,
         atlasRelief: extra.atlasReliefTexture,
         atlasPlantInk: extra.ink.plants,
         atlasMarkInk: extra.ink.marks,
@@ -333,6 +345,7 @@ export class AtlasTerrainMaterialLayer extends SimpleMeshLayer<unknown, Material
   finalizeState(context: LayerContext) {
     this.extras.ink?.release();
     this.extras.atlasCoverTexture?.destroy();
+    this.extras.atlasBiomeTexture?.destroy();
     this.extras.atlasReliefTexture?.destroy();
     this.maskTexture?.destroy();
     this.baseTexture?.destroy();

@@ -1,3 +1,4 @@
+import { vegetationWaterSuitable, vegetationFurrowShade } from './vegetation-surface';
 import { terrainColors } from '../runtime/world-model';
 import type { Polygon } from '../shared/contracts';
 import { type LandscapeBox, type LandscapeRecord } from './atlas-landscape';
@@ -95,8 +96,9 @@ export class LandscapeRasterizer {
   private fresh: LandscapeRecord[] = [];
   private maskPending = false;
   private coastPending = false;
+  private waterLevels: Float32Array | undefined;
   private elevations: Float32Array | null = null;
-  private field: Pick<TerrainField, 'heights' | 'water'> | null = null;
+  private field: Pick<TerrainField, 'heights' | 'water' | 'levels'> | null = null;
   private terrainStyle: Readonly<TerrainStyle> = DEFAULT_TERRAIN_STYLE;
   private seaLevelM = 0;
   private materialCaptured = false;
@@ -161,7 +163,7 @@ export class LandscapeRasterizer {
     this.assertMaterialNotCaptured();
     if (field.heights.length !== this.w * this.h || field.water.length !== this.w * this.h)
       throw Error('Geländerastergröße prüfen.');
-    this.field = { heights: field.heights, water: field.water };
+    this.field = { heights: field.heights, water: field.water, levels: field.levels };
     this.maskPending = true;
     this.coastPending = true;
   }
@@ -233,20 +235,27 @@ export class LandscapeRasterizer {
           );
       }
     }
+    const mainChannel =
+      preset.tree === 'pine' ? 'conifer' : preset.tree === 'oak' ? 'deciduous' : 'shrub';
+    const underChannel =
+      preset.groundPattern === 'furrows'
+        ? 'furrows'
+        : preset.undergrowthAsset === 'crop'
+          ? 'grass'
+          : preset.undergrowthAsset;
     const coverEntries = COVER_CHANNEL_NAMES.filter((c) => this.coverSamples[c]).map((c) => ({
-      active:
-        c === (preset.tree === 'pine' ? 'conifer' : 'deciduous') ||
-        c === (preset.id === 'meadow' ? 'grass' : 'shrub') ||
-        c === 'debris',
+      active: c === mainChannel || c === underChannel || c === 'debris',
       samples: this.coverSamples[c]!,
+      maximumWaterDepth:
+        c === mainChannel
+          ? preset.waterDepth.trees
+          : c === underChannel
+            ? preset.waterDepth.undergrowth
+            : preset.waterDepth.rocks,
       value:
-        c === (preset.tree === 'pine' ? 'conifer' : 'deciduous')
-          ? preset.density
-          : c === (preset.id === 'meadow' ? 'grass' : 'shrub')
-            ? preset.undergrowth
-            : c === 'debris'
-              ? preset.rocks
-              : 0,
+        (c === mainChannel ? preset.density : 0) +
+        (c === underChannel ? preset.undergrowth : 0) +
+        (c === 'debris' ? preset.rocks : 0),
     }));
     // Edits apply to every candidate family, exactly as the individual generator.
     const corrected = coverEntries.map((entry) => {
@@ -285,16 +294,52 @@ export class LandscapeRasterizer {
     const forest = this.forestSamples,
       coverage = forest
         ? (i: number, fade: number) => {
-            const value = Math.min(1, (density?.[i] ?? preset.density) / 0.8) * 255;
+            const value =
+              preset.tree === 'shrub' || this.water[i]
+                ? 0
+                : Math.min(1, (density?.[i] ?? preset.density) / 0.8) * 255;
             forest[i] = Math.round(forest[i]! * (1 - fade) + value * fade);
             for (const entry of corrected)
               entry.samples[i] = Math.round(
-                entry.samples[i]! * (1 - fade) + (entry.values?.[i] ?? entry.value) * 255 * fade,
+                entry.samples[i]! * (1 - fade) +
+                  (this.suitableWater(i, entry.maximumWaterDepth)
+                    ? (entry.values?.[i] ?? entry.value)
+                    : 0) *
+                    255 *
+                    fade,
               );
           }
         : undefined;
+    const shade =
+      preset.groundPattern === 'furrows'
+        ? (i: number) =>
+            vegetationFurrowShade(
+              this.sampleBox.y + ((Math.floor(i / this.w) + 0.5) * this.sampleBox.height) / this.h,
+              record.vegetation!.spacing,
+              this.displayMpp,
+              this.sampleBox.height / this.h,
+            )
+        : undefined;
     for (const polygon of polygons)
-      yield* this.polygonSteps(polygon, rgb, 0.78, 'ground', undefined, checkpoint, fade, coverage);
+      yield* this.polygonSteps(
+        polygon,
+        rgb,
+        0.78,
+        (i) =>
+          this.suitableWater(
+            i,
+            Math.max(
+              preset.waterDepth.trees,
+              preset.waterDepth.undergrowth,
+              preset.waterDepth.rocks,
+            ),
+          ),
+        undefined,
+        checkpoint,
+        fade,
+        coverage,
+        shade,
+      );
   }
   paint(record: LandscapeRecord) {
     this.assertMaterialNotCaptured();
@@ -398,8 +443,10 @@ export class LandscapeRasterizer {
     if (this.field) {
       this.water.set(this.field.water);
       this.elevations = this.field.heights;
+      this.waterLevels = this.field.levels;
     } else if (this.heights.length) {
       const sampler = new TerrainSampler([...this.heights, ...this.fresh]);
+      this.waterLevels = new Float32Array(this.w * this.h).fill(sampler.seaLevelM);
       this.water.fill(DEFAULT_HEIGHT_M <= sampler.seaLevelM ? 1 : 0);
       this.elevations = new Float32Array(this.w * this.h).fill(DEFAULT_HEIGHT_M);
       // Only the union of authored supports needs sampling. Distant ocean stays implicit.
@@ -441,6 +488,7 @@ export class LandscapeRasterizer {
             z = sampler.sample(p).heightM;
           this.elevations[y * this.w + x] = z;
           this.water[y * this.w + x] = sampler.water(p, z) ? 1 : 0;
+          this.waterLevels[y * this.w + x] = sampler.waterLevel(p, z) ?? -Infinity;
         }
     }
     for (let i = 0; i < this.water.length; i++) {
@@ -875,11 +923,21 @@ export class LandscapeRasterizer {
       );
     }
   }
+  private suitableWater(i: number, maximum: number) {
+    if (!this.water[i]) return true;
+    const level = this.waterLevels?.[i],
+      height = this.elevations?.[i];
+    return (
+      level !== undefined &&
+      height !== undefined &&
+      vegetationWaterSuitable(level - height, maximum)
+    );
+  }
   private polygon(
     p: Polygon,
     rgb: number[],
     alpha = 1,
-    target?: 'ground' | 'water',
+    target?: 'ground' | 'water' | ((i: number) => boolean),
     water?: boolean,
   ) {
     for (const _ of this.polygonSteps(p, rgb, alpha, target, water, function* () {})) {
@@ -889,11 +947,12 @@ export class LandscapeRasterizer {
     p: Polygon,
     rgb: number[],
     alpha: number,
-    target: 'ground' | 'water' | undefined,
+    target: 'ground' | 'water' | ((i: number) => boolean) | undefined,
     water: boolean | undefined,
     checkpoint: () => Generator<void>,
     fade?: (x: number, y: number) => number,
     coverage?: (pixel: number, fade: number) => void,
+    shade?: (pixel: number) => number,
   ): Generator<void> {
     // Opaque spans overwrite their background. Use the platform's packed byte
     // order, and retain per-pixel blending for alpha or land/water clipping.
@@ -915,17 +974,24 @@ export class LandscapeRasterizer {
           if (!area) continue;
           const pixel = y * this.w + x,
             at = pixel * 4;
-          if (target && (target === 'water') !== !!this.water[pixel]) continue;
+          if (
+            typeof target === 'function'
+              ? !target(pixel)
+              : target && (target === 'water') !== !!this.water[pixel]
+          )
+            continue;
           if (water !== undefined && area >= 0.5) this.water[pixel] = water ? 1 : 0;
           const feather = area * (fade?.(x, y) ?? 1);
           coverage?.(pixel, feather);
           const opacity = alpha * feather;
           if (!opacity) continue;
+          const tint = shade?.(pixel) ?? 1;
           const old = this.samples[at + 3]! / 255,
             combined = opacity + old * (1 - opacity);
           for (let c = 0; c < rgb.length; c++)
             this.samples[at + c] = Math.round(
-              (rgb[c]! * opacity + this.samples[at + c]! * old * (1 - opacity)) / (combined || 1),
+              (rgb[c]! * tint * opacity + this.samples[at + c]! * old * (1 - opacity)) /
+                (combined || 1),
             );
           this.samples[at + 3] = Math.round(combined * 255);
         }
@@ -971,17 +1037,24 @@ export class LandscapeRasterizer {
         for (let x = from; x <= to; x++) {
           const pixel = y * this.w + x,
             at = pixel * 4;
-          if (target && (target === 'water') !== !!this.water[pixel]) continue;
+          if (
+            typeof target === 'function'
+              ? !target(pixel)
+              : target && (target === 'water') !== !!this.water[pixel]
+          )
+            continue;
           if (water !== undefined) this.water[pixel] = water ? 1 : 0;
           const feather = fade?.(x, y) ?? 1;
           coverage?.(pixel, feather);
           const opacity = alpha * feather;
           if (!opacity) continue;
+          const tint = shade?.(pixel) ?? 1;
           const old = this.samples[at + 3]! / 255,
             combined = opacity + old * (1 - opacity);
           for (let c = 0; c < 3; c++)
             this.samples[at + c] = Math.round(
-              (rgb[c]! * opacity + this.samples[at + c]! * old * (1 - opacity)) / (combined || 1),
+              (rgb[c]! * tint * opacity + this.samples[at + c]! * old * (1 - opacity)) /
+                (combined || 1),
             );
           this.samples[at + 3] = Math.round(combined * 255);
         }
@@ -1138,9 +1211,10 @@ export class LandscapeRasterizer {
             topology |= 1 << sample;
           }
           if (forest && !isWater) forestSum += forest[i]!;
-          if (!isWater)
-            for (let c = 0; c < covers.length; c++)
-              coverSums[c] = coverSums[c]! + (this.coverSamples[covers[c]!]?.[i] ?? 0);
+          for (let c = 0; c < covers.length; c++)
+            coverSums[c] =
+              coverSums[c]! +
+              (!isWater || covers[c] === 'reed' ? (this.coverSamples[covers[c]!]?.[i] ?? 0) : 0);
           if (!isWater && materialEnabled && materialRequested && z) {
             const sx = (z[i + step]! - z[i - step]!) / (2 * lattice.dx * step);
             const sy = (z[i + stride]! - z[i - stride]!) / (2 * lattice.dy * step);

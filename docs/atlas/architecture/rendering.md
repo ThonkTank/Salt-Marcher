@@ -30,18 +30,18 @@ keine vollständige Produktabnahme.
 
 ## Wo ändern und prüfen?
 
-| Verhalten | Einstieg | Regression |
-| --- | --- | --- |
-| Arbeitsbereich und Werkzeugwechsel | `src/app/atlas/campaign-atlas-ui.ts` | `tools/test-desktop-atlas-cleanup.mjs` |
-| Kamera, GPU-Lebenszyklus und Weltkoordinaten | `src/app/atlas/atlas-deck-surface.ts`, `src/app/atlas/atlas-metric-camera.ts` | `tests/atlas/atlas-deck-surface.test.mjs`, `tools/test-desktop-atlas-deck.mjs` |
-| Zeichenbefehle und genaue Auswahl | `src/app/atlas/atlas-deck-drawing.ts`, `src/app/atlas/atlas-drawing-geometry.ts` | `tests/atlas/atlas-drawing-geometry.test.mjs`, `tools/test-desktop-dungeon-groundplan.mjs` |
-| Maßstab, Waldzeichnung und stabile Instanzen | `src/app/atlas/atlas-cartographic-style.ts`, `src/app/atlas/atlas-cartographic-texture.ts`, `src/app/atlas/atlas-vegetation-layer.ts` | `tests/atlas/atlas-cartographic-scale.test.mjs`, `tools/test-desktop-atlas-multiscale.mjs` |
-| Kacheln und gemeinsame Nachladung | `src/app/atlas/atlas-surface-tile-stream.ts`, `src/app/atlas/atlas-raster-tile-stream.ts` | `tests/atlas/atlas-surface-stream.test.mjs` |
-| Quellenauswertung und Material | `src/app/atlas/landscape-raster.ts`, `src/app/atlas/atlas-raster-kernel.ts` | `tests/atlas/atlas-bounded-material.test.mjs`, `tests/atlas/atlas-raster-kernel.test.mjs` |
-| Asynchrone Leseaufträge | `desktop/atlas-region.ts`, `desktop/atlas-region-worker.ts` | `tests/atlas/atlas-first-product-worker.test.mjs`, `tests/atlas/atlas-presentation-source.test.mjs` |
-| Persistente Produkte und Cache | `src/app/storage/atlas-cache-scope.ts`, `src/app/storage/atlas-tile-cache.ts` | Terrain-/Material-/Geometriekacheltests |
-| Pinselentwurf und Bestätigung | `src/app/atlas/landscape-brush-session.ts`, `src/app/atlas/terrain-stroke-queue.ts` | `tests/atlas/terrain-stroke-queue.test.mjs`, native Pinselprobe |
-| Ausgabe | `src/app/atlas/atlas-output.ts` | `tools/test-desktop-region-export.mjs`, `tools/test-desktop-atlas-cleanup.mjs` |
+| Verhalten                                    | Einstieg                                                                                                                              | Regression                                                                                          |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| Arbeitsbereich und Werkzeugwechsel           | `src/app/atlas/campaign-atlas-ui.ts`                                                                                                  | `tools/test-desktop-atlas-cleanup.mjs`                                                              |
+| Kamera, GPU-Lebenszyklus und Weltkoordinaten | `src/app/atlas/atlas-deck-surface.ts`, `src/app/atlas/atlas-metric-camera.ts`                                                         | `tests/atlas/atlas-deck-surface.test.mjs`, `tools/test-desktop-atlas-deck.mjs`                      |
+| Zeichenbefehle und genaue Auswahl            | `src/app/atlas/atlas-deck-drawing.ts`, `src/app/atlas/atlas-drawing-geometry.ts`                                                      | `tests/atlas/atlas-drawing-geometry.test.mjs`, `tools/test-desktop-dungeon-groundplan.mjs`          |
+| Maßstab, Waldzeichnung und stabile Instanzen | `src/app/atlas/atlas-cartographic-style.ts`, `src/app/atlas/atlas-cartographic-texture.ts`, `src/app/atlas/atlas-vegetation-layer.ts` | `tests/atlas/atlas-cartographic-scale.test.mjs`, `tools/test-desktop-atlas-multiscale.mjs`          |
+| Kacheln und gemeinsame Nachladung            | `src/app/atlas/atlas-surface-tile-stream.ts`, `src/app/atlas/atlas-raster-tile-stream.ts`                                             | `tests/atlas/atlas-surface-stream.test.mjs`                                                         |
+| Quellenauswertung und Material               | `src/app/atlas/landscape-raster.ts`, `src/app/atlas/atlas-raster-kernel.ts`                                                           | `tests/atlas/atlas-bounded-material.test.mjs`, `tests/atlas/atlas-raster-kernel.test.mjs`           |
+| Asynchrone Leseaufträge                      | `desktop/atlas-region.ts`, `desktop/atlas-region-worker.ts`                                                                           | `tests/atlas/atlas-first-product-worker.test.mjs`, `tests/atlas/atlas-presentation-source.test.mjs` |
+| Persistente Produkte und Cache               | `src/app/storage/atlas-cache-scope.ts`, `src/app/storage/atlas-tile-cache.ts`                                                         | Terrain-/Material-/Geometriekacheltests                                                             |
+| Pinselentwurf und Bestätigung                | `src/app/atlas/landscape-brush-session.ts`, `src/app/atlas/terrain-stroke-queue.ts`                                                   | `tests/atlas/terrain-stroke-queue.test.mjs`, native Pinselprobe                                     |
+| Ausgabe                                      | `src/app/atlas/atlas-output.ts`                                                                                                       | `tools/test-desktop-region-export.mjs`, `tools/test-desktop-atlas-cleanup.mjs`                      |
 
 ## Quellenstand und Veröffentlichung
 
@@ -87,11 +87,14 @@ abhängige Cachekanäle. Beleuchtung und Schneegrenze verändern Darstellung,
 keine gemalten Grundfarben. Die TypeScript-Reduktion arbeitet in begrenzten Blöcken.
 
 Die gezeichnete Darstellung verwendet den lokalen Maßstab in CSS-Pixeln.
-Laubwald, Nadelwald, Gras, Sträucher und Geröll besitzen getrennte gewichtete
-Materialkanäle. Die sechs vorhandenen Landschaftsvorlagen verwenden weiterhin
+Laubwald, Nadelwald, Gras, Sträucher, Geröll, Schilf und Ackerfurchen besitzen
+getrennte gewichtete Materialkanäle. Die Landschaftsvorlagen verwenden weiterhin
 ihre gespeicherten Grundfarben und Anteile; diese Kanäle sind keine Autorendaten.
 Flächengrenzen, Löcher, dünne Säume sowie Freihalten/Ausdünnen/Verdichten bleiben
-in den Masken. Wasser unterdrückt Bewuchs. Der persistente Materialcache besitzt
+in den Masken. Wasser unterdrückt normalen Bewuchs; Schilf und Sumpfmaterial erhalten die
+definierte flache Wassereignung aus Bodenhöhe und Pegel. Die Wassermaske bleibt
+unverändert. Feine Ackerfurchen folgen dem gespeicherten Reihenabstand im
+Bodenraster; die Übersicht verwendet weltfeste parallele Striche. Der persistente Materialcache besitzt
 eine neue ableitbare Formatkennung; Kampagnen brauchen dafür keine Migration.
 
 Zwei einmal erzeugte, pro GPU-Gerät gemeinsam gehaltene RGBA-Strichtexturen

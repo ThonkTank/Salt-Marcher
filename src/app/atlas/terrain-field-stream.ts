@@ -141,7 +141,7 @@ export function* streamTerrainFieldSteps(
   const heights = new Float32Array(n),
     water = new Uint8Array(n),
     surface = withSurface ? new Float32Array(n) : undefined,
-    levels = withSurface ? new Float32Array(n) : undefined,
+    levels = new Float32Array(n),
     bandRows = Math.floor(maxSamples / columns);
   for (let row = 0; row < rows; row += bandRows) {
     const count = Math.min(bandRows, rows - row),
@@ -151,8 +151,9 @@ export function* streamTerrainFieldSteps(
     water.set(band.water, offset);
     if (surface) {
       surface.set(band.surface!, offset);
-      levels!.set(band.levels!, offset);
     }
+    levels.set(band.levels!, offset);
+
     yield* checkpoint();
   }
   return { heights, water, surface, levels };
@@ -235,10 +236,10 @@ function terrainBand(
   const heights = new Float32Array(ground),
     water = new Uint8Array(n),
     surface = withSurface ? new Float32Array(n) : undefined,
-    waterLevels = withSurface ? new Float32Array(n) : undefined;
+    waterLevels = new Float32Array(n);
   for (let i = 0; i < n; i++) {
     let level = levels?.[i] ?? -Infinity;
-    if (waterLevels) waterLevels[i] = Math.max(seaLevelM, level, lakeLevels?.[i] ?? -Infinity);
+    waterLevels[i] = Math.max(seaLevelM, level, lakeLevels?.[i] ?? -Infinity);
     if (ground[i]! <= (lakeLevels?.[i] ?? -Infinity)) level = Math.max(level, lakeLevels![i]!);
     if (ground[i]! <= seaLevelM) level = Math.max(level, seaLevelM);
     water[i] = level !== -Infinity ? 1 : 0;

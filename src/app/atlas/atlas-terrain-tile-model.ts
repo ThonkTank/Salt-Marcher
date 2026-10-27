@@ -18,6 +18,7 @@ export interface AtlasTerrainTileModel {
   };
   data: AtlasDeckSceneObject[];
   texture: { data: Uint8Array; width: number; height: number };
+  biome: { data: Uint8Array; width: number; height: number };
   cover: { data: Uint8Array; width: number; height: number };
   relief: { data: Uint8Array; width: number; height: number };
   masks: { data: Uint8Array; width: number; height: number };
@@ -156,6 +157,7 @@ export function atlasTerrainTileModel(
       width,
       height,
     ),
+    biome: packedTexture([channels.reed, channels.furrows], width, height),
     relief: { data: channels.relief, width, height },
   };
   const result = {

@@ -266,7 +266,7 @@ export class LandscapeWorkbench {
     const asset = document.createElement('label');
     asset.textContent = 'Einzelobjekt';
     asset.innerHTML +=
-      '<select id="vegetation-asset"><option value="oak">Laubbaum</option><option value="pine">Nadelbaum</option><option value="rock">Felsen</option><option value="shrub">Strauch</option></select>';
+      '<select id="vegetation-asset"><option value="oak">Laubbaum</option><option value="pine">Nadelbaum</option><option value="rock">Felsen</option><option value="shrub">Strauch</option><option value="grass">Grasbüschel</option><option value="reed">Schilf</option><option value="crop">Kulturpflanzen</option></select>';
     this.vegetationFields.append(asset);
     const selectionFilter = document.createElement('label');
     selectionFilter.textContent = 'Bewuchs auswählen';
@@ -2136,7 +2136,16 @@ export class LandscapeWorkbench {
         id: 'manual:' + crypto.randomUUID(),
         ...this.lastPoint,
         asset,
-        size: asset === 'rock' ? 4 : asset === 'shrub' ? 2 : this.vegetationSettings.preset.size,
+        size:
+          asset === 'rock'
+            ? 4
+            : asset === 'shrub' || asset === 'reed'
+              ? 2
+              : asset === 'grass'
+                ? 0.7
+                : asset === 'crop'
+                  ? 1.2
+                  : this.vegetationSettings.preset.size,
         angle: 0,
       });
       return this.commit({ kind: 'landscape-put', record: r, expectedRevision: r.revision });

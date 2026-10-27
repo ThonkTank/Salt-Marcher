@@ -63,7 +63,31 @@ export function vegetationGeometry(asset: PlantAsset, part: 'crown' | 'trunk') {
     g.rotateX(Math.PI / 2);
     g.translate(0, 0, 0.25);
   } else if (asset === 'oak' || asset === 'pine') return crown(asset);
-  else if (asset === 'rock') {
+  else if (asset === 'reed' || asset === 'crop') {
+    // Several upright, tapered blades form a real tuft. Reeds carry narrow
+    // seed heads; the shorter crop has paired spreading leaves.
+    const positions: number[] = [];
+    const triangle = (...v: number[]) => positions.push(...v);
+    for (let n = 0; n < 7; n++) {
+      const angle = n * 2.4,
+        x = Math.cos(angle) * 0.22,
+        y = Math.sin(angle) * 0.22,
+        z = 0.65 + (n % 3) * 0.14,
+        w = asset === 'reed' ? 0.025 : 0.06;
+      triangle(x - w, y, 0, x + w, y, 0, x + 0.08, y + 0.04, z);
+      triangle(x, y - w, 0, x, y + w, 0, x - 0.04, y + 0.08, z);
+      if (asset === 'reed') {
+        triangle(x - 0.035, y, z - 0.2, x + 0.035, y, z - 0.2, x + 0.035, y, z);
+        triangle(x - 0.035, y, z - 0.2, x + 0.035, y, z, x - 0.035, y, z);
+      } else {
+        triangle(x - w, y, z * 0.3, x + w, y, z * 0.3, x + 0.22, y + 0.12, z * 0.65);
+        triangle(x, y - w, z * 0.4, x, y + w, z * 0.4, x - 0.22, y - 0.12, z * 0.8);
+      }
+    }
+    g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    g.computeVertexNormals();
+  } else if (asset === 'rock') {
     g = new THREE.DodecahedronGeometry(0.55, 0);
     g.scale(1, 0.8, 0.65);
     g.translate(0, 0, 0.14);

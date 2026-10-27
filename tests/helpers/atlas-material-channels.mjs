@@ -10,6 +10,8 @@ export const surfaceChannels = [
   'grass',
   'shrub',
   'debris',
+  'reed',
+  'furrows',
 ];
 export const materialChannels = [...surfaceChannels, 'rock', 'snow'];
 export const channelStride = (c) => (c === 'baseColor' || c === 'relief' ? 4 : 1);

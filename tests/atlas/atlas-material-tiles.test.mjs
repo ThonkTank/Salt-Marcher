@@ -218,9 +218,20 @@ test('snowline rebuilds only snow, pigment only base colour, vegetation density 
     grass: 'built',
     shrub: 'built',
     debris: 'built',
+    reed: 'built',
+    furrows: 'built',
   });
   assert.notDeepEqual(thin.channels.forest, painted.channels.forest);
-  assert.deepEqual(f.calls.at(-1), ['forest', 'deciduous', 'conifer', 'grass', 'shrub', 'debris']);
+  assert.deepEqual(f.calls.at(-1), [
+    'forest',
+    'deciduous',
+    'conifer',
+    'grass',
+    'shrub',
+    'debris',
+    'reed',
+    'furrows',
+  ]);
 });
 
 test('dry height changes preserve ground colour and forest; local parents update while distant tiles reuse; Undo restores', async (t) => {
@@ -389,4 +400,62 @@ test('route prominence refreshes presentation identity while reusing every physi
   assertStates(after, {});
   assert.deepEqual(after.channels, before.channels);
   assert.notEqual(after.fence, before.fence);
+});
+
+test('marsh material invalidates on water depth changes even when wet topology stays identical', async (t) => {
+  const f = fixture(t);
+  f.put(heightRecord(0, 0, 4, new Float32Array(4096).fill(30)));
+  const vegetation = vegetationSpec('marsh', 321);
+  vegetation.preset.edge = 0;
+  f.put({
+    ...emptyRecord('vegetation'),
+    id: 'marsh',
+    resolution: 1,
+    values: { terrain: 'marsh' },
+    polygons: [polygon(0, 0, 256, 256)],
+    vegetation,
+  });
+  const lake = {
+    ...emptyRecord('patch'),
+    id: 'depth-lake',
+    surface: 'freshwater',
+    waterLevelM: 30.25,
+    polygons: [polygon(0, 0, 256, 256)],
+  };
+  f.put(lake);
+  const shallow = await f.read();
+  assert(shallow.channels.reed.some((v) => v > 200));
+  f.put({ ...lake, waterLevelM: 32 });
+  const deep = await f.read();
+  assert.deepEqual(deep.channels.water, shallow.channels.water);
+  assert(deep.channels.reed.every((v) => v === 0));
+  assert.equal(deep.cache.reed, 'built');
+  assert.equal(deep.cache.baseColor, 'built');
+  assert.notDeepEqual(deep.channels.baseColor, shallow.channels.baseColor);
+  f.write({ kind: 'undo' });
+  const restored = await f.read();
+  assert.deepEqual(restored.channels.reed, shallow.channels.reed);
+  assert.deepEqual(restored.channels.baseColor, shallow.channels.baseColor);
+});
+
+test('authored crop spacing updates physical ground furrows without altering area coverage', async (t) => {
+  const f = fixture(t);
+  f.put(heightRecord(0, 0, 4, new Float32Array(4096).fill(30)));
+  const vegetation = vegetationSpec('farmland', 123),
+    record = {
+      ...emptyRecord('vegetation'),
+      id: 'field',
+      resolution: 1,
+      values: { terrain: 'plains' },
+      polygons: [polygon(0, 0, 256, 256)],
+      vegetation,
+    };
+  f.put(record);
+  const twelve = await f.read();
+  record.vegetation.spacing = 24;
+  f.put(record);
+  const twentyFour = await f.read();
+  assert.notDeepEqual(twelve.channels.baseColor, twentyFour.channels.baseColor);
+  assert.deepEqual(twelve.channels.furrows, twentyFour.channels.furrows);
+  assert.equal(twentyFour.cache.baseColor, 'built');
 });

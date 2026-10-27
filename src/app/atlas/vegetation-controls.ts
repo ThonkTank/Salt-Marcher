@@ -21,7 +21,10 @@ export function vegetationControls(
   label.textContent = 'Landschaftsvorlage';
   const select = document.createElement('select');
   select.id = prefix + '-preset';
-  for (const p of vegetationPresets) select.add(new Option(p.name, p.id));
+  const definitions = [...vegetationPresets];
+  if (!definitions.some((p) => p.id === spec.preset.id))
+    definitions.push(structuredClone(spec.preset));
+  for (const p of definitions) select.add(new Option(p.name, p.id));
   select.value = spec.preset.id;
   label.append(select);
   root.append(label);
@@ -30,21 +33,22 @@ export function vegetationControls(
   const fill = () => {
     fields.replaceChildren();
     const species = document.createElement('label');
-    species.textContent = 'Baumart';
+    species.textContent = 'Hauptbewuchs';
     const tree = document.createElement('select');
     tree.id = prefix + '-tree';
     tree.add(new Option('Laubbaum', 'oak'));
     tree.add(new Option('Nadelbaum', 'pine'));
+    tree.add(new Option('Strauch', 'shrub'));
     tree.value = spec.preset.tree;
     tree.onchange = () => {
-      spec.preset.tree = tree.value as 'oak' | 'pine';
+      spec.preset.tree = tree.value as 'oak' | 'pine' | 'shrub';
       change();
     };
     species.append(tree);
     fields.append(species);
     for (const [key, title, min, max] of [
-      ['density', 'Baumdichte', 0, 1],
-      ['size', 'Baumhöhe in m', 1, 60],
+      ['density', 'Dichte Hauptbewuchs', 0, 1],
+      ['size', 'Höhe Hauptbewuchs in m', 1, 60],
       ['undergrowth', 'Unterwuchs', 0, 1],
       ['rocks', 'Steinanteil', 0, 1],
       ['grouping', 'Gruppierung / Lichtungen', 0, 1],
@@ -70,7 +74,7 @@ export function vegetationControls(
     }
   };
   select.onchange = () => {
-    spec.preset = structuredClone(vegetationPresets.find((p) => p.id === select.value)!);
+    spec.preset = structuredClone(definitions.find((p) => p.id === select.value)!);
     fill();
     change();
   };
@@ -137,6 +141,8 @@ export function vegetationInspector(
       ['pine', 'Nadelbaum'],
       ['shrub', 'Strauch'],
       ['grass', 'Grasbüschel'],
+      ['reed', 'Schilf'],
+      ['crop', 'Kulturpflanzen'],
       ['rock', 'Felsen'],
     ])
       assets.add(new Option(label!, id));

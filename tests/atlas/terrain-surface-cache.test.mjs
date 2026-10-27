@@ -364,8 +364,8 @@ test('source failure or invalidation during a paused grid cannot publish stale s
 });
 
 function colorOracle(lattice, sea, stream) {
-  const { heights, water } = streamTerrainField(lattice, sea, stream, false);
-  return { heights, water };
+  const { heights, water, levels } = streamTerrainField(lattice, sea, stream, false);
+  return { heights, water, levels };
 }
 test('coarse colour retains exact water decisions, owns buffers and accounts every retained byte', () => {
   const cache = new TerrainProjectionCache(),
