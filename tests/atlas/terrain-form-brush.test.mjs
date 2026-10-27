@@ -253,7 +253,7 @@ test('live forms recompute joins from the fixed ground and match canonical latti
           water: new Float32Array(129 * 129),
         },
       },
-      draft = new TerrainBrushDraft(base),
+      draft = new TerrainBrushDraft(base, []),
       s = stroke(form, curve);
     for (let n = 2; n <= curve.length; n++) {
       const partial = { ...s, samples: curve.slice(0, n) };

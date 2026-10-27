@@ -11,13 +11,14 @@ import { AtlasCacheScope } from './atlas-cache-scope';
 import type { AtlasRegionReader } from './atlas-region';
 
 // Change for any lattice, material, source-selection or serialization semantic change.
-const FORMAT = 'terrain-tiles-v1';
+const FORMAT = 'terrain-tiles-v2';
 const tileKey = (request: AtlasTerrainTileRequest) =>
   JSON.stringify([
     request.tile.lod,
     request.tile.x,
     request.tile.y,
     request.contours ?? 0,
+    request.editingRadius,
     ...(request.product ? ['height'] : []),
   ]);
 interface StoredTile {
@@ -108,7 +109,13 @@ export class AtlasTerrainTiles {
   ): AtlasTerrainTile | undefined {
     atlasTerrainTileQuery(request, source.fence);
     if (request.revision !== source.revision) throw Error('Atlaskachel inzwischen geändert.');
-    if (!this.directory || source.shadow || !source.shapeVersion) return undefined;
+    if (
+      request.editingRadius !== undefined ||
+      !this.directory ||
+      source.shadow ||
+      !source.shapeVersion
+    )
+      return undefined;
     const cache = this.open(source);
     if (!cache) return undefined;
     const key = tileKey(request);
@@ -135,7 +142,7 @@ export class AtlasTerrainTiles {
   ): Generator<void, AtlasTerrainTile> {
     const query = atlasTerrainTileQuery(request, source.fence);
     if (request.revision !== source.revision) throw Error('Atlaskachel inzwischen geändert.');
-    const cache = this.open(source),
+    const cache = request.editingRadius !== undefined ? undefined : this.open(source),
       key = tileKey(request);
     const old = cache?.get<StoredTile>(key, FORMAT),
       valid = this.valid(old, request);

@@ -12,6 +12,7 @@ const recoveryProbe = process.argv.includes('--recovery');
 const conflictProbe = process.argv.includes('--source-conflict');
 const basicToolsProbe = process.argv.includes('--basic-tools');
 const formsProbe = process.argv.includes('--forms');
+const multiscaleProbe = process.argv.includes('--multiscale');
 if (conflictProbe && !recoveryProbe) throw Error('--source-conflict requires --recovery.');
 const scale = Number(process.argv.find((a) => a.startsWith('--scale='))?.split('=')[1] ?? 1);
 if (![1, 2].includes(scale)) throw Error('Supported UI scales: 1 or 2.');
@@ -61,6 +62,21 @@ const sourceFiles = [
   './tools/atlas-canonical-fixture.mjs',
   './tools/native-session.mjs',
   './tools/atlas-brush-probe.mjs',
+  './src/app/atlas/atlas-presentation-host.ts',
+  './src/app/atlas/atlas-raster-presentation.ts',
+  './src/app/atlas/atlas-raster-tile-stream.ts',
+  './src/app/atlas/atlas-surface-reuse.ts',
+  './src/app/atlas/atlas-surface-tile-stream.ts',
+  './src/app/atlas/atlas-terrain-tile-model.ts',
+  './src/app/atlas/atlas-terrain-tile.ts',
+  './src/app/atlas/landscape-workbench-types.ts',
+  './src/app/atlas/terrain-frame.ts',
+  './src/app/atlas/terrain-projection.ts',
+  './src/app/atlas/terrain-spatial-model.ts',
+  './src/app/storage/atlas-landscape-region.ts',
+  './src/app/storage/atlas-terrain-tiles.ts',
+  './src/app/storage/terrain-scale.ts',
+  './src/app/storage/terrain-editing-source.ts',
 ];
 const persist = async () =>
   writeFile(path.join(output, 'evidence.partial.json'), JSON.stringify(evidence, null, 2));
@@ -462,6 +478,34 @@ async function sample(page, x, y) {
 }
 async function openCampaign() {
   page = await native.launch(scale);
+  if (multiscaleProbe) {
+    // Read-only debugger binding to the actual presentation instance. It does
+    // not replace modules, alter builds, or add a production test bridge.
+    const code = await readFile(path.join(root, '.build/desktop/ui/renderer.js'), 'utf8');
+    const offset = code.indexOf(
+      'this.surface.setTerrain(',
+      code.indexOf('var AtlasRasterPresentation = class'),
+    );
+    if (offset < 0) throw Error('Native height observer binding missing');
+    const session = await page.context().newCDPSession(page);
+    await session.send('Debugger.enable');
+    const breakpoint = await session.send('Debugger.setBreakpointByUrl', {
+      urlRegex: 'renderer\\.js$',
+      lineNumber: code.slice(0, offset).split('\n').length - 1,
+    });
+    session.once('Debugger.paused', async (event) => {
+      try {
+        await session.send('Debugger.evaluateOnCallFrame', {
+          callFrameId: event.callFrames[0].callFrameId,
+          expression: 'globalThis.__qaRaster = this',
+        });
+        await session.send('Debugger.removeBreakpoint', { breakpointId: breakpoint.breakpointId });
+      } finally {
+        await session.send('Debugger.resume');
+        await session.send('Debugger.disable');
+      }
+    });
+  }
   page.on('console', (message) => {
     if (message.type() === 'error') {
       const item = {
@@ -1729,6 +1773,356 @@ async function exerciseFormTools() {
   await persist();
 }
 
+/** The same small multiscale task on the real native renderer and writer. */
+async function exerciseMultiscaleTools() {
+  await page.waitForFunction(() => !!window.__qaRaster);
+  const bundle = await build({
+    stdin: {
+      contents:
+        "export {TerrainSampler} from './src/app/atlas/terrain-height';export {applyTerrainBrush} from './src/app/atlas/terrain-brush';export {gridHeight} from './src/app/atlas/terrain-spatial-model';export {atlasCameraWorldEye} from './src/app/atlas/atlas-camera';",
+      resolveDir: root,
+    },
+    bundle: true,
+    write: false,
+    platform: 'node',
+    format: 'esm',
+  });
+  const { TerrainSampler, applyTerrainBrush, gridHeight, atlasCameraWorldEye } = await import(
+    'data:text/javascript;base64,' + Buffer.from(bundle.outputFiles[0].text).toString('base64')
+  );
+  const records = () => queryHeights().map((h) => ({ id: h.id, height: h, revision: 0 }));
+  const samplePoints = [
+    { x: 16.13, y: 24.27 },
+    { x: 24.17, y: 30.31 },
+    { x: 32.11, y: 32.29 },
+    { x: 39.73, y: 31.83 },
+    { x: 48.27, y: 40.13 },
+    { x: 2, y: 2 },
+  ];
+  const ready = async (radius = 0, revision = queryRevision()) => {
+    await page.waitForFunction(
+      ({ radius, revision }) => {
+        const m = document.querySelector('#campaign-map'),
+          r = window.__qaRaster;
+        return (
+          m.dataset.terrainQuality === 'detail' &&
+          !m.dataset.terrainDraft &&
+          Number(m.dataset.terrainRevision) >= revision &&
+          Number(m.dataset.terrainEditingRadius) >= radius &&
+          r?.tiles.every((t) => t.revision >= revision) &&
+          !document.querySelector('#land-tool').disabled
+        );
+      },
+      { radius, revision },
+      { timeout: 90000 },
+    );
+    await page.evaluate(
+      () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))),
+    );
+  };
+  await page.evaluate(() => {
+    const r = window.__qaRaster;
+    window.__qaHeightSnapshot = () => ({
+      camera: r.cameraPose(),
+      tiles: r.tiles.map((t) => ({
+        tile: t.tile,
+        revision: t.revision,
+        fence: t.fence,
+        view: t.terrain.projection.grid.view,
+        heights: Array.from(t.terrain.projection.grid.heights),
+        ground: Array.from(t.terrain.projection.grid.editing.ground),
+      })),
+    });
+    const preview = r.previewHeight.bind(r);
+    r.previewHeight = (s) => {
+      preview(s);
+      window.__qaLastHeightLive = {
+        ...window.__qaHeightSnapshot(),
+        stroke: structuredClone(s),
+        at: performance.now(),
+      };
+    };
+    const gesture = r.gesture.bind(r);
+    r.gesture = (active) => {
+      if (!active && window.__qaLastHeightLive) {
+        const snapshot = window.__qaLastHeightLive;
+        window.__qaHeightRelease = new Promise((resolve) =>
+          requestAnimationFrame(() => {
+            const c = document.querySelector('#atlas-terrain-spatial canvas'),
+              gl = c.getContext('webgl2');
+            const width = gl.drawingBufferWidth,
+              height = gl.drawingBufferHeight,
+              pixels = new Uint8Array(width * height * 4),
+              old = gl.getParameter(gl.READ_FRAMEBUFFER_BINDING);
+            gl.bindFramebuffer(gl.READ_FRAMEBUFFER, null);
+            gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+            gl.bindFramebuffer(gl.READ_FRAMEBUFFER, old);
+            window.__qaHeightImage = { width, height, pixels };
+            resolve(snapshot);
+          }),
+        );
+      }
+      return gesture(active);
+    };
+  });
+  await native.app.evaluate(({ ipcMain }) => {
+    const original = ipcMain._invokeHandlers.get('atlas:commit');
+    globalThis.__qaMultiscaleCommands = [];
+    ipcMain.removeHandler('atlas:commit');
+    ipcMain.handle('atlas:commit', (...args) => {
+      globalThis.__qaMultiscaleCommands.push(structuredClone(args[1]));
+      return original(...args);
+    });
+  });
+  evidence.multiscale = {
+    scale,
+    gestures: [],
+    samplePoints,
+    scope: 'Functional author/display equality; no p95 or raster-aesthetics claim',
+  };
+  const choose = async ({
+    mode = 'raise',
+    form,
+    radius = 16,
+    strength = 3,
+    preserveDetails = true,
+  }) => {
+    await page
+      .locator(
+        `[data-tool-select="land-tool"][data-tool-value="${mode === 'smooth' ? 'smooth' : 'height'}"]`,
+      )
+      .first()
+      .click();
+    if (form) await page.locator(`[data-form="${form}"]`).click();
+    else if (mode !== 'smooth') await setHeightDirection(page, mode);
+    await setBrushWorldRadius(page, 'land-radius', radius);
+    await page.locator('#land-height-strength').fill(String(strength));
+    await page.locator('#land-height-strength').press('Tab');
+    await page.locator('#land-preserve-details').setChecked(preserveDetails);
+    await ready(radius);
+  };
+  const snapshot = () => page.evaluate(() => window.__qaHeightSnapshot());
+  const saveLiveImage = async (label) => {
+    const encoded = await page.evaluate(() => {
+      const { width, height, pixels } = window.__qaHeightImage,
+        c = document.createElement('canvas');
+      c.width = width;
+      c.height = height;
+      const ctx = c.getContext('2d'),
+        im = ctx.createImageData(width, height);
+      for (let y = 0; y < height; y++)
+        im.data.set(
+          pixels.subarray((height - 1 - y) * width * 4, (height - y) * width * 4),
+          y * width * 4,
+        );
+      ctx.putImageData(im, 0, 0);
+      return c.toDataURL('image/png').split(',')[1];
+    });
+    await writeFile(path.join(output, label + '-live.png'), Buffer.from(encoded, 'base64'));
+  };
+  const draw = async (
+    label,
+    options,
+    pathPoints = [
+      [0.28, 0.48],
+      [0.5, 0.5],
+      [0.72, 0.52],
+    ],
+  ) => {
+    await choose(options);
+    const before = recoveryState(),
+      original = records(),
+      box = await page.locator('#campaign-map').boundingBox();
+    await native.capture(page, label + '-before.png');
+    const points = pathPoints.map(([u, v]) => ({
+      x: box.x + u * box.width,
+      y: box.y + v * box.height,
+    }));
+    await page.mouse.move(points[0].x, points[0].y);
+    await page.mouse.down();
+    const started = Date.now(),
+      duration = 1800;
+    while (Date.now() - started < duration) {
+      const progress = Math.min(0.9999, (Date.now() - started) / duration) * (points.length - 1),
+        i = Math.floor(progress),
+        t = progress - i;
+      await page.mouse.move(
+        points[i].x * (1 - t) + points[i + 1].x * t,
+        points[i].y * (1 - t) + points[i + 1].y * t,
+      );
+      await page.waitForTimeout(50);
+    }
+    await page.mouse.move(points.at(-1).x, points.at(-1).y);
+    // Release first: all images and numerical exports happen without adding hold time.
+    await page.mouse.up();
+    const live = await page.evaluate(() => window.__qaHeightRelease);
+    await saveLiveImage(label);
+    await ready(options.radius, before.revision + 1);
+    const canonical = await snapshot(),
+      after = recoveryState(),
+      command = await native.app.evaluate(() => globalThis.__qaMultiscaleCommands.at(-1));
+    check(
+      label + '-one-command',
+      after.cursor === before.cursor + 1 &&
+        after.commands === before.commands + 1 &&
+        command.action.stroke.preserveDetails === (options.preserveDetails !== false),
+      { before, after, stroke: command.action.stroke },
+    );
+    check(
+      label + '-last-live-is-final-input',
+      JSON.stringify(command.action.stroke) === JSON.stringify(live.stroke),
+    );
+    const expected = applyTerrainBrush(original, command.action.stroke),
+      actual = new Map(records().map((r) => [r.id, r.height.data]));
+    check(
+      label + '-canonical-author-bytes',
+      expected.every((r) => actual.get(r.id) === r.height.data),
+      { changedTiles: expected.length },
+    );
+    let maximum = 0,
+      pointsCompared = 0;
+    const tiles = new Map(canonical.tiles.map((t) => [JSON.stringify(t.tile), t]));
+    for (const t of live.tiles) {
+      const c = tiles.get(JSON.stringify(t.tile));
+      if (!c) continue;
+      for (let i = 0; i < t.ground.length; i++) {
+        maximum = Math.max(maximum, Math.abs(t.ground[i] - c.ground[i]));
+        pointsCompared++;
+      }
+    }
+    check(label + '-live-canonical-heights', pointsCompared > 0 && maximum <= 0.001, {
+      maximumErrorM: maximum,
+      pointsCompared,
+    });
+    check(
+      label + '-actual-displayed-revision',
+      canonical.tiles.every((t) => t.revision === after.revision),
+      { target: after.revision, actual: canonical.tiles.map((t) => t.revision) },
+    );
+    const at = (state, p) => {
+      const t = state.tiles.find(
+        (t) =>
+          p.x >= t.view.box.x &&
+          p.y >= t.view.box.y &&
+          p.x <= t.view.box.x + t.view.box.width &&
+          p.y <= t.view.box.y + t.view.box.height,
+      );
+      return t ? gridHeight({ view: t.view, heights: t.heights }, p) : null;
+    };
+    const measurements = samplePoints.map((p) => ({
+      ...p,
+      live: at(live, p),
+      canonical: at(canonical, p),
+    }));
+    check(
+      label + '-fixed-world-samples',
+      measurements.every(
+        (p) => p.live !== null && p.canonical !== null && Math.abs(p.live - p.canonical) <= 0.001,
+      ),
+      { measurements },
+    );
+    const fine = original.filter(
+      (r) => r.height.pixel < 2 ** Math.floor(Math.log2(options.radius / 32)),
+    );
+    check(
+      label + '-detail-policy',
+      options.preserveDetails === false
+        ? fine.some((r) => actual.get(r.id) !== r.height.data)
+        : fine.every((r) => actual.get(r.id) === r.height.data),
+      { fineTiles: fine.length, preserveDetails: options.preserveDetails !== false },
+    );
+    const sampleBefore = new TerrainSampler(original),
+      sampleAfter = new TerrainSampler(records());
+    check(
+      label + '-outside-preserved',
+      sampleBefore.sample({ x: 2, y: 2 }).heightM === sampleAfter.sample({ x: 2, y: 2 }).heightM,
+    );
+    await native.capture(page, label + '-canonical.png');
+    const item = {
+      label,
+      before,
+      after,
+      maximumErrorM: maximum,
+      pointsCompared,
+      measurements,
+      liveCamera: live.camera,
+      canonicalCamera: canonical.camera,
+      liveEye: atlasCameraWorldEye(live.camera),
+      canonicalEye: atlasCameraWorldEye(canonical.camera),
+      stroke: command.action.stroke,
+    };
+    evidence.multiscale.gestures.push(item);
+    await saveJson(label + '-heights.json', { live, canonical });
+    await persist();
+    return { before, after };
+  };
+  const history = async (kind, expected, label) => {
+    const prior = queryRevision();
+    await page.locator('#atlas-' + kind).click();
+    await ready(0, prior + 1);
+    const actual = recoveryState();
+    check(label, actual.heights === expected.heights && actual.cursor === expected.cursor, {
+      actual,
+      expected,
+    });
+  };
+  await draw('multi-hills', { form: 'hills', radius: 8, strength: 3 });
+  await draw('multi-mountains', { form: 'mountains', radius: 6, strength: 3 }, [
+    [0.4, 0.3],
+    [0.5, 0.5],
+    [0.6, 0.7],
+  ]);
+  await draw('multi-canyon', { form: 'canyon', radius: 3, strength: 2 }, [
+    [0.3, 0.4],
+    [0.5, 0.5],
+    [0.7, 0.6],
+  ]);
+  await draw('multi-smooth-protected', { mode: 'smooth', radius: 16, strength: 4 });
+  await draw('multi-smooth-unprotected', {
+    mode: 'smooth',
+    radius: 8,
+    strength: 3,
+    preserveDetails: false,
+  });
+  for (const mode of ['raise', 'lower']) {
+    const protectedRun = await draw('multi-' + mode + '-protected', {
+      mode,
+      radius: 16,
+      strength: 3,
+    });
+    await history('undo', protectedRun.before, 'multi-' + mode + '-protected-undo');
+    const unprotectedRun = await draw('multi-' + mode + '-unprotected', {
+      mode,
+      radius: 16,
+      strength: 3,
+      preserveDetails: false,
+    });
+    await history('undo', unprotectedRun.before, 'multi-' + mode + '-unprotected-undo');
+    await history('redo', unprotectedRun.after, 'multi-' + mode + '-unprotected-redo');
+  }
+  const saved = recoveryState(),
+    savedSamples = new TerrainSampler(records());
+  const samples = samplePoints.map((p) => ({ ...p, height: savedSamples.sample(p).heightM }));
+  await native.capture(page, 'multi-saved.png');
+  await native.close();
+  await openCampaign();
+  await ready();
+  const fresh = recoveryState(),
+    freshSampler = new TerrainSampler(records());
+  check(
+    'multi-fresh-identical',
+    fresh.heights === saved.heights &&
+      fresh.cursor === saved.cursor &&
+      fresh.commands === saved.commands &&
+      samples.every((p) => freshSampler.sample(p).heightM === p.height),
+    { saved, fresh, samples },
+  );
+  await native.capture(page, 'multi-fresh.png');
+  evidence.multiscale.saved = saved;
+  evidence.multiscale.fresh = fresh;
+  await persist();
+}
+
 try {
   mark('fixture creation');
   fixture = await createAtlasCanonicalFixture({
@@ -1762,7 +2156,9 @@ try {
 
   mark('open initial campaign');
   await openCampaign();
-  if (formsProbe) {
+  if (multiscaleProbe) {
+    await exerciseMultiscaleTools();
+  } else if (formsProbe) {
     await exerciseFormTools();
   } else if (basicToolsProbe) {
     await exerciseBasicTools();
@@ -2068,7 +2464,7 @@ try {
   mark('cleanup: dispose session');
   await native.dispose();
   await new Promise((resolve) => setTimeout(resolve, 250));
-  for (const name of basicToolsProbe || formsProbe
+  for (const name of basicToolsProbe || formsProbe || multiscaleProbe
     ? []
     : [
         'gesture-one-duration-3-to-5s',
@@ -2117,5 +2513,5 @@ try {
   const reportPath = path.join(output, evidence.status === 'PASS' ? 'result.json' : 'failure.json');
   await writeFile(reportPath, JSON.stringify(report, null, 2) + '\n');
   console.log(JSON.stringify({ output, reportPath, status: evidence.status }));
-  if (formsProbe && evidence.status !== 'PASS') process.exitCode = 1;
+  if ((formsProbe || multiscaleProbe) && evidence.status !== 'PASS') process.exitCode = 1;
 }

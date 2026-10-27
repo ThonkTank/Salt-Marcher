@@ -703,6 +703,7 @@ export class CampaignAtlasWorkbench {
       selected: (id, kind) => this.layout?.landscapeSelectionChanged(id, kind),
       terrainGesture: (active) => this.terrainGesture(active),
       previewHeight: (stroke) => this.spatial?.previewHeight(stroke),
+      editingReady: (radius) => this.raster?.editingReady(radius) ?? true,
       writeTerrain: async (a, c) => {
         const r = await this.write(a, false, true, c);
         if (!r) throw Error('Pinselzug nicht gespeichert.');
@@ -1088,6 +1089,7 @@ export class CampaignAtlasWorkbench {
       navigate: (box, coalesce) => this.camera.set(box, true, 'set', coalesce),
       live: () => this.landscape.livePainting,
       draft: () => this.landscape.spatialDraft(),
+      editingRadius: () => this.landscape.editingRadius(),
       writing: () => this.busy || this.regions.reading,
       hasDraft: () => this.cameraDraftPending(),
       navigationLocked: () => this.camera.navigationLocked,

@@ -114,6 +114,7 @@ test('actual controls keep slider, typed units, locked drafts and preset paramet
     document.querySelector(`[data-form="${p.form}"]`).click();
     assert.deepEqual(settings.height(), {
       mode: p.form === 'canyon' ? 'lower' : 'raise',
+      preserveDetails: true,
       form: p.form,
       seed: 0x51a7c3,
       strength: Number((p.radius * 10 * p.rate).toPrecision(3)),
@@ -123,6 +124,12 @@ test('actual controls keep slider, typed units, locked drafts and preset paramet
     assert.equal(document.querySelectorAll('[data-form][aria-pressed="true"]').length, 1);
     assert.equal(Number(atlasFieldValue(f('land-radius'))), p.radius * 10);
   }
+  f('land-preserve-details').checked = false;
+  assert.equal(settings.height().preserveDetails, false);
+  settings.show('smooth');
+  assert.equal(settings.height().preserveDetails, false);
+  assert.equal(settings.height().roughness, undefined);
+  settings.show('height');
   f('land-radius-fixed').checked = true;
   f('land-radius-fixed').dispatchEvent(new Event('change'));
   assert.equal(Number(atlasFieldValue(f('land-radius'))), 450);

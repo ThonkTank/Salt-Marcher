@@ -1,121 +1,87 @@
-import {
-  heightBrushDabs,
-  heightBrushAmount,
-  prepareHeightBrush,
-  validateHeightStroke,
-  type HeightStroke,
-} from './terrain-brush';
-import { strokeBox } from './land-mask';
-import { gridHeight, terrainVisibility, type TerrainGrid } from './terrain-spatial-model';
-import { terrainGridLayout, terrainGridCoordinate } from './terrain-grid-layout';
+import { applyTerrainBrush, type HeightStroke } from './terrain-brush';
+import { TerrainSampler } from './terrain-height';
+import { type TerrainGrid } from './terrain-spatial-model';
+import { terrainGridLayout } from './terrain-grid-layout';
+import type { LandscapeRecord } from './atlas-landscape';
 
-/** Bounded display approximation, anchored to the gesture's loaded ground.
- * Consumes each input segment once. No author records, storage or source mutation.
- * Main still owns precise sampling, protected routes and the committed result. */
+/** One immutable author source per gesture. Draft and writer edit identical
+ * Float32 nodes and use the same interpolation before projecting to the screen. */
 export class TerrainBrushDraft {
   readonly grid: TerrainGrid;
   readonly ground: Float32Array;
-  private dose: Float64Array;
-  private visible: Uint8Array;
   private consumed = 1;
   changedRect = { x: 0, y: 0, width: 0, height: 0 };
   maximumHeight = 0;
-  private source: (p: { x: number; y: number }) => number;
-  private visibility: (p: { x: number; y: number }) => boolean;
-  constructor(readonly base: TerrainGrid) {
-    if (!base.editing) throw Error('Bearbeitbares Höhenraster fehlt.');
+  records: LandscapeRecord[];
+  private original: TerrainSampler;
+  private readonly originalRecords: LandscapeRecord[];
+  constructor(
+    readonly base: TerrainGrid,
+    records = base.editing?.author?.records,
+  ) {
+    if (!base.editing || !records) throw Error('Bearbeitbare Autorenhöhen fehlen.');
+    this.records = records;
+    this.originalRecords = records;
+    this.original = new TerrainSampler(records, false);
     this.ground = base.editing.ground.slice();
-    this.grid = { ...base, heights: base.heights.slice() };
-    this.dose = new Float64Array(this.ground.length);
-    this.visible = new Uint8Array(this.ground.length);
-    const raw = { ...base, heights: base.editing.ground };
-    this.source = (p) => gridHeight(raw, p);
-    this.visibility = terrainVisibility(base);
+    this.grid = {
+      ...base,
+      heights: base.heights.slice(),
+      editing: { ...base.editing, ground: this.ground },
+    };
   }
-  update(stroke: HeightStroke) {
+  update(stroke: HeightStroke, prepared?: LandscapeRecord[]) {
     if (stroke.samples.length <= this.consumed) return false;
-    if (stroke.form) return this.updateForm(stroke);
-    const samples = stroke.samples.slice(this.consumed - 1);
-    this.consumed = stroke.samples.length;
-    const layout = terrainGridLayout(this.base.view),
-      v = this.base.view,
-      water = this.base.editing!.water;
+    const source = this.base.editing!.author;
+    const records = this.originalRecords;
+    const changes =
+      prepared ??
+      applyTerrainBrush(
+        records,
+        { ...stroke, visibility: stroke.visibility ?? this.base.view },
+        undefined,
+        this.base,
+        undefined,
+        true,
+      );
+    const merged = new Map(records.map((r) => [r.id, r]));
+    for (const r of changes) merged.set(r.id, r);
+    this.records = [...merged.values()];
+    if (source) this.grid.editing!.author = { ...source, records: this.records };
+    const next = new TerrainSampler(this.records, false),
+      layout = terrainGridLayout(this.base.view),
+      v = this.base.view;
     let changed = false,
       minX = v.columns,
       minY = v.rows,
       maxX = -1,
       maxY = -1;
-    for (const dab of heightBrushDabs({ ...stroke, samples })) {
-      if (dab.seconds <= 0) continue;
-      const left = Math.ceil(terrainGridCoordinate(layout.x, dab.x - stroke.radius)),
-        right = Math.floor(terrainGridCoordinate(layout.x, dab.x + stroke.radius));
-      const top = Math.ceil(terrainGridCoordinate(layout.y, dab.y - stroke.radius)),
-        bottom = Math.floor(terrainGridCoordinate(layout.y, dab.y + stroke.radius));
-      for (let y = top; y <= bottom; y++)
-        for (let x = left; x <= right; x++) {
-          const p = { x: layout.x.values[x]!, y: layout.y.values[y]! },
-            r = Math.hypot(p.x - dab.x, p.y - dab.y) / stroke.radius;
-          if (r >= 1) continue;
-          const i = y * v.columns + x;
-          if (!this.visible[i]) this.visible[i] = this.visibility(p) ? 1 : 2;
-          if (this.visible[i] === 2) continue;
-          const t = stroke.feather === 0 ? 1 : Math.min(1, (1 - r) / stroke.feather);
-          this.dose[i] = this.dose[i]! + dab.seconds * t * t * (3 - 2 * t);
-          this.ground[i] =
-            this.base.editing!.ground[i]! +
-            heightBrushAmount(
-              stroke,
-              p,
-              this.dose[i]!,
-              stroke.mode === 'smooth' || stroke.targetM !== undefined ? this.source : undefined,
-            );
-          this.grid.heights[i] = Math.max(this.ground[i]!, water[i]!);
-          changed = true;
-          minX = Math.min(minX, x);
-          minY = Math.min(minY, y);
-          maxX = Math.max(maxX, x);
-          maxY = Math.max(maxY, y);
-          this.maximumHeight = Math.max(
-            this.maximumHeight,
-            Math.abs(this.grid.heights[i]! - v.focusM),
-          );
-        }
-    }
-    this.changedRect = { x: minX, y: minY, width: maxX - minX + 1, height: maxY - minY + 1 };
-    return changed;
-  }
-
-  /** The complete corridor can change at a join. Always start from the fixed
-   * pre-gesture field; never integrate a revised profile into an old preview. */
-  private updateForm(stroke: HeightStroke) {
-    validateHeightStroke(stroke);
-    const prepared = prepareHeightBrush(stroke),
-      box = strokeBox(stroke),
-      layout = terrainGridLayout(this.base.view),
-      v = this.base.view,
-      left = Math.ceil(terrainGridCoordinate(layout.x, box.x)),
-      right = Math.floor(terrainGridCoordinate(layout.x, box.x + box.width)),
-      top = Math.ceil(terrainGridCoordinate(layout.y, box.y)),
-      bottom = Math.floor(terrainGridCoordinate(layout.y, box.y + box.height));
-    let changed = false;
-    for (let y = top; y <= bottom; y++)
-      for (let x = left; x <= right; x++) {
+    for (let y = 0; y < v.rows; y++)
+      for (let x = 0; x < v.columns; x++) {
         const i = y * v.columns + x,
           p = { x: layout.x.values[x]!, y: layout.y.values[y]! };
-        if (!this.visible[i]) this.visible[i] = this.visibility(p) ? 1 : 2;
-        if (this.visible[i] === 2) continue;
-        const next = this.base.editing!.ground[i]! + heightBrushAmount(stroke, p, prepared.dose(p));
-        if (this.ground[i] === Math.fround(next)) continue;
-        this.ground[i] = next;
-        this.grid.heights[i] = Math.max(this.ground[i]!, this.base.editing!.water[i]!);
+        // Preserve the displayed route/water contribution. The changed raw height
+        // is sampled on author nodes, never smoothed on the display triangles.
+        const value = Math.fround(
+          this.base.editing!.ground[i]! +
+            next.sample(p).heightM -
+            Math.fround(this.original.sample(p).heightM),
+        );
+        if (this.ground[i] === value) continue;
+        this.ground[i] = value;
+        this.grid.heights[i] = Math.max(value, this.base.editing!.water[i]!);
+        changed = true;
+        minX = Math.min(minX, x);
+        minY = Math.min(minY, y);
+        maxX = Math.max(maxX, x);
+        maxY = Math.max(maxY, y);
         this.maximumHeight = Math.max(
           this.maximumHeight,
           Math.abs(this.grid.heights[i]! - v.focusM),
         );
-        changed = true;
       }
     this.consumed = stroke.samples.length;
-    this.changedRect = { x: left, y: top, width: right - left + 1, height: bottom - top + 1 };
+    this.changedRect = { x: minX, y: minY, width: maxX - minX + 1, height: maxY - minY + 1 };
     return changed;
   }
 }

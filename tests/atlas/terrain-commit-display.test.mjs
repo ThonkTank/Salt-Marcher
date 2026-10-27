@@ -6,7 +6,7 @@ import { createRequire } from 'node:module';
 buildSync({
   stdin: {
     contents:
-      "export * from './src/app/atlas/campaign-atlas-ui';export * from './src/app/atlas/atlas-landscape-ui';",
+      "export * from './src/app/atlas/campaign-atlas-ui';export * from './src/app/atlas/atlas-landscape-ui';export * from './src/app/atlas/terrain-frame';export * from './src/app/atlas/atlas-surface-reuse';",
     resolveDir: process.cwd(),
   },
   outfile: '.build/terrain-commit-display-test.cjs',
@@ -15,9 +15,13 @@ buildSync({
   format: 'cjs',
   external: ['obsidian'],
 });
-const { CampaignAtlasWorkbench, LandscapeWorkbench } = createRequire(import.meta.url)(
-  '../../.build/terrain-commit-display-test.cjs',
-);
+const {
+  CampaignAtlasWorkbench,
+  LandscapeWorkbench,
+  terrainFrameDelta,
+  applyTerrainFrame,
+  reuseAtlasSurfaceTile,
+} = createRequire(import.meta.url)('../../.build/terrain-commit-display-test.cjs');
 test('released direct strokes retain their author fence while releasing camera input', () => {
   const ui = Object.assign(landscapeFixture(LandscapeWorkbench), {
     live: {},
@@ -402,4 +406,52 @@ test('confirmed head survives reload failure and requires explicit retry after a
   assert.equal(resolutions.length, 1, 'failed read cannot replay receipt lookup or original write');
   assert.equal(released, 1);
   assert(shown.some((s) => s.revision === 13 && s.fence === 'canonical-13'));
+});
+
+test('an unchanged display adopts the new author snapshot through delta frames and buffer reuse', () => {
+  const view = { columns: 2, rows: 2, box: { x: 0, y: 0, width: 1, height: 1 } },
+    author = { revision: 1, fence: 'one', pixel: 1, radius: 32, box: view.box, records: [] },
+    grid = {
+      view,
+      seaLevelM: 0,
+      heights: new Float32Array(4),
+      editing: { ground: new Float32Array(4), water: new Float32Array(4), author },
+    },
+    before = {
+      kind: 'full',
+      view: 'tilted',
+      target: { key: 'view', revision: 1, fence: 'one' },
+      invalidation: { bounds: [], reset: false },
+      projection: { grid, pixels: new Uint8Array(16), width: 2, height: 2 },
+    },
+    after = structuredClone(before);
+  after.target = { key: 'view', revision: 2, fence: 'two' };
+  after.projection.grid.editing.author = {
+    ...author,
+    revision: 2,
+    fence: 'two',
+    pixel: 2,
+    radius: 64,
+    records: [{ id: 'fine', height: { data: 'new' } }],
+  };
+  const delta = terrainFrameDelta(before, after, before.target),
+    adopted = applyTerrainFrame(before, delta);
+  assert.equal(delta.kind, 'delta');
+  assert.equal(delta.heights.length, 0);
+  assert.deepEqual(adopted.projection.grid.editing.author, after.projection.grid.editing.author);
+  const tile = (p) => ({
+    tile: { lod: 0, x: 0, y: 0 },
+    revision: p.grid.editing.author.revision,
+    fence: p.grid.editing.author.fence,
+    terrain: { projection: p },
+    material: { channels: {} },
+  });
+  const reused = reuseAtlasSurfaceTile(tile(before.projection), tile(adopted.projection));
+  assert.equal(reused.terrain.projection.grid.heights, grid.heights);
+  assert.equal(reused.terrain.projection.grid.editing.ground, grid.editing.ground);
+  assert.deepEqual(
+    reused.terrain.projection.grid.editing.author,
+    after.projection.grid.editing.author,
+  );
+  assert.equal(before.projection.grid.editing.author.revision, 1);
 });

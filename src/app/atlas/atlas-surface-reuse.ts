@@ -30,7 +30,12 @@ export function reuseAtlasSurfaceTile(
     same(a.heights, b.heights) &&
     same(a.editing?.ground, b.editing?.ground) &&
     same(a.editing?.water, b.editing?.water)
-      ? a
+      ? {
+          ...a,
+          editing: b.editing
+            ? { ...b.editing, ground: a.editing!.ground, water: a.editing!.water }
+            : undefined,
+        }
       : b;
   const channels = { ...next.material.channels };
   for (const c of CHANNEL_NAMES)

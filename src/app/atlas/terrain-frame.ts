@@ -39,7 +39,11 @@ export type TerrainDeltaFrame = Common & { kind: 'delta'; base: TerrainFrameIden
         view: 'tilted';
         projection: Omit<TerrainProjection, 'grid' | 'pixels' | 'forest' | 'detail'>;
         grid: Omit<TerrainGrid, 'heights' | 'editing'>;
-        editing?: { ground: TerrainPatch<Float32Array>[]; water: TerrainPatch<Float32Array>[] };
+        editing?: {
+          ground: TerrainPatch<Float32Array>[];
+          water: TerrainPatch<Float32Array>[];
+          author?: import('./terrain-spatial-model').TerrainEditingSource;
+        };
         heights: TerrainPatch<Float32Array>[];
         pixels: TerrainPatch<Uint8Array>[];
         forest?: TerrainPatch<Uint8Array>[];
@@ -164,6 +168,7 @@ export function terrainFrameDelta(
       grid,
       editing: b.grid.editing
         ? {
+            ...(b.grid.editing.author ? { author: b.grid.editing.author } : {}),
             ground: patches(
               a.grid.editing!.ground,
               b.grid.editing.ground,
@@ -290,6 +295,7 @@ export function applyTerrainFrame(
           ...(frame.editing
             ? {
                 editing: {
+                  ...(frame.editing.author ? { author: frame.editing.author } : {}),
                   ground: applyPatches(
                     before.projection.grid.editing!.ground,
                     frame.editing.ground,

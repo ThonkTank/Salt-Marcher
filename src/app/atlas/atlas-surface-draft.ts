@@ -1,3 +1,5 @@
+import { TerrainSampler } from './terrain-height';
+import { terrainGridLayout } from './terrain-grid-layout';
 import {
   MACRO_RELIEF_RADIUS,
   MACRO_RIDGE_GAIN,
@@ -6,7 +8,7 @@ import {
 } from './terrain-material';
 import type { AtlasSurfaceTile } from './atlas-surface-tile-stream';
 import { TerrainBrushDraft } from './terrain-brush-draft';
-import type { HeightStroke } from './terrain-brush';
+import { applyTerrainBrush, type HeightStroke } from './terrain-brush';
 import { gridHeight, terrainVisibility, type TerrainView } from './terrain-spatial-model';
 import type { LandscapeRecord } from './atlas-landscape';
 import { atlasWorldTileBounds } from './atlas-world-tiles';
@@ -20,6 +22,8 @@ import { terrainColors } from '../runtime/world-model';
 export class AtlasSurfaceDraft {
   private heights = new Map<AtlasSurfaceTile, TerrainBrushDraft>();
   private bases: readonly AtlasSurfaceTile[];
+  private authorRecords: LandscapeRecord[];
+  private consumed = 1;
   tiles: readonly AtlasSurfaceTile[];
   get baseTiles() {
     return this.bases;
@@ -31,19 +35,63 @@ export class AtlasSurfaceDraft {
   ) {
     this.bases = tiles;
     this.tiles = tiles;
+    this.authorRecords = [
+      ...new Map(
+        tiles
+          .flatMap((tile) => tile.terrain.projection.grid.editing?.author?.records ?? [])
+          .map((r) => [r.id, r]),
+      ).values(),
+    ];
+  }
+  private visibilityGrid() {
+    const view = this.visibility,
+      heights = new Float32Array(view.columns * view.rows);
+    const layout = terrainGridLayout(view),
+      sampler = new TerrainSampler(this.authorRecords, false);
+    for (let y = 0; y < view.rows; y++)
+      for (let x = 0; x < view.columns; x++) {
+        const p = { x: layout.x.values[x]!, y: layout.y.values[y]! };
+        const tile = this.bases.find((t) => {
+          const b = t.terrain.projection.grid.view.box;
+          return p.x >= b.x && p.x <= b.x + b.width && p.y >= b.y && p.y <= b.y + b.height;
+        });
+        const g = tile?.terrain.projection.grid;
+        const water = g?.editing
+          ? gridHeight({ ...g, heights: g.editing.water }, p)
+          : this.bases[0]!.terrain.projection.grid.seaLevelM;
+        heights[y * view.columns + x] = Math.max(sampler.sample(p).heightM, water);
+      }
+    return { view, heights, seaLevelM: this.bases[0]!.terrain.projection.grid.seaLevelM };
   }
   height(stroke: HeightStroke): boolean {
+    if (stroke.samples.length <= this.consumed) return false;
+    this.consumed = stroke.samples.length;
     let changed = false;
+    // All visible tiles share one author computation and fixed visibility.
+    // Tile edges cannot invent smoothing neighbours or duplicate attenuation.
+    const visibility = this.visibilityGrid();
+    const changes = applyTerrainBrush(
+      this.authorRecords,
+      stroke,
+      undefined,
+      visibility,
+      undefined,
+      true,
+    );
+    changed = changes.length > 0;
     this.tiles = this.bases.map((tile, index) => {
       const old = this.tiles[index]!,
         b = tile.terrain.projection.grid.view.box;
-      if (!touches(stroke.samples, stroke.radius, b.x, b.y, b.x + b.width, b.y + b.height))
-        return old;
+
       let draft = this.heights.get(tile);
       if (!draft) {
         const g = tile.terrain.projection.grid;
         draft = new TerrainBrushDraft({
           ...g,
+          editing: {
+            ...g.editing!,
+            author: { ...g.editing!.author!, records: this.authorRecords },
+          },
           view: {
             ...g.view,
             ...this.visibility,
@@ -54,11 +102,22 @@ export class AtlasSurfaceDraft {
         });
         this.heights.set(tile, draft);
       }
-      if (!draft.update(stroke)) return old;
+      const updated = draft.update(stroke, changes);
+      if (!updated)
+        return {
+          ...old,
+          terrain: {
+            ...old.terrain,
+            projection: {
+              ...old.terrain.projection,
+              grid: { ...old.terrain.projection.grid, editing: draft.grid.editing },
+            },
+          },
+        };
       changed = true;
       const grid = {
         ...draft.grid,
-        editing: { ground: draft.ground, water: tile.terrain.projection.grid.editing!.water },
+        editing: draft.grid.editing!,
       };
       const { width, height, channels } = tile.material,
         current = old.material.channels,

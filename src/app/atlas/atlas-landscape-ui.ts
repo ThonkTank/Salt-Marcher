@@ -494,6 +494,14 @@ export class LandscapeWorkbench {
             this.say('Zuerst abschließen oder verwerfen.');
             return;
           }
+          if (
+            (this.tool === 'height' || this.tool === 'smooth') &&
+            this.host.editingReady?.(this.editingRadius()) === false
+          ) {
+            this.say('Höhendaten für diesen Pinsel werden geladen.');
+            this.host.redraw();
+            return;
+          }
           this.pointer = e.pointerId;
           if (this.tool === 'color')
             this.brush.colorDraft ??= {
@@ -1005,7 +1013,8 @@ export class LandscapeWorkbench {
       read.point.x === point.x &&
       read.point.y === point.y &&
       read.resolutionM !== null &&
-      read.resolutionM < brush;
+      read.resolutionM < brush &&
+      this.settings.height().preserveDetails !== false;
     const hint = this.settings.precisionRoot.querySelector<HTMLElement>('#land-height-protection')!;
     hint.hidden = !protectedPoint;
     if (protectedPoint && read.resolutionM !== null) {
@@ -1823,6 +1832,9 @@ export class LandscapeWorkbench {
     }
     if (t === 1) this.gridFade = null;
     return t < 1;
+  }
+  editingRadius() {
+    return Number(atlasFieldValue(html<HTMLInputElement>('land-radius')));
   }
   private sayIfIdle(s: string) {
     if (

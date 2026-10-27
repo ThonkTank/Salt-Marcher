@@ -2,7 +2,7 @@ import { type LandscapeBox, type LandscapeRecord } from '../atlas/atlas-landscap
 import type { AtlasRegionSource } from '../atlas/atlas-region-contracts';
 import { TerrainCache } from '../atlas/terrain-cache';
 import { streamTerrainField, type TerrainStream } from '../atlas/terrain-field-stream';
-import { heightRecord, TerrainSampler, DEFAULT_HEIGHT_M } from '../atlas/terrain-height';
+import { heightRecord, TerrainSampler } from '../atlas/terrain-height';
 import {
   applyTerrainBrush,
   heightBrushBounds,
@@ -13,6 +13,7 @@ import {
 import { coupleRouteEdits } from '../atlas/terrain-route-planner';
 import { routeBounds } from '../atlas/terrain-route';
 import { readRouteTerrain } from './terrain-route';
+import { readTerrainEditingRecords } from './terrain-editing-source';
 import { readTerrainGrid } from './terrain-grid';
 import type { TerrainGrid } from '../atlas/terrain-spatial-model';
 
@@ -209,7 +210,7 @@ export function computeTerrainStroke(
   db: any,
   cam: string,
   stroke: HeightStroke,
-  pyramid = new TerrainScalePyramid(),
+  _pyramid = new TerrainScalePyramid(),
   visibility?: TerrainGrid,
 ): LandscapeRecord[] {
   validateHeightStroke(stroke);
@@ -225,23 +226,26 @@ export function computeTerrainStroke(
     area = heightBrushBounds({ ...stroke, visibility: undefined });
   // Interpolation support and smoothing samples may read neighbouring nodes.
   const box = {
-    x: area.x - pixel,
-    y: area.y - pixel,
-    width: area.width + 2 * pixel,
-    height: area.height + 2 * pixel,
+    x: area.x - 3 * pixel,
+    y: area.y - 3 * pixel,
+    width: area.width + 6 * pixel,
+    height: area.height + 6 * pixel,
   };
   const needsSource = stroke.mode === 'smooth' || stroke.targetM !== undefined;
-  const records = scaleRecords(db, cam, box, pixel, needsSource);
-  const base = needsSource ? pyramid.sampler(db, cam, box, pixel) : undefined;
-  const bands = needsSource ? new TerrainSampler(records, false) : undefined;
-  const sample =
-    base && bands
-      ? (p: { x: number; y: number }) =>
-          base.sample(p).heightM + bands.sample(p).heightM - DEFAULT_HEIGHT_M
-      : undefined;
+  const records =
+    stroke.preserveDetails === false || needsSource
+      ? readTerrainEditingRecords(
+          db,
+          cam,
+          box,
+          pixel,
+          stroke.preserveDetails === false,
+          needsSource || stroke.preserveDetails === false,
+        )
+      : scaleRecords(db, cam, box, pixel, false);
   const visible =
     visibility ?? (stroke.visibility ? readTerrainGrid(db, cam, stroke.visibility) : undefined);
-  const tiles = applyTerrainBrush(records, stroke, undefined, visible, sample, true);
+  const tiles = applyTerrainBrush(records, stroke, undefined, visible, undefined, true);
   if (!tiles.length) return [];
   const local = routeSources(db, cam, box);
   if (!local.some((r) => r.route)) return tiles;

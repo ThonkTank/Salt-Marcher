@@ -1,3 +1,4 @@
+import { heightPatch } from './terrain-interpolation';
 import { coupleRouteEdits } from './terrain-route-planner';
 import {
   terrainGrid,
@@ -11,12 +12,14 @@ import { terrainRoughness } from './terrain-relief';
 import { prepareTerrainForm, type TerrainForm } from './terrain-form-brush';
 import type { LandscapeRecord } from './atlas-landscape';
 import { strokeBox, validateStroke, type MaskSample } from './land-mask';
-import { editHeight, TerrainSampler } from './terrain-height';
+import { decodeHeights, encodeHeights, editHeight, TerrainSampler } from './terrain-height';
 
 /** Strength is metres per second, feather is the soft fraction of the radius. */
 export interface HeightStroke {
   mode: 'raise' | 'lower' | 'roughen' | 'smooth' | 'level';
   form?: TerrainForm;
+  /** Missing means protected. Frozen with radius and all other gesture parameters. */
+  preserveDetails?: boolean;
   radius: number;
   strength: number;
   feather: number;
@@ -30,6 +33,7 @@ export function validateHeightStroke(s: HeightStroke) {
   if (
     !s ||
     !['raise', 'lower', 'roughen', 'smooth', 'level'].includes(s.mode) ||
+    (s.preserveDetails !== undefined && typeof s.preserveDetails !== 'boolean') ||
     !Number.isFinite(s.strength) ||
     s.strength <= 0 ||
     s.strength > 100000 ||
@@ -53,6 +57,7 @@ export function validateHeightStroke(s: HeightStroke) {
         ![
           'mode',
           'form',
+          'preserveDetails',
           'radius',
           'strength',
           'feather',
@@ -89,12 +94,31 @@ export function scaleHeightSampler(records: LandscapeRecord[], pixel: number) {
     records.filter((r) => r.height?.version === 2 && r.height.pixel >= pixel),
     false,
   );
+  // The legacy low pass lives on the same author lattice in both runtimes.
+  // Round at the two Float32 boundaries used by the stored scale pyramid.
+  const nodes = new Map<string, number>();
+  const node = (x: number, y: number) => {
+    const key = x + ':' + y;
+    let height = nodes.get(key);
+    if (height !== undefined) return height;
+    height = 0;
+    for (const dy of [-0.375, -0.125, 0.125, 0.375])
+      for (const dx of [-0.375, -0.125, 0.125, 0.375])
+        height +=
+          Math.fround(base.sample({ x: (x + dx) * pixel, y: (y + dy) * pixel }).heightM) / 16;
+    height = Math.fround(height);
+    nodes.set(key, height);
+    return height;
+  };
   return (p: { x: number; y: number }) => {
-    let height = 0;
-    for (const y of [-0.375, -0.125, 0.125, 0.375])
-      for (const x of [-0.375, -0.125, 0.125, 0.375])
-        height += base.sample({ x: p.x + x * pixel, y: p.y + y * pixel }).heightM / 16;
-    return height + bands.sample(p).heightM + 100;
+    const x = p.x / pixel,
+      y = p.y / pixel,
+      gx = Math.floor(x),
+      gy = Math.floor(y);
+    const values = new Float64Array(16);
+    for (let iy = 0; iy < 4; iy++)
+      for (let ix = 0; ix < 4; ix++) values[iy * 4 + ix] = node(gx + ix - 1, gy + iy - 1);
+    return heightPatch(values, x - gx, y - gy, -100) + bands.sample(p).heightM + 100;
   };
 }
 export function heightBrushDabs(s: Pick<HeightStroke, 'samples' | 'radius'>) {
@@ -209,5 +233,40 @@ export function applyTerrainBrush(
     },
     2,
   );
+  // Fine bands are relaxed at their own author nodes, never removed as whole
+  // tiles. The complete gesture dose is evaluated against its fixed source.
+  if (s.preserveDetails === false) {
+    const coarseBase = scaleHeightSampler(
+      records.filter((r) => r.height?.version !== 2),
+      pixel,
+    );
+    for (const r of records) {
+      const t = r.height;
+      if (!t || t.pixel >= pixel) continue;
+      if (
+        t.x > box.x + box.width ||
+        t.y > box.y + box.height ||
+        t.x + 63 * t.pixel < box.x ||
+        t.y + 63 * t.pixel < box.y
+      )
+        continue;
+      const values = decodeHeights(t).slice();
+      let changed = false;
+      for (let iy = 0; iy < 64; iy++)
+        for (let ix = 0; ix < 64; ix++) {
+          const i = iy * 64 + ix,
+            prior = values[i]!;
+          if (!Number.isFinite(prior) || (t.version === 2 && prior === 0)) continue;
+          const p = { x: t.x + ix * t.pixel, y: t.y + iy * t.pixel };
+          const exposure = dose(p);
+          if (!exposure || (visible && !visible(p))) continue;
+          const target = t.version === 2 ? 0 : coarseBase(p);
+          const retained = Math.exp((-s.strength * exposure) / s.radius);
+          values[i] = target + (prior - target) * retained;
+          changed ||= values[i] !== prior;
+        }
+      if (changed) edited.push({ ...r, height: { ...t, data: encodeHeights(values) } });
+    }
+  }
   return uncoupled ? edited : coupleRouteEdits(records, edited, limited);
 }

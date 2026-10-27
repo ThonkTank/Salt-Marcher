@@ -26,7 +26,11 @@ function tile(x = 0) {
   const grid = {
     view: { ...view, box: { ...view.box, x: x * 64 } },
     heights: new Float32Array(4225).fill(20),
-    editing: { ground: new Float32Array(4225).fill(20), water: new Float32Array(4225) },
+    editing: {
+      author: { records: [], revision: 0, fence: 'a', radius: 8, pixel: 0.25 },
+      ground: new Float32Array(4225).fill(20),
+      water: new Float32Array(4225),
+    },
     seaLevelM: 0,
   };
   const address = { lod: -2, x, y: 0 };
@@ -65,7 +69,14 @@ test('a second unacknowledged height gesture starts from first local ground with
     outside = tile(2),
     first = new AtlasSurfaceDraft([base, outside], view);
   assert(first.height(stroke));
-  assert.equal(first.tiles[1], outside);
+  assert.equal(
+    first.tiles[1].terrain.projection.grid.heights,
+    outside.terrain.projection.grid.heights,
+  );
+  assert(
+    first.tiles[1].terrain.projection.grid.editing.author.records.length > 0,
+    'halo carries local author changes into a successor',
+  );
   const centre = 32 * 65 + 32;
   assert.equal(base.terrain.projection.grid.heights[centre], 20);
   assert.equal(first.tiles[0].terrain.projection.grid.heights[centre], 30);

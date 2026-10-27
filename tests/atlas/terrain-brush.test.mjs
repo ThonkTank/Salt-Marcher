@@ -20,6 +20,8 @@ buildSync({
 });
 const {
   heightBrushResolution,
+  decodeHeights,
+  prepareHeightBrush,
   applyTerrainBrush,
   TerrainSampler,
   heightRecord,
@@ -493,4 +495,82 @@ test('roughen canonical writer matches preview and survives undo, redo and fresh
   store = new CampaignStore(dir + '/world.sqlite');
   active = store.activate(cam.id);
   assert.deepEqual(records(), restored);
+});
+
+test('coarse raise/lower preserve finer bands or relax them locally with time and feather across tile joins', () => {
+  const original = [];
+  for (let y = -2; y <= 1; y++)
+    for (let x = -2; x <= 1; x++) {
+      original.push(
+        heightRecord(
+          x * 128,
+          y * 128,
+          2,
+          Float32Array.from({ length: 4096 }, (_, i) => 240 + (x * 128 + (i % 64) * 2) * 0.2),
+          2,
+        ),
+      );
+      original.push(
+        heightRecord(
+          x * 32,
+          y * 32,
+          0.5,
+          Float32Array.from({ length: 4096 }, (_, i) => {
+            const xx = x * 32 + (i % 64) * 0.5,
+              yy = y * 32 + Math.floor(i / 64) * 0.5;
+            return 18 * Math.exp((-yy * yy) / 6) - 12 * Math.exp(-((yy - 7) ** 2 + xx * xx) / 12);
+          }),
+          2,
+        ),
+      );
+    }
+  const fine = original.filter((r) => r.height.pixel < 2);
+  for (const mode of ['raise', 'lower'])
+    for (const preserveDetails of [true, false]) {
+      const s = brush(mode, { preserveDetails, strength: 30, feather: 0.8 });
+      const changes = applyTerrainBrush(original, s),
+        result = merge(original, changes),
+        sampler = new TerrainSampler(result);
+      const dose = prepareHeightBrush(s).dose;
+      let affected = 0,
+        unchanged = 0;
+      for (const r of fine) {
+        const after = result.find((a) => a.id === r.id),
+          a = decodeHeights(r.height),
+          b = decodeHeights(after.height);
+        if (preserveDetails) assert.equal(after.height.data, r.height.data);
+        for (let i = 0; i < a.length; i++) {
+          const p = { x: r.height.x + (i % 64) * 0.5, y: r.height.y + Math.floor(i / 64) * 0.5 };
+          const expected =
+            preserveDetails || !dose(p)
+              ? a[i]
+              : Math.fround(0 + a[i] * Math.exp((-s.strength * dose(p)) / s.radius));
+          assert(b[i] === expected, `fine node ${i}: ${b[i]} vs ${expected}`);
+          if (dose(p) > 0 && a[i] !== 0) affected++;
+          else {
+            assert.equal(b[i], a[i]);
+            unchanged++;
+          }
+        }
+      }
+      assert(affected && unchanged);
+      if (preserveDetails) {
+        // The additive coarse band changes by its node-wise delta; fine data is byte-identical.
+        const untouchedFine = new TerrainSampler(fine);
+        const coarseResult = new TerrainSampler(result.filter((r) => r.height.pixel >= 2));
+        for (const p of [
+          { x: -0.13, y: 0.27 },
+          { x: 0.17, y: -0.31 },
+          { x: 31.8, y: 2.1 },
+        ])
+          assert(
+            Math.abs(
+              sampler.sample(p).heightM -
+                (coarseResult.sample(p).heightM + untouchedFine.sample(p).heightM + 100),
+            ) < 1e-10,
+          );
+      } else {
+        assert.notEqual(result.find((r) => r.id === fine[5].id).height.data, fine[5].height.data);
+      }
+    }
 });

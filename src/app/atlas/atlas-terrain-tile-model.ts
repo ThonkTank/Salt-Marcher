@@ -23,8 +23,8 @@ export interface AtlasTerrainTileModel {
   masks: { data: Uint8Array; width: number; height: number };
 }
 const geometryCache = new WeakMap<
-  AtlasTerrainTile['projection']['grid'],
-  Pick<AtlasTerrainTileModel, 'object' | 'data' | 'mesh' | 'bounds'>
+  Float32Array,
+  { view: string; geometry: Pick<AtlasTerrainTileModel, 'object' | 'data' | 'mesh' | 'bounds'> }
 >();
 type TextureData = AtlasTerrainTileModel['texture'];
 interface TextureNode {
@@ -71,7 +71,9 @@ export function atlasTerrainTileModel(
   }
   const existing = materials.get(material);
   if (existing) return existing;
-  let geometry = geometryCache.get(terrain.projection.grid);
+  const gridKey = JSON.stringify(terrain.projection.grid.view);
+  const previousGeometry = geometryCache.get(terrain.projection.grid.heights);
+  let geometry = previousGeometry?.view === gridKey ? previousGeometry.geometry : undefined;
   if (!geometry) {
     const grid = terrain.projection.grid,
       v = grid.view,
@@ -146,7 +148,7 @@ export function atlasTerrainTileModel(
         indices: { size: 1, value: indices },
       },
     };
-    geometryCache.set(terrain.projection.grid, geometry);
+    geometryCache.set(terrain.projection.grid.heights, { view: gridKey, geometry });
   }
   const { width, height, channels } = material;
   const materialData = {
