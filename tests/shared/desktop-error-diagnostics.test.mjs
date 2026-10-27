@@ -187,6 +187,9 @@ test('worker startup and shutdown failures retain their remote origin', async (t
     path.join(output, 'worker.cjs'),
   );
   t.after(() => client.close());
+  // Force the native error ahead of the worker's queued structured fatal message.
+  client.worker.listeners('error')[0](new Error('Native error arrived first'));
+  await assert.rejects(client.list(), StoreOutcomeUnknownError);
   await assert.rejects(client.ready, (error) => {
     assert(error instanceof StoreOutcomeUnknownError);
     const d = errorDiagnostic(error).cause;
@@ -198,6 +201,18 @@ test('worker startup and shutdown failures retain their remote origin', async (t
     return true;
   });
   assert.equal((await client.close()).databaseClosed, false);
+  const missing = new StoreClient(
+    path.join(output, 'missing'),
+    'test',
+    path.join(output, 'missing-worker.cjs'),
+  );
+  t.after(() => missing.close());
+  await assert.rejects(missing.ready, (error) => {
+    assert(error instanceof StoreOutcomeUnknownError);
+    assert.match(errorDiagnostic(error).cause.message, /missing-worker\.cjs/);
+    return true;
+  });
+  assert.deepEqual(await missing.close(), { databaseClosed: false, exitCode: 1 });
   const { client: closing } = await clientFixture(t, 'close-error');
   let failure;
   closing.on('failure', (error) => (failure = error));
