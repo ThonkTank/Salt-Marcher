@@ -47,8 +47,8 @@ Kampagnenarchive und Build-Metadaten. Frühere Testbestände werden nicht migrie
 Planungsstand: 27.10.2026, übernommen; Umsetzung durch den Koordinationschat freigegeben.
 Preflight-Basis ist Main `a87b8e99ba8a3954f664a10b0e7a9c141c65eb22`.
 Aktuelle Arbeitsbasis: `a87b8e99ba8a3954f664a10b0e7a9c141c65eb22`; letzter
-erfolgreicher GitHub-Abgleich 27.10.2026, 13:46 Uhr Europe/Berlin. Keine neuen
-Main-Commits offen; Arbeitsbranch enthält den eigenen Plancommit `40cb7c8bd`.
+erfolgreicher GitHub-Abgleich 27.10.2026, 13:59 Uhr Europe/Berlin. Keine neuen
+Main-Commits offen; Arbeitsstand auf eigenem Checkpoint `95c0fc5c8` gesichert.
 Die [sechs bestätigten Ziele TW-G1–6 und der Messvertrag](../requirements/terrain-relief.md#ziele-und-abnahme-dieser-etappe)
 gelten unverändert. Hier stehen Ausführung und Entscheidungen, keine zweite Anforderungsliste.
 
@@ -83,6 +83,9 @@ Alternative entscheiden: verfügbare normale Wayland-Sitzung oder isoliertes KWi
 Softwareausgabe kann nur einen gekennzeichneten Funktionsbefund tragen.
 Keine Sperre umgehen, keine Systemeinstellungen ändern, kein Ausbau einer
 allgemeinen Messplattform. Fehlender Intel-Nachweis bleibt offen.
+Setup-Entscheidung: Die isolierte KWin-/Wayland-Sitzung hat den nativen Ablauf
+bereits ausgeführt und bleibt für P02 geeignet; die noch fehlende GPU-Bindung
+begrenzt Leistungsaussagen, verhindert diesen Funktionsversuch aber nicht.
 
 P02 benutzt einen 3–5 Sekunden langen Höhenzug über eine kleine trockene Hang-/
 Küstenfläche. Bildfolge/Eingabezeitpunkt belegen eine veränderte Terrainfläche
@@ -92,18 +95,36 @@ ohne Warten auf die erste Speicherantwort; anschließend müssen beide bestätig
 Falls nötig hilft ein identischer Kontrollablauf ohne Höhenwirkung, Störeinflüsse
 auszuschließen. Kein Erfolg nur aus Revisionszähler oder `terrainDraft`-Attribut.
 
-**Aktuelle Entscheidung:** P01/P02 nach erstem nativen Kontakt zur M1-Prüfung
-angehalten, keine Produktdateien geändert. Der Lauf
-`.build/atlas-terrain-stroke/1793101396292-374648/` besitzt Vorher-/Zug-/Folgezug-/
-Wiederöffnungsbilder und zwei normale Prozessenden, ist aber wegen eines
-fehlenden `atlas:terrain-tile`-Handlers fehlgeschlagen. Der getrennte Phasenlauf
-`1793101529427-375950/phase-errors.json` ordnet den Fehler dem Schließen zu;
-dieser Lauf scheiterte anschließend zusätzlich an Berichtscode auf einer
-geschlossenen Page. App-GPU-Bindung und vollständiger gespeicherter Messbericht
-bleiben offen. Kein zusammengefügter Gesamterfolg aus verschiedenen Läufen.
-Die Wiederöffnungsansicht zeigt außerdem eine stark zugespitzte, weit aus der
-Ansicht ragende Geländeform; eine überzeugende Darstellung ist damit nicht belegt.
-A bleibt die vorläufige Richtung; nächste Entscheidung nach gezieltem M1-Review.
+**Aktuelle Entscheidung:** M1 bleibt offen. Nach dem M1-Review am Checkpoint
+`95c0fc5c8` wurde genau ein korrigierter Lauf ausgeführt; weitere Ausführung ist
+bis zur Ansatzentscheidung angehalten. Reviewchat
+`01a17d32-1d64-7ce3-8b48-93d53429877a` prüft die vier Befunde und den kleinsten
+nötigen Anschluss am neuen gesicherten Stand nach. Kein neuer Zeitrahmen;
+gemeinsame Grenze bleibt 15:08. A bleibt die Richtung, B/C sind bisher nicht
+durch widerlegte Produktgrundlagen begründet.
+
+Aktueller Lauf: `.build/atlas-terrain-stroke/1793102431128-380640/`.
+`evidence.partial.json` und getrennte Baseline-/Änderungsbilder belegen für beide
+Züge cursorfreie Pixeländerung während Pointerdown, mit moderater Stärke 1 m/s
+und Radius 8 m. Der zweite Zug begann 292 ms nach dem ersten Pointerup. Die
+App-GPU ist am lebenden WebGL2-Kontext als Intel UHD 620/ANGLE gebunden; die
+räumlich verzögerte Beobachtung liefert keine First-visible-Latenz. Die erste
+Geste dauerte durch Beobachter-Roundtrips 5,356 s statt höchstens 5 s; eine
+Harness-Assertion brach danach den kanonischen Vergleich und Fresh-Reopen ab.
+Der nachträgliche SQLite-Audit weist Änderungen in beiden Bändern nach, ersetzt
+aber keinen zeitgebundenen Harness-Vergleich oder Wiederöffnungsbeleg.
+
+Der `atlas:terrain-tile`-Handlerfehler wurde in diesem Lauf erst nach der
+Assertion bei Fehlerbehandlung/Fallback-Capture erfasst; das Phasenlabel blieb
+fälschlich beim zweiten Zug. Der Prozessaudit bestätigt PID-Abwesenheit, aber
+keinen gespeicherten normalen Exit. Diese Belegfehler sowie Fresh-Reopen bleiben
+offen; kein zusammengefügter Erfolg aus früheren Läufen. Vorläuferlauf
+`1793101396292-374648/` hatte Wiederöffnungsbilder und normale Exits, jedoch
+keinen haltbaren vollständigen Bericht; die damals gemeldeten 2,54 s waren
+wegen des Beobachterfilters keine First-visible-Messung. Der getrennte alte
+Phasenlauf `1793101529427-375950/` scheiterte außerdem an einer geschlossenen
+Page. Die neue Korrektur darf nicht erneut nach einem kleinen Prüfdetail
+alle späteren fachlichen und Prozessbelege verlieren.
 
 Der historische
 saubere Stand `e5882ae09d70bb38eede86c28a9ae453f8024a06` hat einen nativen
@@ -179,8 +200,8 @@ führt ergänzende Code-/Testbesitzer.
 ### Vollständig zerlegte Pakete
 
 Jede Zeile ist ein Agentenauftrag zusammen mit den obigen Eingaben/Rollen.
-Voraussetzungen stehen in der Reihenfolge-/Terminspalte unten; P01/P02 liegen
-mit offenen Befunden zur M1-Prüfung, Folgepakete sind noch nicht begonnen.
+Voraussetzungen stehen in der Reihenfolge-/Terminspalte unten; P02 korrigiert die
+konkreten M1-Prüfbefunde, Folgepakete sind noch nicht begonnen.
 Aufwandsspannen ab M2 sind vorläufig und werden an P02 gezielt nachgeschärft.
 
 | Paket / Kompetenz | Ergebnis und Eingaben | Prüfkriterium / Schnittstelle |
