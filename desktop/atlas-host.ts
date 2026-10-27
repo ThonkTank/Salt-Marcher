@@ -547,6 +547,7 @@ export function registerAtlasHost(host: {
   handle('atlas:terrain-source', async (token: string) => {
     if (graphSourceReadBarrierDepth) throw Error('Graphwechsel läuft.');
     const source = await store.atlasRegionSource(token);
+    if (graphSourceReadBarrierDepth) throw Error('Graphwechsel läuft.');
     return { revision: source.revision, fence: source.fence };
   });
   handle(
@@ -563,6 +564,7 @@ export function registerAtlasHost(host: {
       if (!['view', 'export'].includes(consumer)) throw Error('Kartenleser prüfen.');
       const reader = consumer === 'view' ? atlasRegions : atlasExportRegions,
         source = await store.atlasRegionSource(token, reader.cursor);
+      if (graphSourceReadBarrierDepth) throw Error('Graphwechsel läuft.');
       if (source.revision !== q.revision || (q.fence !== undefined && source.fence !== q.fence))
         throw Error('Gelände inzwischen geändert. Ausschnitt erneut laden.');
       const value = await reader.terrain(source, q, control);

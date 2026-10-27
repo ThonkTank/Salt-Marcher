@@ -2,7 +2,7 @@
 
 Status: Verbindlicher Zielumfang; historische Umsetzungsbelege sind keine aktuelle Abnahme.
 Owner: atlas
-Last Reviewed: 2026-10-24 (Struktur und Quellen; Fachabnahme separat)
+Last Reviewed: 2026-10-27 (bestätigter Terrain-/Wasserumfang; Fachabnahme separat)
 Source of Truth: Dieses Dokument besitzt das benannte Thema; Code belegt den Iststand, das Abnahmeregister den Prüfstand.
 
 Zieländerung vom 20.10.2026: Die [Roadmap für den gemeinsamen räumlichen Atlas](../architecture/unified-spatial-atlas.md) ersetzt getrennte Drauf-/Kippdarstellung durch eine gemeinsame perspektivische Kamera. Die folgenden Implementierungs- und Prüfbefunde beschreiben den bisherigen Stand; sie belegen den neuen Atlas noch nicht.
@@ -10,6 +10,145 @@ Zieländerung vom 20.10.2026: Die [Roadmap für den gemeinsamen räumlichen Atla
 Ursprünglicher Arbeitsplan aus dem Nutzerentscheid vom 19.10.2026. Die damalige starre Phasenfolge wird durch die ergebnisbezogenen Etappen der aktuellen Atlas-Roadmap ersetzt. R0 wurde visuell abgenommen. Seit der Nutzeranweisung „Warte bitte nicht auf abnahmen von mir. Arbeite einfach weiter.“ werden weitere Phasen ohne Abnahmepausen umgesetzt und selbst geprüft; eine Nutzerabnahme wird dadurch nicht behauptet. Der Status steht am Ende dieser Datei; ein Prototyp ist kein Produktnachweis.
 
 Aktuelle Arbeit folgt der [Arbeitsweise und Etappe vom 23.10.2026](../architecture/unified-spatial-atlas.md#ziel). Ältere Implementierungsbelege unten bleiben historisch; die Phase R3 ist wegen des jüngeren Feature-Auftrags wieder offen. Größere isolierte Ersatzentwicklungen sind zulässig.
+
+## Aktueller Lieferfokus: Terrain und Wasser
+
+Bestätigter Nutzerumfang vom 25./26.10.2026; Funktions- und Leistungsabnahme bleiben offen.
+Zuerst werden ausschließlich
+Terrain-/Wasserbearbeitung und deren Darstellung nutzbar gemacht. Der übrige
+Atlasumfang bleibt zurückgestellt, ohne bestehende Fähigkeiten oder fremde Arbeit
+zu entfernen. Die breiteren R0–R7-Ziele unten bleiben langfristiger Umfang; sie
+sind keine Voraussetzung, um diese begrenzte Etappe zu liefern.
+
+**Nutzerklarstellung vom 26.10.2026 — Produktziel und technische Freiheit:**
+Das Gesamtziel ist ein Karteneditor für alle Karten der eigenen Welt in einem
+zusammenhängenden, Google-Maps-artigen Atlas mit ansprechender, intuitiver
+Bedienung. Die technische Umsetzung entscheidet der Agent ausdrücklich frei.
+Rasterstruktur, Renderer, interne Datenorganisation und selbst gesetzte
+Ressourcenbudgets sind Mittel zum Produktziel, keine vom Nutzer verlangten
+Lösungen. Sie dürfen begründet ersetzt oder angepasst werden, ohne dafür
+erneut eine Nutzerfreigabe einzuholen. Entscheidend bleiben nutzbare Werkzeuge,
+erhaltene Kartendetails, überzeugende Darstellung und reaktionsfähige Bedienung
+auf dem Zielgerät. Technische Alternativen nach ihrem Nutzen und Aufwand
+bewerten; bestehende Versuchsannahmen nicht zum Selbstzweck erhalten.
+Der Terrain-/Meeresspiegel-Lieferfokus dieser Etappe bleibt bestehen; diese
+Klarstellung zieht die übrigen Kartenwerkzeuge nicht vor.
+
+**Bestätigt:**
+- Land anheben und senken mit Radius, Stärke, Abfall zum Rand und Roughness.
+- Gelände gezielt aufrauen und glätten.
+- Alle Terrainwerkzeuge funktionieren durch Pinselmalen, einschließlich der
+  Spezialwerkzeuge. Es gibt keine vorgeschaltete Umrissauswahl und keinen
+  separaten Verlaufeditor für Bergketten oder Schluchten.
+- Pinsel bearbeiten die Karte direkt während des Malens. Eine Vorschau oder
+  gesonderte Übernahme ist nicht erforderlich. Diese Entscheidung ersetzt
+  entsprechende Vorschauanforderungen der älteren Etappen für diesen Lieferfokus.
+- Spezialwerkzeuge füllen den mit dem Pinsel bearbeiteten Bereich sinnvoll mit Hügeln,
+  Bergen oder einer Schlucht. Hügel bilden eine Hügellandschaft; Berge besitzen
+  zusammenhängende Hänge und Rücken; eine Schlucht bildet einen zusammenhängenden
+  Einschnitt. Sie reduzieren manuelles Sculpten und wiederholtes Einstellen der
+  Grundpinsel. Weitere Formen sind noch nicht konkretisiert.
+- Wasserumfang: Meer mit einstellbarem Meeresspiegel; keine Seen und keine Flüsse.
+- Bearbeitung und Darstellung mit einer drehbaren 3D-Kamera. Die vollständige
+  Kamerasteuerung funktioniert allein mit der Maus; WASD ist eine zusätzliche
+  Bedienmöglichkeit, keine Voraussetzung für Navigation oder Bearbeitung.
+  Eine gemeinsame Kamera zoomt stufenlos von der vollständigen Weltübersicht bis
+  auf die Größe einzelner Räume. Der Nutzer beschreibt das Bediengefühl mit
+  Google Maps: weiches Rein-/Rauszoomen, angepasste Darstellung und reaktionsfähige
+  Detailstufen (LOD). Raumgröße bezeichnet hier die Navigations- und
+  Bearbeitungsskala, keinen zusätzlichen Auftrag für Raumwerkzeuge.
+- Werkzeugumfang und tatsächliche Performance sind die vorrangigen Probleme.
+
+**Bedienvorgaben für die Umsetzung:** Links malt, mittlere Maustaste schiebt,
+rechts dreht/neigt um den betrachteten Geländepunkt, das Mausrad zoomt am
+Geländepunkt unter dem Cursor. Der Handmodus erlaubt Verschieben mit links;
+Mausregler bleiben erreichbar. WASD verschiebt relativ zur Ansicht bei
+Kartenfokus, niemals beim Schreiben in Eingabefeldern. Neigung zunächst 0–75 Grad,
+keine Rollbewegung und kein Durchtauchen durch Gelände; bei fehlendem Geländetreffer
+kontrolliert die bestehende Fokusebene verwenden. Diese konkreten Belegungen sind
+technische Ausgestaltung des bestätigten Bedienumfangs.
+
+Die Spezialpinsel verbinden überlappende Abdrücke zu sinnvollen Formen. Der
+Bedienablauf lautet: Werkzeug wählen, direkt malen, loslassen. Loslassen beendet
+einen Undo-Schritt. Escape nimmt den noch laufenden Zug zurück. Pointerabbruch
+und Fokusverlust schließen die bis dahin gemalte Änderung einmal ab und beenden
+die Eingabe; ein losgelassener, noch speichernder Zug wird nicht verworfen.
+Sinnvolle Vorgaben vermeiden ständiges Nachregeln. Während einer gedrückten
+Maltaste besitzt die Pinselgeste die Eingabe; Kameraaktionen sind zwischen den
+Zügen und während Nachladung möglich.
+
+### Ziele und Abnahme dieser Etappe
+
+Die folgenden Kriterien beschreiben den bestätigten Zielumfang und die bisherigen
+Projekt-Leistungsziele. Es sind Sollwerte, keine erreichten Messungen. Eine neue
+Planung leitet Reihenfolge und Termine aus dem aktuellen Codebestand ab.
+
+| Ziel | Messbarer Abschluss |
+| --- | --- |
+| TW-G1 Grundbearbeitung | Anheben, Senken, Aufrauen, Glätten und Meeresspiegel wirken im nativen Atlas; jeder gültige Pinselzug wird genau einmal angenommen, Undo/Redo und Neustart erhalten die Höhen. Kein separater Vorschauschritt. |
+| TW-G2 Kamera | Alle Kameraaktionen allein mit Maus, optional WASD; gleichmäßiger Welt-bis-Raum-Zoom, geschützter Textfokus und nachvollziehbarer Geländeanker. |
+| TW-G3 Formen | Hügel, Berge und Schluchten entstehen durch Malen mit sinnvollen Vorgaben. Mehrere überlappende Züge verbinden sich, ohne Kegelketten oder sichtbare Strichnähte. Berge haben Rücken und Hänge, Schluchten einen zusammenhängenden Einschnitt; Formen lassen sich mit Grundpinseln weiterbearbeiten. Bildbeurteilung ergänzt numerische Tests. |
+| TW-G4 Darstellung | Küsten, Rücken und Schluchten bleiben im kontinuierlichen Zoom erkennbar, ohne Löcher, Kachelnähte, Flimmern oder harte Formwechsel; angepasste Details erhalten die grobe Form. |
+| TW-G5 Leistung | Erste sichtbare Terrainänderung p95 ≤ 100 ms, geladene Navigation p95 ≤ 33,3 ms pro Frame; keine verlorenen Gesten. Kaltladen und Speichern werden separat gemessen. |
+| TW-G6 Lieferung | Gesamtablauf auf exaktem Quellstand und Paket geprüft, grüne Candidate-CI und Integration; Veröffentlichung nach bestehender Releasepflicht. Technische/nativer Prüfung und Nutzerabnahme getrennt berichten. |
+
+**Messvertrag:** Zielgerät ist der vorhandene Laptop (aktuell i5-8365U,
+Intel UHD 620, rund 38 GiB RAM), nativer Wayland-Start, 1920 × 1080 Fensterinhalt,
+100 % und 200 % UI-Skalierung. CPU-/Speicherlast, tatsächliche Rendergröße,
+GPU-Treiber und Runtime-/Quellhashes werden je Lauf festgehalten; keine
+Systemeinstellungen ändern. Messläufe laufen ohne parallele Builds oder andere
+eigene UI-Proben. Fremde Last wird offengelegt, nicht als eigener Leistungsgewinn
+verrechnet.
+
+Nutzerfortsetzung vom 25.10.2026: Die Prüfungen müssen auch bei gesperrtem
+Desktop autonom möglich sein. Eine isolierte native Wayland-Testsitzung mit
+eigener Ausgabe ist dafür erlaubt; die Bildschirmsperre wird weder umgangen
+noch deaktiviert. Backend, tatsächlicher Renderer, Ausgabegröße und native
+Fokus-/Tastaturereignisse werden gebunden. Diese Ergebnisse qualifizieren die
+isolierte Sitzung, nicht die gesperrte Desktopoberfläche. Software-Rendering
+kann funktionelle Prüfungen tragen, ersetzt aber keinen Leistungsnachweis auf
+der vereinbarten Intel-GPU. Die Leistungs- und Bedienkriterien bleiben erhalten.
+
+Eine deterministische, räumlich verteilte reine Terrain-Testwelt enthält grobe
+Kontinentalhöhen, eine detaillierte Küsten-/Gebirgsregion und einen feinen
+Ausschnitt in Raumgröße. Weltkoordinaten reichen über negative und positive
+Kachelgrenzen. Fünf Ansichtsbreiten: 40.000 km, 1.000 km, 10 km, 1 km und 20 m;
+Pinselradius jeweils 1/32 der Breite. Pro Werkzeug, Maßstab und Skalierung
+genau 30 vorab geplante Versuche je Kombination; keine Ersatzsamples. p95 wird je Kombination separat berichtet,
+fehlende Wirkung gilt als Fehler und wird nicht aus den Samples entfernt.
+Sichtbare Wirkung zählt erst bei verändertem Terrainbild, ohne Cursorbewegung
+oder bloßen DB-Revisionswechsel als Ersatz. Verschiedene Eventdichten und
+stationäres Halten prüfen zusätzlich die Formstabilität.
+
+Die Leistungsqualifikation verwendet eine versionierte Messfixture samt
+automatisiertem Eingabereplay.
+Vor der ersten Baseline werden Ausgangshöhen je Werkzeug, Pfade, Gestendauer,
+Stärke, Randabfall, Roughness, Seeds, Reihenfolge und Rücksetzpunkte in einem
+Manifest eingefroren. Jeder Versuch startet vom gleichen definierten Höhenstand;
+Glätten erhält eine nichtflache Fläche. Genau 30 vorab geplante Versuche pro
+Kombination werden ausgewertet: keine Ersatzversuche für verworfene Eingaben
+oder fehlende Wirkung. Anfang/Ende werden auf derselben Renderer-Zeitbasis
+gemessen: Eingang des Pointerereignisses bis zum ersten nachgewiesen geänderten
+Terrainframe. Methode und Beobachteraufwand dokumentieren; Cursor-/Overlaywechsel
+und LOD-Nachladung dürfen keine Pinselwirkung vortäuschen. Physische
+Bildschirmausgabe wird durch GPU-/Framebelege nicht behauptet.
+
+Vorhandene Werkzeuge erhalten die erste Baseline; noch fehlende Spezialpinsel
+werden als nicht implementiert ausgewiesen. Ihre erste implementierte Baseline
+bindet ebenfalls Manifest und Quellstand. Vergleichswerte benutzen immer
+dieselbe Fixture-/Replayversion und dieselben Einstellungen.
+
+Navigation: drei kontinuierliche Welt→Raum→Welt-Läufe pro Skalierung und
+Neigung 0/45/75 Grad, mit festen Geländeankern und denselben Quellen. Kalte
+Nachladung separat protokollieren; nach zehn Hin-/Rückfahrten dürfen Cache- und
+GPU-Ressourcen nicht laufend anwachsen. Ausgeblendete Details ersetzen keinen
+Leistungsnachweis bei der festgelegten Bildqualität.
+
+Die aktuelle Implementierung und ihr Prüfstand sind am integrierten Quellstand zu
+prüfen. Frühere Teilprüfungen ersetzen keine aktuelle Funktions- oder Leistungsabnahme.
+Fachbindung: HEX-16 für Relief, HEX-06/08 für Maßstäbe und große Karten; Wasser
+konkretisieren die [Landschaftswerkzeuge](../contract/landscape-tools.md).
+Bestehende Abnahmestände und ursprüngliche Quellenbindungen bleiben erhalten.
 
 ## Ziel und festgelegter Umfang
 

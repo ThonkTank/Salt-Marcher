@@ -21,6 +21,12 @@ in die Git-Historie, nicht in den aktuellen Arbeitsplan.
 
 ## Aktueller Arbeitsstand
 
+Für die nächste Lieferung gilt der bestätigte
+[Terrain-/Meerfokus](../requirements/terrain-relief.md#aktueller-lieferfokus-terrain-und-wasser).
+Andere Atlasfunktionen bleiben erhalten und vorerst zurückgestellt. Technische
+Entscheidungen werden am aktuellen Code und an diesem Nutzerablauf geprüft;
+frühere Paketfolgen sind keine verbindliche Ausführungsreihenfolge.
+
 Der gemeinsame metrische deck.gl-Pfad zeichnet Weltgeometrie, Gebäude, Räume
 und Ausgabe. Canvas bleibt für Bedienüberlagerungen zuständig. Kamera und
 Eingabesteuerung benötigen keine zusätzliche Rendererschicht.
