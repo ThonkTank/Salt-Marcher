@@ -37,7 +37,7 @@ const Database = require('better-sqlite3');
  * scene check. The returned profile directory is ready to pass to Electron as
  * `--data-dir`; this function closes and reopens CampaignStore before returning.
  *
- * @param {{profilePath?:string,campaignName?:string,includeCity?:boolean,peak?:{x:number,y:number},baseHeightM?:number,peakRiseM?:number,hillScale?:number}} options
+ * @param {{profilePath?:string,campaignName?:string,includeCity?:boolean,includeRoom?:boolean,peak?:{x:number,y:number},baseHeightM?:number,peakRiseM?:number,hillScale?:number,flatTileSizeM?:number}} options
  */
 export async function createAtlasCanonicalFixture(options = {}) {
   const cache = join(homedir(), '.cache/saltmarcher');
@@ -80,7 +80,7 @@ export async function createAtlasCanonicalFixture(options = {}) {
   let active;
   let readerDb;
   try {
-    const campaign = store.create(campaignName, [initialRoom]);
+    const campaign = store.create(campaignName, options.includeRoom === false ? [] : [initialRoom]);
     active = store.activate(campaign.id);
     const write = (action) =>
       store.executeAtlasCommit({
@@ -94,7 +94,7 @@ export async function createAtlasCanonicalFixture(options = {}) {
     // a quiet, terrain-only patch with a smaller relief.
     const peak = options.peak ?? { x: 24, y: 24 };
     const baseHeightM = options.baseHeightM ?? 20;
-    const peakRiseM = options.peakRiseM ?? 120;
+    const peakRiseM = options.flatTileSizeM ? 0 : (options.peakRiseM ?? 120);
     const hillScale = options.hillScale ?? 100;
     const hill = heightRecord(
       0,
@@ -107,7 +107,19 @@ export async function createAtlasCanonicalFixture(options = {}) {
         return baseHeightM + peakRiseM * Math.exp(-distance2 / hillScale);
       }),
     );
-    write({ kind: 'landscape-put', record: hill, expectedRevision: null });
+    const heights = options.flatTileSizeM
+      ? [-1, 0].flatMap((y) =>
+          [-1, 0].map((x) =>
+            heightRecord(
+              x * options.flatTileSizeM,
+              y * options.flatTileSizeM,
+              options.flatTileSizeM / 64,
+              new Float32Array(4096).fill(baseHeightM),
+            ),
+          ),
+        )
+      : [hill];
+    for (const record of heights) write({ kind: 'landscape-put', record, expectedRevision: null });
 
     let cityId, buildingId, interiorScopeId, groundRoom, upperFloorId, upperRoom;
     if (options.includeCity !== false) {

@@ -3,6 +3,7 @@ import type { Point, Polygon } from '../shared/contracts';
 import { type LandscapeBox, type LandscapeRecord } from './atlas-landscape';
 import { bounds, contains, segmentDistance } from './landscape-geometry';
 import { linePoints } from './landscape-line';
+import { vegetationFootprintRadius } from './vegetation-shape';
 import { TerrainSampler } from './terrain-height';
 import {
   vegetationGrid,
@@ -335,6 +336,10 @@ export function generateVegetation(
   ) => {
     const env = sourceAt(at, size * 0.25);
     if (overrides.has(id) || !inBox(at, box, pad) || vegetationOwner(env, at)?.id !== r.id) return;
+    const edge = edgeDistance(at, r.polygons);
+    // Containment applies to the complete visible model, not just its stem.
+    // Protected author corrections below deliberately retain their exact position.
+    if (edge < vegetationFootprintRadius(asset, size)) return;
     const surface = env.terrain.query(at);
     if (
       surface.water ||
@@ -351,7 +356,7 @@ export function generateVegetation(
             : edit.mode === 'thin'
               ? density * 0.3
               : Math.min(1, density + 0.5);
-    if (p.edge) density *= Math.min(1, edgeDistance(at, r.polygons) / p.edge);
+    if (p.edge) density *= Math.min(1, edge / p.edge);
     if (random > density) return;
     instances.push({ id, ...at, asset, size, angle, z: surface.heightM, normal: surface.normal });
   };
