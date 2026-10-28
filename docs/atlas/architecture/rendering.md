@@ -2,7 +2,7 @@
 
 Status: Current; offene Ziele sind als solche beschrieben.
 Owner: atlas
-Last Reviewed: 2026-10-25 (Struktur und Quellen; Fachabnahme separat)
+Last Reviewed: 2026-10-28 (LOD-/Kamerarückkopplung; Fachabnahme separat)
 Source of Truth: Dieses Dokument besitzt das benannte Thema; Code belegt den Iststand, das Abnahmeregister den Prüfstand.
 
 Der Atlas verbindet Landschaft, Städte und Räume in Weltmetern. Der [kanonische Store-Worker](../../project/architecture/canonical-store-worker.md)
@@ -50,6 +50,13 @@ gültig, für die er aufgebaut wurde. Ein altes Bild darf während der Nachladun
 stehen bleiben; es erteilt keine neue Schreib- oder Auswahlberechtigung.
 Verspätete Antworten werden verworfen. Ein Abbruch beendet auch die laufende
 Arbeit, bevor ein Ersatz denselben begrenzten Rechenplatz übernimmt.
+
+Eintreffende LOD-Kacheln verändern die Fokushöhenebene der ruhenden Kamera
+nicht. Unterschiedliche interpolierte Höhen dürfen keinen Wechsel zwischen
+sofort verfügbaren Kachelplänen und dadurch eine endlose Ladefolge auslösen.
+Der Abschluss einer Navigation und die Ansichtssteuerung führen den Fokus nach;
+die Sicherheitskorrektur bei neu bekanntem Terrain unter der Kamera bleibt aktiv.
+`tests/atlas/atlas-presentation-source.test.mjs` prüft beide Zuständigkeiten.
 
 Höhe und Material werden gemeinsam veröffentlicht. Eine Elternkachel bleibt
 sichtbar, bis ihre benötigten Kinder vollständig sind. Cachebudget und

@@ -263,3 +263,68 @@ test('pose controls use the navigation lock rather than a closed stroke awaiting
   assert.equal(ui.rotation, 25);
   assert.equal(calls.length, 1);
 });
+
+test('LOD publication after history refresh completes without navigating the stationary camera', async (t) => {
+  const { ui, calls } = fixture(t),
+    navigations = [],
+    frame = { x: -370, y: -325, width: 1000, height: 650 };
+  Object.defineProperty(ui, 'needsTerrainRaster', { value: false });
+  Object.assign(ui, {
+    active: true,
+    ready: true,
+    generation: 0,
+    request: '',
+    frame,
+    tilt: 45,
+    focusHeightM: 7,
+    tiles: [],
+    input: {
+      dataset: {},
+      getBoundingClientRect: () => ({ left: 0, top: 0, width: 1600, height: 1000 }),
+    },
+    surface: { gpuMemory: {} },
+    host: {
+      ...ui.host,
+      writing: () => false,
+      navigate: (box) => navigations.push(box),
+    },
+    reconcileCamera() {},
+    // Overview and detail interpolate the deep basin differently. Refocusing
+    // either arrival changes the next tile plan despite an unchanged world eye.
+    terrainHit() {
+      return { point: { x: 130, y: 0, heightM: this.tiles[0].centreHeight } };
+    },
+    applyCameraPose(pose) {
+      this.frame = pose.frame;
+      this.focusHeightM = pose.focusM;
+    },
+    show() {},
+    stream: {
+      statistics: {},
+      async load(input, fetch, publish) {
+        for (const [lod, centreHeight, complete] of [
+          [4, 7.5, false],
+          [3, 6.5, false],
+          [2, 6.75, true],
+        ]) {
+          publish({
+            tiles: [{ tile: { lod, x: 0, y: 0 }, revision: 7, centreHeight }],
+            overviewComplete: true,
+            complete,
+          });
+          await Promise.resolve();
+        }
+      },
+    },
+  });
+  await ui.load();
+  assert.deepEqual(calls.errors, []);
+  assert.equal(ui.input.dataset.terrainQuality, 'detail');
+  assert.deepEqual(navigations, [], 'tile arrivals must not restart navigation and tile loading');
+  assert.deepEqual(ui.frame, frame);
+  assert.equal(ui.focusHeightM, 7);
+  ui.navigationGesture(true);
+  ui.navigationGesture(false);
+  assert.equal(navigations.length, 1, 'a completed author navigation still rebases focus');
+  assert.equal(ui.focusHeightM, 6.75);
+});

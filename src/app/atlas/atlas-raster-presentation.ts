@@ -503,7 +503,9 @@ export class AtlasRasterPresentation implements AtlasPresentation {
             this.surface?.setCamera(this.pose());
           }
           this.reconcileCamera();
-          this.refocusCamera();
+          // LOD heights can differ while the world eye is stationary. Rebasing
+          // focus here can alternate cached tile plans and starve the next frame.
+          // Navigation completion and pose controls own focus rebasing.
           this.input.dataset.terrainQuality = frame.complete ? 'detail' : 'overview';
           this.show();
           if (frame.complete && this.scene) {

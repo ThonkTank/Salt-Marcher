@@ -409,6 +409,7 @@ export async function qualifyRiverRoute({
   result.sourceHashes = Object.fromEntries(
     await Promise.all(
       [
+        'src/app/atlas/atlas-raster-presentation.ts',
         'src/app/atlas/terrain-route-planner.ts',
         'src/app/atlas/terrain-route.ts',
         'src/app/atlas/route-segment-range.ts',
