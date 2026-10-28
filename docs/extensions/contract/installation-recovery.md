@@ -42,7 +42,7 @@ Quarantäne gehört weder in Campaigntransfer noch in Packagecode.
 prüft diese zehn Store-/DOMfälle einschließlich Originalerhalt, Storagefehlern,
 fehlender Liste, verändertem Vermerk und Receiptbestätigung ohne Writerreplay.
 `python tools/ui-session.py node tools/test-desktop-extension-install.mjs` prüft
-den vollständigen Paketweg bei 100 und 200 Prozent Browserzoom: fehlerhaftes Paket,
+den vollständigen Paketweg bei 100 Prozent Browserzoom: fehlerhaftes Paket,
 explizite Zustimmung, nach dem tatsächlichen Commit unterbrochene Antwort,
 Neustart und reine Ergebnisabfrage, Widerruf, Entfernen und Neuinstallation. Ein
 ungeöffneter Kampagnen-Record und seine opaque Zusatzdaten bleiben unverändert.

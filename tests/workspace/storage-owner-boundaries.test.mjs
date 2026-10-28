@@ -13,11 +13,11 @@ const sources = new Map(
   ),
 );
 
-test('domain storage has no runtime cycle except the separate key/surface component', () => {
+test('domain storage has no runtime cycles', () => {
   const cycles = dependencyCycles(dependencyGraph(sources, true)).filter((cycle) =>
     cycle.some((file) => file.startsWith('src/app/storage/')),
   );
-  assert.deepEqual(cycles, [['src/app/storage/dungeon-key.ts', 'src/app/storage/surfaces.ts']]);
+  assert.deepEqual(cycles, []);
 });
 
 test('actual readers and local records cannot return to facades or command owners', () => {

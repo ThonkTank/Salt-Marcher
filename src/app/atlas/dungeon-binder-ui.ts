@@ -5,7 +5,7 @@ import {
   type KeyPassageTarget,
   type KeyBookmark,
 } from '../campaign/key-reading-model';
-import type { DrawingElement } from './drawing-contracts';
+import type { DrawingElement } from './drawing-element-contracts';
 import type { WorkspaceGeometry, Room } from '../shared/contracts';
 import { DungeonBinderIndex, unplacedBinderPublicText } from './dungeon-binder-model';
 import type { KeyRendered } from '../campaign/key-contracts';

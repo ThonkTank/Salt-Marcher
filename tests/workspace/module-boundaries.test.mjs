@@ -122,12 +122,12 @@ test('removed path and aggregate-contract cycles cannot be reintroduced', () => 
   ])
     assert(check(files).some((error) => error.startsWith('New cyclic dependency:')));
 });
-test('reviewed storage edges may be removed but not expanded', () => {
+test('the removed key/surface runtime cycle cannot be reintroduced', () => {
   const files = {
     'src/app/storage/dungeon-key.ts': "import './surfaces';",
     'src/app/storage/surfaces.ts': "import './dungeon-key';",
   };
-  assert.deepEqual(check(files), []);
+  assert(check(files).some((error) => error.endsWith('(values)')));
   assert.deepEqual(check({ ...files, 'src/app/storage/surfaces.ts': '' }), []);
 });
 
@@ -138,3 +138,34 @@ test('an explicitly named domain owner cannot quietly acquire browser globals', 
     ),
   );
 });
+
+for (const [name, forward, backward] of [
+  [
+    'named type imports',
+    "import type { B } from './note-merge-contracts';",
+    "import type { A } from './preparation-contracts';",
+  ],
+  [
+    'type re-exports',
+    "export type { B } from './note-merge-contracts';",
+    "export type { A } from './preparation-contracts';",
+  ],
+  [
+    'inline import types',
+    "export type A = import('./note-merge-contracts').B;",
+    "export type B = import('./preparation-contracts').A;",
+  ],
+])
+  test(`removed note contracts reject cycles through ${name} but allow one-way contracts`, () => {
+    const files = {
+      'src/app/campaign/preparation-contracts.ts': forward,
+      'src/app/campaign/note-merge-contracts.ts': backward,
+    };
+    const cycles = check(files).filter((error) => error.startsWith('New cyclic dependency:'));
+    assert.equal(cycles.length, 2);
+    assert(cycles.every((error) => error.endsWith('(declared)')));
+    assert.deepEqual(
+      check({ ...files, 'src/app/campaign/note-merge-contracts.ts': 'export interface B {}' }),
+      [],
+    );
+  });

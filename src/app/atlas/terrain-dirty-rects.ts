@@ -1,4 +1,4 @@
-import type { TerrainRect } from './terrain-frame';
+import type { TerrainRect } from './terrain-frame-identity';
 
 /** Join adjacent dirty cells before reading their shared source neighbourhood.
  * Clean cells stay untouched; every rectangle remains within the sample budget. */

@@ -1,10 +1,8 @@
-import {
-  validateTerrainView,
-  type TerrainView,
-  type TerrainGrid,
-} from '../atlas/terrain-spatial-model';
+import { validateTerrainView } from '../atlas/terrain-spatial-model';
+import { type TerrainView } from '../atlas/terrain-view-contracts';
+import { type TerrainGrid } from '../atlas/terrain-grid-contracts';
 import type { PlayerFrame } from './player-contracts';
-import { atlasHexAt } from '../atlas/campaign-atlas-model';
+import { atlasHexAt } from '../atlas/atlas-coordinates';
 import { terrainGridLayout } from '../atlas/terrain-grid-layout';
 /** Only the allowlisted player snapshot enters this field. Never fill forgotten heights from GM terrain. */
 export function publicTerrainGrid(frame: PlayerFrame, view: TerrainView): TerrainGrid {

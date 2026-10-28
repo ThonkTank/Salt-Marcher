@@ -6,17 +6,13 @@ import {
   movementModes,
   trackSurfaces,
 } from '../runtime/track-model';
-import type { DungeonTraceRules } from '../atlas/dungeon-contracts';
+import type { DungeonTraceRules } from '../atlas/dungeon-travel-contracts';
 import { readPreparedGroup } from './session-read';
 import { createHash, randomUUID } from 'node:crypto';
-import type {
-  DungeonGeometry,
-  SpatialGeometry,
-  DungeonPose,
-  DungeonSenseAction,
-  DungeonTrace,
-  DungeonSenseView,
-} from '../atlas/dungeon-contracts';
+import type { DungeonGeometry, SpatialGeometry } from '../atlas/dungeon-geometry-contracts';
+import type { DungeonPose } from '../atlas/dungeon-position-contracts';
+import type { DungeonSenseAction } from '../atlas/dungeon-contracts';
+import type { DungeonTrace, DungeonSenseView } from '../atlas/dungeon-travel-contracts';
 import { perception, planDungeon } from '../atlas/dungeon-model';
 import { inside } from '../atlas/drawing-model';
 import { readLiveScene } from './live-read';

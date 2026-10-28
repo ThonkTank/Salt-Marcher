@@ -1,7 +1,7 @@
 import { Worker } from 'node:worker_threads';
 import path from 'node:path';
 import type { StoreClient } from './store-client';
-import type { LandscapeBox } from '../src/app/atlas/atlas-landscape';
+import type { LandscapeBox } from '../src/app/atlas/landscape-bounds';
 import type { SpatialTerrainDraft } from '../src/app/atlas/spatial-terrain';
 import type { VegetationScene } from '../src/app/atlas/vegetation';
 

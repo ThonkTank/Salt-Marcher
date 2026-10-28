@@ -1,0 +1,9 @@
+{
+  "roles": {
+    "AtlasCell.faction": "text",
+    "AtlasCell.interrupt": "text",
+    "AtlasCell.label": "text",
+    "MarkerPresentation.symbol": "text",
+    "MarkerPresentation.title": "text"
+  }
+}

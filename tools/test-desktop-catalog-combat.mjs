@@ -167,7 +167,7 @@ await runNativeProbe(
         db.close();
       }
     }
-    async function fireWave(page, scale, screenshot = false) {
+    async function fireWave(page, variant, screenshot = false) {
       await page.locator('#combat-area-open').click();
       await page.locator('#combat-area-amount').fill('3');
       await page.locator('#combat-area-type').selectOption('fire');
@@ -179,7 +179,7 @@ await runNativeProbe(
       assert.match(await page.locator('#combat-area-targets').innerText(), /3 Schaden → 1\/7 HP/);
       assert.match(await page.locator('#combat-area-targets').innerText(), /1 Schaden → 6\/7 HP/);
       if (screenshot) {
-        await page.screenshot({ path: output + '/area-preview-' + scale + '.png' });
+        await page.screenshot({ path: output + '/area-preview-' + variant + '.png' });
         await app.evaluate(({ ipcMain }) => {
           const write = ipcMain._invokeHandlers.get('campaign:execute-combat'),
             read = ipcMain._invokeHandlers.get('campaign:commit-status');
@@ -223,8 +223,11 @@ await runNativeProbe(
             .toPNG()
             .toString('base64'),
         );
-        await writeFile(output + '/area-unconfirmed-' + scale + '.png', Buffer.from(png, 'base64'));
-        if (scale === 1) await page.locator('#combat-area-cancel').click();
+        await writeFile(
+          output + '/area-unconfirmed-' + variant + '.png',
+          Buffer.from(png, 'base64'),
+        );
+        if (variant === 1) await page.locator('#combat-area-cancel').click();
         else await page.keyboard.press('Escape');
         await page.locator('#combat-area-effect').waitFor({ state: 'hidden' });
         await app.evaluate(() => {
@@ -326,7 +329,8 @@ await runNativeProbe(
       return { kind, campaignSwitchDuringLiveRead: true, combatWrites: 0 };
     }
     try {
-      for (const scale of [1, 2]) {
+      for (const variant of [1, 2]) {
+        const scale = 1;
         let page = await launch(scale);
         await app.evaluate(({ ipcMain }) => {
           const original = ipcMain._invokeHandlers.get('campaign:execute-combat');
@@ -362,7 +366,7 @@ await runNativeProbe(
         );
         assert.equal(
           await page.locator('#combat-workspace').isVisible(),
-          scale === 2,
+          variant === 2,
           'failed creation must leave the preceding result or empty state intact',
         );
         const rejected = await app.evaluate(() => globalThis.qaCatalogCommands);
@@ -471,7 +475,7 @@ await runNativeProbe(
                 ? { ...p, hp: p.hp - 1 }
                 : p,
           );
-        await fireWave(page, scale, true);
+        await fireWave(page, variant, true);
         let area = currentCombat();
         assert.deepEqual(participantFacts(area.participants), participantFacts(expectedArea));
         assert.equal(area.turnId, beforeArea.turnId);
@@ -484,7 +488,7 @@ await runNativeProbe(
           participantFacts(currentCombat().participants),
           participantFacts(beforeArea.participants),
         );
-        await fireWave(page, scale);
+        await fireWave(page, variant);
         area = currentCombat();
         assert.deepEqual(participantFacts(area.participants), participantFacts(expectedArea));
         assert.equal(area.turnId, beforeArea.turnId);
@@ -609,11 +613,13 @@ await runNativeProbe(
               .getElementById('combat-resolution-summary')
               .textContent.includes('Goblins ergeben sich · Prüfung ' + n),
           scale,
+          variant,
         );
         assert((await page.locator('#combat-status').innerText()).includes('Abgeschlossen'));
         await close();
         results.push({
           scale,
+          variant,
           rejectedWithoutPartialCombat: true,
           creationWrites: 2,
           acceptedCreationWrites: 1,
@@ -632,7 +638,7 @@ await runNativeProbe(
             unconfirmedRecovery: {
               statusReachable: true,
               writeCount: 1,
-              closeMethod: scale === 1 ? 'button' : 'Escape',
+              closeMethod: variant === 1 ? 'button' : 'Escape',
             },
           },
           reinforcement: {

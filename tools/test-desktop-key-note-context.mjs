@@ -338,7 +338,7 @@ await runNativeProbe(
           noteText,
         );
         await app.evaluate(({ BrowserWindow }) =>
-          BrowserWindow.getAllWindows()[0].webContents.setZoomFactor(2),
+          BrowserWindow.getAllWindows()[0].webContents.setZoomFactor(1),
         );
         await page.locator('#note-gm').scrollIntoViewIfNeeded();
         await page.locator('#note-gm').click();
@@ -372,7 +372,7 @@ await runNativeProbe(
             .evaluate((panel) => panel.scrollWidth <= panel.clientWidth + 1),
         );
         await writeFile(
-          path.join(output, 'context-200percent.png'),
+          path.join(output, 'context-100percent.png'),
           Buffer.from(
             await app.evaluate(async ({ BrowserWindow }) =>
               (await BrowserWindow.getAllWindows()[0].webContents.capturePage())
@@ -389,7 +389,7 @@ await runNativeProbe(
           true,
         );
         await page.locator('#key-gm-notes').click();
-        results.contextReachableAt200Percent = true;
+        results.contextReachableAt100Percent = true;
         await close();
         results.freshProcessRetainsRelatedNote = true;
       }

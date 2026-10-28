@@ -1,0 +1,24 @@
+{
+  "roles": {
+    "NpcDailyOverride.day": "text",
+    "NpcDailyOverride.label": "text",
+    "NpcDailySlot.activity": "text",
+    "NpcDailySlot.id": "local",
+    "NpcDailySlot.locationId": "local",
+    "NpcDailySlot.notes": "text",
+    "NpcDemographics.ancestry": "text",
+    "NpcDemographics.gender": "text",
+    "NpcRecord.appearance": "text",
+    "NpcRecord.behavior": "text",
+    "NpcRecord.factionId": "local",
+    "NpcRecord.history": "text",
+    "NpcRecord.id": "local",
+    "NpcView.creatureId": "external",
+    "NpcView.gmNotes": "text",
+    "NpcView.health.conditions": "text",
+    "NpcView.id": "local",
+    "NpcView.locationId": "local",
+    "NpcView.name": "text",
+    "NpcView.readAloud": "text"
+  }
+}

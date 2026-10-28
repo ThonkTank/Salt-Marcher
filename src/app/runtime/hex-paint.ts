@@ -1,5 +1,6 @@
 import { canonicalJson } from '../campaign/generation/canonical-json';
-import type { AtlasMap, AtlasCell, Hex, Terrain } from './world-contracts';
+import type { AtlasMap } from './world-map-contracts';
+import type { AtlasCell, Hex, Terrain } from './world-cell-contracts';
 import { cellAt, hexKey, hexPoint, pointHex, hexDistance } from './world-model';
 export interface HexPaintChange {
   key: string;

@@ -1,5 +1,6 @@
 import type { DeskContent, DeskEntry, SceneDeskAPI } from '../runtime/scene-desk-contracts';
-import type { NoteRow, PreparationAPI } from './preparation-contracts';
+import type { NoteRow } from './note-data';
+import type { PreparationAPI } from './preparation-contracts';
 import { plainReferenceText } from './text-references';
 const node = <K extends keyof HTMLElementTagNameMap>(tag: K, text?: string) => {
   const n = document.createElement(tag);

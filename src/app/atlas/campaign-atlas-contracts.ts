@@ -1,49 +1,14 @@
+import { type AtlasBinding } from './atlas-binding-contracts';
+import { type CampaignAtlas, type AtlasRenderView } from './campaign-atlas-view-contracts';
 import type { AtlasRegionAPI as importAtlasRegionAPI } from './atlas-region-contracts';
-import type { DrawingElement, DrawingElementGeometry } from './drawing-contracts';
-import type { AtlasEntrance, AtlasLocalJourney } from './atlas-travel-contracts';
-import type {
-  Result,
-  WorkspaceState,
-  Room,
-  RoomGeometry,
-  Edit,
-  Polygon,
-} from '../shared/contracts';
-import type { CityCommand, CityView } from './city-contracts';
+import type { AtlasEntrance } from './atlas-journey-contracts';
+import type { Result, Edit, Polygon } from '../shared/contracts';
+import type { CityCommand } from './city-contracts';
+
+import type { WorldCommand } from '../runtime/world-contracts';
+
 import type { DrawingCommand } from './drawing-contracts';
-import type { WorldCommand, AtlasMap, SceneWorld } from '../runtime/world-contracts';
-import type { DungeonView } from './dungeon-contracts';
-export interface AtlasBinding {
-  id: string;
-  kind: 'city' | 'dungeon';
-  ownerId: string;
-  parent: 'world' | 'building';
-  parentId: string | null;
-  x: number;
-  y: number;
-  angle: number;
-  revision: number;
-}
-export interface CampaignAtlas<
-  R extends RoomGeometry = Room,
-  E extends DrawingElementGeometry = DrawingElement,
-  C extends import('./atlas-region-contracts').CityGeometry = CityView,
-> {
-  scopes: { id: string; name: string }[];
-  perception: import('./dungeon-contracts').DungeonDisplay | null;
-  entrances: AtlasEntrance[];
-  localJourney: AtlasLocalJourney | null;
-  campaignId: string;
-  revision: number;
-  terrain: AtlasMap;
-  bindings: AtlasBinding[];
-  cities: C[];
-  geometry: DungeonView<R, E>;
-  workspace: WorkspaceState<R>;
-  scene: SceneWorld | null;
-  canUndo: boolean;
-  canRedo: boolean;
-}
+
 export type AtlasAction =
   | {
       kind: 'group-room-split';
@@ -58,10 +23,10 @@ export type AtlasAction =
       name: string;
       x: number;
       y: number;
-      recipe: import('./room-group-generator').GroupRecipe;
+      recipe: import('./room-group-contracts').GroupRecipe;
     }
   | import('./atlas-territories').TerritoryAction
-  | import('./atlas-landscape').LandscapeAction
+  | import('./landscape-action-contracts').LandscapeAction
   | {
       kind: 'drawing-import';
       name: string;
@@ -101,6 +66,7 @@ export type AtlasAction =
     }
   | { kind: 'undo' | 'redo' };
 export interface AtlasCommand {
+  expectedCampaignRevision?: number;
   /** Consecutive committed terrain increments share one undo entry. Each increment has its own receipt. */
   terrainStroke?: { id: string; expectedRevision: number };
   sourceFence?: string;
@@ -117,7 +83,7 @@ export interface AtlasOverview {
   canUndo: boolean;
   canRedo: boolean;
   counts: { rooms: number; cities: number; landscape: number };
-  landscapeBounds: import('./atlas-landscape').LandscapeBox | null;
+  landscapeBounds: import('./landscape-bounds').LandscapeBox | null;
 }
 export interface AtlasObjectQuery {
   kind: 'room' | 'city' | 'landscape' | 'scope';
@@ -159,30 +125,15 @@ export type AtlasCommitOutcome =
   | { outcome: 'applied'; ack: AtlasCommitAck }
   | { outcome: 'not-applied' }
   | { outcome: 'unknown' };
-export type AtlasRenderView = Omit<
-  CampaignAtlas<
-    RoomGeometry,
-    DrawingElementGeometry,
-    import('./atlas-region-contracts').CityGeometry
-  >,
-  'scene' | 'terrain'
-> & {
-  terrain: Omit<AtlasMap, 'cells' | 'landscape'>;
-  scene: Pick<SceneWorld, 'scene' | 'position' | 'journey'> | null;
-  region?: Omit<
-    import('./atlas-region-contracts').AtlasRegionGeometry,
-    'rooms' | 'floors' | 'drawing' | 'cities' | 'bindings' | 'scopes'
-  >;
-};
 export interface AtlasAPI extends importAtlasRegionAPI {
   atlasTerritories(
     token: string,
-    box?: import('./atlas-landscape').LandscapeBox,
+    box?: import('./landscape-bounds').LandscapeBox,
   ): Promise<Result<import('./atlas-territories').TerritoryState>>;
   atlasDrawingCommit(command: DrawingCommand): Promise<
     Result<{
       workspace: import('../shared/contracts').Workspace;
-      view: import('./drawing-contracts').DrawingView;
+      view: import('./drawing-view-contracts').DrawingView;
       atlasRevision: number;
     }>
   >;
@@ -192,12 +143,12 @@ export interface AtlasAPI extends importAtlasRegionAPI {
   atlasObjects(token: string, query: AtlasObjectQuery): Promise<Result<AtlasObjectPage>>;
   atlasVegetationScene(
     token: string,
-    box: import('./atlas-landscape').LandscapeBox,
+    box: import('./landscape-bounds').LandscapeBox,
     mpp: number,
   ): Promise<Result<import('./vegetation').VegetationScene>>;
   atlasSpatialScene(
     token: string,
-    box: import('./atlas-landscape').LandscapeBox,
+    box: import('./landscape-bounds').LandscapeBox,
     mpp: number,
     draft?: import('./spatial-terrain').SpatialTerrainDraft,
     fence?: string,
@@ -220,18 +171,20 @@ export interface AtlasAPI extends importAtlasRegionAPI {
   ): Promise<Result<import('./terrain-color').TerrainColorTile>>;
   atlasTerrainProjection(
     token: string,
-    q: import('./terrain-projection').TerrainProjectionRequest,
+    q: import('./terrain-projection-contracts').TerrainProjectionRequest,
     consumer?: 'view' | 'export',
     control?: import('./atlas-read-request').AtlasReadRequest,
-  ): Promise<Result<import('./terrain-projection').TerrainProjection>>;
+  ): Promise<Result<import('./terrain-projection-contracts').TerrainProjection>>;
   atlasMaskRegion(
     token: string,
-    box: import('./atlas-landscape').LandscapeBox,
-  ): Promise<Result<{ revision: number; records: import('./atlas-landscape').LandscapeRecord[] }>>;
+    box: import('./landscape-bounds').LandscapeBox,
+  ): Promise<
+    Result<{ revision: number; records: import('./landscape-contracts').LandscapeRecord[] }>
+  >;
   atlasLandscapeObject(
     token: string,
     id: string,
-  ): Promise<Result<import('./atlas-landscape').LandscapeRecord>>;
+  ): Promise<Result<import('./landscape-contracts').LandscapeRecord>>;
   atlasRoom(token: string, id: string): Promise<Result<import('../shared/contracts').Room>>;
   executeAtlasCommit(command: AtlasCommand): Promise<Result<AtlasCommitAck>>;
   reconcileAtlasCommit(command: AtlasCommand): Promise<Result<AtlasCommitOutcome>>;
@@ -239,7 +192,7 @@ export interface AtlasAPI extends importAtlasRegionAPI {
   landscapeFind(
     token: string,
     text: string,
-  ): Promise<Result<import('./atlas-landscape').LandscapeRecord[]>>;
+  ): Promise<Result<import('./landscape-contracts').LandscapeRecord[]>>;
   referenceImage(
     token: string,
   ): Promise<Result<{ id: string; width: number; height: number } | null>>;

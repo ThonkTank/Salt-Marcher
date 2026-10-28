@@ -1,106 +1,13 @@
-import type { KeyAction, KeyContent } from '../campaign/key-contracts';
-import type { TriggerAction, TriggerField } from '../runtime/trigger-contracts';
-import type {
-  GraphPreviewState,
-  Point,
-  Polygon,
-  Result,
-  Room,
-  RoomGeometry,
-  Workspace,
-} from '../shared/contracts';
-import type { DungeonContent } from './dungeon-budget-contracts';
+import { type DrawingElement, type RoomStyle } from './drawing-element-contracts';
+import { type DrawingView, type DrawingMapView } from './drawing-view-contracts';
+import type { KeyAction } from '../campaign/key-contracts';
+import type { TriggerAction } from '../runtime/trigger-contracts';
+import type { Point, Polygon, Result, Workspace } from '../shared/contracts';
+
 import { validateDungeonContentValue } from './dungeon-budget-contracts';
 import type { GraphCommit, GraphEdit } from './graph-contracts';
-import type { DungeonPassage, DungeonPath, PathAPI, PathAction } from './path-contracts';
-import type { DungeonVolume, VolumeAction } from './volume-contracts';
-export type DrawingKind =
-  | 'wall'
-  | 'door'
-  | 'stairs'
-  | 'light'
-  | 'object'
-  | 'path'
-  | 'terrain'
-  | 'water'
-  | 'roof'
-  | 'text'
-  | 'feature';
-export interface DrawingElement {
-  content?: DungeonContent;
-  id: string;
-  revision: number;
-  scopeId: string;
-  floorId: string;
-  roomId: string | null;
-  kind: DrawingKind;
-  points: Point[];
-  name: string;
-  notes: string;
-  secret: boolean;
-  color: string;
-  width: number;
-  height: number;
-  angle: number;
-  variant: string;
-  blocksSight: boolean;
-  blocksSound: boolean;
-  passable: boolean;
-  state: 'open' | 'closed' | 'locked';
-  targetRoomId: string | null;
-  targetFloorId: string | null;
-  anchor: { roomId: string; polygon: number; edge: number; t: number } | null;
-  feature: 'trap' | 'puzzle' | 'curiosity' | 'encounter' | 'loot';
-  maxCharges: number;
-  resetSeconds: number;
-  resetMode: 'empty' | 'used';
-  triggerRadius: number;
-  triggerHeight: number;
-  assetId: string | null;
-  zOffsetMeters?: number;
-  verticalMeters?: number;
-  sound?: { enabled: boolean; rangeMeters: number; dc: number; publicText: string };
-  archived: boolean;
-}
-export interface RoomStyle {
-  id: string;
-  revision: number;
-  scopeId: string;
-  ceilingMeters: number;
-  fill: string;
-  wall: string;
-  publicLabel: string;
-  secret: boolean;
-  trackSurface?: 'stone' | 'mud' | 'sand' | 'snow' | 'water' | 'vegetation';
-}
-export type DrawingElementGeometry = Omit<DrawingElement, 'notes' | 'content'>;
-export interface DrawingView<
-  R extends RoomGeometry = Room,
-  E extends DrawingElementGeometry = DrawingElement,
-> {
-  coverage?: 'selected';
-  triggerFields?: TriggerField[];
-  graphPreview?: GraphPreviewState;
-  keyContent?: KeyContent[];
-  passageStatuses?: { id: string; outbound: string; inbound: string }[];
-  paths?: (DungeonPath & { status: string })[];
-  passages?: DungeonPassage[];
-  volumes?: DungeonVolume[];
-  elements: E[];
-  styles: RoomStyle[];
-  hiddenRooms: R[];
-  hiddenFloors: { id: string; scopeId: string; name: string; sourceElevation: number }[];
-  features: {
-    id: string;
-    revision: number;
-    charges: number;
-    resetStartedMs: string | null;
-    epochId: string | null;
-  }[];
-}
-export type DrawingMapView = Omit<DrawingView<RoomGeometry, DrawingElementGeometry>, 'styles'> & {
-  styles: (RoomStyle & { authorRevision?: number | null })[];
-};
+import type { PathAPI, PathAction } from './path-contracts';
+import type { VolumeAction } from './volume-contracts';
 export type DrawingAction =
   | TriggerAction
   | GraphEdit

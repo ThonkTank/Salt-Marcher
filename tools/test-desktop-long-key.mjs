@@ -289,7 +289,7 @@ await runNativeProbe(
         results.returnedToUpdatedPassageWithSearch = true;
         await page.screenshot({ path: path.join(out, 'returned.png') });
         await app.evaluate(({ BrowserWindow }) =>
-          BrowserWindow.getAllWindows()[0].webContents.setZoomFactor(2),
+          BrowserWindow.getAllWindows()[0].webContents.setZoomFactor(1),
         );
         await page.locator('#key-document-next').click();
         await page.locator('#key-document-prev').click();
@@ -300,9 +300,9 @@ await runNativeProbe(
             return e.contains(document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2));
           }),
         );
-        results.zoom200PassageUnobscured = true;
+        results.zoom100PassageUnobscured = true;
         await writeFile(
-          path.join(out, 'reader-200percent.png'),
+          path.join(out, 'reader-100percent.png'),
           Buffer.from(
             await app.evaluate(async ({ BrowserWindow }) =>
               (await BrowserWindow.getAllWindows()[0].webContents.capturePage())

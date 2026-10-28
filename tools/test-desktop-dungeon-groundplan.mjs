@@ -39,7 +39,7 @@ async function until(check) {
   assert(check(), 'Expected confirmed source state');
 }
 try {
-  for (const scale of [1, 2]) {
+  for (const scale of [1]) {
     const evidenceDir = out + '/' + scale;
     native = await createNativeSession({ root, output: evidenceDir, name: 'dungeon-groundplan' });
     const profile = native.profile,

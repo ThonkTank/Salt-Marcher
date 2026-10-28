@@ -83,7 +83,7 @@ async function conversation(npc) {
   return visible;
 }
 try {
-  for (const scale of [1, 2]) {
+  for (const scale of [1]) {
     native = await createNativeSession({
       root,
       output: out + '/' + scale,

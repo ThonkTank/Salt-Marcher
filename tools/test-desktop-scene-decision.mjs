@@ -65,7 +65,7 @@ await runNativeProbe(
       freshUses = [],
       finalUses = [],
       searchChecks = [];
-    const zoom = Number(process.env.GM_QA_ZOOM ?? 2),
+    const zoom = 1,
       title = 'Abmachung am Schrank · Dritte Nacht',
       decision =
         '23:10 – Die Gruppe lässt den Schrank verschlossen. Beim nächsten Treffen soll Siv ohne Varo befragt werden. Das Siegel bleibt unbestätigt.',

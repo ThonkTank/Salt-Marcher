@@ -1,10 +1,8 @@
 import { streamTerrainFieldSteps, type TerrainStream } from '../atlas/terrain-field-stream';
-import {
-  validateTerrainView,
-  type TerrainGrid,
-  type TerrainView,
-} from '../atlas/terrain-spatial-model';
-import type { LandscapeRecord } from '../atlas/atlas-landscape';
+import { validateTerrainView } from '../atlas/terrain-spatial-model';
+import { type TerrainGrid } from '../atlas/terrain-grid-contracts';
+import { type TerrainView } from '../atlas/terrain-view-contracts';
+import type { LandscapeRecord } from '../atlas/landscape-contracts';
 import { terrainGridLayout } from '../atlas/terrain-grid-layout';
 import { landscapeSampleFilter } from './landscape-record-stream';
 import { TerrainSampler } from '../atlas/terrain-height';

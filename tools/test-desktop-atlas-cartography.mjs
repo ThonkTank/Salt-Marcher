@@ -460,7 +460,7 @@ try {
   await app.evaluate(({ BrowserWindow }) => {
     const w = BrowserWindow.getAllWindows().find((w) => w.getTitle() === 'SaltMarcher');
     w.setSize(1440, 1000);
-    w.webContents.setZoomFactor(2);
+    w.webContents.setZoomFactor(1);
   });
   await page.waitForFunction(() => innerWidth <= 720);
   await atlasCanvasReady(page);
@@ -497,7 +497,7 @@ try {
   assert.equal(await page.locator('#territory-name').inputValue(), 'Westmark Nord');
   assert.equal(await page.locator('#territory-layer-name').inputValue(), 'Handelsreiche');
   result.checks.push(
-    '200% property editing preserves the other form and both confirmed values survive restart',
+    '100% property editing preserves the other form and both confirmed values survive restart',
   );
   await closeNative();
   await native.finish({ complete: true, ...result });

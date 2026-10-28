@@ -1,9 +1,7 @@
-import { checkedQuery, sqliteInteger } from './sqlite-connection';
 import { decodeStored } from './stored-payload';
 import * as shape from './stored-shapes';
 import { checkedLandscapeRow } from './landscape-read';
 import { checkedLocationDocument } from '../../features/location/location-schema';
-import { map as storedWorldMap } from './world-state';
 import { AtlasCommitProjectionError } from './atlas-commit-projection';
 import { openStoreDatabase } from './store-bootstrap';
 import { writeBackup } from './backup';
@@ -14,20 +12,19 @@ import {
   acceptCampaignSnapshot,
 } from './campaign-snapshots';
 import { storedTutorial } from './tutorial';
-import { checkedRow } from './sqlite-connection';
 import { createHash, randomUUID } from 'node:crypto';
 import { dirname } from 'node:path';
 import { type ManualPlan } from '../../features/planner/manual-planner';
-import type {
-  AtlasRegionGeometry,
-  AtlasRegionSource,
-  AtlasRegionView,
-} from '../atlas/atlas-region-contracts';
+import type { AtlasRegionGeometry } from '../atlas/atlas-region-geometry-contracts';
+import type { AtlasRegionSource, AtlasRegionView } from '../atlas/atlas-region-view-contracts';
 import { atlasPartyPoint } from '../atlas/atlas-runtime-model';
-import type { AtlasCommand, CampaignAtlas } from '../atlas/campaign-atlas-contracts';
+import type { AtlasCommand } from '../atlas/campaign-atlas-contracts';
+import type { CampaignAtlas } from '../atlas/campaign-atlas-view-contracts';
 import type { CityCommand } from '../atlas/city-contracts';
-import type { DrawingCommand, DrawingView } from '../atlas/drawing-contracts';
-import type { DungeonCommand, DungeonRequest } from '../atlas/dungeon-contracts';
+import type { DrawingCommand } from '../atlas/drawing-contracts';
+import type { DrawingView } from '../atlas/drawing-view-contracts';
+import type { DungeonCommand } from '../atlas/dungeon-contracts';
+import type { DungeonRequest } from '../atlas/dungeon-travel-contracts';
 import type { GraphCommand, GraphView } from '../atlas/graph-contracts';
 import type { DungeonPath, PathPreview } from '../atlas/path-contracts';
 import { profileBounds, terrainProfile } from '../atlas/terrain-profile';
@@ -43,7 +40,8 @@ import type {
   LootRollCommand,
 } from '../campaign/generation-contracts';
 import type { KeyNoteCaptureCommand } from '../campaign/key-note-capture-contracts';
-import type { NpcCommand, NpcDraft, NpcQuery } from '../campaign/npc-contracts';
+import type { NpcCommand, NpcDraft } from '../campaign/npc-contracts';
+import type { NpcQuery } from '../campaign/npc-data-contracts';
 import {
   preparationTarget,
   type Preparation,
@@ -65,7 +63,8 @@ import type { AutonomyCommand } from '../runtime/autonomy-contracts';
 import type { ChaseCommand } from '../runtime/chase-contracts';
 import type { CombatCommand } from '../runtime/combat-contracts';
 import type { CombatDraftKind, CombatWorkingDraft } from '../runtime/combat-draft-contracts';
-import type { LiveCommand, LiveScene } from '../runtime/live-contracts';
+import type { LiveCommand } from '../runtime/live-contracts';
+import type { LiveScene } from '../runtime/live-scene-contracts';
 import type {
   AudioAsset,
   AudioQuery,
@@ -76,7 +75,8 @@ import type {
 import type { PlayerAsset, PlayerCommand, PlayerFrame } from '../runtime/player-contracts';
 import type { LedgerInventoryQuery, LedgerQuery, ProgressCommand } from '../runtime/progression';
 import type { SceneCheckCommand } from '../runtime/scene-check-contracts';
-import type { TravelRequest, WorldCommand } from '../runtime/world-contracts';
+import type { TravelRequest } from '../runtime/world-travel-contracts';
+import type { WorldCommand } from '../runtime/world-contracts';
 import type { CommitOutcome } from '../shared/commit-receipt';
 import { checkedCommitReference, type CommitReference } from '../shared/commit-receipt';
 import type { RoomDirectoryQuery, WorkspaceGeometry, WorkspaceShell } from '../shared/contracts';
@@ -301,7 +301,6 @@ import { readDungeonVolume } from './volume';
 import { reconcileWorld } from './world';
 import { storedExecuteWorld } from './world-command-flow';
 import { previewTravel } from './world-commands';
-import { readSceneWorld, readWorld } from './world-state';
 import { readWorldCalendar as readNpcPlanCalendar } from './world-calendar-read';
 import { readWorldLinks } from './world-links';
 import { checkedWorldNoteRow } from './world-note-row';
@@ -316,6 +315,13 @@ import {
   reconcileWorldRelationPairHistory,
 } from './world-relation-pair';
 import { readWorldSources } from './world-sources';
+import {
+  creatureReference,
+  itemDefinitionReference,
+  resolveCatalogReference,
+} from './catalog-references';
+import { checkedQuery, checkedRow, sqliteInteger } from './sqlite-connection';
+import { readSceneWorld, readWorld, map as storedWorldMap } from './world-state';
 const roomNumberOrder = new Intl.Collator('de', { numeric: true });
 
 const json = (value: unknown) => JSON.stringify(value);
@@ -329,7 +335,7 @@ export class CampaignStore {
   rememberTerrainGrid(
     token: string,
     fence: string,
-    grid: import('../atlas/terrain-spatial-model').TerrainGrid,
+    grid: import('../atlas/terrain-grid-contracts').TerrainGrid,
   ) {
     const source = this.atlasRegionSource(token);
     if (source.fence === fence) this.terrainAuthorCache.seed(source.campaignId, grid, fence);
@@ -377,7 +383,7 @@ export class CampaignStore {
   private coupleAtlasWall(
     c: AtlasCommand,
     before: Room,
-    elements: import('../atlas/drawing-contracts').DrawingElement[],
+    elements: import('../atlas/drawing-element-contracts').DrawingElement[],
   ) {
     return storedCoupleAtlasWall(
       this.db,
@@ -432,7 +438,7 @@ export class CampaignStore {
   }
   atlasVegetationScene(
     token: string,
-    box: import('../atlas/atlas-landscape').LandscapeBox,
+    box: import('../atlas/landscape-bounds').LandscapeBox,
     mpp: number,
   ) {
     const cam = this.guard(token);
@@ -443,7 +449,7 @@ export class CampaignStore {
   }
   atlasSpatialScene(
     token: string,
-    box: import('../atlas/atlas-landscape').LandscapeBox,
+    box: import('../atlas/landscape-bounds').LandscapeBox,
     mpp: number,
     draft?: import('../atlas/spatial-terrain').SpatialTerrainDraft,
     fence?: string,
@@ -466,7 +472,7 @@ export class CampaignStore {
   atlasHeight(token: string, point: import('../shared/contracts').Point) {
     return storedAtlasHeight(this.db, { guard: this.guard.bind(this) }, token, point);
   }
-  atlasMaskRegion(token: string, box: import('../atlas/atlas-landscape').LandscapeBox) {
+  atlasMaskRegion(token: string, box: import('../atlas/landscape-bounds').LandscapeBox) {
     const cam = this.guard(token);
     if (
       !box ||
@@ -502,7 +508,7 @@ export class CampaignStore {
   }
   landscapeRegion(
     token: string,
-    box: import('../atlas/atlas-landscape').LandscapeBox,
+    box: import('../atlas/landscape-bounds').LandscapeBox,
     metersPerPixel = 0,
     includePatches = true,
   ) {
@@ -607,7 +613,7 @@ export class CampaignStore {
   atlasLandscapeObject(
     token: string,
     id: string,
-  ): import('../atlas/atlas-landscape').LandscapeRecord {
+  ): import('../atlas/landscape-contracts').LandscapeRecord {
     const cam = this.guard(token);
     if (typeof id !== 'string' || !id) throw new Error('Landschaftskennung prüfen.');
     const row = checkedQuery(
@@ -676,7 +682,7 @@ export class CampaignStore {
   }
   terrainStrokeSource(
     c: AtlasCommand,
-    cursor?: import('../atlas/atlas-region-contracts').AtlasRegionCursor,
+    cursor?: import('../atlas/atlas-region-view-contracts').AtlasRegionCursor,
   ) {
     this.guard(c.token, c.campaignId);
     if (
@@ -738,7 +744,7 @@ export class CampaignStore {
   }
   atlasRegionSource(
     token: string,
-    cursor?: import('../atlas/atlas-region-contracts').AtlasRegionCursor,
+    cursor?: import('../atlas/atlas-region-view-contracts').AtlasRegionCursor,
   ): AtlasRegionSource {
     const campaignId = this.guard(token),
       preview = this.graphShadow,
@@ -790,7 +796,7 @@ export class CampaignStore {
     token: string,
     cityId: string,
     id?: string,
-  ): import('../atlas/atlas-region-contracts').AtlasCitySite {
+  ): import('../atlas/atlas-region-view-contracts').AtlasCitySite {
     return storedAtlasCitySite(this.db, { guard: this.guard.bind(this) }, token, cityId, id);
   }
   workspaceInitial(token: string): WorkspaceGeometry {
@@ -838,7 +844,7 @@ export class CampaignStore {
       entranceId,
     );
   }
-  atlasRenderView(token: string): import('../atlas/campaign-atlas-contracts').AtlasRenderView {
+  atlasRenderView(token: string): import('../atlas/campaign-atlas-view-contracts').AtlasRenderView {
     const cam = this.guard(token);
     return this.db.transaction(() => {
       const root = atlasRoot(this.db, cam),
@@ -849,7 +855,7 @@ export class CampaignStore {
         geometry = dungeonMapView(this.db, cam, workspace, drawing);
       geometry.rooms = workspace.rooms;
       const perception =
-        geometry.position && geometry.sceneId
+        geometry.runtime.ok && geometry.position && geometry.sceneId
           ? dungeonDisplay(
               this.db,
               cam,
@@ -893,7 +899,7 @@ export class CampaignStore {
       token,
     );
   }
-  atlasTerritories(token: string, box?: import('../atlas/atlas-landscape').LandscapeBox) {
+  atlasTerritories(token: string, box?: import('../atlas/landscape-bounds').LandscapeBox) {
     return readTerritories(this.db, this.guard(token), box);
   }
   executeAtlas(c: AtlasCommand) {
@@ -1570,6 +1576,22 @@ export class CampaignStore {
   encounterPlans(token: string, search: string, limit?: number) {
     return readEncounterPlans(this.db, this.guard(token), search, limit);
   }
+  catalogReference(entryType: 'creature' | 'item', id: string) {
+    if (entryType !== 'creature' && entryType !== 'item')
+      throw new Error('Katalogeintragstyp prüfen.');
+    const reference =
+      entryType === 'creature'
+        ? creatureReference(id)
+        : itemDefinitionReference(readItemDefinition(this.db, id));
+    resolveCatalogReference(this.db, reference);
+    return reference;
+  }
+  resolveCatalogReference(
+    reference: import('../catalog/catalog-reference-contracts').CatalogReference,
+  ) {
+    const entry = resolveCatalogReference(this.db, reference);
+    return { reference, name: entry.name };
+  }
   encounterPlan(token: string, id: string) {
     return readEncounterPlan(this.db, this.guard(token), id);
   }
@@ -1858,7 +1880,7 @@ export class CampaignStore {
     token: string,
     roomId?: string,
     elementId?: string,
-  ): import('../atlas/drawing-contracts').DrawingMapView {
+  ): import('../atlas/drawing-view-contracts').DrawingMapView {
     if (this.graphShadow && !this.graphRouting)
       return this.withGraph(() => this.drawingMap(token, roomId, elementId));
     const cam = this.guard(token);
@@ -1900,13 +1922,16 @@ export class CampaignStore {
       features,
     };
   }
-  drawingElement(token: string, id: string): import('../atlas/drawing-contracts').DrawingElement {
+  drawingElement(
+    token: string,
+    id: string,
+  ): import('../atlas/drawing-element-contracts').DrawingElement {
     if (this.graphShadow && !this.graphRouting)
       return this.withGraph(() => this.drawingElement(token, id));
     return drawingElement(this.db, this.guard(token), id);
   }
   /** Authoring needs canonical geometry/content, never live travel or perception. */
-  dungeonAuthoring(token: string): import('../atlas/dungeon-contracts').DungeonGeometry {
+  dungeonAuthoring(token: string): import('../atlas/dungeon-geometry-contracts').DungeonGeometry {
     if (this.graphShadow && !this.graphRouting)
       return this.withGraph(() => this.dungeonAuthoring(token));
     const cam = this.guard(token);
@@ -2685,8 +2710,8 @@ export class CampaignStore {
   }
   keepSessionRecapDraft(
     token: string,
-    draft: import('../runtime/live-contracts').SessionRecapDraft,
-    expected: import('../runtime/live-contracts').SessionRecapDraft | null,
+    draft: import('../runtime/live-scene-contracts').SessionRecapDraft,
+    expected: import('../runtime/live-scene-contracts').SessionRecapDraft | null,
   ) {
     return this.db
       .transaction(() => keepSessionRecapDraft(this.db, this.guard(token), draft, expected))

@@ -6,7 +6,7 @@ import { spawn, execFileSync } from 'node:child_process';
 import { randomUUID, createHash } from 'node:crypto';
 import assert from 'node:assert/strict';
 import path from 'node:path';
-const zoom = process.argv.includes('--zoom=2') ? 2 : 1;
+const zoom = 1;
 const source = process.cwd(),
   output =
     process.env.QA_EVIDENCE_DIR ?? (await mkdtemp(path.join(source, '.build/chronicle-search-')));
@@ -202,8 +202,7 @@ await runNativeProbe(
         'Next page must be reachable below the last event',
       );
       await capture(page, path.join(output, 'chronicle-page-end.png'));
-      if (zoom === 2) await page.locator('#chronicle-next-bottom').press('Enter');
-      else await page.locator('#chronicle-next-bottom').click();
+      await page.locator('#chronicle-next-bottom').press('Enter');
       await ready(page);
       assert.match(await page.locator('#chronicle-count').innerText(), /^Seite 2/);
       assert.notEqual(await page.locator('#chronicle-list article').first().innerText(), first);

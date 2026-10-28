@@ -1,0 +1,11 @@
+{
+  "roles": {
+    "ItemInput.name": "text",
+    "ItemInput.valueGold": "text",
+    "ItemReference.definitionId": {
+      "reference": "shared",
+      "historical": "historicalDefinitionId"
+    },
+    "ItemReference.historicalDefinitionId": "shared"
+  }
+}

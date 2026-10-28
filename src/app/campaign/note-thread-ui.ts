@@ -4,10 +4,10 @@ import {
   noteThreadMembers,
   noteSourceLinks,
   restoreNoteSource,
-  type NoteSourceRecovery,
   type NoteSourceLinks,
 } from './note-thread-edit';
-import type { Note } from './preparation-contracts';
+import { type NoteSourceRecovery } from './note-source-recovery-contracts';
+import type { Note } from './note-data';
 import type { ManualPlan } from '../../features/planner/manual-planner';
 import type { NoteThreadAPI, NoteThreadEntry, NoteThreadSelection } from './note-thread-contracts';
 import type { SceneDeskAPI } from '../runtime/scene-desk-contracts';

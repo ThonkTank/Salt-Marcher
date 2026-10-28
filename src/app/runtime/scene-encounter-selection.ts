@@ -1,5 +1,5 @@
 import type { LiveView } from './live-contracts';
-import type { Progress } from './progression';
+import type { Progress } from './character-progress-contracts';
 import { xpLevel } from './progression';
 import { assessEncounter, type EncounterParty } from '../catalog/encounter-contracts';
 import type { GroupView, GroupActor } from '../campaign/groups-contracts';

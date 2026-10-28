@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { createRequire } from 'node:module';
-import { buildSync } from 'esbuild';
+import { buildSync } from '../helpers/build.mjs';
 for (const [name, entry] of [
   ['store', 'storage/store'],
   ['model', 'campaign/key-model'],
@@ -53,6 +53,28 @@ test('shared template linking preserves individual room material, is atomic, gua
     })),
     cam = store.create('Nebelwacht', rooms);
   let w = store.activate(cam.id);
+  const mara = randomUUID();
+  store.changePreparation({
+    commandId: randomUUID(),
+    campaignId: cam.id,
+    token: w.token,
+    change: {
+      kind: 'note',
+      expectedRevision: null,
+      note: {
+        version: 1,
+        id: mara,
+        revision: 1,
+        kind: 'npc',
+        title: 'Mara',
+        readAloud: '',
+        gmNotes: '',
+        relations: [],
+        creatureId: null,
+        deleted: false,
+      },
+    },
+  });
   const command = (action) => ({
       commandId: randomUUID(),
       campaignId: cam.id,
@@ -97,7 +119,7 @@ test('shared template linking preserves individual room material, is atomic, gua
       tags: ['vorbereitet'],
       status: 'ready',
       attributes: { Licht: 'dunkel' },
-      references: [{ kind: 'npc', id: 'mara', label: 'Mara' }],
+      references: [{ kind: 'npc', id: mara, label: 'Mara' }],
     };
     send({ kind: 'key-content', content: key, expectedRevision: null });
     original.push(records().find((k) => k.id === room.id));
@@ -210,6 +232,6 @@ test('shared template linking preserves individual room material, is atomic, gua
     assert.match(gm, /Eigenes Geheimnis/);
     assert.match(publicText, /Blaues Dienstsiegel/);
     assert.doesNotMatch(publicText, /Geheimnis|Versteck|Entdeckung/);
-    assert.equal(records().find((k) => k.id === room.id).references[0].id, 'mara');
+    assert.equal(records().find((k) => k.id === room.id).references[0].id, mara);
   }
 });

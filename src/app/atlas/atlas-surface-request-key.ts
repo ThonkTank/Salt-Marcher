@@ -1,5 +1,5 @@
 import { atlasTilePlan, atlasPrefetchTiles } from './atlas-tile-plan';
-import type { LandscapeBox } from './atlas-landscape';
+import type { LandscapeBox } from './landscape-bounds';
 /** Camera pixels are not data dependencies. Keep an in-flight request while
  * its stable world addresses still cover the new view at the requested LOD. */
 export function atlasSurfaceRequestKey(

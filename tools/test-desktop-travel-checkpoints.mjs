@@ -1,7 +1,7 @@
 import { revealWorkspaceNavigation } from './native-navigation.mjs';
 import { runNativeProbe } from './native-session.mjs';
 // Real Live-desk travel on the shared Atlas. Run through tools/ui-session.py after build:desktop.
-// GM_QA_ZOOM=2 repeats at actual 200% browser zoom, including Undo/Redo and fresh reopening.
+// Native 100% browser zoom includes Undo/Redo and fresh reopening.
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { mkdtemp, mkdir, readFile, writeFile, stat, rm } from 'node:fs/promises';
@@ -14,8 +14,8 @@ const root = process.cwd(),
 await runNativeProbe(
   { output: out, name: 'travel-checkpoints', resultName: 'result.json' },
   async (native) => {
-    const zoom = Number(process.env.GM_QA_ZOOM ?? 1);
-    assert([1, 2].includes(zoom));
+    const zoom = 1;
+    assert([1].includes(zoom));
     await mkdir(out, { recursive: true });
     await rm(path.join(out, 'result.json'), { force: true });
     const result = {

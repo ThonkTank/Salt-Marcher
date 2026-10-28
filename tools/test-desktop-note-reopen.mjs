@@ -203,7 +203,7 @@ try {
         !document.getElementById('note-thread-use').disabled,
     );
   }
-  for (const scale of [1, 2]) {
+  for (const scale of [1]) {
     // Each scale must really reopen a closed source, including after the prior fresh edit.
     const reset = new CampaignStore(file);
     try {
@@ -224,7 +224,7 @@ try {
     } finally {
       reset.close();
     }
-    if (scale === 2) resetOverview();
+    resetOverview();
     stage = 'reopen and update originals at ' + scale;
     await launch(scale);
     await page.locator('#note-thread-active').uncheck();

@@ -398,7 +398,7 @@ await runNativeProbe(
         fresh.close();
       }
       if (!before) {
-        page = await launch(2);
+        page = await launch(1);
         assert((await page.locator('#live-clock').innerText()).endsWith('00:00:06'));
         assert.equal(await page.locator('#chase-people [data-distance]').inputValue(), '36');
         assert.equal(await page.locator('#chase-people [data-exhaustion]').inputValue(), '1');
@@ -446,7 +446,7 @@ await runNativeProbe(
           final.close();
         }
         results.nativeRestartAndSingleFinish = true;
-        page = await launch(2, 'Hafenflucht');
+        page = await launch(1, 'Hafenflucht');
         await choose(b.id, b.title);
         assert(
           (await page.locator('#chase-status').innerText()).includes('Späher erreicht das Tor.'),

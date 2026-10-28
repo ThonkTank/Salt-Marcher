@@ -15,8 +15,8 @@ import type {
 } from '../shared/commit-confirmation';
 import type { ProgressAck } from '../runtime/progression';
 import type { WorkspaceGeometry, Result } from '../shared/contracts';
+import type { ItemDefinition } from './item-definition-contracts';
 import type {
-  ItemDefinition,
   ItemQuery,
   ShopSummary,
   ShopView,
@@ -26,7 +26,8 @@ import type {
 } from './items-contracts';
 import type { Preparation } from '../campaign/preparation-contracts';
 import { formatInstant, type LiveView } from '../runtime/live-contracts';
-import { copper, gold, type LedgerItem, type LedgerInventoryPage } from '../runtime/progression';
+import { copper, gold, type LedgerInventoryPage } from '../runtime/progression';
+import { type LedgerItem } from '../runtime/treasure-contracts';
 
 export function createItemsEditor(host: {
   roots: readonly HTMLElement[];

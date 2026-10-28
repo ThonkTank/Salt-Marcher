@@ -1,10 +1,10 @@
 import { ShapeUtils, Vector2 } from 'three';
-import type { AtlasRegionView } from './atlas-region-contracts';
+import type { AtlasRegionView } from './atlas-region-view-contracts';
 import type { Point, Polygon, RoomGeometry } from '../shared/contracts';
-import type { TerrainGrid } from './terrain-spatial-model';
+import type { TerrainGrid } from './terrain-grid-contracts';
 import { gridHeight, validateTerrainView } from './terrain-spatial-model';
 import { terrainGridLayout } from './terrain-grid-layout';
-import { localToAtlas } from './campaign-atlas-model';
+import { localToAtlas } from './atlas-coordinates';
 import { posedFootprint } from './city-model';
 import { defaultTerrainBuilding, validateTerrainBuilding } from './terrain-objects';
 export type AtlasSceneSelectionTarget =

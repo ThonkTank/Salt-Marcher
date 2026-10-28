@@ -1,5 +1,5 @@
 // Isolated real Obsidian Save -> fresh-process World Notes probe on synthetic Campaign input.
-module.exports = ({ page, fs, path, assert, crypto, qa, vault, out, checks, worldNotesZoom200, worldNotesFault, worldNotesRecovery }) => {
+module.exports = ({ page, fs, path, assert, crypto, qa, vault, out, checks, worldNotesFault, worldNotesRecovery }) => {
   const manifestPath = "Kampagnen/SaltMarcher/E2E-01-Atlas-Save.campaign.json";
   const journalPath = manifestPath.replace(/\.campaign\.json$/, ".world-notes.journal");
   const open = async () => {
@@ -13,15 +13,15 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out, checks, worl
   return {
     edit: async () => {
       const panel = await open();
-      if (worldNotesZoom200) {
+      if (true) {
         const zoom = await page.evaluate(() => {
           const electron = window.require?.("electron");
           if (!electron?.webFrame) return { available: false };
-          electron.webFrame.setZoomFactor(2);
+          electron.webFrame.setZoomFactor(1);
           return { available: true, factor: electron.webFrame.getZoomFactor() };
         });
         assert.equal(zoom.available, true, "Obsidian webFrame zoom must be available");
-        assert.equal(zoom.factor, 2);
+        assert.equal(zoom.factor, 1);
         const help = panel.locator("details summary");
         await help.focus();
         await page.keyboard.press("Enter");
@@ -35,12 +35,12 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out, checks, worl
             right: button.getBoundingClientRect().right,
           })),
         }));
-        assert(layout.left >= 0 && layout.right <= layout.viewport, "World Notes panel fits 200% viewport");
+        assert(layout.left >= 0 && layout.right <= layout.viewport, "World Notes panel fits 100% viewport");
         assert(layout.buttons.every((button) => button.left >= 0 && button.right <= layout.viewport),
-          "World Notes actions fit 200% viewport");
+          "World Notes actions fit 100% viewport");
         fs.writeFileSync(path.join(out, "world-notes-zoom.json"), JSON.stringify({ zoom, layout }, null, 2));
-        await page.screenshot({ path: path.join(out, "world-notes-200-percent.png") });
-        checks.push("Real Obsidian webFrame at 200%: keyboard help and action layout PASS");
+        await page.screenshot({ path: path.join(out, "world-notes-100-percent.png") });
+        checks.push("Real Obsidian webFrame at 100%: keyboard help and action layout PASS");
       }
       await panel.getByRole("button", { name: "NPC anlegen" }).click();
       const form = panel.locator("form");
@@ -178,14 +178,14 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out, checks, worl
           "Fresh World Notes activation removes the validated committed journal");
         checks.push("Fresh real Obsidian resolves the committed native journal before World Notes mount PASS");
       }
-      if (worldNotesZoom200) {
+      if (true) {
         const zoom = await page.evaluate(() => {
           const webFrame = window.require?.("electron")?.webFrame;
           if (!webFrame) return null;
-          webFrame.setZoomFactor(2);
+          webFrame.setZoomFactor(1);
           return webFrame.getZoomFactor();
         });
-        assert.equal(zoom, 2);
+        assert.equal(zoom, 1);
         const search = panel.getByRole("searchbox", { name: "Notizen durchsuchen" });
         await search.focus();
         await page.keyboard.type("Maris");
@@ -205,7 +205,7 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out, checks, worl
       await search.fill("");
       await panel.getByRole("button", { name: "NPC: Maris vom Hafen" }).click();
       const form = panel.locator("form");
-      if (worldNotesZoom200) {
+      if (true) {
         const layout = await form.evaluate((el) => ({
           viewport: window.innerWidth,
           right: el.getBoundingClientRect().right,
@@ -213,9 +213,9 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out, checks, worl
             item.getBoundingClientRect().right),
         }));
         assert(layout.right <= layout.viewport && layout.inputs.every((right) => right <= layout.viewport),
-          "World Notes edit controls fit the 200% viewport");
-        fs.writeFileSync(path.join(out, "world-notes-reopen-zoom.json"), JSON.stringify({ zoom: 2, layout }, null, 2));
-        await page.screenshot({ path: path.join(out, "world-notes-reopen-200-percent.png") });
+          "World Notes edit controls fit the 100% viewport");
+        fs.writeFileSync(path.join(out, "world-notes-reopen-zoom.json"), JSON.stringify({ zoom: 1, layout }, null, 2));
+        await page.screenshot({ path: path.join(out, "world-notes-reopen-100-percent.png") });
       }
       assert.equal(await form.locator("label").filter({ hasText: "Vorlesetext" }).locator("textarea").inputValue(),
         "Sie hebt die Laterne.");

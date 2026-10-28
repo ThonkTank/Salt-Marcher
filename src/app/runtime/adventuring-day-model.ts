@@ -1,4 +1,6 @@
-import { dailyXp, levelXp, xpLevel, xpShare, restFrame, type Progress } from './progression';
+import { dailyXp, levelXp } from './experience-tables';
+import { xpLevel, xpShare, restFrame } from './progression';
+import { type Progress } from './character-progress-contracts';
 import { assessEncounter } from '../catalog/encounter-contracts';
 import type {
   DayRow,

@@ -237,7 +237,7 @@ try {
     'offen',
   );
   await close();
-  page = await launch(2);
+  page = await launch(1);
   await note(page, 'Leuchtturm');
   panel = page.locator('#narrative-editor');
   await panel.getByLabel('Quest-XP-Pool', { exact: true }).waitFor();
@@ -284,7 +284,7 @@ try {
   const distribution = await openAwardTreasure(page, panel);
   await distribution.getByRole('button', { name: 'Schließen', exact: true }).click();
   await close();
-  page = await launch(2);
+  page = await launch(1);
   await note(page, 'Leuchtturm');
   panel = page.locator('#narrative-editor');
   await panel.getByRole('button', { name: 'Belohnung bereits vergeben', exact: true }).waitFor();
@@ -356,7 +356,7 @@ try {
     .getByRole('button', { name: 'Schließen', exact: true })
     .click();
   await close();
-  page = await launch(2);
+  page = await launch(1);
   await note(page, 'Leuchtturm');
   panel = page.locator('#narrative-editor');
   await panel.getByRole('button', { name: 'Belohnung bereits vergeben', exact: true }).waitFor();

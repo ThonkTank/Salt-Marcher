@@ -1,16 +1,9 @@
 import { effectiveLandscape } from '../atlas/atlas-landscape';
 import { hexAccessProblem, checkedTravelSupplies } from './hex-access';
-import type {
-  Hex,
-  AtlasMap,
-  AtlasCell,
-  FantasyCalendar,
-  Climate,
-  Weather,
-  WeatherPhenomenon,
-  CalendarEvent,
-  Terrain,
-} from './world-contracts';
+import type { Hex, AtlasCell, Climate, Terrain } from './world-cell-contracts';
+import type { AtlasMap } from './world-map-contracts';
+import type { FantasyCalendar, CalendarEvent } from './calendar-contracts';
+import type { Weather, WeatherPhenomenon } from './weather-contracts';
 export const terrainNames: Record<Terrain, string> = {
   plains: 'Ebene',
   forest: 'Wald',

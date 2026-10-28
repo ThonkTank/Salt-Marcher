@@ -1,4 +1,4 @@
-import type { DrawingElement } from './drawing-contracts';
+import type { DrawingElement } from './drawing-element-contracts';
 import type { AtlasPathDrag } from './atlas-workbench-types';
 
 /** Preview and commit share one immutable point edit. */

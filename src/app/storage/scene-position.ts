@@ -1,4 +1,4 @@
-import type { LiveScene } from '../runtime/live-contracts';
+import type { LiveScene } from '../runtime/live-scene-contracts';
 import type { ScenePosition, SceneWorld } from '../runtime/world-contracts';
 import { readLiveScene } from './live-read';
 import { scenePosition, savePosition, journeyRow } from './world-state';

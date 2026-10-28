@@ -4,14 +4,15 @@ import { effectiveLandscape } from '../atlas/atlas-landscape';
 import { atlasPartyPoint } from '../atlas/atlas-runtime-model';
 import { createHash } from 'node:crypto';
 import type { Point } from '../shared/contracts';
-import type { CampaignAtlas } from '../atlas/campaign-atlas-contracts';
+import type { CampaignAtlas } from '../atlas/campaign-atlas-view-contracts';
 import type {
   AtlasEntrance,
   AtlasLocalJourney,
   AtlasLocalPreview,
-  AtlasTravelCommand,
-} from '../atlas/atlas-travel-contracts';
-import { atlasFrame, atlasHexAt, atlasToLocal, localToAtlas } from '../atlas/campaign-atlas-model';
+} from '../atlas/atlas-journey-contracts';
+import type { AtlasTravelCommand } from '../atlas/atlas-travel-contracts';
+import { atlasFrame } from '../atlas/campaign-atlas-model';
+import { atlasHexAt, atlasToLocal, localToAtlas } from '../atlas/atlas-coordinates';
 import { cellAt } from '../runtime/world-model';
 import { hexAccessProblem } from '../runtime/hex-access';
 import { posed, roadPoints } from '../atlas/city-model';
@@ -238,13 +239,13 @@ function saveOutdoor(
 }
 export interface AtlasTravelPorts {
   crossing: (
-    from: import('../atlas/dungeon-contracts').DungeonPose,
-    to: import('../atlas/dungeon-contracts').DungeonPose,
+    from: import('../atlas/dungeon-position-contracts').DungeonPose,
+    to: import('../atlas/dungeon-position-contracts').DungeonPose,
   ) => void;
   read: () => CampaignAtlas;
   advance: (seconds: number, revision: number) => void;
   location: (id: string | null) => void;
-  dungeon: (pose: import('../atlas/dungeon-contracts').DungeonPose | null) => void;
+  dungeon: (pose: import('../atlas/dungeon-position-contracts').DungeonPose | null) => void;
 }
 export function executeAtlasTravel(
   db: SqliteDatabase,
@@ -460,18 +461,18 @@ interface ApplyAtlasTravelContext {
   guard: (token: string, campaignId?: string | undefined) => string;
   travelAtlas: (
     token: string,
-  ) => import('./../atlas/campaign-atlas-contracts').CampaignAtlas<
+  ) => import('../atlas/campaign-atlas-view-contracts').CampaignAtlas<
     import('./../shared/contracts').Room,
-    import('./../atlas/drawing-contracts').DrawingElement,
-    import('./../atlas/city-contracts').CityView
+    import('../atlas/drawing-element-contracts').DrawingElement,
+    import('../atlas/city-data-contracts').CityView
   >;
   executeLive: (command: import('../runtime/live-contracts').LiveCommand) => void;
-  liveScene: (token: string, id: string) => import('../runtime/live-contracts').LiveScene;
+  liveScene: (token: string, id: string) => import('../runtime/live-scene-contracts').LiveScene;
   dungeon: (
     token: string,
   ) => import('./../atlas/dungeon-contracts').DungeonView<
     import('./../shared/contracts').Room,
-    import('./../atlas/drawing-contracts').DrawingElement
+    import('../atlas/drawing-element-contracts').DrawingElement
   >;
   executeDungeon: (c: import('../atlas/dungeon-contracts').DungeonCommand) => void;
 }

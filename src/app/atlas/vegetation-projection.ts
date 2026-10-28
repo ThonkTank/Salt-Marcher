@@ -1,15 +1,6 @@
-import type { PlantAsset, VegetationInstance, VegetationView } from './vegetation';
+import { type VegetationProjection } from './vegetation-projection-contracts';
+import type { PlantAsset, VegetationInstance, VegetationView } from './vegetation-contracts';
 import { deflateSync, inflateSync } from 'fflate';
-
-/** Disposable transport only. Authored overrides stay verbatim in the tail;
- * generated doubles are lossless, including at distant world coordinates. */
-export type VegetationProjection =
-  | VegetationView
-  | {
-      mode: VegetationView['mode'];
-      packed: { version: 1; ids: string[]; data: string };
-      tail: VegetationInstance[];
-    };
 const assets: PlantAsset[] = ['oak', 'pine', 'rock', 'shrub', 'grass', 'reed', 'crop'];
 const stride = 65,
   maximum = 72000; // Three generated objects per bounded candidate cell.

@@ -1,16 +1,17 @@
 import { brushPreviewRecords } from '../atlas/atlas-brush-preview';
-import { type LandscapeBox, type LandscapeRecord } from '../atlas/atlas-landscape';
-import type { AtlasRegionSource } from '../atlas/atlas-region-contracts';
+import { type LandscapeBox } from '../atlas/landscape-bounds';
+import { type LandscapeRecord } from '../atlas/landscape-contracts';
+import type { AtlasRegionSource } from '../atlas/atlas-region-view-contracts';
 import { bounds } from '../atlas/landscape-geometry';
 import { heightBrushBounds } from '../atlas/terrain-brush';
 import { terrainDetailDimensions } from '../atlas/terrain-detail';
 import { TerrainSampler } from '../atlas/terrain-height';
 import { resolveTerrainObjects, terrainObjectPoints } from '../atlas/terrain-objects';
+import { validateTerrainProjection } from '../atlas/terrain-projection';
 import {
-  validateTerrainProjection,
   type TerrainProjection,
   type TerrainProjectionRequest,
-} from '../atlas/terrain-projection';
+} from '../atlas/terrain-projection-contracts';
 import type { TerrainProjectionCache } from '../atlas/terrain-projection-cache';
 import { gridHeight } from '../atlas/terrain-spatial-model';
 import { terrainTraceMeasure, terrainTraceStart } from '../atlas/terrain-timing';

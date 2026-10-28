@@ -6,9 +6,9 @@ import { vegetationInstances } from './vegetation-projection';
 import { vegetationScaleLimit, vegetationOpacity, vegetationCrownScale } from './vegetation-lod';
 import { vegetationColors } from './vegetation-view';
 import { crownTone } from './vegetation-shape';
-import type { LandscapeRecord } from './atlas-landscape';
+import type { LandscapeRecord } from './landscape-contracts';
 import type { AtlasMetricFrame } from './atlas-metric-camera';
-import type { VegetationInstance } from './vegetation';
+import type { VegetationInstance } from './vegetation-contracts';
 import type { Point } from '../shared/contracts';
 type Instance = VegetationInstance & { areaId: string; limit: number };
 

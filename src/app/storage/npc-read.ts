@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import type { NpcView } from '../campaign/npc-contracts';
+import type { NpcView } from '../campaign/npc-data-contracts';
 import { npcRecord, npcDisposition } from './npc-record';
 import { npcPosition } from './npc-world';
 import { readWorldActor } from './session-read';

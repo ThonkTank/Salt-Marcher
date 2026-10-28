@@ -1,10 +1,12 @@
 import { coupleRouteEdits } from './terrain-route-planner';
-import type { LakeStroke, LandscapeRecord, LakeBed } from './atlas-landscape';
+import type { LakeStroke } from './landscape-action-contracts';
+import type { LandscapeRecord, LakeBed } from './landscape-contracts';
 import { brushFootprint, intersectPolygons, subtractPolygons } from './landscape-brush';
 import { contains } from './landscape-geometry';
-import { applyTerrainBrush, validateHeightStroke, type HeightStroke } from './terrain-brush';
+import { applyTerrainBrush, validateHeightStroke } from './terrain-brush';
+import { type HeightStroke } from './terrain-brush-contracts';
 import { decodeHeights, encodeHeights, TerrainSampler } from './terrain-height';
-import { type TerrainGrid } from './terrain-spatial-model';
+import { type TerrainGrid } from './terrain-grid-contracts';
 
 export interface LakeBrushChanges {
   records: LandscapeRecord[];

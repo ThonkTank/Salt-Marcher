@@ -1,5 +1,5 @@
 import type { Point } from '../shared/contracts';
-import { type LandscapeBox } from './atlas-landscape';
+import { type LandscapeBox } from './landscape-bounds';
 import { atlasPaint, type AtlasPaint } from './atlas-paint';
 import {
   defaultTerritoryLayers,
@@ -10,7 +10,8 @@ import {
   type TerritoryAction,
   type TerritoryState,
 } from './atlas-territories';
-import type { AtlasAction, AtlasRenderView } from './campaign-atlas-contracts';
+import type { AtlasAction } from './campaign-atlas-contracts';
+import type { AtlasRenderView } from './campaign-atlas-view-contracts';
 import { contains } from './landscape-geometry';
 const el = <T extends HTMLElement>(root: ParentNode, id: string) =>
   root.querySelector<T>('#' + id)!;

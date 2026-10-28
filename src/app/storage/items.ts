@@ -3,7 +3,6 @@ import { decodeStored } from './stored-payload';
 import * as shape from './stored-shapes';
 import { checkedWorldNoteRow } from './world-note-row';
 import { checkedLocationDocument } from '../../features/location/location-schema';
-import { validateLedgerItem } from './progression-records';
 import { checkedQuery, checkedRow, type SqliteDatabase } from './sqlite-connection';
 import { shopStockForItem } from '../catalog/items-contracts';
 import { checkedDefinition } from '../catalog/item-definition-validation';
@@ -24,9 +23,9 @@ import type {
   ItemShopCommand,
   ItemShopAck,
 } from '../catalog/items-contracts';
-import { copper, partitionLedgerPaidPrice, type LedgerItem } from '../runtime/progression';
+import { copper, partitionLedgerPaidPrice } from '../runtime/progression';
+import { type LedgerItem } from '../runtime/treasure-contracts';
 import { saveLedger, readLedgerItem } from './progression';
-import { event } from './progression-records';
 import {
   readItemDefinition,
   saveItemDefinition,
@@ -37,6 +36,8 @@ import {
 import { scenePreparation } from './session-read';
 import { readLiveScene, readCampaignTime } from './live-read';
 import { formatInstant } from '../runtime/live-contracts';
+import { itemDefinitionReference } from './catalog-references';
+import { event, validateLedgerItem } from './progression-records';
 const json = (v: unknown) => JSON.stringify(v),
   hash = (s: string) => createHash('sha256').update(s).digest('hex');
 export function installItemsSchema(db: SqliteDatabase) {
@@ -362,7 +363,11 @@ function checkedShop(
   const through = restockThrough(db, cam, s.id);
   for (const e of s.stock) {
     const d = readItemDefinition(db, e.reference.definitionId);
-    e.reference = { ...e.reference, revision: d.revision };
+    e.reference = {
+      ...e.reference,
+      revision: d.revision,
+      catalogReference: itemDefinitionReference(d),
+    };
     if (e.restock) {
       if (e.restock.nextDueMs === '0')
         e.restock.nextDueMs = (
@@ -597,7 +602,11 @@ export function executeItemShop(
             id: randomUUID(),
             characterId: a.characterId,
             revision: 1,
-            reference: { ...e.reference, revision: d.revision },
+            reference: {
+              ...e.reference,
+              revision: d.revision,
+              catalogReference: itemDefinitionReference(d),
+            },
             name: d.name,
             category: d.category,
             quantity: a.quantity,
@@ -666,6 +675,7 @@ export function executeItemShop(
             e.quantity += a.quantity;
             qty(e.quantity);
             e.reference.revision = d.revision;
+            e.reference.catalogReference = itemDefinitionReference(d);
           } else {
             const prices = a.newStockPrices
               ? {
@@ -681,7 +691,12 @@ export function executeItemShop(
               );
             s.stock.push({
               id: randomUUID(),
-              reference: { kind: 'authored', definitionId: d.id, revision: d.revision },
+              reference: {
+                kind: 'authored',
+                definitionId: d.id,
+                revision: d.revision,
+                catalogReference: itemDefinitionReference(d),
+              },
               quantity: a.quantity,
               unique: !!l.instanceId,
               instanceId: l.instanceId ?? null,

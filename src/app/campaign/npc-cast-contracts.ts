@@ -1,7 +1,7 @@
 import type { NpcPlaces } from './npc-places-contracts';
-import type { NpcDailySlot } from './npc-contracts';
-import type { NpcPage, NpcView } from './npc-contracts';
-import type { LiveScene } from '../runtime/live-contracts';
+import type { NpcDailySlot } from './npc-data-contracts';
+import type { NpcPage, NpcView } from './npc-data-contracts';
+import type { LiveScene } from '../runtime/live-scene-contracts';
 export interface NpcCastQuery {
   sceneId: string;
   text: string;
@@ -15,7 +15,7 @@ export interface NpcCastPage extends NpcPage {
 }
 export interface NpcDossier {
   dailyPlan?: {
-    targets?: import('./npc-contracts').NpcPlanLocation[];
+    targets?: import('./npc-data-contracts').NpcPlanLocation[];
     current: NpcDailySlot | null;
     next: NpcDailySlot | null;
     secondsUntilNext: number | null;

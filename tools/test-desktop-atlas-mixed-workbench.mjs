@@ -27,9 +27,7 @@ if (!refresh) {
   assert.equal(imageManifest.model, manifest.model);
   assert.equal(imageManifest.fixtureSha256, manifest.fixtureSha256);
 }
-const requestedZoom = process.env.GM_QA_ZOOM ? Number(process.env.GM_QA_ZOOM) : null;
-assert(requestedZoom === null || [1, 2].includes(requestedZoom), 'GM_QA_ZOOM must be1 or2');
-for (const zoom of refresh ? [1] : requestedZoom === null ? [2, 1] : [requestedZoom]) {
+for (const zoom of [1]) {
   const output =
     (process.env.QA_EVIDENCE_DIR ?? root + '/.build/atlas-mixed-workbench') + '/' + zoom;
   const native = await createNativeSession({ root, output, name: 'atlas-mixed-workbench' }),

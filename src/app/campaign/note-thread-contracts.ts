@@ -1,5 +1,5 @@
-import type { NoteSourceRecovery } from './note-thread-edit';
-import type { Note } from './preparation-contracts';
+import type { NoteSourceRecovery } from './note-source-recovery-contracts';
+import type { Note } from './note-data';
 import type { Result } from '../shared/contracts';
 export interface NoteThreadEntry {
   id: string;

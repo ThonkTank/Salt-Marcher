@@ -1,6 +1,7 @@
 import { routeBounds, validateRoute } from '../atlas/terrain-route';
 import { planRoute, replanRoutes } from '../atlas/terrain-route-planner';
-import type { LandscapeRecord, LandscapeBox } from '../atlas/atlas-landscape';
+import type { LandscapeRecord } from '../atlas/landscape-contracts';
+import type { LandscapeBox } from '../atlas/landscape-bounds';
 
 const union = (a: LandscapeBox, b: LandscapeBox) => {
   const x = Math.min(a.x, b.x),

@@ -1,6 +1,7 @@
 import type { Point } from '../shared/contracts';
-import type { AtlasRenderView } from './campaign-atlas-contracts';
-import type { TravelPreview, Hex } from '../runtime/world-contracts';
+import type { AtlasRenderView } from './campaign-atlas-view-contracts';
+import type { TravelPreview } from '../runtime/world-travel-contracts';
+import type { Hex } from '../runtime/world-cell-contracts';
 export function atlasWorldRoute(a: AtlasRenderView, preview: TravelPreview | null): Hex[] {
   const scene = a.scene;
   if (
@@ -17,8 +18,13 @@ export function atlasWorldRoute(a: AtlasRenderView, preview: TravelPreview | nul
     ? j.route.slice(Math.max(0, j.nextIndex - 1))
     : [];
 }
-import { atlasFrame, localToAtlas, atlasHexPoint } from './campaign-atlas-model';
-export function atlasPartyPoint(a: AtlasRenderView): Point | null {
+import { atlasFrame } from './campaign-atlas-model';
+import { localToAtlas, atlasHexPoint } from './atlas-coordinates';
+export function atlasPartyPoint(
+  a: Pick<AtlasRenderView, 'bindings' | 'cities' | 'scene' | 'terrain'> & {
+    geometry: Pick<AtlasRenderView['geometry'], 'position'>;
+  },
+): Point | null {
   const p = a.geometry.position;
   if (p) {
     const b = a.bindings.find((b) => b.kind === 'dungeon' && b.ownerId === p.scopeId);

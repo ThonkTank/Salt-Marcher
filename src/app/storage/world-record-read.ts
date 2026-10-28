@@ -1,4 +1,4 @@
-import type { Journey } from '../runtime/world-contracts';
+import type { Journey } from '../runtime/world-travel-contracts';
 import { hexDistance } from '../runtime/world-model';
 import { checkedTravelSupplies } from '../runtime/hex-access';
 import { checkedRow, type SqliteDatabase } from './sqlite-connection';

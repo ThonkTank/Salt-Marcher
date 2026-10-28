@@ -1,5 +1,5 @@
 import { applyLakeBrush } from './terrain-lake-brush';
-import type { LakeStroke } from './atlas-landscape';
+import type { LakeStroke } from './landscape-action-contracts';
 import { TerrainSampler } from './terrain-height';
 import { terrainGridLayout } from './terrain-grid-layout';
 import {
@@ -10,11 +10,12 @@ import {
 } from './terrain-material';
 import type { AtlasSurfaceTile } from './atlas-surface-tile-stream';
 import { TerrainBrushDraft, terrainDraftBounds } from './terrain-brush-draft';
-import type { HeightStroke } from './terrain-brush';
+import type { HeightStroke } from './terrain-brush-contracts';
 import { applyCoupledTerrainBrush } from './terrain-lake-coupling';
-import { gridHeight, terrainVisibility, type TerrainView } from './terrain-spatial-model';
-import type { TerrainEditingSource } from './terrain-spatial-model';
-import type { LandscapeRecord } from './atlas-landscape';
+import { gridHeight, terrainVisibility } from './terrain-spatial-model';
+import { type TerrainView } from './terrain-view-contracts';
+import type { TerrainEditingSource } from './terrain-grid-contracts';
+import type { LandscapeRecord } from './landscape-contracts';
 import { atlasWorldTileBounds } from './atlas-world-tiles';
 import { LandscapeRasterizer } from './landscape-raster';
 import { pigmentStrokeCoverage } from './landscape-pigment-coverage';

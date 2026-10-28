@@ -273,7 +273,6 @@ try {
   for (const [width, height, zoom] of [
     [1280, 880, 1],
     [800, 720, 1],
-    [1280, 880, 2],
   ]) {
     await native.app.evaluate(
       ({ BrowserWindow }, s) => {

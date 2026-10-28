@@ -438,7 +438,7 @@ await runNativeProbe(
       } finally {
         fresh.close();
       }
-      page = await launch(2);
+      page = await launch(1);
       await choose(a.id);
       assert.equal(await page.locator('#combat-edit-title').inputValue(), '');
       assert.equal(await page.locator('#combat-notes').inputValue(), 'Unfertige Hafennotiz');

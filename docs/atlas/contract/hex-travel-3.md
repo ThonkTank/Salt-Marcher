@@ -95,7 +95,7 @@ allgemeine Ownerabnahme sind dadurch nicht umfassend qualifiziert.
    Routensuche bleibt ein Rechenbudget mit erklärter Abschnittsteilung, keine
    Begrenzung der kontinuierlichen Kartenfläche.
 3. **Präsentation weiter qualifizieren.** Die vorhandene Wiedergabe auf großen
-   Routen und bei 200% prüfen. Pointerinterpolation ist nicht Bestandteil der
+   Routen und bei 100 % prüfen. Pointerinterpolation ist nicht Bestandteil der
    autoritativen Checkpoints; jede zusätzliche Animation bleibt reine Darstellung.
 4. **Gemeinsame Bedienung weiter qualifizieren.** Vorhandene Drag-Platzierung,
    Tastaturalternative, Wegpunkte und Auswahl im selben Scene-/Mapkontext mit
@@ -104,7 +104,7 @@ allgemeine Ownerabnahme sind dadurch nicht umfassend qualifiziert.
    vorhandener ausdrücklicher Transport-/Passierbarkeitsregel konsistent weiterführen. Mapwechsel
    leert nur transienten Entwurf/Auswertung; Scenewechsel übernimmt keine alte
    Antwort. Reiseansicht allein erzwingt keinen anderen Arbeitskontext.
-   Native Abnahme mit Kartenwechsel, langen Routen,200%, Fehlerantwort,
+   Native Abnahme mit Kartenwechsel, langen Routen,100 %, Fehlerantwort,
    Prozessunterbrechung, Fokuswechsel und finalem Interrupt ohne Doppelbuchung.
 
 ### Geländeänderungen ohne Quellenkartenkopie (21.10.2026)

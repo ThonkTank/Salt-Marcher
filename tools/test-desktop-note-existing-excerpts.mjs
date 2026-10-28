@@ -58,7 +58,7 @@ await runNativeProbe(
           BrowserWindow.getAllWindows()
             .find((w) => w.webContents.getURL().endsWith('/index.html'))
             .webContents.setZoomFactor(zoom),
-        Number(process.env.GM_QA_ZOOM ?? 1),
+        1,
       );
       await page.waitForFunction(() => document.body.dataset.tutorialReady === 'true');
       if (await page.locator('#tutorial-dialog').isVisible())
@@ -429,7 +429,7 @@ await runNativeProbe(
           errors,
           humanAcceptance: false,
           installedPackageAcceptance: false,
-          zoom: Number(process.env.GM_QA_ZOOM ?? 1),
+          zoom: 1,
           completedAt: new Date().toISOString(),
         };
         if (errors.length || launches.some((l) => l.exit?.code !== 0 || !l.mainPidAbsent))

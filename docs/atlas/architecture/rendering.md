@@ -78,6 +78,27 @@ Native Grundpinselprobe: [test-desktop-terrain-brush.mjs](../../../tools/test-de
 Folgezüge und Speicherfehler siehe [Speicherklärung](#speicherklärung-im-atlas).
 Testinhalt ist ein gezielter Prüfweg; ein vorhandenes Skript ist kein neuer Laufbeleg.
 
+Die Welt-Autorenprobe (`tools/test-desktop-world-authoring.mjs`) wartet vor dem
+Höhenzug nach dem Hover auf die vollständige Autorenbasis für den tatsächlich
+gewählten Radius und dieselbe Terrainrevision. Ein fertiges Anzeigebild reicht
+hier nicht: Die Produktionsgrenze nimmt während der Autorenladung keinen
+Pointer-down an; daraus entstehen weder Vorschau noch Speicherauftrag.
+Der Kontinentradius von 2.200.000 Metern und die kanonische Commitassertion
+bleiben Teil der Probe. Abgeschlossene Straßenzüge warten vor der nächsten
+Eingabe auf ihre kanonische Revision und die vom Writer freigegebenen Controls;
+ein noch fertiger Anzeigeframe ist kein Nachweis einer abgeschlossenen Sicherung.
+Alle drei gezeichneten Straßen werden im kanonischen Bestand verlangt.
+
+`prepareHeightBrush` indiziert die unveränderlichen Dabs nach Radiuszellen.
+Die Dosis summiert räumlich relevante Kandidaten in unveränderter ursprünglicher
+Reihenfolge. Das Arbeitsbudget zählt deren lokale Kachel-/Knotenkombinationen;
+ein langer Zug wird nicht mehr durch die Multiplikation aller Dabs mit dem
+gesamten umschließenden Rechteck abgewiesen.
+`tests/atlas/terrain-brush-budget.test.mjs` vergleicht die numerische Dosis mit
+der vollständigen geordneten Integration an Zellgrenzen und entfernten
+Koordinaten, erzeugt Höhenrecords für den Kontinentpfad und prüft die weiterhin
+bestehende Ablehnung tatsächlich übermäßiger lokaler Arbeit.
+
 ## Reise ändern
 
 Vom [Index](../../INDEX.md) über [Leiten](../guide.md#leiten) zu
@@ -150,7 +171,7 @@ für beschädigte gespeicherte Werte/Receipts und unveränderte Originalbytes.
 Native Probe: [test-desktop-atlas-terrain-stroke.mjs](../../../tools/test-desktop-atlas-terrain-stroke.mjs)
 mit `--recovery` und `--recovery --source-conflict`; `--recovery --drop-followup` muss eine fehlende B-Wirkung erkennen.
 Der enge lokale Folgezugnachweis ist abgeschlossen; vollständiges G1, physischer
-Input, 200 %, Plattform-/Paketqualifikation und Produktabnahme folgen daraus nicht.
+Input, 100 %, Plattform-/Paketqualifikation und Produktabnahme folgen daraus nicht.
 
 ## Quellenstand und Veröffentlichung
 
@@ -263,7 +284,7 @@ npm run check
 npm run check:desktop
 npm run build:desktop
 node tools/test-desktop-atlas-terrain-stroke.mjs --basic-tools --scale=1
-node tools/test-desktop-atlas-terrain-stroke.mjs --recovery --source-conflict --scale=2
+node tools/test-desktop-atlas-terrain-stroke.mjs --recovery --source-conflict
 QA_DRAWN=1 QA_EXACT_SCALE=1 node tools/test-desktop-atlas-multiscale.mjs
 node tools/test-desktop-atlas-prominence.mjs
 node tools/test-desktop-atlas-raster-workbench.mjs
@@ -279,7 +300,7 @@ node tools/test-desktop-player-map-reveal.mjs
 Native Proben verwenden isolierte, erzeugte Testkampagnen. Verglichen werden
 sichtbare Ergebnisse, erste Eingabereaktion, Folgezug, Undo/Redo und Wiederöffnung.
 Die dichte Stadtprobe `tools/test-desktop-room-reads.mjs --regions --zoom=1`
-(ebenso `--zoom=2`) erzeugt 5.000 Häuser über den gemeinsamen Fachwriter auf
+erzeugt 5.000 Häuser über den gemeinsamen Fachwriter auf
 trockenem Gelände. Einzelne SQL-Hauszeilen ohne Raumgruppen, Geschosse und
 Eingangsbindungen bilden diesen Bestand nicht ab. Gebäude und Eingangsanker
 teilen das Projektionsbudget; der Regionsleser wechselt vor dessen Überschreitung
@@ -299,7 +320,7 @@ Automatische Regressionen für diese Darstellung liegen in
 `tests/atlas/atlas-material-tiles.test.mjs`, `tests/atlas/atlas-surface-draft.test.mjs` und
 [desktop-terrain-route-units.test.mjs (historisch)](https://github.com/ThonkTank/Salt-Marcher/blob/05e8f2f97fc729dba8b6fef3830c566cdc47adad/tests/atlas/desktop-terrain-route-units.test.mjs). Die native Maßstabsprobe nimmt mit
 `QA_DRAWN=1 QA_EXACT_SCALE=1` sechs Maßstäbe (2048, 128, 16, 4, 1, 0,25 m/Pixel), drei Neigungen
-(0°, 45°, 75°) und 100/200 % UI-Skalierung auf. `QA_PERF=1` misst Kameragesten;
+(0°, 45°, 75°) und 100 Prozent UI-Skalierung auf. `QA_PERF=1` misst Kameragesten;
 `QA_EXPORT=1 QA_EXPORT_SIZES=1024,2048,8192` prüft gekachelte Ausgaben.
 Messwerte und Bilder liegen im gewählten `QA_EVIDENCE_DIR`; die Zielwerte
 p95 ≤ 33,3 ms pro Navigationsframe und ≤ 100 ms erste Pinselreaktion bleiben

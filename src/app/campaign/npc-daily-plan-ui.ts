@@ -1,6 +1,6 @@
 import { rawDailyPlan, readDailyPlanRaw, readDailyOverridesRaw } from './npc-daily-plan';
 import type { NpcDailyRaw, NpcDailyOverrideRaw } from './npc-daily-plan';
-import type { FantasyCalendar } from '../runtime/world-contracts';
+import type { FantasyCalendar } from '../runtime/calendar-contracts';
 import { calendarDate } from '../runtime/world-model';
 export function drawNpcDailyPlan(
   input: HTMLInputElement,

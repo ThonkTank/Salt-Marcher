@@ -8,8 +8,8 @@ import assert from 'node:assert/strict';
 import path from 'node:path';
 const root = process.cwd(),
   before = process.argv.includes('--before'),
-  zoom = process.argv.includes('--zoom') ? 2 : 1,
-  phase = before ? 'before' : zoom === 2 ? 'after-zoom' : 'after',
+  zoom = 1,
+  phase = before ? 'before' : 'after',
   out = process.env.QA_EVIDENCE_DIR ?? path.join(root, '.build/note-map-overlap', phase);
 await runNativeProbe(
   { output: out, name: 'note-map-overlap', resultName: 'result.json' },
@@ -197,17 +197,7 @@ await runNativeProbe(
       await page.waitForFunction(() => !document.querySelector('#note-thread-use').disabled);
     }
     async function screenshot(page, name) {
-      if (zoom === 1) return page.screenshot({ path: path.join(out, name) });
-      const data = await app.evaluate(async ({ BrowserWindow }) =>
-        (
-          await BrowserWindow.getAllWindows()
-            .find((w) => w.webContents.getURL().endsWith('/index.html'))
-            .webContents.capturePage()
-        )
-          .toPNG()
-          .toString('base64'),
-      );
-      await writeFile(path.join(out, name), Buffer.from(data, 'base64'));
+      return page.screenshot({ path: path.join(out, name) });
     }
     async function close() {
       const ended = new Promise((r) =>

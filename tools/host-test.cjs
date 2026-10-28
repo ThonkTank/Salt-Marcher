@@ -31,10 +31,9 @@ const restart = process.argv.includes("--restart"),
   atlasCampaignABA = process.argv.includes("--atlas-campaign-aba"),
   worldNotesDrafts = process.argv.includes("--world-notes-drafts"),
   worldNotesReclaim = process.argv.includes("--world-notes-reclaim"),
-  worldNotesZoom200 = process.argv.includes("--world-notes-zoom200"),
   worldNotesFault = process.argv.includes("--world-notes-rollback"),
   worldNotesRecovery = process.argv.includes("--world-notes-recovery"),
-  worldNotesNative = process.argv.includes("--world-notes-native") || worldNotesZoom200 || worldNotesFault || worldNotesRecovery,
+  worldNotesNative = process.argv.includes("--world-notes-native") || worldNotesFault || worldNotesRecovery,
   atlasCampaignRuntime = process.argv.includes("--atlas-campaign-runtime") || atlasCampaignABA || worldNotesDrafts || worldNotesReclaim || worldNotesNative || hex04DungeonAtLocation || cityBuildingName,
   atlasSpatial = process.argv.includes("--atlas-spatial") || atlasCampaignRuntime,
   hex03Location = process.argv.includes("--hex03-location"),
@@ -934,7 +933,7 @@ async function workflow() {
         renderCount: e.renderer.renderCount,
       };
     });
-  const scenarioContext = { page, browser, fs, path, assert, crypto, PNG, root, pluginRoot, qa, vault, sourceVault, restart, out, checks, worldNotesZoom200, worldNotesFault, worldNotesRecovery, chooseTool, editorAction, selectOnlyObjects, waitForFileAbsent, sleep, resolveQaAppCgroup };
+  const scenarioContext = { page, browser, fs, path, assert, crypto, PNG, root, pluginRoot, qa, vault, sourceVault, restart, out, checks, worldNotesFault, worldNotesRecovery, chooseTool, editorAction, selectOnlyObjects, waitForFileAbsent, sleep, resolveQaAppCgroup };
   if (worldNotesDrafts) {
     assert.equal(restart, false, "World Notes drafts use one real process");
     await require("./host/world-notes-drafts.cjs")(scenarioContext)();

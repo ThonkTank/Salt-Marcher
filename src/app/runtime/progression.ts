@@ -1,25 +1,25 @@
-import type { LiveScene, TimeUnit } from './live-contracts';
+import { levelXp, dailyXp } from './experience-tables';
+import {
+  type Progress,
+  type CharacterHealth,
+  type DeathSaveResult,
+} from './character-progress-contracts';
+import { type ItemInput } from '../catalog/item-input-contracts';
+import { type Treasure, type LedgerItem } from './treasure-contracts';
+import { type ProgressGuard } from './reward-contracts';
+import type { LiveScene, TimeUnit } from './live-scene-contracts';
 import type { GroupsAPI, GroupAction } from '../campaign/groups-contracts';
 import type {
   TreasuryAPI,
   TreasuryAction,
-  TreasureOrigin,
   TreasureAnchor,
   TreasureQuery,
 } from './treasury-contracts';
+
 import type { SceneDeskAPI } from './scene-desk-contracts';
 import type { FinishDraftAPI as importFinishDraftAPI } from './finish-draft-contracts';
 import type { NarrativeAction } from './narrative-contracts';
 import type { Result } from '../shared/contracts';
-import type { ItemDefinition } from '../catalog/items-contracts';
-export const levelXp = [
-  0, 300, 900, 2700, 6500, 14000, 23000, 34000, 48000, 64000, 85000, 100000, 120000, 140000, 165000,
-  195000, 225000, 265000, 305000, 355000,
-] as const;
-export const dailyXp = [
-  300, 600, 1200, 1700, 3500, 4000, 5000, 6000, 7500, 9000, 10500, 11500, 13500, 15000, 18000,
-  20000, 25000, 27000, 30000, 40000,
-] as const;
 export function xpLevel(xp: number) {
   if (!Number.isSafeInteger(xp) || xp < 0)
     throw new Error('XP müssen eine nichtnegative ganze Zahl sein.');
@@ -66,33 +66,6 @@ export function gold(cp: string) {
   const n = BigInt(cp);
   return n / 100n + ',' + (n % 100n).toString().padStart(2, '0') + ' GM';
 }
-export interface Progress {
-  characterId: string;
-  revision: number;
-  xp: number | null;
-  rest: { known: boolean; longXp: number; shortXp: number; baseline: number; sections: number };
-  health: {
-    hp: number;
-    maxHp: number;
-    tempHp: number;
-    conditions: string;
-    concentrating: boolean;
-    death?: { successes: number; failures: number; stable: boolean; dead: boolean };
-  } | null;
-  /** Current conditions/temporary HP when normal HP are intentionally unknown. */
-  combatStatus?: { tempHp: number; conditions: string; concentrating: boolean };
-}
-export type CharacterHealth = NonNullable<Progress['health']> & {
-  death?: { successes: number; failures: number; stable: boolean; dead: boolean };
-};
-export type DeathSaveResult =
-  | 'success'
-  | 'failure'
-  | 'natural-20'
-  | 'natural-1'
-  | 'stabilize'
-  | 'reset'
-  | 'dead';
 export function deathSaveControls(death: CharacterHealth['death']) {
   const terminal = !!(death?.dead || death?.stable);
   return { terminal, reset: !!death && (death.successes > 0 || death.failures > 0 || terminal) };
@@ -247,81 +220,6 @@ export function restFrame(p: Progress) {
     overdue: p.rest.longXp >= budget,
   };
 }
-export type ItemCategory = 'coins' | 'equipment' | 'trade-goods' | 'magic' | 'other';
-export interface ItemInput {
-  name: string;
-  quantity: number;
-  valueGold: string;
-  category: ItemCategory;
-  reference?: ItemReference;
-}
-export interface ItemReference {
-  kind: 'authored';
-  definitionId: string;
-  revision: number;
-  historicalDefinitionId?: string;
-}
-export interface TreasureItem {
-  id: string;
-  reference: ItemReference;
-  name: string;
-  category: ItemCategory;
-  quantity: number;
-  allocated: number;
-  unitCopper: string | null;
-  currentDefinition?: ItemDefinition;
-  origin?: TreasureOrigin;
-}
-export interface Treasure {
-  id: string;
-  revision: number;
-  title: string;
-  sceneId: string | null;
-  locationId: string | null;
-  combatId: string | null;
-  sourceNoteId?: string;
-  awardId?: string;
-  items: TreasureItem[];
-}
-export interface LedgerItem {
-  id: string;
-  characterId: string;
-  revision: number;
-  reference: ItemReference;
-  name: string;
-  category: ItemCategory;
-  quantity: number;
-  unitCopper: string | null;
-  origin: 'award' | 'purchase' | 'manual' | 'transfer';
-  status: 'received' | 'sold' | 'given';
-  actualSaleCopper: string | null;
-  counterparty: string;
-  treasureId: string | null;
-  combatId: string | null;
-  sceneId: string | null;
-  locationId: string | null;
-  instantMs: string | null;
-  recordedAt: string;
-  parentId: string | null;
-  sourceTreasureId?: string;
-  sourceTreasureItemId?: string;
-  rewardCreditId?: string;
-  creditedCopper?: string | null;
-  recipientCharacterId?: string;
-  sourceCharacterId?: string;
-  sourceNoteId?: string;
-  awardId?: string;
-  provenance?: string;
-  mergeTargetId?: string;
-  counterpartyLink?: { kind: 'shop' | 'npc' | 'location' | 'faction'; id: string };
-  paidCopper?: string;
-  instanceId?: string | null;
-  counterpartyReference?: { shopId: string; owner: { kind: 'npc' | 'location'; id: string } };
-  currentName?: string;
-  currentUnitCopper?: string | null;
-  /** Current source title for navigation; never part of the stored grant. */
-  sourceTitle?: string;
-}
 /** Allocate the recorded total price before quantity changes; whole copper stays in the remainder. */
 export function partitionLedgerPaidPrice(source: LedgerItem, portion: LedgerItem): void {
   if (source.paidCopper === undefined) return;
@@ -441,27 +339,6 @@ export interface LedgerInventoryPage {
   problems: LedgerPage['problems'];
   visited: number;
   next: string | null;
-}
-export interface ProgressGuard {
-  characterId: string;
-  revision: number;
-}
-export interface FinishRewards {
-  poolXp: number;
-  noXp: boolean;
-  recipients: ProgressGuard[];
-  policyVersion: 'xp-ceil-2014-v1';
-  loadXp: number;
-  items: ItemInput[];
-}
-export interface CombatReward {
-  awardId: string;
-  poolXp: number;
-  shareXp: number;
-  totalXp: number;
-  recipientIds: string[];
-  treasureId: string | null;
-  policyVersion: 'xp-ceil-2014-v1';
 }
 export type ProgressAction =
   | GroupAction

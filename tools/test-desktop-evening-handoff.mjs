@@ -17,7 +17,7 @@ const root = process.cwd(),
   out = process.env.QA_EVIDENCE_DIR;
 assert(out);
 const native = await createNativeSession({ root, output: out, name: 'salt-evening-handoff' }),
-  zoom = Number(process.env.GM_QA_ZOOM ?? 1);
+  zoom = 1;
 try {
   require('esbuild').buildSync({
     entryPoints: ['src/app/storage/store.ts'],

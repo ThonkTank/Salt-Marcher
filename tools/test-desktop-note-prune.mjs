@@ -240,7 +240,7 @@ await runNativeProbe(
         assert.equal(await page.locator('#note-thread-sources article').count(), 2);
         await review.click();
         await app.evaluate(({ BrowserWindow }) =>
-          BrowserWindow.getAllWindows()[0].webContents.setZoomFactor(2),
+          BrowserWindow.getAllWindows()[0].webContents.setZoomFactor(1),
         );
         const confirm = card.getByRole('button', { name: 'Verknüpfungen hier lösen', exact: true });
         await confirm.scrollIntoViewIfNeeded();
@@ -254,7 +254,7 @@ await runNativeProbe(
           () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))),
         );
         await writeFile(
-          path.join(out, 'unlink-200percent.png'),
+          path.join(out, 'unlink-100percent.png'),
           Buffer.from(
             await app.evaluate(async ({ BrowserWindow }) =>
               (await BrowserWindow.getAllWindows()[0].webContents.capturePage())
@@ -288,7 +288,7 @@ await runNativeProbe(
         assert.equal(await remaining.isChecked(), false);
         await remaining.check();
         results.deliberateChoicesAndDestinationNamesRetained = true;
-        results.previewKeepAndUnlinkAt200PercentExecuted = true;
+        results.previewKeepAndUnlinkAt100PercentExecuted = true;
       }
       await page.waitForFunction(
         () =>

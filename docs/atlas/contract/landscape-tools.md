@@ -177,7 +177,7 @@ Grundkorrekturen), `tests/atlas/terrain-scale-worker.test.mjs` (Worker, Store,
 History und Wiederöffnung) sowie `tests/atlas/atlas-brush-size.test.mjs`
 (tatsächliche Formauswahl und Parametereingaben). Der bestehende native Ablauf
 `tools/test-desktop-atlas-terrain-stroke.mjs --forms --scale=1` beziehungsweise
-`--scale=2` prüft direkte Formzüge, überlappende Anschlüsse, Wirkung vor Loslassen,
+Die 100-Prozent-Probe prüft direkte Formzüge, überlappende Anschlüsse, Wirkung vor Loslassen,
 kanonische Daten, Grundkorrekturen, Undo/Redo und reguläre Wiederöffnung.
 Funktionsbelege ersetzen weder die spätere Darstellungs-/LOD- und
 Leistungsqualifikation noch Paket-, Integrations- oder Nutzerabnahme.
@@ -216,7 +216,7 @@ Gezielte Regressionen stehen in `tests/atlas/terrain-brush.test.mjs`,
 prüft den tatsächlichen Worker und die gemeinsame Receipt-Wiederholung.
 Der begrenzte native Ablauf
 `tools/test-desktop-terrain-lakes.mjs --lift --scale=1` beziehungsweise
-`--scale=2` prüft gemeinsame Livewirkung, kanonische Höhen/Pegel,
+Die 100-Prozent-Probe prüft gemeinsame Livewirkung, kanonische Höhen/Pegel,
 Undo/Redo, Fresh und nachfolgende Seeradierung sowie einen lokalen Ablauf
 an großen Weltkoordinaten. Die vollständige Welt-bis-Raum-Qualifikation,
 Leistung, Gestaltung, Paketlieferung und Nutzerabnahme bleiben getrennt.

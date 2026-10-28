@@ -2,16 +2,19 @@
 
 Status: Verbindlicher Zielumfang; historische Umsetzungsbelege sind keine aktuelle Abnahme.
 Owner: project
-Last Reviewed: 2026-10-24 (Struktur und Quellen; Fachabnahme separat)
+Last Reviewed: 2026-10-28 (Quellenrolle und entschiedener Host; keine neue Fachabnahme)
 Source of Truth: Dieses Dokument besitzt das benannte Thema; Code belegt den Iststand, das Abnahmeregister den Prüfstand.
 
-Stand: 10. Oktober 2026. Direkter Nutzerauftrag: SaltMarcher ist als
+Historische Umfangsableitung vom 10. Oktober 2026, gebunden an SaltMarcher
+`9de85c1a26f526acbc1af332ac5962e185c0aab2`. Direkter Nutzerauftrag: SaltMarcher ist als
 eigenständiges Produkt vollständig abgelöst. Das in diesem Repository
 fortgeführte Zielprodukt übernimmt nicht nur bereits implementierte Funktionen,
 sondern auch den bestätigten und geplanten Gesamtumfang. Das Endergebnis ist
 ausdrücklich nicht an Obsidian als Laufzeit oder Pluginformat gebunden. Die
-UX- und Funktionsvorgaben sind verbindlich; die Plattform und technische
-Ausprägung bestimmt das Team in einem eigenen, belegten Architekturentscheid.
+UX- und Funktionsvorgaben sind verbindlich; die technische Richtung ist im
+[Plattformentscheid](../architecture/platform-decision.md) festgelegt. Heutige
+Codeanschlüsse und Lieferungen stehen in der [Roadmap](../delivery/roadmap.md),
+Produktcutover und Datenlinie im [Übernahmevertrag](../delivery/workbench-migration.md).
 SaltMarcher bleibt Produktwahrheits-, Daten- und Verhaltensquelle; seine
 Electron-, Java-, JavaFX-, JDBC- und frühere Obsidian-Architektur sind keine
 Zielarchitektur und kein Merge-Vertrag.
@@ -40,11 +43,10 @@ führen den Übergang, keine zusätzliche unabhängige Produktlinie.
    letzte vollständige JavaFX-Dungeon-Linie `javafx-final-2026-07-27` und
    historische Obsidian-Stände dürfen nur gezielt als Orakel, Fixture- oder
    UX-Quelle verwendet werden.
-4. Die Architektur dieses Repositories ist die gegenwärtige
-   Implementierungsbasis, aber keine Vorentscheidung für den finalen Host.
-   Electron Main/Preload/IPC/Installer/Handoff, JavaFX/JDBC, Obsidian-Grenzen
-   und alte Plugin-Bundles werden nur nach dem Plattformentscheid gezielt
-   übernommen, ersetzt oder durch Adapter isoliert.
+4. Der implementierte Electron-/TypeScript-/SQLitepfad folgt dem
+   [Plattformentscheid](../architecture/platform-decision.md). Historische
+   JavaFX-/JDBC-/Obsidian- und frühere SaltMarcher-Hostvorschriften bleiben
+   Quellenkontext, keine zweite aktuelle Architektur.
 
 Jeder Lauf hält die verwendete SaltMarcher-Revision, konkrete Quelldokumente,
 übernommene Daten/Fixtures, bewusst nicht übernommene Hostarchitektur und
@@ -52,7 +54,13 @@ verbleibende Abweichungen in `acceptance.json` fest.
 
 ## Gesamtumfang
 
-| Bereich | SaltMarcher-Stand | Ziel im gemeinsamen Produkt | Hauptquellen |
+Die Standspalte beschreibt ausschließlich die oben gebundene Ausgangsrevision.
+Sie ist kein heutiger Implementierungs- oder Prüfstatus. Aktuellen Nutzerumfang
+und offene Fachentscheidungen besitzt [SCOPE](scope.md); vorhandene Fähigkeiten
+und Restqualifikation die [Roadmap](../delivery/roadmap.md). Historische
+Quellpfade in der Tabelle beziehen sich auf die Ausgangsrevision.
+
+| Bereich | Historischer SaltMarcher-Stand | Ziel im gemeinsamen Produkt | Hauptquellen |
 | --- | --- | --- | --- |
 | Kampagnen und Datenlebenszyklus | produktiv/teilweise | Kampagnen anlegen, wechseln, umbenennen, wiederherstellbar löschen, dauerhaft löschen, kopieren, importieren/exportieren und nach Absturz exakt fortsetzen | `docs/campaign/requirements/requirements-campaign-management.md`, Program Capabilities |
 | Katalog und Referenzgraph | teilweise produktiv | installationweite Creatures/Items/Rules; kampagneneigene PCs, NPCs, Orte, Fraktionen, Quests, Gerüchte und Besitz; Duplikatnamen, Notizen, Suche und historische Snapshots | `docs/catalog`, `docs/creatures`, `docs/items`, `docs/reference` |
@@ -71,7 +79,7 @@ verbleibende Abweichungen in `acceptance.json` fest.
 | Actor Autonomy | geplant | ausdrücklich aktivierte, begrenzte NPC-/Monsterbedürfnisse, Arbeit, Wahrnehmung und Konflikte; pausierbar, atomar, erklärbar und einmaliges Catch-up | `docs/autonomy/requirements/requirements-actor-autonomy.md` |
 | Passives zweites Display | teilweise produktive Referenz | fokussierte Scene, sichere Karte/Art und nur freigegebene Spielerinformationen; keine privaten Notizen oder Mechanikdetails | Scene/Live-Session-Anforderungen, Program Technical Needs |
 | Extensions | geplant | explizite Identität, Default-Deny-Fähigkeiten, präzise Einwilligung, Widerruf, Sink-Prüfung, Fehlerisolation und erhaltene opaque Daten | Program Capabilities: Extensions; TN-27 bis TN-31 |
-| Tutorials, Lokalisierung und A11y | teilweise/querliegend | Tutorial je Feature/Version, Skip/Dismiss, Tastatur, 200 %, Kontrast, Nicht-Farb-Signale und vollständige UI-Texte | Program Technical Needs |
+| Tutorials, Lokalisierung und A11y | teilweise/querliegend | Tutorial je Feature/Version, Skip/Dismiss, Tastatur, 100 %, Kontrast, Nicht-Farb-Signale und vollständige UI-Texte | Program Technical Needs |
 | Performance, Offline, Privacy und Provenienz | teilweise/querliegend | lokale Offline-Nutzung ohne versteckten Egress, reproduzierbare Regeln, messbare Latenz-/Skalierungsgrenzen, portable Assets und nachvollziehbare Entscheidungen | Vision; Program Technical Needs |
 
 ## Lieferphasen
@@ -89,10 +97,11 @@ verlinkten Fachquellen beschreiben Anforderungen und technische Anschlüsse.
   Verteilung, Datenbesitz, Erweiterbarkeit und den Migrationspfad. Mindestens
   Obsidian-Plugin, eigenständige Desktop-App und ein schrittweise entkoppeltes
   Hybridmodell werden mit prototypischen Risikobelegen verglichen.
-- Der vorgeschlagene Entscheid samt Beweis- und Ratifikationskriterien steht in
+- Der getroffene Entscheid samt Beweis- und Qualifikationskriterien steht in
   [`docs/project/architecture/platform-decision.md`](../architecture/platform-decision.md).
-- Bis zur Entscheidung bleiben neue Domänenlogik und Produktverträge
-  hostneutral; bestehende Plugin-Arbeit wird nicht verworfen.
+- Neue Domänenlogik und Produktverträge bleiben gemäß dem Entscheid
+  von privilegierten Hostfähigkeiten getrennt; historische Plugin-Arbeit bleibt
+  als Referenz erhalten.
 - Für jeden Bereich aktuelle Produktquelle, Verhaltensreferenz, Datenquelle,
   Nichtziel und zuständige lokale Roadmap festhalten.
 - Historische Obsidian-Stände nur dateiweise inventarisieren; kein Whole-Branch-
@@ -156,7 +165,7 @@ und ausdrücklich „Erneut versuchen“;
 ein bloßes Providerereignis übernimmt ihn nicht. Die begrenzte Zwei-View-Probe
 bestand auf `489bc13d`; unabhängige Prüfung steht aus.
 
-Begrenzte Obsidianproben belegen Tastatur/200 % sowie kontrollierten
+Begrenzte Obsidianproben belegen Tastatur/100 % sowie kontrollierten
 Manifestfehler mit Rollback/Retry und ein aus echten Bytes gebildetes
 Committed-Restjournal. Die [24 portablen Rohbelege](https://github.com/ThonkTank/Salt-Marcher/blob/16eb0aa8807ac21704abfea5412ac3a22033a23a/docs/reference/smr02-world-notes-recovery/README.md)
 erhalten ihre Hash-/Quellbindung. Die ursprünglichen Recoverycheckouts waren

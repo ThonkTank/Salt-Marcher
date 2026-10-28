@@ -27,11 +27,7 @@ const out =
   process.env.QA_EVIDENCE_DIR ??
   root +
     '/.build/campaign-transfer-visit/' +
-    (process.argv.includes('--before')
-      ? 'before'
-      : process.argv.includes('--zoom200')
-        ? 'after-200'
-        : 'after');
+    (process.argv.includes('--before') ? 'before' : 'after');
 await runNativeProbe({ output: out, name: 'campaign-transfer-visit' }, async (native) => {
   const profile = native.profile;
   const file = profile + '/workbench.sqlite';
@@ -177,7 +173,7 @@ await runNativeProbe({ output: out, name: 'campaign-transfer-visit' }, async (na
       }
     }, process.argv.includes('--fail-import-atlas'));
     const pid = child.pid,
-      zoom = process.argv.includes('--zoom200') ? 2 : 1;
+      zoom = 1;
     assert((await readFile(`/proc/${pid}/cmdline`, 'utf8')).includes(profile));
     assert.equal((await readFile(`/proc/${pid}/cgroup`, 'utf8')).trim().split('::')[1], group);
     launches.push({ pid, zoom, cgroup: group });

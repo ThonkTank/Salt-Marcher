@@ -1,5 +1,4 @@
 import { TerrainQueueRecovery } from './terrain-queue-recovery';
-import { editorSession as atlasEditorSession } from './campaign-atlas-author';
 import { atlasElement as get } from './atlas-dom';
 import { AtlasAuthor } from './atlas-author';
 import { AtlasDrawing } from './atlas-drawing';
@@ -25,34 +24,37 @@ import { AtlasWorkspaceLayout } from './atlas-workspace-layout';
 import { AtlasReferenceUI } from './atlas-reference-ui';
 import { travelHexSizes } from './atlas-navigation-scale';
 import { regionValue } from './atlas-region-contracts';
-import { selectElement } from './drawing-ui';
 import { mountDungeonTravelConsole } from '../runtime/dungeon-travel-console';
 import { LiveAtlasPortal } from '../runtime/live-atlas-portal';
 import { LandscapeWorkbench } from './atlas-landscape-ui';
 import { earthView } from './atlas-landscape';
 import { atlasPartyPoint } from './atlas-runtime-model';
-import { openWorld } from '../runtime/world-ui';
 import { AtlasCanvas } from './atlas-canvas';
-import { atlasFrame, localToAtlas, atlasToLocal } from './campaign-atlas-model';
-import {
-  writeAtlasCommit,
-  pendingAtlasWrite,
-  recoverAtlasCommit,
-  reconcilePendingAtlasCommit,
-} from './campaign-atlas-author';
-import type { AtlasRenderView, AtlasAction } from './campaign-atlas-contracts';
+import { atlasFrame } from './campaign-atlas-model';
+import { localToAtlas, atlasToLocal } from './atlas-coordinates';
+import type { AtlasRenderView } from './campaign-atlas-view-contracts';
+import type { AtlasAction } from './campaign-atlas-contracts';
 import type { WorkspaceGeometry, Point, Room } from '../shared/contracts';
 import { terrainNames } from '../runtime/world-model';
 import { nearestAnchor } from './drawing-model';
 import { atlasCityState, atlasCityUndoPoint, openCityReference } from './city-ui';
+import { openDungeon, stopDungeonPlayback } from './dungeon-ui';
+import type { WorldTravelPort } from '../runtime/world-ui';
 import {
-  selectedDrawingElementId,
+  editorSession as atlasEditorSession,
+  pendingAtlasWrite,
+  reconcilePendingAtlasCommit,
+  recoverAtlasCommit,
+  writeAtlasCommit,
+} from './campaign-atlas-author';
+import {
   atlasDrawingDraft,
   atlasDrawingHasDraft,
   atlasDrawingUndoPoint,
   reloadDrawing,
+  selectElement,
+  selectedDrawingElementId,
 } from './drawing-ui';
-import { openDungeon, stopDungeonPlayback } from './dungeon-ui';
 export class CampaignAtlasWorkbench {
   private output: AtlasOutput = this.createAtlasOutput();
   private createAtlasOutput(): AtlasOutput {
@@ -112,6 +114,9 @@ export class CampaignAtlasWorkbench {
   private createAtlasJourney(): AtlasJourney {
     const source = this;
     return new AtlasJourney({
+      get world() {
+        return source.opts.world;
+      },
       get data() {
         return source.regions.data;
       },
@@ -190,6 +195,9 @@ export class CampaignAtlasWorkbench {
   private createAtlasDrawing(): AtlasDrawing {
     const source = this;
     return new AtlasDrawing({
+      get world() {
+        return source.opts.world;
+      },
       get author() {
         return source.author;
       },
@@ -243,6 +251,9 @@ export class CampaignAtlasWorkbench {
   private createAtlasAuthor(): AtlasAuthor {
     const source = this;
     return new AtlasAuthor({
+      get world() {
+        return source.opts.world;
+      },
       get creation() {
         return source.creation;
       },
@@ -537,6 +548,7 @@ export class CampaignAtlasWorkbench {
   private creation: 'city' | 'dungeon' | null = null;
   constructor(
     private opts: {
+      world: WorldTravelPort;
       exit?: () => Promise<void>;
       selectRoom: (id: string) => Promise<void>;
       roomDraft: () => Room | null;
@@ -1330,6 +1342,11 @@ export class CampaignAtlasWorkbench {
     }
     if (this.owner?.token !== w.token && (this.strokeQueue?.pending || this.strokeQueue?.failed))
       throw Error('Gehaltene Pinselzüge vor dem Kampagnenwechsel klären.');
+    if (this.owner?.token !== w.token) {
+      get<HTMLInputElement>('atlas-search').value = '';
+      get('atlas-save-status').textContent = 'Kartenausschnitt wird geladen…';
+      get('atlas-save-status').dataset.error = 'false';
+    }
     atlasEditorSession.generation++;
     this.regions.resetContext();
     this.hitVersion++;
@@ -1443,7 +1460,7 @@ export class CampaignAtlasWorkbench {
     }
     return true;
   }
-  private entranceHeight(entrances: import('./atlas-travel-contracts').AtlasEntrance[]) {
+  private entranceHeight(entrances: import('./atlas-journey-contracts').AtlasEntrance[]) {
     const owner = this.owner;
     if (!owner || this.busy) return;
     const valid = () => {
@@ -1507,6 +1524,7 @@ export class CampaignAtlasWorkbench {
         commandId,
         token: w.token,
         campaignId: w.campaign.id,
+        expectedCampaignRevision: w.campaign.revision,
         action: a,
         ...(this.regions.data?.region ? { sourceFence: this.regions.data.region.fence } : {}),
       };
@@ -1753,7 +1771,7 @@ export class CampaignAtlasWorkbench {
     if (f === 'city' && this.cityId) await openCityReference(this.cityId, undefined, true);
     if (f === 'travel') {
       await this.regions.refresh();
-      await openWorld();
+      await this.opts.world.openWorld();
       await openDungeon();
     }
     this.render();
@@ -2150,7 +2168,7 @@ export class CampaignAtlasWorkbench {
       this.regions.data?.region?.fence === fence &&
       this.hitVersion === version &&
       this.regions.geometryCurrent();
-    const choose = async (hit: import('./atlas-region-contracts').AtlasHit) => {
+    const choose = async (hit: import('./atlas-region-view-contracts').AtlasHit) => {
       if (!valid()) return;
       this.hitDialog.close();
       if (hit.kind === 'landscape') {

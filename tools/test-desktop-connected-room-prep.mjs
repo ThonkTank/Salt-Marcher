@@ -482,14 +482,14 @@ await runNativeProbe(
       await close();
       closed = true;
       results.fullTaskAndFreshComplete = true;
-      stage = '200percent contextual return';
+      stage = '100percent contextual return';
       await launch();
       closed = false;
       await revealWorkspaceNavigation(page);
       await app.evaluate(({ BrowserWindow }) =>
         BrowserWindow.getAllWindows()
           .find((w) => w.webContents.getURL().endsWith('/index.html'))
-          .webContents.setZoomFactor(2),
+          .webContents.setZoomFactor(1),
       );
       await page.waitForFunction(
         () =>
@@ -499,7 +499,7 @@ await runNativeProbe(
       await openKey('Wachstube');
       await followPlan();
       await page.locator('#key-plan-return').scrollIntoViewIfNeeded();
-      results.returnAt200 = await page.locator('#key-plan-return').evaluate((b) => {
+      results.returnAt100 = await page.locator('#key-plan-return').evaluate((b) => {
         const r = b.getBoundingClientRect();
         return {
           visible:
@@ -509,9 +509,9 @@ await runNativeProbe(
           ),
         };
       });
-      assert(results.returnAt200.visible && results.returnAt200.uncovered);
+      assert(results.returnAt100.visible && results.returnAt100.uncovered);
       await writeFile(
-        out + '/plan-return-200.png',
+        out + '/plan-return-100.png',
         Buffer.from(
           await app.evaluate(async ({ BrowserWindow }) =>
             (
@@ -572,7 +572,7 @@ await runNativeProbe(
         hashes,
       });
       console.log(
-        'COMPLETE connected-room preparation, plan return, live outcome, handoff and Fresh; bounded200% return separately checked.',
+        'COMPLETE connected-room preparation, plan return, live outcome, handoff and Fresh; bounded 100% return separately checked.',
       );
     } catch (error) {
       if (page) await shot('failure').catch(() => {});

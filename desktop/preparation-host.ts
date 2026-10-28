@@ -3,7 +3,8 @@ import type {
   GenerationRequest,
   LootRollCommand,
 } from '../src/app/campaign/generation-contracts';
-import type { NpcCommand, NpcDraft, NpcQuery } from '../src/app/campaign/npc-contracts';
+import type { NpcCommand, NpcDraft } from '../src/app/campaign/npc-contracts';
+import type { NpcQuery } from '../src/app/campaign/npc-data-contracts';
 import type {
   PreparationCommand,
   PreparationDraft,

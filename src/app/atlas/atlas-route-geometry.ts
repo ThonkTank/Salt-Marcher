@@ -1,7 +1,8 @@
 import * as THREE from 'three';
 import type { Point } from '../shared/contracts';
 import type { AtlasDrawingMesh } from './atlas-drawing-mesh';
-import type { LandscapeBox, LandscapeRecord } from './atlas-landscape';
+import type { LandscapeBox } from './landscape-bounds';
+import type { LandscapeRecord } from './landscape-contracts';
 import { mapLineWidth } from './atlas-scale-policy';
 import { lineParts, linePoints } from './landscape-line';
 import { nearestRoute } from './terrain-route';

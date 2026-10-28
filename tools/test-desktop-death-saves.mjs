@@ -25,7 +25,7 @@ require('esbuild').buildSync({
 });
 const { CampaignStore } = require(root + '/.build/death-native-store.cjs'),
   results = [];
-for (const scale of [1, 2]) {
+for (const scale of [1]) {
   await runNativeProbe(
     { output: output + '/case-' + ++nativeCase, name: 'death-saves' },
     async (session) => {

@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
-import type { DrawingCommand, DrawingElement, RoomStyle } from '../atlas/drawing-contracts';
+import type { DrawingCommand } from '../atlas/drawing-contracts';
+import type { DrawingElement, RoomStyle } from '../atlas/drawing-element-contracts';
 import { validateDrawingElement } from '../atlas/drawing-contracts';
 import {
   anchored,

@@ -1,24 +1,17 @@
+import {
+  type HeightTile,
+  type TerrainSettings,
+  type HeightSample,
+} from './terrain-height-contracts';
 import type { Point, Polygon } from '../shared/contracts';
-import { type LandscapeBox, type LandscapeRecord } from './atlas-landscape';
-import { strokeBox, validateStroke, type MaskStroke } from './land-mask';
+import { type LandscapeBox } from './landscape-bounds';
+import { type LandscapeRecord } from './landscape-contracts';
+import { strokeBox, validateStroke } from './land-mask';
+import { type MaskStroke } from './land-mask-contracts';
 import { bounds, contains, segmentDistance } from './landscape-geometry';
 import { heightPatch } from './terrain-interpolation';
-import { validateTerrainStyle, type TerrainStyle } from './terrain-relief';
+import { validateTerrainStyle } from './terrain-relief';
 import { RouteSurface } from './terrain-route';
-
-/** Metres, independent of hexes and camera. NaN nodes inherit the coarser field. */
-export interface HeightTile {
-  version: 1 | 2;
-  x: number;
-  y: number;
-  pixel: number;
-  data: string;
-}
-export interface TerrainSettings {
-  version: 1;
-  seaLevelM: number;
-  style?: TerrainStyle;
-}
 export const HEIGHT_EDGE = 64,
   DEFAULT_HEIGHT_M = -100;
 export const TERRAIN_SETTINGS_ID = 'terrain-settings';
@@ -160,11 +153,6 @@ export function validateTerrain(r: LandscapeRecord) {
     (!Number.isFinite(r.waterLevelM) || Math.abs(r.waterLevelM) > 1e6)
   )
     throw Error('Wasserstand prüfen.');
-}
-export interface HeightSample {
-  heightM: number;
-  resolutionM: number | null;
-  revision: number;
 }
 /** Legacy absolute levels compose coarse-to-fine; version 2 adds independent scale bands afterwards. */
 type SampleTile = { values: Float32Array; revision: number };

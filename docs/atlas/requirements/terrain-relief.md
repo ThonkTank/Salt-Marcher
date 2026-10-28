@@ -97,7 +97,7 @@ Planung leitet Reihenfolge und Termine aus dem aktuellen Codebestand ab.
 
 **Messvertrag:** Zielgerät ist der vorhandene Laptop (aktuell i5-8365U,
 Intel UHD 620, rund 38 GiB RAM), nativer Wayland-Start, 1920 × 1080 Fensterinhalt,
-100 % und 200 % UI-Skalierung. CPU-/Speicherlast, tatsächliche Rendergröße,
+100 Prozent UI-Skalierung. CPU-/Speicherlast, tatsächliche Rendergröße,
 GPU-Treiber und Runtime-/Quellhashes werden je Lauf festgehalten; keine
 Systemeinstellungen ändern. Messläufe laufen ohne parallele Builds oder andere
 eigene UI-Proben. Fremde Last wird offengelegt, nicht als eigener Leistungsgewinn

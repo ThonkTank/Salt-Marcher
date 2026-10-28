@@ -1,5 +1,6 @@
-import type { LandscapeBox, LandscapeRecord } from './atlas-landscape';
-import type { TerrainEditingSource } from './terrain-spatial-model';
+import type { LandscapeBox } from './landscape-bounds';
+import type { LandscapeRecord } from './landscape-contracts';
+import type { TerrainEditingSource } from './terrain-grid-contracts';
 
 export type TerrainEditingIdentity = { revision: number; fence: string; radius: number };
 export const editingContains = (outer: LandscapeBox, inner: LandscapeBox) =>

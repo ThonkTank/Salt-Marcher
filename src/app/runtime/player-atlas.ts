@@ -1,7 +1,7 @@
 import { atlasPaint, type AtlasPaint } from '../atlas/atlas-paint';
 import type { PlayerFrame } from './player-contracts';
 import { hexPoint, terrainColors } from './world-model';
-import type { Terrain } from './world-contracts';
+import type { Terrain } from './world-cell-contracts';
 import type { Point } from '../shared/contracts';
 
 /** Build only from the main process's public projection. No campaign/GM reader is available here. */

@@ -6,7 +6,7 @@ import { readDungeonKeys } from './dungeon-key';
 import { readSession } from './session-read';
 import { documentReferences, remapTextReferences } from '../campaign/text-references';
 import type { NoteMergePreview } from '../campaign/note-merge-contracts';
-import type { Note } from '../campaign/preparation-contracts';
+import type { Note } from '../campaign/note-data';
 
 const hash = (s: string) => createHash('sha256').update(s).digest('hex');
 const decoded = (row: any) => {

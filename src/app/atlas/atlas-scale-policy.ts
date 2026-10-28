@@ -1,5 +1,5 @@
 import { prominenceOpacity } from './atlas-prominence';
-import type { LandscapeRecord } from './atlas-landscape';
+import type { LandscapeRecord } from './landscape-contracts';
 export const MAP_LINE_MIN_PIXELS = 1.4;
 export const mapLineThreshold = (kind: 'road' | 'river', minor = false) =>
   minor ? 0.4 : kind === 'river' ? 0.12 : 0.18;

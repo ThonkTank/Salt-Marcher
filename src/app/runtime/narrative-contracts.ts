@@ -1,4 +1,5 @@
-import type { ItemInput, ProgressGuard } from './progression';
+import type { ItemInput } from '../catalog/item-input-contracts';
+import type { ProgressGuard } from './reward-contracts';
 export interface NarrativeState {
   noteId: string;
   revision: number;

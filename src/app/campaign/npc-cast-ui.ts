@@ -1,5 +1,5 @@
 import type { WorkspaceGeometry, Result } from '../shared/contracts';
-import type { LiveScene } from '../runtime/live-contracts';
+import type { LiveScene } from '../runtime/live-scene-contracts';
 import type { NpcDossier, NpcCastQuery } from './npc-cast-contracts';
 import { dailyTime } from './npc-daily-plan';
 import { loadCreatureDetail } from '../catalog/creature-detail-ui';

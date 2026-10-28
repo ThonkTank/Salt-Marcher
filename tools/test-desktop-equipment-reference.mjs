@@ -19,10 +19,11 @@ require('esbuild').buildSync({
 });
 const { CampaignStore } = require(root + '/.build/equipment-reference-store.cjs'),
   results = [];
-for (const scale of process.env.GM_QA_ZOOM ? [Number(process.env.GM_QA_ZOOM)] : [1, 2]) {
+for (const variant of [1, 2]) {
+  const scale = 1;
   const native = await createNativeSession({
       root,
-      output: output + '/' + scale,
+      output: output + '/variant-' + variant,
       name: 'gm-equipment-reference',
     }),
     store = new CampaignStore(native.profile + '/workbench.sqlite'),
@@ -31,6 +32,14 @@ for (const scale of process.env.GM_QA_ZOOM ? [Number(process.env.GM_QA_ZOOM)] : 
   store.close();
   async function open() {
     const page = await native.launch(scale);
+    if (variant === 2)
+      await native.app.evaluate(({ BrowserWindow }) => {
+        const w = BrowserWindow.getAllWindows().find((w) =>
+          w.webContents.getURL().endsWith('/index.html'),
+        );
+        w.setMinimumSize(320, 240);
+        w.setContentSize(640, 800);
+      });
     await page
       .locator('.campaign-card')
       .filter({ hasText: campaign.name })
@@ -131,7 +140,7 @@ for (const scale of process.env.GM_QA_ZOOM ? [Number(process.env.GM_QA_ZOOM)] : 
         name === 'Longbow' ? 'longbow-source' : 'heavy-crossbow-source',
         '#item-reference-detail h5',
       );
-      if (scale === 2) {
+      if (variant === 2) {
         await page.locator('#item-reference-results-return').click();
         assert.equal(await page.locator('#item-reference-maximum').inputValue(), '59');
         assert.equal(
@@ -154,7 +163,7 @@ for (const scale of process.env.GM_QA_ZOOM ? [Number(process.env.GM_QA_ZOOM)] : 
       assert(facts[name].includes('1 gp') && facts[name].includes(weight));
       assert.match(facts[name], /PDF-Seiten 69/);
       await native.capture(page, name.startsWith('Arrows') ? 'arrows' : 'bolts');
-      if (scale === 2) await page.locator('#item-reference-results-return').click();
+      if (variant === 2) await page.locator('#item-reference-results-return').click();
     }
     const before = await page.locator('#item-reference-detail').innerText();
     await page.locator('#catalog-monsters-tab').click();
@@ -204,7 +213,9 @@ for (const scale of process.env.GM_QA_ZOOM ? [Number(process.env.GM_QA_ZOOM)] : 
       bowSetsWeightLb: 6,
       crossbowSetsWeightLb: 39,
     });
-    results.push(JSON.parse(await readFile(output + '/' + scale + '/result.json', 'utf8')));
+    results.push(
+      JSON.parse(await readFile(output + '/variant-' + variant + '/result.json', 'utf8')),
+    );
   } catch (error) {
     await native.fail(error);
     throw error;

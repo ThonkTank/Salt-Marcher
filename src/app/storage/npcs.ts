@@ -1,12 +1,6 @@
 import { randomUUID } from 'node:crypto';
-import type {
-  NpcCommand,
-  NpcView,
-  NpcQuery,
-  NpcPage,
-  NpcDraft,
-  NpcResolution,
-} from '../campaign/npc-contracts';
+import type { NpcCommand, NpcDraft, NpcResolution } from '../campaign/npc-contracts';
+import type { NpcView, NpcQuery, NpcPage } from '../campaign/npc-data-contracts';
 import {
   npcRecord,
   npcDisposition,

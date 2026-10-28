@@ -5,7 +5,14 @@ import { copyKeyPatch, keyCopyDependencies } from '../campaign/key-copy-model';
 import { editKeyText, expandedKeyBlocks, templateBlockId } from '../campaign/key-model';
 import { type Room } from '../shared/contracts';
 import { validateRoom } from '../shared/room-validation';
-import { validateSurfaceGeometry } from './surfaces';
+import {
+  creatureReference,
+  itemDefinitionReference,
+  resolveCatalogReference,
+} from './catalog-references';
+import { readEncounterPlan } from './encounters';
+import { readItemDefinition } from './item-definitions';
+import { validateSurfaceGeometry } from './surface-geometry-validation';
 const hash = (s: string) => createHash('sha256').update(s).digest('hex');
 export function installDungeonKey(db: any) {
   db.exec(`CREATE TABLE IF NOT EXISTS dungeon_key_content(campaign_id TEXT NOT NULL,id TEXT NOT NULL,scope_id TEXT NOT NULL,kind TEXT NOT NULL,revision INTEGER NOT NULL,payload TEXT NOT NULL,checksum TEXT NOT NULL,PRIMARY KEY(campaign_id,id),FOREIGN KEY(campaign_id,scope_id) REFERENCES scope(campaign_id,id)) STRICT;
@@ -76,7 +83,10 @@ export function validateDungeonKeys(db: any) {
     list.push(value);
     records.set(row.campaign_id, list);
   }
-  for (const list of records.values()) validateResolvedKeyBlocks(list);
+  for (const [cam, list] of records) {
+    validateResolvedKeyBlocks(list);
+    for (const c of list) validateKeyReferenceBindings(db, cam, c);
+  }
 }
 export function validateKeyHistoryRow(row: any) {
   checkedKeyRow(row);
@@ -94,8 +104,26 @@ export function keyDiscoveries(db: any, cam: string, characters: string[]) {
       .map((r: any) => r.subject_id),
   );
 }
-function validateKeyReferences(c: KeyContent, records: KeyContent[]) {
+function validateKeyReferenceBindings(db: any, cam: string, c: KeyContent) {
+  for (const ref of c.references) {
+    if (ref.kind === 'encounter') readEncounterPlan(db, cam, ref.id);
+    else if (
+      ['note', 'npc', 'faction', 'quest', 'rumor', 'rule', 'location', 'plan'].includes(ref.kind)
+    ) {
+      const table =
+        ref.kind === 'location' ? 'location' : ref.kind === 'plan' ? 'plan' : 'world_note';
+      if (!db.prepare('SELECT 1 FROM ' + table + ' WHERE campaign_id=? AND id=?').get(cam, ref.id))
+        throw new Error('Keyreferenz fehlt oder gehört zu einer anderen Kampagne.');
+    }
+    if (ref.kind === 'creature' || ref.kind === 'item') {
+      if (!ref.catalogReference) throw new Error('Key-Katalogreferenz fehlt.');
+      resolveCatalogReference(db, ref.catalogReference);
+    }
+  }
+}
+function validateKeyReferences(db: any, cam: string, c: KeyContent, records: KeyContent[]) {
   validateKeyContent(c);
+  validateKeyReferenceBindings(db, cam, c);
   const local = records.filter((r) => r.scopeId === c.scopeId && r.id !== c.id),
     level = c.levelId ? local.find((r) => r.id === c.levelId && r.kind === 'level') : null,
     group = c.groupId ? local.find((r) => r.id === c.groupId && r.kind === 'group') : null;
@@ -201,7 +229,21 @@ export function executeKeyAction(db: any, cam: string, a: KeyAction, owner: Owne
       if (old && (old.kind !== c.kind || old.scopeId !== c.scopeId))
         throw new Error('Inhaltsidentität gehört zu einem anderen Keybereich.');
       if ((old?.revision ?? null) !== expected) throw new Error('Dungeon-Key geändert.');
-      validateKeyReferences(c, records);
+      validateKeyContent(c);
+      // Bind new references once; existing bindings must resolve exactly before the first mutation.
+      c.references = c.references.map((ref) => {
+        if (ref.kind !== 'creature' && ref.kind !== 'item') return ref;
+        const catalogReference =
+          ref.catalogReference ??
+          (ref.kind === 'creature'
+            ? creatureReference(ref.id)
+            : itemDefinitionReference(readItemDefinition(db, ref.id)));
+        if (catalogReference.entryId !== ref.id || catalogReference.entryType !== ref.kind)
+          throw new Error('Keyreferenz widerspricht ihrer Katalogbindung.');
+        resolveCatalogReference(db, catalogReference);
+        return { ...ref, catalogReference };
+      });
+      validateKeyReferences(db, cam, c, records);
       validateSurfaceGeometry(db, cam, c);
       for (const b of c.blocks) {
         const ownerId = blockOwners.get(b.id);

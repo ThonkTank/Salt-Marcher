@@ -2,10 +2,12 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { buildSync } from 'esbuild';
+import Database from 'better-sqlite3';
 
 for (const [name, entry] of [
   ['model', 'atlas/surface-model'],
   ['storage', 'storage/surfaces'],
+  ['validation', 'storage/surface-geometry-validation'],
   ['volume', 'atlas/volume-model'],
 ]) {
   buildSync({
@@ -21,6 +23,7 @@ const require = createRequire(import.meta.url);
 const { surfaceWorldFaces } = require('../../.build/surface-model.cjs');
 const { volumeOrigin } = require('../../.build/surface-volume.cjs');
 const { rebindSurfaces } = require('../../.build/surface-storage.cjs');
+const { validateSurfaceGeometry } = require('../../.build/surface-validation.cjs');
 const span = (z = 0) => ({ z, height: 2, floor: true, ceiling: true, medium: 'air' });
 const face = (x) => ({ x, y: 0, z: 0, side: 'floor' });
 const volume = (id, columns) => ({
@@ -156,4 +159,58 @@ test('rebinding 20000 marked faces to a 100000-column volume preserves every mar
     faces.map((f) => ({ ...f, x: f.x + 5, y: f.y + 7, z: 3 })),
   );
   assert.deepEqual(saved[0].blocks, content.blocks);
+});
+
+test('surface validation keeps campaign/scope and local connected-face boundaries', (t) => {
+  const db = new Database(':memory:');
+  t.after(() => db.close());
+  db.exec(`CREATE TABLE room(campaign_id TEXT, id TEXT, scope_id TEXT);
+    CREATE TABLE dungeon_volume(campaign_id TEXT, id TEXT, payload TEXT);`);
+  db.prepare('INSERT INTO room VALUES(?,?,?)').run('campaign', 'room', 'local');
+  const v = {
+    ...volume('volume', [
+      { x: 10, y: -7, spans: [span(3)] },
+      { x: 11, y: -7, spans: [span(3)] },
+      { x: 14, y: -7, spans: [span(3)] },
+    ]),
+    roomId: 'room',
+  };
+  db.prepare('INSERT INTO dungeon_volume VALUES(?,?,?)').run('campaign', v.id, JSON.stringify(v));
+  const key = {
+    ...structuredClone(content),
+    surface: {
+      roomId: 'room',
+      fragments: [{ id: 'mark', volumeId: v.id, faces: [face(0), face(1)] }],
+    },
+  };
+  const before = structuredClone(key);
+  validateSurfaceGeometry(db, 'campaign', key);
+  assert.deepEqual(key, before, 'validation never normalizes local geometry or prose');
+  const marked = (faces) => ({
+    ...key,
+    surface: { ...key.surface, fragments: [{ ...key.surface.fragments[0], faces }] },
+  });
+  for (const faces of [[face(0), face(0)], [face(0), face(4)], [face(2)]])
+    assert.throws(() => validateSurfaceGeometry(db, 'campaign', marked(faces)), /zusammenhängende/);
+  assert.throws(
+    () => validateSurfaceGeometry(db, 'another-campaign', key),
+    /Raum derselben Zeichnung/,
+  );
+  assert.throws(
+    () => validateSurfaceGeometry(db, 'campaign', { ...key, scopeId: 'foreign' }),
+    /Raum derselben Zeichnung/,
+  );
+  db.prepare('UPDATE dungeon_volume SET payload=?').run(
+    JSON.stringify({ ...v, scopeId: 'foreign' }),
+  );
+  assert.throws(() => validateSurfaceGeometry(db, 'campaign', key), /Volumen zuordnen/);
+  db.prepare('UPDATE dungeon_volume SET payload=?').run(JSON.stringify({ ...v, columns: [] }));
+  assert.throws(() => validateSurfaceGeometry(db, 'campaign', key), /Volumen zuordnen/);
+  db.prepare('DELETE FROM dungeon_volume').run();
+  assert.throws(() => validateSurfaceGeometry(db, 'campaign', key), /Volumen zuordnen/);
+  validateSurfaceGeometry(db, 'campaign', {
+    ...key,
+    surface: { ...key.surface, fragments: [{ ...key.surface.fragments[0], unbound: true }] },
+  });
+  validateSurfaceGeometry(db, 'campaign', { ...key, kind: 'room' });
 });

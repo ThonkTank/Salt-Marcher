@@ -1,6 +1,7 @@
 import { inheritScenePosition } from './scene-position';
 import { syncSceneWorld } from './world-state';
-import { type LiveCommand, type LiveScene } from '../runtime/live-contracts';
+import { type LiveCommand } from '../runtime/live-contracts';
+import { type LiveScene } from '../runtime/live-scene-contracts';
 import { campaignLocalId } from '../../features/campaign/campaign-contracts';
 import {
   autonomyView,

@@ -3,7 +3,7 @@ import manifestAsset from '../../features/catalog/data/items-srd51-source-manife
 import { createHash } from 'node:crypto';
 import { canonicalJson } from '../campaign/generation/canonical-json';
 import type { ItemReferenceRecord } from '../catalog/item-reference-contracts';
-import type { ItemDefinition } from '../catalog/items-contracts';
+import type { ItemDefinition } from '../catalog/item-definition-contracts';
 const transcript = transcriptAsset as {
   complete: boolean;
   records: ItemReferenceRecord[];

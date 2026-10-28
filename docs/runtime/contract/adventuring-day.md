@@ -137,7 +137,7 @@ die drei skalaren Werte bleiben auch über den anschließenden Flush unveränder
 
 Die vorhandene native Probe `tools/test-desktop-scene-selection-read.mjs`
 verbindet nun Abwesenheit, zweistufige Rast und Rückkehr bei 100 % mit gespeicherten
-Szenengruppen, Initiative/Abschluss bei 200 % und einer weiteren frischen Öffnung.
+Szenengruppen, Initiative/Abschluss bei 100 % und einer weiteren frischen Öffnung.
 Sie prüft unveränderte Rastfakten der abwesenden Figur, genau 60 Minuten Szenenzeit,
 alle drei zurückgekehrten Partyfiguren im Kampf und einmalig 120 XP / 40 je Figur.
 Die inaktive Reserve bleibt unverändert. Quellenlesefehler und die gemeinsame
@@ -153,7 +153,7 @@ Eindeutige Namen bleiben kurz. Der bestehende ID-/Revisionsvertrag der Buchung
 bleibt unverändert.
 
 Die native Probe nutzt den gemeinsamen Sitzungsprüfer mit echtem Browserzoom.
-`GM_QA_NAMESAKES=1 GM_QA_ZOOM=2` führt den gesamten Ablauf bei 200 Prozent mit
+`GM_QA_NAMESAKES=1` führt den gesamten Ablauf bei 100 % mit
 Noras und Noahs „Ada“ aus: nur Nora rastet, Noah und die abwesende Cora bleiben
 unverändert; danach kämpfen wieder alle drei und erhalten genau einmal ihre XP.
 DOM-/Storetests decken zusätzlich gleiche oder fehlende Spielernamen ab.
@@ -214,7 +214,7 @@ Suche, Hinzufügen, explizites Aktualisieren, Popupwiederöffnung und Escape mit
 Fokus am Trigger; bestehende Anzahl und Vorlagenrevisionen bleiben erhalten.
 Datenbankbytes während dieser Planungsaktionen unverändert, normaler App-Exit,
 keine Rendererfehler und bestätigte XP nach erneutem Storeöffnen erhalten.
-Diese Teilprüfung ersetzt keine Großparty-, 200-%- oder vollständige
+Diese Teilprüfung ersetzt keine Großparty-, 100 %- oder vollständige
 Host-/Produktabnahme.
 
 Die Rechnereingaben bleiben ein lokaler Entwurf auf diesem Gerät, getrennt je Kampagne.
@@ -232,13 +232,13 @@ Lesefehler auslösen. Die gemeinsame Main-/SQLite-Transaktion bleibt erforderlic
 damit Party, Raststände und Vorlagen aus derselben Lesebasis stammen. Eingaben
 bleiben unabhängig vom Read gesichert; Fehler räumen Ergebnisse ab, nicht den
 Entwurf. `tools/test-desktop-day-refresh.mjs` prüft diesen Weg über echte IPC und
-SQLite bei 100/200 Prozent, Fehler und erneutes Öffnen sowie App-Neustart. Für den
+SQLite bei 100 Prozent, Fehler und erneutes Öffnen sowie App-Neustart. Für den
 gezielten Timingfall werden die DOM-Aktionen innerhalb eines Renderer-Tasks
 ausgelöst; das ist keine Messung menschlicher Klickgeschwindigkeit oder eine
 vollständige Leistungsabnahme.
 
 Die native Tagesplanprobe `tools/test-desktop-day-refresh.mjs` führt zusätzlich
-bei 100 und 200 Prozent die gespeicherte Wachpatrouille über 18 Begegnungen,
+bei 100 Prozent die gespeicherte Wachpatrouille über 18 Begegnungen,
 die Teilung nach Begegnung 6, den Wechsel zur eigenen Party und zurück sowie
 die Wiederaufnahme der beiden Zeilen nach App-Neustart aus. Dabei bleiben
 1.368 verteilte Belastungs-XP und 900 Verdienst-XP erhalten; Party-, Fortschritts-,

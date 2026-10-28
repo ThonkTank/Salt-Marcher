@@ -1,8 +1,8 @@
+import { type TerrainForm } from './terrain-brush-contracts';
 import { terrainRoughness } from './terrain-relief';
 
 type Point = { x: number; y: number };
 type Dab = Point & { seconds: number };
-export type TerrainForm = 'hills' | 'mountains' | 'canyon';
 /** The same world field is used by adjacent gestures, retries and the writer. */
 export const TERRAIN_FORM_SEED = 0x51a7c3;
 const smooth = (t: number) => t * t * (3 - 2 * t);

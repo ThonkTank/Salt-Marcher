@@ -1,16 +1,8 @@
 import { EditorSession } from '../shared/editor-session';
 import { ItemReferenceCatalog } from './item-reference-ui';
-import { encounterEntryLabel } from './encounter-contracts';
 import type { WorkspaceGeometry, Result } from '../shared/contracts';
 import type { Creature, CreatureCatalogQuery } from '../../features/catalog/creature-catalog';
 import { renderCreatureDetail } from './creature-detail-ui';
-import {
-  assessEncounter,
-  validateEncounterPlanInput,
-  type EncounterPlan,
-  type CatalogInfo,
-  type CreaturePage,
-} from './encounter-contracts';
 import { xpLevel } from '../runtime/progression';
 import {
   initGeneration,
@@ -21,6 +13,15 @@ import {
   generationCreature,
   refreshGeneration,
 } from '../campaign/generation-ui';
+import { creatureCatalogReference } from './catalog-reference-contracts';
+import {
+  assessEncounter,
+  encounterEntryLabel,
+  validateEncounterPlanInput,
+  type CatalogInfo,
+  type CreaturePage,
+  type EncounterPlan,
+} from './encounter-contracts';
 export const editorSession = new EditorSession();
 const savingWork = editorSession.operation<Promise<boolean>>();
 
@@ -597,6 +598,11 @@ function save(): Promise<boolean> {
         clearSaveTimer();
         const version = editVersion,
           snapshot = structuredClone(draft);
+        snapshot.sourceReferences = [...new Set(snapshot.entries.map((e) => e.creatureId))].map(
+          (id) =>
+            draft.sourceReferences?.find((r) => r.entryId === id) ??
+            creatureCatalogReference(id, info?.hash ?? draft.catalogHash),
+        );
         try {
           validateEncounterPlanInput(snapshot);
           assessEncounter(
@@ -621,6 +627,7 @@ function save(): Promise<boolean> {
         const saved = unwrap(response);
         draft.revision = saved.revision;
         draft.catalogHash = saved.catalogHash;
+        draft.sourceReferences = saved.sourceReferences;
         const sources = new Map([...saved.sources, ...draft.sources].map((c) => [c.id, c]));
         draft.sources = [...sources.values()];
         dirty = editVersion !== version;
@@ -724,6 +731,9 @@ async function newPlan(
         name: source!.name + ' (Kopie)',
         party: source!.party.map((p) => ({ ...p, id: crypto.randomUUID() })),
         entries: source!.entries.map((e) => ({ ...e, id: crypto.randomUUID() })),
+        ...(source!.items
+          ? { items: source!.items.map((i) => ({ ...i, id: crypto.randomUUID() })) }
+          : {}),
       }
     : {
         id: crypto.randomUUID(),
@@ -788,6 +798,16 @@ async function currentParty() {
 }
 
 function renderAssessment() {
+  get('encounter-items').replaceChildren();
+  for (const item of plan?.items ?? []) {
+    const line = document.createElement('p');
+    line.textContent =
+      item.quantity +
+      ' × ' +
+      (plan?.resolvedItems?.find((d) => d.id === item.reference.entryId)?.name ??
+        'Gegenstandsquelle nicht aufgelöst');
+    get('encounter-items').append(line);
+  }
   generationPlanningChanged(plan?.party ?? null, plan);
   get('encounter-party-summary').textContent =
     'Planungsparty · ' + (plan?.party.reduce((n, p) => n + p.count, 0) ?? 0) + ' Figuren';

@@ -159,7 +159,7 @@ keine nativen Latenz- oder Cancelnachweise. Der reproduzierbare native Prüfweg
 angelegten Wachjob, ausdrückliches Actor-Opt-in, bestätigte Scenezeit und
 Nachholen. Er prüft nach erneutem Nachholen und nativem Neustart unveränderte
 Ergebnisse und ursprüngliche NPC-Textbytes sowie normales Prozessende. Mit
-`GM_QA_ZOOM=2` läuft derselbe Ablauf bei 200 Prozent. Kampagnenwechsel,
+Derselbe Ablauf läuft ausschließlich bei 100 Prozent. Kampagnenwechsel,
 verzögerte Antworten und Abbruch während eines offenen Commands bleiben durch
 diese Probe nativ unqualifiziert.
 
@@ -216,7 +216,7 @@ Elementquellen. Im kleinen Vergleichsfall sinken vorbereitete SQL-Anweisungen vo
 5. **Den vollständigen GM-Fluss abnehmen.** Aktivieren, konfigurieren,
    Entscheidung inspizieren, bestätigte Zeit, Hintergrundkontext öffnen,
    Partygrenze begründet klären, normale Ownerkorrektur und Restart am gleichen
-   Build. Fokus/Rohwerte, A/B/A, Antwortenverlust, Cancel, Tastatur/200 % und
+   Build. Fokus/Rohwerte, A/B/A, Antwortenverlust, Cancel, Tastatur/100 % und
    200 Actors mit realen Wegen und Logwachstum nativ prüfen. Korrekturen ergänzen
    Geschichte; kein stilles Autonomy-Undo oder Identitätslöschen. Die vorhandenen
    Store-/DOMfälle und Baselines begrenzen diesen Pflichtumfang nicht.

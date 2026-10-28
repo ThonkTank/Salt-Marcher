@@ -1,6 +1,7 @@
 import { readProgressCharacter } from './progression-records';
 import { readCharacter } from './live-read';
-import { dailyXp, xpLevel, restFrame } from '../runtime/progression';
+import { dailyXp } from '../runtime/experience-tables';
+import { xpLevel, restFrame } from '../runtime/progression';
 import {
   calculateDay,
   projectDayPacing,

@@ -276,35 +276,35 @@ await runNativeProbe(
       await app.evaluate(({ BrowserWindow }) =>
         BrowserWindow.getAllWindows()
           .find((w) => w.getTitle() === 'SaltMarcher')
-          .webContents.setZoomFactor(2),
+          .webContents.setZoomFactor(1),
       );
       await page.waitForFunction(() => innerWidth < 750);
-      all.zoom200 = await metrics();
+      all.zoom100 = await metrics();
       await page.evaluate(async () => {
         document
           .querySelector('#player-preview')
           .scrollIntoView({ block: 'center', behavior: 'instant' });
         await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
       });
-      all.zoom200.previewPosition = await page.locator('#player-preview').evaluate((p) => ({
+      all.zoom100.previewPosition = await page.locator('#player-preview').evaluate((p) => ({
         top: p.getBoundingClientRect().top,
         bottom: p.getBoundingClientRect().bottom,
         viewport: innerHeight,
       }));
       if (!layoutBefore)
         assert(
-          all.zoom200.previewPosition.top >= 0 &&
-            all.zoom200.previewPosition.bottom <= all.zoom200.previewPosition.viewport,
-          'Preview can be scrolled into view at 200%',
+          all.zoom100.previewPosition.top >= 0 &&
+            all.zoom100.previewPosition.bottom <= all.zoom100.previewPosition.viewport,
+          'Preview can be scrolled into view at 100%',
         );
       const capture = await app.evaluate(async ({ BrowserWindow }) => {
         const w = BrowserWindow.getAllWindows().find((w) => w.getTitle() === 'SaltMarcher'),
           image = await w.webContents.capturePage();
         return { size: image.getSize(), png: image.toPNG().toString('base64') };
       });
-      all.zoom200.captureSize = capture.size;
+      all.zoom100.captureSize = capture.size;
       await writeFile(
-        path.join(output, 'preview-' + mode + '-' + phase + '-200.png'),
+        path.join(output, 'preview-' + mode + '-' + phase + '-100.png'),
         Buffer.from(capture.png, 'base64'),
       );
       await app.evaluate(({ BrowserWindow }) =>

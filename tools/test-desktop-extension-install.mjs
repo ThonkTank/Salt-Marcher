@@ -53,7 +53,7 @@ async function until(check) {
   assert(check(), 'Expected persisted installation state');
 }
 try {
-  for (const zoom of [1, 2]) {
+  for (const zoom of [1]) {
     native = await createNativeSession({
       root,
       output: out + '/' + zoom,

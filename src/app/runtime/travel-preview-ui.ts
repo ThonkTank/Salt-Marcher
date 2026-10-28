@@ -1,12 +1,15 @@
-import type { TravelPreview } from './world-contracts';
+import type { TravelPreview } from './world-travel-contracts';
 import { hexKey, terrainNames } from './world-model';
-const node = <K extends keyof HTMLElementTagNameMap>(tag: K, text?: string) => {
-  const n = document.createElement(tag);
-  if (text !== undefined) n.textContent = text;
-  return n;
-};
+const nodes =
+  (document: Document) =>
+  <K extends keyof HTMLElementTagNameMap>(tag: K, text?: string) => {
+    const n = document.createElement(tag);
+    if (text !== undefined) n.textContent = text;
+    return n;
+  };
 /** Display the utility-owned facts; do not recalculate a route from its visible stage window. */
 export function renderTravelEvaluation(root: HTMLElement, p: TravelPreview) {
+  const node = nodes(root.ownerDocument);
   root.replaceChildren();
   const facts = node('dl');
   facts.className = 'travel-evaluation-facts';
@@ -28,6 +31,7 @@ export function renderTravelEvaluation(root: HTMLElement, p: TravelPreview) {
   );
 }
 export function renderTravelBriefing(root: HTMLElement, p: TravelPreview) {
+  const node = nodes(root.ownerDocument);
   root.replaceChildren();
   const evaluation = node('div');
   renderTravelEvaluation(evaluation, p);

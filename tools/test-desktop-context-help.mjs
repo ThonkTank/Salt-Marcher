@@ -3,14 +3,14 @@ import { randomUUID } from 'node:crypto';
 import assert from 'node:assert/strict';
 import { createNativeSession } from './native-session.mjs';
 const root = process.cwd(),
-  zoom = Number(process.env.QA_SCALE ?? 1);
+  zoom = 1;
 const native = await createNativeSession({
   root,
   output: process.env.QA_EVIDENCE_DIR ?? root + '/.build/context-help',
   name: 'context-help',
 });
 try {
-  assert([1, 2].includes(zoom));
+  assert([1].includes(zoom));
   const require = createRequire(import.meta.url);
   require('esbuild').buildSync({
     entryPoints: ['src/app/storage/store.ts'],

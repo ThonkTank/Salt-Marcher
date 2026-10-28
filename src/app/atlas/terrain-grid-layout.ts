@@ -1,5 +1,5 @@
-import type { LandscapeBox } from './atlas-landscape';
-import type { TerrainView } from './terrain-spatial-model';
+import type { LandscapeBox } from './landscape-bounds';
+import type { TerrainView } from './terrain-view-contracts';
 import type { TerrainLattice } from './terrain-field-stream';
 
 interface Band {

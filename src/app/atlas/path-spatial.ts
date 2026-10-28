@@ -1,4 +1,6 @@
-import type { DungeonPose, DungeonWaypoint, SpatialGeometry } from './dungeon-contracts';
+import type { DungeonPose } from './dungeon-position-contracts';
+import type { DungeonWaypoint } from './dungeon-travel-contracts';
+import type { SpatialGeometry } from './dungeon-geometry-contracts';
 import { resolvePathAnchor } from './path-anchor';
 import type { DungeonPassage } from './path-contracts';
 import { VOXEL_METERS as U } from './volume-contracts';

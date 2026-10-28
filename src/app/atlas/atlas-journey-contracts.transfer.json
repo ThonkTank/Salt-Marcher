@@ -1,0 +1,13 @@
+{
+  "roles": {
+    "AtlasEntrance.floorId": "local",
+    "AtlasEntrance.id": "local",
+    "AtlasEntrance.roomId": "local",
+    "AtlasEntrance.scopeId": "local",
+    "AtlasLocalJourney.actorIds[]": "local",
+    "AtlasLocalJourney.basis": "external",
+    "AtlasLocalJourney.id": "local",
+    "AtlasLocalJourney.reason": "text",
+    "AtlasLocalJourney.sceneId": "local"
+  }
+}

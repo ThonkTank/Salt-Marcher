@@ -16,7 +16,7 @@ import type {
   SessionRun,
 } from '../campaign/session-contracts';
 import { canonicalJson } from '../campaign/generation/canonical-json';
-import type { ItemInput } from '../runtime/progression';
+import type { ItemInput } from '../catalog/item-input-contracts';
 import { copper, xpShare } from '../runtime/progression';
 import {
   cumulativeGoldCopper,

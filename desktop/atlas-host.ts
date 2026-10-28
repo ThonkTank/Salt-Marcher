@@ -99,7 +99,7 @@ export function registerAtlasHost(host: {
   handle('dungeon:view', async (token: string) => await store.dungeon(token));
   handle(
     'dungeon:preview',
-    async (token: string, r: import('../src/app/atlas/dungeon-contracts').DungeonRequest) =>
+    async (token: string, r: import('../src/app/atlas/dungeon-travel-contracts').DungeonRequest) =>
       await store.previewDungeon(token, r),
   );
   handle(
@@ -397,7 +397,7 @@ export function registerAtlasHost(host: {
   );
   handle(
     'atlas:territories',
-    async (token: string, box?: import('../src/app/atlas/atlas-landscape').LandscapeBox) =>
+    async (token: string, box?: import('../src/app/atlas/landscape-bounds').LandscapeBox) =>
       await store.atlasTerritories(token, box),
   );
   handle('atlas:overview', async (token: string) => await store.atlasOverview(token));
@@ -412,7 +412,7 @@ export function registerAtlasHost(host: {
     'atlas:vegetation-scene',
     async (
       token: string,
-      box: import('../src/app/atlas/atlas-landscape').LandscapeBox,
+      box: import('../src/app/atlas/landscape-bounds').LandscapeBox,
       mpp: number,
     ) => await store.atlasVegetationScene(token, box, mpp),
   );
@@ -420,7 +420,7 @@ export function registerAtlasHost(host: {
     'atlas:spatial-scene',
     async (
       token: string,
-      box: import('../src/app/atlas/atlas-landscape').LandscapeBox,
+      box: import('../src/app/atlas/landscape-bounds').LandscapeBox,
       mpp: number,
       draft?: import('../src/app/atlas/spatial-terrain').SpatialTerrainDraft,
       fence?: string,
@@ -554,7 +554,7 @@ export function registerAtlasHost(host: {
     'atlas:terrain-projection',
     async (
       token: string,
-      q: import('../src/app/atlas/terrain-projection').TerrainProjectionRequest,
+      q: import('../src/app/atlas/terrain-projection-contracts').TerrainProjectionRequest,
       consumer: 'view' | 'export' = 'view',
       control?: AtlasReadRequest,
     ) => {
@@ -577,7 +577,7 @@ export function registerAtlasHost(host: {
   );
   handle(
     'atlas:mask-region',
-    async (token: string, box: import('../src/app/atlas/atlas-landscape').LandscapeBox) =>
+    async (token: string, box: import('../src/app/atlas/landscape-bounds').LandscapeBox) =>
       await store.atlasMaskRegion(token, box),
   );
   handle(
@@ -631,7 +631,7 @@ export function registerAtlasHost(host: {
     'atlas:geometry-region',
     async (
       token: string,
-      query: import('../src/app/atlas/atlas-region-contracts').AtlasRegionQuery,
+      query: import('../src/app/atlas/atlas-region-view-contracts').AtlasRegionQuery,
       consumer: 'view' | 'export' = 'view',
     ) => {
       if (graphSourceReadBarrierDepth)
@@ -672,7 +672,7 @@ export function registerAtlasHost(host: {
     'atlas:region-candidates',
     async (
       token: string,
-      query: import('../src/app/atlas/atlas-region-contracts').AtlasRegionQuery,
+      query: import('../src/app/atlas/atlas-region-view-contracts').AtlasRegionQuery,
       point: import('../src/app/shared/contracts').Point,
       fence: string,
       offset = 0,
@@ -713,7 +713,7 @@ export function registerAtlasHost(host: {
     'atlas:region-hit',
     async (
       token: string,
-      query: import('../src/app/atlas/atlas-region-contracts').AtlasRegionQuery,
+      query: import('../src/app/atlas/atlas-region-view-contracts').AtlasRegionQuery,
       point: import('../src/app/shared/contracts').Point,
       fence: string,
     ) => {

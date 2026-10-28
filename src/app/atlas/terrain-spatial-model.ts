@@ -1,48 +1,12 @@
+import { type TerrainView } from './terrain-view-contracts';
+import { type TerrainGrid } from './terrain-grid-contracts';
 import { terrainHorizon } from './terrain-coverage';
-import { atlasCameraEye, atlasProject, type AtlasCameraPose } from './atlas-camera';
+import { atlasCameraEye, atlasProject } from './atlas-camera';
 import { TerrainSampler } from './terrain-height';
-import type { LandscapeBox, LandscapeRecord } from './atlas-landscape';
+import type { LandscapeBox } from './landscape-bounds';
+import type { LandscapeRecord } from './landscape-contracts';
 import type { Point } from '../shared/contracts';
 import { terrainGridLayout, terrainGridCoordinate } from './terrain-grid-layout';
-
-/** Frozen view used by both the visible mesh and canonical brush clipping. */
-export interface TerrainView extends AtlasCameraPose {
-  box: LandscapeBox;
-  frame: LandscapeBox;
-  columns: number;
-  rows: number;
-  refinement?: LandscapeBox;
-  focusM: number;
-  tilt: number;
-  rotation: number;
-  exaggeration: number;
-}
-export interface TerrainGrid {
-  view: TerrainView;
-  heights: Float32Array;
-  seaLevelM: number;
-  editing?: {
-    ground: Float32Array;
-    water: Float32Array;
-    author?: TerrainEditingSource;
-  };
-}
-/** Read-only author snapshot. Main remains the sole storage writer. */
-export interface TerrainEditingSource {
-  /** Only the last packet closes this exact spatial snapshot. */
-  complete?: boolean;
-  next?: string;
-  /** Canonical bounded visibility samples, independent of exact brush records. */
-  visibility?: TerrainGrid;
-  revision: number;
-  fence: string;
-  pixel: number;
-  radius: number;
-  box: LandscapeBox;
-  records: LandscapeRecord[];
-  /** Local draft tombstones, never a canonical author source. */
-  removed?: string[];
-}
 export function validateTerrainView(v: TerrainView) {
   if (
     !v ||

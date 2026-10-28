@@ -96,7 +96,7 @@ Im Atlas den Bereich **Landschaft** wählen. **Maße** bestimmt die angezeigten 
 5. Oben **Messen** wählen und Wegpunkte setzen. Die Anzeige verwendet das gewählte Einheitensystem; Messen speichert keine Autorenänderung und verbraucht keine Reisezeit. Ein Werkzeugwechsel beendet die Messung ohne zusätzlichen Abschluss. Die dynamische Maßstabsleiste bleibt beim Zoomen lesbar.
 6. Oben **Export** öffnen, bei Bedarf **Bereich aufziehen** wählen und zwei Ecken setzen. Unter **Bildoptionen** PNG oder JPEG, Raster und längste Bildkante bis 8192 Pixel einstellen. Ohne Rahmen gilt die aktuelle Ansicht. GM-Ausgaben zeigen bestätigte Inhalte ohne Bearbeitungsgriffe, Entwürfe oder Messhilfen. Vorlagen sind standardmäßig ausgeschlossen. Öffentliche Ausgabe verwendet weiterhin die bestehende Wissensprojektion.
 
-Die [native Regionsprobe](../../tools/test-desktop-region-export.mjs) bereitet mit den aktuellen Höhenwerkzeugen drei Orte auf ausdrücklich gezeichnetem Land, einen sichtbaren Fluss und ihren Verbindungsweg vor. Sie prüft die metrische und die DnD-Messanzeige gegen dieselben gespeicherten Meterpunkte, die Wegkorrektur mit Undo/Redo, Land und Flussufer im PNG sowie unveränderte Quellen nach Ausgabe und Neustart bei echtem 100-/200-%-Browserzoom. Der gemeinsame native Prüfhelfer bindet den Build und verlangt reguläre Prozessenden. Schrift über internen Ausgabekachelgrenzen bleibt eine zusätzliche Gegenprobe; ein unsichtbarer Fluss auf einer reinen Ozeanfläche gilt nicht als erfolgreiche Regionsvorbereitung.
+Die [native Regionsprobe](../../tools/test-desktop-region-export.mjs) bereitet mit den aktuellen Höhenwerkzeugen drei Orte auf ausdrücklich gezeichnetem Land, einen sichtbaren Fluss und ihren Verbindungsweg vor. Sie prüft die metrische und die DnD-Messanzeige gegen dieselben gespeicherten Meterpunkte, die Wegkorrektur mit Undo/Redo, Land und Flussufer im PNG sowie unveränderte Quellen nach Ausgabe und Neustart bei echtem 100 Prozent-Browserzoom. Der gemeinsame native Prüfhelfer bindet den Build und verlangt reguläre Prozessenden. Schrift über internen Ausgabekachelgrenzen bleibt eine zusätzliche Gegenprobe; ein unsichtbarer Fluss auf einer reinen Ozeanfläche gilt nicht als erfolgreiche Regionsvorbereitung.
 
 Unter **Geländedaten → Hexfläche füllen** begrenzt die gewählte Rasterkontur eine
 kontinuierliche Eigenschaftsfläche. Der Auftrag speichert Polygongeometrie, keinen
@@ -180,7 +180,7 @@ Gezielte Prüfungen: [desktop-atlas-measurements.test.mjs (historisch)](https://
 synthetische Kampagne und prüft Wegentwurf, Einheitenwechsel, Raumzug mit
 Undo/Redo, Viertelfläche, Gebäudevorschau und -übernahme, Export und metrische
 Wiederöffnung. Gebäudemaße und gespeicherte Geometrie werden nach Einheitenwechsel
-und Neustart verglichen; der Gebäude-Dialog wird bei tatsächlichem 200-%-Zoom
+und Neustart verglichen; der Gebäude-Dialog wird bei tatsächlichem 100 %-Zoom
 bedient. Die gemeinsame Native-Session-Prüfung verlangt normale Prozessenden.
 Diese Fälle sind keine vollständige Abnahme aller Werkzeugvarianten. Auch der
 geländegebundene Trassenplaner verwendet die gemeinsame Maßeinstellung für Breite,

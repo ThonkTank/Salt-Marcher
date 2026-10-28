@@ -245,7 +245,7 @@ await runNativeProbe(
       await page.locator('#dungeon-travel-console').scrollIntoViewIfNeeded();
       await page.screenshot({ path: output + '/reconciled.png' });
       await close();
-      page = await launch(2);
+      page = await launch(1);
       const resumed = await canonical(page);
       assert.equal(resumed.instantMs, '60000');
       assert.equal(resumed.journey.segmentElapsedSeconds, 60);
@@ -284,7 +284,7 @@ await runNativeProbe(
       assert(Math.abs(last.position.y - 3) < 1e-9);
       results.originalJourneyArrivesAtExactTime = true;
       await page.locator('#dungeon-travel-console').scrollIntoViewIfNeeded();
-      await page.screenshot({ path: output + '/arrived-200.png' });
+      await page.screenshot({ path: output + '/arrived-100.png' });
       await close();
       const checked = new CampaignStore(file);
       try {

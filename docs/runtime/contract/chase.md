@@ -42,7 +42,7 @@ Kopieren, auch nach Neustart und in einer unabhängigen Kampagnenkopie. Sie dür
 keine bestätigten Werte überblenden. Der bestehende Draft-/Receiptvertrag bindet
 den Restentwurf atomar an die neue Revision; Replay bestätigt dasselbe Ergebnis.
 Store-/DOMfälle prüfen diese Grenze, die native Wechselprobe zusätzlich den
-Abschluss mit leeren Zahlenfeldern und die kopierbare Wiederaufnahme bei 200 %.
+Abschluss mit leeren Zahlenfeldern und die kopierbare Wiederaufnahme bei 100 %.
 
 ## Behobene Antwortzuordnung
 
@@ -156,7 +156,7 @@ Karte, prüft zwei Verfolgungen, gesicherte Rundenentwürfe, fehlgeschlagene Rea
 mit Wiederaufnahme und eine verlorene Bestätigungsantwort. Die Statusklärung
 zeigt Runde 1 und `00:00:06`; ein separater Store bestätigt genau einen
 Zeitschritt und unveränderte Bytes der anderen Maske. Nach normalem Close
-folgen Wiederaufnahme und einmaliger Abschluss bei echtem Browserzoom 200 %.
+folgen Wiederaufnahme und einmaliger Abschluss bei echtem Browserzoom 100 %.
 Die Probe protokolliert Quellrevision, Dirty-Status, fünf Runtimehashes,
 Zoomfaktoren und tatsächliche normale Prozessenden samt fehlender PID.
 Sie verwendet ein diskbasiertes `TMPDIR`, begrenzte Lebensdauer und frische

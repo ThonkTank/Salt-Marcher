@@ -1,6 +1,6 @@
 import { ATLAS_CAMERA_FOV, atlasCameraEye } from './atlas-camera';
-import type { TerrainView } from './terrain-spatial-model';
-import type { LandscapeBox } from './atlas-landscape';
+import type { TerrainView } from './terrain-view-contracts';
+import type { LandscapeBox } from './landscape-bounds';
 
 /** Rotation-independent, coarse coverage tiers. Retain a tier during gestures;
  * only crossing a tier requests a wider source, never every slider movement.

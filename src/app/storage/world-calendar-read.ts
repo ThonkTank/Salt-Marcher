@@ -2,7 +2,7 @@ import { checkedRow, type SqliteDatabase } from './sqlite-connection';
 import { decodeStored } from './stored-payload';
 import * as shape from './stored-shapes';
 import { createHash } from 'node:crypto';
-import type { FantasyCalendar } from '../runtime/world-contracts';
+import type { FantasyCalendar } from '../runtime/calendar-contracts';
 export const hash = (s: string) => createHash('sha256').update(s).digest('hex');
 
 export const defaultCalendar: FantasyCalendar = {

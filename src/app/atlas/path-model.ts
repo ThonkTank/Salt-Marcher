@@ -1,5 +1,5 @@
 import { inside } from './drawing-model';
-import type { SpatialGeometry } from './dungeon-contracts';
+import type { SpatialGeometry } from './dungeon-geometry-contracts';
 import { directions, resolvePathAnchor } from './path-anchor';
 import type {
   BoundaryFace,

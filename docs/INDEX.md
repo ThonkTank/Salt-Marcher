@@ -2,10 +2,12 @@
 
 Status: Current; offene Ziele sind als solche beschrieben.
 Owner: project
-Last Reviewed: 2026-10-28 (Atlas-Einstiegswege; Fachabnahme separat)
+Last Reviewed: 2026-10-28 (Produkt-, Architektur- und Prüfeinstiege; Fachabnahme separat)
 Source of Truth: Dieses Dokument besitzt das benannte Thema; Code belegt den Iststand, das Abnahmeregister den Prüfstand.
 
-Gesamtprodukt: [Produktziele](project/requirements/product.md), [Umfang](project/requirements/scope.md) und [Lieferfolge](project/delivery/roadmap.md). Technische Entscheidungen: [ARCHITECTURE](project/architecture/overview.md). Die Fachpläne ergänzen konkrete Abläufe und Datenregeln; aktueller Code ist Istbefund. Abnahmen und direkte Belege: `acceptance.json`; dort angegebene historische Belege bleiben unter ihren festen Git-Revisionen erreichbar.
+Die aktuelle Anwendung ist Electron/TypeScript/SQLite unter `desktop/` und `src/app/`. `npm run build` und `npm run build:desktop` bauen denselben Desktop; der Obsidian-Adapter ist historische Referenz. Build und lokale Prüfvorbereitung stehen in der [Testanleitung](project/verification/testing.md), Codebesitzer in der [Architektur](project/architecture/overview.md#code-nach-zuständigkeit-finden).
+
+Gesamtprodukt: [Produktziele](project/requirements/product.md), [Umfang](project/requirements/scope.md) und [Lieferfolge](project/delivery/roadmap.md). Technische Entscheidungen: [ARCHITECTURE](project/architecture/overview.md). Die Fachpläne ergänzen konkrete Abläufe und Datenregeln; aktueller Code ist Istbefund. Implementierte Fähigkeiten und Restlieferungen besitzt die Roadmap, automatisierte und native Belege die Prüfdokumentation; Zielgerätequalifikation und Ownerabnahme bleiben eigene Aussagen. Abnahmen und direkte Belege: `acceptance.json`; dort angegebene historische Belege bleiben unter ihren festen Git-Revisionen erreichbar.
 
 | Ich möchte … | Hier beginnen | Danach nur bei Bedarf |
 | --- | --- | --- |
@@ -24,6 +26,7 @@ Gesamtprodukt: [Produktziele](project/requirements/product.md), [Umfang](project
 | eine verlorene Buchungsantwort klären | [Bestätigungsbesitzer und modale Rückbindung](project/architecture/overview.md#buchungsantworten-klären) | Fachvertrag des betroffenen Writers |
 | eine Lieferung prüfen | Betroffene Fachabnahme und [gemeinsame E2E-Kriterien](project/verification/end-to-end.md) | [Atlas-Bedienproben](atlas/requirements/atlas-2.md#spätere-bedienabnahme), [GM-Aufgaben](project/verification/gm-workflows.md) und `acceptance.json` |
 | Datenfelder oder unabhängige Kampagnenkopien ändern | [Transferverträge bei den Fachmodellen](campaign/contract/transfer-ownership.md) | [Archivvertrag](campaign/contract/archive.md) und Fachtests |
+| Modulgrenzen oder Architekturkennzahlen prüfen | [Benannte Zuständigkeiten und reproduzierbarer Graphbericht](project/architecture/test-boundaries.md#benannte-zuständigkeiten-und-zyklen) | `node tools/module-graph.mjs --report`; reine Strukturprüfung, keine Produktabnahme |
 | Tests ausführen oder ihren Aufwand beurteilen | [Testvorbereitung, Laufzeiten und Bereinigung](project/verification/testing.md), [Fachanschlüsse und Modulgrenzen](project/architecture/test-boundaries.md) | Betroffene Fachabnahme und tatsächliche Testdateien im Capability-Katalog |
 
 | Thema | Fachliche Quellen |

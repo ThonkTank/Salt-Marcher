@@ -1,4 +1,4 @@
-import type { TerrainIdentity, TerrainInvalidation } from './terrain-frame';
+import type { TerrainIdentity, TerrainInvalidation } from './terrain-frame-identity';
 
 export interface TerrainColorChange {
   base: TerrainIdentity;

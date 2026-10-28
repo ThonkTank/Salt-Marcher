@@ -1,7 +1,7 @@
 import { sha256 } from '@noble/hashes/sha2.js';
 import { bytesToHex } from '@noble/hashes/utils.js';
 import { anchored } from '../atlas/drawing-model';
-import type { DungeonGeometry } from '../atlas/dungeon-contracts';
+import type { DungeonGeometry } from '../atlas/dungeon-geometry-contracts';
 import { resolvePathAnchor } from '../atlas/path-anchor';
 import type { Room } from '../shared/contracts';
 import type { KeyBlock, KeyContent, KeyRendered } from './key-contracts';

@@ -38,7 +38,7 @@ try {
     await atlasCanvasReady(page);
     console.log('saved', id, prominence ?? 'automatic');
   };
-  for (const zoom of [1, 2]) {
+  for (const zoom of [1]) {
     page = await native.launch(zoom);
     await native.app.evaluate(({ BrowserWindow }) =>
       BrowserWindow.getAllWindows()[0].setContentSize(1920, 1080),

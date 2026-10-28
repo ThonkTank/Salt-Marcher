@@ -2,7 +2,7 @@
 
 Status: Current
 Owner: campaign
-Last Reviewed: 2026-10-24
+Last Reviewed: 2026-10-28
 Source of Truth: Fachtypen und ihre `.transfer.json`-Deklarationen besitzen die Referenzbedeutung; automatisierte Prüfungen und native Abnahme bleiben getrennt.
 
 Der [Archivvertrag](archive.md#copy-complete-import-remap-und-ownerlieferung)
@@ -13,12 +13,19 @@ nicht anhand von Feldnamen oder `_id`-Endungen über Identitäten.
 ## Wo eine Änderung hingehört
 
 Neben den verwendeten Fachtypen liegen `.transfer.json`-Dateien. Beispielsweise
-besitzt [drawing-contracts.transfer.json](../../../src/app/atlas/drawing-contracts.transfer.json)
+besitzt [drawing-element-contracts.transfer.json](../../../src/app/atlas/drawing-element-contracts.transfer.json)
 die Bedeutung von `DrawingElement.targetFloorId`, während
 [music-contracts.transfer.json](../../../src/app/runtime/music-contracts.transfer.json)
 Audioverweise auf gemeinsame Definitionen bindet. Eine identische Zeichenfolge
 kann in einem Namen unverändert bleiben und in einem Referenzfeld eine neue
 Kennung erhalten.
+
+Die Vertragstrennung verschiebt Referenzrollen zusammen mit ihrem tatsächlichen
+Typbesitzer, etwa zu `live-scene-contracts.transfer.json`,
+`combat-state-contracts.transfer.json` und `drawing-element-contracts.transfer.json`.
+Das generierte Modell ändert dadurch seine Quellnamen, nicht die Behandlung von
+Identitäten, Text oder historischen Referenzen. Tabellenbesitzer und Spaltenregeln
+bleiben unverändert.
 
 Die Deklarationen neben den Speichermodulen ordnen jede kanonische Tabelle und
 jede SQL-Spalte einem Fachowner und einer Behandlung zu. Es gibt drei

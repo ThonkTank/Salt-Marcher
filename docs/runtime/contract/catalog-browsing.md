@@ -24,7 +24,7 @@ Für schreibende Vorlagen, Tabellen und Generatoren: [Encounterplanung](encounte
 Obsidian-Catalogviewtests qualifizieren den Desktopcontroller nicht automatisch.
 Native Lesefluss-, Enter-/Fokus- und Inhaltswechselproben sind begrenzte Belege;
 Linkedomidentität allein beweist keinen nativen Fokus, verzögerter IPC keinen
-physisch abgebrochenen Read. Gesamt-, Langlisten-, Tastatur-, 200%- und
+physisch abgebrochenen Read. Gesamt-, Langlisten-, Tastatur-, 100 %- und
 Plattformabnahme bleiben eigenständig.
 
 ## Aktueller Suchvertrag
@@ -97,13 +97,12 @@ Definitionsbytes; gültige Korrekturen nutzen die bestehende
 DBänderung, genau eine korrigierte Buchung sowie einen gültigen Entwurf bei
 gehaltener Prüfsumme. Die native Probe `tools/test-desktop-item-selection.mjs`
 führt Namenskorrektur, blockierten Wechsel, Freigabe, Neustart und unabhängige Kopie
-bei 100/200 Prozent aus. Unberührte CRLF-Prosa, andere Definitionen und die zweite
+bei 100 Prozent aus. Unberührte CRLF-Prosa, andere Definitionen und die zweite
 Figur bleiben erhalten; Vergabe, Schatz und Shopübernahme behalten ihre eigenen
 Checks. Die Probe benutzt aktuelle Kampagnenkarten, Bereichsschalter und
 Detailbereiche. Start, isoliertes Profil, Buildhashes, frische nichtleere Bilder,
 normale Exits und verschwundene Prozess-IDs übernimmt der gemeinsame
-`native-session.mjs`-Helfer. `GM_QA_ZOOM=1` bzw. `2` prüft den tatsächlichen
-Anwendungszoom; Pixeldichte wird nicht als Zoomnachweis gewertet.
+`native-session.mjs`-Helfer. Die Probe verwendet 100 Prozent Anwendungszoom; Pixeldichte wird nicht als Zoomnachweis gewertet.
 Historische Schalter für unsicheres Altverhalten entfallen. Diese Linuxprobe ist
 keine vollständige Plattform-, Tastatur- oder Owner-Abnahme.
 
@@ -170,7 +169,7 @@ sind hiervon getrennte offene Owner.
   sichtbar machen. Zwei Campaigns, unbekannte Altwerte und Importkonflikte prüfen.
 - Übergaben nur ausdrücklich gewählter Kandidaten in die bestätigte Fokusgruppe;
   Drain/Read und Kampagnen-/Gruppenwechsel dürfen das Ziel nicht umdeuten.
-  Native Fehler, schnelles Tippen, Enter, Paging, 200% und Fokusrückkehr qualifizieren.
+  Native Fehler, schnelles Tippen, Enter, Paging, 100 % und Fokusrückkehr qualifizieren.
 - Vorlagen-/Generatorreads nur beim sichtbaren Owner starten und laufende Antworten
   beim Wechsel entmächtigen, ohne Encounterentwürfe oder Speicheraufträge zu verlieren.
 - Ausdrücklicher Refresh soll akzeptierte Treffer erhalten und ausstehenden Filterstand
@@ -179,4 +178,4 @@ sind hiervon getrennte offene Owner.
 - NPCs, Fraktionen, Orte, Encounter und Tabellen über bestehende Owner in den
   Inhaltswechsel samt gemeinsamem Status-/Pagingfooter integrieren. Je Abschnitt
   unfertige Eingabe, Seite/Auswahl/Position, Fehler/Retry, Enter, schmale Ansicht,
-  200% und fehlende versteckte Listenreads prüfen. Das ersetzt keine SRD-Abnahme.
+  100 % und fehlende versteckte Listenreads prüfen. Das ersetzt keine SRD-Abnahme.

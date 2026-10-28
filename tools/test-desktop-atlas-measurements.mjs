@@ -243,7 +243,7 @@ try {
   await app.evaluate(({ BrowserWindow }) => {
     const w = BrowserWindow.getAllWindows().find((w) => w.getTitle() === 'SaltMarcher');
     w.setSize(1440, 1000);
-    w.webContents.setZoomFactor(2);
+    w.webContents.setZoomFactor(1);
   });
   await page.waitForFunction(() => innerWidth <= 720);
   await frame('building-recipe-200');
@@ -257,7 +257,7 @@ try {
     overflow.box.left >= 0 &&
       overflow.box.right <= overflow.viewport &&
       overflow.width <= overflow.client + 1,
-    'Building recipe must fit the 200% viewport: ' + JSON.stringify(overflow),
+    'Building recipe must fit the 100% viewport: ' + JSON.stringify(overflow),
   );
   await recipe.getByRole('button', { name: 'Übernehmen', exact: true }).click();
   await recipe.waitFor({ state: 'hidden' });
@@ -267,11 +267,11 @@ try {
   await app.evaluate(({ BrowserWindow }) => {
     const w = BrowserWindow.getAllWindows().find((w) => w.getTitle() === 'SaltMarcher');
     w.setSize(1440, 1000);
-    w.webContents.setZoomFactor(2);
+    w.webContents.setZoomFactor(1);
   });
   await page.waitForFunction(() => innerWidth <= 720);
   await atlasCanvasReady(page);
-  await frame('metric-200-percent');
+  await frame('metric-100-percent');
   assert.deepEqual(geometry(), beforeUnits, 'Changing display units must not save geometry');
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
   await page.locator('#atlas-output-open').click();

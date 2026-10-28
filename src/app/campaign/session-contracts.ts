@@ -6,7 +6,8 @@ import type {
   EncounterPlan,
   EncounterAssessment,
 } from '../catalog/encounter-contracts';
-import type { ItemInput, ProgressGuard } from '../runtime/progression';
+import type { ItemInput } from '../catalog/item-input-contracts';
+import type { ProgressGuard } from '../runtime/reward-contracts';
 import type { GenerationRequest } from './generation-contracts';
 import type { ManualPlan } from '../../features/planner/manual-planner';
 export interface SessionProfile {
@@ -36,7 +37,7 @@ export interface VisitDetail {
 export interface WorldActor {
   defeated?: boolean;
   disposition?: number;
-  role?: import('./npc-contracts').NpcRole;
+  role?: import('./npc-data-contracts').NpcRole;
   id: string;
   name: string;
   creatureId: string;

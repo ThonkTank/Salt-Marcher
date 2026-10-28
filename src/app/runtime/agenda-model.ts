@@ -1,4 +1,4 @@
-import type { FantasyCalendar, CalendarEvent } from './world-contracts';
+import type { FantasyCalendar, CalendarEvent } from './calendar-contracts';
 export type AgendaUnit = 'second' | 'minute' | 'hour' | 'day' | 'week';
 export const agendaUnitLabels: Record<AgendaUnit, string> = {
   second: 'Sekunden',

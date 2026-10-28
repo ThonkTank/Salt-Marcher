@@ -14,6 +14,7 @@ for (const [name, file] of [
   ['worker', 'desktop/room-directory-worker.ts'],
   ['projection', 'src/app/atlas/atlas-render-view.ts'],
   ['author', 'src/app/atlas/campaign-atlas-author.ts'],
+  ['regions', 'src/app/storage/atlas-region.ts'],
 ])
   buildSync({
     entryPoints: [file],
@@ -400,10 +401,22 @@ test('map projection preserves party visibility, public labels and NPC markers w
   assert(map.perception);
   for (const field of ['known', 'visible', 'markers', 'labels'])
     assert.deepEqual(map.perception[field], full.perception[field]);
-  assert.equal(map.geometry.npcs.length, 1);
-  assert.deepEqual(map.geometry.npcs, full.geometry.npcs);
+  assert.equal(map.geometry.runtime.ok, true);
+  assert.equal(map.geometry.runtime.value.npcs.length, 1);
+  assert.deepEqual(map.geometry.runtime.value.npcs, full.geometry.npcs);
   assert(!('description' in map.perception));
   assert(!JSON.stringify(map).includes('PRIVATE'));
+  f.store.db
+    .prepare('INSERT INTO dungeon_trace VALUES(?,?,?,?,?,?,?,?,?,?)')
+    .run(f.cam.id, 'bad-active-trace', null, null, 'local', 'ground', 'epoch', '0', '{}', 'broken');
+  const damaged = f.store.atlasRenderView(w.token);
+  assert.equal(
+    damaged.geometry.runtime.ok,
+    false,
+    'active group authoring also isolates failed runtime',
+  );
+  assert.match(damaged.geometry.runtime.error, /wahrnehmung beschädigt/);
+  assert.throws(() => f.store.dungeon(w.token), /wahrnehmung beschädigt/);
 });
 for (const field of ['secret', 'id', 'scopeId', 'kind', 'revision'])
   test('map projection rejects checksummed key metadata damage: ' + field, (t) => {
@@ -454,4 +467,67 @@ test('reader cancellation joins its worker before a disposable source can be rem
   await service.cancelAndWait();
   assert.equal(worker.threadId, -1, 'snapshot cleanup must wait for actual worker exit');
   assert.match((await read).message, /abgebrochen/);
+});
+
+test('damaged dungeon runtime leaves exact author reads and writes accessible without repairing runtime', async (t) => {
+  const f = fixture(t),
+    w = f.store.activateShell(f.cam.id);
+  f.store.db
+    .prepare('INSERT INTO dungeon_trace VALUES(?,?,?,?,?,?,?,?,?,?)')
+    .run(f.cam.id, 'bad-trace', null, null, 'local', 'ground', 'epoch', '0', '{}', 'broken');
+  const damaged = () =>
+    f.store.db.prepare("SELECT * FROM dungeon_trace WHERE id='bad-trace'").get();
+  const original = damaged();
+  assert.throws(() => f.store.dungeon(w.token), /wahrnehmung beschädigt/);
+  const map = f.store.atlasRenderView(w.token);
+  assert.equal(map.geometry.runtime.ok, false);
+  assert.match(map.geometry.runtime.error, /wahrnehmung beschädigt/);
+  assert(!('tracks' in map.geometry), 'failed runtime is never reported as healthy empty tracks');
+  const Database = require('better-sqlite3'),
+    { AtlasRegionReader } = require('../../.build/room-reads-regions.cjs'),
+    db = new Database(f.filename, { readonly: true }),
+    reader = new AtlasRegionReader(db),
+    source = f.store.atlasRegionSource(w.token);
+  try {
+    await reader.sync(source);
+    const region = reader.read(source, {
+      box: { x: 0, y: -1, width: 20, height: 10 },
+      width: 1000,
+      height: 500,
+      scopeId: 'local',
+      floorId: 'ground',
+      slice: null,
+      roofs: true,
+    });
+    assert.equal(f.store.atlasRegionView(w.token, region).geometry.runtime.ok, false);
+    assert.throws(
+      () => f.store.atlasRegionView(w.token, region, true),
+      /wahrnehmung beschädigt/,
+      'explicit perception still fails',
+    );
+  } finally {
+    db.close();
+  }
+  const author = f.store.dungeonAuthoring(w.token);
+  assert.equal(author.rooms.length, 2);
+  const target = author.rooms[0];
+  f.store.atlasDrawingCommit({
+    commandId: randomUUID(),
+    token: w.token,
+    campaignId: f.cam.id,
+    action: {
+      kind: 'key-batch',
+      rooms: [{ id: target.id, expectedRevision: target.revision, keyRevision: null }],
+      patch: { gmNotes: { mode: 'replace', text: 'Autor bleibt arbeitsfähig' } },
+    },
+  });
+  assert.equal(
+    f.store
+      .dungeonAuthoring(w.token)
+      .drawing.keyContent.find((k) => k.id === target.id)
+      .blocks.find((b) => b.visibility === 'gm').text,
+    'Autor bleibt arbeitsfähig',
+  );
+  assert.throws(() => f.store.dungeon(w.token), /wahrnehmung beschädigt/);
+  assert.deepEqual(damaged(), original);
 });

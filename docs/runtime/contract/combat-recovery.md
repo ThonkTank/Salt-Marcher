@@ -65,7 +65,7 @@ neue gespeicherte Kennungen.
 Die native Probe `tools/test-desktop-concentration.mjs` führt zwei gleiche,
 getrennt gebuchte Treffer, Bestanden/Rücknahme/Verloren, weiteren Schaden ohne Konzentration,
 Neustart mit offener Warteschlange und Abschluss samt erneutem Öffnen bei
-100/200 Prozent Browserzoom aus. Der gemeinsame Sitzungshelfer prüft Buildbindung,
+100 Prozent Browserzoom aus. Der gemeinsame Sitzungshelfer prüft Buildbindung,
 frische Bilder und reguläres Prozessende. Das ist keine menschliche Bedienabnahme.
 
 ## Kampf wechseln und erneut laden
@@ -87,7 +87,7 @@ verwenden denselben angeforderten Zielbezug und dieselbe Antwortprüfung.
 Entwürfe bleiben ihrem Kampf zugeordnet, auch beim Besuch eines abgeschlossenen
 Kampfes.
 
-`tools/test-desktop-combat-switch.mjs` prüft den direkten Retry bei 100/200 Prozent
+`tools/test-desktop-combat-switch.mjs` prüft den direkten Retry bei 100 Prozent
 Browserzoom, den erhaltenen unvollständigen Notizentwurf nach Kampfwechsel und
 Neustart sowie seine Korrektur, Speicherung und erneute Wiederöffnung. Die
 Controllerprüfungen in `desktop-combat-switch.test.mjs` ergänzen verspätete
@@ -131,7 +131,7 @@ die Übergabe; eine neu geöffnete Kampagne erhält keinen alten Anlageauftrag.
 
 Die gezielten Store-/Controllerprüfungen decken Party/Mob, Fresh/Replay,
 Quellenkonflikte, Rollback und verlorene Antwort ab. Die native Probe führt bei
-100/200 % Katalogauswahl, kontrollierte Ablehnung/Replyverlust, Spieler-/Gruppeninitiative,
+100 Prozent Katalogauswahl, kontrollierte Ablehnung/Replyverlust, Spieler-/Gruppeninitiative,
 individuelle HP, Zugwechsel/Undo, XP-Abschluss und Neustart gemeinsam aus.
 Das ersetzt keine großen Kampf-/History-, Mehrplattform- oder physischen
 Eingabeabnahmen. Anlage-/Gegnerrohentwürfe und andere Anlagewege bleiben offen.
@@ -155,7 +155,7 @@ vorhandene Quellenreihenfolge und Receiptformate bleiben erhalten. Erst der
 Rettungswurfanteil, dann die Abwehr: Die Berechnung bleibt mit der Vorschau geteilt.
 Der bestehende native Katalog-/Kampflauf prüft zusätzlich zwei Feuerziele mit
 vollem/halbem Anteil, unveränderte übrige Teilnehmer, ein gemeinsames Undo,
-erneutes Anwenden, Fortsetzen, Abschluss und Wiederöffnen bei 100/200 %.
+erneutes Anwenden, Fortsetzen, Abschluss und Wiederöffnen bei 100 Prozent.
 
 Nach bestätigtem Flächenschaden öffnen sich die betroffenen Mobkarten, damit
 individuelle HP und unbetroffene Mitglieder direkt kontrollierbar sind. Andere
@@ -163,7 +163,7 @@ Trupps behalten ihren Aufklappzustand. Die Schreibbestätigung nennt die
 tatsächlichen HP jedes Ziels; Rundenzähler und aktiver Zug bleiben erhalten.
 `tools/test-desktop-area-results.mjs` prüft den vollständigen Ablauf mit vier
 Ogern, drei Zielen und zwei bestandenen Rettungswürfen bis zum Abschluss und
-Wiederöffnen bei 100/200 %. Das belegt keine menschliche Bedienabnahme oder
+Wiederöffnen bei 100 Prozent. Das belegt keine menschliche Bedienabnahme oder
 einen vollständigen aktuellen Vergleichslauf in einem anderen Produkt.
 
 Schließen, Escape und Schreibschutz folgen dem gemeinsamen
@@ -232,7 +232,7 @@ Scrollflächen. Musiktransport bleibt unmittelbar verfügbar.
 
 Die [native Wiederholung und DM-Screen-Gegenprobe](https://github.com/ThonkTank/Salt-Marcher/blob/16eb0aa8807ac21704abfea5412ac3a22033a23a/docs/reference/gm-ux-qa/2026-10-15-encounter-comparison.md#verstärkung-bei-kurzer-ansicht)
 belegen den begrenzten Gegnerablauf mit unveränderten HP/Zuständen/Zug,
-Neustart und Abschluss bei 100/200 %. Keine vollständige Party-, Reward-,
+Neustart und Abschluss bei 100 Prozent. Keine vollständige Party-, Reward-,
 Mehrplattform- oder menschliche Bedienabnahme.
 
 Die Verstärkung nutzt den [modalen Buchungsvertrag](../../project/architecture/overview.md#modale-buchungen)
@@ -242,7 +242,7 @@ Der Fehlerhinweis gilt auch für die erste Kataloganlage und freie Teilnehmer
 ohne Statblock; vorbereitete Gruppen verwenden
 ihren eigenen Auswahlweg. Die native Verstärkungsprobe wählt den Trupp ausdrücklich,
 wartet vor dem Zoom auf das Fenster und entfernt alte Erfolgsdateien vor dem Start.
-Mit `--reply-loss` prüft sie bei 100 % Truppverstärkung und bei 200 % eine neue
+Mit `--reply-loss` prüft sie bei 100 % sowohl Truppverstärkung als auch eine neue
 Katalogkreatur mit verlorener Antwort, einmaligem Receipt, unveränderten bisherigen
 Teilnehmern, Fresh, Fortsetzen, Abschluss und erneutem Fresh. Kontrollierte Ablehnung
 der ersten Kataloganlage prüft sie anschließend am abgeschlossenen Kampf ohne

@@ -2,10 +2,11 @@ import { atlasUnits, type AtlasUnits } from './atlas-units';
 import { AtlasPaint, atlasPaint } from './atlas-paint';
 import { AtlasCanvasScene } from './atlas-canvas-scene';
 import { drawScale } from './atlas-landscape-view';
-import type { AtlasRenderView } from './campaign-atlas-contracts';
+import type { AtlasRenderView } from './campaign-atlas-view-contracts';
 import type { CanvasBox } from './atlas-camera';
 import type { PlayerFrame } from '../runtime/player-contracts';
-import { atlasFrame, frameMatrix, atlasHexPoint, localToAtlas } from './campaign-atlas-model';
+import { atlasFrame } from './campaign-atlas-model';
+import { frameMatrix, atlasHexPoint, localToAtlas } from './atlas-coordinates';
 import { regionValue } from './atlas-region-contracts';
 import { terrainColors } from '../runtime/world-model';
 /** Full current-floor bounds come from the source index, including offscreen rooms. */

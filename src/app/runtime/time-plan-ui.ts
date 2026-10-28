@@ -1,5 +1,6 @@
 import type { WorkspaceGeometry } from '../shared/contracts';
-import type { LiveScene, LiveAction } from './live-contracts';
+import type { LiveScene } from './live-scene-contracts';
+import type { LiveAction } from './live-contracts';
 import type { AgendaPage, AgendaCursor, AgendaItem } from './agenda-contracts';
 import type { TimeRequest, TimePreview } from './time-plan-contracts';
 import { agendaUnitLabels, calendarParts, calendarInstant, type AgendaUnit } from './agenda-model';

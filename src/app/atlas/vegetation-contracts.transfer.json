@@ -1,0 +1,11 @@
+{
+  "roles": {
+    "VegetationInstance.id": "external",
+    "VegetationInstance.locationId": "local",
+    "VegetationOverride.id": "external",
+    "VegetationOverride.locationId": "local",
+    "VegetationPreset.ground": "text",
+    "VegetationPreset.id": "external",
+    "VegetationPreset.name": "text"
+  }
+}

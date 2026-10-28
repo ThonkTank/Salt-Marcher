@@ -1,6 +1,6 @@
 import { heightRow, interpolateHeight } from './terrain-interpolation';
 import { decodeHeights } from './terrain-height';
-import type { LandscapeRecord } from './atlas-landscape';
+import type { LandscapeRecord } from './landscape-contracts';
 
 /** Readonly numerical source. Decoding stays lazy until a sampled node touches it. */
 export interface TerrainHeightSource {

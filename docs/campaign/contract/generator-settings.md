@@ -44,6 +44,6 @@ auch ohne Workspace auf den offenen Editor.
 
 Gezielte Store-/Regressionstests und der native Treiber im eigenen Arbeitsbereich
 prüfen Copy/Save/Assign/Delete, Versionskonflikt, Neustart, Originalprosa und
-Nutzungszeiten sowie Tastatur und 200-Prozent-Layout. Dies ersetzt nicht die volle
+Nutzungszeiten sowie Tastatur und 100 %-Layout. Dies ersetzt nicht die volle
 Encounter-Abnahme: Selector-p95, Scene/Session-Parität, vollständige Combatkanten,
 Hell/Dunkel-Goldens und weitere Betriebssysteme bleiben getrennte Nachweise.

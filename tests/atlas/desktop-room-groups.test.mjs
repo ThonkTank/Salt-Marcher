@@ -8,6 +8,7 @@ import { randomUUID } from 'node:crypto';
 buildSync({
   entryPoints: {
     'room-group-generator': 'src/app/atlas/room-group-generator.ts',
+    'room-group-contracts': 'src/app/atlas/room-group-contracts.ts',
     'storage/store': 'src/app/storage/store.ts',
     'drawing-model': 'src/app/atlas/drawing-model.ts',
     'dungeon-model': 'src/app/atlas/dungeon-model.ts',
@@ -21,14 +22,12 @@ buildSync({
   external: ['better-sqlite3'],
 });
 const require = createRequire(import.meta.url),
-  {
-    generateRoomGroup,
-    GROUP_PROFILES,
-  } = require('../../.build/room-groups/room-group-generator.cjs'),
+  { generateRoomGroup } = require('../../.build/room-groups/room-group-generator.cjs'),
   { CampaignStore } = require('../../.build/room-groups/storage/store.cjs'),
   { inside, anchored } = require('../../.build/room-groups/drawing-model.cjs');
 const { planDungeon } = require('../../.build/room-groups/dungeon-model.cjs'),
   { poseOwner } = require('../../.build/room-groups/spatial-3d.cjs');
+const { GROUP_PROFILES } = require('../../.build/room-groups/room-group-contracts.cjs');
 const recipe = (profile = 'Taverne', seed = 'silberner-ast') => ({
   version: 1,
   profile,

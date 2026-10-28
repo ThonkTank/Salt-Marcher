@@ -3,7 +3,7 @@ import { openMaskHistory, closeMaskHistory } from './mask-history-ui';
 import { ChaseDraftCache } from './chase-draft-cache';
 import { chaseDraftFields, type ChaseWorkingDraft } from './chase-draft-contracts';
 import type { WorkspaceGeometry } from '../shared/contracts';
-import type { Character, LiveScene } from './live-contracts';
+import type { Character, LiveScene } from './live-scene-contracts';
 import {
   chaseActionControls,
   checkedChaseView,

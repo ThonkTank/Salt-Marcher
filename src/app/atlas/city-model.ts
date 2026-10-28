@@ -1,7 +1,8 @@
 import { mapLineVisible, mapLineWidth, mapFootprintVisible } from './atlas-scale-policy';
 import { atlasPaint } from './atlas-paint';
 import { paintMarkup } from './atlas-paint-svg';
-import type { CityPoint as P, CityUnit, CityView, CityRecipe, CityPreview } from './city-contracts';
+import type { CityPoint as P, CityUnit, CityView } from './city-data-contracts';
+import type { CityRecipe, CityPreview } from './city-contracts';
 export function inside(p: P, poly: P[]) {
   let yes = false;
   for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
@@ -157,7 +158,7 @@ export async function generateCity(
           groupRecipe: {
             version: 1,
             seed: r.seed + ':' + attempts,
-            profile: r.use as import('./room-group-generator').GroupProfile,
+            profile: r.use as import('./room-group-contracts').GroupProfile,
             width: w,
             depth: h,
           },
@@ -203,7 +204,7 @@ export async function generateCity(
 }
 /** City objects share the Atlas landscape; document paper is not world geometry. */
 export function cityObjectsPaint(
-  v: import('./atlas-region-contracts').CityGeometry,
+  v: import('./city-geometry-contracts').CityGeometry,
   labels = true,
   mpp = 0,
 ) {
@@ -278,7 +279,7 @@ export function cityObjectsPaint(
 }
 /** Historical standalone document/export boundary owns its optional paper sheet. */
 export function cityPaint(
-  v: import('./atlas-region-contracts').CityGeometry,
+  v: import('./city-geometry-contracts').CityGeometry,
   labels = true,
   mpp = 0,
 ) {
@@ -291,6 +292,6 @@ export function cityPaint(
   );
   return root;
 }
-export function citySvg(v: import('./atlas-region-contracts').CityGeometry) {
+export function citySvg(v: import('./city-geometry-contracts').CityGeometry) {
   return paintMarkup(cityPaint(v));
 }

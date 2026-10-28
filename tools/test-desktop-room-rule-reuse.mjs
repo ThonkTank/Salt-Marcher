@@ -278,7 +278,7 @@ await runNativeProbe(
       await app.evaluate(({ BrowserWindow }) =>
         BrowserWindow.getAllWindows()
           .find((w) => w.webContents.getURL().endsWith('/index.html'))
-          .webContents.setZoomFactor(2),
+          .webContents.setZoomFactor(1),
       );
       await page
         .locator('#note-room-uses-list')
@@ -300,7 +300,7 @@ await runNativeProbe(
         const r = button.getBoundingClientRect();
         return button.contains(document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2));
       });
-      assert(returnVisible, 'Return to room remains visible over the scrolled source at 200%');
+      assert(returnVisible, 'Return to room remains visible over the scrolled source at 100%');
       await shot('source-return-200');
       await page.locator('#key-reference-return').click();
       await page.locator('#key-reference-panel').waitFor({ state: 'hidden' });

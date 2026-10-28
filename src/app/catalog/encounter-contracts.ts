@@ -1,5 +1,7 @@
 import type { Result } from '../shared/contracts';
 import type { Creature, CreatureCatalogQuery } from '../../features/catalog/creature-catalog';
+import type { CatalogReference } from './catalog-reference-contracts';
+import { validateCatalogReference } from './catalog-reference-contracts';
 export interface EncounterParty {
   id: string;
   name: string;
@@ -16,14 +18,25 @@ export interface EncounterEntry {
   actorNames?: string[];
   allowAnonymous?: boolean;
 }
-export interface EncounterPlan {
+export interface EncounterItem {
+  id: string;
+  reference: CatalogReference;
+  quantity: number;
+}
+export interface EncounterItemFacts {
+  id: string;
+  revision: number;
+  name: string;
+  unitCopper: string | null;
+}
+export interface EncounterPlanDefinition {
+  items?: EncounterItem[];
   id: string;
   revision: number;
   name: string;
   notes: string;
   party: EncounterParty[];
   entries: EncounterEntry[];
-  sources: Creature[];
   catalogHash: string;
   generationOrigin?: {
     runId: string;
@@ -31,6 +44,16 @@ export interface EncounterPlan {
     seed: string;
     preset: { id: string; name: string; revision: number; hash: string; mobThreshold: number };
   };
+}
+/** Canonical reusable definition. Sources remain global even in independent campaign copies. */
+export interface StoredEncounterPlan extends EncounterPlanDefinition {
+  sources: CatalogReference[];
+}
+export interface EncounterPlan extends EncounterPlanDefinition {
+  /** Resolved display/frozen historical facts; never written into encounter_plan. */
+  sources: Creature[];
+  sourceReferences?: CatalogReference[];
+  resolvedItems?: EncounterItemFacts[];
 }
 export const encounterPlanFields = {
   id: true,
@@ -40,8 +63,11 @@ export const encounterPlanFields = {
   party: true,
   entries: true,
   sources: true,
+  sourceReferences: true,
   catalogHash: true,
   generationOrigin: true,
+  items: true,
+  resolvedItems: true,
 } satisfies Record<keyof EncounterPlan, true>;
 export function validateEncounterPlanInput(input: EncounterPlan): void {
   if (
@@ -57,6 +83,32 @@ export function validateEncounterPlanInput(input: EncounterPlan): void {
     input.entries.length > 1000
   )
     throw new Error('Ungültige Encounter-Vorlage.');
+  if (input.sourceReferences !== undefined) {
+    if (!Array.isArray(input.sourceReferences) || input.sourceReferences.length > 1000)
+      throw new Error('Encounter-Katalogreferenzen prüfen.');
+    input.sourceReferences.forEach(validateCatalogReference);
+  }
+  if (input.items !== undefined) {
+    if (!Array.isArray(input.items) || input.items.length > 1000)
+      throw new Error('Encounter-Gegenstandsreferenzen prüfen.');
+    const itemIds = new Set<string>();
+    for (const item of input.items) {
+      if (
+        !item ||
+        typeof item.id !== 'string' ||
+        !item.id ||
+        itemIds.has(item.id) ||
+        !Number.isSafeInteger(item.quantity) ||
+        item.quantity < 1 ||
+        item.quantity > 1000000
+      )
+        throw new Error('Encounter-Gegenstandsmenge oder Identität prüfen.');
+      itemIds.add(item.id);
+      validateCatalogReference(item.reference);
+      if (item.reference.entryType !== 'item')
+        throw new Error('Encounter-Gegenstand benötigt eine Itemreferenz.');
+    }
+  }
   const ids = new Set<string>();
   for (const p of input.party) {
     if (
@@ -161,6 +213,10 @@ export interface EncounterPlanCommand {
   expectedRevision: number | null;
 }
 export interface EncounterAPI {
+  catalogReference(entryType: 'creature' | 'item', id: string): Promise<Result<CatalogReference>>;
+  resolveCatalogReference(
+    reference: CatalogReference,
+  ): Promise<Result<{ reference: CatalogReference; name: string }>>;
   creatureInfo(): Promise<Result<CatalogInfo>>;
   creatures(query: CreatureCatalogQuery): Promise<Result<CreaturePage>>;
   creature(id: string): Promise<Result<Creature>>;

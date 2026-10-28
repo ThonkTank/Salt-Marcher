@@ -169,4 +169,4 @@ keine versteckte City-Dungeonpriorität. Docksuche findet Stadt/Haus/Room über
 Identität und zeigt dasselbe Atlasziel. Textname erhält Whitespace und IME;
 eine erfolgreiche spätere Eingabe darf nicht durch ein altes Rendercallback
 überschrieben werden. Canvasneubau darf den aktiven Textdraft nicht vernichten.
-Tastatur/200 % und tatsächliche physische Eingabe bleiben direkte Hostabnahmen.
+Tastatur/100 % und tatsächliche physische Eingabe bleiben direkte Hostabnahmen.

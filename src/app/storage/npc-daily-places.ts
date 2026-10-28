@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { checkedLocationDocument } from '../../features/location/location-schema';
-import type { NpcPlanLocation } from '../campaign/npc-contracts';
+import type { NpcPlanLocation } from '../campaign/npc-data-contracts';
 export function readNpcPlanLocation(db: any, cam: string, locationId: string): NpcPlanLocation {
   const row = db
     .prepare('SELECT payload,checksum,trashed FROM location WHERE campaign_id=? AND id=?')

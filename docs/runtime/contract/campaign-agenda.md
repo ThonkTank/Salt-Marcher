@@ -75,6 +75,13 @@ Save; unveränderte Daten behalten auch Sekunden und Millisekunden. Nach einem
 bestätigten Receipt kann der Editor direkt schließen, sofern keine späteren
 Änderungen vorliegen.
 
+`CampaignAgenda` erhält Save/Pending/Recovery-Methoden derselben
+`createWorldEditor`-Instanz, die der Workspace registriert. Kalenderdialog,
+Regelentwurf und Agenda-Lesegeneration besitzt `world-calendar-editor.ts`;
+Originalcommand und Drain bleiben beim `world-write-coordinator.ts`. Die
+[Besitzerübersicht](../../project/architecture/editor-lifecycle.md#weltinstanz-und-gemeinsame-schreibgrenze)
+beschreibt die geordnete Wechselgrenze.
+
 ## Kalenderregeln aus der Agenda
 
 „Kalenderregeln bearbeiten…“ öffnet das bestehende Kalenderformular direkt in
@@ -92,7 +99,7 @@ Die Kalenderrevision bleibt an den sichtbaren Entwurf gebunden; ein paralleles
 Weltlesen überschreibt weder Rohfelder noch die Konfliktbasis.
 [desktop-calendar-rules.test.mjs (historisch)](https://github.com/ThonkTank/Salt-Marcher/blob/05e8f2f97fc729dba8b6fef3830c566cdc47adad/tests/runtime/desktop-calendar-rules.test.mjs) prüft diese Übergänge mit dem echten Store.
 
-`tools/test-desktop-agenda-deadline.mjs` prüft nativ bei tatsächlichem 100-/200-%-Zoom:
+`tools/test-desktop-agenda-deadline.mjs` prüft nativ bei tatsächlichem 100-%-Zoom:
 90-Minuten-Tag konfigurieren, verlorene Speicherantwort klären, eine Frist sechs
 Tage voraus anlegen, sieben Tage mit sichtbarer Vorschau vorsetzen, normal
 schließen, neu starten und dieselbe Frist weiterbearbeiten. Bestehende Ereignisse
@@ -185,5 +192,5 @@ für diesen Zeitdialog, native Recovery und gruppenübergreifende Fachabnahmen.
    begrenzte Storequeries/Indizes beheben. Kein zweiter Timer oder Eventstore.
 4. Nativ: Datum und relative Frist anlegen → Zeit ändern → sichtbare Vorschau
    bestätigen → Neustart → dieselbe Frist finden. Papierkorb/Restore, Tastatur,
-   200 %, unbekannte Antwort und bestehende offene Session prüfen. Lokale
+   unbekannte Antwort und bestehende offene Session prüfen. Lokale
    Mathematik-/DOMtests schließen diese Produktabnahme nicht.

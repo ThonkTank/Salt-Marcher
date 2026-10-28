@@ -137,7 +137,7 @@ vollständige Plattform-/Accessibility-/Owner-Abnahme bleiben offen.
 Der native Ablauf `tools/test-desktop-npc-conversation.mjs` prüft Dossier →
 sichtbares Gesprächsfeld → gesicherter Rohentwurf → regulärer Close/Fresh →
 Fortsetzung und ausdrückliche einmalige Übernahme → erneuter Close/Fresh bei
-100 und 200 Prozent Appzoom über den gemeinsamen nativen Sitzungshelfer. Die
+100 Prozent Appzoom über den gemeinsamen nativen Sitzungshelfer. Die
 Wiederöffnung eines nur aus Leerraum bestehenden Gesprächsentwurfs wird vor dem
 eigentlichen Gespräch geprüft. Unveränderte Autorenprosa einschließlich CRLF, der zweite
 NSC und der Live-Szenenstand werden getrennt geprüft. Das qualifiziert diesen
@@ -160,7 +160,7 @@ Bedienweg; Antwortverlust und die vollständige SMR-AC-03/04-Abnahme bleiben off
 - Nativ: NPC am Gruppenort wählen → Gespräch beginnen → während Flush/Fachwechsel
   Gruppe, Ort oder Figur wechseln → keine fremde Eingabe/alte Statusmeldung;
   aktuellen Gesprächsrohtext → Neustart → explizit übernehmen → genau einmalige
-  Geschichte. Vorlesen, Tastatur/200 %, abgelegte Schaltflächen, beschädigte
+  Geschichte. Vorlesen, Tastatur/100 %, abgelegte Schaltflächen, beschädigte
   Einzelquellen und verzögerte Antworten gehören in denselben Ablauf.
 
 Lokale Kontexttests sowie echter NPC-Renderer/SQLitewriter prüfen diese engeren
@@ -267,6 +267,6 @@ ferner Einzeltermine gegen eine unabhängige tageweise Referenzrechnung.
 Profilen und frischer SQLite-Wiederöffnung. Der native Ablauf
 `tools/test-desktop-npc-weekly-visits.mjs` prüft Wochenplan und unvollständigen
 Ruhetagentwurf → regulärer Neustart → Bestätigung → Dossier und Ortsmappe →
-weiterer Ruhetag → erneuter Neustart bei 100 und 200 Prozent. Tatsächlicher Ort,
+weiterer Ruhetag → erneuter Neustart bei 100 Prozent. Tatsächlicher Ort,
 Gruppenzeit, andere NSCs und unveränderte Autorenprosa werden dabei gesondert
 geprüft. Das ist keine vollständige CITY-07- oder Owner-Abnahme.

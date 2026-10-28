@@ -54,6 +54,16 @@ export function registerCatalogHost(host: {
     (query: import('../src/app/catalog/item-reference-contracts').ItemReferenceQuery) =>
       readItemReferenceCatalog(query),
   );
+  handle(
+    'catalog:reference',
+    async (entryType: 'creature' | 'item', id: string) =>
+      await store.catalogReference(entryType, id),
+  );
+  handle(
+    'catalog:resolve-reference',
+    async (reference: import('../src/app/catalog/catalog-reference-contracts').CatalogReference) =>
+      await store.resolveCatalogReference(reference),
+  );
   handle('catalog:info', () => creatureInfo());
   handle('catalog:search', (query: CreatureCatalogQuery) => searchCreatures(query));
   handle('catalog:creature', (id: string) => readCreature(id));

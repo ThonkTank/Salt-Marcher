@@ -2,6 +2,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import type { Shop, ShopRestockTable } from '../catalog/items-contracts';
 import { readItemDefinition, matchesItemDefinition } from './item-definitions';
 import { drawRestockChoices, restockSpacing } from './shop-restock';
+import { itemDefinitionReference } from './catalog-references';
 
 /** The surrounding receipt/time transaction fixes the current catalogue for this delivery. */
 export function drawCatalogRestock(
@@ -56,7 +57,12 @@ export function drawCatalogRestock(
         );
       stock = {
         id: randomUUID(),
-        reference: { kind: 'authored', definitionId: d.id, revision: d.revision },
+        reference: {
+          kind: 'authored',
+          definitionId: d.id,
+          revision: d.revision,
+          catalogReference: itemDefinitionReference(readItemDefinition(db, d.id, d.revision)),
+        },
         quantity: 0,
         unique: false,
         instanceId: null,

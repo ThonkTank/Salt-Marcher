@@ -22,7 +22,26 @@ export const responsibilities = {
     ],
   },
   'combat editor': { kind: 'presentation', files: ['src/app/runtime/combat.ts'] },
-  'editor surface': { kind: 'presentation', files: ['src/app/shared/editor-surface.ts'] },
+  'world composition': {
+    kind: 'presentation',
+    files: ['src/app/runtime/world-ui.ts', 'src/app/runtime/world-editor-surface.ts'],
+  },
+  'world map and places': { kind: 'presentation', files: ['src/app/runtime/world-map-editor.ts'] },
+  'world travel': { kind: 'presentation', files: ['src/app/runtime/world-travel-editor.ts'] },
+  'world calendar and agenda': {
+    kind: 'presentation',
+    files: ['src/app/runtime/world-calendar-editor.ts', 'src/app/runtime/agenda-ui.ts'],
+  },
+  'world weather': { kind: 'presentation', files: ['src/app/runtime/world-weather-editor.ts'] },
+  'world writes': { kind: 'presentation', files: ['src/app/runtime/world-write-coordinator.ts'] },
+  'world owner contracts': {
+    kind: 'domain',
+    files: ['src/app/runtime/world-owner-ports.ts', 'src/app/runtime/world-editor-types.ts'],
+  },
+  'editor surface': {
+    kind: 'presentation',
+    files: ['src/app/shared/editor-surface.ts', 'src/app/shared/owned-event-target.ts'],
+  },
   'editor lifecycle': {
     kind: 'domain',
     files: [

@@ -1,7 +1,8 @@
+import { type GraphContentCounts } from './graph-content-contracts';
 import type { GraphPreviewState, Point, Result, Workspace } from '../shared/contracts';
 import type { DungeonBudgetSetting } from './dungeon-budget-contracts';
 import { validateBudgetSettings } from './dungeon-budget-contracts';
-import type { DungeonGeometry } from './dungeon-contracts';
+import type { DungeonGeometry } from './dungeon-geometry-contracts';
 export interface GraphIntent {
   id: string;
   fromRoomId: string | null;
@@ -62,15 +63,6 @@ export interface GraphCommand {
 export interface GraphAPI {
   graph(token: string, scopeId: string): Promise<Result<GraphView>>;
   executeGraph(command: GraphCommand): Promise<Result<{ workspace: Workspace; view: GraphView }>>;
-}
-export interface GraphContentCounts {
-  danger: number;
-  encounters: number;
-  treasure: number;
-  rewards: number;
-  curiosities: number;
-  puzzles: number;
-  secrets: number;
 }
 export interface GraphNode {
   id: string;

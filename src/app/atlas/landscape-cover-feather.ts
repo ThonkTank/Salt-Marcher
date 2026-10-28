@@ -1,5 +1,5 @@
 import type { Point, Polygon } from '../shared/contracts';
-import type { LandscapeBox } from './atlas-landscape';
+import type { LandscapeBox } from './landscape-bounds';
 
 interface Bounds {
   minX: number;

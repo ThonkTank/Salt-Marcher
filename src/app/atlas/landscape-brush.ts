@@ -1,34 +1,9 @@
-import { validateTerrainView, type TerrainView } from './terrain-spatial-model';
+import { validateTerrainView } from './terrain-spatial-model';
+
 import polygonClipping from 'polygon-clipping';
 import type { Point, Polygon } from '../shared/contracts';
-import type { LandscapeRecord } from './atlas-landscape';
+import type { LandscapeRecord } from './landscape-contracts';
 import { clipLandscapePolygons, roundBrushPolygons } from './landscape-polygon-clipping';
-export type BrushMode =
-  | 'terrain'
-  | 'land'
-  | 'land-erase'
-  | 'raise'
-  | 'lower'
-  | 'freshwater'
-  | 'freshwater-erase'
-  | 'ground-color'
-  | 'water-color'
-  | 'color-erase';
-export interface LandscapeColor {
-  version: 1 | 2;
-  operation?: 'paint' | 'erase';
-  fillScope?: 'connected' | 'all';
-  target: 'ground' | 'water';
-  color: string;
-  opacity: number;
-  flow: number;
-  tip: 'round' | 'soft' | 'textured';
-  radius: number;
-  seed: number;
-  fill: boolean;
-  strokes?: Point[][];
-  visibility?: TerrainView;
-}
 export const clipPolygons = (ps: Polygon[]) =>
   ps.map((p) => [p.outer, ...p.holes].map((r) => r.map((p) => [p.x, p.y] as [number, number])));
 export const unclipPolygons = (ps: ReturnType<typeof polygonClipping.union>): Polygon[] =>

@@ -78,12 +78,17 @@ Providerfehler, andere Uhr/Orte und erhaltene Datenbytes. Die bestehenden Reise-
 Wetter- und Atlasfälle prüfen außerdem Entwürfe, Fokuswechsel, Start/Checkpoint
 und Wiederaufnahme. Der native Ablauf `tools/test-desktop-live-travel-reads.mjs`
 zählt reale IPC-Aufrufe, öffnet die gemeinsame Karte ausdrücklich, reist bis
-Ankunft und öffnet den Stand nach Neustart bei200% erneut. Das ist ein begrenzter
+Ankunft und öffnet den Stand nach Neustart bei 100 % erneut. Das ist ein begrenzter
 Ablaufbeleg und keine vollständige Provider-/Großrouten-/Plattformabnahme.
 
 ## Vorhandener Ablauf und Datenregeln
 
-`world-ui.ts` besitzt die bestehende Karten-/Reisekonsole. Geordnete Wegpunkte
+`world-ui.ts` komponiert die instanziierbare Karten-/Reisekonsole.
+`world-map-editor.ts` besitzt Karte, Orte und Kamera,
+`world-travel-editor.ts` Route, Vorschau, Platzierung und Playback.
+`AtlasJourney`, `AtlasAuthor` und `AtlasDrawing` erhalten die schmalen
+Reisemethoden der konkreten Instanz. Eingaben und Aktivierung folgen dem
+[gemeinsamen Editor-Lebenszyklus](../../project/architecture/editor-lifecycle.md#weltinstanz-und-gemeinsame-schreibgrenze). Geordnete Wegpunkte
 führen über `world-model.findRoute` zu benachbarten Hexschritten; die Vorschau
 zeigt Strecke, Dauer und Wetterabschnitte. Der GM nimmt sie ausdrücklich an.
 Die Konsole erlaubt bis zu 20 Wegpunkte plus Reiseziel; offene Routeneingaben
@@ -188,7 +193,7 @@ Store-/DOMgegenfälle prüfen gehaltene Antworten, erhaltene rohe Wegpunkte,
 anschließende read-only Neuauswertung und einen Gruppenwechsel während Nachread;
 kanonische Position und Uhr bleiben dabei von der Anzeige getrennte Nachweise.
 Eine native IPCverzögerung prüft denselben Bedienpfad. Das ersetzt keine vollständige
-Großrouten-, Drag-/Plattform- oder200%-Abnahme.
+Großrouten-, Drag- oder Plattformabnahme.
 
 ## Unabhängige Kampagnenkopie
 
@@ -260,7 +265,7 @@ bei unverändert exakt neun Spielsekunden. Vorhandene Reise-/DOMfälle bestanden
 Nativ: erster Stundencheckpoint bei 1×, Pause, alle Geschwindigkeiten, GM-Halt,
 Fortsetzen bis Ankunft, Route ausblenden, Abbruch, Bereichswechsel und Neustart
 am gespeicherten Hex. Zwei normale Exits, keine Rendererfehler. Keine umfassende
-Host-/200%-/Großroutenabnahme und keine behauptete neue Kartengrenzregel.
+Host-/Großroutenabnahme und keine behauptete neue Kartengrenzregel.
 
 ## Scenegebundene Reisekonsole: fehlender Providerstand
 

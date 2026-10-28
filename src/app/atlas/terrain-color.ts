@@ -1,4 +1,4 @@
-import type { LandscapeBox } from './atlas-landscape';
+import type { LandscapeBox } from './landscape-bounds';
 import type { TerrainDetail } from './terrain-detail';
 /** Derived colour only. No heights, object payloads or author writes cross this boundary. */
 export interface TerrainColorRequest {

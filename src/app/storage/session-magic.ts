@@ -6,11 +6,11 @@ import type {
   SessionMagicPoolItem,
   SessionGenerationRequest,
 } from '../campaign/session-contracts';
-import type { ItemInput } from '../runtime/progression';
+import type { ItemInput } from '../catalog/item-input-contracts';
 import type { RewardGuidanceRules } from '../campaign/generation/reward-guidance';
 import { cumulativeMagicGuidance } from '../campaign/generation/reward-guidance';
 import { readItemDefinition } from './item-definitions';
-import type { ItemDefinition } from '../catalog/items-contracts';
+import type { ItemDefinition } from '../catalog/item-definition-contracts';
 export const emptyMagic = () =>
   Object.fromEntries(budgetRarities.map((r) => [r, 0])) as Record<BudgetRarity, number>;
 export function magicRules(rules: RewardGuidanceRules) {

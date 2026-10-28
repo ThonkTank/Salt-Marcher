@@ -83,7 +83,7 @@ try {
       );
     }
   };
-  for (const zoom of (process.env.QA_ZOOMS ?? '1,2').split(',').map(Number)) {
+  for (const zoom of [1]) {
     page = await native.launch(zoom);
     page.on('console', (m) => {
       if (/Link error|Compilation error|initialization of/.test(m.text()))

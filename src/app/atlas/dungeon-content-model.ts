@@ -1,5 +1,5 @@
-import type { DungeonGeometry } from './dungeon-contracts';
-import type { DrawingElement } from './drawing-contracts';
+import type { DungeonGeometry } from './dungeon-geometry-contracts';
+import type { DrawingElement } from './drawing-element-contracts';
 import type { DungeonVolume, VolumeColumn } from './volume-contracts';
 import { VOXEL_METERS as U } from './volume-contracts';
 type ContentAnchor = {

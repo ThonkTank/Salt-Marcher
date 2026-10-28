@@ -1,4 +1,5 @@
-import type { TimeRequest, TimePreview, ClockEventTarget } from '../runtime/time-plan-contracts';
+import type { TimeRequest, TimePreview } from '../runtime/time-plan-contracts';
+import type { ClockEventTarget } from '../runtime/clock-event-contracts';
 import { agendaDuration, agendaOccurrence, unitMs } from '../runtime/agenda-model';
 import { calendarEvents, readClockEvent } from './calendar-events';
 import { validInstant } from '../runtime/time-plan-model';

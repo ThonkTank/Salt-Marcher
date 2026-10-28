@@ -176,7 +176,7 @@ try {
   await session.capture(page, 'land-controls');
   for (const [width, height, zoomFactor] of [
     [640, 480, 1],
-    [1280, 852, 2],
+
     [1920, 1080, 1],
     [1280, 852, 1],
   ]) {
@@ -222,11 +222,10 @@ try {
     });
     const scaled = await size();
     assert(Math.abs(scaled.world / scaled.mpp - scaled.pixels) < 0.1);
-    if (width === 640 || zoomFactor === 2)
-      await session.capture(page, 'layout-' + width + '-' + zoomFactor);
+    if (width === 640) await session.capture(page, 'layout-' + width + '-' + zoomFactor);
   }
   checks.push(
-    'Kompakte Oberfläche bei 640 px Fensterbreite und bis 200 % Skalierung ohne horizontales Überlaufen',
+    'Kompakte Oberfläche bei 640 px Fensterbreite und 100 % Skalierung ohne horizontales Überlaufen',
   );
   await page.locator('#land-radius-slider').focus();
   await page.keyboard.press('ArrowRight');

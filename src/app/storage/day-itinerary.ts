@@ -1,6 +1,8 @@
 import { readEncounterPlan } from './encounters';
 import { assessEncounter, type EncounterParty } from '../catalog/encounter-contracts';
-import { xpShare, levelXp, restAfter, type Progress } from '../runtime/progression';
+import { xpShare, restAfter } from '../runtime/progression';
+import { levelXp } from '../runtime/experience-tables';
+import { type Progress } from '../runtime/character-progress-contracts';
 import { projectDayPacing, projectDayRestStops } from '../runtime/adventuring-day-model';
 import type { DayPlanEntry, DayItinerary } from '../runtime/adventuring-day-contracts';
 

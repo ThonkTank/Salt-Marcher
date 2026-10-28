@@ -1,4 +1,5 @@
-import type { DungeonPose, DungeonWaypoint } from '../atlas/dungeon-contracts';
+import type { DungeonPose } from '../atlas/dungeon-position-contracts';
+import type { DungeonWaypoint } from '../atlas/dungeon-travel-contracts';
 import type { Result } from '../shared/contracts';
 export type Need = 'hunger' | 'thirst' | 'rest' | 'safety' | 'social';
 export interface AutonomyNeed {

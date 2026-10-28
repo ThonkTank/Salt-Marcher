@@ -156,7 +156,7 @@ export function dungeonBudgetView(
 export function validateDungeonPlacement(
   db: any,
   cam: string,
-  e: import('../atlas/drawing-contracts').DrawingElement,
+  e: import('../atlas/drawing-element-contracts').DrawingElement,
   skipScopeId: string | null = null,
 ) {
   const c = e.content;

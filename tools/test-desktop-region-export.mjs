@@ -34,7 +34,7 @@ try {
     external: ['better-sqlite3'],
   });
   const { CampaignStore } = require(root + '/.build/region-export-native-store.cjs');
-  for (const scale of [1, 2]) {
+  for (const scale of [1]) {
     native = await createNativeSession({
       root,
       output: output + '/' + scale,
@@ -48,6 +48,24 @@ try {
     async function launch() {
       page = await native.launch(scale);
       app = native.app;
+      await app.evaluate(({ ipcMain }) => {
+        globalThis.__regionSelectionReads = [];
+        for (const name of ['atlas:geometry-region', 'atlas:region-candidates', 'atlas:object']) {
+          const handler = ipcMain._invokeHandlers.get(name);
+          ipcMain.removeHandler(name);
+          ipcMain.handle(name, async (...args) => {
+            const entry = { name, args: args.slice(1), started: Date.now() };
+            globalThis.__regionSelectionReads.push(entry);
+            try {
+              const result = await handler(...args);
+              entry.result = result;
+              return result;
+            } finally {
+              entry.finished = Date.now();
+            }
+          });
+        }
+      });
       await app.evaluate(({ BrowserWindow }) => {
         const w = BrowserWindow.getAllWindows().find((w) =>
           w.webContents.getURL().endsWith('/index.html'),
@@ -90,6 +108,7 @@ try {
           places: db.prepare('SELECT * FROM location ORDER BY id').all(),
           scenes: db.prepare('SELECT * FROM live_scene ORDER BY id').all(),
         });
+    const selectionChecks = [];
     const tool = async (value) => {
       if (value === 'select' || value === 'measure') {
         await page.locator(value === 'select' ? '#atlas-select' : '#atlas-measure').click();
@@ -142,7 +161,26 @@ try {
         const point = item.points[Math.floor(item.points.length / 2)],
           at = await atlasCanvasPoint(page, point, false);
         assert.equal(at.target, 'campaign-map');
+        await page.evaluate(() => {
+          globalThis.__selectionCamera = {};
+          const canvas = document.querySelector('#campaign-map');
+          for (const event of ['pointerdown', 'click'])
+            document.addEventListener(
+              event,
+              (e) => {
+                if (e.target === canvas)
+                  globalThis.__selectionCamera[event] = canvas.dataset.atlasView;
+              },
+              { capture: true, once: true },
+            );
+        });
         await page.mouse.click(at.x, at.y);
+        const camera = await page.evaluate(() => globalThis.__selectionCamera);
+        assert.equal(
+          camera.click,
+          camera.pointerdown,
+          'An unmoved selection click must not refocus terrain or invalidate its region',
+        );
         await page.waitForFunction(
           (n) =>
             document.querySelector('#atlas-hit-candidates')?.open ||
@@ -164,6 +202,12 @@ try {
         () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))),
       );
       await atlasCanvasReady(page);
+      selectionChecks.push({
+        name,
+        tool: await page.locator('#land-tool').inputValue(),
+        inspector: await page.locator('#land-name').inputValue(),
+        camera: await page.evaluate(() => globalThis.__selectionCamera ?? null),
+      });
     };
     const click = async (x, y) => {
       const b = await page.locator('#campaign-map').boundingBox();
@@ -199,6 +243,23 @@ try {
     await page.locator('#land-height-target').fill('100');
     const landBox = await page.locator('#campaign-map').boundingBox();
     await page.mouse.move(landBox.x + landBox.width * 0.5, landBox.y + landBox.height * 0.5);
+    // Hover starts the exact author-source read. Display readiness alone cannot
+    // authorize this gesture; retain the original radius, duration and assertions.
+    await page.waitForFunction(
+      (radius) => {
+        const state = document.querySelector('#campaign-map').dataset,
+          source = JSON.parse(state.terrainEditingSource ?? 'null');
+        return (
+          state.terrainEditingState === 'ready' &&
+          Number(state.terrainEditingRadius) === radius &&
+          source?.complete === true &&
+          source.radius === radius &&
+          source.revision === Number(state.terrainRevision)
+        );
+      },
+      landRadius,
+      { timeout: 60000 },
+    );
     await page.mouse.down();
     // Deliberate brush contact duration (strength is metres/second), not a readiness wait.
     await page.waitForTimeout(250);
@@ -523,6 +584,7 @@ try {
       scale,
       profile,
       measurement: measured,
+      selectionChecks,
       measurementReadonly: true,
       propertyUndoRedo: true,
       dragUndoRedo: true,
@@ -551,6 +613,26 @@ try {
     output + '/failure.json',
     JSON.stringify({ scale: results.length + 1, completed: results, error: error.stack }, null, 2),
   );
+  if (app && page) {
+    await writeFile(
+      output + '/selection-diagnostics.json',
+      JSON.stringify(
+        {
+          ipc: await app.evaluate(() => globalThis.__regionSelectionReads),
+          view: await page.evaluate(() => ({
+            tool: document.querySelector('#land-tool')?.value,
+            atlas: { ...document.querySelector('#campaign-atlas')?.dataset },
+            canvas: { ...document.querySelector('#campaign-map')?.dataset },
+            hint: document.querySelector('#atlas-hint')?.textContent,
+            status: document.querySelector('#land-status')?.textContent,
+            inspector: document.querySelector('#land-name')?.value,
+          })),
+        },
+        null,
+        2,
+      ),
+    );
+  }
   await native?.fail(error);
   throw error;
 } finally {

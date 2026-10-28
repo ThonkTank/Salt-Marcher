@@ -1,4 +1,4 @@
-import type { LandscapeBox } from './atlas-landscape';
+import type { LandscapeBox } from './landscape-bounds';
 import type { AtlasPaint } from './atlas-paint';
 import type { Result } from '../shared/contracts';
 

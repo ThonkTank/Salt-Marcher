@@ -69,7 +69,7 @@ den Fokus an das ursprüngliche Bedienelement zurück, auch über einem anderen 
 Der Hilfe-Button bleibt der allgemeine Einstieg zum Arbeitsbereich.
 `tools/test-desktop-context-help.mjs` führt diesen Weg mit unfertiger Notiz,
 Themensuche, verschachteltem Einstellungsdialog und Neustart aus; die Probe
-verwendet tatsächlichen Browserzoom bei 100 und 200 Prozent. Sie ersetzt keine
+verwendet tatsächlichen Browserzoom bei 100 Prozent. Sie ersetzt keine
 vollständige Tutorial-, Sprach- oder Screenreaderabnahme.
 
 Die Zuordnung steht im Code; dynamische Controls wie Journal und Schnellsuche
@@ -80,7 +80,7 @@ keine verständliche Erklärung jeder Unterfähigkeit oder native Bedienbarkeit.
 
 1. Nativ bestätigten Roomedit, Hilfe/Modal, Strg/Meta+Z und Alt+P prüfen: History
    bleibt geschützt; nach Dismiss funktionieren Workspace-Undo/Redo wieder.
-   Party/Daypopover, Select/Richtext, Escape, Fokus und 200 % gesondert bedienen.
+   Party/Daypopover, Select/Richtext, Escape, Fokus und 100 % gesondert bedienen.
 2. Lektionen gegen tatsächlich sichtbare Aktionen und SCOPE prüfen: Anlegen,
    Datenwirkung, Fehler und Wiederaufnahme je Nutzerweg. Neue Sessionmappe,
    NPC-Suche, Ortsfreigabe und Quellenstatus korrekt erklären; Installation, Rechteannahme, Widerruf und schreibfreie Reparatur von

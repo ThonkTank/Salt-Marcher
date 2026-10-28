@@ -1,6 +1,6 @@
 import type { WorkspaceGeometry } from '../shared/contracts';
 import type { Preparation } from '../campaign/preparation-contracts';
-import type { CalendarEvent } from './world-contracts';
+import type { CalendarEvent } from './calendar-contracts';
 import type { AgendaPage, AgendaCursor, AgendaItem, AgendaBasis } from './agenda-contracts';
 import {
   agendaCountdown,
@@ -12,7 +12,7 @@ import {
   type AgendaUnit,
 } from './agenda-model';
 import { calendarDate } from './world-model';
-import { saveAgendaEvent, agendaWritePending, recoverAgendaEvent } from './world-ui';
+import type { WorldAgendaPort } from './world-ui';
 const node = <K extends keyof HTMLElementTagNameMap>(tag: K, text?: string) => {
   const n = document.createElement(tag);
   if (text !== undefined) n.textContent = text;
@@ -83,6 +83,7 @@ export class CampaignAgenda {
     }
   });
   constructor(
+    private world: WorldAgendaPort,
     private workspace: () => WorkspaceGeometry | null,
     private drain: () => Promise<boolean>,
     private tell: (s: string, error?: boolean) => void,
@@ -244,7 +245,7 @@ export class CampaignAgenda {
     }
   }
   private canLeave() {
-    if (this.draft && this.token && agendaWritePending(this.draft.id, this.token)) {
+    if (this.draft && this.token && this.world.agendaWritePending(this.draft.id, this.token)) {
       this.status.firstChild!.textContent =
         'Speicherauftrag ungeklärt. Zuerst den ursprünglichen Auftrag prüfen.';
       return false;
@@ -574,7 +575,7 @@ export class CampaignAgenda {
         !this.busy &&
         this.draft?.revision &&
         this.token &&
-        !agendaWritePending(this.draft.id, this.token)
+        !this.world.agendaWritePending(this.draft.id, this.token)
       ) {
         this.draft.trashed = !this.draft.trashed;
         void this.save();
@@ -584,7 +585,7 @@ export class CampaignAgenda {
       this.submit,
       button('Eingaben verwerfen', () => {
         if (this.busy) return;
-        if (this.draft && this.token && agendaWritePending(this.draft.id, this.token)) {
+        if (this.draft && this.token && this.world.agendaWritePending(this.draft.id, this.token)) {
           this.canLeave();
           return;
         }
@@ -754,7 +755,7 @@ export class CampaignAgenda {
           : ' · einmalig');
       this.submit.disabled =
         this.busy ||
-        (!!this.token && agendaWritePending(this.draft.id, this.token)) ||
+        (!!this.token && this.world.agendaWritePending(this.draft.id, this.token)) ||
         !this.dirty();
     } catch (e) {
       this.preview.textContent = (e as Error).message;
@@ -770,7 +771,7 @@ export class CampaignAgenda {
       !draft ||
       !this.current(token) ||
       this.busy ||
-      agendaWritePending(draft.id, token)
+      this.world.agendaWritePending(draft.id, token)
     )
       return;
     const owns = () => this.current(token) && this.request === n && this.draft === draft,
@@ -792,7 +793,7 @@ export class CampaignAgenda {
     for (const button of this.form.querySelectorAll<HTMLButtonElement>('button'))
       button.disabled = true;
     try {
-      const event = await saveAgendaEvent(
+      const event = await this.world.saveAgendaEvent(
         value.event,
         value.event.revision || null,
         value.basis,
@@ -829,7 +830,7 @@ export class CampaignAgenda {
     } catch (e) {
       if (owns()) {
         this.report((e as Error).message + ' Eingaben bleiben erhalten.');
-        if (agendaWritePending(draft.id, token))
+        if (this.world.agendaWritePending(draft.id, token))
           this.status.append(this.control('Speicherauftrag prüfen', () => void this.recover()));
         else
           this.status.append(
@@ -850,7 +851,7 @@ export class CampaignAgenda {
     if (!token || !draft || this.busy || !this.current(token)) return;
     this.busy = true;
     try {
-      const event = await recoverAgendaEvent(draft.id, token);
+      const event = await this.world.recoverAgendaEvent(draft.id, token);
       if (!this.current(token) || this.request !== n || this.draft !== draft) return;
       if (event) {
         this.draft = { ...draft, revision: event.revision };

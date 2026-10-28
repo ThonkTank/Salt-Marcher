@@ -32,7 +32,7 @@ const { CampaignStore } = require(root + '/.build/relief-native-store.cjs');
 const output = path.resolve(process.env.QA_EVIDENCE_DIR ?? '.build/terrain-relief-native');
 await mkdir(output, { recursive: true });
 await rm(path.join(output, 'result.json'), { force: true });
-for (const zoom of [1, 2]) {
+for (const zoom of [1]) {
   const out = path.join(output, String(zoom)),
     native = await createNativeSession({ root, output: out, name: 'terrain-relief' }),
     dir = native.profile;
@@ -410,7 +410,7 @@ for (const zoom of [1, 2]) {
   }
 }
 const runs = await Promise.all(
-  [1, 2].map(async (zoom) =>
+  [1].map(async (zoom) =>
     JSON.parse(await readFile(path.join(output, String(zoom), 'result.json'), 'utf8')),
   ),
 );

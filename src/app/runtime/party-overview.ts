@@ -1,5 +1,6 @@
-import { restFrame, xpLevel, type Progress } from './progression';
-import type { Character } from './live-contracts';
+import { restFrame, xpLevel } from './progression';
+import { type Progress } from './character-progress-contracts';
+import type { Character } from './live-scene-contracts';
 export const partyQuickFields = [
   ['characterClass', 'Klasse'],
   ['level', 'Level'],

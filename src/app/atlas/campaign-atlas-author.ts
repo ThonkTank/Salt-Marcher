@@ -1,15 +1,17 @@
 import { EditorSession } from '../shared/editor-session';
 import type { Result, Edit, RoomCommit } from '../shared/contracts';
-import type { CityCommand, CityView } from './city-contracts';
-import type { DrawingCommand, DrawingView } from './drawing-contracts';
+import type { CityCommand } from './city-contracts';
+import type { CityView } from './city-data-contracts';
+import type { DrawingCommand } from './drawing-contracts';
+import type { DrawingView } from './drawing-view-contracts';
 import type { WorldCommand, WorldAck } from '../runtime/world-contracts';
 import type {
   AtlasAction,
   AtlasCommand,
-  CampaignAtlas,
   AtlasCommitAck,
   AtlasCommitOutcome,
 } from './campaign-atlas-contracts';
+import type { CampaignAtlas } from './campaign-atlas-view-contracts';
 export const editorSession = new EditorSession();
 
 const pending = new Map<string, AtlasCommand>();

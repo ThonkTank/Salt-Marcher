@@ -1,12 +1,13 @@
 import type { Polygon } from '../shared/contracts';
-import type { LandscapeRecord } from './atlas-landscape';
+import type { LandscapeRecord } from './landscape-contracts';
 import { intersectPolygons, subtractPolygons, unionPolygons } from './landscape-brush';
 import { bounds, contains } from './landscape-geometry';
 import { decodeHeights, encodeHeights, terrainSettings } from './terrain-height';
 import { heightInfluenceBounds } from './terrain-interpolation';
 import { coupleRouteEdits, replanRoutes } from './terrain-route-planner';
-import { applyTerrainBrush, heightBrushPixel, type HeightStroke } from './terrain-brush';
-import type { TerrainGrid } from './terrain-spatial-model';
+import { applyTerrainBrush, heightBrushPixel } from './terrain-brush';
+import { type HeightStroke } from './terrain-brush-contracts';
+import type { TerrainGrid } from './terrain-grid-contracts';
 
 /** Author operation above the numeric brush, shared by live draft and previews.
  * The worker supplies its independently paged source to coupleTerrainEdits. */

@@ -1,6 +1,8 @@
-import type { AtlasCell, Terrain } from '../runtime/world-contracts';
+import { type LandscapeBox } from './landscape-bounds';
+import { type LandscapeRecord } from './landscape-contracts';
+import type { AtlasCell, Terrain } from '../runtime/world-cell-contracts';
 import type { Point, Polygon } from '../shared/contracts';
-import { atlasHexAt, atlasHexPoint } from './campaign-atlas-model';
+import { atlasHexAt, atlasHexPoint } from './atlas-coordinates';
 import { MASK_SEA_LEVEL, maskAt } from './land-mask';
 import { contains } from './landscape-geometry';
 import { lineContains } from './landscape-line';
@@ -9,12 +11,6 @@ export const HEX_METERS = 4828.032;
 const EARTH_WIDTH = 40000000,
   EARTH_HEIGHT = 20000000;
 export const hexSize = (level: number) => HEX_METERS * 3 ** level;
-export interface LandscapeBox {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-}
 export const LANDSCAPE_PLACE_FONT_PX = 13;
 /** Conservative paint reach; canonical geometry and exact hits keep their own bounds. */
 export function landscapePaintBox(
@@ -45,137 +41,6 @@ export function landscapePaintBox(
     throw Error('Landschaftsausschnitt nicht präzise darstellbar.');
   return result;
 }
-export type LandscapeField =
-  | 'terrain'
-  | 'elevationM'
-  | 'climate'
-  | 'road'
-  | 'river'
-  | 'label'
-  | 'faction'
-  | 'interrupt'
-  | 'access';
-/** Parameters and level are frozen at pointerdown; samples are snapshotted at release. */
-export interface LakeStroke {
-  mode: 'dig' | 'erase';
-  id: string;
-  radius: number;
-  strength: number;
-  feather: number;
-  waterLevelM: number;
-  samples: import('./land-mask').MaskSample[];
-  visibility?: import('./terrain-brush').HeightStroke['visibility'];
-}
-/** Source attribution only; canonical heights remain ordinary height records. */
-export interface LakeBed {
-  tileId: string;
-  tile: import('./terrain-height').HeightTile;
-}
-export interface LandscapeRecord {
-  /** Display importance; absent means automatic. Physical dimensions are unchanged. */
-  prominence?: number;
-  label?: import('./map-label-style').MapLabelStyle;
-  id: string;
-  revision: number;
-  kind: 'patch' | 'river' | 'road' | 'reference' | 'place' | 'vegetation';
-  name: string;
-  points: Point[];
-  polygons: Polygon[];
-  resolution: number;
-  width: number;
-  values: Partial<Omit<AtlasCell, 'q' | 'r' | 'level'>>;
-  order?: number;
-  style?: 'path' | 'road' | 'stream' | 'river';
-  route?: import('./terrain-route').TerrainRoute;
-  line?: import('./landscape-line').LandscapeLine;
-  paint?: import('./landscape-brush').LandscapeColor;
-  mask?: import('./land-mask').LandMask;
-  maskManaged?: boolean;
-  height?: import('./terrain-height').HeightTile;
-  terrainSettings?: import('./terrain-height').TerrainSettings;
-  waterLevelM?: number;
-  lakeBed?: LakeBed[];
-  propertyOnly?: boolean;
-  sourceCell?: { mapId: string; q: number; r: number; level: number };
-  surface?: 'land' | 'sea' | 'freshwater';
-  vegetation?: import('./vegetation').VegetationSpec;
-  vegetationView?: import('./vegetation-projection').VegetationProjection;
-  locationId?: string;
-  assetId?: string;
-  imageWidth?: number;
-  imageHeight?: number;
-  angle?: number;
-  opacity?: number;
-  visible?: boolean;
-  locked?: boolean;
-}
-export type LandscapeAction =
-  | {
-      kind: 'landscape-prominence';
-      id: string;
-      expectedRevision: number;
-      prominence: number | null;
-    }
-  | {
-      kind: 'landscape-route';
-      record: LandscapeRecord;
-      expectedRevision: number | null;
-      sourceRevision: number;
-    }
-  | {
-      kind: 'landscape-vegetation-edit';
-      polygons: Polygon[];
-      mode: 'clear' | 'thin' | 'dense' | 'erase';
-    }
-  | { kind: 'landscape-terrain-style'; style: import('./terrain-relief').TerrainStyle }
-  | { kind: 'landscape-sea-level'; seaLevelM: number }
-  | { kind: 'landscape-lake-stroke'; stroke: LakeStroke }
-  | { kind: 'landscape-height-stroke'; stroke: import('./terrain-brush').HeightStroke }
-  | { kind: 'landscape-land-stroke'; stroke: import('./land-mask').MaskStroke }
-  | { kind: 'landscape-color-stroke'; record: LandscapeRecord }
-  | {
-      kind: 'landscape-brush';
-      record: LandscapeRecord;
-      mode: Exclude<import('./landscape-brush').BrushMode, 'terrain'>;
-      radius: number;
-      roughness: number;
-      seed: number;
-      fill: boolean;
-      samples?: import('./land-mask').MaskSample[];
-    }
-  | {
-      kind: 'landscape-batch';
-      remove?: { id: string; expectedRevision: number }[];
-      records: {
-        record: LandscapeRecord;
-        expectedRevision: number | null;
-      }[];
-    }
-  | {
-      kind: 'landscape-put';
-      record: LandscapeRecord;
-      expectedRevision: number | null;
-    }
-  | {
-      kind: 'landscape-remove';
-      id: string;
-      expectedRevision: number;
-    }
-  | {
-      kind: 'landscape-reset';
-      propertyOnly?: boolean;
-      polygons: Polygon[];
-      field: LandscapeField;
-      resolution: number;
-    }
-  | {
-      kind: 'landscape-place';
-      point?: Point;
-      record: LandscapeRecord;
-      document: import('../../features/location/location-schema').LocationDocument;
-      expectedLocationRevision: number | null;
-      expectedRevision: number | null;
-    };
 export function hexPolygon(q: number, r: number, size: number): Polygon {
   return {
     outer: Array.from({ length: 6 }, (_, i) => {

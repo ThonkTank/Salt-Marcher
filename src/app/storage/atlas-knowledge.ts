@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
-import type { AtlasMap, Hex, Terrain } from '../runtime/world-contracts';
+import type { AtlasMap } from '../runtime/world-map-contracts';
+import type { Hex, Terrain } from '../runtime/world-cell-contracts';
 import { cellAt, terrainNames } from '../runtime/world-model';
 export interface RememberedHex extends Hex {
   terrain: Terrain;

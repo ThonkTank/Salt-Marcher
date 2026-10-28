@@ -267,7 +267,7 @@ neuere Eingaben und wieder geöffnete Vorschau bleiben getrennt. Kein neuer
 Command oder zweiter Kampf allein wegen einer fehlenden Antwort. Die aktuell
 vollständigen Reads von Roster, Tabellen, Worldsources und Runliste sowie große
 Statblockvorschauen benötigen eine gemessene Query-/Darstellungsgrenze. Native
-Tastatur, Esc/Fokusrückgabe, Fresh und 200%-Darstellung bleiben separat offen.
+Tastatur, Esc/Fokusrückgabe, Fresh und 100 %-Darstellung bleiben separat offen.
 
 ## Noch fehlende fachliche Abschlüsse
 

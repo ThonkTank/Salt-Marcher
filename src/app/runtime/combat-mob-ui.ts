@@ -1,4 +1,5 @@
-import { combatOrder, type CombatState, type Combatant } from './combat-contracts';
+import { combatOrder } from './combat-contracts';
+import { type CombatState, type Combatant } from './combat-state-contracts';
 
 export interface CombatMob {
   id: string;

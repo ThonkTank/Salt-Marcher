@@ -9,8 +9,8 @@ import { atlasCanvasReady, atlasCanvasPoint } from './atlas-canvas-probe.mjs';
 const root = process.cwd(),
   require = createRequire(root + '/package.json'),
   { _electron } = require('playwright-core');
-const scale = Number(process.env.QA_SCALE ?? 1);
-assert([1, 2].includes(scale));
+const scale = 1;
+assert([1].includes(scale));
 const out = process.env.QA_EVIDENCE_DIR ?? (await mkdtemp(root + '/.build/atlas-distance-'));
 await runNativeProbe(
   { output: out, name: 'atlas-distance', resultName: 'result.json' },

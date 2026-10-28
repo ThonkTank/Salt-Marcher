@@ -1,8 +1,9 @@
 import type { Creature } from '../../features/catalog/creature-catalog';
 import type { LocationDocument } from '../../features/location/location-schema';
-import type { Note, PreparationCommand, PreparationDraft } from '../campaign/preparation-contracts';
+import type { Note } from '../campaign/note-data';
+import type { PreparationCommand, PreparationDraft } from '../campaign/preparation-contracts';
 import type { EncounterPlan } from '../catalog/encounter-contracts';
-import type { ItemDefinition } from '../catalog/items-contracts';
+import type { ItemDefinition } from '../catalog/item-definition-contracts';
 import type { Result } from '../shared/contracts';
 import { DeskRef } from '../shared/desk-reference';
 export interface DeskEntry {
@@ -11,9 +12,7 @@ export interface DeskEntry {
   label: string;
   unavailable?: boolean;
   revision?: number;
-  preview?:
-    | import('../campaign/preparation-contracts').NoteSearchPreview
-    | { label: string; text: string };
+  preview?: import('../campaign/note-data').NoteSearchPreview | { label: string; text: string };
 }
 export interface DeskContent extends DeskEntry {
   links?: { label: string; entry: DeskEntry }[];

@@ -1,10 +1,5 @@
-import type {
-  GraphView,
-  GraphNode,
-  GraphEdge,
-  GraphContentCounts,
-  GraphDisplay,
-} from './graph-contracts';
+import type { GraphView, GraphNode, GraphEdge, GraphDisplay } from './graph-contracts';
+import type { GraphContentCounts } from './graph-content-contracts';
 const empty = (): GraphContentCounts => ({
     danger: 0,
     encounters: 0,

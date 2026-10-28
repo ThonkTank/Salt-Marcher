@@ -9,7 +9,7 @@ import { atlasCanvasReady, atlasCanvasPoint } from './atlas-canvas-probe.mjs';
 import { setBrushWorldRadius, setHeightDirection } from './atlas-brush-probe.mjs';
 const require = createRequire(import.meta.url),
   root = process.cwd(),
-  zoom = Number(process.env.GM_QA_ZOOM ?? 1);
+  zoom = 1;
 require('esbuild').buildSync({
   stdin: {
     contents:

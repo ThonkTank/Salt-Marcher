@@ -207,7 +207,7 @@ await runNativeProbe(
           () => document.querySelectorAll('#note-room-uses-list button').length === 2,
         );
         await app.evaluate(({ BrowserWindow }) =>
-          BrowserWindow.getAllWindows()[0].webContents.setZoomFactor(2),
+          BrowserWindow.getAllWindows()[0].webContents.setZoomFactor(1),
         );
         await page
           .locator('#note-room-uses-list button')
@@ -221,9 +221,9 @@ await runNativeProbe(
             return e.contains(document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2));
           });
         assert(hit);
-        results.zoom200LinkUnobscured = true;
+        results.zoom100LinkUnobscured = true;
         await writeFile(
-          path.join(out, 'zoom200.png'),
+          path.join(out, 'zoom100.png'),
           Buffer.from(
             await app.evaluate(async ({ BrowserWindow }) =>
               (await BrowserWindow.getAllWindows()[0].webContents.capturePage())

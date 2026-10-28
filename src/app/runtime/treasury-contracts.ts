@@ -1,18 +1,9 @@
 import type { Result } from '../shared/contracts';
-import type { ItemInput } from './progression';
+import type { ItemInput } from '../catalog/item-input-contracts';
 export type TreasuryRow = Omit<ItemInput, 'quantity'> & {
   quantity: string;
   lotId?: string | null;
 };
-export interface TreasureOrigin {
-  treasureId: string;
-  itemId: string;
-  combatId: string | null;
-  sceneId: string | null;
-  locationId: string | null;
-  sourceNoteId?: string;
-  awardId?: string;
-}
 export interface TreasuryDraft {
   writeId: string;
   treasureId: string;

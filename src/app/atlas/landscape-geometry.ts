@@ -1,5 +1,6 @@
 import type { Point, Polygon } from '../shared/contracts';
-import type { LandscapeBox, LandscapeRecord } from './atlas-landscape';
+import type { LandscapeBox } from './landscape-bounds';
+import type { LandscapeRecord } from './landscape-contracts';
 import { linePoints } from './landscape-line';
 import { heightInfluenceBounds } from './terrain-interpolation';
 import { routeBounds } from './terrain-route';

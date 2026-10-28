@@ -1,4 +1,5 @@
-import type { CombatAction, CombatState } from './combat-contracts';
+import type { CombatAction } from './combat-contracts';
+import type { CombatState } from './combat-state-contracts';
 import { combatStartIssue } from './combat-contracts';
 import type { InitiativeWorkingDraft } from './combat-draft-contracts';
 import { CombatDraftCache } from './combat-draft-cache';

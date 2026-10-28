@@ -149,7 +149,7 @@ test('A–B–A region activation rejects both retired replies even when A reuse
     ok: true,
     value: {
       workspace: { rooms: [] },
-      geometry: { drawing: { elements: [], hiddenRooms: [] } },
+      geometry: { drawing: { elements: [], hiddenRooms: [] }, runtime: { ok: true, value: {} } },
       region: { revision, coverage: { mode: 'detail', unreadable: 0 } },
     },
   });

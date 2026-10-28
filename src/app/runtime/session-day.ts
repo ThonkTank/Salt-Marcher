@@ -1,5 +1,5 @@
 import { assessEncounter } from '../catalog/encounter-contracts';
-import { dailyXp } from './progression';
+import { dailyXp } from './experience-tables';
 import { decimal, multiply, rational, roundHalfUp } from '../campaign/generation/rational';
 import { exactWeight } from '../campaign/generation-contracts';
 import type { ManualPlan } from '../../features/planner/manual-planner';

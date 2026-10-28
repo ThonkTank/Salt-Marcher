@@ -65,7 +65,7 @@ keinen Namenscache und keinen zweiten Unterdrückungsbestand. Ein unlesbarer
 Eintrag bleibt mit seiner Kennung und dem Lesefehler sichtbar; Lesen repariert
 oder entfernt weder den Eintrag noch die gespeicherte Unterdrückung.
 
-`tools/test-desktop-ambience-mix.mjs` prüft nativ bei 100/200 Prozent Browserzoom:
+`tools/test-desktop-ambience-mix.mjs` prüft nativ bei 100 Prozent Browserzoom:
 zwei Wetterlayer, manueller Zusatz, zwei namentliche Unterdrückungen und gezielte
 Freigabe einer Schicht, stiller Neustart mit erhaltenen Entscheidungen sowie
 ausdrückliche Einzel- und Automatikfreigabe. Native Decoder, laufende
@@ -100,7 +100,7 @@ nach Abschließen oder Verwerfen sind Musik und Live-Spiel ohne Rückweg über
 die Kampagnenliste erreichbar. Navigation wird als bestehender DOM-Knoten
 umgestellt; ihre Handler, Save-Grenzen und Kampagnenidentität bleiben erhalten.
 `desktop-workspace-navigation.test.mjs` prüft Eigentum und Wiederherstellung.
-`tools/test-desktop-scene-music-navigation.mjs` prüft nativ mit 100 % und 200 %:
+`tools/test-desktop-scene-music-navigation.mjs` prüft nativ mit 100 Prozent:
 Atlaszug verwerfen, zwei Szenen mit verschiedener Musikintensität speichern,
 manuelle Auswahl bei aktivierter Automatik über Fokuswechsel erhalten, Stop,
 Atlas-Rückkehr, stillen Neustart und ausdrückliches Play mit nativer Dekodierung.
@@ -127,7 +127,7 @@ ihren Vorrang vor der automatischen Öffnung.
 `desktop-music-stop.test.mjs` prüft die tatsächliche Controller-/Storekette mit
 gleichnamiger Beschreibung, Replay, belegter Zielkennung und verzögerten
 Schreib- und Leseantworten. `tools/test-desktop-audio-copy.mjs` führt den
-Kopier-/Bearbeitungs-/Neustartablauf mit 100/200 Prozent nativ aus und wählt danach
+Kopier-/Bearbeitungs-/Neustartablauf mit 100 Prozent nativ aus und wählt danach
 beide Titel ausdrücklich mit nativer Dekodierung. Originalrecords und Medienhash
 werden verglichen. Das ist keine Prüfung hörbarer Hardwareausgabe.
 

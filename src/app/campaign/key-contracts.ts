@@ -1,5 +1,15 @@
-import type { SurfaceRegion } from '../atlas/surface-model';
+import type { SurfaceRegion } from '../atlas/surface-contracts';
 import type { Room } from '../shared/contracts';
+import {
+  validateCatalogReference,
+  type CatalogReference,
+} from '../catalog/catalog-reference-contracts';
+export interface KeyReference {
+  kind: string;
+  id: string;
+  label: string;
+  catalogReference?: CatalogReference;
+}
 export type KeyVisibility = 'public' | 'gm' | 'secret';
 export interface KeyBlock {
   id: string;
@@ -28,7 +38,7 @@ export interface KeyContent {
   tags: string[];
   secret: boolean;
   status: string;
-  references: { kind: string; id: string; label: string }[];
+  references: KeyReference[];
 }
 export interface KeyTextEdit {
   mode: 'replace' | 'prepend' | 'append' | 'search-replace';
@@ -181,9 +191,15 @@ export function validateKeyContent(c: unknown): asserts c is KeyContent {
   for (const [key, value] of Object.entries(c.attributes))
     if (!key.trim() || key.length > 200 || (value !== null && !text(value, 10000)))
       throw new Error('Attributname oder Wert prüfen.');
-  for (const ref of c.references)
+  for (const ref of c.references) {
     if (!object(ref) || !id(ref.kind) || !id(ref.id) || !text(ref.label))
       throw new Error('Keyreferenz prüfen.');
+    if (ref.catalogReference !== undefined) {
+      validateCatalogReference(ref.catalogReference);
+      if (ref.catalogReference.entryType !== ref.kind || ref.catalogReference.entryId !== ref.id)
+        throw new Error('Keyreferenz widerspricht ihrer Katalogbindung.');
+    }
+  }
   if (c.kind === 'surface') {
     const a = c.surface;
     if (!object(a) || !id(a.roomId) || !Array.isArray(a.fragments) || a.fragments.length > 128)

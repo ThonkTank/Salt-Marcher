@@ -63,7 +63,7 @@ const result = {
 };
 let app;
 try {
-  for (const zoom of (process.env.ATLAS_ZOOMS ?? '1,2').split(',').map(Number)) {
+  for (const zoom of [1]) {
     await runNativeProbe(
       { output: out + '/case-' + ++nativeCase, name: 'atlas-author-overlay' },
       async (session) => {

@@ -1,6 +1,7 @@
 import { lakeBrushLevel, applyLakeBrush } from '../atlas/terrain-lake-brush';
 import { randomUUID } from 'node:crypto';
-import { type LandscapeAction, type LandscapeRecord } from '../atlas/atlas-landscape';
+import { type LandscapeAction } from '../atlas/landscape-action-contracts';
+import { type LandscapeRecord } from '../atlas/landscape-contracts';
 import { isLandMode, maskLandSpans, strokeBox } from '../atlas/land-mask';
 import {
   colorParts,
@@ -23,7 +24,7 @@ export function executeBrush(
   cam: string,
   a: Extract<LandscapeAction, { kind: 'landscape-brush' }>,
   colorRevision: number | null = null,
-  visibilityGrid?: import('../atlas/terrain-spatial-model').TerrainGrid,
+  visibilityGrid?: import('../atlas/terrain-grid-contracts').TerrainGrid,
 ) {
   if (a.mode === 'freshwater' || a.mode === 'freshwater-erase') {
     if (

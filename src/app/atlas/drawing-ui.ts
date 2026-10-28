@@ -12,7 +12,9 @@ import type {
   Polygon,
   Result,
 } from '../shared/contracts';
-import type { DrawingMapView, DrawingElement, DrawingAction, RoomStyle } from './drawing-contracts';
+import type { DrawingMapView } from './drawing-view-contracts';
+import type { DrawingElement, RoomStyle } from './drawing-element-contracts';
+import type { DrawingAction } from './drawing-contracts';
 import { newElement, elementPaint, nearestAnchor, carveRoom } from './drawing-model';
 import { drawingToolControls } from './drawing-tool-controls';
 import { paint } from '../../compute';

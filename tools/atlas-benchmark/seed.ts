@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { createHash } from "node:crypto";
 import { CampaignStore } from "../../src/app/storage/store";
 import type { AtlasCommand } from "../../src/app/atlas/campaign-atlas-contracts";
-import type { GroupRecipe } from "../../src/app/atlas/room-group-generator";
+import type { GroupRecipe } from '../../src/app/atlas/room-group-contracts';
 import {
   SCENE_VERSION,
   anchors,

@@ -2,7 +2,7 @@
 
 Status: Current; offene Ziele sind als solche beschrieben.
 Owner: project
-Last Reviewed: 2026-10-27 (native Sitzungen, Einstiegskatalog und Suitebereinigung; Fachabnahme separat)
+Last Reviewed: 2026-10-28 (gemeinsamer E2E-01-Kern und explizites Crashprotokoll; Fachabnahme separat)
 Source of Truth: Dieses Dokument besitzt das benannte Thema; Code belegt den Iststand, das Abnahmeregister den Prüfstand.
 
 `npm test` führt die aktive Auswahl lokal standardmäßig mit einem Testprozess aus.
@@ -28,6 +28,16 @@ die Cgroup und ihren Speicherhöchststand. `.build/test-run.json` verweist durch
 seinen Inhalt auf den letzten abgeschlossenen Lauf. Nur Zeiten desselben Standes
 unter vergleichbarer Last vergleichen. Ziel unter 300 Sekunden für die gesamte
 Suite bleibt offen; der vollständige Candidate-Check bleibt erforderlich.
+
+## Native UI-Skalierung
+
+Nach der Nutzervorgabe vom 28.10.2026 laufen native Bedienproben ausschließlich bei
+100 Prozent Appzoom. Separate 200-Prozent-Durchläufe und entsprechende Liefergates
+entfallen. Eigenständige Fehler-, Tastatur-, Neustart- und Schmalfensterfälle bleiben
+bei 100 Prozent erhalten. Frühere Zoombelege bleiben historische Belege ihres
+Laufstands; daraus entsteht keine erneute Prüfpflicht. Rechnerische Kamera-,
+Pixelabdeckungs- und DPI-Tests verändern diese native Prüfvorgabe nicht.
+
 
 ## Pauschale Bereinigung vom 27.10.2026
 
@@ -73,6 +83,12 @@ Dies ist lokale Testqualifikation, keine neue native Produkt- oder Candidate-Abn
 
 
 ## Gemessene Initialisierungskosten
+
+Der [aktuelle Vergleich vom 28.10.2026](../../reference/test-costs-coverage-20261028/README.md)
+verbindet zwei vollständige Läufe mit unverkleinerten Worker-Teilmengen und
+gezielten neuen Produktionsverhaltenstests. Er trennt gemessene Buildkosten,
+zusätzliche Abdeckung, reparierte Ausgangsfixtures und verbleibende historische
+Nachweislücken. Die frühere Messung unten gehört zu einem anderen Testbestand.
 
 Der [Vergleich vom 26.10.2026](../../reference/test-suite-costs-20261026/README.md)
 misst auf demselben Vier-Thread-Host 424,6 → 388,1 Sekunden einschließlich
@@ -122,6 +138,10 @@ fertigen `.build/desktop/ui/index.html`.
 
 ## Einzelne Abläufe prüfen
 
+[Konkrete Dateiauswahlen](test-selections.md) für Aktivierung/Ansichtswechsel,
+Preparation-/Live-/Welteditoren, Autorenverweise und Runner-/Cacheänderungen lassen sich mit
+dem bestehenden Runner vorab über `--list` kontrollieren.
+
 `npm test -- tests/atlas/desktop-atlas-commit-recovery.test.mjs` bereitet nur tatsächlich benötigte gemeinsame
 Testartefakte vor und führt anschließend die ausgewählten Dateien aus.
 Mehrere explizite Dateipfade sind erlaubt; doppelte Pfade werden nur einmal geprüft.
@@ -138,13 +158,15 @@ sind direkt auswählbare `.test.mjs`-Dateien; Fixtures werden nicht als Tests en
 Für direkte `node --test`-Aufrufe bereitet `node build.mjs --test` weiterhin
 Store und Katalog vor (unter Linux über `verify:local`).
 
-- Store wird erst beim tatsächlichen Standard-Store-Build im Testhelfer vorbereitet.
+- Store und Regionsworker werden erst beim jeweiligen identischen Standardbuild
+  im Testhelfer vorbereitet. Custom-Optionen und andere Einstiege werden weiterhin
+  direkt gebaut; eine Serviceinstanz mit eigenem Workerpfad bleibt unverändert.
   Katalogdateien für individuelle Fixtures werden ohne Bundle-Build bereitgestellt.
   Abweichende Buildoptionen bleiben individuelle esbuild-Aufrufe; jede Testdatei
   läuft in einem eigenen Prozess.
 - `.build/test-assets` enthält nach Inhalten adressierte Artefakte. Schlüssel
-  berücksichtigen Quelldateien einschließlich Hinzufügen/Entfernen, Helfer,
-  Konfiguration, Lockfile, Node und esbuild. Ausgabehashes werden vor jedem
+  berücksichtigen Renderer-/Store-/Desktopquellen einschließlich Hinzufügen/Entfernen, Helfer,
+  Konfiguration, Lockfile, Node und esbuild. Vollständige Ausgabeliste und Ausgabehashes werden vor jedem
   Treffer geprüft. Ein fehlgeschlagener oder während Quelländerung erzeugter
   Build wird nicht veröffentlicht. Kurze Locks koordinieren nur die jeweilige
   Asset-Vorbereitung; sie sperren keine Rollen oder Testläufe. Verwaiste Locks
@@ -179,6 +201,19 @@ Lauf entfernt vorherige Erfolgsdaten bereits vor dem Fixtureaufbau. Notfall-Clea
 ist kein normaler Prozessabschluss. Profile liegen unter `~/.cache/saltmarcher/ui/` auf Disk, unabhängig vom
 RAM-basierten `/tmp`.
 
+Die gemeinsame E2E-01-Probe aktiviert ausdrücklich das begrenzte
+`crashAfterConfirmedAutosave`-Protokoll: sichtbare Bestätigung und unabhängiger
+Inventarhash vor dem absichtlichen Prozessabbruch, anschließend ein neuer
+Prozess mit Datenvergleich und regulärem Ende. Unknown/pending dürfen keine
+Crashbestätigung liefern. Alle anderen Sitzungen verlangen weiterhin normale
+Prozessenden; Notfall-Cleanup bleibt ein Fehler. Die E2E-Probe verwendet für die
+frische Aufnahme vor Close eine protokollierte Deadline von 20 Sekunden, für
+die weiterhin verlangten zwei neuen Frames 15 Sekunden samt tatsächlicher Wartezeit und den
+äußeren `tools/ui-session.py`-Besitzer, der überlebende Kindprozesse erkennt und
+Erfolgsdaten entwertet. Dies ist keine Produktlatenzgrenze und keine allgemeine
+Recovery- oder Zielgerätabnahme.
+
+
 Die Sitzung verwendet standardmäßig dieselbe Plattformwahl wie ein normaler
 Electron-Start. `QA_OZONE_PLATFORM=x11`, `wayland` oder `auto` erlaubt einen
 gezielten Vergleich; angeforderte Plattform und Desktop-Sitzung stehen im
@@ -191,8 +226,7 @@ Timeline teilen diesen Unterbau. Die Skripte behalten ihre tatsächlichen
 Bedienaktionen, Fehlerprovokationen und Fachassertionen. Aufruf weiterhin über
 `python tools/ui-session.py node tools/test-desktop-….mjs`; der äußere Wrapper
 räumt ausschließlich die eigenen, markierten UI-Prozesse auf. `QA_EVIDENCE_DIR`
-trennt Vergleichsläufe; `GM_QA_ZOOM=2` wiederholt manuelle Timeline und Verstärkung
-bei 200 Prozent. Die Gegenprobe gegen falsche Prozesserfolge steht in
+trennt Vergleichsläufe. Manuelle Timeline und Verstärkung laufen bei 100 Prozent. Die Gegenprobe gegen falsche Prozesserfolge steht in
 `tests/shared/desktop-editor-transition.test.mjs`. Native Evidenz und menschliche
 Bedienabnahme bleiben getrennt.
 
@@ -270,7 +304,7 @@ nativen Negativfällen geprüft; danach wurden nicht sämtliche 80 Fachproben er
 aufgerufen. Die positiven Fachbelege gehören daher zu ihren jeweiligen Laufständen.
 
 Der erneuerte kontinuierliche Referenzwelt-Bildlauf bestand bei 100 Prozent.
-Bei 200 Prozent blieb der Maßstab 64 rot: 2534 gemessene statt 4461 erwarteter
+Im historischen, künftig entfallenden 200-Prozent-Lauf blieb der Maßstab 64 rot: 2534 gemessene statt 4461 erwarteter
 Kontrastkanten unterschreiten die unverändert verlangten 65 Prozent. Ob Ursache
 im Renderer oder in der DPI-abhängigen Vergleichsmethode liegt, ist offen.
 Technische Prozessqualifikation und diese Teilbelege sind keine vollständige
@@ -307,21 +341,17 @@ nur ein Inventar für isolierte Tests; er ersetzt diese vollständige Welt nicht
 
 `tests/atlas/atlas-reference-fixture.test.mjs` prüft Inhaltstreue über Store-Neuöffnung
 und gezielte Verluste. Die nativen Vergleiche in
-`tools/test-desktop-atlas-mixed-workbench.mjs` prüfen fünf Maßstäbe bei 100/200 %,
+`tools/test-desktop-atlas-mixed-workbench.mjs` prüfen fünf Maßstäbe bei 100 Prozent,
 sichtbare Kartenausschnitte, Neustart und Bildexport. Ihre Referenzbilder unter
 `tests/fixtures/atlas/reference-images/` gehören zur kontinuierlichen Testwelt. Eine ausdrückliche Neuerzeugung mit
 `--refresh-reference` prüft zuerst Inventar, sichtbare Populationen, Neustart und
 Export; normale Prüfläufe ändern diese Bildreferenzen nicht.
-Ohne Auswahl läuft die Probe bei 200 und 100 Prozent; `GM_QA_ZOOM=1` oder `2`
-prüft einen Zoomfaktor, ohne Fachassertionen zu ändern. Der neue technische
+Die Probe läuft ausschließlich bei 100 Prozent; die fünf fachlichen Maßstäbe bleiben unverändert. Der neue technische
 Referenzstand ersetzt keine Besitzerabnahme der Darstellung.
 Die Bildmetadaten binden Runtime-Hashes, PNG-Prüfsummen und tatsächliche
 Kameraausschnitte; jeder Zoomschritt muss vor dem nächsten abgeschlossen sein.
-Der 200-%-Vergleich braucht reale 2560 × 1704 Inhaltspixel bei unverändertem
-CSS-Viewport. Die Probe setzt dazu die tatsächlichen nativen Mindest- und Höchstmaße
-(einschließlich gemessenem Fensterrahmen) und prüft Inhaltsmaße, CSS-Viewport,
-Kamera und Zoom erneut nach dem Öffnen. Dadurch kann die Fensterverwaltung das
-Vergleichsfenster nicht nachträglich auf die Bildschirmgröße begrenzen.
+Die Probe prüft native Inhaltsmaße, CSS-Viewport und Kamera bei 100 Prozent.
+Die Fensterverwaltung darf den gemessenen Vergleichsausschnitt nicht verändern.
 
 Die Bildprüfung vergleicht einen festen Kartenausschnitt ohne Bedienoberfläche,
 mit begrenzter RGB-Abweichung, Mindestanteilen für Land, Wald, Straße und
@@ -338,7 +368,7 @@ jede Probe über `tools/ui-session.py` mit eigenem Profil und Prozessbesitz.
 | Probe | Erhaltene fachliche Aussagen |
 | --- | --- |
 | `tools/test-desktop-room-reads.mjs` | 4.000 Räume, vollständige Suchseiten, gezielte private Textreads, langer Raum-Identifier, Text speichern, ungültigen Rohentwurf nach Auswahlwechsel wiederfinden, frisch öffnen, beschädigte Raumbytes erhalten und anderen Raum öffnen |
-| `tools/test-desktop-region-export.mjs` | Land/Orte/Fluss/Straße zeichnen, Eigenschaften und Pfadänderungen rücknehmen/wiederholen, messen ohne Mutation, PNG mit Land/Ufern/Fluss und Beschriftung über Kachelgrenzen, frischer Prozess bei 100/200 % |
+| `tools/test-desktop-region-export.mjs` | Land/Orte/Fluss/Straße zeichnen, Eigenschaften und Pfadänderungen rücknehmen/wiederholen, messen ohne Mutation, PNG mit Land/Ufern/Fluss und Beschriftung über Kachelgrenzen, frischer Prozess bei 100 Prozent |
 | `tools/test-desktop-player-focus.mjs --cue --handout` | Bereichs- und Szenenwechsel, verspätete Freigabe abweisen, nach Neustart leer bleiben, abgewiesenen Write klären, richtige Gruppe ausdrücklich freigeben, GM-Texte und Handout-Dateiname nicht veröffentlichen |
 
 Der Runner entfernt vor dem ersten Start alle alten Erfolgsdateien dieses
@@ -362,7 +392,7 @@ Der Basissatz ersetzt weder die große Mischwelt noch sämtliche optionalen
 Raum-/Stadtprüfungen, Paket-/Installationsprüfung oder menschliche Produktabnahme.
 
 Die dichte Stadtprobe (`tools/test-desktop-room-reads.mjs --regions --zoom=1`
-und `--zoom=2`) legt 5.000 Gebäude mit unveränderten Haus-IDs, Positionen und
+bei 100 Prozent) legt 5.000 Gebäude mit unveränderten Haus-IDs, Positionen und
 privaten Texten über den Fachwriter an. Die frühere SQL-Fixture ließ Raumgruppen,
 Geschosse und Eingänge aus. Der gültige Bestand deckte einen Produktfehler auf:
 Gebäude und Eingangsanker überschritten gemeinsam das Projektionsbudget, obwohl

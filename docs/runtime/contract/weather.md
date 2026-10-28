@@ -90,7 +90,7 @@ auch positive Rowrevision und Übereinstimmung mit dem Payload. Bestehende gült
 Datensätze bleiben unverändert; neue Commands benötigen eine ausdrückliche Basis.
 Die Reisevorschau verwendet weiter den tatsächlichen Wetterwert und GM-Reisefaktor.
 
-`world-ui.ts` hält Owner, Auswahlgeneration und beide Revisionen ab der ersten
+`world-weather-editor.ts`, erzeugt durch `createWorldEditor`, hält Owner, Auswahlgeneration und beide Revisionen ab der ersten
 Eingabe fest. Ein Refresh ersetzt diese Eingabebasis nicht. Pending blockiert
 weitere Wettercommands; spätere Tastatureingaben bleiben erhalten. Nur die eigene
 passende Bestätigung schreibt ihre Basis fort. Ältere Reads/Acks können einen
@@ -107,6 +107,13 @@ aus und erhält spätere Eingaben. Nicht übernommene Commands behalten ihre alt
 Basis. Die Store-Reconciliation prüft neue Wetterbestätigungen gegen Auftrag,
 Scene, Uhr, Overriderevision und gesetzten Wetterwert. Historische Receipts werden
 nicht umgeschrieben. Das ersetzt keinen persistenten Wetter-Workingdraft.
+
+Die Weltinstanz erhält DOM, Preload und Live-Aktionen ausdrücklich vom Renderer.
+`world-write-coordinator.ts` besitzt den gemeinsamen Command-/Drainanschluss;
+der Wetterbesitzer nimmt ausschließlich seine eigene passende Bestätigung an.
+Die produktive Instanzprüfung liegt in
+`tests/runtime/desktop-world-owner-lifecycle.test.mjs`; Zustände und Lebensdauer
+stehen im [Editor-Lebenszyklus](../../project/architecture/editor-lifecycle.md#weltinstanz-und-gemeinsame-schreibgrenze).
 
 ## Lokaler Nachweis und Grenzen
 
@@ -135,7 +142,7 @@ Crash/Cancel besitzen weiterhin eigene Fachabnahmen. Der Wetterentwurf und seine
 unklare Editorbestätigung liegen derzeit nur im Speicher.
 
 `tools/test-desktop-weather-override.mjs` prüft den vollständigen nativen Ablauf
-bei 100 und 200 Prozent: zwei Gruppen an verschiedenen Hexpositionen und Zeiten,
+bei 100 Prozent: zwei Gruppen an verschiedenen Hexpositionen und Zeiten,
 manueller Nebel für eine Gruppe, bestätigte drei Tage, Neustart, Fokuswechsel und
 ausdrückliche Freigabe zur Automatik. Die andere Gruppe bleibt unverändert;
 Overridebytes überstehen Zeit und Fresh, und genau zwei Wetteränderungen stehen

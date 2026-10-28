@@ -1,7 +1,7 @@
-import type { LandscapeRecord } from "../../src/app/atlas/atlas-landscape";
+import type { LandscapeRecord } from '../../src/app/atlas/landscape-contracts';
 import type { Polygon } from "../../src/app/shared/contracts";
 import type { AtlasTerritory } from "../../src/app/atlas/atlas-territories";
-import type { CityUnit } from "../../src/app/atlas/city-contracts";
+import type { CityUnit } from '../../src/app/atlas/city-data-contracts';
 import { heightRecord, settingsRecord } from "../../src/app/atlas/terrain-height";
 import { vegetationSpec } from "../../src/app/atlas/vegetation";
 

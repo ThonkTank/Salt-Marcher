@@ -11,7 +11,7 @@ const root = process.cwd(),
   require = createRequire(root + '/package.json'),
   { _electron } = require('playwright-core');
 const out = path.resolve(process.env.QA_EVIDENCE_DIR ?? '.build/place-search'),
-  zoom = Number(process.env.GM_QA_ZOOM ?? 1),
+  zoom = 1,
   baseline = process.argv.includes('--baseline');
 await runNativeProbe(
   { output: out, name: 'place-search', resultName: 'result.json' },

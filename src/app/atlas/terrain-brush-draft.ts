@@ -1,12 +1,13 @@
 import { bounds, contains } from './landscape-geometry';
 import { applyLakeBrush, type LakeBrushChanges } from './terrain-lake-brush';
-import type { LakeStroke } from './atlas-landscape';
-import type { HeightStroke } from './terrain-brush';
+import type { LakeStroke } from './landscape-action-contracts';
+import type { HeightStroke } from './terrain-brush-contracts';
 import { applyCoupledTerrainBrush } from './terrain-lake-coupling';
 import { decodeHeights, TerrainSampler } from './terrain-height';
-import { type TerrainGrid } from './terrain-spatial-model';
+import { type TerrainGrid } from './terrain-grid-contracts';
 import { terrainGridLayout } from './terrain-grid-layout';
-import type { LandscapeBox, LandscapeRecord } from './atlas-landscape';
+import type { LandscapeBox } from './landscape-bounds';
+import type { LandscapeRecord } from './landscape-contracts';
 
 /** Exact changed author support, including Hermite's two-cell halo. All tiles
  * still adopt the complete author result; untouched display grids need no

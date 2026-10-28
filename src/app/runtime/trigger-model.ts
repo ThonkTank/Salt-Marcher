@@ -1,5 +1,7 @@
 import { volumeOrigin } from '../atlas/volume-model';
-import type { DungeonGeometry, DungeonPose, DungeonWaypoint } from '../atlas/dungeon-contracts';
+import type { DungeonGeometry } from '../atlas/dungeon-geometry-contracts';
+import type { DungeonPose } from '../atlas/dungeon-position-contracts';
+import type { DungeonWaypoint } from '../atlas/dungeon-travel-contracts';
 import type { TriggerField, TriggerFragment } from './trigger-contracts';
 import { poseOwner, bodyHeight } from '../atlas/spatial-3d';
 import { annotatePathRoute } from '../atlas/path-spatial';

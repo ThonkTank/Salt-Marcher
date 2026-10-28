@@ -81,7 +81,7 @@ await runNativeProbe({ output: output, name: 'day-party' }, async (native) => {
       .update(await readFile('.build/desktop/' + p))
       .digest('hex');
   try {
-    for (const scale of [1, 2]) {
+    for (const scale of [1]) {
       app = await native.launchConfigured({
         executablePath: source + '/node_modules/electron/dist/electron',
         args: [

@@ -155,7 +155,8 @@ await runNativeProbe(
         await page.locator('#tutorial-skip').click();
       await openNativeCampaign(page, campaign.id);
       await page.locator('#live-tab').click();
-      await page.locator('#live-continue').click();
+      if (await page.locator('#live-continue').isVisible())
+        await page.locator('#live-continue').click();
       await page.locator('#combat-panel').waitFor({ state: 'visible' });
       return page;
     }
@@ -232,6 +233,9 @@ await runNativeProbe(
           .getByRole('button', { name: /^Kampf: Torwache/ })
           .click();
         await page.locator('#archive-detail h4').getByText('Torwache', { exact: true }).waitFor();
+        assert(
+          (await page.locator('#archive-mask-detail').innerText()).includes('Beleg: Torwache'),
+        );
         await app.evaluate(({ ipcMain }, id) => {
           const original = ipcMain._invokeHandlers.get('campaign:combat');
           let hold = true;
@@ -256,15 +260,22 @@ await runNativeProbe(
           await new Promise((r) => setTimeout(r, 20));
         }
         assert(await app.evaluate(() => globalThis.qaArchiveHeld));
-        results.loadingText = await page
-          .locator('#archive-detail section > div:last-child')
-          .innerText();
+        results.loadingText = await page.locator('#archive-mask-detail').innerText();
         if (!before) {
           assert(results.loadingText.includes('Kellerwolf'));
+          assert(results.loadingText.includes('wird geladen'));
           assert(!results.loadingText.includes('Beleg: Torwache'));
+          assert.equal(
+            await page.locator('#archive-mask-detail').getAttribute('aria-busy'),
+            'true',
+          );
         }
         await app.evaluate(() => globalThis.qaArchiveRelease());
         await page.locator('#archive-detail h4').getByText('Kellerwolf', { exact: true }).waitFor();
+        assert(
+          (await page.locator('#archive-mask-detail').innerText()).includes('Beleg: Kellerwolf'),
+        );
+        assert.equal(await page.locator('#archive-mask-detail').getAttribute('aria-busy'), 'false');
         await page
           .locator('#archive-detail')
           .getByRole('button', { name: /^Verfolgung: Flucht/ })

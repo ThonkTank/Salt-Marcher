@@ -1,5 +1,3 @@
-/** Own the mounted controls even when a contextual dialog temporarily borrows
- * them. Lookups never fall through to another editor or the workspace document. */
 export function createEditorSurface(roots: readonly HTMLElement[]) {
   if (!roots.length) throw new Error('An editor needs its own surface');
   const document = roots[0]!.ownerDocument;
@@ -16,5 +14,10 @@ export function createEditorSurface(roots: readonly HTMLElement[]) {
     if (!nodes.has(id)) collect();
     return nodes.get(id) as T;
   };
-  return { document, get };
+  const register = (root: HTMLElement) => {
+    if (root.ownerDocument !== document) throw new Error('Editor surfaces span documents');
+    if (root.id) nodes.set(root.id, root);
+    for (const node of root.querySelectorAll<HTMLElement>('[id]')) nodes.set(node.id, node);
+  };
+  return { document, get, register };
 }

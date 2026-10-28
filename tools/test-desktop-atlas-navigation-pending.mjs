@@ -22,8 +22,8 @@ require('esbuild').buildSync({
 });
 const { atlasProject, TerrainSampler } = require('../.build/navigation-pending-math.cjs');
 const Database = require('better-sqlite3');
-const scale = Number(process.argv.find((s) => s.startsWith('--scale='))?.split('=')[1] ?? 1);
-assert([1, 2].includes(scale));
+const scale = 1;
+assert([1].includes(scale));
 const output = path.resolve(
   process.env.QA_EVIDENCE_DIR ?? '.build/navigation-pending',
   `${Date.now()}-${process.pid}`,

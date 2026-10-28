@@ -1,4 +1,4 @@
-import type { SpatialGeometry } from './dungeon-contracts';
+import type { SpatialGeometry } from './dungeon-geometry-contracts';
 import type { BoundaryFace, PathAnchor } from './path-contracts';
 import { VOXEL_METERS as U } from './volume-contracts';
 import { volumeOrigin } from './volume-model';

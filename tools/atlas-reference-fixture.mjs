@@ -77,7 +77,7 @@ export function assertReferenceContents(db, manifest) {
 }
 
 // Compare a fixed map-only window in the original 1280×852 native captures.
-// The 200% run doubles the window dimensions, keeping the CSS layout/world view.
+// The sampler also accepts a 2× native-pixel footprint for coverage unit tests.
 // Per-channel error tolerates raster/AA differences; palette populations ensure
 // that a small road or marker cannot disappear inside a large background average.
 export function assertReferenceMapImage(actual, expected, { markerVisible = true } = {}) {
@@ -87,7 +87,7 @@ export function assertReferenceMapImage(actual, expected, { markerVisible = true
     'Reference viewport aspect ratio',
   );
   const scale = actual.width / expected.width;
-  assert([1, 2].includes(scale), 'Reference capture must use 100% or 200% native pixels');
+  assert([1, 2].includes(scale), 'Reference capture must use a 1× or 2× pixel footprint');
   if (scale === 2) {
     // A reference pixel covers one CSS pixel. Integrate its complete 2×2 native
     // footprint before measuring color or adjacent-pixel contrast. Selecting one

@@ -68,7 +68,7 @@ und unabhängige Kopien. Reads und readonly Snapshotprüfung schreiben keinen St
 Ungültige Aktionen/Revisionen werden abgewiesen; vorhandene Prosa bleibt erhalten.
 
 Das belegt lokale Controller-/Storepfade. Der unten beschriebene native Ablauf
-ergänzt reguläres Schließen, Neustart und 100/200 % für die konkret geprüfte
+ergänzt reguläres Schließen, Neustart und 100 Prozent für die konkret geprüfte
 Gruppenaufgabe. Native Replyverlust- und vollständige Tastaturabnahme bleiben
 offen. Installationsweite Regeldefinitionen, deren Konfliktimport und die
 Trennung aktueller Definitionen von historischen Fakten sind noch nicht
@@ -123,7 +123,7 @@ Pin als nicht verfügbar; dessen Text, andere Pins und regelbezogene Proben
 bleiben nutzbar. Beschädigte Pins selbst werden weiterhin abgewiesen.
 `desktop-rule-reference-store.test.mjs` prüft diese Grenze und unveränderte
 Quellbytes; die native Regelprüfung verfolgt sie über Gruppenwechsel und
-Neustart bei 100/200 % Zoom. Das ist keine Reparatur oder Exportfreigabe der
+Neustart bei 100 Prozent Zoom. Das ist keine Reparatur oder Exportfreigabe der
 beschädigten Quelle.
 
 Die Enter-Gegenfälle in `desktop-quick-reference.test.mjs` halten einen
@@ -138,7 +138,7 @@ keine vollständige Reference-Graph-Lieferung.
 
 Der native Aufruf `npm run test:desktop-rule-context-ui` verwendet
 `tools/test-desktop-rule-reading.mjs`: vollständiges Lesen, Gruppenregeln,
-regelbezogene Proben und Wiederöffnen beider Gruppen bei 100/200 %.
+regelbezogene Proben und Wiederöffnen beider Gruppen bei 100 Prozent.
 Eine zurückgehaltene A-Antwort wird erst nach dem Wechsel nach B freigegeben;
 B muss anschließend mit eigener Regelrevision speichern können. Der frühere
 separate Kontextlauf verwendete die versteckte Kampagnenauswahl und scheiterte
@@ -192,7 +192,7 @@ nicht.
    entfernte Ziele verständlich als nicht verfügbar zeigen. Kein veralteter
    Kampagnencache als aktuelle Wahrheit und keine Netzwerkabfrage. Mit zwei
    Kampagnen, Umbenennen/Löschen bei offener Karte, verspäteten Antworten,
-   Index-/Detailfehlern, Netzsperre, Tastatur und 200 % prüfen. Lange Texte und
+   Index-/Detailfehlern, Netzsperre, Tastatur und 100 % prüfen. Lange Texte und
    große Indexmengen messen, bevor zusätzliche Suchstrukturen eingeführt werden.
 
 ## Weitere ausführbare Schritte
@@ -207,7 +207,7 @@ nicht.
    Treffer an. „Regel lesen“ zeigt das Original vor dem Anheften; die Übernahme
    prüft atomar die angezeigte Quellenrevision. [Vollständiger nativer Ablauf und
    Obsidian-Gegenprobe](https://github.com/ThonkTank/Salt-Marcher/blob/16eb0aa8807ac21704abfea5412ac3a22033a23a/docs/reference/gm-ux-qa/2026-10-14-rule-context.md#hausregel-vor-dem-festhalten-lesen)
-   prüfen Suche, Lesen, Probe, Gruppenwechsel und Fresh bei 100/200 % Zoom.
+   prüfen Suche, Lesen, Probe, Gruppenwechsel und Fresh bei 100 Prozent Zoom.
    Beschädigte Quellen, sehr große Regelbestände und vollständige
    Campaignwechselabnahme bleiben von diesen Belegen getrennt.
 3. **Aktuelle Definitionen und Geschichte verbinden.** Den vorhandenen

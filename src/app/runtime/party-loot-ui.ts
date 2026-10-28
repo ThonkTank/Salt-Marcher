@@ -2,11 +2,11 @@ import type { Result } from '../shared/contracts';
 import {
   gold,
   ledgerCopper,
-  type LedgerItem,
   type LedgerPage,
   type ProgressAction,
   type ProgressHistory,
 } from './progression';
+import { type LedgerItem } from './treasure-contracts';
 const unwrap = <T>(r: Result<T>) => {
   if (!r.ok) throw Error(r.error);
   return r.value;

@@ -21,7 +21,7 @@ const frozen = (target) =>
     ),
   );
 
-test('each frozen map retains its populations and RGB error at 100% and 200%', () => {
+test('each frozen map retains its populations and RGB error with single and doubled pixel footprints', () => {
   for (const target of [32768, 4096, 512, 64, 16]) {
     const expected = frozen(target);
     assert.deepEqual(
@@ -62,7 +62,7 @@ test('native subpixel coverage is integrated before testing CSS-scale texture co
   }
 });
 
-test('200% integration still rejects flat forest, lost content classes and a blank map', () => {
+test('Coverage integration still rejects flat forest, lost content classes and a blank map', () => {
   const expected = frozen(32768);
   for (const shade of [1, 0.88]) {
     const flat = twice(expected);
@@ -104,7 +104,7 @@ test('image comparison rejects captures outside its native scale contract', () =
   const expected = frozen(64);
   assert.throws(
     () => assertReferenceMapImage({ ...expected, width: 1920, height: 1278 }, expected),
-    /100% or 200%/,
+    /1× or 2× pixel footprint/,
   );
   assert.throws(
     () => assertReferenceMapImage({ ...expected, width: 2560 }, expected),

@@ -274,7 +274,7 @@ async function restWithAbsentMember(page) {
     assert.equal(receipt.includes('Noah'), longRest);
   } else if (!longRest) assert.match(receipt, /Ada, Borin/);
   await page.locator('#party-rest-status').scrollIntoViewIfNeeded();
-  await native.capture(page, 'rest-receipt-' + Number(process.env.GM_QA_ZOOM ?? 1) + '.png');
+  await native.capture(page, 'rest-receipt-' + 1 + '.png');
   if (longRest) {
     const labels = await page.locator('#party-rest-members label').allTextContents();
     assert(receipt.includes(labels[0] + ': 20/20 HP'));
@@ -329,9 +329,9 @@ async function restWithAbsentMember(page) {
 }
 try {
   for (const [stage, scale] of [
-    ['prepare', Number(process.env.GM_QA_ZOOM ?? 1)],
-    ['finish', Number(process.env.GM_QA_ZOOM ?? 2)],
-    ['reopen', Number(process.env.GM_QA_ZOOM ?? 2)],
+    ['prepare', 1],
+    ['finish', 1],
+    ['reopen', 1],
   ]) {
     const page = await native.launch(scale);
     app = native.app;

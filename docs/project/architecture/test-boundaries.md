@@ -2,7 +2,7 @@
 
 Status: Current; bestehende Kopplungen und offene Qualifikation ausdrücklich benannt.
 Owner: project
-Last Reviewed: 2026-10-27
+Last Reviewed: 2026-10-28 (Quellenauswahl, Graphbericht und aktuelle Speichergrenzen; Fachabnahme separat)
 Source of Truth: Benannte Produktionsanschlüsse, `tools/module-responsibilities.mjs`, `tools/check-module-boundaries.mjs` und die ausführbaren TypeScript-Umgebungsprüfungen.
 
 ## Ausführbare Fachinstanzen
@@ -29,10 +29,8 @@ Fachliche Assertions liegen in den jeweiligen Testdateien. Gemeinsame Helfer
 bauen vollständige Module, stellen DOM-Technik und echte Store-/Editor-Fixtures
 bereit oder prüfen lesend die Quellstruktur. Der ungenutzte Funktionsausschneider `sourceFunctions` entfällt.
 Quellprüfung für verbotene Imports, Preload-/Sicherheitsgrenzen, Einstiegspunkte
-und deklarierte Markupstruktur bleibt sinnvoll. Die historische Obsidian-
-Hostprobe verwendet noch einen ausgeschnittenen Shutdown-Ablauf; sie gehört
-nicht zum aktiven Desktop-Anschluss und wurde hier nicht umgebaut. Das ist keine
-Behauptung, sämtliche historische Quellproben seien bereits beseitigt.
+und deklarierte Markupstruktur bleibt sinnvoll. Historische Obsidian-Hostproben gehören nicht zum aktiven Desktop-Anschluss.
+Ihre frühere Quelltechnik ist kein Nachweis heutiger Desktopgrenzen.
 
 ## Verhaltensprüfungen ohne private Probe-Exports
 
@@ -57,6 +55,17 @@ werden nicht neu eingeführt. Der ungenutzte Import-Umschreibhelfer entfällt.
 Raum-/Quellen-, Scene- und Quest-Proben prüfen die konkrete Zusammensetzung;
 isolierte Ownerfälle allein ersetzen keine Produktabnahme.
 
+`desktop-preparation-owner.test.mjs` ergänzt gezielte öffentliche Anschlüsse der
+vollständigen `createPreparation`-Fabrik mit eigenem SQLite-Store und kontrollierter
+Bridge. Kein Quelltext wird umgeschrieben; Entwürfe, geordnete Writes,
+Receiptklärung und der echte Verweispicker bleiben Teil der Produktionsinstanz.
+`desktop-text-reference-picker-owner.test.mjs` prüft die öffentliche Pickerfunktion
+direkt mit kontrollierten Quellantworten. Diese kleinen Ergänzungen stellen die
+entfernten großen Matrizen nicht wieder her und behaupten deren Umfang nicht.
+`desktop-text-reference-readers.test.mjs` verwendet die öffentlichen
+`openQuickReference`-/Aktivierungsanschlüsse für unbekannte Quellen, die Anzeige
+von 250 Verweisen bei einer Grenze von 200 Controls und entwertete Übergaben.
+
 ## Benannte Zuständigkeiten und Zyklen
 
 `module-responsibilities.mjs` benennt Arbeitsflächenzusammensetzung,
@@ -74,9 +83,9 @@ benannten Oberflächen-/Hostbesitzer erreichen. Diese Ergänzung ersetzt keine
 vollständige Typtrennung sämtlicher historischer Darstellungsmodelle.
 
 Der ursprüngliche Ausgangspunkt ist `7ef54e44c295f4adf6cf3800e27f45aa8ad0a0b3`.
-Die Baseline wurde nach der Trennung ausdrücklich verkleinert; sie wird bei
-Prüfläufen niemals automatisch erweitert. Neue zyklische Kanten, einschließlich
-neuer Kanten innerhalb einer bekannten Komponente, bleiben Fehler.
+Die aktive Baseline ist nach der Vertragstrennung leer und wird bei Prüfläufen
+niemals automatisch erweitert. Jede neue zyklische Typ- oder Wertkante im aktiven
+Bereich bleibt ein Fehler.
 
 `shared/contracts.ts` enthält nur grundlegende Datenverträge. Die Zusammensetzung
 aller Fach-APIs gehört `shared/desktop-api.ts`, die Browserdeklaration
@@ -90,20 +99,75 @@ aufgelöst: `landscape-geometry.ts` besitzt gemeinsame Geometrie,
 Meshvertrag, `party-command-contracts.ts` die benötigten Live-Befehle; die
 bisherigen Drawing/Route- und Live/Party-Typzyklen entfallen.
 
-| Verbleibende Komponente | Grenze |
-| --- | --- |
-| 79 Fach-/Atlas-/Vertragsdateien | Der frühere 119-Dateien-Verbund ist kleiner; `shared/contracts` und die Desktop-API gehören nicht mehr dazu. Gegenseitige Fachmodelltypen bleiben gekoppelt. Dies ist keine Behauptung eines vollständig azyklischen Typgraphen. |
-| Notiz-/Vorbereitungsverträge (4 Dateien) und Kampfverträge/-initiative (3 Dateien) | Aus dem alten großen Verbund abgetrennte Typkomponenten; keine neuen Wertzyklen. |
-| Speichergruppe um `campaign-atlas`, `live`, `session`, `world` | 36 Dateien im Gesamtgraphen, 35 im Wertgraphen. Die fachübergreifenden Writer wurden nicht neu entworfen. |
-| `storage/dungeon-key` / `storage/surfaces` | Bestehende Speicherabhängigkeit bleibt. |
+Die [fachlichen Speicherbesitzer](storage-ownership.md) trennen untere Leser und
+lokale Operationen von aufrufenden Commands und Fassaden. Die frühere große
+Speicher-Wertkomponente ist aufgelöst. `storage-owner-boundaries.mjs` benennt die
+Rückimportverbote; `check:repo` verfolgt sie auch indirekt und einschließlich
+Typkanten. `surface-geometry-validation.ts` besitzt die reine Geometrieprüfung
+und ihre SQL-Leseprojektionen; `dungeon-key.ts` ruft sie innerhalb derselben
+bestehenden Transaktion auf. `surfaces.ts` behält Erfassung, Transformation und
+Neubindung. Es gibt keinen Rückimport des Validators zur Key-Orchestrierung.
+`storage-owner-boundaries.test.mjs` verlangt einen zyklusfreien Speicherwertgraphen.
+Die aktive Zyklusbaseline ist für deklarierte und Wertkanten leer.
 
-Der aktuelle Gesamtgraph hat fünf Komponenten mit 124 Dateien und 368 internen
-Kanten; der Wertgraph zwei Komponenten mit 37 Dateien und 109 Kanten. Zuvor waren
-es 164 Dateien/533 Kanten beziehungsweise 43 Dateien/117 Kanten. Im Gesamtgraphen
-ersetzen 15 Kanten zum/aus dem ausgezogenen Geometrieeigentümer frühere
-Landschaftskanten; dies ist eine explizite Eigentümerverschiebung, keine pauschale
-Freigabe neuer Kopplungen. Der Wertgraph enthält ausschließlich eine echte
-Teilmenge der alten Baseline. Die Baseline ist keine zweite Testzuordnung.
+### Reproduzierbarer Graphbericht
+
+`node tools/module-graph.mjs --report` gibt JSON aus und verändert weder Quellen
+noch Zyklusbaseline. Bericht und `check:repo` verwenden dieselbe
+`repositoryFiles`-/`readModuleSources`-Auswahl: vorhandene getrackte und nicht
+ignorierte ungetrackte `.ts`-/`.tsx`-Dateien einschließlich `.d.ts` unter `src/`
+und `desktop/`. Historische und wiederverwendete Quellen bleiben dadurch im
+analysierten Umfang; `tests/`, `tools/`, Buildausgaben und ignorierte Dateien
+gehören nicht dazu. Gelöschte getrackte Dateien werden nicht gelesen.
+
+`scope.files` nennt jede untersuchte Quelldatei, `scope.sourceSha256` bindet ihre
+Pfade und Inhalte. `declared` enthält Typ- und Wertkanten; `values` lässt explizit
+als type-only deklarierte Kanten aus. Das ist eine syntaktische Importanalyse,
+kein Beweis des endgültigen Tree-Shakings. Pro Graph werden interne Kanten
+zwischen untersuchten Dateien, externe/nicht aufgelöste Ziele und jede zyklische
+Komponente samt internen Kanten getrennt ausgegeben. `activeCycles` zählt wie die
+Grenzprüfung nur Komponenten mit mindestens einer Datei unter `src/app/` oder
+`desktop/`. Komponenten sind stark zusammenhängende **zyklische** Gruppen, nicht
+sämtliche Module. Reine historische Zyklen erscheinen separat mit `active: false`.
+
+Messstand 28.10.2026 im aktuellen Arbeitsbaum einschließlich der vorhandenen
+uncommitteten Fachbeiträge: **919 Quellen**, Quellhash
+`2e3c4d7f369373485f7188450d63d8505aa57fcd052305c6eb8cc6479ff48223`.
+Dies ist eine Strukturmessung dieses Quellenstands, keine CI- oder Produktfreigabe.
+
+| Aktiver Graph | Vor der Vertragstrennung (865 Quellen) | Nach der Vertragstrennung |
+| --- | --- | --- |
+| Typ- und Wertkanten | 4 Komponenten / 88 Dateien / 258 interne zyklische Kanten | 0 Komponenten / 0 Dateien / 0 zyklische Kanten |
+| Wertkanten | 1 Komponente / 2 Dateien / 2 interne zyklische Kanten | 0 Komponenten / 0 Dateien / 0 zyklische Kanten |
+
+Der Ausgangsquellhash ist
+`d64486ad614488310f8b56fdb17b1d5b953685e0e98ed8a24f4c78ca7bebd132`.
+Historische Quellen bleiben im Bericht; nur vollständig historische Komponenten
+stehen weiter getrennt unter `active: false`. Die Quellenauswahl und Kantenanalyse
+wurden für diese Trennung nicht verkleinert. Neue Typ-, Reexport-, Inline-Importtyp-
+oder Laufzeitzyklen im aktiven Bereich sind ohne Ausnahme Fehler.
+`module-graph.test.mjs` prüft den vollständigen aktiven Quellenstand;
+`module-boundaries.test.mjs` belegt die Ablehnung auch mit gezielten Gegenfällen.
+Ein azyklischer Graph beweist keine fachliche Korrektheit oder Nutzerabnahme.
+Die Baseline ist keine Testzuordnung.
+
+### Fachliche Daten, Funktionen und zusammengesetzte Verträge
+
+Kleine Datenverträge liegen bei ihrem Fachbesitzer. Fachfunktionen verwenden sie;
+zusammengesetzte Ansichten und APIs stehen darüber. Verbraucher importieren den
+tatsächlichen Besitzer direkt; die bisherigen Module reexportieren keine
+verschobenen Typen oder Funktionen als versteckte Rückkante.
+
+| Fach | Untere Verträge und Funktionen | Zusammensetzung darüber |
+| --- | --- | --- |
+| Notizen | `note-data.ts`, `note-source-recovery-contracts.ts`; `note-thread-edit.ts` besitzt Bearbeitung und Wiederherstellung | Vorbereitungs-, Merge- und Thread-APIs |
+| Kampf | `combat-state-contracts.ts`, `combat-initiative-contracts.ts`; Initiative- und Entwurfsfunktionen behalten Bedingungen und Basisvergleiche | `combat-contracts.ts` und Entwurfs-API |
+| Welt | `world-cell-contracts.ts`, `hex-access-contracts.ts`, `world-map-contracts.ts`, `calendar-contracts.ts`, `weather-contracts.ts`, `world-travel-contracts.ts`, `live-scene-contracts.ts` | vollständige Welt-/Live-/Zeit-APIs |
+| Landschaft | `landscape-contracts.ts`, `landscape-bounds.ts`, Masken-, Farb-, Linien-, Höhen-, Routen- und Bewuchsverträge | Landschaftsauswertung, Pinselaufträge und räumliche Ausführung |
+| Terrainansicht | `terrain-view-contracts.ts` besitzt die reine Kamerabasis, `terrain-grid-contracts.ts` den gelesenen Snapshot; Projektionsdaten und Frameidentitäten haben eigene Verträge | Sampler, Projektion, Deltas und Regionantworten |
+| Atlas | `atlas-coordinates.ts` besitzt Hex- und lokale Transformationen, `atlas-binding-contracts.ts` Bindungen | `campaign-atlas-model.ts` löst vollständige Frames auf; Regiongeometrie, Regionansicht und Kampagnenansicht sind getrennt |
+| Stadt/Dungeon | Stadtgrunddaten, Raumgruppenrezepte, Zeichnungselemente/-ansichten, Dungeonposition/-geometrie/-reise und Oberflächen haben eigene Verträge | Stadt-/Dungeon-/Graph-/Reise-APIs |
+| Fortschritt | Charakterfortschritt, Itemeingaben/-definitionen, Beute-/Belohnungsdaten und XP-Tabellen haben fachnahe Besitzer | Fortschrittsfunktionen, Sessionziele und Gruppen-/Treasury-APIs |
 
 ## Vollständige Einstiegspunkte und Umgebungsprüfung
 
@@ -163,7 +227,7 @@ bleiben an ihren bisherigen Fachanschlüssen.
 
 Benutzerabläufe und ihre tatsächlichen Testdateien werden ausschließlich im
 Capability-Katalog verknüpft und mit `--geprueft` fortgeschrieben. Native
-Raumöffnung, Atlasexport bei 100/200 % und passive Spielerfreigabe prüfen die
+Raumöffnung, Atlasexport bei 100 Prozent und passive Spielerfreigabe prüfen die
 Rendererzusammensetzung. Die optionale dichte Stadt-/Regionsprobe, Installation,
 veröffentlichte Pakete und menschliche Produktabnahme sind dadurch nicht belegt.
 
@@ -172,7 +236,7 @@ veröffentlichte Pakete und menschliche Produktabnahme sind dadurch nicht belegt
 `tools/test-desktop-brush-worker.mjs` lädt den ausgelieferten Worker im echten
 Electron-App-Protokoll und prüft Pixelantwort, Fehlerantwort und einen weiteren
 Auftrag nach dem Fehler, einschließlich regulärem Prozessende. Exportproben bei
-100/200 % samt frischer Wiederöffnung und die normale Raumprobe bestehen.
+100 Prozent samt frischer Wiederöffnung und die normale Raumprobe bestehen.
 
 Die relevante UI-Grenze prüft `tools/test-desktop-terrain-brush.mjs --preview-only`:
 Eine native Geste senkt eine einfache, ungeschützte Insel unter den Meeresspiegel.
@@ -212,7 +276,10 @@ geprüft. Die Browserprüfung kombiniert echte Typdiagnosen und semantische
 Fähigkeitsdiagnosen; sie behauptet keine Node-freie Fremdbibliotheksdeklaration.
 `tests/shared/sqlite-driver.types.ts` sichert ab, dass native Zeilen und PRAGMA
 keine ungeprüften Strings/Zahlen liefern. Der Transfervertrag behält alle
-145 Modelle/602 Formen; nur der Quellname von `GraphPreviewState` wandert.
+am damaligen Prüfstand 145 Modelle/602 Formen; nur der Quellname von
+`GraphPreviewState` wanderte. Aktuelle Inventare erzeugen
+`tools/build-transfer-contracts.mjs` und `tools/build-stored-shapes.mjs`; die
+historischen Zahlen sind keine heutige Bestandsbehauptung.
 
 Der frühere Terrain-Fresh-Pixelvergleich wurde mit identischer Probe auf einem
 frisch gebauten Export von `ee58456ab98ee74b064dc711284e3fbb972e693d` reproduziert.
@@ -241,7 +308,7 @@ Dieser Lauf belegt den Modus Absenken bei 100 %, nicht sämtliche Pinselmodi.
 
 Die native Spieler-Szenenprobe bestand anschließend auf dem neu gebauten Stand:
 getrennte Spieler-API ohne Kampagnenbridge, wörtliche öffentliche Titel,
-100/200-%-Layout, Blank und erneute Freigabe nach Neustart, unveränderte Quelle
+100 Prozent-Layout, Blank und erneute Freigabe nach Neustart, unveränderte Quelle
 und reguläres Schließen (`.build/qa-point3-player/privacy-scene-after.json`).
 Sie qualifiziert diesen konkreten Ablauf, nicht sämtliche Atlasausgaben oder
 alle Neustartpfade. Verpackung, Installation und menschliche Produktabnahme

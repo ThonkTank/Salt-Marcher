@@ -2,7 +2,8 @@ import { EditorSession } from '../shared/editor-session';
 import { atlasFieldValue, setAtlasFieldValue, lengthLabel } from './atlas-units';
 import { atlasDrawingWrite } from './campaign-atlas-author';
 import type { WorkspaceGeometry, Room } from '../shared/contracts';
-import type { DrawingView, DrawingAction } from './drawing-contracts';
+import type { DrawingView } from './drawing-view-contracts';
+import type { DrawingAction } from './drawing-contracts';
 import type {
   DungeonPath,
   PathPreview,

@@ -1,0 +1,16 @@
+{
+  "roles": {
+    "Weather.label": "text",
+    "Weather.source": "text",
+    "WeatherEffects.ambience[]": "text",
+    "WeatherEffects.combatNote": "text",
+    "WeatherEffects.perception": "text",
+    "WeatherPhenomenon.durationMs": "text",
+    "WeatherPhenomenon.id": "local",
+    "WeatherPhenomenon.mapId": "local",
+    "WeatherPhenomenon.name": "text",
+    "WeatherPhenomenon.notes": "text",
+    "WeatherPhenomenon.pausedAtMs": "text",
+    "WeatherPhenomenon.startMs": "text"
+  }
+}

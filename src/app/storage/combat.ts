@@ -19,11 +19,10 @@ import {
   combatOrder,
   combatStartIssue,
   concentrationDc,
-  type CombatState,
   type CombatView,
   type CombatCommand,
-  type Combatant,
 } from '../runtime/combat-contracts';
+import { type CombatState, type Combatant } from '../runtime/combat-state-contracts';
 import { readLiveScene, readLive } from './live-read';
 import {
   finishCombatRewards,
@@ -39,8 +38,8 @@ import {
   applyDeathSave,
   checkedHealth,
   xpLevel,
-  type DeathSaveResult,
 } from '../runtime/progression';
+import { type DeathSaveResult } from '../runtime/character-progress-contracts';
 import { assessEncounter } from '../catalog/encounter-contracts';
 import { readCreature, readEncounterPlan } from './encounters';
 import { acceptGeneration } from './generation';

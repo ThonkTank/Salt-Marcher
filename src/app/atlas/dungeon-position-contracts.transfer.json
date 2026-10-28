@@ -1,0 +1,7 @@
+{
+  "roles": {
+    "DungeonPose.floorId": "local",
+    "DungeonPose.roomId": "local",
+    "DungeonPose.scopeId": "local"
+  }
+}

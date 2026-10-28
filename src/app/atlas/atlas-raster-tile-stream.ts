@@ -18,7 +18,7 @@ export interface AtlasRasterTileAdapter<
   request(tile: AtlasWorldTile, revision: number, contours?: number, editingRadius?: number): R;
   validate(reply: T, request: R, source: string): void;
 }
-import type { LandscapeBox } from './atlas-landscape.js';
+import type { LandscapeBox } from './landscape-bounds';
 import { atlasWorldTileBounds, type AtlasWorldTile } from './atlas-world-tiles.js';
 
 const DEFAULT_MAX_BYTES = 32 * 1024 * 1024;

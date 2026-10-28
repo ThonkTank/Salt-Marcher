@@ -5,16 +5,16 @@ import { KeyNoteCapture } from './key-note-capture';
 import { RoomKeySearchIndex, type KeySearchHit } from './key-search';
 import { KeyNoteContext } from './key-note-context';
 import { KeyPlanContext, type KeyPlanReturn } from './key-plan-context';
-import { atlasDefaultRoomWrite } from '../atlas/campaign-atlas-author';
-import { atlasDrawingWrite } from '../atlas/campaign-atlas-author';
 import { initKeyCopy, invalidateKeyCopy, syncKeyCopyControl } from './key-copy-ui';
 import { drawSurfaceKey } from '../atlas/surface-key-ui';
 import type { WorkspaceGeometry, Workspace, Room } from '../shared/contracts';
-import type { DrawingView, DrawingAction } from '../atlas/drawing-contracts';
+import type { DrawingView } from '../atlas/drawing-view-contracts';
+import type { DrawingAction } from '../atlas/drawing-contracts';
 import type { KeyContent, KeyBlock, KeyBatch, KeyTextEdit } from './key-contracts';
 import { emptyKey } from './key-contracts';
 import { renderDungeonKey, expandedKeyBlocks, keyAttributes } from './key-model';
-import type { DungeonGeometry } from '../atlas/dungeon-contracts';
+import type { DungeonGeometry } from '../atlas/dungeon-geometry-contracts';
+import { atlasDefaultRoomWrite, atlasDrawingWrite } from '../atlas/campaign-atlas-author';
 export const editorSession = new EditorSession();
 const pendingWork = editorSession.operation<Promise<void>>();
 
@@ -33,7 +33,7 @@ let workspace: () => WorkspaceGeometry | null,
   draft: KeyContent | null = null,
   roomId: string | null = null,
   scopeId = '';
-let references: { kind: string; id: string; label: string }[] = [];
+let references: KeyContent['references'] = [];
 const picked = new Set<string>();
 let matchedRooms: Room[] = [],
   listPage = 0;
@@ -938,6 +938,29 @@ function drawReferences() {
       remove = document.createElement('button'),
       label = references.find((r) => r.kind === ref.kind && r.id === ref.id)?.label ?? ref.label;
     line.append(document.createTextNode(referenceKindLabel(ref.kind) + ': '));
+    if (ref.kind === 'creature' || ref.kind === 'item') {
+      const resolved = document.createElement('span'),
+        o = owner(),
+        id = draft.id;
+      resolved.textContent = 'Katalogquelle wird geprüft …';
+      line.append(resolved);
+      if (!ref.catalogReference) resolved.textContent = 'Katalogreferenz fehlt.';
+      else
+        void window.campaign
+          .resolveCatalogReference(ref.catalogReference)
+          .then((result) => {
+            if (!resolved.isConnected || !owns(o) || draft?.id !== id) return;
+            resolved.textContent = result.ok ? result.value.name : result.error;
+            resolved.dataset.state = result.ok ? 'ready' : 'error';
+          })
+          .catch((error) => {
+            if (resolved.isConnected && owns(o) && draft?.id === id) {
+              resolved.textContent = (error as Error).message;
+              resolved.dataset.state = 'error';
+            }
+          });
+    }
+
     if (noteContext && ['note', 'npc', 'faction', 'quest', 'rumor', 'rule'].includes(ref.kind)) {
       const open = document.createElement('button');
       open.type = 'button';
@@ -970,7 +993,8 @@ function drawReferences() {
           void planContext!.open(ref.id);
       };
       line.append(open);
-    } else line.append(document.createTextNode(label));
+    } else if (ref.kind !== 'creature' && ref.kind !== 'item')
+      line.append(document.createTextNode(label));
     line.append(document.createTextNode(' '));
     remove.type = 'button';
     remove.textContent = 'Entfernen';
@@ -1810,6 +1834,12 @@ export function initKeys(
       })
       .catch(reportFailure);
   };
+  el('key-room-browser-toggle').onclick = () => {
+    const dialog = el('key-dialog');
+    const expanded = dialog.dataset.roomBrowser !== 'true';
+    dialog.dataset.roomBrowser = String(expanded);
+    el('key-room-browser-toggle').setAttribute('aria-expanded', String(expanded));
+  };
   el('key-close').onclick = () => {
     void moveEditor(() => el<HTMLDialogElement>('key-dialog').close()).catch(reportFailure);
   };
@@ -1972,7 +2002,24 @@ export function initKeys(
   el('key-batch-apply').onclick = applyBatch;
 }
 export function activateKeys() {
-  field('key-reference-query').value = '';
+  // Retire the former owner's authored controls as well as its in-memory draft.
+  for (const id of [
+    'key-name',
+    'key-gm-notes',
+    'key-read-aloud',
+    'key-attributes',
+    'key-tags',
+    'key-status',
+    'key-heading',
+    'key-zsteps',
+    'key-number',
+    'key-search',
+    'key-reference-query',
+  ])
+    field(id).value = '';
+  for (const id of ['key-blocks', 'key-references', 'key-original', 'key-rendered'])
+    el(id).replaceChildren();
+  saveState('idle', '');
   el<HTMLDetailsElement>('key-reference-picker').open = false;
   composing = false;
   noteCapture?.reset();

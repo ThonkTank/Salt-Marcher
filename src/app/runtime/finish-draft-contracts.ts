@@ -1,4 +1,4 @@
-import type { ItemInput } from './progression';
+import type { ItemInput } from '../catalog/item-input-contracts';
 import type { Result } from '../shared/contracts';
 export type FinishOwner = {
   kind: 'combat' | 'narrative';

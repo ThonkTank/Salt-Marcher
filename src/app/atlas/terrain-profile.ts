@@ -1,5 +1,5 @@
 import type { Point } from '../shared/contracts';
-import type { LandscapeRecord } from './atlas-landscape';
+import type { LandscapeRecord } from './landscape-contracts';
 import { TerrainSampler } from './terrain-height';
 export function profileBounds(points: Point[], pad = 1) {
   if (

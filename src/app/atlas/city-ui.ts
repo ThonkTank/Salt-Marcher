@@ -8,15 +8,13 @@ import type {
   CityView,
   CityUnit,
   CityPoint,
-  CityCommand,
   CityOverview,
-  CityPreview,
-  CityRecipe,
   CityHousehold,
   CityJob,
   CityPersonMove,
-} from './city-contracts';
-import type { NpcPage } from '../campaign/npc-contracts';
+} from './city-data-contracts';
+import type { CityCommand, CityPreview, CityRecipe } from './city-contracts';
+import type { NpcPage } from '../campaign/npc-data-contracts';
 import { CityActivityBinder } from './city-activity-ui';
 import { chooseCityBuilding, confirmCityLifeMove } from './city-building-picker';
 import { citySvg, generateCity, posed, roadPoints } from './city-model';
@@ -1400,7 +1398,7 @@ export async function atlasCityPoint(at: CityPoint) {
       source = view;
     const recipe = await chooseRoomGroup({
       version: 1,
-      profile: value('city-use') as import('./room-group-generator').GroupProfile,
+      profile: value('city-use') as import('./room-group-contracts').GroupProfile,
       width: size,
       depth: size,
       seed: crypto.randomUUID().slice(0, 8),

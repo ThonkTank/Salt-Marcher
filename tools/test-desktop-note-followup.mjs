@@ -222,7 +222,7 @@ await runNativeProbe(
         await page.locator('#note-relations button').filter({ hasText: notes[1].title }).click();
       } else {
         await app.evaluate(({ BrowserWindow }) =>
-          BrowserWindow.getAllWindows()[0].webContents.setZoomFactor(2),
+          BrowserWindow.getAllWindows()[0].webContents.setZoomFactor(1),
         );
         await page.locator('#note-thread-return').scrollIntoViewIfNeeded();
         assert(
@@ -235,7 +235,7 @@ await runNativeProbe(
           () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))),
         );
         await writeFile(
-          path.join(out, 'edit-return-200percent.png'),
+          path.join(out, 'edit-return-100percent.png'),
           Buffer.from(
             await app.evaluate(async ({ BrowserWindow }) =>
               (await BrowserWindow.getAllWindows()[0].webContents.capturePage())
@@ -249,7 +249,7 @@ await runNativeProbe(
         await app.evaluate(({ BrowserWindow }) =>
           BrowserWindow.getAllWindows()[0].webContents.setZoomFactor(1),
         );
-        results.editReturnAt200Percent = true;
+        results.editReturnAt100Percent = true;
         await page.waitForFunction(() => document.querySelector('#note-thread-editor').hidden);
         await page
           .locator('#note-thread-sources article')
@@ -311,7 +311,7 @@ await runNativeProbe(
       assert(!results.packet.includes(notes[2].gmNotes));
       await page.screenshot({ path: path.join(out, 'next-session-packet.png') });
       await close();
-      page = await launch(2);
+      page = await launch(1);
       await page.waitForFunction(
         (s) => document.querySelector('#note-thread-sources').textContent.includes(s),
         addition,

@@ -1,0 +1,22 @@
+{
+  "roles": {
+    "DrawingElement.anchor.roomId": "local",
+    "DrawingElement.assetId": "local",
+    "DrawingElement.color": "text",
+    "DrawingElement.floorId": "local",
+    "DrawingElement.id": "local",
+    "DrawingElement.name": "text",
+    "DrawingElement.notes": "text",
+    "DrawingElement.roomId": "local",
+    "DrawingElement.scopeId": "local",
+    "DrawingElement.sound.publicText": "text",
+    "DrawingElement.targetFloorId": "local",
+    "DrawingElement.targetRoomId": "local",
+    "DrawingElement.variant": "text",
+    "RoomStyle.fill": "text",
+    "RoomStyle.id": "local",
+    "RoomStyle.publicLabel": "text",
+    "RoomStyle.scopeId": "local",
+    "RoomStyle.wall": "text"
+  }
+}

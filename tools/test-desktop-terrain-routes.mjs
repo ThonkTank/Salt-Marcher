@@ -11,7 +11,7 @@ import assert from 'node:assert/strict';
 import { atlasCanvasReady } from './atlas-canvas-probe.mjs';
 const riverOnly = process.argv.includes('--river-only'),
   depression = Number(process.argv.find((a) => a.startsWith('--depression='))?.split('=')[1] ?? 0),
-  scale = process.argv.includes('--scale=2') ? 2 : 1;
+  scale = 1;
 const root = process.cwd(),
   require = createRequire(import.meta.url),
   { buildSync } = require('esbuild'),
@@ -277,7 +277,7 @@ try {
     await app.evaluate(({ BrowserWindow }) => {
       const w = BrowserWindow.getAllWindows().find((w) => w.getTitle() === 'SaltMarcher');
       w.setSize(1440, 1000);
-      w.webContents.setZoomFactor(2);
+      w.webContents.setZoomFactor(1);
     });
     await page.waitForFunction(() => innerWidth <= 720);
     await page.locator('#route-units').selectOption('metric');

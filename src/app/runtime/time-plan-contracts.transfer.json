@@ -1,6 +1,0 @@
-{
- "roles": {
-  "ClockEventTarget.eventId": "local",
-  "ClockEventTarget.instantMs": "external"
- }
-}

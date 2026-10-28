@@ -11,14 +11,6 @@
     "NpcCommand.npc.name": "text",
     "NpcCommand.npc.readAloud": "text",
     "NpcCommand.token": "token",
-    "NpcDailyOverride.day": "text",
-    "NpcDailyOverride.label": "text",
-    "NpcDailySlot.activity": "text",
-    "NpcDailySlot.id": "local",
-    "NpcDailySlot.locationId": "local",
-    "NpcDailySlot.notes": "text",
-    "NpcDemographics.ancestry": "text",
-    "NpcDemographics.gender": "text",
     "NpcDraft.fields": {
       "fields": {
         "faction": "local",
@@ -35,18 +27,6 @@
       "values": "text"
     },
     "NpcDraft.id": "local",
-    "NpcDraft.writeId": "local",
-    "NpcRecord.appearance": "text",
-    "NpcRecord.behavior": "text",
-    "NpcRecord.factionId": "local",
-    "NpcRecord.history": "text",
-    "NpcRecord.id": "local",
-    "NpcView.creatureId": "external",
-    "NpcView.gmNotes": "text",
-    "NpcView.health.conditions": "text",
-    "NpcView.id": "local",
-    "NpcView.locationId": "local",
-    "NpcView.name": "text",
-    "NpcView.readAloud": "text"
+    "NpcDraft.writeId": "local"
   }
 }

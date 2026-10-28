@@ -1,15 +1,8 @@
 import { validateTerrainBuilding } from '../atlas/terrain-objects';
 import { validateMapLabelStyle } from '../atlas/map-label-style';
 import { createHash } from 'node:crypto';
-import type {
-  CityHeader,
-  CityUnit,
-  CityView,
-  CityCommand,
-  CityOverview,
-  CityBuildingQuery,
-  CityBuildingChoices,
-} from '../atlas/city-contracts';
+import type { CityHeader, CityUnit, CityView, CityOverview } from '../atlas/city-data-contracts';
+import type { CityCommand, CityBuildingQuery, CityBuildingChoices } from '../atlas/city-contracts';
 import { npcRecord } from './npc-record';
 const hash = (s: string) => createHash('sha256').update(s).digest('hex');
 export function installCitySchema(db: any) {

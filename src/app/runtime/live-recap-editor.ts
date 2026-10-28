@@ -18,7 +18,7 @@ type Host = {
 };
 
 export function createLiveRecapEditor(host: Host) {
-  type RecapText = import('./live-contracts').SessionRecapDraft;
+  type RecapText = import('./live-scene-contracts').SessionRecapDraft;
   type RecapWork = {
     text: RecapText;
     basis: RecapText | null;

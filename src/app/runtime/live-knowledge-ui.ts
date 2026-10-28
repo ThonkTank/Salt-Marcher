@@ -16,12 +16,14 @@ type Host = {
   readonly liveSourcesProblem: string;
   readonly preparedNoteIds: ReadonlySet<string>;
   readonly useKnowledgeReadAloud: (text: string, title: string) => void;
-  readonly showLiveNpc: (id: string) => Promise<boolean>;
+  readonly showLiveNpc: (id: string, current?: () => boolean) => Promise<boolean>;
   readonly openKnowledgeNote: (id: string, current?: () => boolean) => Promise<void>;
 };
 
 export function createLiveKnowledgeUI(host: Host) {
-  let narrativeGeneration = 0,
+  let renderGeneration = 0,
+    ownerGeneration = 0,
+    narrativeGeneration = 0,
     narrativeCache = new Map<string, NarrativeView>(),
     narrativeProblems = new Map<string, string>(),
     narrativeLoading = new Set<string>();
@@ -75,7 +77,22 @@ export function createLiveKnowledgeUI(host: Host) {
     );
   }
   function renderLiveKnowledge() {
-    const root = host.get('live-knowledge-results');
+    const root = host.get('live-knowledge-results'),
+      generation = ++renderGeneration,
+      owner = ownerGeneration,
+      workspace = host.context,
+      token = host.context?.token,
+      sceneId = host.data?.scene?.id,
+      locationId = host.data?.scene?.locationId,
+      focusRevision = host.data?.focusRevision,
+      ownsContext = () =>
+        owner === ownerGeneration &&
+        host.context === workspace &&
+        host.context?.token === token &&
+        host.data?.scene?.id === sceneId &&
+        host.data?.scene?.locationId === locationId &&
+        host.data?.focusRevision === focusRevision,
+      current = () => generation === renderGeneration && ownsContext();
     root.replaceChildren();
     const query = host.value('live-knowledge-search').trim().toLocaleLowerCase('de');
     if (!host.sources) {
@@ -121,7 +138,9 @@ export function createLiveKnowledgeUI(host: Host) {
         publicText.className = 'live-knowledge-public';
         use.type = 'button';
         use.textContent = 'Als Vorlesetext einsetzen';
-        use.onclick = () => host.useKnowledgeReadAloud(note.readAloud, note.title);
+        use.onclick = () => {
+          if (current()) host.useKnowledgeReadAloud(note.readAloud, note.title);
+        };
         card.append(heading, publicText);
         actions.append(use);
       } else card.append(heading);
@@ -129,7 +148,9 @@ export function createLiveKnowledgeUI(host: Host) {
         const portrait = host.document.createElement('button');
         portrait.type = 'button';
         portrait.textContent = 'Porträt zeigen';
-        portrait.onclick = () => void host.showLiveNpc(note.id);
+        portrait.onclick = () => {
+          if (current()) void host.showLiveNpc(note.id, ownsContext);
+        };
         actions.append(portrait);
       }
       if (note.kind === 'quest' || note.kind === 'rumor') {
@@ -145,7 +166,9 @@ export function createLiveKnowledgeUI(host: Host) {
             : 'Status wird geladen…';
         open.type = 'button';
         open.textContent = view?.award ? 'Abschluss ansehen' : 'Verwalten / abschließen';
-        open.onclick = () => void host.openKnowledgeNote(note.id);
+        open.onclick = () => {
+          if (current()) void host.openKnowledgeNote(note.id, ownsContext);
+        };
         card.append(status);
         actions.append(open);
         if (!view && !problem) loadLiveNarrative(note.id);
@@ -173,6 +196,8 @@ export function createLiveKnowledgeUI(host: Host) {
   }
 
   function reset() {
+    renderGeneration++;
+    ownerGeneration++;
     narrativeGeneration++;
     narrativeCache.clear();
     narrativeProblems.clear();

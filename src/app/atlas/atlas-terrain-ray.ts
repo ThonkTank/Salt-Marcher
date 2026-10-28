@@ -1,4 +1,5 @@
-import { gridHeight, type TerrainGrid } from './terrain-spatial-model';
+import { gridHeight } from './terrain-spatial-model';
+import { type TerrainGrid } from './terrain-grid-contracts';
 import { terrainGridLayout, terrainGridCoordinate } from './terrain-grid-layout';
 import type { AtlasDeckRaySegment, AtlasDeckRayHit } from './atlas-deck-ray';
 

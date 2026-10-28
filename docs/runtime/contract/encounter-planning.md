@@ -22,9 +22,60 @@ Liveübergabe: [Kampf-Recovery](combat-recovery.md).
 | Generierung bis zum Folgeabend durchspielen | [Native Bedienprobe](../../../tools/test-desktop-generation-preparation.mjs): gemischte Level, thematische Tabelle, verknüpfte Beute, angepasste Vorlage, Appneustart, veränderte aktuelle Party, Kampfabschluss und erneutes Öffnen; Vorbereitung, Quellenredaktion, Wiederöffnen aus der Vorschauhistorie und aktueller Gruppenstand beim Kampf |
 
 Vorhandene Store-/DOM- und native Einzelläufe qualifizieren ihre geprüften Fälle,
-keine vollständige Encounter-, 200%-, Plattform- oder unbekannte-Write-Abnahme.
+keine vollständige Encounter-, 100 %-, Plattform- oder unbekannte-Write-Abnahme.
 Kontrollierter Nachreadfehler, abgewiesener SQLitewrite, verlorene Antwort und
 vollständiger Appneustart bleiben verschiedene Belege.
+
+## Gebundene Katalogquellen und historische Verwendung
+
+Die wiederverwendbare `encounter_plan`-Definition und ihr Receipt speichern
+`StoredEncounterPlan`: `sources` enthält ausschließlich `CatalogReference`
+mit `sourceId`, `sourceVersion`, `sourceHash`, `entryId` und `entryType`.
+Geplante Gegenstände stehen mit eigener lokaler Zeilenkennung, Menge und
+derselben Referenz in `items`. Creature- und Itemkörper gehören nicht in diese
+Definition. Die aufgelöste `EncounterPlan`-Ansicht liefert `sources` und
+`resolvedItems` getrennt; der Writer übernimmt diese Anzeigekörper nicht.
+
+Der Kreaturanschluss bindet den vorhandenen SRD-5.1-Katalog einschließlich
+XP-Korrekturen und Reaktionsergänzungen an seinen effektiven SHA-256.
+Gegenstandsquellen benutzen die bereits vorhandenen unveränderlichen
+`item_definition_version`-Stände. Hier besitzt jede Definition eine stabile
+Quellenidentität unter `srd-5.1-items/<globale ID>` beziehungsweise
+`authored-items/<globale ID>`, ihre Revision und den SHA-256 des kanonischen
+Definitionsstands. Das führt keinen weiteren Gesamtkorpus ein.
+
+`storage/catalog-references.ts` löst diese Bindungen am kanonischen Speicher auf.
+Fehlende und unbekannte Quellen, ein nicht installierter Versions-/Hashstand,
+eine beschädigte oder nicht verfügbare Quelle und ein fehlender beziehungsweise
+falscher Eintragstyp bleiben unterscheidbare Fehler. Kein Name ersetzt eine
+fehlende Bindung. Neue Autorenentwürfe können beim ersten Save vom kanonischen
+Katalog gebunden werden; bestehende Definitionen müssen ihre Bindungen mitsenden.
+
+Raum-Keyverweise tragen dieselbe Referenz. Der Keywriter prüft sie und lokale
+Encounter-/Notiz-/Orts-/Planbindungen vor Veröffentlichung. Die Keyanzeige liest
+Katalognamen über den vorhandenen eingeschränkten Preloadanschluss; ein Fehler
+ersetzt dort den früheren Katalognamen. Eine betroffene Übernahme scheitert ohne
+Teil-Key, History- oder Receiptänderung. Andere Quellen und Atlasarbeit bleiben
+unabhängig nutzbar.
+
+Bewertung, Auffüllbasis, Gruppenanlage und Kampfvorbereitung lesen die Vorlage
+über diesen Anschluss. Generierungsergebnisse, vorbereitete Gruppen und
+Kampfausgänge behalten dagegen ihre tatsächlich verwendeten eingefrorenen
+Fakten. Eine spätere Definitionsänderung berechnet sie nicht neu. Bestehende
+explizite historische Item-Aliase bleiben Speicherzuordnungen; sie werden nicht
+über Namen oder eine Suche nach ähnlichen Definitionen ersetzt.
+
+Transferdeklarationen und generierte Speicherformen besitzen dieselben Felder.
+Globale Quellen-/Eintragsbindungen bleiben erhalten, lokale Plan-, Itemzeilen-,
+Raum-, Block- und Abschnittskennungen werden umgeschrieben. Die gemeinsame
+E2E-01-Fixture und `tests/campaign/desktop-e2e01-fixture.test.mjs` prüfen
+Creature-/Itemauflösung, Fresh, unveränderte historische Itemverwendung nach
+Definitionsänderung, Complete-Import und Neustart sowie Complete-Import aus
+einem vorher eingefrorenen Quelleninventar, fehlende
+Zuordnungen und fremde lokale Verweise. `tests/catalog/desktop-catalog-xp.test.mjs`
+prüft eingefrorene Gruppenfakten bei aktuellem gebundenem Katalog und ihren
+unveränderten Erhalt über Complete-Import und Neustart. Diese
+technischen Belege ersetzen keine Ownerabnahme.
 
 ## Gespeicherte Vorbereitung aus einer früheren Vorschau öffnen
 
@@ -61,10 +112,10 @@ abgeschlossene Ergebnis samt unveränderter Vorbereitung.
 
 Die native Probe redigiert nach dem ersten App-Exit die Quelltabelle und öffnet
 die frühere Vorbereitung über die Vorschauhistorie vor dem Kampf. Sie setzt nun
-wirklichen Browserzoom auf 1 beziehungsweise 2. Die früheren Aufrufe mit
-Geräteskalierungsfaktor 2 belegen keinen 200%-Browserzoom. Alte Erfolgsdateien
+wirklichen Browserzoom auf 1. Ein Geräteskalierungsfaktor allein ist kein
+Nachweis des Anwendungszooms. Alte Erfolgsdateien
 werden vor dem Lauf entfernt; Prozessausgänge und Runtimehashes bleiben eigene
-Belege. Ein fehlgeschlagener nativer Lauf schließt weder Bedienung noch 200% ab.
+Belege. Ein fehlgeschlagener nativer Lauf schließt weder Bedienung noch 100 % ab.
 
 ## Planungsparty zwischen Vorlage und Generator bearbeiten
 
@@ -155,7 +206,7 @@ Keine Schemaänderung oder zweiter Selector.
   und bestehender Commit-/Recoverygrenze klären. Bestätigt, unbekannt und
   fehlgeschlagener Nachread sind getrennt; keinen Ersatzcommand erfinden.
   Verlorene Antwort, Close/Escape, Restart und spätere Registryänderung gemeinsam prüfen.
-- Verschachtelte Anlage bei 200%, vollständiger Tastaturbedienung und Appneustart
+- Verschachtelte Anlage bei 100 %, vollständiger Tastaturbedienung und Appneustart
   nach getrenntem Table-/Factionwrite qualifizieren, einschließlich unbekanntem
   Ausgang eines Saves. Beide Bestände separat wiederfinden; weitere inline
   Konsumenten verwenden denselben Manager.
@@ -168,6 +219,6 @@ Keine Schemaänderung oder zweiter Selector.
   Kreaturfilter und XPceiling schneiden, Lootkonflikte nur warnen. Biom-/Poolregeln:
   [Kataloglieferungen](catalog-browsing.md#offene-lieferungen).
 - Direktes Auffüllen persistenter Scenegruppen und vollständige Kapazitätsallokation
-  bei ungleichen endlichen Statblockbeständen bleiben offen. p95-, 200%-, Golden-,
+  bei ungleichen endlichen Statblockbeständen bleiben offen. p95-, 100 %-, Golden-,
   Plattform- und vollständige Scene-/Session-Parität eigenständig abnehmen.
   Der übrige Originalumfang bleibt verbindlich.

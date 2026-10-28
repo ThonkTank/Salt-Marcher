@@ -3,7 +3,7 @@ import { AtlasDeckDrawing } from './atlas-deck-drawing';
 import { AtlasDeckSurface } from './atlas-deck-surface';
 import { AtlasDeckVegetation } from './atlas-deck-vegetation';
 import type { AtlasDrawingMesh } from './atlas-drawing-mesh';
-import type { LandscapeRecord } from './atlas-landscape';
+import type { LandscapeRecord } from './landscape-contracts';
 import type { AtlasMetricCamera } from './atlas-metric-camera';
 import type { AtlasPaint } from './atlas-paint';
 import type { AtlasSpatialSurface } from './atlas-spatial-surface';

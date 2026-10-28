@@ -234,7 +234,7 @@ try {
   } finally {
     edited.close();
   }
-  page = await launch(2);
+  page = await launch(1);
   await nav(page, 'live-tab');
   if (await page.locator('#live-continue').isVisible())
     await page.locator('#live-continue').click();
@@ -294,7 +294,7 @@ try {
   assert.equal(combat().phase, 'finished');
   assert.deepEqual(plans()[0], saved);
   await close();
-  page = await launch(2);
+  page = await launch(1);
   await nav(page, 'live-tab');
   if (await page.locator('#live-continue').isVisible())
     await page.locator('#live-continue').click();

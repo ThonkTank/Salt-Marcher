@@ -1,5 +1,6 @@
-import type { CombatState, Combatant } from './combat-contracts';
-export function initiativeBasis(c: CombatState) {
+import { type InitiativeBasis } from './combat-initiative-contracts';
+import type { CombatState, Combatant } from './combat-state-contracts';
+export function initiativeBasis(c: CombatState): InitiativeBasis {
   return {
     phase: c.phase,
     round: c.round,
@@ -11,7 +12,6 @@ export function initiativeBasis(c: CombatState) {
     })),
   };
 }
-export type InitiativeBasis = ReturnType<typeof initiativeBasis>;
 export function initiativeBasisMatches(b: InitiativeBasis, c: CombatState) {
   return JSON.stringify(b) === JSON.stringify(initiativeBasis(c));
 }

@@ -1,4 +1,4 @@
-import type { NpcPage } from './npc-contracts';
+import type { NpcPage } from './npc-data-contracts';
 
 /** Small paged picker; retain identities only, not NPC prose or complete catalogs. */
 export function requiredNpcPicker(hostId: string, tell: (text: string, error?: boolean) => void) {

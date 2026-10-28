@@ -2,10 +2,18 @@
   <p id="key-save-status" role="status" class="caption">Eingaben werden automatisch gespeichert.</p>
   <div class="toolbar">
     <h2>Dungeon-Key</h2>
+    <button
+      id="key-room-browser-toggle"
+      type="button"
+      aria-expanded="false"
+      aria-controls="key-room-browser"
+    >
+      Raumverzeichnis
+    </button>
     <button id="key-close">Schließen</button><button id="key-map">Raum im Atlas auswählen</button>
   </div>
   <div class="key-layout">
-    <aside>
+    <aside id="key-room-browser">
       <label
         >Volltext / Nummer
         <input id="key-search" type="search" aria-describedby="key-search-help" /><span

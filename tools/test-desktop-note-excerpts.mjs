@@ -100,7 +100,7 @@ await runNativeProbe(
           BrowserWindow.getAllWindows()
             .find((w) => w.webContents.getURL().endsWith('/index.html'))
             .webContents.setZoomFactor(zoom),
-        Number(process.env.GM_QA_ZOOM ?? 1),
+        1,
       );
       await page.waitForFunction(() => document.body.dataset.tutorialReady === 'true');
       if (await page.locator('#tutorial-dialog').isVisible())
@@ -385,7 +385,7 @@ await runNativeProbe(
         hashes,
         profile,
         file,
-        zoom: Number(process.env.GM_QA_ZOOM ?? 1),
+        zoom: 1,
         task: 'Rawlog to4typedreusable notes withprovenance,sourceoverview,nextplan,normalFresh,fulltextfind/edit,liveupdatedpacket andcorrectoriginaleditor',
         results,
         audit,

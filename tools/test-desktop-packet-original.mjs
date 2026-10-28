@@ -7,11 +7,11 @@ import { randomUUID, createHash } from 'node:crypto';
 import assert from 'node:assert/strict';
 import path from 'node:path';
 const root = process.cwd();
-const zoom = process.argv.includes('--zoom') ? 2 : 1;
+const zoom = 1;
 const out =
   process.env.QA_EVIDENCE_DIR ??
   process.argv.find((v) => v.startsWith('--out='))?.slice(6) ??
-  root + '/.build/qa/packet-original' + (zoom === 2 ? '-zoom' : '');
+  root + '/.build/qa/packet-original';
 await runNativeProbe({ output: out, name: 'packet-original' }, async (native) => {
   await mkdir(out, { recursive: true });
   const sourceAtStart = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(),
@@ -166,22 +166,10 @@ await runNativeProbe({ output: out, name: 'packet-original' }, async (native) =>
     );
     return page
       .locator('#session-packet-content .packet-block')
-      .filter({ has: page.getByRole('heading', { name: guide.title + ' · quest', exact: true }) });
+      .filter({ has: page.getByRole('heading', { name: guide.title, exact: true }) });
   }
   async function shot(page, name) {
-    if (zoom === 1) await page.screenshot({ path: out + '/' + name + '.png' });
-    else {
-      const data = await app.evaluate(async ({ BrowserWindow }) =>
-        (
-          await BrowserWindow.getAllWindows()
-            .find((w) => w.webContents.getURL().endsWith('/index.html'))
-            .webContents.capturePage()
-        )
-          .toPNG()
-          .toString('base64'),
-      );
-      await writeFile(out + '/' + name + '.png', Buffer.from(data, 'base64'));
-    }
+    await page.screenshot({ path: out + '/' + name + '.png' });
   }
   async function visible(page, phrase) {
     return page.locator('#session-packet-content').evaluate((el, phrase) => {
@@ -294,7 +282,31 @@ await runNativeProbe({ output: out, name: 'packet-original' }, async (native) =>
       el.focus();
       el.setSelectionRange(at, at + phrase.length);
     });
+    await page.locator('#note-gm').dispatchEvent('compositionstart');
     await page.keyboard.insertText('Nera wartet jetzt im Wachraum.');
+    await page.locator('#packet-note-return').click();
+    assert.equal(await page.locator('#packet-note-editor').isVisible(), true);
+    assert.equal(await page.locator('#note-title').inputValue(), guide.title);
+    const composing = new (require('better-sqlite3'))(file, { readonly: true });
+    try {
+      assert.equal(
+        JSON.parse(
+          composing
+            .prepare('SELECT payload FROM world_note WHERE campaign_id=? AND id=?')
+            .get(campaign.id, guide.id).payload,
+        ).gmNotes,
+        guide.gmNotes,
+      );
+    } finally {
+      composing.close();
+    }
+    await page.locator('#note-gm').focus();
+    assert.equal(
+      await page.locator('#note-gm').evaluate((el) => document.activeElement === el),
+      true,
+    );
+    await page.locator('#note-gm').dispatchEvent('compositionend');
+    result.compositionBlocksSourceReturnAndWrites = true;
     await page.locator('#packet-note-return').click();
     await page.waitForFunction(
       () =>

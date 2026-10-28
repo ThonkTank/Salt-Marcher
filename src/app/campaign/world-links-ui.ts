@@ -1,7 +1,8 @@
 import { plainReferenceText } from './text-references';
 import type { WorkspaceGeometry, Result } from '../shared/contracts';
 import type { DeskContent } from '../runtime/scene-desk-contracts';
-import type { PreparationCommand, PreparationDraft, Note } from './preparation-contracts';
+import type { PreparationCommand, PreparationDraft } from './preparation-contracts';
+import type { Note } from './note-data';
 import { campaignLocalId } from '../../features/campaign/campaign-contracts';
 import type { WorldLinksPage, WorldLinkRef, WorldLinksQuery } from './world-links-contracts';
 import { worldLinkKey, worldLinkKinds } from './world-links-contracts';

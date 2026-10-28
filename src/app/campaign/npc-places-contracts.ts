@@ -1,4 +1,4 @@
-import type { CityPersonMove } from '../atlas/city-contracts';
+import type { CityPersonMove } from '../atlas/city-data-contracts';
 import type { Result } from '../shared/contracts';
 export type NpcPlaceSite = (
   | { kind: 'home' | 'work'; cityId: string; unitId: string }

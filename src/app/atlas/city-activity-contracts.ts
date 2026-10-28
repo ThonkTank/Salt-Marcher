@@ -27,7 +27,7 @@ export interface CityActivityRow {
     activity: string;
     time: string;
     place: 'home' | 'work' | 'other' | 'location';
-    locationTarget?: import('../campaign/npc-contracts').NpcPlanLocation | null;
+    locationTarget?: import('../campaign/npc-data-contracts').NpcPlanLocation | null;
     notes: string;
     target: CityActivitySite | null;
   } | null;

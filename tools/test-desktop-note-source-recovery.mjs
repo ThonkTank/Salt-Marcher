@@ -7,14 +7,8 @@ import assert from 'node:assert/strict';
 import path from 'node:path';
 const root = process.cwd(),
   before = process.argv.includes('--before'),
-  zoom = process.argv.includes('--zoom') ? 2 : 1,
-  phase = before
-    ? 'before'
-    : process.argv.includes('--final')
-      ? 'after-final'
-      : zoom === 2
-        ? 'after-zoom'
-        : 'after',
+  zoom = 1,
+  phase = before ? 'before' : process.argv.includes('--final') ? 'after-final' : 'after',
   out = process.env.QA_EVIDENCE_DIR ?? path.join(root, '.build/note-source-recovery', phase);
 await runNativeProbe(
   { output: out, name: 'note-source-recovery', resultName: 'result.json' },
@@ -189,17 +183,7 @@ await runNativeProbe(
       return page;
     }
     async function screenshot(page, filename) {
-      if (zoom === 1) return page.screenshot({ path: filename });
-      const encoded = await app.evaluate(async ({ BrowserWindow }) =>
-        (
-          await BrowserWindow.getAllWindows()
-            .find((w) => w.webContents.getURL().endsWith('/index.html'))
-            .webContents.capturePage()
-        )
-          .toPNG()
-          .toString('base64'),
-      );
-      await writeFile(filename, Buffer.from(encoded, 'base64'));
+      return page.screenshot({ path: filename });
     }
     async function close() {
       const ended = new Promise((r) =>
@@ -247,7 +231,7 @@ await runNativeProbe(
       );
       await screenshot(page, path.join(out, 'later-edits.png'));
       await close();
-      page = await launch(2);
+      page = await launch(1);
       results.afterReopen = await page.locator('#note-thread-dialog').innerText();
       results.offeredButtons = await page.locator('#note-thread-dialog button').allTextContents();
       await screenshot(page, path.join(out, 'recovery-entry.png'));

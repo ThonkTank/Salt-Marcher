@@ -1,4 +1,5 @@
-import { type LandscapeBox, type LandscapeRecord } from './atlas-landscape';
+import { type LandscapeBox } from './landscape-bounds';
+import { type LandscapeRecord } from './landscape-contracts';
 import { bounds, contains } from './landscape-geometry';
 import { DEFAULT_HEIGHT_M } from './terrain-height';
 import {

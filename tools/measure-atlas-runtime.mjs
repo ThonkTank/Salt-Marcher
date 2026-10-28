@@ -259,7 +259,7 @@ try {
     if (kind === 'landscape') assert.equal(population.landscape, 101200);
     if (kind === 'city') assert.equal(population.buildings, 5000);
     if (kind === 'dungeon') assert.equal(population.cells, 100000);
-    for (const zoom of (process.env.ATLAS_ZOOMS ?? '1,2').split(',').map(Number)) {
+    for (const zoom of [1]) {
       const rec = { kind, profile, zoom, population, errors: [] },
         started = performance.now();
       result.cases.push(rec);

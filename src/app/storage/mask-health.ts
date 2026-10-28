@@ -1,7 +1,9 @@
 import { createHash } from 'node:crypto';
 import { recordMaskReconciliation } from './mask-reconciliation';
-import { checkedCombat, combatOrder, type CombatState } from '../runtime/combat-contracts';
-import { checkedHealth, checkedHealthStatus, type CharacterHealth } from '../runtime/progression';
+import { checkedCombat, combatOrder } from '../runtime/combat-contracts';
+import { type CombatState } from '../runtime/combat-state-contracts';
+import { checkedHealth, checkedHealthStatus } from '../runtime/progression';
+import { type CharacterHealth } from '../runtime/character-progress-contracts';
 import { readProgressCharacter, saveProgress, event } from './progression-records';
 import { writeWorldActorHealth } from './preparation-write';
 import { readWorldActor } from './session-read';

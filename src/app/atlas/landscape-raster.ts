@@ -1,7 +1,8 @@
 import { vegetationWaterSuitable, vegetationFurrowShade } from './vegetation-surface';
 import { terrainColors } from '../runtime/world-model';
 import type { Polygon } from '../shared/contracts';
-import { type LandscapeBox, type LandscapeRecord } from './atlas-landscape';
+import { type LandscapeBox } from './landscape-bounds';
+import { type LandscapeRecord } from './landscape-contracts';
 import { reduceAtlasMaterialRows } from './atlas-raster-kernel';
 import { mapLineWidth, mapRecordOpacity, mapRecordVisible } from './atlas-scale-policy';
 import { MASK_SEA_LEVEL, maskAt } from './land-mask';

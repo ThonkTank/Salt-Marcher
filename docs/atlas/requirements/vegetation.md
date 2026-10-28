@@ -167,7 +167,7 @@ Landschaftsebene wegen zu vieler lokaler Kandidaten verschwinden lassen.
 | Datenregression, Auswahl und echte Desktop-Bedienung                                                  | `tests/atlas/vegetation.test.mjs`, `tests/atlas/vegetation-spatial.test.mjs`, `tests/atlas/vegetation-geometry.test.mjs`, `tests/atlas/biome-library.test.mjs`, `tools/test-desktop-atlas-biome-stroke.mjs` |
 
 Die gezielte native Probe `tools/test-desktop-atlas-biome-stroke.mjs --scale=1`
-(bzw. `--scale=2`) erzeugt eine flache Testkampagne und prüft Laubwald mit 25 m
+erzeugt eine flache Testkampagne und prüft Laubwald mit 25 m
 und 75 m Radius über einer tatsächlich geladenen Renderkachelgrenze. Bodenbild,
 Materialkanäle, vollständige Modellränder, getrennte Bereichsreads, Undo/Redo und
 ein frischer Prozess gehören zum selben Ablauf. Die vorhandene Waldzeichnung
@@ -175,7 +175,7 @@ wird zusätzlich im Übersichtsmaßstab geprüft; dies ist keine Leistungs- oder
 Gestaltungsabnahme. Ergebnisse und native Bilder liegen unter `.build/cycle2-point1/native/`.
 
 Der begrenzte Modus `tools/test-desktop-atlas-biome-stroke.mjs --library --scale=1`
-(bzw. `--scale=2`) prüft Sumpf, Laubwald, Wüste und Landwirtschaft im gemeinsamen
+prüft Sumpf, Laubwald, Wüste und Landwirtschaft im gemeinsamen
 Maler, je einen Historyschritt, Undo/Redo und frische Prozesse. Das Sumpf-Fixture
 enthält trockenen Boden sowie 0,25 m und 2 m Wasser; es benutzt keinen neuen
 Wasserpinsel. Gezielt protokollierte Übergänge um 2 und 8 m/Pixel und Ausschnitte
@@ -184,7 +184,7 @@ synthetische Testdaten; kleine Autorenflächen bleiben maßhaltig. Ergebnisse
 liegen unter `.build/cycle2-point2/native/`. Das ist eine funktionale
 Bibliotheks-/Maßstabsprüfung, keine Leistungs-, Gestaltungs- oder Nutzerabnahme.
 
-`--earth-only --scale=1` beziehungsweise `--scale=2` ergänzt den oberen
+`--earth-only --scale=1` ergänzt den oberen
 Weltüberblick mit 40.000 km Breite, vier großen synthetischen Biomflächen,
 tatsächlichen Metern pro CSS-Pixel, gezeichneten Farben und einem frischen
 Prozess. Ein zusätzliches 150-m-Feld behält seine physische Ausdehnung und

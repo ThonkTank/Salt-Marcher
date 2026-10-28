@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { unionTerrainBounds } from './terrain-invalidation';
-import type { LandscapeBox } from '../atlas/atlas-landscape';
+import type { LandscapeBox } from '../atlas/landscape-bounds';
 const journals = new WeakMap<object, { epoch: string; external: number }>();
 const tables = [
   'atlas_territory',

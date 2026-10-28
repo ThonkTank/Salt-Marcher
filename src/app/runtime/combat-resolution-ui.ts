@@ -1,6 +1,7 @@
 import type { WorkspaceGeometry, Result } from '../shared/contracts';
-import type { LiveScene } from './live-contracts';
-import type { CombatState, CombatResolution } from './combat-contracts';
+import type { LiveScene } from './live-scene-contracts';
+import type { CombatState } from './combat-state-contracts';
+import type { CombatResolution } from './combat-contracts';
 import { CombatNpcLossesPanel } from './combat-npc-losses-ui';
 const node = <K extends keyof HTMLElementTagNameMap>(tag: K, text?: string) => {
   const n = document.createElement(tag);

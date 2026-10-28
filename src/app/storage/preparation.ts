@@ -8,13 +8,13 @@ import {
   checkedPreparationDraft,
   preparationTarget,
   validatePreparation,
-  type Note,
   type Preparation,
   type PreparationChange,
   type PreparationCommand,
   type PreparationDraft,
   type PreparationSelection,
 } from '../campaign/preparation-contracts';
+import { type Note } from '../campaign/note-data';
 import { executeDrawing } from './drawing';
 import { hasNoteTitle } from './key-note-capture';
 import { assertNpcOutsideOpenCombat, syncOpenMaskHealth } from './mask-health';

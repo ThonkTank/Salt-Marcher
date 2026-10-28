@@ -2,7 +2,7 @@
 
 Status: Current; offene Ziele sind als solche beschrieben.
 Owner: project
-Last Reviewed: 2026-10-27 (Iststand und Lieferanschlüsse; Fachabnahme separat)
+Last Reviewed: 2026-10-28 (Einstieg, Host- und Lieferanschlüsse; Fachabnahme separat)
 Source of Truth: Dieses Dokument besitzt das benannte Thema; Code belegt den Iststand, das Abnahmeregister den Prüfstand.
 
 Diese Datei verbindet den vorhandenen Produktstand mit der nächsten Lieferung. Fachliche Details bleiben in den verlinkten Fachplänen; Anforderungen und datierte Nachweise bleiben in `acceptance.json`. Historische Issues und frühere Prototypen sind Herkunftsbelege, keine aktuelle Aufgabenliste.
@@ -15,7 +15,10 @@ Der [aktuelle Atlasplan](../../atlas/architecture/unified-spatial-atlas.md#aktue
 
 ## Vorhandene Umsetzung und nächste Anschlüsse
 
-Stand dieser Orientierung: 27.10.2026. **Vorhanden** beschreibt Code, nicht vollständige Fachabnahme. Die genannten Prüfwege sind vorhandene, begrenzte Belege oder ausführbare Prüfansätze; ihre Auflistung behauptet keinen neuen Lauf. Automatisierte Evidenz, native Qualifikation und Ownerabnahme bleiben getrennt. Ein aktueller gemeinsamer PASS für E2E-01–04 wird hier nicht festgestellt.
+Stand dieser Orientierung: 28.10.2026. **Vorhanden** beschreibt Code, nicht vollständige Fachabnahme. Die genannten Prüfwege sind vorhandene, begrenzte Belege oder ausführbare Prüfansätze; ihre Auflistung behauptet keinen neuen Lauf. Automatisierte Evidenz, native Qualifikation und Ownerabnahme bleiben getrennt. Der [gemeinsame E2E-Katalog](../verification/end-to-end.md) besitzt die tatsächlich
+erreichten lokalen Belege und ihre Grenzen; Integration/Exact-SHA-CI, Zielgerät
+und Ownerabnahme bleiben getrennt. Ein Gesamt-PASS für E2E-01–04 wird hier nicht
+festgestellt.
 
 | Bereich | Vorhandene Umsetzung und Quelle | Prüfumfang und nächste Lieferung |
 | --- | --- | --- |
@@ -30,7 +33,10 @@ Das Register enthält auch historische Zustände, etwa `saltMarcherReplacement` 
 
 ## Kritischer Pfad für E2E-01
 
-Der nächste gemeinsame Lieferabschluss verbindet die vorhandenen Anschlüsse. Dafür gilt der [vollständige E2E-01-Szenarienkatalog](../verification/end-to-end.md#e2e-01--kampagne-und-gemeinsamer-raum--saverestart):
+Der nächste gemeinsame Lieferabschluss verbindet die vorhandenen Anschlüsse.
+Den erreichten lokalen Szenarienstand und offene Integrationsnachweise führt
+der [E2E-Prüfstand](../verification/end-to-end.md); die folgende Liste beschreibt
+die verbindliche Wirkung, nicht eine zweite Ergebnisliste. Dafür gilt der [vollständige E2E-01-Szenarienkatalog](../verification/end-to-end.md#e2e-01--kampagne-und-gemeinsamer-raum--saverestart):
 
 1. Kampagne ohne LiveSession öffnen; Atlas, Stadt/Gebäude, Dungeon und Key auf derselben Arbeitsfläche bearbeiten. Fehlende fachliche Wirkung an ihrem konkreten Atlas-/Storeanschluss ergänzen.
 2. Gemeinsame Undo/Redo-Folge, Autosave ohne manuellen Save, A→B→A-Kontextwechsel und frischen Prozess an diesem Ablauf nachweisen. IDs, Geometrie, Abschnittsreihenfolge, Markdownbytes und Referenzen müssen erhalten bleiben; offene Schreibbestätigungen dürfen nicht als dauerhaft gesichert erscheinen.
@@ -73,7 +79,7 @@ Die folgenden Lieferketten übersetzen den bestätigten Umfang in Nutzerergebnis
 
 **Zusammenführung:** Die Verbindung einzelner Funktionen benötigt den jeweiligen konkreten Port, nicht den Abschluss des ganzen Quellbereichs. Import/Atlas verbinden sich in E2E-01, Vorbereitung/Runtime/Encounter in E2E-02, Reise/Zeit/Worldverbraucher in E2E-03 und Plattform/Recovery/Anzeige in E2E-04. Nur diese gemeinsamen Gateabnahmen bleiben nacheinander. Zusätzliche Fachfunktionen behalten ihre vollständigen eigenen Abnahmen.
 
-Tastatur, 200 %, Lokalisierbarkeit, passende Feature-Tutorials, ehrlicher pending/durable-Zustand und relevante Latenz-/Lastgrenzen werden mit dem betroffenen Nutzerablauf umgesetzt und geprüft. SMR-11/E2E-04 bündeln die verbleibende Gesamtqualifikation; sie sind kein Aufschub der Featurequalität. Für neue schreibende Funktionen genügt nicht ein In-Memory- oder DOM-Beleg: produktive Aktivierung benötigt den tatsächlich bestätigten Owner-/Publish-/Recoveryanschluss.
+Tastatur, 100 %, Lokalisierbarkeit, passende Feature-Tutorials, ehrlicher pending/durable-Zustand und relevante Latenz-/Lastgrenzen werden mit dem betroffenen Nutzerablauf umgesetzt und geprüft. SMR-11/E2E-04 bündeln die verbleibende Gesamtqualifikation; sie sind kein Aufschub der Featurequalität. Für neue schreibende Funktionen genügt nicht ein In-Memory- oder DOM-Beleg: produktive Aktivierung benötigt den tatsächlich bestätigten Owner-/Publish-/Recoveryanschluss.
 
 ## Zusätzliche Lieferergebnisse außerhalb der vier Gate-Kurzfassungen
 

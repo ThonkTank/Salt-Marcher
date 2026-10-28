@@ -1,5 +1,5 @@
 import type { Point } from '../shared/contracts';
-import type { LandscapeBox } from './atlas-landscape';
+import type { LandscapeBox } from './landscape-bounds';
 import { routeSegmentRange } from './route-segment-range';
 export { routeSegmentRange };
 

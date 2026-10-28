@@ -18,7 +18,7 @@ jobs:
   baseline:
     name: Candidate · exact-SHA aggregate
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
 
     steps:
       - name: Check out exact event commit
@@ -66,3 +66,32 @@ jobs:
 
       - name: Run complete test suite
         run: npm test
+
+      - name: Install native E2E prerequisites
+        run: |
+          npx playwright-core install-deps chromium
+          sudo apt-get install -y dbus xdg-dbus-proxy xvfb
+          npm run desktop:runtime
+
+      - name: Allow the Electron sandbox in the ephemeral runner
+        run: |
+          if test -e /proc/sys/kernel/apparmor_restrict_unprivileged_userns; then
+            sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+          fi
+
+      # Reuse the exact desktop build above; the probe checks its source SHA and
+      # runtime hashes and owns every Electron process in one isolated profile.
+      - name: Test complete native E2E-01 technical catalogue
+        timeout-minutes: 25
+        env:
+          QA_EVIDENCE_DIR: .build/e2e01-native
+        run: dbus-run-session -- xvfb-run -a -s '-screen 0 1600x1200x24' python3 tools/ui-session.py node tools/test-desktop-e2e01.mjs --software-gpu
+
+      - name: Upload native E2E-01 evidence and failure diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-e2e01-${{ github.event.pull_request.head.sha || github.sha }}
+          path: .build/e2e01-native
+          include-hidden-files: true
+          if-no-files-found: ignore

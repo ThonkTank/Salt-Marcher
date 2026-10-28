@@ -108,7 +108,7 @@ Neustart sowie deren Korrektur und einmaligen Questabschluss: Mitwirkende im
 gemeinsamen Dialog ausdrücklich ändern, XP aufrunden und den unverteilten Schatz
 nach erneutem Neustart direkt am Abschlussbeleg öffnen. Der ursprüngliche
 Lauf nutzte Geräteskalierung; die aktuelle Probe setzt echten Browserzoom
-100/200 %, sichert frische native Fensteraufnahmen und prüft normale Prozessenden.
+100 Prozent, sichert frische native Fensteraufnahmen und prüft normale Prozessenden.
 Die Erweiterung prüft ausdrückliche Teilverteilung und lesende Statusklärung
 nach verlorener Verteilungsantwort; der verbleibende Schatz behält seine Identität.
 

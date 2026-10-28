@@ -1,6 +1,8 @@
-import type { AtlasMap, Hex, Terrain } from './world-contracts';
+import type { AtlasMap } from './world-map-contracts';
+import type { Hex, Terrain } from './world-cell-contracts';
 import { pointHex } from './world-model';
 import { beginHexPaint, applyHexPaintEdit, type HexPaintEdit } from './hex-paint';
+import { ownedEventTarget } from '../shared/owned-event-target';
 type State = {
   owner: string;
   map: AtlasMap;
@@ -22,8 +24,11 @@ export function installHexMapGestures(
     commit: () => Promise<boolean>;
     changed: () => void;
     tell: (s: string, error?: boolean) => void;
+    controls?: { undo: HTMLButtonElement; redo: HTMLButtonElement; status: HTMLElement };
   },
 ) {
+  const cleanups: (() => void)[] = [];
+  const events = ownedEventTarget(root, cleanups);
   let gesture: {
       id: number;
       state: State;
@@ -34,9 +39,13 @@ export function installHexMapGestures(
     historyMap = '',
     undo: HexPaintEdit[] = [],
     redo: HexPaintEdit[] = [];
-  const undoButton = document.getElementById('hex-paint-undo') as HTMLButtonElement,
-    redoButton = document.getElementById('hex-paint-redo') as HTMLButtonElement,
-    status = document.getElementById('hex-paint-status')!;
+  const undoButton =
+      options.controls?.undo ??
+      (root.ownerDocument.getElementById('hex-paint-undo') as HTMLButtonElement),
+    redoButton =
+      options.controls?.redo ??
+      (root.ownerDocument.getElementById('hex-paint-redo') as HTMLButtonElement),
+    status = options.controls?.status ?? root.ownerDocument.getElementById('hex-paint-status')!;
   const sync = () => {
     const state = options.state();
     if (state && state.map.id !== historyMap) {
@@ -84,7 +93,7 @@ export function installHexMapGestures(
   const point = (e: PointerEvent, g: NonNullable<typeof gesture>) =>
     new DOMPoint(e.clientX, e.clientY).matrixTransform(g.inverse);
   root.style.touchAction = 'none';
-  root.addEventListener('pointerdown', (e) => {
+  events.addEventListener('pointerdown', (e) => {
     if (e.button !== 0 || e.altKey) return;
     suppressClick = false;
     const s = options.state();
@@ -120,7 +129,7 @@ export function installHexMapGestures(
       e.preventDefault();
     }
   });
-  root.addEventListener('pointermove', (e) => {
+  events.addEventListener('pointermove', (e) => {
     const g = gesture;
     if (!g || g.id !== e.pointerId) return;
     const s = options.state();
@@ -147,12 +156,12 @@ export function installHexMapGestures(
     }
     e.preventDefault();
   });
-  root.addEventListener('pointerup', (e) => {
+  events.addEventListener('pointerup', (e) => {
     if (gesture?.id === e.pointerId) finish();
   });
-  root.addEventListener('pointercancel', finish);
-  root.addEventListener('lostpointercapture', finish);
-  root.addEventListener(
+  events.addEventListener('pointercancel', finish);
+  events.addEventListener('lostpointercapture', finish);
+  events.addEventListener(
     'click',
     (e) => {
       if (suppressClick) {
@@ -190,7 +199,7 @@ export function installHexMapGestures(
   };
   undoButton.onclick = () => void step('undo');
   redoButton.onclick = () => void step('redo');
-  root.addEventListener('keydown', (e) => {
+  events.addEventListener('keydown', (e) => {
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
       e.preventDefault();
       e.stopPropagation();
@@ -210,6 +219,12 @@ export function installHexMapGestures(
   });
   sync();
   return {
+    dispose() {
+      suspend();
+      undoButton.onclick = null;
+      redoButton.onclick = null;
+      for (const cleanup of cleanups.splice(0)) cleanup();
+    },
     get active() {
       return !!gesture;
     },

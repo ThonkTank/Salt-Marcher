@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import type { CalendarEvent } from '../runtime/world-contracts';
+import type { CalendarEvent } from '../runtime/calendar-contracts';
 import { checkedCalendarEvent } from '../runtime/world-model';
 
 /** Verify author bytes and row identity before any payload-based filtering. */

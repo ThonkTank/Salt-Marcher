@@ -65,7 +65,7 @@ await runNativeProbe(
       await app.evaluate(({ BrowserWindow }) =>
         BrowserWindow.getAllWindows()
           .find((w) => w.webContents.getURL().endsWith('/index.html'))
-          .webContents.setZoomFactor(2),
+          .webContents.setZoomFactor(1),
       );
       page.on('pageerror', (e) => errors.push(e.stack));
       await page.waitForFunction(() => document.body.dataset.tutorialReady === 'true');
@@ -327,7 +327,7 @@ r={t:[dict(x) for x in d.execute('select * from '+t+' order by rowid')] for t in
         sessionRead,
         launches,
         errors,
-        zoom: 2,
+        zoom: 1,
         audit: {
           allEightOriginalIdentities: true,
           onlyQuestAndNpcAppended: true,

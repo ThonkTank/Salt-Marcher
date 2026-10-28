@@ -1,0 +1,7 @@
+{
+  "roles": {
+    "CombatReward.awardId": "local",
+    "CombatReward.recipientIds[]": "local",
+    "CombatReward.treasureId": "local"
+  }
+}

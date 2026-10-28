@@ -109,7 +109,7 @@ Ein Kontextwechsel entwertet alte Antworten.
 [Native Wiederaufnahme und Obsidian-Gegenprobe](https://github.com/ThonkTank/Salt-Marcher/blob/16eb0aa8807ac21704abfea5412ac3a22033a23a/docs/reference/gm-ux-qa/note-followup-20261016/README.md#abgeschlossene-spur-wieder-aufnehmen-und-denselben-abend-weiterverwenden).
 Der native Ablauf `tools/test-desktop-note-reopen.mjs` prüft Spur und NSC-Notiz,
 denselben vorhandenen Spielabend und weitere Bearbeitung nach regulärem
-Close/Fresh bei echtem Fensterzoom von 100 und 200 %. Explizites Aktualisieren
+Close/Fresh bei echtem Fensterzoom von 100 Prozent. Explizites Aktualisieren
 erhält die ausgewählte Quelle auch nach dem Einfügen von 40 weiteren
 Verknüpfungen vor ihr und der Verschiebung auf Seite drei. Er prüft außerdem
 die begrenzte Quellenwahl
@@ -229,7 +229,7 @@ Die nächsten konkreten Prüfungen und Korrekturen:
 3. Offene Profil-, Besuchs-, Gruppen- und Rewardeingaben vor Ersatz sichern.
    Verzögerte Antworten, Contextwechsel, Schreibfehler und unklare Commits
    prüfen; dieselbe Command-ID per Status aufklären. Danach Save → normal
-   schließen → frischer Prozess sowie Tastatur, 200%-Ansicht und Undo/Redo
+   schließen → frischer Prozess sowie Tastatur, 100 %-Ansicht und Undo/Redo
    im nativen Produkt prüfen.
 
 Für [Kampfentwürfe](../../runtime/contract/combat-recovery.md) und

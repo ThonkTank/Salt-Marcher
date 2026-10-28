@@ -1,0 +1,8 @@
+{
+  "roles": {
+    "CatalogReference.sourceId": "external",
+    "CatalogReference.sourceVersion": "external",
+    "CatalogReference.sourceHash": "external",
+    "CatalogReference.entryId": "external"
+  }
+}

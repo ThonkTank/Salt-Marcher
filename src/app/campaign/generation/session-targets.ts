@@ -1,5 +1,5 @@
 import { encounterThresholds, type EncounterParty } from '../../catalog/encounter-contracts';
-import { dailyXp } from '../../runtime/progression';
+import { dailyXp } from '../../runtime/experience-tables';
 import { exactWeight } from '../generation-contracts';
 import { add, decimal, multiply, rational, roundHalfUp } from './rational';
 

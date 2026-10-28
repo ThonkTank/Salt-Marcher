@@ -1,7 +1,7 @@
 import { openMaskHistory, closeMaskHistory } from './mask-history-ui';
 import type { Result } from '../shared/contracts';
 import { formatInstant } from './live-contracts';
-import type { CombatState } from './combat-contracts';
+import type { CombatState } from './combat-state-contracts';
 import type { ChaseState } from './chase-contracts';
 
 const get = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;

@@ -287,7 +287,7 @@ await runNativeProbe(
           notes[2].gmNotes,
         );
         await app.evaluate(({ BrowserWindow }) =>
-          BrowserWindow.getAllWindows()[0].webContents.setZoomFactor(2),
+          BrowserWindow.getAllWindows()[0].webContents.setZoomFactor(1),
         );
         const toggle = page.locator('#visit-note-detail [data-note-toggle]');
         await toggle.scrollIntoViewIfNeeded();
@@ -301,7 +301,7 @@ await runNativeProbe(
           () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))),
         );
         await writeFile(
-          path.join(out, 'reading-200percent.png'),
+          path.join(out, 'reading-100percent.png'),
           Buffer.from(
             await app.evaluate(async ({ BrowserWindow }) =>
               (await BrowserWindow.getAllWindows()[0].webContents.capturePage())
@@ -324,7 +324,7 @@ await runNativeProbe(
         );
         results.readAndLinkWithinSameVisit = true;
         results.selectedReferencesSurviveEmptySearch = true;
-        results.zoom200ToggleActuallyUsed = true;
+        results.zoom100ToggleActuallyUsed = true;
       }
       await page.locator('#scene-title').click();
       await page.locator('#session-packet-open').click();
