@@ -52,6 +52,8 @@ function fixture(t) {
     s,
     c,
     w,
+    file: path.join(dir, 'workbench.sqlite'),
+    snapshot: path.join(dir, 'historical.sqlite'),
     command: () => ({ commandId: randomUUID(), campaignId: c.id, token: w.token }),
   };
 }
@@ -82,7 +84,7 @@ test('four source-backed XP errata preserve pinned artifact bytes and unrelated 
   assert.equal(raw.creatures.find((c) => c.id === 'riding-horse').xp, 25);
 });
 
-test('historical plan snapshots remain unchanged until an explicit edit uses corrected catalog values', (t) => {
+test('historical group facts remain frozen through plan edits, Complete import and Fresh', async (t) => {
   const x = fixture(t),
     p = x.s.saveEncounterPlan({
       ...x.command(),
@@ -101,23 +103,66 @@ test('historical plan snapshots remain unchanged until an explicit edit uses cor
   const old = {
       ...p,
       catalogHash: SRD_5_1_ARTIFACT_SHA256,
+      sourceReferences: p.sourceReferences.map((r) => ({
+        ...r,
+        sourceHash: SRD_5_1_ARTIFACT_SHA256,
+      })),
       sources: p.sources.map((c) => ({ ...c, xp: 25, sourceVersion: 'v5.10.0' })),
     },
-    payload = JSON.stringify(old);
+    groupId = x.s.executeProgress({
+      ...x.command(),
+      action: {
+        kind: 'group-create',
+        title: 'Historical patrol',
+        encounterId: p.id,
+        expectedEncounterRevision: p.revision,
+      },
+    }).groupId,
+    row = x.s.db.prepare('SELECT * FROM prepared_group WHERE id=?').get(groupId),
+    group = { ...JSON.parse(row.payload), plan: old },
+    payload = JSON.stringify(group);
   x.s.db
-    .prepare('UPDATE encounter_plan SET payload=?,checksum=? WHERE id=?')
-    .run(payload, hash(payload), p.id);
+    .prepare('UPDATE prepared_group SET payload=?,checksum=? WHERE id=?')
+    .run(payload, hash(payload), groupId);
   const before = x.s.db.serialize();
-  assert.deepEqual(x.s.encounterPlan(x.w.token, p.id), old);
+  assert.deepEqual(x.s.groupView(x.w.token, groupId).plan, old);
+  assert.equal(x.s.encounterPlan(x.w.token, p.id).sources[0].xp, 50);
   assert.ok(x.s.db.serialize().equals(before));
   const edited = x.s.saveEncounterPlan({
     ...x.command(),
     expectedRevision: 1,
-    plan: { ...old, notes: 'Explicit edit' },
+    plan: { ...p, notes: 'Explicit edit' },
   });
   assert.equal(edited.sources[0].xp, 50);
   assert.equal(edited.catalogHash, creatureInfo().hash);
   assert.equal(edited.revision, 2);
+  assert.deepEqual(x.s.groupView(x.w.token, groupId).plan, old);
+  await x.s.campaignSnapshot(x.w.token, x.snapshot);
+  const imported = x.s.acceptCampaignSnapshot(x.snapshot, 'Imported historical facts', {}),
+    mapping = JSON.parse(
+      x.s.db.prepare('SELECT local_map FROM campaign_origin WHERE campaign_id=?').get(imported.id)
+        .local_map,
+    ),
+    importedView = x.s.activate(imported.id),
+    importedGroup = x.s.groupView(importedView.token, mapping[groupId]);
+  assert.notEqual(importedGroup.plan.id, old.id);
+  assert.deepEqual(importedGroup.plan.sources, old.sources);
+  assert.deepEqual(importedGroup.plan.sourceReferences, old.sourceReferences);
+  assert.equal(importedGroup.plan.catalogHash, old.catalogHash);
+  assert.equal(importedGroup.plan.notes, old.notes);
+  assert.equal(importedGroup.plan.sources[0].xp, 25);
+  assert.equal(x.s.encounterPlan(importedView.token, mapping[p.id]).sources[0].xp, 50);
+  const originalView = x.s.activate(x.c.id);
+  assert.deepEqual(x.s.groupView(originalView.token, groupId).plan, old);
+  const fresh = new CampaignStore(x.file);
+  try {
+    const original = fresh.activate(x.c.id);
+    assert.deepEqual(fresh.groupView(original.token, groupId).plan, old);
+    const view = fresh.activate(imported.id);
+    assert.deepEqual(fresh.groupView(view.token, mapping[groupId]), importedGroup);
+  } finally {
+    fresh.close();
+  }
 });
 
 test('a readable proposal made with the previous catalog cannot be accepted under the corrected identity', (t) => {
@@ -202,7 +247,7 @@ test('all twelve omitted reactions are readable, clearly named and immutable in 
   );
 });
 
-test('reaction supplementation preserves old saved sources and prose until an explicit plan edit', (t) => {
+test('reaction supplementation preserves frozen group sources and prose across a reusable plan edit', (t) => {
   const x = fixture(t),
     p = x.s.saveEncounterPlan({
       ...x.command(),
@@ -225,24 +270,37 @@ test('reaction supplementation preserves old saved sources and prose until an ex
   const old = {
       ...p,
       catalogHash: previousHash,
+      sourceReferences: p.sourceReferences.map((r) => ({ ...r, sourceHash: previousHash })),
       sources: p.sources.map((c) => ({ ...c, traits: original.traits, sourceVersion: 'v5.10.0' })),
     },
-    payload = JSON.stringify(old);
+    groupId = x.s.executeProgress({
+      ...x.command(),
+      action: {
+        kind: 'group-create',
+        title: 'Historical gladiators',
+        encounterId: p.id,
+        expectedEncounterRevision: p.revision,
+      },
+    }).groupId,
+    row = x.s.db.prepare('SELECT * FROM prepared_group WHERE id=?').get(groupId),
+    group = { ...JSON.parse(row.payload), plan: old },
+    payload = JSON.stringify(group);
   x.s.db
-    .prepare('UPDATE encounter_plan SET payload=?,checksum=? WHERE id=?')
-    .run(payload, hash(payload), p.id);
+    .prepare('UPDATE prepared_group SET payload=?,checksum=? WHERE id=?')
+    .run(payload, hash(payload), groupId);
   const before = x.s.db.serialize();
-  assert.deepEqual(x.s.encounterPlan(x.w.token, p.id), old);
+  assert.deepEqual(x.s.groupView(x.w.token, groupId).plan, old);
   assert.ok(x.s.db.serialize().equals(before));
   assert.notEqual(creatureInfo().hash, previousHash);
   const edited = x.s.saveEncounterPlan({
     ...x.command(),
     expectedRevision: p.revision,
-    plan: { ...old, notes: old.notes + 'Explicit edit' },
+    plan: { ...p, notes: old.notes + 'Explicit edit' },
   });
   assert.equal(edited.sources[0].traits.at(-1).name, 'Reaktion: Parry');
   assert.equal(edited.catalogHash, creatureInfo().hash);
   assert.equal(edited.notes, old.notes + 'Explicit edit');
   assert.deepEqual(edited.sources[0].traits.slice(0, -1), original.traits);
+  assert.deepEqual(x.s.groupView(x.w.token, groupId).plan, old);
   assert.equal(hash(bytes), SRD_5_1_ARTIFACT_SHA256);
 });

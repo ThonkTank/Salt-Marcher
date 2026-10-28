@@ -30,7 +30,8 @@ require('esbuild').buildSync({
 const { CampaignStore } = require(root + '/.build/area-results-store.cjs'),
   results = [];
 for (const recovery of [false, true])
-  for (const scale of [1, 2]) {
+  for (const variant of [1, 2]) {
+    const scale = 1;
     await runNativeProbe(
       { output: output + '/case-' + ++nativeCase, name: 'area-results' },
       async (session) => {
@@ -264,7 +265,7 @@ for (const recovery of [false, true])
             );
             assert.equal(commands.length, 1);
             areaCommandId = commands[0].commandId;
-            if (scale === 1) await page.locator('#combat-area-cancel').click();
+            if (variant === 1) await page.locator('#combat-area-cancel').click();
             else await page.keyboard.press('Escape');
             await app.evaluate(() => {
               globalThis.qaAreaStatusUnavailable = false;

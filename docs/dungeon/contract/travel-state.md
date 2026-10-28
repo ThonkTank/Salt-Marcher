@@ -144,7 +144,7 @@ Das ist ein Storebeleg, keine native Gesamtqualifikation.
    Autorenzeichnung sind nach Fresh geprüft. Beide App-Prozesse enden regulär.
    Dies qualifiziert den beschriebenen Kernablauf, keine breite Indoor-,
    Betriebssystem-, Accessibility- oder Autonomygesamtprüfung.
-4. **Zusammenhängend qualifizieren.** Native Ansichtwechsel, lange Texte, 200 %,
+4. **Zusammenhängend qualifizieren.** Native Ansichtwechsel, lange Texte, 100 %,
    langsame Reads und tatsächliche Prozessunterbrechung mit Reise, Trigger,
    Wahrnehmung, Verfolgung und NPCs prüfen. Weitere räumliche Owner gegen den Geometrieguard
    prüfen; der gezielte Volume-/Stilbeleg qualifiziert nicht sämtliche

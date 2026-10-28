@@ -1,5 +1,5 @@
 // Native task: move the same partially allocated fund through location, inbox and group.
-// Requires build:desktop; run via tools/ui-session.py. GM_QA_ZOOM=2 checks 200%.
+// Requires build:desktop; run via tools/ui-session.py. Native UI probes use 100%.
 import { createRequire } from 'node:module';
 import { randomUUID } from 'node:crypto';
 import { writeFile } from 'node:fs/promises';
@@ -101,7 +101,7 @@ try {
       s.close();
     }
   };
-  const zoom = Number(process.env.GM_QA_ZOOM ?? 1),
+  const zoom = 1,
     snapshots = [];
   async function launch() {
     const page = await native.launch(zoom);

@@ -2,15 +2,17 @@
 
 Status: Current; offene Ziele sind als solche beschrieben.
 Owner: project
-Last Reviewed: 2026-10-24 (Struktur und Quellen; Fachabnahme separat)
+Last Reviewed: 2026-10-28 (Host-, Build-, Speicher- und Modulgrenzen; Fachabnahme separat)
 Source of Truth: Dieses Dokument besitzt das benannte Thema; Code belegt den Iststand, das Abnahmeregister den Prüfstand.
 
-Entscheidungsstand: **11. Oktober 2026**. Untersucht wurde das Zielrepository auf
+Historische Entscheidungsgrundlage vom **11. Oktober 2026**: Untersucht wurde das Zielrepository auf
 `116c16af48b6a073216685c8d8e2cc74fada82c3`. Alle 36 Anforderungsdateien und die
 beiden ergänzenden Primärquellen aus [scope-sources.json](../requirements/sources.json)
 wurden gegen die dort gebundenen SHA-256-Werte geprüft. Der historische
 Umfangsabgleich bleibt erhalten. Diese Seite entscheidet die technische
-Richtung; sie behauptet weder Implementation noch Produktabnahme.
+Richtung und die aktuellen Codebesitzer. Der Implementierungs- und Lieferstand
+steht in der [Roadmap](../delivery/roadmap.md), direkte Belege und offene
+Qualifikation in der [Prüfdokumentation](../verification/end-to-end.md).
 
 ## Zweck und Entscheidungsmaßstab
 
@@ -53,12 +55,13 @@ und Aufgaben zugeordnet, nicht nach ihrer Größe:
 | `storage/` | Kanonischer SQLite-Speicher und fachliche Speicheroperationen |
 | `transfer/` | Kopier-/Archivmodelle, Transferprüfung und erzeugte Vertragsbeschreibungen |
 
-Die aktiven Node-Tests spiegeln die sechs Fachbereiche unter `tests/`. Der
-bestehende gebündelte TypeScript-Testbestand liegt unter `tests/shared/core/`;
-sein Einstieg bleibt Bestandteil derselben Standardsuite. `tests/adr-prototypes/`
-hat weiterhin seine ausdrückliche Auswahl. `tests/native-reference/` wird nicht
-von der Standardsuche erfasst. [Gezielte Testläufe](../verification/testing.md)
-bereiten die gemeinsamen Artefakte automatisch vor.
+Die aktiven Node-Tests spiegeln die sechs Fachbereiche unter `tests/`.
+`tools/test-selection.mjs` wählt deren `.test.mjs`-Dateien rekursiv sowie
+`.test.mjs`-Dateien direkt unter `tests/` aus. Native Desktopproben unter
+`tools/` haben eigene Aufrufe; die entfernten historischen Sammel- und
+ADR-Tests gehören nicht zur aktuellen Suite. [Gezielte Testläufe](../verification/testing.md)
+über den Runner bereiten die gemeinsamen Artefakte automatisch vor; direkte
+Node-Testaufrufe benötigen einmal `node build.mjs --test`.
 
 Ausschließlich historische Obsidian-Einstiege und Adapter liegen unter
 `src/legacy/obsidian/`. Der historische Pluginbuild verwendet diesen Einstieg.
@@ -67,6 +70,18 @@ bleiben erhalten; sie sind nicht allein wegen ihrer Herkunft Legacy-Adapter.
 Die Desktop-Bundlepfade für Worker, Lazy-Module, Assets und Spieleranzeige bleiben
 unverändert. Diese Gliederung ändert weder IPC-Verträge noch Archive oder Schema.
 
+
+### Build und Host
+
+Node.js 22 und npm sind die Werkzeugbasis. `npm run build` (`build.mjs`) und
+`npm run build:desktop` rufen denselben Desktopbuild auf; die Ausgabe liegt in
+`.build/desktop/`, Main startet aus `main.cjs`. `tools/desktop-build-plan.mjs`
+und `tools/desktop-entry-environments.mjs` verbinden die produktiven Einstiege
+mit ihrer Build-/Prüfumgebung. Der explizite Befehl `build:legacy:obsidian`
+baut nur die historische Referenz unter `.build/legacy-obsidian/`.
+Linuxpakete entstehen mit `npm run package:desktop -- <Ausgabeverzeichnis>`;
+Paketbau, Installation und Produktqualifikation besitzen getrennte Belege im
+[Liefervertrag](../delivery/github-updates.md).
 
 ### Zusammensetzen und fachliche Eigentümer
 
@@ -127,7 +142,7 @@ Validierung, Rohentwürfe und Receipt-Auswertung.
 ein lokaler SQLite-Schreibdienst, eine Atlasoberfläche.** Die
 [Plattformentscheidung](platform-decision.md) begründet Alternativen
 und Übergang; der [Prototypplan](../verification/architecture-experiments.md) führt
-die noch erforderlichen Implementationsbeweise.
+die Qualifikationskriterien und historischen Entscheidungsproben.
 
 | Teil | Zuständigkeit | Prüfbare Grenze |
 | --- | --- | --- |
@@ -135,7 +150,7 @@ die noch erforderlichen Implementationsbeweise.
 | Anwendung | Aktivierung, Zugriffsprüfung, Command, betroffene Records, Konflikt/Cancel, Projektionen | Eine Änderung kann mehrere Fachmodule betreffen, besitzt aber eine gemeinsame Commitentscheidung |
 | Electron-Main | Fenster, Dialoge, Rechteprüfung, Ressourcenfreigabe und geordnetes Schließen | Enger Preload-Vertrag; typisierter asynchroner Store-Client statt SQLite-Zugriff |
 | Lokaler Schreibdienst im Node-Worker | SQLite, Validierung an der Schreibgrenze, Revisionen, Receipts, Assets, Recovery und Migration | Ausschließlich dieser Dienst schreibt Produktdaten; UI und Extensions erhalten keine DB-Verbindung |
-| GM-Oberfläche | Native DOM-Controls, Auswahl/Inspector/Text, gemeinsame Kamera/Werkzeuge, Canvas2D-Draufsicht und abgeleitete Three.js-Geländeansicht | Eingabe und Vorschau ohne Autorenmutation; keine Geschäftslogik in Popup/Dialog/Meter |
+| GM-Oberfläche | Native DOM-Controls, Auswahl/Inspector/Text und gemeinsame Kamera/Werkzeuge; metrischer deck.gl-Pfad gemäß [Atlasbesitzer](../../atlas/architecture/rendering.md) | Eingabe und Vorschau ohne Autorenmutation; keine Geschäftslogik in Popup/Dialog/Meter |
 | Hintergrundjobs | Abbrechbare Geometrie, Generatoren, Suche/Export, Medienprüfung | Unveränderlicher Input, gebundene Basisrevision und Aktivierung; Resultate erhalten keine eigene Schreibberechtigung |
 | Passive Anzeige / Extensions | Redigierte Anzeige bzw. ausdrücklich erlaubte Fähigkeiten | Getrennte Prozesse und enge DTOs; keine versteckten GM-Daten oder ungeprüften privilegierten Aufrufe |
 

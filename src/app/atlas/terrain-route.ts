@@ -1,31 +1,12 @@
+import {
+  type RouteStructure,
+  type RouteLimits,
+  type RouteNode,
+  type TerrainRoute,
+} from './terrain-route-contracts';
 import type { Point } from '../shared/contracts';
-import type { LandscapeRecord, LandscapeBox } from './atlas-landscape';
-
-export type RouteStructure = 'ground' | 'bridge' | 'ford' | 'tunnel';
-export interface RouteLimits {
-  corridor: number;
-  cut: number;
-  fill: number;
-  shoulder: number;
-  grade: number;
-  depth: number;
-  clearance: number;
-}
-export interface RouteNode extends Point {
-  z: number;
-  structure: RouteStructure;
-}
-export interface TerrainRoute {
-  version: 1;
-  anchors: Point[];
-  limits: RouteLimits;
-  protected: boolean;
-  /** One explicit choice per anchor interval. Auto is resolved before saving. */
-  sections: ('auto' | RouteStructure)[];
-  nodes: RouteNode[];
-  mouth?: { id: string; point: Point };
-  conflict?: string;
-}
+import type { LandscapeRecord } from './landscape-contracts';
+import type { LandscapeBox } from './landscape-bounds';
 export const routeDefaults = (kind: 'road' | 'river'): RouteLimits =>
   kind === 'river'
     ? { corridor: 200, cut: 8, fill: 0, shoulder: 20, grade: 1, depth: 1.5, clearance: 3 }

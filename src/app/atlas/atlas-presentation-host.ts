@@ -1,7 +1,7 @@
 import type { AtlasWorkplane } from './atlas-workplane';
 import type { CanvasBox } from './atlas-camera';
 import type { Point } from '../shared/contracts';
-import type { LandscapeRecord } from './atlas-landscape';
+import type { LandscapeRecord } from './landscape-contracts';
 export interface TerrainDraft {
   routeRecords: LandscapeRecord[];
 }

@@ -4,8 +4,8 @@ import {
   type AtlasTerrainTileRequest,
   type AtlasTerrainTile,
 } from '../atlas/atlas-terrain-tile';
-import type { AtlasRegionSource } from '../atlas/atlas-region-contracts';
-import type { TerrainProjection } from '../atlas/terrain-projection';
+import type { AtlasRegionSource } from '../atlas/atlas-region-view-contracts';
+import type { TerrainProjection } from '../atlas/terrain-projection-contracts';
 import { landscapeRasterBounds } from '../atlas/landscape-raster';
 import { AtlasCacheScope } from './atlas-cache-scope';
 import type { AtlasRegionReader } from './atlas-region';

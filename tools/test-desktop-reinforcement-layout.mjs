@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 const root = process.cwd(),
   require = createRequire(root + '/package.json'),
   Database = require('better-sqlite3'),
-  zoom = Number(process.env.GM_QA_ZOOM ?? 1),
+  zoom = 1,
   out = process.env.QA_EVIDENCE_DIR ?? root + '/.build/reinforcement-layout-' + zoom;
 const replyLoss = process.argv.includes('--reply-loss');
 const native = await createNativeSession({ root, output: out, name: 'gm-reinforcement' }),
@@ -161,7 +161,7 @@ async function add(lose) {
     assert.equal(await page.locator('#combat-creature-source').inputValue(), source);
     await shot('unconfirmed-' + source);
     await checkControls(['combat-add-close', 'combat-add-status']);
-    if (zoom === 1) await page.locator('#combat-add-close').click();
+    if (source !== 'catalog') await page.locator('#combat-add-close').click();
     else await page.keyboard.press('Escape');
     await page.locator('#combat-add-dialog').waitFor({ state: 'hidden' });
     assert.equal(await page.locator('#combat-next').isDisabled(), true);
@@ -220,7 +220,7 @@ try {
     'combat-creature-add',
   ]);
   await page.locator('#combat-creature-count').fill('1');
-  await add(replyLoss && zoom === 1);
+  await add(replyLoss);
   let current = read();
   assert.deepEqual(current.participants.slice(0, 2), original.participants);
   assert.equal(current.turnId, original.turnId);
@@ -247,7 +247,7 @@ try {
     'combat-creature-initiative',
     'combat-creature-add',
   ]);
-  await add(replyLoss && zoom === 2);
+  await add(replyLoss);
   current = read();
   assert.equal(current.participants.length, 4);
   assert.deepEqual(current.participants.slice(0, 2), original.participants);

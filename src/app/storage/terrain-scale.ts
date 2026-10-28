@@ -1,7 +1,8 @@
 import { applyLakeBrush, validateLakeStroke, lakeHeightStroke } from '../atlas/terrain-lake-brush';
-import type { LakeStroke } from '../atlas/atlas-landscape';
-import { type LandscapeBox, type LandscapeRecord } from '../atlas/atlas-landscape';
-import type { AtlasRegionSource } from '../atlas/atlas-region-contracts';
+import type { LakeStroke } from '../atlas/landscape-action-contracts';
+import { type LandscapeBox } from '../atlas/landscape-bounds';
+import { type LandscapeRecord } from '../atlas/landscape-contracts';
+import type { AtlasRegionSource } from '../atlas/atlas-region-view-contracts';
 import { TerrainCache } from '../atlas/terrain-cache';
 import { streamTerrainField, type TerrainStream } from '../atlas/terrain-field-stream';
 import { heightRecord, TerrainSampler } from '../atlas/terrain-height';
@@ -10,15 +11,15 @@ import {
   heightBrushBounds,
   heightBrushPixel,
   validateHeightStroke,
-  type HeightStroke,
 } from '../atlas/terrain-brush';
+import { type HeightStroke } from '../atlas/terrain-brush-contracts';
 import { coupleTerrainEdits } from '../atlas/terrain-lake-coupling';
 import { terrainEditingDependencies } from './terrain-editing-dependencies';
 import { routeBounds } from '../atlas/terrain-route';
 import { readRouteTerrain } from './terrain-route';
 import { readTerrainEditingPackets } from './terrain-editing-source';
 import { readTerrainGrid } from './terrain-grid';
-import type { TerrainGrid } from '../atlas/terrain-spatial-model';
+import type { TerrainGrid } from '../atlas/terrain-grid-contracts';
 
 /** Internal worker result. Never part of the renderer action/bridge contract. */
 export interface PreparedTerrainStroke {

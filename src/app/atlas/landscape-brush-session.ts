@@ -2,11 +2,11 @@ import type { LandscapeHost } from './landscape-workbench-types';
 import { TerrainDraftStroke, TerrainStrokeDiscardedError } from './terrain-stroke-queue';
 import { terrainTraceMeasure } from './terrain-timing';
 import { TerrainLiveStroke } from './terrain-live-stroke';
-import { type HeightStroke } from './terrain-brush';
+import { type HeightStroke } from './terrain-brush-contracts';
 import type { LandscapeToolSettings } from './landscape-tool-settings';
 import { pendingAtlasWrite } from './campaign-atlas-author';
 import type { Point } from '../shared/contracts';
-import { type LandscapeRecord } from './atlas-landscape';
+import { type LandscapeRecord } from './landscape-contracts';
 interface LandscapeBrushSessionHost {
   readonly effects: Pick<
     LandscapeHost,
@@ -34,7 +34,7 @@ interface LandscapeBrushSessionHost {
 /** Owns live brush sampling, frame scheduling and stroke completion. */
 export class LandscapeBrushSession {
   constructor(private host: LandscapeBrushSessionHost) {}
-  maskStroke: HeightStroke | import('./atlas-landscape').LakeStroke | null = null;
+  maskStroke: HeightStroke | import('./landscape-action-contracts').LakeStroke | null = null;
   colorDraft: ReturnType<LandscapeToolSettings['color']> | null = null;
   maskStart = 0;
   maskGeneration = 0;

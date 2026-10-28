@@ -4,7 +4,7 @@ import { createRequire } from 'node:module';
 import { randomUUID } from 'node:crypto';
 import assert from 'node:assert/strict';
 const root = process.cwd(),
-  zoom = Number(process.env.GM_QA_ZOOM ?? 1),
+  zoom = 1,
   native = await createNativeSession({
     root,
     output: process.env.QA_EVIDENCE_DIR ?? '.build/loot-stacks',

@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import type { TreasureAnchor } from '../runtime/treasury-contracts';
-import type { Treasure } from '../runtime/progression';
+import type { Treasure } from '../runtime/treasure-contracts';
 /** Old scene rewards also contain a historical location; the Scene is their current anchor. */
 export function treasureAnchor(t: Pick<Treasure, 'sceneId' | 'locationId'>): TreasureAnchor {
   return t.sceneId

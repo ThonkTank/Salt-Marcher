@@ -36,7 +36,7 @@ const fields = [
   'live-session-close-summary',
   'live-session-close-handoff',
 ];
-function recap(keep) {
+function recap(keep, live = async () => ({ ok: true, value: {} })) {
   const { document } = parseHTML(
     '<html><body>' +
       fields.map((id) => `<textarea id="${id}"></textarea>`).join('') +
@@ -59,7 +59,7 @@ function recap(keep) {
     },
     window: {
       confirm: () => true,
-      campaign: { keepSessionRecapDraft: keep, live: async () => ({ ok: true, value: {} }) },
+      campaign: { keepSessionRecapDraft: keep, live },
     },
   });
   editor.accept({ recapDraft: null });
@@ -111,6 +111,43 @@ test('a failed recap flush retains raw input and does not approve navigation', a
   assert.equal(await a.editor.flush(), false);
   assert.equal(a.get('live-session-summary').value, '  Unfinished\r\nrecap  ');
   assert.match(a.get('live-session-draft-status').textContent, /nicht gesichert/);
+});
+
+test('a lost recap acknowledgement is read back once and later literal input uses its confirmed basis', async () => {
+  const held = deferred(),
+    writes = [];
+  let saved = null,
+    reads = 0;
+  const a = recap(
+    async (_token, text, basis) => {
+      writes.push({ text: { ...text }, basis });
+      assert.deepEqual(basis, saved);
+      saved = { ...text };
+      if (writes.length === 1) {
+        await held.promise;
+        throw Error('Antwort verloren');
+      }
+      return { ok: true, value: null };
+    },
+    async () => {
+      reads++;
+      return { ok: true, value: { recapDraft: saved } };
+    },
+  );
+  a.get('live-session-summary').value = '  Gesendet\r\n';
+  a.editor.queueRecapSave();
+  await settle();
+  a.get('live-session-summary').value = '  Später\r\n[[Tor]]  ';
+  a.editor.queueRecapSave();
+  held.resolve();
+  assert.equal(await a.editor.flush(), true);
+  assert.equal(reads, 1);
+  assert.deepEqual(
+    writes.map((w) => w.text.summary),
+    ['  Gesendet\r\n', '  Später\r\n[[Tor]]  '],
+  );
+  assert.deepEqual(saved, { summary: '  Später\r\n[[Tor]]  ', handoff: '' });
+  assert.equal(a.get('live-session-summary').value, saved.summary);
 });
 
 function knowledge(load) {

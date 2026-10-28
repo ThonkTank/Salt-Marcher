@@ -1,4 +1,5 @@
-import type { LandscapeBox, LandscapeRecord } from './atlas-landscape';
+import type { LandscapeBox } from './landscape-bounds';
+import type { LandscapeRecord } from './landscape-contracts';
 /** Raster coverage of a version-2 stroke. The caller owns the RGBA footprint
  * mask; the Float32 accumulation and stamp order are part of the paint format.
  * Axis coordinates retain Float64 precision, including far-world positions. */

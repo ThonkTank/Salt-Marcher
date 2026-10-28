@@ -1,4 +1,4 @@
-import type { Note, NoteSearchPreview } from '../campaign/preparation-contracts';
+import type { Note, NoteSearchPreview } from '../campaign/note-data';
 
 /** FTS supplies token locations; the renderer receives only bounded literal text. */
 export function noteSearchPreview(

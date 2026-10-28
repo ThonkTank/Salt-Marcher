@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import path from 'node:path';
 import { randomUUID, createHash } from 'node:crypto';
 import { writeFile, mkdir } from 'node:fs/promises';
-const zoom = Number(process.env.GM_QA_ZOOM ?? 1),
+const zoom = 1,
   root = process.cwd(),
   require = createRequire(root + '/package.json');
 const output = process.env.QA_EVIDENCE_DIR ?? path.join(root, '.build/npc-portrait-evidence');

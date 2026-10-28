@@ -26,8 +26,8 @@ await runNativeProbe({ output: out, name: 'moment-follow-up' }, async (native) =
   });
   const { CampaignStore } = require(root + '/.build/note-case17-store.cjs');
   const direct = !process.argv.includes('--legacy-navigation'),
-    zoom = Number(process.argv.find((x) => x.startsWith('--zoom='))?.slice(7) ?? 1);
-  assert([1, 2].includes(zoom), 'Use --zoom=1 or --zoom=2');
+    zoom = 1;
+  assert([1].includes(zoom), 'Native UI probes use 100% only');
   const resume = process.argv.find((x) => x.startsWith('--resume='))?.slice(9);
   async function newFixture() {
     const profile = native.profile,

@@ -1,6 +1,7 @@
 import type { Result } from '../shared/contracts';
-import type { LiveScene } from './live-contracts';
-import type { CombatAction, CombatState, CombatView } from './combat-contracts';
+import type { LiveScene } from './live-scene-contracts';
+import type { CombatAction, CombatView } from './combat-contracts';
+import type { CombatState } from './combat-state-contracts';
 import type { PreparedGroup } from '../campaign/session-contracts';
 import { groupCombatBasis, type GroupView } from '../campaign/groups-contracts';
 const node = <K extends keyof HTMLElementTagNameMap>(tag: K, text?: string) => {

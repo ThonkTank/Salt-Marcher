@@ -1,5 +1,6 @@
 import { adjustedHitDamage } from './damage-adjustment';
-import type { CombatAction, CombatState } from './combat-contracts';
+import type { CombatAction } from './combat-contracts';
+import type { CombatState } from './combat-state-contracts';
 import type { CreatureAction } from '../../features/catalog/creature-catalog';
 import type { SceneCheck } from './scene-check-contracts';
 import {

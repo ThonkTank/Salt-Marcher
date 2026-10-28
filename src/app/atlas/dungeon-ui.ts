@@ -21,13 +21,12 @@ import type { DungeonMovement } from './volume-contracts';
 import type { WorkspaceGeometry } from '../shared/contracts';
 import type {
   DungeonView,
-  DungeonPose,
-  DungeonPreview,
   DungeonAction,
   DungeonSenseAction,
-  DungeonTraceRules,
   DungeonCommand,
 } from './dungeon-contracts';
+import type { DungeonPose } from './dungeon-position-contracts';
+import type { DungeonPreview, DungeonTraceRules } from './dungeon-travel-contracts';
 import { centerInRoom } from './dungeon-model';
 import { trackAt } from '../runtime/track-model';
 export const editorSession = new EditorSession();

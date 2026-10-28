@@ -54,8 +54,8 @@ einer verlorenen Antwort. Notiz-ID, bestehende Verweise und spätere Texte bleib
 erhalten; die Statusabfrage wiederholt den Writer nicht.
 
 `tools/test-desktop-note-trash-recovery.mjs` führt diesen Weg mit echter Tastatur,
-Neustarts sowie Raum- und Spielabendverwendungen bei 100/200 Prozent Browserzoom
-aus; bei 200 Prozent geht die Restore-Antwort nach dem Commit absichtlich verloren.
+Neustarts sowie Raum- und Spielabendverwendungen bei 100 Prozent Browserzoom
+aus; in einer getrennten 100-Prozent-Fehlervariante geht die Restore-Antwort nach dem Commit absichtlich verloren.
 Echte CRLF-Autorenbytes bleiben im Speicher erhalten. Die Probe verwendet den
 vorhandenen nativen Sitzungshelfer: ein Fehlstart entfernt frühere Erfolgsdateien,
 und nur unveränderte Buildartefakte mit regulären Prozessenden qualifizieren den
@@ -107,7 +107,7 @@ und beide Herkunftsbeziehungen bleiben beim bestehenden Writer.
 Die nativen Prüfungen `tools/test-desktop-note-excerpts.mjs` und
 `tools/test-desktop-note-existing-excerpts.mjs` prüfen Neuanlage, Ergänzung,
 Spielabendverwendung, normales Prozessende, frisches Wiederfinden und
-Weiterbearbeitung. `GM_QA_ZOOM=2` prüft denselben Ablauf vergrößert.
+Weiterbearbeitung. Die Probe bleibt bei 100 Prozent.
 
 Die Auswahl eines vorhandenen Originals liest nur dessen kanonischen Inhalt
 über den bestehenden `deskContent`-Port und dessen offenen Arbeitsentwurf.

@@ -131,7 +131,7 @@ eine verfügbare Identität; Speichern oder Kopieren allein weist nichts zu.
 Der konkrete Presetvertrag und seine weiteren Abnahmen stehen in
 [Generatorregeln](generator-settings.md). Historische und importierte Kampagnen
 ohne lokale Nutzungsmetadaten zeigen unbekannte Daten.
-Vollständige OS-, Tastatur-, 200-%- und Crashqualifikation bleibt eigenständig.
+Vollständige OS-, Tastatur-, 100 %- und Crashqualifikation bleibt eigenständig.
 
 ## Bestätigte Kopie und lokale Transferbereinigung
 

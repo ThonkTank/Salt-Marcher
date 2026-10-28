@@ -13,22 +13,21 @@ import type {
   AtlasHit,
   AtlasHitPage,
   AtlasObjectFocus,
-  AtlasRegionGeometry,
   AtlasRegionQuery,
   AtlasRegionSource,
   AtlasRegionView,
-} from '../atlas/atlas-region-contracts';
+} from '../atlas/atlas-region-view-contracts';
+import type { AtlasRegionGeometry } from '../atlas/atlas-region-geometry-contracts';
 import {
   REGION_ACTIVE_BYTES,
   REGION_REPLY_BYTES,
   REGION_VECTOR_OBJECTS,
-  emptyDrawing,
-  validateRegion,
-} from '../atlas/atlas-region-contracts';
+} from '../atlas/atlas-region-limits';
+import { emptyDrawing, validateRegion } from '../atlas/atlas-region-contracts';
 import { mapExtentVisible } from '../atlas/atlas-scale-policy';
-import type { AtlasBinding } from '../atlas/campaign-atlas-contracts';
-import { localToAtlas } from '../atlas/campaign-atlas-model';
-import type { CityHeader } from '../atlas/city-contracts';
+import type { AtlasBinding } from '../atlas/atlas-binding-contracts';
+import { localToAtlas } from '../atlas/atlas-coordinates';
+import type { CityHeader } from '../atlas/city-data-contracts';
 import { posedFootprint, roadPoints } from '../atlas/city-model';
 import { validateDrawingElement } from '../atlas/drawing-contracts';
 import { anchored, inside } from '../atlas/drawing-model';
@@ -39,9 +38,9 @@ import { validateTerrainDetail } from '../atlas/terrain-detail';
 import {
   terrainFrameBytes,
   terrainFrameDelta,
-  type TerrainFrameIdentity,
   type TerrainFullFrame,
 } from '../atlas/terrain-frame';
+import { type TerrainFrameIdentity } from '../atlas/terrain-frame-identity';
 import { volumeProjection } from '../atlas/volume-model';
 import type { Point, Polygon, RoomGeometry } from '../shared/contracts';
 import { validateRoom } from '../shared/room-validation';
@@ -240,7 +239,7 @@ export class AtlasRegionReader {
   }
   terrainVisibility(
     source: AtlasRegionSource,
-    view: import('../atlas/terrain-spatial-model').TerrainView,
+    view: import('../atlas/terrain-view-contracts').TerrainView,
   ) {
     if (this.landscapeFailure) throw Error('Geländequelle konnte nicht gelesen werden.');
     return this.landscape.visibility(source, view);
@@ -254,7 +253,7 @@ export class AtlasRegionReader {
   }
   terrain(
     source: AtlasRegionSource,
-    q: import('../atlas/terrain-projection').TerrainProjectionRequest,
+    q: import('../atlas/terrain-projection-contracts').TerrainProjectionRequest,
   ) {
     return this.navigationTerrain().terrain(source, q);
   }
@@ -263,7 +262,7 @@ export class AtlasRegionReader {
   }
   heightSteps(
     source: AtlasRegionSource,
-    q: import('../atlas/terrain-projection').TerrainProjectionRequest,
+    q: import('../atlas/terrain-projection-contracts').TerrainProjectionRequest,
   ) {
     return this.navigationTerrain().heightSteps(source, q);
   }
@@ -276,7 +275,7 @@ export class AtlasRegionReader {
   }
   terrainSteps(
     source: AtlasRegionSource,
-    q: import('../atlas/terrain-projection').TerrainProjectionRequest,
+    q: import('../atlas/terrain-projection-contracts').TerrainProjectionRequest,
   ) {
     return this.navigationTerrain().terrainSteps(source, q);
   }
@@ -1854,8 +1853,8 @@ interface AtlasRegionViewContext {
   guard: (token: string, campaignId?: string | undefined) => string;
   atlasRegionSource: (
     token: string,
-    cursor?: import('./../atlas/atlas-region-contracts').AtlasRegionCursor | undefined,
-  ) => import('./../atlas/atlas-region-contracts').AtlasRegionSource;
+    cursor?: import('../atlas/atlas-region-view-contracts').AtlasRegionCursor | undefined,
+  ) => import('../atlas/atlas-region-view-contracts').AtlasRegionSource;
   workspaceShell: () => import('./../shared/contracts').WorkspaceShell;
 }
 export function storedAtlasRegionView(
@@ -1865,7 +1864,7 @@ export function storedAtlasRegionView(
   region: AtlasRegionGeometry,
   withPerception = false,
   entranceId?: string,
-): import('./../atlas/atlas-region-contracts').AtlasRegionView {
+): import('../atlas/atlas-region-view-contracts').AtlasRegionView {
   const cam = context.guard(token);
   if (
     region.token !== token ||
@@ -1882,6 +1881,7 @@ export function storedAtlasRegionView(
         problems: [],
       },
       geometry = dungeonMapView(db, cam, workspace, region.drawing);
+    if (withPerception && !geometry.runtime.ok) throw new Error(geometry.runtime.error);
     // Perception retains its exact canonical reader; viewport geometry never supplies rule truth.
     const exact =
       withPerception && geometry.position

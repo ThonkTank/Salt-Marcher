@@ -95,11 +95,33 @@ test('independent room-content copy is guarded, atomic, reversible and does not 
     },
     expectedRevision: null,
   });
+  const npcId = randomUUID();
+  store.changePreparation({
+    commandId: randomUUID(),
+    campaignId: cam.id,
+    token: w.token,
+    change: {
+      kind: 'note',
+      expectedRevision: null,
+      note: {
+        version: 1,
+        id: npcId,
+        revision: 1,
+        kind: 'npc',
+        title: 'Alte Referenz',
+        readAloud: '',
+        gmNotes: '',
+        relations: [],
+        creatureId: null,
+        deleted: false,
+      },
+    },
+  });
   const source = {
     ...emptyKey(rooms[0]),
     attributes: { Licht: null },
     tags: ['Nische'],
-    references: [{ kind: 'npc', id: 'external-npc', label: 'Alte Referenz' }],
+    references: [{ kind: 'npc', id: npcId, label: 'Alte Referenz' }],
   };
   source.blocks.unshift({ ...block(''), kind: 'template', templateId: template.id });
   send({ kind: 'key-content', content: source, expectedRevision: null });

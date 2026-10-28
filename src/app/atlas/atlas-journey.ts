@@ -1,19 +1,16 @@
 import { atlasElement as get, setAtlasText as setText } from './atlas-dom';
 import { journeyPlayback } from '../runtime/journey-playback';
 import { atlasPartyPoint } from './atlas-runtime-model';
-import type { AtlasLocalPreview, AtlasTravelAction } from './atlas-travel-contracts';
-import {
-  openWorld,
-  atlasWorldTravelState,
-  previewAtlasWorldTravel,
-  startAtlasWorldTravel,
-  refreshWorldAfterAtlasTravel,
-} from '../runtime/world-ui';
-import { atlasFrame, localToAtlas } from './campaign-atlas-model';
-import type { AtlasRenderView } from './campaign-atlas-contracts';
+import type { AtlasLocalPreview } from './atlas-journey-contracts';
+import type { AtlasTravelAction } from './atlas-travel-contracts';
+import { atlasFrame } from './campaign-atlas-model';
+import { localToAtlas } from './atlas-coordinates';
+import type { AtlasRenderView } from './campaign-atlas-view-contracts';
 import type { WorkspaceGeometry, Point } from '../shared/contracts';
 import { atlasDungeonState, openDungeon } from './dungeon-ui';
+import type { WorldTravelPort } from '../runtime/world-ui';
 interface AtlasJourneyHost {
+  readonly world: WorldTravelPort;
   readonly data: AtlasRenderView | null;
   readonly owner: WorkspaceGeometry | null;
   readonly busy: boolean;
@@ -78,7 +75,7 @@ export class AtlasJourney {
   localPreview: AtlasLocalPreview | null = null;
   entranceId: string | null = null;
   worldPreview() {
-    const state = atlasWorldTravelState(),
+    const state = this.host.world.atlasWorldTravelState(),
       p = state.preview,
       a = this.host.data;
     return p &&
@@ -87,7 +84,7 @@ export class AtlasJourney {
       !a.geometry.position &&
       p.request.sceneId === a.geometry.sceneId &&
       p.request.mapId === a.terrain.id &&
-      !get<HTMLButtonElement>('travel-preview-accept').disabled
+      state.canAccept
       ? p
       : null;
   }
@@ -253,7 +250,7 @@ export class AtlasJourney {
       this.host.render();
       try {
         await openDungeon();
-        await refreshWorldAfterAtlasTravel(w.token, sceneId);
+        await this.host.world.refreshWorldAfterAtlasTravel(w.token, sceneId);
       } catch (error) {
         if (this.host.owner === w)
           this.host.opts.status(
@@ -320,7 +317,7 @@ export class AtlasJourney {
             expectedMembershipRevision: a.scene.scene.membershipRevision,
           });
           await openDungeon();
-          await openWorld();
+          await this.host.world.openWorld();
         }
         return;
       }
@@ -335,7 +332,7 @@ export class AtlasJourney {
           Math.hypot(start.x - this.host.lastPoint.x, start.y - this.host.lastPoint.y) > 5000
         ) {
           this.localPreview = null;
-          await previewAtlasWorldTravel();
+          await this.host.world.previewAtlasWorldTravel();
           this.renderTravel();
           return;
         }
@@ -369,7 +366,7 @@ export class AtlasJourney {
       if (kind === 'start') {
         if (this.localPreview) await this.travel({ kind: 'start', preview: this.localPreview });
         else if (a.geometry.position) get('dungeon-confirm').click();
-        else if (this.worldPreview()) await startAtlasWorldTravel();
+        else if (this.worldPreview()) await this.host.world.startAtlasWorldTravel();
         return;
       }
       const j = a.localJourney;

@@ -1,7 +1,9 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { validateDrawingElement } from '../atlas/drawing-contracts';
 import { inside } from '../atlas/drawing-model';
-import type { DungeonGeometry, DungeonPose, DungeonTraceRules } from '../atlas/dungeon-contracts';
+import type { DungeonGeometry } from '../atlas/dungeon-geometry-contracts';
+import type { DungeonPose } from '../atlas/dungeon-position-contracts';
+import type { DungeonTraceRules } from '../atlas/dungeon-travel-contracts';
 import { centerInRoom, planDungeon, trapEntry } from '../atlas/dungeon-model';
 import { validateDungeonPassage, validateDungeonPath } from '../atlas/path-contracts';
 import { seen3D } from '../atlas/spatial-3d';

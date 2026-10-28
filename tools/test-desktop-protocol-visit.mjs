@@ -3,7 +3,7 @@ import { runNativeProbe } from './native-session.mjs';
 // evening visit -> normal close/fresh launch -> edit the original from its packet.
 // Requires npm run build:desktop and npm run desktop:runtime.
 // Run through python3 tools/ui-session.py node tools/test-desktop-protocol-visit.mjs;
-// GM_QA_ZOOM=2 repeats it at 200%. Uses only a disposable campaign/profile.
+// Native UI probes use 100%. Uses only a disposable campaign/profile.
 import path from 'node:path';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
@@ -16,7 +16,7 @@ const root = process.cwd(),
 const out =
   process.env.QA_EVIDENCE_DIR ??
   process.env.GM_QA_OUT ??
-  path.resolve('.build/protocol-visit-' + (process.env.GM_QA_ZOOM ?? 1));
+  path.resolve('.build/protocol-visit-' + 1);
 await runNativeProbe(
   { output: out, name: 'protocol-visit', resultName: 'result.json' },
   async (native) => {
@@ -183,7 +183,7 @@ await runNativeProbe(
           BrowserWindow.getAllWindows()
             .find((w) => w.webContents.getURL().endsWith('/index.html'))
             .webContents.setZoomFactor(zoom),
-        Number(process.env.GM_QA_ZOOM ?? 1),
+        1,
       );
       if (await page.locator('#tutorial-dialog').isVisible())
         await page.locator('#tutorial-skip').click();
@@ -574,11 +574,10 @@ await runNativeProbe(
         complete: true,
         explicitTarget: true,
         knownDestinationPreserved: true,
-        zoom: Number(process.env.GM_QA_ZOOM ?? 1),
+        zoom: 1,
       });
       console.log(
-        'COMPLETE protocol, existing original, explicit visit, fresh and further edit at ' +
-          (process.env.GM_QA_ZOOM ?? 1),
+        'COMPLETE protocol, existing original, explicit visit, fresh and further edit at ' + 1,
       );
     } catch (error) {
       await writeFile(

@@ -214,7 +214,7 @@ offen; die hier beschriebenen Entwurfs- und Batchtests ersetzen ihn nicht.
 4. Große Schätze/Roster über begrenzte Queries anbinden und Kosten messen.
    25 Posten, acht Spalten und 25 sichtbare Figuren begrenzen die Darstellung,
    nicht bereits die vollständig gelesenen Quellen. Native Tastatur, Dialogscroll,
-   Esc/Fokusrückgabe, 200 %, Close/Fresh und langsame Reads separat prüfen.
+   Esc/Fokusrückgabe, 100 %, Close/Fresh und langsame Reads separat prüfen.
 
 ## Schätze finden und vollständig umhängen ab0.124
 

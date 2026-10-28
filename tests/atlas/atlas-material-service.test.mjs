@@ -1,7 +1,7 @@
 import { materialChannels } from '../helpers/atlas-material-channels.mjs';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { buildSync } from 'esbuild';
+import { buildSync } from '../helpers/build.mjs';
 import { createRequire } from 'node:module';
 import { mkdirSync, mkdtempSync, rmSync } from 'node:fs';
 import { homedir } from 'node:os';

@@ -50,9 +50,9 @@ type Host = {
     scenes: LiveView['scenes'],
     current?: () => boolean,
   ) => Promise<SessionResumePrep>;
-  readonly recapFields: (review?: boolean) => import('./live-contracts').SessionRecapDraft;
+  readonly recapFields: (review?: boolean) => import('./live-scene-contracts').SessionRecapDraft;
   readonly recapReadError: () => string | null | undefined;
-  readonly queueRecapSave: (text?: import('./live-contracts').SessionRecapDraft) => void;
+  readonly queueRecapSave: (text?: import('./live-scene-contracts').SessionRecapDraft) => void;
   readonly recapBindings: () => void;
   readonly markLiveSession: (
     marker: 'start' | 'end',

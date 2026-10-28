@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
-import type { DrawingElement, DrawingView, RoomStyle } from '../atlas/drawing-contracts';
+import type { DrawingElement, RoomStyle } from '../atlas/drawing-element-contracts';
+import type { DrawingView } from '../atlas/drawing-view-contracts';
 import { validateDrawingElement } from '../atlas/drawing-contracts';
 import { dungeonContentAnchors } from '../atlas/dungeon-content-model';
 import { type Room } from '../shared/contracts';
@@ -43,9 +44,9 @@ export function drawingView(
   db: any,
   cam: string,
   projection: true,
-): import('../atlas/drawing-contracts').DrawingView<
+): import('../atlas/drawing-view-contracts').DrawingView<
   import('../shared/contracts').RoomGeometry,
-  import('../atlas/drawing-contracts').DrawingElementGeometry
+  import('../atlas/drawing-element-contracts').DrawingElementGeometry
 >;
 export function drawingView(db: any, cam: string, projection = false): any {
   const passages = readDungeonPassages(db, cam);

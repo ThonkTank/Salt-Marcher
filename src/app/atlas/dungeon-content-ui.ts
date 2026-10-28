@@ -2,7 +2,7 @@ import { EditorSession } from '../shared/editor-session';
 import { atlasDrawingWrite } from './campaign-atlas-author';
 import type { WorkspaceGeometry, Room } from '../shared/contracts';
 import type { GraphView } from './graph-contracts';
-import type { DrawingElement } from './drawing-contracts';
+import type { DrawingElement } from './drawing-element-contracts';
 import type { DungeonContent } from './dungeon-budget-contracts';
 import { dungeonContentAnchor } from './dungeon-content-model';
 export const editorSession = new EditorSession();

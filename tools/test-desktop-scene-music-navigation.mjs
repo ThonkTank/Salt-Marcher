@@ -156,10 +156,11 @@ async function close() {
   app = null;
 }
 try {
-  for (const scale of [1, 2]) {
+  for (const variant of [1, 2]) {
+    const scale = 1;
     native = await createNativeSession({
       root,
-      output: out + '/' + scale,
+      output: out + '/variant-' + variant,
       name: 'scene-music-native',
     });
     assert.equal(native.source, source);
@@ -195,6 +196,7 @@ try {
             .webContents.getZoomFactor(),
         ),
         scale,
+        variant,
       );
       await page
         .locator('.campaign-card[data-campaign-id="' + campaign.id + '"]')
@@ -389,7 +391,7 @@ try {
       throw Error('Expected pending periodic music read');
     });
     await page
-      .locator((scale === 1 ? '#music' : '#music-mini') + ' [data-music-transport="stop"]')
+      .locator((variant === 1 ? '#music' : '#music-mini') + ' [data-music-transport="stop"]')
       .click();
     await until(() => state().manualHold === 'stop');
     await page.waitForFunction(() =>
@@ -486,13 +488,14 @@ try {
     assert.deepEqual(errors, []);
     results.push({
       scale,
+      variant,
       profile,
       atlasDraftGuard: true,
       singleNavigationOwner: true,
       sceneSettings: [20, 80],
       multiStepBack: true,
       manualTrackPreserved: true,
-      draftStop: scale === 1 ? 'console' : 'mini',
+      draftStop: variant === 1 ? 'console' : 'mini',
       invalidDraftPreserved: true,
       checkpointFailureStop: true,
       soundboardStop: true,

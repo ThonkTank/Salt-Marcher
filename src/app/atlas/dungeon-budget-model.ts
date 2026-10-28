@@ -1,5 +1,6 @@
-import type { DungeonGeometry } from './dungeon-contracts';
-import type { GraphLayout, GraphContentCounts } from './graph-contracts';
+import type { DungeonGeometry } from './dungeon-geometry-contracts';
+import type { GraphLayout } from './graph-contracts';
+import type { GraphContentCounts } from './graph-content-contracts';
 import type {
   DungeonBudgetSummary,
   DungeonBudgetSetting,
@@ -7,7 +8,7 @@ import type {
   DungeonBudgetValues,
 } from './dungeon-budget-contracts';
 import { budgetRarities, validateBudgetSettings } from './dungeon-budget-contracts';
-import { dailyXp } from '../runtime/progression';
+import { dailyXp } from '../runtime/experience-tables';
 import { decimal, multiply, rational, roundHalfUp } from '../campaign/generation/rational';
 import { rewardGuidance, type RewardGuidanceRules } from '../campaign/generation/reward-guidance';
 export const emptyBudgetValues = (): DungeonBudgetValues => ({

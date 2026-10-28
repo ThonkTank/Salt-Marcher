@@ -1,6 +1,7 @@
 import type { Point, Polygon } from '../shared/contracts';
 import type { MapLabelCandidate, MapLabelKind, MapLabelSource } from './atlas-label-source';
-import { type LandscapeBox, type LandscapeRecord } from './atlas-landscape';
+import { type LandscapeBox } from './landscape-bounds';
+import { type LandscapeRecord } from './landscape-contracts';
 import { atlasPaint, type AtlasPaint, type PaintStyle } from './atlas-paint';
 import { effectiveProminence, PROMINENCE_LIMITS } from './atlas-prominence';
 import { territoryAnchor, territoryBounds, type TerritoryState } from './atlas-territories';

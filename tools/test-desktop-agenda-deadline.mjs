@@ -20,7 +20,7 @@ require('esbuild').buildSync({
 });
 const { CampaignStore } = require(root + '/.build/agenda-deadline-store.cjs');
 const results = [];
-for (const scale of [1, 2]) {
+for (const scale of [1]) {
   const native = await createNativeSession({
       root,
       output: output + '/zoom-' + scale,

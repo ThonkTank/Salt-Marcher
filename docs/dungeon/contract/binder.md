@@ -75,7 +75,7 @@ offene begrenzte Storeabfrage muss genau diese Suchsemantik erhalten.
    Abnahme: Fokus/Position/Binding wechseln, während Details und Zielwahl offen
    sind; GM liest weiter, bestätigt aber keine Handlung für eine andere Gruppe.
 3. Denselben Ablauf nativ prüfen: Raumlink → zurück → Filtern/Paging → Key
-   bearbeiten → bestätigte Texte nach Fresh; Tastatur/200 %, verzögerte Reads,
+   bearbeiten → bestätigte Texte nach Fresh; Tastatur/100 %, verzögerte Reads,
    fehlende Bindungen und unverändert private GM-/Geheimtexte. Kein zusätzlicher
    Binderstore oder zweites Wissen-/Entdeckungsmodell.
 
@@ -137,4 +137,4 @@ oder private Suchnotizen. Replay verändert nichts, Undo/Redo und Fresh erhalten
 Inhalte und Kennungen; Quellvorlagen- und später Zielkonflikt bleiben atomar.
 Nativ geprüft: Quell-/Zielauswahl, Vorschau ohne Writes, spätere Vorlagenänderung,
 Abweisung/Neuladen, getrennte Textvorschau, Apply, Undo/Redo und Neustart. Zwei
-normale Exits, keine Rendererfehler. Große Stapel und 200%-Layouts bleiben unqualifiziert.
+normale Exits, keine Rendererfehler. Große Stapel und 100 %-Layouts bleiben unqualifiziert.

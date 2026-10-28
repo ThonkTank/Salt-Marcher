@@ -2,7 +2,8 @@ import { editorInstanceEvents, clearEditorHandlers } from '../shared/editor-inst
 import { createEditorSurface } from '../shared/editor-surface';
 import { EditorSession } from '../shared/editor-session';
 import type { WorkspaceGeometry, Result } from '../shared/contracts';
-import type { NpcDraft, NpcView, NpcCommand, NpcQuery } from './npc-contracts';
+import type { NpcDraft, NpcCommand } from './npc-contracts';
+import type { NpcView, NpcQuery } from './npc-data-contracts';
 import { drawNpcDailyPlan } from './npc-daily-plan-ui';
 import {
   rawDailyPlan,

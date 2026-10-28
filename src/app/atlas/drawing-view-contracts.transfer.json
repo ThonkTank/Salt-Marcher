@@ -1,0 +1,23 @@
+{
+  "roles": {
+    "DrawingView.features[].epochId": "local",
+    "DrawingView.features[].id": "local",
+    "DrawingView.features[].resetStartedMs": "text",
+    "DrawingView.hiddenFloors[].id": "local",
+    "DrawingView.hiddenFloors[].name": "text",
+    "DrawingView.hiddenFloors[].scopeId": "local",
+    "DrawingView.passageStatuses[].id": "local",
+    "DrawingView.passageStatuses[].inbound": "text",
+    "DrawingView.passageStatuses[].outbound": "text",
+    "DrawingView.paths[].basis": "external",
+    "DrawingView.paths[].fromPassageId": "local",
+    "DrawingView.paths[].id": "local",
+    "DrawingView.paths[].name": "text",
+    "DrawingView.paths[].notes": "text",
+    "DrawingView.paths[].roomId": "local",
+    "DrawingView.paths[].scopeId": "local",
+    "DrawingView.paths[].status": "text",
+    "DrawingView.paths[].toPassageId": "local",
+    "DrawingView.paths[].volumeId": "local"
+  }
+}

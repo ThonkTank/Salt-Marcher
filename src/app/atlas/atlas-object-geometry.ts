@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import type { AtlasDrawingMesh } from './atlas-drawing-mesh';
-import type { TerrainObject } from './terrain-objects';
+import type { TerrainObject } from './terrain-object-contracts';
 
 /** Room-derived footprints retain disconnected components and courtyard holes.
  * Floors are horizontal; only the foundation's lower edge follows the ground. */

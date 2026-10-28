@@ -3,7 +3,8 @@ import { atlasDrawingWrite } from '../atlas/campaign-atlas-author';
 import type { WorkspaceGeometry, Room } from '../shared/contracts';
 import type { DungeonView } from '../atlas/dungeon-contracts';
 import type { TriggerField } from './trigger-contracts';
-import type { DrawingElement, DrawingAction } from '../atlas/drawing-contracts';
+import type { DrawingElement } from '../atlas/drawing-element-contracts';
+import type { DrawingAction } from '../atlas/drawing-contracts';
 export const editorSession = new EditorSession();
 const pendingWork = editorSession.operation<Promise<void>>();
 

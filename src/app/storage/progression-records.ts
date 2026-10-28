@@ -10,13 +10,14 @@ import {
   ledgerDefinitionId,
   xpLevel,
   xpShare,
-  type ItemInput,
-  type LedgerItem,
-  type Progress,
-  type Treasure,
 } from '../runtime/progression';
+import { type ItemInput } from '../catalog/item-input-contracts';
+import { type LedgerItem, type Treasure } from '../runtime/treasure-contracts';
+import { type Progress } from '../runtime/character-progress-contracts';
 import { readLiveScene } from './live-read';
 import { readItemDefinition, recordItemDefinitionVersion } from './item-definitions';
+import { validateCatalogReference } from '../catalog/catalog-reference-contracts';
+import { itemDefinitionReference, resolveItemReference } from './catalog-references';
 export const json = (v: unknown) => JSON.stringify(v);
 
 export const hash = (s: string) => createHash('sha256').update(s).digest('hex');
@@ -293,7 +294,16 @@ export function checkedLedgerRow(value: unknown): LedgerItem {
 }
 
 export function readLedgerDefinition(db: SqliteDatabase, item: LedgerItem) {
-  const pinned = readItemDefinition(db, ledgerDefinitionId(item), item.reference.revision);
+  const bound = item.reference.catalogReference;
+  if (
+    bound &&
+    ((!item.reference.historicalDefinitionId && bound.entryId !== item.reference.definitionId) ||
+      bound.sourceVersion !== String(item.reference.revision))
+  )
+    throw new Error('Beuteeintrag widerspricht seiner Katalogbindung.');
+  const pinned = bound
+    ? resolveItemReference(db, bound, ledgerDefinitionId(item))
+    : readItemDefinition(db, ledgerDefinitionId(item), item.reference.revision);
   if (
     pinned.name !== item.name ||
     pinned.category !== item.category ||
@@ -412,6 +422,15 @@ export function checkedItemInput(input: ItemInput) {
       input.reference.revision < 1)
   )
     throw new Error('Gegenstandsreferenz prüfen.');
+  if (input.reference?.catalogReference) {
+    validateCatalogReference(input.reference.catalogReference);
+    if (
+      input.reference.catalogReference.entryType !== 'item' ||
+      input.reference.catalogReference.entryId !== input.reference.definitionId ||
+      input.reference.catalogReference.sourceVersion !== String(input.reference.revision)
+    )
+      throw new Error('Gegenstandsreferenz widerspricht ihrer Katalogbindung.');
+  }
   if (!input.reference) copper(input.valueGold);
   return input;
 }
@@ -419,6 +438,8 @@ export function checkedItemInput(input: ItemInput) {
 export function validateItemInput(db: SqliteDatabase, input: ItemInput) {
   checkedItemInput(input);
   if (input.reference) {
+    if (input.reference.catalogReference)
+      resolveItemReference(db, input.reference.catalogReference);
     const d = readItemDefinition(db, input.reference.definitionId);
     if (d.trashed || d.revision !== input.reference.revision)
       throw new Error('Gegenstandsdefinition geändert oder im Papierkorb.');
@@ -436,6 +457,7 @@ export function checkedItem(db: SqliteDatabase, input: ItemInput) {
         kind: 'authored' as const,
         definitionId: definition.id,
         revision: definition.revision,
+        catalogReference: itemDefinitionReference(definition),
       },
       name: definition.name,
       category: definition.category,
@@ -454,7 +476,12 @@ export function checkedItem(db: SqliteDatabase, input: ItemInput) {
   recordItemDefinitionVersion(db, readItemDefinition(db, id));
   return {
     id: randomUUID(),
-    reference: { kind: 'authored' as const, definitionId: id, revision: 1 },
+    reference: {
+      kind: 'authored' as const,
+      definitionId: id,
+      revision: 1,
+      catalogReference: itemDefinitionReference(readItemDefinition(db, id)),
+    },
     name: input.name,
     category: input.category,
     quantity: input.quantity,

@@ -157,8 +157,10 @@ export function registerRuntimeHost(host: { ipc: HostIpc; store: StoreClient }) 
   handle('world:scene', async (token: string, id: string) => await store.sceneWorld(token, id));
   handle(
     'world:travel-preview',
-    async (token: string, request: import('../src/app/runtime/world-contracts').TravelRequest) =>
-      await store.previewTravel(token, request),
+    async (
+      token: string,
+      request: import('../src/app/runtime/world-travel-contracts').TravelRequest,
+    ) => await store.previewTravel(token, request),
   );
   handle(
     'world:reconcile',

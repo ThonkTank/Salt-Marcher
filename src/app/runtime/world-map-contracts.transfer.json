@@ -1,0 +1,10 @@
+{
+  "roles": {
+    "AtlasMap.id": "local",
+    "AtlasMap.name": "text",
+    "AtlasMap.seed": "external",
+    "AtlasPlace.locationId": "local",
+    "AtlasPlace.mapId": "local",
+    "AtlasPlace.name": "text"
+  }
+}

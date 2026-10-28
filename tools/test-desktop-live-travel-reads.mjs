@@ -54,6 +54,38 @@ await runNativeProbe(
         expectedFocusRevision: live.focusRevision,
       }),
     );
+    const other = store.executeLive(
+      command({ kind: 'create-character', profile: { name: 'Siv' } }),
+    ).character;
+    let roster = store.live(w.token);
+    store.executeLive(
+      command({
+        kind: 'membership',
+        characterId: other.id,
+        expectedRevision: other.membershipRevision,
+        expectedRosterRevision: roster.rosterRevision,
+        active: true,
+        targetSceneId: scene.id,
+        expectedFocusRevision: roster.focusRevision,
+      }),
+    );
+    roster = store.live(w.token);
+    const otherSceneId = store.executeLive(
+      command({
+        kind: 'move',
+        sceneId: scene.id,
+        expectedRosterRevision: roster.rosterRevision,
+        expectedFocusRevision: roster.focusRevision,
+        expectedClockRevision: roster.scene.clock.revision,
+        expectedSceneMembershipRevision: roster.scene.membershipRevision,
+        memberIds: [other.id],
+        target: {
+          kind: 'new',
+          title: 'Andere Gruppe · Hafen',
+          expectedContentRevision: roster.scene.revision,
+        },
+      }),
+    ).session.createdScene.id;
     const map = store.world(w.token).maps[0];
     store.executeWorld(
       command({
@@ -92,7 +124,7 @@ await runNativeProbe(
           revision: 1,
           kind: 'note',
           title: 'Wissen am Nordtor',
-          readAloud: '',
+          readAloud: 'Wachen warten.',
           gmNotes: 'Wachen warten.',
           relations: [],
           creatureId: null,
@@ -113,7 +145,8 @@ await runNativeProbe(
       artifacts[p] = createHash('sha256')
         .update(await readFile('.build/desktop/' + p))
         .digest('hex');
-    async function launch(scale) {
+    async function launch(reopened = false) {
+      const scale = 1;
       app = await native.launchConfigured({
         executablePath: root + '/node_modules/electron/dist/electron',
         args: [
@@ -137,8 +170,8 @@ await runNativeProbe(
         .getByRole('button', { name: 'Fortsetzen', exact: true })
         .click();
       await revealWorkspaceNavigation(page);
-      await app.evaluate(({ ipcMain }, scale) => {
-        globalThis.__preparationMode = scale === 1 ? 'error' : 'ready';
+      await app.evaluate(({ ipcMain }, reopened) => {
+        globalThis.__preparationMode = reopened ? 'ready' : 'error';
         globalThis.__preparationReads = 0;
         const reader = ipcMain._invokeHandlers.get('campaign:preparation');
         ipcMain.removeHandler('campaign:preparation');
@@ -154,7 +187,7 @@ await runNativeProbe(
           }
           return result;
         });
-      }, scale);
+      }, reopened);
       await app.evaluate(({ ipcMain }) => {
         globalThis.__travelReadCounts = { scene: 0, agenda: 0 };
         globalThis.__liveCommands = [];
@@ -194,7 +227,7 @@ await runNativeProbe(
       await page.locator('#live-tab').click();
       if (await page.locator('#live-continue').isVisible())
         await page.locator('#live-continue').click();
-      if (scale === 1) {
+      if (!reopened) {
         await page.locator('#live-sources-retry').waitFor({ state: 'visible' });
         assert.match(await page.locator('#live-knowledge-result').textContent(), /nicht verfügbar/);
         assert.equal(await page.locator('#running-notes').isEditable(), true);
@@ -209,7 +242,7 @@ await runNativeProbe(
       }
       await page.locator('#live-travel-toggle').waitFor({ state: 'visible' });
       const counts = await oneContext(page);
-      openings.push({ scale, counts });
+      openings.push({ scale, reopened, counts });
       await resetReads();
       return page;
     }
@@ -329,6 +362,62 @@ await runNativeProbe(
       assert.equal(await page.locator('#live-center-map').isVisible(), false);
       return counts;
     }
+    async function groupWithMaterialFailure(page) {
+      if (!(await page.locator('#live-prepared-details').evaluate((el) => el.open)))
+        await page.locator('#live-prepared-details > summary').click();
+      const oldKnowledge = await page
+        .getByRole('button', { name: 'Als Vorlesetext einsetzen', exact: true })
+        .elementHandle();
+      assert(oldKnowledge);
+      await app.evaluate(() => {
+        globalThis.__preparationMode = 'error';
+      });
+      await revealWorkspaceNavigation(page);
+      await page.locator('#preparation-tab').click();
+      await page.locator('#live-tab').click();
+      await page.locator('#live-sources-retry').waitFor({ state: 'visible' });
+      await page.locator('#scene-focus').selectOption(otherSceneId);
+      await page.waitForFunction(
+        (id) =>
+          document.querySelector('#scene-focus').value === id &&
+          !document.querySelector('#running-notes').disabled,
+        otherSceneId,
+      );
+      const own = '  Hafengruppe behält eigene Eingabe\nbei Materialfehler  ';
+      await page.locator('#running-notes').fill(own);
+      await page.locator('#running-notes').evaluate((el) => el.setSelectionRange(4, 4));
+      const publicDraft = await page.locator('#running-read-aloud').inputValue();
+      await oldKnowledge.evaluate((el) => el.click());
+      assert.equal(await page.locator('#running-read-aloud').inputValue(), publicDraft);
+      assert.equal(await page.locator('#running-notes').isEditable(), true);
+      assert.match(await page.locator('#live-sources-status').innerText(), /nicht verfügbar/);
+      await app.evaluate(() => {
+        globalThis.__preparationMode = 'ready';
+      });
+      await page.locator('#live-sources-retry').click();
+      await page.locator('#live-sources-state').waitFor({ state: 'hidden' });
+      assert.equal(await page.locator('#running-notes').inputValue(), own);
+      assert.equal(await page.locator('#scene-focus').inputValue(), otherSceneId);
+      await native.capture(page, 'group-switch-material-retry', '#live-workspace');
+      await page.locator('#scene-focus').selectOption(scene.id);
+      await page.waitForFunction(
+        (expected) => document.querySelector('#running-notes').value === expected,
+        notes,
+      );
+      await page.waitForFunction(
+        () => document.querySelector('#live-agenda-upcoming').getAttribute('aria-busy') === 'false',
+      );
+      await page.evaluate(
+        () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))),
+      );
+      return {
+        otherSceneId,
+        notes: own,
+        originalSceneId: scene.id,
+        coreEditable: true,
+        detachedKnowledgeRejected: true,
+      };
+    }
     async function close() {
       const ended = new Promise((resolve) =>
         app.process().once('exit', (code, signal) => resolve({ code, signal })),
@@ -340,7 +429,7 @@ await runNativeProbe(
       return exit;
     }
     try {
-      let page = await launch(1);
+      let page = await launch();
       const materialReads = await app.evaluate(() => globalThis.__preparationReads);
       await app.evaluate(() => {
         globalThis.__preparationMode = 'hold';
@@ -393,6 +482,8 @@ await runNativeProbe(
       await resetReads();
       const recoveredCounts = await recoverPartyProfile(page);
       await resetReads();
+      const materialGroup = await groupWithMaterialFailure(page);
+      await resetReads();
       const legacy = await page.locator('#world-map').innerHTML();
       let counts = await openTravel(page);
       await page.locator('#live-travel-map-open').click();
@@ -424,18 +515,19 @@ await runNativeProbe(
         savedCounts,
         profileCounts,
         recoveredCounts,
+        materialGroup,
         exit: await close(),
       });
-      page = await launch(2);
+      page = await launch(true);
       assert.equal(await page.locator('#running-notes').inputValue(), notes);
       await page.locator('#running-notes').scrollIntoViewIfNeeded();
-      await page.screenshot({ path: path.join(out, 'live-notes-200.png') });
+      await page.screenshot({ path: path.join(out, 'reopened-live-notes-100.png') });
       counts = await openTravel(page);
       assert.match(await page.locator('#world-journey-status').innerText(), /Angekommen/);
       await page.locator('#live-travel-weather > summary').click();
       await page.locator('#live-agenda-upcoming').scrollIntoViewIfNeeded();
-      await page.screenshot({ path: path.join(out, 'reopened-200.png') });
-      results.push({ scale: 2, counts, exit: await close() });
+      await page.screenshot({ path: path.join(out, 'reopened-100.png') });
+      results.push({ scale: 1, reopened: true, counts, exit: await close() });
       const fresh = new CampaignStore(file);
       let state;
       try {
@@ -445,6 +537,10 @@ await runNativeProbe(
         assert.equal(character.profile.name, 'Recovered Iri');
         assert.equal(character.profileRevision, pc.profileRevision + 3);
         assert.equal(p.scene.notes, notes);
+        assert.equal(
+          fresh.sceneWorld(token, otherSceneId).scene.notes,
+          results[0].materialGroup.notes,
+        );
         assert.equal(p.position.q, 1);
         assert.equal(p.scene.clock.instantMs, '36000');
         assert.equal(p.journey.status, 'arrived');

@@ -1,4 +1,4 @@
-import type { MarkerPresentation } from '../runtime/world-contracts';
+import type { MarkerPresentation } from '../runtime/world-cell-contracts';
 
 /** The same immutable built-ins feed the picker, validator and SVG renderer. */
 export const markerSymbols = Object.freeze([

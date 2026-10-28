@@ -396,7 +396,7 @@ async function run() {
   if (gmAfter.ticks <= gmBefore.ticks || gmAfter.note !== gmBefore.note)
     throw new Error("GM_WINDOW_AFFECTED");
 
-  passiveWindow.webContents.setZoomFactor(2);
+  passiveWindow.webContents.setZoomFactor(1);
   passiveWindow.setBounds({ x: 0, y: 0, width: 360, height: 240 });
   await sleep(50);
   passiveWindow.webContents.focus();
@@ -414,8 +414,8 @@ async function run() {
     `({ active: document.activeElement?.id, expanded: document.querySelector('#details').getAttribute('aria-expanded') })`,
   );
   const accessibility = await accessibilityEvidence();
-  surfaces.push(await snapshotSurface("small-200-percent"));
-  await capture("07-small-200-percent", "ready");
+  surfaces.push(await snapshotSurface("small-100-percent"));
+  await capture("07-small-100-percent", "ready");
 
   const previousSession = passiveSession;
   passiveWindow.destroy();

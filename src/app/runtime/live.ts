@@ -24,14 +24,12 @@ import { bindSceneGroupDrag } from './combat-group-ui';
 import { initLiveArchives } from './live-archive-ui';
 import {
   checkedCharacterProfile,
-  type Character,
-  type CharacterProfile,
   type LiveAck,
   type LiveAction,
   type LiveCommand,
-  type LiveScene,
   type LiveView,
 } from './live-contracts';
+import { type Character, type CharacterProfile, type LiveScene } from './live-scene-contracts';
 import { LiveEncounterGenerator } from './live-generation-ui';
 import { createLiveKnowledgeUI } from './live-knowledge-ui';
 import { createLiveMomentEditor } from './live-moment-editor';
@@ -70,8 +68,9 @@ import {
 } from './session-progress-ui';
 import { TimeNavigator } from './time-plan-ui';
 import { openTreasureDistribution } from './treasury-ui';
-import { renderLiveWorld } from './world-ui';
+import type { WorldEditor } from './world-ui';
 export type LiveHost = {
+  world: Pick<WorldEditor, 'renderLiveWorld'>;
   items: Pick<ItemsEditor, 'renderSceneShops'>;
   music: Pick<MusicEditor, 'refreshMusic'>;
   combat: CombatEditor;
@@ -1287,7 +1286,8 @@ export function createLive(host: LiveHost) {
     sessionNavigatorContext(context, data, sources, resumed);
     syncLivePacketContext();
     void refreshMusic();
-    if (context && data?.scene && resumed) void renderLiveWorld(context.token, data.scene.id);
+    if (context && data?.scene && resumed)
+      void host.world.renderLiveWorld(context.token, data.scene.id);
     const scene = data?.scene;
     sceneDeskContext(context, resumed ? (scene ?? null) : null);
     combatContext(context, resumed ? (scene ?? null) : null, data?.rosterRevision);

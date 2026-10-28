@@ -1,20 +1,13 @@
 {
- "roles": {
-  "TreasureOrigin.awardId": "local",
-  "TreasureOrigin.combatId": "local",
-  "TreasureOrigin.itemId": "local",
-  "TreasureOrigin.locationId": "local",
-  "TreasureOrigin.sceneId": "local",
-  "TreasureOrigin.sourceNoteId": "local",
-  "TreasureOrigin.treasureId": "local",
-  "TreasuryDraft.items[].lotId": "local",
-  "TreasuryDraft.items[].name": "text",
-  "TreasuryDraft.items[].quantity": "text",
-  "TreasuryDraft.items[].valueGold": "text",
-  "TreasuryDraft.locationId": "local",
-  "TreasuryDraft.reason": "text",
-  "TreasuryDraft.title": "text",
-  "TreasuryDraft.treasureId": "local",
-  "TreasuryDraft.writeId": "local"
- }
+  "roles": {
+    "TreasuryDraft.items[].lotId": "local",
+    "TreasuryDraft.items[].name": "text",
+    "TreasuryDraft.items[].quantity": "text",
+    "TreasuryDraft.items[].valueGold": "text",
+    "TreasuryDraft.locationId": "local",
+    "TreasuryDraft.reason": "text",
+    "TreasuryDraft.title": "text",
+    "TreasuryDraft.treasureId": "local",
+    "TreasuryDraft.writeId": "local"
+  }
 }

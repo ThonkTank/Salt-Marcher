@@ -159,7 +159,7 @@ Fachabnahmen und rechtfertigt keinen eigenen Shop-/Wetter-/Music-Snapshotstore.
   führen und Aktionen auch bei langen Inhalten erreichbar halten. HP, XP und
   Rastbudget ablesen sowie Änderungsbeträge vor der Übernahme prüfen können.
   Die konkrete Oberflächenform folgt den [Produktzielen](product.md).
-- Feature-/Versions-Tutorials, Lokalisierung, Tastatur, 200 %, Kontrast und
+- Feature-/Versions-Tutorials, Lokalisierung, Tastatur, 100 %, Kontrast und
   Nicht-Farb-Signale vollständig qualifizieren.
 - Latenz-, große Daten-, Speicher-, Abbruch-, Offline- und Privacy-Gates gegen
   Program Technical Needs prüfen.

@@ -9,7 +9,7 @@ import {
   type TerrainLattice,
   type TerrainStream,
 } from './terrain-field-stream';
-import type { LandscapeBox } from './atlas-landscape';
+import type { LandscapeBox } from './landscape-bounds';
 import { terrainDirtyRects } from './terrain-dirty-rects';
 type Surface = {
   kind: 'surface';

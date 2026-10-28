@@ -1,12 +1,14 @@
 import { checkedLandscapeRow } from './landscape-read';
 import { createHash, randomUUID } from 'node:crypto';
 import { newLocation } from '../../features/location/location-schema';
-import type { AtlasBinding, AtlasCommand } from '../atlas/campaign-atlas-contracts';
-import { atlasFrame, atlasHexAt, localToAtlas } from '../atlas/campaign-atlas-model';
+import type { AtlasBinding } from '../atlas/atlas-binding-contracts';
+import type { AtlasCommand } from '../atlas/campaign-atlas-contracts';
+import { atlasFrame } from '../atlas/campaign-atlas-model';
+import { atlasHexAt, localToAtlas } from '../atlas/atlas-coordinates';
 import { inside, nearestAnchor } from '../atlas/drawing-model';
 import { poseSpace } from '../atlas/spatial-3d';
 import { terrainTraceMeasure } from '../atlas/terrain-timing';
-import type { AtlasMap } from '../runtime/world-contracts';
+import type { AtlasMap } from '../runtime/world-map-contracts';
 import { type Room } from '../shared/contracts';
 import { validateRoom } from '../shared/room-validation';
 import { executeLandscape } from './atlas-landscape';
@@ -826,19 +828,19 @@ interface AtlasCommandEffects {
   coupleAtlasWall: (
     c: import('../atlas/campaign-atlas-contracts').AtlasCommand,
     before: import('../shared/contracts').Room,
-    elements: import('../atlas/drawing-contracts').DrawingElement[],
+    elements: import('../atlas/drawing-element-contracts').DrawingElement[],
   ) => void;
   atlasRoom: (token: string, id: string) => import('../shared/contracts').Room;
   atlasRegionSource: (
     token: string,
-    cursor?: import('../atlas/atlas-region-contracts').AtlasRegionCursor | undefined,
-  ) => import('../atlas/atlas-region-contracts').AtlasRegionSource;
+    cursor?: import('../atlas/atlas-region-view-contracts').AtlasRegionCursor | undefined,
+  ) => import('../atlas/atlas-region-view-contracts').AtlasRegionSource;
   campaignAtlas: (
     token: string,
-  ) => import('../atlas/campaign-atlas-contracts').CampaignAtlas<
+  ) => import('../atlas/campaign-atlas-view-contracts').CampaignAtlas<
     import('../shared/contracts').Room,
-    import('../atlas/drawing-contracts').DrawingElement,
-    import('../atlas/city-contracts').CityView
+    import('../atlas/drawing-element-contracts').DrawingElement,
+    import('../atlas/city-data-contracts').CityView
   >;
   insertRoom: (campaignId: string, room: import('../shared/contracts').Room) => void;
   guard: (token: string, campaignId?: string | undefined) => string;
@@ -847,25 +849,25 @@ interface AtlasCommandEffects {
   edit: (edit: import('../shared/contracts').Edit) => import('../shared/contracts').RoomCommit;
   drawing: (
     token: string,
-  ) => import('../atlas/drawing-contracts').DrawingView<
+  ) => import('../atlas/drawing-view-contracts').DrawingView<
     import('../shared/contracts').Room,
-    import('../atlas/drawing-contracts').DrawingElement
+    import('../atlas/drawing-element-contracts').DrawingElement
   >;
   executeDrawing: (c: import('../atlas/drawing-contracts').DrawingCommand) => {
     workspace: import('../shared/contracts').Workspace;
-    view: import('../atlas/drawing-contracts').DrawingView<
+    view: import('../atlas/drawing-view-contracts').DrawingView<
       import('../shared/contracts').Room,
-      import('../atlas/drawing-contracts').DrawingElement
+      import('../atlas/drawing-element-contracts').DrawingElement
     >;
   };
   executeGraph: (c: import('../atlas/graph-contracts').GraphCommand) => {
     workspace: import('../shared/contracts').Workspace;
     view: import('../atlas/graph-contracts').GraphView;
   };
-  city: (token: string, id: string) => import('../atlas/city-contracts').CityView;
+  city: (token: string, id: string) => import('../atlas/city-data-contracts').CityView;
   executeCity: (
     command: import('../atlas/city-contracts').CityCommand,
-  ) => import('../atlas/city-contracts').CityView;
+  ) => import('../atlas/city-data-contracts').CityView;
   executeWorld: (
     command: import('../runtime/world-contracts').WorldCommand,
   ) => import('../runtime/world-contracts').WorldAck;
@@ -882,11 +884,19 @@ export function applyAtlasCommand(
   prepared?: import('./terrain-scale').PreparedTerrainStroke,
 ) {
   effects.guard(c.token, c.campaignId);
+  const replay = !!db.prepare('SELECT 1 FROM atlas_receipt WHERE command_id=?').get(c.commandId);
+  if (
+    !replay &&
+    c.expectedCampaignRevision !== undefined &&
+    (!Number.isSafeInteger(c.expectedCampaignRevision) ||
+      db.prepare('SELECT revision FROM campaign WHERE id=?').get(c.campaignId)?.revision !==
+        c.expectedCampaignRevision)
+  )
+    throw new Error('Kampagnenrevision inzwischen geändert. Atlas erneut öffnen.');
   if (
     c.sourceFence !== undefined &&
     (typeof c.sourceFence !== 'string' ||
-      (!db.prepare('SELECT 1 FROM atlas_receipt WHERE command_id=?').get(c.commandId) &&
-        effects.atlasRegionSource(c.token).fence !== c.sourceFence))
+      (!replay && effects.atlasRegionSource(c.token).fence !== c.sourceFence))
   )
     throw new Error('Atlas inzwischen geändert. Ausschnitt vor dem Zeichnen erneut laden.');
   if (
@@ -903,7 +913,7 @@ export function applyAtlasCommand(
     typeof c.action?.kind === 'string' && c.action.kind.startsWith('landscape-');
   const terrainSourceBefore = landscapeOnly ? effects.atlasRegionSource(c.token) : undefined,
     terrainBefore = terrainSourceBefore?.fence;
-  const terrainChange: import('../atlas/terrain-frame').TerrainInvalidation = {
+  const terrainChange: import('../atlas/terrain-frame-identity').TerrainInvalidation = {
     reset: false,
     bounds: [],
   };
@@ -1443,7 +1453,7 @@ export function applyAtlasCommand(
         effects.reconcileAtlasGeometry(c.token);
         return;
       }
-      const changedBounds = new Map<string, import('../atlas/atlas-landscape').LandscapeBox>();
+      const changedBounds = new Map<string, import('../atlas/landscape-bounds').LandscapeBox>();
       for (const delta of checkedQuery(
         db,
         "SELECT before_json,after_json FROM atlas_delta WHERE table_name='atlas_landscape'",
@@ -1522,8 +1532,8 @@ export function applyAtlasCommand(
 
 interface ReconcileAtlasGeometryContext {
   guard: (token: string, campaignId?: string | undefined) => string;
-  cities: (token: string) => import('./../atlas/city-contracts').CityOverview;
-  city: (token: string, id: string) => import('./../atlas/city-contracts').CityView;
+  cities: (token: string) => import('../atlas/city-data-contracts').CityOverview;
+  city: (token: string, id: string) => import('../atlas/city-data-contracts').CityView;
 }
 
 export function storedReconcileAtlasGeometry(
@@ -1639,15 +1649,15 @@ interface CoupleAtlasWallContext {
   edit: (edit: import('./../shared/contracts').Edit) => import('./../shared/contracts').RoomCommit;
   drawing: (
     token: string,
-  ) => import('./../atlas/drawing-contracts').DrawingView<
+  ) => import('../atlas/drawing-view-contracts').DrawingView<
     import('./../shared/contracts').Room,
-    import('./../atlas/drawing-contracts').DrawingElement
+    import('../atlas/drawing-element-contracts').DrawingElement
   >;
   executeDrawing: (c: import('./../atlas/drawing-contracts').DrawingCommand) => {
     workspace: import('./../shared/contracts').Workspace;
-    view: import('./../atlas/drawing-contracts').DrawingView<
+    view: import('../atlas/drawing-view-contracts').DrawingView<
       import('./../shared/contracts').Room,
-      import('./../atlas/drawing-contracts').DrawingElement
+      import('../atlas/drawing-element-contracts').DrawingElement
     >;
   };
 }
@@ -1657,7 +1667,7 @@ export function storedCoupleAtlasWall(
   context: CoupleAtlasWallContext,
   c: AtlasCommand,
   before: Room,
-  elements: import('../atlas/drawing-contracts').DrawingElement[],
+  elements: import('../atlas/drawing-element-contracts').DrawingElement[],
 ): void {
   const binding = atlasBindings(db, c.campaignId).find(
     (b) => b.kind === 'dungeon' && b.ownerId === before.scopeId,
@@ -1826,7 +1836,7 @@ export function storedAtlasCitySite(
   token: string,
   cityId: string,
   id?: string,
-): import('./../atlas/atlas-region-contracts').AtlasCitySite {
+): import('../atlas/atlas-region-view-contracts').AtlasCitySite {
   return db.transaction(() => {
     const cam = context.guard(token),
       site = id
@@ -1854,11 +1864,11 @@ interface CampaignAtlasContext {
     token: string,
   ) => import('./../atlas/dungeon-contracts').DungeonView<
     import('./../shared/contracts').Room,
-    import('./../atlas/drawing-contracts').DrawingElement
+    import('../atlas/drawing-element-contracts').DrawingElement
   >;
   sceneWorld: (token: string, id: string) => import('../runtime/world-contracts').SceneWorld;
-  cities: (token: string) => import('./../atlas/city-contracts').CityOverview;
-  city: (token: string, id: string) => import('./../atlas/city-contracts').CityView;
+  cities: (token: string) => import('../atlas/city-data-contracts').CityOverview;
+  city: (token: string, id: string) => import('../atlas/city-data-contracts').CityView;
   workspace: () => import('./../shared/contracts').Workspace;
 }
 
@@ -1866,10 +1876,10 @@ export function storedCampaignAtlas(
   db: SqliteDatabase,
   context: CampaignAtlasContext,
   token: string,
-): import('./../atlas/campaign-atlas-contracts').CampaignAtlas<
+): import('../atlas/campaign-atlas-view-contracts').CampaignAtlas<
   import('./../shared/contracts').Room,
-  import('./../atlas/drawing-contracts').DrawingElement,
-  import('./../atlas/city-contracts').CityView
+  import('../atlas/drawing-element-contracts').DrawingElement,
+  import('../atlas/city-data-contracts').CityView
 > {
   const cam = context.guard(token);
   return db.transaction(() => {

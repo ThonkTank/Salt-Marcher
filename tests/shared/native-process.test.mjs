@@ -220,3 +220,41 @@ test('repeated interruption cannot abort the outer owner during child cleanup', 
     }
   }
 });
+
+test('only explicit confirmed-autosave crash protocol plus later normal fresh exit qualifies', () => {
+  const crashed = {
+    termination: 'confirmed-autosave-crash',
+    confirmation: { state: 'saved', inventorySha256: 'a'.repeat(64) },
+    exit: { code: null, signal: 'SIGKILL' },
+    pidAbsent: true,
+  };
+  const fresh = { exit: { code: 0, signal: null }, pidAbsent: true };
+  assert.throws(() => assertNativeCompletion([crashed, fresh], []), /explicit fault protocol/);
+  assert.throws(
+    () => assertNativeCompletion([crashed], [], { allowConfirmedCrash: true }),
+    /later normal fresh/,
+  );
+  for (const state of ['unknown', 'pending', undefined])
+    assert.throws(() =>
+      assertNativeCompletion(
+        [{ ...crashed, confirmation: { ...crashed.confirmation, state } }, fresh],
+        [],
+        { allowConfirmedCrash: true },
+      ),
+    );
+  assert.throws(() =>
+    assertNativeCompletion(
+      [{ ...crashed, confirmation: { state: 'saved', inventorySha256: 'unverified' } }, fresh],
+      [],
+      { allowConfirmedCrash: true },
+    ),
+  );
+  assert.doesNotThrow(() =>
+    assertNativeCompletion([crashed, fresh], [], { allowConfirmedCrash: true }),
+  );
+  assert.throws(() =>
+    assertNativeCompletion([crashed, { ...fresh, pidAbsent: false }], [], {
+      allowConfirmedCrash: true,
+    }),
+  );
+});

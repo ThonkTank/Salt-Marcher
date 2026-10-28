@@ -1,4 +1,5 @@
-import type { LandscapeBox, LandscapeRecord } from '../atlas/atlas-landscape';
+import type { LandscapeBox } from '../atlas/landscape-bounds';
+import type { LandscapeRecord } from '../atlas/landscape-contracts';
 import { editingDependencySql, terrainEditingDependencies } from './terrain-editing-dependencies';
 
 /** Exact author nodes, spatially bounded including Hermite's two-node halo.

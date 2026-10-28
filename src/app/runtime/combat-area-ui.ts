@@ -1,4 +1,5 @@
-import type { CombatAction, CombatState, Combatant } from './combat-contracts';
+import type { CombatAction } from './combat-contracts';
+import type { CombatState, Combatant } from './combat-state-contracts';
 import type { Creature, CreatureAction } from '../../features/catalog/creature-catalog';
 import { creatureAverageDamage, creatureActionRolls } from '../shared/dice-formula';
 import { areaTargetDamage } from './area-damage';

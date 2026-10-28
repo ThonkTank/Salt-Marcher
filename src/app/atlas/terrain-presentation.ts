@@ -1,22 +1,16 @@
-import {
-  applyTerrainFrame,
-  type TerrainFullFrame,
-  type TerrainFrameIdentity,
-  type TerrainFrame,
-  type TerrainIdentity,
-} from './terrain-frame';
+import { applyTerrainFrame, type TerrainFullFrame, type TerrainFrame } from './terrain-frame';
+import { type TerrainFrameIdentity, type TerrainIdentity } from './terrain-frame-identity';
+export type { TerrainFrame, TerrainFullFrame } from './terrain-frame';
 export type {
-  TerrainFrame,
   TerrainIdentity,
   TerrainInvalidation,
-  TerrainFullFrame,
   TerrainFrameIdentity,
-} from './terrain-frame';
-import type { AtlasRegionQuery, AtlasRegionSource } from './atlas-region-contracts';
-import type { TerrainProjectionRequest } from './terrain-projection';
+} from './terrain-frame-identity';
+import type { AtlasRegionQuery, AtlasRegionSource } from './atlas-region-view-contracts';
+import type { TerrainProjectionRequest } from './terrain-projection-contracts';
 
 export type TerrainFrameQuery =
-  | { kind: 'top'; query: AtlasRegionQuery; detail?: import('./atlas-landscape').LandscapeBox }
+  | { kind: 'top'; query: AtlasRegionQuery; detail?: import('./landscape-bounds').LandscapeBox }
   | { kind: 'tilted'; query: TerrainProjectionRequest };
 export interface TerrainFrameRequest {
   source: TerrainIdentity;

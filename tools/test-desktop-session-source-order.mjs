@@ -181,6 +181,31 @@ await runNativeProbe({ output: out, name: 'session-source-order' }, async (nativ
     await generate();
     await page.locator('#session-preview').scrollIntoViewIfNeeded();
     await page.screenshot({ path: path.join(out, 'same-edited-preview.png') });
+    await app.evaluate(({ ipcMain }) => {
+      const channel = 'campaign:execute-session',
+        handler = ipcMain._invokeHandlers.get(channel);
+      globalThis.__reviewCommands = [];
+      ipcMain.removeHandler(channel);
+      ipcMain.handle(channel, (event, command) => {
+        if (command.action.kind === 'accept-proposals') globalThis.__reviewCommands.push(command);
+        return handler(event, command);
+      });
+    });
+    await page.locator('#session-preview input[data-proposal-id]').first().check();
+    await page.locator('#session-review-selection').click();
+    await page.locator('#session-selection-dialog').waitFor({ state: 'visible' });
+    assert.match(
+      await page.locator('#session-selection-dialog').innerText(),
+      /Meine Brücke.*Eigener Text/s,
+    );
+    await page.locator('#session-selection-confirm').click();
+    await page.locator('#session-selection-dialog').waitFor({ state: 'hidden' });
+    const reviewed = await app.evaluate(() => globalThis.__reviewCommands);
+    assert.equal(reviewed.length, 1);
+    assert.equal(reviewed[0].action.runId, run.id);
+    assert.deepEqual(reviewed[0].action.proposals, [{ index: 0, expectedRevision: 2 }]);
+    assert.equal(reviewed[0].action.expectedPlanRevision, 1);
+    await page.screenshot({ path: path.join(out, 'confirmed-reviewed-plan.png') });
     const ended = new Promise((resolve) =>
       app.process().once('exit', (code, signal) => resolve({ code, signal })),
     );
@@ -195,6 +220,12 @@ await runNativeProbe({ output: out, name: 'session-source-order' }, async (nativ
           fresh.db.prepare('SELECT * FROM ' + table + ' ORDER BY id').all(),
           saved[table],
         );
+      const token = fresh.activate(campaign.id).token,
+        adopted = fresh.preparation(token).plans.find((p) => p.id === planId);
+      assert.equal(adopted.scenes.length, 1);
+      assert.equal(adopted.scenes[0].title, 'Meine Brücke');
+      assert.equal(adopted.scenes[0].notes, 'Eigener Text\r\n');
+      assert.equal(fresh.session(token, planId).visits[0].readAloud, 'Still.');
     } finally {
       fresh.close();
     }
@@ -211,6 +242,8 @@ await runNativeProbe({ output: out, name: 'session-source-order' }, async (nativ
       artifacts,
       immutableRowsUnchanged: true,
       presentationOrderPerturbed: true,
+      reviewed,
+      displayedProposalConfirmedExactlyOnce: true,
     });
     console.log(JSON.stringify({ runId: run.id, exit, immutableRowsUnchanged: true }));
   } catch (error) {

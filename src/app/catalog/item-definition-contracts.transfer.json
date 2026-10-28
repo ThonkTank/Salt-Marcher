@@ -1,0 +1,13 @@
+{
+  "roles": {
+    "ItemDefinition.description": "text",
+    "ItemDefinition.id": "shared",
+    "ItemDefinition.name": "text",
+    "ItemDefinition.properties[]": "text",
+    "ItemDefinition.rarity": "text",
+    "ItemDefinition.source": "opaque",
+    "ItemDefinition.sourceHash": "external",
+    "ItemDefinition.unitCopper": "text",
+    "ItemDefinition.weightText": "text"
+  }
+}

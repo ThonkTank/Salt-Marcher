@@ -154,7 +154,7 @@ Codeeinstiege und Prüfwege stehen in [rendering.md](../architecture/rendering.m
    Tempo, Pause/Abbruch und pausierte Wiederaufnahme folgen dem [Reisevertrag](hex-travel.md).
    Reise- und Referenzraster bleiben gültig, ohne Autoren-Zellarchitektur zu fordern.
    Gesamtprüfung umfasst fehlende Kontexte, konkurrierende Saves, Kampagnen-/
-   Scenewechsel, Tastatur, 200 % und große Daten. Einzelne Marker- oder Queuefälle
+   Scenewechsel, Tastatur, 100 % und große Daten. Einzelne Marker- oder Queuefälle
    sind keine vollständige HEX-/E2E-Abnahme.
 
 Die [frühere Zell-/Chunk-Lieferfolge](https://github.com/ThonkTank/Salt-Marcher/blob/1cb69e33dca7eda6e56916c3cf6bc2cfba803c7d/docs/atlas/contract/hex-editing.md#verbleibende-ausführbare-hex-lieferfolge)

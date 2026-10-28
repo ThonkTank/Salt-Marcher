@@ -1,4 +1,5 @@
 import type { CanvasBox } from '../atlas/atlas-camera';
+import { ownedEventTarget } from '../shared/owned-event-target';
 export type { CanvasBox } from '../atlas/atlas-camera';
 /** Presentation only. Scene units, elements and DOM hits are interpreted by the adopter. */
 export type CameraReason = 'pan' | 'zoom' | 'reset' | 'set' | 'history';
@@ -6,6 +7,13 @@ type SavedView = { box: CanvasBox; initial: CanvasBox; past: CanvasBox[]; future
 const same = (a: CanvasBox, b: CanvasBox) =>
   a.x === b.x && a.y === b.y && a.width === b.width && a.height === b.height;
 export class PassiveMapCanvas {
+  private cleanups: (() => void)[] = [];
+  dispose() {
+    this.cancel();
+    for (const cleanup of this.cleanups.splice(0)) cleanup();
+    this.controls.remove();
+    this.panel.remove();
+  }
   private box: CanvasBox;
   private initial: CanvasBox;
   private contextKey = '';
@@ -47,6 +55,7 @@ export class PassiveMapCanvas {
       changed?: (box: CanvasBox, reason: CameraReason) => void;
     },
   ) {
+    const events = ownedEventTarget(root, this.cleanups);
     this.box = { ...options.initial };
     this.initial = { ...options.initial };
     this.apply();
@@ -91,7 +100,7 @@ export class PassiveMapCanvas {
     this.panel.append(this.note, retry);
     root.after(this.panel);
     root.style.touchAction = 'none';
-    root.addEventListener(
+    events.addEventListener(
       'pointerdown',
       (e) => {
         if (this.failed) {
@@ -120,7 +129,7 @@ export class PassiveMapCanvas {
       },
       true,
     );
-    root.addEventListener(
+    events.addEventListener(
       'pointermove',
       (e) => {
         const drag = this.drag;
@@ -157,13 +166,13 @@ export class PassiveMapCanvas {
         e.stopImmediatePropagation();
       }
     };
-    root.addEventListener('pointerup', finish, true);
-    root.addEventListener('pointercancel', finish, true);
-    root.addEventListener('lostpointercapture', () => this.cancel());
-    root.addEventListener('pointerleave', (e) => {
+    events.addEventListener('pointerup', finish, true);
+    events.addEventListener('pointercancel', finish, true);
+    events.addEventListener('lostpointercapture', () => this.cancel());
+    events.addEventListener('pointerleave', (e) => {
       if (this.drag?.id === e.pointerId && !root.hasPointerCapture(e.pointerId)) this.cancel();
     });
-    root.addEventListener(
+    events.addEventListener(
       'click',
       (e) => {
         if (this.suppressClick || this.failed) {
@@ -174,7 +183,7 @@ export class PassiveMapCanvas {
       },
       true,
     );
-    root.addEventListener(
+    events.addEventListener(
       'wheel',
       (e) => {
         if (!e.deltaY) return;

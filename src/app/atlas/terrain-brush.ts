@@ -1,3 +1,4 @@
+import { type HeightStroke } from './terrain-brush-contracts';
 import { heightPatch } from './terrain-interpolation';
 import { coupleRouteEdits } from './terrain-route-planner';
 import {
@@ -5,30 +6,14 @@ import {
   terrainVisibility,
   terrainSourceBounds,
   validateTerrainView,
-  type TerrainView,
-  type TerrainGrid,
 } from './terrain-spatial-model';
+import { type TerrainGrid } from './terrain-grid-contracts';
 import { terrainRoughness } from './terrain-relief';
-import { prepareTerrainForm, type TerrainForm } from './terrain-form-brush';
-import type { LandscapeRecord } from './atlas-landscape';
-import { strokeBox, validateStroke, type MaskSample } from './land-mask';
-import { decodeHeights, encodeHeights, editHeight, TerrainSampler } from './terrain-height';
+import { prepareTerrainForm } from './terrain-form-brush';
+import type { LandscapeRecord } from './landscape-contracts';
+import { strokeBox, validateStroke } from './land-mask';
 
-/** Strength is metres per second, feather is the soft fraction of the radius. */
-export interface HeightStroke {
-  mode: 'raise' | 'lower' | 'roughen' | 'smooth' | 'level';
-  form?: TerrainForm;
-  /** Missing means protected. Frozen with radius and all other gesture parameters. */
-  preserveDetails?: boolean;
-  radius: number;
-  strength: number;
-  feather: number;
-  targetM?: number;
-  roughness?: number;
-  seed?: number;
-  samples: MaskSample[];
-  visibility?: TerrainView;
-}
+import { decodeHeights, encodeHeights, editHeight, TerrainSampler } from './terrain-height';
 export function validateHeightStroke(s: HeightStroke) {
   if (
     !s ||
@@ -150,11 +135,37 @@ export function heightBrushDabs(s: Pick<HeightStroke, 'samples' | 'radius'>) {
 /** Prepared once per complete gesture; shared by live forms and canonical edits. */
 export function prepareHeightBrush(s: HeightStroke) {
   const dabs = heightBrushDabs(s);
+  // A point only receives dose from dabs within one brush radius. Index the
+  // immutable gesture once; cache each cell's candidates in original order so
+  // preview and commit keep the same integration and floating-point order.
+  const buckets = new Map<string, number[]>(),
+    candidates = new Map<string, number[]>();
+  if (!s.form)
+    for (let i = 0; i < dabs.length; i++) {
+      const dab = dabs[i]!,
+        key = Math.floor(dab.x / s.radius) + ':' + Math.floor(dab.y / s.radius);
+      const bucket = buckets.get(key) ?? [];
+      bucket.push(i);
+      buckets.set(key, bucket);
+    }
   const dose = s.form
     ? prepareTerrainForm(s, dabs)
     : (p: { x: number; y: number }) => {
+        const x = Math.floor(p.x / s.radius),
+          y = Math.floor(p.y / s.radius),
+          key = x + ':' + y;
+        let near = candidates.get(key);
+        if (!near) {
+          near = [];
+          for (let dy = -1; dy <= 1; dy++)
+            for (let dx = -1; dx <= 1; dx++)
+              near.push(...(buckets.get(x + dx + ':' + (y + dy)) ?? []));
+          near.sort((a, b) => a - b);
+          candidates.set(key, near);
+        }
         let total = 0;
-        for (const d of dabs) {
+        for (const i of near) {
+          const d = dabs[i]!;
           const r = Math.hypot(p.x - d.x, p.y - d.y) / s.radius;
           if (r >= 1) continue;
           const t = s.feather === 0 ? 1 : Math.min(1, (1 - r) / s.feather);
@@ -216,8 +227,26 @@ export function applyTerrainBrush(
   const tiles =
     (Math.floor((box.x + box.width) / edge) - Math.floor(box.x / edge) + 1) *
     (Math.floor((box.y + box.height) / edge) - Math.floor(box.y / edge) + 1);
-  if (dabs.length * tiles * 4096 > 60000000)
-    throw Error('Höhenzug zu lang. In kürzeren Zügen bearbeiten.');
+  // Bound relevant dab/node evaluations, rather than multiplying every dab
+  // by every tile in a long gesture's bounding rectangle. The radius-cell
+  // index above visits at most the neighboring cells; count that conservative
+  // square here, including all their author nodes.
+  const work = s.form
+    ? dabs.length * tiles
+    : dabs.reduce((sum, dab) => {
+        const cx = Math.floor(dab.x / s.radius),
+          cy = Math.floor(dab.y / s.radius);
+        return (
+          sum +
+          (Math.floor(((cx + 2) * s.radius) / edge) -
+            Math.floor(((cx - 1) * s.radius) / edge) +
+            1) *
+            (Math.floor(((cy + 2) * s.radius) / edge) -
+              Math.floor(((cy - 1) * s.radius) / edge) +
+              1)
+        );
+      }, 0);
+  if (work * 4096 > 60000000) throw Error('Höhenzug zu lang. In kürzeren Zügen bearbeiten.');
   const needsSource = s.mode === 'smooth' || s.targetM !== undefined,
     source = needsSource ? (scaleHeight ?? scaleHeightSampler(records, pixel)) : undefined,
     visibility = s.visibility ? (canonicalVisibility ?? terrainGrid(records, s.visibility)) : null;

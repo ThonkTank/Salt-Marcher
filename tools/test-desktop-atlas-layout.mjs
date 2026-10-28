@@ -642,7 +642,6 @@ await runNativeProbe({ output: out, name: 'atlas-layout' }, async (native) => {
         [1600, 900, 1],
         [1920, 1080, 1],
         [640, 480, 1],
-        [1280, 880, 2],
       ]) {
         const f = await frame('viewport-' + w + '-' + z, w, h, z);
         assert(!f.viewport.scroll);

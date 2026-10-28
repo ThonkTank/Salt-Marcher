@@ -152,6 +152,28 @@ async function stroke(points, hold = 400) {
   const before = inventory().revision,
     b = await page.locator('#campaign-map').boundingBox();
   await page.mouse.move(b.x + b.width * points[0][0], b.y + b.height * points[0][1]);
+  // Display readiness does not imply that the exact author's height basis is
+  // loaded. Hover starts that read; the production gate deliberately rejects a
+  // pointerdown while it is loading, so wait for this radius and source identity.
+  if (['height', 'smooth', 'freshwater'].includes(await page.locator('#land-tool').inputValue())) {
+    const radius = Number(await page.locator('#land-radius-value').inputValue());
+    await page.waitForFunction(
+      (radius) => {
+        const canvas = document.querySelector('#campaign-map'),
+          state = canvas.dataset;
+        const source = JSON.parse(state.terrainEditingSource ?? 'null');
+        return (
+          state.terrainEditingState === 'ready' &&
+          Number(state.terrainEditingRadius) === radius &&
+          source?.complete === true &&
+          source.radius === radius &&
+          source.revision === Number(state.terrainRevision)
+        );
+      },
+      radius,
+      { timeout: 60000 },
+    );
+  }
   await page.mouse.down();
   await wait(hold);
   for (let i = 1; i < points.length; i++) {
@@ -181,6 +203,19 @@ async function stroke(points, hold = 400) {
   );
   await ready();
   assert(inventory().revision > before, 'gesture must commit canonical records');
+}
+async function finishPath() {
+  const before = inventory().revision;
+  await page.locator('#land-finish').click();
+  const deadline = Date.now() + 120000;
+  while (inventory().revision <= before && Date.now() < deadline) await wait(50);
+  assert(inventory().revision > before, 'each road must commit before the next author input');
+  // Region readiness can still describe the previous frame during a save. The
+  // writer releases these controls only after its acknowledgement and refresh.
+  await page.waitForFunction(() => !document.querySelector('#land-finish').disabled, null, {
+    timeout: 60000,
+  });
+  await ready();
 }
 async function land(radius, strength = 500, direction = 'raise') {
   await page.locator('#atlas-section').selectOption('terrain');
@@ -376,8 +411,7 @@ try {
     [0.75, 0.48],
   ])
     await page.mouse.click(area.x + area.width * x, area.y + area.height * y);
-  await page.locator('#land-finish').click();
-  await ready();
+  await finishPath();
   await page.locator('#land-width').fill('3');
   for (const points of [
     [
@@ -392,10 +426,9 @@ try {
     area = await page.locator('#campaign-map').boundingBox();
     for (const [x, y] of points)
       await page.mouse.click(area.x + area.width * x, area.y + area.height * y);
-    await page.locator('#land-finish').click();
-    await ready();
+    await finishPath();
   }
-  assert(inventory().roads > 0);
+  assert.equal(inventory().roads, 3, 'all three ordinary authored roads must be canonical');
   await page.locator('#atlas-section').selectOption('city');
   await page.locator('[data-tool-group=buildings]').click();
   await page.locator('[data-atlas-tool=building]').click();

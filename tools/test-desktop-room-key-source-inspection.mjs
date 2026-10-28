@@ -60,7 +60,7 @@ await runNativeProbe(
       keyChecks = [],
       freshChecks = [],
       searchChecks = [];
-    const zoom = Number(process.env.GM_QA_ZOOM ?? 2),
+    const zoom = 1,
       sivCorrection = 'Dritte Nacht am Fährsteg: Siv spricht erst, wenn Varo außer Hörweite ist.',
       questCorrection =
         'Dritte Nacht am Schrank: Vor dem Öffnen nach einer Falle suchen; die Schatulle bleibt unbestätigt.';

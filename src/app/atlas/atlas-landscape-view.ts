@@ -12,7 +12,8 @@ import {
 } from './landscape-brush';
 import { lineParts } from './landscape-line';
 import { AtlasPaint, atlasPaint } from './atlas-paint';
-import type { LandscapeRecord, LandscapeBox } from './atlas-landscape';
+import type { LandscapeRecord } from './landscape-contracts';
+import type { LandscapeBox } from './landscape-bounds';
 import { hexPolygon, LANDSCAPE_PLACE_FONT_PX } from './atlas-landscape';
 import { gridMeters, scaleBar, hexTravelLabel } from './atlas-navigation-scale';
 import { terrainColors } from '../runtime/world-model';

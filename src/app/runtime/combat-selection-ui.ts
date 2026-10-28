@@ -1,5 +1,5 @@
 import type { WorkspaceGeometry, Result } from '../shared/contracts';
-import type { LiveScene } from './live-contracts';
+import type { LiveScene } from './live-scene-contracts';
 import type { CombatAction } from './combat-contracts';
 import type { EncounterParty } from '../catalog/encounter-contracts';
 import {

@@ -1,4 +1,4 @@
-import type { LandscapeBox } from './atlas-landscape';
+import type { LandscapeBox } from './landscape-bounds';
 export const terrainBoxesOverlap = (a: LandscapeBox, b: LandscapeBox) =>
   a.x <= b.x + b.width && a.x + a.width >= b.x && a.y <= b.y + b.height && a.y + a.height >= b.y;
 type Entry<T> = { value: T; bytes: number; box: LandscapeBox };

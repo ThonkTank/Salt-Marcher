@@ -1,3 +1,4 @@
+import { itemDefinitionReference } from './catalog-references';
 import { checkedPreparedGroupValue } from './prepared-group';
 import { checkedTreasureValue } from './progression-records';
 import { checkedProgressValue } from './progression-records';
@@ -37,22 +38,21 @@ import {
   restAfter,
   xpLevel,
   xpShare,
-  type CombatReward,
-  type FinishRewards,
   type LedgerInventoryPage,
   type LedgerInventoryQuery,
-  type LedgerItem,
   type LedgerPage,
   type LedgerQuery,
-  type Progress,
   type ProgressAck,
   type ProgressAction,
   type ProgressCommand,
   type ProgressView,
-  type Treasure,
   type TreasurePage,
 } from '../runtime/progression';
-import { checkedCombat, type CombatState } from '../runtime/combat-contracts';
+import { type CombatReward, type FinishRewards } from '../runtime/reward-contracts';
+import { type LedgerItem, type Treasure } from '../runtime/treasure-contracts';
+import { type Progress } from '../runtime/character-progress-contracts';
+import { checkedCombat } from '../runtime/combat-contracts';
+import { type CombatState } from '../runtime/combat-state-contracts';
 import { readLive, readLiveScene, readRoster } from './live-read';
 import { readItemDefinition, recordItemDefinitionVersion } from './item-definitions';
 import {
@@ -916,7 +916,12 @@ function allocateTreasurePortion(
     id: randomUUID(),
     characterId: a.characterId,
     revision: 1,
-    reference: { kind: 'authored', definitionId: definition.id, revision: definition.revision },
+    reference: {
+      kind: 'authored',
+      definitionId: definition.id,
+      revision: definition.revision,
+      catalogReference: itemDefinitionReference(definition),
+    },
     name: definition.name,
     category: definition.category,
     quantity: a.quantity,

@@ -1,0 +1,28 @@
+{
+  "roles": {
+    "Character.id": "local",
+    "Character.sceneId": "local",
+    "CharacterProfile.archive.reason": "text",
+    "CharacterProfile.archive.recordedAt": "text",
+    "CharacterProfile.characterClass": "text",
+    "CharacterProfile.languages[]": "text",
+    "CharacterProfile.name": "text",
+    "CharacterProfile.playerName": "text",
+    "CharacterProfile.species": "text",
+    "LiveScene.adoption.id": "local",
+    "LiveScene.adoption.locationId": "local",
+    "LiveScene.adoption.notes": "text",
+    "LiveScene.adoption.planId": "local",
+    "LiveScene.adoption.title": "text",
+    "LiveScene.adoption.visitId": "local",
+    "LiveScene.clock.epochId": "local",
+    "LiveScene.clock.instantMs": "text",
+    "LiveScene.id": "local",
+    "LiveScene.locationId": "local",
+    "LiveScene.members[]": "local",
+    "LiveScene.momentDraftError": "text",
+    "LiveScene.notes": "text",
+    "LiveScene.readAloud": "text",
+    "LiveScene.title": "text"
+  }
+}

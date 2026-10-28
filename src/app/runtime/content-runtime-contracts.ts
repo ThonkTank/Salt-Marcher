@@ -1,5 +1,5 @@
-import type { DungeonPose } from '../atlas/dungeon-contracts';
-import type { TreasureItem } from './progression';
+import type { DungeonPose } from '../atlas/dungeon-position-contracts';
+import type { TreasureItem } from './treasure-contracts';
 export interface ContentState {
   featureId: string;
   revision: number;

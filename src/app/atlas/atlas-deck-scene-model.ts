@@ -5,7 +5,7 @@ import {
   type AtlasCanonicalSceneModel,
 } from './atlas-scene-geometry';
 import type { AtlasSceneView } from './atlas-scene-geometry';
-import type { TerrainGrid } from './terrain-spatial-model';
+import type { TerrainGrid } from './terrain-grid-contracts';
 import type { AtlasGeometryOverview } from './atlas-geometry-overview';
 
 const ORIGIN_STEP_M = 256;

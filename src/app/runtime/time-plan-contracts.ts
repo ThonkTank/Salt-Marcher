@@ -1,13 +1,7 @@
 import type { Result } from '../shared/contracts';
 import type { LiveAction } from './live-contracts';
-import type { FantasyCalendar } from './world-contracts';
+import type { FantasyCalendar } from './calendar-contracts';
 import type { AgendaUnit } from './agenda-model';
-export interface ClockEventTarget {
-  eventId: string;
-  expectedRevision: number;
-  phase: 'start' | 'end';
-  instantMs: string;
-}
 export type TimeRequest = { sceneId: string; reason: string; expectedCalendarRevision?: number } & (
   | { kind: 'duration'; amount: string; unit: AgendaUnit }
   | { kind: 'instant'; instantMs: string }

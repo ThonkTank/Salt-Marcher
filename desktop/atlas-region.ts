@@ -18,11 +18,11 @@ import { join } from 'node:path';
 import type {
   AtlasRegionSource,
   AtlasRegionQuery,
-  AtlasRegionGeometry,
   AtlasObjectFocus,
   AtlasHitPage,
-} from '../src/app/atlas/atlas-region-contracts';
-import { REGION_CACHE_BYTES } from '../src/app/atlas/atlas-region-contracts';
+} from '../src/app/atlas/atlas-region-view-contracts';
+import type { AtlasRegionGeometry } from '../src/app/atlas/atlas-region-geometry-contracts';
+import { REGION_CACHE_BYTES } from '../src/app/atlas/atlas-region-limits';
 
 type Queued = {
   control?: AtlasReadRequest;
@@ -375,8 +375,8 @@ export class AtlasRegionService {
   prepareTerrainStroke(
     source: AtlasRegionSource,
     stroke:
-      | import('../src/app/atlas/terrain-brush').HeightStroke
-      | import('../src/app/atlas/atlas-landscape').LakeStroke,
+      | import('../src/app/atlas/terrain-brush-contracts').HeightStroke
+      | import('../src/app/atlas/landscape-action-contracts').LakeStroke,
   ): Promise<import('../src/app/storage/terrain-scale').PreparedTerrainStroke> {
     return this.enqueue(source, { kind: 'terrain-stroke', stroke }, 'author');
   }
@@ -409,16 +409,16 @@ export class AtlasRegionService {
   }
   terrain(
     source: AtlasRegionSource,
-    query: import('../src/app/atlas/terrain-projection').TerrainProjectionRequest,
+    query: import('../src/app/atlas/terrain-projection-contracts').TerrainProjectionRequest,
     control?: AtlasReadRequest,
-  ): Promise<import('../src/app/atlas/terrain-projection').TerrainProjection> {
+  ): Promise<import('../src/app/atlas/terrain-projection-contracts').TerrainProjection> {
     return this.enqueue(source, { kind: 'terrain', query }, 'terrain', control);
   }
 
   liveTerrain(
     source: AtlasRegionSource,
     query: import('../src/app/atlas/terrain-presentation').TerrainFrameQuery,
-    base?: import('../src/app/atlas/terrain-frame').TerrainFrameIdentity,
+    base?: import('../src/app/atlas/terrain-frame-identity').TerrainFrameIdentity,
     refinement = false,
   ): Promise<import('../src/app/atlas/terrain-presentation').TerrainFrame> {
     return this.enqueue(

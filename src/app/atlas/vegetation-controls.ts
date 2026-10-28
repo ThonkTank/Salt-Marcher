@@ -1,10 +1,10 @@
+import { vegetationPresets } from './vegetation';
 import {
-  vegetationPresets,
   type VegetationSpec,
   type VegetationInstance,
   type VegetationOverride,
-} from './vegetation';
-import type { LandscapeRecord } from './atlas-landscape';
+} from './vegetation-contracts';
+import type { LandscapeRecord } from './landscape-contracts';
 
 // Keep invalid/empty visible edits in the draft. The shared canonical validator
 // must reject them instead of silently saving the last valid value.

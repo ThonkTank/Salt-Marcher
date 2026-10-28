@@ -1,18 +1,18 @@
 import type {
   AtlasRegionSource,
   AtlasRegionQuery,
-  AtlasRegionGeometry,
   AtlasObjectFocus,
   AtlasHitPage,
-} from '../src/app/atlas/atlas-region-contracts';
+} from '../src/app/atlas/atlas-region-view-contracts';
+import type { AtlasRegionGeometry } from '../src/app/atlas/atlas-region-geometry-contracts';
 import type {
   TerrainProjection,
   TerrainProjectionRequest,
-} from '../src/app/atlas/terrain-projection';
+} from '../src/app/atlas/terrain-projection-contracts';
 import type { TerrainColorRequest, TerrainColorTile } from '../src/app/atlas/terrain-color';
 import type { TerrainFrame, TerrainFrameQuery } from '../src/app/atlas/terrain-presentation';
-import type { TerrainFrameIdentity } from '../src/app/atlas/terrain-frame';
-import type { HeightStroke } from '../src/app/atlas/terrain-brush';
+import type { TerrainFrameIdentity } from '../src/app/atlas/terrain-frame-identity';
+import type { HeightStroke } from '../src/app/atlas/terrain-brush-contracts';
 import type { PreparedTerrainStroke } from '../src/app/storage/terrain-scale';
 import type {
   AtlasTerrainTile,
@@ -40,7 +40,7 @@ export type AtlasJob = (
   | { kind: 'terrain-live'; query: TerrainFrameQuery; base?: TerrainFrameIdentity }
   | {
       kind: 'terrain-stroke';
-      stroke: HeightStroke | import('../src/app/atlas/atlas-landscape').LakeStroke;
+      stroke: HeightStroke | import('../src/app/atlas/landscape-action-contracts').LakeStroke;
     }
   | { kind: 'region'; query: AtlasRegionQuery }
   | { kind: 'focus'; objectKind: 'room' | 'city' | 'building' | 'element' | 'scope'; id: string }

@@ -1,4 +1,5 @@
-import type { LandscapeBox, LandscapeRecord } from '../atlas/atlas-landscape';
+import type { LandscapeBox } from '../atlas/landscape-bounds';
+import type { LandscapeRecord } from '../atlas/landscape-contracts';
 import { bounds } from '../atlas/landscape-geometry';
 import { intersectPolygons } from '../atlas/landscape-brush';
 import { routeBounds } from '../atlas/terrain-route';

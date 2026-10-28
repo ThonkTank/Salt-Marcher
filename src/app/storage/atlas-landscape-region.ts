@@ -2,18 +2,16 @@ import { readTerrainEditingPage, readTerrainEditingRecords } from './terrain-edi
 import { heightBrushResolution } from '../atlas/terrain-brush';
 import { PNG } from 'pngjs';
 import { boundedLabels, landscapeLabels, type MapLabelCandidate } from '../atlas/atlas-cartography';
-import {
-  landscapePaintBox,
-  type LandscapeBox,
-  type LandscapeRecord,
-} from '../atlas/atlas-landscape';
+import { landscapePaintBox } from '../atlas/atlas-landscape';
+import { type LandscapeBox } from '../atlas/landscape-bounds';
+import { type LandscapeRecord } from '../atlas/landscape-contracts';
 import type {
   AtlasHit,
   AtlasHitPage,
-  AtlasLandscapeLayer,
   AtlasRegionQuery,
   AtlasRegionSource,
-} from '../atlas/atlas-region-contracts';
+} from '../atlas/atlas-region-view-contracts';
+import type { AtlasLandscapeLayer } from '../atlas/atlas-region-geometry-contracts';
 import { mapRecordVisible } from '../atlas/atlas-scale-policy';
 import { bounds, contains } from '../atlas/landscape-geometry';
 import { lineContains } from '../atlas/landscape-line';
@@ -26,11 +24,8 @@ import {
 } from '../atlas/landscape-raster';
 import { TerrainChangeHistory } from '../atlas/terrain-change-history';
 import { streamTerrainField } from '../atlas/terrain-field-stream';
-import {
-  resolveTerrainObjects,
-  terrainObjectPoints,
-  type TerrainObject,
-} from '../atlas/terrain-objects';
+import { resolveTerrainObjects, terrainObjectPoints } from '../atlas/terrain-objects';
+import { type TerrainObject } from '../atlas/terrain-object-contracts';
 import { TerrainProjectionCache } from '../atlas/terrain-projection-cache';
 import { validateTerrainView } from '../atlas/terrain-spatial-model';
 import { generateVegetation, VEGETATION_SURFACE_MPP } from '../atlas/vegetation';
@@ -403,7 +398,7 @@ export class AtlasLandscapeReader {
 
   visibility(
     source: AtlasRegionSource,
-    view: import('../atlas/terrain-spatial-model').TerrainView,
+    view: import('../atlas/terrain-view-contracts').TerrainView,
   ) {
     const identity = JSON.stringify([
         source.campaignId,
@@ -591,8 +586,8 @@ export class AtlasLandscapeReader {
   }
   *heightSteps(
     source: AtlasRegionSource,
-    q: import('../atlas/terrain-projection').TerrainProjectionRequest,
-  ): Generator<void, import('../atlas/terrain-projection').TerrainProjection> {
+    q: import('../atlas/terrain-projection-contracts').TerrainProjectionRequest,
+  ): Generator<void, import('../atlas/terrain-projection-contracts').TerrainProjection> {
     this.requireFull();
     let start = performance.now();
     function* checkpoint() {
@@ -679,7 +674,7 @@ export class AtlasLandscapeReader {
   }
   terrain(
     source: AtlasRegionSource,
-    q: import('../atlas/terrain-projection').TerrainProjectionRequest,
+    q: import('../atlas/terrain-projection-contracts').TerrainProjectionRequest,
   ) {
     this.requireFull();
     const projection = readTerrainProjection(
@@ -709,8 +704,8 @@ export class AtlasLandscapeReader {
   }
   *terrainSteps(
     source: AtlasRegionSource,
-    q: import('../atlas/terrain-projection').TerrainProjectionRequest,
-  ): Generator<void, import('../atlas/terrain-projection').TerrainProjection> {
+    q: import('../atlas/terrain-projection-contracts').TerrainProjectionRequest,
+  ): Generator<void, import('../atlas/terrain-projection-contracts').TerrainProjection> {
     this.requireFull();
     if (q.product === 'height') return yield* this.heightSteps(source, q);
     const colorChange = q.colorBase ? this.colorHistory.since(q.colorBase) : undefined;

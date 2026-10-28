@@ -1,9 +1,9 @@
 import { EditorSession } from '../shared/editor-session';
 import { TreasureDistribution } from './treasure-distribution-ui';
-import type { ItemDefinition } from '../catalog/items-contracts';
+import type { ItemDefinition } from '../catalog/item-definition-contracts';
 import type { WorkspaceGeometry, Result } from '../shared/contracts';
+import type { Treasure } from './treasure-contracts';
 import type {
-  Treasure,
   TreasurePage,
   ProgressView,
   ProgressAction,

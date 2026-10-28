@@ -20,7 +20,8 @@ import {
   type CommitResolution,
 } from '../shared/commit-confirmation';
 import type { WorkspaceGeometry, Result } from '../shared/contracts';
-import { formatInstant, advanceInstant, type LiveScene, type LiveView } from './live-contracts';
+import { formatInstant, advanceInstant, type LiveView } from './live-contracts';
+import { type LiveScene } from './live-scene-contracts';
 import type { EncounterAssessment } from '../catalog/encounter-contracts';
 import {
   deathSaveControls,
@@ -30,21 +31,19 @@ import {
   restFrame,
   gold,
   ledgerCopper,
-  type CharacterHealth,
   type ProgressView,
   type ProgressAck,
   type ProgressAction,
   type ProgressCommand,
-  type ItemInput,
-  type ItemCategory,
-  type FinishRewards,
   type ProgressHistory,
-  type Treasure,
   type TreasurePage,
   type LedgerPage,
-  type LedgerItem,
   type LootBalance,
 } from './progression';
+import { type CharacterHealth } from './character-progress-contracts';
+import { type ItemInput, type ItemCategory } from '../catalog/item-input-contracts';
+import { type FinishRewards } from './reward-contracts';
+import { type Treasure, type LedgerItem } from './treasure-contracts';
 export const editorSession = new EditorSession();
 const pendingWork = editorSession.operation<Promise<boolean>>();
 

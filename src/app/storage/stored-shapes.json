@@ -16,100 +16,91 @@
    "node": 10
   },
   "live_scene_extra": {
-   "node": 15
-  },
-  "world_actor": {
    "node": 16
   },
-  "session_run": {
+  "world_actor": {
    "node": 17
   },
+  "session_run": {
+   "node": 18
+  },
   "session_receipt": {
-   "node": 58
+   "node": 61
   },
   "generator_preset": {
-   "node": 62
+   "node": 65
   },
   "generation_run": {
-   "node": 76
+   "node": 79
   },
   "encounter_table": {
-   "node": 89
+   "node": 92
   },
   "loot_table": {
-   "node": 91
+   "node": 94
   },
   "generation_receipt": {
    "union": [
     {
-     "node": 77
+     "node": 80
     },
     {
-     "node": 94
+     "node": 97
     },
     {
-     "node": 96
+     "node": 99
     }
    ]
   },
   "generation_result": {
-   "node": 94
-  },
-  "loot_roll": {
-   "node": 96
-  },
-  "encounter_plan": {
-   "node": 77
-  },
-  "prepared_group": {
-   "node": 59
-  },
-  "character_profile": {
    "node": 97
   },
-  "character_progress": {
+  "loot_roll": {
    "node": 99
   },
+  "encounter_plan": {
+   "node": 100
+  },
+  "encounter_snapshot": {
+   "node": 80
+  },
+  "prepared_group": {
+   "node": 62
+  },
+  "character_profile": {
+   "node": 101
+  },
+  "character_progress": {
+   "node": 103
+  },
   "treasure": {
-   "node": 104
+   "node": 108
   },
   "character_ledger": {
-   "node": 109
+   "node": 113
   },
   "progress_event": {
    "union": [
     {
-     "node": 113
+     "node": 117
     },
     {
-     "node": 114
+     "node": 118
     },
     {
-     "node": 115
+     "node": 119
     },
     {
-     "node": 123
+     "node": 127
     },
     {
-     "node": 124
-    },
-    {
-     "node": 125
-    },
-    {
-     "node": 126
+     "node": 128
     },
     {
      "node": 129
     },
     {
      "node": 130
-    },
-    {
-     "node": 131
-    },
-    {
-     "node": 132
     },
     {
      "node": 133
@@ -130,28 +121,31 @@
      "node": 138
     },
     {
+     "node": 139
+    },
+    {
+     "node": 140
+    },
+    {
      "node": 141
     },
     {
      "node": 142
     },
     {
-     "node": 143
+     "node": 145
     },
     {
-     "node": 148
+     "node": 146
+    },
+    {
+     "node": 147
     },
     {
      "node": 152
     },
     {
-     "node": 153
-    },
-    {
-     "node": 154
-    },
-    {
-     "node": 155
+     "node": 156
     },
     {
      "node": 157
@@ -163,84 +157,93 @@
      "node": 159
     },
     {
-     "node": 160
+     "node": 161
     },
     {
-     "node": 161
+     "node": 162
+    },
+    {
+     "node": 163
+    },
+    {
+     "node": 164
+    },
+    {
+     "node": 165
     }
    ]
   },
   "progress_receipt": {
-   "node": 162
+   "node": 166
   },
   "combat_award": {
-   "node": 173
+   "node": 177
   },
   "combat": {
-   "node": 174
+   "node": 178
   },
   "shop": {
-   "node": 180
+   "node": 184
   },
   "shop_event": {
-   "node": 190
+   "node": 194
   },
   "shop_receipt": {
-   "node": 195
-  },
-  "world_record_calendar": {
    "node": 199
   },
+  "world_record_calendar": {
+   "node": 203
+  },
   "world_record_map": {
-   "node": 201
+   "node": 205
   },
   "world_record_phenomenon": {
-   "node": 234
-  },
-  "world_record_place_presentation": {
-   "node": 236
-  },
-  "world_record_weather_state": {
-   "node": 237
-  },
-  "world_history": {
    "node": 238
   },
+  "world_record_place_presentation": {
+   "node": 240
+  },
+  "world_record_weather_state": {
+   "node": 241
+  },
+  "world_history": {
+   "node": 242
+  },
   "world_receipt": {
-   "node": 288
+   "node": 292
   },
   "scene_position": {
-   "node": 258
+   "node": 262
   },
   "world_journey": {
-   "node": 294
+   "node": 298
   },
   "audio_asset": {
-   "node": 301
-  },
-  "audio_registry": {
-   "node": 303
-  },
-  "music_state": {
    "node": 305
   },
-  "scene_music": {
-   "node": 308
+  "audio_registry": {
+   "node": 307
   },
-  "music_subject": {
+  "music_state": {
    "node": 309
   },
+  "scene_music": {
+   "node": 312
+  },
+  "music_subject": {
+   "node": 313
+  },
   "music_receipt": {
-   "node": 310
+   "node": 314
   },
   "atlas_landscape": {
-   "node": 202
+   "node": 206
   },
   "dungeon_feature_state": {
-   "node": 311
+   "node": 315
   },
   "campaign_catalog_receipt": {
-   "node": 312
+   "node": 316
   }
  },
  "nodes": [
@@ -794,12 +797,52 @@
        "scalar": "string"
       }
      ]
+    },
+    "catalogReference": {
+     "union": [
+      {
+       "node": 15
+      }
+     ]
     }
    },
    "required": [
     "kind",
     "definitionId",
     "revision"
+   ]
+  },
+  {
+   "fields": {
+    "sourceId": {
+     "scalar": "string"
+    },
+    "sourceVersion": {
+     "scalar": "string"
+    },
+    "sourceHash": {
+     "scalar": "string"
+    },
+    "entryId": {
+     "scalar": "string"
+    },
+    "entryType": {
+     "union": [
+      {
+       "literal": "creature"
+      },
+      {
+       "literal": "item"
+      }
+     ]
+    }
+   },
+   "required": [
+    "sourceId",
+    "sourceVersion",
+    "sourceHash",
+    "entryId",
+    "entryType"
    ]
   },
   {
@@ -897,21 +940,21 @@
     "origin": {
      "union": [
       {
-       "node": 18
+       "node": 19
       }
      ]
     },
     "targets": {
      "union": [
       {
-       "node": 30
+       "node": 31
       }
      ]
     },
     "lootGuidance": {
      "union": [
       {
-       "node": 33
+       "node": 34
       }
      ]
     },
@@ -951,7 +994,7 @@
     },
     "proposals": {
      "array": {
-      "node": 43
+      "node": 44
      }
     },
     "warnings": {
@@ -979,30 +1022,30 @@
      "literal": "session-origin-v1"
     },
     "request": {
-     "node": 19
+     "node": 20
     },
     "itemCatalog": {
      "union": [
       {
        "array": {
-        "node": 24
+        "node": 25
        }
       }
      ]
     },
     "locations": {
      "array": {
-      "node": 25
+      "node": 26
      }
     },
     "notes": {
      "array": {
-      "node": 26
+      "node": 27
      }
     },
     "encounters": {
      "array": {
-      "node": 27
+      "node": 28
      }
     },
     "rewards": {
@@ -1012,7 +1055,7 @@
         "literal": null
        },
        {
-        "node": 29
+        "node": 30
        }
       ]
      }
@@ -1030,13 +1073,13 @@
   {
    "fields": {
     "encounter": {
-     "node": 20
+     "node": 21
     },
     "magicPool": {
      "union": [
       {
        "array": {
-        "node": 23
+        "node": 24
        }
       }
      ]
@@ -1111,7 +1154,7 @@
     "fillPlan": {
      "union": [
       {
-       "node": 21
+       "node": 22
       }
      ]
     },
@@ -1178,7 +1221,7 @@
      }
     },
     "filters": {
-     "node": 22
+     "node": 23
     },
     "habitat": {
      "scalar": "string"
@@ -1594,7 +1637,7 @@
      "scalar": "string"
     },
     "preset": {
-     "node": 28
+     "node": 29
     }
    },
    "required": [
@@ -1662,7 +1705,7 @@
     },
     "party": {
      "array": {
-      "node": 31
+      "node": 32
      }
     },
     "fraction": {
@@ -1690,7 +1733,7 @@
      }
     },
     "audit": {
-     "node": 32
+     "node": 33
     }
    },
    "required": [
@@ -1751,14 +1794,14 @@
     "basis": {
      "union": [
       {
-       "node": 34
+       "node": 35
       }
      ]
     },
     "magic": {
      "union": [
       {
-       "node": 37
+       "node": 38
       }
      ]
     },
@@ -1773,7 +1816,7 @@
      ]
     },
     "preset": {
-     "node": 41
+     "node": 42
     },
     "rewardXp": {
      "scalar": "number"
@@ -1803,7 +1846,7 @@
     },
     "characters": {
      "array": {
-      "node": 42
+      "node": 43
      }
     }
    },
@@ -1825,12 +1868,12 @@
    "fields": {
     "ledger": {
      "array": {
-      "node": 35
+      "node": 36
      }
     },
     "definitions": {
      "array": {
-      "node": 36
+      "node": 37
      }
     }
    },
@@ -1877,30 +1920,30 @@
      "union": [
       {
        "array": {
-        "node": 38
+        "node": 39
        }
       }
      ]
     },
     "expectedBefore": {
-     "node": 39
+     "node": 40
     },
     "expectedAfter": {
-     "node": 39
+     "node": 40
     },
     "received": {
-     "node": 39
+     "node": 40
     },
     "target": {
-     "node": 39
+     "node": 40
     },
     "allocations": {
      "array": {
-      "node": 39
+      "node": 40
      }
     },
     "missing": {
-     "node": 39
+     "node": 40
     },
     "warnings": {
      "array": {
@@ -1909,7 +1952,7 @@
     },
     "characters": {
      "array": {
-      "node": 40
+      "node": 41
      }
     }
    },
@@ -1994,7 +2037,7 @@
      "scalar": "string"
     },
     "received": {
-     "node": 39
+     "node": 40
     }
    },
    "required": [
@@ -2068,7 +2111,7 @@
     "rewardMissingMagic": {
      "union": [
       {
-       "node": 39
+       "node": 40
       }
      ]
     },
@@ -2105,7 +2148,7 @@
        "literal": null
       },
       {
-       "node": 44
+       "node": 45
       }
      ]
     },
@@ -2125,7 +2168,7 @@
        "literal": null
       },
       {
-       "node": 45
+       "node": 46
       }
      ]
     },
@@ -2160,7 +2203,7 @@
      }
     },
     "encounter": {
-     "node": 46
+     "node": 47
     },
     "acceptedVisitId": {
      "union": [
@@ -2221,6 +2264,38 @@
   },
   {
    "fields": {
+    "sources": {
+     "array": {
+      "node": 48
+     }
+    },
+    "sourceReferences": {
+     "union": [
+      {
+       "array": {
+        "node": 15
+       }
+      }
+     ]
+    },
+    "resolvedItems": {
+     "union": [
+      {
+       "array": {
+        "node": 51
+       }
+      }
+     ]
+    },
+    "items": {
+     "union": [
+      {
+       "array": {
+        "node": 52
+       }
+      }
+     ]
+    },
     "id": {
      "scalar": "string"
     },
@@ -2240,12 +2315,7 @@
     },
     "entries": {
      "array": {
-      "node": 47
-     }
-    },
-    "sources": {
-     "array": {
-      "node": 48
+      "node": 53
      }
     },
     "catalogHash": {
@@ -2254,88 +2324,31 @@
     "generationOrigin": {
      "union": [
       {
-       "node": 51
+       "node": 54
       }
      ]
     },
     "assessment": {
-     "node": 53
+     "node": 56
     },
     "composition": {
      "union": [
       {
-       "node": 54
+       "node": 57
       }
      ]
     }
    },
    "required": [
+    "sources",
     "id",
     "revision",
     "name",
     "notes",
     "party",
     "entries",
-    "sources",
     "catalogHash",
     "assessment"
-   ]
-  },
-  {
-   "fields": {
-    "id": {
-     "scalar": "string"
-    },
-    "creatureId": {
-     "scalar": "string"
-    },
-    "count": {
-     "scalar": "number"
-    },
-    "grouped": {
-     "scalar": "boolean"
-    },
-    "groupName": {
-     "union": [
-      {
-       "scalar": "string"
-      }
-     ]
-    },
-    "worldActorIds": {
-     "union": [
-      {
-       "array": {
-        "scalar": "string"
-       }
-      }
-     ]
-    },
-    "actorNames": {
-     "union": [
-      {
-       "array": {
-        "scalar": "string"
-       }
-      }
-     ]
-    },
-    "allowAnonymous": {
-     "union": [
-      {
-       "literal": false
-      },
-      {
-       "literal": true
-      }
-     ]
-    }
-   },
-   "required": [
-    "id",
-    "creatureId",
-    "count",
-    "grouped"
    ]
   },
   {
@@ -2534,6 +2547,110 @@
   },
   {
    "fields": {
+    "id": {
+     "scalar": "string"
+    },
+    "revision": {
+     "scalar": "number"
+    },
+    "name": {
+     "scalar": "string"
+    },
+    "unitCopper": {
+     "union": [
+      {
+       "literal": null
+      },
+      {
+       "scalar": "string"
+      }
+     ]
+    }
+   },
+   "required": [
+    "id",
+    "revision",
+    "name",
+    "unitCopper"
+   ]
+  },
+  {
+   "fields": {
+    "id": {
+     "scalar": "string"
+    },
+    "reference": {
+     "node": 15
+    },
+    "quantity": {
+     "scalar": "number"
+    }
+   },
+   "required": [
+    "id",
+    "reference",
+    "quantity"
+   ]
+  },
+  {
+   "fields": {
+    "id": {
+     "scalar": "string"
+    },
+    "creatureId": {
+     "scalar": "string"
+    },
+    "count": {
+     "scalar": "number"
+    },
+    "grouped": {
+     "scalar": "boolean"
+    },
+    "groupName": {
+     "union": [
+      {
+       "scalar": "string"
+      }
+     ]
+    },
+    "worldActorIds": {
+     "union": [
+      {
+       "array": {
+        "scalar": "string"
+       }
+      }
+     ]
+    },
+    "actorNames": {
+     "union": [
+      {
+       "array": {
+        "scalar": "string"
+       }
+      }
+     ]
+    },
+    "allowAnonymous": {
+     "union": [
+      {
+       "literal": false
+      },
+      {
+       "literal": true
+      }
+     ]
+    }
+   },
+   "required": [
+    "id",
+    "creatureId",
+    "count",
+    "grouped"
+   ]
+  },
+  {
+   "fields": {
     "runId": {
      "scalar": "string"
     },
@@ -2544,7 +2661,7 @@
      "scalar": "string"
     },
     "preset": {
-     "node": 52
+     "node": 55
     }
    },
    "required": [
@@ -2635,15 +2752,15 @@
    "fields": {
     "blocks": {
      "array": {
-      "node": 55
+      "node": 58
      }
     },
     "metrics": {
-     "node": 56
+     "node": 59
     },
     "diagnostics": {
      "array": {
-      "node": 57
+      "node": 60
      }
     },
     "candidateCount": {
@@ -2784,12 +2901,12 @@
     },
     "groups": {
      "array": {
-      "node": 59
+      "node": 62
      }
     },
     "encounters": {
      "array": {
-      "node": 61
+      "node": 64
      }
     }
    },
@@ -2831,11 +2948,11 @@
      ]
     },
     "plan": {
-     "node": 60
+     "node": 63
     },
     "actors": {
      "array": {
-      "node": 16
+      "node": 17
      }
     }
    },
@@ -2856,14 +2973,46 @@
     "assessment": {
      "union": [
       {
-       "node": 53
+       "node": 56
       }
      ]
     },
     "composition": {
      "union": [
       {
-       "node": 54
+       "node": 57
+      }
+     ]
+    },
+    "sources": {
+     "array": {
+      "node": 48
+     }
+    },
+    "sourceReferences": {
+     "union": [
+      {
+       "array": {
+        "node": 15
+       }
+      }
+     ]
+    },
+    "resolvedItems": {
+     "union": [
+      {
+       "array": {
+        "node": 51
+       }
+      }
+     ]
+    },
+    "items": {
+     "union": [
+      {
+       "array": {
+        "node": 52
+       }
       }
      ]
     },
@@ -2886,12 +3035,7 @@
     },
     "entries": {
      "array": {
-      "node": 47
-     }
-    },
-    "sources": {
-     "array": {
-      "node": 48
+      "node": 53
      }
     },
     "catalogHash": {
@@ -2900,19 +3044,19 @@
     "generationOrigin": {
      "union": [
       {
-       "node": 51
+       "node": 54
       }
      ]
     }
    },
    "required": [
+    "sources",
     "id",
     "revision",
     "name",
     "notes",
     "party",
     "entries",
-    "sources",
     "catalogHash"
    ]
   },
@@ -2949,7 +3093,7 @@
      "scalar": "boolean"
     },
     "config": {
-     "node": 63
+     "node": 66
     },
     "hash": {
      "scalar": "string"
@@ -2967,16 +3111,16 @@
   {
    "fields": {
     "composition": {
-     "node": 64
+     "node": 67
     },
     "generationDefaults": {
-     "node": 72
+     "node": 75
     },
     "scene": {
-     "node": 73
+     "node": 76
     },
     "combat": {
-     "node": 75
+     "node": 78
     },
     "loot": {
      "unknown": true
@@ -3018,7 +3162,7 @@
      }
     },
     "roleQuantities": {
-     "node": 65
+     "node": 68
     },
     "roleCombinations": {
      "array": {
@@ -3044,16 +3188,16 @@
      }
     },
     "crBlocks": {
-     "node": 67
+     "node": 70
     },
     "statblocks": {
-     "node": 68
+     "node": 71
     },
     "monsters": {
-     "node": 69
+     "node": 72
     },
     "initiativeSlots": {
-     "node": 69
+     "node": 72
     },
     "mixing": {
      "union": [
@@ -3080,19 +3224,19 @@
   {
    "fields": {
     "standard": {
-     "node": 66
+     "node": 69
     },
     "minion": {
-     "node": 66
+     "node": 69
     },
     "support": {
-     "node": 66
+     "node": 69
     },
     "elite": {
-     "node": 66
+     "node": 69
     },
     "boss": {
-     "node": 66
+     "node": 69
     }
    },
    "required": [
@@ -3148,10 +3292,10 @@
   {
    "fields": {
     "min": {
-     "node": 70
+     "node": 73
     },
     "max": {
-     "node": 71
+     "node": 74
     }
    },
    "required": [
@@ -3264,7 +3408,7 @@
   {
    "fields": {
     "difficultyWeights": {
-     "node": 74
+     "node": 77
     }
    },
    "required": [
@@ -3312,7 +3456,7 @@
     "fixedRoster": {
      "union": [
       {
-       "node": 77
+       "node": 80
       }
      ]
     },
@@ -3322,7 +3466,7 @@
        "literal": null
       },
       {
-       "node": 78
+       "node": 81
       }
      ]
     },
@@ -3330,7 +3474,7 @@
      "union": [
       {
        "array": {
-        "node": 82
+        "node": 85
        }
       }
      ]
@@ -3355,21 +3499,21 @@
      "scalar": "string"
     },
     "request": {
-     "node": 83
+     "node": 86
     },
     "preset": {
-     "node": 84
+     "node": 87
     },
     "tables": {
      "array": {
-      "node": 85
+      "node": 88
      }
     },
     "lootTables": {
      "union": [
       {
        "array": {
-        "node": 86
+        "node": 89
        }
       }
      ]
@@ -3379,7 +3523,7 @@
     },
     "plans": {
      "array": {
-      "node": 87
+      "node": 90
      }
     },
     "warnings": {
@@ -3389,7 +3533,7 @@
     },
     "candidates": {
      "array": {
-      "node": 88
+      "node": 91
      }
     },
     "acceptedPlanIds": {
@@ -3414,6 +3558,38 @@
   },
   {
    "fields": {
+    "sources": {
+     "array": {
+      "node": 48
+     }
+    },
+    "sourceReferences": {
+     "union": [
+      {
+       "array": {
+        "node": 15
+       }
+      }
+     ]
+    },
+    "resolvedItems": {
+     "union": [
+      {
+       "array": {
+        "node": 51
+       }
+      }
+     ]
+    },
+    "items": {
+     "union": [
+      {
+       "array": {
+        "node": 52
+       }
+      }
+     ]
+    },
     "id": {
      "scalar": "string"
     },
@@ -3433,12 +3609,7 @@
     },
     "entries": {
      "array": {
-      "node": 47
-     }
-    },
-    "sources": {
-     "array": {
-      "node": 48
+      "node": 53
      }
     },
     "catalogHash": {
@@ -3447,19 +3618,19 @@
     "generationOrigin": {
      "union": [
       {
-       "node": 51
+       "node": 54
       }
      ]
     }
    },
    "required": [
+    "sources",
     "id",
     "revision",
     "name",
     "notes",
     "party",
     "entries",
-    "sources",
     "catalogHash"
    ]
   },
@@ -3471,13 +3642,13 @@
        "literal": null
       },
       {
-       "node": 79
+       "node": 82
       }
      ]
     },
     "involved": {
      "array": {
-      "node": 79
+      "node": 82
      }
     },
     "tableIds": {
@@ -3487,7 +3658,7 @@
     },
     "caps": {
      "array": {
-      "node": 81
+      "node": 84
      }
     }
    },
@@ -3535,7 +3706,7 @@
     },
     "stock": {
      "array": {
-      "node": 80
+      "node": 83
      }
     }
    },
@@ -3651,7 +3822,7 @@
     "fillPlan": {
      "union": [
       {
-       "node": 21
+       "node": 22
       }
      ]
     },
@@ -3721,7 +3892,7 @@
      }
     },
     "filters": {
-     "node": 22
+     "node": 23
     },
     "habitat": {
      "scalar": "string"
@@ -3903,6 +4074,38 @@
   },
   {
    "fields": {
+    "sources": {
+     "array": {
+      "node": 48
+     }
+    },
+    "sourceReferences": {
+     "union": [
+      {
+       "array": {
+        "node": 15
+       }
+      }
+     ]
+    },
+    "resolvedItems": {
+     "union": [
+      {
+       "array": {
+        "node": 51
+       }
+      }
+     ]
+    },
+    "items": {
+     "union": [
+      {
+       "array": {
+        "node": 52
+       }
+      }
+     ]
+    },
     "id": {
      "scalar": "string"
     },
@@ -3922,12 +4125,7 @@
     },
     "entries": {
      "array": {
-      "node": 47
-     }
-    },
-    "sources": {
-     "array": {
-      "node": 48
+      "node": 53
      }
     },
     "catalogHash": {
@@ -3936,25 +4134,25 @@
     "generationOrigin": {
      "union": [
       {
-       "node": 51
+       "node": 54
       }
      ]
     },
     "assessment": {
-     "node": 53
+     "node": 56
     },
     "composition": {
-     "node": 54
+     "node": 57
     }
    },
    "required": [
+    "sources",
     "id",
     "revision",
     "name",
     "notes",
     "party",
     "entries",
-    "sources",
     "catalogHash",
     "assessment",
     "composition"
@@ -4000,7 +4198,7 @@
     },
     "entries": {
      "array": {
-      "node": 90
+      "node": 93
      }
     },
     "habitats": {
@@ -4081,7 +4279,7 @@
     },
     "entries": {
      "array": {
-      "node": 92
+      "node": 95
      }
     },
     "trashed": {
@@ -4113,7 +4311,7 @@
      "scalar": "number"
     },
     "item": {
-     "node": 93
+     "node": 96
     }
    },
    "required": [
@@ -4162,16 +4360,16 @@
    "fields": {
     "tables": {
      "array": {
-      "node": 89
+      "node": 92
      }
     },
     "lootTables": {
      "array": {
-      "node": 91
+      "node": 94
      }
     },
     "registry": {
-     "node": 95
+     "node": 98
     }
    },
    "required": [
@@ -4187,7 +4385,7 @@
     },
     "presets": {
      "array": {
-      "node": 62
+      "node": 65
      }
     },
     "assignedId": {
@@ -4241,13 +4439,73 @@
   },
   {
    "fields": {
+    "sources": {
+     "array": {
+      "node": 15
+     }
+    },
+    "items": {
+     "union": [
+      {
+       "array": {
+        "node": 52
+       }
+      }
+     ]
+    },
+    "id": {
+     "scalar": "string"
+    },
+    "revision": {
+     "scalar": "number"
+    },
+    "name": {
+     "scalar": "string"
+    },
+    "notes": {
+     "scalar": "string"
+    },
+    "party": {
+     "array": {
+      "node": 9
+     }
+    },
+    "entries": {
+     "array": {
+      "node": 53
+     }
+    },
+    "catalogHash": {
+     "scalar": "string"
+    },
+    "generationOrigin": {
+     "union": [
+      {
+       "node": 54
+      }
+     ]
+    }
+   },
+   "required": [
+    "sources",
+    "id",
+    "revision",
+    "name",
+    "notes",
+    "party",
+    "entries",
+    "catalogHash"
+   ]
+  },
+  {
+   "fields": {
     "name": {
      "scalar": "string"
     },
     "archive": {
      "union": [
       {
-       "node": 98
+       "node": 102
       }
      ]
     },
@@ -4354,7 +4612,7 @@
      ]
     },
     "rest": {
-     "node": 100
+     "node": 104
     },
     "health": {
      "union": [
@@ -4362,14 +4620,14 @@
        "literal": null
       },
       {
-       "node": 101
+       "node": 105
       }
      ]
     },
     "combatStatus": {
      "union": [
       {
-       "node": 103
+       "node": 107
       }
      ]
     }
@@ -4428,7 +4686,7 @@
     "death": {
      "union": [
       {
-       "node": 102
+       "node": 106
       }
      ]
     }
@@ -4538,7 +4796,7 @@
     },
     "items": {
      "array": {
-      "node": 105
+      "node": 109
      }
     }
    },
@@ -4601,14 +4859,14 @@
     "currentDefinition": {
      "union": [
       {
-       "node": 106
+       "node": 110
       }
      ]
     },
     "origin": {
      "union": [
       {
-       "node": 108
+       "node": 112
       }
      ]
     }
@@ -4694,7 +4952,7 @@
      "scalar": "string"
     },
     "source": {
-     "node": 107
+     "node": 111
     },
     "trashed": {
      "scalar": "boolean"
@@ -5057,7 +5315,7 @@
     "counterpartyLink": {
      "union": [
       {
-       "node": 110
+       "node": 114
       }
      ]
     },
@@ -5081,7 +5339,7 @@
     "counterpartyReference": {
      "union": [
       {
-       "node": 111
+       "node": 115
       }
      ]
     },
@@ -5165,7 +5423,7 @@
      "scalar": "string"
     },
     "owner": {
-     "node": 112
+     "node": 116
     }
    },
    "required": [
@@ -5197,7 +5455,7 @@
   {
    "fields": {
     "entry": {
-     "node": 109
+     "node": 113
     },
     "shopId": {
      "scalar": "string"
@@ -5215,10 +5473,10 @@
   {
    "fields": {
     "before": {
-     "node": 109
+     "node": 113
     },
     "portion": {
-     "node": 109
+     "node": 113
     },
     "shopId": {
      "scalar": "string"
@@ -5250,7 +5508,7 @@
      "scalar": "string"
     },
     "participant": {
-     "node": 116
+     "node": 120
     },
     "reason": {
      "scalar": "string"
@@ -5343,14 +5601,14 @@
     "death": {
      "union": [
       {
-       "node": 117
+       "node": 121
       }
      ]
     },
     "deathLast": {
      "union": [
       {
-       "node": 118
+       "node": 122
       }
      ]
     },
@@ -5358,7 +5616,7 @@
      "union": [
       {
        "array": {
-        "node": 119
+        "node": 123
        }
       }
      ]
@@ -5366,14 +5624,14 @@
     "concentrationLast": {
      "union": [
       {
-       "node": 120
+       "node": 124
       }
      ]
     },
     "legendaryActions": {
      "union": [
       {
-       "node": 121
+       "node": 125
       }
      ]
     },
@@ -5381,7 +5639,7 @@
      "union": [
       {
        "array": {
-        "node": 122
+        "node": 126
        }
       }
      ]
@@ -5691,7 +5949,7 @@
      "scalar": "string"
     },
     "after": {
-     "node": 59
+     "node": 62
     },
     "recordedAt": {
      "scalar": "string"
@@ -5709,10 +5967,10 @@
      "scalar": "string"
     },
     "before": {
-     "node": 59
+     "node": 62
     },
     "after": {
-     "node": 59
+     "node": 62
     },
     "recordedAt": {
      "scalar": "string"
@@ -5728,7 +5986,7 @@
   {
    "fields": {
     "treasure": {
-     "node": 104
+     "node": 108
     },
     "recordedAt": {
      "scalar": "string"
@@ -5747,20 +6005,20 @@
     "from": {
      "union": [
       {
-       "node": 127
+       "node": 131
       },
       {
-       "node": 128
+       "node": 132
       }
      ]
     },
     "to": {
      "union": [
       {
-       "node": 127
+       "node": 131
       },
       {
-       "node": 128
+       "node": 132
       }
      ]
     },
@@ -5768,10 +6026,10 @@
      "scalar": "string"
     },
     "before": {
-     "node": 104
+     "node": 108
     },
     "after": {
-     "node": 104
+     "node": 108
     },
     "reason": {
      "scalar": "string"
@@ -5828,10 +6086,10 @@
      "scalar": "string"
     },
     "before": {
-     "node": 104
+     "node": 108
     },
     "after": {
-     "node": 104
+     "node": 108
     },
     "reason": {
      "scalar": "string"
@@ -5857,16 +6115,16 @@
      "scalar": "string"
     },
     "before": {
-     "node": 104
+     "node": 108
     },
     "after": {
-     "node": 104
+     "node": 108
     },
     "targetBefore": {
-     "node": 104
+     "node": 108
     },
     "targetAfter": {
-     "node": 104
+     "node": 108
     },
     "quantity": {
      "scalar": "number"
@@ -5906,13 +6164,13 @@
      "scalar": "string"
     },
     "participant": {
-     "node": 116
+     "node": 120
     },
     "before": {
-     "node": 99
+     "node": 103
     },
     "after": {
-     "node": 99
+     "node": 103
     },
     "recordedAt": {
      "scalar": "string"
@@ -5940,7 +6198,7 @@
      "scalar": "string"
     },
     "participant": {
-     "node": 116
+     "node": 120
     },
     "recordedAt": {
      "scalar": "string"
@@ -5963,10 +6221,10 @@
      "scalar": "string"
     },
     "before": {
-     "node": 99
+     "node": 103
     },
     "after": {
-     "node": 99
+     "node": 103
     },
     "xp": {
      "scalar": "number"
@@ -5993,10 +6251,10 @@
      "scalar": "string"
     },
     "before": {
-     "node": 99
+     "node": 103
     },
     "after": {
-     "node": 99
+     "node": 103
     },
     "xp": {
      "scalar": "number"
@@ -6027,7 +6285,7 @@
      "scalar": "string"
     },
     "entry": {
-     "node": 109
+     "node": 113
     },
     "recordedAt": {
      "scalar": "string"
@@ -6043,10 +6301,10 @@
   {
    "fields": {
     "before": {
-     "node": 99
+     "node": 103
     },
     "after": {
-     "node": 99
+     "node": 103
     },
     "xp": {
      "scalar": "number"
@@ -6130,10 +6388,10 @@
      "scalar": "string"
     },
     "before": {
-     "node": 139
+     "node": 143
     },
     "after": {
-     "node": 140
+     "node": 144
     },
     "recordedAt": {
      "scalar": "string"
@@ -6335,16 +6593,16 @@
   {
    "fields": {
     "before": {
-     "node": 109
+     "node": 113
     },
     "sourceBefore": {
-     "node": 109
+     "node": 113
     },
     "after": {
-     "node": 109
+     "node": 113
     },
     "sourceAfter": {
-     "node": 109
+     "node": 113
     },
     "reason": {
      "scalar": "string"
@@ -6368,7 +6626,7 @@
      "scalar": "string"
     },
     "entry": {
-     "node": 144
+     "node": 148
     },
     "reason": {
      "scalar": "string"
@@ -6582,7 +6840,7 @@
     "counterpartyLink": {
      "union": [
       {
-       "node": 145
+       "node": 149
       }
      ]
     },
@@ -6606,7 +6864,7 @@
     "counterpartyReference": {
      "union": [
       {
-       "node": 146
+       "node": 150
       }
      ]
     },
@@ -6693,7 +6951,7 @@
      "scalar": "string"
     },
     "owner": {
-     "node": 147
+     "node": 151
     }
    },
    "required": [
@@ -6725,13 +6983,13 @@
   {
    "fields": {
     "before": {
-     "node": 109
+     "node": 113
     },
     "after": {
-     "node": 109
+     "node": 113
     },
     "handed": {
-     "node": 149
+     "node": 153
     },
     "receivedId": {
      "scalar": "string"
@@ -6988,7 +7246,7 @@
     "counterpartyReference": {
      "union": [
       {
-       "node": 150
+       "node": 154
       }
      ]
     },
@@ -7046,7 +7304,7 @@
      "scalar": "string"
     },
     "owner": {
-     "node": 151
+     "node": 155
     }
    },
    "required": [
@@ -7078,13 +7336,13 @@
   {
    "fields": {
     "before": {
-     "node": 109
+     "node": 113
     },
     "after": {
-     "node": 109
+     "node": 113
     },
     "portion": {
-     "node": 109
+     "node": 113
     },
     "reason": {
      "scalar": "string"
@@ -7107,10 +7365,10 @@
      "scalar": "string"
     },
     "before": {
-     "node": 99
+     "node": 103
     },
     "after": {
-     "node": 99
+     "node": 103
     },
     "result": {
      "union": [
@@ -7175,10 +7433,10 @@
   {
    "fields": {
     "before": {
-     "node": 99
+     "node": 103
     },
     "after": {
-     "node": 99
+     "node": 103
     },
     "reason": {
      "scalar": "string"
@@ -7232,7 +7490,7 @@
     "duration": {
      "union": [
       {
-       "node": 156
+       "node": 160
       }
      ]
     },
@@ -7257,10 +7515,10 @@
      ]
     },
     "before": {
-     "node": 99
+     "node": 103
     },
     "after": {
-     "node": 99
+     "node": 103
     },
     "restoreHp": {
      "scalar": "boolean"
@@ -7308,7 +7566,7 @@
   {
    "fields": {
     "entry": {
-     "node": 109
+     "node": 113
     },
     "recordedAt": {
      "scalar": "string"
@@ -7325,10 +7583,10 @@
      "scalar": "string"
     },
     "before": {
-     "node": 109
+     "node": 113
     },
     "after": {
-     "node": 109
+     "node": 113
     },
     "reason": {
      "scalar": "string"
@@ -7351,13 +7609,13 @@
      "scalar": "string"
     },
     "before": {
-     "node": 109
+     "node": 113
     },
     "after": {
-     "node": 109
+     "node": 113
     },
     "portion": {
-     "node": 109
+     "node": 113
     },
     "reason": {
      "scalar": "string"
@@ -7411,7 +7669,7 @@
      "scalar": "string"
     },
     "participant": {
-     "node": 116
+     "node": 120
     },
     "returning": {
      "scalar": "boolean"
@@ -7434,14 +7692,14 @@
     "partyAward": {
      "union": [
       {
-       "node": 163
+       "node": 167
       }
      ]
     },
     "restScene": {
      "union": [
       {
-       "node": 164
+       "node": 168
       }
      ]
     },
@@ -7478,12 +7736,12 @@
     },
     "characters": {
      "array": {
-      "node": 169
+      "node": 173
      }
     },
     "notices": {
      "array": {
-      "node": 172
+      "node": 176
      }
     }
    },
@@ -7532,7 +7790,7 @@
        "literal": null
       },
       {
-       "node": 165
+       "node": 169
       }
      ]
     },
@@ -7579,7 +7837,7 @@
      "scalar": "boolean"
     },
     "clock": {
-     "node": 166
+     "node": 170
     },
     "members": {
      "array": {
@@ -7592,7 +7850,7 @@
        "literal": null
       },
       {
-       "node": 167
+       "node": 171
       }
      ]
     }
@@ -7693,7 +7951,7 @@
        "literal": null
       },
       {
-       "node": 168
+       "node": 172
       }
      ]
     },
@@ -7783,7 +8041,7 @@
      ]
     },
     "rest": {
-     "node": 100
+     "node": 104
     },
     "health": {
      "union": [
@@ -7791,14 +8049,14 @@
        "literal": null
       },
       {
-       "node": 101
+       "node": 105
       }
      ]
     },
     "combatStatus": {
      "union": [
       {
-       "node": 103
+       "node": 107
       }
      ]
     },
@@ -7824,14 +8082,14 @@
     "healthCombat": {
      "union": [
       {
-       "node": 170
+       "node": 174
       }
      ]
     },
     "lastCombatStatus": {
      "union": [
       {
-       "node": 171
+       "node": 175
       }
      ]
     }
@@ -7951,7 +8209,7 @@
      "union": [
       {
        "array": {
-        "node": 175
+        "node": 179
        }
       }
      ]
@@ -8008,14 +8266,14 @@
      "union": [
       {
        "array": {
-        "node": 176
+        "node": 180
        }
       }
      ]
     },
     "participants": {
      "array": {
-      "node": 116
+      "node": 120
      }
     },
     "notes": {
@@ -8027,7 +8285,7 @@
     "rewards": {
      "union": [
       {
-       "node": 173
+       "node": 177
       }
      ]
     },
@@ -8043,14 +8301,14 @@
     "sourceSerials": {
      "union": [
       {
-       "node": 177
+       "node": 181
       }
      ]
     },
     "assessment": {
      "union": [
       {
-       "node": 53
+       "node": 56
       }
      ]
     },
@@ -8066,14 +8324,14 @@
     "generatorPreset": {
      "union": [
       {
-       "node": 178
+       "node": 182
       }
      ]
     },
     "planOrigin": {
      "union": [
       {
-       "node": 179
+       "node": 183
       }
      ]
     }
@@ -8186,7 +8444,7 @@
      "scalar": "string"
     },
     "owner": {
-     "node": 181
+     "node": 185
     },
     "notes": {
      "scalar": "string"
@@ -8196,14 +8454,14 @@
     },
     "stock": {
      "array": {
-      "node": 182
+      "node": 186
      }
     },
     "restockTables": {
      "union": [
       {
        "array": {
-        "node": 184
+        "node": 188
        }
       }
      ]
@@ -8279,7 +8537,7 @@
        "literal": null
       },
       {
-       "node": 183
+       "node": 187
       }
      ]
     }
@@ -8344,7 +8602,7 @@
     },
     "entries": {
      "array": {
-      "node": 185
+      "node": 189
      }
     },
     "catalog": {
@@ -8353,7 +8611,7 @@
        "literal": null
       },
       {
-       "node": 186
+       "node": 190
       }
      ]
     },
@@ -8363,10 +8621,10 @@
        "literal": null
       },
       {
-       "node": 188
+       "node": 192
       },
       {
-       "node": 189
+       "node": 193
       }
      ]
     }
@@ -8406,7 +8664,7 @@
   {
    "fields": {
     "filter": {
-     "node": 187
+     "node": 191
     },
     "minimum": {
      "scalar": "number"
@@ -8539,7 +8797,7 @@
     "facts": {
      "union": [
       {
-       "node": 191
+       "node": 195
       }
      ]
     }
@@ -8554,14 +8812,14 @@
     "entry": {
      "union": [
       {
-       "node": 109
+       "node": 113
       }
      ]
     },
     "shop": {
      "union": [
       {
-       "node": 180
+       "node": 184
       }
      ]
     },
@@ -8666,10 +8924,10 @@
     "rule": {
      "union": [
       {
-       "node": 184
+       "node": 188
       },
       {
-       "node": 192
+       "node": 196
       }
      ]
     },
@@ -8677,7 +8935,7 @@
      "union": [
       {
        "array": {
-        "node": 193
+        "node": 197
        }
       }
      ]
@@ -8685,7 +8943,7 @@
     "catalogPool": {
      "union": [
       {
-       "node": 194
+       "node": 198
       }
      ]
     }
@@ -8784,14 +9042,14 @@
     "definition": {
      "union": [
       {
-       "node": 106
+       "node": 110
       }
      ]
     },
     "shop": {
      "union": [
       {
-       "node": 196
+       "node": 200
       }
      ]
     },
@@ -8810,7 +9068,7 @@
   {
    "fields": {
     "shop": {
-     "node": 180
+     "node": 184
     },
     "ownerName": {
      "scalar": "string"
@@ -8832,19 +9090,19 @@
      "union": [
       {
        "array": {
-        "node": 197
+        "node": 201
        }
       }
      ]
     },
     "items": {
      "array": {
-      "node": 106
+      "node": 110
      }
     },
     "history": {
      "array": {
-      "node": 198
+      "node": 202
      }
     },
     "historyNext": {
@@ -8918,7 +9176,7 @@
     "facts": {
      "union": [
       {
-       "node": 191
+       "node": 195
       }
      ]
     }
@@ -8945,7 +9203,7 @@
     },
     "months": {
      "array": {
-      "node": 200
+      "node": 204
      }
     },
     "weekdays": {
@@ -9028,14 +9286,14 @@
      "union": [
       {
        "array": {
-        "node": 202
+        "node": 206
        }
       }
      ]
     },
     "cells": {
      "array": {
-      "node": 233
+      "node": 237
      }
     }
    },
@@ -9061,7 +9319,7 @@
     "label": {
      "union": [
       {
-       "node": 203
+       "node": 207
       }
      ]
     },
@@ -9098,12 +9356,12 @@
     },
     "points": {
      "array": {
-      "node": 204
+      "node": 208
      }
     },
     "polygons": {
      "array": {
-      "node": 205
+      "node": 209
      }
     },
     "resolution": {
@@ -9113,7 +9371,7 @@
      "scalar": "number"
     },
     "values": {
-     "node": 206
+     "node": 210
     },
     "order": {
      "union": [
@@ -9141,28 +9399,28 @@
     "route": {
      "union": [
       {
-       "node": 208
+       "node": 212
       }
      ]
     },
     "line": {
      "union": [
       {
-       "node": 212
+       "node": 216
       }
      ]
     },
     "paint": {
      "union": [
       {
-       "node": 214
+       "node": 218
       }
      ]
     },
     "mask": {
      "union": [
       {
-       "node": 217
+       "node": 221
       }
      ]
     },
@@ -9179,14 +9437,14 @@
     "height": {
      "union": [
       {
-       "node": 218
+       "node": 222
       }
      ]
     },
     "terrainSettings": {
      "union": [
       {
-       "node": 219
+       "node": 223
       }
      ]
     },
@@ -9201,7 +9459,7 @@
      "union": [
       {
        "array": {
-        "node": 221
+        "node": 225
        }
       }
      ]
@@ -9219,7 +9477,7 @@
     "sourceCell": {
      "union": [
       {
-       "node": 222
+       "node": 226
       }
      ]
     },
@@ -9239,17 +9497,17 @@
     "vegetation": {
      "union": [
       {
-       "node": 223
+       "node": 227
       }
      ]
     },
     "vegetationView": {
      "union": [
       {
-       "node": 228
+       "node": 232
       },
       {
-       "node": 231
+       "node": 235
       }
      ]
     },
@@ -9350,7 +9608,7 @@
     "point": {
      "union": [
       {
-       "node": 204
+       "node": 208
       }
      ]
     },
@@ -9382,13 +9640,13 @@
    "fields": {
     "outer": {
      "array": {
-      "node": 204
+      "node": 208
      }
     },
     "holes": {
      "array": {
       "array": {
-       "node": 204
+       "node": 208
       }
      }
     }
@@ -9430,7 +9688,7 @@
     "access": {
      "union": [
       {
-       "node": 207
+       "node": 211
       }
      ]
     },
@@ -9533,11 +9791,11 @@
     },
     "anchors": {
      "array": {
-      "node": 204
+      "node": 208
      }
     },
     "limits": {
-     "node": 209
+     "node": 213
     },
     "protected": {
      "scalar": "boolean"
@@ -9565,13 +9823,13 @@
     },
     "nodes": {
      "array": {
-      "node": 210
+      "node": 214
      }
     },
     "mouth": {
      "union": [
       {
-       "node": 211
+       "node": 215
       }
      ]
     },
@@ -9667,7 +9925,7 @@
      "scalar": "string"
     },
     "point": {
-     "node": 204
+     "node": 208
     }
    },
    "required": [
@@ -9745,7 +10003,7 @@
     "continuity": {
      "union": [
       {
-       "node": 213
+       "node": 217
       }
      ]
     }
@@ -9767,14 +10025,14 @@
     "before": {
      "union": [
       {
-       "node": 204
+       "node": 208
       }
      ]
     },
     "after": {
      "union": [
       {
-       "node": 204
+       "node": 208
       }
      ]
     },
@@ -9868,7 +10126,7 @@
       {
        "array": {
         "array": {
-         "node": 204
+         "node": 208
         }
        }
       }
@@ -9877,7 +10135,7 @@
     "visibility": {
      "union": [
       {
-       "node": 215
+       "node": 219
       }
      ]
     }
@@ -9897,10 +10155,10 @@
   {
    "fields": {
     "box": {
-     "node": 216
+     "node": 220
     },
     "frame": {
-     "node": 216
+     "node": 220
     },
     "columns": {
      "scalar": "number"
@@ -9911,7 +10169,7 @@
     "refinement": {
      "union": [
       {
-       "node": 216
+       "node": 220
       }
      ]
     },
@@ -10038,7 +10296,7 @@
     "style": {
      "union": [
       {
-       "node": 220
+       "node": 224
       }
      ]
     }
@@ -10111,7 +10369,7 @@
      "scalar": "string"
     },
     "tile": {
-     "node": 218
+     "node": 222
     }
    },
    "required": [
@@ -10150,7 +10408,7 @@
      "scalar": "number"
     },
     "preset": {
-     "node": 224
+     "node": 228
     },
     "layout": {
      "union": [
@@ -10167,12 +10425,12 @@
     },
     "edits": {
      "array": {
-      "node": 226
+      "node": 230
      }
     },
     "overrides": {
      "array": {
-      "node": 227
+      "node": 231
      }
     }
    },
@@ -10275,7 +10533,7 @@
      ]
     },
     "waterDepth": {
-     "node": 225
+     "node": 229
     },
     "density": {
      "scalar": "number"
@@ -10340,7 +10598,7 @@
    "fields": {
     "polygons": {
      "array": {
-      "node": 205
+      "node": 209
      }
     },
     "mode": {
@@ -10435,7 +10693,7 @@
    "fields": {
     "instances": {
      "array": {
-      "node": 229
+      "node": 233
      }
     },
     "mode": {
@@ -10497,7 +10755,7 @@
      "scalar": "number"
     },
     "normal": {
-     "node": 230
+     "node": 234
     },
     "protected": {
      "union": [
@@ -10578,11 +10836,11 @@
      ]
     },
     "packed": {
-     "node": 232
+     "node": 236
     },
     "tail": {
      "array": {
-      "node": 229
+      "node": 233
      }
     }
    },
@@ -10617,7 +10875,7 @@
     "access": {
      "union": [
       {
-       "node": 207
+       "node": 211
       }
      ]
     },
@@ -10750,13 +11008,13 @@
      "scalar": "number"
     },
     "center": {
-     "node": 235
+     "node": 239
     },
     "radiusHexes": {
      "scalar": "number"
     },
     "movement": {
-     "node": 235
+     "node": 239
     },
     "startMs": {
      "scalar": "string"
@@ -10950,18 +11208,6 @@
     "facts": {
      "union": [
       {
-       "node": 239
-      },
-      {
-       "node": 240
-      },
-      {
-       "node": 241
-      },
-      {
-       "node": 242
-      },
-      {
        "node": 243
       },
       {
@@ -10975,6 +11221,9 @@
       },
       {
        "node": 247
+      },
+      {
+       "node": 248
       },
       {
        "node": 249
@@ -10992,34 +11241,43 @@
        "node": 254
       },
       {
+       "node": 255
+      },
+      {
        "node": 257
       },
       {
-       "node": 263
+       "node": 258
       },
       {
-       "node": 270
+       "node": 261
       },
       {
-       "node": 271
+       "node": 267
       },
       {
-       "node": 272
+       "node": 274
       },
       {
-       "node": 277
+       "node": 275
       },
       {
-       "node": 278
+       "node": 276
       },
       {
-       "node": 285
+       "node": 281
       },
       {
-       "node": 286
+       "node": 282
       },
       {
-       "node": 287
+       "node": 289
+      },
+      {
+       "node": 290
+      },
+      {
+       "node": 291
       }
      ]
     }
@@ -11332,7 +11590,7 @@
        "literal": null
       },
       {
-       "node": 168
+       "node": 172
       }
      ]
     },
@@ -11380,10 +11638,10 @@
   {
    "fields": {
     "before": {
-     "node": 248
+     "node": 252
     },
     "after": {
-     "node": 248
+     "node": 252
     }
    },
    "required": [
@@ -11407,7 +11665,7 @@
     },
     "months": {
      "array": {
-      "node": 200
+      "node": 204
      }
     },
     "weekdays": {
@@ -11444,7 +11702,7 @@
      "scalar": "string"
     },
     "hex": {
-     "node": 235
+     "node": 239
     }
    },
    "required": [
@@ -11459,7 +11717,7 @@
      "scalar": "string"
     },
     "presentation": {
-     "node": 252
+     "node": 256
     }
    },
    "required": [
@@ -11509,7 +11767,7 @@
   {
    "fields": {
     "phenomenon": {
-     "node": 234
+     "node": 238
     }
    },
    "required": [
@@ -11524,7 +11782,7 @@
        "literal": null
       },
       {
-       "node": 255
+       "node": 259
       }
      ]
     }
@@ -11567,7 +11825,7 @@
      "scalar": "number"
     },
     "effects": {
-     "node": 256
+     "node": 260
     },
     "source": {
      "scalar": "string"
@@ -11617,10 +11875,10 @@
   {
    "fields": {
     "before": {
-     "node": 258
+     "node": 262
     },
     "after": {
-     "node": 262
+     "node": 266
     }
    },
    "required": [
@@ -11633,14 +11891,14 @@
     "city": {
      "union": [
       {
-       "node": 259
+       "node": 263
       }
      ]
     },
     "outdoor": {
      "union": [
       {
-       "node": 260
+       "node": 264
       }
      ]
     },
@@ -11673,7 +11931,7 @@
        "literal": null
       },
       {
-       "node": 261
+       "node": 265
       }
      ]
     },
@@ -11782,7 +12040,7 @@
     "city": {
      "union": [
       {
-       "node": 259
+       "node": 263
       }
      ]
     },
@@ -11792,7 +12050,7 @@
        "literal": null
       },
       {
-       "node": 261
+       "node": 265
       }
      ]
     },
@@ -11815,7 +12073,7 @@
     "outdoor": {
      "union": [
       {
-       "node": 260
+       "node": 264
       }
      ]
     },
@@ -11840,7 +12098,7 @@
   {
    "fields": {
     "preview": {
-     "node": 264
+     "node": 268
     },
     "journeyId": {
      "scalar": "string"
@@ -11857,11 +12115,11 @@
      "scalar": "string"
     },
     "request": {
-     "node": 265
+     "node": 269
     },
     "route": {
      "array": {
-      "node": 235
+      "node": 239
      }
     },
     "distanceMeters": {
@@ -11904,7 +12162,7 @@
        "literal": null
       },
       {
-       "node": 255
+       "node": 259
       }
      ]
     },
@@ -11921,18 +12179,18 @@
     },
     "stages": {
      "array": {
-      "node": 267
+      "node": 271
      }
     },
     "events": {
      "array": {
-      "node": 268
+      "node": 272
      }
     },
     "continuation": {
      "union": [
       {
-       "node": 269
+       "node": 273
       }
      ]
     }
@@ -11974,7 +12232,7 @@
      "scalar": "string"
     },
     "destination": {
-     "node": 235
+     "node": 239
     },
     "mapId": {
      "scalar": "string"
@@ -11991,7 +12249,7 @@
     },
     "waypoints": {
      "array": {
-      "node": 235
+      "node": 239
      }
     },
     "paceKmh": {
@@ -12023,7 +12281,7 @@
     "continuation": {
      "union": [
       {
-       "node": 266
+       "node": 270
       }
      ]
     }
@@ -12059,7 +12317,7 @@
      "scalar": "number"
     },
     "hex": {
-     "node": 235
+     "node": 239
     },
     "seconds": {
      "scalar": "number"
@@ -12099,7 +12357,7 @@
      ]
     },
     "weather": {
-     "node": 255
+     "node": 259
     },
     "interrupt": {
      "scalar": "string"
@@ -12215,10 +12473,10 @@
      }
     },
     "before": {
-     "node": 273
+     "node": 277
     },
     "after": {
-     "node": 275
+     "node": 279
     },
     "seconds": {
      "scalar": "number"
@@ -12236,10 +12494,10 @@
   {
    "fields": {
     "position": {
-     "node": 258
+     "node": 262
     },
     "clock": {
-     "node": 274
+     "node": 278
     },
     "weather": {
      "union": [
@@ -12247,7 +12505,7 @@
        "literal": null
       },
       {
-       "node": 255
+       "node": 259
       }
      ]
     }
@@ -12279,10 +12537,10 @@
   {
    "fields": {
     "position": {
-     "node": 258
+     "node": 262
     },
     "clock": {
-     "node": 276
+     "node": 280
     },
     "weather": {
      "union": [
@@ -12290,7 +12548,7 @@
        "literal": null
       },
       {
-       "node": 255
+       "node": 259
       }
      ]
     }
@@ -12325,7 +12583,7 @@
      "scalar": "string"
     },
     "hex": {
-     "node": 235
+     "node": 239
     }
    },
    "required": [
@@ -12341,14 +12599,14 @@
        "literal": null
       },
       {
-       "node": 79
+       "node": 82
       },
       {
-       "node": 279
+       "node": 283
       },
       {
        "array": {
-        "node": 280
+        "node": 284
        }
       }
      ]
@@ -12356,14 +12614,14 @@
     "after": {
      "union": [
       {
-       "node": 79
+       "node": 82
       },
       {
-       "node": 279
+       "node": 283
       },
       {
        "array": {
-        "node": 280
+        "node": 284
        }
       }
      ]
@@ -12402,7 +12660,7 @@
      "scalar": "string"
     },
     "record": {
-     "node": 280
+     "node": 284
     },
     "locationId": {
      "union": [
@@ -12440,7 +12698,7 @@
        "literal": null
       },
       {
-       "node": 284
+       "node": 288
       }
      ]
     },
@@ -12520,7 +12778,7 @@
     "demographics": {
      "union": [
       {
-       "node": 281
+       "node": 285
       }
      ]
     },
@@ -12528,7 +12786,7 @@
      "union": [
       {
        "array": {
-        "node": 282
+        "node": 286
        }
       }
      ]
@@ -12537,7 +12795,7 @@
      "union": [
       {
        "array": {
-        "node": 283
+        "node": 287
        }
       }
      ]
@@ -12648,7 +12906,7 @@
     },
     "slots": {
      "array": {
-      "node": 282
+      "node": 286
      }
     }
    },
@@ -12678,7 +12936,7 @@
     "death": {
      "union": [
       {
-       "node": 117
+       "node": 121
       }
      ]
     }
@@ -12806,7 +13064,7 @@
   {
    "fields": {
     "world": {
-     "node": 289
+     "node": 293
     },
     "scene": {
      "union": [
@@ -12814,7 +13072,7 @@
        "literal": null
       },
       {
-       "node": 292
+       "node": 296
       }
      ]
     }
@@ -12827,26 +13085,26 @@
   {
    "fields": {
     "calendar": {
-     "node": 248
+     "node": 252
     },
     "maps": {
      "array": {
-      "node": 201
+      "node": 205
      }
     },
     "places": {
      "array": {
-      "node": 290
+      "node": 294
      }
     },
     "events": {
      "array": {
-      "node": 291
+      "node": 295
      }
     },
     "phenomena": {
      "array": {
-      "node": 234
+      "node": 238
      }
     }
    },
@@ -12878,7 +13136,7 @@
     "presentation": {
      "union": [
       {
-       "node": 252
+       "node": 256
       }
      ]
     },
@@ -12965,10 +13223,10 @@
   {
    "fields": {
     "scene": {
-     "node": 164
+     "node": 168
     },
     "position": {
-     "node": 258
+     "node": 262
     },
     "date": {
      "scalar": "string"
@@ -12979,7 +13237,7 @@
        "literal": null
       },
       {
-       "node": 255
+       "node": 259
       }
      ]
     },
@@ -12995,12 +13253,12 @@
     },
     "events": {
      "array": {
-      "node": 291
+      "node": 295
      }
     },
     "notices": {
      "array": {
-      "node": 293
+      "node": 297
      }
     },
     "journey": {
@@ -13009,24 +13267,24 @@
        "literal": null
       },
       {
-       "node": 294
+       "node": 298
       }
      ]
     },
     "knowledge": {
      "array": {
-      "node": 296
+      "node": 300
      }
     },
     "history": {
      "array": {
-      "node": 297
+      "node": 301
      }
     },
     "travelHistory": {
      "union": [
       {
-       "node": 298
+       "node": 302
       }
      ]
     }
@@ -13134,7 +13392,7 @@
     },
     "route": {
      "array": {
-      "node": 235
+      "node": 239
      }
     },
     "nextIndex": {
@@ -13209,7 +13467,7 @@
     "continuedFrom": {
      "union": [
       {
-       "node": 295
+       "node": 299
       }
      ]
     }
@@ -13293,7 +13551,7 @@
        "literal": null
       },
       {
-       "node": 299
+       "node": 303
       }
      ]
     },
@@ -13303,7 +13561,7 @@
        "literal": null
       },
       {
-       "node": 300
+       "node": 304
       }
      ]
     }
@@ -13402,10 +13660,10 @@
      ]
     },
     "media": {
-     "node": 302
+     "node": 306
     },
     "moods": {
-     "node": 177
+     "node": 181
     },
     "moodTags": {
      "array": {
@@ -13501,7 +13759,7 @@
     },
     "axes": {
      "array": {
-      "node": 304
+      "node": 308
      }
     }
    },
@@ -13559,13 +13817,13 @@
        "literal": null
       },
       {
-       "node": 306
+       "node": 310
       }
      ]
     },
     "queue": {
      "array": {
-      "node": 307
+      "node": 311
      }
     },
     "history": {
@@ -13739,7 +13997,7 @@
      "scalar": "number"
     },
     "moods": {
-     "node": 177
+     "node": 181
     },
     "intensity": {
      "scalar": "number"

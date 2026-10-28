@@ -1,4 +1,5 @@
-import { type LandscapeBox, type LandscapeRecord } from '../atlas/atlas-landscape';
+import { type LandscapeBox } from '../atlas/landscape-bounds';
+import { type LandscapeRecord } from '../atlas/landscape-contracts';
 import { posed, roadPoints } from '../atlas/city-model';
 import { bounds, contains } from '../atlas/landscape-geometry';
 import {

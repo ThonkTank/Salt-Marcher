@@ -1,9 +1,11 @@
-import { type LandscapeBox, type LandscapeRecord } from './atlas-landscape';
+import { type LandscapeBox } from './landscape-bounds';
+import { type LandscapeRecord } from './landscape-contracts';
 import { orderedColors, validateColor } from './landscape-brush';
 import { colorSurface } from './landscape-color-surface';
 import { bounds, contains } from './landscape-geometry';
 import { LandscapeRasterizer } from './landscape-raster';
-import { applyTerrainBrush, heightBrushBounds, type HeightStroke } from './terrain-brush';
+import { applyTerrainBrush, heightBrushBounds } from './terrain-brush';
+import { type HeightStroke } from './terrain-brush-contracts';
 import { TerrainSampler } from './terrain-height';
 import { routeBounds, validateRoute } from './terrain-route';
 import { planRoute, replanRoutes } from './terrain-route-planner';

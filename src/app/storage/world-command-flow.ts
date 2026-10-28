@@ -14,8 +14,8 @@ interface ExecuteWorldContext {
   consumeSceneTime: (
     cam: string,
     commandId: string,
-    before: import('./../runtime/live-contracts').LiveScene,
-    after: import('./../runtime/live-contracts').LiveScene,
+    before: import('../runtime/live-scene-contracts').LiveScene,
+    after: import('../runtime/live-scene-contracts').LiveScene,
     basis: ReturnType<typeof captureAutonomyBasis>,
   ) => void;
   updateMusic: (campaignId: string) => void;

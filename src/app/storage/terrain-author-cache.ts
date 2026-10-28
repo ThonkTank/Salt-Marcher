@@ -1,6 +1,7 @@
 import { TerrainProjectionCache } from '../atlas/terrain-projection-cache';
-import type { TerrainGrid, TerrainView } from '../atlas/terrain-spatial-model';
-import type { TerrainInvalidation } from '../atlas/terrain-frame';
+import type { TerrainGrid } from '../atlas/terrain-grid-contracts';
+import type { TerrainView } from '../atlas/terrain-view-contracts';
+import type { TerrainInvalidation } from '../atlas/terrain-frame-identity';
 import { readTerrainGrid } from './terrain-grid';
 import { terrainGridLayout } from '../atlas/terrain-grid-layout';
 /** Main-owned derived surface blocks. The fence must describe committed canonical rows.

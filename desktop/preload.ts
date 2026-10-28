@@ -263,6 +263,9 @@ contextBridge.exposeInMainWorld(
     itemReferenceCatalog: (
       query: import('../src/app/catalog/item-reference-contracts').ItemReferenceQuery,
     ) => ipcRenderer.invoke('catalog:items', query),
+    catalogReference: (entryType, id) => ipcRenderer.invoke('catalog:reference', entryType, id),
+    resolveCatalogReference: (reference: unknown) =>
+      ipcRenderer.invoke('catalog:resolve-reference', reference),
     creatureInfo: () => ipcRenderer.invoke('catalog:info'),
     creatures: (query: unknown) => ipcRenderer.invoke('catalog:search', query),
     creature: (id: string) => ipcRenderer.invoke('catalog:creature', id),
@@ -397,7 +400,7 @@ contextBridge.exposeInMainWorld(
     dungeon: (token: string) => ipcRenderer.invoke('dungeon:view', token),
     previewDungeon: (
       token: string,
-      r: import('../src/app/atlas/dungeon-contracts').DungeonRequest,
+      r: import('../src/app/atlas/dungeon-travel-contracts').DungeonRequest,
     ) => ipcRenderer.invoke('dungeon:preview', token, r),
     executeDungeon: (c: import('../src/app/atlas/dungeon-contracts').DungeonCommand) =>
       ipcRenderer.invoke('dungeon:execute', c),
@@ -513,7 +516,7 @@ contextBridge.exposeInMainWorld(
     sceneWorld: (token: string, id: string) => ipcRenderer.invoke('world:scene', token, id),
     previewTravel: (
       token: string,
-      request: import('../src/app/runtime/world-contracts').TravelRequest,
+      request: import('../src/app/runtime/world-travel-contracts').TravelRequest,
     ) => ipcRenderer.invoke('world:travel-preview', token, request),
     reconcileWorld: (
       command: import('../src/app/runtime/world-contracts').WorldCommand,
@@ -585,8 +588,8 @@ contextBridge.exposeInMainWorld(
     ) => ipcRenderer.invoke('campaign:keep-live-moment-draft', token, id, draft, expected),
     keepSessionRecapDraft: (
       token: string,
-      draft: import('../src/app/runtime/live-contracts').SessionRecapDraft,
-      expected: import('../src/app/runtime/live-contracts').SessionRecapDraft | null,
+      draft: import('../src/app/runtime/live-scene-contracts').SessionRecapDraft,
+      expected: import('../src/app/runtime/live-scene-contracts').SessionRecapDraft | null,
     ) => ipcRenderer.invoke('campaign:keep-session-recap-draft', token, draft, expected),
     executeLive: (command: unknown) => ipcRenderer.invoke('campaign:execute-live', command),
     liveStatus: (command: unknown, token: string) =>

@@ -1,0 +1,11 @@
+{
+  "roles": {
+    "TreasureOrigin.awardId": "local",
+    "TreasureOrigin.combatId": "local",
+    "TreasureOrigin.itemId": "local",
+    "TreasureOrigin.locationId": "local",
+    "TreasureOrigin.sceneId": "local",
+    "TreasureOrigin.sourceNoteId": "local",
+    "TreasureOrigin.treasureId": "local"
+  }
+}

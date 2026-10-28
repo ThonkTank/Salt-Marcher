@@ -279,6 +279,7 @@ test('fixed named opponents cannot be selected again as additions and retain the
     expectedRevision: x.plan.revision,
     plan: {
       ...x.plan,
+      sourceReferences: [x.store.catalogReference('creature', 'guard')],
       entries: [
         {
           id: randomUUID(),

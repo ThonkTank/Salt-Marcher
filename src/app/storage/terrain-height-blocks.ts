@@ -1,4 +1,5 @@
-import type { LandscapeBox, LandscapeRecord } from '../atlas/atlas-landscape';
+import type { LandscapeBox } from '../atlas/landscape-bounds';
+import type { LandscapeRecord } from '../atlas/landscape-contracts';
 import { decodeHeights } from '../atlas/terrain-height';
 import type { TerrainHeightSource } from '../atlas/terrain-height-lattice';
 import type { TerrainProjectionCache } from '../atlas/terrain-projection-cache';

@@ -93,7 +93,7 @@ Items sperren. Migration betrifft bei späterem Workspaceanschluss den oben
 beschriebenen Suchzustand; für diesen Entkopplungsschritt gibt es keine Migration.
 Abnahmen: offline Quelle+Detail, alle Filter/Sort/Paging mit realem Korpus,
 Item→Monster→Item samt Auswahl, Nebenquelle langsam/fehlerhaft plus Retry,
-unveränderte Encounter-/Ledger-/Shoptruth sowie native Tastatur/Fokus und200%.
+unveränderte Encounter-/Ledger-/Shoptruth sowie native Tastatur/Fokus und100 %.
 
 `desktop-item-selection.test.mjs` prüft mit echtem Store und kontrollierten DOMreads
 alle drei wartenden Nebenquellen, Result-/Transportfehler, Retry, alte Aktivierung
@@ -206,5 +206,5 @@ Gruppeneditor und den abschließenden Scene-Desktop. Die heutige orts-/besuchsge
 Gruppenauswahl samt separatem Gruppenbereich erfüllt diese Lieferungen noch nicht.
 Der gezielte native Readercheck `tools/test-desktop-scene-selection-read.mjs` prüft
 Lesefehler, erneutes Lesen, gemeinsame Übernahme und Initiative-Wiederaufnahme nach
-Neustart bei 100/200 Prozent; er ersetzt weder jene Lieferungen noch eine
+Neustart bei 100 Prozent; er ersetzt weder jene Lieferungen noch eine
 Großgruppen-/Speicherqualifikation.

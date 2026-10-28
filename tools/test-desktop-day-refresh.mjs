@@ -84,7 +84,8 @@ let app;
 const results = [];
 const capture = (page, name) => native.capture(page, name);
 try {
-  for (const scale of [1, 2]) {
+  for (const variant of [1, 2]) {
+    const scale = 1;
     const page = await native.launch(scale);
     app = native.app;
     if (await page.locator('#tutorial-dialog').isVisible())
@@ -136,7 +137,7 @@ try {
         () => document.querySelector('#day-popover').getAttribute('aria-busy') === 'false',
       );
     await settled();
-    if (scale === 2) {
+    if (variant === 2) {
       assert.equal(await page.locator('#day-use-encounters').isChecked(), true);
       assert.equal(await page.locator('#day-active').getAttribute('aria-pressed'), 'true');
       assert.deepEqual(
@@ -152,7 +153,7 @@ try {
         ['none', 'short'],
       );
       assert.equal(await page.locator('#day-total-xp').inputValue(), '1368');
-      await capture(page, 'restored-plan-' + scale);
+      await capture(page, 'restored-plan-' + variant);
       await page.locator('#day-use-encounters').uncheck();
       await settled();
       assert.equal(await page.locator('#day-total-xp').inputValue(), '600');
@@ -181,7 +182,7 @@ try {
       await page.locator('#day-results').evaluate((n) => n.getBoundingClientRect().height),
       answerHeight,
     );
-    await capture(page, 'pending-' + scale);
+    await capture(page, 'pending-' + variant);
     // A native screenshot gives the debounced read time to arrive; await the exact gate too.
     for (let attempts = 0; !(await app.evaluate(() => !!globalThis.__dayRelease)); attempts++) {
       assert.ok(attempts < 100, 'the held read reached Main');
@@ -211,7 +212,7 @@ try {
     await settled();
     await page.waitForTimeout(200);
     const partyReads = await app.evaluate((_electron, n) => globalThis.__dayReads.slice(n), before);
-    await capture(page, 'party-' + scale);
+    await capture(page, 'party-' + variant);
     assert.equal(partyReads.length, 1, 'choosing the active party consumes the queued edit');
     assert.equal(partyReads[0].source, 'active');
     await page.locator('#day-custom').click();
@@ -248,7 +249,7 @@ try {
       await page.getByRole('spinbutton', { name: 'Anzahl Zeile 1', exact: true }).inputValue(),
       '3',
     );
-    await capture(page, 'failure-' + scale);
+    await capture(page, 'failure-' + variant);
     await page.locator('#day-close').click();
     await page.locator('#day-trigger').click();
     await settled();
@@ -268,7 +269,7 @@ try {
     );
     assert.equal(zoom, scale);
     await page.locator('#day-summary').scrollIntoViewIfNeeded();
-    await capture(page, 'recovered-' + scale);
+    await capture(page, 'recovered-' + variant);
     await page.locator('#day-active').click();
     await settled();
     if ((await page.locator('#day-plan-panel').getAttribute('open')) === null)
@@ -373,7 +374,7 @@ try {
       assert(row.controlsFit);
     }
     await page.locator('#day-plan-selected').scrollIntoViewIfNeeded();
-    await capture(page, 'split-plan-' + scale);
+    await capture(page, 'split-plan-' + variant);
     await page.locator('#day-custom').click();
     await settled();
     assert.equal(

@@ -12,7 +12,7 @@ import { atlasCanvasReady } from './atlas-canvas-probe.mjs';
 const root = process.cwd(),
   require = createRequire(import.meta.url),
   Database = require('better-sqlite3');
-const scale = process.argv.includes('--scale=2') ? 2 : 1;
+const scale = 1;
 const liftOnly = process.argv.includes('--lift');
 const output = path.resolve(
   process.env.QA_EVIDENCE_DIR ?? `.build/cycle2-point4/native/${Date.now()}-${scale}`,

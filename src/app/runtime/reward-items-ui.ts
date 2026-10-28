@@ -1,4 +1,4 @@
-import type { ItemInput, ItemCategory } from './progression';
+import type { ItemInput, ItemCategory } from '../catalog/item-input-contracts';
 export function rewardItemsEditor(
   root: HTMLElement,
   items: (Omit<ItemInput, 'quantity'> & { quantity: string | number })[],

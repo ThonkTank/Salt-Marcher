@@ -88,14 +88,12 @@ test('vendor Node declarations cannot authorize direct, aliased or indexed brows
       ? ts.createSourceFile(file, text, ts.ScriptTarget.Latest, true)
       : getSource(file, ...args);
   const program = ts.createProgram([...parsed.fileNames, probe], parsed.options, host);
-  const errors = browserCapabilityDiagnostics(program).filter((d) => d.file.fileName === probe);
+  const diagnostics = browserCapabilityDiagnostics(program);
+  const errors = diagnostics.filter((d) => d.file.fileName === probe);
   for (let line = 0; line < 6; line++)
     assert(
       errors.some((d) => d.file.getLineAndCharacterOfPosition(d.start).line === line),
       `capability bypass on probe line ${line + 1}`,
     );
-  assert.equal(
-    browserCapabilityDiagnostics(program).filter((d) => d.file.fileName !== probe).length,
-    0,
-  );
+  assert.equal(diagnostics.filter((d) => d.file.fileName !== probe).length, 0);
 });

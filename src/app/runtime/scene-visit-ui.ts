@@ -1,5 +1,5 @@
 import type { WorkspaceGeometry, Result } from '../shared/contracts';
-import type { LiveScene } from './live-contracts';
+import type { LiveScene } from './live-scene-contracts';
 import type { SceneVisit, SceneVisitPage } from './scene-visit-contracts';
 import { visitOutcomeLabel } from './visit-outcome-contracts';
 import { renderCreatureDetail } from '../catalog/creature-detail-ui';

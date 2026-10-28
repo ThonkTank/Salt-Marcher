@@ -1,8 +1,0 @@
-{
- "roles": {
-  "SurfaceRegion.fragments[].id": "local",
-  "SurfaceRegion.fragments[].orphanedWorld.floorId": "local",
-  "SurfaceRegion.fragments[].volumeId": "local",
-  "SurfaceRegion.roomId": "local"
- }
-}

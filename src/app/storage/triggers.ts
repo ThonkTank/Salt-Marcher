@@ -1,6 +1,8 @@
 import { createHash, randomUUID } from 'node:crypto';
 import type { TriggerField, TriggerAction, TriggerEvent } from '../runtime/trigger-contracts';
-import type { DungeonGeometry, DungeonJourney, DungeonPose } from '../atlas/dungeon-contracts';
+import type { DungeonGeometry } from '../atlas/dungeon-geometry-contracts';
+import type { DungeonJourney } from '../atlas/dungeon-travel-contracts';
+import type { DungeonPose } from '../atlas/dungeon-position-contracts';
 import { enteredTrigger } from '../runtime/trigger-model';
 const hash = (s: string) => createHash('sha256').update(s).digest('hex'),
   parsed = (r: any) => {

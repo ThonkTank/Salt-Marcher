@@ -3,7 +3,7 @@ import type {
   LocationActivityQuery,
   LocationVisit,
 } from '../campaign/location-activity-contracts';
-import type { NpcDailySlot } from '../campaign/npc-contracts';
+import type { NpcDailySlot } from '../campaign/npc-data-contracts';
 import { deskContent } from './scene-desk';
 import { readLive, readLiveScene } from './live-read';
 import { readWorldCalendar } from './world-calendar-read';

@@ -2,7 +2,7 @@ import { EditorSession } from '../shared/editor-session';
 import { atlasFieldValue, setAtlasFieldValue } from './atlas-units';
 import { atlasDrawingWrite } from './campaign-atlas-author';
 import type { WorkspaceGeometry, Room, RoomGeometry } from '../shared/contracts';
-import type { DrawingView } from './drawing-contracts';
+import type { DrawingView } from './drawing-view-contracts';
 import type { DungeonVolume, VolumeCell, VolumeAction } from './volume-contracts';
 import { VOXEL_METERS as U } from './volume-contracts';
 import { volumeFromRoom, volumeProjection, isometricVolume } from './volume-model';

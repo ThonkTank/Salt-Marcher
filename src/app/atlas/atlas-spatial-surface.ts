@@ -5,7 +5,7 @@ export interface AtlasSpatialSurface {
   /** Output sampling density for text textures; live scenes use a bounded glyph atlas. */
   textPixelsPerMeter?: number;
   displayMpp?: number;
-  routes?: ReadonlyMap<string, import('./atlas-landscape').LandscapeRecord>;
+  routes?: ReadonlyMap<string, import('./landscape-contracts').LandscapeRecord>;
   objectHeights?: ReadonlyMap<string, number>;
   scopeBases?: ReadonlyMap<string, number>;
   origin: Point;
@@ -15,7 +15,7 @@ export interface AtlasSpatialSurface {
   /** Maximum world edge length for draped vector triangles. */
   segment: number;
   /** Loaded terrain coverage, including the camera margin. */
-  bounds?: import('./atlas-landscape').LandscapeBox;
+  bounds?: import('./landscape-bounds').LandscapeBox;
 }
 
 /** Refine local vector triangles against the shared terrain without changing source geometry.

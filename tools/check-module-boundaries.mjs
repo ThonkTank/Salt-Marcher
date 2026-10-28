@@ -2,7 +2,12 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { builtinModules } from 'node:module';
 import ts from 'typescript';
-import { moduleEdges, dependencyGraph, dependencyCycles } from './module-graph.mjs';
+import {
+  moduleEdges,
+  dependencyGraph,
+  dependencyCycles,
+  readModuleSources,
+} from './module-graph.mjs';
 import { responsibility, rendererEntries } from './module-responsibilities.mjs';
 import { storageFoundations, storageCommandOwners } from './storage-owner-boundaries.mjs';
 const cycleBaseline = JSON.parse(
@@ -154,10 +159,5 @@ export function checkModuleBoundaries(sources) {
 }
 
 export function checkSourceModuleBoundaries(root, files) {
-  const sources = new Map(
-    files
-      .filter((file) => /^(src|desktop)\/.*\.tsx?$/.test(file))
-      .map((file) => [file, fs.readFileSync(path.join(root, file), 'utf8')]),
-  );
-  return checkModuleBoundaries(sources);
+  return checkModuleBoundaries(readModuleSources(root, files));
 }

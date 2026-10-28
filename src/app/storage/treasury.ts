@@ -1,7 +1,8 @@
 import { treasureAnchor, treasureAnchorLabel } from './treasure-anchors';
 import { createHash, randomUUID } from 'node:crypto';
-import type { TreasuryDraft, TreasuryAction, TreasureOrigin } from '../runtime/treasury-contracts';
-import type { Treasure } from '../runtime/progression';
+import type { TreasuryDraft, TreasuryAction } from '../runtime/treasury-contracts';
+import type { TreasureOrigin } from '../runtime/treasure-origin-contracts';
+import type { Treasure } from '../runtime/treasure-contracts';
 import {
   readTreasure,
   checkedTreasureRow,

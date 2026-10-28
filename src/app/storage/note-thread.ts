@@ -4,7 +4,7 @@ import { checkedWorldNoteRow } from './world-note-row';
 import { plainReferenceText } from '../campaign/text-references';
 import { noteThreadMembers as links } from '../campaign/note-thread-edit';
 import { readNarrative } from './narrative';
-import type { Note } from '../campaign/preparation-contracts';
+import type { Note } from '../campaign/note-data';
 import type {
   NoteThreadEntry,
   NoteThreadPage,

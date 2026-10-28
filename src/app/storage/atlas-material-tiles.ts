@@ -15,8 +15,8 @@ import {
 } from '../atlas/terrain-material';
 import { DEFAULT_TERRAIN_STYLE } from '../atlas/terrain-relief';
 import { landscapeRasterBounds } from '../atlas/landscape-raster';
-import type { LandscapeRecord } from '../atlas/atlas-landscape';
-import type { AtlasRegionSource } from '../atlas/atlas-region-contracts';
+import type { LandscapeRecord } from '../atlas/landscape-contracts';
+import type { AtlasRegionSource } from '../atlas/atlas-region-view-contracts';
 import { AtlasCacheScope } from './atlas-cache-scope';
 import { readTerrainSettings } from './terrain-color-raster';
 import type { AtlasRegionReader } from './atlas-region';

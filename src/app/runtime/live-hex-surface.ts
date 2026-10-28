@@ -1,17 +1,17 @@
-/** DOM composition only. The Hex owner keeps the sole Scene, route and position state. */
 export interface LiveAtlasSurface {
   mount(map: HTMLElement, navigation: HTMLElement, console: HTMLElement): void;
   show(visible: boolean): void;
   unmount(): void;
   focus(): void;
 }
-let atlasSurface: LiveAtlasSurface | null = null;
-export function setLiveAtlasSurface(surface: LiveAtlasSurface | null) {
-  atlasSurface = surface;
-}
-export function liveHexSurface() {
-  const get = (id: string) => document.getElementById(id)!;
-  const writing = document.querySelector<HTMLElement>('.live-desk-writing')!;
+export function liveHexSurface(surface: {
+  document: Document;
+  get: <T extends HTMLElement>(id: string) => T;
+  query: <T extends HTMLElement>(selector: string) => T | null;
+  atlas: () => LiveAtlasSurface | null;
+}) {
+  const { document, get, query } = surface;
+  const writing = query<HTMLElement>('.live-desk-writing')!;
   const tabs = document.createElement('div');
   tabs.id = 'live-center-tabs';
   tabs.setAttribute('role', 'tablist');
@@ -46,7 +46,7 @@ export function liveHexSurface() {
     tabs.append(button);
     get('live-center-' + id).setAttribute('aria-labelledby', button.id);
   }
-  const reference = document.querySelector<HTMLElement>('.live-desk-reference')!,
+  const reference = query<HTMLElement>('.live-desk-reference')!,
     panel = get('live-world-panel'),
     panelHome = document.createComment('world panel home');
   panel.before(panelHome);
@@ -132,7 +132,7 @@ export function liveHexSurface() {
           panel.scrollTop = 0;
           host.append(...nodes, navigation);
           navigation.append(...camera);
-          shared = atlasSurface;
+          shared = surface.atlas();
           if (shared) shared.mount(map, navigation, host);
           else map.append(canvas);
         } else {
@@ -146,6 +146,15 @@ export function liveHexSurface() {
       host.classList.toggle('live-travel-owner', on);
       canvas.classList.toggle('live-hex-canvas', on);
       paint();
+    },
+    dispose() {
+      this.close();
+      writing.append(...scene.childNodes);
+      toolbar.remove();
+      scene.remove();
+      map.remove();
+      for (const { marker } of homes) marker.remove();
+      panelHome.remove();
     },
     close() {
       center = 'scene';

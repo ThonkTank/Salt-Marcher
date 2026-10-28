@@ -78,6 +78,11 @@ Buchungsjournal behalten ihre speziellen Commands und Lockgrenzen.
   Entfernen des bisherigen Kontexts.
 - `tests/workspace/workspace-editor-registry.test.mjs`: konkrete Reihenfolgen, alle vier
   Grenzarten, Graph-/Aktivierungs-Ausnahmen und Werkzeugvorbereitung.
+- `tests/campaign/desktop-preparation-owner.test.mjs`: vollständige Preparation-Fabrik
+  mit eigenem SQLite-Store; alte Antworten nach A → B → A, spätere Eingaben im
+  Write-Drain und ausdrückliche Klärung angewandter oder nicht angewandter
+  Aufträge. Der echte Verweisconsumer behält seine Auswahl über Flush,
+  neue Eingabe und erneute Aktivierung gebunden.
 - [desktop-npc-switch.test.mjs (historisch)](https://github.com/ThonkTank/Salt-Marcher/blob/05e8f2f97fc729dba8b6fef3830c566cdc47adad/tests/campaign/desktop-npc-switch.test.mjs): echter Renderer/SQLite-Draft mit alter
   Antwort während einer neuen Sicherung, weiterer Eingabe und unveränderten
   Rohbytes; vorhandene Receipt-/Neustartregressionen bleiben erhalten.
@@ -208,3 +213,64 @@ NPC-, Musik-, Item- und Shop-Fachtests. Getrennte Instanzen in getrennten
 DOM-Dokumenten sind der hier geprüfte Zusammensetzungsfall. Mehrere vollständige
 Workspaces mit ihren heutigen identischen HTML-IDs in einem Dokument sowie eine
 neue Mehrfensterfunktion sind damit nicht geliefert.
+
+## Weltinstanz und gemeinsame Schreibgrenze
+
+`createWorldEditor(host)` erzeugt die Weltoberfläche einmal je Workspace. Der
+Renderer übergibt eigene DOM-Wurzeln, Preload, Atlaswriter und konkrete Live-/
+Navigationsanschlüsse. `createWorkspaceEditors` erhält diese Instanz ausdrücklich;
+Live, `CampaignAgenda`, `AtlasJourney`, `AtlasAuthor` und `AtlasDrawing` verwenden
+benannte Methoden dieser Instanz. Es gibt keinen veränderlichen Welteditorzustand
+auf Modulebene und keinen Rückimport eines Fachbesitzers zur Kompositionswurzel.
+
+| Besitzer unter `src/app/runtime/` | Veränderlicher Zustand, Eingaben und Lebensdauer |
+| --- | --- |
+| `world-write-coordinator.ts` | Angenommene Aufträge, Drainoperationen, ursprünglicher Command samt Token/Generation und ungeklärte Bestätigung. Diese Zustände überleben eine sichtbare Aktivierung bis zu ihrem tatsächlichen Abschluss oder ihrer Receiptklärung. |
+| `world-map-editor.ts` | Gelesene Kampagnen-/Sceneprojektionen, Karten-/Hex-/Markerentwürfe mit eigenen Eingabezählern, Auswahl, Kamera, Gesten und Ortsformulare. Aktivierung entwertet Leser und sichtbare Entwürfe; bestätigte Werte werden nur vom passenden Besitzer angenommen. |
+| `world-travel-editor.ts` | Routenfelder, Wegpunkte, Vorschau, Gruppenplatzierung, Reiseaktionen, Playback und Live-Docking. Kampagnen-, Scene- und Kartenauswahl gehören zur Lease; auch A → B → A macht eine frühere Aktion nicht wieder aktuell. |
+| `world-calendar-editor.ts` | Kalenderdialog und dessen Revisionsbasis, Eingabezähler, Agenda-Lesegeneration und Fristspeicheranschluss. `CampaignAgenda` behält ihren eigenen Dialog-/Ereignisentwurf und bekommt ausschließlich Save/Pending/Recovery-Methoden. |
+| `world-weather-editor.ts` | Sceneantworten, GM-Overridebasis mit ursprünglicher Eingabeversion, laufende Wetteraktion und Wettergebietsentwurf. Ein Auswahlwechsel entwertet die alte Antwortberechtigung; offene manuelle Wettereingabe bleibt bis zum ausdrücklichen Speichern oder Verwerfen erhalten. |
+| `world-editor-surface.ts` | Unveränderliche Hostports, `EditorSession`, registrierte DOM-Identitäten und Listenerfreigaben. Ausgeliehene Controls behalten ihren Besitzer, insbesondere Kalenderdialog und Live-Reisekarte. |
+
+Die Fachports in `world-owner-ports.ts` geben rekursiv unveränderliche
+Lesemodelle weiter, einschließlich Routenarrays und verschachtelter Scene- und
+Kartendaten. Die konkreten Besitzer bleiben innerhalb der Komposition.
+Karten-/Scenewechsel melden fachliche Übergänge an Reise; Reise entwertet selbst
+Vorschau, Playback und Transportlease. Reise übergibt bestätigte Positionen samt
+Kampagnen-, Karten- und Sceneauswahlkontext an die Kartenannahme. Nur Karte
+entscheidet danach über Frame, Kartenentwurf und Kamera; ein veralteter Kontext
+oder ein offener Kartenentwurf erlaubt keine fremde Entwurfsübernahme.
+Wetter übergibt bestätigte Sceneprojektionen ebenso an die Kartenannahme.
+Kalender übernimmt seine bestätigte Revisionsbasis selbst, auch bei
+Receiptklärung mit späteren offenen Dialogeingaben. Der direkte Einstieg aus
+Live vor jedem Atlasread liest, zeigt und sichert diese eigene vollständige
+Kalenderbasis; ein fehlender Quellenstand wird ausdrücklich abgewiesen und
+kann keinen Drain ohne Fortschritt erzeugen. Ein altes Transport-Finally
+kann die Controls einer neueren Auswahlgeneration nicht entsperren.
+
+`flushWorld` beendet zuerst die aktuelle Kartengeste und wartet auf die beim
+Eintritt bereits angenommenen Aktionen. Danach folgen Marker, Karte/Hex,
+Kalender und Wettergebiet in der bisherigen Reihenfolge. Neue Eingabe während
+eines Writes bleibt offen und wird im nächsten Durchlauf gesichert. Der Drain
+wartet nicht auf seine eigenen erst danach gestarteten Writes. Ein abgewiesener
+Entwurf oder ungeklärter Command verweigert die Wechselgrenze und behält die
+Eingaben. Aktivierung löscht oder ersetzt keinen Originalcommand. Eine späte
+Receiptklärung darf dessen Ausgang klären, bestätigt aber keine neue
+Besitzergeneration und übernimmt dort keine alten Entwurfswerte.
+
+Erfolgreiches `dispose` entwässert die gemeinsame Grenze, entwertet die Sitzung,
+beendet Playback und Gesten und entfernt ausschließlich die eigenen Controls und
+Listener. Ein fehlgeschlagener Flush lässt die Instanz verwendbar. Andere
+Live-Controls bleiben erhalten. `createEditorSurface` registriert dynamische
+Dialoge, bevor sie ihre ursprüngliche DOM-Wurzel verlassen.
+
+`tests/runtime/desktop-world-owner-lifecycle.test.mjs` baut vollständige
+Produktionsfabriken mit echten SQLite-Stores und kontrollierten Hostantworten.
+Die Prüfungen umfassen getrennte Oberflächen/Receipts, Mount/Dispose, weitere
+Eingabe während einer Sicherung, ungültige Entwürfe, Originalcommandklärung,
+A → B → A, späte Scene-/Wetter-/Reiseantworten, kalenderseitige Receiptübernahme
+und spätere Karten-/Kalender-/Wettergebietseingaben während des Drains. Native Zusammensetzung prüfen
+`tools/test-desktop-world-authoring.mjs`, `tools/test-desktop-weather-override.mjs`,
+`tools/test-desktop-agenda-deadline.mjs` und die fachlich passenden Reiseproben.
+Die Laufbelege bleiben von Plattformqualifikation, Paketinstallation und
+Ownerabnahme getrennt; dieser Umbau ändert keine Speicher- oder Archivformate.

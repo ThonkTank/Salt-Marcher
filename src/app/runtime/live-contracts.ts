@@ -1,54 +1,13 @@
+import {
+  type CharacterProfile,
+  type Character,
+  type LiveScene,
+  type SessionRecapDraft,
+  type TimeUnit,
+} from './live-scene-contracts';
 import { checkedLiveMomentDraft, type LiveMomentDraft } from './live-moment-drafts';
-import type { VisitOutcome, VisitOutcomeStatus } from './visit-outcome-contracts';
+import type { VisitOutcomeStatus } from './visit-outcome-contracts';
 import type { Result } from '../shared/contracts';
-export interface CharacterProfile {
-  name: string;
-  archive?: { recordedAt: string; reason: string };
-  playerName?: string;
-  species?: string;
-  characterClass?: string;
-  armorClass?: number;
-  passivePerception?: number;
-  passiveInsight?: number;
-  passiveInvestigation?: number;
-  languages?: string[];
-  speedFeet?: number;
-}
-export interface Character {
-  id: string;
-  ordinal: number;
-  profile: CharacterProfile;
-  profileRevision: number;
-  archived?: boolean;
-  active: boolean;
-  membershipRevision: number;
-  sceneId: string | null;
-}
-export interface LiveScene {
-  momentDraft?: LiveMomentDraft | null;
-  momentDraftError?: string;
-  id: string;
-  revision: number;
-  title: string;
-  notes: string;
-  readAloud?: string;
-  locationId: string | null;
-  membershipRevision: number;
-  retired: boolean;
-  clock: { epochId: string; instantMs: string; revision: number };
-  members: string[];
-  adoption: {
-    outcome?: VisitOutcome | null;
-    id: string;
-    planId: string;
-    planRevision: number;
-    visitId: string;
-    title: string;
-    notes: string;
-    locationId: string | null;
-  } | null;
-}
-export type SessionRecapDraft = { summary: string; handoff: string };
 export function checkedSessionRecapDraft(draft: SessionRecapDraft): SessionRecapDraft {
   const invalid = () =>
     new Error('Rückblickentwurf ist ungültig. Gespeicherte Texte bleiben erhalten.');
@@ -201,7 +160,7 @@ export type LiveAction =
       calendar: { revision: number; daySeconds: number };
       toInstantMs: string;
       expectedFocusRevision: number;
-      eventTarget?: import('./time-plan-contracts').ClockEventTarget;
+      eventTarget?: import('./clock-event-contracts').ClockEventTarget;
       reason: string;
     };
 export interface LiveCommand {
@@ -230,7 +189,6 @@ export interface LiveAck {
     archiveCount: number;
   };
 }
-export type TimeUnit = 'seconds' | 'minutes' | 'hours' | 'days';
 export function advanceInstant(instantMs: string, amount: number, unit: TimeUnit): string {
   const factors: Record<TimeUnit, bigint> = {
     seconds: 1000n,

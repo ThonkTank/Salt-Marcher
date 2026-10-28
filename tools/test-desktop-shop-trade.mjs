@@ -1,5 +1,5 @@
 // Native GM workflow with disposable campaign: choose a trader once, buy, return a portion, close and reopen.
-// Requires build:desktop and desktop:runtime; run via python3 tools/ui-session.py. GM_QA_ZOOM=2 repeats at 200%.
+// Requires build:desktop and desktop:runtime; run via python3 tools/ui-session.py. Native UI probes use 100%.
 import { createNativeSession } from './native-session.mjs';
 import { createRequire } from 'node:module';
 import { randomUUID } from 'node:crypto';
@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 import path from 'node:path';
 const source = process.cwd(),
   output = process.env.QA_EVIDENCE_DIR ?? path.join(source, '.build/shop-trade-evidence'),
-  zoom = Number(process.env.GM_QA_ZOOM ?? 1);
+  zoom = 1;
 const native = await createNativeSession({ root: source, output, name: 'shop-trade' });
 try {
   const require = createRequire(source + '/package.json'),

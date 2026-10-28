@@ -1,6 +1,6 @@
 import { runNativeProbe } from './native-session.mjs';
 // Native GM workflow with disposable campaign: split a shared treasure, transfer one potion, close and reopen all inventories.
-// Requires build:desktop and desktop:runtime; run via python3 tools/ui-session.py. GM_QA_ZOOM=2 repeats at 200%.
+// Requires build:desktop and desktop:runtime; run via python3 tools/ui-session.py. Native UI probes use 100%.
 import { currentProcessGroup } from './process-group.mjs';
 import { createRequire } from 'node:module';
 import { mkdtemp, readFile, writeFile, mkdir, stat, rm } from 'node:fs/promises';
@@ -14,7 +14,7 @@ const source = process.cwd(),
 await runNativeProbe(
   { output: output, name: 'treasure-distribution', resultName: 'result.json' },
   async (native) => {
-    const scale = Number(process.env.QA_DEVICE_SCALE ?? 1);
+    const scale = 1;
     await mkdir(output, { recursive: true });
     await rm(path.join(output, 'result.json'), { force: true });
     const replyLoss = process.argv.includes('--reply-loss'),
@@ -125,7 +125,7 @@ await runNativeProbe(
           BrowserWindow.getAllWindows()
             .find((w) => w.webContents.getURL().endsWith('/index.html'))
             .webContents.setZoomFactor(zoom),
-        Number(process.env.GM_QA_ZOOM ?? 1),
+        1,
       );
       if (await page.locator('#tutorial-dialog').isVisible())
         await page.locator('#tutorial-skip').click();
@@ -284,7 +284,7 @@ await runNativeProbe(
           (await app.evaluate(() => globalThis.qaAllocationCommands)).length,
           rejectOnce ? 2 : 1,
         );
-        if (Number(process.env.GM_QA_ZOOM ?? 1) === 2) await page.keyboard.press('Escape');
+        if (1 === 2) await page.keyboard.press('Escape');
         else
           await page
             .locator('#treasure-distribution-dialog')
@@ -532,7 +532,7 @@ await runNativeProbe(
         dirty,
         hashes,
         profile,
-        zoom: Number(process.env.GM_QA_ZOOM ?? 1),
+        zoom: 1,
         fixture: { campaign, heroes, treasureId },
         launches,
         errors,
@@ -543,8 +543,7 @@ await runNativeProbe(
         humanAcceptance: false,
       });
       console.log(
-        'COMPLETE treasure distribution, correction, transfer, receipt and Fresh at ' +
-          (process.env.GM_QA_ZOOM ?? 1),
+        'COMPLETE treasure distribution, correction, transfer, receipt and Fresh at ' + 1,
       );
     } catch (e) {
       await writeFile(

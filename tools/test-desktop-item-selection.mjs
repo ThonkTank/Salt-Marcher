@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import path from 'node:path';
 if (process.argv.length > 2)
   throw Error('Diese Probe prüft den aktuellen Vertrag ohne historische Baseline-Schalter.');
-const zoom = Number(process.env.GM_QA_ZOOM ?? 1);
+const zoom = 1;
 const source = process.cwd(),
   output = process.env.QA_EVIDENCE_DIR ?? path.join(source, '.build/item-selection-evidence');
 const native = await createNativeSession({

@@ -1,5 +1,5 @@
 import { randomUUID, createHash } from 'node:crypto';
-import type { CombatState, Combatant } from '../runtime/combat-contracts';
+import type { CombatState, Combatant } from '../runtime/combat-state-contracts';
 import type { Creature } from '../../features/catalog/creature-catalog';
 import { worldNoteDocument } from '../../features/world/world-notes';
 import { newGroup, materialize, saveGroup } from './preparation-write';

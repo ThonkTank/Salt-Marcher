@@ -168,7 +168,7 @@ Source of Truth: Dieses Dokument besitzt das benannte Thema; Code belegt den Ist
 21. Der repräsentative technische Fall mit 20 Rosterfiguren, vier unabhängig
     getakteten Scenes, acht Masken und 50 Teilnehmern erfüllt die TN-21-
     Livebudgets; die großen Profile truncaten oder vermischen keine Wahrheit.
-22. Tastatur, 200-Prozent-Skalierung, lange Namen, `pending`/`unavailable` und
+22. Tastatur, 100 %-Skalierung, lange Namen, `pending`/`unavailable` und
     nicht-farbige Zustände erhalten dieselben Scene-/Party-Aktionen und
     vollständige zugängliche Namen.
 
@@ -222,7 +222,7 @@ Gezielte Modell-/Store-/DOMfälle prüfen diese Anzeigen und den bestehenden
 zweistufigen Rastweg. Ein nativer Linuxlauf prüft360/240px, lange Namen,
 Tastaturaufklappen, Schnellwertauswahl ohne Campaignwrite, Rast ohne Zeitänderung,
 XP-Schwellenwechsel und Fresh samt Einstellungen und zwei normalen Exits.
-Das ist keine vollständige Tastatur-/200%- oder Betriebssystemabnahme.
+Das ist keine vollständige Tastatur-/100 %- oder Betriebssystemabnahme.
 Die Roster-Suche vergleicht IDs und tatsächliche Profilwerte einschließlich
 Klasse, Sprachen und Zahlen. Interne JSON-Feldnamen und Serialisierungszeichen
 sind keine Suchinhalte. Filtern und Blättern bleiben lesend; Aufklappzustand und
@@ -238,8 +238,8 @@ der aktuellen Produktstruktur, nicht aus zu kopierenden SaltMarcher-Schemanummer
 
 | Nutzerwirkung / nächster Schritt | Bereiche und Datenregel | Abnahme und Abhängigkeit |
 |---|---|---|
-| Party auf kleinem Raum lesen | `party-topbar-ui.ts`, `party-overview.ts`, `index.html`, bestehende Styles: kompakter Teilstand oben. Keine zweite Fortschrittsrechnung. Vorher bestand nur die flüchtige820px-Breite ohne Geometriepräferenz; neue Maße ersetzen keine fremde Shellgeometrie. | Weitere200%-, vollständige Tastatur/Fokus- und Fenstermigrationsabnahme; die lokalen360/240px-Belege ersetzen sie nicht. |
-| Mehrere Mitglieder bewusst ändern | Vorhandene `scene-roster`-Übernahme bindet die komplette Auswahl an Roster/Fokus/Scene-Revision und schreibt atomar; stabile CharacterIds, Auswahl außerhalb des Filters erhalten; andere Scenes nur über gemeinsamen Move | Store-/DOMfälle mit45 Figuren, gleichen Namen, Filter-ABA, Stale-Basis und atomarem Rollback sind unten beschrieben. Vollständige200%-/OS-Abnahme bleibt offen; keine Schleife separat bestätigter Einzelbefehle ergänzen. |
+| Party auf kleinem Raum lesen | `party-topbar-ui.ts`, `party-overview.ts`, `index.html`, bestehende Styles: kompakter Teilstand oben. Keine zweite Fortschrittsrechnung. Vorher bestand nur die flüchtige820px-Breite ohne Geometriepräferenz; neue Maße ersetzen keine fremde Shellgeometrie. | Weitere100 %-, vollständige Tastatur/Fokus- und Fenstermigrationsabnahme; die lokalen360/240px-Belege ersetzen sie nicht. |
+| Mehrere Mitglieder bewusst ändern | Vorhandene `scene-roster`-Übernahme bindet die komplette Auswahl an Roster/Fokus/Scene-Revision und schreibt atomar; stabile CharacterIds, Auswahl außerhalb des Filters erhalten; andere Scenes nur über gemeinsamen Move | Store-/DOMfälle mit45 Figuren, gleichen Namen, Filter-ABA, Stale-Basis und atomarem Rollback sind unten beschrieben. Vollständige100 %-/OS-Abnahme bleibt offen; keine Schleife separat bestätigter Einzelbefehle ergänzen. |
 | Gruppe gemeinsam bewegen | Bestehender `LiveAction.move` und Scene-/Maskenreconciliation; bestehendes/neues Ziel mit Ort und Mitgliedern, namenlose neue Scene mit geerbtem Ort/Uhr | Split/Rejoin samt divergenten Uhren, letzte Figur, Combat/Journey, Fehler/Replay; keine eigene Movefachlogik im Party-Popup. |
 | Bestätigte Partyaktionen zurücknehmen | Bestehende `executeLive`-/`executeProgress`-/Lootreceipts und gezielte Vorher-/Nachherfelder inventarisieren; Schema und atomaren Historyanschluss in deren vorhandenen Transaktionen ergänzen | Erst echte XP-, Rast-, Profil-, Membership-, Move- und Lootfälle samt Konflikt/Replyverlust/Fresh schließen; danach 100 Schritte, Redobranch und Importinvalidierung. Keine Ableitung inverser Aktionen allein aus Text-/Anzeigehistory. Der normative Historyvertrag oben bleibt unverändert. |
 | History sicher anbieten | Erst nach belastbaren Historycommands im Party-Popup vier Readzustände, aktuelle Undo-/Redoautorität, isoliertes Retry und Originalcommand-Recovery anbinden | Verspätete Antwort nach Close/Workspace-ABA, beschädigter Read ohne neue Schreibautorität, 240 px Fehler/Retry mit Tastatur. Quickfieldpräferenzen an ihrem tatsächlichen Installationsowner beteiligen; keine zweite DB nur wegen der Quellarchitektur einführen. |

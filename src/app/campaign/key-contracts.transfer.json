@@ -13,7 +13,7 @@
     "KeyContent.id": "local",
     "KeyContent.levelId": "local",
     "KeyContent.name": "text",
-    "KeyContent.references[].id": {
+    "KeyReference.id": {
       "by": "kind",
       "cases": {
         "creature": "external",
@@ -21,8 +21,8 @@
       },
       "otherwise": "local"
     },
-    "KeyContent.references[].kind": "text",
-    "KeyContent.references[].label": "text",
+    "KeyReference.kind": "text",
+    "KeyReference.label": "text",
     "KeyContent.scopeId": "local",
     "KeyContent.status": "text",
     "KeyContent.tags[]": "text"

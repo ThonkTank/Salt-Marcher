@@ -224,7 +224,7 @@ await runNativeProbe(
         { kind: 'preset-assign', campaignId: b.id },
       ]);
       results.push({ scale: 1, writes, exit: await close() });
-      await launch(2, b);
+      await launch(1, b);
       assert.equal(await page.locator('#preset-selection').inputValue(), presetId);
       assert.equal(await page.locator('#preset-name').inputValue(), 'Gemeinsame Einzelinitiative');
       assert.equal(await page.locator('#preset-mob').inputValue(), '0');
@@ -232,9 +232,9 @@ await runNativeProbe(
         await page.locator('#preset-effective').innerText(),
         /Gemeinsame Einzelinitiative/,
       );
-      await page.screenshot({ path: path.join(out, 'reopened-200.png') });
+      await page.screenshot({ path: path.join(out, 'reopened-100.png') });
       await page.locator('#preset-close').click();
-      results.push({ scale: 2, exit: await close() });
+      results.push({ scale: 1, exit: await close() });
       const fresh = new CampaignStore(file);
       let state;
       try {

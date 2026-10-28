@@ -7,7 +7,7 @@ import type {
 } from '../catalog/encounter-contracts';
 import type { GeneratorPresetConfigV3 } from './generation/config';
 import type { EncounterComposition } from './generation/selector';
-import type { ItemCategory, ItemInput } from '../runtime/progression';
+import type { ItemCategory, ItemInput } from '../catalog/item-input-contracts';
 export interface WorldSource {
   disposition?: number;
   kind: 'faction' | 'location';

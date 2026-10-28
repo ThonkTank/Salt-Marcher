@@ -2,12 +2,8 @@ import { bindAnchoredPopup } from '../shared/anchored-popup';
 import { checkPendingCommit } from '../shared/commit-confirmation';
 import type { Result, WorkspaceGeometry } from '../shared/contracts';
 import { workspaceShortcutAvailable } from '../workspace/workspace-shortcuts';
-import {
-  checkedCharacterProfile,
-  type Character,
-  type CharacterProfile,
-  type LiveView,
-} from './live-contracts';
+import { checkedCharacterProfile, type LiveView } from './live-contracts';
+import { type Character, type CharacterProfile } from './live-scene-contracts';
 import { initPartyAwards, resetPartyAwards } from './party-award-ui';
 import type { PartyCommands } from './party-command-contracts';
 import { PartyLootPanel } from './party-loot-ui';
@@ -23,14 +19,8 @@ import {
 } from './party-overview';
 import { PartyRosterPanel } from './party-roster-ui';
 import { changeCharacterXp } from './party-xp-model';
-import {
-  levelXp,
-  restFrame,
-  xpInput,
-  xpLevel,
-  type ProgressAction,
-  type ProgressView,
-} from './progression';
+import { levelXp } from './experience-tables';
+import { restFrame, xpInput, xpLevel, type ProgressAction, type ProgressView } from './progression';
 import { onProgressChanged } from './progression-ui';
 let liveCommands: PartyCommands | undefined;
 const commands = () => {

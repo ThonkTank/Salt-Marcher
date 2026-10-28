@@ -1,9 +1,10 @@
 import type { EditorSession } from '../shared/editor-session';
 import type { WorkspaceGeometry } from '../shared/contracts';
-import { formatInstant, type LiveScene } from './live-contracts';
+import { formatInstant } from './live-contracts';
+import { type LiveScene } from './live-scene-contracts';
 import { calendarDate } from './world-model';
 import type { TimePreview } from './time-plan-contracts';
-import type { FantasyCalendar } from './world-contracts';
+import type { FantasyCalendar } from './calendar-contracts';
 
 type Host = {
   get: <T extends HTMLElement>(id: string) => T;

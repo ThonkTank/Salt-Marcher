@@ -1,9 +1,5 @@
-import {
-  ledgerStacksMatch,
-  type LedgerItem,
-  type ProgressView,
-  type ProgressAction,
-} from './progression';
+import { ledgerStacksMatch, type ProgressView, type ProgressAction } from './progression';
+import { type LedgerItem } from './treasure-contracts';
 /** Each operation exposes only its own inputs; the existing Progress writer owns the transaction. */
 export function drawLedgerStacks(
   root: HTMLElement,

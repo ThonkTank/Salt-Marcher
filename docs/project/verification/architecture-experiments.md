@@ -2,13 +2,17 @@
 
 Status: Current; offene Ziele sind als solche beschrieben.
 Owner: project
-Last Reviewed: 2026-10-24 (Struktur und Quellen; Fachabnahme separat)
+Last Reviewed: 2026-10-28 (historische Proben und heutige Qualifikationsrolle; kein neuer Probenlauf)
 Source of Truth: Dieses Dokument besitzt das benannte Thema; Code belegt den Iststand, das Abnahmeregister den Prüfstand.
 
-Stand: 11.10.2026. Technische Entscheidungen stehen in
+Historische Entscheidungsproben vom 11.10.2026 auf
+`116c16af48b6a073216685c8d8e2cc74fada82c3`; ihre Ergebnisse bleiben auf diesen
+Aufbau begrenzt. Technische Entscheidungen stehen in
 [ARCHITECTURE](../architecture/overview.md) und [Plattform-ADR](../architecture/platform-decision.md).
 Diese Datei besitzt Untersuchungsbefunde, anspruchsvolle Gegenproben und die
-noch erforderlichen Implementationsnachweise. Ein Planungsentscheid ist kein
+Qualifikationskriterien. Die heutige Implementation und nächsten
+Lieferanschlüsse besitzt die [Roadmap](../delivery/roadmap.md); der gemeinsame
+Prüfstand steht im [E2E-Katalog](end-to-end.md). Ein Planungsentscheid ist kein
 Produkt-PASS. Alte P01–P04-Matrizen/Fixtures/Receipts behalten ihren datierten
 Umfang; sie erzwingen weder Editorreuse noch das frühere Mehrdateiprotokoll.
 
@@ -174,7 +178,7 @@ Spielerausschnitt unterscheiden Sichtbarkeit; Bildexport verändert nichts.
 | Custombiom/-symbol löschen mit aktiver und getrashteter Campaign | Globale Referenzersetzung atomar, Tabellen/Autoreninhalte bleiben; unabhängiger Import und Restore zeigen denselben gültigen Stand |
 | Provider fehlt → Completeimport → Restore → permanente Löschung | Opaque Bytes/Remapclosure erhalten, keine importierte Autorität; kein rekonstruktiver Rest in app-owned Stores/Backups |
 | Manualmusic → Autoplay/Wetterlayer → Stop/Queueoverride → Neustart | Manuelle Priorität, portable Source-IDs/Cues, kein fremder Track als stiller Ersatz; tatsächliches Audio und Fehlerisolation |
-| Suche/Referenzpreview → Keyboardcanvas/Inspector → Popup/Dialog → Tutorialupdate | Alle notizfähigen Inhalte aktuell suchbar; stabile Linkziele; Fokus/200 %/Screenreader/Kontrast; Skip verliert keine Arbeit |
+| Suche/Referenzpreview → Keyboardcanvas/Inspector → Popup/Dialog → Tutorialupdate | Alle notizfähigen Inhalte aktuell suchbar; stabile Linkziele; Fokus/100 %/Screenreader/Kontrast; Skip verliert keine Arbeit |
 | Focuswechsel/Knowledge → sichere Playergeometrie bei Secretänderung | Nur fokussierte Sceneunion; Erinnerung vs. aktuelle Wahrnehmung getrennt; keine verborgene GM-/Mechanik-/Assetwirkung |
 
 Alle 36 Sourcebereiche sind in [SCOPE](../requirements/scope.md) der bestehenden SMR-/AC-

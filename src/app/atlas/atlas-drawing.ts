@@ -1,6 +1,5 @@
 import { measureMapText } from './map-text-measure';
 import { dungeonTravelRoute } from '../runtime/dungeon-travel-console';
-import { atlasWorldTravelState } from '../runtime/world-ui';
 import type { Point, Room } from '../shared/contracts';
 import type { CanvasBox } from './atlas-camera';
 import type { AtlasCanvas } from './atlas-canvas';
@@ -29,14 +28,10 @@ import type {
   AtlasRegionView,
 } from './atlas-workbench-types';
 import { atlasWorkplaneData, type AtlasWorkplane } from './atlas-workplane';
-import type { AtlasBinding, AtlasRenderView } from './campaign-atlas-contracts';
-import {
-  atlasFrame,
-  atlasHexPoint,
-  atlasToLocal,
-  frameMatrix,
-  localToAtlas,
-} from './campaign-atlas-model';
+import type { AtlasBinding } from './atlas-binding-contracts';
+import type { AtlasRenderView } from './campaign-atlas-view-contracts';
+import { atlasFrame } from './campaign-atlas-model';
+import { atlasHexPoint, atlasToLocal, frameMatrix, localToAtlas } from './atlas-coordinates';
 import { cityObjectsPaint, posedFootprint, roadPoints } from './city-model';
 import { atlasCityMeasurement, atlasCityState } from './city-ui';
 import { elementPaint, roomFacePaint } from './drawing-model';
@@ -49,7 +44,9 @@ import {
 import { atlasDungeonState } from './dungeon-ui';
 import { appendRoomNumber } from './room-number-label';
 import { volumeProjection } from './volume-model';
+import type { WorldTravelPort } from '../runtime/world-ui';
 interface AtlasDrawingHost {
+  readonly world: WorldTravelPort;
   readonly author: AtlasAuthorView;
   readonly territories: Pick<TerritoryWorkbench, 'selectedLabel' | 'draw'>;
   readonly journey: AtlasJourneyView;
@@ -397,7 +394,7 @@ export class AtlasDrawing {
           }),
         );
     }
-    const travel = atlasWorldTravelState(),
+    const travel = this.host.world.atlasWorldTravelState(),
       route = atlasWorldRoute(data, travel.preview);
     if (route.length)
       root.append(
@@ -618,7 +615,7 @@ export class AtlasDrawing {
     const b = this.host.camera.view;
     return { x: p.x - b.x, y: p.y - b.y };
   }
-  relative(f: import('./campaign-atlas-model').AtlasFrame) {
+  relative(f: import('./atlas-coordinates').AtlasFrame) {
     return { ...f, ...this.relativePoint(f) };
   }
   visible(p: Point, r: number, b: CanvasBox) {
@@ -1018,6 +1015,8 @@ export class AtlasDrawing {
     shown: import('../shared/contracts').RoomGeometry[],
   ) {
     const data = this.host.regions.data!;
+    if (!data.geometry.runtime.ok) return;
+    const overlay = data.geometry.runtime.value;
     const runtime = atlasDungeonState(),
       route = dungeonTravelRoute(data.geometry.journey, runtime.preview, data.geometry.sceneId);
     const points = route.filter((p) => p.scopeId === b.ownerId && p.floorId === floor);
@@ -1031,7 +1030,7 @@ export class AtlasDrawing {
     const party = data.geometry.position,
       perception = data.perception,
       masked = get<HTMLInputElement>('atlas-perception').checked;
-    for (const t of data.geometry.tracks.filter(
+    for (const t of overlay.tracks.filter(
       (t) => t.from.scopeId === b.ownerId && t.from.floorId === floor && t.to.floorId === floor,
     )) {
       if (
@@ -1060,10 +1059,12 @@ export class AtlasDrawing {
         }),
       );
     }
-    for (const n of data.geometry.npcs.filter(
+    for (const n of overlay.npcs.filter(
       (n) => n.pose?.scopeId === b.ownerId && n.pose.floorId === floor,
     )) {
-      const observation = data.geometry.senses.observations.find(
+      const observation = (
+        data.geometry.runtime.ok ? data.geometry.runtime.value.senses.observations : []
+      ).find(
         (o) =>
           o.subjectKind === 'actor' &&
           o.subjectId === n.id &&

@@ -102,7 +102,7 @@ Browser-Mengen-/Schrittgrenzen deuten bestehende Fachwerte nicht um.
 `desktop-shop-switch.test.mjs` prüft unvollständigen Namen, negativen Bestand
 und unvollständige Auffülltabelle ohne Buchungsbeginn sowie eine gültige Korrektur
 bei gehaltener Prüfsumme. Die native Shopprobe führt Namen-, Preis- und leere Mengeneingaben über echte
-IPC bei 100/200 Prozent Browserzoom und regulärem Neustart aus; CRLF-Notizen und fremde
+IPC bei 100 Prozent Browserzoom und regulärem Neustart aus; CRLF-Notizen und fremde
 Ledgerbytes bleiben erhalten. Historische Schalter für absichtlich unsicheres
 Altverhalten entfallen aus dieser aktuellen Vertragsprobe. Metadaten einschließlich
 Buildhashes stehen auch bei Fehlern bereit; frische nichtleere Bilder, begrenztes
@@ -126,7 +126,7 @@ Der native Ablauf prüft tatsächlich abweichende Preise (5,01 GM Kauf / 0,77 GM
 Erlös), Rückkauf eines von zwei Einzelstücken derselben Definition mit eigenem
 Ankaufspreis und ausdrücklich abweichendem Erlös, 55 spätere Auffüllungen, geänderte heutige Shoppreise und erneutes
 Lesen der alten Beträge nach einem kontrollierten Seitenfehler. Regulärer
-Close/Fresh und 100/200 Prozent bleiben getrennte Laufbelege; vollständige
+Close/Fresh und 100 Prozent bleiben getrennte Laufbelege; vollständige
 SMR-AC-10- und Plattform-/Owner-Abnahme bleiben offen.
 Die Probe verwendet den gemeinsamen nativen Sitzungshelfer für Profilbesitz,
 Buildbindung vor jedem Start und nach dem Ablauf, frische nichtleere Aufnahmen,
@@ -209,7 +209,7 @@ native Reisebedienung oder vollständige Produktabnahme.
 4. Gesamtlesen gemischter Shops und Auffüllfälligkeiten bei langen Historien
    messen; vorhandene Verlaufsseiten qualifizieren diese Reads nicht.
    Native Ownerwarnung, Zeitfehler, verlorene
-   Handelsantwort, Tastatur, 200 % und Auffindbarkeit aus Scene abnehmen.
+   Handelsantwort, Tastatur, 100 % und Auffindbarkeit aus Scene abnehmen.
 
 [Storeprüfungen](../../../tests/runtime/desktop-shop-owner-time.test.mjs) belegen manuelle/
 fällige/zukünftige Regeln mit fehlendem Owner, Rollback sowie Ownertrash,
@@ -234,7 +234,7 @@ behält dafür die bestätigte Fälligkeit; der Writer unterscheidet die Bezeich
 von der wirksamen Regel. Die native Probe
 [`test-desktop-restock-name.mjs`](../../../tools/test-desktop-restock-name.mjs)
 prüft Umbenennen vor Fälligkeit, zwei nachgeholte Termine, eine zweite Gruppenuhr
-und den gleichen Bestand samt Verlauf nach Neustart bei 100/200 Prozent Zoom. Die
+und den gleichen Bestand samt Verlauf nach Neustart bei 100 Prozent Zoom. Die
 gemeinsame bestätigte Zeitverarbeitung addiert nur ausgewählte Zeilen und
 hält erste/letzte Fälligkeit, Anzahl, Regelrevision und konkrete Ergebnisse
 im Shopverlauf. Kampagnenkopien remappen Tabellen-/Bestandsidentitäten und

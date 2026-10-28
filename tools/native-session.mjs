@@ -17,11 +17,25 @@ import { homedir } from 'node:os';
 import path from 'node:path';
 import { currentProcessGroup } from './process-group.mjs';
 
-export function assertNativeCompletion(launches, errors) {
+export function assertNativeCompletion(launches, errors, { allowConfirmedCrash = false } = {}) {
   assert(launches.length > 0, 'No native launches recorded');
   assert.deepEqual(errors, [], 'Renderer errors prevent qualification');
   for (const launch of launches) {
-    assert.deepEqual(launch.exit, { code: 0, signal: null }, 'Every launch must close normally');
+    if (launch.termination === 'confirmed-autosave-crash') {
+      assert(allowConfirmedCrash, 'Intentional crash requires the explicit fault protocol');
+      assert.equal(launch.confirmation?.state, 'saved');
+      assert.equal(typeof launch.confirmation?.inventorySha256, 'string');
+      assert.match(launch.confirmation.inventorySha256, /^[a-f0-9]{64}$/);
+      assert.deepEqual(launch.exit, { code: null, signal: 'SIGKILL' });
+      assert(
+        launches
+          .slice(launches.indexOf(launch) + 1)
+          .some((l) => l.exit?.code === 0 && l.exit?.signal === null),
+        'A confirmed crash requires a later normal fresh-process exit',
+      );
+    } else {
+      assert.deepEqual(launch.exit, { code: 0, signal: null }, 'Every launch must close normally');
+    }
     assert.equal(launch.pidAbsent, true, 'Closed native PID must be absent');
   }
 }
@@ -32,7 +46,22 @@ export async function createNativeSession({
   output,
   name,
   resultName = 'result.json',
+  allowConfirmedCrash = false,
+  closeCaptureTimeoutMs = 5000,
+  captureFrameTimeoutMs = 2500,
 }) {
+  assert(
+    Number.isSafeInteger(closeCaptureTimeoutMs) &&
+      closeCaptureTimeoutMs > 0 &&
+      closeCaptureTimeoutMs <= 60000,
+    'Native close capture deadline must be within 1..60000 ms',
+  );
+  assert(
+    Number.isSafeInteger(captureFrameTimeoutMs) &&
+      captureFrameTimeoutMs > 0 &&
+      captureFrameTimeoutMs <= 60000,
+    'Native frame deadline must be within 1..60000 ms',
+  );
   assert.equal(
     path.basename(resultName),
     resultName,
@@ -121,6 +150,8 @@ export async function createNativeSession({
     steps,
     cleanup,
     runtime: launchedRuntime,
+    closeCaptureTimeoutMs,
+    captureFrameTimeoutMs,
   });
   async function startBus() {
     if (!proxy) proxy = (await startNativeBus(profile)).child;
@@ -128,6 +159,7 @@ export async function createNativeSession({
     assert.equal(proxy.signalCode, null, 'Native bus proxy terminated during the workflow');
   }
   async function launch(zoom = 1, config = {}) {
+    assert.equal(zoom, 1, 'Native UI probes run at 100% only.');
     const attempt = {
       at: new Date().toISOString(),
       zoom,
@@ -268,7 +300,7 @@ export async function createNativeSession({
     assert(app, 'No native process to close');
     await bounded(
       capture(await app.firstWindow(), 'native-launch-' + launches.length),
-      5000,
+      closeCaptureTimeoutMs,
       'Native close capture timed out',
     );
     const child = app.process(),
@@ -304,6 +336,34 @@ export async function createNativeSession({
     processHandle = null;
     mark('normal native exit confirmed');
   }
+  async function crashAfterConfirmedAutosave(confirmation) {
+    assert(allowConfirmedCrash, 'Intentional crash is disabled for this session');
+    assert(app && processHandle, 'No native process to crash');
+    assert.equal(
+      confirmation?.state,
+      'saved',
+      'Unknown/pending work cannot authorize saved-crash evidence',
+    );
+    assert.match(confirmation.inventorySha256 ?? '', /^[a-f0-9]{64}$/);
+    const child = processHandle,
+      entry = launches.at(-1);
+    assert(await ownsProfile(child, profile), 'Crash requires owned native profile');
+    await capture(await app.firstWindow(), 'confirmed-autosave-before-crash');
+    const exited = observeExit(child);
+    entry.termination = 'confirmed-autosave-crash';
+    entry.confirmation = structuredClone(confirmation);
+    mark('intentional crash after confirmed autosave');
+    child.kill('SIGKILL');
+    assert.deepEqual(await bounded(exited, 10000, 'Intentional crash did not exit'), {
+      code: null,
+      signal: 'SIGKILL',
+    });
+    await pidAbsent(child.pid);
+    entry.pidAbsent = true;
+    app = null;
+    processHandle = null;
+    mark('intentional crash exit confirmed');
+  }
   async function capture(page, name, selector) {
     assert(app, 'Native capture requires an open application');
     const captureZoom = await app.evaluate(({ BrowserWindow }) => {
@@ -315,21 +375,30 @@ export async function createNativeSession({
       return w.webContents.getZoomFactor();
     });
     if (selector) await page.locator(selector).scrollIntoViewIfNeeded();
-    await page.evaluate(
-      () =>
+    const frameWaitMs = await page.evaluate(
+      (deadline) =>
         new Promise((resolve, reject) => {
           let frame;
+          const started = performance.now();
           const timer = setTimeout(() => {
             cancelAnimationFrame(frame);
-            reject(Error('No fresh native capture frames'));
-          }, 2500);
+            reject(
+              Error(
+                'No fresh native capture frames; visibility=' +
+                  document.visibilityState +
+                  ', focus=' +
+                  document.hasFocus(),
+              ),
+            );
+          }, deadline);
           frame = requestAnimationFrame(() => {
             frame = requestAnimationFrame(() => {
               clearTimeout(timer);
-              resolve();
+              resolve(performance.now() - started);
             });
           });
         }),
+      captureFrameTimeoutMs,
     );
     const bytes = Buffer.from(
       await app.evaluate(async ({ BrowserWindow }) =>
@@ -355,6 +424,7 @@ export async function createNativeSession({
       height: png.height,
       sha256: createHash('sha256').update(bytes).digest('hex'),
       fresh: true,
+      frameWaitMs,
     });
   }
   async function finish(extra = {}) {
@@ -364,7 +434,7 @@ export async function createNativeSession({
       starts.every((attempt) => attempt.outcome === 'ready'),
       'Every requested native start must complete; a caught start failure prevents qualification',
     );
-    assertNativeCompletion(launches, errors);
+    assertNativeCompletion(launches, errors, { allowConfirmedCrash });
     if (proxy) {
       assert.equal(proxy.exitCode, null, 'Native bus proxy exited during the workflow');
       assert.equal(proxy.signalCode, null, 'Native bus proxy terminated during the workflow');
@@ -402,6 +472,25 @@ export async function createNativeSession({
             (await app.firstWindow()).evaluate(() => ({
               status: document.querySelector('#status')?.textContent,
               atlasStatus: document.querySelector('#atlas-save-status')?.textContent,
+              saveIndicators: Object.fromEntries(
+                [
+                  'atlas-status',
+                  'status',
+                  'atlas-recover',
+                  'commit-pending',
+                  'error-actions',
+                  'backup-status',
+                  'world-write-recovery',
+                ].map((id) => {
+                  const node = document.getElementById(id);
+                  return [
+                    id,
+                    node
+                      ? { hidden: node.hidden, text: node.textContent, data: { ...node.dataset } }
+                      : null,
+                  ];
+                }),
+              ),
               atlas: { ...document.querySelector('#campaign-atlas')?.dataset },
               canvas: { ...document.querySelector('#campaign-map')?.dataset },
             })))(),
@@ -493,6 +582,7 @@ export async function createNativeSession({
     mark,
     close,
     capture,
+    crashAfterConfirmedAutosave,
     finish,
     fail,
     dispose,

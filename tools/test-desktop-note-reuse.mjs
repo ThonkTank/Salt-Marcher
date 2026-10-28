@@ -160,7 +160,7 @@ await runNativeProbe(
           'Verknüpfen und ergänzen',
         );
         await app.evaluate(({ BrowserWindow }) =>
-          BrowserWindow.getAllWindows()[0].webContents.setZoomFactor(2),
+          BrowserWindow.getAllWindows()[0].webContents.setZoomFactor(1),
         );
         await page.locator('#key-note-submit').scrollIntoViewIfNeeded();
         assert(
@@ -173,7 +173,7 @@ await runNativeProbe(
           () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))),
         );
         await writeFile(
-          path.join(out, 'reuse-200percent.png'),
+          path.join(out, 'reuse-100percent.png'),
           Buffer.from(
             await app.evaluate(async ({ BrowserWindow }) =>
               (await BrowserWindow.getAllWindows()[0].webContents.capturePage())

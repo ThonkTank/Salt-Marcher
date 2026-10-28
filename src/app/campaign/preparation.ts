@@ -23,13 +23,13 @@ import { NoteThreadDialog } from './note-thread-ui';
 import {
   preparationTarget,
   type LocationRow,
-  type Note,
   type Preparation,
   type PreparationChange,
   type PreparationCommand,
   type PreparationDraft,
   type PreparationEdit,
 } from './preparation-contracts';
+import { type Note } from './note-data';
 import { PreparationNoteDirectory } from './preparation-note-directory';
 import { packetNoteFeedback, registerPreparationPacketEditor } from './session-packet-ui';
 import {
@@ -1063,6 +1063,30 @@ export function createPreparation(host: PreparationHost) {
     renderSceneList();
     void checkpoint();
   }
+  function planInputConflict(
+    confirmed: ManualPlan | undefined,
+    before: ManualPlan,
+    pending: ManualPlan,
+  ): boolean {
+    if (!confirmed) return true;
+    if (
+      pending.name !== before.name &&
+      confirmed.name !== before.name &&
+      confirmed.name !== pending.name
+    )
+      return true;
+    return pending.scenes.some((draft) => {
+      const base = before.scenes.find((scene) => scene.id === draft.id);
+      if (!base) return false;
+      const fields = (['title', 'notes', 'locationId'] as const).filter(
+          (field) => draft[field] !== base[field],
+        ),
+        current = confirmed.scenes.find((scene) => scene.id === draft.id);
+      return fields.some(
+        (field) => !current || (current[field] !== base[field] && current[field] !== draft[field]),
+      );
+    });
+  }
   /** Preserve only the known editable fields entered after this exact plan command was sent. */
   function preservePlanInput(
     confirmed: ManualPlan,
@@ -1264,13 +1288,27 @@ export function createPreparation(host: PreparationHost) {
           current = () => context?.token === token && request === editorSession.generation;
         const next = unwrap(await window.campaign.preparation(token, query));
         if (!current()) return;
+        const base = originalPlan(),
+          pending = planDraft,
+          keepPlanInput = !!pending && !!base && pending.id === base.id && !equal(pending, base);
+        const confirmed = pending ? next.plans.find((plan) => plan.id === pending.id) : undefined;
+        if (keepPlanInput && planInputConflict(confirmed, base!, pending!)) {
+          blocked = true;
+          get('preparation-refresh').hidden = false;
+          syncSaveControl();
+          throw new Error(
+            'Plan oder bearbeiteter Besuch inzwischen geändert. Eigene Eingabe bleibt erhalten; gespeicherten Stand ausdrücklich aktualisieren.',
+          );
+        }
         usePreparation(next, !!query.trim());
-        if (planId) {
+        if (keepPlanInput) {
+          if (confirmed) planDraft = preservePlanInput(confirmed, base!, pending!);
+        } else if (planId) {
           selectedPlan = planId;
           planDraft = null;
           selectedScene = null;
         }
-        if (id) selectedScene = id;
+        if (id && !keepPlanInput) selectedScene = id;
         await renderPlans();
         if (!current()) return;
         await renderNotes();

@@ -2,14 +2,19 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { buildSync } from 'esbuild';
 import { createRequire } from 'node:module';
+import { parseHTML } from '../helpers/dom.mjs';
 buildSync({
-  entryPoints: ['src/app/workspace/workspace-opening.ts'],
+  stdin: {
+    contents:
+      "export {createWorkspaceViewOpener} from './src/app/workspace/workspace-opening'; export {CampaignAtlasWorkbench} from './src/app/atlas/campaign-atlas-ui';",
+    resolveDir: process.cwd(),
+  },
   outfile: '.build/workspace-opening.cjs',
   bundle: true,
   platform: 'node',
   format: 'cjs',
 });
-const { createWorkspaceViewOpener } = createRequire(import.meta.url)(
+const { createWorkspaceViewOpener, CampaignAtlasWorkbench } = createRequire(import.meta.url)(
   '../../.build/workspace-opening.cjs',
 );
 function fixture() {
@@ -88,6 +93,52 @@ test('opening the Atlas releases the workspace while its first region is unresol
     f.resolve();
     await opening;
   }
+});
+
+test('Atlas context activation retires only the previous context status and retains pending write protection', (t) => {
+  const oldDocument = global.document;
+  const { document } = parseHTML(
+    '<input id="atlas-search" value="Alter Suchtext"><p id="atlas-save-status" data-error="true">Alter Atlasfehler</p><div id="atlas-search-results"></div><p id="commit-pending">Ungeklärte Buchung</p>',
+  );
+  global.document = document;
+  t.after(() => {
+    global.document = oldDocument;
+  });
+  const ui = Object.assign(Object.create(CampaignAtlasWorkbench.prototype), {
+    owner: { token: 'a', campaign: { id: 'a' } },
+    root: document.createElement('section'),
+    canvas: document.createElement('canvas'),
+    regions: { resetContext() {} },
+    hitDialog: { close() {} },
+    journey: { activate() {} },
+    author: { resetContext() {} },
+    output: { reset() {} },
+    reference: { close() {} },
+    landscape: { context() {} },
+    drawing: {},
+    camera: { context() {} },
+  });
+  const status = document.getElementById('atlas-save-status');
+  ui.activate({ token: 'b', campaign: { id: 'b' } });
+  assert.equal(document.getElementById('atlas-search').value, '');
+  assert.equal(status.dataset.error, 'false');
+  assert.equal(status.textContent, 'Kartenausschnitt wird geladen…');
+  assert.equal(
+    document.getElementById('commit-pending').hidden,
+    false,
+    'Other unresolved write owners remain visible',
+  );
+  status.dataset.error = 'true';
+  status.textContent = 'Aktueller Fehler';
+  document.getElementById('atlas-search').value = 'Aktuelle Suche';
+  ui.activate({ token: 'b', campaign: { id: 'b' } });
+  assert.equal(status.dataset.error, 'true', 'Same-context updates cannot clear a current failure');
+  assert.equal(status.textContent, 'Aktueller Fehler');
+  assert.equal(document.getElementById('atlas-search').value, 'Aktuelle Suche');
+  ui.strokeQueue = { pending: 1 };
+  assert.throws(() => ui.activate({ token: 'c', campaign: { id: 'c' } }), /Pinselzüge/);
+  assert.equal(status.dataset.error, 'true');
+  assert.equal(ui.owner.token, 'b');
 });
 for (const stale of [null, 'changeOwner', 'changeView'])
   test(`late Atlas opening errors belong only to the current view: ${stale ?? 'current'}`, async () => {

@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto';
-import type { DrawingElement } from '../atlas/drawing-contracts';
-import type { DungeonGeometry } from '../atlas/dungeon-contracts';
+import type { DrawingElement } from '../atlas/drawing-element-contracts';
+import type { DungeonGeometry } from '../atlas/dungeon-geometry-contracts';
 import { resolvePathAnchor } from '../atlas/path-anchor';
 import type {
   DungeonPassage,

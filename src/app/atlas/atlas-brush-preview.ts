@@ -1,11 +1,12 @@
-import type { HeightStroke } from './terrain-brush';
+import type { HeightStroke } from './terrain-brush-contracts';
 import { applyCoupledTerrainBrush } from './terrain-lake-coupling';
 import { applyHeightStroke, TerrainSampler } from './terrain-height';
-import { type MaskStroke } from './land-mask';
+import { type MaskStroke } from './land-mask-contracts';
 import { validateColor, brushFootprint, orderedColors } from './landscape-brush';
 import { colorSurface } from './landscape-color-surface';
 import { LandscapeRasterizer } from './landscape-raster';
-import type { LandscapeBox, LandscapeRecord } from './atlas-landscape';
+import type { LandscapeBox } from './landscape-bounds';
+import type { LandscapeRecord } from './landscape-contracts';
 
 export interface BrushPreviewJob {
   generation: number;
@@ -22,7 +23,7 @@ export interface BrushPreviewJob {
 export function brushPreviewRecords(
   job: BrushPreviewJob,
   limited?: (factor: number) => void,
-  visibility?: import('./terrain-spatial-model').TerrainGrid,
+  visibility?: import('./terrain-grid-contracts').TerrainGrid,
 ): LandscapeRecord[] {
   let records = job.records;
   if (job.stroke || job.heightStroke) {

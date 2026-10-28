@@ -310,7 +310,7 @@ Kachelwechsel erzeugen keine Löcher oder doppelten Eltern-/Kindflächen. Normal
 und geneigte Ansichten erhalten maßhaltige Geometrie und richtige Verdeckung.
 Abbruch, Quellenwechsel, GPU-Verlust und ungeklärte Schreibantworten sind geprüft.
 
-Native Abläufe bei 100 % und 200 % Skalierung sowie große Mischwelt werden mit der
+Native Abläufe bei 100 Prozent Skalierung sowie große Mischwelt werden mit der
 Ausgangsbasis verglichen. Integration verlangt die grüne exakte Candidate-SHA;
 Releasepflicht und Paketprüfung bleiben unverändert.
 
@@ -327,7 +327,7 @@ verpflichtend gemacht.
 
 | Gruppe | Zu erhaltende Werkzeuge und Abläufe | Fachquelle |
 | --- | --- | --- |
-| Navigation und Auswahl | Zoomen am Weltpunkt, Schieben, Rücksprung, Übersicht, Suche, präzise/mehrdeutige Treffer, Griffe, Größenvergleich, Maße und Einheiten, 200 % | HEX-05/08/22, [Darstellungsregeln](rendering.md) |
+| Navigation und Auswahl | Zoomen am Weltpunkt, Schieben, Rücksprung, Übersicht, Suche, präzise/mehrdeutige Treffer, Griffe, Größenvergleich, Maße und Einheiten, 100 % | HEX-05/08/22, [Darstellungsregeln](rendering.md) |
 | Land und Daten | Formen, Glätten, Bodenfarbe, Geländeeigenschaften, kontinuierliche Pinselstriche, Zurücksetzen, Maßstabswahl, Meeresspiegel | HEX-06/16, [Relief](../requirements/terrain-relief.md) |
 | Bewuchs | Landschaft malen/umgrenzen, Baumreihe, Freihalten, Ausdünnen, Verdichten, Einzelbaum/Felsen, Einzelkorrektur/Auswahl | HEX-18, [Bewuchs](../requirements/vegetation.md) |
 | Gewässer und Trassen | Wasser setzen/entfernen/färben/radieren, Fluss und Straße zeichnen, Geländeprofil und Verlauf korrigieren | HEX-14/15/17, [Trassen](../contract/terrain-routes.md), [Landschaftswerkzeuge](../contract/landscape-tools.md) |

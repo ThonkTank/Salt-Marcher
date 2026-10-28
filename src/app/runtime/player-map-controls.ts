@@ -1,6 +1,6 @@
 import type { PlayerMapCell } from './player-contracts';
 import { hexDistance, hexPoint, terrainColors } from './world-model';
-import type { Hex, Terrain } from './world-contracts';
+import type { Hex, Terrain } from './world-cell-contracts';
 /** A bounded GM-only neighbourhood. Searching selects distant hexes without a huge SVG. */
 export function renderPlayerMapPicker(
   root: HTMLElement,

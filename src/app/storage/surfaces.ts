@@ -2,13 +2,9 @@ import { volumeOrigin } from '../atlas/volume-model';
 import { createHash, randomUUID } from 'node:crypto';
 import type { KeyContent } from '../campaign/key-contracts';
 import type { DungeonVolume } from '../atlas/volume-contracts';
-import {
-  isSurfaceFace,
-  connectedSurface,
-  surfaceFaceKey,
-  type SurfaceFace,
-} from '../atlas/surface-model';
 import { readDungeonKeys } from './dungeon-key';
+import { isSurfaceFace } from '../atlas/surface-model';
+import { type SurfaceFace } from '../atlas/surface-contracts';
 const keyRow = (cam: string, c: KeyContent) => {
   const payload = JSON.stringify(c);
   return {
@@ -21,32 +17,6 @@ const keyRow = (cam: string, c: KeyContent) => {
     checksum: createHash('sha256').update(payload).digest('hex'),
   };
 };
-export function validateSurfaceGeometry(db: any, cam: string, c: KeyContent) {
-  if (c.kind !== 'surface') return;
-  const room = db
-    .prepare('SELECT scope_id FROM room WHERE campaign_id=? AND id=?')
-    .get(cam, c.surface!.roomId);
-  if (!room || room.scope_id !== c.scopeId)
-    throw new Error('Oberflächenbereich benötigt einen Raum derselben Zeichnung.');
-  for (const f of c.surface!.fragments) {
-    if (f.unbound) continue;
-    const row = db
-        .prepare('SELECT payload FROM dungeon_volume WHERE campaign_id=? AND id=?')
-        .get(cam, f.volumeId),
-      v = row ? (JSON.parse(row.payload) as DungeonVolume) : null;
-    if (!v || v.scopeId !== c.scopeId || !v.columns.length)
-      throw new Error('Oberflächenfragment zuerst einem Volumen zuordnen.');
-    const o = volumeOrigin(v),
-      faces = f.faces.map((p) => ({ ...p, x: p.x + o.x, y: p.y + o.y, z: p.z + o.z }));
-    if (
-      faces.length &&
-      (!connectedSurface(faces) ||
-        new Set(faces.map(surfaceFaceKey)).size !== faces.length ||
-        faces.some((p) => !isSurfaceFace(v, p)))
-    )
-      throw new Error('Eine zusammenhängende Wand-, Boden- oder Deckenfläche markieren.');
-  }
-}
 export function captureSurfaces(db: any, cam: string, volumes: DungeonVolume[]) {
   const selected = new Map(volumes.filter((v) => v.columns.length).map((v) => [v.id, v]));
   return readDungeonKeys(db, cam)

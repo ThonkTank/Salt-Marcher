@@ -1,4 +1,5 @@
-import { xpLevel, xpShare, type Progress } from './progression';
+import { xpLevel, xpShare } from './progression';
+import { type Progress } from './character-progress-contracts';
 
 /** Current Party window policy: preview/writer share XP calculation; confirmed rest facts are independent. */
 export function changeCharacterXp(

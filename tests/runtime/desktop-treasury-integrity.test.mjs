@@ -395,6 +395,10 @@ test('canonical coin denominations can be selected, partly distributed and reope
   assert.equal(gold.unitCopper, '100');
   assert.equal(gold.source.kind, 'srd51');
   const reference = { kind: 'authored', definitionId: gold.id, revision: gold.revision };
+  const boundReference = {
+    ...reference,
+    catalogReference: x.store.catalogReference('item', gold.id),
+  };
   const id = x.store.executeProgress(
     x.command({ kind: 'treasure-create', title: 'Münzfund', locationId: null }),
   ).treasureId;
@@ -432,16 +436,16 @@ test('canonical coin denominations can be selected, partly distributed and reope
       }),
     );
   const ledger = x.store.ledgerItem(x.w.token, result.ledgerIds[0]);
-  assert.deepEqual(ledger.reference, reference);
+  assert.deepEqual(ledger.reference, boundReference);
   assert.equal(ledger.quantity, 10);
   const fresh = new CampaignStore(x.file);
   try {
     const w = fresh.activate(x.cam.id),
       rest = fresh.treasure(w.token, id).items[0];
     assert.equal(rest.quantity - rest.allocated, 11);
-    assert.deepEqual(rest.reference, reference);
+    assert.deepEqual(rest.reference, boundReference);
     assert.equal(rest.currentDefinition.unitCopper, '100');
-    assert.deepEqual(fresh.ledgerItem(w.token, ledger.id).reference, reference);
+    assert.deepEqual(fresh.ledgerItem(w.token, ledger.id).reference, boundReference);
   } finally {
     fresh.close();
   }

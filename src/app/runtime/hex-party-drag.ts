@@ -1,4 +1,5 @@
-import type { Hex } from './world-contracts';
+import type { Hex } from './world-cell-contracts';
+import { ownedEventTarget } from '../shared/owned-event-target';
 type Target = { hex: Hex; x: number; y: number };
 /** A transient token gesture. Only the adopter may issue a placement command. */
 export function installHexPartyDrag(
@@ -11,6 +12,8 @@ export function installHexPartyDrag(
     status: (text: string, error?: boolean) => void;
   },
 ) {
+  const cleanups: (() => void)[] = [];
+  const events = ownedEventTarget(root, cleanups);
   let drag: {
       id: number;
       key: string;
@@ -42,7 +45,7 @@ export function installHexPartyDrag(
     }
     return !!drag;
   };
-  root.addEventListener(
+  events.addEventListener(
     'pointerdown',
     (e) => {
       suppress = false;
@@ -78,7 +81,7 @@ export function installHexPartyDrag(
     },
     true,
   );
-  root.addEventListener(
+  events.addEventListener(
     'pointermove',
     (e) => {
       if (!drag || e.pointerId !== drag.id) return;
@@ -104,7 +107,7 @@ export function installHexPartyDrag(
     },
     true,
   );
-  root.addEventListener(
+  events.addEventListener(
     'pointerup',
     (e) => {
       if (!drag || e.pointerId !== drag.id) return;
@@ -135,12 +138,12 @@ export function installHexPartyDrag(
     true,
   );
   for (const name of ['pointercancel', 'lostpointercapture'])
-    root.addEventListener(
+    events.addEventListener(
       name,
       () => cancel('Platzierung abgebrochen · Standort unverändert.'),
       true,
     );
-  root.addEventListener(
+  events.addEventListener(
     'keydown',
     (e) => {
       if (e.key === 'Escape' && drag) {
@@ -155,10 +158,11 @@ export function installHexPartyDrag(
     },
     true,
   );
-  root.ownerDocument.defaultView?.addEventListener('blur', () =>
-    cancel('Platzierung abgebrochen · Standort unverändert.'),
-  );
-  root.addEventListener(
+  if (root.ownerDocument.defaultView)
+    ownedEventTarget(root.ownerDocument.defaultView, cleanups).addEventListener('blur', () =>
+      cancel('Platzierung abgebrochen · Standort unverändert.'),
+    );
+  events.addEventListener(
     'click',
     (e) => {
       if (suppress) {
@@ -170,6 +174,10 @@ export function installHexPartyDrag(
     true,
   );
   return {
+    dispose() {
+      cancel();
+      for (const cleanup of cleanups.splice(0)) cleanup();
+    },
     get active() {
       return !!drag;
     },

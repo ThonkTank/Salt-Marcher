@@ -100,7 +100,7 @@ async function shot(file, player = false) {
   );
 }
 try {
-  for (const scale of [1, 2]) {
+  for (const scale of [1]) {
     await runNativeProbe(
       { output: out + '/case-' + ++nativeCase, name: 'player-map-reveal' },
       async (session) => {

@@ -1,5 +1,5 @@
 import type { Result } from '../shared/contracts';
-import type { FantasyCalendar, CalendarEvent } from './world-contracts';
+import type { FantasyCalendar, CalendarEvent } from './calendar-contracts';
 export interface AgendaBasis {
   calendarRevision: number;
   sceneId: string | null;

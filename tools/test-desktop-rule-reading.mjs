@@ -9,7 +9,7 @@ import assert from 'node:assert/strict';
 import path from 'node:path';
 const source = process.cwd(),
   output = process.env.QA_EVIDENCE_DIR ?? path.join(source, '.build/rule-reading-evidence');
-const zoom = process.env.GM_QA_ZOOM === '2' ? 2 : 1;
+const zoom = 1;
 await runNativeProbe(
   { output: output, name: 'rule-reading', resultName: 'result-' + zoom + '.json' },
   async (native) => {

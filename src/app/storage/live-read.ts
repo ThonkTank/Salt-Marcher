@@ -1,12 +1,8 @@
 import { readLiveMomentDraft } from './live-moment-drafts';
 import { readVisitOutcome } from './visit-outcome-read';
 import { createHash } from 'node:crypto';
-import {
-  checkedCharacterProfile,
-  type Character,
-  type LiveScene,
-  type LiveView,
-} from '../runtime/live-contracts';
+import { checkedCharacterProfile, type LiveView } from '../runtime/live-contracts';
+import { type Character, type LiveScene } from '../runtime/live-scene-contracts';
 import { checkedLocationDocument } from '../../features/location/location-schema';
 import { sceneReadAloud } from './scene-read-aloud';
 export const hash = (text: string) => createHash('sha256').update(text).digest('hex');

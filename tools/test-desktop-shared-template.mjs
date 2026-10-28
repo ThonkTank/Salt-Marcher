@@ -111,7 +111,7 @@ await runNativeProbe(
       await app.evaluate(({ BrowserWindow }) =>
         BrowserWindow.getAllWindows()
           .find((w) => w.webContents.getURL().endsWith('/index.html'))
-          .webContents.setZoomFactor(2),
+          .webContents.setZoomFactor(1),
       );
       await tab('#preparation-tab');
     }

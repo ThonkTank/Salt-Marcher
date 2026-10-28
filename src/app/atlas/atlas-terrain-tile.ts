@@ -1,5 +1,5 @@
 import { atlasWorldTileBounds, type AtlasWorldTile } from './atlas-world-tiles';
-import type { TerrainProjection, TerrainProjectionRequest } from './terrain-projection';
+import type { TerrainProjection, TerrainProjectionRequest } from './terrain-projection-contracts';
 
 export const ATLAS_TERRAIN_TILE_PIXELS = 256;
 export const ATLAS_TERRAIN_TILE_NODES = 65;

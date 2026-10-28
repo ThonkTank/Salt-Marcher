@@ -2,7 +2,7 @@
 
 Status: Current; Strukturbeleg und fachliche Abnahme bleiben getrennt.
 Owner: project
-Last Reviewed: 2026-10-27
+Last Reviewed: 2026-10-28
 Source of Truth: Die benannten Module unter `src/app/storage/` und ihre Importgrenzen.
 
 `CampaignStore` besitzt Verbindung, Aktivierung, Guards, Graphvorschau und
@@ -86,10 +86,13 @@ Sie stellen keine neue vollständige Fach- oder Ownerabnahme dar.
 
 `tools/module-graph.mjs` unterscheidet Wert- und Typkanten.
 `tests/workspace/storage-owner-boundaries.test.mjs` prüft den aktuellen Graphen:
-Die frühere gemeinsame Laufzeitkomponente darf nicht wieder entstehen. Nur die
-separate bestehende Komponente `dungeon-key.ts` / `surfaces.ts` ist hier weiterhin
-zugelassen. Reine Typzyklen werden gesondert durch die bestehende Baseline erfasst.
-Die Baseline wird durch diese Aufteilung nur verkleinert.
+Es sind weder Laufzeit- noch Typzyklen im aktiven Bereich erlaubt. Auch die
+bisherige Ausnahme `dungeon-key.ts` / `surfaces.ts` ist entfernt:
+`surface-geometry-validation.ts` besitzt Geometrieprüfung und die beiden
+SQL-Leseprojektionen für Raum und Volumen, ohne Key-Orchestrierung zu importieren.
+Key-Writes prüfen weiter vor dem bestehenden Apply innerhalb derselben äußeren
+Transaktion; Erfassung, Transformation, Neubindung und Checksummen bleiben bei
+ihren bisherigen Besitzern. Die aktive Baseline ist leer.
 
 `tools/storage-owner-boundaries.mjs` benennt die unteren Besitzer und die
 aufrufenden Commands/Fassaden. Die Repositoryprüfung weist auch indirekte

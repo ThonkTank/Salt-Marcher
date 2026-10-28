@@ -1,13 +1,15 @@
 import type { Point } from '../shared/contracts';
-import type { LandscapeBox, LandscapeRecord } from './atlas-landscape';
-import type { AtlasAction, AtlasRenderView } from './campaign-atlas-contracts';
-import type { HeightStroke } from './terrain-brush';
+import type { LandscapeBox } from './landscape-bounds';
+import type { LandscapeRecord } from './landscape-contracts';
+import type { AtlasAction } from './campaign-atlas-contracts';
+import type { AtlasRenderView } from './campaign-atlas-view-contracts';
+import type { HeightStroke } from './terrain-brush-contracts';
 import type { TerrainLiveAction, TerrainLiveContext } from './terrain-live-stroke';
 export interface LandscapeHost {
   box: () => LandscapeBox;
   planning?: () => void;
   navigation?: (e: PointerEvent) => boolean;
-  visibility?: () => import('./terrain-spatial-model').TerrainView | undefined;
+  visibility?: () => import('./terrain-view-contracts').TerrainView | undefined;
   navigate?: (box: LandscapeBox) => void;
   hit: (
     e: MouseEvent,
@@ -29,7 +31,9 @@ export interface LandscapeHost {
     previewColor: (record: LandscapeRecord) => void;
   } | null;
   lakeLevel?: (point: Point) => number | undefined;
-  previewHeight?: (stroke: HeightStroke | import('./atlas-landscape').LakeStroke) => void;
+  previewHeight?: (
+    stroke: HeightStroke | import('./landscape-action-contracts').LakeStroke,
+  ) => void;
   editingReady?: (radius: number, point?: Point) => boolean;
   terrainGesture: (active: boolean) => void | Promise<void>;
   writeTerrain: (

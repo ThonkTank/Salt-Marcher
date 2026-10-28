@@ -1,4 +1,4 @@
-import type { LandscapeRecord } from './atlas-landscape';
+import type { LandscapeRecord } from './landscape-contracts';
 
 export const PROMINENCE_LIMITS = [2, 12, 100, 1000, 10000, Infinity] as const;
 export const PROMINENCE_NAMES = [

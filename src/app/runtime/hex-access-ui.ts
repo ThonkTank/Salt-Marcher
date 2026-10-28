@@ -1,4 +1,3 @@
-/** Transient GM declarations, scoped to the displayed map, Scene and accepted journey. */
 export class HexAccessChoices {
   private owner = '';
   private chosen = new Set<string>();
@@ -10,6 +9,7 @@ export class HexAccessChoices {
     return [...this.chosen].sort();
   }
   render(owner: string, names: string[], initial: string[] = []) {
+    const document = this.root.ownerDocument;
     if (owner !== this.owner) {
       this.owner = owner;
       this.chosen = new Set(initial);

@@ -11,12 +11,11 @@ import {
   advanceInstant,
   checkedCharacterProfile,
   validateLiveCommand,
-  type Character,
   type LiveAck,
   type LiveCommand,
-  type LiveScene,
   type LiveStatus,
 } from '../runtime/live-contracts';
+import { type Character, type LiveScene } from '../runtime/live-scene-contracts';
 import { checkedLocationDocument } from '../../features/location/location-schema';
 import { manualPlan } from '../../features/planner/manual-planner';
 import { captureVisitDetails, writeSceneReadAloud } from './preparation-write';

@@ -45,7 +45,7 @@ import {
   type CommitResolution,
 } from '../shared/commit-confirmation';
 import type { WorkspaceGeometry, Result } from '../shared/contracts';
-import type { LiveScene } from './live-contracts';
+import type { LiveScene } from './live-scene-contracts';
 import {
   hasCombatCondition,
   setCombatCondition,
@@ -55,16 +55,16 @@ import {
   type CombatAction,
   type CombatView,
   type CombatCommand,
-  type Combatant,
-  type CombatState,
 } from './combat-contracts';
+import { type Combatant, type CombatState } from './combat-state-contracts';
 import { prepareFinish, finishRewards, refreshProgress, onProgressChanged } from './progression-ui';
 import { renderCreatureDetail } from '../catalog/creature-detail-ui';
 import type { EncounterPlan } from '../catalog/encounter-contracts';
 import type { PreparedGroup } from '../campaign/session-contracts';
 import { rollSceneCheck, rollSceneFormula } from '../catalog/rule-reference-ui';
 import type { SceneCheck } from './scene-check-contracts';
-import { deathSaveControls, type DeathSaveResult } from './progression';
+import { deathSaveControls } from './progression';
+import { type DeathSaveResult } from './character-progress-contracts';
 import {
   isLegendaryAction,
   creatureActionForRolls,

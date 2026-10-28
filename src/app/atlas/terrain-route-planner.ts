@@ -1,14 +1,9 @@
 import type { Point } from '../shared/contracts';
-import { type LandscapeRecord } from './atlas-landscape';
+import { type LandscapeRecord } from './landscape-contracts';
 import { contains } from './landscape-geometry';
 import { TerrainSampler, decodeHeights, heightRecord } from './terrain-height';
-import {
-  nearestRoute,
-  routeRiverFade,
-  validateRoute,
-  type RouteNode,
-  type RouteStructure,
-} from './terrain-route';
+import { nearestRoute, routeRiverFade, validateRoute } from './terrain-route';
+import { type RouteNode, type RouteStructure } from './terrain-route-contracts';
 import { routeSegmentRange } from './route-segment-range';
 import { heightInfluenceBounds } from './terrain-interpolation';
 

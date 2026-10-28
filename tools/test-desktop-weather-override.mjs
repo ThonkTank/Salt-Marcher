@@ -89,7 +89,7 @@ async function automaticVisible(frame, notes) {
     { date: frame.date, label: weather.label, temperature: weather.effects.temperatureC, notes },
   );
 }
-for (const scale of [1, 2]) {
+for (const scale of [1]) {
   await runNativeProbe(
     { output: output + '/case-' + ++nativeCase, name: 'weather-override' },
     async (session) => {

@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import path from 'node:path';
 if (process.argv.length > 2) throw Error('This probe checks the current application contract.');
 const source = process.cwd(),
-  zoom = Number(process.env.GM_QA_ZOOM ?? 1),
+  zoom = 1,
   output = process.env.QA_EVIDENCE_DIR ?? path.join(source, '.build/autonomy-evidence');
 const require = createRequire(source + '/package.json'),
   Database = require('better-sqlite3');

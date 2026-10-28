@@ -1,7 +1,7 @@
 import { releaseAtlasUnits, atlasFieldValue, setAtlasFieldValue } from './atlas-units';
 import type { Point } from '../shared/contracts';
 import type { TerrainProfile } from './terrain-profile';
-import type { AtlasEntrance } from './atlas-travel-contracts';
+import type { AtlasEntrance } from './atlas-journey-contracts';
 
 /** Bounded, read-only measurements. Never adds a brush or changes the current author tool. */
 export class TerrainAnalysisUI {

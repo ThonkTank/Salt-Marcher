@@ -11,7 +11,7 @@ import type { EncounterPlan } from '../catalog/encounter-contracts';
 import type { Result, WorkspaceGeometry } from '../shared/contracts';
 import type { DeskRef } from '../shared/desk-reference';
 import { EditorSession } from '../shared/editor-session';
-import type { LiveScene } from './live-contracts';
+import type { LiveScene } from './live-scene-contracts';
 import { flushNarrative, showNarrative } from './narrative-ui';
 import type {
   DeskContent,

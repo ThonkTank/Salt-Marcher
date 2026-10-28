@@ -4,7 +4,7 @@ import { randomUUID } from 'node:crypto';
 import assert from 'node:assert/strict';
 const root = process.cwd(),
   require = createRequire(root + '/package.json'),
-  zoom = Number(process.env.GM_QA_ZOOM ?? 1),
+  zoom = 1,
   output = process.env.QA_EVIDENCE_DIR ?? root + '/.build/restock-name-evidence';
 const native = await createNativeSession({ root, output, name: 'gm-restock-name' });
 require('esbuild').buildSync({

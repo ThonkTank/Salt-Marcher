@@ -1,29 +1,12 @@
+import { type LandMode, type LandMask, type MaskStroke } from './land-mask-contracts';
 import type { Point } from '../shared/contracts';
-import { type LandscapeBox, type LandscapeRecord } from './atlas-landscape';
+import { type LandscapeBox } from './landscape-bounds';
+import { type LandscapeRecord } from './landscape-contracts';
 import { bounds } from './landscape-geometry';
 
 export const MASK_EDGE = 256,
   MASK_MAX = 65535,
   MASK_SEA_LEVEL = 32768;
-export type LandMode = 'land' | 'land-erase' | 'raise' | 'lower';
-export interface MaskSample extends Point {
-  t: number;
-}
-/** Lossless little-endian (run length, uint16 value) pairs. World-aligned, half-open tiles. */
-export interface LandMask {
-  version: 1;
-  x: number;
-  y: number;
-  pixel: number;
-  data: string;
-}
-export interface MaskStroke {
-  mode: LandMode;
-  radius: number;
-  roughness: number;
-  seed: number;
-  samples: MaskSample[];
-}
 export const isLandMode = (mode: string): mode is LandMode =>
   ['land', 'land-erase', 'raise', 'lower'].includes(mode);
 const decoded = new WeakMap<LandMask, Uint16Array>();

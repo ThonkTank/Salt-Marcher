@@ -1,5 +1,5 @@
-import type { Combatant } from './combat-contracts';
-import type { InitiativeBasis } from './combat-initiative';
+import type { Combatant } from './combat-state-contracts';
+import type { InitiativeBasis } from './combat-initiative-contracts';
 import type { Result } from '../shared/contracts';
 export const fighterDraftFields = [
   'fighter-name',

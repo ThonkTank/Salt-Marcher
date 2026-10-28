@@ -1,4 +1,5 @@
-import { validatePreparation, type Note } from './preparation-contracts';
+import { validatePreparation } from './preparation-contracts';
+import { type Note } from './note-data';
 import type { KeyRoomGuard } from './key-contracts';
 import type { Result } from '../shared/contracts';
 /** With reuseRevision, note identifies the existing target and gmNotes is only the new supplement. */

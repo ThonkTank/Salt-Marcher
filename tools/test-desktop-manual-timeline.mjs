@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 const root = process.cwd(),
   require = createRequire(root + '/package.json'),
   Database = require('better-sqlite3'),
-  zoom = Number(process.env.GM_QA_ZOOM ?? 1);
+  zoom = 1;
 const output = process.env.QA_EVIDENCE_DIR ?? root + '/.build/manual-timeline-evidence';
 const native = await createNativeSession({ root, output, name: 'manual-timeline' }),
   file = native.profile + '/workbench.sqlite';

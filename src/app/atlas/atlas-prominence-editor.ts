@@ -1,4 +1,4 @@
-import type { LandscapeRecord } from './atlas-landscape';
+import type { LandscapeRecord } from './landscape-contracts';
 import { automaticProminence, PROMINENCE_NAMES } from './atlas-prominence';
 
 /** One compact control for ordinary lines, planned routes and inspector drafts. */

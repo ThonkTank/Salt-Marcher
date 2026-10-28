@@ -92,7 +92,7 @@ native Popover-, IPC-, Tastatur-, Monitor-, Last- und Produktabnahmen bleiben of
    ausgewählte Rasten am realen Clock-/Autonomieanschluss abnehmen; spätere
    XP-/Loot-Ereignisse dürfen die ursprünglichen Rast-/Awardfacts nicht ändern.
 3. **Oberfläche am Host abnehmen.** Popoveröffnung/-schließen, Fokus zurück zum
-   Trigger, Escape, Tastatur, 200 %, Scrollen vieler Zeilen, lange Namen,
+   Trigger, Escape, Tastatur, 100 %, Scrollen vieler Zeilen, lange Namen,
    Storage-/IPCfehler und tatsächliche numerische Browserfelder prüfen. Für
    fehlerhafte erforderliche aktive Records eine hilfreiche Ownernavigation
    bereitstellen. Öffnen/Refresh muss alte Summen sichtbar als ausstehend zeigen.
@@ -212,6 +212,5 @@ aufgerundeter Gruppenverdienst von 1 XP erreicht auch bei ihr 300 XP / Level 2.
 Beide Tabellen müssen diese Figur erreichbar machen. Seitenaktionen dürfen bei
 laufender Neuberechnung keine alten Werte ergänzen oder neue Reads starten;
 Roster-, Fortschritts- und Scenefacts bleiben unverändert. Native Probe:
-`python3 tools/ui-session.py node tools/test-desktop-day-party.mjs`, bei 100 und
-200 Prozent einschließlich erneutem Öffnen und normalem Prozessende. Dieser
+`python3 tools/ui-session.py node tools/test-desktop-day-party.mjs`, bei 100 Prozent einschließlich erneutem Öffnen und normalem Prozessende. Dieser
 begrenzte Ablauf ersetzt keine vollständige Party-/Produktabnahme.

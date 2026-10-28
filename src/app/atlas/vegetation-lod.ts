@@ -1,4 +1,4 @@
-import type { VegetationInstance, VegetationSpec } from './vegetation';
+import type { VegetationInstance, VegetationSpec } from './vegetation-contracts';
 import { forestSurfaceWeight } from './atlas-cartographic-style';
 
 export function vegetationRandom(seed: number, x: number, y: number, salt = 0) {

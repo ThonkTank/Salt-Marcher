@@ -1,5 +1,5 @@
 import { lakeBrushLevel } from './terrain-lake-brush';
-import type { LakeStroke } from './atlas-landscape';
+import type { LakeStroke } from './landscape-action-contracts';
 import { AtlasTerrainEditingSource } from './atlas-terrain-editing-source';
 import { heightBrushResolution } from './terrain-brush';
 import {
@@ -16,7 +16,8 @@ import type { AtlasDeckVegetation } from './atlas-deck-vegetation';
 import { lengthLabel } from './atlas-units';
 import { atlasSurfaceRequestKey } from './atlas-surface-request-key';
 import { reuseAtlasSurfaceTile } from './atlas-surface-reuse';
-import { terrainObjectSources, type TerrainObject } from './terrain-objects';
+import { terrainObjectSources } from './terrain-objects';
+import { type TerrainObject } from './terrain-object-contracts';
 import { AtlasObjectGeometry } from './atlas-object-geometry';
 import { atlasWorkplaneHeight } from './atlas-workplane';
 import type { AtlasReadRequest } from './atlas-read-request';
@@ -24,8 +25,9 @@ import { terrainTraceMeasure } from './terrain-timing';
 import type { AtlasPresentationHost } from './atlas-presentation-host';
 import type { AtlasPresentation } from './atlas-presentation';
 import type { AtlasCanvasScene } from './atlas-canvas-scene';
-import type { LandscapeBox, LandscapeRecord } from './atlas-landscape';
-import type { AtlasRenderView } from './campaign-atlas-contracts';
+import type { LandscapeBox } from './landscape-bounds';
+import type { LandscapeRecord } from './landscape-contracts';
+import type { AtlasRenderView } from './campaign-atlas-view-contracts';
 import type { Point } from '../shared/contracts';
 import type { AtlasDeckSurface } from './atlas-deck-surface';
 import type { AtlasDeckDrawing } from './atlas-deck-drawing';
@@ -37,9 +39,10 @@ import {
 import { atlasTerrainTileModel, atlasTerrainRayIntersects } from './atlas-terrain-tile-model';
 import { AtlasSurfaceDraft } from './atlas-surface-draft';
 import { DEFAULT_TERRAIN_STYLE, type TerrainStyle } from './terrain-relief';
-import { gridHeight, type TerrainView } from './terrain-spatial-model';
+import { gridHeight } from './terrain-spatial-model';
+import { type TerrainView } from './terrain-view-contracts';
 import { atlasTerrainRay } from './atlas-terrain-ray';
-import type { HeightStroke } from './terrain-brush';
+import type { HeightStroke } from './terrain-brush-contracts';
 import type { AtlasMetricFrame } from './atlas-metric-camera';
 
 type Host = AtlasPresentationHost;
@@ -65,7 +68,7 @@ export class AtlasRasterPresentation implements AtlasPresentation {
   private editing = new AtlasTerrainEditingSource();
   private editingRead: { token: string; control: AtlasReadRequest } | null = null;
   private pendingStroke: HeightStroke | LakeStroke | null = null;
-  private draftSource: import('./terrain-spatial-model').TerrainEditingSource | null = null;
+  private draftSource: import('./terrain-grid-contracts').TerrainEditingSource | null = null;
   private draft: AtlasSurfaceDraft | null = null;
   private dirty = false;
   private draftWasDirty = false;

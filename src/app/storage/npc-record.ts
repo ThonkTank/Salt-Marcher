@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
-import type { NpcRecord, NpcRole, NpcView, NpcDraft } from '../campaign/npc-contracts';
+import type { NpcRecord, NpcRole, NpcView } from '../campaign/npc-data-contracts';
+import type { NpcDraft } from '../campaign/npc-contracts';
 import {
   checkedDailyPlan,
   checkedDailyOverrides,

@@ -1,6 +1,6 @@
 import { PNG } from 'pngjs';
 import type { Point, Polygon } from '../shared/contracts';
-import type { AtlasRegionQuery } from '../atlas/atlas-region-contracts';
+import type { AtlasRegionQuery } from '../atlas/atlas-region-view-contracts';
 import { LandscapeRasterizer } from '../atlas/landscape-raster';
 import { mapFootprintVisible, mapLineVisible, mapLineWidth } from '../atlas/atlas-scale-policy';
 import { territoryBounds } from '../atlas/atlas-territories';

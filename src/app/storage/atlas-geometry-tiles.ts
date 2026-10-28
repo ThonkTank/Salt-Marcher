@@ -12,7 +12,7 @@ import {
 import { buildAtlasGeometryMesh } from '../atlas/atlas-geometry-mesh';
 import type { AtlasSceneView } from '../atlas/atlas-scene-geometry';
 import type { AtlasDeckSceneModel } from '../atlas/atlas-deck-scene-model';
-import type { AtlasRegionSource } from '../atlas/atlas-region-contracts';
+import type { AtlasRegionSource } from '../atlas/atlas-region-view-contracts';
 import type { Point } from '../shared/contracts';
 import type { AtlasRegionReader } from './atlas-region';
 import { AtlasCacheScope } from './atlas-cache-scope';

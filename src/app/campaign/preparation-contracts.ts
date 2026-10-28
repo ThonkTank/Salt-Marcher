@@ -1,24 +1,15 @@
+import { type Note, type NoteRow } from './note-data';
 import {
   checkedNoteMerge,
   type NoteMergeChange,
   type NoteMergePreview,
 } from './note-merge-contracts';
 import { manualPlan, type ManualPlan } from '../../features/planner/manual-planner';
-import { worldNoteDocument, type WorldNoteV1 } from '../../features/world/world-notes';
+import { worldNoteDocument } from '../../features/world/world-notes';
 import {
   checkedLocationDocument,
   type LocationDocument,
 } from '../../features/location/location-schema';
-export type Note = WorldNoteV1;
-export interface NoteSearchPreview {
-  owner: string;
-  parts: { text: string; matched: boolean }[];
-}
-export interface NoteRow {
-  note: Note;
-  trashed: boolean;
-  searchPreview?: NoteSearchPreview;
-}
 export interface LocationRow {
   document: LocationDocument;
   revision: number;

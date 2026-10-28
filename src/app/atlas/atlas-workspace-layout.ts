@@ -701,7 +701,10 @@ export class AtlasWorkspaceLayout {
     this.openContext('selection', 'Eigenschaften', [this.selection]);
   }
   /** Selection controls follow the selected record, not the first tool sharing "select". */
-  landscapeSelectionChanged(id: string, kind: import('./atlas-landscape').LandscapeRecord['kind']) {
+  landscapeSelectionChanged(
+    id: string,
+    kind: import('./landscape-contracts').LandscapeRecord['kind'],
+  ) {
     this.groupMemory.set('terrain', kind === 'vegetation' ? 'vegetation' : 'objects');
     this.renderGroups();
     this.sync();

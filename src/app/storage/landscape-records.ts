@@ -1,6 +1,7 @@
 import { checkedLandscapeValue } from './landscape-read';
-import { type LandscapeBox, type LandscapeRecord } from '../atlas/atlas-landscape';
-import { REGION_REPLY_BYTES } from '../atlas/atlas-region-contracts';
+import { type LandscapeBox } from '../atlas/landscape-bounds';
+import { type LandscapeRecord } from '../atlas/landscape-contracts';
+import { REGION_REPLY_BYTES } from '../atlas/atlas-region-limits';
 import { bounds } from '../atlas/landscape-geometry';
 import { applyHeightArea } from '../atlas/terrain-height';
 import { readRouteTerrain } from './terrain-route';

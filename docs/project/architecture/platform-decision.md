@@ -2,12 +2,14 @@
 
 Status: Current; offene Ziele sind als solche beschrieben.
 Owner: project
-Last Reviewed: 2026-10-24 (Struktur und Quellen; Fachabnahme separat)
+Last Reviewed: 2026-10-28 (Entscheidung, implementierter Host und historische Cutoverfolge; Fachabnahme separat)
 Source of Truth: Dieses Dokument besitzt das benannte Thema; Code belegt den Iststand, das Abnahmeregister den Prüfstand.
 
-Status: **technische Richtung entschieden am 11.10.2026; Implementation und
-Produktqualifikation offen.** [ARCHITECTURE](overview.md) besitzt die
-Gesamtgrundlage; hier stehen Auswahl und Cutover.
+**Technische Richtung entschieden am 11.10.2026.** Der Electron-/TypeScript-/
+SQLitepfad ist implementiert; [Architektur](overview.md) und [Roadmap](../delivery/roadmap.md)
+besitzen aktuelle Codeanschlüsse und Restlieferungen. Hier stehen Auswahlgründe
+und die historischen Übergangskriterien. Die vollständige Plattformqualifikation
+und Produktabnahme bleiben eigene Nachweise.
 
 ## Entscheidungskontext
 
@@ -39,8 +41,10 @@ TypeScript-Fach-/Applicationkern und einem lokalen SQLite-Schreibdienst.
 Die UI wird aus den Nutzerwegen entwickelt; es gibt keine Pflicht, vorhandene
 imperative Editorobjekte oder ihre Dateischnittstellen zu erhalten.
 Geeignete Pixi-/Geometrie-/Regel-/Quellenbausteine werden nach Verhalten,
-Abhängigkeiten und Gesamtkosten einzeln geprüft. Obsidian bleibt bis Cutover
-die bisherige nutzbare Installation, kein dauerhaft mitzupflegender zweiter Host.
+Abhängigkeiten und Gesamtkosten einzeln geprüft. Der Obsidian-Adapter ist
+historische Referenz. Die Übernahme in den heutigen Produktpfad und die
+beibehaltene CampaignWorkbench-Datenlinie besitzt der [Cutoververtrag](../delivery/workbench-migration.md);
+die Migration alter SaltMarcher-Nutzerdaten ist dort ausdrücklich separat.
 
 Ein einzelner lokaler GM benötigt keinen verteilten Sync, Backendserver oder
 Mehrbenutzerkonfliktalgorithmus. Passive Anzeige bleibt read-only. Die
@@ -62,10 +66,12 @@ durch diese Dokumentationsentscheidung als PASS ersetzt.
 | P04 | Geschlossener unabhängiger Campaigntransfer mit Runtime/Trash/Audio/shared Definitions/opaque Payload und vollständigem Remap |
 | C01 | Gemeinsame Prozess-/Storegrenze, Crossfeatureablauf und Last-/Fehler-/OS-/A11yqualifikation |
 
-## Migrationsfolge nach Ratifikation
+## Historische Migrationsfolge vom 11.10.2026
 
-Die technische Richtung benötigt keine erneute allgemeine Architekturfreigabe;
-Ratifikation des **Produktcutovers** erfordert belegte Umsetzung:
+Die folgende Folge bewahrt die ursprünglichen Übergangskriterien aus
+`116c16af48b6a073216685c8d8e2cc74fada82c3`. Sie ist keine zweite heutige
+Arbeitsqueue. Heutiger Produktpfad und noch fehlende Qualifikation stehen im
+[Cutoververtrag](../delivery/workbench-migration.md) und der [Roadmap](../delivery/roadmap.md):
 
 1. Aktuelle tatsächlich genutzte Formate/Links und Inhalte inventarisieren;
    bytegleiche Originalsicherung und importierbare Goldenfixtures.

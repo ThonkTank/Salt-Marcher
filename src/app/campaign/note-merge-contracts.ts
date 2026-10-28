@@ -1,4 +1,4 @@
-import type { Note } from './preparation-contracts';
+import type { Note } from './note-data';
 
 export interface NoteMergeChange {
   kind: 'note-merge';

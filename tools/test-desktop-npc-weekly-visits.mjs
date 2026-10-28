@@ -73,7 +73,7 @@ async function visits(zoom, day, stage, id) {
   await native.capture(page, stage + '-location-' + zoom, '#location-activity-rows');
 }
 try {
-  for (const zoom of [1, 2]) {
+  for (const zoom of [1]) {
     const store = new CampaignStore(native.profile + '/workbench.sqlite'),
       campaign = store.create('Wochenbesuch ' + zoom),
       w = store.activate(campaign.id);

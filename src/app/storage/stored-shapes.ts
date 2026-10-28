@@ -2,7 +2,6 @@
  * Values are inspected in place: text, extra fields and ordering are never normalized. */
 import shapes from './stored-shapes.json';
 import type * as Model from './stored-record-types';
-
 export interface StoredShapes {
   planned_visit: Model.planned_visit;
   location: Model.location;
@@ -21,6 +20,7 @@ export interface StoredShapes {
   generation_result: Extract<Model.generation_receipt, { registry: unknown }>;
   loot_roll: import('../campaign/generation-contracts').LootRoll;
   encounter_plan: Model.encounter_plan;
+  encounter_snapshot: import('../catalog/encounter-contracts').EncounterPlan;
   prepared_group: Model.prepared_group;
   character_profile: Model.character_profile;
   character_progress: Model.character_progress;
@@ -167,6 +167,7 @@ export const campaign_catalog_receipt = (value: unknown) =>
 export const generation_result = (value: unknown) => checkedShape('generation_result', value);
 export const loot_roll = (value: unknown) => checkedShape('loot_roll', value);
 export const encounter_plan = (value: unknown) => checkedShape('encounter_plan', value);
+export const encounter_snapshot = (value: unknown) => checkedShape('encounter_snapshot', value);
 
 export const character_profile = (value: unknown) => checkedShape('character_profile', value);
 

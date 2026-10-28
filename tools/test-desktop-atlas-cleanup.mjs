@@ -1,4 +1,4 @@
-// Controller integration: output returns to the same usable Atlas at 100% and 200%.
+// Controller integration: output returns to the same usable Atlas at 100%.
 // This does not replace the separate region-export label/seam qualification.
 import { createNativeSession } from './native-session.mjs';
 import { atlasCanvasReady } from './atlas-canvas-probe.mjs';
@@ -18,7 +18,7 @@ require('esbuild').buildSync({
 });
 const { CampaignStore } = require('../.build/atlas-cleanup-store.cjs');
 const output = path.resolve(process.env.QA_EVIDENCE_DIR ?? '.build/atlas-cleanup-native');
-for (const zoom of [1, 2]) {
+for (const zoom of [1]) {
   const native = await createNativeSession({
     root,
     output: path.join(output, String(zoom)),

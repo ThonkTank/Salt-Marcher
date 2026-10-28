@@ -1,10 +1,8 @@
 import { createWorkspaceEditors } from './workspace-editors';
-import { editorSession as atlasEditorSession } from '../atlas/campaign-atlas-author';
 import { EditorSession } from '../shared/editor-session';
 import { initUpdateUI } from './update-ui';
 import { initNumberInputScroll } from '../shared/number-input-scroll';
 import { workspaceGeometryOnly as geometryOnly } from '../atlas/atlas-render-view';
-import { setLiveAtlasSurface } from '../runtime/live-hex-surface';
 import { CampaignAtlasWorkbench } from '../atlas/campaign-atlas-ui';
 import {
   hideCampaignScreen,
@@ -60,20 +58,12 @@ import { initCommitControls } from '../shared/commit-confirmation';
 import * as commits from '../shared/commit-confirmation';
 import { initVolume } from '../atlas/volume-ui';
 import { DungeonBinder } from '../atlas/dungeon-binder-ui';
-import { initDungeon, openDungeon, selectDungeonRoom } from '../atlas/dungeon-ui';
 import { initDrawing, reloadDrawing } from '../atlas/drawing-ui';
 import { initAutonomy, openAutonomy } from '../runtime/autonomy-ui';
 import { deactivatePlayer, initPlayerUI } from '../runtime/player-ui';
 import { initCity, openCity, prepareCityPersonBinding } from '../atlas/city-ui';
 import { initCampaignActions, initCampaignManager } from '../campaign/campaign-manager-ui';
 import { createMusicEditor } from '../runtime/music-ui';
-import {
-  initWorld,
-  openWorld,
-  openWorldCalendar,
-  setWorldSurface,
-  stopWorldPlayback,
-} from '../runtime/world-ui';
 import { createItemsEditor } from '../catalog/items-ui';
 import { type Result, type WorkspaceGeometry } from '../shared/contracts';
 import { createLive } from '../runtime/live';
@@ -88,6 +78,18 @@ import {
   suspendChronicle,
 } from '../runtime/chronicle-ui';
 import { createRoomEditor } from '../atlas/room-editor-ui';
+import {
+  editorSession as atlasEditorSession,
+  atlasWorldWrite,
+  settleAtlasWorldWrite,
+} from '../atlas/campaign-atlas-author';
+import {
+  initDungeon,
+  openDungeon,
+  selectDungeonRoom,
+  syncDungeonLiveContext,
+} from '../atlas/dungeon-ui';
+import { createWorldEditor } from '../runtime/world-ui';
 export const editorSession = new EditorSession();
 const el = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const api = window.campaign;
@@ -240,7 +242,32 @@ const soundboard = createSoundboard({
   music: musicEditor,
 });
 const { activateSoundboard, initSoundboard } = soundboard;
+const worldEditor = createWorldEditor({
+  roots: ['world', 'live', 'status'].map(el),
+  api,
+  status,
+  before: () => liveEditor.flushLive(),
+  after: async () => {
+    await liveEditor.openLive();
+  },
+  enter: async () => {
+    if (!(await leaveWorkspace())) return;
+    showTab('world');
+    await worldEditor.openWorld();
+  },
+  camp: async (sceneId, kind) => {
+    if (kind === 'wait') await liveEditor.openTimeNavigator(undefined, sceneId);
+    else await liveEditor.openTravelRest(sceneId);
+  },
+  syncScene: syncDungeonLiveContext,
+  write: atlasWorldWrite,
+  settle: settleAtlasWorldWrite,
+  changed: (event) => document.dispatchEvent(new Event(event)),
+  atlasSurface: () => campaignAtlas?.liveSurface() ?? null,
+});
+const { initWorld, openWorld, openWorldCalendar, setWorldSurface, stopWorldPlayback } = worldEditor;
 const liveEditor = createLive({
+  world: worldEditor,
   items: itemsEditor,
   music: musicEditor,
   combat: combatEditor,
@@ -290,19 +317,18 @@ const liveEditor = createLive({
 const {
   addLiveCreature,
   addLiveNpc,
-  flushLive,
   initLive,
   openLive,
   openLiveCharacterLoot,
   openLiveSoundboard,
   openPlannedVisitReview,
   openTimeNavigator,
-  openTravelRest,
   prepareLiveEncounter,
   refreshScenePreparation,
   useLiveReferenceReadAloud,
 } = liveEditor;
 const editors = createWorkspaceEditors({
+  world: worldEditor,
   npcs: npcEditor,
   music: musicEditor,
   items: itemsEditor,
@@ -896,23 +922,9 @@ initCity(
     await locationNotebook.open(id);
   },
 );
-initWorld(
-  status,
-  flushLive,
-  async () => {
-    await openLive();
-  },
-  async () => {
-    if (!(await leaveWorkspace())) return;
-    showTab('world');
-    await openWorld();
-  },
-  async (sceneId, kind) => {
-    if (kind === 'wait') await openTimeNavigator(undefined, sceneId);
-    else await openTravelRest(sceneId);
-  },
-);
+initWorld();
 const campaignAgenda = new CampaignAgenda(
+  worldEditor,
   () => workspace,
   leaveWorkspace,
   status,
@@ -989,6 +1001,7 @@ initSoundboard(
   },
 );
 campaignAtlas = new CampaignAtlasWorkbench({
+  world: worldEditor,
   exit: async () => {
     if (await openCampaignScreen()) showTab('preparation');
   },
@@ -1004,7 +1017,6 @@ campaignAtlas = new CampaignAtlasWorkbench({
   },
   status,
 });
-setLiveAtlasSurface(campaignAtlas.liveSurface());
 for (const id of ['world', 'city', 'dungeon']) el(id + '-tab').hidden = true;
 el('atlas-tab').textContent = 'Atlas';
 function showTab(selected: WorkspaceTab, restored?: number) {

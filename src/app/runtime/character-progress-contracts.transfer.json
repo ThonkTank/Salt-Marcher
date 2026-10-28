@@ -1,0 +1,7 @@
+{
+  "roles": {
+    "Progress.characterId": "local",
+    "Progress.combatStatus.conditions": "text",
+    "Progress.health.conditions": "text"
+  }
+}

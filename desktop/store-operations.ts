@@ -220,6 +220,8 @@ export const storeMethods = [
   'roomDraft',
   'roomReadSource',
   'saveEncounterPlan',
+  'resolveCatalogReference',
+  'catalogReference',
   'sceneChecks',
   'sceneCreationDraft',
   'sceneDesk',

@@ -56,7 +56,7 @@ Gezielte Store-/DOMfälle prüfen die geteilte Oberfläche, unabhängige Mitte,
 Tastaturwegpunkte, inline Start und Geschwindigkeitsübergabe, fehlende Karte und
 mutationsfreien Providerretry. Native Belege umfassen zwei Gruppen auf zwei
 Karten, Fokuswechsel mit offener Auswertung, Löschen, Start/Pause/Fortsetzen/
-Abbruch/Ankunft und Neustart. Kein Ersatz für vollständige200%-/Latenz-/
+Abbruch/Ankunft und Neustart. Kein Ersatz für vollständige100 %-/Latenz-/
 Großroutenqualifikation. Direktes Party-Tokenziehen folgt in 0.143 (unten). Weitere Session-Center-
 Anbieter und die genannten weitergehenden Abnahmen bleiben offen.
 
@@ -97,7 +97,7 @@ Provider-Ausfallfall wählt jetzt ein tatsächlich anderes Cursorhex, damit er
 weiterhin einen wartenden Platzierungsauftrag statt eines wirkungslosen Klicks
 prüft. Native Prüfung umfasst Atlas mit und ohne aktiven Pinsel, Livekarte,
 Tastaturalternative, ungültiges Ziel, Escape, Gruppenwechsel und Neustart.
-Vollständige Plattform-, 200%- und Langroutenqualifikation bleiben offen.
+Vollständige Plattform-, 100 %- und Langroutenqualifikation bleiben offen.
 
 ## Ausdrückliche Passierbarkeit und Reisevoraussetzungen (0.147)
 
@@ -149,7 +149,7 @@ bearbeitbare Ortsmarkerpräsentation bleibt eigenständig. Die DOM-Probe prüft
 Auswahlpriorität, Rückkehr nach Zoom/Reset und unveränderte gespeicherte Werte;
 `test-desktop-travel-target.mjs` prüft echte native Textrechtecke, Label- und
 Nachbarhexklicks neben dem bestehenden Reise-/Neustartpfad. Das ist keine
-Abnahme beliebiger Markerkrümmungen, aller Schriften, großer Karten oder200%.
+Abnahme beliebiger Markerkrümmungen, aller Schriften, großer Karten oder100 %.
 
 ## Reisekontext im gemeinsamen Atlas
 
@@ -175,7 +175,7 @@ Desktoplauf prüft tatsächliche Schaltflächen, gehaltene Antworten, Fehler/Ret
 und Fokuswechsel: Statusklärung verändert keine DBbytes; eine alte Antwort wird
 verworfen, erst ein neuer ausdrücklicher Start/Schritt bewegt die neue Gruppe.
 Normaler Exit und frischer Store bestätigen Fokus, getrennte Uhren und lokalen
-Laufstand. Das ist keine vollständige native Neustart-/Indoor-/200%-Abnahme. Beim ersten Lauf scheiterten sämtliche51
+Laufstand. Das ist keine vollständige native Neustart-/Indoor-/100 %-Abnahme. Beim ersten Lauf scheiterten sämtliche51
 `desktop-travel-target-dom`-Fälle bereits am Anlegen einer zweiten Karte. Das
 Fixture verwendet jetzt die tatsächliche Atlaswurzel samt Revision, den realen
 Atlaswriter für authored Worldbefehle und die DOM-eigenen Eventkonstruktoren.
@@ -224,7 +224,7 @@ Wegpunkte, Auswertung, Start/Pause/Fortsetzung, Ankunft/Abbruch und vollständig
 Neustart. Der ergänzte lokale Schritt prüft dieselbe Position/Uhr nach einer
 Weltreise. Store-, Native-, vollständige CI- und Mainnachweise bleiben getrennte
 Behauptungen. Vollständige Indoor-/Eingangs-/Fokuswechsel-, physische
-200%-/OS-/Großroutenabnahme sowie eine weiter vereinfachte kontextübergreifende
+100 %-/OS-/Großroutenabnahme sowie eine weiter vereinfachte kontextübergreifende
 Konsole bleiben offen; zusätzliche versteckte Runtimestores sind kein Lösungsweg.
 
 ## Übergabe zwischen Innenraum, lokalem Weg und Hexreise

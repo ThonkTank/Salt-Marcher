@@ -10,7 +10,7 @@ import {
   atlasMaterialTileQuery,
   type AtlasMaterialTileRequest,
 } from '../atlas/atlas-material-tile';
-import type { AtlasRegionSource } from '../atlas/atlas-region-contracts';
+import type { AtlasRegionSource } from '../atlas/atlas-region-view-contracts';
 import { readTerrainSettings, type ProjectionStream } from './terrain-color-raster';
 
 /** Same canonical field/base/cover/pigment arithmetic as the reference raster,

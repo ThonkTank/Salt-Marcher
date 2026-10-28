@@ -1,15 +1,12 @@
+import { type Combatant, type CombatState } from './combat-state-contracts';
 import type { DamageScale, DamageType } from './damage-adjustment';
 import type { CombatDraftAPI } from './combat-draft-contracts';
 import type { Result } from '../shared/contracts';
-import {
-  checkedHealth,
-  type FinishRewards,
-  type CombatReward,
-  type CharacterHealth,
-  type DeathSaveResult,
-} from './progression';
-import type { Creature } from '../../features/catalog/creature-catalog';
-import type { EncounterAssessment, EncounterParty } from '../catalog/encounter-contracts';
+import { checkedHealth } from './progression';
+import { type FinishRewards, type CombatReward } from './reward-contracts';
+import { type CharacterHealth, type DeathSaveResult } from './character-progress-contracts';
+
+import type { EncounterAssessment } from '../catalog/encounter-contracts';
 export const combatConditions = [
   ['Blind', 'Blinded'],
   ['Bezaubert', 'Charmed'],
@@ -40,76 +37,6 @@ export function setCombatCondition(text: string, label: string, source: string, 
     parts = conditionParts(text).filter((part) => !aliases.has(part.toLocaleLowerCase()));
   if (active) parts.push(label);
   return parts.join(', ');
-}
-export interface Combatant {
-  role?: import('../campaign/npc-contracts').NpcRole;
-  id: string;
-  characterId: string | null;
-  groupId: string;
-  groupName?: string;
-  name: string;
-  initiative: number;
-  initiativeBonus: number;
-  armorClass: number | null;
-  hp: number;
-  maxHp: number;
-  tempHp: number;
-  conditions: string;
-  concentrating: boolean;
-  death?: CharacterHealth['death'];
-  deathLast?: { result: DeathSaveResult; roll: number | null };
-  concentrationChecks?: { damage: number; dc: number }[];
-  concentrationLast?: {
-    damage: number;
-    dc: number;
-    roll: number | null;
-    modifier: number;
-    total: number | null;
-    success: boolean;
-  };
-  legendaryActions?: {
-    remaining: number;
-    maximum: number;
-    lastResetRound: number;
-    lastUsedRound?: number;
-    lastUsedTurnId?: string;
-    lastUsedActionId?: string;
-    hitResolved?: boolean;
-  };
-  timedEffects?: { id: string; name: string; remaining: number; tick: 'start' | 'end' }[];
-  hiddenFromPlayers?: boolean;
-  /** Missing means a legacy known value; false denotes an uninitialized PC. */
-  healthKnown?: boolean;
-  xp?: number;
-  countForMultiplier?: boolean;
-  sourceId?: string;
-  sourceOrdinal?: number;
-  worldActorId?: string;
-  worldActorRevision?: number;
-  sourceEntryId?: string;
-  partitionKind?: 'mob' | 'individual';
-}
-export interface CombatState {
-  worldLosses?: { actorId: string; name: string; recordRevision: number }[];
-  id: string;
-  sceneId: string;
-  revision: number;
-  title: string;
-  phase: 'preparing' | 'running' | 'finished' | 'retired';
-  round: number;
-  turnId: string | null;
-  sharedNotice?: string;
-  sceneGroups?: { id: string; revision: number; name: string }[];
-  participants: Combatant[];
-  notes: string;
-  outcome: string;
-  rewards?: CombatReward;
-  sources?: Creature[];
-  sourceSerials?: Record<string, number>;
-  assessment?: EncounterAssessment;
-  partyBasis?: EncounterParty[];
-  generatorPreset?: { id: string; revision: number; hash: string; mobThreshold: number };
-  planOrigin?: { id: string; revision: number; name: string };
 }
 export interface CombatLossBasis {
   participantId: string;

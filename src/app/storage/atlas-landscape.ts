@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import polygonClipping from 'polygon-clipping';
-import { type LandscapeAction, type LandscapeRecord } from '../atlas/atlas-landscape';
+import { type LandscapeAction } from '../atlas/landscape-action-contracts';
+import { type LandscapeRecord } from '../atlas/landscape-contracts';
 import { validateProminence } from '../atlas/atlas-prominence';
 import { bounds } from '../atlas/landscape-geometry';
 import { decodeHeights, resetHeightArea, settingsRecord } from '../atlas/terrain-height';
@@ -47,7 +48,7 @@ export function executeLandscape(
   cam: string,
   a: LandscapeAction,
   liveColorRevision: number | null = null,
-  visibilityGrid?: import('../atlas/terrain-spatial-model').TerrainGrid,
+  visibilityGrid?: import('../atlas/terrain-grid-contracts').TerrainGrid,
   prepared?: import('./terrain-scale').PreparedTerrainStroke,
 ) {
   if (a.kind === 'landscape-prominence') {

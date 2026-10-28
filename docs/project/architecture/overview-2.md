@@ -2,7 +2,7 @@
 
 Status: Current; offene Ziele sind als solche beschrieben.
 Owner: project
-Last Reviewed: 2026-10-24 (Struktur und Quellen; Fachabnahme separat)
+Last Reviewed: 2026-10-28 (Darstellungsbesitzer und Lieferverweise; Fachabnahme separat)
 Source of Truth: Dieses Dokument besitzt das benannte Thema; Code belegt den Iststand, das Abnahmeregister den Prüfstand.
 
 ## Statisches Workspace-Markup ändern
@@ -46,7 +46,7 @@ Fehlerwiederaufnahme und die Trennung von GM-Ausgabe und öffentlicher Freigabe.
 
 Native DOM-Controls tragen Text, Suche, Menüs/Dialoge und Inspector. Der Canvas
 hat eine passende zugängliche Objektliste mit denselben Aktionen; Tastatur,
-Fokusrückgabe, 200 %, Kontrast und nicht allein farbliche Signale werden mit
+Fokusrückgabe, 100 %, Kontrast und nicht allein farbliche Signale werden mit
 jedem Feature gebaut. Lokalisierbare UIlabels und Autorenwortlaut sind getrennt.
 Tutorials sind versionierte Capabilityinhalte mit Skip/Dismiss, keine gekoppelte
 Geschäftslogik. Such-/Referenzgraphindizes sind rebuildbare Projektionen aller notizfähigen Records. Gewöhnliche Textänderungen aktualisieren den Volltextindex in derselben DBtransaktion; die nächste Suche sieht den neuen Text. Abgeleitete Reference-/Viewcaches werden revisioniert invalidiert. Ein ausgefallener Index darf rebuildbar sein, aber keine stale Ergebnisse als aktuell ausgeben. Volltextindex/SQLpaging zuerst;
@@ -123,10 +123,18 @@ Linux/Windows/macOS erhalten reproduzierbare selbständige Pakete und Smoke-
 Nachweise. Updates prüfen Herkunft, sichern/migrieren eine Kopie der Daten und
 aktivieren die neue Version erst nach Prüfung; Rollback verwendet einen
 kompatiblen gesicherten Store, keinen rückwärts beschriebenen neuen Schemafund.
-Packagingbibliothek und OSspezifische Signierung werden beim ersten lieferbaren
-Shellpaket konkret festgelegt; OSnachweise dürfen nicht ans Ende verschoben werden.
+Der vorhandene Linux-Paket-/Signierungsanschluss und seine direkten Belege
+stehen im [Update- und Liefervertrag](../delivery/github-updates.md). Windows-/
+macOS- und vollständige OS-/A11yqualifikation bleiben eigene Lieferungen; ein
+Linuxbeleg schließt sie nicht.
 
 ## Übergang und Lieferung
+
+Der aktuelle technische Übergang und die nächsten Lieferanschlüsse stehen in
+der [Roadmap](../delivery/roadmap.md#technischer-übergang); der Produktcutover
+und die Datenlinie im [Cutoververtrag](../delivery/workbench-migration.md).
+Die folgende Folge ist die historische Begründung vom 11.10.2026 auf
+`116c16af48b6a073216685c8d8e2cc74fada82c3`, keine erneute Shellbau-Aufgabe:
 
 1. **Work – Daten und erster Nutzerweg:** Bekannte aktuelle Nutzerformate und
    Verlinkungen inventarisieren; Originale sichern und rein lesende Adapter
@@ -163,9 +171,10 @@ Shellpaket konkret festgelegt; OSnachweise dürfen nicht ans Ende verschoben wer
 | TN-31–32 | Lokalisierbare native Controls, Objektliste, Fokus und A11y je vertikalem Pfad; Feature-/GM-Abnahmen |
 | TN-33–38 | D&D-2014-Goldens, explizite Initialize/XP-Hinweise, umfassende Notizsuche, genaue Tabellengewichte und Tutorialversionen; CE/Scene/SMR-11 |
 
-Konkrete SQLspalten, Payloadcodecversionen, Chunkkanten, Navheuristik, Wetter-
-parameter, Rendereroptimierung und Signierungswerkzeuge werden beim jeweiligen
-ersten Nutzerweg entschieden und gemessen. Besitz, Einheit, atomare Wirkung,
+Neue SQL-/Codec-, Chunk-, Navigations-, Wetter- und Rendererentscheidungen
+werden beim betroffenen Nutzerweg entschieden und gemessen. Bereits
+implementierte Verträge bleiben bei ihren verlinkten Fachbesitzern; der
+Signierungsanschluss steht im [Liefervertrag](../delivery/github-updates.md). Besitz, Einheit, atomare Wirkung,
 Identität, Rechte und Remapsemantik sind bereits hier entschieden; diese
 Details sind keine Ausrede für einen offenen Grundvertrag.
 
@@ -228,7 +237,7 @@ außerhalb des Desktop-Buildordners sichern. Nach dem Build vergleicht
 diese Datei im echten Electronfenster mit der neuen Ausgabe. Die
 [Vergleichsprobe](../../../tools/test-desktop-style-ownership.mjs) verwendet
 synthetische Kampagnendaten und prüft berechnete Styles sowie Geometrie der
-vorhandenen Oberflächen bei breitem und schmalem Fenster sowie 200 Prozent Zoom;
+vorhandenen Oberflächen bei breitem und schmalem Fenster sowie 100 % Zoom;
 sie speichert Vorher-/Nachher-Aufnahmen und verlangt normales Prozessende.
 Das ist eine begrenzte Layoutregression, keine vollständige Produkt- oder
 menschliche Bedienabnahme. Fachliche Abläufe behalten ihre eigenen nativen Proben.

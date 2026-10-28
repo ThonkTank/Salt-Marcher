@@ -1,10 +1,12 @@
 import { brushSizeControl } from './atlas-brush-size';
-import type { HeightStroke } from './terrain-brush';
-import { TERRAIN_FORM_SEED, type TerrainForm } from './terrain-form-brush';
+import type { HeightStroke } from './terrain-brush-contracts';
+import { TERRAIN_FORM_SEED } from './terrain-form-brush';
+import { type TerrainForm } from './terrain-brush-contracts';
 import { atlasFieldValue } from './atlas-units';
-import { newLine, lineParts, roadStyles, type LandscapeLine } from './landscape-line';
-import type { BrushMode, LandscapeColor } from './landscape-brush';
-import type { LandscapeRecord } from './atlas-landscape';
+import { newLine, lineParts } from './landscape-line';
+import { roadStyles, type LandscapeLine } from './landscape-line-contracts';
+import type { BrushMode, LandscapeColor } from './landscape-brush-contracts';
+import type { LandscapeRecord } from './landscape-contracts';
 const field = (root: ParentNode, id: string) =>
   root.querySelector<HTMLInputElement | HTMLSelectElement>('#' + id)!;
 const check = (root: ParentNode, id: string) => root.querySelector<HTMLInputElement>('#' + id)!;

@@ -131,7 +131,7 @@ Offizielle Produktreferenzen für die Mindestabnahme:
   Campaign zuweisen → Scene-/Sessiongenerierung konsumieren → frisch öffnen.
   Kopieren/Speichern weist nichts zu; Löschen eines Custompresets führt seine
   Campaigns auf den Systemfallback. Kein Regelversionswähler. Tastatur/Painting,
-  Dirty-Wechsel, 200 %, stale Save mit erhaltenem Draft/Load-or-Copy und unbekannter
+  Dirty-Wechsel, 100 %, stale Save mit erhaltenem Draft/Load-or-Copy und unbekannter
   Commandausgang über Receipt im selben Ergebnis prüfen. Installation besitzt
   Registry, Campaign nur Zuweisung; produktive Schreib-/Recoveryautorität mit
   Campaign/Data ([Campaign-Datenvertrag](../../campaign/contract/archive.md)) bestätigen, keine zweite Campaignregistry.

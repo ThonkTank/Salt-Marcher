@@ -1,7 +1,8 @@
 import { BookingDialog } from '../shared/booking-dialog';
 import { captureView } from '../shared/editor-transition';
 import type { WorkspaceGeometry, Result } from '../shared/contracts';
-import type { Treasure, TreasurePage, ProgressView, ProgressAction } from './progression';
+import type { Treasure } from './treasure-contracts';
+import type { TreasurePage, ProgressView, ProgressAction } from './progression';
 const node = <K extends keyof HTMLElementTagNameMap>(tag: K, text?: string) => {
     const n = document.createElement(tag);
     if (text !== undefined) n.textContent = text;

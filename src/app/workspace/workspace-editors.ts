@@ -15,7 +15,6 @@ import * as drawing from '../atlas/drawing-ui';
 import * as autonomy from '../runtime/autonomy-ui';
 import * as city from '../atlas/city-ui';
 import type { MusicEditor } from '../runtime/music-ui';
-import * as world from '../runtime/world-ui';
 import type { ItemsEditor } from '../catalog/items-ui';
 import * as catalog from '../catalog/catalog-ui';
 import type { LiveEditor } from '../runtime/live';
@@ -28,8 +27,9 @@ import { editorSession as deskSession } from '../runtime/scene-desk-ui';
 import { editorSession as narrativeSession } from '../runtime/narrative-ui';
 import { editorSession as planningSession } from '../campaign/session-ui';
 import { editorSession as generationSession } from '../campaign/generation-ui';
-
+import type { WorldEditor } from '../runtime/world-ui';
 type Host = {
+  world: WorldEditor;
   items: ItemsEditor;
   music: MusicEditor;
   npcs: NpcEditor;
@@ -71,7 +71,7 @@ export function createWorkspaceEditors(host: Host) {
     {
       id: 'playback',
       flush: async (r) => {
-        if (r !== 'checkpoint') await world.stopWorldPlayback();
+        if (r !== 'checkpoint') await host.world.stopWorldPlayback();
         return true;
       },
     },
@@ -164,9 +164,9 @@ export function createWorkspaceEditors(host: Host) {
     },
     {
       id: 'world',
-      session: world.editorSession,
-      activate: { order: 13, run: world.activateWorld },
-      flush: world.flushWorld,
+      session: host.world.editorSession,
+      activate: { order: 13, run: host.world.activateWorld },
+      flush: host.world.flushWorld,
     },
     {
       id: 'items',

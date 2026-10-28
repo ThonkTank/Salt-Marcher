@@ -1,6 +1,6 @@
 import type { Room } from '../shared/contracts';
 import type { DungeonView } from './dungeon-contracts';
-import type { DrawingElement } from './drawing-contracts';
+import type { DrawingElement } from './drawing-element-contracts';
 import type { KeyBlock, KeyContent } from '../campaign/key-contracts';
 import { expandedKeyBlocks, keyAttributes } from '../campaign/key-model';
 export interface BinderExit {

@@ -6,8 +6,8 @@ import { randomUUID, createHash } from 'node:crypto';
 import assert from 'node:assert/strict';
 import path from 'node:path';
 const spatial = process.argv.includes('--regions'),
-  zoom = Number((process.argv.find((a) => a.startsWith('--zoom=')) ?? '--zoom=1').split('=')[1]);
-if (![1, 2].includes(zoom)) throw new Error('Zoom 1 oder 2 wählen.');
+  zoom = 1;
+if (![1].includes(zoom)) throw new Error('Native UI-Proben laufen ausschließlich bei 100 %.');
 const root = process.cwd(),
   require = createRequire(root + '/package.json'),
   output = process.env.QA_EVIDENCE_DIR ?? path.resolve('.build/room-reads-evidence');

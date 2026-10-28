@@ -41,12 +41,14 @@ export function treeFingerprint(root, inputs, identity) {
   }
   return h.digest('hex');
 }
-function valid(directory, key) {
+function valid(directory, key, outputs) {
   try {
     const manifest = JSON.parse(readFileSync(path.join(directory, 'manifest.json'), 'utf8'));
     return (
       manifest.key === key &&
-      Object.keys(manifest.outputs).length > 0 &&
+      outputs.length > 0 &&
+      JSON.stringify(Object.keys(manifest.outputs).sort()) ===
+        JSON.stringify([...outputs].sort()) &&
       Object.entries(manifest.outputs).every(
         ([file, digest]) => hash(readFileSync(path.join(directory, file))) === digest,
       )
@@ -93,7 +95,7 @@ export function prepareArtifact({ root, kind, fingerprint, build, outputs, timeo
   try {
     const key = fingerprint(),
       directory = path.join(base, key);
-    if (valid(directory, key))
+    if (valid(directory, key, outputs))
       return {
         kind,
         key,
@@ -126,7 +128,7 @@ export function prepareArtifact({ root, kind, fingerprint, build, outputs, timeo
   }
 }
 export function ensureTestAsset(kind, root = process.cwd()) {
-  if (kind !== 'store') throw Error('Unknown test asset: ' + kind);
+  if (!['store', 'atlas-region-worker'].includes(kind)) throw Error('Unknown test asset: ' + kind);
   const result = prepareArtifact({
     root,
     kind,
@@ -135,12 +137,14 @@ export function ensureTestAsset(kind, root = process.cwd()) {
         root,
         [
           'src/',
+          'desktop/',
           'package.json',
           'package-lock.json',
           'tsconfig.json',
           'tools/test-assets.mjs',
           'tools/build-test-assets.mjs',
           'tools/catalog-build-asset.mjs',
+          'tests/helpers/build.mjs',
         ],
         {
           kind,

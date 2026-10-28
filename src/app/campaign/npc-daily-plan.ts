@@ -1,4 +1,4 @@
-import type { NpcDailySlot, NpcDailyOverride } from './npc-contracts';
+import type { NpcDailySlot, NpcDailyOverride } from './npc-data-contracts';
 export const dailyTime = (minutes: number) =>
   Math.floor(minutes / 60)
     .toString()

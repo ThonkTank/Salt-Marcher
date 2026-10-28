@@ -1,12 +1,13 @@
 import { atlasElement as get, setAtlasText as setText } from './atlas-dom';
-import type { TerrainIdentity } from './terrain-frame';
+import type { TerrainIdentity } from './terrain-frame-identity';
 import type { AtlasRasterPresentation } from './atlas-raster-presentation';
 import { atlasFieldValue } from './atlas-units';
-import type { AtlasRegionQuery } from './atlas-region-contracts';
+import type { AtlasRegionQuery } from './atlas-region-view-contracts';
 import { atlasGeometryOnly } from './atlas-render-view';
 import type { LandscapeWorkbench } from './atlas-landscape-ui';
 import type { AtlasCanvas } from './atlas-canvas';
-import type { AtlasCommitAck, AtlasRenderView } from './campaign-atlas-contracts';
+import type { AtlasCommitAck } from './campaign-atlas-contracts';
+import type { AtlasRenderView } from './campaign-atlas-view-contracts';
 import type { WorkspaceGeometry } from '../shared/contracts';
 import type { AtlasJourneyContext } from './atlas-workbench-types';
 interface AtlasRegionsHost {
@@ -306,6 +307,10 @@ export class AtlasRegions {
       if (r.value.region.coverage.unreadable)
         get('atlas-hint').textContent +=
           ` ${r.value.region.coverage.unreadable} beschädigte Karteneinträge bleiben unverändert.`;
+      if (!r.value.geometry.runtime.ok) {
+        get('atlas-hint').textContent +=
+          ` Laufzeitansicht nicht verfügbar: ${r.value.geometry.runtime.error}`;
+      }
       const layer = r.value.region.landscape;
       if (layer?.state === 'error')
         get('atlas-hint').textContent +=

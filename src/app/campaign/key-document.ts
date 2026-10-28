@@ -1,4 +1,4 @@
-import type { DungeonGeometry } from '../atlas/dungeon-contracts';
+import type { DungeonGeometry } from '../atlas/dungeon-geometry-contracts';
 import type { Room } from '../shared/contracts';
 import { renderDungeonKey } from './key-model';
 import { dungeonSvg } from '../atlas/drawing-model';

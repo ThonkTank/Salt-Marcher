@@ -183,7 +183,7 @@ zeichnet drei benannte Räume und zwei Türen, vergrößert eine Wand samt Tür,
 prüft Undo/Redo und die tatsächlich gespeicherten PNG-Pixel und öffnet den Stand
 nach regulärem Prozessende erneut. Der gemeinsame native Sitzungshelfer prüft
 Laufzeitdateien, frische Aufnahmen und verschwundene PIDs. Der Ablauf läuft bei
-100 und 200 Prozent Browserzoom. Ein Kampagnenwechsel während zurückgehaltener
+100 Prozent Browserzoom. Ein Kampagnenwechsel während zurückgehaltener
 Leseantworten lässt nur den neuen Export speichern. Verzögerte Speicherantworten
 und erneute Aktivierung desselben Workspace-Objekts sind dadurch nur im DOM-Test,
 nicht nativ qualifiziert. `QA_EVIDENCE_DIR` trennt Varianten und Vergleichsläufe.

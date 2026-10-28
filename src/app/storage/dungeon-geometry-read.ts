@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import type { DungeonGeometry } from '../atlas/dungeon-contracts';
+import type { DungeonGeometry } from '../atlas/dungeon-geometry-contracts';
 import { drawingRoom, drawingView } from './drawing-read';
 export const hash = (s: string) => createHash('sha256').update(s).digest('hex');
 

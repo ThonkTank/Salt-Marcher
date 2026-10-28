@@ -3,7 +3,7 @@ import {
   type TerrainColorRequest,
   type TerrainColorTile,
 } from '../atlas/terrain-color';
-import type { AtlasRegionSource } from '../atlas/atlas-region-contracts';
+import type { AtlasRegionSource } from '../atlas/atlas-region-view-contracts';
 import type { TerrainProjectionCache } from '../atlas/terrain-projection-cache';
 import {
   readTerrainSettings,

@@ -1,7 +1,4 @@
 import { validatedQuery } from '../../features/catalog/creature-catalog';
-import { checkedItemInput } from './progression-records';
-import { validateEncounterPlanInput } from '../catalog/encounter-contracts';
-import { checkedPresetValue } from './generation-read';
 import { checkedQuery, checkedRow, type SqliteDatabase } from './sqlite-connection';
 import { decodeStored } from './stored-payload';
 import * as shape from './stored-shapes';
@@ -23,7 +20,6 @@ import {
   selectEncounter,
   type CompositionCatalog,
 } from '../campaign/generation/selector';
-import { assessEncounter, type EncounterPlan } from '../catalog/encounter-contracts';
 import {
   creatureInfo,
   readCreature,
@@ -31,7 +27,6 @@ import {
   saveEncounterPlan,
   readEncounterPlan,
 } from './encounters';
-import { makeTreasure } from './progression-records';
 import { copper } from '../runtime/progression';
 import {
   exactWeight,
@@ -48,14 +43,21 @@ import {
   type GenerationRun,
 } from '../campaign/generation-contracts';
 import {
-  hash,
-  systemId,
+  assessEncounter,
+  validateEncounterPlanInput,
+  type EncounterPlan,
+} from '../catalog/encounter-contracts';
+import { creatureReference } from './catalog-references';
+import {
+  checkedPresetValue,
   decodePreset,
   generationRunRow,
-  readGeneratorRegistry,
+  hash,
   readGenerationRun,
+  readGeneratorRegistry,
+  systemId,
 } from './generation-read';
-export { readGeneratorRegistry, readGenerationRun, readGenerationRuns } from './generation-read';
+import { checkedItemInput, makeTreasure } from './progression-records';
 const json = (v: unknown) => JSON.stringify(v);
 
 const fingerprint = (v: object) => hash(canonicalJson({ ...v, token: undefined }));
@@ -546,7 +548,7 @@ export function previewLoot(
 }
 
 function lootItems(table: LootTable, seed: string) {
-  const grouped = new Map<string, import('../runtime/progression').ItemInput>();
+  const grouped = new Map<string, import('../catalog/item-input-contracts').ItemInput>();
   for (let roll = 0; roll < table.rolls; roll++) {
     const entry =
         table.entries[
@@ -1057,6 +1059,13 @@ export function generateEncounters(
           party: r.party.map((p) => ({ ...p, id: randomUUID() })),
           entries: planEntries,
           sources,
+          sourceReferences: sources.map((c) => creatureReference(c.id)),
+          ...(fixed?.items
+            ? {
+                items: fixed.items.map((i) => ({ ...structuredClone(i), id: randomUUID() })),
+                resolvedItems: structuredClone(fixed.resolvedItems),
+              }
+            : {}),
           catalogHash: creatureInfo().hash,
           assessment,
           composition: result.composition,
@@ -1321,7 +1330,7 @@ function checkedLootRollReceipt(value: unknown): LootRoll {
   return roll;
 }
 function checkedEncounterReceipt(value: unknown): EncounterPlan {
-  const plan = decodeStored(value, shape.encounter_plan);
+  const plan = decodeStored(value, shape.encounter_snapshot);
   validateEncounterPlanInput(plan);
   if (!Number.isSafeInteger(plan.revision) || plan.revision < 1)
     throw new Error('Begegnungsbestätigung beschädigt.');

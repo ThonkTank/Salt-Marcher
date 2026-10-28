@@ -1,5 +1,18 @@
 import path from 'node:path';
+import fs from 'node:fs';
+import { createHash } from 'node:crypto';
+import { fileURLToPath } from 'node:url';
 import ts from 'typescript';
+import { repositoryFiles } from './repository-files.mjs';
+
+/** The repository boundary gate and the report analyze exactly this source selection. */
+export function readModuleSources(root, files) {
+  return new Map(
+    files
+      .filter((file) => /^(src|desktop)\/.*\.tsx?$/.test(file))
+      .map((file) => [file, fs.readFileSync(path.join(root, file), 'utf8')]),
+  );
+}
 
 /** Preserve type-only edges for architecture review; runtime SCCs exclude them. */
 export function moduleEdges(file, text) {
@@ -97,4 +110,62 @@ export function dependencyCycles(graph) {
   }
   for (const file of graph.keys()) if (!indices.has(file)) visit(file);
   return result.sort((a, b) => a[0].localeCompare(b[0]));
+}
+
+/** Read-only structural inventory; this does not qualify behavior or update a baseline. */
+export function moduleGraphReport(sources) {
+  const sorted = new Map([...sources].sort(([a], [b]) => a.localeCompare(b)));
+  const summary = (runtimeOnly) => {
+    const graph = dependencyGraph(sorted, runtimeOnly);
+    let internalEdges = 0,
+      externalEdges = 0;
+    for (const targets of graph.values())
+      for (const target of targets) graph.has(target) ? internalEdges++ : externalEdges++;
+    const cyclicComponents = dependencyCycles(graph).map((files) => {
+      const members = new Set(files);
+      return {
+        files,
+        internalEdges: files.reduce(
+          (count, file) => count + graph.get(file).filter((target) => members.has(target)).length,
+          0,
+        ),
+        active: files.some((file) => /^(src\/app|desktop)\//.test(file)),
+      };
+    });
+    const active = cyclicComponents.filter((component) => component.active);
+    return {
+      internalEdges,
+      externalEdges,
+      activeCycles: {
+        components: active.length,
+        files: active.reduce((count, component) => count + component.files.length, 0),
+        internalEdges: active.reduce((count, component) => count + component.internalEdges, 0),
+      },
+      cyclicComponents,
+    };
+  };
+  return {
+    scope: {
+      selection:
+        'Existing tracked and non-ignored untracked src/**/*.ts(x) and desktop/**/*.ts(x), including declarations',
+      files: [...sorted.keys()],
+      sourceSha256: createHash('sha256')
+        .update(JSON.stringify([...sorted]))
+        .digest('hex'),
+    },
+    declared: summary(false),
+    values: summary(true),
+  };
+}
+
+if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
+  if (process.argv.slice(2).join(' ') !== '--report') {
+    console.error('Usage: node tools/module-graph.mjs --report');
+    process.exitCode = 1;
+  } else {
+    const root = process.cwd();
+    console.log(
+      JSON.stringify(moduleGraphReport(readModuleSources(root, repositoryFiles(root))), null, 2),
+    );
+  }
 }

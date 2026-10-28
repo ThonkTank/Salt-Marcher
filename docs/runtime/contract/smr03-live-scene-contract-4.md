@@ -45,7 +45,7 @@ Vergangene Testdateien und Receipts stehen unverändert in `acceptance.json`
 und `116c16af48b6a073216685c8d8e2cc74fada82c3:docs/plans/runtime/smr03-live-scene-contract.md`.
 Sie belegen ihren jeweiligen Kern-/Hostumfang. [P02/P03/P04/C01](../../project/verification/architecture-experiments.md)
 prüfen den neuen gemeinsamen Anschluss; Modell-PASS ist kein Store-/OS-/
-Runtime-/Player-PASS. Tatsächliche Tastatur/200 %, physischer Input und
+Runtime-/Player-PASS. Tatsächliche Tastatur/100 %, physischer Input und
 independent review bleiben direkte Produktbelege.
 
 ### Szenenroster gemeinsam übernehmen und bewegen
@@ -98,7 +98,7 @@ Appneustart liest denselben Zielzustand. Das ist ein begrenzter Zielauswahlbeleg
 keine gesamte Partyabnahme und keine Datenmigration.
 
 Offen bleiben Party-Undo/Redo einschließlich100-Schritt-History, vollständige
-Fenstermigration und OS-/200%-Abnahme. Persönliche Loot-/Rosterübergaben sind
+Fenstermigration und OS-/100 %-Abnahme. Persönliche Loot-/Rosterübergaben sind
 im folgenden Abschnitt angeschlossen.
 Der strenge aktuelle Livereader akzeptiert weiterhin keine beschädigte aktive
 Zuordnung ohne Szene; die historische „Ohne Szene“-Recovery benötigt einen
@@ -148,4 +148,4 @@ Atlas, berichtigt7 auf3, liest den Verlauf, öffnet die zweite gleichnamige
 Figur und prüft den gespeicherten Stand nach regulärem Neustart. Roster,
 Szenenuhr, XP und Rast bleiben dabei unverändert; die Ansicht scrollt bei
 240×160px ohne horizontales Überlaufen. Dies belegt diesen Anschluss, keine
-vollständige OS-, 200%- oder kausale Party-Undo-Abnahme.
+vollständige OS-, 100 %- oder kausale Party-Undo-Abnahme.

@@ -8,7 +8,8 @@ import {
   confirmDungeonBudget,
 } from './dungeon-budget-ui';
 import type { WorkspaceGeometry, Room, Point } from '../shared/contracts';
-import type { GraphView, GraphAction, GraphDisplay, GraphContentCounts } from './graph-contracts';
+import type { GraphView, GraphAction, GraphDisplay } from './graph-contracts';
+import type { GraphContentCounts } from './graph-content-contracts';
 import { graphDisplay } from './graph-model';
 export const editorSession = new EditorSession();
 const pendingWork = editorSession.operation<Promise<boolean>>();

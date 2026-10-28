@@ -1,5 +1,5 @@
 import { isProjectionJob, isCachedTileJob, type AtlasWorkerJob } from './atlas-worker-contract';
-import type { AtlasRegionSource } from '../src/app/atlas/atlas-region-contracts';
+import type { AtlasRegionSource } from '../src/app/atlas/atlas-region-view-contracts';
 import { AtlasGeometryTiles } from '../src/app/storage/atlas-geometry-tiles';
 import { AtlasTerrainTiles } from '../src/app/storage/atlas-terrain-tiles';
 import { AtlasMaterialTiles } from '../src/app/storage/atlas-material-tiles';

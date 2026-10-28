@@ -16,8 +16,8 @@ const earthOnly = process.argv.includes('--earth-only');
 const library = process.argv.includes('--library') || earthOnly;
 const marshOnly = process.argv.includes('--marsh-only');
 const surfaceOnly = process.argv.includes('--surface-only');
-const scale = Number(process.argv.find((a) => a.startsWith('--scale='))?.split('=')[1] ?? 1);
-assert([1, 2].includes(scale));
+const scale = 1;
+assert([1].includes(scale));
 const output = path.resolve(
   library ? '.build/cycle2-point2/native' : '.build/cycle2-point1/native',
   `${Date.now()}-${process.pid}`,

@@ -188,7 +188,7 @@ await runNativeProbe(
         await page.locator('#key-note-gm').fill(noteText);
         await page.screenshot({ path: path.join(out, 'capture-route.png') });
         await app.evaluate(({ BrowserWindow }) =>
-          BrowserWindow.getAllWindows()[0].webContents.setZoomFactor(2),
+          BrowserWindow.getAllWindows()[0].webContents.setZoomFactor(1),
         );
         await page
           .locator('#key-note-submit')
@@ -200,7 +200,7 @@ await runNativeProbe(
           }),
         );
         await writeFile(
-          path.join(out, 'capture-200percent.png'),
+          path.join(out, 'capture-100percent.png'),
           Buffer.from(
             await app.evaluate(async ({ BrowserWindow }) =>
               (await BrowserWindow.getAllWindows()[0].webContents.capturePage())
@@ -222,7 +222,7 @@ await runNativeProbe(
         assert.equal(await page.locator('#key-search').inputValue(), 'Archiv');
         assert.equal(await page.locator('#note-gm').inputValue(), noteText);
         results.noteCreatedLinkedAndOpenedWithoutLeavingKey = true;
-        results.zoom200CaptureButtonReachable = true;
+        results.zoom100CaptureButtonReachable = true;
         await app.evaluate(({ BrowserWindow }) =>
           BrowserWindow.getAllWindows()[0].webContents.setZoomFactor(1),
         );

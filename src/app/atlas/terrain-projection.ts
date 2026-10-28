@@ -1,72 +1,13 @@
+import { type TerrainProjectionRequest } from './terrain-projection-contracts';
 import { validateTerrainDetail } from './terrain-detail';
-import { REGION_VECTOR_OBJECTS } from './atlas-region-contracts';
-import { validateTerrainView, type TerrainView } from './terrain-spatial-model';
-import { validateHeightStroke, type HeightStroke } from './terrain-brush';
-import { validateColor } from './landscape-brush';
-import {
-  validateTerrainAnchor,
-  terrainObjectPoints,
-  type TerrainObjectSource,
-} from './terrain-objects';
-import type { TerrainGrid } from './terrain-spatial-model';
-import type { LandscapeRecord } from './atlas-landscape';
-export interface TerrainProjectionData {
-  rasterRouteKey?: string;
-  detail?: import('./terrain-detail').TerrainDetail;
-  identity?: import('./terrain-frame').TerrainFrameIdentity;
-  update?: {
-    base: import('./terrain-frame').TerrainFrameIdentity;
-    heights: import('./terrain-frame').TerrainRect[];
-    pixels: import('./terrain-frame').TerrainRect[];
-    forest?: import('./terrain-frame').TerrainRect[];
-    detailForest?: import('./terrain-frame').TerrainRect[];
-    detail?: import('./terrain-frame').TerrainRect[];
-  };
-  objects?: import('./terrain-objects').TerrainObject[];
-  generation: number;
-  source: string;
-  grid: TerrainGrid;
-  pixels: Uint8Array;
-  forest?: Uint8Array;
-  width: number;
-  height: number;
-  draft: boolean;
-  routes?: LandscapeRecord[];
-  vegetation?: LandscapeRecord[];
-  protectedLimit?: number;
-  heightM?: number;
-  contourInk?: string;
-  landColor?: string;
-  /** Renderer composition only: confirmed local colour under retained fine tiles. */
-  brushDetail?: import('./terrain-detail').TerrainDetail;
-}
+import { REGION_VECTOR_OBJECTS } from './atlas-region-limits';
+import { validateTerrainView } from './terrain-spatial-model';
 
-export interface TerrainProjectionRequest {
-  editingRadius?: number;
-  /** Cursor for an exact, bounded author-source packet. Empty starts a read. */
-  editingPage?: string;
-  editingBox?: import('./atlas-landscape').LandscapeBox;
-  product?: 'height';
-  colorBase?: import('./terrain-frame').TerrainIdentity;
-  detail?: import('./atlas-landscape').LandscapeBox;
-  detailResolution?: number;
-  view: TerrainView;
-  width: number;
-  height: number;
-  contours: number;
-  displayMpp: number;
-  revision: number;
-  fence?: string;
-  objects?: TerrainObjectSource[];
-  heightStroke?: HeightStroke;
-  color?: LandscapeRecord;
-}
-export interface TerrainProjection extends TerrainProjectionData {
-  /** Height-only tile: no colour payload is present. */ heightOnly?: true;
-  revision: number;
-  fence: string;
-  colorChange?: import('./terrain-change-history').TerrainColorChange;
-}
+import { validateHeightStroke } from './terrain-brush';
+
+import { validateColor } from './landscape-brush';
+import { validateTerrainAnchor, terrainObjectPoints } from './terrain-objects';
+
 /** Display-only request: source heights never cross this boundary from the caller. */
 export function validateTerrainProjection(q: TerrainProjectionRequest) {
   if (

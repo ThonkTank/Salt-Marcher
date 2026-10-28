@@ -19,7 +19,7 @@ require('esbuild').buildSync({
 });
 const { CampaignStore } = require(root + '/.build/audio-copy-store.cjs'),
   Database = require('better-sqlite3');
-for (const zoom of [1, 2]) {
+for (const zoom of [1]) {
   const native = await createNativeSession({
     root,
     output: path.join(output, String(zoom)),

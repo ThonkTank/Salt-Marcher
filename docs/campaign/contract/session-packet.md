@@ -107,7 +107,7 @@ und Rückkehr aus dem Originaleditor erhalten die aktuelle Aufklappentscheidung.
    behandeln. Vollständige Ergebnishistorie und Verlaufsexport prüfen.
 2. **Native Bedienung und Ausgabe:** Live → Quelle/Kampf/Belohnung → zurück mit
    offenen Entwürfen und Fehlern bedienen. Fokus/Rückkehr, Tastatur, leere Suche,
-   200 %, lange Texte und Statblocks prüfen. Im Speicherdialog Quellen ändern,
+   100 %, lange Texte und Statblocks prüfen. Im Speicherdialog Quellen ändern,
    abbrechen, Schreibfehler und vorhandene Zieldateien testen. Exportbytes und
    Darstellung offener Markdownfences prüfen, ohne Autorenprosa umzuschreiben.
 3. **Wiederaufnahme:** Offenes Review, Plan-/Kampagnenwechsel, laufendes Submit und

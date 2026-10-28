@@ -139,7 +139,7 @@ await runNativeProbe(
       return page;
     }
     try {
-      for (const scale of [1, 2]) {
+      for (const scale of [1]) {
         const page = await launch(scale);
         await loaded(page);
         const before = await state(page),

@@ -1,0 +1,14 @@
+{
+  "roles": {
+    "CalendarEvent.durationMs": "text",
+    "CalendarEvent.id": "local",
+    "CalendarEvent.locationId": "local",
+    "CalendarEvent.name": "text",
+    "CalendarEvent.notes": "text",
+    "CalendarEvent.repeatMs": "text",
+    "CalendarEvent.startMs": "text",
+    "FantasyCalendar.months[].name": "text",
+    "FantasyCalendar.name": "text",
+    "FantasyCalendar.weekdays[]": "text"
+  }
+}

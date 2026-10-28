@@ -1,13 +1,8 @@
 import { volumeOrigin } from './volume-model';
 import type { KeyContent } from '../campaign/key-contracts';
-import type { DungeonGeometry } from './dungeon-contracts';
-import {
-  isSurfaceFace,
-  surfaceFaceKey,
-  connectedSurface,
-  type SurfaceFace,
-  type SurfaceSide,
-} from './surface-model';
+import type { DungeonGeometry } from './dungeon-geometry-contracts';
+import { isSurfaceFace, surfaceFaceKey, connectedSurface } from './surface-model';
+import { type SurfaceFace, type SurfaceSide } from './surface-contracts';
 const el = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 export function drawSurfaceKey(c: KeyContent, g: DungeonGeometry | null, changed: () => void) {
   const panel = el('key-surface-editor');

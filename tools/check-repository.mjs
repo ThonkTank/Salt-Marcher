@@ -2,8 +2,8 @@ import { checkNativeProbes } from './native-probes.mjs';
 import { checkSourceModuleBoundaries } from './check-module-boundaries.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
-import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { repositoryFiles } from './repository-files.mjs';
 
 const isMarkdown = (file) => /\.(md|markdown)$/i.test(file);
 
@@ -69,15 +69,7 @@ function anchors(text) {
 
 export function checkRepository(root, suppliedFiles) {
   const errors = [];
-  const files = new Set(
-    suppliedFiles ??
-      execFileSync('git', ['ls-files', '--cached', '--others', '--exclude-standard', '-z'], {
-        cwd: root,
-        encoding: 'utf8',
-      })
-        .split('\0')
-        .filter((f) => f && fs.existsSync(path.join(root, f))),
-  );
+  const files = new Set(suppliedFiles ?? repositoryFiles(root));
   errors.push(...checkSourceModuleBoundaries(root, [...files]));
   errors.push(...checkNativeProbes(root, [...files]));
   const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');

@@ -6,14 +6,14 @@ import {
   setAtlasFieldValue,
   lengthLabel,
 } from './atlas-units';
-import {
-  emptyRecord,
-  type LandscapeRecord,
-  type LandscapeBox,
-  type LandscapeAction,
-} from './atlas-landscape';
-import { routeSpec, routeDefaults, nearestRoute, type RouteStructure } from './terrain-route';
-import { newLine, roadStyles } from './landscape-line';
+import { emptyRecord } from './atlas-landscape';
+import { type LandscapeRecord } from './landscape-contracts';
+import { type LandscapeBox } from './landscape-bounds';
+import { type LandscapeAction } from './landscape-action-contracts';
+import { routeSpec, routeDefaults, nearestRoute } from './terrain-route';
+import { type RouteStructure } from './terrain-route-contracts';
+import { newLine } from './landscape-line';
+import { roadStyles } from './landscape-line-contracts';
 import type { VegetationScene } from './vegetation';
 import type { Point } from '../shared/contracts';
 

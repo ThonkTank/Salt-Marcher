@@ -7,7 +7,7 @@ import {
   type KeyNoteCaptureStatus,
   type KeyNoteChoices,
 } from '../campaign/key-note-capture-contracts';
-import type { Note } from '../campaign/preparation-contracts';
+import type { Note } from '../campaign/note-data';
 import { validateRoom } from '../shared/room-validation';
 import { executeDrawing } from './drawing';
 import { drawingRoom } from './drawing-read';

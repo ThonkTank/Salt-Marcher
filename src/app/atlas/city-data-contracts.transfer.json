@@ -1,0 +1,28 @@
+{
+  "roles": {
+    "CityHeader.id": "local",
+    "CityHeader.locationId": "local",
+    "CityHeader.name": "text",
+    "CityHeader.paper": "text",
+    "CityHeader.roof": "text",
+    "CityHousehold.id": "local",
+    "CityHousehold.memberIds[]": "local",
+    "CityHousehold.name": "text",
+    "CityJob.id": "local",
+    "CityJob.name": "text",
+    "CityJob.workerIds[]": "local",
+    "CityUnit.districtId": "local",
+    "CityUnit.factionId": "local",
+    "CityUnit.groupId": "local",
+    "CityUnit.id": "local",
+    "CityUnit.name": "text",
+    "CityUnit.nodeIds[]": "local",
+    "CityUnit.notes": "text",
+    "CityUnit.ownerId": "local",
+    "CityUnit.recipe.algorithm": "text",
+    "CityUnit.recipe.seed": "external",
+    "CityUnit.residentIds[]": "local",
+    "CityUnit.use": "text",
+    "CityUnit.workerIds[]": "local"
+  }
+}

@@ -400,7 +400,7 @@ await runNativeProbe(
         );
         await page.screenshot({ path: path.join(out, 'fresh-thread.png') });
         await app.evaluate(({ BrowserWindow }) =>
-          BrowserWindow.getAllWindows()[0].webContents.setZoomFactor(2),
+          BrowserWindow.getAllWindows()[0].webContents.setZoomFactor(1),
         );
         await page.locator('#note-thread-use').scrollIntoViewIfNeeded();
         assert(
@@ -413,7 +413,7 @@ await runNativeProbe(
           () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))),
         );
         await writeFile(
-          path.join(out, 'prepare-200percent.png'),
+          path.join(out, 'prepare-100percent.png'),
           Buffer.from(
             await app.evaluate(async ({ BrowserWindow }) =>
               (await BrowserWindow.getAllWindows()[0].webContents.capturePage())
@@ -433,7 +433,7 @@ await runNativeProbe(
           newPlan ? 'Die Nachtwache befragen' : plan.scenes[0].title,
         );
         results.freshThreadPreparedWithoutSearchingMembersAgain = true;
-        results.zoom200PreparationActuallyExecuted = true;
+        results.zoom100PreparationActuallyExecuted = true;
       }
       await page.locator('#session-packet-open').click();
       await page.waitForFunction(

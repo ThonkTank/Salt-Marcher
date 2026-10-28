@@ -186,7 +186,6 @@ export class AtlasCanvas {
           box: { ...this.box },
           moved: false,
         };
-        presentation?.navigationGesture?.(true);
         if (e.button === 1 || e.button === 2) {
           root.setPointerCapture(e.pointerId);
           e.preventDefault();
@@ -205,6 +204,7 @@ export class AtlasCanvas {
           Math.hypot(e.clientX - this.screenStart(drag).x, e.clientY - this.screenStart(drag).y) < 3
         )
           return;
+        if (!drag.moved) this.options.presentation?.()?.navigationGesture?.(true);
         drag.moved = true;
         this.suppressClick = true;
         root.setPointerCapture(e.pointerId);
@@ -884,7 +884,7 @@ export class AtlasCanvas {
     this.stopZoom();
     const drag = this.drag;
     this.drag = null;
-    this.options.presentation?.()?.navigationGesture?.(false);
+    if (drag?.moved) this.options.presentation?.()?.navigationGesture?.(false);
     if (drag?.moved) this.remember(drag.box);
     if (drag && this.root.hasPointerCapture(drag.id)) this.root.releasePointerCapture(drag.id);
   }

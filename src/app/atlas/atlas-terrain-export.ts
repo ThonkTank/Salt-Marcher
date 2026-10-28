@@ -1,7 +1,8 @@
 import { measureMapText } from './map-text-measure';
 import { publicTerrainGrid } from '../runtime/player-terrain';
-import type { AtlasRenderView } from './campaign-atlas-contracts';
-import { gridHeight, type TerrainView } from './terrain-spatial-model';
+import type { AtlasRenderView } from './campaign-atlas-view-contracts';
+import { gridHeight } from './terrain-spatial-model';
+import { type TerrainView } from './terrain-view-contracts';
 import type { AtlasPaint } from './atlas-paint';
 import { atlasPaint } from './atlas-paint';
 import { terrainObjectSources } from './terrain-objects';

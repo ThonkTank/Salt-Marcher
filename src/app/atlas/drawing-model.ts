@@ -6,9 +6,9 @@ import type { Point, Polygon, RoomGeometry } from '../shared/contracts';
 import type {
   DrawingElement,
   DrawingElementGeometry,
-  DrawingView,
   RoomStyle,
-} from './drawing-contracts';
+} from './drawing-element-contracts';
+import type { DrawingView } from './drawing-view-contracts';
 const toMulti = (p: Polygon[]): MultiPolygon =>
   p.map((p) =>
     [p.outer, ...p.holes].map((r) => [

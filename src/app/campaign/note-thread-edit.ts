@@ -1,4 +1,5 @@
-import type { Note } from './preparation-contracts';
+import { type NoteSourceRecovery } from './note-source-recovery-contracts';
+import type { Note } from './note-data';
 import { documentReferences, textReferences } from './text-references';
 
 /** Canonical direct-source order: shared by storage cursors and reader restoration. */
@@ -93,15 +94,6 @@ export function sameNoteContent(a: Note, b: Note) {
     n.relations.map((r) => [r.targetId, r.label, r.familyKind ?? null]),
   ];
   return JSON.stringify(content(a)) === JSON.stringify(content(b));
-}
-
-export interface NoteSourceRecovery {
-  id: string;
-  sourceId: string;
-  title: string;
-  unavailable?: boolean;
-  before: Note;
-  after: Note;
 }
 
 /** Reverse only the recorded unlink. Changed or ambiguous text lines require manual review. */

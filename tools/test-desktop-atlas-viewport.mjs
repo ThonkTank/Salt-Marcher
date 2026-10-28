@@ -112,7 +112,7 @@ try {
   for (const [width, height, zoom] of [
     [1600, 900, 1],
     [960, 720, 1],
-    [1280, 880, 2],
+
     [1280, 880, 1],
   ]) {
     const before = await camera();

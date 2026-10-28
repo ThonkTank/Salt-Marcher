@@ -1,7 +1,8 @@
 import { createHash } from 'node:crypto';
 import { settingsRecord } from '../atlas/terrain-height';
 import { terrainTraceMeasure, terrainTraceStart } from '../atlas/terrain-timing';
-import type { LandscapeBox, LandscapeRecord } from '../atlas/atlas-landscape';
+import type { LandscapeBox } from '../atlas/landscape-bounds';
+import type { LandscapeRecord } from '../atlas/landscape-contracts';
 import { LandscapeRasterizer, landscapeRasterBounds } from '../atlas/landscape-raster';
 import {
   streamTerrainFieldSteps,

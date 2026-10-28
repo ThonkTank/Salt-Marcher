@@ -21,14 +21,16 @@ import {
 } from './drawing-ui';
 import type { LandscapeWorkbench } from './atlas-landscape-ui';
 import { atlasPartyPoint } from './atlas-runtime-model';
-import { atlasWorldTarget } from '../runtime/world-ui';
 import type { AtlasCanvas } from './atlas-canvas';
-import { atlasFrame, atlasHexAt, atlasToLocal, localToAtlas } from './campaign-atlas-model';
+import { atlasFrame } from './campaign-atlas-model';
+import { atlasHexAt, atlasToLocal, localToAtlas } from './atlas-coordinates';
 import type { AtlasAction } from './campaign-atlas-contracts';
 import type { Point, Room, WorkspaceGeometry } from '../shared/contracts';
 import { atlasCityPoint, openCityReference } from './city-ui';
 import { atlasDungeonTarget } from './dungeon-ui';
+import type { WorldTravelPort } from '../runtime/world-ui';
 interface AtlasAuthorHost {
+  readonly world: WorldTravelPort;
   creation: 'city' | 'dungeon' | null;
   readonly root: HTMLElement;
   readonly family: Family;
@@ -48,7 +50,7 @@ interface AtlasAuthorHost {
   readonly setFamily: (family: Family, flush?: boolean) => Promise<void>;
   readonly landscape: Pick<LandscapeWorkbench, 'hasDraft' | 'selectVegetation' | 'selectId'>;
   readonly entranceHeight: (
-    entrances: import('./atlas-travel-contracts').AtlasEntrance[],
+    entrances: import('./atlas-journey-contracts').AtlasEntrance[],
   ) => Promise<void> | undefined;
   readonly chooseAt: (
     point: Point,
@@ -67,7 +69,7 @@ interface AtlasAuthorHost {
     propagateError?: boolean,
     terrain?: import('./terrain-live-stroke').TerrainLiveContext,
   ) => Promise<{
-    atlas: import('./campaign-atlas-contracts').AtlasRenderView;
+    atlas: import('./campaign-atlas-view-contracts').AtlasRenderView;
     result: unknown;
     ack: import('./campaign-atlas-contracts').AtlasCommitAck;
   } | null>;
@@ -444,7 +446,7 @@ export class AtlasAuthor {
         return;
       }
       if (this.host.family === 'travel')
-        atlasWorldTarget(atlasHexAt(p, this.host.regions.data!.terrain.hexMeters));
+        this.host.world.atlasWorldTarget(atlasHexAt(p, this.host.regions.data!.terrain.hexMeters));
     } catch (e) {
       this.host.error(e);
     }

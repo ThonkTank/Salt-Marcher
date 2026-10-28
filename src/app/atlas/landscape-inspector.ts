@@ -3,14 +3,15 @@ import { onlyProminenceChanged } from './atlas-prominence';
 import type { LandscapeRoutes } from './landscape-routes';
 import type { LandscapeHost } from './landscape-workbench-types';
 import { mapLabelEditor, readMapLabelEditor } from './map-label-editor';
-import { type VegetationInstance, type VegetationOverride } from './vegetation';
+import { type VegetationInstance, type VegetationOverride } from './vegetation-contracts';
 import { vegetationInspector } from './vegetation-controls';
 import { atlasFieldValue } from './atlas-units';
 import { lineControls, readLineControls } from './landscape-tool-settings';
 import { newLine, linePoints, translateLine, splitLine } from './landscape-line';
 import { AtlasPaint } from './atlas-paint';
 import type { AtlasAction } from './campaign-atlas-contracts';
-import { type LandscapeBox, type LandscapeRecord } from './atlas-landscape';
+import { type LandscapeBox } from './landscape-bounds';
+import { type LandscapeRecord } from './landscape-contracts';
 import { newLocation, type LocationDocument } from '../../features/location/location-schema';
 const html = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 interface LandscapeInspectorHost {

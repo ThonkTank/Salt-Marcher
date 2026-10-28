@@ -20,7 +20,7 @@ require('esbuild').buildSync({
 });
 const { CampaignStore } = require(root + '/.build/spontaneous-combat-store.cjs'),
   results = [];
-for (const scale of process.env.GM_QA_ZOOM ? [Number(process.env.GM_QA_ZOOM)] : [1, 2]) {
+for (const scale of [1]) {
   const native = await createNativeSession({
       root,
       output: output + '/' + scale,

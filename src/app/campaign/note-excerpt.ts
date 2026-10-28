@@ -1,4 +1,4 @@
-import type { Note } from './preparation-contracts';
+import type { Note } from './note-data';
 
 /** Append without rewriting any prior prose or moving material between audiences. */
 export function appendNoteExcerpt(

@@ -1,4 +1,5 @@
-import { restFrame, xpLevel, type CharacterHealth, type Progress } from './progression';
+import { restFrame, xpLevel } from './progression';
+import { type CharacterHealth, type Progress } from './character-progress-contracts';
 
 export interface PartyHealthReference {
   health?: CharacterHealth | null;

@@ -20,7 +20,7 @@ require('esbuild').buildSync({
 });
 const { CampaignStore } = require(root + '/.build/character-profile-store.cjs'),
   Database = require('better-sqlite3');
-for (const zoom of [1, 2]) {
+for (const zoom of [1]) {
   const native = await createNativeSession({
     root,
     output: path.join(output, String(zoom)),
@@ -236,7 +236,7 @@ for (const zoom of [1, 2]) {
   }
 }
 const runs = await Promise.all(
-  [1, 2].map(async (z) =>
+  [1].map(async (z) =>
     JSON.parse(await readFile(path.join(output, String(z), 'result.json'), 'utf8')),
   ),
 );

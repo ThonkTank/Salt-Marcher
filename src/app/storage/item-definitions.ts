@@ -3,12 +3,8 @@ import { budgetRarity } from '../atlas/dungeon-budget-contracts';
 import { srdItemDefinitions, srdItemSourceStatus } from './srd-items';
 import { coinDefinitions } from './coin-definitions';
 import { createHash } from 'node:crypto';
-import type {
-  ItemDefinition,
-  ItemQuery,
-  ItemPage,
-  ItemCatalogFilter,
-} from '../catalog/items-contracts';
+import type { ItemDefinition } from '../catalog/item-definition-contracts';
+import type { ItemQuery, ItemPage, ItemCatalogFilter } from '../catalog/items-contracts';
 import { canonicalJson } from '../campaign/generation/canonical-json';
 const hash = (s: string) => createHash('sha256').update(s).digest('hex');
 function decoded(row: any, id: string, revision: number): ItemDefinition {

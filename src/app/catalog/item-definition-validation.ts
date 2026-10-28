@@ -1,4 +1,4 @@
-import type { ItemDefinition } from './items-contracts';
+import type { ItemDefinition } from './item-definition-contracts';
 
 const categories = ['coins', 'equipment', 'trade-goods', 'magic', 'other'];
 const fields = [

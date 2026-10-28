@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import type { PlantAsset } from './vegetation';
+import type { PlantAsset } from './vegetation-contracts';
 import { crownRadius } from './vegetation-shape';
 
 // Metres are supplied by each instance's existing size. These profiles provide

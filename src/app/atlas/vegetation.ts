@@ -1,8 +1,17 @@
+import {
+  plantAssets,
+  type PlantAsset,
+  type VegetationPreset,
+  type VegetationInstance,
+  type VegetationSpec,
+  type VegetationView,
+} from './vegetation-contracts';
 import { vegetationWaterSuitable } from './vegetation-surface';
 export { vegetationWaterSuitable, vegetationFurrowShade } from './vegetation-surface';
-import type { Terrain } from '../runtime/world-contracts';
+
 import type { Point, Polygon } from '../shared/contracts';
-import { type LandscapeBox, type LandscapeRecord } from './atlas-landscape';
+import { type LandscapeBox } from './landscape-bounds';
+import { type LandscapeRecord } from './landscape-contracts';
 import { bounds, contains, segmentDistance } from './landscape-geometry';
 import { linePoints } from './landscape-line';
 import { vegetationFootprintRadius } from './vegetation-shape';
@@ -14,28 +23,6 @@ import {
   vegetationStride,
 } from './vegetation-lod';
 export { vegetationRandom } from './vegetation-lod';
-
-export const plantAssets = ['oak', 'pine', 'shrub', 'grass', 'rock', 'reed', 'crop'] as const;
-export type PlantAsset = (typeof plantAssets)[number];
-export interface VegetationPreset {
-  id: string;
-  name: string;
-  terrain: Terrain;
-  ground: string;
-  tree: 'oak' | 'pine' | 'shrub';
-  undergrowthAsset: 'shrub' | 'grass' | 'reed' | 'crop';
-  distribution: 'natural' | 'rows';
-  groundPattern: 'natural' | 'furrows';
-  /** Maximum water depth in metres. Zero requires dry ground. */
-  waterDepth: { trees: number; undergrowth: number; rocks: number };
-  density: number;
-  size: number;
-  undergrowth: number;
-  rocks: number;
-  grouping: number;
-  edge: number;
-  slope: number;
-}
 /** Copied into authored areas. Library updates never silently rewrite a campaign. */
 export const vegetationPresets: readonly VegetationPreset[] = [
   {
@@ -201,42 +188,6 @@ export const vegetationPresets: readonly VegetationPreset[] = [
     slope: 25,
   },
 ];
-export interface VegetationEdit {
-  polygons: Polygon[];
-  mode: 'clear' | 'thin' | 'dense';
-}
-export interface VegetationInstance extends Point {
-  id: string;
-  asset: PlantAsset;
-  size: number;
-  angle: number;
-  z: number;
-  normal: Point & { z: number };
-  protected?: boolean;
-  conflict?: boolean;
-  locationId?: string;
-}
-export interface VegetationOverride extends Point {
-  id: string;
-  asset: PlantAsset;
-  size: number;
-  angle: number;
-  removed?: boolean;
-  locationId?: string;
-}
-export interface VegetationSpec {
-  version: 1;
-  seed: number;
-  preset: VegetationPreset;
-  layout: 'natural' | 'row';
-  spacing: number;
-  edits: VegetationEdit[];
-  overrides: VegetationOverride[];
-}
-export interface VegetationView {
-  instances: VegetationInstance[];
-  mode: 'individual' | 'canopy' | 'surface';
-}
 export interface VegetationScene {
   revision: number;
   fence?: string;

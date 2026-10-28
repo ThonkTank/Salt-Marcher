@@ -11,7 +11,8 @@ import type {
   PlayerSettings,
   PlayerView,
 } from '../runtime/player-contracts';
-import type { Hex, SceneWorld } from '../runtime/world-contracts';
+import type { Hex } from '../runtime/world-cell-contracts';
+import type { SceneWorld } from '../runtime/world-contracts';
 import { authoredCellAt, cellAt, hexDistance, hexPoint, pointHex } from '../runtime/world-model';
 import {
   addMemory,

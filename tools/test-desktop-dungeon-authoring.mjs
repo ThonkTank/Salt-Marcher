@@ -107,6 +107,13 @@ await runNativeProbe(
         for (const name of [
           'dungeon:view',
           'dungeon:authoring',
+          'atlas:view',
+          'atlas:render-view',
+          'atlas:geometry-region',
+          'atlas:overview',
+          'atlas:terrain-source',
+          'atlas:room',
+          'atlas:object',
           'atlas:execute',
           'atlas:drawing-commit',
         ]) {
@@ -123,13 +130,27 @@ await runNativeProbe(
         .filter({ hasText: campaign.name })
         .getByRole('button', { name: 'Fortsetzen', exact: true })
         .click();
-      await page.locator('#atlas-tab').click();
-      await page.locator('#atlas-families button[data-family=interior]').click();
-      if ((await page.locator('#atlas-advanced').getAttribute('open')) === null)
-        await page.locator('#atlas-advanced > summary').click();
+      if ((await page.locator('#atlas-tab').getAttribute('aria-pressed')) !== 'true') {
+        if (!(await page.locator('#atlas-tab').isVisible()))
+          await page.locator('#workspace-nav-summary').click();
+        await page.locator('#atlas-tab').click();
+      }
+      await page.locator('#atlas-section').waitFor({ state: 'visible' });
+      await page.locator('#atlas-section').selectOption('interior');
+      await page.locator('#atlas-select').click();
+      await page.locator('#atlas-search').fill('Torhalle');
+      await page.getByRole('button', { name: '1 · Torhalle', exact: true }).click();
     }
     async function key() {
+      if (!(await page.locator('#key-open').isVisible())) {
+        await page.locator('#atlas-select').click();
+        await page.locator('#atlas-search').fill('Torhalle');
+        await page.getByRole('button', { name: '1 · Torhalle', exact: true }).click();
+      }
       await page.locator('#key-open').click();
+      await page.locator('#key-name').waitFor({ state: 'visible' });
+      if (!(await page.locator('#key-room-list button').first().isVisible()))
+        await page.locator('#key-room-browser-toggle').click();
       await page.locator('#key-room-list button').first().waitFor();
     }
     async function choose(name) {
@@ -182,13 +203,18 @@ await runNativeProbe(
       await shot('runtime-damaged-key');
       await page.locator('#key-close').click();
       if (!(await page.locator('#volume-open').isVisible()))
-        await page.locator('.dungeon-more-tools > summary').click();
+        await page.locator('#atlas-analysis-open').click();
       await page.locator('#volume-open').click();
       await page.locator('#volume-dialog').waitFor({ state: 'visible' });
       await shot('runtime-damaged-volume');
       await page.locator('#volume-close').click();
       const isolatedReads = await app.evaluate(() => globalThis.__authorReads);
       assert(isolatedReads.includes('atlas:drawing-commit'));
+      assert(isolatedReads.includes('atlas:geometry-region'));
+      assert.match(
+        await page.locator('#atlas-hint').innerText(),
+        /Laufzeitansicht nicht verfügbar: Dungeonwahrnehmung beschädigt/,
+      );
       assert(!isolatedReads.includes('dungeon:view'));
       assert(!isolatedReads.includes('atlas:execute'));
       results.isolatedReads = isolatedReads;
@@ -229,7 +255,7 @@ await runNativeProbe(
       assert.equal(JSON.parse(results.mapFloor)[1], 'upper');
       await shot('upper-map');
       if (!(await page.locator('#volume-open').isVisible()))
-        await page.locator('.dungeon-more-tools > summary').click();
+        await page.locator('#atlas-analysis-open').click();
       await page.locator('#volume-open').click();
       await page.locator('#volume-dialog').waitFor({ state: 'visible' });
       await shot('volume');
@@ -246,7 +272,7 @@ await runNativeProbe(
       assert(!reads.includes('dungeon:view'));
       results.reads = reads;
       await close();
-      await launch(2);
+      await launch(1);
       await key();
       await choose('Wachstube');
       assert.equal(await page.locator('#key-gm-notes').inputValue(), 'Wachwechsel um Mitternacht.');

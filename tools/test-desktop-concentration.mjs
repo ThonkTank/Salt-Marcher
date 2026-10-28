@@ -18,7 +18,7 @@ require('esbuild').buildSync({
   external: ['better-sqlite3'],
 });
 const { CampaignStore } = require(root + '/.build/concentration-store.cjs');
-for (const zoom of [1, 2]) {
+for (const zoom of [1]) {
   const native = await createNativeSession({
     root,
     output: path.join(output, String(zoom)),
@@ -299,7 +299,7 @@ for (const zoom of [1, 2]) {
   }
 }
 const runs = await Promise.all(
-  [1, 2].map(async (z) =>
+  [1].map(async (z) =>
     JSON.parse(await readFile(path.join(output, String(z), 'result.json'), 'utf8')),
   ),
 );

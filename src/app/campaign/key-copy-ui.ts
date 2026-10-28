@@ -1,5 +1,5 @@
 import type { Room } from '../shared/contracts';
-import type { DungeonGeometry } from '../atlas/dungeon-contracts';
+import type { DungeonGeometry } from '../atlas/dungeon-geometry-contracts';
 import type { KeyContent, KeyAction, KeyCopyOptions } from './key-contracts';
 import { emptyKey } from './key-contracts';
 import { copyKeyPatch, keyCopyDependencies, keyCopyFields } from './key-copy-model';

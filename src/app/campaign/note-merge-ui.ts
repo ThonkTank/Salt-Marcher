@@ -1,10 +1,6 @@
 import { checkedNoteMerge, type NoteMergePreview } from './note-merge-contracts';
-import type {
-  NoteRow,
-  Preparation,
-  PreparationAPI,
-  PreparationCommand,
-} from './preparation-contracts';
+import type { NoteRow } from './note-data';
+import type { Preparation, PreparationAPI, PreparationCommand } from './preparation-contracts';
 import { editTextareaText } from './key-reading-model';
 
 export interface NoteMergeOwner {

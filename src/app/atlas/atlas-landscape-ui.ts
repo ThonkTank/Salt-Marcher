@@ -9,15 +9,9 @@ import { terrainDetailBox } from './terrain-detail';
 
 import { newLocation } from '../../features/location/location-schema';
 import type { Point, Polygon } from '../shared/contracts';
-import {
-  distance,
-  emptyRecord,
-  hexPolygon,
-  hexStrokesPolygons,
-  type LandscapeBox,
-  type LandscapeField,
-  type LandscapeRecord,
-} from './atlas-landscape';
+import { distance, emptyRecord, hexPolygon, hexStrokesPolygons } from './atlas-landscape';
+import { type LandscapeBox } from './landscape-bounds';
+import { type LandscapeField, type LandscapeRecord } from './landscape-contracts';
 import { drawLandscape, drawLandscapeGrid, drawScale } from './atlas-landscape-view';
 import { areaMeasures, drawMeasurements, pathMeasures, radiusMeasures } from './atlas-measurements';
 import { automaticGrid, gridMeters, travelHexSizes } from './atlas-navigation-scale';
@@ -30,19 +24,15 @@ import {
 } from './atlas-units';
 import { pendingAtlasWrite } from './campaign-atlas-author';
 import type { AtlasAction } from './campaign-atlas-contracts';
-import { atlasHexAt } from './campaign-atlas-model';
+import { atlasHexAt } from './atlas-coordinates';
 import { brushFootprint } from './landscape-brush';
 import { contains } from './landscape-geometry';
 import { linePoints, translateLine } from './landscape-line';
 import { LandscapeToolSettings } from './landscape-tool-settings';
 import { heightBrushResolution } from './terrain-brush';
 import { DEFAULT_TERRAIN_STYLE, type TerrainStyle } from './terrain-relief';
-import {
-  validateVegetation,
-  vegetationSpec,
-  type VegetationInstance,
-  type VegetationOverride,
-} from './vegetation';
+import { validateVegetation, vegetationSpec } from './vegetation';
+import { type VegetationInstance, type VegetationOverride } from './vegetation-contracts';
 import { vegetationControls } from './vegetation-controls';
 const html = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 
@@ -181,7 +171,9 @@ export class LandscapeWorkbench {
   private raster: import('./landscape-raster').LandscapeRaster[] | undefined;
   private token = '';
   private key = '';
-  private publishedLayer: import('./atlas-region-contracts').AtlasLandscapeLayer | undefined;
+  private publishedLayer:
+    | import('./atlas-region-geometry-contracts').AtlasLandscapeLayer
+    | undefined;
   private request = 0;
   private selectionRequest = 0;
   private minimumRevision = 0;
@@ -1247,7 +1239,7 @@ export class LandscapeWorkbench {
     }
     return record.points[0];
   }
-  presentTerrain(layer: import('./atlas-region-contracts').AtlasLandscapeLayer) {
+  presentTerrain(layer: import('./atlas-region-geometry-contracts').AtlasLandscapeLayer) {
     this.records = layer.records;
     this.raster = layer.tiles;
     this.background = null;

@@ -496,8 +496,18 @@ body.atlas-workspace
   max-height: none;
   height: auto;
 }
+#key-room-browser-toggle {
+  display: none;
+}
+#campaign-atlas #key-room-browser-toggle {
+  display: inline-flex;
+}
 #campaign-atlas #key-dialog .key-layout > aside {
   display: none;
+}
+#campaign-atlas #key-dialog[data-room-browser='true'] .key-layout > aside {
+  display: block;
+  margin-bottom: 1rem;
 }
 #campaign-atlas #key-dialog .key-layout > section {
   padding: 0;

@@ -2,8 +2,9 @@ import { crownRadius, crownTone } from './vegetation-shape';
 import { vegetationInstances } from './vegetation-projection';
 import { vegetationOpacity, vegetationScaleLimit, vegetationCrownScale } from './vegetation-lod';
 import { atlasPaint, type AtlasPaint } from './atlas-paint';
-import type { LandscapeRecord, LandscapeBox } from './atlas-landscape';
-import type { VegetationInstance } from './vegetation';
+import type { LandscapeRecord } from './landscape-contracts';
+import type { LandscapeBox } from './landscape-bounds';
+import type { VegetationInstance } from './vegetation-contracts';
 
 export const vegetationColors = {
   oak: '#55764b',

@@ -1,8 +1,5 @@
-import type { AtlasCell } from './world-contracts';
-export interface HexAccess {
-  mode: 'blocked' | 'requires';
-  requirement: string;
-}
+import { type HexAccess } from './hex-access-contracts';
+import type { AtlasCell } from './world-cell-contracts';
 export function checkedHexAccess(value: unknown): HexAccess | undefined {
   if (value === undefined) return;
   const a = value as HexAccess;

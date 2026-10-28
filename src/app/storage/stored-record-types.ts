@@ -1,20 +1,20 @@
 /** Pure canonical payload types shared by transfer and concrete read decoders. No command imports. */
-export type world_note = import('../campaign/preparation-contracts').Note;
-export type character_profile = import('../runtime/live-contracts').CharacterProfile;
-export type combat = import('../runtime/combat-contracts').CombatState;
-export type character_progress = import('../runtime/progression').Progress;
-export type treasure = import('../runtime/progression').Treasure;
-export type character_ledger = import('../runtime/progression').LedgerItem;
+export type world_note = import('../campaign/note-data').Note;
+export type character_profile = import('../runtime/live-scene-contracts').CharacterProfile;
+export type combat = import('../runtime/combat-state-contracts').CombatState;
+export type character_progress = import('../runtime/character-progress-contracts').Progress;
+export type treasure = import('../runtime/treasure-contracts').Treasure;
+export type character_ledger = import('../runtime/treasure-contracts').LedgerItem;
 export type progress_receipt = import('../runtime/progression').ProgressAck;
-export type combat_award = import('../runtime/progression').CombatReward;
-export type encounter_plan = import('../catalog/encounter-contracts').EncounterPlan;
+export type combat_award = import('../runtime/reward-contracts').CombatReward;
+export type encounter_plan = import('../catalog/encounter-contracts').StoredEncounterPlan;
 export type encounter_table = import('../campaign/generation-contracts').EncounterTable;
 export type loot_table = import('../campaign/generation-contracts').LootTable;
 export type generator_preset = import('../campaign/generation-contracts').GeneratorPreset;
 export type generation_run = import('../campaign/generation-contracts').GenerationRun;
 export type world_source = import('../campaign/generation-contracts').WorldSource;
-export type npc_record = import('../campaign/npc-contracts').NpcRecord;
-export type npc_receipt = import('../campaign/npc-contracts').NpcView;
+export type npc_record = import('../campaign/npc-data-contracts').NpcRecord;
+export type npc_receipt = import('../campaign/npc-data-contracts').NpcView;
 export type session_profile = import('../campaign/session-contracts').SessionProfile;
 export type session_visit = import('../campaign/session-contracts').VisitDetail;
 export type world_actor = import('../campaign/session-contracts').WorldActor;
@@ -24,7 +24,7 @@ export type shop = import('../catalog/items-contracts').Shop;
 export type shop_event = import('../catalog/items-contracts').ShopHistoryEntry;
 export type shop_receipt = import('../catalog/items-contracts').ItemShopAck;
 export type scene_position = import('../runtime/world-contracts').ScenePosition;
-export type world_journey = import('../runtime/world-contracts').Journey;
+export type world_journey = import('../runtime/world-travel-contracts').Journey;
 export type world_receipt = import('../runtime/world-contracts').WorldAck;
 export type audio_asset = import('../runtime/music-contracts').AudioAsset;
 export type audio_registry = import('../runtime/music-contracts').AudioRegistry;
@@ -33,19 +33,19 @@ export type scene_music = import('../runtime/music-contracts').MusicSceneSetting
 export type music_subject = import('../runtime/music-contracts').MusicSubject;
 export type music_receipt = { applied: true };
 export type dungeon_feature_state =
-  import('../atlas/drawing-contracts').DrawingView['features'][number];
-export type atlas_landscape = import('../atlas/atlas-landscape').LandscapeRecord;
+  import('../atlas/drawing-view-contracts').DrawingView['features'][number];
+export type atlas_landscape = import('../atlas/landscape-contracts').LandscapeRecord;
 export type planned_visit =
   import('../../features/planner/manual-planner').ManualPlan['scenes'][number];
 export type location = import('../../features/location/location-schema').LocationDocument;
 export type live_scene_extra = { readAloud: string };
-export type world_record_calendar = import('../runtime/world-contracts').FantasyCalendar & {
+export type world_record_calendar = import('../runtime/calendar-contracts').FantasyCalendar & {
   id?: string;
 };
-export type world_record_map = import('../runtime/world-contracts').AtlasMap;
-export type world_record_phenomenon = import('../runtime/world-contracts').WeatherPhenomenon;
+export type world_record_map = import('../runtime/world-map-contracts').AtlasMap;
+export type world_record_phenomenon = import('../runtime/weather-contracts').WeatherPhenomenon;
 export type world_record_place_presentation =
-  import('../runtime/world-contracts').MarkerPresentation & {
+  import('../runtime/world-cell-contracts').MarkerPresentation & {
     id: string;
     revision: number;
   };
@@ -66,10 +66,10 @@ export type generation_receipt =
   | import('../campaign/generation-contracts').LootRoll
   | import('../catalog/encounter-contracts').EncounterPlan;
 export type progress_event = (
-  | { entry: import('../runtime/progression').LedgerItem; shopId: string }
+  | { entry: import('../runtime/treasure-contracts').LedgerItem; shopId: string }
   | {
-      before: import('../runtime/progression').LedgerItem;
-      portion: import('../runtime/progression').LedgerItem;
+      before: import('../runtime/treasure-contracts').LedgerItem;
+      portion: import('../runtime/treasure-contracts').LedgerItem;
       shopId: string;
       notes: string;
     }
@@ -77,7 +77,7 @@ export type progress_event = (
       commandId: string;
       combatId: string;
       title: string;
-      participant: import('../runtime/combat-contracts').Combatant;
+      participant: import('../runtime/combat-state-contracts').Combatant;
       reason: string;
     }
   | { groupId: string; after: import('../campaign/session-contracts').PreparedGroup }
@@ -86,29 +86,29 @@ export type progress_event = (
       before: import('../campaign/session-contracts').PreparedGroup;
       after: import('../campaign/session-contracts').PreparedGroup;
     }
-  | { treasure: import('../runtime/progression').Treasure }
+  | { treasure: import('../runtime/treasure-contracts').Treasure }
   | {
       treasureId: string;
       from: import('../runtime/treasury-contracts').TreasureAnchor;
       to: import('../runtime/treasury-contracts').TreasureAnchor;
       targetName: string;
-      before: import('../runtime/progression').Treasure;
-      after: import('../runtime/progression').Treasure;
+      before: import('../runtime/treasure-contracts').Treasure;
+      after: import('../runtime/treasure-contracts').Treasure;
       reason: string;
     }
   | {
       treasureId: string;
-      before: import('../runtime/progression').Treasure;
-      after: import('../runtime/progression').Treasure;
+      before: import('../runtime/treasure-contracts').Treasure;
+      after: import('../runtime/treasure-contracts').Treasure;
       reason: string;
     }
   | {
       treasureId: string;
       targetTreasureId: string;
-      before: import('../runtime/progression').Treasure;
-      after: import('../runtime/progression').Treasure;
-      targetBefore: import('../runtime/progression').Treasure;
-      targetAfter: import('../runtime/progression').Treasure;
+      before: import('../runtime/treasure-contracts').Treasure;
+      after: import('../runtime/treasure-contracts').Treasure;
+      targetBefore: import('../runtime/treasure-contracts').Treasure;
+      targetAfter: import('../runtime/treasure-contracts').Treasure;
       quantity: number;
       itemId: string;
       reason: string;
@@ -117,35 +117,39 @@ export type progress_event = (
       commandId: string;
       combatId: string;
       title: string;
-      participant: import('../runtime/combat-contracts').Combatant;
-      before: import('../runtime/progression').Progress;
-      after: import('../runtime/progression').Progress;
+      participant: import('../runtime/combat-state-contracts').Combatant;
+      before: import('../runtime/character-progress-contracts').Progress;
+      after: import('../runtime/character-progress-contracts').Progress;
     }
   | {
       commandId: string;
       combatId: string;
       title: string;
-      participant: import('../runtime/combat-contracts').Combatant;
+      participant: import('../runtime/combat-state-contracts').Combatant;
     }
   | {
       sourceKind: string;
       sourceId: string;
-      before: import('../runtime/progression').Progress;
-      after: import('../runtime/progression').Progress;
+      before: import('../runtime/character-progress-contracts').Progress;
+      after: import('../runtime/character-progress-contracts').Progress;
       xp: number;
     }
   | {
       awardId: string;
       combatId: string;
-      before: import('../runtime/progression').Progress;
-      after: import('../runtime/progression').Progress;
+      before: import('../runtime/character-progress-contracts').Progress;
+      after: import('../runtime/character-progress-contracts').Progress;
       xp: number;
       load: number;
     }
-  | { treasureId: string; itemId: string; entry: import('../runtime/progression').LedgerItem }
   | {
-      before: import('../runtime/progression').Progress;
-      after: import('../runtime/progression').Progress;
+      treasureId: string;
+      itemId: string;
+      entry: import('../runtime/treasure-contracts').LedgerItem;
+    }
+  | {
+      before: import('../runtime/character-progress-contracts').Progress;
+      after: import('../runtime/character-progress-contracts').Progress;
       xp: number;
       load: number;
       reason: string;
@@ -173,7 +177,7 @@ export type progress_event = (
         locationId?: string | null | undefined;
         contributors: string[];
         poolXp: number;
-        items: import('../runtime/progression').ItemInput[];
+        items: import('../catalog/item-input-contracts').ItemInput[];
       };
     }
   | {
@@ -189,10 +193,10 @@ export type progress_event = (
       recordedAt: string;
     }
   | {
-      before: import('../runtime/progression').LedgerItem;
-      sourceBefore: import('../runtime/progression').LedgerItem;
-      after: import('../runtime/progression').LedgerItem;
-      sourceAfter: import('../runtime/progression').LedgerItem;
+      before: import('../runtime/treasure-contracts').LedgerItem;
+      sourceBefore: import('../runtime/treasure-contracts').LedgerItem;
+      after: import('../runtime/treasure-contracts').LedgerItem;
+      sourceAfter: import('../runtime/treasure-contracts').LedgerItem;
       reason: string;
     }
   | {
@@ -207,9 +211,9 @@ export type progress_event = (
         sourceCharacterId: string;
         provenance: string;
         revision: number;
-        reference: import('../runtime/progression').ItemReference;
+        reference: import('../catalog/item-input-contracts').ItemReference;
         name: string;
-        category: import('../runtime/progression').ItemCategory;
+        category: import('../catalog/item-input-contracts').ItemCategory;
         quantity: number;
         unitCopper: string | null;
         status: 'received' | 'sold' | 'given';
@@ -242,8 +246,8 @@ export type progress_event = (
       reason: string;
     }
   | {
-      before: import('../runtime/progression').LedgerItem;
-      after: import('../runtime/progression').LedgerItem;
+      before: import('../runtime/treasure-contracts').LedgerItem;
+      after: import('../runtime/treasure-contracts').LedgerItem;
       handed: {
         status: 'given';
         counterparty: any;
@@ -252,9 +256,9 @@ export type progress_event = (
         id: string;
         characterId: string;
         revision: number;
-        reference: import('../runtime/progression').ItemReference;
+        reference: import('../catalog/item-input-contracts').ItemReference;
         name: string;
-        category: import('../runtime/progression').ItemCategory;
+        category: import('../catalog/item-input-contracts').ItemCategory;
         quantity: number;
         unitCopper: string | null;
         origin: 'purchase' | 'award' | 'manual' | 'transfer';
@@ -288,22 +292,22 @@ export type progress_event = (
       reason: string;
     }
   | {
-      before: import('../runtime/progression').LedgerItem;
-      after: import('../runtime/progression').LedgerItem;
-      portion: import('../runtime/progression').LedgerItem;
+      before: import('../runtime/treasure-contracts').LedgerItem;
+      after: import('../runtime/treasure-contracts').LedgerItem;
+      portion: import('../runtime/treasure-contracts').LedgerItem;
       reason: string;
     }
   | {
       reason: string;
-      before: import('../runtime/progression').Progress;
-      after: import('../runtime/progression').Progress;
-      result?: import('../runtime/progression').DeathSaveResult | undefined;
+      before: import('../runtime/character-progress-contracts').Progress;
+      after: import('../runtime/character-progress-contracts').Progress;
+      result?: import('../runtime/character-progress-contracts').DeathSaveResult | undefined;
       amount?: number | undefined;
       operation: 'set' | 'damage' | 'heal' | 'death';
     }
   | {
-      before: import('../runtime/progression').Progress;
-      after: import('../runtime/progression').Progress;
+      before: import('../runtime/character-progress-contracts').Progress;
+      after: import('../runtime/character-progress-contracts').Progress;
       reason: string;
       mode: 'add' | 'set' | 'subtract';
       requestedAmount: number;
@@ -311,26 +315,28 @@ export type progress_event = (
       correctionOf: string | null;
     }
   | {
-      duration?: { amount: number; unit: import('../runtime/live-contracts').TimeUnit } | undefined;
+      duration?:
+        | { amount: number; unit: import('../runtime/live-scene-contracts').TimeUnit }
+        | undefined;
       sceneId?: string | undefined;
       commandId: string;
       rest: 'short' | 'long';
-      before: import('../runtime/progression').Progress;
-      after: import('../runtime/progression').Progress;
+      before: import('../runtime/character-progress-contracts').Progress;
+      after: import('../runtime/character-progress-contracts').Progress;
       restoreHp: boolean;
     }
-  | { entry: import('../runtime/progression').LedgerItem }
+  | { entry: import('../runtime/treasure-contracts').LedgerItem }
   | {
       originalId: string;
-      before: import('../runtime/progression').LedgerItem;
-      after: import('../runtime/progression').LedgerItem;
+      before: import('../runtime/treasure-contracts').LedgerItem;
+      after: import('../runtime/treasure-contracts').LedgerItem;
       reason: string;
     }
   | {
       originalId: string;
-      before: import('../runtime/progression').LedgerItem;
-      after: import('../runtime/progression').LedgerItem;
-      portion: import('../runtime/progression').LedgerItem;
+      before: import('../runtime/treasure-contracts').LedgerItem;
+      after: import('../runtime/treasure-contracts').LedgerItem;
+      portion: import('../runtime/treasure-contracts').LedgerItem;
       reason: string;
     }
   | { combatId: string; groupId: string; actorIds: string[] }
@@ -338,25 +344,28 @@ export type progress_event = (
       commandId: string;
       combatId: string;
       title: string;
-      participant: import('../runtime/combat-contracts').Combatant;
+      participant: import('../runtime/combat-state-contracts').Combatant;
       returning: boolean;
     }
 ) & { recordedAt: string };
 export type world_history_facts =
   | {
-      before: import('../runtime/world-contracts').FantasyCalendar;
-      after: import('../runtime/world-contracts').FantasyCalendar;
+      before: import('../runtime/calendar-contracts').FantasyCalendar;
+      after: import('../runtime/calendar-contracts').FantasyCalendar;
     }
   | { mapId: string }
-  | { locationId: string; mapId: string; hex: import('../runtime/world-contracts').Hex }
-  | { locationId: string; presentation: import('../runtime/world-contracts').MarkerPresentation }
-  | { phenomenon: import('../runtime/world-contracts').WeatherPhenomenon }
-  | { weather: import('../runtime/world-contracts').Weather | null }
+  | { locationId: string; mapId: string; hex: import('../runtime/world-cell-contracts').Hex }
+  | {
+      locationId: string;
+      presentation: import('../runtime/world-cell-contracts').MarkerPresentation;
+    }
+  | { phenomenon: import('../runtime/weather-contracts').WeatherPhenomenon }
+  | { weather: import('../runtime/weather-contracts').Weather | null }
   | {
       before: import('../runtime/world-contracts').ScenePosition;
       after: Omit<import('../runtime/world-contracts').ScenePosition, 'revision'>;
     }
-  | { preview: import('../runtime/world-contracts').TravelPreview; journeyId: string }
+  | { preview: import('../runtime/world-travel-contracts').TravelPreview; journeyId: string }
   | { journeyId: string }
   | { checkpointId: string; retainedShared: any; from: string; to: string; tables: string[] }
   | {
@@ -366,16 +375,16 @@ export type world_history_facts =
       before: {
         position: import('../runtime/world-contracts').ScenePosition;
         clock: { epochId: string; instantMs: string; revision: number };
-        weather: import('../runtime/world-contracts').Weather | null;
+        weather: import('../runtime/weather-contracts').Weather | null;
       };
       after: {
         position: import('../runtime/world-contracts').ScenePosition;
         clock: { epochId: string; instantMs: string; revision: number };
-        weather: import('../runtime/world-contracts').Weather | null;
+        weather: import('../runtime/weather-contracts').Weather | null;
       };
       seconds: number;
     }
-  | { journeyId: string; hex: import('../runtime/world-contracts').Hex };
+  | { journeyId: string; hex: import('../runtime/world-cell-contracts').Hex };
 export type world_history = {
   text: string;
   recordedAt: string;

@@ -1,0 +1,7 @@
+{
+  "roles": {
+    "DungeonGeometry.floors[].id": "local",
+    "DungeonGeometry.floors[].name": "text",
+    "DungeonGeometry.floors[].scopeId": "local"
+  }
+}

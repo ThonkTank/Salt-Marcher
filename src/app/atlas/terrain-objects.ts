@@ -1,19 +1,16 @@
-import type { Point, Polygon } from '../shared/contracts';
-import type { AtlasRenderView } from './campaign-atlas-contracts';
-import { atlasFrame, localToAtlas } from './campaign-atlas-model';
+import {
+  type TerrainAnchor,
+  type TerrainBuilding,
+  type TerrainObjectSource,
+  type TerrainObject,
+} from './terrain-object-contracts';
+
+import type { AtlasRenderView } from './campaign-atlas-view-contracts';
+import { atlasFrame } from './campaign-atlas-model';
+import { localToAtlas } from './atlas-coordinates';
 import { posedFootprint } from './city-model';
 import { TerrainSampler } from './terrain-height';
-import type { LandscapeRecord } from './atlas-landscape';
-
-/** Values are metres. A ground anchor moves the complete object, never its footprint or floors. */
-export interface TerrainAnchor {
-  mode: 'ground' | 'fixed';
-  offsetM: number;
-}
-export interface TerrainBuilding extends TerrainAnchor {
-  wallM: number;
-  roofM: number;
-}
+import type { LandscapeRecord } from './landscape-contracts';
 export const defaultTerrainBuilding = (): TerrainBuilding => ({
   mode: 'ground',
   offsetM: 0,
@@ -42,30 +39,6 @@ export function validateTerrainBuilding(b: TerrainBuilding | undefined) {
       b.roofM > 1000)
   )
     throw Error('Wandhöhe (0,1–1000 m) und Dachhöhe (0–1000 m) prüfen.');
-}
-export interface TerrainObjectSource {
-  kind: 'building' | 'entrance' | 'scope';
-  id: string;
-  name: string;
-  cityId?: string;
-  roomId?: string;
-  scopeId?: string;
-  closed?: boolean;
-  footprint?: Polygon[];
-  anchor: Point;
-  outline: Point[];
-  binding: TerrainAnchor;
-  wallM: number;
-  roofM: number;
-  floorElevations: number[];
-  color: string;
-}
-export interface TerrainObject extends TerrainObjectSource {
-  baseM: number;
-  topM: number;
-  groundM: number[];
-  floorsM: number[];
-  footprintGroundM?: number[][][];
 }
 export function terrainObjectSources(
   a: AtlasRenderView,

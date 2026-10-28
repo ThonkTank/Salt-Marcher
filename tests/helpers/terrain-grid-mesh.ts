@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { terrainGridLayout } from '../../src/app/atlas/terrain-grid-layout';
-import type { TerrainGrid } from '../../src/app/atlas/terrain-spatial-model';
+import type { TerrainGrid } from '../../src/app/atlas/terrain-grid-contracts';
 /** Independent triangle oracle for persisted brush snapshots and nonuniform lattices. */
 export function gridMesh(grid: TerrainGrid) {
   const { view: v } = grid,

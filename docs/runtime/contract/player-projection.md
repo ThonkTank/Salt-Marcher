@@ -191,6 +191,6 @@ Gesamt-/Privacy-/Plattformabnahme oder vollständige SMR-AC-14-Freigabe.
    Ressourcen-/Session-/Fenstergeneration und Widerruf gemeinsam binden.
 4. **Native Wirkung qualifizieren.** Echte Player-Session mit großer Geometrie,
    Blank, Art-/Decoderfehlern, Scenewechsel und Neustart; physische Monitorwahl,
-   DPI, Fullscreen, Tastatur/200 % sowie Linux/Windows/macOS. Ein kontrolliertes
+   DPI, Fullscreen, Tastatur/100 % sowie Linux/Windows/macOS. Ein kontrolliertes
    Fenster ist kein Beleg für diese Aufgaben. Nichtnative Feldtests bleiben
    separat von sichtbarer Ausgabe und gemessener Ressourcenfreigabe.

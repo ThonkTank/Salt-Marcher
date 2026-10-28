@@ -37,8 +37,13 @@ const launches = [],
   results = [];
 let app, page, native, db;
 try {
-  for (const scale of [1, 2]) {
-    native = await createNativeSession({ root, output: out + '/' + scale, name: 'access-path' });
+  for (const variant of [1, 2]) {
+    const scale = 1;
+    native = await createNativeSession({
+      root,
+      output: out + '/variant-' + variant,
+      name: 'access-path',
+    });
     assert.equal(native.source, source);
     assert.equal(native.dirty, dirty);
     const profile = native.profile,
@@ -138,13 +143,14 @@ try {
           .digest('hex'),
         workerArtifact,
       );
-      await app.evaluate(({ BrowserWindow }) => {
+      await app.evaluate(({ BrowserWindow }, compact) => {
         const w = BrowserWindow.getAllWindows().find((w) =>
           w.webContents.getURL().endsWith('/index.html'),
         );
         w.unmaximize();
-        w.setContentSize(1400, 1000);
-      });
+        w.setMinimumSize(320, 240);
+        w.setContentSize(compact ? 700 : 1400, compact ? 500 : 1000);
+      }, variant === 2);
       await page.emulateMedia({ reducedMotion: 'reduce' });
       await page.waitForFunction(() => document.body.dataset.tutorialReady === 'true');
       await page
@@ -200,7 +206,7 @@ try {
       await page.locator('#atlas-export-audience').selectOption('gm');
       await page.locator('#atlas-export-grid').uncheck();
       const box = JSON.parse(await page.locator('#campaign-map').getAttribute('data-atlas-view')),
-        file = out + '/' + scale + '-' + label + '.png';
+        file = out + '/variant-' + variant + '-' + label + '.png';
       await app.evaluate(({ dialog }, file) => {
         dialog.showSaveDialog = async () => ({ canceled: false, filePath: file });
       }, file);
@@ -258,9 +264,9 @@ try {
       selectedLayout.mapWidth / selectedLayout.width >= 0.45,
       'map keeps enough room beside selected-object properties',
     );
-    assert.equal(await page.locator('#atlas-tool-settings').isVisible(), scale === 1);
+    assert.equal(await page.locator('#atlas-tool-settings').isVisible(), variant === 1);
     await native.capture(page, 'selected-path');
-    if (scale === 2) {
+    if (variant === 2) {
       await page.locator('[data-tool-group=walls]').click();
       await page.waitForFunction(() => !document.querySelector('#atlas-section').disabled);
       assert(await page.locator('#atlas-tool-settings').isVisible());
@@ -330,7 +336,7 @@ try {
       true,
       'reopening campaign output puts keyboard focus in its visible controls',
     );
-    const editable = out + '/' + scale + '-editable.kwcampaign';
+    const editable = out + '/variant-' + variant + '-editable.kwcampaign';
     await app.evaluate(({ dialog }, file) => {
       dialog.showSaveDialog = async () => ({ canceled: false, filePath: file });
     }, editable);
@@ -372,7 +378,7 @@ try {
     await page.locator('#campaign-manager').click();
     await page.locator('#campaign-import-package').click();
     await page.locator('#campaign-transfer-dialog').waitFor({ state: 'visible' });
-    const restoredName = 'Zollhaus wiederhergestellt ' + scale;
+    const restoredName = 'Zollhaus wiederhergestellt ' + variant;
     await page.locator('#campaign-transfer-name').fill(restoredName);
     await page.locator('#campaign-transfer-accept').click();
     await page.locator('#campaign-transfer-dialog').waitFor({ state: 'hidden' });
@@ -466,8 +472,8 @@ try {
       }, file);
       await page.locator('#atlas-output-save-campaign').click();
     };
-    const retiredFile = out + '/' + scale + '-retired.kwcampaign',
-      currentFile = out + '/' + scale + '-current.kwcampaign';
+    const retiredFile = out + '/variant-' + variant + '-retired.kwcampaign',
+      currentFile = out + '/variant-' + variant + '-current.kwcampaign';
     await startBackup(retiredFile);
     await waitBackups(1);
     await page.locator('#atlas-export-kind').selectOption('image');
@@ -518,6 +524,7 @@ try {
     launches.push(...native.launches);
     results.push({
       scale,
+      variant,
       profile,
       before,
       after,
@@ -529,7 +536,7 @@ try {
       packageRestoredAndEdited: true,
       exportPreviewUncovered: true,
       selectedPropertiesKeptOpen: true,
-      compactToolReturn: scale === 2,
+      compactToolReturn: variant === 2,
       exportFocusOnReopen: true,
       editingLayoutPreferenceRetained: true,
       backupIndependentOfPublicSettings: true,

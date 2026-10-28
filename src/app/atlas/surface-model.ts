@@ -1,24 +1,9 @@
+import { type SurfaceFace } from './surface-contracts';
 import { volumeOrigin } from './volume-model';
 import type { DungeonVolume } from './volume-contracts';
-import type { SpatialGeometry, DungeonPose } from './dungeon-contracts';
+import type { SpatialGeometry } from './dungeon-geometry-contracts';
+import type { DungeonPose } from './dungeon-position-contracts';
 import type { KeyContent } from '../campaign/key-contracts';
-export type SurfaceSide = 'north' | 'east' | 'south' | 'west' | 'floor' | 'ceiling';
-export interface SurfaceFace {
-  x: number;
-  y: number;
-  z: number;
-  side: SurfaceSide;
-}
-export interface SurfaceRegion {
-  roomId: string;
-  fragments: {
-    id: string;
-    volumeId: string;
-    faces: SurfaceFace[];
-    unbound?: boolean;
-    orphanedWorld?: { floorId: string; faces: SurfaceFace[] };
-  }[];
-}
 export const surfaceFaceKey = (f: SurfaceFace) => [f.x, f.y, f.z, f.side].join(',');
 const indexes = new WeakMap<DungeonVolume, Map<string, DungeonVolume['columns'][number]>>();
 export function isSurfaceFace(v: DungeonVolume, f: SurfaceFace) {

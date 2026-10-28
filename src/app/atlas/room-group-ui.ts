@@ -1,4 +1,5 @@
-import { GROUP_PROFILES, generateRoomGroup, type GroupRecipe } from './room-group-generator';
+import { GROUP_PROFILES, type GroupRecipe } from './room-group-contracts';
+import { generateRoomGroup } from './room-group-generator';
 import { atlasFieldValue, setAtlasFieldValue } from './atlas-units';
 import { dungeonSvg } from './drawing-model';
 /** A local preview never writes. Main regenerates from the accepted recipe. */

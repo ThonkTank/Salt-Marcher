@@ -4,7 +4,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import type { Room } from '../shared/contracts';
 import type { DungeonVolume, VolumeAction } from '../atlas/volume-contracts';
 import { MAX_VOLUME_COLUMNS, MAX_VOLUME_CELLS } from '../atlas/volume-contracts';
-import type { DrawingElement } from '../atlas/drawing-contracts';
+import type { DrawingElement } from '../atlas/drawing-element-contracts';
 import {
   volumeFromRoom,
   editVolume,

@@ -35,7 +35,8 @@ import {
 import type { WorkspaceGeometry, Result } from '../shared/contracts';
 import type { Preparation } from './preparation-contracts';
 import type { ManualPlan } from '../../features/planner/manual-planner';
-import { xpLevel, xpShare, type ItemInput } from '../runtime/progression';
+import { xpLevel, xpShare } from '../runtime/progression';
+import { type ItemInput } from '../catalog/item-input-contracts';
 import { type GenerationRequest } from './generation-contracts';
 import type {
   SessionProfile,

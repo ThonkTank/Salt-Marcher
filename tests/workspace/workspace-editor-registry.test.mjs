@@ -94,6 +94,10 @@ function fixture() {
     ['deactivate' + name]: (...args) => globalThis.editorBoundaryTest('deactivate' + name, args),
   });
   const host = {
+    world: {
+      ...owner('World'),
+      stopWorldPlayback: () => globalThis.editorBoundaryTest('stopWorldPlayback', []),
+    },
     npcs: owner('Npcs'),
     music: owner('Music'),
     items: owner('Items'),

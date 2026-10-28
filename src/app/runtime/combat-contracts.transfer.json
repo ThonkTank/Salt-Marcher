@@ -1,38 +1,9 @@
 {
- "roles": {
-  "CombatState.generatorPreset.hash": "external",
-  "CombatState.generatorPreset.id": "shared",
-  "CombatState.id": "local",
-  "CombatState.notes": "text",
-  "CombatState.outcome": "text",
-  "CombatState.planOrigin.id": "local",
-  "CombatState.planOrigin.name": "text",
-  "CombatState.sceneGroups[].id": "local",
-  "CombatState.sceneGroups[].name": "text",
-  "CombatState.sceneId": "local",
-  "CombatState.sharedNotice": "text",
-  "CombatState.sourceSerials{}": "external",
-  "CombatState.title": "text",
-  "CombatState.turnId": "local",
-  "CombatState.worldLosses[].actorId": "local",
-  "CombatState.worldLosses[].name": "text",
-  "CombatView.partyCandidates[].characterId": "local",
-  "CombatView.partyCandidates[].health.conditions": "text",
-  "CombatView.partyCandidates[].name": "text",
-  "CombatView.recent[].id": "local",
-  "CombatView.recent[].title": "text",
-  "Combatant.characterId": "local",
-  "Combatant.conditions": "text",
-  "Combatant.groupId": "local",
-  "Combatant.groupName": "text",
-  "Combatant.id": "local",
-  "Combatant.legendaryActions.lastUsedActionId": "text",
-  "Combatant.legendaryActions.lastUsedTurnId": "local",
-  "Combatant.name": "text",
-  "Combatant.sourceEntryId": "local",
-  "Combatant.sourceId": "external",
-  "Combatant.timedEffects[].id": "local",
-  "Combatant.timedEffects[].name": "text",
-  "Combatant.worldActorId": "local"
- }
+  "roles": {
+    "CombatView.partyCandidates[].characterId": "local",
+    "CombatView.partyCandidates[].health.conditions": "text",
+    "CombatView.partyCandidates[].name": "text",
+    "CombatView.recent[].id": "local",
+    "CombatView.recent[].title": "text"
+  }
 }

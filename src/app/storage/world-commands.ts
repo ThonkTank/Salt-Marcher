@@ -13,14 +13,12 @@ import { agendaOccurrence } from '../runtime/agenda-model';
 import { rememberAtlasHex } from './atlas-knowledge';
 import { canonicalJson } from '../campaign/generation/canonical-json';
 import { randomUUID } from 'node:crypto';
+import type { AtlasMap } from '../runtime/world-map-contracts';
+import type { Hex } from '../runtime/world-cell-contracts';
+import type { Journey, TravelPreview, TravelRequest } from '../runtime/world-travel-contracts';
 import type {
-  AtlasMap,
-  Hex,
-  Journey,
   ScenePosition,
   SceneWorld,
-  TravelPreview,
-  TravelRequest,
   WorldAck,
   WorldCommand,
   WorldView,
@@ -470,7 +468,7 @@ function cellLandscape(
   db: SqliteDatabase,
   cam: string,
   mapId: string,
-  cell: import('../runtime/world-contracts').AtlasCell,
+  cell: import('../runtime/world-cell-contracts').AtlasCell,
 ) {
   return checkedQuery(db, sourceCellLookup, { id: 'text', revision: 'integer' }).get(
     cam,
@@ -485,7 +483,7 @@ function writeCellLandscape(
   db: SqliteDatabase,
   cam: string,
   m: AtlasMap,
-  cell: import('../runtime/world-contracts').AtlasCell,
+  cell: import('../runtime/world-cell-contracts').AtlasCell,
 ) {
   const { q, r, level } = cell,
     old = cellLandscape(db, cam, m.id, cell),
@@ -596,7 +594,7 @@ export function executeWorld<T = never>(
           ).get(cam, m.id),
           old = prior ? map(db, cam, m.id) : null;
         const previous = new Map(
-          (old?.cells ?? []).map((c: import('../runtime/world-contracts').AtlasCell) => [
+          (old?.cells ?? []).map((c: import('../runtime/world-cell-contracts').AtlasCell) => [
             `${c.level}:${c.q}:${c.r}`,
             c.terrain,
           ]),
@@ -646,15 +644,25 @@ export function executeWorld<T = never>(
       } else if (a.kind === 'place') {
         hex(a.hex);
         map(db, cam, a.mapId);
-        const loc = checkedQuery(db, 'SELECT trashed FROM location WHERE campaign_id=? AND id=?', {
-            trashed: 'integer',
-          }).get(cam, a.locationId),
+        const loc = checkedQuery(
+            db,
+            'SELECT trashed,revision FROM location WHERE campaign_id=? AND id=?',
+            {
+              trashed: 'integer',
+              revision: 'integer',
+            },
+          ).get(cam, a.locationId),
           old = checkedQuery(
             db,
             'SELECT revision FROM atlas_place WHERE campaign_id=? AND location_id=?',
             { revision: 'integer' },
           ).get(cam, a.locationId);
-        if (!loc || loc.trashed || (old?.revision ?? null) !== a.expectedRevision)
+        if (
+          !loc ||
+          loc.trashed ||
+          (old?.revision ?? null) !== a.expectedRevision ||
+          (a.expectedLocationRevision !== undefined && a.expectedLocationRevision !== loc.revision)
+        )
           throw new Error('Ort oder Marker geändert.');
         db.prepare(
           'INSERT INTO atlas_place VALUES(?,?,?,?,?,?) ON CONFLICT(campaign_id,location_id) DO UPDATE SET map_id=excluded.map_id,revision=excluded.revision,q=excluded.q,r=excluded.r',
@@ -665,9 +673,14 @@ export function executeWorld<T = never>(
           hex: a.hex,
         });
       } else if (a.kind === 'place-presentation') {
-        const loc = checkedQuery(db, 'SELECT trashed FROM location WHERE campaign_id=? AND id=?', {
-            trashed: 'integer',
-          }).get(cam, a.locationId),
+        const loc = checkedQuery(
+            db,
+            'SELECT trashed,revision FROM location WHERE campaign_id=? AND id=?',
+            {
+              trashed: 'integer',
+              revision: 'integer',
+            },
+          ).get(cam, a.locationId),
           anchor = checkedQuery(
             db,
             'SELECT 1 FROM atlas_place WHERE campaign_id=? AND location_id=?',

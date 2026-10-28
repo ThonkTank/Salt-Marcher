@@ -1,5 +1,5 @@
 import type { Polygon } from '../shared/contracts';
-import { type LandscapeRecord } from './atlas-landscape';
+import { type LandscapeRecord } from './landscape-contracts';
 import { maskLandSpans } from './land-mask';
 import { intersectPolygons, subtractPolygons, unionPolygons } from './landscape-brush';
 import { contains } from './landscape-geometry';
@@ -36,7 +36,7 @@ export function landSurface(records: LandscapeRecord[]): Polygon[] {
 export function colorSurface(
   record: LandscapeRecord,
   records: LandscapeRecord[],
-  canonicalVisibility?: import('./terrain-spatial-model').TerrainGrid,
+  canonicalVisibility?: import('./terrain-grid-contracts').TerrainGrid,
 ): LandscapeRecord {
   const r = visibleTerrainColor(structuredClone(record), records, canonicalVisibility),
     p = r.paint!;

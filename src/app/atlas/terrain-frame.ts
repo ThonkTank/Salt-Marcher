@@ -1,28 +1,12 @@
-import type { AtlasLandscapeLayer } from './atlas-region-contracts';
-import type { LandscapeBox } from './atlas-landscape';
-import type { TerrainProjection } from './terrain-projection';
-import type { TerrainGrid } from './terrain-spatial-model';
+import {
+  type TerrainFrameIdentity,
+  type TerrainInvalidation,
+  type TerrainPatch,
+} from './terrain-frame-identity';
+import type { AtlasLandscapeLayer } from './atlas-region-geometry-contracts';
 
-export interface TerrainIdentity {
-  revision: number;
-  fence: string;
-}
-export interface TerrainFrameIdentity extends TerrainIdentity {
-  key: string;
-}
-export interface TerrainInvalidation {
-  bounds: LandscapeBox[];
-  reset: boolean;
-}
-export interface TerrainRect {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-}
-export interface TerrainPatch<T extends Uint8Array | Float32Array> extends TerrainRect {
-  data: T;
-}
+import type { TerrainProjection } from './terrain-projection-contracts';
+import type { TerrainGrid } from './terrain-grid-contracts';
 type Common = { target: TerrainFrameIdentity; invalidation: TerrainInvalidation };
 export type TerrainFullFrame = Common & { kind: 'full' } & (
     | { view: 'top'; layer: AtlasLandscapeLayer }
@@ -42,7 +26,7 @@ export type TerrainDeltaFrame = Common & { kind: 'delta'; base: TerrainFrameIden
         editing?: {
           ground: TerrainPatch<Float32Array>[];
           water: TerrainPatch<Float32Array>[];
-          author?: import('./terrain-spatial-model').TerrainEditingSource;
+          author?: import('./terrain-grid-contracts').TerrainEditingSource;
         };
         heights: TerrainPatch<Float32Array>[];
         pixels: TerrainPatch<Uint8Array>[];

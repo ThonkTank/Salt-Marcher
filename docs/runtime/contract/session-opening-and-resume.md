@@ -54,7 +54,7 @@ Gezielte Prüfungen zählen den gemeinsamen Vorbereitungs-/Referenzanschluss bei
 und nach bestätigter Ortsänderung. Profilinspektion und lokaler Ortsentwurf
 lösen diesen Anschluss nicht aus. Native Gegenproben zählen reale Welt-/Agenda-
 IPC-Aufrufe, erhalten Eingabetext, Fokus und Cursor über automatisches Speichern
-und lesen nach normalem Neustart bei200% denselben Text und Reisestand.
+und lesen nach normalem Neustart bei100 % denselben Text und Reisestand.
 Große Vorbereitungs-/Rosterprojektionen und parallele Inhaltsreads
 eigenständiger Dialoge bleiben gesondert zu messen;
 keine vollständige Last-, Plattform- oder Produktabnahme aus diesen Teilbelegen.
@@ -93,7 +93,7 @@ Live-Read, unveränderte Ortsbindung und Prosa, späte Antworten nach Textwrite,
 Kampagnenwechsel, überholtem Retry und widerrufener Planabsicht. Die native
 Live-/Reiseprobe ergänzt eine fehlerhafte echte Preparation-IPC-Antwort und einen
 verzögerten Retry über Textautosave hinweg, anschließend normalen Close/Fresh bei
-100%/200%. Große Quellbestände einschließlich synchroner Arbeit im gemeinsamen
+100 Prozent. Große Quellbestände einschließlich synchroner Arbeit im gemeinsamen
 Main-Prozess gesondert messen; die unabhängige Rendererübernahme ist keine
 Garantie gegen dortige Blockaden. Weitere Plattformen und vollständige
 Produktabnahme bleiben offen.
@@ -201,7 +201,7 @@ lässt sich danach im Startbriefing erneut aus der historischen Übergabe vorber
 Ein unfertiger Einstiegsdialog ist damit noch kein über Neustart gesicherter Planentwurf.
 
 `tools/test-desktop-evening-handoff.mjs` prüft den vollständigen Linuxablauf bei
-100 und 200 %: CRLF-Rückblick ergänzen, normal schließen und frisch fortsetzen,
+100 Prozent: CRLF-Rückblick ergänzen, normal schließen und frisch fortsetzen,
 bestätigen, Vorbereitung abbrechen, nach Neustart aus der historischen Übergabe
 vorbereiten, Mappe speichern und nach erneutem Neustart denselben Besuch bearbeiten.
 Jeder Lauf prüft vier normale Prozessenden, einen unveränderten historischen Abschluss,
@@ -228,7 +228,7 @@ Eingaben zurück. Native verzögerte Antworten, IME und physischer Crash bleiben
 - Native Wiederaufnahme mit unlesbarem Rückblick, unabhängiger Sceneeingabe,
   wiederhergestellter Quelle und später Readantwort prüfen; Texte wortgetreu
   erhalten und keinen Abschluss aus einem Ersatztext erzeugen.
-- Native Tastatur-, Fokus- und 200-%-Bedienung bei fehlender Quelle und nach
+- Native Tastatur-, Fokus- und 100 %-Bedienung bei fehlender Quelle und nach
   unabhängiger Kampagnenkopie abnehmen.
 
 `desktop-live-moment-context.test.mjs` prüft Abbruch während Flush und

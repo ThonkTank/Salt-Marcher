@@ -1,5 +1,5 @@
 import type { Point } from '../shared/contracts';
-import type { DrawingElement } from './drawing-contracts';
+import type { DrawingElement } from './drawing-element-contracts';
 /** Shared context values; their mutable state belongs to the author controller. */
 export type AtlasSelection =
   | {
@@ -54,11 +54,11 @@ export type AtlasPathDrag = {
 
 /** Read-only geometry published by the region owner. */
 export interface AtlasRegionView {
-  readonly data: import('./campaign-atlas-contracts').AtlasRenderView | null;
+  readonly data: import('./campaign-atlas-view-contracts').AtlasRenderView | null;
   geometryCurrent(): boolean;
 }
 export interface AtlasRegionEditing extends AtlasRegionView {
-  readonly loadedRegionQuery: import('./atlas-region-contracts').AtlasRegionQuery | null;
+  readonly loadedRegionQuery: import('./atlas-region-view-contracts').AtlasRegionQuery | null;
   refresh(keepScene?: boolean): Promise<boolean | undefined>;
   scheduleRegion(camera?: boolean): void;
 }
@@ -76,7 +76,7 @@ export interface AtlasJourneySelection {
   renderTravel(): void;
 }
 export interface AtlasJourneyView {
-  readonly localPreview: import('./atlas-travel-contracts').AtlasLocalPreview | null;
+  readonly localPreview: import('./atlas-journey-contracts').AtlasLocalPreview | null;
 }
 /** Pointer handling belongs to output; authoring cannot mutate an export drag. */
 export interface AtlasOutputSelection {

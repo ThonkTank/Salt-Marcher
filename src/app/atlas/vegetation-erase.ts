@@ -1,5 +1,5 @@
 import type { Polygon } from '../shared/contracts';
-import { type LandscapeRecord } from './atlas-landscape';
+import { type LandscapeRecord } from './landscape-contracts';
 import { contains } from './landscape-geometry';
 import { clipLandscapePolygons } from './landscape-polygon-clipping';
 
