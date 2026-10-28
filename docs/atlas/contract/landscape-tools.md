@@ -54,8 +54,9 @@ schreibt Höhe, Wasser und Herkunft atomar in genau einem Historyschritt; Queue,
 Receipts und Recovery besitzen weiterhin Bestätigung und Wiederaufnahme.
 
 Der sichtbare Wasserspiegel wird weiterhin durch Autorenfläche und Bodenhöhe
-begrenzt. Eine Überlauf-/Einzugsgebietssimulation und das gemeinsame Anheben von
-See und Umland sind spätere Arbeit. Gezielte Regressionen stehen in
+begrenzt. Eine Überlauf-/Einzugsgebietssimulation bleibt spätere Arbeit. Das
+[gemeinsame Anheben von See und Umland](#see-und-umland-gemeinsam-anheben--28102026)
+ist unten mit seinen Grenzen beschrieben. Gezielte Regressionen stehen in
 `tests/atlas/terrain-brush.test.mjs`, `tests/atlas/landscape-brush.test.mjs` und
 `tests/atlas/terrain-brush-draft.test.mjs`; die native Eingabeprobe ist
 `tools/test-desktop-terrain-lakes.mjs`. Testverknüpfungen ersetzen keine Nutzerabnahme.
