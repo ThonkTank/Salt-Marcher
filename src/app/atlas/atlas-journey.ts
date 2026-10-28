@@ -10,17 +10,22 @@ import type { WorkspaceGeometry, Point } from '../shared/contracts';
 import { atlasDungeonState, openDungeon } from './dungeon-ui';
 import type { WorldTravelPort } from '../runtime/world-ui';
 interface AtlasJourneyHost {
-  readonly world: WorldTravelPort;
+  readonly world: Pick<
+    WorldTravelPort,
+    | 'atlasWorldTravelState'
+    | 'openWorld'
+    | 'previewAtlasWorldTravel'
+    | 'refreshWorldAfterAtlasTravel'
+    | 'startAtlasWorldTravel'
+  >;
   readonly data: AtlasRenderView | null;
   readonly owner: WorkspaceGeometry | null;
   readonly busy: boolean;
   readonly family: string;
   readonly refresh: (keepScene?: boolean) => Promise<boolean | undefined>;
   readonly render: (preview?: boolean) => void;
-  readonly opts: {
-    flush: () => Promise<boolean>;
-    status: (text: string, error?: boolean) => void;
-  };
+  readonly flushEditors: () => Promise<boolean>;
+  readonly status: (text: string, error?: boolean) => void;
   readonly error: (error: unknown) => void;
   readonly root: HTMLElement;
   readonly lastPoint: Point;
@@ -61,6 +66,26 @@ export class AtlasJourney {
   selectEntrance(id: string | null) {
     this.invalidatePreview();
     this.entranceId = id;
+  }
+  hide() {
+    this.invalidatePreview();
+  }
+  pausePlayback() {
+    this.playback.stop();
+  }
+  async drainPlayback() {
+    this.playback.stop();
+    await this.playback.settled();
+  }
+  async recoverPending() {
+    const command = this.pendingTravel,
+      owner = this.host.owner;
+    if (!command || !owner) return;
+    const result = await window.campaign.executeAtlasTravelCommit(command);
+    if (this.host.owner !== owner || this.pendingTravel !== command) return;
+    if (!result.ok) throw Error(result.error);
+    this.pendingTravel = null;
+    await this.host.refresh();
   }
   activate() {
     this.invalidatePreview();
@@ -253,7 +278,7 @@ export class AtlasJourney {
         await this.host.world.refreshWorldAfterAtlasTravel(w.token, sceneId);
       } catch (error) {
         if (this.host.owner === w)
-          this.host.opts.status(
+          this.host.status(
             'Reisestand gespeichert. Weltkontext erneut laden: ' + (error as Error).message,
             true,
           );

@@ -362,3 +362,54 @@ test('the same token and note after reactivation cannot accept the old verified 
   assert.equal(x.el('note-gm').value, x.a.note.gmNotes);
   assert(x.store.db.serialize().equals(before));
 });
+
+test('a delayed real Preparation receipt after campaign change cannot replace the new draft, publish feedback or replay', async (t) => {
+  const x = fixture(t),
+    held = deferred(),
+    writes = [];
+  const bWorkspace = x.store.activate(x.b.campaign.id);
+  x.b.note = { ...x.b.note, revision: 2, readAloud: 'Nur die neue Kampagne' };
+  x.store.changePreparation({
+    token: bWorkspace.token,
+    campaignId: x.b.campaign.id,
+    commandId: randomUUID(),
+    change: { kind: 'note', expectedRevision: 1, note: x.b.note },
+  });
+  await x.activate(x.a);
+  x.api.changePreparation = async (command) => {
+    writes.push(structuredClone(command));
+    return writes.length === 1
+      ? { ok: false, error: 'Antwort verloren vor Anwendung' }
+      : x.invoke('changePreparation', command);
+  };
+  x.input('  Alter ungeklärter Auftrag\r\n');
+  assert.equal(await x.ui.flushPreparation(), false);
+  let receiptStarted = false;
+  x.api.reconcilePreparation = async (...args) => {
+    const result = await x.invoke('reconcilePreparation', ...args);
+    receiptStarted = true;
+    await held.promise;
+    return result;
+  };
+  x.el('preparation-reconcile').click();
+  await tick();
+  assert.equal(receiptStarted, true);
+  await x.activate(x.b);
+  const raw = '  B nach Wechsel\r\n[[Wörtlich]]  ';
+  x.input(raw);
+  const before = x.store.db.serialize(),
+    messages = structuredClone(x.messages);
+  held.resolve();
+  await tick();
+  assert.equal(x.el('note-title').value, 'B');
+  assert.equal(x.el('note-read-aloud').value, 'Nur die neue Kampagne');
+  assert.equal(x.el('note-gm').value, raw);
+  assert.deepEqual(x.messages, messages);
+  assert.equal(writes.length, 1, 'receipt completion cannot resend the old command');
+  assert.deepEqual(x.store.db.serialize(), before);
+  assert.equal(await x.ui.flushPreparation(), true);
+  assert.equal(writes.length, 2);
+  assert.equal(writes[1].campaignId, x.b.campaign.id);
+  assert.equal(x.saved(x.b).gmNotes, raw);
+  assert.equal(x.saved(x.a).gmNotes, x.a.note.gmNotes);
+});

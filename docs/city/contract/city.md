@@ -2,7 +2,7 @@
 
 Status: Geltender Fachvertrag; offene Erweiterungen sind als Ziele beschrieben.
 Owner: city
-Last Reviewed: 2026-10-24 (Struktur und Quellen; Fachabnahme separat)
+Last Reviewed: 2026-10-28 (konkrete offene Originalwirkungen und Lieferzuordnung; Fachabnahme separat)
 Source of Truth: Dieses Dokument besitzt das benannte Thema; Code belegt den Iststand, das Abnahmeregister den Prüfstand.
 
 Stand: 11.10.2026. [Stadtziele](../requirements/city.md) und das vollständige
@@ -140,6 +140,46 @@ geschützter Vorschlag; spätere Autonomie darf weder Bewohnerdefinitionen
 ersetzen noch heimlich Zeit vorantreiben. Owner-Trash/Restore erhält Wohnungen,
 Shops und Beziehungen kohärent; endgültige Löschung folgt der gemeinsamen
 geschlossenen Erasuregrenze.
+
+## Offene Originalwirkungen vor den späteren Stadtlieferungen
+
+Die folgende Präzisierung verwendet das bestehende CTY-/CO-Inventar, ohne dessen
+IDs, Quellen oder Abnahmestände zu ersetzen. Die hier behandelten offenen
+Stadtwirkungen gehören zum späteren Ausbau; sie sind keine zusätzlichen
+Abschlusskriterien für Terrain/Meer oder den begrenzten Flussabschluss.
+CITY-00 wird gezielt vor dem jeweils
+betroffenen Ausbau bearbeitet und vor CITY-09 vervollständigt.
+
+Die vorhandenen FTG-Einträge stammen aus Webbeobachtungen vom 09.10.2026,
+`observedVersion` ist dort unbekannt. Für CO-FTG-0014 dokumentiert I02 das gelesene
+Profil von Thawn Cobblekind mit Erscheinung, Persönlichkeit, Ziel und Wohnort
+sowie den benannten Beziehungen parent/father/adoptive brother. Das belegt
+weder Bearbeiten noch vollständige Beziehungstypen oder Persistenz; I18 war
+eine erfolglose Zugangsprobe. Die referenzierten I02-Rohdateien unter
+`city-plans/city00-i02-20261009` sind in diesem Checkout/Host nicht verfügbar.
+Die datierten Registerauszüge bleiben erhalten; eine neue Originalwirkung wird
+hier nicht als beobachtet behauptet.
+
+| Bestehende IDs / spätere Lieferung | Konkrete Klärung vor der Umsetzung | Beispielszenario und daraus abzuleitendes Abschlusskriterium |
+| --- | --- | --- |
+| CO-WAT-0001, CO-FTG-0001/0002/0010/0022, CO-WAT-0011; CITY-02 | Welche Größen-/Layout-/Küsten- und Namensvorgaben ändern welches editierbare Ergebnis? Hamlet, einzelne Layout-/Permalinkwirkungen sind teilbelegt; weitere Größen, Settingsspeicherung und Ufertopologie fehlen. | Dorf mit Straße/Platz und Küste erzeugen, ein Gebäude korrigieren, Recipe erneut verwenden. Vor Bindung eines Teilausbaus dessen Wirkung, reproduzierbare Eingaben, Abbruch und Erhalt manueller Änderungen klären; weitere Varianten nicht aus dem Formular schätzen. |
+| CO-FTG-0016, CO-WAT-0007/0008; CITY-04 | Welche Bereiche und geschützten Objekte verändert eine lokale Neuerzeugung oder Verformung tatsächlich? Bestehende Warp-Teilproben entscheiden vollständige Schutz-/Bindungs-/Undo-Wirkung nicht. | Viertel neben Haus mit Bewohner/Key erneuern; ableiten, welche Geometrie geändert werden darf und welche IDs/Inhalte unverändert bleiben. Quellenlücken vor der betreffenden Regenerationsfunktion schließen. |
+| CO-FTG-0004/0008/0014/0017; CITY-06 Bewohner | Welche Bewohnermerkmale werden beim **Erzeugen** benötigt, welche sind **einzeln/gesammelt bearbeitbar**, welche bleiben bei Regeneration und Wiederöffnung **erhalten**? Verteilungen, Religion und Lebensstandard sind nur als Formularbereiche belegt; Profilattribute und Zweier-Namensänderung/Cancel nur teilweise. | Zwei Bewohner mit unterschiedlichen Haushalten/Berufen erzeugen, ein Merkmal einzeln und eines gesammelt ändern, abbrechen, regenerieren und neu öffnen. Vor diesem Teilausbau erforderliche Felder/Defaults und Änderungswirkung belegen; der bereits festgelegte Erhalt von World-IDs/Texten/Bindungen bleibt Pflicht. Keine pauschale Zusage „vollständige FTG-Funktion“ als fertige Feldspezifikation. |
+| CO-FTG-0014/0026 sowie 0005/0007; CITY-06 Beziehungen/Fraktionen | Welche Typen/Gegenrichtungen, Familien- und Regierungs-/Wachenwirkungen sind eigenständig erforderlich? Gelesene Beziehungen/Familienansicht und sichtbare Formulare entscheiden weder vollständige Typen noch Änderung/Entfernung/Neugenerierung. | Zwei Personen verbinden, Gegenrichtung/Familiennavigation prüfen, Zugehörigkeit ändern und eine Person entfernen/übertragen. Vor diesem Ausbau fehlende Originalwirkungen belegen und dem bestehenden Paar-/Worldvertrag zuordnen; abweichende fachliche Regeln als Entscheidungsbedarf führen. |
+| CO-FTG-0018/0042/0011 und übrige CO-Darstellungsfälle in CITY-07 | Welche Kalender-/Overridepolitik gilt bei großen Sprüngen und Wiederöffnung? Welche noch unbeobachteten Darstellungskontrollen ändern eigenständige sichtbare Ergebnisse? Arbeits-/Ruhetag bei gleicher Zeit sowie einzelne Stil-/Lichtwirkungen sind teilbelegt. | Derselbe Bewohner an Arbeits-/Ruhetag, über Tagesgrenze und Restart; geplante Aktivität und tatsächlichen Standort unterscheiden. Vor Zeitintegration offene Wirkung klären; übrige Grafik-/Asset-/Gruppenwirkungen vor ihrem jeweiligen CITY-07-Ausbau mit Übersicht/Detail beobachten. |
+| CO-FTG-0020/0021/0023–0025/0029, CO-WAT-0005 und übrige CITY-08-Fälle | Welche Daten und Sichtbarkeitsgrenzen liefern die Ausgabe-/Integrationsdialekte tatsächlich? FTG-Menüs oder deaktivierte temporäre Funktionen belegen keine empfangene Datei; Watabou-Dateibelege sind begrenzt vorhanden. | Identischen Ausschnitt samt Lebensdaten ausgeben und Datei/Öffnung prüfen; vor dem jeweiligen Adapter Format, Datenumfang und Quellen-/Lizenzgrenze klären. Gerätespezifische Darstellung/Fallback und Metropole erst nach Code-/Fragenprüfung schätzen. |
+
+Übrige offene CTY-/CO-Fälle bleiben an ihrer vorhandenen CITY-Zuordnung erhalten,
+einschließlich Straßen/Topologie (CITY-05), POIs/Gebäudedaten (CITY-06), Assets,
+Gruppen, Street View und grafischer Optionen (CITY-07/08). Vor jedem betroffenen
+Teilausbau werden zuerst dessen vorhandene Belege gelesen und nur die fehlenden
+Nutzerwirkungen im Original untersucht. Version bzw. unbekannte Webversion mit
+Datum/Build, Quell-URL, Ausgangsszenario, tatsächlich beobachtete Wirkung und
+abgeleitete Anforderungs-/Lieferzuordnung festhalten. Gleichwertige Ergebnisse
+genügen; Originalgesten schaffen keine zusätzliche Lieferpflicht. Ohne geklärte
+Wirkung nur Klärungsaufwand planen; erst nach Codeprüfung Umsetzungsspannen
+angeben. Fachliche Änderungen gegenüber dem Stadtauftrag bleiben offen zu
+entscheiden und werden nicht durch einen Teilabschluss ratifiziert.
 
 ## Technische Arbeitspakete
 

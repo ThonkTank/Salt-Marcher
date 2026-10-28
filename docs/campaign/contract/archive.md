@@ -244,10 +244,15 @@ Wortlaut/Links/IDs und bekannte externe Bindungen sind zu vergleichen.
 6. Trash/Restore/permanente Löschung, auch fehlender Provider und app-owned
    Backup-/WAL-/Temp-/Historyreste; externe GM-Pakete als nicht widerrufbar erklären.
 
-Reale Store-/Zielhost-/P02-/P04-/OSnachweise stehen noch aus. Vergangene
-Kern-/Hostbelege stehen unverändert in `acceptance.json`, `docs/reference/` und
-`116c16af48b6a073216685c8d8e2cc74fada82c3:ROADMAP-SALTMARCHER-SMR-01-CAMPAIGN-DATA-PLAN.md`.
-Sie erhalten ihren Scope, keinen neuen synthetischen PASS.
+Der [datierte gemeinsame E2E-01-Lauf](../../project/verification/end-to-end.md#datierter-lokaler-e2e-01-nachweis)
+belegt inzwischen die lokale technische P02-Minimal- und Complete-Importvariante
+am dort gebundenen Dirtybuild. Zusätzlich ist der [integrierte technische
+CI-Katalog](../../project/verification/end-to-end.md#integrierter-technischer-e2e-01-nachweis)
+auf Candidate und Main bestanden. Offen bleiben Zielgerät und Paket am integrierten
+Exact-SHA-Kandidaten sowie die breitere P02-/P04-/OS- und Ownerabnahme.
+Vergangene Kern-/Hostbelege in `acceptance.json` und der festen Revision
+`116c16af48b6a073216685c8d8e2cc74fada82c3:ROADMAP-SALTMARCHER-SMR-01-CAMPAIGN-DATA-PLAN.md`
+behalten ihren Scope; sie sind keine zusätzlichen aktuellen Liefernachweise.
 
 ### Visible transfer entry and independent continuation
 

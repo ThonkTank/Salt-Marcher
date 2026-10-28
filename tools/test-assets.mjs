@@ -8,10 +8,25 @@ import {
   renameSync,
   rmSync,
   mkdtempSync,
+  statSync,
 } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 const hash = (bytes) => createHash('sha256').update(bytes).digest('hex');
+// Process-local reuse only: inode, size and nanosecond mtime/ctime must agree.
+// Each traversal still discovers additions/removals; output verification always hashes bytes.
+const digests = new Map();
+const metadata = (s) => [s.dev, s.ino, s.size, s.mtimeNs, s.ctimeNs].join(':');
+function fileDigest(file) {
+  const identity = metadata(statSync(file, { bigint: true }));
+  const previous = digests.get(file);
+  if (previous?.identity === identity) return previous.digest;
+  const digest = hash(readFileSync(file));
+  if (metadata(statSync(file, { bigint: true })) !== identity)
+    throw Error('Sources changed during test fingerprint; retry.');
+  digests.set(file, { identity, digest });
+  return digest;
+}
 const pause = () => Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 50);
 export function treeFingerprint(root, inputs, identity) {
   const h = createHash('sha256').update(JSON.stringify(identity));
@@ -25,8 +40,7 @@ export function treeFingerprint(root, inputs, identity) {
     for (const entry of entries.sort((a, b) => a.name.localeCompare(b.name))) {
       const name = relative + '/' + entry.name;
       if (entry.isDirectory()) walk(name);
-      else if (entry.isFile())
-        h.update(name + '\0').update(hash(readFileSync(path.join(root, name))));
+      else if (entry.isFile()) h.update(name + '\0').update(fileDigest(path.join(root, name)));
       else throw Error('Unsupported cache input: ' + name);
     }
   }
@@ -34,9 +48,7 @@ export function treeFingerprint(root, inputs, identity) {
     if (input.endsWith('/')) walk(input.slice(0, -1));
     else {
       h.update(input + '\0');
-      h.update(
-        existsSync(path.join(root, input)) ? hash(readFileSync(path.join(root, input))) : 'missing',
-      );
+      h.update(existsSync(path.join(root, input)) ? fileDigest(path.join(root, input)) : 'missing');
     }
   }
   return h.digest('hex');

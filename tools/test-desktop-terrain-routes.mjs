@@ -3,7 +3,7 @@ import { qualifyRiverRoute, observeRiverSurface } from './atlas-river-probe.mjs'
 import { setBrushWorldRadius, setHeightDirection } from './atlas-brush-probe.mjs';
 // Product inputs and a fresh profile; SQLite reads are assertions, never UI shortcuts.
 import { createRequire } from 'node:module';
-import { mkdir, readFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { createNativeSession } from './native-session.mjs';
 import { randomUUID } from 'node:crypto';
@@ -106,7 +106,9 @@ const db = new Database(profile + '/workbench.sqlite', { readonly: true }),
       .all()
       .map((r) => JSON.parse(r.payload));
 const result = { checks: [] };
-let app, page;
+let app,
+  page,
+  riverViewSeeded = false;
 const capture = (name) => native.capture(page, name);
 const mark = (name) => {
   result.checks.push(name);
@@ -117,16 +119,19 @@ async function start() {
   if (riverOnly) {
     await observeRiverSurface(page, root);
     await appWindowSize();
-    const campaignId = db.prepare('SELECT id FROM campaign LIMIT 1').get().id;
-    await page.evaluate(
-      (id) =>
-        localStorage.setItem(
-          'atlas-camera:' + id,
-          JSON.stringify({ x: -400, y: -280, width: 1100, height: 620 }),
-        ),
-      campaignId,
-    );
-    await page.reload();
+    if (!riverViewSeeded) {
+      const campaignId = db.prepare('SELECT id FROM campaign LIMIT 1').get().id;
+      await page.evaluate(
+        (id) =>
+          localStorage.setItem(
+            'atlas-camera:' + id,
+            JSON.stringify({ x: -400, y: -280, width: 1100, height: 620 }),
+          ),
+        campaignId,
+      );
+      await page.reload();
+      riverViewSeeded = true;
+    }
   }
   app = native.app;
   await page.waitForFunction(() => document.body.dataset.tutorialReady === 'true');
@@ -175,6 +180,19 @@ async function tilt() {
   await atlasCanvasReady(page);
 }
 const action = (name) => editor().locator(`[data-action="${name}"]`);
+async function transition(label) {
+  const state = await page.evaluate(() => ({
+    editor: document.querySelector('#terrain-route-editor')?.innerText,
+    name: document.querySelector('#route-name')?.value,
+    points: document.querySelectorAll('#route-points li').length,
+    tool: document.querySelector('#land-tool')?.value,
+    status: document.querySelector('#land-status')?.textContent,
+    selection: document.querySelector('#land-selection')?.textContent,
+  }));
+  result.transitions ??= [];
+  result.transitions.push({ label, state });
+  await writeFile(path.join(out, 'transitions.json'), JSON.stringify(result.transitions, null, 2));
+}
 async function ready() {
   await page.waitForFunction(
     () =>
@@ -184,11 +202,29 @@ async function ready() {
     { timeout: 60000 },
   );
 }
+async function history(kind) {
+  const state = db.prepare('SELECT cursor FROM campaign_atlas LIMIT 1').get(),
+    expected = state.cursor + (kind === 'undo' ? -1 : 1);
+  await page.locator('#atlas-' + kind).click();
+  const deadline = Date.now() + 60000;
+  while (
+    db.prepare('SELECT cursor FROM campaign_atlas LIMIT 1').get().cursor !== expected &&
+    Date.now() < deadline
+  )
+    await page.waitForTimeout(50);
+  assert.equal(db.prepare('SELECT cursor FROM campaign_atlas LIMIT 1').get().cursor, expected);
+  await page.waitForFunction(() => {
+    const editor = document.querySelector('#terrain-route-editor');
+    return !editor || (editor.getAttribute('aria-busy') === 'false' && !editor.inert);
+  });
+  await atlasCanvasReady(page);
+}
 async function change(id, value) {
   await page.locator('#route-' + id).fill(String(value));
   await page.locator('#route-' + id).press('Tab');
 }
 async function save() {
+  const before = db.prepare('SELECT cursor FROM campaign_atlas LIMIT 1').get().cursor;
   await action('save').click();
   await page.waitForFunction(
     () =>
@@ -196,6 +232,11 @@ async function save() {
       'Verlauf und Geländeform gespeichert.',
     null,
     { timeout: 60000 },
+  );
+  assert.equal(
+    db.prepare('SELECT cursor FROM campaign_atlas LIMIT 1').get().cursor,
+    before + 1,
+    'Each explicit save must add exactly one history action',
   );
 }
 try {
@@ -276,12 +317,12 @@ try {
     assert.deepEqual(records(), beforeSwitch, 'Units must not persist previews');
     await app.evaluate(({ BrowserWindow }) => {
       const w = BrowserWindow.getAllWindows().find((w) => w.getTitle() === 'SaltMarcher');
-      w.setSize(1440, 1000);
+      w.setContentSize(720, 1000);
       w.webContents.setZoomFactor(1);
     });
     await page.waitForFunction(() => innerWidth <= 720);
     await page.locator('#route-units').selectOption('metric');
-    await capture('01b-route-metric-200');
+    await capture('01b-route-metric-100-narrow');
     const profileSize = await page
       .locator('#route-profile')
       .evaluate((el) => ({ pixels: el.width, css: el.clientWidth, dpr: devicePixelRatio }));
@@ -294,11 +335,11 @@ try {
     }));
     assert(box.left >= 0 && box.right <= box.width && box.overflow <= 1, JSON.stringify(box));
     await page.locator('#route-units').selectOption('dnd');
-    await app.evaluate(({ BrowserWindow }) =>
-      BrowserWindow.getAllWindows()
-        .find((w) => w.getTitle() === 'SaltMarcher')
-        .webContents.setZoomFactor(1),
-    );
+    await app.evaluate(({ BrowserWindow }) => {
+      const w = BrowserWindow.getAllWindows().find((w) => w.getTitle() === 'SaltMarcher');
+      w.setContentSize(1440, 1000);
+      w.webContents.setZoomFactor(1);
+    });
     await page.waitForFunction(() => innerWidth > 1000);
     await tilt();
     await capture('02-road-tilted');
@@ -308,13 +349,12 @@ try {
     assert.equal(road.width, 12.192);
     assert(road.route.nodes.length > 2);
     assert(road.route.protected);
-    await page.locator('#atlas-undo').click();
+    await history('undo');
     await page.waitForFunction(
       () => document.querySelector('#route-status')?.textContent === 'Entwurf verworfen.',
     );
     assert(!records().find((r) => r.id === road.id).route);
-    await page.locator('#atlas-redo').click();
-    await page.waitForTimeout(100);
+    await history('redo');
     await atlasCanvasReady(page);
     assert.deepEqual(records().find((r) => r.id === road.id).route, road.route);
     assert(
@@ -332,16 +372,28 @@ try {
     await editor().getByText('Planungsgrenzen', { exact: true }).click();
     await change('cut', 1);
     await action('cancel').click();
+    await transition('road-cancel');
     assert.equal(JSON.stringify(records().find((r) => r.id === road.id).route.anchors), previous);
+    const oldEditor = await editor().elementHandle();
     await action('close').click();
+    await editor().waitFor({ state: 'detached' });
+    assert.equal(await oldEditor.evaluate((el) => el.isConnected), false);
+    await transition('road-close');
     await atlasCanvasReady(page);
     await page.locator('#atlas-section').selectOption('terrain');
     await page.locator('[data-tool-group="water"]').click();
     await page.locator('[data-tool-select="land-tool"][data-tool-value="river"]').click();
+    await transition('river-tool-selected');
     await page.locator('#land-route-plan').click();
+    await transition('river-plan-requested');
     await page.waitForFunction(
       () => document.querySelector('#terrain-route-editor')?.getAttribute('aria-busy') === 'false',
     );
+    assert.match(await editor().locator('strong').innerText(), /^Fluss im Gelände$/);
+    assert.equal(await page.locator('#route-name').inputValue(), '');
+    assert.equal(await page.locator('#route-points li').count(), 0);
+    const beforeRiver = records(),
+      roadBeforeRiver = beforeRiver.find((r) => r.id === road.id);
     const canvas = await page.locator('#campaign-map').boundingBox();
     await page.mouse.click(canvas.x + canvas.width * 0.35, canvas.y + canvas.height * 0.5);
     await page.mouse.click(canvas.x + canvas.width * 0.6, canvas.y + canvas.height * 0.5);
@@ -363,8 +415,20 @@ try {
     await ready();
     await tilt();
     await capture('03-river-preview');
+    assert.deepEqual(
+      records(),
+      beforeRiver,
+      'The new river preview must not write any existing data',
+    );
     await save();
     const river = records().find((r) => r.name === 'Talfluss');
+    assert.notEqual(river.id, road.id);
+    assert.equal(river.kind, 'river');
+    assert.deepEqual(
+      records().find((r) => r.id === road.id),
+      roadBeforeRiver,
+    );
+    assert.equal(river.route.anchors.length, 2);
     assert(river.route.nodes.every((p, i, a) => !i || p.z < a[i - 1].z));
     mark(
       'Fluss mit echten Punktklicks und Koordinatenkorrektur, abfließendes Profil und verbundenes Bett',
@@ -382,7 +446,7 @@ try {
     await editor().waitFor({ state: 'detached' });
     await atlasCanvasReady(page);
     assert(!records().some((r) => r.id === river.id));
-    await page.locator('#atlas-undo').click();
+    await history('undo');
     await atlasCanvasReady(page);
     assert(records().some((r) => r.id === river.id));
     mark('Löschen und Atlas-Undo stellen Verlauf samt Geländeform wieder her');
@@ -395,6 +459,12 @@ try {
       null,
       { timeout: 60000 },
     );
+    await page.getByRole('button', { name: 'Verlauf und Gelände bearbeiten', exact: true }).click();
+    await ready();
+    await action('fit').click();
+    await atlasCanvasReady(page);
+    await action('close').click();
+    await editor().waitFor({ state: 'detached' });
     await capture('04-shared-tilted-atlas');
     mark('Gemeinsamer gekippter Atlas zeigt dieselben gespeicherten Verläufe');
     if (!process.argv.includes('--planning-only')) {
@@ -412,6 +482,8 @@ try {
       );
       const normal = (rs) => rs.map(({ revision, ...r }) => r),
         beforeBrush = normal(records()),
+        beforeBrushCursor = db.prepare('SELECT cursor FROM campaign_atlas LIMIT 1').get().cursor,
+        brushRevision = db.prepare('SELECT revision FROM campaign_atlas LIMIT 1').get().revision,
         point = { x: -100, y: -70 };
       const projection = await page
           .locator('#campaign-map')
@@ -424,9 +496,34 @@ try {
           sampler.waterLevel(point) ?? sampler.sample(point).heightM,
         );
       await page.mouse.move(rect.x + screen.x * rect.width, rect.y + screen.y * rect.height);
+      await page.waitForFunction(
+        (revision) => {
+          const d = document.querySelector('#campaign-map').dataset,
+            source = JSON.parse(d.terrainEditingSource ?? 'null');
+          return (
+            d.terrainEditingState === 'ready' &&
+            source?.complete &&
+            source.revision >= revision &&
+            source.radius === 35
+          );
+        },
+        brushRevision,
+        { timeout: 60000 },
+      );
       await page.mouse.down();
       await page.waitForTimeout(450);
       await page.mouse.up();
+      const brushDeadline = Date.now() + 60000;
+      while (
+        db.prepare('SELECT cursor FROM campaign_atlas LIMIT 1').get().cursor ===
+          beforeBrushCursor &&
+        Date.now() < brushDeadline
+      )
+        await page.waitForTimeout(50);
+      assert.equal(
+        db.prepare('SELECT cursor FROM campaign_atlas LIMIT 1').get().cursor,
+        beforeBrushCursor + 1,
+      );
       await atlasCanvasReady(page);
       await page.waitForFunction(
         () => document.querySelector('#campaign-map')?.dataset.terrainReady === 'ready',
@@ -440,7 +537,7 @@ try {
           .every((r) => !r.route.conflict),
       );
       await capture('04b-protected-brush');
-      await page.locator('#atlas-undo').click();
+      await history('undo');
       await atlasCanvasReady(page);
       assert.deepEqual(normal(records()), beforeBrush);
       mark(

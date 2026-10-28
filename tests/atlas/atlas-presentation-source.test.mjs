@@ -328,3 +328,72 @@ test('LOD publication after history refresh completes without navigating the sta
   assert.equal(navigations.length, 1, 'a completed author navigation still rebases focus');
   assert.equal(ui.focusHeightM, 6.75);
 });
+
+for (const restore of [true, false])
+  test(`first overview and later detail ${restore ? 'preserve a restored complete pose' : 'initialize a view without a saved pose'}`, async (t) => {
+    const { ui, calls } = fixture(t),
+      original = {
+        frame: { x: -370, y: -325, width: 1000, height: 650 },
+        focusM: 18.4375,
+        tilt: 45,
+        rotation: 12,
+        exaggeration: 1,
+        projection: 'perspective',
+      },
+      cameras = [];
+    Object.defineProperty(ui, 'needsTerrainRaster', { value: false });
+    Object.assign(ui, {
+      active: true,
+      ready: false,
+      generation: 0,
+      request: '',
+      tiles: [],
+      input: { dataset: {} },
+      toggle: {},
+      controls: { querySelector: () => ({}) },
+      surface: {
+        gpuMemory: {},
+        setCamera: (pose) => cameras.push(pose),
+        waitForFrame: async () => {},
+      },
+      host: { ...ui.host, writing: () => false },
+      reconcileCamera() {},
+      settleFirst() {},
+      show() {},
+      height() {
+        return this.tiles[0].centreHeight;
+      },
+      stream: {
+        statistics: {},
+        async load(_input, _fetch, publish) {
+          for (const [lod, centreHeight, complete] of [
+            [4, 28, false],
+            [3, 27.8, false],
+            [2, 27.999999523, true],
+          ]) {
+            publish({
+              tiles: [{ tile: { lod, x: 0, y: 0 }, revision: 7, centreHeight }],
+              overviewComplete: true,
+              complete,
+            });
+            await Promise.resolve();
+          }
+        },
+      },
+    });
+    ui.restoreCameraPose(original);
+    if (!restore) ui.restoreCameraPose();
+    await ui.load();
+    assert.deepEqual(calls.errors, []);
+    assert.equal(ui.ready, true);
+    assert.equal(ui.input.dataset.terrainQuality, 'detail');
+    assert.equal(ui.savedCameraPose.focusM, restore ? 18.4375 : 28);
+    if (restore) {
+      assert.deepEqual(ui.savedCameraPose, original);
+      assert.equal(
+        cameras.length,
+        1,
+        'only restoration publishes a camera, never terrain arrivals',
+      );
+    }
+  });

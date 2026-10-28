@@ -1,0 +1,2020 @@
+{
+  "sourceRun": ".build/round8-rest/final-full/",
+  "sourceDigest": "fac50855980453046a8623ec4ee714fbd6d9a261216901ea786ff3517f7b35dc",
+  "baselineWallSeconds": 715.8547502940055,
+  "runnerTestsSeconds": 714.9268109330001,
+  "grouping": "Mutually exclusive: five known files, then direct source CampaignStore/new Store/new HostIpc calls or bindings, then remaining files by area. Content criterion, not filename inference. No claim every store use is direct.",
+  "sampling": "One-second /proc endpoints per actual single-file child process. Runner with 313 file arguments excluded. Durations are lower bounds; absent files have no duration, not zero measured work.",
+  "sampledFiles": 224,
+  "sampledFileWallLowerBoundSeconds": 480.01772123991395,
+  "unassignedWallUpperBoundSeconds": 235.83702905409154,
+  "tap": {
+    "topLevelResults": 2618,
+    "topLevelTestSeconds": 587.213921646,
+    "nestedDurationsAdded": false,
+    "mapping": "TAP contains no filenames. No exact file attribution inferred from anonymous TAP test names. File groups use observed child processes; total top-level durations only cross-check suite work vs startup/loading/teardown."
+  },
+  "groups": [
+    {
+      "group": "direct-store-or-host-integration",
+      "files": 148,
+      "sampledFiles": 135,
+      "wallLowerBoundSeconds": 288.63659972192545,
+      "cpuLowerBoundSeconds": 410.79,
+      "members": [
+        {
+          "file": "tests/campaign/desktop-session-proposal-store.test.mjs",
+          "wallLowerBoundSeconds": 11.175339126988547,
+          "cpuLowerBoundSeconds": 13.35,
+          "pid": 518752,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/vegetation.test.mjs",
+          "wallLowerBoundSeconds": 11.163524150004378,
+          "cpuLowerBoundSeconds": 14.44,
+          "pid": 518145,
+          "sampled": true
+        },
+        {
+          "file": "tests/campaign/desktop-key-store.test.mjs",
+          "wallLowerBoundSeconds": 9.161913961987011,
+          "cpuLowerBoundSeconds": 9.84,
+          "pid": 518447,
+          "sampled": true
+        },
+        {
+          "file": "tests/catalog/desktop-generation-npcs.test.mjs",
+          "wallLowerBoundSeconds": 9.146564590992057,
+          "cpuLowerBoundSeconds": 10.8,
+          "pid": 518934,
+          "sampled": true
+        },
+        {
+          "file": "tests/campaign/desktop-campaign-shared-definitions.test.mjs",
+          "wallLowerBoundSeconds": 9.143933847997687,
+          "cpuLowerBoundSeconds": 9.92,
+          "pid": 518280,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/terrain-author-cache.test.mjs",
+          "wallLowerBoundSeconds": 9.130453253994347,
+          "cpuLowerBoundSeconds": 10.16,
+          "pid": 516959,
+          "sampled": true
+        },
+        {
+          "file": "tests/runtime/desktop-restock-journey.test.mjs",
+          "wallLowerBoundSeconds": 8.133865683994372,
+          "cpuLowerBoundSeconds": 9.21,
+          "pid": 519698,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/terrain-live-history.test.mjs",
+          "wallLowerBoundSeconds": 8.125394143993617,
+          "cpuLowerBoundSeconds": 8.52,
+          "pid": 517423,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/terrain-spatial.test.mjs",
+          "wallLowerBoundSeconds": 8.1174921990023,
+          "cpuLowerBoundSeconds": 12.11,
+          "pid": 517942,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/desktop-land-color-separation.test.mjs",
+          "wallLowerBoundSeconds": 7.106251318007708,
+          "cpuLowerBoundSeconds": 10.13,
+          "pid": 516632,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/terrain-brush.test.mjs",
+          "wallLowerBoundSeconds": 6.114159399992786,
+          "cpuLowerBoundSeconds": 9.77,
+          "pid": 517073,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/desktop-atlas-region-cache.test.mjs",
+          "wallLowerBoundSeconds": 6.106337274002726,
+          "cpuLowerBoundSeconds": 5.46,
+          "pid": 516449,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/terrain-covered-brush.test.mjs",
+          "wallLowerBoundSeconds": 6.106248409996624,
+          "cpuLowerBoundSeconds": 7.0,
+          "pid": 517202,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/atlas-landscape-field-preparation.test.mjs",
+          "wallLowerBoundSeconds": 5.100419532012893,
+          "cpuLowerBoundSeconds": 7.22,
+          "pid": 515433,
+          "sampled": true
+        },
+        {
+          "file": "tests/runtime/desktop-dungeon-travel-copy.test.mjs",
+          "wallLowerBoundSeconds": 5.082766627994715,
+          "cpuLowerBoundSeconds": 6.82,
+          "pid": 519418,
+          "sampled": true
+        },
+        {
+          "file": "tests/runtime/desktop-live-priority.test.mjs",
+          "wallLowerBoundSeconds": 5.0818148639955325,
+          "cpuLowerBoundSeconds": 6.65,
+          "pid": 519500,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/desktop-room-groups.test.mjs",
+          "wallLowerBoundSeconds": 5.081505830996321,
+          "cpuLowerBoundSeconds": 5.46,
+          "pid": 516755,
+          "sampled": true
+        },
+        {
+          "file": "tests/runtime/desktop-autonomy-disable-time.test.mjs",
+          "wallLowerBoundSeconds": 5.07935499100131,
+          "cpuLowerBoundSeconds": 5.93,
+          "pid": 519243,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/terrain-field-stream.test.mjs",
+          "wallLowerBoundSeconds": 5.076255181003944,
+          "cpuLowerBoundSeconds": 6.59,
+          "pid": 517249,
+          "sampled": true
+        },
+        {
+          "file": "tests/catalog/desktop-store-worker.test.mjs",
+          "wallLowerBoundSeconds": 5.068781650988967,
+          "cpuLowerBoundSeconds": 4.5,
+          "pid": 519080,
+          "sampled": true
+        },
+        {
+          "file": "tests/runtime/desktop-mask-history.test.mjs",
+          "wallLowerBoundSeconds": 4.0783300869952654,
+          "cpuLowerBoundSeconds": 4.75,
+          "pid": 519565,
+          "sampled": true
+        },
+        {
+          "file": "tests/campaign/desktop-e2e01-fixture.test.mjs",
+          "wallLowerBoundSeconds": 4.0711673839978175,
+          "cpuLowerBoundSeconds": 4.87,
+          "pid": 518317,
+          "sampled": true
+        },
+        {
+          "file": "tests/runtime/desktop-session-reward-integrity.test.mjs",
+          "wallLowerBoundSeconds": 4.0663328929949785,
+          "cpuLowerBoundSeconds": 4.86,
+          "pid": 519774,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/terrain-projection-service.test.mjs",
+          "wallLowerBoundSeconds": 4.06546071000048,
+          "cpuLowerBoundSeconds": 6.18,
+          "pid": 517664,
+          "sampled": true
+        },
+        {
+          "file": "tests/catalog/desktop-rule-reference-store.test.mjs",
+          "wallLowerBoundSeconds": 4.062241898995126,
+          "cpuLowerBoundSeconds": 4.23,
+          "pid": 519014,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/atlas-geometry-tiles.test.mjs",
+          "wallLowerBoundSeconds": 4.062202950997744,
+          "cpuLowerBoundSeconds": 4.72,
+          "pid": 515412,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/terrain-scale-worker.test.mjs",
+          "wallLowerBoundSeconds": 4.0609998339932645,
+          "cpuLowerBoundSeconds": 6.02,
+          "pid": 517913,
+          "sampled": true
+        },
+        {
+          "file": "tests/campaign/desktop-review-integrity.test.mjs",
+          "wallLowerBoundSeconds": 4.060710114004905,
+          "cpuLowerBoundSeconds": 5.42,
+          "pid": 518711,
+          "sampled": true
+        },
+        {
+          "file": "tests/campaign/desktop-preparation-priority.test.mjs",
+          "wallLowerBoundSeconds": 4.053440646996023,
+          "cpuLowerBoundSeconds": 5.7,
+          "pid": 518673,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/terrain-raster-reuse.test.mjs",
+          "wallLowerBoundSeconds": 4.052461844999925,
+          "cpuLowerBoundSeconds": 5.93,
+          "pid": 517742,
+          "sampled": true
+        },
+        {
+          "file": "tests/runtime/desktop-chronicle-store.test.mjs",
+          "wallLowerBoundSeconds": 3.054803685998195,
+          "cpuLowerBoundSeconds": 3.98,
+          "pid": 519341,
+          "sampled": true
+        },
+        {
+          "file": "tests/campaign/desktop-campaign-export-isolation.test.mjs",
+          "wallLowerBoundSeconds": 3.0520145570044406,
+          "cpuLowerBoundSeconds": 3.86,
+          "pid": 518265,
+          "sampled": true
+        },
+        {
+          "file": "tests/campaign/desktop-world-source-transfer.test.mjs",
+          "wallLowerBoundSeconds": 3.051891605005949,
+          "cpuLowerBoundSeconds": 4.05,
+          "pid": 518859,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/atlas-first-product-worker.test.mjs",
+          "wallLowerBoundSeconds": 3.0515732810017653,
+          "cpuLowerBoundSeconds": 4.44,
+          "pid": 515257,
+          "sampled": true
+        },
+        {
+          "file": "tests/catalog/desktop-session-retention.test.mjs",
+          "wallLowerBoundSeconds": 3.050078433996532,
+          "cpuLowerBoundSeconds": 3.7,
+          "pid": 519044,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/terrain-projection-cache.test.mjs",
+          "wallLowerBoundSeconds": 3.049251592994551,
+          "cpuLowerBoundSeconds": 4.5,
+          "pid": 517646,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/terrain-height.test.mjs",
+          "wallLowerBoundSeconds": 3.0486770319985226,
+          "cpuLowerBoundSeconds": 4.07,
+          "pid": 517366,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/terrain-projection.test.mjs",
+          "wallLowerBoundSeconds": 3.0477670289983507,
+          "cpuLowerBoundSeconds": 4.43,
+          "pid": 517713,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/terrain-invalidation-bounds.test.mjs",
+          "wallLowerBoundSeconds": 3.041688401994179,
+          "cpuLowerBoundSeconds": 4.35,
+          "pid": 517388,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/atlas-benchmark.test.mjs",
+          "wallLowerBoundSeconds": 2.0483697070012568,
+          "cpuLowerBoundSeconds": 2.53,
+          "pid": 514950,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/terrain-sample-filter.test.mjs",
+          "wallLowerBoundSeconds": 2.0407286010013195,
+          "cpuLowerBoundSeconds": 2.16,
+          "pid": 517897,
+          "sampled": true
+        },
+        {
+          "file": "tests/runtime/desktop-world-owner-lifecycle.test.mjs",
+          "wallLowerBoundSeconds": 2.0405993269960163,
+          "cpuLowerBoundSeconds": 3.5,
+          "pid": 519930,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/atlas-geometry-overview-service.test.mjs",
+          "wallLowerBoundSeconds": 2.0394537190004485,
+          "cpuLowerBoundSeconds": 3.53,
+          "pid": 515330,
+          "sampled": true
+        },
+        {
+          "file": "tests/campaign/desktop-session-targets.test.mjs",
+          "wallLowerBoundSeconds": 2.0386583779909415,
+          "cpuLowerBoundSeconds": 3.32,
+          "pid": 518778,
+          "sampled": true
+        },
+        {
+          "file": "tests/runtime/desktop-live-publication-owner.test.mjs",
+          "wallLowerBoundSeconds": 2.0369387429964263,
+          "cpuLowerBoundSeconds": 2.54,
+          "pid": 519542,
+          "sampled": true
+        },
+        {
+          "file": "tests/runtime/desktop-finish-draft-store.test.mjs",
+          "wallLowerBoundSeconds": 2.034917762997793,
+          "cpuLowerBoundSeconds": 3.05,
+          "pid": 519434,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/desktop-atlas-commit-recovery.test.mjs",
+          "wallLowerBoundSeconds": 2.034603167005116,
+          "cpuLowerBoundSeconds": 2.07,
+          "pid": 516365,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/desktop-atlas-territories.test.mjs",
+          "wallLowerBoundSeconds": 2.034552890007035,
+          "cpuLowerBoundSeconds": 2.72,
+          "pid": 516508,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/desktop-landscape-tools.test.mjs",
+          "wallLowerBoundSeconds": 2.0342386120028095,
+          "cpuLowerBoundSeconds": 3.66,
+          "pid": 516695,
+          "sampled": true
+        },
+        {
+          "file": "tests/runtime/desktop-combat-drafts.test.mjs",
+          "wallLowerBoundSeconds": 2.03378377899935,
+          "cpuLowerBoundSeconds": 3.1,
+          "pid": 519367,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/terrain-relief.test.mjs",
+          "wallLowerBoundSeconds": 2.0326753230037866,
+          "cpuLowerBoundSeconds": 3.65,
+          "pid": 517800,
+          "sampled": true
+        },
+        {
+          "file": "tests/runtime/desktop-chase-drafts.test.mjs",
+          "wallLowerBoundSeconds": 2.032671304012183,
+          "cpuLowerBoundSeconds": 2.63,
+          "pid": 519308,
+          "sampled": true
+        },
+        {
+          "file": "tests/runtime/desktop-narrative-integrity.test.mjs",
+          "wallLowerBoundSeconds": 2.032649916000082,
+          "cpuLowerBoundSeconds": 3.33,
+          "pid": 519603,
+          "sampled": true
+        },
+        {
+          "file": "tests/runtime/desktop-trade-paid-price.test.mjs",
+          "wallLowerBoundSeconds": 2.0320966980070807,
+          "cpuLowerBoundSeconds": 2.5,
+          "pid": 519815,
+          "sampled": true
+        },
+        {
+          "file": "tests/catalog/desktop-npc-integrity.test.mjs",
+          "wallLowerBoundSeconds": 2.031946342001902,
+          "cpuLowerBoundSeconds": 2.95,
+          "pid": 518996,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/desktop-campaign-atlas.test.mjs",
+          "wallLowerBoundSeconds": 2.0310818610014394,
+          "cpuLowerBoundSeconds": 3.28,
+          "pid": 516550,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/desktop-extension-reference-transfer.test.mjs",
+          "wallLowerBoundSeconds": 2.0296438410005067,
+          "cpuLowerBoundSeconds": 3.09,
+          "pid": 516597,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/terrain-objects.test.mjs",
+          "wallLowerBoundSeconds": 2.0294867230113596,
+          "cpuLowerBoundSeconds": 2.67,
+          "pid": 517496,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/atlas-terrain-tiles.test.mjs",
+          "wallLowerBoundSeconds": 2.0284819600055926,
+          "cpuLowerBoundSeconds": 2.96,
+          "pid": 516245,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/desktop-land-mask.test.mjs",
+          "wallLowerBoundSeconds": 2.0255883950012503,
+          "cpuLowerBoundSeconds": 3.51,
+          "pid": 516657,
+          "sampled": true
+        },
+        {
+          "file": "tests/runtime/desktop-autonomy-jobs-integrity.test.mjs",
+          "wallLowerBoundSeconds": 2.025109110996709,
+          "cpuLowerBoundSeconds": 3.71,
+          "pid": 519279,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/biome-library.test.mjs",
+          "wallLowerBoundSeconds": 1.0281295199965825,
+          "cpuLowerBoundSeconds": 1.93,
+          "pid": 516349,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/desktop-review-data-retention.test.mjs",
+          "wallLowerBoundSeconds": 1.0249446219968377,
+          "cpuLowerBoundSeconds": 1.65,
+          "pid": 516731,
+          "sampled": true
+        },
+        {
+          "file": "tests/campaign/desktop-plan-replacement-copy.test.mjs",
+          "wallLowerBoundSeconds": 1.0240033279987983,
+          "cpuLowerBoundSeconds": 1.77,
+          "pid": 518627,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/terrain-color-service.test.mjs",
+          "wallLowerBoundSeconds": 1.0199471579981036,
+          "cpuLowerBoundSeconds": 2.8,
+          "pid": 517148,
+          "sampled": true
+        },
+        {
+          "file": "tests/runtime/desktop-treasury-integrity.test.mjs",
+          "wallLowerBoundSeconds": 1.0190171739959624,
+          "cpuLowerBoundSeconds": 2.43,
+          "pid": 519899,
+          "sampled": true
+        },
+        {
+          "file": "tests/runtime/desktop-desk-integrity.test.mjs",
+          "wallLowerBoundSeconds": 1.0178295600053389,
+          "cpuLowerBoundSeconds": 2.38,
+          "pid": 519378,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/desktop-landscape-paint-bounds.test.mjs",
+          "wallLowerBoundSeconds": 1.0177903650037479,
+          "cpuLowerBoundSeconds": 0.98,
+          "pid": 516679,
+          "sampled": true
+        },
+        {
+          "file": "tests/campaign/desktop-note-excerpt.test.mjs",
+          "wallLowerBoundSeconds": 1.0176538649975555,
+          "cpuLowerBoundSeconds": 1.66,
+          "pid": 518528,
+          "sampled": true
+        },
+        {
+          "file": "tests/runtime/desktop-chase-transfer.test.mjs",
+          "wallLowerBoundSeconds": 1.0173058619984658,
+          "cpuLowerBoundSeconds": 1.52,
+          "pid": 519326,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/terrain-base-span.test.mjs",
+          "wallLowerBoundSeconds": 1.0169810539955506,
+          "cpuLowerBoundSeconds": 1.66,
+          "pid": 517006,
+          "sampled": true
+        },
+        {
+          "file": "tests/catalog/desktop-group-integrity.test.mjs",
+          "wallLowerBoundSeconds": 1.0169495000009192,
+          "cpuLowerBoundSeconds": 2.35,
+          "pid": 518964,
+          "sampled": true
+        },
+        {
+          "file": "tests/runtime/desktop-treasure-batch.test.mjs",
+          "wallLowerBoundSeconds": 1.016939677996561,
+          "cpuLowerBoundSeconds": 1.74,
+          "pid": 519863,
+          "sampled": true
+        },
+        {
+          "file": "tests/campaign/desktop-note-thread-store.test.mjs",
+          "wallLowerBoundSeconds": 1.0168792250042316,
+          "cpuLowerBoundSeconds": 2.18,
+          "pid": 518595,
+          "sampled": true
+        },
+        {
+          "file": "tests/runtime/desktop-weather-integrity.test.mjs",
+          "wallLowerBoundSeconds": 1.0163513729930855,
+          "cpuLowerBoundSeconds": 1.55,
+          "pid": 519910,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/atlas-material-service.test.mjs",
+          "wallLowerBoundSeconds": 1.0162705059919972,
+          "cpuLowerBoundSeconds": 1.82,
+          "pid": 515474,
+          "sampled": true
+        },
+        {
+          "file": "tests/runtime/desktop-autonomy-interval-integrity.test.mjs",
+          "wallLowerBoundSeconds": 1.0161131649947492,
+          "cpuLowerBoundSeconds": 2.08,
+          "pid": 519268,
+          "sampled": true
+        },
+        {
+          "file": "tests/runtime/desktop-mask-integration.test.mjs",
+          "wallLowerBoundSeconds": 1.0157680740085198,
+          "cpuLowerBoundSeconds": 1.9,
+          "pid": 519572,
+          "sampled": true
+        },
+        {
+          "file": "tests/shared/desktop-storage-values.test.mjs",
+          "wallLowerBoundSeconds": 1.0157274560042424,
+          "cpuLowerBoundSeconds": 1.44,
+          "pid": 520624,
+          "sampled": true
+        },
+        {
+          "file": "tests/campaign/desktop-note-merge.test.mjs",
+          "wallLowerBoundSeconds": 1.0157157679932425,
+          "cpuLowerBoundSeconds": 1.58,
+          "pid": 518539,
+          "sampled": true
+        },
+        {
+          "file": "tests/catalog/desktop-encounter-table-integrity.test.mjs",
+          "wallLowerBoundSeconds": 1.0156189970002742,
+          "cpuLowerBoundSeconds": 1.25,
+          "pid": 518901,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/desktop-room-renumber-history.test.mjs",
+          "wallLowerBoundSeconds": 1.0153012410009978,
+          "cpuLowerBoundSeconds": 1.57,
+          "pid": 516806,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/terrain-tilted-atlas-storage.test.mjs",
+          "wallLowerBoundSeconds": 1.015225292998366,
+          "cpuLowerBoundSeconds": 2.09,
+          "pid": 517997,
+          "sampled": true
+        },
+        {
+          "file": "tests/runtime/desktop-dungeon-round.test.mjs",
+          "wallLowerBoundSeconds": 1.01463118600077,
+          "cpuLowerBoundSeconds": 1.81,
+          "pid": 519403,
+          "sampled": true
+        },
+        {
+          "file": "tests/shared/desktop-backup-worker.test.mjs",
+          "wallLowerBoundSeconds": 1.0135359090054408,
+          "cpuLowerBoundSeconds": 1.55,
+          "pid": 520488,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/atlas-fantasy-cartography.test.mjs",
+          "wallLowerBoundSeconds": 1.0133120829996187,
+          "cpuLowerBoundSeconds": 2.06,
+          "pid": 515236,
+          "sampled": true
+        },
+        {
+          "file": "tests/catalog/desktop-generation-fill.test.mjs",
+          "wallLowerBoundSeconds": 1.0129319280094933,
+          "cpuLowerBoundSeconds": 1.53,
+          "pid": 518912,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/desktop-atlas-region.test.mjs",
+          "wallLowerBoundSeconds": 1.012133864001953,
+          "cpuLowerBoundSeconds": 2.0,
+          "pid": 516474,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/terrain-kind-index.test.mjs",
+          "wallLowerBoundSeconds": 1.0110514429979958,
+          "cpuLowerBoundSeconds": 1.55,
+          "pid": 517404,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/desktop-room-reads.test.mjs",
+          "wallLowerBoundSeconds": 1.0107778249948751,
+          "cpuLowerBoundSeconds": 1.53,
+          "pid": 516784,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/terrain-base-samples.test.mjs",
+          "wallLowerBoundSeconds": 1.0101602799986722,
+          "cpuLowerBoundSeconds": 1.76,
+          "pid": 516984,
+          "sampled": true
+        },
+        {
+          "file": "tests/shared/desktop-store-persistence.test.mjs",
+          "wallLowerBoundSeconds": 1.0098562379862415,
+          "cpuLowerBoundSeconds": 1.48,
+          "pid": 520644,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/atlas-geometry-point-sampling.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 0.57,
+          "pid": 515377,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/atlas-geometry-source-pages.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 0.4,
+          "pid": 515397,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/atlas-mixed-world-fixture.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 0.43,
+          "pid": 515585,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/atlas-staged-geometry.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 0.33,
+          "pid": 516101,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/atlas-terrain-tile-location.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 0.2,
+          "pid": 516230,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/desktop-boundary-anchor.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 0.63,
+          "pid": 516533,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/desktop-free-room-creation.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 0.14,
+          "pid": 516625,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/desktop-transfer-contracts.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 1.16,
+          "pid": 516832,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/desktop-volume-stroke.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 0.28,
+          "pid": 516873,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/terrain-empty-kinds.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 0.29,
+          "pid": 517233,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/terrain-grid-settings-cache.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 0.4,
+          "pid": 517316,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/terrain-height-blocks.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 0.67,
+          "pid": 517332,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/terrain-output.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 0.22,
+          "pid": 517526,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/terrain-pigment-stream.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 0.46,
+          "pid": 517557,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/terrain-profile.test.mjs",
+          "sampled": false
+        },
+        {
+          "file": "tests/atlas/terrain-reconstruction.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 0.59,
+          "pid": 517773,
+          "sampled": true
+        },
+        {
+          "file": "tests/campaign/desktop-autonomy-order.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 0.2,
+          "pid": 518235,
+          "sampled": true
+        },
+        {
+          "file": "tests/campaign/desktop-combat-group-reinforcement.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 0.82,
+          "pid": 518297,
+          "sampled": true
+        },
+        {
+          "file": "tests/campaign/desktop-generation-loot.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 0.56,
+          "pid": 518357,
+          "sampled": true
+        },
+        {
+          "file": "tests/campaign/desktop-key-copy.test.mjs",
+          "sampled": false
+        },
+        {
+          "file": "tests/campaign/desktop-key-discovery.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 0.78,
+          "pid": 518389,
+          "sampled": true
+        },
+        {
+          "file": "tests/campaign/desktop-key-note-capture-store.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 0.94,
+          "pid": 518414,
+          "sampled": true
+        },
+        {
+          "file": "tests/campaign/desktop-key-section-edit.test.mjs",
+          "sampled": false
+        },
+        {
+          "file": "tests/campaign/desktop-key-template-link.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 0.47,
+          "pid": 518474,
+          "sampled": true
+        },
+        {
+          "file": "tests/campaign/desktop-note-choice-search.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 0.45,
+          "pid": 518506,
+          "sampled": true
+        },
+        {
+          "file": "tests/campaign/desktop-note-room-uses.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 0.49,
+          "pid": 518551,
+          "sampled": true
+        },
+        {
+          "file": "tests/campaign/desktop-note-source-recovery.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 0.66,
+          "pid": 518562,
+          "sampled": true
+        },
+        {
+          "file": "tests/campaign/desktop-plan-projection.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 0.14,
+          "pid": 518620,
+          "sampled": true
+        },
+        {
+          "file": "tests/campaign/desktop-plan-replacement-world.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 0.82,
+          "pid": 518638,
+          "sampled": true
+        },
+        {
+          "file": "tests/campaign/desktop-preparation-owner.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 0.92,
+          "pid": 518649,
+          "sampled": true
+        },
+        {
+          "file": "tests/campaign/desktop-preset-registry.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 0.97,
+          "pid": 518697,
+          "sampled": true
+        },
+        {
+          "file": "tests/campaign/desktop-session-copy-integrity.test.mjs",
+          "sampled": false
+        },
+        {
+          "file": "tests/campaign/desktop-text-reference-completeness.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 0.65,
+          "pid": 518808,
+          "sampled": true
+        },
+        {
+          "file": "tests/campaign/desktop-text-reference-store.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 0.51,
+          "pid": 518829,
+          "sampled": true
+        },
+        {
+          "file": "tests/campaign/desktop-world-source-constraints.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 0.29,
+          "pid": 518840,
+          "sampled": true
+        },
+        {
+          "file": "tests/catalog/desktop-catalog-xp.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 0.35,
+          "pid": 518882,
+          "sampled": true
+        },
+        {
+          "file": "tests/catalog/desktop-npc-rename.test.mjs",
+          "sampled": false
+        },
+        {
+          "file": "tests/catalog/desktop-table-scope.test.mjs",
+          "sampled": false
+        },
+        {
+          "file": "tests/runtime/desktop-chase-time.test.mjs",
+          "sampled": false
+        },
+        {
+          "file": "tests/runtime/desktop-chronicle-window.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 0.69,
+          "pid": 519352,
+          "sampled": true
+        },
+        {
+          "file": "tests/runtime/desktop-dungeon-position.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 0.61,
+          "pid": 519396,
+          "sampled": true
+        },
+        {
+          "file": "tests/runtime/desktop-legendary-transfer-integrity.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 0.8,
+          "pid": 519459,
+          "sampled": true
+        },
+        {
+          "file": "tests/runtime/desktop-loot-balance.test.mjs",
+          "sampled": false
+        },
+        {
+          "file": "tests/runtime/desktop-music-history.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 0.63,
+          "pid": 519587,
+          "sampled": true
+        },
+        {
+          "file": "tests/runtime/desktop-party-history-copy.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 0.2,
+          "pid": 519616,
+          "sampled": true
+        },
+        {
+          "file": "tests/runtime/desktop-party-xp.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 0.58,
+          "pid": 519641,
+          "sampled": true
+        },
+        {
+          "file": "tests/runtime/desktop-session-recap-shape.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 0.83,
+          "pid": 519728,
+          "sampled": true
+        },
+        {
+          "file": "tests/runtime/desktop-shop-owner-time.test.mjs",
+          "sampled": false
+        },
+        {
+          "file": "tests/runtime/desktop-shop-restock-boundary.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 0.16,
+          "pid": 519801,
+          "sampled": true
+        },
+        {
+          "file": "tests/runtime/desktop-storage-ownership.test.mjs",
+          "sampled": false
+        },
+        {
+          "file": "tests/shared/desktop-data-format.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 1.11,
+          "pid": 520514,
+          "sampled": true
+        },
+        {
+          "file": "tests/shared/desktop-error-diagnostics.test.mjs",
+          "sampled": false
+        },
+        {
+          "file": "tests/shared/desktop-storage-ports.test.mjs",
+          "sampled": false
+        },
+        {
+          "file": "tests/shared/desktop-tool-editor-instances.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 1.38,
+          "pid": 520679,
+          "sampled": true
+        },
+        {
+          "file": "tests/shared/test-fixtures.test.mjs",
+          "sampled": false
+        },
+        {
+          "file": "tests/workspace/desktop-extension-recovery.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 1.01,
+          "pid": 521344,
+          "sampled": true
+        }
+      ]
+    },
+    {
+      "group": "previously-investigated-five",
+      "files": 5,
+      "sampledFiles": 5,
+      "wallLowerBoundSeconds": 123.38727126699814,
+      "cpuLowerBoundSeconds": 159.82,
+      "members": [
+        {
+          "file": "tests/workspace/typescript-environments.test.mjs",
+          "wallLowerBoundSeconds": 47.802135050995275,
+          "cpuLowerBoundSeconds": 74.09,
+          "pid": 521605,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/terrain-route.test.mjs",
+          "wallLowerBoundSeconds": 20.294486673999927,
+          "cpuLowerBoundSeconds": 22.58,
+          "pid": 517817,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/atlas-material-tiles.test.mjs",
+          "wallLowerBoundSeconds": 19.263397200003965,
+          "cpuLowerBoundSeconds": 24.25,
+          "pid": 515520,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/atlas-reference-fixture.test.mjs",
+          "wallLowerBoundSeconds": 18.754175068999757,
+          "cpuLowerBoundSeconds": 19.24,
+          "pid": 515707,
+          "sampled": true
+        },
+        {
+          "file": "tests/runtime/desktop-travel.test.mjs",
+          "wallLowerBoundSeconds": 17.273077272999217,
+          "cpuLowerBoundSeconds": 19.66,
+          "pid": 519831,
+          "sampled": true
+        }
+      ]
+    },
+    {
+      "group": "remaining-atlas",
+      "files": 90,
+      "sampledFiles": 49,
+      "wallLowerBoundSeconds": 35.5678473040025,
+      "cpuLowerBoundSeconds": 56.92,
+      "members": [
+        {
+          "file": "tests/atlas/terrain-brush-draft.test.mjs",
+          "wallLowerBoundSeconds": 13.198701735993382,
+          "cpuLowerBoundSeconds": 17.29,
+          "pid": 517036,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/atlas-reference-image.test.mjs",
+          "wallLowerBoundSeconds": 9.129045100999065,
+          "cpuLowerBoundSeconds": 10.77,
+          "pid": 516064,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/atlas-bounded-material.test.mjs",
+          "wallLowerBoundSeconds": 6.084357149011339,
+          "cpuLowerBoundSeconds": 6.87,
+          "pid": 514972,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/terrain-form-brush.test.mjs",
+          "wallLowerBoundSeconds": 2.0688583000010112,
+          "cpuLowerBoundSeconds": 3.47,
+          "pid": 517285,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/desktop-drawing-draft-lifecycle.test.mjs",
+          "wallLowerBoundSeconds": 1.0256971360067837,
+          "cpuLowerBoundSeconds": 1.21,
+          "pid": 516580,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/atlas-ownership-boundaries.test.mjs",
+          "wallLowerBoundSeconds": 1.0210115359950578,
+          "cpuLowerBoundSeconds": 1.59,
+          "pid": 515601,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/terrain-progressive-projection.test.mjs",
+          "wallLowerBoundSeconds": 1.0169945710076718,
+          "cpuLowerBoundSeconds": 1.54,
+          "pid": 517626,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/landscape-cover-feather.test.mjs",
+          "wallLowerBoundSeconds": 1.0133766099897912,
+          "cpuLowerBoundSeconds": 1.83,
+          "pid": 516913,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/terrain-tilted-atlas.test.mjs",
+          "wallLowerBoundSeconds": 1.0098051649983972,
+          "cpuLowerBoundSeconds": 1.45,
+          "pid": 518016,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/atlas-assets.test.mjs",
+          "sampled": false
+        },
+        {
+          "file": "tests/atlas/atlas-brush-boundary.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 0.18,
+          "pid": 514990,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/atlas-brush-size.test.mjs",
+          "sampled": false
+        },
+        {
+          "file": "tests/atlas/atlas-camera-labels.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 0.24,
+          "pid": 515025,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/atlas-canvas-gesture.test.mjs",
+          "sampled": false
+        },
+        {
+          "file": "tests/atlas/atlas-cartographic-scale.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 0.27,
+          "pid": 515056,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/atlas-controller-lifecycle.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 0.27,
+          "pid": 515074,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/atlas-deck-geometry-overview.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 0.38,
+          "pid": 515090,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/atlas-deck-labels.test.mjs",
+          "sampled": false
+        },
+        {
+          "file": "tests/atlas/atlas-deck-picking.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 0.17,
+          "pid": 515122,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/atlas-deck-ray.test.mjs",
+          "sampled": false
+        },
+        {
+          "file": "tests/atlas/atlas-deck-scene-model.test.mjs",
+          "sampled": false
+        },
+        {
+          "file": "tests/atlas/atlas-deck-surface.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 0.23,
+          "pid": 515167,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/atlas-deferred-geometry.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 0.2,
+          "pid": 515184,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/atlas-derived-file-cache.test.mjs",
+          "sampled": false
+        },
+        {
+          "file": "tests/atlas/atlas-drawing-geometry.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 0.19,
+          "pid": 515220,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/atlas-geometry-anchor-cache.test.mjs",
+          "sampled": false
+        },
+        {
+          "file": "tests/atlas/atlas-geometry-mesh.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 0.12,
+          "pid": 515314,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/atlas-geometry-overview.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 1.19,
+          "pid": 515361,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/atlas-landscape-write-cost.test.mjs",
+          "sampled": false
+        },
+        {
+          "file": "tests/atlas/atlas-material-stream.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 0.03,
+          "pid": 515505,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/atlas-mesh-ray.test.mjs",
+          "sampled": false
+        },
+        {
+          "file": "tests/atlas/atlas-metric-camera.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 0.19,
+          "pid": 515570,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/atlas-perspective-camera.test.mjs",
+          "sampled": false
+        },
+        {
+          "file": "tests/atlas/atlas-presentation-source.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 0.12,
+          "pid": 515633,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/atlas-projection-copy.test.mjs",
+          "sampled": false
+        },
+        {
+          "file": "tests/atlas/atlas-raster-kernel.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 0.18,
+          "pid": 515694,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/atlas-spatial-scene.test.mjs",
+          "sampled": false
+        },
+        {
+          "file": "tests/atlas/atlas-surface-draft.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 0.27,
+          "pid": 516121,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/atlas-surface-request-key.test.mjs",
+          "sampled": false
+        },
+        {
+          "file": "tests/atlas/atlas-surface-reuse.test.mjs",
+          "sampled": false
+        },
+        {
+          "file": "tests/atlas/atlas-surface-stream.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 0.27,
+          "pid": 516162,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/atlas-terrain-edits.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 0.05,
+          "pid": 516187,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/atlas-terrain-export.test.mjs",
+          "sampled": false
+        },
+        {
+          "file": "tests/atlas/atlas-terrain-ray.test.mjs",
+          "sampled": false
+        },
+        {
+          "file": "tests/atlas/atlas-texture-patch.test.mjs",
+          "sampled": false
+        },
+        {
+          "file": "tests/atlas/atlas-tile-cache.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 0.21,
+          "pid": 516282,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/atlas-tile-plan.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 0.11,
+          "pid": 516305,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/atlas-tile-stream.test.mjs",
+          "sampled": false
+        },
+        {
+          "file": "tests/atlas/atlas-world-tiles.test.mjs",
+          "sampled": false
+        },
+        {
+          "file": "tests/atlas/desktop-atlas-navigation.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 0.22,
+          "pid": 516397,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/desktop-atlas-opening.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 0.47,
+          "pid": 516413,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/desktop-atlas-paint.test.mjs",
+          "sampled": false
+        },
+        {
+          "file": "tests/atlas/desktop-atlas-source-barrier.test.mjs",
+          "sampled": false
+        },
+        {
+          "file": "tests/atlas/desktop-coast-render.test.mjs",
+          "sampled": false
+        },
+        {
+          "file": "tests/atlas/desktop-live-shared-atlas.test.mjs",
+          "sampled": false
+        },
+        {
+          "file": "tests/atlas/desktop-surface.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 0.89,
+          "pid": 516817,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/desktop-volume-spatial.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 0.43,
+          "pid": 516851,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/landscape-brush.test.mjs",
+          "sampled": false
+        },
+        {
+          "file": "tests/atlas/landscape-forest-coverage.test.mjs",
+          "sampled": false
+        },
+        {
+          "file": "tests/atlas/object-color-alpha.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 0.06,
+          "pid": 516945,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/raster-files.test.mjs",
+          "sampled": false
+        },
+        {
+          "file": "tests/atlas/terrain-brush-budget.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 0.33,
+          "pid": 517021,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/terrain-brush-frame.test.mjs",
+          "sampled": false
+        },
+        {
+          "file": "tests/atlas/terrain-coast.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 0.12,
+          "pid": 517100,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/terrain-color-cache-context.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 1.32,
+          "pid": 517122,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/terrain-commit-display.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 0.17,
+          "pid": 517166,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/terrain-coverage.test.mjs",
+          "sampled": false
+        },
+        {
+          "file": "tests/atlas/terrain-focus-grid.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 0.2,
+          "pid": 517270,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/terrain-frame-delta.test.mjs",
+          "sampled": false
+        },
+        {
+          "file": "tests/atlas/terrain-height-codec.test.mjs",
+          "sampled": false
+        },
+        {
+          "file": "tests/atlas/terrain-live-stroke.test.mjs",
+          "sampled": false
+        },
+        {
+          "file": "tests/atlas/terrain-material-raster.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 0.01,
+          "pid": 517465,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/terrain-object-main.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 0.18,
+          "pid": 517480,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/terrain-opaque-raster.test.mjs",
+          "sampled": false
+        },
+        {
+          "file": "tests/atlas/terrain-pigment-coverage.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 0.35,
+          "pid": 517542,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/terrain-pixel-comparison.test.mjs",
+          "sampled": false
+        },
+        {
+          "file": "tests/atlas/terrain-pixel-readback.test.mjs",
+          "sampled": false
+        },
+        {
+          "file": "tests/atlas/terrain-presentation.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 0.06,
+          "pid": 517596,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/terrain-queue-recovery.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 0.04,
+          "pid": 517729,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/terrain-relief-prototype.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 0.02,
+          "pid": 517793,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/terrain-stroke-queue.test.mjs",
+          "sampled": false
+        },
+        {
+          "file": "tests/atlas/terrain-surface-cache.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 0.36,
+          "pid": 517981,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/terrain-timing.test.mjs",
+          "sampled": false
+        },
+        {
+          "file": "tests/atlas/terrain-visibility.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 0.42,
+          "pid": 518060,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/universal-vtt.test.mjs",
+          "sampled": false
+        },
+        {
+          "file": "tests/atlas/vegetation-geometry.test.mjs",
+          "sampled": false
+        },
+        {
+          "file": "tests/atlas/vegetation-lod.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 0.18,
+          "pid": 518097,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/vegetation-projection.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 0.2,
+          "pid": 518113,
+          "sampled": true
+        },
+        {
+          "file": "tests/atlas/vegetation-spatial.test.mjs",
+          "sampled": false
+        },
+        {
+          "file": "tests/atlas/vtt-map-geometry.test.mjs",
+          "sampled": false
+        }
+      ]
+    },
+    {
+      "group": "remaining-shared",
+      "files": 27,
+      "sampledFiles": 14,
+      "wallLowerBoundSeconds": 18.22017507100827,
+      "cpuLowerBoundSeconds": 3.06,
+      "members": [
+        {
+          "file": "tests/shared/ui-session.test.mjs",
+          "wallLowerBoundSeconds": 9.105998455008375,
+          "cpuLowerBoundSeconds": 0.07,
+          "pid": 521301,
+          "sampled": true
+        },
+        {
+          "file": "tests/shared/agent-maintenance.test.mjs",
+          "wallLowerBoundSeconds": 5.060902930999873,
+          "cpuLowerBoundSeconds": 0.05,
+          "pid": 519950,
+          "sampled": true
+        },
+        {
+          "file": "tests/shared/native-process.test.mjs",
+          "wallLowerBoundSeconds": 4.053273685000022,
+          "cpuLowerBoundSeconds": 0.16,
+          "pid": 520931,
+          "sampled": true
+        },
+        {
+          "file": "tests/shared/build-target.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 0.02,
+          "pid": 520446,
+          "sampled": true
+        },
+        {
+          "file": "tests/shared/desktop-anchored-popup.test.mjs",
+          "sampled": false
+        },
+        {
+          "file": "tests/shared/desktop-e2e01-report.test.mjs",
+          "sampled": false
+        },
+        {
+          "file": "tests/shared/desktop-editor-transition.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 0.18,
+          "pid": 520537,
+          "sampled": true
+        },
+        {
+          "file": "tests/shared/desktop-host-capabilities.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 0.14,
+          "pid": 520578,
+          "sampled": true
+        },
+        {
+          "file": "tests/shared/desktop-markup.test.mjs",
+          "sampled": false
+        },
+        {
+          "file": "tests/shared/desktop-number-input-scroll.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 0.31,
+          "pid": 520603,
+          "sampled": true
+        },
+        {
+          "file": "tests/shared/desktop-styles.test.mjs",
+          "sampled": false
+        },
+        {
+          "file": "tests/shared/development-child.test.mjs",
+          "sampled": false
+        },
+        {
+          "file": "tests/shared/development-queue.test.mjs",
+          "sampled": false
+        },
+        {
+          "file": "tests/shared/editor-session.test.mjs",
+          "sampled": false
+        },
+        {
+          "file": "tests/shared/fixture-lifecycle.test.mjs",
+          "sampled": false
+        },
+        {
+          "file": "tests/shared/host-shutdown-receipt.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 0.04,
+          "pid": 520734,
+          "sampled": true
+        },
+        {
+          "file": "tests/shared/local-check-launcher.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 0.07,
+          "pid": 520741,
+          "sampled": true
+        },
+        {
+          "file": "tests/shared/local-check-policy.test.mjs",
+          "sampled": false
+        },
+        {
+          "file": "tests/shared/native-probes.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 0.92,
+          "pid": 520924,
+          "sampled": true
+        },
+        {
+          "file": "tests/shared/process-group.test.mjs",
+          "sampled": false
+        },
+        {
+          "file": "tests/shared/repository-structure.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 0.71,
+          "pid": 521072,
+          "sampled": true
+        },
+        {
+          "file": "tests/shared/source-probes.test.mjs",
+          "sampled": false
+        },
+        {
+          "file": "tests/shared/test-assets-concurrency.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 0.07,
+          "pid": 521086,
+          "sampled": true
+        },
+        {
+          "file": "tests/shared/test-assets.test.mjs",
+          "sampled": false
+        },
+        {
+          "file": "tests/shared/test-dom.test.mjs",
+          "sampled": false
+        },
+        {
+          "file": "tests/shared/test-selection.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 0.07,
+          "pid": 521146,
+          "sampled": true
+        },
+        {
+          "file": "tests/shared/test-worker-build-asset.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 0.25,
+          "pid": 521167,
+          "sampled": true
+        }
+      ]
+    },
+    {
+      "group": "remaining-workspace",
+      "files": 12,
+      "sampledFiles": 8,
+      "wallLowerBoundSeconds": 13.191862103980384,
+      "cpuLowerBoundSeconds": 22.16,
+      "members": [
+        {
+          "file": "tests/workspace/storage-owner-boundaries.test.mjs",
+          "wallLowerBoundSeconds": 7.095332757991855,
+          "cpuLowerBoundSeconds": 9.91,
+          "pid": 521591,
+          "sampled": true
+        },
+        {
+          "file": "tests/workspace/module-graph.test.mjs",
+          "wallLowerBoundSeconds": 6.096529345988529,
+          "cpuLowerBoundSeconds": 8.47,
+          "pid": 521540,
+          "sampled": true
+        },
+        {
+          "file": "tests/workspace/desktop-editor-activation.test.mjs",
+          "sampled": false
+        },
+        {
+          "file": "tests/workspace/desktop-release-source.test.mjs",
+          "sampled": false
+        },
+        {
+          "file": "tests/workspace/desktop-update-ui.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 0.24,
+          "pid": 521365,
+          "sampled": true
+        },
+        {
+          "file": "tests/workspace/desktop-updates.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 0.83,
+          "pid": 521382,
+          "sampled": true
+        },
+        {
+          "file": "tests/workspace/desktop-workspace-navigation.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 0.85,
+          "pid": 521487,
+          "sampled": true
+        },
+        {
+          "file": "tests/workspace/desktop-workspace-shortcuts.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 1.32,
+          "pid": 521502,
+          "sampled": true
+        },
+        {
+          "file": "tests/workspace/desktop-workspace-view.test.mjs",
+          "sampled": false
+        },
+        {
+          "file": "tests/workspace/module-boundaries.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 0.44,
+          "pid": 521533,
+          "sampled": true
+        },
+        {
+          "file": "tests/workspace/renderer-boundary.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 0.1,
+          "pid": 521575,
+          "sampled": true
+        },
+        {
+          "file": "tests/workspace/workspace-editor-registry.test.mjs",
+          "sampled": false
+        }
+      ]
+    },
+    {
+      "group": "remaining-runtime",
+      "files": 12,
+      "sampledFiles": 6,
+      "wallLowerBoundSeconds": 1.0139657719992101,
+      "cpuLowerBoundSeconds": 3.63,
+      "members": [
+        {
+          "file": "tests/runtime/desktop-session-resume-owner.test.mjs",
+          "wallLowerBoundSeconds": 1.0139657719992101,
+          "cpuLowerBoundSeconds": 2.32,
+          "pid": 519744,
+          "sampled": true
+        },
+        {
+          "file": "tests/runtime/desktop-audio-layer-recovery.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 0.1,
+          "pid": 519215,
+          "sampled": true
+        },
+        {
+          "file": "tests/runtime/desktop-audio-response.test.mjs",
+          "sampled": false
+        },
+        {
+          "file": "tests/runtime/desktop-chase-draft-cache.test.mjs",
+          "sampled": false
+        },
+        {
+          "file": "tests/runtime/desktop-journey-playback.test.mjs",
+          "sampled": false
+        },
+        {
+          "file": "tests/runtime/desktop-live-generation-owner.test.mjs",
+          "sampled": false
+        },
+        {
+          "file": "tests/runtime/desktop-live-owner-lifecycle.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 0.17,
+          "pid": 519485,
+          "sampled": true
+        },
+        {
+          "file": "tests/runtime/desktop-party-overview.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 0.01,
+          "pid": 519627,
+          "sampled": true
+        },
+        {
+          "file": "tests/runtime/desktop-player-render-bounds.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 0.21,
+          "pid": 519661,
+          "sampled": true
+        },
+        {
+          "file": "tests/runtime/desktop-player-visual-host.test.mjs",
+          "sampled": false
+        },
+        {
+          "file": "tests/runtime/desktop-session-handoff-owner.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 0.82,
+          "pid": 519713,
+          "sampled": true
+        },
+        {
+          "file": "tests/runtime/desktop-session-review-owner.test.mjs",
+          "sampled": false
+        }
+      ]
+    },
+    {
+      "group": "remaining-campaign",
+      "files": 10,
+      "sampledFiles": 4,
+      "wallLowerBoundSeconds": 0.0,
+      "cpuLowerBoundSeconds": 0.5700000000000001,
+      "members": [
+        {
+          "file": "tests/campaign/desktop-archive-error.test.mjs",
+          "sampled": false
+        },
+        {
+          "file": "tests/campaign/desktop-archive-transfer.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 0.13,
+          "pid": 518216,
+          "sampled": true
+        },
+        {
+          "file": "tests/campaign/desktop-encounter-selector.test.mjs",
+          "sampled": false
+        },
+        {
+          "file": "tests/campaign/desktop-key-search.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 0.18,
+          "pid": 518425,
+          "sampled": true
+        },
+        {
+          "file": "tests/campaign/desktop-location-notebook-owner.test.mjs",
+          "sampled": false
+        },
+        {
+          "file": "tests/campaign/desktop-note-editor-mount.test.mjs",
+          "sampled": false
+        },
+        {
+          "file": "tests/campaign/desktop-note-thread-edit.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 0.14,
+          "pid": 518580,
+          "sampled": true
+        },
+        {
+          "file": "tests/campaign/desktop-npc-schedule.test.mjs",
+          "sampled": false
+        },
+        {
+          "file": "tests/campaign/desktop-session-packet-export.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 0.12,
+          "pid": 518734,
+          "sampled": true
+        },
+        {
+          "file": "tests/campaign/desktop-text-reference-picker-owner.test.mjs",
+          "sampled": false
+        }
+      ]
+    },
+    {
+      "group": "remaining-catalog",
+      "files": 9,
+      "sampledFiles": 3,
+      "wallLowerBoundSeconds": 0.0,
+      "cpuLowerBoundSeconds": 0.58,
+      "members": [
+        {
+          "file": "tests/catalog/catalog-build-asset.test.mjs",
+          "sampled": false
+        },
+        {
+          "file": "tests/catalog/desktop-srd-item-projection.test.mjs",
+          "sampled": false
+        },
+        {
+          "file": "tests/catalog/desktop-text-reference-readers.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 0.26,
+          "pid": 519131,
+          "sampled": true
+        },
+        {
+          "file": "tests/catalog/items-srd51-b-section.test.mjs",
+          "sampled": false
+        },
+        {
+          "file": "tests/catalog/items-srd51-bags.test.mjs",
+          "sampled": false
+        },
+        {
+          "file": "tests/catalog/items-srd51-c-section.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 0.11,
+          "pid": 519169,
+          "sampled": true
+        },
+        {
+          "file": "tests/catalog/items-srd51-d-section.test.mjs",
+          "sampled": false
+        },
+        {
+          "file": "tests/catalog/items-srd51-e-section.test.mjs",
+          "wallLowerBoundSeconds": 0.0,
+          "cpuLowerBoundSeconds": 0.21,
+          "pid": 519193,
+          "sampled": true
+        },
+        {
+          "file": "tests/catalog/items-srd51-source.test.mjs",
+          "sampled": false
+        }
+      ]
+    }
+  ],
+  "sampleIntegrity": {
+    "everyObservedFileIsInFullSelection": true,
+    "duplicateObservedFiles": 0,
+    "overlappingObservedFileIntervals": 0
+  }
+}

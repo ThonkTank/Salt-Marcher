@@ -1,6 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync } from 'node:fs';
+import {
+  mkdtempSync,
+  mkdirSync,
+  writeFileSync,
+  readFileSync,
+  rmSync,
+  statSync,
+  utimesSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { prepareArtifact, treeFingerprint } from '../../tools/test-assets.mjs';
@@ -88,4 +96,21 @@ test('a live publication owner is not displaced', (t) => {
   );
   assert.throws(() => prepareArtifact({ root, kind: 'fixture', timeoutMs: 1 }), /busy/);
   assert.equal(JSON.parse(readFileSync(path.join(lock, 'owner.json'))).token, 'other');
+});
+
+// Restoring mtime and preserving length cannot hide changed source bytes from the
+// process-local digest reuse. Output verification still reads full bytes separately.
+test('fingerprints notice equal-length rewrites with restored mtime and exact content restoration', (t) => {
+  const root = fixture(t),
+    file = path.join(root, 'src/a.ts');
+  utimesSync(file, 1000, 1000);
+  const stamp = statSync(file);
+  const original = treeFingerprint(root, ['src/'], {});
+  assert.equal(treeFingerprint(root, ['src/'], {}), original);
+  writeFileSync(file, 'two');
+  utimesSync(file, stamp.atime, stamp.mtime);
+  assert.notEqual(treeFingerprint(root, ['src/'], {}), original);
+  writeFileSync(file, 'one');
+  utimesSync(file, stamp.atime, stamp.mtime);
+  assert.equal(treeFingerprint(root, ['src/'], {}), original);
 });

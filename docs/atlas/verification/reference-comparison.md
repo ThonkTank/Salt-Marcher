@@ -2,7 +2,7 @@
 
 Status: Current; offene Ziele sind als solche beschrieben.
 Owner: atlas
-Last Reviewed: 2026-10-24 (Struktur und Quellen; Fachabnahme separat)
+Last Reviewed: 2026-10-28 (lieferrelevante Originalfragen; Fachabnahme separat)
 Source of Truth: Dieses Dokument besitzt das benannte Thema; Code belegt den Iststand, das Abnahmeregister den Prüfstand.
 
 Dieser Plan ergänzt die [Hex-Atlas-Roadmap](../requirements/atlas.md). Für die weitere Umsetzung gelten die gemeinsamen [Ergebnisgleichwertigkeit und Lieferprioritäten](../requirements/atlas.md#wie-kommen-wir-zum-ziel). Vorhandene Inventare und Belege verwenden; unklare fachliche Wirkung gezielt vor ihrer Lieferung im Original prüfen. Eine vollständige Wiederholung aller UI-/Gestenproben ist keine Voraussetzung für einen benutzbaren Ausbau. Der erste benutzbare Hex-Editor bleibt das Ziel von HEX-02; der Ort-Dungeon-Raum-Key-Ablauf das Ziel von HEX-05.
@@ -18,6 +18,27 @@ Referenz ist die lokal installierte **Wonderdraft-Version 1.1.8.2** unter `/home
 Der erste Katalog enthält **36 Inventargruppen und 79 konkrete Ausgangsproben**. Sämtliche 35 Werkzeug- und 61 UI-Modulpfade aus dem lokalen Programmpaket sind Gruppen zugeordnet. Das belegt vorhandene Paketbestandteile; Erreichbarkeit, genaue UI-Namen, Defaults und Wirkung bleiben bis zur Originalprobe offen. Hilfsmodule können dieselbe Funktion unterstützen, unbenutzt sein oder reine Programmoberfläche betreffen. Diese Unterscheidung wird im Inventarreview belegt.
 
 Die [offizielle Funktionsübersicht](https://wonderdraft.net/), der [Quick Guide](https://github.com/Megasploot/Wonderdraft/wiki/Quick-Guide) und die [Shortcuts](https://github.com/Megasploot/Wonderdraft/wiki/Shortcuts) liefern Suchhinweise für Werkzeuge und Abläufe. Sie sind nicht auf die lokale Version festgelegt und ersetzen deren direkte Beobachtung nicht. Die Ausgangsproben sind **kein abgeschlossener Unterfallkatalog**: Eigenständige fachliche Wirkungen werden mit den vorhandenen Unterfällen verbunden. Mehrere Regler oder Eingabewege derselben Wirkung dürfen denselben eigenen Zugang verwenden; Originaldaten bleiben unverändert nachlesbar. Sammelproben werden dafür bei Bedarf aufgeteilt; IDs bleiben erhalten.
+
+## Lieferrelevante offene Originalwirkungen
+
+Der bestätigte Terrain-/Wasserumfang besitzt [TW-G1–6](../requirements/terrain-relief.md#begrenzte-ergebnisabschnitte)
+und den eigenen [begrenzten Flussabschluss](../contract/terrain-routes.md#begrenzter-flussabschluss).
+Der bestehende WD-Katalog bleibt das Inventar. Seine historischen Nullfelder
+und Teilbelege werden nicht durch neue Produktbehauptungen überschrieben.
+
+| Bestehende Fälle / Referenz | Beobachteter Stand und konkret fehlende Wirkung | Nächste gezielte Klärung / Lieferung |
+| --- | --- | --- |
+| WD-005.01–02, WD-006.01–02; Wonderdraft 1.1.8.2 | Die im [Landschaftsvertrag](../contract/landscape-tools.md#nachprüfung-bewegter-originalpinsel) gebundenen stationären und bewegten Land-/Fraktalproben belegen Originalwirkungen, keinen aktuellen Hostvergleich. Offen bleiben vollständig zugeordnete Rand-/Übergangswirkungen und Wirkung auf vorhandene Elemente; reine Reglernamen entscheiden keine Pflicht. | Vor TW-G1/4 prüfen, ob vorhandene Proben Küste, Überfahren und Erhalt bestehender Details ausreichend konkretisieren. Nur bei fehlender Nutzerwirkung Insel/Bucht mit einem überlappenden Zug, Gegenkorrektur und Wiederöffnung im Original ergänzen; zusätzliche Gestaltung vor HEX-11/16. Höhen- und Spezialpinsel bleiben durch den jüngeren Nutzerauftrag eigenständig gebunden. |
+| WD-008.01–02; Wonderdraft 1.1.8.2 | Vollständige Wasserfarb-/Textur-/Küsteneffekte nicht gemessen; ein Meeresspiegel mit daraus abgeleiteter Küste ist bereits eigener bestätigter Umfang. | Vor TW-G4 nur sichtbare Küstenlesbarkeit gegen vorhandene Bilder prüfen; fehlende eigenständige Gestaltungswirkungen an Küste/offenem Meer vor HEX-12/24 beobachten. Keine neue See- oder Effektlieferung aus einem offenen Regler ableiten. |
+| WD-010.01–03, WD-012.01–02; Wonderdraft 1.1.8.2 | [Optionssitzung und fehlgeschlagene Wirkungsprobe](../contract/landscape-tools.md#vergleich-und-nachweise) zeigen keine vollständige gespeicherte Mäander-/Rauheits-/Spitzen-/Übergangs- oder Anschlusswirkung. Eigene Planerbelege entscheiden diese Originalfragen nicht. | Vor Flussabschluss prüfen, ob eine solche Wirkung Pflichtpunkt, Editierbarkeit oder Mündung verändert; nur dann kleine Flussgabel mit Anschluss und Wiederöffnung im Original ergänzen. Zusätzliche Form-/Stilvarianten vor HEX-13/14 klären. Der bestätigte begrenzte Bettabtrag braucht keine erfundene Wonderdraft-Entsprechung. |
+| Übrige WD-Gruppen, besonders WD-036.01–02 | Paket-/Menüzuordnung und bestehende Teilproben lassen weitere selbständige Ergebnisse offen; eine interne Hilfsmodulrolle ist noch keine Nutzerfunktion. | Vor dem jeweiligen Ausbau nach der bestehenden Original→Phase-Tabelle die konkrete Nutzeraufgabe festlegen, vorhandene Belege prüfen und nur die fehlende Wirkung beobachten. Gesamtinventar spätestens vor HEX-28 schließen; keine Aufwandsschätzung für unbekannte Funktionen. |
+
+Jede Ergänzung bindet Version, vorhandene WD-ID/Quelle, Ausgangskarte und
+Beispielszenario, beobachtete Wirkung, gespeichertes Ergebnis/Neuöffnung soweit
+betroffen sowie abgeleitete eigene Anforderung und Lieferung. Unverfügbare
+Originalproben bleiben offen. Eine abweichende fachliche Zielwirkung braucht
+eine ausdrückliche Entscheidung; die Zusammenfassung mehrerer Gesten zu
+einem gleichwertigen Werkzeug benötigt keinen identischen Gestennachbau.
 
 ## HEX-00: bestehende Referenzläufe und offene Fachfragen
 

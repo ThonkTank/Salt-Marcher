@@ -6,10 +6,20 @@ Last Reviewed: 2026-10-28 (gemeinsamer E2E-01-Kern und explizites Crashprotokoll
 Source of Truth: Dieses Dokument besitzt das benannte Thema; Code belegt den Iststand, das Abnahmeregister den Prüfstand.
 
 `npm test` führt die aktive Auswahl lokal standardmäßig mit einem Testprozess aus.
-Auf Linux startet der Runner dafür eine eigene systemd-Benutzerscope mit
-`MemoryHigh=2G` und `MemoryMax=3G`, sofern bereits geerbte tatsächliche
-Cgroup-Grenzen nicht mindestens ebenso eng sind. Ein Startfehler führt zum
-Abbruch; es gibt keinen unbeschränkten Ersatzstart. Der bestehende
+Auf Linux verwendet der Runner dafür eine eigene Cgroup mit 2 GiB `memory.high`
+und 3 GiB `memory.max`, sofern geerbte tatsächliche Grenzen nicht mindestens
+ebenso eng sind. Ist der eigene systemd-Benutzerbaum bereits delegiert, erzeugt
+der Launcher dort ausschließlich seine eigene Gruppe. Er schreibt und prüft die
+Grenzen und der kleine Startprozess prüft seine tatsächliche Mitgliedschaft, bevor
+er den Prüfbefehl startet. Engere geerbte Grenzen bleiben erhalten. Ohne passende
+Delegation verwendet er eine systemd-Benutzerscope mit `MemoryHigh=2G` und
+`MemoryMax=3G`. Ein Startfehler führt zum Abbruch; es gibt keinen unbeschränkten
+Ersatzstart. Ein nach 30 Sekunden noch unbestätigter Start wird abgebrochen; dabei
+wird nur der eigene wartende systemd-Auftrag storniert. Der Launcher bleibt außerhalb
+der eigenen Gruppe, beendet nach Prozessende eventuell verbliebene Nachkommen und
+entfernt die leere Gruppe. Ein Abbruch wartet zwei Sekunden auf Signalbehandlung,
+dann beendet er die eigenen Restprozesse. `.build/local-checks/UNIT/report.json`
+enthält Startzeit, Ausgang und Cleanup einschließlich Cgroup-Peak. Der bestehende
 `codex-chat-protection@UID`-Dienst schützt die App separat und wird nicht verändert.
 Andere schwere Prüfungen laufen mit `npm run verify:local -- npm run check`
 (entsprechend für `check:desktop`, `build` und `build:desktop`).
@@ -23,7 +33,10 @@ der Launcher behauptet dort keine Betriebssystem-Speichergrenze.
 Jeder Lauf schreibt `.build/test-runs/UUID/report.json` und `tests.tap` mit
 Commit, Dirty-Status, Auswahl, Parallelität, effektiven Speichergrenzen,
 Vorbereitungs-/Test-/Gesamtdauer und Ergebnis. Asset-Einträge enthalten
-Cachetreffer, Grund, Schlüssel und Zeit. Unter Linux enthält der Bericht außerdem
+Cachetreffer, Grund, Schlüssel und Zeit. Der Messwrapper bindet außerdem die
+Produktions-/Test-/Toolquellen vor und nach dem Lauf per SHA-256;
+`python3 tools/measure-test-suite.py .build/neue-auswahl -- --serial tests/atlas/terrain-stroke-queue.test.mjs`
+misst eine kleine Auswahl mit demselben Runner. Unter Linux enthält der Bericht außerdem
 die Cgroup und ihren Speicherhöchststand. `.build/test-run.json` verweist durch
 seinen Inhalt auf den letzten abgeschlossenen Lauf. Nur Zeiten desselben Standes
 unter vergleichbarer Last vergleichen. Ziel unter 300 Sekunden für die gesamte
@@ -83,6 +96,12 @@ Dies ist lokale Testqualifikation, keine neue native Produkt- oder Candidate-Abn
 
 
 ## Gemessene Initialisierungskosten
+
+Der [Normalweg und aktuelle Vergleich für Runde 8](../../reference/test-path-round8-20261028/README.md)
+reproduziert den blockierten systemd-Start, belegt den automatischen begrenzten
+Start samt Abbruch/Cleanup und trennt aktuelle Vollmessungen, unveränderte kleine
+Auswahlen, Fingerprintkosten sowie konkrete Abdeckungslücken. Die älteren
+709-Sekunden-Werte sind kein aktueller Benchmark.
 
 Der [aktuelle Vergleich vom 28.10.2026](../../reference/test-costs-coverage-20261028/README.md)
 verbindet zwei vollständige Läufe mit unverkleinerten Worker-Teilmengen und
@@ -167,7 +186,11 @@ Store und Katalog vor (unter Linux über `verify:local`).
 - `.build/test-assets` enthält nach Inhalten adressierte Artefakte. Schlüssel
   berücksichtigen Renderer-/Store-/Desktopquellen einschließlich Hinzufügen/Entfernen, Helfer,
   Konfiguration, Lockfile, Node und esbuild. Vollständige Ausgabeliste und Ausgabehashes werden vor jedem
-  Treffer geprüft. Ein fehlgeschlagener oder während Quelländerung erzeugter
+  Treffer geprüft. Innerhalb eines Prozesses werden bereits gelesene Quelldigests
+  nur bei gleichem Gerät, Inode, Größe und Nanosekunden-mtime/ctime wiederverwendet;
+  jeder Durchlauf entdeckt weiterhin neue/entfernte Dateien. Gleich lange Änderungen
+  mit wiederhergestellter mtime sind ausdrücklich geprüft; Ausgaben werden weiterhin
+  vollständig gehasht. Ein fehlgeschlagener oder während Quelländerung erzeugter
   Build wird nicht veröffentlicht. Kurze Locks koordinieren nur die jeweilige
   Asset-Vorbereitung; sie sperren keine Rollen oder Testläufe. Verwaiste Locks
   mit nachweislich beendetem Besitzer werden zurückgewonnen; unklare Besitzer

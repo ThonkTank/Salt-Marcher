@@ -2,7 +2,7 @@
 
 Status: Verbindlicher Zielumfang; historische Umsetzungsbelege sind keine aktuelle Abnahme.
 Owner: project
-Last Reviewed: 2026-10-28 (Host, Quellenrollen und Codeverweise; Fachabnahme separat)
+Last Reviewed: 2026-10-28 (offene Originalwirkungen und begrenzte Lieferzuordnung; Fachabnahme separat)
 Source of Truth: Dieses Dokument besitzt das benannte Thema; Code belegt den Iststand, das Abnahmeregister den Prüfstand.
 
 Historischer Quellenabgleich vom 10. Oktober 2026. Geprüfte SaltMarcher-Revision: **`9de85c1a26f526acbc1af332ac5962e185c0aab2`**, damaliger `main`-Stand und die in unserer Acceptance gebundene Revision. Zielrepository-Ausgang: `d6cd63b52086c944b632a3225cc69a07fcda9b88`. Das [Quellenregister](sources.json) hält Dateihashes, die aktuell gebundenen Anforderungsdateien, die technischen Bedarf-IDs und ihre Zuordnung fest.
@@ -27,6 +27,40 @@ entschieden; fehlende Original-Unteroptionen bleiben vor ihrer Lieferung zu prü
 **Die bisherige Kurzfassung war als vollständiger Produkteinstieg unzureichend.** Die vier E2E-Gates erfassen wichtige Integrationsabläufe, aber nicht jeden eigenständig zu liefernden Funktionsbereich. Der Root-Gesamtplan nennt das vollständige SaltMarcher-Portfolio, überlässt jedoch einige große Anforderungen einem allgemeinen Quellenverweis.
 
 Diese Seite erfasst die in den geprüften Quellen identifizierten Zielbereiche ausdrücklich. Sie ist eine Vollständigkeitsprüfung auf Themen-, Quellen- und Zuordnungsebene, keine Behauptung, alle Detailvorgaben seien schon widerspruchsfrei entschieden oder implementiert. Originalinventare für Wonderdraft und die Stadtvorbilder bleiben offen; unbekannte Original-Unterfunktionen lassen sich daher noch nicht vollständig aufzählen. Produktabnahmen bleiben unverändert.
+
+## Offene Originalwirkungen und Klärung vor der Lieferung
+
+Der Gesamtumfang bleibt verbindlich; unbekannte Original-Unterfunktionen sind
+damit weder vollständig spezifiziert noch verbindlich geschätzt. Die
+[Terrain-/Meerlieferung und der bestätigte Flussteilabschluss](../delivery/roadmap.md#nächste-begrenzte-lieferung-terrain-und-meer)
+verwenden die bestätigten Anforderungen. Noch offene spätere Funktionen
+verhindern diese begrenzten Abschlüsse nicht. Schutz vorhandener Inhalte,
+History und Speicherung gelten schon im jeweils betroffenen Ablauf.
+
+| Offener Eingang / bestehende IDs | Konkrete ungeklärte Nutzerwirkung und fehlender Beleg | Klärungszeitpunkt / betroffene Lieferung |
+| --- | --- | --- |
+| Wonderdraft-Land/Wasser: WD-005/006/008; TW-G1/4 | Direkte Landpinselbelege existieren; vollständige Rand-/Übergangs- und Wassererscheinungswirkungen sind damit nicht entschieden. Unklar bleibt, ob eine fehlende Wirkung das bestätigte Küstenbearbeiten oder nur spätere Gestaltung betrifft. | Zuerst vorhandene Proben mit TW-G1/4 abgleichen; nur eine tatsächlich lieferrelevante Lücke vor Terrainabschluss gezielt im Original prüfen. Übrige Varianten vor HEX-11/12/24 nach [Referenzkatalog](../../atlas/verification/reference-comparison.md#lieferrelevante-offene-originalwirkungen). |
+| Flussform/-anschluss: WD-010.01–03, WD-012.01–02 | Optionsbilder belegen keine gespeicherte Form-, Mäander- oder Anschlusswirkung. Pflichtpunkte und begrenzter Bettabtrag stammen hingegen aus dem bestätigten Eigenauftrag. | Vor dem begrenzten Flussabschluss nur dessen unklare Ergebniswirkung klären; zusätzliche Form-/Stil- und Bearbeitungsvarianten vor späterem HEX-13/14-Ausbau. |
+| Stadtgeneratoren und Lebensdaten: CITY-00–08, CTY-/CO-Inventar | Sichtbare Formulare und gelesene Bewohnerprofile entscheiden nicht, welche Merkmale/Beziehungen beim Erzeugen, Bearbeiten und Erhalten wirken. Auch geschützte Regeneration und Ausgabedialekte haben konkrete offene Wirkungen. | Vor der jeweiligen Stadtteillieferung: CITY-02 Erzeugung, CITY-04 Schutz, CITY-06 Merkmale/Beziehungen/Fraktionen, CITY-07 Zeit, CITY-08 Ausgabe. Der [Stadtvertrag](../../city/contract/city.md#offene-originalwirkungen-vor-den-späteren-stadtlieferungen) besitzt die Fragen; keine Voraussetzung für Terrain/Fluss. |
+| Erweiterter Dungeon/Transfer: SMR-04/07/10, AC-05/08/15 | Originalumfang und vorhandene räumliche Regeln nicht mit vollständiger Graph-/Template-/Passagewirkung gleichsetzen; für Discovery, Charges und Countdown im Complete-Campaigntransfer fehlt eine ratifizierte Zielregel. | Vor dem jeweils betroffenen Authoring-/Runtimeausbau bzw. vor Complete-Importabnahme entscheiden; [Dungeoncoverage](../../dungeon/requirements/smr04-spatial-coverage.md) und Trap-Zuordnung unten bleiben Besitzer. Keine Voraussetzung neuer Terrainwerkzeuge. |
+| Actor Autonomy: SMR-09, AC-13 | Fachliche Regeln zu Bedürfnissen, Jobauswahl, Konflikten und gemeinsam bestätigter Zeit benötigen ihre eigene vollständige Prüfung; Stadtlebensdaten implizieren keine autonome Ausführung. | Vor dem jeweiligen Autonomystep nach [Fachvertrag](../../runtime/contract/actor-autonomy.md), vor AC-13 zusammenführen; weder Terrain- noch Flussabschluss wartet darauf. |
+
+Dies ist die Zuordnung offener Eingänge, keine zweite Inventar- oder Aufgabenliste.
+Bestehende Inventar-IDs, `sourceUrl`, Versions-/Datumsangaben, Originalproben und
+offene `gap`-Felder bleiben maßgeblich. Eine neue Probe hält Referenzversion
+(bei Webprodukten ersatzweise Datum/Build, unbekannte Version ausdrücklich),
+Beispielszenario, beobachtete Wirkung samt Grenzen und die daraus abgeleiteten
+Anforderungs-/Lieferbindungen fest. Vorhandene Belege zuerst verwenden;
+fehlende Rohbelege als fehlend benennen. Gleichwertige Ergebnisse genügen;
+Originalregler oder Gesten schaffen nicht automatisch zusätzliche Pflichten.
+
+Nach Code- und Fragenprüfung dürfen geklärte Teillieferungen eine Aufwandsspanne
+mit Annahmen erhalten. Für unbekannte Originalwirkungen wird zunächst nur die
+Klärung begrenzt, keine fertige Funktionslieferung zugesagt. Neue Anforderungen
+erhalten im bestehenden Register Quelle und Lieferzuordnung; ihre Aufnahme in
+eine laufende Lieferung aktualisiert sichtbar Umfang und Aufwand. Eine fachliche
+Abweichung vom Nutzerauftrag bleibt Entscheidungsbedarf und wird nicht als
+technische Vereinfachung still beschlossen.
 
 ## Quellen und Vorrang
 

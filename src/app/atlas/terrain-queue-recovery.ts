@@ -24,8 +24,8 @@ export class TerrainQueueRecovery {
         this.running = false;
         if (generation === this.generation) {
           this.delay = this.needed() ? Math.min(5000, this.delay * 2) : 200;
-          this.schedule();
         }
+        this.schedule();
       }
     }, this.delay);
   }

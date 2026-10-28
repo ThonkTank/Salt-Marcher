@@ -15,10 +15,8 @@ import type { Point, WorkspaceGeometry } from '../shared/contracts';
 interface AtlasOutputHost {
   readonly reference: Pick<AtlasReferenceUI, 'active' | 'close'>;
   readonly flush: () => Promise<boolean>;
-  readonly opts: {
-    flush: () => Promise<boolean>;
-    status: (text: string, error?: boolean) => void;
-  };
+  readonly flushEditors: () => Promise<boolean>;
+  readonly status: (text: string, error?: boolean) => void;
   readonly root: HTMLElement;
   readonly family: string;
   readonly layout: Pick<AtlasWorkspaceLayout, 'output'>;
@@ -152,7 +150,7 @@ export class AtlasOutput {
   }
   async setOutput(open: boolean) {
     if (this.host.reference.active) this.host.reference.close();
-    if (open && (!(await this.host.flush()) || !(await this.host.opts.flush()))) return;
+    if (open && (!(await this.host.flush()) || !(await this.host.flushEditors()))) return;
     if (this.exporting) return;
     this.host.root.dataset.output = String(open);
     if (open && this.exportDungeon && !['interior', 'decoration'].includes(this.host.family)) {
@@ -185,7 +183,12 @@ export class AtlasOutput {
     const current = () =>
       this.host.owner === owner && this.outputRun === session && !session.cancelled;
     try {
-      if (!(await this.host.flush()) || !current() || !(await this.host.opts.flush()) || !current())
+      if (
+        !(await this.host.flush()) ||
+        !current() ||
+        !(await this.host.flushEditors()) ||
+        !current()
+      )
         return;
       get('atlas-output-save-status').textContent = 'Kampagne wird gesichert…';
       const response = await window.campaign.exportCampaign(owner.token);
@@ -197,7 +200,7 @@ export class AtlasOutput {
       get('atlas-output-save-status').textContent = message;
       get('atlas-save-status').textContent = message;
       get('atlas-save-status').dataset.error = 'false';
-      this.host.opts.status(message);
+      this.host.status(message);
     } catch (e) {
       if (current()) {
         get('atlas-output-save-status').textContent =
@@ -305,7 +308,7 @@ export class AtlasOutput {
     get<HTMLButtonElement>('atlas-output-save-campaign').disabled = true;
     status('Bild wird vorbereitet…');
     try {
-      if (!(await this.host.opts.flush()) || !current()) return;
+      if (!(await this.host.flushEditors()) || !current()) return;
       const audience = get<HTMLSelectElement>('atlas-export-audience').value as 'gm' | 'public',
         chosenBox = this.outputBox();
       if (!chosenBox) throw new Error('Dungeon-Grundriss wird geladen. Ausschnitt erneut laden.');
@@ -380,7 +383,7 @@ export class AtlasOutput {
       if (!current()) return;
       if (!r.ok) throw new Error(r.error);
       if (!r.value.cancelled) {
-        this.host.opts.status('Atlas-' + format.toUpperCase() + ' gespeichert.');
+        this.host.status('Atlas-' + format.toUpperCase() + ' gespeichert.');
         status('Atlas-' + format.toUpperCase() + ' gespeichert');
       }
     } catch (e) {

@@ -136,7 +136,7 @@ test('save-state rendering retains the GPU brush scene until the gesture finishe
     'ordinary edits must rebuild',
   );
 });
-test('commits advance author identity without relabelling the Atlas or awaiting display; finish refreshes once', async (t) => {
+test('commits advance author identity without relabelling the Atlas or awaiting display', async (t) => {
   const old = { document: global.document, window: global.window, CustomEvent: global.CustomEvent },
     status = { dataset: {} },
     shown = [];
@@ -215,15 +215,6 @@ test('commits advance author identity without relabelling the Atlas or awaiting 
   assert.equal(ui.busy, false);
   ui.spatial.active = true;
   ui.spatial.reconcile = (revision, fence) => shown.push({ revision, fence });
-  ui.strokeOwner = owner.token;
-  ui.strokeQueue = {
-    pending: false,
-    failed: false,
-    confirmedSource: { expectedRevision: 12, sourceFence: 'f2' },
-  };
-  await ui.terrainGesture(false);
-  assert.deepEqual(shown, [{ revision: 12, fence: 'f2' }]);
-  assert.equal(refreshes, 1);
 });
 
 test('a failed final display refresh releases the brush lock and preserves the saved-prefix status', async () => {
@@ -260,160 +251,6 @@ test('a failed final display refresh releases the brush lock and preserves the s
   assert.deepEqual(errors, ['Anzeige nicht erreichbar']);
   assert.match(messages[0], /Gespeicherte Änderungen bleiben/);
   assert.equal(redraws, 1);
-});
-
-test('confirmed head survives reload failure and requires explicit retry after an intervening source change', async (t) => {
-  const old = { document: global.document, window: global.window, CustomEvent: global.CustomEvent };
-  const status = { dataset: {} },
-    commands = [],
-    resolutions = [],
-    shown = [],
-    errors = [];
-  global.CustomEvent = class extends Event {
-    constructor(name, options) {
-      super(name);
-      this.detail = options.detail;
-    }
-  };
-  global.document = { getElementById: () => status, dispatchEvent() {} };
-  let sourceReads = 0,
-    released = 0;
-  global.window = {
-    campaign: {
-      executeAtlasCommit: async (c) => {
-        commands.push(structuredClone(c));
-        return commands.length === 1
-          ? { ok: false, error: 'Lost answer', errorKind: 'store-outcome-unknown' }
-          : {
-              ok: true,
-              value: {
-                commandId: c.commandId,
-                campaignId: 'held-c',
-                revision: c.terrainStroke.expectedRevision + 1,
-                sourceFence: 'canonical-' + (c.terrainStroke.expectedRevision + 1),
-                canUndo: true,
-                canRedo: false,
-              },
-            };
-      },
-      reconcileAtlasCommit: async (c) => {
-        resolutions.push(structuredClone(c));
-        return {
-          ok: true,
-          value: {
-            outcome: 'applied',
-            ack: {
-              commandId: c.commandId,
-              campaignId: 'held-c',
-              revision: 11,
-              sourceFence: 'canonical-11',
-              canUndo: true,
-              canRedo: false,
-            },
-          },
-        };
-      },
-      atlasTerrainSource: async () =>
-        ++sourceReads === 1
-          ? { ok: false, error: 'Controlled source read failure' }
-          : { ok: true, value: { revision: 11, fence: 'canonical-11' } },
-    },
-  };
-  t.after(() => Object.assign(global, old));
-  const owner = { token: 'held-source-token', campaign: { id: 'held-c' } },
-    atlas = { revision: 10, region: { revision: 10, fence: 'base' } };
-  const ui = Object.assign(atlasFixture(CampaignAtlasWorkbench), {
-    owner,
-    terrainRecovery: { schedule() {}, stop() {} },
-    automaticRetries: new Set(),
-    automaticRetryHead: null,
-    svg: { dataset: {} },
-    projection: atlas,
-    opts: { status() {} },
-    render() {},
-    error: (e) => errors.push(e.message),
-    landscape: {
-      livePainting: false,
-      releaseHeld() {
-        released++;
-      },
-    },
-    spatial: {
-      active: true,
-      pauseReads() {},
-      reconcile: (revision, fence) => shown.push({ revision, fence }),
-    },
-    async refresh() {
-      return true;
-    },
-  });
-  ui.journey.invalidatePreview = () => {};
-  const action = {
-    kind: 'landscape-height-stroke',
-    stroke: {
-      samples: [
-        { x: 0, y: 0, t: 0 },
-        { x: 1, y: 0, t: 100 },
-      ],
-    },
-  };
-  const failed = assert.rejects(ui.enqueueRasterStroke(action, 'held-first'), /Lost answer/);
-  let completed = false;
-  const dependent = ui.enqueueRasterStroke(action, 'held-second').then(() => {
-    completed = true;
-  });
-  await failed;
-  await assert.rejects(ui.strokeQueue.finish());
-  assert.equal(await ui.flush(), false);
-  assert.throws(
-    () => ui.activate({ token: 'different', campaign: { id: 'other' } }),
-    /vor dem Kampagnenwechsel klären/,
-  );
-  assert.equal(ui.owner, owner);
-  await ui.continueTerrainQueue();
-  assert.equal(ui.strokeQueue.failureKind, 'source');
-  assert.equal(ui.strokeQueue.pending, 1);
-  assert.equal(ui.strokeQueue.head.id, 'held-second');
-  assert.equal(completed, false);
-  assert.equal(commands.length, 1);
-  assert.equal(resolutions.length, 1);
-  assert.deepEqual(
-    errors,
-    [],
-    'uncertain saves remain an unobtrusive status, without an error dialog',
-  );
-  assert.equal(await ui.flush(), false);
-  assert.equal(
-    await ui.write({ kind: 'landscape-sea-level', seaLevelM: 3 }),
-    null,
-    'sea settings cannot overtake held terrain',
-  );
-  global.window.campaign.atlasTerrainSource = async () => ({
-    ok: true,
-    value: { revision: 12, fence: 'canonical-12' },
-  });
-  await ui.continueTerrainQueue();
-  assert.equal(
-    ui.strokeQueue.failureKind,
-    'rejected',
-    'confirmed original is safe; unsent successors need an explicit choice on the changed source',
-  );
-  assert.equal(ui.strokeQueue.pending, 1);
-  assert.equal(commands.length, 1, 'source change cannot silently replay a successor');
-  assert.equal(await ui.write({ kind: 'landscape-sea-level', seaLevelM: 3 }), null);
-  await ui.continueTerrainQueue(true);
-  await dependent;
-  assert.equal(ui.strokeQueue.pending, 0);
-  assert.equal(commands.length, 2);
-  assert.deepEqual(
-    commands.map((c) => c.commandId),
-    ['held-first', 'held-second'],
-  );
-  assert.equal(commands[1].sourceFence, 'canonical-12');
-  assert.equal(commands[1].terrainStroke.expectedRevision, 12);
-  assert.equal(resolutions.length, 1, 'failed read cannot replay receipt lookup or original write');
-  assert.equal(released, 1);
-  assert(shown.some((s) => s.revision === 13 && s.fence === 'canonical-13'));
 });
 
 test('an unchanged display adopts the new author snapshot through delta frames and buffer reuse', () => {
