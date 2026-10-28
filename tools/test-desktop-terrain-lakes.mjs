@@ -34,7 +34,7 @@ const clean = (rs) =>
   rs.map(({ revision, order, ...r }) => r).sort((a, b) => a.id.localeCompare(b.id));
 const sha = (v) =>
   createHash('sha256')
-    .update(typeof v === 'string' ? v : JSON.stringify(v))
+    .update(typeof v === 'string' || Buffer.isBuffer(v) ? v : JSON.stringify(v))
     .digest('hex');
 await runNativeProbe({ root, output, name: 'terrain-lakes' }, async (native) => {
   const profile = native.profile,
