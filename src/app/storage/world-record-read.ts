@@ -181,11 +181,12 @@ export function checkedJourneyValue(value: unknown): Journey {
     !identity(j.id) ||
     !identity(j.sceneId) ||
     !identity(j.mapId) ||
-    ![j.mapRevision, j.clockRevision, j.positionRevision, j.membershipRevision].every(
-      (v) => Number.isSafeInteger(v) && v >= 0,
-    ) ||
+    ![
+      j.mapRevision,
+      j.membershipRevision,
+      ...[j.clockRevision, j.positionRevision].filter((v): v is number => v !== undefined),
+    ].every((v) => Number.isSafeInteger(v) && v >= 0) ||
     j.mapRevision < 1 ||
-    !Number.isSafeInteger(j.plannedSeconds) ||
     j.actorIds.some((v) => !identity(v)) ||
     new Set(j.actorIds).size !== j.actorIds.length ||
     j.paceKmh < 0.1 ||

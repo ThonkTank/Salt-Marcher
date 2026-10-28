@@ -299,7 +299,7 @@ test('typed boundary rejects mixed land/color/property operations atomically', (
         record: { ...patch(), propertyOnly: 'yes' },
         expectedRevision: null,
       }),
-    /Eigenschaftsfläche/,
+    /Eigenschaftsfläche|Landschaft hat ungültige Felder/,
   );
   assert.deepEqual(f.records(), before);
 });

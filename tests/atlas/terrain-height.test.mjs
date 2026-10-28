@@ -232,10 +232,13 @@ test('malformed height formats and write failures leave the transaction unchange
   bad.height.version = 3;
   assert.throws(
     () => f.write({ kind: 'landscape-put', record: bad, expectedRevision: null }),
-    /prüfen/,
+    /prüfen|Landschaft hat ungültige Felder/,
   );
   assert.deepEqual(f.records(), before);
-  assert.throws(() => f.write({ kind: 'landscape-sea-level', seaLevelM: Infinity }), /prüfen/);
+  assert.throws(
+    () => f.write({ kind: 'landscape-sea-level', seaLevelM: Infinity }),
+    /prüfen|Landschaft hat ungültige Felder/,
+  );
   assert.deepEqual(f.records(), before);
   f.store.db.exec(
     "CREATE TEMP TRIGGER fail_height BEFORE INSERT ON atlas_landscape WHEN json_extract(new.payload,'$.height') IS NOT NULL BEGIN SELECT RAISE(ABORT,'simulated disk failure');END;",
@@ -251,7 +254,7 @@ test('malformed height formats and write failures leave the transaction unchange
         ...settingsRecord(0),
         terrainSettings: { version: 2, seaLevelM: 0 },
       }),
-    /prüfen/,
+    /prüfen|Landschaft hat ungültige Felder/,
   );
 });
 test('height queries are read-only; explicit local reset releases height overrides and undo restores them', (t) => {

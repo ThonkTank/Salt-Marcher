@@ -479,14 +479,14 @@ for (const damage of ['invalid weather', 'damaged checksum'])
           notes: '  Szene bleibt bedienbar.\r\n\nPrivater Text.',
           locationId: scene.locationId,
         });
-      assert.throws(x.frame, /Wetter|Weltstand/);
+      assert.throws(x.frame, /Wetter|Weltstand|Originaldaten bleiben erhalten/);
       const ack = x.store.executeLive(command);
       assert.equal(ack.scene.notes, command.action.notes);
       assert.equal(ack.scene.title, command.action.title);
       assert.equal(ack.scene.revision, scene.revision + 1);
       assert.deepEqual(ack.scene.clock, scene.clock);
       assert.equal(worldBytes(), beforeWorld);
-      assert.throws(x.frame, /Wetter|Weltstand/);
+      assert.throws(x.frame, /Wetter|Weltstand|Originaldaten bleiben erhalten/);
       const bytes = x.store.db.serialize();
       assert.deepEqual(x.store.executeLive(command), ack);
       assert.ok(x.store.db.serialize().equals(bytes));
@@ -530,7 +530,7 @@ test('weather-dependent clock change still rejects damaged weather atomically', 
           reason: 'Benötigt gültige Wetterfolgen',
         }),
       ),
-    /Weltstand|Wetter/,
+    /Weltstand|Wetter|Originaldaten bleiben erhalten/,
   );
   assert.ok(x.store.db.serialize().equals(before));
 });

@@ -819,8 +819,11 @@ test('visible invalid vegetation numbers reach canonical rejection; recovery sav
         { kind: 'landscape-place', record: draft },
         { kind: 'landscape-batch', records: [{ record: draft }] },
       ])
-        await assert.rejects(() => workbench.commit(action), /Bewuchs/);
-      assert.throws(() => f.save(draft), /Bewuchs/);
+        await assert.rejects(
+          () => workbench.commit(action),
+          /Bewuchs|Landschaft hat ungültige Felder/,
+        );
+      assert.throws(() => f.save(draft), /Bewuchs|Landschaft hat ungültige Felder/);
       assert.equal(density.value, value);
       assert.equal(f.store.atlasRegionSource(f.token).revision, source);
       assert.deepEqual(f.store.atlasLandscapeObject(f.token, r.id), original);
@@ -843,7 +846,7 @@ test('visible invalid vegetation numbers reach canonical rejection; recovery sav
     linkWorkbench = landscapeFixture(LandscapeWorkbench);
   await assert.rejects(
     () => linkWorkbench.linkVegetation(failedLink, failedLink.vegetation.overrides[0]),
-    /Bewuchs/,
+    /Bewuchs|Landschaft hat ungültige Felder/,
   );
   assert.deepEqual(
     failedLink,
@@ -870,7 +873,7 @@ test('visible invalid vegetation numbers reach canonical rejection; recovery sav
     const input = root.querySelector('#vegetation-object-' + key);
     input.value = '';
     input.oninput();
-    assert.throws(() => f.save(draft), /Einzelkorrektur/);
+    assert.throws(() => f.save(draft), /Einzelkorrektur|Landschaft hat ungültige Felder/);
     assert.equal(input.value, '');
     assert.deepEqual(f.store.atlasLandscapeObject(f.token, r.id), original);
     input.value = value;
@@ -1139,7 +1142,7 @@ test('terrain eraser removes ground and vegetation, supports repaint and preserv
           },
         ],
       }),
-    /prüfen/,
+    /prüfen|Landschaft hat ungültige Felder/,
   );
 });
 

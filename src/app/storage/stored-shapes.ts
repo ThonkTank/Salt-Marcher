@@ -81,13 +81,20 @@ function matches(rule: Rule, value: unknown): boolean {
   return Object.entries(record).every(([key, v]) => {
     const field = Object.hasOwn(shape.fields, key) ? shape.fields[key] : shape.values;
     // Extra fields are retained; owners with closed contracts check them explicitly.
-    return !field || matches(field, v);
+    return (
+      !field ||
+      (v === undefined && Object.hasOwn(shape.fields, key) && !shape.required.includes(key)) ||
+      matches(field, v)
+    );
   });
 }
 function isShape<K extends keyof StoredShapes>(kind: K, value: unknown): value is StoredShapes[K] {
   return matches(graph.roots[kind]!, value);
 }
 const domainNames: Partial<Record<keyof StoredShapes, string>> = {
+  encounter_table: 'Encounter-Tabelle',
+  world_journey: 'Reisegrundlage',
+  atlas_landscape: 'Landschaft',
   character_ledger: 'Beuteeintrag',
   character_progress: 'Fortschrittsdaten',
   treasure: 'Beutedaten',

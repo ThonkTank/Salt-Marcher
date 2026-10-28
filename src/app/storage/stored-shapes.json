@@ -13085,13 +13085,25 @@
      "scalar": "number"
     },
     "clockRevision": {
-     "scalar": "number"
+     "union": [
+      {
+       "scalar": "number"
+      }
+     ]
     },
     "positionRevision": {
-     "scalar": "number"
+     "union": [
+      {
+       "scalar": "number"
+      }
+     ]
     },
     "environmentBasis": {
-     "scalar": "string"
+     "union": [
+      {
+       "scalar": "string"
+      }
+     ]
     },
     "actorIds": {
      "array": {
@@ -13208,9 +13220,6 @@
     "sceneId",
     "mapId",
     "mapRevision",
-    "clockRevision",
-    "positionRevision",
-    "environmentBasis",
     "actorIds",
     "membershipRevision",
     "status",

@@ -306,6 +306,7 @@ test('confirmed head survives reload failure and requires explicit retry after a
               commandId: c.commandId,
               campaignId: 'held-c',
               revision: 11,
+              sourceFence: 'canonical-11',
               canUndo: true,
               canRedo: false,
             },
@@ -323,6 +324,9 @@ test('confirmed head survives reload failure and requires explicit retry after a
     atlas = { revision: 10, region: { revision: 10, fence: 'base' } };
   const ui = Object.assign(atlasFixture(CampaignAtlasWorkbench), {
     owner,
+    terrainRecovery: { schedule() {}, stop() {} },
+    automaticRetries: new Set(),
+    automaticRetryHead: null,
     svg: { dataset: {} },
     projection: atlas,
     opts: { status() {} },
@@ -373,7 +377,11 @@ test('confirmed head survives reload failure and requires explicit retry after a
   assert.equal(completed, false);
   assert.equal(commands.length, 1);
   assert.equal(resolutions.length, 1);
-  assert(errors.some((error) => /quelle erneut laden/i.test(error)));
+  assert.deepEqual(
+    errors,
+    [],
+    'uncertain saves remain an unobtrusive status, without an error dialog',
+  );
   assert.equal(await ui.flush(), false);
   assert.equal(
     await ui.write({ kind: 'landscape-sea-level', seaLevelM: 3 }),

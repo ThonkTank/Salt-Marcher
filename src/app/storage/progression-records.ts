@@ -114,7 +114,7 @@ export function notice(db: SqliteDatabase, cam: string, characterId: string, amo
     );
 }
 
-function checkedTreasure(t: Treasure): Treasure {
+function checkedTreasure(t: Treasure, unpersisted = false): Treasure {
   const id = (v: unknown) => typeof v === 'string' && !!v.trim() && v.length <= 1000;
   const reference = (r: Treasure['items'][number]['reference']) =>
     r &&
@@ -127,7 +127,7 @@ function checkedTreasure(t: Treasure): Treasure {
     !t ||
     !id(t.id) ||
     !Number.isSafeInteger(t.revision) ||
-    t.revision < 1 ||
+    (t.revision < 1 && !(unpersisted && t.revision === 0 && t.items.length === 0)) ||
     typeof t.title !== 'string' ||
     t.title.length > 1000 ||
     !Array.isArray(t.items) ||
@@ -169,8 +169,8 @@ function checkedTreasure(t: Treasure): Treasure {
   return t;
 }
 
-export function checkedTreasureValue(value: unknown): Treasure {
-  return checkedTreasure(shape.treasure(value));
+export function checkedTreasureValue(value: unknown, unpersisted = false): Treasure {
+  return checkedTreasure(shape.treasure(value), unpersisted);
 }
 
 export function checkedTreasureRow(value: unknown): Treasure {

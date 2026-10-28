@@ -1793,7 +1793,17 @@ function checkedProgressEvent(value: unknown) {
     'shop-sale': ['before', 'portion', 'shopId', 'notes'],
     'treasure-created': ['treasure'],
     'treasure-edited': ['treasureId', 'before', 'after', 'reason'],
-    'treasure-moved': ['treasureId', 'from', 'to', 'before', 'after'],
+    'treasure-moved': [
+      'treasureId',
+      'targetTreasureId',
+      'before',
+      'after',
+      'targetBefore',
+      'targetAfter',
+      'quantity',
+      'itemId',
+      'reason',
+    ],
     'treasure-anchored': ['treasureId', 'from', 'to', 'before', 'after'],
     'story-award': ['sourceKind', 'sourceId', 'before', 'after', 'xp'],
     'combat-award': ['awardId', 'combatId', 'before', 'after', 'xp', 'load'],
@@ -1875,6 +1885,20 @@ function checkedProgressEvent(value: unknown) {
         if (record.treasureId !== undefined && treasure.id !== record.treasureId)
           throw new Error('Historische Schatzfakten widersprüchlich.');
       }
+  if (row.kind === 'treasure-moved') {
+    const before = checkedTreasureValue(record.targetBefore, true),
+      after = checkedTreasureValue(record.targetAfter);
+    if (
+      before.id !== record.targetTreasureId ||
+      after.id !== record.targetTreasureId ||
+      typeof record.itemId !== 'string' ||
+      !record.itemId ||
+      typeof record.quantity !== 'number' ||
+      !Number.isSafeInteger(record.quantity) ||
+      record.quantity < 1
+    )
+      throw new Error('Historisches Schatzbewegungsziel oder Menge widersprüchlich.');
+  }
   if (row.kind === 'narrative-state')
     for (const key of ['before', 'after']) checkedNarrativeState(record[key]);
   if (
