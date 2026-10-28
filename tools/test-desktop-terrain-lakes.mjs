@@ -161,14 +161,26 @@ await runNativeProbe({ root, output, name: 'terrain-lakes' }, async (native) => 
         return reconcile(...args);
       });
     });
+    await installDraftObserver();
     await page.evaluate(() => {
       window.__qaLakeInputs = [];
       for (const type of ['pointerdown', 'pointerup'])
         window.addEventListener(
           type,
           (e) => {
-            if (e.target.closest?.('#campaign-map'))
+            if (e.target.closest?.('#campaign-map')) {
               window.__qaLakeInputs.push({ type, t: e.timeStamp, x: e.clientX, y: e.clientY });
+              if (type === 'pointerdown' && window.__qaObserveLake) {
+                const point = window.__qaObserveLake;
+                setTimeout(
+                  () =>
+                    requestAnimationFrame(() => {
+                      window.__qaLakeAtOne = window.__qaReadLake(point);
+                    }),
+                  1000,
+                );
+              }
+            }
           },
           true,
         );
@@ -213,36 +225,41 @@ await runNativeProbe({ root, output, name: 'terrain-lakes' }, async (native) => 
       pt = api.projectTerrain(camera, p, Math.max(h, sampler.waterLevel(p, h) ?? -Infinity));
     return { x: rect.x + pt.x * rect.width, y: rect.y + pt.y * rect.height };
   }
-  async function draftState(p) {
-    return await page.evaluate((p) => {
-      const r = window.__qaRiverRaster,
-        d = r.draft;
-      const tiles = d?.tiles ?? r.tiles;
-      const tile = tiles.find((t) => {
-        const b = t.terrain.projection.grid.view.box;
-        return p.x >= b.x && p.x <= b.x + b.width && p.y >= b.y && p.y <= b.y + b.height;
-      });
-      const g = tile?.terrain.projection.grid;
-      if (!g) return null;
-      const b = g.view.box,
-        ix = Math.round(((p.x - b.x) / b.width) * (g.view.columns - 1)),
-        iy = Math.round(((p.y - b.y) / b.height) * (g.view.rows - 1)),
-        i = iy * g.view.columns + ix;
-      return {
-        ground: g.editing.ground[i],
-        water: g.editing.water[i],
-        surface: g.heights[i],
-        pointer: r.gesturing,
-        now: performance.now(),
-        down: window.__qaLakeInputs.filter((e) => e.type === 'pointerdown').at(-1)?.t,
-        draft: !!d,
-        lastSample: r.pendingStroke?.samples.at(-1),
-        wetPixels: tiles.reduce(
-          (n, t) => n + t.material.channels.water.reduce((s, v) => s + (v > 0), 0),
-          0,
-        ),
+  async function installDraftObserver() {
+    await page.evaluate(() => {
+      window.__qaReadLake = (p) => {
+        const r = window.__qaRiverRaster,
+          d = r.draft;
+        const tiles = d?.tiles ?? r.tiles;
+        const tile = tiles.find((t) => {
+          const b = t.terrain.projection.grid.view.box;
+          return p.x >= b.x && p.x <= b.x + b.width && p.y >= b.y && p.y <= b.y + b.height;
+        });
+        const g = tile?.terrain.projection.grid;
+        if (!g) return null;
+        const b = g.view.box,
+          ix = Math.round(((p.x - b.x) / b.width) * (g.view.columns - 1)),
+          iy = Math.round(((p.y - b.y) / b.height) * (g.view.rows - 1)),
+          i = iy * g.view.columns + ix;
+        return {
+          ground: g.editing.ground[i],
+          water: g.editing.water[i],
+          surface: g.heights[i],
+          pointer: r.gesturing,
+          now: performance.now(),
+          down: window.__qaLakeInputs.filter((e) => e.type === 'pointerdown').at(-1)?.t,
+          draft: !!d,
+          lastSample: r.pendingStroke?.samples.at(-1),
+          wetPixels: tiles.reduce(
+            (n, t) => n + t.material.channels.water.reduce((s, v) => s + (v > 0), 0),
+            0,
+          ),
+        };
       };
-    }, p);
+    });
+  }
+  async function draftState(p) {
+    return page.evaluate((p) => window.__qaReadLake(p), p);
   }
   async function stroke(
     p,
@@ -265,17 +282,24 @@ await runNativeProbe({ root, output, name: 'terrain-lakes' }, async (native) => 
       beforeRecords = clean(beforeRaw);
     const beforeDraft = await draftState(p);
     if (unknown) await native.app.evaluate(() => (globalThis.__qaLake.loseNext = true));
+    await page.evaluate(
+      (p) => {
+        window.__qaObserveLake = p;
+        window.__qaLakeAtOne = null;
+      },
+      holdCheck ? p : null,
+    );
     await page.mouse.down();
+    const nodeDownAt = performance.now();
+    let live = null;
     if (holdCheck) {
-      await page.waitForTimeout(1000);
+      await page.waitForFunction(() => !!window.__qaLakeAtOne);
+      const one = await page.evaluate(() => window.__qaLakeAtOne);
+      live = one;
       await page.evaluate(() => window.__qaRiverRaster.surface.waitForFrame());
-      const one = await draftState(p);
       assert(one.pointer && one.draft);
       console.log('held probe', JSON.stringify(one));
-      assert(
-        Math.abs(one.ground - (20 - (2 * (one.now - one.down)) / 1000)) < 0.5,
-        JSON.stringify(one),
-      );
+      assert(one.lastSample.t >= 800 && one.lastSample.t <= 1400, JSON.stringify(one));
       assert(
         Math.abs(one.ground - (20 - (2 * one.lastSample.t) / 1000)) < 0.1,
         JSON.stringify(one),
@@ -286,10 +310,9 @@ await runNativeProbe({ root, output, name: 'terrain-lakes' }, async (native) => 
         'A new water material patch must appear before pointerup',
       );
       await native.capture(page, label + '-holding');
-      await page.waitForTimeout(Math.max(1, duration - (one.now - one.down)));
       gestures.push({ label, one, beforeDraft });
-    } else await page.waitForTimeout(duration);
-    const live = await draftState(p);
+    }
+    await page.waitForTimeout(Math.max(1, duration - (performance.now() - nodeDownAt)));
     await page.mouse.up();
     if (unknown) {
       const end = Date.now() + 60000;
@@ -340,6 +363,12 @@ await runNativeProbe({ root, output, name: 'terrain-lakes' }, async (native) => 
     }
     assert.notEqual(sha(clean(rs)), sha(beforeRecords));
     const input = await page.evaluate(() => window.__qaLakeInputs.slice(-2));
+    assert.equal(input[0].type, 'pointerdown');
+    assert.equal(input[1].type, 'pointerup');
+    assert.equal(input[0].x, input[1].x);
+    assert.equal(input[0].y, input[1].y);
+    if (holdCheck)
+      assert(Math.abs(input[1].t - input[0].t - duration) < 250, JSON.stringify(input));
     gestures.push({
       label,
       p,
