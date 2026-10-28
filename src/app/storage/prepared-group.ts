@@ -31,7 +31,8 @@ export function checkedPreparedGroupValue(value: unknown): PreparedGroup {
     new Set(g.actors.map((a) => a.id)).size !== g.actors.length
   )
     throw new Error('Gruppenzuordnung, Revision oder Figurenliste beschädigt.');
-  validateEncounterPlanInput(g.plan);
+  // Groups created without a catalog template intentionally retain an empty source ID.
+  validateEncounterPlanInput({ ...g.plan, id: g.plan.id || g.id });
   g.plan.sources.forEach(rawCreature);
   for (const a of g.actors) {
     checkedHealth(a);

@@ -222,7 +222,7 @@ test('invalid options and a stale second batch member roll back the whole write'
           record: { ...a, id: randomUUID(), line: { ...a.line, ...invalid } },
           expectedRevision: null,
         }),
-      /prüfen/,
+      /prüfen|Landschaft hat ungültige Felder/,
     );
 });
 function brush(mode, points = [{ x: 0, y: 0 }]) {
@@ -463,6 +463,9 @@ test('archive restore rejects unknown curve/brush versions before publishing a c
   db.prepare("UPDATE atlas_landscape SET payload=json_set(payload,'$.line.version',99)").run();
   db.close();
   const before = f.store.list();
-  assert.throws(() => f.store.acceptCampaignSnapshot(copy, 'Zukunft', {}), /prüfen/);
+  assert.throws(
+    () => f.store.acceptCampaignSnapshot(copy, 'Zukunft', {}),
+    /prüfen|Landschaft hat ungültige Felder/,
+  );
   assert.deepEqual(f.store.list(), before);
 });

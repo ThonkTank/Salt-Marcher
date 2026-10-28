@@ -123,9 +123,10 @@ export interface Journey {
   sceneId: string;
   mapId: string;
   mapRevision: number;
-  clockRevision: number;
-  positionRevision: number;
-  environmentBasis: string;
+  // Older journeys remain readable, but cannot resume without their original bases.
+  clockRevision?: number;
+  positionRevision?: number;
+  environmentBasis?: string;
   actorIds: string[];
   membershipRevision: number;
   status: 'active' | 'paused' | 'interrupted' | 'arrived' | 'ended';

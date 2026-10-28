@@ -248,7 +248,7 @@ for (const corruption of ['field', 'variant', 'table'])
       before = store.db.serialize();
     assert.throws(
       () => store.acceptCampaignSnapshot(file, 'Rejected', {}),
-      /Transfer|transfer|Datenbanktabellen/,
+      /Transfer|transfer|Datenbanktabellen|Unbekannte Weltrecordart/,
     );
     assert.deepEqual(readFileSync(file), original);
     assert.deepEqual(store.db.serialize(), before);

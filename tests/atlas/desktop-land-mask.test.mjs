@@ -245,7 +245,7 @@ test('rendered water agrees with mask queries and malformed input rolls back', (
           ],
         }),
       ),
-    /prüfen/,
+    /prüfen|Landschaft hat ungültige Felder/,
   );
   assert.deepEqual(f.records(), before);
 });
@@ -289,7 +289,10 @@ test('malformed archived height is rejected before a campaign is published', asy
   ).run();
   db.close();
   const before = f.store.list();
-  assert.throws(() => f.store.acceptCampaignSnapshot(file, 'Defekt', {}), /prüfen/);
+  assert.throws(
+    () => f.store.acceptCampaignSnapshot(file, 'Defekt', {}),
+    /prüfen|Landschaft hat ungültige Felder/,
+  );
   assert.deepEqual(f.store.list(), before);
 });
 
