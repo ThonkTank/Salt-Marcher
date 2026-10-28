@@ -40,6 +40,8 @@ export interface TerrainEditingSource {
   radius: number;
   box: LandscapeBox;
   records: LandscapeRecord[];
+  /** Local draft tombstones, never a canonical author source. */
+  removed?: string[];
 }
 export function validateTerrainView(v: TerrainView) {
   if (

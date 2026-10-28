@@ -1,3 +1,4 @@
+import { validateLakeBed } from '../atlas/terrain-lake-brush';
 import { randomUUID } from 'node:crypto';
 import polygonClipping from 'polygon-clipping';
 import {
@@ -28,7 +29,7 @@ import type { Polygon } from '../shared/contracts';
 import { installSourceCellIndex } from './atlas-source-cell';
 import { executeBrush } from './landscape-brush-edit';
 import { readRouteTerrain, routeProposal } from './terrain-route';
-import { computeTerrainStroke } from './terrain-scale';
+import { computeTerrainStroke, computeLakeStroke } from './terrain-scale';
 const clip = (polys: Polygon[]) =>
   polys.map((p) => [p.outer, ...p.holes].map((r) => r.map((p) => [p.x, p.y] as [number, number])));
 const unclip = (a: ReturnType<typeof polygonClipping.difference>): Polygon[] =>
@@ -236,6 +237,7 @@ export function putLandscape(db: any, cam: string, r: LandscapeRecord, expected:
         throw Error('Verknüpfter Ort fehlt.');
   validateMask(r);
   validateTerrain(r);
+  validateLakeBed(r);
   if (
     r.height &&
     writes(db).height.get(cam, r.id, r.height.x, r.height.y, r.height.pixel, r.height.version)
@@ -471,6 +473,13 @@ export function executeLandscape(
     if (a.kind === 'landscape-sea-level') record.terrainSettings!.seaLevelM = a.seaLevelM;
     else record.terrainSettings!.style = a.style;
     return putLandscape(db, cam, record, old ? record.revision : null);
+  }
+  if (a.kind === 'landscape-lake-stroke') {
+    const edited = prepared ?? computeLakeStroke(db, cam, a.stroke, visibilityGrid);
+    for (const id of edited.remove ?? [])
+      db.prepare('DELETE FROM atlas_landscape WHERE campaign_id=? AND id=?').run(cam, id);
+    for (const r of edited.records) putLandscape(db, cam, r, r.revision || null);
+    return;
   }
   if (a.kind === 'landscape-height-stroke') {
     const edited =

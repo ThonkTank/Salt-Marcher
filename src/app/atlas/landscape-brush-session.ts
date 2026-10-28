@@ -34,7 +34,7 @@ interface LandscapeBrushSessionHost {
 /** Owns live brush sampling, frame scheduling and stroke completion. */
 export class LandscapeBrushSession {
   constructor(private host: LandscapeBrushSessionHost) {}
-  maskStroke: HeightStroke | null = null;
+  maskStroke: HeightStroke | import('./atlas-landscape').LakeStroke | null = null;
   colorDraft: ReturnType<LandscapeToolSettings['color']> | null = null;
   maskStart = 0;
   maskGeneration = 0;
@@ -51,25 +51,38 @@ export class LandscapeBrushSession {
     const data = this.host.effects.data();
     if (!data?.region) throw Error('Kartenausschnitt fehlt. Erneut laden.');
     this.host.effects.terrainGesture(true);
-    this.liveId = crypto.randomUUID();
+    this.liveId =
+      this.maskStroke && 'waterLevelM' in this.maskStroke
+        ? this.maskStroke.id
+        : crypto.randomUUID();
     this.liveColorCount = 0;
     this.liveFailureMessage = undefined;
     const local = this.host.effects.localTerrain?.(),
       id = this.liveId;
-    this.live = local
-      ? new TerrainDraftStroke((a) => local.enqueue(a, id))
-      : new TerrainLiveStroke(
-          { id: this.liveId, expectedRevision: data.revision, sourceFence: data.region.fence },
-          (a, c) => this.host.effects.writeTerrain(a, c),
-          (error) => {
-            this.liveFailureMessage = error instanceof Error ? error.message : String(error);
-            this.host.endInput();
-            clearTimeout(this.maskTimer);
-            void this.finishLive(true);
-            this.host.effects.error(error);
-          },
-          () => this.scheduleLive(),
-        );
+    this.live =
+      !local && this.maskStroke && 'waterLevelM' in this.maskStroke
+        ? new TerrainDraftStroke(async (a) => {
+            await this.host.effects.writeTerrain(a, {
+              id,
+              commandId: id,
+              expectedRevision: data.revision,
+              sourceFence: data.region!.fence,
+            });
+          })
+        : local
+          ? new TerrainDraftStroke((a) => local.enqueue(a, id))
+          : new TerrainLiveStroke(
+              { id: this.liveId, expectedRevision: data.revision, sourceFence: data.region.fence },
+              (a, c) => this.host.effects.writeTerrain(a, c),
+              (error) => {
+                this.liveFailureMessage = error instanceof Error ? error.message : String(error);
+                this.host.endInput();
+                clearTimeout(this.maskTimer);
+                void this.finishLive(true);
+                this.host.effects.error(error);
+              },
+              () => this.scheduleLive(),
+            );
     this.host.disable(true);
     this.host.say('Pinsel arbeitet direkt. Rückgängig nimmt den ganzen Zug zurück.');
     // Sample the first real elapsed frame, just like subsequent stationary
@@ -92,7 +105,11 @@ export class LandscapeBrushSession {
     if (this.maskStroke) this.host.effects.previewHeight?.(this.maskStroke);
     if (!this.live || !write) return;
     if (this.maskStroke)
-      this.live.update({ kind: 'landscape-height-stroke', stroke: this.maskStroke });
+      this.live.update(
+        'waterLevelM' in this.maskStroke
+          ? { kind: 'landscape-lake-stroke', stroke: this.maskStroke }
+          : { kind: 'landscape-height-stroke', stroke: this.maskStroke },
+      );
     else if (this.host.points.length !== this.liveColorCount) {
       const record = terrainTraceMeasure('draft.colorRecord', () => this.host.colorRecord());
       record.id = this.liveId;

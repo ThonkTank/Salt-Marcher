@@ -1,3 +1,5 @@
+import { lakeBrushLevel } from './terrain-lake-brush';
+import type { LakeStroke } from './atlas-landscape';
 import { AtlasTerrainEditingSource } from './atlas-terrain-editing-source';
 import { heightBrushResolution } from './terrain-brush';
 import {
@@ -62,7 +64,7 @@ export class AtlasRasterPresentation implements AtlasPresentation {
   private tiles: readonly AtlasSurfaceTile[] = [];
   private editing = new AtlasTerrainEditingSource();
   private editingRead: { token: string; control: AtlasReadRequest } | null = null;
-  private pendingStroke: HeightStroke | null = null;
+  private pendingStroke: HeightStroke | LakeStroke | null = null;
   private draftSource: import('./terrain-spatial-model').TerrainEditingSource | null = null;
   private draft: AtlasSurfaceDraft | null = null;
   private dirty = false;
@@ -738,7 +740,7 @@ export class AtlasRasterPresentation implements AtlasPresentation {
         !this.gesturing &&
         !this.dirty &&
         !this.host.writing() &&
-        ['height', 'smooth'].includes(this.host.tool())
+        ['height', 'smooth', 'freshwater'].includes(this.host.tool())
       )
         this.editingReady(this.host.editingRadius?.() ?? 1, this.lastPoint);
     }
@@ -1055,7 +1057,25 @@ export class AtlasRasterPresentation implements AtlasPresentation {
       this.show();
     }
   }
-  previewHeight(stroke: HeightStroke) {
+  lakeLevel(point: Point) {
+    const records = this.editing.source?.records;
+    if (!records) throw Error('Autorenhöhen für den See fehlen.');
+    const local = this.tiles.flatMap(
+      (t) => t.terrain.projection.grid.editing?.author?.records ?? [],
+    );
+    const removed = new Set(
+      this.tiles.flatMap((t) => t.terrain.projection.grid.editing?.author?.removed ?? []),
+    );
+    return lakeBrushLevel(
+      [
+        ...new Map(
+          [...records, ...local].filter((r) => !removed.has(r.id)).map((r) => [r.id, r]),
+        ).values(),
+      ],
+      point,
+    );
+  }
+  previewHeight(stroke: HeightStroke | LakeStroke) {
     this.pendingStroke = stroke;
     if (!this.ensureEditing(stroke.radius, this.editingBox(stroke.radius, stroke.samples))) return;
     if (this.draft && this.draftSource !== this.editing.source) {

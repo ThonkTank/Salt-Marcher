@@ -14,11 +14,11 @@ export function readTerrainEditingRecords(
     .prepare(
       `SELECT payload FROM atlas_landscape
     WHERE campaign_id=? AND json_valid(payload)
-    AND json_extract(payload,'$.height') IS NOT NULL
-    AND max_x + 2 * CAST(json_extract(payload,'$.height.pixel') AS REAL) >= ?
-    AND min_x - 2 * CAST(json_extract(payload,'$.height.pixel') AS REAL) <= ?
-    AND max_y + 2 * CAST(json_extract(payload,'$.height.pixel') AS REAL) >= ?
-    AND min_y - 2 * CAST(json_extract(payload,'$.height.pixel') AS REAL) <= ?
+    AND (json_extract(payload,'$.height') IS NOT NULL ${pixel === undefined ? "OR json_extract(payload,'$.surface')='freshwater' OR json_extract(payload,'$.route') IS NOT NULL" : ''})
+    AND coalesce(max_x + 2 * CAST(json_extract(payload,'$.height.pixel') AS REAL),max_x) >= ?
+    AND coalesce(min_x - 2 * CAST(json_extract(payload,'$.height.pixel') AS REAL),min_x) <= ?
+    AND coalesce(max_y + 2 * CAST(json_extract(payload,'$.height.pixel') AS REAL),max_y) >= ?
+    AND coalesce(min_y - 2 * CAST(json_extract(payload,'$.height.pixel') AS REAL),min_y) <= ?
     ${legacy ? '' : "AND json_extract(payload,'$.height.version')=2"}
     ${pixel === undefined || fine ? '' : "AND (json_extract(payload,'$.height.version')=1 OR CAST(json_extract(payload,'$.height.pixel') AS REAL)>=?)"}
     ORDER BY CAST(json_extract(payload,'$.height.pixel') AS REAL) DESC,id`,
@@ -56,11 +56,11 @@ export function readTerrainEditingPage(
     .prepare(
       `SELECT id,payload FROM atlas_landscape
     WHERE campaign_id=? AND id>? AND json_valid(payload)
-    AND json_extract(payload,'$.height') IS NOT NULL
-    AND max_x + 2 * CAST(json_extract(payload,'$.height.pixel') AS REAL) >= ?
-    AND min_x - 2 * CAST(json_extract(payload,'$.height.pixel') AS REAL) <= ?
-    AND max_y + 2 * CAST(json_extract(payload,'$.height.pixel') AS REAL) >= ?
-    AND min_y - 2 * CAST(json_extract(payload,'$.height.pixel') AS REAL) <= ?
+    AND (json_extract(payload,'$.height') IS NOT NULL ${filter.pixel === undefined ? "OR json_extract(payload,'$.surface')='freshwater' OR json_extract(payload,'$.route') IS NOT NULL" : ''})
+    AND coalesce(max_x + 2 * CAST(json_extract(payload,'$.height.pixel') AS REAL),max_x) >= ?
+    AND coalesce(min_x - 2 * CAST(json_extract(payload,'$.height.pixel') AS REAL),min_x) <= ?
+    AND coalesce(max_y + 2 * CAST(json_extract(payload,'$.height.pixel') AS REAL),max_y) >= ?
+    AND coalesce(min_y - 2 * CAST(json_extract(payload,'$.height.pixel') AS REAL),min_y) <= ?
     ${filter.legacy === false ? "AND json_extract(payload,'$.height.version')=2" : ''}
     ${filter.pixel === undefined || filter.fine !== false ? '' : "AND (json_extract(payload,'$.height.version')=1 OR CAST(json_extract(payload,'$.height.pixel') AS REAL)>=?)"}
     ORDER BY id`,

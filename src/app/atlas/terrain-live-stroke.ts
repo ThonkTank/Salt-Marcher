@@ -2,7 +2,7 @@ import { terrainTraceStart } from './terrain-timing';
 import type { AtlasAction, AtlasCommitAck } from './campaign-atlas-contracts';
 export type TerrainLiveAction = Extract<
   AtlasAction,
-  { kind: 'landscape-height-stroke' | 'landscape-color-stroke' }
+  { kind: 'landscape-height-stroke' | 'landscape-lake-stroke' | 'landscape-color-stroke' }
 >;
 export interface TerrainLiveContext {
   id: string;

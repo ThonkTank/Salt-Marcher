@@ -28,7 +28,8 @@ export interface LandscapeHost {
     enqueue: (action: TerrainLiveAction, id: string) => Promise<void>;
     previewColor: (record: LandscapeRecord) => void;
   } | null;
-  previewHeight?: (stroke: HeightStroke) => void;
+  lakeLevel?: (point: Point) => number | undefined;
+  previewHeight?: (stroke: HeightStroke | import('./atlas-landscape').LakeStroke) => void;
   editingReady?: (radius: number, point?: Point) => boolean;
   terrainGesture: (active: boolean) => void | Promise<void>;
   writeTerrain: (

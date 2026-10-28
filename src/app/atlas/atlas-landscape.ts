@@ -55,6 +55,22 @@ export type LandscapeField =
   | 'faction'
   | 'interrupt'
   | 'access';
+/** Parameters and level are frozen at pointerdown; samples are snapshotted at release. */
+export interface LakeStroke {
+  mode: 'dig' | 'erase';
+  id: string;
+  radius: number;
+  strength: number;
+  feather: number;
+  waterLevelM: number;
+  samples: import('./land-mask').MaskSample[];
+  visibility?: import('./terrain-brush').HeightStroke['visibility'];
+}
+/** Source attribution only; canonical heights remain ordinary height records. */
+export interface LakeBed {
+  tileId: string;
+  tile: import('./terrain-height').HeightTile;
+}
 export interface LandscapeRecord {
   /** Display importance; absent means automatic. Physical dimensions are unchanged. */
   prominence?: number;
@@ -78,6 +94,7 @@ export interface LandscapeRecord {
   height?: import('./terrain-height').HeightTile;
   terrainSettings?: import('./terrain-height').TerrainSettings;
   waterLevelM?: number;
+  lakeBed?: LakeBed[];
   propertyOnly?: boolean;
   sourceCell?: { mapId: string; q: number; r: number; level: number };
   surface?: 'land' | 'sea' | 'freshwater';
@@ -112,6 +129,7 @@ export type LandscapeAction =
     }
   | { kind: 'landscape-terrain-style'; style: import('./terrain-relief').TerrainStyle }
   | { kind: 'landscape-sea-level'; seaLevelM: number }
+  | { kind: 'landscape-lake-stroke'; stroke: LakeStroke }
   | { kind: 'landscape-height-stroke'; stroke: import('./terrain-brush').HeightStroke }
   | { kind: 'landscape-land-stroke'; stroke: import('./land-mask').MaskStroke }
   | { kind: 'landscape-color-stroke'; record: LandscapeRecord }

@@ -605,7 +605,10 @@ export function registerAtlasHost(host: {
     atlasWriteActivity.run(c.commandId, async () => {
       if (c.action?.kind === 'graph-accept')
         return withGraphSourceReadBarrier(async () => await store.executeAtlasCommit(c));
-      if (c.action?.kind === 'landscape-height-stroke') {
+      if (
+        c.action?.kind === 'landscape-height-stroke' ||
+        c.action?.kind === 'landscape-lake-stroke'
+      ) {
         const source = await store.terrainStrokeSource(c, atlasRegions.cursor);
         if (source) {
           const prepared = await atlasRegions.prepareTerrainStroke(source, c.action.stroke);

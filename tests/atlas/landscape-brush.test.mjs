@@ -6,7 +6,7 @@ import { readFileSync } from 'node:fs';
 buildSync({
   stdin: {
     contents:
-      "export {brushFootprint} from './src/app/atlas/landscape-brush';export {contains} from './src/app/atlas/landscape-geometry';export {eraseVegetation} from './src/app/atlas/vegetation-erase';",
+      "export * from './src/app/atlas/terrain-lake-brush';export {heightRecord,TerrainSampler} from './src/app/atlas/terrain-height';export {brushFootprint} from './src/app/atlas/landscape-brush';export {contains} from './src/app/atlas/landscape-geometry';export {eraseVegetation} from './src/app/atlas/vegetation-erase';",
     resolveDir: process.cwd(),
   },
   outfile: '.build/landscape-brush-test.cjs',
@@ -14,9 +14,15 @@ buildSync({
   platform: 'node',
   format: 'cjs',
 });
-const { brushFootprint, contains, eraseVegetation } = createRequire(import.meta.url)(
-  '../../.build/landscape-brush-test.cjs',
-);
+const {
+  applyLakeBrush,
+  mergeLakeBrush,
+  heightRecord,
+  TerrainSampler,
+  brushFootprint,
+  contains,
+  eraseVegetation,
+} = createRequire(import.meta.url)('../../.build/landscape-brush-test.cjs');
 const fixture = JSON.parse(
   readFileSync(new URL('../fixtures/landscape-brush-distant-stroke.json', import.meta.url)),
 );
@@ -122,4 +128,49 @@ test('dense pointer samples keep a bounded contour and preserve the brush width 
       );
   }
   assert(!contains({ x: points[1000].x, y: points[1000].y + 200 }, polygons));
+});
+
+test('distant lake area and every owned excavation shrink together without residual or duplicate filling', () => {
+  const p = { x: 18000000, y: -9000000 },
+    radius = 48;
+  const tx = Math.floor(p.x / 64),
+    ty = Math.floor(p.y / 64),
+    original = [];
+  for (let y = ty - 2; y <= ty + 2; y++)
+    for (let x = tx - 2; x <= tx + 2; x++)
+      original.push(heightRecord(x * 64, y * 64, 1, new Float32Array(4096).fill(20)));
+  const s = {
+    id: 'distant-lake',
+    mode: 'dig',
+    radius,
+    strength: 2,
+    feather: 0.8,
+    waterLevelM: 20,
+    samples: [
+      { ...p, t: 0 },
+      { ...p, t: 1000 },
+    ],
+  };
+  const painted = mergeLakeBrush(original, applyLakeBrush(original, s)),
+    initialArea = area(painted.find((r) => r.id === s.id).polygons);
+  const erased = mergeLakeBrush(
+    painted,
+    applyLakeBrush(painted, { ...s, id: 'erase', mode: 'erase', radius: 12 }),
+  );
+  const rest = erased.find((r) => r.id === s.id);
+  assert(area(rest.polygons) < initialArea);
+  assert(rest.lakeBed.length);
+  assert(!contains(p, rest.polygons));
+  assert.equal(new TerrainSampler(erased).sample(p).heightM, 20);
+  const all = mergeLakeBrush(
+    erased,
+    applyLakeBrush(erased, { ...s, id: 'all', mode: 'erase', radius: 64 }),
+  );
+  assert(!all.some((r) => r.lakeBed || r.surface === 'freshwater'));
+  for (let dx = -50; dx <= 50; dx += 5)
+    assert(Math.abs(new TerrainSampler(all).sample({ x: p.x + dx, y: p.y }).heightM - 20) < 0.001);
+  assert.deepEqual(
+    mergeLakeBrush(all, applyLakeBrush(all, { ...s, id: 'again', mode: 'erase', radius: 64 })),
+    all,
+  );
 });

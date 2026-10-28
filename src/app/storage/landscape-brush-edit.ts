@@ -1,3 +1,4 @@
+import { lakeBrushLevel, applyLakeBrush } from '../atlas/terrain-lake-brush';
 import { randomUUID } from 'node:crypto';
 import { type LandscapeAction, type LandscapeRecord } from '../atlas/atlas-landscape';
 import { isLandMode, maskLandSpans, strokeBox } from '../atlas/land-mask';
@@ -10,7 +11,7 @@ import {
 } from '../atlas/landscape-brush';
 import { colorSurface } from '../atlas/landscape-color-surface';
 import { bounds, contains } from '../atlas/landscape-geometry';
-import { applyHeightStroke, TerrainSampler } from '../atlas/terrain-height';
+import { applyHeightStroke } from '../atlas/terrain-height';
 import type { Polygon } from '../shared/contracts';
 import { landMaskRegion, landscapeRegion, putLandscape } from './atlas-landscape';
 import { readTerrainGrid } from './terrain-grid';
@@ -24,6 +25,34 @@ export function executeBrush(
   colorRevision: number | null = null,
   visibilityGrid?: import('../atlas/terrain-spatial-model').TerrainGrid,
 ) {
+  if (a.mode === 'freshwater' || a.mode === 'freshwater-erase') {
+    if (
+      !a.samples?.length ||
+      a.record?.paint ||
+      a.record?.height ||
+      a.record?.mask ||
+      a.record?.terrainSettings
+    )
+      throw Error('Seezug braucht Zeitstempel und reine Pinselparameter.');
+    const source = readRouteTerrain(db, cam, strokeBox({ samples: a.samples, radius: a.radius }));
+    const changes = applyLakeBrush(
+      source,
+      {
+        id: a.record.id || randomUUID(),
+        mode: a.mode === 'freshwater' ? 'dig' : 'erase',
+        radius: a.radius,
+        strength: 2,
+        feather: 0.8,
+        samples: a.samples,
+        waterLevelM: a.record.waterLevelM ?? lakeBrushLevel(source, a.samples[0]!),
+      },
+      visibilityGrid,
+    );
+    for (const id of changes.remove)
+      db.prepare('DELETE FROM atlas_landscape WHERE campaign_id=? AND id=?').run(cam, id);
+    for (const r of changes.records) putLandscape(db, cam, r, r.revision || null);
+    return;
+  }
   if (isLandMode(a.mode)) {
     if (a.record?.paint) throw Error('Landpinsel darf keine Farbmaske enthalten.');
     const stroke = {
@@ -161,9 +190,9 @@ export function executeBrush(
       height: box.height + pad * 2,
     });
   }
-  if (a.mode === 'color-erase' || a.mode === 'freshwater-erase') {
+  if (a.mode === 'color-erase') {
     for (const old of records) {
-      if (a.mode === 'color-erase' ? !old.paint : old.surface !== 'freshwater') continue;
+      if (!old.paint) continue;
       if (!intersectPolygons(old.polygons, r.polygons).length) continue;
       const polygons = subtractPolygons(old.polygons, r.polygons);
       if (polygons.length) putLandscape(db, cam, { ...old, polygons }, old.revision);
@@ -179,14 +208,8 @@ export function executeBrush(
     return;
   }
   if (r.paint) throw Error('Landpinsel darf keine Farbmaske enthalten.');
-  const water = ['land-erase', 'lower', 'freshwater'].includes(a.mode);
-  if (a.mode === 'freshwater') {
-    const sampler = new TerrainSampler(records);
-    r.waterLevelM ??=
-      Math.max(sampler.seaLevelM, sampler.sample(r.points[0] ?? r.polygons[0]!.outer[0]!).heightM) +
-      1;
-  }
-  r.surface = a.mode === 'freshwater' ? 'freshwater' : water ? 'sea' : 'land';
+  const water = ['land-erase', 'lower'].includes(a.mode);
+  r.surface = water ? 'sea' : 'land';
   r.values = {
     terrain: water
       ? 'water'

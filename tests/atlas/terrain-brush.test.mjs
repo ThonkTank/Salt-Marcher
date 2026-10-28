@@ -9,7 +9,7 @@ const require = createRequire(import.meta.url);
 buildSync({
   stdin: {
     contents:
-      "export * from './src/app/atlas/terrain-brush';export * from './src/app/atlas/terrain-height';export * from './src/app/atlas/atlas-brush-preview';export * from './src/app/atlas/landscape-raster';export * from './src/app/storage/store';export * from './src/app/storage/atlas-landscape-region';export {validateRegion} from './src/app/atlas/atlas-region-contracts';",
+      "export * from './src/app/atlas/terrain-lake-brush';export * from './src/app/atlas/terrain-brush';export * from './src/app/atlas/terrain-height';export * from './src/app/atlas/atlas-brush-preview';export * from './src/app/atlas/landscape-raster';export * from './src/app/storage/store';export * from './src/app/storage/atlas-landscape-region';export {validateRegion} from './src/app/atlas/atlas-region-contracts';",
     resolveDir: process.cwd(),
   },
   outfile: '.build/terrain-brush-test.cjs',
@@ -19,6 +19,9 @@ buildSync({
   external: ['better-sqlite3'],
 });
 const {
+  applyLakeBrush,
+  mergeLakeBrush,
+  lakeBrushLevel,
   heightBrushResolution,
   decodeHeights,
   prepareHeightBrush,
@@ -573,4 +576,183 @@ test('coarse raise/lower preserve finer bands or relax them locally with time an
         assert.notEqual(result.find((r) => r.id === fine[5].id).height.data, fine[5].height.data);
       }
     }
+});
+
+const lakePlane = (fn) =>
+  [-2, -1, 0, 1, 2, 3].flatMap((y) =>
+    [-2, -1, 0, 1, 2, 3].map((x) =>
+      heightRecord(
+        x * 64,
+        y * 64,
+        1,
+        Float32Array.from({ length: 4096 }, (_, i) =>
+          fn(x * 64 + (i % 64), y * 64 + Math.floor(i / 64)),
+        ),
+      ),
+    ),
+  );
+const lakeStroke = (extra = {}) => ({
+  id: randomUUID(),
+  mode: 'dig',
+  radius: 48,
+  strength: 2,
+  feather: 0.8,
+  waterLevelM: 20,
+  samples: [
+    { x: 64, y: 0, t: 0 },
+    { x: 64, y: 0, t: 1000 },
+  ],
+  ...extra,
+});
+const lakeEdit = (rs, s) => mergeLakeBrush(rs, applyLakeBrush(rs, s));
+test('lake basin: stationary duration, repeated deepening, overlaps and partial/full erasure across a real height tile seam', () => {
+  const initial = lakePlane(() => 20),
+    control = { x: 115, y: 0 };
+  // The brush has a 1 m author lattice; x=64 is an actual V2 tile boundary.
+  const s = lakeStroke(),
+    first = lakeEdit(initial, s);
+  assert.equal(lakeBrushLevel(initial, { x: 64, y: 0 }), 20);
+  assert(Math.abs(height(first, 64, 0) - 18) < 0.001);
+  assert(new TerrainSampler(first).water({ x: 64, y: 0 }));
+  assert.equal(height(first, control.x, control.y), height(initial, control.x, control.y));
+  const total = lakeEdit(initial, { ...s, samples: [s.samples[0], { x: 64, y: 0, t: 3000 }] });
+  assert(Math.abs(height(total, 64, 0) - 14) < 0.001);
+  assert.equal(total.find((r) => r.id === s.id).waterLevelM, 20);
+  const deepened = lakeEdit(
+    first,
+    lakeStroke({
+      samples: [
+        { x: 64, y: 0, t: 0 },
+        { x: 64, y: 0, t: 2000 },
+      ],
+    }),
+  );
+  assert(Math.abs(height(deepened, 64, 0) - 14) < 0.001);
+  assert.equal(lakeBrushLevel(deepened, { x: 64, y: 0 }), 20);
+  assert(first.filter((r) => r.height?.version === 2).some((r) => r.height.x === 0));
+  assert(first.filter((r) => r.height?.version === 2).some((r) => r.height.x === 64));
+  const partial = lakeEdit(deepened, lakeStroke({ mode: 'erase', radius: 12 }));
+  assert(Math.abs(height(partial, 64, 0) - 20) < 0.001);
+  assert(!new TerrainSampler(partial).water({ x: 64, y: 0 }));
+  assert(new TerrainSampler(partial).water({ x: 90, y: 0 }));
+  const all = lakeEdit(partial, lakeStroke({ mode: 'erase', radius: 64 }));
+  assert(!all.some((r) => r.surface === 'freshwater' || r.lakeBed || r.height?.version === 2));
+  for (let x = 0; x < 128; x += 3)
+    assert(Math.abs(height(all, x, 0) - height(initial, x, 0)) < 0.001);
+  assert.deepEqual(lakeEdit(all, lakeStroke({ mode: 'erase', radius: 64 })), all);
+  assert.deepEqual(
+    initial,
+    lakePlane(() => 20),
+  );
+});
+test('lake erasure removes provenance at every resolution and preserves later independent sculpting', () => {
+  const initial = lakePlane(() => 20);
+  let rs = lakeEdit(initial, lakeStroke());
+  rs = lakeEdit(rs, lakeStroke({ radius: 96 }));
+  // Independent later edit occupies the same additive height tile.
+  rs = edit(
+    rs,
+    brush('raise', {
+      radius: 48,
+      strength: 3,
+      samples: [
+        { x: 64, y: 0, t: 0 },
+        { x: 64, y: 0, t: 1000 },
+      ],
+    }),
+  );
+  const sculpted = edit(
+    initial,
+    brush('raise', {
+      radius: 48,
+      strength: 3,
+      samples: [
+        { x: 64, y: 0, t: 0 },
+        { x: 64, y: 0, t: 1000 },
+      ],
+    }),
+  );
+  rs = lakeEdit(rs, lakeStroke({ mode: 'erase', radius: 128 }));
+  assert(!rs.some((r) => r.lakeBed));
+  for (let x = 0; x < 128; x += 3)
+    assert(Math.abs(height(rs, x, 0) - height(sculpted, x, 0)) < 0.001);
+  new TerrainSampler(rs); // duplicate scale/address records are forbidden
+});
+test('lake level is frozen on a slope and water never escapes the authored footprint or floods higher ground', () => {
+  const initial = lakePlane((x) => 20 + 0.2 * (x - 64));
+  const s = lakeStroke({ waterLevelM: lakeBrushLevel(initial, { x: 64, y: 0 }) });
+  const rs = lakeEdit(initial, s),
+    sampler = new TerrainSampler(rs);
+  assert.equal(rs.find((r) => r.id === s.id).waterLevelM, s.waterLevelM);
+  assert(sampler.water({ x: 64, y: 0 }));
+  assert(!sampler.water({ x: 100, y: 0 }));
+  assert(!sampler.water({ x: 0, y: 50 }));
+});
+test('canonical lake gesture is one atomic history step; undo, redo, receipt reconciliation and fresh preserve height/water/provenance', (t) => {
+  const dir = mkdtempSync('/tmp/lake-history-');
+  let store = new CampaignStore(dir + '/world.sqlite');
+  const cam = store.create('Lake'),
+    initial = lakePlane(() => 20);
+  let active = store.activate(cam.id);
+  t.after(() => {
+    store.close();
+    rmSync(dir, { recursive: true, force: true });
+  });
+  const write = (action, extra = {}) =>
+    store.executeAtlasCommit({
+      commandId: randomUUID(),
+      campaignId: cam.id,
+      token: active.token,
+      action,
+      ...extra,
+    });
+  const records = () =>
+    store.db
+      .prepare('SELECT payload FROM atlas_landscape WHERE campaign_id=? ORDER BY id')
+      .all(cam.id)
+      .map((r) => ({ ...JSON.parse(r.payload), revision: 0 }));
+  for (const r of initial) write({ kind: 'landscape-put', record: r, expectedRevision: null });
+  const cursor = () =>
+    store.db.prepare('SELECT cursor FROM campaign_atlas WHERE campaign_id=?').get(cam.id).cursor;
+  const start = cursor(),
+    id = randomUUID(),
+    stroke = lakeStroke({ id }),
+    command = {
+      commandId: id,
+      campaignId: cam.id,
+      token: active.token,
+      action: { kind: 'landscape-lake-stroke', stroke },
+      sourceFence: store.atlasRegionSource(active.token).fence,
+      terrainStroke: { id, expectedRevision: store.atlasRegionSource(active.token).revision },
+    };
+  const ack = store.executeAtlasCommit(command),
+    saved = records();
+  assert.equal(cursor(), start + 1);
+  assert(Math.abs(height(saved, 64, 0) - 18) < 0.001);
+  // Lost result is reconciled using the original command id, never reapplied.
+  assert.equal(store.reconcileAtlasCommit(command, false).outcome, 'applied');
+  store.executeAtlasCommit(command);
+  assert.deepEqual(records(), saved);
+  assert.equal(cursor(), start + 1);
+  write({ kind: 'undo' });
+  assert(Math.abs(height(records(), 64, 0) - 20) < 0.001);
+  assert(!records().some((r) => r.lakeBed));
+  write({ kind: 'redo' });
+  assert.deepEqual(records(), saved);
+  write({ kind: 'landscape-lake-stroke', stroke: lakeStroke({ mode: 'erase', radius: 12 }) });
+  const partial = records();
+  assert.equal(cursor(), start + 2);
+  assert(Math.abs(height(partial, 64, 0) - 20) < 0.001);
+  write({ kind: 'undo' });
+  assert.deepEqual(records(), saved);
+  write({ kind: 'redo' });
+  assert.deepEqual(records(), partial);
+  store.close();
+  store = new CampaignStore(dir + '/world.sqlite');
+  active = store.activate(cam.id);
+  assert.deepEqual(records(), partial);
+  write({ kind: 'landscape-lake-stroke', stroke: lakeStroke({ mode: 'erase', radius: 64 }) });
+  assert(!records().some((r) => r.lakeBed));
+  assert(Math.abs(height(records(), 64, 0) - 20) < 0.001);
+  assert(ack.sourceFence);
 });
