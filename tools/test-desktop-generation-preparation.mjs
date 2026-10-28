@@ -140,6 +140,10 @@ async function nav(page, id) {
     else await page.locator('#workspace-nav-summary').click();
   }
   await page.locator('#' + id).click();
+  await page.waitForFunction(
+    (tab) => document.getElementById(tab)?.getAttribute('aria-pressed') === 'true',
+    id,
+  );
 }
 async function launch(zoom) {
   const page = await native.launch(zoom);
