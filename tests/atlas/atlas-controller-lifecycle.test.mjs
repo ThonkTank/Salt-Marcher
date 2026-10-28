@@ -117,7 +117,7 @@ test('A–B–A region activation rejects both retired replies even when A reuse
     journey: Object.assign(new AtlasJourney({ data: null }), { renderTravel() {} }),
     render() {},
     error: (e) => errors.push(e),
-    opts: { status() {} },
+    status() {},
   };
   window.campaign = {
     cancelAtlasRegion: (token) => cancelled.push(token),

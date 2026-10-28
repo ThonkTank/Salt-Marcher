@@ -27,6 +27,12 @@ export function atlasFixture(Workbench) {
   ui.regions = ui.createAtlasRegions();
   ui.drawing = ui.createAtlasDrawing();
   ui.author = ui.createAtlasAuthor();
+  ui.terrain = ui.createAtlasTerrainEdits();
+  Object.defineProperty(ui, 'scopeId', {
+    configurable: true,
+    get: () => ui.author.scopeId,
+    set: (value) => ui.author.followParty(value, ui.author.floorId),
+  });
   for (const key of [
     'outputRun',
     'exporting',

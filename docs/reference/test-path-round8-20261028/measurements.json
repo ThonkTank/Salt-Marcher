@@ -1,0 +1,3091 @@
+{
+  "scope": "Round 8 point 4: local execution only; no integration",
+  "measurements": {
+    "baseline-full": {
+      "directory": ".build/round8-point4/baseline-full",
+      "command": [
+        "npm",
+        "test"
+      ],
+      "code": 0,
+      "node": "v22.19.0",
+      "commit": "5c679da32dd9aee72cfbf29a509471ed524dbffd",
+      "dirty": true,
+      "sourceDigest": "254d632f64016c93fb89147119bc564d9e9b835e3f1145d02dad97d3119ab618",
+      "sourcesUnchanged": true,
+      "sourceFiles": 2057,
+      "selectedFiles": [
+        "tests/atlas/atlas-assets.test.mjs",
+        "tests/atlas/atlas-benchmark.test.mjs",
+        "tests/atlas/atlas-bounded-material.test.mjs",
+        "tests/atlas/atlas-brush-boundary.test.mjs",
+        "tests/atlas/atlas-brush-size.test.mjs",
+        "tests/atlas/atlas-camera-labels.test.mjs",
+        "tests/atlas/atlas-canvas-gesture.test.mjs",
+        "tests/atlas/atlas-cartographic-scale.test.mjs",
+        "tests/atlas/atlas-controller-lifecycle.test.mjs",
+        "tests/atlas/atlas-deck-geometry-overview.test.mjs",
+        "tests/atlas/atlas-deck-labels.test.mjs",
+        "tests/atlas/atlas-deck-picking.test.mjs",
+        "tests/atlas/atlas-deck-ray.test.mjs",
+        "tests/atlas/atlas-deck-scene-model.test.mjs",
+        "tests/atlas/atlas-deck-surface.test.mjs",
+        "tests/atlas/atlas-deferred-geometry.test.mjs",
+        "tests/atlas/atlas-derived-file-cache.test.mjs",
+        "tests/atlas/atlas-drawing-geometry.test.mjs",
+        "tests/atlas/atlas-fantasy-cartography.test.mjs",
+        "tests/atlas/atlas-first-product-worker.test.mjs",
+        "tests/atlas/atlas-geometry-anchor-cache.test.mjs",
+        "tests/atlas/atlas-geometry-mesh.test.mjs",
+        "tests/atlas/atlas-geometry-overview-service.test.mjs",
+        "tests/atlas/atlas-geometry-overview.test.mjs",
+        "tests/atlas/atlas-geometry-point-sampling.test.mjs",
+        "tests/atlas/atlas-geometry-source-pages.test.mjs",
+        "tests/atlas/atlas-geometry-tiles.test.mjs",
+        "tests/atlas/atlas-landscape-field-preparation.test.mjs",
+        "tests/atlas/atlas-landscape-write-cost.test.mjs",
+        "tests/atlas/atlas-material-service.test.mjs",
+        "tests/atlas/atlas-material-stream.test.mjs",
+        "tests/atlas/atlas-material-tiles.test.mjs",
+        "tests/atlas/atlas-mesh-ray.test.mjs",
+        "tests/atlas/atlas-metric-camera.test.mjs",
+        "tests/atlas/atlas-mixed-world-fixture.test.mjs",
+        "tests/atlas/atlas-ownership-boundaries.test.mjs",
+        "tests/atlas/atlas-perspective-camera.test.mjs",
+        "tests/atlas/atlas-presentation-source.test.mjs",
+        "tests/atlas/atlas-projection-copy.test.mjs",
+        "tests/atlas/atlas-raster-kernel.test.mjs",
+        "tests/atlas/atlas-reference-fixture.test.mjs",
+        "tests/atlas/atlas-reference-image.test.mjs",
+        "tests/atlas/atlas-spatial-scene.test.mjs",
+        "tests/atlas/atlas-staged-geometry.test.mjs",
+        "tests/atlas/atlas-surface-draft.test.mjs",
+        "tests/atlas/atlas-surface-request-key.test.mjs",
+        "tests/atlas/atlas-surface-reuse.test.mjs",
+        "tests/atlas/atlas-surface-stream.test.mjs",
+        "tests/atlas/atlas-terrain-edits.test.mjs",
+        "tests/atlas/atlas-terrain-export.test.mjs",
+        "tests/atlas/atlas-terrain-ray.test.mjs",
+        "tests/atlas/atlas-terrain-tile-location.test.mjs",
+        "tests/atlas/atlas-terrain-tiles.test.mjs",
+        "tests/atlas/atlas-texture-patch.test.mjs",
+        "tests/atlas/atlas-tile-cache.test.mjs",
+        "tests/atlas/atlas-tile-plan.test.mjs",
+        "tests/atlas/atlas-tile-stream.test.mjs",
+        "tests/atlas/atlas-world-tiles.test.mjs",
+        "tests/atlas/biome-library.test.mjs",
+        "tests/atlas/desktop-atlas-commit-recovery.test.mjs",
+        "tests/atlas/desktop-atlas-navigation.test.mjs",
+        "tests/atlas/desktop-atlas-opening.test.mjs",
+        "tests/atlas/desktop-atlas-paint.test.mjs",
+        "tests/atlas/desktop-atlas-region-cache.test.mjs",
+        "tests/atlas/desktop-atlas-region.test.mjs",
+        "tests/atlas/desktop-atlas-source-barrier.test.mjs",
+        "tests/atlas/desktop-atlas-territories.test.mjs",
+        "tests/atlas/desktop-boundary-anchor.test.mjs",
+        "tests/atlas/desktop-campaign-atlas.test.mjs",
+        "tests/atlas/desktop-coast-render.test.mjs",
+        "tests/atlas/desktop-drawing-draft-lifecycle.test.mjs",
+        "tests/atlas/desktop-extension-reference-transfer.test.mjs",
+        "tests/atlas/desktop-free-room-creation.test.mjs",
+        "tests/atlas/desktop-land-color-separation.test.mjs",
+        "tests/atlas/desktop-land-mask.test.mjs",
+        "tests/atlas/desktop-landscape-paint-bounds.test.mjs",
+        "tests/atlas/desktop-landscape-tools.test.mjs",
+        "tests/atlas/desktop-live-shared-atlas.test.mjs",
+        "tests/atlas/desktop-review-data-retention.test.mjs",
+        "tests/atlas/desktop-room-groups.test.mjs",
+        "tests/atlas/desktop-room-reads.test.mjs",
+        "tests/atlas/desktop-room-renumber-history.test.mjs",
+        "tests/atlas/desktop-surface.test.mjs",
+        "tests/atlas/desktop-transfer-contracts.test.mjs",
+        "tests/atlas/desktop-volume-spatial.test.mjs",
+        "tests/atlas/desktop-volume-stroke.test.mjs",
+        "tests/atlas/landscape-brush.test.mjs",
+        "tests/atlas/landscape-cover-feather.test.mjs",
+        "tests/atlas/landscape-forest-coverage.test.mjs",
+        "tests/atlas/object-color-alpha.test.mjs",
+        "tests/atlas/raster-files.test.mjs",
+        "tests/atlas/terrain-author-cache.test.mjs",
+        "tests/atlas/terrain-base-samples.test.mjs",
+        "tests/atlas/terrain-base-span.test.mjs",
+        "tests/atlas/terrain-brush-budget.test.mjs",
+        "tests/atlas/terrain-brush-draft.test.mjs",
+        "tests/atlas/terrain-brush-frame.test.mjs",
+        "tests/atlas/terrain-brush.test.mjs",
+        "tests/atlas/terrain-coast.test.mjs",
+        "tests/atlas/terrain-color-cache-context.test.mjs",
+        "tests/atlas/terrain-color-service.test.mjs",
+        "tests/atlas/terrain-commit-display.test.mjs",
+        "tests/atlas/terrain-coverage.test.mjs",
+        "tests/atlas/terrain-covered-brush.test.mjs",
+        "tests/atlas/terrain-empty-kinds.test.mjs",
+        "tests/atlas/terrain-field-stream.test.mjs",
+        "tests/atlas/terrain-focus-grid.test.mjs",
+        "tests/atlas/terrain-form-brush.test.mjs",
+        "tests/atlas/terrain-frame-delta.test.mjs",
+        "tests/atlas/terrain-grid-settings-cache.test.mjs",
+        "tests/atlas/terrain-height-blocks.test.mjs",
+        "tests/atlas/terrain-height-codec.test.mjs",
+        "tests/atlas/terrain-height.test.mjs",
+        "tests/atlas/terrain-invalidation-bounds.test.mjs",
+        "tests/atlas/terrain-kind-index.test.mjs",
+        "tests/atlas/terrain-live-history.test.mjs",
+        "tests/atlas/terrain-live-stroke.test.mjs",
+        "tests/atlas/terrain-material-raster.test.mjs",
+        "tests/atlas/terrain-object-main.test.mjs",
+        "tests/atlas/terrain-objects.test.mjs",
+        "tests/atlas/terrain-opaque-raster.test.mjs",
+        "tests/atlas/terrain-output.test.mjs",
+        "tests/atlas/terrain-pigment-coverage.test.mjs",
+        "tests/atlas/terrain-pigment-stream.test.mjs",
+        "tests/atlas/terrain-pixel-comparison.test.mjs",
+        "tests/atlas/terrain-pixel-readback.test.mjs",
+        "tests/atlas/terrain-presentation.test.mjs",
+        "tests/atlas/terrain-profile.test.mjs",
+        "tests/atlas/terrain-progressive-projection.test.mjs",
+        "tests/atlas/terrain-projection-cache.test.mjs",
+        "tests/atlas/terrain-projection-service.test.mjs",
+        "tests/atlas/terrain-projection.test.mjs",
+        "tests/atlas/terrain-queue-recovery.test.mjs",
+        "tests/atlas/terrain-raster-reuse.test.mjs",
+        "tests/atlas/terrain-reconstruction.test.mjs",
+        "tests/atlas/terrain-relief-prototype.test.mjs",
+        "tests/atlas/terrain-relief.test.mjs",
+        "tests/atlas/terrain-route.test.mjs",
+        "tests/atlas/terrain-sample-filter.test.mjs",
+        "tests/atlas/terrain-scale-worker.test.mjs",
+        "tests/atlas/terrain-spatial.test.mjs",
+        "tests/atlas/terrain-stroke-queue.test.mjs",
+        "tests/atlas/terrain-surface-cache.test.mjs",
+        "tests/atlas/terrain-tilted-atlas-storage.test.mjs",
+        "tests/atlas/terrain-tilted-atlas.test.mjs",
+        "tests/atlas/terrain-timing.test.mjs",
+        "tests/atlas/terrain-visibility.test.mjs",
+        "tests/atlas/universal-vtt.test.mjs",
+        "tests/atlas/vegetation-geometry.test.mjs",
+        "tests/atlas/vegetation-lod.test.mjs",
+        "tests/atlas/vegetation-projection.test.mjs",
+        "tests/atlas/vegetation-spatial.test.mjs",
+        "tests/atlas/vegetation.test.mjs",
+        "tests/atlas/vtt-map-geometry.test.mjs",
+        "tests/campaign/desktop-archive-error.test.mjs",
+        "tests/campaign/desktop-archive-transfer.test.mjs",
+        "tests/campaign/desktop-autonomy-order.test.mjs",
+        "tests/campaign/desktop-campaign-export-isolation.test.mjs",
+        "tests/campaign/desktop-campaign-shared-definitions.test.mjs",
+        "tests/campaign/desktop-combat-group-reinforcement.test.mjs",
+        "tests/campaign/desktop-e2e01-fixture.test.mjs",
+        "tests/campaign/desktop-encounter-selector.test.mjs",
+        "tests/campaign/desktop-generation-loot.test.mjs",
+        "tests/campaign/desktop-key-copy.test.mjs",
+        "tests/campaign/desktop-key-discovery.test.mjs",
+        "tests/campaign/desktop-key-note-capture-store.test.mjs",
+        "tests/campaign/desktop-key-search.test.mjs",
+        "tests/campaign/desktop-key-section-edit.test.mjs",
+        "tests/campaign/desktop-key-store.test.mjs",
+        "tests/campaign/desktop-key-template-link.test.mjs",
+        "tests/campaign/desktop-location-notebook-owner.test.mjs",
+        "tests/campaign/desktop-note-choice-search.test.mjs",
+        "tests/campaign/desktop-note-editor-mount.test.mjs",
+        "tests/campaign/desktop-note-excerpt.test.mjs",
+        "tests/campaign/desktop-note-merge.test.mjs",
+        "tests/campaign/desktop-note-room-uses.test.mjs",
+        "tests/campaign/desktop-note-source-recovery.test.mjs",
+        "tests/campaign/desktop-note-thread-edit.test.mjs",
+        "tests/campaign/desktop-note-thread-store.test.mjs",
+        "tests/campaign/desktop-npc-schedule.test.mjs",
+        "tests/campaign/desktop-plan-projection.test.mjs",
+        "tests/campaign/desktop-plan-replacement-copy.test.mjs",
+        "tests/campaign/desktop-plan-replacement-world.test.mjs",
+        "tests/campaign/desktop-preparation-owner.test.mjs",
+        "tests/campaign/desktop-preparation-priority.test.mjs",
+        "tests/campaign/desktop-preset-registry.test.mjs",
+        "tests/campaign/desktop-review-integrity.test.mjs",
+        "tests/campaign/desktop-session-copy-integrity.test.mjs",
+        "tests/campaign/desktop-session-packet-export.test.mjs",
+        "tests/campaign/desktop-session-proposal-store.test.mjs",
+        "tests/campaign/desktop-session-targets.test.mjs",
+        "tests/campaign/desktop-text-reference-completeness.test.mjs",
+        "tests/campaign/desktop-text-reference-picker-owner.test.mjs",
+        "tests/campaign/desktop-text-reference-store.test.mjs",
+        "tests/campaign/desktop-world-source-constraints.test.mjs",
+        "tests/campaign/desktop-world-source-transfer.test.mjs",
+        "tests/catalog/catalog-build-asset.test.mjs",
+        "tests/catalog/desktop-catalog-xp.test.mjs",
+        "tests/catalog/desktop-encounter-table-integrity.test.mjs",
+        "tests/catalog/desktop-generation-fill.test.mjs",
+        "tests/catalog/desktop-generation-npcs.test.mjs",
+        "tests/catalog/desktop-group-integrity.test.mjs",
+        "tests/catalog/desktop-npc-integrity.test.mjs",
+        "tests/catalog/desktop-npc-rename.test.mjs",
+        "tests/catalog/desktop-rule-reference-store.test.mjs",
+        "tests/catalog/desktop-session-retention.test.mjs",
+        "tests/catalog/desktop-srd-item-projection.test.mjs",
+        "tests/catalog/desktop-store-worker.test.mjs",
+        "tests/catalog/desktop-table-scope.test.mjs",
+        "tests/catalog/desktop-text-reference-readers.test.mjs",
+        "tests/catalog/items-srd51-b-section.test.mjs",
+        "tests/catalog/items-srd51-bags.test.mjs",
+        "tests/catalog/items-srd51-c-section.test.mjs",
+        "tests/catalog/items-srd51-d-section.test.mjs",
+        "tests/catalog/items-srd51-e-section.test.mjs",
+        "tests/catalog/items-srd51-source.test.mjs",
+        "tests/runtime/desktop-audio-layer-recovery.test.mjs",
+        "tests/runtime/desktop-audio-response.test.mjs",
+        "tests/runtime/desktop-autonomy-disable-time.test.mjs",
+        "tests/runtime/desktop-autonomy-interval-integrity.test.mjs",
+        "tests/runtime/desktop-autonomy-jobs-integrity.test.mjs",
+        "tests/runtime/desktop-chase-draft-cache.test.mjs",
+        "tests/runtime/desktop-chase-drafts.test.mjs",
+        "tests/runtime/desktop-chase-time.test.mjs",
+        "tests/runtime/desktop-chase-transfer.test.mjs",
+        "tests/runtime/desktop-chronicle-store.test.mjs",
+        "tests/runtime/desktop-chronicle-window.test.mjs",
+        "tests/runtime/desktop-combat-drafts.test.mjs",
+        "tests/runtime/desktop-desk-integrity.test.mjs",
+        "tests/runtime/desktop-dungeon-position.test.mjs",
+        "tests/runtime/desktop-dungeon-round.test.mjs",
+        "tests/runtime/desktop-dungeon-travel-copy.test.mjs",
+        "tests/runtime/desktop-finish-draft-store.test.mjs",
+        "tests/runtime/desktop-journey-playback.test.mjs",
+        "tests/runtime/desktop-legendary-transfer-integrity.test.mjs",
+        "tests/runtime/desktop-live-generation-owner.test.mjs",
+        "tests/runtime/desktop-live-owner-lifecycle.test.mjs",
+        "tests/runtime/desktop-live-priority.test.mjs",
+        "tests/runtime/desktop-live-publication-owner.test.mjs",
+        "tests/runtime/desktop-loot-balance.test.mjs",
+        "tests/runtime/desktop-mask-history.test.mjs",
+        "tests/runtime/desktop-mask-integration.test.mjs",
+        "tests/runtime/desktop-music-history.test.mjs",
+        "tests/runtime/desktop-narrative-integrity.test.mjs",
+        "tests/runtime/desktop-party-history-copy.test.mjs",
+        "tests/runtime/desktop-party-overview.test.mjs",
+        "tests/runtime/desktop-party-xp.test.mjs",
+        "tests/runtime/desktop-player-render-bounds.test.mjs",
+        "tests/runtime/desktop-player-visual-host.test.mjs",
+        "tests/runtime/desktop-restock-journey.test.mjs",
+        "tests/runtime/desktop-session-handoff-owner.test.mjs",
+        "tests/runtime/desktop-session-recap-shape.test.mjs",
+        "tests/runtime/desktop-session-resume-owner.test.mjs",
+        "tests/runtime/desktop-session-review-owner.test.mjs",
+        "tests/runtime/desktop-session-reward-integrity.test.mjs",
+        "tests/runtime/desktop-shop-owner-time.test.mjs",
+        "tests/runtime/desktop-shop-restock-boundary.test.mjs",
+        "tests/runtime/desktop-storage-ownership.test.mjs",
+        "tests/runtime/desktop-trade-paid-price.test.mjs",
+        "tests/runtime/desktop-travel.test.mjs",
+        "tests/runtime/desktop-treasure-batch.test.mjs",
+        "tests/runtime/desktop-treasury-integrity.test.mjs",
+        "tests/runtime/desktop-weather-integrity.test.mjs",
+        "tests/runtime/desktop-world-owner-lifecycle.test.mjs",
+        "tests/shared/agent-maintenance.test.mjs",
+        "tests/shared/build-target.test.mjs",
+        "tests/shared/desktop-anchored-popup.test.mjs",
+        "tests/shared/desktop-backup-worker.test.mjs",
+        "tests/shared/desktop-data-format.test.mjs",
+        "tests/shared/desktop-e2e01-report.test.mjs",
+        "tests/shared/desktop-editor-transition.test.mjs",
+        "tests/shared/desktop-error-diagnostics.test.mjs",
+        "tests/shared/desktop-host-capabilities.test.mjs",
+        "tests/shared/desktop-markup.test.mjs",
+        "tests/shared/desktop-number-input-scroll.test.mjs",
+        "tests/shared/desktop-storage-ports.test.mjs",
+        "tests/shared/desktop-storage-values.test.mjs",
+        "tests/shared/desktop-store-persistence.test.mjs",
+        "tests/shared/desktop-styles.test.mjs",
+        "tests/shared/desktop-tool-editor-instances.test.mjs",
+        "tests/shared/development-child.test.mjs",
+        "tests/shared/development-queue.test.mjs",
+        "tests/shared/editor-session.test.mjs",
+        "tests/shared/fixture-lifecycle.test.mjs",
+        "tests/shared/host-shutdown-receipt.test.mjs",
+        "tests/shared/local-check-launcher.test.mjs",
+        "tests/shared/local-check-policy.test.mjs",
+        "tests/shared/native-probes.test.mjs",
+        "tests/shared/native-process.test.mjs",
+        "tests/shared/process-group.test.mjs",
+        "tests/shared/repository-structure.test.mjs",
+        "tests/shared/source-probes.test.mjs",
+        "tests/shared/test-assets-concurrency.test.mjs",
+        "tests/shared/test-assets.test.mjs",
+        "tests/shared/test-dom.test.mjs",
+        "tests/shared/test-fixtures.test.mjs",
+        "tests/shared/test-selection.test.mjs",
+        "tests/shared/test-worker-build-asset.test.mjs",
+        "tests/shared/ui-session.test.mjs",
+        "tests/workspace/desktop-editor-activation.test.mjs",
+        "tests/workspace/desktop-extension-recovery.test.mjs",
+        "tests/workspace/desktop-release-source.test.mjs",
+        "tests/workspace/desktop-update-ui.test.mjs",
+        "tests/workspace/desktop-updates.test.mjs",
+        "tests/workspace/desktop-workspace-navigation.test.mjs",
+        "tests/workspace/desktop-workspace-shortcuts.test.mjs",
+        "tests/workspace/desktop-workspace-view.test.mjs",
+        "tests/workspace/module-boundaries.test.mjs",
+        "tests/workspace/module-graph.test.mjs",
+        "tests/workspace/renderer-boundary.test.mjs",
+        "tests/workspace/storage-owner-boundaries.test.mjs",
+        "tests/workspace/typescript-environments.test.mjs",
+        "tests/workspace/workspace-editor-registry.test.mjs"
+      ],
+      "cases": {
+        "tests": 2606,
+        "pass": 2605,
+        "fail": 0,
+        "skipped": 1
+      },
+      "wallSeconds": 726.6410939100024,
+      "launcherStartupMs": 66,
+      "runnerPrepareMs": 18.801025999999993,
+      "runnerTestMs": 726225.9900440001,
+      "runnerTotalMs": 726244.79107,
+      "cgroup": {
+        "high": 2147483648,
+        "max": 3221225472,
+        "peak": 1764065280,
+        "group": "/user.slice/user-1000.slice/user@1000.service/salt-check-96520f81-c8cb-47cd-8489-f992fa0622dd"
+      },
+      "launcherCleanup": {
+        "peak": 1764065280,
+        "reapedDescendants": false,
+        "removed": true
+      },
+      "gnuTime": {
+        "User time (seconds)": 765.08,
+        "System time (seconds)": 59.47,
+        "Maximum resident set size (kbytes)": 1328332.0
+      },
+      "rootAssets": {
+        "miss": 2,
+        "hit": 89,
+        "totalMs": 6066.87554,
+        "keys": [
+          "742fb2c1f1f945bf805ef13397bae5d0db4f6b6933a8f956e1ceeffc139c8870",
+          "f3c5c3a828fdbad1c903672f99b3c7ac897c19ec252a48a5a5333eb34dd4a825"
+        ]
+      },
+      "allAssetEvents": {
+        "miss": 9,
+        "hit": 90
+      },
+      "sampledSlowestFiles": [
+        {
+          "file": "tests/workspace/typescript-environments.test.mjs",
+          "observedSecondsLowerBound": 55.92108938599995,
+          "observedCpuSecondsLowerBound": 83.79
+        },
+        {
+          "file": "tests/atlas/atlas-material-tiles.test.mjs",
+          "observedSecondsLowerBound": 19.28976409099414,
+          "observedCpuSecondsLowerBound": 24.45
+        },
+        {
+          "file": "tests/atlas/terrain-route.test.mjs",
+          "observedSecondsLowerBound": 19.284908251996967,
+          "observedCpuSecondsLowerBound": 22.33
+        },
+        {
+          "file": "tests/runtime/desktop-travel.test.mjs",
+          "observedSecondsLowerBound": 17.277229008002905,
+          "observedCpuSecondsLowerBound": 19.86
+        },
+        {
+          "file": "tests/atlas/atlas-reference-fixture.test.mjs",
+          "observedSecondsLowerBound": 17.261016046002624,
+          "observedCpuSecondsLowerBound": 18.4
+        },
+        {
+          "file": "tests/atlas/terrain-brush-draft.test.mjs",
+          "observedSecondsLowerBound": 13.194878681999398,
+          "observedCpuSecondsLowerBound": 17.26
+        },
+        {
+          "file": "tests/atlas/vegetation.test.mjs",
+          "observedSecondsLowerBound": 11.185641869000392,
+          "observedCpuSecondsLowerBound": 15.05
+        },
+        {
+          "file": "tests/campaign/desktop-session-proposal-store.test.mjs",
+          "observedSecondsLowerBound": 11.177257618997828,
+          "observedCpuSecondsLowerBound": 13.19
+        },
+        {
+          "file": "tests/atlas/atlas-reference-image.test.mjs",
+          "observedSecondsLowerBound": 9.18025516999478,
+          "observedCpuSecondsLowerBound": 10.57
+        },
+        {
+          "file": "tests/atlas/terrain-live-history.test.mjs",
+          "observedSecondsLowerBound": 9.139204983002855,
+          "observedCpuSecondsLowerBound": 9.35
+        },
+        {
+          "file": "tests/atlas/terrain-author-cache.test.mjs",
+          "observedSecondsLowerBound": 9.128052829997614,
+          "observedCpuSecondsLowerBound": 10.34
+        },
+        {
+          "file": "tests/campaign/desktop-key-store.test.mjs",
+          "observedSecondsLowerBound": 9.12279912600934,
+          "observedCpuSecondsLowerBound": 10.18
+        }
+      ]
+    },
+    "before-atlas": {
+      "directory": ".build/round8-point4/before-atlas",
+      "command": [
+        "npm",
+        "test",
+        "--",
+        "--serial",
+        "tests/atlas/atlas-terrain-edits.test.mjs",
+        "tests/atlas/atlas-ownership-boundaries.test.mjs",
+        "tests/atlas/desktop-atlas-commit-recovery.test.mjs",
+        "tests/atlas/atlas-canvas-gesture.test.mjs"
+      ],
+      "code": 0,
+      "node": "v22.19.0",
+      "commit": "5c679da32dd9aee72cfbf29a509471ed524dbffd",
+      "dirty": true,
+      "sourceDigest": "254d632f64016c93fb89147119bc564d9e9b835e3f1145d02dad97d3119ab618",
+      "sourcesUnchanged": true,
+      "sourceFiles": 2057,
+      "selectedFiles": [
+        "tests/atlas/atlas-terrain-edits.test.mjs",
+        "tests/atlas/atlas-ownership-boundaries.test.mjs",
+        "tests/atlas/desktop-atlas-commit-recovery.test.mjs",
+        "tests/atlas/atlas-canvas-gesture.test.mjs"
+      ],
+      "cases": {
+        "tests": 25,
+        "pass": 25,
+        "fail": 0,
+        "skipped": 0
+      },
+      "wallSeconds": 6.11674708899227,
+      "launcherStartupMs": 59,
+      "runnerPrepareMs": 19.555490999999996,
+      "runnerTestMs": 5142.57197,
+      "runnerTotalMs": 5162.127461,
+      "cgroup": {
+        "high": 2147483648,
+        "max": 3221225472,
+        "peak": 437764096,
+        "group": "/user.slice/user-1000.slice/user@1000.service/salt-check-8c890ca6-841d-4e5b-be9c-af334a7faf56"
+      },
+      "launcherCleanup": {
+        "peak": 437764096,
+        "reapedDescendants": false,
+        "removed": true
+      },
+      "gnuTime": {
+        "User time (seconds)": 5.09,
+        "System time (seconds)": 0.45,
+        "Maximum resident set size (kbytes)": 216144.0
+      },
+      "rootAssets": {
+        "miss": 0,
+        "hit": 2,
+        "totalMs": 95.84522799999999,
+        "keys": [
+          "742fb2c1f1f945bf805ef13397bae5d0db4f6b6933a8f956e1ceeffc139c8870",
+          "f3c5c3a828fdbad1c903672f99b3c7ac897c19ec252a48a5a5333eb34dd4a825"
+        ]
+      },
+      "allAssetEvents": {
+        "miss": 0,
+        "hit": 2
+      },
+      "sampledSlowestFiles": [
+        {
+          "file": "tests/atlas/desktop-atlas-commit-recovery.test.mjs",
+          "observedSecondsLowerBound": 2.047488506999798,
+          "observedCpuSecondsLowerBound": 2.18
+        },
+        {
+          "file": "tests/atlas/atlas-ownership-boundaries.test.mjs",
+          "observedSecondsLowerBound": 1.0199487979989499,
+          "observedCpuSecondsLowerBound": 1.16
+        }
+      ]
+    },
+    "before-store": {
+      "directory": ".build/round8-point4/before-store",
+      "command": [
+        "npm",
+        "test",
+        "--",
+        "--serial",
+        "tests/catalog/desktop-store-worker.test.mjs",
+        "tests/campaign/desktop-archive-transfer.test.mjs",
+        "tests/shared/test-fixtures.test.mjs"
+      ],
+      "code": 0,
+      "node": "v22.19.0",
+      "commit": "5c679da32dd9aee72cfbf29a509471ed524dbffd",
+      "dirty": true,
+      "sourceDigest": "254d632f64016c93fb89147119bc564d9e9b835e3f1145d02dad97d3119ab618",
+      "sourcesUnchanged": true,
+      "sourceFiles": 2057,
+      "selectedFiles": [
+        "tests/catalog/desktop-store-worker.test.mjs",
+        "tests/campaign/desktop-archive-transfer.test.mjs",
+        "tests/shared/test-fixtures.test.mjs"
+      ],
+      "cases": {
+        "tests": 30,
+        "pass": 30,
+        "fail": 0,
+        "skipped": 0
+      },
+      "wallSeconds": 8.105713173994445,
+      "launcherStartupMs": 78,
+      "runnerPrepareMs": 16.725638000000004,
+      "runnerTestMs": 7041.663915,
+      "runnerTotalMs": 7058.389553,
+      "cgroup": {
+        "high": 2147483648,
+        "max": 3221225472,
+        "peak": 384651264,
+        "group": "/user.slice/user-1000.slice/user@1000.service/salt-check-b65b7f17-69a4-4be4-ae81-7eff6bbd2d19"
+      },
+      "launcherCleanup": {
+        "peak": 384651264,
+        "reapedDescendants": false,
+        "removed": true
+      },
+      "gnuTime": {
+        "User time (seconds)": 6.16,
+        "System time (seconds)": 0.55,
+        "Maximum resident set size (kbytes)": 205368.0
+      },
+      "rootAssets": {
+        "miss": 0,
+        "hit": 1,
+        "totalMs": 53.45228700000001,
+        "keys": [
+          "742fb2c1f1f945bf805ef13397bae5d0db4f6b6933a8f956e1ceeffc139c8870"
+        ]
+      },
+      "allAssetEvents": {
+        "miss": 0,
+        "hit": 1
+      },
+      "sampledSlowestFiles": [
+        {
+          "file": "tests/catalog/desktop-store-worker.test.mjs",
+          "observedSecondsLowerBound": 5.06094078499882,
+          "observedCpuSecondsLowerBound": 4.54
+        },
+        {
+          "file": "tests/shared/test-fixtures.test.mjs",
+          "observedSecondsLowerBound": 0.0,
+          "observedCpuSecondsLowerBound": 0.15
+        }
+      ]
+    },
+    "cache-after-atlas-cold": {
+      "directory": ".build/round8-point4/cache-after-atlas-cold",
+      "command": [
+        "npm",
+        "test",
+        "--",
+        "--serial",
+        "tests/atlas/atlas-terrain-edits.test.mjs",
+        "tests/atlas/atlas-ownership-boundaries.test.mjs",
+        "tests/atlas/desktop-atlas-commit-recovery.test.mjs",
+        "tests/atlas/atlas-canvas-gesture.test.mjs"
+      ],
+      "code": 0,
+      "node": "v22.19.0",
+      "commit": "5c679da32dd9aee72cfbf29a509471ed524dbffd",
+      "dirty": true,
+      "sourceDigest": "49b4fa3761ab92a55fc56b0002338beba5c5c80b2e805c35bfb07665832dc4df",
+      "sourcesUnchanged": true,
+      "sourceFiles": 2057,
+      "selectedFiles": [
+        "tests/atlas/atlas-terrain-edits.test.mjs",
+        "tests/atlas/atlas-ownership-boundaries.test.mjs",
+        "tests/atlas/desktop-atlas-commit-recovery.test.mjs",
+        "tests/atlas/atlas-canvas-gesture.test.mjs"
+      ],
+      "cases": {
+        "tests": 25,
+        "pass": 25,
+        "fail": 0,
+        "skipped": 0
+      },
+      "wallSeconds": 7.130120118003106,
+      "launcherStartupMs": 73,
+      "runnerPrepareMs": 17.268751,
+      "runnerTestMs": 5956.149171,
+      "runnerTotalMs": 5973.417922,
+      "cgroup": {
+        "high": 2147483648,
+        "max": 3221225472,
+        "peak": 447131648,
+        "group": "/user.slice/user-1000.slice/user@1000.service/salt-check-0ef8b13b-2a7b-45e7-8157-60f9aaf2ca69"
+      },
+      "launcherCleanup": {
+        "peak": 447131648,
+        "reapedDescendants": false,
+        "removed": true
+      },
+      "gnuTime": {
+        "User time (seconds)": 5.3,
+        "System time (seconds)": 0.48,
+        "Maximum resident set size (kbytes)": 225424.0
+      },
+      "rootAssets": {
+        "miss": 2,
+        "hit": 0,
+        "totalMs": 902.2889749999998,
+        "keys": [
+          "0a93c8ba940f5fc48d86bd862d73a3dd9e2e81fa7a0d7b864243c591a7d3342d",
+          "22cd29cfdfd9d96033e00dd1c3736002632e18e63cfcfe7f8b9e46d728316ac5"
+        ]
+      },
+      "allAssetEvents": {
+        "miss": 2,
+        "hit": 0
+      },
+      "sampledSlowestFiles": [
+        {
+          "file": "tests/atlas/desktop-atlas-commit-recovery.test.mjs",
+          "observedSecondsLowerBound": 3.0618839860107983,
+          "observedCpuSecondsLowerBound": 2.55
+        },
+        {
+          "file": "tests/atlas/atlas-ownership-boundaries.test.mjs",
+          "observedSecondsLowerBound": 1.0223468829935882,
+          "observedCpuSecondsLowerBound": 1.13
+        }
+      ]
+    },
+    "cache-after-atlas-warm": {
+      "directory": ".build/round8-point4/cache-after-atlas-warm",
+      "command": [
+        "npm",
+        "test",
+        "--",
+        "--serial",
+        "tests/atlas/atlas-terrain-edits.test.mjs",
+        "tests/atlas/atlas-ownership-boundaries.test.mjs",
+        "tests/atlas/desktop-atlas-commit-recovery.test.mjs",
+        "tests/atlas/atlas-canvas-gesture.test.mjs"
+      ],
+      "code": 0,
+      "node": "v22.19.0",
+      "commit": "5c679da32dd9aee72cfbf29a509471ed524dbffd",
+      "dirty": true,
+      "sourceDigest": "49b4fa3761ab92a55fc56b0002338beba5c5c80b2e805c35bfb07665832dc4df",
+      "sourcesUnchanged": true,
+      "sourceFiles": 2057,
+      "selectedFiles": [
+        "tests/atlas/atlas-terrain-edits.test.mjs",
+        "tests/atlas/atlas-ownership-boundaries.test.mjs",
+        "tests/atlas/desktop-atlas-commit-recovery.test.mjs",
+        "tests/atlas/atlas-canvas-gesture.test.mjs"
+      ],
+      "cases": {
+        "tests": 25,
+        "pass": 25,
+        "fail": 0,
+        "skipped": 0
+      },
+      "wallSeconds": 6.097645793997799,
+      "launcherStartupMs": 61,
+      "runnerPrepareMs": 18.196427999999997,
+      "runnerTestMs": 5036.134661,
+      "runnerTotalMs": 5054.331089,
+      "cgroup": {
+        "high": 2147483648,
+        "max": 3221225472,
+        "peak": 450797568,
+        "group": "/user.slice/user-1000.slice/user@1000.service/salt-check-ed319f04-12df-4db7-9df0-5fa2e0c93026"
+      },
+      "launcherCleanup": {
+        "peak": 450797568,
+        "reapedDescendants": false,
+        "removed": true
+      },
+      "gnuTime": {
+        "User time (seconds)": 5.03,
+        "System time (seconds)": 0.42,
+        "Maximum resident set size (kbytes)": 225852.0
+      },
+      "rootAssets": {
+        "miss": 0,
+        "hit": 2,
+        "totalMs": 84.05837999999997,
+        "keys": [
+          "0a93c8ba940f5fc48d86bd862d73a3dd9e2e81fa7a0d7b864243c591a7d3342d",
+          "22cd29cfdfd9d96033e00dd1c3736002632e18e63cfcfe7f8b9e46d728316ac5"
+        ]
+      },
+      "allAssetEvents": {
+        "miss": 0,
+        "hit": 2
+      },
+      "sampledSlowestFiles": [
+        {
+          "file": "tests/atlas/desktop-atlas-commit-recovery.test.mjs",
+          "observedSecondsLowerBound": 2.0268159859988373,
+          "observedCpuSecondsLowerBound": 2.32
+        },
+        {
+          "file": "tests/atlas/atlas-ownership-boundaries.test.mjs",
+          "observedSecondsLowerBound": 1.0187757020030404,
+          "observedCpuSecondsLowerBound": 1.18
+        }
+      ]
+    },
+    "cache-after-store": {
+      "directory": ".build/round8-point4/cache-after-store",
+      "command": [
+        "npm",
+        "test",
+        "--",
+        "--serial",
+        "tests/catalog/desktop-store-worker.test.mjs",
+        "tests/campaign/desktop-archive-transfer.test.mjs",
+        "tests/shared/test-fixtures.test.mjs"
+      ],
+      "code": 0,
+      "node": "v22.19.0",
+      "commit": "5c679da32dd9aee72cfbf29a509471ed524dbffd",
+      "dirty": true,
+      "sourceDigest": "49b4fa3761ab92a55fc56b0002338beba5c5c80b2e805c35bfb07665832dc4df",
+      "sourcesUnchanged": true,
+      "sourceFiles": 2057,
+      "selectedFiles": [
+        "tests/catalog/desktop-store-worker.test.mjs",
+        "tests/campaign/desktop-archive-transfer.test.mjs",
+        "tests/shared/test-fixtures.test.mjs"
+      ],
+      "cases": {
+        "tests": 30,
+        "pass": 30,
+        "fail": 0,
+        "skipped": 0
+      },
+      "wallSeconds": 8.113034529000288,
+      "launcherStartupMs": 63,
+      "runnerPrepareMs": 17.338444000000003,
+      "runnerTestMs": 6945.3444660000005,
+      "runnerTotalMs": 6962.68291,
+      "cgroup": {
+        "high": 2147483648,
+        "max": 3221225472,
+        "peak": 402526208,
+        "group": "/user.slice/user-1000.slice/user@1000.service/salt-check-25afeff6-a25e-4154-befd-2b083327b2d3"
+      },
+      "launcherCleanup": {
+        "peak": 402526208,
+        "reapedDescendants": false,
+        "removed": true
+      },
+      "gnuTime": {
+        "User time (seconds)": 6.08,
+        "System time (seconds)": 0.56,
+        "Maximum resident set size (kbytes)": 205740.0
+      },
+      "rootAssets": {
+        "miss": 0,
+        "hit": 1,
+        "totalMs": 74.057293,
+        "keys": [
+          "0a93c8ba940f5fc48d86bd862d73a3dd9e2e81fa7a0d7b864243c591a7d3342d"
+        ]
+      },
+      "allAssetEvents": {
+        "miss": 0,
+        "hit": 1
+      },
+      "sampledSlowestFiles": [
+        {
+          "file": "tests/catalog/desktop-store-worker.test.mjs",
+          "observedSecondsLowerBound": 5.0722229719976895,
+          "observedCpuSecondsLowerBound": 4.46
+        },
+        {
+          "file": "tests/shared/test-fixtures.test.mjs",
+          "observedSecondsLowerBound": 0.0,
+          "observedCpuSecondsLowerBound": 0.32
+        }
+      ]
+    },
+    "final-full": {
+      "directory": ".build/round8-point4/final-full",
+      "command": [
+        "npm",
+        "test"
+      ],
+      "code": 0,
+      "node": "v22.19.0",
+      "commit": "5c679da32dd9aee72cfbf29a509471ed524dbffd",
+      "dirty": true,
+      "sourceDigest": "19c6f8c34bc376d8b3a5276654fd865282221b1204e6e112c46f0938f80d8a8a",
+      "sourcesUnchanged": true,
+      "sourceFiles": 2057,
+      "selectedFiles": [
+        "tests/atlas/atlas-assets.test.mjs",
+        "tests/atlas/atlas-benchmark.test.mjs",
+        "tests/atlas/atlas-bounded-material.test.mjs",
+        "tests/atlas/atlas-brush-boundary.test.mjs",
+        "tests/atlas/atlas-brush-size.test.mjs",
+        "tests/atlas/atlas-camera-labels.test.mjs",
+        "tests/atlas/atlas-canvas-gesture.test.mjs",
+        "tests/atlas/atlas-cartographic-scale.test.mjs",
+        "tests/atlas/atlas-controller-lifecycle.test.mjs",
+        "tests/atlas/atlas-deck-geometry-overview.test.mjs",
+        "tests/atlas/atlas-deck-labels.test.mjs",
+        "tests/atlas/atlas-deck-picking.test.mjs",
+        "tests/atlas/atlas-deck-ray.test.mjs",
+        "tests/atlas/atlas-deck-scene-model.test.mjs",
+        "tests/atlas/atlas-deck-surface.test.mjs",
+        "tests/atlas/atlas-deferred-geometry.test.mjs",
+        "tests/atlas/atlas-derived-file-cache.test.mjs",
+        "tests/atlas/atlas-drawing-geometry.test.mjs",
+        "tests/atlas/atlas-fantasy-cartography.test.mjs",
+        "tests/atlas/atlas-first-product-worker.test.mjs",
+        "tests/atlas/atlas-geometry-anchor-cache.test.mjs",
+        "tests/atlas/atlas-geometry-mesh.test.mjs",
+        "tests/atlas/atlas-geometry-overview-service.test.mjs",
+        "tests/atlas/atlas-geometry-overview.test.mjs",
+        "tests/atlas/atlas-geometry-point-sampling.test.mjs",
+        "tests/atlas/atlas-geometry-source-pages.test.mjs",
+        "tests/atlas/atlas-geometry-tiles.test.mjs",
+        "tests/atlas/atlas-landscape-field-preparation.test.mjs",
+        "tests/atlas/atlas-landscape-write-cost.test.mjs",
+        "tests/atlas/atlas-material-service.test.mjs",
+        "tests/atlas/atlas-material-stream.test.mjs",
+        "tests/atlas/atlas-material-tiles.test.mjs",
+        "tests/atlas/atlas-mesh-ray.test.mjs",
+        "tests/atlas/atlas-metric-camera.test.mjs",
+        "tests/atlas/atlas-mixed-world-fixture.test.mjs",
+        "tests/atlas/atlas-ownership-boundaries.test.mjs",
+        "tests/atlas/atlas-perspective-camera.test.mjs",
+        "tests/atlas/atlas-presentation-source.test.mjs",
+        "tests/atlas/atlas-projection-copy.test.mjs",
+        "tests/atlas/atlas-raster-kernel.test.mjs",
+        "tests/atlas/atlas-reference-fixture.test.mjs",
+        "tests/atlas/atlas-reference-image.test.mjs",
+        "tests/atlas/atlas-spatial-scene.test.mjs",
+        "tests/atlas/atlas-staged-geometry.test.mjs",
+        "tests/atlas/atlas-surface-draft.test.mjs",
+        "tests/atlas/atlas-surface-request-key.test.mjs",
+        "tests/atlas/atlas-surface-reuse.test.mjs",
+        "tests/atlas/atlas-surface-stream.test.mjs",
+        "tests/atlas/atlas-terrain-edits.test.mjs",
+        "tests/atlas/atlas-terrain-export.test.mjs",
+        "tests/atlas/atlas-terrain-ray.test.mjs",
+        "tests/atlas/atlas-terrain-tile-location.test.mjs",
+        "tests/atlas/atlas-terrain-tiles.test.mjs",
+        "tests/atlas/atlas-texture-patch.test.mjs",
+        "tests/atlas/atlas-tile-cache.test.mjs",
+        "tests/atlas/atlas-tile-plan.test.mjs",
+        "tests/atlas/atlas-tile-stream.test.mjs",
+        "tests/atlas/atlas-world-tiles.test.mjs",
+        "tests/atlas/biome-library.test.mjs",
+        "tests/atlas/desktop-atlas-commit-recovery.test.mjs",
+        "tests/atlas/desktop-atlas-navigation.test.mjs",
+        "tests/atlas/desktop-atlas-opening.test.mjs",
+        "tests/atlas/desktop-atlas-paint.test.mjs",
+        "tests/atlas/desktop-atlas-region-cache.test.mjs",
+        "tests/atlas/desktop-atlas-region.test.mjs",
+        "tests/atlas/desktop-atlas-source-barrier.test.mjs",
+        "tests/atlas/desktop-atlas-territories.test.mjs",
+        "tests/atlas/desktop-boundary-anchor.test.mjs",
+        "tests/atlas/desktop-campaign-atlas.test.mjs",
+        "tests/atlas/desktop-coast-render.test.mjs",
+        "tests/atlas/desktop-drawing-draft-lifecycle.test.mjs",
+        "tests/atlas/desktop-extension-reference-transfer.test.mjs",
+        "tests/atlas/desktop-free-room-creation.test.mjs",
+        "tests/atlas/desktop-land-color-separation.test.mjs",
+        "tests/atlas/desktop-land-mask.test.mjs",
+        "tests/atlas/desktop-landscape-paint-bounds.test.mjs",
+        "tests/atlas/desktop-landscape-tools.test.mjs",
+        "tests/atlas/desktop-live-shared-atlas.test.mjs",
+        "tests/atlas/desktop-review-data-retention.test.mjs",
+        "tests/atlas/desktop-room-groups.test.mjs",
+        "tests/atlas/desktop-room-reads.test.mjs",
+        "tests/atlas/desktop-room-renumber-history.test.mjs",
+        "tests/atlas/desktop-surface.test.mjs",
+        "tests/atlas/desktop-transfer-contracts.test.mjs",
+        "tests/atlas/desktop-volume-spatial.test.mjs",
+        "tests/atlas/desktop-volume-stroke.test.mjs",
+        "tests/atlas/landscape-brush.test.mjs",
+        "tests/atlas/landscape-cover-feather.test.mjs",
+        "tests/atlas/landscape-forest-coverage.test.mjs",
+        "tests/atlas/object-color-alpha.test.mjs",
+        "tests/atlas/raster-files.test.mjs",
+        "tests/atlas/terrain-author-cache.test.mjs",
+        "tests/atlas/terrain-base-samples.test.mjs",
+        "tests/atlas/terrain-base-span.test.mjs",
+        "tests/atlas/terrain-brush-budget.test.mjs",
+        "tests/atlas/terrain-brush-draft.test.mjs",
+        "tests/atlas/terrain-brush-frame.test.mjs",
+        "tests/atlas/terrain-brush.test.mjs",
+        "tests/atlas/terrain-coast.test.mjs",
+        "tests/atlas/terrain-color-cache-context.test.mjs",
+        "tests/atlas/terrain-color-service.test.mjs",
+        "tests/atlas/terrain-commit-display.test.mjs",
+        "tests/atlas/terrain-coverage.test.mjs",
+        "tests/atlas/terrain-covered-brush.test.mjs",
+        "tests/atlas/terrain-empty-kinds.test.mjs",
+        "tests/atlas/terrain-field-stream.test.mjs",
+        "tests/atlas/terrain-focus-grid.test.mjs",
+        "tests/atlas/terrain-form-brush.test.mjs",
+        "tests/atlas/terrain-frame-delta.test.mjs",
+        "tests/atlas/terrain-grid-settings-cache.test.mjs",
+        "tests/atlas/terrain-height-blocks.test.mjs",
+        "tests/atlas/terrain-height-codec.test.mjs",
+        "tests/atlas/terrain-height.test.mjs",
+        "tests/atlas/terrain-invalidation-bounds.test.mjs",
+        "tests/atlas/terrain-kind-index.test.mjs",
+        "tests/atlas/terrain-live-history.test.mjs",
+        "tests/atlas/terrain-live-stroke.test.mjs",
+        "tests/atlas/terrain-material-raster.test.mjs",
+        "tests/atlas/terrain-object-main.test.mjs",
+        "tests/atlas/terrain-objects.test.mjs",
+        "tests/atlas/terrain-opaque-raster.test.mjs",
+        "tests/atlas/terrain-output.test.mjs",
+        "tests/atlas/terrain-pigment-coverage.test.mjs",
+        "tests/atlas/terrain-pigment-stream.test.mjs",
+        "tests/atlas/terrain-pixel-comparison.test.mjs",
+        "tests/atlas/terrain-pixel-readback.test.mjs",
+        "tests/atlas/terrain-presentation.test.mjs",
+        "tests/atlas/terrain-profile.test.mjs",
+        "tests/atlas/terrain-progressive-projection.test.mjs",
+        "tests/atlas/terrain-projection-cache.test.mjs",
+        "tests/atlas/terrain-projection-service.test.mjs",
+        "tests/atlas/terrain-projection.test.mjs",
+        "tests/atlas/terrain-queue-recovery.test.mjs",
+        "tests/atlas/terrain-raster-reuse.test.mjs",
+        "tests/atlas/terrain-reconstruction.test.mjs",
+        "tests/atlas/terrain-relief-prototype.test.mjs",
+        "tests/atlas/terrain-relief.test.mjs",
+        "tests/atlas/terrain-route.test.mjs",
+        "tests/atlas/terrain-sample-filter.test.mjs",
+        "tests/atlas/terrain-scale-worker.test.mjs",
+        "tests/atlas/terrain-spatial.test.mjs",
+        "tests/atlas/terrain-stroke-queue.test.mjs",
+        "tests/atlas/terrain-surface-cache.test.mjs",
+        "tests/atlas/terrain-tilted-atlas-storage.test.mjs",
+        "tests/atlas/terrain-tilted-atlas.test.mjs",
+        "tests/atlas/terrain-timing.test.mjs",
+        "tests/atlas/terrain-visibility.test.mjs",
+        "tests/atlas/universal-vtt.test.mjs",
+        "tests/atlas/vegetation-geometry.test.mjs",
+        "tests/atlas/vegetation-lod.test.mjs",
+        "tests/atlas/vegetation-projection.test.mjs",
+        "tests/atlas/vegetation-spatial.test.mjs",
+        "tests/atlas/vegetation.test.mjs",
+        "tests/atlas/vtt-map-geometry.test.mjs",
+        "tests/campaign/desktop-archive-error.test.mjs",
+        "tests/campaign/desktop-archive-transfer.test.mjs",
+        "tests/campaign/desktop-autonomy-order.test.mjs",
+        "tests/campaign/desktop-campaign-export-isolation.test.mjs",
+        "tests/campaign/desktop-campaign-shared-definitions.test.mjs",
+        "tests/campaign/desktop-combat-group-reinforcement.test.mjs",
+        "tests/campaign/desktop-e2e01-fixture.test.mjs",
+        "tests/campaign/desktop-encounter-selector.test.mjs",
+        "tests/campaign/desktop-generation-loot.test.mjs",
+        "tests/campaign/desktop-key-copy.test.mjs",
+        "tests/campaign/desktop-key-discovery.test.mjs",
+        "tests/campaign/desktop-key-note-capture-store.test.mjs",
+        "tests/campaign/desktop-key-search.test.mjs",
+        "tests/campaign/desktop-key-section-edit.test.mjs",
+        "tests/campaign/desktop-key-store.test.mjs",
+        "tests/campaign/desktop-key-template-link.test.mjs",
+        "tests/campaign/desktop-location-notebook-owner.test.mjs",
+        "tests/campaign/desktop-note-choice-search.test.mjs",
+        "tests/campaign/desktop-note-editor-mount.test.mjs",
+        "tests/campaign/desktop-note-excerpt.test.mjs",
+        "tests/campaign/desktop-note-merge.test.mjs",
+        "tests/campaign/desktop-note-room-uses.test.mjs",
+        "tests/campaign/desktop-note-source-recovery.test.mjs",
+        "tests/campaign/desktop-note-thread-edit.test.mjs",
+        "tests/campaign/desktop-note-thread-store.test.mjs",
+        "tests/campaign/desktop-npc-schedule.test.mjs",
+        "tests/campaign/desktop-plan-projection.test.mjs",
+        "tests/campaign/desktop-plan-replacement-copy.test.mjs",
+        "tests/campaign/desktop-plan-replacement-world.test.mjs",
+        "tests/campaign/desktop-preparation-owner.test.mjs",
+        "tests/campaign/desktop-preparation-priority.test.mjs",
+        "tests/campaign/desktop-preset-registry.test.mjs",
+        "tests/campaign/desktop-review-integrity.test.mjs",
+        "tests/campaign/desktop-session-copy-integrity.test.mjs",
+        "tests/campaign/desktop-session-packet-export.test.mjs",
+        "tests/campaign/desktop-session-proposal-store.test.mjs",
+        "tests/campaign/desktop-session-targets.test.mjs",
+        "tests/campaign/desktop-text-reference-completeness.test.mjs",
+        "tests/campaign/desktop-text-reference-picker-owner.test.mjs",
+        "tests/campaign/desktop-text-reference-store.test.mjs",
+        "tests/campaign/desktop-world-source-constraints.test.mjs",
+        "tests/campaign/desktop-world-source-transfer.test.mjs",
+        "tests/catalog/catalog-build-asset.test.mjs",
+        "tests/catalog/desktop-catalog-xp.test.mjs",
+        "tests/catalog/desktop-encounter-table-integrity.test.mjs",
+        "tests/catalog/desktop-generation-fill.test.mjs",
+        "tests/catalog/desktop-generation-npcs.test.mjs",
+        "tests/catalog/desktop-group-integrity.test.mjs",
+        "tests/catalog/desktop-npc-integrity.test.mjs",
+        "tests/catalog/desktop-npc-rename.test.mjs",
+        "tests/catalog/desktop-rule-reference-store.test.mjs",
+        "tests/catalog/desktop-session-retention.test.mjs",
+        "tests/catalog/desktop-srd-item-projection.test.mjs",
+        "tests/catalog/desktop-store-worker.test.mjs",
+        "tests/catalog/desktop-table-scope.test.mjs",
+        "tests/catalog/desktop-text-reference-readers.test.mjs",
+        "tests/catalog/items-srd51-b-section.test.mjs",
+        "tests/catalog/items-srd51-bags.test.mjs",
+        "tests/catalog/items-srd51-c-section.test.mjs",
+        "tests/catalog/items-srd51-d-section.test.mjs",
+        "tests/catalog/items-srd51-e-section.test.mjs",
+        "tests/catalog/items-srd51-source.test.mjs",
+        "tests/runtime/desktop-audio-layer-recovery.test.mjs",
+        "tests/runtime/desktop-audio-response.test.mjs",
+        "tests/runtime/desktop-autonomy-disable-time.test.mjs",
+        "tests/runtime/desktop-autonomy-interval-integrity.test.mjs",
+        "tests/runtime/desktop-autonomy-jobs-integrity.test.mjs",
+        "tests/runtime/desktop-chase-draft-cache.test.mjs",
+        "tests/runtime/desktop-chase-drafts.test.mjs",
+        "tests/runtime/desktop-chase-time.test.mjs",
+        "tests/runtime/desktop-chase-transfer.test.mjs",
+        "tests/runtime/desktop-chronicle-store.test.mjs",
+        "tests/runtime/desktop-chronicle-window.test.mjs",
+        "tests/runtime/desktop-combat-drafts.test.mjs",
+        "tests/runtime/desktop-desk-integrity.test.mjs",
+        "tests/runtime/desktop-dungeon-position.test.mjs",
+        "tests/runtime/desktop-dungeon-round.test.mjs",
+        "tests/runtime/desktop-dungeon-travel-copy.test.mjs",
+        "tests/runtime/desktop-finish-draft-store.test.mjs",
+        "tests/runtime/desktop-journey-playback.test.mjs",
+        "tests/runtime/desktop-legendary-transfer-integrity.test.mjs",
+        "tests/runtime/desktop-live-generation-owner.test.mjs",
+        "tests/runtime/desktop-live-owner-lifecycle.test.mjs",
+        "tests/runtime/desktop-live-priority.test.mjs",
+        "tests/runtime/desktop-live-publication-owner.test.mjs",
+        "tests/runtime/desktop-loot-balance.test.mjs",
+        "tests/runtime/desktop-mask-history.test.mjs",
+        "tests/runtime/desktop-mask-integration.test.mjs",
+        "tests/runtime/desktop-music-history.test.mjs",
+        "tests/runtime/desktop-narrative-integrity.test.mjs",
+        "tests/runtime/desktop-party-history-copy.test.mjs",
+        "tests/runtime/desktop-party-overview.test.mjs",
+        "tests/runtime/desktop-party-xp.test.mjs",
+        "tests/runtime/desktop-player-render-bounds.test.mjs",
+        "tests/runtime/desktop-player-visual-host.test.mjs",
+        "tests/runtime/desktop-restock-journey.test.mjs",
+        "tests/runtime/desktop-session-handoff-owner.test.mjs",
+        "tests/runtime/desktop-session-recap-shape.test.mjs",
+        "tests/runtime/desktop-session-resume-owner.test.mjs",
+        "tests/runtime/desktop-session-review-owner.test.mjs",
+        "tests/runtime/desktop-session-reward-integrity.test.mjs",
+        "tests/runtime/desktop-shop-owner-time.test.mjs",
+        "tests/runtime/desktop-shop-restock-boundary.test.mjs",
+        "tests/runtime/desktop-storage-ownership.test.mjs",
+        "tests/runtime/desktop-trade-paid-price.test.mjs",
+        "tests/runtime/desktop-travel.test.mjs",
+        "tests/runtime/desktop-treasure-batch.test.mjs",
+        "tests/runtime/desktop-treasury-integrity.test.mjs",
+        "tests/runtime/desktop-weather-integrity.test.mjs",
+        "tests/runtime/desktop-world-owner-lifecycle.test.mjs",
+        "tests/shared/agent-maintenance.test.mjs",
+        "tests/shared/build-target.test.mjs",
+        "tests/shared/desktop-anchored-popup.test.mjs",
+        "tests/shared/desktop-backup-worker.test.mjs",
+        "tests/shared/desktop-data-format.test.mjs",
+        "tests/shared/desktop-e2e01-report.test.mjs",
+        "tests/shared/desktop-editor-transition.test.mjs",
+        "tests/shared/desktop-error-diagnostics.test.mjs",
+        "tests/shared/desktop-host-capabilities.test.mjs",
+        "tests/shared/desktop-markup.test.mjs",
+        "tests/shared/desktop-number-input-scroll.test.mjs",
+        "tests/shared/desktop-storage-ports.test.mjs",
+        "tests/shared/desktop-storage-values.test.mjs",
+        "tests/shared/desktop-store-persistence.test.mjs",
+        "tests/shared/desktop-styles.test.mjs",
+        "tests/shared/desktop-tool-editor-instances.test.mjs",
+        "tests/shared/development-child.test.mjs",
+        "tests/shared/development-queue.test.mjs",
+        "tests/shared/editor-session.test.mjs",
+        "tests/shared/fixture-lifecycle.test.mjs",
+        "tests/shared/host-shutdown-receipt.test.mjs",
+        "tests/shared/local-check-launcher.test.mjs",
+        "tests/shared/local-check-policy.test.mjs",
+        "tests/shared/native-probes.test.mjs",
+        "tests/shared/native-process.test.mjs",
+        "tests/shared/process-group.test.mjs",
+        "tests/shared/repository-structure.test.mjs",
+        "tests/shared/source-probes.test.mjs",
+        "tests/shared/test-assets-concurrency.test.mjs",
+        "tests/shared/test-assets.test.mjs",
+        "tests/shared/test-dom.test.mjs",
+        "tests/shared/test-fixtures.test.mjs",
+        "tests/shared/test-selection.test.mjs",
+        "tests/shared/test-worker-build-asset.test.mjs",
+        "tests/shared/ui-session.test.mjs",
+        "tests/workspace/desktop-editor-activation.test.mjs",
+        "tests/workspace/desktop-extension-recovery.test.mjs",
+        "tests/workspace/desktop-release-source.test.mjs",
+        "tests/workspace/desktop-update-ui.test.mjs",
+        "tests/workspace/desktop-updates.test.mjs",
+        "tests/workspace/desktop-workspace-navigation.test.mjs",
+        "tests/workspace/desktop-workspace-shortcuts.test.mjs",
+        "tests/workspace/desktop-workspace-view.test.mjs",
+        "tests/workspace/module-boundaries.test.mjs",
+        "tests/workspace/module-graph.test.mjs",
+        "tests/workspace/renderer-boundary.test.mjs",
+        "tests/workspace/storage-owner-boundaries.test.mjs",
+        "tests/workspace/typescript-environments.test.mjs",
+        "tests/workspace/workspace-editor-registry.test.mjs"
+      ],
+      "cases": {
+        "tests": 2617,
+        "pass": 2616,
+        "fail": 0,
+        "skipped": 1
+      },
+      "wallSeconds": 722.9006116189994,
+      "launcherStartupMs": 63,
+      "runnerPrepareMs": 28.294996999999995,
+      "runnerTestMs": 722554.551796,
+      "runnerTotalMs": 722582.846793,
+      "cgroup": {
+        "high": 2147483648,
+        "max": 3221225472,
+        "peak": 1414582272,
+        "group": "/user.slice/user-1000.slice/user@1000.service/salt-check-c12466ba-4a4f-4761-9453-e0c0e1b1be6d"
+      },
+      "launcherCleanup": {
+        "peak": 1414582272,
+        "reapedDescendants": false,
+        "removed": true
+      },
+      "gnuTime": {
+        "User time (seconds)": 762.66,
+        "System time (seconds)": 58.68,
+        "Maximum resident set size (kbytes)": 1344816.0
+      },
+      "rootAssets": {
+        "miss": 0,
+        "hit": 91,
+        "totalMs": 6090.736226,
+        "keys": [
+          "7a4963647d8f51379e2589fc95b9e0524c3b18078accd6418ecf88555a6bb42f",
+          "d74e7e87d3353a3d59ad8e234536118d25242495a76785b25704dbb15fe3a6a4"
+        ]
+      },
+      "allAssetEvents": {
+        "miss": 7,
+        "hit": 92
+      },
+      "sampledSlowestFiles": [
+        {
+          "file": "tests/workspace/typescript-environments.test.mjs",
+          "observedSecondsLowerBound": 54.886091070002294,
+          "observedCpuSecondsLowerBound": 82.72
+        },
+        {
+          "file": "tests/atlas/terrain-route.test.mjs",
+          "observedSecondsLowerBound": 20.289670787999057,
+          "observedCpuSecondsLowerBound": 23.4
+        },
+        {
+          "file": "tests/atlas/atlas-material-tiles.test.mjs",
+          "observedSecondsLowerBound": 19.30189575899567,
+          "observedCpuSecondsLowerBound": 24.48
+        },
+        {
+          "file": "tests/atlas/atlas-reference-fixture.test.mjs",
+          "observedSecondsLowerBound": 18.269595856996602,
+          "observedCpuSecondsLowerBound": 18.89
+        },
+        {
+          "file": "tests/runtime/desktop-travel.test.mjs",
+          "observedSecondsLowerBound": 17.305988544991123,
+          "observedCpuSecondsLowerBound": 19.15
+        },
+        {
+          "file": "tests/atlas/terrain-brush-draft.test.mjs",
+          "observedSecondsLowerBound": 12.169040565000614,
+          "observedCpuSecondsLowerBound": 16.29
+        },
+        {
+          "file": "tests/campaign/desktop-session-proposal-store.test.mjs",
+          "observedSecondsLowerBound": 11.177791460009757,
+          "observedCpuSecondsLowerBound": 13.03
+        },
+        {
+          "file": "tests/atlas/vegetation.test.mjs",
+          "observedSecondsLowerBound": 11.162211938004475,
+          "observedCpuSecondsLowerBound": 14.33
+        },
+        {
+          "file": "tests/atlas/atlas-reference-image.test.mjs",
+          "observedSecondsLowerBound": 9.147132151992992,
+          "observedCpuSecondsLowerBound": 10.58
+        },
+        {
+          "file": "tests/catalog/desktop-generation-npcs.test.mjs",
+          "observedSecondsLowerBound": 9.14348089399573,
+          "observedCpuSecondsLowerBound": 10.53
+        },
+        {
+          "file": "tests/campaign/desktop-key-store.test.mjs",
+          "observedSecondsLowerBound": 9.141400377993705,
+          "observedCpuSecondsLowerBound": 10.25
+        },
+        {
+          "file": "tests/atlas/terrain-live-history.test.mjs",
+          "observedSecondsLowerBound": 9.14012419199571,
+          "observedCpuSecondsLowerBound": 9.32
+        }
+      ]
+    }
+  },
+  "changedSourcesBetweenFullRuns": [
+    "tests/atlas/desktop-atlas-commit-recovery.test.mjs",
+    "tests/campaign/desktop-preparation-owner.test.mjs",
+    "tests/shared/local-check-launcher.test.mjs",
+    "tests/shared/test-assets.test.mjs",
+    "tools/run-local-check.mjs",
+    "tools/test-assets.mjs"
+  ],
+  "sourceBinding": "Each host.json stores every production/desktop/test/tool/config hash before and after its invocation; docs excluded from executable source digest.",
+  "foreignLoadProbe": {
+    "seconds": 5.052809162996709,
+    "oneCpuPercent": {
+      "1285": {
+        "executable": "/usr/lib/systemd/systemd",
+        "percent": 87.08027273665047
+      },
+      "2935": {
+        "executable": "/usr/lib/chatgpt/ChatGPT",
+        "percent": 2.3749165291813763
+      },
+      "3323": {
+        "executable": "/usr/lib/chatgpt/ChatGPT",
+        "percent": 32.65510227624392
+      },
+      "6438": {
+        "executable": "/usr/bin/python3",
+        "percent": 6.33311074448367
+      },
+      "233541": {
+        "executable": "/usr/libexec/uresourced",
+        "percent": 19.988880787276585
+      }
+    }
+  },
+  "finalForeignLoadProbe": {
+    "seconds": 5.0451600500091445,
+    "oneCpuPercent": {
+      "1285": {
+        "executable": "/usr/lib/systemd/systemd",
+        "percent": 91.17649300326285
+      },
+      "6438": {
+        "executable": "/usr/bin/python3",
+        "percent": 6.540922324147117
+      },
+      "233541": {
+        "executable": "/usr/libexec/uresourced",
+        "percent": 21.803074413823726
+      }
+    }
+  },
+  "fingerprintPairs": [
+    {
+      "name": "original",
+      "pair": 0,
+      "ms": 212.128491,
+      "key": "4f922c3fa96bc703edca09c40907ffe49cab7d9f359b099df440a503fae10d7f"
+    },
+    {
+      "name": "candidate",
+      "pair": 0,
+      "ms": 83.939999,
+      "key": "4f922c3fa96bc703edca09c40907ffe49cab7d9f359b099df440a503fae10d7f"
+    },
+    {
+      "name": "candidate",
+      "pair": 1,
+      "ms": 36.46740699999998,
+      "key": "4f922c3fa96bc703edca09c40907ffe49cab7d9f359b099df440a503fae10d7f"
+    },
+    {
+      "name": "original",
+      "pair": 1,
+      "ms": 147.22475499999996,
+      "key": "4f922c3fa96bc703edca09c40907ffe49cab7d9f359b099df440a503fae10d7f"
+    },
+    {
+      "name": "original",
+      "pair": 2,
+      "ms": 147.735007,
+      "key": "4f922c3fa96bc703edca09c40907ffe49cab7d9f359b099df440a503fae10d7f"
+    },
+    {
+      "name": "candidate",
+      "pair": 2,
+      "ms": 39.65918999999997,
+      "key": "4f922c3fa96bc703edca09c40907ffe49cab7d9f359b099df440a503fae10d7f"
+    },
+    {
+      "name": "candidate",
+      "pair": 3,
+      "ms": 34.39656100000002,
+      "key": "4f922c3fa96bc703edca09c40907ffe49cab7d9f359b099df440a503fae10d7f"
+    },
+    {
+      "name": "original",
+      "pair": 3,
+      "ms": 154.05878099999995,
+      "key": "4f922c3fa96bc703edca09c40907ffe49cab7d9f359b099df440a503fae10d7f"
+    }
+  ],
+  "launcherProbes": [
+    {
+      "abort": false,
+      "pids": [
+        502006,
+        502013
+      ],
+      "outcome": {
+        "code": 0,
+        "signal": null
+      },
+      "text": "Local check: delegated-2G-3G; group=/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-2935.scope\n",
+      "pidsGone": true
+    },
+    {
+      "abort": true,
+      "pids": [
+        502033,
+        502040
+      ],
+      "outcome": {
+        "code": null,
+        "signal": "SIGKILL"
+      },
+      "text": "Local check: delegated-2G-3G; group=/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-2935.scope\n",
+      "pidsGone": true
+    },
+    {
+      "realBlockedSystemd": {
+        "code": 1,
+        "signal": null,
+        "error": "Local systemd scope did not start within 1000 ms (salt-check-4a087e33-49ec-46ec-a529-f2e321a8bd51); command was not confirmed bounded.",
+        "policy": "systemd-2G-3G",
+        "group": "/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-2935.scope",
+        "startupMs": null,
+        "totalMs": 1053.0081770000002,
+        "evidence": "/home/aaron/Documents/Codex/SaltMarcher/.build/local-checks/salt-check-4a087e33-49ec-46ec-a529-f2e321a8bd51"
+      }
+    }
+  ],
+  "counterprobes": [
+    {
+      "name": "campaign-ack",
+      "file": "src/app/atlas/campaign-atlas-author.ts",
+      "command": [
+        "npm",
+        "run",
+        "verify:local",
+        "--",
+        "node",
+        "--test",
+        "--test-name-pattern=foreign campaign",
+        "tests/atlas/desktop-atlas-commit-recovery.test.mjs"
+      ],
+      "code": 1,
+      "targetedFailure": true,
+      "sourceSha256": "eefbdcc6587af53d0fdeb77abb94899d65c66d474d6779a45976f77a254453af"
+    },
+    {
+      "name": "terrain-fence",
+      "file": "src/app/atlas/campaign-atlas-author.ts",
+      "command": [
+        "npm",
+        "run",
+        "verify:local",
+        "--",
+        "node",
+        "--test",
+        "--test-name-pattern=missing terrain fence",
+        "tests/atlas/desktop-atlas-commit-recovery.test.mjs"
+      ],
+      "code": 1,
+      "targetedFailure": true,
+      "sourceSha256": "eefbdcc6587af53d0fdeb77abb94899d65c66d474d6779a45976f77a254453af"
+    },
+    {
+      "name": "terrain-revision",
+      "file": "src/app/atlas/campaign-atlas-author.ts",
+      "command": [
+        "npm",
+        "run",
+        "verify:local",
+        "--",
+        "node",
+        "--test",
+        "--test-name-pattern=older terrain revision",
+        "tests/atlas/desktop-atlas-commit-recovery.test.mjs"
+      ],
+      "code": 1,
+      "targetedFailure": true,
+      "sourceSha256": "eefbdcc6587af53d0fdeb77abb94899d65c66d474d6779a45976f77a254453af"
+    },
+    {
+      "name": "safe-revision",
+      "file": "src/app/atlas/campaign-atlas-author.ts",
+      "command": [
+        "npm",
+        "run",
+        "verify:local",
+        "--",
+        "node",
+        "--test",
+        "--test-name-pattern=fractional revision",
+        "tests/atlas/desktop-atlas-commit-recovery.test.mjs"
+      ],
+      "code": 1,
+      "targetedFailure": true,
+      "sourceSha256": "eefbdcc6587af53d0fdeb77abb94899d65c66d474d6779a45976f77a254453af"
+    },
+    {
+      "name": "preparation-owner",
+      "file": "src/app/campaign/preparation.ts",
+      "command": [
+        "npm",
+        "run",
+        "verify:local",
+        "--",
+        "node",
+        "--test",
+        "--test-name-pattern=a delayed real Preparation receipt",
+        "tests/campaign/desktop-preparation-owner.test.mjs"
+      ],
+      "code": 1,
+      "targetedFailure": true,
+      "sourceSha256": "4e883f6870faf27ed5745a897bc724b7d6d38000301585c367cf651958362232"
+    },
+    {
+      "name": "fingerprint-ctime",
+      "file": "tools/test-assets.mjs",
+      "command": [
+        "npm",
+        "run",
+        "verify:local",
+        "--",
+        "node",
+        "--test",
+        "--test-name-pattern=fingerprints notice equal-length",
+        "tests/shared/test-assets.test.mjs"
+      ],
+      "code": 1,
+      "targetedFailure": true,
+      "sourceSha256": "7d98e2c1584c684bcb65a6ecba13c6f683b37565ae4ba8a41c2379c9ffccc608"
+    }
+  ],
+  "historicalComparison": {
+    "inventory": ".build/test-costs-coverage-history/assertion-inventory.json",
+    "current": 416,
+    "open": 1315,
+    "newExactMappings": 7,
+    "originalAssertions": 1731,
+    "preservedPriorityGroups": 384
+  },
+  "checks": {
+    "targetedTests": {
+      "code": 0,
+      "cases": 44,
+      "log": ".build/round8-point4/new-tests-final.log"
+    },
+    "check:repo": {
+      "code": 0,
+      "log": ".build/round8-point4/check-repo-final.log"
+    },
+    "check": {
+      "code": 0,
+      "log": ".build/round8-point4/check-types.log"
+    },
+    "check:desktop": {
+      "code": 0,
+      "log": ".build/round8-point4/check-desktop.log"
+    },
+    "build": {
+      "code": 0,
+      "log": ".build/round8-point4/build.log"
+    },
+    "build:desktop": {
+      "code": 0,
+      "log": ".build/round8-point4/build-desktop.log"
+    },
+    "format": {
+      "code": 0,
+      "log": ".build/round8-point4/format-final.log"
+    },
+    "priorRepositoryCheck": {
+      "code": 1,
+      "log": ".build/round8-point4/check-repo-before-reference-created.log",
+      "reason": "New reference file was not created yet; two document links failed. Final check passed with reference present."
+    }
+  },
+  "ci": {
+    "run": false,
+    "candidateGatesUnchanged": [
+      "check:repo",
+      "check",
+      "check:desktop",
+      "test",
+      "build",
+      "build:desktop"
+    ]
+  },
+  "nativeUi": {
+    "run": false,
+    "requiredAppZoom": 1,
+    "statement": "No native product UI/target-device qualification added; launcher native process probes are separate."
+  },
+  "capabilityEvidence": [
+    ".build/round8-point4/capability-atlas.log",
+    ".build/round8-point4/capability-receipt.log",
+    ".build/round8-point4/capability-navigation.log",
+    ".build/round8-point4/capability-inverse.log"
+  ],
+  "historical709SecondsIsNotCurrentBaseline": true,
+  "noTestsRemoved": true,
+  "noIntegration": true,
+  "cleanupEvidence": {
+    "remainingLocalCheckGroups": [],
+    "groupReport": ".build/round8-point4/final-cgroup-cleanup.json",
+    "systemdJobs": ".build/round8-point4/final-systemd-jobs.txt",
+    "preexistingUnchangedForeignJobs": 5
+  },
+  "fullComparison": {
+    "sameSelectedFiles": true,
+    "productionSourcesIdentical": true,
+    "additionalCasesAfterBaseline": 11,
+    "additionalCasesAcrossTask": 15,
+    "wallDifferenceSeconds": -3.7404822910029907,
+    "noIsolatedFullSuiteSpeedupClaim": true,
+    "rootSharedPreparationWasNotCheaper": true
+  },
+  "finalExecutableSourcesStillMatchFullRun": false,
+  "reviewCorrection": {
+    "scope": "Three systemd-only counterexamples are Linux-only; delegation path assertion uses platform path joining. Production sources unchanged.",
+    "files": [
+      "tests/shared/local-check-launcher.test.mjs",
+      "tests/shared/local-check-policy.test.mjs"
+    ],
+    "report": ".build/test-runs/db308047-0c3b-4725-955d-ebff75238bbf/report.json",
+    "passed": 10,
+    "skippedOnLinux": 0,
+    "fullSuiteReused": true,
+    "nonLinuxRun": false
+  },
+  "restPlan": {
+    "baselineReused": ".build/round8-point4/final-full",
+    "diagnosticProfiles": {
+      "before": [
+        {
+          "file": "tests/workspace/typescript-environments.test.mjs",
+          "wallSeconds": 57.460580314000005,
+          "exclusivePhaseSeconds": {
+            "compiler": 56.83101887999999,
+            "bundleBuild": 0.0,
+            "databaseInitialize": 0.0,
+            "assertionFunctions": 0.0016017310000107728,
+            "storeOperations": 0.0,
+            "remaining": 0.627959703000009
+          },
+          "compilerProgramCalls": 6,
+          "compilerCheckCalls": 5,
+          "browserAnalysisCalls": 2,
+          "raw": ".build/round8-rest/phases-before/513169.json"
+        },
+        {
+          "file": "tests/atlas/terrain-route.test.mjs",
+          "wallSeconds": 20.896787456000002,
+          "exclusivePhaseSeconds": {
+            "compiler": 0.0,
+            "bundleBuild": 0.43699295600000004,
+            "databaseInitialize": 0.34728057000000306,
+            "assertionFunctions": 0.7364585749999948,
+            "storeOperations": 6.318544864999988,
+            "remaining": 13.057510490000016
+          },
+          "compilerProgramCalls": 0,
+          "compilerCheckCalls": 0,
+          "browserAnalysisCalls": 0,
+          "raw": ".build/round8-rest/phases-before/513023.json"
+        },
+        {
+          "file": "tests/atlas/atlas-material-tiles.test.mjs",
+          "wallSeconds": 20.429352084,
+          "exclusivePhaseSeconds": {
+            "compiler": 0.0,
+            "bundleBuild": 0.36419111099999996,
+            "databaseInitialize": 0.5277817400000014,
+            "assertionFunctions": 0.005637476000014203,
+            "storeOperations": 0.5711695889999856,
+            "remaining": 18.960572168
+          },
+          "compilerProgramCalls": 0,
+          "compilerCheckCalls": 0,
+          "browserAnalysisCalls": 0,
+          "raw": ".build/round8-rest/phases-before/512952.json"
+        },
+        {
+          "file": "tests/runtime/desktop-travel.test.mjs",
+          "wallSeconds": 18.214516339000003,
+          "exclusivePhaseSeconds": {
+            "compiler": 0.0,
+            "bundleBuild": 0.06745924300000002,
+            "databaseInitialize": 1.567769170999999,
+            "assertionFunctions": 0.012492119000005346,
+            "storeOperations": 13.461094835999976,
+            "remaining": 3.105700970000022
+          },
+          "compilerProgramCalls": 0,
+          "compilerCheckCalls": 0,
+          "browserAnalysisCalls": 0,
+          "raw": ".build/round8-rest/phases-before/513122.json"
+        },
+        {
+          "file": "tests/atlas/atlas-reference-fixture.test.mjs",
+          "wallSeconds": 17.573336342999998,
+          "exclusivePhaseSeconds": {
+            "compiler": 0.0,
+            "bundleBuild": 0.09405357699999999,
+            "databaseInitialize": 0.039806452999999464,
+            "assertionFunctions": 6.382267396999998,
+            "storeOperations": 0.004008466000000226,
+            "remaining": 11.05320045
+          },
+          "compilerProgramCalls": 0,
+          "compilerCheckCalls": 0,
+          "browserAnalysisCalls": 0,
+          "raw": ".build/round8-rest/phases-before/513005.json"
+        }
+      ],
+      "after": [
+        {
+          "file": "tests/workspace/typescript-environments.test.mjs",
+          "wallSeconds": 48.687210144,
+          "exclusivePhaseSeconds": {
+            "compiler": 47.942601331000006,
+            "bundleBuild": 0.0,
+            "databaseInitialize": 0.0,
+            "assertionFunctions": 0.0016131819999939125,
+            "storeOperations": 0.0,
+            "remaining": 0.7429956309999994
+          },
+          "compilerProgramCalls": 5,
+          "compilerCheckCalls": 5,
+          "browserAnalysisCalls": 1,
+          "raw": ".build/round8-rest/phases-after/513516.json"
+        },
+        {
+          "file": "tests/atlas/terrain-route.test.mjs",
+          "wallSeconds": 21.063347298,
+          "exclusivePhaseSeconds": {
+            "compiler": 0.0,
+            "bundleBuild": 0.445626206,
+            "databaseInitialize": 0.3168172689999997,
+            "assertionFunctions": 0.6967267710000008,
+            "storeOperations": 7.052188970999989,
+            "remaining": 12.55198808100001
+          },
+          "compilerProgramCalls": 0,
+          "compilerCheckCalls": 0,
+          "browserAnalysisCalls": 0,
+          "raw": ".build/round8-rest/phases-after/513450.json"
+        },
+        {
+          "file": "tests/atlas/atlas-material-tiles.test.mjs",
+          "wallSeconds": 20.290166313999997,
+          "exclusivePhaseSeconds": {
+            "compiler": 0.0,
+            "bundleBuild": 0.414963252,
+            "databaseInitialize": 0.5061460380000024,
+            "assertionFunctions": 0.005836052999994081,
+            "storeOperations": 0.5475562389999966,
+            "remaining": 18.815664732000002
+          },
+          "compilerProgramCalls": 0,
+          "compilerCheckCalls": 0,
+          "browserAnalysisCalls": 0,
+          "raw": ".build/round8-rest/phases-after/513349.json"
+        },
+        {
+          "file": "tests/runtime/desktop-travel.test.mjs",
+          "wallSeconds": 18.396218333999997,
+          "exclusivePhaseSeconds": {
+            "compiler": 0.0,
+            "bundleBuild": 0.078214011,
+            "databaseInitialize": 1.5714638759999897,
+            "assertionFunctions": 0.013218859999999154,
+            "storeOperations": 13.562578946999954,
+            "remaining": 3.1707426400000536
+          },
+          "compilerProgramCalls": 0,
+          "compilerCheckCalls": 0,
+          "browserAnalysisCalls": 0,
+          "raw": ".build/round8-rest/phases-after/513497.json"
+        },
+        {
+          "file": "tests/atlas/atlas-reference-fixture.test.mjs",
+          "wallSeconds": 18.097128754999996,
+          "exclusivePhaseSeconds": {
+            "compiler": 0.0,
+            "bundleBuild": 0.08265103300000001,
+            "databaseInitialize": 0.04277616999999986,
+            "assertionFunctions": 6.504371840000001,
+            "storeOperations": 0.004635457999999744,
+            "remaining": 11.462694253999995
+          },
+          "compilerProgramCalls": 0,
+          "compilerCheckCalls": 0,
+          "browserAnalysisCalls": 0,
+          "raw": ".build/round8-rest/phases-after/513397.json"
+        },
+        {
+          "file": "tests/atlas/atlas-terrain-edits.test.mjs",
+          "wallSeconds": 0.09595627799999999,
+          "exclusivePhaseSeconds": {
+            "compiler": 0.0,
+            "bundleBuild": 0.0,
+            "databaseInitialize": 0.0,
+            "assertionFunctions": 0.00222915299999994,
+            "storeOperations": 0.0,
+            "remaining": 0.09372712500000005
+          },
+          "compilerProgramCalls": 0,
+          "compilerCheckCalls": 0,
+          "browserAnalysisCalls": 0,
+          "raw": ".build/round8-rest/phases-after/513431.json"
+        }
+      ],
+      "method": "Source-call compiler/build instrumentation and synchronous CommonJS constructor/method/assertion wrappers. Exclusive self times remove nested calls; worker online/first-reply observations overlap and are not additive. Compiler-before virtual source is the exact saved original, not the candidate. Diagnostic instrumentation, not full-suite benchmark.",
+      "originalCompilerSourceSha256": "5f78ec057243e3f4461d4fbe39bd9bb8b5dc35e9d26a07dad26c9e08f7667c15",
+      "scripts": [
+        ".build/round8-rest/profile.mjs",
+        ".build/round8-rest/profile-loader.mjs"
+      ],
+      "earlyInstrumentationAttemptsExcluded": [
+        "profile-before"
+      ]
+    },
+    "optimization": {
+      "selectedBlocks": 1,
+      "description": "One full renderer Program and capability traversal supply both virtual probes; all five different production environments still compile and check independently. Only compact observed diagnostics are reused.",
+      "casesUnchanged": 7,
+      "productionProgramsBefore": 6,
+      "productionProgramsAfter": 5,
+      "browserAnalysesBefore": 2,
+      "browserAnalysesAfter": 1,
+      "noSharedMutableDomainState": true,
+      "noInitializationMigrationPersistenceRestartCasesBypassed": true,
+      "otherCandidatesRejected": "DB/build cost small relative to real raster/geometry/canonical validation; root shared assets 6.091 seconds in reused full baseline. No further fingerprint optimization."
+    },
+    "workerProbe": {
+      "log": ".build/round8-rest/worker-phases.log",
+      "passed": 6,
+      "nodeReportedWallSeconds": 6.874765957,
+      "firstReplyCount": 14,
+      "firstReplyAggregateSeconds": 4.633860008999999,
+      "onlineNotificationsCount": 15,
+      "onlineNotificationsAggregateSeconds": 0.8637606970000001,
+      "readTraceSeconds": 1.054014116999998,
+      "syncTraceSeconds": 0.0948912149999992,
+      "firstReplyIncludesFirstJob": true,
+      "onlineNotificationIsNotIsolatedModuleStartup": true,
+      "bundleLoadAndCatalogUpperBoundSeconds": 0.124
+    },
+    "parallelProbes": [
+      {
+        "directory": ".build/round8-rest/parallel-pair",
+        "mode": "comparison",
+        "groupCount": 2,
+        "referenceStartDelayMs": 0,
+        "groupWallSeconds": 104.310390652,
+        "outerWallSeconds": 105.63342971300881,
+        "code": 0,
+        "sourcesUnchanged": true,
+        "sourceDigest": "fac50855980453046a8623ec4ee714fbd6d9a261216901ea786ff3517f7b35dc",
+        "limits": {
+          "high": "2147483648",
+          "max": "3221225472"
+        },
+        "memoryPeakBytes": 1980796928,
+        "sampledPeakBytes": 1980538880,
+        "memoryEventsBefore": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0",
+        "memoryEventsAfter": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0",
+        "sampleIntervalMs": 100,
+        "aborted": false,
+        "guardLimitBytes": 2040109465.6,
+        "results": [
+          {
+            "pid": 513677,
+            "files": [
+              "tests/workspace/typescript-environments.test.mjs"
+            ],
+            "done": true,
+            "code": 0,
+            "signal": null
+          },
+          {
+            "pid": 513678,
+            "files": [
+              "tests/atlas/atlas-material-tiles.test.mjs",
+              "tests/atlas/atlas-reference-fixture.test.mjs",
+              "tests/atlas/terrain-route.test.mjs",
+              "tests/runtime/desktop-travel.test.mjs"
+            ],
+            "done": true,
+            "code": 0,
+            "signal": null
+          }
+        ]
+      },
+      {
+        "directory": ".build/round8-rest/parallel-pair-repeat",
+        "mode": "comparison",
+        "groupCount": 2,
+        "referenceStartDelayMs": 0,
+        "groupWallSeconds": 97.389030611,
+        "outerWallSeconds": 97.8619637699885,
+        "code": 0,
+        "sourcesUnchanged": true,
+        "sourceDigest": "fac50855980453046a8623ec4ee714fbd6d9a261216901ea786ff3517f7b35dc",
+        "limits": {
+          "high": "2147483648",
+          "max": "3221225472"
+        },
+        "memoryPeakBytes": 1928249344,
+        "sampledPeakBytes": 1928249344,
+        "memoryEventsBefore": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0",
+        "memoryEventsAfter": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0",
+        "sampleIntervalMs": 100,
+        "aborted": false,
+        "guardLimitBytes": 2040109465.6,
+        "results": [
+          {
+            "pid": 514389,
+            "files": [
+              "tests/workspace/typescript-environments.test.mjs"
+            ],
+            "done": true,
+            "code": 0,
+            "signal": null
+          },
+          {
+            "pid": 514390,
+            "files": [
+              "tests/atlas/atlas-material-tiles.test.mjs",
+              "tests/atlas/atlas-reference-fixture.test.mjs",
+              "tests/atlas/terrain-route.test.mjs",
+              "tests/runtime/desktop-travel.test.mjs"
+            ],
+            "done": true,
+            "code": 0,
+            "signal": null
+          }
+        ]
+      },
+      {
+        "directory": ".build/round8-rest/parallel-abort",
+        "mode": "abort",
+        "groupCount": 2,
+        "referenceStartDelayMs": 0,
+        "groupWallSeconds": 0.43315758800000004,
+        "outerWallSeconds": 1.0167494759953115,
+        "code": 2,
+        "sourcesUnchanged": true,
+        "sourceDigest": "fac50855980453046a8623ec4ee714fbd6d9a261216901ea786ff3517f7b35dc",
+        "limits": {
+          "high": "2147483648",
+          "max": "3221225472"
+        },
+        "memoryPeakBytes": 178085888,
+        "sampledPeakBytes": 169816064,
+        "memoryEventsBefore": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0",
+        "memoryEventsAfter": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0",
+        "sampleIntervalMs": 100,
+        "aborted": true,
+        "guardLimitBytes": 157286400,
+        "results": [
+          {
+            "pid": 514286,
+            "files": [
+              "tests/workspace/typescript-environments.test.mjs"
+            ],
+            "done": true,
+            "code": 1,
+            "signal": null
+          },
+          {
+            "pid": 514287,
+            "files": [
+              "tests/atlas/atlas-material-tiles.test.mjs",
+              "tests/atlas/atlas-reference-fixture.test.mjs",
+              "tests/atlas/terrain-route.test.mjs",
+              "tests/runtime/desktop-travel.test.mjs"
+            ],
+            "done": true,
+            "code": 1,
+            "signal": null
+          }
+        ]
+      },
+      {
+        "directory": ".build/round8-rest/parallel-overload",
+        "mode": "overload",
+        "groupCount": 3,
+        "referenceStartDelayMs": 0,
+        "groupWallSeconds": 90.51340723899999,
+        "outerWallSeconds": 90.97501158399973,
+        "code": 0,
+        "sourcesUnchanged": true,
+        "sourceDigest": "fac50855980453046a8623ec4ee714fbd6d9a261216901ea786ff3517f7b35dc",
+        "limits": {
+          "high": "2147483648",
+          "max": "3221225472"
+        },
+        "memoryPeakBytes": 1891106816,
+        "sampledPeakBytes": 1890144256,
+        "memoryEventsBefore": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0",
+        "memoryEventsAfter": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0",
+        "sampleIntervalMs": 100,
+        "aborted": false,
+        "guardLimitBytes": 2040109465.6,
+        "results": [
+          {
+            "pid": 521773,
+            "files": [
+              "tests/workspace/typescript-environments.test.mjs"
+            ],
+            "done": true,
+            "code": 0,
+            "signal": null
+          },
+          {
+            "pid": 521774,
+            "files": [
+              "tests/atlas/atlas-reference-fixture.test.mjs"
+            ],
+            "done": true,
+            "code": 0,
+            "signal": null
+          },
+          {
+            "pid": 521775,
+            "files": [
+              "tests/atlas/atlas-material-tiles.test.mjs",
+              "tests/atlas/terrain-route.test.mjs",
+              "tests/runtime/desktop-travel.test.mjs"
+            ],
+            "done": true,
+            "code": 0,
+            "signal": null
+          }
+        ]
+      },
+      {
+        "directory": ".build/round8-rest/parallel-overload-aligned",
+        "mode": "overload-aligned",
+        "groupCount": 3,
+        "referenceStartDelayMs": 20000,
+        "groupWallSeconds": 29.374902734,
+        "outerWallSeconds": 30.732064601994352,
+        "code": 2,
+        "sourcesUnchanged": true,
+        "sourceDigest": "fac50855980453046a8623ec4ee714fbd6d9a261216901ea786ff3517f7b35dc",
+        "limits": {
+          "high": "2147483648",
+          "max": "3221225472"
+        },
+        "memoryPeakBytes": 2045038592,
+        "sampledPeakBytes": 2045038592,
+        "memoryEventsBefore": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0",
+        "memoryEventsAfter": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0",
+        "sampleIntervalMs": 100,
+        "aborted": true,
+        "guardLimitBytes": 2040109465.6,
+        "results": [
+          {
+            "pid": 522031,
+            "files": [
+              "tests/workspace/typescript-environments.test.mjs"
+            ],
+            "done": true,
+            "code": 1,
+            "signal": null
+          },
+          {
+            "pid": 522032,
+            "files": [
+              "tests/atlas/atlas-reference-fixture.test.mjs"
+            ],
+            "done": true,
+            "code": 1,
+            "signal": null
+          },
+          {
+            "pid": 522033,
+            "files": [
+              "tests/atlas/atlas-material-tiles.test.mjs",
+              "tests/atlas/terrain-route.test.mjs",
+              "tests/runtime/desktop-travel.test.mjs"
+            ],
+            "done": true,
+            "code": 1,
+            "signal": null
+          }
+        ]
+      }
+    ],
+    "parallelDecision": {
+      "defaultChanged": false,
+      "memoryPolicyChanged": false,
+      "narrowSelectionOnly": true,
+      "totalCases": 88,
+      "compilerSlowerUnderCompetitionSeconds": [
+        68.273031313,
+        63.659448651
+      ],
+      "firstPeakHighHeadroomMiB": 158.96484375,
+      "blocker": "Two narrow groups reach92.2% of high; three groups pass with favorable overlap but deliberate20-second reference offset hits95% guard at2,045,038,592bytes and aborts. Compiler slows under competition. No qualified memory/output-safe schedule across all313 files; standard remains serial. No full-suite target claim.",
+      "abortProbeIsNotOomQualification": true
+    },
+    "counterprobes": {
+      "sourceSha256": "290d8d62b0fc27187309d7a8f74adc2ca00021e3e45e7ed71a1934f63c0951ef",
+      "restored": true,
+      "results": [
+        {
+          "name": "retired-source-success",
+          "code": 1,
+          "command": [
+            "npm",
+            "run",
+            "verify:local",
+            "--",
+            "node",
+            "--test",
+            "--test-name-pattern=a retired source reply",
+            "tests/atlas/atlas-terrain-edits.test.mjs"
+          ]
+        },
+        {
+          "name": "retired-source-failure",
+          "code": 1,
+          "command": [
+            "npm",
+            "run",
+            "verify:local",
+            "--",
+            "node",
+            "--test",
+            "--test-name-pattern=a retired source failure",
+            "tests/atlas/atlas-terrain-edits.test.mjs"
+          ]
+        }
+      ]
+    },
+    "foreignLoad": {
+      "seconds": 5.000073927993071,
+      "phase": "during final serial full suite",
+      "oneCpuPercent": {
+        "1285": {
+          "executable": null,
+          "percent": 90.99865453041967,
+          "comm": "systemd",
+          "executableLookupUnavailable": true
+        },
+        "2935": {
+          "executable": "/usr/lib/chatgpt/ChatGPT",
+          "percent": 0.9999852146199965,
+          "comm": "ChatGPT"
+        },
+        "3323": {
+          "executable": "/usr/lib/chatgpt/ChatGPT",
+          "percent": 2.79995860093599,
+          "comm": "ChatGPT"
+        },
+        "233541": {
+          "executable": "/usr/libexec/uresourced",
+          "percent": 22.79966289333592,
+          "comm": "uresourced"
+        },
+        "6438": {
+          "executable": null,
+          "percent": 6.599902416491976,
+          "comm": "python3",
+          "executableLookupUnavailable": true
+        }
+      }
+    },
+    "historicalReview": {
+      "originalAssertions": 1731,
+      "exactMappingsUnchanged": 416,
+      "unmappedAssertionsStillOpen": 1315,
+      "newExactHistoricalMappings": 0,
+      "scope": "TW-G1–6/current separately planned rivers plus shared storage/context/draft boundaries; explicit effect/gap table in README, not an alternate capability catalog.",
+      "newProtectionCases": 2,
+      "newCaseFile": "tests/atlas/atlas-terrain-edits.test.mjs",
+      "missingAutomatedSpecificCoverage": [
+        "terrain-route UI unit change preserves untouched exact coordinate and preview intent",
+        "historical nested preparation maps retain composing source/destination",
+        "historical parent reread after campaign activation",
+        "historical delayed packet-source opening and borrowed editor context"
+      ],
+      "existingNativeRoutesWithoutNewRun": [
+        "tools/test-desktop-atlas-terrain-stroke.mjs",
+        "tools/test-desktop-atlas-main-camera.mjs",
+        "tools/test-desktop-terrain-routes.mjs"
+      ],
+      "productQualificationStillSeparate": [
+        "visible form quality and seams",
+        "coast/LOD visual continuity",
+        "complete target-device mouse/text-focus workflow",
+        "statistical p95 input/frame response",
+        "exact packaged build and owner acceptance"
+      ]
+    },
+    "capabilityEvidence": [
+      ".build/round8-rest/capability-recovery.log",
+      ".build/round8-rest/capability-terrain.log",
+      ".build/round8-rest/capability-capabilities.log",
+      ".build/round8-rest/capability-inverse.log"
+    ],
+    "nativeUi": {
+      "newRun": false,
+      "requiredAppZoom": 1
+    },
+    "noIntegration": true,
+    "noTestRemoval": true,
+    "noAssertionWeakening": true,
+    "fullRun": {
+      "directory": ".build/round8-rest/final-full",
+      "command": [
+        "npm",
+        "test"
+      ],
+      "code": 0,
+      "wallSeconds": 715.8547502940055,
+      "sourceDigest": "fac50855980453046a8623ec4ee714fbd6d9a261216901ea786ff3517f7b35dc",
+      "sourcesUnchanged": true,
+      "cases": {
+        "tests": 2619,
+        "pass": 2618,
+        "fail": 0,
+        "skipped": 1
+      },
+      "concurrency": 1,
+      "cgroup": {
+        "high": 2147483648,
+        "max": 3221225472,
+        "peak": 1418145792,
+        "group": "/user.slice/user-1000.slice/user@1000.service/salt-check-9dbfe129-8e28-4e8f-86cf-95d6a7022a50"
+      },
+      "prepareMs": 31.817485999999995,
+      "testMs": 714926.8109330001,
+      "totalMs": 714958.6284190001,
+      "assetEvents": {
+        "hit": 92,
+        "miss": 7
+      },
+      "selectedFileCount": 313,
+      "sameSelectedFiles": true,
+      "changedExecutableSourcesSinceReusedFullRun": [
+        "tests/atlas/atlas-terrain-edits.test.mjs",
+        "tests/shared/local-check-launcher.test.mjs",
+        "tests/shared/local-check-policy.test.mjs",
+        "tests/workspace/typescript-environments.test.mjs"
+      ],
+      "productionSourcesIdentical": true,
+      "additionalCases": 2,
+      "wallDifferenceFromReusedBaselineSeconds": -7.0458613249938935,
+      "targetSeconds": 300,
+      "targetReached": false,
+      "noIsolatedGeneralSuiteSpeedupClaim": true,
+      "gnuTime": {
+        "User time (seconds)": 753.94,
+        "System time (seconds)": 59.15,
+        "Maximum resident set size (kbytes)": 1113012.0
+      },
+      "rootAssets": {
+        "hit": 91,
+        "miss": 0,
+        "totalMs": 6135.502701
+      },
+      "sampledSlowestFiles": [
+        {
+          "file": "tests/workspace/typescript-environments.test.mjs",
+          "observedSecondsLowerBound": 47.802135050995275,
+          "observedCpuSecondsLowerBound": 74.09
+        },
+        {
+          "file": "tests/atlas/terrain-route.test.mjs",
+          "observedSecondsLowerBound": 20.294486673999927,
+          "observedCpuSecondsLowerBound": 22.58
+        },
+        {
+          "file": "tests/atlas/atlas-material-tiles.test.mjs",
+          "observedSecondsLowerBound": 19.263397200003965,
+          "observedCpuSecondsLowerBound": 24.25
+        },
+        {
+          "file": "tests/atlas/atlas-reference-fixture.test.mjs",
+          "observedSecondsLowerBound": 18.754175068999757,
+          "observedCpuSecondsLowerBound": 19.24
+        },
+        {
+          "file": "tests/runtime/desktop-travel.test.mjs",
+          "observedSecondsLowerBound": 17.273077272999217,
+          "observedCpuSecondsLowerBound": 19.66
+        },
+        {
+          "file": "tests/atlas/terrain-brush-draft.test.mjs",
+          "observedSecondsLowerBound": 13.198701735993382,
+          "observedCpuSecondsLowerBound": 17.29
+        },
+        {
+          "file": "tests/campaign/desktop-session-proposal-store.test.mjs",
+          "observedSecondsLowerBound": 11.175339126988547,
+          "observedCpuSecondsLowerBound": 13.35
+        },
+        {
+          "file": "tests/atlas/vegetation.test.mjs",
+          "observedSecondsLowerBound": 11.163524150004378,
+          "observedCpuSecondsLowerBound": 14.44
+        },
+        {
+          "file": "tests/campaign/desktop-key-store.test.mjs",
+          "observedSecondsLowerBound": 9.161913961987011,
+          "observedCpuSecondsLowerBound": 9.84
+        },
+        {
+          "file": "tests/catalog/desktop-generation-npcs.test.mjs",
+          "observedSecondsLowerBound": 9.146564590992057,
+          "observedCpuSecondsLowerBound": 10.8
+        },
+        {
+          "file": "tests/campaign/desktop-campaign-shared-definitions.test.mjs",
+          "observedSecondsLowerBound": 9.143933847997687,
+          "observedCpuSecondsLowerBound": 9.92
+        },
+        {
+          "file": "tests/atlas/terrain-author-cache.test.mjs",
+          "observedSecondsLowerBound": 9.130453253994347,
+          "observedCpuSecondsLowerBound": 10.16
+        }
+      ]
+    },
+    "remainingDrivers": "Full independent production environment checks, material/terrain raster and geometry calculations, canonical travel validation/copy/restart and full reference data assertions; serial default under existing2/3GiB and measured foreign CPU load. Target remains open.",
+    "checks": {
+      "vendor-selector": {
+        "code": 0,
+        "command": [
+          "npm",
+          "run",
+          "verify:local",
+          "--",
+          "node",
+          "--test",
+          "--test-name-pattern=vendor Node declarations",
+          "tests/workspace/typescript-environments.test.mjs"
+        ],
+        "log": ".build/round8-rest/vendor-selector.log"
+      },
+      "check-repo": {
+        "code": 0,
+        "command": [
+          "npm",
+          "run",
+          "verify:local",
+          "--",
+          "npm",
+          "run",
+          "check:repo"
+        ],
+        "log": ".build/round8-rest/check-repo.log"
+      },
+      "format": {
+        "code": 0,
+        "command": [
+          "node_modules/.bin/prettier",
+          "--check",
+          "tests/workspace/typescript-environments.test.mjs",
+          "tests/atlas/atlas-terrain-edits.test.mjs"
+        ],
+        "log": ".build/round8-rest/format.log"
+      },
+      "compiler-test-syntax": {
+        "code": 0,
+        "command": [
+          "node",
+          "--check",
+          "tests/workspace/typescript-environments.test.mjs"
+        ],
+        "log": ".build/round8-rest/compiler-test-syntax.log"
+      },
+      "terrain-test-syntax": {
+        "code": 0,
+        "command": [
+          "node",
+          "--check",
+          "tests/atlas/atlas-terrain-edits.test.mjs"
+        ],
+        "log": ".build/round8-rest/terrain-test-syntax.log"
+      },
+      "diff-check": {
+        "code": 0,
+        "command": [
+          "git",
+          "diff",
+          "--check"
+        ],
+        "log": ".build/round8-rest/diff-check.log"
+      },
+      "executableSourceBinding": {
+        "sameAsFullRun": true,
+        "changed": [],
+        "sourceDigest": "fac50855980453046a8623ec4ee714fbd6d9a261216901ea786ff3517f7b35dc"
+      }
+    },
+    "cleanup": {
+      "remainingLocalCheckGroups": [],
+      "reportedGroupPidsGone": {
+        "513677": true,
+        "513678": true,
+        "514389": true,
+        "514390": true,
+        "514286": true,
+        "514287": true,
+        "521773": true,
+        "521774": true,
+        "521775": true,
+        "522031": true,
+        "522032": true,
+        "522033": true
+      },
+      "launcherReports": {
+        "parallel-pair": {
+          "file": ".build/local-checks/salt-check-9fb7ff3f-66c4-40e0-8c2a-e67e6a56898f/report.json",
+          "result": {
+            "code": 0,
+            "signal": null,
+            "cleanup": {
+              "peak": 1980796928,
+              "reapedDescendants": false,
+              "removed": true
+            },
+            "policy": "delegated-2G-3G",
+            "group": "/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-2935.scope",
+            "startupMs": 66,
+            "totalMs": 104456.134053,
+            "evidence": "/home/aaron/Documents/Codex/SaltMarcher/.build/local-checks/salt-check-9fb7ff3f-66c4-40e0-8c2a-e67e6a56898f"
+          }
+        },
+        "parallel-pair-repeat": {
+          "file": ".build/local-checks/salt-check-cd9093dd-d658-4feb-8e5a-3a80bd35d3a9/report.json",
+          "result": {
+            "code": 0,
+            "signal": null,
+            "cleanup": {
+              "peak": 1928249344,
+              "reapedDescendants": false,
+              "removed": true
+            },
+            "policy": "delegated-2G-3G",
+            "group": "/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-2935.scope",
+            "startupMs": 68,
+            "totalMs": 97522.175978,
+            "evidence": "/home/aaron/Documents/Codex/SaltMarcher/.build/local-checks/salt-check-cd9093dd-d658-4feb-8e5a-3a80bd35d3a9"
+          }
+        },
+        "parallel-abort": {
+          "file": ".build/local-checks/salt-check-dec647d0-4bb3-4025-aae8-878758df43f1/report.json",
+          "result": {
+            "code": 2,
+            "signal": null,
+            "cleanup": {
+              "peak": 178085888,
+              "reapedDescendants": true,
+              "removed": true
+            },
+            "policy": "delegated-2G-3G",
+            "group": "/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-2935.scope",
+            "startupMs": 72,
+            "totalMs": 588.9962919999999,
+            "evidence": "/home/aaron/Documents/Codex/SaltMarcher/.build/local-checks/salt-check-dec647d0-4bb3-4025-aae8-878758df43f1"
+          }
+        },
+        "parallel-overload": {
+          "file": ".build/local-checks/salt-check-6db56773-8a1f-4742-ab66-e78743a39fb5/report.json",
+          "result": {
+            "code": 0,
+            "signal": null,
+            "cleanup": {
+              "peak": 1891106816,
+              "reapedDescendants": false,
+              "removed": true
+            },
+            "policy": "delegated-2G-3G",
+            "group": "/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-2935.scope",
+            "startupMs": 64,
+            "totalMs": 90650.68795200001,
+            "evidence": "/home/aaron/Documents/Codex/SaltMarcher/.build/local-checks/salt-check-6db56773-8a1f-4742-ab66-e78743a39fb5"
+          }
+        },
+        "parallel-overload-aligned": {
+          "file": ".build/local-checks/salt-check-868d89b3-2b6b-474e-90de-32a9ea2eab1c/report.json",
+          "result": {
+            "code": 2,
+            "signal": null,
+            "cleanup": {
+              "peak": 2045038592,
+              "reapedDescendants": false,
+              "removed": true
+            },
+            "policy": "delegated-2G-3G",
+            "group": "/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-2935.scope",
+            "startupMs": 59,
+            "totalMs": 29580.863583,
+            "evidence": "/home/aaron/Documents/Codex/SaltMarcher/.build/local-checks/salt-check-868d89b3-2b6b-474e-90de-32a9ea2eab1c"
+          }
+        }
+      },
+      "systemdJobs": {
+        "code": 0,
+        "file": ".build/round8-rest/final-systemd-jobs.txt",
+        "text": "4806 salt-check-7b5ce65e-85ba-47cf-ba94-32e822ad381f.scope stop waiting\n4599 salt-check-08a6b5ed-4b89-40ac-99d1-2c713f306cbb.scope stop waiting\n4801 salt-check-bed24613-3e9e-49b1-a3ae-875edd02dbc6.scope stop waiting\n4562 salt-check-4b03b13d-9e45-4053-97d5-836dadc77893.scope stop waiting\n4716 salt-check-7c1feca3-b4df-45cf-b85b-a8941f1ebe7d.scope stop waiting\n"
+      },
+      "preexistingJobsFile": ".build/round8-point4/final-systemd-jobs.txt"
+    },
+    "obsoleteCapabilityLinksRemoved": [
+      "tests/atlas/desktop-atlas-author-overlay.test.mjs",
+      "tests/atlas/terrain-draft-scale.test.mjs",
+      "tools/test-desktop-terrain-scale.mjs"
+    ],
+    "originalPhaseSourcesBinding": "The retained top-level finalExecutableSourcesStillMatchFullRun describes the prior phase; checks.executableSourceBinding binds the present executable sources to restPlan.fullRun.",
+    "finalDocumentRepositoryCheck": {
+      "code": 0,
+      "log": ".build/round8-rest/check-repo-final.log"
+    }
+  },
+  "riverPlannerAndRemainingCosts": {
+    "cleanupEvidence": ".build/round8-river/cleanup.json",
+    "scope": "Next bounded contribution to round 8 point 4: public river planner units coverage and diagnosis of the largest remaining cost group; no integration or complete point-4 claim.",
+    "productionUnchangedFromFullBaseline": true,
+    "testFile": "tests/atlas/terrain-route-units.test.mjs",
+    "testCases": 3,
+    "historicalRequirementEvidence": "05e8f2f97fc729dba8b6fef3830c566cdc47adad:tests/atlas/desktop-terrain-route-units.test.mjs",
+    "automaticGapClosed": "Public openTerrainRoute with production-created markup and actual units functions: exact untouched coordinates/planning values through metric-DnD-metric; independent axes; no proposal/write/domain mutation from units alone; cancellation retains confirmed route; explicit metric intent commits once. Controlled host/preload responses do not qualify actual solver or persistence.",
+    "counterprobe": {
+      "evidence": ".build/round8-river/counterprobe-final.json",
+      "log": ".build/round8-river/units-rounding-counterprobe-final.log",
+      "mutation": "setAtlasUnits alone rederives canonical values from rounded displayed values on each unit switch; normal reads remain unchanged",
+      "exitCode": 1,
+      "detected": true,
+      "restored": true,
+      "sha256": "93fce96c9f1a412109cdbb119d381e6dbfefc7465ef04d48342e8bc58236c098"
+    },
+    "targeted": {
+      "files": [
+        "tests/atlas/terrain-route-units.test.mjs",
+        "tests/atlas/terrain-route.test.mjs",
+        "tests/atlas/atlas-metric-camera.test.mjs",
+        "tests/atlas/atlas-brush-size.test.mjs"
+      ],
+      "cases": 39,
+      "passed": 39,
+      "failed": 0,
+      "report": ".build/test-runs/a6a95ec2-7577-4143-b980-f67494a33e57/report.json",
+      "log": ".build/round8-river/targeted-final.log",
+      "runnerSeconds": 21.802971002000003
+    },
+    "native": {
+      "zoom": 1,
+      "qualifiesCompleteWorkflow": false,
+      "toolFix": "Use true 720px content width at zoom 1 instead of expecting a 1440px window to have a 720px CSS viewport; restore 1440px content width afterwards.",
+      "originalHarnessFailure": ".build/round8-river/native/failure.json",
+      "roadAndUnits": {
+        "evidence": ".build/round8-river/native-100/failure.json",
+        "passedExtent": "Units cycles, no writes from units, 720px layout, preview, road commit and undo/redo.",
+        "open": "Full follow-up river start blocked by the still-visible road editor."
+      },
+      "river": {
+        "evidence": ".build/round8-river/native-river/failure.json",
+        "log": ".build/round8-river/native-river.log",
+        "passedExtent": "Three real mouse anchors; read-only preview; mandatory anchors; sea level; falling profile; connected bed within cut budget; one atomic history step; unchanged terrain bytes; Undo/Redo of route and effective samples; same canonical state and heights in a fresh process.",
+        "open": {
+          "assertion": "fixed camera pose fresh-top",
+          "expectedFocusM": 18.4375,
+          "actualFocusM": 27.999999523162842
+        },
+        "rendererErrors": []
+      },
+      "cleanupEvidence": ".build/round8-river/native-river-deadline.json"
+    },
+    "remainingCosts": {
+      "groupingEvidence": "docs/reference/test-path-round8-20261028/remaining-costs.json",
+      "originalFullWallSeconds": 715.8547502940055,
+      "topLevelTapSeconds": 587.213921646,
+      "nestedTapTimesAdded": false,
+      "largestUnexplainedGroup": "direct-store-or-host-integration",
+      "selectedFiles": 148,
+      "sampledFiles": 135,
+      "sampledWallLowerBoundSeconds": 288.63659972192545,
+      "allObservedFileIntervalsDisjoint": true
+    },
+    "storageGroupDiagnosis": {
+      "cases": 1460,
+      "passed": 1460,
+      "failed": 0,
+      "files": 148,
+      "fileProfiles": 148,
+      "sourceRun": ".build/round8-river/storage-group",
+      "sourcesUnchanged": true,
+      "sourceDigest": "e559b06c0f9d1e2620d4231e8b1b94571bbb1e3054bba8d5e5e072e040c7d33e",
+      "selectedTestSourcesEqualFullBaseline": true,
+      "outerWallSeconds": 626.689622321981,
+      "runnerSeconds": 623.8031322239999,
+      "mainFileWallSeconds": 545.264323405,
+      "mainExclusiveSeconds": 309.29117569200037,
+      "mainResidualSeconds": 235.97314771299966,
+      "groups": {
+        "overlapping-worker-observations-not-added": {
+          "seconds": 227.53058075099997,
+          "calls": 236
+        },
+        "store-domain-calls": {
+          "seconds": 142.94070568800007,
+          "calls": 89081
+        },
+        "bundle-build": {
+          "seconds": 80.20715158899999,
+          "calls": 220
+        },
+        "database-open-bootstrap-schema": {
+          "seconds": 33.692095765999994,
+          "calls": 8035
+        },
+        "catalog-install-and-current-validation": {
+          "seconds": 27.193846275999995,
+          "calls": 2040
+        },
+        "bundle-load-excluding-instrumented-catalog": {
+          "seconds": 18.78792671800001,
+          "calls": 383
+        },
+        "static-catalog-projection": {
+          "seconds": 3.747223908,
+          "calls": 154
+        },
+        "assertions-including-real-byte-reads": {
+          "seconds": 2.6026111140002923,
+          "calls": 2363449
+        },
+        "worker-internal-traces-not-added": {
+          "seconds": 0.1461253060000072,
+          "calls": 31
+        },
+        "other-synchronous-hooks": {
+          "seconds": 0.11961463300000003,
+          "calls": 173
+        }
+      },
+      "workerConstructionCalls": 173,
+      "workerExitProfiles": 34,
+      "workerProfilesIncomplete": true,
+      "workerNotificationsAndTracesAddedToMainWall": false,
+      "necessaryWorkExamples": {
+        "store.acceptCampaignSnapshot": {
+          "calls": 149,
+          "selfMs": 49368.842031,
+          "inclusiveMs": 53393.259064999984
+        },
+        "store.applyAtlas": {
+          "calls": 1114,
+          "selfMs": 26766.50066000001,
+          "inclusiveMs": 29204.850020999995
+        },
+        "store.atlasSpatialScene": {
+          "calls": 24,
+          "selfMs": 9263.174863000002,
+          "inclusiveMs": 9281.363092000001
+        }
+      },
+      "cgroup": {
+        "high": 2147483648,
+        "max": 3221225472,
+        "peak": 1231065088,
+        "group": "/user.slice/user-1000.slice/user@1000.service/salt-check-0b410ad1-69ca-4a10-abcf-c222c11458e7"
+      },
+      "sharedAssetHits": 89,
+      "sharedAssetMs": 6350.764719000001,
+      "diagnosticInstrumentationOverhead": "AST and runtime hooks plus initialization in test and helper threads/processes. Build phase includes existing cache hits and instrumentation. No direct benchmark comparison or isolated speedup inference.",
+      "rawProfiles": ".build/round8-river/storage-profile",
+      "summary": ".build/round8-river/storage-diagnosis.json",
+      "loaderValidation": ".build/round8-river/loader-validation.json",
+      "probeHashes": {
+        "storage-profile.mjs": "90ab5ce00952ac13b8a4b3f7bad298fe46ac53f698a3eeb9b6a7eebc0288b957",
+        "storage-profile-loader.mjs": "16eb01f1ed231333aab1a7d943027cd0b9c2d60e5587826588e22465704eae5a",
+        "summarize-storage.py": "90fb23ffb29aea9eb9f9f74453827b33e2e4ea5a7755b57f1763f9adc3c0d005",
+        "storage-selection.json": "f5232f2da18de8b8fc51a923fc2ee2c403a5c5b462884606afe0014267bfc4f4",
+        "validate-loader.mjs": "d13e55d4b59629abd9c1bc282183a69cc669e765651ceaac5bf8ad45af4f2f6e",
+        "run-storage.py": "7762d2e5a1aadbb0673e29d79283b34fb1cbe49927a2c76a06eb5df5837226a3"
+      },
+      "abortedInstrumentationAttempt": {
+        "evidence": ".build/round8-river/storage-group-instrumentation-abort",
+        "reason": "Text-based build call wrapping produced syntax errors in diagnostic copies; stopped owned run and replaced with AST rewrites validated for every selected file. Production/test sources on disk were not rewritten."
+      }
+    },
+    "optimizationDecision": "No further significant avoidable repeated setup with a reliable whole-suite contribution established. Retain all assertions and independent mutable fixtures; no optimization patch and no speculative complete suite rerun. The 300s goal remains open.",
+    "checks": {
+      "types": {
+        "code": 0,
+        "command": [
+          "npm",
+          "run",
+          "verify:local",
+          "--",
+          "npm",
+          "run",
+          "check"
+        ],
+        "log": ".build/round8-river/types.log"
+      },
+      "check-desktop": {
+        "code": 0,
+        "command": [
+          "npm",
+          "run",
+          "verify:local",
+          "--",
+          "npm",
+          "run",
+          "check:desktop"
+        ],
+        "log": ".build/round8-river/check-desktop.log"
+      },
+      "build": {
+        "code": 0,
+        "command": [
+          "npm",
+          "run",
+          "verify:local",
+          "--",
+          "npm",
+          "run",
+          "build"
+        ],
+        "log": ".build/round8-river/build.log"
+      },
+      "check-repo": {
+        "code": 0,
+        "command": [
+          "npm",
+          "run",
+          "verify:local",
+          "--",
+          "npm",
+          "run",
+          "check:repo"
+        ],
+        "log": ".build/round8-river/check-repo-final.log"
+      },
+      "format-check": {
+        "code": 0,
+        "command": [
+          "node_modules/.bin/prettier",
+          "--check",
+          "tests/atlas/terrain-route-units.test.mjs",
+          "tools/test-desktop-terrain-routes.mjs"
+        ],
+        "log": ".build/round8-river/format-check.log"
+      },
+      "diff-check": {
+        "code": 0,
+        "command": [
+          "git",
+          "diff",
+          "--check"
+        ],
+        "log": ".build/round8-river/diff-check-final.log"
+      }
+    },
+    "desktopBuild": {
+      "command": "npm run verify:local -- npm run build:desktop",
+      "code": 0,
+      "log": ".build/round8-river/build-desktop.log"
+    },
+    "capabilityEvidence": [
+      ".build/round8-river/capability-routes.log",
+      ".build/round8-river/capability-units.log",
+      ".build/round8-river/capability-inverse.log"
+    ],
+    "openLimits": [
+      "Native road-to-river editor transition",
+      "Fresh native river camera focus and image parity",
+      "Other historical nested notebooks/source/archive/time contexts",
+      "Complete TW-G1-6 qualification and owner acceptance",
+      "Uninstrumented cost residual and remaining cost groups",
+      "Complete suite below 300 seconds",
+      "Packaging/installation/Candidate/integration not performed"
+    ]
+  },
+  "nativeRoadRiverCompletion": {
+    "scope": "Round 8 point 4: complete native road-to-river transition and river restart camera; no integration or full-suite speed measurement.",
+    "source": {
+      "head": "5c679da32dd9aee72cfbf29a509471ed524dbffd",
+      "dirty": true,
+      "files": {
+        "src/app/atlas/campaign-atlas-ui.ts": "d3fa2b3b09165879ffc550e225536956f50a620feed7ea767abe1a255fb560b6",
+        "src/app/atlas/terrain-route-ui.ts": "4f8121eb10df05e0018318e3351408a1b24ae623162927eb73734ba2d85ecb67",
+        "src/app/atlas/atlas-raster-presentation.ts": "a533b5484f74cf81450a1dd26a943a9a0206c40b8a977b0724c327153fc0249e",
+        "tests/atlas/terrain-route-units.test.mjs": "049720496d5a0a53da7a56eded1e19389efeee4d5bddc6b0bf8b1f07fcce0be3",
+        "tests/atlas/atlas-presentation-source.test.mjs": "f69289d1a435271140364bc02da26d24ed7fab9b0ea60864a8ad97d07cf67986",
+        "tools/test-desktop-terrain-routes.mjs": "11108331ee1df721fa03211c591a8d94f54a1a9911d97ddf33ca429190a04910",
+        "tools/atlas-river-probe.mjs": "c03c842842d9fb29ebb6cc00789f136a89564a79fd43a77161a47761f12b9bae"
+      },
+      "sameSourcesAcrossNativeLanes": true,
+      "nativeSourcesUnchanged": [
+        {
+          "name": "road-final",
+          "args": [],
+          "exit": 0,
+          "sourcesUnchanged": true,
+          "sourceBefore": ".build/round8-native-completion/road-final-source-before.json",
+          "sourceAfter": ".build/round8-native-completion/road-final-source-after.json"
+        },
+        {
+          "name": "river-final",
+          "args": [
+            "--river-only"
+          ],
+          "exit": 0,
+          "sourcesUnchanged": true,
+          "sourceBefore": ".build/round8-native-completion/river-final-source-before.json",
+          "sourceAfter": ".build/round8-native-completion/river-final-source-after.json"
+        }
+      ],
+      "artifactHashes": {
+        "main.cjs": "44f219bfaf4b89c43f527343d04de98426c470f0f46a81ffa2f480e337ec77ac",
+        "preload.cjs": "8c89e0558ba5b3f79aa13a1b931c89bd57a3454734430c4accdd1457b3da5361",
+        "player-preload.cjs": "2298bcbc665e510444c6e8b8e4d202ce2cec8bfcde8d328c7121e3c1043091b4",
+        "store-worker.cjs": "0cbc01a1ca2d6ad53f333edb772aea4a817df474b96039bc860e1fad05dc6bad",
+        "atlas-region-worker.cjs": "389c77bd32c05255a888ec2e56c7a9723add0afc9567dd31c96a5b3342ac9f8b",
+        "room-directory-worker.cjs": "022e2a82e338b66070fe5c960974dc1ced46ae20dcbd2713c86b2649e1d961c8",
+        "terrain-route-worker.cjs": "79e60c0386be5bb0a55e3ab13a4750cbb6878dc2d877d7a585333f6f8ebe912d",
+        "backup-validation-worker.cjs": "9f39942dc2469be61a3f11d3d1bfeb952f1824d7823534a428057e3f9e880426",
+        "update-helper.cjs": "fb360030c815848b6eed9de396accc59f8d4c0ae2ebf50bed3d04449a4b5542a",
+        "update-probe.cjs": "bb778f09a55d564cac392148f7ea459f607109515627fc94aa0f4d69cdbfef1f",
+        "ui/renderer.js": "56651fd6093c964edf9a9adc8929ab8d3adc561dd7fdaa1fb21981af97b4ffe9",
+        "ui/atlas-brush-worker.js": "af8789cdec3cddafef090bc3fd5fbc139db2f189c3188989a7f2a11e4ed87e8e",
+        "ui/atlas-deck-runtime.js": "5239c479ef4b1f5b64886df8bc367d55184fd65bd34f086825d48eee77e542a9",
+        "ui/preset-settings.js": "3981d8dc1a1310dd6fb8d141ffe67931c3071ccb0721d08bbdf1002a3935678a",
+        "ui/index.html": "a079fffb1c5a40a876df21ccc7fd212944e533095c06f7e3393fa36bc1aad687",
+        "ui/app.css": "e8ef8e14a975789787d5a3a926cd735dd1df6b1603a658f6fd9a6a19439350f6",
+        "ui/player-display.js": "dc6e45207607ca5ddf222c94f58daa8f9d48e21ba231953ae713753a2d5e11ee",
+        "ui/player-display.html": "ac6bbc763b22b10375cbbe116e275ed5af51dfc79acb9fb79491dec5f4f67df7",
+        "ui/player.css": "7f82fb6e91227d97b83a8d1421374c74e9f9a5289452b2f1cdf6e032214a8be5",
+        "ui/preset-settings.css": "13c1bf91476633ea63c00700a3440f01a5cdf6e4bc6e447929a3016b3dfdd35b"
+      }
+    },
+    "causes": {
+      "road": "Probe used a 100ms delay plus canvas readiness after Redo, while planner write/refresh/source reload could still own saving. Cancel reset the old session while that read was pending; close could be refused by saving, leaving the old road editor and hidden new-plan button. Planner now owns aria-busy/inert until all phases finish; cancel cannot invalidate a pending canonical response. Probe waits actual cursor and planner, asserts old editor detached and new river identity/zero anchors, unchanged road, read-only preview and exactly one history action per explicit save.",
+      "camera": "River-only start seeded the initial localStorage frame again on restart, deleting the saved pose. Fixture view seeding now occurs only once. Independently, initial terrain publication overwrote a valid restored focus while ready=false. Presentation protects a valid complete restored pose before first overview and later detail; activation without one clears that protection. Navigation focus rebasing and terrain eye safety remain active.",
+      "brushProbe": "Full native run exposed immediate pointerdown before the public editing source was prepared. Probe now fits the selected road with visible controls, hovers then waits complete current revision/radius35 source, and waits canonical cursor+1 before checking brush effect; no private state reset."
+    },
+    "retainedFailures": [
+      ".build/round8-river/native-100/failure.json",
+      ".build/round8-river/native-river/failure.json",
+      ".build/round8-native-completion/road-diagnostic/failure.json",
+      ".build/round8-native-completion/river-before/failure.json",
+      ".build/round8-native-completion/road-brush-before/failure.json"
+    ],
+    "originalCameraDifference": {
+      "expectedFocusM": 18.4375,
+      "actualFocusM": 27.999999523162842,
+      "reproduced": true,
+      "evidence": ".build/round8-native-completion/river-before/failure.json",
+      "debuggerTimeline": [
+        ".build/round8-native-completion/river-before/camera-timeline-1793224149280.json",
+        ".build/round8-native-completion/river-before/camera-timeline-1793224425211.json"
+      ]
+    },
+    "automatic": {
+      "cases": 55,
+      "passed": 55,
+      "newCases": 3,
+      "report": ".build/test-runs/50224466-b114-4046-bb65-194be53c87cb/report.json",
+      "counterprobes": [
+        {
+          "name": "camera-restoration",
+          "file": "src/app/atlas/atlas-raster-presentation.ts",
+          "originalSha256": "a533b5484f74cf81450a1dd26a943a9a0206c40b8a977b0724c327153fc0249e",
+          "exit": 1,
+          "expectedFailure": true,
+          "restoredExact": true
+        },
+        {
+          "name": "history-owner",
+          "file": "src/app/atlas/terrain-route-ui.ts",
+          "originalSha256": "4f8121eb10df05e0018318e3351408a1b24ae623162927eb73734ba2d85ecb67",
+          "exit": 1,
+          "expectedFailure": true,
+          "restoredExact": true
+        }
+      ],
+      "checks": [
+        {
+          "name": "prepare",
+          "command": [
+            "node",
+            "build.mjs",
+            "--test"
+          ],
+          "exit": 0,
+          "seconds": 0.6868348100106232,
+          "log": ".build/round8-native-completion/prepare.log"
+        },
+        {
+          "name": "targeted",
+          "command": [
+            "npm",
+            "test",
+            "--",
+            "tests/atlas/terrain-route-units.test.mjs",
+            "tests/atlas/atlas-presentation-source.test.mjs",
+            "tests/atlas/atlas-metric-camera.test.mjs",
+            "tests/atlas/terrain-route.test.mjs",
+            "tests/atlas/atlas-ownership-boundaries.test.mjs"
+          ],
+          "exit": 0,
+          "seconds": 24.858650140988175,
+          "log": ".build/round8-native-completion/targeted.log"
+        },
+        {
+          "name": "check-repo",
+          "command": [
+            "npm",
+            "run",
+            "check:repo"
+          ],
+          "exit": 0,
+          "seconds": 11.453691415023059,
+          "log": ".build/round8-native-completion/check-repo.log"
+        },
+        {
+          "name": "check",
+          "command": [
+            "npm",
+            "run",
+            "check"
+          ],
+          "exit": 0,
+          "seconds": 79.44375984201906,
+          "log": ".build/round8-native-completion/check.log"
+        },
+        {
+          "name": "check-desktop",
+          "command": [
+            "npm",
+            "run",
+            "check:desktop"
+          ],
+          "exit": 0,
+          "seconds": 24.582714481977746,
+          "log": ".build/round8-native-completion/check-desktop.log"
+        },
+        {
+          "name": "build",
+          "command": [
+            "npm",
+            "run",
+            "build"
+          ],
+          "exit": 0,
+          "seconds": 2.638632163987495,
+          "log": ".build/round8-native-completion/build.log"
+        },
+        {
+          "name": "build-desktop",
+          "command": [
+            "npm",
+            "run",
+            "build:desktop"
+          ],
+          "exit": 0,
+          "seconds": 2.4660640960210003,
+          "log": ".build/round8-native-completion/build-desktop.log"
+        }
+      ]
+    },
+    "native": {
+      "zoom": 1,
+      "road": {
+        "complete": true,
+        "evidence": ".build/round8-native-completion/road-final/result.json",
+        "transitions": ".build/round8-native-completion/road-final/transitions.json",
+        "checks": [
+          "Straße aus bestehender Linie planen, Neigen derselben Hauptkamera und atomare Übernahme",
+          "Fluss mit echten Punktklicks und Koordinatenkorrektur, abfließendes Profil und verbundenes Bett",
+          "Schutz ist pro Verlauf schaltbar und gespeichert",
+          "Löschen und Atlas-Undo stellen Verlauf samt Geländeform wieder her",
+          "Gemeinsamer gekippter Atlas zeigt dieselben gespeicherten Verläufe",
+          "Echter Geländepinselzug erhält geschützte Verläufe; ein Undo nimmt Gelände und Profile zurück",
+          "Frischer Prozess erhält Straßen, Flüsse, Profile und Schutz"
+        ],
+        "exits": [
+          {
+            "code": 0,
+            "signal": null
+          },
+          {
+            "code": 0,
+            "signal": null
+          }
+        ]
+      },
+      "river": {
+        "complete": true,
+        "evidence": ".build/round8-native-completion/river-final/result.json",
+        "poseCheckpoints": ".build/round8-native-completion/river-final/pose-checkpoints.json",
+        "cameraTimelines": [
+          ".build/round8-native-completion/river-final/camera-timeline-1793224871229.json",
+          ".build/round8-native-completion/river-final/camera-timeline-1793225140700.json"
+        ],
+        "closingPose": {
+          "frame": {
+            "x": -370.5159470022629,
+            "y": -325.33536555147083,
+            "width": 1001.0318940045239,
+            "height": 650.6707311029405
+          },
+          "focusM": 13.499999999999478,
+          "tilt": 45,
+          "rotation": 0,
+          "exaggeration": 1,
+          "projection": "perspective"
+        },
+        "closingStoredPose": {
+          "frame": {
+            "x": -370.5159470022629,
+            "y": -325.33536555147083,
+            "width": 1001.0318940045239,
+            "height": 650.6707311029405
+          },
+          "focusM": 13.499999999999478,
+          "tilt": 45,
+          "rotation": 0,
+          "exaggeration": 1,
+          "projection": "perspective"
+        },
+        "restoredFirstPose": {
+          "frame": {
+            "x": -370.51594700226286,
+            "y": -285.8338618909982,
+            "width": 1001.0318940045238,
+            "height": 571.6677237819953
+          },
+          "focusM": 13.499999999999478,
+          "tilt": 45,
+          "rotation": 0,
+          "exaggeration": 1,
+          "projection": "perspective"
+        },
+        "focusRetainedExactly": true,
+        "logicalViewportNote": "Existing AtlasCanvas.resizeViewport normalizes logical frame height to CSS viewport while preserving world centre and CSS scale. Complete post-fit top/tilted poses are compared below with unchanged tolerances.",
+        "snapshotFocusM": {
+          "preview-top": 13.50000035762856,
+          "preview-tilted": 13.499999999999508,
+          "saved-top": 28.00000000000013,
+          "saved-tilted": 13.499999999999478,
+          "undo": 13.499999999999478,
+          "redo-top": 28.00000000000013,
+          "redo-tilted": 13.499999999999478,
+          "fresh-top": 28.000000000000135,
+          "fresh-tilted": 13.499999999999478
+        },
+        "imageDifferences": {
+          "redoTop": {
+            "different": 0,
+            "total": 1521024,
+            "ratio": 0,
+            "max": 0
+          },
+          "redoTilted": {
+            "different": 0,
+            "total": 1521024,
+            "ratio": 0,
+            "max": 0
+          },
+          "freshTop": {
+            "different": 0,
+            "total": 1521024,
+            "ratio": 0,
+            "max": 0
+          },
+          "freshTilted": {
+            "different": 0,
+            "total": 1521024,
+            "ratio": 0,
+            "max": 0
+          }
+        },
+        "sampleCount": 2353,
+        "sampleSpacingM": 0.25,
+        "sampleToleranceM": 1e-05,
+        "canonicalHash": "4ed65cf5893283d47149c863816a1a577cfc20ed1dcc4af0541965a411ddbf65",
+        "exits": [
+          {
+            "code": 0,
+            "signal": null
+          },
+          {
+            "code": 0,
+            "signal": null
+          }
+        ]
+      },
+      "rendererErrors": [],
+      "allNativePidsAbsent": true,
+      "forcedCleanup": false
+    },
+    "capabilityEvidence": [
+      ".build/round8-native-completion/capability-routes.log",
+      ".build/round8-native-completion/capability-camera.log",
+      ".build/round8-native-completion/capability-inverse.log"
+    ],
+    "runtimeBoundary": {
+      "lastFullBenchmarkSeconds": 715.855,
+      "newFullBenchmark": false,
+      "suiteMemoryParallelismChanged": false,
+      "instrumented80SecondBuildOptimizationClaim": false,
+      "importsRestartsIntegrityChecksRetained": true
+    },
+    "openLimits": [
+      "Full-suite target under 300s remains open.",
+      "Other native UI/LOD/form quality and TW-G1–6/package/target-device qualification remain separate.",
+      "No packaging, installation, integration, Candidate CI or owner acceptance in this contribution."
+    ],
+    "finalChecks": {
+      "repository": ".build/round8-native-completion/check-repo-final.log",
+      "format": ".build/round8-native-completion/format-final.log",
+      "diff": ".build/round8-native-completion/diff-check-final.log",
+      "allPassed": true
+    },
+    "cleanupEvidence": ".build/round8-native-completion/cleanup.json"
+  }
+}

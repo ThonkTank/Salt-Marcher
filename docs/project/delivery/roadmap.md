@@ -2,7 +2,7 @@
 
 Status: Current; offene Ziele sind als solche beschrieben.
 Owner: project
-Last Reviewed: 2026-10-28 (Einstieg, Host- und Lieferanschlüsse; Fachabnahme separat)
+Last Reviewed: 2026-10-28 (beleggebundene Übergabe und begrenzte Terrainlieferung; keine neue Qualifikation)
 Source of Truth: Dieses Dokument besitzt das benannte Thema; Code belegt den Iststand, das Abnahmeregister den Prüfstand.
 
 Diese Datei verbindet den vorhandenen Produktstand mit der nächsten Lieferung. Fachliche Details bleiben in den verlinkten Fachplänen; Anforderungen und datierte Nachweise bleiben in `acceptance.json`. Historische Issues und frühere Prototypen sind Herkunftsbelege, keine aktuelle Aufgabenliste.
@@ -15,25 +15,74 @@ Der [aktuelle Atlasplan](../../atlas/architecture/unified-spatial-atlas.md#aktue
 
 ## Vorhandene Umsetzung und nächste Anschlüsse
 
-Stand dieser Orientierung: 28.10.2026. **Vorhanden** beschreibt Code, nicht vollständige Fachabnahme. Die genannten Prüfwege sind vorhandene, begrenzte Belege oder ausführbare Prüfansätze; ihre Auflistung behauptet keinen neuen Lauf. Automatisierte Evidenz, native Qualifikation und Ownerabnahme bleiben getrennt. Der [gemeinsame E2E-Katalog](../verification/end-to-end.md) besitzt die tatsächlich
-erreichten lokalen Belege und ihre Grenzen; Integration/Exact-SHA-CI, Zielgerät
-und Ownerabnahme bleiben getrennt. Ein Gesamt-PASS für E2E-01–04 wird hier nicht
-festgestellt.
+Stand dieser Übergabe: 28.10.2026; das Datum ist keine neue Qualifikation.
+Die Aussagen gelten unabhängig voneinander: **implementiert** benennt vorhandenen
+Code; **automatisiert geprüft** einen tatsächlich ausgeführten Test oder CI-Lauf;
+**nativ geprüft** einen Bedienlauf mit Host, Renderer und Quellbindung;
+**ausgeliefert** ein überprüftes Paket beziehungsweise eine veröffentlichte Version;
+**Ownerabnahme** eine ausdrücklich erteilte Abnahme. Ein Testdateilink allein
+belegt keinen PASS. **Nicht belegt** bezeichnet fehlende oder unzugängliche
+Evidenz, **fehlgeschlagen** einen ausgeführten erfolglosen Versuch. Historische
+Erfolge gelten nur für ihre damalige Revision und Bedingungen.
 
-| Bereich | Vorhandene Umsetzung und Quelle | Prüfumfang und nächste Lieferung |
-| --- | --- | --- |
-| Desktop und Speicher (SMR-00/01) | [Hostfähigkeiten und IPC](../architecture/desktop-host.md), [kanonischer Store-Worker](../architecture/canonical-store-worker.md); `desktop/main.ts`, `desktop/store-worker.ts`, `src/app/storage/` | Host-/Worker-/Backuptests prüfen benannte Grenzen; die Fachpläne nennen native Prüfwege. P01–P04/C01 und OS-/Recoveryqualifikation am tatsächlich gelieferten Stand abgleichen, fehlende gemeinsame Nachweise ergänzen. Kein neuer Shell-/Storeaufbau als Voraussetzung. |
-| Kampagnentransfer (SMR-01, E2E-01/04) | [Direkter Import, Export und unabhängige Weiterarbeit](../../campaign/contract/archive.md#visible-transfer-entry-and-independent-continuation); `desktop/campaign-host.ts` und Store-Transferanschlüsse | `tools/test-desktop-campaign-transfer-visit.mjs` umfasst Import, Bearbeitung und frischen Prozess; `tools/test-desktop-campaign-copy.mjs` ergänzt Fehler/Recovery. Complete-Import mit Manifest, Medien und vollständiger Remap-Closure in den gemeinsamen E2E-01-Beleg aufnehmen; die breitere Fault-/Restorematrix bleibt E2E-04. |
-| Gemeinsamer Atlas (SMR-04, E2E-01) | [Aktueller Darstellungspfad und Codebesitzer](../../atlas/architecture/unified-spatial-atlas.md#aktueller-arbeitsstand), [technischer Einstieg und Prüfwege](../../atlas/architecture/rendering.md); gemeinsame metrische Darstellung für Welt, Gebäude, Räume und Ausgabe | Vorhandene Fach- und native Prüfwege ersetzen weder vollständige Werkzeugparität noch gemeinsame Abnahme. Den unten beschriebenen E2E-01-Abschluss prüfen; fehlende Werkzeuge und Vergleichs-/Zielgerätebelege nach dem [Funktionsumfang](../../atlas/architecture/unified-spatial-atlas.md#funktionsumfang) liefern. |
-| Vorbereitung und Live-Spiel (E2E-02) | [Spielabendstart, gespeicherter Laufstand und Wiederaufnahme](../../runtime/contract/session-opening-and-resume.md), [Kampf und Nachbereitung](../../runtime/contract/combat-recovery.md) | Fachtests und der native Spielabend-Prüfweg decken Teilabläufe ab. Preparation → Initialize → Encounter/Combat/Loot mit ID-/Receipt-Trace und unveränderter Vorbereitung am selben Stand gemeinsam qualifizieren; [E2E-02-Orakel](../verification/end-to-end.md#e2e-02--vorbereitung--live-spiel--abschluss) bleiben maßgeblich. |
-| Reise und Weltzeit (E2E-03) | [Reisecheckpoint und Wiederaufnahme](../../atlas/contract/hex-travel-3.md#checkpoint-und-wiederaufnahme-auf-der-aktuellen-atlasfläche), [Agenda und Zeitänderung](../../runtime/contract/campaign-agenda.md) | Reiseprüfwege belegen ihre benannten Fälle. Den verbundenen Reise-/Zeit-/Wetter-/Shop-/Musikablauf samt Retry/Restart nach [E2E-03](../verification/end-to-end.md#e2e-03--reise--kalenderclock--weltreaktion) qualifizieren; offene Fachwirkungen in den jeweiligen Verträgen bearbeiten. |
-| Spieleranzeige, Portabilität und Gesamtqualität (SMR-10/11, E2E-04) | [Passive visuelle Projektion und Hostfilter](../../runtime/contract/player-projection.md), [Kampagnentransfer](../../campaign/contract/archive.md), [Linux-Installation und Updates](github-updates.md) | Store-/Host-/Renderergegenproben und begrenzte native Abläufe sind dokumentiert. Vollständige Privacy-, Recovery-, OS-, Accessibility- und Zielgerätequalifikation sowie Extensionabnahme bleiben getrennte Lieferungen; ein Linuxbeleg ersetzt sie nicht. |
+| Nutzerergebnis | Implementierter Umfang | Nachgewiesener Umfang | Offener Abschluss |
+| --- | --- | --- | --- |
+| Desktop öffnen und bestätigte Arbeit erhalten (SMR-00/01) | Eingeschränkter Renderer über `desktop/preload.ts`, native Fähigkeiten in `desktop/main.ts`, kanonischer SQLite-Store in `desktop/store-worker.ts`; [Hostbesitzer](../architecture/desktop-host.md) und [Storevertrag](../architecture/canonical-store-worker.md). | Der [lokale E2E-01-Lauf](../verification/end-to-end.md#datierter-lokaler-e2e-01-nachweis) vom 28.10. auf `1e7512f74…` plus Dirtyänderungen belegt bestätigten Autosave, Close/Fresh, absichtlichen Prozessabbruch und Receiptklärung. Der [Workervergleich vom 24.10.](../architecture/canonical-store-worker.md#lokaler-vorher-nachher-vergleich-am-24102026) misst Mainreaktion, keine Terrainlatenz. | P01–P04/C01 am Lieferstand, breite Fault-/Recovery- und OS-Qualifikation; [SMR-AC-01/02 im Register](../../../acceptance.json) bleiben historische offene Abnahmen, kein Auftrag zum erneuten Shellaufbau. |
+| Kampagne exportieren, vollständig importieren und unabhängig weiterarbeiten (SMR-01, E2E-01/04) | [Transferbedienung](../../campaign/contract/archive.md#visible-transfer-entry-and-independent-continuation), Manifest-/Medienprüfung und lokaler ID-Remap über `desktop/campaign-files.ts`, `desktop/campaign-accept.ts` und `src/app/storage/campaign-data.ts`. | Derselbe [gemeinsame E2E-01-Beleg](../verification/end-to-end.md#datierter-lokaler-e2e-01-nachweis) prüft Complete-Archiv, echte PNGbytes, 199 lokale Identitäten über 168 Tabellen, Referenzclosure, unveränderte Quelle und unabhängige Bearbeitung/Fresh. | Diese technische P04-Variante ist lokal und im [integrierten CI-Katalog](../verification/end-to-end.md#integrierter-technischer-e2e-01-nachweis) bestanden; Zielgeräte-/Paketabschluss bleiben offen. Salvage, Trash, Backup/Restore und Zweithost gehören zur breiteren [E2E-04-Abnahme](../verification/end-to-end.md#e2e-04--portabilität-recovery-und-sichere-anzeige), SMR-AC-15 und [Transferfacharbeit](../../campaign/contract/archive.md#acceptance-reihenfolge). |
+| Welt, Terrain/Wasser, Stadt und Räume im gemeinsamen Atlas bearbeiten (SMR-04, E2E-01) | [Gemeinsamer metrischer Renderer und Besitzer](../../atlas/architecture/rendering.md), Anheben, Senken, Aufrauen, Glätten, direkte Hügel-/Berg-/Schluchtpinsel, Meeresspiegel und [einzeln geplante Flüsse](../../atlas/contract/terrain-routes.md#begrenzter-flussabschluss); gemeinsame Kamera, History und Storegrenze. | E2E-01 belegt Gelände-Eigenschaften, Hausgeometrie und Raum-Key in einer History; das ist kein Höhenpinsel-Gesamtbeleg. [Terrainbelege und Grenzen](../verification/end-to-end.md#terrain-wasserbelege-und-zielgerät) trennen lokale Funktionsproben, historische Bilder und fehlende Zielgerätequalifikation. | [TW-G1–6](../../atlas/requirements/terrain-relief.md#ziele-und-abnahme-dieser-etappe) samt Flussteilabschluss: vollständige Parameter-/Abbruch-/Feinhöhenwirkung, Kamera, Formen/LOD und Leistung am vereinbarten Gerät, dann Paket/CI. Vollständiger Atlas-/Stadt-/Dungeonumfang und SMR-AC-05 bleiben eigene Abschlüsse; Ownerabnahme separat. |
+| Spielabend vorbereiten, fortsetzen und Kampf abrechnen (E2E-02) | [Eröffnung, gespeicherter Rückblick und Wiederaufnahme](../../runtime/contract/session-opening-and-resume.md) in `src/app/runtime/live.ts`; [Kampfentwürfe und Nachbereitung](../../runtime/contract/combat-recovery.md) mit eigener Runtime-/Receiptgrenze. | Die [datierte lokale Spielabendprobe](../verification/end-to-end.md#wiederverwendete-fachbelege) auf `1cb69e33…` plus Dirtyänderungen belegt bei 100 % vier normale Starts/Exits, erhaltene Rückblickbytes und stabile Plan-/Besuchsidentitäten. Der [Kampfbeleg vom 13.10.](../../runtime/contract/combat-recovery.md#offene-lieferung-und-beleggrenzen) gilt nur für Build 0.29.0. | Preparation → Initialize → Encounter/Combat/Loot mit gemeinsamem ID-/Receipt-Trace und unveränderter Vorbereitung am selben Stand qualifizieren; [E2E-02-Orakel](../verification/end-to-end.md#e2e-02--vorbereitung--live-spiel--abschluss), SMR-AC-04/06/07 und offene Fachwirkungen bleiben maßgeblich. |
+| Reisen und Weltzeit nachvollziehbar fortschreiben (E2E-03) | [Checkpoint, Unterbrechung, Fresh und kausale Rücknahme/Wiederholung](../../atlas/contract/hex-travel-3.md#checkpoint-und-wiederaufnahme-auf-der-aktuellen-atlasfläche) in `src/app/storage/travel-history.ts`; [Agenda und ausdrückliche Zeitänderung](../../runtime/contract/campaign-agenda.md). | Die [datierte Reiseprobe](../verification/end-to-end.md#wiederverwendete-fachbelege) auf `1cb69e33…` plus Dirtyänderungen belegt zwei Hexabschnitte, Pause/Fresh, Ankunft, Rücknahme/Wiederholung, Pixel- und kanonische Gegenproben mit vier normalen Starts/Exits. | Verbundenen Reise-/Zeit-/Wetter-/Shop-/Musikablauf einschließlich Retry/Restart nach [E2E-03](../verification/end-to-end.md#e2e-03--reise--kalenderclock--weltreaktion) qualifizieren. Routengrenzen, weitere Zeitfolgen und Agendaentwürfe bleiben bei ihren Fachbesitzern offen; SMR-AC-08–12/13 sind dadurch nicht geschlossen. |
+| Spieler sicher anzeigen und die Anwendung installieren/aktualisieren (SMR-10/11, E2E-04) | [Passive visuelle Projektion und Hostfilter](../../runtime/contract/player-projection.md), getrenntes Playerfenster sowie [Linuxpakete und signierte Updates](github-updates.md); `desktop/player-host.ts`, `desktop/player-window.ts` und `desktop/update-service.ts`. | Der [historische Dialog-/Handoutlauf](../../runtime/contract/player-projection.md#große-karten-und-lokaler-nachweis) auf `ea0d616c` vom 14.10. bestand; erneuter Cue-Lauf hing, aktueller Ortsart-/Privacy-Lauf ist offen. [SMR-LINUX-UPDATE-01](../../../acceptance.json) hält 25 gezielte Tests und eine Zwei-Paket-Installations-/Restartprobe fest, nennt aber keinen exakten Quell-/Paketstand. | Vollständige Privacy-/Recovery-/OS-/Accessibility-/Extensionqualifikation nach [E2E-04](../verification/end-to-end.md#e2e-04--portabilität-recovery-und-sichere-anzeige), SMR-AC-14–18. Der historische Linuxnachweis ist keine aktuelle Paketfreigabe oder Ownerabnahme. |
 
-Das Register enthält auch historische Zustände, etwa `saltMarcherReplacement` vom 09.10.2026, damalige ADR-P01/P02-No-Gos und Obsidian-P04-Beiträge. Sie bleiben datierte Evidenz und werden weder als heutiger Implementierungsstand noch als automatisch erledigte Abnahme übertragen. `desktopGithubUpdates` beschreibt dagegen einen ausdrücklich begrenzten Linux-Nachweis. Aktuelle Produktbehauptungen brauchen den passenden Code- und Prüfstand; ein alter Eintrag oder vorhandener Testname reicht dafür nicht.
+**Gemeinsamer E2E-01-Stand:** Der vollständige technische Pflichtkatalog ist
+[lokal sowie auf Candidate und integriertem Main](../verification/end-to-end.md#integrierter-technischer-e2e-01-nachweis)
+bestanden: Candidate `43a0cd501…`, Main `5c679da32…` aus PR #1431 mit gleichem
+Tree und erfolgreichem eigenem Exact-SHA-Lauf. Die 22 technischen Fälle sind
+CI-qualifiziert; nativer Zielgerätlauf, Paketqualifikation und ausdrückliche
+Ownerabnahme bleiben offen. Die aktuellen Dokumentationsänderungen sind nicht
+Teil dieser CI-Commits; E2E-02–04 haben keinen gemeinsamen Gesamtbeleg.
+
+Das [Abnahmeregister](../../../acceptance.json) enthält auch `saltMarcherReplacement`
+vom 09.10.2026, frühere ADR-P01/P02-No-Gos und Obsidian-P04-Beiträge. Diese
+historischen Aussagen bleiben erhalten. Aktuelle Fachpläne besitzen Verhalten,
+Code und Restarbeit; die Prüfdokumentation besitzt ausgeführte Szenarien,
+Ergebnisse und Grenzen; Acceptance besitzt Anforderungen und Belegbindungen.
+Das Quellenregister behält unverändert deren Herkunft.
+
+## Nächste begrenzte Lieferung: Terrain und Meer
+
+Der bestätigte [Terrain-/Meerumfang](../../atlas/requirements/terrain-relief.md#aktueller-lieferfokus-terrain-und-wasser)
+ist die nächste Lieferung. Er umfasst Grundpinsel samt Parameterwirkung und
+genau einmal übernommenen Zügen, Abbruch, Undo/Redo und Neustart (TW-G1),
+Mauskamera und Welt-bis-Raum-Zoom (TW-G2), direkt gemalte Hügel, Berge und
+Schluchten (TW-G3), kontinuierliche lesbare Darstellung (TW-G4), gemessene
+Reaktionsfähigkeit auf dem vereinbarten Zielgerät (TW-G5) und die tatsächliche
+Qualifikation/Auslieferung (TW-G6). Die [kleinen Ergebnisabschnitte](../../atlas/requirements/terrain-relief.md#begrenzte-ergebnisabschnitte)
+konkretisieren diese Lieferung; ein Grundpinsel-Teilabschluss ist weder
+Gesamtterrain- noch E2E-01-Abnahme. Spezialformen und visuelle Qualität bleiben
+Bestandteile des bestätigten Terrainumfangs.
+
+**Eigener Teilabschluss des bestätigten erweiterten Terrain-/Wasserumfangs:** der [Flusszyklus](../../atlas/contract/terrain-routes.md#begrenzter-flussabschluss)
+mit Pflichtpunkten und begrenztem Bettabtrag. Die Trennung der Prüfumfänge
+verschiebt diesen bestätigten Ausbau nicht in eine spätere Lieferung. Ein
+TW-G1–6-Abschluss allein schließt den erweiterten Wasserumfang nicht ab. Bereits vorhandene Umsetzung und
+lokale Zyklus-2-Belege bleiben erhalten; sie ziehen keinen vollständigen
+Fluss-/Wonderdraft-PASS vor. Automatische Flussnetze, Erosion und neue Seen
+werden damit nicht aufgenommen. Bestehende Gewässer und andere Karteninhalte
+bleiben bei Terrainänderungen nach ihren Schutzverträgen erhalten.
+
+**Späterer Gesamtumfang:** übrige Kartenwerkzeuge, Stadt-/Dungeonfunktionen und
+Actor Autonomy bleiben vollständig gebunden. Offene Bewohnermerkmale,
+Beziehungs-/Fraktionswirkungen, Stadtgeneratoroptionen, Dungeon-Graph-/Template-
+und Runtimefragen sowie Autonomyentscheidungen verhindern den Abschluss der
+Terrainlieferung nicht. Sie werden [vor dem jeweiligen späteren Ausbau](../requirements/scope.md#offene-originalwirkungen-und-klärung-vor-der-lieferung)
+geklärt. Fehler an gemeinsam genutzter Kamera, History, Speicherung oder am
+Erhalt vorhandener Inhalte sind dagegen auch hier Liefermängel.
 
 ## Kritischer Pfad für E2E-01
 
-Der nächste gemeinsame Lieferabschluss verbindet die vorhandenen Anschlüsse.
+Der nächste gemeinsame E2E-Abschluss verbindet die vorhandenen Anschlüsse;
+er ist von der begrenzten Terrainlieferung oben zu unterscheiden.
 Den erreichten lokalen Szenarienstand und offene Integrationsnachweise führt
 der [E2E-Prüfstand](../verification/end-to-end.md); die folgende Liste beschreibt
 die verbindliche Wirkung, nicht eine zweite Ergebnisliste. Dafür gilt der [vollständige E2E-01-Szenarienkatalog](../verification/end-to-end.md#e2e-01--kampagne-und-gemeinsamer-raum--saverestart):
@@ -43,13 +92,13 @@ die verbindliche Wirkung, nicht eine zweite Ergebnisliste. Dafür gilt der [voll
 3. Eine echte Complete-Import-Variante mit Manifest, Checksums, Medien und vollständiger Remap-Closure unabhängig weiterbearbeiten und frisch öffnen. Quelle und Import bleiben unabhängig; normale Wiederaufnahme erhält IDs.
 4. P01/P02 und die erforderliche P04-Importvariante mit diesen Fachbeiträgen auf derselben integrierten SHA zusammenführen. Fixture-/Buildhashes, tatsächliche Host-/Prozessbelege und verbleibende Lücken nennen. Erst der vollständige gemeinsame Nachweis erlaubt den Gateabschluss; Ownerabnahme bleibt gesondert.
 
-Dies ist eine offene **gemeinsame Qualifikation** mit möglichen konkreten Restimplementierungen, keine Behauptung, die einzelnen Abläufe fehlten vollständig. Die [Atlas-Prüfwege](../../atlas/architecture/rendering.md#prüfwege-und-offene-qualifikation), der [Transfervertrag](../../campaign/contract/archive.md) und die [Editorgrenzen](../architecture/editor-lifecycle.md) sind die Arbeitseinstiege. Weitere unabhängige Fachfunktionen dürfen parallel entstehen.
+Der vollständige technische Pflichtlauf dieser Verbindung ist lokal sowie auf Candidate und integriertem Main bestanden; offen bleiben **Zielgeräte-, Paket- und Ownerqualifikation** mit möglichen konkreten Restimplementierungen. Der oben verlinkte datierte Prüfstand benennt die abgeschlossene und die offenen Stufen. Die [Atlas-Prüfwege](../../atlas/architecture/rendering.md#prüfwege-und-offene-qualifikation), der [Transfervertrag](../../campaign/contract/archive.md) und die [Editorgrenzen](../architecture/editor-lifecycle.md) sind die Arbeitseinstiege. Weitere unabhängige Fachfunktionen dürfen parallel entstehen.
 
 ## Lieferfolge des Gesamtprodukts
 
 | Gate | Nutzerablauf | Voraussetzungen der gemeinsamen Abnahme |
 | --- | --- | --- |
-| [E2E-01](../verification/end-to-end.md#e2e-01--kampagne-und-gemeinsamer-raum--saverestart) | Kampagne, gemeinsamer Atlas, Stadt/Dungeon/Key, Save und Restart | Aktueller Lieferfokus; P02-Minimalpfad und verbindliche P04-Importvariante sind harte Eingänge |
+| [E2E-01](../verification/end-to-end.md#e2e-01--kampagne-und-gemeinsamer-raum--saverestart) | Kampagne, gemeinsamer Atlas, Stadt/Dungeon/Key, Save und Restart | Nächste gemeinsame Gateabnahme; P02-Minimalpfad und verbindliche P04-Importvariante sind harte Eingänge; kein Abschlusskriterium der begrenzten Terrainlieferung |
 | [E2E-02](../verification/end-to-end.md#e2e-02--vorbereitung--live-spiel--abschluss) | Preparation → Party/LiveSession → Encounter/Combat/Loot | Nach integriertem E2E-01-PASS; keine automatische Session in E2E-01 |
 | [E2E-03](../verification/end-to-end.md#e2e-03--reise--kalenderclock--weltreaktion) | Reise → Clock/Calendar → Wetter/Shops/Musik | Nach integriertem E2E-02-PASS; bestätigte Zeit- und Consumerverträge erforderlich |
 | [E2E-04](../verification/end-to-end.md#e2e-04--portabilität-recovery-und-sichere-anzeige) | Portabilität, Recovery, sichere Spielerprojektion, OS/A11y | Nach integriertem E2E-03-PASS; beschlossene Zielhost-/Storegrenze direkt qualifizieren |

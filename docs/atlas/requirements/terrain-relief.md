@@ -2,14 +2,14 @@
 
 Status: Verbindlicher Zielumfang; historische Umsetzungsbelege sind keine aktuelle Abnahme.
 Owner: atlas
-Last Reviewed: 2026-10-28 (begrenzte Flussplanung konkretisiert; Fachabnahme separat)
+Last Reviewed: 2026-10-28 (begrenzte Ergebnisabschnitte und offene Klärungen; Fachabnahme separat)
 Source of Truth: Dieses Dokument besitzt das benannte Thema; Code belegt den Iststand, das Abnahmeregister den Prüfstand.
 
 Zieländerung vom 20.10.2026: Die [Roadmap für den gemeinsamen räumlichen Atlas](../architecture/unified-spatial-atlas.md) ersetzt getrennte Drauf-/Kippdarstellung durch eine gemeinsame perspektivische Kamera. Die folgenden Implementierungs- und Prüfbefunde beschreiben den bisherigen Stand; sie belegen den neuen Atlas noch nicht.
 
 Ursprünglicher Arbeitsplan aus dem Nutzerentscheid vom 19.10.2026. Die damalige starre Phasenfolge wird durch die ergebnisbezogenen Etappen der aktuellen Atlas-Roadmap ersetzt. R0 wurde visuell abgenommen. Seit der Nutzeranweisung „Warte bitte nicht auf abnahmen von mir. Arbeite einfach weiter.“ werden weitere Phasen ohne Abnahmepausen umgesetzt und selbst geprüft; eine Nutzerabnahme wird dadurch nicht behauptet. Der Status steht am Ende dieser Datei; ein Prototyp ist kein Produktnachweis.
 
-Aktuelle Arbeit folgt der [Arbeitsweise und Etappe vom 23.10.2026](../architecture/unified-spatial-atlas.md#ziel). Ältere Implementierungsbelege unten bleiben historisch; die Phase R3 ist wegen des jüngeren Feature-Auftrags wieder offen. Größere isolierte Ersatzentwicklungen sind zulässig.
+Aktuelle Arbeit folgt der [Arbeitsweise und Etappe vom 23.10.2026](../architecture/unified-spatial-atlas.md#ziel). Ältere Implementierungsbelege unten bleiben historisch; direkte R3-Formpinsel sind inzwischen implementiert, ihr vollständiger Form-/Darstellungsabschluss bleibt offen. Größere isolierte Ersatzentwicklungen sind zulässig.
 
 ## Aktueller Lieferfokus: Terrain und Wasser
 
@@ -94,6 +94,39 @@ Planung leitet Reihenfolge und Termine aus dem aktuellen Codebestand ab.
 | TW-G4 Darstellung | Küsten, Rücken und Schluchten bleiben im kontinuierlichen Zoom erkennbar, ohne Löcher, Kachelnähte, Flimmern oder harte Formwechsel; angepasste Details erhalten die grobe Form. |
 | TW-G5 Leistung | Erste sichtbare Terrainänderung p95 ≤ 100 ms, geladene Navigation p95 ≤ 33,3 ms pro Frame; keine verlorenen Gesten. Kaltladen und Speichern werden separat gemessen. |
 | TW-G6 Lieferung | Gesamtablauf auf exaktem Quellstand und Paket geprüft, grüne Candidate-CI und Integration; Veröffentlichung nach bestehender Releasepflicht. Technische/nativer Prüfung und Nutzerabnahme getrennt berichten. |
+
+### Begrenzte Ergebnisabschnitte
+
+Diese Abschnitte konkretisieren TW-G1–6 im bestehenden Fachplan. Sie sind
+Teilabschlüsse derselben bestätigten Terrainlieferung, keine neue Gatefolge.
+Vorhandene Implementierung und begrenzte Nachweise aus dem
+[Umsetzungsplan](../architecture/unified-spatial-atlas.md#nächster-produktnachweis-und-entscheidung)
+werden weiterverwendet; jeder offene Punkt wird vor seinem betroffenen Ausbau
+am aktuellen Code geprüft.
+
+| Nutzerergebnis / Anforderungsbindung | Voraussetzungen und offene Fragen | Abschlusskriterium des Teilumfangs |
+| --- | --- | --- |
+| Grundpinsel und Meer: Küste und Relief direkt erstellen und korrigieren; TW-G1, HEX-16 | Gemeinsamer Höhenwriter, Livebild und bestätigte Speicherantwort. Radius, Stärke, Randabfall und Roughness auf ihre Wirkung prüfen; Erhalt absoluter Feinhöhen und Fehler-/Folgezugfälle bleiben gezielte offene Prüfungen. Vorhandene Wonderdraft-Landbelege lesen, fehlende Rand-/Überfahrwirkung nur bei fachlicher Relevanz gezielt ergänzen. | Anheben, Senken, Aufrauen, Glätten und Meeresspiegel mit unterscheidbarer Parameterwirkung; jeder gültige Zug genau einmal, Escape ohne Restwirkung, Pointerabbruch/Fokusverlust nach geltendem Vertrag, Folgezug, Undo/Redo und frischer Prozess. Kein separater Übernahmeschritt. |
+| Welt bis Raum mit Maus bearbeiten; TW-G2, HEX-06/08 | Geländeanker, Textfokus und gleiche Kamera in allen Maßstäben; kalte Nachladung von geladener Navigation trennen. | Alle bestätigten Mausaktionen, optionales WASD und kontinuierlicher Zoom erhalten Anker und Bearbeitbarkeit; keine verlorene Eingabe oder Texteingabe als Kamerabefehl. |
+| Zusammenhängende Formen und lesbare Darstellung; TW-G3/4, HEX-16 | Vorhandene Formpinsel weiterverwenden. Überlappung, Feindetailschutz, Rücken/Schlucht und LOD-Übergänge am gleichen Datenstand prüfen; weitere unbenannte Spezialformen bleiben vor späterer Aufnahme zu klären. | Hügel, Berge und Schluchten direkt malen und mit Grundpinseln korrigieren; Bildbeurteilung in allen vereinbarten Maßstäben einschließlich Übergängen, Undo/Redo und Neustart. Numerische Formtests allein schließen TW-G3/4 nicht. |
+| Den gesamten bestätigten Terrainablauf flüssig nutzen und erhalten; TW-G5/6, HEX-08 | Alle vorstehenden Teile; versionierte Fixture, Zielgerät und exakter Quell-/Paketstand nach Messvertrag. Fehlende Funktions-, Leistungs- und Paketbelege getrennt ausweisen. | Sämtliche TW-G1–6 am selben Lieferstand nachweisen; Candidate-CI/Integration und Paketprüfung, Veröffentlichung nach Releasepflicht. Nutzerabnahme bleibt eine eigene Aussage. |
+
+Der [bestätigte Flusszyklus](../contract/terrain-routes.md#begrenzter-flussabschluss)
+ist ein eigener Teilabschluss des bereits bestätigten erweiterten Terrain-/Wasserumfangs.
+Er wird durch diese Gliederung nicht in eine spätere Lieferung verschoben;
+TW-G1–6 allein schließen diesen erweiterten Umfang nicht ab. Weitere R0–R7-Anteile,
+Stadt, Dungeon und Autonomy gehören zum späteren Gesamtumfang. Bereits
+vorhandene Inhalte und ihre Schutzregeln bleiben auch beim Teilabschluss gültig.
+Eine offene Frage zu deren Erhalt wird deshalb vor dem betroffenen Terrainzug
+geklärt; neue Stadt-/Dungeon-/Autonomywirkungen werden dadurch nicht vorgezogen.
+
+Neue Umsetzungsspannen entstehen erst nach Prüfung des aktuellen Codes und
+der lieferrelevanten Fachfragen, mit Annahmen, betroffenen IDs und Restunsicherheit.
+Die datierten Spannen des übernommenen Umsetzungsplans sind keine Schätzung
+unbekannter Originalfunktionen. Dafür wird zunächst nur der gezielte
+Klärungsaufwand geplant. Erweitert eine geklärte Anforderung diese Lieferung,
+werden Quellen-/Lieferzuordnung und Umfang/Aufwand sichtbar nachgeführt;
+fachliche Änderungen am Nutzerauftrag bleiben ausdrücklicher Entscheidungsbedarf.
 
 **Messvertrag:** Zielgerät ist der vorhandene Laptop (aktuell i5-8365U,
 Intel UHD 620, rund 38 GiB RAM), nativer Wayland-Start, 1920 × 1080 Fensterinhalt,
@@ -204,19 +237,23 @@ Drei Landpinsel: Land formen mit Erhöhen/Absenken, Stärke, Roughness und optio
 
 Abnahme: Küstenregion mit Hügeln, Hochfläche und Tal vollständig erstellen, korrigieren, speichern und als Bild ausgeben. Erster produktiv nutzbarer Zwischenstand mit echten Geländeformen und Küstenkopplung.
 
-### R3 — Geländeformen schnell erstellen (wieder offen)
+### R3 — Geländeformen schnell erstellen (vollständiger Abschluss offen)
 
 Der Ausschluss spezieller Formenwerkzeuge vom 20.10.2026 ist durch den jüngeren
 [verbindlichen Feature-Auftrag](../architecture/unified-spatial-atlas.md#funktionsumfang)
 überholt. Hügel, Bergketten, Schluchten und vergleichbare Formen sollen mit wenigen
 Eingaben entstehen und anschließend mit Sculpt und Smooth bearbeitbar bleiben.
-Lokale Verfeinerung, geschützte Details, eine nachvollziehbare Vorschau und Undo/Redo
-bleiben erforderlich. Dieser Umfang ist nicht durch vorhandene Landpinsel erfüllt.
+Lokale Verfeinerung, geschützte Details und Undo/Redo bleiben erforderlich.
+Für den aktuellen Lieferfokus gilt das oben bestätigte direkte Pinselmalen ohne
+gesonderten Vorschauschritt. Die [direkten Formpinsel vom 27.10.](../contract/landscape-tools.md#direkte-terrainformpinsel--27102026)
+sind implementiert; Grundpinsel allein erfüllen diesen Umfang nicht.
 Ein Höhenkartenimport wird durch den Feature-Auftrag nicht zusätzlich beauftragt.
 
 Abschluss: Gebirgskette und Schlucht erzeugen, lokal korrigieren, in Kontinent-,
 Regions- und Ortsmaßstab sowie geneigt prüfen; Undo/Redo und frisches Öffnen
-bewahren Form und feine Korrekturen. Die technische Umsetzung ist noch offen.
+bewahren Form und feine Korrekturen. Offen sind die vollständige Form-/Darstellungs-
+und Zielgerätequalifikation; der [Prüfstand](../../project/verification/end-to-end.md#terrain-wasserbelege-und-zielgerät)
+trennt vorhandene Anschlüsse und begrenzte Belege von diesen Abschlüssen.
 
 ### R4 — Den gezeichneten Kartenstil ausarbeiten
 
@@ -253,7 +290,7 @@ Endabnahme: Neue Region vom leeren Meer bis Gebirge/Pass/Dorf/Eingang erstellen;
 - Daten: bekannte Höhenflächen, Küstenschnitt, negative Koordinaten, Kachelränder, Auflösungswechsel, geschützte Details, Abbruch, Undo/Redo, Schreibfehler und Archivwiederherstellung.
 - Darstellung: feste Szenen für Draufsicht/Neigung; Küsten/Grate/Beschriftung/Gebäude in mehreren Maßstäben; visuelle Beurteilung zusätzlich zu Bildtests.
 - Bedienung: vollständige native Abläufe mit tatsächlichen Eingaben, Werkzeugwechsel, verdeckter Auswahl und Rückkehr zur Draufsicht.
-- Leistung: reales 16-GiB-Zielgerät, 1920 × 1080, mindestens 30 FPS bei gewöhnlicher Navigation; Pinselrückmeldung innerhalb 100 ms; begrenzter Speicherverbrauch in Großbestandsprobe. Ziele, keine vorhandenen Belege.
+- Leistung: Die ältere R0–R7-Planung nannte ein 16-GiB-Gerät und 30 FPS. Für die aktuelle Lieferung gelten der oben festgelegte [Messvertrag und TW-G5](#ziele-und-abnahme-dieser-etappe), einschließlich des aktuellen Zielgeräts und p95 je Versuchsgruppe; dies sind Ziele, keine vorhandenen Belege.
 - Pro Etappe betroffene Tests/Builds, native Prüfung und erforderliche Candidate-CI. Quellprüfung, Paketprüfung, Integration und Nutzerabnahme getrennt.
 - HEX-16 konkretisiert diese Etappen; HEX-06/08 tragen Maßstäbe/große Welten. Bergsymbole in HEX-18 durch native Geländeformen ergänzen/ersetzen; allgemeine Symbol-/Waldwerkzeuge erhalten. Ursprüngliche Quellenbindungen erhalten. Testdateien nach tatsächlichem Inhalt im Fähigkeitskatalog zuordnen.
-- Verlinkung aus docs/INDEX.md und ROADMAP-HEX-ATLAS.md. Terminprognose erst nach R0-Messungen.
+- Aktuelle Einstiege sind [docs/INDEX.md](../../INDEX.md) und die [Atlasarchitektur](../architecture/unified-spatial-atlas.md). Der frühere Verweis auf ROADMAP-HEX-ATLAS.md und die Terminregel vor R0 gehören zum historischen Etappenplan; die aktuelle Lieferung folgt den Ergebnisabschnitten oben.

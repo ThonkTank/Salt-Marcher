@@ -46,7 +46,7 @@ import { appendRoomNumber } from './room-number-label';
 import { volumeProjection } from './volume-model';
 import type { WorldTravelPort } from '../runtime/world-ui';
 interface AtlasDrawingHost {
-  readonly world: WorldTravelPort;
+  readonly world: Pick<WorldTravelPort, 'atlasWorldTravelState'>;
   readonly author: AtlasAuthorView;
   readonly territories: Pick<TerritoryWorkbench, 'selectedLabel' | 'draw'>;
   readonly journey: AtlasJourneyView;
@@ -65,15 +65,20 @@ interface AtlasDrawingHost {
   readonly frame: (scopeId: string) => ReturnType<typeof atlasFrame>;
   readonly floorId: string;
   readonly floorPlane: (scopeId?: string, floorId?: string) => AtlasWorkplane | null;
-  readonly opts: {
-    roomDraft: () => Room | null;
-  };
+  readonly roomDraft: () => Room | null;
   readonly roomPreview: <T extends import('../shared/contracts').RoomGeometry>(original: T) => T;
   readonly camera: Pick<AtlasCanvas, 'view' | 'hitAt'>;
 }
 /** Builds map and author paint commands and owns reusable base geometry. */
 export class AtlasDrawing {
   constructor(private host: AtlasDrawingHost) {}
+  invalidateGeometry() {
+    this.baseGeometry = null;
+  }
+  resetContext() {
+    this.invalidateGeometry();
+    this.labelLayout = new MapLabelLayout();
+  }
   labelLayout = new MapLabelLayout();
   baseGeometry: {
     key: unknown[];
@@ -85,7 +90,7 @@ export class AtlasDrawing {
   draw(root: AtlasPaint, data: AtlasRenderView, box: CanvasBox, mpp: number) {
     this.drawTerrain(root, box, mpp);
     this.host.landscape.draw(root, box, mpp);
-    const draft = this.host.opts.roomDraft(),
+    const draft = this.host.roomDraft(),
       cacheable =
         !this.host.author.drag &&
         !atlasCityState() &&
@@ -571,7 +576,7 @@ export class AtlasDrawing {
       );
     } else if (state.tool === 'select') {
       if (this.host.author.selection?.kind === 'room') {
-        const room = this.host.opts.roomDraft();
+        const room = this.host.roomDraft();
         if (room && room.id === this.host.author.selection.id) {
           const preview = this.host.roomPreview(room);
           points = preview.polygons.flatMap((p) => p.outer);
@@ -705,7 +710,7 @@ export class AtlasDrawing {
         g.append(shape('group', { data: { authorRoomFace: saved.id } }));
         continue;
       }
-      let room = this.host.opts.roomDraft()?.id === saved.id ? this.host.opts.roomDraft()! : saved;
+      let room = this.host.roomDraft()?.id === saved.id ? this.host.roomDraft()! : saved;
       room = this.host.roomPreview(room);
       const at = localToAtlas(room.polygons[0]!.outer[0]!, f);
       if (
@@ -754,7 +759,7 @@ export class AtlasDrawing {
       this.host.family === 'interior' &&
       this.host.author.selection?.kind === 'room' &&
       this.host.author.selection.id === room.id &&
-      this.host.opts.roomDraft()?.id === room.id &&
+      this.host.roomDraft()?.id === room.id &&
       room.scopeId === this.host.scopeId &&
       room.floorId === this.host.floorId &&
       !get<HTMLInputElement>('atlas-slice-enabled').checked &&
@@ -777,7 +782,7 @@ export class AtlasDrawing {
       const index = slot[0]!;
       copy.children[index] = this.withAuthorFace(node.children[index]!, slot.slice(1), mpp);
     } else {
-      const original = this.host.opts.roomDraft();
+      const original = this.host.roomDraft();
       if (original) {
         const room = this.host.roomPreview(original);
         this.drawRoomFace(copy, room, mpp);
@@ -827,7 +832,7 @@ export class AtlasDrawing {
         matrix: frameMatrix(this.relative(frame)),
         data: { editorOnly: 'true', ...atlasWorkplaneData(this.host.floorPlane()) },
       });
-    const original = this.host.opts.roomDraft();
+    const original = this.host.roomDraft();
     if (
       this.host.family === 'interior' &&
       this.host.author.selection?.kind === 'room' &&

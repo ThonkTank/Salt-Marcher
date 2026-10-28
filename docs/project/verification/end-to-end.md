@@ -2,7 +2,7 @@
 
 Status: Current; offene Ziele sind als solche beschrieben.
 Owner: project
-Last Reviewed: 2026-10-28 (versionierte Quellen, vollständiger technischer Szenarienkatalog; Fachabnahme separat)
+Last Reviewed: 2026-10-28 (datierte lokale Belegbindung und offene Lieferstufen; keine neue Qualifikation)
 Source of Truth: Dieses Dokument besitzt das benannte Thema; Code belegt den Iststand, das Abnahmeregister den Prüfstand.
 
 ## Technische Grundlage vom 11.10.2026
@@ -20,11 +20,99 @@ ihren tatsächlichen Build/Host/Store; historische PASSe werden nicht übertrage
 
 Ein Gesamt-PASS benennt den Szenarienkatalog, die integrierte SHA, Fixture-/Buildhashes, ausgeführte Checks und tatsächliche Host-/Prozessbelege. Modelltests und einzelne Smokes bleiben entsprechend begrenzte Belege. Fachliche Abhängigkeiten unten bestimmen die Szenarien.
 
+## Integrierter technischer E2E-01-Nachweis
+
+Am 28.10.2026 bestand der reale `Candidate · exact-SHA aggregate` auf
+`43a0cd501d9ef890df59067a39c9ad3d4b881596`, einschließlich aller 22 technischen
+E2E-01-Pflichtfälle: [Candidate-Lauf mit nativen Evidenzartefakten](https://github.com/ThonkTank/Salt-Marcher/actions/runs/40747461372).
+[PR #1431](https://github.com/ThonkTank/Salt-Marcher/pull/1431) integrierte diesen
+Stand als `5c679da32dd9aee72cfbf29a509471ed524dbffd`; beide Commits besitzen denselben
+Git-Tree `ef28f2630348b57469366a58bba311e8b34b28ed`. Auch der
+[Exact-SHA-Wiederholungslauf auf Main](https://github.com/ThonkTank/Salt-Marcher/actions/runs/40750264882)
+ist erfolgreich, einschließlich des vollständigen nativen technischen E2E-01-Katalogs.
+Diese CI-Ergebnisse wurden bei der Übergabe direkt geprüft; der lokale
+Integrationsbericht `.build/review7-integration/integration-result.json` hielt den
+Main-Lauf noch als laufend fest und ist insoweit überholt.
+
+Damit sind Candidate und integrierte technische Funktionsprüfung belegt.
+Die automatisierten nativen CI-Läufe ersetzen keine Qualifikation auf dem
+vereinbarten Zielgerät, Paket-/Installationsprüfung oder Ownerabnahme. Diese
+Stufen sowie TW-G1–6 und E2E-02–04 bleiben offen. Die nachstehenden lokalen
+Berichte bleiben zusätzliche datierte Belege; ihre Dirtystände werden nicht
+nachträglich zu einem sauberen integrierten Quellstand erklärt. Die aktuellen
+Dokumentationsänderungen selbst sind nicht Bestandteil der genannten CI-Commits.
+
+## Datierter lokaler E2E-01-Nachweis
+
+Der vorhandene lokale Ergebnisbericht vom 28.10.2026,
+`.build/test-costs-native-e2e01-20261028/result.json`, belegt alle 22 unten definierten Pflichtfälle auf Basis
+`1e7512f74b0dd7ea580a47067cbdb24731f8fd5b`, **dirty: true**,
+Build 0.193.1 / Schema 55. Die SHA allein beschreibt diesen Lauf daher nicht:
+`sourceHashes`, zwanzig Runtimehashes, Fixture und Prozessbelege im Bericht
+binden die tatsächliche Arbeitskopie. Bericht-SHA256:
+`86408b34d8a19fcf81a97e09a1a90039ec76412febb3ac45623e1526771fd659`.
+
+Bedingungen: Linux x64, Kernel `7.2.11-200.fc44.x86_64`, Electron 44.7.0 /
+Chromium 152.0.7977.130, X11, ausdrücklich ANGLE/SwiftShader, Browserzoom 100 %,
+Fensterbilder 1400 × 980. Fixture `e2e01-desktop-v2`, Rezept-Hash
+`0ce6b792462b2aaf7559472b5cf2455a58b0ee538b3e015e1dc313e18a1c7e21`,
+Seed-Datenbankhash
+`41438a8c85f4c22650f6667f48ba10caf208210a57ae5cdfc153e927fcbb3716`.
+Jeder Pflichtfall trägt `passed`, dieselbe Build-/Fixturebindung und sichtbare
+sowie unabhängige Speicherassertionen; das Complete-Inventar umfasst 199 lokale
+Identitäten über 168 Tabellen. Reguläre Prozessenden und der ausdrücklich
+bestätigte Crashfall sind getrennt protokolliert.
+
+**Abgeschlossene Stufe:** automatisierter nativer technischer Funktionslauf des
+gemeinsamen Katalogs unter diesen Bedingungen. Candidate und integrierter
+technischer Lauf sind inzwischen [separat belegt](#integrierter-technischer-e2e-01-nachweis).
+**Offene Stufen:** neuer Zielgerätlauf am integrierten Stand,
+Paket-/Installationsqualifikation und ausdrückliche Ownerabnahme.
+Es gibt hier keinen Gesamt-PASS des heutigen Checkouts, von TW-G1–6 oder von
+E2E-02–04. Ein CI-Ergebnis allein wäre ebenfalls keine physische Bedienprüfung.
+Der Rohbericht ist ein ignoriertes lokales Artefakt und außerhalb dieser
+Arbeitskopie nicht gesichert abrufbar; seine Bindung und Grenzen bleiben hier
+festgehalten. Bei dieser Dokumentationsübergabe wurde er gelesen, kein neuer
+Produktlauf ausgeführt.
+
+## Wiederverwendete Fachbelege
+
+Die folgenden vorhandenen Rohberichte sind ebenfalls lokal und ignoriert;
+ihre Pfade sind keine portablen Repositorylinks. Ihre Dirtybasis
+ist jeweils `1cb69e33dca7eda6e56916c3cf6bc2cfba803c7d`, nicht der heutige Stand.
+Sie schließen keine gemeinsame E2E-02-/03-Abnahme.
+
+| Ablauf / Fachbesitzer | Gelesenes Ergebnis und Bedingungen | Grenze |
+| --- | --- | --- |
+| [Spielabendübergabe](../../runtime/contract/session-opening-and-resume.md#originaltext-vom-entwurf-bis-zum-nächsten-besuch) | Lokaler Bericht `.build/storage-types-completion/native-evening-final/result.json`, 27.10.2026 22:57 UTC (28.10. lokal), `complete: true`; Linux/X11, 100 %, 1280 × 852, vier normale Starts/Exits. Rückblick, Abbruch/erneute Vorbereitung und gespeicherter Planbesuch erhalten Bytes, IDs und Gruppenzeit. | Runtimehashes sind gebunden; GPU-/Renderergerät ist nicht ausgewiesen. `humanAcceptance` und `installedPackageAcceptance` sind ausdrücklich false. Kein durchgehender Preparation→Combat/Loot-Beleg. |
+| [Reisecheckpoint](../../atlas/contract/hex-travel-3.md#checkpoint-und-wiederaufnahme-auf-der-aktuellen-atlasfläche) | Lokaler Bericht `.build/storage-cycles-completion/native-travel-final/result.json`, 27.10.2026 21:33 UTC; Linux/X11, 100 %, 1280 × 852, vier normale Starts/Exits; `checkpointWorkflowComplete` und `causalUndoRedoComplete` true. Pixel- und kanonische Datenprüfungen für Pause/Fresh, Ankunft, Rücknahme und Wiederholung. | Runtimehashes sind gebunden; GPU-/Renderergerät ist nicht ausgewiesen. Keine vollständige Wetter-/Shop-/Musik-/Autonomymatrix, Paket- oder Ownerabnahme. |
+
+## Terrain-/Wasserbelege und Zielgerät
+
+Der [Fachplan TW-G1–6](../../atlas/requirements/terrain-relief.md#ziele-und-abnahme-dieser-etappe)
+besitzt den Lieferumfang, der [Flussvertrag](../../atlas/contract/terrain-routes.md#begrenzter-flussabschluss)
+seinen zusätzlichen Teilabschluss. Die [Codeeinstiege](../../atlas/architecture/rendering.md#gelände-ändern)
+und [Formpinsel](../../atlas/contract/landscape-tools.md#direkte-terrainformpinsel--27102026)
+belegen implementierte Anschlüsse. Der Prüfstand lässt sich daraus nur wie folgt ableiten:
+
+| Ziel | Vorhandener Nachweis | Offene Grenze |
+| --- | --- | --- |
+| TW-G1 Grundpinsel/Meer und Speicherfolge | Der enge lokale Recoverybericht `.build/atlas-terrain-stroke/1793178461012-357879/result.json` vom 28.10. auf `c10b9b559da343e3be1d51452ecb90cab971f5ec` hat Status PASS, keine aufgezeichneten Fehler, zwei normale Starts/Exits und Quell-/Runtimehashes: gehaltene Folgegeste, verlorene Antwort, geänderte Quelle, einmalige Fortsetzung und Fresh. X11, Electron 44.7.0, 100 %, 1920 × 980; tatsächlicher Renderer ANGLE/Mesa Intel UHD Graphics **TGL GT2**. | Kein vollständiger Grundpinsel-/Meer-/Parameter-/Abbruchnachweis. Absolute Feinhöhen und übrige G1-Fälle bleiben offen. Der Bericht nennt keinen Dirtywert; Quell-SHA allein ist keine vollständige Buildbindung. |
+| TW-G2 Kamera, TW-G3 Formen, TW-G4 Darstellung | Die Fachpläne dokumentieren integrierte geländegebundene Kamera und direkte Formpinsel sowie begrenzte Funktionsprüfungen. Der [Terrainbeleg vom 20.10.](https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/terrain-land-tools-20261020/README.md) bleibt historisch. | Für die aktuelle vollständige Maus-/Welt-bis-Raum-, Formbild-/Überlappungs- und LOD-Matrix liegt hier kein quellgebundener Ergebnisbericht vor. Ein ausführbares natives Skript oder numerischer Test allein schließt diese Stufe nicht. |
+| Erweiterter Wasserumfang: Flussteilabschluss | Der [Fachvertrag berichtet am 28.10.](../../atlas/contract/terrain-routes.md#prüfanschluss) lokale Zyklus-2-Erfolge für Hang/Küste und 4-/12-m-Senke, Abweisung bei 8 m und Annahme nach 16 m Abtrag, Redo/Fresh und normale Exits. Der [portable Bericht vom 20.10.](https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/terrain-routes-20261020/README.md) belegt den damaligen Umfang. | Die erneuerte 28.10.-Aussage nennt dort keinen direkten Rohbericht mit Quell-/Runtime-/Hostbindung; bei dieser Übergabe nicht unabhängig nachprüfbar. Der 20.10.-Bericht qualifiziert weder die späteren Senkenreparaturen noch den aktuellen Flussabschluss. Leistung, Paket und Ownerabnahme bleiben offen. |
+| TW-G5 Leistung / TW-G6 Lieferung | Der [Messvertrag](../../atlas/requirements/terrain-relief.md#aktueller-lieferfokus-terrain-und-wasser) legt i5-8365U / Intel UHD 620, Wayland, 1920 × 1080, 100 % und vorab eingefrorene 30er-Versuchsgruppen fest. Die oben gelesenen Berichte erfüllen diese Bedingungen nicht. | Vollständige Funktions-/Leistungs- und Paketqualifikation an diesem Zielgerät ist **nicht belegt**, damit weder bestanden noch als fehlgeschlagen bewertet. Kein TW-G1–6-Gesamtabschluss, keine aktuelle Auslieferungs- oder Ownerbehauptung. |
+
+Die historische visuelle R0-Abnahme bleibt auf ihren damaligen Prototyp begrenzt.
+Der [Wonderdraft-Abgleich](../../atlas/verification/reference-comparison.md#lieferrelevante-offene-originalwirkungen)
+trennt echte Originalbeobachtungen, fehlgeschlagene Versuche und offene
+Vergleichswirkungen. Das Dokumentdatum überträgt keinen dieser Erfolge auf den
+heutigen Atlas.
+
 ## E2E-01 – Kampagne und gemeinsamer Raum → Save/Restart
 
 **Nutzerablauf:** Neu angelegte oder vollständig importierte Kampagne öffnen → World/Location auf derselben grenzenlosen Atlasfläche wählen → Hex/Ort/City/Haus/Dungeon/Raum-Key allein durch Navigation und Zoom bearbeiten → gemeinsame Undo/Redo-Folge → speichern → Anwendung vollständig beenden → frischer Prozess → dieselben IDs, Geometrie, Abschnittsreihenfolge, exakten Markdownbytes und Referenzen wiederfinden. Es gibt keine zweite Kamera, getrennte Karten-History oder automatischen LiveSession-Start.
 
-**Harte Eingänge vor vollständigem PASS:** ausführbarer CampaignLifecycle/Context mit Schema-/CampaignRevision, World-/Location-Namespace und Campaign→Atlas-Navigation; bestätigte Hex-/City-/Dungeon-Payload- und Haus→Dungeon-Bindung; eingefrorene, versionierte `CatalogSource`-/`CatalogEntry`-/`Creature`-/`Item`-/`EncounterPlan`-Referenzen im gemeinsamen Fixture; eine gemeinsame Command-/History-/Commitgrenze für alle betroffenen Records; realer P02-Save/Reopen-Minimalpfad; für die verbindliche Import-Eingangsvariante P04 und genau ein echter Complete-Import mit Manifest, Checksums und vollständiger Remap-Closure. Party-/Preparation-/Initialize-Verträge sind hier eine **negative Grenze**: Eine gültige Campaign ohne LiveSession bleibt bedienbar, Atlasnavigation und Reopen starten keine Session. Der positive Preparation→LiveSession-Beweis gehört zu E2E-02; Salvage und vollständige Crash-/Backup-Recovery zu E2E-04. Ein früher Atlas/City/Dungeon-Smoke bleibt ausdrücklich Zwischenbeleg. Der [aktuelle Atlasanschluss](../../atlas/contract/spatial-runtime.md#größen-abfragen-und-umsetzung) und die [integrierten Stadtverträge](../../city/contract/city.md) dokumentieren die Fachanteile; ein vollständiger gemeinsamer E2E-Beleg bleibt gesondert nachzuweisen.
+**Harte Eingänge vor vollständigem PASS:** ausführbarer CampaignLifecycle/Context mit Schema-/CampaignRevision, World-/Location-Namespace und Campaign→Atlas-Navigation; bestätigte Hex-/City-/Dungeon-Payload- und Haus→Dungeon-Bindung; eingefrorene, versionierte `CatalogSource`-/`CatalogEntry`-/`Creature`-/`Item`-/`EncounterPlan`-Referenzen im gemeinsamen Fixture; eine gemeinsame Command-/History-/Commitgrenze für alle betroffenen Records; realer P02-Save/Reopen-Minimalpfad; für die verbindliche Import-Eingangsvariante P04 und genau ein echter Complete-Import mit Manifest, Checksums und vollständiger Remap-Closure. Party-/Preparation-/Initialize-Verträge sind hier eine **negative Grenze**: Eine gültige Campaign ohne LiveSession bleibt bedienbar, Atlasnavigation und Reopen starten keine Session. Der positive Preparation→LiveSession-Beweis gehört zu E2E-02; Salvage und vollständige Crash-/Backup-Recovery zu E2E-04. Ein früher Atlas/City/Dungeon-Smoke bleibt ausdrücklich Zwischenbeleg. Der [aktuelle Atlasanschluss](../../atlas/contract/spatial-runtime.md#größen-abfragen-und-umsetzung) und die [integrierten Stadtverträge](../../city/contract/city.md) dokumentieren die Fachanteile; der datierte lokale technische Gesamtbeleg steht [oben](#datierter-lokaler-e2e-01-nachweis), die integrierte technische CI-Stufe ist ebenfalls [belegt](#integrierter-technischer-e2e-01-nachweis); Zielgerät, Paket und Ownerabnahme bleiben offen.
 
 **Orakel:** Normales Save/Reopen bewahrt CampaignId sowie alle World-/Location-/Placement-/City-/Building-/Dungeon-/Floor-/Room-/Route-/Section-IDs und Markdownbytes; Restore muss das in E2E-04 ebenfalls beweisen. Gelände, City und Dungeon teilen eine Undo/Redo- und Savegrenze; Room/Key hält stabile Katalog- und EncounterPlan-Referenzen ohne kopierte SRD-/Itempayloads. Nach Reopen lösen diese auf dieselbe Quelle, Entry- und Planidentität auf; aktuelle Definition und eingefrorene historische Verwendung bleiben getrennt. Fehlende, unbekannte, falsch revisionierte oder unavailable Quellen erscheinen sichtbar und werden weder per Name noch durch stale Einträge ersetzt. Der verifizierte Complete-Import erzeugt eine unabhängige Campaign und remappt sämtliche kampagnenlokalen IDs samt internen Referenzen über eine eingefrorene vollständige Old→New-Closure; Quelle, bestehende Campaigns und shared definitions bleiben unverändert. Globale CatalogSource-/Entry-Identitäten bleiben erhalten; kampagnenlokale EncounterPlan-IDs werden nur über diese dokumentierte Zuordnung neu zugeordnet. Normales Reopen remappt niemals still. A→B→A bindet Atlas-/Location-Projektionen aus der aktuellen CampaignRevision neu; Kamera, History, Auswahl und Writes lecken nicht zwischen Campaigns. Stale oder fremde CampaignContext-/World-/Location-Revisionen scheitern vor Mutation. Der unabhängige Complete-Import verliert weder Text noch Referenzen. Der sichtbare integrierte Hostablauf wird unabhängig geprüft; Fach- und Plattformbelege gelten nur für ihren jeweiligen Umfang.
 
@@ -44,7 +132,7 @@ Assertions. `tools/atlas-e2e01-scenarios.mjs` verlangt alle 22 Pflichtfälle mit
 | E01-04 · P02: Autosave, reguläres Ende, frischer Prozess | Native Probe wartet auf sichtbaren Savedzustand, schließt regulär, öffnet einen neuen Electronprozess und vergleicht ausgewählte persistente Tabellen einschließlich IDs, Revisionen, Geometrie, Abschnitten, Markdownbytes und Referenzen exakt. | Kein Stromausfall-, Installations- oder vollständiger Recoverynachweis. |
 | E01-05 · P02: bestätigter Autosave nach Prozessabbruch | `native-session.mjs` besitzt ein ausdrücklich aktiviertes Crashprotokoll: Savedzustand plus SQL-Inventarhash vor absichtlichem Abbruch, neuer Prozess, identisches Inventar und anschließend reguläres Ende. `tests/shared/native-process.test.mjs` weist unknown/pending als Crashbestätigung ab und verlangt frischen normalen Abschluss. | Die native Probe hält zusätzlich eine echte Main-Commitantwort zurück und prüft den weiterhin unbestätigten UI-Zustand bis zur Freigabe. N05 verliert die tatsächliche Commitantwort, verlangt sichtbaren Fehler und Klärung derselben CommandId, genau eine Wirkung, unveränderte History/Receipts bei der Klärung und erfolgreiche Fortsetzung. Unbestätigte Zustände gelten niemals als dauerhaft bestätigt. E2E-04 behält seine weitergehende Matrix. |
 | E01-06 · verbindliche P04-Variante: echter Complete-Import | Dieselbe native Probe exportiert über Main/Dateidialog und prüft Manifestdateiliste, Dateilängen, SHA-256 und echte PNG-Medien. Vor dem sichtbar bestätigten Import friert sie das vollständige kopierbare Quelleninventar einschließlich lokaler Referenzrollen ein. Die erwarteten Zuordnungen prüft sie unabhängig von der importerzeugten Mappingtabelle. Alle lokalen Identitäten, Abschnitte, Plan-/Itemzeilen und Referenzen müssen injektiv remappt sein. Fachrecords und History-Guards werden aus diesem Ausgangsinventar verglichen; globale Quellen-/Entry-IDs und gemeinsame Definitionen bleiben erhalten. Fehlende Zuordnungen und fremde lokale Referenzen haben eigene Gegenfälle. Quelle unverändert; Original und Import unabhängig bearbeiten und beide frisch öffnen. | Keine vollständige P04-/Salvage-/Trash-/Recovery- oder Zweithostabnahme. Archiveigenschaften allein ersetzen keine Ownerabnahme der Remapsemantik. |
-| E01-07 · eingefrorene CatalogSource-/CatalogEntry-/Creature-/Item-/EncounterPlan-Referenzen | Die gemeinsame Fixture verwendet den produktiven engen `CatalogReference`-Vertrag mit Quellenkennung, Quellversion, SHA-256, globaler Entry-ID und Typ. `StoredEncounterPlan.sources` speichert Referenzen; geplante Items und Raum-Keyverweise tragen dieselbe Bindung. Die aufgelöste UI bleibt getrennt. Native Katalogansicht nach Fresh und Complete-Import prüft Guard, Bewertung und gebundenes Item ohne Write. N06 zeigt fehlende, unbekannte, falsch revisionierte und nicht verfügbare Itemquellen, verweigert Teilübernahmen und prüft unveränderte Daten/History/Receipts. Unbetroffene Terrainarbeit in B bleibt während des Quellenfehlers möglich. `tests/campaign/desktop-e2e01-fixture.test.mjs` prüft außerdem unveränderte historische Itemverwendung nach Definitionsänderung, Complete-Import und Neustart; `tests/catalog/desktop-catalog-xp.test.mjs` eingefrorene Gruppenfakten über Planänderung, Complete-Import und Neustart. | Der gemeinsame vollständige lokale Pflichtlauf ist bestanden. Exact-SHA Candidate nach Begutachtung und Integration, integrierter Zielgerätestand und Ownerabnahme bleiben gesondert zu belegen. |
+| E01-07 · eingefrorene CatalogSource-/CatalogEntry-/Creature-/Item-/EncounterPlan-Referenzen | Die gemeinsame Fixture verwendet den produktiven engen `CatalogReference`-Vertrag mit Quellenkennung, Quellversion, SHA-256, globaler Entry-ID und Typ. `StoredEncounterPlan.sources` speichert Referenzen; geplante Items und Raum-Keyverweise tragen dieselbe Bindung. Die aufgelöste UI bleibt getrennt. Native Katalogansicht nach Fresh und Complete-Import prüft Guard, Bewertung und gebundenes Item ohne Write. N06 zeigt fehlende, unbekannte, falsch revisionierte und nicht verfügbare Itemquellen, verweigert Teilübernahmen und prüft unveränderte Daten/History/Receipts. Unbetroffene Terrainarbeit in B bleibt während des Quellenfehlers möglich. `tests/campaign/desktop-e2e01-fixture.test.mjs` prüft außerdem unveränderte historische Itemverwendung nach Definitionsänderung, Complete-Import und Neustart; `tests/catalog/desktop-catalog-xp.test.mjs` eingefrorene Gruppenfakten über Planänderung, Complete-Import und Neustart. | Die [datierte lokale technische Stufe](#datierter-lokaler-e2e-01-nachweis) ist bestanden. Candidate und integrierte technische CI-Stufe sind [belegt](#integrierter-technischer-e2e-01-nachweis); Zielgerät, Paket und Ownerabnahme bleiben gesondert offen. |
 | E01-08 · negative Schreib-/Kontextgrenzen | N04 prüft fremde CampaignId, veraltete Campaignrevision, fremde und veraltete World-/Locationbindungen vor Mutation über den tatsächlichen Main-/Storeanschluss. Pro Fall wird der sichtbare Fehler mit unabhängigen Daten-/History-/Receiptassertionen verbunden. Neue veraltete Aufträge scheitern; das Originalreceipt bleibt nach späterer Campaignrevision idempotent. N02/N03/N03b/N05/N06 ergänzen späte Antworten, Antwortverlust und Quellenfehler. Die ergänzenden Archive-/Commit-/Fixturetests bleiben eigene Fachbelege. | Keine weitergehende E2E-04-, Plattform-, Installations- oder Ownerabnahme. |
 
 `tools/atlas-e2e01-fixture.mjs`, Version `e2e01-desktop-v2`, besitzt den kleinen
@@ -65,9 +153,9 @@ Der neue Lauf entfernt alte Erfolgsdaten vor Aufbau der Fixture. Sein Ergebnis
 bindet Quell-SHA/Dirtyzustand, Buildmetadaten und zwanzig Runtimehashes,
 Fixture-/Quellhashes, Host, Szenarien, Start-/Exit-/PID-Nachweise, Datenvergleiche,
 Manifest, eingefrorenes vollständiges Transferinventar, nativen Gegenfallkatalog und Remapdatei; Fehler schreiben `failure.json` und eine frische Aufnahme.
-Der Software-Prüfmodus verlangt weiterhin zwei neue Frames und protokolliert ihre Wartezeit; dafür gelten höchstens 15 Sekunden, für die gesamte Aufnahme vor Close höchstens 20 Sekunden. Dies sind Automationsdeadlines, keine Produktleistungszusagen. Linux mit Software-GPU ist CI-Evidenz. Der integrierte Kandidat braucht weiterhin
-den realen `Candidate · exact-SHA aggregate`, einen neuen nativen Zielgerätlauf
-auf genau diesem Stand und die gesonderte Ownerabnahme. Alte Erfolgsdateien,
+Der Software-Prüfmodus verlangt weiterhin zwei neue Frames und protokolliert ihre Wartezeit; dafür gelten höchstens 15 Sekunden, für die gesamte Aufnahme vor Close höchstens 20 Sekunden. Dies sind Automationsdeadlines, keine Produktleistungszusagen. Linux mit Software-GPU belegt den ausgeführten automatisierten Funktionsumfang; ein lokaler Lauf ist kein GitHub-CI-Ergebnis und kein Zielgerätebeleg. Der reale `Candidate · exact-SHA aggregate` ist für den oben genannten
+integrierten Stand belegt. Ein neuer nativer Zielgerätlauf auf genau diesem
+Stand sowie Paketprüfung und gesonderte Ownerabnahme bleiben erforderlich. Alte Erfolgsdateien,
 Software-GPU und Modelltests erbringen diese Aussagen nicht. E2E-02–04 bleiben
 eigenständige Abschlüsse.
 

@@ -88,14 +88,53 @@ npm test -- --serial --list \
   tests/atlas/atlas-first-product-worker.test.mjs
 ```
 
+## Terrain-Recovery und Navigation
+
+Gehaltene Folgezüge und derselbe Auftrag nach Antwortverlust, Generationen bei
+Ausblenden/Wiederöffnen, geschützte Autorentwürfe und abgewiesene falsche
+Speicherbelege am echten Autorenanschluss. Die Host-/Workerfälle bleiben enthalten:
+
+```sh
+npm test -- --serial --list \
+  tests/atlas/atlas-terrain-edits.test.mjs \
+  tests/atlas/atlas-ownership-boundaries.test.mjs \
+  tests/atlas/desktop-atlas-commit-recovery.test.mjs \
+  tests/atlas/atlas-canvas-gesture.test.mjs
+```
+
+Dies ist kein vollständiger Pinsel-, Kamera-, Fluss-, Darstellungs- oder
+Leistungsnachweis für TW-G1–6. Die konkreten erhaltenen und offenen Wirkungen
+stehen im [aktuellen begrenzten Abgleich](../../reference/test-path-round8-20261028/README.md).
+
+## Store, Archive und unabhängige Fixtures
+
+Echte Storeworker einschließlich verlorener Antwort, Abbruch und Neustart,
+Archivmedien mit exakten Bytes und atomarer Bereinigung sowie unabhängige
+SQLite-Schemafixtures mit Reopen und weiterhin WAL/FULL-Sync:
+
+```sh
+npm test -- --serial --list \
+  tests/catalog/desktop-store-worker.test.mjs \
+  tests/campaign/desktop-archive-transfer.test.mjs \
+  tests/shared/test-fixtures.test.mjs
+```
+
+Diese drei Dateien ersetzen weder die übrigen Transferverträge noch die
+Kampagnenkopie-/Backup- und Nativequalifikation.
+
 ## Auswahl kontrollieren
 
-Die fünf Aufrufe wurden am 28.10.2026 mit dem tatsächlichen Runner und Node
+Die ursprünglichen fünf Aufrufe wurden am 28.10.2026 mit dem tatsächlichen Runner und Node
 22.19.0 geprüft: genau 5, 3, 4, 5 und 6 Dateien, ohne Wiederholung und jeweils
 Teil der vollständigen aktiven Auswahl. Auch `npm test -- --list` wurde
 verglichen. Dies bestätigt die Auswahl, keinen Test- oder nativen Erfolg.
 `tests/shared/test-selection.test.mjs` prüft zusätzlich abgewiesene fehlende,
 fremde und ungültige Pfade sowie einen CLI-Start ohne Buildvorbereitung.
+
+Die beiden ergänzten Aufrufe wurden mit `--list` auf genau vier beziehungsweise
+drei Dateien geprüft und als unveränderte Auswahlen vor/nach der Cacheänderung
+ausgeführt. Der Testumfang der Atlasauswahl erhielt danach die acht benannten
+ACK-Gegenfälle; das ist getrennt vom Cachevergleich ausgewiesen.
 
 Bei Umbenennungen die Aufrufe und die bestehenden Capabilitylinks gemeinsam
 nachführen. Für die inverse Ansicht den vorhandenen Befehl verwenden:

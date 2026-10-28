@@ -26,10 +26,8 @@ interface AtlasRegionsHost {
   readonly invalidateHits: () => void;
   readonly render: (preview?: boolean) => void;
   readonly error: (error: unknown) => void;
-  readonly opts: {
-    flush: () => Promise<boolean>;
-    status: (text: string, error?: boolean) => void;
-  };
+  readonly flushEditors: () => Promise<boolean>;
+  readonly status: (text: string, error?: boolean) => void;
 }
 /** Owns region reads, source publication and geometry readiness. */
 export class AtlasRegions {
@@ -331,7 +329,7 @@ export class AtlasRegions {
       if (retry) {
         get('atlas-save-status').textContent = 'Reisekontext aktualisiert';
         get('atlas-save-status').dataset.error = 'false';
-        this.host.opts.status('Reisekontext aktualisiert');
+        this.host.status('Reisekontext aktualisiert');
       }
       completed = true;
       this.regionReading = null;

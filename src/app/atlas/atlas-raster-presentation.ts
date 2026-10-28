@@ -78,6 +78,7 @@ export class AtlasRasterPresentation implements AtlasPresentation {
   private pickTiles: readonly AtlasSurfaceTile[] | null = null;
   private frame: LandscapeBox = { x: 0, y: 0, width: 256, height: 256 };
   private focusHeightM = 0;
+  private restoredCameraPose = false;
   private navigating = false;
   private perception = false;
   private tilt = 0;
@@ -500,7 +501,7 @@ export class AtlasRasterPresentation implements AtlasPresentation {
           this.tiles = frame.tiles.map((t) =>
             reuseAtlasSurfaceTile(previous.get(JSON.stringify(t.tile)), t),
           );
-          if (!this.ready && !this.navigating) {
+          if (!this.ready && !this.navigating && !this.restoredCameraPose) {
             this.focusHeightM = this.height({
               x: this.frame.x + this.frame.width / 2,
               y: this.frame.y + this.frame.height / 2,
@@ -790,7 +791,8 @@ export class AtlasRasterPresentation implements AtlasPresentation {
   get savedCameraPose() {
     return this.cameraPose();
   }
-  restoreCameraPose(pose: AtlasCameraPose) {
+  restoreCameraPose(pose?: AtlasCameraPose) {
+    this.restoredCameraPose = false;
     if (
       !pose ||
       !pose.frame ||
@@ -806,6 +808,8 @@ export class AtlasRasterPresentation implements AtlasPresentation {
       pose.exaggeration > 8
     )
       return;
+    // Restoring a complete pose owns its focus before the first terrain tile arrives.
+    this.restoredCameraPose = true;
     this.applyCameraPose({
       ...pose,
       projection: 'perspective',

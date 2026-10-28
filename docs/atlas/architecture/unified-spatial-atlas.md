@@ -38,7 +38,11 @@ Der gemeinsame metrische deck.gl-Pfad zeichnet Weltgeometrie, Gebäude, Räume
 und Ausgabe. Canvas bleibt für Bedienüberlagerungen zuständig. Kamera und
 Eingabesteuerung benötigen keine zusätzliche Rendererschicht.
 
-`CampaignAtlasWorkbench` verbindet Sitzungen und Oberfläche. `AtlasRegions`
+`CampaignAtlasWorkbench` verbindet Sitzungen und koordiniert angenommene Übergänge.
+`AtlasTerrainEdits` besitzt Queue, Recovery und die Entscheidung über gehaltene
+Terrainzüge; `AtlasAuthor` besitzt fachliche Auswahl, Stadt-/Raumgruppen-/Geschosskontext,
+Platzierung und Gesten. Die [Zuständigkeitstabelle und Übergangsreihenfolge](rendering.md#zustandsbesitzer-und-übergänge)
+binden Leser, Schreiber und Abmeldung. `AtlasRegions`
 besitzt Anfragegeneration, bestätigte Projektion und Schreibrevisionen;
 `AtlasJourney` besitzt Vorschau, Reisebereitschaft und Wiedergabe. Autoren-Gesten
 besitzen gemeinsame Entwurfs-, Abbruch- und Kontextwechselregeln in `AtlasAuthor`.

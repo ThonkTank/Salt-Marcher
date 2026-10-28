@@ -11,7 +11,6 @@ import type {
 } from './atlas-workbench-types';
 import { vegetationInstances } from './vegetation-projection';
 import { atlasFieldValue } from './atlas-units';
-import { regionValue } from './atlas-region-contracts';
 import {
   atlasDrawingDraft,
   atlasDrawingPoint,
@@ -26,12 +25,11 @@ import { atlasFrame } from './campaign-atlas-model';
 import { atlasHexAt, atlasToLocal, localToAtlas } from './atlas-coordinates';
 import type { AtlasAction } from './campaign-atlas-contracts';
 import type { Point, Room, WorkspaceGeometry } from '../shared/contracts';
-import { atlasCityPoint, openCityReference } from './city-ui';
+import { atlasCityPoint } from './city-ui';
 import { atlasDungeonTarget } from './dungeon-ui';
 import type { WorldTravelPort } from '../runtime/world-ui';
 interface AtlasAuthorHost {
-  readonly world: WorldTravelPort;
-  creation: 'city' | 'dungeon' | null;
+  readonly world: Pick<WorldTravelPort, 'atlasWorldTarget'>;
   readonly root: HTMLElement;
   readonly family: Family;
   readonly output: AtlasOutputSelection;
@@ -39,15 +37,13 @@ interface AtlasAuthorHost {
   readonly spacePan: boolean;
   readonly camera: Pick<AtlasCanvas, 'ready' | 'hitAt' | 'stopZoom' | 'redrawOverlay'>;
   readonly regions: AtlasRegionEditing;
-  readonly opts: {
-    selectRoom: (id: string) => Promise<void>;
-    roomDraft: () => Room | null;
-    status: (text: string, error?: boolean) => void;
-  };
+  readonly selectRoom: (id: string) => Promise<void>;
+  readonly roomDraft: () => Room | null;
+  readonly status: (text: string, error?: boolean) => void;
   readonly point: (event: MouseEvent) => Point;
   readonly createCity: () => Promise<void>;
   readonly createRoomGroup: (mode?: 'interior' | 'building') => Promise<void>;
-  readonly setFamily: (family: Family, flush?: boolean) => Promise<void>;
+  readonly setFamily: (family: Family, flush?: boolean) => Promise<boolean>;
   readonly landscape: Pick<LandscapeWorkbench, 'hasDraft' | 'selectVegetation' | 'selectId'>;
   readonly entranceHeight: (
     entrances: import('./atlas-journey-contracts').AtlasEntrance[],
@@ -61,7 +57,6 @@ interface AtlasAuthorHost {
   readonly navigateElement: (id: string, focus?: boolean) => Promise<void>;
   readonly navigateScope: (id: string) => Promise<void>;
   readonly navigate: (kind: 'city' | 'room', id: string, unitId?: string) => Promise<void>;
-  scopeId: string | null;
   readonly frame: (scopeId: string) => ReturnType<typeof atlasFrame>;
   readonly write: (
     action: AtlasAction,
@@ -75,13 +70,11 @@ interface AtlasAuthorHost {
   } | null>;
   readonly render: (preview?: boolean) => void;
   readonly journey: AtlasJourneySelection;
-  cityId: string | null;
   readonly doorRoomAt: (point: Point) => Promise<{
     room: import('../shared/contracts').RoomGeometry;
     maxDistance: number;
   }>;
   readonly chooseScope: (id: string) => void;
-  floorId: string;
   readonly syncDrawingFloor: () => void;
   readonly error: (error: unknown) => void;
   readonly cancel: () => void;
@@ -90,7 +83,140 @@ interface AtlasAuthorHost {
 /** Owns author selection, pointer gestures and temporary geometry. */
 export class AtlasAuthor {
   constructor(private host: AtlasAuthorHost) {}
-  selection: Selection = null;
+  private selected: Selection = null;
+  private city: string | null = null;
+  private scope: string | null = null;
+  private floor = 'ground';
+  private placing: 'city' | 'dungeon' | null = null;
+  private contextGeneration = 0;
+  private selectionRequest = 0;
+  get selection() {
+    return this.selected;
+  }
+  get cityId() {
+    return this.city;
+  }
+  get scopeId() {
+    return this.scope;
+  }
+  get floorId() {
+    return this.floor;
+  }
+  get creation() {
+    return this.placing;
+  }
+  /** A navigation lease is invalid after another selection, activation or hide. */
+  beginNavigation() {
+    const generation = this.contextGeneration,
+      request = ++this.selectionRequest,
+      owner = this.host.owner;
+    return () =>
+      this.contextGeneration === generation &&
+      this.selectionRequest === request &&
+      this.host.owner === owner;
+  }
+  hide() {
+    this.contextGeneration++;
+    this.selectionRequest++;
+  }
+  canChangeTool() {
+    if (!this.hasDraft()) return true;
+    this.host.status('Begonnenen Atlaszug abschließen oder verwerfen.', true);
+    return false;
+  }
+  changeTool(preserveNavigation = false) {
+    if (!preserveNavigation) this.selectionRequest++;
+    this.cancelPlacement();
+    this.host.root.dataset.roomDraw = 'false';
+    this.measurementHover = null;
+  }
+  clearSelection() {
+    this.selectionRequest++;
+    this.selected = null;
+  }
+  selectCity(
+    id: string,
+    interiorScope: string | null = null,
+    unit?: { id: string; kind: 'building' | 'city-unit' },
+    navigation?: () => boolean,
+  ) {
+    if (navigation && !navigation()) return;
+    if (!navigation) this.selectionRequest++;
+    this.city = id;
+    this.scope = interiorScope;
+    this.floor = 'ground';
+    this.selected = unit ? { ...unit, cityId: id } : { kind: 'city', id };
+  }
+  selectRoom(room: Pick<Room, 'id' | 'scopeId' | 'floorId'>, navigation?: () => boolean) {
+    if (navigation && !navigation()) return;
+    if (!navigation) this.selectionRequest++;
+    this.scope = room.scopeId;
+    this.floor = room.floorId;
+    this.city = null;
+    this.selected = { kind: 'room', id: room.id };
+  }
+  selectScope(id: string, floor = 'ground', navigation?: () => boolean) {
+    if (navigation && !navigation()) return;
+    if (!navigation) this.selectionRequest++;
+    this.city = null;
+    this.scope = id;
+    this.floor = floor;
+    this.selected = { kind: 'scope', id };
+  }
+  selectElement(id: string, scope: string, floor: string, navigation?: () => boolean) {
+    if (navigation && !navigation()) return;
+    if (!navigation) this.selectionRequest++;
+    this.city = null;
+    this.scope = scope;
+    this.floor = floor;
+    this.selected = { kind: 'element', id };
+  }
+  followParty(scope: string, floor: string) {
+    this.selectionRequest++;
+    this.scope = scope;
+    this.floor = floor;
+  }
+  selectFloor(floor: string) {
+    if (!this.canChangeTool()) return false;
+    this.floor = floor;
+    this.selectionRequest++;
+    return true;
+  }
+  beginPlacement(kind: 'city' | 'dungeon') {
+    if (!this.canChangeTool()) return false;
+    this.selectionRequest++;
+    this.placing = kind;
+    this.host.root.dataset.placing = kind;
+    return true;
+  }
+  cancelPlacement() {
+    this.placing = null;
+    delete this.host.root.dataset.placing;
+  }
+  beginRoomRectangle() {
+    if (!this.canChangeTool()) return false;
+    this.selectionRequest++;
+    this.cancelPlacement();
+    this.draft = [];
+    this.host.root.dataset.roomDraw = 'true';
+    return true;
+  }
+  beginEntrance() {
+    this.selectionRequest++;
+    this.entranceDraft = [];
+  }
+  takePlaceIntent() {
+    const intent = this.placeIntent;
+    this.placeIntent = null;
+    return intent;
+  }
+  undoPoint() {
+    this.draft.pop();
+  }
+  clearHover() {
+    this.measurementHover = null;
+  }
+
   draft: Point[] = [];
   measurementHover: Point | null = null;
   lastPoint: Point = { x: 0, y: 0 };
@@ -149,6 +275,8 @@ export class AtlasAuthor {
     return this.hasDraft() || this.rectangleCommit;
   }
   cancelGesture() {
+    this.contextGeneration++;
+    this.selectionRequest++;
     this.brushId = null;
     this.vertexDrag = null;
     this.pathDrag = null;
@@ -158,10 +286,17 @@ export class AtlasAuthor {
     this.placeIntent = null;
     this.draft = [];
     this.drag = null;
+    this.host.root.dataset.roomDraw = 'false';
   }
   resetContext() {
+    this.hide();
     this.cancelGesture();
-    this.selection = null;
+    this.cancelPlacement();
+    this.city = null;
+    this.scope = null;
+    this.floor = 'ground';
+    this.host.root.dataset.roomDraw = 'false';
+    this.selected = null;
     this.measurementHover = null;
   }
   roomPreview<T extends import('../shared/contracts').RoomGeometry>(original: T): T {
@@ -198,7 +333,7 @@ export class AtlasAuthor {
   }
   pointToolActive() {
     return (
-      this.host.creation != null ||
+      this.placing != null ||
       this.host.root.dataset.roomDraw === 'true' ||
       this.entranceDraft != null ||
       ((this.host.family === 'interior' || this.host.family === 'decoration') &&
@@ -225,14 +360,14 @@ export class AtlasAuthor {
     )
       return;
     if (!this.host.camera.ready || !this.host.regions.geometryCurrent()) {
-      this.host.opts.status('Kartenausschnitt wird vorbereitet.');
+      this.host.status('Kartenausschnitt wird vorbereitet.');
       return;
     }
     const p = this.host.point(e);
     this.lastPoint = p;
-    if (this.host.creation) {
-      const kind = this.host.creation;
-      this.host.creation = null;
+    if (this.placing) {
+      const kind = this.placing;
+      this.placing = null;
       delete this.host.root.dataset.placing;
       if (kind === 'city') await this.host.createCity();
       else await this.host.createRoomGroup();
@@ -255,7 +390,7 @@ export class AtlasAuthor {
             (i) => i.id === hit?.data.vegetationInstance,
           );
         if (area && instance) {
-          await this.host.setFamily('terrain');
+          if (!(await this.host.setFamily('terrain'))) return;
           await this.host.landscape.selectVegetation(area.id, instance);
           return;
         }
@@ -277,17 +412,18 @@ export class AtlasAuthor {
         this.host.regions.loadedRegionQuery
       ) {
         if (!this.host.regions.geometryCurrent()) {
-          this.host.opts.status('Kartenausschnitt wird geladen.');
+          this.host.status('Kartenausschnitt wird geladen.');
           return;
         }
         const owner = this.host.owner,
+          current = this.beginNavigation(),
           r = await window.campaign.atlasRegionHit(
             owner.token,
             this.host.regions.loadedRegionQuery,
             p,
             this.host.regions.data.region.fence,
           );
-        if (this.host.owner !== owner) return;
+        if (!current()) return;
         if (!r.ok) throw new Error(r.error);
         const hit = r.value;
         if (hit) {
@@ -302,8 +438,8 @@ export class AtlasAuthor {
         }
         return;
       }
-      if (this.entranceDraft !== null && this.host.scopeId && this.selection?.kind === 'room') {
-        this.entranceDraft.push(atlasToLocal(p, this.host.frame(this.host.scopeId)));
+      if (this.entranceDraft !== null && this.scope && this.selection?.kind === 'room') {
+        this.entranceDraft.push(atlasToLocal(p, this.host.frame(this.scope)));
         if (this.entranceDraft.length === 2) {
           const r = this.host.regions.data!.workspace.rooms.find(
             (r) => r.id === this.selection!.id,
@@ -336,8 +472,8 @@ export class AtlasAuthor {
         this.host.journey.renderTravel();
       }
       if (this.host.root.dataset.roomDraw === 'true') {
-        if (!this.host.scopeId) throw new Error('Zuerst eine Raumgruppe wählen oder anlegen.');
-        const local = atlasDrawingSnapPoint(atlasToLocal(p, this.host.frame(this.host.scopeId)));
+        if (!this.scope) throw new Error('Zuerst eine Raumgruppe wählen oder anlegen.');
+        const local = atlasDrawingSnapPoint(atlasToLocal(p, this.host.frame(this.scope)));
         this.draft.push(local);
         get('atlas-draft-cancel').hidden = false;
         if (this.draft.length === 2) await this.createRoomRectangle();
@@ -351,11 +487,11 @@ export class AtlasAuthor {
       }
       if (
         this.host.family === 'city' &&
-        this.host.cityId &&
+        this.city &&
         get<HTMLSelectElement>('city-tool').value !== 'select'
       ) {
         const b = this.host.regions.data?.bindings.find(
-          (b) => b.kind === 'city' && b.ownerId === this.host.cityId,
+          (b) => b.kind === 'city' && b.ownerId === this.city,
         );
         if (b) {
           await atlasCityPoint(atlasToLocal(p, atlasFrame(this.host.regions.data!, b)));
@@ -365,12 +501,12 @@ export class AtlasAuthor {
       }
       if (
         (this.host.family === 'decoration' || this.host.family === 'interior') &&
-        this.host.scopeId &&
+        this.scope &&
         get<HTMLSelectElement>('drawing-tool').value !== 'select'
       ) {
         const door = get<HTMLSelectElement>('drawing-tool').value === 'door';
         const task = atlasDrawingPoint(
-          atlasToLocal(p, this.host.frame(this.host.scopeId)),
+          atlasToLocal(p, this.host.frame(this.scope)),
           door ? this.brushQueue : undefined,
           () => this.host.doorRoomAt(p),
         );
@@ -406,43 +542,20 @@ export class AtlasAuthor {
         return;
       }
       if (kind === 'room' && id) {
-        const room = this.host.regions.data!.workspace.rooms.find((r) => r.id === id)!;
-        this.selection = { kind: 'room', id };
-        this.host.scopeId = room.scopeId;
-        this.host.floorId = room.floorId;
-        if (this.host.family === 'travel')
+        if (this.host.family === 'travel') {
+          const room = this.host.regions.data!.workspace.rooms.find((r) => r.id === id)!;
+          this.selectRoom(room);
           await atlasDungeonTarget(id, atlasToLocal(p, this.host.frame(room.scopeId)));
-        else {
-          await this.host.opts.selectRoom(id);
-          this.host.syncDrawingFloor();
-        }
-        this.host.render();
+          this.host.render();
+        } else await this.host.navigate('room', id);
         return;
       }
       if ((kind === 'building' || kind === 'city-unit') && id) {
-        const cityId = target!.data.cityId!;
-        this.host.cityId = cityId;
-        this.selection = { kind: kind as 'building' | 'city-unit', id, cityId };
-        const binding = this.host.regions.data?.bindings.find(
-          (b) => b.parent === 'building' && b.parentId === id,
-        );
-        const interiorScope =
-          binding?.ownerId ?? regionValue(this.host.regions.data?.region?.interiors, id);
-        if (interiorScope) {
-          this.host.scopeId = interiorScope;
-          this.host.floorId = 'ground';
-          this.host.syncDrawingFloor();
-        }
-        await openCityReference(cityId, id, true);
-        this.host.render();
-        this.host.regions.scheduleRegion();
+        await this.host.navigate('city', target!.data.cityId!, id);
         return;
       }
       if (kind === 'city' && id) {
-        this.host.cityId = id;
-        this.selection = { kind: 'city', id };
-        await openCityReference(id, undefined, true);
-        this.host.render();
+        await this.host.navigate('city', id);
         return;
       }
       if (this.host.family === 'travel')
@@ -453,11 +566,15 @@ export class AtlasAuthor {
   }
   async createRoomRectangle() {
     const owner = this.host.owner,
-      scope = this.host.scopeId,
-      floor = this.host.floorId,
+      scope = this.scope,
+      floor = this.floor,
       append = get<HTMLInputElement>('drawing-append').checked;
+    let generation = this.contextGeneration;
     const current = () =>
-      this.host.owner === owner && this.host.scopeId === scope && this.host.floorId === floor;
+      this.contextGeneration === generation &&
+      this.host.owner === owner &&
+      this.scope === scope &&
+      this.floor === floor;
     const [a, b] = this.draft as [Point, Point];
     if (Math.abs(a.x - b.x) < 0.01 || Math.abs(a.y - b.y) < 0.01) {
       this.draft = [a];
@@ -474,12 +591,13 @@ export class AtlasAuthor {
       }
       if (result && current()) {
         this.host.cancel();
+        generation = this.contextGeneration;
         // The write is confirmed; room selection flushes this same author.
         this.rectanglePhase = 'selecting';
         const id = result.workspace.selectedId!;
-        await this.host.opts.selectRoom(id);
+        await this.host.selectRoom(id);
         if (!current()) return;
-        this.selection = { kind: 'room', id };
+        this.selected = { kind: 'room', id };
         // Selecting the new room persists its context and changes the source fence.
         await this.host.regions.refresh();
         if (!current()) return;
@@ -499,7 +617,7 @@ export class AtlasAuthor {
   }
   lastBrushPoint: Point | null = null;
   queueBrush(p: Point) {
-    const scope = this.host.scopeId;
+    const scope = this.scope;
     if (!scope) return;
     const local = atlasToLocal(p, this.host.frame(scope));
     const radius = Number(atlasFieldValue(get<HTMLInputElement>('drawing-brush')));
@@ -538,10 +656,10 @@ export class AtlasAuthor {
       this.host.output.beginArea(e, this.host.point(e));
       return;
     }
-    if (this.host.creation || (this.host.family === 'terrain' && this.host.regions.data)) return;
+    if (this.placing || (this.host.family === 'terrain' && this.host.regions.data)) return;
     if (
       (this.host.family === 'interior' || this.host.family === 'decoration') &&
-      this.host.scopeId &&
+      this.scope &&
       ['room-cave', 'room-erase', 'scatter'].includes(get<HTMLSelectElement>('drawing-tool').value)
     ) {
       this.lastBrushPoint = null;
@@ -550,12 +668,12 @@ export class AtlasAuthor {
       this.queueBrush(this.host.point(e));
       return;
     }
-    if (this.host.root.dataset.roomDraw === 'true' && this.host.scopeId) {
+    if (this.host.root.dataset.roomDraw === 'true' && this.scope) {
       const p = this.host.point(e);
       this.roomDrag = {
         id: e.pointerId,
-        scopeId: this.host.scopeId,
-        floorId: this.host.floorId,
+        scopeId: this.scope,
+        floorId: this.floor,
         start: p,
         last: p,
         x: e.clientX,
@@ -603,7 +721,7 @@ export class AtlasAuthor {
     }
     const handle = this.host.camera.hitAt(e, ['atlasVertex', 'atlasEdge']);
     if (handle && this.host.regions.data) {
-      const selected = this.host.opts.roomDraft();
+      const selected = this.host.roomDraft();
       const room = selected?.id === handle.data.id ? selected : null;
       if (room) {
         this.vertexDrag = {
@@ -693,7 +811,7 @@ export class AtlasAuthor {
       (this.pathDrag || this.vertexDrag || this.drag || this.roomDrag || this.brushId !== null)
     ) {
       this.host.cancel();
-      this.host.opts.status(
+      this.host.status(
         'Kartengeometrie inzwischen geändert. Zug nach dem Laden erneut beginnen.',
         true,
       );
@@ -706,8 +824,8 @@ export class AtlasAuthor {
       this.suppressClick();
       if (
         drag.token !== this.host.owner?.token ||
-        element.scopeId !== this.host.scopeId ||
-        element.floorId !== this.host.floorId ||
+        element.scopeId !== this.scope ||
+        element.floorId !== this.floor ||
         this.selection?.id !== element.id
       ) {
         this.host.render();
@@ -742,8 +860,8 @@ export class AtlasAuthor {
       if (!drag.moved) return; // Leave a stationary press to the existing two-click path.
       this.suppressClick();
       if (
-        drag.scopeId !== this.host.scopeId ||
-        drag.floorId !== this.host.floorId ||
+        drag.scopeId !== this.scope ||
+        drag.floorId !== this.floor ||
         this.host.root.dataset.roomDraw !== 'true'
       )
         return;

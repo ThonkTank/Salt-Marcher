@@ -86,6 +86,11 @@ export function openTerrainRoute(host: Host) {
     saving = false,
     dirty = false,
     timer: ReturnType<typeof setTimeout> | undefined;
+  const setSaving = (value: boolean) => {
+    saving = value;
+    panel.inert = value;
+    panel.setAttribute('aria-busy', String(value));
+  };
   let selected = -1,
     insert = false,
     physicalDirty = !host.record?.route;
@@ -208,8 +213,8 @@ export function openTerrainRoute(host: Host) {
     host.preview(previewRecords, record.route!.anchors);
   }
   function invalidate() {
-    physicalDirty = true;
     if (saving) return;
+    physicalDirty = true;
     dirty = true;
     proposal = undefined;
     previewRecords = undefined;
@@ -320,7 +325,7 @@ export function openTerrainRoute(host: Host) {
         drawHandles();
       }
     } finally {
-      if (epoch === generation) panel.setAttribute('aria-busy', 'false');
+      if (epoch === generation && !saving) panel.setAttribute('aria-busy', 'false');
     }
   }
   async function load() {
@@ -345,7 +350,7 @@ export function openTerrainRoute(host: Host) {
       select.value = record.route?.mouth?.id ?? '';
     }
     status.textContent = 'Start, Zwischenpunkte und Ziel setzen. Punkte lassen sich ziehen.';
-    panel.setAttribute('aria-busy', 'false');
+    if (!saving) panel.setAttribute('aria-busy', 'false');
   }
   // Capture author gestures before normal tools; navigation remains entirely in AtlasCanvas.
   const parent = canvas.parentElement!;
@@ -487,7 +492,7 @@ export function openTerrainRoute(host: Host) {
   button('save').onclick = () =>
     void (async () => {
       if ((!proposal && (physicalDirty || !saved)) || !source || saving) return;
-      saving = true;
+      setSaving(true);
       button('save').disabled = true;
       try {
         const result = await host.write(
@@ -520,7 +525,7 @@ export function openTerrainRoute(host: Host) {
         error(e);
         button('save').disabled = false;
       } finally {
-        saving = false;
+        setSaving(false);
       }
     })();
   const reset = () => {
@@ -538,9 +543,12 @@ export function openTerrainRoute(host: Host) {
     previewRecords = undefined;
     drawHandles();
     showProfile(record);
+    if (!saving) panel.setAttribute('aria-busy', 'false');
     status.textContent = 'Entwurf verworfen.';
   };
-  button('cancel').onclick = reset;
+  button('cancel').onclick = () => {
+    if (!saving) reset();
+  };
   for (const action of ['undo', 'redo'] as const)
     button(action).onclick = () =>
       void (async () => {
@@ -548,7 +556,7 @@ export function openTerrainRoute(host: Host) {
           status.textContent = 'Zuerst Entwurf übernehmen oder verwerfen.';
           return;
         }
-        saving = true;
+        setSaving(true);
         try {
           await host.write({ kind: action });
           await host.changed?.();
@@ -558,13 +566,13 @@ export function openTerrainRoute(host: Host) {
         } catch (e) {
           error(e);
         } finally {
-          saving = false;
+          setSaving(false);
         }
       })();
   button('delete').onclick = () =>
     void (async () => {
       if (!saved || saving) return;
-      saving = true;
+      setSaving(true);
       try {
         await host.write({
           kind: 'landscape-remove',
@@ -577,7 +585,7 @@ export function openTerrainRoute(host: Host) {
       } catch (e) {
         error(e);
       } finally {
-        saving = false;
+        setSaving(false);
       }
     })();
   function close() {

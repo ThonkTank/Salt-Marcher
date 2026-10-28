@@ -562,3 +562,72 @@ test('concurrent clarification shares one read; mismatched applied acknowledgeme
   assert.equal((await author.reconcilePendingAtlasCommit(second.token)).ok, false);
   assert.deepEqual(author.pendingAtlasWrite(second.token), second);
 });
+
+for (const [fault, change] of [
+  ['foreign campaign with matching command', (ack) => ({ ...ack, campaignId: 'foreign-campaign' })],
+  ['missing terrain fence', (ack) => ({ ...ack, sourceFence: '' })],
+  ['older terrain revision', (ack) => ({ ...ack, revision: 4 })],
+  ['fractional revision', (ack) => ({ ...ack, revision: 5.5 })],
+])
+  for (const phase of ['write', 'receipt'])
+    test(`${phase} refuses ${fault} without saved notification, lost command or replay`, async (t) => {
+      const x = fixture(t),
+        c = {
+          ...x.command(),
+          sourceFence: 'source-5',
+          terrainStroke: { id: 'stroke', expectedRevision: 5 },
+          action: {
+            kind: 'landscape-height-stroke',
+            stroke: {
+              mode: 'raise',
+              radius: 8,
+              strength: 10,
+              feather: 0.8,
+              samples: [
+                { x: 0, y: 0, t: 0 },
+                { x: 0, y: 0, t: 1000 },
+              ],
+            },
+          },
+        };
+      const ack = {
+        commandId: c.commandId,
+        campaignId: c.campaignId,
+        revision: 6,
+        sourceFence: 'source-6',
+        canUndo: true,
+        canRedo: false,
+      };
+      const originalRead = x.api.reconcileAtlasCommit;
+      let dispatches = 0,
+        invalidations = 0;
+      document.addEventListener('atlas-invalidated', () => invalidations++);
+      x.api.executeAtlasCommit = async () => {
+        dispatches++;
+        return phase === 'write'
+          ? { ok: true, value: change(ack) }
+          : { ok: false, errorKind: 'store-outcome-unknown', error: 'Lost response' };
+      };
+      const before = x.store.db.serialize();
+      assert.equal((await author.writeAtlasCommit(c)).ok, false);
+      assert.deepEqual(author.pendingAtlasWrite(c.token), c);
+      x.api.reconcileAtlasCommit = async () => ({
+        ok: true,
+        value: { outcome: 'applied', ack: change(ack) },
+      });
+      assert.equal((await author.reconcilePendingAtlasCommit(c.token)).ok, false);
+      assert.deepEqual(author.pendingAtlasWrite(c.token), c);
+      assert.equal((await author.writeAtlasCommit(c)).ok, false);
+      assert.equal(dispatches, 1);
+      assert.equal(invalidations, 0);
+      assert.deepEqual(x.store.db.serialize(), before);
+      x.api.reconcileAtlasCommit = originalRead;
+      assert.equal(
+        (await author.reconcilePendingAtlasCommit(c.token)).value.outcome,
+        'not-applied',
+      );
+      assert.equal(author.pendingAtlasWrite(c.token), null);
+      assert.equal(dispatches, 1);
+      assert.equal(invalidations, 0);
+      assert.equal(x.draft(), 'Unveröffentlichter Entwurf');
+    });

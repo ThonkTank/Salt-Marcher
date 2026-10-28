@@ -2,10 +2,43 @@
 
 Status: Geltender Fachvertrag; offene Erweiterungen sind als Ziele beschrieben.
 Owner: atlas
-Last Reviewed: 2026-10-28 (begrenzte Flussqualifikation; Fachabnahme separat)
+Last Reviewed: 2026-10-28 (begrenzter Flussabschluss und Qualifikation; Fachabnahme separat)
 Source of Truth: Dieses Dokument besitzt das benannte Thema; Code belegt den Iststand, das Abnahmeregister den Prüfstand.
 
 Beauftragter Ausbau vom 20.10.2026. Ergänzt [Landschaftswerkzeuge](landscape-tools.md) und den Straßen-/Wasserteil von [Relief R6](../requirements/terrain-relief.md). Die ursprünglichen Quellenbindungen WD-010, WD-011 und WD-012 bleiben erhalten. Gebäude, Dungeoneingänge und eine automatische Erzeugung ganzer Flusssysteme gehören nicht zu diesem Ausbau.
+
+## Begrenzter Flussabschluss
+
+Der bestätigte zweite Arbeitszyklus erweitert den aktuellen
+[Terrain-/Wasserumfang](../requirements/terrain-relief.md#aktueller-lieferfokus-terrain-und-wasser).
+Er besitzt den hier beschriebenen eigenen Teilabschluss; daraus folgt keine
+Verschiebung in eine Lieferung nach dem vollständigen TW-G1–6-Abschluss.
+Nutzerergebnis ist ein einzeln geplanter, direkt weiterbearbeitbarer Fluss von
+Pflichtpunkt zu Pflichtpunkt mit durchgängig fallendem Wasserprofil und begrenztem
+Bettabtrag. Quellenzuordnung: Auftrag vom 20.10.2026, bestätigter zweiter Zyklus,
+HEX-13/16 und WD-010.01–03/WD-012.01–02; deren volle Originalparität bleibt separat.
+Voraussetzungen sind kanonische Höhen, gemeinsame Kamera, transaktionale
+Übernahme, History und Wiederaufnahme. Vorschau/Übernahme gehören zum
+Flussplaner; sie ändern nicht den bestätigten direkten Terrainpinselablauf.
+
+Offen vor diesem Abschluss: aktuelle Quellen-/Höhenbindung der Vorschau,
+Mündungsbudget, Pflichtpunkte und schmale Rücken sowie Abweisung unlösbarer
+Verläufe am Lieferstand gegen vorhandene Belege prüfen; verbleibende
+Originalfragen zu Form-/Anschlusswirkung nur dort nachmessen, wo sie dieses
+Nutzerergebnis tatsächlich verändern. Zusätzliche grafische Pfadoptionen
+bleiben vor dem späteren HEX-13/14-Ausbau zu klären. Der
+[Wonderdraft-Katalog](../verification/reference-comparison.md#lieferrelevante-offene-originalwirkungen)
+trennt diese Fragen vom schon bestätigten Eigenauftrag.
+
+Abschluss dieses Teilumfangs: Hang/Küste und lösbare/unlösbare Senke mit echten
+Pflichtpunkten planen, Vorschau abbrechen bzw. einmal atomar übernehmen,
+unzulässigen Abtrag ohne Teiländerung erklären, ausdrücklich geänderte Grenzen
+erneut prüfen; Bearbeiten, Schutz, Löschen, Undo/Redo und frischer Prozess
+erhalten den bestätigten Verlauf. Funktions-, Darstellungs-, Leistungs- und
+Paketbelege werden getrennt berichtet. Die vorhandenen lokalen Zyklus-2-Belege
+unten werden weiterverwendet; sie sind weder Gesamtterrain-/E2E- noch vollständige
+Flussparitätsabnahme. Neue Seen, Erosion, automatische Flussnetze und R6-Gebäude
+gehören nicht zu diesem Abschluss.
 
 ## Bedienung
 
@@ -43,13 +76,14 @@ Bereiche werden um betroffene Verläufe und ihre Anschlüsse erweitert. Grenzen:
 ## Prüfanschluss
 
 - `tests/atlas/terrain-route.test.mjs`: Trasse, Pflichtpunkte, Steigung, Flussbett, Anschlüsse/Zyklen, Schutz/Konflikt, Bauwerke, gemeinsame Geometrie, Revisionen, Transaktion, Undo/Redo, Löschen und Neustart. Die Flussfälle prüfen zusätzlich Mündungsbudget, eine lösbare und eine unlösbare querliegende Senke sowie schmale Rücken zwischen Profilknoten; unabhängige Zwischenproben bis 0,01 m prüfen das wirksame Bett.
+- `tests/atlas/terrain-route-units.test.mjs`: öffentlicher `openTerrainRoute()`-Einstieg, tatsächlich erzeugtes Planermarkup und gemeinsame Einheitenfunktionen; passive Metrisch/DnD-Wechsel erhalten exakte Anker/Planungswerte, einzelne Achsen bleiben unabhängig, Abbruch erhält den bestätigten Verlauf und ausdrückliche Eingaben erzeugen genau eine metrische Übernahme. Der verzögerte Straßen-Historygegenfall hält Schreiben, Aktualisierung und Quellrücklesung einzeln an: Der Planer bleibt bis zum Ende beschäftigt und für Eingaben gesperrt; danach lassen sich Änderung verwerfen, Planung schließen und ein neuer leerer Fluss öffnen. Host/Preload sind kontrolliert; Solver und SQLite besitzen die getrennten Fachtests.
 - [desktop-terrain-route-units.test.mjs (historisch)](https://github.com/ThonkTank/Salt-Marcher/blob/05e8f2f97fc729dba8b6fef3830c566cdc47adad/tests/atlas/desktop-terrain-route-units.test.mjs): gemeinsame Umrechnung, volle Koordinatengenauigkeit, passive Einheitenwechsel, Vorschau/Übernahme und erneutes Öffnen.
 - `tools/test-desktop-terrain-routes.mjs --river-only` (optional `--depression=4`, `--depression=12`): begrenzter Hang-/Küstenablauf mit drei echten Punktklicks, Vorschau, atomarer Übernahme, Undo/Redo und frischem Prozess. Die 12-m-Senke wird bei 8 m Abtrag abgewiesen; derselbe Entwurf lässt sich nach ausdrücklicher Änderung auf 16 m übernehmen. `tests/helpers/river-terrain.mjs` besitzt die gemeinsame Vier-Kachel-Fixture und 0,25-m-Zwischenproben; die numerische Höhentoleranz beträgt 0,00001 m. Native Bilder warten auf aktuelle Revision und fertige Detaildarstellung; Kamerabilder sind von kanonischen Höhenproben getrennte Belege.
 - `tools/test-desktop-terrain-routes.mjs`: echte native Eingaben, Einheitenwechsel, Vorschau/Übernahme, Neigung derselben Hauptkamera, 100 %-Seitenleiste, PNG, Schutzwechsel, Löschen/Undo, Geländepinsel und frischer Prozess.
 - `tests/atlas/terrain-route-display.test.mjs` und `tools/test-desktop-atlas-line-scales.mjs`: unmittelbare Bildschirmbreite, weiche Sichtbarkeit, Auswahl, Tunnelunterbrechungen und begrenzte Unterteilung langer Verläufe; [native Belege](https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-route-scale-20261021/README.md).
 - `tools/render-terrain-routes.mjs`: isolierter Bildvergleich mit Hangstraße, Fluss, Tunnel, Brücke und Furt.
 
-Der Renderer-Hänger nach Redo der 12-m-Senke entstand durch automatische Fokusnachführung bei eintreffenden LOD-Kacheln: Unterschiedliche interpolierte Höhen ließen unmittelbar verfügbare Übersichts-/Detailpläne abwechseln und verhinderten neue Frames. Kachelankünfte führen den Fokus deshalb nicht nach; Navigationsabschluss und Ansichtssteuerung behalten diese Aufgabe. `tests/atlas/atlas-presentation-source.test.mjs` prüft die ruhende Kamera während der Verfeinerung und den weiterhin wirksamen Refokus nach Navigation.
+Der Renderer-Hänger nach Redo der 12-m-Senke entstand durch automatische Fokusnachführung bei eintreffenden LOD-Kacheln: Unterschiedliche interpolierte Höhen ließen unmittelbar verfügbare Übersichts-/Detailpläne abwechseln und verhinderten neue Frames. Kachelankünfte führen den Fokus deshalb nicht nach; Navigationsabschluss und Ansichtssteuerung behalten diese Aufgabe. `tests/atlas/atlas-presentation-source.test.mjs` prüft die ruhende Kamera während der Verfeinerung und den weiterhin wirksamen Refokus nach Navigation. Eine gültige wiederhergestellte Pose besitzt ihren Fokus bereits vor der ersten Terrainlieferung; Übersicht und spätere Details überschreiben ihn nicht. Ohne gespeicherte Pose wird der anfängliche Fokus weiterhin aus dem geladenen Terrain bestimmt. Die bestehende Sicherheitskorrektur gegen ein Durchtauchen bleibt wirksam.
 
 Der erneuerte lokale Zyklus-2-Nachweis vom 28.10.2026 deckt Hang/Küste bei 100 Prozent sowie die 4-m- und 12-m-Senke einschließlich identischer Redo-/Fresh-Bilder ab. Die 12-m-Senke wird bei 8 m Abtrag ohne Teiländerung abgewiesen und lässt sich nach ausdrücklich gewählten 16 m speichern, rückgängig machen und wiederherstellen. Alle qualifizierten Starts enden normal; die erzwungen beendeten Diagnoseläufe bleiben davon getrennt. Dies ist lokale Funktionsprüfung, keine Leistungs-, Paket- oder Benutzerabnahme.
 

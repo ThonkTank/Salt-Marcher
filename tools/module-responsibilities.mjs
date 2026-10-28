@@ -9,6 +9,20 @@ export const responsibilities = {
       'src/app/workspace/workspace-opening.ts',
     ],
   },
+  'atlas composition': { kind: 'presentation', files: ['src/app/atlas/campaign-atlas-ui.ts'] },
+  'atlas terrain edits': {
+    kind: 'presentation',
+    files: [
+      'src/app/atlas/atlas-terrain-edits.ts',
+      'src/app/atlas/terrain-stroke-queue.ts',
+      'src/app/atlas/terrain-queue-recovery.ts',
+    ],
+  },
+  'atlas author': { kind: 'presentation', files: ['src/app/atlas/atlas-author.ts'] },
+  'atlas regions': { kind: 'presentation', files: ['src/app/atlas/atlas-regions.ts'] },
+  'atlas journey': { kind: 'presentation', files: ['src/app/atlas/atlas-journey.ts'] },
+  'atlas drawing': { kind: 'presentation', files: ['src/app/atlas/atlas-drawing.ts'] },
+  'atlas output': { kind: 'presentation', files: ['src/app/atlas/atlas-output.ts'] },
   'preparation editor': { kind: 'presentation', files: ['src/app/campaign/preparation.ts'] },
   'live editor': {
     kind: 'presentation',

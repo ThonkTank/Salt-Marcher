@@ -31,6 +31,46 @@ festen Gitrevisionen Referenzen, keine zusätzlichen aktuellen Arbeitspläne.
 5. **Export und Spieleranzeige** konsumieren bestätigte Szenen. Öffentliche
    Inhalte stammen ausschließlich aus der freigegebenen Spielerprojektion.
 
+### Zustandsbesitzer und Übergänge
+
+`CampaignAtlasWorkbench` verbindet die Besitzer und koordiniert angenommene
+Übergänge. Sie erhält keine zusätzliche Schreibautorität über ihre Fachzustände.
+Die `createAtlas…`-Anschlüsse übergeben konkrete Lese-/Aktionsfähigkeiten; weder
+Gesamt-Workbench noch `opts` werden weitergereicht.
+
+| Zustand | Einziger Schreiber | Leser / angeforderte Aktionen | Abmeldung / Reset |
+| --- | --- | --- | --- |
+| Geschlossene Terrainzüge, zugehöriger Token, Recovery-Sperre und einmaliger automatischer Retry | `AtlasTerrainEdits`, intern `TerrainStrokeQueue` / `TerrainQueueRecovery` | Landgesten reihen ein; UI liest `view` und fordert Klären, Anwenden, Verwerfen oder Drain an; Receipt-, Quellen- und Projektionsports sind getrennt | `hide` stoppt eigene Timer und entwertet Lesefortsetzungen; `activate` verweigert fremde Kampagnen bei gehaltenen Zügen; nur `releaseSettled` entfernt eine leere bestätigte Queue |
+| Auswahl, Stadt, Raumgruppe, Geschoss, Platzierungsabsicht und Autorenentwurf | `AtlasAuthor` | Klick, Treffer, Suche und Navigation fordern fachliche Auswahloperationen an; Darstellung und Layout lesen denselben Kontext | `hide` entwertet Auswahlleases; `resetContext` räumt nur Autorenkontext/Gesten auf; `changeTool` beendet den leeren Werkzeugcursor erst nach angenommener Grenze |
+| Aktive Kampagne, Sichtbarkeit, Werkzeugfamilie und koordinierte Übergangsgeneration | `CampaignAtlasWorkbench` | Workspace und Live-Portal fordern Aktivierung, Öffnen, Verbergen, Flush oder Werkzeugwechsel an | Eigene Such-/Treffergeneration, Öffnungsauftrag und Laufzeit-Refresh-Timer werden stillgelegt; Fachresets werden delegiert |
+| Anfragegeneration, Regions-Timer, bestätigte Projektion und Bereitschaft | `AtlasRegions` | Autoren, Reise, Darstellung und Ausgabe lesen bestätigte Quellen und fordern Refresh an | `cancel` beendet eigene Leseaufträge/Timer, `resetContext` zusätzlich die alte Projektion |
+| Reisevorschau, ungeklärter Reiseauftrag und Wiedergabe | `AtlasJourney` | Controls fordern Reise-/Recoveryaktionen an; Regionen melden Lesekontext | `hide` entwertet Vorschau und stoppt Wiedergabe; `drainPlayback` wartet auf ihr tatsächliches Ende; `activate` setzt den eigenen Reisekontext zurück |
+| Wiederverwendbare Zeichengeometrie und Beschriftungslayout | `AtlasDrawing` | Zeichnet bestätigte Regionsdaten und sichtbare Autorenentwürfe | `invalidateGeometry` / `resetContext` besitzen nur abgeleitete Darstellung |
+| Ausgabebereich, Zeigergeste und Exportauftrag | `AtlasOutput` | UI fordert Ausgabeaktionen an, Darstellung liest die Auswahl | `cancel` bricht den eigenen Exportkanal ab, `reset` räumt seine Bereichswahl auf |
+| Kamera / gespeicherte Ausschnitte und Live-Einbettung | `AtlasCanvas` / `LiveAtlasPortal` jeweils für den eigenen Zustand | Workbench fokussiert; das Portal bewegt dieselbe Fläche und dieselben Controls | Kampagnenkontext wechselt über `camera.context`; Verbergen und Live-Docking erzeugen keine zweite Kamera oder Fachauswahl |
+
+Die gemeinsame Reihenfolge bleibt in `activate`, `hide`, `open`, `flush` und
+`setFamily` sichtbar. Aktivierung prüft zuerst die Terrain-Abgabepflicht; danach
+entwertet sie Regions-/Treffer-/Reise-/Ausgabeantworten, veröffentlicht den neuen
+Workspace und delegiert Landschafts-, Autoren-, Darstellungs- und Kamerakontext.
+Verbergen entwertet zuerst die Workbenchgeneration, dann Terrain-Recovery,
+Analyse, Projektion, Regionslesen, Export, Treffer, Reise und Autorenantworten;
+erst danach wird die Fläche verborgen. Angenommene Writes werden nicht abgebrochen.
+Öffnen aktiviert Terrain-Recovery, lädt Terrain und Region und nimmt erst für
+dieselbe noch sichtbare Generation den Werkzeugmodus an. Ein alter Öffnungsauftrag
+kann eine neu geöffnete Ansicht nicht übernehmen.
+
+Flush wartet zuerst auf Terrain-Drain und danach auf das Ende der
+Reisewiedergabe; ungeklärte Commands, offene Fachentwürfe und Placementänderungen
+verweigern die Übergabe. Navigation verwendet diese Grenze vor jedem Targetread,
+zusätzlich zum bestehenden Editorflush. Eine Autorenlease schützt die Übernahme
+über weitere Reads und Auswahloperationen hinweg. Werkzeugwechsel prüft die
+Grenzen vor seiner ersten Mutation; ein verweigerter Wechsel erhält Auswahl und
+Entwurf. Erst die angenommene Grenze übergibt der fachlichen Auswahloperation den
+neuen Kontext und aktiviert die passende Werkzeugfamilie. Diese Regeln verwenden
+weiterhin bestehende Tokens, Receipts und Entwurfssicherung, keine allgemeine
+Zustandsverwaltung.
+
 Funktionsumfang und Regressionsziele stehen im
 [Atlasplan](unified-spatial-atlas.md). Technische Nachweise ersetzen
 keine vollständige Produktabnahme.
@@ -55,7 +95,8 @@ keine vollständige Produktabnahme.
 Vom [Index](../../INDEX.md) führt dieser Weg über die
 [Bedienung der Landwerkzeuge](../guide.md#gelände-formen-und-ansicht-kippen) zum Writer:
 `atlas-landscape-ui.ts` / `landscape-brush-session.ts` halten Eingabe und Vorschau;
-`terrain-stroke-queue.ts` ordnet geschlossene Höhenzüge. `campaign-atlas-author.ts`
+`atlas-terrain-edits.ts` besitzt die geschlossenen Höhenzüge samt Recovery;
+`terrain-stroke-queue.ts` ordnet ihre unveränderlichen Aufträge. `campaign-atlas-author.ts`
 übergibt den Auftrag ausschließlich über Preload/Main. Der kanonische Einstieg
 ist `CampaignStore.executeAtlasCommit` in `src/app/storage/store.ts`, mit
 `campaign-atlas.ts`, `landscape-brush-edit.ts`, `atlas-landscape.ts` und den
@@ -130,7 +171,7 @@ Gesamtabnahmen.
 
 Vom [Index](../../INDEX.md) über den
 [sichtbaren Klärungsablauf](../guide.md#speicherstand-klären-und-weiterarbeiten)
-zu `TerrainStrokeQueue`, `campaign-atlas-author.ts` und dem Klärungszugang in
+zu `AtlasTerrainEdits` mit `TerrainStrokeQueue`, `campaign-atlas-author.ts` und dem Klärungszugang in
 `campaign-atlas-ui.ts`. `CampaignStore.reconcileAtlasCommit` ist der kanonische
 Read für den Originalauftrag. [Store-Worker](../../project/architecture/canonical-store-worker.md)
 und [Speicherports](../../project/architecture/storage-ports.md) besitzen
@@ -158,7 +199,19 @@ entwertet die frühe [Editorstilllegung](../../project/architecture/editor-lifec
 alte Regionsantworten; der neue bestätigte Besitzer darf echte Ladefehler weiter
 zeigen.
 
-Automatisierte Quellprüfungen: [terrain-stroke-queue.test.mjs](../../../tests/atlas/terrain-stroke-queue.test.mjs)
+Automatisierte Besitzerprüfungen:
+[atlas-terrain-edits.test.mjs](../../../tests/atlas/atlas-terrain-edits.test.mjs)
+verwendet den vollständigen Terrainbesitzer mit Queue und Recovery für verlorene
+Erstantwort, genau einmalige Folgefortsetzung, Quellenkonflikt mit Anwenden/Verwerfen,
+Kampagnenwechsel, alte versteckte Antworten und Wiederöffnung.
+[atlas-ownership-boundaries.test.mjs](../../../tests/atlas/atlas-ownership-boundaries.test.mjs)
+verwendet den vollständigen Workbenchkonstruktor und Produktionsmarkup für
+verweigerte Auswahl-/Werkzeugwechsel, konkurrierende Navigation, A–B–A,
+späte Antworten und dieselbe Auswahl/Kamera beim Live-Docking.
+Die frühere private Queue-Nachbildung in `terrain-commit-display.test.mjs` ist
+durch diese Besitzerprüfungen ersetzt; deren Darstellungsprüfungen bleiben erhalten.
+
+Weitere automatisierte Quellprüfungen: [terrain-stroke-queue.test.mjs](../../../tests/atlas/terrain-stroke-queue.test.mjs)
 für Originalaktionen, Reihenfolge, Retry und Quellenkonflikt;
 [terrain-queue-recovery.test.mjs](../../../tests/atlas/terrain-queue-recovery.test.mjs)
 für automatische, zusammengefasste Leseversuche und Timerende;
