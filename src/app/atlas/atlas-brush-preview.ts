@@ -1,4 +1,5 @@
-import { applyTerrainBrush, type HeightStroke } from './terrain-brush';
+import type { HeightStroke } from './terrain-brush';
+import { applyCoupledTerrainBrush } from './terrain-lake-coupling';
 import { applyHeightStroke, TerrainSampler } from './terrain-height';
 import { type MaskStroke } from './land-mask';
 import { validateColor, brushFootprint, orderedColors } from './landscape-brush';
@@ -26,7 +27,7 @@ export function brushPreviewRecords(
   let records = job.records;
   if (job.stroke || job.heightStroke) {
     const tiles = job.heightStroke
-        ? applyTerrainBrush(records, job.heightStroke, limited, visibility)
+        ? applyCoupledTerrainBrush(records, job.heightStroke, limited, visibility)
         : applyHeightStroke(records, job.stroke!),
       ids = new Set(tiles.map((r) => r.id));
     records = [...records.filter((r) => !ids.has(r.id)), ...tiles];

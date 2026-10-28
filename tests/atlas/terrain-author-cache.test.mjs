@@ -9,7 +9,7 @@ const require = createRequire(import.meta.url);
 buildSync({
   stdin: {
     contents:
-      "export * from './src/app/storage/terrain-editing-source';export * from './src/app/atlas/atlas-terrain-editing-source';export * from './src/app/atlas/terrain-brush';export {terrainGridLayout} from './src/app/atlas/terrain-grid-layout';export * from './src/app/storage/store';export * from './src/app/storage/terrain-grid';export * from './src/app/storage/atlas-landscape';export * from './src/app/storage/terrain-route';export * from './src/app/atlas/terrain-height';",
+      "export * from './src/app/storage/terrain-editing-source';export * from './src/app/atlas/atlas-terrain-editing-source';export * from './src/app/atlas/terrain-brush';export * from './src/app/atlas/terrain-lake-coupling';export {terrainGridLayout} from './src/app/atlas/terrain-grid-layout';export * from './src/app/storage/store';export * from './src/app/storage/terrain-grid';export * from './src/app/storage/atlas-landscape';export * from './src/app/storage/terrain-route';export * from './src/app/atlas/terrain-height';",
     resolveDir: process.cwd(),
   },
   outfile: '.build/terrain-author-cache-test.cjs',
@@ -23,7 +23,7 @@ const {
   readTerrainEditingPage,
   readTerrainEditingPackets,
   AtlasTerrainEditingSource,
-  applyTerrainBrush,
+  applyCoupledTerrainBrush: applyTerrainBrush,
   TerrainSampler,
   terrainGridLayout,
   CampaignStore,
@@ -68,6 +68,76 @@ function fixture(t) {
   const seed = () => store.rememberTerrainGrid(token, fence(), canonical());
   return { store, cam, token, write, view, fence, canonical, cache, read, seed };
 }
+test('editing packets load a complete overlapping lake group outside the camera and keep the partial brush level', (t) => {
+  const f = fixture(t);
+  const lake = (id, x, level = 20) => ({
+    id,
+    revision: 0,
+    kind: 'patch',
+    name: 'Connected lake',
+    points: [],
+    width: 0,
+    resolution: 1,
+    values: {},
+    surface: 'freshwater',
+    waterLevelM: level,
+    polygons: [
+      {
+        outer: [
+          { x, y: 0 },
+          { x: x + 30, y: 0 },
+          { x: x + 30, y: 20 },
+          { x, y: 20 },
+        ],
+        holes: [],
+      },
+    ],
+  });
+  for (const r of [
+    lake('lake-a', 0),
+    lake('lake-b', 25),
+    lake('lake-c', 50),
+    lake('separate-level', 75, 21),
+    lake('unrelated', 200),
+  ])
+    f.write({ kind: 'landscape-put', expectedRevision: null, record: r });
+  const box = { x: 0, y: 0, width: 5, height: 20 },
+    records = [];
+  let after = '',
+    pages = 0;
+  for (;;) {
+    const page = readTerrainEditingPage(f.store.db, f.cam.id, box, after, 800);
+    records.push(...page.records);
+    pages++;
+    if (page.complete) break;
+    assert(page.next > after);
+    after = page.next;
+  }
+  assert(pages > 1);
+  assert.deepEqual(
+    records.filter((r) => r.surface).map((r) => r.id),
+    ['lake-a', 'lake-b', 'lake-c'],
+  );
+  const s = {
+    mode: 'raise',
+    radius: 32,
+    strength: 2,
+    feather: 0,
+    samples: [
+      { x: 10, y: 10, t: 0 },
+      { x: 10, y: 10, t: 2000 },
+    ],
+  };
+  assert(!applyTerrainBrush(records, s).some((r) => r.surface));
+  const before = f.store.db
+    .prepare("SELECT payload FROM atlas_landscape WHERE id='lake-c'")
+    .get().payload;
+  f.write({ kind: 'landscape-height-stroke', stroke: s });
+  assert.equal(
+    f.store.db.prepare("SELECT payload FROM atlas_landscape WHERE id='lake-c'").get().payload,
+    before,
+  );
+});
 test('trusted seeded surface is reused; successful local writes invalidate only affected blocks', (t) => {
   const f = fixture(t);
   f.seed();
