@@ -1,12 +1,12 @@
 import type { Result } from '../shared/contracts';
-import type { WorldAck,WorldAction,WorldCommand,WorldReconciliation } from './world-contracts';
+import type { WorldAck, WorldAction, WorldCommand, WorldReconciliation } from './world-contracts';
 import type { WorldEditorSurface } from './world-editor-surface';
-import type { WeatherIntent,WorldEdits } from './world-editor-types';
+import type { WeatherIntent, WorldEdits } from './world-editor-types';
 import type {
-WorldCalendarPort,
-WorldMapPort,
-WorldTravelPort,
-WorldWeatherPort,
+  WorldCalendarPort,
+  WorldMapPort,
+  WorldTravelPort,
+  WorldWeatherPort,
 } from './world-owner-ports';
 
 interface Host {
