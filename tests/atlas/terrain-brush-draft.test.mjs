@@ -6,7 +6,7 @@ import { createRequire } from 'node:module';
 buildSync({
   stdin: {
     contents:
-      "export * from './src/app/atlas/terrain-lake-brush';export * from './src/app/atlas/atlas-surface-draft';export * from './src/app/atlas/terrain-brush-draft';export * from './src/app/atlas/terrain-brush';export * from './src/app/atlas/terrain-height';export * from './src/app/atlas/terrain-spatial-model';",
+      "export * from './src/app/atlas/terrain-lake-brush';export * from './src/app/atlas/atlas-surface-draft';export * from './src/app/atlas/terrain-brush-draft';export * from './src/app/atlas/terrain-brush';export * from './src/app/atlas/terrain-lake-coupling';export * from './src/app/atlas/terrain-height';export * from './src/app/atlas/terrain-spatial-model';",
     resolveDir: process.cwd(),
   },
   outfile: '.build/terrain-brush-draft-test.cjs',
@@ -19,7 +19,7 @@ const {
   mergeLakeBrush,
   AtlasSurfaceDraft,
   TerrainBrushDraft,
-  applyTerrainBrush,
+  applyCoupledTerrainBrush: applyTerrainBrush,
   TerrainSampler,
   heightRecord,
   gridHeight,
@@ -293,4 +293,50 @@ test('lake draft equals commit for stationary holding, deepening, partial/full e
   for (const r of again.records) assert(!again.grid.editing.author.removed.includes(r.id));
   assert.equal(base.editing.ground[centre], 20);
   assert.equal(base.editing.water[centre], 0);
+});
+
+test('a normal height draft lifts the complete lake level before release, preserving depth and following erase', () => {
+  const base = grid(20),
+    dig = {
+      id: 'lake-lift',
+      mode: 'dig',
+      radius: 24,
+      strength: 2,
+      feather: 0.8,
+      waterLevelM: 20,
+      samples: [
+        { x: 0, y: 0, t: 0 },
+        { x: 0, y: 0, t: 3000 },
+      ],
+    };
+  const lake = new TerrainBrushDraft(base);
+  lake.update(dig);
+  const draft = new TerrainBrushDraft(lake.grid),
+    lift = {
+      ...stroke,
+      radius: 128,
+      strength: 2,
+      feather: 0.5,
+      samples: [
+        { x: 0, y: 0, t: 0 },
+        { x: 0, y: 0, t: 2000 },
+      ],
+    };
+  draft.update(lift);
+  assert.equal(draft.ground[centre], 18);
+  assert.equal(draft.grid.editing.water[centre], 24);
+  assert.equal(draft.grid.heights[centre], 24);
+  const expected = mergeLakeBrush(lake.records, {
+    records: applyTerrainBrush(lake.records, { ...lift, visibility: base.view }, undefined, base),
+    remove: [],
+  });
+  assert.deepEqual(
+    [...draft.records].sort((a, b) => a.id.localeCompare(b.id)),
+    [...expected].sort((a, b) => a.id.localeCompare(b.id)),
+  );
+  assert.equal(lake.grid.editing.water[centre], 20);
+  const erased = new TerrainBrushDraft(draft.grid);
+  erased.update({ ...dig, mode: 'erase', radius: 32 });
+  assert.equal(erased.ground[centre], 24);
+  assert.equal(erased.grid.editing.water[centre], 0);
 });

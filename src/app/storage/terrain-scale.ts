@@ -12,7 +12,8 @@ import {
   validateHeightStroke,
   type HeightStroke,
 } from '../atlas/terrain-brush';
-import { coupleRouteEdits } from '../atlas/terrain-route-planner';
+import { coupleTerrainEdits } from '../atlas/terrain-lake-coupling';
+import { terrainEditingDependencies } from './terrain-editing-dependencies';
 import { routeBounds } from '../atlas/terrain-route';
 import { readRouteTerrain } from './terrain-route';
 import { readTerrainEditingPackets } from './terrain-editing-source';
@@ -250,10 +251,18 @@ export function computeTerrainStroke(
     visibility ?? (stroke.visibility ? readTerrainGrid(db, cam, stroke.visibility) : undefined);
   const tiles = applyTerrainBrush(records, stroke, undefined, visible, undefined, true);
   if (!tiles.length) return [];
+  const dependencies = terrainEditingDependencies(db, cam, box);
   const local = routeSources(db, cam, box);
-  if (!local.some((r) => r.route)) return tiles;
-  const ids = new Set(local.map((r) => r.id));
-  return coupleRouteEdits([...local, ...records.filter((r) => !ids.has(r.id))], tiles);
+  for (const corridor of dependencies.corridors) local.push(...routeSources(db, cam, corridor));
+  local.push(...dependencies.records);
+  const complete = [...new Map(local.map((r) => [r.id, r])).values()];
+  const ids = new Set(complete.map((r) => r.id));
+  return coupleTerrainEdits(
+    [...complete, ...records.filter((r) => !ids.has(r.id))],
+    tiles,
+    undefined,
+    stroke.preserveDetails === false ? pixel : undefined,
+  );
 }
 
 /** Complete local author set, including every scale of lake provenance. */

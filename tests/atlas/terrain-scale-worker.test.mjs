@@ -85,6 +85,79 @@ test('readonly worker prepares the real large brush; the canonical Store alone w
   assert.equal(f.store.atlasRegionSource(f.token).revision, revision);
   assert.equal(f.service.diagnostics.workerStarts, 1);
 });
+test('height worker returns coupled lake and heights for one atomic commit and original receipt replay', async (t) => {
+  const f = await fixture(t);
+  const write = (action) => f.store.executeAtlasCommit({ ...f.command(), action });
+  for (const y of [-512, 0])
+    for (const x of [-512, 0])
+      write({
+        kind: 'landscape-put',
+        expectedRevision: null,
+        record: heightRecord(x, y, 8, new Float32Array(4096).fill(20)),
+      });
+  write({
+    kind: 'landscape-lake-stroke',
+    stroke: {
+      id: 'worker-lake',
+      mode: 'dig',
+      radius: 48,
+      strength: 2,
+      feather: 0.8,
+      waterLevelM: 20,
+      samples: [
+        { x: 64, y: 0, t: 0 },
+        { x: 64, y: 0, t: 3000 },
+      ],
+    },
+  });
+  const c = f.command();
+  c.action.stroke = {
+    mode: 'raise',
+    radius: 128,
+    strength: 2,
+    feather: 0.5,
+    samples: [
+      { x: 64, y: 0, t: 0 },
+      { x: 64, y: 0, t: 2000 },
+    ],
+  };
+  const source = f.store.terrainStrokeSource(c, f.service.cursor),
+    prepared = await f.service.prepareTerrainStroke(source, c.action.stroke);
+  assert.equal(prepared.records.find((r) => r.id === 'worker-lake').waterLevelM, 24);
+  assert.equal(
+    f.store.db
+      .prepare(
+        "SELECT json_extract(payload,'$.waterLevelM') level FROM atlas_landscape WHERE id='worker-lake'",
+      )
+      .get().level,
+    20,
+  );
+  const before = f.store.db
+    .prepare('SELECT cursor FROM campaign_atlas WHERE campaign_id=?')
+    .get(f.cam.id).cursor;
+  f.store.executeAtlasCommit(c, prepared);
+  assert.equal(f.store.atlasHeight(f.token, { x: 64, y: 0 }).heightM, 18);
+  assert.equal(
+    f.store.db
+      .prepare(
+        "SELECT json_extract(payload,'$.waterLevelM') level FROM atlas_landscape WHERE id='worker-lake'",
+      )
+      .get().level,
+    24,
+  );
+  assert.equal(
+    f.store.db.prepare('SELECT cursor FROM campaign_atlas WHERE campaign_id=?').get(f.cam.id)
+      .cursor,
+    before + 1,
+  );
+  assert.equal(f.store.reconcileAtlasCommit(c).outcome, 'applied');
+  f.store.executeAtlasCommit(c);
+  assert.equal(
+    f.store.db.prepare('SELECT cursor FROM campaign_atlas WHERE campaign_id=?').get(f.cam.id)
+      .cursor,
+    before + 1,
+  );
+});
 test('intervening writes reject computed patches; worker survives and accepts a new source', async (t) => {
   const f = await fixture(t),
     c = f.command(),

@@ -15,7 +15,7 @@ const cache = homedir() + '/.cache/saltmarcher';
 mkdirSync(cache, { recursive: true });
 buildSync({
   stdin: {
-    contents: `export * from './src/app/atlas/terrain-route';export * from './src/app/atlas/terrain-route-planner';export * from './src/app/atlas/atlas-route-geometry';export * from './src/app/atlas/terrain-height';export * from './src/app/atlas/terrain-brush';export * from './src/app/atlas/landscape-line';export * from './src/app/atlas/atlas-landscape';export * from './src/app/atlas/spatial-terrain';export * from './src/app/storage/store';export * from './src/app/storage/atlas-landscape-region';export * from './src/app/storage/atlas-region';export * from './src/app/storage/atlas-terrain-tiles';export * from './src/app/storage/atlas-material-tiles';`,
+    contents: `export * from './src/app/atlas/terrain-route';export * from './src/app/atlas/terrain-route-planner';export * from './src/app/atlas/atlas-route-geometry';export * from './src/app/atlas/terrain-height';export * from './src/app/atlas/terrain-brush';export * from './src/app/atlas/terrain-lake-coupling';export * from './src/app/atlas/landscape-line';export * from './src/app/atlas/atlas-landscape';export * from './src/app/atlas/spatial-terrain';export * from './src/app/storage/store';export * from './src/app/storage/atlas-landscape-region';export * from './src/app/storage/atlas-region';export * from './src/app/storage/atlas-terrain-tiles';export * from './src/app/storage/atlas-material-tiles';`,
     resolveDir: process.cwd(),
   },
   outfile: '.build/terrain-route-test.cjs',
@@ -32,7 +32,7 @@ const {
   routeSpec,
   planRoute,
   linePoints,
-  applyTerrainBrush,
+  applyCoupledTerrainBrush: applyTerrainBrush,
   decodeHeights,
   CampaignStore,
   atlasRouteGeometry,
@@ -83,6 +83,68 @@ const merge = (before, changes) => {
   const ids = new Set(changes.map((r) => r.id));
   return [...before.filter((r) => !ids.has(r.id)), ...changes];
 };
+test('joint lake lift replans its river mouth at the new level; impossible protected connection rejects atomically', (t) => {
+  const lake = {
+    ...emptyRecord('patch'),
+    id: 'joint-lake',
+    surface: 'freshwater',
+    waterLevelM: 20,
+    points: [],
+    polygons: [
+      {
+        outer: [
+          { x: 176, y: -24 },
+          { x: 224, y: -24 },
+          { x: 224, y: 24 },
+          { x: 176, y: 24 },
+        ],
+        holes: [],
+      },
+    ],
+  };
+  const base = [...terrain((x) => 20 + (200 - x) * 0.02), lake],
+    input = route('river');
+  input.route.mouth = { id: lake.id, point: { x: 200, y: 0 } };
+  const river = planRoute(base, input),
+    source = [...base, river],
+    before = structuredClone(source),
+    stroke = { ...brush(0, 0, 4), radius: 1024, feather: 0.5 },
+    changes = applyTerrainBrush(source, stroke),
+    lifted = merge(source, changes),
+    liftedRiver = lifted.find((r) => r.id === river.id);
+  assert.equal(lifted.find((r) => r.id === lake.id).waterLevelM, 24);
+  assert.equal(liftedRiver.route.nodes.at(-1).z, 24);
+  assert(!liftedRiver.route.conflict);
+  assert.deepEqual(source, before);
+  const impossible = { ...brush(200, 0, 40), radius: 96, feather: 0 };
+  assert.throws(() => applyTerrainBrush(source, impossible), /Abfluss|Eingriffsgrenzen|Verlauf/);
+  assert.deepEqual(source, before);
+  const f = fixture(t, base);
+  f.put(input);
+  const saved = f.records(),
+    cursor = f.store.db
+      .prepare('SELECT cursor FROM campaign_atlas WHERE campaign_id=?')
+      .get(f.cam.id).cursor;
+  assert.throws(
+    () => f.write({ kind: 'landscape-height-stroke', stroke: impossible }),
+    /Abfluss|Eingriffsgrenzen|Verlauf/,
+  );
+  assert.deepEqual(f.records(), saved);
+  assert.equal(
+    f.store.db.prepare('SELECT cursor FROM campaign_atlas WHERE campaign_id=?').get(f.cam.id)
+      .cursor,
+    cursor,
+  );
+  f.write({ kind: 'landscape-height-stroke', stroke });
+  assert.equal(f.records().find((r) => r.id === lake.id).waterLevelM, 24);
+  assert.equal(
+    f
+      .records()
+      .find((r) => r.id === river.id)
+      .route.nodes.at(-1).z,
+    24,
+  );
+});
 test('planned curves preserve mandatory points and produce deterministic geometry', () => {
   const base = terrain((x, y) => 60 + 30 * Math.exp(-(x * x + y * y) / 3000)),
     r = route('road', [

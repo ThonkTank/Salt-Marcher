@@ -2,7 +2,7 @@
 
 Status: Geltender Fachvertrag; offene Erweiterungen sind als Ziele beschrieben.
 Owner: atlas
-Last Reviewed: 2026-10-24 (Struktur und Quellen; Fachabnahme separat)
+Last Reviewed: 2026-10-28 (gemeinsame See-/Umlandanhebung; Fachabnahme separat)
 Source of Truth: Dieses Dokument besitzt das benannte Thema; Code belegt den Iststand, das Abnahmeregister den Prüfstand.
 
 Beauftragter Ausbau vom 19.10.2026. Städte, Symbole, Generator und Heightmap-Import sind ausgeschlossen. Die ursprüngliche Lieferung ließ bestehende Karten unverändert; die unten beschriebene Landmasken-Umstellung übernimmt nun explizite Gelände-/Wasserflächen.
@@ -170,3 +170,42 @@ History und Wiederöffnung) sowie `tests/atlas/atlas-brush-size.test.mjs`
 kanonische Daten, Grundkorrekturen, Undo/Redo und reguläre Wiederöffnung.
 Funktionsbelege ersetzen weder die spätere Darstellungs-/LOD- und
 Leistungsqualifikation noch Paket-, Integrations- oder Nutzerabnahme.
+
+## See und Umland gemeinsam anheben · 28.10.2026
+
+Ein normaler Höhenzug hebt den horizontalen Seepegel um den gemeinsamen,
+über der vollständigen Autorenfläche belegten Höhenanteil an. Überlappende
+Seezüge gleichen Pegels bilden dafür einen Wasserkörper. Gleichmäßige +4 m
+verschieben Land, Becken und Pegel gemeinsam; Tiefe und Ufer bleiben erhalten.
+Bei ungleichmäßiger Wirkung gilt eine konservative Untergrenze, bei bloßer
+Teilabdeckung bleibt der Pegel stehen. Wasser breitet sich nicht außerhalb
+der Autorenfläche aus; Überlauf wird nicht simuliert.
+
+`terrain-lake-coupling.ts` prüft sämtliche geometrisch geschnittenen
+Interpolationszellen der betroffenen Höhenbänder. Konstante Translationen
+werden exakt erkannt; andere Zellen verwenden gültige Hermite-Untergrenzen,
+keine repräsentativen Höhenstichproben. Nicht belegbare positive Anteile
+werden nicht zugesagt. Die vorhandenen Autorenpakete laden vollständige
+Seegruppen und angeschlossene Verläufe. Liveentwurf, Browserworker-Vorschau
+und kanonischer Höhenwriter verwenden denselben Operator. Erst werden
+geschützte Höhenänderungen bestimmt, dann der endgültige Pegel und der
+gemeinsame Verlauf geprüft. Ein nicht erhaltbarer geschützter Anschluss
+weist den gesamten Zug mutationsfrei ab.
+
+Der bestehende Höhenauftrag speichert Höhe und See gemeinsam mit einem
+Historyschritt. Additive Anhebung verändert den zugeordneten Seeabtrag
+nicht: spätere Seeradierung füllt das Becken und erhält die Anhebung.
+Bei ausgeschaltetem Feindetailschutz führt die bestehende Abschwächung
+feiner Höhenbänder deren Abtragsanteile mit, damit Radierung nicht überfüllt.
+
+Gezielte Regressionen stehen in `tests/atlas/terrain-brush.test.mjs`,
+`tests/atlas/terrain-brush-draft.test.mjs`,
+`tests/atlas/terrain-author-cache.test.mjs` und
+`tests/atlas/terrain-route.test.mjs`; `tests/atlas/terrain-scale-worker.test.mjs`
+prüft den tatsächlichen Worker und die gemeinsame Receipt-Wiederholung.
+Der begrenzte native Ablauf
+`tools/test-desktop-terrain-lakes.mjs --lift --scale=1` beziehungsweise
+`--scale=2` prüft gemeinsame Livewirkung, kanonische Höhen/Pegel,
+Undo/Redo, Fresh und nachfolgende Seeradierung sowie einen lokalen Ablauf
+an großen Weltkoordinaten. Die vollständige Welt-bis-Raum-Qualifikation,
+Leistung, Gestaltung, Paketlieferung und Nutzerabnahme bleiben getrennt.

@@ -9,7 +9,7 @@ const require = createRequire(import.meta.url);
 buildSync({
   stdin: {
     contents:
-      "export * from './src/app/atlas/terrain-lake-brush';export * from './src/app/atlas/terrain-brush';export * from './src/app/atlas/terrain-height';export * from './src/app/atlas/atlas-brush-preview';export * from './src/app/atlas/landscape-raster';export * from './src/app/storage/store';export * from './src/app/storage/atlas-landscape-region';export {validateRegion} from './src/app/atlas/atlas-region-contracts';",
+      "export * from './src/app/atlas/terrain-lake-brush';export * from './src/app/atlas/terrain-brush';export * from './src/app/atlas/terrain-lake-coupling';export * from './src/app/atlas/terrain-height';export * from './src/app/atlas/atlas-brush-preview';export * from './src/app/atlas/landscape-raster';export * from './src/app/storage/store';export * from './src/app/storage/atlas-landscape-region';export {validateRegion} from './src/app/atlas/atlas-region-contracts';",
     resolveDir: process.cwd(),
   },
   outfile: '.build/terrain-brush-test.cjs',
@@ -25,9 +25,10 @@ const {
   heightBrushResolution,
   decodeHeights,
   prepareHeightBrush,
-  applyTerrainBrush,
+  applyCoupledTerrainBrush: applyTerrainBrush,
   TerrainSampler,
   heightRecord,
+  settingsRecord,
   LandscapeRasterizer,
   renderBrushPreview,
   CampaignStore,
@@ -605,6 +606,186 @@ const lakeStroke = (extra = {}) => ({
   ...extra,
 });
 const lakeEdit = (rs, s) => mergeLakeBrush(rs, applyLakeBrush(rs, s));
+const liftStroke = (extra = {}) =>
+  brush('raise', {
+    radius: 256,
+    strength: 2,
+    feather: 0.5,
+    samples: [
+      { x: 64, y: 0, t: 0 },
+      { x: 64, y: 0, t: 2000 },
+    ],
+    ...extra,
+  });
+test('whole lake and shore lift together, overlapping strokes share one level and erasure retains the lift', () => {
+  const initial = lakePlane(() => 20),
+    dug = lakeEdit(
+      initial,
+      lakeStroke({
+        samples: [
+          { x: 64, y: 0, t: 0 },
+          { x: 64, y: 0, t: 3000 },
+        ],
+      }),
+    ),
+    overlapping = lakeEdit(
+      dug,
+      lakeStroke({
+        radius: 32,
+        samples: [
+          { x: 100, y: 0, t: 0 },
+          { x: 100, y: 0, t: 1000 },
+        ],
+      }),
+    ),
+    neighbor = lakeEdit(
+      overlapping,
+      lakeStroke({
+        radius: 8,
+        samples: [
+          { x: 400, y: 0, t: 0 },
+          { x: 400, y: 0, t: 1000 },
+        ],
+      }),
+    ),
+    lifted = edit(neighbor, liftStroke());
+  assert.equal(height(lifted, 64), 18);
+  assert.equal(height(lifted, 140), 24);
+  for (const lake of neighbor.filter((r) => r.surface === 'freshwater')) {
+    const after = lifted.find((r) => r.id === lake.id);
+    assert.equal(after.waterLevelM, lake === neighbor.at(-1) ? 20 : 24);
+    assert.deepEqual(after.lakeBed, lake.lakeBed);
+  }
+  const restored = lakeEdit(lifted, lakeStroke({ mode: 'erase', radius: 96 }));
+  assert.equal(height(restored, 64), 24);
+  assert.equal(height(restored, 100), 24);
+  assert.equal(new TerrainSampler(lifted).waterLevel({ x: 64, y: 0 }), 24);
+});
+test('soft edge certifies a shared lower lift; partial coverage and a remote connected stroke keep the level', () => {
+  const source = lakeEdit(
+      lakePlane(() => 20),
+      lakeStroke(),
+    ),
+    soft = edit(source, liftStroke({ radius: 100, feather: 1 })),
+    lake = soft.find((r) => r.surface === 'freshwater');
+  assert.equal(
+    edit([...source].reverse(), liftStroke({ radius: 100, feather: 1 })).find(
+      (r) => r.surface === 'freshwater',
+    ).waterLevelM,
+    lake.waterLevelM,
+  );
+  assert(lake.waterLevelM > 20 && lake.waterLevelM < 24);
+  const before = new TerrainSampler(source, false),
+    after = new TerrainSampler(soft, false);
+  for (let y = -48; y <= 48; y += 0.8)
+    for (let x = 16; x <= 112; x += 0.8)
+      if ((x - 64) ** 2 + y ** 2 < 47 ** 2)
+        assert(
+          after.sample({ x, y }).heightM - before.sample({ x, y }).heightM + 1e-5 >=
+            lake.waterLevelM - 20,
+        );
+  const partial = edit(source, liftStroke({ radius: 24, feather: 0 }));
+  assert.equal(partial.find((r) => r.surface === 'freshwater').waterLevelM, 20);
+  assert.equal(height(partial, 100), height(source, 100));
+  const chain = lakeEdit(
+      source,
+      lakeStroke({
+        radius: 48,
+        samples: [
+          { x: 140, y: 0, t: 0 },
+          { x: 140, y: 0, t: 1000 },
+        ],
+      }),
+    ),
+    part = edit(chain, liftStroke({ radius: 80, feather: 0 }));
+  for (const r of part.filter((r) => r.surface === 'freshwater')) assert.equal(r.waterLevelM, 20);
+  const inherited = [
+    settingsRecord(19),
+    ...source.map((r) => {
+      if (r.surface !== 'freshwater') return r;
+      const { waterLevelM, ...lake } = r;
+      return lake;
+    }),
+  ];
+  assert.equal(
+    edit(inherited, liftStroke()).find((r) => r.surface === 'freshwater').waterLevelM,
+    24,
+  );
+});
+test('detail relaxation carries actual excavation ownership and never overfills on later erase', () => {
+  const source = lakeEdit(
+      lakePlane(() => 20),
+      lakeStroke(),
+    ),
+    lifted = edit(source, liftStroke({ preserveDetails: false })),
+    restored = lakeEdit(lifted, lakeStroke({ mode: 'erase', radius: 96 }));
+  const lake = lifted.find((r) => r.surface === 'freshwater');
+  assert(lake.waterLevelM > 23.999 && lake.waterLevelM <= 24.00001);
+  assert.notDeepEqual(lake.lakeBed, source.find((r) => r.id === lake.id).lakeBed);
+  for (const x of [20, 32.3, 63.4, 64, 90, 110])
+    assert(Math.abs(height(restored, x) - 24) < 0.00001);
+});
+test('canonical lift is atomic with lake level and one history step, fresh and erase retain independent terrain', (t) => {
+  const dir = mkdtempSync('/tmp/lake-lift-history-');
+  let store = new CampaignStore(dir + '/world.sqlite');
+  const cam = store.create('Lake lift');
+  let active = store.activate(cam.id);
+  t.after(() => {
+    store.close();
+    rmSync(dir, { recursive: true, force: true });
+  });
+  const write = (action) =>
+    store.executeAtlasCommit({
+      commandId: randomUUID(),
+      campaignId: cam.id,
+      token: active.token,
+      action,
+    });
+  const records = () =>
+    store.db
+      .prepare('SELECT payload FROM atlas_landscape WHERE campaign_id=? ORDER BY id')
+      .all(cam.id)
+      .map((r) => ({ ...JSON.parse(r.payload), revision: 0 }));
+  const cursor = () =>
+    store.db.prepare('SELECT cursor FROM campaign_atlas WHERE campaign_id=?').get(cam.id).cursor;
+  for (const r of lakePlane(() => 20))
+    write({ kind: 'landscape-put', record: r, expectedRevision: null });
+  write({
+    kind: 'landscape-lake-stroke',
+    stroke: lakeStroke({
+      samples: [
+        { x: 64, y: 0, t: 0 },
+        { x: 64, y: 0, t: 3000 },
+      ],
+    }),
+  });
+  const before = records(),
+    c = cursor(),
+    action = { kind: 'landscape-height-stroke', stroke: liftStroke() };
+  store.db.exec(
+    "CREATE TEMP TRIGGER fail_lake_lift BEFORE UPDATE ON atlas_landscape WHEN json_extract(NEW.payload,'$.surface')='freshwater' BEGIN SELECT RAISE(ABORT,'controlled lake lift failure'); END",
+  );
+  assert.throws(() => write(action), /controlled lake lift failure/);
+  assert.deepEqual(records(), before);
+  assert.equal(cursor(), c);
+  store.db.exec('DROP TRIGGER fail_lake_lift');
+  write(action);
+  const lifted = records();
+  assert.equal(cursor(), c + 1);
+  assert.equal(height(lifted, 64), 18);
+  assert.equal(lifted.find((r) => r.surface === 'freshwater').waterLevelM, 24);
+  write({ kind: 'undo' });
+  assert.deepEqual(records(), before);
+  write({ kind: 'redo' });
+  assert.deepEqual(records(), lifted);
+  store.close();
+  store = new CampaignStore(dir + '/world.sqlite');
+  active = store.activate(cam.id);
+  assert.deepEqual(records(), lifted);
+  assert.equal(cursor(), c + 1);
+  write({ kind: 'landscape-lake-stroke', stroke: lakeStroke({ mode: 'erase', radius: 96 }) });
+  assert.equal(height(records(), 64), 24);
+});
 test('lake basin: stationary duration, repeated deepening, overlaps and partial/full erasure across a real height tile seam', () => {
   const initial = lakePlane(() => 20),
     control = { x: 115, y: 0 };

@@ -9,8 +9,9 @@ import {
   type TerrainCoverChannel,
 } from './terrain-material';
 import type { AtlasSurfaceTile } from './atlas-surface-tile-stream';
-import { TerrainBrushDraft } from './terrain-brush-draft';
-import { applyTerrainBrush, type HeightStroke } from './terrain-brush';
+import { TerrainBrushDraft, terrainDraftBounds } from './terrain-brush-draft';
+import type { HeightStroke } from './terrain-brush';
+import { applyCoupledTerrainBrush } from './terrain-lake-coupling';
 import { gridHeight, terrainVisibility, type TerrainView } from './terrain-spatial-model';
 import type { TerrainEditingSource } from './terrain-spatial-model';
 import type { LandscapeRecord } from './atlas-landscape';
@@ -83,6 +84,7 @@ export class AtlasSurfaceDraft {
       heights = new Float32Array(view.columns * view.rows);
     const layout = terrainGridLayout(view),
       sampler = new TerrainSampler(this.authorRecords, false),
+      currentWater = new TerrainSampler(this.authorRecords),
       canonical = this.source?.visibility,
       original = canonical ? new TerrainSampler(this.source!.records, false) : null;
     for (let y = 0; y < view.rows; y++)
@@ -100,9 +102,15 @@ export class AtlasSurfaceDraft {
           const ground = canonical.editing
             ? gridHeight({ ...canonical, heights: canonical.editing.ground }, p)
             : gridHeight(canonical, p);
-          const level = canonical.editing
-            ? gridHeight({ ...canonical, heights: canonical.editing.water }, p)
-            : canonical.seaLevelM;
+          const b = this.source!.box,
+            local = p.x >= b.x && p.x <= b.x + b.width && p.y >= b.y && p.y <= b.y + b.height;
+          // A queued successor may already have lifted/erased local water
+          // while the independently loaded visibility snapshot is still old.
+          const level = local
+            ? Math.max(canonical.seaLevelM, currentWater.waterLevel(p, -Infinity) ?? -Infinity)
+            : canonical.editing
+              ? gridHeight({ ...canonical, heights: canonical.editing.water }, p)
+              : canonical.seaLevelM;
           heights[y * view.columns + x] = Math.max(
             level,
             ground + sampler.sample(p).heightM - original.sample(p).heightM,
@@ -130,10 +138,15 @@ export class AtlasSurfaceDraft {
     const changes =
       'waterLevelM' in stroke
         ? applyLakeBrush(this.authorRecords, stroke, visibility)
-        : applyTerrainBrush(this.authorRecords, stroke, undefined, visibility, undefined, true);
+        : applyCoupledTerrainBrush(this.authorRecords, stroke, undefined, visibility);
     changed = Array.isArray(changes)
       ? changes.length > 0
       : changes.records.length > 0 || changes.remove.length > 0;
+    const affected = terrainDraftBounds(
+      this.authorRecords,
+      Array.isArray(changes) ? changes : changes.records,
+      Array.isArray(changes) ? [] : changes.remove,
+    );
     this.tiles = this.bases.map((tile, index) => {
       const old = this.tiles[index]!,
         b = tile.terrain.projection.grid.view.box;
@@ -157,7 +170,7 @@ export class AtlasSurfaceDraft {
         });
         this.heights.set(tile, draft);
       }
-      const updated = draft.update(stroke, changes);
+      const updated = draft.update(stroke, changes, affected);
       if (!updated)
         return {
           ...old,
