@@ -158,6 +158,7 @@ export class LandscapeBrushSession {
       // Close author input synchronously. The queue owns the immutable
       // snapshot; an immediately following gesture owns fresh local state.
       if (stop) this.host.effects.localTerrain?.()?.cancel();
+      const token = this.host.token;
       const completion = stop ? live.stop() : live.finish();
       this.live = null;
       this.clearMask();
@@ -169,8 +170,9 @@ export class LandscapeBrushSession {
       );
       try {
         await completion;
-        if (!this.live) this.host.say('Gespeichert');
+        if (this.host.token === token && !this.live) this.host.say('Gespeichert');
       } catch (error) {
+        if (this.host.token !== token) return;
         if (error instanceof TerrainStrokeDiscardedError) {
           this.host.disable(false);
           this.host.say('Gehaltene Pinselzüge verworfen.');
@@ -178,7 +180,7 @@ export class LandscapeBrushSession {
         }
         this.liveFailureMessage = error instanceof Error ? error.message : String(error);
         this.host.disable(true);
-        this.host.effects.error(error);
+        this.host.say('Speicherstatus wird geprüft…');
       }
       this.host.effects.redraw();
       return;

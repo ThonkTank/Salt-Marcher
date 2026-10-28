@@ -1,5 +1,5 @@
-import { readProgressCharacter } from './progression';
-import { readCharacter } from './live';
+import { readProgressCharacter } from './progression-records';
+import { readCharacter } from './live-read';
 import { dailyXp, xpLevel, restFrame } from '../runtime/progression';
 import {
   calculateDay,

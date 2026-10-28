@@ -2,8 +2,8 @@ import { createHash } from 'node:crypto';
 import type { AgendaQuery, AgendaPage, AgendaItem } from '../runtime/agenda-contracts';
 import { agendaOccurrence, unitMs } from '../runtime/agenda-model';
 import { calendarEvents } from './calendar-events';
-import { readWorldCalendar } from './world';
-import { readLiveScene } from './live';
+import { readWorldCalendar } from './world-calendar-read';
+import { readLiveScene } from './live-read';
 import { checkedLocationDocument } from '../../features/location/location-schema';
 const compare = (a: AgendaItem, b: AgendaItem) =>
   BigInt(a.sortMs) < BigInt(b.sortMs)

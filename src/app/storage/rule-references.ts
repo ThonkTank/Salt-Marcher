@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { worldNoteDocument, type WorldNoteV1 } from '../../features/world/world-notes';
-import { readLiveScene } from './live';
+import { readLiveScene } from './live-read';
 import type {
   SceneRuleCommand,
   SceneRulePin,

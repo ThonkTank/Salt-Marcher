@@ -12,7 +12,7 @@ import type {
 import type { DeskRef } from '../shared/desk-reference';
 import { readCreature, readEncounterPlan, searchCreatures } from './encounters';
 import { readItemDefinition, readItemDefinitions } from './item-definitions';
-import { readLiveScene } from './live';
+import { readLiveScene } from './live-read';
 import { saveNarrative, validateNarrativeState } from './narrative';
 import { searchNoteChoices } from './note-choice-search';
 import { referenceEntry, searchTextReferences } from './text-references';

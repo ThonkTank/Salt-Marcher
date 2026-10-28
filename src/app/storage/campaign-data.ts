@@ -18,14 +18,15 @@ import {
 import { createCampaignAtlas } from './campaign-atlas';
 import { installCampaignCatalog, noteCampaignCreated } from './campaign-catalog';
 import { drawingTables } from './drawing';
-import { dungeonGeometry, dungeonGeometryBasis } from './dungeon-play';
+import { dungeonGeometry, dungeonGeometryBasis } from './dungeon-geometry-read';
 import { dungeonTraceById } from './dungeon-senses';
 import { readEncounterTables } from './generation';
 import { ensureLiveOwners } from './live';
 import { checkedAudioRegistry, musicStateAssetCount } from './music';
 import { installNoteSourceHistory, validateNoteSourceHistory } from './note-source-history';
 import { npcFingerprint, validateNpcRecovery } from './npcs';
-import { readWorld, travelEnvironmentBasis } from './world';
+import { travelEnvironmentBasis } from './world-commands';
+import { readWorld } from './world-state';
 import { validateWorldRelationPairs, worldRelationPairFingerprint } from './world-relation-pair';
 import { resolveWorldSources } from './world-sources';
 export const quote = (s: string) => '"' + s.replace(/"/g, '""') + '"';

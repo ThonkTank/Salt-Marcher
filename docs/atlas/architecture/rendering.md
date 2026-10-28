@@ -2,12 +2,19 @@
 
 Status: Current; offene Ziele sind als solche beschrieben.
 Owner: atlas
-Last Reviewed: 2026-10-28 (LOD-/Kamerarückkopplung; Fachabnahme separat)
+Last Reviewed: 2026-10-28 (Writer, Datenverträge und Prüfwege; Fachabnahme separat)
 Source of Truth: Dieses Dokument besitzt das benannte Thema; Code belegt den Iststand, das Abnahmeregister den Prüfstand.
 
 Der Atlas verbindet Landschaft, Städte und Räume in Weltmetern. Der [kanonische Store-Worker](../../project/architecture/canonical-store-worker.md)
 besitzt SQLite und alle Store-Schreibvorgänge; Main besitzt den privilegierten Hostanschluss. Der Renderer erhält ausschließlich
 die geprüften Fähigkeiten der Preload-Brücke.
+
+Die [Architektur und bestätigte Lieferpriorität](unified-spatial-atlas.md) gelten
+für alle folgenden Anschlüsse. Dieses Dokument besitzt Codeeinstiege und Prüfwege;
+[guide.md](../guide.md) besitzt aktuelle Bedienung und Werkzeugnamen. Fachverträge
+besitzen Wirkung und Datenregeln, [Atlasanforderungen](../requirements/atlas.md)
+den vollständigen Zielumfang. Historische Adapter- oder Paketstände sind nur an
+festen Gitrevisionen Referenzen, keine zusätzlichen aktuellen Arbeitspläne.
 
 ## Zuständigkeiten und Datenfluss
 
@@ -30,18 +37,120 @@ keine vollständige Produktabnahme.
 
 ## Wo ändern und prüfen?
 
-| Verhalten                                    | Einstieg                                                                                                                              | Regression                                                                                          |
-| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| Arbeitsbereich und Werkzeugwechsel           | `src/app/atlas/campaign-atlas-ui.ts`                                                                                                  | `tools/test-desktop-atlas-cleanup.mjs`                                                              |
-| Kamera, GPU-Lebenszyklus und Weltkoordinaten | `src/app/atlas/atlas-deck-surface.ts`, `src/app/atlas/atlas-metric-camera.ts`                                                         | `tests/atlas/atlas-deck-surface.test.mjs`, `tools/test-desktop-atlas-deck.mjs`                      |
-| Zeichenbefehle und genaue Auswahl            | `src/app/atlas/atlas-deck-drawing.ts`, `src/app/atlas/atlas-drawing-geometry.ts`                                                      | `tests/atlas/atlas-drawing-geometry.test.mjs`, `tools/test-desktop-dungeon-groundplan.mjs`          |
-| Maßstab, Waldzeichnung und stabile Instanzen | `src/app/atlas/atlas-cartographic-style.ts`, `src/app/atlas/atlas-cartographic-texture.ts`, `src/app/atlas/atlas-vegetation-layer.ts` | `tests/atlas/atlas-cartographic-scale.test.mjs`, `tools/test-desktop-atlas-multiscale.mjs`          |
-| Kacheln und gemeinsame Nachladung            | `src/app/atlas/atlas-surface-tile-stream.ts`, `src/app/atlas/atlas-raster-tile-stream.ts`                                             | `tests/atlas/atlas-surface-stream.test.mjs`                                                         |
-| Quellenauswertung und Material               | `src/app/atlas/landscape-raster.ts`, `src/app/atlas/atlas-raster-kernel.ts`                                                           | `tests/atlas/atlas-bounded-material.test.mjs`, `tests/atlas/atlas-raster-kernel.test.mjs`           |
-| Asynchrone Leseaufträge                      | `desktop/atlas-region.ts`, `desktop/atlas-region-worker.ts`                                                                           | `tests/atlas/atlas-first-product-worker.test.mjs`, `tests/atlas/atlas-presentation-source.test.mjs` |
-| Persistente Produkte und Cache               | `src/app/storage/atlas-cache-scope.ts`, `src/app/storage/atlas-tile-cache.ts`                                                         | Terrain-/Material-/Geometriekacheltests                                                             |
-| Pinselentwurf und Bestätigung                | `src/app/atlas/landscape-brush-session.ts`, `src/app/atlas/terrain-stroke-queue.ts`                                                   | `tests/atlas/terrain-stroke-queue.test.mjs`, native Pinselprobe                                     |
-| Ausgabe                                      | `src/app/atlas/atlas-output.ts`                                                                                                       | `tools/test-desktop-region-export.mjs`, `tools/test-desktop-atlas-cleanup.mjs`                      |
+| Verhalten | Einstieg | Regression |
+| --- | --- | --- |
+| Arbeitsbereich, Werkzeugnamen und Seitenleisten | `src/app/atlas/campaign-atlas-ui.ts`, `src/app/atlas/atlas-workspace-layout.ts`, `src/app/atlas/atlas-tool-catalog.ts`, `src/app/atlas/atlas-workspace.css` | `tools/test-desktop-atlas-cleanup.mjs` |
+| Kamera, GPU-Lebenszyklus und Weltkoordinaten | `src/app/atlas/atlas-deck-surface.ts`, `src/app/atlas/atlas-metric-camera.ts` | `tests/atlas/atlas-deck-surface.test.mjs`, `tools/test-desktop-atlas-deck.mjs` |
+| Zeichenbefehle und genaue Auswahl | `src/app/atlas/atlas-deck-drawing.ts`, `src/app/atlas/atlas-drawing-geometry.ts` | `tests/atlas/atlas-drawing-geometry.test.mjs`, `tools/test-desktop-dungeon-groundplan.mjs` |
+| Maßstab, Waldzeichnung und stabile Instanzen | `src/app/atlas/atlas-cartographic-style.ts`, `src/app/atlas/atlas-cartographic-texture.ts`, `src/app/atlas/atlas-vegetation-layer.ts` | `tests/atlas/atlas-cartographic-scale.test.mjs`, `tools/test-desktop-atlas-multiscale.mjs` |
+| Kacheln und gemeinsame Nachladung | `src/app/atlas/atlas-surface-tile-stream.ts`, `src/app/atlas/atlas-raster-tile-stream.ts` | `tests/atlas/atlas-surface-stream.test.mjs` |
+| Quellenauswertung und Material | `src/app/atlas/landscape-raster.ts`, `src/app/atlas/atlas-raster-kernel.ts` | `tests/atlas/atlas-bounded-material.test.mjs`, `tests/atlas/atlas-raster-kernel.test.mjs` |
+| Asynchrone Leseaufträge | `desktop/atlas-region.ts`, `desktop/atlas-region-worker.ts` | `tests/atlas/atlas-first-product-worker.test.mjs`, `tests/atlas/atlas-presentation-source.test.mjs` |
+| Persistente Produkte und Cache | `src/app/storage/atlas-cache-scope.ts`, `src/app/storage/atlas-tile-cache.ts` | Terrain-/Material-/Geometriekacheltests |
+| Pinselentwurf und Bestätigung | `src/app/atlas/landscape-brush-session.ts`, `src/app/atlas/terrain-stroke-queue.ts` | [Speicherklärung und enge Gegenproben](#speicherklärung-im-atlas) |
+| Ausgabe | `src/app/atlas/atlas-output.ts` | `tools/test-desktop-region-export.mjs`, `tools/test-desktop-atlas-cleanup.mjs` |
+
+## Gelände ändern
+
+Vom [Index](../../INDEX.md) führt dieser Weg über die
+[Bedienung der Landwerkzeuge](../guide.md#gelände-formen-und-ansicht-kippen) zum Writer:
+`atlas-landscape-ui.ts` / `landscape-brush-session.ts` halten Eingabe und Vorschau;
+`terrain-stroke-queue.ts` ordnet geschlossene Höhenzüge. `campaign-atlas-author.ts`
+übergibt den Auftrag ausschließlich über Preload/Main. Der kanonische Einstieg
+ist `CampaignStore.executeAtlasCommit` in `src/app/storage/store.ts`, mit
+`campaign-atlas.ts`, `landscape-brush-edit.ts`, `atlas-landscape.ts` und den
+gezielten Record-/Terrainmodulen als Fachbesitzern. Die UI schreibt keine SQLitewerte.
+
+Datenvertrag: [kontinuierliche Geländewirkung](../contract/hex-editing.md),
+[Land, Farbe und Wasser](../contract/landscape-tools.md#aktuelle-landwerkzeuge--r2-vereinheitlichung-20102026)
+und [aktuelle Terrainziele samt offenem Feinhöhenschutz](../requirements/terrain-relief.md#ziele-und-abnahme-dieser-etappe).
+Reise-/Referenzhexes sind keine Autoren-Zellen. Eigenschaftsvererbung ist nicht
+mit dem noch offenen Schutz absoluter Feinhöhen gleichzusetzen.
+
+Automatisierte Quellprüfungen: [desktop-atlas-region.test.mjs](../../../tests/atlas/desktop-atlas-region.test.mjs)
+für Eigenschaften, partielle Rücksetzung, gemeinsame History und Fresh;
+[desktop-land-mask.test.mjs](../../../tests/atlas/desktop-land-mask.test.mjs) für
+Höhen-/Küstenkopplung, atomaren Commit und unabhängige Kopie kontinuierlicher Flächen;
+[terrain-scale-worker.test.mjs](../../../tests/atlas/terrain-scale-worker.test.mjs)
+für den tatsächlichen Bearbeitungsdatenpfad zwischen Worker, Store und Entwurf,
+mehrere Maßstäbe, History und frische Wiederöffnung.
+Native Grundpinselprobe: [test-desktop-terrain-brush.mjs](../../../tools/test-desktop-terrain-brush.mjs),
+Folgezüge und Speicherfehler siehe [Speicherklärung](#speicherklärung-im-atlas).
+Testinhalt ist ein gezielter Prüfweg; ein vorhandenes Skript ist kein neuer Laufbeleg.
+
+## Reise ändern
+
+Vom [Index](../../INDEX.md) über [Leiten](../guide.md#leiten) zu
+`src/app/atlas/atlas-journey.ts` und `src/app/runtime/world-ui.ts` für Anzeige und
+Reisebedienung. Kanonisch verbinden `CampaignStore.executeWorld`,
+`src/app/storage/world-command-flow.ts`, `world-commands.ts` und
+`travel-history.ts` Reiseabschnitt, Zeitfolgen, Checkpoint und Receipt innerhalb
+der bestehenden Transaktion. Lokale Atlaswege besitzen daneben ihren Anschluss
+in `src/app/storage/atlas-travel.ts`. Besitzaufteilung und Folgeordnung stehen bei
+den [fachlichen Speicherbesitzern](../../project/architecture/storage-ownership.md#fachübergreifende-abläufe).
+
+Datenvertrag: [Journeygrundlagen und Grundkosten](../contract/hex-travel.md#vorhandener-ablauf-und-datenregeln),
+[Passierbarkeit](../contract/hex-travel-2.md) sowie
+[Checkpoint, Wiederaufnahme und kausale Rücknahme](../contract/hex-travel-3.md#checkpoint-und-wiederaufnahme-auf-der-aktuellen-atlasfläche).
+Das axiale Reiseraster, gespeicherte Journeybasis und Terrain-Umgebungsrevision
+bleiben gültig; daraus folgt kein Zellwriter für die Landschaft. Autorhistorie und
+kausale Reisehistory sind getrennt. Geänderte Landschaft kann eine Reisebasis
+entwerten; bloßer Zoom, Rasterwahl oder Kamera erzeugen keine Zeitbuchung.
+
+Automatisierte Quellprüfungen: [desktop-travel.test.mjs](../../../tests/runtime/desktop-travel.test.mjs)
+für mehrere Checkpoints, Replay, kausale Rücknahme, spätere Prosa, Restart und
+Rollback; [desktop-campaign-atlas.test.mjs](../../../tests/atlas/desktop-campaign-atlas.test.mjs)
+für lokale Wege, ausdrückliche Eingänge und dieselbe Gruppenuhr.
+Native Probe: [test-desktop-travel-checkpoints.mjs](../../../tools/test-desktop-travel-checkpoints.mjs).
+Mehrkarten-/Welttabbelege bleiben historisch; `SMR-AC-08/09` bleiben eigene offene
+Gesamtabnahmen.
+
+## Speicherklärung im Atlas
+
+Vom [Index](../../INDEX.md) über den
+[sichtbaren Klärungsablauf](../guide.md#speicherstand-klären-und-weiterarbeiten)
+zu `TerrainStrokeQueue`, `campaign-atlas-author.ts` und dem Klärungszugang in
+`campaign-atlas-ui.ts`. `CampaignStore.reconcileAtlasCommit` ist der kanonische
+Read für den Originalauftrag. [Store-Worker](../../project/architecture/canonical-store-worker.md)
+und [Speicherports](../../project/architecture/storage-ports.md) besitzen
+Transaktion, Belegdecodierung und die privilegierte Grenze; der Renderer bleibt
+auf die Preloadfähigkeiten beschränkt.
+
+Dieser Klärungsvertrag gilt für Autoren- und Terrainaufträge. Lokale Reiseaufträge
+behalten ihren eigenen idempotenten Commit-/Checkpointpfad unter [Reise ändern](#reise-ändern).
+
+Geschlossene Terrainzüge behalten ursprüngliche Kennung, unveränderliche Aktion
+und Reihenfolge auch nach endendem Transportversuch. `reconcilePendingAtlasCommit` liefert
+typisiert `applied`, `not-applied` oder `unknown`. Nur ein zu Kampagne und
+Command-ID passender Beleg samt bestätigter Revision/Fence entfernt den Kopf und
+autorisiert seinen Folgezug genau einmal. Gleichzeitige Klärungen teilen einen
+Read. Unknown, temporäre Lesefehler oder beschädigte Receipts sind keine sichere
+Ablehnung und lösen keinen Write aus. `TerrainQueueRecovery` prüft solche Antworten automatisch mit begrenzter Wiederholungsfrequenz und beendet seine Timer bei Abmeldung. Nach `not-applied` darf derselbe Originalauftrag auf unveränderter Quelle automatisch wiederholt werden; ein wiederholtes Scheitern bleibt gehalten. Eine geänderte Quelle verlangt die ausdrückliche Entscheidung „Erneut anwenden“ oder „Verwerfen“. Der Hinweis „Letzter Pinselzug nicht übernommen“ erzwingt keinen Dialog. Nur noch nicht bestätigte Züge werden auf die aktuelle Quelle gesetzt; ein bereits bestätigter Kopf bleibt entfernt.
+
+
+Kamera und Ansichtsladen setzen die Queue nicht zurück; Undo, Wechsel und normales
+Schließen dürfen ungeklärte Züge nicht überspringen. Der Sitzungsentwurf ist kein
+persistentes Journal unbestätigter Eingaben. Eine über vollständige Appneustarts
+fortgesetzte Autor-Undo-Bedienfolge wird nicht allgemein zugesagt. Checkpoint-
+Wiederaufnahme folgt weiterhin dem eigenen Reisevertrag. Beim Kampagnenimport
+entwertet die frühe [Editorstilllegung](../../project/architecture/editor-lifecycle.md)
+alte Regionsantworten; der neue bestätigte Besitzer darf echte Ladefehler weiter
+zeigen.
+
+Automatisierte Quellprüfungen: [terrain-stroke-queue.test.mjs](../../../tests/atlas/terrain-stroke-queue.test.mjs)
+für Originalaktionen, Reihenfolge, Retry und Quellenkonflikt;
+[terrain-queue-recovery.test.mjs](../../../tests/atlas/terrain-queue-recovery.test.mjs)
+für automatische, zusammengefasste Leseversuche und Timerende;
+[desktop-atlas-commit-recovery.test.mjs](../../../tests/atlas/desktop-atlas-commit-recovery.test.mjs)
+für Receiptread und tatsächliche Worker-/Host-/Preloadgrenze;
+[workspace-editor-registry.test.mjs](../../../tests/workspace/workspace-editor-registry.test.mjs)
+für frühe Stilllegung und aktuelle Fehler;
+[desktop-storage-values.test.mjs](../../../tests/shared/desktop-storage-values.test.mjs)
+für beschädigte gespeicherte Werte/Receipts und unveränderte Originalbytes.
+Native Probe: [test-desktop-atlas-terrain-stroke.mjs](../../../tools/test-desktop-atlas-terrain-stroke.mjs)
+mit `--recovery` und `--recovery --source-conflict`; `--recovery --drop-followup` muss eine fehlende B-Wirkung erkennen.
+Der enge lokale Folgezugnachweis ist abgeschlossen; vollständiges G1, physischer
+Input, 200 %, Plattform-/Paketqualifikation und Produktabnahme folgen daraus nicht.
 
 ## Quellenstand und Veröffentlichung
 

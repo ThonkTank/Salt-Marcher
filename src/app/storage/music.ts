@@ -1,3 +1,6 @@
+import { checkedQuery, checkedRow, type SqliteDatabase } from './sqlite-connection';
+import { decodeStored } from './stored-payload';
+import * as shape from './stored-shapes';
 import { createHash, randomUUID } from 'node:crypto';
 import { existsSync, statSync } from 'node:fs';
 import path from 'node:path';
@@ -16,23 +19,19 @@ import type {
   MoodAxis,
 } from '../runtime/music-contracts';
 import { audioMimeTypes } from '../runtime/music-contracts';
-import { readLiveScene } from './live';
-import { readSceneWorld } from './world';
-import { scenePreparation } from './session';
+import { readLiveScene } from './live-read';
+import { readSceneWorld } from './world-state';
+import { scenePreparation } from './session-read';
 import { cellAt, terrainNames } from '../runtime/world-model';
-import { worldNoteDocument } from '../../features/world/world-notes';
+import { checkedWorldNoteRow } from './world-note-row';
+import { checkedVisitDetail } from './session-read';
+import { readWorldCalendar } from './world-calendar-read';
+import { map as storedWorldMap } from './world-state';
+import { checkedCombat } from '../runtime/combat-contracts';
 import { checkedLocationDocument } from '../../features/location/location-schema';
 const json = (v: unknown) => JSON.stringify(v),
   hash = (s: string) => createHash('sha256').update(s).digest('hex');
-function decoded<T>(row: any): T {
-  if (!row || hash(row.payload) !== row.checksum)
-    throw new Error('Musikdaten fehlen oder sind beschädigt.');
-  const v = JSON.parse(row.payload);
-  if (v.revision !== undefined && v.revision !== row.revision)
-    throw new Error('Musikrevision widersprüchlich.');
-  return v;
-}
-export function installMusicSchema(db: any) {
+export function installMusicSchema(db: SqliteDatabase) {
   db.exec(`CREATE TABLE IF NOT EXISTS audio_asset(id TEXT PRIMARY KEY,revision INTEGER NOT NULL,kind TEXT NOT NULL,trashed INTEGER NOT NULL,search_text TEXT NOT NULL,payload TEXT NOT NULL,checksum TEXT NOT NULL) STRICT;
  CREATE TABLE IF NOT EXISTS audio_registry(id TEXT PRIMARY KEY,revision INTEGER NOT NULL,payload TEXT NOT NULL,checksum TEXT NOT NULL) STRICT;
  CREATE TABLE IF NOT EXISTS music_state(campaign_id TEXT PRIMARY KEY REFERENCES campaign(id),revision INTEGER NOT NULL,payload TEXT NOT NULL,checksum TEXT NOT NULL) STRICT;
@@ -49,8 +48,17 @@ export function audioFile(root: string, asset: AudioAsset) {
     throw new Error('Mediendatei hat keine gültige Bibliotheksidentität.');
   return path.join(root, asset.media.sha256 + asset.media.extension);
 }
-function checkedAudioRow(row: any): AudioAsset {
-  const a = decoded<AudioAsset>(row);
+function checkedAudioRow(value: unknown): AudioAsset {
+  const row = checkedRow(value, {
+    id: 'text',
+    revision: 'integer',
+    kind: 'text',
+    trashed: 'integer',
+    payload: 'text',
+    checksum: 'text',
+  });
+  const stored = decodeStored(row, shape.audio_asset);
+  const a = { ...stored, available: stored.available ?? false };
   validateAsset(a);
   if (
     a.id !== row.id ||
@@ -63,7 +71,7 @@ function checkedAudioRow(row: any): AudioAsset {
     throw new Error('Audioidentität oder Bibliotheksstatus widersprüchlich.');
   return a;
 }
-function audioFromRow(root: string, row: any): AudioAsset {
+function audioFromRow(root: string, row: unknown): AudioAsset {
   const a = checkedAudioRow(row);
   let available = false;
   try {
@@ -72,10 +80,21 @@ function audioFromRow(root: string, row: any): AudioAsset {
   } catch {}
   return { ...a, available };
 }
-export function readAudioAsset(db: any, root: string, id: string): AudioAsset {
-  return audioFromRow(root, db.prepare('SELECT * FROM audio_asset WHERE id=?').get(id));
+export function readAudioAsset(db: SqliteDatabase, root: string, id: string): AudioAsset {
+  return audioFromRow(
+    root,
+    checkedQuery(db, 'SELECT * FROM audio_asset WHERE id=?', {
+      id: 'text',
+      revision: 'integer',
+      kind: 'text',
+      trashed: 'integer',
+      search_text: 'text',
+      payload: 'text',
+      checksum: 'text',
+    }).get(id),
+  );
 }
-export function readAudioAssets(db: any, root: string, q: AudioQuery): AudioPage {
+export function readAudioAssets(db: SqliteDatabase, root: string, q: AudioQuery): AudioPage {
   if (
     typeof q.search !== 'string' ||
     q.search.length > 1000 ||
@@ -83,19 +102,19 @@ export function readAudioAssets(db: any, root: string, q: AudioQuery): AudioPage
     (q.after !== null && !/^[1-9][0-9]*$/.test(q.after))
   )
     throw new Error('Audiosuche ungültig.');
-  const rows = db
-      .prepare(
-        "SELECT rowid AS cursor,* FROM audio_asset WHERE (? OR trashed=0) AND (?='' OR kind=?) AND (?='' OR instr(lower(search_text),lower(?))>0) AND (? IS NULL OR rowid>?) ORDER BY rowid LIMIT 51",
-      )
-      .all(
-        q.includeTrashed ? 1 : 0,
-        q.kind,
-        q.kind,
-        q.search,
-        q.search.toLocaleLowerCase(),
-        q.after,
-        q.after,
-      ),
+  const rows = checkedQuery(
+      db,
+      "SELECT rowid AS cursor,* FROM audio_asset WHERE (? OR trashed=0) AND (?='' OR kind=?) AND (?='' OR instr(lower(search_text),lower(?))>0) AND (? IS NULL OR rowid>?) ORDER BY rowid LIMIT 51",
+      { id: 'text', cursor: 'integer' },
+    ).all(
+      q.includeTrashed ? 1 : 0,
+      q.kind,
+      q.kind,
+      q.search,
+      q.search.toLocaleLowerCase(),
+      q.after,
+      q.after,
+    ),
     problems: string[] = [],
     items: AudioAsset[] = [];
   for (const r of rows.slice(0, 50))
@@ -104,7 +123,7 @@ export function readAudioAssets(db: any, root: string, q: AudioQuery): AudioPage
     } catch (error) {
       problems.push(r.id + ': ' + (error as Error).message);
     }
-  return { items, next: rows.length > 50 ? String(rows[49].cursor) : null, problems };
+  return { items, next: rows.length > 50 ? String(rows[49]!.cursor) : null, problems };
 }
 function validateAudioRegistry(r: AudioRegistry, revision: number) {
   if (
@@ -121,24 +140,35 @@ function validateAudioRegistry(r: AudioRegistry, revision: number) {
     throw new Error('Musikregister ist ungültig.');
   validateAxes(r.axes);
 }
-export function checkedAudioRegistry(row: any): AudioRegistry {
-  const r = decoded<AudioRegistry>(row);
+export function checkedAudioRegistry(value: unknown): AudioRegistry {
+  const row = checkedRow(value, {
+    id: 'text',
+    revision: 'integer',
+    payload: 'text',
+    checksum: 'text',
+  });
+  const r = decodeStored(row, shape.audio_registry);
   if (row.id !== 'main') throw new Error('Musikregisteridentität ist widersprüchlich.');
   validateAudioRegistry(r, row.revision);
   return r;
 }
-export function readAudioRegistry(db: any): AudioRegistry {
-  const r = db.prepare("SELECT * FROM audio_registry WHERE id='main'").get();
+export function readAudioRegistry(db: SqliteDatabase): AudioRegistry {
+  const r = checkedQuery(db, "SELECT * FROM audio_registry WHERE id='main'", {
+    id: 'text',
+    revision: 'integer',
+    payload: 'text',
+    checksum: 'text',
+  }).get();
   return r ? checkedAudioRegistry(r) : { revision: 0, catalogRevision: 0, axes: [] };
 }
-function saveRegistry(db: any, r: AudioRegistry) {
+function saveRegistry(db: SqliteDatabase, r: AudioRegistry) {
   validateAudioRegistry(r, r.revision);
   const payload = json(r);
   db.prepare(
     "INSERT INTO audio_registry VALUES('main',?,?,?) ON CONFLICT(id) DO UPDATE SET revision=excluded.revision,payload=excluded.payload,checksum=excluded.checksum",
   ).run(r.revision, payload, hash(payload));
 }
-function touchCatalog(db: any) {
+function touchCatalog(db: SqliteDatabase) {
   const r = readAudioRegistry(db);
   r.catalogRevision++;
   saveRegistry(db, r);
@@ -229,14 +259,15 @@ export function validateAudioLibrary(library: ReturnType<typeof audioLibrarySnap
     ids.add(a.id);
   }
 }
-function saveAsset(db: any, a: AudioAsset) {
+function saveAsset(db: SqliteDatabase, a: AudioAsset) {
   validateAsset(a);
   a.moodTags = tags(a.moodTags);
   a.vibes = tags(a.vibes);
   a.genres = tags(a.genres);
   const data = { ...a };
-  delete (data as Partial<AudioAsset>).available;
-  const payload = json(data),
+  const { available: _available, ...stored } = data;
+  void _available;
+  const payload = json(stored),
     search = [a.name, ...a.moodTags, ...a.vibes, ...a.genres, a.notes]
       .join(' ')
       .toLocaleLowerCase();
@@ -244,12 +275,12 @@ function saveAsset(db: any, a: AudioAsset) {
     'INSERT INTO audio_asset VALUES(?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET revision=excluded.revision,kind=excluded.kind,trashed=excluded.trashed,search_text=excluded.search_text,payload=excluded.payload,checksum=excluded.checksum',
   ).run(a.id, a.revision, a.kind, a.trashed ? 1 : 0, search, payload, hash(payload));
 }
-export function ingestAudio(db: any, root: string, media: AudioAsset['media']) {
-  const match = db
-    .prepare(
-      "SELECT id FROM audio_asset WHERE json_extract(payload,'$.media.sha256')=? AND json_extract(payload,'$.media.originalName')=? AND trashed=0 ORDER BY rowid LIMIT 1",
-    )
-    .get(media.sha256, media.originalName);
+export function ingestAudio(db: SqliteDatabase, root: string, media: AudioAsset['media']) {
+  const match = checkedQuery(
+    db,
+    "SELECT id FROM audio_asset WHERE json_extract(payload,'$.media.sha256')=? AND json_extract(payload,'$.media.originalName')=? AND trashed=0 ORDER BY rowid LIMIT 1",
+    { id: 'text' },
+  ).get(media.sha256, media.originalName);
   if (match) return readAudioAsset(db, root, match.id);
   const a: AudioAsset = {
     id: randomUUID(),
@@ -293,7 +324,7 @@ function defaultState(): MusicState {
     lastError: null,
   };
 }
-function validateMusicState(db: any, s: MusicState, revision: number) {
+function validateMusicState(db: SqliteDatabase, s: MusicState, revision: number) {
   if (
     !s ||
     typeof s !== 'object' ||
@@ -338,7 +369,9 @@ function validateMusicState(db: any, s: MusicState, revision: number) {
   if (s.favoriteAssets !== undefined && !list(s.favoriteAssets, true))
     throw new Error('Soundboard-Favoriten sind ungültig.');
   for (const assetId of s.favoriteAssets ?? []) {
-    const kind = db.prepare('SELECT kind FROM audio_asset WHERE id=?').get(assetId)?.kind;
+    const kind = checkedQuery(db, 'SELECT kind FROM audio_asset WHERE id=?', { kind: 'text' }).get(
+      assetId,
+    )?.kind;
     if (kind !== 'song' && kind !== 'ambience')
       throw new Error('Soundboard-Favorit verweist auf eine fehlende Audiodatei.');
   }
@@ -367,7 +400,9 @@ function validateMusicState(db: any, s: MusicState, revision: number) {
   const requireKind = (assetId: string, kind: 'song' | 'ambience') => {
     let actual = kinds.get(assetId);
     if (!actual) {
-      actual = db.prepare('SELECT kind FROM audio_asset WHERE id=?').get(assetId)?.kind;
+      actual = checkedQuery(db, 'SELECT kind FROM audio_asset WHERE id=?', { kind: 'text' }).get(
+        assetId,
+      )?.kind;
       kinds.set(assetId, actual ?? '');
     }
     if (actual !== kind)
@@ -386,17 +421,28 @@ function validateMusicState(db: any, s: MusicState, revision: number) {
   for (const assetId of [...s.forcedAmbience, ...s.mutedAmbience, ...(s.automaticAmbience ?? [])])
     requireKind(assetId, 'ambience');
 }
-function checkedMusicState(db: any, cam: string, row: any): MusicState {
-  const s = decoded<MusicState>(row);
+function checkedMusicState(db: SqliteDatabase, cam: string, value: unknown): MusicState {
+  const row = checkedRow(value, {
+    campaign_id: 'text',
+    revision: 'integer',
+    payload: 'text',
+    checksum: 'text',
+  });
+  const s = decodeStored(row, shape.music_state);
   if (row.campaign_id !== cam) throw new Error('Musikkampagne ist widersprüchlich.');
   validateMusicState(db, s, row.revision);
   return s;
 }
-function state(db: any, cam: string): MusicState {
-  const row = db.prepare('SELECT * FROM music_state WHERE campaign_id=?').get(cam);
+function state(db: SqliteDatabase, cam: string): MusicState {
+  const row = checkedQuery(db, 'SELECT * FROM music_state WHERE campaign_id=?', {
+    campaign_id: 'text',
+    revision: 'integer',
+    payload: 'text',
+    checksum: 'text',
+  }).get(cam);
   return row ? checkedMusicState(db, cam, row) : defaultState();
 }
-export function musicStateAssetCount(db: any, cam: string) {
+export function musicStateAssetCount(db: SqliteDatabase, cam: string) {
   const s = state(db, cam);
   return new Set(
     [
@@ -410,7 +456,7 @@ export function musicStateAssetCount(db: any, cam: string) {
     ].filter((id): id is string => !!id),
   ).size;
 }
-function saveState(db: any, cam: string, s: MusicState) {
+function saveState(db: SqliteDatabase, cam: string, s: MusicState) {
   s.revision++;
   const data = structuredClone(s);
   if (data.current) data.current.positionSeconds = 0;
@@ -422,7 +468,8 @@ function saveState(db: any, cam: string, s: MusicState) {
 }
 function normalizedTags(value: unknown) {
   if (!Array.isArray(value)) throw new Error('Musiktags ungültig.');
-  const next = tags(value as string[]);
+  if (value.some((v) => typeof v !== 'string')) throw new Error('Musiktags ungültig.');
+  const next = tags(value);
   if (json(next) !== json(value)) throw new Error('Musiktags sind nicht normalisiert.');
 }
 function validateSceneSettings(s: MusicSceneSettings, id: string, revision: number) {
@@ -440,21 +487,39 @@ function validateSceneSettings(s: MusicSceneSettings, id: string, revision: numb
   normalizedTags(s.vibes);
   normalizedTags(s.genres);
 }
-function checkedSceneSettings(db: any, cam: string, id: string, row: any): MusicSceneSettings {
-  const s = decoded<MusicSceneSettings>(row);
+function checkedSceneSettings(
+  db: SqliteDatabase,
+  cam: string,
+  id: string,
+  value: unknown,
+): MusicSceneSettings {
+  const row = checkedRow(value, {
+    campaign_id: 'text',
+    scene_id: 'text',
+    revision: 'integer',
+    payload: 'text',
+    checksum: 'text',
+  });
+  const s = decodeStored(row, shape.scene_music);
   if (row.campaign_id !== cam || row.scene_id !== id)
     throw new Error('Szenenmusikidentität ist widersprüchlich.');
   validateSceneSettings(s, id, row.revision);
   readLiveScene(db, cam, id);
   return s;
 }
-function sceneSettings(db: any, cam: string, id: string): MusicSceneSettings {
-  const r = db.prepare('SELECT * FROM scene_music WHERE campaign_id=? AND scene_id=?').get(cam, id);
+function sceneSettings(db: SqliteDatabase, cam: string, id: string): MusicSceneSettings {
+  const r = checkedQuery(db, 'SELECT * FROM scene_music WHERE campaign_id=? AND scene_id=?', {
+    campaign_id: 'text',
+    scene_id: 'text',
+    revision: 'integer',
+    payload: 'text',
+    checksum: 'text',
+  }).get(cam, id);
   return r
     ? checkedSceneSettings(db, cam, id, r)
     : { sceneId: id, revision: 0, moods: {}, intensity: 50, vibes: [], genres: [] };
 }
-function subjectName(db: any, cam: string, kind: MusicSubject['kind'], id: string) {
+function subjectName(db: SqliteDatabase, cam: string, kind: MusicSubject['kind'], id: string) {
   if (
     !['location', 'note', 'creature'].includes(kind) ||
     typeof id !== 'string' ||
@@ -463,16 +528,15 @@ function subjectName(db: any, cam: string, kind: MusicSubject['kind'], id: strin
   )
     throw new Error('Musikquelle ist ungültig.');
   if (kind === 'creature') return id;
-  const row = db
-    .prepare(
-      `SELECT * FROM ${kind === 'location' ? 'location' : 'world_note'} WHERE campaign_id=? AND id=?`,
-    )
-    .get(cam, id);
-  if (!row || hash(row.payload) !== row.checksum)
-    throw new Error('Musikquelle fehlt oder ist beschädigt.');
+  const row = checkedQuery(
+    db,
+    `SELECT * FROM ${kind === 'location' ? 'location' : 'world_note'} WHERE campaign_id=? AND id=?`,
+    { id: 'text', revision: 'integer', payload: 'text', checksum: 'text' },
+  ).get(cam, id);
+  if (!row) throw new Error('Musikquelle fehlt oder ist beschädigt.');
   return kind === 'location'
-    ? checkedLocationDocument(JSON.parse(row.payload)).name
-    : worldNoteDocument(JSON.parse(row.payload)).title;
+    ? decodeStored(row, checkedLocationDocument).name
+    : checkedWorldNoteRow(row).title;
 }
 function validateMusicSubject(
   s: MusicSubject,
@@ -498,60 +562,86 @@ function validateMusicSubject(
   normalizedTags(s.genres);
 }
 function checkedMusicSubject(
-  row: any,
+  value: unknown,
   cam: string,
   kind: MusicSubject['kind'],
   id: string,
 ): MusicSubject {
-  const s = decoded<MusicSubject>(row);
+  const row = checkedRow(value, {
+    campaign_id: 'text',
+    kind: 'text',
+    id: 'text',
+    revision: 'integer',
+    payload: 'text',
+    checksum: 'text',
+  });
+  const s = decodeStored(row, shape.music_subject);
   if (row.campaign_id !== cam || row.kind !== kind || row.id !== id)
     throw new Error('Musikquellenidentität ist widersprüchlich.');
   validateMusicSubject(s, kind, id, row.revision);
   return s;
 }
 export function readMusicSubject(
-  db: any,
+  db: SqliteDatabase,
   cam: string,
   kind: MusicSubject['kind'],
   id: string,
 ): MusicSubject {
   const name = subjectName(db, cam, kind, id),
-    r = db
-      .prepare('SELECT * FROM music_subject WHERE campaign_id=? AND kind=? AND id=?')
-      .get(cam, kind, id);
+    r = checkedQuery(db, 'SELECT * FROM music_subject WHERE campaign_id=? AND kind=? AND id=?', {
+      campaign_id: 'text',
+      kind: 'text',
+      id: 'text',
+      revision: 'integer',
+      payload: 'text',
+      checksum: 'text',
+    }).get(cam, kind, id);
   return r
     ? { ...checkedMusicSubject(r, cam, kind, id), name }
     : { id, kind, name, revision: 0, vibes: [], genres: [], vibeMode: 'add', genreMode: 'add' };
 }
-function checkedMusicReceipt(db: any, row: any) {
-  const receipt = decoded<{ applied: boolean }>(row);
+function checkedMusicReceipt(db: SqliteDatabase, value: unknown) {
+  const row = checkedRow(value, {
+    command_id: 'text',
+    campaign_id: 'text',
+    fingerprint: 'text',
+    scene_id: 'nullable-text',
+    payload: 'text',
+    checksum: 'text',
+  });
+  const receipt = decodeStored(row, shape.music_receipt);
   if (
     typeof row.command_id !== 'string' ||
     !row.command_id ||
     row.command_id.length > 1000 ||
     typeof row.campaign_id !== 'string' ||
     !row.campaign_id ||
-    !db.prepare('SELECT 1 FROM campaign WHERE id=?').get(row.campaign_id) ||
+    !checkedQuery(db, 'SELECT 1 FROM campaign WHERE id=?', { '1': 'integer' }).get(
+      row.campaign_id,
+    ) ||
     typeof row.fingerprint !== 'string' ||
     !/^[a-f0-9]{64}$/.test(row.fingerprint) ||
     !receipt ||
     typeof receipt !== 'object' ||
     Array.isArray(receipt) ||
+    'revision' in receipt ||
     receipt.applied !== true
   )
     throw new Error('Musikbestätigung ist ungültig.');
   if (
     row.scene_id !== null &&
     (typeof row.scene_id !== 'string' ||
-      !db
-        .prepare('SELECT 1 FROM live_scene WHERE campaign_id=? AND id=?')
-        .get(row.campaign_id, row.scene_id))
+      !checkedQuery(db, 'SELECT 1 FROM live_scene WHERE campaign_id=? AND id=?', {
+        '1': 'integer',
+      }).get(row.campaign_id, row.scene_id))
   )
     throw new Error('Musikbestätigung verweist auf eine fehlende Scene.');
   return receipt;
 }
-function context(db: any, cam: string, s: MusicState): MusicContext {
-  const focus = db.prepare('SELECT focus_id FROM live_state WHERE campaign_id=?').get(cam),
+function context(db: SqliteDatabase, cam: string, s: MusicState): MusicContext {
+  const focus = checkedQuery(db, 'SELECT focus_id FROM live_state WHERE campaign_id=?', {
+      focus_id: 'text',
+    }).get(cam),
     registry = readAudioRegistry(db),
     result: MusicContext = {
       sceneId: focus?.focus_id ?? null,
@@ -586,26 +676,15 @@ function context(db: any, cam: string, s: MusicState): MusicContext {
     if (s.autoplay || s.autoAmbience) {
       try {
         const world = readSceneWorld(db, cam, scene.id),
-          mapRow = world.position.mapId
-            ? db
-                .prepare(
-                  "SELECT payload FROM world_record WHERE campaign_id=? AND kind='map' AND id=?",
-                )
-                .get(cam, world.position.mapId)
-            : null;
-        if (mapRow) {
-          const cell = cellAt(JSON.parse(mapRow.payload), world.position);
+          worldMap = world.position.mapId ? storedWorldMap(db, cam, world.position.mapId) : null;
+        if (worldMap) {
+          const cell = cellAt(worldMap, world.position);
           result.environment.push(terrainNames[cell.terrain]);
           if (cell.river) result.environment.push('Fluss');
         }
         if (world.weather)
           result.environment.push(world.weather.label, ...world.weather.effects.ambience);
-        const calendarRow = db
-            .prepare(
-              "SELECT payload FROM world_record WHERE campaign_id=? AND kind='calendar' AND id='main'",
-            )
-            .get(cam),
-          daySeconds = calendarRow ? JSON.parse(calendarRow.payload).daySeconds : 86400,
+        const daySeconds = readWorldCalendar(db, cam).daySeconds,
           fraction =
             Number(BigInt(scene.clock.instantMs) % (BigInt(daySeconds) * 1000n)) /
             (daySeconds * 1000);
@@ -615,40 +694,43 @@ function context(db: any, cam: string, s: MusicState): MusicContext {
         for (const actor of groups.flatMap((g) => g.actors).filter((a) => !a.unavailable)) {
           ids.add(actor.id);
           append(readMusicSubject(db, cam, 'creature', actor.creatureId));
-          const note = db
-            .prepare('SELECT payload FROM world_note WHERE campaign_id=? AND id=?')
-            .get(cam, actor.id);
+          const note = checkedQuery(db, 'SELECT * FROM world_note WHERE campaign_id=? AND id=?', {
+            payload: 'text',
+          }).get(cam, actor.id);
           if (note)
-            for (const relation of JSON.parse(note.payload).relations ?? [])
-              ids.add(relation.targetId);
+            for (const relation of checkedWorldNoteRow(note).relations) ids.add(relation.targetId);
         }
-        const adoption = db
-          .prepare(
-            'SELECT plan_id,visit_id FROM scene_adoption WHERE campaign_id=? AND scene_id=? ORDER BY ordinal DESC LIMIT 1',
-          )
-          .get(cam, scene.id);
+        const adoption = checkedQuery(
+          db,
+          'SELECT plan_id,visit_id FROM scene_adoption WHERE campaign_id=? AND scene_id=? ORDER BY ordinal DESC LIMIT 1',
+          { plan_id: 'text', visit_id: 'text' },
+        ).get(cam, scene.id);
         if (adoption) {
-          const d = db
-            .prepare('SELECT payload FROM session_visit WHERE campaign_id=? AND plan_id=? AND id=?')
-            .get(cam, adoption.plan_id, adoption.visit_id);
-          if (d) for (const id of JSON.parse(d.payload).noteIds ?? []) ids.add(id);
+          const d = checkedQuery(
+            db,
+            'SELECT * FROM session_visit WHERE campaign_id=? AND plan_id=? AND id=?',
+            { payload: 'text' },
+          ).get(cam, adoption.plan_id, adoption.visit_id);
+          if (d) for (const id of checkedVisitDetail(db, cam, d).noteIds) ids.add(id);
         }
         for (const id of ids) {
-          const note = db
-            .prepare('SELECT trashed FROM world_note WHERE campaign_id=? AND id=?')
-            .get(cam, id);
+          const note = checkedQuery(
+            db,
+            'SELECT trashed FROM world_note WHERE campaign_id=? AND id=?',
+            { trashed: 'integer' },
+          ).get(cam, id);
           if (note && !note.trashed) append(readMusicSubject(db, cam, 'note', id));
         }
-        const fight = db
-          .prepare(
-            "SELECT payload FROM combat WHERE campaign_id=? AND scene_id=? AND phase='running' ORDER BY rowid DESC LIMIT 1",
-          )
-          .get(cam, scene.id);
+        const fight = checkedQuery(
+          db,
+          "SELECT * FROM combat WHERE campaign_id=? AND scene_id=? AND phase='running' ORDER BY rowid DESC LIMIT 1",
+          { payload: 'text' },
+        ).get(cam, scene.id);
         if (fight) {
           result.environment.push('Kampf');
           for (const id of new Set<string>(
-            (JSON.parse(fight.payload).participants as { sourceId?: string }[])
-              .map((p) => p.sourceId)
+            checkedCombat(decodeStored(fight, shape.combat))
+              .participants.map((p) => p.sourceId)
               .filter((id): id is string => !!id),
           ))
             append(readMusicSubject(db, cam, 'creature', id));
@@ -683,11 +765,17 @@ function score(a: AudioAsset, c: MusicContext) {
     genres = a.genres.filter((t) => genreSet.has(norm(t))).length;
   return distance - Math.min(3, matches) * 0.75 - Math.min(2, genres) * 0.8;
 }
-function candidates(db: any, root: string, c: MusicContext) {
+function candidates(db: SqliteDatabase, root: string, c: MusicContext) {
   const matches: { asset: AudioAsset; score: number }[] = [];
-  for (const row of db
-    .prepare("SELECT * FROM audio_asset WHERE kind='song' AND trashed=0")
-    .iterate()) {
+  for (const row of checkedQuery(db, "SELECT * FROM audio_asset WHERE kind='song' AND trashed=0", {
+    id: 'text',
+    revision: 'integer',
+    kind: 'text',
+    trashed: 'integer',
+    search_text: 'text',
+    payload: 'text',
+    checksum: 'text',
+  }).iterate()) {
     try {
       const a = audioFromRow(root, row);
       if (
@@ -699,7 +787,9 @@ function candidates(db: any, root: string, c: MusicContext) {
       )
         continue;
       matches.push({ asset: a, score: score(a, c) });
-    } catch {}
+    } catch (error) {
+      c.problems.push(row.id + ': ' + (error as Error).message);
+    }
   }
   matches.sort(
     (a, b) =>
@@ -709,17 +799,29 @@ function candidates(db: any, root: string, c: MusicContext) {
   );
   return matches.slice(0, 20).map((x) => x.asset.id);
 }
-function automaticAmbience(db: any, root: string, c: MusicContext) {
+function automaticAmbience(db: SqliteDatabase, root: string, c: MusicContext) {
   const env = new Set(c.environment.map(norm)),
     ids: string[] = [];
-  for (const row of db
-    .prepare("SELECT * FROM audio_asset WHERE kind='ambience' AND trashed=0")
-    .iterate()) {
+  for (const row of checkedQuery(
+    db,
+    "SELECT * FROM audio_asset WHERE kind='ambience' AND trashed=0",
+    {
+      id: 'text',
+      revision: 'integer',
+      kind: 'text',
+      trashed: 'integer',
+      search_text: 'text',
+      payload: 'text',
+      checksum: 'text',
+    },
+  ).iterate()) {
     try {
       const a = audioFromRow(root, row);
       if (a.available && !a.problem && [...a.vibes, ...a.moodTags].some((t) => env.has(norm(t))))
         ids.push(a.id);
-    } catch {}
+    } catch (error) {
+      c.problems.push(row.id + ': ' + (error as Error).message);
+    }
   }
   return ids.slice(0, 12);
 }
@@ -743,12 +845,13 @@ function next(s: MusicState) {
   }
 }
 // An incomplete environment is visible to the reader, but cannot replace the last confirmed automatic selection.
-export function refreshMusicContext(db: any, root: string, cam: string) {
+export function refreshMusicContext(db: SqliteDatabase, root: string, cam: string) {
   const s = state(db, cam);
   if (!s.autoplay && !s.autoAmbience) return;
   const c = context(db, cam, s);
   if (c.problems.length) return;
   const ambient = s.autoAmbience ? automaticAmbience(db, root, c) : [];
+  if (c.problems.length) return;
   if (c.signature === s.contextSignature && json(ambient) === json(s.automaticAmbience ?? []))
     return;
   s.contextSignature = c.signature;
@@ -756,6 +859,7 @@ export function refreshMusicContext(db: any, root: string, cam: string) {
   if (s.autoplay) {
     const ids = candidates(db, root, c),
       manual = s.queue.filter((e) => e.mode === 'manual');
+    if (c.problems.length) return;
     s.queue = [
       ...manual,
       ...ids
@@ -780,14 +884,14 @@ export function refreshMusicContext(db: any, root: string, cam: string) {
   }
   saveState(db, cam, s);
 }
-function layers(db: any, root: string, s: MusicState, c: MusicContext) {
+function layers(db: SqliteDatabase, root: string, s: MusicState, c: MusicContext) {
   if (s.manualHold === 'stop') return [];
   const selected = new Map<string, boolean>();
-  if (s.autoAmbience)
-    for (const id of c.problems.length
-      ? (s.automaticAmbience ?? [])
-      : automaticAmbience(db, root, c))
+  if (s.autoAmbience) {
+    const automatic = c.problems.length ? [] : automaticAmbience(db, root, c);
+    for (const id of c.problems.length ? (s.automaticAmbience ?? []) : automatic)
       selected.set(id, false);
+  }
   for (const id of s.forcedAmbience) selected.set(id, true);
   for (const id of s.mutedAmbience) selected.delete(id);
   const ids = [...selected].slice(0, 12);
@@ -806,13 +910,17 @@ function layers(db: any, root: string, s: MusicState, c: MusicContext) {
       }
     });
 }
-export function readMusic(db: any, root: string, cam: string): MusicView {
+export function readMusic(db: SqliteDatabase, root: string, cam: string): MusicView {
   const s = state(db, cam),
-    c = context(db, cam, s),
-    ambient = layers(db, root, s, c),
+    c = context(db, cam, s);
+  // Automatic discovery errors must be visible even when the damaged asset was not queued.
+  if (s.autoplay) candidates(db, root, c);
+  const ambient = layers(db, root, s, c),
     ids = new Set([
       ...s.queue.map((e) => e.assetId),
       ...ambient.map((l) => l.assetId),
+      ...s.forcedAmbience,
+      ...(s.automaticAmbience ?? []),
       ...s.mutedAmbience,
       ...(s.current ? [s.current.assetId] : []),
     ]),
@@ -826,11 +934,14 @@ export function readMusic(db: any, root: string, cam: string): MusicView {
     } catch (error) {
       problems.push(id + ': ' + (error as Error).message);
     }
-  if (s.current)
-    s.current.positionSeconds =
-      db
-        .prepare('SELECT seconds FROM music_position WHERE campaign_id=? AND playback_id=?')
-        .get(cam, s.current.playbackId)?.seconds ?? 0;
+  if (s.current) {
+    const seconds =
+      checkedQuery(db, 'SELECT seconds FROM music_position WHERE campaign_id=? AND playback_id=?', {
+        seconds: 'number',
+      }).get(cam, s.current.playbackId)?.seconds ?? 0;
+    numeric(seconds, 0, 100000000);
+    s.current.positionSeconds = seconds;
+  }
   return {
     registry: readAudioRegistry(db),
     state: s,
@@ -841,7 +952,12 @@ export function readMusic(db: any, root: string, cam: string): MusicView {
     problems,
   };
 }
-export function readMusicFavorites(db: any, root: string, cam: string, after: string | null) {
+export function readMusicFavorites(
+  db: SqliteDatabase,
+  root: string,
+  cam: string,
+  after: string | null,
+) {
   if (after !== null && (typeof after !== 'string' || !after || after.length > 1000))
     throw new Error('Favoritenposition prüfen.');
   const ids = state(db, cam).favoriteAssets ?? [],
@@ -858,7 +974,12 @@ export function readMusicFavorites(db: any, root: string, cam: string, after: st
     }
   return { items, next: start + page.length < ids.length ? page.at(-1)! : null, problems };
 }
-export function saveMusicPosition(db: any, cam: string, playbackId: string, seconds: number) {
+export function saveMusicPosition(
+  db: SqliteDatabase,
+  cam: string,
+  playbackId: string,
+  seconds: number,
+) {
   numeric(seconds, 0, 100000000);
   const s = state(db, cam);
   if (s.current?.playbackId !== playbackId) return;
@@ -866,14 +987,26 @@ export function saveMusicPosition(db: any, cam: string, playbackId: string, seco
     'INSERT INTO music_position VALUES(?,?,?) ON CONFLICT(campaign_id,playback_id) DO UPDATE SET seconds=excluded.seconds',
   ).run(cam, playbackId, seconds);
 }
-export function executeMusic(db: any, root: string, c: MusicCommand, guard: () => void): MusicView {
+export function executeMusic(
+  db: SqliteDatabase,
+  root: string,
+  c: MusicCommand,
+  guard: () => void,
+): MusicView {
   return db
     .transaction(() => {
       guard();
       if (!c.commandId) throw new Error('Musikänderungskennung fehlt.');
       const cam = c.campaignId,
         fp = hash(json({ campaignId: cam, action: c.action })),
-        prior = db.prepare('SELECT * FROM music_receipt WHERE command_id=?').get(c.commandId);
+        prior = checkedQuery(db, 'SELECT * FROM music_receipt WHERE command_id=?', {
+          command_id: 'text',
+          campaign_id: 'text',
+          fingerprint: 'text',
+          scene_id: 'nullable-text',
+          payload: 'text',
+          checksum: 'text',
+        }).get(c.commandId);
       if (prior) {
         if (prior.campaign_id !== cam || prior.fingerprint !== fp)
           throw new Error('Musikänderungskennung anders verwendet.');
@@ -921,7 +1054,7 @@ export function executeMusic(db: any, root: string, c: MusicCommand, guard: () =
           typeof id !== 'string' ||
           !id ||
           id.length > 1000 ||
-          db.prepare('SELECT 1 FROM audio_asset WHERE id=?').get(id)
+          checkedQuery(db, 'SELECT 1 FROM audio_asset WHERE id=?', { '1': 'integer' }).get(id)
         )
           throw new Error('Kopierziel ist ungültig oder bereits vorhanden.');
         saveAsset(db, { ...old, id, revision: 1, name: old.name + ' – Kopie' });
@@ -958,9 +1091,18 @@ export function executeMusic(db: any, root: string, c: MusicCommand, guard: () =
         ).run(cam, next.sceneId, next.revision, payload, hash(payload));
       } else if (a.kind === 'subject') {
         const sub = a.subject,
-          old = db
-            .prepare('SELECT * FROM music_subject WHERE campaign_id=? AND kind=? AND id=?')
-            .get(cam, sub.kind, sub.id);
+          old = checkedQuery(
+            db,
+            'SELECT * FROM music_subject WHERE campaign_id=? AND kind=? AND id=?',
+            {
+              campaign_id: 'text',
+              kind: 'text',
+              id: 'text',
+              revision: 'integer',
+              payload: 'text',
+              checksum: 'text',
+            },
+          ).get(cam, sub.kind, sub.id);
         readMusicSubject(db, cam, sub.kind, sub.id);
         if (
           (old?.revision ?? null) !== a.expectedRevision ||
@@ -1166,20 +1308,29 @@ export function executeMusic(db: any, root: string, c: MusicCommand, guard: () =
     .immediate();
 }
 export function audioLibrarySnapshot(
-  db: any,
+  db: SqliteDatabase,
   root: string,
 ): { format: string; version: number; axes: MoodAxis[]; assets: AudioAsset[] } {
   return {
     format: 'Kampagnenwerkstatt Musikbibliothek',
     version: 1,
     axes: readAudioRegistry(db).axes,
-    assets: Array.from(db.prepare('SELECT * FROM audio_asset ORDER BY rowid').iterate(), (r: any) =>
-      audioFromRow(root, r),
+    assets: Array.from(
+      checkedQuery(db, 'SELECT * FROM audio_asset ORDER BY rowid', {
+        id: 'text',
+        revision: 'integer',
+        kind: 'text',
+        trashed: 'integer',
+        search_text: 'text',
+        payload: 'text',
+        checksum: 'text',
+      }).iterate(),
+      (r) => audioFromRow(root, r),
     ),
   };
 }
 export function mergeAudioLibrary(
-  db: any,
+  db: SqliteDatabase,
   root: string,
   library: ReturnType<typeof audioLibrarySnapshot>,
 ) {
@@ -1204,9 +1355,17 @@ export function mergeAudioLibrary(
       for (const a of library.assets) {
         if (!existsSync(audioFile(root, a)))
           throw new Error('Musikpaket enthält nicht alle referenzierten Medien.');
-        const old = db.prepare('SELECT * FROM audio_asset WHERE id=?').get(a.id);
+        const old = checkedQuery(db, 'SELECT * FROM audio_asset WHERE id=?', {
+          id: 'text',
+          revision: 'integer',
+          kind: 'text',
+          trashed: 'integer',
+          search_text: 'text',
+          payload: 'text',
+          checksum: 'text',
+        }).get(a.id);
         if (old) {
-          const previous = decoded<AudioAsset>(old),
+          const previous = checkedAudioRow(old),
             fields = (x: AudioAsset) =>
               json([
                 x.name,
@@ -1245,9 +1404,17 @@ export function mergeAudioLibrary(
     })
     .immediate();
 }
-export function audioMediaFiles(db: any) {
+export function audioMediaFiles(db: SqliteDatabase) {
   const media = new Map<string, { name: string; sha256: string; bytes: number }>();
-  for (const row of db.prepare('SELECT * FROM audio_asset').iterate()) {
+  for (const row of checkedQuery(db, 'SELECT * FROM audio_asset', {
+    id: 'text',
+    revision: 'integer',
+    kind: 'text',
+    trashed: 'integer',
+    search_text: 'text',
+    payload: 'text',
+    checksum: 'text',
+  }).iterate()) {
     const a = checkedAudioRow(row);
     const name = 'audio/' + a.media.sha256 + a.media.extension,
       previous = media.get(name);
@@ -1257,21 +1424,53 @@ export function audioMediaFiles(db: any) {
   }
   return [...media.values()];
 }
-export function validateMusicBackup(db: any) {
+export function validateMusicBackup(db: SqliteDatabase) {
   audioMediaFiles(db);
-  for (const r of db.prepare('SELECT * FROM music_state').iterate())
+  for (const r of checkedQuery(db, 'SELECT * FROM music_state', {
+    campaign_id: 'text',
+    revision: 'integer',
+    payload: 'text',
+    checksum: 'text',
+  }).iterate())
     checkedMusicState(db, r.campaign_id, r);
-  for (const r of db.prepare('SELECT * FROM scene_music').iterate())
+  for (const r of checkedQuery(db, 'SELECT * FROM scene_music', {
+    campaign_id: 'text',
+    scene_id: 'text',
+    revision: 'integer',
+    payload: 'text',
+    checksum: 'text',
+  }).iterate())
     checkedSceneSettings(db, r.campaign_id, r.scene_id, r);
-  for (const r of db.prepare('SELECT * FROM music_subject').iterate()) {
-    subjectName(db, r.campaign_id, r.kind, r.id);
-    checkedMusicSubject(r, r.campaign_id, r.kind, r.id);
+  for (const r of checkedQuery(db, 'SELECT * FROM music_subject', {
+    campaign_id: 'text',
+    kind: 'text',
+    id: 'text',
+    revision: 'integer',
+    payload: 'text',
+    checksum: 'text',
+  }).iterate()) {
+    subjectName(db, r.campaign_id, decodeStored(r, shape.music_subject).kind, r.id);
+    checkedMusicSubject(r, r.campaign_id, decodeStored(r, shape.music_subject).kind, r.id);
   }
-  for (const r of db.prepare('SELECT * FROM music_receipt').iterate()) checkedMusicReceipt(db, r);
-  for (const r of db.prepare('SELECT * FROM music_position').iterate())
+  for (const r of checkedQuery(db, 'SELECT * FROM music_receipt', {
+    command_id: 'text',
+    campaign_id: 'text',
+    fingerprint: 'text',
+    scene_id: 'nullable-text',
+    payload: 'text',
+    checksum: 'text',
+  }).iterate())
+    checkedMusicReceipt(db, r);
+  for (const r of checkedQuery(db, 'SELECT * FROM music_position', {
+    campaign_id: 'text',
+    playback_id: 'text',
+    seconds: 'number',
+  }).iterate())
     if (
       typeof r.campaign_id !== 'string' ||
-      !db.prepare('SELECT 1 FROM campaign WHERE id=?').get(r.campaign_id) ||
+      !checkedQuery(db, 'SELECT 1 FROM campaign WHERE id=?', { '1': 'integer' }).get(
+        r.campaign_id,
+      ) ||
       typeof r.playback_id !== 'string' ||
       !r.playback_id ||
       r.playback_id.length > 1000 ||
@@ -1280,5 +1479,11 @@ export function validateMusicBackup(db: any) {
       r.seconds > 100000000
     )
       throw new Error('Musikwiedergabeposition ist ungültig.');
-  for (const r of db.prepare('SELECT * FROM audio_registry').iterate()) checkedAudioRegistry(r);
+  for (const r of checkedQuery(db, 'SELECT * FROM audio_registry', {
+    id: 'text',
+    revision: 'integer',
+    payload: 'text',
+    checksum: 'text',
+  }).iterate())
+    checkedAudioRegistry(r);
 }

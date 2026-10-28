@@ -1,5 +1,5 @@
 import { budgetRarity as rarity } from '../atlas/dungeon-budget-contracts';
-import { readPreparedGroup } from './session';
+import { readPreparedGroup } from './session-read';
 import { validateDrawingElement } from '../atlas/drawing-contracts';
 import { createHash } from 'node:crypto';
 import type { GraphView } from '../atlas/graph-contracts';
@@ -10,12 +10,12 @@ import {
   featureBudgetOwner,
 } from '../atlas/dungeon-budget-model';
 import { dungeonContentAnchors } from '../atlas/dungeon-content-model';
-import { readGeneratorRegistry } from './generation';
+import { readGeneratorRegistry } from './generation-read';
 import { readEncounterPlan, readEncounterPlans } from './encounters';
-import { readTreasure } from './progression';
+import { readTreasure } from './progression-records';
 import { readItemDefinition } from './item-definitions';
 import { assessEncounter } from '../catalog/encounter-contracts';
-import { readLive } from './live';
+import { readLive } from './live-read';
 import type { RewardGuidanceRules } from '../campaign/generation/reward-guidance';
 export function dungeonBudgetView(
   source: any,

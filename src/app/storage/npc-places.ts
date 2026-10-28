@@ -8,7 +8,7 @@ import type {
 import { validateRoom } from '../shared/room-validation';
 import { readCityBuildingChoices, readCitySite } from './city';
 import { npcPosition } from './npc-world';
-import { readNpc } from './npcs';
+import { readNpc } from './npc-read';
 import { deskContent } from './scene-desk';
 export function readNpcPlaces(db: any, cam: string, id: string, offset: number): NpcPlaces {
   if (

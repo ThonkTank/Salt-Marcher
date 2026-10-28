@@ -1,3 +1,4 @@
+import { revealWorkspaceNavigation } from './native-navigation.mjs';
 import { runNativeProbe } from './native-session.mjs';
 // Real Live-desk travel on the shared Atlas. Run through tools/ui-session.py after build:desktop.
 // GM_QA_ZOOM=2 repeats at actual 200% browser zoom, including Undo/Redo and fresh reopening.
@@ -204,11 +205,7 @@ await runNativeProbe(
         .locator('.campaign-card[data-campaign-id="' + campaign.id + '"]')
         .getByRole('button', { name: /Öffnen|Fortsetzen/ })
         .click();
-      await page.waitForFunction(() => !document.querySelector('#workspace-navigation').inert);
-      if (await page.locator('#atlas-navigation').isVisible())
-        await page.locator('#atlas-navigation').click();
-      if (!(await page.locator('#live-tab').isVisible()))
-        await page.locator('#workspace-nav-summary').click();
+      await revealWorkspaceNavigation(page);
       await page.locator('#live-tab').click();
       if (await page.locator('#live-continue').isVisible())
         await page.locator('#live-continue').click();
@@ -257,23 +254,46 @@ await runNativeProbe(
             canvasState: c.dataset.canvasState,
           })),
           { box } = view;
-        const png = PNG.sync.read(await page.locator('#campaign-map').screenshot()),
+        const capture = await page.locator('#campaign-map').screenshot(),
+          png = PNG.sync.read(capture),
           scale = Math.min(png.width / box.width, png.height / box.height);
-        const pixel = (q) => {
+        const coordinate = (q) => {
           const x = Math.round(
               (png.width - box.width * scale) / 2 + (q * 4828.032 - box.x) * scale,
             ),
             y = Math.round((png.height - box.height * scale) / 2 - box.y * scale);
-          if (x < 0 || x >= png.width || y < 0 || y >= png.height) return [];
-          const offset = (y * png.width + x) * 4;
-          return [...png.data.subarray(offset, offset + 3)];
+          return { x, y };
         };
+        // Screenshot bytes can carry the host display ICC profile. Decode that profile
+        // into a detached sRGB canvas before comparing the authored sRGB colors.
+        // Neither the product canvas nor its rendered pixels are changed.
+        const samples = await page.evaluate(
+          async ({ encoded, points }) => {
+            const bytes = Uint8Array.from(atob(encoded), (c) => c.charCodeAt(0)),
+              bitmap = await createImageBitmap(new Blob([bytes], { type: 'image/png' })),
+              canvas = document.createElement('canvas');
+            canvas.width = bitmap.width;
+            canvas.height = bitmap.height;
+            const context = canvas.getContext('2d', { colorSpace: 'srgb' });
+            if (!context) throw new Error('Screenshot color decoder unavailable');
+            context.drawImage(bitmap, 0, 0);
+            bitmap.close();
+            return points.map(({ x, y }) =>
+              x < 0 || x >= canvas.width || y < 0 || y >= canvas.height
+                ? []
+                : [...context.getImageData(x, y, 1, 1).data].slice(0, 3),
+            );
+          },
+          { encoded: capture.toString('base64'), points: [coordinate(q), coordinate(1.4)] },
+        );
+        const pixel = (q) => samples[q === 1.4 ? 1 : 0];
         result.lastPixelProbe = {
           ...view,
           scale,
           width: png.width,
           height: png.height,
           q,
+          pixelColorSpace: 'srgb',
           party: pixel(q),
           route: pixel(1.4),
         };

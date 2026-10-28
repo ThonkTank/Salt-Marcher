@@ -2,8 +2,8 @@ import type { TimeRequest, TimePreview, ClockEventTarget } from '../runtime/time
 import { agendaDuration, agendaOccurrence, unitMs } from '../runtime/agenda-model';
 import { calendarEvents, readClockEvent } from './calendar-events';
 import { validInstant } from '../runtime/time-plan-model';
-import { readWorldCalendar } from './world';
-import { readLiveScene } from './live';
+import { readWorldCalendar } from './world-calendar-read';
+import { readLiveScene } from './live-read';
 export function previewSceneTime(db: any, cam: string, r: TimeRequest): TimePreview {
   if (!r || typeof r.reason !== 'string' || r.reason.length > 2000)
     throw new Error('Zeitgrund benötigt höchstens 2.000 Zeichen.');

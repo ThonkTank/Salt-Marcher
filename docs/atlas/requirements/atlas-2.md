@@ -2,7 +2,7 @@
 
 Status: Verbindlicher Zielumfang; historische Umsetzungsbelege sind keine aktuelle Abnahme.
 Owner: atlas
-Last Reviewed: 2026-10-24 (Struktur und Quellen; Fachabnahme separat)
+Last Reviewed: 2026-10-28 (Bedienzugänge und metrischer Geländeumfang; Fachabnahme separat)
 Source of Truth: Dieses Dokument besitzt das benannte Thema; Code belegt den Iststand, das Abnahmeregister den Prüfstand.
 
 ## Werkzeuge und Bediengefühl
@@ -13,7 +13,7 @@ Der Atlas soll sich wie ein Zeicheneditor anfühlen: Werkzeug wählen, Wirkung a
 
 ### Gemeinsame Bedienung
 
-Die feste Befehlsleiste enthält Navigation und Verwaltung. Links folgt die Werkzeugleiste **Bereich → Gruppe → Werkzeug → Optionen**. Die Bereiche **Landschaft, Stadt und Dungeon** wechseln keinen Editor oder Kartenmodus. Zoom verändert weder Werkzeug noch dessen Einstellungen. Objektauswahl ersetzt die Werkzeugliste nicht; Eigenschaften und erweiterte Optionen erscheinen im rechten Kontextbereich. Die Karte bleibt beim Bearbeiten sichtbar.
+Die feste Befehlsleiste enthält Navigation und Verwaltung. Links folgt die Werkzeugleiste **Bereich → Gruppe → Werkzeug → Optionen**. Die aktuellen Bereiche **Landschaft, Stadt und Räume** wechseln keinen Editor oder Kartenmodus; ihre vorhandenen Zugänge und Anordnung stehen in der [Bedienung](../guide.md#arbeitsplatz-und-kartenfläche). Zoom verändert weder Werkzeug noch dessen Einstellungen. Objektauswahl ersetzt die Werkzeugliste nicht; Eigenschaften und erweiterte Optionen erscheinen im rechten Kontextbereich. Die Karte bleibt beim Bearbeiten sichtbar.
 
 **Ein einfacher Standardweg:** Zum Korrigieren „Auswahl“ wählen und das Objekt anklicken; zum Anlegen das Fachwerkzeug wählen. Ein neuer Raum beginnt als Rechteck im gewählten Geschoss, ein Fluss/eine Straße als Punktzug, ein Asset als Einzelplatzierung und eine Siedlung mit vorgegebener Fläche/Straße. Weitere Formen und bereits verfügbare Fähigkeiten bleiben erreichbar. Im Panel stehen zuerst die für diese Aktion nötigen Felder; zusätzliche vorhandene Einstellungen werden über „Mehr Optionen“ erreichbar, ohne neue Kartenmodi. Ein Normalfall verlangt weder Graphentwurf noch Vorlage oder Generatorparameterstudium.
 
@@ -137,7 +137,7 @@ Beispiel: Ich ziehe die Küchenwand nach außen. Schon während des Zugs sehe ic
 | --- | --- |
 | Work 1: Vorhandene Karte öffnen → Raum suchen → Kontur/Key ändern → Undo/Redo → automatische Speicherung abwarten → neu öffnen | Der erste vollständige Ablauf funktioniert mit wenigen Optionen; Inhalte, Kennungen und Links bleiben erhalten. Normalbetrieb verlangt keine manuelle Saveaktion; pending/durable/Fehler sind unterscheidbar. |
 | Work 2: Kleine Dungeonvorbereitung aus [GM-UX-01 A/B](../../project/verification/gm-workflows.md#gm-ux-01-ein-abenteuer-vorbereiten-und-leiten) mit sechs Räumen, verbundenen Gängen, Tür/Treppe und einfachem zweitem Geschoss → nummerieren/beschreiben → GM-/Spielerbild ausgeben | Ohne fertige Region/Stadt spielvorbereitungsfähig. Bildvorschau/Datei gemäß jeweiligem Profil prüfen; geheime Inhalte und GM-Notizen erscheinen nicht im Spielerbild. Eingabeart und Build müssen benannt sein, bevor dies einen Produktnachweis ergibt. |
-| Work 3: Kleine 3-Meilen-Region mit Küste, Fluss, Straße und drei benannten Orten vorbereiten; Verlauf korrigieren, Vorlage kalibrieren, Entfernung messen und Bild ausgeben | Region ohne vollständige Stadt nutzbar; Koordinaten, Namen/Keys, Vorlage und Maßstab bleiben nach Neustart konsistent. Drei Orte sind die Testaufgabe, kein Produktlimit. Weitere Hexstufen erhalten ihre eigene Fachabnahme. |
+| Work 3: Kleine 3-Meilen-Region mit Küste, Fluss, Straße und drei benannten Orten vorbereiten; Verlauf korrigieren, Vorlage kalibrieren, Entfernung messen und Bild ausgeben | Region ohne vollständige Stadt nutzbar; Koordinaten, Namen/Keys, Vorlage und Maßstab bleiben nach Neustart konsistent. Drei Orte sind die Testaufgabe, kein Produktlimit. Maßstabsübergreifende Verfeinerung und der Schutz anderer Arbeit erhalten ihre Fachabnahme im kontinuierlichen Geländemodell; Reise-/Referenzhexes bleiben davon unabhängig. |
 | Work 4: Eichenfurt mit Fläche/Hauptstraße/Platz vorschlagen, abbrechen und übernehmen; ein Haus zur Taverne korrigieren und Innenraum anlegen | Siedlung eigenständig vorbereitungsfähig. Abbruch ohne Restdaten, Übernahme als native Geometrie und Hauskorrektur/Keys nach Neustart prüfen. Wandkorrektur im gewählten Geschoss reicht für diesen Zwischenstand; das gesamte Leitbeispiel folgt nach den vier Work-Abschlüssen. |
 | Region zeichnen → Straße setzen → Dorf bebauen → einzelnes Haus korrigieren | Fachwerkzeuge sind direkt auffindbar; Erzeugung folgt ausdrücklicher Übernahme und Einzelkorrekturen bleiben native Geometrie. |
 | Work: Innenraum anlegen → Räume zeichnen → Wand im gewählten Geschoss ändern; Efficient: ganzes Gebäude skalieren | Gemeinsames Gebäude bleibt konsistent; Wandänderung betrifft den gewählten Umfang, Skalierung alle Grundrisse ohne Änderung der Höhen. |
@@ -195,13 +195,18 @@ Innenstand, nicht zwei unabhängig bearbeitete Konturen.
 
 ### Hex-Stufen und Landschaft
 
-3, 9, 27, … Meilen zwischen gegenüberliegenden Kanten, Ursprung/Ausrichtung gemeinsam. Bei regelmäßigen Nachbarhexes entspricht dies ihrem Mittelpunktabstand. Kleinste Stufe: 3 Meilen; weiteste Kameraansicht: erdgroße Referenzfläche von etwa 40.000 × 20.000 km, ohne feste Weltgrenze.
-Alle Stufen sind bearbeitbar, gröbere Vorgaben werden pro Eigenschaft durch
-ausdrückliche feinere Werte überschrieben. Reguläre Hexes verschiedener Stufen
-verschachteln sich nicht exakt: Flächenüberschneidung statt fester Kindliste.
-Reset entfernt nur die gewählte Overrideeigenschaft. Freie Wege/Küsten bleiben
-über Chunkgrenzen verbunden. Sparse authored Records; Pan/Zoom malt nichts.
-Details/35-Biome-/Symbolclosure stehen ausschließlich im Runtimeplan.
+Aktuelle Reise-/Referenzgrößen, automatische und manuelle Anzeige stehen in der
+[Bedienung](../guide.md#eine-region-vorbereiten). Sie erzeugen keine Gelände-Zellen.
+Kontinuierliche Landschaft verwendet Weltmeter, freie Konturen, gezielte
+Eigenschaften und gemeinsame Autorhistorie; grobe Gestaltung und feine Korrektur
+bleiben über Kameramaßstäbe möglich. Schutz absoluter Feinhöhen und vollständige
+Abnahme bleiben beim [Terrainvertrag](terrain-relief.md#ziele-und-abnahme-dieser-etappe).
+Biom-/Symbolumfang und Referenzfolgen stehen im [Geländevertrag](../contract/hex-editing.md).
+
+Die [frühere 3/9/27-Meilen-Autorenarchitektur](https://github.com/ThonkTank/Salt-Marcher/blob/1cb69e33dca7eda6e56916c3cf6bc2cfba803c7d/docs/atlas/requirements/atlas-2.md#hex-stufen-und-landschaft)
+ist eine historische technische Festlegung. Architektur und bestätigte
+Lieferpriorität besitzt heute [unified-spatial-atlas.md](../architecture/unified-spatial-atlas.md);
+[rendering.md](../architecture/rendering.md) führt zu aktuellem Code und Prüfwegen.
 
 ### Wiederverwendung der Editorbasis
 
@@ -232,7 +237,9 @@ Die gemeinsame Testregion wächst mit den zentralen Lieferstufen und ihren funkt
 | Phase | Nutzbarer Ablauf und begrenzter Umfang | Praxistest im tatsächlichen Zielhost |
 |---|---|---|
 | **HEX-01 – Atlas anlegen und öffnen** | Grenzenlosen Atlas anlegen, benennen und öffnen, ohne Größenabfrage. 3-Meilen-Hexes anzeigen, ein Hex treffen und seine Adresse zeigen; verschieben, zoomen und belegte Inhalte einpassen. Ausrichtung, Weltmaßstab und Weltkoordinaten von Anfang an speichern. | Leeren Atlas öffnen, Hexes auf beiden Seiten des Ursprungs und außerhalb des ersten Ausschnitts anklicken. Pan/Zoom belegen keine Landschaftsdaten. Nach frischem Start stimmen Kennung und Adressen; ein bestehender Dungeon öffnet weiterhin. |
-| **HEX-02 – Gelände malen und erhalten** | Land, Meer und einfacher Geländetyp per Klick und zusammenhängendem Pinselzug setzen; lokale Bearbeitung zurücksetzen; Undo/Redo, explizites Speichern und dauerhafte Entwürfe anbieten. Nur bearbeitete kontinuierliche Flächen werden als spärlich belegte, getrennt ladbare Bereiche gespeichert; Inhalt erweitert die gemeinsame Ausdehnung automatisch. | Kleine Insel zeichnen und jenseits ihres bisherigen Bereichs weiterzeichnen, auch in negativen Koordinaten. Wachstum verlangt keine Resize-Aktion und verschiebt nichts. Abbruch, Undo/Redo, Speichern, Neuöffnung und Entwurfswiederherstellung erhalten Inhalt und daraus abgeleitete Ausdehnung. |
+| **HEX-02 – Gelände malen und erhalten** | Land, Meer und einfacher Geländetyp per Klick und zusammenhängendem Pinselzug setzen; lokale Bearbeitung zurücksetzen; gemeinsames Undo/Redo und automatische dauerhafte Speicherung anbieten; unbestätigte Eingaben nach dem aktuellen Recoveryvertrag halten. Nur bearbeitete kontinuierliche Flächen werden als spärlich belegte, getrennt ladbare Bereiche gespeichert; Inhalt erweitert die gemeinsame Ausdehnung automatisch. | Kleine Insel zeichnen und jenseits ihres bisherigen Bereichs weiterzeichnen, auch in negativen Koordinaten. Wachstum verlangt keine Resize-Aktion und verschiebt nichts. Abbruch, Undo/Redo, Speichern, Neuöffnung und Entwurfswiederherstellung erhalten Inhalt und daraus abgeleitete Ausdehnung. |
+
+Dauerhaft wiederherstellbare Entwürfe bleiben Teil des fachlichen Zielumfangs. Der aktuelle Recoveryvertrag hält unbestätigte Gesten nur innerhalb der Sitzung; ihre Wiederherstellung nach erzwungenem Prozessabbruch ist damit nicht umgesetzt oder abgenommen. Automatische Speicherung bestätigter Arbeit ersetzt diese offene Entwurfsanforderung nicht.
 
 **Nach HEX-02 steht der erste benutzbare Hex-Editor bereit.** Sein Testbuild enthält einen vollständigen Bearbeitungs- und Speicherablauf; weitere Kartengestaltung folgt auf dieser Grundlage.
 
@@ -254,7 +261,7 @@ CITY-01–04 enthalten den Stadt-/Gebäudegrundablauf für Work und dessen spät
 
 | Phase | Nutzbarer Ablauf und begrenzter Umfang | Praxistest im tatsächlichen Zielhost |
 |---|---|---|
-| **HEX-06 – Alle Hex-Stufen bearbeiten** | Standardstufen von 3 bis 2.187 Meilen und erforderliche größere Stufen anbieten. Manuelle Stufenwahl und automatischer Wechsel mit Übergangsbereich; grobe Vorgaben, feine Überschreibungen und Zurücksetzen verbinden. | Auf 27 Meilen Land setzen, auf 3 Meilen eine Küste verfeinern, grobe Vorgabe ändern und ein feines Detail zurücksetzen. Alle Stufen, Ortspositionen, Übersicht und Neuöffnung zeigen den jeweils richtigen Zustand. |
+| **HEX-06 – Maßstabsübergreifende Landschaft** | Landschaft unabhängig vom Reise-/Referenzraster gestalten, lokal verfeinern und Eigenschaften gezielt zurücksetzen; andere und feinere Arbeit nach dem Geländevertrag schützen. Manuelle und automatische Rasteranzeige bleiben eigene Ansichtsaktionen. | In regionaler Übersicht Land formen, eine Küste und Eigenschaften im Detail verfeinern und anschließend eine grobe Änderung sowie partielle Rücksetzung prüfen. Konturen, Ortspositionen und Neuöffnung bleiben konsistent; offener absoluter Feinhöhenschutz wird gesondert bewertet. |
 | **HEX-07 – Verbundene Änderungen sicher erhalten** | Externe Importkonflikte, unterbrochene gekoppelte Transaktion, Wiederherstellung und direkte Links nach Umbenennungen ausdrücklich absichern. Benötigte Dungeonwirkung im gemeinsamen Kern liefern. | Orts-Key ändern und Platzierung verschieben; Abbruch im gemeinsamen Commit und externe Importänderung im isolierten Zielstore auslösen. Ein lesbarer, konsistenter Stand wird wiederhergestellt oder ein Konflikt gemeldet. Orts- und Raumlinks funktionieren nach Umbenennung. |
 | **HEX-08 – Große Welt zuerst grob öffnen** | Atlas mit erdgroßer belegter Ausdehnung zunächst in grober Stufe öffnen; nur sichtbare Detailbereiche laden, Anfragen beim Weiterzoomen verwerfen und ungenutzte Ressourcen freigeben. Fortschreitend größere und weiter entfernte Inhaltsbereiche prüfen. | In einem belegten Bereich von 40.000 × 20.000 km zwischen entfernten Orten wechseln und darüber hinaus neue Inhalte setzen. Grobe Übersicht erscheint vor Detaildaten; Rückkehr zeigt gespeicherte Bearbeitung. Speichern, Undo und der Ort-Dungeon-Ablauf bleiben bedienbar. |
 | **HEX-09 – Ooke als Nachzeichenvorlage** | Zunächst ein exportiertes Ooke-Bild laden, anhand zweier Referenzpunkte maßstäblich ausrichten und die Deckkraft ändern. Danach dieselbe Funktion für die zweite Ooke-Karte nutzen. Vorlagen sind separate Referenzassets. | Bekannte Küste und Ort nachzeichnen, Stufen wechseln und neu öffnen. Vorlage und native Landschaft bleiben ausgerichtet; die Referenz lässt sich ausblenden. Originale Wonderdraft-Dateien bleiben erhalten. |
@@ -264,7 +271,13 @@ CITY-01–04 enthalten den Stadt-/Gebäudegrundablauf für Work und dessen spät
 
 ### Meilenstein D – Eine natürliche Landschaft zeichnen
 
-Der Nutzerentscheid vom 19.10.2026 konkretisiert native Geländehöhe und die spätere räumliche Ansicht in der [Relief-Roadmap R0–R7](terrain-relief.md). Sie erweitert HEX-16 und verbindet HEX-06/08 mit dem kippbaren Atlas. Gebirge werden ausschließlich mit Land formen und Glätten modelliert; spezielle Formenwerkzeuge und Höhenkartenimport entfallen nach Nutzerentscheidung vom 20.10.2026; Bergsymbolstreuung aus HEX-18 ist dafür kein Ersatz. Allgemeine Symbol- und Waldwerkzeuge bleiben erhalten. Der isolierte R0-Prototyp ist noch keine integrierte Atlasfähigkeit.
+Der Höhenumfang wird im [aktuellen Terrain-/Wasserfokus](terrain-relief.md#aktueller-lieferfokus-terrain-und-wasser)
+und im [bestätigten Umsetzungsplan](../architecture/unified-spatial-atlas.md#terrain-wasserlieferung-umsetzungsplan)
+konkretisiert. Grundpinsel, Spezialformen, kontinuierliche Darstellung und ihre
+Prüfgates folgen diesen Quellen. Die ältere Aussage, Spezialformen entfielen,
+ist supersediert; Bergsymbolstreuung ersetzt keine Höhenlandschaft. Allgemeine
+Symbol- und Waldwerkzeuge sowie der vollständige Originalumfang bleiben erhalten.
+
 
 | Phase | Nutzbarer Ablauf und begrenzter Umfang | Praxistest im tatsächlichen Zielhost |
 |---|---|---|

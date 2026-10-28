@@ -1,16 +1,11 @@
+import { checkedLandscapeRow } from './landscape-read';
 import { createHash, randomUUID } from 'node:crypto';
 import { newLocation } from '../../features/location/location-schema';
 import type { AtlasBinding, AtlasCommand } from '../atlas/campaign-atlas-contracts';
 import { atlasFrame, atlasHexAt, localToAtlas } from '../atlas/campaign-atlas-model';
 import { inside, nearestAnchor } from '../atlas/drawing-model';
-import { validateMask } from '../atlas/land-mask';
-import { validateColor } from '../atlas/landscape-brush';
-import { validateLine } from '../atlas/landscape-line';
 import { poseSpace } from '../atlas/spatial-3d';
-import { validateTerrain } from '../atlas/terrain-height';
-import { validateRoute } from '../atlas/terrain-route';
 import { terrainTraceMeasure } from '../atlas/terrain-timing';
-import { validateVegetation } from '../atlas/vegetation';
 import type { AtlasMap } from '../runtime/world-contracts';
 import { type Room } from '../shared/contracts';
 import { validateRoom } from '../shared/room-validation';
@@ -25,7 +20,8 @@ import {
   putAtlasEntrance,
 } from './atlas-travel';
 import { readCityHeader, readCitySite } from './city';
-import { dungeonDisplay, dungeonGeometry, dungeonGeometryBasis } from './dungeon-play';
+import { dungeonDisplay } from './dungeon-play';
+import { dungeonGeometry, dungeonGeometryBasis } from './dungeon-geometry-read';
 import { playerObservers, playerSettings } from './player';
 import {
   groupRecipeForHouse,
@@ -39,9 +35,14 @@ import {
 import { type SqliteDatabase, checkedQuery, checkedRow } from './sqlite-connection';
 import { advanceTerrainEnvironment } from './terrain-environment';
 import { changedHeightBounds, unionTerrainBounds } from './terrain-invalidation';
-import { readWorld, travelEnvironmentBasis } from './world';
-const hash = (v: string) => createHash('sha256').update(v).digest('hex'),
-  json = JSON.stringify;
+import { travelEnvironmentBasis } from './world-commands';
+import { readWorld } from './world-state';
+import { atlasRoot } from './atlas-root-read';
+export { atlasRoot } from './atlas-root-read';
+const hash = (v: string) => createHash('sha256').update(v).digest('hex');
+
+const json = JSON.stringify;
+
 export function installCampaignAtlas(db: SqliteDatabase) {
   db.exec(`
  CREATE TABLE IF NOT EXISTS atlas_import_source(campaign_id TEXT NOT NULL REFERENCES campaign(id),id TEXT NOT NULL,source TEXT NOT NULL,checksum TEXT NOT NULL,PRIMARY KEY(campaign_id,id)) STRICT;
@@ -51,6 +52,7 @@ export function installCampaignAtlas(db: SqliteDatabase) {
  CREATE TABLE IF NOT EXISTS atlas_receipt(command_id TEXT PRIMARY KEY,campaign_id TEXT NOT NULL,fingerprint TEXT NOT NULL) STRICT;
  `);
 }
+
 export function createCampaignAtlas(db: SqliteDatabase, cam: string) {
   const id = randomUUID(),
     m: AtlasMap = {
@@ -75,19 +77,7 @@ export function createCampaignAtlas(db: SqliteDatabase, cam: string) {
   db.prepare('INSERT INTO campaign_atlas(campaign_id,map_id) VALUES(?,?)').run(cam, id);
   ensureAtlasShapeSource(db, cam);
 }
-export function atlasRoot(db: SqliteDatabase, cam: string) {
-  const root = checkedQuery(db, 'SELECT * FROM campaign_atlas WHERE campaign_id=?', {
-    campaign_id: 'text',
-    map_id: 'text',
-    revision: 'integer',
-    cursor: 'integer',
-  }).get(cam);
-  if (!root)
-    throw new Error(
-      'Dieser alte Testbestand besitzt noch keinen gemeinsamen Atlas. Neue Kampagne anlegen.',
-    );
-  return root;
-}
+
 export function decodeAtlasBinding(value: unknown): AtlasBinding {
   const r = checkedRow(value, {
     id: 'text',
@@ -117,12 +107,14 @@ export function decodeAtlasBinding(value: unknown): AtlasBinding {
     revision: r.revision,
   };
 }
+
 export function atlasBindings(db: SqliteDatabase, cam: string): AtlasBinding[] {
   return db
     .prepare('SELECT * FROM atlas_binding WHERE campaign_id=? ORDER BY rowid')
     .all(cam)
     .map(decodeAtlasBinding);
 }
+
 export function bindAtlas(
   db: SqliteDatabase,
   cam: string,
@@ -165,6 +157,7 @@ export function bindAtlas(
     'INSERT INTO atlas_binding VALUES(?,?,?,?,?,?,?,?,?,?) ON CONFLICT(campaign_id,id) DO UPDATE SET parent=excluded.parent,parent_id=excluded.parent_id,x=excluded.x,y=excluded.y,angle=excluded.angle,revision=excluded.revision',
   ).run(cam, b.id, b.kind, b.ownerId, b.parent, b.parentId, b.x, b.y, b.angle, (expected ?? 0) + 1);
 }
+
 // Capture only canonical rows written by the existing domain commands. Their own
 // old receipts/histories remain immutable; the Atlas exposes one chronological history.
 const tracked = [
@@ -201,7 +194,9 @@ const tracked = [
   'world_journey',
   'dungeon_journey',
 ];
+
 type CapturedRow = Record<string, string | number | null>;
+
 function capturedRow(value: unknown): CapturedRow {
   if (
     !value ||
@@ -216,6 +211,7 @@ function capturedRow(value: unknown): CapturedRow {
     );
   return value as CapturedRow;
 }
+
 interface Delta {
   table: string;
   key: CapturedRow;
@@ -223,6 +219,7 @@ interface Delta {
   after: CapturedRow | null;
   guard: string;
 }
+
 function readDeltas(payload: string): Delta[] {
   const values: unknown = JSON.parse(payload);
   if (!Array.isArray(values)) throw Error('Atlasverlauf ist beschädigt.');
@@ -237,6 +234,7 @@ function readDeltas(payload: string): Delta[] {
     return value as Delta;
   });
 }
+
 function captureSetup(db: SqliteDatabase) {
   // TEMP DDL participates in an enclosing transaction. A JavaScript cache can
   // survive its rollback even though SQLite removed every capture table/trigger.
@@ -284,6 +282,7 @@ function captureSetup(db: SqliteDatabase) {
     }
   }
 }
+
 function currentRow(db: SqliteDatabase, d: Pick<Delta, 'table' | 'key'>) {
   const row =
     db
@@ -298,9 +297,11 @@ function currentRow(db: SqliteDatabase, d: Pick<Delta, 'table' | 'key'>) {
       .get(...Object.values(d.key)) ?? null;
   return row === null ? null : capturedRow(row);
 }
+
 function fp(v: object | null) {
   return hash(json(v));
 }
+
 function restore(db: SqliteDatabase, d: Delta, row: CapturedRow | null) {
   const current = currentRow(db, d);
   if (!row) {
@@ -361,12 +362,14 @@ function restore(db: SqliteDatabase, d: Delta, row: CapturedRow | null) {
       nonKeys.map((k) => k + '=excluded.' + k).join(','),
   ).run(...cols.map((k) => next[k]!));
 }
+
 /** Used only inside an active Atlas capture, before secondary map/environment updates. */
 export function atlasCapturedChanges(db: SqliteDatabase) {
   return !!db
     .prepare('SELECT 1 FROM temp.atlas_delta WHERE before_json IS NOT after_json LIMIT 1')
     .get();
 }
+
 export function atlasHistoryState(db: SqliteDatabase, cam: string) {
   const root = atlasRoot(db, cam),
     max =
@@ -375,6 +378,7 @@ export function atlasHistoryState(db: SqliteDatabase, cam: string) {
       }).required(cam).n ?? 0;
   return { canUndo: root.cursor > 0, canRedo: root.cursor < max };
 }
+
 function history(db: SqliteDatabase, cam: string, direction: 'undo' | 'redo') {
   const root = atlasRoot(db, cam),
     ordinal = direction === 'undo' ? root.cursor : root.cursor + 1,
@@ -423,6 +427,7 @@ function history(db: SqliteDatabase, cam: string, direction: 'undo' | 'redo') {
     }
   }
 }
+
 function checkPositions(db: SqliteDatabase, cam: string) {
   const geometry = dungeonGeometry(db, cam);
   // Check each position against its own room group. A generated town can have
@@ -510,6 +515,7 @@ function checkPositions(db: SqliteDatabase, cam: string) {
     });
   }
 }
+
 const atlasActionKinds: Record<AtlasCommand['action']['kind'], true> = {
   'territory-layer': true,
   'territory-put': true,
@@ -549,8 +555,10 @@ const atlasActionKinds: Record<AtlasCommand['action']['kind'], true> = {
   'landscape-remove': true,
   'landscape-place': true,
 };
+
 export const atlasCommandFingerprint = (c: AtlasCommand) =>
   fp(c.terrainStroke ? { action: c.action, terrainStroke: c.terrainStroke } : c.action);
+
 /** No replay or projection reads: the transaction receipt alone establishes application. */
 export function hasAtlasReceipt(db: SqliteDatabase, c: AtlasCommand): boolean {
   if (
@@ -570,6 +578,7 @@ export function hasAtlasReceipt(db: SqliteDatabase, c: AtlasCommand): boolean {
     throw new Error('Atlasbefehlskennung anders verwendet.');
   return true;
 }
+
 export function executeAtlasWrite(
   db: SqliteDatabase,
   c: AtlasCommand,
@@ -740,19 +749,13 @@ export function validateCampaignAtlases(db: SqliteDatabase) {
   ])
     if (!db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name=?").get(table))
       throw new Error('Atlasstore unvollständig: ' + table);
-  for (const row of checkedQuery(
-    db,
-    "SELECT payload FROM atlas_landscape WHERE json_extract(payload,'$.line') IS NOT NULL OR json_extract(payload,'$.paint') IS NOT NULL OR json_extract(payload,'$.surface') IS NOT NULL OR json_extract(payload,'$.mask') IS NOT NULL OR json_extract(payload,'$.propertyOnly') IS NOT NULL OR json_extract(payload,'$.height') IS NOT NULL OR json_extract(payload,'$.terrainSettings') IS NOT NULL OR json_extract(payload,'$.vegetation') IS NOT NULL OR json_extract(payload,'$.route') IS NOT NULL OR json_extract(payload,'$.kind')='vegetation'",
-    { payload: 'text' },
-  ).iterate()) {
-    const record = JSON.parse(row.payload);
-    validateLine(record);
-    validateColor(record);
-    validateMask(record);
-    validateTerrain(record);
-    validateVegetation(record);
-    validateRoute(record);
-  }
+  for (const row of checkedQuery(db, 'SELECT id,revision,payload FROM atlas_landscape', {
+    id: 'text',
+    revision: 'integer',
+    payload: 'text',
+  }).iterate())
+    checkedLandscapeRow(row);
+
   {
     if (
       checkedQuery(
@@ -871,6 +874,7 @@ interface AtlasCommandEffects {
   ) => void;
   readonly terrainAuthorCache: import('./terrain-author-cache').TerrainAuthorCache;
 }
+
 export function applyAtlasCommand(
   db: SqliteDatabase,
   effects: AtlasCommandEffects,
@@ -1521,6 +1525,7 @@ interface ReconcileAtlasGeometryContext {
   cities: (token: string) => import('./../atlas/city-contracts').CityOverview;
   city: (token: string, id: string) => import('./../atlas/city-contracts').CityView;
 }
+
 export function storedReconcileAtlasGeometry(
   db: SqliteDatabase,
   context: ReconcileAtlasGeometryContext,
@@ -1628,6 +1633,7 @@ export function storedReconcileAtlasGeometry(
       );
     }
 }
+
 interface CoupleAtlasWallContext {
   workspace: () => import('./../shared/contracts').Workspace;
   edit: (edit: import('./../shared/contracts').Edit) => import('./../shared/contracts').RoomCommit;
@@ -1645,6 +1651,7 @@ interface CoupleAtlasWallContext {
     >;
   };
 }
+
 export function storedCoupleAtlasWall(
   db: SqliteDatabase,
   context: CoupleAtlasWallContext,
@@ -1756,9 +1763,11 @@ export function storedCoupleAtlasWall(
     });
   }
 }
+
 interface AtlasOverviewContext {
   guard: (token: string, campaignId?: string | undefined) => string;
 }
+
 export function storedAtlasOverview(
   db: SqliteDatabase,
   context: AtlasOverviewContext,
@@ -1806,9 +1815,11 @@ export function storedAtlasOverview(
     };
   })();
 }
+
 interface AtlasCitySiteContext {
   guard: (token: string, campaignId?: string | undefined) => string;
 }
+
 export function storedAtlasCitySite(
   db: SqliteDatabase,
   context: AtlasCitySiteContext,
@@ -1836,6 +1847,7 @@ export function storedAtlasCitySite(
     return { ...site, related, factions, ...atlasHistoryState(db, cam) };
   })();
 }
+
 interface CampaignAtlasContext {
   guard: (token: string, campaignId?: string | undefined) => string;
   dungeon: (
@@ -1849,6 +1861,7 @@ interface CampaignAtlasContext {
   city: (token: string, id: string) => import('./../atlas/city-contracts').CityView;
   workspace: () => import('./../shared/contracts').Workspace;
 }
+
 export function storedCampaignAtlas(
   db: SqliteDatabase,
   context: CampaignAtlasContext,

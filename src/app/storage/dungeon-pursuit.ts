@@ -6,8 +6,8 @@ import type {
   DungeonPreview,
   DungeonRequest,
 } from '../atlas/dungeon-contracts';
-import { readLiveScene } from './live';
-import { position } from './world';
+import { readLiveScene } from './live-read';
+import { position } from './scene-position';
 import { dungeonTraces, discoverDungeonTrack, dungeonTraceById } from './dungeon-senses';
 import { trackAt } from '../runtime/track-model';
 const hash = (s: string) => createHash('sha256').update(s).digest('hex'),

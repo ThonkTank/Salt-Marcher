@@ -1864,6 +1864,7 @@ export class LandscapeWorkbench {
   recovered() {
     this.cancel();
     this.disable(false);
+    this.say('Gespeichert');
   }
   releaseHeld() {
     if (this.brush.live) return;

@@ -3,7 +3,7 @@ import { campaignLocalId } from '../../features/campaign/campaign-contracts';
 import { worldNoteDocument } from '../../features/world/world-notes';
 import { checkedLocationDocument } from '../../features/location/location-schema';
 import { readDungeonKeys } from './dungeon-key';
-import { readSession } from './session';
+import { readSession } from './session-read';
 import { documentReferences, remapTextReferences } from '../campaign/text-references';
 import type { NoteMergePreview } from '../campaign/note-merge-contracts';
 import type { Note } from '../campaign/preparation-contracts';

@@ -3,7 +3,7 @@ import { readNarrative } from './narrative';
 import { readSessionProgress } from './visit-outcomes';
 import { visitOutcomeLabel } from '../runtime/visit-outcome-contracts';
 import { createHash } from 'node:crypto';
-import { readSession } from './session';
+import { readSession } from './session-read';
 import { checkedLocationDocument } from '../../features/location/location-schema';
 import { worldNoteDocument } from '../../features/world/world-notes';
 import { SRD_5_1_NOTICE } from '../../features/catalog/creature-catalog';

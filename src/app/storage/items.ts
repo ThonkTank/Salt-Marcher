@@ -1,9 +1,19 @@
+import { checkedCalendarEventRow } from './calendar-events';
+import { decodeStored } from './stored-payload';
+import * as shape from './stored-shapes';
+import { checkedWorldNoteRow } from './world-note-row';
+import { checkedLocationDocument } from '../../features/location/location-schema';
+import { validateLedgerItem } from './progression-records';
+import { checkedQuery, checkedRow, type SqliteDatabase } from './sqlite-connection';
 import { shopStockForItem } from '../catalog/items-contracts';
 import { checkedDefinition } from '../catalog/item-definition-validation';
-import { validateShopShape, validateShopQuantity as qty } from '../runtime/shop-validation';
+import {
+  validateShopShape,
+  validateShopRestockTable,
+  validateShopQuantity as qty,
+} from '../runtime/shop-validation';
 import { npcIdsAtLocation } from './npc-world';
 import { drawCatalogRestock } from './catalog-restock';
-import { checkedCalendarEvent } from '../runtime/world-model';
 import { prepareRestockTables, drawRestockTable } from './shop-restock';
 import { createHash, randomUUID } from 'node:crypto';
 import type {
@@ -15,7 +25,8 @@ import type {
   ItemShopAck,
 } from '../catalog/items-contracts';
 import { copper, partitionLedgerPaidPrice, type LedgerItem } from '../runtime/progression';
-import { saveLedger, event, readLedgerItem } from './progression';
+import { saveLedger, readLedgerItem } from './progression';
+import { event } from './progression-records';
 import {
   readItemDefinition,
   saveItemDefinition,
@@ -23,24 +34,19 @@ import {
   validateItemDefinitionVersions,
   validateCurrentItemDefinitions,
 } from './item-definitions';
-import { scenePreparation } from './session';
-import { readLiveScene, readCampaignTime } from './live';
+import { scenePreparation } from './session-read';
+import { readLiveScene, readCampaignTime } from './live-read';
 import { formatInstant } from '../runtime/live-contracts';
 const json = (v: unknown) => JSON.stringify(v),
   hash = (s: string) => createHash('sha256').update(s).digest('hex');
-function decoded<T>(row: any): T {
-  if (!row || hash(row.payload) !== row.checksum)
-    throw new Error('Shopdaten fehlen oder sind beschädigt.');
-  return JSON.parse(row.payload);
-}
-export function installItemsSchema(db: any) {
+export function installItemsSchema(db: SqliteDatabase) {
   installItemDefinitions(db);
   db.exec(`CREATE TABLE IF NOT EXISTS shop(campaign_id TEXT NOT NULL REFERENCES campaign(id),id TEXT NOT NULL,revision INTEGER NOT NULL,payload TEXT NOT NULL,checksum TEXT NOT NULL,PRIMARY KEY(campaign_id,id)) STRICT;
  CREATE TABLE IF NOT EXISTS shop_event(campaign_id TEXT NOT NULL,shop_id TEXT NOT NULL,id TEXT NOT NULL,payload TEXT NOT NULL,checksum TEXT NOT NULL,PRIMARY KEY(campaign_id,id),FOREIGN KEY(campaign_id,shop_id) REFERENCES shop(campaign_id,id)) STRICT;
  CREATE INDEX IF NOT EXISTS shop_event_by_shop ON shop_event(campaign_id,shop_id);
  CREATE TABLE IF NOT EXISTS shop_receipt(command_id TEXT PRIMARY KEY,campaign_id TEXT NOT NULL REFERENCES campaign(id),fingerprint TEXT NOT NULL,payload TEXT NOT NULL,checksum TEXT NOT NULL) STRICT;`);
 }
-function owner(db: any, cam: string, s: Shop) {
+function owner(db: SqliteDatabase, cam: string, s: Shop) {
   if (!['npc', 'location'].includes(s.owner.kind))
     throw new Error('Shop benötigt einen NPC oder Ort als Besitzer.');
   const row = db
@@ -49,10 +55,12 @@ function owner(db: any, cam: string, s: Shop) {
     )
     .get(cam, s.owner.id);
   if (!row) throw new Error('Shopbesitzer fehlt.');
-  const d = decoded<any>(row);
+  const r = checkedRow(row, { id: 'text', trashed: 'integer' });
+  const d =
+    s.owner.kind === 'npc' ? checkedWorldNoteRow(row) : decodeStored(row, checkedLocationDocument);
   if (s.owner.kind === 'npc' && d.kind !== 'npc')
     throw new Error('Shopbesitzer muss ein NPC sein.');
-  const name = d.title ?? d.name;
+  const name = 'title' in d ? d.title : d.name;
   if (
     d.id !== s.owner.id ||
     (s.owner.kind === 'location' && d.kind !== 'location') ||
@@ -61,24 +69,32 @@ function owner(db: any, cam: string, s: Shop) {
     name.length > 1000
   )
     throw new Error('Shopbesitzer hat keine gültige Identität oder Bezeichnung.');
-  return { name, unavailable: !!row.trashed };
+  return { name, unavailable: !!r.trashed };
 }
-function saveShop(db: any, cam: string, s: Shop) {
+function saveShop(db: SqliteDatabase, cam: string, s: Shop) {
   validateShopShape(s);
   const payload = json(s);
   db.prepare(
     'INSERT INTO shop VALUES(?,?,?,?,?) ON CONFLICT(campaign_id,id) DO UPDATE SET revision=excluded.revision,payload=excluded.payload,checksum=excluded.checksum',
   ).run(cam, s.id, s.revision, payload, hash(payload));
 }
-export function shopRecord(db: any, cam: string, id: string): Shop {
-  const row = db.prepare('SELECT * FROM shop WHERE campaign_id=? AND id=?').get(cam, id),
-    s = decoded<Shop>(row);
+export function shopRecord(db: SqliteDatabase, cam: string, id: string): Shop {
+  const row = checkedQuery(db, 'SELECT * FROM shop WHERE campaign_id=? AND id=?', {
+      campaign_id: 'text',
+      id: 'text',
+      revision: 'integer',
+      payload: 'text',
+      checksum: 'text',
+    }).get(cam, id),
+    s = decodeStored(row, shape.shop);
+  const r = checkedRow(row, { id: 'text', revision: 'integer' });
   validateShopShape(s);
-  if (s.id !== id || s.revision !== row.revision) throw new Error('Shoprevision widersprüchlich.');
+  if (s.id !== id || s.revision !== r.revision || s.id !== r.id)
+    throw new Error('Shoprevision widersprüchlich.');
   return s;
 }
 function history(
-  db: any,
+  db: SqliteDatabase,
   cam: string,
   s: Shop,
   description: string,
@@ -89,12 +105,14 @@ function history(
   db.prepare('INSERT INTO shop_event VALUES(?,?,?,?,?)').run(cam, s.id, id, payload, hash(payload));
   return id;
 }
-function restockThrough(db: any, cam: string, id: string): bigint | null {
+function restockThrough(db: SqliteDatabase, cam: string, id: string): bigint | null {
   let through: bigint | null = null;
-  for (const row of db
-    .prepare('SELECT payload,checksum FROM shop_event WHERE campaign_id=? AND shop_id=?')
-    .iterate(cam, id)) {
-    const facts = decoded<any>(row).facts;
+  for (const row of checkedQuery(
+    db,
+    'SELECT shop_id,payload,checksum FROM shop_event WHERE campaign_id=? AND shop_id=?',
+    { payload: 'text', checksum: 'text' },
+  ).iterate(cam, id)) {
+    const facts = checkedShopEvent(row).facts;
     if (!facts || facts.intervals === undefined || facts.instantMs === undefined) continue;
     const instant = facts.lastDueMs ?? facts.instantMs;
     if (typeof instant !== 'string' || !/^(0|[1-9][0-9]{0,29})$/.test(instant))
@@ -104,9 +122,11 @@ function restockThrough(db: any, cam: string, id: string): bigint | null {
   }
   return through;
 }
-function restockTimeNotice(db: any, cam: string, id: string): string | null {
+function restockTimeNotice(db: SqliteDatabase, cam: string, id: string): string | null {
   const through = restockThrough(db, cam, id),
-    focus = db.prepare('SELECT focus_id FROM live_state WHERE campaign_id=?').get(cam)?.focus_id;
+    focus = checkedQuery(db, 'SELECT focus_id FROM live_state WHERE campaign_id=?', {
+      focus_id: 'text',
+    }).get(cam)?.focus_id;
   if (!focus) return null;
   let scene;
   try {
@@ -123,15 +143,18 @@ function restockTimeNotice(db: any, cam: string, id: string): string | null {
     '. Zeitangaben in Tagen zu je 24 Stunden.'
   );
 }
-function restockEvents(db: any, cam: string) {
+function restockEvents(db: SqliteDatabase, cam: string) {
   const events: NonNullable<ShopView['restockEvents']> = [];
-  for (const row of db
-    .prepare(
-      "SELECT id,revision,payload,checksum FROM world_record WHERE campaign_id=? AND kind='calendar-event' ORDER BY id",
+  for (const row of checkedQuery(
+    db,
+    "SELECT id,revision,payload,checksum FROM world_record WHERE campaign_id=? AND kind='calendar-event' ORDER BY id",
+    { id: 'text', revision: 'integer', payload: 'text', checksum: 'text' },
+  ).iterate(cam)) {
+    const e = checkedCalendarEventRow(row);
+    if (
+      e.id !== checkedRow(row, { id: 'text', revision: 'integer' }).id ||
+      e.revision !== checkedRow(row, { id: 'text', revision: 'integer' }).revision
     )
-    .iterate(cam)) {
-    const e = checkedCalendarEvent(decoded(row), true);
-    if (e.id !== row.id || e.revision !== row.revision)
       throw new Error('Lieferereignis widerspricht seiner Identität.');
     events.push({
       id: e.id,
@@ -144,41 +167,60 @@ function restockEvents(db: any, cam: string) {
   }
   return events;
 }
-function readRestockEvent(db: any, cam: string, id: string) {
-  const row = db
-      .prepare("SELECT * FROM world_record WHERE campaign_id=? AND kind='calendar-event' AND id=?")
-      .get(cam, id),
-    e = checkedCalendarEvent(decoded(row), true);
-  if (e.id !== row.id || e.revision !== row.revision)
+function readRestockEvent(db: SqliteDatabase, cam: string, id: string) {
+  const row = checkedQuery(
+      db,
+      "SELECT * FROM world_record WHERE campaign_id=? AND kind='calendar-event' AND id=?",
+      {
+        campaign_id: 'text',
+        kind: 'text',
+        id: 'text',
+        revision: 'integer',
+        payload: 'text',
+        checksum: 'text',
+      },
+    ).get(cam, id),
+    e = checkedCalendarEventRow(row);
+  if (
+    e.id !== checkedRow(row, { id: 'text', revision: 'integer' }).id ||
+    e.revision !== checkedRow(row, { id: 'text', revision: 'integer' }).revision
+  )
     throw new Error('Lieferereignis widerspricht seiner Identität.');
   return e;
 }
-function historyPage(db: any, cam: string, id: string, after: string | null): ShopHistoryPage {
+function historyPage(
+  db: SqliteDatabase,
+  cam: string,
+  id: string,
+  after: string | null,
+): ShopHistoryPage {
   const cursor =
     after === null
       ? null
-      : db
-          .prepare(
-            'SELECT rowid AS cursor FROM shop_event WHERE campaign_id=? AND shop_id=? AND id=?',
-          )
-          .get(cam, id, after);
+      : checkedQuery(
+          db,
+          'SELECT rowid AS cursor FROM shop_event WHERE campaign_id=? AND shop_id=? AND id=?',
+          { cursor: 'integer' },
+        ).get(cam, id, after);
   if (after !== null && !cursor) throw Error('Seitenmarke gehört nicht zu diesem Shopverlauf.');
   const rows = cursor
-    ? db
-        .prepare(
-          'SELECT * FROM shop_event WHERE campaign_id=? AND shop_id=? AND rowid<? ORDER BY rowid DESC LIMIT 51',
-        )
-        .all(cam, id, cursor.cursor)
-    : db
-        .prepare(
-          'SELECT * FROM shop_event WHERE campaign_id=? AND shop_id=? ORDER BY rowid DESC LIMIT 51',
-        )
-        .all(cam, id);
-  const entries = rows.slice(0, 50).map((r: any) => ({ ...decoded<any>(r), id: r.id }));
+    ? checkedQuery(
+        db,
+        'SELECT * FROM shop_event WHERE campaign_id=? AND shop_id=? AND rowid<? ORDER BY rowid DESC LIMIT 51',
+        { campaign_id: 'text', shop_id: 'text', id: 'text', payload: 'text', checksum: 'text' },
+      ).all(cam, id, cursor.cursor)
+    : checkedQuery(
+        db,
+        'SELECT * FROM shop_event WHERE campaign_id=? AND shop_id=? ORDER BY rowid DESC LIMIT 51',
+        { campaign_id: 'text', shop_id: 'text', id: 'text', payload: 'text', checksum: 'text' },
+      ).all(cam, id);
+  const entries = rows
+    .slice(0, 50)
+    .map((r) => ({ ...checkedShopEvent(r), id: checkedRow(r, { id: 'text' }).id }));
   return { shopId: id, entries, next: rows.length > 50 ? entries.at(-1)!.id : null };
 }
 export function readShopHistory(
-  db: any,
+  db: SqliteDatabase,
   cam: string,
   id: string,
   after: string | null,
@@ -195,7 +237,7 @@ export function readShopHistory(
     return historyPage(db, cam, id, after);
   })();
 }
-export function readShop(db: any, cam: string, id: string): ShopView {
+export function readShop(db: SqliteDatabase, cam: string, id: string): ShopView {
   const s = shopRecord(db, cam, id),
     o = owner(db, cam, s),
     history = historyPage(db, cam, id, null);
@@ -213,13 +255,15 @@ export function readShop(db: any, cam: string, id: string): ShopView {
   };
 }
 function listShops(
-  db: any,
+  db: SqliteDatabase,
   cam: string,
   includeTrashed: boolean,
   accept?: (s: Shop) => boolean,
 ): ShopSummary[] {
   const list: ShopSummary[] = [];
-  for (const row of db.prepare('SELECT id FROM shop WHERE campaign_id=?').iterate(cam)) {
+  for (const row of checkedQuery(db, 'SELECT id FROM shop WHERE campaign_id=?', {
+    id: 'text',
+  }).iterate(cam)) {
     let s: Shop | undefined;
     try {
       s = shopRecord(db, cam, row.id);
@@ -248,13 +292,15 @@ function listShops(
   }
   return list.sort((a, b) => a.name.localeCompare(b.name));
 }
-export function readShops(db: any, cam: string, includeTrashed: boolean) {
+export function readShops(db: SqliteDatabase, cam: string, includeTrashed: boolean) {
   return listShops(db, cam, includeTrashed);
 }
-export function sceneShops(db: any, cam: string, sceneId: string) {
-  const scene = db
-    .prepare('SELECT location_id FROM live_scene WHERE campaign_id=? AND id=?')
-    .get(cam, sceneId);
+export function sceneShops(db: SqliteDatabase, cam: string, sceneId: string) {
+  const scene = checkedQuery(
+    db,
+    'SELECT location_id FROM live_scene WHERE campaign_id=? AND id=?',
+    { location_id: 'nullable-text' },
+  ).get(cam, sceneId);
   if (!scene) throw new Error('Scene fehlt.');
   const actors = new Set(
     scenePreparation(db, cam, sceneId)
@@ -269,14 +315,14 @@ export function sceneShops(db: any, cam: string, sceneId: string) {
   );
 }
 
-function sceneTime(db: any, cam: string, id: string | null) {
+function sceneTime(db: SqliteDatabase, cam: string, id: string | null) {
   if (!id) return { sceneId: null, locationId: null, instantMs: null };
   const scene = readLiveScene(db, cam, id);
   if (scene.retired) throw new Error('Handelsgruppe ist archiviert.');
   return { sceneId: scene.id, locationId: scene.locationId, instantMs: scene.clock.instantMs };
 }
 function scheduleTime(
-  db: any,
+  db: SqliteDatabase,
   cam: string,
   shopId: string,
   basis: Extract<ItemShopCommand['action'], { kind: 'shop' }>['scheduleClock'],
@@ -293,21 +339,23 @@ function scheduleTime(
       );
     return instant;
   }
-  if (db.prepare('SELECT 1 FROM live_state WHERE campaign_id=?').get(cam))
+  if (checkedQuery(db, 'SELECT 1 FROM live_state WHERE campaign_id=?', { '1': 'integer' }).get(cam))
     throw new Error(
       'Neue Auffüllregel benötigt eine ausdrücklich gewählte Scenezeit als Zeitbasis.',
     );
   return BigInt(readCampaignTime(db, cam).instantMs);
 }
 function checkedShop(
-  db: any,
+  db: SqliteDatabase,
   cam: string,
   s: Shop,
   expected: number | null,
   basis: Extract<ItemShopCommand['action'], { kind: 'shop' }>['scheduleClock'],
 ) {
   validateShopShape(s, true);
-  const row = db.prepare('SELECT revision FROM shop WHERE campaign_id=? AND id=?').get(cam, s.id);
+  const row = checkedQuery(db, 'SELECT revision FROM shop WHERE campaign_id=? AND id=?', {
+    revision: 'integer',
+  }).get(cam, s.id);
   if ((row?.revision ?? null) !== expected) throw new Error('Shop geändert. Bitte aktualisieren.');
   owner(db, cam, s);
   const prior = row ? shopRecord(db, cam, s.id) : null;
@@ -333,10 +381,12 @@ function checkedShop(
   );
   return { ...s, revision: (expected ?? 0) + 1 };
 }
-export function restockDue(db: any, cam: string, instantMs: string) {
+export function restockDue(db: SqliteDatabase, cam: string, instantMs: string) {
   if (!/^(0|[1-9][0-9]{0,29})$/.test(instantMs)) throw new Error('Ungültige Auffüllzeit.');
   const current = BigInt(instantMs);
-  for (const row of db.prepare('SELECT id FROM shop WHERE campaign_id=?').all(cam)) {
+  for (const row of checkedQuery(db, 'SELECT id FROM shop WHERE campaign_id=?', { id: 'text' }).all(
+    cam,
+  )) {
     const s = shopRecord(db, cam, row.id);
     if (
       s.trashed ||
@@ -390,11 +440,11 @@ export function restockDue(db: any, cam: string, instantMs: string) {
       if ('eventId' in schedule) {
         // An authored event revision is the trigger. Changes pause it until the GM rebinds.
         if (
-          !db
-            .prepare(
-              "SELECT 1 FROM world_record WHERE campaign_id=? AND kind='calendar-event' AND id=?",
-            )
-            .get(cam, schedule.eventId)
+          !checkedQuery(
+            db,
+            "SELECT 1 FROM world_record WHERE campaign_id=? AND kind='calendar-event' AND id=?",
+            { '1': 'integer' },
+          ).get(cam, schedule.eventId)
         )
           continue;
         event = readRestockEvent(db, cam, schedule.eventId);
@@ -450,7 +500,7 @@ function deliverySummary(outcomes: { name: string; added: number }[]) {
     : 'keine passenden Waren';
 }
 function applyRandomRestock(
-  db: any,
+  db: SqliteDatabase,
   shop: Shop,
   table: import('../catalog/items-contracts').ShopRestockTable,
   seed: string,
@@ -471,18 +521,28 @@ function applyRandomRestock(
     })),
   };
 }
-export function executeItemShop(db: any, c: ItemShopCommand, guard: () => void): ItemShopAck {
+export function executeItemShop(
+  db: SqliteDatabase,
+  c: ItemShopCommand,
+  guard: () => void,
+): ItemShopAck {
   return db
     .transaction(() => {
       guard();
       if (!c.commandId || typeof c.commandId !== 'string')
         throw new Error('Änderungskennung fehlt.');
       const fp = hash(json({ campaignId: c.campaignId, action: c.action })),
-        prior = db.prepare('SELECT * FROM shop_receipt WHERE command_id=?').get(c.commandId);
+        prior = checkedQuery(db, 'SELECT * FROM shop_receipt WHERE command_id=?', {
+          command_id: 'text',
+          campaign_id: 'text',
+          fingerprint: 'text',
+          payload: 'text',
+          checksum: 'text',
+        }).get(c.commandId);
       if (prior) {
         if (prior.campaign_id !== c.campaignId || prior.fingerprint !== fp)
           throw new Error('Änderungskennung anders verwendet.');
-        return decoded<ItemShopAck>(prior);
+        return checkedShopReceipt(db, prior);
       }
       const a = c.action,
         cam = c.campaignId;
@@ -525,11 +585,11 @@ export function executeItemShop(db: any, c: ItemShopCommand, guard: () => void):
           const d = readItemDefinition(db, e.reference.definitionId);
           if (d.trashed || d.revision !== a.expectedDefinitionRevision)
             throw new Error('Gegenstand geändert oder im Papierkorb.');
-          const member = db
-            .prepare(
-              'SELECT active,membership_revision,scene_id FROM roster_member WHERE campaign_id=? AND id=?',
-            )
-            .get(cam, a.characterId);
+          const member = checkedQuery(
+            db,
+            'SELECT active,membership_revision,scene_id FROM roster_member WHERE campaign_id=? AND id=?',
+            { active: 'integer', membership_revision: 'integer', scene_id: 'nullable-text' },
+          ).get(cam, a.characterId);
           if (!member?.active || member.membership_revision !== a.expectedMembershipRevision)
             throw new Error('Empfänger geändert oder inaktiv.');
           const time = sceneTime(db, cam, member.scene_id);
@@ -573,9 +633,11 @@ export function executeItemShop(db: any, c: ItemShopCommand, guard: () => void):
           const d = readItemDefinition(db, l.reference.definitionId);
           if (d.revision !== a.expectedDefinitionRevision)
             throw new Error('Gegenstandsdefinition geändert.');
-          const member = db
-            .prepare('SELECT scene_id FROM roster_member WHERE campaign_id=? AND id=?')
-            .get(cam, l.characterId);
+          const member = checkedQuery(
+            db,
+            'SELECT scene_id FROM roster_member WHERE campaign_id=? AND id=?',
+            { scene_id: 'nullable-text' },
+          ).get(cam, l.characterId);
           if (!member) throw new Error('Verkäufer fehlt.');
           const part: LedgerItem = {
             ...l,
@@ -686,17 +748,137 @@ export function executeItemShop(db: any, c: ItemShopCommand, guard: () => void):
     })
     .immediate();
 }
-export function validateItemsBackup(db: any) {
+export function validateItemsBackup(db: SqliteDatabase) {
   validateCurrentItemDefinitions(db);
   validateItemDefinitionVersions(db);
-  for (const row of db.prepare('SELECT campaign_id,id FROM shop').iterate())
+  for (const row of checkedQuery(db, 'SELECT campaign_id,id FROM shop', {
+    campaign_id: 'text',
+    id: 'text',
+  }).iterate())
     readShop(db, row.campaign_id, row.id);
-  for (const table of ['shop_event', 'shop_receipt'])
-    for (const row of db.prepare(`SELECT * FROM ${table}`).iterate()) {
-      const value = decoded<any>(row);
-      if (table === 'shop_receipt') {
-        if (value.definition) checkedDefinition(value.definition);
-        for (const d of value.shop?.items ?? []) checkedDefinition(d);
-      }
+  for (const row of checkedQuery(db, 'SELECT * FROM shop_event', {
+    campaign_id: 'text',
+    shop_id: 'text',
+    id: 'text',
+    payload: 'text',
+    checksum: 'text',
+  }).iterate())
+    checkedShopEvent(row);
+  for (const row of checkedQuery(db, 'SELECT * FROM shop_receipt', {
+    command_id: 'text',
+    campaign_id: 'text',
+    fingerprint: 'text',
+    payload: 'text',
+    checksum: 'text',
+  }).iterate())
+    checkedShopReceipt(db, row);
+}
+
+export function checkedShopEventValue(value: unknown) {
+  const v = shape.shop_event(value);
+  if (!v.time || !Number.isFinite(Date.parse(v.time))) throw new Error('Shopverlauf beschädigt.');
+  const f = v.facts;
+  if (!f) return v;
+  if (f.shop) validateShopShape(f.shop);
+  if (f.entry) validateLedgerItem(f.entry);
+  const id = (value: string) => !!value.trim() && value.length <= 1000;
+  for (const value of [f.entryId, f.tableId, f.eventId, f.seed])
+    if (value !== undefined && !id(value))
+      throw new Error('Shopverlauf enthält ungültige Kennungen.');
+  for (const value of [f.before, f.quantity]) if (value !== undefined) qty(value, true);
+  for (const value of [f.tableRevision, f.eventRevision])
+    if (value !== undefined && (!Number.isSafeInteger(value) || value < 1))
+      throw new Error('Shopverlauf enthält ungültige Revisionen.');
+  for (const value of [f.instantMs, f.firstDueMs, f.lastDueMs])
+    if (value !== undefined && !/^(0|[1-9][0-9]{0,29})$/.test(value))
+      throw new Error('Auffüllzeit im Shopverlauf beschädigt.');
+  if (
+    f.intervals !== undefined &&
+    (!/^[1-9][0-9]{0,29}$/.test(f.intervals) ||
+      f.instantMs === undefined ||
+      f.firstDueMs === undefined ||
+      f.lastDueMs === undefined)
+  )
+    throw new Error('Auffüllfälligkeiten im Shopverlauf beschädigt.');
+  if (f.rule) {
+    if ('mode' in f.rule) {
+      if (!['fill', 'add'].includes(f.rule.mode))
+        throw new Error('Historische Auffüllvariante beschädigt.');
+      qty(f.rule.quantity);
+      if (!/^[1-9][0-9]{0,17}$/.test(f.rule.intervalMs))
+        throw new Error('Historische Auffüllregel beschädigt.');
+    } else {
+      validateShopRestockTable(f.rule);
+      if (f.tableId !== f.rule.id || f.tableRevision !== f.rule.revision)
+        throw new Error('Historische Auffülltabelle widersprüchlich.');
     }
+  }
+  if (new Set((f.outcomes ?? []).map((o) => o.entryId)).size !== (f.outcomes ?? []).length)
+    throw new Error('Doppelte historische Warenlieferung.');
+  for (const o of f.outcomes ?? []) {
+    if (
+      !id(o.entryId) ||
+      !id(o.reference.definitionId) ||
+      !Number.isSafeInteger(o.reference.revision) ||
+      o.reference.revision < 1
+    )
+      throw new Error('Historische Warenlieferungsreferenz beschädigt.');
+    for (const n of [o.before, o.added, o.quantity]) qty(n, true);
+    for (const price of [o.buyCopper, o.sellCopper])
+      if (price !== undefined && !/^(0|[1-9][0-9]{0,17})$/.test(price))
+        throw new Error('Historischer Warenpreis beschädigt.');
+  }
+  if (
+    f.catalogPool &&
+    (![f.catalogPool.eligible, f.catalogPool.excludedDamaged].every(
+      (n) => Number.isSafeInteger(n) && n >= 0,
+    ) ||
+      !/^[0-9a-f]{64}$/.test(f.catalogPool.fingerprint))
+  )
+    throw new Error('Historischer Kataloglieferstand beschädigt.');
+  return v;
+}
+export function checkedShopEvent(row: unknown) {
+  const value = decodeStored(row, checkedShopEventValue);
+  if (
+    row &&
+    typeof row === 'object' &&
+    'shop_id' in row &&
+    value.facts?.shop &&
+    row.shop_id !== value.facts.shop.id
+  )
+    throw new Error('Historischer Shopstand gehört zu einem anderen Shop.');
+  return value;
+}
+export function checkedShopReceipt(db: SqliteDatabase, value: unknown): ItemShopAck {
+  const row = checkedRow(value, { command_id: 'text', campaign_id: 'text', fingerprint: 'text' });
+  const ack = decodeStored(value, shape.shop_receipt);
+  if (
+    !row.command_id ||
+    !/^[0-9a-f]{64}$/.test(row.fingerprint) ||
+    !checkedQuery(db, 'SELECT 1 FROM campaign WHERE id=?', { '1': 'integer' }).get(
+      row.campaign_id,
+    ) ||
+    (!ack.definition && !ack.shop)
+  )
+    throw new Error('Shopbestätigung beschädigt. Originaldaten bleiben erhalten.');
+  if (ack.definition) checkedDefinition(ack.definition);
+  if (ack.shop) {
+    validateShopShape(ack.shop.shop);
+    for (const d of ack.shop.items) checkedDefinition(d);
+    for (const event of ack.shop.history) {
+      if (!event.id) throw new Error('Shopverlaufkennung fehlt in der Bestätigung.');
+      // The receipt owns its historical facts; do not compare them to later stock.
+      checkedShopEventValue(event);
+      if (event.facts?.shop && event.facts.shop.id !== ack.shop.shop.id)
+        throw new Error('Historischer Shopstand gehört zu einem anderen Shop.');
+    }
+  }
+  if (
+    ack.ledgerIds &&
+    (ack.ledgerIds.some((id) => !id || id.length > 1000) ||
+      new Set(ack.ledgerIds).size !== ack.ledgerIds.length)
+  )
+    throw new Error('Shopbestätigung enthält ungültige Beutekennungen.');
+  return ack;
 }

@@ -9,7 +9,8 @@ import {
 } from '../campaign/key-note-capture-contracts';
 import type { Note } from '../campaign/preparation-contracts';
 import { validateRoom } from '../shared/room-validation';
-import { drawingRoom, executeDrawing } from './drawing';
+import { executeDrawing } from './drawing';
+import { drawingRoom } from './drawing-read';
 import { checkedKeyRow } from './dungeon-key';
 const hash = (s: string) => createHash('sha256').update(s).digest('hex');
 const fingerprint = (c: KeyNoteCaptureCommand) => hash(JSON.stringify({ ...c, token: undefined }));

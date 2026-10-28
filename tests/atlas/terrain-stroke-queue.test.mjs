@@ -39,7 +39,11 @@ test('immediate second gesture waits for first receipt, uses its source and dist
   const queue = new TerrainStrokeQueue({ expectedRevision: 7, sourceFence: 'a' }, async (a, c) => {
     calls.push({ a, c });
     if (calls.length === 1) await gate.promise;
-    return { revision: c.expectedRevision + 1, sourceFence: c.sourceFence + 'x' };
+    return {
+      commandId: c.commandId,
+      revision: c.expectedRevision + 1,
+      sourceFence: c.sourceFence + 'x',
+    };
   });
   const first = new TerrainDraftStroke((a) => queue.enqueue(a, 'first'));
   first.update(action);
@@ -259,4 +263,40 @@ test('a changed source after confirmation exposes only unsent successors for exp
   assert.equal(queue.pending, 0);
   assert.equal(calls.length, 1, 'confirmed first and discarded second are never replayed');
   assert.deepEqual(queue.confirmedSource, { expectedRevision: 2, sourceFence: 'foreign-2' });
+});
+
+test('a receipt for another command cannot remove or advance the original gesture', async () => {
+  const queue = new TerrainStrokeQueue(
+    { expectedRevision: 0, sourceFence: 'original' },
+    async (_a, c) => ({ ...ack(c), commandId: 'other' }),
+  );
+  await assert.rejects(queue.enqueue(action, 'original'), /unvollständig/);
+  assert.equal(queue.pending, 1);
+  assert.equal(queue.head.id, 'original');
+  assert.deepEqual(queue.confirmedSource, { expectedRevision: 0, sourceFence: 'original' });
+});
+
+test('explicit reapply after a foreign edit writes only the unconfirmed successor on the current source', async () => {
+  const calls = [];
+  const queue = new TerrainStrokeQueue({ expectedRevision: 0, sourceFence: 'a' }, async (a, c) => {
+    calls.push(structuredClone(c));
+    if (c.id === 'A') throw new TerrainStrokeWriteError('lost', 'unknown');
+    return ack(c);
+  });
+  const first = assert.rejects(queue.enqueue(action, 'A'), /lost/);
+  const second = queue.enqueue(action, 'B');
+  await first;
+  queue.confirm({ commandId: 'A', revision: 1, sourceFence: 'after-A' });
+  queue.sourceConflict();
+  assert.equal(queue.pending, 1);
+  assert.equal(queue.head.id, 'B');
+  queue.retry({ expectedRevision: 2, sourceFence: 'foreign' });
+  await second;
+  await queue.finish();
+  assert.deepEqual(
+    calls.map((c) => c.id),
+    ['A', 'B'],
+  );
+  assert.equal(calls[1].expectedRevision, 2);
+  assert.equal(calls[1].sourceFence, 'foreign');
 });

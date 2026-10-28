@@ -2,7 +2,7 @@
 
 Status: Geltender Fachvertrag; offene Erweiterungen sind als Ziele beschrieben.
 Owner: atlas
-Last Reviewed: 2026-10-24 (Struktur und Quellen; Fachabnahme separat)
+Last Reviewed: 2026-10-28 (aktuelle Einstiege und historische Adapterstände; Fachabnahme separat)
 Source of Truth: Dieses Dokument besitzt das benannte Thema; Code belegt den Iststand, das Abnahmeregister den Prüfstand.
 
 Stand: 17.10.2026. Quellen: [Hex Travel](https://github.com/ThonkTank/Salt-Marcher/blob/9de85c1a26f526acbc1af332ac5962e185c0aab2/docs/hex/requirements/requirements-hex-travel.md)
@@ -16,6 +16,15 @@ Karte pro Kampagne. Die unten genannten versionierten Hex-/Live-Belege stammen
 teilweise aus dem früheren Mehrkartenaufbau. Sie beschreiben lokale Teilbelege,
 keine erneute Abnahme der aktuellen Workbench; die aktuellen Integrationsgrenzen
 und nächsten Schritte stehen unter „Reisekontext im gemeinsamen Atlas“.
+
+Das axiale Raster ist weiterhin Reise- und Referenzmodell. Terrainkosten,
+Passierbarkeit und gespeicherte Journeygrundlagen bleiben gültig; Landschafts-
+bearbeitung erfolgt unabhängig davon kontinuierlich in Metern. Hexschritte,
+Reisecheckpoints und kausale Rücknahme fordern keinen Gelände-Zellwriter.
+Aktuelle Codebesitzer und Prüfwege: [Reise ändern](../architecture/rendering.md#reise-ändern).
+Die [Speicherbesitzer](../../project/architecture/storage-ownership.md#fachübergreifende-abläufe)
+konkretisieren `storage/world.ts`: `world-commands.ts` besitzt lokale Commands,
+`world-command-flow.ts` verbindet Zeitfolgen unter derselben äußeren Transaktion.
 
 ## Standardpfad vom Reisestand zur sichtbaren Konsole
 

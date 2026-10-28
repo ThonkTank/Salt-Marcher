@@ -1,4 +1,4 @@
-import type { Shop } from '../catalog/items-contracts';
+import type { Shop, ShopRestockTable } from '../catalog/items-contracts';
 import { integerWeights } from '../campaign/generation-contracts';
 
 export function validateShopQuantity(n: number, zero = false) {
@@ -89,85 +89,94 @@ function validateRestockTables(shop: Shop, pending = false) {
     throw new Error('Ungültige Warenauffülltabellen.');
   const ids = new Set<string>();
   for (const table of shop.restockTables) {
-    if (
-      !table ||
-      typeof table.id !== 'string' ||
-      !table.id ||
-      table.id.length > 1000 ||
-      ids.has(table.id) ||
-      !Number.isSafeInteger(table.revision) ||
-      table.revision < (pending ? 0 : 1) ||
-      typeof table.name !== 'string' ||
-      !table.name.trim() ||
-      table.name.length > 1000 ||
-      typeof table.seed !== 'string' ||
-      !table.seed.trim() ||
-      table.seed.length > 1000 ||
-      !positive(table.rolls, 100) ||
-      !Array.isArray(table.entries) ||
-      (!table.catalog && !table.entries.length) ||
-      table.entries.length > 1000
-    )
-      throw new Error('Warenauffülltabelle benötigt Namen, Zufallsbasis und 1–100 Ziehungen.');
+    validateShopRestockTable(table, pending);
+    if (ids.has(table.id)) throw new Error('Doppelte Warenauffülltabelle.');
     ids.add(table.id);
-    const entries = new Set<string>();
-    for (const e of table.entries) {
-      const stock = shop.stock.find((s) => s.id === e?.entryId);
+    for (const entry of table.entries) {
+      const stock = shop.stock.find((s) => s.id === entry.entryId);
+      if (!stock || stock.unique)
+        throw new Error('Auffülltabelle benötigt eindeutige Mengenstapel.');
+    }
+  }
+}
+/** Historical rules keep their own shape and ranges; current stock membership belongs to authoring. */
+export function validateShopRestockTable(table: ShopRestockTable, pending = false) {
+  if (
+    !table ||
+    typeof table.id !== 'string' ||
+    !table.id ||
+    table.id.length > 1000 ||
+    !Number.isSafeInteger(table.revision) ||
+    table.revision < (pending ? 0 : 1) ||
+    typeof table.name !== 'string' ||
+    !table.name.trim() ||
+    table.name.length > 1000 ||
+    typeof table.seed !== 'string' ||
+    !table.seed.trim() ||
+    table.seed.length > 1000 ||
+    !positive(table.rolls, 100) ||
+    !Array.isArray(table.entries) ||
+    (!table.catalog && !table.entries.length) ||
+    table.entries.length > 1000
+  )
+    throw new Error('Warenauffülltabelle benötigt Namen, Zufallsbasis und 1–100 Ziehungen.');
+  const entries = new Set<string>();
+  for (const e of table.entries) {
+    if (
+      !e ||
+      typeof e.entryId !== 'string' ||
+      !e.entryId.trim() ||
+      e.entryId.length > 1000 ||
+      entries.has(e.entryId) ||
+      !positive(e.minimum) ||
+      !positive(e.maximum) ||
+      e.maximum < e.minimum
+    )
+      throw new Error(
+        'Auffülltabelle benötigt eindeutige Mengenstapel mit gültigen Mindest-/Höchstmengen.',
+      );
+    entries.add(e.entryId);
+  }
+  if (table.catalog) {
+    const c = table.catalog,
+      f = c.filter,
+      price = (v: unknown) => typeof v === 'string' && /^(0|[1-9][0-9]{0,17})$/.test(v);
+    if (
+      !f ||
+      typeof f.search !== 'string' ||
+      f.search.length > 1000 ||
+      !['', 'coins', 'equipment', 'trade-goods', 'magic', 'other'].includes(f.category) ||
+      !['', 'yes', 'no'].includes(f.magic) ||
+      typeof f.rarity !== 'string' ||
+      f.rarity.length > 1000 ||
+      !['', 'no', 'yes', 'unspecified'].includes(f.attunement) ||
+      !['', 'authored', 'srd51'].includes(f.source ?? '') ||
+      !positive(c.minimum) ||
+      !positive(c.maximum) ||
+      c.minimum > c.maximum ||
+      !price(c.buyCopper) ||
+      !price(c.sellCopper)
+    )
+      throw new Error('Kataloglieferung benötigt gültige Filter, Mengenbereiche und Preise.');
+  }
+  if (!table.catalog && !integerWeights(table.entries.map((e) => e.weight)).some((w) => w > 0n))
+    throw new Error('Mindestens ein Warengewicht muss positiv sein.');
+  const s = table.schedule;
+  if (s !== null) {
+    if (!s || typeof s !== 'object') throw new Error('Ungültiger Lieferauslöser.');
+    if ('eventId' in s) {
       if (
-        !e ||
-        !stock ||
-        stock.unique ||
-        entries.has(e.entryId) ||
-        !positive(e.minimum) ||
-        !positive(e.maximum) ||
-        e.maximum < e.minimum
+        typeof s.eventId !== 'string' ||
+        !s.eventId.trim() ||
+        s.eventId.length > 1000 ||
+        !positive(s.eventRevision, Number.MAX_SAFE_INTEGER) ||
+        (s.repeatMs !== null && (!validShopInstant(s.repeatMs) || s.repeatMs === '0')) ||
+        (s.nextDueMs !== null && !validShopInstant(s.nextDueMs))
       )
-        throw new Error(
-          'Auffülltabelle benötigt eindeutige Mengenstapel mit gültigen Mindest-/Höchstmengen.',
-        );
-      entries.add(e.entryId);
-    }
-    if (table.catalog) {
-      const c = table.catalog,
-        f = c.filter,
-        price = (v: unknown) => typeof v === 'string' && /^(0|[1-9][0-9]{0,17})$/.test(v);
-      if (
-        !f ||
-        typeof f.search !== 'string' ||
-        f.search.length > 1000 ||
-        !['', 'coins', 'equipment', 'trade-goods', 'magic', 'other'].includes(f.category) ||
-        !['', 'yes', 'no'].includes(f.magic) ||
-        typeof f.rarity !== 'string' ||
-        f.rarity.length > 1000 ||
-        !['', 'no', 'yes', 'unspecified'].includes(f.attunement) ||
-        !['', 'authored', 'srd51'].includes(f.source ?? '') ||
-        !positive(c.minimum) ||
-        !positive(c.maximum) ||
-        c.minimum > c.maximum ||
-        !price(c.buyCopper) ||
-        !price(c.sellCopper)
-      )
-        throw new Error('Kataloglieferung benötigt gültige Filter, Mengenbereiche und Preise.');
-    }
-    if (!table.catalog && !integerWeights(table.entries.map((e) => e.weight)).some((w) => w > 0n))
-      throw new Error('Mindestens ein Warengewicht muss positiv sein.');
-    const s = table.schedule;
-    if (s !== null) {
-      if (!s || typeof s !== 'object') throw new Error('Ungültiger Lieferauslöser.');
-      if ('eventId' in s) {
-        if (
-          typeof s.eventId !== 'string' ||
-          !s.eventId.trim() ||
-          s.eventId.length > 1000 ||
-          !positive(s.eventRevision, Number.MAX_SAFE_INTEGER) ||
-          (s.repeatMs !== null && (!validShopInstant(s.repeatMs) || s.repeatMs === '0')) ||
-          (s.nextDueMs !== null && !validShopInstant(s.nextDueMs))
-        )
-          throw new Error('Warenlieferung benötigt eine gültige Ereignisbindung.');
-      } else if (!interval(s.intervalMs) || !validShopInstant(s.nextDueMs))
-        throw new Error(
-          'Warenauffülltabelle benötigt ein positives Intervall und eine gültige Fälligkeit.',
-        );
-    }
+        throw new Error('Warenlieferung benötigt eine gültige Ereignisbindung.');
+    } else if (!interval(s.intervalMs) || !validShopInstant(s.nextDueMs))
+      throw new Error(
+        'Warenauffülltabelle benötigt ein positives Intervall und eine gültige Fälligkeit.',
+      );
   }
 }

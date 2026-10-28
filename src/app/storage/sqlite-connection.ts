@@ -25,16 +25,27 @@ export interface SqliteDatabase {
   ): SqliteTransaction<Args, Result>;
 }
 
-type Column = 'text' | 'integer' | 'number' | 'nullable-text' | 'nullable-integer';
+type Column =
+  | 'text'
+  | 'integer'
+  | 'number'
+  | 'nullable-text'
+  | 'nullable-integer'
+  | 'nullable-number'
+  | 'blob';
 type Columns = Record<string, Column>;
 type CheckedRow<S extends Columns> = {
-  [K in keyof S]: S[K] extends 'text'
-    ? string
-    : S[K] extends 'nullable-integer'
+  [K in keyof S]: S[K] extends 'blob'
+    ? Uint8Array
+    : S[K] extends 'nullable-number'
       ? number | null
-      : S[K] extends 'nullable-text'
-        ? string | null
-        : number;
+      : S[K] extends 'text'
+        ? string
+        : S[K] extends 'nullable-integer'
+          ? number | null
+          : S[K] extends 'nullable-text'
+            ? string | null
+            : number;
 };
 /** Check SQL projection fields without altering payloads, extra columns or stored bytes. */
 export function checkedRow<const S extends Columns>(value: unknown, columns: S): CheckedRow<S> {
@@ -44,14 +55,18 @@ export function checkedRow<const S extends Columns>(value: unknown, columns: S):
   for (const [name, kind] of Object.entries(columns)) {
     const value = row[name];
     const valid =
-      kind === 'text'
-        ? typeof value === 'string'
-        : kind === 'nullable-text'
-          ? value === null || typeof value === 'string'
-          : kind === 'nullable-integer'
-            ? value === null || (typeof value === 'number' && Number.isSafeInteger(value))
-            : typeof value === 'number' &&
-              (kind === 'integer' ? Number.isSafeInteger(value) : Number.isFinite(value));
+      kind === 'blob'
+        ? value instanceof Uint8Array
+        : kind === 'nullable-number'
+          ? value === null || (typeof value === 'number' && Number.isFinite(value))
+          : kind === 'text'
+            ? typeof value === 'string'
+            : kind === 'nullable-text'
+              ? value === null || typeof value === 'string'
+              : kind === 'nullable-integer'
+                ? value === null || (typeof value === 'number' && Number.isSafeInteger(value))
+                : typeof value === 'number' &&
+                  (kind === 'integer' ? Number.isSafeInteger(value) : Number.isFinite(value));
     if (!valid)
       throw new Error(`Datenbankfeld ${name} ist beschädigt. Originaldaten bleiben erhalten.`);
   }
@@ -82,4 +97,17 @@ export function sqliteInteger(value: unknown): number {
   if (typeof value !== 'number' || !Number.isSafeInteger(value))
     throw new Error('Ungültiger ganzzahliger Datenbankwert.');
   return value;
+}
+
+/** Generic SQLite row copying is still checked before values become bindings. */
+export function sqliteValue(value: unknown): SqliteValue {
+  if (
+    value === null ||
+    typeof value === 'string' ||
+    typeof value === 'bigint' ||
+    value instanceof Uint8Array ||
+    (typeof value === 'number' && Number.isFinite(value))
+  )
+    return value;
+  throw new Error('Ungültiger gespeicherter SQLite-Wert.');
 }

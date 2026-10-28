@@ -1,4 +1,4 @@
-import { createHash, randomUUID } from 'node:crypto';
+import { randomUUID } from 'node:crypto';
 import type {
   NpcCommand,
   NpcView,
@@ -14,17 +14,19 @@ import {
   checkedNpcView,
   readNpcDraftRow,
 } from './npc-record';
-import { npcPosition, npcPositionReader, placeNpc } from './npc-world';
-import { readWorldActor, writeWorldActorHealth } from './session';
+import { npcPositionReader, placeNpc } from './npc-world';
+import { writeWorldActorHealth } from './preparation-write';
 import { readCreature } from './encounters';
 import { syncOpenMaskHealth } from './mask-health';
 import { worldNoteDocument } from '../../features/world/world-notes';
 import { campaignLocalId } from '../../features/campaign/campaign-contracts';
 import { checkedNpcSchedule, npcPlanLocationIds } from '../campaign/npc-daily-plan';
-import { readWorldCalendar } from './world';
+import { readWorldCalendar } from './world-calendar-read';
 import { checkedHealth } from '../runtime/progression';
-const hash = (s: string) => createHash('sha256').update(s).digest('hex');
+import { hash, readNpc, note } from './npc-read';
+export { readNpc } from './npc-read';
 export const npcFingerprint = (c: NpcCommand) => hash(JSON.stringify({ ...c, token: undefined }));
+
 function checkedPending(cam: string, d: NpcDraft) {
   const rejected = d.rejectedCommand;
   if (
@@ -48,6 +50,7 @@ function checkedPending(cam: string, d: NpcDraft) {
   )
     throw new Error('NPC-Auftrag gehört nicht zu diesem Entwurf.');
 }
+
 function npcReceipt(db: any, c: NpcCommand): NpcView | null {
   const row = db.prepare('SELECT * FROM npc_receipt WHERE command_id=?').get(c.commandId);
   if (!row) return null;
@@ -96,45 +99,6 @@ function npcReceipt(db: any, c: NpcCommand): NpcView | null {
   return v;
 }
 
-function note(db: any, cam: string, id: string) {
-  const r = db.prepare('SELECT * FROM world_note WHERE campaign_id=? AND id=?').get(cam, id);
-  if (!r || r.trashed || hash(r.payload) !== r.checksum)
-    throw new Error('NPC fehlt, ist im Papierkorb oder beschädigt.');
-  const n = worldNoteDocument(JSON.parse(r.payload));
-  if (n.id !== r.id || n.revision !== r.revision)
-    throw new Error('NPC-Profil ist falsch zugeordnet.');
-  if (n.kind !== 'npc') throw new Error('Dieser Weltinhalt ist kein NPC.');
-  return n;
-}
-export function readNpc(db: any, cam: string, id: string): NpcView {
-  const n = note(db, cam, id),
-    record = npcRecord(db, cam, id),
-    p = npcPosition(db, cam, id),
-    exists = db.prepare('SELECT 1 FROM world_actor WHERE campaign_id=? AND id=?').get(cam, id),
-    actor = exists ? readWorldActor(db, cam, id) : null;
-  return {
-    id,
-    name: n.title,
-    noteRevision: n.revision,
-    creatureId: actor?.creatureId ?? n.creatureId,
-    readAloud: n.readAloud,
-    gmNotes: n.gmNotes,
-    record,
-    locationId: p.locationId,
-    positionRevision: p.revision,
-    actorRevision: actor?.revision ?? null,
-    health: actor
-      ? {
-          hp: actor.hp,
-          maxHp: actor.maxHp,
-          tempHp: actor.tempHp,
-          conditions: actor.conditions,
-          concentrating: actor.concentrating,
-        }
-      : null,
-    ...npcDisposition(db, cam, record),
-  };
-}
 export function readNpcs(db: any, cam: string, q: NpcQuery): NpcPage {
   if (
     typeof q.text !== 'string' ||
@@ -172,6 +136,7 @@ export function readNpcs(db: any, cam: string, q: NpcQuery): NpcPage {
     rows: page.map((r: any) => ({ ...r, ...npcDisposition(db, cam, npcRecord(db, cam, r.id)) })),
   };
 }
+
 export function npcDraft(db: any, cam: string, id: string): NpcDraft | null {
   const r = db.prepare('SELECT * FROM npc_draft WHERE campaign_id=? AND id=?').get(cam, id);
   if (!r) return null;
@@ -179,6 +144,7 @@ export function npcDraft(db: any, cam: string, id: string): NpcDraft | null {
   checkedPending(cam, d);
   return d;
 }
+
 export function npcDrafts(db: any, cam: string) {
   return db
     .prepare('SELECT id FROM npc_draft WHERE campaign_id=? ORDER BY id LIMIT 50')
@@ -188,6 +154,7 @@ export function npcDrafts(db: any, cam: string) {
       name: npcDraft(db, cam, r.id)!.fields.name || 'Unbenannter NPC',
     }));
 }
+
 export function keepNpcDraft(db: any, cam: string, d: NpcDraft, expected: string | null) {
   return db
     .transaction(() => {
@@ -205,6 +172,7 @@ export function keepNpcDraft(db: any, cam: string, d: NpcDraft, expected: string
     })
     .immediate();
 }
+
 export function discardNpcDraft(db: any, cam: string, id: string, writeId: string) {
   const d = npcDraft(db, cam, id);
   if (d?.writeId !== writeId) throw new Error('NPC-Entwurf inzwischen geändert.');
@@ -212,6 +180,7 @@ export function discardNpcDraft(db: any, cam: string, id: string, writeId: strin
     throw new Error('Originaler NPC-Auftrag ist noch ungeklärt. Zuerst prüfen.');
   db.prepare('DELETE FROM npc_draft WHERE campaign_id=? AND id=?').run(cam, id);
 }
+
 export function executeNpc(db: any, c: NpcCommand, guard: () => void): NpcView {
   return db
     .transaction(() => {

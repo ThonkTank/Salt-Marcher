@@ -22,8 +22,9 @@ import {
   type RememberedHex,
 } from './atlas-knowledge';
 import { dungeonDisplay } from './dungeon-play';
-import { readLive } from './live';
-import { readSceneWorld, readWorld, position as scenePosition } from './world';
+import { readLive } from './live-read';
+import { position as scenePosition } from './scene-position';
+import { readSceneWorld, readWorld } from './world-state';
 const hash = (p: string) => createHash('sha256').update(p).digest('hex');
 export function installPlayerSchema(db: any) {
   db.exec(`CREATE TABLE IF NOT EXISTS player_record(campaign_id TEXT NOT NULL REFERENCES campaign(id),kind TEXT NOT NULL,id TEXT NOT NULL,revision INTEGER NOT NULL,payload TEXT NOT NULL,checksum TEXT NOT NULL,PRIMARY KEY(campaign_id,kind,id)) STRICT;

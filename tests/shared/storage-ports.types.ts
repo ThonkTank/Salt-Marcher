@@ -1,3 +1,5 @@
+import { storedPayload, decodeStored } from '../../src/app/storage/stored-payload';
+import { session_profile } from '../../src/app/storage/stored-shapes';
 import type { SqliteDatabase } from '../../src/app/storage/sqlite-connection';
 import { storedEdit } from '../../src/app/storage/stored-records';
 import { commitPreparation } from '../../src/app/storage/preparation';
@@ -50,4 +52,20 @@ export function atlasPortTypeChecks(
     liveScene: () => ({ revision: 1 }),
   };
   void invalidRead;
+}
+
+export function canonicalJsonTypeChecks(db: SqliteDatabase) {
+  const row = db.prepare('SELECT payload,checksum FROM session_profile').get();
+  // @ts-expect-error Raw SQL is not a SessionProfile, even when the query mentions its table.
+  const profile: import('../../src/app/campaign/session-contracts').SessionProfile = row;
+  const value = storedPayload(row);
+  // @ts-expect-error Checksum and JSON syntax alone do not prove a domain value.
+  const raw: import('../../src/app/campaign/session-contracts').SessionProfile = value;
+  const checked = decodeStored(row, session_profile);
+  const revision: number = checked.revision;
+  // @ts-expect-error A caller cannot pick an arbitrary domain type without a decoder.
+  decodeStored<import('../../src/app/campaign/session-contracts').SessionProfile>(row);
+  void raw;
+  void revision;
+  void profile;
 }

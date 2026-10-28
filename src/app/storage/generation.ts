@@ -1,3 +1,10 @@
+import { validatedQuery } from '../../features/catalog/creature-catalog';
+import { checkedItemInput } from './progression-records';
+import { validateEncounterPlanInput } from '../catalog/encounter-contracts';
+import { checkedPresetValue } from './generation-read';
+import { checkedQuery, checkedRow, type SqliteDatabase } from './sqlite-connection';
+import { decodeStored } from './stored-payload';
+import * as shape from './stored-shapes';
 import { generationNpcs, requiredGenerationNpcs } from './generation-npcs';
 import {
   installWorldSources,
@@ -7,7 +14,7 @@ import {
   validateWorldSources,
   canonicalSourceSnapshot,
 } from './world-sources';
-import { createHash, randomUUID } from 'node:crypto';
+import { randomUUID } from 'node:crypto';
 import artifact from '../campaign/generation/system-preset.json';
 import { checkedGeneratorConfig } from '../campaign/generation/config';
 import { canonicalJson } from '../campaign/generation/canonical-json';
@@ -16,11 +23,7 @@ import {
   selectEncounter,
   type CompositionCatalog,
 } from '../campaign/generation/selector';
-import {
-  assessEncounter,
-  validateEncounterPlanInput,
-  type EncounterPlan,
-} from '../catalog/encounter-contracts';
+import { assessEncounter, type EncounterPlan } from '../catalog/encounter-contracts';
 import {
   creatureInfo,
   readCreature,
@@ -28,34 +31,36 @@ import {
   saveEncounterPlan,
   readEncounterPlan,
 } from './encounters';
-import { makeTreasure } from './progression';
+import { makeTreasure } from './progression-records';
 import { copper } from '../runtime/progression';
 import {
   exactWeight,
   encounterWeight,
   integerWeights,
   encounterTableFields,
-  generatorPresetFields,
   type EncounterTable,
   type LootTable,
   type LootRoll,
   type LootRollCommand,
   type GeneratorPreset,
-  type GeneratorRegistry,
   type GenerationCommand,
   type GenerationRequest,
   type GenerationRun,
 } from '../campaign/generation-contracts';
-const hash = (s: string) => createHash('sha256').update(s).digest('hex'),
-  json = (v: unknown) => JSON.stringify(v),
-  systemId = 'generator-system-v5';
+import {
+  hash,
+  systemId,
+  decodePreset,
+  generationRunRow,
+  readGeneratorRegistry,
+  readGenerationRun,
+} from './generation-read';
+export { readGeneratorRegistry, readGenerationRun, readGenerationRuns } from './generation-read';
+const json = (v: unknown) => JSON.stringify(v);
+
 const fingerprint = (v: object) => hash(canonicalJson({ ...v, token: undefined }));
-function decoded<T>(row: any): T {
-  if (!row || hash(row.payload) !== row.checksum)
-    throw new Error('Generator- oder Tabellendaten nicht verfügbar.');
-  return JSON.parse(row.payload);
-}
-export function installGenerationSchema(db: any) {
+
+export function installGenerationSchema(db: SqliteDatabase) {
   db.exec(`CREATE TABLE IF NOT EXISTS encounter_table(id TEXT PRIMARY KEY,campaign_id TEXT REFERENCES campaign(id),revision INTEGER NOT NULL,trashed INTEGER NOT NULL,payload TEXT NOT NULL,checksum TEXT NOT NULL) STRICT;
  CREATE TABLE IF NOT EXISTS loot_table(campaign_id TEXT NOT NULL REFERENCES campaign(id),id TEXT NOT NULL,revision INTEGER NOT NULL,trashed INTEGER NOT NULL,payload TEXT NOT NULL,checksum TEXT NOT NULL,PRIMARY KEY(campaign_id,id)) STRICT;
  CREATE TABLE IF NOT EXISTS generator_meta(id INTEGER PRIMARY KEY CHECK(id=1),revision INTEGER NOT NULL) STRICT;
@@ -86,29 +91,35 @@ export function installGenerationSchema(db: any) {
     hash(payload),
   );
 }
+
 export function readEncounterTables(
-  db: any,
+  db: SqliteDatabase,
   cam: string,
   includeTrashed: boolean,
 ): EncounterTable[] {
-  return db
-    .prepare(
-      'SELECT * FROM encounter_table WHERE (campaign_id=? OR campaign_id IS NULL) AND (? OR trashed=0) ORDER BY id',
-    )
+  return checkedQuery(
+    db,
+    'SELECT * FROM encounter_table WHERE (campaign_id=? OR campaign_id IS NULL) AND (? OR trashed=0) ORDER BY id',
+    {
+      id: 'text',
+      campaign_id: 'nullable-text',
+      revision: 'integer',
+      trashed: 'integer',
+      payload: 'text',
+      checksum: 'text',
+    },
+  )
     .all(cam, includeTrashed ? 1 : 0)
-    .map((r: any) => decodeTable(r));
+    .map((r) => decodeTable(r));
 }
-function decodeLootTable(row: any): LootTable {
-  const table = decoded<LootTable>(row);
+
+function checkedLootTableValue(table: LootTable) {
   if (
     !table ||
     typeof table !== 'object' ||
     Array.isArray(table) ||
-    table.id !== row.id ||
-    table.revision !== row.revision ||
     !Number.isSafeInteger(table.revision) ||
     table.revision < 1 ||
-    Number(table.trashed) !== row.trashed ||
     typeof table.trashed !== 'boolean' ||
     typeof table.name !== 'string' ||
     !table.name.trim() ||
@@ -146,17 +157,52 @@ function decodeLootTable(row: any): LootTable {
     );
   return table;
 }
-export function readLootTables(db: any, cam: string, includeTrashed: boolean): LootTable[] {
-  return db
-    .prepare('SELECT * FROM loot_table WHERE campaign_id=? AND (? OR trashed=0) ORDER BY id')
-    .all(cam, includeTrashed ? 1 : 0)
-    .map((r: any) => decodeLootTable(r));
+function decodeLootTable(value: unknown): LootTable {
+  const row = checkedRow(value, { id: 'text', revision: 'integer', trashed: 'integer' });
+  const table = checkedLootTableValue(decodeStored(value, shape.loot_table));
+  if (
+    table.id !== row.id ||
+    table.revision !== row.revision ||
+    Number(table.trashed) !== row.trashed
+  )
+    throw new Error('Beutetabellenidentität widersprüchlich.');
+  return table;
 }
-function readLootTable(db: any, cam: string, id: string): LootTable {
+
+export function readLootTables(
+  db: SqliteDatabase,
+  cam: string,
+  includeTrashed: boolean,
+): LootTable[] {
+  return checkedQuery(
+    db,
+    'SELECT * FROM loot_table WHERE campaign_id=? AND (? OR trashed=0) ORDER BY id',
+    {
+      campaign_id: 'text',
+      id: 'text',
+      revision: 'integer',
+      trashed: 'integer',
+      payload: 'text',
+      checksum: 'text',
+    },
+  )
+    .all(cam, includeTrashed ? 1 : 0)
+    .map((r) => decodeLootTable(r));
+}
+
+function readLootTable(db: SqliteDatabase, cam: string, id: string): LootTable {
   return decodeLootTable(
-    db.prepare('SELECT * FROM loot_table WHERE campaign_id=? AND id=?').get(cam, id),
+    checkedQuery(db, 'SELECT * FROM loot_table WHERE campaign_id=? AND id=?', {
+      campaign_id: 'text',
+      id: 'text',
+      revision: 'integer',
+      trashed: 'integer',
+      payload: 'text',
+      checksum: 'text',
+    }).get(cam, id),
   );
 }
+
 /** Stored content remains readable with legacy decimal weights; new edits have a narrower authoring rule. */
 function checkTableContent(table: EncounterTable) {
   if (
@@ -205,8 +251,17 @@ function checkTableContent(table: EncounterTable) {
       'Encounter-Tabelle besitzt eine ungültige Loot-Tabellenreferenz. Originaldaten bleiben erhalten.',
     );
 }
-function decodeTable(row: any): EncounterTable {
-  const table = decoded<EncounterTable>(row);
+
+function decodeTable(value: unknown): EncounterTable {
+  const row = checkedRow(value, {
+    id: 'text',
+    revision: 'integer',
+    trashed: 'integer',
+    campaign_id: 'nullable-text',
+    payload: 'text',
+    checksum: 'text',
+  });
+  const table = decodeStored(row, shape.encounter_table);
   checkTableContent(table);
   if (
     table.id !== row.id ||
@@ -220,61 +275,76 @@ function decodeTable(row: any): EncounterTable {
     throw new Error('Encounter-Tabelle besitzt widersprüchliche Identität oder Revision.');
   return table;
 }
-function readTable(db: any, cam: string, id: string): EncounterTable {
-  const row = db
-    .prepare('SELECT * FROM encounter_table WHERE id=? AND (campaign_id=? OR campaign_id IS NULL)')
-    .get(id, cam);
+
+function readTable(db: SqliteDatabase, cam: string, id: string): EncounterTable {
+  const row = checkedQuery(
+    db,
+    'SELECT * FROM encounter_table WHERE id=? AND (campaign_id=? OR campaign_id IS NULL)',
+    {
+      id: 'text',
+      campaign_id: 'nullable-text',
+      revision: 'integer',
+      trashed: 'integer',
+      payload: 'text',
+      checksum: 'text',
+    },
+  ).get(id, cam);
   return decodeTable(row);
 }
-function decodePreset(row: any): GeneratorPreset {
-  const preset = decoded<GeneratorPreset>(row);
-  if (
-    !preset ||
-    typeof preset !== 'object' ||
-    Array.isArray(preset) ||
-    Object.keys(preset).some((key) => !Object.hasOwn(generatorPresetFields, key)) ||
-    typeof preset.name !== 'string' ||
-    !preset.name.trim() ||
-    typeof preset.system !== 'boolean' ||
-    preset.id !== row.id ||
-    preset.revision !== row.revision ||
-    !Number.isSafeInteger(preset.revision) ||
-    preset.revision < 1 ||
-    Number(preset.system) !== row.system
-  )
-    throw new Error(
-      'Preset besitzt ein unbekanntes Format oder eine widersprüchliche Identität. Originaldaten bleiben erhalten.',
-    );
-  const config = checkedGeneratorConfig(preset.config);
-  if (preset.hash !== hash(canonicalJson(config)))
-    throw new Error('Preset-Regelhash widerspricht seinem Inhalt. Originaldaten bleiben erhalten.');
-  return preset;
-}
-export function validateGenerationBackup(db: any) {
-  for (const row of db.prepare('SELECT * FROM encounter_table').iterate()) decodeTable(row);
-  for (const row of db.prepare('SELECT * FROM loot_table').iterate()) decodeLootTable(row);
-  for (const row of db.prepare('SELECT * FROM generator_preset').iterate()) decodePreset(row);
+
+export function validateGenerationBackup(db: SqliteDatabase) {
+  for (const row of checkedQuery(db, 'SELECT * FROM encounter_table', {
+    id: 'text',
+    campaign_id: 'nullable-text',
+    revision: 'integer',
+    trashed: 'integer',
+    payload: 'text',
+    checksum: 'text',
+  }).iterate())
+    decodeTable(row);
+  for (const row of checkedQuery(db, 'SELECT * FROM loot_table', {
+    campaign_id: 'text',
+    id: 'text',
+    revision: 'integer',
+    trashed: 'integer',
+    payload: 'text',
+    checksum: 'text',
+  }).iterate())
+    decodeLootTable(row);
+  for (const row of checkedQuery(db, 'SELECT * FROM generator_preset', {
+    id: 'text',
+    revision: 'integer',
+    system: 'integer',
+    payload: 'text',
+    checksum: 'text',
+  }).iterate())
+    decodePreset(row);
   validateWorldSources(db);
-  for (const row of db.prepare('SELECT * FROM generation_run').iterate()) generationRunRow(db, row);
-  for (const row of db.prepare('SELECT campaign_id,id FROM encounter_plan').iterate())
+  for (const row of checkedQuery(db, 'SELECT * FROM generation_run', {
+    campaign_id: 'text',
+    id: 'text',
+    payload: 'text',
+    checksum: 'text',
+  }).iterate())
+    generationRunRow(db, row);
+  for (const row of checkedQuery(db, 'SELECT campaign_id,id FROM encounter_plan', {
+    campaign_id: 'text',
+    id: 'text',
+  }).iterate())
     readEncounterPlan(db, row.campaign_id, row.id);
+  for (const row of db.prepare('SELECT * FROM generation_receipt').iterate()) {
+    const value = decodeStored(row, shape.generation_receipt);
+    if ('registry' in value) checkedGenerationReceipt(row);
+    else if ('tableId' in value) checkedLootRollReceipt(row);
+    else checkedEncounterReceipt(row);
+  }
 }
-export function readGeneratorRegistry(db: any, cam: string): GeneratorRegistry {
-  const presets = db
-      .prepare('SELECT * FROM generator_preset ORDER BY system DESC,id')
-      .all()
-      .map((r: any) => decodePreset(r)),
-    assignedId =
-      db.prepare('SELECT preset_id FROM generator_assignment WHERE campaign_id=?').get(cam)
-        ?.preset_id ?? null;
-  return {
-    revision: db.prepare('SELECT revision FROM generator_meta WHERE id=1').get().revision,
-    presets,
-    assignedId,
-    effectiveId: assignedId ?? systemId,
-  };
-}
-export function executeGeneration(db: any, command: GenerationCommand, guard: () => void) {
+
+export function executeGeneration(
+  db: SqliteDatabase,
+  command: GenerationCommand,
+  guard: () => void,
+) {
   return db
     .transaction(() => {
       guard();
@@ -282,14 +352,18 @@ export function executeGeneration(db: any, command: GenerationCommand, guard: ()
         throw new Error('Änderungskennung fehlt.');
       const cam = command.campaignId,
         fp = fingerprint(command),
-        prior = db
-          .prepare('SELECT * FROM generation_receipt WHERE command_id=?')
-          .get(command.commandId);
+        prior = checkedQuery(db, 'SELECT * FROM generation_receipt WHERE command_id=?', {
+          command_id: 'text',
+          campaign_id: 'text',
+          fingerprint: 'text',
+          payload: 'text',
+          checksum: 'text',
+        }).get(command.commandId);
       if (prior) {
         if (prior.campaign_id !== cam || prior.fingerprint !== fp)
           throw new Error('Änderungskennung bereits anders verwendet.');
-        const result = decoded<any>(prior);
-        if (!Array.isArray(result.lootTables)) result.lootTables = readLootTables(db, cam, true);
+        const result = checkedGenerationReceipt(prior);
+
         return result;
       }
       const a = command.action;
@@ -298,7 +372,14 @@ export function executeGeneration(db: any, command: GenerationCommand, guard: ()
       } else if (a.kind === 'table-save') {
         const t = structuredClone(a.table);
         checkTableContent(t);
-        const old = db.prepare('SELECT * FROM encounter_table WHERE id=?').get(t.id);
+        const old = checkedQuery(db, 'SELECT * FROM encounter_table WHERE id=?', {
+          id: 'text',
+          campaign_id: 'nullable-text',
+          revision: 'integer',
+          trashed: 'integer',
+          payload: 'text',
+          checksum: 'text',
+        }).get(t.id);
         if (
           (old && old.campaign_id !== null && old.campaign_id !== cam) ||
           (a.expectedRevision === null ? !!old : !old || old.revision !== a.expectedRevision)
@@ -339,7 +420,14 @@ export function executeGeneration(db: any, command: GenerationCommand, guard: ()
         ).run(t.revision, t.trashed ? 1 : 0, payload, hash(payload), t.id);
       } else if (a.kind === 'loot-save') {
         const t = structuredClone(a.table),
-          old = db.prepare('SELECT * FROM loot_table WHERE campaign_id=? AND id=?').get(cam, t?.id);
+          old = checkedQuery(db, 'SELECT * FROM loot_table WHERE campaign_id=? AND id=?', {
+            campaign_id: 'text',
+            id: 'text',
+            revision: 'integer',
+            trashed: 'integer',
+            payload: 'text',
+            checksum: 'text',
+          }).get(cam, t?.id);
         if (
           !t?.id ||
           typeof t.name !== 'string' ||
@@ -419,6 +507,7 @@ export function executeGeneration(db: any, command: GenerationCommand, guard: ()
     })
     .immediate();
 }
+
 function weightedIndex(weights: readonly string[], stream: string): number {
   const ints = integerWeights(weights),
     sum = ints.reduce((a, b) => a + b, 0n);
@@ -440,8 +529,9 @@ function weightedIndex(weights: readonly string[], stream: string): number {
   }
   throw new Error('Gewichtete Auswahl fehlgeschlagen.');
 }
+
 export function previewLoot(
-  db: any,
+  db: SqliteDatabase,
   cam: string,
   tableId: string,
   expectedRevision: number,
@@ -454,6 +544,7 @@ export function previewLoot(
     throw new Error('Beute benötigt gültigen Seed.');
   return lootItems(table, seed);
 }
+
 function lootItems(table: LootTable, seed: string) {
   const grouped = new Map<string, import('../runtime/progression').ItemInput>();
   for (let roll = 0; roll < table.rolls; roll++) {
@@ -475,7 +566,12 @@ function lootItems(table: LootTable, seed: string) {
   }
   return [...grouped.values()];
 }
-export function rollLoot(db: any, command: LootRollCommand, guard: () => void): LootRoll {
+
+export function rollLoot(
+  db: SqliteDatabase,
+  command: LootRollCommand,
+  guard: () => void,
+): LootRoll {
   return db
     .transaction(() => {
       guard();
@@ -483,13 +579,24 @@ export function rollLoot(db: any, command: LootRollCommand, guard: () => void): 
         throw new Error('Änderungskennung fehlt.');
       const cam = command.campaignId,
         fp = fingerprint(command),
-        prior = db
-          .prepare('SELECT * FROM generation_receipt WHERE command_id=?')
-          .get(command.commandId);
+        prior = checkedQuery(db, 'SELECT * FROM generation_receipt WHERE command_id=?', {
+          command_id: 'text',
+          campaign_id: 'text',
+          fingerprint: 'text',
+          payload: 'text',
+          checksum: 'text',
+        }).get(command.commandId);
       if (prior) {
         if (prior.campaign_id !== cam || prior.fingerprint !== fp)
           throw new Error('Änderungskennung bereits anders verwendet.');
-        return decoded<LootRoll>(prior);
+        const result = checkedLootRollReceipt(prior);
+        if (
+          result.tableId !== command.tableId ||
+          result.tableRevision !== command.expectedRevision ||
+          result.seed !== command.seed
+        )
+          throw new Error('Beutewurfbestätigung gehört zu einem anderen Auftrag.');
+        return result;
       }
       if (
         typeof command.seed !== 'string' ||
@@ -524,230 +631,9 @@ export function rollLoot(db: any, command: LootRollCommand, guard: () => void): 
     })
     .immediate();
 }
-/** Read frozen proposals without requiring their sources to still be current. */
-function generationRunRow(db: any, row: any): GenerationRun {
-  const run = decoded<GenerationRun>(row),
-    cam = row.campaign_id;
-  const object = (v: any) => v && typeof v === 'object' && !Array.isArray(v);
-  const id = (v: any) => typeof v === 'string' && !!v.trim() && v.length <= 1000;
-  const unsigned = (v: any) => Number.isSafeInteger(v) && v >= 0;
-  const revision = (v: any) => unsigned(v) && v >= 1;
-  const digest = (v: any) => typeof v === 'string' && /^[0-9a-f]{64}$/.test(v);
-  const fail = () => {
-    throw new Error('Generierungsvorschau beschädigt. Originaldaten bleiben erhalten.');
-  };
-  if (
-    !object(run) ||
-    run.id !== row.id ||
-    !id(run.id) ||
-    run.revision !== 1 ||
-    !id(run.seed) ||
-    !object(run.request) ||
-    run.seed !== run.request.seed ||
-    !object(run.preset) ||
-    !id(run.preset.id) ||
-    typeof run.preset.name !== 'string' ||
-    !revision(run.preset.revision) ||
-    !digest(run.preset.hash) ||
-    !unsigned(run.preset.mobThreshold) ||
-    !digest(run.catalogHash) ||
-    (run.sourceBasis !== undefined && run.sourceBasis !== null && !digest(run.sourceBasis))
-  )
-    fail();
-  const r = run.request;
-  const fixed = run.fixedRoster;
-  if (r.fillPlan !== undefined) {
-    if (
-      !object(r.fillPlan) ||
-      !id(r.fillPlan.id) ||
-      !revision(r.fillPlan.revision) ||
-      !fixed ||
-      fixed.id !== r.fillPlan.id ||
-      fixed.revision !== r.fillPlan.revision
-    )
-      fail();
-    validateEncounterPlanInput(fixed!);
-  } else if (fixed !== undefined) fail();
-  if (
-    !unsigned(r.count) ||
-    r.count < 1 ||
-    r.count > 20 ||
-    typeof r.title !== 'string' ||
-    r.title.length > 1000 ||
-    typeof r.habitat !== 'string' ||
-    !['any', 'day', 'night'].includes(r.time) ||
-    !Array.isArray(r.party) ||
-    !r.party.length ||
-    !Array.isArray(r.tableIds) ||
-    r.tableIds.length > 1000 ||
-    r.tableIds.some((v) => !id(v)) ||
-    new Set(r.tableIds).size !== r.tableIds.length ||
-    !object(r.filters) ||
-    (r.npcOnly !== undefined && typeof r.npcOnly !== 'boolean') ||
-    !Array.isArray(run.plans) ||
-    run.plans.length !== r.count ||
-    new Set(run.plans.map((p) => p?.id)).size !== run.plans.length ||
-    !Array.isArray(run.warnings) ||
-    run.warnings.some((s) => typeof s !== 'string') ||
-    !Array.isArray(run.acceptedPlanIds) ||
-    run.acceptedPlanIds.length > run.plans.length ||
-    !Array.isArray(run.candidates) ||
-    new Set(run.candidates.map((c) => c?.creatureId)).size !== run.candidates.length
-  )
-    fail();
-  for (const refs of [run.tables, run.lootTables ?? []]) {
-    if (
-      !Array.isArray(refs) ||
-      refs.length > 1000 ||
-      new Set(refs.map((v) => v?.id)).size !== refs.length ||
-      refs.some((v) => !object(v) || !id(v.id) || !revision(v.revision))
-    )
-      fail();
-  }
-  for (const c of run.candidates)
-    if (!object(c) || !id(c.creatureId) || integerWeights([exactWeight(c.weight)])[0]! <= 0n)
-      fail();
-  const required = r.requiredNpcIds ?? [],
-    excluded = r.excludedNpcIds ?? [],
-    basis = run.npcBasis;
-  for (const ids of [required, excluded])
-    if (
-      !Array.isArray(ids) ||
-      ids.length > 100 ||
-      ids.some((v) => !id(v)) ||
-      new Set(ids).size !== ids.length
-    )
-      fail();
-  if (
-    required.some((v) => excluded.includes(v)) ||
-    (r.includeNpcs !== undefined && typeof r.includeNpcs !== 'boolean')
-  )
-    fail();
-  const usesNpcs = r.npcOnly === true || r.includeNpcs === true || required.length > 0;
-  if (usesNpcs ? !Array.isArray(basis) : basis !== undefined) fail();
-  if (!run.candidates.length && !required.length && !fixed?.entries.length) fail();
-  if (basis !== undefined) {
-    if (new Set(basis.map((n) => n?.id)).size !== basis.length) fail();
-    for (const n of basis) {
-      if (
-        !object(n) ||
-        !id(n.id) ||
-        typeof n.name !== 'string' ||
-        n.name.length > 1000 ||
-        !id(n.creatureId) ||
-        !revision(n.noteRevision) ||
-        !revision(n.recordRevision) ||
-        !revision(n.actorRevision) ||
-        (n.positionRevision !== null && !revision(n.positionRevision)) ||
-        (n.locationId !== null && !id(n.locationId)) ||
-        n.role !== 'hostile' ||
-        !db.prepare('SELECT 1 FROM world_actor WHERE campaign_id=? AND id=?').get(cam, n.id)
-      )
-        fail();
-    }
-  }
-  if (
-    required.some((v) => !basis?.some((n) => n.id === v)) ||
-    basis?.some((n) => excluded.includes(n.id))
-  )
-    fail();
-  if (run.sourceSnapshot !== undefined) canonicalSourceSnapshot(run.sourceSnapshot);
-  const party = (rows: EncounterPlan['party']) => rows.map(({ id, ...p }) => p);
-  for (const p of run.plans) {
-    if (
-      !object(p) ||
-      !id(p.id) ||
-      p.revision !== 0 ||
-      p.catalogHash !== run.catalogHash ||
-      !Array.isArray(p.sources) ||
-      new Set(p.sources.map((c) => c?.id)).size !== p.sources.length
-    )
-      fail();
-    validateEncounterPlanInput(p);
-    if (canonicalJson(party(p.party)) !== canonicalJson(party(r.party))) fail();
-    if (
-      fixed &&
-      (p.entries.length < fixed.entries.length ||
-        fixed.entries.some((entry, i) => {
-          const { id, ...original } = entry,
-            { id: newId, ...copied } = p.entries[i]!;
-          return canonicalJson(original) !== canonicalJson(copied);
-        }))
-    )
-      fail();
-    const opponents = p.entries.map((e, index) => {
-      const source = p.sources.find((c) => c.id === e.creatureId);
-      if (!source || !unsigned(source.xp)) fail();
-      if (fixed && index < fixed.entries.length) {
-        if (
-          canonicalJson(source) !== canonicalJson(fixed.sources.find((c) => c.id === e.creatureId))
-        )
-          fail();
-        return { xp: source!.xp, count: e.count };
-      }
-      const named = e.worldActorIds ?? [],
-        anonymous = e.count - named.length;
-      if (
-        (r.npcOnly && anonymous) ||
-        (!run.candidates.some((c) => c.creatureId === e.creatureId) &&
-          (anonymous || named.some((actorId) => !required.includes(actorId))))
-      )
-        fail();
-      if (named.length) {
-        if (!basis || !e.actorNames) fail();
-        for (const [i, actorId] of named.entries()) {
-          const n = basis!.find((n) => n.id === actorId);
-          if (
-            !n ||
-            n.creatureId !== e.creatureId ||
-            n.name !== e.actorNames![i] ||
-            (!r.npcOnly && !r.includeNpcs && !required.includes(actorId))
-          )
-            fail();
-        }
-      } else if (e.actorNames?.length) fail();
-      return { xp: source!.xp, count: e.count };
-    });
-    if (required.some((v) => !p.entries.some((e) => e.worldActorIds?.includes(v)))) fail();
-    if (canonicalJson(assessEncounter(p.party, opponents)) !== canonicalJson(p.assessment)) fail();
-  }
-  const accepted = new Map<number, string>();
-  for (const a of db
-    .prepare(
-      'SELECT proposal_index,plan_id FROM generation_acceptance WHERE campaign_id=? AND run_id=?',
-    )
-    .all(cam, run.id)) {
-    if (
-      !unsigned(a.proposal_index) ||
-      !run.plans[a.proposal_index] ||
-      !id(a.plan_id) ||
-      !db.prepare('SELECT 1 FROM encounter_plan WHERE campaign_id=? AND id=?').get(cam, a.plan_id)
-    )
-      fail();
-    accepted.set(a.proposal_index, a.plan_id);
-  }
-  for (const [index, value] of run.acceptedPlanIds.entries())
-    if (value !== null && value !== undefined && value !== accepted.get(index)) fail();
-  for (const [index, value] of accepted) run.acceptedPlanIds[index] = value;
-  return run;
-}
-export function readGenerationRun(db: any, cam: string, id: string): GenerationRun {
-  return generationRunRow(
-    db,
-    db.prepare('SELECT * FROM generation_run WHERE campaign_id=? AND id=?').get(cam, id),
-  );
-}
-export function readGenerationRuns(db: any, cam: string) {
-  return db
-    .prepare('SELECT * FROM generation_run WHERE campaign_id=? ORDER BY rowid DESC LIMIT 50')
-    .all(cam)
-    .map((r: any) => {
-      const run = generationRunRow(db, r);
-      return { id: run.id, seed: run.seed, title: run.request.title, count: run.plans.length };
-    });
-}
+
 export function generateEncounters(
-  db: any,
+  db: SqliteDatabase,
   cam: string,
   request: GenerationRequest,
 ): GenerationRun {
@@ -779,6 +665,7 @@ export function generateEncounters(
         (!Number.isSafeInteger(r.xpCeiling) || r.xpCeiling < 0)
       )
         throw new Error('XP-Obergrenze benötigt eine nichtnegative ganze Zahl.');
+      validatedQuery(r.filters);
       const basis = assessEncounter(r.party, []);
       if (basis.unknownLevels) throw new Error('Für die Generierung fehlen Party-Level.');
       const registry = readGeneratorRegistry(db, cam),
@@ -1212,12 +1099,13 @@ export function generateEncounters(
         payload,
         hash(payload),
       );
-      return run;
+      return readGenerationRun(db, cam, run.id);
     })
     .immediate();
 }
+
 export function assertGenerationSourcesCurrent(
-  db: any,
+  db: SqliteDatabase,
   cam: string,
   run: GenerationRun,
   expectedRegistryRevision?: number,
@@ -1269,8 +1157,9 @@ export function assertGenerationSourcesCurrent(
   if (run.catalogHash !== creatureInfo().hash)
     throw new Error('Katalog geändert. Vorschau neu erzeugen.');
 }
+
 export function acceptGeneration(
-  db: any,
+  db: SqliteDatabase,
   command: {
     commandId: string;
     campaignId: string;
@@ -1286,13 +1175,23 @@ export function acceptGeneration(
       guard();
       const cam = command.campaignId,
         fp = fingerprint(command),
-        prior = db
-          .prepare('SELECT * FROM generation_receipt WHERE command_id=?')
-          .get(command.commandId);
+        prior = checkedQuery(db, 'SELECT * FROM generation_receipt WHERE command_id=?', {
+          command_id: 'text',
+          campaign_id: 'text',
+          fingerprint: 'text',
+          payload: 'text',
+          checksum: 'text',
+        }).get(command.commandId);
       if (prior) {
         if (prior.campaign_id !== cam || prior.fingerprint !== fp)
           throw new Error('Änderungskennung bereits anders verwendet.');
-        return decoded<EncounterPlan>(prior);
+        const result = checkedEncounterReceipt(prior);
+        if (
+          result.generationOrigin?.runId !== command.runId ||
+          result.generationOrigin?.index !== command.index
+        )
+          throw new Error('Begegnungsbestätigung gehört zu einem anderen Auftrag.');
+        return result;
       }
       const run = readGenerationRun(db, cam, command.runId),
         plan = run.plans[command.index];
@@ -1339,7 +1238,7 @@ export function acceptGeneration(
 
 /** The installation editor and campaign generator use the same policy mutation. */
 export function mutatePreset(
-  db: any,
+  db: SqliteDatabase,
   cam: string | null,
   a: import('../campaign/generation-contracts').PresetAction,
 ) {
@@ -1384,4 +1283,47 @@ export function mutatePreset(
     db.prepare('DELETE FROM generator_preset WHERE id=?').run(a.id);
   } else throw new Error('Unbekannte Generatoraktion.');
   db.prepare('UPDATE generator_meta SET revision=revision+1 WHERE id=1').run();
+}
+
+function checkedGenerationReceipt(value: unknown) {
+  const result = decodeStored(value, shape.generation_result);
+  for (const t of result.tables) {
+    checkTableContent(t);
+    if (!Number.isSafeInteger(t.revision) || t.revision < 1)
+      throw new Error('Bestätigte Tabellenrevision ungültig.');
+  }
+  for (const t of result.lootTables) checkedLootTableValue(t);
+  for (const p of result.registry.presets) checkedPresetValue(p);
+  if (
+    !Number.isSafeInteger(result.registry.revision) ||
+    result.registry.revision < 0 ||
+    !result.registry.effectiveId ||
+    (result.registry.assignedId !== null &&
+      !result.registry.presets.some((p) => p.id === result.registry.assignedId)) ||
+    result.registry.effectiveId !== (result.registry.assignedId ?? systemId) ||
+    !result.registry.presets.some((p) => p.id === result.registry.effectiveId)
+  )
+    throw new Error('Generatorregisterbestätigung beschädigt.');
+  return result;
+}
+function checkedLootRollReceipt(value: unknown): LootRoll {
+  const roll = decodeStored(value, shape.loot_roll);
+  if (
+    !roll.tableId ||
+    !Number.isSafeInteger(roll.tableRevision) ||
+    roll.tableRevision < 1 ||
+    !roll.seed.trim() ||
+    !roll.treasureId ||
+    roll.items.length > 10000
+  )
+    throw new Error('Beutewurfbestätigung beschädigt.');
+  for (const item of roll.items) checkedItemInput(item);
+  return roll;
+}
+function checkedEncounterReceipt(value: unknown): EncounterPlan {
+  const plan = decodeStored(value, shape.encounter_plan);
+  validateEncounterPlanInput(plan);
+  if (!Number.isSafeInteger(plan.revision) || plan.revision < 1)
+    throw new Error('Begegnungsbestätigung beschädigt.');
+  return plan;
 }

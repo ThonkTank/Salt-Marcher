@@ -4,6 +4,7 @@ import { builtinModules } from 'node:module';
 import ts from 'typescript';
 import { moduleEdges, dependencyGraph, dependencyCycles } from './module-graph.mjs';
 import { responsibility, rendererEntries } from './module-responsibilities.mjs';
+import { storageFoundations, storageCommandOwners } from './storage-owner-boundaries.mjs';
 const cycleBaseline = JSON.parse(
   fs.readFileSync(new URL('./module-cycle-baseline.json', import.meta.url), 'utf8'),
 );
@@ -103,6 +104,11 @@ export function checkModuleBoundaries(sources) {
         (target) => ui(target) || presentation.has(target),
       );
   }
+  for (const owner of storageFoundations)
+    if (graph.has(owner))
+      check(owner, 'Storage foundation imports a command owner', (target) =>
+        storageCommandOwners.has(target),
+      );
   for (const entry of rendererEntries)
     check(
       entry,

@@ -17,8 +17,9 @@ import { hexAccessProblem } from '../runtime/hex-access';
 import { posed, roadPoints } from '../atlas/city-model';
 import { inside } from '../atlas/drawing-model';
 import { atlasLocalRoute } from '../atlas/atlas-local-route';
-import { position, savePosition } from './world';
-import { dungeonGeometry } from './dungeon-play';
+import { position } from './scene-position';
+import { savePosition } from './world-state';
+import { dungeonGeometry } from './dungeon-geometry-read';
 import { createTriggerEvents } from './triggers';
 const hash = (v: unknown) => createHash('sha256').update(JSON.stringify(v)).digest('hex');
 export function installAtlasTravel(db: SqliteDatabase) {

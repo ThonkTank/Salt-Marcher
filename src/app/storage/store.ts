@@ -1,3 +1,9 @@
+import { checkedQuery, sqliteInteger } from './sqlite-connection';
+import { decodeStored } from './stored-payload';
+import * as shape from './stored-shapes';
+import { checkedLandscapeRow } from './landscape-read';
+import { checkedLocationDocument } from '../../features/location/location-schema';
+import { map as storedWorldMap } from './world-state';
 import { AtlasCommitProjectionError } from './atlas-commit-projection';
 import { openStoreDatabase } from './store-bootstrap';
 import { writeBackup } from './backup';
@@ -87,7 +93,7 @@ import type { ExtensionCommand } from '../workspace/extension-contracts';
 import { type TutorialRun } from '../workspace/tutorial-contracts';
 import { readDay } from './adventuring-day';
 import { readAgenda } from './agenda';
-import { landscapeRegion, terrainRegion } from './atlas-landscape';
+import { landscapeRegion, terrainRegion } from './landscape-records';
 import { atlasReadChanges } from './atlas-read-journal';
 import { storedAtlasRegionView } from './atlas-region';
 import { atlasProjectionSource } from './atlas-shape-source';
@@ -103,7 +109,6 @@ import {
   applyAtlasCommand,
   atlasBindings,
   atlasHistoryState,
-  atlasRoot,
   hasAtlasReceipt,
   storedAtlasCitySite,
   storedAtlasOverview,
@@ -111,6 +116,7 @@ import {
   storedCoupleAtlasWall,
   storedReconcileAtlasGeometry,
 } from './campaign-atlas';
+import { atlasRoot } from './atlas-root-read';
 import {
   applyCampaignCatalog,
   catalogCommand,
@@ -141,24 +147,18 @@ import { readCombatResolution } from './combat-resolution';
 import { matchesReceipt } from './command-fingerprint';
 import { readCommitReceipt } from './commit-receipt';
 import { CommittedSources } from './committed-sources';
-import {
-  activateDungeonFeature,
-  drawingElement,
-  drawingRoom,
-  drawingView,
-  executeDrawing,
-  roomMapStyle,
-} from './drawing';
+import { activateDungeonFeature, executeDrawing, roomMapStyle } from './drawing';
+import { drawingElement, drawingRoom, drawingView } from './drawing-read';
 import { dungeonBudgetView, validateDungeonPlacement } from './dungeon-budget';
 import {
   dungeonCommandState,
   dungeonDisplay,
-  dungeonGeometry,
   dungeonMapView,
   dungeonView,
   executeDungeon,
   previewDungeon,
 } from './dungeon-play';
+import { dungeonGeometry } from './dungeon-geometry-read';
 import { readEncounterPlan, readEncounterPlans, saveEncounterPlan } from './encounters';
 import { ExtensionRegistry } from './extensions';
 import { discardFinishDraft, keepFinishDraft, readFinishDraft } from './finish-drafts';
@@ -167,26 +167,25 @@ import {
   executeGeneration,
   generateEncounters,
   readEncounterTables,
-  readGenerationRun,
-  readGenerationRuns,
-  readGeneratorRegistry,
   readLootTables,
   rollLoot,
 } from './generation';
+import { readGenerationRun, readGenerationRuns, readGeneratorRegistry } from './generation-read';
 import { graphLayout, GraphShadow, graphView } from './graph';
 import { discardGroupDraft, groupDraft, groupView, keepGroupDraft, preparedGroups } from './groups';
 import { readItemDefinition, readItemDefinitions } from './item-definitions';
-import { executeItemShop, readShop, readShopHistory, readShops, sceneShops } from './items';
-import { captureKeyNote, keyNoteCaptureStatus, readKeyNoteChoices } from './key-note-capture';
 import {
-  applyLiveCommand,
-  consumeSceneTime,
-  liveStatus,
-  readArchivedRoster,
-  readArchives,
-  readLive,
-  readLiveScene,
-} from './live';
+  executeItemShop,
+  readShop,
+  shopRecord,
+  readShopHistory,
+  readShops,
+  sceneShops,
+} from './items';
+import { captureKeyNote, keyNoteCaptureStatus, readKeyNoteChoices } from './key-note-capture';
+import { applyLiveCommand, consumeSceneTime } from './live-command-flow';
+import { liveStatus } from './live-commands';
+import { readArchivedRoster, readArchives, readLive, readLiveScene } from './live-read';
 import { keepLiveMomentDraft as keepMomentDraft } from './live-moment-drafts';
 import { readLocationActivities } from './location-activity';
 import { readLocationMaterials } from './location-notebook';
@@ -218,10 +217,10 @@ import {
   keepNpcDraft,
   npcDraft,
   npcDrafts,
-  readNpc,
   readNpcs,
   reconcileNpc,
 } from './npcs';
+import { readNpc } from './npc-read';
 import { previewDungeonPath } from './paths';
 import {
   executePlayer,
@@ -248,10 +247,10 @@ import {
   readLootBalance,
   readProgress,
   readProgressHistory,
-  readTreasure,
   readTreasures,
   storedExecuteProgress,
 } from './progression';
+import { readTreasure } from './progression-records';
 import { roomDirectoryQuery, roomGeometries, roomOrder, visibleRoomWhere } from './room-reads';
 import { executeSceneRule, readSceneRules } from './rule-references';
 import { executeSceneCheck, readSceneChecks } from './scene-checks';
@@ -268,14 +267,11 @@ import { readSceneVisits } from './scene-visits';
 import {
   executeSession,
   generateSession,
-  readPreparedGroup,
-  readSession,
-  readSessionRun,
-  readSessionRuns,
   regenerateSessionProposal,
   regenerateSessionReward,
-  scenePreparation,
 } from './session';
+import { readSessionRun, readSessionRuns } from './session-result-read';
+import { readPreparedGroup, readSession, scenePreparation } from './session-read';
 import { readSessionPacket } from './session-packet';
 import { keepSessionRecapDraft, readSessionRecapDraft } from './session-recap';
 import {
@@ -302,14 +298,11 @@ import {
 import { vegetationScene } from './vegetation';
 import { readSessionProgress } from './visit-outcomes';
 import { readDungeonVolume } from './volume';
-import {
-  previewTravel,
-  readWorldCalendar as readNpcPlanCalendar,
-  readSceneWorld,
-  readWorld,
-  reconcileWorld,
-  storedExecuteWorld,
-} from './world';
+import { reconcileWorld } from './world';
+import { storedExecuteWorld } from './world-command-flow';
+import { previewTravel } from './world-commands';
+import { readSceneWorld, readWorld } from './world-state';
+import { readWorldCalendar as readNpcPlanCalendar } from './world-calendar-read';
 import { readWorldLinks } from './world-links';
 import { checkedWorldNoteRow } from './world-note-row';
 import {
@@ -343,7 +336,7 @@ export class CampaignStore {
   }
 
   private chronicleRead: ChronicleReadSession | null = null;
-  private db: any;
+  private db: ReturnType<typeof openStoreDatabase>;
   private committedSources = new CommittedSources();
   private shellFirstRoom = new WeakMap<
     object,
@@ -484,11 +477,11 @@ export class CampaignStore {
       box.height <= 0
     )
       throw Error('Pinselbereich prüfen.');
-    const bytes = this.db
-      .prepare(
-        'SELECT coalesce(sum(length(payload)),0) n FROM atlas_landscape WHERE campaign_id=? AND max_x>=? AND min_x<=? AND max_y>=? AND min_y<=?',
-      )
-      .get(cam, box.x, box.x + box.width, box.y, box.y + box.height) as { n: number };
+    const bytes = checkedQuery(
+      this.db,
+      'SELECT coalesce(sum(length(payload)),0) n FROM atlas_landscape WHERE campaign_id=? AND max_x>=? AND min_x<=? AND max_y>=? AND min_y<=?',
+      { n: 'integer' },
+    ).required(cam, box.x, box.x + box.width, box.y, box.y + box.height);
     if (bytes.n > 16 * 1024 * 1024)
       throw Error('Pinselbereich zu groß. In kürzeren Zügen bearbeiten.');
     return {
@@ -499,14 +492,13 @@ export class CampaignStore {
   landscapeFind(token: string, text: string) {
     const cam = this.guard(token);
     if (typeof text !== 'string' || text.length > 200) throw new Error('Suchtext prüfen.');
-    return this.db
-      .prepare(
-        "SELECT payload FROM atlas_landscape WHERE campaign_id=? AND json_extract(payload,'$.kind')!='patch' AND (instr(lower(json_extract(payload,'$.name')),lower(?))>0 OR json_extract(payload,'$.locationId')=?) LIMIT 100",
-      )
+    return checkedQuery(
+      this.db,
+      "SELECT id,revision,payload FROM atlas_landscape WHERE campaign_id=? AND json_extract(payload,'$.kind')!='patch' AND (instr(lower(json_extract(payload,'$.name')),lower(?))>0 OR json_extract(payload,'$.locationId')=?) LIMIT 100",
+      { id: 'text', revision: 'integer', payload: 'text' },
+    )
       .all(cam, text, text)
-      .map((r: any) =>
-        JSON.parse(r.payload),
-      ) as import('../atlas/atlas-landscape').LandscapeRecord[];
+      .map(checkedLandscapeRow);
   }
   landscapeRegion(
     token: string,
@@ -529,11 +521,13 @@ export class CampaignStore {
     return id;
   }
   referenceAssetSource(token: string, id: string) {
-    const r = this.db
-      .prepare('SELECT mime,bytes FROM atlas_reference_asset WHERE campaign_id=? AND id=?')
-      .get(this.guard(token), id);
+    const r = checkedQuery(
+      this.db,
+      'SELECT mime,bytes FROM atlas_reference_asset WHERE campaign_id=? AND id=?',
+      { mime: 'text', bytes: 'blob' },
+    ).get(this.guard(token), id);
     if (!r) throw new Error('Referenzbild fehlt.');
-    return r as { mime: string; bytes: Buffer };
+    return { mime: r.mime, bytes: Buffer.from(r.bytes) };
   }
   atlasIdentity(token: string) {
     const campaignId = this.guard(token);
@@ -582,7 +576,18 @@ export class CampaignStore {
             : room
               ? `SELECT r.id,r.name,r.number,r.revision,r.scope_id scopeId,r.floor_id floorId FROM room r WHERE r.campaign_id=? AND r.id>? AND instr(atlas_lower(r.name||' '||r.number),?)>0 AND NOT EXISTS(SELECT 1 FROM drawing_hidden h WHERE h.campaign_id=r.campaign_id AND h.id=r.id AND h.kind='room' AND h.hidden=1) AND NOT EXISTS(SELECT 1 FROM drawing_hidden h WHERE h.campaign_id=r.campaign_id AND h.id=r.floor_id AND h.scope_id=r.scope_id AND h.kind='floor' AND h.hidden=1) ORDER BY r.id LIMIT ?`
               : `SELECT id,json_extract(payload,'$.name') name,revision FROM city_document WHERE campaign_id=? AND id>? AND instr(atlas_lower(json_extract(payload,'$.name')),?)>0 ORDER BY id LIMIT ?`;
-      const items = this.db.prepare(sql).all(cam, c?.after ?? '', text, q.limit + 1),
+      const items = (
+          room
+            ? checkedQuery(this.db, sql, {
+                id: 'text',
+                name: 'text',
+                revision: 'integer',
+                number: 'text',
+                scopeId: 'text',
+                floorId: 'text',
+              })
+            : checkedQuery(this.db, sql, { id: 'text', name: 'text', revision: 'integer' })
+        ).all(cam, c?.after ?? '', text, q.limit + 1),
         more = items.length > q.limit;
       items.length = Math.min(q.limit, items.length);
       return {
@@ -605,14 +610,26 @@ export class CampaignStore {
   ): import('../atlas/atlas-landscape').LandscapeRecord {
     const cam = this.guard(token);
     if (typeof id !== 'string' || !id) throw new Error('Landschaftskennung prüfen.');
-    const row = this.db
-      .prepare(
-        "SELECT a.payload,l.payload location,l.trashed FROM atlas_landscape a LEFT JOIN location l ON l.campaign_id=a.campaign_id AND l.id=json_extract(a.payload,'$.locationId') WHERE a.campaign_id=? AND a.id=?",
-      )
-      .get(cam, id);
+    const row = checkedQuery(
+      this.db,
+      "SELECT a.id,a.revision,a.payload,l.payload location,l.checksum location_checksum,l.trashed FROM atlas_landscape a LEFT JOIN location l ON l.campaign_id=a.campaign_id AND l.id=json_extract(a.payload,'$.locationId') WHERE a.campaign_id=? AND a.id=?",
+      {
+        id: 'text',
+        revision: 'integer',
+        payload: 'text',
+        location: 'nullable-text',
+        location_checksum: 'nullable-text',
+        trashed: 'nullable-integer',
+      },
+    ).get(cam, id);
     if (!row || row.trashed) throw new Error('Landschaftsobjekt nicht gefunden.');
-    const record = JSON.parse(row.payload);
-    if (row.location) record.name = JSON.parse(row.location).name;
+    const record = checkedLandscapeRow(row);
+    if (record.id !== id) throw new Error('Landschaftsidentität widersprüchlich.');
+    if (row.location)
+      record.name = decodeStored(
+        { payload: row.location, checksum: row.location_checksum },
+        checkedLocationDocument,
+      ).name;
     return record;
   }
   atlasRoom(token: string, id: string): Room {
@@ -620,7 +637,17 @@ export class CampaignStore {
       return this.withGraph(() => this.atlasRoom(token, id));
     const cam = this.guard(token);
     if (typeof id !== 'string' || !id) throw new Error('Raumkennung prüfen.');
-    const row = this.db.prepare('SELECT * FROM room WHERE campaign_id=? AND id=?').get(cam, id);
+    const row = checkedQuery(this.db, 'SELECT * FROM room WHERE campaign_id=? AND id=?', {
+      campaign_id: 'text',
+      id: 'text',
+      scope_id: 'text',
+      number: 'text',
+      name: 'text',
+      revision: 'integer',
+      payload: 'text',
+      checksum: 'text',
+      floor_id: 'text',
+    }).get(cam, id);
     if (!row) throw new Error('Raum nicht gefunden.');
     return decodeRoom(row);
   }
@@ -654,7 +681,9 @@ export class CampaignStore {
     this.guard(c.token, c.campaignId);
     if (
       !['landscape-height-stroke', 'landscape-lake-stroke'].includes(c.action.kind) ||
-      this.db.prepare('SELECT 1 FROM atlas_receipt WHERE command_id=?').get(c.commandId)
+      checkedQuery(this.db, 'SELECT 1 FROM atlas_receipt WHERE command_id=?', {
+        '1': 'integer',
+      }).get(c.commandId)
     )
       return;
     const source = this.atlasRegionSource(c.token, cursor);
@@ -668,7 +697,7 @@ export class CampaignStore {
   ): import('../atlas/campaign-atlas-contracts').AtlasCommitAck {
     const value = terrainTraceMeasure('author.transaction-history', () =>
       prepared ? this.db.transaction(() => this.applyAtlas(c, prepared))() : this.applyAtlas(c),
-    ) as { id?: string } | undefined;
+    );
     try {
       const root = atlasRoot(this.db, c.campaignId);
       return {
@@ -676,7 +705,9 @@ export class CampaignStore {
         commandId: c.commandId,
         revision: root.revision,
         ...(c.terrainStroke ? { sourceFence: this.atlasRegionSource(c.token).fence } : {}),
-        ...(typeof value?.id === 'string' ? { result: { id: value.id } } : {}),
+        ...(value && typeof value === 'object' && 'id' in value && typeof value.id === 'string'
+          ? { result: { id: value.id } }
+          : {}),
         ...atlasHistoryState(this.db, c.campaignId),
       };
     } catch (error) {
@@ -699,6 +730,7 @@ export class CampaignStore {
           campaignId: c.campaignId,
           commandId: c.commandId,
           revision: root.revision,
+          ...(c.terrainStroke ? { sourceFence: this.atlasRegionSource(c.token).fence } : {}),
           ...atlasHistoryState(this.db, c.campaignId),
         },
       };
@@ -780,11 +812,11 @@ export class CampaignStore {
       geometryCoverage: 'selected',
       rooms,
       problems,
-      floors: this.db
-        .prepare(
-          'SELECT id,scope_id scopeId,name,source_elevation sourceElevation FROM drawing_floor WHERE campaign_id=?',
-        )
-        .all(cam),
+      floors: checkedQuery(
+        this.db,
+        'SELECT id,scope_id scopeId,name,source_elevation sourceElevation FROM drawing_floor WHERE campaign_id=?',
+        { id: 'text', scopeId: 'text', name: 'text', sourceElevation: 'number' },
+      ).all(cam),
     };
   }
   atlasRegionView(
@@ -828,17 +860,16 @@ export class CampaignStore {
             )
           : null;
       return {
-        scopes: this.db.prepare('SELECT id,name FROM scope WHERE campaign_id=?').all(cam),
+        scopes: checkedQuery(this.db, 'SELECT id,name FROM scope WHERE campaign_id=?', {
+          id: 'text',
+          name: 'text',
+        }).all(cam),
         perception,
         entrances: atlasEntrances(this.db, cam),
         localJourney: geometry.sceneId ? atlasLocalJourney(this.db, cam, geometry.sceneId) : null,
         campaignId: cam,
         revision: root.revision,
-        terrain: JSON.parse(
-          this.db
-            .prepare("SELECT payload FROM world_record WHERE campaign_id=? AND kind='map' AND id=?")
-            .get(cam, root.map_id).payload,
-        ),
+        terrain: storedWorldMap(this.db, cam, root.map_id),
         bindings: atlasBindings(this.db, cam),
         cities: this.cities(token).cities.map((h) => this.city(token, h.id)),
         geometry,
@@ -919,13 +950,15 @@ export class CampaignStore {
   }
   list(): { campaigns: Campaign[]; activeId: string | null } {
     return {
-      campaigns: this.db
-        .prepare(
-          'SELECT c.id,c.name,c.revision FROM campaign c JOIN campaign_lifecycle l ON l.campaign_id=c.id WHERE l.trashed=0 ORDER BY c.name,c.id',
-        )
-        .all(),
+      campaigns: checkedQuery(
+        this.db,
+        'SELECT c.id,c.name,c.revision FROM campaign c JOIN campaign_lifecycle l ON l.campaign_id=c.id WHERE l.trashed=0 ORDER BY c.name,c.id',
+        { id: 'text', name: 'text', revision: 'integer' },
+      ).all(),
       activeId:
-        this.db.prepare("SELECT value FROM settings WHERE key='active'").get()?.value ?? null,
+        checkedQuery(this.db, "SELECT value FROM settings WHERE key='active'", {
+          value: 'text',
+        }).get()?.value ?? null,
     };
   }
   create(name: string, rooms: Room[] = [], source?: Buffer): Campaign {
@@ -957,11 +990,11 @@ export class CampaignStore {
     if (this.graphShadow && this.graphShadow.campaignId !== campaignId)
       throw new Error('Offene Graphvorschau zuerst übernehmen oder Ursprung wiederherstellen.');
     if (
-      !this.db
-        .prepare(
-          'SELECT c.id FROM campaign c JOIN campaign_lifecycle l ON l.campaign_id=c.id WHERE c.id=? AND l.trashed=0',
-        )
-        .get(campaignId)
+      !checkedQuery(
+        this.db,
+        'SELECT c.id FROM campaign c JOIN campaign_lifecycle l ON l.campaign_id=c.id WHERE c.id=? AND l.trashed=0',
+        { id: 'text' },
+      ).get(campaignId)
     )
       throw new Error('Kampagne nicht gefunden.');
     this.active = { campaignId, token: randomUUID() };
@@ -981,9 +1014,11 @@ export class CampaignStore {
     if (!this.active || token !== this.active.token || campaignId !== this.active.campaignId)
       throw new Error('Diese Eingabe gehört zu einer früheren Kampagnenaktivierung.');
     if (
-      !this.db
-        .prepare('SELECT campaign_id FROM campaign_lifecycle WHERE campaign_id=? AND trashed=0')
-        .get(this.active.campaignId)
+      !checkedQuery(
+        this.db,
+        'SELECT campaign_id FROM campaign_lifecycle WHERE campaign_id=? AND trashed=0',
+        { campaign_id: 'text' },
+      ).get(this.active.campaignId)
     )
       throw new Error('Kampagne befindet sich im Papierkorb.');
     return this.active.campaignId;
@@ -996,9 +1031,11 @@ export class CampaignStore {
   ): PreparationDraft | null {
     const campaignId = this.guard(token);
     preparationDraftTable(kind);
-    const row = this.db
-      .prepare('SELECT * FROM preparation_draft WHERE campaign_id=? AND kind=? AND target_id=?')
-      .get(campaignId, kind, id);
+    const row = checkedQuery(
+      this.db,
+      'SELECT * FROM preparation_draft WHERE campaign_id=? AND kind=? AND target_id=?',
+      { campaign_id: 'text', kind: 'text', target_id: 'text', payload: 'text', checksum: 'text' },
+    ).get(campaignId, kind, id);
     return row ? decodePreparationDraft(row) : null;
   }
   keepPreparationDrafts(token: string, drafts: PreparationDraft[]) {
@@ -1014,9 +1051,17 @@ export class CampaignStore {
       .transaction(() => {
         const campaignId = this.guard(token);
         preparationDraftTable(kind);
-        const row = this.db
-          .prepare('SELECT * FROM preparation_draft WHERE campaign_id=? AND kind=? AND target_id=?')
-          .get(campaignId, kind, id);
+        const row = checkedQuery(
+          this.db,
+          'SELECT * FROM preparation_draft WHERE campaign_id=? AND kind=? AND target_id=?',
+          {
+            campaign_id: 'text',
+            kind: 'text',
+            target_id: 'text',
+            payload: 'text',
+            checksum: 'text',
+          },
+        ).get(campaignId, kind, id);
         if (!row) return;
         if (typeof writeId !== 'string' || decodePreparationDraft(row).writeId !== writeId)
           throw new Error('Der Entwurf wurde inzwischen geändert.');
@@ -1032,25 +1077,36 @@ export class CampaignStore {
     const { campaignId, token } = this.active;
     this.guard(token);
     return this.db.transaction(() => {
-      const campaign = this.db.prepare('SELECT * FROM campaign WHERE id=?').get(campaignId);
-      const valid = this.db
-        .prepare(`SELECT r.id FROM room r WHERE ${visibleRoomWhere} AND r.id=?`)
-        .get(campaignId, campaign.selected_id);
-      let first = valid;
+      const campaign = checkedQuery(this.db, 'SELECT * FROM campaign WHERE id=?', {
+        id: 'text',
+        name: 'text',
+        selected_id: 'nullable-text',
+        cursor: 'integer',
+        revision: 'integer',
+      }).required(campaignId);
+      const valid = checkedQuery(
+        this.db,
+        `SELECT r.id,r.number FROM room r WHERE ${visibleRoomWhere} AND r.id=?`,
+        { id: 'text', number: 'text' },
+      ).get(campaignId, campaign.selected_id);
+      let first: { id: string; number?: string } | undefined = valid;
       if (!first) {
         // This internal cache also runs inside write transactions and must see uncommitted edits.
         const stamp = JSON.stringify([
-            this.db.prepare('SELECT total_changes() n').get().n,
-            this.db.pragma('data_version', { simple: true }),
+            checkedQuery(this.db, 'SELECT total_changes() n', { n: 'integer' }).required().n,
+            sqliteInteger(this.db.pragma('data_version', { simple: true })),
           ]),
           cached = this.shellFirstRoom.get(this.db);
         if (cached?.campaignId === campaignId && cached.stamp === stamp)
-          first = cached.id ? { id: cached.id } : null;
+          first = cached.id ? { id: cached.id } : undefined;
         else {
-          for (const row of this.db
-            .prepare(`SELECT r.id,r.number FROM room r WHERE ${visibleRoomWhere}`)
-            .iterate(campaignId))
-            if (!first || roomOrder(row, first) < 0) first = row;
+          for (const row of checkedQuery(
+            this.db,
+            `SELECT r.id,r.number FROM room r WHERE ${visibleRoomWhere}`,
+            { id: 'text', number: 'text' },
+          ).iterate(campaignId))
+            if (!first || roomOrder(row, { id: first.id, number: first.number ?? '' }) < 0)
+              first = row;
           this.shellFirstRoom.set(this.db, { campaignId, stamp, id: first?.id ?? null });
         }
       }
@@ -1059,12 +1115,16 @@ export class CampaignStore {
         campaign: { id: campaign.id, name: campaign.name, revision: campaign.revision },
         token,
         selectedId: first?.id ?? null,
-        canUndo: !!this.db
-          .prepare('SELECT 1 FROM history WHERE campaign_id=? AND ordinal=?')
-          .get(campaignId, campaign.cursor),
-        canRedo: !!this.db
-          .prepare('SELECT 1 FROM history WHERE campaign_id=? AND ordinal=?')
-          .get(campaignId, campaign.cursor + 1),
+        canUndo: !!checkedQuery(
+          this.db,
+          'SELECT 1 FROM history WHERE campaign_id=? AND ordinal=?',
+          { '1': 'integer' },
+        ).get(campaignId, campaign.cursor),
+        canRedo: !!checkedQuery(
+          this.db,
+          'SELECT 1 FROM history WHERE campaign_id=? AND ordinal=?',
+          { '1': 'integer' },
+        ).get(campaignId, campaign.cursor + 1),
       };
     })();
   }
@@ -1075,11 +1135,11 @@ export class CampaignStore {
     return this.db.transaction(() => ({
       ...this.workspaceShell(),
       ...roomGeometries(this.db, cam),
-      floors: this.db
-        .prepare(
-          `SELECT f.id,f.scope_id scopeId,f.name,f.source_elevation sourceElevation FROM drawing_floor f WHERE f.campaign_id=? AND NOT EXISTS(SELECT 1 FROM drawing_hidden h WHERE h.campaign_id=f.campaign_id AND h.id=f.id AND h.scope_id=f.scope_id AND h.kind='floor' AND h.hidden=1) ORDER BY source_elevation,id`,
-        )
-        .all(cam),
+      floors: checkedQuery(
+        this.db,
+        `SELECT f.id,f.scope_id scopeId,f.name,f.source_elevation sourceElevation FROM drawing_floor f WHERE f.campaign_id=? AND NOT EXISTS(SELECT 1 FROM drawing_hidden h WHERE h.campaign_id=f.campaign_id AND h.id=f.id AND h.scope_id=f.scope_id AND h.kind='floor' AND h.hidden=1) ORDER BY source_elevation,id`,
+        { id: 'text', scopeId: 'text', name: 'text', sourceElevation: 'number' },
+      ).all(cam),
     }))();
   }
   roomReadSource(
@@ -1109,7 +1169,13 @@ export class CampaignStore {
     if (!this.active) throw new Error('Bitte eine Kampagne öffnen.');
     return this.db.transaction(() => {
       const active = this.active!;
-      const campaign = this.db.prepare('SELECT * FROM campaign WHERE id=?').get(active.campaignId);
+      const campaign = checkedQuery(this.db, 'SELECT * FROM campaign WHERE id=?', {
+        id: 'text',
+        name: 'text',
+        selected_id: 'nullable-text',
+        cursor: 'integer',
+        revision: 'integer',
+      }).required(active.campaignId);
       const rooms: Room[] = [],
         problems: Workspace['problems'] = [];
       for (const row of this.db
@@ -1120,15 +1186,18 @@ export class CampaignStore {
         try {
           rooms.push(decodeRoom(row));
         } catch (error) {
-          problems.push({ id: row.id, number: row.number, message: (error as Error).message });
+          problems.push({
+            ...checkedRow(row, { id: 'text', number: 'text' }),
+            message: (error as Error).message,
+          });
         }
       }
       rooms.sort((a, b) => roomNumberOrder.compare(a.number, b.number) || a.id.localeCompare(b.id));
-      const floors = this.db
-        .prepare(
-          `SELECT f.id,f.scope_id AS scopeId,f.name,f.source_elevation AS sourceElevation FROM drawing_floor f WHERE f.campaign_id=? AND NOT EXISTS(SELECT 1 FROM drawing_hidden h WHERE h.campaign_id=f.campaign_id AND h.id=f.id AND h.scope_id=f.scope_id AND h.kind='floor' AND h.hidden=1) ORDER BY source_elevation,id`,
-        )
-        .all(active.campaignId);
+      const floors = checkedQuery(
+        this.db,
+        `SELECT f.id,f.scope_id AS scopeId,f.name,f.source_elevation AS sourceElevation FROM drawing_floor f WHERE f.campaign_id=? AND NOT EXISTS(SELECT 1 FROM drawing_hidden h WHERE h.campaign_id=f.campaign_id AND h.id=f.id AND h.scope_id=f.scope_id AND h.kind='floor' AND h.hidden=1) ORDER BY source_elevation,id`,
+        { id: 'text', scopeId: 'text', name: 'text', sourceElevation: 'number' },
+      ).all(active.campaignId);
       return {
         graphPreview: this.graphShadow?.state(),
         campaign: { id: campaign.id, name: campaign.name, revision: campaign.revision },
@@ -1139,12 +1208,16 @@ export class CampaignStore {
         selectedId: rooms.some((r) => r.id === campaign.selected_id)
           ? campaign.selected_id
           : (rooms[0]?.id ?? null),
-        canUndo: !!this.db
-          .prepare('SELECT 1 FROM history WHERE campaign_id=? AND ordinal=?')
-          .get(campaign.id, campaign.cursor),
-        canRedo: !!this.db
-          .prepare('SELECT 1 FROM history WHERE campaign_id=? AND ordinal=?')
-          .get(campaign.id, campaign.cursor + 1),
+        canUndo: !!checkedQuery(
+          this.db,
+          'SELECT 1 FROM history WHERE campaign_id=? AND ordinal=?',
+          { '1': 'integer' },
+        ).get(campaign.id, campaign.cursor),
+        canRedo: !!checkedQuery(
+          this.db,
+          'SELECT 1 FROM history WHERE campaign_id=? AND ordinal=?',
+          { '1': 'integer' },
+        ).get(campaign.id, campaign.cursor + 1),
       };
     })();
   }
@@ -1152,7 +1225,11 @@ export class CampaignStore {
     if (this.graphShadow && !this.graphRouting)
       return this.withGraph<void>(() => this.select(token, id));
     const campaignId = this.guard(token);
-    if (!this.db.prepare('SELECT 1 FROM room WHERE campaign_id=? AND id=?').get(campaignId, id))
+    if (
+      !checkedQuery(this.db, 'SELECT 1 FROM room WHERE campaign_id=? AND id=?', {
+        '1': 'integer',
+      }).get(campaignId, id)
+    )
       throw new Error('Raum nicht gefunden.');
     this.db.prepare('UPDATE campaign SET selected_id=? WHERE id=?').run(id, campaignId);
   }
@@ -1271,9 +1348,14 @@ export class CampaignStore {
     if (typeof id !== 'string' || !id || id.length > 1000) throw new Error('Ungültiges Notizziel.');
     const cam = this.guard(token);
     return this.db.transaction(() => {
-      const row = this.db
-        .prepare('SELECT * FROM world_note WHERE campaign_id=? AND id=?')
-        .get(cam, id);
+      const row = checkedQuery(this.db, 'SELECT * FROM world_note WHERE campaign_id=? AND id=?', {
+        campaign_id: 'text',
+        id: 'text',
+        revision: 'integer',
+        trashed: 'integer',
+        payload: 'text',
+        checksum: 'text',
+      }).get(cam, id);
       if (!row) throw new Error('Notiz nicht verfügbar.');
       const note = checkedWorldNoteRow(row);
       return readNoteRoomUses(this.db, cam, note, offset);
@@ -1610,31 +1692,38 @@ export class CampaignStore {
   }
   ledgerParties(token: string) {
     const cam = this.guard(token),
-      rows: any[] = [];
+      rows: { id: string; name: string; kind: string }[] = [];
     for (const kind of ['npc', 'faction'])
       rows.push(
-        ...this.db
-          .prepare(
-            "SELECT id,json_extract(payload,'$.title') name FROM world_note WHERE campaign_id=? AND trashed=0 AND json_extract(payload,'$.kind')=? ORDER BY name LIMIT 2000",
-          )
+        ...checkedQuery(
+          this.db,
+          "SELECT *,json_extract(payload,'$.title') name FROM world_note WHERE campaign_id=? AND trashed=0 AND json_extract(payload,'$.kind')=? ORDER BY name LIMIT 2000",
+          { id: 'text', name: 'text' },
+        )
           .all(cam, kind)
-          .map((r: any) => ({ ...r, kind })),
+          .map((r) => ({ id: r.id, name: checkedWorldNoteRow(r).title, kind })),
       );
     rows.push(
-      ...this.db
-        .prepare(
-          "SELECT id,json_extract(payload,'$.name') name FROM location WHERE campaign_id=? AND trashed=0 ORDER BY name LIMIT 2000",
-        )
+      ...checkedQuery(
+        this.db,
+        "SELECT *,json_extract(payload,'$.name') name FROM location WHERE campaign_id=? AND trashed=0 ORDER BY name LIMIT 2000",
+        { id: 'text', name: 'text' },
+      )
         .all(cam)
-        .map((r: any) => ({ ...r, kind: 'location' })),
+        .map((r) => ({
+          id: r.id,
+          name: decodeStored(r, checkedLocationDocument).name,
+          kind: 'location',
+        })),
     );
     rows.push(
-      ...this.db
-        .prepare(
-          "SELECT id,json_extract(payload,'$.name') name FROM shop WHERE campaign_id=? AND coalesce(json_extract(payload,'$.trashed'),0)=0 ORDER BY name LIMIT 2000",
-        )
+      ...checkedQuery(
+        this.db,
+        "SELECT id,json_extract(payload,'$.name') name FROM shop WHERE campaign_id=? AND coalesce(json_extract(payload,'$.trashed'),0)=0 ORDER BY name LIMIT 2000",
+        { id: 'text', name: 'text' },
+      )
         .all(cam)
-        .map((r: any) => ({ ...r, kind: 'shop' })),
+        .map((r) => ({ id: r.id, name: shopRecord(this.db, cam, r.id).name, kind: 'shop' })),
     );
     return rows;
   }
@@ -1774,19 +1863,30 @@ export class CampaignStore {
       return this.withGraph(() => this.drawingMap(token, roomId, elementId));
     const cam = this.guard(token);
     if (roomId === undefined) return drawingView(this.db, cam, true);
-    const checked = (r: any) => {
-      if (hash(r.payload) !== r.checksum) throw new Error('Zeichnungsdaten beschädigt.');
-      return JSON.parse(r.payload);
+    const checked = (value: unknown) => {
+      const row = checkedRow(value, { id: 'text', revision: 'integer' }),
+        state = decodeStored(value, shape.dungeon_feature_state);
+      if (
+        state.id !== row.id ||
+        state.revision !== row.revision ||
+        !Number.isSafeInteger(state.revision) ||
+        state.revision < 0 ||
+        !Number.isSafeInteger(state.charges) ||
+        state.charges < 0 ||
+        (state.resetStartedMs !== null && !/^(0|[1-9][0-9]{0,29})$/.test(state.resetStartedMs))
+      )
+        throw new Error('Dungeonfeaturestand beschädigt.');
+      return state;
     };
     const style = roomMapStyle(this.db, cam, roomId),
       styles = style ? [style] : [];
     const volume = roomId ? readDungeonVolume(this.db, cam, roomId) : undefined,
       volumes = volume ? [volume] : [];
     const features = elementId
-      ? this.db
-          .prepare(
-            'SELECT payload,checksum FROM dungeon_feature_state WHERE campaign_id=? AND id=?',
-          )
+      ? checkedQuery(this.db, 'SELECT * FROM dungeon_feature_state WHERE campaign_id=? AND id=?', {
+          payload: 'text',
+          checksum: 'text',
+        })
           .all(cam, elementId)
           .map(checked)
       : [];
@@ -1814,11 +1914,11 @@ export class CampaignStore {
       const geometry = dungeonGeometry(this.db, cam),
         preserved = new Map(geometry.drawing.hiddenRooms.map((r) => [r.id, r]));
       // Archiving a floor hides its map, not the authored room contents.
-      for (const row of this.db
-        .prepare(
-          "SELECT r.id FROM room r JOIN drawing_hidden h ON h.campaign_id=r.campaign_id AND h.scope_id=r.scope_id AND h.id=r.floor_id AND h.kind='floor' AND h.hidden=1 WHERE r.campaign_id=?",
-        )
-        .iterate(cam))
+      for (const row of checkedQuery(
+        this.db,
+        "SELECT r.id FROM room r JOIN drawing_hidden h ON h.campaign_id=r.campaign_id AND h.scope_id=r.scope_id AND h.id=r.floor_id AND h.kind='floor' AND h.hidden=1 WHERE r.campaign_id=?",
+        { id: 'text' },
+      ).iterate(cam))
         if (!preserved.has(row.id)) preserved.set(row.id, drawingRoom(this.db, cam, row.id));
       geometry.drawing.hiddenRooms = [...preserved.values()];
       if (this.graphShadow) geometry.drawing.graphPreview = this.graphShadow.state();
@@ -1943,9 +2043,9 @@ export class CampaignStore {
           'Zur Rastervorschau wechseln, dort korrigieren und anschließend übernehmen.',
         );
       const changes = shadow.changes(),
-        selected = shadow.db
-          .prepare('SELECT selected_id FROM campaign WHERE id=?')
-          .get(cam)?.selected_id;
+        selected = checkedQuery(shadow.db, 'SELECT selected_id FROM campaign WHERE id=?', {
+          selected_id: 'nullable-text',
+        }).get(cam)?.selected_id;
       this.db
         .transaction(() => {
           if (changes.length)
@@ -1964,7 +2064,9 @@ export class CampaignStore {
           if (
             selected &&
             selected !==
-              this.db.prepare('SELECT selected_id FROM campaign WHERE id=?').get(cam)?.selected_id
+              checkedQuery(this.db, 'SELECT selected_id FROM campaign WHERE id=?', {
+                selected_id: 'nullable-text',
+              }).get(cam)?.selected_id
           )
             this.db.prepare('UPDATE campaign SET selected_id=? WHERE id=?').run(selected, cam);
         })
@@ -2162,9 +2264,9 @@ export class CampaignStore {
   }
   currentPlayerSettings() {
     if (!this.active) return null;
-    const l = this.db
-      .prepare('SELECT trashed FROM campaign_lifecycle WHERE campaign_id=?')
-      .get(this.active.campaignId);
+    const l = checkedQuery(this.db, 'SELECT trashed FROM campaign_lifecycle WHERE campaign_id=?', {
+      trashed: 'integer',
+    }).get(this.active.campaignId);
     return l && !l.trashed ? playerSettings(this.db, this.active.campaignId) : null;
   }
   currentPlayerFrame() {
@@ -2249,11 +2351,14 @@ export class CampaignStore {
   campaignCatalogWorkspace(commandId: string, projection: true): WorkspaceShell;
   campaignCatalogWorkspace(commandId: string, projection?: boolean): Workspace | WorkspaceShell;
   campaignCatalogWorkspace(commandId: string, projection = false): Workspace | WorkspaceShell {
-    const row = this.db
-      .prepare('SELECT payload,checksum FROM campaign_catalog_receipt WHERE command_id=?')
-      .get(commandId);
-    if (!row || hash(row.payload) !== row.checksum) throw new Error('Öffnungsbeleg fehlt.');
-    const receipt = JSON.parse(row.payload) as CampaignCatalogReceipt;
+    const row = checkedQuery(
+      this.db,
+      'SELECT payload,checksum FROM campaign_catalog_receipt WHERE command_id=?',
+      { payload: 'text', checksum: 'text' },
+    ).get(commandId);
+    if (!row) throw new Error('Öffnungsbeleg fehlt.');
+    const receipt = decodeStored(row, shape.campaign_catalog_receipt);
+    if (receipt.commandId !== commandId) throw new Error('Öffnungsbelegkennung widersprüchlich.');
     if (
       !['open', 'create'].includes(receipt.kind) ||
       this.list().activeId !== receipt.campaignId ||
@@ -2271,22 +2376,26 @@ export class CampaignStore {
     return this.db.transaction(() => campaignOverview(this.db))();
   }
   campaignIdentity(token: string): Campaign {
-    return this.db
-      .prepare('SELECT id,name,revision FROM campaign WHERE id=?')
-      .get(this.guard(token));
+    return checkedQuery(this.db, 'SELECT id,name,revision FROM campaign WHERE id=?', {
+      id: 'text',
+      name: 'text',
+      revision: 'integer',
+    }).required(this.guard(token));
   }
   campaignFence(id: string, revision: number) {
-    const r = this.db
-      .prepare('SELECT revision,trashed FROM campaign_lifecycle WHERE campaign_id=?')
-      .get(id);
+    const r = checkedQuery(
+      this.db,
+      'SELECT revision,trashed FROM campaign_lifecycle WHERE campaign_id=?',
+      { revision: 'integer', trashed: 'integer' },
+    ).get(id);
     if (!r || r.trashed || r.revision !== revision)
       throw new Error('Quellkampagne wurde gelöscht oder ihr Lebenszyklus geändert.');
   }
   async campaignSnapshot(token: string, filename: string) {
     const id = this.guard(token),
-      fence = this.db
-        .prepare('SELECT revision FROM campaign_lifecycle WHERE campaign_id=?')
-        .get(id).revision;
+      fence = checkedQuery(this.db, 'SELECT revision FROM campaign_lifecycle WHERE campaign_id=?', {
+        revision: 'integer',
+      }).required(id).revision;
     return writeCampaignSnapshot(this.db, id, fence, () => this.campaignFence(id, fence), filename);
   }
   campaignPreview(filename: string) {
@@ -2334,15 +2443,16 @@ export class CampaignStore {
     this.db.pragma('wal_checkpoint(TRUNCATE)');
   }
   pendingCampaignErasures(): string[] {
-    return this.db
-      .prepare("SELECT id FROM campaign_erasure WHERE phase='cleanup'")
+    return checkedQuery(this.db, "SELECT id FROM campaign_erasure WHERE phase='cleanup'", {
+      id: 'text',
+    })
       .all()
-      .map((r: any) => r.id);
+      .map((r) => r.id);
   }
   campaignErasureFiles(id: string): string[] {
-    const value = this.db
-      .prepare('SELECT value FROM settings WHERE key=?')
-      .get('campaign-erasure-files:' + id)?.value;
+    const value = checkedQuery(this.db, 'SELECT value FROM settings WHERE key=?', {
+      value: 'text',
+    }).get('campaign-erasure-files:' + id)?.value;
     const files: unknown = value === undefined ? [] : JSON.parse(value);
     if (
       !Array.isArray(files) ||
@@ -2654,7 +2764,13 @@ export class CampaignStore {
   reconcilePreparationContent(command: PreparationCommand, token: string) {
     const cam = this.guard(token, command.campaignId),
       target = preparationTarget(command.change),
-      r = this.db.prepare('SELECT * FROM receipt WHERE command_id=?').get(command.commandId),
+      r = checkedQuery(this.db, 'SELECT * FROM receipt WHERE command_id=?', {
+        command_id: 'text',
+        fingerprint: 'text',
+        campaign_id: 'text',
+        room_id: 'text',
+        revision: 'integer',
+      }).get(command.commandId),
       table =
         target.kind === 'note' ? 'world_note' : target.kind === 'location' ? 'location' : 'plan',
       current = this.db
@@ -2735,9 +2851,11 @@ export class CampaignStore {
     return this.db.transaction(() => {
       const campaignId = this.guard(token, command.campaignId ?? this.active?.campaignId),
         change = command.change;
-      const prior = this.db
-        .prepare('SELECT fingerprint,campaign_id,revision FROM receipt WHERE command_id=?')
-        .get(command.commandId);
+      const prior = checkedQuery(
+        this.db,
+        'SELECT fingerprint,campaign_id,revision FROM receipt WHERE command_id=?',
+        { fingerprint: 'text', campaign_id: 'text', revision: 'integer' },
+      ).get(command.commandId);
       if (prior && (prior.campaign_id !== campaignId || !matchesReceipt(prior, command)))
         throw new Error('Änderungskennung bereits anders verwendet.');
       if (!prior && command.campaignId === undefined && command.token !== token)
@@ -2763,9 +2881,11 @@ export class CampaignStore {
       let unchanged = expected === null ? !current : current?.revision === expected;
       let mergeTargetChanged = false;
       if (change.kind === 'note-merge') {
-        const target = this.db
-          .prepare('SELECT revision FROM world_note WHERE campaign_id=? AND id=?')
-          .get(campaignId, change.targetId);
+        const target = checkedQuery(
+          this.db,
+          'SELECT revision FROM world_note WHERE campaign_id=? AND id=?',
+          { revision: 'integer' },
+        ).get(campaignId, change.targetId);
         mergeTargetChanged = target?.revision !== change.expectedTargetRevision + (prior ? 1 : 0);
         if (!prior) {
           try {
@@ -2787,7 +2907,11 @@ export class CampaignStore {
             ? data.locations.some((row) => row.document.id === targetId)
             : data.notes.some((row) => row.note.id === targetId);
       return {
-        outcome: prior ? 'applied' : unchanged ? 'not-applied' : 'conflict',
+        outcome: prior
+          ? ('applied' as const)
+          : unchanged
+            ? ('not-applied' as const)
+            : ('conflict' as const),
         targetChanged:
           mergeTargetChanged ||
           (prior ? current?.revision !== prior.revision : !unchanged) ||
@@ -2805,9 +2929,12 @@ export class CampaignStore {
     if (this.graphShadow && !this.graphRouting)
       return this.withGraph(() => this.roomDraft(token, roomId));
     const campaignId = this.guard(token),
-      row = this.db
-        .prepare('SELECT * FROM room_draft WHERE campaign_id=? AND room_id=?')
-        .get(campaignId, roomId);
+      row = checkedQuery(this.db, 'SELECT * FROM room_draft WHERE campaign_id=? AND room_id=?', {
+        campaign_id: 'text',
+        room_id: 'text',
+        payload: 'text',
+        checksum: 'text',
+      }).get(campaignId, roomId);
     if (!row) return null;
     return decodeRoomDraft(row);
   }

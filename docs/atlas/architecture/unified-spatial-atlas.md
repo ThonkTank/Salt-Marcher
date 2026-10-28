@@ -2,7 +2,7 @@
 
 Status: Current; offene Ziele sind als solche beschrieben.
 Owner: atlas
-Last Reviewed: 2026-10-27 (Grundwerkzeuge und Recovery funktional geprüft; Fachabnahme separat)
+Last Reviewed: 2026-10-28 (enge Abschlüsse und aktuelle Zuständigkeiten; Fachabnahme separat)
 Source of Truth: Dieses Dokument besitzt das benannte Thema; Code belegt den Iststand, das Abnahmeregister den Prüfstand.
 
 ## Ziel
@@ -20,6 +20,13 @@ werden; produktive Nutzerdaten bestehen nicht. Historische Arbeitsberichte gehö
 in die Git-Historie, nicht in den aktuellen Arbeitsplan.
 
 ## Aktueller Arbeitsstand
+
+Dieses Dokument besitzt Architektur und bestätigte Lieferpriorität.
+[rendering.md](rendering.md) besitzt Codeeinstiege und Prüfwege,
+[guide.md](../guide.md) die aktuelle Bedienung. Fachverträge besitzen Wirkung und
+Datenregeln. Die [Atlasanforderungen](../requirements/atlas.md) erhalten den
+vollständigen Zielumfang, ohne einen zweiten technischen Arbeitsplan zu führen.
+
 
 Für die nächste Lieferung gilt der bestätigte
 [Terrain-/Meerfokus](../requirements/terrain-relief.md#aktueller-lieferfokus-terrain-und-wasser).
@@ -48,124 +55,47 @@ Planungsstand: 27.10.2026, übernommen; Umsetzung durch den Koordinationschat fr
 Alle lokalen Uhrzeiten gelten in Europe/Berlin (CET, UTC+1). Frühere UTC+2-
 Umrechnungen wurden korrigiert; UTC-Anker und verstrichene Zeitbudgets bleiben gleich.
 Preflight-Basis ist Main `a87b8e99ba8a3954f664a10b0e7a9c141c65eb22`.
-Aktuelle Arbeitsbasis: `2668d40757d7997a1406e5bb0a8d1fc81661a732`; letzter
-erfolgreicher GitHub-Abgleich 27.10.2026, 14:07 Uhr Europe/Berlin. PR #1421
-integriert und in diesem Checkout übernommen; keine neuen Main-Commits offen.
+Historische Arbeitsbasis des übernommenen Plans: `613c012f00c99f0e110d081285049399173c4d11`; damaliger letzter
+erfolgreicher GitHub-Abgleich 27.10.2026, 13:52 Uhr Europe/Berlin. PR #1420
+war damals integriert und übernommen. Dieser datierte Befund ist kein aktueller Main-Abgleich.
 Die [sechs bestätigten Ziele TW-G1–6 und der Messvertrag](../requirements/terrain-relief.md#ziele-und-abnahme-dieser-etappe)
 gelten unverändert. Hier stehen Ausführung und Entscheidungen, keine zweite Anforderungsliste.
 
-### Grundwerkzeuge: aktueller Funktionsnachweis
+### Nächster Produktnachweis und Entscheidung
 
-Die begrenzte `TerrainStrokeQueue` erhält geschlossene Gesten mit unveränderlicher
-Kennung und Reihenfolge. Unknown wird unter der Originalkennung geklärt;
-Nachladefehler erhalten Folgezüge. Sicher abgewiesene oder noch ungesendete Züge
-bei einer inzwischen geänderten Quelle erlauben ausdrückliches Retry/Discard.
-Escape verwirft ausschließlich die aktive Geste. Meeresspiegel und andere
-Autorenaufträge können die gehaltene Queue nicht überholen.
+**Nächster Produktnachweis P03:** verlässliche Grundpinsel und Meer einschließlich
+Parameterwirkung, Undo/Redo, Abbruchregeln, Folgezug und Neustart. M1 besitzt einen
+begrenzten funktionalen Frühdurchstich; vollständiges G1 und statistische Leistung
+bleiben offen. PR #1428 hat inzwischen geländegebundene Kameranavigation, direkte Hügel-/Berg-/Schluchtpinsel und maßstabsübergreifende Bearbeitung integriert. Ihre jeweiligen begrenzten Nachweise stehen im [Landschaftsvertrag](../contract/landscape-tools.md#direkte-terrainformpinsel--27102026) und bei den aktuellen Prüfwegen; daraus folgt keine vollständige G1–6- oder Nutzerabnahme.
 
-Die native Grundwerkzeugprobe vom 27.10.2026 besteht bei 100 % und 200 %:
-vier Werkzeuge mit sichtbarer Wirkung vor Pointerup, wirksame Parameter,
-ein Historyschritt je Geste, Undo/Redo, Escape, echte Pointercancel-/Fokusereignisse,
-Unknown mit erhaltenem Folgezug, Quellreload, Retry/Discard und Meer mit
-unveränderten Bodenhöhen; Fresh erhält Höhen, Meeresspiegel und History.
-Belege: `.build/atlas-terrain-stroke/1793109327446-400411/result.json` und
-`1793109754331-401586/result.json`, jeweils 48 Prüfungen. Nach dem gezielten Fix
-für eine inzwischen weitergeschriebene Quelle wurde ausschließlich Recovery
-am endgültigen Produktstand erneut geprüft: `1793110361998-403333/result.json`
-und `1793110483055-403798/result.json`, jeweils 23 Prüfungen. Alle acht
-Electron-Starts enden normal. Intel UHD 620, 1920 × 1080 native Bildgröße und
-Quell-/Runtimebindung sind dokumentiert. Keine p95-, Gestaltungs-, Paket- oder
-Nutzerabnahme; Kamera, Spezialformen und weitere Darstellung bleiben offen.
+Vier enge Anschlüsse dieser Bereinigungsrunde sind implementiert und lokal
+geprüft; sie schließen keine vollständige E2E- oder Terrainabnahme:
 
-### Frühere Paketplanung
+- Import/Wechsel entwertet alte Atlasregionsantworten vor Mainaktivierung;
+  [Editor-Lebenszyklus](../../project/architecture/editor-lifecycle.md) und
+  [Importprüfweg](../../campaign/contract/archive.md#copy-complete-import-remap-und-ownerlieferung).
+- Geschlossene Terrain-Folgegesten bleiben über Unknown/Readfehler gehalten;
+  Speicherantworten werden automatisch gelesen. Ohne Quellenkonflikt setzt sich
+  die ursprüngliche Folge fort; ein bestätigter Zug wird nicht erneut angewandt.
+  Bei Konflikt stehen „Erneut anwenden“ auf aktuellem Gelände und „Verwerfen“
+  ausdrücklich zur Wahl, ohne erzwungenen Dialog.
+  [Queue, Receiptregeln und Nachweise](rendering.md#speicherklärung-im-atlas).
+- Fachliche Speicherbesitzer sind ohne gegenseitige Gesamtwriter aufgeteilt;
+  [Besitz und atomare Grenzen](../../project/architecture/storage-ownership.md).
+- Kanonische SQL-/Payload-/Receiptwerte werden strukturell und fachlich geprüft;
+  [Werte- und Belegverträge](../../project/architecture/storage-ports.md).
 
-Die folgende ursprüngliche Paketplanung hält Ausgangsannahmen fest; der jüngere
-Nutzerauftrag für den Analyse-/Umsetzungszyklus ersetzt ihren Steuerungsablauf.
+Der frühere enge Folgezugverlust ist damit kein offener Implementierungsauftrag
+mehr. Die übrigen G1-Werkzeug-/Parameter-/Abbruchkriterien, Schutz absoluter
+Feinhöhen, vollständige Produktabnahme und Lieferung bleiben offen. Codeeinstiege,
+automatisierte Prüfungen und native Qualifikation stehen in [rendering.md](rendering.md);
+Originalanforderungen und Abnahmestände bleiben unverändert.
 
-**Beginn T0:** 27.10.2026, 12:38 Uhr Europe/Berlin (11:38 UTC), tatsächlicher
-P01-Start nach Main-, Plan- und Umsetzungsfreigabe. Implementierer: Subagent
-`terrain_native_implementer`, `gpt-6-luna` / `high`; P01/P02 gemeinsam delegiert.
-Erster Beleg geschätzt nach **45–75 Minuten**, gemeinsame Entscheidungsgrenze
-**T0 + 90 Minuten**. Setup, Build, Ausführung, Fix, Prüfung und Warten zählen mit;
-Unterpakete setzen diese Grenze nicht zurück. Konkrete gemeinsame Grenze:
-**27.10.2026, 14:08 Uhr Europe/Berlin**; Setup-Entscheidung spätestens 12:58 Uhr.
-
-P01 benötigt geschätzt 15–25 Minuten: Session/GPU/Prozessbesitz 5–10,
-aktueller Desktopbuild und kleine kanonische Testfixture 10–15.
-P02 benötigt 30–50 Minuten: vorhandene Probe auf den kleinen Ablauf und
-aussagefähige Bildbeobachtung zuschneiden 15–25, ausführen 5–10,
-Befund/kleinster Korrekturversuch 10–15. Das sind Schätzungen, keine Messergebnisse.
-
-Start mit dem vorhandenen nativen Harness und normalem Atlas in einer erzeugten
-Testkampagne, 1920 × 1080 Fensterinhalt bei 100 %. Bevorzugt echter Intel-Wayland-Pfad
-auf dem Zielgerät; bei gesperrtem Desktop eine isolierte native Sitzung.
-Nach 20 Minuten ungelöstem Setup sofort die konkrete Ursache und kleinste
-Alternative entscheiden: verfügbare normale Wayland-Sitzung oder isoliertes KWin;
-Softwareausgabe kann nur einen gekennzeichneten Funktionsbefund tragen.
-Keine Sperre umgehen, keine Systemeinstellungen ändern, kein Ausbau einer
-allgemeinen Messplattform. Fehlender Intel-Nachweis bleibt offen.
-Setup-Entscheidung: Die isolierte KWin-/Wayland-Sitzung hat den nativen Ablauf
-bereits ausgeführt und bleibt für P02 geeignet; die noch fehlende GPU-Bindung
-begrenzt Leistungsaussagen, verhindert diesen Funktionsversuch aber nicht.
-
-P02 benutzt einen 3–5 Sekunden langen Höhenzug über eine kleine trockene Hang-/
-Küstenfläche. Bildfolge/Eingabezeitpunkt belegen eine veränderte Terrainfläche
-vor Pointerup; Cursor, Overlay oder bloße Nachladung zählen nicht. Ein kanonischer
-Höhenvergleich und Wiederöffnung belegen Speicherung. Die zweite Geste beginnt
-ohne Warten auf die erste Speicherantwort; anschließend müssen beide bestätigt sein.
-Falls nötig hilft ein identischer Kontrollablauf ohne Höhenwirkung, Störeinflüsse
-auszuschließen. Kein Erfolg nur aus Revisionszähler oder `terrainDraft`-Attribut.
-
-**Aktuelle Entscheidung:** M1 ist am 27.10.2026 um 13:18 nach unabhängiger
-Nachprüfung von `0b7f72d77` im Reviewchat
-`01a17d32-1d64-7ce3-8b48-93d53429877a` als begrenzter fachlicher Frühdurchstich
-und Ansatzentscheidung erfüllt, vor der ursprünglichen Grenze 14:08.
-Der damalige M1-Gesamtlauf blieb wegen Shutdownfehler rot. Der erste P03-Teil
-behebt nun dessen Ursache: Der Atlas war nicht an die gemeinsame Abmeldung
-angeschlossen. Die Registrierung ruft nach erfolgreichem Flush den vorhandenen
-`CampaignAtlas.hide()` auf; verweigertes Schließen erhält den aktiven Besitzer.
-Der Reportstatus ist gegen Überschreiben durch UI-Text geschützt. Gezielt 19
-Tests, App-/Desktop-Typprüfung, Repositoryprüfung, frischer Desktopbuild,
-Formatierung und Syntaxprüfung bestehen. Die unabhängige Nachprüfung gab den
-engen Teil frei. [PR #1420](https://github.com/ThonkTank/Salt-Marcher/pull/1420)
-ist nach grüner [exakter Candidate-CI](https://github.com/ThonkTank/Salt-Marcher/actions/runs/40503939602)
-auf `307defac26704ecafb1eb474a7f546bb53db1957` integriert; der Main-Baum ist
-inhaltlich identisch. Auch die [zusätzliche Main-CI](https://github.com/ThonkTank/Salt-Marcher/actions/runs/40504782207)
-auf `613c012f00c99f0e110d081285049399173c4d11` ist grün; übriges P03/G1 bleibt offen.
-
-Aktueller Produktfixlauf: `.build/atlas-terrain-stroke/1793103792143-385146/`.
-`handoff-report.json` bindet den unveränderten Originalbericht `result.json`
-(**PASS**), Quell-/Runtimehashes, Vor-up-PNGs, kanonische Höhenvergleiche und
-`03-fresh-reopen.png`. Beide Züge ändern das Terrain vor Pointerup; beide
-räumlichen Höhenvergleiche bestehen. Fresh bestätigt identische Höhenbytes von
-17 Kacheln bei Revision 3. `phase-errors.json` ist leer; beide Electron-Prozesse
-enden mit Code 0, ohne Signal und mit bestätigter PID-Abwesenheit, Launcher mit
-Code 0. Keine eigenen Restprozesse. Die App ist an Intel UHD 620/ANGLE gebunden.
-Typchecks liefen anfangs parallel zur Probe; dies ist ausschließlich ein
-Funktionsnachweis, keine First-visible-/p95-/Leistungsfreigabe.
-
-Die zuvor rote M1-Probe `1793103145919-382361/` und ihre Rohbelege bleiben
-unverändert. Ihre funktionalen Ergebnisse wurden unabhängig bestätigt; das
-überschriebene Speicherstatusfeld und der Close-Handlerfehler sind nun durch
-den Produktfixlauf gezielt nachgeprüft. Sichtbare Übergänge und stempelartige
-Formen bleiben Darstellungsbefunde; sie sind nicht durch diese Korrektur gelöst.
-Keine zusammengesetzten Leistungs- oder Qualitätsaussagen aus verschiedenen
-Läufen. Frühere Harnessabbrüche bleiben in den gesicherten Checkpoints erhalten.
-
-Der historische
-saubere Stand `e5882ae09d70bb38eede86c28a9ae453f8024a06` hat einen nativen
-Rasterablauf mit Folgezug, Undo/Redo und Wiederöffnung; das ist keine aktuelle
-Abnahme. Hauptunsicherheit ist der aktuelle Übergang von lokaler Bildwirkung zu
-Bestätigung, Nachladung und Folgezug. Grundpinsel/Meer sind vorhanden;
-Hügel-/Berg-/Schluchtvorlagen sind bisher Grundpinselparameter.
-Produktive Rechtszieh-/WASD-Kamera und neue Formbildung bleiben zu liefern.
-
-Spätestens an der 90-Minuten-Grenze: Ergebnis oder erste konkrete Bruchstelle
-festhalten und nur betroffene Pakete nachplanen. B, gezielter Terrainersatz,
-braucht benanntes Hindernis und positiven Gesamtnutzen einschließlich Umstellung
-und Prüfung. C, Ersatz von Renderer/Datenkern, bleibt bei widerlegter Grundlage
-erlaubt. Keine vollständige Rendereranalyse vor dem ersten sinnvollen Kontakt.
-Ein erfolgloser Versuch rechtfertigt weder Umfangskürzung noch Erfolgsmeldung.
+[Historische P01/P02-/Shutdown-/erste Unknown-Berichte und Zeitpunkte](https://github.com/ThonkTank/Salt-Marcher/blob/1cb69e33dca7eda6e56916c3cf6bc2cfba803c7d/docs/atlas/architecture/unified-spatial-atlas.md#nächster-produktnachweis-und-entscheidung)
+bleiben unter fester Gitrevision erreichbar. Deren offene Folgezugbefunde und
+Paketstarts beschreiben den damaligen Stand. Die folgenden Pakete behalten ihre
+fachlichen Ziele und den bestätigten Planungsrahmen; alte Uhrzeiten sind keine
+neuen Startsignale. Pausierte Automationen werden dadurch nicht fortgesetzt.
 
 ### Meilensteine und Zuständigkeit
 
@@ -227,9 +157,9 @@ führt ergänzende Code-/Testbesitzer.
 
 Jede Zeile ist ein Agentenauftrag zusammen mit den obigen Eingaben/Rollen.
 Voraussetzungen stehen in der Reihenfolge-/Terminspalte unten. M1 ist als früher
-Funktionsbefund geprüft; P03 beginnt mit dem konkret beobachteten Shutdownfehler.
+Funktionsbefund geprüft; Shutdown, frühe Importstilllegung und Queueklärung sind enge abgeschlossene Anschlüsse. P03 enthält weiterhin die übrige G1-Qualifikation.
 Die übrige Aufwandsspanne für P03 bleibt 2–4 Stunden; P04 und spätere Pakete sind
-noch nicht begonnen. Der frühere P03-Start nutzt den M1-Vorsprung ohne Wartezeit.
+im übernommenen Plan als nächste Arbeit benannt. Der aktuelle Umfang wird vor Fortsetzung gegen die oben verlinkten Abschlüsse abgeglichen.
 
 | Paket / Kompetenz | Ergebnis und Eingaben | Prüfkriterium / Schnittstelle |
 | --- | --- | --- |
@@ -354,8 +284,8 @@ und keine 14 obligatorischen Vorpakete. Gezielte Zuordnung:
 - Vor P02 nur ein konkret sicherheits- oder aussagekritischer Defekt; keine pauschale Vorqualifikation.
 
 Nach **jeder** Integration GitHub-Releasezählung prüfen. Live geprüft am
-27.10.2026 um 14:07: Basistag `v0.192.0`, **8 PRs** mit Mergecommit nach diesem
-Tag in Main (#1413–1416, #1418–1421); Schwelle 10 noch nicht erreicht.
+27.10.2026 um 14:34: Basistag `v0.192.0`, **7 PRs** mit Mergecommit nach diesem
+Tag in Main (#1413–1416, #1418–1420); Schwelle 10 noch nicht erreicht.
 Eine früher erreichte Pflichtschwelle zieht P15 bzw. die nötigen Releaseanteile
 vor, statt bis M5 zu warten. Zusätzliche Veröffentlichung und CI-Zeit erscheinen
 dann in der betroffenen Timeline. Fehlende Signierung/GPU-/Paketbelege sind

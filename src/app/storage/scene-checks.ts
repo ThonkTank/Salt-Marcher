@@ -1,6 +1,6 @@
 import { createHash, randomInt, randomUUID } from 'node:crypto';
 import type { SceneCheck, SceneCheckCommand, SceneChecks } from '../runtime/scene-check-contracts';
-import { readLiveScene } from './live';
+import { readLiveScene } from './live-read';
 import { formulaOutcome, parseDiceFormula } from '../shared/dice-formula';
 
 const json = (value: unknown) => JSON.stringify(value),

@@ -5,11 +5,11 @@ import type {
 } from '../campaign/location-notebook-contracts';
 import { calendarDate } from '../runtime/world-model';
 import { calendarEvents } from './calendar-events';
-import { readWorldCalendar } from './world';
+import { readWorldCalendar } from './world-calendar-read';
 import { readWorldSources } from './world-sources';
 import { deskContent } from './scene-desk';
 import { readNarrative } from './narrative';
-import { readPreparedGroup } from './session';
+import { readPreparedGroup } from './session-read';
 import { readShop, shopRecord } from './items';
 import { npcPositionReader, npcIdsAtLocation } from './npc-world';
 function locationContent(db: any, cam: string, id: string) {

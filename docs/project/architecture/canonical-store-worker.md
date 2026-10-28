@@ -60,6 +60,10 @@ vorübergehenden Wechsel auf die Graphvorschau-Verbindung.
 Öffentliche Store-Signaturen, Worker-Allowlist und Preload-Fähigkeiten ändern sich
 hierdurch nicht. Diese interne Aufteilung ist kein neuer Transport oder Fehlerkanal.
 
+Die fachlichen Leser, lokalen Operationen und übergreifenden Abläufe sind in
+[Fachliche Speicherbesitzer](storage-ownership.md) mit ihren Rückimportgrenzen
+beschrieben.
+
 ## Aufträge, Fehler und Schließen
 
 Der Client registriert Pending-Aufträge vor `postMessage`. Monotone Transport-IDs

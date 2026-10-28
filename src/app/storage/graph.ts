@@ -1,3 +1,10 @@
+import {
+  checkedRow,
+  checkedQuery,
+  sqliteValue,
+  type SqliteDatabase,
+  type SqliteRow,
+} from './sqlite-connection';
 import Database from 'better-sqlite3';
 import { createHash } from 'node:crypto';
 import { mkdtempSync, rmSync } from 'node:fs';
@@ -6,7 +13,7 @@ import { join } from 'node:path';
 import type { GraphLayout, GraphView } from '../atlas/graph-contracts';
 import { validateGraphLayout } from '../atlas/graph-contracts';
 import type { GraphPreviewState } from '../shared/contracts';
-import { dungeonGeometry } from './dungeon-play';
+import { dungeonGeometry } from './dungeon-geometry-read';
 export const graphTables = [
   'drawing_floor',
   'room',
@@ -20,7 +27,7 @@ export const graphTables = [
   'dungeon_graph_layout',
   'dungeon_trigger_field',
 ];
-export function installGraph(db: any) {
+export function installGraph(db: SqliteDatabase) {
   db.exec(
     `CREATE TABLE IF NOT EXISTS dungeon_graph_layout(campaign_id TEXT NOT NULL,id TEXT NOT NULL,scope_id TEXT NOT NULL,revision INTEGER NOT NULL,payload TEXT NOT NULL,checksum TEXT NOT NULL,PRIMARY KEY(campaign_id,id),FOREIGN KEY(campaign_id,scope_id) REFERENCES scope(campaign_id,id)) STRICT;`,
   );
@@ -34,7 +41,7 @@ function checkedGraphRow(r: any): GraphLayout {
     throw new Error('Graphidentität widersprüchlich.');
   return layout;
 }
-export function graphLayout(db: any, cam: string, scopeId: string): GraphLayout {
+export function graphLayout(db: SqliteDatabase, cam: string, scopeId: string): GraphLayout {
   const row = db
     .prepare('SELECT * FROM dungeon_graph_layout WHERE campaign_id=? AND scope_id=?')
     .get(cam, scopeId);
@@ -42,7 +49,7 @@ export function graphLayout(db: any, cam: string, scopeId: string): GraphLayout 
     ? { ...checkedGraphRow(row), stored: true }
     : { stored: false, id: scopeId, revision: 0, scopeId, positions: [], intents: [] };
 }
-export function validateGraphLayouts(db: any) {
+export function validateGraphLayouts(db: SqliteDatabase) {
   for (const row of db.prepare('SELECT * FROM dungeon_graph_layout').iterate())
     checkedGraphRow(row);
 }
@@ -50,7 +57,7 @@ export function validateGraphHistoryRow(row: any) {
   checkedGraphRow(row);
 }
 export function graphView(
-  db: any,
+  db: SqliteDatabase,
   cam: string,
   scopeId: string,
   preview: GraphPreviewState | null = null,
@@ -58,7 +65,7 @@ export function graphView(
   return { geometry: dungeonGeometry(db, cam), layout: graphLayout(db, cam, scopeId), preview };
 }
 const quote = (s: string) => '"' + s.replaceAll('"', '""') + '"';
-function scopeRows(db: any, cam: string, scopeId: string, table: string) {
+function scopeRows(db: SqliteDatabase, cam: string, scopeId: string, table: string) {
   return db
     .prepare(
       'SELECT * FROM ' +
@@ -68,7 +75,7 @@ function scopeRows(db: any, cam: string, scopeId: string, table: string) {
     )
     .iterate(cam, scopeId);
 }
-function stamp(db: any, cam: string, scopeId: string) {
+function stamp(db: SqliteDatabase, cam: string, scopeId: string) {
   const hash = createHash('sha256');
   for (const table of graphTables) {
     hash.update(table);
@@ -82,7 +89,7 @@ export class GraphShadow {
   readonly basis: string;
   phase: 'graph' | 'raster' = 'graph';
   constructor(
-    readonly source: any,
+    readonly source: SqliteDatabase,
     readonly campaignId: string,
     readonly scopeId: string,
   ) {
@@ -112,15 +119,20 @@ export class GraphShadow {
         'room_draft',
       ];
       for (const table of tables) {
-        const schema = source
-          .prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name=?")
-          .get(table);
+        const schema = checkedQuery(
+          source,
+          "SELECT sql FROM sqlite_master WHERE type='table' AND name=?",
+          { sql: 'text' },
+        ).get(table);
         if (!schema) throw new Error('Graphgrundlage fehlt: ' + table);
         this.db.exec(schema.sql);
       }
       this.db
         .transaction(() => {
-          const insert = (table: string, row: any) => {
+          const insert = (table: string, value: unknown) => {
+            if (!value || typeof value !== 'object' || Array.isArray(value))
+              throw new Error('Graphgrundlage fehlt.');
+            const row = value as SqliteRow;
             const columns = Object.keys(row);
             this.db
               .prepare(
@@ -132,7 +144,7 @@ export class GraphShadow {
                   columns.map(() => '?').join(',') +
                   ')',
               )
-              .run(...columns.map((c) => row[c]));
+              .run(...columns.map((c) => sqliteValue(row[c])));
           };
           const campaign = source.prepare('SELECT * FROM campaign WHERE id=?').get(campaignId);
           insert('campaign', { ...campaign, cursor: 0 });
@@ -151,7 +163,7 @@ export class GraphShadow {
           let bytes = 0;
           for (const table of graphTables)
             for (const row of scopeRows(source, campaignId, scopeId, table)) {
-              bytes += row.payload?.length ?? 256;
+              bytes += typeof row.payload === 'string' ? row.payload.length : 256;
               if (bytes > 64 * 1024 * 1024)
                 throw new Error(
                   'Graphvorschau für diesen Dungeon auf höchstens 64 MiB Autoreninhalt begrenzen.',
@@ -184,33 +196,44 @@ export class GraphShadow {
       );
     const changes: {
       key: { table: string; id: string; scopeId?: string; kind?: string };
-      before: any;
-      after: any;
+      before: SqliteRow | null;
+      after: SqliteRow | null;
     }[] = [];
     for (const table of graphTables) {
-      const key = (r: any) => ({
-          table,
-          id: r.id,
-          ...(table === 'drawing_floor' || table === 'drawing_hidden'
-            ? { scopeId: this.scopeId }
-            : {}),
-          ...(table === 'drawing_hidden' ? { kind: r.kind } : {}),
-        }),
-        get = (db: any, r: any) =>
-          db
-            .prepare(
-              'SELECT * FROM ' +
-                quote(table) +
-                ' WHERE campaign_id=? AND id=?' +
-                (table === 'drawing_floor' || table === 'drawing_hidden' ? ' AND scope_id=?' : '') +
-                (table === 'drawing_hidden' ? ' AND kind=?' : ''),
-            )
-            .get(
-              this.campaignId,
-              r.id,
-              ...(table === 'drawing_floor' || table === 'drawing_hidden' ? [this.scopeId] : []),
-              ...(table === 'drawing_hidden' ? [r.kind] : []),
-            ) ?? null;
+      const key = (value: unknown) => {
+          const r = checkedRow(value, { id: 'text' });
+          return {
+            table,
+            id: r.id,
+            ...(table === 'drawing_floor' || table === 'drawing_hidden'
+              ? { scopeId: this.scopeId }
+              : {}),
+            ...(table === 'drawing_hidden'
+              ? { kind: checkedRow(value, { kind: 'text' }).kind }
+              : {}),
+          };
+        },
+        get = (db: SqliteDatabase, value: unknown) => {
+          const r = checkedRow(value, { id: 'text' });
+          return (
+            db
+              .prepare(
+                'SELECT * FROM ' +
+                  quote(table) +
+                  ' WHERE campaign_id=? AND id=?' +
+                  (table === 'drawing_floor' || table === 'drawing_hidden'
+                    ? ' AND scope_id=?'
+                    : '') +
+                  (table === 'drawing_hidden' ? ' AND kind=?' : ''),
+              )
+              .get(
+                this.campaignId,
+                r.id,
+                ...(table === 'drawing_floor' || table === 'drawing_hidden' ? [this.scopeId] : []),
+                ...(table === 'drawing_hidden' ? [checkedRow(value, { kind: 'text' }).kind] : []),
+              ) ?? null
+          );
+        };
       for (const row of scopeRows(this.source, this.campaignId, this.scopeId, table)) {
         const after = get(this.db, row);
         if (JSON.stringify(row) !== JSON.stringify(after))

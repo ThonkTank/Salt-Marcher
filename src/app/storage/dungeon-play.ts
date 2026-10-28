@@ -37,9 +37,9 @@ import {
   addDungeonTrace,
 } from './dungeon-senses';
 import type { CombatCommand } from '../runtime/combat-contracts';
-import { readPreparedGroup } from './session';
+import { readPreparedGroup } from './session-read';
 import { npcDungeonPose, placeNpcDungeon } from './npc-dungeon';
-import { createHash, randomUUID } from 'node:crypto';
+import { randomUUID } from 'node:crypto';
 import type {
   DungeonCommand,
   DungeonGeometry,
@@ -52,17 +52,21 @@ import type {
 } from '../atlas/dungeon-contracts';
 import type { PlayerObserver, PlayerSettings } from '../runtime/player-contracts';
 import type { LiveCommand } from '../runtime/live-contracts';
-import { readLive, readLiveScene } from './live';
-import { position, savePosition } from './world';
-import { drawingRoom, drawingView, activateDungeonFeature } from './drawing';
+import { readLive, readLiveScene } from './live-read';
+import { position } from './scene-position';
+import { savePosition } from './world-state';
+import { activateDungeonFeature } from './drawing';
+import { drawingView } from './drawing-read';
 import { npcPosition } from './npc-world';
 import { planDungeon, perception, centerInRoom, unionPerception } from '../atlas/dungeon-model';
 import { inside, carveRoom } from '../atlas/drawing-model';
-const hash = (s: string) => createHash('sha256').update(s).digest('hex'),
-  parsed = (r: any) => {
-    if (!r || hash(r.payload) !== r.checksum) throw new Error('Dungeonlaufstand beschädigt.');
-    return JSON.parse(r.payload);
-  };
+import { hash, dungeonGeometry, dungeonGeometryBasis } from './dungeon-geometry-read';
+export { dungeonGeometry, dungeonGeometryBasis } from './dungeon-geometry-read';
+const parsed = (r: any) => {
+  if (!r || hash(r.payload) !== r.checksum) throw new Error('Dungeonlaufstand beschädigt.');
+  return JSON.parse(r.payload);
+};
+
 export function installDungeonPlaySchema(db: any) {
   installDungeonPace(db);
   db.exec(`CREATE TABLE IF NOT EXISTS dungeon_journey(campaign_id TEXT NOT NULL,id TEXT NOT NULL,scene_id TEXT NOT NULL,revision INTEGER NOT NULL,payload TEXT NOT NULL,checksum TEXT NOT NULL,PRIMARY KEY(campaign_id,id),FOREIGN KEY(campaign_id,scene_id) REFERENCES live_scene(campaign_id,id)) STRICT;
@@ -71,6 +75,7 @@ CREATE TABLE IF NOT EXISTS dungeon_reveal(campaign_id TEXT NOT NULL,character_id
 CREATE TABLE IF NOT EXISTS npc_dungeon_position(campaign_id TEXT NOT NULL,actor_id TEXT NOT NULL,payload TEXT NOT NULL,checksum TEXT NOT NULL,PRIMARY KEY(campaign_id,actor_id),FOREIGN KEY(campaign_id,actor_id) REFERENCES npc_position(campaign_id,actor_id)) STRICT;
 CREATE TABLE IF NOT EXISTS dungeon_receipt(campaign_id TEXT NOT NULL REFERENCES campaign(id),command_id TEXT PRIMARY KEY,fingerprint TEXT NOT NULL) STRICT;`);
 }
+
 export function dungeonMapView(
   db: any,
   cam: string,
@@ -138,37 +143,7 @@ export function dungeonMapView(
     traceRules: dungeonTraceRules(db, cam, scene?.id ?? null),
   };
 }
-export function dungeonGeometry(db: any, cam: string): DungeonGeometry {
-  const drawing = drawingView(db, cam);
-  for (const key of drawing.keyContent ?? []) {
-    if (key.kind !== 'room' || !key.secret) continue;
-    const style = drawing.styles.find((s) => s.id === key.id);
-    if (style) style.secret = true;
-    else
-      drawing.styles.push({
-        id: key.id,
-        revision: 0,
-        scopeId: key.scopeId,
-        ceilingMeters: 3.048,
-        fill: '#c5b998',
-        wall: '#56493e',
-        publicLabel: '',
-        secret: true,
-      });
-  }
-  const rooms = db
-      .prepare(
-        `SELECT r.id FROM room r WHERE r.campaign_id=? AND NOT EXISTS(SELECT 1 FROM drawing_hidden h WHERE h.campaign_id=r.campaign_id AND h.id=r.id AND h.kind='room' AND h.hidden=1) AND NOT EXISTS(SELECT 1 FROM drawing_hidden h WHERE h.campaign_id=r.campaign_id AND h.id=r.floor_id AND h.scope_id=r.scope_id AND h.kind='floor' AND h.hidden=1)`,
-      )
-      .all(cam)
-      .map((r: any) => drawingRoom(db, cam, r.id)),
-    floors = db
-      .prepare(
-        `SELECT f.id,f.scope_id scopeId,f.name,f.source_elevation elevation FROM drawing_floor f WHERE f.campaign_id=? AND NOT EXISTS(SELECT 1 FROM drawing_hidden h WHERE h.campaign_id=f.campaign_id AND h.id=f.id AND h.scope_id=f.scope_id AND h.kind='floor' AND h.hidden=1)`,
-      )
-      .all(cam);
-  return { rooms, floors, drawing };
-}
+
 function checkedPose(g: DungeonGeometry, p: DungeonPose) {
   const room = g.rooms.find(
       (r) => r.id === p?.roomId && r.scopeId === p.scopeId && r.floorId === p.floorId,
@@ -182,25 +157,7 @@ function checkedPose(g: DungeonGeometry, p: DungeonPose) {
     );
   return p;
 }
-export function dungeonGeometryBasis(g: DungeonGeometry, scopeId: string) {
-  return hash(
-    JSON.stringify({
-      rooms: g.rooms.filter((r) => r.scopeId === scopeId).map((r) => [r.id, r.revision]),
-      floors: g.floors.filter((f) => f.scopeId === scopeId),
-      passages: g.drawing.passages
-        ?.filter((p) => p.scopeId === scopeId)
-        .map((p) => [p.id, p.revision]),
-      paths: g.drawing.paths?.filter((p) => p.scopeId === scopeId).map((p) => [p.id, p.revision]),
-      elements: g.drawing.elements
-        .filter((e) => e.scopeId === scopeId)
-        .map((e) => [e.id, e.revision]),
-      triggerFields: g.drawing.triggerFields
-        ?.filter((f) => f.scopeId === scopeId)
-        .map((f) => [f.id, f.revision]),
-      styles: g.drawing.styles.filter((e) => e.scopeId === scopeId).map((e) => [e.id, e.revision]),
-    }),
-  );
-}
+
 function checkedPartial(j: DungeonJourney) {
   const elapsed = j.segmentElapsedSeconds;
   if (
@@ -215,6 +172,7 @@ function checkedPartial(j: DungeonJourney) {
     throw new Error('Gespeicherter Rundenfortschritt ungültig.');
   return j;
 }
+
 function activeJourney(db: any, cam: string, sceneId: string) {
   const r = db
     .prepare(
@@ -223,6 +181,7 @@ function activeJourney(db: any, cam: string, sceneId: string) {
     .get(cam, sceneId);
   return r ? checkedPartial(parsed(r)) : null;
 }
+
 function saveJourney(db: any, cam: string, j: DungeonJourney) {
   const p = JSON.stringify(j);
   db.prepare(
@@ -242,6 +201,7 @@ function keyHeading(db: any, cam: string, sceneId: string) {
   }
   return null;
 }
+
 export function dungeonView(db: any, cam: string): DungeonView {
   const live = readLive(db, cam),
     scene = live.scene,
@@ -313,6 +273,7 @@ export function dungeonView(db: any, cam: string): DungeonView {
     traceRules: dungeonTraceRules(db, cam, scene?.id ?? null),
   };
 }
+
 export function previewDungeon(db: any, cam: string, r: DungeonRequest): DungeonPreview {
   if (r.useGroupPace !== undefined && typeof r.useGroupPace !== 'boolean')
     throw new Error('Tempoquelle prüfen.');
@@ -399,6 +360,7 @@ export function previewDungeon(db: any, cam: string, r: DungeonRequest): Dungeon
     segmentSeconds,
   };
 }
+
 function memory(db: any, cam: string, o: PlayerObserver, pose: DungeonPose) {
   const slice = Math.round(pose.z / 1.524),
     row = db
@@ -420,6 +382,7 @@ function memory(db: any, cam: string, o: PlayerObserver, pose: DungeonPose) {
     .get(cam, o.characterId, pose.scopeId, pose.floorId);
   return legacy ? parsed(legacy).polygons : [];
 }
+
 function remember(db: any, cam: string, id: string, pose: DungeonPose, polygons: any[]) {
   const payload = JSON.stringify({ polygons });
   db.prepare(
@@ -435,6 +398,7 @@ function revealed(db: any, cam: string, id: string) {
       .map((r: any) => r.room_id),
   );
 }
+
 function observerFor(db: any, cam: string, id: string): PlayerObserver {
   const row = db
     .prepare("SELECT * FROM player_record WHERE campaign_id=? AND kind='observer' AND id=?")
@@ -449,12 +413,14 @@ function observerFor(db: any, cam: string, id: string): PlayerObserver {
         eyeHeightMeters: 1.7,
       };
 }
+
 function settingsFor(db: any, cam: string): PlayerSettings {
   const r = db
     .prepare("SELECT * FROM player_record WHERE campaign_id=? AND kind='settings' AND id='main'")
     .get(cam);
   return r ? parsed(r) : ({ light: 'auto', labels: false } as PlayerSettings);
 }
+
 export function learnDungeon(db: any, cam: string, sceneId: string, geometry?: DungeonGeometry) {
   const scene = readLiveScene(db, cam, sceneId),
     p = position(db, cam, sceneId).dungeon;
@@ -467,6 +433,7 @@ export function learnDungeon(db: any, cam: string, sceneId: string, geometry?: D
     if (seen.length) remember(db, cam, id, p, unionPerception(memory(db, cam, o, p), seen));
   }
 }
+
 export function dungeonDisplay(
   db: any,
   cam: string,
@@ -645,6 +612,7 @@ export function dungeonDisplay(
     tracks,
   };
 }
+
 /** The receipt is authoritative even if rebuilding the travel view currently fails. */
 export function dungeonCommandState(
   db: any,
@@ -664,6 +632,7 @@ export function dungeonCommandState(
         : 'conflict',
   };
 }
+
 export function executeDungeon(
   db: any,
   c: DungeonCommand,
@@ -1390,6 +1359,7 @@ export function executeDungeon(
     })
     .immediate();
 }
+
 export function validateDungeonPlay(db: any) {
   validateDungeonPaces(db);
   for (const row of db.prepare('SELECT * FROM dungeon_journey').iterate()) {

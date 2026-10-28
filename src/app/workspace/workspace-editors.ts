@@ -64,6 +64,9 @@ export function createWorkspaceEditors(host: Host) {
       activate: { order: 0, run: host.atlas.activate },
       flush: (r) => r === 'checkpoint' || host.atlas.flush(),
       deactivate: host.atlas.deactivate,
+      // Main cancels source reads during activation; retire their renderer
+      // generation before that asynchronous boundary can return a cancellation.
+      suspendBeforeActivation: true,
     },
     {
       id: 'playback',

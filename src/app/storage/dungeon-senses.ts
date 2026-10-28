@@ -7,7 +7,7 @@ import {
   trackSurfaces,
 } from '../runtime/track-model';
 import type { DungeonTraceRules } from '../atlas/dungeon-contracts';
-import { readPreparedGroup } from './session';
+import { readPreparedGroup } from './session-read';
 import { createHash, randomUUID } from 'node:crypto';
 import type {
   DungeonGeometry,
@@ -19,8 +19,8 @@ import type {
 } from '../atlas/dungeon-contracts';
 import { perception, planDungeon } from '../atlas/dungeon-model';
 import { inside } from '../atlas/drawing-model';
-import { readLiveScene } from './live';
-import { position } from './world';
+import { readLiveScene } from './live-read';
+import { position } from './scene-position';
 const hash = (s: string) => createHash('sha256').update(s).digest('hex'),
   parsed = (r: any) => {
     if (!r || hash(r.payload) !== r.checksum) throw new Error('Dungeonwahrnehmung beschädigt.');

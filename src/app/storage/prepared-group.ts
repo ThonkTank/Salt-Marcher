@@ -1,16 +1,16 @@
-import { createHash } from 'node:crypto';
+import { decodeStored } from './stored-payload';
+import { checkedRow } from './sqlite-connection';
+import * as shape from './stored-shapes';
+import { checkedHealth } from '../runtime/progression';
+import { validateEncounterPlanInput } from '../catalog/encounter-contracts';
+import { rawCreature } from '../../features/catalog/creature-catalog';
 import type { PreparedGroup } from '../campaign/session-contracts';
 
-export function checkedPreparedGroupRow(row: any): PreparedGroup {
-  if (!row || createHash('sha256').update(row.payload).digest('hex') !== row.checksum)
-    throw new Error('Spielabend-Inhalt fehlt oder ist beschädigt.');
-  const g = JSON.parse(row.payload) as PreparedGroup,
+export function checkedPreparedGroupValue(value: unknown): PreparedGroup {
+  const g = shape.prepared_group(value),
     id = (v: unknown) => typeof v === 'string' && !!v.trim() && v.length <= 1000;
   if (
     !g ||
-    g.id !== row.id ||
-    g.revision !== row.revision ||
-    g.locationId !== row.location_id ||
     !id(g.id) ||
     !Number.isSafeInteger(g.revision) ||
     g.revision < 1 ||
@@ -31,5 +31,24 @@ export function checkedPreparedGroupRow(row: any): PreparedGroup {
     new Set(g.actors.map((a) => a.id)).size !== g.actors.length
   )
     throw new Error('Gruppenzuordnung, Revision oder Figurenliste beschädigt.');
+  validateEncounterPlanInput(g.plan);
+  g.plan.sources.forEach(rawCreature);
+  for (const a of g.actors) {
+    checkedHealth(a);
+    if (
+      !g.plan.entries.some((e) => e.id === a.entryId && e.creatureId === a.creatureId) ||
+      !Number.isSafeInteger(a.revision) ||
+      a.revision < 1
+    )
+      throw new Error('Gruppenfigur widerspricht ihrer Eintragsbindung.');
+  }
+  return g;
+}
+
+export function checkedPreparedGroupRow(value: unknown): PreparedGroup {
+  const row = checkedRow(value, { id: 'text', revision: 'integer', location_id: 'nullable-text' }),
+    g = decodeStored(value, checkedPreparedGroupValue);
+  if (g.id !== row.id || g.revision !== row.revision || g.locationId !== row.location_id)
+    throw new Error('Gruppenzuordnung widersprüchlich.');
   return g;
 }
