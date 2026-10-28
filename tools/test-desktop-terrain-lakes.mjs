@@ -261,6 +261,45 @@ await runNativeProbe({ root, output, name: 'terrain-lakes' }, async (native) => 
   async function draftState(p) {
     return page.evaluate((p) => window.__qaReadLake(p), p);
   }
+  // Same preserved WebGL read/PNG row flip as the terrain-stroke probe. Read a
+  // small scene patch before pointerup; encode only after input has ended.
+  async function pixelPatch(point) {
+    return page.evaluate((point) => {
+      const canvas = document.querySelector('#atlas-terrain-spatial canvas'),
+        gl = canvas.getContext('webgl2'),
+        rect = canvas.getBoundingClientRect(),
+        size = 128;
+      const cx = Math.round(((point.x - rect.left) / rect.width) * gl.drawingBufferWidth),
+        cy = Math.round((1 - (point.y - rect.top) / rect.height) * gl.drawingBufferHeight);
+      const left = Math.max(0, Math.min(gl.drawingBufferWidth - size, cx - size / 2)),
+        bottom = Math.max(0, Math.min(gl.drawingBufferHeight - size, cy - size / 2));
+      const bytes = new Uint8Array(size * size * 4),
+        previous = gl.getParameter(gl.READ_FRAMEBUFFER_BINDING);
+      gl.bindFramebuffer(gl.READ_FRAMEBUFFER, null);
+      gl.readPixels(left, bottom, size, size, gl.RGBA, gl.UNSIGNED_BYTE, bytes);
+      gl.bindFramebuffer(gl.READ_FRAMEBUFFER, previous);
+      return { bytes: Array.from(bytes), sampledAt: performance.now(), size, left, bottom };
+    }, point);
+  }
+  async function savePatch(name, patch) {
+    const { PNG } = require('pngjs'),
+      png = new PNG({ width: patch.size, height: patch.size });
+    for (let y = 0; y < patch.size; y++)
+      for (let x = 0; x < patch.size; x++)
+        for (let c = 0; c < 4; c++)
+          png.data[(y * patch.size + x) * 4 + c] =
+            patch.bytes[((patch.size - y - 1) * patch.size + x) * 4 + c];
+    const bytes = PNG.sync.write(png);
+    await writeFile(path.join(output, name), bytes);
+    return {
+      file: name,
+      sha256: sha(bytes),
+      sampledAt: patch.sampledAt,
+      size: patch.size,
+      left: patch.left,
+      bottom: patch.bottom,
+    };
+  }
   async function stroke(
     p,
     duration,
@@ -281,6 +320,8 @@ await runNativeProbe({ root, output, name: 'terrain-lakes' }, async (native) => 
       beforeRaw = records(),
       beforeRecords = clean(beforeRaw);
     const beforeDraft = await draftState(p);
+    const beforePixels = holdCheck ? await pixelPatch(pt) : null;
+    let heldEvidence = null;
     if (unknown) await native.app.evaluate(() => (globalThis.__qaLake.loseNext = true));
     await page.evaluate(
       (p) => {
@@ -309,11 +350,32 @@ await runNativeProbe({ root, output, name: 'terrain-lakes' }, async (native) => 
         one.wetPixels > beforeDraft.wetPixels,
         'A new water material patch must appear before pointerup',
       );
-      await native.capture(page, label + '-holding');
-      gestures.push({ label, one, beforeDraft });
+      const pixels = await pixelPatch(pt);
+      let changedPixels = 0;
+      for (let i = 0; i < pixels.bytes.length; i += 4)
+        if (
+          Math.abs(pixels.bytes[i] - beforePixels.bytes[i]) +
+            Math.abs(pixels.bytes[i + 1] - beforePixels.bytes[i + 1]) +
+            Math.abs(pixels.bytes[i + 2] - beforePixels.bytes[i + 2]) >
+          12
+        )
+          changedPixels++;
+      assert(changedPixels > 100, 'Actual GPU terrain pixels must change before pointerup');
+      heldEvidence = { one, pixels, changedPixels };
     }
     await page.waitForTimeout(Math.max(1, duration - (performance.now() - nodeDownAt)));
     await page.mouse.up();
+    if (heldEvidence)
+      gestures.push({
+        label,
+        one: heldEvidence.one,
+        beforeDraft,
+        gpu: {
+          before: await savePatch(label + '-before-gpu.png', beforePixels),
+          holding: await savePatch(label + '-holding-gpu.png', heldEvidence.pixels),
+          changedPixels: heldEvidence.changedPixels,
+        },
+      });
     if (unknown) {
       const end = Date.now() + 60000;
       while (cursor() !== before + 1 && Date.now() < end) await page.waitForTimeout(100);
@@ -367,8 +429,13 @@ await runNativeProbe({ root, output, name: 'terrain-lakes' }, async (native) => 
     assert.equal(input[1].type, 'pointerup');
     assert.equal(input[0].x, input[1].x);
     assert.equal(input[0].y, input[1].y);
-    if (holdCheck)
+    if (holdCheck) {
       assert(Math.abs(input[1].t - input[0].t - duration) < 250, JSON.stringify(input));
+      assert(
+        heldEvidence.pixels.sampledAt < input[1].t,
+        'Holding GPU patch must precede actual pointerup',
+      );
+    }
     gestures.push({
       label,
       p,
