@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import type { NoteRoomUsesPage } from '../campaign/preparation-contracts';
 import { validateRoom } from '../shared/room-validation';
-import { drawingRoomFromRow } from './drawing';
+import { drawingRoomFromRow } from './drawing-read';
 import { checkedKeyRow } from './dungeon-key';
 
 const registered = new WeakSet<object>();

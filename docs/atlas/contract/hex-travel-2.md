@@ -2,8 +2,17 @@
 
 Status: Geltender Fachvertrag; offene Erweiterungen sind als Ziele beschrieben.
 Owner: atlas
-Last Reviewed: 2026-10-24 (Struktur und Quellen; Fachabnahme separat)
+Last Reviewed: 2026-10-28 (aktuelle Einstiege und historische Adapterstände; Fachabnahme separat)
 Source of Truth: Dieses Dokument besitzt das benannte Thema; Code belegt den Iststand, das Abnahmeregister den Prüfstand.
+
+Aktueller Einstieg: [Leiten](../guide.md#leiten),
+[Reisewriter und Prüfwege](../architecture/rendering.md#reise-ändern) und
+[Checkpoint/Wiederaufnahme](hex-travel-3.md#checkpoint-und-wiederaufnahme-auf-der-aktuellen-atlasfläche).
+Die versionierten Abschnitte halten die Entwicklung der Reiseadapter fest.
+Mehrkartenwahl, separate alte Hexfläche und beschriebene Drag-Zielzellen sind
+Adapterstände; sie fordern keinen Gelände-Zellwriter. Die fachlichen Regeln zu
+Fokus, Passierbarkeit, Zeit, expliziter Bewegung und Quellenbindung bleiben gültig.
+Der aktuelle Atlas verwendet genau eine metrische Karte je Kampagne.
 
 ## Getrennte Live-Mitte und Reisekonsole (0.141)
 

@@ -8,14 +8,21 @@ import { createRequire } from 'node:module';
 import { buildSync } from '../helpers/build.mjs';
 
 buildSync({
-  entryPoints: ['src/app/storage/store.ts'],
+  stdin: {
+    contents:
+      "export { CampaignStore } from './src/app/storage/store'; export { refreshMusicContext } from './src/app/storage/music';",
+    resolveDir: process.cwd(),
+    loader: 'ts',
+  },
   outfile: '.build/music-history-store.cjs',
   bundle: true,
   platform: 'node',
   format: 'cjs',
   external: ['better-sqlite3'],
 });
-const { CampaignStore } = createRequire(import.meta.url)('../../.build/music-history-store.cjs');
+const { CampaignStore, refreshMusicContext } = createRequire(import.meta.url)(
+  '../../.build/music-history-store.cjs',
+);
 function fixture(t) {
   const root = mkdtempSync(path.join(tmpdir(), 'music-history-')),
     file = path.join(root, 'workbench.sqlite');
@@ -42,6 +49,7 @@ function fixture(t) {
     });
   });
   const x = {
+    root,
     assets,
     campaign,
     workspace,
@@ -132,4 +140,102 @@ test('new selections and forward queue transitions still contribute to the histo
   const back = x.execute({ kind: 'transport', operation: 'back' });
   assert.equal(back.state.current.assetId, a.id);
   assert.deepEqual(back.state.history, []);
+});
+
+function corruptAsset(x, id) {
+  const row = x.store.db.prepare('SELECT payload FROM audio_asset WHERE id=?').get(id),
+    value = JSON.parse(row.payload);
+  value.moods = { danger: 'not-a-number' };
+  const payload = JSON.stringify(value);
+  x.store.db
+    .prepare('UPDATE audio_asset SET payload=?,checksum=? WHERE id=?')
+    .run(payload, createHash('sha256').update(payload).digest('hex'), id);
+}
+
+test('corrupt correctly hashed candidate cannot replace a confirmed automatic selection', (t) => {
+  const x = fixture(t);
+  x.execute({
+    kind: 'settings',
+    autoplay: true,
+    autoAmbience: false,
+    volume: 0.2,
+    ambienceVolume: 0.2,
+    fadeSeconds: 0,
+    loop: 'none',
+  });
+  corruptAsset(x, x.assets[1].id);
+  // A changed context forces candidate discovery instead of the unchanged-context fast path.
+  const row = x.store.db
+      .prepare('SELECT payload FROM music_state WHERE campaign_id=?')
+      .get(x.campaign.id),
+    state = JSON.parse(row.payload);
+  state.contextSignature = '';
+  const payload = JSON.stringify(state);
+  x.store.db
+    .prepare('UPDATE music_state SET payload=?,checksum=? WHERE campaign_id=?')
+    .run(payload, createHash('sha256').update(payload).digest('hex'), x.campaign.id);
+  const before = x.store.db.serialize();
+  refreshMusicContext(x.store.db, x.root, x.campaign.id);
+  assert.ok(
+    x.store.music(x.workspace.token).problems.some((problem) => problem.includes(x.assets[1].id)),
+  );
+  assert.ok(before.equals(x.store.db.serialize()));
+});
+
+test('corrupt correctly hashed forced ambience stays visible as a problem without rewriting state', (t) => {
+  const x = fixture(t),
+    original = x.assets[0];
+  x.store.executeMusic(
+    x.command({
+      kind: 'asset',
+      asset: { ...original, kind: 'ambience' },
+      expectedRevision: original.revision,
+    }),
+  );
+  x.execute({ kind: 'ambience', assetId: original.id, operation: 'add' });
+  corruptAsset(x, original.id);
+  const before = x.store.db.serialize(),
+    view = x.store.music(x.workspace.token);
+  assert.ok(view.problems.some((problem) => problem.includes(original.id)));
+  assert.deepEqual(view.layers, []);
+  assert.deepEqual(view.state.forcedAmbience, [original.id]);
+  assert.ok(before.equals(x.store.db.serialize()));
+});
+
+test('corrupt correctly hashed automatic ambience reports its error and preserves confirmed state', (t) => {
+  const x = fixture(t),
+    original = x.assets[0];
+  x.store.executeMusic(
+    x.command({
+      kind: 'asset',
+      asset: { ...original, kind: 'ambience' },
+      expectedRevision: original.revision,
+    }),
+  );
+  x.execute({
+    kind: 'settings',
+    autoplay: false,
+    autoAmbience: true,
+    volume: 0.2,
+    ambienceVolume: 0.2,
+    fadeSeconds: 0,
+    loop: 'none',
+  });
+  corruptAsset(x, original.id);
+  const before = x.store.db.serialize();
+  refreshMusicContext(x.store.db, x.root, x.campaign.id);
+  const view = x.store.music(x.workspace.token);
+  assert.ok(view.problems.some((problem) => problem.includes(original.id)));
+  assert.ok(before.equals(x.store.db.serialize()));
+});
+
+test('present playback position obeys the writer range instead of becoming an unchecked projection', (t) => {
+  const x = fixture(t);
+  const view = x.execute({ kind: 'select', assetId: x.assets[0].id });
+  x.store.db
+    .prepare('INSERT INTO music_position VALUES(?,?,?)')
+    .run(x.campaign.id, view.state.current.playbackId, -1);
+  const before = x.store.db.serialize();
+  assert.throws(() => x.store.music(x.workspace.token));
+  assert.ok(before.equals(x.store.db.serialize()));
 });

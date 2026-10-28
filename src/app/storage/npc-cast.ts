@@ -3,9 +3,10 @@ import type { NpcCastQuery, NpcCastPage, NpcDossier } from '../campaign/npc-cast
 import { readNpcPlanLocation } from './npc-daily-places';
 import { dailyPlanAt } from '../campaign/npc-daily-plan';
 import { readNpcPlaces } from './npc-places';
-import { readNpc, readNpcs } from './npcs';
-import { readLiveScene } from './live';
-import { readWorldCalendar } from './world';
+import { readNpcs } from './npcs';
+import { readNpc } from './npc-read';
+import { readLiveScene } from './live-read';
+import { readWorldCalendar } from './world-calendar-read';
 import { calendarDate } from '../runtime/world-model';
 import { checkedLocationDocument } from '../../features/location/location-schema';
 import { worldNoteDocument } from '../../features/world/world-notes';

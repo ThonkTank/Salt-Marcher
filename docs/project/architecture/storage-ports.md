@@ -2,7 +2,7 @@
 
 Status: Current; technische Nachweise und Produktabnahme bleiben getrennt.
 Owner: project
-Last Reviewed: 2026-10-26
+Last Reviewed: 2026-10-27 (kanonische Werteprüfung; Fachabnahme separat)
 Source of Truth: `src/app/storage/sqlite-connection.ts` und die benannten Fachmodule.
 
 ## Anschluss und Lesegrenze
@@ -29,6 +29,58 @@ benötigt lediglich die aktive Campaign-ID. Die Reise verlangt einen `LiveScene`
 Leser, der Kampagnenatlas einen `SceneWorld`-Leser. Ein beliebiges Ergebnis ist dort
 kein gültiger Anschluss. Dies ist eine Typisierung dieser Anschlüsse, keine
 Behauptung vollständig typisierter historischer Projektions- und Payloadmodelle.
+
+## Konkrete Werte an der kanonischen Grenze
+
+`CampaignStore.db` trägt den tatsächlichen Rückgabetyp von `openStoreDatabase`,
+einschließlich Dateiname, Close und Backup. `GraphShadow.db` besitzt denselben
+nativen Verbindungstyp; die Fachleser erhalten den kleineren `SqliteDatabase`-
+Vertrag. SQL-Projektionen prüfen ihre verwendeten Spalten am Leseort. Bei
+Einzelrecord-Fehlerlisten liegt die vollständige Payloadprüfung weiterhin innerhalb
+der bisherigen Fehlergrenze. Aggregate und verwendete PRAGMA-Skalare werden
+geprüft; Binärspalten bleiben Bytearrays und werden am Buffer-Anschluss kopiert.
+
+`stored-payload.ts` prüft die SQL-Hülle und SHA-256 über **unveränderte** gespeicherte
+Bytes und liefert nach JSON-Parsing `unknown`. `decodeStored` benötigt immer einen
+konkreten Decoder. Die früheren ungeprüften generischen `decoded<T>`-Helfer in
+Session, Generierung, Fortschritt, Kalender, Shops und Musik sind entfernt.
+
+Die konkreten Strukturdecoder in `stored-shapes.ts` verwenden den aus den
+kanonischen TypeScript-Typen erzeugten Graphen `stored-shapes.json`.
+`tools/build-stored-shapes.mjs --check` gehört zur Repositoryprüfung. Er erfasst
+Pflichtfelder, optionale Felder, verschachtelte Listen, Dictionaries und Varianten;
+Zahlen müssen endlich sein. Bekannte optionale Felder werden auch dann geprüft,
+wenn sie vorhanden sind; fehlende Pflichtfelder werden abgewiesen. Zusätzliche
+Felder bleiben erhalten, sofern der Fachvertrag sie nicht ausdrücklich verbietet.
+Der Graph normalisiert, kopiert und repariert keine Nutzwerte.
+
+Die reinen Typdefinitionen in `stored-record-types.ts` sind zugleich die Ziele
+der bisherigen Transferaliases. Transfergraph, Schema und Archivkennungen ändern
+sich dadurch nicht. Die gespeicherten Formen unterscheiden sich ausdrücklich von
+abgeleiteten Projektionen: Audio-Verfügbarkeit entsteht beim Lesen; die Kennung
+eines Shopereignisses liegt in dessen SQL-Hülle.
+
+| Fachbesitzer | Zusätzliche Prüfung nach Struktur und Prüfsumme |
+| --- | --- |
+| `session-read.ts`, `scene-read-aloud.ts` | Plan-/Visit-ID, Reihenfolge, SQL-Revision, Profilparty und Adventure-Day-Anteil, Visittexte/-verweise, Rastnachbar, Belohnung und noch im Besuch entworfene Gruppenbindung. Fehlende optionale Profile, Visitdetails und Vorlesetexte behalten ihre bisherigen Defaults. |
+| `session-result-read.ts` | Der bestehende Runprüfer bleibt einziger Besitzer für Budget, Herkunft, Quellen und Vorschlagsannahmen; Wiederverwendung liest denselben geprüften Run. |
+| `generation-read.ts`, `generation.ts` | Presetkonfiguration und Hash, Tabelleninhalt/-gewichte, Runzusammenhang und eingefrorene Quellen, passende Varianten von Register-, Beutewurf- und Begegnungsreceipts. |
+| `progression-records.ts`, `progression.ts` | Fortschritt, Gesundheit, Rast, Schatz-/Ledgeridentität und Figurenbindung; historische Fakten und Bestätigungen werden anhand ihrer eigenen gespeicherten Werte geprüft. |
+| `world-calendar-read.ts`, `world-record-read.ts`, `world-state.ts` | Kalenderbereiche und Revision, Karten-/Wetter-/Positionswerte, Reisegrundlage und Checkpoint, historische Weltbestätigung. Der Kalenderdefault gilt ausschließlich bei fehlendem Record. |
+| `items.ts`, `music.ts` | Die bestehenden Shop-, Bibliotheks-, Player-, Scene- und Subjectprüfer erhalten strukturgeprüfte Werte; Historie und Receipts erhalten ihre eigene Prüfung. Kontext liest Quellen über die passenden Besitzerdecoder. |
+| Fassade und Landschaft | Suchprojektionen, Öffnungsbeleg und ausgewählte Featurestände werden geprüft; Landschaftswerte teilen ihre reine Prüfung zwischen Writer, gezieltem Read und Backupprüfung. |
+
+`validateDatabase` verwendet diese passenden Besitzer auch für Backup-/Restore-
+und Importkandidaten. Ein vorhandener beschädigter Record wird nicht zum Default,
+übersprungen, gelöscht oder repariert. Ein beschädigter Beleg nach möglichem Commit
+bleibt ein Lesefehler und autorisiert weder `not-applied` noch einen zweiten Write.
+Einzelabfragen lösen keine globale Gesamtdatenprüfung aus. Historische Fakten werden
+nicht gegen inzwischen geänderte Preise, XP, Presets oder Quellenrevisionen gerechnet.
+
+Dies typisiert die benannten Fassadenleser und sämtliche Verbraucher der sechs
+Helfer. Es ist keine globale Bereinigung historischer `any`-Stellen, etwa in
+anderen Graph-, Live-, Scene- oder Transferoperationen. Diese Stellen und die
+vollständige Produktabnahme bleiben eigene Aufgaben.
 
 ## Fingerprints bleiben fachlich gebunden
 
@@ -69,6 +121,9 @@ Host-/Workergrenze aus [canonical-store-worker.md](canonical-store-worker.md).
 
 ## Prüfwege
 
+- `tests/shared/desktop-storage-values.test.mjs`: korrekt gehashte ungültige Profile,
+  Visitdetails, Kalender und Receipts; fehlende Defaults, exakte Texte über Neustart,
+  unveränderte Backup-/Restore-/Importoriginale und kein zweiter Write.
 - `tests/shared/storage-ports.types.ts`: falsche Writer/Leser, ungeprüfte SQL-Spalten,
   unzulässige Bindings und asynchrone Transaktionen müssen im Typcheck scheitern.
 - `tests/shared/desktop-storage-ports.test.mjs`: echte SQLite-Verbindungen, alte

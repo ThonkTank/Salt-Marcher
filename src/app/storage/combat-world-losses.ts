@@ -4,7 +4,7 @@ import type {
   CombatLossBasis,
   CombatLossCandidate,
 } from '../runtime/combat-contracts';
-import { readNpc } from './npcs';
+import { readNpc } from './npc-read';
 const hash = (s: string) => createHash('sha256').update(s).digest('hex');
 
 /** Health belongs to runtime; durable defeat is a separate, explicit GM fact. */

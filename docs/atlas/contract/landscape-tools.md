@@ -2,8 +2,17 @@
 
 Status: Geltender Fachvertrag; offene Erweiterungen sind als Ziele beschrieben.
 Owner: atlas
-Last Reviewed: 2026-10-28 (gemeinsame See-/Umlandanhebung; Fachabnahme separat)
+Last Reviewed: 2026-10-28 (aktuelle Einstiege und historische Adapterstände; Fachabnahme separat)
 Source of Truth: Dieses Dokument besitzt das benannte Thema; Code belegt den Iststand, das Abnahmeregister den Prüfstand.
+
+Aktuelle Bedienung: [guide.md](../guide.md#gelände-formen-und-ansicht-kippen).
+Aktuelle Landwerkzeuge und Datenwirkung: [R2-Vereinheitlichung](#aktuelle-landwerkzeuge--r2-vereinheitlichung-20102026).
+Codeeinstiege, kanonischer Writer und Prüfwege: [rendering.md](../architecture/rendering.md#gelände-ändern).
+Die Abschnitte zu Landmasken, vier Landpinseln und früheren Formaten dokumentieren
+historische Operationsverträge; seit dem Höhenanschluss sind sie keine aktuellen
+Werkzeug- oder Migrationsaufträge. Fachliche Wirkungen wie getrennte Farbe,
+gezieltes Radieren und Erhalt anderer Arbeit gelten weiterhin. Historische
+Laufzahlen und Nativebelege sind keine Qualifikation des heutigen Builds.
 
 Beauftragter Ausbau vom 19.10.2026. Städte, Symbole, Generator und Heightmap-Import sind ausgeschlossen. Die ursprüngliche Lieferung ließ bestehende Karten unverändert; die unten beschriebene Landmasken-Umstellung übernimmt nun explizite Gelände-/Wasserflächen.
 
@@ -26,8 +35,9 @@ auf null gerundet. Messung und Formatierung ändern keine Weltkoordinaten. Ein a
 Messergebnis bleibt bis zum Verwerfen oder Werkzeugwechsel sichtbar; der
 automatische Hex-Hinweis überschreibt es nicht.
 `tools/test-desktop-atlas-distance.mjs` prüft den integrierten metrischen Ablauf
-mit Wegkorrektur, Messung, PNG-Ausgabe und Neustart. Die noch nicht integrierte
-DnD-/Metrik-Umschaltung und weitere Live-Geometriemaße sind davon nicht abgenommen.
+mit Wegkorrektur, Messung, PNG-Ausgabe und Neustart. Dieser historische Lauf nimmt die spätere DnD-/Metrik-Umschaltung und weitere
+Live-Geometriemaße nicht ab; ihr aktueller Anschluss steht bei den
+[Maßeinheiten](../guide.md#größen-beim-bearbeiten-und-maßeinheiten).
 
 ## Implementierung und Grenzen
 

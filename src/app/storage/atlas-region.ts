@@ -53,15 +53,17 @@ import { AtlasReadCancelled, atlasReadCheckpoint } from './atlas-read-cancellati
 import { assertAtlasProjectionSource } from './atlas-shape-source';
 import { readTerritories } from './atlas-territories';
 import { atlasDisplayEntrances, atlasLocalJourney } from './atlas-travel';
-import { atlasHistoryState, atlasRoot, decodeAtlasBinding } from './campaign-atlas';
+import { atlasHistoryState, decodeAtlasBinding } from './campaign-atlas';
+import { atlasRoot } from './atlas-root-read';
 import { checkedUnit, readCityHeader, readCitySite } from './city';
-import { drawingView, roomMapStyle } from './drawing';
+import { roomMapStyle } from './drawing';
+import { drawingView } from './drawing-read';
 import { dungeonDisplay, dungeonMapView } from './dungeon-play';
 import { playerObservers, playerSettings } from './player';
 import { roomGeometries } from './room-reads';
 import { checkedQuery, checkedRow, type SqliteDatabase } from './sqlite-connection';
 import { readDungeonVolume } from './volume';
-import { readAtlasScene } from './world';
+import { readAtlasScene } from './scene-position';
 const digest = (s: string) => createHash('sha256').update(s).digest('hex');
 const parse = (value: unknown) => {
   const r = checkedRow(value, { payload: 'text', checksum: 'text' });

@@ -264,9 +264,15 @@ also names the active campaign so source and copy remain identifiable while
 working on maps.
 
 `tools/test-desktop-campaign-transfer-visit.mjs` exercises export, direct import,
-linked-note and room-key edits, normal shutdown, fresh-process reopening and
-separate continuation of source and import. It records actual browser zoom,
+linked-note edits and room selection through Atlas search, confirmed room-key
+edits, normal shutdown, fresh-process Atlas reopening and separate continuation
+of source and import. Failed region states during activation fail this visit;
+region readiness alone does not replace selecting and editing the room. It records
+actual browser zoom,
 owned process identities, bounded normal exits and fresh native window captures;
-its disposable profile honors disk-backed `TMPDIR`. Only native file selection
-is instrumented. The fault/recovery visit remains in
+its disposable profile honors disk-backed `TMPDIR`. Native file selection is
+instrumented; passive IPC metadata records request
+identity and outcome without campaign payloads. `--fail-import-atlas` supplies
+one narrow negative opening case after a confirmed import; it must fail the
+same usability assertion without reimporting. The fault/recovery visit remains in
 `tools/test-desktop-campaign-copy.mjs`; the clean visit does not replace it.

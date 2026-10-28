@@ -97,6 +97,7 @@ export class TerrainStrokeQueue {
       try {
         const ack = await this.write(structuredClone(entry.action), { ...entry.context });
         if (
+          ack.commandId !== entry.context.commandId ||
           !ack.sourceFence ||
           !Number.isSafeInteger(ack.revision) ||
           ack.revision < this.source.expectedRevision

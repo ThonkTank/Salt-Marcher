@@ -170,7 +170,7 @@ function abilityScores(value: unknown, label: string): Creature["abilities"] {
   };
 }
 
-function rawCreature(value: unknown, index: number): RawCatalog["creatures"][number] {
+export function rawCreature(value: unknown, index: number): RawCatalog["creatures"][number] {
   const label = `creatures[${index}]`, row = object(value, label);
   const id = text(row.id, `${label}.id`).trim();
   if (!id) throw new Error(`${label}.id darf nicht leer sein.`);
@@ -337,7 +337,7 @@ function deepFreeze<T>(value: T): T {
   return value;
 }
 
-function validatedQuery(input: CreatureCatalogQuery): CreatureCatalogQuery {
+export function validatedQuery(input: CreatureCatalogQuery): CreatureCatalogQuery {
   const query = object(input, "query");
   const numeric = ["crMin", "crMax", "acMin", "acMax", "hpMin", "hpMax"] as const;
   for (const key of numeric) if (query[key] !== undefined &&

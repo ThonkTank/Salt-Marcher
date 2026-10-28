@@ -126,6 +126,56 @@ await runNativeProbe({ output: out, name: 'campaign-transfer-visit' }, async (na
     child = app.process();
     closed = false;
     page = await app.firstWindow();
+    await app.evaluate(({ ipcMain }, failImportedAtlas) => {
+      const importedTokens = new Set();
+      globalThis.__atlasRequests = [];
+      let sequence = 0;
+      for (const name of [
+        'atlas:geometry-region',
+        'atlas:region-cancel',
+        'atlas:terrain-source',
+        'campaign:activate-shell',
+        'campaign:workspace-initial',
+        'campaign:transfer-accept',
+      ]) {
+        const handler = ipcMain._invokeHandlers.get(name);
+        if (!handler) continue;
+        ipcMain.removeHandler(name);
+        ipcMain.handle(name, async (event, ...args) => {
+          const call = ++sequence;
+          const identity = { call, name, token: args[0] };
+          globalThis.__atlasRequests.push({ ...identity, event: 'start' });
+          try {
+            const reply =
+              failImportedAtlas && name === 'atlas:geometry-region' && importedTokens.has(args[0])
+                ? { ok: false, error: 'Controlled imported Atlas opening failure' }
+                : await handler(event, ...args);
+            if (
+              name === 'campaign:workspace-initial' &&
+              reply?.value?.campaign?.name === 'Nebelmark Import'
+            )
+              importedTokens.add(args[0]);
+            globalThis.__atlasRequests.push({
+              ...identity,
+              event: 'end',
+              ok: reply?.ok,
+              error: reply?.error,
+              campaignId: reply?.value?.campaign?.id,
+              regionRevision: reply?.value?.region?.revision,
+            });
+            return reply;
+          } catch (error) {
+            globalThis.__atlasRequests.push({
+              ...identity,
+              event: 'throw',
+              message: error.message,
+              stack: error.stack,
+            });
+            throw error;
+          }
+        });
+      }
+    }, process.argv.includes('--fail-import-atlas'));
     const pid = child.pid,
       zoom = process.argv.includes('--zoom200') ? 2 : 1;
     assert((await readFile(`/proc/${pid}/cmdline`, 'utf8')).includes(profile));
@@ -141,6 +191,25 @@ await runNativeProbe({ output: out, name: 'campaign-transfer-visit' }, async (na
     }, zoom);
     page.setDefaultTimeout(15000);
     page.on('pageerror', (e) => errors.push(e.stack));
+    await page.evaluate(() => {
+      window.__atlasStates = [];
+      new MutationObserver(() => {
+        const root = document.querySelector('#campaign-atlas');
+        if (!root) return;
+        const state = {
+          campaignId: document.querySelector('#campaigns').value,
+          regionState: root.dataset.regionState,
+          status: document.querySelector('#atlas-save-status').textContent,
+        };
+        if (JSON.stringify(state) !== JSON.stringify(window.__atlasStates.at(-1)))
+          window.__atlasStates.push(state);
+      }).observe(document.body, {
+        subtree: true,
+        attributes: true,
+        childList: true,
+        characterData: true,
+      });
+    });
     observations.runtime = await app.evaluate(({ app }) => ({
       version: app.getVersion(),
       electron: process.versions.electron,
@@ -149,6 +218,15 @@ await runNativeProbe({ output: out, name: 'campaign-transfer-visit' }, async (na
     await page.waitForFunction(() => document.body.dataset.tutorialReady === 'true');
   }
   async function close() {
+    const phase = 'launch-' + launches.length;
+    const states = await page.evaluate(() => window.__atlasStates);
+    observations.atlasStateTraces ??= [];
+    observations.atlasStateTraces.push({ phase, states });
+    await writeFile(out + '/' + phase + '-atlas-states.json', JSON.stringify(states, null, 2));
+    await writeFile(
+      out + '/' + phase + '-atlas-requests.json',
+      JSON.stringify(await app.evaluate(() => globalThis.__atlasRequests), null, 2),
+    );
     assert.deepEqual(errors, []);
     const done = new Promise((r) => child.once('exit', (code, signal) => r({ code, signal })));
     await native.close();
@@ -245,6 +323,41 @@ await runNativeProbe({ output: out, name: 'campaign-transfer-visit' }, async (na
     await page.locator('#note-room-uses-list button').filter({ hasText: 'Torhalle' }).click();
     await page.locator('#key-dialog').waitFor({ state: 'visible' });
   }
+  async function atlasRoom(id, phase) {
+    if (!(await page.locator('#campaign-atlas').isVisible())) {
+      if (!(await page.locator('#atlas-tab').isVisible()))
+        await page.locator('#workspace-nav-summary').click();
+      await page.locator('#atlas-tab').click();
+    }
+    await page.waitForFunction(() =>
+      ['ready', 'failed'].includes(document.querySelector('#campaign-atlas').dataset.regionState),
+    );
+    assert.equal(await page.locator('#campaigns').inputValue(), id);
+    assert.equal(await page.locator('#campaign-atlas').getAttribute('data-region-state'), 'ready');
+    assert.notEqual(await page.locator('#atlas-save-status').getAttribute('data-error'), 'true');
+    assert.equal(await page.locator('#atlas-region-retry').isVisible(), false);
+    await page.locator('#atlas-search').fill('Torhalle');
+    const result = page.locator('#atlas-search-results button').filter({ hasText: 'Torhalle' });
+    await result.waitFor({ state: 'visible' });
+    await result.click();
+    await page.waitForFunction(
+      () =>
+        document.querySelector('#room-name').value === 'Torhalle' &&
+        document.querySelector('#campaign-atlas').dataset.regionState === 'ready',
+    );
+    await page.locator('#room-name').waitFor({ state: 'visible' });
+    await shot(phase + '-atlas-room');
+    await page.locator('#key-open').click();
+    await page.locator('#key-dialog').waitFor({ state: 'visible' });
+    observations.atlasRoomVisits ??= [];
+    observations.atlasRoomVisits.push({
+      phase,
+      campaignId: id,
+      search: 'Torhalle',
+      selected: await page.locator('#room-name').inputValue(),
+    });
+  }
+
   try {
     await launch();
     await shot('startup');
@@ -350,14 +463,47 @@ await runNativeProbe({ output: out, name: 'campaign-transfer-visit' }, async (na
       observations.normalCampaignViewRetained = true;
     }
     await shot('imported');
+    await page.waitForFunction(() =>
+      ['ready', 'failed'].includes(document.querySelector('#campaign-atlas').dataset.regionState),
+    );
+    observations.importedAtlas = await page.evaluate(() => ({
+      campaignId: document.querySelector('#campaigns').value,
+      regionState: document.querySelector('#campaign-atlas').dataset.regionState,
+      status: document.querySelector('#status').textContent,
+      atlasStatus: document.querySelector('#atlas-save-status').textContent,
+      hint: document.querySelector('#atlas-hint').textContent,
+    }));
+    await writeFile(out + '/atlas-observation.json', JSON.stringify(observations, null, 2));
+    const states = await page.evaluate(() => window.__atlasStates);
+    await writeFile(out + '/atlas-states.json', JSON.stringify(states, null, 2));
+    await writeFile(
+      out + '/atlas-requests.json',
+      JSON.stringify(await app.evaluate(() => globalThis.__atlasRequests), null, 2),
+    );
+    assert.deepEqual(
+      states.filter((state) => state.regionState === 'failed'),
+      [],
+      'Imported Atlas must never fail during opening',
+    );
+    assert.equal(
+      observations.importedAtlas.regionState,
+      'ready',
+      'Imported Atlas must be usable: ' + JSON.stringify(observations.importedAtlas),
+    );
+    await atlasRoom(imported, 'imported');
+    await page.locator('#key-gm-notes').fill('Nur im Import: Der Basalttunnel ist offen.');
+    await page.waitForFunction(
+      () => document.querySelector('#key-save-status').dataset.state === 'saved',
+    );
+    await page.locator('#key-close').click();
     await note('Auftrag am Tor');
     await page.locator('#note-relations button').filter({ hasText: 'beauftragt: Nera' }).click();
     assert.equal(await page.locator('#note-gm').inputValue(), npcText.replaceAll('\r\n', '\n'));
     await page.locator('#note-gm').fill('Nur im Import: Nera öffnet das Tor.');
     await map();
-    await page.locator('#key-gm-notes').fill('Nur im Import: Der Basalttunnel ist offen.');
-    await page.waitForFunction(
-      () => document.querySelector('#key-save-status').dataset.state === 'saved',
+    assert.equal(
+      await page.locator('#key-gm-notes').inputValue(),
+      'Nur im Import: Der Basalttunnel ist offen.',
     );
     await page.locator('#key-close').click();
     await shot('edited');
@@ -372,6 +518,9 @@ await runNativeProbe({ output: out, name: 'campaign-transfer-visit' }, async (na
       ],
     ]) {
       await open(id);
+      await atlasRoom(id, id === original.id ? 'fresh-original' : 'fresh-imported');
+      assert.equal(await page.locator('#key-gm-notes').inputValue(), key);
+      await page.locator('#key-close').click();
       await note('Auftrag am Tor');
       await page.locator('#note-relations button').filter({ hasText: 'beauftragt: Nera' }).click();
       assert.equal(await page.locator('#note-gm').inputValue(), text);
@@ -425,6 +574,13 @@ await runNativeProbe({ output: out, name: 'campaign-transfer-visit' }, async (na
     }
     assert.deepEqual(await readFile(profile + '/transfer.kwcampaign'), archive);
     assert.deepEqual(errors, []);
+    assert.deepEqual(
+      observations.atlasStateTraces
+        .flatMap((trace) => trace.states)
+        .filter((state) => state.regionState === 'failed'),
+      [],
+      'Every Atlas visit must remain free of view failures',
+    );
     await native.recordResult({
       head: execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(),
       dirty: !!execFileSync('git', ['status', '--porcelain'], { encoding: 'utf8' }).trim(),
@@ -432,6 +588,22 @@ await runNativeProbe({ output: out, name: 'campaign-transfer-visit' }, async (na
       launches,
       exits,
       artifactHashes,
+      sourceHashes: Object.fromEntries(
+        await Promise.all(
+          [
+            'src/app/workspace/workspace-editors.ts',
+            'src/app/atlas/atlas-regions.ts',
+            'tools/test-desktop-campaign-transfer-visit.mjs',
+            'tests/workspace/workspace-editor-registry.test.mjs',
+          ].map(async (file) => [
+            file,
+            createHash('sha256')
+              .update(await readFile(file))
+              .digest('hex'),
+          ]),
+        ),
+      ),
+      buildInfo: JSON.parse(await readFile('.build/desktop/build-info.json', 'utf8')),
       observations,
       linkedNotesAndMapIndependent: true,
       archiveUnchanged: true,
@@ -443,7 +615,10 @@ await runNativeProbe({ output: out, name: 'campaign-transfer-visit' }, async (na
       out + '/failure.json',
       JSON.stringify({ error: error.stack, profile, launches, errors }, null, 2),
     );
-    if (app && !closed) await shot('failure').catch(() => {});
+    if (app && !closed) {
+      await shot('failure').catch(() => {});
+      await close();
+    }
     throw error;
   } finally {
   }

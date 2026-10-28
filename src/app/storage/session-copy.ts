@@ -2,7 +2,8 @@ import { copyVisitPlanning } from '../runtime/session-day';
 import { randomUUID } from 'node:crypto';
 import { campaignLocalId } from '../../features/campaign/campaign-contracts';
 import type { SessionAction, PlanPublisher, PreparedGroup } from '../campaign/session-contracts';
-import { readPlan, readSession, saveDetail, newGroup, saveGroup } from './session';
+import { saveDetail, newGroup, saveGroup } from './preparation-write';
+import { readPlan, readSession } from './session-read';
 import { createHash } from 'node:crypto';
 /** Add authored preparation, preserving existing physical groups and booked rewards. */
 export function copySessionVisits(

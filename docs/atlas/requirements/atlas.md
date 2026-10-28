@@ -1,49 +1,44 @@
-# Roadmap: Hex-Atlas mit Wonderdraft-Parität und verbundenen Orts- und Dungeon-Keys
+# Roadmap: gemeinsamer Atlas mit Wonderdraft-Parität und verbundenen Orts- und Dungeon-Keys
 
 Status: Verbindlicher Zielumfang; historische Umsetzungsbelege sind keine aktuelle Abnahme.
 Owner: atlas
-Last Reviewed: 2026-10-24 (Struktur und Quellen; Fachabnahme separat)
+Last Reviewed: 2026-10-28 (Zuständigkeiten und metrischer Geländeumfang; Fachabnahme separat)
 Source of Truth: Dieses Dokument besitzt das benannte Thema; Code belegt den Iststand, das Abnahmeregister den Prüfstand.
 
 ## Atlas auf einen Blick
 
-**Desktop 0.157:** Regionswerkzeuge für freie Küsten, Flüsse/Wege, Orts-Keys, kalibrierte Bildvorlagen, Messung und saubere PNG-/JPEG-Ausgabe bis 8192 Pixel sind im gemeinsamen Atlas ergänzt. Kleinste Hexgröße: 3 Meilen Kante zu Kante; weiteste Ansicht: erdgroß. Bedienweg und Grenzen stehen unter [Eine Region vorbereiten](../guide.md#eine-region-vorbereiten). Die folgende ältere Bestandstabelle bleibt eine historische Einordnung.
+Der aktuelle Atlas verbindet kontinuierliche Landschaft, Städte, Gebäude und Räume
+in einer metrischen Kampagnenkarte. Seine Architektur und die bestätigte nächste
+Lieferpriorität besitzt [Atlas: gemeinsamer Darstellungspfad](../architecture/unified-spatial-atlas.md#aktueller-arbeitsstand).
+[Bedienung](../guide.md) beschreibt die vorhandenen Zugänge;
+[Darstellung und Bearbeitung](../architecture/rendering.md#wo-ändern-und-prüfen)
+führt zu Codebesitzern und begrenzten Prüfwegen. Diese Anforderungen besitzen den
+fachlichen Zielumfang, keine zweite technische Ausführungsfolge.
 
-**Aktueller Desktopumbau:** Pro Kampagne genau eine gemeinsame Karte mit räumlichen Stadt-/Gebäudebindungen und einer Autorhistorie. Bedienung, Nachweisgrenzen und offene Fachumfänge stehen in [ATLAS.md](../guide.md). Obsidian wird nicht weiterentwickelt. Die folgende Übersicht hält den älteren Integrationsstand fest und ist keine Freigabe des Desktopumbaus.
+**Ziel:** Welt → Region → Stadt → Haus → Dungeonraum durch Zoom erreichen und
+direkt bearbeiten; eine Kamera, gemeinsame Autorhistorie und haltbare Daten.
+Reise- und Referenzraster bleiben davon unabhängige Verbraucher. Landschaft wird
+bei jedem Kameramaßstab in Weltmetern bearbeitet; es gibt keine zu liefernden
+Gelände-Zelleditoren je Hexstufe. Grobe Gestaltung, lokale Verfeinerung und Schutz
+anderer Arbeit bleiben fachliche Anforderungen im [Geländevertrag](../contract/hex-editing.md).
 
-**Ziel:** Welt → Region → Stadt → Haus → Dungeonraum durch Zoom erreichen und direkt bearbeiten; eine Kamera, eine Undo/Redo-Folge und gemeinsame haltbare Daten.
-
-**Geprüfter Stand: 13.10.2026**, gemeinsamer Branch `active/installed-phase1`, Commit [af858153](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/commit/af85815313aac6e964e235d3e7acbdf294cce0e0). Der Atlas besitzt bereits einen benutzbaren Hex-/Ortskern, integrierte Stadt-/Dungeon-Teilabläufe und den ersten begrenzten Bildexport. Der vollständige Zielablauf und E2E-01 bleiben offen.
-
-### Was funktioniert, was fehlt?
-
-**Integriert** bedeutet im gemeinsamen Branch vorhanden, **Kandidat** bedeutet nur im genannten offenen PR. Die Belege bestätigen jeweils begrenzte Abläufe; vollständige Fachabnahme und lokal installierte Pluginversion sind daraus nicht ableitbar.
-
-| Fähigkeit | Bereits umgesetzt / Beleg | Fehlt zum Ziel |
-| --- | --- | --- |
-| Hexgelände | **Integriert:** grenzenloser Atlas; 3-Meilen-Hexes mit Land, Meer, Wald und Farbe; Pinsel, Zurücksetzen, Undo/Redo, Speichern und Entwurf. [HEX-01/02](../../../acceptance.json) | Vollständige Landschaftswerkzeuge und Gleichwertigkeit mit dem Original. |
-| Mehrere Maßstäbe | **Teilweise:** größere Raster beim Herauszoomen; Gelände wird auf der kleinsten Stufe gespeichert. [Terrainformat](../../../src/features/atlas/terrain-schema.ts) | Alle Hexstufen bearbeiten; grobe Vorgaben und geschützte feine Überschreibungen, HEX-06. |
-| Orte und Orts-Keys | **Integriert:** Stadt-/POI-Marker anlegen, verschieben, Markdown bearbeiten; gemeinsame Rücknahme, Speichern und Neustart belegt. [Abschluss #40](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/40#issuecomment-6102165161) | Links nach Umbenennung und vollständigen Ablauf abnehmen. |
-| Vorhandene Stadt bearbeiten | **Integriert:** Häuser und Straßenknoten verschieben, Hausnamen ändern und Häuser drehen. Begrenzte Obsidian-Speicher-/Neustartbelege. [Stadtabnahmen](../../../acceptance.json) | Vollständiges Zeichnen/Neuanlegen und sämtliche Stadtfunktionen. |
-| Assistierte Bebauung | **Kandidat [PR154](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/154):** Fläche/Straßen/Platz, Häuser erzeugen, Dichte/Größe/Variante, Vorschau/Abbruch und präzise Hauskorrektur; kleine Speicher-/Neustartfälle in Obsidian. | Übernahme; neue Stadt mit Dateien und Kampagnenverweisen anlegen; große Bedienprobe. [Restarbeit #149](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/149) |
-| Haus und Innenraum | **Teilweise:** metrische Stadt-/Haus-/Dungeonbindungen und Dach-/Raumdarstellung im gemeinsamen Zoom. [Atlasdarstellung](../../../src/features/atlas/spatial-canvas.ts) | Gemeinsam bearbeitetes Gebäude mit Außenform und Innenräumen; Wandänderung und Gesamtskalierung; vollständiger Key-/Regenerationsablauf, CITY-03/04. |
-| Dungeon im Atlas | **Integriert:** vorhandenen Dungeon am Ort verorten; Raumkontur/Key bearbeiten und zurückkehren, gemeinsames Undo/Speichern. [Obsidian-Teilbelege #80](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80) | Restliche Bedien-/Wiederherstellungsfälle und vollständige HEX-04/05-Abnahme; mehrere Detailkarten, HEX-22. |
-| Räumlicher Dungeon | **Integriert [PR158](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/158):** 3D-Volumes, Höhen, Schnitte, Flächenbearbeitung und Undo/Speichern/Neustart im Dungeon-Editor. | Vollständiger Atlasanschluss; Raumzuordnung bei Bewegung/Teilung/Vereinigung, räumliche Wege/Durchgänge, Graphentwurf, Attributvererbung, Inhaltsvorlagen und weitere [Dungeon-Fachziele](../../project/requirements/scope.md). |
-| Speicherung und Wiederaufnahme | **Teilweise:** gemeinsame Mehrdateispeicherung, Entwurf, Kopie und direkte Wiederherstellungsfälle in Obsidian. **Integriert [PR167](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/167):** korrigierte Anzeige nach entzogener Speicherberechtigung. | Vollständige Wiederherstellungsabnahme (begrenzte Prepared-/Committed-Raumspeicherung bereits belegt); Autosave; vollständiger [Importanschluss #41](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/41); breite Fehler-/Konfliktabnahme. |
-| Landschaft, Gestaltung, Ausgabe | **Teilweise integriert:** HEX-10 besitzt einen ersten PNG-/JPEG-/WebP-Export für die aktuelle Ansicht oder den belegten Atlas bis 2.048 Pixel Breite, wahlweise mit Raster. Der Export schreibt offene Autorenarbeit zuerst in den geschützten Entwurf, lädt den gewählten Umfang und blendet Auswahl-, Hover- und Bearbeitungsmarkierungen im Bild aus, ohne die Editorkamera zu verändern. | Gezielte Modulregressionen belegen Bildgröße, saubere Ausgabe und Zustandswiederherstellung; echter Hostlauf, visuelles Öffnen und räumlicher Vergleich des Bildes bleiben für HEX-10 offen. Ooke-Vorlagen, freie Küsten, Gewässer, Flüsse/Straßen, Symbole/Assets, freie Labels/Stile und Maße fehlen; HEX-27 fordert weiterhin mindestens 8.192 × 8.192 Pixel und bedarfsgerechte Großwelt-Ausgabe. |
-| Größe und Gesamtqualität | **Offen:** vollständige Endqualifikation. Kandidat PR154 besteht einen 5.000-Häuser-Datenlauf; die entsprechende Bedienprobe fehlt. | Großwelt/bedarfsgerechtes Laden, große Städte/Dungeons, Reaktionszeiten, Originalvergleiche, Tastatur/200 %, physische Bedienung und installierter Endbuild. |
+Die [historische Bestandstabelle und Obsidian-Paketstände](https://github.com/ThonkTank/Salt-Marcher/blob/1cb69e33dca7eda6e56916c3cf6bc2cfba803c7d/docs/atlas/requirements/atlas.md#atlas-auf-einen-blick)
+sind fest gebunden. Ihre integrierten/kandidierenden Pakete, Zellformate und
+Speicherbefunde sind historische Teilstände, keine aktuellen Implementierungsaufträge
+oder Abnahmen. Obsidian bleibt Referenz. E2E-01 und der vollständige Zielablauf
+bleiben offen; maßgeblich für Nachweisstände bleibt `acceptance.json`.
 
 ### Wie kommen wir zum Ziel?
 
 **Nutzerentscheidung vom 11.10.2026: Gleichwertig bedeutet „kann dasselbe erreichen“.** Für Wonderdraft, Dungeondraft, Canvas of Kings, Watabou und Fantasy Town Generator zählen fachliche Ergebnisse, gezielte Nachbearbeitung und dauerhafte Speicherung. Oberfläche, Gesten, Algorithmen und Grafik dürfen anders sein. Mehrere Originalaktionen können dieselbe eigene Werkzeugfamilie nachweisen; eigenständige Wirkungen dürfen dabei nicht verloren gehen. Ein Bild ersetzt keine geforderte editierbare Geometrie.
 
-Die folgende Tabelle ist die **einzige Gesamtpriorisierung: Make it Work → Make it Efficient → Make it Beautiful, unter durchgehendem KISS**. HEX-/CITY-/Dungeonkennungen bleiben Fachreferenzen; ihre Nummern bestimmen keine Lieferfolge. Bestehende Datenabhängigkeiten bleiben verbindlich. Bestehender Code ist Istbefund, keine Architekturvorgabe. Jede Übernahme wird gegen die Gesamtgrundlage geprüft; Nutzerinhalte und bestätigte Wirkungen bleiben geschützt. Ein Grundausbau schließt keine vollständige Fachphase.
+Die folgende Tabelle ordnet den fachlichen Ausbau nach **Make it Work → Make it Efficient → Make it Beautiful, unter durchgehendem KISS** ein. Die bestätigte aktuelle Lieferpriorität steht im [Atlasplan](../architecture/unified-spatial-atlas.md#aktueller-arbeitsstand). HEX-/CITY-/Dungeonkennungen bleiben Fachreferenzen; ihre Nummern bestimmen keine Lieferfolge. Bestehende Datenabhängigkeiten bleiben verbindlich. Bestehender Code ist Istbefund, keine Architekturvorgabe. Jede Übernahme wird gegen die Gesamtgrundlage geprüft; Nutzerinhalte und bestätigte Wirkungen bleiben geschützt. Ein Grundausbau schließt keine vollständige Fachphase.
 
 | Stufe | Konkreter Nutzerablauf und Reihenfolge | Umsetzung und Abschluss |
 | --- | --- | --- |
-| **Work 1 – Bestehende Karte zuverlässig ändern** | Öffnen → Raum/Ort suchen → Geometrie und Key ändern → rücknehmen → automatisch speichern → frisch wiederfinden. | Neuen kleinen Kern/Store/Shell aufbauen; Originaldateien über geprüfte Adapter übernehmen. Auswahl, Textfokus, gemeinsame Commands/History und dauerhafte Speicherung am vollständigen Weg absichern. Kernablauf einschließlich Speicherfehler prüfen; vollständiger Import und breite OS-/Recoveryqualifikation bleiben eigene Fachabnahmen. |
+| **Work 1 – Bestehende Karte zuverlässig ändern** | Öffnen → Raum/Ort suchen → Geometrie und Key ändern → rücknehmen → automatisch speichern → frisch wiederfinden. | Gemeinsamen Kern, Store und Shell am aktuellen Code weiterführen; Originaldateien über geprüfte Adapter übernehmen. Auswahl, Textfokus, gemeinsame Commands/History und dauerhafte Speicherung am vollständigen Weg absichern. Kernablauf einschließlich Speicherfehler prüfen; vollständiger Import und breite OS-/Recoveryqualifikation bleiben eigene Fachabnahmen. |
 | **Work 2 – Einen kleinen Dungeon vorbereiten** | Räume und Gänge zeichnen → Türen/einfache Treppe setzen → Geschoss wählen → nummerieren und Vorlese-/GM-Texte ergänzen → GM-/Spielerbild ausgeben. | Grundlegende Raumliste, einfache Inhalte/Verweise und Dungeonverwaltung mit Anlegen, Umbenennen, Archivieren/Wiederherstellen. Ohne fertig ausgearbeitete Region oder Stadt benutzbar; strukturierte Fallenfelder und Graphdiagnostik folgen später. |
-| **Work 3 – Eine kleine Region vorbereiten** | Gelände/Küste, Fluss und Straße zeichnen → Orte benennen und beschreiben → Vorlage kalibrieren → messen → ausgeben. | Zunächst die 3-Meilen-Fachwirkung mit freien Küsten und bearbeitbaren Verläufen liefern; alle weiteren Hexstufen bleiben Pflicht im späteren Ausbau. Die Region ist unabhängig von fertiger Stadtbebauung nutzbar. |
+| **Work 3 – Eine kleine Region vorbereiten** | Gelände/Küste, Fluss und Straße zeichnen → Orte benennen und beschreiben → Vorlage kalibrieren → messen → ausgeben. | Freie Küsten und bearbeitbare Verläufe in einer metrischen Region liefern; grobe Gestaltung und gezielte Verfeinerung bleiben über Kameramaßstäbe hinweg möglich. Reise-/Referenzraster bestimmen keine Gelände-Autorenstufe. Die Region ist unabhängig von fertiger Stadtbebauung nutzbar. |
 | **Work 4 – Eine Siedlung vorbereiten** | Grenze/Platz und Straßen zeichnen → Häuser mit Dichte/Größe/Struktur vorschlagen → übernehmen → ein Haus korrigieren → Innenraum ausdrücklich anlegen und ausarbeiten. | Assistierte Bebauung mit wenigen guten Vorgaben gehört zum Grundablauf. Gebäudeaußenform und Innenräume gehören zum selben Objekt; Wandkorrektur zunächst im gewählten Geschoss. Bearbeitete Häuser, Texte und Bindungen bleiben geschützt. Einfacher Stadtfall vor dem verbundenen Leitbeispiel prüfen. |
 | **Make it Efficient** | Dieselben Aufgaben mit weniger Wiederholung erledigen: Raum/Haus duplizieren → mehrfach Assets platzieren → gemeinsam ändern → Vorlage nutzen → gezielt erneuern. Präzise korrigieren, Auswahl schnell wiederfinden und größere Karten ohne störende Wartezeiten bearbeiten. | Zuerst schnelle Auswahl, Duplizieren/wiederholte Platzierung und zuletzt verwendete Assets; danach Mehrfachbearbeitung einschließlich Text-Sammeländerungen, Gruppen und Vorlagen/Prefabs. Teilbare Generierungsvorgaben und Inhaltsvorschläge erweitern diese Wiederverwendung. Präzise Tastaturbewegung, Fanghilfen und schnelle Zugänge. Erweiterte Erzeugung/Layouts, Pfad-/Flächenverteilung und geschützte lokale Neuerzeugung. Wandumfang über übereinanderliegende Abschnitte und horizontale Gesamtskalierung aller Geschosse folgen hier. Sichtbare/betroffene Records bedarfsgerecht abfragen; gemessene Engpässe bei großen Karten, Suche und Export verbessern. **Abschluss:** dieselbe Vorbereitungsaufgabe mit weniger Aktionen, Suchaufwand, Fehlern oder Wartezeit, bei unveränderter Daten- und Abbruchsicherheit. |
 | **Make it Beautiful** | Den bereits brauchbaren Plan übersichtlich gestalten und als lesbare, stimmige Karte präsentieren. | Werkzeugleiste, Panel, Icons, Typografie und Rückmeldungen vereinheitlichen; Stile, Texturen, Dachdetails, grafische Lichtwirkung und Effekte ausarbeiten. Beschriftungsformat, Rahmen, Kompass und Ausgabepräsentation verfeinern. **Abschluss:** Karten und Bedienung sind bei typischen Zoomstufen und 200 % klar lesbar; dieselben Aufgaben bleiben erreichbar, Daten und Ausgabeinhalte korrekt. |
@@ -52,7 +47,7 @@ Die folgende Tabelle ist die **einzige Gesamtpriorisierung: Make it Work → Mak
 
 **KISS ist eine Regel für jede Stufe:** eine gemeinsame Kamera, Auswahl, Command-/History-/Speichergrenze und verständliche Werkzeugfamilien; keine Pflicht zur Übernahme ihrer aktuellen Codeimplementierung. Zunächst ein klarer Standardweg und wenige verständliche Optionen; weitere Optionen nur für einen konkreten Bedarf. Eine neue Abstraktion braucht einen belegten gemeinsamen Bedarf. Sichere Abbrüche, Textfokus, Lesbarkeit und ausreichende Reaktion sind bereits Work, keine spätere Schönheitsarbeit.
 
-Die Stufen gelten zunächst für die oben genannten Kernabläufe. Innerhalb eines Ablaufs geht eine fehlende fachliche Wirkung, die dessen Vorbereitung verhindert, vor Komfort und Politur. Efficient wird zuerst an den oben genannten Wiederholungen geprüft; ein neuer Spezialablauf darf unabhängig davon mit seinem eigenen Work beginnen. Diese Regel ersetzt ein pauschales Warten auf sämtliche späteren Funktionen. **Weitere verpflichtende Fachfähigkeiten beginnen ebenfalls mit ihrem eigenen Work und werden danach effizienter und schöner.** Es muss nicht der gesamte Vorbildumfang fertig sein, bevor die häufigen Kernaufgaben effizienter werden. Die funktionalen Erweiterungen bleiben im Werkzeugkatalog und den bestehenden Fachphasen zugeordnet: alle Hexstufen/Seen/Höhen, weitere Geometrie/Höhlen/Befestigungen, räumliche Wege und Durchgänge, Lichtblockierung, zusammengesetzte Beschreibungen/Attribute, strukturierte Features mit Fallenfeldern und Zustandsaktionen, Graph/Verteilungsdiagnostik, Bewohner/Beziehungen/Fraktionen und gemeinsame Weltzeit, Bibliotheks-/Paketfunktionen, zusätzliche 3D-/Straßenansichten, vollständige Im-/Exporte und Recovery. Eine neue fachliche Wirkung ist Work; Lichtblockierung, Bewohnerdaten oder VTT-Ausgabe werden nicht allein wegen ihrer Darstellung zu Beautiful. Kompass/Maßstabsanzeige als Messinformation und Dachgeometrie als Gebäudefunktion folgen ebenfalls ihrem Fachvertrag; ihre Gestaltung darf später verfeinert werden.
+Die Stufen gelten zunächst für die oben genannten Kernabläufe. Innerhalb eines Ablaufs geht eine fehlende fachliche Wirkung, die dessen Vorbereitung verhindert, vor Komfort und Politur. Efficient wird zuerst an den oben genannten Wiederholungen geprüft; ein neuer Spezialablauf darf unabhängig davon mit seinem eigenen Work beginnen. Diese Regel ersetzt ein pauschales Warten auf sämtliche späteren Funktionen. **Weitere verpflichtende Fachfähigkeiten beginnen ebenfalls mit ihrem eigenen Work und werden danach effizienter und schöner.** Es muss nicht der gesamte Vorbildumfang fertig sein, bevor die häufigen Kernaufgaben effizienter werden. Die funktionalen Erweiterungen bleiben im Werkzeugkatalog und den bestehenden Fachphasen zugeordnet: maßstabsübergreifende Landschaft/Seen/Höhen, weitere Geometrie/Höhlen/Befestigungen, räumliche Wege und Durchgänge, Lichtblockierung, zusammengesetzte Beschreibungen/Attribute, strukturierte Features mit Fallenfeldern und Zustandsaktionen, Graph/Verteilungsdiagnostik, Bewohner/Beziehungen/Fraktionen und gemeinsame Weltzeit, Bibliotheks-/Paketfunktionen, zusätzliche 3D-/Straßenansichten, vollständige Im-/Exporte und Recovery. Eine neue fachliche Wirkung ist Work; Lichtblockierung, Bewohnerdaten oder VTT-Ausgabe werden nicht allein wegen ihrer Darstellung zu Beautiful. Kompass/Maßstabsanzeige als Messinformation und Dachgeometrie als Gebäudefunktion folgen ebenfalls ihrem Fachvertrag; ihre Gestaltung darf später verfeinert werden.
 
 Die Reihenfolge ist eine Vorbereitungshypothese, kein gemessener Nutzungsbefund. Die bestehenden [GM-Aufgaben](../../project/verification/gm-workflows.md) dienen als konkrete Vergleichsproben: unter anderem sechs Räume ausarbeiten, zehn Assets setzen, Inhalte finden und nach Neustart weiterarbeiten. Efficient vergleicht Aktionen, Suchaufwand, Fehler und Wartezeiten derselben Aufgabe; zusätzliche Optionen müssen dabei helfen. Vollständiger Funktionsumfang und Größen-/Host-/Exportnachweise bleiben Voraussetzung der Endabnahme, einschließlich getrennter installierter und physischer Bedienabnahme.
 
@@ -62,81 +57,49 @@ Abnahmedetails stehen in `acceptance.json`; die folgenden Abschnitte führen Zie
 
 ## Umsetzungsplan
 
-**Einstieg:** [Prioritäten](atlas.md#wie-kommen-wir-zum-ziel) → [Lieferpakete](atlas.md#lieferpakete-und-codeanschlüsse). Die Nutzerabläufe und der Werkzeugkatalog definieren weiterhin die Wirkung. Dieser Abschnitt übersetzt sie in Codearbeit; er eröffnet keine zweite Prioritäts- oder Statusliste.
+**Einstieg:** [Prioritäten](atlas.md#wie-kommen-wir-zum-ziel) → [Lieferpakete](atlas.md#lieferpakete-und-codeanschlüsse). Die Nutzerabläufe und der Werkzeugkatalog definieren weiterhin die Wirkung. Dieser Abschnitt führt zu den zuständigen Arbeitsdokumenten; er eröffnet keine zweite Prioritäts- oder Statusliste.
 
 ### Informationsarchitektur der Oberfläche
 
-Die Oberfläche beantwortet in dieser Reihenfolge: **Wo bin ich? Was will ich tun? Was ist ausgewählt? Ist meine Arbeit gesichert?** Der Atlas bleibt die gemeinsame Arbeitsfläche. Zoom verändert den Ausschnitt und die Detaildarstellung, nicht Werkzeug, Auswahlbesitz oder Schreibautorität.
+Die fachliche Ordnung lautet: **Wo bin ich? Was will ich tun? Was ist ausgewählt?
+Ist meine Arbeit gesichert?** Der Atlas bleibt eine gemeinsame Fläche. Zoom
+verändert Ausschnitt und Detaildarstellung, nicht Auswahlbesitz oder Schreibautorität.
 
-| Fester Bereich | Inhalt und Verhalten |
-| --- | --- |
-| Obere Leiste | Feste Befehlsleiste mit Atlasmenü, Undo/Redo, Auswahl/Hand/Messen, Ansichtsverlauf, Zoom/Weltübersicht, Suche, Größenvergleich, Ansicht, Import/Export und Speicherstatus. Ab 1200 CSS-Pixeln einzeilig; darunter umbrechend, auch bei 200 % Skalierung. |
-| Hauptseitenleiste | Bereichswahl Landschaft/Stadt/Dungeon oben links, darunter Werkzeuggruppen mit Symbol und Namen (144 Pixel). Daneben stehen die Werkzeuge der gewählten Gruppe mehrzeilig über ihren dauerhaft sichtbaren Optionen. Optionsspalte: Standardbreite 280 Pixel, verstellbar zwischen 240 und 360 Pixeln. Die gemeinsame linke Leiste lässt sich über Ansicht ausblenden; umfangreiche Bibliotheken bleiben rechts. |
-| Karte | Füllt den verbleibenden Fensterraum. Die feste Maßstabsleiste zeigt die Entfernung; eine zusätzliche Anzeige der sichtbaren Ausdehnung entfällt. Seitenleistenänderungen erhalten Mittelpunkt und Meter pro Bildschirmpixel ohne Ansichtsverlauf oder Autorenänderung. |
-| Zusatzbereich | Rechts Eigenschaften, Bibliothek, Raumbeschreibung, Bebauung, Analyse, Vergleich, Kalibrierung oder Export. Standardbreite 340 Pixel, verstellbar zwischen 280 und 480 Pixeln. Bei weniger als 560 Pixeln verbleibender Kartenbreite überlagert die Leiste die Karte. Manuelles Schließen bleibt beim Zoomen/Nachladen bestehen; Eingaben bleiben geschützt. |
-| Rückmeldung | Normale Meldungen und Speicherzustand erscheinen kompakt im Kopf. Fehler und unklare Schreibvorgänge behalten ihre sichtbaren Klärungszugänge; keine pauschale Unterdrückung von Recoverymeldungen. |
-| Aufgabenbezogene Erweiterungen | Vorhandene Stadt-, Raum- und Analyseaktionen bleiben gezielt erreichbar. Party, Reisen, Spielzeit, Musik und Spieleranzeige bleiben ausschließlich in den Spielleitungsbereichen. Die gemeinsame Kamera, Schreibautorität und Historie bleiben erhalten. |
-
-Work liefert diese Ordnung zuerst mit den bereits nutzbaren Aktionen; ungebaute Funktionen werden nicht als scheinbar fertige Schaltflächen angeboten. Eine konkret fehlende Voraussetzung wird am betroffenen Zugang erklärt. In Efficient kommen die benötigten Optionen hinzu; Beautiful vereinheitlicht Gestaltung und Rückmeldungen. Die Regeln für Entwurf, Textfokus, Werkzeugwechsel und Speicherung stehen ausschließlich bei der [gemeinsamen Bedienung](atlas-2.md#gemeinsame-bedienung).
+Die aktuelle Anordnung, Werkzeugnamen, Seitenleisten und Kontextregeln stehen
+an einer Stelle: [Arbeitsplatz und Kartenfläche](../guide.md#arbeitsplatz-und-kartenfläche).
+Bereiche und Gruppen stammen aus dem gemeinsamen Werkzeugkatalog; nur vorhandene
+Werkzeuge erscheinen. Neue Fachfähigkeiten müssen in diese Zugänge passen und
+Offenes sichtbar erklären. Die [gemeinsame Bedienung](atlas-2.md#gemeinsame-bedienung)
+beschreibt zusätzliche Zielregeln und keine zweite Layoutspezifikation.
 
 ### Werkzeuggruppen der Atlassteuerung
 
-| Bereich | Gruppen |
-| --- | --- |
-| Landschaft | Land · Wasser · Wege & Flächen · Objekte |
-| Stadt | Flächen · Straßen & Plätze · Gebäude · Objekte |
-| Dungeon | Räume & Höhlen · Wände & Übergänge · Boden & Wasser · Objekte |
-
-Nur vorhandene Werkzeuge erscheinen; leere Gruppen bleiben ausgeblendet. Landform, Landfarbe, Süßwasser und Wasserfarbe besitzen direkte Werkzeugzugänge einschließlich ihrer Radierer. Geländedaten, Hexfüllung und Zurücksetzen gehören zu Land. Flüsse gehören zu Wasser, Straßen zu Wege & Flächen und Orte zu Objekte. Stadtbefestigungen und assistierte Bebauung gehören zu Gebäude; Dungeon-Dächer und grafische Pfade zu Boden & Wasser. Licht, Text und Fallen/Features gehören zu Dungeon-Objekte. Noch fehlende Gebiets- oder Symbolwerkzeuge werden dadurch nicht als implementiert behauptet.
-
-Beim ersten Öffnen sind Landschaft/Land und die globale Auswahl aktiv. Gruppen merken sich ihr zuletzt verwendetes Werkzeug, Bereiche ihre letzte Gruppe. Beim ersten Gruppenbesuch wird das erste verfügbare Werkzeug gewählt. Alle Wechsel durchlaufen denselben Entwurfsschutz. Werkzeugwerte bleiben während der Sitzung erhalten. Objekte öffnen ihre Bibliothek rechts, bewusste Auswahl öffnet Eigenschaften. Manuelles Schließen bleibt bis zur nächsten passenden Benutzeraktion erhalten; Nachladen und Zoom öffnen das Panel nicht erneut. „Mehr Optionen“ öffnet die vorhandenen zusätzlichen Einstellungen. Stadt/Dungeon anlegen, Raumverzeichnis und Analyse bleiben benannte Zugänge.
+Aktuelle Gruppen und Zugänge: [Bedienung](../guide.md#vorbereiten) und
+[Codebesitzer](../architecture/rendering.md#wo-ändern-und-prüfen). Vollständiger
+fachlicher Werkzeugumfang: [Werkzeugkatalog](atlas-2.md#konkreter-werkzeugkatalog).
+Werkzeugwechsel schützen Entwürfe; Objektauswahl öffnet Eigenschaften, ohne eine
+neue Karte oder einen zweiten Editor zu erzeugen.
 
 ### Lieferpakete und Codeanschlüsse
 
-**Technische Richtung vom 11.10.2026:** [Gesamtgrundlage](../../project/architecture/overview.md),
-[räumlicher Vertrag](../contract/spatial-runtime.md) und
-[Übergang](../../project/architecture/platform-decision.md). Geprüfter Istcode:
-`116c16af48b6a073216685c8d8e2cc74fada82c3`. `storage.changed()` sichert derzeit
-einen Draft; der separate Save ist noch kein automatischer Normalbetrieb.
-Whole-Document-Sources, FileTransaction und imperative Sessionwrapper besitzen
-keinen Bestandsschutz. Daten/Verhalten schützen, geeignete reine Teile begründet
-übernehmen, gekoppelte Zustands-/Speicherstrukturen ersetzen.
+Die bestätigte technische Ausführung besitzt der
+[Terrain-/Wasserplan](../architecture/unified-spatial-atlas.md#terrain-wasserlieferung-umsetzungsplan).
+Die [Codeeinstiege und Prüfwege](../architecture/rendering.md#wo-ändern-und-prüfen)
+führen zum aktuellen Electron-/TypeScript-/SQLite-Anschluss. Fachverträge
+besitzen Wirkung und Datenregeln, etwa [Gelände](../contract/hex-editing.md),
+[Reise](../contract/hex-travel.md) und [Raumgruppen](../contract/room-groups.md).
 
-| Lieferpaket | Konkrete Umsetzung im gewählten Kern | Abschluss / Fachanschluss |
-| --- | --- | --- |
-| **Work 1a – Datenbasis, Finden und Bearbeiten** | Aktuelle Formate/Links inventarisieren und importvergleichbar sichern. Kleine Electron-Shell, typisierte Records/IDs, ein SQLite-Schreibdienst und gemeinsame Kamera/Auswahl/Textdrafts. Bestehende reine Polygon-/Einheiten-/Such-/Controlteile nur nach passender Prüfung übernehmen. | Ort/Room finden, Kontur/Key ändern, gemeinsames Undo/Redo. Scope/Revision/Context, Textfokus und Überlagerung prüfen; kein heimlicher Formatumbau. [P01/P02](../../project/verification/architecture-experiments.md). |
-| **Work 1b – Automatisch dauerhaft sichern** | Änderungen, Undo-Deltas und Receipt in einem Commit; pending/durable/Fehler ehrlich. A→B→A und spätes Jobresultat absichern; normaler Close/Restart ohne manuelles Save. Backup/Assetstaging für den verwendeten Datenweg anschließen. | Fehler/Crash/unknown outcome bewahren bestätigte Arbeit und offene Eingabe. Tatsächlichen Store benutzen, keinen Memory-PASS. [Campaign](../../campaign/contract/archive.md). |
-| **Work 2 – Kleiner Dungeon und Ausgabe** | 5-Fuß-Volumes, stabile Roominhalte, Gang/Tür/einfache Treppe, Slice/Geschoss und Keys im gemeinsamen Raumvertrag. Draw/Hit/Export aus derselben Projektion; vorhandene Zeichnungsartefakte ausdrücklich übertragen. | Sechs Rooms ausarbeiten/korrigieren, GM-/freigegebenes Spieler-PNG und Reopen. Kleine unabhängige Dungeonvorbereitung; keine Pflicht zu fertiger Region/Graph/Traps. |
-| **Work 3 – Kleine Region** | Sparse Landschaftsrecords, freie Küste/Fluss/Straße, Ortsreferenzen, kalibrierte Vorlage und Messung. Mehrstufige partielle Eigenschaften im Modell vorsehen; einzelne Stufen je benötigtem Weg liefern. | 3-Meilen-Region mit drei Orten, verbundenen Wegen, korrekten Metern und Ausgabe/Restart. Custombiom-/Symbolkatalog besitzt installationsweite Referenzclosure. |
-| **Work 4a – Assistierte Siedlung** | Citymeterrecords, Straßen/Platz/Polygon, versionierte Seed-/Parameterrecipe, abbrechbarer Workerpreview; eine Annahme schreibt editierbare Geometrie. | Eichenfurt erzeugen, Variante verwerfen, übernehmen, Taverne korrigieren und frisch öffnen. Keine Generation beim Laden. [CITY-01/02/04](../../city/contract/city.md#technische-arbeitspakete). |
-| **Work 4b – Haus und Innenräume** | Ein gemeinsamer Gebäudestand, ausdrücklich leere Innenhülle, Räume/Geschosse. Keine dauerhaft synchronisierten Außen-/Innendokumente. Meterpose, Wandreichweite und horizontale Skalierung mit derselben Commandgrenze. | Außen/Innen, Türen/Anker, Text/IDs stimmen nach Zug/Undo/Restart. [Gebäude](../../city/contract/city.md#gemeinsamer-gebäudezustand-erste-umsetzung). |
-| **Weitere Fachfähigkeiten – eigener Work-Abschluss** | World/Plan/Katalog/Party/Scenes an denselben Store anschließen; Room-Lifecycle → Path/Passage → Features/Beschreibungen/Templates/Graph. Travel/Clock vor abhängigen Zeitfolgen; manuelle Musik/Lebensdaten benötigen keine fertige Automatik. | Jeweils sichtbarer Edit, sicherer Cancel, atomarer Commit/Restart und Fachorakel. Vollständige Lieferzuordnung bleibt [docs/ROADMAP](../../project/delivery/roadmap.md), Umfang [SCOPE](../../project/requirements/scope.md). |
-| **Efficient** | Duplizieren/repetitive Platzierung/schnelle Auswahl, danach Batch/Prefabs/geschützte Regeneration. Lokale Records/Chunks und Queries nach Messung verbessern. | Dieselbe Aufgabe mit weniger Aktionen, Suche, Fehlern oder Wartezeit; Fachwirkung, Abbruch und Datenintegrität erhalten. |
-| **Beautiful / Gesamtqualifikation** | Kartenstile, Texturen, Beschriftung, Ausgabe und Rückmeldung verfeinern. Vollständige Original-/OS-/Installations-/Recovery-/A11y-/Lastabnahmen am Zielbuild. | Kein Ersatz für frühe Keyboard-/200%-/Lesbarkeits-/Sicherheitsanforderungen. Cutover erst bei belegten nötigen Nutzerabläufen/Datenbindungen. |
-
-**Prüfung je Lieferung:** passende Verhalten-/Faulttests, Typecheck/Build und
-Repositoryprüfung; tatsächlicher Zielhost/Store und frischer Prozess am
-betroffenen Nutzerweg. Historische Obsidian-/Originalbelege bleiben datiert,
-keine synthetische Übertragung ihres PASS auf den Neuaufbau. Physischer Input,
-Stromverlust, OSinstallation und Fachgesamtumfang haben eigene Nachweise.
-
-**Legacy-Speicherintegration:** Die eigenständige Consumer-Matrix prüft 18 Modellfälle;
-[direkter Aufruf](../../../README.md#lokal-entwickeln). Auf `f23912ff` bestanden 17:
-M13 erwartet nach Rollback mit beobachtetem eigenem Manifestereignis einen
-widerrufenen Context, tatsächlich bleibt er aktiv. Das historische 18/18 auf
-`86bbbbf` belegt einen anderen Quellstand. Bei Übernahme alter Save-/Source-
-Logik ist diese Erwartung gegen den gültigen Context-/Rollbackvertrag zu klären;
-weder Fehlerfall verwerfen noch einen aktuellen PASS daraus ableiten.
-Das verlangt keine vorgelagerte Reparatur des gesamten Altadapters vor dem neuen Store.
-
-Work 1 benötigt den kleinen autoritativen Store, nicht schon den vollständigen
-Import/Generator/Graph oder sämtliche späteren Runtimefeatures. Bei fehlendem
-konkreten Anschluss genau diesen liefern; keine globale Abnahmesperre für
-unabhängige fachliche Arbeit. Einzelne E2E-Gates bleiben in bestätigter Reihenfolge.
+Der [frühere Work-1a–4b-Kernaufbau samt Legacy-Speicherbefunden](https://github.com/ThonkTank/Salt-Marcher/blob/1cb69e33dca7eda6e56916c3cf6bc2cfba803c7d/docs/atlas/requirements/atlas.md#lieferpakete-und-codeanschlüsse)
+bleibt historisch erreichbar. Sein `storage.changed()`-Draft, separater Save,
+Obsidian-Consumer-Matrix und offene Übernahmepakete beschreiben den damaligen
+Stand; neue Arbeit beginnt an den aktuellen Besitzern. Die fachlichen
+Work-1–4-Nutzerabläufe und ihre noch offenen Gesamtprüfungen bleiben erhalten.
+Automatisierte Regression, native Qualifikation und fachliche Abnahme sind
+getrennte Nachweise; diese redaktionelle Bereinigung vergibt keinen PASS.
 
 ## Konkrete Nutzerabläufe
 
-**Planungsstand: 11.10.2026.** Die folgenden Abläufe beschreiben das vereinbarte Zielverhalten, keine bereits vollständige Implementierung. Das Leitbeispiel zeigt auch spätere Erweiterungen wie alle Hexstufen, gemeinsame Wandumfänge und Neuerzeugung; die einzelnen Work-Abschlüsse verlangen diese noch nicht. Der [aktuelle Stand](atlas.md#atlas-auf-einen-blick) bleibt davon getrennt. Leitbeispiel ist eine Region mit dem Dorf **Eichenfurt**, der Taverne **Zum Silbernen Ast** und dem Ruinendungeon **Alte Wacht**. Das Beispiel macht die Bedienung prüfbar; der vollständige Fachumfang der HEX-/CITY-Phasen und [Dungeonanforderungen](../../project/requirements/scope.md) bleibt erhalten.
+**Planungsstand: 11.10.2026.** Die folgenden Abläufe beschreiben das vereinbarte Zielverhalten, keine bereits vollständige Implementierung. Das Leitbeispiel zeigt auch spätere Erweiterungen wie geschützte Verfeinerung, gemeinsame Wandumfänge und Neuerzeugung; die einzelnen Work-Abschlüsse verlangen diese noch nicht. Der [aktuelle Stand](atlas.md#atlas-auf-einen-blick) bleibt davon getrennt. Leitbeispiel ist eine Region mit dem Dorf **Eichenfurt**, der Taverne **Zum Silbernen Ast** und dem Ruinendungeon **Alte Wacht**. Das Beispiel macht die Bedienung prüfbar; der vollständige Fachumfang der HEX-/CITY-Phasen und [Dungeonanforderungen](../../project/requirements/scope.md) bleibt erhalten.
 
 ### Vorbereitung: Region bis Dungeon
 
@@ -148,9 +111,9 @@ Ich öffne den Atlas meiner Kampagne und gebe ihm einen Namen. Eine leere Welt v
 
 #### 2. Die Region formen
 
-Auf der 27-Meilen-Stufe zeichne ich Land und Meer. Beim Hineinzoomen verfeinere ich auf der 3-Meilen-Stufe Küste, Wald, Hügel und Berge. Ich zeichne einen zusammenhängenden Fluss und einen regionalen Weg frei über mehrere Hexes, verschiebe Verlaufspunkte und entferne Teilstücke.
+In einer regionalen Übersicht forme ich Land und Meer. Beim Hineinzoomen verfeinere ich Küste, Wald, Hügel und Berge in Weltmetern. Das gewählte Referenzraster begrenzt diese Bearbeitung nicht. Ich zeichne einen zusammenhängenden Fluss und einen regionalen Weg frei über mehrere Hexes, verschiebe Verlaufspunkte und entferne Teilstücke.
 
-**Sichtbares Ergebnis:** Die Landschaft bleibt über Hex- und Zoomgrenzen verbunden. Eine spätere grobe Änderung erhält meine ausdrücklich verfeinerten Eigenschaften. Mit „Zur Vorgabe zurücksetzen“ entferne ich eine lokale Überschreibung gezielt und rücknehmbar.
+**Sichtbares Ergebnis:** Die Landschaft bleibt über Hex- und Zoomgrenzen verbunden. Eine spätere grobe Änderung erhält meine ausdrücklich verfeinerten Eigenschaften; die noch offene Schutzregel für absolute Feinhöhen steht im [Terrain-Liefervertrag](terrain-relief.md#ziele-und-abnahme-dieser-etappe). Mit „Zur Vorgabe zurücksetzen“ entferne ich eine lokale Überschreibung gezielt und rücknehmbar.
 
 #### 3. Eichenfurt anlegen und beschreiben
 

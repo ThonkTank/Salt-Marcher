@@ -9,7 +9,8 @@ import {
   dungeonParties,
   checkedAutonomyDungeonBasis,
 } from './autonomy-dungeon';
-import { resetDungeonFeatureByNpc, readDrawingElements } from './drawing';
+import { resetDungeonFeatureByNpc } from './drawing';
+import { readDrawingElements } from './drawing-read';
 import { createHash, randomUUID, randomInt } from 'node:crypto';
 import type {
   AutonomyActor,
@@ -21,8 +22,9 @@ import type {
 } from '../runtime/autonomy-contracts';
 import { standardNeeds, checkedAutonomyJob } from '../runtime/autonomy-contracts';
 import { npcPosition, npcPositionReader, placeNpc, npcRoutes, saveNpcRoute } from './npc-world';
-import { readLive } from './live';
-import { readPreparedGroup, readWorldActor, writeWorldActorHealth } from './session';
+import { readLive } from './live-read';
+import { writeWorldActorHealth } from './preparation-write';
+import { readPreparedGroup, readWorldActor } from './session-read';
 const hash = (s: string) => createHash('sha256').update(s).digest('hex');
 // Opaque IDs have one order across host languages, in both job and route ties.
 const compareIds = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);

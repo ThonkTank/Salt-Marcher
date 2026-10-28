@@ -8,7 +8,9 @@ import { createAtlasCanonicalFixture } from './atlas-canonical-fixture.mjs';
 import { setBrushWorldRadius, setHeightDirection } from './atlas-brush-probe.mjs';
 
 const root = process.cwd();
-const recoveryProbe = process.argv.includes('--recovery');
+const recoveryOnly = process.argv.includes('--recovery-only');
+const recoveryProbe = recoveryOnly || process.argv.includes('--recovery');
+const dropFollowup = process.argv.includes('--drop-followup');
 const conflictProbe = process.argv.includes('--source-conflict');
 const basicToolsProbe = process.argv.includes('--basic-tools');
 const formsProbe = process.argv.includes('--forms');
@@ -45,6 +47,7 @@ const sourceFiles = [
   './src/app/storage/atlas-commit-projection.ts',
   './src/app/atlas/campaign-atlas-author.ts',
   './src/app/atlas/terrain-stroke-queue.ts',
+  './src/app/atlas/terrain-queue-recovery.ts',
   './src/app/atlas/campaign-atlas-ui.ts',
   './src/app/atlas/landscape-brush-session.ts',
   './src/app/atlas/terrain-live-stroke.ts',
@@ -165,12 +168,15 @@ async function dismissStatus() {
 async function exerciseRecovery(failSourceRead = false) {
   mark('recovery: hold a committed reply while a dependent gesture closes');
   const before = recoveryState();
-  await native.app.evaluate(({ ipcMain }) => {
+  await native.app.evaluate(({ ipcMain }, drop) => {
     const state = (globalThis.__qaRecovery = {
       calls: [],
       resolutions: [],
       resolutionResults: [],
+      writes: [],
       held: false,
+      allowResolution: false,
+      drop,
       release: null,
     });
     const original = ipcMain._invokeHandlers.get('atlas:commit');
@@ -179,8 +185,19 @@ async function exerciseRecovery(failSourceRead = false) {
     ipcMain.handle('atlas:commit', async (...args) => {
       state.event = args[0];
       state.calls.push(structuredClone(args[1]));
+      if (state.drop && state.calls.length === 2)
+        return {
+          ok: true,
+          value: {
+            ...state.firstAck,
+            commandId: args[1].commandId,
+            revision: state.firstAck.revision + 1,
+          },
+        };
       const result = await original(...args);
+      state.writes.push(result);
       if (state.calls.length !== 1 || !result.ok) return result;
+      state.firstAck = result.value;
       state.held = true;
       await new Promise((resolve) => {
         state.release = resolve;
@@ -197,14 +214,19 @@ async function exerciseRecovery(failSourceRead = false) {
     ipcMain.removeHandler('atlas:reconcile-commit');
     ipcMain.handle('atlas:reconcile-commit', async (...args) => {
       state.resolutions.push(structuredClone(args[1]));
-      const result = await reconcile(...args);
+      const result = !state.allowResolution
+        ? { ok: true, value: { outcome: 'unknown' } }
+        : await reconcile(...args);
       state.resolutionResults.push({ result, dispatches: state.calls.length });
       return result;
     });
-  });
+  }, dropFollowup);
   const stroke = async (fraction) => {
     const box = await page.locator('#campaign-map').boundingBox();
     await page.mouse.move(box.x + box.width * 0.5, box.y + box.height * fraction);
+    await page.waitForFunction(
+      () => document.querySelector('#campaign-map').dataset.terrainEditingState === 'ready',
+    );
     await page.mouse.down();
     await page.waitForTimeout(400);
     await page.mouse.up();
@@ -215,7 +237,13 @@ async function exerciseRecovery(failSourceRead = false) {
     while (!globalThis.__qaRecovery.held && Date.now() < end)
       await new Promise((r) => setTimeout(r, 10));
     if (!globalThis.__qaRecovery.held)
-      throw Error('Committed reply did not reach the controlled hold');
+      throw Error(
+        'Committed reply did not reach the controlled hold: ' +
+          JSON.stringify({
+            calls: globalThis.__qaRecovery.calls,
+            writes: globalThis.__qaRecovery.writes,
+          }),
+      );
   });
   const committed = recoveryState();
   await page.evaluate(() => {
@@ -237,33 +265,33 @@ async function exerciseRecovery(failSourceRead = false) {
   });
   check('closed-dependent-has-original-identity', dependentIds.length === 1, { dependentIds });
   await native.app.evaluate(() => globalThis.__qaRecovery.release());
-  await page.waitForFunction(() => !document.querySelector('#atlas-recover').hidden);
-  await page.locator('#atlas-status').click();
-  await page.locator('#atlas-recover').waitFor({ state: 'visible' });
-  await page.waitForFunction(() => !document.querySelector('#atlas-recover').disabled);
-  await page.locator('#atlas-region-retry').click();
+  await native.app.evaluate(async () => {
+    const end = Date.now() + 15000;
+    while (!globalThis.__qaRecovery.resolutions.length && Date.now() < end)
+      await new Promise((r) => setTimeout(r, 20));
+    if (!globalThis.__qaRecovery.resolutions.length) throw Error('No automatic receipt read');
+  });
   const blocked = recoveryState();
   const held = await native.app.evaluate(() => ({
     calls: globalThis.__qaRecovery.calls,
     resolutions: globalThis.__qaRecovery.resolutions,
   }));
   check(
-    'unknown-keeps-original-and-blocks-dependent-reset',
+    'unknown-keeps-original-and-automatically-reads-without-dialog',
     held.calls.length === 1 &&
-      held.resolutions.length === 0 &&
+      held.resolutions.length > 0 &&
       committed.revision === before.revision + 1 &&
-      committed.cursor === before.cursor + 1 &&
       JSON.stringify(blocked) === JSON.stringify(committed) &&
-      (await page.locator('#atlas-recover').isVisible()),
+      (await page.locator('dialog[open]').count()) === 0,
     {
       before,
       committed,
       blocked,
-      commandId: held.calls[0]?.commandId,
       dispatches: held.calls.length,
+      automaticReads: held.resolutions.length,
     },
   );
-  await native.capture(page, '04-recovery-blocked.png');
+  evidence.automaticPendingNotice = await page.locator('#atlas-save-status').textContent();
   mark('recovery: resolve the original receipt without replay');
   if (failSourceRead) {
     await native.app.evaluate(
@@ -274,6 +302,7 @@ async function exerciseRecovery(failSourceRead = false) {
           const state = globalThis.__qaRecovery;
           if (!state.failedSource) {
             state.failedSource = true;
+            state.callsAtFailedSource = state.calls.length;
             return { ok: false, error: 'Controlled source reload failure' };
           }
           if (foreignId && !state.foreign) {
@@ -297,43 +326,26 @@ async function exerciseRecovery(failSourceRead = false) {
     );
   }
   check('unknown-has-no-discard-action', await page.locator('#atlas-strokes-discard').isHidden());
-  await page.locator('#atlas-recover').click();
-  if (failSourceRead) {
-    await page.waitForFunction(
-      () =>
-        document.querySelector('#atlas-save-status').textContent.includes('Quelle') ||
-        document.querySelector('#atlas-status').textContent.includes('Quelle') ||
-        document.querySelector('#atlas-save-status').textContent.includes('quelle'),
-    );
-    const heldAfterRead = await native.app.evaluate(() => ({
-      calls: globalThis.__qaRecovery.calls.length,
-      resolutions: globalThis.__qaRecovery.resolutions.length,
-      failed: globalThis.__qaRecovery.failedSource,
-    }));
+  await native.app.evaluate(() => {
+    globalThis.__qaRecovery.allowResolution = true;
+  });
+  if (conflictProbe) {
+    await page.waitForFunction(() => !document.querySelector('#atlas-strokes-retry').hidden);
+    const conflict = recoveryState();
+    const calls = await native.app.evaluate(() => globalThis.__qaRecovery.calls.length);
     check(
-      'source-read-failure-keeps-closed-successor',
-      heldAfterRead.failed &&
-        heldAfterRead.calls === 1 &&
-        heldAfterRead.resolutions === 1 &&
-        JSON.stringify(recoveryState()) === JSON.stringify(committed),
-      { heldAfterRead, committed, actual: recoveryState() },
+      'changed-source-retains-successor-with-optional-actions',
+      calls === 1 &&
+        conflict.cursor === committed.cursor + 1 &&
+        conflict.heights === committed.heights &&
+        (await page.locator('dialog[open]').count()) === 0 &&
+        (await page.locator('#atlas-save-status').textContent()) ===
+          'Letzter Pinselzug nicht übernommen',
+      { calls, committed, conflict },
     );
-    await page.locator('#atlas-region-retry').click();
-    if (conflictProbe) {
-      await page.waitForFunction(() => !document.querySelector('#atlas-strokes-retry').hidden);
-      const conflict = recoveryState();
-      const calls = await native.app.evaluate(() => globalThis.__qaRecovery.calls.length);
-      check(
-        'changed-source-retains-successor-for-explicit-choice',
-        calls === 1 &&
-          conflict.cursor === committed.cursor + 1 &&
-          conflict.heights === committed.heights &&
-          (await page.locator('#atlas-strokes-discard').isVisible()),
-        { calls, committed, conflict },
-      );
-      evidence.foreignSourceState = conflict;
-      await page.locator('#atlas-strokes-retry').click();
-    }
+    evidence.foreignSourceState = conflict;
+    await page.locator('#atlas-status').click();
+    await page.locator('#atlas-strokes-retry').click();
   }
   await page.waitForFunction(
     () =>
@@ -343,6 +355,17 @@ async function exerciseRecovery(failSourceRead = false) {
     null,
     { timeout: 60000 },
   );
+  if (failSourceRead) {
+    const failed = await native.app.evaluate(() => ({
+      failed: globalThis.__qaRecovery.failedSource,
+      calls: globalThis.__qaRecovery.callsAtFailedSource,
+    }));
+    check(
+      'source-read-failure-keeps-closed-successor',
+      failed.failed && failed.calls === 1,
+      failed,
+    );
+  }
   const resolved = recoveryState();
   const resolution = await native.app.evaluate(() => ({
     calls: globalThis.__qaRecovery.calls,
@@ -351,9 +374,9 @@ async function exerciseRecovery(failSourceRead = false) {
   }));
   check(
     'unknown-resolution-never-duplicates-original',
-    resolution.resolutions.length === 1 &&
-      resolution.results[0]?.dispatches === 1 &&
-      resolution.results[0]?.result.value?.outcome === 'applied' &&
+    resolution.resolutions.length >= 1 &&
+      resolution.results.filter((r) => r.result.value?.outcome === 'applied').length === 1 &&
+      resolution.results.every((r) => r.dispatches === 1) &&
       resolution.calls.filter((c) => c.commandId === held.calls[0]?.commandId).length === 1 &&
       JSON.stringify(resolution.resolutions[0]) === JSON.stringify(held.calls[0]),
     {
@@ -2229,7 +2252,19 @@ try {
 
   mark('open initial campaign');
   await openCampaign();
-  if (multiscaleProbe) {
+  if (recoveryOnly) {
+    await exerciseRecovery(conflictProbe);
+    const saved = recoveryState();
+    await native.close();
+    await openCampaign();
+    const reopened = recoveryState();
+    check(
+      'recovery-fresh-canonical-bytes-and-history',
+      JSON.stringify(saved) === JSON.stringify(reopened),
+      { saved, reopened },
+    );
+    await native.capture(page, '06-recovery-fresh.png');
+  } else if (multiscaleProbe) {
     await exerciseMultiscaleTools();
   } else if (formsProbe) {
     await exerciseFormTools();
@@ -2537,18 +2572,25 @@ try {
   mark('cleanup: dispose session');
   await native.dispose();
   await new Promise((resolve) => setTimeout(resolve, 250));
-  for (const name of basicToolsProbe || formsProbe || multiscaleProbe
-    ? []
-    : [
-        'gesture-one-duration-3-to-5s',
-        'gesture-one-pre-up-terrain-pixels',
-        'gesture-two-pre-up-terrain-pixels',
-        'terrain-save-state',
-        'canonical-height-region-one',
-        'canonical-height-region-two',
-        'canonical-added-or-changed-height-data',
-        'fresh-reopen-identical-height-bytes',
-      ]) {
+  for (const name of recoveryOnly
+    ? [
+        'unknown-keeps-original-and-automatically-reads-without-dialog',
+        'unknown-resolution-never-duplicates-original',
+        'closed-dependent-resumed-once-without-new-input',
+        'recovery-fresh-canonical-bytes-and-history',
+      ]
+    : basicToolsProbe || formsProbe || multiscaleProbe
+      ? []
+      : [
+          'gesture-one-duration-3-to-5s',
+          'gesture-one-pre-up-terrain-pixels',
+          'gesture-two-pre-up-terrain-pixels',
+          'terrain-save-state',
+          'canonical-height-region-one',
+          'canonical-height-region-two',
+          'canonical-added-or-changed-height-data',
+          'fresh-reopen-identical-height-bytes',
+        ]) {
     if (!evidence.checks[name])
       evidence.checks[name] = {
         status: 'SKIPPED',
@@ -2586,5 +2628,5 @@ try {
   const reportPath = path.join(output, evidence.status === 'PASS' ? 'result.json' : 'failure.json');
   await writeFile(reportPath, JSON.stringify(report, null, 2) + '\n');
   console.log(JSON.stringify({ output, reportPath, status: evidence.status }));
-  if ((formsProbe || multiscaleProbe) && evidence.status !== 'PASS') process.exitCode = 1;
+  if (evidence.status !== 'PASS') process.exitCode = 1;
 }

@@ -1,10 +1,5 @@
-import { createHash, randomUUID } from 'node:crypto';
-import type {
-  DrawingCommand,
-  DrawingElement,
-  DrawingView,
-  RoomStyle,
-} from '../atlas/drawing-contracts';
+import { randomUUID } from 'node:crypto';
+import type { DrawingCommand, DrawingElement, RoomStyle } from '../atlas/drawing-contracts';
 import { validateDrawingElement } from '../atlas/drawing-contracts';
 import {
   anchored,
@@ -12,7 +7,6 @@ import {
   deformedBoundaryPoints,
   nearestAnchor,
 } from '../atlas/drawing-model';
-import { dungeonContentAnchors } from '../atlas/dungeon-content-model';
 import { volumeProjection } from '../atlas/volume-model';
 import { type Polygon, type Room } from '../shared/contracts';
 import { validateRoom } from '../shared/room-validation';
@@ -23,20 +17,11 @@ import {
   validateDungeonKeys,
   validateKeyHistoryRow,
 } from './dungeon-key';
-import { dungeonGeometry } from './dungeon-play';
+import { dungeonGeometry } from './dungeon-geometry-read';
 import { validateGraphHistoryRow, validateGraphLayouts } from './graph';
 import { executeGraphEdit } from './graph-edit';
-import {
-  executePathAction,
-  passageStatuses,
-  pathState,
-  readDungeonPassages,
-  readDungeonPaths,
-  validateDungeonPaths,
-  validatePathHistoryRow,
-} from './paths';
-import { roomGeometries } from './room-reads';
-import { executeTriggerAction, readTriggerFields } from './triggers';
+import { executePathAction, validateDungeonPaths, validatePathHistoryRow } from './paths';
+import { executeTriggerAction } from './triggers';
 import {
   executeVolumeAction,
   readDungeonVolume,
@@ -46,8 +31,21 @@ import {
   validateVolumeHistoryRow,
   volumeRow,
 } from './volume';
-const hash = (s: string) => createHash('sha256').update(s).digest('hex'),
-  json = (v: any) => JSON.stringify(v);
+import {
+  parsed,
+  hash,
+  json,
+  drawingRoom,
+  checkedElementRow,
+  recordPlacement,
+} from './drawing-read';
+export {
+  drawingRoomFromRow,
+  drawingRoom,
+  drawingView,
+  drawingElement,
+  readDrawingElements,
+} from './drawing-read';
 export function installDrawingSchema(db: any) {
   db.exec(`CREATE TABLE IF NOT EXISTS drawing_hidden(campaign_id TEXT NOT NULL REFERENCES campaign(id),id TEXT NOT NULL,scope_id TEXT NOT NULL,kind TEXT NOT NULL,revision INTEGER NOT NULL,hidden INTEGER NOT NULL,PRIMARY KEY(campaign_id,id,scope_id,kind)) STRICT;
 CREATE TABLE IF NOT EXISTS drawing_profile(campaign_id TEXT NOT NULL REFERENCES campaign(id),id TEXT NOT NULL,scope_id TEXT NOT NULL,target_id TEXT NOT NULL,revision INTEGER NOT NULL,payload TEXT NOT NULL,checksum TEXT NOT NULL,PRIMARY KEY(campaign_id,id),UNIQUE(campaign_id,scope_id,target_id)) STRICT;
@@ -57,30 +55,16 @@ CREATE TABLE IF NOT EXISTS drawing_revision(campaign_id TEXT NOT NULL REFERENCES
 CREATE TABLE IF NOT EXISTS dungeon_feature_state(campaign_id TEXT NOT NULL,id TEXT NOT NULL,revision INTEGER NOT NULL,payload TEXT NOT NULL,checksum TEXT NOT NULL,PRIMARY KEY(campaign_id,id),FOREIGN KEY(campaign_id,id) REFERENCES drawing_element(campaign_id,id)) STRICT;
 CREATE TABLE IF NOT EXISTS dungeon_feature_receipt(campaign_id TEXT NOT NULL REFERENCES campaign(id),command_id TEXT PRIMARY KEY,fingerprint TEXT NOT NULL) STRICT;`);
 }
-function parsed<T = any>(row: any): T {
-  if (!row || hash(row.payload) !== row.checksum)
-    throw new Error('Dungeonstand fehlt oder ist beschädigt.');
-  return JSON.parse(row.payload);
-}
-export function drawingRoomFromRow(r: any): Room {
-  if (!r || hash(r.payload) !== r.checksum) throw new Error('Raum fehlt oder ist beschädigt.');
-  return {
-    id: r.id,
-    scopeId: r.scope_id,
-    floorId: r.floor_id,
-    number: r.number,
-    name: r.name,
-    revision: r.revision,
-    ...JSON.parse(r.payload),
-  };
-}
-export function drawingRoom(db: any, cam: string, id: string): Room {
-  return drawingRoomFromRow(
-    db.prepare('SELECT * FROM room WHERE campaign_id=? AND id=?').get(cam, id),
-  );
-}
+
 // Cache only the two SQL programs, never style/secret values across snapshots.
-const roomStyleQueries = new WeakMap<object, { profile: any; key: any }>();
+const roomStyleQueries = new WeakMap<
+  object,
+  {
+    profile: any;
+    key: any;
+  }
+>();
+
 function roomStyleStatements(db: any) {
   let queries = roomStyleQueries.get(db);
   if (!queries) {
@@ -96,6 +80,7 @@ function roomStyleStatements(db: any) {
   }
   return queries;
 }
+
 /** Selected display style; secret Key metadata does not create an author revision. */
 export function roomMapStyle(
   db: any,
@@ -140,97 +125,11 @@ export function roomMapStyle(
   }
   return style;
 }
-export function drawingView(db: any, cam: string): DrawingView;
-export function drawingView(
-  db: any,
-  cam: string,
-  projection: true,
-): import('../atlas/drawing-contracts').DrawingView<
-  import('../shared/contracts').RoomGeometry,
-  import('../atlas/drawing-contracts').DrawingElementGeometry
->;
-export function drawingView(db: any, cam: string, projection = false): any {
-  const passages = readDungeonPassages(db, cam);
-  const value = {
-    triggerFields: readTriggerFields(db, cam),
-    ...(projection ? {} : { keyContent: readDungeonKeys(db, cam) }),
-    passageStatuses: passageStatuses(db, cam, passages),
-    paths: readDungeonPaths(db, cam).map((p) => ({ ...p, status: pathState(db, cam, p) })),
-    passages,
-    volumes: readDungeonVolumes(db, cam),
-    elements: readDrawingElements(db, cam),
-    styles: db
-      .prepare('SELECT * FROM drawing_profile WHERE campaign_id=?')
-      .all(cam)
-      .map((r: any) => parsed<RoomStyle>(r)),
-    hiddenRooms: projection
-      ? roomGeometries(db, cam, true).rooms
-      : db
-          .prepare(
-            "SELECT r.id FROM room r JOIN drawing_hidden h ON h.campaign_id=r.campaign_id AND h.id=r.id AND h.kind='room' WHERE r.campaign_id=? AND h.hidden=1",
-          )
-          .all(cam)
-          .map((r: any) => drawingRoom(db, cam, r.id)),
-    hiddenFloors: db
-      .prepare(
-        "SELECT f.id,f.scope_id scopeId,f.name,f.source_elevation sourceElevation FROM drawing_floor f JOIN drawing_hidden h ON h.campaign_id=f.campaign_id AND h.id=f.id AND h.scope_id=f.scope_id AND h.kind='floor' WHERE f.campaign_id=? AND h.hidden=1",
-      )
-      .all(cam),
-    features: db
-      .prepare('SELECT * FROM dungeon_feature_state WHERE campaign_id=?')
-      .all(cam)
-      .map((r: any) => parsed(r)),
-  };
-  if (projection)
-    for (const row of db
-      .prepare(
-        "SELECT id,scope_id scopeId,revision,payload,checksum,CASE WHEN json_valid(payload) THEN json_extract(payload,'$.id','$.scopeId','$.kind','$.revision','$.secret') END header FROM dungeon_key_content WHERE campaign_id=? AND kind='room'",
-      )
-      .iterate(cam)) {
-      if (hash(row.payload) !== row.checksum) throw new Error('Dungeon-Key beschädigt.');
-      const header = JSON.parse(row.header ?? 'null');
-      if (
-        !Array.isArray(header) ||
-        header.length !== 5 ||
-        header[0] !== row.id ||
-        header[1] !== row.scopeId ||
-        header[2] !== 'room' ||
-        !Number.isSafeInteger(row.revision) ||
-        row.revision < 0 ||
-        header[3] !== row.revision ||
-        typeof header[4] !== 'boolean'
-      )
-        throw new Error('Dungeon-Key-Metadaten widersprüchlich.');
-      if (!header[4]) continue;
-      const style = value.styles.find((s: RoomStyle) => s.id === row.id);
-      if (style) style.secret = true;
-      else
-        value.styles.push({
-          id: row.id,
-          revision: 0,
-          scopeId: row.scopeId,
-          ceilingMeters: 3.048,
-          fill: '#c5b998',
-          wall: '#56493e',
-          publicLabel: '',
-          secret: true,
-          authorRevision: null,
-        });
-    }
-  const anchors = dungeonContentAnchors({ drawing: value }, value.elements);
-  for (const element of value.elements) {
-    const anchor = anchors.get(element.id);
-    if (anchor) {
-      element.points = [anchor.point];
-      element.zOffsetMeters = anchor.zOffsetMeters;
-    }
-  }
-  if (projection)
-    return { ...value, elements: value.elements.map(({ notes, content, ...e }) => e) };
-  return value;
-}
+
 type Key = { table: string; id: string; scopeId?: string; kind?: string };
+
 type Delta = { key: Key; before: any; after: any; guard: string };
+
 export const drawingTables = new Set([
   'room',
   'drawing_floor',
@@ -244,12 +143,14 @@ export const drawingTables = new Set([
   'dungeon_graph_layout',
   'dungeon_trigger_field',
 ]);
+
 function where(k: Key) {
   if (!drawingTables.has(k.table)) throw new Error('Unbekannte Zeichnungseinheit.');
   return (
     'campaign_id=? AND id=?' + (k.scopeId ? ' AND scope_id=?' : '') + (k.kind ? ' AND kind=?' : '')
   );
 }
+
 function read(db: any, cam: string, k: Key) {
   return (
     db
@@ -257,9 +158,11 @@ function read(db: any, cam: string, k: Key) {
       .get(cam, k.id, ...(k.scopeId ? [k.scopeId] : []), ...(k.kind ? [k.kind] : [])) ?? null
   );
 }
+
 function fingerprint(v: any) {
   return hash(json(v));
 }
+
 function put(db: any, cam: string, k: Key, row: any) {
   const current = read(db, cam, k);
   if (!row && k.table === 'drawing_element' && current) {
@@ -306,6 +209,7 @@ function put(db: any, cam: string, k: Key, row: any) {
       ')',
   ).run(...keys.map((k) => n[k]));
 }
+
 function roomRow(cam: string, r: Room) {
   const payload = json({ polygons: r.polygons, sections: r.sections });
   return {
@@ -320,26 +224,7 @@ function roomRow(cam: string, r: Room) {
     floor_id: r.floorId,
   };
 }
-export function drawingElement(db: any, cam: string, id: string): DrawingElement {
-  if (typeof id !== 'string' || !id) throw new Error('Elementkennung prüfen.');
-  const row = db.prepare('SELECT * FROM drawing_element WHERE campaign_id=? AND id=?').get(cam, id);
-  if (!row) throw new Error('Zeichnungselement fehlt.');
-  return checkedElementRow(row);
-}
-function checkedElementRow(row: any): DrawingElement {
-  const e = parsed<DrawingElement>(row);
-  validateDrawingElement(e);
-  if (
-    e.id !== row.id ||
-    e.scopeId !== row.scope_id ||
-    e.floorId !== row.floor_id ||
-    e.roomId !== row.room_id ||
-    e.kind !== row.kind ||
-    e.revision !== row.revision
-  )
-    throw new Error('Zeichnungsidentität widersprüchlich.');
-  return e;
-}
+
 function checkElementLocation(db: any, cam: string, e: DrawingElement) {
   if (
     !db
@@ -353,27 +238,7 @@ function checkElementLocation(db: any, cam: string, e: DrawingElement) {
       throw new Error('Raum gehört zu einem anderen Geschoss.');
   }
 }
-function recordPlacement(references: Set<string>, cam: string, e: DrawingElement) {
-  if (e.archived || !e.roomId || !e.content?.reference) return;
-  const key = json([cam, e.content.reference.kind, e.content.reference.id]);
-  if (references.has(key))
-    throw new Error(
-      'Dieser konkrete Encounter / Loot besitzt bereits eine Dungeonplatzierung. Für eine weitere Platzierung eine unabhängige Inhaltskopie verwenden.',
-    );
-  references.add(key);
-}
-export function readDrawingElements(db: any, cam: string) {
-  const elements: DrawingElement[] = [],
-    references = new Set<string>();
-  for (const row of db
-    .prepare('SELECT * FROM drawing_element WHERE campaign_id=? ORDER BY rowid')
-    .iterate(cam)) {
-    const e = checkedElementRow(row);
-    recordPlacement(references, cam, e);
-    elements.push(e);
-  }
-  return elements;
-}
+
 function validateDrawingElements(db: any) {
   const references = new Set<string>();
   for (const row of db.prepare('SELECT * FROM drawing_element').iterate()) {
@@ -382,6 +247,7 @@ function validateDrawingElements(db: any) {
     recordPlacement(references, row.campaign_id, e);
   }
 }
+
 function elementRow(cam: string, e: DrawingElement) {
   const payload = json(e);
   return {
@@ -396,6 +262,7 @@ function elementRow(cam: string, e: DrawingElement) {
     checksum: hash(payload),
   };
 }
+
 function featureState(db: any, cam: string, e: DrawingElement) {
   const r = db
     .prepare('SELECT * FROM dungeon_feature_state WHERE campaign_id=? AND id=?')
@@ -404,6 +271,7 @@ function featureState(db: any, cam: string, e: DrawingElement) {
     ? parsed(r)
     : { id: e.id, revision: 0, charges: e.maxCharges, resetStartedMs: null, epochId: null };
 }
+
 function saveFeature(db: any, cam: string, s: any) {
   s = { ...s, revision: s.revision + 1 };
   const payload = json(s);
@@ -412,6 +280,7 @@ function saveFeature(db: any, cam: string, s: any) {
   ).run(cam, s.id, s.revision, payload, hash(payload));
   return s;
 }
+
 export function executeDrawing(db: any, c: DrawingCommand, guard: () => void) {
   return db
     .transaction(() => {
@@ -981,6 +850,7 @@ export function executeDrawing(db: any, c: DrawingCommand, guard: () => void) {
     })
     .immediate();
 }
+
 export function drawingHistory(db: any, cam: string, ordinal: number, direction: 'undo' | 'redo') {
   const row = db
     .prepare('SELECT * FROM drawing_history WHERE campaign_id=? AND ordinal=?')
@@ -1040,6 +910,7 @@ export function drawingHistory(db: any, cam: string, ordinal: number, direction:
   }
   return true;
 }
+
 export function rebaseDrawingRoomHistory(
   db: any,
   cam: string,
@@ -1067,6 +938,7 @@ export function rebaseDrawingRoomHistory(
     break;
   }
 }
+
 export function activateDungeonFeature(
   db: any,
   cam: string,
@@ -1130,6 +1002,7 @@ export function activateDungeonFeature(
     })
     .immediate();
 }
+
 export function advanceDungeonFeatures(db: any, cam: string, epochId: string, toMs: string) {
   for (const row of db
     .prepare('SELECT * FROM dungeon_feature_state WHERE campaign_id=?')
@@ -1148,6 +1021,7 @@ export function advanceDungeonFeatures(db: any, cam: string, epochId: string, to
       saveFeature(db, cam, { ...s, charges: e.maxCharges, resetStartedMs: null, epochId: null });
   }
 }
+
 export function resetDungeonFeatureByNpc(db: any, cam: string, id: string) {
   const e = checkedElementRow(
     db
@@ -1163,6 +1037,7 @@ export function resetDungeonFeatureByNpc(db: any, cam: string, id: string) {
     epochId: null,
   });
 }
+
 function checkedDrawingHistory(db: any, row: any) {
   const history = parsed<{ changes: Delta[] }>(row);
   if (!Array.isArray(history?.changes)) throw new Error('Zeichnungshistory ungültig.');
@@ -1197,6 +1072,7 @@ function checkedDrawingHistory(db: any, row: any) {
   }
   return history;
 }
+
 export function validateFeatureStates(db: any) {
   for (const row of db.prepare('SELECT * FROM dungeon_feature_state').iterate()) {
     const state = parsed<any>(row),
@@ -1225,6 +1101,7 @@ export function validateFeatureStates(db: any) {
       throw Error('Gespeicherte Fallenladung oder Resetzeit ungültig.');
   }
 }
+
 export function validateDrawing(db: any) {
   validateFeatureStates(db);
   validateDungeonKeys(db);

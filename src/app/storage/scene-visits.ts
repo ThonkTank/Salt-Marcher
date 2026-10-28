@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto';
 import type { SceneVisit, SceneVisitPage } from '../runtime/scene-visit-contracts';
-import { readVisitOutcome } from './visit-outcomes';
+import { readVisitOutcome } from './visit-outcome-read';
 const hash = (s: string) => createHash('sha256').update(s).digest('hex');
 function decoded(row: any) {
   if (!row || hash(row.payload) !== row.checksum)

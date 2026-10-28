@@ -55,8 +55,12 @@ entwertet eine noch laufende alte Grenze.
 Die Aktivierungsreihenfolge unterscheidet sich absichtlich von der Flushreihenfolge.
 Live aktiviert seine Untereditoren, Katalog seine Generierung, Vorbereitung ihre
 Sessionplanung. Die Registrierung kennt diese Sitzungen für Abmeldung und Drain,
-wiederholt aber nicht die fachlichen Unterketten. Native Ausgabe wird bereits
-vor dem Laden pausiert; die gesicherte Quellsitzung wird erst nach erfolgreichem
+wiederholt aber nicht die fachlichen Unterketten. Native Ausgabe und Atlasleser
+werden bereits
+vor dem Laden pausiert. Der Atlas entwertet dabei seine Anfragegeneration, bevor
+Main beim Aktivieren die alten Regionsleser abbricht; deren Abbruchantwort darf
+keinen sichtbaren Ansichtsfehler mehr veröffentlichen. Die gesicherte Quellsitzung
+wird erst nach erfolgreichem
 Lesen des neuen Kontexts abgemeldet. Ein fehlgeschlagener Ladevorgang bleibt
 schreibgeschützt und kann erneut geöffnet werden. Kampf, Verfolgung, Fortschritt,
 Scene-Desk, narrative Bearbeitung, Sessionplanung, Generierung und Abschlussentwurf

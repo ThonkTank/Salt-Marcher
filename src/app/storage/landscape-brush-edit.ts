@@ -13,7 +13,7 @@ import { colorSurface } from '../atlas/landscape-color-surface';
 import { bounds, contains } from '../atlas/landscape-geometry';
 import { applyHeightStroke } from '../atlas/terrain-height';
 import type { Polygon } from '../shared/contracts';
-import { landMaskRegion, landscapeRegion, putLandscape } from './atlas-landscape';
+import { landMaskRegion, landscapeRegion, putLandscape } from './landscape-records';
 import { readTerrainGrid } from './terrain-grid';
 import { readRouteTerrain } from './terrain-route';
 

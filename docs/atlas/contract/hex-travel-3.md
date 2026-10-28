@@ -22,6 +22,9 @@ Gruppenmarker am bestätigten Hex, Restweg ab diesem Hex und kein Restweg nach
 Ankunft. Nur auf den Konsolenstatus oder den abgeschlossenen Read zu warten,
 kann vor dem nächsten Zeichenframe noch ein altes Kartenbild erfassen. Keine
 SVG-Objektabfrage: der veröffentlichte Atlas ist inzwischen ein Canvas.
+Die Pixelprüfung dekodiert ein eingebettetes Bildschirm-ICC-Profil vor dem
+exakten Vergleich mit den sRGB-Quellfarben. Das native Produktbild bleibt
+unverändert; der Start wartet auf den bestehenden sichtbaren Navigationsanschluss.
 Frische kanonische Reads prüfen genau eine ursprüngliche Zeitbuchung je erreichtem Hex
 und je einen zusätzlichen kausalen Zeitbeleg für Rücknahme und Wiederholung,
 die unveränderte Reiseprosa, Position und Uhr sowie den terminalen Stand ohne

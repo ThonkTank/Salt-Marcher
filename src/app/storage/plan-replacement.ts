@@ -2,7 +2,8 @@ import { copyVisitPlanning } from '../runtime/session-day';
 import { randomUUID } from 'node:crypto';
 import { campaignLocalId } from '../../features/campaign/campaign-contracts';
 import type { SessionAction, PlanPublisher } from '../campaign/session-contracts';
-import { readSession, saveDetail, newGroup, saveGroup } from './session';
+import { saveDetail, newGroup, saveGroup } from './preparation-write';
+import { readSession } from './session-read';
 import { createHash } from 'node:crypto';
 const hash = (s: string) => createHash('sha256').update(s).digest('hex');
 export function replaceSessionPlan(

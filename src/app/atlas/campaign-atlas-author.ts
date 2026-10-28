@@ -3,7 +3,13 @@ import type { Result, Edit, RoomCommit } from '../shared/contracts';
 import type { CityCommand, CityView } from './city-contracts';
 import type { DrawingCommand, DrawingView } from './drawing-contracts';
 import type { WorldCommand, WorldAck } from '../runtime/world-contracts';
-import type { AtlasAction, AtlasCommand, CampaignAtlas } from './campaign-atlas-contracts';
+import type {
+  AtlasAction,
+  AtlasCommand,
+  CampaignAtlas,
+  AtlasCommitAck,
+  AtlasCommitOutcome,
+} from './campaign-atlas-contracts';
 export const editorSession = new EditorSession();
 
 const pending = new Map<string, AtlasCommand>();
@@ -56,6 +62,14 @@ export async function writeAtlasCommit(
     const result = await editorSession.run(() => window.campaign.executeAtlasCommit(c));
     if (!result.ok && result.errorKind === 'store-outcome-unknown')
       pending.set(c.token, structuredClone(c));
+    if (result.ok && !validCommitAck(c, result.value)) {
+      pending.set(c.token, structuredClone(c));
+      return {
+        ok: false,
+        errorKind: 'store-outcome-unknown',
+        error: 'Speicherbeleg passt nicht zum ursprünglichen Atlasauftrag.',
+      };
+    }
     if (result.ok) {
       pending.delete(c.token);
       document.dispatchEvent(new CustomEvent('atlas-invalidated', { detail: result.value }));
@@ -75,7 +89,36 @@ export async function writeAtlasCommit(
   }
 }
 
-export async function reconcilePendingAtlasCommit(
+const recovering = new Map<string, Promise<Result<AtlasCommitOutcome> | null>>();
+function validCommitAck(command: AtlasCommand, ack: AtlasCommitAck) {
+  return (
+    ack.commandId === command.commandId &&
+    ack.campaignId === command.campaignId &&
+    Number.isSafeInteger(ack.revision) &&
+    (!command.terrainStroke ||
+      (!!ack.sourceFence && ack.revision >= command.terrainStroke.expectedRevision))
+  );
+}
+export function reconcilePendingAtlasCommit(
+  token: string,
+  retained?: AtlasCommand,
+): Promise<Result<AtlasCommitOutcome> | null> {
+  if (
+    retained &&
+    (retained.token !== token ||
+      (pending.has(token) && pending.get(token)!.commandId !== retained.commandId))
+  )
+    return Promise.resolve({ ok: false, error: 'Ein anderer Atlasauftrag bleibt ungeklärt.' });
+  const current = recovering.get(token);
+  if (current) return current;
+  const task = readPendingAtlasCommit(token, retained);
+  recovering.set(token, task);
+  void task.finally(() => {
+    if (recovering.get(token) === task) recovering.delete(token);
+  });
+  return task;
+}
+async function readPendingAtlasCommit(
   token: string,
   retained?: AtlasCommand,
 ): Promise<Result<import('./campaign-atlas-contracts').AtlasCommitOutcome> | null> {
@@ -94,6 +137,8 @@ export async function reconcilePendingAtlasCommit(
       return { ok: false, error: 'Atlasauftrag inzwischen geändert. Speicherstand erneut klären.' };
     if (!result.ok) return result;
     if (result.value.outcome === 'unknown') return result;
+    if (result.value.outcome === 'applied' && !validCommitAck(command, result.value.ack))
+      return { ok: false, error: 'Speicherbeleg passt nicht zum ursprünglichen Atlasauftrag.' };
     pending.delete(token);
     document.dispatchEvent(new Event('atlas-write-state'));
     if (result.value.outcome === 'applied')

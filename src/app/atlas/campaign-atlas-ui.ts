@@ -1,3 +1,4 @@
+import { TerrainQueueRecovery } from './terrain-queue-recovery';
 import { editorSession as atlasEditorSession } from './campaign-atlas-author';
 import { atlasElement as get } from './atlas-dom';
 import { AtlasAuthor } from './atlas-author';
@@ -329,6 +330,27 @@ export class CampaignAtlasWorkbench {
   private spatial?: AtlasRasterPresentation;
   private strokeQueue: TerrainStrokeQueue | null = null;
   private strokeOwner: string | null = null;
+  private recoveryBusy = false;
+  private automaticRetries = new Set<string>();
+  private automaticRetryHead: string | null = null;
+  private terrainRecovery = new TerrainQueueRecovery(
+    () =>
+      !!this.owner &&
+      !this.root.hidden &&
+      (this.strokeQueue?.failureKind === 'unknown' ||
+        this.strokeQueue?.failureKind === 'source' ||
+        (!!this.automaticRetryHead && this.strokeQueue?.head?.id === this.automaticRetryHead)),
+    () => this.continueTerrainQueue(),
+  );
+  private terrainNotice() {
+    const text =
+      this.strokeQueue?.failureKind === 'rejected'
+        ? 'Letzter Pinselzug nicht übernommen'
+        : 'Speicherstatus wird geprüft…';
+    get('atlas-save-status').textContent = text;
+    get('atlas-save-status').dataset.error = 'false';
+    this.opts.status(text, false);
+  }
   private get raster() {
     return this.spatial ?? null;
   }
@@ -371,13 +393,9 @@ export class CampaignAtlasWorkbench {
     } catch (error) {
       if (error instanceof TerrainStrokeDiscardedError) throw error;
       if (this.owner === owner) {
-        get('atlas-region-retry').hidden = false;
-        this.opts.status(
-          this.strokeQueue.failureKind === 'rejected'
-            ? 'Pinselzug nicht gespeichert. Gehaltene Züge ausdrücklich erneut speichern oder verwerfen.'
-            : 'Pinselzüge bleiben gehalten. Speicherstand klären; Folgezüge werden bis dahin nicht gesendet.',
-          true,
-        );
+        this.terrainNotice();
+        this.terrainRecovery.schedule();
+        this.render();
       }
       throw error;
     }
@@ -390,7 +408,9 @@ export class CampaignAtlasWorkbench {
   private async continueTerrainQueue(retry = false, discard = false) {
     const queue = this.strokeQueue,
       owner = this.owner;
-    if (!queue || !owner || this.busy || this.landscape.livePainting) return;
+    if (!queue || !owner || this.busy || this.landscape.livePainting || this.recoveryBusy) return;
+    this.recoveryBusy = true;
+    let automaticRetry = !!this.automaticRetryHead && queue.head?.id === this.automaticRetryHead;
     this.writing = true;
     try {
       if (queue.failureKind === 'unknown') {
@@ -410,29 +430,38 @@ export class CampaignAtlasWorkbench {
           throw Error('Pinselauftrag läuft noch. Alle Züge bleiben gehalten.');
         if (result.value.outcome === 'not-applied') {
           queue.notApplied();
-          this.opts.status(
-            'Pinselzug wurde nicht gespeichert. Gehaltene Züge erneut speichern oder verwerfen.',
-            true,
-          );
-          return;
-        }
-        queue.confirm(result.value.ack);
+          automaticRetry = !this.automaticRetries.has(head.id);
+          if (automaticRetry) this.automaticRetryHead = head.id;
+        } else queue.confirm(result.value.ack);
       }
-      if (queue.failureKind === 'rejected' && !retry && !discard) return;
+      if (queue.failureKind === 'rejected' && !retry && !discard && !automaticRetry) {
+        this.terrainNotice();
+        return;
+      }
       const result = await window.campaign.atlasTerrainSource(owner.token);
       if (this.owner !== owner || this.strokeQueue !== queue) return;
       if (!result.ok)
         throw Error('Geländequelle erneut laden. Alle Folgezüge bleiben erhalten: ' + result.error);
       const source = { expectedRevision: result.value.revision, sourceFence: result.value.fence };
+      if (automaticRetry) {
+        const head = queue.head;
+        if (
+          head?.context?.expectedRevision !== source.expectedRevision ||
+          head.context.sourceFence !== source.sourceFence
+        ) {
+          this.automaticRetryHead = null;
+          this.terrainNotice();
+          return;
+        }
+      }
       if (
         queue.failureKind === 'source' &&
         queue.pending &&
         source.expectedRevision !== queue.confirmedSource.expectedRevision
       ) {
         queue.sourceConflict();
-        throw Error(
-          'Gelände inzwischen geändert. Gehaltene Folgezüge ausdrücklich erneut speichern oder verwerfen.',
-        );
+        this.terrainNotice();
+        return;
       }
       if (
         queue.failureKind === 'source' &&
@@ -445,13 +474,17 @@ export class CampaignAtlasWorkbench {
       // Release the UI writer before the queue dispatches its next real write.
       this.writing = false;
       if (discard) {
+        this.automaticRetryHead = null;
         queue.discard(source);
         this.raster?.reconcile(source.expectedRevision, source.sourceFence);
         this.landscape.releaseHeld();
         await this.regions.refresh();
       } else {
-        if (retry) queue.retry(source);
-        else queue.resume(source);
+        if (retry || automaticRetry) {
+          if (automaticRetry && queue.head) this.automaticRetries.add(queue.head.id);
+          this.automaticRetryHead = null;
+          queue.retry(source);
+        } else queue.resume(source);
         await queue.finish();
         if (this.owner !== owner || this.strokeQueue !== queue) return;
         const confirmed = queue.confirmedSource;
@@ -464,12 +497,14 @@ export class CampaignAtlasWorkbench {
         : 'Alle Pinselzüge gespeichert';
       get('atlas-save-status').dataset.error = 'false';
       this.opts.status(get('atlas-save-status').textContent!);
-    } catch (error) {
-      if (this.owner === owner) this.error(error);
+    } catch {
+      if (this.owner === owner) this.terrainNotice();
     } finally {
+      this.recoveryBusy = false;
       if (this.owner === owner) {
         this.writing = false;
         this.render();
+        this.terrainRecovery.schedule();
       }
     }
   }
@@ -520,7 +555,7 @@ export class CampaignAtlasWorkbench {
     this.root.id = 'campaign-atlas';
     this.root.dataset.family = this.family;
     this.root.hidden = true;
-    this.root.innerHTML = `<div class="atlas-command-bar"><strong>Atlas</strong><button id="atlas-output-open">Bild ausgeben</button><button id="atlas-reference-open">Größe vergleichen</button><button id="atlas-overview">Weltübersicht</button><button id="atlas-to-party">Zur Gruppe</button><button id="atlas-region-retry" hidden>Ansicht erneut laden</button><label>Ort finden<input id="atlas-search" type="search" placeholder="Stadt, Haus oder Raum"></label><button id="atlas-recover" hidden>Speicherstand klären</button><button id="atlas-strokes-retry" hidden>Gehaltene Züge erneut speichern</button><button id="atlas-strokes-discard" hidden>Gehaltene Züge verwerfen</button><button id="atlas-undo" disabled>↶ Rückgängig</button><button id="atlas-redo" disabled>↷ Wiederholen</button></div><div id="atlas-search-results"></div><dialog id="atlas-place-confirm"><h2>Gruppe versetzen</h2><p>Die Fokusgruppe wird an den gewählten Punkt gesetzt. Dabei vergeht keine Reisezeit.</p><div class="toolbar"><button id="atlas-place-accept">Platzieren</button><button id="atlas-place-cancel">Abbrechen</button></div></dialog><div class="atlas-layout"><div class="atlas-stage"><canvas id="campaign-map" tabindex="0" role="application" aria-label="Gemeinsamer Kampagnenatlas">Atlas: Auswahl und Navigation über Ortsuche und Objektliste.</canvas><p id="atlas-save-status" role="status"></p></div><aside id="atlas-panel"><div id="atlas-edit-panel"><nav id="atlas-families" aria-label="Atlaswerkzeuge"></nav><h2 id="atlas-selection-title">Deine Kampagnenwelt</h2><p id="atlas-hint" data-idle="true">Zoome von der Landschaft bis zum Innenraum. Ziehen verschiebt die Ansicht.</p><section id="atlas-tool-fields"><label>Terrain<select id="atlas-terrain">${Object.entries(
+    this.root.innerHTML = `<div class="atlas-command-bar"><strong>Atlas</strong><button id="atlas-output-open">Bild ausgeben</button><button id="atlas-reference-open">Größe vergleichen</button><button id="atlas-overview">Weltübersicht</button><button id="atlas-to-party">Zur Gruppe</button><button id="atlas-region-retry" hidden>Ansicht erneut laden</button><label>Ort finden<input id="atlas-search" type="search" placeholder="Stadt, Haus oder Raum"></label><button id="atlas-recover" hidden>Speicherstand klären</button><button id="atlas-strokes-retry" hidden>Erneut anwenden</button><button id="atlas-strokes-discard" hidden>Verwerfen</button><button id="atlas-undo" disabled>↶ Rückgängig</button><button id="atlas-redo" disabled>↷ Wiederholen</button></div><div id="atlas-search-results"></div><dialog id="atlas-place-confirm"><h2>Gruppe versetzen</h2><p>Die Fokusgruppe wird an den gewählten Punkt gesetzt. Dabei vergeht keine Reisezeit.</p><div class="toolbar"><button id="atlas-place-accept">Platzieren</button><button id="atlas-place-cancel">Abbrechen</button></div></dialog><div class="atlas-layout"><div class="atlas-stage"><canvas id="campaign-map" tabindex="0" role="application" aria-label="Gemeinsamer Kampagnenatlas">Atlas: Auswahl und Navigation über Ortsuche und Objektliste.</canvas><p id="atlas-save-status" role="status"></p></div><aside id="atlas-panel"><div id="atlas-edit-panel"><nav id="atlas-families" aria-label="Atlaswerkzeuge"></nav><h2 id="atlas-selection-title">Deine Kampagnenwelt</h2><p id="atlas-hint" data-idle="true">Zoome von der Landschaft bis zum Innenraum. Ziehen verschiebt die Ansicht.</p><section id="atlas-tool-fields"><label>Terrain<select id="atlas-terrain">${Object.entries(
       terrainNames,
     )
       .map(([id, title]) => `<option value="${id}">${title}</option>`)
@@ -1272,6 +1307,7 @@ export class CampaignAtlasWorkbench {
     ));
   }
   hide() {
+    this.terrainRecovery.stop();
     this.terrainAnalysis?.cancel();
 
     this.spatial?.setActive(false);
@@ -1284,6 +1320,14 @@ export class CampaignAtlasWorkbench {
     this.layout?.setActive(false);
   }
   activate(w: WorkspaceGeometry) {
+    if (
+      this.owner?.token === w.token &&
+      this.owner.campaign.id === w.campaign.id &&
+      this.strokeQueue?.pending
+    ) {
+      Object.assign(this.owner, w);
+      return;
+    }
     if (this.owner?.token !== w.token && (this.strokeQueue?.pending || this.strokeQueue?.failed))
       throw Error('Gehaltene Pinselzüge vor dem Kampagnenwechsel klären.');
     atlasEditorSession.generation++;
@@ -1521,7 +1565,7 @@ export class CampaignAtlasWorkbench {
       }
       return { atlas: this.regions.data!, result: ack.value.result ?? null, ack: ack.value };
     } catch (e) {
-      if (this.owner === w) this.error(e);
+      if (this.owner === w && !terrain) this.error(e);
       if (propagateError) throw e;
       return null;
     } finally {
@@ -2317,11 +2361,17 @@ export class CampaignAtlasWorkbench {
     if (this.panelKey?.length === key.length && this.panelKey.every((v, i) => v === key[i])) return;
     this.panelKey = key;
     get('atlas-recover').hidden =
-      !this.journey.pendingTravel &&
+      (!!this.strokeQueue?.failed || !this.journey.pendingTravel) &&
       (!this.owner ||
         (!pendingAtlasWrite(this.owner.token) && this.strokeQueue?.failureKind !== 'unknown'));
     get('atlas-strokes-retry').hidden = get('atlas-strokes-discard').hidden =
       this.strokeQueue?.failureKind !== 'rejected';
+    if (this.strokeQueue?.failed) {
+      get('atlas-recover').hidden = true;
+      this.terrainNotice();
+    }
+    get<HTMLButtonElement>('atlas-strokes-retry').disabled = this.recoveryBusy;
+    get<HTMLButtonElement>('atlas-strokes-discard').disabled = this.recoveryBusy;
     const selectedBinding = this.selectedBinding();
     get('atlas-placement').hidden = !selectedBinding && !this.selectedGroupBinding();
     get('atlas-binding-pose').hidden = !selectedBinding;

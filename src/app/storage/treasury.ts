@@ -2,7 +2,13 @@ import { treasureAnchor, treasureAnchorLabel } from './treasure-anchors';
 import { createHash, randomUUID } from 'node:crypto';
 import type { TreasuryDraft, TreasuryAction, TreasureOrigin } from '../runtime/treasury-contracts';
 import type { Treasure } from '../runtime/progression';
-import { readTreasure, checkedTreasureRow, saveTreasure, checkedItem, event } from './progression';
+import {
+  readTreasure,
+  checkedTreasureRow,
+  saveTreasure,
+  checkedItem,
+  event,
+} from './progression-records';
 const hash = (s: string) => createHash('sha256').update(s).digest('hex');
 export function installTreasury(db: any) {
   db.exec(

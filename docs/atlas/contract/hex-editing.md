@@ -2,7 +2,7 @@
 
 Status: Geltender Fachvertrag; offene Erweiterungen sind als Ziele beschrieben.
 Owner: atlas
-Last Reviewed: 2026-10-24 (Struktur und Quellen; Fachabnahme separat)
+Last Reviewed: 2026-10-28 (metrischer Fachumfang und Nachweisgrenzen; Fachabnahme separat)
 Source of Truth: Dieses Dokument besitzt das benannte Thema; Code belegt den Iststand, das Abnahmeregister den Prüfstand.
 
 Laufzeitreise, unabhängige Kampagnenkopien und verbleibende Reiseziele:
@@ -44,7 +44,14 @@ Reiseadapter. Sie behauptet keine Prüfung eines alten Gelände-Zellpinsels.
 Native Atlasproben besitzen zusätzliche Kamera-, Neustart- und Bildnachweise;
 ihr tatsächlicher Laufstand bleibt von diesem Fachvertrag getrennt.
 
-## Ortsmarken im Desktop
+## World-Ortsmarken im bestehenden Adapter
+
+Die folgenden Markerregeln beschreiben den Worldadapter. Aktuelle metrische
+Ortsanlage und Orts-Keys im Atlas stehen in der [Bedienung](../guide.md#eine-region-vorbereiten)
+und werden unter anderem durch `tests/atlas/desktop-atlas-region.test.mjs` geprüft.
+Die Adapterregeln begründen keine neue Kartenwahl oder Gelände-Zellarchitektur.
+Die folgenden datierten Test- und Nativeaussagen gehören zu diesem Adapterstand;
+sie qualifizieren nicht erneut die aktuelle Atlasoberfläche.
 
 Bestehende World-Orte sind nach Name, Ortstyp und Kartenname suchbar; die Auswahl
 zeigt Karte und Koordinaten. „Marker zeigen“ navigiert ausdrücklich, Auswahl und
@@ -76,7 +83,7 @@ Auftrag behält seinen Beleg, darf aber keine neu gelesene World-/Markersicht
 unklarer Buchung bleibt der bisherige Ort ausgewählt; die bestehende
 Originalcommand-Reconciliation klärt einen verlorenen Ausgang ohne zweiten Write.
 
-`desktop-marker-selection.test.mjs` kontrolliert echte Store-/DOMübergaben mit
+[desktop-marker-selection.test.mjs (historisch)](https://github.com/ThonkTank/Salt-Marcher/blob/05e8f2f97fc729dba8b6fef3830c566cdc47adad/tests/runtime/desktop-marker-selection.test.mjs) kontrolliert echte Store-/DOMübergaben mit
 verzögerter Vorbereitung und Bestätigung, schneller A/B/A-Auswahl, gleicher
 Workspace-Reaktivierung, neuerem Fremdstand, Validierungsfehler und verlorenem
 IPC-Reply samt read-only Recovery. Diese lokalen Gegenproben ersetzen keine
@@ -85,69 +92,73 @@ Eine zusätzliche Electron-Bedienprobe bestätigt zwei getrennte Markersaves,
 unveränderte Orts-/Geländeinhalte, Fresh-Wiederöffnung und normalen Prozessausstieg.
 Die gezielt verzögerten Bestätigungen bleiben kontrollierte Store-/DOMbelege.
 
-Noch offen im vollständigen Originalumfang: Erstellung kompletter World-Orte
-direkt aus dem Hexwerkzeug, Suche nach kanonischen Tags, eigene importierte
-Symbole, persistente Marker-Undohistorie und referenzbewusstes Entfernen von
-Markern/Gelände. Der einfache Karten-JSON-Export enthält weiterhin nur Gelände;
-die vollständige Kampagnenkopie erhält auch Orte und Marker.
-Auch die Voraussetzung eines bereits gestalteten Zielhexes wird im aktuellen
-Desktop-Platzierungscommand noch nicht erzwungen.
+Noch offen im vollständigen Originalumfang: vollständiger World-Locationeditor
+bei der Ortsanlage, Suche nach kanonischen Tags, eigene importierte
+Symbole, gemeinsame Rücknahme sämtlicher Markerwirkungen und referenzbewusstes
+Entfernen von Markern/Gelände. Der einfache Gelände-JSON-Export des Adapters ist
+keine vollständige Kampagnenkopie; deren eigener Vertrag erhält Orte und Marker.
+Die frühere Zielhex-Voraussetzung bleibt unten als offener fachlicher Anschluss
+an die metrische Landschaft benannt.
 
-## Verbleibende ausführbare Hex-Lieferfolge
+## Verbleibender fachlicher Geländeumfang
 
-Die Feature-, Editor- und Travel-Originale bleiben gemeinsam maßgeblich. Acht
-feste `Terrain`-Werte, ein kleiner Markerpicker und lokale Strichhistory sind
-Teilstände, keine alternative Reduktion des Auftrags.
+Die Feature-, Editor- und Travel-Originale sowie ihre Quellenbindungen bleiben
+maßgeblich. Die folgenden Wirkungen bleiben offen, soweit sie nicht durch einen
+benannten aktuellen Teilnachweis belegt sind. Die bestätigte Lieferpriorität
+besitzt ausschließlich der [Atlasplan](../architecture/unified-spatial-atlas.md#aktueller-arbeitsstand);
+Codeeinstiege und Prüfwege stehen in [rendering.md](../architecture/rendering.md#wo-ändern-und-prüfen).
 
-1. **Gemeinsame Biome vor weiteren Palette- und Reiseregeln.** `world-contracts.ts`
-   und `world-model.ts` verwenden bisher feste Terrainstrings/-faktoren;
-   `features/catalog/creature-catalog.ts`, Desktopkatalog und Generatorfilter
-   müssen dieselben stabilen installationseigenen Biom-IDs konsumieren.
-   Die 35 Originalbiome einschließlich Aliasauflösung und globaler `Any`-Tabelle
-   auf vorhandene Kreaturumgebungen abbilden. Schutz gilt gegen Löschen, nicht
-   gegen erlaubte Bearbeitung. Writer/Reader, serverseitige Suche/Seiten und
-   virtuelle Dreierspaletten gemeinsam schließen. Bestehende Geländestrings
-   verlustfrei migrieren; keine stillen neuen Reise-/Passierbarkeitswirkungen für
-   historische Karten oder gespeicherte Journeybasen. Abnahme: Custom-Biom über
-   Palette, Kreaturfilter, Routenvorschau, Restart und unabhängige Kopie; echte
-   fehlende Definition zeigt Problem statt Fallback ohne Kennzeichnung.
-2. **Paint/Erase und sichtbare Fenster auf denselben Patchwriter.**
-   `hex-paint.ts`/`hex-map-gestures.ts`, Worldreader und `storage/world.ts` vom
-   Whole-Map-Write zu gebundenen betroffenen Zellen/Chunks führen. Derselbe
-   kanonische Axialpfad und Radius 0–9 dienen Vorschau und Writer. Echte sparse
-   Abwesenheit ist Radieren, kein Paint auf das Standardbiom. Vor Erase
-   `atlas_place`, `scene_position` und offene Journeys als Impact zeigen;
-   ausdrücklich bestätigtes Entfernen, Reiseabbruch und Positionsclear atomar,
-   ohne Ort oder PC zu löschen. Undo betrifft Kartenfakten und belebt keine
-   bereinigte Position/Reise wieder. Persistierte letzte 20 Aktionen je Karte
-   ersetzen die aktuelle rein lokale Strichhistory. Abnahme: gemischte Referenzen,
-   Rollback mittendrin, spätere Fremdänderung, verlorene Antwort, Fresh und
-   negative/große Koordinaten; Kamera bleibt erhalten. Gezeichnetes Fenster ist
-   bereits begrenzt, der aktuelle Whole-Map-Reader damit noch nicht qualifiziert.
-3. **World-Ort erzeugen/platzieren über bestehende Owner.** Vollständigen
-   Locationeditor in `preparation.ts`/`changePreparation` aus dem Hexwerkzeug
-   öffnen; aktuelles freies authored Tile ist nur ein staged Vorschlag.
-   Erst bestätigte Locationanlage, dann separater revisionierter Placecommand.
-   Teilfehler erhalten den angelegten Ort und aktive Auswahl. Move-/Remove- und
-   neu gesetzte Marker brauchen Tile-/Map-/Placementguards im Worldwriter;
-   bestehende Legacyplatzierungen bei Migration nicht still verwerfen.
-   Bestätigte Locationlöschung entfernt ihre Platzierung atomar. Abnahme:
-   besetztes/unbeschriebenes Tile, zwischenzeitlicher Orts-/Mapwechsel,
-   wiederholte Command-ID und Platzierungsfehler nach erfolgreicher Anlage.
-4. **Symbole und Markerprojektion schließen.** Den gemeinsamen Built-in-Manifest
-   in `atlas-marker.ts` erhalten, eigene one-path-SVGs über begrenzte Mainauswahl,
-   Utility-Parser und installationseigenen Such-/Detail-/Impactowner ergänzen.
-   Import+Assignment besitzt einen idempotenten Journalpfad; Löschung ersetzt
-   aktive und recoverable Referenzen vor Entfernung. World-/Chunkreader liefern
-   vollständige immutable Renderdaten, keine Rendererjoins gegen Kataloge.
-   Abnahme: strikte SVG-Untermenge, Parserabbruch, Restart in jeder Journalphase,
-   Trashedcampaign-Referenzen und ausschließlich betroffene Invalidierungen.
-5. **Runtimeprojektion und Gesamtfluss abnehmen.** `openTravel`/`liveWorld` und
-   bestehende Scene-/Journeycommands gegen unabhängige Editor-Mapauswahl prüfen.
-   Die kompakte Reiseoberfläche liest nur den tatsächlich fokussierten
-   Laufzeitkontext; keine aktive Reise aus einer Editorwahl ableiten. Wegpunkte,
-   expliziter Start, passierbare Schritte, Tempo, Pause/Abbruch und pausierte
-   Präsentation nach Restart bleiben im vorhandenen [Reiseplan](hex-travel.md).
-   Abnahme erst über denselben Nutzerfluss mit gültigen/fehlenden Kontexten,
-   gleichzeitigen Saves, Karten-/Scenewechsel, Tastatur, 200 % und großen Daten;
-   keine Gleichsetzung einzelner grüner Markerfälle mit vollständiger Hexparität.
+1. **Gemeinsame Biome.** Die 35 Originalbiome einschließlich Aliasauflösung und
+   globaler `Any`-Tabelle auf stabile installationseigene Biom-IDs beziehen.
+   Geländeauswahl, Kreaturumgebungen, Generatorfilter und Reiseauswertung müssen
+   dieselben Definitionen konsumieren. Built-ins sind gegen Löschen geschützt,
+   erlaubte Bearbeitung bleibt möglich. Beliebig viele eigene Definitionen, Suche,
+   Seiten und begrenzt geladene große Paletten bleiben Teil des Umfangs. Fehlende Definitionen sind sichtbar, keine unmarkierten
+   Fallbacks. Prüffall: eigenes Biom in Palette, Kreaturfilter und Routenvorschau,
+   nach Neustart und unabhängiger Kopie. Historische Journeyfakten und Receipts
+   bleiben unverändert; neue Regeln dürfen ihre Wirkung nicht rückwirkend ändern.
+2. **Gezieltes Radieren, Referenzfolgen und Schutz anderer Arbeit.** Kontinuierliche
+   metrische Pinsel und Zurücksetzen wirken nur auf gewählte Eigenschaften und
+   berührte Flächen. Radieren entfernt die eigene Vorgabe statt das Standardbiom
+   aufzutragen. Andere Eigenschaften, unberührte Feinarbeit und spätere
+   Fremdänderungen bleiben geschützt. Vor einer referenzwirksamen Entfernung
+   müssen betroffene Ortsbindungen, Positionen und offene Journeys sichtbar sein.
+   Ausdrücklich bestätigte Bereinigung ist atomar, ohne Ort oder Figur zu löschen;
+   Autoren-Undo darf bereinigte Runtimepositionen oder Reisen nicht heimlich
+   wiederbeleben. Diese umfassende Impactwirkung ist noch offen. Prüfung umfasst
+   Rollback, verlorene Antwort, spätere Änderungen, negative/große Koordinaten,
+   Fresh und unveränderte Kamera. Gemeinsame Autorhistorie und kanonische
+   Main-/Store-Schreibgrenze ersetzen lokale Karten-Strichhistorien; es gibt
+   keinen neuen Zellpatchwriter, Axial-Pinselradius oder alten Gelände-Fixtureauftrag.
+3. **Ortsanlage über die bestehenden Fachbesitzer.** Der aktuelle Atlaszugang
+   „Ort platzieren“ verbindet Ortsdokument und metrische Platzierung bereits über
+   `landscape-place` in der gemeinsamen Transaktion. Die vollständige World-Ortsanlage
+   mit allen Locationeditorfeldern bleibt ein eigener offener Ausbau; keine zweite
+   unabhängige Hex-Ortsdatenhaltung. Orts-ID, Prosa und Links bei Move/Remove,
+   Änderung und unabhängiger Kopie erhalten. Fehlende oder belegte Ziele und
+   zwischenzeitliche Quellenänderungen sichtbar behandeln; wiederholte Command-IDs
+   dürfen keine zweite Anlage erzeugen. Eine bestätigte Ortslöschung entfernt die
+   Platzierung atomar; Entfernen der Platzierung allein löscht keine Ortsprosa.
+   Die frühere Voraussetzung „gestaltetes
+   Zielhex“ muss für kontinuierliche Landschaft fachlich konkretisiert werden;
+   sie autorisiert keinen Gelände-Zelleditor und keine Legacy-Migration.
+4. **Symbole und Markerprojektion.** Gemeinsame eingebaute Symbole erhalten;
+   eigene begrenzte one-path-SVGs über Mainauswahl und geprüften Parser ergänzen.
+   Installationseigene Suche, Detail-/Impactanzeige und vollständige Referenzprüfung
+   gehören dazu. Import und Zuordnung brauchen idempotente Bestätigung; Löschung
+   ersetzt aktive und wiederherstellbare Verweise vor Entfernung, auch in
+   Papierkorbkampagnen. Parserabbruch, Neustart in Journalphasen und ausschließlich
+   betroffene Invalidierungen prüfen. Renderer erhalten fertige begrenzte Daten.
+5. **Reiseprojektion und Gesamtfluss.** Editorwahl bestimmt keine aktive Reise.
+   Fokussierte Gruppe/Scene, gültige Wegpunkte, ausdrücklicher Start, Passierbarkeit,
+   Tempo, Pause/Abbruch und pausierte Wiederaufnahme folgen dem [Reisevertrag](hex-travel.md).
+   Reise- und Referenzraster bleiben gültig, ohne Autoren-Zellarchitektur zu fordern.
+   Gesamtprüfung umfasst fehlende Kontexte, konkurrierende Saves, Kampagnen-/
+   Scenewechsel, Tastatur, 200 % und große Daten. Einzelne Marker- oder Queuefälle
+   sind keine vollständige HEX-/E2E-Abnahme.
+
+Die [frühere Zell-/Chunk-Lieferfolge](https://github.com/ThonkTank/Salt-Marcher/blob/1cb69e33dca7eda6e56916c3cf6bc2cfba803c7d/docs/atlas/contract/hex-editing.md#verbleibende-ausführbare-hex-lieferfolge)
+ist historisch gebunden. Ihre technische Migration, lokale 20er-Kartenhistory und
+Axialradius 0–9 sind keine aktuellen Lieferaufträge. Die ursprünglichen fachlichen
+Anforderungen und `sources.json` bleiben erhalten; neue Tests verwenden das aktuelle
+metrische Modell, keine Migration alter interner Geländeformate.

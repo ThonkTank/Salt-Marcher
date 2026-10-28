@@ -524,3 +524,41 @@ test('typed receipt resolution distinguishes still unknown from confirmed not-ap
   assert.equal(author.pendingAtlasWrite(c.token), null);
   assert.equal(x.calls.writes, 0);
 });
+
+test('concurrent clarification shares one read; mismatched applied acknowledgements retain the original', async (t) => {
+  const x = fixture(t),
+    c = x.command(),
+    write = x.api.executeAtlasCommit;
+  x.api.executeAtlasCommit = async (command) => {
+    await write(command);
+    throw Error('lost');
+  };
+  await author.writeAtlasCommit(c);
+  let release;
+  const gate = new Promise((resolve) => (release = resolve)),
+    read = x.api.reconcileAtlasCommit;
+  x.api.reconcileAtlasCommit = async (command) => {
+    await gate;
+    return read(command);
+  };
+  const a = author.reconcilePendingAtlasCommit(c.token),
+    b = author.reconcilePendingAtlasCommit(c.token);
+  assert.equal(a, b);
+  release();
+  const [r, s] = await Promise.all([a, b]);
+  assert.equal(r, s);
+  assert.equal(r.value.outcome, 'applied');
+  assert.equal(x.calls.checks, 1);
+  assert.equal(await author.reconcilePendingAtlasCommit(c.token), null);
+  const second = x.command();
+  await author.writeAtlasCommit(second);
+  x.api.reconcileAtlasCommit = async () => ({
+    ok: true,
+    value: {
+      outcome: 'applied',
+      ack: { commandId: c.commandId, campaignId: c.campaignId, revision: 2 },
+    },
+  });
+  assert.equal((await author.reconcilePendingAtlasCommit(second.token)).ok, false);
+  assert.deepEqual(author.pendingAtlasWrite(second.token), second);
+});

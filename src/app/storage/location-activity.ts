@@ -5,9 +5,9 @@ import type {
 } from '../campaign/location-activity-contracts';
 import type { NpcDailySlot } from '../campaign/npc-contracts';
 import { deskContent } from './scene-desk';
-import { readLive, readLiveScene } from './live';
-import { readWorldCalendar } from './world';
-import { readNpc } from './npcs';
+import { readLive, readLiveScene } from './live-read';
+import { readWorldCalendar } from './world-calendar-read';
+import { readNpc } from './npc-read';
 import { readNpcPlaces } from './npc-places';
 import { readCityHeader } from './city';
 import { calendarDate } from '../runtime/world-model';

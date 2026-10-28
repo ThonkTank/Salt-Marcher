@@ -249,6 +249,12 @@ for (const change of ['health', 'lifecycle', 'new opponent'])
   });
 
 for (const [name, damage] of [
+  ['negative numeric filter', (r) => (r.request.filters.crMin = -1)],
+  ['negative source HP', (r) => (r.plans[0].sources[0].hp = -1)],
+  ['negative XP ceiling', (r) => (r.request.xpCeiling = -1)],
+  ['negative XP target', (r) => (r.request.targetXp = -1)],
+  ['foreign request location', (r) => (r.request.locationId = randomUUID())],
+  ['invalid query limit', (r) => (r.request.filters.limit = 0)],
   [
     'identity',
     (r) => {

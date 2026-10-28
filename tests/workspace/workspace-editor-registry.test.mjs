@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { build } from 'esbuild';
 import { createRequire } from 'node:module';
 import path from 'node:path';
+import { parseHTML } from '../helpers/dom.mjs';
 const require = createRequire(import.meta.url),
   root = process.cwd();
 const owners = {
@@ -35,7 +36,11 @@ const owners = {
   'finish-draft-ui': [],
 };
 await build({
-  entryPoints: ['src/app/workspace/workspace-editors.ts'],
+  stdin: {
+    contents: `export { createWorkspaceEditors } from './src/app/workspace/workspace-editors';
+      export { AtlasRegions } from './src/app/atlas/atlas-regions';`,
+    resolveDir: root,
+  },
   outfile: '.build/workspace-editor-registry-tests.cjs',
   bundle: true,
   platform: 'node',
@@ -66,7 +71,10 @@ await build({
     },
   ],
 });
-const { createWorkspaceEditors } = require('../../.build/workspace-editor-registry-tests.cjs');
+const {
+  createWorkspaceEditors,
+  AtlasRegions,
+} = require('../../.build/workspace-editor-registry-tests.cjs');
 // A host session needs the same interface, but no DOM or storage capability.
 const session = () => ({ settle: async () => {}, deactivate() {}, status: {} });
 function fixture() {
@@ -127,6 +135,7 @@ function fixture() {
   };
   return {
     calls,
+    host,
     editors: createWorkspaceEditors(host),
     atlasFlush: (value) => {
       atlasFlush = value;
@@ -261,3 +270,67 @@ for (const acknowledged of [true, false])
     await x.editors.activate({ token: 'next' });
     assert.equal(x.calls[0], 'atlas');
   });
+
+test('campaign suspension retires pending Atlas replies before Main cancels source reads', async (t) => {
+  const previous = { window: global.window, document: global.document };
+  const { window, document } = parseHTML(
+    '<p id="atlas-save-status"></p><p id="atlas-hint"></p><button id="atlas-region-retry"></button>',
+  );
+  Object.assign(global, { window, document });
+  t.after(() => Object.assign(global, previous));
+  let reply;
+  const errors = [],
+    x = fixture();
+  const host = {
+    owner: { token: 'source' },
+    root: document.createElement('section'),
+    canvas: document.createElement('canvas'),
+    landscape: { livePainting: false },
+    journey: {
+      beginContextRead() {},
+      renderTravel() {},
+      failContextRead() {
+        errors.push('travel failed');
+      },
+    },
+    invalidateHits() {},
+    render() {},
+    error: (error) => errors.push(error.message),
+  };
+  window.campaign = {
+    atlasRegion: () =>
+      new Promise((resolve) => {
+        reply = resolve;
+      }),
+    cancelAtlasRegion: () => {},
+  };
+  const regions = new AtlasRegions(host);
+  regions.regionQuery = () => ({});
+  x.host.atlas.deactivate = () => regions.cancel();
+  // The registration captures this callback when built, as the renderer does.
+  const editors = createWorkspaceEditors(x.host);
+  const pending = regions.refresh();
+  assert.equal(host.root.dataset.regionState, 'loading');
+  editors.suspend();
+  assert.equal(
+    host.owner.token,
+    'source',
+    'source session stays attached until the next context loads',
+  );
+  reply({ ok: false, error: 'Kartenausschnitt abgebrochen.' });
+  await pending;
+  assert.deepEqual(
+    errors,
+    [],
+    'retired source cancellation must not mark the visible Atlas failed',
+  );
+  assert.equal(regions.reading, false);
+  assert.notEqual(host.root.dataset.regionState, 'failed');
+  // The next live owner still reports a genuine read failure; suspension does
+  // not suppress errors from requests it continues to own.
+  const current = regions.refresh();
+  reply({ ok: false, error: 'Current Atlas source unavailable' });
+  await current;
+  assert.deepEqual(errors, ['travel failed', 'Current Atlas source unavailable']);
+  assert.equal(host.root.dataset.regionState, 'failed');
+});

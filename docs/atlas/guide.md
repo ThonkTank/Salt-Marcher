@@ -2,7 +2,7 @@
 
 Status: Current; offene Ziele sind als solche beschrieben.
 Owner: atlas
-Last Reviewed: 2026-10-24 (Struktur und Quellen; Fachabnahme separat)
+Last Reviewed: 2026-10-28 (Bedienung am aktuellen Code abgeglichen; Fachabnahme separat)
 Source of Truth: Dieses Dokument besitzt das benannte Thema; Code belegt den Iststand, das Abnahmeregister den Prüfstand.
 
 Die Desktopanwendung verwendet eine Kampagnenwelt. Kontinuierliches Gelände, Städte, Gebäude und Dungeonräume liegen in derselben metrischen Fläche. Stadt und Dungeon sind räumliche Bereiche mit eigenen fachlichen Werkzeugen; sie besitzen keine unabhängig auswählbaren Karten. Die Kamera und die Auswahl bleiben beim Werkzeugwechsel erhalten. Zoomen erzeugt weder Geometrie noch Reisezeit.
@@ -11,9 +11,9 @@ Die Desktopanwendung verwendet eine Kampagnenwelt. Kontinuierliches Gelände, St
 
 Der Atlas verwendet die gesamte Fensterfläche. Die feste obere Befehlsleiste enthält das Atlasmenü mit Kampagnenverwaltung, Einstellungen, Hilfe und Rückkehr zur Kampagnenübersicht, Rückgängig/Wiederholen, Auswahl/Hand, Ansichtsverlauf, Zoom und Weltübersicht. Suche, Größenvergleich, Ansicht, Import, Export und Speicherstatus bleiben unabhängig vom Werkzeug erreichbar. Ab 1200 CSS-Pixeln steht die Leiste in einer Zeile, darunter in zwei Zeilen. Menüs und Suchergebnisse überlagern die Karte. Party, Reise, Spielzeit, Musik und Spieleranzeige gehören ausschließlich zu den Spielleitungsbereichen; Alt+P öffnet im Editor keine Partyansicht.
 
-Ganz links steht eine 76 Pixel breite Werkzeugleiste: jedes Symbol trägt seinen kurzen Namen darunter. **Landschaft**, **Stadt** und **Räume** wählen die Werkzeuggruppe. Ein Werkzeugklick öffnet unmittelbar daneben eine eigene linke Leiste mit den passenden Grundeinstellungen; ihr Schließen-Schalter klappt nur diese Einstellungen ein. Die Symbolleiste bleibt erreichbar. Räume und Ausstattung verwenden gemeinsame Werkzeuge. Geschosse stehen bei den Raumwerkzeugen. Eine Objektauswahl ersetzt die Werkzeugleiste nicht. Die Einstellungsleiste ist standardmäßig 240 Pixel breit und zwischen 200 und 300 Pixeln verstellbar. **Ansicht** bietet das Ausblenden der linken oder beider Seiten; die Befehlsleiste bleibt sichtbar.
+Ganz links steht eine 48 Pixel breite Werkzeugleiste mit Symbolen und kurzen Namen. Die Bereichswahl in den danebenliegenden Werkzeugeinstellungen bietet **Landschaft**, **Stadt** und **Räume**; die Werkzeugleiste zeigt die passenden Gruppen und Zugänge. Ein Werkzeugklick öffnet die zugehörigen Werkzeugeinstellungen. Die Symbolleiste bleibt erreichbar. Räume und Ausstattung verwenden gemeinsame Werkzeuge. Geschosse stehen bei den Raumwerkzeugen. Eine Objektauswahl ersetzt die Werkzeugleiste nicht. Die Einstellungsleiste ist standardmäßig 240 Pixel breit und zwischen 220 und 360 Pixeln verstellbar. **Ansicht** bietet das Ausblenden der linken oder beider Seiten; die Befehlsleiste bleibt sichtbar.
 
-Eigenschaften einer ausdrücklichen Auswahl, **Beschreibung bearbeiten**, Objektbibliothek, **Viertel bebauen**, Analyse, Nachzeichenvorlage, Größenvergleich und Bildexport öffnen ihren Kontext rechts. Diese Leiste ist standardmäßig 340 Pixel breit und zwischen 280 und 480 Pixeln verstellbar. Würden weniger als 560 Pixel Kartenbreite verbleiben, überlagert sie die Karte. Schließen erhält den aktuellen Kontext und offene Eingaben; Zoomen und Nachladen öffnen sie nicht wieder. Der Schalter oben blendet den Kontext erneut ein. Eine offene Raumbeschreibung wird nicht automatisch durch einen anderen Kontext verdrängt. Raumtexte verwenden dieselben Key-Records und Speicherregeln.
+Eigenschaften einer ausdrücklichen Auswahl, **Beschreibung bearbeiten**, Objektbibliothek, **Viertel bebauen**, Analyse, Nachzeichenvorlage, Größenvergleich und Bildexport öffnen ihren Kontext rechts. Diese Leiste ist standardmäßig 340 Pixel breit und zwischen 280 und 480 Pixeln verstellbar. Bei einer Auswahl und engem Platz klappen die Werkzeugeinstellungen vorübergehend ein; die Eigenschaften bleiben neben der Geometrie. Für andere Kontexte überlagert die rechte Leiste die Karte, wenn weniger als 560 Pixel Kartenbreite verbleiben. Schließen erhält den aktuellen Kontext und offene Eingaben; Zoomen und Nachladen öffnen sie nicht wieder. Der Schalter oben blendet den Kontext erneut ein. Eine offene Raumbeschreibung wird nicht automatisch durch einen anderen Kontext verdrängt. Raumtexte verwenden dieselben Key-Records und Speicherregeln.
 
 Breiten und Sichtbarkeit der linken Leisten bleiben als eigene lokale Ansichtspräferenz erhalten. Seitenleistenänderungen erhalten Kartenmittelpunkt und Meter pro Bildschirmpixel, ohne Autorenänderung oder Eintrag im Ansichtsverlauf. Die Maßstabsleiste bleibt als nicht bedienbare Kartenanzeige sichtbar; ihre Balkenlänge folgt gut lesbaren Entfernungen.
 
@@ -23,11 +23,11 @@ Das Mausrad zoomt am Zeiger. Mittlere Maustaste oder **Leertaste + Ziehen** vers
 
 ## Vorbereiten
 
-1. Kampagne öffnen und **Atlas** wählen. Unter **Land** Landform oder Farbe wählen und einen metrischen Pinselradius einstellen; ein gedrückter Pinselzug ist eine gemeinsame Änderung.
+1. Kampagne öffnen und **Atlas** wählen. Unter **Landschaft → Land** Landform oder Farbe wählen und einen metrischen Pinselradius einstellen; ein gedrückter Pinselzug ist eine gemeinsame Änderung.
 2. Unter **Stadt** einen Namen eingeben, **Stadt platzieren** wählen und den Punkt auf der Karte anklicken. Die Stadt liegt jetzt an diesem Weltpunkt. Unter **Stadt** Straßen, Viertel und Plätze zeichnen; **Viertel bebauen…** öffnet die Erzeugungsoptionen und Vorschau. Bebauung vorschlagen und übernehmen. Häuser einzeln korrigieren.
 3. **Einzelhaus** oder **Raumgruppe anlegen** wählen. Die gemeinsame Vorschau erzeugt je nach Art passende Räume, Geschosse, Türen und Einrichtung. Übernehmen speichert sie zusammen; hineinzoomen zeigt dieselben bearbeitbaren Räume. Gebäude und Raumgruppe haben dieselbe Kennung. Außenformen werden aus den Räumen abgeleitet. [Details und Schutzregeln](contract/room-groups.md).
 4. **Geschoss**, **Dächer anzeigen** und **Höhenschnitt** verändern die Ansicht. Die Fachwerkzeuge behalten Raumtexte, Keys, Türen, Ausstattung, Volumen, Graph und Passagen. **Ort finden** findet auch benannte Ortsmarken sowie Städte, Häuser und Räume innerhalb derselben Karte. Ein gefundener Ort öffnet seine vorhandene Beschreibung direkt in den Eigenschaften. Unter **Objekte → Objekt auswählen** bleibt die Auswahl beim Ortskontext; Bewuchs besitzt weiterhin seine eigene Auswahl. Bei Ortsmarken stehen Name und Beschreibung vor der aufklappbaren **Position**. **Vorige Ansicht** kehrt nach dem Speichern zum vorherigen Kartenausschnitt zurück.
-5. **Rückgängig/Wiederholen** umfasst Landschaft, Stadt, Räume, Keys und räumliche Bindungen. Bestätigte Schritte sind automatisch in SQLite gespeichert. Eine unbekannte IPC-Antwort bleibt mit ihrer Befehlskennung erhalten; **Speicherstand klären** fragt durch denselben idempotenten Auftrag nach. Eine spätere unvereinbare Änderung sperrt eine Rücknahme statt sie zu überschreiben.
+5. **Rückgängig/Wiederholen** umfasst Landschaft, Stadt, Räume, Keys und räumliche Bindungen. Bestätigte Schritte sind automatisch in SQLite gespeichert. Eine unbekannte IPC-Antwort eines Autorenauftrags bleibt mit ihrer Befehlskennung erhalten; **Speicherstand klären** liest den Ausgang dieses ursprünglichen Autorenauftrags ohne erneute Ausführung. Eine spätere unvereinbare Änderung sperrt eine Rücknahme statt sie zu überschreiben.
 
 Dungeondateien werden beim Import in eine offene Kampagne am zuletzt gewählten Atlaspunkt eingefügt. Räume, Geschosse und Abschnittsbindungen bekommen kollisionsfreie lokale IDs; der originale UTF-8-Quelltext bleibt zusätzlich erhalten. Ohne offene Kampagne bleibt der Import als neue Kampagne möglich. Unabhängige Kampagnenkopien erhalten eigene IDs und eine frische Autorhistorie; räumliche Beziehungen bleiben verbunden.
 
@@ -46,6 +46,24 @@ zeigt und bearbeitet dieselben Bestände auf dem Höhengelände.
 **Ansicht → Atlas kippen** zeigt denselben Höhenbestand räumlich. Neigung, Drehung und Höhenüberhöhung ändern nur die Darstellung. Die drei Landpinsel bearbeiten die sichtbare Oberfläche in Weltmetern; verdeckte Höhenknoten werden geschützt. **Draufsicht** kehrt unmittelbar zurück, mit derselben Kamera, Auswahl und gemeinsamen Rückgängig-Schritten. Andere Gelände- und Grundrisswerkzeuge sowie der bestehende Bildexport führen zur Draufsicht. Wissens- und Sichtmasken verwenden weiterhin die gefilterte Draufsicht.
 
 [Lokale R5-Prüfung und offene R6-/R7-Grenzen](https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/terrain-tilted-atlas-r5-20261020/README.md).
+
+## Speicherstand klären und weiterarbeiten
+
+„Gespeichert“ bezeichnet bestätigte Autorenarbeit, keine bloß sichtbare Vorschau.
+Dieser Ablauf beschreibt Autoren- und Terrainaufträge. Geschlossene Pinselzüge warten in ihrer ursprünglichen Reihenfolge auf Bestätigung.
+Bleibt die Antwort aus, wird der Speicherstatus automatisch geprüft. Ist der erste Zug bereits gespeichert, bestätigt sein Beleg genau diesen Zug; ein bereits geschlossener Folgezug läuft ohne Ersatzgeste weiter. Vorübergehende Lesefehler halten die Arbeit und werden mit Abstand erneut geprüft.
+
+Ist der ursprüngliche Zug sicher nicht gespeichert und seine Quelle unverändert, wird derselbe Auftrag automatisch erneut versucht. Bei einer tatsächlich geänderten Quelle erscheint der unaufdringliche Hinweis **Letzter Pinselzug nicht übernommen**. Über den Speicherstatus stehen optional **Erneut anwenden** und **Verwerfen** bereit; ein Dialog wird nicht erzwungen. Erneut anwenden verwendet ausdrücklich das aktuelle Gelände für die noch nicht übernommenen Züge. Bereits gespeicherte Züge werden dabei nicht doppelt angewandt.
+Neue Gesten, Rücknahme, Kampagnenwechsel und normales Schließen dürfen ungeklärte
+Züge nicht übergehen. Kamera und Ansichtsladen entfernen die Warteschlange nicht.
+Diese gehaltene Eingabe ist kein dauerhaftes Entwurfsjournal: Für erzwungenen
+Prozessabbruch besteht keine Zusage zur Erhaltung unbestätigter Gesten.
+
+Nach normaler Wiederöffnung sind bestätigte Inhalte erneut lesbar. Die gemeinsame
+Autorhistorie verbindet die Atlaswerkzeuge; eine über vollständige Appneustarts
+fortgesetzte Undo-Bedienfolge wird damit nicht allgemein zugesagt. Reisecheckpoints
+besitzen ihre eigene kausale Rücknahme. Code, Receiptregeln und begrenzte Nachweise:
+[Speicherklärung im Atlas](architecture/rendering.md#speicherklärung-im-atlas).
 
 ## Leiten
 
@@ -67,11 +85,11 @@ Alte Testbestände ohne Atlaswurzel werden nicht in ein Mehrkartenmodell migrier
 
 ## Eine Region vorbereiten
 
-Die kleinste Hexstufe misst **3 Meilen / 4828,032 m zwischen gegenüberliegenden Kanten**. Weitere Anzeige- und Zeichenstufen entsprechen 1 Tag (24 Meilen), 1 Woche (168), 1 Monat (720), 3 Monaten (2.160) und 12 Monaten (8.640). Grundlage sind 3 Meilen/Stunde, 8 Reisestunden/Tag, 7 Tage/Woche und 30 Tage/Monat. Diese Größenreferenzen verändern die tatsächliche Reiseberechnung nicht. Bestehende Hexflächen behalten ihre Geometrie und Auflösung. Hexstufe und Kamera sind unabhängig: Städte und Räume bleiben unabhängig davon in realen Längenmaßen bearbeitbar. **Weltübersicht** zoomt bis zu einer erdgroßen Referenzfläche von 40.000 × 20.000 km; je Fensterformat erscheint zusätzlicher Rand. Die Welt bleibt verschiebbar.
+Die kleinste Hexstufe misst **3 Meilen / 4828,032 m zwischen gegenüberliegenden Kanten**. Weitere Reise- und Referenzraster entsprechen 1 Tag (24 Meilen), 1 Woche (168), 1 Monat (720), 3 Monaten (2.160) und 12 Monaten (8.640). Grundlage sind 3 Meilen/Stunde, 8 Reisestunden/Tag, 7 Tage/Woche und 30 Tage/Monat. Diese Größenreferenzen verändern die tatsächliche Reiseberechnung nicht. Das Raster legt keine Gelände-Zellen oder Autorenauflösung fest; vorhandene kontinuierliche Flächen behalten ihre metrische Geometrie. Hexstufe und Kamera sind unabhängig: Städte und Räume bleiben unabhängig davon in realen Längenmaßen bearbeitbar. **Weltübersicht** zoomt bis zu einer erdgroßen Referenzfläche von 40.000 × 20.000 km; je Fensterformat erscheint zusätzlicher Rand. Die Welt bleibt verschiebbar.
 
 Im Atlas den Bereich **Landschaft** wählen. **Maße** bestimmt die angezeigten Einheiten; gespeicherte Geometrie bleibt in Metern:
 
-1. Unter **Land → Land formen** mit Anheben/Absenken, Stärke, Radius und optionaler Zielhöhe die Landfläche anlegen. Loslassen speichert einen rücknehmbaren Pinselzug. **Geländedaten** bietet freie Eigenschaftspinsel; Gelände, Höhe und Klima bleiben eigene Eingaben. **Eigenschaft zurücksetzen** entfernt nur die gewählte Eigenschaft im bemalten Bereich. Feinere Vorgaben bleiben bestehen.
+1. Unter **Land → Land formen** mit Anheben/Absenken, Stärke, Radius und optionaler Zielhöhe die Landfläche anlegen. Loslassen speichert einen rücknehmbaren Pinselzug. **Landschaft → Geländedaten** bietet freie Eigenschaftspinsel; Gelände, Höhe und Klima bleiben eigene Eingaben. **Eigenschaft zurücksetzen** entfernt nur die gewählte Eigenschaft im bemalten Bereich. Feinere Eigenschaftsvorgaben bleiben bestehen. Der Schutz absoluter Feinhöhen ist davon getrennt und noch nicht vollständig qualifiziert.
 2. Unter **Wasser → Fluss zeichnen** oder **Wege & Flächen → Weg zeichnen** Punkte setzen und abschließen. Unter Auswahl einen Verlauf anklicken oder aus der Objektliste wählen. Punkte ziehen speichert den Verlauf beim Loslassen; er bleibt für die nächste Punktkorrektur ausgewählt. Punkte einfügen/entfernen, am inneren Punkt teilen oder die Breite ändern und anschließend Auswahl speichern. Eine gezeichnete Straßenquerung ist keine Brücke.
 3. Unter **Objekte → Ort platzieren** einen Namen eingeben, den Ort setzen und abschließen. Die Koordinaten einer Auswahl stehen unter **Position**. Im selben Panel die geordneten Markdown-Abschnitte bearbeiten. Die Abschnitte besitzen stabile Links; Umbenennen und Verschieben ändern ihre Kennungen nicht. Entfernen aus dem Atlas löscht die Ortsprosa nicht. Die vorhandenen Orts- und Weltfunktionen verwenden dieselben Ortskennungen.
 4. Unter Nachzeichenvorlage ein PNG/JPEG/WebP laden, zwei Punkte im Bild anklicken und deren reale Entfernung in der angezeigten Einheit eingeben. Abschließen übernimmt die Kalibrierung. Über die Objektliste die Vorlage auswählen; Deckkraft, Sichtbarkeit, Sperre und Lage bearbeiten. Nach Entsperren dienen der Ursprung und der gegenüberliegende Griff zum Verschieben beziehungsweise Skalieren/Drehen. Die importierte Vorlage wird innerhalb der Kampagne gespeichert und mitkopiert.
@@ -79,6 +97,10 @@ Im Atlas den Bereich **Landschaft** wählen. **Maße** bestimmt die angezeigten 
 6. Oben **Export** öffnen, bei Bedarf **Bereich aufziehen** wählen und zwei Ecken setzen. Unter **Bildoptionen** PNG oder JPEG, Raster und längste Bildkante bis 8192 Pixel einstellen. Ohne Rahmen gilt die aktuelle Ansicht. GM-Ausgaben zeigen bestätigte Inhalte ohne Bearbeitungsgriffe, Entwürfe oder Messhilfen. Vorlagen sind standardmäßig ausgeschlossen. Öffentliche Ausgabe verwendet weiterhin die bestehende Wissensprojektion.
 
 Die [native Regionsprobe](../../tools/test-desktop-region-export.mjs) bereitet mit den aktuellen Höhenwerkzeugen drei Orte auf ausdrücklich gezeichnetem Land, einen sichtbaren Fluss und ihren Verbindungsweg vor. Sie prüft die metrische und die DnD-Messanzeige gegen dieselben gespeicherten Meterpunkte, die Wegkorrektur mit Undo/Redo, Land und Flussufer im PNG sowie unveränderte Quellen nach Ausgabe und Neustart bei echtem 100-/200-%-Browserzoom. Der gemeinsame native Prüfhelfer bindet den Build und verlangt reguläre Prozessenden. Schrift über internen Ausgabekachelgrenzen bleibt eine zusätzliche Gegenprobe; ein unsichtbarer Fluss auf einer reinen Ozeanfläche gilt nicht als erfolgreiche Regionsvorbereitung.
+
+Unter **Geländedaten → Hexfläche füllen** begrenzt die gewählte Rasterkontur eine
+kontinuierliche Eigenschaftsfläche. Der Auftrag speichert Polygongeometrie, keinen
+Gelände-Zellbestand. Freie Eigenschaftspinsel sind nicht auf Hexkonturen begrenzt.
 
 Die leere Standardzeichnung ist ein Bearbeitungsrahmen, kein zusätzlicher Kartenort. Sie liefert weder eine Beschriftung noch einen unsichtbaren Treffpunkt. Ausdrücklich angelegte leere Dungeons und Zeichnungen mit Inhalt bleiben Kartenorte.
 

@@ -8,8 +8,8 @@ import type { LandscapeRecord } from '../atlas/atlas-landscape';
 import { terrainGridLayout } from '../atlas/terrain-grid-layout';
 import { landscapeSampleFilter } from './landscape-record-stream';
 import { TerrainSampler } from '../atlas/terrain-height';
-import { terrainRegion } from './atlas-landscape';
-import { atlasRoot } from './campaign-atlas';
+import { terrainRegion } from './landscape-records';
+import { atlasRoot } from './atlas-root-read';
 /** Authoritative visibility lattice. Never accepts heights supplied by the renderer. */
 export function readTerrainGrid(
   db: any,

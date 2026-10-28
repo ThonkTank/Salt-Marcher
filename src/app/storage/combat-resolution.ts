@@ -1,8 +1,8 @@
 import type { CombatResolution } from '../runtime/combat-contracts';
 import { readCombat } from './combat';
 import { combatNpcLosses } from './combat-world-losses';
-import { readLiveScene } from './live';
-import { checkedTreasureRow } from './progression';
+import { readLiveScene } from './live-read';
+import { checkedTreasureRow } from './progression-records';
 
 /** Read the finished encounter and relevant Treasury identities in one snapshot. */
 export function readCombatResolution(

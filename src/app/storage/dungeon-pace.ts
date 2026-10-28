@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { readRoster, readLiveScene } from './live';
+import { readRoster, readLiveScene } from './live-read';
 import {
   checkedDungeonPace,
   dungeonPartyPace,

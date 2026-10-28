@@ -7,7 +7,7 @@ import {
   type MaskHistoryPage,
   type MaskHistoryItem,
 } from '../runtime/mask-history-contracts';
-import { readLiveScene } from './live';
+import { readLiveScene } from './live-read';
 const digest = (s: string) => createHash('sha256').update(s).digest('hex');
 const fold = (s: string) =>
   s.normalize('NFKD').replace(/\p{M}/gu, '').toLocaleLowerCase('de').replace(/ß/g, 'ss');
