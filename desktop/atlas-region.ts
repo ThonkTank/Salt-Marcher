@@ -374,7 +374,9 @@ export class AtlasRegionService {
 
   prepareTerrainStroke(
     source: AtlasRegionSource,
-    stroke: import('../src/app/atlas/terrain-brush').HeightStroke,
+    stroke:
+      | import('../src/app/atlas/terrain-brush').HeightStroke
+      | import('../src/app/atlas/atlas-landscape').LakeStroke,
   ): Promise<import('../src/app/storage/terrain-scale').PreparedTerrainStroke> {
     return this.enqueue(source, { kind: 'terrain-stroke', stroke }, 'author');
   }

@@ -1,3 +1,5 @@
+import { applyLakeBrush, validateLakeStroke, lakeHeightStroke } from '../atlas/terrain-lake-brush';
+import type { LakeStroke } from '../atlas/atlas-landscape';
 import { type LandscapeBox, type LandscapeRecord } from '../atlas/atlas-landscape';
 import type { AtlasRegionSource } from '../atlas/atlas-region-contracts';
 import { TerrainCache } from '../atlas/terrain-cache';
@@ -23,6 +25,7 @@ export interface PreparedTerrainStroke {
   revision: number;
   stroke: string;
   records: LandscapeRecord[];
+  remove?: string[];
 }
 const queryBounds = (b: LandscapeBox) => [b.x, b.x + b.width, b.y, b.y + b.height];
 const heightFilter = "json_valid(payload) AND json_extract(payload,'$.height') IS NOT NULL";
@@ -251,4 +254,26 @@ export function computeTerrainStroke(
   if (!local.some((r) => r.route)) return tiles;
   const ids = new Set(local.map((r) => r.id));
   return coupleRouteEdits([...local, ...records.filter((r) => !ids.has(r.id))], tiles);
+}
+
+/** Complete local author set, including every scale of lake provenance. */
+export function computeLakeStroke(
+  db: any,
+  cam: string,
+  stroke: LakeStroke,
+  visibility?: TerrainGrid,
+) {
+  validateLakeStroke(stroke);
+  const area = heightBrushBounds({ ...lakeHeightStroke(stroke), visibility: undefined });
+  const box = {
+    x: area.x - stroke.radius,
+    y: area.y - stroke.radius,
+    width: area.width + 2 * stroke.radius,
+    height: area.height + 2 * stroke.radius,
+  };
+  const records = readRouteTerrain(db, cam, box);
+  const visible =
+    visibility ?? (stroke.visibility ? readTerrainGrid(db, cam, stroke.visibility) : undefined);
+  const result = applyLakeBrush(records, stroke, visible);
+  return result;
 }

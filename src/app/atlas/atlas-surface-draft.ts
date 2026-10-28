@@ -1,3 +1,5 @@
+import { applyLakeBrush } from './terrain-lake-brush';
+import type { LakeStroke } from './atlas-landscape';
 import { TerrainSampler } from './terrain-height';
 import { terrainGridLayout } from './terrain-grid-layout';
 import {
@@ -40,7 +42,14 @@ export class AtlasSurfaceDraft {
     // Existing local successors override its canonical records.
     const local = tiles.flatMap((t) => t.terrain.projection.grid.editing?.author?.records ?? []);
     if (source) {
-      const records = [...new Map([...source.records, ...local].map((r) => [r.id, r])).values()];
+      const removed = new Set(
+        tiles.flatMap((t) => t.terrain.projection.grid.editing?.author?.removed ?? []),
+      );
+      const records = [
+        ...new Map(
+          [...source.records, ...local].filter((r) => !removed.has(r.id)).map((r) => [r.id, r]),
+        ).values(),
+      ];
       tiles = tiles.map((t) => ({
         ...t,
         terrain: {
@@ -51,7 +60,7 @@ export class AtlasSurfaceDraft {
               ...t.terrain.projection.grid,
               editing: {
                 ...t.terrain.projection.grid.editing!,
-                author: { ...source, records },
+                author: { ...source, records, removed: [...removed] },
               },
             },
           },
@@ -111,22 +120,20 @@ export class AtlasSurfaceDraft {
       }
     return { view, heights, seaLevelM: this.bases[0]!.terrain.projection.grid.seaLevelM };
   }
-  height(stroke: HeightStroke): boolean {
+  height(stroke: HeightStroke | LakeStroke): boolean {
     if (stroke.samples.length <= this.consumed) return false;
     this.consumed = stroke.samples.length;
     let changed = false;
     // All visible tiles share one author computation and fixed visibility.
     // Tile edges cannot invent smoothing neighbours or duplicate attenuation.
     const visibility = this.visibilityGrid();
-    const changes = applyTerrainBrush(
-      this.authorRecords,
-      stroke,
-      undefined,
-      visibility,
-      undefined,
-      true,
-    );
-    changed = changes.length > 0;
+    const changes =
+      'waterLevelM' in stroke
+        ? applyLakeBrush(this.authorRecords, stroke, visibility)
+        : applyTerrainBrush(this.authorRecords, stroke, undefined, visibility, undefined, true);
+    changed = Array.isArray(changes)
+      ? changes.length > 0
+      : changes.records.length > 0 || changes.remove.length > 0;
     this.tiles = this.bases.map((tile, index) => {
       const old = this.tiles[index]!,
         b = tile.terrain.projection.grid.view.box;
@@ -172,7 +179,8 @@ export class AtlasSurfaceDraft {
         r = draft.changedRect;
       const raw = { ...grid, heights: draft.ground },
         before = { ...grid, heights: tile.terrain.projection.grid.editing!.ground },
-        waterGrid = { ...grid, heights: grid.editing.water };
+        waterGrid = { ...grid, heights: grid.editing.water },
+        beforeWater = { ...grid, heights: tile.terrain.projection.grid.editing!.water };
       let water: Uint8Array | undefined,
         baseColor: Uint8Array | undefined,
         forest: Uint8Array | undefined;
@@ -194,7 +202,7 @@ export class AtlasSurfaceDraft {
             },
             level = gridHeight(waterGrid, p);
           const wet = gridHeight(raw, p) <= level,
-            wasWet = gridHeight(before, p) <= level,
+            wasWet = gridHeight(before, p) <= gridHeight(beforeWater, p),
             i = y * width + x,
             crossed = wet !== wasWet;
           const mask = crossed ? (wet ? 255 : 0) : channels.water[i]!,

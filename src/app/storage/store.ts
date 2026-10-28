@@ -653,7 +653,7 @@ export class CampaignStore {
   ) {
     this.guard(c.token, c.campaignId);
     if (
-      c.action.kind !== 'landscape-height-stroke' ||
+      !['landscape-height-stroke', 'landscape-lake-stroke'].includes(c.action.kind) ||
       this.db.prepare('SELECT 1 FROM atlas_receipt WHERE command_id=?').get(c.commandId)
     )
       return;

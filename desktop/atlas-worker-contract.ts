@@ -38,7 +38,10 @@ export type AtlasProjectionJob =
 export type AtlasJob = (
   | AtlasProjectionJob
   | { kind: 'terrain-live'; query: TerrainFrameQuery; base?: TerrainFrameIdentity }
-  | { kind: 'terrain-stroke'; stroke: HeightStroke }
+  | {
+      kind: 'terrain-stroke';
+      stroke: HeightStroke | import('../src/app/atlas/atlas-landscape').LakeStroke;
+    }
   | { kind: 'region'; query: AtlasRegionQuery }
   | { kind: 'focus'; objectKind: 'room' | 'city' | 'building' | 'element' | 'scope'; id: string }
   | { kind: 'hit'; query: AtlasRegionQuery; point: Point }

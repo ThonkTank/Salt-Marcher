@@ -538,6 +538,7 @@ const atlasActionKinds: Record<AtlasCommand['action']['kind'], true> = {
   'landscape-vegetation-edit': true,
   'landscape-terrain-style': true,
   'landscape-height-stroke': true,
+  'landscape-lake-stroke': true,
   'landscape-sea-level': true,
   'landscape-land-stroke': true,
   'landscape-color-stroke': true,
@@ -602,7 +603,9 @@ export function executeAtlasWrite(
       let continuation: { ordinal: number; payload: string; label: string } | undefined;
       if (stroke) {
         if (
-          !['landscape-height-stroke', 'landscape-color-stroke'].includes(c.action.kind) ||
+          !['landscape-height-stroke', 'landscape-lake-stroke', 'landscape-color-stroke'].includes(
+            c.action.kind,
+          ) ||
           typeof stroke.id !== 'string' ||
           !stroke.id ||
           stroke.id.length > 128 ||
@@ -884,7 +887,8 @@ export function applyAtlasCommand(
     throw new Error('Atlas inzwischen geändert. Ausschnitt vor dem Zeichnen erneut laden.');
   if (
     prepared &&
-    (c.action.kind !== 'landscape-height-stroke' ||
+    (!['landscape-height-stroke', 'landscape-lake-stroke'].includes(c.action.kind) ||
+      !('stroke' in c.action) ||
       prepared.stroke !== JSON.stringify(c.action.stroke) ||
       prepared.fence !== effects.atlasRegionSource(c.token).fence ||
       prepared.revision !== atlasRoot(db, c.campaignId).revision)
@@ -900,7 +904,7 @@ export function applyAtlasCommand(
     bounds: [],
   };
   const visibility =
-    c.action.kind === 'landscape-height-stroke'
+    c.action.kind === 'landscape-height-stroke' || c.action.kind === 'landscape-lake-stroke'
       ? c.action.stroke.visibility
       : c.action.kind === 'landscape-color-stroke'
         ? c.action.record.paint?.visibility
@@ -937,6 +941,7 @@ export function applyAtlasCommand(
         a.kind === 'landscape-terrain-style' ||
         a.kind === 'landscape-vegetation-edit' ||
         a.kind === 'landscape-height-stroke' ||
+        a.kind === 'landscape-lake-stroke' ||
         a.kind === 'landscape-sea-level' ||
         a.kind === 'landscape-land-stroke' ||
         a.kind === 'landscape-color-stroke' ||
@@ -973,6 +978,7 @@ export function applyAtlasCommand(
             ? false
             : a.kind === 'landscape-vegetation-edit' ||
               a.kind === 'landscape-height-stroke' ||
+              a.kind === 'landscape-lake-stroke' ||
               a.kind === 'landscape-sea-level' ||
               a.kind === 'landscape-land-stroke' ||
               a.kind === 'landscape-color-stroke' ||

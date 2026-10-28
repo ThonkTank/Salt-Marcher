@@ -6,7 +6,7 @@ import { createRequire } from 'node:module';
 buildSync({
   stdin: {
     contents:
-      "export * from './src/app/atlas/terrain-brush-draft';export * from './src/app/atlas/terrain-brush';export * from './src/app/atlas/terrain-height';export * from './src/app/atlas/terrain-spatial-model';",
+      "export * from './src/app/atlas/terrain-lake-brush';export * from './src/app/atlas/atlas-surface-draft';export * from './src/app/atlas/terrain-brush-draft';export * from './src/app/atlas/terrain-brush';export * from './src/app/atlas/terrain-height';export * from './src/app/atlas/terrain-spatial-model';",
     resolveDir: process.cwd(),
   },
   outfile: '.build/terrain-brush-draft-test.cjs',
@@ -14,8 +14,16 @@ buildSync({
   platform: 'node',
   format: 'cjs',
 });
-const { TerrainBrushDraft, applyTerrainBrush, TerrainSampler, heightRecord, gridHeight } =
-  createRequire(import.meta.url)('../../.build/terrain-brush-draft-test.cjs');
+const {
+  applyLakeBrush,
+  mergeLakeBrush,
+  AtlasSurfaceDraft,
+  TerrainBrushDraft,
+  applyTerrainBrush,
+  TerrainSampler,
+  heightRecord,
+  gridHeight,
+} = createRequire(import.meta.url)('../../.build/terrain-brush-draft-test.cjs');
 function grid(height = -100) {
   const view = {
     box: { x: -64, y: -64, width: 128, height: 128 },
@@ -230,4 +238,59 @@ test('overlapping forms and multiscale smoothing share exact author nodes across
       JSON.stringify({ preserveDetails, maximumHeightErrorM: maximum, gestures: actions.length }),
     );
   }
+});
+
+test('lake draft equals commit for stationary holding, deepening, partial/full erasure and a following gesture', () => {
+  const base = grid(20),
+    s = {
+      id: 'lake-first',
+      mode: 'dig',
+      radius: 48,
+      strength: 2,
+      feather: 0.8,
+      waterLevelM: 20,
+      samples: [
+        { x: 0, y: 0, t: 0 },
+        { x: 0, y: 0, t: 1000 },
+      ],
+    };
+  let original = base.editing.author.records;
+  const draft = new TerrainBrushDraft(base);
+  assert(draft.update(s));
+  assert.equal(draft.ground[centre], 18);
+  assert.equal(draft.grid.heights[centre], 20);
+  assert.equal(draft.grid.editing.water[centre], 20);
+  const held = { ...s, samples: [s.samples[0], s.samples[1], { x: 0, y: 0, t: 3000 }] };
+  assert(draft.update(held));
+  assert.equal(draft.ground[centre], 14);
+  let expected = mergeLakeBrush(original, applyLakeBrush(original, held, base));
+  assert.deepEqual(draft.records, expected);
+  const at = (x, y) => ({ x: x - 64, y: y - 64 });
+  for (let y = 25; y <= 100; y += 5)
+    for (let x = 25; x <= 100; x += 5) {
+      const sample = new TerrainSampler(expected);
+      const p = at(x, y);
+      assert(Math.abs(draft.ground[y * 129 + x] - sample.sample(p).heightM) < 0.001);
+      assert.equal(
+        draft.grid.heights[y * 129 + x],
+        Math.fround(Math.max(sample.sample(p).heightM, sample.waterLevel(p, -Infinity) ?? 0)),
+      );
+    }
+  const erase = { ...s, id: 'erase', mode: 'erase', radius: 12 };
+  const partial = new TerrainBrushDraft(draft.grid);
+  assert(partial.update(erase));
+  assert.equal(partial.ground[centre], 20);
+  assert.equal(partial.grid.editing.water[centre], 0);
+  assert(partial.records.some((r) => r.lakeBed));
+  const all = new TerrainBrushDraft(partial.grid);
+  all.update({ ...erase, radius: 64 });
+  assert.equal(all.ground[centre], 20);
+  assert(!all.records.some((r) => r.lakeBed));
+  assert(all.grid.editing.author.removed.includes(s.id));
+  const again = new TerrainBrushDraft(all.grid);
+  again.update({ ...s, id: 'lake-again' });
+  assert.equal(again.ground[centre], 18);
+  for (const r of again.records) assert(!again.grid.editing.author.removed.includes(r.id));
+  assert.equal(base.editing.ground[centre], 20);
+  assert.equal(base.editing.water[centre], 0);
 });

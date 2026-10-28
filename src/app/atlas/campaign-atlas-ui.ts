@@ -702,6 +702,7 @@ export class CampaignAtlasWorkbench {
           : null,
       selected: (id, kind) => this.layout?.landscapeSelectionChanged(id, kind),
       terrainGesture: (active) => this.terrainGesture(active),
+      lakeLevel: (point) => this.raster?.lakeLevel(point),
       previewHeight: (stroke) => this.spatial?.previewHeight(stroke),
       editingReady: (radius, point) => this.raster?.editingReady(radius, point) ?? true,
       writeTerrain: async (a, c) => {
@@ -728,7 +729,8 @@ export class CampaignAtlasWorkbench {
       refresh: () => this.regions.refresh(),
       choose: (p) => this.chooseAt(p, 'landscape'),
       current: () =>
-        this.raster?.active && ['height', 'smooth', 'color'].includes(this.landscape.spatialTool)
+        this.raster?.active &&
+        ['height', 'smooth', 'freshwater', 'color'].includes(this.landscape.spatialTool)
           ? this.raster.ready &&
             (this.strokeQueue?.hasCapacity ?? true) &&
             !(this.strokeOwner === this.owner?.token && this.strokeQueue?.failed)

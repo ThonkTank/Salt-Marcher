@@ -13,7 +13,7 @@ Für das neue Höhenmodell ergänzt [Geländegebundene Straßen und Flüsse](ter
 
 Straßen und Flüsse speichern Weltmeter-Kontrollpunkte und optionale `line.version = 1`: Kurve, Farbe, Rauheit, Mäander, Quellverjüngung, Zufallsstart, Straßenmuster und Zeichenebene. Die zehn Straßenmuster bilden die sichtbaren Referenzvorschauen mit eigener Geometrie nach; proprietäre Assets werden nicht übernommen. Neue Vorgaben und ausgewählte Objekte besitzen getrennte Kontrollen. Umschalt-Klick erweitert die Auswahl derselben Verlaufsart; Ziehen verschiebt die ganze Auswahl. Breite/Stil lassen sich ausdrücklich gemeinsam anwenden. Punktaktionen bleiben erhalten. Teilen speichert angrenzende Tangenten und den bisherigen Verlaufabstand.
 
-Land hinzufügen/radieren, Küste anheben/absenken und Süßwasser hinzufügen/radieren sind Wirkungen des Geländepinsels. Küstenänderungen betreffen nur den berührten Rand. Süßwasserradierung entfernt die eigene Wasserschicht und legt das darunterliegende Gelände frei. Eigenschaften und gezieltes Zurücksetzen verwenden freie metrische Flächen.
+Land hinzufügen/radieren, Küste anheben/absenken und Süßwasser hinzufügen/radieren sind Wirkungen des Geländepinsels. Küstenänderungen betreffen nur den berührten Rand. Süßwasser gräbt ein Seebecken und füllt es gleichzeitig. Die Radierung entfernt Wasser und füllt ausschließlich den zugeordneten Seeabtrag wieder auf; spätere unabhängige Geländeänderungen bleiben erhalten. Eigenschaften und gezieltes Zurücksetzen verwenden freie metrische Flächen.
 
 Gelände- und Wasserfarbe speichern `paint.version = 1` ohne Spielwerte: Ziel, Farbe, Deckkraft, Auftragsstärke, Spitze, Radius, Zufallsstart und Strichpunkte. Auftragsstärke akkumuliert innerhalb eines Strichs; Deckkraft begrenzt den gesamten Auftrag. Füllen verwendet die zusammenhängende angelegte Land-/Wasserfläche. Farbmasken richten sich nach der aktuellen Wasserverteilung. Die Pipette liest den sichtbaren Kartenpixel; die Palette bleibt lokal erhalten. Farbradierer beschneiden nur Farbflächen.
 
@@ -34,6 +34,31 @@ DnD-/Metrik-Umschaltung und weitere Live-Geometriemaße sind davon nicht abgenom
 `landscape-line.ts` erzeugt deterministische numerische Geometrie für Vorschau, Canvas, SVG-Adapter, Rasterübersicht, Export und genaue Abfragen. Bounds umfassen die erzeugte Kurve und ihre Breite. Datensätze ohne neue Optionen verwenden weiterhin ihre ursprünglichen Linien und Zeichenreihenfolgen. `landscape-brush.ts` speichert örtliche Polygonmasken; berechnet werden ausschließlich angeforderte Rasterkacheln. Es gibt keine weltgroße Farbfläche.
 
 Die vorhandene SQLite-Schreibgrenze, Receipts, Undo/Redo, Archive und Wiederherstellung tragen die neuen optionalen Felder unverändert. Mehrfachbearbeitung und Radierung sind atomar. Kurven sind auf 2000 Kontrollpunkte begrenzt, Farbzüge auf 4000 Abdrücke, Füllen auf 10000 Autorenflächen. Extreme Pfeil-/Schraffurverläufe begrenzen die Anzahl ihrer Muster auf 2000; die Verteilung bleibt kameraunabhängig.
+
+### Seebeckenpinsel
+
+`terrain-lake-brush.ts` ist der gemeinsame reine Operator für Live-Entwurf und
+kanonischen Worker. Radius und weicher Rand bestimmen die Form, Stärke in m/s
+und tatsächliche Einwirkzeit den Abtrag, auch bei stillstehender Spitze. Der
+Pegel wird am Anfang der Geste eingefroren: ein ausdrücklich eingegebener Pegel,
+der Pegel einer dort vorhandenen Seefläche oder die Bodenhöhe des ersten Punktes.
+Der frühere automatische Zuschlag von einem Meter entfällt.
+
+Die Bodenhöhen bleiben ausschließlich in den vorhandenen Höhenkacheln. Das
+Wasserobjekt trägt unter `lakeBed` die zugehörigen tatsächlich abgetragenen
+Knotenanteile samt Kachelkennung und Auflösung als Herkunftsinformation. Die
+Radierung nimmt alle betroffenen Auflösungen zurück und verkleinert Wasserfläche
+und Herkunft gemeinsam. Sie wirkt im bestrichenen Bereich vollständig und
+addiert den eigenen Abtrag zu den aktuellen Höhen. Ein abgeschlossener Zug
+schreibt Höhe, Wasser und Herkunft atomar in genau einem Historyschritt; Queue,
+Receipts und Recovery besitzen weiterhin Bestätigung und Wiederaufnahme.
+
+Der sichtbare Wasserspiegel wird weiterhin durch Autorenfläche und Bodenhöhe
+begrenzt. Eine Überlauf-/Einzugsgebietssimulation und das gemeinsame Anheben von
+See und Umland sind spätere Arbeit. Gezielte Regressionen stehen in
+`tests/atlas/terrain-brush.test.mjs`, `tests/atlas/landscape-brush.test.mjs` und
+`tests/atlas/terrain-brush-draft.test.mjs`; die native Eingabeprobe ist
+`tools/test-desktop-terrain-lakes.mjs`. Testverknüpfungen ersetzen keine Nutzerabnahme.
 
 ## Vergleich und Nachweise
 

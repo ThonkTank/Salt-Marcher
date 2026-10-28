@@ -31,7 +31,7 @@ import {
 import { pendingAtlasWrite } from './campaign-atlas-author';
 import type { AtlasAction } from './campaign-atlas-contracts';
 import { atlasHexAt } from './campaign-atlas-model';
-import { brushFootprint, type BrushMode } from './landscape-brush';
+import { brushFootprint } from './landscape-brush';
 import { contains } from './landscape-geometry';
 import { linePoints, translateLine } from './landscape-line';
 import { LandscapeToolSettings } from './landscape-tool-settings';
@@ -495,7 +495,7 @@ export class LandscapeWorkbench {
             return;
           }
           if (
-            (this.tool === 'height' || this.tool === 'smooth') &&
+            ['height', 'smooth', 'freshwater'].includes(this.tool) &&
             this.host.editingReady?.(this.editingRadius(), this.lastPoint) === false
           ) {
             this.say('Höhendaten für diesen Pinsel werden geladen.');
@@ -511,19 +511,34 @@ export class LandscapeWorkbench {
               ),
               visibility: this.host.visibility?.(),
             };
-          if (this.tool === 'height' || this.tool === 'smooth') {
+          if (['height', 'smooth', 'freshwater'].includes(this.tool)) {
             this.brush.maskStart = e.timeStamp;
-            this.brush.maskStroke = {
-              seed: this.draftSeed,
-              ...this.settings.height(),
-              visibility: this.host.visibility?.(),
-              radius: Number(atlasFieldValue(html<HTMLInputElement>('land-radius'))),
-              samples: [{ ...this.lastPoint, t: 0 }],
-            };
+            this.brush.maskStroke =
+              this.tool === 'freshwater'
+                ? {
+                    id: crypto.randomUUID(),
+                    mode: this.settings.mode() === 'freshwater-erase' ? 'erase' : 'dig',
+                    radius: this.editingRadius(),
+                    strength: this.settings.height().strength,
+                    feather: this.settings.height().feather,
+                    waterLevelM:
+                      html<HTMLInputElement>('land-water-level').value !== ''
+                        ? Number(html<HTMLInputElement>('land-water-level').value)
+                        : (this.host.lakeLevel?.(this.lastPoint) ?? 0),
+                    visibility: this.host.visibility?.(),
+                    samples: [{ ...this.lastPoint, t: 0 }],
+                  }
+                : {
+                    seed: this.draftSeed,
+                    ...this.settings.height(),
+                    visibility: this.host.visibility?.(),
+                    radius: Number(atlasFieldValue(html<HTMLInputElement>('land-radius'))),
+                    samples: [{ ...this.lastPoint, t: 0 }],
+                  };
           }
           if (this.points.length) this.brushStrokes.push(this.points);
           this.points = [this.lastPoint];
-          if (this.tool === 'height' || this.tool === 'smooth' || this.tool === 'color')
+          if (['height', 'smooth', 'freshwater', 'color'].includes(this.tool))
             this.brush.startLive();
           canvas.setPointerCapture(e.pointerId);
           this.redrawPointer();
@@ -875,7 +890,7 @@ export class LandscapeWorkbench {
   private redrawPointer() {
     if (
       !this.dragging &&
-      ['height', 'smooth', 'color'].includes(this.tool) &&
+      ['height', 'smooth', 'freshwater', 'color'].includes(this.tool) &&
       this.host.redrawOverlay
     )
       this.host.redrawOverlay();
@@ -1781,7 +1796,7 @@ export class LandscapeWorkbench {
       'vegetation-dense',
     ].includes(this.tool);
     const spatialCursor =
-      ['height', 'smooth', 'color'].includes(this.tool) && !!this.host.visibility?.();
+      ['height', 'smooth', 'freshwater', 'color'].includes(this.tool) && !!this.host.visibility?.();
     if (this.active && this.hovering && brush && !spatialCursor)
       root.append(
         atlasPaint('circle', {
@@ -1986,7 +2001,11 @@ export class LandscapeWorkbench {
     if (!this.points.length) return;
     if (this.tool.startsWith('vegetation')) return this.finishVegetation();
     if (this.brush.maskStroke)
-      return this.commit({ kind: 'landscape-height-stroke', stroke: this.brush.maskStroke });
+      return this.commit(
+        'waterLevelM' in this.brush.maskStroke
+          ? { kind: 'landscape-lake-stroke', stroke: this.brush.maskStroke }
+          : { kind: 'landscape-height-stroke', stroke: this.brush.maskStroke },
+      );
     if (this.tool === 'color')
       return this.commit({ kind: 'landscape-color-stroke', record: this.colorRecord() });
     const res = gridMeters(html<HTMLSelectElement>('atlas-hex-level').value);
@@ -2015,26 +2034,7 @@ export class LandscapeWorkbench {
           brushFootprint(points, radius),
         );
       }
-      if (this.tool === 'freshwater') {
-        const mode = this.settings.mode() as Exclude<BrushMode, 'terrain'>,
-          radius = Number(atlasFieldValue(html<HTMLInputElement>('land-radius'))),
-          r = emptyRecord('patch');
-        if (html<HTMLInputElement>('land-water-level').value !== '')
-          r.waterLevelM = Number(html<HTMLInputElement>('land-water-level').value);
-        r.points = this.points;
-        r.polygons = polygons;
-        r.resolution = res;
-        r.values = { terrain: html<HTMLSelectElement>('atlas-terrain').value as any };
-        return this.commit({
-          kind: 'landscape-brush',
-          record: r,
-          mode,
-          radius,
-          roughness: 0,
-          seed: this.draftSeed,
-          fill: !!r.paint?.fill,
-        });
-      }
+      if (this.tool === 'freshwater') throw Error('Seezug neu beginnen. Zeitstempel fehlen.');
       const field = html<HTMLSelectElement>('land-field').value as LandscapeField;
       if (this.tool === 'reset')
         return this.commit({

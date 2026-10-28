@@ -1,5 +1,6 @@
 {
  "roles": {
+  "LakeBed.tileId": "local",
   "LandscapeRecord.assetId": "local",
   "LandscapeRecord.id": "local",
   "LandscapeRecord.locationId": "local",

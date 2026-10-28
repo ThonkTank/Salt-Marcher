@@ -5,7 +5,11 @@ import { AtlasTerrainTiles } from '../src/app/storage/atlas-terrain-tiles';
 import { AtlasMaterialTiles } from '../src/app/storage/atlas-material-tiles';
 import { AtlasProjectionIndex } from '../src/app/storage/atlas-projection-index';
 import { assertAtlasProjectionSource } from '../src/app/storage/atlas-shape-source';
-import { computeTerrainStroke, TerrainScalePyramid } from '../src/app/storage/terrain-scale';
+import {
+  computeTerrainStroke,
+  computeLakeStroke,
+  TerrainScalePyramid,
+} from '../src/app/storage/terrain-scale';
 import { terrainTraceStart } from '../src/app/atlas/terrain-timing';
 import { parentPort, workerData } from 'node:worker_threads';
 import Database from 'better-sqlite3';
@@ -111,7 +115,10 @@ parentPort!.on('message', async (job: AtlasWorkerJob) => {
         preparation = {
           fence: job.source.fence,
           stroke,
-          steps: pyramid.warm(db, job.source.campaignId, job.stroke),
+          steps:
+            'waterLevelM' in job.stroke
+              ? (function* () {})()
+              : pyramid.warm(db, job.source.campaignId, job.stroke),
         };
       if (!preparation || preparation.fence !== job.source.fence || preparation.stroke !== stroke)
         throw Error('Geländeberechnung inzwischen ersetzt.');
@@ -168,15 +175,26 @@ parentPort!.on('message', async (job: AtlasWorkerJob) => {
               fence: job.source.fence,
               revision: job.source.revision,
               stroke: JSON.stringify(job.stroke),
-              records: computeTerrainStroke(
-                db,
-                job.source.campaignId,
-                job.stroke,
-                pyramid,
-                job.stroke.visibility
-                  ? reader.terrainVisibility(job.source, job.stroke.visibility)
-                  : undefined,
-              ),
+              ...('waterLevelM' in job.stroke
+                ? computeLakeStroke(
+                    db,
+                    job.source.campaignId,
+                    job.stroke,
+                    job.stroke.visibility
+                      ? reader.terrainVisibility(job.source, job.stroke.visibility)
+                      : undefined,
+                  )
+                : {
+                    records: computeTerrainStroke(
+                      db,
+                      job.source.campaignId,
+                      job.stroke,
+                      pyramid,
+                      job.stroke.visibility
+                        ? reader.terrainVisibility(job.source, job.stroke.visibility)
+                        : undefined,
+                    ),
+                  }),
             }
           : job.kind === 'terrain-live'
             ? reader.liveTerrain(job.source, job.query, job.base)
