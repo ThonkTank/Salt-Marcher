@@ -1,8 +1,8 @@
 import type { Result } from '../shared/contracts';
 import { EditorSession } from '../shared/editor-session';
 import { createEditorSurface } from '../shared/editor-surface';
-import { liveHexSurface,type LiveAtlasSurface } from './live-hex-surface';
-import type { WorldAck,WorldCommand } from './world-contracts';
+import { liveHexSurface, type LiveAtlasSurface } from './live-hex-surface';
+import type { WorldAck, WorldCommand } from './world-contracts';
 export interface WorldEditorHost {
   roots: readonly HTMLElement[];
   api: Window['campaign'];

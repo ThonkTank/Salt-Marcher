@@ -2,12 +2,12 @@ import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import {
-CreatureCatalog,
-SRD_5_1_ARTIFACT_SHA256,
-SRD_5_1_NOTICE,
-SRD_5_1_REACTION_SUPPLEMENT,
-SRD_5_1_XP_CORRECTIONS,
-type CreatureCatalogQuery,
+  CreatureCatalog,
+  SRD_5_1_ARTIFACT_SHA256,
+  SRD_5_1_NOTICE,
+  SRD_5_1_REACTION_SUPPLEMENT,
+  SRD_5_1_XP_CORRECTIONS,
+  type CreatureCatalogQuery,
 } from '../../features/catalog/creature-catalog';
 const hash = (text: string | Buffer) => createHash('sha256').update(text).digest('hex');
 const effectiveCatalogHash = hash(
