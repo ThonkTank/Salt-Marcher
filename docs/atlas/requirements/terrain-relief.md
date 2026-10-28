@@ -2,7 +2,7 @@
 
 Status: Verbindlicher Zielumfang; historische Umsetzungsbelege sind keine aktuelle Abnahme.
 Owner: atlas
-Last Reviewed: 2026-10-27 (bestätigter Terrain-/Wasserumfang; Fachabnahme separat)
+Last Reviewed: 2026-10-28 (begrenzte Flussplanung konkretisiert; Fachabnahme separat)
 Source of Truth: Dieses Dokument besitzt das benannte Thema; Code belegt den Iststand, das Abnahmeregister den Prüfstand.
 
 Zieländerung vom 20.10.2026: Die [Roadmap für den gemeinsamen räumlichen Atlas](../architecture/unified-spatial-atlas.md) ersetzt getrennte Drauf-/Kippdarstellung durch eine gemeinsame perspektivische Kamera. Die folgenden Implementierungs- und Prüfbefunde beschreiben den bisherigen Stand; sie belegen den neuen Atlas noch nicht.
@@ -48,7 +48,10 @@ Klarstellung zieht die übrigen Kartenwerkzeuge nicht vor.
   zusammenhängende Hänge und Rücken; eine Schlucht bildet einen zusammenhängenden
   Einschnitt. Sie reduzieren manuelles Sculpten und wiederholtes Einstellen der
   Grundpinsel. Weitere Formen sind noch nicht konkretisiert.
-- Wasserumfang: Meer mit einstellbarem Meeresspiegel; keine Seen und keine Flüsse.
+- Wasserumfang der ursprünglichen Etappe: Meer mit einstellbarem Meeresspiegel.
+  Der bestätigte zweite Arbeitszyklus erweitert diesen Umfang um einzeln geplante
+  [Flüsse mit Pflichtpunkten und begrenztem Bettabtrag](../contract/terrain-routes.md).
+  Automatische Flussnetze, Erosion und neue Seen gehören weiterhin nicht dazu.
 - Bearbeitung und Darstellung mit einer drehbaren 3D-Kamera. Die vollständige
   Kamerasteuerung funktioniert allein mit der Maus; WASD ist eine zusätzliche
   Bedienmöglichkeit, keine Voraussetzung für Navigation oder Bearbeitung.

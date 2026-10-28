@@ -38,6 +38,9 @@ export const routeSpec = (kind: 'road' | 'river', anchors: Point[]): TerrainRout
   sections: anchors.slice(1).map(() => 'auto'),
   nodes: [],
 });
+/** Water width and bed depth taper over the same physical source distance. */
+export const routeRiverFade = (r: LandscapeRecord, station: number) =>
+  r.kind === 'river' && r.line?.fadeIn ? Math.min(1, station / (r.width * 8)) : 1;
 const finite = (x: number, min: number, max: number) => Number.isFinite(x) && x >= min && x <= max;
 export function validateRoute(r: LandscapeRecord, planned = true) {
   const s = r.route;
@@ -181,7 +184,7 @@ export class RouteSurface {
       water: number | undefined;
     for (const { r, hit } of nearest.values()) {
       const s = r.route!,
-        fade = r.kind === 'river' && r.line?.fadeIn ? Math.min(1, hit.station / (r.width * 8)) : 1,
+        fade = routeRiverFade(r, hit.station),
         radius = (r.width / 2) * fade;
       if (hit.distance > radius + s.limits.shoulder) continue;
       if (r.kind === 'river' && hit.distance <= radius)
