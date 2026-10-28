@@ -2,7 +2,15 @@ import type { Point } from '../shared/contracts';
 import { type LandscapeRecord } from './atlas-landscape';
 import { contains } from './landscape-geometry';
 import { TerrainSampler, decodeHeights, heightRecord } from './terrain-height';
-import { nearestRoute, validateRoute, type RouteNode, type RouteStructure } from './terrain-route';
+import {
+  nearestRoute,
+  routeRiverFade,
+  validateRoute,
+  type RouteNode,
+  type RouteStructure,
+} from './terrain-route';
+import { routeSegmentRange } from './route-segment-range';
+import { heightInfluenceBounds } from './terrain-interpolation';
 
 const distance = (a: Point, b: Point) => Math.hypot(a.x - b.x, a.y - b.y);
 const mix = (a: Point, b: Point, t: number) => ({
@@ -176,8 +184,9 @@ function solveProfile(
     const h = ground[i]!,
       mode = modes[i]!,
       p = points[i]!;
-    lo[i] = h - l.cut + (r.kind === 'river' ? l.depth : 0);
-    hi[i] = h + l.fill + (r.kind === 'river' ? l.depth : 0);
+    const depth = r.kind === 'river' ? l.depth * routeRiverFade(r, station[i]!) : 0;
+    lo[i] = h - l.cut + depth;
+    hi[i] = h + l.fill + depth;
     want[i] = h;
     const portalDistance = Math.min(
         station[i]! - station[runStart[i]!]!,
@@ -209,7 +218,13 @@ function solveProfile(
       hi[i] = ground[i]! + l.fill;
       want[i] = ground[i]!;
     }
-  if (mouth !== undefined) lo[n - 1] = hi[n - 1] = want[n - 1] = mouth;
+  if (mouth !== undefined) {
+    // A water-level connection is an additional constraint, never permission
+    // to exceed the author's earthwork budget at the mouth.
+    lo[n - 1] = Math.max(lo[n - 1]!, mouth);
+    hi[n - 1] = Math.min(hi[n - 1]!, mouth);
+    want[n - 1] = mouth;
+  }
   const minSlope = r.kind === 'river' ? 0.00001 : -l.grade,
     maxSlope = r.kind === 'river' ? l.grade : l.grade;
   // z[i] - z[i+1] is bounded; interval propagation is exact on a chain.
@@ -244,6 +259,103 @@ function solveProfile(
     z: z[i]!,
     structure: modes[i] === 'tunnel' && (i === 0 || i === n - 1) ? 'ground' : modes[i]!,
   }));
+}
+
+/** Retain the existing interval solver, but constrain the actual interpolated
+ * terrain between its nodes too. Fine source tiles may lie entirely between
+ * the width-based path samples, so probe their complete interpolation support.
+ * Only offending samples become profile nodes; the canonical terrain stays intact. */
+function solveRiverProfile(
+  points: Point[],
+  r: LandscapeRecord,
+  sampler: TerrainSampler,
+  modes: RouteStructure[],
+  records: LandscapeRecord[],
+  mouth?: number,
+) {
+  const sources = records.flatMap((record) =>
+    record.height
+      ? [
+          {
+            box: heightInfluenceBounds(record.height),
+            height: record.height,
+            step: record.height.pixel / 4,
+          },
+        ]
+      : [],
+  );
+  for (let pass = 0; pass < 12; pass++) {
+    const nodes = solveProfile(points, r, sampler, modes, mouth),
+      refined = [points[0]!],
+      structures = [modes[0]!];
+    let station = 0,
+      changed = false;
+    for (let i = 1; i < nodes.length; i++) {
+      const a = nodes[i - 1]!,
+        b = nodes[i]!,
+        length = distance(a, b),
+        probes = new Set([0.25, 0.5, 0.75]);
+      const sourceEnd = r.width * 8;
+      if (r.line?.fadeIn && sourceEnd > station && sourceEnd < station + length)
+        probes.add((sourceEnd - station) / length);
+      for (const source of sources) {
+        const range = routeSegmentRange(a, b, source.box);
+        if (!range) continue;
+        // Include source-node crossings exactly: a narrow crest at a canonical
+        // node must not hide between the otherwise regular quarter-pixel probes.
+        for (const axis of ['x', 'y'] as const) {
+          const delta = b[axis] - a[axis];
+          if (!delta) continue;
+          for (let grid = -2; grid <= 65; grid++) {
+            const t = (source.height[axis] + grid * source.height.pixel - a[axis]) / delta;
+            if (t > 0 && t < 1 && t >= range[0] && t <= range[1]) probes.add(t);
+          }
+        }
+        const count = Math.max(1, Math.ceil((length * (range[1] - range[0])) / source.step));
+        for (let j = 0; j <= count; j++) {
+          const t = range[0] + ((range[1] - range[0]) * j) / count;
+          if (t > 0 && t < 1) probes.add(t);
+        }
+      }
+      for (const t of [...probes].sort((a, b) => a - b)) {
+        const p = mix(a, b, t),
+          ground = sampler.sample(p).heightM,
+          water = a.z + (b.z - a.z) * t,
+          bed = water - r.route!.limits.depth * routeRiverFade(r, station + length * t),
+          limits = r.route!.limits;
+        if (bed < ground - limits.cut - 1e-6 || bed > ground + limits.fill + 1e-6) {
+          const near =
+            distance(refined.at(-1)!, p) < 1e-8
+              ? refined.at(-1)!
+              : distance(p, b) < 1e-8
+                ? b
+                : undefined;
+          if (near) {
+            if (Math.abs(sampler.sample(near).heightM - ground) > 1e-6)
+              throw Error(
+                'Geländewechsel unterhalb der Profilgenauigkeit. Kürzeren Abschnitt planen.',
+              );
+            continue;
+          }
+          refined.push(p);
+          if (refined.length > 4096)
+            throw Error('Verlauf zu detailreich. Kürzere Abschnitte anlegen.');
+          structures.push(t < 0.5 ? modes[i - 1]! : modes[i]!);
+          changed = true;
+        }
+      }
+      refined.push(points[i]!);
+      structures.push(modes[i]!);
+      station += length;
+      if (refined.length > 4096) throw Error('Verlauf zu detailreich. Kürzere Abschnitte anlegen.');
+    }
+    if (!changed) return nodes;
+    points = refined;
+    modes = structures;
+  }
+  throw Error(
+    'Kein durchgängiger Abfluss zwischen den Profilpunkten innerhalb der Eingriffsgrenzen.',
+  );
 }
 export function planRoute(
   records: LandscapeRecord[],
@@ -309,7 +421,10 @@ export function planRoute(
     }
     if (points.length > 4096) throw Error('Verlauf zu lang. Kürzere Abschnitte anlegen.');
     try {
-      final = solveProfile(points, r, sampler, modes, mouth);
+      final =
+        r.kind === 'river'
+          ? solveRiverProfile(points, r, sampler, modes, records, mouth)
+          : solveProfile(points, r, sampler, modes, mouth);
       break;
     } catch (e) {
       lastError = e;

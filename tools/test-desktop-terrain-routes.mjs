@@ -1,3 +1,5 @@
+import { riverTerrain } from '../tests/helpers/river-terrain.mjs';
+import { qualifyRiverRoute, observeRiverSurface } from './atlas-river-probe.mjs';
 import { setBrushWorldRadius, setHeightDirection } from './atlas-brush-probe.mjs';
 // Product inputs and a fresh profile; SQLite reads are assertions, never UI shortcuts.
 import { createRequire } from 'node:module';
@@ -7,6 +9,9 @@ import { createNativeSession } from './native-session.mjs';
 import { randomUUID } from 'node:crypto';
 import assert from 'node:assert/strict';
 import { atlasCanvasReady } from './atlas-canvas-probe.mjs';
+const riverOnly = process.argv.includes('--river-only'),
+  depression = Number(process.argv.find((a) => a.startsWith('--depression='))?.split('=')[1] ?? 0),
+  scale = process.argv.includes('--scale=2') ? 2 : 1;
 const root = process.cwd(),
   require = createRequire(import.meta.url),
   { buildSync } = require('esbuild'),
@@ -18,7 +23,7 @@ const native = await createNativeSession({ root, output: out, name: 'terrain-rou
 buildSync({
   stdin: {
     contents:
-      "export * from './src/app/storage/store';export * from './src/app/atlas/terrain-height';export * from './src/app/atlas/atlas-landscape';export * from './src/app/atlas/landscape-line';export * from './src/app/atlas/terrain-spatial-model';",
+      "export * from './src/app/storage/store';export * from './src/app/atlas/terrain-height';export * from './src/app/atlas/atlas-landscape';export * from './src/app/atlas/landscape-line';export * from './src/app/atlas/terrain-spatial-model';export * from './src/app/atlas/terrain-route';",
     resolveDir: root,
   },
   outfile: root + '/.build/route-store.cjs',
@@ -27,6 +32,7 @@ buildSync({
   format: 'cjs',
   external: ['better-sqlite3'],
 });
+const api = require(root + '/.build/route-store.cjs');
 const {
   CampaignStore,
   heightRecord,
@@ -57,34 +63,39 @@ if (reopenFrom) {
       token: active.token,
       action,
     });
-  for (let y = -1; y <= 0; y++)
-    for (let x = -1; x <= 0; x++)
-      write({
-        kind: 'landscape-put',
-        expectedRevision: null,
-        record: heightRecord(
-          x * 512,
-          y * 512,
-          8,
-          Float32Array.from({ length: 4096 }, (_, i) => {
-            const xx = x * 512 + (i % 64) * 8,
-              yy = y * 512 + Math.floor(i / 64) * 8;
-            return 65 - xx * 0.03 + 45 * Math.exp(-((xx - 20) ** 2 + (yy - 140) ** 2) / 4500);
-          }),
-        ),
-      });
-  const reference = {
-    ...emptyRecord('road'),
-    name: 'Referenzstraße',
-    width: 8,
-    line: newLine('road'),
-    points: [
-      { x: -180, y: 0 },
-      { x: 0, y: 40 },
-      { x: 180, y: 0 },
-    ],
-  };
-  write({ kind: 'landscape-put', record: reference, expectedRevision: null });
+  if (riverOnly) {
+    for (const record of riverTerrain(api, depression))
+      write({ kind: 'landscape-put', expectedRevision: null, record });
+  } else {
+    for (let y = -1; y <= 0; y++)
+      for (let x = -1; x <= 0; x++)
+        write({
+          kind: 'landscape-put',
+          expectedRevision: null,
+          record: heightRecord(
+            x * 512,
+            y * 512,
+            8,
+            Float32Array.from({ length: 4096 }, (_, i) => {
+              const xx = x * 512 + (i % 64) * 8,
+                yy = y * 512 + Math.floor(i / 64) * 8;
+              return 65 - xx * 0.03 + 45 * Math.exp(-((xx - 20) ** 2 + (yy - 140) ** 2) / 4500);
+            }),
+          ),
+        });
+    const reference = {
+      ...emptyRecord('road'),
+      name: 'Referenzstraße',
+      width: 8,
+      line: newLine('road'),
+      points: [
+        { x: -180, y: 0 },
+        { x: 0, y: 40 },
+        { x: 180, y: 0 },
+      ],
+    };
+    write({ kind: 'landscape-put', record: reference, expectedRevision: null });
+  }
   store.tutorial('skipped');
   store.close();
 }
@@ -102,7 +113,21 @@ const mark = (name) => {
   console.log(name);
 };
 async function start() {
-  page = await native.launch();
+  page = await native.launch(scale);
+  if (riverOnly) {
+    await observeRiverSurface(page, root);
+    await appWindowSize();
+    const campaignId = db.prepare('SELECT id FROM campaign LIMIT 1').get().id;
+    await page.evaluate(
+      (id) =>
+        localStorage.setItem(
+          'atlas-camera:' + id,
+          JSON.stringify({ x: -400, y: -280, width: 1100, height: 620 }),
+        ),
+      campaignId,
+    );
+    await page.reload();
+  }
   app = native.app;
   await page.waitForFunction(() => document.body.dataset.tutorialReady === 'true');
   await page
@@ -122,10 +147,15 @@ async function start() {
   await atlasCanvasReady(page);
   assert.equal(
     await page.locator('#campaign-map').getAttribute('data-renderer'),
-    'webgl',
+    'deck',
     'The ordinary Atlas must use the integrated camera, not its fallback',
   );
   assert.equal(await page.locator('#atlas-terrain-spatial').count(), 1);
+}
+async function appWindowSize() {
+  await native.app.evaluate(({ BrowserWindow }) =>
+    BrowserWindow.getAllWindows()[0].setContentSize(1920, 1080),
+  );
 }
 async function close() {
   await native.close();
@@ -169,7 +199,31 @@ async function save() {
   );
 }
 try {
-  if (reopenFrom) {
+  if (riverOnly) {
+    const campaignId = db.prepare('SELECT id FROM campaign LIMIT 1').get().id;
+    await qualifyRiverRoute({
+      api,
+      native,
+      getPage: () => page,
+      start,
+      close,
+      records,
+      revision: () =>
+        db.prepare('SELECT revision FROM campaign_atlas WHERE campaign_id=?').get(campaignId)
+          .revision,
+      cursor: () =>
+        db.prepare('SELECT cursor FROM campaign_atlas WHERE campaign_id=?').get(campaignId).cursor,
+      ready,
+      change,
+      save,
+      focus,
+      capture,
+      scale,
+      depression,
+      out,
+      result,
+    });
+  } else if (reopenFrom) {
     const before = records();
     await start();
     await focus('Passstraße');
@@ -283,7 +337,7 @@ try {
     await atlasCanvasReady(page);
     await page.locator('#atlas-section').selectOption('terrain');
     await page.locator('[data-tool-group="water"]').click();
-    await page.locator('[data-atlas-tool="river"]').click();
+    await page.locator('[data-tool-select="land-tool"][data-tool-value="river"]').click();
     await page.locator('#land-route-plan').click();
     await page.waitForFunction(
       () => document.querySelector('#terrain-route-editor')?.getAttribute('aria-busy') === 'false',

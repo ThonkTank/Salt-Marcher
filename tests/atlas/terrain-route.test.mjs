@@ -5,11 +5,17 @@ import { createRequire } from 'node:module';
 import { mkdirSync, mkdtempSync, rmSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { randomUUID } from 'node:crypto';
+import {
+  riverAnchors,
+  riverTerrain,
+  riverSamples,
+  riverRidgeTerrain,
+} from '../helpers/river-terrain.mjs';
 const cache = homedir() + '/.cache/saltmarcher';
 mkdirSync(cache, { recursive: true });
 buildSync({
   stdin: {
-    contents: `export * from './src/app/atlas/terrain-route';export * from './src/app/atlas/terrain-route-planner';export * from './src/app/atlas/atlas-route-geometry';export * from './src/app/atlas/terrain-height';export * from './src/app/atlas/terrain-brush';export * from './src/app/atlas/landscape-line';export * from './src/app/atlas/atlas-landscape';export * from './src/app/atlas/spatial-terrain';export * from './src/app/storage/store';export * from './src/app/storage/atlas-landscape-region';`,
+    contents: `export * from './src/app/atlas/terrain-route';export * from './src/app/atlas/terrain-route-planner';export * from './src/app/atlas/atlas-route-geometry';export * from './src/app/atlas/terrain-height';export * from './src/app/atlas/terrain-brush';export * from './src/app/atlas/landscape-line';export * from './src/app/atlas/atlas-landscape';export * from './src/app/atlas/spatial-terrain';export * from './src/app/storage/store';export * from './src/app/storage/atlas-landscape-region';export * from './src/app/storage/atlas-region';export * from './src/app/storage/atlas-terrain-tiles';export * from './src/app/storage/atlas-material-tiles';`,
     resolveDir: process.cwd(),
   },
   outfile: '.build/terrain-route-test.cjs',
@@ -113,6 +119,87 @@ test('river surface descends and owns a removable bed without changing base byte
   assert.equal(JSON.stringify(base), before);
   assert.equal(new TerrainSampler(base).sample(node).heightM, raw.sample(node).heightM);
 });
+test('sea mouth keeps the excavation budget instead of replacing its interval', () => {
+  const base = riverTerrain(api),
+    r = route('river', riverAnchors);
+  r.route.limits.cut = 0.25;
+  const end = new TerrainSampler(base, false).sample(riverAnchors.at(-1)).heightM;
+  assert(Math.abs(end + 1) < 1e-6);
+  assert(
+    end - r.route.limits.cut + r.route.limits.depth > 0,
+    'the 0m sea level is outside the allowed mouth interval',
+  );
+  assert.throws(() => planRoute(base, r), /Abfluss.*Eingriffsgrenzen/);
+});
+for (const depression of [0, 4, 12])
+  test(`river crosses ${depression}m trough with real interpolated bed and water`, () => {
+    const base = riverTerrain(api, depression),
+      request = route('river', riverAnchors);
+    if (depression === 12) {
+      const raw = new TerrainSampler(base, false),
+        low = raw.sample({ x: 0, y: 0 }).heightM + request.route.limits.depth,
+        saddle =
+          raw.sample({ x: 40, y: 0 }).heightM -
+          request.route.limits.cut +
+          request.route.limits.depth;
+      assert(
+        saddle > low,
+        'mandatory trough upper bound collides with downstream lower bound across full corridor',
+      );
+      assert.throws(() => planRoute(base, request), /Abfluss.*Eingriffsgrenzen/);
+      request.route.limits.cut = 16;
+    }
+    const before = JSON.stringify(base),
+      river = planRoute(base, request),
+      samples = riverSamples(api, base, river),
+      tolerance = 1e-5;
+    for (const p of riverAnchors) assert(river.route.nodes.some((n) => n.x === p.x && n.y === p.y));
+    assert.equal(river.route.nodes.at(-1).z, 0);
+    for (let i = 0; i < samples.length; i++) {
+      const p = samples[i];
+      assert(Math.abs(p.water - p.profile) < tolerance, JSON.stringify(p));
+      assert(
+        p.station === 0 ? p.bed <= p.water + tolerance : p.bed < p.water - tolerance,
+        `dry bed: ${JSON.stringify(p)}`,
+      );
+      assert(p.base - p.bed <= request.route.limits.cut + tolerance, JSON.stringify(p));
+      assert(p.bed - p.base <= tolerance, JSON.stringify(p));
+      if (i) assert(p.water < samples[i - 1].water, JSON.stringify(p));
+    }
+    assert.equal(JSON.stringify(base), before);
+  });
+test('a fine terrain ridge between profile nodes cannot hide a dry gap', () => {
+  const base = riverRidgeTerrain(api),
+    request = route('river', riverAnchors),
+    before = JSON.stringify(base);
+  assert.throws(() => planRoute(base, request), /Abfluss/);
+  assert.equal(JSON.stringify(base), before);
+  request.route.limits.cut = 16;
+  const river = planRoute(base, request),
+    samples = riverSamples(api, base, river, 0.05);
+  assert(samples.every((p) => p.station === 0 || p.bed < p.water - 1e-5));
+  assert(samples.every((p) => p.base - p.bed <= 16 + 1e-5 && p.bed - p.base <= 1e-5));
+  assert(samples.every((p, i) => !i || p.water < samples[i - 1].water));
+});
+test('a feasible fine crest near the tapered source is refined without a dry gap', () => {
+  const base = riverRidgeTerrain(api, -159, 8.01),
+    request = route('river', riverAnchors),
+    river = planRoute(base, request),
+    samples = riverSamples(api, base, river, 0.01);
+  assert(
+    river.route.nodes.some((p) => Math.abs(p.x + 159) < 1e-8),
+    'the canonical ridge node becomes a profile constraint',
+  );
+  assert(samples.every((p) => p.station === 0 || p.bed < p.water - 1e-5));
+  assert(samples.every((p) => p.base - p.bed <= 8 + 1e-5 && p.bed - p.base <= 1e-5));
+  assert(samples.every((p, i) => !i || p.water < samples[i - 1].water));
+  assert.equal(river.route.limits.cut, 8, 'no silent budget increase');
+  assert.deepEqual(
+    planRoute([...base, river], river, true),
+    river,
+    'canonical replanning retains the refined profile',
+  );
+});
 test('uphill river beyond cut budget is refused instead of drawn uphill', () => {
   const r = route('river');
   r.route.limits.cut = 2;
@@ -206,7 +293,7 @@ test('legacy curved styles and terrain edge heights survive 3D meshing', () => {
   }
   assert(vertices > 12);
 });
-function fixture(t) {
+function fixture(t, source = terrain((x) => 60 - x * 0.02)) {
   const dir = mkdtempSync(cache + '/route-store-'),
     store = new CampaignStore(dir + '/world.sqlite'),
     cam = store.create('Verläufe'),
@@ -218,8 +305,7 @@ function fixture(t) {
       token: active.token,
       action,
     });
-  for (const r of terrain((x) => 60 - x * 0.02))
-    write({ kind: 'landscape-put', record: r, expectedRevision: null });
+  for (const r of source) write({ kind: 'landscape-put', record: r, expectedRevision: null });
   t.after(() => {
     store.close();
     rmSync(dir, { recursive: true, force: true });
@@ -305,6 +391,137 @@ test('preview, save, undo, redo, deletion and fresh process preserve exact base 
     f.records().filter((x) => x.height),
     base.filter((x) => x.height),
   );
+});
+test('sea river rejects impossible budgets atomically and keeps the corrected draft through history and reopen', (t) => {
+  const f = fixture(t, riverTerrain(api, 12)),
+    request = route('river', riverAnchors),
+    base = f.records(),
+    box = { x: -200, y: -40, width: 660, height: 80 },
+    history = () =>
+      f.store.db.prepare('SELECT cursor FROM campaign_atlas WHERE campaign_id=?').get(f.cam.id)
+        .cursor,
+    beforeCursor = history();
+  assert.throws(() => f.put(request), /Abfluss.*Eingriffsgrenzen/);
+  assert.deepEqual(f.records(), base);
+  assert.equal(history(), beforeCursor);
+  request.route.limits.cut = 16;
+  const preview = f.store.atlasSpatialScene(f.token, box, 1, {
+    kind: 'landscape-route',
+    record: request,
+  });
+  assert.deepEqual(f.records(), base);
+  assert.equal(history(), beforeCursor);
+  f.put(request);
+  const saved = f.records(),
+    river = saved.find((r) => r.id === request.id),
+    samples = riverSamples(api, base, river);
+  assert.equal(history(), beforeCursor + 1);
+  assert.equal(river.route.nodes.at(-1).z, 0);
+  assert.deepEqual(f.store.atlasSpatialScene(f.token, box, 1).grid, preview.grid);
+  f.write({ kind: 'undo' });
+  assert.deepEqual(f.records(), base);
+  assert.equal(history(), beforeCursor);
+  f.write({ kind: 'redo' });
+  assert.deepEqual(
+    riverSamples(
+      api,
+      base,
+      f.records().find((r) => r.id === request.id),
+    ),
+    samples,
+  );
+  const reopened = new CampaignStore(f.dir + '/world.sqlite');
+  try {
+    const restored = JSON.parse(
+      reopened.db.prepare('SELECT payload FROM atlas_landscape WHERE id=?').get(request.id).payload,
+    );
+    assert.deepEqual(restored.route, river.route);
+    assert.deepEqual(riverSamples(api, base, restored), samples);
+    assert.deepEqual(
+      f.records().filter((r) => r.height),
+      base.filter((r) => r.height),
+    );
+  } finally {
+    reopened.close();
+  }
+});
+test('retained terrain tiles include a newly planned river and match fresh worker reads', async (t) => {
+  const f = fixture(t, riverTerrain(api)),
+    Database = createRequire(import.meta.url)('better-sqlite3');
+  let db = new Database(f.dir + '/world.sqlite', { readonly: true }),
+    reader = new api.AtlasRegionReader(db),
+    tiles = new api.AtlasTerrainTiles(db, f.dir + '/cache'),
+    materials = new api.AtlasMaterialTiles(db, f.dir + '/cache'),
+    cursor;
+  const read = async () => {
+    cursor = f.store.atlasRegionSource(f.token, cursor);
+    await reader.sync(cursor, false);
+    const steps = tiles.read(
+      cursor,
+      { tile: { lod: 1, x: 0, y: 0 }, revision: cursor.revision, product: 'height' },
+      reader,
+    );
+    let projection;
+    for (;;) {
+      const step = steps.next();
+      if (step.done) {
+        projection = step.value.projection;
+        break;
+      }
+    }
+    cursor = f.store.atlasRegionSource(f.token, cursor);
+    await reader.sync(cursor, false);
+    const materialSteps = materials.read(
+      cursor,
+      { tile: { lod: 1, x: 0, y: 0 }, revision: cursor.revision, product: 'surface' },
+      reader,
+    );
+    for (;;) {
+      const step = materialSteps.next();
+      if (step.done) return { ...projection, material: step.value };
+    }
+  };
+  try {
+    const before = await read();
+    f.put(route('river', riverAnchors));
+    const saved = await read();
+    assert.notDeepEqual(
+      saved.grid.heights,
+      before.grid.heights,
+      'banks must appear in the retained worker',
+    );
+    f.write({ kind: 'undo' });
+    assert.deepEqual((await read()).grid.heights, before.grid.heights);
+    f.write({ kind: 'redo' });
+    const redone = await read();
+    assert.deepEqual(redone.grid.heights, saved.grid.heights);
+    assert.deepEqual(redone.pixels, saved.pixels);
+    assert.deepEqual(
+      redone.material.channels.relief,
+      saved.material.channels.relief,
+      'retained relief material must include restored bed',
+    );
+    tiles.close();
+    materials.close();
+    db.close();
+    db = new Database(f.dir + '/world.sqlite', { readonly: true });
+    reader = new api.AtlasRegionReader(db);
+    tiles = new api.AtlasTerrainTiles(db, f.dir + '/cache');
+    materials = new api.AtlasMaterialTiles(db, f.dir + '/cache');
+    cursor = undefined;
+    const fresh = await read();
+    assert.deepEqual(fresh.grid.heights, saved.grid.heights);
+    assert.deepEqual(fresh.pixels, saved.pixels);
+    assert.deepEqual(
+      fresh.material.channels.relief,
+      saved.material.channels.relief,
+      'fresh relief material must include bed',
+    );
+  } finally {
+    tiles.close();
+    materials.close();
+    db.close();
+  }
 });
 test('stale preview and failed storage never persist part of a coupled command', (t) => {
   const f = fixture(t),
