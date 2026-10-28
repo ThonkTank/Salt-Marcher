@@ -456,11 +456,11 @@ test(
       cache = AtlasTileCache.open(f.cacheDirectory, namespace),
       waterKey = JSON.stringify(['material', terrain.lod, terrain.x, terrain.y, 'water']);
     try {
-      const water = cache.get(waterKey, 'material-tiles-v4-fantasy-cover');
+      const water = cache.get(waterKey, 'material-tiles-v5-biome-cover');
       assert(water?.waterTopology instanceof Uint16Array);
       delete water.waterTopology;
       assert.equal(
-        cache.put(waterKey, 'material-tiles-v4-fantasy-cover', water),
+        cache.put(waterKey, 'material-tiles-v5-biome-cover', water),
         true,
         'the malformed single-channel entry is stored with a valid outer checksum',
       );

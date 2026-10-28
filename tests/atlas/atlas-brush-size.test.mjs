@@ -79,9 +79,10 @@ test('actual controls keep slider, typed units, locked drafts and preset paramet
   const { document, window } = parseHTML(
     '<html><body><main><label>Width<input id="land-width"></label><label>Radius<input id="land-radius" value="500"></label></main></body></html>',
   );
-  const old = { document: global.document, Event: global.Event };
+  const old = { document: global.document, Event: global.Event, HTMLElement: global.HTMLElement };
   global.document = document;
   global.Event = window.Event;
+  global.HTMLElement = window.HTMLElement;
   t.after(() => Object.assign(global, old));
   Object.defineProperty(window.HTMLSelectElement.prototype, 'value', {
     configurable: true,
@@ -254,9 +255,10 @@ test('camera synchronization retains caption nodes while real unit changes updat
   const { document, window } = parseHTML(
     '<html><body><label>Radius<input id="stable-radius" value="500"></label></body></html>',
   );
-  const old = { document: global.document, Event: global.Event };
+  const old = { document: global.document, Event: global.Event, HTMLElement: global.HTMLElement };
   global.document = document;
   global.Event = window.Event;
+  global.HTMLElement = window.HTMLElement;
   t.after(() => Object.assign(global, old));
   initAtlasUnits(document);
   setAtlasUnits('metric');
