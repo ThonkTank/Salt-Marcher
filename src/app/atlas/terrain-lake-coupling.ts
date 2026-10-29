@@ -1,3 +1,4 @@
+import type { HeightStroke } from './terrain-brush-contracts';
 import type { Polygon } from '../shared/contracts';
 import type { LandscapeRecord } from './landscape-contracts';
 import { intersectPolygons, subtractPolygons, unionPolygons } from './landscape-brush';
@@ -5,8 +6,7 @@ import { bounds, contains } from './landscape-geometry';
 import { decodeHeights, encodeHeights, terrainSettings } from './terrain-height';
 import { heightInfluenceBounds } from './terrain-interpolation';
 import { coupleRouteEdits, replanRoutes } from './terrain-route-planner';
-import { applyTerrainBrush, heightBrushPixel } from './terrain-brush';
-import { type HeightStroke } from './terrain-brush-contracts';
+import { applyTerrainBrush, heightBrushPixel, type prepareHeightBrush } from './terrain-brush';
 import type { TerrainGrid } from './terrain-grid-contracts';
 
 /** Author operation above the numeric brush, shared by live draft and previews.
@@ -17,8 +17,17 @@ export function applyCoupledTerrainBrush(
   limited?: (factor: number) => void,
   visibility?: TerrainGrid,
   scaleHeight?: (p: { x: number; y: number }) => number,
+  prepared?: ReturnType<typeof prepareHeightBrush>,
 ) {
-  const changes = applyTerrainBrush(records, stroke, undefined, visibility, scaleHeight, true);
+  const changes = applyTerrainBrush(
+    records,
+    stroke,
+    undefined,
+    visibility,
+    scaleHeight,
+    true,
+    prepared,
+  );
   return coupleTerrainEdits(
     records,
     changes,

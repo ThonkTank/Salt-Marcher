@@ -1,6 +1,11 @@
 import type { LandscapeBox } from '../atlas/landscape-bounds';
 import type { LandscapeRecord } from '../atlas/landscape-contracts';
-import { editingDependencySql, terrainEditingDependencies } from './terrain-editing-dependencies';
+import {
+  editingDependencySql,
+  terrainEditingDependencies,
+  terrainEditingSourcePlan,
+  type TerrainEditingSourcePlan,
+} from './terrain-editing-dependencies';
 
 /** Exact author nodes, spatially bounded including Hermite's two-node halo.
  * Unlike a display read this must never discard fine nodes between pixels. */
@@ -34,7 +39,7 @@ export function readTerrainEditingRecords(
       box.y + box.height,
       ...(dependencies
         ? [
-            JSON.stringify(dependencies.records.map((r) => r.id)),
+            JSON.stringify([...dependencies.records.map((r) => r.id), ...dependencies.tileIds]),
             JSON.stringify(dependencies.corridors),
           ]
         : []),
@@ -60,36 +65,42 @@ export function readTerrainEditingPage(
   after = '',
   maxBytes = 2 * 1024 * 1024,
   filter: { pixel?: number; fine?: boolean; legacy?: boolean } = {},
+  plan?: TerrainEditingSourcePlan,
+  supports: readonly LandscapeBox[] = [box],
 ): { records: LandscapeRecord[]; complete: boolean; next?: string } {
   const dependencies =
-    filter.pixel === undefined ? terrainEditingDependencies(db, campaignId, box) : null;
+    filter.pixel === undefined
+      ? (plan ?? terrainEditingSourcePlan(db, campaignId, box, supports))
+      : null;
   const rows = db
     .prepare(
       `SELECT id,payload FROM atlas_landscape
     WHERE campaign_id=? AND id>? AND json_valid(payload)
-    AND (json_extract(payload,'$.height') IS NOT NULL ${filter.pixel === undefined ? "OR json_extract(payload,'$.surface')='freshwater' OR json_extract(payload,'$.route') IS NOT NULL OR json_extract(payload,'$.terrainSettings') IS NOT NULL" : ''})
-    AND ((coalesce(max_x + 2 * CAST(json_extract(payload,'$.height.pixel') AS REAL),max_x) >= ?
-    AND coalesce(min_x - 2 * CAST(json_extract(payload,'$.height.pixel') AS REAL),min_x) <= ?
-    AND coalesce(max_y + 2 * CAST(json_extract(payload,'$.height.pixel') AS REAL),max_y) >= ?
-    AND coalesce(min_y - 2 * CAST(json_extract(payload,'$.height.pixel') AS REAL),min_y) <= ?) ${dependencies ? editingDependencySql : ''})
+    AND (json_extract(payload,'$.height') IS NOT NULL ${filter.pixel === undefined ? "OR json_extract(payload,'$.surface')='freshwater' OR json_extract(payload,'$.route') IS NOT NULL " : ''})
+    AND (EXISTS (SELECT 1 FROM json_each(?) support WHERE
+    coalesce(max_x + 2 * CAST(json_extract(payload,'$.height.pixel') AS REAL),max_x)>=json_extract(support.value,'$.x') AND
+    coalesce(min_x - 2 * CAST(json_extract(payload,'$.height.pixel') AS REAL),min_x)<=json_extract(support.value,'$.x')+json_extract(support.value,'$.width') AND
+    coalesce(max_y + 2 * CAST(json_extract(payload,'$.height.pixel') AS REAL),max_y)>=json_extract(support.value,'$.y') AND
+    coalesce(min_y - 2 * CAST(json_extract(payload,'$.height.pixel') AS REAL),min_y)<=json_extract(support.value,'$.y')+json_extract(support.value,'$.height')) ${dependencies ? editingDependencySql : ''})
     ${filter.legacy === false ? "AND json_extract(payload,'$.height.version')=2" : ''}
     ${filter.pixel === undefined || filter.fine !== false ? '' : "AND (json_extract(payload,'$.height.version')=1 OR CAST(json_extract(payload,'$.height.pixel') AS REAL)>=?)"}
+    ${
+      dependencies
+        ? `UNION ALL SELECT id,payload FROM atlas_landscape INDEXED BY landscape_settings_fast
+    WHERE campaign_id=? AND id>? AND json_valid(payload) AND json_extract(payload,'$.terrainSettings') IS NOT NULL`
+        : ''
+    }
     ORDER BY id`,
     )
     .iterate(
       campaignId,
       after,
-      box.x,
-      box.x + box.width,
-      box.y,
-      box.y + box.height,
+      JSON.stringify(supports),
       ...(dependencies
-        ? [
-            JSON.stringify(dependencies.records.map((r) => r.id)),
-            JSON.stringify(dependencies.corridors),
-          ]
+        ? [JSON.stringify(dependencies.ids), JSON.stringify(dependencies.corridors)]
         : []),
       ...(filter.pixel !== undefined && filter.fine === false ? [filter.pixel] : []),
+      ...(dependencies ? [campaignId, after] : []),
     );
   const records: LandscapeRecord[] = [];
   let bytes = 0,
@@ -115,15 +126,27 @@ export function readTerrainEditingPackets(
   pixel?: number,
   fine = true,
   legacy = true,
+  supports: readonly LandscapeBox[] = [box],
 ): LandscapeRecord[] {
   const records: LandscapeRecord[] = [];
   let after = '';
+  const plan =
+    pixel === undefined ? terrainEditingSourcePlan(db, campaignId, box, supports) : undefined;
   for (;;) {
-    const page = readTerrainEditingPage(db, campaignId, box, after, undefined, {
-      pixel,
-      fine,
-      legacy,
-    });
+    const page = readTerrainEditingPage(
+      db,
+      campaignId,
+      box,
+      after,
+      undefined,
+      {
+        pixel,
+        fine,
+        legacy,
+      },
+      plan,
+      supports,
+    );
     records.push(...page.records);
     if (page.complete) return records;
     if (!page.next || page.next <= after) throw Error('Unvollständige Autorenpakete.');

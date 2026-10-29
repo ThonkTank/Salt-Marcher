@@ -244,6 +244,10 @@ export class AtlasRegionReader {
     if (this.landscapeFailure) throw Error('Geländequelle konnte nicht gelesen werden.');
     return this.landscape.visibility(source, view);
   }
+  terrainSourceChange(base: import('../atlas/terrain-source').TerrainIdentity) {
+    if (this.landscapeFailure) throw Error('Geländequelle konnte nicht gelesen werden.');
+    return this.landscape.sourceChange(base);
+  }
   /** Navigation resumes after the gesture; its new overview/fine tiles need the
    * full cache again. Live frames below deliberately bypass this handoff. */
   private navigationTerrain() {
@@ -270,8 +274,9 @@ export class AtlasRegionReader {
     source: AtlasRegionSource,
     q: import('../atlas/atlas-material-tile').AtlasMaterialTileRequest,
     channels: ReadonlySet<import('../atlas/terrain-material').TerrainMaterialChannel>,
+    fields?: Map<string, import('../atlas/terrain-field-stream').TerrainField>,
   ) {
-    return this.navigationTerrain().materialSteps(source, q, channels);
+    return this.navigationTerrain().materialSteps(source, q, channels, fields);
   }
   terrainSteps(
     source: AtlasRegionSource,

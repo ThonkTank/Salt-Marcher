@@ -1,9 +1,5 @@
-import type { TerrainIdentity, TerrainInvalidation } from './terrain-frame-identity';
-
-export interface TerrainColorChange {
-  base: TerrainIdentity;
-  invalidation: TerrainInvalidation;
-}
+import type { TerrainIdentity, TerrainInvalidation, TerrainColorChange } from './terrain-source';
+export type { TerrainColorChange, TerrainSourceChange } from './terrain-source';
 export const equalTerrainSource = (
   a: TerrainIdentity | undefined,
   b: TerrainIdentity | undefined,
@@ -37,7 +33,7 @@ export class TerrainChangeHistory {
     const index = this.entries.findIndex((e) => equalTerrainSource(e.source, base));
     const changes = index < 0 ? [] : this.entries.slice(index + 1);
     return {
-      base: { ...base },
+      base: { revision: base.revision, fence: base.fence },
       invalidation: {
         reset: index < 0 || changes.some((e) => e.invalidation.reset),
         bounds: changes.flatMap((e) => e.invalidation.bounds.map((b) => ({ ...b }))),

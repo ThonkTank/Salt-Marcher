@@ -1,6 +1,6 @@
 import { terrainChannelStride } from '../atlas/terrain-material';
 import { LandscapeRasterizer } from '../atlas/landscape-raster';
-import { streamTerrainFieldSteps } from '../atlas/terrain-field-stream';
+import { streamTerrainFieldSteps, type TerrainField } from '../atlas/terrain-field-stream';
 import {
   COVER_CHANNEL_NAMES,
   type TerrainMaterialChannel,
@@ -21,6 +21,7 @@ export function* readTerrainMaterialSteps(
   request: AtlasMaterialTileRequest,
   stream: ProjectionStream,
   requested: ReadonlySet<TerrainMaterialChannel>,
+  fields?: Map<string, TerrainField>,
 ): Generator<void, TerrainMaterialRaster> {
   const q = atlasMaterialTileQuery(request);
   if (source.revision !== request.revision) throw Error('Materialkachel inzwischen geändert.');
@@ -36,9 +37,10 @@ export function* readTerrainMaterialSteps(
   for (const channel of requested)
     channels[channel] = new Uint8Array(q.width * q.height * terrainChannelStride(channel));
   if (requested.has('water')) channels.waterTopology = new Uint16Array(q.width * q.height);
-  // Fixed 64-pixel batches limit scratch buffers; their aligned sample lattices
-  // and full halo produce the same pixels as an unsplit tile.
-  const edge = 64,
+  // A fixed display tile needs one halo. Sixteen small batches repeat that
+  // expensive canonical field and retain more samples than the whole tile.
+  // The field reader still yields bounded row bands of at most 65,536 samples.
+  const edge = 256,
     colour = requested.has('baseColor'),
     cover = COVER_CHANNEL_NAMES.some((c) => requested.has(c)),
     forest = requested.has('forest') || cover;
@@ -60,15 +62,26 @@ export function* readTerrainMaterialSteps(
         }),
         samples = image.sampleLattice();
       image.paint(settings);
-      image.setTerrainField(
-        yield* streamTerrainFieldSteps(
+      const fieldKey = JSON.stringify([
+        source.campaignId,
+        source.revision,
+        source.fence,
+        request.tile,
+        x,
+        y,
+      ]);
+      let field = fields?.get(fieldKey);
+      if (!field) {
+        field = yield* streamTerrainFieldSteps(
           samples,
           settings.terrainSettings!.seaLevelM,
           stream,
           false,
           checkpoint,
-        ),
-      );
+        );
+        fields?.set(fieldKey, field);
+      }
+      image.setTerrainField(field);
       for (const r of stream('base', image.sampleBox, samples)) image.paint(r);
       if (colour || forest)
         for (const r of stream('cover', image.sampleBox))

@@ -1,4 +1,9 @@
-import { heightRow, interpolateHeight } from './terrain-interpolation';
+import {
+  heightRow,
+  interpolateHeight,
+  prepareHeightInterpolation,
+  interpolatePreparedHeight,
+} from './terrain-interpolation';
 import { decodeHeights } from './terrain-height';
 import type { LandscapeRecord } from './landscape-contracts';
 
@@ -131,25 +136,54 @@ class HeightLevel {
       return out;
     };
     const absolute = horizontal(this.absolute, true),
-      additive = horizontal(this.additive, false);
-    for (let row = 0; row < y.starts.length; row++)
+      additive = horizontal(this.additive, false),
+      absoluteCurves = absolute ? new Float64Array(columns * 5) : undefined,
+      additiveCurves = additive ? new Float64Array(columns * 5) : undefined,
+      complete = new Uint8Array(columns);
+    let sourceRow = -1;
+    for (let row = 0; row < y.starts.length; row++) {
+      const fy = y.fractions[row]!;
+      if (sourceRow !== y.starts[row]) {
+        sourceRow = y.starts[row]!;
+        for (let col = 0; col < columns; col++) {
+          const at = sourceRow * columns + col,
+            curve = col * 5;
+          if (absolute) {
+            const a = absolute[at]!,
+              b = absolute[at + columns]!,
+              c = absolute[at + 2 * columns]!,
+              d = absolute[at + 3 * columns]!;
+            complete[col] = Number.isNaN(a + b + c + d) ? 0 : 1;
+            if (complete[col]) prepareHeightInterpolation(a, b, c, d, absoluteCurves!, curve);
+          }
+          if (additive)
+            prepareHeightInterpolation(
+              additive[at]!,
+              additive[at + columns]!,
+              additive[at + 2 * columns]!,
+              additive[at + 3 * columns]!,
+              additiveCurves!,
+              curve,
+            );
+        }
+      }
       for (let col = 0; col < columns; col++) {
         const index = row * columns + col,
-          base = y.starts[row]! * x.nodes.length + x.starts[col]!,
-          fx = x.fractions[col]!,
-          fy = y.fractions[row]!;
-        const at = y.starts[row]! * columns + col;
+          curve = col * 5;
         if (absolute) {
-          const a = absolute[at]!,
-            b = absolute[at + columns]!,
-            c = absolute[at + 2 * columns]!,
-            d = absolute[at + 3 * columns]!;
           // Only rows containing holes depend on this point's coarse value. Reuse
           // every complete row even when another row in the neighbourhood is sparse.
-          if (!Number.isNaN(a + b + c + d)) {
-            ground[index] = interpolateHeight(a, b, c, d, fy);
+          if (complete[col]) {
+            ground[index] = interpolatePreparedHeight(absoluteCurves!, curve, fy);
           } else {
-            const fill = ground[index]!,
+            const at = sourceRow * columns + col,
+              a = absolute[at]!,
+              b = absolute[at + columns]!,
+              c = absolute[at + 2 * columns]!,
+              d = absolute[at + 3 * columns]!,
+              base = sourceRow * x.nodes.length + x.starts[col]!,
+              fx = x.fractions[col]!,
+              fill = ground[index]!,
               stride = x.nodes.length;
             ground[index] = interpolateHeight(
               Number.isNaN(a) ? heightRow(this.absolute!, base, fx, fill) : a,
@@ -162,15 +196,9 @@ class HeightLevel {
         }
         if (additive)
           additions[index] =
-            additions[index]! +
-            interpolateHeight(
-              additive[at]!,
-              additive[at + columns]!,
-              additive[at + 2 * columns]!,
-              additive[at + 3 * columns]!,
-              fy,
-            );
+            additions[index]! + interpolatePreparedHeight(additiveCurves!, curve, fy);
       }
+    }
   }
 }
 /** Input tiles are unique and coarse-to-fine, as required by the readonly reader. */

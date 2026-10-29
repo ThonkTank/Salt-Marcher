@@ -544,12 +544,32 @@ export function registerAtlasHost(host: {
       return value;
     },
   );
-  handle('atlas:terrain-source', async (token: string) => {
-    if (graphSourceReadBarrierDepth) throw Error('Graphwechsel läuft.');
-    const source = await store.atlasRegionSource(token);
-    if (graphSourceReadBarrierDepth) throw Error('Graphwechsel läuft.');
-    return { revision: source.revision, fence: source.fence };
-  });
+  handle(
+    'atlas:terrain-source',
+    async (token: string, base?: import('../src/app/atlas/terrain-source').TerrainIdentity) => {
+      if (
+        base &&
+        (!Number.isSafeInteger(base.revision) ||
+          base.revision < 0 ||
+          typeof base.fence !== 'string' ||
+          !base.fence ||
+          base.fence.length > 512)
+      )
+        throw Error('Geländequelle prüfen.');
+      if (graphSourceReadBarrierDepth) throw Error('Graphwechsel läuft.');
+      const source = await store.atlasRegionSource(
+        token,
+        base ? atlasExportRegions.cursor : undefined,
+      );
+      if (graphSourceReadBarrierDepth) throw Error('Graphwechsel läuft.');
+      const change = base ? await atlasExportRegions.terrainSourceChange(source, base) : undefined;
+      if (graphSourceReadBarrierDepth) throw Error('Graphwechsel läuft.');
+      if (change && (await store.atlasRegionSource(token)).fence !== source.fence)
+        throw Error('Gelände inzwischen geändert. Ausschnitt erneut laden.');
+      if (graphSourceReadBarrierDepth) throw Error('Graphwechsel läuft.');
+      return { revision: source.revision, fence: source.fence, ...(change ? { change } : {}) };
+    },
+  );
   handle(
     'atlas:terrain-projection',
     async (

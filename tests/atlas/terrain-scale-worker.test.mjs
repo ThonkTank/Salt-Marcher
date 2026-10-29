@@ -10,7 +10,7 @@ const require = createRequire(import.meta.url);
 buildSync({
   stdin: {
     contents:
-      "export * from './src/app/storage/store';export * from './src/app/atlas/terrain-height';export * from './src/app/atlas/terrain-brush';export * from './desktop/atlas-region';export * from './src/app/atlas/terrain-brush-draft';export * from './src/app/atlas/terrain-stroke-queue';",
+      "export * from './src/app/storage/store';export * from './src/app/atlas/terrain-height';export * from './src/app/atlas/terrain-brush';export * from './desktop/atlas-region';export * from './src/app/atlas/terrain-brush-draft';export * from './src/app/atlas/terrain-stroke-queue';export * from './src/app/storage/terrain-grid';export * from './src/app/storage/terrain-editing-source';export * from './src/app/atlas/terrain-stroke-support';",
     resolveDir: process.cwd(),
   },
   outfile: '.build/terrain-scale-worker-test.cjs',
@@ -35,6 +35,12 @@ const {
   TerrainSampler,
   TerrainBrushDraft,
   TerrainStrokeQueue,
+  readTerrainGrid,
+  prepareHeightBrush,
+  terrainSupportBoxes,
+  terrainBoxesBounds,
+  heightBrushPixel,
+  readTerrainEditingPackets,
 } = require('../../.build/terrain-scale-worker-test.cjs');
 async function fixture(t) {
   const base = homedir() + '/.cache/saltmarcher/tests';
@@ -480,4 +486,175 @@ test('real editing packet, pending successor and writer preserve multiscale heig
       canonicalRevision: current.revision,
     }),
   );
+});
+
+test('versioned screen gestures reconstruct every height tool canonically from precise supports, remain atomic and preserve Undo/Redo/Fresh', async (t) => {
+  const f = await fixture(t),
+    write = (action) => f.store.executeAtlasCommit({ ...f.command(), action }),
+    rows = () =>
+      f.store.db
+        .prepare('SELECT payload FROM atlas_landscape WHERE campaign_id=? ORDER BY id')
+        .all(f.cam.id)
+        .map((r) => JSON.parse(r.payload)),
+    clean = (records) =>
+      records.map(({ revision, order, ...r }) => r).sort((a, b) => a.id.localeCompare(b.id)),
+    cursor = () =>
+      f.store.db.prepare('SELECT cursor FROM campaign_atlas WHERE campaign_id=?').get(f.cam.id)
+        .cursor;
+  for (const y of [-256, 0])
+    for (const x of [-256, 0])
+      write({
+        kind: 'landscape-put',
+        expectedRevision: null,
+        record: heightRecord(
+          x,
+          y,
+          4,
+          Float32Array.from(
+            { length: 4096 },
+            (_, i) =>
+              20 +
+              2 * Math.sin((x + (i % 64) * 4) / 12) * Math.cos((y + Math.floor(i / 64) * 4) / 12),
+          ),
+        ),
+      });
+  write({
+    kind: 'landscape-put',
+    expectedRevision: null,
+    record: heightRecord(
+      24,
+      32,
+      0.125,
+      Float32Array.from({ length: 4096 }, (_, i) => 0.3 * Math.sin(i)),
+      2,
+    ),
+  });
+  const far = heightRecord(-768, -768, 4, new Float32Array(4096).fill(1000));
+  write({ kind: 'landscape-put', expectedRevision: null, record: far });
+  const view = {
+      box: { x: 0, y: 0, width: 64, height: 64 },
+      frame: { x: 0, y: 0, width: 64, height: 64 },
+      columns: 65,
+      rows: 65,
+      focusM: 20,
+      tilt: 0,
+      rotation: 0,
+      exaggeration: 1,
+      projection: 'perspective',
+    },
+    input = {
+      version: 1,
+      events: [
+        { u: 0.25, v: 0.5, t: 0 },
+        { u: 0.75, v: 0.5, t: 1000 },
+      ],
+    },
+    cases = [
+      { mode: 'raise' },
+      { mode: 'lower' },
+      { mode: 'roughen', seed: 42 },
+      { mode: 'smooth' },
+      { mode: 'level', targetM: 25 },
+      { mode: 'raise', targetM: 24 },
+      ...['hills', 'mountains', 'canyon'].map((form) => ({
+        form,
+        seed: 123,
+        mode: form === 'canyon' ? 'lower' : 'raise',
+      })),
+      { mode: 'raise', preserveDetails: false },
+    ];
+  for (const tool of cases) {
+    const stroke = {
+        ...tool,
+        radius: 8,
+        strength: 1,
+        feather: 0.7,
+        visibility: view,
+        screenInput: input,
+        // These advisory old coordinates deliberately span unrelated far terrain.
+        // They cannot choose source records, author tiles, centres or dose.
+        samples: [
+          { x: -900, y: -900, t: 0 },
+          { x: 900, y: 900, t: 1000 },
+        ],
+      },
+      original = rows(),
+      before = clean(original),
+      at = cursor(),
+      grid = readTerrainGrid(f.store.db, f.cam.id, view),
+      plan = prepareHeightBrush(stroke, grid),
+      pixel = heightBrushPixel(stroke.radius),
+      supports = terrainSupportBoxes(plan.tiles, pixel, stroke.radius / 2 + 3 * pixel),
+      box = terrainBoxesBounds(supports),
+      sourceRows = readTerrainEditingPackets(
+        f.store.db,
+        f.cam.id,
+        box,
+        undefined,
+        true,
+        true,
+        supports,
+      );
+    assert(
+      !sourceRows.some((r) => r.id === far.id),
+      'source excludes the world-sample bounding rectangle',
+    );
+    const c = { ...f.command(), action: { kind: 'landscape-height-stroke', stroke } },
+      source = f.store.terrainStrokeSource(c, f.service.cursor),
+      patch = await f.service.prepareTerrainStroke(source, stroke),
+      expected = applyTerrainBrush(original, stroke, undefined, grid, undefined, true);
+    assert.deepEqual(clean(patch.records), clean(expected), JSON.stringify(tool));
+    assert(patch.records.length > 0, JSON.stringify(tool));
+    assert.deepEqual(clean(rows()), before, 'readonly planning');
+    assert.equal(cursor(), at);
+    f.store.executeAtlasCommit(c, patch);
+    assert.equal(cursor(), at + 1, 'one screen gesture, one history step');
+    const saved = clean(rows());
+    f.store.executeAtlasCommit(c);
+    assert.deepEqual(clean(rows()), saved, 'receipt replay');
+    assert.equal(cursor(), at + 1);
+    write({ kind: 'undo' });
+    assert.deepEqual(clean(rows()), before, 'exact screen undo');
+    assert.equal(cursor(), at);
+    write({ kind: 'redo' });
+    assert.deepEqual(clean(rows()), saved, 'exact screen redo');
+    assert.equal(cursor(), at + 1);
+  }
+  const saved = clean(rows()),
+    fresh = new CampaignStore(f.store.db.name);
+  try {
+    assert.deepEqual(
+      clean(
+        fresh.db
+          .prepare('SELECT payload FROM atlas_landscape WHERE campaign_id=? ORDER BY id')
+          .all(f.cam.id)
+          .map((r) => JSON.parse(r.payload)),
+      ),
+      saved,
+      'fresh preserves every real delta',
+    );
+  } finally {
+    fresh.close();
+  }
+  const stroke = {
+      mode: 'raise',
+      radius: 8,
+      strength: 1,
+      feather: 0.7,
+      visibility: view,
+      screenInput: input,
+      samples: [
+        { x: 16, y: 32, t: 0 },
+        { x: 48, y: 32, t: 1000 },
+      ],
+    },
+    c = { ...f.command(), action: { kind: 'landscape-height-stroke', stroke } },
+    source = f.store.terrainStrokeSource(c, f.service.cursor),
+    patch = await f.service.prepareTerrainStroke(source, stroke);
+  write({ kind: 'landscape-sea-level', seaLevelM: -1 });
+  const newer = clean(rows()),
+    at = cursor();
+  assert.throws(() => f.store.executeAtlasCommit(c, patch), /inzwischen/);
+  assert.deepEqual(clean(rows()), newer);
+  assert.equal(cursor(), at);
 });

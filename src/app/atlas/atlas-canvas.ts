@@ -296,9 +296,14 @@ export class AtlasCanvas {
         e.stopImmediatePropagation();
         if (this.failed || this.options.locked?.() || this.drag) return;
         const presentation = this.options.presentation?.();
+        const burst = Date.now() - this.wheelAt < 300;
+        // A closed burst uses the current terrain, and a moved cursor owns a
+        // new screen anchor. Keeping the old point while advancing x/y can
+        // accumulate many pixels of drift through one-pixel mouse movements.
         if (
-          this.wheelAnchor &&
-          Math.hypot(e.clientX - this.wheelAnchor.x, e.clientY - this.wheelAnchor.y) > 1
+          !burst ||
+          (this.wheelAnchor &&
+            (e.clientX !== this.wheelAnchor.x || e.clientY !== this.wheelAnchor.y))
         )
           this.wheelAnchor = null;
         const terrain =
@@ -309,7 +314,6 @@ export class AtlasCanvas {
         const p = matrix
           ? new DOMPoint(e.clientX, e.clientY).matrixTransform(matrix.inverse())
           : undefined;
-        const burst = Date.now() - this.wheelAt < 300;
         this.zoom(
           wheelZoomFactor(e.deltaY, e.deltaMode, root.clientHeight),
           presentation
@@ -327,7 +331,7 @@ export class AtlasCanvas {
     root.addEventListener('pointermove', (e) => {
       if (
         this.wheelAnchor &&
-        Math.hypot(e.clientX - this.wheelAnchor.x, e.clientY - this.wheelAnchor.y) > 1
+        (e.clientX !== this.wheelAnchor.x || e.clientY !== this.wheelAnchor.y)
       )
         this.wheelAnchor = null;
       this.tooltipPoint = { clientX: e.clientX, clientY: e.clientY };

@@ -860,13 +860,7 @@ export class AtlasWorkspaceLayout {
       b.onclick = () => void this.activateTool(this.family, group!.id, tool);
       this.toolList.append(b);
     }
-    for (const id of [
-      'land-tool',
-      'city-tool',
-      'drawing-tool',
-      'land-color-target',
-      'land-freshwater-operation',
-    ])
+    for (const id of ['land-tool', 'city-tool', 'drawing-tool', 'land-color-target'])
       el(id)?.closest('label')?.classList.add('atlas-native-tool-select');
   }
   private async select() {

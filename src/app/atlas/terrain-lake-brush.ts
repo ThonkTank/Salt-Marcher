@@ -1,12 +1,25 @@
+import type { HeightStroke } from './terrain-brush-contracts';
 import { coupleRouteEdits } from './terrain-route-planner';
 import type { LakeStroke } from './landscape-action-contracts';
 import type { LandscapeRecord, LakeBed } from './landscape-contracts';
-import { brushFootprint, intersectPolygons, subtractPolygons } from './landscape-brush';
+import {
+  brushFootprint,
+  intersectPolygons,
+  subtractPolygons,
+  unionPolygons,
+} from './landscape-brush';
 import { contains } from './landscape-geometry';
-import { applyTerrainBrush, validateHeightStroke } from './terrain-brush';
-import { type HeightStroke } from './terrain-brush-contracts';
-import { decodeHeights, encodeHeights, TerrainSampler } from './terrain-height';
-import { type TerrainGrid } from './terrain-grid-contracts';
+import { prepareLakeScatter } from './terrain-lake-scatter';
+import { strokeBox } from './land-mask';
+import { terrainGrid, terrainVisibility } from './terrain-spatial-model';
+import type { TerrainGrid } from './terrain-grid-contracts';
+import {
+  applyTerrainBrush,
+  heightBrushPixel,
+  prepareHeightBrush,
+  validateHeightStroke,
+} from './terrain-brush';
+import { decodeHeights, editHeight, encodeHeights, TerrainSampler } from './terrain-height';
 
 export interface LakeBrushChanges {
   records: LandscapeRecord[];
@@ -19,16 +32,37 @@ export const lakeHeightStroke = (s: LakeStroke): HeightStroke => ({
   feather: s.feather,
   samples: s.samples,
   visibility: s.visibility,
+  screenInput: s.screenInput,
 });
+/** Author bounds, independent of the camera. The source reader additionally
+ * includes each existing tile's own Hermite support. */
+export function lakeBrushSourceBounds(s: Pick<LakeStroke, 'samples' | 'radius'>) {
+  const area = strokeBox(s),
+    pad = 3 * heightBrushPixel(s.radius);
+  return {
+    x: area.x - pad,
+    y: area.y - pad,
+    width: area.width + 2 * pad,
+    height: area.height + 2 * pad,
+  };
+}
 export function validateLakeStroke(s: LakeStroke) {
   if (
     !s ||
-    !['dig', 'erase'].includes(s.mode) ||
+    !['dig', 'erase', 'scatter'].includes(s.mode) ||
     typeof s.id !== 'string' ||
     !s.id ||
     s.id.length > 128 ||
-    !Number.isFinite(s.waterLevelM) ||
-    Math.abs(s.waterLevelM) > 1e6 ||
+    (s.waterLevelM === null
+      ? s.mode !== 'scatter'
+      : !Number.isFinite(s.waterLevelM) || Math.abs(s.waterLevelM) > 1e6) ||
+    (s.mode === 'scatter' &&
+      (!Number.isFinite(s.noise) ||
+        s.noise < 0 ||
+        s.noise > 1 ||
+        !Number.isInteger(s.seed) ||
+        s.seed < 0 ||
+        s.seed > 0xffffffff)) ||
     Object.keys(s).some(
       (k) =>
         ![
@@ -40,6 +74,8 @@ export function validateLakeStroke(s: LakeStroke) {
           'waterLevelM',
           'samples',
           'visibility',
+          'screenInput',
+          ...(s.mode === 'scatter' ? ['noise', 'seed'] : []),
         ].includes(k),
     )
   )
@@ -81,14 +117,93 @@ export function applyLakeBrush(
   records: LandscapeRecord[],
   s: LakeStroke,
   visibility?: TerrainGrid,
+  prepared?: ReturnType<typeof prepareHeightBrush>,
 ): LakeBrushChanges {
   validateLakeStroke(s);
-  const footprint = brushFootprint(s.samples, s.radius),
+  if (s.screenInput && !visibility) throw Error('Gebundene Geländeoberfläche fehlt. Erneut laden.');
+  const grid = s.visibility ? (visibility ?? terrainGrid(records, s.visibility)) : undefined,
+    plan = prepared ?? (s.screenInput ? prepareHeightBrush(lakeHeightStroke(s), grid) : undefined),
+    footprint =
+      s.mode === 'scatter'
+        ? []
+        : plan
+          ? plan.centrelines.reduce<import('../shared/contracts').Polygon[]>(
+              (all, line) => unionPolygons(all, brushFootprint(line, s.radius)),
+              [],
+            )
+          : brushFootprint(s.samples, s.radius),
     changes = new Map<string, LandscapeRecord>(),
     remove: string[] = [];
-  if (s.mode === 'dig') {
+  if (s.mode === 'scatter') {
+    const scatter = prepareLakeScatter(s, grid, plan),
+      box = strokeBox({ ...s, samples: scatter.samples }),
+      pixel = heightBrushPixel(s.radius),
+      visible = grid ? terrainVisibility(grid, s.screenInput ? 'clip' : 'reject') : undefined,
+      ownership = new Map<string, Map<number, Float32Array>>();
+    const edited = editHeight(
+      records,
+      box,
+      pixel,
+      (p, prior) => {
+        if (visible && !visible(p)) return undefined;
+        const { owner, profile } = scatter.owner(p);
+        if (owner < 0) return undefined;
+        const amount = s.strength * scatter.dose(p) * profile;
+        return amount ? prior - amount : undefined;
+      },
+      2,
+      scatter.tiles,
+    );
+    for (const r of edited) {
+      const t = r.height!,
+        before = records.find((old) => old.id === r.id)?.height,
+        prior = before ? decodeHeights(before) : undefined,
+        after = decodeHeights(t),
+        beds = new Map<number, Float32Array>();
+      for (let i = 0; i < after.length; i++) {
+        const delta = Number.isNaN(after[i])
+          ? 0
+          : after[i]! - (prior && !Number.isNaN(prior[i]) ? prior[i]! : 0);
+        if (!delta) continue;
+        const p = { x: t.x + (i % 64) * pixel, y: t.y + Math.floor(i / 64) * pixel },
+          owner = scatter.owner(p).owner;
+        if (owner < 0) throw Error('Seeabtrag ohne Beckenbesitzer.');
+        let bed = beds.get(owner);
+        if (!bed) beds.set(owner, (bed = new Float32Array(4096)));
+        bed[i] = delta;
+      }
+      ownership.set(r.id, beds);
+      changes.set(r.id, r);
+    }
+    for (let i = 0; i < scatter.basins.length; i++) {
+      const basin = scatter.basins[i]!,
+        id = `${s.id}:${basin.key}`,
+        bed: LakeBed[] = [];
+      for (const r of edited) {
+        const amounts = ownership.get(r.id)!.get(i);
+        if (amounts)
+          bed.push({ tileId: r.id, tile: { ...r.height!, data: encodeHeights(amounts) } });
+      }
+      if (!bed.length) continue;
+      if (records.some((r) => r.id === id)) throw Error('Seezugkennung bereits gespeichert.');
+      changes.set(id, {
+        id,
+        revision: 0,
+        kind: 'patch',
+        name: 'See',
+        points: [],
+        polygons: basin.polygons,
+        resolution: pixel,
+        width: 0,
+        values: {},
+        surface: 'freshwater',
+        waterLevelM: s.waterLevelM ?? lakeBrushLevel(records, basin.anchor),
+        lakeBed: bed,
+      });
+    }
+  } else if (s.mode === 'dig') {
     const stroke = lakeHeightStroke(s),
-      edited = applyTerrainBrush(records, stroke, undefined, visibility, undefined, true),
+      edited = applyTerrainBrush(records, stroke, undefined, visibility, undefined, true, plan),
       bed: LakeBed[] = [];
     for (const r of edited) {
       const t = r.height!,

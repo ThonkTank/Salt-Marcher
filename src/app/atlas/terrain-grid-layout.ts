@@ -1,7 +1,24 @@
-import type { LandscapeBox } from './landscape-bounds';
-import type { TerrainView } from './terrain-view-contracts';
-import type { TerrainLattice } from './terrain-field-stream';
-
+/** Low-level lattice shapes: independent of author records and visibility policy. */
+export interface TerrainLayoutBox {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+export interface TerrainLayoutView {
+  box: TerrainLayoutBox;
+  columns: number;
+  rows: number;
+  refinement?: TerrainLayoutBox;
+}
+export interface TerrainLattice {
+  x: number;
+  y: number;
+  dx: number;
+  dy: number;
+  columns: number;
+  rows: number;
+}
 interface Band {
   start: number;
   cells: number;
@@ -17,7 +34,7 @@ export interface TerrainAxis {
   bands: Band[];
   minimumStep: number;
 }
-const layouts = new WeakMap<TerrainView, ReturnType<typeof layout>>();
+const layouts = new WeakMap<TerrainLayoutView, ReturnType<typeof layout>>();
 /** Wider context uses a few uniform bands with increasing spacing. This
  * preserves bounded stream lattices and avoids one huge cell beside the centre. */
 function marginBands(
@@ -84,7 +101,7 @@ function axis(
     for (let i = 0; i <= b.cells; i++) values[b.start + i] = b.origin + i * b.step;
   return { values, bands, minimumStep: Math.min(...bands.map((b) => b.step)) };
 }
-function layout(v: TerrainView) {
+function layout(v: TerrainLayoutView) {
   const b = v.box,
     f = v.refinement,
     x = axis(b.x, b.width, v.columns, f && { origin: f.x, size: f.width }),
@@ -108,7 +125,7 @@ function layout(v: TerrainView) {
 }
 /** One continuous rectangular mesh: fine centre and coarse margins share edge
  * vertices. The same layout owns sampling, rendering and canonical visibility. */
-export function terrainGridLayout(v: TerrainView) {
+export function terrainGridLayout(v: TerrainLayoutView) {
   let found = layouts.get(v);
   if (!found) {
     found = layout(v);
@@ -129,10 +146,10 @@ export function terrainGridCoordinate(axis: TerrainAxis, value: number) {
   );
 }
 export function terrainGridRect(
-  v: TerrainView,
+  v: TerrainLayoutView,
   r: { x: number; y: number; width: number; height: number },
   pad = 0,
-): LandscapeBox {
+): TerrainLayoutBox {
   const { x, y } = terrainGridLayout(v),
     left = x.values[Math.max(0, r.x - pad)]!,
     top = y.values[Math.max(0, r.y - pad)]!,

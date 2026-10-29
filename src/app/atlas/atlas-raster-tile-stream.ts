@@ -1,4 +1,5 @@
 import { atlasTilePlan, atlasPrefetchTiles } from './atlas-tile-plan.js';
+import type { TerrainSourceChange } from './terrain-change-history';
 /** Common ownership and publication rules for raster display products. */
 export interface AtlasRasterTileRequest {
   tile: AtlasWorldTile;
@@ -17,6 +18,7 @@ export interface AtlasRasterTileAdapter<
 > {
   request(tile: AtlasWorldTile, revision: number, contours?: number, editingRadius?: number): R;
   validate(reply: T, request: R, source: string): void;
+  reuse?(previous: T, request: R, source: string, change: TerrainSourceChange): T | undefined;
 }
 import type { LandscapeBox } from './landscape-bounds';
 import { atlasWorldTileBounds, type AtlasWorldTile } from './atlas-world-tiles.js';
@@ -41,6 +43,7 @@ export interface AtlasRasterStreamInput {
   readonly source: string;
   readonly contours?: number;
   readonly editingRadius?: number;
+  readonly change?: TerrainSourceChange;
 }
 export interface AtlasRasterStreamFrame<T extends AtlasRasterTile> {
   readonly tiles: readonly T[];
@@ -72,6 +75,7 @@ export class AtlasRasterTileStream<T extends AtlasRasterTile, R extends AtlasRas
   private fallback = new Map<string, CachedTile<T>>();
   /** Insertion order is LRU order, oldest first. */
   private readonly cache = new Map<string, CachedTile<T>>();
+  private reused = 0;
 
   constructor(
     private readonly adapter: AtlasRasterTileAdapter<T, R>,
@@ -125,6 +129,49 @@ export class AtlasRasterTileStream<T extends AtlasRasterTile, R extends AtlasRas
     });
     const identity = sourceIdentity(input.source, input.revision, contours, input.editingRadius);
     const compatible = this.identity === identity;
+    this.reused = 0;
+    const change = input.change;
+    if (
+      !compatible &&
+      change &&
+      !change.invalidation.reset &&
+      change.invalidation.bounds.length <= 2048 &&
+      change.invalidation.bounds.every(
+        (b) =>
+          [b.x, b.y, b.width, b.height].every(Number.isFinite) && b.width >= 0 && b.height >= 0,
+      ) &&
+      sourceIdentity(change.base.fence, change.base.revision, contours, input.editingRadius) ===
+        this.identity &&
+      change.target.revision === input.revision &&
+      change.target.fence === input.source &&
+      this.adapter.reuse
+    ) {
+      // Transfer ownership, not a second allocation. Previously published objects
+      // remain immutable; no old-key alias can inflate or bypass the budget.
+      const previous = new Map([
+        ...this.cache,
+        ...[...this.visible.values(), ...this.staged.values(), ...this.fallback.values()].map(
+          (e) => [e.key, e] as const,
+        ),
+      ]);
+      for (const [key, entry] of previous) {
+        if (entry.tile.revision !== change.base.revision || entry.tile.fence !== change.base.fence)
+          continue;
+        const request = this.adapter.request(
+          entry.tile.tile,
+          input.revision,
+          contours,
+          input.editingRadius,
+        );
+        this.cache.delete(key);
+        const tile = this.adapter.reuse(entry.tile, request, input.source, change);
+        if (!tile) continue;
+        this.adapter.validate(tile, request, input.source);
+        const nextKey = cacheKey(input.source, request);
+        this.cache.set(nextKey, { tile, key: nextKey, bytes: estimateBytes(tile) });
+        this.reused++;
+      }
+    }
     this.identity = identity;
 
     // Camera movement does not invalidate terrain. Retain only old tiles that
@@ -290,6 +337,7 @@ export class AtlasRasterTileStream<T extends AtlasRasterTile, R extends AtlasRas
   get statistics() {
     return {
       bytes: this.retainedBytes(),
+      reused: this.reused,
       tiles: new Set(
         [...this.cache.values(), ...this.visible.values(), ...this.staged.values()].map(
           (e) => e.tile,

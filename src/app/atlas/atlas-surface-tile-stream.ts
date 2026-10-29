@@ -5,6 +5,9 @@ import type { AtlasMaterialTile } from './atlas-material-tile';
 import type { AtlasRegionAPI } from './atlas-region-contracts';
 import type { AtlasReadRequest } from './atlas-read-request';
 import { SURFACE_CHANNEL_NAMES } from './terrain-material';
+import { atlasTerrainTileQuery } from './atlas-terrain-tile';
+import { landscapeRasterBounds } from './landscape-raster';
+import type { TerrainSourceChange } from './terrain-change-history';
 
 export interface AtlasSurfaceTile {
   tile: AtlasTerrainTile['tile'];
@@ -30,10 +33,50 @@ export class AtlasSurfaceTileStream extends AtlasRasterTileStream<
           editingRadius,
         }),
         validate: validateSurfaceTile,
+        reuse: reuseUnchangedSurface,
       },
       { maxTiles: 32, ...options },
     );
   }
+}
+
+/** Same dependency envelope as the canonical terrain fingerprint: material halo
+ * plus one lattice cell. Canonical changed-height bounds already include the
+ * interpolation support, and route/lake rows carry their full physical bounds. */
+export function reuseUnchangedSurface(
+  previous: AtlasSurfaceTile,
+  request: AtlasTerrainTileRequest,
+  source: string,
+  change: TerrainSourceChange,
+): AtlasSurfaceTile | undefined {
+  // Author packets contain complete row payloads, not merely sampled nodes.
+  // Their dependency cannot be certified by a narrowed height-node journal.
+  if (request.editingRadius !== undefined || previous.terrain.projection.grid.editing?.author)
+    return;
+  const q = atlasTerrainTileQuery(request),
+    b = landscapeRasterBounds(q.view.box, q.width, q.height),
+    pad = q.view.box.width / (q.view.columns - 1);
+  if (
+    change.invalidation.bounds.some(
+      (c) =>
+        c.x <= b.x + b.width + pad &&
+        c.x + c.width >= b.x - pad &&
+        c.y <= b.y + b.height + pad &&
+        c.y + c.height >= b.y - pad,
+    )
+  )
+    return;
+  const identity = { revision: request.revision, fence: source };
+  return {
+    ...previous,
+    ...identity,
+    terrain: {
+      ...previous.terrain,
+      ...identity,
+      projection: { ...previous.terrain.projection, ...identity, source },
+    },
+    material: { ...previous.material, ...identity },
+  };
 }
 
 function validateSurfaceTile(

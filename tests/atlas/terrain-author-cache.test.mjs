@@ -481,3 +481,29 @@ test('a sub-metre author source above the old cap remains complete through canon
     assert.deepEqual(byId.get(r.id)?.height, r.height);
   }
 });
+
+test('disjoint editing supports do not authorize the empty bounding-box corridor or reuse a pending request there', async () => {
+  const source = new AtlasTerrainEditingSource(),
+    identity = { revision: 1, fence: 'one', radius: 1 },
+    a = { x: 0, y: 0, width: 4, height: 4 },
+    b = { x: 20, y: 0, width: 4, height: 4 },
+    box = { x: 0, y: 0, width: 24, height: 4 },
+    middle = { x: 10, y: 0, width: 2, height: 2 },
+    page = { ...identity, box, pixel: 1 / 32, records: [], complete: true, supports: [a, b] };
+  await source.load(identity, box, async () => page, [a, b]);
+  assert(source.ready(identity, box, [a, b]));
+  assert(!source.ready(identity, middle));
+  source.clear();
+  let release;
+  const old = source.load(identity, box, () => new Promise((r) => (release = r)), [a, b]);
+  const next = await source.load(identity, middle, async () => ({
+    ...page,
+    box: middle,
+    supports: [middle],
+  }));
+  release(page);
+  assert.equal(await old, null);
+  assert.equal(source.source, next);
+  assert(source.ready(identity, middle));
+  assert(!source.ready(identity, a));
+});

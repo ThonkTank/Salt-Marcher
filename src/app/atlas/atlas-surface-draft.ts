@@ -11,6 +11,7 @@ import {
 import type { AtlasSurfaceTile } from './atlas-surface-tile-stream';
 import { TerrainBrushDraft, terrainDraftBounds } from './terrain-brush-draft';
 import type { HeightStroke } from './terrain-brush-contracts';
+import type { prepareHeightBrush } from './terrain-brush';
 import { applyCoupledTerrainBrush } from './terrain-lake-coupling';
 import { gridHeight, terrainVisibility } from './terrain-spatial-model';
 import { type TerrainView } from './terrain-view-contracts';
@@ -29,6 +30,9 @@ export class AtlasSurfaceDraft {
   private bases: readonly AtlasSurfaceTile[];
   private authorRecords: LandscapeRecord[];
   private consumed = 1;
+  get appliedSamples() {
+    return this.consumed;
+  }
   private source?: TerrainEditingSource;
   tiles: readonly AtlasSurfaceTile[];
   get baseTiles() {
@@ -81,6 +85,16 @@ export class AtlasSurfaceDraft {
     ];
   }
   private visibilityGrid() {
+    if (this.visibility.surface) {
+      // Camera, layout and base meshes are frozen together at pointer-down.
+      // No second lattice is sampled between picking and the author kernel.
+      const first = this.bases[0]!.terrain.projection.grid;
+      return {
+        ...first,
+        view: this.visibility,
+        surface: this.bases.map((t) => t.terrain.projection.grid),
+      };
+    }
     const view = this.visibility,
       heights = new Float32Array(view.columns * view.rows);
     const layout = terrainGridLayout(view),
@@ -129,17 +143,26 @@ export class AtlasSurfaceDraft {
       }
     return { view, heights, seaLevelM: this.bases[0]!.terrain.projection.grid.seaLevelM };
   }
-  height(stroke: HeightStroke | LakeStroke): boolean {
+  height(
+    stroke: HeightStroke | LakeStroke,
+    prepared?: ReturnType<typeof prepareHeightBrush>,
+  ): boolean {
     if (stroke.samples.length <= this.consumed) return false;
-    this.consumed = stroke.samples.length;
     let changed = false;
     // All visible tiles share one author computation and fixed visibility.
     // Tile edges cannot invent smoothing neighbours or duplicate attenuation.
     const visibility = this.visibilityGrid();
     const changes =
       'waterLevelM' in stroke
-        ? applyLakeBrush(this.authorRecords, stroke, visibility)
-        : applyCoupledTerrainBrush(this.authorRecords, stroke, undefined, visibility);
+        ? applyLakeBrush(this.authorRecords, stroke, visibility, prepared)
+        : applyCoupledTerrainBrush(
+            this.authorRecords,
+            stroke,
+            undefined,
+            visibility,
+            undefined,
+            prepared,
+          );
     changed = Array.isArray(changes)
       ? changes.length > 0
       : changes.records.length > 0 || changes.remove.length > 0;
@@ -164,6 +187,7 @@ export class AtlasSurfaceDraft {
           view: {
             ...g.view,
             ...this.visibility,
+            surface: undefined,
             box: g.view.box,
             rows: g.view.rows,
             columns: g.view.columns,
@@ -274,6 +298,7 @@ export class AtlasSurfaceDraft {
         },
       };
     });
+    this.consumed = stroke.samples.length;
     return changed;
   }
   color(record: LandscapeRecord): boolean {
@@ -284,6 +309,7 @@ export class AtlasSurfaceDraft {
         paint.target === 'water' ? terrainColors.water : DEFAULT_TERRAIN_STYLE.land,
       );
     let changed = false;
+    const visible = terrainVisibility(this.visibilityGrid());
     this.tiles = this.bases.map((tile, index) => {
       const b = atlasWorldTileBounds(tile.tile),
         points = paint.strokes?.flat() ?? record.points;
@@ -309,18 +335,7 @@ export class AtlasSurfaceDraft {
       let next = iterator.next();
       while (!next.done) next = iterator.next();
       const coverage = next.value;
-      const color = channels.baseColor.slice(),
-        g = tile.terrain.projection.grid;
-      const visible = terrainVisibility({
-        ...g,
-        view: {
-          ...g.view,
-          ...this.visibility,
-          box: g.view.box,
-          columns: g.view.columns,
-          rows: g.view.rows,
-        },
-      });
+      const color = channels.baseColor.slice();
       for (let y = 0; y < h; y++)
         for (let x = 0; x < w; x++) {
           const i = (y + top) * width + x + left,

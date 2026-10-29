@@ -43,8 +43,6 @@ export function atlasHorizonRange(
   const horizon = terrainHorizon({
     frame: box,
     box: terrainCoverageBox(box, terrainCoverageLevel(camera.tilt)),
-    columns: 65,
-    rows: 65,
     focusM: camera.focusHeightM,
     tilt: camera.tilt,
     rotation: camera.rotation,

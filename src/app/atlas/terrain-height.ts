@@ -3,6 +3,7 @@ import {
   type TerrainSettings,
   type HeightSample,
 } from './terrain-height-contracts';
+import type { TerrainAuthorTile } from './terrain-stroke-support';
 import type { Point, Polygon } from '../shared/contracts';
 import { type LandscapeBox } from './landscape-bounds';
 import { type LandscapeRecord } from './landscape-contracts';
@@ -295,6 +296,7 @@ export function editHeight(
   pixel: number,
   edit: (p: Point, old: number) => number | undefined,
   version: 1 | 2 = 1,
+  authorTiles?: readonly TerrainAuthorTile[],
 ): LandscapeRecord[] {
   const edge = 64 * pixel,
     x0 = Math.floor(box.x / edge),
@@ -302,7 +304,7 @@ export function editHeight(
     y0 = Math.floor(box.y / edge),
     y1 = Math.floor((box.y + box.height) / edge);
   if (
-    (x1 - x0 + 1) * (y1 - y0 + 1) > 256 ||
+    (authorTiles?.length ?? (x1 - x0 + 1) * (y1 - y0 + 1)) > 256 ||
     Math.max(
       Math.abs(box.x),
       Math.abs(box.y),
@@ -313,39 +315,43 @@ export function editHeight(
     throw Error('Höhenbereich zu groß. In kürzeren Zügen bearbeiten.');
   const sampler = version === 1 ? new TerrainSampler(records, false) : undefined,
     result: LandscapeRecord[] = [];
-  for (let ty = y0; ty <= y1; ty++)
-    for (let tx = x0; tx <= x1; tx++) {
-      const x = tx * edge,
-        y = ty * edge,
-        old = records.find(
-          (r) =>
-            r.height?.x === x &&
-            r.height.y === y &&
-            r.height.pixel === pixel &&
-            r.height.version === version,
-        ),
-        values = old ? decodeHeights(old.height!).slice() : new Float32Array(4096).fill(NaN);
-      let changed = false;
-      for (let iy = 0; iy < 64; iy++)
-        for (let ix = 0; ix < 64; ix++) {
-          const p = { x: x + ix * pixel, y: y + iy * pixel };
-          if (p.x < box.x || p.y < box.y || p.x > box.x + box.width || p.y > box.y + box.height)
-            continue;
-          const index = iy * 64 + ix,
-            prior = values[index]!,
-            before = Number.isNaN(prior) ? (sampler?.sample(p).heightM ?? 0) : prior,
-            value = edit(p, before);
-          if (value === undefined || value === before) continue;
-          values[index] = Math.max(-1e6, Math.min(1e6, value));
-          changed = true;
-        }
-      if (changed)
-        result.push({
-          ...heightRecord(x, y, pixel, values, version),
-          ...(old ? { id: old.id } : {}),
-          revision: old?.revision ?? 0,
-        });
-    }
+  const tiles =
+    authorTiles ??
+    Array.from({ length: y1 - y0 + 1 }, (_, j) =>
+      Array.from({ length: x1 - x0 + 1 }, (_, i) => ({ x: x0 + i, y: y0 + j })),
+    ).flat();
+  for (const { x: tx, y: ty } of tiles) {
+    const x = tx * edge,
+      y = ty * edge,
+      old = records.find(
+        (r) =>
+          r.height?.x === x &&
+          r.height.y === y &&
+          r.height.pixel === pixel &&
+          r.height.version === version,
+      ),
+      values = old ? decodeHeights(old.height!).slice() : new Float32Array(4096).fill(NaN);
+    let changed = false;
+    for (let iy = 0; iy < 64; iy++)
+      for (let ix = 0; ix < 64; ix++) {
+        const p = { x: x + ix * pixel, y: y + iy * pixel };
+        if (p.x < box.x || p.y < box.y || p.x > box.x + box.width || p.y > box.y + box.height)
+          continue;
+        const index = iy * 64 + ix,
+          prior = values[index]!,
+          before = Number.isNaN(prior) ? (sampler?.sample(p).heightM ?? 0) : prior,
+          value = edit(p, before);
+        if (value === undefined || value === before) continue;
+        values[index] = Math.max(-1e6, Math.min(1e6, value));
+        changed = true;
+      }
+    if (changed)
+      result.push({
+        ...heightRecord(x, y, pixel, values, version),
+        ...(old ? { id: old.id } : {}),
+        revision: old?.revision ?? 0,
+      });
+  }
   return result;
 }
 /** Existing land tools author metres; no writable occupancy mask is produced. */

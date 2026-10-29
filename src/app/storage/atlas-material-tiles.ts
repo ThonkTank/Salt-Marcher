@@ -247,6 +247,10 @@ export class AtlasMaterialTiles {
     const cache = this.open(source),
       channels: TerrainMaterialRaster = {},
       states = {} as AtlasMaterialTile['cache'];
+    // A warm water edit may require a classification pass followed by other
+    // channels. Retain only this read's sixteen fixed sample blocks so those
+    // passes share the exact same field (20.25 MiB with halos), then release them.
+    const fields = new Map<string, import('../atlas/terrain-field-stream').TerrainField>();
     const key = (c: TerrainMaterialChannel) =>
       JSON.stringify(['material', request.tile.lod, request.tile.x, request.tile.y, c]);
     const old = new Map<TerrainMaterialChannel, Stored>();
@@ -278,6 +282,7 @@ export class AtlasMaterialTiles {
           source,
           request,
           new Set(old.size ? (['water'] as const) : selected),
+          fields,
         );
         channels.water = built.water!;
         waterTopology = built.waterTopology;
@@ -317,22 +322,28 @@ export class AtlasMaterialTiles {
         } else missing.add(c);
       }
       if (missing.size) {
-        const more = yield* reader.materialSteps(source, request, missing);
+        const more = yield* reader.materialSteps(source, request, missing, fields);
         for (const c of missing) {
           channels[c] = more[c]!;
           states[c] = cache ? 'built' : 'disabled';
         }
       }
       // No yield within publication: all channels describe the same revalidated source.
-      if (cache && fingerprints)
-        for (const c of selected)
-          if (old.get(c)?.version !== source.shapeVersion || states[c] !== 'hit')
-            cache.put(key(c), FORMAT, {
+      if (cache && fingerprints) {
+        const updates = selected
+          .filter((c) => old.get(c)?.version !== source.shapeVersion || states[c] !== 'hit')
+          .map((c) => ({
+            key: key(c),
+            source: FORMAT,
+            value: {
               version: source.shapeVersion!,
               fingerprint: fingerprints[c],
               bytes: channels[c],
               ...(c === 'water' ? { waterTopology } : {}),
-            });
+            },
+          }));
+        if (updates.length) cache.putMany(updates);
+      }
     }
     return reply(source, request, q.width, q.height, channels, states);
   }

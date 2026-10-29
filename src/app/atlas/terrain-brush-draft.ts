@@ -70,6 +70,7 @@ export class TerrainBrushDraft {
   readonly ground: Float32Array;
   private consumed = 1;
   private touched = false;
+  private scatterRegions: LandscapeBox[] = [];
   changedRect = { x: 0, y: 0, width: 0, height: 0 };
   maximumHeight = 0;
   records: LandscapeRecord[];
@@ -124,10 +125,14 @@ export class TerrainBrushDraft {
           (id) => !merged.has(id),
         ),
       };
-    const box = this.base.view.box;
+    const box = this.base.view.box,
+      currentRegions = affected ?? terrainDraftBounds(records, changes, removed),
+      regions =
+        stroke.mode === 'scatter' ? [...currentRegions, ...this.scatterRegions] : currentRegions;
+    if (stroke.mode === 'scatter') this.scatterRegions = currentRegions;
     if (
       !this.touched &&
-      !(affected ?? terrainDraftBounds(records, changes, removed)).some(
+      !regions.some(
         (b) =>
           b.x <= box.x + box.width &&
           b.x + b.width >= box.x &&
@@ -155,6 +160,16 @@ export class TerrainBrushDraft {
       for (let x = 0; x < v.columns; x++) {
         const i = y * v.columns + x,
           p = { x: layout.x.values[x]!, y: layout.y.values[y]! };
+        // Real input can retract speculative holding, so restore both the
+        // previous and current scatter support. Other modes retain their
+        // original complete grid restoration when protection attenuates them.
+        if (
+          stroke.mode === 'scatter' &&
+          !regions.some(
+            (b) => p.x >= b.x && p.x <= b.x + b.width && p.y >= b.y && p.y <= b.y + b.height,
+          )
+        )
+          continue;
         // Preserve the displayed route/water contribution. The changed raw height
         // is sampled on author nodes, never smoothed on the display triangles.
         const value = Math.fround(

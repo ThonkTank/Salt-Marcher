@@ -2,9 +2,11 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { buildSync } from 'esbuild';
 import { createRequire } from 'node:module';
+import { parseHTML } from '../helpers/dom.mjs';
 const require = createRequire(import.meta.url);
 for (const entry of [
   'atlas-navigation-scale',
+  'atlas-camera',
   'atlas-canvas',
   'atlas-reference-catalog',
   'atlas-landscape-view',
@@ -198,4 +200,85 @@ test('shared camera writes reject all notified navigation while author input is 
     'a closed stroke awaiting storage must not retain camera ownership',
   );
   assert.equal(changes, 1);
+});
+
+test('native wheel handler refreshes terrain after a pause and follows single-pixel cursor moves', (t) => {
+  const { AtlasCanvas } = require('../../.build/atlas-canvas.cjs');
+  const {
+    atlasPlanePoint,
+    atlasAnchorCamera,
+    atlasProject,
+  } = require('../../.build/atlas-camera.cjs');
+  const { document, Event } = parseHTML('<html><body><canvas id="map"></canvas></body></html>');
+  const root = document.querySelector('canvas');
+  Object.defineProperties(root, { clientWidth: { value: 1000 }, clientHeight: { value: 600 } });
+  for (const name of ['apply', 'refreshControls', 'acquireContext'])
+    t.mock.method(AtlasCanvas.prototype, name, () => {});
+  let now = 1000,
+    surfaceM = 20,
+    pose = {
+      frame: { x: -826, y: -522, width: 1652, height: 1044 },
+      focusM: 26,
+      tilt: 0,
+      rotation: 0,
+      exaggeration: 1,
+      projection: 'perspective',
+    },
+    event,
+    picked = 0;
+  t.mock.method(Date, 'now', () => now);
+  const currentAnchor = (e) => {
+    const screen = { x: e.clientX / 1000, y: e.clientY / 600 };
+    return { point: { ...atlasPlanePoint(pose, screen, surfaceM), heightM: surfaceM }, screen };
+  };
+  const presentation = {
+    navigationAnchor: (e) => {
+      picked++;
+      return currentAnchor(e);
+    },
+  };
+  const canvas = new AtlasCanvas(root, { initial: pose.frame, presentation: () => presentation });
+  canvas.screenMatrix = () => null;
+  const drifts = [];
+  canvas.zoom = (factor, _point, burst, anchor) => {
+    const actual = currentAnchor(event),
+      before = atlasProject(pose, actual.point, actual.point.heightM),
+      next = atlasAnchorCamera(
+        {
+          ...pose,
+          frame: {
+            ...pose.frame,
+            width: pose.frame.width * factor,
+            height: pose.frame.height * factor,
+          },
+        },
+        anchor,
+      ),
+      after = atlasProject(next, actual.point, actual.point.heightM);
+    const driftCssPx = Math.hypot((after.x - before.x) * 1000, (after.y - before.y) * 600);
+    drifts.push(driftCssPx);
+    assert(driftCssPx < 1e-7, 'Actual current terrain under cursor stays anchored: ' + driftCssPx);
+    pose = next;
+  };
+  const wheel = (x, y, elapsed = 100) => {
+    now += elapsed;
+    event = new Event('wheel', { bubbles: true, cancelable: true });
+    Object.assign(event, { clientX: x, clientY: y, deltaY: -300, deltaMode: 0 });
+    root.dispatchEvent(event);
+  };
+  wheel(500, 300, 1000);
+  wheel(500, 300);
+  assert.equal(picked, 1, 'Stationary events in one burst retain their terrain point');
+  wheel(501, 300);
+  wheel(502, 300);
+  wheel(502, 301);
+  assert.equal(picked, 4, 'Every moved cursor gets its actual terrain/screen anchor');
+  surfaceM = 25.8328;
+  wheel(502, 301, 30000);
+  assert.equal(
+    picked,
+    5,
+    'After detail loading, a new burst picks current terrain at the same cursor',
+  );
+  assert.equal(drifts.length, 6);
 });

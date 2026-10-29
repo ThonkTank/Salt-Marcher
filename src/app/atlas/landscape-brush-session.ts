@@ -1,3 +1,4 @@
+import type { ScreenPoint } from './atlas-screen-triangle';
 import type { LandscapeHost } from './landscape-workbench-types';
 import { TerrainDraftStroke, TerrainStrokeDiscardedError } from './terrain-stroke-queue';
 import { terrainTraceMeasure } from './terrain-timing';
@@ -5,14 +6,36 @@ import { TerrainLiveStroke } from './terrain-live-stroke';
 import { type HeightStroke } from './terrain-brush-contracts';
 import type { LandscapeToolSettings } from './landscape-tool-settings';
 import { pendingAtlasWrite } from './campaign-atlas-author';
+import type { MaskSample } from './land-mask-contracts';
 import type { Point } from '../shared/contracts';
 import { type LandscapeRecord } from './landscape-contracts';
+/** A received event is authoritative over speculative RAF holding. Rewrite
+ * that suffix onto the actual timed segment, clipping predictions after it.
+ * Retaining those observations and appending the event advances draft versions
+ * without adding time or changing the piecewise linear path. */
+export function receiveTimedBrushInput(
+  samples: MaskSample[],
+  lastInput: number,
+  point: Point,
+  elapsedMs: number,
+) {
+  const start = samples[lastInput]!,
+    end = Math.min(300000, Math.max(start.t, elapsedMs));
+  for (let i = lastInput + 1; i < samples.length; i++) {
+    const t = Math.min(samples[i]!.t, end),
+      f = end === start.t ? 1 : (t - start.t) / (end - start.t);
+    samples[i] = { x: start.x + (point.x - start.x) * f, y: start.y + (point.y - start.y) * f, t };
+  }
+  samples.push({ ...point, t: end });
+  return samples.length - 1;
+}
 interface LandscapeBrushSessionHost {
   readonly effects: Pick<
     LandscapeHost,
     | 'data'
     | 'error'
     | 'previewHeight'
+    | 'completeHeightPreview'
     | 'redraw'
     | 'terrainGesture'
     | 'writeTerrain'
@@ -37,6 +60,8 @@ export class LandscapeBrushSession {
   maskStroke: HeightStroke | import('./landscape-action-contracts').LakeStroke | null = null;
   colorDraft: ReturnType<LandscapeToolSettings['color']> | null = null;
   maskStart = 0;
+  private lastHeightInput = 0;
+  private lastScreenInput = 0;
   maskGeneration = 0;
   liveFrame: number | undefined;
   liveWriteRequested = false;
@@ -48,6 +73,8 @@ export class LandscapeBrushSession {
     return this.live !== null;
   }
   startLive() {
+    this.lastHeightInput = 0;
+    this.lastScreenInput = 0;
     const data = this.host.effects.data();
     if (!data?.region) throw Error('Kartenausschnitt fehlt. Erneut laden.');
     this.host.effects.terrainGesture(true);
@@ -60,7 +87,7 @@ export class LandscapeBrushSession {
     const local = this.host.effects.localTerrain?.(),
       id = this.liveId;
     this.live =
-      !local && this.maskStroke && 'waterLevelM' in this.maskStroke
+      !local && this.maskStroke && ('waterLevelM' in this.maskStroke || this.maskStroke.screenInput)
         ? new TerrainDraftStroke(async (a) => {
             await this.host.effects.writeTerrain(a, {
               id,
@@ -91,31 +118,60 @@ export class LandscapeBrushSession {
     if (local && !this.maskStroke) this.sampleLive();
     this.scheduleLive();
   }
+  receiveHeightInput(point: Point, timeStamp: number, screen?: ScreenPoint) {
+    if (this.maskStroke?.screenInput) {
+      if (!screen) throw Error('Bildschirmereignis des Pinselzugs fehlt.');
+      const events = this.maskStroke.screenInput.events,
+        legacy = events.map((p) => ({ x: p.u, y: p.v, t: p.t }));
+      this.lastScreenInput = receiveTimedBrushInput(
+        legacy,
+        this.lastScreenInput,
+        { x: screen.u, y: screen.v },
+        timeStamp - this.maskStart,
+      );
+      this.maskStroke.screenInput.events = legacy.map((p) => ({ u: p.x, v: p.y, t: p.t }));
+    }
+    if (this.maskStroke)
+      this.lastHeightInput = receiveTimedBrushInput(
+        this.maskStroke.samples,
+        this.lastHeightInput,
+        point,
+        timeStamp - this.maskStart,
+      );
+  }
   sampleHeight() {
     if (this.maskStroke && this.host.pointer !== null && this.maskStroke.samples.length < 20000) {
       const last = this.maskStroke.samples.at(-1)!;
-      this.maskStroke.samples.push({
-        ...this.host.lastPoint,
-        t: Math.min(300000, Math.max(last.t, performance.now() - this.maskStart)),
-      });
+      const t = Math.min(300000, Math.max(last.t, performance.now() - this.maskStart));
+      this.maskStroke.samples.push({ ...this.host.lastPoint, t });
+      const events = this.maskStroke.screenInput?.events;
+      if (events) events.push({ ...events.at(-1)!, t });
     }
   }
   sampleLive(write = true) {
-    this.sampleHeight();
-    if (this.maskStroke) this.host.effects.previewHeight?.(this.maskStroke);
-    if (!this.live || !write) return;
-    if (this.maskStroke)
-      this.live.update(
-        'waterLevelM' in this.maskStroke
-          ? { kind: 'landscape-lake-stroke', stroke: this.maskStroke }
-          : { kind: 'landscape-height-stroke', stroke: this.maskStroke },
-      );
-    else if (this.host.points.length !== this.liveColorCount) {
-      const record = terrainTraceMeasure('draft.colorRecord', () => this.host.colorRecord());
-      record.id = this.liveId;
-      this.liveColorCount = this.host.points.length;
-      this.host.effects.localTerrain?.()?.previewColor(record);
-      this.live.update({ kind: 'landscape-color-stroke', record });
+    try {
+      this.sampleHeight();
+      if (this.maskStroke) this.host.effects.previewHeight?.(this.maskStroke);
+      if (!this.live || !write) return;
+      if (this.maskStroke)
+        this.live.update(
+          'waterLevelM' in this.maskStroke
+            ? { kind: 'landscape-lake-stroke', stroke: this.maskStroke }
+            : { kind: 'landscape-height-stroke', stroke: this.maskStroke },
+        );
+      else if (this.host.points.length !== this.liveColorCount) {
+        const record = terrainTraceMeasure('draft.colorRecord', () => this.host.colorRecord());
+        record.id = this.liveId;
+        this.liveColorCount = this.host.points.length;
+        this.host.effects.localTerrain?.()?.previewColor(record);
+        this.live.update({ kind: 'landscape-color-stroke', record });
+      }
+    } catch (error) {
+      // Stop the current input owner before surfacing a synchronous preview
+      // failure. Existing writes retain their original outcome/recovery owner.
+      this.liveFailureMessage = error instanceof Error ? error.message : String(error);
+      void this.finishLive(true).catch((e) => this.host.effects.error(e));
+      this.host.effects.error(error);
     }
   }
   liveFailureMessage: string | undefined;
@@ -138,14 +194,15 @@ export class LandscapeBrushSession {
     if (this.liveFrame !== undefined) cancelAnimationFrame(this.liveFrame);
     this.liveFrame = undefined;
     this.liveWriteRequested = false;
-    if (this.maskStroke && this.host.pointer !== null)
-      this.maskStroke.samples.push({
-        ...this.host.lastPoint,
-        t: Math.min(
-          300000,
-          Math.max(this.maskStroke.samples.at(-1)!.t, performance.now() - this.maskStart),
-        ),
-      });
+    if (this.maskStroke && this.host.pointer !== null) {
+      const t = Math.min(
+        300000,
+        Math.max(this.maskStroke.samples.at(-1)!.t, performance.now() - this.maskStart),
+      );
+      this.maskStroke.samples.push({ ...this.host.lastPoint, t });
+      const events = this.maskStroke.screenInput?.events;
+      if (events) events.push({ ...events.at(-1)!, t });
+    }
     this.host.endInput();
     clearTimeout(this.maskTimer);
   }
@@ -154,6 +211,20 @@ export class LandscapeBrushSession {
     if (!live || this.host.saving) return;
     this.endLiveInput();
     if (!stop) this.sampleLive();
+    if (this.live !== live || this.host.saving) return;
+    if (!stop && this.maskStroke && this.host.effects.completeHeightPreview) {
+      this.host.setSaving(true);
+      try {
+        await this.host.effects.completeHeightPreview(this.maskStroke);
+      } catch (error) {
+        stop = true;
+        this.liveFailureMessage = error instanceof Error ? error.message : String(error);
+        this.host.effects.error(error);
+      } finally {
+        this.host.setSaving(false);
+      }
+      if (this.live !== live) return;
+    }
     if (live instanceof TerrainDraftStroke) {
       // Close author input synchronously. The queue owns the immutable
       // snapshot; an immediately following gesture owns fresh local state.
@@ -228,6 +299,8 @@ export class LandscapeBrushSession {
     clearTimeout(this.maskTimer);
     this.maskGeneration++;
     this.maskStroke = null;
+    this.lastHeightInput = 0;
+    this.lastScreenInput = 0;
     this.colorDraft = null;
     this.host.clearHeightPreview();
   }

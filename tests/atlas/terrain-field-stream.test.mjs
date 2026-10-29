@@ -1,8 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
-import { buildSync } from 'esbuild';
-import { mkdirSync, mkdtempSync, rmSync } from 'node:fs';
+import { build, buildSync } from 'esbuild';
+import { mkdirSync, mkdtempSync, rmSync, readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 const require = createRequire(import.meta.url);
 buildSync({
@@ -160,6 +160,62 @@ test('scanline bands keep the same lattice at their boundary and can omit unused
   assert.deepEqual(compact.heights, field.heights);
   assert.deepEqual(compact.water, field.water);
   assert.equal(compact.surface, undefined);
+});
+
+test('dense authored lake contours retain canonical membership at vertices, holes and overlapping polygons', () => {
+  const lakes = Array.from({ length: 60 }, (_, i) => {
+    const x = (i % 10) * 3 - 15,
+      y = Math.floor(i / 10) * 3 - 9;
+    const outer = Array.from({ length: 40 }, (_, j) => {
+      const angle = (j * Math.PI) / 20,
+        radius = 2 + 0.5 * Math.cos(angle * 3);
+      return { x: x + Math.cos(angle) * radius, y: y + Math.sin(angle) * radius };
+    });
+    return {
+      id: 'basin-' + i,
+      kind: 'patch',
+      revision: 0,
+      name: '',
+      points: [],
+      resolution: 1,
+      width: 0,
+      values: {},
+      surface: 'freshwater',
+      waterLevelM: 25 + (i % 3),
+      polygons: [
+        {
+          outer: i % 2 ? outer.reverse() : outer,
+          holes: [rectangle(x - 0.5, y - 0.5, 1, 1)[0].outer],
+        },
+        ...rectangle(x, y, 0.75, 0.5),
+      ],
+    };
+  });
+  // Quarter-metre nodes include horizontal/vertical edges and exact hole vertices;
+  // the second lattice binds the same contours to non-integral world origins.
+  for (const offset of [0, 0.125]) {
+    const lattice = {
+      x: -18 + offset,
+      y: -12 + offset,
+      dx: 0.25,
+      dy: 0.25,
+      columns: 145,
+      rows: 97,
+    };
+    const full = check(lakes, lattice);
+    const block = streamTerrainFieldBlock(
+      lattice,
+      { x: 21, y: 18, width: 100, height: 70 },
+      0,
+      stream(lakes),
+    );
+    for (const name of ['heights', 'water', 'surface', 'levels'])
+      for (let row = 0; row < 70; row++)
+        assert.deepEqual(
+          block[name].subarray(row * 100, (row + 1) * 100),
+          full[name].subarray((row + 18) * 145 + 21, (row + 18) * 145 + 121),
+        );
+  }
 });
 test('two-dimensional blocks preserve canonical sample arithmetic at fractional origins and seams', () => {
   const records = ground();
@@ -508,4 +564,61 @@ test('potential lake levels remain available above dry ground without changing t
   assert.deepEqual([...field.heights], [200, 200, 200, 200]);
   assert.deepEqual([...field.levels], [100, 100, 100, 100]);
   assert.deepEqual([...field.water], [0, 0, 0, 0]);
+});
+
+test('dense samples reuse vertical source-cell curves without changing inherited heights', async () => {
+  await build({
+    stdin: {
+      contents:
+        "export * from './src/app/atlas/terrain-height-lattice';export * from './src/app/atlas/terrain-interpolation';export * from './src/app/atlas/terrain-height';",
+      resolveDir: process.cwd(),
+    },
+    bundle: true,
+    platform: 'node',
+    format: 'cjs',
+    outfile: '.build/height-cell-reuse-test.cjs',
+    plugins: [
+      {
+        name: 'count-scalar-height-work',
+        setup(build) {
+          build.onLoad({ filter: /terrain-interpolation\.ts$/ }, ({ path }) => {
+            const source = readFileSync(path, 'utf8'),
+              signature =
+                'export function interpolateHeight(a: number, b: number, c: number, d: number, t: number) {';
+            assert(source.includes(signature));
+            return {
+              loader: 'ts',
+              contents:
+                'export const interpolationCalls = { count: 0 };\n' +
+                source.replace(signature, signature + '\ninterpolationCalls.count++;'),
+            };
+          });
+        },
+      },
+    ],
+  });
+  const api = require('../../.build/height-cell-reuse-test.cjs'),
+    record = api.heightRecord(
+      0,
+      0,
+      1,
+      Float32Array.from(
+        { length: 4096 },
+        (_, i) => 20 + (i % 64) * 0.25 + Math.floor(i / 64) * 0.125,
+      ),
+    ),
+    xs = Float64Array.from({ length: 128 }, (_, i) => 21.01 + i * 0.003),
+    ys = Float64Array.from({ length: 128 }, (_, i) => 21.02 + i * 0.002),
+    ground = new Float64Array(xs.length * ys.length).fill(30),
+    additions = new Float64Array(ground.length);
+  api.interpolationCalls.count = 0;
+  api.accumulateHeightSources(xs, ys, api.terrainHeightSources([record]), ground, additions);
+  assert(
+    api.interpolationCalls.count <= xs.length * 8,
+    'coarse source interpolation is not repeated for every supersample',
+  );
+  const sampler = new api.TerrainSampler([record]);
+  for (let y = 0; y < ys.length; y++)
+    for (let x = 0; x < xs.length; x++)
+      assert.equal(ground[y * xs.length + x], sampler.sample({ x: xs[x], y: ys[y] }).heightM);
 });

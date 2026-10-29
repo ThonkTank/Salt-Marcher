@@ -9,6 +9,7 @@ export interface TerrainView extends AtlasCameraPose {
   columns: number;
   rows: number;
   refinement?: LandscapeBox;
+  surface?: import('./terrain-surface-layout').TerrainSurfaceLayout;
   focusM: number;
   tilt: number;
   rotation: number;

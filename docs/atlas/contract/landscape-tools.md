@@ -2,7 +2,7 @@
 
 Status: Geltender Fachvertrag; offene Erweiterungen sind als Ziele beschrieben.
 Owner: atlas
-Last Reviewed: 2026-10-28 (aktuelle Einstiege und historische Adapterstände; Fachabnahme separat)
+Last Reviewed: 2026-10-28 (Seen streuen und getrennte Beckenautoren; Fachabnahme separat)
 Source of Truth: Dieses Dokument besitzt das benannte Thema; Code belegt den Iststand, das Abnahmeregister den Prüfstand.
 
 Aktuelle Bedienung: [guide.md](../guide.md#gelände-formen-und-ansicht-kippen).
@@ -22,7 +22,7 @@ Für das neue Höhenmodell ergänzt [Geländegebundene Straßen und Flüsse](ter
 
 Straßen und Flüsse speichern Weltmeter-Kontrollpunkte und optionale `line.version = 1`: Kurve, Farbe, Rauheit, Mäander, Quellverjüngung, Zufallsstart, Straßenmuster und Zeichenebene. Die zehn Straßenmuster bilden die sichtbaren Referenzvorschauen mit eigener Geometrie nach; proprietäre Assets werden nicht übernommen. Neue Vorgaben und ausgewählte Objekte besitzen getrennte Kontrollen. Umschalt-Klick erweitert die Auswahl derselben Verlaufsart; Ziehen verschiebt die ganze Auswahl. Breite/Stil lassen sich ausdrücklich gemeinsam anwenden. Punktaktionen bleiben erhalten. Teilen speichert angrenzende Tangenten und den bisherigen Verlaufabstand.
 
-Land hinzufügen/radieren, Küste anheben/absenken und Süßwasser hinzufügen/radieren sind Wirkungen des Geländepinsels. Küstenänderungen betreffen nur den berührten Rand. Süßwasser gräbt ein Seebecken und füllt es gleichzeitig. Die Radierung entfernt Wasser und füllt ausschließlich den zugeordneten Seeabtrag wieder auf; spätere unabhängige Geländeänderungen bleiben erhalten. Eigenschaften und gezieltes Zurücksetzen verwenden freie metrische Flächen.
+Land hinzufügen/radieren, Küste anheben/absenken und Süßwasser hinzufügen/radieren sind Wirkungen des Geländepinsels. Küstenänderungen betreffen nur den berührten Rand. Süßwasser gräbt ein Seebecken und füllt es gleichzeitig; „Seen streuen“ verteilt mehrere getrennte Becken im bestrichenen Bereich. Die Radierung entfernt Wasser und füllt ausschließlich den zugeordneten Seeabtrag wieder auf; spätere unabhängige Geländeänderungen bleiben erhalten. Eigenschaften und gezieltes Zurücksetzen verwenden freie metrische Flächen.
 
 Gelände- und Wasserfarbe speichern `paint.version = 1` ohne Spielwerte: Ziel, Farbe, Deckkraft, Auftragsstärke, Spitze, Radius, Zufallsstart und Strichpunkte. Auftragsstärke akkumuliert innerhalb eines Strichs; Deckkraft begrenzt den gesamten Auftrag. Füllen verwendet die zusammenhängende angelegte Land-/Wasserfläche. Farbmasken richten sich nach der aktuellen Wasserverteilung. Die Pipette liest den sichtbaren Kartenpixel; die Palette bleibt lokal erhalten. Farbradierer beschneiden nur Farbflächen.
 
@@ -48,11 +48,50 @@ Die vorhandene SQLite-Schreibgrenze, Receipts, Undo/Redo, Archive und Wiederhers
 ### Seebeckenpinsel
 
 `terrain-lake-brush.ts` ist der gemeinsame reine Operator für Live-Entwurf und
-kanonischen Worker. Radius und weicher Rand bestimmen die Form, Stärke in m/s
+kanonischen Worker. Neue Höhen-/Seegesten binden normierte, zeitgestempelte
+Screenereignisse an Kamera und Oberfläche. Der [Screenzugvertrag](../architecture/rendering.md#bildschirmgebundene-höhen--und-seezüge)
+beschreibt First-hit-Abschnitte, Dosis und genaue Quellenarbeit. Radius und weicher Rand bestimmen die Form, Stärke in m/s
 und tatsächliche Einwirkzeit den Abtrag, auch bei stillstehender Spitze. Der
 Pegel wird am Anfang der Geste eingefroren: ein ausdrücklich eingegebener Pegel,
 der Pegel einer dort vorhandenen Seefläche oder die Bodenhöhe des ersten Punktes.
 Der frühere automatische Zuschlag von einem Meter entfällt.
+
+Die Wirkung „Seen streuen“ zeigt zusätzlich Verteilung / Noise von 0 bis 1:
+wenige große bis viele kleine Seen, mit Landzwischenräumen. Stärke bleibt Abtrag
+in m/s; längeres Halten vertieft dieselben Becken. Radius, Randabfall, Noise und
+ein uint32-Seed werden pro Geste eingefroren. `terrain-lake-scatter.ts` bestimmt
+aus Weltkoordinaten stabile, unregelmäßige Beckenformen; das versetzte und gedrehte
+Kandidatenraster ist nur eine Suchstruktur. Redundante kollineare Zeitereignisse
+werden vor der gemeinsamen Zeitintegration entfernt. Empfangene Pointerzeiten
+begrenzen spekulative Halteframes: deren Punkte werden auf das tatsächliche
+Zeitsegment zurückgeführt, der reale Endpunkt wird angehängt. Dadurch bleiben
+Liveentwurf, Auftragsdauer und Writer an dieselbe tatsächliche Eingabe gebunden. Kamera, Kachelgrenze und
+Eventdichte derselben zeitgestempelten Bewegung verändern die Anordnung nicht.
+Unterhalb der Autorenauflösung liegende Randfragmente werden ausgeschlossen.
+
+Jedes wirksame Becken erhält eine eigene deterministische Autorenkennung aus
+Gestenkennung und Beckenkennung. Wasserflächen folgen den tatsächlichen Becken,
+nicht der ganzen Pinselreichweite. Überlagerte Profile verwenden je Höhenknoten
+das stärkste Profil; genau ein stabiler Beckenbesitzer trägt den tatsächlichen
+Abtrag. Ohne ausdrücklichen Wasserstand erhält jedes Becken den Pegel am eigenen
+unveränderlichen Quellenanker (vorhandener See oder ursprüngliche Bodenhöhe).
+Ein ausdrücklicher Pegel gilt wie bisher. Es gibt keinen Überlaufsolver.
+Alle Becken einer Geste bleiben ein Atlasauftrag, eine Transaktion und ein
+Undo-Schritt. Der Streu-Liveentwurf resampelt nur Gridknoten innerhalb der bereits
+ermittelten exakten Höhen-/Wasseränderungsbereiche, einschließlich des
+Interpolationsrandes; nach zeitlicher Eingabekorrektur werden vorheriger und
+aktueller Bereich wiederhergestellt. Andere Höhenmodi behalten ihren bisherigen
+vollständigen Wiederherstellungspfad. Teil-/Vollradierung verwendet dieselbe Herkunft wie einzelne Seen
+und erhält spätere unabhängige Höhenzüge.
+
+Gezielte Scatterregressionen stehen in `tests/atlas/terrain-lake-scatter.test.mjs`:
+Seed/Noise, Zeit/Eventdichte, Kachelgrenzen, Quellenpegel, Entwurf/Writer,
+Abtragsbesitz, Flussschutz und atomare History mit Fresh. Die bestehende native
+Seeprobe hat dafür `--scatter --scale=1` und `--scatter --scale=2`; ihr Helfer
+`tools/atlas-lake-scatter-probe.mjs` bindet während des tatsächlichen Deck-Draws
+einen geänderten GPU-Frame vor Pointerup. Eingabezeiten, Runtime-/Quellhashes und
+normale Prozessenden sind gesonderte Belege. Dies erweitert keine Performance-,
+Weltzoom-, Paket- oder gestalterische Abnahme.
 
 Die Bodenhöhen bleiben ausschließlich in den vorhandenen Höhenkacheln. Das
 Wasserobjekt trägt unter `lakeBed` die zugehörigen tatsächlich abgetragenen
@@ -156,8 +195,9 @@ wechseln zurück zum jeweiligen Grundpinsel; Glätten bleibt direkt erreichbar.
 Die früheren gleichnamigen radialen Parameter-Vorlagen entfallen.
 
 Der unveränderliche Höhenauftrag trägt `form` und einen festen Seed. Ein
-räumlich gleichmäßig abgetasteter, an Kurven leicht geglätteter Korridor verbindet
-die ganze Geste. Weltgebundene Kuppen füllen das Hügelfeld; Berge besitzen einen
+räumlich gleichmäßig abgetasteter, an Kurven leicht geglätteter Korridor folgt
+jedem sichtbaren First-hit-Abschnitt. Getrennte Abschnitte einer Bildschirmgeste
+werden nicht durch eine Weltstrecke verbunden. Weltgebundene Kuppen füllen das Hügelfeld; Berge besitzen einen
 positiven Hauptkamm mit breiten Hängen und begrenzt ungleichen Gipfeln; Schluchten
 einen schmalen Boden mit seitlich auslaufenden Böschungen. Halten verstärkt die
 bestehende Form, Folgezüge verwenden dasselbe Weltfeld. Überlappungen addieren
@@ -166,7 +206,7 @@ vollständig aus ihrer festen Ausgangsfläche berechnet und verwendet dieselbe
 Auswertung wie der kanonische Writer. Bestehende additive Höhenbänder,
 Sichtbarkeit, Trassenschutz und die Speichergrenze in Main bleiben zuständig.
 
-Formzüge verteilen ihre Wirkzeit über die zusammenhängende überstrichene Fläche.
+Formzüge verteilen ihre tatsächliche Wirkzeit über die Vereinigung der überstrichenen Abschnitte; Himmelzeit gehört nicht dazu.
 Haltezeiten ändern die Stärke der bestehenden Form; sie erzeugen keine einzelnen
 Lochstempel. Erneutes Überstreichen verstärkt die Form, während Weltfeld und
 Randprofil erhalten bleiben.

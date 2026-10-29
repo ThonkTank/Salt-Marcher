@@ -394,6 +394,12 @@ export class AtlasRegionService {
   ): Promise<import('../src/app/atlas/atlas-terrain-tile').AtlasTerrainTile> {
     return this.enqueue(source, { kind: 'terrain-tile', query }, 'terrain', control);
   }
+  terrainSourceChange(
+    source: AtlasRegionSource,
+    base: import('../src/app/atlas/terrain-source').TerrainIdentity,
+  ): Promise<import('../src/app/atlas/terrain-change-history').TerrainSourceChange> {
+    return this.enqueue(source, { kind: 'terrain-change', base }, 'terrain');
+  }
   materialTile(
     source: AtlasRegionSource,
     query: import('../src/app/atlas/atlas-material-tile').AtlasMaterialTileRequest,

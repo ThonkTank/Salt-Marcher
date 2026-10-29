@@ -192,3 +192,133 @@ test('a failed write cancels future height frames without retrying an uncertain 
   assert.equal(f.previews.length, shown);
   assert.equal(f.writes.length, 1);
 });
+
+test('synchronous preview failure stops RAF and pointer capture without committing the failing snapshot', async (t) => {
+  const f = fixture(t),
+    failure = Error('preview work guard');
+  let captured = true;
+  f.ui.canvas = {
+    hasPointerCapture: () => captured,
+    releasePointerCapture: () => {
+      captured = false;
+    },
+  };
+  f.ui.host.previewHeight = () => {
+    throw failure;
+  };
+  f.ui.startLive();
+  assert.doesNotThrow(() => f.advance(16));
+  await settle();
+  assert.equal(f.ui.pointer, null);
+  assert.equal(captured, false);
+  assert.equal(f.ui.live, null);
+  assert.equal(f.frames.size, 0);
+  assert.equal(f.writes.length, 0);
+  assert.deepEqual(f.errors, [failure]);
+  f.advance(32);
+  assert.equal(f.writes.length, 0);
+  // Fresh ownership remains available after the aborted gesture.
+  f.ui.host.previewHeight = () => {};
+  f.ui.pointer = 2;
+  f.ui.maskStroke = {
+    mode: 'raise',
+    radius: 100,
+    strength: 10,
+    feather: 0,
+    samples: [{ x: 0, y: 0, t: 0 }],
+  };
+  f.ui.startLive();
+  f.advance(48);
+  assert.equal(f.writes.length, 1);
+  f.ui.endLiveInput();
+  await f.ack();
+  await f.ui.live.finish();
+});
+
+test('preview failure while a write is pending does not retry or undo its outcome', async (t) => {
+  const f = fixture(t),
+    failure = Error('later preview failure');
+  f.ui.startLive();
+  f.advance(16);
+  f.ui.host.previewHeight = () => {
+    throw failure;
+  };
+  assert.doesNotThrow(() => f.advance(32));
+  assert.equal(f.ui.pointer, null);
+  assert.equal(f.frames.size, 0);
+  assert.equal(f.writes.length, 1);
+  await f.ack();
+  await settle();
+  assert.equal(f.ui.live, null);
+  assert.equal(f.writes.length, 1);
+  assert.deepEqual(f.errors, [failure]);
+});
+
+test('local draft preview failure cancels only the active draft and leaves a fresh gesture usable', async (t) => {
+  const f = fixture(t),
+    failure = Error('local preview failed');
+  let cancels = 0,
+    queued = 0,
+    disabled = false;
+  f.ui.host.localTerrain = () => ({
+    cancel: () => cancels++,
+    enqueue: async () => {
+      queued++;
+    },
+    previewColor() {},
+  });
+  f.ui.disable = (value) => {
+    disabled = value;
+  };
+  f.ui.host.previewHeight = () => {
+    throw failure;
+  };
+  f.ui.startLive();
+  f.advance(16);
+  await settle();
+  assert.equal(cancels, 1);
+  assert.equal(queued, 0);
+  assert.equal(f.ui.live, null);
+  assert.equal(f.ui.pointer, null);
+  assert.equal(f.frames.size, 0);
+  assert.equal(disabled, false);
+  assert.deepEqual(f.errors, [failure]);
+  f.ui.host.previewHeight = () => {};
+  f.ui.pointer = 2;
+  f.ui.maskStroke = {
+    mode: 'raise',
+    radius: 100,
+    strength: 10,
+    feather: 0,
+    samples: [{ x: 0, y: 0, t: 0 }],
+  };
+  f.ui.startLive();
+  f.advance(32);
+  await f.ui.finishLive();
+  assert.equal(queued, 1);
+  assert.equal(cancels, 1);
+});
+
+test('versioned screen input cannot fall into incremental world-sample writes without a local terrain queue', async (t) => {
+  const f = fixture(t);
+  f.ui.maskStroke.screenInput = { version: 1, events: [{ u: 0.4, v: 0.5, t: 0 }] };
+  f.ui.startLive();
+  f.advance(16);
+  f.advance(32);
+  assert.equal(f.writes.length, 0, 'screen gesture remains atomic while held');
+  f.ui.brush.receiveHeightInput({ x: 1, y: 0 }, 40, { u: 0.6, v: 0.5 });
+  f.setTime(40);
+  f.ui.endLiveInput();
+  f.ui.sampleLive();
+  const done = f.ui.live.finish();
+  assert.equal(f.writes.length, 1);
+  const sent = f.writes[0].action.stroke;
+  assert.equal(sent.screenInput.version, 1);
+  assert.equal(sent.screenInput.events[0].t, 0);
+  assert.equal(sent.screenInput.events.at(-1).t, 40);
+  assert.equal(sent.samples[0].t, 0);
+  assert.equal(sent.samples.at(-1).t, 40);
+  await f.ack();
+  await done;
+  assert.equal(f.writes.length, 1);
+});

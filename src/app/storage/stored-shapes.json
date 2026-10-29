@@ -198,52 +198,52 @@
    "node": 205
   },
   "world_record_phenomenon": {
-   "node": 238
-  },
-  "world_record_place_presentation": {
    "node": 240
   },
-  "world_record_weather_state": {
-   "node": 241
-  },
-  "world_history": {
+  "world_record_place_presentation": {
    "node": 242
   },
+  "world_record_weather_state": {
+   "node": 243
+  },
+  "world_history": {
+   "node": 244
+  },
   "world_receipt": {
-   "node": 292
+   "node": 294
   },
   "scene_position": {
-   "node": 262
+   "node": 264
   },
   "world_journey": {
-   "node": 298
+   "node": 300
   },
   "audio_asset": {
-   "node": 305
-  },
-  "audio_registry": {
    "node": 307
   },
-  "music_state": {
+  "audio_registry": {
    "node": 309
   },
+  "music_state": {
+   "node": 311
+  },
   "scene_music": {
-   "node": 312
+   "node": 314
   },
   "music_subject": {
-   "node": 313
+   "node": 315
   },
   "music_receipt": {
-   "node": 314
+   "node": 316
   },
   "atlas_landscape": {
    "node": 206
   },
   "dungeon_feature_state": {
-   "node": 315
+   "node": 317
   },
   "campaign_catalog_receipt": {
-   "node": 316
+   "node": 318
   }
  },
  "nodes": [
@@ -9293,7 +9293,7 @@
     },
     "cells": {
      "array": {
-      "node": 237
+      "node": 239
      }
     }
    },
@@ -9420,7 +9420,7 @@
     "mask": {
      "union": [
       {
-       "node": 221
+       "node": 223
       }
      ]
     },
@@ -9437,14 +9437,14 @@
     "height": {
      "union": [
       {
-       "node": 222
+       "node": 224
       }
      ]
     },
     "terrainSettings": {
      "union": [
       {
-       "node": 223
+       "node": 225
       }
      ]
     },
@@ -9459,7 +9459,7 @@
      "union": [
       {
        "array": {
-        "node": 225
+        "node": 227
        }
       }
      ]
@@ -9477,7 +9477,7 @@
     "sourceCell": {
      "union": [
       {
-       "node": 226
+       "node": 228
       }
      ]
     },
@@ -9497,17 +9497,17 @@
     "vegetation": {
      "union": [
       {
-       "node": 227
+       "node": 229
       }
      ]
     },
     "vegetationView": {
      "union": [
       {
-       "node": 232
+       "node": 234
       },
       {
-       "node": 235
+       "node": 237
       }
      ]
     },
@@ -10173,6 +10173,13 @@
       }
      ]
     },
+    "surface": {
+     "union": [
+      {
+       "node": 221
+      }
+     ]
+    },
     "focusM": {
      "scalar": "number"
     },
@@ -10224,6 +10231,40 @@
     "y",
     "width",
     "height"
+   ]
+  },
+  {
+   "fields": {
+    "metersPerPixel": {
+     "scalar": "number"
+    },
+    "tiles": {
+     "array": {
+      "node": 222
+     }
+    }
+   },
+   "required": [
+    "metersPerPixel",
+    "tiles"
+   ]
+  },
+  {
+   "fields": {
+    "lod": {
+     "scalar": "number"
+    },
+    "x": {
+     "scalar": "number"
+    },
+    "y": {
+     "scalar": "number"
+    }
+   },
+   "required": [
+    "lod",
+    "x",
+    "y"
    ]
   },
   {
@@ -10296,7 +10337,7 @@
     "style": {
      "union": [
       {
-       "node": 224
+       "node": 226
       }
      ]
     }
@@ -10369,7 +10410,7 @@
      "scalar": "string"
     },
     "tile": {
-     "node": 222
+     "node": 224
     }
    },
    "required": [
@@ -10408,7 +10449,7 @@
      "scalar": "number"
     },
     "preset": {
-     "node": 228
+     "node": 230
     },
     "layout": {
      "union": [
@@ -10425,12 +10466,12 @@
     },
     "edits": {
      "array": {
-      "node": 230
+      "node": 232
      }
     },
     "overrides": {
      "array": {
-      "node": 231
+      "node": 233
      }
     }
    },
@@ -10533,7 +10574,7 @@
      ]
     },
     "waterDepth": {
-     "node": 229
+     "node": 231
     },
     "density": {
      "scalar": "number"
@@ -10693,7 +10734,7 @@
    "fields": {
     "instances": {
      "array": {
-      "node": 233
+      "node": 235
      }
     },
     "mode": {
@@ -10755,7 +10796,7 @@
      "scalar": "number"
     },
     "normal": {
-     "node": 234
+     "node": 236
     },
     "protected": {
      "union": [
@@ -10836,11 +10877,11 @@
      ]
     },
     "packed": {
-     "node": 236
+     "node": 238
     },
     "tail": {
      "array": {
-      "node": 233
+      "node": 235
      }
     }
    },
@@ -11008,13 +11049,13 @@
      "scalar": "number"
     },
     "center": {
-     "node": 239
+     "node": 241
     },
     "radiusHexes": {
      "scalar": "number"
     },
     "movement": {
-     "node": 239
+     "node": 241
     },
     "startMs": {
      "scalar": "string"
@@ -11208,12 +11249,6 @@
     "facts": {
      "union": [
       {
-       "node": 243
-      },
-      {
-       "node": 244
-      },
-      {
        "node": 245
       },
       {
@@ -11235,49 +11270,55 @@
        "node": 251
       },
       {
-       "node": 253
+       "node": 252
       },
       {
-       "node": 254
+       "node": 253
       },
       {
        "node": 255
       },
       {
+       "node": 256
+      },
+      {
        "node": 257
       },
       {
-       "node": 258
+       "node": 259
       },
       {
-       "node": 261
+       "node": 260
       },
       {
-       "node": 267
+       "node": 263
       },
       {
-       "node": 274
-      },
-      {
-       "node": 275
+       "node": 269
       },
       {
        "node": 276
       },
       {
-       "node": 281
+       "node": 277
       },
       {
-       "node": 282
+       "node": 278
       },
       {
-       "node": 289
+       "node": 283
       },
       {
-       "node": 290
+       "node": 284
       },
       {
        "node": 291
+      },
+      {
+       "node": 292
+      },
+      {
+       "node": 293
       }
      ]
     }
@@ -11638,10 +11679,10 @@
   {
    "fields": {
     "before": {
-     "node": 252
+     "node": 254
     },
     "after": {
-     "node": 252
+     "node": 254
     }
    },
    "required": [
@@ -11702,7 +11743,7 @@
      "scalar": "string"
     },
     "hex": {
-     "node": 239
+     "node": 241
     }
    },
    "required": [
@@ -11717,7 +11758,7 @@
      "scalar": "string"
     },
     "presentation": {
-     "node": 256
+     "node": 258
     }
    },
    "required": [
@@ -11767,7 +11808,7 @@
   {
    "fields": {
     "phenomenon": {
-     "node": 238
+     "node": 240
     }
    },
    "required": [
@@ -11782,7 +11823,7 @@
        "literal": null
       },
       {
-       "node": 259
+       "node": 261
       }
      ]
     }
@@ -11825,7 +11866,7 @@
      "scalar": "number"
     },
     "effects": {
-     "node": 260
+     "node": 262
     },
     "source": {
      "scalar": "string"
@@ -11875,10 +11916,10 @@
   {
    "fields": {
     "before": {
-     "node": 262
+     "node": 264
     },
     "after": {
-     "node": 266
+     "node": 268
     }
    },
    "required": [
@@ -11891,14 +11932,14 @@
     "city": {
      "union": [
       {
-       "node": 263
+       "node": 265
       }
      ]
     },
     "outdoor": {
      "union": [
       {
-       "node": 264
+       "node": 266
       }
      ]
     },
@@ -11931,7 +11972,7 @@
        "literal": null
       },
       {
-       "node": 265
+       "node": 267
       }
      ]
     },
@@ -12040,7 +12081,7 @@
     "city": {
      "union": [
       {
-       "node": 263
+       "node": 265
       }
      ]
     },
@@ -12050,7 +12091,7 @@
        "literal": null
       },
       {
-       "node": 265
+       "node": 267
       }
      ]
     },
@@ -12073,7 +12114,7 @@
     "outdoor": {
      "union": [
       {
-       "node": 264
+       "node": 266
       }
      ]
     },
@@ -12098,7 +12139,7 @@
   {
    "fields": {
     "preview": {
-     "node": 268
+     "node": 270
     },
     "journeyId": {
      "scalar": "string"
@@ -12115,11 +12156,11 @@
      "scalar": "string"
     },
     "request": {
-     "node": 269
+     "node": 271
     },
     "route": {
      "array": {
-      "node": 239
+      "node": 241
      }
     },
     "distanceMeters": {
@@ -12162,7 +12203,7 @@
        "literal": null
       },
       {
-       "node": 259
+       "node": 261
       }
      ]
     },
@@ -12179,18 +12220,18 @@
     },
     "stages": {
      "array": {
-      "node": 271
+      "node": 273
      }
     },
     "events": {
      "array": {
-      "node": 272
+      "node": 274
      }
     },
     "continuation": {
      "union": [
       {
-       "node": 273
+       "node": 275
       }
      ]
     }
@@ -12232,7 +12273,7 @@
      "scalar": "string"
     },
     "destination": {
-     "node": 239
+     "node": 241
     },
     "mapId": {
      "scalar": "string"
@@ -12249,7 +12290,7 @@
     },
     "waypoints": {
      "array": {
-      "node": 239
+      "node": 241
      }
     },
     "paceKmh": {
@@ -12281,7 +12322,7 @@
     "continuation": {
      "union": [
       {
-       "node": 270
+       "node": 272
       }
      ]
     }
@@ -12317,7 +12358,7 @@
      "scalar": "number"
     },
     "hex": {
-     "node": 239
+     "node": 241
     },
     "seconds": {
      "scalar": "number"
@@ -12357,7 +12398,7 @@
      ]
     },
     "weather": {
-     "node": 259
+     "node": 261
     },
     "interrupt": {
      "scalar": "string"
@@ -12473,10 +12514,10 @@
      }
     },
     "before": {
-     "node": 277
+     "node": 279
     },
     "after": {
-     "node": 279
+     "node": 281
     },
     "seconds": {
      "scalar": "number"
@@ -12494,10 +12535,10 @@
   {
    "fields": {
     "position": {
-     "node": 262
+     "node": 264
     },
     "clock": {
-     "node": 278
+     "node": 280
     },
     "weather": {
      "union": [
@@ -12505,7 +12546,7 @@
        "literal": null
       },
       {
-       "node": 259
+       "node": 261
       }
      ]
     }
@@ -12537,10 +12578,10 @@
   {
    "fields": {
     "position": {
-     "node": 262
+     "node": 264
     },
     "clock": {
-     "node": 280
+     "node": 282
     },
     "weather": {
      "union": [
@@ -12548,7 +12589,7 @@
        "literal": null
       },
       {
-       "node": 259
+       "node": 261
       }
      ]
     }
@@ -12583,7 +12624,7 @@
      "scalar": "string"
     },
     "hex": {
-     "node": 239
+     "node": 241
     }
    },
    "required": [
@@ -12602,11 +12643,11 @@
        "node": 82
       },
       {
-       "node": 283
+       "node": 285
       },
       {
        "array": {
-        "node": 284
+        "node": 286
        }
       }
      ]
@@ -12617,11 +12658,11 @@
        "node": 82
       },
       {
-       "node": 283
+       "node": 285
       },
       {
        "array": {
-        "node": 284
+        "node": 286
        }
       }
      ]
@@ -12660,7 +12701,7 @@
      "scalar": "string"
     },
     "record": {
-     "node": 284
+     "node": 286
     },
     "locationId": {
      "union": [
@@ -12698,7 +12739,7 @@
        "literal": null
       },
       {
-       "node": 288
+       "node": 290
       }
      ]
     },
@@ -12778,7 +12819,7 @@
     "demographics": {
      "union": [
       {
-       "node": 285
+       "node": 287
       }
      ]
     },
@@ -12786,7 +12827,7 @@
      "union": [
       {
        "array": {
-        "node": 286
+        "node": 288
        }
       }
      ]
@@ -12795,7 +12836,7 @@
      "union": [
       {
        "array": {
-        "node": 287
+        "node": 289
        }
       }
      ]
@@ -12906,7 +12947,7 @@
     },
     "slots": {
      "array": {
-      "node": 286
+      "node": 288
      }
     }
    },
@@ -13064,7 +13105,7 @@
   {
    "fields": {
     "world": {
-     "node": 293
+     "node": 295
     },
     "scene": {
      "union": [
@@ -13072,7 +13113,7 @@
        "literal": null
       },
       {
-       "node": 296
+       "node": 298
       }
      ]
     }
@@ -13085,7 +13126,7 @@
   {
    "fields": {
     "calendar": {
-     "node": 252
+     "node": 254
     },
     "maps": {
      "array": {
@@ -13094,17 +13135,17 @@
     },
     "places": {
      "array": {
-      "node": 294
+      "node": 296
      }
     },
     "events": {
      "array": {
-      "node": 295
+      "node": 297
      }
     },
     "phenomena": {
      "array": {
-      "node": 238
+      "node": 240
      }
     }
    },
@@ -13136,7 +13177,7 @@
     "presentation": {
      "union": [
       {
-       "node": 256
+       "node": 258
       }
      ]
     },
@@ -13226,7 +13267,7 @@
      "node": 168
     },
     "position": {
-     "node": 262
+     "node": 264
     },
     "date": {
      "scalar": "string"
@@ -13237,7 +13278,7 @@
        "literal": null
       },
       {
-       "node": 259
+       "node": 261
       }
      ]
     },
@@ -13253,12 +13294,12 @@
     },
     "events": {
      "array": {
-      "node": 295
+      "node": 297
      }
     },
     "notices": {
      "array": {
-      "node": 297
+      "node": 299
      }
     },
     "journey": {
@@ -13267,24 +13308,24 @@
        "literal": null
       },
       {
-       "node": 298
+       "node": 300
       }
      ]
     },
     "knowledge": {
      "array": {
-      "node": 300
+      "node": 302
      }
     },
     "history": {
      "array": {
-      "node": 301
+      "node": 303
      }
     },
     "travelHistory": {
      "union": [
       {
-       "node": 302
+       "node": 304
       }
      ]
     }
@@ -13392,7 +13433,7 @@
     },
     "route": {
      "array": {
-      "node": 239
+      "node": 241
      }
     },
     "nextIndex": {
@@ -13467,7 +13508,7 @@
     "continuedFrom": {
      "union": [
       {
-       "node": 299
+       "node": 301
       }
      ]
     }
@@ -13551,7 +13592,7 @@
        "literal": null
       },
       {
-       "node": 303
+       "node": 305
       }
      ]
     },
@@ -13561,7 +13602,7 @@
        "literal": null
       },
       {
-       "node": 304
+       "node": 306
       }
      ]
     }
@@ -13660,7 +13701,7 @@
      ]
     },
     "media": {
-     "node": 306
+     "node": 308
     },
     "moods": {
      "node": 181
@@ -13759,7 +13800,7 @@
     },
     "axes": {
      "array": {
-      "node": 308
+      "node": 310
      }
     }
    },
@@ -13817,13 +13858,13 @@
        "literal": null
       },
       {
-       "node": 310
+       "node": 312
       }
      ]
     },
     "queue": {
      "array": {
-      "node": 311
+      "node": 313
      }
     },
     "history": {

@@ -25,6 +25,16 @@ export function validateTerrainProjection(q: TerrainProjectionRequest) {
   )
     throw Error('Geländefarbbasis prüfen.');
   validateTerrainView(q.view);
+  if (q.editingSupports !== undefined) {
+    if (
+      q.editingPage === undefined ||
+      !Array.isArray(q.editingSupports) ||
+      !q.editingSupports.length ||
+      q.editingSupports.length > 256
+    )
+      throw Error('Autorenbereiche prüfen.');
+    for (const box of q.editingSupports) validateTerrainView({ ...q.view, box });
+  }
   if (q.editingBox !== undefined) {
     if (q.editingPage === undefined) throw Error('Autorenbereich benötigt eine Paketanfrage.');
     validateTerrainView({ ...q.view, box: q.editingBox });
@@ -60,6 +70,7 @@ export function validateTerrainProjection(q: TerrainProjectionRequest) {
           'editingRadius',
           'editingPage',
           'editingBox',
+          'editingSupports',
           'colorBase',
           'detail',
           'detailResolution',

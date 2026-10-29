@@ -1,3 +1,5 @@
+import { observeStrokeDiagnostic } from './atlas-stroke-diagnostic.mjs';
+import { observeRiverSurface } from './atlas-river-probe.mjs';
 import { runNativeProbe } from './native-session.mjs';
 import {
   setBrushWorldRadius,
@@ -83,6 +85,10 @@ await runNativeProbe({ output: out, name: 'terrain-brush' }, async (native) => {
   for (const file of [
     'src/app/atlas/terrain-height.ts',
     'src/app/atlas/terrain-brush.ts',
+    'src/app/atlas/terrain-screen-input.ts',
+    'src/app/atlas/atlas-screen-segment.ts',
+    'src/app/atlas/atlas-screen-triangle.ts',
+    'src/app/atlas/terrain-stroke-support.ts',
     'src/app/atlas/atlas-tool-catalog.ts',
     'src/app/atlas/atlas-workspace-layout.ts',
     'src/app/atlas/atlas-units.ts',
@@ -132,7 +138,7 @@ await runNativeProbe({ output: out, name: 'terrain-brush' }, async (native) => {
         ...(process.env.ATLAS_PACKAGE ? [] : [root + '/.build/desktop/main.cjs']),
         '--data-dir',
         dir,
-        '--ozone-platform=x11',
+        '--ozone-platform=' + (process.env.QA_OZONE_PLATFORM ?? 'x11'),
       ],
       timeout: 60000,
     });
@@ -142,6 +148,18 @@ await runNativeProbe({ output: out, name: 'terrain-brush' }, async (native) => {
         JSON.parse(await readFile(root + '/package.json', 'utf8')).version,
       );
     page = await app.firstWindow();
+    await observeRiverSurface(page, root);
+    await app.evaluate(({ ipcMain }) => {
+      const original = ipcMain._invokeHandlers.get('atlas:commit');
+      globalThis.__qaTargetCalls = [];
+      ipcMain.removeHandler('atlas:commit');
+      ipcMain.handle('atlas:commit', async (...args) => {
+        const item = { command: structuredClone(args[1]) };
+        globalThis.__qaTargetCalls.push(item);
+        item.result = await original(...args);
+        return item.result;
+      });
+    });
     console.log('Native window opened');
     page.on('pageerror', (e) => result.errors.push(e.stack ?? e.message));
     await page.waitForFunction(() => document.body.dataset.tutorialReady === 'true');
@@ -205,9 +223,26 @@ await runNativeProbe({ output: out, name: 'terrain-brush' }, async (native) => {
       i = (Math.round(p.y) * png.width + Math.round(p.x)) * 4;
     return [...png.data.subarray(i, i + 3)];
   }
+  async function brushReady() {
+    if (!['height', 'smooth', 'freshwater'].includes(await page.locator('#land-tool').inputValue()))
+      return;
+    await page.waitForFunction(
+      () => {
+        const map = document.querySelector('#campaign-map');
+        return (
+          map.dataset.terrainEditingState === 'ready' &&
+          Number(map.dataset.terrainEditingRadius) ===
+            Number(document.querySelector('#land-radius').value)
+        );
+      },
+      null,
+      { timeout: 60000 },
+    );
+  }
   async function stroke(points) {
     const screen = await Promise.all(points.map((p) => at(...p)));
     await page.mouse.move(screen[0].x, screen[0].y);
+    await brushReady();
     await page.mouse.down();
     for (let i = 1; i < screen.length; i++) {
       await page.mouse.move(screen[i].x, screen[i].y, { steps: 12 });
@@ -232,6 +267,9 @@ await runNativeProbe({ output: out, name: 'terrain-brush' }, async (native) => {
     await page.waitForFunction(
       () =>
         !document.querySelector('#land-tool').disabled &&
+        !document.querySelector('#campaign-map').dataset.terrainDraft &&
+        document.querySelector('#campaign-map').dataset.terrainQuality === 'detail' &&
+        document.querySelector('#campaign-map').dataset.terrainReady === 'ready' &&
         document.querySelector('#land-status').textContent === 'Gespeichert',
       null,
       { timeout: 60000 },
@@ -241,6 +279,7 @@ await runNativeProbe({ output: out, name: 'terrain-brush' }, async (native) => {
   async function hold(x, y, ms) {
     const p = await at(x, y);
     await page.mouse.move(p.x, p.y);
+    await brushReady();
     await page.mouse.down();
     await page.waitForTimeout(ms);
     await page.mouse.up();
@@ -285,12 +324,34 @@ await runNativeProbe({ output: out, name: 'terrain-brush' }, async (native) => {
         if (target !== undefined) await page.locator('#land-height-target').fill(String(target));
       }
     }
-    await heightMode('raise', r * 1.6, 10000, 0, 100);
-    await stroke([
-      [x - r * 1.3, y],
-      [x + r * 1.3, y],
-    ]);
+    await observeStrokeDiagnostic(page, (data) =>
+      writeFile(out + '/target-preview-failure.json', JSON.stringify(data, null, 2)),
+    );
+    // A stationary setup qualifies directional targets without the unrelated
+    // long moving setup exceeding the unchanged radial work guard.
+    await heightMode('raise', r * 2.4, 10000, 0, 100);
+    await hold(x, y, 1200);
     await settled();
+    await writeFile(
+      out + '/initial-target.json',
+      JSON.stringify(
+        {
+          world: { x, y, radius: r * 2.4, setup: 'stationary-target' },
+          calls: await app.evaluate(() => globalThis.__qaTargetCalls),
+          renderer: await page.evaluate(() => ({
+            pose: window.__qaRiverRaster.cameraPose(),
+            status: document.querySelector('#atlas-status').textContent,
+            saveStatus: document.querySelector('#land-status').textContent,
+            popup: document.querySelector('#atlas-status-popup')?.textContent,
+            dataset: { ...document.querySelector('#campaign-map').dataset },
+            pending: structuredClone(window.__qaRiverRaster.pendingStroke),
+          })),
+          height: sample(x, y).heightM,
+        },
+        null,
+        2,
+      ),
+    );
     assert.equal(sample(x, y).heightM, 100);
     assert.equal(sample(x, y).water, false);
     mark('Exactly three land tools; create an island from ocean with the directional target');
@@ -299,7 +360,7 @@ await runNativeProbe({ output: out, name: 'terrain-brush' }, async (native) => {
     await heightMode('lower', r, 10000, 1, -100);
     await page.locator('#land-coast-roughness').fill('0');
     const hill = await at(x - r, y),
-      control = await at(x + r, y - r * 2),
+      control = await at(x + r * 3, y),
       radiusPixels = r / hill.unitsPerPixel,
       PNG = require('pngjs').PNG;
     async function frame(name) {
@@ -337,7 +398,7 @@ await runNativeProbe({ output: out, name: 'terrain-brush' }, async (native) => {
       { timeout: 60000 },
     );
     await page.mouse.move(hill.x, hill.y);
-    await page.waitForTimeout(300);
+    await brushReady();
     const beforePixels = await frame('01-before'),
       beforeHeight = maskBytes();
     const waterIndex = (Math.round(control.y) * beforePixels.width + Math.round(control.x)) * 4;
@@ -346,24 +407,142 @@ await runNativeProbe({ output: out, name: 'terrain-brush' }, async (native) => {
       difference(beforePixels, beforePixels, hill, waterReference).fraction > 0.95,
       'The sample starts as land, distinct from the visible sea reference',
     );
+    // Capture at the completed Deck draw. Reading after an awaited frame can
+    // see an older framebuffer while another preview publication is queued.
+    const probes = (center) => {
+      const points = [];
+      for (let dy = -radiusPixels * 0.85; dy <= -radiusPixels * 0.2; dy += 2)
+        for (let dx = -radiusPixels * 0.85; dx <= radiusPixels * 0.85; dx += 2) {
+          const distance = Math.hypot(dx, dy);
+          if (distance < radiusPixels * 0.2 || distance > radiusPixels * 0.85) continue;
+          const x = Math.round(center.x + dx),
+            y = Math.round(center.y + dy),
+            i = (y * beforePixels.width + x) * 4;
+          points.push({ x, y, rgb: [...beforePixels.data.subarray(i, i + 3)] });
+        }
+      return points;
+    };
+    await page.evaluate(
+      ({ hill, control, water }) => {
+        const r = window.__qaRiverRaster,
+          deck = r.surface.deckValue,
+          previous = deck.props.onAfterRender;
+        const state = (window.__qaTargetPixels = { frames: [], stableFrames: 0, previous: null });
+        deck.setProps({
+          onAfterRender: (...args) => {
+            previous?.(...args);
+            if (
+              !r.gesturing ||
+              !r.surface.frameUsable ||
+              !r.draft ||
+              !r.pendingStroke ||
+              r.draft.consumed !== r.pendingStroke.samples.length
+            )
+              return;
+            const canvas = document.querySelector('#atlas-terrain-spatial canvas'),
+              gl = canvas.getContext('webgl2'),
+              rect = canvas.getBoundingClientRect();
+            const bytes = new Uint8Array(gl.drawingBufferWidth * gl.drawingBufferHeight * 4),
+              old = gl.getParameter(gl.READ_FRAMEBUFFER_BINDING);
+            gl.bindFramebuffer(gl.READ_FRAMEBUFFER, null);
+            gl.readPixels(
+              0,
+              0,
+              gl.drawingBufferWidth,
+              gl.drawingBufferHeight,
+              gl.RGBA,
+              gl.UNSIGNED_BYTE,
+              bytes,
+            );
+            gl.bindFramebuffer(gl.READ_FRAMEBUFFER, old);
+            const colors = (points) =>
+              points.map((p) => {
+                const x = Math.floor(((p.x - rect.left) / rect.width) * gl.drawingBufferWidth),
+                  y =
+                    gl.drawingBufferHeight -
+                    1 -
+                    Math.floor(((p.y - rect.top) / rect.height) * gl.drawingBufferHeight),
+                  i = (y * gl.drawingBufferWidth + x) * 4;
+                return [...bytes.subarray(i, i + 3)];
+              });
+            const rgb = colors(hill),
+              sea = colors(control);
+            const delta = (a, b) => Math.max(...a.map((v, k) => Math.abs(v - b[k])));
+            const difference = (a, b) => {
+              const ds = a.map((v, i) => delta(v, b[i]));
+              return {
+                changed: ds.filter((v) => v >= 12).length,
+                total: ds.length,
+                fraction: ds.filter((v) => v >= 12).length / ds.length,
+                mean: ds.reduce((a, b) => a + b, 0) / ds.length,
+              };
+            };
+            const visible = difference(
+                rgb,
+                hill.map((p) => p.rgb),
+              ),
+              stable = state.previous ? difference(rgb, state.previous) : null;
+            state.stableFrames = stable?.mean < 0.1 ? state.stableFrames + 1 : 0;
+            state.previous = rgb;
+            state.frames.push({
+              at: performance.now(),
+              sampleT: r.pendingStroke.samples.at(-1).t,
+              visible,
+              stableFrames: state.stableFrames,
+              previousMean: stable?.mean,
+              water: difference(
+                rgb,
+                rgb.map(() => water),
+              ),
+              control: difference(
+                sea,
+                control.map((p) => p.rgb),
+              ),
+            });
+            if (state.frames.length > 40) state.frames.shift();
+          },
+        });
+      },
+      { hill: probes(hill), control: probes(control), water: waterReference },
+    );
     await page.mouse.down();
-    let duringPixels,
-      visible,
-      previousPixels,
-      stableFrames = 0;
-    const deadline = Date.now() + 20000;
-    do {
-      await page.waitForTimeout(200);
-      duringPixels = await frame();
+    await page
+      .waitForFunction(
+        () => {
+          const s = window.__qaTargetPixels,
+            f = s.frames.at(-1);
+          return (
+            s.stableFrames >= 3 &&
+            f.visible.changed >= 40 &&
+            f.visible.fraction >= 0.03 &&
+            f.water.fraction < 0.05
+          );
+        },
+        null,
+        { timeout: 20000 },
+      )
+      .catch(async (error) => {
+        result.previewFrames = await page.evaluate(() => window.__qaTargetPixels.frames);
+        await writeFile(
+          out + '/target-preview-observation.json',
+          JSON.stringify(
+            {
+              frames: result.previewFrames,
+              diagnostic: await page.evaluate(() => window.__strokeDiagnostic?.snapshot()),
+            },
+            null,
+            2,
+          ),
+        );
+        throw error;
+      });
+    result.previewFrames = await page.evaluate(() => window.__qaTargetPixels.frames);
+    const stableFrames = result.previewFrames.at(-1).stableFrames,
+      duringPixels = await frame('01-preview'),
       visible = difference(beforePixels, duringPixels, hill);
-      stableFrames =
-        previousPixels && difference(previousPixels, duringPixels, hill).mean < 0.1
-          ? stableFrames + 1
-          : 0;
-      previousPixels = duringPixels;
-    } while (
-      (visible.changed < 40 || visible.fraction < 0.03 || stableFrames < 3) &&
-      Date.now() < deadline
+    await writeFile(
+      out + '/target-preview-observation.json',
+      JSON.stringify({ frames: result.previewFrames }, null, 2),
     );
     assert(stableFrames >= 3, 'Bounded preview must reach a stable visible target before release');
     assert(
@@ -415,7 +594,7 @@ await runNativeProbe({ output: out, name: 'terrain-brush' }, async (native) => {
     await page.locator('#atlas-undo').click();
     await atlasCanvasReady(page);
     await page.mouse.move(hill.x, hill.y);
-    await page.waitForTimeout(300);
+    await brushReady();
     assert.equal(
       maskBytes(),
       beforeHeight,
@@ -432,7 +611,7 @@ await runNativeProbe({ output: out, name: 'terrain-brush' }, async (native) => {
     await page.locator('#atlas-redo').click();
     await atlasCanvasReady(page);
     await page.mouse.move(hill.x, hill.y);
-    await page.waitForTimeout(300);
+    await brushReady();
     assert.equal(maskBytes(), committedHeight);
     await page.waitForFunction(
       () => document.querySelector('#campaign-map').dataset.terrainQuality === 'detail',

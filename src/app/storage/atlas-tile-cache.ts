@@ -319,39 +319,54 @@ export class AtlasTileCache {
   }
 
   put(key: string, source: string, value: unknown): boolean {
+    return this.putMany([{ key, source, value }]);
+  }
+
+  /** One bounded durable burst. Individual LRU admission and all shared physical
+   * limits still apply; a failed transaction publishes none of its writes. */
+  putMany(entries: readonly { key: string; source: string; value: unknown }[]): boolean {
     const db = this.db;
-    if (!db || !validText(key, 512) || !validText(source, 2048)) return false;
-    let blob: Buffer;
+    if (!db || !Array.isArray(entries) || entries.length < 1 || entries.length > 32) return false;
+    const batch: { key: string; source: string; blob: Buffer; digest: string }[] = [];
+    let bytes = 0;
     try {
-      blob = serialize(value);
+      const limits = this.persistedLimits();
+      for (const { key, source, value } of entries) {
+        if (!validText(key, 512) || !validText(source, 2048)) return false;
+        const blob = serialize(value);
+        bytes += blob.length;
+        if (
+          blob.length > limits.entryBytes ||
+          blob.length > limits.namespaceBytes ||
+          bytes > limits.globalBytes
+        )
+          return false;
+        batch.push({ key, source, blob, digest: sha(blob) });
+      }
     } catch {
       return false;
     }
-    try {
-      if (blob.length > this.entryBudget() || blob.length > this.namespaceBudget()) return false;
-    } catch {
-      return false;
-    }
-    const digest = sha(blob);
     try {
       db.exec('BEGIN IMMEDIATE');
       try {
         const limits = this.persistedLimits();
         this.applyPageLimit(limits.maxPages);
-        if (
-          blob.length > limits.entryBytes ||
-          blob.length > limits.namespaceBytes ||
-          blob.length > limits.globalBytes
-        )
-          throw Error('Atlas-Kacheleintrag überschreitet das persistierte Budget.');
-        const evicted = this.reserveEntry(key, blob.length, limits);
-        db.prepare(
+        if (bytes > limits.globalBytes)
+          throw Error('Atlas-Kachelblock überschreitet das persistierte Budget.');
+        const insert = db.prepare(
           "INSERT INTO atlas_tile_cache(namespace,key,source,blob,digest,bytes,last_used,kind) VALUES(?,?,?,?,?,?,(SELECT sequence FROM atlas_tile_meta WHERE id=1),'tile')",
-        ).run(this.namespace, key, source, blob, digest, blob.length);
-        this.bytes += blob.length;
+        );
+        let evicted = 0;
+        for (const { key, source, blob, digest } of batch) {
+          if (blob.length > limits.entryBytes || blob.length > limits.namespaceBytes)
+            throw Error('Atlas-Kacheleintrag überschreitet das persistierte Budget.');
+          evicted += this.reserveEntry(key, blob.length, limits);
+          insert.run(this.namespace, key, source, blob, digest, blob.length);
+          this.bytes += blob.length;
+        }
         db.exec('COMMIT');
         this.evictions += evicted;
-        this.writes++;
+        this.writes += batch.length;
         try {
           db.exec('PRAGMA incremental_vacuum(8)');
         } catch {
@@ -840,12 +855,6 @@ export class AtlasTileCache {
         db.pragma('busy_timeout = 250');
       } catch {}
     }
-  }
-  private namespaceBudget() {
-    return this.persistedLimits().namespaceBytes;
-  }
-  private entryBudget() {
-    return this.persistedLimits().entryBytes;
   }
 }
 

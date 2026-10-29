@@ -2,7 +2,7 @@
 
 Status: Current; offene Ziele sind als solche beschrieben.
 Owner: atlas
-Last Reviewed: 2026-10-28 (Writer, Datenverträge und Prüfwege; Fachabnahme separat)
+Last Reviewed: 2026-10-29 (Screenzug und gemeinsame Terrain-Sichtbarkeitsgeometrie; Fachabnahme separat)
 Source of Truth: Dieses Dokument besitzt das benannte Thema; Code belegt den Iststand, das Abnahmeregister den Prüfstand.
 
 Der Atlas verbindet Landschaft, Städte und Räume in Weltmetern. Der [kanonische Store-Worker](../../project/architecture/canonical-store-worker.md)
@@ -237,6 +237,9 @@ Arbeit, bevor ein Ersatz denselben begrenzten Rechenplatz übernimmt.
 Eintreffende LOD-Kacheln verändern die Fokushöhenebene der ruhenden Kamera
 nicht. Unterschiedliche interpolierte Höhen dürfen keinen Wechsel zwischen
 sofort verfügbaren Kachelplänen und dadurch eine endlose Ladefolge auslösen.
+Eine gespeicherte vollständige Kamerapose behält ihren Fokus auch beim ersten
+Überblick nach einer frischen Öffnung; dessen gröbere Höhen ersetzen die
+gespeicherte Augenposition nicht.
 Der Abschluss einer Navigation und die Ansichtssteuerung führen den Fokus nach;
 die Sicherheitskorrektur bei neu bekanntem Terrain unter der Kamera bleibt aktiv.
 `tests/atlas/atlas-presentation-source.test.mjs` prüft beide Zuständigkeiten.
@@ -245,6 +248,16 @@ Höhe und Material werden gemeinsam veröffentlicht. Eine Elternkachel bleibt
 sichtbar, bis ihre benötigten Kinder vollständig sind. Cachebudget und
 Verdrängung zählen sichtbare und vorbereitete Daten mit. Cacheinhalte sind
 ableitbar; beschädigte eigene Bestände werden kontrolliert neu aufgebaut.
+Bei einem Quellenwechsel kann der Readonly-Worker einen begrenzten Verlauf
+zwischen exakter Basis- und Zielrevision samt Fence bestätigen. Der Surface-Stream
+übernimmt dann ausschließlich disjunkte Kacheln mit unveränderten Produktparametern
+in neue Metadatenhüllen; Höhen- und Materialarrays bleiben gemeinsam erhalten.
+Der Abstandscheck umfasst den Materialhalo und eine zusätzliche Gitterzelle.
+Fehlende oder gekürzte History, Worker-Neustart, globale Einstellungen und
+unbekannte Objektabhängigkeiten erzwingen reguläre Leseaufträge. Vollständige
+Autorenpakete werden ebenfalls neu gelesen: ihre ganzen Zeilenpayloads sind
+durch räumlich verengte Höhenknotenänderungen nicht abgesichert. Revision und
+Fence bleiben an beiden Endpunkten verbindlich; alte Produkte werden nie mutiert.
 Kameraposition, Fenstergröße und Licht gehören nicht zur Identität gespeicherter
 Autorendaten. Änderungen berücksichtigen Nachbarknoten, Quellenränder und Eltern.
 
@@ -269,6 +282,123 @@ Die metrische Kamera besitzt Projektion und Auswahlstrahlen. Ein naher Ursprung
 hält GPU-Koordinaten präzise; kanonische Weltpositionen bleiben doppelt genau.
 Gebäude und Räume beziehen ihre physischen Höhen aus denselben Quellen wie die
 Darstellung. Versteckte Geschosse verändern keine physische Bauhöhe.
+
+Geländepinsel binden die Kamera an die vollständige, disjunkte Partition der
+angezeigten Terrainkacheln. `terrain-surface-layout.ts` prüft deren kanonische
+Adressen, vollständige Kameraabdeckung und bestehende Kachelgrenzen. Fehlende
+Kacheln oder Abdeckung ergeben „noch nicht vollständig geladen“. Sie gelten
+nicht als verdecktes Gelände. Der privilegierte Lesedienst rekonstruiert die
+65×65-Kachelgitter aus der angefragten Revision samt Fence; Rendererhöhen oder
+Sichtbarkeitsmasken werden nicht als Autorenquelle angenommen.
+
+Picking und Autorensichtbarkeit schneiden dieselben Dreiecke über
+`atlas-terrain-ray.ts`; Wasser ist Bestandteil der dargestellten Oberfläche.
+Kamera, Layout und Basismeshes bleiben innerhalb der Geste eingefroren.
+`AtlasSurfaceDraft` verwendet diese Basismeshes direkt statt eines neu gesampelten
+Fokusgitters. Ein feinerer Autorenknoten wird gegen die sichtbare Meshoberfläche
+an seiner Weltposition geprüft; Vordergrundterrain schützt verdeckte Knoten.
+Geteilte LOD-Kanten verwenden die oberste dort vorhandene Oberfläche, unabhängig
+von der Kachelreihenfolge. Der abgeschlossene Zug bleibt ein Historyschritt;
+Folgezüge erhalten weiterhin die vorhandenen lokalen Autorenergebnisse und die
+kanonische Schreibreihenfolge. Automatisierte Regressionen, native Qualifikation
+und Nutzerabnahme bleiben getrennte Nachweise.
+
+### Bildschirmgebundene Höhen- und Seezüge
+
+Neue Höhen- und Seeaufträge tragen optional `screenInput: {version: 1, events}`.
+Jedes Ereignis enthält `u`, `v` im bei Pointerdown eingefrorenen Viewport und
+`t` in echten Millisekunden seit Pointerdown. Kamera, Seitenverhältnis, Layout,
+Revision und Fence sind gemeinsam gebunden. Zwischen erhaltenen Ereignissen
+verläuft der Zug linear in Bildschirmkoordinaten und Zeit. Ereignisse außerhalb
+des Viewports werden nicht an dessen Rand geklemmt. Main prüft endliche Werte,
+Zeitordnung, höchstens 20.000 Ereignisse und 2 MiB UTF16-Eingabe. Die alten
+Welt-Samples wählen bei diesen Aufträgen weder Dosis noch Autorenquellen.
+Gespeicherte Aufträge ohne das versionierte Feld behalten ihren bisherigen
+Vertrag; History/Redo spielen weiterhin tatsächliche Deltas ab.
+
+`atlas-screen-triangle.ts` schneidet kanonische Dreiecke vor der perspektivischen
+Division gegen Near/Far und Viewport. `atlas-screen-segment.ts` partitioniert die
+Screenstrecke analytisch an Polygonintervallen und Tiefenwechseln aktiver
+Dreiecke. Inverse Kameratiefe ist perspektivisch affin; orthografisch gilt dies
+für die Kameratiefe. Jeder offene Abschnitt besitzt ein konkretes vorderstes
+Dreieck. Baryzentrik mit Clip-w liefert die Weltposition und ihre einseitigen
+Grenzwerte; ein Grenzray oder eine gleiche Kachel darf Abschnitte nicht verbinden.
+Halten auf einer gemeinsamen Kante wird genau einmal dosiert. Degenerierte
+projizierte Flächen erfinden keine Fläche. Der vorhandene Einzelraykern bleibt
+eine unabhängige Interior-Gegenprüfung und der Besitzer der Autoren-Sichtbarkeit.
+
+`terrain-screen-geometry.ts` beschleunigt wiederholte Planung ausschließlich
+innerhalb einer gebundenen Geste. Token, Revision, Fence, vollständige Kamera und
+Layout sowie die Identität aller unveränderten Mesh-Höhenarrays binden den Plan.
+Er hält konservative Float64-Dreiecksgrenzen (höchstens 64 MiB) und nur die
+aktuellen, weiterhin auf 20.000 begrenzten exakten Kandidaten. Größere Geometrien
+nutzen die unveränderte exakte Projektion ohne Cache; das Speicherbudget ändert
+keine Wirkung oder Komplexitätsgrenze. Commit, Abbruch, Quellenwechsel und
+Deaktivierung geben den Besitzer frei. Neue Screenereignisse berechnen Dosis
+und Abschnitte erneut; spekulative Endzeiten werden nicht zwischengespeichert.
+Der innerhalb eines Vorschau-/Schreibauftrags berechnete Wirkungsplan wird für
+Support und Anwendung gemeinsam genutzt. Main rekonstruiert ihn unabhängig aus
+seiner kanonischen Quelle und übernimmt keinen Rendererplan.
+
+Die kleine native Effizienzgegenprobe vom 29.10.2026 bindet dieselbe geladene
+75°/10-m-Originalszene bei 100 % und je fünf feste Höhen-/Scattereingaben ohne
+Verlängerung bis zum Liveframe. Gegen die gesicherte alte Runtime sinkt
+Pointer-up → vollständiger Frame p95 von 21,45 auf 17,38 s (Höhe) und von 30,31
+auf 17,09 s (Scatter); die nächste Bedienbarkeit verbessert sich ebenfalls.
+Alle zehn tatsächlichen optimierten Eingaben liefern dieselben vollständigen
+Autorenbytes wie der gepinnte Originaloperator `3586325c8`. Dieser kleine
+Vergleich ist keine Leistungsfreigabe: Alle zehn Liveframes fehlen weiterhin,
+Navigation liegt mit p95 117,6 ms über dem 33,3-ms-Ziel, und der Gesamtpeak steigt
+von 2.031.165.440 auf 2.127.310.848 Byte. Beide Vergleichsläufe bleiben ohne
+`memory.high`, PSI oder OOM; ihre Peakphasen sind wegen der nur im optimierten
+Lauf enthaltenen Navigation nicht identisch qualifiziert. 200%-Gegenprobe,
+30er-Editserien, längere Retention und erneuter nativer Folgegesten-/Fresh-Schutz
+bleiben nach dem angeordneten Rundenabschluss offen. Rohbelege, Runtimebindung,
+Prüfungen und Grenzen liegen unter `.build/cycle3-point4/efficiency-final-summary.json`
+und `.build/cycle3-point4/efficiency-final-handoff.md`; die akzeptierte vorherige
+Screen-Funktionsreparatur bleibt davon getrennt.
+
+`terrain-screen-input.ts` erzeugt geordnete Abschnitte und Zeitgewichte. Die
+Mittelpunktsintegration begrenzt jedes Teilintervall auf 1/60 Sekunde und einen
+metrischen XY-Weg von Radius/32; die maximale projektive Geschwindigkeit des
+Abschnitts bestimmt die Wegunterteilung. Jede Probe wird direkt auf ihrem
+Besitzerdreieck ausgewertet; identische stationäre Zentren fassen ihre Zeitgewichte exakt zusammen. Redundante Beobachtungen derselben zeitparametrisierten
+Screenlinie werden bis auf 2^-42 eines Viewports normalisiert. Zeit über Himmel
+oder außerhalb des Viewports hat keine Wirkung und wird nicht umverteilt.
+Fehlende deklarierte Kacheln oder nicht endliche Höhen sind dagegen ein
+Ladefehler. Sie dürfen kein Himmelintervall vortäuschen. Der Radius eines
+Bildschirmzugs darf am Viewportrand über die gebundene Partition hinausreichen:
+Autorknoten ohne Dreieck in dieser vollständig geprüften Partition haben keine
+sichtbare Wirkung. Das ergänzt keine unbekannten Höhen außerhalb des Meshs.
+
+Grundpinsel, Glätten und Zielhöhe konsumieren dieselbe Dosis. Formen behalten
+getrennte Centrelines je Dreiecksbesitzer und integrieren deren Wirkzeit exakt
+je Abschnitt. Sie benötigen keine radialen Quadraturpunkte für ihr räumliches
+Feld. Über Silhouetten entsteht kein
+Berg-/Schluchtkorridor. Ihre Wirkzeit gehört nur zur Vereinigung der tatsächlich
+überstrichenen Abschnitte. See-Dig/Erase und Scatter verwenden deren wirkliche
+Kreis-/Kapsel-Footprints. Welt- und Seedidentitäten der Streubecken bleiben
+unverändert. Eine gemeinsame Abschnittsgrenze besitzt keine zusätzliche Zeitdosis.
+
+`terrain-stroke-support.ts` bestimmt tatsächliche Dab-/Autorenkachelpaare sowie
+Kapsel-Supports für geometrische Footprints. `editHeight` und der Scale-Leser
+iterieren explizite Kacheln und Halos. Autorenpakete deklarieren einzelne
+`editingSupports`; deren zusammenfassende Box autorisiert keine dazwischenliegende
+Quelle. See-/Flussabhängigkeiten werden vollständig aufgelöst; die unabhängige
+Okkluderpartition bleibt vollständig. 256 Autorenkacheln, 20.000 Dabs und 60 Mio.
+Knotenauswertungen bleiben Grenzen, keine still gekürzten Resultate.
+
+Der Abschlussbesitzer wartet auf die vollständige finale Quelle und deren
+angewandte Vorschau, bevor er den unveränderlichen Zug einreiht und den Entwurf
+freigibt. Ein Quellenfehler verwirft den aktiven Entwurf ohne Teilcommit.
+Ein gesamter Zug bleibt eine Transaktion und ein Historyschritt.
+
+Direkte Regressionen: `tests/atlas/terrain-screen-stroke.test.mjs` mit konservativ
+extrahierten echten Revision-85/86-Zellen und den ursprünglichen Ausschlussknoten;
+`terrain-scale-worker.test.mjs`, `terrain-lake-source.test.mjs`,
+`terrain-brush-draft.test.mjs` und `terrain-author-cache.test.mjs` prüfen die
+angeschlossenen Writer-, Abschluss- und Quellenverträge. Native Bedienung,
+Paket-/Mainqualifikation und Nutzerabnahme sind eigene Nachweise.
 
 Höhen, Pigment, Wasser und Bewuchs bleiben fachlich getrennt. Kleine Flächen,
 Löcher und Inseln dürfen nicht durch eine reine Mittelpunktprobe verschwinden.
@@ -363,6 +493,31 @@ Häuser unter zwei CSS-Pixeln werden nach der bestehenden Maßstabsregel ausgebl
 Die große Mischwelt prüft Last; kleine Szenen lokalisieren Fehler. Ein Link oder
 eine Testanzahl belegt keine vollständige Produktabnahme. Tatsächliche Testdateien
 und geprüfte Abläufe stehen im gemeinsamen Capability-Katalog.
+
+Die begrenzte Welt-bis-Raum-Funktionsmatrix vom 29.10.2026 ist auf Produktstand
+`8f18faf7995700bdb2f4320c2555118babc16c0d` bei 100 % und 200 % geprüft.
+`tools/test-desktop-atlas-world-continuity.mjs` bindet eine gefüllte kanonische
+Kampagne, Neigungen 0/45/75°, Welt → 10 m → Welt, kontinentale/lokale Edits,
+Undo/Redo/Fresh, vier Biome, 2/8-mpp-Grenzen, physische Assetmaße und hohe
+Weltkoordinaten. Der 100%-Nachweis setzt 32 frühere Teilkontrollen und 30 neue
+Restkontrollen mit einem doppelt geprüften Einstieg zu 61 verschiedenen
+Kontrollpunkten zusammen; er ist kein ununterbrochener neuer Lauf. Bei 200 %
+bestehen alle 61 Kontrollpunkte in derselben neuen Kampagne. Die Fortsetzung
+bindet identische SQLitebytes und History; die pfadabhängige Fence wird für die
+neue Profilkopie ausdrücklich neu gebunden und innerhalb jeder Sitzung strikt
+geprüft. Die Runtime ist gegenüber dem Produktstand bytegleich.
+
+Belege: `.build/cycle3-point3/selective-reuse/remaining-qualification-binding.json`
+und die dort gebundenen Quellen-, Frame-, Bild-, Lifecycle- und Ressourcenbelege.
+Navigation/Fresh besitzen ein vorab festgelegtes 300-s-Funktionsbudget,
+Edit/Undo/Redo 120 s, benötigte Produkte höchstens 60 s ohne Abschlussfortschritt.
+Frühere Fehlversuche bleiben fehlgeschlagen. Die längste neue Framewartezeit
+beträgt 161,913 s; bei 200 % wurden 18.288 `memory.high`-Ereignisse ohne OOM
+aufgezeichnet. Alle acht Electron-Starts der beiden erfolgreichen neuen Läufe
+und ihre isolierten KWin-Sitzungen enden normal. Dies ist keine Leistungs-,
+Langzeitressourcen-, Gestaltungs-, Paket- oder Nutzerabnahme. Ein zusätzlicher
+Einstiegsstop wegen des unzulässigen Fencevergleichs zwischen verschiedenen
+Datenbankpfaden bleibt als Prüfhelferfehler separat erhalten.
 
 Beim Rechteckabschluss unterscheidet `AtlasAuthor` Schreiben und bestätigte
 Nachauswahl. Die Nachauswahl darf den Workspace-Flush passieren; Kameraeingaben

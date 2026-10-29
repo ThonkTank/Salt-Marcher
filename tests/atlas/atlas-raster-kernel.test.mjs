@@ -92,3 +92,37 @@ test('reject oversized or out-of-bounds blocks before touching the output', () =
   for (const patch of [{ rows: 17 }, { width: 1025 }, { scale: 8 }, { top: 1 }, { left: -1 }])
     assert.throws(() => reduceAtlasMaterialRows({ ...input, ...patch }, {}, 0));
 });
+
+test('supersample reduction resolves each cover buffer once while preserving coverage', () => {
+  const width = 16,
+    rows = 16,
+    scale = 4,
+    stride = width * scale,
+    n = stride * rows * scale,
+    values = new Uint8Array(n).fill(153);
+  let reads = 0;
+  const covers = Object.defineProperty({}, 'reed', {
+    get: () => {
+      reads++;
+      return values;
+    },
+  });
+  const output = { reed: new Uint8Array(width * rows) };
+  reduceAtlasMaterialRows(
+    {
+      samples: new Uint8Array(n * 4),
+      water: new Uint8Array(n).fill(1),
+      covers,
+      stride,
+      left: 0,
+      top: 0,
+      width,
+      rows,
+      scale,
+    },
+    output,
+    0,
+  );
+  assert(output.reed.every((v) => v === 153));
+  assert(reads <= 3, 'a stable source buffer lookup is not repeated for every channel supersample');
+});

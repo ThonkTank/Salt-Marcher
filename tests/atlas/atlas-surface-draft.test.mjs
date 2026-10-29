@@ -218,3 +218,13 @@ test('each live update rebuilds mesh heights even when its author projection reu
     30,
   );
 });
+
+test('a failed height calculation does not consume a snapshot or mutate the displayed base', () => {
+  const base = tile(),
+    draft = new AtlasSurfaceDraft([base], view);
+  const invalid = { ...stroke, strength: -1 };
+  assert.throws(() => draft.height(invalid), /Höhenpinsel prüfen/);
+  assert.equal(draft.tiles[0], base);
+  assert(draft.height(stroke), 'same sample count must still be applied after failure');
+  assert.equal(draft.tiles[0].terrain.projection.grid.heights[32 * 65 + 32], 30);
+});

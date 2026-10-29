@@ -181,3 +181,52 @@ test('six world-to-room endpoints and intermediate scales are bounded and covere
     }
   }
 });
+
+test('steep horizons preserve focus sampling from a full Earth to local edits at remote coordinates', () => {
+  for (const center of [
+    { x: -120, y: -100 },
+    { x: 18000128, y: -8999936 },
+  ])
+    for (const width of [40000000, 1000000, 100000, 10000, 1000, 100, 10])
+      for (const coverage of [6, 64]) {
+        const focus = {
+            x: center.x - width / 2,
+            y: center.y - (width * 1032) / 1632 / 2,
+            width,
+            height: (width * 1032) / 1632,
+          },
+          box = {
+            x: center.x - (width * coverage) / 2,
+            y: center.y - (width * coverage) / 2,
+            width: width * coverage,
+            height: width * coverage,
+          },
+          mpp = width / 1632,
+          plan = atlasTilePlan(box, mpp, { maxTiles: 192, focus }),
+          flatLod = atlasTilePlan(focus, mpp, { maxTiles: 32 }).detail[0].lod;
+        assert(plan.detail.length <= 192);
+        assert(
+          plan.detail.length <= 144,
+          'a complete horizon does not consume every leaf after ordinary focus sampling is reached',
+        );
+        const near = plan.detail.filter((t) => {
+          const size = 256 * 2 ** t.lod;
+          return (
+            t.x * size < focus.x + focus.width &&
+            (t.x + 1) * size > focus.x &&
+            t.y * size < focus.y + focus.height &&
+            (t.y + 1) * size > focus.y
+          );
+        });
+        assert(near.length > 0);
+        assert(
+          near.every((t) => t.lod <= flatLod),
+          `focus sampling survives ${width}m, coverage ${coverage}, centre ${center.x}/${center.y}`,
+        );
+        assert.equal(
+          plan.detail.reduce((sum, t) => sum + (256 * 2 ** t.lod) ** 2, 0),
+          plan.overview.reduce((sum, t) => sum + (256 * 2 ** t.lod) ** 2, 0),
+          'focus refinement retains every distant root area',
+        );
+      }
+});

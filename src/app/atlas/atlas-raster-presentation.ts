@@ -1,3 +1,8 @@
+import { TerrainScreenGeometry } from './terrain-screen-geometry';
+import { prepareHeightBrush } from './terrain-brush';
+import { lakeHeightStroke } from './terrain-lake-brush';
+import { terrainSupportBoxes, terrainBoxesBounds } from './terrain-stroke-support';
+import { TERRAIN_FLAT_TILE_BUDGET, TERRAIN_TILTED_TILE_BUDGET } from './terrain-surface-layout';
 import { lakeBrushLevel } from './terrain-lake-brush';
 import type { LakeStroke } from './landscape-action-contracts';
 import { AtlasTerrainEditingSource } from './atlas-terrain-editing-source';
@@ -46,6 +51,15 @@ import type { HeightStroke } from './terrain-brush-contracts';
 import type { AtlasMetricFrame } from './atlas-metric-camera';
 
 type Host = AtlasPresentationHost;
+const FLAT_TILE_BUDGET = TERRAIN_FLAT_TILE_BUDGET;
+// The horizon at steep tilt covers 64 focus widths. Its partition ancestors
+// need room alongside the focus, whose physical sampling must remain intact.
+const TILTED_TILE_BUDGET = TERRAIN_TILTED_TILE_BUDGET;
+const SURFACE_STREAM_OPTIONS = {
+  maxTiles: TILTED_TILE_BUDGET,
+  maxRetainedTiles: 256,
+  maxBytes: 256 * 1024 * 1024,
+};
 /** Owns the GPU presentation; author input and canonical writes remain in the controller. */
 export class AtlasRasterPresentation implements AtlasPresentation {
   active = false;
@@ -59,26 +73,25 @@ export class AtlasRasterPresentation implements AtlasPresentation {
   private surface: AtlasDeckSurface | null = null;
   private Drawing: typeof AtlasDeckDrawing | null = null;
   private creating: Promise<void> | null = null;
-  private stream = new AtlasSurfaceTileStream({
-    maxTiles: 32,
-    maxRetainedTiles: 64,
-    maxBytes: 64 * 1024 * 1024,
-  });
+  private stream = new AtlasSurfaceTileStream(SURFACE_STREAM_OPTIONS);
+  private streamSource: { token: string; revision: number; fence: string } | undefined;
   private tiles: readonly AtlasSurfaceTile[] = [];
   private editing = new AtlasTerrainEditingSource();
   private editingRead: { token: string; control: AtlasReadRequest } | null = null;
   private pendingStroke: HeightStroke | LakeStroke | null = null;
   private draftSource: import('./terrain-grid-contracts').TerrainEditingSource | null = null;
   private draft: AtlasSurfaceDraft | null = null;
+  private screenGeometry: TerrainScreenGeometry | null = null;
   private dirty = false;
   private draftWasDirty = false;
   private preferDetail = false;
   private gesturing = false;
   private frozen: AtlasMetricFrame | null = null;
+  private gestureVisibility: TerrainView | null = null;
   private pickTiles: readonly AtlasSurfaceTile[] | null = null;
   private frame: LandscapeBox = { x: 0, y: 0, width: 256, height: 256 };
   private focusHeightM = 0;
-  private restoredCameraPose = false;
+  private restoredFocusM: number | undefined;
   private navigating = false;
   private perception = false;
   private tilt = 0;
@@ -207,7 +220,10 @@ export class AtlasRasterPresentation implements AtlasPresentation {
       this.objects = [];
       this.pickTiles = null;
       this.frozen = null;
+      this.gestureVisibility = null;
       this.gesturing = false;
+      this.screenGeometry?.dispose();
+      this.screenGeometry = null;
       this.objectKey = '';
       this.objectLayer.dispose();
       this.vegetation?.dispose();
@@ -215,11 +231,8 @@ export class AtlasRasterPresentation implements AtlasPresentation {
       this.settleFirst(false);
       this.ready = false;
       this.stream.dispose();
-      this.stream = new AtlasSurfaceTileStream({
-        maxTiles: 32,
-        maxRetainedTiles: 64,
-        maxBytes: 64 * 1024 * 1024,
-      });
+      this.stream = new AtlasSurfaceTileStream(SURFACE_STREAM_OPTIONS);
+      this.streamSource = undefined;
       this.surface?.dispose();
       this.surface = null;
       this.container?.remove();
@@ -442,6 +455,7 @@ export class AtlasRasterPresentation implements AtlasPresentation {
     )
       return;
     const pose = this.pose(),
+      maxTiles = this.tilt ? TILTED_TILE_BUDGET : FLAT_TILE_BUDGET,
       box = this.tilt
         ? terrainCoverageBox(this.frame, terrainCoverageLevel(this.tilt))
         : this.frame;
@@ -460,7 +474,7 @@ export class AtlasRasterPresentation implements AtlasPresentation {
         this.fence,
         box,
         pose.metersPerPixel,
-        32,
+        maxTiles,
         this.tilt ? this.frame : undefined,
         preload,
       ),
@@ -473,15 +487,35 @@ export class AtlasRasterPresentation implements AtlasPresentation {
     try {
       await this.creating;
       if (generation !== this.generation) return;
+      const target = { token: this.token, revision: this.revision, fence: this.fence },
+        base = this.streamSource;
+      let change: import('./terrain-change-history').TerrainSourceChange | undefined;
+      if (
+        base &&
+        base.token === target.token &&
+        (base.revision !== target.revision || base.fence !== target.fence)
+      ) {
+        const reply = await window.campaign.atlasTerrainSource(target.token, {
+          revision: base.revision,
+          fence: base.fence,
+        });
+        if (generation !== this.generation) return;
+        if (!reply.ok) throw Error(reply.error);
+        if (reply.value.revision !== target.revision || reply.value.fence !== target.fence)
+          throw Error('Gelände inzwischen geändert. Ausschnitt erneut laden.');
+        change = reply.value.change;
+      }
+      this.streamSource = target;
       await this.stream.load(
         {
           box,
           preload,
-          maxTiles: 32,
+          maxTiles,
           focus: this.tilt ? this.frame : undefined,
           metersPerPixel: pose.metersPerPixel,
           revision: this.revision,
           source: this.fence,
+          change,
         },
         atlasSurfaceTileFetcher(window.campaign, this.token, 'workbench-surface'),
         (frame) => {
@@ -501,11 +535,15 @@ export class AtlasRasterPresentation implements AtlasPresentation {
           this.tiles = frame.tiles.map((t) =>
             reuseAtlasSurfaceTile(previous.get(JSON.stringify(t.tile)), t),
           );
-          if (!this.ready && !this.navigating && !this.restoredCameraPose) {
-            this.focusHeightM = this.height({
-              x: this.frame.x + this.frame.width / 2,
-              y: this.frame.y + this.frame.height / 2,
-            });
+          if (!this.ready && !this.navigating && this.restoredFocusM === undefined) {
+            // A restored eye belongs to the saved view. An overview may have
+            // coarser (or zero) heights and cannot replace that explicit focus.
+            this.focusHeightM =
+              this.restoredFocusM ??
+              this.height({
+                x: this.frame.x + this.frame.width / 2,
+                y: this.frame.y + this.frame.height / 2,
+              });
             this.surface?.setCamera(this.pose());
           }
           this.reconcileCamera();
@@ -514,6 +552,16 @@ export class AtlasRasterPresentation implements AtlasPresentation {
           // Navigation completion and pose controls own focus rebasing.
           this.input.dataset.terrainQuality = frame.complete ? 'detail' : 'overview';
           this.show();
+          // A hovered brush can have waited while canonical adoption showed
+          // only overview parents. New complete geometry closes that wait;
+          // another pointer movement must not be required to retry the source.
+          if (
+            frame.complete &&
+            this.input.dataset.terrainEditingState === 'loading' &&
+            !this.navigating &&
+            ['height', 'smooth', 'freshwater'].includes(this.host.tool())
+          )
+            this.editingReady(this.host.editingRadius?.() ?? 1);
           if (frame.complete && this.scene) {
             const scene = this.scene;
             this.scene = null;
@@ -527,6 +575,7 @@ export class AtlasRasterPresentation implements AtlasPresentation {
               .then(() => {
                 if (generation === this.generation && !this.failed) {
                   this.ready = true;
+                  this.restoredFocusM = undefined;
                   this.settleFirst(true);
                   this.input.dataset.terrainReady = 'ready';
                   this.host.redraw();
@@ -680,6 +729,7 @@ export class AtlasRasterPresentation implements AtlasPresentation {
     return this.loadedHeight(p) ?? 0;
   }
   visibility(): TerrainView | undefined {
+    if (this.gestureVisibility) return this.gestureVisibility;
     return this.tiles.length
       ? {
           box: { ...this.frame },
@@ -691,6 +741,12 @@ export class AtlasRasterPresentation implements AtlasPresentation {
           rotation: this.rotation,
           exaggeration: this.exaggeration,
           projection: 'perspective',
+          surface: {
+            metersPerPixel:
+              (this.frozen ?? this.surface?.frame)?.camera.metersPerPixel ??
+              this.frame.width / this.input.clientWidth,
+            tiles: (this.pickTiles ?? this.tiles).map((t) => ({ ...t.tile })),
+          },
         }
       : undefined;
   }
@@ -792,7 +848,7 @@ export class AtlasRasterPresentation implements AtlasPresentation {
     return this.cameraPose();
   }
   restoreCameraPose(pose?: AtlasCameraPose) {
-    this.restoredCameraPose = false;
+    this.restoredFocusM = undefined;
     if (
       !pose ||
       !pose.frame ||
@@ -808,8 +864,7 @@ export class AtlasRasterPresentation implements AtlasPresentation {
       pose.exaggeration > 8
     )
       return;
-    // Restoring a complete pose owns its focus before the first terrain tile arrives.
-    this.restoredCameraPose = true;
+    this.restoredFocusM = pose.focusM;
     this.applyCameraPose({
       ...pose,
       projection: 'perspective',
@@ -926,8 +981,18 @@ export class AtlasRasterPresentation implements AtlasPresentation {
       height: Math.max(...ys) - Math.min(...ys) + pad * 2,
     };
   }
-  private ensureEditing(radius: number, needed: LandscapeBox) {
+  private ensureEditing(radius: number, neededInput: LandscapeBox | LandscapeBox[]) {
+    const supports = Array.isArray(neededInput) ? neededInput : [neededInput],
+      needed = terrainBoxesBounds(supports);
     const identity = { revision: this.revision, fence: this.fence, radius };
+    // Overview parents remain navigable but do not bind an author command.
+    // The complete frame callback resumes a hovered brush when its actual
+    // canonical partition is available.
+    if (!this.gesturing && this.input.dataset.terrainQuality !== 'detail') {
+      this.input.dataset.terrainEditingState = 'loading';
+      this.input.dataset.terrainEditingRadius = '0';
+      return false;
+    }
     const visibility = this.visibility();
     if (!visibility) return false;
     if (
@@ -935,65 +1000,79 @@ export class AtlasRasterPresentation implements AtlasPresentation {
       JSON.stringify(this.editing.source.visibility.view) !== JSON.stringify(visibility)
     )
       this.editing.clear();
-    if (this.editing.ready(identity, needed)) {
+    if (this.editing.ready(identity, needed, supports)) {
       this.input.dataset.terrainEditingState = 'ready';
       this.input.dataset.terrainEditingRadius = String(radius);
+      delete this.input.dataset.terrainEditingError;
       return true;
     }
     if (!this.active || !this.fence) return false;
     this.input.dataset.terrainEditingState = 'loading';
     this.input.dataset.terrainEditingRadius = '0';
+    delete this.input.dataset.terrainEditingError;
     const box = {
       x: needed.x - radius,
       y: needed.y - radius,
       width: needed.width + radius * 2,
       height: needed.height + radius * 2,
     };
+    const requestedSupports = supports.map((b) => ({
+      x: b.x - radius,
+      y: b.y - radius,
+      width: b.width + 2 * radius,
+      height: b.height + 2 * radius,
+    }));
     const token = this.token;
     void this.editing
-      .load(identity, box, async (after) => {
-        if (this.editingRead)
-          void window.campaign
-            .atlasCancelRead(this.editingRead.token, this.editingRead.control)
-            .catch(() => {});
-        const read = { token, control: { owner: 'workbench-editing', id: crypto.randomUUID() } };
-        this.editingRead = read;
-        const reply = await window.campaign.atlasTerrainProjection(
-          token,
-          {
-            product: 'height',
-            revision: identity.revision,
-            fence: identity.fence,
-            editingRadius: radius,
-            editingPage: after,
-            editingBox: box,
-            view: visibility,
-            width: 16,
-            height: 16,
-            displayMpp: box.width / 16,
-            contours: 0,
-          },
-          'view',
-          read.control,
-        );
-        if (this.editingRead === read) this.editingRead = null;
-        if (!reply.ok) throw Error(reply.error);
-        const source = reply.value.grid.editing?.author;
-        if (!source) throw Error('Autorenhöhenpaket fehlt.');
-        const g = reply.value.grid;
-        return {
-          ...source,
-          visibility: {
-            ...g,
-            editing: g.editing
-              ? {
-                  ground: g.editing.ground,
-                  water: g.editing.water,
-                }
-              : undefined,
-          },
-        };
-      })
+      .load(
+        identity,
+        box,
+        async (after) => {
+          if (this.editingRead)
+            void window.campaign
+              .atlasCancelRead(this.editingRead.token, this.editingRead.control)
+              .catch(() => {});
+          const read = { token, control: { owner: 'workbench-editing', id: crypto.randomUUID() } };
+          this.editingRead = read;
+          const reply = await window.campaign.atlasTerrainProjection(
+            token,
+            {
+              product: 'height',
+              revision: identity.revision,
+              fence: identity.fence,
+              editingRadius: radius,
+              editingPage: after,
+              editingBox: box,
+              editingSupports: requestedSupports,
+              view: visibility,
+              width: 16,
+              height: 16,
+              displayMpp: box.width / 16,
+              contours: 0,
+            },
+            'view',
+            read.control,
+          );
+          if (this.editingRead === read) this.editingRead = null;
+          if (!reply.ok) throw Error(reply.error);
+          const source = reply.value.grid.editing?.author;
+          if (!source) throw Error('Autorenhöhenpaket fehlt.');
+          const g = reply.value.grid;
+          return {
+            ...source,
+            visibility: {
+              ...g,
+              editing: g.editing
+                ? {
+                    ground: g.editing.ground,
+                    water: g.editing.water,
+                  }
+                : undefined,
+            },
+          };
+        },
+        requestedSupports,
+      )
       .then((source) => {
         if (
           !this.active ||
@@ -1005,13 +1084,24 @@ export class AtlasRasterPresentation implements AtlasPresentation {
           return;
         this.input.dataset.terrainEditingState = 'ready';
         this.input.dataset.terrainEditingRadius = String(radius);
+        delete this.input.dataset.terrainEditingError;
         this.input.dataset.terrainEditingSource = JSON.stringify({
           ...identity,
           box: source.box,
           complete: source.complete,
           records: source.records.length,
         });
-        if (this.gesturing && this.pendingStroke) this.previewHeight(this.pendingStroke);
+        if (this.gesturing && this.pendingStroke) {
+          try {
+            this.previewHeight(this.pendingStroke);
+          } catch (error) {
+            // A deferred preview failure belongs to the active input owner,
+            // rather than the source-read failure state below.
+            this.host.cancel();
+            this.host.error(error);
+            return;
+          }
+        }
         this.host.redraw();
       })
       .catch((error) => {
@@ -1034,11 +1124,14 @@ export class AtlasRasterPresentation implements AtlasPresentation {
     return this.ensureEditing(radius, this.editingBox(radius, [point]));
   }
   gesture(active: boolean) {
+    this.screenGeometry?.dispose();
+    this.screenGeometry = null;
     this.gesturing = active;
     if (active) {
       this.draftWasDirty = this.dirty;
       this.frozen = this.surface?.frame ?? null;
       this.pickTiles = this.tiles;
+      this.gestureVisibility = this.visibility() ?? null;
       this.draftSource = this.editing.source;
       this.pendingStroke = null;
       this.draft = new AtlasSurfaceDraft(
@@ -1050,6 +1143,7 @@ export class AtlasRasterPresentation implements AtlasPresentation {
       this.pauseReads();
     } else {
       this.frozen = null;
+      this.gestureVisibility = null;
       this.pickTiles = null;
       this.draft = null;
       this.pendingStroke = null;
@@ -1082,9 +1176,64 @@ export class AtlasRasterPresentation implements AtlasPresentation {
       point,
     );
   }
+  /** The close owner waits for the final exact source support. Releasing input
+   * must not discard a pending final preview or enqueue a different local mesh. */
+  async completeHeightPreview(stroke: HeightStroke | LakeStroke) {
+    const draft = this.draft;
+    if (!draft) throw Error('Pinselvorschau fehlt. Zug erneut beginnen.');
+    this.previewHeight(stroke);
+    while (
+      this.draft &&
+      this.pendingStroke === stroke &&
+      this.draft.appliedSamples < stroke.samples.length
+    ) {
+      const pending = this.editing.pendingResult();
+      if (!pending) throw Error('Pinselquelle nicht vollständig geladen. Zug erneut beginnen.');
+      await pending;
+      if (!this.gesturing || this.pendingStroke !== stroke)
+        throw Error('Pinselvorschau inzwischen ersetzt.');
+      this.previewHeight(stroke);
+    }
+    if (!this.draft || this.draft.appliedSamples < stroke.samples.length)
+      throw Error('Pinselvorschau nicht vollständig.');
+  }
   previewHeight(stroke: HeightStroke | LakeStroke) {
     this.pendingStroke = stroke;
-    if (!this.ensureEditing(stroke.radius, this.editingBox(stroke.radius, stroke.samples))) return;
+    const reference = this.draft?.baseTiles ?? this.pickTiles ?? this.tiles,
+      first = reference[0]?.terrain.projection.grid,
+      grid = first
+        ? {
+            ...first,
+            view: stroke.visibility ?? first.view,
+            surface: reference.map((t) => t.terrain.projection.grid),
+          }
+        : undefined;
+    if (stroke.screenInput && grid) {
+      const identity = { token: this.token, revision: this.revision, fence: this.fence };
+      if (!this.screenGeometry?.matches(grid, identity)) {
+        this.screenGeometry?.dispose();
+        this.screenGeometry = new TerrainScreenGeometry(grid, identity);
+      }
+    }
+    const prepared = stroke.screenInput
+        ? prepareHeightBrush(
+            'waterLevelM' in stroke ? lakeHeightStroke(stroke) : stroke,
+            grid,
+            this.screenGeometry ?? undefined,
+          )
+        : undefined,
+      needed = prepared
+        ? terrainSupportBoxes(
+            'waterLevelM' in stroke ? prepared.footprintTiles() : prepared.tiles,
+            heightBrushResolution(stroke.radius),
+            stroke.radius / 2 + 3 * heightBrushResolution(stroke.radius),
+          )
+        : this.editingBox(stroke.radius, stroke.samples);
+    if (Array.isArray(needed) && !needed.length) {
+      this.draft?.height(stroke, prepared);
+      return;
+    }
+    if (!this.ensureEditing(stroke.radius, needed)) return;
     if (this.draft && this.draftSource !== this.editing.source) {
       this.draftSource = this.editing.source;
       this.draft = new AtlasSurfaceDraft(
@@ -1095,7 +1244,7 @@ export class AtlasRasterPresentation implements AtlasPresentation {
       );
     }
     const draft = this.draft;
-    if (draft && terrainTraceMeasure('draft.height', () => draft.height(stroke))) {
+    if (draft && terrainTraceMeasure('draft.height', () => draft.height(stroke, prepared))) {
       this.tiles = draft.tiles;
       this.dirty = true;
       this.input.dataset.terrainDraft = 'height';

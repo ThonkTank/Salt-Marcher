@@ -7,13 +7,17 @@ import { buildSync } from 'esbuild';
 import { runNativeProbe } from './native-session.mjs';
 import { observeRiverSurface } from './atlas-river-probe.mjs';
 import { setBrushWorldRadius } from './atlas-brush-probe.mjs';
+import { qualifyLakeScatter } from './atlas-lake-scatter-probe.mjs';
 import { atlasCanvasReady } from './atlas-canvas-probe.mjs';
+import { seedDenseLakeTerrain } from '../tests/helpers/terrain-lake-dense.mjs';
 
 const root = process.cwd(),
   require = createRequire(import.meta.url),
   Database = require('better-sqlite3');
 const scale = 1;
 const liftOnly = process.argv.includes('--lift');
+const scatterOnly = process.argv.includes('--scatter');
+const denseOnly = process.argv.includes('--dense');
 const output = path.resolve(
   process.env.QA_EVIDENCE_DIR ?? `.build/cycle2-point4/native/${Date.now()}-${scale}`,
 );
@@ -21,7 +25,7 @@ await mkdir(output, { recursive: true });
 buildSync({
   stdin: {
     contents:
-      "export * from './src/app/storage/store';export * from './src/app/atlas/terrain-height';export * from './src/app/atlas/terrain-spatial-model';export * from './src/app/atlas/terrain-lake-brush';export * from './src/app/atlas/terrain-brush';export * from './src/app/atlas/terrain-lake-coupling';",
+      "export * from './src/app/storage/store';export * from './src/app/atlas/terrain-height';export * from './src/app/atlas/terrain-spatial-model';export * from './src/app/atlas/terrain-lake-brush';export * from './src/app/atlas/terrain-lake-scatter';export * from './src/app/atlas/terrain-brush';export * from './src/app/atlas/terrain-lake-coupling';export * from './src/app/storage/terrain-grid';",
     resolveDir: root,
   },
   outfile: '.build/cycle2-point4/native-api.cjs',
@@ -53,7 +57,13 @@ await runNativeProbe({ root, output, name: 'terrain-lakes' }, async (native) => 
           Float32Array.from({ length: 4096 }, (_, i) => {
             const xx = x * 512 + (i % 64) * 8,
               yy = y * 512 + Math.floor(i / 64) * 8;
-            return Math.hypot(xx, yy) > 480 ? -20 : xx > 240 ? 20 + 0.08 * (xx - 320) : 20;
+            return Math.hypot(xx, yy) > 480
+              ? -20
+              : scatterOnly
+                ? 20 + 0.02 * xx + 0.01 * yy
+                : xx > 240
+                  ? 20 + 0.08 * (xx - 320)
+                  : 20;
           }),
         );
         store.executeAtlasCommit({
@@ -63,6 +73,29 @@ await runNativeProbe({ root, output, name: 'terrain-lakes' }, async (native) => 
           action: { kind: 'landscape-put', record, expectedRevision: null },
         });
       }
+  const denseFixture = denseOnly ? seedDenseLakeTerrain(api, store.db, cam.id) : null;
+  if (denseOnly) assert(denseFixture.bytes > 16 * 1024 * 1024);
+  if (scatterOnly)
+    store.executeAtlasCommit({
+      commandId: randomUUID(),
+      campaignId: cam.id,
+      token: active.token,
+      action: {
+        kind: 'landscape-lake-stroke',
+        stroke: {
+          id: 'existing-lake',
+          mode: 'dig',
+          radius: 24,
+          strength: 2,
+          feather: 0.8,
+          waterLevelM: 20,
+          samples: [
+            { x: 0, y: 0, t: 0 },
+            { x: 0, y: 0, t: 2000 },
+          ],
+        },
+      },
+    });
   store.tutorial('skipped');
   store.close();
   const db = new Database(profile + '/workbench.sqlite', { readonly: true });
@@ -80,6 +113,8 @@ await runNativeProbe({ root, output, name: 'terrain-lakes' }, async (native) => 
     snapshots = {},
     gestures = [];
   let page;
+  const canonicalGrid = async () =>
+    api.readTerrainGrid(db, cam.id, await page.evaluate(() => window.__qaRiverRaster.visibility()));
   const mark = (name, detail = {}) => {
     checks.push({ name, ...detail });
     console.log(name);
@@ -87,11 +122,29 @@ await runNativeProbe({ root, output, name: 'terrain-lakes' }, async (native) => 
   async function viewReady() {
     await atlasCanvasReady(page);
     await page.waitForFunction(
-      (r) =>
-        Number(document.querySelector('#campaign-map').dataset.terrainRevision) >= r &&
-        document.querySelector('#campaign-map').dataset.terrainReady === 'ready',
-      revision(),
-      { timeout: 60000 },
+      ({ revision, complete }) => {
+        const canvas = document.querySelector('#campaign-map'),
+          r = window.__qaRiverRaster;
+        return (
+          Number(canvas.dataset.terrainRevision) >= revision &&
+          canvas.dataset.terrainReady === 'ready' &&
+          (!complete ||
+            (canvas.dataset.terrainQuality === 'detail' &&
+              r?.tiles.length > 0 &&
+              r.revision === revision &&
+              r.tiles.every(
+                (t) =>
+                  t.revision === revision &&
+                  t.fence === r.fence &&
+                  t.terrain.revision === revision &&
+                  t.terrain.fence === r.fence &&
+                  t.material.revision === revision &&
+                  t.material.fence === r.fence,
+              )))
+        );
+      },
+      { revision: revision(), complete: denseOnly || process.argv.includes('--scatter-moving') },
+      { timeout: denseOnly ? 120000 : 60000 },
     );
     await page.waitForFunction(() => !!window.__qaRiverRaster?.surface?.frameUsable);
     await page.evaluate(() => window.__qaRiverRaster.surface.waitForFrame());
@@ -103,6 +156,24 @@ await runNativeProbe({ root, output, name: 'terrain-lakes' }, async (native) => 
         BrowserWindow.getAllWindows()[0].setContentSize(1920 * scale, 1080 * scale),
       scale,
     );
+    // Reproduce one diagnostic scatter arrangement before the UI constructs
+    // its frozen gesture seed. Ordinary qualification uses production randomness.
+    const seedArg = process.argv.find((a) => a.startsWith('--scatter-seed='));
+    if (seedArg) {
+      assert(process.argv.includes('--scatter-diagnose'));
+      const seed = Number(seedArg.split('=')[1]);
+      assert(Number.isInteger(seed) && seed >= 0 && seed <= 0xffffffff);
+      await page.addInitScript((seed) => {
+        const random = crypto.getRandomValues.bind(crypto);
+        crypto.getRandomValues = (values) => {
+          if (values instanceof Uint32Array && values.length === 1) {
+            values[0] = seed;
+            return values;
+          }
+          return random(values);
+        };
+      }, seed);
+    }
     if (box) {
       await page.evaluate(
         ({ id, box }) => localStorage.setItem('atlas-camera:' + id, JSON.stringify(box)),
@@ -202,9 +273,16 @@ await runNativeProbe({ root, output, name: 'terrain-lakes' }, async (native) => 
         revision: r.revision,
         fence: r.fence,
         frameUsable: r.surface.frameUsable,
+        quality: r.input.dataset.terrainQuality,
         view: document.querySelector('#campaign-map').dataset.atlasView,
         projection: document.querySelector('#campaign-map').dataset.terrainProjection,
-        tiles: r.tiles.map((t) => ({ id: t.tile, revision: t.revision, fence: t.fence })),
+        tiles: r.tiles.map((t) => ({
+          id: t.tile,
+          revision: t.revision,
+          fence: t.fence,
+          terrain: { revision: t.terrain.revision, fence: t.terrain.fence },
+          material: { revision: t.material.revision, fence: t.material.fence },
+        })),
       };
     });
     snapshots[label] = { ...source, historyCursor: cursor() };
@@ -261,7 +339,7 @@ await runNativeProbe({ root, output, name: 'terrain-lakes' }, async (native) => 
         const canvas = document.querySelector('#atlas-terrain-spatial canvas'),
           gl = canvas.getContext('webgl2'),
           rect = canvas.getBoundingClientRect(),
-          size = 128;
+          size = point.size ?? 128;
         const cx = Math.round(((point.x - rect.left) / rect.width) * gl.drawingBufferWidth),
           cy = Math.round((1 - (point.y - rect.top) / rect.height) * gl.drawingBufferHeight),
           left = Math.max(0, Math.min(gl.drawingBufferWidth - size, cx - size / 2)),
@@ -359,6 +437,7 @@ await runNativeProbe({ root, output, name: 'terrain-lakes' }, async (native) => 
     const before = cursor(),
       beforeRaw = records(),
       beforeRecords = clean(beforeRaw);
+    const boundGrid = await canonicalGrid();
     const beforeDraft = await draftState(p);
     const beforePixels = holdCheck ? await pixelPatch(pt) : null;
     let heldEvidence = null;
@@ -380,7 +459,10 @@ await runNativeProbe({ root, output, name: 'terrain-lakes' }, async (native) => 
       await page.evaluate(() => window.__qaRiverRaster.surface.waitForFrame());
       assert(one.pointer && one.draft);
       console.log('held probe', JSON.stringify(one));
-      assert(one.lastSample.t >= 800 && one.lastSample.t <= 1400, JSON.stringify(one));
+      assert(
+        one.lastSample.t >= 800 && (denseOnly || one.lastSample.t <= duration),
+        JSON.stringify(one),
+      );
       assert(
         Math.abs(one.ground - (20 - (2 * one.lastSample.t) / 1000)) < 0.1,
         JSON.stringify(one),
@@ -444,9 +526,10 @@ await runNativeProbe({ root, output, name: 'terrain-lakes' }, async (native) => 
       sampler = new api.TerrainSampler(rs);
     const command = await native.app.evaluate(() => globalThis.__qaLake.calls.at(-1));
     assert(command && command.action.kind === 'landscape-lake-stroke');
+    assert.equal(command.action.stroke.screenInput?.version, 1);
     const expected = api.mergeLakeBrush(
       beforeRaw,
-      api.applyLakeBrush(beforeRaw, command.action.stroke),
+      api.applyLakeBrush(beforeRaw, command.action.stroke, boundGrid),
     );
     assert.deepEqual(
       clean(rs),
@@ -470,7 +553,10 @@ await runNativeProbe({ root, output, name: 'terrain-lakes' }, async (native) => 
     assert.equal(input[0].x, input[1].x);
     assert.equal(input[0].y, input[1].y);
     if (holdCheck) {
-      assert(Math.abs(input[1].t - input[0].t - duration) < 250, JSON.stringify(input));
+      // Pixel inspection can extend the real hold beyond the requested delay.
+      // Judge the operator by captured input time, and retain both durations.
+      assert(input[1].t - input[0].t >= duration - 250, JSON.stringify(input));
+      assert(input[1].t - input[0].t <= 120000, 'Loaded edit must remain within 120 seconds');
       assert(
         heldEvidence.pixels.sampledAt < input[1].t,
         'Holding GPU patch must precede actual pointerup',
@@ -482,12 +568,74 @@ await runNativeProbe({ root, output, name: 'terrain-lakes' }, async (native) => 
       live,
       command,
       input,
+      requestedHoldMs: duration,
+      actualHoldMs: input[1].t - input[0].t,
       ground: sampler.sample(p).heightM,
       water: sampler.waterLevel(p),
       cursor: cursor(),
     });
     mark(label + ' commits one history step', { ground: sampler.sample(p).heightM });
     return rs;
+  }
+  async function denseScenario() {
+    const p = { x: 0, y: 0 };
+    await start({ x: -220, y: -180, width: 600, height: 400 });
+    await pose(false);
+    mark('dense local terrain above 16 MiB UTF8', denseFixture);
+    const baseline = records(),
+      baselineHeight = new api.TerrainSampler(baseline).sample(p).heightM;
+    await stroke(p, 2500, { radius: 160, holdCheck: true, label: 'dense-01-held-dig' });
+    await picture('dense-02-current-dig');
+    await stroke(p, 150, { mode: 'erase', radius: 24, label: 'dense-03-partial-erase' });
+    assert(records().some((r) => r.lakeBed?.length));
+    await page.locator('[data-tool-group="land"]').click();
+    await page.locator('[data-atlas-tool="land-shape"]').click();
+    await setBrushWorldRadius(page, 'land-radius', 160);
+    await page.locator('#land-height-direction [data-direction="raise"]').click();
+    await page.locator('#land-height-strength').fill('2');
+    await page.locator('#land-height-strength').press('Tab');
+    await page.locator('#land-height-feather').fill('0.8');
+    await page.locator('#land-coast-roughness').fill('0');
+    await page.locator('#land-height-target-enabled').uncheck();
+    await page.locator('#land-preserve-details').check();
+    const pt = await screen(p),
+      at = cursor();
+    await page.mouse.move(pt.x, pt.y);
+    await page.waitForFunction(
+      () => document.querySelector('#campaign-map').dataset.terrainEditingState === 'ready',
+      null,
+      { timeout: 60000 },
+    );
+    await page.mouse.down();
+    await new Promise((resolve) => setTimeout(resolve, 1200));
+    await page.mouse.up();
+    await waitCursor(at + 1);
+    const command = await native.app.evaluate(() => globalThis.__qaLake.calls.at(-1));
+    assert.equal(command.action.kind, 'landscape-height-stroke');
+    const dose = (2 * command.action.stroke.samples.at(-1).t) / 1000;
+    await picture('dense-04-independent-terrain');
+    await stroke(p, 150, { mode: 'erase', radius: 240, label: 'dense-05-full-erase' });
+    assert(!records().some((r) => r.lakeBed));
+    assert(
+      Math.abs(new api.TerrainSampler(records()).sample(p).heightM - baselineHeight - dose) < 0.001,
+    );
+    const saved = clean(records()),
+      savedCursor = cursor();
+    await page.locator('#atlas-undo').click();
+    await waitCursor(savedCursor - 1);
+    assert(records().some((r) => r.lakeBed));
+    await page.locator('#atlas-redo').click();
+    await waitCursor(savedCursor);
+    assert.deepEqual(clean(records()), saved);
+    await native.close();
+    await start();
+    assert.deepEqual(clean(records()), saved);
+    assert.equal(cursor(), savedCursor);
+    await picture('dense-06-undo-redo-fresh');
+    mark('dense held dig, partial/full erasure and independent terrain survive Undo/Redo/Fresh', {
+      dose,
+    });
+    await native.close();
   }
   async function liftScenario() {
     const p = { x: 64, y: 0 };
@@ -695,7 +843,30 @@ await runNativeProbe({ root, output, name: 'terrain-lakes' }, async (native) => 
     mark('same joint lift persists at large world coordinates');
   }
   try {
-    if (liftOnly) await liftScenario();
+    if (denseOnly) await denseScenario();
+    if (scatterOnly || denseOnly)
+      await qualifyLakeScatter({
+        api,
+        canonicalGrid,
+        native,
+        start,
+        pose,
+        picture,
+        records,
+        cursor,
+        clean,
+        screen,
+        viewReady,
+        waitCursor,
+        pixelPatch,
+        savePatch,
+        output,
+        gestures,
+        mark,
+        page: () => page,
+        early: process.argv.includes('--early'),
+      });
+    else if (liftOnly) await liftScenario();
     else {
       await start({ x: -150, y: -150, width: 450, height: 300 });
       await pose(false);
@@ -716,7 +887,7 @@ await runNativeProbe({ root, output, name: 'terrain-lakes' }, async (native) => 
       const p = { x: 64, y: 0 },
         control = { x: 130, y: 0 },
         controlHeight = new api.TerrainSampler(records()).sample(control).heightM;
-      await stroke(p, 3000, { holdCheck: true, label: '01-still-three-seconds' });
+      await stroke(p, 3000, { holdCheck: true, label: '01-held-dig' });
       assert(
         Math.abs(new api.TerrainSampler(records()).sample(control).heightM - controlHeight) < 1e-5,
       );
@@ -792,6 +963,8 @@ await runNativeProbe({ root, output, name: 'terrain-lakes' }, async (native) => 
     const hashes = {};
     for (const file of [
       'src/app/atlas/terrain-lake-brush.ts',
+      'src/app/atlas/terrain-lake-scatter.ts',
+      'tools/atlas-lake-scatter-probe.mjs',
       'src/app/atlas/terrain-lake-coupling.ts',
       'src/app/atlas/terrain-brush.ts',
       'src/app/atlas/atlas-landscape.ts',
@@ -822,6 +995,7 @@ await runNativeProbe({ root, output, name: 'terrain-lakes' }, async (native) => 
           initialHash: sha(initial),
           finalHash: sha(clean(records())),
           far,
+          denseFixture,
           scale,
         },
         null,
@@ -836,6 +1010,9 @@ await runNativeProbe({ root, output, name: 'terrain-lakes' }, async (native) => 
       scale,
       limits: ['No p95, beauty, package, owner acceptance or full Earth/room LOD qualification.'],
     };
+  } catch (error) {
+    await db.backup(path.join(output, 'failed-world.sqlite'));
+    throw error;
   } finally {
     db.close();
   }

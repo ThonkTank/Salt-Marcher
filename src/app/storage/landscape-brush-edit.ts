@@ -1,4 +1,4 @@
-import { lakeBrushLevel, applyLakeBrush } from '../atlas/terrain-lake-brush';
+import { lakeBrushLevel, applyLakeBrush, lakeBrushSourceBounds } from '../atlas/terrain-lake-brush';
 import { randomUUID } from 'node:crypto';
 import { type LandscapeAction } from '../atlas/landscape-action-contracts';
 import { type LandscapeRecord } from '../atlas/landscape-contracts';
@@ -17,6 +17,7 @@ import type { Polygon } from '../shared/contracts';
 import { landMaskRegion, landscapeRegion, putLandscape } from './landscape-records';
 import { readTerrainGrid } from './terrain-grid';
 import { readRouteTerrain } from './terrain-route';
+import { readTerrainEditingPackets } from './terrain-editing-source';
 
 /** Runs inside the existing Atlas transaction/history, never as a renderer-side read/modify/write. */
 export function executeBrush(
@@ -35,7 +36,11 @@ export function executeBrush(
       a.record?.terrainSettings
     )
       throw Error('Seezug braucht Zeitstempel und reine Pinselparameter.');
-    const source = readRouteTerrain(db, cam, strokeBox({ samples: a.samples, radius: a.radius }));
+    const source = readTerrainEditingPackets(
+      db,
+      cam,
+      lakeBrushSourceBounds({ samples: a.samples, radius: a.radius }),
+    );
     const changes = applyLakeBrush(
       source,
       {

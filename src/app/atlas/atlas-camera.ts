@@ -209,3 +209,10 @@ export function atlasRefocusCamera(pose: AtlasCameraPose, focusM: number): Atlas
     },
   };
 }
+
+/** The shared near/far planes of the native metric view and author rays. */
+export function atlasCameraClipRange(pose: AtlasCameraPose) {
+  const distance = pose.frame.height / (2 * halfFovTan);
+  const near = Math.max(0.01, distance / 1000);
+  return { near, far: Math.max(100_000, distance * 1000, near * 10_000) };
+}

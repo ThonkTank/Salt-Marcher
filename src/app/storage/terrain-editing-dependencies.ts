@@ -17,7 +17,7 @@ export function terrainEditingDependencies(db: any, campaign: string, box: Lands
   if (settings) selected.set(settings.id, settings);
   const defaultLevel = (settings?.terrainSettings?.seaLevelM ?? 0) + 1;
   const lakes = db.prepare(
-    "SELECT payload FROM atlas_landscape WHERE campaign_id=? AND json_valid(payload) AND json_extract(payload,'$.surface')='freshwater' AND max_x>=? AND min_x<=? AND max_y>=? AND min_y<=?",
+    "SELECT payload FROM atlas_landscape WHERE campaign_id=? AND json_valid(payload) AND json_extract(payload,'$.surface')='freshwater' AND max_x>=? AND min_x<=? AND max_y>=? AND min_y<=? ORDER BY id",
   );
   const nearLakes = (b: LandscapeBox): LandscapeRecord[] =>
     [...lakes.iterate(campaign, b.x, b.x + b.width, b.y, b.y + b.height)].map((row: any) =>
@@ -46,8 +46,31 @@ export function terrainEditingDependencies(db: any, campaign: string, box: Lands
   const corridors: LandscapeBox[] = [];
   const routes = db.prepare(
     `SELECT payload FROM atlas_landscape WHERE campaign_id=? AND json_valid(payload) AND json_extract(payload,'$.route') IS NOT NULL
-     AND ((max_x>=? AND min_x<=? AND max_y>=? AND min_y<=?) OR id IN (SELECT value FROM json_each(?)) OR json_extract(payload,'$.route.mouth.id') IN (SELECT value FROM json_each(?)))`,
+     AND ((max_x>=? AND min_x<=? AND max_y>=? AND min_y<=?) OR id IN (SELECT value FROM json_each(?)) OR json_extract(payload,'$.route.mouth.id') IN (SELECT value FROM json_each(?))) ORDER BY id`,
   );
+  const sharedOwners = db.prepare(`SELECT payload FROM atlas_landscape
+    WHERE campaign_id=? AND json_valid(payload) AND json_extract(payload,'$.surface')='freshwater'
+    AND EXISTS (SELECT 1 FROM json_each(payload,'$.lakeBed') bed
+      WHERE json_extract(bed.value,'$.tileId') IN (SELECT value FROM json_each(?))) ORDER BY id`);
+  function expandOwners() {
+    for (;;) {
+      const ids = [
+        ...new Set([...selected.values()].flatMap((r) => r.lakeBed?.map((b) => b.tileId) ?? [])),
+      ];
+      let added = false;
+      if (!ids.length) return;
+      for (const row of sharedOwners.iterate(campaign, JSON.stringify(ids))) {
+        const lake: LandscapeRecord = JSON.parse(row.payload);
+        if (selected.has(lake.id)) continue;
+        selected.set(lake.id, lake);
+        pending.push(lake);
+        added = true;
+      }
+      if (!added) return;
+      expandLakes();
+    }
+  }
+  expandOwners();
   const searches = [box];
   for (let i = 0; i < searches.length; i++) {
     const b = searches[i]!,
@@ -78,6 +101,7 @@ export function terrainEditingDependencies(db: any, campaign: string, box: Lands
           selected.set(target.id, target);
           pending.push(target);
           expandLakes();
+          expandOwners();
         }
       }
       const corridor = routeBounds(r);
@@ -85,8 +109,57 @@ export function terrainEditingDependencies(db: any, campaign: string, box: Lands
       searches.push(corridor);
     }
   }
-  return { records: [...selected.values()], corridors };
+  // Excavation belongs to an explicit author tile. Geometry is only a search
+  // aid: an empty/trimmed water polygon must not hide its remaining ownership.
+  const tileIds = new Set<string>();
+  const owner = db.prepare(`SELECT json_extract(payload,'$.height.version') version,
+    json_extract(payload,'$.height.x') x,json_extract(payload,'$.height.y') y,
+    json_extract(payload,'$.height.pixel') pixel FROM atlas_landscape WHERE campaign_id=? AND id=?`);
+  for (const r of selected.values())
+    for (const bed of r.lakeBed ?? []) {
+      const tile = owner.get(campaign, bed.tileId);
+      if (
+        !tile ||
+        tile.version !== 2 ||
+        tile.x !== bed.tile.x ||
+        tile.y !== bed.tile.y ||
+        tile.pixel !== bed.tile.pixel
+      )
+        throw Error('Zugeordnete Seehöhe fehlt. Ausschnitt erneut laden.');
+      tileIds.add(bed.tileId);
+    }
+  return { records: [...selected.values()], corridors, tileIds: [...tileIds].sort() };
 }
+
+/** Retain only the small query plan between packets, never another complete
+ * parsed copy of the water/height payloads that those packets deliver. */
+export function terrainEditingSourcePlan(
+  db: any,
+  campaign: string,
+  box: LandscapeBox,
+  supports: readonly LandscapeBox[] = [box],
+) {
+  if (
+    db
+      .prepare(
+        'SELECT 1 FROM atlas_landscape WHERE campaign_id=? AND NOT json_valid(payload) LIMIT 1',
+      )
+      .get(campaign)
+  )
+    throw Error('Geländequelle beschädigt.');
+  const ids = new Set<string>(),
+    corridors = new Map<string, LandscapeBox>();
+  for (const support of supports) {
+    const dependencies = terrainEditingDependencies(db, campaign, support);
+    for (const r of dependencies.records) ids.add(r.id);
+    for (const id of dependencies.tileIds) ids.add(id);
+    for (const b of dependencies.corridors) corridors.set(JSON.stringify(b), b);
+    if (corridors.size > 128)
+      throw Error('Verbundene See-/Verlaufquellen zu groß. Kleineren Bereich bearbeiten.');
+  }
+  return { ids: [...ids].sort(), corridors: [...corridors.values()] };
+}
+export type TerrainEditingSourcePlan = ReturnType<typeof terrainEditingSourcePlan>;
 
 /** SQL suffix shared by paged and legacy editing readers. */
 export const editingDependencySql = `OR id IN (SELECT value FROM json_each(?))
