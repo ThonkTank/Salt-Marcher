@@ -9,6 +9,31 @@ export function interpolateHeight(a: number, b: number, c: number, d: number, t:
     m1 = tangent(delta, d - c);
   return b + t * (m0 + t * (3 * delta - 2 * m0 - m1 + t * (m0 + m1 - 2 * delta)));
 }
+/** The same Hermite expression for many samples sharing four source values. */
+export function prepareHeightInterpolation(
+  a: number,
+  b: number,
+  c: number,
+  d: number,
+  target: Float64Array,
+  offset: number,
+) {
+  const delta = c - b,
+    m0 = tangent(b - a, delta),
+    m1 = tangent(delta, d - c);
+  target[offset] = b;
+  target[offset + 1] = c;
+  target[offset + 2] = m0;
+  target[offset + 3] = 3 * delta - 2 * m0 - m1;
+  target[offset + 4] = m0 + m1 - 2 * delta;
+}
+export function interpolatePreparedHeight(curve: Float64Array, offset: number, t: number) {
+  const b = curve[offset]!,
+    c = curve[offset + 1]!;
+  if (b === c || t === 0) return b;
+  if (t === 1) return c;
+  return b + t * (curve[offset + 2]! + t * (curve[offset + 3]! + t * curve[offset + 4]!));
+}
 /** Four consecutive source nodes share the same inherited coarse value. */
 export function heightRow(nodes: ArrayLike<number>, offset: number, x: number, fill: number) {
   const a = nodes[offset]!,

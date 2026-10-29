@@ -13,8 +13,12 @@ const hash = (value) =>
 
 // Bind the existing presentation only for read-only frame/data diagnostics,
 // using the same native debugger seam as the biome qualification.
-export async function observeRiverSurface(page, root) {
-  const code = await readFile(path.join(root, '.build/desktop/ui/renderer.js'), 'utf8'),
+export async function observeRiverSurface(
+  page,
+  root,
+  directory = path.join(root, '.build/desktop'),
+) {
+  const code = await readFile(path.join(directory, 'ui/renderer.js'), 'utf8'),
     offset = code.indexOf(
       'this.surface.setTerrain(',
       code.indexOf('var AtlasRasterPresentation = class'),

@@ -6,7 +6,7 @@ import { createRequire } from 'node:module';
 buildSync({
   stdin: {
     contents:
-      "export * from './src/app/atlas/terrain-lake-brush';export * from './src/app/atlas/atlas-surface-draft';export * from './src/app/atlas/terrain-brush-draft';export * from './src/app/atlas/terrain-brush';export * from './src/app/atlas/terrain-lake-coupling';export * from './src/app/atlas/terrain-height';export * from './src/app/atlas/terrain-spatial-model';",
+      "export {receiveTimedBrushInput,LandscapeBrushSession} from './src/app/atlas/landscape-brush-session';export * from './src/app/atlas/terrain-lake-brush';export * from './src/app/atlas/atlas-surface-draft';export * from './src/app/atlas/terrain-brush-draft';export * from './src/app/atlas/terrain-brush';export * from './src/app/atlas/terrain-lake-coupling';export * from './src/app/atlas/terrain-height';export * from './src/app/atlas/terrain-spatial-model';export {TerrainDraftStroke} from './src/app/atlas/terrain-stroke-queue';",
     resolveDir: process.cwd(),
   },
   outfile: '.build/terrain-brush-draft-test.cjs',
@@ -15,6 +15,9 @@ buildSync({
   format: 'cjs',
 });
 const {
+  receiveTimedBrushInput,
+  LandscapeBrushSession,
+  TerrainDraftStroke,
   applyLakeBrush,
   mergeLakeBrush,
   AtlasSurfaceDraft,
@@ -339,4 +342,135 @@ test('a normal height draft lifts the complete lake level before release, preser
   erased.update({ ...dig, mode: 'erase', radius: 32 });
   assert.equal(erased.ground[centre], 24);
   assert.equal(erased.grid.editing.water[centre], 0);
+});
+
+test('a normal height preview restores its source when the prepared author result retracts to no effect', () => {
+  const base = grid(20),
+    draft = new TerrainBrushDraft(base),
+    s = { ...stroke, radius: 16, strength: 2, feather: 0 };
+  assert(draft.update(s));
+  assert.equal(draft.ground[centre], 22);
+  assert(draft.update({ ...s, samples: [...s.samples, { x: 0, y: 0, t: 2000 }] }, []));
+  assert.deepEqual(draft.records, base.editing.author.records);
+  assert.deepEqual(draft.ground, base.editing.ground);
+  assert.deepEqual(draft.grid.heights, base.heights);
+  assert.deepEqual(draft.grid.editing.water, base.editing.water);
+});
+
+test('a corrected scatter release restores its earlier speculative ground and water support', () => {
+  const base = grid(20),
+    draft = new TerrainBrushDraft(base),
+    s = {
+      id: 'speculative',
+      mode: 'scatter',
+      noise: 1,
+      seed: 123456,
+      radius: 48,
+      strength: 2,
+      feather: 0.8,
+      waterLevelM: 20,
+      samples: [
+        { x: 0, y: 0, t: 0 },
+        { x: 0, y: 0, t: 2000 },
+      ],
+    };
+  assert(draft.update(s));
+  assert(draft.records.some((r) => r.lakeBed));
+  receiveTimedBrushInput(s.samples, 0, { x: 0, y: 0 }, 0);
+  assert(draft.update(s));
+  assert.deepEqual(draft.records, base.editing.author.records);
+  assert.deepEqual(draft.ground, base.editing.ground);
+  assert.deepEqual(draft.grid.heights, base.heights);
+  assert.deepEqual(draft.grid.editing.water, base.editing.water);
+});
+
+test('closing a screen gesture waits for its complete final preview; source rejection cancels without enqueue', async () => {
+  for (const fail of [false, true]) {
+    let resolve,
+      reject,
+      saving = false,
+      previewComplete = false,
+      cancelled = 0;
+    const writes = [],
+      errors = [],
+      gate = new Promise((a, b) => {
+        resolve = a;
+        reject = b;
+      }),
+      stroke = {
+        mode: 'raise',
+        radius: 8,
+        strength: 1,
+        feather: 0.7,
+        samples: [
+          { x: 0, y: 0, t: 0 },
+          { x: 1, y: 0, t: 1000 },
+        ],
+        screenInput: {
+          version: 1,
+          events: [
+            { u: 0.4, v: 0.5, t: 0 },
+            { u: 0.6, v: 0.5, t: 1000 },
+          ],
+        },
+      },
+      host = {
+        pointer: null,
+        lastPoint: { x: 1, y: 0 },
+        points: [],
+        get saving() {
+          return saving;
+        },
+        setSaving(v) {
+          saving = v;
+        },
+        endInput() {},
+        disable() {},
+        say() {},
+        clearDraft() {},
+        clearHeightPreview() {},
+        token: 'test',
+        effects: {
+          data: () => null,
+          error: (e) => errors.push(e),
+          previewHeight() {},
+          completeHeightPreview: async (s) => {
+            assert.equal(s, stroke);
+            await gate;
+            previewComplete = true;
+          },
+          redraw() {},
+          terrainGesture() {},
+          writeTerrain() {
+            throw Error('wrong writer');
+          },
+          localTerrain: () => ({
+            cancel() {
+              cancelled++;
+            },
+          }),
+        },
+      };
+    const session = new LandscapeBrushSession(host);
+    session.maskStroke = stroke;
+    session.live = new TerrainDraftStroke(async (action) => {
+      assert(previewComplete, 'no writer before final exact source');
+      writes.push(action);
+    });
+    const completion = session.finishLive();
+    await Promise.resolve();
+    assert.equal(writes.length, 0);
+    assert.equal(saving, true);
+    assert.equal(session.livePainting, true);
+    if (fail) reject(Error('source missing'));
+    else resolve();
+    await completion;
+    assert.equal(writes.length, fail ? 0 : 1);
+    assert.equal(cancelled, fail ? 1 : 0);
+    assert.equal(errors.length, fail ? 1 : 0);
+    if (!fail) assert.deepEqual(writes[0].stroke, stroke);
+    assert.equal(session.livePainting, false);
+    assert.equal(session.maskStroke, null);
+    assert.equal(saving, false);
+  }
 });

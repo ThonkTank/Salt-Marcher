@@ -1,14 +1,17 @@
-import { gridHeight } from './terrain-spatial-model';
-import { type TerrainGrid } from './terrain-grid-contracts';
+import { gridHeight, type TerrainGridGeometry } from './terrain-grid-geometry';
 import { terrainGridLayout, terrainGridCoordinate } from './terrain-grid-layout';
-import type { AtlasDeckRaySegment, AtlasDeckRayHit } from './atlas-deck-ray';
+import type { AtlasMetricSegment } from './atlas-mesh-ray';
+export interface AtlasTerrainRayHit {
+  point: { x: number; y: number; heightM: number };
+  segmentFraction: number;
+}
 
 /** Exact intersection with the displayed triangle lattice. A height edit needs
  * no rebuilt triangle BVH: cross grid lines and each cell's one diagonal. */
 export function atlasTerrainRay(
-  grid: TerrainGrid,
-  segment: AtlasDeckRaySegment,
-): AtlasDeckRayHit | null {
+  grid: TerrainGridGeometry,
+  segment: AtlasMetricSegment,
+): AtlasTerrainRayHit | null {
   const a = segment[0],
     d = segment[1].map((v, i) => v - a[i]!),
     layout = terrainGridLayout(grid.view),
@@ -42,7 +45,7 @@ export function atlasTerrainRay(
         if (t > enter && t < exit) crossings.push(t);
       }
   crossings.sort((x, y) => x - y);
-  const intersect = (start: number, end: number): AtlasDeckRayHit | null => {
+  const intersect = (start: number, end: number): AtlasTerrainRayHit | null => {
     const f = distance(start),
       g = distance(end);
     if (Math.abs(f) < 1e-8)

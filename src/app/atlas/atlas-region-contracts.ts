@@ -36,7 +36,14 @@ export interface AtlasRegionAPI {
   /** Cheap terrain bootstrap; no object index or geometry response is implied. */
   atlasTerrainSource(
     token: string,
-  ): Promise<import('../shared/contracts').Result<{ revision: number; fence: string }>>;
+    base?: import('./terrain-source').TerrainIdentity,
+  ): Promise<
+    import('../shared/contracts').Result<{
+      revision: number;
+      fence: string;
+      change?: import('./terrain-source').TerrainSourceChange;
+    }>
+  >;
   atlasRegion(
     token: string,
     query: AtlasRegionQuery,

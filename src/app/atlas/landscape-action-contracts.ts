@@ -71,13 +71,18 @@ export type LandscapeAction =
     };
 
 /** Parameters and level are frozen at pointerdown; samples are snapshotted at release. */
-export interface LakeStroke {
-  mode: 'dig' | 'erase';
+interface LakeStrokeParameters {
   id: string;
   radius: number;
   strength: number;
   feather: number;
-  waterLevelM: number;
   samples: import('./land-mask-contracts').MaskSample[];
   visibility?: import('./terrain-brush-contracts').HeightStroke['visibility'];
+  screenInput?: import('./terrain-screen-input').TerrainScreenInput;
 }
+/** Scatter's null level resolves each basin against the immutable gesture source. */
+export type LakeStroke = LakeStrokeParameters &
+  (
+    | { mode: 'dig' | 'erase'; waterLevelM: number }
+    | { mode: 'scatter'; waterLevelM: number | null; noise: number; seed: number }
+  );

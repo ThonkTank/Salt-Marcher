@@ -5,6 +5,8 @@ import type { TerrainView } from './terrain-view-contracts';
 export interface TerrainGrid {
   view: TerrainView;
   heights: Float32Array;
+  /** Canonically sampled grids for the exact displayed partition. */
+  surface?: TerrainGrid[];
   seaLevelM: number;
   editing?: {
     ground: Float32Array;
@@ -25,6 +27,7 @@ export interface TerrainEditingSource {
   pixel: number;
   radius: number;
   box: LandscapeBox;
+  supports?: LandscapeBox[];
   records: LandscapeRecord[];
   /** Local draft tombstones, never a canonical author source. */
   removed?: string[];

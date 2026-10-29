@@ -1,4 +1,12 @@
 import { type HeightStroke } from './terrain-brush-contracts';
+import type { TerrainScreenGeometry } from './terrain-screen-geometry';
+import { planTerrainScreenInput, validateTerrainScreenInput } from './terrain-screen-input';
+import {
+  terrainSupportTiles,
+  terrainCentrelineTiles,
+  terrainSupportBoxes,
+  terrainBoxesBounds,
+} from './terrain-stroke-support';
 import { heightPatch } from './terrain-interpolation';
 import { coupleRouteEdits } from './terrain-route-planner';
 import {
@@ -51,11 +59,13 @@ export function validateHeightStroke(s: HeightStroke) {
           'seed',
           'samples',
           'visibility',
+          'screenInput',
         ].includes(k),
     )
   )
     throw Error('Höhenpinsel prüfen.');
   if (s.visibility) validateTerrainView(s.visibility);
+  if (s.screenInput !== undefined) validateTerrainScreenInput(s.screenInput, s.visibility);
   validateStroke({ ...s, mode: 'raise', roughness: 0, seed: 0 });
 }
 export function heightBrushBounds(s: HeightStroke) {
@@ -133,47 +143,91 @@ export function heightBrushDabs(s: Pick<HeightStroke, 'samples' | 'radius'>) {
 }
 
 /** Prepared once per complete gesture; shared by live forms and canonical edits. */
-export function prepareHeightBrush(s: HeightStroke) {
-  const dabs = heightBrushDabs(s);
-  // A point only receives dose from dabs within one brush radius. Index the
-  // immutable gesture once; cache each cell's candidates in original order so
-  // preview and commit keep the same integration and floating-point order.
-  const buckets = new Map<string, number[]>(),
-    candidates = new Map<string, number[]>();
-  if (!s.form)
-    for (let i = 0; i < dabs.length; i++) {
-      const dab = dabs[i]!,
-        key = Math.floor(dab.x / s.radius) + ':' + Math.floor(dab.y / s.radius);
-      const bucket = buckets.get(key) ?? [];
-      bucket.push(i);
-      buckets.set(key, bucket);
+export function prepareHeightBrush(
+  s: HeightStroke,
+  visibility?: TerrainGrid,
+  geometry?: TerrainScreenGeometry,
+) {
+  if (s.screenInput && !visibility) throw Error('Gebundene Geländeoberfläche fehlt. Erneut laden.');
+  const screen = s.screenInput
+      ? planTerrainScreenInput(
+          s.screenInput,
+          s.radius,
+          visibility!,
+          s.form ? 'exposure' : 'radial',
+          geometry,
+        )
+      : undefined,
+    dabs = screen?.dabs ?? heightBrushDabs(s),
+    centrelines = screen?.centrelines ?? [s.samples],
+    pixel = heightBrushPixel(s.radius),
+    tiles = s.form
+      ? terrainCentrelineTiles(centrelines, s.radius + s.radius / 12, pixel)
+      : terrainSupportTiles(dabs, s.radius, pixel);
+  let geometryTiles: ReturnType<typeof terrainCentrelineTiles> | undefined;
+  const footprintTiles = () =>
+    (geometryTiles ??= terrainCentrelineTiles(centrelines, s.radius, pixel));
+  if (s.form)
+    return {
+      dabs,
+      dose: prepareTerrainForm(s, dabs, centrelines),
+      tilePairs: undefined,
+      tiles,
+      centrelines,
+      sections: screen?.sections ?? [],
+      footprintTiles,
+    };
+  // Keep each tile's dabs in original order. A silhouette can put adjacent
+  // screen samples far apart in world space; most bounding-box tiles then
+  // cannot receive most dabs. Index only intersecting circular supports.
+  const edge = 64 * heightBrushPixel(s.radius),
+    cells = new Map<string, typeof dabs>();
+  let tilePairs = 0;
+  for (const d of dabs)
+    for (let y = Math.floor((d.y - s.radius) / edge); y <= Math.floor((d.y + s.radius) / edge); y++)
+      for (
+        let x = Math.floor((d.x - s.radius) / edge);
+        x <= Math.floor((d.x + s.radius) / edge);
+        x++
+      ) {
+        const dx = Math.max(x * edge - d.x, 0, d.x - (x + 1) * edge),
+          dy = Math.max(y * edge - d.y, 0, d.y - (y + 1) * edge);
+        if (Math.hypot(dx, dy) >= s.radius) continue;
+        const key = x + ':' + y;
+        let cell = cells.get(key);
+        if (!cell) cells.set(key, (cell = []));
+        cell.push(d);
+        tilePairs++;
+      }
+  let lastX = NaN,
+    lastY = NaN,
+    nearby: typeof dabs = [];
+  const dose = (p: { x: number; y: number }) => {
+    const x = Math.floor(p.x / edge),
+      y = Math.floor(p.y / edge);
+    if (x !== lastX || y !== lastY) {
+      nearby = cells.get(x + ':' + y) ?? [];
+      lastX = x;
+      lastY = y;
     }
-  const dose = s.form
-    ? prepareTerrainForm(s, dabs)
-    : (p: { x: number; y: number }) => {
-        const x = Math.floor(p.x / s.radius),
-          y = Math.floor(p.y / s.radius),
-          key = x + ':' + y;
-        let near = candidates.get(key);
-        if (!near) {
-          near = [];
-          for (let dy = -1; dy <= 1; dy++)
-            for (let dx = -1; dx <= 1; dx++)
-              near.push(...(buckets.get(x + dx + ':' + (y + dy)) ?? []));
-          near.sort((a, b) => a - b);
-          candidates.set(key, near);
-        }
-        let total = 0;
-        for (const i of near) {
-          const d = dabs[i]!;
-          const r = Math.hypot(p.x - d.x, p.y - d.y) / s.radius;
-          if (r >= 1) continue;
-          const t = s.feather === 0 ? 1 : Math.min(1, (1 - r) / s.feather);
-          total += d.seconds * t * t * (3 - 2 * t);
-        }
-        return total;
-      };
-  return { dabs, dose };
+    let total = 0;
+    for (const d of nearby) {
+      const r = Math.hypot(p.x - d.x, p.y - d.y) / s.radius;
+      if (r >= 1) continue;
+      const t = s.feather === 0 ? 1 : Math.min(1, (1 - r) / s.feather);
+      total += d.seconds * t * t * (3 - 2 * t);
+    }
+    return total;
+  };
+  return {
+    dabs,
+    dose,
+    tilePairs,
+    tiles,
+    centrelines,
+    sections: screen?.sections ?? [],
+    footprintTiles,
+  };
 }
 
 /** Shared numeric effect; the caller owns the source snapshot and visibility. */
@@ -218,39 +272,24 @@ export function applyTerrainBrush(
   canonicalVisibility?: TerrainGrid,
   scaleHeight?: (p: { x: number; y: number }) => number,
   uncoupled = false,
+  prepared?: ReturnType<typeof prepareHeightBrush>,
 ): LandscapeRecord[] {
   validateHeightStroke(s);
-  const box = strokeBox(s),
-    pixel = heightBrushPixel(s.radius),
-    edge = 64 * pixel;
-  const { dabs, dose } = prepareHeightBrush(s);
-  const tiles =
-    (Math.floor((box.x + box.width) / edge) - Math.floor(box.x / edge) + 1) *
-    (Math.floor((box.y + box.height) / edge) - Math.floor(box.y / edge) + 1);
-  // Bound relevant dab/node evaluations, rather than multiplying every dab
-  // by every tile in a long gesture's bounding rectangle. The radius-cell
-  // index above visits at most the neighboring cells; count that conservative
-  // square here, including all their author nodes.
-  const work = s.form
-    ? dabs.length * tiles
-    : dabs.reduce((sum, dab) => {
-        const cx = Math.floor(dab.x / s.radius),
-          cy = Math.floor(dab.y / s.radius);
-        return (
-          sum +
-          (Math.floor(((cx + 2) * s.radius) / edge) -
-            Math.floor(((cx - 1) * s.radius) / edge) +
-            1) *
-            (Math.floor(((cy + 2) * s.radius) / edge) -
-              Math.floor(((cy - 1) * s.radius) / edge) +
-              1)
-        );
-      }, 0);
-  if (work * 4096 > 60000000) throw Error('Höhenzug zu lang. In kürzeren Zügen bearbeiten.');
+  if (s.screenInput && !canonicalVisibility)
+    throw Error('Gebundene Geländeoberfläche fehlt. Erneut laden.');
+  const pixel = heightBrushPixel(s.radius),
+    visibility = s.visibility
+      ? (canonicalVisibility ?? terrainGrid(records, s.visibility))
+      : undefined,
+    { dabs, dose, tilePairs, tiles } = prepared ?? prepareHeightBrush(s, visibility),
+    box = s.screenInput ? terrainBoxesBounds(terrainSupportBoxes(tiles, pixel)) : strokeBox(s);
+  if ((tilePairs ?? dabs.length * tiles.length) * 4096 > 60000000)
+    throw Error('Höhenzug zu lang. In kürzeren Zügen bearbeiten.');
   const needsSource = s.mode === 'smooth' || s.targetM !== undefined,
-    source = needsSource ? (scaleHeight ?? scaleHeightSampler(records, pixel)) : undefined,
-    visibility = s.visibility ? (canonicalVisibility ?? terrainGrid(records, s.visibility)) : null;
-  const visible = visibility ? terrainVisibility(visibility) : undefined;
+    source = needsSource ? (scaleHeight ?? scaleHeightSampler(records, pixel)) : undefined;
+  const visible = visibility
+    ? terrainVisibility(visibility, s.screenInput ? 'clip' : 'reject')
+    : undefined;
   const edited = editHeight(
     records,
     box,
@@ -261,6 +300,7 @@ export function applyTerrainBrush(
       return prior + heightBrushAmount(s, p, exposure, source);
     },
     2,
+    tiles,
   );
   // Fine bands are relaxed at their own author nodes, never removed as whole
   // tiles. The complete gesture dose is evaluated against its fixed source.

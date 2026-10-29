@@ -647,3 +647,37 @@ test('bounds include deformation support and distant coordinates retain local ge
   const result = planRoute(far, shifted);
   assert(result.route.nodes.every((p) => Number.isFinite(p.z) && p.z === 60));
 });
+
+test('route material samples skip segments outside their physical shoulder inside a shared index cell', () => {
+  for (const origin of [0, 18000000, 999999999000]) {
+    const r = route('river', [
+      { x: origin, y: 0 },
+      { x: origin + 128, y: 0 },
+    ]);
+    let readHeights = 0;
+    r.route.nodes = Array.from({ length: 129 }, (_, i) => ({
+      x: origin + i,
+      y: 0,
+      structure: 'ground',
+      get z() {
+        readHeights++;
+        return 30 - i * 0.01;
+      },
+    }));
+    const surface = new api.RouteSurface([r]);
+    const before = surface.at({ x: origin + 32, y: -50 }, 40);
+    assert.equal(before.height, 40);
+    assert.equal(before.water, undefined);
+    assert.equal(
+      readHeights,
+      0,
+      'A material texel outside every segment shoulder must not evaluate their height profiles',
+    );
+    const inside = surface.at({ x: origin + 32, y: -2 }, 40);
+    assert(readHeights > 0);
+    assert(inside.height < 40);
+    assert.equal(inside.water, 29.68);
+    const edge = surface.at({ x: origin + 32, y: 26 }, 40);
+    assert.equal(edge.height, 40, 'Exact outer shoulder preserves unchanged ground');
+  }
+});

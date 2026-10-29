@@ -34,6 +34,9 @@ export interface LandscapeHost {
   previewHeight?: (
     stroke: HeightStroke | import('./landscape-action-contracts').LakeStroke,
   ) => void;
+  completeHeightPreview?: (
+    stroke: HeightStroke | import('./landscape-action-contracts').LakeStroke,
+  ) => Promise<void>;
   editingReady?: (radius: number, point?: Point) => boolean;
   terrainGesture: (active: boolean) => void | Promise<void>;
   writeTerrain: (

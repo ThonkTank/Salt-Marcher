@@ -82,10 +82,13 @@ export function prepareTerrainForm(
     samples: readonly Point[];
   },
   dabs: readonly Dab[],
+  centrelines: readonly (readonly Point[])[] = [s.samples],
 ) {
+  if (!dabs.length || !centrelines.some((line) => line.length)) return () => 0;
   const r = s.radius,
-    points = centreline(s.samples, r),
-    segments = points.map((b, i) => ({ a: points[Math.max(0, i - 1)]!, b })),
+    lines = centrelines.filter((line) => line.length).map((line) => centreline(line, r)),
+    points = lines.flat(),
+    segments = lines.flatMap((line) => line.map((b, i) => ({ a: line[Math.max(0, i - 1)]!, b }))),
     nearbySegments = buckets(
       segments,
       ({ a, b }) => [

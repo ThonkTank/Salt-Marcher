@@ -1,7 +1,12 @@
 import { Matrix4 } from '@math.gl/core';
 import { Viewport, View } from '@deck.gl/core';
 import type { Point } from '../shared/contracts';
-import { ATLAS_CAMERA_FOV, atlasCameraEye, atlasPlanePoint } from './atlas-camera';
+import {
+  ATLAS_CAMERA_FOV,
+  atlasCameraEye,
+  atlasPlanePoint,
+  atlasCameraClipRange,
+} from './atlas-camera';
 
 /** Canonical Atlas camera: x east, y south, height above datum in metres. */
 export interface AtlasMetricCamera {
@@ -63,7 +68,6 @@ export interface AtlasMetricProjectedPoint extends AtlasMetricPixel {
 
 const ORIGIN_GRID_METERS = 256;
 const FOV_RADIANS = (ATLAS_CAMERA_FOV * Math.PI) / 180;
-const DEFAULT_NEAR = 0.01;
 
 function finite(...values: number[]): boolean {
   return values.every(Number.isFinite);
@@ -195,8 +199,9 @@ export function atlasMetricFrame(
   const fullWidth = crop?.width ?? width,
     fullHeight = crop?.height ?? height;
   const cameraDistance = (fullHeight * camera.metersPerPixel) / (2 * Math.tan(FOV_RADIANS / 2));
-  const near = options.near ?? Math.max(DEFAULT_NEAR, cameraDistance / 1000);
-  const far = options.far ?? Math.max(100_000, cameraDistance * 1000, near * 10_000);
+  const clip = atlasCameraClipRange(cameraPose(camera, fullWidth, fullHeight));
+  const near = options.near ?? clip.near;
+  const far = options.far ?? Math.max(clip.far, near * 10_000);
   if (!finite(near, far) || near <= 0 || far <= near)
     throw new Error('Invalid Atlas metric clip range');
   const origin = Object.freeze({ ...renderOrigin });

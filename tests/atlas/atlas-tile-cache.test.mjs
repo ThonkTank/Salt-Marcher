@@ -541,3 +541,79 @@ test('failed replacement rolls back deletion and preserves the prior entry', (t)
 test('invalid namespace cannot escape the owned cache directory', (t) => {
   assert.throws(() => AtlasTileCache.open(fixture(t), '../' + namespace), /Namensraum/);
 });
+
+test('bounded channel batch uses one transaction and preserves independent typed products', (t) => {
+  const directory = fixture(t),
+    cache = AtlasTileCache.open(directory, namespace),
+    exec = cache.db.exec.bind(cache.db);
+  let begins = 0;
+  cache.db.exec = (sql) => {
+    if (sql === 'BEGIN IMMEDIATE') begins++;
+    return exec(sql);
+  };
+  const entries = [0, 1, 2].map((i) => ({
+    key: 'channel-' + i,
+    source: 'same-field',
+    value: new Uint8Array([i, 255]),
+  }));
+  assert.equal(cache.putMany(entries), true);
+  assert.equal(begins, 1);
+  assert.equal(cache.diagnostics.writes, 3);
+  cache.close();
+  const reopened = AtlasTileCache.open(directory, namespace);
+  for (const e of entries) assert.deepEqual(reopened.get(e.key, e.source), e.value);
+  reopened.close();
+});
+
+test('invalid channel batch cannot replace a previously durable entry', (t) => {
+  const cache = AtlasTileCache.open(fixture(t), namespace);
+  assert(cache.put('kept', 'old', new Uint8Array([7])));
+  assert.equal(
+    cache.putMany([
+      { key: 'kept', source: 'new', value: new Uint8Array([8]) },
+      { key: '', source: 'new', value: new Uint8Array([9]) },
+    ]),
+    false,
+  );
+  assert.deepEqual(cache.get('kept', 'old'), new Uint8Array([7]));
+  assert.equal(cache.get('kept', 'new'), undefined);
+  cache.close();
+});
+
+test('channel batches obey the same persisted namespace quota and LRU admission', (t) => {
+  const cache = AtlasTileCache.open(fixture(t), namespace, {
+    maxBytes: 4096,
+    maxGlobalBytes: 8192,
+    maxEntryBytes: 2048,
+  });
+  const entries = Array.from({ length: 6 }, (_, i) => ({
+    key: 'batch-' + i,
+    source: 'field',
+    value: new Uint8Array(1000).fill(i),
+  }));
+  assert(cache.putMany(entries));
+  assert(cache.diagnostics.bytes <= 4096);
+  assert.equal(cache.get('batch-0', 'field'), undefined);
+  assert.deepEqual(cache.get('batch-5', 'field'), entries[5].value);
+  assert.equal(cache.putMany(Array.from({ length: 33 }, () => entries[0])), false);
+  cache.close();
+});
+
+test('a failed cache channel insertion rolls back the entire bounded batch', (t) => {
+  const cache = AtlasTileCache.open(fixture(t), namespace);
+  assert(cache.put('kept', 'old', new Uint8Array([7])));
+  cache.db.exec(
+    "CREATE TRIGGER fail_channel BEFORE INSERT ON atlas_tile_cache WHEN NEW.key='fail' BEGIN SELECT RAISE(ABORT,'test failure'); END",
+  );
+  assert.equal(
+    cache.putMany([
+      { key: 'kept', source: 'new', value: new Uint8Array([8]) },
+      { key: 'fail', source: 'new', value: new Uint8Array([9]) },
+    ]),
+    false,
+  );
+  assert.deepEqual(cache.get('kept', 'old'), new Uint8Array([7]));
+  assert.equal(cache.get('kept', 'new'), undefined);
+  assert.equal(cache.get('fail', 'new'), undefined);
+  cache.close();
+});

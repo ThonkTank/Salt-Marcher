@@ -1,11 +1,17 @@
 import { type TerrainView } from './terrain-view-contracts';
 import { type TerrainGrid } from './terrain-grid-contracts';
+import { atlasWorldTileBounds } from './atlas-world-tiles';
+import { validateTerrainSurfaceLayout } from './terrain-surface-layout';
+import { atlasTerrainRay } from './atlas-terrain-ray';
+import { atlasCameraWorldEye, atlasCameraClipRange } from './atlas-camera';
 import { terrainHorizon } from './terrain-coverage';
 import { atlasCameraEye, atlasProject } from './atlas-camera';
 import { TerrainSampler } from './terrain-height';
 import type { LandscapeBox } from './landscape-bounds';
 import type { LandscapeRecord } from './landscape-contracts';
 import type { Point } from '../shared/contracts';
+import { gridHeight } from './terrain-grid-geometry';
+export { gridHeight } from './terrain-grid-geometry';
 import { terrainGridLayout, terrainGridCoordinate } from './terrain-grid-layout';
 export function validateTerrainView(v: TerrainView) {
   if (
@@ -51,10 +57,12 @@ export function validateTerrainView(v: TerrainView) {
           'exaggeration',
           'projection',
           'refinement',
+          'surface',
         ].includes(k),
     )
   )
     throw Error('Räumlichen Geländeausschnitt prüfen.');
+  if (v.surface !== undefined) validateTerrainSurfaceLayout(v, v.surface);
   const r = v.refinement,
     b = v.box;
   if (
@@ -86,21 +94,6 @@ export function terrainGrid(records: LandscapeRecord[], view: TerrainView): Terr
     }
   return { view, heights, seaLevelM: sampler.seaLevelM };
 }
-/** Triangular interpolation matches the exact GPU index order, not a bilinear surrogate. */
-export function gridHeight(g: TerrainGrid, p: Point) {
-  const { view: v, heights: h } = g,
-    l = terrainGridLayout(v),
-    x = terrainGridCoordinate(l.x, p.x),
-    y = terrainGridCoordinate(l.y, p.y),
-    ix = Math.min(v.columns - 2, Math.floor(x)),
-    iy = Math.min(v.rows - 2, Math.floor(y)),
-    u = x - ix,
-    w = y - iy,
-    i = iy * v.columns + ix;
-  return u + w <= 1
-    ? h[i]! * (1 - u - w) + h[i + 1]! * u + h[i + v.columns]! * w
-    : h[i + v.columns + 1]! * (u + w - 1) + h[i + 1]! * (1 - w) + h[i + v.columns]! * (1 - u);
-}
 export function projectTerrain(view: TerrainView, p: Point, heightM: number) {
   const { x, y } = atlasProject(view, p, heightM);
   return { x, y };
@@ -108,11 +101,12 @@ export function projectTerrain(view: TerrainView, p: Point, heightM: number) {
 /** Exact line-of-sight against the displayed triangular grid, including occluders outside the brush.
  * Walk grid/diagonal crossings; heights along each interval are linear, so no narrow peak is skipped. */
 export function terrainVisible(g: TerrainGrid, p: Point) {
-  return visibleTerrain(g, p, Infinity);
+  return g.view.surface !== undefined ? surfaceVisibility(g)(p) : visibleTerrain(g, p, Infinity);
 }
 /** Prepare once for an immutable brush snapshot. A ray above the highest
  * vertex cannot meet a later triangle, so distant empty cells need no walk. */
-export function terrainVisibility(g: TerrainGrid) {
+export function terrainVisibility(g: TerrainGrid, outsideSurface: 'reject' | 'clip' = 'reject') {
+  if (g.view.surface !== undefined) return surfaceVisibility(g, outsideSurface);
   let ceiling = -Infinity;
   for (const height of g.heights) ceiling = Math.max(ceiling, height);
   return (p: Point) => visibleTerrain(g, p, ceiling);
@@ -201,5 +195,126 @@ export function terrainSourceBounds(v: TerrainView, pad = 0): LandscapeBox {
     y: v.box.y - pad,
     width: v.box.width + 2 * pad,
     height: v.box.height + 2 * pad,
+  };
+}
+
+/** First hit against the same immutable partition used by picking. Author
+ * points use its surface height even when author nodes are more detailed. */
+function surfaceVisibility(g: TerrainGrid, outsideSurface: 'reject' | 'clip' = 'reject') {
+  const v = g.view;
+  validateTerrainView(v);
+  if (!g.surface || g.surface.length !== v.surface!.tiles.length)
+    throw Error('Geländeoberfläche noch nicht vollständig geladen.');
+  // A screen footprint may extend beyond the displayed partition at a
+  // viewport edge. Only a fully present declared mesh can certify that such
+  // nodes have no displayed triangle; missing members must never become sky.
+  if (outsideSurface === 'clip') {
+    const boxes = new Set(
+      g.surface.map(({ view: { box: b } }) => [b.x, b.y, b.width, b.height].join(':')),
+    );
+    for (const tile of v.surface!.tiles) {
+      const b = atlasWorldTileBounds(tile);
+      if (!boxes.has([b.minX, b.minY, b.maxX - b.minX, b.maxY - b.minY].join(':')))
+        throw Error('Geländeoberfläche noch nicht vollständig geladen.');
+    }
+    for (const grid of g.surface)
+      if (
+        grid.heights.length !== grid.view.columns * grid.view.rows ||
+        !grid.heights.every(Number.isFinite)
+      )
+        throw Error('Geländeoberfläche noch nicht vollständig geladen.');
+  }
+  const grids = g.surface.map((grid) => {
+    const b = grid.view.box;
+    let low = Infinity,
+      high = -Infinity;
+    for (const h of grid.heights) {
+      low = Math.min(low, h);
+      high = Math.max(high, h);
+    }
+    return { grid, b, low, high };
+  });
+  const eye = atlasCameraWorldEye(v),
+    clip = atlasCameraClipRange(v);
+  return (p: Point) => {
+    let z = -Infinity;
+    for (const { grid, b } of grids)
+      if (p.x >= b.x && p.y >= b.y && p.x <= b.x + b.width && p.y <= b.y + b.height)
+        z = Math.max(z, gridHeight(grid, p));
+    if (z === -Infinity) {
+      if (outsideSurface === 'clip') return false;
+      throw Error('Geländeoberfläche am Pinsel noch nicht vollständig geladen.');
+    }
+    const screen = atlasProject(v, p, z);
+    if (
+      screen.depth < clip.near ||
+      screen.depth > clip.far ||
+      !Number.isFinite(screen.x) ||
+      !Number.isFinite(screen.y) ||
+      screen.x < 0 ||
+      screen.x > 1 ||
+      screen.y < 0 ||
+      screen.y > 1
+    )
+      return false;
+    const start = clip.near / screen.depth;
+    const rayEye = {
+      x: eye.x + (p.x - eye.x) * start,
+      y: eye.y + (p.y - eye.y) * start,
+      heightM: eye.heightM + (z - eye.heightM) * start,
+    };
+    const segment = [
+      [rayEye.x, rayEye.y, rayEye.heightM],
+      [p.x, p.y, z],
+    ] as const;
+    const minX = Math.min(rayEye.x, p.x),
+      maxX = Math.max(rayEye.x, p.x),
+      minY = Math.min(rayEye.y, p.y),
+      maxY = Math.max(rayEye.y, p.y),
+      minZ = Math.min(rayEye.heightM, z),
+      maxZ = Math.max(rayEye.heightM, z);
+    for (const { grid, b, low, high } of grids) {
+      if (
+        minZ > high ||
+        maxZ < low ||
+        minX > b.x + b.width ||
+        maxX < b.x ||
+        minY > b.y + b.height ||
+        maxY < b.y
+      )
+        continue;
+      let near = 0,
+        far = 1;
+      for (const [start, end, min, max] of [
+        [rayEye.x, p.x, b.x, b.x + b.width],
+        [rayEye.y, p.y, b.y, b.y + b.height],
+        [rayEye.heightM, z, low, high],
+      ]) {
+        const delta = end! - start!;
+        if (!delta) {
+          if (start! < min! || start! > max!) {
+            near = 1;
+            far = 0;
+            break;
+          }
+          continue;
+        }
+        const a = (min! - start!) / delta,
+          c = (max! - start!) / delta;
+        near = Math.max(near, Math.min(a, c));
+        far = Math.min(far, Math.max(a, c));
+      }
+      if (near > far) continue;
+      const hit = atlasTerrainRay(grid, segment);
+      // Use the existing ray kernel's mesh-boundary precision (1e-8 m),
+      // not a relief-height allowance. Adjacent triangles may share the endpoint.
+      if (
+        hit &&
+        hit.segmentFraction < 1 &&
+        Math.hypot(hit.point.x - p.x, hit.point.y - p.y, hit.point.heightM - z) > 1e-8
+      )
+        return false;
+    }
+    return true;
   };
 }

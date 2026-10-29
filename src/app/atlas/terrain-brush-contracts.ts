@@ -18,4 +18,5 @@ export interface HeightStroke {
   seed?: number;
   samples: MaskSample[];
   visibility?: TerrainView;
+  screenInput?: import('./terrain-screen-input').TerrainScreenInput;
 }

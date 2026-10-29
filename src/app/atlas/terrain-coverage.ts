@@ -1,6 +1,5 @@
 import { ATLAS_CAMERA_FOV, atlasCameraEye } from './atlas-camera';
-import type { TerrainView } from './terrain-view-contracts';
-import type { LandscapeBox } from './landscape-bounds';
+import type { AtlasCameraPose, CanvasBox as LandscapeBox } from './atlas-camera';
 
 /** Rotation-independent, coarse coverage tiers. Retain a tier during gestures;
  * only crossing a tier requests a wider source, never every slider movement.
@@ -20,7 +19,7 @@ export function terrainCoverageBox(frame: LandscapeBox, level: number): Landscap
 /** Atmospheric distance ends before any visible boundary of the loaded square.
  * Cone depth bounds use the full viewport, so tiled output has the same horizon.
  * Near detail stays clear; unsupported sky has no author hit. */
-export function terrainHorizon(view: TerrainView) {
+export function terrainHorizon(view: AtlasCameraPose & { box: LandscapeBox }) {
   if (view.tilt <= 60) return { near: 1e29, far: 1e30 };
   const eye = atlasCameraEye(view),
     x = view.frame.x + view.frame.width / 2 + eye.x,

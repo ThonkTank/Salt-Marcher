@@ -50,7 +50,9 @@ export function reduceAtlasMaterialRows(
   for (const c of covers)
     if (input.covers?.[c] && input.covers[c]!.length < water.length)
       throw Error('Ungültiger Bewuchskanal.');
-  const coverSums = new Float64Array(covers.length);
+  const coverInputs = covers.map((c) => input.covers?.[c]),
+    reed = covers.indexOf('reed'),
+    coverSums = new Float64Array(covers.length);
   for (let y = 0; y < rows; y++)
     for (let x = 0; x < width; x++) {
       coverSums.fill(0);
@@ -64,20 +66,20 @@ export function reduceAtlasMaterialRows(
       for (let sy = 0; sy < scale; sy++)
         for (let sx = 0; sx < scale; sx++) {
           const i = (top + y * scale + sy) * stride + left + x * scale + sx,
-            a = samples[i * 4 + 3]!;
+            a = samples[i * 4 + 3]!,
+            isWater = !!water[i];
           alpha += a;
           red += samples[i * 4]! * a;
           green += samples[i * 4 + 1]! * a;
           blue += samples[i * 4 + 2]! * a;
-          if (water[i]) {
+          if (isWater) {
             wet += 255;
             topology |= 1 << (sy * scale + sx);
           } else {
             cover += forest?.[i] ?? 0;
           }
           for (let c = 0; c < covers.length; c++) {
-            if (!water[i] || covers[c] === 'reed')
-              coverSums[c] = coverSums[c]! + (input.covers?.[covers[c]!]?.[i] ?? 0);
+            if (!isWater || c === reed) coverSums[c] = coverSums[c]! + (coverInputs[c]?.[i] ?? 0);
           }
         }
       const out = (outputRow + y) * width + x;

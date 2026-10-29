@@ -295,3 +295,207 @@ test('world-to-room navigation carries paired display data without author snapsh
   }
   stream.dispose();
 });
+
+const revisedPair = (q, fence) => {
+  const p = pair(q);
+  p.fence = p.terrain.fence = p.material.fence = p.terrain.projection.fence = fence;
+  p.terrain.projection.source = fence;
+  return p;
+};
+const interval = (bounds, extra = {}) => ({
+  base: { revision: 2, fence: 'fence' },
+  target: { revision: 3, fence: 'next' },
+  invalidation: { reset: false, bounds },
+  ...extra,
+});
+test('authoritative local interval reuses disjoint arrays, rebuilds the halo and leaves old metadata immutable', async () => {
+  const stream = new AtlasSurfaceTileStream({ maxBytes: 16 * 1024 * 1024 }),
+    view = { ...input, box: { x: 0, y: 0, width: 512, height: 256 } };
+  let before, after;
+  await stream.load(
+    view,
+    async (q) => pair(q),
+    (f) => {
+      if (f.complete) before = f;
+    },
+  );
+  const prior = before.tiles.find((t) => t.tile.x === 0),
+    calls = [];
+  await stream.load(
+    {
+      ...view,
+      revision: 3,
+      source: 'next',
+      change: interval([{ x: 350, y: 100, width: 1, height: 1 }]),
+    },
+    async (q) => {
+      calls.push(q.tile);
+      return revisedPair(q, 'next');
+    },
+    (f) => {
+      if (f.complete) after = f;
+    },
+  );
+  assert.equal(calls.length, 2, 'only the intersecting detail and its parent need reads');
+  assert.equal(stream.statistics.reused, 1);
+  const adopted = after.tiles.find((t) => t.tile.x === 0);
+  assert.notEqual(adopted, prior);
+  assert.equal(adopted.terrain.projection.grid, prior.terrain.projection.grid);
+  assert.equal(adopted.material.channels, prior.material.channels);
+  assert.equal(prior.revision, 2);
+  assert.equal(prior.terrain.projection.fence, 'fence');
+  assert.equal(adopted.terrain.projection.source, 'next');
+  assert(after.tiles.every((t) => t.revision === 3 && t.material.fence === 'next'));
+  assert(stream.statistics.bytes < 8 * 1024 * 1024, 'transferred arrays count once');
+  stream.dispose();
+});
+test('halo, missing/reset/wrong endpoint evidence and product changes require canonical reads', async () => {
+  const cases = [
+    interval([{ x: 257, y: 128, width: 1, height: 1 }]),
+    undefined,
+    interval([], { invalidation: { reset: true, bounds: [] } }),
+    interval([], { base: { revision: 1, fence: 'fence' } }),
+    interval([], { target: { revision: 3, fence: 'other' } }),
+    interval([{ x: NaN, y: 0, width: 1, height: 1 }]),
+    interval([]),
+  ];
+  for (let i = 0; i < cases.length; i++) {
+    const stream = new AtlasSurfaceTileStream();
+    await stream.load(
+      input,
+      async (q) => pair(q),
+      () => {},
+    );
+    let calls = 0;
+    await stream.load(
+      {
+        ...input,
+        revision: 3,
+        source: 'next',
+        change: cases[i],
+        ...(i === cases.length - 1 ? { contours: 4 } : {}),
+      },
+      async (q) => {
+        calls++;
+        return revisedPair(q, 'next');
+      },
+      () => {},
+    );
+    assert.equal(calls, 2, 'case ' + i);
+    assert.equal(stream.statistics.reused, 0);
+    stream.dispose();
+  }
+});
+test('a wholly disjoint interval transfers the complete cache without a second allocation or physical read', async () => {
+  const stream = new AtlasSurfaceTileStream();
+  await stream.load(
+    input,
+    async (q) => pair(q),
+    () => {},
+  );
+  const bytes = stream.statistics.bytes;
+  await stream.load(
+    {
+      ...input,
+      revision: 3,
+      source: 'next',
+      change: interval([{ x: 100000, y: 100000, width: 2, height: 2 }]),
+    },
+    async () => {
+      throw Error('unexpected physical read');
+    },
+    (f) => {
+      assert(f.tiles.every((t) => t.revision === 3));
+    },
+  );
+  assert.equal(stream.statistics.reused, 2);
+  assert.equal(stream.statistics.tiles, 2);
+  assert(Math.abs(stream.statistics.bytes - bytes) < 1024);
+  stream.dispose();
+});
+
+test('a second authoritative interval cancels an unfinished predecessor before it can publish', async () => {
+  const stream = new AtlasSurfaceTileStream();
+  await stream.load(
+    input,
+    async (q) => pair(q),
+    () => {},
+  );
+  let release;
+  const gate = new Promise((resolve) => {
+      release = resolve;
+    }),
+    calls = [],
+    finalFrames = [];
+  const fetch = async (q) => {
+    calls.push(q.revision);
+    if (q.revision === 3) await gate;
+    return revisedPair(q, q.revision === 3 ? 'next' : 'four');
+  };
+  const first = stream.load(
+    {
+      ...input,
+      revision: 3,
+      source: 'next',
+      change: interval([{ x: 0, y: 0, width: 256, height: 256 }]),
+    },
+    fetch,
+    () => {},
+  );
+  await new Promise((resolve) => setImmediate(resolve));
+  const last = stream.load(
+    {
+      ...input,
+      revision: 4,
+      source: 'four',
+      change: interval([], {
+        base: { revision: 3, fence: 'next' },
+        target: { revision: 4, fence: 'four' },
+      }),
+    },
+    fetch,
+    (f) => finalFrames.push(f),
+  );
+  release();
+  await Promise.all([first, last]);
+  assert.deepEqual(calls, [3, 4, 4]);
+  assert(finalFrames.every((f) => f.tiles.every((t) => t.revision === 4 && t.fence === 'four')));
+  assert.equal(finalFrames.at(-1).complete, true);
+  stream.dispose();
+});
+
+test('whole author packets remain canonical reads even when the narrowed node interval is disjoint', async () => {
+  const stream = new AtlasSurfaceTileStream(),
+    view = { ...input, editingRadius: 4 },
+    authorPair = (q, fence) => {
+      const p = revisedPair(q, fence);
+      p.terrain.projection.grid.editing = {
+        ground: new Float32Array(65 * 65),
+        water: new Float32Array(65 * 65),
+        author: { radius: q.editingRadius, revision: q.revision, fence, records: [] },
+      };
+      return p;
+    };
+  await stream.load(
+    view,
+    async (q) => authorPair(q, 'fence'),
+    () => {},
+  );
+  let calls = 0;
+  await stream.load(
+    {
+      ...view,
+      revision: 3,
+      source: 'next',
+      change: interval([{ x: 100000, y: 0, width: 1, height: 1 }]),
+    },
+    async (q) => {
+      calls++;
+      return authorPair(q, 'next');
+    },
+    () => {},
+  );
+  assert.equal(calls, 2);
+  assert.equal(stream.statistics.reused, 0);
+  stream.dispose();
+});

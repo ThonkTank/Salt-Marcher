@@ -604,6 +604,8 @@ export class CampaignAtlasWorkbench {
       terrainGesture: (active) => this.terrainGesture(active),
       lakeLevel: (point) => this.raster?.lakeLevel(point),
       previewHeight: (stroke) => this.spatial?.previewHeight(stroke),
+      completeHeightPreview: (stroke) =>
+        this.spatial?.completeHeightPreview(stroke) ?? Promise.resolve(),
       editingReady: (radius, point) => this.raster?.editingReady(radius, point) ?? true,
       writeTerrain: async (a, c) => {
         const r = await this.write(a, false, true, c);

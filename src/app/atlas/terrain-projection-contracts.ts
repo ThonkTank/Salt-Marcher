@@ -42,6 +42,7 @@ export interface TerrainProjectionRequest {
   /** Cursor for an exact, bounded author-source packet. Empty starts a read. */
   editingPage?: string;
   editingBox?: import('./landscape-bounds').LandscapeBox;
+  editingSupports?: import('./landscape-bounds').LandscapeBox[];
   product?: 'height';
   colorBase?: import('./terrain-frame-identity').TerrainIdentity;
   detail?: import('./landscape-bounds').LandscapeBox;

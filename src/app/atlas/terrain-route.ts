@@ -114,7 +114,18 @@ export function nearestRoute(nodes: RouteNode[], p: Point) {
 /** Indexed segments keep per-pixel height sampling local, even for long roads.
  * Contributions are blended, never added or applied in database iteration order. */
 export class RouteSurface {
-  private cells = new Map<string, { r: LandscapeRecord; nodes: RouteNode[]; offset: number }[]>();
+  private cells = new Map<
+    string,
+    {
+      r: LandscapeRecord;
+      nodes: RouteNode[];
+      offset: number;
+      left: number;
+      right: number;
+      top: number;
+      bottom: number;
+    }[]
+  >();
   private step = 64;
   constructor(records: LandscapeRecord[]) {
     const routes = records.filter((r) => r.route?.nodes.length && !r.route.conflict);
@@ -130,12 +141,29 @@ export class RouteSurface {
           x1 = Math.floor((Math.max(a.x, b.x) + pad) / this.step);
         const y0 = Math.floor((Math.min(a.y, b.y) - pad) / this.step),
           y1 = Math.floor((Math.max(a.y, b.y) + pad) / this.step);
+        // Cells are deliberately coarse; reject segments outside their actual
+        // influence before projecting every material texel onto their line.
+        // A conservative rounding guard retains endpoint arithmetic at large
+        // canonical coordinates. The planning corridor is not terrain influence.
+        const guard =
+          Number.EPSILON *
+          Math.max(1, Math.abs(a.x), Math.abs(a.y), Math.abs(b.x), Math.abs(b.y)) *
+          8;
+        const segment = {
+          r,
+          nodes: [a, b],
+          offset,
+          left: Math.min(a.x, b.x) - pad - guard,
+          right: Math.max(a.x, b.x) + pad + guard,
+          top: Math.min(a.y, b.y) - pad - guard,
+          bottom: Math.max(a.y, b.y) + pad + guard,
+        };
         for (let y = y0; y <= y1; y++)
           for (let x = x0; x <= x1; x++) {
             if (++count > 300000) throw Error('Zu viele Verlaufdetails im Ausschnitt.');
             const key = x + ':' + y,
               list = this.cells.get(key) ?? [];
-            list.push({ r, nodes: [a, b], offset });
+            list.push(segment);
             this.cells.set(key, list);
           }
         offset += Math.hypot(b.x - a.x, b.y - a.y);
@@ -153,7 +181,8 @@ export class RouteSurface {
       string,
       { r: LandscapeRecord; hit: NonNullable<ReturnType<typeof nearestRoute>> }
     >();
-    for (const { r, nodes, offset } of candidates) {
+    for (const { r, nodes, offset, left, right, top, bottom } of candidates) {
+      if (p.x < left || p.x > right || p.y < top || p.y > bottom) continue;
       const hit = nearestRoute(nodes, p)!;
       hit.station += offset;
       if (!nearest.has(r.id) || nearest.get(r.id)!.hit.distance > hit.distance)

@@ -227,6 +227,7 @@ function focusedPlan(
   )
     throw Error('Atlas tile focus must be a finite positive box');
   const overview = atlasTilePlan(box, mpp, { maxTiles: Math.min(8, maxTiles) }).detail;
+  const focusLod = atlasTilePlan(focus, mpp, { maxTiles: Math.min(32, maxTiles) }).detail[0]!.lod;
   const detail = [...overview],
     cx = focus.x + focus.width / 2,
     cy = focus.y + focus.height / 2;
@@ -235,15 +236,33 @@ function focusedPlan(
     const size = ATLAS_WORLD_TILE_METERS * 2 ** tile.lod;
     const dx = Math.max(tile.x * size - cx, cx - (tile.x + 1) * size, 0);
     const dy = Math.max(tile.y * size - cy, cy - (tile.y + 1) * size, 0);
-    return size / (mpp * 256 * Math.max(1, Math.hypot(dx, dy) / span));
+    const resolution = 2 ** (tile.lod - focusLod);
+    // A wide horizon must not consume the focus's sampling budget. Otherwise
+    // distant, very large leaves outrank already refined focus leaves forever,
+    // and a complete 75-degree frame can lose both mountains and local edits.
+    const inFocus =
+      tile.x * size < focus.x + focus.width &&
+      (tile.x + 1) * size > focus.x &&
+      tile.y * size < focus.y + focus.height &&
+      (tile.y + 1) * size > focus.y;
+    return {
+      focus: inFocus && tile.lod > focusLod,
+      // The focus's normal sampling is the reference. A linear falloff spends
+      // every remaining leaf on the huge horizon even after that sampling is
+      // reached, delaying the whole atomic partition. Coarse sibling leaves
+      // already cover it; refine them only near the focus.
+      score: resolution / (1 + Math.hypot(dx, dy) / span) ** 3,
+    };
   };
   while (detail.length + 3 <= maxTiles) {
     let index = -1,
-      score = 1;
+      score = 1,
+      focused = false;
     detail.forEach((tile, i) => {
       const value = priority(tile);
-      if (tile.lod > MIN_LOD && value > score) {
-        score = value;
+      if (tile.lod > MIN_LOD && (value.focus !== focused ? value.focus : value.score > score)) {
+        score = value.score;
+        focused = value.focus;
         index = i;
       }
     });

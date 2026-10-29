@@ -17,6 +17,7 @@ for (const [name, file] of [
   ['worker', 'desktop/atlas-region-worker.ts'],
   ['cache', 'src/app/storage/atlas-projection-index.ts'],
   ['tile-cache', 'src/app/storage/atlas-tile-cache.ts'],
+  ['history', 'src/app/atlas/terrain-change-history.ts'],
 ])
   buildSync({
     entryPoints: [file],
@@ -30,6 +31,7 @@ const { CampaignStore } = require('../../.build/atlas-first-product-store.cjs'),
   { AtlasRegionService } = require('../../.build/atlas-first-product-service.cjs'),
   { projectionKey, PROJECTION_CACHE_KEY } = require('../../.build/atlas-first-product-cache.cjs'),
   { AtlasTileCache } = require('../../.build/atlas-first-product-tile-cache.cjs');
+const { TerrainChangeHistory } = require('../../.build/atlas-first-product-history.cjs');
 
 const overview = { lod: 1, x: 0, y: 0 },
   fine = { lod: 0, x: 0, y: 0 },
@@ -494,3 +496,103 @@ test(
       );
   },
 );
+
+test('worker certifies exact terrain intervals, including Undo/Redo, and revokes evidence after restart or unknown object changes', async (t) => {
+  const f = fixture(t, 1),
+    command = (action) =>
+      f.store.executeAtlasCommit({
+        commandId: randomUUID(),
+        token: f.token,
+        campaignId: f.campaign.id,
+        action,
+      });
+  const baseline = f.source();
+  const first = await f.service.terrainSourceChange(baseline, baseline);
+  assert.equal(
+    first.invalidation.reset,
+    false,
+    'a recorded exact baseline has no successor changes',
+  );
+  command({
+    kind: 'landscape-height-stroke',
+    stroke: {
+      mode: 'raise',
+      radius: 1,
+      strength: 1,
+      feather: 0.7,
+      samples: [
+        { x: -120, y: -100, t: 0 },
+        { x: -120, y: -100, t: 300 },
+      ],
+    },
+  });
+  const edited = f.source(),
+    change = await f.service.terrainSourceChange(edited, baseline);
+  assert.equal(change.invalidation.reset, false);
+  assert(change.invalidation.bounds.length > 0);
+  assert.deepEqual(change.base, { revision: baseline.revision, fence: baseline.fence });
+  assert.deepEqual(change.target, { revision: edited.revision, fence: edited.fence });
+  assert(change.invalidation.bounds.every((b) => b.x >= -123 && b.x + b.width <= -117));
+  command({ kind: 'undo' });
+  const undone = f.source(),
+    undo = await f.service.terrainSourceChange(undone, edited);
+  assert.equal(undo.invalidation.reset, false);
+  assert(undo.invalidation.bounds.length > 0);
+  command({ kind: 'redo' });
+  const redone = f.source(),
+    redo = await f.service.terrainSourceChange(redone, undone);
+  assert.equal(redo.invalidation.reset, false);
+  assert(redo.invalidation.bounds.length > 0);
+  assert.equal(
+    (
+      await f.service.terrainSourceChange(redone, {
+        revision: baseline.revision,
+        fence: 'another-campaign',
+      })
+    ).invalidation.reset,
+    true,
+  );
+  await f.restart();
+  assert.equal(
+    (await f.service.terrainSourceChange(f.source(), baseline)).invalidation.reset,
+    true,
+  );
+  const current = f.source();
+  f.store.db.prepare('UPDATE room SET revision=revision+1 WHERE campaign_id=?').run(f.campaign.id);
+  const unknown = await f.service.terrainSourceChange(f.source(), current);
+  assert.equal(
+    unknown.invalidation.reset,
+    true,
+    'a change outside the landscape dependency contract fails closed',
+  );
+});
+
+test('global sea settings revoke a previously recorded local surface interval', async (t) => {
+  const f = fixture(t, 1),
+    base = f.source();
+  await f.service.terrainSourceChange(base, base);
+  f.store.executeAtlasCommit({
+    commandId: randomUUID(),
+    token: f.token,
+    campaignId: f.campaign.id,
+    action: { kind: 'landscape-sea-level', seaLevelM: 7 },
+  });
+  const change = await f.service.terrainSourceChange(f.source(), base);
+  assert.equal(change.invalidation.reset, true);
+});
+
+test('bounded history never certifies pruned, reset or foreign source intervals', () => {
+  const history = new TerrainChangeHistory(),
+    source = (revision) => ({ revision, fence: 'f-' + revision });
+  history.record(source(0), { reset: true, bounds: [] });
+  for (let i = 1; i <= 65; i++)
+    history.record(source(i), { reset: false, bounds: [{ x: i, y: -i, width: 1, height: 1 }] });
+  assert.equal(history.since(source(0)).invalidation.reset, true);
+  assert.equal(history.since(source(64)).invalidation.reset, false);
+  assert.deepEqual(history.since(source(64)).invalidation.bounds, [
+    { x: 65, y: -65, width: 1, height: 1 },
+  ]);
+  history.record(source(66), { reset: true, bounds: [] });
+  assert.equal(history.since(source(65)).invalidation.reset, true);
+  assert.equal(history.since({ revision: 66, fence: 'other-campaign' }).invalidation.reset, true);
+});

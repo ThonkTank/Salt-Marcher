@@ -10,7 +10,7 @@ const require = createRequire(import.meta.url),
   Database = require('better-sqlite3');
 buildSync({
   stdin: {
-    contents: `export * from './src/app/storage/store';export * from './src/app/storage/atlas-region';export * from './src/app/storage/atlas-material-tiles';export * from './src/app/atlas/terrain-material';export * from './src/app/atlas/atlas-material-tile';export * from './src/app/atlas/terrain-height';export * from './src/app/atlas/terrain-relief';export * from './src/app/atlas/atlas-landscape';export * from './src/app/atlas/vegetation';`,
+    contents: `export * from './src/app/storage/store';export * from './src/app/storage/atlas-region';export * from './src/app/storage/atlas-material-tiles';export * from './src/app/storage/terrain-material';export * from './src/app/atlas/terrain-material';export * from './src/app/atlas/atlas-material-tile';export * from './src/app/atlas/terrain-height';export * from './src/app/atlas/terrain-relief';export * from './src/app/atlas/atlas-landscape';export * from './src/app/atlas/vegetation';`,
     resolveDir: process.cwd(),
   },
   outfile: '.build/atlas-material-tiles-test.cjs',
@@ -29,6 +29,8 @@ const {
   vegetationSpec,
   CHANNEL_NAMES,
   atlasMaterialTileQuery,
+  readTerrainMaterialSteps,
+  SURFACE_CHANNEL_NAMES,
 } = require('../../.build/atlas-material-tiles-test.cjs');
 const near = { lod: 0, x: 0, y: 0 },
   far = { lod: 0, x: 8, y: 0 },
@@ -110,6 +112,7 @@ function fixture(t) {
   return {
     dir,
     store,
+    token,
     write,
     read,
     reopen,
@@ -122,6 +125,72 @@ function fixture(t) {
 const assertStates = (result, expected) => {
   for (const c of CHANNEL_NAMES) assert.equal(result.cache[c], expected[c] ?? 'hit', c);
 };
+
+test('water classification and dependent channels share one bounded, source-pinned terrain read', (t) => {
+  const f = fixture(t),
+    height = heightRecord(0, 0, 1, new Float32Array(4096).fill(20)),
+    lake = {
+      ...emptyRecord('patch'),
+      id: 'lake',
+      polygons: [polygon(2, 2, 20, 20)],
+      surface: 'freshwater',
+      waterLevelM: 25,
+    };
+  f.put(height);
+  f.put(lake);
+  const db = new Database(f.store.filename, { readonly: true });
+  t.after(() => db.close());
+  let reads = 0;
+  const stream = (kind) => {
+    if (kind === 'height' || kind === 'lake') reads++;
+    return kind === 'height' ? [height] : kind === 'lake' ? [lake] : [];
+  };
+  const fields = new Map(),
+    tile = { lod: -2, x: 0, y: 0 };
+  const read = (source, channels, retained) => {
+    const steps = readTerrainMaterialSteps(
+      db,
+      source,
+      { tile, revision: source.revision, product: 'surface' },
+      stream,
+      new Set(channels),
+      retained,
+    );
+    for (;;) {
+      const next = steps.next();
+      if (next.done) return next.value;
+    }
+  };
+  const source = f.store.atlasRegionSource(f.token),
+    water = read(source, ['water'], fields),
+    afterWater = reads,
+    rest = read(
+      source,
+      SURFACE_CHANNEL_NAMES.filter((c) => c !== 'water'),
+      fields,
+    );
+  assert(afterWater > 0);
+  assert.equal(reads, afterWater, 'the dependent pass cannot read the canonical field again');
+  assert(fields.size <= 16);
+  assert(
+    [...fields.values()].reduce(
+      (sum, field) =>
+        sum + field.heights.byteLength + field.water.byteLength + field.levels.byteLength,
+      0,
+    ) <
+      13 * 1024 * 1024,
+    'one tile field retains a single halo instead of sixteen repeated neighbourhoods',
+  );
+  const together = read(source, SURFACE_CHANNEL_NAMES);
+  for (const c of SURFACE_CHANNEL_NAMES)
+    assert.deepEqual((c === 'water' ? water : rest)[c], together[c], c);
+  f.write({ kind: 'landscape-sea-level', seaLevelM: 30 });
+  const changedSource = f.store.atlasRegionSource(f.token),
+    beforeChanged = reads,
+    changed = read(changedSource, ['water'], fields);
+  assert(reads > beforeChanged, 'a changed source cannot reuse old sample blocks');
+  assert.notDeepEqual(changed.water, water.water);
+});
 
 test('raw channels persist across restart; lighting, analysis mode, contours and names cannot invalidate them', async (t) => {
   const f = fixture(t);

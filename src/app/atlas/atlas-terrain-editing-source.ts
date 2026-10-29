@@ -17,19 +17,23 @@ export class AtlasTerrainEditingSource {
   private pending: {
     identity: string;
     box: LandscapeBox;
+    supports: LandscapeBox[];
     result: Promise<TerrainEditingSource | null>;
   } | null = null;
   private identity(i: TerrainEditingIdentity) {
     return JSON.stringify([i.revision, i.fence, i.radius]);
   }
-  ready(i: TerrainEditingIdentity, box: LandscapeBox) {
+  ready(i: TerrainEditingIdentity, box: LandscapeBox, supports: LandscapeBox[] = [box]) {
     const s = this.source;
     return (
       !!s &&
       s.complete === true &&
       this.identity(s) === this.identity(i) &&
-      editingContains(s.box, box)
+      supports.every((b) => (s.supports ?? [s.box]).some((outer) => editingContains(outer, b)))
     );
+  }
+  pendingResult() {
+    return this.pending?.result;
   }
   clear() {
     this.generation++;
@@ -40,10 +44,14 @@ export class AtlasTerrainEditingSource {
     identity: TerrainEditingIdentity,
     box: LandscapeBox,
     fetch: (after: string) => Promise<TerrainEditingSource>,
+    supports: LandscapeBox[] = [box],
   ): Promise<TerrainEditingSource | null> {
-    if (this.ready(identity, box)) return this.source;
+    if (this.ready(identity, box, supports)) return this.source;
     const key = this.identity(identity);
-    if (this.pending?.identity === key && editingContains(this.pending.box, box))
+    if (
+      this.pending?.identity === key &&
+      supports.every((b) => this.pending!.supports.some((outer) => editingContains(outer, b)))
+    )
       return this.pending.result;
     const generation = ++this.generation;
     const result = (async () => {
@@ -52,7 +60,12 @@ export class AtlasTerrainEditingSource {
       for (;;) {
         const page = await fetch(after);
         if (generation !== this.generation) return null;
-        if (this.identity(page) !== key || !editingContains(page.box, box))
+        if (
+          this.identity(page) !== key ||
+          !supports.every((b) =>
+            (page.supports ?? [page.box]).some((outer) => editingContains(outer, b)),
+          )
+        )
           throw Error('Höhenpaket gehört nicht zum angeforderten Bereich.');
         for (const record of page.records) records.set(record.id, record);
         if (page.complete === true) {
@@ -69,7 +82,7 @@ export class AtlasTerrainEditingSource {
         after = page.next;
       }
     })();
-    this.pending = { identity: key, box, result };
+    this.pending = { identity: key, box, supports, result };
     try {
       return await result;
     } finally {

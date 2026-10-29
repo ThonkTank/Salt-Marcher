@@ -100,7 +100,12 @@ parentPort!.on('message', async (job: AtlasWorkerJob) => {
     db.exec('BEGIN');
     // The first SELECT pins the WAL snapshot before async index maintenance.
     // A queued source must never label newer terrain rows as an older revision.
-    if (job.kind === 'terrain-live' || job.kind === 'terrain-stroke' || isProjectionJob(job)) {
+    if (
+      job.kind === 'terrain-live' ||
+      job.kind === 'terrain-stroke' ||
+      job.kind === 'terrain-change' ||
+      isProjectionJob(job)
+    ) {
       assertTerrainRevision(job.source);
     }
     atlasReadCheckpoint(job.cancellation)();
@@ -168,6 +173,11 @@ parentPort!.on('message', async (job: AtlasWorkerJob) => {
       }
       projection = undefined;
       value = step.value;
+    } else if (job.kind === 'terrain-change') {
+      value = {
+        ...reader.terrainSourceChange(job.base),
+        target: { revision: job.source.revision, fence: job.source.fence },
+      };
     } else
       value =
         job.kind === 'terrain-stroke'

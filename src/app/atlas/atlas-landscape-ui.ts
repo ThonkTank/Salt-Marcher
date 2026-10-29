@@ -48,7 +48,10 @@ export class LandscapeWorkbench {
         return source.pointer;
       },
       endInput: () => {
+        const pointer = this.pointer;
         this.pointer = null;
+        if (pointer !== null && this.canvas?.hasPointerCapture(pointer))
+          this.canvas.releasePointerCapture(pointer);
       },
       disable: (...args) => this.disable(...args),
       say: (...args) => this.say(...args),
@@ -505,20 +508,25 @@ export class LandscapeWorkbench {
             };
           if (['height', 'smooth', 'freshwater'].includes(this.tool)) {
             this.brush.maskStart = e.timeStamp;
+            this.brushViewport = canvas.getBoundingClientRect();
             this.brush.maskStroke =
               this.tool === 'freshwater'
                 ? {
-                    id: crypto.randomUUID(),
-                    mode: this.settings.mode() === 'freshwater-erase' ? 'erase' : 'dig',
-                    radius: this.editingRadius(),
-                    strength: this.settings.height().strength,
-                    feather: this.settings.height().feather,
-                    waterLevelM:
-                      html<HTMLInputElement>('land-water-level').value !== ''
-                        ? Number(html<HTMLInputElement>('land-water-level').value)
-                        : (this.host.lakeLevel?.(this.lastPoint) ?? 0),
+                    ...this.settings.lake(
+                      this.editingRadius(),
+                      this.draftSeed,
+                      this.host.lakeLevel?.(this.lastPoint) ?? 0,
+                    ),
                     visibility: this.host.visibility?.(),
                     samples: [{ ...this.lastPoint, t: 0 }],
+                    ...(this.host.visibility?.()
+                      ? {
+                          screenInput: {
+                            version: 1 as const,
+                            events: [{ ...this.screenPoint(e)!, t: 0 }],
+                          },
+                        }
+                      : {}),
                   }
                 : {
                     seed: this.draftSeed,
@@ -526,6 +534,14 @@ export class LandscapeWorkbench {
                     visibility: this.host.visibility?.(),
                     radius: Number(atlasFieldValue(html<HTMLInputElement>('land-radius'))),
                     samples: [{ ...this.lastPoint, t: 0 }],
+                    ...(this.host.visibility?.()
+                      ? {
+                          screenInput: {
+                            version: 1 as const,
+                            events: [{ ...this.screenPoint(e)!, t: 0 }],
+                          },
+                        }
+                      : {}),
                   };
           }
           if (this.points.length) this.brushStrokes.push(this.points);
@@ -571,16 +587,11 @@ export class LandscapeWorkbench {
           const events = e.getCoalescedEvents?.() ?? [];
           for (const sample of events.length ? events : [e])
             if (this.brush.maskStroke.samples.length < 20000)
-              this.brush.maskStroke.samples.push({
-                ...this.point(sample),
-                t: Math.min(
-                  300000,
-                  Math.max(
-                    this.brush.maskStroke.samples.at(-1)!.t,
-                    sample.timeStamp - this.brush.maskStart,
-                  ),
-                ),
-              });
+              this.brush.receiveHeightInput(
+                this.point(sample),
+                sample.timeStamp,
+                this.screenPoint(sample),
+              );
         }
         if (this.dragging && this.details.selected) {
           if (this.details.selected.kind === 'reference' && this.details.vertex === -1) {
@@ -660,13 +671,7 @@ export class LandscapeWorkbench {
         e.stopImmediatePropagation();
         e.preventDefault();
         if (this.brush.maskStroke)
-          this.brush.maskStroke.samples.push({
-            ...this.point(e),
-            t: Math.min(
-              300000,
-              Math.max(this.brush.maskStroke.samples.at(-1)!.t, e.timeStamp - this.brush.maskStart),
-            ),
-          });
+          this.brush.receiveHeightInput(this.point(e), e.timeStamp, this.screenPoint(e));
         clearTimeout(this.brush.maskTimer);
         const commitLine =
           this.dragging &&
@@ -1076,6 +1081,12 @@ export class LandscapeWorkbench {
   }
   private hit(e: MouseEvent, keys: string[]) {
     return this.host.hit(e, keys);
+  }
+  private brushViewport: { left: number; top: number; width: number; height: number } | null = null;
+  private screenPoint(e: MouseEvent) {
+    const b = this.brushViewport;
+    if (!b) return undefined;
+    return { u: (e.clientX - b.left) / b.width, v: (e.clientY - b.top) / b.height };
   }
   private point(e: MouseEvent) {
     return this.host.point(e);

@@ -1,3 +1,4 @@
+import { atlasTerrainTileQuery } from '../atlas/atlas-terrain-tile';
 import { streamTerrainFieldSteps, type TerrainStream } from '../atlas/terrain-field-stream';
 import { validateTerrainView } from '../atlas/terrain-spatial-model';
 import { type TerrainGrid } from '../atlas/terrain-grid-contracts';
@@ -119,7 +120,18 @@ export function* readTerrainGridSteps(
     }
     yield* checkpoint();
   }
-  return { view, heights, seaLevelM, editing: { ground, water } };
+  const surface: TerrainGrid[] | undefined = view.surface ? [] : undefined;
+  if (surface)
+    for (const tile of view.surface!.tiles) {
+      const tileView = atlasTerrainTileQuery({ tile, revision: 0, product: 'height' }).view;
+      surface.push(
+        yield* readTerrainGridSteps(db, cam, tileView, checkpoint, records, cache, maxSamples, {
+          seaLevelM,
+        }),
+      );
+      yield* checkpoint();
+    }
+  return { view, heights, seaLevelM, editing: { ground, water }, ...(surface ? { surface } : {}) };
 }
 
 interface AtlasHeightContext {

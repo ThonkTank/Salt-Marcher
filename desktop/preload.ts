@@ -72,7 +72,7 @@ contextBridge.exposeInMainWorld(
       ipcRenderer.invoke('atlas:terrain-tile', token, request, control),
     atlasMaterialTile: (token, request, control) =>
       ipcRenderer.invoke('atlas:material-tile', token, request, control),
-    atlasTerrainSource: (token) => ipcRenderer.invoke('atlas:terrain-source', token),
+    atlasTerrainSource: (token, base) => ipcRenderer.invoke('atlas:terrain-source', token, base),
     atlasRegion: (token, query, consumer) =>
       ipcRenderer.invoke('atlas:geometry-region', token, query, consumer),
     atlasObjectFocus: (token, kind, id) => ipcRenderer.invoke('atlas:focus', token, kind, id),

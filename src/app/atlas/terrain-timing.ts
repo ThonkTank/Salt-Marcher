@@ -5,6 +5,7 @@ export interface TerrainTimingEvent {
   start: number;
   duration: number;
   revision?: number;
+  counts?: Record<string, number>;
 }
 export interface TerrainTiming {
   events: TerrainTimingEvent[];
@@ -17,12 +18,15 @@ const host = globalThis as typeof globalThis & {
 if (host.process?.env?.SALTMARCHER_TERRAIN_TRACE === '1')
   host.__saltTerrainTrace ??= { events: [], dropped: 0 };
 const noop = () => {};
-export function terrainTraceStart(stage: string, revision?: number): () => void {
+export function terrainTraceStart(
+  stage: string,
+  revision?: number,
+): (counts?: Record<string, number>) => void {
   const trace = host.__saltTerrainTrace;
   if (!trace) return noop;
   const start = performance.now();
   let ended = false;
-  return () => {
+  return (counts) => {
     if (ended) return;
     ended = true;
     if (trace.events.length >= 4096) {
@@ -34,6 +38,7 @@ export function terrainTraceStart(stage: string, revision?: number): () => void 
       start,
       duration: performance.now() - start,
       ...(revision === undefined ? {} : { revision }),
+      ...(counts ? { counts } : {}),
     });
   };
 }

@@ -1,4 +1,8 @@
 import { readTerrainEditingPage, readTerrainEditingRecords } from './terrain-editing-source';
+import {
+  terrainEditingSourcePlan,
+  type TerrainEditingSourcePlan,
+} from './terrain-editing-dependencies';
 import { heightBrushResolution } from '../atlas/terrain-brush';
 import { PNG } from 'pngjs';
 import { boundedLabels, landscapeLabels, type MapLabelCandidate } from '../atlas/atlas-cartography';
@@ -110,6 +114,7 @@ export class AtlasLandscapeReader {
     bounds: [],
   };
   private colorHistory = new TerrainChangeHistory();
+  private surfaceHistory = new TerrainChangeHistory();
   readonly projectionCache = new TerrainProjectionCache();
   private statements = new Map<string, any>();
   private cache = new Map<string, { box: LandscapeBox; json: string; bytes: number }>();
@@ -124,6 +129,7 @@ export class AtlasLandscapeReader {
   private terrainSeaLevelM = 0;
   private terrainSettingsReady = false;
   private terrainKinds = new Set<string>();
+  private editingPlan?: { key: string; value: TerrainEditingSourcePlan };
   private completeness: 'none' | 'field' | 'full' = 'none';
   get complete() {
     return this.completeness === 'full';
@@ -380,6 +386,12 @@ export class AtlasLandscapeReader {
     this.terrainSeaLevelM = seaLevelM;
     this.terrainSettingsReady = true;
     this.colorHistory.record(source, this.invalidation);
+    // Only landscape rows have a complete spatial dependency contract here.
+    // Unknown/global object dependencies revoke surface reuse conservatively.
+    this.surfaceHistory.record(source, {
+      ...this.invalidation,
+      reset: this.invalidation.reset || source.changes.some((c) => c.table !== 'atlas_landscape'),
+    });
     if (full) this.projection.mark('landscape', source);
     else this.projection.forget('landscape');
     this.projection.mark('landscape-field', source);
@@ -391,6 +403,10 @@ export class AtlasLandscapeReader {
     this.identity = '';
     this.terrainSettingsReady = false;
     this.projectionCache.invalidate([], true);
+  }
+  sourceChange(base: import('../atlas/terrain-source').TerrainIdentity) {
+    this.requireFull();
+    return this.surfaceHistory.since(base);
   }
   private requireFull() {
     if (!this.complete) throw Error('Vollständige Landschaft muss zuerst synchronisiert werden.');
@@ -617,14 +633,42 @@ export class AtlasLandscapeReader {
         width: b.width + 2 * pad,
         height: b.height + 2 * pad,
       };
+      const supports = q.editingSupports?.map((b) => ({
+        x: b.x - pad,
+        y: b.y - pad,
+        width: b.width + 2 * pad,
+        height: b.height + 2 * pad,
+      }));
+      const planKey = JSON.stringify([
+        source.fence,
+        source.revision,
+        source.campaignId,
+        box,
+        supports,
+      ]);
+      if (q.editingPage !== undefined && this.editingPlan?.key !== planKey)
+        this.editingPlan = {
+          key: planKey,
+          value: terrainEditingSourcePlan(this.db, source.campaignId, box, supports),
+        };
       grid.editing!.author = {
         revision: source.revision,
         fence: source.fence,
         pixel,
         radius,
         box,
+        ...(supports ? { supports } : {}),
         ...(q.editingPage !== undefined
-          ? readTerrainEditingPage(this.db, source.campaignId, box, q.editingPage)
+          ? readTerrainEditingPage(
+              this.db,
+              source.campaignId,
+              box,
+              q.editingPage,
+              undefined,
+              {},
+              this.editingPlan!.value,
+              supports,
+            )
           : {
               records: readTerrainEditingRecords(this.db, source.campaignId, box),
               complete: true,
@@ -668,9 +712,17 @@ export class AtlasLandscapeReader {
     source: AtlasRegionSource,
     q: import('../atlas/atlas-material-tile').AtlasMaterialTileRequest,
     channels: ReadonlySet<import('../atlas/terrain-material').TerrainMaterialChannel>,
+    fields?: Map<string, import('../atlas/terrain-field-stream').TerrainField>,
   ) {
     this.requireFull();
-    return readTerrainMaterialSteps(this.db, source, q, this.terrainStream(source), channels);
+    return readTerrainMaterialSteps(
+      this.db,
+      source,
+      q,
+      this.terrainStream(source),
+      channels,
+      fields,
+    );
   }
   terrain(
     source: AtlasRegionSource,

@@ -1,7 +1,14 @@
-import { applyLakeBrush, validateLakeStroke, lakeHeightStroke } from '../atlas/terrain-lake-brush';
+import { lakeHeightStroke } from '../atlas/terrain-lake-brush';
+import { prepareHeightBrush } from '../atlas/terrain-brush';
+import { terrainSupportBoxes, terrainBoxesBounds } from '../atlas/terrain-stroke-support';
+import {
+  applyLakeBrush,
+  validateLakeStroke,
+  lakeBrushSourceBounds,
+} from '../atlas/terrain-lake-brush';
 import type { LakeStroke } from '../atlas/landscape-action-contracts';
-import { type LandscapeBox } from '../atlas/landscape-bounds';
-import { type LandscapeRecord } from '../atlas/landscape-contracts';
+import type { LandscapeBox } from '../atlas/landscape-bounds';
+import type { LandscapeRecord } from '../atlas/landscape-contracts';
 import type { AtlasRegionSource } from '../atlas/atlas-region-view-contracts';
 import { TerrainCache } from '../atlas/terrain-cache';
 import { streamTerrainField, type TerrainStream } from '../atlas/terrain-field-stream';
@@ -134,31 +141,65 @@ export class TerrainScalePyramid {
     validateHeightStroke(stroke);
     if (stroke.mode !== 'smooth' && stroke.targetM === undefined) return;
     const pixel = heightBrushPixel(stroke.radius),
-      area = heightBrushBounds({ ...stroke, visibility: undefined }),
+      visible =
+        stroke.screenInput && stroke.visibility
+          ? readTerrainGrid(db, cam, stroke.visibility)
+          : undefined,
+      prepared = stroke.screenInput ? prepareHeightBrush(stroke, visible) : undefined,
+      areas = prepared
+        ? terrainSupportBoxes(
+            prepared.tiles,
+            pixel,
+            stroke.mode === 'smooth' ? stroke.radius / 2 : 0,
+          )
+        : [heightBrushBounds({ ...stroke, visibility: undefined })],
       edge = 64 * pixel;
-    const left = Math.floor((area.x - 2 * pixel) / edge),
-      right = Math.floor((area.x + area.width + 2 * pixel) / edge),
-      top = Math.floor((area.y - 2 * pixel) / edge),
-      bottom = Math.floor((area.y + area.height + 2 * pixel) / edge);
-    if ((right - left + 1) * (bottom - top + 1) > 256)
-      throw Error('Höhenzug zu lang. In kürzeren Zügen bearbeiten.');
-    for (let y = top; y <= bottom; y++)
-      for (let x = left; x <= right; x++) yield* this.build(db, cam, x * edge, y * edge, pixel);
+    const keys = new Set<string>();
+    for (const area of areas) {
+      const left = Math.floor((area.x - 2 * pixel) / edge),
+        right = Math.floor((area.x + area.width + 2 * pixel) / edge),
+        top = Math.floor((area.y - 2 * pixel) / edge),
+        bottom = Math.floor((area.y + area.height + 2 * pixel) / edge);
+      if ((right - left + 1) * (bottom - top + 1) > 256)
+        throw Error('Höhenzug zu lang. In kürzeren Zügen bearbeiten.');
+      for (let y = top; y <= bottom; y++)
+        for (let x = left; x <= right; x++) {
+          const key = `${x}:${y}`;
+          if (keys.has(key)) continue;
+          keys.add(key);
+          if (keys.size > 256) throw Error('Höhenzug zu lang. In kürzeren Zügen bearbeiten.');
+          yield* this.build(db, cam, x * edge, y * edge, pixel);
+        }
+    }
   }
-  sampler(db: any, cam: string, box: LandscapeBox, pixel: number) {
+  sampler(
+    db: any,
+    cam: string,
+    box: LandscapeBox,
+    pixel: number,
+    supports: readonly LandscapeBox[] = [box],
+  ) {
     const edge = 64 * pixel,
       records: LandscapeRecord[] = [];
-    const left = Math.floor((box.x - 2 * pixel) / edge),
-      right = Math.floor((box.x + box.width + 2 * pixel) / edge),
-      top = Math.floor((box.y - 2 * pixel) / edge),
-      bottom = Math.floor((box.y + box.height + 2 * pixel) / edge);
-    if ((right - left + 1) * (bottom - top + 1) > 256)
-      throw Error('Höhenzug zu lang. In kürzeren Zügen bearbeiten.');
-    for (let y = top; y <= bottom; y++)
-      for (let x = left; x <= right; x++)
-        records.push(
-          heightRecord(x * edge, y * edge, pixel, this.tile(db, cam, x * edge, y * edge, pixel)),
-        );
+    const keys = new Set<string>();
+    for (const box of supports) {
+      const left = Math.floor((box.x - 2 * pixel) / edge),
+        right = Math.floor((box.x + box.width + 2 * pixel) / edge),
+        top = Math.floor((box.y - 2 * pixel) / edge),
+        bottom = Math.floor((box.y + box.height + 2 * pixel) / edge);
+      if ((right - left + 1) * (bottom - top + 1) > 256)
+        throw Error('Höhenzug zu lang. In kürzeren Zügen bearbeiten.');
+      for (let y = top; y <= bottom; y++)
+        for (let x = left; x <= right; x++) {
+          const key = `${x}:${y}`;
+          if (keys.has(key)) continue;
+          keys.add(key);
+          if (keys.size > 256) throw Error('Höhenzug zu lang. In kürzeren Zügen bearbeiten.');
+          records.push(
+            heightRecord(x * edge, y * edge, pixel, this.tile(db, cam, x * edge, y * edge, pixel)),
+          );
+        }
+    }
     return new TerrainSampler(records, false);
   }
 }
@@ -211,6 +252,19 @@ function routeSources(db: any, cam: string, box: LandscapeBox) {
   return [...records.values()];
 }
 
+function uniqueRecords(records: Iterable<LandscapeRecord>, limit?: number, utf8 = false) {
+  const unique = new Map<string, LandscapeRecord>();
+  let bytes = 0;
+  for (const r of records) {
+    if (unique.has(r.id)) continue;
+    bytes += utf8 ? Buffer.byteLength(JSON.stringify(r)) : JSON.stringify(r).length * 2;
+    if (limit !== undefined && bytes > limit)
+      throw Error('Höhenzug zu lang. In kürzeren Zügen bearbeiten.');
+    unique.set(r.id, r);
+  }
+  return [...unique.values()];
+}
+
 export function computeTerrainStroke(
   db: any,
   cam: string,
@@ -227,15 +281,17 @@ export function computeTerrainStroke(
       .get(cam)
   )
     throw Error('Geländequelle beschädigt.');
-  const pixel = heightBrushPixel(stroke.radius),
-    area = heightBrushBounds({ ...stroke, visibility: undefined });
-  // Interpolation support and smoothing samples may read neighbouring nodes.
-  const box = {
-    x: area.x - 3 * pixel,
-    y: area.y - 3 * pixel,
-    width: area.width + 6 * pixel,
-    height: area.height + 6 * pixel,
-  };
+  const visible =
+      visibility ?? (stroke.visibility ? readTerrainGrid(db, cam, stroke.visibility) : undefined),
+    prepared = prepareHeightBrush(stroke, visible),
+    pixel = heightBrushPixel(stroke.radius),
+    supports = terrainSupportBoxes(
+      prepared.tiles,
+      pixel,
+      (stroke.mode === 'smooth' ? stroke.radius / 2 : 0) + 3 * pixel,
+    ),
+    box = terrainBoxesBounds(supports);
+  if (!supports.length) return [];
   const needsSource = stroke.mode === 'smooth' || stroke.targetM !== undefined;
   const records =
     stroke.preserveDetails === false || needsSource
@@ -246,17 +302,37 @@ export function computeTerrainStroke(
           pixel,
           stroke.preserveDetails === false,
           needsSource || stroke.preserveDetails === false,
+          supports,
         )
-      : scaleRecords(db, cam, box, pixel, false);
-  const visible =
-    visibility ?? (stroke.visibility ? readTerrainGrid(db, cam, stroke.visibility) : undefined);
-  const tiles = applyTerrainBrush(records, stroke, undefined, visible, undefined, true);
+      : uniqueRecords(
+          (function* () {
+            for (const b of supports) yield* scaleRecords(db, cam, b, pixel, false);
+          })(),
+          8 * 1024 * 1024,
+          true,
+        );
+  const tiles = applyTerrainBrush(records, stroke, undefined, visible, undefined, true, prepared);
   if (!tiles.length) return [];
-  const dependencies = terrainEditingDependencies(db, cam, box);
-  const local = routeSources(db, cam, box);
-  for (const corridor of dependencies.corridors) local.push(...routeSources(db, cam, corridor));
-  local.push(...dependencies.records);
-  const complete = [...new Map(local.map((r) => [r.id, r])).values()];
+  // Deduplicate as supports are read; no array containing repeated full
+  // dependency sets. Existing per-read route/source guards remain authoritative.
+  const complete = uniqueRecords(
+    (function* () {
+      const corridors = new Set<string>();
+      for (const support of supports) {
+        const dependencies = terrainEditingDependencies(db, cam, support);
+        yield* routeSources(db, cam, support);
+        yield* dependencies.records;
+        for (const corridor of dependencies.corridors) {
+          const key = JSON.stringify(corridor);
+          if (corridors.has(key)) continue;
+          corridors.add(key);
+          if (corridors.size > 128)
+            throw Error('Verbundene See-/Verlaufquellen zu groß. Kleineren Bereich bearbeiten.');
+          yield* routeSources(db, cam, corridor);
+        }
+      }
+    })(),
+  );
   const ids = new Set(complete.map((r) => r.id));
   return coupleTerrainEdits(
     [...complete, ...records.filter((r) => !ids.has(r.id))],
@@ -274,16 +350,21 @@ export function computeLakeStroke(
   visibility?: TerrainGrid,
 ) {
   validateLakeStroke(stroke);
-  const area = heightBrushBounds({ ...lakeHeightStroke(stroke), visibility: undefined });
-  const box = {
-    x: area.x - stroke.radius,
-    y: area.y - stroke.radius,
-    width: area.width + 2 * stroke.radius,
-    height: area.height + 2 * stroke.radius,
-  };
-  const records = readRouteTerrain(db, cam, box);
   const visible =
-    visibility ?? (stroke.visibility ? readTerrainGrid(db, cam, stroke.visibility) : undefined);
-  const result = applyLakeBrush(records, stroke, visible);
+      visibility ?? (stroke.visibility ? readTerrainGrid(db, cam, stroke.visibility) : undefined),
+    prepared = stroke.screenInput
+      ? prepareHeightBrush(lakeHeightStroke(stroke), visible)
+      : undefined,
+    supports = prepared
+      ? terrainSupportBoxes(
+          prepared.footprintTiles(),
+          heightBrushPixel(stroke.radius),
+          3 * heightBrushPixel(stroke.radius),
+        )
+      : [lakeBrushSourceBounds(stroke)],
+    box = terrainBoxesBounds(supports);
+  if (!supports.length) return { records: [], remove: [] };
+  const records = readTerrainEditingPackets(db, cam, box, undefined, true, true, supports);
+  const result = applyLakeBrush(records, stroke, visible, prepared);
   return result;
 }

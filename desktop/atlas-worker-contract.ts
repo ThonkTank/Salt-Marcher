@@ -37,6 +37,7 @@ export type AtlasProjectionJob =
   | { kind: 'geometry-tile'; query: AtlasGeometryTileRequest };
 export type AtlasJob = (
   | AtlasProjectionJob
+  | { kind: 'terrain-change'; base: import('../src/app/atlas/terrain-source').TerrainIdentity }
   | { kind: 'terrain-live'; query: TerrainFrameQuery; base?: TerrainFrameIdentity }
   | {
       kind: 'terrain-stroke';
@@ -56,6 +57,7 @@ export type AtlasJob = (
 ) & { continuation?: boolean; cancellation?: Int32Array };
 export type AtlasWorkerJob = AtlasJob & { source: AtlasRegionSource };
 export interface AtlasJobResults {
+  'terrain-change': import('../src/app/atlas/terrain-change-history').TerrainSourceChange;
   terrain: TerrainProjection;
   'terrain-color': TerrainColorTile;
   'terrain-refine': TerrainFrame;

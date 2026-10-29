@@ -1,6 +1,7 @@
-import { type LandscapeBox } from './landscape-bounds';
-import { type LandscapeRecord } from './landscape-contracts';
-import { bounds, contains } from './landscape-geometry';
+import type { LandscapeBox } from './landscape-bounds';
+import type { LandscapeRecord } from './landscape-contracts';
+import { bounds } from './landscape-geometry';
+import type { Point, Polygon } from '../shared/contracts';
 import { DEFAULT_HEIGHT_M } from './terrain-height';
 import {
   accumulateHeightSources,
@@ -11,14 +12,8 @@ import { RouteSurface } from './terrain-route';
 
 /** A fixed display lattice. Readers must yield unique height tiles from coarse to fine.
  * Only the bounded source neighbourhood survives a tile read; no author record is retained. */
-export interface TerrainLattice {
-  x: number;
-  y: number;
-  dx: number;
-  dy: number;
-  columns: number;
-  rows: number;
-}
+export type { TerrainLattice } from './terrain-grid-layout';
+import type { TerrainLattice } from './terrain-grid-layout';
 export interface TerrainField {
   heights: Float32Array;
   water: Uint8Array;
@@ -29,6 +24,27 @@ export interface TerrainField {
 export interface TerrainSamples {
   columns: number;
   rows: number;
+}
+/** The canonical point-in-ring arithmetic, shared by every sample of one row.
+ * Preserve its strict x comparison and separate polygon/hole membership. Small
+ * authored lakes otherwise rescan all contour edges for every material texel. */
+function lakeRowContains(polygons: readonly Polygon[], y: number) {
+  const crossings = (ring: readonly Point[]) => {
+    const xs: number[] = [];
+    for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+      const a = ring[i]!,
+        b = ring[j]!;
+      if (a.y > y !== b.y > y) xs.push(((b.x - a.x) * (y - a.y)) / (b.y - a.y) + a.x);
+    }
+    return xs;
+  };
+  const rows = polygons.map((p) => ({ outer: crossings(p.outer), holes: p.holes.map(crossings) }));
+  const inside = (xs: number[], x: number) => {
+    let odd = false;
+    for (const edge of xs) if (x < edge) odd = !odd;
+    return odd;
+  };
+  return (x: number) => rows.some((p) => inside(p.outer, x) && !p.holes.some((h) => inside(h, x)));
 }
 export type TerrainStream = ((
   kind: 'height' | 'route' | 'lake',
@@ -227,8 +243,14 @@ function terrainBand(
   // are combined afterwards, using the final effective ground, as TerrainSampler does.
   for (const r of records('lake', query)) {
     const level = r.waterLevelM ?? seaLevelM + 1;
+    let row = NaN,
+      contains: ((x: number) => boolean) | undefined;
     each(bounds(r), (i, px, py) => {
-      if (contains({ x: px, y: py }, r.polygons)) {
+      if (py !== row) {
+        row = py;
+        contains = lakeRowContains(r.polygons, py);
+      }
+      if (contains!(px)) {
         lakeLevels ??= new Float64Array(n).fill(-Infinity);
         lakeLevels[i] = Math.max(lakeLevels[i]!, level);
       }

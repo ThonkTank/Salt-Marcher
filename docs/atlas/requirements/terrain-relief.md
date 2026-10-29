@@ -2,7 +2,7 @@
 
 Status: Verbindlicher Zielumfang; historische Umsetzungsbelege sind keine aktuelle Abnahme.
 Owner: atlas
-Last Reviewed: 2026-10-28 (begrenzte Ergebnisabschnitte und offene Klärungen; Fachabnahme separat)
+Last Reviewed: 2026-10-28 (Seeumfang und Streuwirkung ergänzt; Fachabnahme separat)
 Source of Truth: Dieses Dokument besitzt das benannte Thema; Code belegt den Iststand, das Abnahmeregister den Prüfstand.
 
 Zieländerung vom 20.10.2026: Die [Roadmap für den gemeinsamen räumlichen Atlas](../architecture/unified-spatial-atlas.md) ersetzt getrennte Drauf-/Kippdarstellung durch eine gemeinsame perspektivische Kamera. Die folgenden Implementierungs- und Prüfbefunde beschreiben den bisherigen Stand; sie belegen den neuen Atlas noch nicht.
@@ -51,7 +51,11 @@ Klarstellung zieht die übrigen Kartenwerkzeuge nicht vor.
 - Wasserumfang der ursprünglichen Etappe: Meer mit einstellbarem Meeresspiegel.
   Der bestätigte zweite Arbeitszyklus erweitert diesen Umfang um einzeln geplante
   [Flüsse mit Pflichtpunkten und begrenztem Bettabtrag](../contract/terrain-routes.md).
-  Automatische Flussnetze, Erosion und neue Seen gehören weiterhin nicht dazu.
+  Der bestätigte dritte Arbeitszyklus ergänzt den vorhandenen Seebeckenpinsel
+  um [„Seen streuen“ mit getrennten Becken und Noise-Verteilung](../contract/landscape-tools.md#seebeckenpinsel).
+  Seen graben/radieren, der zugeordnete Abtrag und die gemeinsame Anhebung von See
+  und Umland gehören ebenfalls zum aktuellen Wasserumfang. Automatische
+  Flussnetze, Erosion und ein Überlauf-/Einzugsgebietssolver gehören nicht dazu.
 - Bearbeitung und Darstellung mit einer drehbaren 3D-Kamera. Die vollständige
   Kamerasteuerung funktioniert allein mit der Maus; WASD ist eine zusätzliche
   Bedienmöglichkeit, keine Voraussetzung für Navigation oder Bearbeitung.

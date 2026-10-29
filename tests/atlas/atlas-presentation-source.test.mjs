@@ -171,6 +171,11 @@ test('a stale floor source waits for the pending geometry owner before issuing a
 
 test('surface tiles also wait for a new confirmed fence after a deferred source refresh', async (t) => {
   const f = fixture(t);
+  // Source reconciliation already precedes the replacement tile read.
+  window.campaign.atlasTerrainSource = async () => ({
+    ok: true,
+    value: { revision: f.ui.revision, fence: f.ui.fence },
+  });
   let reads = 0;
   Object.defineProperty(f.ui, 'needsTerrainRaster', { value: false });
   Object.assign(f.ui, {
@@ -397,3 +402,169 @@ for (const restore of [true, false])
       );
     }
   });
+test('surface reuse asks Main for the exact retained base and drops evidence superseded during its read', async (t) => {
+  const { ui } = fixture(t),
+    requests = [],
+    loads = [];
+  Object.defineProperty(ui, 'needsTerrainRaster', { value: false });
+  Object.assign(ui, {
+    active: true,
+    ready: true,
+    generation: 0,
+    request: '',
+    streamSource: { token: 't', revision: 6, fence: 'before' },
+    host: { ...ui.host, writing: () => false },
+    stream: {
+      async load(input) {
+        loads.push(input);
+      },
+    },
+  });
+  let release;
+  const gate = new Promise((resolve) => {
+    release = resolve;
+  });
+  window.campaign.atlasTerrainSource = async (token, base) => {
+    const revision = ui.revision,
+      fence = ui.fence;
+    requests.push({ token, base, revision, fence });
+    if (revision === 7) await gate;
+    return {
+      ok: true,
+      value: {
+        revision,
+        fence,
+        change: { base, target: { revision, fence }, invalidation: { reset: false, bounds: [] } },
+      },
+    };
+  };
+  const old = ui.load();
+  await new Promise((resolve) => setImmediate(resolve));
+  ui.revision = 8;
+  ui.fence = 'latest';
+  const latest = ui.load();
+  release();
+  await Promise.all([old, latest]);
+  assert.equal(requests.length, 2);
+  assert(
+    requests.every((r) => r.token === 't' && r.base.revision === 6 && r.base.fence === 'before'),
+  );
+  assert.equal(loads.length, 1);
+  assert.deepEqual(loads[0].change.target, { revision: 8, fence: 'latest' });
+  assert.equal(loads[0].revision, 8);
+  assert.deepEqual(ui.streamSource, { token: 't', revision: 8, fence: 'latest' });
+});
+
+test('deferred height preview failure cancels the active input without misclassifying a successful source read', async (t) => {
+  const f = fixture(t),
+    failure = Error('deferred height work guard');
+  let cancelled = 0;
+  Object.assign(f.ui, {
+    active: true,
+    gesturing: true,
+    pendingStroke: {
+      radius: 1,
+      samples: [
+        { x: 0, y: 0, t: 0 },
+        { x: 0, y: 0, t: 100 },
+      ],
+    },
+    editing: {
+      source: null,
+      ready: () => false,
+      load: async () => ({
+        revision: 7,
+        fence: 'first',
+        records: [],
+        box: { x: 0, y: 0, width: 2, height: 2 },
+        complete: true,
+      }),
+    },
+    visibility: () => ({ box: { x: 0, y: 0, width: 2, height: 2 } }),
+    previewHeight: () => {
+      throw failure;
+    },
+  });
+  f.ui.host.cancel = () => {
+    cancelled++;
+    f.ui.gesturing = false;
+  };
+  f.ui.host.error = (error) => f.calls.errors.push(error);
+  assert.equal(f.ui.ensureEditing(1, { x: 0, y: 0, width: 2, height: 2 }), false);
+  await new Promise(setImmediate);
+  assert.equal(cancelled, 1);
+  assert.deepEqual(f.calls.errors, [failure]);
+  assert.equal(f.ui.input.dataset.terrainEditingState, 'ready');
+  assert.equal(f.ui.input.dataset.terrainEditingError, undefined);
+});
+
+test('initial overview and detail preserve a restored eye; an absent preference uses surface focus', async (t) => {
+  const { ui, calls } = fixture(t);
+  Object.defineProperty(ui, 'needsTerrainRaster', { value: false });
+  Object.assign(ui, {
+    active: true,
+    ready: false,
+    generation: 0,
+    request: '',
+    tiles: [],
+    input: {
+      dataset: {},
+      getBoundingClientRect: () => ({ left: 0, top: 0, width: 1600, height: 1000 }),
+    },
+    surface: { gpuMemory: {}, setCamera() {}, async waitForFrame() {} },
+    host: { ...ui.host, writing: () => false },
+    reconcileCamera() {},
+    settleFirst() {},
+    show() {},
+    height() {
+      return this.tiles[0].centreHeight;
+    },
+    applyCameraPose(pose) {
+      this.frame = { ...pose.frame };
+      this.focusHeightM = pose.focusM;
+    },
+    stream: {
+      statistics: {},
+      async load(input, fetch, publish) {
+        for (const [centreHeight, complete] of [
+          [0, false],
+          [7, true],
+        ]) {
+          publish({
+            tiles: [{ tile: { lod: 0, x: centreHeight, y: 0 }, revision: 7, centreHeight }],
+            overviewComplete: true,
+            complete,
+          });
+          await Promise.resolve();
+        }
+      },
+    },
+  });
+  ui.restoreCameraPose({
+    frame: { ...ui.frame },
+    focusM: 3.5,
+    tilt: 0,
+    rotation: 0,
+    exaggeration: 1,
+    projection: 'perspective',
+  });
+  await ui.load();
+  assert.deepEqual(calls.errors, []);
+  assert.equal(ui.focusHeightM, 3.5, 'coarse zero-height overview must not move the restored eye');
+  assert.equal(
+    ui.restoredFocusM,
+    undefined,
+    'initialization must not pin later reopen/navigation focus',
+  );
+  ui.restoreCameraPose();
+  ui.ready = false;
+  ui.tiles = [];
+  ui.request = '';
+  await ui.load();
+  assert.deepEqual(calls.errors, []);
+  assert.equal(
+    ui.focusHeightM,
+    0,
+    'without a saved pose, the initial surface still supplies focus',
+  );
+});

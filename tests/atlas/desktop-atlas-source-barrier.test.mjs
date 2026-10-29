@@ -20,7 +20,7 @@ const deferred = () => {
   return { promise, resolve };
 };
 
-for (const consumer of ['bootstrap', 'view', 'export']) {
+for (const consumer of ['bootstrap', 'reuse', 'view', 'export']) {
   test(`graph acceptance blocks a ${consumer} source read already awaiting storage`, async () => {
     const handlers = new Map(),
       sourceWait = deferred(),
@@ -31,6 +31,10 @@ for (const consumer of ['bootstrap', 'view', 'export']) {
     class Reader {
       cursor = 'test';
       async cancelAndWait() {}
+      async terrainSourceChange(source, base) {
+        projections++;
+        return { base, target: source, invalidation: { reset: true, bounds: [] } };
+      }
       async terrain() {
         projections++;
         return { draft: true };
@@ -88,7 +92,9 @@ for (const consumer of ['bootstrap', 'view', 'export']) {
     const read = () =>
       consumer === 'bootstrap'
         ? handlers.get('atlas:terrain-source')('token')
-        : handlers.get('atlas:terrain-projection')('token', query, consumer);
+        : consumer === 'reuse'
+          ? handlers.get('atlas:terrain-source')('token', source)
+          : handlers.get('atlas:terrain-projection')('token', query, consumer);
     const pendingRead = read();
     const blocked = assert.rejects(pendingRead, /Graphwechsel läuft/);
     const pendingGraph = handlers.get('atlas:commit')({
@@ -106,7 +112,63 @@ for (const consumer of ['bootstrap', 'view', 'export']) {
     );
     graphWait.resolve();
     await pendingGraph;
-    assert.deepEqual(await read(), consumer === 'bootstrap' ? source : { draft: true });
+    const expected =
+      consumer === 'bootstrap'
+        ? source
+        : consumer === 'reuse'
+          ? {
+              ...source,
+              change: { base: source, target: source, invalidation: { reset: true, bounds: [] } },
+            }
+          : { draft: true };
+    assert.deepEqual(await read(), expected);
     assert.equal(projections, consumer === 'bootstrap' ? 0 : 1);
   });
 }
+
+test('a surface interval is rejected when its worker evidence finishes after a graph mutation starts', async () => {
+  const handlers = new Map(),
+    evidence = deferred(),
+    entered = deferred(),
+    graph = deferred();
+  class Reader {
+    cursor = undefined;
+    async cancelAndWait() {}
+    async terrainSourceChange() {
+      entered.resolve();
+      return evidence.promise;
+    }
+  }
+  const module = { exports: {} };
+  new Function('require', 'module', 'exports', built)(
+    (name) => {
+      if (name === 'electron') return {};
+      if (name === './atlas-region') return { AtlasRegionService: Reader };
+      if (name === './room-directory') return { RoomDirectoryService: Reader };
+      return require(name);
+    },
+    module,
+    module.exports,
+  );
+  const source = { revision: 2, fence: 'target' },
+    base = { revision: 1, fence: 'base' };
+  module.exports.registerAtlasHost({
+    ipc: { scope: () => ({ handle: (name, fn) => handlers.set(name, fn) }) },
+    store: { atlasRegionSource: async () => source, executeAtlasCommit: async () => graph.promise },
+    win: {},
+    dataDir: '.build',
+    dungeonImport() {},
+  });
+  const read = handlers.get('atlas:terrain-source')('token', base),
+    rejected = assert.rejects(read, /Graphwechsel läuft/);
+  await entered.promise;
+  const mutation = handlers.get('atlas:commit')({
+    commandId: 'graph-late',
+    action: { kind: 'graph-accept' },
+  });
+  await new Promise((resolve) => setImmediate(resolve));
+  evidence.resolve({ base, target: source, invalidation: { reset: false, bounds: [] } });
+  await rejected;
+  graph.resolve({});
+  await mutation;
+});
