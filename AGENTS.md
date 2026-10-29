@@ -21,7 +21,11 @@
   `docs/project/requirements/sources.json`. Implemented behavior, automated evidence, native
   qualification, and owner acceptance remain separate claims.
 - Atlas work follows the current user-approved cleanup and full renderer cutover
-  in `docs/atlas/architecture/unified-spatial-atlas.md`. The former mandatory M0–M8
+  in [Atlas architecture](docs/atlas/architecture/unified-spatial-atlas.md).
+  The confirmed terrain/water execution assignment, including package ownership,
+  delegation, review, timing and synchronization duties, is maintained separately
+  in [terrain/water execution](docs/atlas/delivery/terrain-water-execution.md).
+  The former mandatory M0–M8
   sequence and Rust/WASM requirement are superseded. Preserve the complete
   functional scope, restricted renderer privileges and delivery gates. Only test
   setups exist; old internal formats need no compatibility migration. Preserve

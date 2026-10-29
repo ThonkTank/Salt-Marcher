@@ -11,8 +11,14 @@ import { hasPendingCommit } from '../shared/commit-confirmation';
 import type { Result, WorkspaceGeometry } from '../shared/contracts';
 import { EditorSession } from '../shared/editor-session';
 import { createEditorSurface } from '../shared/editor-surface';
-import { acknowledgeFields } from '../shared/editor-transition';
-import { preserveLiteralEdit } from '../shared/literal-text-edit';
+import {
+  PreparationDraftOwner,
+  preparationDraftKey as draftKey,
+  equalPreparationValue as equal,
+  preservePreparationPlanInput as preservePlanInput,
+} from './preparation-draft-owner';
+import { PreparationWriteCoordinator } from './preparation-write-coordinator';
+import { PreparationListView } from './preparation-list-view';
 import { rawTextOffset } from '../shared/raw-text-offset';
 import { normalizedNoteTitle, type KeyNoteChoices } from './key-note-capture-contracts';
 import { appendNoteExcerpt } from './note-excerpt';
@@ -22,11 +28,8 @@ import { detachNoteSource, restoreNoteSource } from './note-thread-edit';
 import { NoteThreadDialog } from './note-thread-ui';
 import {
   preparationTarget,
-  type LocationRow,
   type Preparation,
   type PreparationChange,
-  type PreparationCommand,
-  type PreparationDraft,
   type PreparationEdit,
 } from './preparation-contracts';
 import { type Note } from './note-data';
@@ -49,7 +52,6 @@ const defaultPlanning = {
   clearSessionTimeline,
   linkVisitNoteThread,
 };
-
 export type PreparationHost = {
   roots: readonly HTMLElement[];
   dialogHost: HTMLElement;
@@ -62,11 +64,13 @@ export type PreparationHost = {
       id: string,
       current: () => boolean,
       restore: () => void,
-      source?: { id: string; label: string },
+      source?: {
+        id: string;
+        label: string;
+      },
     ) => Promise<boolean>;
   };
 };
-
 export function createPreparation(host: PreparationHost) {
   const {
     initSession,
@@ -79,9 +83,7 @@ export function createPreparation(host: PreparationHost) {
   const { document, get } = createEditorSurface(host.roots);
   const window = { campaign: host.api, localStorage: host.storage };
   const editorSession = new EditorSession();
-  const failedCommandState = editorSession.command<PreparationCommand>();
-  const pendingWork = editorSession.operation<Promise<boolean>>();
-
+  const listView = new PreparationListView({ document, get });
   const value = (id: string) => get<HTMLInputElement>(id).value;
   function showPreparationArea(plan: boolean) {
     if (plan) rememberPlanningTarget();
@@ -93,7 +95,7 @@ export function createPreparation(host: PreparationHost) {
   function showDayPreparation() {
     showPreparationArea(true);
     get<HTMLDetailsElement>('session-panel').open = true;
-    get(planDraft ? 'session-fraction' : 'plan-create').focus();
+    get(drafts.plan ? 'session-fraction' : 'plan-create').focus();
   }
   const unwrap = <T>(result: Result<T>): T => {
     if (!result.ok) throw new Error(result.error);
@@ -101,25 +103,13 @@ export function createPreparation(host: PreparationHost) {
   };
   let context: WorkspaceGeometry | null = null;
   let preparationLoaded = false;
-  let data: Preparation = {
-    notes: [],
-    plans: [],
-    locations: [],
-    maps: [],
-    problems: [],
-    selection: { noteId: null, planId: null, sceneId: null },
-  };
   const directory = new PreparationNoteDirectory();
   function usePreparation(next: Preparation, filtered = false) {
-    data = next;
     preparationLoaded = true;
     get('preparation').inert = false;
-    directory.accept(next.notes, filtered);
+    directory.acceptPreparation(next, filtered);
   }
   const noteRow = (id: string | null) => directory.row(id);
-
-  let noteDraft: Note | null = null,
-    planDraft: ManualPlan | null = null;
   let excerptField: 'readAloud' | 'gmNotes' | null = null;
   let excerpt: {
     source: import('./preparation-contracts').NoteExcerptSource;
@@ -244,8 +234,8 @@ export function createPreparation(host: PreparationHost) {
                 throw Error('Original wurde geändert. Namen erneut eingeben und Auswahl prüfen.');
               if (
                 draft ||
-                retained.get(draftKey('note', candidate.id)) ||
-                draftProblems.has(draftKey('note', candidate.id))
+                drafts.saved(draftKey('note', candidate.id)) ||
+                drafts.problem(draftKey('note', candidate.id))
               )
                 throw Error(
                   'Dieses Original hat einen offenen Arbeitsentwurf. Erst im Originaleditor aufklären.',
@@ -281,197 +271,144 @@ export function createPreparation(host: PreparationHost) {
     }
   }
   // A fallback loaded behind the knowledge editor is not a chosen destination.
-  let planningTarget: { planId: string; visitId: string | null } | null = null;
+  let planningTarget: {
+    planId: string;
+    visitId: string | null;
+  } | null = null;
   function rememberPlanningTarget() {
     planningTarget = selectedPlan ? { planId: selectedPlan, visitId: selectedScene } : null;
   }
   let selectedNote: string | null = null,
     selectedPlan: string | null = null,
     selectedScene: string | null = null;
-  let selectedLocation: string | null = null,
-    locationDraft: LocationRow | null = null;
+  let selectedLocation: string | null = null;
   let openMap: (scopeId: string) => Promise<void>;
   let timer: ReturnType<typeof setTimeout> | null = null;
-
-  const changesPending = new Set<Promise<void>>();
-  let composing = false,
-    blocked = false;
+  let composing = false;
   let sceneSearchPlan: string | null = null;
   let planningRenderedLoad = -1,
-    planningOpening: { load: number; task: Promise<void> } | null = null;
-  let hasOpenInput = false;
-
+    planningOpening: {
+      load: number;
+      task: Promise<void>;
+    } | null = null;
   let tell: (text: string, error?: boolean) => void;
   let inspectNote: ((id: string, current: () => boolean) => Promise<void>) | undefined;
   function syncSaveControl() {
-    get('preparation-apply').hidden = !hasOpenInput || blocked;
+    listView.save({
+      open: drafts.openInput,
+      blocked: writer.blocked,
+      unresolved: !!writer.failedCommand,
+    });
   }
-  const equal = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
   const locationNotebookOpen = host.navigation.locationNotebook;
   let roomUses: NoteRoomUses | null = null;
   let noteThread: NoteThreadDialog | null = null;
   let noteMerge: NoteMergeUI | null = null;
   const roomKeyOpen = host.navigation.roomKey;
   const originalNote = () => noteRow(selectedNote)?.note;
-  const originalPlan = () => data.plans.find((plan) => plan.id === selectedPlan);
-  const originalLocation = () => data.locations.find((row) => row.document.id === selectedLocation);
-  const retained = new Map<string, PreparationDraft | null>(),
-    draftProblems = new Map<string, string>();
-
-  const draftKey = (kind: PreparationEdit['kind'], id: string) => `${kind}:${id}`;
+  const originalPlan = () => directory.preparation.plans.find((plan) => plan.id === selectedPlan);
+  const originalLocation = () =>
+    directory.preparation.locations.find((row) => row.document.id === selectedLocation);
+  const drafts: PreparationDraftOwner = new PreparationDraftOwner({
+    api: window.campaign,
+    session: editorSession,
+    context: () => (context ? { token: context.token, campaignId: context.campaign.id } : null),
+    note: (id) => noteRow(id)?.note,
+    plan: (id) => directory.preparation.plans.find((plan) => plan.id === id),
+    location: (id) => directory.preparation.locations.find((row) => row.document.id === id),
+    failedCommand: () => writer.failedCommand,
+    restoreCommand: (command) => writer.restoreCommand(command),
+    loading: (busy) => {
+      get('preparation').inert = busy;
+    },
+    changed: () => {
+      renderProblems();
+      syncSaveControl();
+    },
+    feedback: (text, error) => tell(text, error),
+  });
+  const writer: PreparationWriteCoordinator = new PreparationWriteCoordinator({
+    api: window.campaign,
+    session: editorSession,
+    drafts,
+    context: () => (context ? { token: context.token, campaignId: context.campaign.id } : null),
+    acceptPreparation: (next) => usePreparation(next),
+    acceptPlan,
+    confirmedNote: (id) => noteRow(id)?.note,
+    refreshSearch: async () => {
+      if (value('world-search').trim()) await reloadNoteSearch(false);
+    },
+    redraw: async (kind) => {
+      if (kind === 'plan') await renderPlans();
+      else await Promise.all([renderNotes(), renderPlans(), renderLocations()]);
+    },
+    afterSaved: async (change, beforeNote) => {
+      if (change.kind === 'note') {
+        renderNoteList();
+        return acceptNarrativeNoteReceipt(context!, beforeNote!, noteRow(change.note.id)!.note);
+      }
+      if (change.kind === 'plan') {
+        const confirmed = directory.preparation.plans.find((plan) => plan.id === change.plan.id)!;
+        listView.planSaved(change.plan.id, confirmed.name);
+        renderSceneList();
+        renderSceneLocation();
+        await sessionContext(context, drafts.plan, selectedScene, directory.preparation);
+      } else {
+        renderLocationList();
+        renderSceneLocation();
+        renderLocationMapActions();
+      }
+      return true;
+    },
+    changed: () => {
+      renderProblems();
+      syncSaveControl();
+    },
+    feedback: (text, error) => tell(text, error),
+    afterResolved: async (change, current) => {
+      const targetId = preparationTarget(change).id;
+      const focusOnResolve = document.activeElement === get('preparation-reconcile');
+      syncSaveControl();
+      if (change.kind === 'plan') renderSceneList();
+      if (change.kind === 'note' && change.excerpt) {
+        if (selectedNote === targetId) await renderNotes();
+        else {
+          renderRelations();
+          renderNoteList();
+        }
+        if (!current()) return;
+      }
+      if (
+        change.kind === 'note-trash' &&
+        selectedNote === targetId &&
+        noteThread?.editorId === targetId
+      ) {
+        get<HTMLInputElement>('world-trash').checked = !!noteRow(targetId)?.trashed;
+        await renderNotes();
+        if (!current()) return;
+        if (focusOnResolve)
+          get('note-editor')
+            .querySelector<HTMLElement>('#note-title:enabled, #note-restore:not([hidden])')
+            ?.focus();
+      }
+    },
+    mergePending: () => !!noteMerge?.hasPending(),
+    composing: () => composing,
+    flushNarrative,
+    flushPlanning: flushSession,
+    cancelAutosave: () => {
+      if (timer) clearTimeout(timer);
+      timer = null;
+    },
+  });
   const preparationHasDrafts = () =>
     !!noteMerge?.hasPending() ||
-    hasOpenInput ||
-    blocked ||
+    drafts.openInput ||
+    writer.blocked ||
     !!editorSession.reading ||
-    !!draftProblems.size;
-  async function loadedDraft(kind: PreparationEdit['kind'], id: string) {
-    const key = draftKey(kind, id),
-      token = context?.token,
-      request = editorSession.generation;
-    if (retained.has(key) || !token) return retained.get(key) ?? null;
-    const read = editorSession.read();
-    get('preparation').inert = true;
-    try {
-      const saved = unwrap(await window.campaign.preparationDraft(token, kind, id));
-      if (context?.token !== token || request !== editorSession.generation) return null;
-      retained.set(key, saved);
-      if (saved) {
-        hasOpenInput = true;
-        if (saved.failedCommand) {
-          failedCommandState.value = saved.failedCommand;
-          blocked = true;
-          get('preparation-reconcile').hidden = false;
-          get('preparation-refresh').hidden = false;
-        }
-        syncSaveControl();
-        tell(
-          'Offener Vorbereitungsentwurf wiederaufgenommen. Noch nicht als Autorenstand gespeichert.',
-          true,
-        );
-      }
-      return saved;
-    } catch (error) {
-      if (context?.token !== token || request !== editorSession.generation) return null;
-      const message =
-        'Entwurf bleibt gesperrt; Originalbytes bleiben erhalten: ' + (error as Error).message;
-      retained.set(key, null);
-      draftProblems.set(key, message);
-      data.problems.push(message);
-      renderProblems();
-      tell(message, true);
-      return null;
-    } finally {
-      read.finish();
-      if (read.current()) get('preparation').inert = editorSession.reading > 0;
-    }
-  }
-  async function retainOpenDrafts() {
-    if (!context || editorSession.reading) throw new Error('Die Entwürfe werden noch geladen.');
-    if (
-      failedCommandState.value &&
-      (!['note', 'plan', 'location'].includes(failedCommandState.value.change.kind) ||
-        failedCommandState.value.change.expectedRevision === null)
-    )
-      throw new Error(
-        'Dieser offene Anlage-/Papierkorbauftrag muss vor dem Verlassen aufgeklärt werden.',
-      );
-    const token = context.token,
-      request = editorSession.generation,
-      inputVersion = editorSession.input.version,
-      values: PreparationEdit[] = [];
-    if (noteDraft && originalNote())
-      values.push({
-        kind: 'note',
-        expectedRevision: noteDraft.revision,
-        note: structuredClone(noteDraft),
-      });
-    if (planDraft && originalPlan())
-      values.push({
-        kind: 'plan',
-        expectedRevision: planDraft.revision,
-        plan: structuredClone(planDraft),
-      });
-    if (locationDraft && originalLocation())
-      values.push({
-        kind: 'location',
-        expectedRevision: locationDraft.revision,
-        document: structuredClone(locationDraft.document),
-      });
-    // A handed-off command can own a different plan than the visible editor.
-    // Preserve that owner and any already retained later input as well.
-    if (
-      failedCommandState.value &&
-      ['note', 'plan', 'location'].includes(failedCommandState.value.change.kind)
-    ) {
-      const target = preparationTarget(failedCommandState.value.change),
-        key = draftKey(target.kind, target.id);
-      if (
-        !values.some((value) => {
-          const owner = preparationTarget(value);
-          return owner.kind === target.kind && owner.id === target.id;
-        })
-      )
-        values.push(
-          structuredClone(
-            retained.get(key)?.change ?? failedCommandState.value.change,
-          ) as PreparationEdit,
-        );
-    }
-    const drafts: PreparationDraft[] = [],
-      clean: { kind: PreparationEdit['kind']; id: string; saved: PreparationDraft }[] = [];
-    for (const change of values) {
-      const target = preparationTarget(change),
-        key = draftKey(target.kind, target.id);
-      if (draftProblems.has(key)) continue;
-      const failedTarget = failedCommandState.value
-        ? preparationTarget(failedCommandState.value.change)
-        : null;
-      const failed =
-        failedTarget?.kind === target.kind && failedTarget.id === target.id
-          ? failedCommandState.value
-          : null;
-      const original =
-        change.kind === 'note'
-          ? noteRow(target.id)?.note
-          : change.kind === 'plan'
-            ? data.plans.find((plan) => plan.id === target.id)
-            : data.locations.find((row) => row.document.id === target.id)?.document;
-      const value =
-        change.kind === 'note'
-          ? change.note
-          : change.kind === 'plan'
-            ? change.plan
-            : change.document;
-      const changed =
-        !equal(value, original) ||
-        (change.kind === 'location' && change.expectedRevision !== originalLocation()?.revision);
-      if (changed || failed)
-        drafts.push({ version: 1, writeId: crypto.randomUUID(), change, failedCommand: failed });
-      else {
-        const saved = retained.get(key);
-        if (saved) clean.push({ ...target, saved });
-      }
-    }
-    if (drafts.length) unwrap(await window.campaign.keepPreparationDrafts(token, drafts));
-    for (const item of clean)
-      unwrap(
-        await window.campaign.discardPreparationDraft(
-          token,
-          item.kind,
-          item.id,
-          item.saved.writeId,
-        ),
-      );
-    if (context?.token !== token || request !== editorSession.generation) return;
-    for (const saved of drafts) {
-      const t = preparationTarget(saved.change);
-      retained.set(draftKey(t.kind, t.id), saved);
-    }
-    for (const item of clean) retained.set(draftKey(item.kind, item.id), null);
-    editorSession.input.retained = inputVersion;
-    hasOpenInput = drafts.length > 0;
-  }
+    !!drafts.hasProblems;
+  const loadedDraft = (kind: PreparationEdit['kind'], id: string) => drafts.load(kind, id);
+  const retainOpenDrafts = () => drafts.retain();
   async function leavePreparation(): Promise<boolean> {
     // Supplementary visit/profile editors do not yet have this draft codec.
     // Their unresolved input must not be mistaken for one of the three saved owners.
@@ -499,10 +436,13 @@ export function createPreparation(host: PreparationHost) {
     if (!context || !preparationLoaded || planningRenderedLoad === editorSession.generation) return;
     const load = editorSession.generation;
     if (planningOpening?.load === load) return planningOpening.task;
-    if (!data.plans.some((p) => p.id === selectedPlan))
+    if (!directory.preparation.plans.some((p) => p.id === selectedPlan))
       selectedPlan =
-        data.plans.find((p) => p.id === data.selection.planId)?.id ?? data.plans[0]?.id ?? null;
-    if (selectedScene === null) selectedScene = data.selection.sceneId;
+        directory.preparation.plans.find((p) => p.id === directory.preparation.selection.planId)
+          ?.id ??
+        directory.preparation.plans[0]?.id ??
+        null;
+    if (selectedScene === null) selectedScene = directory.preparation.selection.sceneId;
     const task = renderPlans();
     planningOpening = { load, task };
     try {
@@ -525,32 +465,16 @@ export function createPreparation(host: PreparationHost) {
     const request = ++editorSession.generation;
     sceneSearchPlan = null;
     get<HTMLInputElement>('scene-search').value = '';
-    directory.notes.clear();
-    directory.request++;
-    directory.error = null;
+    directory.reset();
     context = workspace;
-    blocked = false;
-    failedCommandState.value = null;
-    hasOpenInput = false;
-    noteDraft = null;
-    planDraft = null;
-    locationDraft = null;
-    retained.clear();
-    draftProblems.clear();
+    writer.resetVisible();
+    drafts.reset();
     composing = false;
     if (timer) clearTimeout(timer);
     timer = null;
     get('preparation-reconcile').hidden = true;
     get('preparation-refresh').hidden = true;
     syncSaveControl();
-    data = {
-      notes: [],
-      plans: [],
-      locations: [],
-      maps: [],
-      problems: [],
-      selection: { noteId: null, planId: null, sceneId: null },
-    };
     selectedNote = null;
     selectedPlan = null;
     selectedScene = null;
@@ -564,16 +488,22 @@ export function createPreparation(host: PreparationHost) {
       if (request !== editorSession.generation || context?.token !== workspace.token) return;
       usePreparation(unwrap(response));
       preparationLoaded = true;
-      selectedNote = data.notes.some((row) => row.note.id === data.selection.noteId && !row.trashed)
-        ? data.selection.noteId
-        : (data.notes.find((row) => !row.trashed)?.note.id ?? null);
-      selectedPlan = data.plans.some((plan) => plan.id === data.selection.planId)
-        ? data.selection.planId
-        : (data.plans[0]?.id ?? null);
-      selectedScene = data.selection.sceneId;
-      selectedLocation = data.locations.some((row) => row.document.id === data.selection.locationId)
-        ? data.selection.locationId!
-        : (data.locations.find((row) => !row.trashed)?.document.id ?? null);
+      selectedNote = directory.preparation.notes.some(
+        (row) => row.note.id === directory.preparation.selection.noteId && !row.trashed,
+      )
+        ? directory.preparation.selection.noteId
+        : (directory.preparation.notes.find((row) => !row.trashed)?.note.id ?? null);
+      selectedPlan = directory.preparation.plans.some(
+        (plan) => plan.id === directory.preparation.selection.planId,
+      )
+        ? directory.preparation.selection.planId
+        : (directory.preparation.plans[0]?.id ?? null);
+      selectedScene = directory.preparation.selection.sceneId;
+      selectedLocation = directory.preparation.locations.some(
+        (row) => row.document.id === directory.preparation.selection.locationId,
+      )
+        ? directory.preparation.selection.locationId!
+        : (directory.preparation.locations.find((row) => !row.trashed)?.document.id ?? null);
       await Promise.all([renderNotes(), renderPlans(), renderLocations()]);
       if (request === editorSession.generation && context?.token === workspace.token)
         renderProblems();
@@ -600,200 +530,21 @@ export function createPreparation(host: PreparationHost) {
     }
   }
   function renderProblems() {
-    const problems = [...new Set([...data.problems, ...draftProblems.values()])];
-    get('preparation-problems').textContent = problems.join('\n');
-    get('preparation-problems').hidden = !problems.length;
+    listView.problems([...directory.preparation.problems, ...drafts.problems]);
   }
   function acceptPlan(plan: ManualPlan | null, id: string) {
-    if (plan && plan.id !== id)
-      throw new Error('Planantwort gehört nicht zum ursprünglichen Auftrag.');
-    const plans = data.plans.filter((row) => row.id !== id);
-    if (plan) plans.push(plan);
-    plans.sort((a, b) =>
-      a.name < b.name ? -1 : a.name > b.name ? 1 : a.id < b.id ? -1 : a.id > b.id ? 1 : 0,
-    );
-    data = { ...data, plans };
+    directory.acceptPlan(plan, id);
   }
-  async function change(
-    change: PreparationChange,
-    redraw = true,
-    stillCurrent: () => boolean = () => true,
-  ): Promise<boolean> {
-    if (!context || blocked || !stillCurrent()) return false;
-    if (changesPending.size) {
-      tell('Vorherige Vorbereitung wird noch gespeichert.');
-      return false;
-    }
-    const token = context.token,
-      current = editorSession.capture(
-        () => [context?.token, editorSession.generation],
-        stillCurrent,
-      );
-    const target = preparationTarget(change),
-      key = draftKey(target.kind, target.id);
-    const command: PreparationCommand = {
-      commandId: crypto.randomUUID(),
-      token,
-      campaignId: context.campaign.id,
-      draftWriteId: retained.get(key)?.writeId,
-      change,
-    };
-    tell('Wird gespeichert…');
-    let complete!: () => void;
-    const completion = new Promise<void>((resolve) => {
-      complete = resolve;
-    });
-    changesPending.add(completion);
-    try {
-      // A normal timeline edit confirms only its owner, not the whole world directory.
-      const result =
-        command.change.kind === 'plan'
-          ? unwrap(await window.campaign.changePreparationPlan(command))
-          : unwrap(await window.campaign.changePreparation(command));
-      if (context?.token !== token || !current()) return false;
-      if (command.change.kind === 'plan') acceptPlan(result as ManualPlan, command.change.plan.id);
-      else usePreparation(result as Preparation);
-      if (command.change.kind !== 'plan' && value('world-search').trim())
-        await reloadNoteSearch(false);
-      if (context?.token !== token || !current()) return false;
-      retained.delete(key);
-      if (command.change.kind === 'plan' && planDraft?.id === command.change.plan.id) {
-        const sent = command.change.plan;
-        const confirmed = data.plans.find((p) => p.id === sent.id);
-        if (confirmed) planDraft = preservePlanInput(confirmed, sent, planDraft);
-      }
-      if (redraw) {
-        if (command.change.kind === 'plan') await renderPlans();
-        else await Promise.all([renderNotes(), renderPlans(), renderLocations()]);
-      }
-      if (!current()) return false;
-      renderProblems();
-      syncSaveControl();
-      tell('Gespeichert.');
-      return true;
-    } catch (error) {
-      if (context?.token !== token || !current()) return false;
-      if (change.kind === 'plan' && planDraft?.id === change.plan.id && originalPlan())
-        planDraft = preservePlanInput(change.plan, originalPlan()!, planDraft);
-      blocked = true;
-      failedCommandState.value = command;
-      get('preparation-refresh').hidden = false;
-      get('preparation-reconcile').hidden = false;
-      syncSaveControl();
-      try {
-        await retainOpenDrafts();
-        if (!current()) return false;
-        tell((error as Error).message + ' Entwurf gesichert. Kein automatischer Neuversuch.', true);
-      } catch (draftError) {
-        if (!current()) return false;
-        tell(
-          (error as Error).message +
-            ' Entwurf bleibt im Speicher: ' +
-            (draftError as Error).message,
-          true,
-        );
-      }
-      return false;
-    } finally {
-      changesPending.delete(completion);
-      complete();
-    }
-  }
-  async function flushPreparation(skipSession = false, skipNarrative = false): Promise<boolean> {
-    if (noteMerge?.hasPending()) return false;
-    if (!skipNarrative && !(await flushNarrative())) return false;
-    if (!skipSession && !(await flushSession())) return false;
-    if (timer) clearTimeout(timer);
-    timer = null;
-    if (pendingWork.value) {
-      const result = await pendingWork.value;
-      return result ? flushPreparation(skipSession, skipNarrative) : false;
-    }
-    if (changesPending.size) {
-      await Promise.all(changesPending);
-      return flushPreparation(skipSession, skipNarrative);
-    }
-    if (!context) return true;
-    if (editorSession.reading) return false;
-    if (blocked || composing) return false;
-    const beforeNote = originalNote(),
-      beforePlan = originalPlan();
-    const beforeLocation = originalLocation();
-    const changedNote = noteDraft && beforeNote && !equal(noteDraft, beforeNote),
-      changedPlan = planDraft && beforePlan && !equal(planDraft, beforePlan);
-    const changedLocation =
-      locationDraft && beforeLocation && !equal(locationDraft, beforeLocation);
-    if (!changedNote && !changedPlan && !changedLocation) {
-      if (hasOpenInput) {
-        await retainOpenDrafts();
-        hasOpenInput = false;
-        syncSaveControl();
-        tell('Gespeichert.');
-      }
-      return true;
-    }
-    pendingWork.value = (async () => {
-      if (changedNote) {
-        const sent = structuredClone(noteDraft!);
-        if (!(await change({ kind: 'note', expectedRevision: sent.revision, note: sent }, false)))
-          return false;
-        const current = originalNote()!;
-        if (noteDraft) noteDraft = { ...noteDraft, revision: current.revision };
-        renderNoteList();
-        if (!(await acceptNarrativeNoteReceipt(context!, beforeNote!, current))) return false;
-      }
-      if (changedPlan) {
-        const sent = structuredClone(planDraft!);
-        if (!(await change({ kind: 'plan', expectedRevision: sent.revision, plan: sent }, false)))
-          return false;
-        if (planDraft) planDraft = { ...planDraft, revision: originalPlan()!.revision };
-        const option = [...get<HTMLSelectElement>('plans').options].find(
-          (o) => o.value === sent.id,
-        );
-        if (option) option.textContent = originalPlan()!.name || 'Unbenannter Plan';
-        renderSceneList();
-        renderSceneLocation();
-        // Publish the acknowledged plan revision without replacing live session inputs.
-        await sessionContext(context, planDraft, selectedScene, data);
-      }
-      if (changedLocation) {
-        const sent = structuredClone(locationDraft!);
-        if (
-          !(await change(
-            { kind: 'location', expectedRevision: sent.revision, document: sent.document },
-            false,
-          ))
-        )
-          return false;
-        if (locationDraft)
-          locationDraft = { ...locationDraft, revision: originalLocation()!.revision };
-        renderLocationList();
-        renderSceneLocation();
-        renderLocationMapActions();
-      }
-      hasOpenInput = !!(
-        (noteDraft && originalNote() && !equal(noteDraft, originalNote())) ||
-        (planDraft && originalPlan() && !equal(planDraft, originalPlan())) ||
-        (locationDraft && originalLocation() && !equal(locationDraft, originalLocation()))
-      );
-      if (!hasOpenInput) editorSession.input.retained = editorSession.input.version;
-      syncSaveControl();
-      tell(
-        hasOpenInput
-          ? 'Weitere Vorbereitungseingabe offen – noch nicht gespeichert.'
-          : 'Gespeichert.',
-      );
-      return true;
-    })();
-    const okay = await pendingWork.value;
-    return okay ? flushPreparation(skipSession, skipNarrative) : false;
-  }
+  const change = (change: PreparationChange, redraw = true, stillCurrent?: () => boolean) =>
+    writer.change(change, redraw, stillCurrent);
+  const flushPreparation = (skipSession = false, skipNarrative = false) =>
+    writer.flush(skipSession, skipNarrative);
   function schedule() {
     editorSession.input.version++;
-    hasOpenInput = true;
+    drafts.markOpen(true);
     syncSaveControl();
     if (timer) clearTimeout(timer);
-    if (blocked) {
+    if (writer.blocked) {
       tell('Schreiben gesperrt. Der Entwurf bleibt offen.', true);
       return;
     }
@@ -835,53 +586,21 @@ export function createPreparation(host: PreparationHost) {
     }
   }
   function renderNoteList() {
-    const list = get('world-list');
-    list.replaceChildren();
-    if (directory.error?.query === value('world-search')) {
-      const message = document.createElement('p');
-      message.setAttribute('role', 'alert');
-      message.textContent = directory.error.message;
-      list.append(message);
-      return;
-    }
-    const trash = get<HTMLInputElement>('world-trash').checked;
-    for (const row of data.notes.filter((row) => row.trashed === trash)) {
-      const button = document.createElement('button');
-      button.textContent = row.note.title;
-      const preview = row.searchPreview;
-      if (preview) {
-        const excerpt = document.createElement('small');
-        excerpt.className = 'note-result-excerpt';
-        excerpt.id = `note-result-${row.note.id}`;
-        excerpt.append(`${preview.owner}: `);
-        for (const part of preview.parts) {
-          if (part.matched) {
-            const mark = document.createElement('mark');
-            mark.textContent = part.text;
-            excerpt.append(mark);
-          } else excerpt.append(part.text);
-        }
-        button.setAttribute('aria-label', row.note.title);
-        button.setAttribute('aria-describedby', excerpt.id);
-        button.append(excerpt);
-      }
-      button.setAttribute('aria-pressed', String(row.note.id === selectedNote));
-      button.onclick = () => {
-        void (async () => {
-          const token = context?.token;
-          if (!(await leavePreparation()) || context?.token !== token) return;
-          selectedNote = row.note.id;
-          await renderNotes();
-          if (context?.token === token) revealNote(row.note.id);
-        })();
-      };
-      list.append(button);
-    }
-    if (!list.childNodes.length) {
-      const p = document.createElement('p');
-      p.textContent = 'Keine Einträge in dieser Auswahl.';
-      list.append(p);
-    }
+    const current = editorSession.capture(() => [context?.token]);
+    listView.notes(
+      {
+        rows: directory.preparation.notes,
+        selected: selectedNote,
+        trash: get<HTMLInputElement>('world-trash').checked,
+        error: directory.error?.query === value('world-search') ? directory.error.message : null,
+      },
+      async (id) => {
+        if (!current() || !(await leavePreparation()) || !current()) return;
+        selectedNote = id;
+        await renderNotes();
+        if (current()) revealNote(id);
+      },
+    );
   }
   function revealNote(id: string) {
     const editor = get('note-editor');
@@ -892,9 +611,8 @@ export function createPreparation(host: PreparationHost) {
   async function renderNotes(initialLocationId?: string) {
     noteEditorGeneration++;
     if (!noteThread?.ownsNote(selectedNote)) noteThread?.reset();
-
     const row = noteRow(selectedNote);
-    noteDraft = row && !row.trashed ? structuredClone(row.note) : null;
+    drafts.setNote(row && !row.trashed ? structuredClone(row.note) : null);
     const token = context?.token,
       target = selectedNote,
       request = editorSession.generation;
@@ -903,21 +621,21 @@ export function createPreparation(host: PreparationHost) {
     if (context?.token !== token || request !== editorSession.generation || selectedNote !== target)
       return;
     if (saved?.change.kind === 'note' && !row?.trashed)
-      noteDraft = structuredClone(saved.change.note);
+      drafts.setNote(structuredClone(saved.change.note));
     get('note-editor').hidden = !row;
     get('note-empty').hidden = !!row;
     renderNoteList();
     get<HTMLButtonElement>('note-text-reference').disabled =
-      !row || row.trashed || blocked || draftProblems.has(draftKey('note', row.note.id));
+      !row || row.trashed || writer.blocked || drafts.problem(draftKey('note', row.note.id));
     get<HTMLButtonElement>('note-excerpt').disabled =
-      !row || row.trashed || blocked || draftProblems.has(draftKey('note', row.note.id));
+      !row || row.trashed || writer.blocked || drafts.problem(draftKey('note', row.note.id));
     excerptField = null;
     get('note-excerpt-status').replaceChildren();
     get('note-excerpt').hidden = true;
     get('note-gm').after(get('note-selection-actions'));
     if (!row) return;
     void checkpoint();
-    const shown = noteDraft ?? row.note;
+    const shown = drafts.note ?? row.note;
     get<HTMLInputElement>('note-title').value = shown.title;
     get<HTMLTextAreaElement>('note-read-aloud').value = shown.readAloud;
     get<HTMLDetailsElement>('note-read-aloud-details').open = !!shown.readAloud;
@@ -932,7 +650,7 @@ export function createPreparation(host: PreparationHost) {
     }[row.note.kind];
     for (const id of ['note-title', 'note-read-aloud', 'note-gm'])
       get<HTMLInputElement>(id).disabled =
-        row.trashed || draftProblems.has(draftKey('note', row.note.id));
+        row.trashed || drafts.problem(draftKey('note', row.note.id));
     const mergeButton = get('note-merge-open');
     if (mergeButton) mergeButton.hidden = row.trashed || row.note.kind !== 'npc';
     const focusAction = ['note-remove', 'note-restore'].includes(document.activeElement?.id ?? '');
@@ -964,65 +682,31 @@ export function createPreparation(host: PreparationHost) {
     );
   }
   function renderSceneList() {
-    const list = get('scene-list');
-    list.replaceChildren();
-    const plan = planDraft ?? originalPlan(),
-      token = context?.token;
-    const query = value('scene-search'),
-      terms = query.trim().toLocaleLowerCase().split(/\s+/).filter(Boolean);
-    const locations = new Map(data.locations.map((row) => [row.document.id, row.document.name]));
-    const readAlouds = terms.length ? sessionVisitReadAlouds(token, plan?.id) : null;
-    let matches = 0,
-      selectedVisible = false;
-    plan?.scenes.forEach((scene, index) => {
-      const text = [
-        scene.title,
-        scene.notes,
-        readAlouds?.get(scene.id) ?? '',
-        scene.locationId ? (locations.get(scene.locationId) ?? '') : '',
-      ]
-        .join('\n')
-        .toLocaleLowerCase();
-      if (!terms.every((term) => text.includes(term))) return;
-      matches++;
-      if (scene.id === selectedScene) selectedVisible = true;
-      const button = document.createElement('button');
-      button.textContent = `${index + 1}. ${scene.title || 'Unbenannte Szene'}`;
-      button.setAttribute('aria-pressed', String(scene.id === selectedScene));
-      button.onclick = () => {
-        void (async () => {
-          if (context?.token !== token || selectedPlan !== plan.id || !(await leavePreparation()))
-            return;
-          if (context?.token !== token || selectedPlan !== plan.id) return;
-          selectedScene = scene.id;
-          rememberPlanningTarget();
-          await renderPlans();
-          get<HTMLInputElement>('scene-title').focus();
-        })();
-      };
-      list.append(button);
-    });
-    get('scene-search-clear').hidden = !query;
-    get('scene-search-status').textContent =
-      matches +
-      ' von ' +
-      (plan?.scenes.length ?? 0) +
-      ' Besuchen' +
-      (!matches ? ' · Keine passenden Besuche.' : '') +
-      (selectedScene && !selectedVisible
-        ? ' · Der ausgewählte Besuch bleibt im Editor geöffnet.'
-        : '');
+    const plan = drafts.plan ?? originalPlan(),
+      token = context?.token,
+      query = value('scene-search');
+    const current = editorSession.capture(() => [context?.token, selectedPlan]);
+    listView.scenes(
+      {
+        plan,
+        selected: selectedScene,
+        query,
+        locations: new Map(
+          directory.preparation.locations.map((row) => [row.document.id, row.document.name]),
+        ),
+        readAlouds: query.trim() ? sessionVisitReadAlouds(token, plan?.id) : null,
+      },
+      async (id) => {
+        if (!plan || !current() || !(await leavePreparation()) || !current()) return;
+        selectedScene = id;
+        rememberPlanningTarget();
+        await renderPlans();
+        if (current()) get<HTMLInputElement>('scene-title').focus();
+      },
+    );
   }
   function renderPlanOptions() {
-    const select = get<HTMLSelectElement>('plans');
-    select.replaceChildren();
-    for (const plan of data.plans) {
-      const option = document.createElement('option');
-      option.value = plan.id;
-      option.textContent = plan.name || 'Unbenannter Plan';
-      select.append(option);
-    }
-    select.value = selectedPlan ?? '';
+    listView.plans(directory.preparation.plans, selectedPlan);
   }
   async function renderPlans() {
     renderPlanOptions();
@@ -1037,80 +721,39 @@ export function createPreparation(host: PreparationHost) {
     const saved = confirmed ? await loadedDraft('plan', confirmed.id) : null;
     if (context?.token !== token || request !== editorSession.generation || selectedPlan !== target)
       return;
-    if (!confirmed) planDraft = null;
-    else if (saved?.change.kind === 'plan') planDraft = structuredClone(saved.change.plan);
-    else if (planDraft?.id !== confirmed.id || planDraft.revision !== confirmed.revision)
-      planDraft = structuredClone(confirmed);
-    if (planDraft && !planDraft.scenes.some((scene) => scene.id === selectedScene))
-      selectedScene = planDraft.scenes[0]?.id ?? null;
-    get('plan-controls').hidden = !planDraft;
-    get('plan-empty').hidden = !!planDraft;
-    get('plan-clear').hidden = !planDraft?.scenes.length;
-    get('plan-controls').inert = !!confirmed && draftProblems.has(draftKey('plan', confirmed.id));
-    get<HTMLInputElement>('plan-name').value = planDraft?.name ?? '';
+    if (!confirmed) drafts.setPlan(null);
+    else if (saved?.change.kind === 'plan') drafts.setPlan(structuredClone(saved.change.plan));
+    else if (drafts.plan?.id !== confirmed.id || drafts.plan.revision !== confirmed.revision)
+      drafts.setPlan(structuredClone(confirmed));
+    if (drafts.plan && !drafts.plan.scenes.some((scene) => scene.id === selectedScene))
+      selectedScene = drafts.plan.scenes[0]?.id ?? null;
+    get('plan-controls').hidden = !drafts.plan;
+    get('plan-empty').hidden = !!drafts.plan;
+    get('plan-clear').hidden = !drafts.plan?.scenes.length;
+    get('plan-controls').inert = !!confirmed && drafts.problem(draftKey('plan', confirmed.id));
+    get<HTMLInputElement>('plan-name').value = drafts.plan?.name ?? '';
     renderSceneList();
-    const scene = planDraft?.scenes.find((scene) => scene.id === selectedScene);
+    const scene = drafts.plan?.scenes.find((scene) => scene.id === selectedScene);
     get('scene-editor').hidden = !scene;
     if (scene) {
       get<HTMLInputElement>('scene-title').value = scene.title;
       get<HTMLTextAreaElement>('scene-notes').value = scene.notes;
     }
     renderSceneLocation();
-    await sessionContext(context, planDraft, selectedScene, data);
+    await sessionContext(context, drafts.plan, selectedScene, directory.preparation);
     if (context?.token !== token || request !== editorSession.generation || selectedPlan !== target)
       return;
     planningRenderedLoad = request;
     renderSceneList();
     void checkpoint();
   }
-  function planInputConflict(
-    confirmed: ManualPlan | undefined,
-    before: ManualPlan,
-    pending: ManualPlan,
-  ): boolean {
-    if (!confirmed) return true;
-    if (
-      pending.name !== before.name &&
-      confirmed.name !== before.name &&
-      confirmed.name !== pending.name
-    )
-      return true;
-    return pending.scenes.some((draft) => {
-      const base = before.scenes.find((scene) => scene.id === draft.id);
-      if (!base) return false;
-      const fields = (['title', 'notes', 'locationId'] as const).filter(
-          (field) => draft[field] !== base[field],
-        ),
-        current = confirmed.scenes.find((scene) => scene.id === draft.id);
-      return fields.some(
-        (field) => !current || (current[field] !== base[field] && current[field] !== draft[field]),
-      );
-    });
-  }
-  /** Preserve only the known editable fields entered after this exact plan command was sent. */
-  function preservePlanInput(
-    confirmed: ManualPlan,
-    sent: ManualPlan,
-    current: ManualPlan,
-  ): ManualPlan {
-    const sentVisits = new Map(sent.scenes.map((scene) => [scene.id, scene])),
-      currentVisits = new Map(current.scenes.map((scene) => [scene.id, scene]));
-    return {
-      ...acknowledgeFields(confirmed, sent, current, ['name']).value,
-      scenes: confirmed.scenes.map((scene) => {
-        const before = sentVisits.get(scene.id),
-          draft = currentVisits.get(scene.id);
-        if (!before || !draft) return scene;
-        return acknowledgeFields(scene, before, draft, ['title', 'notes', 'locationId']).value;
-      }),
-    };
-  }
   async function changeNoteRelations(relations: Note['relations']) {
     const token = context?.token,
       id = selectedNote,
       request = editorSession.generation;
-    if (!token || !noteDraft || noteDraft.id !== id || blocked || composing) return false;
-    noteDraft = { ...noteDraft, relations };
+    if (!token || !drafts.note || drafts.note.id !== id || writer.blocked || composing)
+      return false;
+    drafts.setNote({ ...drafts.note, relations });
     renderRelations();
     schedule();
     return (
@@ -1134,15 +777,15 @@ export function createPreparation(host: PreparationHost) {
     if (
       !token ||
       !id ||
-      !noteDraft ||
+      !drafts.note ||
       !button.isConnected ||
       button.disabled ||
       area.disabled ||
-      blocked
+      writer.blocked
     )
       return;
     // Flush may confirm a revision, but cannot authorize a different text/selection.
-    const before = noteDraft.gmNotes,
+    const before = drafts.note.gmNotes,
       input = area.value,
       start = area.selectionStart,
       end = area.selectionEnd,
@@ -1154,11 +797,11 @@ export function createPreparation(host: PreparationHost) {
       editorSession.generation === run &&
       noteEditorGeneration === editor &&
       selectedNote === id &&
-      !!noteDraft &&
-      noteDraft.gmNotes === before &&
+      !!drafts.note &&
+      drafts.note.gmNotes === before &&
       area.isConnected &&
       !area.disabled &&
-      !blocked;
+      !writer.blocked;
     button.disabled = true;
     try {
       if (!(await flushPreparation()) || !current()) return;
@@ -1166,8 +809,8 @@ export function createPreparation(host: PreparationHost) {
       if (!link || !current()) return;
       const from = rawTextOffset(before, start),
         to = rawTextOffset(before, end);
-      noteDraft = { ...noteDraft!, gmNotes: before.slice(0, from) + link + before.slice(to) };
-      area.value = noteDraft.gmNotes;
+      drafts.setNote({ ...drafts.note!, gmNotes: before.slice(0, from) + link + before.slice(to) });
+      area.value = drafts.note.gmNotes;
       schedule();
       area.focus();
       const caret = start + link.replace(/\r\n/g, '\n').length;
@@ -1181,7 +824,7 @@ export function createPreparation(host: PreparationHost) {
         noteEditorGeneration === editor &&
         selectedNote === id
       )
-        button.disabled = area.disabled || blocked;
+        button.disabled = area.disabled || writer.blocked;
     }
   }
   function initPreparation(
@@ -1222,7 +865,7 @@ export function createPreparation(host: PreparationHost) {
       done: async (id, next, owner) => {
         if (!owner.current()) return;
         usePreparation(next);
-        noteDraft = null;
+        drafts.setNote(null);
         selectedNote = id;
         get<HTMLInputElement>('world-trash').checked = false;
         get<HTMLInputElement>('world-search').value = '';
@@ -1250,7 +893,7 @@ export function createPreparation(host: PreparationHost) {
               restore(true);
               if (selectedNote) revealNote(selectedNote);
             },
-            source ? { id: source.id, label: noteDraft?.title ?? source.title } : undefined,
+            source ? { id: source.id, label: drafts.note?.title ?? source.title } : undefined,
           );
         },
       );
@@ -1289,11 +932,11 @@ export function createPreparation(host: PreparationHost) {
         const next = unwrap(await window.campaign.preparation(token, query));
         if (!current()) return;
         const base = originalPlan(),
-          pending = planDraft,
+          pending = drafts.plan,
           keepPlanInput = !!pending && !!base && pending.id === base.id && !equal(pending, base);
         const confirmed = pending ? next.plans.find((plan) => plan.id === pending.id) : undefined;
-        if (keepPlanInput && planInputConflict(confirmed, base!, pending!)) {
-          blocked = true;
+        if (keepPlanInput && drafts.planInputConflict(confirmed)) {
+          writer.blockConflict();
           get('preparation-refresh').hidden = false;
           syncSaveControl();
           throw new Error(
@@ -1302,10 +945,10 @@ export function createPreparation(host: PreparationHost) {
         }
         usePreparation(next, !!query.trim());
         if (keepPlanInput) {
-          if (confirmed) planDraft = preservePlanInput(confirmed, base!, pending!);
+          if (confirmed) drafts.setPlan(preservePlanInput(confirmed, base!, pending!));
         } else if (planId) {
           selectedPlan = planId;
-          planDraft = null;
+          drafts.setPlan(null);
           selectedScene = null;
         }
         if (id && !keepPlanInput) selectedScene = id;
@@ -1362,7 +1005,7 @@ export function createPreparation(host: PreparationHost) {
           editorSession.generation !== run ||
           selectedNote !== id ||
           noteEditorGeneration !== editor ||
-          !noteDraft
+          !drafts.note
         )
           return null;
         const current = () =>
@@ -1372,26 +1015,26 @@ export function createPreparation(host: PreparationHost) {
         return {
           token: owner.token,
           id,
-          plans: [...data.plans],
+          plans: [...directory.preparation.plans],
           destination: planningTarget ? { ...planningTarget } : undefined,
           current,
           edit: (target, live) => openPreparedNote(target, () => current() && live()),
           returnToRoot: (live) => openPreparedNote(id, () => current() && live()),
-          blocked: () => blocked || composing || hasPendingCommit(owner.campaign.id),
+          blocked: () => writer.blocked || composing || hasPendingCommit(owner.campaign.id),
           room: (room, current, restore) => roomKeyOpen(room, current, restore),
           add: async (root, ids) => {
             if (
               !current() ||
               !(await flushPreparation()) ||
               !current() ||
-              !noteDraft ||
-              noteDraft.id !== root.id ||
-              noteDraft.revision !== root.revision
+              !drafts.note ||
+              drafts.note.id !== root.id ||
+              drafts.note.revision !== root.revision
             )
               throw Error('Übersichtsnotiz geändert. Schließen und die Notiz neu öffnen.');
-            const existing = new Set(noteDraft.relations.map((r) => r.targetId));
+            const existing = new Set(drafts.note.relations.map((r) => r.targetId));
             return changeNoteRelations([
-              ...noteDraft.relations,
+              ...drafts.note.relations,
               ...ids
                 .filter((id) => !existing.has(campaignLocalId(id)))
                 .map((id) => ({ targetId: campaignLocalId(id), label: 'Quelle' })),
@@ -1403,17 +1046,17 @@ export function createPreparation(host: PreparationHost) {
               !valid() ||
               !(await flushPreparation()) ||
               !valid() ||
-              !noteDraft ||
-              noteDraft.id !== root.id ||
-              noteDraft.revision !== root.revision
+              !drafts.note ||
+              drafts.note.id !== root.id ||
+              drafts.note.revision !== root.revision
             )
               throw Error('Übersichtsnotiz geändert. Verknüpfungen erneut prüfen.');
-            const removal = detachNoteSource(noteDraft, id);
+            const removal = detachNoteSource(drafts.note, id);
             if (!removal.relationships.length && !removal.readAloud && !removal.gmNotes)
               throw Error('Diese Quelle ist nicht mehr mit der Übersicht verknüpft.');
-            noteDraft = removal.note;
-            get<HTMLTextAreaElement>('note-read-aloud').value = noteDraft.readAloud;
-            get<HTMLTextAreaElement>('note-gm').value = noteDraft.gmNotes;
+            drafts.setNote(removal.note);
+            get<HTMLTextAreaElement>('note-read-aloud').value = drafts.note.readAloud;
+            get<HTMLTextAreaElement>('note-gm').value = drafts.note.gmNotes;
             renderRelations();
             schedule();
             return (await flushPreparation()) && valid();
@@ -1424,14 +1067,14 @@ export function createPreparation(host: PreparationHost) {
               !valid() ||
               !(await flushPreparation()) ||
               !valid() ||
-              !noteDraft ||
-              noteDraft.id !== root.id ||
-              noteDraft.revision !== root.revision
+              !drafts.note ||
+              drafts.note.id !== root.id ||
+              drafts.note.revision !== root.revision
             )
               throw Error('Übersichtsnotiz geändert. Wiederherstellung erneut prüfen.');
-            noteDraft = restoreNoteSource(noteDraft, recovery);
-            get<HTMLTextAreaElement>('note-read-aloud').value = noteDraft.readAloud;
-            get<HTMLTextAreaElement>('note-gm').value = noteDraft.gmNotes;
+            drafts.setNote(restoreNoteSource(drafts.note, recovery));
+            get<HTMLTextAreaElement>('note-read-aloud').value = drafts.note.readAloud;
+            get<HTMLTextAreaElement>('note-gm').value = drafts.note.gmNotes;
             renderRelations();
             schedule();
             return (await flushPreparation()) && valid();
@@ -1519,8 +1162,8 @@ export function createPreparation(host: PreparationHost) {
       void (async () => {
         const field = excerptField ?? 'gmNotes',
           area = get<HTMLTextAreaElement>(field === 'gmNotes' ? 'note-gm' : 'note-read-aloud'),
-          before = noteDraft;
-        if (!before || blocked || excerptBusy) return;
+          before = drafts.note;
+        if (!before || writer.blocked || excerptBusy) return;
         const start = rawTextOffset(before[field], area.selectionStart),
           end = rawTextOffset(before[field], area.selectionEnd),
           text = before[field].slice(start, end);
@@ -1601,7 +1244,7 @@ export function createPreparation(host: PreparationHost) {
           excerptBusy ||
           excerptReading ||
           excerptComposing ||
-          blocked ||
+          writer.blocked ||
           !value('note-excerpt-title').trim()
         )
           return;
@@ -1658,7 +1301,7 @@ export function createPreparation(host: PreparationHost) {
           get<HTMLDialogElement>('note-excerpt-dialog').close();
           excerpt = null;
           if (!saved) return;
-          noteDraft = structuredClone(originalNote()!);
+          drafts.setNote(structuredClone(originalNote()!));
           renderNoteList();
           renderRelations();
           const status = get('note-excerpt-status');
@@ -1682,8 +1325,8 @@ export function createPreparation(host: PreparationHost) {
             input.source.field === 'gmNotes' ? 'note-gm' : 'note-read-aloud',
           );
           area.focus();
-          const end = noteDraft[input.source.field]
-            .slice(0, input.source.end)
+          const end = drafts
+            .note![input.source.field].slice(0, input.source.end)
             .replace(/\r\n?/g, '\n').length;
           area.setSelectionRange(end, end);
         } finally {
@@ -1725,20 +1368,7 @@ export function createPreparation(host: PreparationHost) {
       ['note-gm', 'gmNotes'],
     ] as const) {
       get(id).addEventListener('input', () => {
-        if (noteDraft) {
-          const text = value(id),
-            before = originalNote()!;
-          noteDraft = {
-            ...noteDraft,
-            [field]:
-              text === before[field].replace(/\r\n?/g, '\n')
-                ? before[field]
-                : field === 'title'
-                  ? text
-                  : preserveLiteralEdit(noteDraft[field], text),
-          };
-          schedule();
-        }
+        if (drafts.editNoteField(field, value(id))) schedule();
       });
       get(id).addEventListener('blur', () => {
         if (!composing) void flushPreparation();
@@ -1833,10 +1463,7 @@ export function createPreparation(host: PreparationHost) {
       })();
     });
     get('plan-name').addEventListener('input', () => {
-      if (planDraft) {
-        planDraft = { ...planDraft, name: value('plan-name') };
-        schedule();
-      }
+      if (drafts.editPlanName(value('plan-name'))) schedule();
     });
     get('plan-name').addEventListener('blur', () => {
       if (!composing) void flushPreparation();
@@ -1854,11 +1481,11 @@ export function createPreparation(host: PreparationHost) {
           context?.token !== token ||
           selectedPlan !== planId ||
           selectedScene !== target ||
-          !planDraft ||
+          !drafts.plan ||
           !target
         )
           return;
-        const next = { ...planDraft, scenes: planDraft.scenes.filter((s) => s.id !== target) };
+        const next = { ...drafts.plan, scenes: drafts.plan.scenes.filter((s) => s.id !== target) };
         if (await change({ kind: 'plan', expectedRevision: next.revision, plan: next }, false)) {
           selectedScene = next.scenes[0]?.id ?? null;
           await renderPlans();
@@ -1869,11 +1496,11 @@ export function createPreparation(host: PreparationHost) {
       void (async () => {
         const token = context?.token,
           planId = selectedPlan;
-        if (changesPending.size) await Promise.all(changesPending);
-        if (pendingWork.value && !(await pendingWork.value)) return;
+        if (writer.changing) await writer.waitForChanges();
+        if (!(await writer.waitForFlush())) return;
         if (
-          !planDraft ||
-          blocked ||
+          !drafts.plan ||
+          writer.blocked ||
           composing ||
           context?.token !== token ||
           selectedPlan !== planId
@@ -1881,8 +1508,8 @@ export function createPreparation(host: PreparationHost) {
           return;
         const id = campaignLocalId(crypto.randomUUID());
         const next = {
-          ...planDraft,
-          scenes: [...planDraft.scenes, { id, title: 'Neue Szene', notes: '', locationId: null }],
+          ...drafts.plan,
+          scenes: [...drafts.plan.scenes, { id, title: 'Neue Szene', notes: '', locationId: null }],
         };
         if (await change({ kind: 'plan', expectedRevision: next.revision, plan: next }, false)) {
           selectedScene = id;
@@ -1902,27 +1529,7 @@ export function createPreparation(host: PreparationHost) {
       ['scene-notes', 'notes'],
     ] as const) {
       get(id).addEventListener('input', () => {
-        if (planDraft) {
-          const before = originalPlan()?.scenes.find((s) => s.id === selectedScene),
-            text = value(id);
-          planDraft = {
-            ...planDraft,
-            scenes: planDraft.scenes.map((s) =>
-              s.id === selectedScene
-                ? {
-                    ...s,
-                    [field]:
-                      before && text === before[field].replace(/\r\n?/g, '\n')
-                        ? before[field]
-                        : field === 'notes'
-                          ? preserveLiteralEdit(s.notes, text)
-                          : text,
-                  }
-                : s,
-            ),
-          };
-          schedule();
-        }
+        if (drafts.editSceneField(selectedScene, field, value(id))) schedule();
       });
       get(id).addEventListener('blur', () => {
         if (!composing) void flushPreparation();
@@ -1937,17 +1544,17 @@ export function createPreparation(host: PreparationHost) {
           const token = context?.token,
             planId = selectedPlan,
             target = selectedScene;
-          if (changesPending.size) await Promise.all(changesPending);
-          if (pendingWork.value && !(await pendingWork.value)) return;
+          if (writer.changing) await writer.waitForChanges();
+          if (!(await writer.waitForFlush())) return;
           if (
-            !planDraft ||
-            blocked ||
+            !drafts.plan ||
+            writer.blocked ||
             composing ||
             context?.token !== token ||
             selectedPlan !== planId
           )
             return;
-          const scenes = [...planDraft.scenes],
+          const scenes = [...drafts.plan.scenes],
             from = scenes.findIndex((s) => s.id === target),
             to = from + delta;
           if (from < 0 || to < 0 || to >= scenes.length) return;
@@ -1956,8 +1563,8 @@ export function createPreparation(host: PreparationHost) {
             await change(
               {
                 kind: 'plan',
-                expectedRevision: planDraft.revision,
-                plan: { ...planDraft, scenes },
+                expectedRevision: drafts.plan.revision,
+                plan: { ...drafts.plan, scenes },
               },
               false,
             )
@@ -1969,188 +1576,15 @@ export function createPreparation(host: PreparationHost) {
       void flushPreparation();
     };
     get('preparation-reconcile').onclick = () => {
-      void (async () => {
-        const command = failedCommandState.value,
-          token = context?.token,
-          request = editorSession.generation;
-        if (!command || !token) return;
-        const owns = () => context?.token === token && editorSession.generation === request;
-        const current = () => owns() && failedCommandState.value === command;
-        try {
-          const result =
-            command.change.kind === 'plan'
-              ? unwrap(await window.campaign.reconcilePreparationPlan(command, token))
-              : unwrap(await window.campaign.reconcilePreparation(command, token));
-          if (!current()) return;
-          if (result.targetChanged || result.outcome === 'conflict') {
-            tell(
-              result.outcome === 'applied'
-                ? 'Speicherung bestätigt, aber der aktuelle Vorbereitungsstand ist verändert oder nicht verlässlich lesbar. Entwurf bleibt offen; sichere den Text vor dem Verwerfen.'
-                : 'Vorbereitungskonflikt bestätigt. Entwurf bleibt offen; sichere den Text vor dem Verwerfen.',
-              true,
-            );
-            return;
-          }
-          const sourceBefore =
-            command.change.kind === 'note' && command.change.excerpt
-              ? noteRow(command.change.excerpt.id)?.note
-              : null;
-          if ('plan' in result && command.change.kind === 'plan')
-            acceptPlan(result.plan, command.change.plan.id);
-          else if ('data' in result) usePreparation(result.data);
-          const change = command.change;
-          const targetId =
-            change.kind === 'note'
-              ? change.note.id
-              : change.kind === 'plan'
-                ? change.plan.id
-                : change.kind === 'location'
-                  ? change.document.id
-                  : change.id;
-          const target = preparationTarget(change),
-            key = draftKey(target.kind, target.id),
-            saved = retained.get(key);
-          if (saved && change.kind === 'note' && change.excerpt) {
-            // This is one guarded append with two provenance directions, never a
-            // plain note draft to autosave after an unapplied command.
-            if (saved.change.kind !== 'note' || !equal(saved.change.note, change.note))
-              throw Error(
-                'Weitere Eingaben liegen über dem Auszugsauftrag. Entwurf bleibt zur manuellen Klärung erhalten.',
-              );
-            unwrap(
-              await window.campaign.discardPreparationDraft(
-                token,
-                target.kind,
-                target.id,
-                saved.writeId,
-              ),
-            );
-            if (!current()) return;
-            retained.set(key, null);
-            if (noteDraft?.id === targetId) noteDraft = structuredClone(noteRow(targetId)!.note);
-          } else if (saved) {
-            const revision =
-              target.kind === 'note'
-                ? data.notes.find((r) => r.note.id === target.id)?.note.revision
-                : target.kind === 'plan'
-                  ? data.plans.find((p) => p.id === target.id)?.revision
-                  : data.locations.find((r) => r.document.id === target.id)?.revision;
-            if (revision === undefined) throw new Error('Der Entwurfsstand ist nicht lesbar.');
-            const rebased: PreparationEdit =
-              saved.change.kind === 'note'
-                ? {
-                    ...saved.change,
-                    expectedRevision: revision,
-                    note: { ...saved.change.note, revision },
-                  }
-                : saved.change.kind === 'plan'
-                  ? {
-                      ...saved.change,
-                      expectedRevision: revision,
-                      plan: { ...saved.change.plan, revision },
-                    }
-                  : { ...saved.change, expectedRevision: revision };
-            const next: PreparationDraft = {
-              version: 1,
-              writeId: crypto.randomUUID(),
-              change: rebased,
-              failedCommand: null,
-            };
-            unwrap(await window.campaign.keepPreparationDrafts(token, [next]));
-            if (!current()) return;
-            retained.set(key, next);
-          }
-          if (sourceBefore && noteDraft?.id === sourceBefore.id) {
-            const sourceNow = noteRow(sourceBefore.id)?.note;
-            if (
-              !sourceNow ||
-              !equal(
-                { ...sourceBefore, revision: sourceNow.revision, relations: sourceNow.relations },
-                sourceNow,
-              )
-            )
-              throw Error(
-                'Die Quelle wurde zusätzlich geändert. Entwurf bleibt zur manuellen Klärung erhalten.',
-              );
-            noteDraft = {
-              ...noteDraft,
-              revision: sourceNow.revision,
-              relations: sourceNow.relations,
-            };
-          }
-          if (
-            (change.kind === 'note' || change.kind === 'note-trash') &&
-            noteDraft?.id === targetId &&
-            originalNote()
-          )
-            noteDraft = { ...noteDraft, revision: originalNote()!.revision };
-          if (change.kind === 'plan' && planDraft?.id === targetId && originalPlan())
-            planDraft = { ...planDraft, revision: originalPlan()!.revision };
-          if (
-            (change.kind === 'location' || change.kind === 'location-trash') &&
-            locationDraft?.document.id === targetId &&
-            originalLocation()
-          )
-            locationDraft = { ...locationDraft, revision: originalLocation()!.revision };
-          const focusOnResolve = document.activeElement === get('preparation-reconcile');
-          blocked = false;
-          failedCommandState.value = null;
-          get('preparation-reconcile').hidden = true;
-          get('preparation-refresh').hidden = true;
-          await retainOpenDrafts();
-          if (!owns()) return;
-          if (change.kind === 'plan') renderSceneList();
-          if (change.kind === 'note' && change.excerpt) {
-            if (selectedNote === targetId) await renderNotes();
-            else {
-              renderRelations();
-              renderNoteList();
-            }
-            if (!owns()) return;
-          }
-          if (
-            change.kind === 'note-trash' &&
-            selectedNote === targetId &&
-            noteThread?.editorId === targetId
-          ) {
-            get<HTMLInputElement>('world-trash').checked = !!noteRow(targetId)?.trashed;
-            await renderNotes();
-            if (!owns()) return;
-            if (focusOnResolve)
-              get('note-editor')
-                .querySelector<HTMLElement>('#note-title:enabled, #note-restore:not([hidden])')
-                ?.focus();
-          }
-          tell(
-            result.outcome === 'applied'
-              ? 'Speicherung der Vorbereitung bestätigt. Weitere Eingaben bleiben offen.'
-              : change.kind === 'note' && change.excerpt
-                ? 'Auszug nicht übernommen. Der Originaltext bleibt in der Quelle; dort erneut markieren und ausdrücklich übernehmen.'
-                : 'Änderung nicht gespeichert. Eingabe abschließen, um den Entwurf erneut zu übernehmen.',
-          );
-        } catch (error) {
-          if (owns()) tell((error as Error).message + ' Status bleibt ungeklärt.', true);
-        }
-      })();
+      void writer.reconcile();
     };
     get('preparation-refresh').onclick = () => {
       void (async () => {
         try {
-          if (context && failedCommandState.value) {
-            const target = preparationTarget(failedCommandState.value.change),
-              key = draftKey(target.kind, target.id),
-              saved = retained.get(key);
-            if (saved) {
-              unwrap(
-                await window.campaign.discardPreparationDraft(
-                  context.token,
-                  target.kind,
-                  target.id,
-                  saved.writeId,
-                ),
-              );
-              retained.set(key, null);
-            }
+          if (context && writer.failedCommand) {
+            const token = context.token;
+            const current = editorSession.capture(() => [context?.token]);
+            if (!(await drafts.discardCommandDraft(writer.failedCommand, token, current))) return;
             await activatePreparation(context);
             tell(
               'Gespeicherter Stand geöffnet. Betroffener Entwurf verworfen; andere Entwürfe bleiben erhalten.',
@@ -2201,7 +1635,7 @@ export function createPreparation(host: PreparationHost) {
     };
     get('relation-add').onclick = () => {
       void (async () => {
-        if (!noteDraft || blocked) return;
+        if (!drafts.note || writer.blocked) return;
         const label = value('relation-label'),
           target = value('relation-target');
         if (!label.trim() || !target) {
@@ -2209,7 +1643,7 @@ export function createPreparation(host: PreparationHost) {
           return;
         }
         if (
-          noteDraft.relations.some(
+          drafts.note.relations.some(
             (relation) => relation.targetId === target && relation.label === label,
           )
         ) {
@@ -2218,7 +1652,7 @@ export function createPreparation(host: PreparationHost) {
         }
         if (
           (await changeNoteRelations([
-            ...noteDraft.relations,
+            ...drafts.note.relations,
             { targetId: campaignLocalId(target), label },
           ])) &&
           value('relation-label') === label
@@ -2227,12 +1661,12 @@ export function createPreparation(host: PreparationHost) {
       })();
     };
     get('scene-location').onchange = () => {
-      if (!planDraft) return;
+      if (!drafts.plan) return;
       const locationId = value('scene-location') ? campaignLocalId(value('scene-location')) : null;
-      planDraft = {
-        ...planDraft,
-        scenes: planDraft.scenes.map((s) => (s.id === selectedScene ? { ...s, locationId } : s)),
-      };
+      drafts.setPlan({
+        ...drafts.plan,
+        scenes: drafts.plan.scenes.map((s) => (s.id === selectedScene ? { ...s, locationId } : s)),
+      });
       get<HTMLButtonElement>('scene-open-location').disabled = !locationId;
       schedule();
     };
@@ -2241,7 +1675,9 @@ export function createPreparation(host: PreparationHost) {
         if (!(await flushPreparation())) return;
         const scene = originalPlan()?.scenes.find((s) => s.id === selectedScene);
         if (!scene?.locationId) return;
-        const row = data.locations.find((row) => row.document.id === scene.locationId);
+        const row = directory.preparation.locations.find(
+          (row) => row.document.id === scene.locationId,
+        );
         if (!row) {
           tell('Szenenort ist nicht verfügbar. Die Ortskennung bleibt erhalten.', true);
           return;
@@ -2309,8 +1745,14 @@ export function createPreparation(host: PreparationHost) {
       current = () =>
         context?.token === token && editorSession.generation === request && stillCurrent();
     if (!token || !(await flushPreparation()) || !current()) return false;
+    // Flushing may drain later input. Only the subsequent read must retain the
+    // exact selection and draft that it started from, including nested returns.
+    const readCurrent = editorSession.capture(
+      () => [selectedNote, noteEditorGeneration, editorSession.input.version],
+      current,
+    );
     const next = unwrap(await window.campaign.preparation(token, ''));
-    if (!current()) return false;
+    if (!readCurrent()) return false;
     usePreparation(next);
     const row = noteRow(id);
     if (!row) {
@@ -2351,7 +1793,7 @@ export function createPreparation(host: PreparationHost) {
       !stillCurrent()
     )
       return;
-    const row = data.locations.find((row) => row.document.id === id);
+    const row = directory.preparation.locations.find((row) => row.document.id === id);
     if (!row) {
       tell('Ort ist nicht verfügbar. Die Ortskennung bleibt erhalten.', true);
       return;
@@ -2392,7 +1834,7 @@ export function createPreparation(host: PreparationHost) {
     get<HTMLInputElement>('world-search').value = '';
     selectedPlan = planId;
     selectedScene = visitId;
-    planDraft = null;
+    drafts.setPlan(null);
     showPreparationArea(true);
     showLocations(false);
     await renderPlans();
@@ -2404,7 +1846,6 @@ export function createPreparation(host: PreparationHost) {
       target.focus({ preventScroll: true });
     }
   }
-
   /** Follow a plan identity without guessing a visit from a room's title. */
   async function openPreparedPlan(
     planId: string,
@@ -2429,7 +1870,7 @@ export function createPreparation(host: PreparationHost) {
     selectedPlan = planId;
     if (previous !== planId || !plan.scenes.some((scene) => scene.id === selectedScene))
       selectedScene = plan.scenes[0]?.id ?? null;
-    planDraft = null;
+    drafts.setPlan(null);
     showPreparationArea(true);
     showLocations(false);
     await renderPlans();
@@ -2439,7 +1880,6 @@ export function createPreparation(host: PreparationHost) {
     target.focus({ preventScroll: true });
     return true;
   }
-
   async function prepareNextVisit(
     planId: string | null,
     seed: {
@@ -2454,7 +1894,13 @@ export function createPreparation(host: PreparationHost) {
       noteThread?: import('./note-thread-contracts').NoteThreadSelection;
     },
     stillCurrent: () => boolean = () => true,
-  ): Promise<{ planId: string; visitId: string } | undefined> {
+  ): Promise<
+    | {
+        planId: string;
+        visitId: string;
+      }
+    | undefined
+  > {
     const owner = context,
       token = owner?.token,
       epoch = editorSession.generation,
@@ -2474,10 +1920,10 @@ export function createPreparation(host: PreparationHost) {
       selectedScene === selection[1] &&
       selectedNote === selection[2] &&
       selectedLocation === selection[3] &&
-      !blocked &&
+      !writer.blocked &&
       !composing;
     const requested = input.newPlan ? null : (planId ?? selectedPlan),
-      shown = data.plans.find((plan) => plan.id === requested);
+      shown = directory.preparation.plans.find((plan) => plan.id === requested);
     const next = unwrap(await window.campaign.preparation(token, ''));
     if (!current()) return;
     if (!sameInput())
@@ -2499,7 +1945,7 @@ export function createPreparation(host: PreparationHost) {
       );
     if (target) {
       const saved = await loadedDraft('plan', target.id);
-      if (!current() || !sameInput() || saved || draftProblems.has(draftKey('plan', target.id)))
+      if (!current() || !sameInput() || saved || drafts.problem(draftKey('plan', target.id)))
         throw new Error(
           'Offener Planentwurf oder ursprünglicher Auftrag vorhanden. Im Zielplan zuerst prüfen; kein neuer Besuch wurde angelegt.',
         );
@@ -2555,7 +2001,7 @@ export function createPreparation(host: PreparationHost) {
     if (!sameInput()) return;
     selectedPlan = plan.id;
     selectedScene = id;
-    planDraft = null;
+    drafts.setPlan(null);
     get<HTMLInputElement>('world-search').value = '';
     showPreparationArea(true);
     showLocations(false);
@@ -2566,7 +2012,6 @@ export function createPreparation(host: PreparationHost) {
       return { planId: plan.id, visitId: id };
     }
   }
-
   function showLocations(show: boolean) {
     get('knowledge-panel').hidden = show;
     get('locations-panel').hidden = !show;
@@ -2580,15 +2025,17 @@ export function createPreparation(host: PreparationHost) {
     none.value = '';
     none.textContent = 'Kein Ort';
     select.append(none);
-    const current = planDraft?.scenes.find((s) => s.id === selectedScene)?.locationId;
-    for (const row of data.locations.filter((row) => !row.trashed || row.document.id === current)) {
+    const current = drafts.plan?.scenes.find((s) => s.id === selectedScene)?.locationId;
+    for (const row of directory.preparation.locations.filter(
+      (row) => !row.trashed || row.document.id === current,
+    )) {
       const option = document.createElement('option');
       option.value = row.document.id;
       option.textContent = row.document.name + (row.trashed ? ' (Papierkorb)' : '');
       option.disabled = row.trashed;
       select.append(option);
     }
-    if (current && !data.locations.some((row) => row.document.id === current)) {
+    if (current && !directory.preparation.locations.some((row) => row.document.id === current)) {
       const option = document.createElement('option');
       option.value = current;
       option.textContent = 'Ort nicht verfügbar';
@@ -2599,59 +2046,47 @@ export function createPreparation(host: PreparationHost) {
     get<HTMLButtonElement>('scene-open-location').disabled = !current;
   }
   function renderLocationList() {
-    const list = get('location-list');
-    list.replaceChildren();
-    const needle = value('location-search').toLocaleLowerCase();
-    const trash = get<HTMLInputElement>('location-trash').checked,
-      token = context?.token;
-    for (const row of data.locations.filter(
-      (row) =>
-        row.trashed === trash &&
-        `${row.document.name} ${row.document.sections.map((s) => s.markdown).join('\n')}`
-          .toLocaleLowerCase()
-          .includes(needle),
-    )) {
-      const button = document.createElement('button');
-      button.textContent = row.document.name;
-      button.setAttribute('aria-pressed', String(row.document.id === selectedLocation));
-      button.onclick = () => {
-        void (async () => {
-          if (context?.token !== token || !(await leavePreparation()) || context?.token !== token)
-            return;
-          selectedLocation = row.document.id;
-          await renderLocations();
-        })();
-      };
-      list.append(button);
-    }
+    const current = editorSession.capture(() => [context?.token]);
+    listView.locations(
+      {
+        rows: directory.preparation.locations,
+        selected: selectedLocation,
+        query: value('location-search'),
+        trash: get<HTMLInputElement>('location-trash').checked,
+      },
+      async (id) => {
+        if (!current() || !(await leavePreparation()) || !current()) return;
+        selectedLocation = id;
+        await renderLocations();
+      },
+    );
   }
   async function renderLocations() {
     const row = originalLocation();
-    locationDraft = row && !row.trashed ? structuredClone(row) : null;
+    drafts.setLocation(row && !row.trashed ? structuredClone(row) : null);
     renderLocationList();
     const token = context?.token,
       id = row?.document.id;
     const saved = row ? await loadedDraft('location', row.document.id) : null;
     if (context?.token !== token || originalLocation()?.document.id !== id) return;
     if (saved?.change.kind === 'location' && row && !row.trashed)
-      locationDraft = {
+      drafts.setLocation({
         ...row,
         document: structuredClone(saved.change.document),
         revision: saved.change.expectedRevision!,
-      };
+      });
     get('location-editor').hidden = !row;
     get('location-empty').hidden = !!row;
     get('location-sections').replaceChildren();
     get('location-maps').replaceChildren();
     get('location-map-actions').replaceChildren();
     if (!row) return;
-    const shown = locationDraft?.document ?? row.document,
-      readonly = row.trashed || draftProblems.has(draftKey('location', row.document.id));
+    const shown = drafts.location?.document ?? row.document,
+      readonly = row.trashed || drafts.problem(draftKey('location', row.document.id));
     get<HTMLInputElement>('location-name').value = shown.name;
     get<HTMLInputElement>('location-name').disabled = readonly;
     renderLocationSections();
-
-    for (const map of data.maps) {
+    for (const map of directory.preparation.maps) {
       const label = document.createElement('label'),
         box = document.createElement('input');
       box.type = 'checkbox';
@@ -2661,10 +2096,16 @@ export function createPreparation(host: PreparationHost) {
       label.append(box, document.createTextNode(' ' + map.name));
       get('location-maps').append(label);
       box.onchange = () => {
-        if (!locationDraft || context?.token !== token || locationDraft.document.id !== id) return;
-        const detailMaps = locationDraft.document.detailMaps.filter((d) => d.documentId !== map.id);
+        if (!drafts.location || context?.token !== token || drafts.location.document.id !== id)
+          return;
+        const detailMaps = drafts.location.document.detailMaps.filter(
+          (d) => d.documentId !== map.id,
+        );
         if (box.checked) detailMaps.push({ kind: 'dungeon', documentId: map.id });
-        locationDraft = { ...locationDraft, document: { ...locationDraft.document, detailMaps } };
+        drafts.setLocation({
+          ...drafts.location,
+          document: { ...drafts.location.document, detailMaps },
+        });
         schedule();
       };
     }
@@ -2716,14 +2157,14 @@ export function createPreparation(host: PreparationHost) {
       campaignId = owner?.campaign.id,
       run = editorSession.generation,
       epoch = ++locationSectionsGeneration;
-    const row = locationDraft ?? originalLocation(),
+    const row = drafts.location ?? originalLocation(),
       root = get('location-sections'),
       token = context?.token,
       id = row?.document.id;
     root.replaceChildren();
     if (!row) return;
     const readonly =
-      row.trashed || blocked || draftProblems.has(draftKey('location', row.document.id));
+      row.trashed || writer.blocked || drafts.problem(draftKey('location', row.document.id));
     const button = (text: string, action: () => Promise<void>) => {
       const b = document.createElement('button');
       b.type = 'button';
@@ -2748,11 +2189,14 @@ export function createPreparation(host: PreparationHost) {
       context?.campaign.id === campaignId &&
       editorSession.generation === run &&
       locationSectionsGeneration === epoch &&
-      locationDraft?.document.id === id &&
-      !blocked;
+      drafts.location?.document.id === id &&
+      !writer.blocked;
     const update = (sections: typeof row.document.sections) => {
       if (!owned()) return;
-      locationDraft = { ...locationDraft!, document: { ...locationDraft!.document, sections } };
+      drafts.setLocation({
+        ...drafts.location!,
+        document: { ...drafts.location!.document, sections },
+      });
       schedule();
       renderLocationSections();
     };
@@ -2772,26 +2216,7 @@ export function createPreparation(host: PreparationHost) {
       tools.className = 'toolbar';
       field.oninput = () => {
         if (!owned()) return;
-        const current = locationDraft!.document.sections.find((s) => s.id === section.id);
-        if (!current) return;
-        locationDraft = {
-          ...locationDraft!,
-          document: {
-            ...locationDraft!.document,
-            sections: locationDraft!.document.sections.map((s) =>
-              s.id === section.id
-                ? {
-                    ...s,
-                    markdown:
-                      field.value === current.markdown.replace(/\r\n?/g, '\n')
-                        ? current.markdown
-                        : field.value,
-                  }
-                : s,
-            ),
-          },
-        };
-        schedule();
+        if (drafts.editLocationSection(section.id, field.value)) schedule();
       };
       field.onblur = () => {
         if (!composing) void flushPreparation();
@@ -2801,20 +2226,21 @@ export function createPreparation(host: PreparationHost) {
           const start = field.selectionStart,
             end = field.selectionEnd,
             alias = field.value.slice(start, end),
-            before = locationDraft?.document.sections.find((s) => s.id === section.id)?.markdown;
+            before = drafts.location?.document.sections.find((s) => s.id === section.id)?.markdown;
           const current = () =>
             owned() &&
             field.isConnected &&
             !field.disabled &&
-            locationDraft?.document.sections.find((s) => s.id === section.id)?.markdown === before;
+            drafts.location?.document.sections.find((s) => s.id === section.id)?.markdown ===
+              before;
           if (before === undefined || !(await flushPreparation()) || !current()) return;
           const link = await chooseTextReference(token!, alias, current);
           if (!link || !current()) return;
-          locationDraft = {
-            ...locationDraft!,
+          drafts.setLocation({
+            ...drafts.location!,
             document: {
-              ...locationDraft!.document,
-              sections: locationDraft!.document.sections.map((s) =>
+              ...drafts.location!.document,
+              sections: drafts.location!.document.sections.map((s) =>
                 s.id === section.id
                   ? {
                       ...s,
@@ -2826,8 +2252,10 @@ export function createPreparation(host: PreparationHost) {
                   : s,
               ),
             },
-          };
-          field.value = locationDraft.document.sections.find((s) => s.id === section.id)!.markdown;
+          });
+          field.value = drafts.location!.document.sections.find(
+            (s) => s.id === section.id,
+          )!.markdown;
           schedule();
           field.focus();
           const caret = start + link.replace(/\r\n/g, '\n').length;
@@ -2840,7 +2268,7 @@ export function createPreparation(host: PreparationHost) {
           const title = await sectionTitleDialog('Abschnitt umbenennen', section.title);
           if (title && owned())
             update(
-              locationDraft!.document.sections.map((s) =>
+              drafts.location!.document.sections.map((s) =>
                 s.id === section.id ? { ...s, title } : s,
               ),
             );
@@ -2848,7 +2276,7 @@ export function createPreparation(host: PreparationHost) {
       );
       const move = (delta: number) => async () => {
         if (!(await flushPreparation()) || !owned()) return;
-        const sections = [...locationDraft!.document.sections],
+        const sections = [...drafts.location!.document.sections],
           from = sections.findIndex((s) => s.id === section.id),
           to = from + delta;
         if (from < 0 || to < 0 || to >= sections.length) return;
@@ -2870,7 +2298,7 @@ export function createPreparation(host: PreparationHost) {
         const title = await sectionTitleDialog('Neuen Ortsabschnitt anlegen', '');
         if (title && owned())
           update([
-            ...locationDraft!.document.sections,
+            ...drafts.location!.document.sections,
             { id: crypto.randomUUID(), title, markdown: '' },
           ]);
       }),
@@ -2888,12 +2316,12 @@ export function createPreparation(host: PreparationHost) {
     root.prepend(read);
   }
   function renderLocationMapActions() {
-    const row = locationDraft ?? originalLocation();
+    const row = drafts.location ?? originalLocation();
     get('location-map-actions').replaceChildren();
     if (!row || row.trashed) return;
     const token = context?.token;
     for (const binding of row.document.detailMaps) {
-      const map = data.maps.find((map) => map.id === binding.documentId);
+      const map = directory.preparation.maps.find((map) => map.id === binding.documentId);
       if (!map) continue;
       const button = document.createElement('button');
       button.textContent = `Karte öffnen: ${map.name}`;
@@ -2961,7 +2389,7 @@ export function createPreparation(host: PreparationHost) {
         if (context?.token === token) revealNote(id);
       })();
     };
-    for (const relation of (noteDraft?.id === row.note.id ? noteDraft : row.note).relations) {
+    for (const relation of (drafts.note?.id === row.note.id ? drafts.note : row.note).relations) {
       const target = noteRow(relation.targetId),
         item = document.createElement('div'),
         button = document.createElement('button');
@@ -2976,9 +2404,9 @@ export function createPreparation(host: PreparationHost) {
         const remove = document.createElement('button');
         remove.textContent = 'Beziehung lösen';
         remove.onclick = () => {
-          if (current() && remove.isConnected && noteDraft)
+          if (current() && remove.isConnected && drafts.note)
             void changeNoteRelations(
-              noteDraft.relations.filter(
+              drafts.note.relations.filter(
                 (r) => r.targetId !== relation.targetId || r.label !== relation.label,
               ),
             );
@@ -3048,13 +2476,7 @@ export function createPreparation(host: PreparationHost) {
       })();
     };
     get('location-name').oninput = () => {
-      if (locationDraft) {
-        locationDraft = {
-          ...locationDraft,
-          document: { ...locationDraft.document, name: value('location-name') },
-        };
-        schedule();
-      }
+      if (drafts.editLocationName(value('location-name'))) schedule();
     };
     get('location-name').onblur = () => {
       if (!composing) void flushPreparation();
@@ -3104,18 +2526,15 @@ export function createPreparation(host: PreparationHost) {
         })();
       };
   }
-
   editorSession.onDeactivate(() => {
     if (timer) clearTimeout(timer);
     timer = null;
   });
-
   editorSession.observeDraft(() => ({
-    openInput: hasOpenInput,
-    retainedDraft: [...retained.values()].some(Boolean),
-    unresolvedCommand: !!failedCommandState.value,
+    openInput: drafts.openInput,
+    retainedDraft: drafts.hasRetained,
+    unresolvedCommand: !!writer.failedCommand,
   }));
-
   return {
     editorSession,
     showDayPreparation,

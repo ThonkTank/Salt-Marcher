@@ -28,9 +28,9 @@ und Teilbelege werden nicht durch neue Produktbehauptungen überschrieben.
 
 | Bestehende Fälle / Referenz | Beobachteter Stand und konkret fehlende Wirkung | Nächste gezielte Klärung / Lieferung |
 | --- | --- | --- |
-| WD-005.01–02, WD-006.01–02; Wonderdraft 1.1.8.2 | Die im [Landschaftsvertrag](../contract/landscape-tools.md#nachprüfung-bewegter-originalpinsel) gebundenen stationären und bewegten Land-/Fraktalproben belegen Originalwirkungen, keinen aktuellen Hostvergleich. Offen bleiben vollständig zugeordnete Rand-/Übergangswirkungen und Wirkung auf vorhandene Elemente; reine Reglernamen entscheiden keine Pflicht. | Vor TW-G1/4 prüfen, ob vorhandene Proben Küste, Überfahren und Erhalt bestehender Details ausreichend konkretisieren. Nur bei fehlender Nutzerwirkung Insel/Bucht mit einem überlappenden Zug, Gegenkorrektur und Wiederöffnung im Original ergänzen; zusätzliche Gestaltung vor HEX-11/16. Höhen- und Spezialpinsel bleiben durch den jüngeren Nutzerauftrag eigenständig gebunden. |
-| WD-008.01–02; Wonderdraft 1.1.8.2 | Vollständige Wasserfarb-/Textur-/Küsteneffekte nicht gemessen; ein Meeresspiegel mit daraus abgeleiteter Küste ist bereits eigener bestätigter Umfang. | Vor TW-G4 nur sichtbare Küstenlesbarkeit gegen vorhandene Bilder prüfen; fehlende eigenständige Gestaltungswirkungen an Küste/offenem Meer vor HEX-12/24 beobachten. Keine neue See- oder Effektlieferung aus einem offenen Regler ableiten. |
-| WD-010.01–03, WD-012.01–02; Wonderdraft 1.1.8.2 | [Optionssitzung und fehlgeschlagene Wirkungsprobe](../contract/landscape-tools.md#vergleich-und-nachweise) zeigen keine vollständige gespeicherte Mäander-/Rauheits-/Spitzen-/Übergangs- oder Anschlusswirkung. Eigene Planerbelege entscheiden diese Originalfragen nicht. | Vor Flussabschluss prüfen, ob eine solche Wirkung Pflichtpunkt, Editierbarkeit oder Mündung verändert; nur dann kleine Flussgabel mit Anschluss und Wiederöffnung im Original ergänzen. Zusätzliche Form-/Stilvarianten vor HEX-13/14 klären. Der bestätigte begrenzte Bettabtrag braucht keine erfundene Wonderdraft-Entsprechung. |
+| WD-005.01–02, WD-006.01–02; Wonderdraft 1.1.8.2 | Die im [Landschaftsvertrag](../contract/landscape-tools.md#nachprüfung-bewegter-originalpinsel) gebundenen stationären und bewegten Land-/Fraktalproben belegen Originalwirkungen, keinen aktuellen Hostvergleich. Offen bleiben vollständig zugeordnete Rand-/Übergangswirkungen und Wirkung auf vorhandene Elemente; reine Reglernamen entscheiden keine Pflicht. | Der [Abgleich unten](#abgleich-für-terrain-meer-und-den-bestätigten-fluss--28102026) konkretisiert Küste/Überfahren für TW-G1/4; aktuelle Hostbelege und Detailschutz bleiben offen. Zusätzliche Gestaltung vor HEX-11/16; nur eine neu benannte fehlende Ergebniswirkung gezielt im Original ergänzen. Höhen- und Spezialpinsel bleiben durch den jüngeren Nutzerauftrag eigenständig gebunden. |
+| WD-008.01–02; Wonderdraft 1.1.8.2 | Vollständige Wasserfarb-/Textur-/Küsteneffekte nicht gemessen; ein Meeresspiegel mit daraus abgeleiteter Küste ist bereits eigener bestätigter Umfang. | Vorhandene Bilder im [Abgleich unten](#abgleich-für-terrain-meer-und-den-bestätigten-fluss--28102026) eingeordnet; aktuelle Küstenlesbarkeit bleibt TW-G4-Nachweis. Fehlende eigenständige Gestaltungswirkungen an Küste/offenem Meer vor HEX-12/24 beobachten. Keine neue See- oder Effektlieferung aus einem offenen Regler ableiten. |
+| WD-010.01–03, WD-012.01–02; Wonderdraft 1.1.8.2 | [Optionssitzung und fehlgeschlagene Wirkungsprobe](../contract/landscape-tools.md#vergleich-und-nachweise) zeigen keine vollständige gespeicherte Mäander-/Rauheits-/Spitzen-/Übergangs- oder Anschlusswirkung. Eigene Planerbelege entscheiden diese Originalfragen nicht. | Der [Abgleich unten](#abgleich-für-terrain-meer-und-den-bestätigten-fluss--28102026) trennt den entschiedenen Flusszyklus von offenen WD-Wirkungen. Nur eine zusätzlich benannte Wirkung auf Pflichtpunkt, Editierbarkeit oder Mündung erfordert vor diesem Abschluss eine kleine Originalgabel mit Anschluss/Wiederöffnung. Zusätzliche Form-/Stilvarianten vor HEX-13/14 klären. Der bestätigte begrenzte Bettabtrag braucht keine erfundene Wonderdraft-Entsprechung. |
 | Übrige WD-Gruppen, besonders WD-036.01–02 | Paket-/Menüzuordnung und bestehende Teilproben lassen weitere selbständige Ergebnisse offen; eine interne Hilfsmodulrolle ist noch keine Nutzerfunktion. | Vor dem jeweiligen Ausbau nach der bestehenden Original→Phase-Tabelle die konkrete Nutzeraufgabe festlegen, vorhandene Belege prüfen und nur die fehlende Wirkung beobachten. Gesamtinventar spätestens vor HEX-28 schließen; keine Aufwandsschätzung für unbekannte Funktionen. |
 
 Jede Ergänzung bindet Version, vorhandene WD-ID/Quelle, Ausgangskarte und
@@ -39,6 +39,42 @@ betroffen sowie abgeleitete eigene Anforderung und Lieferung. Unverfügbare
 Originalproben bleiben offen. Eine abweichende fachliche Zielwirkung braucht
 eine ausdrückliche Entscheidung; die Zusammenfassung mehrerer Gesten zu
 einem gleichwertigen Werkzeug benötigt keinen identischen Gestennachbau.
+
+### Abgleich für Terrain, Meer und den bestätigten Fluss · 28.10.2026
+
+Geprüft wurden die bestehenden WD-Einträge, die bestätigten TW-G1/4-Ziele und
+bereits aufgezeichnete Originalproben; **kein neuer Originalbedienlauf**.
+Wonderdraft 1.1.8.2 ist für diese Proben gebunden. Der aktuell verfügbare
+Programmweg ist `/opt/Wonderdraft/Wonderdraft.x86_64`; der oben übernommene
+Installationsweg ist hier nicht vorhanden. Das ändert keine Referenzversion.
+
+| Bestehende IDs / Probe | Eingaben und belegtes Ergebnis | Konsequenz für die begrenzte Lieferung / offene Folge |
+| --- | --- | --- |
+| WD-005/006; [bewegte Landpinsel vom 19.10.](https://github.com/ThonkTank/Salt-Marcher/blob/16eb0aa8807ac21704abfea5412ac3a22033a23a/docs/reference/wonderdraft-moving-fractals-20261019/README.md) | Karte 1920 × 1080, Anzeige 47 %, Größe 128, Fraktalrauheit 2; Gerade/S-Kurve von (300,520) nach (700,520), 960/12000 ms, Überfahren/Umkehr. Schnelle normale Land-/Radierzüge bilden geschlossene Flächen bzw. Wasserkanäle mit Küstenkante; fraktale Wirkung ist zeitabhängig und akkumuliert. Undo/Redo und gespeichertes Wiederöffnen sind im Bericht mit Kartenpixelvergleichen gebunden. | Küste erzeugen, zurückdrängen, überfahren und wieder öffnen sind ausreichend konkret für den [Terrainvertrag](../requirements/terrain-relief.md#geklärte-küstenwirkung-und-aktuelle-lieferblocker). Keine neue Originalprobe nötig, um diese Nutzerwirkungen zu spezifizieren. Absolute Höhe, direkter Liveauftrag und Parametereffekt folgen dem jüngeren Eigenauftrag; eine lückenlose schnelle Fraktalspur ist keine abgeleitete Pflicht. |
+| WD-005.01/008; Registerbeobachtungen vom 09.10. und Küstenbilder vom 19.10. | WD-005.01 nennt Insel/Landzunge, Coastal FX Distance, Kontur/Blend, Stil-/Farbvariation und frischen Prozess. Die 19.10.-Bilder zeigen unterscheidbare Land-/Wasserflächen samt Küste. Sie vermessen keine vollständige Wassertextur-/Farb-/Effektwirkung. | TW-G4 fordert eine lesbare, stetige Küste; Auswahl aller Originalstile ist kein Teil dieses Abschlusses. Wasser-/Konturfarben, Texturen und Effektdialekte bleiben vor HEX-12/24 bzw. HEX-11 zu klären. Aus fehlenden Reglerproben folgt kein neuer Meerwerkzeugauftrag. |
+| WD-010.01–03/012.01–02; Options- und Auswahlbeobachtungen | Register und Landschaftsvertrag nennen Oberflächen-/Auswahlteilbelege; gespeicherte Mäander-, Spitzen-, Kurvenbearbeitungs- und Anschlusswirkungen sind nicht vollständig belegt. Der gescheiterte Wirkungsversuch bleibt gescheitert. | Der [begrenzte Flussvertrag](../contract/terrain-routes.md#abgrenzung-gegen-offene-originalwirkungen) entscheidet Pflichtpunkte, fallendes Profil, editierbaren Verlauf, begrenzten Abtrag und Mündungsbezug aus dem Eigenauftrag. Kein nachgewiesener offener WD-Unterfall ändert derzeit diese Regeln. Volle grafische Form-/Stil- und Punktbearbeitungsparität bleibt vor HEX-13/14 offen. |
+
+**Beleggrenzen:** Die Rohdaten der 19.10.-Bewegungsprobe liegen hier unter
+`/home/aaron/.cache/dungeon-native-qa/wonderdraft-moving-fractals-20261019/`.
+`session.json`, `measurements.json`, Eingabepfade und die 25 referenzierten
+Zugbilder sind vorhanden; alle 25 Bildhashes entsprechen dem Messbericht.
+Drei vorhandene Frames (009, 022, 028) wurden erneut gelesen. Das bestätigt
+Verfügbarkeit/Unverändertheit dieser Belege, weder neue Originalausführung
+noch Gleichwertigkeit mit SaltMarcher. Der Sitzungsabschluss bleibt `failed`
+(`Original/display exited before explicit stop`). Die im WD-005.01-Eintrag
+referenzierten 09.10.-Metadaten und die Karte `Exit-save.wonderdraft_map` sowie
+`/tmp/wonderdraft-options-bssu1c/path-options.png` sind hier nicht verfügbar.
+Ihre Registerbeobachtungen werden nicht als erneut geprüfte Rohbelege ausgegeben.
+Die `gap`-Felder und offenen Acceptance-Zustände bleiben erhalten.
+
+Eine neue Originalprobe wird erst für eine **benannte**, in diesen Verträgen
+noch nicht entschiedene Ergebniswirkung begonnen: eine kleine Kontrollkarte,
+eine Variante und Gegenkorrektur, Abschluss/Abbruch und gespeichertes
+Wiederöffnen; Version, Eingaben und Rohbeleg am vorhandenen WD-Fall ergänzen.
+Zunächst nur diesen Versuch begrenzen. Fehlender Zugang oder erfolgloser
+Versuch bleibt offen; ohne Ergebnis keine Umsetzungsschätzung. Aktuelle
+Lieferblocker sind die verlinkten eigenen Funktions-/Darstellungs-/Leistungs-
+und Paketnachweise, kein pauschal ungeprüftes Wonderdraft-Gesamtinventar.
 
 ## HEX-00: bestehende Referenzläufe und offene Fachfragen
 

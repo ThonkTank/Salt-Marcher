@@ -161,6 +161,15 @@ eigenständige Abschlüsse.
 
 ## E2E-02 – Vorbereitung → Live-Spiel → Abschluss
 
+Die [Runde-9-Pflichtfallzuordnung und neue gemeinsame native Spielkette](../../reference/round9-e2e-20261028/README.md)
+verbinden vorhandene Teilbelege über dieselbe Kampagne, eigenständige
+SQLite-Orakel und einen neuen Electronprozess. Der ausführbare Katalog in
+`tools/live-e2e02-scenarios.mjs` hält fehlende Eingänge ausdrücklich offen;
+ein bestandener Teilablauf schließt E2E-02 nicht. Insbesondere fehlen dem
+aktuellen Initialize noch der versionierte immutable PreparationSnapshot und
+eine eigene LiveSession-Identität. E2E-03 und E2E-04 behalten ihre getrennten
+Abschlüsse und dort konkret zugeordneten Restprüfungen.
+
 **Nutzerablauf:** Ort, Party und Encounter vorbereiten → bestätigten immutable Preparation-Snapshot übernehmen → LiveSession ausdrücklich initialisieren → Party Split/Move/Rejoin, Primary-/SplitScene und Focus nutzen → Encounter/Chase/Combat/Loot ausführen → Session abschließen. Vorbereitung bleibt unverändert, solange kein eigener bestätigter Vorbereitungsbefehl sie ändert.
 
 **Harte Eingänge:** CampaignId/Revision, PreparationId/Revision, SessionPlanId, immutable SourceProvenance, planning-only ExpectedParty, LocationRef und EncounterPlanRef; Character-/Party-/LiveSession-/PrimaryScene-/SplitScene-/Mask-IDs sowie Scene-/Assignment-/Focus-Revisionen. Der PreparationSnapshot ist eine tief kopierte, immutable Runtimeeingabe. Der versionierte EncounterPlan hält stabile Creature-/Item-/EncounterTable-Referenzen; eigene revisionierte Encounter-/Chase-/Combat-Laufzeitidentitäten, Participant- und Group-vs-individual-Zuordnung sowie ein atomarer Loot-/Reward-/Ledger-Ausgang besitzen eigene Identität und Revision. Planung, Runtime und Ledger haben getrennte Datenmodelle und denselben Receipt-/Savevertrag; Katalogreferenzen werden nicht als Fremdpayload kopiert. Der gepinnte D&D-2014-Vertrag bestimmt Bewertung und Kampf; es gibt keinen 2024-Modus, keine 2024-Budgets und keine Regelversionsauswahl. Music/Weather/Shops konsumieren nur bestätigte Focus-/Clock-/Location-Projektionen; ihre manuelle Steuerung und Fehlergrenzen bleiben eigene Bereichsgates.

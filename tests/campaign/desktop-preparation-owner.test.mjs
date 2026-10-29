@@ -14,7 +14,16 @@ for (const [entry, name] of [
   ['src/app/storage/store.ts', 'store'],
 ])
   buildSync({
-    entryPoints: [entry],
+    ...(name === 'editor'
+      ? {
+          stdin: {
+            contents:
+              "export * from './src/app/campaign/preparation'; export * from './src/app/campaign/session-packet-ui';",
+            resolveDir: process.cwd(),
+            loader: 'ts',
+          },
+        }
+      : { entryPoints: [entry] }),
     outfile: `.build/preparation-owner-${name}.cjs`,
     bundle: true,
     platform: 'node',
@@ -22,7 +31,8 @@ for (const [entry, name] of [
     external: ['better-sqlite3'],
   });
 const require = createRequire(import.meta.url);
-const { createPreparation } = require('../../.build/preparation-owner-editor.cjs');
+const packetUi = require('../../.build/preparation-owner-editor.cjs');
+const { createPreparation } = packetUi;
 const { CampaignStore } = require('../../.build/preparation-owner-store.cjs');
 const tick = async () => {
   for (let n = 0; n < 12; n++) await new Promise((resolve) => setImmediate(resolve));
@@ -129,12 +139,13 @@ function fixture(t) {
     },
   });
   window.campaign = api;
+  window.localStorage = { getItem: () => null, setItem() {}, removeItem() {} };
   const el = (id) => document.getElementById(id);
   const ui = createPreparation({
     roots: ['preparation', 'world-dialog', 'location-dialog', 'note-excerpt-dialog'].map(el),
     dialogHost: el('preparation'),
     api,
-    storage: { getItem: () => null, setItem() {}, removeItem() {} },
+    storage: window.localStorage,
     navigation: { locationNotebook: async () => {}, roomKey: async () => false },
     planning: {
       initSession() {},
@@ -149,7 +160,10 @@ function fixture(t) {
     (text, error) => messages.push({ text, error }),
     async () => {},
   );
-  t.after(() => {
+  t.after(async () => {
+    Object.assign(globalThis, { document, window });
+    if (el('session-packet-dialog')) packetUi.closeSessionPacket();
+    await ui.activatePreparation(store.activate(a.campaign.id), false);
     ui.deactivate();
     Object.assign(globalThis, prior);
     store.close();
@@ -412,4 +426,314 @@ test('a delayed real Preparation receipt after campaign change cannot replace th
   assert.equal(writes[1].campaignId, x.b.campaign.id);
   assert.equal(x.saved(x.b).gmNotes, raw);
   assert.equal(x.saved(x.a).gmNotes, x.a.note.gmNotes);
+});
+
+test('Preparation navigation and close drain wait for accepted writes and later input', async (t) => {
+  const x = fixture(t),
+    held = deferred(),
+    writes = [];
+  await x.activate(x.a);
+  x.api.changePreparation = async (command) => {
+    writes.push(structuredClone(command));
+    const result = await x.invoke('changePreparation', command);
+    return writes.length === 1 ? held.promise.then(() => result) : result;
+  };
+  x.input('  Vor der Grenze\r\n');
+  const flush = x.ui.flushPreparation();
+  await tick();
+  let left = false,
+    closed = false;
+  const leaving = x.ui.leavePreparation().then((result) => {
+    left = true;
+    return result;
+  });
+  const closing = x.ui.editorSession.settle().then(() => {
+    closed = true;
+  });
+  await tick();
+  assert.equal(left, false);
+  assert.equal(closed, false);
+  assert.equal(writes.length, 1);
+  x.input('  Nach Beginn der Grenze\r\n');
+  held.resolve();
+  assert.equal(await flush, true);
+  assert.equal(await leaving, true);
+  await closing;
+  assert.equal(x.saved(x.a).gmNotes, '  Nach Beginn der Grenze\r\n');
+  assert.deepEqual(
+    writes.map((command) => command.change.expectedRevision),
+    [1, 2],
+  );
+  assert.equal(x.ui.editorSession.status.openInput, false);
+});
+
+test('two Preparation instances keep drafts, pending writes and DOM controls isolated', async (t) => {
+  const first = fixture(t),
+    second = fixture(t),
+    held = deferred();
+  await first.activate(first.a);
+  await second.activate(second.b);
+  first.input('  Erste Instanz\r\n');
+  second.input('  Zweite Instanz\r\n');
+  first.api.changePreparation = async (command) => {
+    const result = await first.invoke('changePreparation', command);
+    await held.promise;
+    return result;
+  };
+  const pending = first.ui.flushPreparation();
+  await tick();
+  assert.equal(await second.ui.flushPreparation(), true);
+  assert.equal(second.saved(second.b).gmNotes, '  Zweite Instanz\r\n');
+  assert.equal(first.ui.editorSession.status.saving, true);
+  assert.equal(second.ui.editorSession.status.saving, false);
+  first.ui.deactivate();
+  let drained = false;
+  const closing = first.ui.editorSession.settle().then(() => {
+    drained = true;
+  });
+  await tick();
+  assert.equal(drained, false, 'detaching a surface cannot release its accepted write');
+  held.resolve();
+  assert.equal(await pending, false, 'a retired acknowledgement cannot publish into the surface');
+  await closing;
+  assert.equal(first.saved(first.a).gmNotes, '  Erste Instanz\r\n');
+  assert.equal(second.el('note-gm').value, '  Zweite Instanz\r\n');
+  assert.equal(second.ui.editorSession.status.openInput, false);
+});
+
+test('a direct Preparation creation belongs to the close drain before its acknowledgement arrives', async (t) => {
+  const x = fixture(t),
+    held = deferred();
+  await x.activate(x.a);
+  let accepted;
+  x.api.changePreparation = async (command) => {
+    accepted = structuredClone(command);
+    const result = await x.invoke('changePreparation', command);
+    await held.promise;
+    return result;
+  };
+  x.el('world-kind').value = 'note';
+  x.el('world-name').value = 'Direkt angelegt';
+  x.el('world-form').dispatchEvent(new x.window.Event('submit', { cancelable: true }));
+  await tick();
+  assert.equal(accepted?.change.note.title, 'Direkt angelegt');
+  let closed = false;
+  const closing = x.ui.editorSession.settle().then(() => {
+    closed = true;
+  });
+  await tick();
+  assert.equal(closed, false);
+  held.resolve();
+  await closing;
+  await tick();
+  assert.equal(x.el('note-title').value, 'Direkt angelegt');
+  assert.equal(
+    x.store.preparation(accepted.token).notes.filter((row) => row.note.title === 'Direkt angelegt')
+      .length,
+    1,
+  );
+});
+
+// Keep these on the composed Preparation instance and real SQLite writer. The
+// dialogs borrow its actual controls; they do not imitate the draft lifecycle.
+async function nestedNotebook(t) {
+  const x = fixture(t),
+    w = await x.activate(x.a);
+  const leaf = {
+    ...x.a.note,
+    id: randomUUID(),
+    title: 'Blatt',
+    revision: 1,
+    gmNotes: '  Blatt original\r\n',
+    relations: [],
+  };
+  const child = {
+    ...leaf,
+    id: randomUUID(),
+    title: 'Kindmappe',
+    gmNotes: '  Kind original\r\n',
+    relations: [{ targetId: leaf.id, label: 'Quelle' }],
+  };
+  for (const note of [leaf, child])
+    x.store.changePreparation({
+      token: w.token,
+      campaignId: x.a.campaign.id,
+      commandId: randomUUID(),
+      change: { kind: 'note', expectedRevision: null, note },
+    });
+  x.a.note = { ...x.a.note, revision: 2, relations: [{ targetId: child.id, label: 'Quelle' }] };
+  x.store.changePreparation({
+    token: w.token,
+    campaignId: x.a.campaign.id,
+    commandId: randomUUID(),
+    change: { kind: 'note', expectedRevision: 1, note: x.a.note },
+  });
+  await x.ui.activatePreparation(w);
+  x.el('note-thread-open').click();
+  await tick();
+  assert.equal(x.el('note-thread-heading').textContent, 'Notizmappe: A');
+  const sourceAction = (id, text) => {
+    const card = x.el('note-thread-sources').querySelector(`article[data-note-id="${id}"]`);
+    const button = [...card.querySelectorAll('button')].find((b) => b.textContent === text);
+    assert(
+      button && !button.disabled,
+      x.el('note-thread-status').textContent + ' | ' + card.outerHTML,
+    );
+    button.click();
+  };
+  sourceAction(child.id, 'Notiz bearbeiten…');
+  await tick();
+  assert.equal(x.el('note-title').value, child.title);
+  assert.equal(x.el('note-thread-editor').hidden, false);
+  const saved = (note) =>
+    JSON.parse(
+      x.store.db
+        .prepare('SELECT payload FROM world_note WHERE campaign_id=? AND id=?')
+        .get(x.a.campaign.id, note.id).payload,
+    );
+  return { ...x, child, leaf, sourceAction, savedNote: saved };
+}
+
+test('nested notebook navigation drains literal input entered during the original child acknowledgement', async (t) => {
+  const x = await nestedNotebook(t),
+    held = deferred(),
+    writes = [];
+  x.api.changePreparation = async (command) => {
+    writes.push(structuredClone(command));
+    const result = await x.invoke('changePreparation', command);
+    if (writes.length === 1) await held.promise;
+    return result;
+  };
+  x.input('  Vor verschachtelter Navigation\r\n');
+  x.el('note-thread-open').click();
+  await tick();
+  assert.equal(writes.length, 1);
+  assert.equal(x.el('note-thread-editor').hidden, false);
+  const raw = '  Weitere Kind-Eingabe\r\n[[Wörtlich]]  ';
+  x.input(raw);
+  held.resolve();
+  await tick();
+  assert.equal(x.el('note-thread-heading').textContent, 'Notizmappe: Kindmappe');
+  assert.equal(x.el('note-thread-editor').hidden, true);
+  assert.equal(x.el('note-gm').value, raw);
+  assert.equal(x.savedNote(x.child).gmNotes, raw);
+  assert.equal(x.savedNote(x.leaf).gmNotes, x.leaf.gmNotes);
+  assert.equal(x.saved(x.a).gmNotes, x.a.note.gmNotes);
+  assert.deepEqual(
+    writes.map((c) => c.change.expectedRevision),
+    [1, 2],
+  );
+  assert(writes.every((c) => c.change.note.id === x.child.id));
+});
+
+test('a delayed parent reread cannot replace the visible leaf draft during nested notebook return', async (t) => {
+  const x = await nestedNotebook(t),
+    held = deferred();
+  x.el('note-thread-open').click();
+  await tick();
+  assert.equal(x.el('note-thread-heading').textContent, 'Notizmappe: Kindmappe');
+  x.sourceAction(x.leaf.id, 'Notiz bearbeiten…');
+  await tick();
+  assert.equal(x.el('note-title').value, 'Blatt');
+  let response;
+  x.api.preparation = async (...args) => {
+    response = await x.invoke('preparation', ...args);
+    return held.promise;
+  };
+  x.el('note-thread-parent').click();
+  await tick();
+  assert.equal(response?.ok, true, 'the real return request reached its original parent reread');
+  assert.equal(x.el('note-thread-editor').hidden, false);
+  const raw = '  Blatt während Parent-Read\r\n[[Wörtlich]]  ';
+  x.input(raw);
+  const before = x.store.db.serialize();
+  held.resolve(response);
+  await tick();
+  assert.equal(x.el('note-title').value, 'Blatt');
+  assert.equal(x.el('note-gm').value, raw);
+  assert.equal(x.el('note-thread-editor').hidden, false);
+  assert.equal(x.el('note-thread-heading').textContent, 'Notizmappe: Kindmappe');
+  assert.equal(x.savedNote(x.leaf).gmNotes, x.leaf.gmNotes);
+  assert.equal(x.savedNote(x.child).gmNotes, x.child.gmNotes);
+  assert(x.store.db.serialize().equals(before));
+});
+
+test('a delayed packet source opening cannot replace the new campaign draft or canonical notes', async (t) => {
+  const x = fixture(t),
+    w = await x.activate(x.a),
+    held = deferred(),
+    planId = randomUUID();
+  let owner = { token: w.token, planId };
+  x.api.sessionPacket = async () => ({
+    ok: true,
+    value: {
+      planId,
+      planName: 'Quellenabend',
+      planRevision: 1,
+      campaignName: 'A',
+      basis: 'packet-fixture',
+      party: [],
+      warnings: [],
+      visits: [
+        {
+          id: randomUUID(),
+          title: 'Quellenbesuch',
+          locationId: null,
+          location: null,
+          blocks: [
+            {
+              heading: 'Original A',
+              text: x.a.note.gmNotes,
+              kind: 'reference',
+              action: { kind: 'reference', ref: { kind: 'note', id: x.a.note.id } },
+            },
+          ],
+        },
+      ],
+    },
+  });
+  packetUi.initSessionPacket(
+    (text, error) => x.messages.push({ text, error }),
+    () => owner,
+    () => x.ui.flushPreparation(),
+  );
+  assert.equal(await packetUi.openPreparationSessionPacket(), true);
+  const action = [...x.el('session-packet-content').querySelectorAll('button')].find(
+    (b) => b.textContent === 'Original bearbeiten…',
+  );
+  assert(action && !action.disabled);
+  let response;
+  x.api.preparation = async (...args) => {
+    response = await x.invoke('preparation', ...args);
+    return held.promise;
+  };
+  action.click();
+  await tick();
+  assert.equal(
+    response?.ok,
+    true,
+    'the packet source started its original production preparation read',
+  );
+  assert.equal(x.el('packet-note-content').hidden, true);
+  x.api.preparation = (...args) => x.invoke('preparation', ...args);
+  packetUi.closeSessionPacket();
+  const b = await x.activate(x.b);
+  owner = { token: b.token, planId: randomUUID() };
+  const raw = '  B nach Packet-Quellenwechsel\r\n[[Wörtlich]]  ';
+  x.input(raw);
+  assert.equal(x.el('session-packet-dialog').open, false);
+  assert.equal(x.el('packet-note-content').contains(x.el('note-editor')), false);
+  assert.equal(x.el('note-editor').hidden, false);
+  assert.equal(x.el('note-gm').value, raw);
+  const before = x.store.db.serialize(),
+    messages = structuredClone(x.messages);
+  held.resolve(response);
+  await tick();
+  assert.equal(x.el('note-title').value, 'B');
+  assert.equal(x.el('note-gm').value, raw);
+  assert.equal(x.el('packet-note-content').hidden, true);
+  assert.deepEqual(x.messages, messages);
+  assert.equal(x.saved(x.a).gmNotes, x.a.note.gmNotes);
+  assert.equal(x.saved(x.b).gmNotes, x.b.note.gmNotes);
+  assert(x.store.db.serialize().equals(before));
 });

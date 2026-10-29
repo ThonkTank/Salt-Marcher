@@ -120,6 +120,30 @@ vorhandene Inhalte und ihre Schutzregeln bleiben auch beim Teilabschluss gültig
 Eine offene Frage zu deren Erhalt wird deshalb vor dem betroffenen Terrainzug
 geklärt; neue Stadt-/Dungeon-/Autonomywirkungen werden dadurch nicht vorgezogen.
 
+### Geklärte Küstenwirkung und aktuelle Lieferblocker
+
+Der [gezielte Originalabgleich vom 28.10.](../verification/reference-comparison.md#abgleich-für-terrain-meer-und-den-bestätigten-fluss--28102026)
+benennt Eingaben, vorhandene Rohbelege und Grenzen für WD-005/006/008. Damit ist
+für TW-G1/4 keine zusätzliche unentschiedene Küstenwirkung gefunden. Der
+jüngere Auftrag besitzt metrische Höhe, Meeresspiegel, direkte Pinsel und
+Spezialformen; die vollständige WD-Gestaltung bleibt späterer Umfang.
+
+| Nutzerhandlung | Ergebnis und betroffene Daten | Erhaltung und direktes Abnahmeszenario |
+| --- | --- | --- |
+| Insel anheben, Bucht absenken, überlappenden Zug korrigieren | Kanonische Höhen und Meeresspiegel bestimmen Land/Wasser und die daraus abgeleitete Küste. Radius, Stärke, Randabfall und Roughness besitzen unterscheidbare Wirkungen. Farbe/Eigenschaften sind keine Höhenwerte. | Vorhandene Feinhöhen, Farbe, Eigenschaften und Orts-/Gebäude-/Raum-IDs außerhalb der tatsächlichen Höhenwirkung erhalten; keine Löschung bei Überflutung. Insel mit Feindetail und gesetzter Farbe bearbeiten, Gegenkorrektur, einmaliges Undo/Redo und Fresh; unveränderte Daten direkt vergleichen. |
+| Meeresspiegel ändern und kontinuierlich zoomen | Ein Meeresspiegel ändert den Höhenschnitt und die Küstendarstellung; er schreibt keine neue Landform, Objektgeometrie oder Autorenprosa. Küste bleibt bis Raumgröße lesbar, ohne Naht/Loch/harten LOD-Formwechsel. | Vorherige Höhen/IDs und Details im gleichen Datenstand prüfen; Meeresspiegel rückgängig/wiederholen, frischen Prozess öffnen und Übersicht/Detail/Übergänge vergleichen. Zusätzliche Originalwasserstile sind kein Bestandteil dieser Probe. |
+| Laufenden Zug abbrechen oder Speicherung klären | Escape nimmt nur den laufenden Zug zurück; Pointerabbruch/Fokusverlust schließen die bis dahin gemalte Änderung einmal ab. Bereits losgelassene, noch offene Speicherung bleibt zu klären. | Keine Reständerung nach Escape, keine doppelte Annahme durch Retry/Antwortverlust; anschließender Zug und Neustart erhalten ausschließlich bestätigte Arbeit. Geschützte Flüsse und bestehende Gewässer folgen ihren Fachverträgen. |
+
+**Aktuelle Lieferblocker sind Prüf- bzw. mögliche Restimplementierungsaufgaben:**
+(1) volle Parameter-/Abbruch-/Folgezugmatrix einschließlich absoluter Feinhöhen
+am aktuellen Stand; (2) Mausnavigation sowie Formen-/Überlappungsbilder und
+kontinuierliche Küsten-/LOD-Übergänge auf demselben Datenstand; (3) vollständige
+TW-G5-Messung auf dem vereinbarten Zielgerät; (4) exakte Quell-/Runtime-/Paketbindung
+und TW-G6. Der [datierte Prüfstand](../../project/verification/end-to-end.md#terrain-wasserbelege-und-zielgerät)
+trennt vorhandene Teilbelege von diesen offenen Nachweisen. Ein fehlender
+Nachweis ist weder ein behaupteter Implementierungsfehler noch ein Produkt-PASS.
+Keine zusätzliche Originalwirkung und keine neue Aufwandszahl werden hier erfunden.
+
 Neue Umsetzungsspannen entstehen erst nach Prüfung des aktuellen Codes und
 der lieferrelevanten Fachfragen, mit Annahmen, betroffenen IDs und Restunsicherheit.
 Die datierten Spannen des übernommenen Umsetzungsplans sind keine Schätzung

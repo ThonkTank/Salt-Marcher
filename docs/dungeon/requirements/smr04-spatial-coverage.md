@@ -2,7 +2,7 @@
 
 Status: Verbindlicher Zielumfang; historische Umsetzungsbelege sind keine aktuelle Abnahme.
 Owner: dungeon
-Last Reviewed: 2026-10-24 (Struktur und Quellen; Fachabnahme separat)
+Last Reviewed: 2026-10-28 (begrenzte Klärung vor Ausbau und Complete-Abgrenzung; Fachabnahme separat)
 Source of Truth: Dieses Dokument besitzt das benannte Thema; Code belegt den Iststand, das Abnahmeregister den Prüfstand.
 
 ## Scope und Eingänge
@@ -23,6 +23,33 @@ und deren unveränderte Hashes in `docs/project/requirements/sources.json`:
 `60e1e72432c1b9073b162cf9eedb8959dc36ae71cfa0c6ee82d968ed71bb7a0f`
 beziehungsweise
 `b596a4a30d75413a96c1d40b862b473ed8f480baa8ec18ed2217431987cba20d`.
+
+## Klärungsauftrag vor dem nächsten erweiterten Ausbau
+
+Der [räumliche Fachvertrag](../../atlas/contract/spatial-runtime.md#keys-features-templates-und-geschützter-graphentwurf)
+entscheidet bereits stabile Roomidentität, geschützten Graphgesamtdraft und
+verknüpfte/detachierbare Inhaltsblöcke. Die Matrix unten bewahrt historische
+Lücken; weder ihre Existenz noch aktuelle Teiltests schließen SMR-AC-05/08.
+Vor einem gewählten Ausbau nur dessen offene Wirkung gegen die gebundenen
+Dungeon-/Editorabschnitte prüfen:
+
+- **Graph/Template:** an zwei beschriebenen Rooms einen Graphumbau verwerfen und
+  annehmen; einen verknüpften Block ändern, lokal ablösen und erneut die Vorlage
+  ändern. Vor der Umsetzung Quelle, betroffene ID-/Text-/Referenzmenge und
+  erwarteten Erhalt festhalten; Annahme/Undo/Redo/Restart und abgeschlossene
+  Runtimefakten am selben Stand direkt prüfen. Kein abstraktes „Graphparität“
+  als fertiges Paket schätzen.
+- **Path/Passage:** zwei Seiten einschließlich Richtung/Gegenlink und getrennten
+  sensorischen Fakten verbinden, eine Seite ändern/entfernen und unabhängig
+  kopieren. Eindeutige Reassoziation, kaputtes Ziel, lokale Inhalte und atomare
+  Rücknahme nach dem bestehenden Vertrag prüfen; fehlende konkrete Wirkung vor
+  Codeausbau beim Fachbesitzer klären.
+
+Der Complete-Transfer ist dagegen entschieden: [Campaignlaufdaten](../../campaign/contract/archive.md#laufdaten-im-complete-transfer)
+werden erhalten und lokal remappt; die engere Dungeonduplikation bleibt getrennt.
+Offen sind direkte Fach-/Nativebelege, keine erneute Ratifikation dieser Regel.
+Diese späteren Klärungsaufträge blockieren keine neue Terrain-/Meerfunktion;
+Erhalt bereits vorhandener Dungeoninhalte gilt bei jedem Terrainzug.
 
 ## Gepinnte Ausgangsbasis
 

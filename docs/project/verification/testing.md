@@ -2,7 +2,7 @@
 
 Status: Current; offene Ziele sind als solche beschrieben.
 Owner: project
-Last Reviewed: 2026-10-28 (gemeinsamer E2E-01-Kern und explizites Crashprotokoll; Fachabnahme separat)
+Last Reviewed: 2026-10-29 (Runde-9-Testauswahl, Kosten und direkte Schutzgrenzen; Fachabnahme separat)
 Source of Truth: Dieses Dokument besitzt das benannte Thema; Code belegt den Iststand, das Abnahmeregister den Prüfstand.
 
 `npm test` führt die aktive Auswahl lokal standardmäßig mit einem Testprozess aus.
@@ -96,6 +96,14 @@ Dies ist lokale Testqualifikation, keine neue native Produkt- oder Candidate-Abn
 
 
 ## Gemessene Initialisierungskosten
+
+Der [Runde-9-Vergleich](../../reference/test-feedback-round9-20261029/README.md)
+übernimmt die bisherigen Leistungsbelege und die Plan-3-Besitzerprüfungen.
+Er trennt heutige vollständige Messungen, dieselben kleinen Dateiauswahlen,
+drei direkte Notizmappen-/Packet-Risiken und ihre gezielten Gegenproben.
+Zusätzliche Schutzarbeit wird als solche ausgewiesen; Plan 4 behauptet keine
+neue Leistungsoptimierung. Das 300-Sekunden-Ziel und die eigenständigen
+E2E-/Terrain-/Zielgeräteabnahmen bleiben offen.
 
 Der [Normalweg und aktuelle Vergleich für Runde 8](../../reference/test-path-round8-20261028/README.md)
 reproduziert den blockierten systemd-Start, belegt den automatischen begrenzten
