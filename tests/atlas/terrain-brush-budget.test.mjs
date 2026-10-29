@@ -62,7 +62,8 @@ test('the brush still rejects an actually excessive local dose workload', () => 
   const overloaded = {
     ...continental,
     radius: 64,
-    samples: Array.from({ length: 2000 }, (_, i) => ({ x: (i % 2) * 8, y: 0, t: i * 34 })),
+    // Four actual author tiles per dab exceed the unchanged 60-million evaluation cap.
+    samples: Array.from({ length: 4000 }, (_, i) => ({ x: (i % 2) * 8, y: 0, t: i * 34 })),
   };
   assert.throws(() => applyTerrainBrush([], overloaded), /Höhenzug zu lang/);
 });
