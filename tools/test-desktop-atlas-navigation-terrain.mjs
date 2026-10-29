@@ -33,7 +33,9 @@ const {
 const Database = require('better-sqlite3');
 const scale = 1;
 assert([1].includes(scale));
-const output = path.resolve('.build/navigation-terrain', `${Date.now()}-${process.pid}`);
+const output =
+  process.env.QA_EVIDENCE_DIR ??
+  path.resolve('.build/navigation-terrain', `${Date.now()}-${process.pid}`);
 const native = await createNativeSession({ name: 'navigation-terrain', output });
 const fixture = await createAtlasCanonicalFixture({
   profilePath: native.profile,

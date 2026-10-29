@@ -2,7 +2,7 @@
 
 Status: Current; native und automatisierte Nachweise bleiben von Produktabnahme getrennt.
 Owner: project
-Last Reviewed: 2026-10-29 (Runde 9: Vorbereitungs-, Kampf- und Livebesitzer; native Teilproben bei 100 Prozent)
+Last Reviewed: 2026-10-29 (Runde 10: Live-Entwurf/Writer, Kampfreads/Writer und Vorbereitungsauszug; native Teilproben bei 100 Prozent)
 Source of Truth: Sitzungskern und Übergangsregistrierung; Fachmodule besitzen Entwürfe und Receipts.
 
 ## Zuständigkeiten
@@ -102,22 +102,23 @@ Radiusänderung belegen das weiterhin offene 100-ms-Ziel für einen Terrainpinse
 ## Zustandszuordnung der drei Kompositionen
 
 Die Zuordnung benennt den aktuellen Besitzer, keine neue Abnahme und kein
-zusätzliches Register. Runde 9 wurde in der Reihenfolge Vorbereitung → Kampf →
-Live umgesetzt und geprüft; erster Lieferabschluss war die entkoppelte Vorbereitung.
+zusätzliches Register. Runde 10 erweitert die vorhandenen Besitzer aus Runde 9;
+`EditorSession` bleibt der gemeinsame Lebenszykluskern. Die folgenden Abschnitte
+benennen Mutieren, Bestätigen, Beenden und die dazugehörigen Bedienprüfungen.
 
 | Zustand | Vorbereitung | Kampf | Live |
 | --- | --- | --- | --- |
-| Bestätigte Daten | `PreparationNoteDirectory`: Quellenprojektion und ungefilterte Notizidentitäten | `createCombat`: bestätigter `CombatView`; Fachwriter bleibt zentral | `createLive`: bestätigter `LiveView`; Fachwriter bleibt zentral |
-| Rohentwurf und Basisrevision | `PreparationDraftOwner`: Notiz, Plan und Ort samt späterer Eingabe und gesichertem Entwurf; Sessionplanung behält eigene Entwürfe | `CombatDraftCache`: Figuren-/Notiz-/Initiativeentwürfe; `combat-roll-editor.ts`: offene Angriffs-/Save-/Schadensübergaben | Bestehende Moment-/Rückblick-/Abschlussbesitzer; Figuren-/Szenenentwurf weiterhin `createLive` |
-| Auswahl und Dialog | `createPreparation` hält Oberflächenauswahl; Notizfaden, Quellen, Merge und Sessionplanung behalten ihre eigenen Dialoge | `combat-reinforcement-editor.ts`: Verstärkungssuche, Katalog-/Truppauswahl und Buchungsdialog; übrige Panels behalten ihre Auswahl | `live-party-move-editor.ts`: Verschiebe-/Split-/Rejoin-Auswahl, Titel, Ziele und Revisionsbasis; Resume und Abschluss bleiben eigene Besitzer |
-| Laufende Reads | Entwurfsreads: `PreparationDraftOwner` mit `EditorSession`; Notizensuche: Verzeichnisgeneration; übrige Oberflächenreads: Komposition mit Kontextlease | `EditorSession` und bestehende Panel-/Cachebesitzer; Verstärkungsreads und eigene Anfragegeneration beim Verstärkungsbesitzer | `EditorSession` und bestehende Live-Untereditoren; kein neuer Snapshotstart geliefert |
-| Angenommene Writes | `PreparationWriteCoordinator`: Originalcommand, Blockade, Receiptklärung und geordneter Drain; Session-/Narrativewriter bleiben ihre bestehenden Grenzen | Zentraler Kampfwriter und Commitbestätigung; Verstärkungs- und Würfelbesitzer erhalten die gebundene Bestätigung | Zentraler `execute`-/Receiptwriter; Verschiebedialog liefert ausschließlich einen kontextgebundenen Auftrag |
+| Bestätigte Daten | `PreparationNoteDirectory`: Quellenprojektion und ungefilterte Notizidentitäten | `createCombat`: bestätigter `CombatView`; Fachwriter bleibt zentral | `LiveDraftOwner`: bestätigter `LiveView`; Annahme ausschließlich durch Read oder Writer |
+| Rohentwurf und Basisrevision | `PreparationDraftOwner`: Notiz, Plan und Ort samt späterer Eingabe und gesichertem Entwurf; Sessionplanung behält eigene Entwürfe | `CombatDraftCache`: Figuren-/Notiz-/Initiativeentwürfe; `combat-roll-editor.ts`: offene Angriffs-/Save-/Schadensübergaben | `LiveDraftOwner`: Figuren-/Szenenrohwerte und CAS-Basis; Moment-/Rückblick-/Abschlussbesitzer bleiben erhalten |
+| Auswahl und Dialog | `createPreparation` hält Oberflächenauswahl; `preparation-excerpt-editor.ts` besitzt Quellmarkierung, Suche, Zielwahl und Bestätigung; übrige Dialogbesitzer bleiben erhalten | `CombatReadOwner`: Ladeziel und Figurenwahl; `combat-reinforcement-editor.ts` behält Verstärkungssuche, Katalog-/Truppauswahl und Buchungsdialog | `live-party-move-editor.ts`: Verschiebe-/Split-/Rejoin-Auswahl, Titel, Ziele und Revisionsbasis; Resume und Abschluss bleiben eigene Besitzer |
+| Laufende Reads | Entwurfsreads: `PreparationDraftOwner` mit `EditorSession`; Notizensuche: Verzeichnisgeneration; Auszugssuche/Zielread: eigener Dialogbesitzer; übrige Reads: Kontextlease | `CombatReadOwner`: getrennte Kampf-, Figuren- und Notizleases mit `EditorSession`; Panel-/Cache- und Verstärkungsbesitzer bleiben erhalten | `EditorSession` und bestehende Live-Untereditoren; kein neuer Snapshotstart geliefert |
+| Angenommene Writes | `PreparationWriteCoordinator`: Originalcommand, Blockade, Receiptklärung und geordneter Drain; Session-/Narrativewriter bleiben ihre bestehenden Grenzen | `combat-write-coordinator.ts` und bestehende Commitbestätigung; Verstärkungs- und Würfelbesitzer erhalten die gebundene Bestätigung | `LiveWriteCoordinator`: Originalcommand, laufende Aktion, ungeklärte Antwort, Flush und Receiptannahme; Verschiebedialog liefert einen gebundenen Auftrag |
 
 ## Vorbereitungsinstanz
 
 `createPreparation` komponiert `PreparationNoteDirectory`,
-`PreparationDraftOwner`, `PreparationWriteCoordinator`, `PreparationListView`
-und die bestehende Sessionplanung. Kontext, Oberflächenauswahl und DOM-Ereignisse
+`PreparationDraftOwner`, `PreparationWriteCoordinator`, `PreparationListView`,
+`createPreparationExcerptEditor` und die bestehende Sessionplanung. Kontext, Oberflächenauswahl und DOM-Ereignisse
 bleiben in der Komposition. Es wird kein veränderlicher Gesamtcontext an die
 Unterbesitzer übergeben und keiner importiert den Kompositionsroot zurück.
 
@@ -145,6 +146,30 @@ Preloadverträge bleiben erhalten. Angenommene direkte Änderungen sind ebenso
 wie Flushes im gemeinsamen `EditorSession`-Drain registriert; Abmeldung
 entwertet ausschließlich ihre sichtbare Antwortberechtigung.
 
+`preparation-excerpt-editor.ts` besitzt den gesamten Auszugsdialog. **Mutieren**:
+Die Auswahlaktion übernimmt rohe Zeichenbereiche aus dem ursprünglichen Feld;
+Suchgeneration, Suchtext, gewähltes Original, ausdrückliche Neuanlage und IME-Zustand
+bleiben privat. Schmale Ports liefern bestätigte Notizen aus dem bestehenden
+Verzeichnis und benannte Aktionen des bestehenden Writers. **Bestätigen**: Erst
+`change` bestätigt Anlage oder Ergänzung; ein Antwortverlust wird im bestehenden
+Vorbereitungswriter mit dem Originalcommand geklärt. **Beenden**: `reset` und
+`selectionChanged` entwerten Dialog-/Suchkontext; zusätzlich bindet jede Antwort
+die konkrete Notizeditorgeneration. A → B → A erlaubt dadurch keine alte
+Zielantwort. Rückkehr und Cursor bleiben beim ursprünglichen Rohtextfeld.
+
+`desktop-preparation-priority.test.mjs` prüft den vollständigen Produktionseditor,
+unter anderem doppelte Bestätigung, offene Zielentwürfe, angewandte und nicht
+angewandte Antwortverluste sowie den neuen A → B → A-Fall während des Zielreads.
+`desktop-preparation-owner.test.mjs` ergänzt getrennte Auszugsdialoge und
+Suchantworten in zwei vollständigen Produktionsinstanzen. Die native Probe
+`tools/test-desktop-preparation-excerpt-owner.mjs` prüft bei
+100 Prozent neue private Quelle, verlorene Antwort ohne Doppelanlage, Ergänzung
+am vorhandenen Original mit öffentlichem Text, Fokus-/Quellrückkehr und normalen
+Neustart. Beleg: `.build/r10-plan2-excerpt-native/result.json`, zwei reguläre
+Prozessenden und vier neue Bilder. Der bereits rote breite Prüfweg
+`tools/test-desktop-note-excerpts.mjs` aus Plan 1 bleibt offen; dieser begrenzte
+Dialognachweis beansprucht dessen Mappen-/Quellen-Gesamtablauf nicht.
+
 `tests/campaign/desktop-preparation-owner.test.mjs` prüft A → B → A, spätere
 Rohtexte im Save, denselben Command bei angewandter und nicht angewandter
 Antwortklärung, Navigation und Close-Drain samt weiterer Eingabe, isolierte
@@ -154,8 +179,8 @@ Ortsabschnittslesegrenzen. Der native Quellenprüfweg bleibt
 `tools/test-desktop-note-source-recovery.mjs` bei 100 Prozent Appzoom.
 
 Lokale Prüfung des Vorbereitungsabschlusses am 29.10.2026: 124 gezielte
-Preparation-/Quellen-/Plan-/Workspacefälle bestanden; die aktuelle Ownerdatei
-mit den ergänzten Grenzen besteht mit 11 Fällen. Typ-/Umgebungsprüfung,
+Preparation-/Quellen-/Plan-/Workspacefälle bestanden; die damalige Ownerdatei
+mit den ergänzten Grenzen bestand mit 11 Fällen. Typ-/Umgebungsprüfung,
 Repositoryprüfung und Desktopbuild bestehen. Die native Quellenprobe besteht
 bei 100 Prozent Zoom mit drei regulär beendeten Prozessen; ihr Neustartorakel
 wurde von einer auf die zuvor bestätigten zwei Quellen korrigiert.
@@ -174,14 +199,17 @@ Zustandsentkopplung nicht geschlossen.
 
 ## Live-Instanz
 
-`createLive` komponiert die Live-Oberfläche und besitzt weiterhin Kontext,
-bestätigten `LiveView`, Figuren-/Szenenentwürfe, Command-Recovery und die gemeinsame
-Schreibgrenze. Der Renderer übergibt DOM-Wurzeln, Preload und benannte Navigation
+`createLive` komponiert die Live-Oberfläche, `LiveDraftOwner`,
+`LiveWriteCoordinator` und die bestehenden Untereditoren. Kontext und Darstellung
+bleiben in der Komposition; Figuren-/Szenenrohwerte, Auswahl, Basisrevision und
+Bestätigungsannahme sowie Command-/Recovery-/Flushzustand haben eigene Besitzer. Der Renderer übergibt DOM-Wurzeln, Preload und benannte Navigation
 und verbindet dieselbe Instanz mit Workspace und Party. Die Party erhält ihre
 drei Schreib-/Verschiebeaktionen ausdrücklich.
 
 | Besitzer in `src/app/runtime/` | Privater Zustand und Übergabe |
 | --- | --- |
+| `live-draft-owner.ts` | Bestätigte Liveprojektion, Figurenwahl, Figuren-/Szenenrohwerte und deren Basisrevision; `select`, `editProfile`, `editScene`, `accept`, `acceptAck` und `acceptClock` sind die Mutationsgrenze. |
+| `live-write-coordinator.ts` | Originalcommand, aktive Operation, ungeklärte Antwort, IME und Timer; `execute`, `flush` und `resolve` verwenden einen fachlichen Schreibweg. |
 | `live-recap-editor.ts` | Kampagnengebundene Rückblickentwürfe, CAS-Basis, Fehler und laufende Sicherung; Abschluss hält die Publish-Sperre bis zur Ack-Annahme. Spätere Prosa bleibt erhalten. |
 | `live-moment-editor.ts` | Szenengebundene Momententwürfe, Sicherungsoperationen und Formularaktionen; bestätigte Folgeaktionen bleiben an ihren ursprünglichen Kontext gebunden. |
 | `live-session-close-ui.ts` | Abschlussaudit, Reviewgeneration, Dialoge und Übergabeentwurf; Änderungen am geprüften Gruppenstand entwerten die Bestätigung. |
@@ -197,6 +225,37 @@ angenommene Writes werden beim Wechsel nicht abgebrochen. `flushLive` sichert
 weiterhin Moment, Rückblick, Scene-Desk, Fortschritt/Kampf/Chase und danach
 Figuren-/Szenenentwürfe in dieser Reihenfolge. Ein Entwurf mit Fehler blockiert
 die erfolgreiche Navigation. Mappenübergaben verwenden benannte Funktionen.
+
+**Mutieren**: Figurenwahl und Rohtexte gehen ausschließlich durch die benannten
+Aktionen des `LiveDraftOwner`; Rendering liest dessen Projektionen. **Bestätigen**:
+Der Writer ruft `acceptAck` über die Komposition auf; dieser Besitzer übernimmt
+nur die bestätigten Felder und hält spätere Eingaben gegen ihre eigene CAS-Basis
+offen. Der zentrale Writer klärt sowohl allgemeine als auch Kalenderantworten
+über `resolve`; das ist eine Statusabfrage mit demselben Originalcommand, keine
+erneute Buchung. **Beenden**: Die Sitzung entwässert angenommene Aufträge;
+Abmeldung stoppt Autosave und entwertet Reads und sichtbare Bestätigungen.
+Ein später Transportfehler behält seinen Originalcommand auch nach Abmeldung.
+Eine nach Reaktivierung geklärte alte Buchung ersetzt keine neuen Rohwerte.
+Die unabhängigen Gesundheits-/Beutedialoge behalten ihre Rückkehr- und Fokusports.
+
+`tests/runtime/desktop-live-write-owner.test.mjs` prüft die Produktionsbesitzer mit
+realem SQLite-Store: spätere Figuren-/Szeneneingaben während Save und Close-Drain,
+angewandte/nicht angewandte Antwortverluste ohne Replay, Abmeldung mit spätem Fehler,
+Receiptklärung nach Reaktivierung und unabhängige Besitzer bei gleichen IDs.
+`desktop-live-publication-owner.test.mjs` verwendet die vollständige Livefabrik;
+die ergänzten Fälle prüfen verspätetes Öffnen nach Abmeldung, neue Eingabe nach
+Reaktivierung und Fokus bei der Rückkehr aus persönlicher Beute. Die bestehenden
+Spielerfreigabe-/Gesundheitsorakel bleiben erhalten.
+
+Die native Probe `tools/test-desktop-live-travel-reads.mjs` besteht am neuen
+Schnitt mit späterer Profileingabe während Save, angewandter verlorener
+Profilantwort, eigenem Szenenrohtext bei Materialfehler sowie frischem Prozess:
+`.build/r10-plan2-live-writes-native/result.json`, zwei reguläre Starts/Enden.
+Zusätzlich bestehen Live-Archiv mit Readretry und Rückkehr zur aktuellen Szene
+(`.build/r10-plan2-live-native/archive-after.json`) sowie private Spielerprojektion
+mit Neustart (`.build/r10-plan2-live-privacy-native/privacy-scene-after.json`),
+jeweils zwei reguläre Starts/Enden. Alle Proben verwenden 100 Prozent Appzoom.
+Diese Teilnachweise schließen keine offenen E2E-/Produkt-/Ownergates.
 
 `tests/runtime/desktop-live-owner-lifecycle.test.mjs` prüft getrennte Besitzer
 mit identischen IDs, spätere Rohtexte während einer Sicherung, Drain nach
@@ -255,10 +314,34 @@ explizite Writer-Ports; bestehende Recovery- und Textregressionen bleiben erhalt
 ## Kampfinstanz
 
 `createCombat` komponiert die bestätigte Kampfprojektion, den zentralen Writer,
-`CombatDraftCache`, die bestehenden Panels und zwei abgegrenzte Besitzer.
+`CombatDraftCache`, `CombatReadOwner`, `createCombatWriteCoordinator` und die
+bestehenden Panel-, Verstärkungs- und Würfelbesitzer.
 Renderer und Live erhalten dieselbe Instanz; native Navigation bleibt ein
 benannter Port. Kein Unterbesitzer importiert den Kompositionsroot zurück oder
 erhält dessen veränderlichen Gesamtzustand.
+
+`combat-read-owner.ts` besitzt angeforderten Kampf, Ladefehler, letzte bekannte
+Auswahlliste, Figurenwahl sowie getrennte Figuren-/Notizleseoperationen.
+**Mutieren**: `load`, `choose` und `loadNotes` eröffnen eine konkrete `EditorSession`-
+Lease; Rohentwürfe verbleiben ausschließlich im `CombatDraftCache`. Ein neuer
+Kampfread ersetzt die Figurenlease und lädt die aktuelle Auswahl erneut.
+**Bestätigen**: `combat-write-coordinator.ts` erzeugt den Command mit exakter
+Entwurfsfassung, sichert den Cache, verwendet die bestehende Commitbestätigung und
+führt Cacheverbrauch, Würfelbestätigung, Fortschritt/Nachbereitung und Darstellung
+in der bisherigen Reihenfolge aus. Auch Receiptklärung verwendet diese Grenze.
+`combat-write-feedback.ts` berechnet ausschließlich Text aus dem bestätigten
+Ergebnis und dem vorigen bestätigten Kampf. **Beenden**: `reset` entwertet Reads
+und Auswahl; Abmeldung widerruft Veröffentlichungen und lässt angenommene Writes
+im gemeinsamen Drain. Kein Finally einer alten Figuren-/Notizantwort entsperrt
+einen späteren Read desselben Ziels.
+
+`tests/runtime/desktop-combat-read-owner.test.mjs` prüft Kampagnen-A → B → A,
+Figurenwechsel, zwei parallele Notizreads mit gleicher Identität, Refresh während
+eines Figurenreads, Abmeldung und unabhängige Instanzen über die Produktionsports.
+Die native Probe `tools/test-desktop-combat-switch.mjs --apply-rolled-damage`
+prüft die vollständige Komposition mit Angriff, ausdrücklichem Schaden, Readretry,
+Entwürfen und Neustarts. Neuer Beleg: `.build/r10-plan2-combat-native/combat-after.json`;
+drei reguläre Starts/Enden bei 100 Prozent Appzoom.
 
 `combat-reinforcement-editor.ts` besitzt Suchwort, Anfragegeneration, Treffer,
 Katalog-/Truppauswahl, die eigenen Controls und den `BookingDialog`. Kampf- oder
@@ -306,6 +389,38 @@ Logger umhüllt; ein Command wird dadurch nicht doppelt gezählt. Beleg:
 Die aktuelle Ownerdatei besteht mit acht Fällen; die E2E-02-Teilprobe nach dem
 Kampfschnitt besteht weiterhin mit denselben fünf offenen Gates unter
 `.build/round9-plan3-combat-e2e02/result.json`.
+
+## Einmaliger Review von Runde 10, Plan 2
+
+Der Besitzerschnitt ist als begrenzte Entflechtung akzeptiert. Die vorhandenen
+Race-/Writer-/Architekturprüfungen sowie Repository-, Typ- und Buildbelege wurden
+wiederverwendet. Die fünf neuen nativen Ergebnisdateien wurden vor der kleinen
+Reviewkorrektur erneut mit `assertBaselineReceipt` gegen die vorhandenen
+Runtimeartefakte geprüft: insgesamt elf reguläre Starts/Enden; Bildhashes und
+Abschlussbelege sind gültig. Es wurde keine vollständige native Serie wiederholt.
+
+Der Review fand zwei verbliebene direkte Clockmutationen über `drafts.view` in
+der Livekomposition. Beide verwenden jetzt `LiveDraftOwner.acceptClock`; die
+vorherigen Szenen-/Epoch-/Revisionsbedingungen bleiben erhalten. Der Besitzer
+aktualisiert die bestätigte Szene und Gruppenliste, ohne den offenen Szenenrohtext
+zu bestätigen. Die ergänzte Regression prüft genau diese Trennung sowie fremde
+und veraltete Clockantworten. Beide gezielt erneut ausgeführten Live-Testdateien
+bestanden gemeinsam mit zwölf Fällen; Log `.build/r10-plan2-review-live.log`.
+Die anschließende vollständige Typ-/Environmentprüfung und der Desktopbuild
+bestanden (`.build/r10-plan2-review-check.log`, `.build/r10-plan2-review-build.log`).
+Für diese kleine Besitzerkorrektur wurde kein neuer nativer Gesamtstand behauptet;
+die fünf nativen Bestandsbelege gehören weiterhin zu ihren ursprünglichen Builds.
+Der betroffene Capability-Eintrag wurde mit tatsächlichen Testlinks und
+`--geprueft` nachgeführt.
+
+Verbleibende Grenze: Die Live-Leseprojektionen sind bislang nur flach als
+`Readonly` typisiert; rekursive Unveränderlichkeit wird nicht durchgängig vom
+Typsystem erzwungen. Im geprüften Anschluss wurden die konkreten direkten
+Clockschreibzugriffe beseitigt. Die Kompositionen bleiben umfangreiche
+Oberflächenmodule; der Abschluss betrifft ihren genannten Zustandsbesitz und
+behauptet keine vollständige Zerlegung aller Darstellung. Die roten breiten
+Prüfwege aus Plan 1 und offene E2E-/Paket-/Ownergates bleiben offen. Der Review
+ist einmalig; keine weitere Delegation, Restplanung oder Re-Review.
 
 ## Instanzen für NPCs, Musik und Gegenstände
 

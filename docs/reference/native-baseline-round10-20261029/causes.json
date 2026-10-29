@@ -1,0 +1,2467 @@
+{
+  "status": "Gebundener Ausgangsbefund mit unterbrochener Erstserie und separat dokumentierter Fortsetzung; keine vollständige Qualifikation",
+  "sourceDigest": "248be47bcfbc82fe7750fa98887aa5f334650a5680d3c38551857b6c1d7ecc2e",
+  "cases": [
+    {
+      "name": "access-path",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "/home/aaron/.nvm/versions/node/v22.19.0/bin/node",
+        "tools/test-desktop-access-path.mjs"
+      ],
+      "category": "ungültige Fixture",
+      "step": "choose(): Zugangsweg auf der Karte auswählen",
+      "userEffect": "Keine Auswahl des Zugangswegs; die eigentliche Korrektur wird nicht erreicht.",
+      "currentState": "Fixture erzeugt Raum und Pfad, aber kein trockenes Gelände. Frische Aufnahme zeigt Meer ohne Raum-/Pfadgeometrie; leeres Gelände liegt gemäß terrain-height.ts bei -100 m.",
+      "source": "tools/test-desktop-access-path.mjs:87; tools/test-desktop-access-path.mjs:130; src/app/atlas/terrain-height.ts:16",
+      "evidence": [
+        ".build/native-baseline-round10-full-20261029/access-path/variant-1/failure.json"
+      ],
+      "historicalRegression": "Nicht behauptet; kein vergleichbarer Gegenlauf an historischem Produktstand.",
+      "env": {}
+    },
+    {
+      "name": "atlas-author-overlay",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "/home/aaron/.nvm/versions/node/v22.19.0/bin/node",
+        "tools/test-desktop-atlas-author-overlay.mjs"
+      ],
+      "category": "veraltete Testannahme",
+      "step": "open(): #atlas-dock-tool anklicken",
+      "userEffect": "Die Überlagerungs-/Entwurfsassertionen werden nicht erreicht.",
+      "currentState": "Der erwartete Schalter #atlas-dock-tool wird vom aktuellen Layout nicht erzeugt. Aktuelle Werkzeugbedienung besitzt #atlas-section und #atlas-group-tools.",
+      "source": "tools/test-desktop-atlas-author-overlay.mjs:177; src/app/atlas/atlas-workspace-layout.ts:145",
+      "evidence": [
+        ".build/native-baseline-round10-full-20261029/atlas-author-overlay/case-1/failure.json",
+        ".build/native-baseline-round10-full-20261029/atlas-author-overlay/failure.json"
+      ],
+      "historicalRegression": "Nicht behauptet; kein vergleichbarer Gegenlauf an historischem Produktstand.",
+      "env": {}
+    },
+    {
+      "name": "atlas-biome-stroke-marsh-only",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "/home/aaron/.nvm/versions/node/v22.19.0/bin/node",
+        "tools/test-desktop-atlas-biome-stroke.mjs",
+        "--marsh-only"
+      ],
+      "category": "Umgebung/Harness",
+      "step": "Aufrufvariante wählen",
+      "userEffect": "Die beabsichtigte enge Sumpf-Bibliotheksprobe wurde nicht erreicht.",
+      "currentState": "Eigener Manifestfehler: --marsh-only ohne --library wiederholt den Standardsatz. Nur dieser registrierte Wrapper wurde kontrolliert beendet; PID-Abwesenheit und leere remainingOwnedPids sind belegt. Korrekte Wiederholung nach der unveränderten Ausgangsserie ausstehend.",
+      "source": "tools/test-desktop-atlas-biome-stroke.mjs:16; tools/test-desktop-atlas-biome-stroke.mjs:639",
+      "evidence": [
+        ".build/native-baseline-round10-full-20261029/atlas-biome-stroke-marsh-only/invocation-diagnosis.json",
+        ".build/native-baseline-round10-full-20261029/atlas-biome-stroke-marsh-only/wrapper-failure.json"
+      ],
+      "historicalRegression": "Nicht behauptet; eigener Aufruffehler.",
+      "env": {}
+    },
+    {
+      "name": "atlas-cache-reopen",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "/home/aaron/.nvm/versions/node/v22.19.0/bin/node",
+        "tools/test-desktop-atlas-cache-reopen.mjs"
+      ],
+      "category": "ungültige Fixture",
+      "step": "Große Welt öffnen und erste Terrainbereitschaft erwarten",
+      "userEffect": "Die Testwelt erhält keinen geladenen Geländeausschnitt; Backup meldet ebenfalls einen ungültigen Bestand.",
+      "currentState": "1.024 alte Vegetationspresets besitzen keine aktuellen Pflichtfelder. Kanonischer checkedLandscapeValue lehnt forest:-16:-16 ab; Terrain-Materialprojektion ruft Object.values(p.waterDepth) auf dem fehlenden Feld auf. Sichtbarer Istzustand: terrainReady=failed, status=Cannot convert undefined or null to object.",
+      "source": "src/app/storage/atlas-material-tiles.ts:181; src/app/atlas/vegetation-contracts.ts:14; src/app/storage/landscape-read.ts:16",
+      "evidence": [
+        ".build/native-baseline-round10-full-20261029/fixture-validation.json",
+        ".build/native-baseline-round10-full-20261029/atlas-cache-reopen/failure.json"
+      ],
+      "historicalRegression": "Nicht behauptet; früherer positiver Bildlauf hat einen anderen Schema-/Codevertrag.",
+      "env": {
+        "ATLAS_MIXED_SOURCE": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-full-20261029/fixtures/mixed-world.sqlite"
+      }
+    },
+    {
+      "name": "atlas-cache-reopen-detail",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "/home/aaron/.nvm/versions/node/v22.19.0/bin/node",
+        "tools/test-desktop-atlas-cache-reopen.mjs"
+      ],
+      "category": "ungültige Fixture",
+      "step": "Große Welt öffnen und erste Terrainbereitschaft erwarten",
+      "userEffect": "Die Testwelt erhält keinen geladenen Geländeausschnitt; Backup meldet ebenfalls einen ungültigen Bestand.",
+      "currentState": "1.024 alte Vegetationspresets besitzen keine aktuellen Pflichtfelder. Kanonischer checkedLandscapeValue lehnt forest:-16:-16 ab; Terrain-Materialprojektion ruft Object.values(p.waterDepth) auf dem fehlenden Feld auf. Sichtbarer Istzustand: terrainReady=failed, status=Cannot convert undefined or null to object.",
+      "source": "src/app/storage/atlas-material-tiles.ts:181; src/app/atlas/vegetation-contracts.ts:14; src/app/storage/landscape-read.ts:16",
+      "evidence": [
+        ".build/native-baseline-round10-full-20261029/fixture-validation.json",
+        ".build/native-baseline-round10-full-20261029/atlas-cache-reopen-detail/failure.json"
+      ],
+      "historicalRegression": "Nicht behauptet; früherer positiver Bildlauf hat einen anderen Schema-/Codevertrag.",
+      "env": {
+        "ATLAS_WAIT_DETAIL": "1",
+        "ATLAS_MIXED_SOURCE": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-full-20261029/fixtures/mixed-world.sqlite"
+      }
+    },
+    {
+      "name": "atlas-cartography",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "/home/aaron/.nvm/versions/node/v22.19.0/bin/node",
+        "tools/test-desktop-atlas-cartography.mjs"
+      ],
+      "category": "veraltete Testannahme",
+      "step": "Nach PNG-Ausgabe auf kompakte Ansicht wechseln",
+      "userEffect": "Umbenennen von Region und Ebenenentwurf nach dem Export wird nicht erreicht.",
+      "currentState": "Verbliebene 200-Prozent-Annahme: Fensterbreite 1440 wird bei Zoom 1 gesetzt, danach wartet die Probe auf innerWidth <= 720. PNG wurde zuvor erfolgreich mit 1600 Pixeln exportiert. Kompakte 100-Prozent-Ansicht muss über echte Inhaltsmaße hergestellt werden.",
+      "source": "tools/test-desktop-atlas-cartography.mjs:460",
+      "evidence": [
+        ".build/native-baseline-round10-full-20261029/atlas-cartography/failure.json"
+      ],
+      "historicalRegression": "Nicht behauptet; Ursache am gebundenen aktuellen Quellenstand eingeordnet.",
+      "env": {}
+    },
+    {
+      "name": "atlas-distance",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "/home/aaron/.nvm/versions/node/v22.19.0/bin/node",
+        "tools/test-desktop-atlas-distance.mjs"
+      ],
+      "category": "veraltete Testannahme",
+      "step": "Straßenbreite 2 eingeben und kanonische Meter prüfen",
+      "userEffect": "Die Probe meldet die korrekt als zwei Fuß gespeicherten 0,6096 Meter als Fehler.",
+      "currentState": "Aktuelle Oberfläche startet mit DnD-Einheiten. Die Probe setzt vor der metrisch gemeinten Eingabe keine metrischen Einheiten und erwartet dennoch zwei kanonische Meter. 2 Fuß sind exakt 0,6096 Meter; bestehende Mess-/Persistenzassertionen bleiben bei expliziter metrischer Auswahl erhalten.",
+      "source": "tools/test-desktop-atlas-distance.mjs:207; src/app/atlas/atlas-units.ts",
+      "evidence": [
+        ".build/native-baseline-round10-full-20261029/atlas-distance/failure.json"
+      ],
+      "historicalRegression": "Nicht behauptet; Ursache am gebundenen aktuellen Quellenstand eingeordnet.",
+      "env": {}
+    },
+    {
+      "name": "atlas-early-terrain",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "/home/aaron/.nvm/versions/node/v22.19.0/bin/node",
+        "tools/test-desktop-atlas-early-terrain.mjs"
+      ],
+      "category": "ungültige Fixture",
+      "step": "Terrain vor der gehaltenen Objektregion anzeigen",
+      "userEffect": "Die Testwelt erhält keinen geladenen Geländeausschnitt; Backup meldet ebenfalls einen ungültigen Bestand.",
+      "currentState": "1.024 alte Vegetationspresets besitzen keine aktuellen Pflichtfelder. Kanonischer checkedLandscapeValue lehnt forest:-16:-16 ab; Terrain-Materialprojektion ruft Object.values(p.waterDepth) auf dem fehlenden Feld auf. Sichtbarer Istzustand: terrainReady=failed, status=Cannot convert undefined or null to object.",
+      "source": "src/app/storage/atlas-material-tiles.ts:181; src/app/atlas/vegetation-contracts.ts:14; src/app/storage/landscape-read.ts:16",
+      "evidence": [
+        ".build/native-baseline-round10-full-20261029/fixture-validation.json",
+        ".build/native-baseline-round10-full-20261029/atlas-early-terrain/failure.json"
+      ],
+      "historicalRegression": "Nicht behauptet; früherer positiver Bildlauf hat einen anderen Schema-/Codevertrag.",
+      "env": {
+        "ATLAS_MIXED_SOURCE": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-full-20261029/fixtures/mixed-world.sqlite"
+      }
+    },
+    {
+      "name": "atlas-geometry-overview",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "/home/aaron/.nvm/versions/node/v22.19.0/bin/node",
+        "tools/test-desktop-atlas-geometry-overview.mjs"
+      ],
+      "category": "ungültige Fixture",
+      "step": "Komprimierte große Welt an eingefrorene Quellenbindung vergleichen",
+      "userEffect": "Der Geometrie-/IPC-Ablauf erreicht keinen nativen Start; die falsche Fixturebindung wird vor Verwendung zurückgewiesen.",
+      "currentState": "Probe erwartet frühere M0-Fixture mit 40.236.558 komprimierten Bytes und altem Hash. Aktueller freigegebener kontinuierlicher Testbestand hat 58.108.757 komprimierte Bytes und den Hash aus mixed-world-manifest.json. Fachassertionen müssen mit einer ausdrücklich aktualisierten gültigen Quellenbindung erhalten bleiben.",
+      "source": "tools/test-desktop-atlas-geometry-overview.mjs:21; tools/test-desktop-atlas-geometry-overview.mjs:215",
+      "evidence": [
+        ".build/native-baseline-round10-full-20261029/atlas-geometry-overview/1793237893190-595294/failure.json"
+      ],
+      "historicalRegression": "Nicht behauptet; unterschiedliche Testweltbindungen.",
+      "env": {}
+    },
+    {
+      "name": "atlas-main-camera-city-only",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "/home/aaron/.nvm/versions/node/v22.19.0/bin/node",
+        "tools/test-desktop-atlas-main-camera.mjs",
+        "--city-only"
+      ],
+      "category": "veraltete Testannahme",
+      "step": "WebGL-Canvas lesen",
+      "userEffect": "Die native Fachqualifikation wird durch eine überholte technische Erwartung abgebrochen.",
+      "currentState": "Der Test ruft getContext auf #atlas-terrain-spatial auf. Dieses Element ist nach der Rendererumstellung ein Container; der WebGL-Canvas liegt darunter. Die eigentlichen Pixel-/Neustartassertionen wurden noch nicht erreicht.",
+      "source": "tools/atlas-main-city-probe.mjs:156",
+      "evidence": [
+        ".build/native-baseline-round10-full-20261029/atlas-main-camera-city-only/failure.json"
+      ],
+      "historicalRegression": "Nicht behauptet; am aktuellen Quellenstand eingeordnet.",
+      "env": {}
+    },
+    {
+      "name": "atlas-material-stream",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "/home/aaron/.nvm/versions/node/v22.19.0/bin/node",
+        "tools/test-desktop-atlas-material-stream.mjs"
+      ],
+      "category": "ungültige Fixture",
+      "step": "Komprimierte große Welt an eingefrorene Quellenbindung vergleichen",
+      "userEffect": "Der Geometrie-/IPC-Ablauf erreicht keinen nativen Start; die falsche Fixturebindung wird vor Verwendung zurückgewiesen.",
+      "currentState": "Probe erwartet frühere M0-Fixture mit 40.236.558 komprimierten Bytes und altem Hash. Aktueller freigegebener kontinuierlicher Testbestand hat 58.108.757 komprimierte Bytes und den Hash aus mixed-world-manifest.json. Fachassertionen müssen mit einer ausdrücklich aktualisierten gültigen Quellenbindung erhalten bleiben.",
+      "source": "tools/test-desktop-atlas-material-stream.mjs:21; tools/test-desktop-atlas-material-stream.mjs:274",
+      "evidence": [
+        ".build/native-baseline-round10-full-20261029/atlas-material-stream/1793238112390-596478/failure.json"
+      ],
+      "historicalRegression": "Nicht behauptet; unterschiedliche Testweltbindungen.",
+      "env": {}
+    },
+    {
+      "name": "atlas-material-tiles",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "/home/aaron/.nvm/versions/node/v22.19.0/bin/node",
+        "tools/test-desktop-atlas-material-tiles.mjs"
+      ],
+      "category": "veraltete Testannahme",
+      "step": "Warme Materialkanäle vergleichen",
+      "userEffect": "Die native Fachqualifikation wird durch eine überholte technische Erwartung abgebrochen.",
+      "currentState": "Die Warm-Cache-Assertion erwartet nur fünf alte Materialkanäle. Der aktuelle Vertrag liefert dreizehn Kanäle, einschließlich relief und sieben getrennten Bewuchskanälen; alle gemeldeten Caches sind hit. Der Test muss jeden aktuellen Kanal samt dessen korrektem Stride und unveränderten Warmbytes prüfen.",
+      "source": "tools/test-desktop-atlas-material-tiles.mjs:42; src/app/atlas/terrain-material.ts:1",
+      "evidence": [
+        ".build/native-baseline-round10-full-20261029/atlas-material-tiles/failure.json"
+      ],
+      "historicalRegression": "Nicht behauptet; am aktuellen Quellenstand eingeordnet.",
+      "env": {}
+    },
+    {
+      "name": "atlas-mixed-workbench",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "/home/aaron/.nvm/versions/node/v22.19.0/bin/node",
+        "tools/test-desktop-atlas-mixed-workbench.mjs"
+      ],
+      "category": "ungültige Fixture",
+      "step": "Große Welt öffnen und erste Terrainbereitschaft erwarten",
+      "userEffect": "Die Testwelt erhält keinen geladenen Geländeausschnitt; Backup meldet ebenfalls einen ungültigen Bestand.",
+      "currentState": "1.024 alte Vegetationspresets besitzen keine aktuellen Pflichtfelder. Kanonischer checkedLandscapeValue lehnt forest:-16:-16 ab; Terrain-Materialprojektion ruft Object.values(p.waterDepth) auf dem fehlenden Feld auf. Sichtbarer Istzustand: terrainReady=failed, status=Cannot convert undefined or null to object.",
+      "source": "src/app/storage/atlas-material-tiles.ts:181; src/app/atlas/vegetation-contracts.ts:14; src/app/storage/landscape-read.ts:16",
+      "evidence": [
+        ".build/native-baseline-round10-full-20261029/fixture-validation.json",
+        ".build/native-baseline-round10-full-20261029/atlas-mixed-workbench/1/failure.json"
+      ],
+      "historicalRegression": "Nicht behauptet; früherer positiver Bildlauf hat einen anderen Schema-/Codevertrag.",
+      "env": {}
+    },
+    {
+      "name": "atlas-navigation-terrain-world-room",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "/home/aaron/.nvm/versions/node/v22.19.0/bin/node",
+        "tools/test-desktop-atlas-navigation-terrain.mjs",
+        "--world-room"
+      ],
+      "category": "Umgebung/Harness",
+      "step": "Exakte native Inhaltsgröße vor dem Welt-/Raumdurchlauf prüfen",
+      "userEffect": "Der eigentliche Maßstabs-, Raum- und Gestenablauf wird nicht erreicht.",
+      "currentState": "Die Probe verlangt 1920 × 1080 CSS-Pixel bei 100 Prozent. Der native Windowmanager begrenzt den angeforderten Inhalt am aktiven Display auf 1920 × 980. Die Gegenprobe muss eine explizite auf diesem Display erreichbare Inhaltsgröße verwenden und diese weiterhin exakt prüfen.",
+      "source": "tools/atlas-world-room-probe.mjs:351",
+      "evidence": [
+        ".build/native-baseline-round10-full-20261029/atlas-navigation-terrain-world-room/failure.json"
+      ],
+      "historicalRegression": "Nicht behauptet; am aktuellen gebundenen Quellenstand eingeordnet.",
+      "env": {}
+    },
+    {
+      "name": "atlas-objects-main",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "/home/aaron/.nvm/versions/node/v22.19.0/bin/node",
+        "tools/test-desktop-atlas-objects-main.mjs"
+      ],
+      "category": "veraltete Testannahme",
+      "step": "Internes data-terrain-view-Label vergleichen",
+      "userEffect": "Objektauswahl, Höhenkorrektur, Export und Neustart werden nicht erreicht.",
+      "currentState": "Die Oberfläche meldet renderer=deck und terrainView=raster; die Probe erwartet vor den Fachassertionen das ältere Label main. Der aktuelle Architekturvertrag verwendet einen gemeinsamen metrischen deck.gl-Pfad. Die Prüfung muss dessen tatsächlichen Canvas und die fachlichen Objektassertionen erhalten.",
+      "source": "tools/test-desktop-atlas-objects-main.mjs:142; docs/atlas/architecture/unified-spatial-atlas.md:38",
+      "evidence": [
+        ".build/native-baseline-round10-full-20261029/atlas-objects-main/failure.json"
+      ],
+      "historicalRegression": "Nicht behauptet; am aktuellen gebundenen Quellenstand eingeordnet.",
+      "env": {}
+    },
+    {
+      "name": "atlas-scale-roundtrip",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "/home/aaron/.nvm/versions/node/v22.19.0/bin/node",
+        "tools/test-desktop-atlas-scale-roundtrip.mjs"
+      ],
+      "category": "ungültige Fixture",
+      "step": "Große Welt vor Maßstabswechseln und nativer Speichermessung öffnen",
+      "userEffect": "Die Testwelt erhält keinen geladenen Geländeausschnitt; Backup meldet ebenfalls einen ungültigen Bestand.",
+      "currentState": "1.024 alte Vegetationspresets besitzen keine aktuellen Pflichtfelder. Kanonischer checkedLandscapeValue lehnt forest:-16:-16 ab; Terrain-Materialprojektion ruft Object.values(p.waterDepth) auf dem fehlenden Feld auf. Sichtbarer Istzustand: terrainReady=failed, status=Cannot convert undefined or null to object.",
+      "source": "src/app/storage/atlas-material-tiles.ts:181; src/app/atlas/vegetation-contracts.ts:14; src/app/storage/landscape-read.ts:16",
+      "evidence": [
+        ".build/native-baseline-round10-full-20261029/fixture-validation.json",
+        ".build/native-baseline-round10-full-20261029/atlas-scale-roundtrip/failure.json"
+      ],
+      "historicalRegression": "Nicht behauptet; früherer positiver Bildlauf hat einen anderen Schema-/Codevertrag.",
+      "env": {
+        "ATLAS_MIXED_SOURCE": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-full-20261029/fixtures/mixed-world.sqlite"
+      }
+    },
+    {
+      "name": "atlas-terrain-stroke-recovery-only",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "/home/aaron/.nvm/versions/node/v22.19.0/bin/node",
+        "tools/test-desktop-atlas-terrain-stroke.mjs",
+        "--recovery-only"
+      ],
+      "rawOutcome": "passed",
+      "technicalQualification": "blocked",
+      "category": "Umgebung/Harness",
+      "step": "Erfolg nach eigener manueller Berichterstellung technisch qualifizieren",
+      "userEffect": "Fachassertionen enden roh grün, aber der gemeinsame Abschlussnachweis fehlt. Kein vollständiger Qualifikationserfolg.",
+      "currentState": "Einzige aktuelle Sitzung ohne Aufruf von native.finish() oder runNativeProbe(). Der eigene Bericht enthält nativeErrors statt gemeinsamer errors/starts/cleanup/step; der Audit weist die fehlenden Abschlussmetadaten zurück. PASS-Veröffentlichung über native.finish(report) ist separat vorbereitet.",
+      "source": "tools/test-desktop-atlas-terrain-stroke.mjs:2641",
+      "evidence": [
+        ".build/native-baseline-round10-full-20261029/atlas-terrain-stroke-recovery-only/result.json",
+        ".build/native-baseline-round10-full-20261029/technical-audit.json"
+      ],
+      "historicalRegression": "Nicht behauptet; aktuelle technische Abschlusslücke.",
+      "env": {}
+    },
+    {
+      "name": "atlas-terrain-stroke-recovery-only-source-conflict",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "/home/aaron/.nvm/versions/node/v22.19.0/bin/node",
+        "tools/test-desktop-atlas-terrain-stroke.mjs",
+        "--recovery-only",
+        "--source-conflict"
+      ],
+      "rawOutcome": "passed",
+      "technicalQualification": "blocked",
+      "category": "Umgebung/Harness",
+      "step": "Erfolg nach eigener manueller Berichterstellung technisch qualifizieren",
+      "userEffect": "Fachassertionen enden roh grün, aber der gemeinsame Abschlussnachweis fehlt. Kein vollständiger Qualifikationserfolg.",
+      "currentState": "Einzige aktuelle Sitzung ohne Aufruf von native.finish() oder runNativeProbe(). Der eigene Bericht enthält nativeErrors statt gemeinsamer errors/starts/cleanup/step; der Audit weist die fehlenden Abschlussmetadaten zurück. PASS-Veröffentlichung über native.finish(report) ist separat vorbereitet.",
+      "source": "tools/test-desktop-atlas-terrain-stroke.mjs:2641",
+      "evidence": [
+        ".build/native-baseline-round10-full-20261029/atlas-terrain-stroke-recovery-only-source-conflict/result.json",
+        ".build/native-baseline-round10-full-20261029/technical-audit.json"
+      ],
+      "historicalRegression": "Nicht behauptet; aktuelle technische Abschlusslücke.",
+      "env": {}
+    },
+    {
+      "name": "atlas-terrain-stroke-recovery-only-drop-followup",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "/home/aaron/.nvm/versions/node/v22.19.0/bin/node",
+        "tools/test-desktop-atlas-terrain-stroke.mjs",
+        "--recovery-only",
+        "--drop-followup"
+      ],
+      "category": "Umgebung/Harness",
+      "intent": "Absichtlich roter Detektorgegenfall; versehentlich als normale positive Katalogvariante eingeordnet.",
+      "step": "Geschlossene Folgegeste nach verlorener Antwort nachweisen",
+      "userEffect": "Keine unbeabsichtigte Produktregression aus diesem roten Aufruf ableitbar; die Probe erkennt die absichtlich unterdrückte B-Wirkung.",
+      "currentState": "--drop-followup ersetzt die zweite echte Commitantwort durch eine fingierte Bestätigung und führt deren Schreiben nicht aus. Der vorhandene Architekturvertrag verlangt ausdrücklich, dass die Probe diese fehlende B-Wirkung erkennt. closed-dependent-resumed-once-without-new-input und die daraus folgenden Undo-/Redo-Checks werden rot. Reguläre Exits und PID-Abwesenheit sind im Bericht belegt.",
+      "source": "tools/test-desktop-atlas-terrain-stroke.mjs:192; docs/atlas/architecture/rendering.md:225",
+      "evidence": [
+        ".build/native-baseline-round10-full-20261029/atlas-terrain-stroke-recovery-only-drop-followup/failure.json"
+      ],
+      "historicalRegression": "Nicht behauptet; absichtliche kontrollierte Fehlerinjektion.",
+      "env": {}
+    },
+    {
+      "name": "atlas-terrain-stroke-multiscale",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "/home/aaron/.nvm/versions/node/v22.19.0/bin/node",
+        "tools/test-desktop-atlas-terrain-stroke.mjs",
+        "--multiscale"
+      ],
+      "category": "Umgebung/Harness",
+      "step": "multi-same-logical-viewport im initialen Multiscalezustand",
+      "userEffect": "Der eigentliche Maßstabs-, Raum- und Gestenablauf wird nicht erreicht.",
+      "currentState": "Die Probe verlangt 1920 × 1080 CSS-Pixel bei 100 Prozent. Der native Windowmanager begrenzt den angeforderten Inhalt am aktiven Display auf 1920 × 980. Die Gegenprobe muss eine explizite auf diesem Display erreichbare Inhaltsgröße verwenden und diese weiterhin exakt prüfen.",
+      "source": "tools/test-desktop-atlas-terrain-stroke.mjs:1818",
+      "evidence": [
+        ".build/native-baseline-round10-full-20261029/atlas-terrain-stroke-multiscale/failure.json"
+      ],
+      "historicalRegression": "Nicht behauptet; am aktuellen gebundenen Quellenstand eingeordnet.",
+      "additionalOpen": "Danach wird multiscale multi-hills am readiness-Prädikat nach 90 s rot. Ob derselbe oder ein weiterer Fehler vorliegt, bleibt bis zum gezielten Gegenlauf mit erreichbarer exakter Inhaltsgröße offen.",
+      "env": {}
+    },
+    {
+      "name": "atlas-transition",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "/home/aaron/.nvm/versions/node/v22.19.0/bin/node",
+        "tools/test-desktop-atlas-transition.mjs"
+      ],
+      "category": "veraltete Testannahme",
+      "step": "launch(): #atlas-tab nach Kampagnenfortsetzung anklicken",
+      "userEffect": "Die eigentlichen Übergangs-/Gestenassertionen werden nicht erreicht.",
+      "currentState": "Die Probe klickt #atlas-tab bedingungslos. Der Atlas ist bereits aktiv (aria-pressed=true), sein Navigationsknopf liegt im geschlossenen Workspace-Menü und ist deshalb unsichtbar. Aktuelle Proben prüfen den aktiven Atlas und öffnen bei Bedarf das Workspace-Menü.",
+      "source": "tools/test-desktop-atlas-transition.mjs:124",
+      "evidence": [
+        ".build/native-baseline-round10-full-20261029/atlas-transition/failure.json"
+      ],
+      "historicalRegression": "Nicht behauptet; aktueller UI-Aufruf eingeordnet.",
+      "env": {}
+    },
+    {
+      "name": "campaign-transfer-visit-fail-import-atlas",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "/home/aaron/.nvm/versions/node/v22.19.0/bin/node",
+        "tools/test-desktop-campaign-transfer-visit.mjs",
+        "--fail-import-atlas"
+      ],
+      "evidence": [
+        ".build/native-baseline-round10-full-20261029/campaign-transfer-visit-fail-import-atlas/failure.json"
+      ],
+      "historicalRegression": "Nicht behauptet; aktuelle Aufrufart eingeordnet.",
+      "category": "Umgebung/Harness",
+      "intent": "Absichtlich roter Importdetektor; versehentlich als normale positive Katalogvariante eingeordnet.",
+      "step": "Importierten Atlas nach bestätigtem Import auf Nutzbarkeit prüfen",
+      "userEffect": "Die probeweise blockierte importierte Karte wird von derselben Nutzbarkeitsassertion erkannt; kein unbeabsichtigter Produktfehler aus diesem roten Gegenlauf ableitbar.",
+      "currentState": "--fail-import-atlas injiziert Controlled imported Atlas opening failure nur in den importierten Atlas. Der vorhandene Archivvertrag verlangt genau das Scheitern von Imported Atlas must never fail during opening ohne erneuten Import. Der rote Ausgang entspricht dieser Detektorgegenprobe.",
+      "source": "tools/test-desktop-campaign-transfer-visit.mjs:146; docs/campaign/contract/archive.md:310",
+      "env": {}
+    },
+    {
+      "name": "canvas-recovery",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "/home/aaron/.nvm/versions/node/v22.19.0/bin/node",
+        "tools/test-desktop-canvas-recovery.mjs"
+      ],
+      "evidence": [
+        ".build/native-baseline-round10-full-20261029/canvas-recovery/failure.json"
+      ],
+      "historicalRegression": "Nicht behauptet; aktuelle Aufrufart eingeordnet.",
+      "category": "veraltete Testannahme",
+      "step": "launch(): Atlas-Navigationsknopf bedingungslos anklicken",
+      "userEffect": "Die eigentliche Canvasverlust-/Wiederherstellungsprobe wird nicht erreicht.",
+      "currentState": "Nach der Kampagnenöffnung wird Atlas bedingungslos über getByRole(button) geklickt. Der aktuelle Workspace zeigt den Atlas bereits; die zusätzliche Navigation ist im geschlossenen Menü verborgen. Der aktuelle Einstieg muss den sichtbaren aktiven Arbeitsbereich prüfen und nur bei Bedarf das Menü öffnen.",
+      "source": "tools/test-desktop-canvas-recovery.mjs:137",
+      "env": {}
+    },
+    {
+      "name": "combat-drafts",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "/home/aaron/.nvm/versions/node/v22.19.0/bin/node",
+        "tools/test-desktop-combat-drafts.mjs"
+      ],
+      "category": "veraltete Testannahme",
+      "step": "launch(): Party-/Leitenknopf vor dem Kampagneneinstieg klicken",
+      "userEffect": "Die Kampfeingabe-/Entwurfsassertionen werden nicht erreicht.",
+      "currentState": "Die Probe erwartet #live-tab direkt auf der Startseite und öffnet keine Kampagnenkarte. Die aktuelle Oberfläche hält Workspace-Navigation bis zum sichtbaren Kampagneneinstieg verborgen.",
+      "source": "tools/test-desktop-combat-drafts.mjs:65",
+      "evidence": [
+        ".build/native-baseline-round10-full-20261029/combat-drafts/failure.json"
+      ],
+      "historicalRegression": "Nicht behauptet; heutige Ursache ersetzt keinen vergleichbaren historischen Gegenlauf.",
+      "env": {}
+    },
+    {
+      "name": "connected-room-prep",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "/home/aaron/.nvm/versions/node/v22.19.0/bin/node",
+        "tools/test-desktop-connected-room-prep.mjs"
+      ],
+      "category": "veraltete Testannahme",
+      "step": "openKey(): alten Atlasfamilienknopf anklicken",
+      "userEffect": "Raumtexte und ihre Quellenbeziehungen werden nicht erreicht.",
+      "currentState": "Die Probe klickt #atlas-families button[data-family=interior]. Der aktuelle Layoutbesitzer versteckt #atlas-families und veröffentlicht die Auswahl über #atlas-section. Der vorhandene openDesktopKeyFromAtlas-Helfer folgt bereits diesem Weg.",
+      "source": "tools/test-desktop-connected-room-prep.mjs:267; src/app/atlas/atlas-workspace-layout.ts:145",
+      "evidence": [
+        ".build/native-baseline-round10-full-20261029/connected-room-prep/failure.json"
+      ],
+      "historicalRegression": "Nicht behauptet; heutige Ursache ersetzt keinen vergleichbaren historischen Gegenlauf.",
+      "env": {}
+    },
+    {
+      "name": "day-party",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "/home/aaron/.nvm/versions/node/v22.19.0/bin/node",
+        "tools/test-desktop-day-party.mjs"
+      ],
+      "category": "veraltete Testannahme",
+      "step": "Rastbudget nach Atlas-/Kampagnenöffnung öffnen",
+      "userEffect": "Rastbudget-/Partyfortschritt wird nicht erreicht.",
+      "currentState": "Die Kampagnenkarte öffnet den Atlas. Die Probe öffnet danach #day-trigger ohne zuvor den aktiven Party-/Leitenbereich zu betreten; der Knopf ist verborgen und deaktiviert.",
+      "source": "tools/test-desktop-day-party.mjs:107",
+      "evidence": [
+        ".build/native-baseline-round10-full-20261029/day-party/failure.json"
+      ],
+      "historicalRegression": "Nicht behauptet; heutige Ursache ersetzt keinen vergleichbaren historischen Gegenlauf.",
+      "env": {}
+    },
+    {
+      "name": "desk-search",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "/home/aaron/.nvm/versions/node/v22.19.0/bin/node",
+        "tools/test-desktop-desk-search.mjs"
+      ],
+      "category": "veraltete Testannahme",
+      "step": "launch(): verstecktes #live-continue nach aktiver Szene klicken",
+      "userEffect": "Die Szenentischsuche wird nicht erreicht.",
+      "currentState": "Die Szene ist nach dem Party-/Leitenwechsel bereits aktiv und sichtbar (failure.png). #live-continue ist deshalb verborgen. Der zusätzliche alte Fortsetzungsklick ist keine aktuelle Voraussetzung; die sichtbare Szene muss weiterhin geprüft werden.",
+      "source": "tools/test-desktop-desk-search.mjs:93; src/app/runtime/live.ts:1649",
+      "evidence": [
+        ".build/native-baseline-round10-full-20261029/desk-search/failure.json"
+      ],
+      "historicalRegression": "Nicht behauptet; heutige Ursache ersetzt keinen vergleichbaren historischen Gegenlauf.",
+      "env": {}
+    },
+    {
+      "name": "context-help",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "/home/aaron/.nvm/versions/node/v22.19.0/bin/node",
+        "tools/test-desktop-context-help.mjs"
+      ],
+      "category": "veraltete Testannahme",
+      "step": "Kanonische Notiz vor/nach längerem Hilfebesuch vergleichen",
+      "userEffect": "Hilfe-/Fokus-/Entwurfserhalt wird nach einer legitimen Autospeicherung als Änderung gewertet.",
+      "currentState": "Der Notizeditor plant bei Eingabe nach 700 ms flushPreparation(). Die Probe liest vor Ablauf den alten Stand, bleibt länger in der Hilfe und erwartet unveränderte Revision. Ihr eigener Endvergleich erwartet bereits dieselbe Revision 2 mit dem eingegebenen Text. Der Hilfebesuch ruft keinen Flush auf; noch ausstehender nativer Gegenlauf ohne F1 und angepasste Autosave-Bindung müssen die Neutralitätsassertion erhalten.",
+      "source": "src/app/campaign/preparation.ts:542; src/app/workspace/tutorial.ts:1062; tools/test-desktop-context-help.mjs:138",
+      "evidence": [
+        ".build/native-baseline-round10-full-20261029/context-help/failure.json"
+      ],
+      "historicalRegression": "Nicht behauptet; heutige Ursache ersetzt keinen vergleichbaren historischen Gegenlauf.",
+      "env": {}
+    },
+    {
+      "name": "dungeon-recovery",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "/home/aaron/.nvm/versions/node/v22.19.0/bin/node",
+        "tools/test-desktop-dungeon-recovery.mjs"
+      ],
+      "category": "veraltete Testannahme",
+      "step": "launch(): #live-travel-toggle nach Kampagnenkarte anklicken",
+      "userEffect": "Die Reise- und Wiederherstellungsassertionen werden nicht erreicht.",
+      "currentState": "Die Kampagnenkarte öffnet den aktuellen Atlas-Arbeitsbereich. Der Spieltischschalter #live-travel-toggle ist dort verborgen; die Probe wechselt vorher nicht in den Spieltisch. Der native Fehlerbeleg bestätigt hidden statt einen gescheiterten Fachbefehl.",
+      "source": "tools/test-desktop-dungeon-recovery.mjs:119; tools/test-desktop-dungeon-recovery.mjs:123",
+      "evidence": [
+        ".build/native-baseline-round10-full-20261029/dungeon-recovery/failure.json"
+      ],
+      "historicalRegression": "Nicht behauptet; kein vergleichbarer historischer Produktgegenlauf.",
+      "env": {}
+    },
+    {
+      "name": "groups-search",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "/home/aaron/.nvm/versions/node/v22.19.0/bin/node",
+        "tools/test-desktop-groups-search.mjs"
+      ],
+      "category": "veraltete Testannahme",
+      "step": "Chronik: nach Bereichswechsel auf leere Party-Ergebnisse warten",
+      "userEffect": "Gruppensuche und der ältere Welt-Zeiteintrag sind bereits geprüft; nur die Assertion des leeren Party-Ergebnisses scheitert.",
+      "currentState": "Die sichtbare Chronik meldet „Seite 1 · 0 Einträge · Ende dieses Lesestands“. Die Probe erwartet den alten Präfix „0 “, obwohl keine Party-Einträge angezeigt werden.",
+      "source": "tools/test-desktop-groups-search.mjs:192; src/app/runtime/chronicle-ui.ts:31",
+      "evidence": [
+        ".build/native-baseline-round10-continuation-20261029/groups-search/failure.json"
+      ],
+      "historicalRegression": "Nicht behauptet; kein vergleichbarer historischer Produktgegenlauf.",
+      "env": {}
+    },
+    {
+      "name": "key-lookup",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "/home/aaron/.nvm/versions/node/v22.19.0/bin/node",
+        "tools/test-desktop-key-lookup.mjs"
+      ],
+      "category": "veraltete Testannahme",
+      "step": "search(): #key-search füllen",
+      "userEffect": "Die Volltext-/Vorlagen-/Verweissuche wird nicht erreicht.",
+      "currentState": "Der Dungeon-Key ist geöffnet, sein Raumverzeichnis aber im aktuellen kompakten Dialog eingeklappt. Die Probe benutzt #key-search ohne den sichtbaren Schalter #key-room-browser-toggle zu öffnen.",
+      "source": "tools/test-desktop-key-lookup.mjs:208; src/app/campaign/key-dialog.html:6; src/app/campaign/key-ui.ts:1837",
+      "evidence": [
+        ".build/native-baseline-round10-continuation-20261029/key-lookup/failure.json"
+      ],
+      "historicalRegression": "Nicht behauptet; kein vergleichbarer historischer Produktgegenlauf.",
+      "env": {}
+    },
+    {
+      "name": "key-note-capture",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "/home/aaron/.nvm/versions/node/v22.19.0/bin/node",
+        "tools/test-desktop-key-note-capture.mjs"
+      ],
+      "category": "veraltete Testannahme",
+      "step": "launch(): Archiv über #key-room-list wählen",
+      "userEffect": "Die Notizerfassungsassertionen werden nicht erreicht.",
+      "currentState": "Der bereits ausgewählte Archivraum ist offen; die Probe klickt zusätzlich auf den Eintrag im eingeklappten Raumverzeichnis, ohne dessen Schalter zu öffnen.",
+      "source": "tools/test-desktop-key-note-capture.mjs:130; src/app/campaign/key-dialog.html:6; src/app/campaign/key-ui.ts:1837",
+      "evidence": [
+        ".build/native-baseline-round10-continuation-20261029/key-note-capture/failure.json"
+      ],
+      "historicalRegression": "Nicht behauptet; kein vergleichbarer historischer Produktgegenlauf.",
+      "env": {}
+    },
+    {
+      "name": "ledger-switch",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "/home/aaron/.nvm/versions/node/v22.19.0/bin/node",
+        "tools/test-desktop-ledger-switch.mjs"
+      ],
+      "category": "veraltete Testannahme",
+      "step": "launch(): #live-continue anklicken",
+      "userEffect": "Die Ledgerwechsel- und Entwurfsassertionen werden nicht erreicht.",
+      "currentState": "Die aktive Szene wird beim Wechsel zum Spieltisch bereits geöffnet. Der zusätzliche Fortsetzen-Schalter ist ausdrücklich hidden; die Probe behandelt den aktuellen offenen Spieltisch wie einen noch nicht fortgesetzten.",
+      "source": "tools/test-desktop-ledger-switch.mjs:110; tools/test-desktop-desk-search.mjs:93",
+      "evidence": [
+        ".build/native-baseline-round10-continuation-20261029/ledger-switch/failure.json"
+      ],
+      "historicalRegression": "Nicht behauptet; kein vergleichbarer historischer Produktgegenlauf.",
+      "env": {}
+    },
+    {
+      "name": "long-key",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "/home/aaron/.nvm/versions/node/v22.19.0/bin/node",
+        "tools/test-desktop-long-key.mjs"
+      ],
+      "category": "veraltete Testannahme",
+      "step": "launch(): Binder lesen anklicken",
+      "userEffect": "Die lange Key-/Treffer-/Dokumentprobe erreicht den Binder nicht.",
+      "currentState": "Der aktuelle Binder-Schalter liegt in den sichtbaren Atlas-Analysewerkzeugen. Die Probe klickt ihn unmittelbar nach dem Atlas-Tab ohne #atlas-analysis-open. Der vorhandene aktuelle Einstieg in qa-key-entry.mjs zeigt beide Bedienungsschritte.",
+      "source": "tools/test-desktop-long-key.mjs:181; tools/qa-key-entry.mjs:77",
+      "evidence": [
+        ".build/native-baseline-round10-continuation-20261029/long-key/failure.json"
+      ],
+      "historicalRegression": "Nicht behauptet; kein vergleichbarer historischer Produktgegenlauf.",
+      "env": {}
+    },
+    {
+      "name": "mask-history",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "/home/aaron/.nvm/versions/node/v22.19.0/bin/node",
+        "tools/test-desktop-mask-history.mjs"
+      ],
+      "category": "veraltete Testannahme",
+      "step": "launch(): #live-continue anklicken",
+      "userEffect": "Die Maskenverlaufs- und Seitengrenzenassertionen werden nicht erreicht.",
+      "currentState": "Der aktuelle Spieltisch ist bereits geöffnet. Die Probe klickt zusätzlich den ausdrücklich verborgenen Fortsetzen-Schalter. Derselbe Eintrittsfehler wie bei desk-search und ledger-switch; die eigentlichen Maskenbefehle sind noch nicht ausgeführt.",
+      "source": "tools/test-desktop-mask-history.mjs:236",
+      "evidence": [
+        ".build/native-baseline-round10-continuation-20261029/mask-history/failure.json"
+      ],
+      "historicalRegression": "Nicht behauptet; kein vergleichbarer historischer Produktgegenlauf.",
+      "env": {}
+    },
+    {
+      "name": "npc-rename",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "/home/aaron/.nvm/versions/node/v22.19.0/bin/node",
+        "tools/test-desktop-npc-rename.mjs"
+      ],
+      "category": "veraltete Testannahme",
+      "step": "Spieltischeinstieg: #live-continue anklicken",
+      "userEffect": "Die eigentlichen Fachassertionen werden nicht erreicht.",
+      "currentState": "Der aktuelle Spieltisch ist bereits geöffnet. Die Probe klickt zusätzlich den ausdrücklich verborgenen Fortsetzen-Schalter; derselbe Eintrittsfehler wie bei desk-search und ledger-switch.",
+      "source": "tools/test-desktop-npc-rename.mjs:171",
+      "evidence": [
+        ".build/native-baseline-round10-continuation-20261029/npc-rename/failure.json"
+      ],
+      "historicalRegression": "Nicht behauptet; kein vergleichbarer historischer Produktgegenlauf.",
+      "env": {}
+    },
+    {
+      "name": "split-knowledge",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "/home/aaron/.nvm/versions/node/v22.19.0/bin/node",
+        "tools/test-desktop-split-knowledge.mjs"
+      ],
+      "category": "veraltete Testannahme",
+      "step": "Spieltischeinstieg: #live-continue anklicken",
+      "userEffect": "Die eigentlichen Fachassertionen werden nicht erreicht.",
+      "currentState": "Der aktuelle Spieltisch ist bereits geöffnet. Die Probe klickt zusätzlich den ausdrücklich verborgenen Fortsetzen-Schalter; derselbe Eintrittsfehler wie bei desk-search und ledger-switch.",
+      "source": "tools/test-desktop-split-knowledge.mjs:135",
+      "evidence": [
+        ".build/native-baseline-round10-continuation-20261029/split-knowledge/failure.json"
+      ],
+      "historicalRegression": "Nicht behauptet; kein vergleichbarer historischer Produktgegenlauf.",
+      "env": {}
+    },
+    {
+      "name": "note-reuse",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "/home/aaron/.nvm/versions/node/v22.19.0/bin/node",
+        "tools/test-desktop-note-reuse.mjs"
+      ],
+      "category": "veraltete Testannahme",
+      "step": "launch(): Archiv über #key-room-list wählen",
+      "userEffect": "Die Wiederverwendungsassertionen werden nicht erreicht.",
+      "currentState": "Die Probe greift auf den vorhandenen Archiv-Eintrag im eingeklappten Raumverzeichnis zu, ohne #key-room-browser-toggle zu öffnen.",
+      "source": "tools/test-desktop-note-reuse.mjs:127; src/app/campaign/key-dialog.html:6",
+      "evidence": [
+        ".build/native-baseline-round10-continuation-20261029/note-reuse/failure.json"
+      ],
+      "historicalRegression": "Nicht behauptet; kein vergleichbarer historischer Produktgegenlauf.",
+      "env": {}
+    },
+    {
+      "name": "moment-follow-up",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "/home/aaron/.nvm/versions/node/v22.19.0/bin/node",
+        "tools/test-desktop-moment-follow-up.mjs"
+      ],
+      "category": "veraltete Testannahme",
+      "step": "Vorbereitete Regelquelle in der Live-Mappe als Chronikmoment vormerken",
+      "userEffect": "Die Live-Mappe ist geöffnet; der Chronikmoment wird noch nicht erfasst.",
+      "currentState": "Die Probe erwartet die frühere einzelne Überschrift „Wachwechsel am Westtor · rule“. Aktuelle Notizkarten gruppieren die Quelle unter dem Titel und besitzen getrennte Teile „Zum Vorlesen“ und „GM · Regelreferenz“. Der ursprüngliche GM-Quelltext und seine Erfassungsaktion bleiben vorhanden.",
+      "source": "tools/test-desktop-moment-follow-up.mjs:291; src/app/campaign/packet-reading-blocks.ts:24; src/app/storage/session-packet.ts:37",
+      "evidence": [
+        ".build/native-baseline-round10-continuation-20261029/moment-follow-up/failure.json"
+      ],
+      "historicalRegression": "Nicht behauptet; kein vergleichbarer historischer Produktgegenlauf.",
+      "env": {}
+    },
+    {
+      "name": "note-room-uses",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "/home/aaron/.nvm/versions/node/v22.19.0/bin/node",
+        "tools/test-desktop-note-room-uses.mjs"
+      ],
+      "category": "Umgebung/Harness",
+      "step": "Frischer Prozess: Raumverweis anklicken und sofort Formularwert lesen",
+      "userEffect": "Die Probe liest einen vorläufig leeren Feldwert vor Abschluss des asynchronen Raumwechsels.",
+      "currentState": "Beim ersten Raumaufruf wartet die Probe auf den sichtbaren Key-Dialog; beim frischen Gegenlauf fehlt diese Wartebedingung. Der frische Fehler-Screenshot zeigt nach dem sofortigen Assert bereits Archiv mit dem unveränderten erwarteten Text. openRoomKey wartet vorher asynchron auf Flush/Refresh und füllt danach das Formular vor showKeyDialog. Ein gezielter Wiederholungslauf mit derselben vollständigen Assertion bleibt erforderlich.",
+      "source": "tools/test-desktop-note-room-uses.mjs:237; src/app/campaign/key-ui.ts:1327; src/app/campaign/key-ui.ts:1362",
+      "evidence": [
+        ".build/native-baseline-round10-continuation-20261029/note-room-uses/failure.json"
+      ],
+      "historicalRegression": "Nicht behauptet; kein vergleichbarer historischer Produktgegenlauf.",
+      "env": {}
+    },
+    {
+      "name": "note-source-choice",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "/home/aaron/.nvm/versions/node/v22.19.0/bin/node",
+        "tools/test-desktop-note-source-choice.mjs"
+      ],
+      "category": "veraltete Testannahme",
+      "step": "Neue Quelle verknüpfen und Vorauswahl prüfen",
+      "userEffect": "Die Probe erwartet automatische Auswahl einer neu hinzukommenden Quelle.",
+      "currentState": "Der aktuelle Vertrag hält anschließend geladene oder neu hinzukommende Quellen abgewählt; die Auswahl ist revisionsgebunden und ausdrücklich. Die Probe erwartet dagegen isChecked()===true. Die korrigierte Probe muss zuerst Abwahl nachweisen, dann die Quelle ausdrücklich auswählen und alle Besuchsassertionen beibehalten.",
+      "source": "tools/test-desktop-note-source-choice.mjs:343; docs/campaign/contract/manual-session-planner.md:87; src/app/campaign/note-thread-ui.ts:701",
+      "evidence": [
+        ".build/native-baseline-round10-continuation-20261029/note-source-choice/failure.json"
+      ],
+      "historicalRegression": "Nicht behauptet; kein vergleichbarer historischer Produktgegenlauf.",
+      "env": {}
+    },
+    {
+      "name": "player-blank",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "/home/aaron/.nvm/versions/node/v22.19.0/bin/node",
+        "tools/test-desktop-player-blank.mjs"
+      ],
+      "category": "ungültige Fixture",
+      "step": "Fixture: Spieleranzeige mit settings.mode=scene konfigurieren",
+      "userEffect": "Kein nativer Start; die eigentliche sofortige Schwarzschaltung unter ausgefallenem Leser wird nicht erreicht.",
+      "currentState": "Die Fixture fordert den entfernten passiven Textmodus „scene“. Der aktuelle Store lehnt diesen Wert ausdrücklich mit „Die passive Anzeige erlaubt Karten und Art, keinen Textmodus.“ ab. Der Gegenlauf muss eine erlaubte tatsächlich sichtbare Karte oder Art verwenden und die unveränderte Blank-/Kein-Leseaufruf-/Neustart-/GM-Dateninvarianz prüfen.",
+      "source": "tools/test-desktop-player-blank.mjs:135; src/app/storage/player.ts",
+      "evidence": [
+        ".build/native-baseline-round10-continuation-20261029/player-blank/failure.json"
+      ],
+      "historicalRegression": "Nicht behauptet; kein vergleichbarer historischer Produktgegenlauf.",
+      "env": {}
+    },
+    {
+      "name": "preset-context",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "/home/aaron/.nvm/versions/node/v22.19.0/bin/node",
+        "tools/test-desktop-preset-context.mjs"
+      ],
+      "category": "veraltete Testannahme",
+      "step": "settings(): Anwendungsmenü öffnen",
+      "userEffect": "Die Preset-Kontextprüfung erreicht die Einstellungen nicht.",
+      "currentState": "Die Probe bleibt im aktuellen Atlas. Dessen geöffnetes Navigationsmenü zeigt Einstellungen direkt, während der allgemeine Header samt #application-trigger verborgen ist. Screenshot und Atlaslayout belegen den sichtbaren vorhandenen Einstieg.",
+      "source": "tools/test-desktop-preset-context.mjs:105; src/app/atlas/atlas-workspace-layout.ts:566",
+      "evidence": [
+        ".build/native-baseline-round10-continuation-20261029/preset-context/failure.json"
+      ],
+      "historicalRegression": "Nicht behauptet; kein vergleichbarer historischer Produktgegenlauf.",
+      "env": {}
+    },
+    {
+      "name": "template-discovery",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "/home/aaron/.nvm/versions/node/v22.19.0/bin/node",
+        "tools/test-desktop-template-discovery.mjs"
+      ],
+      "category": "veraltete Testannahme",
+      "step": "Spieltischeinstieg: #live-continue anklicken",
+      "userEffect": "Die Vorlagen-/Entdeckungsassertionen werden nicht erreicht.",
+      "currentState": "Der aktuelle Spieltisch ist bereits geöffnet. Die Probe klickt zusätzlich den ausdrücklich verborgenen Fortsetzen-Schalter; derselbe Eintrittsfehler wie bei desk-search und ledger-switch.",
+      "source": "tools/test-desktop-template-discovery.mjs:198",
+      "evidence": [
+        ".build/native-baseline-round10-continuation-20261029/template-discovery/failure.json"
+      ],
+      "historicalRegression": "Nicht behauptet; kein vergleichbarer historischer Produktgegenlauf.",
+      "env": {}
+    },
+    {
+      "name": "terrain-spatial",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "/home/aaron/.nvm/versions/node/v22.19.0/bin/node",
+        "tools/test-desktop-terrain-spatial.mjs"
+      ],
+      "category": "veraltete Testannahme",
+      "step": "Räumliche Geländeansicht über #vegetation-spatial öffnen",
+      "userEffect": "Die räumlichen Höhen-/Radien-/Bewuchs-/Undoassertionen erreichen ihren alten zweiten Ansichtsmodus nicht.",
+      "currentState": "Die Probe fordert den abgelösten separaten Bewuchs-/Geländedialog einschließlich #vegetation-spatial-canvas und eigener Toolbar. Der aktuelle Atlas führt die räumliche Ansicht in der einheitlichen Hauptfläche. Diese fachlichen Gesten müssen auf die aktuelle Hauptkamera und ihre Werkzeuge übertragen werden; das bloße Entfernen des Aufrufs wäre keine Qualifikation.",
+      "source": "tools/test-desktop-terrain-spatial.mjs:235; docs/atlas/architecture/unified-spatial-atlas.md",
+      "evidence": [
+        ".build/native-baseline-round10-continuation-20261029/terrain-spatial/failure.json"
+      ],
+      "historicalRegression": "Nicht behauptet; kein vergleichbarer historischer Produktgegenlauf.",
+      "env": {}
+    },
+    {
+      "name": "timeline-search",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "/home/aaron/.nvm/versions/node/v22.19.0/bin/node",
+        "tools/test-desktop-timeline-search.mjs"
+      ],
+      "category": "veraltete Testannahme",
+      "step": "launch(): Plan auswählen",
+      "userEffect": "Die Szenensuche und Umordnungsassertionen werden nicht erreicht.",
+      "currentState": "Die Probe wechselt in den Vorbereitungsbereich, bleibt aber im anfänglichen Modus Weltwissen und Orte. #plans liegt im gesonderten Modus Spielabend planen; dessen sichtbaren Schalter #preparation-planning nutzt die Probe nicht.",
+      "source": "tools/test-desktop-timeline-search.mjs:84; src/app/campaign/preparation.html:6",
+      "evidence": [
+        ".build/native-baseline-round10-continuation-20261029/timeline-search/failure.json"
+      ],
+      "historicalRegression": "Nicht behauptet; kein vergleichbarer historischer Produktgegenlauf.",
+      "env": {}
+    },
+    {
+      "name": "travel-target",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "/home/aaron/.nvm/versions/node/v22.19.0/bin/node",
+        "tools/test-desktop-travel-target.mjs"
+      ],
+      "category": "veraltete Testannahme",
+      "step": "Veralteten world-tab öffnen",
+      "userEffect": "Die Auswahl-/Ziel-/Reiseassertionen werden nicht erreicht.",
+      "currentState": "Die Probe fordert den verborgenen alten Arbeitsbereich Atlas und Reise. Die aktuelle Reisebedienung liegt am Spieltisch unter #live-travel-toggle; travel-checkpoints erreicht sie erfolgreich. Die nachfolgenden alten Hexautoren-Bedienungen müssen im Korrekturlauf ebenfalls gegen den heutigen Reise-/Atlasumfang geprüft werden.",
+      "source": "tools/test-desktop-travel-target.mjs:194; tools/test-desktop-travel-checkpoints.mjs:213",
+      "evidence": [
+        ".build/native-baseline-round10-continuation-20261029/travel-target/failure.json"
+      ],
+      "historicalRegression": "Nicht behauptet; kein vergleichbarer historischer Produktgegenlauf.",
+      "env": {}
+    },
+    {
+      "name": "encounter-table-authoring",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "/home/aaron/.nvm/versions/node/v22.19.0/bin/node",
+        "tools/test-desktop-encounter-table-authoring.mjs"
+      ],
+      "category": "veraltete Testannahme",
+      "step": "Frischen Prozess mit open(2) starten",
+      "userEffect": "Die Tabellenanlage, Grenzvalidierung und erste Generierung erreichen ihre Assertions; frisches Öffnen und abschließende Persistenzprüfung werden gestoppt.",
+      "currentState": "Die Probe fordert für zwei frische Starts weiterhin 200 Prozent. Die gemeinsame native Sitzung lehnt dies vor dem Start ausdrücklich ab: Native UI probes run at 100% only. Der Nutzer hat 200-Prozent-Proben entfernt; beide frischen Prozesse müssen dieselben fachlichen Assertions bei 100 Prozent ausführen.",
+      "source": "tools/test-desktop-encounter-table-authoring.mjs:155; tools/test-desktop-encounter-table-authoring.mjs:178; tools/native-session.mjs:162",
+      "evidence": [
+        ".build/native-baseline-round10-continuation-20261029/encounter-table-authoring/failure.json"
+      ],
+      "historicalRegression": "Nicht behauptet; kein vergleichbarer historischer Produktgegenlauf.",
+      "env": {}
+    },
+    {
+      "name": "fractal-strokes",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "/home/aaron/.nvm/versions/node/v22.19.0/bin/node",
+        "tools/test-desktop-fractal-strokes.mjs"
+      ],
+      "category": "veraltete Testannahme",
+      "step": "start(): alten Familienknopf Landschaft anklicken",
+      "userEffect": "Die eigentlichen Landschafts-/Masken-/Gestenassertionen werden nicht erreicht.",
+      "currentState": "Die Probe klickt button[data-family=\"terrain\"] in den abgelösten Familienkontrollen. Die aktuelle sichtbare Bereichswahl ist #atlas-section. Nach Korrektur dieses Einstiegs müssen auch die folgenden alten Werkzeug-/Maskenannahmen gegen den heutigen kontinuierlichen Höhenvertrag geprüft werden; keine Assertion wird deshalb als bestanden behandelt.",
+      "source": "tools/test-desktop-fractal-strokes.mjs; src/app/atlas/atlas-tool-catalog.ts:46",
+      "evidence": [
+        ".build/native-baseline-round10-continuation-20261029/fractal-strokes/failure.json"
+      ],
+      "historicalRegression": "Nicht behauptet; kein vergleichbarer historischer Produktgegenlauf.",
+      "env": {}
+    },
+    {
+      "name": "key-note-context",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "/home/aaron/.nvm/versions/node/v22.19.0/bin/node",
+        "tools/test-desktop-key-note-context.mjs"
+      ],
+      "category": "veraltete Testannahme",
+      "step": "openKey(): Atlas-Tab anklicken",
+      "userEffect": "Die geliehene Notiz-/Rückkehr-/Unlinkassertionen werden nicht erreicht.",
+      "currentState": "Die Kampagnenkarte hat den Atlas bereits geöffnet und dessen allgemeiner Tab ist verborgen. openKey() klickt ihn dennoch unconditionally und enthält anschließend noch den ersetzten Familien-/Advanced-Einstieg. Der aktuelle sichtbare Einstieg verwendet #atlas-section und den Key-Schalter; das Raumverzeichnis hat einen eigenen Öffner.",
+      "source": "tools/test-desktop-key-note-context.mjs:135; tools/qa-key-entry.mjs:2",
+      "evidence": [
+        ".build/native-baseline-round10-continuation-20261029/key-note-context/failure.json"
+      ],
+      "historicalRegression": "Nicht behauptet; kein vergleichbarer historischer Produktgegenlauf.",
+      "env": {}
+    },
+    {
+      "name": "key-note-context-nested",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "/home/aaron/.nvm/versions/node/v22.19.0/bin/node",
+        "tools/test-desktop-key-note-context.mjs",
+        "--nested"
+      ],
+      "category": "veraltete Testannahme",
+      "step": "openKey(): Atlas-Tab anklicken",
+      "userEffect": "Die geliehene Notiz-/Rückkehr-/Unlinkassertionen werden nicht erreicht.",
+      "currentState": "Die Kampagnenkarte hat den Atlas bereits geöffnet und dessen allgemeiner Tab ist verborgen. openKey() klickt ihn dennoch unconditionally und enthält anschließend noch den ersetzten Familien-/Advanced-Einstieg. Der aktuelle sichtbare Einstieg verwendet #atlas-section und den Key-Schalter; das Raumverzeichnis hat einen eigenen Öffner.",
+      "source": "tools/test-desktop-key-note-context.mjs:135; tools/qa-key-entry.mjs:2",
+      "evidence": [
+        ".build/native-baseline-round10-continuation-20261029/key-note-context-nested/failure.json"
+      ],
+      "historicalRegression": "Nicht behauptet; kein vergleichbarer historischer Produktgegenlauf.",
+      "env": {}
+    },
+    {
+      "name": "key-note-context-unlink",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "/home/aaron/.nvm/versions/node/v22.19.0/bin/node",
+        "tools/test-desktop-key-note-context.mjs",
+        "--unlink"
+      ],
+      "category": "veraltete Testannahme",
+      "step": "openKey(): Atlas-Tab anklicken",
+      "userEffect": "Die geliehene Notiz-/Rückkehr-/Unlinkassertionen werden nicht erreicht.",
+      "currentState": "Die Kampagnenkarte hat den Atlas bereits geöffnet und dessen allgemeiner Tab ist verborgen. openKey() klickt ihn dennoch unconditionally und enthält anschließend noch den ersetzten Familien-/Advanced-Einstieg. Der aktuelle sichtbare Einstieg verwendet #atlas-section und den Key-Schalter; das Raumverzeichnis hat einen eigenen Öffner.",
+      "source": "tools/test-desktop-key-note-context.mjs:135; tools/qa-key-entry.mjs:2",
+      "evidence": [
+        ".build/native-baseline-round10-continuation-20261029/key-note-context-unlink/failure.json"
+      ],
+      "historicalRegression": "Nicht behauptet; kein vergleichbarer historischer Produktgegenlauf.",
+      "env": {}
+    },
+    {
+      "name": "land-mask",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "/home/aaron/.nvm/versions/node/v22.19.0/bin/node",
+        "tools/test-desktop-land-mask.mjs"
+      ],
+      "category": "veraltete Testannahme",
+      "step": "start(): alten Familienknopf Landschaft anklicken",
+      "userEffect": "Die eigentlichen Landschafts-/Masken-/Gestenassertionen werden nicht erreicht.",
+      "currentState": "Die Probe klickt button[data-family=\"terrain\"] in den abgelösten Familienkontrollen. Die aktuelle sichtbare Bereichswahl ist #atlas-section. Nach Korrektur dieses Einstiegs müssen auch die folgenden alten Werkzeug-/Maskenannahmen gegen den heutigen kontinuierlichen Höhenvertrag geprüft werden; keine Assertion wird deshalb als bestanden behandelt.",
+      "source": "tools/test-desktop-land-mask.mjs; src/app/atlas/atlas-tool-catalog.ts:46",
+      "evidence": [
+        ".build/native-baseline-round10-continuation-20261029/land-mask/failure.json"
+      ],
+      "historicalRegression": "Nicht behauptet; kein vergleichbarer historischer Produktgegenlauf.",
+      "env": {}
+    },
+    {
+      "name": "landscape-tools",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "/home/aaron/.nvm/versions/node/v22.19.0/bin/node",
+        "tools/test-desktop-landscape-tools.mjs"
+      ],
+      "category": "veraltete Testannahme",
+      "step": "start(): alten Familienknopf Landschaft anklicken",
+      "userEffect": "Die eigentlichen Landschafts-/Masken-/Gestenassertionen werden nicht erreicht.",
+      "currentState": "Die Probe klickt button[data-family=\"terrain\"] in den abgelösten Familienkontrollen. Die aktuelle sichtbare Bereichswahl ist #atlas-section. Nach Korrektur dieses Einstiegs müssen auch die folgenden alten Werkzeug-/Maskenannahmen gegen den heutigen kontinuierlichen Höhenvertrag geprüft werden; keine Assertion wird deshalb als bestanden behandelt.",
+      "source": "tools/test-desktop-landscape-tools.mjs; src/app/atlas/atlas-tool-catalog.ts:46",
+      "evidence": [
+        ".build/native-baseline-round10-continuation-20261029/landscape-tools/failure.json"
+      ],
+      "historicalRegression": "Nicht behauptet; kein vergleichbarer historischer Produktgegenlauf.",
+      "env": {}
+    },
+    {
+      "name": "note-followup",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "/home/aaron/.nvm/versions/node/v22.19.0/bin/node",
+        "tools/test-desktop-note-followup.mjs"
+      ],
+      "category": "veraltete Testannahme",
+      "step": "Frischen Prozess mit erwarteter Quellenanzahl öffnen",
+      "userEffect": "Die zuvor erfolgreiche Weiterverwendung und gespeicherte Mappe werden im frischen Prozess nicht fertig geprüft.",
+      "currentState": "launch(expectedCount=3) bekommt am Ende 1, obwohl unmittelbar danach 2 Quellen gefordert werden. Das Argument ist eine Quellenanzahl, kein Zoom. Der Gitdiff bce2fb4b0 zeigt die versehentliche Änderung launch(2) zu launch(1) zusammen mit der korrekten Entfernung tatsächlicher 200-Prozent-Bedienung. Der native Start selbst verwendet weiter 100 Prozent.",
+      "source": "tools/test-desktop-note-followup.mjs:145; tools/test-desktop-note-followup.mjs:314; commit bce2fb4b0, derselbe Testdateipfad",
+      "evidence": [
+        ".build/native-baseline-round10-continuation-20261029/note-followup/failure.json"
+      ],
+      "historicalRegression": "Keine historische Produktregression behauptet. Die beschriebene Testquellenänderung ist direkt im genannten Gitdiff belegt.",
+      "env": {}
+    },
+    {
+      "name": "note-excerpts",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "/home/aaron/.nvm/versions/node/v22.19.0/bin/node",
+        "tools/test-desktop-note-excerpts.mjs"
+      ],
+      "category": "veraltete Testannahme",
+      "step": "Neu verknüpfte Notizquellen für Spielabend verwenden",
+      "userEffect": "Die Quellen sind verknüpft, werden aber nicht alle in den Spielabend übernommen; die nachfolgende Belegkette bleibt blockiert.",
+      "currentState": "Die Probe bestätigt vier neu verknüpfte Quellen und übernimmt sofort die Besuchsauswahl. Aktuelle neu hinzukommende Quellen bleiben gemäß revisionsgebundenem Auswahlvertrag abgewählt. Die Probe muss diese Quellen ausdrücklich wählen und weiterhin alle Quelltexte, Gruppierung und frischen Prozesse prüfen.",
+      "source": "tools/test-desktop-note-excerpts.mjs:246; docs/campaign/contract/manual-session-planner.md:87",
+      "evidence": [
+        ".build/native-baseline-round10-continuation-20261029/note-excerpts/failure.json"
+      ],
+      "historicalRegression": "Nicht behauptet; kein vergleichbarer historischer Produktgegenlauf.",
+      "env": {}
+    },
+    {
+      "name": "mountain-material",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "/home/aaron/.nvm/versions/node/v22.19.0/bin/node",
+        "tools/test-desktop-mountain-material.mjs"
+      ],
+      "category": "Umgebung/Harness",
+      "step": "Reliefstil aktivieren und unmittelbar kanonischen Wert prüfen",
+      "userEffect": "Die zweite Stilprüfung liest noch mountains=false, bevor die asynchrone Änderung bestätigt ist.",
+      "currentState": "Die Probe wartet auf das bereits vom vorherigen Auftrag vorhandene Wort Gespeichert. Der Klickhandler startet den Commit asynchron. Der unveränderte kanonische Datenbankstand nach regulärer Fehlerbereinigung enthält anschließend mountains=true und snowlineM=900. Ein gezielter Korrekturlauf muss auf genau die angeforderte bestätigte Stilversion warten und alle Bild-/Geometrie-/Historienassertionen erhalten.",
+      "source": "tools/test-desktop-mountain-material.mjs:103; src/app/atlas/atlas-landscape-ui.ts:953",
+      "evidence": [
+        ".build/native-baseline-round10-continuation-20261029/mountain-material/failure.json"
+      ],
+      "historicalRegression": "Nicht behauptet; kein vergleichbarer historischer Produktgegenlauf.",
+      "env": {}
+    },
+    {
+      "name": "note-prune",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "/home/aaron/.nvm/versions/node/v22.19.0/bin/node",
+        "tools/test-desktop-note-prune.mjs"
+      ],
+      "category": "veraltete Testannahme",
+      "step": "launch(): Vorbereitung direkt nach Kampagnenkarte anklicken",
+      "userEffect": "Die Quellenbereinigungsassertionen werden nicht erreicht.",
+      "currentState": "Die aktuelle Kampagnenkarte öffnet Atlas; der allgemeine Vorbereitungstab liegt in dessen sichtbarem Navigationsmenü. Die Probe verwendet ihn ohne revealWorkspaceNavigation(), während dieser gemeinsame aktuelle Einstieg bereits vorhanden ist.",
+      "source": "tools/test-desktop-note-prune.mjs:145; tools/native-navigation.mjs:2",
+      "evidence": [
+        ".build/native-baseline-round10-continuation-20261029/note-prune/failure.json"
+      ],
+      "historicalRegression": "Nicht behauptet; kein vergleichbarer historischer Produktgegenlauf.",
+      "env": {}
+    },
+    {
+      "name": "note-reopen",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "/home/aaron/.nvm/versions/node/v22.19.0/bin/node",
+        "tools/test-desktop-note-reopen.mjs"
+      ],
+      "category": "veraltete Testannahme",
+      "step": "Tastaturweg nach letzter Quellencheckbox prüfen",
+      "userEffect": "Quellenauswahl, begrenzte Listenhöhe und Fokusoffenlegung sind geprüft; die nächste Fokusassertion scheitert.",
+      "currentState": "Im aktuellen Vorbereitungsmodus steht nach der Quellenliste die ausdrückliche Aktion Quellenauswahl leeren, danach das Besuchsziel. Die Probe erwartet das Ziel schon nach einem Tab und berücksichtigt diese bestehende Aktion nicht. Die korrigierte Tastaturprobe muss beide Stationen in ihrer echten Reihenfolge prüfen.",
+      "source": "tools/test-desktop-note-reopen.mjs:343; src/app/campaign/note-thread-ui.ts:405; src/app/campaign/note-thread-ui.ts:287",
+      "evidence": [
+        ".build/native-baseline-round10-continuation-20261029/note-reopen/failure.json"
+      ],
+      "historicalRegression": "Nicht behauptet; kein vergleichbarer historischer Produktgegenlauf.",
+      "env": {}
+    },
+    {
+      "name": "npc-conversation",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "/home/aaron/.nvm/versions/node/v22.19.0/bin/node",
+        "tools/test-desktop-npc-conversation.mjs"
+      ],
+      "category": "Umgebung/Harness",
+      "step": "Frischer Einstieg: verborgene workspace-nav-summary anklicken",
+      "userEffect": "Die Probe erreicht den nächsten fachlichen Neustart-/Dossierfall nicht.",
+      "currentState": "Die manuelle Einstiegsfolge prüft lediglich inert=false an der Navigation; dies beweist den abgeschlossenen Kampagnenwechsel nicht. Sie entscheidet anschließend anhand einzelner Sichtbarkeitsabfragen und klickt den allgemeinen, in der aktuellen breiten/Atlasansicht verborgenen Summary-Schalter. Die frische Fehleraufnahme zeigt anschließend den bereits erreichten Spieltisch. Der vorhandene openNativeCampaign-/revealWorkspaceNavigation-Einstieg wartet auf den tatsächlichen aktiven Arbeitsbereich und öffnet nur dessen sichtbare Navigation.",
+      "source": "tools/test-desktop-npc-conversation.mjs:36; tools/native-navigation.mjs:17",
+      "evidence": [
+        ".build/native-baseline-round10-continuation-20261029/npc-conversation/1/failure.json"
+      ],
+      "historicalRegression": "Nicht behauptet; kein vergleichbarer historischer Produktgegenlauf.",
+      "env": {}
+    },
+    {
+      "name": "npc-weekly-visits",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "/home/aaron/.nvm/versions/node/v22.19.0/bin/node",
+        "tools/test-desktop-npc-weekly-visits.mjs"
+      ],
+      "category": "Umgebung/Harness",
+      "step": "Frischer Einstieg: verborgene workspace-nav-summary anklicken",
+      "userEffect": "Die Probe erreicht den nächsten fachlichen Neustart-/Dossierfall nicht.",
+      "currentState": "Die manuelle Einstiegsfolge prüft lediglich inert=false an der Navigation; dies beweist den abgeschlossenen Kampagnenwechsel nicht. Sie entscheidet anschließend anhand einzelner Sichtbarkeitsabfragen und klickt den allgemeinen, in der aktuellen breiten/Atlasansicht verborgenen Summary-Schalter. Die frische Fehleraufnahme zeigt anschließend den bereits erreichten Spieltisch. Der vorhandene openNativeCampaign-/revealWorkspaceNavigation-Einstieg wartet auf den tatsächlichen aktiven Arbeitsbereich und öffnet nur dessen sichtbare Navigation.",
+      "source": "tools/test-desktop-npc-weekly-visits.mjs:26; tools/native-navigation.mjs:17",
+      "evidence": [
+        ".build/native-baseline-round10-continuation-20261029/npc-weekly-visits/failure.json"
+      ],
+      "historicalRegression": "Nicht behauptet; kein vergleichbarer historischer Produktgegenlauf.",
+      "env": {}
+    },
+    {
+      "name": "npc-portrait",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "/home/aaron/.nvm/versions/node/v22.19.0/bin/node",
+        "tools/test-desktop-npc-portrait.mjs"
+      ],
+      "category": "Umgebung/Harness",
+      "step": "Frischer Einstieg: verborgene workspace-nav-summary anklicken",
+      "userEffect": "Die Probe erreicht den nächsten fachlichen Neustart-/Dossierfall nicht.",
+      "currentState": "Die manuelle Einstiegsfolge prüft lediglich inert=false an der Navigation; dies beweist den abgeschlossenen Kampagnenwechsel nicht. Sie entscheidet anschließend anhand einzelner Sichtbarkeitsabfragen und klickt den allgemeinen, in der aktuellen breiten/Atlasansicht verborgenen Summary-Schalter. Die frische Fehleraufnahme zeigt anschließend den bereits erreichten Spieltisch. Der vorhandene openNativeCampaign-/revealWorkspaceNavigation-Einstieg wartet auf den tatsächlichen aktiven Arbeitsbereich und öffnet nur dessen sichtbare Navigation.",
+      "source": "tools/test-desktop-npc-portrait.mjs:155; tools/native-navigation.mjs:17",
+      "evidence": [
+        ".build/native-baseline-round10-continuation-20261029/npc-portrait/failure.json"
+      ],
+      "historicalRegression": "Nicht behauptet; kein vergleichbarer historischer Produktgegenlauf.",
+      "env": {}
+    },
+    {
+      "name": "player-blank-pending",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "/home/aaron/.nvm/versions/node/v22.19.0/bin/node",
+        "tools/test-desktop-player-blank.mjs",
+        "--pending"
+      ],
+      "category": "ungültige Fixture",
+      "step": "Fixture: Spieleranzeige mit settings.mode=scene konfigurieren",
+      "userEffect": "Kein nativer Start; die eigentliche sofortige Schwarzschaltung unter ausgefallenem Leser wird nicht erreicht.",
+      "currentState": "Die Fixture fordert den entfernten passiven Textmodus „scene“. Der aktuelle Store lehnt diesen Wert ausdrücklich mit „Die passive Anzeige erlaubt Karten und Art, keinen Textmodus.“ ab. Der Gegenlauf muss eine erlaubte tatsächlich sichtbare Karte oder Art verwenden und die unveränderte Blank-/Kein-Leseaufruf-/Neustart-/GM-Dateninvarianz prüfen.",
+      "source": "tools/test-desktop-player-blank.mjs:135; src/app/storage/player.ts",
+      "evidence": [
+        ".build/native-baseline-round10-continuation-20261029/player-blank-pending/failure.json"
+      ],
+      "historicalRegression": "Nicht behauptet; kein vergleichbarer historischer Produktgegenlauf.",
+      "env": {}
+    },
+    {
+      "name": "player-blank-combat",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "/home/aaron/.nvm/versions/node/v22.19.0/bin/node",
+        "tools/test-desktop-player-blank.mjs",
+        "--combat"
+      ],
+      "category": "ungültige Fixture",
+      "step": "Fixture: Kampf ohne Gegner beginnen",
+      "userEffect": "Kein nativer Start; der Kampfkontext der sofortigen Schwarzschaltung wird nicht erreicht.",
+      "currentState": "Die Fixture übernimmt nur die Party und startet einen Kampf ohne kampffähige Gegner. Der aktuelle kanonische Befehl lehnt diesen Start ausdrücklich ab. Ein echter Kataloggegner muss vor dem Start hinzugefügt werden; anschließend gilt auch für diesen Fall die erlaubte Art-/Kartenanzeige statt des entfernten Textmodus.",
+      "source": "tools/test-desktop-player-blank.mjs:92; src/app/runtime/combat-contracts.ts:255",
+      "evidence": [
+        ".build/native-baseline-round10-continuation-20261029/player-blank-combat/failure.json"
+      ],
+      "historicalRegression": "Nicht behauptet; kein vergleichbarer historischer Produktgegenlauf.",
+      "env": {}
+    },
+    {
+      "name": "player-blank-chase",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "/home/aaron/.nvm/versions/node/v22.19.0/bin/node",
+        "tools/test-desktop-player-blank.mjs",
+        "--chase"
+      ],
+      "category": "ungültige Fixture",
+      "step": "Fixture: Spieleranzeige mit settings.mode=scene konfigurieren",
+      "userEffect": "Kein nativer Start; die eigentliche sofortige Schwarzschaltung unter ausgefallenem Leser wird nicht erreicht.",
+      "currentState": "Die Fixture fordert den entfernten passiven Textmodus „scene“. Der aktuelle Store lehnt diesen Wert ausdrücklich mit „Die passive Anzeige erlaubt Karten und Art, keinen Textmodus.“ ab. Der Gegenlauf muss eine erlaubte tatsächlich sichtbare Karte oder Art verwenden und die unveränderte Blank-/Kein-Leseaufruf-/Neustart-/GM-Dateninvarianz prüfen.",
+      "source": "tools/test-desktop-player-blank.mjs:135; src/app/storage/player.ts",
+      "evidence": [
+        ".build/native-baseline-round10-continuation-20261029/player-blank-chase/failure.json"
+      ],
+      "historicalRegression": "Nicht behauptet; kein vergleichbarer historischer Produktgegenlauf.",
+      "env": {}
+    },
+    {
+      "name": "player-blank-combat-pending",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "/home/aaron/.nvm/versions/node/v22.19.0/bin/node",
+        "tools/test-desktop-player-blank.mjs",
+        "--combat",
+        "--pending"
+      ],
+      "category": "ungültige Fixture",
+      "step": "Fixture: Kampf ohne Gegner beginnen",
+      "userEffect": "Kein nativer Start; der Kampfkontext der sofortigen Schwarzschaltung wird nicht erreicht.",
+      "currentState": "Die Fixture übernimmt nur die Party und startet einen Kampf ohne kampffähige Gegner. Der aktuelle kanonische Befehl lehnt diesen Start ausdrücklich ab. Ein echter Kataloggegner muss vor dem Start hinzugefügt werden; anschließend gilt auch für diesen Fall die erlaubte Art-/Kartenanzeige statt des entfernten Textmodus.",
+      "source": "tools/test-desktop-player-blank.mjs:92; src/app/runtime/combat-contracts.ts:255",
+      "evidence": [
+        ".build/native-baseline-round10-continuation-20261029/player-blank-combat-pending/failure.json"
+      ],
+      "historicalRegression": "Nicht behauptet; kein vergleichbarer historischer Produktgegenlauf.",
+      "env": {}
+    },
+    {
+      "name": "player-blank-chase-pending",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "/home/aaron/.nvm/versions/node/v22.19.0/bin/node",
+        "tools/test-desktop-player-blank.mjs",
+        "--chase",
+        "--pending"
+      ],
+      "category": "ungültige Fixture",
+      "step": "Fixture: Spieleranzeige mit settings.mode=scene konfigurieren",
+      "userEffect": "Kein nativer Start; die eigentliche sofortige Schwarzschaltung unter ausgefallenem Leser wird nicht erreicht.",
+      "currentState": "Die Fixture fordert den entfernten passiven Textmodus „scene“. Der aktuelle Store lehnt diesen Wert ausdrücklich mit „Die passive Anzeige erlaubt Karten und Art, keinen Textmodus.“ ab. Der Gegenlauf muss eine erlaubte tatsächlich sichtbare Karte oder Art verwenden und die unveränderte Blank-/Kein-Leseaufruf-/Neustart-/GM-Dateninvarianz prüfen.",
+      "source": "tools/test-desktop-player-blank.mjs:135; src/app/storage/player.ts",
+      "evidence": [
+        ".build/native-baseline-round10-continuation-20261029/player-blank-chase-pending/failure.json"
+      ],
+      "historicalRegression": "Nicht behauptet; kein vergleichbarer historischer Produktgegenlauf.",
+      "env": {}
+    },
+    {
+      "name": "place-search",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "/home/aaron/.nvm/versions/node/v22.19.0/bin/node",
+        "tools/test-desktop-place-search.mjs"
+      ],
+      "category": "Umgebung/Harness",
+      "step": "launch(): allgemeinen Navigationssummary vor abgeschlossenem Kampagnenwechsel anklicken",
+      "userEffect": "Die Suche des entfernten Ortes wird im ersten Kontext nicht erreicht.",
+      "currentState": "Die Probe wartet nur auf main.inert=false; das gilt bereits auf der Startseite und beweist keinen aktiven Workspace. Sie liest danach den Atlas als noch verborgen und klickt #workspace-nav-summary, obwohl dieser in der später aktiven Atlasansicht verborgen ist. Der vorhandene openNativeCampaign-Einstieg wartet auf den richtigen aktiven Arbeitsbereich und dessen echte Navigation.",
+      "source": "tools/test-desktop-place-search.mjs:151; tools/native-navigation.mjs:17",
+      "evidence": [
+        ".build/native-baseline-round10-continuation-20261029/place-search/failure.json"
+      ],
+      "historicalRegression": "Nicht behauptet; kein vergleichbarer historischer Produktgegenlauf.",
+      "env": {}
+    },
+    {
+      "name": "player-scene-privacy",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "/home/aaron/.nvm/versions/node/v22.19.0/bin/node",
+        "tools/test-desktop-player-scene-privacy.mjs"
+      ],
+      "category": "veraltete Testannahme",
+      "step": "layout(): Fensterbreite nach setZoomFactor(1) prüfen",
+      "userEffect": "Die passive Bildanzeige und Datenschutzprüfungen werden erreicht, aber die Layoutprobe bleibt vor dem Neustartvergleich hängen.",
+      "currentState": "Die frühere 200-Prozent-Probe wurde nur auf Zoomfaktor 1 geändert. Sie wartet weiterhin auf innerWidth<750, ohne die native Ausgangsfensterbreite zu verkleinern. Der richtige 100-Prozent-Gegenlauf setzt ein tatsächlich kompaktes Inhaltsfenster und prüft dieselben Overflow-/Erreichbarkeitsassertionen; danach wird die ursprüngliche Größe wiederhergestellt.",
+      "source": "tools/test-desktop-player-scene-privacy.mjs:281",
+      "evidence": [
+        ".build/native-baseline-round10-continuation-20261029/player-scene-privacy/failure.json"
+      ],
+      "historicalRegression": "Nicht behauptet; kein vergleichbarer historischer Produktgegenlauf.",
+      "env": {}
+    },
+    {
+      "name": "player-scene-privacy-combat",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "/home/aaron/.nvm/versions/node/v22.19.0/bin/node",
+        "tools/test-desktop-player-scene-privacy.mjs",
+        "--combat"
+      ],
+      "category": "ungültige Fixture",
+      "step": "Fixture: Kampf ohne Gegner beginnen",
+      "userEffect": "Kein nativer Start; die Datenschutzassertionen im Kampfkontext werden nicht erreicht.",
+      "currentState": "Die Fixture übernimmt nur die Party und startet einen Kampf ohne kampffähige Gegner. Der aktuelle kanonische Befehl lehnt dies ausdrücklich ab. Vor dem Start muss ein echter Kataloggegner ergänzt werden; alle Anzeige-/Blank-/Fokus-/Neustart- und kanonischen Unverändertheitsassertionen bleiben erforderlich.",
+      "source": "tools/test-desktop-player-scene-privacy.mjs:133; src/app/runtime/combat-contracts.ts:255",
+      "evidence": [
+        ".build/native-baseline-round10-continuation-20261029/player-scene-privacy-combat/failure.json"
+      ],
+      "historicalRegression": "Nicht behauptet; kein vergleichbarer historischer Produktgegenlauf.",
+      "env": {}
+    },
+    {
+      "name": "player-scene-privacy-chase",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "/home/aaron/.nvm/versions/node/v22.19.0/bin/node",
+        "tools/test-desktop-player-scene-privacy.mjs",
+        "--chase"
+      ],
+      "category": "veraltete Testannahme",
+      "step": "layout(): Fensterbreite nach setZoomFactor(1) prüfen",
+      "userEffect": "Die passive Bildanzeige und Datenschutzprüfungen werden erreicht, aber die Layoutprobe bleibt vor dem Neustartvergleich hängen.",
+      "currentState": "Die frühere 200-Prozent-Probe wurde nur auf Zoomfaktor 1 geändert. Sie wartet weiterhin auf innerWidth<750, ohne die native Ausgangsfensterbreite zu verkleinern. Der richtige 100-Prozent-Gegenlauf setzt ein tatsächlich kompaktes Inhaltsfenster und prüft dieselben Overflow-/Erreichbarkeitsassertionen; danach wird die ursprüngliche Größe wiederhergestellt.",
+      "source": "tools/test-desktop-player-scene-privacy.mjs:281",
+      "evidence": [
+        ".build/native-baseline-round10-continuation-20261029/player-scene-privacy-chase/failure.json"
+      ],
+      "historicalRegression": "Nicht behauptet; kein vergleichbarer historischer Produktgegenlauf.",
+      "env": {}
+    },
+    {
+      "name": "atlas-main-camera-city-only-raised-floor",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "/home/aaron/.nvm/versions/node/v22.19.0/bin/node",
+        "tools/test-desktop-atlas-main-camera.mjs",
+        "--city-only",
+        "--raised-floor"
+      ],
+      "category": "Umgebung/Harness",
+      "step": "Eigener Aufrufkatalog: widersprüchliche Kombination aufnehmen",
+      "userEffect": "Der rohe grüne Prozessausgang darf keine Raum- oder Stadtabdeckung behaupten.",
+      "currentState": "Eigener Manifestfehler: --city-only überspringt den gesamten Raum-/Kamerabearbeitungsblock; --raised-floor überspringt die Stadtassertionen. In Kombination bleiben nur Start/Schließen und leere Fehlerliste. Der Endkatalog muss die unbrauchbare Kombination entfernen und die CLI muss sie vor dem Start ablehnen. Gültige Einzelvarianten und deren vollständige Fachassertionen bleiben erhalten.",
+      "source": "tools/test-desktop-atlas-main-camera.mjs:258; tools/test-desktop-atlas-main-camera.mjs:472; tools/native-probes.mjs:36",
+      "evidence": [
+        ".build/native-baseline-round10-full-20261029/atlas-main-camera-city-only-raised-floor/result.json"
+      ],
+      "historicalRegression": "Nicht behauptet; eigener Katalogfehler.",
+      "env": {}
+    },
+    {
+      "name": "restock-name",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "/home/aaron/.nvm/versions/node/v22.19.0/bin/node",
+        "tools/test-desktop-restock-name.mjs"
+      ],
+      "category": "Umgebung/Harness",
+      "step": "Arbeitsbereich über verborgenen workspace-nav-summary wechseln",
+      "userEffect": "Der folgende Fachfall wird vor seinem Arbeitsbereich blockiert.",
+      "currentState": "Die manuelle Navigation entscheidet vor gesichertem aktuellen Arbeitsbereich anhand einzelner Sichtbarkeitsabfragen und klickt anschließend einen in der aktuellen breiten/Atlasansicht verborgenen Summary-Schalter. Der gemeinsame vorhandene revealWorkspaceNavigation-Einstieg wartet auf den tatsächlichen Workspace und verwendet den sichtbaren Atlas- oder allgemeinen Einstieg. Alle nachfolgenden Fachassertionen bleiben erforderlich.",
+      "source": "tools/test-desktop-restock-name.mjs:170; tools/native-navigation.mjs:2",
+      "evidence": [
+        ".build/native-baseline-round10-continuation-20261029/restock-name/failure.json"
+      ],
+      "historicalRegression": "Nicht behauptet; kein vergleichbarer historischer Produktgegenlauf.",
+      "env": {}
+    },
+    {
+      "name": "review-integrity",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "/home/aaron/.nvm/versions/node/v22.19.0/bin/node",
+        "tools/test-desktop-review-integrity.mjs"
+      ],
+      "category": "Umgebung/Harness",
+      "step": "Arbeitsbereich über verborgenen workspace-nav-summary wechseln",
+      "userEffect": "Der folgende Fachfall wird vor seinem Arbeitsbereich blockiert.",
+      "currentState": "Die manuelle Navigation entscheidet vor gesichertem aktuellen Arbeitsbereich anhand einzelner Sichtbarkeitsabfragen und klickt anschließend einen in der aktuellen breiten/Atlasansicht verborgenen Summary-Schalter. Der gemeinsame vorhandene revealWorkspaceNavigation-Einstieg wartet auf den tatsächlichen Workspace und verwendet den sichtbaren Atlas- oder allgemeinen Einstieg. Alle nachfolgenden Fachassertionen bleiben erforderlich.",
+      "source": "tools/test-desktop-review-integrity.mjs:139; tools/native-navigation.mjs:2",
+      "evidence": [
+        ".build/native-baseline-round10-continuation-20261029/review-integrity/failure.json"
+      ],
+      "historicalRegression": "Nicht behauptet; kein vergleichbarer historischer Produktgegenlauf.",
+      "env": {}
+    },
+    {
+      "name": "room-groups",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "/home/aaron/.nvm/versions/node/v22.19.0/bin/node",
+        "tools/test-desktop-room-groups.mjs"
+      ],
+      "category": "Umgebung/Harness",
+      "step": "Raumanzahl direkt nach Schließen des Rezeptdialogs lesen",
+      "userEffect": "Die erzeugten Räume werden vor ihrer kanonischen Bestätigung gezählt.",
+      "currentState": "Der Rezeptdialog löst beim close lediglich die Rezeptwahl auf; der aufrufende Ablauf schreibt anschließend asynchron. Die Probe zählt sofort, obwohl ihr bereits vorhandener Nachweis der freigegebenen Undo-Aktion erst danach folgt. Nach regulärer Fehlerbereinigung enthält dieselbe Datenbank 27 Räume, eine Raumgruppe und keine Stadtgebäude. Der vorhandene Abschlussnachweis muss vor die unveränderte Anzahlassertion treten.",
+      "source": "tools/test-desktop-room-groups.mjs:122; src/app/atlas/room-group-ui.ts:close",
+      "evidence": [
+        ".build/native-baseline-round10-continuation-20261029/room-groups/failure.json"
+      ],
+      "historicalRegression": "Keine historische Produktregression behauptet; der genannte Testquellenstand ist direkt im Repository belegt.",
+      "env": {}
+    },
+    {
+      "name": "shared-template",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "/home/aaron/.nvm/versions/node/v22.19.0/bin/node",
+        "tools/test-desktop-shared-template.mjs"
+      ],
+      "category": "Umgebung/Harness",
+      "step": "Arbeitsbereich über verborgenen workspace-nav-summary wechseln",
+      "userEffect": "Die Vorlage wird vor dem fachlichen Bearbeitungsfall blockiert.",
+      "currentState": "Die manuelle Tab-Hilfe benutzt den allgemeinen Summary-Schalter, ohne den sichtbaren aktuellen Atlas-/Workspaceeinstieg gesichert zu haben. Der vorhandene revealWorkspaceNavigation-Einstieg deckt diese Route ab; alle Vorlagen-/Unverändertheitsassertionen bleiben erforderlich.",
+      "source": "tools/test-desktop-shared-template.mjs:90; tools/native-navigation.mjs:2",
+      "evidence": [
+        ".build/native-baseline-round10-continuation-20261029/shared-template/failure.json"
+      ],
+      "historicalRegression": "Keine historische Produktregression behauptet; der genannte Testquellenstand ist direkt im Repository belegt.",
+      "env": {}
+    },
+    {
+      "name": "terrain-brush",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "/home/aaron/.nvm/versions/node/v22.19.0/bin/node",
+        "tools/test-desktop-terrain-brush.mjs"
+      ],
+      "category": "veraltete Testannahme",
+      "step": "Quellenbindung vorbereiten: gelöschte Testdatei lesen",
+      "userEffect": "Kein nativer Start; die eigentliche Pinsel-/Werkzeugprobe wird nicht erreicht.",
+      "currentState": "Die Quellenhashliste fordert tests/atlas/desktop-atlas-tool-hierarchy.test.mjs. Diese Datei wurde mit der dokumentierten Testbereinigung in Commit 94fddd035 entfernt. Die aktuellen Produktionsdateien für Werkzeugkatalog und Workspace-Layout stehen bereits separat in derselben Hashliste. Die obsolete Hashreferenz ist zu entfernen; keine fachliche Assertion wird dadurch entfernt oder durch einen beliebigen Testlink ersetzt.",
+      "source": "tools/test-desktop-terrain-brush.mjs:89; commit 94fddd035",
+      "evidence": [
+        ".build/native-baseline-round10-continuation-20261029/terrain-brush/failure.json"
+      ],
+      "historicalRegression": "Keine historische Produktregression behauptet; der genannte Testquellenstand ist direkt im Repository belegt.",
+      "env": {}
+    },
+    {
+      "name": "terrain-live",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "/home/aaron/.nvm/versions/node/v22.19.0/bin/node",
+        "tools/test-desktop-terrain-live.mjs"
+      ],
+      "category": "veraltete Testannahme",
+      "step": "Probeadapter bündeln: bounds aus altem Barrel exportieren",
+      "userEffect": "Kein nativer Start; die direkte Gelände-/Variantenprobe wird nicht erreicht.",
+      "currentState": "Der technische Store-Adapter fordert bounds aus atlas-landscape.ts. Der aktuelle Produktionscode exportiert dieselbe Funktion aus landscape-geometry.ts; der alte Barrel-Export wurde entfernt. Der Adapter muss den vorhandenen kanonischen Modulpfad verwenden, ohne die fachlichen Pinsel-/Folgezug-/Frischprozessassertionen zu verändern.",
+      "source": "tools/test-desktop-terrain-live.mjs:17; src/app/atlas/landscape-geometry.ts:29",
+      "evidence": [
+        ".build/native-baseline-round10-continuation-20261029/terrain-live/run.log",
+        ".build/native-baseline-round10-continuation-20261029/terrain-live/resource-wrapper.json"
+      ],
+      "historicalRegression": "Nicht behauptet; kein vergleichbarer historischer Produktgegenlauf.",
+      "env": {}
+    },
+    {
+      "name": "terrain-live-world",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "/home/aaron/.nvm/versions/node/v22.19.0/bin/node",
+        "tools/test-desktop-terrain-live.mjs"
+      ],
+      "category": "veraltete Testannahme",
+      "step": "Probeadapter bündeln: bounds aus altem Barrel exportieren",
+      "userEffect": "Kein nativer Start; die direkte Gelände-/Variantenprobe wird nicht erreicht.",
+      "currentState": "Der technische Store-Adapter fordert bounds aus atlas-landscape.ts. Der aktuelle Produktionscode exportiert dieselbe Funktion aus landscape-geometry.ts; der alte Barrel-Export wurde entfernt. Der Adapter muss den vorhandenen kanonischen Modulpfad verwenden, ohne die fachlichen Pinsel-/Folgezug-/Frischprozessassertionen zu verändern.",
+      "source": "tools/test-desktop-terrain-live.mjs:17; src/app/atlas/landscape-geometry.ts:29",
+      "evidence": [
+        ".build/native-baseline-round10-continuation-20261029/terrain-live-world/run.log",
+        ".build/native-baseline-round10-continuation-20261029/terrain-live-world/resource-wrapper.json"
+      ],
+      "historicalRegression": "Nicht behauptet; kein vergleichbarer historischer Produktgegenlauf.",
+      "env": {
+        "TERRAIN_WORLD_PROBE": "1"
+      }
+    },
+    {
+      "name": "terrain-live-covered",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "/home/aaron/.nvm/versions/node/v22.19.0/bin/node",
+        "tools/test-desktop-terrain-live.mjs"
+      ],
+      "category": "veraltete Testannahme",
+      "step": "Probeadapter bündeln: bounds aus altem Barrel exportieren",
+      "userEffect": "Kein nativer Start; die direkte Gelände-/Variantenprobe wird nicht erreicht.",
+      "currentState": "Der technische Store-Adapter fordert bounds aus atlas-landscape.ts. Der aktuelle Produktionscode exportiert dieselbe Funktion aus landscape-geometry.ts; der alte Barrel-Export wurde entfernt. Der Adapter muss den vorhandenen kanonischen Modulpfad verwenden, ohne die fachlichen Pinsel-/Folgezug-/Frischprozessassertionen zu verändern.",
+      "source": "tools/test-desktop-terrain-live.mjs:17; src/app/atlas/landscape-geometry.ts:29",
+      "evidence": [
+        ".build/native-baseline-round10-continuation-20261029/terrain-live-covered/run.log",
+        ".build/native-baseline-round10-continuation-20261029/terrain-live-covered/resource-wrapper.json"
+      ],
+      "historicalRegression": "Nicht behauptet; kein vergleichbarer historischer Produktgegenlauf.",
+      "env": {
+        "TERRAIN_COVERED_PROBE": "1"
+      }
+    },
+    {
+      "name": "vegetation-qualification-navigation-only",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "node",
+        "tools/test-desktop-vegetation-qualification.mjs",
+        "--navigation-only"
+      ],
+      "category": "veraltete Testannahme",
+      "step": "openSpatial(): #vegetation-spatial anklicken",
+      "userEffect": "Die Dreh-, Schwenk-, Zoom- und Verlaufskontrollen der ehemaligen getrennten Vegetationsansicht werden nicht erreicht.",
+      "currentState": "Das aktuelle Produkt besitzt die gemeinsame Atlas-Kamera; die Probe erwartet weiterhin die entfernte separate Vegetationsansicht. Der Aufruf endet nach 60 Sekunden am nicht vorhandenen Schalter, reguläres Electron-Ende ist belegt. Eine Portierung muss sämtliche Navigations- und Persistenzassertionen erhalten.",
+      "source": "tools/test-desktop-vegetation-qualification.mjs:292; tools/test-desktop-vegetation-qualification.mjs:566; docs/atlas/architecture/unified-spatial-atlas.md",
+      "evidence": [
+        ".build/native-baseline-round10-continuation-20261029/vegetation-qualification-navigation-only/failure.json",
+        ".build/native-baseline-round10-continuation-20261029/vegetation-qualification-navigation-only/run.log"
+      ],
+      "historicalRegression": "Nicht behauptet; kein vergleichbarer Gegenlauf an historischem Produktstand.",
+      "env": {}
+    },
+    {
+      "name": "vegetation-qualification",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "node",
+        "tools/test-desktop-vegetation-qualification.mjs"
+      ],
+      "category": "veraltete Testannahme",
+      "step": "Geschützten Felsen unter einer Baumkrone mit Typfilter auswählen",
+      "userEffect": "Die Auswahl verfehlt das sichtbare Objekt; spätere Bearbeitung und räumliche Prüfung werden nicht erreicht.",
+      "currentState": "Die Probe berechnet den Klick mit der linearen 2D-Hilfe, obwohl die aktuelle perspektivische Kamera die kanonische Geländehöhe einbezieht. Am gebundenen unveränderten Produktstand verschiebt die Produktionsprojektion den Klick um 11,586 CSS-Pixel; damit besteht dieselbe originale Auswahlassertion. Geländehöhe 103,172 m, Kamerafokus 65,327 m. Der Gegenlauf endet nach dieser ersten Ursache; er qualifiziert keine späteren Zweige, insbesondere nicht die entfernte separate Vegetationsansicht.",
+      "source": "tools/test-desktop-vegetation-qualification.mjs:261; tools/atlas-canvas-probe.mjs; src/app/atlas/atlas-camera.ts:45",
+      "evidence": [
+        ".build/native-baseline-round10-full-20261029/vegetation-qualification/failure.json",
+        ".build/native-baseline-round10-counters-20261029/binding.json",
+        ".build/native-baseline-round10-counters-20261029/vegetation-projection/result.json"
+      ],
+      "historicalRegression": "Nicht behauptet; kein vergleichbarer Gegenlauf an historischem Produktstand.",
+      "env": {}
+    },
+    {
+      "name": "scene-music-navigation",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "node",
+        "tools/test-desktop-scene-music-navigation.mjs"
+      ],
+      "category": "Produktfehler",
+      "step": "Beschreibung nach automatischer Speicherung ausdrücklich speichern und unverändert durch Szenenwechsel erhalten",
+      "userEffect": "Identische Metadaten werden zweimal geschrieben; Revision und kanonische Bytes ändern sich unerwartet nach der bestätigten Beschreibung.",
+      "currentState": "Der gebundene IPC-/DOM-Gegenlauf bestätigt: input bei t=1793252205177; Autosave verbucht bei +700 ms Revision 2→3. Bei +883 ms markieren change/blur/Klick dieselbe unveränderte Beschreibung erneut dirty; ein weiterer Asset-Befehl mit expectedRevision 3 erzeugt Revision 4. oninput/onchange setzen assetDirty bislang bedingungslos. Die vorhandene kanonische Invarianzassertion bleibt unverändert und schlägt weiterhin an.",
+      "source": "src/app/runtime/music-ui.ts:987; src/app/runtime/music-ui.ts:396; tools/test-desktop-scene-music-navigation.mjs",
+      "evidence": [
+        ".build/native-baseline-round10-continuation-20261029/scene-music-navigation/failure.json",
+        ".build/native-baseline-round10-counters-20261029/scene-music/music-command-diagnostics.json",
+        ".build/native-baseline-round10-counters-20261029/scene-music/failure.json"
+      ],
+      "historicalRegression": "Nicht behauptet; kein vergleichbarer Gegenlauf an historischem Produktstand.",
+      "env": {}
+    },
+    {
+      "name": "height-workflow",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "node",
+        "tools/test-desktop-height-workflow.mjs"
+      ],
+      "category": "Umgebung/Harness",
+      "step": "Ersten Höhenzug mit Radius 700 m beginnen",
+      "userEffect": "Der erste Druck beginnt vor der für diese Geste geladenen Höhenbasis; die beabsichtigte Höhenänderung wird nicht ausgeführt.",
+      "currentState": "Die unveränderte erste Geste trifft pointerdown bei terrainEditingState=loading und Radius 0; vorhandene Höhenwerte bleiben leer und die ursprüngliche 60-s-Speicherbedingung läuft ab. Derselbe unveränderte Zug nach ready/Radius 700 erzeugt die unveränderte kanonische 150-m-Assertion erfolgreich. Beide Ereignisfolgen und der reguläre Abschluss sind im begrenzten Gegenlauf gespeichert. Das ist keine Qualifikation späterer Höhen-, Wasser-, Historien- und Transferzweige. Der erste Diagnoseentwurf scheiterte erst an seinem fehlenden close vor finish und bleibt separat als Harnessfehler erhalten.",
+      "source": "tools/test-desktop-height-workflow.mjs:116; src/app/atlas/atlas-landscape-ui.ts; tools/test-desktop-region-export.mjs",
+      "evidence": [
+        ".build/native-baseline-round10-continuation-20261029/height-workflow/failure.json",
+        ".build/native-baseline-round10-followup-counters-20261029/height-readiness-retry/height-readiness-diagnostics.json",
+        ".build/native-baseline-round10-followup-counters-20261029/height-readiness-retry/result.json",
+        ".build/native-baseline-round10-followup-counters-20261029/completion-audit.json"
+      ],
+      "historicalRegression": "Nicht behauptet; kein vergleichbarer Gegenlauf an historischem Produktstand.",
+      "env": {}
+    },
+    {
+      "name": "room-reads",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "node",
+        "tools/test-desktop-room-reads.mjs"
+      ],
+      "category": "Produktfehler",
+      "step": "Nach Suche und Pagination Raum 4000 wählen",
+      "userEffect": "Der angeklickte Raum wird nicht geöffnet; der bisherige Raum und das vorherige Zeichenwerkzeug bleiben aktiv.",
+      "currentState": "Zwei readonly CDP-Gegenläufe bestätigen den tatsächlichen Verlust der Auswahlberechtigung. Während die neue Raumnavigation auf atlas:focus wartet, endet die ältere open()-Lesung. Deren Schlussaktion setFamily(this.family,false) ruft changeTool() auf und erhöht selectionRequest 7→8. Die Raumantwort trifft anschließend mit navigationCurrent=false ein und wird verworfen. Der zweite Gegenlauf bindet die anonyme Abschlussaktion an kompiliert renderer.js:78709 bzw. campaign-atlas-ui.ts:1244. Die lange Raum-ID ist damit nicht als ungültige Fixture behauptet.",
+      "source": "src/app/atlas/campaign-atlas-ui.ts:1244; src/app/atlas/campaign-atlas-ui.ts:1687; src/app/atlas/atlas-author.ts:128",
+      "evidence": [
+        ".build/native-baseline-round10-continuation-20261029/room-reads/failure.json",
+        ".build/native-baseline-round10-counters-20261029/room-reads/room-navigation-diagnostics.json",
+        ".build/native-baseline-round10-room-lease-20261029/room-lease-observations.json",
+        ".build/native-baseline-round10-room-lease-locations-20261029/room-lease-observations.json",
+        ".build/native-baseline-round10-room-lease-locations-20261029/completion-audit.json"
+      ],
+      "correction": "Der Öffnungsabschluss beobachtet den bestehenden Auswahlkontext ohne ihn zu ersetzen und setzt die Werkzeuggruppe nur ohne neuere Auswahlaktion. Drei gezielte Tests prüfen verspäteten Abschluss, normales Öffnen und Beobachtung ohne Entwertung; native Korrekturqualifikation steht separat aus.",
+      "historicalRegression": "Nicht behauptet; kein vergleichbarer Gegenlauf an historischem Produktstand.",
+      "env": {}
+    }
+  ],
+  "observedAt": "2026-10-29T05:32:21.140Z",
+  "scope": 218,
+  "observedCounts": {
+    "failed": 105,
+    "passed": 104,
+    "blocked": 2,
+    "not-run": 7
+  },
+  "notYetAttempted": 7,
+  "pendingFirstCause": [
+    {
+      "name": "atlas-brush-ux",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "/home/aaron/.nvm/versions/node/v22.19.0/bin/node",
+        "tools/test-desktop-atlas-brush-ux.mjs"
+      ],
+      "status": "failed",
+      "reason": "Erster tatsächlicher Ursache noch gezielt nachzugehen; keine Produktregression oder Freigabe behauptet.",
+      "errors": [
+        "AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:\n\n  assert(Math.abs(scaled.world / scaled.mpp - scaled.pixels) < 0.1)\n\n    at file:///home/aaron/Documents/Codex/SaltMarcher/tools/test-desktop-atlas-brush-ux.mjs:224:5"
+      ],
+      "evidence": [
+        ".build/native-baseline-round10-full-20261029/atlas-brush-ux/failure.json"
+      ],
+      "env": {}
+    },
+    {
+      "name": "atlas-layout",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "/home/aaron/.nvm/versions/node/v22.19.0/bin/node",
+        "tools/test-desktop-atlas-layout.mjs"
+      ],
+      "status": "failed",
+      "reason": "Erster tatsächlicher Ursache noch gezielt nachzugehen; keine Produktregression oder Freigabe behauptet.",
+      "errors": [
+        "page.waitForFunction: Timeout 15000ms exceeded.\n    at /home/aaron/Documents/Codex/SaltMarcher/tools/test-desktop-atlas-layout.mjs:396:18\n    at async runNativeProbe (/home/aaron/Documents/Codex/SaltMarcher/tools/native-session.mjs:611:20)\n    at async file:///home/aaron/Documents/Codex/SaltMarcher/tools/test-desktop-atlas-layout.mjs:28:1"
+      ],
+      "evidence": [
+        ".build/native-baseline-round10-full-20261029/atlas-layout/failure.json"
+      ],
+      "env": {}
+    },
+    {
+      "name": "atlas-main-camera",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "/home/aaron/.nvm/versions/node/v22.19.0/bin/node",
+        "tools/test-desktop-atlas-main-camera.mjs"
+      ],
+      "status": "failed",
+      "reason": "Erster tatsächlicher Ursache noch gezielt nachzugehen; keine Produktregression oder Freigabe behauptet.",
+      "errors": [
+        "locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('#atlas-hit-candidates') to be visible\u001b[22m\n\u001b[2m    33 × locator resolved to hidden <dialog id=\"atlas-hit-candidates\"></dialog>\u001b[22m\n\n    at /home/aaron/Documents/Codex/SaltMarcher/tools/test-desktop-atlas-main-camera.mjs:280:51\n    at async runNativeProbe (/home/aaron/Documents/Codex/SaltMarcher/tools/native-session.mjs:611:20)\n    at async file:///home/aaron/Documents/Codex/SaltMarcher/tools/test-desktop-atlas-main-camera.mjs:32:1"
+      ],
+      "evidence": [
+        ".build/native-baseline-round10-full-20261029/atlas-main-camera/failure.json"
+      ],
+      "env": {}
+    },
+    {
+      "name": "atlas-main-camera-raised-floor",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "/home/aaron/.nvm/versions/node/v22.19.0/bin/node",
+        "tools/test-desktop-atlas-main-camera.mjs",
+        "--raised-floor"
+      ],
+      "status": "failed",
+      "reason": "Erster tatsächlicher Ursache noch gezielt nachzugehen; keine Produktregression oder Freigabe behauptet.",
+      "errors": [
+        "locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('#atlas-hit-candidates') to be visible\u001b[22m\n\u001b[2m    33 × locator resolved to hidden <dialog id=\"atlas-hit-candidates\"></dialog>\u001b[22m\n\n    at /home/aaron/Documents/Codex/SaltMarcher/tools/test-desktop-atlas-main-camera.mjs:280:51\n    at async runNativeProbe (/home/aaron/Documents/Codex/SaltMarcher/tools/native-session.mjs:611:20)\n    at async file:///home/aaron/Documents/Codex/SaltMarcher/tools/test-desktop-atlas-main-camera.mjs:32:1"
+      ],
+      "evidence": [
+        ".build/native-baseline-round10-full-20261029/atlas-main-camera-raised-floor/failure.json"
+      ],
+      "env": {}
+    },
+    {
+      "name": "atlas-measurements",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "/home/aaron/.nvm/versions/node/v22.19.0/bin/node",
+        "tools/test-desktop-atlas-measurements.mjs"
+      ],
+      "status": "failed",
+      "reason": "Erster tatsächlicher Ursache noch gezielt nachzugehen; keine Produktregression oder Freigabe behauptet.",
+      "errors": [
+        "page.waitForFunction: Timeout 15000ms exceeded.\n    at text (/home/aaron/Documents/Codex/SaltMarcher/tools/test-desktop-atlas-measurements.mjs:87:14)\n    at /home/aaron/Documents/Codex/SaltMarcher/tools/test-desktop-atlas-measurements.mjs:186:9"
+      ],
+      "evidence": [
+        ".build/native-baseline-round10-full-20261029/atlas-measurements/failure.json"
+      ],
+      "env": {}
+    },
+    {
+      "name": "atlas-multiscale-performance",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "/home/aaron/.nvm/versions/node/v22.19.0/bin/node",
+        "tools/test-desktop-atlas-multiscale.mjs"
+      ],
+      "status": "failed",
+      "reason": "Erste tatsächliche Ursache für den 5-s-Abschlussaufnahmefehler noch offen. Die Aufnahme wurde nach dem bereits ausgelösten Fehler noch geschrieben (frameWaitMs 2896,8). Keine längere Frist als Reparatur vorgesehen. Das separat gemessene Navigationsziel ist ausdrücklich nicht erfüllt.",
+      "errors": [
+        "Error: Native close capture timed out\n    at Timeout.<anonymous> (file:///home/aaron/Documents/Codex/SaltMarcher/tools/native-process.mjs:47:41)\n    at listOnTimeout (node:internal/timers:588:17)\n    at process.processTimers (node:internal/timers:523:7)"
+      ],
+      "evidence": [
+        ".build/native-baseline-round10-full-20261029/atlas-multiscale-performance/failure.json",
+        ".build/native-baseline-round10-full-20261029/atlas-multiscale-performance/partial.json"
+      ],
+      "userEffect": "Die gemessene Navigation verfehlt das vorhandene 33,3-ms-Ziel deutlich; der reguläre Abschluss wird durch die überlaufene Aufnahme verhindert.",
+      "observed": {
+        "viewsCompleted": 18,
+        "panFrameSamples": 126,
+        "p95FrameMs": 1185,
+        "targetFrameMs": 33.3,
+        "targetMet": false,
+        "normalExitCleanup": true,
+        "remainingOwnedPids": []
+      },
+      "env": {
+        "QA_PERF": "1"
+      }
+    },
+    {
+      "name": "atlas-navigation-pending",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "/home/aaron/.nvm/versions/node/v22.19.0/bin/node",
+        "tools/test-desktop-atlas-navigation-pending.mjs"
+      ],
+      "status": "failed",
+      "reason": "Erster tatsächlicher Ursache noch gezielt nachzugehen; keine Produktregression oder Freigabe behauptet.",
+      "errors": [
+        "AssertionError [ERR_ASSERTION]: wheel during held brush\n\ntrue !== false\n\n    at changed (file:///home/aaron/Documents/Codex/SaltMarcher/tools/test-desktop-atlas-navigation-pending.mjs:115:10)\n    at async file:///home/aaron/Documents/Codex/SaltMarcher/tools/test-desktop-atlas-navigation-pending.mjs:199:3"
+      ],
+      "evidence": [
+        ".build/native-baseline-round10-full-20261029/atlas-navigation-pending/1793244238580-604625/failure.json"
+      ],
+      "env": {}
+    },
+    {
+      "name": "atlas-navigation-terrain",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "/home/aaron/.nvm/versions/node/v22.19.0/bin/node",
+        "tools/test-desktop-atlas-navigation-terrain.mjs"
+      ],
+      "status": "failed",
+      "reason": "Erster tatsächlicher Ursache noch gezielt nachzugehen; keine Produktregression oder Freigabe behauptet.",
+      "errors": [
+        "AssertionError [ERR_ASSERTION]: middle pan elevated anchor: terrain anchor drift 56.60057235705913 CSS px\n    at anchored (file:///home/aaron/Documents/Codex/SaltMarcher/tools/test-desktop-atlas-navigation-terrain.mjs:141:3)\n    at async file:///home/aaron/Documents/Codex/SaltMarcher/tools/test-desktop-atlas-navigation-terrain.mjs:190:3"
+      ],
+      "evidence": [
+        ".build/native-baseline-round10-full-20261029/atlas-navigation-terrain/failure.json"
+      ],
+      "env": {}
+    },
+    {
+      "name": "atlas-navigation",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "/home/aaron/.nvm/versions/node/v22.19.0/bin/node",
+        "tools/test-desktop-atlas-navigation.mjs"
+      ],
+      "status": "failed",
+      "reason": "Erster tatsächlicher Ursache noch gezielt nachzugehen; keine Produktregression oder Freigabe behauptet.",
+      "errors": [
+        "AssertionError [ERR_ASSERTION]: whole touchpad gesture has one history entry\n    at file:///home/aaron/Documents/Codex/SaltMarcher/tools/test-desktop-atlas-navigation.mjs:184:9\n    at async runNativeProbe (file:///home/aaron/Documents/Codex/SaltMarcher/tools/native-session.mjs:611:20)\n    at async file:///home/aaron/Documents/Codex/SaltMarcher/tools/test-desktop-atlas-navigation.mjs:11:1"
+      ],
+      "evidence": [
+        ".build/native-baseline-round10-full-20261029/atlas-navigation/failure.json"
+      ],
+      "env": {}
+    },
+    {
+      "name": "atlas-raster-workbench",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "/home/aaron/.nvm/versions/node/v22.19.0/bin/node",
+        "tools/test-desktop-atlas-raster-workbench.mjs"
+      ],
+      "status": "failed",
+      "reason": "Erster tatsächlicher Ursache noch gezielt nachzugehen; keine Produktregression oder Freigabe behauptet.",
+      "errors": [
+        "page.waitForFunction: Timeout 5000ms exceeded.\n    at /home/aaron/Documents/Codex/SaltMarcher/tools/test-desktop-atlas-raster-workbench.mjs:153:14"
+      ],
+      "evidence": [
+        ".build/native-baseline-round10-full-20261029/atlas-raster-workbench/failure.json"
+      ],
+      "env": {}
+    },
+    {
+      "name": "atlas-terrain-stroke",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "/home/aaron/.nvm/versions/node/v22.19.0/bin/node",
+        "tools/test-desktop-atlas-terrain-stroke.mjs"
+      ],
+      "status": "failed",
+      "reason": "Erster tatsächlicher Ursache noch gezielt nachzugehen; keine Produktregression oder Freigabe behauptet.",
+      "errors": [
+        {
+          "phase": "collect pre-up pixel observations and actual pointer events",
+          "check": "gesture-two-pre-up-terrain-pixels",
+          "at": "2026-10-29T03:29:22.780Z",
+          "sampleObserved": false,
+          "sampleInsidePointerDown": false,
+          "observedPixels": 0,
+          "maxChangedPixels": 0,
+          "sampleLatencyClaim": "none; cursor-clear first observed sample only"
+        },
+        {
+          "phase": "collect pre-up pixel observations and actual pointer events",
+          "check": "gesture-one-duration-3-to-5s",
+          "at": "2026-10-29T03:29:22.780Z",
+          "actualHeldMs": 8272.5,
+          "downAt": "2026-10-29T03:29:03.786Z",
+          "upAt": "2026-10-29T03:29:12.058Z"
+        }
+      ],
+      "evidence": [
+        ".build/native-baseline-round10-full-20261029/atlas-terrain-stroke/failure.json"
+      ],
+      "currentState": "Kanonische Höhen beider Gesten sind vorhanden und beim frischen Öffnen bytegleich. Zweite Geste besitzt keine belegte sichtbare Pixeländerung vor Pointerup; die erste ist mit 8,27 s länger als die unverändert geforderten 3–5 s. Erste tatsächliche Ursache von Vorschau-/Eingabelaufzeit noch offen; keine längere Toleranz vorgesehen.",
+      "runtime": {
+        "dpr": 1,
+        "contentSize": [
+          1920,
+          980
+        ],
+        "canvasSize": [
+          1632,
+          932
+        ],
+        "unmaskedRenderer": "ANGLE (Intel, Mesa Intel(R) UHD Graphics (TGL GT2), OpenGL 4.6)"
+      },
+      "env": {}
+    },
+    {
+      "name": "atlas-terrain-stroke-recovery",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "/home/aaron/.nvm/versions/node/v22.19.0/bin/node",
+        "tools/test-desktop-atlas-terrain-stroke.mjs",
+        "--recovery"
+      ],
+      "status": "failed",
+      "reason": "Erster tatsächlicher Ursache noch gezielt nachzugehen; keine Produktregression oder Freigabe behauptet.",
+      "errors": [
+        {
+          "phase": "collect pre-up pixel observations and actual pointer events",
+          "check": "gesture-two-pre-up-terrain-pixels",
+          "at": "2026-10-29T03:30:20.853Z",
+          "sampleObserved": false,
+          "sampleInsidePointerDown": false,
+          "observedPixels": 0,
+          "maxChangedPixels": 0,
+          "sampleLatencyClaim": "none; cursor-clear first observed sample only"
+        },
+        {
+          "phase": "collect pre-up pixel observations and actual pointer events",
+          "check": "gesture-one-duration-3-to-5s",
+          "at": "2026-10-29T03:30:20.853Z",
+          "actualHeldMs": 8275.399999976158,
+          "downAt": "2026-10-29T03:30:01.996Z",
+          "upAt": "2026-10-29T03:30:10.270Z"
+        }
+      ],
+      "evidence": [
+        ".build/native-baseline-round10-full-20261029/atlas-terrain-stroke-recovery/failure.json"
+      ],
+      "currentState": "Kanonische Höhen beider Gesten sind vorhanden und beim frischen Öffnen bytegleich. Zweite Geste besitzt keine belegte sichtbare Pixeländerung vor Pointerup; die erste ist mit 8,27 s länger als die unverändert geforderten 3–5 s. Erste tatsächliche Ursache von Vorschau-/Eingabelaufzeit noch offen; keine längere Toleranz vorgesehen.",
+      "runtime": {
+        "dpr": 1,
+        "contentSize": [
+          1920,
+          980
+        ],
+        "canvasSize": [
+          1632,
+          932
+        ],
+        "unmaskedRenderer": "ANGLE (Intel, Mesa Intel(R) UHD Graphics (TGL GT2), OpenGL 4.6)"
+      },
+      "env": {}
+    },
+    {
+      "name": "atlas-terrain-stroke-basic-tools",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "/home/aaron/.nvm/versions/node/v22.19.0/bin/node",
+        "tools/test-desktop-atlas-terrain-stroke.mjs",
+        "--basic-tools"
+      ],
+      "status": "failed",
+      "reason": "Erster tatsächlicher Ursache noch gezielt nachzugehen; keine Produktregression oder Freigabe behauptet.",
+      "errors": [],
+      "evidence": [
+        ".build/native-baseline-round10-full-20261029/atlas-terrain-stroke-basic-tools/failure.json"
+      ],
+      "env": {}
+    },
+    {
+      "name": "atlas-terrain-stroke-forms",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "/home/aaron/.nvm/versions/node/v22.19.0/bin/node",
+        "tools/test-desktop-atlas-terrain-stroke.mjs",
+        "--forms"
+      ],
+      "status": "failed",
+      "reason": "Erster tatsächlicher Ursache noch gezielt nachzugehen; keine Produktregression oder Freigabe behauptet.",
+      "errors": [],
+      "evidence": [
+        ".build/native-baseline-round10-full-20261029/atlas-terrain-stroke-forms/failure.json"
+      ],
+      "env": {}
+    },
+    {
+      "name": "dungeon-groundplan",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "/home/aaron/.nvm/versions/node/v22.19.0/bin/node",
+        "tools/test-desktop-dungeon-groundplan.mjs"
+      ],
+      "status": "failed",
+      "reason": "Erster tatsächlicher Ursache noch gezielt nachzugehen; keine Produktregression oder Freigabe behauptet.",
+      "errors": [
+        "AssertionError [ERR_ASSERTION]: Expected confirmed source state\n    at until (file:///home/aaron/Documents/Codex/SaltMarcher/tools/test-desktop-dungeon-groundplan.mjs:39:3)\n    at async file:///home/aaron/Documents/Codex/SaltMarcher/tools/test-desktop-dungeon-groundplan.mjs:207:7"
+      ],
+      "evidence": [
+        ".build/native-baseline-round10-full-20261029/dungeon-groundplan/1/failure.json"
+      ],
+      "env": {}
+    },
+    {
+      "name": "music-stop",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "/home/aaron/.nvm/versions/node/v22.19.0/bin/node",
+        "tools/test-desktop-music-stop.mjs"
+      ],
+      "status": "failed",
+      "reason": "Instabiler Ausgang am identischen Quellen-/Buildstand: Erstserie RMS=0, zwei unveränderte vollständige Wiederholungen und diagnostischer Gegenlauf erfolgreich. Der Gegenlauf misst nach unveränderten 150 ms RMS=0,00137964 bei laufendem AudioContext und lebender Capture-Spur. Keine Ursache allein durch Wiederholung als behoben erklärt.",
+      "errors": [
+        "AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:\n\n  assert(results.sampleRms > 0.000001)\n\n    at file:///home/aaron/Documents/Codex/SaltMarcher/tools/test-desktop-music-stop.mjs:302:9\n    at async runNativeProbe (file:///home/aaron/Documents/Codex/SaltMarcher/tools/native-session.mjs:611:20)\n    at async file:///home/aaron/Documents/Codex/SaltMarcher/tools/test-desktop-music-stop.mjs:11:1"
+      ],
+      "evidence": [
+        ".build/native-baseline-round10-continuation-20261029/music-stop/failure.json",
+        ".build/native-baseline-round10-counters-20261029/music/audio-diagnostics.json",
+        ".build/native-baseline-round10-followup-counters-20261029/music-original-one/music-after.json",
+        ".build/native-baseline-round10-followup-counters-20261029/music-original-two/music-after.json"
+      ],
+      "env": {}
+    },
+    {
+      "name": "terrain-height",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "/home/aaron/.nvm/versions/node/v22.19.0/bin/node",
+        "tools/test-desktop-terrain-height.mjs"
+      ],
+      "status": "failed",
+      "reason": "Erster tatsächlicher Ursache noch gezielt nachzugehen; keine Produktregression oder Freigabe behauptet.",
+      "errors": [
+        "page.waitForFunction: Timeout 30000ms exceeded.\n    at settled (/home/aaron/Documents/Codex/SaltMarcher/tools/test-desktop-terrain-height.mjs:219:16)\n    at /home/aaron/Documents/Codex/SaltMarcher/tools/test-desktop-terrain-height.mjs:264:11\n    at async runNativeProbe (/home/aaron/Documents/Codex/SaltMarcher/tools/native-session.mjs:611:20)\n    at async file:///home/aaron/Documents/Codex/SaltMarcher/tools/test-desktop-terrain-height.mjs:31:1"
+      ],
+      "evidence": [
+        ".build/native-baseline-round10-continuation-20261029/terrain-height/failure.json"
+      ],
+      "env": {}
+    },
+    {
+      "name": "terrain-lakes",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "/home/aaron/.nvm/versions/node/v22.19.0/bin/node",
+        "tools/test-desktop-terrain-lakes.mjs"
+      ],
+      "status": "failed",
+      "reason": "Erster tatsächlicher Ursache noch gezielt nachzugehen; keine Produktregression oder Freigabe behauptet.",
+      "errors": [
+        "AssertionError [ERR_ASSERTION]: {\"ground\":16.211200714111328,\"water\":20,\"surface\":20,\"pointer\":true,\"now\":8152.9000000059605,\"down\":6172.800000011921,\"draft\":true,\"lastSample\":{\"x\":64.00000628302821,\"y\":0,\"t\":1894.3999999761581},\"wetPixels\":83342}\n    at stroke (file:///home/aaron/Documents/Codex/SaltMarcher/tools/test-desktop-terrain-lakes.mjs:383:7)\n    at async file:///home/aaron/Documents/Codex/SaltMarcher/tools/test-desktop-terrain-lakes.mjs:719:7\n    at async runNativeProbe (file:///home/aaron/Documents/Codex/SaltMarcher/tools/native-session.mjs:611:20)\n    at async file:///home/aaron/Documents/Codex/SaltMarcher/tools/test-desktop-terrain-lakes.mjs:40:1"
+      ],
+      "evidence": [
+        ".build/native-baseline-round10-continuation-20261029/terrain-lakes/failure.json"
+      ],
+      "env": {}
+    },
+    {
+      "name": "terrain-lakes-lift",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "/home/aaron/.nvm/versions/node/v22.19.0/bin/node",
+        "tools/test-desktop-terrain-lakes.mjs",
+        "--lift"
+      ],
+      "status": "failed",
+      "reason": "Erster tatsächlicher Ursache noch gezielt nachzugehen; keine Produktregression oder Freigabe behauptet.",
+      "errors": [
+        "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n\n9 !== 10\n\n    at waitCursor (file:///home/aaron/Documents/Codex/SaltMarcher/tools/test-desktop-terrain-lakes.mjs:216:12)\n    at async liftScenario (file:///home/aaron/Documents/Codex/SaltMarcher/tools/test-desktop-terrain-lakes.mjs:591:5)\n    at async file:///home/aaron/Documents/Codex/SaltMarcher/tools/test-desktop-terrain-lakes.mjs:698:19\n    at async runNativeProbe (file:///home/aaron/Documents/Codex/SaltMarcher/tools/native-session.mjs:611:20)\n    at async file:///home/aaron/Documents/Codex/SaltMarcher/tools/test-desktop-terrain-lakes.mjs:40:1"
+      ],
+      "evidence": [
+        ".build/native-baseline-round10-continuation-20261029/terrain-lakes-lift/failure.json"
+      ],
+      "env": {}
+    },
+    {
+      "name": "terrain-relief",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "/home/aaron/.nvm/versions/node/v22.19.0/bin/node",
+        "tools/test-desktop-terrain-relief.mjs"
+      ],
+      "status": "failed",
+      "reason": "Erster tatsächlicher Ursache noch gezielt nachzugehen; keine Produktregression oder Freigabe behauptet.",
+      "errors": [
+        "page.waitForFunction: Timeout 60000ms exceeded.\n    at /home/aaron/Documents/Codex/SaltMarcher/tools/test-desktop-terrain-relief.mjs:341:18"
+      ],
+      "evidence": [
+        ".build/native-baseline-round10-continuation-20261029/terrain-relief/1/failure.json"
+      ],
+      "env": {}
+    },
+    {
+      "name": "terrain-routes-river-only",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "/home/aaron/.nvm/versions/node/v22.19.0/bin/node",
+        "tools/test-desktop-terrain-routes.mjs",
+        "--river-only"
+      ],
+      "status": "failed",
+      "reason": "Erster tatsächlicher Ursache noch gezielt nachzugehen; keine Produktregression oder Freigabe behauptet.",
+      "errors": [
+        "AssertionError [ERR_ASSERTION]: fixed camera pose fresh-top: {\"expected\":{\"frame\":{\"x\":-360,\"y\":-318.5,\"width\":980,\"height\":637},\"focusM\":18.4375,\"tilt\":0,\"rotation\":0,\"exaggeration\":1,\"projection\":\"perspective\"},\"actual\":{\"frame\":{\"x\":-360,\"y\":-318.5,\"width\":980,\"height\":637},\"focusM\":28.000000000000135,\"tilt\":0,\"rotation\":0,\"exaggeration\":1,\"projection\":\"perspective\"}}\n    at check (file:///home/aaron/Documents/Codex/SaltMarcher/tools/atlas-river-probe.mjs:104:5)\n    at qualifyRiverRoute (file:///home/aaron/Documents/Codex/SaltMarcher/tools/atlas-river-probe.mjs:439:5)\n    at async file:///home/aaron/Documents/Codex/SaltMarcher/tools/test-desktop-terrain-routes.mjs:245:5"
+      ],
+      "evidence": [
+        ".build/native-baseline-round10-continuation-20261029/terrain-routes-river-only/failure.json"
+      ],
+      "env": {}
+    },
+    {
+      "name": "terrain-routes-river-only-depression-2",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "/home/aaron/.nvm/versions/node/v22.19.0/bin/node",
+        "tools/test-desktop-terrain-routes.mjs",
+        "--river-only",
+        "--depression=2"
+      ],
+      "status": "failed",
+      "reason": "Erster tatsächlicher Ursache noch gezielt nachzugehen; keine Produktregression oder Freigabe behauptet.",
+      "errors": [
+        "AssertionError [ERR_ASSERTION]: fixed camera image redoTop: {\"different\":63441,\"total\":1521024,\"ratio\":0.04170940103509215,\"max\":167}\n    at check (file:///home/aaron/Documents/Codex/SaltMarcher/tools/atlas-river-probe.mjs:104:5)\n    at qualifyRiverRoute (file:///home/aaron/Documents/Codex/SaltMarcher/tools/atlas-river-probe.mjs:457:5)\n    at async file:///home/aaron/Documents/Codex/SaltMarcher/tools/test-desktop-terrain-routes.mjs:245:5"
+      ],
+      "evidence": [
+        ".build/native-baseline-round10-continuation-20261029/terrain-routes-river-only-depression-2/failure.json"
+      ],
+      "env": {}
+    },
+    {
+      "name": "world-authoring",
+      "command": [
+        "python3",
+        "tools/ui-session.py",
+        "/home/aaron/.nvm/versions/node/v22.19.0/bin/node",
+        "tools/test-desktop-world-authoring.mjs"
+      ],
+      "status": "failed",
+      "reason": "Erster tatsächlicher Ursache noch gezielt nachzugehen; keine Produktregression oder Freigabe behauptet.",
+      "errors": [
+        "locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('dialog', { name: 'Raumgruppe erzeugen' }) to be visible\u001b[22m\n\n    at /home/aaron/Documents/Codex/SaltMarcher/tools/test-desktop-world-authoring.mjs:477:18"
+      ],
+      "evidence": [
+        ".build/native-baseline-round10-continuation-20261029/world-authoring/failure.json"
+      ],
+      "env": {}
+    }
+  ],
+  "repairDrafts": [
+    {
+      "group": "Große kontinuierliche Welt",
+      "status": "Separater Entwurf, noch nicht in die Ausgangsserie oder Repositoryfixture übernommen",
+      "landscapeRecordsValidated": 108076,
+      "vegetationPresetsWithFourMissingFields": 1024,
+      "payloadRevisionsAlignedToExistingRows": 8072,
+      "fullCanonicalBackupValidation": true,
+      "preserved": "Identitäten, Geometrien, Namen, vorhandene Presetwerte und kanonische Zeilenrevisionen",
+      "derivedEffect": "Bestehender SQLite-Trigger erhöht ausschließlich atlas-shape-source um 8.072; sein Payload und Checksum bleiben gleich. Andere world_record-Inhalte bleiben erhalten.",
+      "evidence": [
+        ".build/native-baseline-round10-fixture-draft/normalizer-proof.json",
+        ".build/native-baseline-round10-fixture-draft/derived-source-diff.json"
+      ],
+      "nativeQualification": "Ausstehend nach unveränderlichem Ausgangslauf"
+    }
+  ],
+  "notRun": [
+    {
+      "name": "note-existing-excerpts",
+      "file": "tools/test-desktop-note-existing-excerpts.mjs",
+      "kind": "session",
+      "args": [],
+      "reason": "Required normally completed fixture unavailable: note-excerpts"
+    },
+    {
+      "name": "note-source-inspection",
+      "file": "tools/test-desktop-note-source-inspection.mjs",
+      "kind": "session",
+      "args": [],
+      "reason": "Required normally completed fixture unavailable: note-existing-excerpts"
+    },
+    {
+      "name": "room-key-source-inspection",
+      "file": "tools/test-desktop-room-key-source-inspection.mjs",
+      "kind": "session",
+      "args": [],
+      "reason": "Required normally completed fixture unavailable: note-source-inspection"
+    },
+    {
+      "name": "scene-decision",
+      "file": "tools/test-desktop-scene-decision.mjs",
+      "kind": "session",
+      "args": [],
+      "reason": "Required normally completed fixture unavailable: room-key-source-inspection"
+    },
+    {
+      "name": "quest-review",
+      "file": "tools/test-desktop-quest-review.mjs",
+      "kind": "session",
+      "args": [],
+      "reason": "Required normally completed fixture unavailable: scene-decision"
+    },
+    {
+      "name": "relief-prototype",
+      "file": "tools/test-desktop-relief-prototype.mjs",
+      "kind": "historical",
+      "args": [],
+      "reason": "standalone .build/relief-r0 prototype; not the current product and not native product qualification"
+    },
+    {
+      "name": "style-ownership",
+      "file": "tools/test-desktop-style-ownership.mjs",
+      "kind": "session",
+      "args": [],
+      "reason": "Requires an explicitly saved previously shipped stylesheet (--baseline-css); current CSS against itself is not qualification."
+    }
+  ],
+  "observedPerformanceLimits": [
+    {
+      "name": "atlas-multiscale-performance",
+      "scriptOutcome": "failed",
+      "navigation": [
+        {
+          "zoom": 1,
+          "samples": 126,
+          "p95FrameMs": 1185,
+          "maxFrameMs": 1716.6000000000058,
+          "targetMet": false
+        }
+      ],
+      "evidence": ".build/native-baseline-round10-full-20261029/atlas-multiscale-performance/partial.json",
+      "claim": "Skriptabschluss und Leistungsziel sind getrennt. Vorhandenes Navigationsziel nicht erfüllt; dies ist kein vollständiger TW-G5-Messvertrag und keine historische Regressionsaussage.",
+      "contract": "docs/atlas/requirements/terrain-relief.md:95",
+      "firstCause": "Gezielte Profilierung am gebundenen Stand ausstehend."
+    },
+    {
+      "name": "atlas-multiscale-export",
+      "scriptOutcome": "passed",
+      "navigation": [
+        {
+          "zoom": 1,
+          "samples": 125,
+          "p95FrameMs": 1200.6000000000058,
+          "maxFrameMs": 1762.3000000000175,
+          "targetMet": false
+        }
+      ],
+      "evidence": ".build/native-baseline-round10-full-20261029/atlas-multiscale-export/result.json",
+      "claim": "Skriptabschluss und Leistungsziel sind getrennt. Vorhandenes Navigationsziel nicht erfüllt; dies ist kein vollständiger TW-G5-Messvertrag und keine historische Regressionsaussage.",
+      "contract": "docs/atlas/requirements/terrain-relief.md:95",
+      "firstCause": "Gezielte Profilierung am gebundenen Stand ausstehend."
+    }
+  ],
+  "hostObservation": {
+    "evidence": ".build/native-baseline-round10-full-20261029/atlas-terrain-stroke/failure.json",
+    "dpr": 1,
+    "nativeContentSize": [
+      1920,
+      980
+    ],
+    "renderer": "ANGLE (Intel, Mesa Intel(R) UHD Graphics (TGL GT2), OpenGL 4.6)",
+    "claim": "Tatsächlich beobachtete Laufzeit; keine andere Zielgeräteabnahme."
+  },
+  "interruption": {
+    "originalReportPreserved": true,
+    "postmortem": ".build/native-baseline-round10-full-20261029/postmortem.json",
+    "counts": {
+      "rawPassed": 45,
+      "failed": 42,
+      "interrupted": 1,
+      "notRun": 130
+    },
+    "technicalBlockedRawPasses": [
+      "atlas-terrain-stroke-recovery-only",
+      "atlas-terrain-stroke-recovery-only-source-conflict"
+    ],
+    "signal": "SIGKILL",
+    "signalOrigin": "Ungeklärt; OOM nicht belegt",
+    "knownPidsAbsent": 90,
+    "resourceGroupRemoved": true,
+    "sourceAndArtifactsUnchanged": true,
+    "retry": ".build/native-baseline-round10-e2e01-retry-20261029",
+    "continuation": ".build/native-baseline-round10-continuation-20261029"
+  },
+  "historical26": [
+    {
+      "name": "packet-original",
+      "status": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/packet-original"
+    },
+    {
+      "name": "moment-follow-up",
+      "status": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/moment-follow-up"
+    },
+    {
+      "name": "template-discovery",
+      "status": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/template-discovery"
+    },
+    {
+      "name": "combat-drafts",
+      "status": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-full-20261029/combat-drafts"
+    },
+    {
+      "name": "atlas-layout",
+      "status": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-full-20261029/atlas-layout"
+    },
+    {
+      "name": "connected-room-prep",
+      "status": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-full-20261029/connected-room-prep"
+    },
+    {
+      "name": "desk-search",
+      "status": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-full-20261029/desk-search"
+    },
+    {
+      "name": "groups-search",
+      "status": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/groups-search"
+    },
+    {
+      "name": "key-lookup",
+      "status": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/key-lookup"
+    },
+    {
+      "name": "key-note-capture",
+      "status": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/key-note-capture"
+    },
+    {
+      "name": "ledger-switch",
+      "status": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/ledger-switch"
+    },
+    {
+      "name": "live-archive",
+      "status": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/live-archive"
+    },
+    {
+      "name": "long-key",
+      "status": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/long-key"
+    },
+    {
+      "name": "mask-history",
+      "status": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/mask-history"
+    },
+    {
+      "name": "note-reuse",
+      "status": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/note-reuse"
+    },
+    {
+      "name": "note-room-uses",
+      "status": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/note-room-uses"
+    },
+    {
+      "name": "note-source-choice",
+      "status": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/note-source-choice"
+    },
+    {
+      "name": "npc-rename",
+      "status": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/npc-rename"
+    },
+    {
+      "name": "player-blank",
+      "status": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/player-blank"
+    },
+    {
+      "name": "preset-context",
+      "status": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/preset-context"
+    },
+    {
+      "name": "split-knowledge",
+      "status": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/split-knowledge"
+    },
+    {
+      "name": "terrain-spatial",
+      "status": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/terrain-spatial"
+    },
+    {
+      "name": "timeline-search",
+      "status": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/timeline-search"
+    },
+    {
+      "name": "travel-checkpoints",
+      "status": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/travel-checkpoints"
+    },
+    {
+      "name": "travel-target",
+      "status": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/travel-target"
+    },
+    {
+      "name": "vegetation-qualification",
+      "status": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/vegetation-qualification"
+    }
+  ],
+  "environmentAnnotations": {
+    "addedAt": "2026-10-29T09:20:11.086684+00:00",
+    "source": "initial-results.json rows.env",
+    "scope": "Explicit original variant environment copied into the derived cause catalogue; source binding and original raw reports unchanged."
+  }
+}

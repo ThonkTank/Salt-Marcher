@@ -18,10 +18,12 @@ const marshOnly = process.argv.includes('--marsh-only');
 const surfaceOnly = process.argv.includes('--surface-only');
 const scale = 1;
 assert([1].includes(scale));
-const output = path.resolve(
-  library ? '.build/cycle2-point2/native' : '.build/cycle2-point1/native',
-  `${Date.now()}-${process.pid}`,
-);
+const output =
+  process.env.QA_EVIDENCE_DIR ??
+  path.resolve(
+    library ? '.build/cycle2-point2/native' : '.build/cycle2-point1/native',
+    `${Date.now()}-${process.pid}`,
+  );
 await mkdir(output, { recursive: true });
 const require = createRequire(import.meta.url),
   Database = require('better-sqlite3');

@@ -6,7 +6,9 @@ import { createNativeSession } from './native-session.mjs';
 import { createAtlasCanonicalFixture } from './atlas-canonical-fixture.mjs';
 
 const root = process.cwd(),
-  output = path.resolve('.build/atlas-deck-native', `${Date.now()}-${process.pid}`);
+  output =
+    process.env.QA_EVIDENCE_DIR ??
+    path.resolve('.build/atlas-deck-native', `${Date.now()}-${process.pid}`);
 const native = await createNativeSession({ root, output, name: 'atlas-deck' });
 const files = [
   'src/app/atlas/atlas-deck-surface.ts',

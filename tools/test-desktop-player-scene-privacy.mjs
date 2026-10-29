@@ -131,6 +131,17 @@ await runNativeProbe(
         expectedRevision: null,
       }).combat;
       mask = store.executeCombat({
+        ...command({
+          kind: 'add-creature',
+          creatureId: 'goblin',
+          count: 1,
+          grouped: false,
+          initiative: 12,
+        }),
+        combatId: mask.id,
+        expectedRevision: mask.revision,
+      }).combat;
+      mask = store.executeCombat({
         ...command({ kind: 'start' }),
         combatId: mask.id,
         expectedRevision: mask.revision,
@@ -273,28 +284,35 @@ await runNativeProbe(
           };
         });
       const all = { normal: await metrics() };
-      await app.evaluate(({ BrowserWindow }) =>
+      const normalSize = await app.evaluate(({ BrowserWindow }) =>
         BrowserWindow.getAllWindows()
           .find((w) => w.getTitle() === 'SaltMarcher')
-          .webContents.setZoomFactor(1),
+          .getContentSize(),
       );
-      await page.waitForFunction(() => innerWidth < 750);
-      all.zoom100 = await metrics();
+      await app.evaluate(({ BrowserWindow }) => {
+        const window = BrowserWindow.getAllWindows().find((w) => w.getTitle() === 'SaltMarcher');
+        window.unmaximize();
+        window.setMinimumSize(320, 240);
+        window.setContentSize(720, 500);
+        window.webContents.setZoomFactor(1);
+      });
+      await page.waitForFunction(() => innerWidth === 720 && innerHeight === 500);
+      all.compact100 = await metrics();
       await page.evaluate(async () => {
         document
           .querySelector('#player-preview')
           .scrollIntoView({ block: 'center', behavior: 'instant' });
         await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
       });
-      all.zoom100.previewPosition = await page.locator('#player-preview').evaluate((p) => ({
+      all.compact100.previewPosition = await page.locator('#player-preview').evaluate((p) => ({
         top: p.getBoundingClientRect().top,
         bottom: p.getBoundingClientRect().bottom,
         viewport: innerHeight,
       }));
       if (!layoutBefore)
         assert(
-          all.zoom100.previewPosition.top >= 0 &&
-            all.zoom100.previewPosition.bottom <= all.zoom100.previewPosition.viewport,
+          all.compact100.previewPosition.top >= 0 &&
+            all.compact100.previewPosition.bottom <= all.compact100.previewPosition.viewport,
           'Preview can be scrolled into view at 100%',
         );
       const capture = await app.evaluate(async ({ BrowserWindow }) => {
@@ -302,17 +320,19 @@ await runNativeProbe(
           image = await w.webContents.capturePage();
         return { size: image.getSize(), png: image.toPNG().toString('base64') };
       });
-      all.zoom100.captureSize = capture.size;
+      all.compact100.captureSize = capture.size;
       await writeFile(
         path.join(output, 'preview-' + mode + '-' + phase + '-100.png'),
         Buffer.from(capture.png, 'base64'),
       );
-      await app.evaluate(({ BrowserWindow }) =>
-        BrowserWindow.getAllWindows()
-          .find((w) => w.getTitle() === 'SaltMarcher')
-          .webContents.setZoomFactor(1),
+      await app.evaluate(({ BrowserWindow }, size) => {
+        const window = BrowserWindow.getAllWindows().find((w) => w.getTitle() === 'SaltMarcher');
+        window.setContentSize(...size);
+      }, normalSize);
+      await page.waitForFunction(
+        (size) => innerWidth === size[0] && innerHeight === size[1],
+        normalSize,
       );
-      await page.waitForFunction(() => innerWidth > 750);
       if (!layoutBefore && !before)
         for (const [name, m] of Object.entries(all)) {
           for (const area of ['dialog', 'controls', 'preview'])

@@ -1,5 +1,10 @@
+import { revealWorkspaceNavigation } from './native-navigation.mjs';
 import { runNativeProbe } from './native-session.mjs';
-import { openDesktopKeyReferences } from './qa-key-entry.mjs';
+import {
+  openDesktopKeyFromAtlas,
+  openDesktopKeyReferences,
+  openDesktopKeyRoomBrowser,
+} from './qa-key-entry.mjs';
 import { createRequire } from 'node:module';
 import { mkdtemp, mkdir, readFile, writeFile, stat } from 'node:fs/promises';
 import { spawn } from 'node:child_process';
@@ -132,14 +137,12 @@ await runNativeProbe(
         .update(await readFile(path.join('.build/desktop', relative)))
         .digest('hex');
     async function openKey(page) {
-      await page.locator('#atlas-tab').click();
-      if (await page.locator('#campaign-atlas').isVisible()) {
-        await page.locator('#atlas-families button[data-family=interior]').click();
-        const advanced = page.locator('#atlas-advanced');
-        if ((await advanced.getAttribute('open')) === null)
-          await advanced.locator(':scope > summary').click();
+      if (await page.locator('#campaign-atlas').isHidden()) {
+        await revealWorkspaceNavigation(page);
+        await page.locator('#atlas-tab').click();
       }
-      await page.locator('#key-open').click();
+      await openDesktopKeyFromAtlas(page, 'Wachstube');
+      await openDesktopKeyRoomBrowser(page);
     }
     async function launch() {
       app = await native.launchConfigured({

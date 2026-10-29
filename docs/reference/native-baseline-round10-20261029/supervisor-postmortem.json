@@ -1,0 +1,12 @@
+{
+  "observedAt": "2026-10-29T11:24:48.882Z",
+  "supervisorPid": 670969,
+  "supervisorAbsent": true,
+  "rawReportEndedAt": "2026-10-29T11:21:31.739Z",
+  "rawReportResults": 217,
+  "unifiedExecSession": 55913,
+  "unifiedExecObservedExitCode": 143,
+  "limit": "The native report and completion log close all 217 positions. The later unified exec session collection reported exit 143, not a normal supervisor exit; its cause is not established. This observation does not replace the immutable per-case ownership/exit receipts or imply a normal enclosing shell exit.",
+  "wrappers": 210,
+  "allRecordedWrappersAbsent": true
+}

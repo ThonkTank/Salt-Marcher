@@ -134,7 +134,7 @@ await runNativeProbe(
         .locator('.campaign-card[data-campaign-id="' + campaign.id + '"]')
         .getByRole('button', { name: /Öffnen|Fortsetzen/ })
         .click();
-      await page.getByRole('button', { name: 'Atlas', exact: true }).click();
+      await page.locator('#campaign-atlas').waitFor({ state: 'visible' });
       await choose(page, 'Wachstube');
       return page;
     }

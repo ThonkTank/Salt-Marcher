@@ -1,0 +1,5153 @@
+{
+  "auditor": {
+    "file": "docs/reference/native-baseline-round10-20261029/audit-final.mjs",
+    "sha256": "256ec9218c25f0b84aa5ce5df3c3f4190e2fb8863c14e9f05642b995dd373f5a",
+    "validatorSourceHash": "2f0c78db4ea84aa4d8969ee7511363ff552161407b35d40555219f0ebe3ad8b5"
+  },
+  "observedAt": "2026-10-29T11:25:38.651Z",
+  "closed": true,
+  "sourceDigest": "2005f9ed9906fb9fdbd79a15c325d63e2b29228a8c75ac8761e16c6bd2130865",
+  "failureProtocol": "For red failure receipts only, absent launch.pidAbsent is read from an existing matching electron cleanup entry with the same PID and exit. Raw receipts remain unchanged; red status remains red.",
+  "scope": "Independent reread of completed immutable final-run receipts, PNG bytes/dimensions, renderer/normal-exit observations, full runtime binding and resource ownership; running/pending cases are not qualified.",
+  "checked": [
+    {
+      "name": "access-path",
+      "status": "failed",
+      "receipts": 0,
+      "launches": 0,
+      "captures": 0,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "agenda-deadline",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 2,
+      "captures": 8,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "ambience-mix",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 2,
+      "captures": 5,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "area-results",
+      "status": "passed",
+      "receipts": 4,
+      "launches": 8,
+      "captures": 8,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "atlas-author-overlay",
+      "status": "failed",
+      "receipts": 0,
+      "launches": 0,
+      "captures": 0,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "atlas-biome-stroke",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 4,
+      "captures": 19,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "atlas-biome-stroke-library",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 6,
+      "captures": 27,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "atlas-biome-stroke-earth-only",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 2,
+      "captures": 4,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "atlas-biome-stroke-library-marsh-only",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 2,
+      "captures": 5,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "atlas-biome-stroke-surface-only",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 2,
+      "captures": 9,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "atlas-brush-ux",
+      "status": "failed",
+      "receipts": 0,
+      "launches": 0,
+      "captures": 0,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "atlas-cache-reopen",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 2,
+      "captures": 4,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "atlas-cache-reopen-detail",
+      "status": "failed",
+      "receipts": 0,
+      "launches": 0,
+      "captures": 0,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "atlas-camera-coverage",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 1,
+      "captures": 4,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "atlas-cartography",
+      "status": "failed",
+      "receipts": 0,
+      "launches": 0,
+      "captures": 0,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "atlas-cleanup",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 2,
+      "captures": 5,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "atlas-deck",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 2,
+      "captures": 6,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "atlas-dense-landscape",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 1,
+      "captures": 3,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "atlas-distance",
+      "status": "failed",
+      "receipts": 0,
+      "launches": 0,
+      "captures": 0,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "atlas-early-terrain",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 1,
+      "captures": 4,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "atlas-entrance-context",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 1,
+      "captures": 3,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "atlas-geometry-overview",
+      "status": "failed",
+      "receipts": 0,
+      "launches": 0,
+      "captures": 0,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "atlas-geometry-tiles",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 2,
+      "captures": 4,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "atlas-layout",
+      "status": "failed",
+      "receipts": 0,
+      "launches": 0,
+      "captures": 0,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "atlas-main-camera",
+      "status": "failed",
+      "receipts": 0,
+      "launches": 0,
+      "captures": 0,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "atlas-main-camera-city-only",
+      "status": "failed",
+      "receipts": 0,
+      "launches": 0,
+      "captures": 0,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "atlas-main-camera-raised-floor",
+      "status": "failed",
+      "receipts": 0,
+      "launches": 0,
+      "captures": 0,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "atlas-material-stream",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 2,
+      "captures": 6,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "atlas-material-tiles",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 2,
+      "captures": 3,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "atlas-measurements",
+      "status": "failed",
+      "receipts": 0,
+      "launches": 0,
+      "captures": 0,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "atlas-mixed-workbench",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 2,
+      "captures": 8,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "atlas-multiscale",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 1,
+      "captures": 19,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "atlas-multiscale-structures",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 1,
+      "captures": 19,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "atlas-multiscale-drawn",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 1,
+      "captures": 19,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "atlas-multiscale-exact-scale",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 1,
+      "captures": 19,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "atlas-multiscale-performance",
+      "status": "failed",
+      "receipts": 0,
+      "launches": 0,
+      "captures": 0,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "atlas-multiscale-sweep",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 1,
+      "captures": 20,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "atlas-multiscale-export",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 1,
+      "captures": 19,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "atlas-navigation-pending",
+      "status": "failed",
+      "receipts": 0,
+      "launches": 0,
+      "captures": 0,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "atlas-navigation-terrain",
+      "status": "failed",
+      "receipts": 0,
+      "launches": 0,
+      "captures": 0,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "atlas-navigation-terrain-world-room",
+      "status": "failed",
+      "receipts": 0,
+      "launches": 0,
+      "captures": 0,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "atlas-navigation",
+      "status": "failed",
+      "receipts": 0,
+      "launches": 0,
+      "captures": 0,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "atlas-objects-main",
+      "status": "failed",
+      "receipts": 0,
+      "launches": 0,
+      "captures": 0,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "atlas-prominence",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 2,
+      "captures": 4,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "atlas-raster-gpu",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 2,
+      "captures": 5,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "atlas-raster-workbench",
+      "status": "failed",
+      "receipts": 0,
+      "launches": 0,
+      "captures": 0,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "atlas-rejected-edit",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 2,
+      "captures": 6,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "atlas-scale-roundtrip",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 1,
+      "captures": 5,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "atlas-terrain-stroke",
+      "status": "failed",
+      "receipts": 0,
+      "launches": 0,
+      "captures": 0,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "atlas-terrain-stroke-recovery",
+      "status": "failed",
+      "receipts": 0,
+      "launches": 0,
+      "captures": 0,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "atlas-terrain-stroke-recovery-only",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 2,
+      "captures": 4,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "atlas-terrain-stroke-recovery-only-drop-followup",
+      "status": "failed",
+      "receipts": 0,
+      "launches": 0,
+      "captures": 0,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "atlas-terrain-stroke-recovery-only-source-conflict",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 2,
+      "captures": 4,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "atlas-terrain-stroke-basic-tools",
+      "status": "failed",
+      "receipts": 0,
+      "launches": 0,
+      "captures": 0,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "atlas-terrain-stroke-forms",
+      "status": "failed",
+      "receipts": 0,
+      "launches": 0,
+      "captures": 0,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "atlas-terrain-stroke-multiscale",
+      "status": "failed",
+      "receipts": 0,
+      "launches": 0,
+      "captures": 0,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "atlas-tiles",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 2,
+      "captures": 6,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "atlas-transition",
+      "status": "failed",
+      "receipts": 0,
+      "launches": 0,
+      "captures": 0,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "atlas-viewport",
+      "status": "failed",
+      "receipts": 0,
+      "launches": 0,
+      "captures": 0,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "audio-copy",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 2,
+      "captures": 5,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "autonomy",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 2,
+      "captures": 5,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "brush-worker",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 1,
+      "captures": 1,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "campaign-copy",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 3,
+      "captures": 3,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "campaign-transfer-visit",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 2,
+      "captures": 2,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "campaign-transfer-visit-fail-import-atlas",
+      "status": "detected",
+      "receipts": 0,
+      "launches": 0,
+      "captures": 0,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "campaign-trash",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 3,
+      "captures": 7,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "canvas-recovery",
+      "status": "failed",
+      "receipts": 0,
+      "launches": 0,
+      "captures": 0,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "catalog-combat",
+      "status": "failed",
+      "receipts": 0,
+      "launches": 0,
+      "captures": 0,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "character-profile",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 2,
+      "captures": 5,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "chase-drafts",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 3,
+      "captures": 3,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "chase-switch",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 4,
+      "captures": 4,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "chronicle-search",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 2,
+      "captures": 2,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "combat-drafts",
+      "status": "failed",
+      "receipts": 0,
+      "launches": 0,
+      "captures": 0,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "combat-switch",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 3,
+      "captures": 3,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "combat-switch-apply-rolled-damage",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 3,
+      "captures": 3,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "concentration",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 3,
+      "captures": 9,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "connected-room-prep",
+      "status": "failed",
+      "receipts": 0,
+      "launches": 0,
+      "captures": 0,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "context-help",
+      "status": "failed",
+      "receipts": 0,
+      "launches": 0,
+      "captures": 0,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "day-party",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 1,
+      "captures": 1,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "day-refresh",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 2,
+      "captures": 13,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "death-saves",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 3,
+      "captures": 3,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "desk-search",
+      "status": "failed",
+      "receipts": 0,
+      "launches": 0,
+      "captures": 0,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "development",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 9,
+      "captures": 9,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "dungeon-authoring",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 3,
+      "captures": 3,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "dungeon-groundplan",
+      "status": "failed",
+      "receipts": 0,
+      "launches": 0,
+      "captures": 0,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "dungeon-recovery",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 2,
+      "captures": 2,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "e2e01",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 19,
+      "captures": 44,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "e2e02",
+      "status": "passed",
+      "receipts": 3,
+      "launches": 4,
+      "captures": 19,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "encounter-table-authoring",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 3,
+      "captures": 9,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "entrance-marker",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 2,
+      "captures": 6,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "equipment-reference",
+      "status": "passed",
+      "receipts": 2,
+      "launches": 4,
+      "captures": 24,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "error-diagnostics",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 1,
+      "captures": 2,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "evening-handoff",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 4,
+      "captures": 10,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "extension-install",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 3,
+      "captures": 5,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "fractal-strokes",
+      "status": "failed",
+      "receipts": 0,
+      "launches": 0,
+      "captures": 0,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "generation-preparation",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 3,
+      "captures": 8,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "geometry-scale",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 1,
+      "captures": 4,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "groups-search",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 2,
+      "captures": 2,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "height-workflow",
+      "status": "failed",
+      "receipts": 0,
+      "launches": 0,
+      "captures": 0,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "item-selection",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 2,
+      "captures": 7,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "key-lookup",
+      "status": "failed",
+      "receipts": 0,
+      "launches": 0,
+      "captures": 0,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "key-note-capture",
+      "status": "failed",
+      "receipts": 0,
+      "launches": 0,
+      "captures": 0,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "key-note-context",
+      "status": "failed",
+      "receipts": 0,
+      "launches": 0,
+      "captures": 0,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "key-note-context-nested",
+      "status": "failed",
+      "receipts": 0,
+      "launches": 0,
+      "captures": 0,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "key-note-context-unlink",
+      "status": "failed",
+      "receipts": 0,
+      "launches": 0,
+      "captures": 0,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "land-mask",
+      "status": "failed",
+      "receipts": 0,
+      "launches": 0,
+      "captures": 0,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "landscape-tools",
+      "status": "failed",
+      "receipts": 0,
+      "launches": 0,
+      "captures": 0,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "ledger-switch",
+      "status": "failed",
+      "receipts": 0,
+      "launches": 0,
+      "captures": 0,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "live-archive",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 2,
+      "captures": 2,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "live-travel-reads",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 2,
+      "captures": 3,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "long-key",
+      "status": "failed",
+      "receipts": 0,
+      "launches": 0,
+      "captures": 0,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "loot-stacks",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 2,
+      "captures": 7,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "manual-timeline",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 3,
+      "captures": 7,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "mask-history",
+      "status": "failed",
+      "receipts": 0,
+      "launches": 0,
+      "captures": 0,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "moment-follow-up",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 2,
+      "captures": 2,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "mountain-material",
+      "status": "failed",
+      "receipts": 0,
+      "launches": 0,
+      "captures": 0,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "music-stop",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 2,
+      "captures": 4,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "narrative-recovery",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 4,
+      "captures": 10,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "note-excerpts",
+      "status": "failed",
+      "receipts": 0,
+      "launches": 0,
+      "captures": 0,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "note-followup",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 2,
+      "captures": 2,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "note-hierarchy",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 2,
+      "captures": 2,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "note-map-overlap",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 2,
+      "captures": 2,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "note-merge",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 2,
+      "captures": 2,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "note-prune",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 2,
+      "captures": 2,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "note-reopen",
+      "status": "failed",
+      "receipts": 0,
+      "launches": 0,
+      "captures": 0,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "note-reuse",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 2,
+      "captures": 2,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "note-room-plan-return",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 2,
+      "captures": 2,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "note-room-uses",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 2,
+      "captures": 2,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "note-source-choice",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 2,
+      "captures": 2,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "note-source-recovery",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 3,
+      "captures": 3,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "note-thread",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 2,
+      "captures": 2,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "note-thread-new-plan",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 2,
+      "captures": 2,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "note-trash-recovery",
+      "status": "passed",
+      "receipts": 2,
+      "launches": 6,
+      "captures": 20,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "npc-conversation",
+      "status": "failed",
+      "receipts": 0,
+      "launches": 0,
+      "captures": 0,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "npc-portrait",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 2,
+      "captures": 6,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "npc-rename",
+      "status": "failed",
+      "receipts": 0,
+      "launches": 0,
+      "captures": 0,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "npc-search",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 2,
+      "captures": 2,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "npc-switch",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 2,
+      "captures": 5,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "npc-weekly-visits",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 3,
+      "captures": 7,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "packet-original",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 2,
+      "captures": 2,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "place-search",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 2,
+      "captures": 2,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "player-blank",
+      "status": "failed",
+      "receipts": 0,
+      "launches": 0,
+      "captures": 0,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "player-blank-pending",
+      "status": "failed",
+      "receipts": 0,
+      "launches": 0,
+      "captures": 0,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "player-blank-combat",
+      "status": "failed",
+      "receipts": 0,
+      "launches": 0,
+      "captures": 0,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "player-blank-chase",
+      "status": "failed",
+      "receipts": 0,
+      "launches": 0,
+      "captures": 0,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "player-blank-combat-pending",
+      "status": "failed",
+      "receipts": 0,
+      "launches": 0,
+      "captures": 0,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "player-blank-chase-pending",
+      "status": "failed",
+      "receipts": 0,
+      "launches": 0,
+      "captures": 0,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "player-focus",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 2,
+      "captures": 2,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "player-focus-cue",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 2,
+      "captures": 2,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "player-focus-handout",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 2,
+      "captures": 2,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "player-focus-cue-handout",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 2,
+      "captures": 2,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "player-map-reveal",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 2,
+      "captures": 2,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "player-scene-privacy",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 2,
+      "captures": 2,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "player-scene-privacy-combat",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 2,
+      "captures": 2,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "player-scene-privacy-chase",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 2,
+      "captures": 2,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "preset-context",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 2,
+      "captures": 2,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "protocol-visit",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 2,
+      "captures": 2,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "region-export",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 2,
+      "captures": 4,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "reinforcement-layout",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 3,
+      "captures": 13,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "reinforcement-layout-assert-layout",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 3,
+      "captures": 13,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "reinforcement-layout-assert-layout-reply-loss",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 3,
+      "captures": 15,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "restock-name",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 2,
+      "captures": 6,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "review-integrity",
+      "status": "failed",
+      "receipts": 0,
+      "launches": 0,
+      "captures": 0,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "review-retention",
+      "status": "failed",
+      "receipts": 0,
+      "launches": 0,
+      "captures": 0,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "room-groups",
+      "status": "failed",
+      "receipts": 0,
+      "launches": 0,
+      "captures": 0,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "room-reads",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 3,
+      "captures": 7,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "room-reads-regions",
+      "status": "failed",
+      "receipts": 0,
+      "launches": 0,
+      "captures": 0,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "room-rule-reuse",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 2,
+      "captures": 2,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "rule-reading",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 5,
+      "captures": 5,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "scene-music-navigation",
+      "status": "passed",
+      "receipts": 2,
+      "launches": 4,
+      "captures": 10,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "scene-selection-read",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 3,
+      "captures": 12,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "scene-selection-read-namesakes",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 3,
+      "captures": 13,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "scene-selection-read-long-rest",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 3,
+      "captures": 12,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "scene-selection-read-namesakes-long-rest",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 3,
+      "captures": 13,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "session-note-organizing",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 2,
+      "captures": 2,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "session-source-order",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 1,
+      "captures": 1,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "shared-template",
+      "status": "failed",
+      "receipts": 0,
+      "launches": 0,
+      "captures": 0,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "shop-switch",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 3,
+      "captures": 13,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "shop-trade",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 2,
+      "captures": 9,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "split-knowledge",
+      "status": "failed",
+      "receipts": 0,
+      "launches": 0,
+      "captures": 0,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "spontaneous-combat",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 2,
+      "captures": 7,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "store-responsiveness",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 1,
+      "captures": 3,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "template-discovery",
+      "status": "failed",
+      "receipts": 0,
+      "launches": 0,
+      "captures": 0,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "terrain-brush",
+      "status": "failed",
+      "receipts": 0,
+      "launches": 0,
+      "captures": 0,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "terrain-height",
+      "status": "failed",
+      "receipts": 0,
+      "launches": 0,
+      "captures": 0,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "terrain-lakes",
+      "status": "failed",
+      "receipts": 0,
+      "launches": 0,
+      "captures": 0,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "terrain-lakes-lift",
+      "status": "failed",
+      "receipts": 0,
+      "launches": 0,
+      "captures": 0,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "terrain-live",
+      "status": "failed",
+      "receipts": 0,
+      "launches": 0,
+      "captures": 0,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "terrain-live-world",
+      "status": "failed",
+      "receipts": 0,
+      "launches": 0,
+      "captures": 0,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "terrain-live-covered",
+      "status": "failed",
+      "receipts": 0,
+      "launches": 0,
+      "captures": 0,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "terrain-relief",
+      "status": "failed",
+      "receipts": 0,
+      "launches": 0,
+      "captures": 0,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "terrain-routes",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 2,
+      "captures": 10,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "terrain-routes-river-only",
+      "status": "failed",
+      "receipts": 0,
+      "launches": 0,
+      "captures": 0,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "terrain-routes-river-only-depression-2",
+      "status": "failed",
+      "receipts": 0,
+      "launches": 0,
+      "captures": 0,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "terrain-routes-planning-only",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 2,
+      "captures": 9,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "terrain-spatial",
+      "status": "failed",
+      "receipts": 0,
+      "launches": 0,
+      "captures": 0,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "timeline-search",
+      "status": "failed",
+      "receipts": 0,
+      "launches": 0,
+      "captures": 0,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "travel-checkpoints",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 4,
+      "captures": 4,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "travel-target",
+      "status": "failed",
+      "receipts": 0,
+      "launches": 0,
+      "captures": 0,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "treasure-anchors",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 3,
+      "captures": 10,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "treasure-distribution",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 2,
+      "captures": 2,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "treasure-distribution-reply-loss",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 2,
+      "captures": 2,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "treasure-distribution-reject-once",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 2,
+      "captures": 2,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "updates",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 2,
+      "captures": 2,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "vegetation-qualification",
+      "status": "failed",
+      "receipts": 0,
+      "launches": 0,
+      "captures": 0,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "vegetation-qualification-navigation-only",
+      "status": "failed",
+      "receipts": 0,
+      "launches": 0,
+      "captures": 0,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "weather-override",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 2,
+      "captures": 2,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "world-authoring",
+      "status": "failed",
+      "receipts": 0,
+      "launches": 0,
+      "captures": 0,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "updates-workspace",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 2,
+      "captures": 2,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    },
+    {
+      "name": "updates-force",
+      "status": "passed",
+      "receipts": 1,
+      "launches": 2,
+      "captures": 3,
+      "resourceRemoved": true,
+      "supervisorAbsent": true
+    }
+  ],
+  "failedNativeEnds": [
+    {
+      "name": "access-path",
+      "file": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-final-20261029/access-path/variant-1/failure.json",
+      "launches": [
+        {
+          "pid": 671047,
+          "pidAbsentNow": true,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "receiptPidAbsent": null
+        }
+      ],
+      "cleanup": [
+        {
+          "kind": "electron",
+          "pid": 671047,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "pidAbsent": true,
+          "forced": false
+        },
+        {
+          "kind": "bus",
+          "unexpected": false,
+          "pid": 671044,
+          "exit": {
+            "code": null,
+            "signal": "SIGTERM"
+          },
+          "pidAbsent": true,
+          "forced": false
+        }
+      ],
+      "rendererErrors": [],
+      "cleanupError": null
+    },
+    {
+      "name": "atlas-author-overlay",
+      "file": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-final-20261029/atlas-author-overlay/case-1/failure.json",
+      "launches": [
+        {
+          "pid": 672646,
+          "pidAbsentNow": true,
+          "exit": {
+            "code": null,
+            "signal": "SIGKILL"
+          },
+          "receiptPidAbsent": null
+        }
+      ],
+      "cleanup": [
+        {
+          "kind": "electron",
+          "pid": 672646,
+          "exit": {
+            "code": null,
+            "signal": "SIGKILL"
+          },
+          "pidAbsent": true,
+          "forced": true
+        },
+        {
+          "kind": "bus",
+          "unexpected": false,
+          "pid": 672643,
+          "exit": {
+            "code": null,
+            "signal": "SIGTERM"
+          },
+          "pidAbsent": true,
+          "forced": false
+        }
+      ],
+      "rendererErrors": [],
+      "cleanupError": null
+    },
+    {
+      "name": "atlas-brush-ux",
+      "file": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-final-20261029/atlas-brush-ux/failure.json",
+      "launches": [
+        {
+          "pid": 677037,
+          "pidAbsentNow": true,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "receiptPidAbsent": null
+        }
+      ],
+      "cleanup": [
+        {
+          "kind": "electron",
+          "pid": 677037,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "pidAbsent": true,
+          "forced": false
+        },
+        {
+          "kind": "bus",
+          "unexpected": false,
+          "pid": 677034,
+          "exit": {
+            "code": null,
+            "signal": "SIGTERM"
+          },
+          "pidAbsent": true,
+          "forced": false
+        }
+      ],
+      "rendererErrors": [],
+      "cleanupError": null
+    },
+    {
+      "name": "atlas-cache-reopen-detail",
+      "file": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-final-20261029/atlas-cache-reopen-detail/failure.json",
+      "launches": [
+        {
+          "pid": 677509,
+          "pidAbsentNow": true,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "receiptPidAbsent": null
+        }
+      ],
+      "cleanup": [
+        {
+          "kind": "electron",
+          "pid": 677509,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "pidAbsent": true,
+          "forced": false
+        },
+        {
+          "kind": "bus",
+          "unexpected": false,
+          "pid": 677506,
+          "exit": {
+            "code": null,
+            "signal": "SIGTERM"
+          },
+          "pidAbsent": true,
+          "forced": false
+        }
+      ],
+      "rendererErrors": [],
+      "cleanupError": null
+    },
+    {
+      "name": "atlas-cartography",
+      "file": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-final-20261029/atlas-cartography/failure.json",
+      "launches": [
+        {
+          "pid": 677981,
+          "pidAbsentNow": true,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "receiptPidAbsent": true
+        },
+        {
+          "pid": 678172,
+          "pidAbsentNow": true,
+          "exit": {
+            "code": null,
+            "signal": "SIGKILL"
+          },
+          "receiptPidAbsent": null
+        }
+      ],
+      "cleanup": [
+        {
+          "kind": "electron",
+          "pid": 678172,
+          "exit": {
+            "code": null,
+            "signal": "SIGKILL"
+          },
+          "pidAbsent": true,
+          "forced": true
+        },
+        {
+          "kind": "bus",
+          "unexpected": false,
+          "pid": 677978,
+          "exit": {
+            "code": null,
+            "signal": "SIGTERM"
+          },
+          "pidAbsent": true,
+          "forced": false
+        }
+      ],
+      "rendererErrors": [],
+      "cleanupError": null
+    },
+    {
+      "name": "atlas-distance",
+      "file": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-final-20261029/atlas-distance/failure.json",
+      "launches": [
+        {
+          "pid": 679159,
+          "pidAbsentNow": true,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "receiptPidAbsent": true
+        },
+        {
+          "pid": 679319,
+          "pidAbsentNow": true,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "receiptPidAbsent": true
+        }
+      ],
+      "cleanup": [
+        {
+          "kind": "bus",
+          "unexpected": false,
+          "pid": 679156,
+          "exit": {
+            "code": null,
+            "signal": "SIGTERM"
+          },
+          "pidAbsent": true,
+          "forced": false
+        }
+      ],
+      "rendererErrors": [],
+      "cleanupError": null
+    },
+    {
+      "name": "atlas-geometry-overview",
+      "file": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-final-20261029/atlas-geometry-overview/1793259203340-679794/failure.json",
+      "launches": [
+        {
+          "pid": 679823,
+          "pidAbsentNow": true,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "receiptPidAbsent": true
+        },
+        {
+          "pid": 679927,
+          "pidAbsentNow": true,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "receiptPidAbsent": null
+        }
+      ],
+      "cleanup": [
+        {
+          "kind": "electron",
+          "pid": 679927,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "pidAbsent": true,
+          "forced": false
+        },
+        {
+          "kind": "bus",
+          "unexpected": false,
+          "pid": 679820,
+          "exit": {
+            "code": null,
+            "signal": "SIGTERM"
+          },
+          "pidAbsent": true,
+          "forced": false
+        }
+      ],
+      "rendererErrors": [],
+      "cleanupError": null
+    },
+    {
+      "name": "atlas-layout",
+      "file": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-final-20261029/atlas-layout/failure.json",
+      "launches": [
+        {
+          "pid": 680331,
+          "pidAbsentNow": true,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "receiptPidAbsent": null
+        }
+      ],
+      "cleanup": [
+        {
+          "kind": "electron",
+          "pid": 680331,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "pidAbsent": true,
+          "forced": false
+        },
+        {
+          "kind": "bus",
+          "unexpected": false,
+          "pid": 680328,
+          "exit": {
+            "code": null,
+            "signal": "SIGTERM"
+          },
+          "pidAbsent": true,
+          "forced": false
+        }
+      ],
+      "rendererErrors": [],
+      "cleanupError": null
+    },
+    {
+      "name": "atlas-main-camera",
+      "file": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-final-20261029/atlas-main-camera/failure.json",
+      "launches": [
+        {
+          "pid": 680599,
+          "pidAbsentNow": true,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "receiptPidAbsent": true
+        }
+      ],
+      "cleanup": [
+        {
+          "kind": "bus",
+          "unexpected": false,
+          "pid": 680596,
+          "exit": {
+            "code": null,
+            "signal": "SIGTERM"
+          },
+          "pidAbsent": true,
+          "forced": false
+        }
+      ],
+      "rendererErrors": [],
+      "cleanupError": null
+    },
+    {
+      "name": "atlas-main-camera-city-only",
+      "file": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-final-20261029/atlas-main-camera-city-only/failure.json",
+      "launches": [
+        {
+          "pid": 680788,
+          "pidAbsentNow": true,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "receiptPidAbsent": true
+        }
+      ],
+      "cleanup": [
+        {
+          "kind": "bus",
+          "unexpected": false,
+          "pid": 680785,
+          "exit": {
+            "code": null,
+            "signal": "SIGTERM"
+          },
+          "pidAbsent": true,
+          "forced": false
+        }
+      ],
+      "rendererErrors": [],
+      "cleanupError": null
+    },
+    {
+      "name": "atlas-main-camera-raised-floor",
+      "file": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-final-20261029/atlas-main-camera-raised-floor/failure.json",
+      "launches": [
+        {
+          "pid": 681033,
+          "pidAbsentNow": true,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "receiptPidAbsent": true
+        }
+      ],
+      "cleanup": [
+        {
+          "kind": "bus",
+          "unexpected": false,
+          "pid": 681030,
+          "exit": {
+            "code": null,
+            "signal": "SIGTERM"
+          },
+          "pidAbsent": true,
+          "forced": false
+        }
+      ],
+      "rendererErrors": [],
+      "cleanupError": null
+    },
+    {
+      "name": "atlas-measurements",
+      "file": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-final-20261029/atlas-measurements/failure.json",
+      "launches": [
+        {
+          "pid": 681749,
+          "pidAbsentNow": true,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "receiptPidAbsent": null
+        }
+      ],
+      "cleanup": [
+        {
+          "kind": "electron",
+          "pid": 681749,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "pidAbsent": true,
+          "forced": false
+        },
+        {
+          "kind": "bus",
+          "unexpected": false,
+          "pid": 681746,
+          "exit": {
+            "code": null,
+            "signal": "SIGTERM"
+          },
+          "pidAbsent": true,
+          "forced": false
+        }
+      ],
+      "rendererErrors": [],
+      "cleanupError": null
+    },
+    {
+      "name": "atlas-multiscale-performance",
+      "file": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-final-20261029/atlas-multiscale-performance/failure.json",
+      "launches": [
+        {
+          "pid": 687092,
+          "pidAbsentNow": true,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "receiptPidAbsent": null
+        }
+      ],
+      "cleanup": [
+        {
+          "kind": "electron",
+          "pid": 687092,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "pidAbsent": true,
+          "forced": false
+        },
+        {
+          "kind": "bus",
+          "unexpected": false,
+          "pid": 687087,
+          "exit": {
+            "code": null,
+            "signal": "SIGTERM"
+          },
+          "pidAbsent": true,
+          "forced": false
+        }
+      ],
+      "rendererErrors": [],
+      "cleanupError": null
+    },
+    {
+      "name": "atlas-navigation-pending",
+      "file": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-final-20261029/atlas-navigation-pending/1793266187601-690653/failure.json",
+      "launches": [
+        {
+          "pid": 690683,
+          "pidAbsentNow": true,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "receiptPidAbsent": null
+        }
+      ],
+      "cleanup": [
+        {
+          "kind": "electron",
+          "pid": 690683,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "pidAbsent": true,
+          "forced": false
+        },
+        {
+          "kind": "bus",
+          "unexpected": false,
+          "pid": 690680,
+          "exit": {
+            "code": null,
+            "signal": "SIGTERM"
+          },
+          "pidAbsent": true,
+          "forced": false
+        }
+      ],
+      "rendererErrors": [],
+      "cleanupError": null
+    },
+    {
+      "name": "atlas-navigation-terrain",
+      "file": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-final-20261029/atlas-navigation-terrain/failure.json",
+      "launches": [
+        {
+          "pid": 690851,
+          "pidAbsentNow": true,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "receiptPidAbsent": null
+        }
+      ],
+      "cleanup": [
+        {
+          "kind": "electron",
+          "pid": 690851,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "pidAbsent": true,
+          "forced": false
+        },
+        {
+          "kind": "bus",
+          "unexpected": false,
+          "pid": 690848,
+          "exit": {
+            "code": null,
+            "signal": "SIGTERM"
+          },
+          "pidAbsent": true,
+          "forced": false
+        }
+      ],
+      "rendererErrors": [],
+      "cleanupError": null
+    },
+    {
+      "name": "atlas-navigation-terrain-world-room",
+      "file": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-final-20261029/atlas-navigation-terrain-world-room/failure.json",
+      "launches": [
+        {
+          "pid": 691059,
+          "pidAbsentNow": true,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "receiptPidAbsent": true
+        }
+      ],
+      "cleanup": [
+        {
+          "kind": "bus",
+          "unexpected": false,
+          "pid": 691054,
+          "exit": {
+            "code": null,
+            "signal": "SIGTERM"
+          },
+          "pidAbsent": true,
+          "forced": false
+        }
+      ],
+      "rendererErrors": [],
+      "cleanupError": null
+    },
+    {
+      "name": "atlas-navigation",
+      "file": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-final-20261029/atlas-navigation/failure.json",
+      "launches": [
+        {
+          "pid": 691254,
+          "pidAbsentNow": true,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "receiptPidAbsent": null
+        }
+      ],
+      "cleanup": [
+        {
+          "kind": "electron",
+          "pid": 691254,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "pidAbsent": true,
+          "forced": false
+        },
+        {
+          "kind": "bus",
+          "unexpected": false,
+          "pid": 691251,
+          "exit": {
+            "code": null,
+            "signal": "SIGTERM"
+          },
+          "pidAbsent": true,
+          "forced": false
+        }
+      ],
+      "rendererErrors": [],
+      "cleanupError": null
+    },
+    {
+      "name": "atlas-objects-main",
+      "file": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-final-20261029/atlas-objects-main/failure.json",
+      "launches": [
+        {
+          "pid": 691472,
+          "pidAbsentNow": true,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "receiptPidAbsent": null
+        }
+      ],
+      "cleanup": [
+        {
+          "kind": "electron",
+          "pid": 691472,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "pidAbsent": true,
+          "forced": false
+        },
+        {
+          "kind": "bus",
+          "unexpected": false,
+          "pid": 691469,
+          "exit": {
+            "code": null,
+            "signal": "SIGTERM"
+          },
+          "pidAbsent": true,
+          "forced": false
+        }
+      ],
+      "rendererErrors": [],
+      "cleanupError": null
+    },
+    {
+      "name": "atlas-raster-workbench",
+      "file": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-final-20261029/atlas-raster-workbench/failure.json",
+      "launches": [
+        {
+          "pid": 692240,
+          "pidAbsentNow": true,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "receiptPidAbsent": null
+        }
+      ],
+      "cleanup": [
+        {
+          "kind": "electron",
+          "pid": 692240,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "pidAbsent": true,
+          "forced": false
+        },
+        {
+          "kind": "bus",
+          "unexpected": false,
+          "pid": 692237,
+          "exit": {
+            "code": null,
+            "signal": "SIGTERM"
+          },
+          "pidAbsent": true,
+          "forced": false
+        }
+      ],
+      "rendererErrors": [],
+      "cleanupError": null
+    },
+    {
+      "name": "atlas-terrain-stroke",
+      "file": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-final-20261029/atlas-terrain-stroke/failure.json",
+      "launches": [
+        {
+          "pid": 693124,
+          "pidAbsentNow": true,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "receiptPidAbsent": true
+        },
+        {
+          "pid": 693253,
+          "pidAbsentNow": true,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "receiptPidAbsent": true
+        }
+      ],
+      "cleanup": [
+        {
+          "kind": "bus",
+          "unexpected": false,
+          "pid": 693121,
+          "exit": {
+            "code": null,
+            "signal": "SIGTERM"
+          },
+          "pidAbsent": true,
+          "forced": false
+        }
+      ],
+      "rendererErrors": [],
+      "cleanupError": null
+    },
+    {
+      "name": "atlas-terrain-stroke-recovery",
+      "file": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-final-20261029/atlas-terrain-stroke-recovery/failure.json",
+      "launches": [
+        {
+          "pid": 693411,
+          "pidAbsentNow": true,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "receiptPidAbsent": true
+        },
+        {
+          "pid": 693616,
+          "pidAbsentNow": true,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "receiptPidAbsent": true
+        }
+      ],
+      "cleanup": [
+        {
+          "kind": "bus",
+          "unexpected": false,
+          "pid": 693408,
+          "exit": {
+            "code": null,
+            "signal": "SIGTERM"
+          },
+          "pidAbsent": true,
+          "forced": false
+        }
+      ],
+      "rendererErrors": [],
+      "cleanupError": null
+    },
+    {
+      "name": "atlas-terrain-stroke-recovery-only-drop-followup",
+      "file": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-final-20261029/atlas-terrain-stroke-recovery-only-drop-followup/failure.json",
+      "launches": [
+        {
+          "pid": 694162,
+          "pidAbsentNow": true,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "receiptPidAbsent": true
+        },
+        {
+          "pid": 694296,
+          "pidAbsentNow": true,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "receiptPidAbsent": true
+        }
+      ],
+      "cleanup": [
+        {
+          "kind": "bus",
+          "unexpected": false,
+          "pid": 694159,
+          "exit": {
+            "code": null,
+            "signal": "SIGTERM"
+          },
+          "pidAbsent": true,
+          "forced": false
+        }
+      ],
+      "rendererErrors": [],
+      "cleanupError": null
+    },
+    {
+      "name": "atlas-terrain-stroke-basic-tools",
+      "file": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-final-20261029/atlas-terrain-stroke-basic-tools/failure.json",
+      "launches": [
+        {
+          "pid": 694860,
+          "pidAbsentNow": true,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "receiptPidAbsent": true
+        }
+      ],
+      "cleanup": [
+        {
+          "kind": "bus",
+          "unexpected": false,
+          "pid": 694852,
+          "exit": {
+            "code": null,
+            "signal": "SIGTERM"
+          },
+          "pidAbsent": true,
+          "forced": false
+        }
+      ],
+      "rendererErrors": [],
+      "cleanupError": null
+    },
+    {
+      "name": "atlas-terrain-stroke-forms",
+      "file": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-final-20261029/atlas-terrain-stroke-forms/failure.json",
+      "launches": [
+        {
+          "pid": 695063,
+          "pidAbsentNow": true,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "receiptPidAbsent": true
+        }
+      ],
+      "cleanup": [
+        {
+          "kind": "bus",
+          "unexpected": false,
+          "pid": 695060,
+          "exit": {
+            "code": null,
+            "signal": "SIGTERM"
+          },
+          "pidAbsent": true,
+          "forced": false
+        }
+      ],
+      "rendererErrors": [],
+      "cleanupError": null
+    },
+    {
+      "name": "atlas-terrain-stroke-multiscale",
+      "file": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-final-20261029/atlas-terrain-stroke-multiscale/failure.json",
+      "launches": [
+        {
+          "pid": 695342,
+          "pidAbsentNow": true,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "receiptPidAbsent": true
+        }
+      ],
+      "cleanup": [
+        {
+          "kind": "bus",
+          "unexpected": false,
+          "pid": 695339,
+          "exit": {
+            "code": null,
+            "signal": "SIGTERM"
+          },
+          "pidAbsent": true,
+          "forced": false
+        }
+      ],
+      "rendererErrors": [],
+      "cleanupError": null
+    },
+    {
+      "name": "atlas-transition",
+      "file": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-final-20261029/atlas-transition/failure.json",
+      "launches": [
+        {
+          "pid": 695887,
+          "pidAbsentNow": true,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "receiptPidAbsent": null
+        }
+      ],
+      "cleanup": [
+        {
+          "kind": "electron",
+          "pid": 695887,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "pidAbsent": true,
+          "forced": false
+        },
+        {
+          "kind": "bus",
+          "unexpected": false,
+          "pid": 695884,
+          "exit": {
+            "code": null,
+            "signal": "SIGTERM"
+          },
+          "pidAbsent": true,
+          "forced": false
+        }
+      ],
+      "rendererErrors": [],
+      "cleanupError": null
+    },
+    {
+      "name": "atlas-viewport",
+      "file": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-final-20261029/atlas-viewport/failure.json",
+      "launches": [
+        {
+          "pid": 696117,
+          "pidAbsentNow": true,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "receiptPidAbsent": null
+        }
+      ],
+      "cleanup": [
+        {
+          "kind": "electron",
+          "pid": 696117,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "pidAbsent": true,
+          "forced": false
+        },
+        {
+          "kind": "bus",
+          "unexpected": false,
+          "pid": 696114,
+          "exit": {
+            "code": null,
+            "signal": "SIGTERM"
+          },
+          "pidAbsent": true,
+          "forced": false
+        }
+      ],
+      "rendererErrors": [],
+      "cleanupError": null
+    },
+    {
+      "name": "campaign-transfer-visit-fail-import-atlas",
+      "file": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-final-20261029/campaign-transfer-visit-fail-import-atlas/failure.json",
+      "launches": [
+        {
+          "pid": 697794,
+          "pidAbsentNow": true,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "receiptPidAbsent": true
+        }
+      ],
+      "cleanup": [
+        {
+          "kind": "bus",
+          "unexpected": false,
+          "pid": 697791,
+          "exit": {
+            "code": null,
+            "signal": "SIGTERM"
+          },
+          "pidAbsent": true,
+          "forced": false
+        }
+      ],
+      "rendererErrors": [],
+      "cleanupError": null
+    },
+    {
+      "name": "canvas-recovery",
+      "file": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-final-20261029/canvas-recovery/failure.json",
+      "launches": [
+        {
+          "pid": 698294,
+          "pidAbsentNow": true,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "receiptPidAbsent": null
+        }
+      ],
+      "cleanup": [
+        {
+          "kind": "electron",
+          "pid": 698294,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "pidAbsent": true,
+          "forced": false
+        },
+        {
+          "kind": "bus",
+          "unexpected": false,
+          "pid": 698291,
+          "exit": {
+            "code": null,
+            "signal": "SIGTERM"
+          },
+          "pidAbsent": true,
+          "forced": false
+        }
+      ],
+      "rendererErrors": [],
+      "cleanupError": null
+    },
+    {
+      "name": "catalog-combat",
+      "file": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-final-20261029/catalog-combat/failure.json",
+      "launches": [
+        {
+          "pid": 698491,
+          "pidAbsentNow": true,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "receiptPidAbsent": null
+        }
+      ],
+      "cleanup": [
+        {
+          "kind": "electron",
+          "pid": 698491,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "pidAbsent": true,
+          "forced": false
+        },
+        {
+          "kind": "bus",
+          "unexpected": false,
+          "pid": 698488,
+          "exit": {
+            "code": null,
+            "signal": "SIGTERM"
+          },
+          "pidAbsent": true,
+          "forced": false
+        }
+      ],
+      "rendererErrors": [],
+      "cleanupError": null
+    },
+    {
+      "name": "combat-drafts",
+      "file": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-final-20261029/combat-drafts/failure.json",
+      "launches": [
+        {
+          "pid": 700124,
+          "pidAbsentNow": true,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "receiptPidAbsent": null
+        }
+      ],
+      "cleanup": [
+        {
+          "kind": "electron",
+          "pid": 700124,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "pidAbsent": true,
+          "forced": false
+        },
+        {
+          "kind": "bus",
+          "unexpected": false,
+          "pid": 700121,
+          "exit": {
+            "code": null,
+            "signal": "SIGTERM"
+          },
+          "pidAbsent": true,
+          "forced": false
+        }
+      ],
+      "rendererErrors": [],
+      "cleanupError": null
+    },
+    {
+      "name": "connected-room-prep",
+      "file": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-final-20261029/connected-room-prep/failure.json",
+      "launches": [
+        {
+          "pid": 701380,
+          "pidAbsentNow": true,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "receiptPidAbsent": true
+        }
+      ],
+      "cleanup": [
+        {
+          "kind": "bus",
+          "unexpected": false,
+          "pid": 701377,
+          "exit": {
+            "code": null,
+            "signal": "SIGTERM"
+          },
+          "pidAbsent": true,
+          "forced": false
+        }
+      ],
+      "rendererErrors": [],
+      "cleanupError": null
+    },
+    {
+      "name": "context-help",
+      "file": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-final-20261029/context-help/failure.json",
+      "launches": [
+        {
+          "pid": 701568,
+          "pidAbsentNow": true,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "receiptPidAbsent": null
+        }
+      ],
+      "cleanup": [
+        {
+          "kind": "electron",
+          "pid": 701568,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "pidAbsent": true,
+          "forced": false
+        },
+        {
+          "kind": "bus",
+          "unexpected": false,
+          "pid": 701565,
+          "exit": {
+            "code": null,
+            "signal": "SIGTERM"
+          },
+          "pidAbsent": true,
+          "forced": false
+        }
+      ],
+      "rendererErrors": [],
+      "cleanupError": null
+    },
+    {
+      "name": "desk-search",
+      "file": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-final-20261029/desk-search/failure.json",
+      "launches": [
+        {
+          "pid": 702526,
+          "pidAbsentNow": true,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "receiptPidAbsent": null
+        }
+      ],
+      "cleanup": [
+        {
+          "kind": "electron",
+          "pid": 702526,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "pidAbsent": true,
+          "forced": false
+        },
+        {
+          "kind": "bus",
+          "unexpected": false,
+          "pid": 702523,
+          "exit": {
+            "code": null,
+            "signal": "SIGTERM"
+          },
+          "pidAbsent": true,
+          "forced": false
+        }
+      ],
+      "rendererErrors": [],
+      "cleanupError": null
+    },
+    {
+      "name": "dungeon-groundplan",
+      "file": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-final-20261029/dungeon-groundplan/1/failure.json",
+      "launches": [
+        {
+          "pid": 704244,
+          "pidAbsentNow": true,
+          "exit": {
+            "code": null,
+            "signal": "SIGKILL"
+          },
+          "receiptPidAbsent": null
+        }
+      ],
+      "cleanup": [
+        {
+          "kind": "electron",
+          "pid": 704244,
+          "exit": {
+            "code": null,
+            "signal": "SIGKILL"
+          },
+          "pidAbsent": true,
+          "forced": true
+        },
+        {
+          "kind": "bus",
+          "unexpected": false,
+          "pid": 704241,
+          "exit": {
+            "code": null,
+            "signal": "SIGTERM"
+          },
+          "pidAbsent": true,
+          "forced": false
+        }
+      ],
+      "rendererErrors": [],
+      "cleanupError": null
+    },
+    {
+      "name": "fractal-strokes",
+      "file": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-final-20261029/fractal-strokes/failure.json",
+      "launches": [
+        {
+          "pid": 710049,
+          "pidAbsentNow": true,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "receiptPidAbsent": null
+        }
+      ],
+      "cleanup": [
+        {
+          "kind": "electron",
+          "pid": 710049,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "pidAbsent": true,
+          "forced": false
+        },
+        {
+          "kind": "bus",
+          "unexpected": false,
+          "pid": 710046,
+          "exit": {
+            "code": null,
+            "signal": "SIGTERM"
+          },
+          "pidAbsent": true,
+          "forced": false
+        }
+      ],
+      "rendererErrors": [],
+      "cleanupError": null
+    },
+    {
+      "name": "height-workflow",
+      "file": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-final-20261029/height-workflow/failure.json",
+      "launches": [
+        {
+          "pid": 711160,
+          "pidAbsentNow": true,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "receiptPidAbsent": null
+        }
+      ],
+      "cleanup": [
+        {
+          "kind": "electron",
+          "pid": 711160,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "pidAbsent": true,
+          "forced": false
+        },
+        {
+          "kind": "bus",
+          "unexpected": false,
+          "pid": 711157,
+          "exit": {
+            "code": null,
+            "signal": "SIGTERM"
+          },
+          "pidAbsent": true,
+          "forced": false
+        }
+      ],
+      "rendererErrors": [],
+      "cleanupError": null
+    },
+    {
+      "name": "key-lookup",
+      "file": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-final-20261029/key-lookup/failure.json",
+      "launches": [
+        {
+          "pid": 711690,
+          "pidAbsentNow": true,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "receiptPidAbsent": null
+        }
+      ],
+      "cleanup": [
+        {
+          "kind": "electron",
+          "pid": 711690,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "pidAbsent": true,
+          "forced": false
+        },
+        {
+          "kind": "bus",
+          "unexpected": false,
+          "pid": 711687,
+          "exit": {
+            "code": null,
+            "signal": "SIGTERM"
+          },
+          "pidAbsent": true,
+          "forced": false
+        }
+      ],
+      "rendererErrors": [],
+      "cleanupError": null
+    },
+    {
+      "name": "key-note-capture",
+      "file": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-final-20261029/key-note-capture/failure.json",
+      "launches": [
+        {
+          "pid": 711865,
+          "pidAbsentNow": true,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "receiptPidAbsent": null
+        }
+      ],
+      "cleanup": [
+        {
+          "kind": "electron",
+          "pid": 711865,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "pidAbsent": true,
+          "forced": false
+        },
+        {
+          "kind": "bus",
+          "unexpected": false,
+          "pid": 711862,
+          "exit": {
+            "code": null,
+            "signal": "SIGTERM"
+          },
+          "pidAbsent": true,
+          "forced": false
+        }
+      ],
+      "rendererErrors": [],
+      "cleanupError": null
+    },
+    {
+      "name": "key-note-context",
+      "file": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-final-20261029/key-note-context/failure.json",
+      "launches": [
+        {
+          "pid": 712077,
+          "pidAbsentNow": true,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "receiptPidAbsent": null
+        }
+      ],
+      "cleanup": [
+        {
+          "kind": "electron",
+          "pid": 712077,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "pidAbsent": true,
+          "forced": false
+        },
+        {
+          "kind": "bus",
+          "unexpected": false,
+          "pid": 712074,
+          "exit": {
+            "code": null,
+            "signal": "SIGTERM"
+          },
+          "pidAbsent": true,
+          "forced": false
+        }
+      ],
+      "rendererErrors": [],
+      "cleanupError": null
+    },
+    {
+      "name": "key-note-context-nested",
+      "file": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-final-20261029/key-note-context-nested/failure.json",
+      "launches": [
+        {
+          "pid": 712242,
+          "pidAbsentNow": true,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "receiptPidAbsent": null
+        }
+      ],
+      "cleanup": [
+        {
+          "kind": "electron",
+          "pid": 712242,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "pidAbsent": true,
+          "forced": false
+        },
+        {
+          "kind": "bus",
+          "unexpected": false,
+          "pid": 712239,
+          "exit": {
+            "code": null,
+            "signal": "SIGTERM"
+          },
+          "pidAbsent": true,
+          "forced": false
+        }
+      ],
+      "rendererErrors": [],
+      "cleanupError": null
+    },
+    {
+      "name": "key-note-context-unlink",
+      "file": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-final-20261029/key-note-context-unlink/failure.json",
+      "launches": [
+        {
+          "pid": 712408,
+          "pidAbsentNow": true,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "receiptPidAbsent": null
+        }
+      ],
+      "cleanup": [
+        {
+          "kind": "electron",
+          "pid": 712408,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "pidAbsent": true,
+          "forced": false
+        },
+        {
+          "kind": "bus",
+          "unexpected": false,
+          "pid": 712405,
+          "exit": {
+            "code": null,
+            "signal": "SIGTERM"
+          },
+          "pidAbsent": true,
+          "forced": false
+        }
+      ],
+      "rendererErrors": [],
+      "cleanupError": null
+    },
+    {
+      "name": "land-mask",
+      "file": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-final-20261029/land-mask/failure.json",
+      "launches": [
+        {
+          "pid": 712578,
+          "pidAbsentNow": true,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "receiptPidAbsent": null
+        }
+      ],
+      "cleanup": [
+        {
+          "kind": "electron",
+          "pid": 712578,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "pidAbsent": true,
+          "forced": false
+        },
+        {
+          "kind": "bus",
+          "unexpected": false,
+          "pid": 712575,
+          "exit": {
+            "code": null,
+            "signal": "SIGTERM"
+          },
+          "pidAbsent": true,
+          "forced": false
+        }
+      ],
+      "rendererErrors": [],
+      "cleanupError": null
+    },
+    {
+      "name": "landscape-tools",
+      "file": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-final-20261029/landscape-tools/failure.json",
+      "launches": [
+        {
+          "pid": 712761,
+          "pidAbsentNow": true,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "receiptPidAbsent": null
+        }
+      ],
+      "cleanup": [
+        {
+          "kind": "electron",
+          "pid": 712761,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "pidAbsent": true,
+          "forced": false
+        },
+        {
+          "kind": "bus",
+          "unexpected": false,
+          "pid": 712758,
+          "exit": {
+            "code": null,
+            "signal": "SIGTERM"
+          },
+          "pidAbsent": true,
+          "forced": false
+        }
+      ],
+      "rendererErrors": [],
+      "cleanupError": null
+    },
+    {
+      "name": "ledger-switch",
+      "file": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-final-20261029/ledger-switch/failure.json",
+      "launches": [
+        {
+          "pid": 712934,
+          "pidAbsentNow": true,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "receiptPidAbsent": null
+        }
+      ],
+      "cleanup": [
+        {
+          "kind": "electron",
+          "pid": 712934,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "pidAbsent": true,
+          "forced": false
+        },
+        {
+          "kind": "bus",
+          "unexpected": false,
+          "pid": 712931,
+          "exit": {
+            "code": null,
+            "signal": "SIGTERM"
+          },
+          "pidAbsent": true,
+          "forced": false
+        }
+      ],
+      "rendererErrors": [],
+      "cleanupError": null
+    },
+    {
+      "name": "long-key",
+      "file": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-final-20261029/long-key/failure.json",
+      "launches": [
+        {
+          "pid": 713700,
+          "pidAbsentNow": true,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "receiptPidAbsent": null
+        }
+      ],
+      "cleanup": [
+        {
+          "kind": "electron",
+          "pid": 713700,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "pidAbsent": true,
+          "forced": false
+        },
+        {
+          "kind": "bus",
+          "unexpected": false,
+          "pid": 713697,
+          "exit": {
+            "code": null,
+            "signal": "SIGTERM"
+          },
+          "pidAbsent": true,
+          "forced": false
+        }
+      ],
+      "rendererErrors": [],
+      "cleanupError": null
+    },
+    {
+      "name": "mask-history",
+      "file": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-final-20261029/mask-history/failure.json",
+      "launches": [
+        {
+          "pid": 714514,
+          "pidAbsentNow": true,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "receiptPidAbsent": null
+        }
+      ],
+      "cleanup": [
+        {
+          "kind": "electron",
+          "pid": 714514,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "pidAbsent": true,
+          "forced": false
+        },
+        {
+          "kind": "bus",
+          "unexpected": false,
+          "pid": 714511,
+          "exit": {
+            "code": null,
+            "signal": "SIGTERM"
+          },
+          "pidAbsent": true,
+          "forced": false
+        }
+      ],
+      "rendererErrors": [],
+      "cleanupError": null
+    },
+    {
+      "name": "mountain-material",
+      "file": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-final-20261029/mountain-material/failure.json",
+      "launches": [
+        {
+          "pid": 715026,
+          "pidAbsentNow": true,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "receiptPidAbsent": null
+        }
+      ],
+      "cleanup": [
+        {
+          "kind": "electron",
+          "pid": 715026,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "pidAbsent": true,
+          "forced": false
+        },
+        {
+          "kind": "bus",
+          "unexpected": false,
+          "pid": 715021,
+          "exit": {
+            "code": null,
+            "signal": "SIGTERM"
+          },
+          "pidAbsent": true,
+          "forced": false
+        }
+      ],
+      "rendererErrors": [],
+      "cleanupError": null
+    },
+    {
+      "name": "note-excerpts",
+      "file": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-final-20261029/note-excerpts/failure.json",
+      "launches": [
+        {
+          "pid": 715922,
+          "pidAbsentNow": true,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "receiptPidAbsent": true
+        }
+      ],
+      "cleanup": [
+        {
+          "kind": "bus",
+          "unexpected": false,
+          "pid": 715919,
+          "exit": {
+            "code": null,
+            "signal": "SIGTERM"
+          },
+          "pidAbsent": true,
+          "forced": false
+        }
+      ],
+      "rendererErrors": [],
+      "cleanupError": null
+    },
+    {
+      "name": "note-reopen",
+      "file": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-final-20261029/note-reopen/failure.json",
+      "launches": [
+        {
+          "pid": 717509,
+          "pidAbsentNow": true,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "receiptPidAbsent": null
+        }
+      ],
+      "cleanup": [
+        {
+          "kind": "electron",
+          "pid": 717509,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "pidAbsent": true,
+          "forced": false
+        },
+        {
+          "kind": "bus",
+          "unexpected": false,
+          "pid": 717506,
+          "exit": {
+            "code": null,
+            "signal": "SIGTERM"
+          },
+          "pidAbsent": true,
+          "forced": false
+        }
+      ],
+      "rendererErrors": [],
+      "cleanupError": null
+    },
+    {
+      "name": "npc-conversation",
+      "file": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-final-20261029/npc-conversation/1/result.json",
+      "launches": [
+        {
+          "pid": 720391,
+          "pidAbsentNow": true,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "receiptPidAbsent": true
+        },
+        {
+          "pid": 720499,
+          "pidAbsentNow": true,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "receiptPidAbsent": true
+        },
+        {
+          "pid": 720591,
+          "pidAbsentNow": true,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "receiptPidAbsent": true
+        }
+      ],
+      "cleanup": [
+        {
+          "kind": "bus",
+          "unexpected": false,
+          "pid": 720388,
+          "exit": {
+            "code": null,
+            "signal": "SIGTERM"
+          },
+          "pidAbsent": true,
+          "forced": false
+        }
+      ],
+      "rendererErrors": [],
+      "cleanupError": null
+    },
+    {
+      "name": "npc-rename",
+      "file": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-final-20261029/npc-rename/failure.json",
+      "launches": [
+        {
+          "pid": 721039,
+          "pidAbsentNow": true,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "receiptPidAbsent": null
+        }
+      ],
+      "cleanup": [
+        {
+          "kind": "electron",
+          "pid": 721039,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "pidAbsent": true,
+          "forced": false
+        },
+        {
+          "kind": "bus",
+          "unexpected": false,
+          "pid": 721036,
+          "exit": {
+            "code": null,
+            "signal": "SIGTERM"
+          },
+          "pidAbsent": true,
+          "forced": false
+        }
+      ],
+      "rendererErrors": [],
+      "cleanupError": null
+    },
+    {
+      "name": "player-blank",
+      "file": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-final-20261029/player-blank/failure.json",
+      "launches": [
+        {
+          "pid": 722642,
+          "pidAbsentNow": true,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "receiptPidAbsent": null
+        }
+      ],
+      "cleanup": [
+        {
+          "kind": "electron",
+          "pid": 722642,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "pidAbsent": true,
+          "forced": false
+        },
+        {
+          "kind": "bus",
+          "unexpected": false,
+          "pid": 722639,
+          "exit": {
+            "code": null,
+            "signal": "SIGTERM"
+          },
+          "pidAbsent": true,
+          "forced": false
+        }
+      ],
+      "rendererErrors": [],
+      "cleanupError": null
+    },
+    {
+      "name": "player-blank-pending",
+      "file": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-final-20261029/player-blank-pending/failure.json",
+      "launches": [
+        {
+          "pid": 722815,
+          "pidAbsentNow": true,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "receiptPidAbsent": null
+        }
+      ],
+      "cleanup": [
+        {
+          "kind": "electron",
+          "pid": 722815,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "pidAbsent": true,
+          "forced": false
+        },
+        {
+          "kind": "bus",
+          "unexpected": false,
+          "pid": 722812,
+          "exit": {
+            "code": null,
+            "signal": "SIGTERM"
+          },
+          "pidAbsent": true,
+          "forced": false
+        }
+      ],
+      "rendererErrors": [],
+      "cleanupError": null
+    },
+    {
+      "name": "player-blank-combat",
+      "file": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-final-20261029/player-blank-combat/failure.json",
+      "launches": [
+        {
+          "pid": 722986,
+          "pidAbsentNow": true,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "receiptPidAbsent": null
+        }
+      ],
+      "cleanup": [
+        {
+          "kind": "electron",
+          "pid": 722986,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "pidAbsent": true,
+          "forced": false
+        },
+        {
+          "kind": "bus",
+          "unexpected": false,
+          "pid": 722983,
+          "exit": {
+            "code": null,
+            "signal": "SIGTERM"
+          },
+          "pidAbsent": true,
+          "forced": false
+        }
+      ],
+      "rendererErrors": [],
+      "cleanupError": null
+    },
+    {
+      "name": "player-blank-chase",
+      "file": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-final-20261029/player-blank-chase/failure.json",
+      "launches": [
+        {
+          "pid": 723197,
+          "pidAbsentNow": true,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "receiptPidAbsent": null
+        }
+      ],
+      "cleanup": [
+        {
+          "kind": "electron",
+          "pid": 723197,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "pidAbsent": true,
+          "forced": false
+        },
+        {
+          "kind": "bus",
+          "unexpected": false,
+          "pid": 723194,
+          "exit": {
+            "code": null,
+            "signal": "SIGTERM"
+          },
+          "pidAbsent": true,
+          "forced": false
+        }
+      ],
+      "rendererErrors": [],
+      "cleanupError": null
+    },
+    {
+      "name": "player-blank-combat-pending",
+      "file": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-final-20261029/player-blank-combat-pending/failure.json",
+      "launches": [
+        {
+          "pid": 723367,
+          "pidAbsentNow": true,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "receiptPidAbsent": null
+        }
+      ],
+      "cleanup": [
+        {
+          "kind": "electron",
+          "pid": 723367,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "pidAbsent": true,
+          "forced": false
+        },
+        {
+          "kind": "bus",
+          "unexpected": false,
+          "pid": 723364,
+          "exit": {
+            "code": null,
+            "signal": "SIGTERM"
+          },
+          "pidAbsent": true,
+          "forced": false
+        }
+      ],
+      "rendererErrors": [],
+      "cleanupError": null
+    },
+    {
+      "name": "player-blank-chase-pending",
+      "file": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-final-20261029/player-blank-chase-pending/failure.json",
+      "launches": [
+        {
+          "pid": 723598,
+          "pidAbsentNow": true,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "receiptPidAbsent": null
+        }
+      ],
+      "cleanup": [
+        {
+          "kind": "electron",
+          "pid": 723598,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "pidAbsent": true,
+          "forced": false
+        },
+        {
+          "kind": "bus",
+          "unexpected": false,
+          "pid": 723595,
+          "exit": {
+            "code": null,
+            "signal": "SIGTERM"
+          },
+          "pidAbsent": true,
+          "forced": false
+        }
+      ],
+      "rendererErrors": [],
+      "cleanupError": null
+    },
+    {
+      "name": "review-integrity",
+      "file": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-final-20261029/review-integrity/failure.json",
+      "launches": [
+        {
+          "pid": 728483,
+          "pidAbsentNow": true,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "receiptPidAbsent": null
+        }
+      ],
+      "cleanup": [
+        {
+          "kind": "electron",
+          "pid": 728483,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "pidAbsent": true,
+          "forced": false
+        },
+        {
+          "kind": "bus",
+          "unexpected": false,
+          "pid": 728471,
+          "exit": {
+            "code": null,
+            "signal": "SIGTERM"
+          },
+          "pidAbsent": true,
+          "forced": false
+        }
+      ],
+      "rendererErrors": [],
+      "cleanupError": null
+    },
+    {
+      "name": "review-retention",
+      "file": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-final-20261029/review-retention/failure.json",
+      "launches": [
+        {
+          "pid": 728636,
+          "pidAbsentNow": true,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "receiptPidAbsent": true
+        },
+        {
+          "pid": 728757,
+          "pidAbsentNow": true,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "receiptPidAbsent": null
+        }
+      ],
+      "cleanup": [
+        {
+          "kind": "electron",
+          "pid": 728757,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "pidAbsent": true,
+          "forced": false
+        },
+        {
+          "kind": "bus",
+          "unexpected": false,
+          "pid": 728633,
+          "exit": {
+            "code": null,
+            "signal": "SIGTERM"
+          },
+          "pidAbsent": true,
+          "forced": false
+        }
+      ],
+      "rendererErrors": [],
+      "cleanupError": null
+    },
+    {
+      "name": "room-groups",
+      "file": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-final-20261029/room-groups/failure.json",
+      "launches": [
+        {
+          "pid": 728955,
+          "pidAbsentNow": true,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "receiptPidAbsent": true
+        }
+      ],
+      "cleanup": [
+        {
+          "kind": "bus",
+          "unexpected": false,
+          "pid": 728952,
+          "exit": {
+            "code": null,
+            "signal": "SIGTERM"
+          },
+          "pidAbsent": true,
+          "forced": false
+        }
+      ],
+      "rendererErrors": [],
+      "cleanupError": null
+    },
+    {
+      "name": "room-reads-regions",
+      "file": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-final-20261029/room-reads-regions/failure.json",
+      "launches": [
+        {
+          "pid": 729589,
+          "pidAbsentNow": true,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "receiptPidAbsent": null
+        }
+      ],
+      "cleanup": [
+        {
+          "kind": "electron",
+          "pid": 729589,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "pidAbsent": true,
+          "forced": false
+        },
+        {
+          "kind": "bus",
+          "unexpected": false,
+          "pid": 729586,
+          "exit": {
+            "code": null,
+            "signal": "SIGTERM"
+          },
+          "pidAbsent": true,
+          "forced": false
+        }
+      ],
+      "rendererErrors": [],
+      "cleanupError": null
+    },
+    {
+      "name": "shared-template",
+      "file": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-final-20261029/shared-template/failure.json",
+      "launches": [
+        {
+          "pid": 733076,
+          "pidAbsentNow": true,
+          "receiptPidAbsent": null
+        }
+      ],
+      "rendererErrors": [],
+      "cleanupError": null
+    },
+    {
+      "name": "split-knowledge",
+      "file": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-final-20261029/split-knowledge/failure.json",
+      "launches": [
+        {
+          "pid": 733867,
+          "pidAbsentNow": true,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "receiptPidAbsent": null
+        }
+      ],
+      "cleanup": [
+        {
+          "kind": "electron",
+          "pid": 733867,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "pidAbsent": true,
+          "forced": false
+        },
+        {
+          "kind": "bus",
+          "unexpected": false,
+          "pid": 733864,
+          "exit": {
+            "code": null,
+            "signal": "SIGTERM"
+          },
+          "pidAbsent": true,
+          "forced": false
+        }
+      ],
+      "rendererErrors": [],
+      "cleanupError": null
+    },
+    {
+      "name": "template-discovery",
+      "file": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-final-20261029/template-discovery/failure.json",
+      "launches": [
+        {
+          "pid": 734473,
+          "pidAbsentNow": true,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "receiptPidAbsent": null
+        }
+      ],
+      "cleanup": [
+        {
+          "kind": "electron",
+          "pid": 734473,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "pidAbsent": true,
+          "forced": false
+        },
+        {
+          "kind": "bus",
+          "unexpected": false,
+          "pid": 734470,
+          "exit": {
+            "code": null,
+            "signal": "SIGTERM"
+          },
+          "pidAbsent": true,
+          "forced": false
+        }
+      ],
+      "rendererErrors": [],
+      "cleanupError": null
+    },
+    {
+      "name": "terrain-brush",
+      "file": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-final-20261029/terrain-brush/failure.json",
+      "launches": [
+        {
+          "pid": 734671,
+          "pidAbsentNow": true,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "receiptPidAbsent": null
+        }
+      ],
+      "cleanup": [
+        {
+          "kind": "electron",
+          "pid": 734671,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "pidAbsent": true,
+          "forced": false
+        },
+        {
+          "kind": "bus",
+          "unexpected": false,
+          "pid": 734668,
+          "exit": {
+            "code": null,
+            "signal": "SIGTERM"
+          },
+          "pidAbsent": true,
+          "forced": false
+        }
+      ],
+      "rendererErrors": [],
+      "cleanupError": null
+    },
+    {
+      "name": "terrain-height",
+      "file": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-final-20261029/terrain-height/failure.json",
+      "launches": [
+        {
+          "pid": 734915,
+          "pidAbsentNow": true,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "receiptPidAbsent": null
+        }
+      ],
+      "cleanup": [
+        {
+          "kind": "electron",
+          "pid": 734915,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "pidAbsent": true,
+          "forced": false
+        },
+        {
+          "kind": "bus",
+          "unexpected": false,
+          "pid": 734912,
+          "exit": {
+            "code": null,
+            "signal": "SIGTERM"
+          },
+          "pidAbsent": true,
+          "forced": false
+        }
+      ],
+      "rendererErrors": [],
+      "cleanupError": null
+    },
+    {
+      "name": "terrain-lakes",
+      "file": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-final-20261029/terrain-lakes/failure.json",
+      "launches": [
+        {
+          "pid": 735137,
+          "pidAbsentNow": true,
+          "exit": {
+            "code": null,
+            "signal": "SIGKILL"
+          },
+          "receiptPidAbsent": null
+        }
+      ],
+      "cleanup": [
+        {
+          "kind": "electron",
+          "pid": 735137,
+          "exit": {
+            "code": null,
+            "signal": "SIGKILL"
+          },
+          "pidAbsent": true,
+          "forced": true
+        },
+        {
+          "kind": "bus",
+          "unexpected": false,
+          "pid": 735134,
+          "exit": {
+            "code": null,
+            "signal": "SIGTERM"
+          },
+          "pidAbsent": true,
+          "forced": false
+        }
+      ],
+      "rendererErrors": [],
+      "cleanupError": null
+    },
+    {
+      "name": "terrain-lakes-lift",
+      "file": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-final-20261029/terrain-lakes-lift/failure.json",
+      "launches": [
+        {
+          "pid": 735439,
+          "pidAbsentNow": true,
+          "exit": {
+            "code": null,
+            "signal": "SIGKILL"
+          },
+          "receiptPidAbsent": null
+        }
+      ],
+      "cleanup": [
+        {
+          "kind": "electron",
+          "pid": 735439,
+          "exit": {
+            "code": null,
+            "signal": "SIGKILL"
+          },
+          "pidAbsent": true,
+          "forced": true
+        },
+        {
+          "kind": "bus",
+          "unexpected": false,
+          "pid": 735426,
+          "exit": {
+            "code": null,
+            "signal": "SIGTERM"
+          },
+          "pidAbsent": true,
+          "forced": false
+        }
+      ],
+      "rendererErrors": [],
+      "cleanupError": null
+    },
+    {
+      "name": "terrain-live",
+      "file": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-final-20261029/terrain-live/failure.json",
+      "launches": [
+        {
+          "pid": 735711,
+          "pidAbsentNow": true,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "receiptPidAbsent": null
+        }
+      ],
+      "cleanup": [
+        {
+          "kind": "electron",
+          "pid": 735711,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "pidAbsent": true,
+          "forced": false
+        },
+        {
+          "kind": "bus",
+          "unexpected": false,
+          "pid": 735704,
+          "exit": {
+            "code": null,
+            "signal": "SIGTERM"
+          },
+          "pidAbsent": true,
+          "forced": false
+        }
+      ],
+      "rendererErrors": [],
+      "cleanupError": null
+    },
+    {
+      "name": "terrain-live-world",
+      "file": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-final-20261029/terrain-live-world/failure.json",
+      "launches": [
+        {
+          "pid": 735873,
+          "pidAbsentNow": true,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "receiptPidAbsent": null
+        }
+      ],
+      "cleanup": [
+        {
+          "kind": "electron",
+          "pid": 735873,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "pidAbsent": true,
+          "forced": false
+        },
+        {
+          "kind": "bus",
+          "unexpected": false,
+          "pid": 735867,
+          "exit": {
+            "code": null,
+            "signal": "SIGTERM"
+          },
+          "pidAbsent": true,
+          "forced": false
+        }
+      ],
+      "rendererErrors": [],
+      "cleanupError": null
+    },
+    {
+      "name": "terrain-live-covered",
+      "file": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-final-20261029/terrain-live-covered/failure.json",
+      "launches": [
+        {
+          "pid": 736023,
+          "pidAbsentNow": true,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "receiptPidAbsent": null
+        }
+      ],
+      "cleanup": [
+        {
+          "kind": "electron",
+          "pid": 736023,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "pidAbsent": true,
+          "forced": false
+        },
+        {
+          "kind": "bus",
+          "unexpected": false,
+          "pid": 736020,
+          "exit": {
+            "code": null,
+            "signal": "SIGTERM"
+          },
+          "pidAbsent": true,
+          "forced": false
+        }
+      ],
+      "rendererErrors": [],
+      "cleanupError": null
+    },
+    {
+      "name": "terrain-relief",
+      "file": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-final-20261029/terrain-relief/1/failure.json",
+      "launches": [
+        {
+          "pid": 736187,
+          "pidAbsentNow": true,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "receiptPidAbsent": null
+        }
+      ],
+      "cleanup": [
+        {
+          "kind": "electron",
+          "pid": 736187,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "pidAbsent": true,
+          "forced": false
+        },
+        {
+          "kind": "bus",
+          "unexpected": false,
+          "pid": 736184,
+          "exit": {
+            "code": null,
+            "signal": "SIGTERM"
+          },
+          "pidAbsent": true,
+          "forced": false
+        }
+      ],
+      "rendererErrors": [],
+      "cleanupError": null
+    },
+    {
+      "name": "terrain-routes-river-only",
+      "file": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-final-20261029/terrain-routes-river-only/failure.json",
+      "launches": [
+        {
+          "pid": 736701,
+          "pidAbsentNow": true,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "receiptPidAbsent": true
+        },
+        {
+          "pid": 737076,
+          "pidAbsentNow": true,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "receiptPidAbsent": null
+        }
+      ],
+      "cleanup": [
+        {
+          "kind": "electron",
+          "pid": 737076,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "pidAbsent": true,
+          "forced": false
+        },
+        {
+          "kind": "bus",
+          "unexpected": false,
+          "pid": 736698,
+          "exit": {
+            "code": null,
+            "signal": "SIGTERM"
+          },
+          "pidAbsent": true,
+          "forced": false
+        }
+      ],
+      "rendererErrors": [],
+      "cleanupError": null
+    },
+    {
+      "name": "terrain-routes-river-only-depression-2",
+      "file": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-final-20261029/terrain-routes-river-only-depression-2/failure.json",
+      "launches": [
+        {
+          "pid": 737390,
+          "pidAbsentNow": true,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "receiptPidAbsent": true
+        },
+        {
+          "pid": 737787,
+          "pidAbsentNow": true,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "receiptPidAbsent": null
+        }
+      ],
+      "cleanup": [
+        {
+          "kind": "electron",
+          "pid": 737787,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "pidAbsent": true,
+          "forced": false
+        },
+        {
+          "kind": "bus",
+          "unexpected": false,
+          "pid": 737387,
+          "exit": {
+            "code": null,
+            "signal": "SIGTERM"
+          },
+          "pidAbsent": true,
+          "forced": false
+        }
+      ],
+      "rendererErrors": [],
+      "cleanupError": null
+    },
+    {
+      "name": "terrain-spatial",
+      "file": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-final-20261029/terrain-spatial/failure.json",
+      "launches": [
+        {
+          "pid": 738431,
+          "pidAbsentNow": true,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "receiptPidAbsent": null
+        }
+      ],
+      "cleanup": [
+        {
+          "kind": "electron",
+          "pid": 738431,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "pidAbsent": true,
+          "forced": false
+        },
+        {
+          "kind": "bus",
+          "unexpected": false,
+          "pid": 738428,
+          "exit": {
+            "code": null,
+            "signal": "SIGTERM"
+          },
+          "pidAbsent": true,
+          "forced": false
+        }
+      ],
+      "rendererErrors": [],
+      "cleanupError": null
+    },
+    {
+      "name": "timeline-search",
+      "file": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-final-20261029/timeline-search/failure.json",
+      "launches": [
+        {
+          "pid": 738650,
+          "pidAbsentNow": true,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "receiptPidAbsent": true
+        }
+      ],
+      "cleanup": [
+        {
+          "kind": "bus",
+          "unexpected": false,
+          "pid": 738641,
+          "exit": {
+            "code": null,
+            "signal": "SIGTERM"
+          },
+          "pidAbsent": true,
+          "forced": false
+        }
+      ],
+      "rendererErrors": [],
+      "cleanupError": null
+    },
+    {
+      "name": "travel-target",
+      "file": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-final-20261029/travel-target/failure.json",
+      "launches": [
+        {
+          "pid": 739361,
+          "pidAbsentNow": true,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "receiptPidAbsent": null
+        }
+      ],
+      "cleanup": [
+        {
+          "kind": "electron",
+          "pid": 739361,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "pidAbsent": true,
+          "forced": false
+        },
+        {
+          "kind": "bus",
+          "unexpected": false,
+          "pid": 739358,
+          "exit": {
+            "code": null,
+            "signal": "SIGTERM"
+          },
+          "pidAbsent": true,
+          "forced": false
+        }
+      ],
+      "rendererErrors": [],
+      "cleanupError": null
+    },
+    {
+      "name": "vegetation-qualification",
+      "file": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-final-20261029/vegetation-qualification/failure.json",
+      "launches": [
+        {
+          "pid": 741133,
+          "pidAbsentNow": true,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "receiptPidAbsent": null
+        }
+      ],
+      "cleanup": [
+        {
+          "kind": "electron",
+          "pid": 741133,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "pidAbsent": true,
+          "forced": false
+        },
+        {
+          "kind": "bus",
+          "unexpected": false,
+          "pid": 741130,
+          "exit": {
+            "code": null,
+            "signal": "SIGTERM"
+          },
+          "pidAbsent": true,
+          "forced": false
+        }
+      ],
+      "rendererErrors": [],
+      "cleanupError": null
+    },
+    {
+      "name": "vegetation-qualification-navigation-only",
+      "file": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-final-20261029/vegetation-qualification-navigation-only/failure.json",
+      "launches": [
+        {
+          "pid": 741326,
+          "pidAbsentNow": true,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "receiptPidAbsent": null
+        }
+      ],
+      "cleanup": [
+        {
+          "kind": "electron",
+          "pid": 741326,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "pidAbsent": true,
+          "forced": false
+        },
+        {
+          "kind": "bus",
+          "unexpected": false,
+          "pid": 741323,
+          "exit": {
+            "code": null,
+            "signal": "SIGTERM"
+          },
+          "pidAbsent": true,
+          "forced": false
+        }
+      ],
+      "rendererErrors": [],
+      "cleanupError": null
+    },
+    {
+      "name": "world-authoring",
+      "file": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-final-20261029/world-authoring/failure.json",
+      "launches": [
+        {
+          "pid": 741871,
+          "pidAbsentNow": true,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "receiptPidAbsent": null
+        }
+      ],
+      "cleanup": [
+        {
+          "kind": "electron",
+          "pid": 741871,
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "pidAbsent": true,
+          "forced": false
+        },
+        {
+          "kind": "bus",
+          "unexpected": false,
+          "pid": 741868,
+          "exit": {
+            "code": null,
+            "signal": "SIGTERM"
+          },
+          "pidAbsent": true,
+          "forced": false
+        }
+      ],
+      "rendererErrors": [],
+      "cleanupError": null
+    }
+  ],
+  "technicalIssues": [
+    {
+      "name": "atlas-author-overlay",
+      "status": "failed",
+      "check": "failure-technical-receipt",
+      "file": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-final-20261029/atlas-author-overlay/case-1/failure.json",
+      "error": "Every launch must close normally\n+ actual - expected\n\n  {\n+   code: null,\n+   signal: 'SIGKILL'\n-   code: 0,\n-   signal: null\n  }\n"
+    },
+    {
+      "name": "atlas-cartography",
+      "status": "failed",
+      "check": "regular-native-end",
+      "leakedOwnedPids": [
+        678217,
+        678218
+      ],
+      "remainingOwnedPids": [],
+      "allAbsent": true
+    },
+    {
+      "name": "atlas-cartography",
+      "status": "failed",
+      "check": "failure-technical-receipt",
+      "file": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-final-20261029/atlas-cartography/failure.json",
+      "error": "Every launch must close normally\n+ actual - expected\n\n  {\n+   code: null,\n+   signal: 'SIGKILL'\n-   code: 0,\n-   signal: null\n  }\n"
+    },
+    {
+      "name": "dungeon-groundplan",
+      "status": "failed",
+      "check": "failure-technical-receipt",
+      "file": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-final-20261029/dungeon-groundplan/1/failure.json",
+      "error": "Every launch must close normally\n+ actual - expected\n\n  {\n+   code: null,\n+   signal: 'SIGKILL'\n-   code: 0,\n-   signal: null\n  }\n"
+    },
+    {
+      "name": "fractal-strokes",
+      "status": "failed",
+      "check": "failure-technical-receipt",
+      "file": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-final-20261029/fractal-strokes/failure.json",
+      "error": "Every native launch needs a fresh capture"
+    },
+    {
+      "name": "land-mask",
+      "status": "failed",
+      "check": "failure-technical-receipt",
+      "file": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-final-20261029/land-mask/failure.json",
+      "error": "Every native launch needs a fresh capture"
+    },
+    {
+      "name": "landscape-tools",
+      "status": "failed",
+      "check": "failure-technical-receipt",
+      "file": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-final-20261029/landscape-tools/failure.json",
+      "error": "Every native launch needs a fresh capture"
+    },
+    {
+      "name": "npc-conversation",
+      "status": "failed",
+      "check": "invalid-native-receipt",
+      "file": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-final-20261029/npc-conversation/1/result.json",
+      "error": "Capture hash mismatch\n+ actual - expected\n\n+ 'ba788c2a0ea0e01fc165ed3c7042942e58d69fc76eeccf0f691819f199cf7fc3'\n- '9f32aecd8e4f4d9312931563bc6f0ba62de1a509f7801d0141700cbabf9debdd'\n"
+    },
+    {
+      "name": "npc-conversation",
+      "status": "failed",
+      "check": "failure-technical-receipt",
+      "file": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-final-20261029/npc-conversation/1/result.json",
+      "error": "Capture hash mismatch\n+ actual - expected\n\n+ 'ba788c2a0ea0e01fc165ed3c7042942e58d69fc76eeccf0f691819f199cf7fc3'\n- '9f32aecd8e4f4d9312931563bc6f0ba62de1a509f7801d0141700cbabf9debdd'\n"
+    },
+    {
+      "name": "shared-template",
+      "status": "failed",
+      "check": "failure-technical-receipt",
+      "file": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-final-20261029/shared-template/failure.json",
+      "error": "Every native start needs completion evidence"
+    },
+    {
+      "name": "terrain-brush",
+      "status": "failed",
+      "check": "failure-technical-receipt",
+      "file": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-final-20261029/terrain-brush/failure.json",
+      "error": "Every native launch needs a fresh capture"
+    },
+    {
+      "name": "terrain-height",
+      "status": "failed",
+      "check": "failure-technical-receipt",
+      "file": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-final-20261029/terrain-height/failure.json",
+      "error": "Every native launch needs a fresh capture"
+    },
+    {
+      "name": "terrain-lakes",
+      "status": "failed",
+      "check": "failure-technical-receipt",
+      "file": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-final-20261029/terrain-lakes/failure.json",
+      "error": "Every launch must close normally\n+ actual - expected\n\n  {\n+   code: null,\n+   signal: 'SIGKILL'\n-   code: 0,\n-   signal: null\n  }\n"
+    },
+    {
+      "name": "terrain-lakes-lift",
+      "status": "failed",
+      "check": "failure-technical-receipt",
+      "file": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-final-20261029/terrain-lakes-lift/failure.json",
+      "error": "Every launch must close normally\n+ actual - expected\n\n  {\n+   code: null,\n+   signal: 'SIGKILL'\n-   code: 0,\n-   signal: null\n  }\n"
+    }
+  ],
+  "failures": []
+}

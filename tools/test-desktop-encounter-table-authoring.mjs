@@ -152,7 +152,7 @@ try {
   );
   const first = await generate(page, saved, 'table-3-to-1');
   await native.close();
-  const fresh = await open(2);
+  const fresh = await open(1);
   await fresh.locator('#encounter-table-list').selectOption(saved.id);
   await fresh.locator('#encounter-table-open').click();
   const reopened = fresh.locator('#table-entries input');
@@ -175,7 +175,7 @@ try {
     'Historical proposals keep their original basis',
   );
   await native.close();
-  const final = await open(2);
+  const final = await open(1);
   await final.locator('#encounter-table-list').selectOption(saved.id);
   await final.locator('#encounter-table-open').click();
   assert.deepEqual(

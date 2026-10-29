@@ -115,6 +115,22 @@ async function stroke(points) {
   const start = await atlasCanvasPoint(page, { x: points[0][0], y: points[0][1] });
   assert.equal(start.target, 'campaign-map');
   await page.mouse.move(start.x, start.y);
+  const radius = Number(await page.locator('#land-radius').inputValue());
+  await page.waitForFunction(
+    (radius) => {
+      const state = document.querySelector('#campaign-map').dataset,
+        source = JSON.parse(state.terrainEditingSource ?? 'null');
+      return (
+        state.terrainEditingState === 'ready' &&
+        Number(state.terrainEditingRadius) === radius &&
+        source?.complete === true &&
+        source.radius === radius &&
+        source.revision === Number(state.terrainRevision)
+      );
+    },
+    radius,
+    { timeout: 60000 },
+  );
   await page.mouse.down();
   for (const [x, y] of points.slice(1)) {
     const p = await atlasCanvasPoint(page, { x, y }, false);

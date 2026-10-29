@@ -2,7 +2,7 @@
 
 Status: Current; offene Ziele sind als solche beschrieben.
 Owner: atlas
-Last Reviewed: 2026-10-28 (lieferrelevante Originalfragen; Fachabnahme separat)
+Last Reviewed: 2026-10-29 (83 Aufgabenbindungen; Originalvarianten und Fachabnahme offen)
 Source of Truth: Dieses Dokument besitzt das benannte Thema; Code belegt den Iststand, das Abnahmeregister den Prüfstand.
 
 Dieser Plan ergänzt die [Hex-Atlas-Roadmap](../requirements/atlas.md). Für die weitere Umsetzung gelten die gemeinsamen [Ergebnisgleichwertigkeit und Lieferprioritäten](../requirements/atlas.md#wie-kommen-wir-zum-ziel). Vorhandene Inventare und Belege verwenden; unklare fachliche Wirkung gezielt vor ihrer Lieferung im Original prüfen. Eine vollständige Wiederholung aller UI-/Gestenproben ist keine Voraussetzung für einen benutzbaren Ausbau. Der erste benutzbare Hex-Editor bleibt das Ziel von HEX-02; der Ort-Dungeon-Raum-Key-Ablauf das Ziel von HEX-05.
@@ -154,6 +154,98 @@ Die Namen sind Arbeitsgruppen; die exakten Original-UI-Pfade werden in HEX-00-A 
 | WD-036 | Ungeklärte Oberflächen und Hilfsmodule | WD-036.01–.02 | HEX-00 |
 
 HEX-03/04/05/06/07/08/22 enthalten zusätzlich eigene Projektanforderungen: Orts-Keys, Verortung, mehrere Hex-Stufen, Wiederherstellung und gemeinsame Detailkarten. Diese Anforderungen haben keinen behaupteten Wonderdraft-Originalfall. Kamera-, Speicher- und Darstellungsfunktionen werden dort dennoch regressiert. HEX-28 wiederholt den Gesamtkatalog am Endstand; es ist keine nachträgliche Inventarphase.
+
+## Ergebnisverträge je vorhandener Variante
+
+Alle 83 WD-Fälle (79 Ausgangsproben und vier spätere Ergänzungen) sind unter `scopeContractReview` im bestehenden Register an
+Anforderungs-ID, Vertrag, konkrete Aufgabenprobe, ursprüngliche Variante und
+Lieferphase gebunden. `originalProbe` übernimmt den bereits vorhandenen gezielten
+Klärungsauftrag; es ist keine neue Beobachtung. Die gemeinsamen Aufgaben werden
+hier einmal definiert; `variantToResolve` und die bisherigen Original-/gap-Felder
+verhindern, dass etwa Punktlöschen, Fortsetzen und Merge in einem pauschalen
+„Linien vorhanden“ verschwinden. Vollständige Optionen und Module bleiben offen.
+Keine der neuen Bindungen ändert Acceptance- oder Implementationsstände.
+
+Die [Quellenprüfung vom 29.10.](../../reference/scope-contracts-20261029/README.md)
+verwendet vorhandene Belege und weist fehlenden Originalzugang aus. Für sämtliche
+schreibenden Aufgaben gilt: bekannte Kontrollkarte → gezielte Änderung → sichtbare
+Vorschau/bestätigtes Ergebnis → gespeicherte Wirkung → Fresh-Reopen → geschützte
+IDs/Texte/Referenzen. Cancel, gemeinsames Undo/Redo und Antwortverlust werden am
+späteren Hostpaar geprüft. Reine Ansicht schreibt keine Autorenwerte. Derselbe
+Grundvertrag gilt auch für Stadtgestaltung; ein zweiter Asset-/Historyowner ist
+keine Konsequenz eines zweiten Vorbilds.
+
+### Ergebnisvertrag Datei und Ansicht
+
+WD-001–004/034 liefern Anlegen, Navigation, sichere erste Eingabe, unabhängige
+Stände, persistente Änderungen, gemeinsame History und kontextgerechte physische
+Eingabe. Ein Kopiervorgang führt zu unabhängig weiterbearbeitbaren Daten;
+A→B→A und Neustart stellen genau den bestätigten Stand wieder her. Die konkrete
+Ausgangsprobe je ID bleibt maßgeblich. Ausgangsmaße des Originals begrenzen
+Generator-/Exportbereiche, niemals die unbegrenzte Atlaswelt. Kurzbefehle sind
+kein Selbstzweck; gleiches erreichbares Ergebnis und Schutz aktiver Textentwürfe
+sind Pflicht. Deliveries bleiben HEX-01/02/07/26 wie im Register.
+
+### Ergebnisvertrag Terrain und Wasser
+
+WD-005–009/013–014 liefern native editierbare Gelände-/Biome-/Wasserergebnisse.
+Insel, Landzunge, Gegenkorrektur und Überfahren samt zusammenhängender Küste sind
+für TW-G1/4 entschieden. Ein geladener bestätigter Höhenstand wird nicht neu
+generiert. Generator-/Heightmapannahme zeigt betroffene Höhen, Wasser und vorhandene
+Anker vor dem atomaren Commit; falsche Eingaben bzw. Cancel verändern nichts.
+Nicht zuordenbare Detailinhalte bleiben erhalten. Noch ungemessene Wasserfarben,
+Texturen, Effektbreiten, Seenübergänge und Generatorvarianten bleiben HEX-11/12/
+15/16/24 zugeordnet. Die Bild-/Parametermatrix muss erst deren eigenständige
+Ergebniswirkung belegen; sie blockiert TW-G1/4 nicht pauschal.
+
+### Ergebnisvertrag Linien
+
+WD-010–012 liefern anlegbare, auswählbare und nachträglich editierbare Straßen/
+Flüsse samt Form, Stil, Punkt-/Teilstückbearbeitung und Anschluss. Der eigene
+begrenzte Flusszyklus entscheidet Pflichtpunkte, fallendes Profil, Bettabtrag und
+Mündungsbezug bereits; offene grafische Mäander-/Spitzen-/Fortsetzungsvarianten
+bleiben HEX-13/14. Kontrollfall ist eine Gabel mit bestehendem Orts-/Mündungsanker:
+Punkt verschieben, Teil löschen/fortsetzen, Preview abbrechen und gespeicherten
+Verlauf neu öffnen. Nur die betroffene Linie/Bettwirkung ändert sich; Verlauf,
+Basisrevisionen, Bindungen und Rücknahme bleiben gemeinsam. Grafische Nähe allein
+ersetzt keinen topologischen Anschluss.
+
+### Ergebnisvertrag Auswahl, Assets und Text
+
+WD-015–024/035 liefern Auswahl/Transformieren/Klonen/Radieren, materialisierte
+Assetvarianten, Bibliothek/Provenienz, unveränderte bereits gesetzte Instanzen,
+Labels/Boxen, Farben, Namen und editierbare Gebiete. Kontrollfall sind überlagerte
+Objekte mit unterschiedlichen Layern und ein Label mit Unicode/Whitespace.
+Auswahl, Pose, Kategorie, Reihenfolge und Wortlaut müssen vor/nach Apply sowie
+Fresh vergleichbar sein. Ein Merge benötigt eine direkte Originalprobe seiner
+weiteren Editierbarkeit, Qualitäts-/Assetwirkung und unabhängigen Rücknahme;
+eine zusammen gerenderte Ansicht beweist diesen Fall nicht. Fehlende Assets
+bleiben erklärbar, Referenzen/Instanzen erhalten. Gemeinschafts-/eigene Assets
+nutzen dieselbe Library mit Quellen-/Lizenzgrenzen. HEX-17–21/23/24/26 besitzen
+die bisherigen Lieferanteile, gemeinsame Farbgrundlage beginnt bereits HEX-02.
+
+### Ergebnisvertrag Ausgabe und Vorlagen
+
+WD-025–033 liefern ausgerichtete Bildunterlage, wiederverwendbare Gestaltung,
+Effekte, Rahmen/Kompass, metrische Messung, Darstellungsraster und tatsächlich
+empfangene Bilddateien. Kontrollfall ist ein Ausschnitt mit bekannter Strecke,
+Label und verstecktem Layer. Editor und empfangene PNG/JPEG müssen den gewählten
+bestätigten Stand/Filter abbilden; Format, Auflösung, Crop und Fehlerzustand sind
+einzelne Varianten. Eine Vorschau oder ein Savebutton ersetzt keine Datei.
+Ausgabe-/Detailkartenfilter ändern keine außerhalb liegenden Autorenrecords und
+benötigen keinen Welt-Resize. Wonderdraft-Nativdateien bleiben Referenzbilder;
+Extract/Repackage wird zunächst als Original-Dateiverwaltung untersucht und
+begründet der nativen Campaign-/Assetclosure zugeordnet, ohne proprietären Import
+zu erfinden. Lieferanteile bleiben HEX-09/10/24–27 und ihre vorhandenen Varianten.
+
+### Ergebnisvertrag Offene Modulklassifikation
+
+WD-036.01–02 bleiben ausdrücklich unbelegt: Alle Paketkandidaten müssen als
+konkreter erreichbarer Nutzerbefehl, reine Oberfläche oder interner Helfer
+klassifiziert werden. Fehlender Zugang rechtfertigt keinen Ausschluss. Entsteht
+eine eigenständige Wirkung, bekommt sie im bestehenden Register ihre Variante,
+Quelle, oben passenden Vertrag und Lieferung; vor diesem Befund gibt es keine
+fertige Umfangs-/Aufwandsschätzung und keinen HEX-00-/HEX-28-Abschluss.
 
 ## Vorgehen je Werkzeugphase: wie beim Dungeondraft-Abgleich
 

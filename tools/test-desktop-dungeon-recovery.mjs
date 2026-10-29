@@ -1,3 +1,4 @@
+import { revealWorkspaceNavigation } from './native-navigation.mjs';
 import { runNativeProbe } from './native-session.mjs';
 import { createRequire } from 'node:module';
 import { mkdtemp, mkdir, readFile, writeFile, stat } from 'node:fs/promises';
@@ -120,6 +121,8 @@ await runNativeProbe(
         .locator('.campaign-card[data-campaign-id="' + campaign.id + '"]')
         .getByRole('button', { name: 'Fortsetzen', exact: true })
         .click();
+      await revealWorkspaceNavigation(page);
+      await page.locator('#live-tab').click();
       await page.locator('#live-travel-toggle').click();
       await page.waitForFunction(
         () =>

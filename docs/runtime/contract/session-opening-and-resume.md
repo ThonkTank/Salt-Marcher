@@ -145,7 +145,8 @@ ungeklärte Textwrites. Spielerfreigabe und Besuchsübernahme bleiben separat.
 ## Unfertigen Rückblick erhalten
 
 `SessionRecapDraft` hält Rückblick und Übergabe getrennt vom bestätigten
-Spielabendmarker. `live.ts` sichert neuere Eingaben über den vorhandenen
+Spielabendmarker. Der von `live.ts` komponierte Rückblickbesitzer
+`live-recap-editor.ts` sichert neuere Eingaben über den vorhandenen
 `keepSessionRecapDraft`-Port; die Textbasis verhindert stilles Überschreiben
 einer anderen gespeicherten Fassung. Normales Wiederöffnen lädt die Texte,
 ohne den Abend zu beenden oder einen weiteren Marker zu schreiben.

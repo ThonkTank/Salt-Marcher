@@ -86,7 +86,6 @@ await runNativeProbe({ output: out, name: 'terrain-brush' }, async (native) => {
     'src/app/atlas/atlas-tool-catalog.ts',
     'src/app/atlas/atlas-workspace-layout.ts',
     'src/app/atlas/atlas-units.ts',
-    'tests/atlas/desktop-atlas-tool-hierarchy.test.mjs',
     'src/app/atlas/campaign-atlas-ui.ts',
     'tests/atlas/terrain-brush.test.mjs',
     'src/app/atlas/landscape-color-surface.ts',

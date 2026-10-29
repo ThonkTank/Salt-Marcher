@@ -233,7 +233,9 @@ await runNativeProbe(
         await page.locator('#tutorial-skip').click();
       await openNativeCampaign(page, campaign.id);
       await page.locator('#live-tab').click();
-      await page.locator('#live-continue').click();
+      if (await page.locator('#live-continue').isVisible())
+        await page.locator('#live-continue').click();
+      await page.locator('#scene-desk').waitFor({ state: 'visible' });
       await page.locator('#combat-panel').waitFor({ state: 'visible' });
       await page.waitForFunction(() =>
         document.querySelector('#chase-status').textContent.startsWith('Waldpfad ·'),
@@ -413,7 +415,9 @@ await runNativeProbe(
         results.nativeRestart = true;
         await openNativeCampaign(page, archiveCampaign.id);
         await page.locator('#live-tab').click();
-        await page.locator('#live-continue').click();
+        if (await page.locator('#live-continue').isVisible())
+          await page.locator('#live-continue').click();
+        await page.locator('#scene-desk').waitFor({ state: 'visible' });
         await page.locator('#live-archives').click();
         await page
           .locator('#archive-list')

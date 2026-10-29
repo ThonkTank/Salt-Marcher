@@ -9,7 +9,9 @@ const namesakes = process.env.GM_QA_NAMESAKES === '1',
   longRest = process.env.GM_QA_LONG_REST === '1';
 const restButton = longRest ? '#party-long-rest' : '#party-short-rest';
 const source = process.cwd(),
-  output = path.resolve(process.argv[2] ?? '.build/scene-selection-evidence');
+  output =
+    process.env.QA_EVIDENCE_DIR ??
+    path.resolve(process.argv[2] ?? '.build/scene-selection-evidence');
 const native = await createNativeSession({
   root: source,
   output,

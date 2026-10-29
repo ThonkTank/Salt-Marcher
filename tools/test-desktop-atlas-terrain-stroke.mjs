@@ -18,7 +18,9 @@ const multiscaleProbe = process.argv.includes('--multiscale');
 if (conflictProbe && !recoveryProbe) throw Error('--source-conflict requires --recovery.');
 const scale = 1;
 if (![1].includes(scale)) throw Error('Native UI probes use 100% only.');
-const output = path.resolve('.build/atlas-terrain-stroke', `${Date.now()}-${process.pid}`);
+const output =
+  process.env.QA_EVIDENCE_DIR ??
+  path.resolve('.build/atlas-terrain-stroke', `${Date.now()}-${process.pid}`);
 await mkdir(output, { recursive: true });
 const native = await createNativeSession({ root, output, name: 'atlas-terrain-stroke' });
 const require = createRequire(import.meta.url);
@@ -2632,7 +2634,24 @@ try {
   });
   const report = { ...evidence };
   const reportPath = path.join(output, evidence.status === 'PASS' ? 'result.json' : 'failure.json');
-  await writeFile(reportPath, JSON.stringify(report, null, 2) + '\n');
+  if (evidence.status === 'PASS') {
+    try {
+      await native.finish(report);
+    } catch (error) {
+      await native.fail(error);
+      throw error;
+    }
+  } else {
+    const firstFailure = evidence.failures[0];
+    await native.fail(
+      new Error(
+        'Native scenario assertions failed: ' +
+          JSON.stringify(firstFailure ?? evidence.unexpectedError ?? evidence.checks),
+      ),
+    );
+    const completion = JSON.parse(await readFile(reportPath, 'utf8'));
+    await writeFile(reportPath, JSON.stringify({ ...report, ...completion }, null, 2) + '\n');
+  }
   console.log(JSON.stringify({ output, reportPath, status: evidence.status }));
   if (evidence.status !== 'PASS') process.exitCode = 1;
 }

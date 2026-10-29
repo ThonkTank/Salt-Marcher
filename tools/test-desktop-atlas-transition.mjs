@@ -121,7 +121,7 @@ await runNativeProbe(
         .locator('.campaign-card[data-campaign-id="' + campaign.id + '"]')
         .getByRole('button', { name: 'Fortsetzen', exact: true })
         .click();
-      await page.locator('#atlas-tab').click();
+      await page.locator('#campaign-atlas').waitFor({ state: 'visible' });
       await page.locator('#atlas-overview').click();
       await atlasCanvasReady(page);
       return page;

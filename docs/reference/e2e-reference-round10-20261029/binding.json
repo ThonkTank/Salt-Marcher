@@ -1,0 +1,63 @@
+{
+  "format": "saltmarcher-e2e-reference-handoff-v1",
+  "capsule": ".build/e2e-reference-round10-final-capsule-20261029",
+  "manifestSha256": "914eb12c22f770f23297b58c1b7c26916ba049389ae0e43dede384b8b7531ba7",
+  "source": {
+    "head": "fa2c3eb50af9b8970235f75b2d9c7b05e99602c9",
+    "dirty": true,
+    "digest": "2005f9ed9906fb9fdbd79a15c325d63e2b29228a8c75ac8761e16c6bd2130865",
+    "files": 2085
+  },
+  "environment": {
+    "node": "v22.19.0",
+    "electron": "44.7.0",
+    "betterSqlite3": "13.0.3",
+    "host": {
+      "platform": "linux",
+      "arch": "x64",
+      "release": "7.2.11-200.fc44.x86_64",
+      "display": ":0",
+      "session": "x11",
+      "zoom": 1
+    }
+  },
+  "archives": {
+    "base.bundle": "3eaa0843bc64ccf86f9634268ef5916bfc0f5cb01bef2ec79469984407f4f219",
+    "dependencies.tar.gz": "894a319f81e6df7c334277893d5d2015d773639900cb9cc554f6175df7754d57",
+    "node": "596b5144ff242737f1c1be6a5f0ccb3907dbba2482344143cb1a6898633402a9",
+    "runtime.tar.gz": "d075ca051da1dbe1f8c91c07f73c5745c400ec18a3f5d3f01b44d3c4a1b10b66",
+    "sources.tar.gz": "c418a4fd7681bfb57ddb86249c711a3c07be443e26a27f39ff45de8ac100d35a"
+  },
+  "packageLockSha256": "66a61875fc8d23205063b7b86c0a755278752e857fdce621316d24f951e8c670",
+  "runtimeArtifacts": {
+    "main.cjs": "44f219bfaf4b89c43f527343d04de98426c470f0f46a81ffa2f480e337ec77ac",
+    "preload.cjs": "8c89e0558ba5b3f79aa13a1b931c89bd57a3454734430c4accdd1457b3da5361",
+    "player-preload.cjs": "2298bcbc665e510444c6e8b8e4d202ce2cec8bfcde8d328c7121e3c1043091b4",
+    "store-worker.cjs": "0cbc01a1ca2d6ad53f333edb772aea4a817df474b96039bc860e1fad05dc6bad",
+    "atlas-region-worker.cjs": "389c77bd32c05255a888ec2e56c7a9723add0afc9567dd31c96a5b3342ac9f8b",
+    "room-directory-worker.cjs": "022e2a82e338b66070fe5c960974dc1ced46ae20dcbd2713c86b2649e1d961c8",
+    "terrain-route-worker.cjs": "79e60c0386be5bb0a55e3ab13a4750cbb6878dc2d877d7a585333f6f8ebe912d",
+    "backup-validation-worker.cjs": "9f39942dc2469be61a3f11d3d1bfeb952f1824d7823534a428057e3f9e880426",
+    "update-helper.cjs": "fb360030c815848b6eed9de396accc59f8d4c0ae2ebf50bed3d04449a4b5542a",
+    "update-probe.cjs": "bb778f09a55d564cac392148f7ea459f607109515627fc94aa0f4d69cdbfef1f",
+    "ui/renderer.js": "aab29c0d06c9f0627856463527daa4e585baf584d4d9dd48919b4ffb07701695",
+    "ui/atlas-brush-worker.js": "af8789cdec3cddafef090bc3fd5fbc139db2f189c3188989a7f2a11e4ed87e8e",
+    "ui/atlas-deck-runtime.js": "5239c479ef4b1f5b64886df8bc367d55184fd65bd34f086825d48eee77e542a9",
+    "ui/preset-settings.js": "3981d8dc1a1310dd6fb8d141ffe67931c3071ccb0721d08bbdf1002a3935678a",
+    "ui/index.html": "a079fffb1c5a40a876df21ccc7fd212944e533095c06f7e3393fa36bc1aad687",
+    "ui/app.css": "e8ef8e14a975789787d5a3a926cd735dd1df6b1603a658f6fd9a6a19439350f6",
+    "ui/player-display.js": "dc6e45207607ca5ddf222c94f58daa8f9d48e21ba231953ae713753a2d5e11ee",
+    "ui/player-display.html": "ac6bbc763b22b10375cbbe116e275ed5af51dfc79acb9fb79491dec5f4f67df7",
+    "ui/player.css": "7f82fb6e91227d97b83a8d1421374c74e9f9a5289452b2f1cdf6e032214a8be5",
+    "ui/preset-settings.css": "13c1bf91476633ea63c00700a3440f01a5cdf6e4bc6e447929a3016b3dfdd35b"
+  },
+  "restoredDependencyFiles": 19629,
+  "restoredRuntimeFiles": 115,
+  "controller": {
+    "controller/e2e-reference-seed-loader.mjs": "f7fbfa6b7f2c8c6fa0e02d60bcf25c63f3c8a075fb0a18fa5ea15167a5b7c8bd",
+    "controller/e2e-reference.mjs": "d5757dbcafb8b152d4435392f4b66ca433292f2f42a2597fbed893d68d358e69",
+    "controller/e2e-reference-fault.mjs": "3980f3cd981f04a23ea2fb71ca8c09e84d9e28ce401146210b72496785d92d2f"
+  },
+  "availability": "Copy the entire ignored local capsule; repository metadata alone is insufficient. No remote upload/publication performed.",
+  "controllerHistory": "This final capsule contains the final controller with standalone frozen-seed failure entry. Its manifest and controller hashes match this binding and the final proof; the earlier pilot controller is not the restoration entry documented here."
+}

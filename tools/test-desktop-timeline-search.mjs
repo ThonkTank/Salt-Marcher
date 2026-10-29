@@ -81,6 +81,7 @@ await runNativeProbe(
         await page.locator('#tutorial-skip').click();
       await openNativeCampaign(page, campaign.id);
       await page.locator('#preparation-tab').click();
+      await page.locator('#preparation-planning').click();
       await page.locator('#plans').selectOption(plan.id);
       await page.waitForFunction(
         () => document.querySelectorAll('#scene-list button').length === 65,
@@ -216,6 +217,7 @@ await runNativeProbe(
         );
         await page.locator('#running-notes').fill('Am Spieltisch: Kupfersiegel entdeckt.');
         await page.locator('#preparation-tab').click();
+        await page.locator('#preparation-planning').click();
         await page.locator('#scene-search').fill('Kupfersiegel');
         await page.locator('#scene-list button').click();
         await page.waitForFunction(() =>

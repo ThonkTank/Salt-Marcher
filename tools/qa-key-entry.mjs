@@ -81,3 +81,10 @@ export async function searchDesktopKeyRooms(page, query, names) {
   await page.locator('#dungeon-binder').waitFor({ state: 'hidden' });
   return { query, names, matches };
 }
+
+/** Expand the ordinary room directory before searching or choosing a room there. */
+export async function openDesktopKeyRoomBrowser(page) {
+  const browser = page.locator('#key-room-browser');
+  if (!(await browser.isVisible())) await page.locator('#key-room-browser-toggle').click();
+  await browser.waitFor({ state: 'visible' });
+}

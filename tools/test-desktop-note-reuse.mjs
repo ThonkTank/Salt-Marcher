@@ -1,3 +1,4 @@
+import { openDesktopKeyRoomBrowser } from './qa-key-entry.mjs';
 import { revealWorkspaceNavigation } from './native-navigation.mjs';
 import { runNativeProbe } from './native-session.mjs';
 import { openDesktopKeyReferences } from './qa-key-entry.mjs';
@@ -124,6 +125,7 @@ await runNativeProbe(
         await page.locator('#workspace-nav-summary').click();
       await page.locator('#atlas-tab').click();
       await openDesktopKeyFromAtlas(page, 'Archiv');
+      await openDesktopKeyRoomBrowser(page);
       await page.locator('#key-room-list button').filter({ hasText: 'Archiv' }).click();
       return page;
     }

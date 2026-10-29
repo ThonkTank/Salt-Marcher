@@ -235,6 +235,8 @@ await runNativeProbe(
         );
         await page.locator('#note-gm').fill(note.gmNotes + ' Elle kennt auch den Hinterausgang.');
         await page.locator('#note-room-uses-list button').filter({ hasText: 'Archiv' }).click();
+        await page.locator('#key-dialog').waitFor({ state: 'visible' });
+        assert.equal(await page.locator('#key-name').inputValue(), 'Archiv');
         assert.equal(await page.locator('#key-gm-notes').inputValue(), updated);
         await page.locator('#key-close').click();
         await page.locator('#note-editor').waitFor({ state: 'visible' });

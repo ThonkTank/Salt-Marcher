@@ -1,3 +1,4 @@
+import { openNativeCampaign, revealWorkspaceNavigation } from './native-navigation.mjs';
 // Author a weekly visit and rest days, retain a raw draft, then read the same
 // future visit in the native dossier and location map before and after restart.
 import { createNativeSession } from './native-session.mjs';
@@ -20,19 +21,12 @@ const { CampaignStore } = require(root + '/.build/weekly-visits-store.cjs'),
   results = [];
 let page;
 async function live() {
-  if (await page.locator('#atlas-navigation').isVisible())
-    await page.locator('#atlas-navigation').click();
-  if (!(await page.locator('#live-tab').isVisible()))
-    await page.locator('#workspace-nav-summary').click();
+  await revealWorkspaceNavigation(page);
   await page.locator('#live-tab').click();
 }
 async function launch(zoom, campaign) {
   page = await native.launch(zoom);
-  await page
-    .locator('.campaign-card[data-campaign-id="' + campaign.id + '"]')
-    .getByRole('button', { name: /Öffnen|Fortsetzen/ })
-    .click();
-  await page.waitForFunction(() => !document.getElementById('workspace-navigation').inert);
+  await openNativeCampaign(page, campaign.id);
   await live();
 }
 async function dossier(id) {

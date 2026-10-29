@@ -51,8 +51,9 @@ Das Quellenregister behält unverändert deren Herkunft.
 
 ## Nächste begrenzte Lieferung: Terrain und Meer
 
-Der [bestätigte Ausführungsauftrag](../../atlas/delivery/terrain-water-execution.md)
-besitzt Pakete, Abhängigkeiten, Rollen und Zeitbasis dieser Lieferung; die
+Der [Fortsetzungseinstieg des bestätigten Ausführungsauftrags](../../atlas/delivery/terrain-water-execution.md#fortsetzungseinstieg)
+benennt den offenen P03-Rest und berücksichtigt bereits integrierte Kamera-/Formwirkungen;
+der Auftrag besitzt Pakete, Abhängigkeiten, Rollen und die belegte historische Zeitbasis dieser Lieferung. Die
 [Atlasarchitektur](../../atlas/architecture/unified-spatial-atlas.md) besitzt ihre
 dauerhaften technischen Grenzen. Die folgende Übersicht beschreibt Nutzerumfang
 und Lieferstand, ohne eine zweite Paketplanung zu führen.
@@ -92,7 +93,26 @@ Complete-Anteil gilt bereits der [Laufdatenvertrag](../../campaign/contract/arch
 (SRC-D02/TN-19, SMR-AC-15); offen ist dessen vollständiger direkter Nachweis.
 Diese Quellenklärung schließt keine Acceptance und schätzt keine unbekannte Funktion.
 
+Der [fachliche Abgleich vom 29.10.](../../reference/scope-contracts-20261029/README.md)
+ordnet die bekannten 65 Stadt- und 83 Wonderdraftfälle ihren bestehenden
+Lieferungen mit konkreten Szenarien zu. CITY-00 bleibt wegen nicht vollständig
+untersuchter Originalwirkungen offen; fehlender Voll-/Premiumzugang und die
+Reichweite des Ruhetagoverrides sind gebündelt beschrieben. Dungeon-Graph/Key/
+Templates und Actor Autonomy haben quellengebundene Wirkungsmatrizen an ihren
+Fachbesitzern. Dies ist fachliche Klärung, kein Produktcode-/Native-/Ownerabschluss
+und keine pauschale Aufwandszusage. Erst je geklärtem Ergebnis Codeanschluss,
+tatsächliche Beleglücke und Aufwand prüfen. Gemeinsame Positions-/Geometrie-
+revisionen, geschützte IDs/Texte und Ownercommits begrenzen reale Konflikte;
+offene unabhängige Funktionen blockieren Terrain/Fluss nicht.
+
 ## Kritischer Pfad für E2E-01
+
+Der [wiederherstellbare Kernablaufstand vom 29.10.2026](../../reference/e2e-reference-round10-20261029/README.md)
+ist der aktuelle lokale Übergabeeinstieg für Quellen-/Runtime-/Fixturebindung,
+Wiederherstellung und die vollständige Pflichtfallmatrix. Er bewahrt den
+archivierten nativen Runde-10-Stand unabhängig von späterer Dirtyarbeit;
+E2E-02–04 werden daraus nicht als vollständig bestanden abgeleitet. Historische
+CI-, aktuelle lokale, spätere Paket-/Zielgeräte- und Ownerbelege bleiben getrennt.
 
 Der nächste gemeinsame E2E-Abschluss verbindet die vorhandenen Anschlüsse;
 er ist von der begrenzten Terrainlieferung oben zu unterscheiden.

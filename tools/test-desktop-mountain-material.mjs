@@ -104,6 +104,12 @@ async function apply(enabled, snowline) {
   await page.waitForFunction(
     () => document.querySelector('#land-status').textContent === 'Gespeichert',
   );
+  const deadline = Date.now() + 15000;
+  while (
+    (style()?.mountains !== enabled || style()?.snowlineM !== snowline) &&
+    Date.now() < deadline
+  )
+    await new Promise((resolve) => setTimeout(resolve, 25));
   await ready();
   assert.equal(style().mountains, enabled);
   assert.equal(style().snowlineM, snowline);

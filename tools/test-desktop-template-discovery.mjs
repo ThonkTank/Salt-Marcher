@@ -195,7 +195,9 @@ await runNativeProbe(
         await page.locator('#tutorial-skip').click();
       await openNativeCampaign(page, campaign.id);
       await page.locator('#live-tab').click();
-      await page.locator('#live-continue').click();
+      if (await page.locator('#live-continue').isVisible())
+        await page.locator('#live-continue').click();
+      await page.locator('#scene-desk').waitFor({ state: 'visible' });
       await page.locator('#running-editor').waitFor({ state: 'visible' });
       return page;
     }

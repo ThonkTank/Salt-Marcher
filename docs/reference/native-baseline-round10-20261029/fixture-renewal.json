@@ -1,0 +1,39 @@
+{
+  "observedAt": "2026-10-29T05:54:35.358221+00:00",
+  "sourceCommit": "16eb0aa8807ac21704abfea5412ac3a22033a23a",
+  "sourceSha256": "0a9ad854d7d2312cebd337ebb31c469f03f430feb54c50dce76de3d819f09e39",
+  "beforeFixtureSha256": "476a8d6b3000ac5935c3962ca6bc0ed5323bebf106de116179e0f0690e7cc5bc",
+  "afterFixtureSha256": "38f4d3a3d6ddbfaa549855434f0756ec9cdc65f5a91eba3b5fc03233fce0014c",
+  "decodedSha256": "00d659c1f365d12f5d21db6a718d3d8b563a4f84b4f7d03efdbbd570f3652bd0",
+  "decodedBytes": 232677376,
+  "canonicalValues": {
+    "records": 108076,
+    "changedRecords": 8072,
+    "upgradedPresets": 1024,
+    "alignedPayloadRevisions": 8072
+  },
+  "changedTables": {
+    "atlas_landscape": {
+      "before": {
+        "count": 108076,
+        "sha256": "2030468f91aa59a3036dba09a125331175e984d05a79e68db9230ebcf1cbd6bb"
+      },
+      "after": {
+        "count": 108076,
+        "sha256": "e556cb2d08980f0c7de8dfb46bba90577e5c5f66cb28717e526a7217fe08316a"
+      }
+    },
+    "world_record": {
+      "before": {
+        "count": 4,
+        "sha256": "97b85f43bc7cff6cccf2d82aaf64495e326af25c8c508788a33ae9fa5d441611"
+      },
+      "after": {
+        "count": 4,
+        "sha256": "cff6aacc2bebc61666c0a55385b25e2a26f126f213645354b61d27458a5e01e7"
+      }
+    }
+  },
+  "unchangedTables": 189,
+  "limits": "Nur gepinnter Testbestand; keine Produktmigration. Vorhandene Feldwerte, Geometrien, Namen, IDs und kanonische Zeilenrevisionen erhalten. Abgeleiteter world_record-Zähler erhöht durch vorhandenen SQLite-Trigger; unveränderte Payload/Checksum. Native Bildreferenzen werden separat erneuert und qualifiziert."
+}

@@ -2,7 +2,7 @@
 
 Status: Verbindlicher Zielumfang; historische Umsetzungsbelege sind keine aktuelle Abnahme.
 Owner: dungeon
-Last Reviewed: 2026-10-28 (begrenzte Klärung vor Ausbau und Complete-Abgrenzung; Fachabnahme separat)
+Last Reviewed: 2026-10-29 (erweiterte Quellen-/Ergebnismatrix; Fachabnahme separat)
 Source of Truth: Dieses Dokument besitzt das benannte Thema; Code belegt den Iststand, das Abnahmeregister den Prüfstand.
 
 ## Scope und Eingänge
@@ -12,8 +12,9 @@ SaltMarcher-Quellen konkreten vorhandenen Arbeitsorten oder ausdrücklich noch
 fehlenden Folgepaketen zu. Es entscheidet weder das künftige Speicherschema
 noch die endgültige Hostplattform. Attributvererbung, Autorenprosa und
 Templates gehören zu [#52](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/52);
-Graphbedienung, Trap-Lifecycle, FTG-Städte und Produktcode sind nicht Teil
-dieses Abgleichs.
+Die ergänzte Wirkungsmatrix ordnet Graphbedienung, Key-/Template- und
+Featurewirkungen fachlich zu; Produktcode und FTG-Originalinventur sind nicht
+Teil dieses Dungeonabgleichs.
 
 Verbindliche Eingänge sind die gepinnten Anforderungen
 [Dungeon L24–62](https://github.com/ThonkTank/Salt-Marcher/blob/9de85c1a26f526acbc1af332ac5962e185c0aab2/docs/dungeon/requirements/requirements-dungeon.md#L24-L62),
@@ -50,6 +51,45 @@ werden erhalten und lokal remappt; die engere Dungeonduplikation bleibt getrennt
 Offen sind direkte Fach-/Nativebelege, keine erneute Ratifikation dieser Regel.
 Diese späteren Klärungsaufträge blockieren keine neue Terrain-/Meerfunktion;
 Erhalt bereits vorhandener Dungeoninhalte gilt bei jedem Terrainzug.
+
+## Prüfbare Wirkungen der erweiterten Dungeonlieferung
+
+Der Quellenstand bleibt `9de85c1a26f526acbc1af332ac5962e185c0aab2`.
+Am 29.10. wurden die fünf im Quellenregister gebundenen Dungeon-/Autonomydateien
+über Git erneut gelesen; alle fünf SHA-256 entsprechen ihren ursprünglichen
+Bindungen. Es gibt hier keinen zusätzlichen Referenzprodukt-Bedienlauf.
+Die folgende Tabelle ergänzt die bestehende räumliche Matrix um die bislang
+pauschal benannten Graph-/Key-/Templatewirkungen. Normativer Besitzer bleibt der
+[räumliche Vertrag](../../atlas/contract/spatial-runtime.md#keys-features-templates-und-geschützter-graphentwurf).
+Jede Zeile gehört zu SMR-04/SMR-AC-05; Reiseverbrauch zusätzlich SMR-07/AC-08,
+Spielerprojektion SMR-10/AC-14. Keine Zeile behauptet Implementierung oder Abnahme.
+
+Für alle Autorenänderungen: kontrollierter Ausgangsdungeon → sichtbare Änderung
+bzw. geschützter Entwurf → bestätigter Commit → Save/Fresh-Reopen → geschützte
+IDs, Prosa und abgeschlossene Laufdaten. Beim Graph gilt zusätzlich komplette
+Wiederherstellung unabhängig von der Undo-Tiefe; Autonomy besitzt ausdrücklich
+keine nachträgliche Laufzeit-Rücknahme. Szenarien sind Lieferorakel, keine schon
+bestandenen Tests.
+
+| Wirkung und gebundener Editorabschnitt | Konkretes Abnahmeszenario / gespeicherter Erhalt | Lieferung / Abhängigkeit |
+| --- | --- | --- |
+| Graphfluss, echte Entscheidungen und Reduktion, L214–258 | Kette, echte Gabel, Schleife, sofort wiedervereinigte Scheinschleife, Secret und Geschosswechsel auf mehreren Detailstufen zeigen. Unverzweigte Wege reduzieren, echte Alternativen und aktuell gesperrte Kanten sichtbar erhalten. Geometrische Nachbarschaft ohne Öffnung erzeugt keine Kante. Aggregierte Reisezeiten bleiben auf authored Fakten zurückführbar; Ansichtswechsel schreibt keine zweite Topologie. | Graphinspektion nach Volume-/Room-/Path-Passagebasis; Work (später) in Atlasaktionen. |
+| Heatmap/Kategorien/Normierung, L260–335 | Encounter, Trap, Loot und Puzzle-Curiosity auf Knoten und Kante verteilen; einzelne Layer und kombinierte Übersicht, absolute Menge und Konzentration pro Wegzeit vergleichen. Reduktion aggregiert ohne Doppeltzählung. Freie Raumprosa erzeugt kein Feature und keine qualitative Rätselwertung; Hinweise blockieren keine GM-Annahme. | Graphdiagnostik mit bestätigten Features und gemeinsamem Encounter-/Lootbudgetowner, kein eigener Rechner. |
+| Ziellevel und Sessionanteile, L324–340 | Dungeon mit zwei Bereichen, überschriebenem Level und nur teilweise verteilten Sessions öffnen. Kindwerte rollen einmal hoch; nicht zugeteilte Anteile sind sichtbar. Bereich ohne Sessionanteil erhält neutrale Verteilung statt falscher Budgetwarnung. Persistenz und Reopen erhalten Vorgaben/Zuordnungen. | Derselbe Graphdiagnostikteil; SMR-05/06 als Rechenlieferant. |
+| Geschützter Graphumbau, L342–369 | Zwei beschriebene Rooms/gruppierte Wege verschieben, duplizieren und verbinden; reduzierte Verbindung bleibt zunächst Planungsabsicht mit sichtbarer Endpunktmehrdeutigkeit. Karten-/Keykorrektur im Entwurf ergänzen, kleine Undo-History überschreiten, dennoch Ausgangsdungeon vollständig herstellen. Andere Variante atomar annehmen und frisch öffnen: IDs/Remap/Prosa bleiben nachvollziehbar, keine halbe Übersetzung. | Geschützter Gesamtdraft nach räumlicher Geometrie-/Identitätsbasis, bestehende Atlas-Commandgrenze. |
+| Keynummern/Suche/Batch, L371–393 | Gleich nummerierte Rooms auf verschiedenen Levels suchen/filtern; Nummer ändern und Room auf konflikthaftes Level bewegen. Nur Anzeigenummer ändert sich, interne ID/Referenzen bleiben. Vorlesetext/GM-Text durch Ersetzen, Voranstellen, Anhängen und Suchen/Ersetzen gesammelt ändern; ein Fehler verwirft die ganze Aktion, Undo/Reopen erhalten exakten Wortlaut. | Keyausbau ohne Graphzwang; vorhandene Keywriter und geschützter Textowner. |
+| Hybride Beschreibung/Secrets, L395–437 | Room aus zwei Anlaufrichtungen vorlesen, außerhalb Reise feste Himmelsrichtung ausgeben; Blöcke umordnen, abgeleitete Tatsache unterdrücken, Wand ändern. Nur Fakten werden neu abgeleitet, Prosa/Anordnung bleiben. Secret-Passage vor/nach GM-bestätigter Entdeckung vergleichen; private Suche meldet ausschließlich an GM, Beschreibung „locked“ ändert keine Passierbarkeit. | Beschreibung/Player-/Reiseverbrauch aus derselben Room-/Passageprojektion; SMR-07/10 Folgeabnahme. |
+| Attribute und Oberfläche, L439–472 | Dungeon → Level → Gruppe → Room → beschriebene Wand mit lokalem Override und Unterdrückung öffnen; Ursprung jedes wirksamen Werts anzeigen, Vererbung wiederherstellen. Mehrhöhenroom bleibt ein Room; überlappende Filtergruppe erbt nicht. Wand entfernen/neubinden: stabile beschriebene Flächen-ID/Text bleibt notfalls ungebunden erhalten. | Room-/Surface-Lifecycle und Beschreibung, keine zweite Roomhierarchie. |
+| Verknüpfte Blöcke/Detach/Kopie, L529–545 | Zwei Rooms mit nur einem gemeinsam verknüpften Block und eigenem Text ausstatten. Vorlage ändern: nur verknüpfter Block folgt. Einen Block bewusst ablösen, Vorlage erneut ändern: abgelöster Wortlaut bleibt exakt; gewöhnliche Kopie besitzt eigene IDs. Undo/Redo/Fresh/Complete erhalten Bindungen; Geometrie, Room-ID und abgeschlossene Laufdaten werden nie aus Vorlage propagiert. | Templateausbau am gemeinsamen Inhalts-/Transferowner; nicht Voraussetzung manueller Keys. |
+| Featureanker/Trapfelder, L469–511 | Room samt Trapanker und mehreren unregelmäßigen Triggerfeldern bewegen/teilen; sichere Bindung folgt, unsichere bleibt auffindbar. Feldeintritt unterbricht nur; erst bestätigte tatsächliche Aktivierung verbraucht Charge. Weiterverbrauch startet laufenden Reset nicht erneut. Encounter/Loot verweisen auf ihre eine vorhandene Identität/Position. | SMR-04 authored Feature, SMR-07 Laufdaten, SMR-09 nur ausdrücklicher Resetjob; Complete nach entschiedener Campaignregel. |
+
+Die vorhandene Path-/Passagematrix besitzt weiterhin ganze Grenzflächen,
+getrennte Passierbarkeit/Sicht/Licht/Schall, Seitenrichtung und externe Ziele.
+Diese bereits entschiedenen Fakten werden nicht durch Beschreibungsattribute,
+Heatmapfarben oder Gruppennähe ersetzt. Eine Änderung derselben gebundenen
+Geometrie durch Stadtregeneration, Terrainvorschau oder Graphentwurf benötigt
+gemeinsame Revision/Preview; nur dieser tatsächliche Schreibkonflikt sperrt die
+betroffene Annahme. Ein offener Graphausbau sperrt keinen unabhängigen Flusszug.
 
 ## Gepinnte Ausgangsbasis
 

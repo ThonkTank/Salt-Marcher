@@ -5,6 +5,12 @@ import { writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { stopOwnedChild, pidAbsent, registerNativeEvidence } from './native-process.mjs';
 
+if (process.argv.includes('--all')) {
+  const { runFullNativeBaseline } = await import('./native-baseline.mjs');
+  await runFullNativeBaseline();
+  process.exit(process.exitCode ?? 0);
+}
+
 // The orchestrator owns exact ui-session children; each wrapper owns its native processes.
 const output = path.resolve(process.env.QA_EVIDENCE_DIR ?? '.build/native-baseline');
 const probes = [

@@ -2,7 +2,7 @@
 
 Status: Geltender Fachvertrag; offene Erweiterungen sind als Ziele beschrieben.
 Owner: runtime
-Last Reviewed: 2026-10-28 (begrenzter Quellenauftrag vor Autonomyausbau; Fachabnahme separat)
+Last Reviewed: 2026-10-29 (quellengebundene Ergebnis-/Abnahmematrix; Fachabnahme separat)
 Source of Truth: Dieses Dokument besitzt das benannte Thema; Code belegt den Iststand, das Abnahmeregister den Prüfstand.
 
 Stand: 15.10.2026. Dieser Fachplan konkretisiert [SMR-09](../../project/requirements/product-scope-2.md#smr-09--actor-autonomy), den [Produktumfang](../../project/requirements/scope.md) und den [Live-/Scenevertrag](smr03-live-scene-contract.md).
@@ -196,6 +196,45 @@ festhalten. Fehlende aktuelle Belege bleiben als Prüfaufgabe offen; erst den
 geklärten Schritt nach Codeprüfung schätzen. Stadtlebensdaten entscheiden keine
 autonome Ausführung. Die folgenden vorhandenen Arbeitspakete bleiben maßgeblich;
 Terrain/Meer und der bestätigte Flussabschluss warten nicht auf diesen Ausbau.
+
+## Ergebnisverträge aus dem gebundenen Quellenstand
+
+Die Autonomyquelle vom gepinnten Stand
+`9de85c1a26f526acbc1af332ac5962e185c0aab2` wurde am 29.10. erneut aus Git gelesen;
+ihr SHA-256 bleibt `95c42de5341aa005de49e0e5aea8c426f8793ea41ac1a96170a76ee0210abf0c`.
+Die folgenden SMR-09/SMR-AC-13-Wirkungen sind aus ihren benannten Abschnitten
+entschieden; fehlende aktuelle Tests sind keine neuen Nutzerentscheidungen.
+Nächste Schritte 1–5 unten bleiben die Lieferpakete. Jede Probe beginnt mit
+gespeicherten Actors/Jobs, läuft über bestätigte Campaignzeit und prüft den
+sichtbaren Entscheidungsgrund, atomare Ownerwirkung und Fresh-Reopen. Die
+vorhandenen selektiven Belege müssen beim jeweiligen Ausbau auf dieses Orakel
+bezogen werden; ihre Existenz schließt die Tabelle nicht.
+
+| Quellenabschnitt / Fähigkeit | Konkrete Ausgangslage, Aktion und sichtbare/gespeicherte Wirkung | Lieferung und Schutz bei Wiederöffnung/Bearbeitung |
+| --- | --- | --- |
+| Authority And Scope; Einzel-/Gruppen-Opt-in | Zwei NPCs und Party: nur NPC A aktivieren, Gruppe später freigeben/pausieren. Bestätigte Zeit bearbeitet nur freigegebene Individuen; GM darf Job zuweisen/abbrechen und Priorität ändern. Party bleibt GM-gesteuert, keine neue oder gelöschte Autorenidentität. | Schritt 1/3/5; SMR-02/03-Actor-/Gruppenowner. Enabled/Pause/Priorität und bestehender Fortschritt bleiben nach Restart erhalten. |
+| Needs And Job Offers; fünf Built-ins und Custom | Hunger, Durst, Rest, Sicherheit und Sozialnähe einzeln wirksam machen, einen Bedarf deaktivieren und einen Custombedarf hinzufügen. Änderung beeinflusst Needstate/Priorität; HP/Erschöpfung/Condition ändern sich ohne ausdrückliche Owneroperation nicht. | Schritt 4; bestehende Individuen bleiben kanonisch. Konfiguration und bestätigter Needstate überleben Restart/Complete; alte Intervalle behalten alte Regeln. |
+| Needs And Job Offers; neun Startjobarten | Guard, Patrol, Rest, Eat, Work, Reset, Travel, Wait und ausdrücklich angebotene einfache Featureinteraktion jeweils mit gültigem Ziel anbieten. Unerreichbares Ziel/fehlender Owner schließt nur dieses Angebot mit Grund aus; keine freie Erzählfolge erfinden. | Schritt 4 pro Jobfamilie; gemeinsame Raum-/Route-/Feature-/Ressourcenowner. Job-ID, Fortschritt und Zielreferenz nach Fresh erhalten. |
+| Job Selection And Execution; deterministische Auswahl | Zwei gleich priorisierte erreichbare Jobs und ein höher gewichteter ungültiger Job: identischer Regelstand wählt denselben gültigen Job per stabilem Tie-break und erklärt Ausschlüsse. Inspektion reserviert nichts, würfelt nichts und bestätigt keine Zeit. | Schritt 1/4/5; bestehender Selektor/Inspektor. Historische Entscheidungen nicht mit heutiger Konfiguration neu bewerten. |
+| Job Selection And Execution; Reservierung/Unterbrechung | Zwei Actors konkurrieren um exklusives Ziel. Zweiter wählt nächstes gültiges Angebot; höherer Need, neue Gefahr oder Zielverlust unterbricht, valide Wiederaufnahme bucht nur Restdauer. Kritischer Teilschritt überschreitet nie Party-/GM-Grenze. | Schritt 1/4; Job- und Zielbuchung atomar. Reopen erhält belegten Zeitraum; Pause/Abbruch geben nur zukünftige exklusive Abschnitte frei. |
+| Job Selection And Execution; gemeinsame Gruppenarbeit/Split/Merge | Gruppe reist/arbeitet gemeinsam, dringlicher Need trennt erlaubtes Mitglied, unzulässiger Split bleibt aus; später erlaubtes Merge. Individuen behalten IDs, Gruppenwechsel und Buchungen werden geloggt, ein spätes Owner-Nein hinterlässt keine halbe Gruppe. | Schritt 3, SMR-03/07-Gruppen-/Bewegungsowner. Opt-in allein ist kein Beleg gemeinsamer Reise. |
+| Campaign Time And Contexts; Catch-up | Kontext B ruhend lassen, über Scene A Zeit bestätigen, B öffnen. Nur bestätigte Intervalle mit damaligen Regeln/Fakten nachholen; erste GM-pflichtige Handlung bleibt vor Wirkung pausiert und sichtbar. Appwartezeit/Restart erzeugt keine Zeit. | Schritt 1/5, SMR-07-Zeitowner. Pending und Zeitfront bleiben dauerhaft; begründete Korrektur erhält ursprüngliche Geschichte. |
+| Perception And Local Behavior; Partygrenze | Ohne Party dürfen freigegebene NPCs fliehen, warnen, verfolgen oder Position nehmen. Sobald Party beteiligt wird, vor Gefahr, Engagementbewegung oder Konfliktfolge pausieren und GM mit Kontext informieren; Encounter nur ausdrücklich starten. | Schritt 4/5 mit Spatial-/Perception-/Encounterownern, SMR-04/07/05. Wiederöffnung setzt keine pausierte Gefahr heimlich fort. |
+| Bounded Non-Party Conflict; Zufall und Schutzgrenzen | Zwei aktivierte Nichtpartygruppen mit Größen-/Werte-/Umwelt-/Positions-/Ressourcenfakten und verbotenem Tod/Gefangenschaft/Besitzverlust aufeinander treffen lassen. Wenige abstrakte 2014-Schritte würfeln echt; jeder Input, Modifikator, Wurf und erlaubte Folge ist auditierbar. Grenze stoppt am stärksten erlaubten Ergebnis. | Schritt 4; geänderte Position/Flucht, Gefangenschaft, Verletzung/Tod, Verbrauch und Besitztransfer jeweils eigene Owneroperation. Nur diese Konfliktwürfe zufällig; keine taktische Vollsimulation. |
+| Bounded Non-Party Conflict; Zusammenfassung | Nichtparty-Konflikt während Catch-up abschließen; Öffnen zeigt kompakte Zusammenfassung und detailliertes Faktenlog, ohne bloß wegen des Berichts zu pausieren. Party-/GM-pflichtige Folge bleibt dagegen vor Wirkung stehen. | Schritt 4/5; Snapshot und protokollierte Ergebnisse nach Fresh/Complete erhalten, keine neuen Würfe beim Lesen. |
+| Atomicity, Cancellation, And Correction | Zwei Actors mit Bewegung, Fremdwirkung und Konfliktwurf; letzter Owner lehnt ab bzw. Prozess endet vor Commit. Vollständiger alter oder neuer Step, kein Teilverbrauch/Log/Wurf. Cancel vor Commit hinterlässt keine Wirkung; Retry derselben bestätigten Command-ID wiederholt keine Buchung. | Schritt 1/2, ein Writer. Nach Commit keine Runtime-Undoaktion; GM korrigiert über normalen Owner, Korrektur und ursprünglicher Verlauf bleiben geloggt. |
+| Explainability And Log; aktuelle Diagnose vs Faktenlog | Auswahl mit validen/abgelehnten Angeboten, Needbeiträgen, Reichweite, Belegung und Tie-break inspizieren; Jobstart/Pause/Abbruch/Resume/Ende und Wirkung später im Faktenlog lesen. Kandidatenbewertung darf diagnostisch bleiben, bestätigte Fakten müssen dauerhaft sein. | Schritt 5 mit bestehendem Inspektor. Quellen-/Jobreferenzen remappen beim unabhängigen Complete, keine zweite Actorwahrheit. |
+| Persistence And Failure States; kaputte Ziele | Benutzten Ort/Job ändern oder Ziel entfernen. Nur betroffener Job wird mit reparierbarem Grund unzulässig; kein stiller Ersatzort, keine Identitätslöschung. Historischer eingefrorener Snapshot bleibt gültig, obwohl heutige Quelle geändert ist. | Schritt 1/4/5; Current-/Historybesitzer getrennt prüfen. Restart erhält Needs/Jobs/Buchungen/Pending/Schutzgrenzen und bereits bestätigte Ergebnisse. |
+| Quality Needs; 200 Actors und Abbruch | 200 Individuen mit realen Wegen, Reservierungen und wachsendem Log ausführen: ≤2 s p95, Fortschritt ≤100 ms, erwartete unbestätigte Arbeit >2 s abbrechbar, Kamera/Auswahl/unabhängige Reads weiter nutzbar. | Schritt 2/5; native Zielqualifikation offen. Bestehende Teilbaselines begründen keinen Gesamt-PASS und keine neue Funktionsauslassung. |
+
+Stadtbewohner, Dungeonfeatures und ihre manuellen Tagespläne liefern dieselben
+Identitäten und Angebote, aktivieren Autonomy aber nicht. Konflikte entstehen
+konkret an einer geänderten Positions-/Routenbasis, konkurrierender Reservierung
+oder abgelehntem Ownercommit; nur die davon betroffene Wirkung pausiert. Weder
+noch ungeprüfte Konfliktfolgen noch ein späterer Gruppenjob blockieren die
+entschiedene Terrain-/Meer-/Flusslieferung. Eine Aufwandszahl wird erst je
+geklärter Jobfamilie nach Codeprüfung und Zuordnung der tatsächlichen Beleglücke
+belastbar; diese Fachklärung enthält keine Implementationsschätzung.
 
 ## Nächste ausführbare Schritte
 

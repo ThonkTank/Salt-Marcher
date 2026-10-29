@@ -329,7 +329,8 @@ die Diagnose über drei bestehende Besitzer:
 | Gehört der gespeicherte Beleg zu diesem Auftrag? | [`CampaignStore.commitStatus`](../../../src/app/storage/store.ts) prüft den Aktivierungskontext; [`storage/commit-receipt.ts`](../../../src/app/storage/commit-receipt.ts) prüft Campaign, Fingerprint, Prüfsumme und Fachbezug. |
 
 `checkPendingCommit` meldet einen bestätigten Beleg über `onCommitResolved` an
-den Fachbesitzer, beim Kampf `recoveredCombat` aus [`combat.ts`](../../../src/app/runtime/combat.ts).
+den Fachbesitzer, beim Kampf `recoveredCombat` aus
+[`combat-write-coordinator.ts`](../../../src/app/runtime/combat-write-coordinator.ts).
 
 #### Modale Buchungen
 

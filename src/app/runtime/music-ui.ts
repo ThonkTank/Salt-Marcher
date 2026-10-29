@@ -989,6 +989,10 @@ export function createMusicEditor(host: {
       schedule();
     };
     el('audio-editor').onchange = () => {
+      // Blur can emit change after this input was already acknowledged by
+      // autosave. Explicit input, including correction of a rejected draft,
+      // still owns its write; only the redundant late change is ignored.
+      if (!assetDirty && selected && assetInput(collectAsset()) === assetInput(selected)) return;
       assetDirty = true;
       schedule();
     };

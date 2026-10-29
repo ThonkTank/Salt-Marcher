@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import assert from 'node:assert/strict';
+import path from 'node:path';
 import { readFile, writeFile, copyFile } from 'node:fs/promises';
 import { gunzipSync } from 'node:zlib';
 import { createRequire } from 'node:module';
@@ -29,12 +30,23 @@ if (!refresh) {
 }
 for (const zoom of [1]) {
   const output =
-    (process.env.QA_EVIDENCE_DIR ?? root + '/.build/atlas-mixed-workbench') + '/' + zoom;
+    path.resolve(process.env.QA_EVIDENCE_DIR ?? root + '/.build/atlas-mixed-workbench') +
+    '/' +
+    zoom;
   const native = await createNativeSession({ root, output, name: 'atlas-mixed-workbench' }),
     results = [],
+    zoomPublications = [],
     errors = [];
   let db;
   try {
+    require('esbuild').buildSync({
+      entryPoints: ['src/app/atlas/atlas-camera.ts'],
+      outfile: output + '/camera.cjs',
+      bundle: true,
+      platform: 'node',
+      format: 'cjs',
+    });
+    const { atlasRefocusCamera } = require(output + '/camera.cjs');
     await writeFile(
       native.profile + '/workbench.sqlite',
       gunzipSync(await readFile(root + '/tests/fixtures/atlas/mixed-world.sqlite.gz')),
@@ -171,15 +183,18 @@ for (const zoom of [1]) {
           await page.locator('#campaign-map').getAttribute('data-atlas-view'),
         );
         if (view.width <= expectedView.width * (1 + 1e-7)) break;
-        const nextWidth = view.width / 1.4;
+        const beforePose = await page
+            .locator('#campaign-map')
+            .evaluate((canvas) => JSON.parse(canvas.dataset.terrainProjection)),
+          nextWidth = beforePose.frame.width / 1.4;
         await page.getByRole('button', { name: 'Vergrößern', exact: true }).click();
         await page.waitForFunction(
           (width) =>
             Math.abs(
               JSON.parse(document.querySelector('#campaign-map').dataset.atlasView).width - width,
-            ) <
+            ) >
             width * 1e-7,
-          nextWidth,
+          beforePose.frame.width,
         );
         native.mark('zoom publication ' + nextWidth);
         await page.evaluate(
@@ -192,6 +207,22 @@ for (const zoom of [1]) {
           null,
           { timeout: 120000 },
         );
+        const afterPose = await page
+            .locator('#campaign-map')
+            .evaluate((canvas) => JSON.parse(canvas.dataset.terrainProjection)),
+          normalized = atlasRefocusCamera(afterPose, beforePose.focusM);
+        // Refocusing preserves the eye and projected points; compare the zoom
+        // factor at the same focus plane instead of requiring a transient frame.
+        assert(
+          Math.abs(normalized.frame.width - nextWidth) < nextWidth * 1e-7,
+          'Zoom factor at the original focus plane',
+        );
+        zoomPublications.push({
+          beforePose,
+          afterPose,
+          normalizedWidth: normalized.frame.width,
+          nextWidth,
+        });
       }
       await atlasCanvasReady(page);
       await page.waitForFunction(
@@ -275,6 +306,7 @@ for (const zoom of [1]) {
       referenceRefresh: refresh,
       zoom,
       results,
+      zoomPublications,
       reopened,
       export: { width: png.width, height: png.height, landPixels: land },
       canonicalRevision: before,

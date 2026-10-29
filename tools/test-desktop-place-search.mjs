@@ -1,3 +1,4 @@
+import { openNativeCampaign } from './native-navigation.mjs';
 import { runNativeProbe } from './native-session.mjs';
 // A distant named World location: search, edit in context, return, and find after restart.
 import assert from 'node:assert/strict';
@@ -143,12 +144,7 @@ await runNativeProbe(
             .webContents.setZoomFactor(z),
         zoom,
       );
-      await page
-        .locator('.campaign-card')
-        .filter({ hasText: campaign.name })
-        .getByRole('button', { name: /^(Öffnen|Fortsetzen)$/ })
-        .click();
-      await page.waitForFunction(() => !document.querySelector('main').inert);
+      await openNativeCampaign(page, campaign.id);
       if (await page.locator('#campaign-atlas').isHidden()) {
         if (!(await page.locator('#atlas-tab').isVisible()))
           await page.locator('#workspace-nav-summary').click();

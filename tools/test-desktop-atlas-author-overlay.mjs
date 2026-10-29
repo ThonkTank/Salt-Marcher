@@ -174,7 +174,6 @@ try {
               document.querySelector('#campaign-atlas').dataset.family === 'interior' &&
               document.querySelector('#atlas-selection-title').textContent === 'Autorenraum',
           );
-          await page.locator('#atlas-dock-tool').click();
           return page;
         };
         const close = async () => {
@@ -226,10 +225,7 @@ try {
           };
         });
         // A visible glyph must join exact overlaps, even far from its logical anchor.
-        await page.locator('#atlas-dock-tool').click();
-        await page
-          .locator('[data-tool-select=\"drawing-tool\"][data-tool-value=\"select\"]')
-          .click();
+        await page.locator('#atlas-select').click();
         await settle();
         const glyphPoint = await atlasCanvasPoint(page, { x: 50, y: 50 });
         await page.mouse.click(glyphPoint.x, glyphPoint.y);
@@ -240,10 +236,9 @@ try {
         rec.glyphCandidates = candidates;
         await page.keyboard.press('Escape');
         rec.retainedPaints = [];
-        await page.locator('#atlas-dock-tool').click();
-        await page
-          .locator('[data-tool-select=\"drawing-tool\"][data-tool-value=\"room-polygon\"]')
-          .click();
+        if (!(await page.locator('[data-atlas-tool="room-polygon"]').isVisible()))
+          await page.locator('[data-tool-group="rooms"]').click();
+        await page.locator('[data-atlas-tool="room-polygon"]').click();
         // Changing tool refreshes its context controls. Only subsequent draft updates
         // must retain the resulting inspector, so capture that settled baseline.
         await settle();
@@ -334,10 +329,7 @@ try {
         await settle();
         rec.continuedRasterDraft = true;
         await page.locator('#drawing-cancel').click();
-        await page.locator('#atlas-dock-tool').click();
-        await page
-          .locator('[data-tool-select=\"drawing-tool\"][data-tool-value=\"select\"]')
-          .click();
+        await page.locator('#atlas-select').click();
         await settle();
         rec.cancelledPaint = await page.evaluate(() => window.__atlasAuthorPaint);
         assert.equal(rec.cancelledPaint.draft, 0, 'Cancel must remove the actual draft stroke');

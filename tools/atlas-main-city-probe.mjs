@@ -153,7 +153,7 @@ export async function verifyAtlasCity(page, settle, capture, readObjects) {
     () => (window.__cityAtlasSurface = document.querySelector('#atlas-terrain-spatial')),
   );
   const inspect = () =>
-    page.locator('#atlas-terrain-spatial').evaluate((c) => {
+    page.locator('#atlas-terrain-spatial canvas').evaluate((c) => {
       const gl = c.getContext('webgl2'),
         pixels = new Uint8Array(c.width * c.height * 4);
       gl.readPixels(0, 0, c.width, c.height, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
@@ -225,7 +225,7 @@ export async function verifyAtlasCity(page, settle, capture, readObjects) {
   assert.equal(withoutArea.paper, 0);
   await capture('08-area-removed-objects-remain');
   // Real GPU context loss must fall back once, without an automatic retry loop.
-  await page.locator('#atlas-terrain-spatial').evaluate((c) => {
+  await page.locator('#atlas-terrain-spatial canvas').evaluate((c) => {
     const extension = c.getContext('webgl2').getExtension('WEBGL_lose_context');
     if (!extension) throw Error('GPU context loss injection unavailable');
     extension.loseContext();

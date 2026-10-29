@@ -7,7 +7,10 @@ import assert from 'node:assert/strict';
 import { createNativeSession } from './native-session.mjs';
 const root = process.cwd(),
   require = createRequire(root + '/package.json'),
-  out = process.env.GM_QA_OUT ?? root + '/.build/treasure-anchor-evidence';
+  out =
+    process.env.QA_EVIDENCE_DIR ??
+    process.env.GM_QA_OUT ??
+    root + '/.build/treasure-anchor-evidence';
 const native = await createNativeSession({ root, output: out, name: 'treasure-anchor' });
 try {
   require('esbuild').buildSync({

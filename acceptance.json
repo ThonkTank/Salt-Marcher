@@ -189,7 +189,17 @@
       {
         "id": "SMR-AC-05",
         "title": "Unified hex, city and dungeon atlas",
-        "state": "open"
+        "state": "open",
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "contracts": [
+            "docs/dungeon/requirements/smr04-spatial-coverage.md#prüfbare-wirkungen-der-erweiterten-dungeonlieferung",
+            "docs/city/contract/city.md#ergebnisverträge-und-bestehende-inventarbindungen",
+            "docs/atlas/verification/reference-comparison.md#ergebnisverträge-je-vorhandener-variante"
+          ],
+          "state": "requirements_mapped_acceptance_unchanged",
+          "evidence": "docs/reference/scope-contracts-20261029/README.md"
+        }
       },
       {
         "id": "SMR-AC-06",
@@ -204,7 +214,15 @@
       {
         "id": "SMR-AC-08",
         "title": "Cross-provider travel with causal undo",
-        "state": "open"
+        "state": "open",
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "contracts": [
+            "docs/dungeon/requirements/smr04-spatial-coverage.md#prüfbare-wirkungen-der-erweiterten-dungeonlieferung"
+          ],
+          "state": "requirements_mapped_acceptance_unchanged",
+          "evidence": "docs/reference/scope-contracts-20261029/README.md"
+        }
       },
       {
         "id": "SMR-AC-09",
@@ -229,17 +247,42 @@
       {
         "id": "SMR-AC-13",
         "title": "Opt-in explainable actor autonomy",
-        "state": "open"
+        "state": "open",
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "contracts": [
+            "docs/runtime/contract/actor-autonomy.md#ergebnisverträge-aus-dem-gebundenen-quellenstand"
+          ],
+          "state": "requirements_mapped_acceptance_unchanged",
+          "evidence": "docs/reference/scope-contracts-20261029/README.md"
+        }
       },
       {
         "id": "SMR-AC-14",
         "title": "Fail-closed passive player projection",
-        "state": "open"
+        "state": "open",
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "contracts": [
+            "docs/dungeon/requirements/smr04-spatial-coverage.md#prüfbare-wirkungen-der-erweiterten-dungeonlieferung"
+          ],
+          "state": "requirements_mapped_acceptance_unchanged",
+          "evidence": "docs/reference/scope-contracts-20261029/README.md"
+        }
       },
       {
         "id": "SMR-AC-15",
         "title": "Complete campaign export/import and salvage",
-        "state": "open"
+        "state": "open",
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "contracts": [
+            "docs/campaign/contract/archive.md#laufdaten-im-complete-transfer",
+            "docs/city/contract/city.md#ergebnisvertrag-ausgabe"
+          ],
+          "state": "requirements_mapped_acceptance_unchanged",
+          "evidence": "docs/reference/scope-contracts-20261029/README.md"
+        }
       },
       {
         "id": "SMR-AC-16",
@@ -2029,7 +2072,17 @@
               "Own implementation and better usability"
             ]
           }
-        ]
+        ],
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "CO-COK-0001",
+          "contract": "docs/city/contract/city.md#ergebnisvertrag-gestaltung",
+          "acceptanceScenario": "Pfad verlängern und Fläche umformen; platzierte Straßen-/Marktobjekte folgen nur ihrem Träger, übrige Objekte bleiben wertgleich.",
+          "delivery": "CITY-07",
+          "state": "specified_core_with_original_variants_open",
+          "unresolvedOriginalEffect": "Direkte Demo-Teilprobe belegt; vollständiger Originalumfang, eigene Umsetzung und Host-/Bedienvergleich weiterhin offen.",
+          "acceptanceState": "open"
+        }
       },
       {
         "id": "CO-COK-0002",
@@ -2074,6 +2127,16 @@
           ],
           "limits": "RandomizeScale and RandomizeRotation were both enabled; saved variation does not independently prove each toggle range/policy. Preview overlaps after placement are distinct from final Escape frame. Native scene asset paths are observed artifact fields, not public integration APIs.",
           "reviewManifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i43-20261009-r01/review.json"
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "CO-COK-0002",
+          "contract": "docs/city/contract/city.md#ergebnisvertrag-gestaltung",
+          "acceptanceScenario": "Zwei Bäume derselben Kategorie als unterschiedliche Varianten platzieren; erneute Variantenwahl verändert die bereits gesetzten Bäume nicht.",
+          "delivery": "CITY-07",
+          "state": "specified_core_with_original_variants_open",
+          "unresolvedOriginalEffect": "Tree-category variants visible and actual saved assets/poses proved. Fullcategory matrix/seed/distribution/reopen, own implementation/host/UX remainopen.",
+          "acceptanceState": "open"
         }
       },
       {
@@ -2110,7 +2173,17 @@
             "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i26-20261009-r01/manifest.json",
             "result": "Two own objects placed on the same ground position; only selected hut moved. Actual save changes only objects: hut x4.17/z-1.35 to x4.46/z-0.48; trunk unchanged. Auto Combine control enabled, tooltip describes crates on walls/ships. No suitable elevated-support test and no combined movement proved. Groups tooltip describes layer visibility/locking, unavailable in Demo."
           }
-        ]
+        ],
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "CO-COK-0003",
+          "contract": "docs/city/contract/city.md#ergebnisvertrag-gestaltung",
+          "acceptanceScenario": "Geeigneten Träger samt aufgesetzten Objekten gemeinsam bewegen; Gruppenauflösung und Einzelkorrektur prüfen. Die historische erfolglose Bodenprobe genügt nicht.",
+          "delivery": "CITY-07",
+          "state": "specified_core_with_original_variants_open",
+          "unresolvedOriginalEffect": "Auto Combine angeboten, bodengleiche Hütte/Stumpf bewegen sich nicht gemeinsam. Geeigneter erhöhter Träger, kombinierte Bewegung und Save/Reload sowie eigener Vergleich offen; Groups-Layerfunktion separat.",
+          "acceptanceState": "open"
+        }
       },
       {
         "id": "CO-COK-0004",
@@ -2165,6 +2238,16 @@
             "normalExit": true,
             "physicalInput": false
           }
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "CO-COK-0004",
+          "contract": "docs/city/contract/city.md#ergebnisvertrag-gestaltung",
+          "acceptanceScenario": "Zwei Licht-/Wettervorlagen erstellen, wechseln, abbrechen und neu öffnen; nur Umgebungswerte ändern, Gebäude und Bewohner bleiben identisch.",
+          "delivery": "CITY-07",
+          "state": "specified_core_with_original_variants_open",
+          "unresolvedOriginalEffect": "I48a/I48b template creation/load, visual Cancel, saved two-field environment delta and genuine fresh-process Map/template reopen pass bounded R48. R48 cleanup P/I/R completed; independent Hex reference review HEX-CITY00-COK-R48-R01 passed bounded scope on 9c4afe102c00e42ba814d0a32cf721ddcccfc820. Other controls/ranges, own product/host/usability/physical/full-version acceptance remain open.",
+          "acceptanceState": "open"
         }
       },
       {
@@ -2193,7 +2276,17 @@
         "status": "open",
         "gap": "Dokumentationskandidat; direkte vollständige Originalprobe offen.",
         "independentFunctionalRequirement": true,
-        "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required"
+        "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required",
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "CO-COK-0005",
+          "contract": "docs/city/contract/city.md#ergebnisvertrag-ausgabe",
+          "acceptanceScenario": "Exportausschnitt mit Raster und Vorlage ausgeben; Abmessungen, Transparenz/Rasterinhalt und erneute Verwendung der Vorlage anhand empfangener Datei prüfen.",
+          "delivery": "CITY-08",
+          "state": "specified_core_with_original_variants_open",
+          "unresolvedOriginalEffect": "Dokumentationskandidat; direkte vollständige Originalprobe offen.",
+          "acceptanceState": "open"
+        }
       },
       {
         "id": "CO-WAT-0001",
@@ -2274,7 +2367,17 @@
             "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i38-coast-20261009/manifest.json",
             "result": "Coast OFF→ON adds sea0.2, same seed540139574/size25.13→14 groups:water added,10 common groups changed/3 equal; planks0→8, buildings544→537. Visible shoreline/jetties, exact harbor topology/sea units unproved. OFF+Rebuild restoration byteequal."
           }
-        ]
+        ],
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "CO-WAT-0001",
+          "contract": "docs/city/contract/city.md#ergebnisvertrag-erzeugung",
+          "acceptanceScenario": "Dorf, ummauerte Stadt und Hafen aus gleichen kontrollierten Eingaben erzeugen; Größe, Netztopologie und Küsten-/Hafenkontakt am Ergebnis vergleichen.",
+          "delivery": "CITY-02",
+          "state": "specified_core_with_original_variants_open",
+          "unresolvedOriginalEffect": "Features/Größen/River/Coast mit sichtbaren Stegen und echten Ausgabegruppen direkt teilbelegt; genaue Ufer-/Hafentopologie, sea-Einheit/Bereiche/weitere Features/Version und eigener Vergleich offen.",
+          "acceptanceState": "open"
+        }
       },
       {
         "id": "CO-WAT-0002",
@@ -2342,7 +2445,17 @@
             "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i31-processing-output-20261009/manifest.json",
             "result": "Processing Offset/None: tatsächliche JSON298842/293445 Bytes; nur buildings geändert, MultiPolygon669→651. Andere13 Gruppen wertgleich; gleiche Gruppenkennung buildings ist kein Beleg stabiler Einzelobjekt-IDs. Exportversion0.11.5 keine bestätigte UI-Version."
           }
-        ]
+        ],
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "CO-WAT-0002",
+          "contract": "docs/city/contract/city.md#ergebnisvertrag-gestaltung",
+          "acceptanceScenario": "Dieselbe Stadt mit geänderten Dach-/Vierteloptionen zeigen und ausgeben; rein visuelle Optionen von tatsächlich veränderter Gebäudegeometrie trennen.",
+          "delivery": "CITY-07",
+          "state": "specified_core_with_original_variants_open",
+          "unresolvedOriginalEffect": "Dach-/Display-/Processing-/Raised-/Solids-Sichtwirkung und Processing-Ausgabe buildings669→651 direkt teilbelegt. Complex vollständige Wirkung/Ursache, interne Geometrie-/ID-/Savewirkung und eigener Vergleich offen.",
+          "acceptanceState": "open"
+        }
       },
       {
         "id": "CO-WAT-0003",
@@ -2388,7 +2501,17 @@
             "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i24-alleys-20261009/manifest.json",
             "result": "Show alleys Flag/Wirkungsprobe und tatsächliche JSON-Dateien: roads 3→74 LineStrings, ursprüngliche3 erhalten, übrige13 Gruppen wertgleich."
           }
-        ]
+        ],
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "CO-WAT-0003",
+          "contract": "docs/city/contract/city.md#ergebnisvertrag-topologie",
+          "acceptanceScenario": "Gassen sichtbar machen, einen Straßen-/Gassenanschluss ändern und erneut öffnen; verbundenes Netz und reine Anzeigeänderung auseinanderhalten.",
+          "delivery": "CITY-05",
+          "state": "specified_core_with_original_variants_open",
+          "unresolvedOriginalEffect": "Show alleys und tatsächliche Ausgabe von71 zusätzlichen Linien direkt belegt; individuelle Hauptweg-/Gassenbearbeitung, Topologie, Save/Reload, Version und eigener Produktvergleich offen.",
+          "acceptanceState": "open"
+        }
       },
       {
         "id": "CO-WAT-0004",
@@ -2433,7 +2556,17 @@
             "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i27-forest-20261009/manifest.json",
             "result": "Show trees aktiviert Show forests. Forest off/on/off verändert sichtbar zusammenhängende Außenwaldflächen. Tatsächliche JSON-Dateien beide299585 Bytes und bytegleich; alle14 Gruppen einschließlich trees13 identisch. Keine separate Waldgeometrieausgabe durch dieses Flag belegt. Exportmetadata0.11.5 ist keine bestätigte UI-Laufversion."
           }
-        ]
+        ],
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "CO-WAT-0004",
+          "contract": "docs/city/contract/city.md#ergebnisvertrag-gestaltung",
+          "acceptanceScenario": "Waldfläche außerhalb der Stadt verändern; Kontur, Bäume und Darstellung gegen unveränderte Stadtgeometrie und Ausgabe prüfen.",
+          "delivery": "CITY-07",
+          "state": "specified_core_with_original_variants_open",
+          "unresolvedOriginalEffect": "Bäume und Waldanzeige direkt teilbelegt; Waldflag verändert sichtbare Außenflächen, JSON bleibt bytegleich. Waldkonturbearbeitung, stabile Kennungen, Save/Reload sowie eigener Produkt-/Host-/Bedienvergleich offen.",
+          "acceptanceState": "open"
+        }
       },
       {
         "id": "CO-FTG-0001",
@@ -2470,7 +2603,26 @@
           "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/manifest.json"
         },
         "independentFunctionalRequirement": true,
-        "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required"
+        "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required",
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "CO-FTG-0001",
+          "contract": "docs/city/contract/city.md#ergebnisvertrag-erzeugung",
+          "acceptanceScenario": "Hamlet und größere Siedlung erzeugen; reale Bewohner-/Gebäudezahl, Layout und direkt editierbare Records prüfen; ungefähre Größen sind keine exakte Einwohnergarantie.",
+          "delivery": "CITY-02",
+          "state": "specified_core_with_original_variants_open",
+          "unresolvedOriginalEffect": "Hamlet am 29.10. direkt erzeugt (93 Bewohner/27 Gebäude). Offen: alle weiteren Größen, Vorgabenwirkungen, deterministische Eingaben, Generierungsabbruch und versionsgebundene Speicherung.",
+          "acceptanceState": "open"
+        },
+        "additionalOriginalProbes": [
+          {
+            "run": "CITY00-PLAN3-20261029",
+            "version": null,
+            "observedAt": "2026-10-29",
+            "evidence": "docs/reference/scope-contracts-20261029/README.md",
+            "scope": "Hamlet generated: 93 residents and 27 buildings; default settings; no same-seed or second-size comparison."
+          }
+        ]
       },
       {
         "id": "CO-FTG-0002",
@@ -2517,6 +2669,16 @@
             "Prior settlement export remains unverified; no third download attempt",
             "No own product/host/UX acceptance"
           ]
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "CO-FTG-0002",
+          "contract": "docs/city/contract/city.md#ergebnisvertrag-erzeugung",
+          "acceptanceScenario": "American und Ringed bei gleicher Größe erzeugen; tatsächliche Straßenform/Dichte und Gebäudeverteilung vergleichen, nicht nur Parameterwerte.",
+          "delivery": "CITY-02",
+          "state": "specified_core_with_original_variants_open",
+          "unresolvedOriginalEffect": "Direkte Formularparameter/Entwurfsauswahl erfasst; erzeugte Karten-/Namenswirkung, Settings-Datei und eigene Umsetzung/Host/Bedienung weiterhin offen.",
+          "acceptanceState": "open"
         }
       },
       {
@@ -2547,7 +2709,17 @@
         "status": "open",
         "gap": "Formularbereich direkt sichtbar; konkrete Wirkung und vollständige Detailoptionen noch offen.",
         "independentFunctionalRequirement": true,
-        "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required"
+        "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required",
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "CO-FTG-0003",
+          "contract": "docs/city/contract/city.md#ergebnisvertrag-gestaltung",
+          "acceptanceScenario": "Baumaterial vor Erzeugung und am vorhandenen Gebäude ändern; sichtbare Oberfläche, gespeicherte Materialzuordnung und Geometrieerhalt trennen.",
+          "delivery": "CITY-07",
+          "state": "specified_core_with_original_variants_open",
+          "unresolvedOriginalEffect": "Formularbereich direkt sichtbar; konkrete Wirkung und vollständige Detailoptionen noch offen.",
+          "acceptanceState": "open"
+        }
       },
       {
         "id": "CO-FTG-0004",
@@ -2575,7 +2747,17 @@
         "status": "open",
         "gap": "Formularbereich direkt sichtbar; konkrete Wirkung und vollständige Detailoptionen noch offen.",
         "independentFunctionalRequirement": true,
-        "mappingCoverage": "new_required_function_not_covered_by_existing_CTY"
+        "mappingCoverage": "new_required_function_not_covered_by_existing_CTY",
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "CO-FTG-0004",
+          "contract": "docs/city/contract/city.md#ergebnisvertrag-lebensdaten",
+          "acceptanceScenario": "Zwei Demografie-/Lebensstandardvorgaben erzeugen; reale Verteilungen, Alters-/Geschlechts-/Speziesmerkmale, Haushalte und Berufe am Ergebnis prüfen.",
+          "delivery": "CITY-06",
+          "state": "specified_core_with_original_variants_open",
+          "unresolvedOriginalEffect": "Formularbereich direkt sichtbar; konkrete Wirkung und vollständige Detailoptionen noch offen.",
+          "acceptanceState": "open"
+        }
       },
       {
         "id": "CO-FTG-0005",
@@ -2603,7 +2785,17 @@
         "status": "open",
         "gap": "Formularbereich direkt sichtbar; konkrete Wirkung und vollständige Detailoptionen noch offen.",
         "independentFunctionalRequirement": true,
-        "mappingCoverage": "new_required_function_not_covered_by_existing_CTY"
+        "mappingCoverage": "new_required_function_not_covered_by_existing_CTY",
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "CO-FTG-0005",
+          "contract": "docs/city/contract/city.md#ergebnisvertrag-lebensdaten",
+          "acceptanceScenario": "Regierung und Wachen erzeugen, Rollen/Besetzung ändern; verknüpfte Bewohner, Arbeitsorte, Gebäude und Zugehörigkeiten konsistent wiederfinden.",
+          "delivery": "CITY-06",
+          "state": "specified_core_with_original_variants_open",
+          "unresolvedOriginalEffect": "Formularbereich direkt sichtbar; konkrete Wirkung und vollständige Detailoptionen noch offen.",
+          "acceptanceState": "open"
+        }
       },
       {
         "id": "CO-FTG-0006",
@@ -2633,7 +2825,17 @@
         "status": "open",
         "gap": "Formularbereich direkt sichtbar; konkrete Wirkung und vollständige Detailoptionen noch offen.",
         "independentFunctionalRequirement": true,
-        "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required"
+        "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required",
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "CO-FTG-0006",
+          "contract": "docs/city/contract/city.md#ergebnisvertrag-lebensdaten",
+          "acceptanceScenario": "Viertelwachstum und Dekoration ändern; betroffene Dichte/Nutzung/Objekte und erhaltene benachbarte Viertel konkret vergleichen.",
+          "delivery": "CITY-06",
+          "state": "specified_core_with_original_variants_open",
+          "unresolvedOriginalEffect": "Formularbereich direkt sichtbar; konkrete Wirkung und vollständige Detailoptionen noch offen.",
+          "acceptanceState": "open"
+        }
       },
       {
         "id": "CO-FTG-0007",
@@ -2661,7 +2863,17 @@
         "status": "open",
         "gap": "Formularbereich direkt sichtbar; konkrete Wirkung und vollständige Detailoptionen noch offen.",
         "independentFunctionalRequirement": true,
-        "mappingCoverage": "new_required_function_not_covered_by_existing_CTY"
+        "mappingCoverage": "new_required_function_not_covered_by_existing_CTY",
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "CO-FTG-0007",
+          "contract": "docs/city/contract/city.md#ergebnisvertrag-lebensdaten",
+          "acceptanceScenario": "Zwei Fraktionen erzeugen und Zugehörigkeit wechseln; Worldidentität, Mitglieder-/Gebäudezahlen, Ortssuche und Ausgabe stimmen überein.",
+          "delivery": "CITY-06",
+          "state": "specified_core_with_original_variants_open",
+          "unresolvedOriginalEffect": "Formularbereich direkt sichtbar; konkrete Wirkung und vollständige Detailoptionen noch offen.",
+          "acceptanceState": "open"
+        }
       },
       {
         "id": "CO-FTG-0008",
@@ -2689,7 +2901,26 @@
         "status": "open",
         "gap": "Formularbereich direkt sichtbar; konkrete Wirkung und vollständige Detailoptionen noch offen.",
         "independentFunctionalRequirement": true,
-        "mappingCoverage": "new_required_function_not_covered_by_existing_CTY"
+        "mappingCoverage": "new_required_function_not_covered_by_existing_CTY",
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "CO-FTG-0008",
+          "contract": "docs/city/contract/city.md#ergebnisvertrag-lebensdaten",
+          "acceptanceScenario": "Religionsvorgabe erzeugen und Religion einer Person ändern; sichtbares Bekenntnis, Gott-/Tempelbindung und weitere tatsächlich wirkende Folgen getrennt belegen.",
+          "delivery": "CITY-06",
+          "state": "specified_core_with_original_variants_open",
+          "unresolvedOriginalEffect": "Einzeländerung neutral→good gods und Browserreload direkt belegt. Offen: Erzeugungsverteilung, Gott-/Tempel-/Fraktionsbezug, weitere Religionsfolgen und rohe gespeicherte Identitäten.",
+          "acceptanceState": "open"
+        },
+        "additionalOriginalProbes": [
+          {
+            "run": "CITY00-PLAN3-20261029",
+            "version": null,
+            "observedAt": "2026-10-29",
+            "evidence": "docs/reference/scope-contracts-20261029/README.md",
+            "scope": "Person religion changed neutral→good gods; profile and browser reload retain choice; generation distribution remains unmeasured."
+          }
+        ]
       },
       {
         "id": "CO-FTG-0009",
@@ -2719,7 +2950,17 @@
         "status": "open",
         "gap": "Formularbereich direkt sichtbar; konkrete Wirkung und vollständige Detailoptionen noch offen.",
         "independentFunctionalRequirement": true,
-        "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required"
+        "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required",
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "CO-FTG-0009",
+          "contract": "docs/city/contract/city.md#ergebnisvertrag-gestaltung",
+          "acceptanceScenario": "Temperate und Desert erzeugen; Boden, Vegetation und Farmanordnung am Ergebnis vergleichen; keine Wetter-/Autonomiewirkung aus Klimaformular ableiten.",
+          "delivery": "CITY-07",
+          "state": "specified_core_with_original_variants_open",
+          "unresolvedOriginalEffect": "Formularbereich direkt sichtbar; konkrete Wirkung und vollständige Detailoptionen noch offen.",
+          "acceptanceState": "open"
+        }
       },
       {
         "id": "CO-FTG-0010",
@@ -2750,7 +2991,17 @@
         "status": "open",
         "gap": "Formularbereich direkt sichtbar; konkrete Wirkung und vollständige Detailoptionen noch offen.",
         "independentFunctionalRequirement": true,
-        "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required"
+        "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required",
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "CO-FTG-0010",
+          "contract": "docs/city/contract/city.md#ergebnisvertrag-erzeugung",
+          "acceptanceScenario": "Küsten-, Insel- und Flussstadt erzeugen; bebaubare Flächen, Brücken, Ufer und Hafenkontakt kontrollieren; gemeinsames Terrain bleibt kanonisch.",
+          "delivery": "CITY-02",
+          "state": "specified_core_with_original_variants_open",
+          "unresolvedOriginalEffect": "Formularbereich direkt sichtbar; konkrete Wirkung und vollständige Detailoptionen noch offen.",
+          "acceptanceState": "open"
+        }
       },
       {
         "id": "CO-FTG-0011",
@@ -2778,7 +3029,17 @@
         "status": "open",
         "gap": "Formularbereich direkt sichtbar; konkrete Wirkung und vollständige Detailoptionen noch offen.",
         "independentFunctionalRequirement": true,
-        "mappingCoverage": "new_required_function_not_covered_by_existing_CTY"
+        "mappingCoverage": "new_required_function_not_covered_by_existing_CTY",
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "CO-FTG-0011",
+          "contract": "docs/city/contract/city.md#ergebnisvertrag-zeit",
+          "acceptanceScenario": "Kalender mit anderer Wochen-/Monatsstruktur anwenden; Datum, Tagesplan und Ruhetag müssen denselben gemeinsamen Zeitpunkt meinen.",
+          "delivery": "CITY-07",
+          "state": "specified_core_with_original_variants_open",
+          "unresolvedOriginalEffect": "Formularbereich direkt sichtbar; konkrete Wirkung und vollständige Detailoptionen noch offen.",
+          "acceptanceState": "open"
+        }
       },
       {
         "id": "CO-FTG-0012",
@@ -2806,7 +3067,17 @@
         "status": "open",
         "gap": "Formularbereich direkt sichtbar; konkrete Wirkung und vollständige Detailoptionen noch offen.",
         "independentFunctionalRequirement": true,
-        "mappingCoverage": "new_required_function_not_covered_by_existing_CTY"
+        "mappingCoverage": "new_required_function_not_covered_by_existing_CTY",
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "CO-FTG-0012",
+          "contract": "docs/city/contract/city.md#ergebnisvertrag-wirtschaft",
+          "acceptanceScenario": "Gegenstand/Dienstleistung mit Qualität und Preis an Gebäude anbieten; editierbare Definition, Bestand und Preiswirkung getrennt prüfen.",
+          "delivery": "CITY-06",
+          "state": "specified_core_with_original_variants_open",
+          "unresolvedOriginalEffect": "Formularbereich direkt sichtbar; konkrete Wirkung und vollständige Detailoptionen noch offen.",
+          "acceptanceState": "open"
+        }
       },
       {
         "id": "CO-FTG-0013",
@@ -2852,7 +3123,17 @@
           "countScope": "UI pagination totals209/80; only first10/20 entries visible, not full catalog verified"
         },
         "independentFunctionalRequirement": true,
-        "mappingCoverage": "new_required_function_not_covered_by_existing_CTY"
+        "mappingCoverage": "new_required_function_not_covered_by_existing_CTY",
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "CO-FTG-0013",
+          "contract": "docs/city/contract/city.md#ergebnisvertrag-wirtschaft",
+          "acceptanceScenario": "Gebäudetyp mit Initialzahl über Limit sowie fehlendem Küsten-/Rohstoffbedarf erzeugen; reale Anzahlen, Ausnahme und Ablehnungsgrund prüfen.",
+          "delivery": "CITY-06",
+          "state": "specified_core_with_original_variants_open",
+          "unresolvedOriginalEffect": "Gebäudetyp-/Bedarfs-/Limitparameter und zwei Änderungen im Formular direkt belegt. Deklarierte Ausnahmeregeln noch ohne erzeugte Anzahlwirkung. Rundung, vollständige Typen-/Abhängigkeitsmatrix, eigene Umsetzung/Host/Bedienung bleiben offen.",
+          "acceptanceState": "open"
+        }
       },
       {
         "id": "CO-FTG-0014",
@@ -2908,7 +3189,26 @@
           "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/manifest.json",
           "observation": "Thawn Cobblekind: Erscheinung, Persönlichkeit, Ziel, Wohnort und Attribute; Relations nennt Markli parent, Guro father, Durmold adoptive brother. Keine Bearbeitung geprüft.",
           "limits": "Gelesene Attribute und benannte Beziehungen sind sichtbare Originaldaten; keine stabilen serialisierten IDs, Bearbeitung oder Persistenz bewiesen."
-        }
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "CO-FTG-0014",
+          "contract": "docs/city/contract/city.md#ergebnisvertrag-lebensdaten",
+          "acceptanceScenario": "Bewohner mit Aussehen, Persönlichkeit, Ziel, Religion, Werten und Wohn-/Arbeitsort öffnen; Name/Religion ändern, Beziehung hinzufügen und nach Reload auf beiden Seiten wiederfinden.",
+          "delivery": "CITY-06",
+          "state": "specified_core_with_original_variants_open",
+          "unresolvedOriginalEffect": "Name/Religion, Friend-Erzeugung, sichtbare Gegenrichtung neben Familienkante und Browserreload am 29.10. belegt. Offen: übrige bearbeitbare Attribute, Relations-/Familien-/Gruppentypen samt Änderungs-/Entfernungswirkung, rohe IDs, Browserprozessneustart und geschützte Regeneration.",
+          "acceptanceState": "open"
+        },
+        "additionalOriginalProbes": [
+          {
+            "run": "CITY00-PLAN3-20261029",
+            "version": null,
+            "observedAt": "2026-10-29",
+            "evidence": "docs/reference/scope-contracts-20261029/README.md",
+            "scope": "Name/religion edit, new Friend relation, reciprocal person view and browser reload; family, home and work references retained. No raw stored IDs inspected."
+          }
+        ]
       },
       {
         "id": "CO-FTG-0015",
@@ -2988,7 +3288,17 @@
             ]
           }
         ],
-        "documentationSource": "https://docs.fantasytowngenerator.com/"
+        "documentationSource": "https://docs.fantasytowngenerator.com/",
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "CO-FTG-0015",
+          "contract": "docs/city/contract/city.md#ergebnisvertrag-bearbeitung",
+          "acceptanceScenario": "Haus bewegen, Straße zeichnen und eigenen Abschnitt entfernen; Cancel, gespeicherten Stand und zweite Wiederöffnung prüfen.",
+          "delivery": "CITY-01",
+          "state": "specified_core_with_original_variants_open",
+          "unresolvedOriginalEffect": "I10/I11 house move/cancel and road save/reload partial; I40 custom Draw/known-shape pose/draft discard directly observed,CTRLwheel scaling instruction only. Original scaling effect, other tools, stable bindings, per-actionUndo and own implementation/host/physical UX remain open.",
+          "acceptanceState": "open"
+        }
       },
       {
         "id": "CO-FTG-0016",
@@ -3014,7 +3324,26 @@
         "status": "open",
         "gap": "Dokumentationskandidat; direkte vollständige Originalprobe offen.",
         "independentFunctionalRequirement": true,
-        "mappingCoverage": "new_required_function_not_covered_by_existing_CTY"
+        "mappingCoverage": "new_required_function_not_covered_by_existing_CTY",
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "CO-FTG-0016",
+          "contract": "docs/city/contract/city.md#ergebnisvertrag-regeneration",
+          "acceptanceScenario": "Begrenzten Bereich mit ungeschützter Bebauung/Bewohnern erneuern; manuell bearbeitete Personen und alle Bindungen/Keys bleiben geschützt; Ersatzmapping vor Annahme zeigen.",
+          "delivery": "CITY-04",
+          "state": "specified_core_with_original_variants_open",
+          "unresolvedOriginalEffect": "29.10. nur Warnung über Gebäude-/Bewohnerersatz ohne Undo beobachtet. Keine Ausführung, Bereichsgrenze, ID-/Text-/Beziehungserhaltung oder Wiederöffnung nach Regeneration gemessen.",
+          "acceptanceState": "open"
+        },
+        "additionalOriginalProbes": [
+          {
+            "run": "CITY00-PLAN3-20261029",
+            "version": null,
+            "observedAt": "2026-10-29",
+            "evidence": "docs/reference/scope-contracts-20261029/README.md",
+            "scope": "Regeneration dialog explicitly warns residents/buildings are replaced and action cannot be undone. No execution or protection behavior measured."
+          }
+        ]
       },
       {
         "id": "CO-FTG-0017",
@@ -3057,6 +3386,16 @@
           ],
           "reviewManifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i46-bulk-20261009/review.json",
           "restorationScope": "Both visible names restored; Wyddis normalized full visible profile equals before. No whole-settlement serialized equality or fresh reload."
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "CO-FTG-0017",
+          "contract": "docs/city/contract/city.md#ergebnisvertrag-lebensdaten",
+          "acceptanceScenario": "Zwei Bewohner auswählen; gemeinsamen Namen ändern und weiteren Entwurf abbrechen; nur Auswahl ändert sich, Einzeltexte und Beziehungen bleiben erhalten.",
+          "delivery": "CITY-06",
+          "state": "specified_core_with_original_variants_open",
+          "unresolvedOriginalEffect": "Zweierauswahl, Namens-Apply, Cancel und sichtbare Rücksetzung direkt belegt. Weitere Felder/Move/Delete, Fresh-Reopen, Konflikt-/History-/Datenwirkung sowie eigene Umsetzung/Host/Bedienung offen.",
+          "acceptanceState": "open"
         }
       },
       {
@@ -3124,7 +3463,17 @@
             "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i42-time-20261009/manifest.json",
             "limits": "Ein Bewohner, Montag11h; keine vollständige Simulation/Persistenz oder ratifizierte None-Semantik."
           }
-        ]
+        ],
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "CO-FTG-0018",
+          "contract": "docs/city/contract/city.md#ergebnisvertrag-zeit",
+          "acceptanceScenario": "Arbeit, Pause, Heimkehr und Tagesgrenze eines Bewohners bei bestätigter Zeit prüfen; großer Sprung/Retry/Restart darf Aktivität nicht doppelt ausführen.",
+          "delivery": "CITY-07",
+          "state": "specified_core_with_original_variants_open",
+          "unresolvedOriginalEffect": "10:00→11:00 Monday und I42-Arbeits-/Ruhetagsfolge eines Bewohners bei gleichem Datum direkt teilbelegt. Vollständige Tagespläne, große Sprünge, Persistenz, Kalender-/Overridepolitik sowie eigener Produkt-/Host-/Bedienvergleich bleiben offen.",
+          "acceptanceState": "open"
+        }
       },
       {
         "id": "CO-FTG-0019",
@@ -3164,6 +3513,16 @@
           "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/manifest.json",
           "observation": "Snow(clear) whitens ground; Winter shows bare trees/defaultsLow8/16; at23:00 dayNight on darkens map, off brightens it, restored on darkens again",
           "observationTimeScope": "artifact persistence times; UI action start not measured"
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "CO-FTG-0019",
+          "contract": "docs/city/contract/city.md#ergebnisvertrag-gestaltung",
+          "acceptanceScenario": "Winter, Schneewetter und Nacht am selben Zeitpunkt wechseln; Darstellung gegen unveränderte Bewohnerdefinitionen und bestätigte Uhrzeit prüfen.",
+          "delivery": "CITY-07",
+          "state": "specified_core_with_original_variants_open",
+          "unresolvedOriginalEffect": "Weitere Wetter/Saison/Sonnenparameter, eigene Umsetzung und Vergleich weiterhin offen.",
+          "acceptanceState": "open"
         }
       },
       {
@@ -3202,6 +3561,16 @@
           "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i04-20261009/manifest.json",
           "exportFileState": "unverified_after_two_download_attempts",
           "retryPolicy": "stop_same_hypothesis"
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "CO-FTG-0020",
+          "contract": "docs/city/contract/city.md#ergebnisvertrag-ausgabe",
+          "acceptanceScenario": "PNG und Lebensdaten-CSV/JSON tatsächlich empfangen; Personen-/Gebäude-/Beziehungsreferenzen, Zeichensatz und GM-Sichtbarkeit am gleichen Stand prüfen.",
+          "delivery": "CITY-08",
+          "state": "specified_core_with_original_variants_open",
+          "unresolvedOriginalEffect": "PNG/SVG/GeoJSON und Daten JSON/CSV im Originalmenü sichtbar; tatsächliche Ausgabedateien nach zwei Downloadversuchen unbestätigt.",
+          "acceptanceState": "open"
         }
       },
       {
@@ -3234,6 +3603,16 @@
         "originalProbe": {
           "run": "CITY-00-I02",
           "state": "disabled_control_observed_only"
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "CO-FTG-0021",
+          "contract": "docs/city/contract/city.md#ergebnisvertrag-ausgabe",
+          "acceptanceScenario": "Foundry-/Roll20-Ausgabe in unterstützter Zielversion öffnen; Lage/Maßstab und tatsächlich übertragene Lebensdaten prüfen; deaktivierter Button ist kein Beleg.",
+          "delivery": "CITY-08",
+          "state": "specified_core_with_original_variants_open",
+          "unresolvedOriginalEffect": "FoundryVTT/Roll20 im Originalmenü sichtbar, für temporäre Siedlung deaktiviert; tatsächliche Integration offen.",
+          "acceptanceState": "open"
         }
       },
       {
@@ -3305,7 +3684,17 @@
         ],
         "documentationSources": [
           "https://docs.fantasytowngenerator.com/createSettlement/save_settings/"
-        ]
+        ],
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "CO-FTG-0022",
+          "contract": "docs/city/contract/city.md#ergebnisvertrag-erzeugung",
+          "acceptanceScenario": "Eigene Namensliste und Settingsdatei speichern/laden; erneute Generation übernimmt gewählte Vorgaben; bestehende Bewohner werden nicht still umbenannt.",
+          "delivery": "CITY-02",
+          "state": "specified_core_with_original_variants_open",
+          "unresolvedOriginalEffect": "Namensauswahl direkt teilbelegt; Load settings zugänglich/leere Liste, dokumentiertes Save settings im geprüften temporären Formular nicht vorhanden. Ursache und Speicher-/Datei-/Teilladeeffekt sowie eigene Umsetzung/Host/Bedienung offen.",
+          "acceptanceState": "open"
+        }
       },
       {
         "id": "CO-FTG-0023",
@@ -3333,7 +3722,17 @@
         "status": "open",
         "gap": "Dokumentationskandidat; direkte vollständige Originalprobe offen.",
         "independentFunctionalRequirement": true,
-        "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required"
+        "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required",
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "CO-FTG-0023",
+          "contract": "docs/city/contract/city.md#ergebnisvertrag-ausgabe",
+          "acceptanceScenario": "Metropole und Generierungsvorschau am erreichbaren Vollzugang prüfen; Größe/Abbruch/Detailzugriff messen, nicht aus deaktivierter Größenwahl schätzen.",
+          "delivery": "CITY-08",
+          "state": "specified_core_with_original_variants_open",
+          "unresolvedOriginalEffect": "Dokumentationskandidat; direkte vollständige Originalprobe offen.",
+          "acceptanceState": "open"
+        }
       },
       {
         "id": "CO-FTG-0024",
@@ -3368,7 +3767,17 @@
           "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/manifest.json"
         },
         "independentFunctionalRequirement": true,
-        "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required"
+        "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required",
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "CO-FTG-0024",
+          "contract": "docs/city/contract/city.md#ergebnisvertrag-ausgabe",
+          "acceptanceScenario": "SVG empfangen und rendern; Gebäude, Linien, Beschriftung und Sichtbarkeit mit bestätigter Kartenansicht vergleichen.",
+          "delivery": "CITY-08",
+          "state": "specified_core_with_original_variants_open",
+          "unresolvedOriginalEffect": "Schaltfläche/Menü direkt sichtbar; konkrete Wirkung und eigener Vergleich noch offen.",
+          "acceptanceState": "open"
+        }
       },
       {
         "id": "CO-FTG-0025",
@@ -3401,7 +3810,17 @@
           "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/manifest.json"
         },
         "independentFunctionalRequirement": true,
-        "mappingCoverage": "new_required_function_not_covered_by_existing_CTY"
+        "mappingCoverage": "new_required_function_not_covered_by_existing_CTY",
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "CO-FTG-0025",
+          "contract": "docs/city/contract/city.md#ergebnisvertrag-ausgabe",
+          "acceptanceScenario": "GeoJSON empfangen und extern öffnen; Koordinaten, Maßstab, Geometriearten und Attribute gegenüber demselben Kartenstand prüfen.",
+          "delivery": "CITY-08",
+          "state": "specified_core_with_original_variants_open",
+          "unresolvedOriginalEffect": "Schaltfläche/Menü direkt sichtbar; konkrete Wirkung und eigener Vergleich noch offen.",
+          "acceptanceState": "open"
+        }
       },
       {
         "id": "CO-FTG-0026",
@@ -3446,7 +3865,26 @@
           ]
         },
         "independentFunctionalRequirement": true,
-        "mappingCoverage": "new_required_function_not_covered_by_existing_CTY"
+        "mappingCoverage": "new_required_function_not_covered_by_existing_CTY",
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "CO-FTG-0026",
+          "contract": "docs/city/contract/city.md#ergebnisvertrag-lebensdaten",
+          "acceptanceScenario": "Familienbaum aus bestehenden Beziehungen öffnen, Eltern/Adoption/Partner navigieren und nach Änderung neu öffnen; keine zweite Personenidentität erzeugen.",
+          "delivery": "CITY-06",
+          "state": "specified_core_with_original_variants_open",
+          "unresolvedOriginalEffect": "Familienkanten nach separater Friend-Erzeugung und Reload erhalten. Offen: Familienbaumänderung, Partnerschaft/Adoption, Familien-/Friendgroup-Operationen, rohe Identitäten und Fresh-Prozess; frühere Graphprobe bleibt datiert.",
+          "acceptanceState": "open"
+        },
+        "additionalOriginalProbes": [
+          {
+            "run": "CITY00-PLAN3-20261029",
+            "version": null,
+            "observedAt": "2026-10-29",
+            "evidence": "docs/reference/scope-contracts-20261029/README.md",
+            "scope": "Family references before/after added Friend relation; no new family-tree graph manipulation measured."
+          }
+        ]
       },
       {
         "id": "CO-FTG-0027",
@@ -3479,7 +3917,17 @@
           "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/manifest.json"
         },
         "independentFunctionalRequirement": true,
-        "mappingCoverage": "new_required_function_not_covered_by_existing_CTY"
+        "mappingCoverage": "new_required_function_not_covered_by_existing_CTY",
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "CO-FTG-0027",
+          "contract": "docs/city/contract/city.md#ergebnisvertrag-lebensdaten",
+          "acceptanceScenario": "Gebäudeereignis anlegen/ändern und Zeitpunkt prüfen; Ausgabe/History und eventuelle Zeitwirkung erst nach direkter Originalprobe binden.",
+          "delivery": "CITY-06",
+          "state": "specified_core_with_original_variants_open",
+          "unresolvedOriginalEffect": "Schaltfläche/Menü direkt sichtbar; konkrete Wirkung und eigener Vergleich noch offen.",
+          "acceptanceState": "open"
+        }
       },
       {
         "id": "CO-FTG-0028",
@@ -3514,7 +3962,17 @@
           "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/manifest.json"
         },
         "independentFunctionalRequirement": true,
-        "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required"
+        "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required",
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "CO-FTG-0028",
+          "contract": "docs/city/contract/city.md#ergebnisvertrag-lebensdaten",
+          "acceptanceScenario": "Gebäude und Bewohner favorisieren, entfavorisieren und neu öffnen; Favoritenliste navigiert zu bestehenden Identitäten.",
+          "delivery": "CITY-06",
+          "state": "specified_core_with_original_variants_open",
+          "unresolvedOriginalEffect": "Schaltfläche/Menü direkt sichtbar; konkrete Wirkung und eigener Vergleich noch offen.",
+          "acceptanceState": "open"
+        }
       },
       {
         "id": "CO-FTG-0029",
@@ -3547,7 +4005,17 @@
           "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/manifest.json"
         },
         "independentFunctionalRequirement": true,
-        "mappingCoverage": "new_required_function_not_covered_by_existing_CTY"
+        "mappingCoverage": "new_required_function_not_covered_by_existing_CTY",
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "CO-FTG-0029",
+          "contract": "docs/city/contract/city.md#ergebnisvertrag-ausgabe",
+          "acceptanceScenario": "Bekannte metrische Strecke messen und Einheit wechseln; Anzeige/Skalenleiste ändern, gespeicherte physische Geometrie bleibt gleich.",
+          "delivery": "CITY-08",
+          "state": "specified_core_with_original_variants_open",
+          "unresolvedOriginalEffect": "Schaltfläche/Menü direkt sichtbar; konkrete Wirkung und eigener Vergleich noch offen.",
+          "acceptanceState": "open"
+        }
       },
       {
         "id": "CO-WAT-0005",
@@ -3601,7 +4069,17 @@
             "run": "CITY-00-I03-I",
             "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/manifest.json"
           }
-        ]
+        ],
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "CO-WAT-0005",
+          "contract": "docs/city/contract/city.md#ergebnisvertrag-ausgabe",
+          "acceptanceScenario": "Denselben Stand als PNG, SVG und JSON empfangen; Rasterbild, Vektoransicht und editierbare Daten mit Straßen/Gebäuden vergleichen.",
+          "delivery": "CITY-08",
+          "state": "specified_core_with_original_variants_open",
+          "unresolvedOriginalEffect": "PNG/SVG/JSON tatsächlich empfangen und Struktur geprüft; PNG visuell geprüft. SVG-Sichtnachweis, Format-/Optionsvarianten, Import/Geometrie-Roundtrip und eigene Produkt-/Host-/Bedienparität offen.",
+          "acceptanceState": "open"
+        }
       },
       {
         "id": "CO-WAT-0006",
@@ -3652,7 +4130,17 @@
             "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i23-landmark-edit-20261009/manifest.json",
             "result": "Inline-Umbenennung und Delete in Originallegende sichtbar sowie in zwei tatsächlichen SVG-Ausgaben bestätigt. Position-Menü verschiebt Legendenkasten, nicht belegte geographische Landmarke."
           }
-        ]
+        ],
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "CO-WAT-0006",
+          "contract": "docs/city/contract/city.md#ergebnisvertrag-lebensdaten",
+          "acceptanceScenario": "Landmarke anlegen, benennen, versetzen und entfernen; Keytext, Position, Referenz und SVG-Beschriftung getrennt prüfen.",
+          "delivery": "CITY-06",
+          "state": "specified_core_with_original_variants_open",
+          "unresolvedOriginalEffect": "Name anlegen/inline ändern/entfernen in Originallegende und SVG belegt. Räumliche Pinposition/Bewegung, Save/Reload, stabile Keys und eigener Produkt-/Host-/Bedienvergleich offen.",
+          "acceptanceState": "open"
+        }
       },
       {
         "id": "CO-WAT-0007",
@@ -3705,7 +4193,17 @@
             "run": "CITY-00-I03-I",
             "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/manifest.json"
           }
-        ]
+        ],
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "CO-WAT-0007",
+          "contract": "docs/city/contract/city.md#ergebnisvertrag-regeneration",
+          "acceptanceScenario": "Westliches Viertel erneut erzeugen; östliche Handkorrektur sowie geschütztes Haus mit Key/Bewohner müssen erhalten bleiben.",
+          "delivery": "CITY-04",
+          "state": "specified_core_with_original_variants_open",
+          "unresolvedOriginalEffect": "Lokale Originalwirkung teilbelegt; weitere Warpoperationen, genaue Wirkungsgrenzen/Schutz, Save/Undo und eigene Produkt-/Host-/Bedienparität offen.",
+          "acceptanceState": "open"
+        }
       },
       {
         "id": "CO-WAT-0008",
@@ -3841,7 +4339,17 @@
             "originalRun": "CITY-00-I15-I",
             "originalManifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i15-warp-tools-20261009/manifest.json"
           }
-        ]
+        ],
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "CO-WAT-0008",
+          "contract": "docs/city/contract/city.md#ergebnisvertrag-regeneration",
+          "acceptanceScenario": "Lokale und globale Verformung an Straße, Küste und Haus ausführen; Reichweite vor Annahme zeigen und geschützte Geometrie/Bindungen erhalten.",
+          "delivery": "CITY-04",
+          "state": "specified_core_with_original_variants_open",
+          "unresolvedOriginalEffect": "Alle8 Warp-Werkzeuge direkt teilbelegt; genaue Formeln/Wirkungsgrenzen, Parameter, Save/Undo/Bindungen sowie eigene Produkt-/Host-/Bedienparität offen.",
+          "acceptanceState": "open"
+        }
       },
       {
         "id": "CO-WAT-0009",
@@ -3894,7 +4402,17 @@
             "observation": "Vivid draft→Apply visible color change; actual341B13-field color JSON saved; before/after298842B geometry JSON byteequal; Tint districts visible checked/un-checked; original restored",
             "sourceScope": "direct original output and synthetic browser inputs; not own implementation"
           }
-        ]
+        ],
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "CO-WAT-0009",
+          "contract": "docs/city/contract/city.md#ergebnisvertrag-gestaltung",
+          "acceptanceScenario": "Farbstil anwenden, abbrechen und als Vorgabe wiederverwenden; Darstellung ändert sich, reine Farbwahl verändert keine Geometrie.",
+          "delivery": "CITY-07",
+          "state": "specified_core_with_original_variants_open",
+          "unresolvedOriginalEffect": "Vivid Apply and color file Save, geometry equality and district tint effect partial proven. File Load, complete presets, tint/weathering formulas/ranges and own host/usability remain open.",
+          "acceptanceState": "open"
+        }
       },
       {
         "id": "CO-WAT-0010",
@@ -3945,7 +4463,17 @@
             "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i34-maximum-20261009/manifest.json",
             "result": "Maximum Rebuild replaces gates=-1 with hub=1 at same seed/size/other flags. roads5→10, walls/buildings/fields/districts changed; other8 groups equal. Default restoration byteequal. No numeric maximum formula or exact gate count proved."
           }
-        ]
+        ],
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "CO-WAT-0010",
+          "contract": "docs/city/contract/city.md#ergebnisvertrag-topologie",
+          "acceptanceScenario": "Tor-/Straßenanzahl gezielt ändern; tatsächliche Anschlüsse zählen und Maximum gegenüber Zielzahl unterscheiden; Handkorrekturen schützen.",
+          "delivery": "CITY-05",
+          "state": "specified_core_with_original_variants_open",
+          "unresolvedOriginalEffect": "Number3 und Maximum/hub-Rebuild-Wirkung sowie bytegleiche Default-Rückstellungen direkt belegt; genaue Maximalregel/Torzählung, Einzelstraßen-/Savewirkung und eigener Produktvergleich offen.",
+          "acceptanceState": "open"
+        }
       },
       {
         "id": "CO-FTG-0030",
@@ -3983,7 +4511,17 @@
           ]
         },
         "independentFunctionalRequirement": true,
-        "mappingCoverage": "new_required_function_not_covered_by_existing_CTY"
+        "mappingCoverage": "new_required_function_not_covered_by_existing_CTY",
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "CO-FTG-0030",
+          "contract": "docs/city/contract/city.md#ergebnisvertrag-lebensdaten",
+          "acceptanceScenario": "Gebäude benennen und Nutzung/Ownerbindung ändern; Bewohner und Key verweisen nach Reload auf dasselbe Gebäude.",
+          "delivery": "CITY-06",
+          "state": "specified_core_with_original_variants_open",
+          "unresolvedOriginalEffect": "Original-Umbenennung und Reload direkt belegt; eigener Produktvergleich und weitere Gebäudedaten offen.",
+          "acceptanceState": "open"
+        }
       },
       {
         "id": "CO-COK-0006",
@@ -4039,7 +4577,17 @@
             "sourceFrame": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i06-20261009-01/screens/018-main-menu.png",
             "sourceScope": "installed_demo_control_not_full_version_description"
           }
-        ]
+        ],
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "CO-COK-0006",
+          "contract": "docs/city/contract/city.md#ergebnisvertrag-bearbeitung",
+          "acceptanceScenario": "Kleine Szene speichern, schließen und neu öffnen; Objekte, Pose, Pfad und Umgebungswerte bleiben erhalten.",
+          "delivery": "CITY-01",
+          "state": "specified_core_with_original_variants_open",
+          "unresolvedOriginalEffect": "Direkte Demo-Teilprobe belegt; vollständiger Originalumfang, eigene Umsetzung und Host-/Bedienvergleich weiterhin offen.",
+          "acceptanceState": "open"
+        }
       },
       {
         "id": "CO-COK-0007",
@@ -4101,7 +4649,17 @@
             "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i20-20261009/manifest.json",
             "observation": "Same road endpoint drag; Undo100ms and2000ms without rollback before explicit Save. Before-manual-save file still original; final Save path0 z1.73; automated save impact unknown. Redo untested."
           }
-        ]
+        ],
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "CO-COK-0007",
+          "contract": "docs/city/contract/city.md#ergebnisvertrag-bearbeitung",
+          "acceptanceScenario": "Einen Hauszug und einen Straßenpunkt ändern, getrennt zurücknehmen/wiederholen und neu öffnen; erfolglose Original-Undo-Versuche bleiben ohne PASS.",
+          "delivery": "CITY-01",
+          "state": "specified_core_with_original_variants_open",
+          "unresolvedOriginalEffect": "I17 post-Save and I20 before-manual-Save hypotheses each stopped after two no-effect attempts. Automatic saving enabled per Welcome; operation/history eligibility and successful Undo/Redo remain unverified. Own implementation/host/usability remain open.",
+          "acceptanceState": "open"
+        }
       },
       {
         "id": "CO-COK-0008",
@@ -4138,6 +4696,16 @@
           "observation": "Snap To Paths and Collision Check visible toggles",
           "sourceFrame": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i06-20261009-01/screens/005-path-asset.png",
           "sourceScope": "installed_demo_control_not_full_version_description"
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "CO-COK-0008",
+          "contract": "docs/city/contract/city.md#ergebnisvertrag-topologie",
+          "acceptanceScenario": "Objekt mit/ohne Pfadsnap setzen und in belegten Raum verschieben; sichtbare Bindungs-/Kollisionsentscheidung und gespeicherte Pose prüfen.",
+          "delivery": "CITY-05",
+          "state": "specified_core_with_original_variants_open",
+          "unresolvedOriginalEffect": "Originalcontrol direkt sichtbar; konkrete Wirkung, Zugang und eigener Vergleich offen.",
+          "acceptanceState": "open"
         }
       },
       {
@@ -4175,6 +4743,16 @@
           "observation": "T lift/G lower and Keep Height visible controls",
           "sourceFrame": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i06-20261009-01/screens/009-path-control-moved.png",
           "sourceScope": "installed_demo_control_not_full_version_description"
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "CO-COK-0009",
+          "contract": "docs/city/contract/city.md#ergebnisvertrag-gestaltung",
+          "acceptanceScenario": "Pfad/Plot anheben und senken; aufgesetzte Objekte und Keep-Height-Variante getrennt vergleichen, metrische Hausinnenräume schützen.",
+          "delivery": "CITY-07",
+          "state": "specified_core_with_original_variants_open",
+          "unresolvedOriginalEffect": "Originalcontrol direkt sichtbar; konkrete Wirkung, Zugang und eigener Vergleich offen.",
+          "acceptanceState": "open"
         }
       },
       {
@@ -4212,6 +4790,16 @@
           "observation": "Asset Editor top control only",
           "sourceFrame": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i06-20261009-01/screens/003-editor.png",
           "sourceScope": "installed_demo_control_not_full_version_description"
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "CO-COK-0010",
+          "contract": "docs/city/contract/city.md#ergebnisvertrag-gestaltung",
+          "acceptanceScenario": "Eigenes Asset importieren, Varianten/Metadaten ändern und neu öffnen; fehlende Datei erklärt anzeigen, bestehende Instanzen erhalten.",
+          "delivery": "CITY-07",
+          "state": "specified_core_with_original_variants_open",
+          "unresolvedOriginalEffect": "Originalcontrol direkt sichtbar; konkrete Wirkung, Zugang und eigener Vergleich offen.",
+          "acceptanceState": "open"
         }
       },
       {
@@ -4249,6 +4837,16 @@
           "observation": "Steam Workshop top control only; integration access/effects untested",
           "sourceFrame": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i06-20261009-01/screens/003-editor.png",
           "sourceScope": "installed_demo_control_not_full_version_description"
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "CO-COK-0011",
+          "contract": "docs/city/contract/city.md#ergebnisvertrag-gestaltung",
+          "acceptanceScenario": "Workshopasset mit Herkunft einbinden, platzieren und auf unabhängiger Kopie öffnen; Lizenz-/Fehlassetverhalten vor eigenem Adapter klären.",
+          "delivery": "CITY-07",
+          "state": "specified_core_with_original_variants_open",
+          "unresolvedOriginalEffect": "Originalcontrol direkt sichtbar; konkrete Wirkung, Zugang und eigener Vergleich offen.",
+          "acceptanceState": "open"
         }
       },
       {
@@ -4287,6 +4885,16 @@
           "observation": "Flat, roof texture,3D,Flattened3D",
           "sourceFrame": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/ftg-general-settings.ax.txt",
           "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/manifest.json"
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "CO-FTG-0031",
+          "contract": "docs/city/contract/city.md#ergebnisvertrag-gestaltung",
+          "acceptanceScenario": "Flat, Roof texture, 3D und Flattened 3D am selben Haus vergleichen; Darstellungswechsel erhält Grundriss und Wohn-/Arbeitsbindungen.",
+          "delivery": "CITY-07",
+          "state": "specified_core_with_original_variants_open",
+          "unresolvedOriginalEffect": "Originalcontrol sichtbar; Wirkung, eigene Umsetzung, Host- und Bedienvergleich offen.",
+          "acceptanceState": "open"
         }
       },
       {
@@ -4325,6 +4933,16 @@
           "observation": "Shown individual decorations100%; trees/rocks visibility",
           "sourceFrame": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/ftg-general-settings.ax.txt",
           "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/manifest.json"
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "CO-FTG-0032",
+          "contract": "docs/city/contract/city.md#ergebnisvertrag-ausgabe",
+          "acceptanceScenario": "Dekorationsanteil und Baum-/Felssichtbarkeit für Ausgabe ändern; verborgene Objekte bleiben editierbar gespeichert.",
+          "delivery": "CITY-08",
+          "state": "specified_core_with_original_variants_open",
+          "unresolvedOriginalEffect": "Originalcontrol sichtbar; Wirkung, eigene Umsetzung, Host- und Bedienvergleich offen.",
+          "acceptanceState": "open"
         }
       },
       {
@@ -4363,6 +4981,16 @@
           "observation": "Textures checkbox",
           "sourceFrame": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/ftg-general-settings.ax.txt",
           "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/manifest.json"
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "CO-FTG-0033",
+          "contract": "docs/city/contract/city.md#ergebnisvertrag-gestaltung",
+          "acceptanceScenario": "Texturen/Vollfarben umschalten; ausschließlich Darstellungswerte und Ausgabe ändern, Gebäudegeometrie bleibt identisch.",
+          "delivery": "CITY-07",
+          "state": "specified_core_with_original_variants_open",
+          "unresolvedOriginalEffect": "Originalcontrol sichtbar; Wirkung, eigene Umsetzung, Host- und Bedienvergleich offen.",
+          "acceptanceState": "open"
         }
       },
       {
@@ -4401,6 +5029,16 @@
           "observation": "Material multiple colours checkbox",
           "sourceFrame": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/ftg-general-settings.ax.txt",
           "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/manifest.json"
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "CO-FTG-0034",
+          "contract": "docs/city/contract/city.md#ergebnisvertrag-gestaltung",
+          "acceptanceScenario": "Materialfarbvariation umschalten; tatsächliche Instanz-/Seedbindung und unveränderte Geometrie prüfen.",
+          "delivery": "CITY-07",
+          "state": "specified_core_with_original_variants_open",
+          "unresolvedOriginalEffect": "Originalcontrol sichtbar; Wirkung, eigene Umsetzung, Host- und Bedienvergleich offen.",
+          "acceptanceState": "open"
         }
       },
       {
@@ -4437,6 +5075,16 @@
           "observation": "Field edge fade checkbox",
           "sourceFrame": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/ftg-general-settings.ax.txt",
           "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/manifest.json"
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "CO-FTG-0035",
+          "contract": "docs/city/contract/city.md#ergebnisvertrag-gestaltung",
+          "acceptanceScenario": "Feldkante weich/hart anzeigen; Reichweite und Exportwirkung gegen unveränderte Feldgeometrie prüfen.",
+          "delivery": "CITY-07",
+          "state": "specified_core_with_original_variants_open",
+          "unresolvedOriginalEffect": "Originalcontrol sichtbar; Wirkung, eigene Umsetzung, Host- und Bedienvergleich offen.",
+          "acceptanceState": "open"
         }
       },
       {
@@ -4473,6 +5121,16 @@
           "observation": "Water effects checkbox",
           "sourceFrame": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/ftg-general-settings.ax.txt",
           "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/manifest.json"
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "CO-FTG-0036",
+          "contract": "docs/city/contract/city.md#ergebnisvertrag-gestaltung",
+          "acceptanceScenario": "Wassertiefe/Schaum umschalten; sichtbare Küsten-/Wasserwirkung und reine Darstellung gegen gemeinsame Wassergeometrie prüfen.",
+          "delivery": "CITY-07",
+          "state": "specified_core_with_original_variants_open",
+          "unresolvedOriginalEffect": "Originalcontrol sichtbar; Wirkung, eigene Umsetzung, Host- und Bedienvergleich offen.",
+          "acceptanceState": "open"
         }
       },
       {
@@ -4511,6 +5169,16 @@
           "observation": "Antialiasing dropdown and FPS stats checkbox",
           "sourceFrame": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/ftg-general-settings.ax.txt",
           "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/manifest.json"
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "CO-FTG-0037",
+          "contract": "docs/city/contract/city.md#ergebnisvertrag-ausgabe",
+          "acceptanceScenario": "Kantenglättung und FPS-Anzeige wechseln; Bildqualität/Diagnostik gegenüber identischen Autorenwerten und unterstütztem Gerät prüfen.",
+          "delivery": "CITY-08",
+          "state": "specified_core_with_original_variants_open",
+          "unresolvedOriginalEffect": "Originalcontrol sichtbar; Wirkung, eigene Umsetzung, Host- und Bedienvergleich offen.",
+          "acceptanceState": "open"
         }
       },
       {
@@ -4549,6 +5217,16 @@
           "observation": "Shadow resolution2048..32768; hardware may limit actual setting",
           "sourceFrame": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/ftg-sun-settings.ax.txt",
           "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/manifest.json"
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "CO-FTG-0038",
+          "contract": "docs/city/contract/city.md#ergebnisvertrag-ausgabe",
+          "acceptanceScenario": "Schattenauflösung auf unterstütztem Gerät ändern; sichtbare Wirkung, tatsächliche Grenze und Speicherbedarf messen.",
+          "delivery": "CITY-08",
+          "state": "specified_core_with_original_variants_open",
+          "unresolvedOriginalEffect": "Originalcontrol sichtbar; Wirkung, eigene Umsetzung, Host- und Bedienvergleich offen.",
+          "acceptanceState": "open"
         }
       },
       {
@@ -4586,6 +5264,16 @@
           "observation": "Color effect None/Greyscale/Sepia/Green tint; Pixelation, Vignette, Dot screen, Scanline, Crosshatch None/Original colour/Grey/Blue/Add; controls only",
           "sourceFrame": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/ftg-effects-settings.ax.txt",
           "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/manifest.json"
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "CO-FTG-0039",
+          "contract": "docs/city/contract/city.md#ergebnisvertrag-gestaltung",
+          "acceptanceScenario": "Jeden Bildeffekttyp am gleichen Ausschnitt einzeln vergleichen; Parameter, Kombination und Dateiresultat müssen konkret belegt werden.",
+          "delivery": "CITY-07",
+          "state": "specified_core_with_original_variants_open",
+          "unresolvedOriginalEffect": "Originalcontrol sichtbar; Wirkung, eigene Umsetzung, Host- und Bedienvergleich offen.",
+          "acceptanceState": "open"
         }
       },
       {
@@ -4622,6 +5310,16 @@
           "observation": "SVG Renderer warning: disables editing and layers",
           "sourceFrame": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/ftg-general-settings.ax.txt",
           "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/manifest.json"
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "CO-FTG-0040",
+          "contract": "docs/city/contract/city.md#ergebnisvertrag-ausgabe",
+          "acceptanceScenario": "SVG-Fallback bei begrenztem Gerät öffnen; erreichbare Bearbeitung/Layer und vollständigen Inhalt prüfen. Originalrestriktion ist kein stiller Atlas-Modusentscheid.",
+          "delivery": "CITY-08",
+          "state": "specified_core_with_original_variants_open",
+          "unresolvedOriginalEffect": "Originalcontrol sichtbar; Wirkung, eigene Umsetzung, Host- und Bedienvergleich offen.",
+          "acceptanceState": "open"
         }
       },
       {
@@ -4666,6 +5364,16 @@
             "Own model, projection/navigation and editing UX",
             "Product version"
           ]
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "CO-FTG-0041",
+          "contract": "docs/city/contract/city.md#ergebnisvertrag-gestaltung",
+          "acceptanceScenario": "Street View starten, bewegen und zur Draufsicht zurückkehren; Blickposition, Hausmaße und gespeicherte Autorenwerte vergleichen; eigener Atlas bleibt direkt bearbeitbar.",
+          "delivery": "CITY-07",
+          "state": "specified_core_with_original_variants_open",
+          "unresolvedOriginalEffect": "Street-View-Einstieg und Rückkehr belegt; Bewegung/Kollision/Synchronisierung, eigene Darstellung und Bedienvergleich offen.",
+          "acceptanceState": "open"
         }
       },
       {
@@ -4713,6 +5421,16 @@
           "limits": "One temporary settlement, same-date sequence. Visible references/names, not stable serialized IDs. No version, persistence, universal calendar or independent reference review proof.",
           "reviewManifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i42-time-20261009/review.json",
           "semanticLimit": "Neither None-clear nor None-preserve is ratified as intended own behavior by this single discrepant reference sequence. Explicit calendar/override policy must be coordinated and tested."
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "CO-FTG-0042",
+          "contract": "docs/city/contract/city.md#ergebnisvertrag-zeit",
+          "acceptanceScenario": "Beim selben Zeitpunkt Arbeits-/Ruhetag/None wechseln; Aktivität und aktueller Ort ändern sich nachvollziehbar, Wohn-/Arbeitsbindung bleibt erhalten; Tagesgrenze/Reload prüfen.",
+          "delivery": "CITY-07",
+          "state": "specified_core_with_original_variants_open",
+          "unresolvedOriginalEffect": "Same-timeRestday changes resident work/home activity; None actual behavior differs fromtooltip in thissequence. Fullcalendar/overridepersistence, own implementation/host/UX remainopen.",
+          "acceptanceState": "open"
         }
       },
       {
@@ -4749,7 +5467,17 @@
             "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i26-20261009-r01/manifest.json",
             "result": "Groups show/hide and lock multiple elements; tooltip explicitly Not available in the demo."
           }
-        ]
+        ],
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "CO-COK-0012",
+          "contract": "docs/city/contract/city.md#ergebnisvertrag-gestaltung",
+          "acceptanceScenario": "Layergruppe ausblenden und sperren; Inhalt bleibt gespeichert, gesperrte Treffer ändern keine Daten, Entsperren stellt Bearbeitbarkeit wieder her.",
+          "delivery": "CITY-07",
+          "state": "specified_core_with_original_variants_open",
+          "unresolvedOriginalEffect": "Originaltooltip beschreibt Gruppen als Layer; in Demo nicht verfügbar. Vollversionswirkung sowie eigene Implementierung/Host/Bedienabnahme offen.",
+          "acceptanceState": "open"
+        }
       },
       {
         "id": "CO-WAT-0011",
@@ -4785,6 +5513,16 @@
           "state": "partial",
           "run": "CITY-00-I35-I",
           "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i35-size-20261009/manifest.json"
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "CO-WAT-0011",
+          "contract": "docs/city/contract/city.md#ergebnisvertrag-erzeugung",
+          "acceptanceScenario": "Generatorlink mit versionierten Vorgaben zweimal öffnen; geometrisches Ergebnis und enthaltene bzw. nicht enthaltene Handänderungen vergleichen.",
+          "delivery": "CITY-02 / CITY-08",
+          "state": "specified_core_with_original_variants_open",
+          "unresolvedOriginalEffect": "From URL/Permalink/Generate auf eigener Karte liefert bytegleiche Kontrollausgabe. Aufnahme manueller Änderungen/Versionverträglichkeit, eigener Recipe-Import/Export und Host-/Bedienvergleich offen.",
+          "acceptanceState": "open"
         }
       }
     ],
@@ -4869,7 +5607,14 @@
           "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i09-gallery-20261009/manifest.json",
           "scope": "Feste Ergebnisgalerie mit vier Formen vollständig; COK veröffentlichte Bilder, eigene Vollversionsprobe und Parität offen"
         }
-      ]
+      ],
+      "scopeReview": {
+        "reviewedAt": "2026-10-29",
+        "mappedCandidates": 65,
+        "state": "incomplete_original_inventory_not_accepted",
+        "evidence": "docs/reference/scope-contracts-20261029/README.md",
+        "remaining": "Vollversion Canvas of Kings, vollständige FTG-Erzeugungs-/Regenerations-/Premium-/Exportwirkungen und weitere Watabou-Varianten nicht vollständig beobachtet; keine vollständige CITY-00- oder Paritätsbehauptung."
+      }
     },
     "currentUserGoal": "11.10.2026: vollständige erreichbare Ergebnisgleichwertigkeit mit Canvas of Kings, Watabou und Fantasy Town Generator bei guter eigener Bedienung, als Teil der zentral priorisierten Atlasumsetzung. Identische Gesten/Algorithmen sind auch für wiederverwendete Hex-/Dungeonwerkzeuge keine Pflicht; fachlicher Umfang bleibt erhalten.",
     "atlasDetailEntry": {
@@ -7589,6 +8334,20 @@
           "build": null,
           "evidence": [],
           "remaining": []
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "WD-001.01",
+          "contract": "docs/atlas/verification/reference-comparison.md#ergebnisvertrag-datei-und-ansicht",
+          "acceptanceScenario": "Unbegrenzte Atlasfläche mit metrischen Ausgangsinhalten anlegen, abbrechen und wieder öffnen; Originalgrößenvorgaben nur als begrenzten Generator-/Ausgabeausschnitt abbilden.",
+          "variantToResolve": "Anlegen und Abbrechen",
+          "delivery": [
+            "HEX-01",
+            "HEX-26"
+          ],
+          "originalProbe": "Alle Felder, Vorlagen und Startzustände des Neuanlagedialogs erfassen; eine kleine Karte anlegen und dieselbe Folge abbrechen.",
+          "state": "specified_task_original_variant_open",
+          "acceptanceState": "open"
         }
       },
       {
@@ -8185,6 +8944,20 @@
           "build": null,
           "evidence": [],
           "remaining": []
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "WD-001.02",
+          "contract": "docs/atlas/verification/reference-comparison.md#ergebnisvertrag-datei-und-ansicht",
+          "acceptanceScenario": "Unbegrenzte Atlasfläche mit metrischen Ausgangsinhalten anlegen, abbrechen und wieder öffnen; Originalgrößenvorgaben nur als begrenzten Generator-/Ausgabeausschnitt abbilden.",
+          "variantToResolve": "Maße, Grenzen und Vorgaben",
+          "delivery": [
+            "HEX-01",
+            "HEX-26"
+          ],
+          "originalProbe": "Erreichbare Größen-, Ausrichtungs- und Vorgabeoptionen einzeln auslösen; gültige Grenzen, ungültige Werte und Wiederverwendung direkt messen.",
+          "state": "specified_task_original_variant_open",
+          "acceptanceState": "open"
         }
       },
       {
@@ -8679,6 +9452,19 @@
           "build": null,
           "evidence": [],
           "remaining": []
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "WD-002.01",
+          "contract": "docs/atlas/verification/reference-comparison.md#ergebnisvertrag-datei-und-ansicht",
+          "acceptanceScenario": "Dieselben Objekte durch Pan/Zoom/Werkzeugwechsel erreichen; erste Bearbeitung trifft das sichtbare Ziel, Inspektion verändert keine Daten.",
+          "variantToResolve": "Verschieben und Zoom",
+          "delivery": [
+            "HEX-01"
+          ],
+          "originalProbe": "Dokumentierte Mitteltasten-/Leertastenbewegung, Strg-Rad, Einpassen und 100-Prozent-Ansicht auf derselben Karte direkt prüfen; Zoomanker messen.",
+          "state": "specified_task_original_variant_open",
+          "acceptanceState": "open"
         }
       },
       {
@@ -9246,6 +10032,19 @@
           "build": null,
           "evidence": [],
           "remaining": []
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "WD-002.02",
+          "contract": "docs/atlas/verification/reference-comparison.md#ergebnisvertrag-datei-und-ansicht",
+          "acceptanceScenario": "Dieselben Objekte durch Pan/Zoom/Werkzeugwechsel erreichen; erste Bearbeitung trifft das sichtbare Ziel, Inspektion verändert keine Daten.",
+          "variantToResolve": "Kontext und erste Eingabe",
+          "delivery": [
+            "HEX-01"
+          ],
+          "originalProbe": "Kaltstart, Werkzeugwechsel, erstes Zeichnen nach Kameraaktion und Tastatureingabe in einem Dialog prüfen; Kamera und aktiven Werkzeugzustand protokollieren.",
+          "state": "specified_task_original_variant_open",
+          "acceptanceState": "open"
         }
       },
       {
@@ -9710,6 +10509,20 @@
           "build": null,
           "evidence": [],
           "remaining": []
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "WD-003.01",
+          "contract": "docs/atlas/verification/reference-comparison.md#ergebnisvertrag-datei-und-ansicht",
+          "acceptanceScenario": "Zwei Kampagnenstände A/B/A öffnen; bestätigte Änderungen und unabhängige Kopie nach Neustart erhalten, abgebrochener Vorgang verändert den Stand nicht.",
+          "variantToResolve": "Speichern und Speichern unter",
+          "delivery": [
+            "HEX-02",
+            "HEX-07"
+          ],
+          "originalProbe": "Neue und geänderte Karte, Dateidialog-Abbruch, Kopie und erneutes Öffnen prüfen; Dateiziel und sichtbaren Dirty-Status vergleichen.",
+          "state": "specified_task_original_variant_open",
+          "acceptanceState": "open"
         }
       },
       {
@@ -10363,6 +11176,20 @@
           "build": null,
           "evidence": [],
           "remaining": []
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "WD-003.02",
+          "contract": "docs/atlas/verification/reference-comparison.md#ergebnisvertrag-datei-und-ansicht",
+          "acceptanceScenario": "Zwei Kampagnenstände A/B/A öffnen; bestätigte Änderungen und unabhängige Kopie nach Neustart erhalten, abgebrochener Vorgang verändert den Stand nicht.",
+          "variantToResolve": "Ungespeicherte Arbeit und Neustart",
+          "delivery": [
+            "HEX-02",
+            "HEX-07"
+          ],
+          "originalProbe": "Kartenwechsel/Schließen mit ungespeicherter Arbeit und vorhandene Wiederherstellungsmöglichkeiten direkt erfassen; anschließend vollständig neuen Prozess öffnen.",
+          "state": "specified_task_original_variant_open",
+          "acceptanceState": "open"
         }
       },
       {
@@ -11061,6 +11888,20 @@
           "build": null,
           "evidence": [],
           "remaining": []
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "WD-003.03",
+          "contract": "docs/atlas/verification/reference-comparison.md#ergebnisvertrag-datei-und-ansicht",
+          "acceptanceScenario": "Zwei Kampagnenstände A/B/A öffnen; bestätigte Änderungen und unabhängige Kopie nach Neustart erhalten, abgebrochener Vorgang verändert den Stand nicht.",
+          "variantToResolve": "Karte A → B → A",
+          "delivery": [
+            "HEX-02",
+            "HEX-07"
+          ],
+          "originalProbe": "Werkzeugwerte, Karteigenschaften, Paletten und Assetwahl bei Kartenwechsel und Prozessneustart als lokal, global oder flüchtig klassifizieren.",
+          "state": "specified_task_original_variant_open",
+          "acceptanceState": "open"
         }
       },
       {
@@ -11834,6 +12675,19 @@
           "build": null,
           "evidence": [],
           "remaining": []
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "WD-004.01",
+          "contract": "docs/atlas/verification/reference-comparison.md#ergebnisvertrag-datei-und-ansicht",
+          "acceptanceScenario": "Einzelaktion und zusammenhängenden Zug getrennt zurücknehmen/wiederholen; abgebrochener Entwurf hinterlässt keine gespeicherte Teilwirkung.",
+          "variantToResolve": "Befehlsgrenzen",
+          "delivery": [
+            "HEX-02"
+          ],
+          "originalProbe": "Einzelklick, zusammenhängenden Pinselzug und mehrstufiges Zeichnen getrennt zurücknehmen/wiederholen; Kartenänderung und reine Werkzeugvorgabe unterscheiden.",
+          "state": "specified_task_original_variant_open",
+          "acceptanceState": "open"
         }
       },
       {
@@ -12622,6 +13476,19 @@
           "build": null,
           "evidence": [],
           "remaining": []
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "WD-004.02",
+          "contract": "docs/atlas/verification/reference-comparison.md#ergebnisvertrag-datei-und-ansicht",
+          "acceptanceScenario": "Einzelaktion und zusammenhängenden Zug getrennt zurücknehmen/wiederholen; abgebrochener Entwurf hinterlässt keine gespeicherte Teilwirkung.",
+          "variantToResolve": "Escape und Werkzeugwechsel",
+          "delivery": [
+            "HEX-02"
+          ],
+          "originalProbe": "Escape während Zeichnen, in ruhender Vorschau und bei offenem Dialog getrennt prüfen; keine einheitliche Escape-Regel voraussetzen.",
+          "state": "specified_task_original_variant_open",
+          "acceptanceState": "open"
         }
       },
       {
@@ -13339,6 +14206,20 @@
           "automatedProbe": "tests/atlas/desktop-landscape-tools.test.mjs",
           "nativeProbe": "tools/test-desktop-landscape-tools.mjs",
           "comparisonState": "original_effect_comparison_open"
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "WD-005.01",
+          "contract": "docs/atlas/verification/reference-comparison.md#ergebnisvertrag-terrain-und-wasser",
+          "acceptanceScenario": "Insel/Landzunge erzeugen, Küste zurückdrängen und überfahren; lesbare zusammenhängende Küste und gespeicherten Höhenstand nach Neustart vergleichen.",
+          "variantToResolve": "Zeichnen und Pinseloptionen",
+          "delivery": [
+            "HEX-02",
+            "HEX-11"
+          ],
+          "originalProbe": "Kleine Insel und Landzunge zeichnen; jeden erreichbaren Form-, Größen-, Stärke- und Küstenregler inventarisieren und einzeln variieren.",
+          "state": "specified_task_original_variant_open",
+          "acceptanceState": "open"
         }
       },
       {
@@ -13402,6 +14283,20 @@
           "automatedProbe": "tests/atlas/desktop-landscape-tools.test.mjs",
           "nativeProbe": "tools/test-desktop-landscape-tools.mjs",
           "comparisonState": "original_effect_comparison_open"
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "WD-005.02",
+          "contract": "docs/atlas/verification/reference-comparison.md#ergebnisvertrag-terrain-und-wasser",
+          "acceptanceScenario": "Insel/Landzunge erzeugen, Küste zurückdrängen und überfahren; lesbare zusammenhängende Küste und gespeicherten Höhenstand nach Neustart vergleichen.",
+          "variantToResolve": "Ränder und Übergänge",
+          "delivery": [
+            "HEX-02",
+            "HEX-11"
+          ],
+          "originalProbe": "Überlappende Züge, sehr schmale Landzunge, Kartenrand und Wasseranschluss prüfen; Vorschau, Commit und Neuöffnung vergleichen.",
+          "state": "specified_task_original_variant_open",
+          "acceptanceState": "open"
         }
       },
       {
@@ -13465,6 +14360,20 @@
           "automatedProbe": "tests/atlas/desktop-landscape-tools.test.mjs",
           "nativeProbe": "tools/test-desktop-landscape-tools.mjs",
           "comparisonState": "original_effect_comparison_open"
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "WD-006.01",
+          "contract": "docs/atlas/verification/reference-comparison.md#ergebnisvertrag-terrain-und-wasser",
+          "acceptanceScenario": "Land anheben/absenken/entfernen und vorhandene Straße, Ortsbindung und Detailgeometrie auf Erhalt bzw. ausdrücklich gezeigte Betroffenheit prüfen.",
+          "variantToResolve": "Werkzeug und Gegenmodus",
+          "delivery": [
+            "HEX-11",
+            "HEX-16"
+          ],
+          "originalProbe": "Alle erreichbaren Anheben-/Absenken-/Radierwege und die dokumentierte Alt-Umkehr direkt auslösen; Wirkung auf dieselbe Kontrollküste messen.",
+          "state": "specified_task_original_variant_open",
+          "acceptanceState": "open"
         }
       },
       {
@@ -13528,6 +14437,20 @@
           "automatedProbe": "tests/atlas/desktop-landscape-tools.test.mjs",
           "nativeProbe": "tools/test-desktop-landscape-tools.mjs",
           "comparisonState": "original_effect_comparison_open"
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "WD-006.02",
+          "contract": "docs/atlas/verification/reference-comparison.md#ergebnisvertrag-terrain-und-wasser",
+          "acceptanceScenario": "Land anheben/absenken/entfernen und vorhandene Straße, Ortsbindung und Detailgeometrie auf Erhalt bzw. ausdrücklich gezeigte Betroffenheit prüfen.",
+          "variantToResolve": "Bestandteile nach Landänderung",
+          "delivery": [
+            "HEX-11",
+            "HEX-16"
+          ],
+          "originalProbe": "Auf einer Fläche mit Wasser, Fluss und Symbolen Land ändern; tatsächlich betroffene Bestandteile, Kontur und History getrennt protokollieren.",
+          "state": "specified_task_original_variant_open",
+          "acceptanceState": "open"
         }
       },
       {
@@ -14483,6 +15406,21 @@
           "automatedProbe": "tests/atlas/desktop-landscape-tools.test.mjs",
           "nativeProbe": "tools/test-desktop-landscape-tools.mjs",
           "comparisonState": "original_effect_comparison_open"
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "WD-007.01",
+          "contract": "docs/atlas/verification/reference-comparison.md#ergebnisvertrag-terrain-und-wasser",
+          "acceptanceScenario": "Zwei Biome/Farben lokal auftragen und entfernen; geänderte Darstellung bzw. Biomebene getrennt von unveränderter Höhe prüfen.",
+          "variantToResolve": "Farbe auftragen und entfernen",
+          "delivery": [
+            "HEX-02",
+            "HEX-11",
+            "HEX-24"
+          ],
+          "originalProbe": "Kontrollfarben auf Land und an Küsten auftragen, mischen und entfernen; erreichbare Pinsel-/Palettenoptionen und deren Zuständigkeit erfassen.",
+          "state": "specified_task_original_variant_open",
+          "acceptanceState": "open"
         }
       },
       {
@@ -14547,6 +15485,21 @@
           "automatedProbe": "tests/atlas/desktop-landscape-tools.test.mjs",
           "nativeProbe": "tools/test-desktop-landscape-tools.mjs",
           "comparisonState": "original_effect_comparison_open"
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "WD-007.02",
+          "contract": "docs/atlas/verification/reference-comparison.md#ergebnisvertrag-terrain-und-wasser",
+          "acceptanceScenario": "Zwei Biome/Farben lokal auftragen und entfernen; geänderte Darstellung bzw. Biomebene getrennt von unveränderter Höhe prüfen.",
+          "variantToResolve": "Werkzeugvorgabe und vorhandene Fläche",
+          "delivery": [
+            "HEX-02",
+            "HEX-11",
+            "HEX-24"
+          ],
+          "originalProbe": "Farbvorgabe ändern, neue Fläche malen und alte Fläche prüfen; Karte A/B und Neustart unterscheiden globale Palette und gespeicherte Karte.",
+          "state": "specified_task_original_variant_open",
+          "acceptanceState": "open"
         }
       },
       {
@@ -14610,6 +15563,20 @@
           "automatedProbe": "tests/atlas/desktop-landscape-tools.test.mjs",
           "nativeProbe": "tools/test-desktop-landscape-tools.mjs",
           "comparisonState": "original_effect_comparison_open"
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "WD-008.01",
+          "contract": "docs/atlas/verification/reference-comparison.md#ergebnisvertrag-terrain-und-wasser",
+          "acceptanceScenario": "Küste/offenes Meer mit Farbe, Textur und Effekt variieren; globalen Darstellungswechsel und lokale Datenänderung unterscheiden.",
+          "variantToResolve": "Wasser bearbeiten",
+          "delivery": [
+            "HEX-12",
+            "HEX-24"
+          ],
+          "originalProbe": "Jeden erreichbaren Wasser-/Farbregler einschließlich Auswahl und Abbruch an derselben Küste prüfen; globale Wirkung und lokale Malwirkung unterscheiden.",
+          "state": "specified_task_original_variant_open",
+          "acceptanceState": "open"
         }
       },
       {
@@ -14673,6 +15640,20 @@
           "automatedProbe": "tests/atlas/desktop-landscape-tools.test.mjs",
           "nativeProbe": "tools/test-desktop-landscape-tools.mjs",
           "comparisonState": "original_effect_comparison_open"
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "WD-008.02",
+          "contract": "docs/atlas/verification/reference-comparison.md#ergebnisvertrag-terrain-und-wasser",
+          "acceptanceScenario": "Küste/offenes Meer mit Farbe, Textur und Effekt variieren; globalen Darstellungswechsel und lokale Datenänderung unterscheiden.",
+          "variantToResolve": "Textur und Küsteneffekt",
+          "delivery": [
+            "HEX-12",
+            "HEX-24"
+          ],
+          "originalProbe": "Alle erreichbaren Wassertexturen und Küsteneffekte erfassen; Land/Wasser-Grenze, Stilwechsel und PNG prüfen.",
+          "state": "specified_task_original_variant_open",
+          "acceptanceState": "open"
         }
       },
       {
@@ -14734,6 +15715,19 @@
           "automatedProbe": "tests/atlas/desktop-landscape-tools.test.mjs",
           "nativeProbe": "tools/test-desktop-landscape-tools.mjs",
           "comparisonState": "original_effect_comparison_open"
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "WD-009.01",
+          "contract": "docs/atlas/verification/reference-comparison.md#ergebnisvertrag-terrain-und-wasser",
+          "acceptanceScenario": "See anlegen, verändern, radieren und erneut an Fluss anschließen; gespeicherte Wassergeometrie/-höhe und Küstenübergang prüfen.",
+          "variantToResolve": "Anlegen und Optionen",
+          "delivery": [
+            "HEX-12"
+          ],
+          "originalProbe": "See und Süßwasserpinsel separat bedienen; Abschluss, Abbruch, Breite/Form und erreichbare Optionen inventarisieren.",
+          "state": "specified_task_original_variant_open",
+          "acceptanceState": "open"
         }
       },
       {
@@ -14795,6 +15789,19 @@
           "automatedProbe": "tests/atlas/desktop-landscape-tools.test.mjs",
           "nativeProbe": "tools/test-desktop-landscape-tools.mjs",
           "comparisonState": "original_effect_comparison_open"
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "WD-009.02",
+          "contract": "docs/atlas/verification/reference-comparison.md#ergebnisvertrag-terrain-und-wasser",
+          "acceptanceScenario": "See anlegen, verändern, radieren und erneut an Fluss anschließen; gespeicherte Wassergeometrie/-höhe und Küstenübergang prüfen.",
+          "variantToResolve": "Ändern und Anschluss",
+          "delivery": [
+            "HEX-12"
+          ],
+          "originalProbe": "See vergrößern, teilweise radieren und mit Fluss/Meer verbinden; Originalregel für Anschlüsse und betroffene Daten messen.",
+          "state": "specified_task_original_variant_open",
+          "acceptanceState": "open"
         }
       },
       {
@@ -14856,6 +15863,19 @@
           "automatedProbe": "tests/atlas/desktop-landscape-tools.test.mjs",
           "nativeProbe": "tools/test-desktop-landscape-tools.mjs",
           "comparisonState": "original_effect_comparison_open"
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "WD-010.01",
+          "contract": "docs/atlas/verification/reference-comparison.md#ergebnisvertrag-linien",
+          "acceptanceScenario": "Fluss über Pflichtpunkte zu Meer/Mündung zeichnen, abbrechen und Verlauf ändern; bestätigtes Gefälle/Bett und gespeicherte Linie gemeinsam prüfen.",
+          "variantToResolve": "Punkte, Abschluss und Abbruch",
+          "delivery": [
+            "HEX-13"
+          ],
+          "originalProbe": "Dokumentierte Klick-, Doppel-/Rechtsklick- und Escape-Folgen mit wenigen Punkten direkt prüfen; unfertige und fertige Geometrie unterscheiden.",
+          "state": "specified_task_original_variant_open",
+          "acceptanceState": "open"
         }
       },
       {
@@ -14917,6 +15937,19 @@
           "automatedProbe": "tests/atlas/desktop-landscape-tools.test.mjs",
           "nativeProbe": "tools/test-desktop-landscape-tools.mjs",
           "comparisonState": "original_effect_comparison_open"
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "WD-010.02",
+          "contract": "docs/atlas/verification/reference-comparison.md#ergebnisvertrag-linien",
+          "acceptanceScenario": "Fluss über Pflichtpunkte zu Meer/Mündung zeichnen, abbrechen und Verlauf ändern; bestätigtes Gefälle/Bett und gespeicherte Linie gemeinsam prüfen.",
+          "variantToResolve": "Breite, Form und Modifier",
+          "delivery": [
+            "HEX-13"
+          ],
+          "originalProbe": "Alle erreichbaren Breiten-, Form- und Stiloptionen sowie dokumentierte Rad-, Alt- und Shift-Modi direkt messen.",
+          "state": "specified_task_original_variant_open",
+          "acceptanceState": "open"
         }
       },
       {
@@ -14994,6 +16027,19 @@
           "automatedProbe": "tests/atlas/desktop-landscape-tools.test.mjs",
           "nativeProbe": "tools/test-desktop-landscape-tools.mjs",
           "comparisonState": "original_effect_comparison_open"
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "WD-010.03",
+          "contract": "docs/atlas/verification/reference-comparison.md#ergebnisvertrag-linien",
+          "acceptanceScenario": "Fluss über Pflichtpunkte zu Meer/Mündung zeichnen, abbrechen und Verlauf ändern; bestätigtes Gefälle/Bett und gespeicherte Linie gemeinsam prüfen.",
+          "variantToResolve": "Mehrere Anschlüsse",
+          "delivery": [
+            "HEX-13"
+          ],
+          "originalProbe": "Flussgabel, Seezulauf und Meeresmündung auf derselben Karte zeichnen; sichtbare und gespeicherte Verbindung prüfen.",
+          "state": "specified_task_original_variant_open",
+          "acceptanceState": "open"
         }
       },
       {
@@ -15078,6 +16124,19 @@
           "automatedProbe": "tests/atlas/desktop-landscape-tools.test.mjs",
           "nativeProbe": "tools/test-desktop-landscape-tools.mjs",
           "comparisonState": "original_effect_comparison_open"
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "WD-011.01",
+          "contract": "docs/atlas/verification/reference-comparison.md#ergebnisvertrag-linien",
+          "acceptanceScenario": "Straße zwischen zwei Orten zeichnen; Breite/Stil/Kurve ändern, ohne Ortsidentität oder unabhängige Nachbarlinien zu verändern.",
+          "variantToResolve": "Anlegen und Abschluss",
+          "delivery": [
+            "HEX-14"
+          ],
+          "originalProbe": "Alle erreichbaren Pfadtypen mit derselben Punktfolge zeichnen; Klickabschluss, Abbruch und Fortsetzen separat erfassen.",
+          "state": "specified_task_original_variant_open",
+          "acceptanceState": "open"
         }
       },
       {
@@ -15139,6 +16198,19 @@
           "automatedProbe": "tests/atlas/desktop-landscape-tools.test.mjs",
           "nativeProbe": "tools/test-desktop-landscape-tools.mjs",
           "comparisonState": "original_effect_comparison_open"
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "WD-011.02",
+          "contract": "docs/atlas/verification/reference-comparison.md#ergebnisvertrag-linien",
+          "acceptanceScenario": "Straße zwischen zwei Orten zeichnen; Breite/Stil/Kurve ändern, ohne Ortsidentität oder unabhängige Nachbarlinien zu verändern.",
+          "variantToResolve": "Stil, Breite und Kurven",
+          "delivery": [
+            "HEX-14"
+          ],
+          "originalProbe": "Jede Stil-/Breiten-/Formoption und dokumentierte Modifier direkt variieren; bestehende Pfade und nächste Werkzeugvorgabe getrennt prüfen.",
+          "state": "specified_task_original_variant_open",
+          "acceptanceState": "open"
         }
       },
       {
@@ -15421,6 +16493,20 @@
           "automatedProbe": "tests/atlas/desktop-landscape-tools.test.mjs",
           "nativeProbe": "tools/test-desktop-landscape-tools.mjs",
           "comparisonState": "original_effect_comparison_open"
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "WD-012.01",
+          "contract": "docs/atlas/verification/reference-comparison.md#ergebnisvertrag-linien",
+          "acceptanceScenario": "Einzelnen Punkt und Teilstück auswählen/verschieben/löschen/fortsetzen; Anschluss, Linientyp und nicht ausgewählte Teile erhalten.",
+          "variantToResolve": "Punkte wählen und ändern",
+          "delivery": [
+            "HEX-13",
+            "HEX-14"
+          ],
+          "originalProbe": "Pfadpunkte auswählen, verschieben, ergänzen und entfernen, soweit direkt erreichbar; Mindestgeometrie und Trefferzonen messen.",
+          "state": "specified_task_original_variant_open",
+          "acceptanceState": "open"
         }
       },
       {
@@ -15696,6 +16782,20 @@
           "automatedProbe": "tests/atlas/desktop-landscape-tools.test.mjs",
           "nativeProbe": "tools/test-desktop-landscape-tools.mjs",
           "comparisonState": "original_effect_comparison_open"
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "WD-012.02",
+          "contract": "docs/atlas/verification/reference-comparison.md#ergebnisvertrag-linien",
+          "acceptanceScenario": "Einzelnen Punkt und Teilstück auswählen/verschieben/löschen/fortsetzen; Anschluss, Linientyp und nicht ausgewählte Teile erhalten.",
+          "variantToResolve": "Auswahl, Löschen und Fortsetzen",
+          "delivery": [
+            "HEX-13",
+            "HEX-14"
+          ],
+          "originalProbe": "Alle erreichbaren Auswahl-, Verschiebe-, Lösch- und Anschlussaktionen erfassen; neue Geometrie und bestehende Linien getrennt prüfen.",
+          "state": "specified_task_original_variant_open",
+          "acceptanceState": "open"
         }
       },
       {
@@ -15774,6 +16874,19 @@
           "build": null,
           "evidence": [],
           "remaining": []
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "WD-013.01",
+          "contract": "docs/atlas/verification/reference-comparison.md#ergebnisvertrag-terrain-und-wasser",
+          "acceptanceScenario": "Landmassenvorschlag mit bekanntem Seed zweimal erzeugen; Preview verwerfen/annehmen und vorhandene geschützte Inhalte erhalten.",
+          "variantToResolve": "Generatoren und Muster",
+          "delivery": [
+            "HEX-15"
+          ],
+          "originalProbe": "Alle tatsächlich erreichbaren Generatoren, Muster und Optionen einzeln erfassen; interne Panelnamen nicht als fertige UI-Befehle interpretieren.",
+          "state": "specified_task_original_variant_open",
+          "acceptanceState": "open"
         }
       },
       {
@@ -15829,6 +16942,19 @@
           "build": null,
           "evidence": [],
           "remaining": []
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "WD-013.02",
+          "contract": "docs/atlas/verification/reference-comparison.md#ergebnisvertrag-terrain-und-wasser",
+          "acceptanceScenario": "Landmassenvorschlag mit bekanntem Seed zweimal erzeugen; Preview verwerfen/annehmen und vorhandene geschützte Inhalte erhalten.",
+          "variantToResolve": "Wiederholung und vorhandene Karte",
+          "delivery": [
+            "HEX-15"
+          ],
+          "originalProbe": "Vorgaben, ggf. Seed und erneute Erzeugung prüfen; Behandlung vorhandener Landschaft, Abbruch und Undo direkt messen.",
+          "state": "specified_task_original_variant_open",
+          "acceptanceState": "open"
         }
       },
       {
@@ -15884,6 +17010,19 @@
           "build": null,
           "evidence": [],
           "remaining": []
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "WD-014.01",
+          "contract": "docs/atlas/verification/reference-comparison.md#ergebnisvertrag-terrain-und-wasser",
+          "acceptanceScenario": "Kontrollhöhenbild einlesen, metrische Skala/Ausschnitt prüfen und lokal weiterbearbeiten; falsches Bild ohne Teilmutation ablehnen.",
+          "variantToResolve": "Import und Skalierung",
+          "delivery": [
+            "HEX-16"
+          ],
+          "originalProbe": "Den dokumentierten Heightmap-Import mit einem kontrollierten Schwarz/Grau/Weiß-Testbild durchführen; erreichbare Optionen und räumliche Wirkung erfassen.",
+          "state": "specified_task_original_variant_open",
+          "acceptanceState": "open"
         }
       },
       {
@@ -15939,6 +17078,19 @@
           "build": null,
           "evidence": [],
           "remaining": []
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "WD-014.02",
+          "contract": "docs/atlas/verification/reference-comparison.md#ergebnisvertrag-terrain-und-wasser",
+          "acceptanceScenario": "Kontrollhöhenbild einlesen, metrische Skala/Ausschnitt prüfen und lokal weiterbearbeiten; falsches Bild ohne Teilmutation ablehnen.",
+          "variantToResolve": "Fehler und anschließende Bearbeitung",
+          "delivery": [
+            "HEX-16"
+          ],
+          "originalProbe": "Ungültigen/abgebrochenen Import, Anheben/Absenken nach Import, Undo und frische Neuöffnung prüfen.",
+          "state": "specified_task_original_variant_open",
+          "acceptanceState": "open"
         }
       },
       {
@@ -16003,6 +17155,19 @@
           "build": null,
           "evidence": [],
           "remaining": []
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "WD-015.01",
+          "contract": "docs/atlas/verification/reference-comparison.md#ergebnisvertrag-auswahl-assets-und-text",
+          "acceptanceScenario": "Landbereich auswählen, kopieren, versetzen und skalieren; echte Geometrie-/Detailwirkung samt geschützten Referenzen in Preview zeigen.",
+          "variantToResolve": "Auswahlgrenze",
+          "delivery": [
+            "HEX-23"
+          ],
+          "originalProbe": "Alle erreichbaren Auswahlformen, Teilüberlappungen und Auswahl-Abbruch prüfen; Kontur-/Mittelpunkt-/Vollflächenregel nicht voraussetzen.",
+          "state": "specified_task_original_variant_open",
+          "acceptanceState": "open"
         }
       },
       {
@@ -16074,6 +17239,19 @@
           "build": null,
           "evidence": [],
           "remaining": []
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "WD-015.02",
+          "contract": "docs/atlas/verification/reference-comparison.md#ergebnisvertrag-auswahl-assets-und-text",
+          "acceptanceScenario": "Landbereich auswählen, kopieren, versetzen und skalieren; echte Geometrie-/Detailwirkung samt geschützten Referenzen in Preview zeigen.",
+          "variantToResolve": "Ausschneiden, Kopieren und Einfügen",
+          "delivery": [
+            "HEX-23"
+          ],
+          "originalProbe": "Gleichen Ausschnitt mit Land, Süßwasser, Linien und Symbolen behandeln; welche Bestandteile dazugehören und Einfügeort direkt messen.",
+          "state": "specified_task_original_variant_open",
+          "acceptanceState": "open"
         }
       },
       {
@@ -16208,6 +17386,19 @@
           "build": null,
           "evidence": [],
           "remaining": []
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "WD-015.03",
+          "contract": "docs/atlas/verification/reference-comparison.md#ergebnisvertrag-auswahl-assets-und-text",
+          "acceptanceScenario": "Landbereich auswählen, kopieren, versetzen und skalieren; echte Geometrie-/Detailwirkung samt geschützten Referenzen in Preview zeigen.",
+          "variantToResolve": "Verschieben und Größenänderung",
+          "delivery": [
+            "HEX-23"
+          ],
+          "originalProbe": "Alle erreichbaren Transformationen und Anschlussfolgen messen; Bezugsanker, Maßstab, Abbruch und Undo protokollieren.",
+          "state": "specified_task_original_variant_open",
+          "acceptanceState": "open"
         }
       },
       {
@@ -16328,6 +17519,19 @@
           "build": null,
           "evidence": [],
           "remaining": []
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "WD-016.01",
+          "contract": "docs/atlas/verification/reference-comparison.md#ergebnisvertrag-auswahl-assets-und-text",
+          "acceptanceScenario": "Einzelasset wählen, Pose/Farbe ändern und zwei Instanzen setzen; spätere Werkzeugvorgabe verändert vorhandene Instanzen nicht.",
+          "variantToResolve": "Assetwahl, Vorschau und Klick",
+          "delivery": [
+            "HEX-17"
+          ],
+          "originalProbe": "Assetkachel, Cursor und gespeicherte Instanz mit gleicher Asset-ID verbinden; Erstklick, wiederholte Klicks und ruhendes Escape messen.",
+          "state": "specified_task_original_variant_open",
+          "acceptanceState": "open"
         }
       },
       {
@@ -16448,6 +17652,19 @@
           "build": null,
           "evidence": [],
           "remaining": []
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "WD-016.02",
+          "contract": "docs/atlas/verification/reference-comparison.md#ergebnisvertrag-auswahl-assets-und-text",
+          "acceptanceScenario": "Einzelasset wählen, Pose/Farbe ändern und zwei Instanzen setzen; spätere Werkzeugvorgabe verändert vorhandene Instanzen nicht.",
+          "variantToResolve": "Vorgabe und Instanz",
+          "delivery": [
+            "HEX-17"
+          ],
+          "originalProbe": "Skalierung, Rotation, Spiegelung, Farbe und weitere tatsächlich erreichbare Optionen einzeln ändern; alte Instanz und nächste Platzierung vergleichen.",
+          "state": "specified_task_original_variant_open",
+          "acceptanceState": "open"
         }
       },
       {
@@ -16519,6 +17736,19 @@
           "build": null,
           "evidence": [],
           "remaining": []
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "WD-017.01",
+          "contract": "docs/atlas/verification/reference-comparison.md#ergebnisvertrag-auswahl-assets-und-text",
+          "acceptanceScenario": "Überlappende Symbole einzeln/gesammelt wählen, transformieren/klonen und Reihenfolge ändern; nur Auswahl und ihre Referenzen ändern.",
+          "variantToResolve": "Treffer und Mehrfachauswahl",
+          "delivery": [
+            "HEX-17"
+          ],
+          "originalProbe": "Klick, Rahmen und Modifier an teilweise überlappenden Symbolen prüfen; Treffergrenze, Auswahlzustand nach Undo und Kontext erfassen.",
+          "state": "specified_task_original_variant_open",
+          "acceptanceState": "open"
         }
       },
       {
@@ -16574,6 +17804,19 @@
           "build": null,
           "evidence": [],
           "remaining": []
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "WD-017.02",
+          "contract": "docs/atlas/verification/reference-comparison.md#ergebnisvertrag-auswahl-assets-und-text",
+          "acceptanceScenario": "Überlappende Symbole einzeln/gesammelt wählen, transformieren/klonen und Reihenfolge ändern; nur Auswahl und ihre Referenzen ändern.",
+          "variantToResolve": "Transformieren, Klonen und Löschen",
+          "delivery": [
+            "HEX-17"
+          ],
+          "originalProbe": "Alle erreichbaren Verschiebe-, Skalier-, Rotier-, Spiegel-, Nudge-, Duplizier- und Löschwege samt dokumentierten Gesten direkt messen.",
+          "state": "specified_task_original_variant_open",
+          "acceptanceState": "open"
         }
       },
       {
@@ -16629,6 +17872,19 @@
           "build": null,
           "evidence": [],
           "remaining": []
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "WD-017.03",
+          "contract": "docs/atlas/verification/reference-comparison.md#ergebnisvertrag-auswahl-assets-und-text",
+          "acceptanceScenario": "Überlappende Symbole einzeln/gesammelt wählen, transformieren/klonen und Reihenfolge ändern; nur Auswahl und ihre Referenzen ändern.",
+          "variantToResolve": "Ebenen und Reihenfolge",
+          "delivery": [
+            "HEX-17"
+          ],
+          "originalProbe": "Zwei überlappende Symbole auf gleicher und verschiedener Ebene prüfen; Platzierungsvorgabe, Auswahlaktion, Grafik, Klicktreffer und gespeicherte Reihenfolge trennen.",
+          "state": "specified_task_original_variant_open",
+          "acceptanceState": "open"
         }
       },
       {
@@ -16684,6 +17940,19 @@
           "build": null,
           "evidence": [],
           "remaining": []
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "WD-018.01",
+          "contract": "docs/atlas/verification/reference-comparison.md#ergebnisvertrag-auswahl-assets-und-text",
+          "acceptanceScenario": "Wald-/Berggruppe zeichnen, Varianten wiederholen und Zug zurücknehmen; materialisierte Instanzen bleiben nach Öffnen identisch.",
+          "variantToResolve": "Gruppenpinsel",
+          "delivery": [
+            "HEX-18"
+          ],
+          "originalProbe": "Alle erreichbaren Baum-/Berg-/Symbolpinsel mit einem zusammenhängenden Zug prüfen; Dichte, Abstand, Streuung, Größen und Varianten einzeln erfassen.",
+          "state": "specified_task_original_variant_open",
+          "acceptanceState": "open"
         }
       },
       {
@@ -16739,6 +18008,19 @@
           "build": null,
           "evidence": [],
           "remaining": []
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "WD-018.02",
+          "contract": "docs/atlas/verification/reference-comparison.md#ergebnisvertrag-auswahl-assets-und-text",
+          "acceptanceScenario": "Wald-/Berggruppe zeichnen, Varianten wiederholen und Zug zurücknehmen; materialisierte Instanzen bleiben nach Öffnen identisch.",
+          "variantToResolve": "Zufall und History",
+          "delivery": [
+            "HEX-18"
+          ],
+          "originalProbe": "Erreichbare Zufallsvorgaben erfassen; wiederholte Züge, rücknehmbare Zuggrenzen und erhaltene ältere Instanzen vergleichen.",
+          "state": "specified_task_original_variant_open",
+          "acceptanceState": "open"
         }
       },
       {
@@ -16794,6 +18076,19 @@
           "build": null,
           "evidence": [],
           "remaining": []
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "WD-019.01",
+          "contract": "docs/atlas/verification/reference-comparison.md#ergebnisvertrag-auswahl-assets-und-text",
+          "acceptanceScenario": "Gefilterten Symbolzug radieren; nicht gewählte Kategorien bleiben unverändert, Undo stellt genau die entfernten IDs/Posen wieder her.",
+          "variantToResolve": "Radierbereiche und Filter",
+          "delivery": [
+            "HEX-18"
+          ],
+          "originalProbe": "Alle erreichbaren Radiergrößen, Filter, Ebenen und Modi an gemischten Symbolen prüfen; Teilüberlappung und Auswahlgrenze messen.",
+          "state": "specified_task_original_variant_open",
+          "acceptanceState": "open"
         }
       },
       {
@@ -16849,6 +18144,19 @@
           "build": null,
           "evidence": [],
           "remaining": []
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "WD-019.02",
+          "contract": "docs/atlas/verification/reference-comparison.md#ergebnisvertrag-auswahl-assets-und-text",
+          "acceptanceScenario": "Gefilterten Symbolzug radieren; nicht gewählte Kategorien bleiben unverändert, Undo stellt genau die entfernten IDs/Posen wieder her.",
+          "variantToResolve": "Zusammenhängender Radierzug",
+          "delivery": [
+            "HEX-18"
+          ],
+          "originalProbe": "Mehrere Symbole in einem Zug entfernen, abbrechen und zurücknehmen; alte/neue Instanzen und Neuöffnung vergleichen.",
+          "state": "specified_task_original_variant_open",
+          "acceptanceState": "open"
         }
       },
       {
@@ -16904,6 +18212,19 @@
           "build": null,
           "evidence": [],
           "remaining": []
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "WD-020.01",
+          "contract": "docs/atlas/verification/reference-comparison.md#ergebnisvertrag-auswahl-assets-und-text",
+          "acceptanceScenario": "Eigenes Asset mit Herkunft importieren, finden/platzieren und auf unabhängiger Kopie öffnen; fehlendes Asset erklärt zeigen ohne Datenverlust.",
+          "variantToResolve": "Bibliothek und Filter",
+          "delivery": [
+            "HEX-19"
+          ],
+          "originalProbe": "Erreichbare Kategorien, Sets, Suche, Sortierung und Assetwechsel erfassen; sichtbare Vorschaubilder und tatsächlich gewählte Assets prüfen.",
+          "state": "specified_task_original_variant_open",
+          "acceptanceState": "open"
         }
       },
       {
@@ -17031,6 +18352,19 @@
           "build": null,
           "evidence": [],
           "remaining": []
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "WD-020.02",
+          "contract": "docs/atlas/verification/reference-comparison.md#ergebnisvertrag-auswahl-assets-und-text",
+          "acceptanceScenario": "Eigenes Asset mit Herkunft importieren, finden/platzieren und auf unabhängiger Kopie öffnen; fehlendes Asset erklärt zeigen ohne Datenverlust.",
+          "variantToResolve": "Eigene Assets und Metadaten",
+          "delivery": [
+            "HEX-19"
+          ],
+          "originalProbe": "Ein kontrolliertes eigenes Testpaket mit farbbaren/nicht farbbaren Symbolen laden; tatsächlich unterstützte Dateien, Farbmodi und Neuladen messen.",
+          "state": "specified_task_original_variant_open",
+          "acceptanceState": "open"
         }
       },
       {
@@ -17123,6 +18457,19 @@
           "build": null,
           "evidence": [],
           "remaining": []
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "WD-020.03",
+          "contract": "docs/atlas/verification/reference-comparison.md#ergebnisvertrag-auswahl-assets-und-text",
+          "acceptanceScenario": "Eigenes Asset mit Herkunft importieren, finden/platzieren und auf unabhängiger Kopie öffnen; fehlendes Asset erklärt zeigen ohne Datenverlust.",
+          "variantToResolve": "Fehlende Assets",
+          "delivery": [
+            "HEX-19"
+          ],
+          "originalProbe": "Testpaket nach Speicherung im isolierten Profil entfernen und Karte frisch öffnen; Originalverhalten und bewahrte Instanzdaten erfassen.",
+          "state": "specified_task_original_variant_open",
+          "acceptanceState": "open"
         }
       },
       {
@@ -17931,6 +19278,26 @@
           "build": null,
           "evidence": [],
           "remaining": []
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "WD-021.01",
+          "contract": "docs/atlas/verification/reference-comparison.md#ergebnisvertrag-auswahl-assets-und-text",
+          "acceptanceScenario": "Kontextfarbe als Text/Palette eingeben, bestätigen oder verwerfen; nur benannter Farbowner ändert sich, falsche Eingabe wird erklärt.",
+          "variantToResolve": "Eingaben und Commit",
+          "delivery": [
+            "HEX-02",
+            "HEX-11",
+            "HEX-12",
+            "HEX-19",
+            "HEX-24",
+            "HEX-20",
+            "HEX-21",
+            "HEX-25"
+          ],
+          "originalProbe": "Jedes tatsächlich vorhandene Farbfeld, Palette, Farbfläche und Pipette getrennt erfassen; gültige/ungültige Eingabe, Livevorschau, Accept, Escape und Außenklick messen.",
+          "state": "specified_task_original_variant_open",
+          "acceptanceState": "open"
         }
       },
       {
@@ -17994,6 +19361,26 @@
           "build": null,
           "evidence": [],
           "remaining": []
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "WD-021.02",
+          "contract": "docs/atlas/verification/reference-comparison.md#ergebnisvertrag-auswahl-assets-und-text",
+          "acceptanceScenario": "Kontextfarbe als Text/Palette eingeben, bestätigen oder verwerfen; nur benannter Farbowner ändert sich, falsche Eingabe wird erklärt.",
+          "variantToResolve": "Kontextabhängige Farbe",
+          "delivery": [
+            "HEX-02",
+            "HEX-11",
+            "HEX-12",
+            "HEX-19",
+            "HEX-24",
+            "HEX-20",
+            "HEX-21",
+            "HEX-25"
+          ],
+          "originalProbe": "Land-, Wasser-, Symbol-, Text- und Gebietskontext einzeln prüfen; vorhandene Instanz, nächstes Werkzeug und globale/kartenlokale Speicherung unterscheiden.",
+          "state": "specified_task_original_variant_open",
+          "acceptanceState": "open"
         }
       },
       {
@@ -18072,6 +19459,19 @@
           "build": null,
           "evidence": [],
           "remaining": []
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "WD-022.01",
+          "contract": "docs/atlas/verification/reference-comparison.md#ergebnisvertrag-auswahl-assets-und-text",
+          "acceptanceScenario": "Label und Rahmen mit Unicode/Whitespace setzen, ausrichten und bearbeiten; Textfokus löst keine Kartenaktion aus, Öffnen erhält Wortlaut.",
+          "variantToResolve": "Anlegen und Textmodus",
+          "delivery": [
+            "HEX-20"
+          ],
+          "originalProbe": "Beschriftung anlegen und bearbeiten; dokumentiertes Enter/Shift-Enter sowie Abbruch und erreichbare Fonts, Presets, Größen und Mehrzeiligkeit messen.",
+          "state": "specified_task_original_variant_open",
+          "acceptanceState": "open"
         }
       },
       {
@@ -18185,6 +19585,19 @@
           "build": null,
           "evidence": [],
           "remaining": []
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "WD-022.02",
+          "contract": "docs/atlas/verification/reference-comparison.md#ergebnisvertrag-auswahl-assets-und-text",
+          "acceptanceScenario": "Label und Rahmen mit Unicode/Whitespace setzen, ausrichten und bearbeiten; Textfokus löst keine Kartenaktion aus, Öffnen erhält Wortlaut.",
+          "variantToResolve": "Position, Winkel und Aussehen",
+          "delivery": [
+            "HEX-20"
+          ],
+          "originalProbe": "Alle erreichbaren Transformationen, Drehmodifier, Stile, Textfarben und weitere Effekte einzeln erfassen; Hit-Test, Undo und Export vergleichen.",
+          "state": "specified_task_original_variant_open",
+          "acceptanceState": "open"
         }
       },
       {
@@ -18240,6 +19653,19 @@
           "build": null,
           "evidence": [],
           "remaining": []
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "WD-022.03",
+          "contract": "docs/atlas/verification/reference-comparison.md#ergebnisvertrag-auswahl-assets-und-text",
+          "acceptanceScenario": "Label und Rahmen mit Unicode/Whitespace setzen, ausrichten und bearbeiten; Textfokus löst keine Kartenaktion aus, Öffnen erhält Wortlaut.",
+          "variantToResolve": "Fokus und Kartenaktionen",
+          "delivery": [
+            "HEX-20"
+          ],
+          "originalProbe": "Texteingabe mit Werkzeugkürzeln, Escape und Kartenklick prüfen; Wirkung auf aktives Label und nächste Beschriftung getrennt erfassen.",
+          "state": "specified_task_original_variant_open",
+          "acceptanceState": "open"
         }
       },
       {
@@ -18339,6 +19765,19 @@
           "build": null,
           "evidence": [],
           "remaining": []
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "WD-023.01",
+          "contract": "docs/atlas/verification/reference-comparison.md#ergebnisvertrag-auswahl-assets-und-text",
+          "acceptanceScenario": "Namen vorschlagen und ausdrücklich übernehmen; erneutes Vorschlagen benennt keine bestehenden Objekte um.",
+          "variantToResolve": "Generatoren und Ausgabe",
+          "delivery": [
+            "HEX-20"
+          ],
+          "originalProbe": "Alle erreichbaren Namensarten, Vorgaben und Ausgabeaktionen erfassen; Übernahme in ein Label, Abbruch und Wiederholung direkt prüfen.",
+          "state": "specified_task_original_variant_open",
+          "acceptanceState": "open"
         }
       },
       {
@@ -18417,6 +19856,19 @@
           "build": null,
           "evidence": [],
           "remaining": []
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "WD-024.01",
+          "contract": "docs/atlas/verification/reference-comparison.md#ergebnisvertrag-auswahl-assets-und-text",
+          "acceptanceScenario": "Gebiet schließen, benennen und Grenzstil/Reihenfolge ändern; editierbare Kontur und Beschriftung bleiben zusammen referenzierbar.",
+          "variantToResolve": "Gebiet anlegen und schließen",
+          "delivery": [
+            "HEX-21"
+          ],
+          "originalProbe": "Jeden erreichbaren Gebiets-/Grenzmodus mit denselben Punkten anlegen; Abschluss, Abbruch, Überlappung und Kontur bearbeiten.",
+          "state": "specified_task_original_variant_open",
+          "acceptanceState": "open"
         }
       },
       {
@@ -18481,6 +19933,19 @@
           "build": null,
           "evidence": [],
           "remaining": []
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "WD-024.02",
+          "contract": "docs/atlas/verification/reference-comparison.md#ergebnisvertrag-auswahl-assets-und-text",
+          "acceptanceScenario": "Gebiet schließen, benennen und Grenzstil/Reihenfolge ändern; editierbare Kontur und Beschriftung bleiben zusammen referenzierbar.",
+          "variantToResolve": "Erscheinung und Reihenfolge",
+          "delivery": [
+            "HEX-21"
+          ],
+          "originalProbe": "Alle erreichbaren Füll-, Rand-, Farb- und Ebenenoptionen einzeln ändern; Label/Symbol-Überdeckung, Treffer und Speicherung messen.",
+          "state": "specified_task_original_variant_open",
+          "acceptanceState": "open"
         }
       },
       {
@@ -18538,6 +20003,20 @@
           "build": null,
           "evidence": [],
           "remaining": []
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "WD-025.01",
+          "contract": "docs/atlas/verification/reference-comparison.md#ergebnisvertrag-ausgabe-und-vorlagen",
+          "acceptanceScenario": "Referenzbild einlesen, metrisch ausrichten und ein-/ausblenden; Bild ist Unterlage, keine unbelegte Konversion in native Kartenobjekte.",
+          "variantToResolve": "Bild laden und ausrichten",
+          "delivery": [
+            "HEX-09",
+            "HEX-26"
+          ],
+          "originalProbe": "Eine kontrollierte Bildvorlage laden; alle erreichbaren Positionierungs-, Skalierungs-, Rotations- und Deckkraftoptionen erfassen.",
+          "state": "specified_task_original_variant_open",
+          "acceptanceState": "open"
         }
       },
       {
@@ -18595,6 +20074,20 @@
           "build": null,
           "evidence": [],
           "remaining": []
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "WD-025.02",
+          "contract": "docs/atlas/verification/reference-comparison.md#ergebnisvertrag-ausgabe-und-vorlagen",
+          "acceptanceScenario": "Referenzbild einlesen, metrisch ausrichten und ein-/ausblenden; Bild ist Unterlage, keine unbelegte Konversion in native Kartenobjekte.",
+          "variantToResolve": "Reihenfolge und Lebensdauer",
+          "delivery": [
+            "HEX-09",
+            "HEX-26"
+          ],
+          "originalProbe": "Erreichbare Sichtbarkeits-, Reihenfolge-, Austausch- und Entfernungsaktionen prüfen; Speichern, Neuöffnung und Exportbeteiligung direkt messen.",
+          "state": "specified_task_original_variant_open",
+          "acceptanceState": "open"
         }
       },
       {
@@ -19636,6 +21129,20 @@
           "build": null,
           "evidence": [],
           "remaining": []
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "WD-026.01",
+          "contract": "docs/atlas/verification/reference-comparison.md#ergebnisvertrag-ausgabe-und-vorlagen",
+          "acceptanceScenario": "Gestaltungsvorlage erstellen/wechseln; nur ausgewiesene Darstellungswerte ändern, manuelle Geometrie/Textwerte bleiben erhalten.",
+          "variantToResolve": "Wahl und Wechsel",
+          "delivery": [
+            "HEX-01",
+            "HEX-24"
+          ],
+          "originalProbe": "Alle erreichbaren Themen und enthaltenen Komponenten erfassen; Thema bei Neuanlage und Wechsel auf einer gestalteten Karte getrennt prüfen.",
+          "state": "specified_task_original_variant_open",
+          "acceptanceState": "open"
         }
       },
       {
@@ -19693,6 +21200,20 @@
           "build": null,
           "evidence": [],
           "remaining": []
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "WD-026.02",
+          "contract": "docs/atlas/verification/reference-comparison.md#ergebnisvertrag-ausgabe-und-vorlagen",
+          "acceptanceScenario": "Gestaltungsvorlage erstellen/wechseln; nur ausgewiesene Darstellungswerte ändern, manuelle Geometrie/Textwerte bleiben erhalten.",
+          "variantToResolve": "Eigene Vorgaben",
+          "delivery": [
+            "HEX-01",
+            "HEX-24"
+          ],
+          "originalProbe": "Erreichbare Speicher-/Lade-/Reset-Aktionen für eigene Gestaltung messen; Inhalt, Werkzeugvorgaben und vorhandene Instanzen getrennt protokollieren.",
+          "state": "specified_task_original_variant_open",
+          "acceptanceState": "open"
         }
       },
       {
@@ -19834,6 +21355,19 @@
           "build": null,
           "evidence": [],
           "remaining": []
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "WD-027.01",
+          "contract": "docs/atlas/verification/reference-comparison.md#ergebnisvertrag-ausgabe-und-vorlagen",
+          "acceptanceScenario": "Effekte einzeln und kombiniert am selben Ausschnitt ändern; Editor und empfangene Ausgabe zeigen die gewählte Wirkung ohne Autorenmutation.",
+          "variantToResolve": "Effektinventar",
+          "delivery": [
+            "HEX-24"
+          ],
+          "originalProbe": "Jeden tatsächlich erreichbaren Effekt und Regler mit Default, gültigen Grenzen und abhängigen Optionen erfassen.",
+          "state": "specified_task_original_variant_open",
+          "acceptanceState": "open"
         }
       },
       {
@@ -19975,6 +21509,19 @@
           "build": null,
           "evidence": [],
           "remaining": []
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "WD-027.02",
+          "contract": "docs/atlas/verification/reference-comparison.md#ergebnisvertrag-ausgabe-und-vorlagen",
+          "acceptanceScenario": "Effekte einzeln und kombiniert am selben Ausschnitt ändern; Editor und empfangene Ausgabe zeigen die gewählte Wirkung ohne Autorenmutation.",
+          "variantToResolve": "Zusammenspiel und Ausgabe",
+          "delivery": [
+            "HEX-24"
+          ],
+          "originalProbe": "Effekte einzeln und in einer kritischen Kombination auf kontrollierten Land/Wasser/Symbol/Text-Flächen prüfen; Vorschau, Undo, Neustart und Export vergleichen.",
+          "state": "specified_task_original_variant_open",
+          "acceptanceState": "open"
         }
       },
       {
@@ -20030,6 +21577,19 @@
           "build": null,
           "evidence": [],
           "remaining": []
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "WD-028.01",
+          "contract": "docs/atlas/verification/reference-comparison.md#ergebnisvertrag-ausgabe-und-vorlagen",
+          "acceptanceScenario": "Rahmen mit Stil/Abstand auf Ausgabeausschnitt anwenden; keine Begrenzung oder Skalierung der editierbaren Atlaswelt.",
+          "variantToResolve": "Rahmen wählen und einstellen",
+          "delivery": [
+            "HEX-25"
+          ],
+          "originalProbe": "Alle erreichbaren Rahmen-/Gestaltungsoptionen erfassen; Auswahl, Skalierung, Ränder und Abbruch direkt prüfen.",
+          "state": "specified_task_original_variant_open",
+          "acceptanceState": "open"
         }
       },
       {
@@ -20085,6 +21645,19 @@
           "build": null,
           "evidence": [],
           "remaining": []
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "WD-028.02",
+          "contract": "docs/atlas/verification/reference-comparison.md#ergebnisvertrag-ausgabe-und-vorlagen",
+          "acceptanceScenario": "Rahmen mit Stil/Abstand auf Ausgabeausschnitt anwenden; keine Begrenzung oder Skalierung der editierbaren Atlaswelt.",
+          "variantToResolve": "Karte und Export",
+          "delivery": [
+            "HEX-25"
+          ],
+          "originalProbe": "Rahmen bei Größenänderung, Speichern und PNG/JPEG prüfen; Inhalt und Ausgabeausschnitt vergleichen.",
+          "state": "specified_task_original_variant_open",
+          "acceptanceState": "open"
         }
       },
       {
@@ -20140,6 +21713,19 @@
           "build": null,
           "evidence": [],
           "remaining": []
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "WD-029.01",
+          "contract": "docs/atlas/verification/reference-comparison.md#ergebnisvertrag-ausgabe-und-vorlagen",
+          "acceptanceScenario": "Kompass setzen, transformieren und ausgeben; Weltmaßstab und vorhandene Geometrie bleiben unverändert.",
+          "variantToResolve": "Anlegen und Optionen",
+          "delivery": [
+            "HEX-25"
+          ],
+          "originalProbe": "Alle erreichbaren Kompassassets, Platzierungs-, Farb-, Größen- und Winkeloptionen erfassen.",
+          "state": "specified_task_original_variant_open",
+          "acceptanceState": "open"
         }
       },
       {
@@ -20211,6 +21797,19 @@
           "build": null,
           "evidence": [],
           "remaining": []
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "WD-029.02",
+          "contract": "docs/atlas/verification/reference-comparison.md#ergebnisvertrag-ausgabe-und-vorlagen",
+          "acceptanceScenario": "Kompass setzen, transformieren und ausgeben; Weltmaßstab und vorhandene Geometrie bleiben unverändert.",
+          "variantToResolve": "Auswahl und Bearbeitung",
+          "delivery": [
+            "HEX-25"
+          ],
+          "originalProbe": "Verschieben, Drehen, Entfernen und alle erreichbaren Auswahlgesten prüfen; Vorschau, Undo, Neustart und Ausgabe vergleichen.",
+          "state": "specified_task_original_variant_open",
+          "acceptanceState": "open"
         }
       },
       {
@@ -20266,6 +21865,19 @@
           "build": null,
           "evidence": [],
           "remaining": []
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "WD-030.01",
+          "contract": "docs/atlas/verification/reference-comparison.md#ergebnisvertrag-ausgabe-und-vorlagen",
+          "acceptanceScenario": "Bekannte metrische Strecke messen und Skalenleiste ausgeben; Kamera-/Einheitenwechsel verändert keine physischen Abstände.",
+          "variantToResolve": "Maßstabsleiste",
+          "delivery": [
+            "HEX-25"
+          ],
+          "originalProbe": "Alle erreichbaren Einheiten, Bezugspunkte, Segmente, Stile und Anpassungen erfassen; kontrollierte Strecke mit Maßstabsleiste vergleichen.",
+          "state": "specified_task_original_variant_open",
+          "acceptanceState": "open"
         }
       },
       {
@@ -20321,6 +21933,19 @@
           "build": null,
           "evidence": [],
           "remaining": []
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "WD-030.02",
+          "contract": "docs/atlas/verification/reference-comparison.md#ergebnisvertrag-ausgabe-und-vorlagen",
+          "acceptanceScenario": "Bekannte metrische Strecke messen und Skalenleiste ausgeben; Kamera-/Einheitenwechsel verändert keine physischen Abstände.",
+          "variantToResolve": "Entfernung messen",
+          "delivery": [
+            "HEX-25"
+          ],
+          "originalProbe": "Alle erreichbaren Messgesten und Modi auf einer bekannten Strecke prüfen; Einheiten, Kartenzoom und Ausgabeverhalten protokollieren.",
+          "state": "specified_task_original_variant_open",
+          "acceptanceState": "open"
         }
       },
       {
@@ -20376,6 +22001,19 @@
           "build": null,
           "evidence": [],
           "remaining": []
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "WD-031.01",
+          "contract": "docs/atlas/verification/reference-comparison.md#ergebnisvertrag-ausgabe-und-vorlagen",
+          "acceptanceScenario": "Darstellungsraster für Editor/Ausgabe umschalten; Hex-/Terrainrecords ändern sich durch reine Rasteranzeige nicht.",
+          "variantToResolve": "Rasteroptionen",
+          "delivery": [
+            "HEX-26"
+          ],
+          "originalProbe": "Alle erreichbaren Rasterarten, Größen, Ursprung/Ausrichtung, Farben und Sichtbarkeiten erfassen; Darstellungsraster und Datenbasis unterscheiden.",
+          "state": "specified_task_original_variant_open",
+          "acceptanceState": "open"
         }
       },
       {
@@ -20431,6 +22069,19 @@
           "build": null,
           "evidence": [],
           "remaining": []
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "WD-031.02",
+          "contract": "docs/atlas/verification/reference-comparison.md#ergebnisvertrag-ausgabe-und-vorlagen",
+          "acceptanceScenario": "Darstellungsraster für Editor/Ausgabe umschalten; Hex-/Terrainrecords ändern sich durch reine Rasteranzeige nicht.",
+          "variantToResolve": "Editor und Export",
+          "delivery": [
+            "HEX-26"
+          ],
+          "originalProbe": "Raster beim Zoom, Kartenwechsel und Export prüfen; weltmetrische Hex-Anpassung gesondert gegen Projektanforderungen belegen.",
+          "state": "specified_task_original_variant_open",
+          "acceptanceState": "open"
         }
       },
       {
@@ -20565,6 +22216,19 @@
           "build": null,
           "evidence": [],
           "remaining": []
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "WD-032.01",
+          "contract": "docs/atlas/verification/reference-comparison.md#ergebnisvertrag-ausgabe-und-vorlagen",
+          "acceptanceScenario": "Ausgabe-/Generatorausschnitt und Detailfilter ändern; außerhalb liegende Autoreninhalte bleiben im unbegrenzten Atlas erhalten. Kein Resizeablauf.",
+          "variantToResolve": "Größenänderung",
+          "delivery": [
+            "HEX-26"
+          ],
+          "originalProbe": "Jeden erreichbaren Größen-, Skalierungs-, Anker- und Ausschnittmodus mit Objekten am Kartenrand direkt prüfen; Dialog-Abbruch getrennt erfassen.",
+          "state": "specified_task_original_variant_open",
+          "acceptanceState": "open"
         }
       },
       {
@@ -20699,6 +22363,19 @@
           "build": null,
           "evidence": [],
           "remaining": []
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "WD-032.02",
+          "contract": "docs/atlas/verification/reference-comparison.md#ergebnisvertrag-ausgabe-und-vorlagen",
+          "acceptanceScenario": "Ausgabe-/Generatorausschnitt und Detailfilter ändern; außerhalb liegende Autoreninhalte bleiben im unbegrenzten Atlas erhalten. Kein Resizeablauf.",
+          "variantToResolve": "Außerhalb liegende Inhalte",
+          "delivery": [
+            "HEX-26"
+          ],
+          "originalProbe": "Verkleinern und Vergrößern mit Land, Linien, Labels, Vorlage und Rahmen prüfen; ursprüngliche Inhaltsbehandlung und Undo messen.",
+          "state": "specified_task_original_variant_open",
+          "acceptanceState": "open"
         }
       },
       {
@@ -20756,6 +22433,20 @@
           "build": null,
           "evidence": [],
           "remaining": []
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "WD-033.01",
+          "contract": "docs/atlas/verification/reference-comparison.md#ergebnisvertrag-ausgabe-und-vorlagen",
+          "acceptanceScenario": "PNG/JPEG mit definiertem Ausschnitt/Pixelmaß empfangen; Cancel/Dateifehler ändern keine Autorenwerte, Sichtbarkeitsprojektion prüfen.",
+          "variantToResolve": "Erste vollständige Ausgabe",
+          "delivery": [
+            "HEX-10",
+            "HEX-27"
+          ],
+          "originalProbe": "PNG einer kleinen gestalteten Karte ausgeben; alle erreichbaren Exportfelder inventarisieren und Unabhängigkeit von Kamera/Zoom prüfen.",
+          "state": "specified_task_original_variant_open",
+          "acceptanceState": "open"
         }
       },
       {
@@ -20850,6 +22541,20 @@
           "build": null,
           "evidence": [],
           "remaining": []
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "WD-033.02",
+          "contract": "docs/atlas/verification/reference-comparison.md#ergebnisvertrag-ausgabe-und-vorlagen",
+          "acceptanceScenario": "PNG/JPEG mit definiertem Ausschnitt/Pixelmaß empfangen; Cancel/Dateifehler ändern keine Autorenwerte, Sichtbarkeitsprojektion prüfen.",
+          "variantToResolve": "Formate, Auflösung und Ausschnitt",
+          "delivery": [
+            "HEX-10",
+            "HEX-27"
+          ],
+          "originalProbe": "Normal, 2x Upscale, Multiplane und Heightmap sowie PNG/JPEG/WEBP, Quality, Export Trace Image und alle erreichbaren Ausschnitt-/Qualitäts-/Transparenz-/Ebenenoptionen einzeln ausführen; Maße, sichtbaren Inhalt und hohe Auflösung vergleichen.",
+          "state": "specified_task_original_variant_open",
+          "acceptanceState": "open"
         }
       },
       {
@@ -20907,6 +22612,20 @@
           "build": null,
           "evidence": [],
           "remaining": []
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "WD-033.03",
+          "contract": "docs/atlas/verification/reference-comparison.md#ergebnisvertrag-ausgabe-und-vorlagen",
+          "acceptanceScenario": "PNG/JPEG mit definiertem Ausschnitt/Pixelmaß empfangen; Cancel/Dateifehler ändern keine Autorenwerte, Sichtbarkeitsprojektion prüfen.",
+          "variantToResolve": "Abbruch und Fehler",
+          "delivery": [
+            "HEX-10",
+            "HEX-27"
+          ],
+          "originalProbe": "Dateidialog abbrechen und ungültiges Ziel prüfen; Karte, Dirty-Status und erneuten Export vergleichen.",
+          "state": "specified_task_original_variant_open",
+          "acceptanceState": "open"
         }
       },
       {
@@ -21062,6 +22781,19 @@
           "build": null,
           "evidence": [],
           "remaining": []
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "WD-034.01",
+          "contract": "docs/atlas/verification/reference-comparison.md#ergebnisvertrag-datei-und-ansicht",
+          "acceptanceScenario": "Tastatur/Pen/Maus und Eingabekontext am realen Host prüfen; Shortcut wirkt nur im vorgesehenen Kontext und erhält aktive Texteingabe.",
+          "variantToResolve": "Vorgabeninventar",
+          "delivery": [
+            "HEX-26"
+          ],
+          "originalProbe": "Alle erreichbaren Einstellungen, Defaults, Wertebereiche und Speicherorte erfassen; Kartenlokalität, Globalität und Neustart prüfen.",
+          "state": "specified_task_original_variant_open",
+          "acceptanceState": "open"
         }
       },
       {
@@ -21117,6 +22849,19 @@
           "build": null,
           "evidence": [],
           "remaining": []
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "WD-034.02",
+          "contract": "docs/atlas/verification/reference-comparison.md#ergebnisvertrag-datei-und-ansicht",
+          "acceptanceScenario": "Tastatur/Pen/Maus und Eingabekontext am realen Host prüfen; Shortcut wirkt nur im vorgesehenen Kontext und erhält aktive Texteingabe.",
+          "variantToResolve": "Kontextbezogene Gesten",
+          "delivery": [
+            "HEX-26"
+          ],
+          "originalProbe": "Jedes im Original erreichbare Kürzel seinem Kontext zuordnen; Wheel/Modifier-Kollisionen, Dialogfokus und Zeichenmodus direkt prüfen.",
+          "state": "specified_task_original_variant_open",
+          "acceptanceState": "open"
         }
       },
       {
@@ -21181,6 +22926,19 @@
           "build": null,
           "evidence": [],
           "remaining": []
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "WD-034.03",
+          "contract": "docs/atlas/verification/reference-comparison.md#ergebnisvertrag-datei-und-ansicht",
+          "acceptanceScenario": "Tastatur/Pen/Maus und Eingabekontext am realen Host prüfen; Shortcut wirkt nur im vorgesehenen Kontext und erhält aktive Texteingabe.",
+          "variantToResolve": "Physische Eingabe",
+          "delivery": [
+            "HEX-26"
+          ],
+          "originalProbe": "Maus und Touchpad in frühen Testständen getrennt prüfen; dokumentierte Stiftfunktionen inventarisieren, ohne fehlende Stifthardware als bestanden zu werten.",
+          "state": "specified_task_original_variant_open",
+          "acceptanceState": "open"
         }
       },
       {
@@ -21242,6 +23000,24 @@
           "build": null,
           "evidence": [],
           "remaining": []
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "WD-035.01",
+          "contract": "docs/atlas/verification/reference-comparison.md#ergebnisvertrag-auswahl-assets-und-text",
+          "acceptanceScenario": "Layer ein-/ausblenden, sperren und Kontextwerte bearbeiten; unsichtbare/gesperrte Objekte werden weder gelöscht noch versehentlich verändert.",
+          "variantToResolve": "Ebenenoberfläche",
+          "delivery": [
+            "HEX-17",
+            "HEX-24",
+            "HEX-26",
+            "HEX-20",
+            "HEX-21",
+            "HEX-25"
+          ],
+          "originalProbe": "Erreichbare Ebenenauswahl, Sichtbarkeit, Sperren und Reihenfolge erfassen, soweit vorhanden; keine Dungeondraft-Ebenenregel auf Wonderdraft übertragen.",
+          "state": "specified_task_original_variant_open",
+          "acceptanceState": "open"
         }
       },
       {
@@ -21361,6 +23137,24 @@
           "build": null,
           "evidence": [],
           "remaining": []
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "WD-035.02",
+          "contract": "docs/atlas/verification/reference-comparison.md#ergebnisvertrag-auswahl-assets-und-text",
+          "acceptanceScenario": "Layer ein-/ausblenden, sperren und Kontextwerte bearbeiten; unsichtbare/gesperrte Objekte werden weder gelöscht noch versehentlich verändert.",
+          "variantToResolve": "Auswahl und Kontextfelder",
+          "delivery": [
+            "HEX-17",
+            "HEX-24",
+            "HEX-26",
+            "HEX-20",
+            "HEX-21",
+            "HEX-25"
+          ],
+          "originalProbe": "Jedes erreichbare Kontext-/Inspektionsfeld einem Objekt-/Werkzeugtyp zuordnen; erlaubte Aktionen, deaktivierte Zustände und Optionswirkung messen.",
+          "state": "specified_task_original_variant_open",
+          "acceptanceState": "open"
         }
       },
       {
@@ -21516,6 +23310,19 @@
           "build": null,
           "evidence": [],
           "remaining": []
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "WD-036.01",
+          "contract": "docs/atlas/verification/reference-comparison.md#ergebnisvertrag-offene-modulklassifikation",
+          "acceptanceScenario": "Erreichbaren Befehl gegenüber internem Helfer anhand Originaloberfläche klassifizieren; keine neue Produktfunktion allein aus Paketmodulnamen ableiten.",
+          "variantToResolve": "Kandidaten klassifizieren",
+          "delivery": [
+            "HEX-00"
+          ],
+          "originalProbe": "Box-/Overlay-Kandidaten, Begrüßung, Hilfe, Import-/Erzeugungsdialoge und restliche Paketmodule direkt erreichbaren Befehlen, Hilfsmodulen oder reinem Programmservice zuordnen.",
+          "state": "specified_task_original_variant_open",
+          "acceptanceState": "open"
         }
       },
       {
@@ -21954,6 +23761,24 @@
             "WD-UI-0680",
             "WD-UI-0681"
           ]
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "WD-036.02",
+          "contract": "docs/atlas/verification/reference-comparison.md#ergebnisvertrag-offene-modulklassifikation",
+          "acceptanceScenario": "Erreichbaren Befehl gegenüber internem Helfer anhand Originaloberfläche klassifizieren; keine neue Produktfunktion allein aus Paketmodulnamen ableiten.",
+          "variantToResolve": "Inventarlücken schließen",
+          "delivery": [
+            "HEX-00",
+            "HEX-02",
+            "HEX-14",
+            "HEX-19",
+            "HEX-24",
+            "HEX-26"
+          ],
+          "originalProbe": "Alle im vollständigen UI-Durchgang zusätzlich gefundenen Befehle und Optionen vor HEX-01 als stabile neue Unterfälle mit zuständiger Produktphase ergänzen.",
+          "state": "specified_task_original_variant_open",
+          "acceptanceState": "open"
         }
       },
       {
@@ -22053,6 +23878,19 @@
           "build": null,
           "evidence": [],
           "remaining": []
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "WD-022.04",
+          "contract": "docs/atlas/verification/reference-comparison.md#ergebnisvertrag-auswahl-assets-und-text",
+          "acceptanceScenario": "Beschriftung mit Boxrahmen anlegen und Größe/Stil/Position ändern; Kopplung von Text, Umbruch und Rahmen sowie Speicherung/Reopen prüfen; keine Raumgeometrie aus grafischer Box ableiten.",
+          "variantToResolve": "Box Tool: Rahmen für Beschriftungen",
+          "delivery": [
+            "HEX-20"
+          ],
+          "originalProbe": "Im Original Box Tool mit allen Stilen, Farbe und Größe platzieren, auswählen, ändern und frisch öffnen; Verhältnis zu Labels direkt messen.",
+          "state": "specified_task_original_variant_open",
+          "acceptanceState": "open"
         }
       },
       {
@@ -22131,6 +23969,19 @@
           "build": null,
           "evidence": [],
           "remaining": []
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "WD-032.03",
+          "contract": "docs/atlas/verification/reference-comparison.md#ergebnisvertrag-ausgabe-und-vorlagen",
+          "acceptanceScenario": "Detailausschnitt mit verschiedenen Inhaltsfiltern erzeugen und empfangenen Stand öffnen; Maßstab, ausgewählte Kategorien und außerhalb erhaltene Inhalte prüfen; im eigenen Atlas keine Kopie unabhängiger Fachwahrheit erfinden.",
+          "variantToResolve": "Detail Map Wizard: Ausschnitt und Inhaltsfilter",
+          "delivery": [
+            "HEX-26"
+          ],
+          "originalProbe": "Zoom, Auswahlrechteck, Inhaltsfilter und Create/Abbruch direkt messen; Zielverhalten als Ausschnitt desselben Atlas ohne Kontextwechsel festlegen.",
+          "state": "specified_task_original_variant_open",
+          "acceptanceState": "open"
         }
       },
       {
@@ -22186,6 +24037,19 @@
           "build": null,
           "evidence": [],
           "remaining": []
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "WD-003.04",
+          "contract": "docs/atlas/verification/reference-comparison.md#ergebnisvertrag-datei-und-ansicht",
+          "acceptanceScenario": "Original Extract/Repackage getrennt prüfen: tatsächlich enthaltene Medien/Metadaten und empfangene Dateien erfassen; eigene Übertragung nur dem bestätigten Campaign-/Assetarchiv zuordnen, kein proprietärer Wonderdraft-Nativimport.",
+          "variantToResolve": "Extract/Repackage Map Data",
+          "delivery": [
+            "HEX-26"
+          ],
+          "originalProbe": "Erreichbare Originalbefehle und ihre Dialoge, Dateiwirkung, Fehler und Wiederöffnung messen; native Atlas-Entsprechung festlegen, keine Originalformat-Importannahme.",
+          "state": "specified_task_original_variant_open",
+          "acceptanceState": "open"
         }
       },
       {
@@ -22257,6 +24121,19 @@
           "build": null,
           "evidence": [],
           "remaining": []
+        },
+        "scopeContractReview": {
+          "reviewedAt": "2026-10-29",
+          "requirementId": "WD-017.04",
+          "contract": "docs/atlas/verification/reference-comparison.md#ergebnisvertrag-auswahl-assets-und-text",
+          "acceptanceScenario": "Zwei Symbole mit verschiedener Pose/Skala zusammenführen; gespeicherte Asset-/Pixelqualität, spätere Einzel-/Gruppenbearbeitbarkeit und Qualitätswarnung direkt im Original prüfen; eigene Annahme/Rücknahme erhält geschützte Referenzen.",
+          "variantToResolve": "Symbol Merge und Qualitätswarnung",
+          "delivery": [
+            "HEX-17"
+          ],
+          "originalProbe": "Zwei Symbole auswählen; Merge mit Qualitätswarnung ausführen. Auswahl, Grafik und Einzelbearbeitung vor/nach Merge, Undo/Redo und frische Neuöffnung direkt vergleichen. Merge nicht als gewöhnliche Gruppierung abbilden.",
+          "state": "specified_task_original_variant_open",
+          "acceptanceState": "open"
         }
       }
     ],
@@ -22356,6 +24233,19 @@
         "source": "https://github.com/ThonkTank/Salt-Marcher/blob/16eb0aa8807ac21704abfea5412ac3a22033a23a/acceptance.json",
         "pointer": "/wonderdraftParity/coverageReview"
       }
+    },
+    "scopeContractReview": {
+      "reviewedAt": "2026-10-29",
+      "mappedCases": 83,
+      "mappedGroups": 36,
+      "state": "incomplete_original_inventory_not_accepted",
+      "evidence": "docs/reference/scope-contracts-20261029/README.md",
+      "preservedDecisions": [
+        "TW-G1/4 coastal effect",
+        "limited river cycle",
+        "unbounded atlas without resize",
+        "reference-image adaptation without proprietary native import"
+      ]
     }
   },
   "source": ".obsidian/plugins/dungeon-auswertung/reference/FEATURE-CATALOG.json",

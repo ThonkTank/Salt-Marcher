@@ -18,11 +18,20 @@ const output = path.resolve(
 const native = await createNativeSession({ root, output, name: 'atlas-material-stream' });
 const fixtureGzip = path.join(root, 'tests/fixtures/atlas/mixed-world.sqlite.gz');
 const databasePath = path.join(native.profile, 'workbench.sqlite');
+const fixtureManifest = JSON.parse(
+  await readFile(path.join(root, 'tests/fixtures/atlas/mixed-world-manifest.json'), 'utf8'),
+);
 const frozenFixture = {
-  sha256: '19d4edc88b50d8074578a5c40c870a50331fec1c78a7a8b4f4feee5d463fdb12',
-  bytes: 225546240,
-  compressedBytes: 40236558,
+  sha256: fixtureManifest.decodedSha256,
+  bytes: fixtureManifest.decodedBytes,
+  compressedBytes: fixtureManifest.fixtureBytes,
 };
+assert.match(
+  frozenFixture.sha256,
+  /^[a-f0-9]{64}$/,
+  'Current fixture must bind its decoded source',
+);
+assert.equal(fixtureManifest.model, 'continuous-terrain-v1');
 const files = [
   'src/app/atlas/atlas-material-tile-stream.ts',
   'src/app/atlas/atlas-raster-tile-stream.ts',

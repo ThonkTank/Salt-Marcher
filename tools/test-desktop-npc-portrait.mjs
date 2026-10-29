@@ -1,3 +1,4 @@
+import { openNativeCampaign, revealWorkspaceNavigation } from './native-navigation.mjs';
 import { createNativeSession } from './native-session.mjs';
 import { createRequire } from 'node:module';
 import assert from 'node:assert/strict';
@@ -143,16 +144,7 @@ store.close();
 const results = {};
 async function launch() {
   const page = await native.launch(zoom);
-  await page
-    .locator('#campaign-screen-list article')
-    .filter({ hasText: campaign.name })
-    .getByRole('button', { name: 'Fortsetzen', exact: true })
-    .click();
-  await page.waitForFunction(() => !document.querySelector('#workspace-navigation').inert);
-  if (await page.locator('#atlas-navigation').isVisible())
-    await page.locator('#atlas-navigation').click();
-  if (!(await page.locator('#live-tab').isVisible()))
-    await page.locator('#workspace-nav-summary').click();
+  await openNativeCampaign(page, campaign.id);
   await page.locator('#live-tab').click();
   if (await page.locator('#live-continue').isVisible())
     await page.locator('#live-continue').click();

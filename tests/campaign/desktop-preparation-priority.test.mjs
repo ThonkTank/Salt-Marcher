@@ -1244,3 +1244,31 @@ for (const conflict of ['removed visit', 'changed text'])
       foreign.scenes,
     );
   });
+
+test('excerpt destination read cannot publish after source A→B→A in the production preparation editor', async (t) => {
+  const x = await fixture(t);
+  await selectExcerpt(x);
+  x.el('note-excerpt-title').value = 'Ada';
+  x.el('note-excerpt-title').dispatchEvent(new x.window.Event('input'));
+  await until(() => x.el('note-excerpt-choices').querySelector('button'));
+  const read = x.window.campaign.deskContent;
+  let release;
+  x.window.campaign.deskContent = async (...args) => {
+    const result = await read(...args);
+    return new Promise((resolve) => {
+      release = () => resolve(result);
+    });
+  };
+  x.el('note-excerpt-choices').querySelector('button').click();
+  await until(() => !!release);
+  await x.ui.openPreparedNote(x.ids.ada);
+  await x.ui.openPreparedNote(x.ids.borin);
+  const before = x.el('note-gm').value;
+  release();
+  await settle();
+  assert.equal(x.el('note-excerpt-existing').hidden, true);
+  assert.equal(x.el('note-title').value, 'Borin');
+  assert.equal(x.el('note-gm').value, before);
+  assert.equal(x.writes.length, 0);
+  x.el('note-excerpt-cancel').click();
+});

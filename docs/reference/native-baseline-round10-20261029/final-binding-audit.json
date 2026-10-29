@@ -1,0 +1,17 @@
+{
+  "observedAt": "2026-10-29T11:27:53.354077+00:00",
+  "closedNativeRun": "2026-10-29T11:21:31.739Z",
+  "auditor": {
+    "file": ".build/r10-final-bindings.py",
+    "sha256": "a65ad1cd43d4853217fd7d48925cbfe555c8696a621dbc05ab41d5cf150275e2"
+  },
+  "sourceDigest": "2005f9ed9906fb9fdbd79a15c325d63e2b29228a8c75ac8761e16c6bd2130865",
+  "archive": ".build/native-baseline-round10-review-source-20261029/sources.tar.gz",
+  "archiveSha256": "c418a4fd7681bfb57ddb86249c711a3c07be443e26a27f39ff45de8ac100d35a",
+  "sourceFilesVerified": 2085,
+  "archiveMembers": 2085,
+  "runtimeArtifactsVerified": 20,
+  "matchingPackage": ".build/native-baseline-round10-review-package",
+  "packageArtifactsVerified": 20,
+  "failures": []
+}

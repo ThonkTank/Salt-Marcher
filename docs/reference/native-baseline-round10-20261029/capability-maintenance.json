@@ -1,0 +1,214 @@
+{
+  "observedAt": "2026-10-29T05:27:14.390035+00:00",
+  "catalog": "/home/aaron/.local/share/saltmarcher/capabilities/capabilities.json",
+  "removedObsoleteLinks": [
+    {
+      "workflow": "Bauten und Räume direkt im gemeinsamen Atlas ohne Ortsmarker zeichnen",
+      "removedTests": [
+        "tests/atlas/desktop-atlas-regions.test.mjs",
+        "tests/atlas/desktop-atlas-author-overlay.test.mjs"
+      ],
+      "reason": "Im Commit 94fddd035 gelöscht; kein existierender Testbeleg. Vorhandene fachlich zugeordnete native Links bleiben erhalten."
+    },
+    {
+      "workflow": "Im Atlas zwischen Bereichen, Werkzeuggruppen und Werkzeugen wechseln und Optionen sowie Bibliothek verwenden",
+      "removedTests": [
+        "tests/atlas/desktop-atlas-tool-hierarchy.test.mjs",
+        "tests/atlas/desktop-atlas-canvas.test.mjs"
+      ],
+      "reason": "Im Commit 94fddd035 gelöscht; kein existierender Testbeleg. Vorhandene fachlich zugeordnete native Links bleiben erhalten."
+    },
+    {
+      "workflow": "Atlasdetails und vollständige Namen beim Zoomen kollisionsfrei darstellen und über Kachelgrenzen exportieren",
+      "removedTests": [
+        "tests/atlas/desktop-atlas-canvas.test.mjs",
+        "tests/atlas/desktop-atlas-author-overlay.test.mjs",
+        "tests/atlas/desktop-atlas-regions.test.mjs"
+      ],
+      "reason": "Im Commit 94fddd035 gelöscht; kein existierender Testbeleg. Vorhandene fachlich zugeordnete native Links bleiben erhalten."
+    },
+    {
+      "workflow": "SaltMarcher über signierte GitHub Releases aktualisieren und sicher neu starten",
+      "removedTests": [
+        "tests/campaign/desktop-preset-settings.test.mjs"
+      ],
+      "reason": "Im Commit 94fddd035 gelöscht; kein existierender Testbeleg. Vorhandene fachlich zugeordnete native Links bleiben erhalten."
+    },
+    {
+      "workflow": "Spieleranzeige für eine Gruppe freigeben und nach Neustart zunächst leer halten",
+      "removedTests": [
+        "tests/runtime/desktop-player-visual-contract.test.mjs"
+      ],
+      "reason": "Im Commit 94fddd035 gelöscht; kein existierender Testbeleg. Vorhandene fachlich zugeordnete native Links bleiben erhalten."
+    },
+    {
+      "workflow": "Konzentrationsprüfungen im Kampf getrennt bestätigen und nach Neustart fortsetzen",
+      "removedTests": [
+        "tests/runtime/desktop-combat-switch.test.mjs",
+        "tests/runtime/desktop-combat-hit.test.mjs"
+      ],
+      "reason": "Im Commit 94fddd035 gelöscht; kein existierender Testbeleg. Vorhandene fachlich zugeordnete native Links bleiben erhalten."
+    },
+    {
+      "workflow": "Unfertigen NSC-Entwurf beim Wechsel erhalten und fremde Schreibantworten vom neuen Ziel trennen",
+      "removedTests": [
+        "tests/campaign/desktop-preparation-context.test.mjs",
+        "tests/campaign/desktop-npc-switch.test.mjs",
+        "tests/campaign/desktop-npc-owner-dom.test.mjs"
+      ],
+      "reason": "Im Commit 94fddd035 gelöscht; kein existierender Testbeleg. Vorhandene fachlich zugeordnete native Links bleiben erhalten."
+    },
+    {
+      "workflow": "SRD-Gegenstände mit historischen Versionen erhalten und eigene Definitionen sicher auswählen, ändern und kopieren",
+      "removedTests": [
+        "tests/catalog/desktop-item-selection.test.mjs"
+      ],
+      "reason": "Im Commit 94fddd035 gelöscht; kein existierender Testbeleg. Vorhandene fachlich zugeordnete native Links bleiben erhalten."
+    },
+    {
+      "workflow": "Kampagnen finden, eindeutig umbenennen, in den Papierkorb verschieben und wiederherstellen",
+      "removedTests": [
+        "tests/campaign/desktop-campaign-catalog.test.mjs"
+      ],
+      "reason": "Im Commit 94fddd035 gelöscht; kein existierender Testbeleg. Vorhandene fachlich zugeordnete native Links bleiben erhalten."
+    },
+    {
+      "workflow": "Kontextuelle Hilfe ohne Entwurfsübernahme öffnen und Tutorialstatus nach Neustart erhalten",
+      "removedTests": [
+        "tests/shared/core/tutorial.test.ts"
+      ],
+      "reason": "Im Commit 94fddd035 gelöscht; kein existierender Testbeleg. Vorhandene fachlich zugeordnete native Links bleiben erhalten."
+    }
+  ],
+  "limits": "Katalogverknüpfung und geprüft-Zeitpunkt sind keine Behauptung vollständiger oder grüner Abdeckung.",
+  "addedActualTests": [
+    {
+      "workflow": "Native Probeaufträge mit isolierten Profilen seriell prüfen und Fachfehler von ungeklärtem Prozessbesitz unterscheiden",
+      "tests": [
+        "tests/shared/native-baseline-resource.test.mjs",
+        "tools/native-baseline-check.mjs"
+      ]
+    },
+    {
+      "workflow": "Viele Räume vollständig durchsuchen, Raumtexte gezielt speichern und Entwürfe nach Auswahlwechsel wiederfinden",
+      "tests": [
+        "tests/atlas/atlas-opening-selection.test.mjs"
+      ]
+    }
+  ],
+  "checkedBeforeFullCatalogueCompletion": {
+    "observedAt": "2026-10-29T08:17:59.045798+00:00",
+    "workflows": [
+      "Native Probeaufträge mit isolierten Profilen seriell prüfen und Fachfehler von ungeklärtem Prozessbesitz unterscheiden",
+      "Viele Räume vollständig durchsuchen, Raumtexte gezielt speichern und Entwürfe nach Auswahlwechsel wiederfinden",
+      "Musik und Ambience ausdrücklich starten, stoppen und nach Szenenwechsel oder Neustart kontrollieren",
+      "Audiodateien mit Metadaten kopieren und nach Neustart gezielt auswählen",
+      "Gemischte Atlaswelt mit kontinuierlichem Gelände, eingerichteten Gebäuden und Detailgeometrie nach Neustart erhalten",
+      "Atlas in Welt-, Orts- und Raummaßstäben mit flacher sowie geneigter Ansicht darstellen"
+    ],
+    "evidence": [
+      ".build/native-baseline-round10-controller-eight-negatives-20261029/result.json",
+      ".build/native-baseline-round10-product-targets-20261029/room-reads",
+      ".build/native-baseline-round10-product-targets-second-20261029/completion-audit.json",
+      ".build/native-baseline-round10-final-20261029/atlas-mixed-workbench/1/result.json",
+      ".build/native-baseline-round10-final-20261029/atlas-multiscale/result.json",
+      ".build/native-baseline-round10-final-20261029/atlas-multiscale-structures/result.json"
+    ],
+    "limits": "Prüfzeitpunkt und Dateiverknüpfung belegen den tatsächlich durchgeführten Check, keine vollständige oder stabile Gesamtqualifikation."
+  },
+  "updatedAt": "2026-10-29T11:24:22.985766+00:00",
+  "checkedAfterFullCatalogue": {
+    "observedAt": "2026-10-29T11:24:22.985766+00:00",
+    "sourceDigest": "2005f9ed9906fb9fdbd79a15c325d63e2b29228a8c75ac8761e16c6bd2130865",
+    "report": ".build/native-baseline-round10-final-20261029/report.json",
+    "completedNativeFiles": 157,
+    "workflows": [
+      "Abgeschlossene Spielabende lesen und Archivfehler im Dialog klären",
+      "Adventuring-Day-Vorschauen mit großen Partys lesen und Partyfakten unverändert erhalten",
+      "Atlas bedienen und große Kampagnenkopien ohne blockierten Hauptprozess vorbereiten",
+      "Atlas in Welt-, Orts- und Raummaßstäben mit flacher sowie geneigter Ansicht darstellen",
+      "Atlas während offener Geländeaufträge bewegen und neue Striche erst nach bestätigtem vorherigem Auftrag erlauben",
+      "Atlas-Materialkanäle nach Änderungen gezielt erneuern und nach Neustart wiederverwenden",
+      "Atlasdetails und vollständige Namen beim Zoomen kollisionsfrei darstellen und über Kachelgrenzen exportieren",
+      "Atlasregionen malen, hierarchisch begrenzen, beschriften und nach Ebene oder Prominenz anzeigen",
+      "Audiodateien mit Metadaten kopieren und nach Neustart gezielt auswählen",
+      "Autorenbeziehungen, Papierkorb und Partygesundheit bei verlorenen Antworten sowie Neustart erhalten",
+      "Bauten und Räume direkt im gemeinsamen Atlas ohne Ortsmarker zeichnen",
+      "Benannte Shoplieferungen ändern und nach ausdrücklichem Zeitsprung genau einmal samt Herkunft anwenden",
+      "Beute ausgeben, persönliche Anteile korrigieren und bestätigte Buchungsbelege nach Neustart erhalten",
+      "Bewuchs im Atlas zeichnen, auswählen, räumlich betrachten und nach Neustart unverändert bearbeiten",
+      "Chronikmomente über Inhalt finden und offene Eingaben beim Suchwechsel erhalten",
+      "Desktop-Entwicklung nach Änderungen an eingebundenen HTML-Fachfragmenten aktualisieren",
+      "Dungeon-Autorenoberfläche trotz beschädigter Laufzeitdaten öffnen, Raumtexte und Volumen bearbeiten und nach Neustart erhalten",
+      "Einen abgewiesenen Atlasentwurf korrigieren, speichern und nach Undo/Redo wieder öffnen",
+      "Einen ausgewählten Eingang nach Atlasbewegung betreten, verlassen und die tatsächliche Gruppenposition erhalten",
+      "Entfernungen im Atlas messen und Einheiten ohne Änderung kanonischer Geometrie wechseln",
+      "Erweiterungen mit begrenzten Rechten installieren und fehlgeschlagene Installationen nach Neustart klären",
+      "Fantasy-Kalender ändern, Fristen relativ zur Gruppenzeit speichern und nach Neustart weiterbearbeiten",
+      "Flächenergebnisse und Todesrettungswürfe auf die richtigen Kampfteilnehmer anwenden und nach Neustart erhalten",
+      "Gebäude auf der gemeinsamen Atlasfläche auswählen, verändern und mit derselben Kamera exportieren",
+      "Geländegerechte Straßen und Flüsse planen, Einheiten wechseln und bestätigte Verläufe erhalten",
+      "Gelöste Notizquellen gezielt wiederherstellen und spätere Texte sowie bestehende Spielabendpläne erhalten",
+      "Gemischte Atlaswelt mit kontinuierlichem Gelände, eingerichteten Gebäuden und Detailgeometrie nach Neustart erhalten",
+      "Gewichtete Encountertabellen erstellen, als Vorschlagsquelle verwenden und nach Neustart weiter bearbeiten",
+      "Globale Bergmaterialien ohne Geometrieänderung einstellen und nach Neustart erhalten",
+      "Gruppen, NSCs, Orte und Timelines über ihre Inhalte finden und veraltete Suchantworten verwerfen",
+      "Gruppenwissen am Szenentisch durchsuchen und passende Quellen trotz verspäteter Antwort lesen",
+      "Gruppenwissen und einzelne Vorlagengeheimnisse gezielt freigeben und private Inhalte der Spieleranzeige vorenthalten",
+      "Im Atlas zwischen Bereichen, Werkzeuggruppen und Werkzeugen wechseln und Optionen sowie Bibliothek verwenden",
+      "Kampagne mit verknüpften Notizen und Karte als unabhängige Kopie übertragen",
+      "Kampagnen finden, eindeutig umbenennen, in den Papierkorb verschieben und wiederherstellen",
+      "Kampagnen wechseln und gesperrte oder fehlgeschlagene Aktivierungen sicher wiederholen",
+      "Kampagnenbezogene und gemeinsame Vorlagen auswählen und ihre Bearbeitungsgrenzen erhalten",
+      "Kampfverstärkung aus Katalog und vorbereiteten Gruppen übernehmen und Initiative erhalten",
+      "Kontextuelle Hilfe ohne Entwurfsübernahme öffnen und Tutorialstatus nach Neustart erhalten",
+      "Kontinuierliches Gelände malen, Eigenschaften gezielt zurücksetzen und nach Undo/Redo sowie unabhängiger Kopie erhalten",
+      "Konzentrationsprüfungen im Kampf getrennt bestätigen und nach Neustart fortsetzen",
+      "Kreaturen spontan aus dem Katalog zum Kampf hinzufügen und anschließend Initiative, Schaden und Ergebnis sichern",
+      "Land mit Bildschirm- oder Weltmaßpinseln formen, räumlich bearbeiten und mit globalem Reliefstil ausgeben",
+      "Live-Szenen und Spielabendmomente bearbeiten, wiederaufnehmen und Zeitvorschauen nach Gruppenwechsel prüfen",
+      "Manuellen Spielabend mit wiederholten Orten planen, Textänderungen sichern und nach Neustart fortsetzen",
+      "Musik und Ambience ausdrücklich starten, stoppen und nach Szenenwechsel oder Neustart kontrollieren",
+      "NPC-Autonomie ausdrücklich freigeben, begrenzte Schritte bestätigen und nach Neustart erklären",
+      "NSC-Gespräch als Entwurf sichern und erst nach Bestätigung an die bestehende Geschichte anhängen",
+      "NSC-Porträt freigeben und verspätete Bildantworten sowie GM-Texte von der Spieleranzeige fernhalten",
+      "NSCs umbenennen und bestehende Begegnungsbindungen sowie ihre Trefferpunkte erhalten",
+      "Nach Streckenmessung Kartenobjekte erneut auswählen, Wege korrigieren und regionale Bildausgaben prüfen",
+      "Native Probeaufträge mit isolierten Profilen seriell prüfen und Fachfehler von ungeklärtem Prozessbesitz unterscheiden",
+      "Notizquellen aus einer Spielabendmappe wieder öffnen und Szenen- sowie Planbindungen erhalten",
+      "Notizquellen gezielt zusammenstellen, hierarchisch ordnen und vorhandene Texte sowie Spielabendbindungen erhalten",
+      "Notizquellen zusammenführen und Originale sowie Verknüpfungen über Archivkopien erhalten",
+      "Partyprofile und Gesundheitswerte bearbeiten und nach normalem Neustart erhalten",
+      "Persönliche Beute teilen, teilweise verkaufen, zusammenführen und ihre Herkunft nach Neustart lesen",
+      "Persönliche Beuteeinträge wechseln, Mengenbuchungen bestätigen und alte Antworten vom neuen Eintrag trennen",
+      "Quest- und Gerüchtabschlüsse nach verlorener Antwort klären und bestätigte Belohnungen einmalig übernehmen",
+      "Regeltexte lesen, Prüfungen bestätigen und die verwendete Regelrevision nach Neustart belegen",
+      "Reiseziele und Zwischenpunkte auswählen, Vorschauen prüfen und Reisen starten oder fortsetzen",
+      "Rohprotokolle in belegte Quellen überführen und über Originaleditor, Raum, Spielabendmappe und Szenenentscheidung wiederverwenden",
+      "Räume, Wände, Türen und Zugangswege im Atlas zeichnen und im PNG sowie nach Neustart wiederfinden",
+      "SRD-Gegenstände mit historischen Versionen erhalten und eigene Definitionen sicher auswählen, ändern und kopieren",
+      "SaltMarcher über signierte GitHub Releases aktualisieren und sicher neu starten",
+      "Seen direkt im Atlas absenken oder anheben und ihre bestätigte Wasserfläche nach Undo und Neustart erhalten",
+      "Shopentwürfe beim Wechsel erhalten und Käufe sowie Verkäufe genau einmal bestätigen",
+      "Spielabendmappe lesen, Originalquellen bearbeiten und Quellen als Chronikmomente wiederverwenden",
+      "Spielabendvorschläge und Belohnungen bearbeiten, sicher übernehmen und unabhängig kopieren",
+      "Spieleranzeige für eine Gruppe freigeben und nach Neustart zunächst leer halten",
+      "Spielersicht auf der Karte zeichnen und Änderungen nach Undo, Redo und Neustart erhalten",
+      "Szenenwetter ausdrücklich überschreiben, Gruppenzeit fortschreiben und die Automatik nach Neustart wieder freigeben",
+      "Teilweise verteilte Beute zwischen Ort, Eingang und Gruppe verschieben ohne Anteile erneut zu buchen",
+      "Unfertige Atlasentwürfe und Graphvorschauen bei Kampagnenwechsel sowie geteilte Medien beim Löschen erhalten",
+      "Unfertigen NSC-Entwurf beim Wechsel erhalten und fremde Schreibantworten vom neuen Ziel trennen",
+      "Unfertigen NSC-Entwurf beim normalen Desktop-Neustart erhalten",
+      "Verfolgungsentwürfe beim Zielwechsel erhalten und verspätete Antworten vom neuen Ziel trennen",
+      "Versionierte Kreatur- und Gegenstandsquellen in Encounter-Vorlagen und Raum-Keys binden und nach Import und Neustart identisch auflösen",
+      "Viele Räume vollständig durchsuchen, Raumtexte gezielt speichern und Entwürfe nach Auswahlwechsel wiederfinden",
+      "Vorbereitung aus Raumquellen wiederverwenden und Raumtexte sowie Planbindungen erhalten",
+      "Wöchentliche NSC-Besuche mit Ruhetagen planen und Rohentwürfe sowie tatsächlichen Standort nach Neustart erhalten",
+      "Zugangswege am ursprünglichen Gebäude korrigieren, rücknehmen und nach Pakettransfer sowie Neustart erhalten",
+      "Zwischen Begegnungen wechseln und offene Kampfentwürfe erhalten"
+    ],
+    "inverseOverview": ".build/native-baseline-round10-capability-inverse-final-20261029.json",
+    "missingActualLinks": [],
+    "limits": "The CLI check date records actual completed native attempts, including red cases. It is not a claim of success, complete workflow coverage, resolved historical instability, Candidate CI or owner acceptance."
+  }
+}

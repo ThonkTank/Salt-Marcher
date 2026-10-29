@@ -1,0 +1,262 @@
+{
+  "observedAt": "2026-10-29T12:42:46.751453+00:00",
+  "sourceDigest": "2005f9ed9906fb9fdbd79a15c325d63e2b29228a8c75ac8761e16c6bd2130865",
+  "manifestSha256": "914eb12c22f770f23297b58c1b7c26916ba049389ae0e43dede384b8b7531ba7",
+  "restoredDirectory": ".build/e2e-reference-round10-delivery-restored-20261029",
+  "positiveComparison": {
+    "observedAt": "2026-10-29T12:41:01.104Z",
+    "sourceDigest": "2005f9ed9906fb9fdbd79a15c325d63e2b29228a8c75ac8761e16c6bd2130865",
+    "seedDatabaseHash": "f6ac4ab44b132ebc4afaac9dc63a6b12f91ff25b77c108f0bdbca1d51d4331d9",
+    "freshProfile": "/home/aaron/.cache/saltmarcher/ui/e2e02-3ZzMw4",
+    "fixedIdentities": {
+      "version": "e2e02-desktop-v1",
+      "a": "762ad4ff-504c-4d22-b814-751699598983",
+      "b": "cc75cf0f-758d-48a0-b150-ac344d29f055",
+      "foreignLocationId": "2d37d8fd-933f-4aa3-92aa-684d47cbe8ef",
+      "cityId": "03145974-b60a-4c4a-9ee6-dca4bc4ca573",
+      "locationId": "debf1839-2726-44c8-9e55-1217e649ce6a",
+      "houseId": "eec672ea-127c-43c7-a60e-4d25d54af3ae",
+      "roomId": "eec672ea-127c-43c7-a60e-4d25d54af3ae:1vg9g7q:room:51",
+      "planId": "428d099f-9353-4889-b8f0-b9873e55477e",
+      "creatureReference": {
+        "sourceId": "srd-5.1-creatures",
+        "sourceVersion": "5.1",
+        "sourceHash": "3b268a4a38c8f296855f592569aacae5481689471256f68482f502c310477256",
+        "entryId": "guard",
+        "entryType": "creature"
+      },
+      "itemReference": {
+        "sourceId": "srd-5.1-items/srd51:equipment:adventuring-gear:1",
+        "sourceVersion": "1",
+        "sourceHash": "bb8ff11034e55aca23ae2d8e4014ca7c32b8f96ead1d2bbbf0ba27e15d2679fa",
+        "entryId": "srd51:equipment:adventuring-gear:1",
+        "entryType": "item"
+      },
+      "imageId": "a288e0b9-919e-4067-950b-4656664fb7e4",
+      "sections": [
+        {
+          "id": "eec672ea-127c-43c7-a60e-4d25d54af3ae:1vg9g7q:key:52",
+          "kind": "markdown",
+          "markdown": "  Am Nebeltor\r\n\r\n- Basalt  \r\n- Salz\n"
+        }
+      ],
+      "authoredRoomId": "5a036292-4e19-40e7-9029-d0d3df3177c4",
+      "authoredSections": [
+        {
+          "id": "2fe86770-7724-419f-865b-203e44b687d9",
+          "kind": "markdown",
+          "markdown": "  Am Nebeltor\r\n\r\n- Basalt  \r\n- Salz\n"
+        },
+        {
+          "id": "6330a545-512e-46f9-879b-1fadffb7cd1e",
+          "kind": "markdown",
+          "markdown": "## Geheimnis\n\n`unverändert` – äöü\r\n"
+        },
+        {
+          "id": "9e901e2c-65a2-45a8-ae1e-498ffd0d8d6b",
+          "kind": "markdown",
+          "markdown": "\n> Wache am Tor\n\n"
+        }
+      ],
+      "media": {
+        "name": "images/bbcda07a368ce464a0a4631f9ec6d59f442b81a187720907bbd42661e6160389.png",
+        "sha256": "bbcda07a368ce464a0a4631f9ec6d59f442b81a187720907bbd42661e6160389",
+        "bytes": 83
+      },
+      "recipeHash": "f7dd20bba583462898afc2fd0b166303fceff7afe59cf97fc161d36850b6662a",
+      "baseRecipeHash": "0ce6b792462b2aaf7559472b5cf2455a58b0ee538b3e015e1dc313e18a1c7e21",
+      "heroes": [
+        {
+          "id": "35a08d0c-30eb-492e-bcfd-ccbf1eda72af",
+          "name": "Mira"
+        },
+        {
+          "id": "facdd864-bfbb-4e67-a97e-39b165caf481",
+          "name": "Borin"
+        },
+        {
+          "id": "559ae3b6-4174-4300-b3f4-4b1e06ddd50a",
+          "name": "Siv"
+        }
+      ],
+      "sessionPlanId": "6d2b67f8-915a-4e68-bab3-4338de92b3ab",
+      "visitId": "2e0d2520-8deb-4955-b35a-a7f397358c43"
+    },
+    "semanticEffects": {
+      "progress": [
+        {
+          "character_id": "35a08d0c-30eb-492e-bcfd-ccbf1eda72af",
+          "xp": 33
+        },
+        {
+          "character_id": "559ae3b6-4174-4300-b3f4-4b1e06ddd50a",
+          "xp": 33
+        },
+        {
+          "character_id": "facdd864-bfbb-4e67-a97e-39b165caf481",
+          "xp": 33
+        }
+      ],
+      "ledger": [
+        {
+          "characterId": "35a08d0c-30eb-492e-bcfd-ccbf1eda72af",
+          "name": "E2E-02 Salzschlüssel",
+          "quantity": 1,
+          "unitCopper": "500",
+          "origin": "award",
+          "status": "received",
+          "locationId": "debf1839-2726-44c8-9e55-1217e649ce6a",
+          "instantMs": "6000"
+        }
+      ],
+      "counts": {
+        "combat": 1,
+        "chase": 1,
+        "combat_award": 1,
+        "treasure": 1,
+        "scene_adoption": 1,
+        "scene_time_step": 1
+      }
+    },
+    "positiveSubset": "passed",
+    "fullE2E02": "open",
+    "faults": [
+      {
+        "kind": "publish-failure",
+        "status": "reproduced",
+        "outcome": "not-applied",
+        "freshProfile": true
+      },
+      {
+        "kind": "reply-loss",
+        "status": "reproduced",
+        "outcome": "applied",
+        "freshProfile": true
+      }
+    ],
+    "boundaries": [
+      "Candidate/Main binding",
+      "package/install",
+      "target device",
+      "E2E-03/04 combined workflows",
+      "owner acceptance"
+    ]
+  },
+  "separateFaultComparison": {
+    "observedAt": "2026-10-29T12:41:29.668Z",
+    "sourceDigest": "2005f9ed9906fb9fdbd79a15c325d63e2b29228a8c75ac8761e16c6bd2130865",
+    "status": "controlled-errors-reproduced",
+    "faults": [
+      {
+        "kind": "publish-failure",
+        "status": "reproduced",
+        "profile": "/home/aaron/.cache/saltmarcher/ui/e2e02-publish-failure-7GSYMn",
+        "outcome": "not-applied"
+      },
+      {
+        "kind": "reply-loss",
+        "status": "reproduced",
+        "profile": "/home/aaron/.cache/saltmarcher/ui/e2e02-reply-loss-UtB1lg",
+        "outcome": "applied"
+      }
+    ],
+    "sourceRecipe": "tools/live-e2e02-countercases.mjs",
+    "limit": "Controlled transactional failures, not unintended product defects or a full E2E-02 gate."
+  },
+  "referenceNegatives": {
+    "observedAt": "2026-10-29T12:42:03.668Z",
+    "rows": [
+      {
+        "case": "missing-bound-media",
+        "status": "rejected-before-product-start"
+      },
+      {
+        "case": "missing-git-objects",
+        "status": "rejected-before-destination-created"
+      }
+    ],
+    "finalReferenceVerified": true
+  },
+  "nativeRuns": [
+    {
+      "kind": "positive",
+      "directory": ".build/e2e-reference-round10-delivery-replay-20261029",
+      "files": {
+        "reference-exit.json": "901c250dc7789a0eac439d3a191c0d9d037843e32fa5d0c4a659d32b3de8cd8d",
+        "reference-native-audit.json": "ae89d99db72639deef7c294b94c631b04943f59f42be25047b7352e1a2a4a8b7",
+        "resource-wrapper.json": "87f2b590a966f9567c92555178a3abc06d94a95c71846a8f3fd619317166f3d0",
+        "reference-comparison.json": "545b39330d174bff7a810ca378503598e49f8a8fb403f01dbd66e535a49bf1a3"
+      }
+    },
+    {
+      "kind": "independent-controlled-faults",
+      "directory": ".build/e2e-reference-round10-delivery-fault-20261029",
+      "files": {
+        "reference-exit.json": "901c250dc7789a0eac439d3a191c0d9d037843e32fa5d0c4a659d32b3de8cd8d",
+        "reference-native-audit.json": "1b7f0dda543232f91a72d8c23a678488d6fc15014a1b566d4ccc0d9cb7c6d8ab",
+        "resource-wrapper.json": "1c4a5ce3a1e5f5ebf92bb14847203698f3c95e03e0a7d5d107395a5efce7e48b",
+        "reference-comparison.json": "c1a1438a88a3c916520a8a78593ee82025b0d3937e2d0fe0b2a0a592be43f87d"
+      }
+    },
+    {
+      "kind": "unstable-source-excerpts",
+      "directory": ".build/e2e-reference-round10-final-failure-20261029",
+      "files": {
+        "reference-exit.json": "7911e3e2c81d00ca9993935ca3d7fab7d123f3d4885cb6338ca3ae73a186c37a",
+        "reference-native-audit.json": "bf0092626327f63a1a62225792cdf14c1b6b780f28bcc88db022c49397063a45",
+        "resource-wrapper.json": "a95282c9b3c8908180184513f34444bfbf3e95994e530815b06b58dfc5889c23",
+        "result.json": "c4de2fa1d8b3a6f65be519573d995093d213ebc16e7b8eaa19a999315c37998f",
+        "fixture.json": "645f5afec94b113fed5da8d6469c1d08caec82e7eeddd22e2dfe9e0dca6a9bc6"
+      }
+    }
+  ],
+  "unstableHistoricalFailure": {
+    "entry": "tools/test-desktop-note-excerpts.mjs",
+    "historicalError": "Error: Missing source Siv die Fährfrau",
+    "newNativeOutcome": "passed",
+    "newNativeLaunches": 2,
+    "controllerOutcome": "Initial red-only expectation rejected the native success. This pilot controller was replaced by the explicit controlled-error entry; raw output retained.",
+    "cause": "unresolved; no causal repair or stable failure claimed"
+  },
+  "proofArchive": {
+    "file": ".build/e2e-reference-round10-delivery-proof-20261029.tar.gz",
+    "sha256": "6cc39f135e1beab3f9147a484cfe62a831e5050e574221f91082b04e66bb39d1",
+    "bytes": 4806937
+  },
+  "targetedVerification": {
+    "tests": [
+      "tests/shared/e2e-reference.test.mjs",
+      "tests/shared/desktop-e2e01-report.test.mjs",
+      "tests/shared/desktop-e2e02-report.test.mjs"
+    ],
+    "passed": 3,
+    "format": "passed",
+    "diffCheck": "passed",
+    "repoCheck": "passed",
+    "capabilityCatalogue": "Actual source test links added with --geprueft; inverse mapping inspected.",
+    "visualInspection": [
+      "Combat round two, 100 percent screenshot; selected Guard A, HP 9/11, initiative 15, prone condition visible.",
+      "Controlled publish failure, 100 percent screenshot; visible unconfirmed draft and storage-status instruction."
+    ]
+  },
+  "qualification": {
+    "E2E-01": "adopted-local-technical-pass",
+    "E2E-02": "subset-passed-full-gate-open",
+    "E2E-03": "prerequisite-blocked",
+    "E2E-04": "prerequisite-blocked",
+    "CandidateMain": "not-bound",
+    "packageInstall": "not-qualified",
+    "targetDevice": "not-qualified",
+    "owner": "open"
+  },
+  "finalNativeProof": {
+    "positiveChainLaunches": 2,
+    "faultsWithinPositiveChain": 2,
+    "separateFaultLaunches": 2,
+    "zoom": 1,
+    "regularExits": 6,
+    "confirmedPidAbsence": 6,
+    "freshProfiles": 5,
+    "resourceGroupsRemoved": 2
+  }
+}

@@ -342,6 +342,90 @@ Technische Prozessqualifikation und diese Teilbelege sind keine vollständige
 Produkt-, Darstellungs- oder menschliche Bedienabnahme.
 
 
+## Erneuerung der vollständigen nativen Ausgangsbasis
+
+Der [Runde-10-Bericht](../../reference/native-baseline-round10-20261029/README.md)
+bindet Aufrufkatalog, Quellen, Runtime und Einzelbelege. Die historische Zahl 80
+ist keine feste Zielzahl. `node tools/native-probes.mjs --scenarios` zeigt aktuelle
+CLI-/Umgebungsvarianten, kontrollierte Fehlerinjektionen und ausdrückliche Sonderfälle.
+
+Der vollständig erfasste Ausgang mit separat gebundener Fortsetzung umfasst 218
+Positionen: 104 technisch grün, 105 rot, zwei technisch blockiert und sieben nicht
+ausgeführt. Die Rohberichte bleiben unverändert; ihre Belege stehen getrennt von
+Ursachen-Gegenläufen und späteren Korrekturprüfungen. Die 26 historisch offenen
+Fälle wurden alle versucht (drei grün, 23 rot). Das beweist keine historische
+Regressionsfreiheit. Ein fachlich leerer Variantenaufruf wurde danach entfernt;
+der aktuelle Katalog besitzt mit den drei Paketfällen 217 Positionen.
+
+Der gebundene Schlusslauf verwendet Quellenfingerprint
+`2005f9ed9906fb9fdbd79a15c325d63e2b29228a8c75ac8761e16c6bd2130865`,
+2.085 hashgeprüfte Quellen im lokalen Archiv
+`.build/native-baseline-round10-review-source-20261029/sources.tar.gz` und das
+private Paket `.build/native-baseline-round10-review-package/` mit denselben
+zwanzig Desktopartefakten. Node 22.19.0, Linux x64 und X11 auf `:0` bleiben an
+`binding.json` gebunden. Der Schlusslauf schloss am 29.10.2026 um 11:21:31 UTC
+alle 217 Positionen: **129 bestanden, 80 fehlgeschlagen, ein erwarteter Negativfehler
+erkannt, sieben nicht ausgeführt**.
+[Seine Statusliste](../../reference/native-baseline-round10-20261029/final-results.json)
+nennt jeden Aufruf; die sieben fehlenden Prüfungen werden nicht durch alte Belege ersetzt.
+[Der aktuelle Fehlerkatalog](../../reference/native-baseline-round10-20261029/current-causes.json)
+trennt 45 belegte erste Ursachen, 35 offene Ursachenprüfungen und erzwungene technische
+Beendigungen. Der eigene verkürzte Negativprüfungsname und die überschriebene
+NPC-Aufnahme bleiben konkrete offene Harnessfehler. Das
+[Abschlussaudit](../../reference/native-baseline-round10-20261029/final-audit.json)
+bestätigt geklärten Besitz und entfernte Gruppen aller 210 ausgeführten Fälle,
+sowie die vollständigen Belege aller 129 positiven Aufrufe. Der
+[Archiv-/Buildabgleich](../../reference/native-baseline-round10-20261029/final-binding-audit.json)
+bestätigt dieselben 2.085 Quellen und je zwanzig Artefakte. Die nach Abschluss
+eingesammelte äußere Exec-Sitzung meldete Exit 143 ungeklärter Ursache; ein
+regulärer äußerer Shellabschluss wird nicht behauptet. Dies ist ein transparenter
+Zwischenstand und keine vollständige native Freigabe.
+Die reguläre gemischte Atlasbildprobe und der Mehrmaßstabs-Grundlauf
+bestehen am selben Stand; andere Varianten werden dadurch nicht qualifiziert.
+Auch E2E-01 besteht vollständig an diesem gebundenen Schlussstand einschließlich
+Crash/Wiederaufnahme und Export/Import; Candidate-CI und Ownerabnahme bleiben
+eigenständige Aussagen. Die technisch grüne Mehrmaßstabs-Exportprobe erfüllt
+das separate Navigationsziel von p95 33,3 ms nicht (gemessen 1.200,5 ms).
+83 tatsächlich geprüfte Workflows sind mit aktuellen Testdateilinks und
+`--geprueft` nachgeführt; ein Prüfdatum ist keine Erfolgsaussage.
+
+Eine vollständige Serie startet direkt mit Node 22:
+
+```sh
+npm run package:desktop -- .build/native-package
+QA_EVIDENCE_DIR=.build/native-full node tools/test-desktop-baseline.mjs --all --package=.build/native-package
+```
+
+Der äußere Supervisor bleibt außerhalb des Ressourcenrahmens. Jede einzelne
+Probe erhält seriell den bestehenden 2/3-GiB-Rahmen und ihren eigenen
+`ui-session.py`-Besitzer. Ein äußerer `verify:local`-Rahmen wird für `--all`
+abgewiesen, weil er den Supervisor zusammen mit einer einzelnen Probe töten
+könnte. Belegordner müssen neu sein; alte Ausgänge werden nicht überschrieben.
+Quellen und zwanzig Desktopartefakte müssen vor und nach jedem Aufruf identisch
+bleiben. Fachfehler lassen unabhängige Proben weiterlaufen. Ungeklärter Besitz,
+Abbruch oder geänderte Quellen stoppen und weisen den Rest als `not-run` aus.
+Abhängige Szenarien benötigen den normal abgeschlossenen Vorgänger desselben
+Laufs. Alle nativen Starts laufen bei 100 Prozent.
+
+Ein unregistrierter Prozessbesitzer wird vor dem ersten Aufruf abgewiesen.
+Ein grüner Prozessstatus verlangt vollständige Fachabschlussbelege, normale
+Renderer-/Prozessenden, frische gebundene PNGs und unveränderte Artefakte. Ein
+fehlender Ressourcenbeleg wird nicht durch einen leeren inneren PID-Beleg ersetzt.
+Die beiden absichtlichen Fehlerinjektionen erhalten nur beim exakten erwarteten
+Fehler mit vollständiger Bereinigung `detected`; das ist kein positiver Produktfall.
+Die acht tatsächlichen Linux/Python-Controller-Negativproben starten separat
+mit `node tools/native-baseline-check.mjs` und öffnen kein Electron. Ihre
+Metadaten-Negativprüfungen stehen in `tests/shared/native-baseline*.test.mjs`;
+`tests/shared/native-probes.test.mjs` prüft den Katalog und gemeinsame Besitzer.
+
+Der ursprüngliche äußere Ausgangsrahmen endete während E2E-01 mit `SIGKILL`.
+Der unveränderte Bericht und `postmortem.json` bleiben erhalten. Alle 90 bekannten
+Ausgangs-PIDs und alle 123 Ressourcenrahmen der Fortsetzung sind bereinigt; Quellen
+und Builds blieben identisch. Die Signalauslösung ist nicht als OOM bewiesen.
+E2E-01 bestand separat vollständig am identischen Stand. Die Candidate-E2E-01-,
+Zielgeräte- und Ownerabnahmen bleiben eigene Aussagen. Der aktuelle Fehlerkatalog
+enthält weiterhin offene und instabile Fälle und ist kein grüner Gesamtnachweis.
+
 ## Vollständige Atlas-Referenzwelt
 
 `tests/fixtures/atlas/mixed-world.sqlite.gz` verwendet die übrigen fachlichen Inhalte der
@@ -351,7 +435,13 @@ per SHA-256 und alle kanonischen Tabellen per Anzahl und Inhaltsprüfsumme.
 Die 100.000 alten hexagonalen Gelände-Zellen werden durch unregelmäßige freie
 Eigenschaftsflächen ersetzt; alte Zellquellen bleiben nicht Teil des Prüfszenarios.
 `originalTables` bindet die Herkunft, `tables` die aktuelle kontinuierliche Testwelt.
-Übrige IDs, Payloads, Verknüpfungen und History bleiben erhalten.
+IDs, Geometrien, bestehende Feldwerte, Verknüpfungen und History bleiben erhalten.
+Die Erneuerung ergänzt fehlende Pflichtfelder in 1.024 Vegetationspresets und
+gleicht 8.072 Payloadrevisionen an die vorhandenen kanonischen Zeilenrevisionen an.
+Alle 108.076 Landschaftswerte werden vollständig kanonisch validiert. Der
+vorhandene SQLite-Trigger erhöht den abgeleiteten `atlas-shape-source`-Zähler;
+189 weitere Tabellen bleiben identisch. Die genaue Bindung steht im
+[Fixturebeleg](../../reference/native-baseline-round10-20261029/fixture-renewal.json).
 
 Wiederherstellung aus dem lokal vorhandenen Git-Objekt:
 

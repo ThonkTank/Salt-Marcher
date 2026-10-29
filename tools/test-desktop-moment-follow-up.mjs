@@ -288,7 +288,9 @@ await runNativeProbe({ output: out, name: 'moment-follow-up' }, async (native) =
       stage = 'capture from prepared knowledge';
       const block = page
         .locator('#session-packet-content .packet-block')
-        .filter({ has: page.getByRole('heading', { name: guide.title + ' · rule', exact: true }) });
+        .filter({ has: page.getByRole('heading', { name: guide.title, exact: true }) })
+        .locator('.packet-part')
+        .filter({ has: page.getByRole('heading', { name: 'GM · Regelreferenz', exact: true }) });
       await block.getByRole('button', { name: 'Als Chronikmoment vormerken', exact: true }).click();
       await page.locator('#live-moment-title').waitFor({ state: 'visible' });
       results.prefilled = {

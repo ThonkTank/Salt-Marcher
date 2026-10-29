@@ -1,0 +1,2020 @@
+{
+  "observedAt": "2026-10-29T05:32:21.140Z",
+  "sourceDigest": "248be47bcfbc82fe7750fa98887aa5f334650a5680d3c38551857b6c1d7ecc2e",
+  "counts": {
+    "failed": 105,
+    "passed": 104,
+    "blocked": 2,
+    "not-run": 7
+  },
+  "scope": "Initial frozen invocation catalogue; resumed execution is explicitly distinct from the interrupted original report. No product acceptance.",
+  "rows": [
+    {
+      "name": "access-path",
+      "file": "tools/test-desktop-access-path.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-full-20261029/access-path",
+      "technicalError": null
+    },
+    {
+      "name": "agenda-deadline",
+      "file": "tools/test-desktop-agenda-deadline.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-full-20261029/agenda-deadline",
+      "technicalError": null
+    },
+    {
+      "name": "ambience-mix",
+      "file": "tools/test-desktop-ambience-mix.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-full-20261029/ambience-mix",
+      "technicalError": null
+    },
+    {
+      "name": "area-results",
+      "file": "tools/test-desktop-area-results.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-full-20261029/area-results",
+      "technicalError": null
+    },
+    {
+      "name": "atlas-author-overlay",
+      "file": "tools/test-desktop-atlas-author-overlay.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-full-20261029/atlas-author-overlay",
+      "technicalError": null
+    },
+    {
+      "name": "atlas-biome-stroke",
+      "file": "tools/test-desktop-atlas-biome-stroke.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-full-20261029/atlas-biome-stroke",
+      "technicalError": null
+    },
+    {
+      "name": "atlas-biome-stroke-library",
+      "file": "tools/test-desktop-atlas-biome-stroke.mjs",
+      "kind": "session",
+      "args": ["--library"],
+      "technicalStatus": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-full-20261029/atlas-biome-stroke-library",
+      "technicalError": null
+    },
+    {
+      "name": "atlas-biome-stroke-earth-only",
+      "file": "tools/test-desktop-atlas-biome-stroke.mjs",
+      "kind": "session",
+      "args": ["--earth-only"],
+      "technicalStatus": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-full-20261029/atlas-biome-stroke-earth-only",
+      "technicalError": null
+    },
+    {
+      "name": "atlas-biome-stroke-marsh-only",
+      "file": "tools/test-desktop-atlas-biome-stroke.mjs",
+      "kind": "session",
+      "args": ["--marsh-only"],
+      "technicalStatus": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-full-20261029/atlas-biome-stroke-marsh-only",
+      "technicalError": null
+    },
+    {
+      "name": "atlas-biome-stroke-surface-only",
+      "file": "tools/test-desktop-atlas-biome-stroke.mjs",
+      "kind": "session",
+      "args": ["--surface-only"],
+      "technicalStatus": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-full-20261029/atlas-biome-stroke-surface-only",
+      "technicalError": null
+    },
+    {
+      "name": "atlas-brush-ux",
+      "file": "tools/test-desktop-atlas-brush-ux.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-full-20261029/atlas-brush-ux",
+      "technicalError": null
+    },
+    {
+      "name": "atlas-cache-reopen",
+      "file": "tools/test-desktop-atlas-cache-reopen.mjs",
+      "kind": "session",
+      "args": [],
+      "env": {
+        "ATLAS_MIXED_SOURCE": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-full-20261029/fixtures/mixed-world.sqlite"
+      },
+      "technicalStatus": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-full-20261029/atlas-cache-reopen",
+      "technicalError": null
+    },
+    {
+      "name": "atlas-cache-reopen-detail",
+      "file": "tools/test-desktop-atlas-cache-reopen.mjs",
+      "kind": "session",
+      "args": [],
+      "env": {
+        "ATLAS_WAIT_DETAIL": "1",
+        "ATLAS_MIXED_SOURCE": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-full-20261029/fixtures/mixed-world.sqlite"
+      },
+      "technicalStatus": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-full-20261029/atlas-cache-reopen-detail",
+      "technicalError": null
+    },
+    {
+      "name": "atlas-camera-coverage",
+      "file": "tools/test-desktop-atlas-camera-coverage.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-full-20261029/atlas-camera-coverage",
+      "technicalError": null
+    },
+    {
+      "name": "atlas-cartography",
+      "file": "tools/test-desktop-atlas-cartography.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-full-20261029/atlas-cartography",
+      "technicalError": null
+    },
+    {
+      "name": "atlas-cleanup",
+      "file": "tools/test-desktop-atlas-cleanup.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-full-20261029/atlas-cleanup",
+      "technicalError": null
+    },
+    {
+      "name": "atlas-deck",
+      "file": "tools/test-desktop-atlas-deck.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-full-20261029/atlas-deck",
+      "technicalError": null
+    },
+    {
+      "name": "atlas-dense-landscape",
+      "file": "tools/test-desktop-atlas-dense-landscape.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-full-20261029/atlas-dense-landscape",
+      "technicalError": null
+    },
+    {
+      "name": "atlas-distance",
+      "file": "tools/test-desktop-atlas-distance.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-full-20261029/atlas-distance",
+      "technicalError": null
+    },
+    {
+      "name": "atlas-early-terrain",
+      "file": "tools/test-desktop-atlas-early-terrain.mjs",
+      "kind": "session",
+      "args": [],
+      "env": {
+        "ATLAS_MIXED_SOURCE": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-full-20261029/fixtures/mixed-world.sqlite"
+      },
+      "technicalStatus": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-full-20261029/atlas-early-terrain",
+      "technicalError": null
+    },
+    {
+      "name": "atlas-entrance-context",
+      "file": "tools/test-desktop-atlas-entrance-context.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-full-20261029/atlas-entrance-context",
+      "technicalError": null
+    },
+    {
+      "name": "atlas-geometry-overview",
+      "file": "tools/test-desktop-atlas-geometry-overview.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-full-20261029/atlas-geometry-overview",
+      "technicalError": null
+    },
+    {
+      "name": "atlas-geometry-tiles",
+      "file": "tools/test-desktop-atlas-geometry-tiles.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-full-20261029/atlas-geometry-tiles",
+      "technicalError": null
+    },
+    {
+      "name": "atlas-layout",
+      "file": "tools/test-desktop-atlas-layout.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-full-20261029/atlas-layout",
+      "technicalError": null
+    },
+    {
+      "name": "atlas-main-camera",
+      "file": "tools/test-desktop-atlas-main-camera.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-full-20261029/atlas-main-camera",
+      "technicalError": null
+    },
+    {
+      "name": "atlas-main-camera-city-only",
+      "file": "tools/test-desktop-atlas-main-camera.mjs",
+      "kind": "session",
+      "args": ["--city-only"],
+      "technicalStatus": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-full-20261029/atlas-main-camera-city-only",
+      "technicalError": null
+    },
+    {
+      "name": "atlas-main-camera-raised-floor",
+      "file": "tools/test-desktop-atlas-main-camera.mjs",
+      "kind": "session",
+      "args": ["--raised-floor"],
+      "technicalStatus": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-full-20261029/atlas-main-camera-raised-floor",
+      "technicalError": null
+    },
+    {
+      "name": "atlas-main-camera-city-only-raised-floor",
+      "file": "tools/test-desktop-atlas-main-camera.mjs",
+      "kind": "session",
+      "args": ["--city-only", "--raised-floor"],
+      "technicalStatus": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-full-20261029/atlas-main-camera-city-only-raised-floor",
+      "technicalError": null
+    },
+    {
+      "name": "atlas-material-stream",
+      "file": "tools/test-desktop-atlas-material-stream.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-full-20261029/atlas-material-stream",
+      "technicalError": null
+    },
+    {
+      "name": "atlas-material-tiles",
+      "file": "tools/test-desktop-atlas-material-tiles.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-full-20261029/atlas-material-tiles",
+      "technicalError": null
+    },
+    {
+      "name": "atlas-measurements",
+      "file": "tools/test-desktop-atlas-measurements.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-full-20261029/atlas-measurements",
+      "technicalError": null
+    },
+    {
+      "name": "atlas-mixed-workbench",
+      "file": "tools/test-desktop-atlas-mixed-workbench.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-full-20261029/atlas-mixed-workbench",
+      "technicalError": null
+    },
+    {
+      "name": "atlas-multiscale",
+      "file": "tools/test-desktop-atlas-multiscale.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-full-20261029/atlas-multiscale",
+      "technicalError": null
+    },
+    {
+      "name": "atlas-multiscale-structures",
+      "file": "tools/test-desktop-atlas-multiscale.mjs",
+      "kind": "session",
+      "args": [],
+      "env": {
+        "QA_STRUCTURES": "1"
+      },
+      "technicalStatus": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-full-20261029/atlas-multiscale-structures",
+      "technicalError": null
+    },
+    {
+      "name": "atlas-multiscale-drawn",
+      "file": "tools/test-desktop-atlas-multiscale.mjs",
+      "kind": "session",
+      "args": [],
+      "env": {
+        "QA_DRAWN": "1"
+      },
+      "technicalStatus": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-full-20261029/atlas-multiscale-drawn",
+      "technicalError": null
+    },
+    {
+      "name": "atlas-multiscale-exact-scale",
+      "file": "tools/test-desktop-atlas-multiscale.mjs",
+      "kind": "session",
+      "args": [],
+      "env": {
+        "QA_EXACT_SCALE": "1"
+      },
+      "technicalStatus": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-full-20261029/atlas-multiscale-exact-scale",
+      "technicalError": null
+    },
+    {
+      "name": "atlas-multiscale-performance",
+      "file": "tools/test-desktop-atlas-multiscale.mjs",
+      "kind": "session",
+      "args": [],
+      "env": {
+        "QA_PERF": "1"
+      },
+      "technicalStatus": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-full-20261029/atlas-multiscale-performance",
+      "technicalError": null
+    },
+    {
+      "name": "atlas-multiscale-sweep",
+      "file": "tools/test-desktop-atlas-multiscale.mjs",
+      "kind": "session",
+      "args": [],
+      "env": {
+        "QA_SWEEP": "1"
+      },
+      "technicalStatus": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-full-20261029/atlas-multiscale-sweep",
+      "technicalError": null
+    },
+    {
+      "name": "atlas-multiscale-export",
+      "file": "tools/test-desktop-atlas-multiscale.mjs",
+      "kind": "session",
+      "args": [],
+      "env": {
+        "QA_EXPORT": "1"
+      },
+      "technicalStatus": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-full-20261029/atlas-multiscale-export",
+      "technicalError": null
+    },
+    {
+      "name": "atlas-navigation-pending",
+      "file": "tools/test-desktop-atlas-navigation-pending.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-full-20261029/atlas-navigation-pending",
+      "technicalError": null
+    },
+    {
+      "name": "atlas-navigation-terrain",
+      "file": "tools/test-desktop-atlas-navigation-terrain.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-full-20261029/atlas-navigation-terrain",
+      "technicalError": null
+    },
+    {
+      "name": "atlas-navigation-terrain-world-room",
+      "file": "tools/test-desktop-atlas-navigation-terrain.mjs",
+      "kind": "session",
+      "args": ["--world-room"],
+      "technicalStatus": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-full-20261029/atlas-navigation-terrain-world-room",
+      "technicalError": null
+    },
+    {
+      "name": "atlas-navigation",
+      "file": "tools/test-desktop-atlas-navigation.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-full-20261029/atlas-navigation",
+      "technicalError": null
+    },
+    {
+      "name": "atlas-objects-main",
+      "file": "tools/test-desktop-atlas-objects-main.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-full-20261029/atlas-objects-main",
+      "technicalError": null
+    },
+    {
+      "name": "atlas-prominence",
+      "file": "tools/test-desktop-atlas-prominence.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-full-20261029/atlas-prominence",
+      "technicalError": null
+    },
+    {
+      "name": "atlas-raster-gpu",
+      "file": "tools/test-desktop-atlas-raster-gpu.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-full-20261029/atlas-raster-gpu",
+      "technicalError": null
+    },
+    {
+      "name": "atlas-raster-workbench",
+      "file": "tools/test-desktop-atlas-raster-workbench.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-full-20261029/atlas-raster-workbench",
+      "technicalError": null
+    },
+    {
+      "name": "atlas-rejected-edit",
+      "file": "tools/test-desktop-atlas-rejected-edit.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-full-20261029/atlas-rejected-edit",
+      "technicalError": null
+    },
+    {
+      "name": "atlas-scale-roundtrip",
+      "file": "tools/test-desktop-atlas-scale-roundtrip.mjs",
+      "kind": "session",
+      "args": [],
+      "env": {
+        "ATLAS_MIXED_SOURCE": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-full-20261029/fixtures/mixed-world.sqlite"
+      },
+      "technicalStatus": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-full-20261029/atlas-scale-roundtrip",
+      "technicalError": null
+    },
+    {
+      "name": "atlas-terrain-stroke",
+      "file": "tools/test-desktop-atlas-terrain-stroke.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-full-20261029/atlas-terrain-stroke",
+      "technicalError": null
+    },
+    {
+      "name": "atlas-terrain-stroke-recovery",
+      "file": "tools/test-desktop-atlas-terrain-stroke.mjs",
+      "kind": "session",
+      "args": ["--recovery"],
+      "technicalStatus": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-full-20261029/atlas-terrain-stroke-recovery",
+      "technicalError": null
+    },
+    {
+      "name": "atlas-terrain-stroke-recovery-only",
+      "file": "tools/test-desktop-atlas-terrain-stroke.mjs",
+      "kind": "session",
+      "args": ["--recovery-only"],
+      "technicalStatus": "blocked",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-full-20261029/atlas-terrain-stroke-recovery-only",
+      "technicalError": "Native completion receipt failed technical validation"
+    },
+    {
+      "name": "atlas-terrain-stroke-recovery-only-drop-followup",
+      "file": "tools/test-desktop-atlas-terrain-stroke.mjs",
+      "kind": "session",
+      "args": ["--recovery-only", "--drop-followup"],
+      "technicalStatus": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-full-20261029/atlas-terrain-stroke-recovery-only-drop-followup",
+      "technicalError": null
+    },
+    {
+      "name": "atlas-terrain-stroke-recovery-only-source-conflict",
+      "file": "tools/test-desktop-atlas-terrain-stroke.mjs",
+      "kind": "session",
+      "args": ["--recovery-only", "--source-conflict"],
+      "technicalStatus": "blocked",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-full-20261029/atlas-terrain-stroke-recovery-only-source-conflict",
+      "technicalError": "Native completion receipt failed technical validation"
+    },
+    {
+      "name": "atlas-terrain-stroke-basic-tools",
+      "file": "tools/test-desktop-atlas-terrain-stroke.mjs",
+      "kind": "session",
+      "args": ["--basic-tools"],
+      "technicalStatus": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-full-20261029/atlas-terrain-stroke-basic-tools",
+      "technicalError": null
+    },
+    {
+      "name": "atlas-terrain-stroke-forms",
+      "file": "tools/test-desktop-atlas-terrain-stroke.mjs",
+      "kind": "session",
+      "args": ["--forms"],
+      "technicalStatus": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-full-20261029/atlas-terrain-stroke-forms",
+      "technicalError": null
+    },
+    {
+      "name": "atlas-terrain-stroke-multiscale",
+      "file": "tools/test-desktop-atlas-terrain-stroke.mjs",
+      "kind": "session",
+      "args": ["--multiscale"],
+      "technicalStatus": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-full-20261029/atlas-terrain-stroke-multiscale",
+      "technicalError": null
+    },
+    {
+      "name": "atlas-tiles",
+      "file": "tools/test-desktop-atlas-tiles.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-full-20261029/atlas-tiles",
+      "technicalError": null
+    },
+    {
+      "name": "atlas-transition",
+      "file": "tools/test-desktop-atlas-transition.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-full-20261029/atlas-transition",
+      "technicalError": null
+    },
+    {
+      "name": "atlas-viewport",
+      "file": "tools/test-desktop-atlas-viewport.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-full-20261029/atlas-viewport",
+      "technicalError": null
+    },
+    {
+      "name": "audio-copy",
+      "file": "tools/test-desktop-audio-copy.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-full-20261029/audio-copy",
+      "technicalError": null
+    },
+    {
+      "name": "autonomy",
+      "file": "tools/test-desktop-autonomy.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-full-20261029/autonomy",
+      "technicalError": null
+    },
+    {
+      "name": "brush-worker",
+      "file": "tools/test-desktop-brush-worker.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-full-20261029/brush-worker",
+      "technicalError": null
+    },
+    {
+      "name": "campaign-copy",
+      "file": "tools/test-desktop-campaign-copy.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-full-20261029/campaign-copy",
+      "technicalError": null
+    },
+    {
+      "name": "campaign-transfer-visit",
+      "file": "tools/test-desktop-campaign-transfer-visit.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-full-20261029/campaign-transfer-visit",
+      "technicalError": null
+    },
+    {
+      "name": "campaign-transfer-visit-fail-import-atlas",
+      "file": "tools/test-desktop-campaign-transfer-visit.mjs",
+      "kind": "session",
+      "args": ["--fail-import-atlas"],
+      "technicalStatus": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-full-20261029/campaign-transfer-visit-fail-import-atlas",
+      "technicalError": null
+    },
+    {
+      "name": "campaign-trash",
+      "file": "tools/test-desktop-campaign-trash.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-full-20261029/campaign-trash",
+      "technicalError": null
+    },
+    {
+      "name": "canvas-recovery",
+      "file": "tools/test-desktop-canvas-recovery.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-full-20261029/canvas-recovery",
+      "technicalError": null
+    },
+    {
+      "name": "catalog-combat",
+      "file": "tools/test-desktop-catalog-combat.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-full-20261029/catalog-combat",
+      "technicalError": null
+    },
+    {
+      "name": "character-profile",
+      "file": "tools/test-desktop-character-profile.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-full-20261029/character-profile",
+      "technicalError": null
+    },
+    {
+      "name": "chase-drafts",
+      "file": "tools/test-desktop-chase-drafts.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-full-20261029/chase-drafts",
+      "technicalError": null
+    },
+    {
+      "name": "chase-switch",
+      "file": "tools/test-desktop-chase-switch.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-full-20261029/chase-switch",
+      "technicalError": null
+    },
+    {
+      "name": "chronicle-search",
+      "file": "tools/test-desktop-chronicle-search.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-full-20261029/chronicle-search",
+      "technicalError": null
+    },
+    {
+      "name": "combat-drafts",
+      "file": "tools/test-desktop-combat-drafts.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-full-20261029/combat-drafts",
+      "technicalError": null
+    },
+    {
+      "name": "combat-switch",
+      "file": "tools/test-desktop-combat-switch.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-full-20261029/combat-switch",
+      "technicalError": null
+    },
+    {
+      "name": "combat-switch-apply-rolled-damage",
+      "file": "tools/test-desktop-combat-switch.mjs",
+      "kind": "session",
+      "args": ["--apply-rolled-damage"],
+      "technicalStatus": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-full-20261029/combat-switch-apply-rolled-damage",
+      "technicalError": null
+    },
+    {
+      "name": "concentration",
+      "file": "tools/test-desktop-concentration.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-full-20261029/concentration",
+      "technicalError": null
+    },
+    {
+      "name": "connected-room-prep",
+      "file": "tools/test-desktop-connected-room-prep.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-full-20261029/connected-room-prep",
+      "technicalError": null
+    },
+    {
+      "name": "context-help",
+      "file": "tools/test-desktop-context-help.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-full-20261029/context-help",
+      "technicalError": null
+    },
+    {
+      "name": "day-party",
+      "file": "tools/test-desktop-day-party.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-full-20261029/day-party",
+      "technicalError": null
+    },
+    {
+      "name": "day-refresh",
+      "file": "tools/test-desktop-day-refresh.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-full-20261029/day-refresh",
+      "technicalError": null
+    },
+    {
+      "name": "death-saves",
+      "file": "tools/test-desktop-death-saves.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-full-20261029/death-saves",
+      "technicalError": null
+    },
+    {
+      "name": "desk-search",
+      "file": "tools/test-desktop-desk-search.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-full-20261029/desk-search",
+      "technicalError": null
+    },
+    {
+      "name": "development",
+      "file": "tools/test-desktop-development.mjs",
+      "kind": "adapter",
+      "args": [],
+      "technicalStatus": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-full-20261029/development",
+      "technicalError": null
+    },
+    {
+      "name": "dungeon-authoring",
+      "file": "tools/test-desktop-dungeon-authoring.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-full-20261029/dungeon-authoring",
+      "technicalError": null
+    },
+    {
+      "name": "dungeon-groundplan",
+      "file": "tools/test-desktop-dungeon-groundplan.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-full-20261029/dungeon-groundplan",
+      "technicalError": null
+    },
+    {
+      "name": "dungeon-recovery",
+      "file": "tools/test-desktop-dungeon-recovery.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-full-20261029/dungeon-recovery",
+      "technicalError": null
+    },
+    {
+      "name": "e2e01",
+      "file": "tools/test-desktop-e2e01.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-e2e01-retry-20261029"
+    },
+    {
+      "name": "e2e02",
+      "file": "tools/test-desktop-e2e02.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/e2e02",
+      "technicalError": null
+    },
+    {
+      "name": "encounter-table-authoring",
+      "file": "tools/test-desktop-encounter-table-authoring.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/encounter-table-authoring",
+      "technicalError": null
+    },
+    {
+      "name": "entrance-marker",
+      "file": "tools/test-desktop-entrance-marker.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/entrance-marker",
+      "technicalError": null
+    },
+    {
+      "name": "equipment-reference",
+      "file": "tools/test-desktop-equipment-reference.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/equipment-reference",
+      "technicalError": null
+    },
+    {
+      "name": "error-diagnostics",
+      "file": "tools/test-desktop-error-diagnostics.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/error-diagnostics",
+      "technicalError": null
+    },
+    {
+      "name": "evening-handoff",
+      "file": "tools/test-desktop-evening-handoff.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/evening-handoff",
+      "technicalError": null
+    },
+    {
+      "name": "extension-install",
+      "file": "tools/test-desktop-extension-install.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/extension-install",
+      "technicalError": null
+    },
+    {
+      "name": "fractal-strokes",
+      "file": "tools/test-desktop-fractal-strokes.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/fractal-strokes",
+      "technicalError": null
+    },
+    {
+      "name": "generation-preparation",
+      "file": "tools/test-desktop-generation-preparation.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/generation-preparation",
+      "technicalError": null
+    },
+    {
+      "name": "geometry-scale",
+      "file": "tools/test-desktop-geometry-scale.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/geometry-scale",
+      "technicalError": null
+    },
+    {
+      "name": "groups-search",
+      "file": "tools/test-desktop-groups-search.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/groups-search",
+      "technicalError": null
+    },
+    {
+      "name": "height-workflow",
+      "file": "tools/test-desktop-height-workflow.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/height-workflow",
+      "technicalError": null
+    },
+    {
+      "name": "item-selection",
+      "file": "tools/test-desktop-item-selection.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/item-selection",
+      "technicalError": null
+    },
+    {
+      "name": "key-lookup",
+      "file": "tools/test-desktop-key-lookup.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/key-lookup",
+      "technicalError": null
+    },
+    {
+      "name": "key-note-capture",
+      "file": "tools/test-desktop-key-note-capture.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/key-note-capture",
+      "technicalError": null
+    },
+    {
+      "name": "key-note-context",
+      "file": "tools/test-desktop-key-note-context.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/key-note-context",
+      "technicalError": null
+    },
+    {
+      "name": "key-note-context-nested",
+      "file": "tools/test-desktop-key-note-context.mjs",
+      "kind": "session",
+      "args": ["--nested"],
+      "technicalStatus": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/key-note-context-nested",
+      "technicalError": null
+    },
+    {
+      "name": "key-note-context-unlink",
+      "file": "tools/test-desktop-key-note-context.mjs",
+      "kind": "session",
+      "args": ["--unlink"],
+      "technicalStatus": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/key-note-context-unlink",
+      "technicalError": null
+    },
+    {
+      "name": "land-mask",
+      "file": "tools/test-desktop-land-mask.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/land-mask",
+      "technicalError": null
+    },
+    {
+      "name": "landscape-tools",
+      "file": "tools/test-desktop-landscape-tools.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/landscape-tools",
+      "technicalError": null
+    },
+    {
+      "name": "ledger-switch",
+      "file": "tools/test-desktop-ledger-switch.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/ledger-switch",
+      "technicalError": null
+    },
+    {
+      "name": "live-archive",
+      "file": "tools/test-desktop-live-archive.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/live-archive",
+      "technicalError": null
+    },
+    {
+      "name": "live-travel-reads",
+      "file": "tools/test-desktop-live-travel-reads.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/live-travel-reads",
+      "technicalError": null
+    },
+    {
+      "name": "long-key",
+      "file": "tools/test-desktop-long-key.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/long-key",
+      "technicalError": null
+    },
+    {
+      "name": "loot-stacks",
+      "file": "tools/test-desktop-loot-stacks.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/loot-stacks",
+      "technicalError": null
+    },
+    {
+      "name": "manual-timeline",
+      "file": "tools/test-desktop-manual-timeline.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/manual-timeline",
+      "technicalError": null
+    },
+    {
+      "name": "mask-history",
+      "file": "tools/test-desktop-mask-history.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/mask-history",
+      "technicalError": null
+    },
+    {
+      "name": "moment-follow-up",
+      "file": "tools/test-desktop-moment-follow-up.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/moment-follow-up",
+      "technicalError": null
+    },
+    {
+      "name": "mountain-material",
+      "file": "tools/test-desktop-mountain-material.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/mountain-material",
+      "technicalError": null
+    },
+    {
+      "name": "music-stop",
+      "file": "tools/test-desktop-music-stop.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/music-stop",
+      "technicalError": null
+    },
+    {
+      "name": "narrative-recovery",
+      "file": "tools/test-desktop-narrative-recovery.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/narrative-recovery",
+      "technicalError": null
+    },
+    {
+      "name": "note-excerpts",
+      "file": "tools/test-desktop-note-excerpts.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/note-excerpts",
+      "technicalError": null
+    },
+    {
+      "name": "note-existing-excerpts",
+      "file": "tools/test-desktop-note-existing-excerpts.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "not-run",
+      "reason": "Required normally completed fixture unavailable: note-excerpts"
+    },
+    {
+      "name": "note-followup",
+      "file": "tools/test-desktop-note-followup.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/note-followup",
+      "technicalError": null
+    },
+    {
+      "name": "note-hierarchy",
+      "file": "tools/test-desktop-note-hierarchy.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/note-hierarchy",
+      "technicalError": null
+    },
+    {
+      "name": "note-map-overlap",
+      "file": "tools/test-desktop-note-map-overlap.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/note-map-overlap",
+      "technicalError": null
+    },
+    {
+      "name": "note-merge",
+      "file": "tools/test-desktop-note-merge.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/note-merge",
+      "technicalError": null
+    },
+    {
+      "name": "note-prune",
+      "file": "tools/test-desktop-note-prune.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/note-prune",
+      "technicalError": null
+    },
+    {
+      "name": "note-reopen",
+      "file": "tools/test-desktop-note-reopen.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/note-reopen",
+      "technicalError": null
+    },
+    {
+      "name": "note-reuse",
+      "file": "tools/test-desktop-note-reuse.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/note-reuse",
+      "technicalError": null
+    },
+    {
+      "name": "note-room-plan-return",
+      "file": "tools/test-desktop-note-room-plan-return.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/note-room-plan-return",
+      "technicalError": null
+    },
+    {
+      "name": "note-room-uses",
+      "file": "tools/test-desktop-note-room-uses.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/note-room-uses",
+      "technicalError": null
+    },
+    {
+      "name": "note-source-choice",
+      "file": "tools/test-desktop-note-source-choice.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/note-source-choice",
+      "technicalError": null
+    },
+    {
+      "name": "note-source-inspection",
+      "file": "tools/test-desktop-note-source-inspection.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "not-run",
+      "reason": "Required normally completed fixture unavailable: note-existing-excerpts"
+    },
+    {
+      "name": "note-source-recovery",
+      "file": "tools/test-desktop-note-source-recovery.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/note-source-recovery",
+      "technicalError": null
+    },
+    {
+      "name": "note-thread",
+      "file": "tools/test-desktop-note-thread.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/note-thread",
+      "technicalError": null
+    },
+    {
+      "name": "note-thread-new-plan",
+      "file": "tools/test-desktop-note-thread.mjs",
+      "kind": "session",
+      "args": ["--new-plan"],
+      "technicalStatus": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/note-thread-new-plan",
+      "technicalError": null
+    },
+    {
+      "name": "note-trash-recovery",
+      "file": "tools/test-desktop-note-trash-recovery.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/note-trash-recovery",
+      "technicalError": null
+    },
+    {
+      "name": "npc-conversation",
+      "file": "tools/test-desktop-npc-conversation.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/npc-conversation",
+      "technicalError": null
+    },
+    {
+      "name": "npc-portrait",
+      "file": "tools/test-desktop-npc-portrait.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/npc-portrait",
+      "technicalError": null
+    },
+    {
+      "name": "npc-rename",
+      "file": "tools/test-desktop-npc-rename.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/npc-rename",
+      "technicalError": null
+    },
+    {
+      "name": "npc-search",
+      "file": "tools/test-desktop-npc-search.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/npc-search",
+      "technicalError": null
+    },
+    {
+      "name": "npc-switch",
+      "file": "tools/test-desktop-npc-switch.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/npc-switch",
+      "technicalError": null
+    },
+    {
+      "name": "npc-weekly-visits",
+      "file": "tools/test-desktop-npc-weekly-visits.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/npc-weekly-visits",
+      "technicalError": null
+    },
+    {
+      "name": "packet-original",
+      "file": "tools/test-desktop-packet-original.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/packet-original",
+      "technicalError": null
+    },
+    {
+      "name": "place-search",
+      "file": "tools/test-desktop-place-search.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/place-search",
+      "technicalError": null
+    },
+    {
+      "name": "player-blank",
+      "file": "tools/test-desktop-player-blank.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/player-blank",
+      "technicalError": null
+    },
+    {
+      "name": "player-blank-pending",
+      "file": "tools/test-desktop-player-blank.mjs",
+      "kind": "session",
+      "args": ["--pending"],
+      "technicalStatus": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/player-blank-pending",
+      "technicalError": null
+    },
+    {
+      "name": "player-blank-combat",
+      "file": "tools/test-desktop-player-blank.mjs",
+      "kind": "session",
+      "args": ["--combat"],
+      "technicalStatus": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/player-blank-combat",
+      "technicalError": null
+    },
+    {
+      "name": "player-blank-chase",
+      "file": "tools/test-desktop-player-blank.mjs",
+      "kind": "session",
+      "args": ["--chase"],
+      "technicalStatus": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/player-blank-chase",
+      "technicalError": null
+    },
+    {
+      "name": "player-blank-combat-pending",
+      "file": "tools/test-desktop-player-blank.mjs",
+      "kind": "session",
+      "args": ["--combat", "--pending"],
+      "technicalStatus": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/player-blank-combat-pending",
+      "technicalError": null
+    },
+    {
+      "name": "player-blank-chase-pending",
+      "file": "tools/test-desktop-player-blank.mjs",
+      "kind": "session",
+      "args": ["--chase", "--pending"],
+      "technicalStatus": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/player-blank-chase-pending",
+      "technicalError": null
+    },
+    {
+      "name": "player-focus",
+      "file": "tools/test-desktop-player-focus.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/player-focus",
+      "technicalError": null
+    },
+    {
+      "name": "player-focus-cue",
+      "file": "tools/test-desktop-player-focus.mjs",
+      "kind": "session",
+      "args": ["--cue"],
+      "technicalStatus": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/player-focus-cue",
+      "technicalError": null
+    },
+    {
+      "name": "player-focus-handout",
+      "file": "tools/test-desktop-player-focus.mjs",
+      "kind": "session",
+      "args": ["--handout"],
+      "technicalStatus": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/player-focus-handout",
+      "technicalError": null
+    },
+    {
+      "name": "player-focus-cue-handout",
+      "file": "tools/test-desktop-player-focus.mjs",
+      "kind": "session",
+      "args": ["--cue", "--handout"],
+      "technicalStatus": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/player-focus-cue-handout",
+      "technicalError": null
+    },
+    {
+      "name": "player-map-reveal",
+      "file": "tools/test-desktop-player-map-reveal.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/player-map-reveal",
+      "technicalError": null
+    },
+    {
+      "name": "player-scene-privacy",
+      "file": "tools/test-desktop-player-scene-privacy.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/player-scene-privacy",
+      "technicalError": null
+    },
+    {
+      "name": "player-scene-privacy-combat",
+      "file": "tools/test-desktop-player-scene-privacy.mjs",
+      "kind": "session",
+      "args": ["--combat"],
+      "technicalStatus": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/player-scene-privacy-combat",
+      "technicalError": null
+    },
+    {
+      "name": "player-scene-privacy-chase",
+      "file": "tools/test-desktop-player-scene-privacy.mjs",
+      "kind": "session",
+      "args": ["--chase"],
+      "technicalStatus": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/player-scene-privacy-chase",
+      "technicalError": null
+    },
+    {
+      "name": "preset-context",
+      "file": "tools/test-desktop-preset-context.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/preset-context",
+      "technicalError": null
+    },
+    {
+      "name": "protocol-visit",
+      "file": "tools/test-desktop-protocol-visit.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/protocol-visit",
+      "technicalError": null
+    },
+    {
+      "name": "room-key-source-inspection",
+      "file": "tools/test-desktop-room-key-source-inspection.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "not-run",
+      "reason": "Required normally completed fixture unavailable: note-source-inspection"
+    },
+    {
+      "name": "scene-decision",
+      "file": "tools/test-desktop-scene-decision.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "not-run",
+      "reason": "Required normally completed fixture unavailable: room-key-source-inspection"
+    },
+    {
+      "name": "quest-review",
+      "file": "tools/test-desktop-quest-review.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "not-run",
+      "reason": "Required normally completed fixture unavailable: scene-decision"
+    },
+    {
+      "name": "region-export",
+      "file": "tools/test-desktop-region-export.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/region-export",
+      "technicalError": null
+    },
+    {
+      "name": "reinforcement-layout",
+      "file": "tools/test-desktop-reinforcement-layout.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/reinforcement-layout",
+      "technicalError": null
+    },
+    {
+      "name": "reinforcement-layout-assert-layout",
+      "file": "tools/test-desktop-reinforcement-layout.mjs",
+      "kind": "session",
+      "args": ["--assert-layout"],
+      "technicalStatus": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/reinforcement-layout-assert-layout",
+      "technicalError": null
+    },
+    {
+      "name": "reinforcement-layout-assert-layout-reply-loss",
+      "file": "tools/test-desktop-reinforcement-layout.mjs",
+      "kind": "session",
+      "args": ["--assert-layout", "--reply-loss"],
+      "technicalStatus": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/reinforcement-layout-assert-layout-reply-loss",
+      "technicalError": null
+    },
+    {
+      "name": "relief-prototype",
+      "file": "tools/test-desktop-relief-prototype.mjs",
+      "kind": "historical",
+      "args": [],
+      "technicalStatus": "not-run",
+      "reason": "standalone .build/relief-r0 prototype; not the current product and not native product qualification"
+    },
+    {
+      "name": "restock-name",
+      "file": "tools/test-desktop-restock-name.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/restock-name",
+      "technicalError": null
+    },
+    {
+      "name": "review-integrity",
+      "file": "tools/test-desktop-review-integrity.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/review-integrity",
+      "technicalError": null
+    },
+    {
+      "name": "review-retention",
+      "file": "tools/test-desktop-review-retention.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/review-retention",
+      "technicalError": null
+    },
+    {
+      "name": "room-groups",
+      "file": "tools/test-desktop-room-groups.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/room-groups",
+      "technicalError": null
+    },
+    {
+      "name": "room-reads",
+      "file": "tools/test-desktop-room-reads.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/room-reads",
+      "technicalError": null
+    },
+    {
+      "name": "room-reads-regions",
+      "file": "tools/test-desktop-room-reads.mjs",
+      "kind": "session",
+      "args": ["--regions"],
+      "technicalStatus": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/room-reads-regions",
+      "technicalError": null
+    },
+    {
+      "name": "room-rule-reuse",
+      "file": "tools/test-desktop-room-rule-reuse.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/room-rule-reuse",
+      "technicalError": null
+    },
+    {
+      "name": "rule-reading",
+      "file": "tools/test-desktop-rule-reading.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/rule-reading",
+      "technicalError": null
+    },
+    {
+      "name": "scene-music-navigation",
+      "file": "tools/test-desktop-scene-music-navigation.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/scene-music-navigation",
+      "technicalError": null
+    },
+    {
+      "name": "scene-selection-read",
+      "file": "tools/test-desktop-scene-selection-read.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/scene-selection-read",
+      "technicalError": null
+    },
+    {
+      "name": "scene-selection-read-namesakes",
+      "file": "tools/test-desktop-scene-selection-read.mjs",
+      "kind": "session",
+      "args": [],
+      "env": {
+        "GM_QA_NAMESAKES": "1"
+      },
+      "technicalStatus": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/scene-selection-read-namesakes",
+      "technicalError": null
+    },
+    {
+      "name": "scene-selection-read-long-rest",
+      "file": "tools/test-desktop-scene-selection-read.mjs",
+      "kind": "session",
+      "args": [],
+      "env": {
+        "GM_QA_LONG_REST": "1"
+      },
+      "technicalStatus": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/scene-selection-read-long-rest",
+      "technicalError": null
+    },
+    {
+      "name": "scene-selection-read-namesakes-long-rest",
+      "file": "tools/test-desktop-scene-selection-read.mjs",
+      "kind": "session",
+      "args": [],
+      "env": {
+        "GM_QA_NAMESAKES": "1",
+        "GM_QA_LONG_REST": "1"
+      },
+      "technicalStatus": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/scene-selection-read-namesakes-long-rest",
+      "technicalError": null
+    },
+    {
+      "name": "session-note-organizing",
+      "file": "tools/test-desktop-session-note-organizing.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/session-note-organizing",
+      "technicalError": null
+    },
+    {
+      "name": "session-source-order",
+      "file": "tools/test-desktop-session-source-order.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/session-source-order",
+      "technicalError": null
+    },
+    {
+      "name": "shared-template",
+      "file": "tools/test-desktop-shared-template.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/shared-template",
+      "technicalError": null
+    },
+    {
+      "name": "shop-switch",
+      "file": "tools/test-desktop-shop-switch.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/shop-switch",
+      "technicalError": null
+    },
+    {
+      "name": "shop-trade",
+      "file": "tools/test-desktop-shop-trade.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/shop-trade",
+      "technicalError": null
+    },
+    {
+      "name": "split-knowledge",
+      "file": "tools/test-desktop-split-knowledge.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/split-knowledge",
+      "technicalError": null
+    },
+    {
+      "name": "spontaneous-combat",
+      "file": "tools/test-desktop-spontaneous-combat.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/spontaneous-combat",
+      "technicalError": null
+    },
+    {
+      "name": "store-responsiveness",
+      "file": "tools/test-desktop-store-responsiveness.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/store-responsiveness",
+      "technicalError": null
+    },
+    {
+      "name": "style-ownership",
+      "file": "tools/test-desktop-style-ownership.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "not-run",
+      "reason": "Requires an explicitly saved previously shipped stylesheet (--baseline-css); current CSS against itself is not qualification."
+    },
+    {
+      "name": "template-discovery",
+      "file": "tools/test-desktop-template-discovery.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/template-discovery",
+      "technicalError": null
+    },
+    {
+      "name": "terrain-brush",
+      "file": "tools/test-desktop-terrain-brush.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/terrain-brush",
+      "technicalError": null
+    },
+    {
+      "name": "terrain-height",
+      "file": "tools/test-desktop-terrain-height.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/terrain-height",
+      "technicalError": null
+    },
+    {
+      "name": "terrain-lakes",
+      "file": "tools/test-desktop-terrain-lakes.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/terrain-lakes",
+      "technicalError": null
+    },
+    {
+      "name": "terrain-lakes-lift",
+      "file": "tools/test-desktop-terrain-lakes.mjs",
+      "kind": "session",
+      "args": ["--lift"],
+      "technicalStatus": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/terrain-lakes-lift",
+      "technicalError": null
+    },
+    {
+      "name": "terrain-live",
+      "file": "tools/test-desktop-terrain-live.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/terrain-live",
+      "technicalError": null
+    },
+    {
+      "name": "terrain-live-world",
+      "file": "tools/test-desktop-terrain-live.mjs",
+      "kind": "session",
+      "args": [],
+      "env": {
+        "TERRAIN_WORLD_PROBE": "1"
+      },
+      "technicalStatus": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/terrain-live-world",
+      "technicalError": null
+    },
+    {
+      "name": "terrain-live-covered",
+      "file": "tools/test-desktop-terrain-live.mjs",
+      "kind": "session",
+      "args": [],
+      "env": {
+        "TERRAIN_COVERED_PROBE": "1"
+      },
+      "technicalStatus": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/terrain-live-covered",
+      "technicalError": null
+    },
+    {
+      "name": "terrain-relief",
+      "file": "tools/test-desktop-terrain-relief.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/terrain-relief",
+      "technicalError": null
+    },
+    {
+      "name": "terrain-routes",
+      "file": "tools/test-desktop-terrain-routes.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/terrain-routes",
+      "technicalError": null
+    },
+    {
+      "name": "terrain-routes-river-only",
+      "file": "tools/test-desktop-terrain-routes.mjs",
+      "kind": "session",
+      "args": ["--river-only"],
+      "technicalStatus": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/terrain-routes-river-only",
+      "technicalError": null
+    },
+    {
+      "name": "terrain-routes-river-only-depression-2",
+      "file": "tools/test-desktop-terrain-routes.mjs",
+      "kind": "session",
+      "args": ["--river-only", "--depression=2"],
+      "technicalStatus": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/terrain-routes-river-only-depression-2",
+      "technicalError": null
+    },
+    {
+      "name": "terrain-routes-planning-only",
+      "file": "tools/test-desktop-terrain-routes.mjs",
+      "kind": "session",
+      "args": ["--planning-only"],
+      "technicalStatus": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/terrain-routes-planning-only",
+      "technicalError": null
+    },
+    {
+      "name": "terrain-spatial",
+      "file": "tools/test-desktop-terrain-spatial.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/terrain-spatial",
+      "technicalError": null
+    },
+    {
+      "name": "timeline-search",
+      "file": "tools/test-desktop-timeline-search.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/timeline-search",
+      "technicalError": null
+    },
+    {
+      "name": "travel-checkpoints",
+      "file": "tools/test-desktop-travel-checkpoints.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/travel-checkpoints",
+      "technicalError": null
+    },
+    {
+      "name": "travel-target",
+      "file": "tools/test-desktop-travel-target.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/travel-target",
+      "technicalError": null
+    },
+    {
+      "name": "treasure-anchors",
+      "file": "tools/test-desktop-treasure-anchors.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/treasure-anchors",
+      "technicalError": null
+    },
+    {
+      "name": "treasure-distribution",
+      "file": "tools/test-desktop-treasure-distribution.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/treasure-distribution",
+      "technicalError": null
+    },
+    {
+      "name": "treasure-distribution-reply-loss",
+      "file": "tools/test-desktop-treasure-distribution.mjs",
+      "kind": "session",
+      "args": ["--reply-loss"],
+      "technicalStatus": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/treasure-distribution-reply-loss",
+      "technicalError": null
+    },
+    {
+      "name": "treasure-distribution-reject-once",
+      "file": "tools/test-desktop-treasure-distribution.mjs",
+      "kind": "session",
+      "args": ["--reject-once"],
+      "technicalStatus": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/treasure-distribution-reject-once",
+      "technicalError": null
+    },
+    {
+      "name": "updates",
+      "file": "tools/test-desktop-updates.mjs",
+      "kind": "adapter",
+      "args": ["/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-package"],
+      "technicalStatus": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/updates",
+      "technicalError": null
+    },
+    {
+      "name": "vegetation-qualification",
+      "file": "tools/test-desktop-vegetation-qualification.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/vegetation-qualification",
+      "technicalError": null
+    },
+    {
+      "name": "vegetation-qualification-navigation-only",
+      "file": "tools/test-desktop-vegetation-qualification.mjs",
+      "kind": "session",
+      "args": ["--navigation-only"],
+      "technicalStatus": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/vegetation-qualification-navigation-only",
+      "technicalError": null
+    },
+    {
+      "name": "weather-override",
+      "file": "tools/test-desktop-weather-override.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/weather-override",
+      "technicalError": null
+    },
+    {
+      "name": "world-authoring",
+      "file": "tools/test-desktop-world-authoring.mjs",
+      "kind": "session",
+      "args": [],
+      "technicalStatus": "failed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/world-authoring",
+      "technicalError": null
+    },
+    {
+      "name": "updates-workspace",
+      "file": "tools/test-desktop-updates.mjs",
+      "kind": "adapter",
+      "args": [
+        "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-package",
+        "--workspace"
+      ],
+      "technicalStatus": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/updates-workspace",
+      "technicalError": null
+    },
+    {
+      "name": "updates-force",
+      "file": "tools/test-desktop-updates.mjs",
+      "kind": "adapter",
+      "args": [
+        "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-package",
+        "--force"
+      ],
+      "technicalStatus": "passed",
+      "directory": "/home/aaron/Documents/Codex/SaltMarcher/.build/native-baseline-round10-continuation-20261029/updates-force",
+      "technicalError": null
+    }
+  ]
+}

@@ -1,3 +1,4 @@
+import { openNativeCampaign, revealWorkspaceNavigation } from './native-navigation.mjs';
 // Real dossier → original profile draft → normal restart → explicit history append.
 import { createRequire } from 'node:module';
 import { mkdir, writeFile, rm } from 'node:fs/promises';
@@ -24,26 +25,18 @@ const source = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).
   dirty = !!execFileSync('git', ['status', '--porcelain'], { encoding: 'utf8' }).trim(),
   launches = [],
   results = [];
-let native, page;
-const capture = (name) => native.capture(page, name);
+let native,
+  page,
+  captureSequence = 0;
+const capture = (name) => native.capture(page, `${++captureSequence}-${name}`);
 async function live() {
-  if (
-    !(await page.locator('#live-tab').isVisible()) &&
-    (await page.locator('#atlas-navigation').isVisible())
-  )
-    await page.locator('#atlas-navigation').click();
-  if (!(await page.locator('#live-tab').isVisible()))
-    await page.locator('#workspace-nav-summary').click();
+  await revealWorkspaceNavigation(page);
   await page.locator('#live-tab').click();
   await page.getByRole('button', { name: 'NSCs am Spieltisch…', exact: true }).waitFor();
 }
 async function launch(scale, campaign) {
   page = await native.launch(scale);
-  await page
-    .locator('.campaign-card[data-campaign-id="' + campaign.id + '"]')
-    .getByRole('button', { name: /Öffnen|Fortsetzen/ })
-    .click();
-  await page.waitForFunction(() => !document.getElementById('workspace-navigation').inert);
+  await openNativeCampaign(page, campaign.id);
   await live();
 }
 async function dossier(id) {

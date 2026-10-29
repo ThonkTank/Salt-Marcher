@@ -107,8 +107,13 @@ export class AtlasAuthor {
   }
   /** A navigation lease is invalid after another selection, activation or hide. */
   beginNavigation() {
+    this.selectionRequest++;
+    return this.watchNavigation();
+  }
+  /** Observe asynchronous setup without replacing a newer selection intent. */
+  watchNavigation() {
     const generation = this.contextGeneration,
-      request = ++this.selectionRequest,
+      request = this.selectionRequest,
       owner = this.host.owner;
     return () =>
       this.contextGeneration === generation &&
