@@ -2,7 +2,7 @@
 
 Status: Geltender Fachvertrag; offene Erweiterungen sind als Ziele beschrieben.
 Owner: runtime
-Last Reviewed: 2026-10-24 (Struktur und Quellen; Fachabnahme separat)
+Last Reviewed: 2026-10-28 (begrenzter Quellenauftrag vor Autonomyausbau; Fachabnahme separat)
 Source of Truth: Dieses Dokument besitzt das benannte Thema; Code belegt den Iststand, das Abnahmeregister den Prüfstand.
 
 Stand: 15.10.2026. Dieser Fachplan konkretisiert [SMR-09](../../project/requirements/product-scope-2.md#smr-09--actor-autonomy), den [Produktumfang](../../project/requirements/scope.md) und den [Live-/Scenevertrag](smr03-live-scene-contract.md).
@@ -171,6 +171,31 @@ mit Keys, Wegen, Passagen, Volumen und Featurezuständen wird dafür nicht aufge
 prüft rein lesenden Zugriff und den vollständigen Command-Rollback bei beschädigten
 Elementquellen. Im kleinen Vergleichsfall sinken vorbereitete SQL-Anweisungen von
 25 auf 16; das ist keine allgemeine Latenz- oder 200-Actor-Qualifikation.
+
+## Quellenklärung vor dem jeweiligen Autonomystep
+
+SMR-09/SMR-AC-13 bleibt eine eigene offene Abnahme. Anders als beim
+Wonderdraft-Vergleich gibt es hier keinen behaupteten Originalbedienbeleg:
+Die [gebundene Autonomyquelle](https://github.com/ThonkTank/Salt-Marcher/blob/9de85c1a26f526acbc1af332ac5962e185c0aab2/docs/autonomy/requirements/requirements-actor-autonomy.md)
+und der Vertrag oben besitzen die Regeln. Vor Ausbau einer Job-/Konfliktfamilie
+zuerst nur deren Needs, Auswahl/Ausschlüsse, Reservierungen, Partygrenze und
+bestätigte Zeit gegen die relevanten Quellenabschnitte prüfen; bestehende
+selektive Storebelege anschließend zuordnen.
+
+Kleine Handlungsprobe für den gewählten Schritt: ein aktivierter Actor, zwei
+konkurrierende erreichbare Angebote, ein belegtes Ziel und eine Partygrenze.
+Eingefrorene Inputs, erklärbare Auswahl, erlaubte Ownerwirkung und geloggte
+Unterbrechung benennen; Cancel/Retry/Restart und unabhängige Campaignkopie müssen
+denselben bestätigten Verlauf erhalten. Ein späteres Owner-Nein darf keine
+Teilbuchung oder Fremdwirkung veröffentlichen. Korrektur ergänzt die Geschichte
+nach dem geltenden Vertrag; kein allgemeines Autonomy-Undo ableiten.
+
+Bei einem echten Quellenkonflikt vor Umsetzung Alternativen samt Folgen für
+GM-Autorität, bestätigte Zeit und bestehende Fakten sowie eine Empfehlung
+festhalten. Fehlende aktuelle Belege bleiben als Prüfaufgabe offen; erst den
+geklärten Schritt nach Codeprüfung schätzen. Stadtlebensdaten entscheiden keine
+autonome Ausführung. Die folgenden vorhandenen Arbeitspakete bleiben maßgeblich;
+Terrain/Meer und der bestätigte Flussabschluss warten nicht auf diesen Ausbau.
 
 ## Nächste ausführbare Schritte
 

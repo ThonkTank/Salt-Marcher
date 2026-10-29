@@ -1,13 +1,5 @@
 import { createEditorSurface } from '../shared/editor-surface';
-import {
-  editableCombat,
-  enqueuePendingDamage,
-  retainPendingAttack,
-  pendingRollStillValid,
-  creatureConstitutionSave,
-  deferLegendaryCost,
-  type PendingDamage,
-} from './combat-roll-state';
+import { editableCombat, creatureConstitutionSave, deferLegendaryCost } from './combat-roll-state';
 export {
   enqueuePendingDamage,
   retainPendingAttack,
@@ -16,9 +8,10 @@ export {
   deferLegendaryCost,
 } from './combat-roll-state';
 import { EditorSession } from '../shared/editor-session';
-import { BookingDialog } from '../shared/booking-dialog';
+import { createCombatRollEditor } from './combat-roll-editor';
+import { createCombatReinforcementEditor } from './combat-reinforcement-editor';
 import { CombatSelectionPanel } from './combat-selection-ui';
-import { combatMobs, combatMobRow, canReinforceTroop } from './combat-mob-ui';
+import { combatMobs, combatMobRow } from './combat-mob-ui';
 import { CombatGroupPicker, sceneGroupDragType, sceneGroupTray } from './combat-group-ui';
 import { CombatInitiativePanel } from './combat-initiative-ui';
 import { initiativeGroups } from './combat-initiative';
@@ -69,7 +62,6 @@ import {
   isLegendaryAction,
   creatureActionForRolls,
   creatureActionRolls,
-  creatureRollKey,
   legendaryActionCost,
   type CreatureRollPreset,
 } from '../shared/dice-formula';
@@ -122,51 +114,7 @@ export function createCombat(host: CombatHost) {
   let hitPanel: CombatHitPanel | null = null;
   let areaPanel: CombatAreaPanel | null = null;
   let initiativePanel: CombatInitiativePanel | null = null;
-  let reinforcementRequest = 0,
-    reinforcementBusy = false,
-    reinforcementSourceChosen = false;
-  // null uses the combat's sources; an empty search must remain empty, even on failure.
-  let reinforcementResults:
-    | { id: string; name: string; challengeRating: string; hp?: number; ac?: number }[]
-    | null = null;
   let selected: string | null = null;
-  type PendingLegendary = { participantId: string; actionId: string; cost: number };
-
-  let pendingDamage: PendingDamage[] = [];
-  type PendingAttack = {
-    combatId: string;
-    attackerId: string;
-    creatureId: string;
-    actionId: string;
-    actor: string;
-    preset: CreatureRollPreset;
-    damages: CreatureRollPreset[];
-    rolledDamage: string[];
-    targetId: string | null;
-    check: SceneCheck | null;
-    legendary?: PendingLegendary;
-    paidLegendary?: boolean;
-  };
-
-  let pendingAttack: PendingAttack | null = null,
-    attackPending = false;
-  type PendingSave = {
-    combatId: string;
-    attackerId: string;
-    creatureId: string;
-    actionId: string;
-    actor: string;
-    preset: CreatureRollPreset;
-    damages: CreatureRollPreset[];
-    rolledDamage: string[];
-    resolvedTargets: string[];
-    targetId: string | null;
-    check: SceneCheck | null;
-    legendary?: PendingLegendary;
-  };
-  let pendingSave: PendingSave | null = null,
-    savePending = false;
-
   let tell: (text: string, error?: boolean) => void, afterSaved: (() => Promise<void>) | undefined;
   let loadPending = false,
     loadError: string | null = null,
@@ -176,25 +124,68 @@ export function createCombat(host: CombatHost) {
     if (view?.combat?.id !== result.combat?.id) {
       expandedMobs.clear();
       groupPicker.reset();
-      reinforcementRequest++;
-      reinforcementBusy = false;
-      reinforcementSourceChosen = false;
-      reinforcementResults = null;
-      if (!reinforcementBooking.busy) closeReinforcements();
-      get<HTMLSelectElement>('combat-creature-source').value = '';
-      get<HTMLInputElement>('combat-creature-count').value = '1';
-      get<HTMLInputElement>('combat-creature-grouped').checked = false;
-      get<HTMLInputElement>('combat-creature-search').value = '';
-      get<HTMLInputElement>('combat-creature-initiative').value = '';
-      get('combat-creature-status').textContent = '';
+      reinforcements.contextChanged();
     }
     view = result;
     requestedCombatId = result.combat?.id ?? null;
     knownRecent = result.recent;
-    if (pendingDamage.some((damage) => damage.combatId !== result.combat?.id)) pendingDamage = [];
-    if (pendingAttack && !pendingRollStillValid(pendingAttack, result.combat)) pendingAttack = null;
-    if (pendingSave && !pendingRollStillValid(pendingSave, result.combat)) pendingSave = null;
+    rolls.accept(result.combat);
   }
+  const rolls = createCombatRollEditor({
+    document,
+    get,
+    session: editorSession,
+    get combat() {
+      return view?.combat ?? null;
+    },
+    blocked: () => blocked(),
+    uncertain: () => !!workspace && hasPendingCommit(workspace.campaign.id),
+    execute: (action) => execute(action),
+    openHit: (input) => hitPanel?.open(input),
+    formula: rollSceneFormula,
+    check: rollSceneCheck,
+    feedback: (text, error) => tell(text, error),
+  });
+  const {
+    stageAttack,
+    stageSave,
+    stageDamage,
+    renderAttackEffect,
+    renderSaveEffect,
+    renderDamageEffect,
+  } = rolls;
+  const reinforcements = createCombatReinforcementEditor({
+    document,
+    get,
+    session: editorSession,
+    api: host.api,
+    get context() {
+      return workspace ? { token: workspace.token, campaignId: workspace.campaign.id } : null;
+    },
+    get combat() {
+      return view?.combat ?? null;
+    },
+    get sceneId() {
+      return scene?.id ?? null;
+    },
+    get loadVersion() {
+      return loadNumber;
+    },
+    blocked: () => blocked(),
+    writing: () => !!pendingWork.value,
+    send: (action, failed) => execute(action, undefined, () => true, failed),
+    create: addCatalogCreature,
+    initiative: () => {
+      void initiativePanel?.open();
+    },
+    lock: () => lock(),
+    feedback: (text, error) => tell(text, error),
+  });
+  const openReinforcements = reinforcements.open,
+    closeReinforcements = reinforcements.close,
+    submitReinforcement = reinforcements.submit,
+    catalogAdditionConfirmed = reinforcements.confirmed,
+    renderReinforcements = reinforcements.render;
   let loadNumber = 0,
     candidateRequest = 0,
     candidatePending = false,
@@ -537,11 +528,7 @@ export function createCombat(host: CombatHost) {
       preparationChanged = preparationBasis !== preparationContext;
     preparationContext = preparationBasis;
     if (changed) {
-      closeReinforcements();
-      reinforcementRequest++;
-      reinforcementResults = null;
-      reinforcementBusy = false;
-      reinforcementSourceChosen = false;
+      reinforcements.contextChanged();
     }
     if (changed && workspace) draftCache.release(workspace.campaign.id);
     workspace = next;
@@ -580,11 +567,7 @@ export function createCombat(host: CombatHost) {
       get('combat-draft-list').replaceChildren();
       get('combat-draft-preview').hidden = true;
       selected = null;
-      pendingDamage = [];
-      pendingAttack = null;
-      attackPending = false;
-      pendingSave = null;
-      savePending = false;
+      rolls.reset();
       view = null;
       render();
       if (next && current) void load();
@@ -722,6 +705,8 @@ export function createCombat(host: CombatHost) {
             editDraft,
             editorDraft,
             resetConcentration,
+            rollAction: action,
+            rollGeneration: gen,
             ...(action.kind === 'area-damage'
               ? { areaTargetIds: action.targets.map((target) => target.participantId) }
               : {}),
@@ -730,6 +715,7 @@ export function createCombat(host: CombatHost) {
         if (editorSession.generation !== gen) return false;
         if (resetConcentration) delete get('combat-concentration-modifier').dataset.checkKey;
         acceptCombat(result);
+        rolls.accepted(action, result.combat?.id);
         applied = true;
         if (action.kind === 'add-party')
           get<HTMLInputElement>('combat-party-initiative').value = '';
@@ -1142,489 +1128,6 @@ export function createCombat(host: CombatHost) {
     !!loadError ||
     !!pendingWork.value ||
     (!!workspace && hasPendingCommit(workspace.campaign.id));
-  function stageAttack(
-    action: CreatureAction,
-    preset: CreatureRollPreset,
-    attackerId: string,
-    actor: string,
-    creatureId: string,
-    combatId: string,
-    legendary?: PendingLegendary,
-  ) {
-    if (attackPending || view?.combat?.id !== combatId) return;
-    const next: PendingAttack = {
-        combatId,
-        attackerId,
-        creatureId,
-        actionId: action.id,
-        actor,
-        preset,
-        damages: creatureActionRolls(action).filter((p) => p.kind === 'damage'),
-        rolledDamage: [],
-        targetId: null,
-        check: null,
-        ...(legendary ? { legendary } : {}),
-      },
-      retained = retainPendingAttack(pendingAttack, next);
-    if (retained === pendingAttack) {
-      renderAttackEffect();
-      get('combat-attack-effect').scrollIntoView({ block: 'nearest' });
-      tell(
-        pendingAttack.check
-          ? 'Offenen Angriff zuerst abschließen.'
-          : 'Offenen Angriff zuerst würfeln oder verwerfen.',
-        true,
-      );
-      return;
-    }
-    pendingAttack = retained;
-    renderAttackEffect();
-    get('combat-attack-effect').scrollIntoView({ block: 'nearest' });
-  }
-  function renderAttackEffect() {
-    const box = get('combat-attack-effect'),
-      combat = view?.combat,
-      attack = pendingAttack;
-    if (!attack || !combat || attack.combatId !== combat.id || !editableCombat(combat)) {
-      box.hidden = true;
-      return;
-    }
-    box.hidden = false;
-    const target = get<HTMLSelectElement>('combat-attack-target'),
-      previous = target.value,
-      candidates = combat.participants.filter((p) => p.id !== attack.attackerId);
-    target.replaceChildren();
-    for (const p of candidates) {
-      const option = document.createElement('option');
-      option.value = p.id;
-      option.textContent = p.name + ' · RK ' + (p.armorClass ?? 'offen');
-      target.append(option);
-    }
-    const preferred =
-      attack.targetId ??
-      (candidates.some((p) => p.id === previous) ? previous : null) ??
-      candidates.find((p) => !!p.characterId)?.id ??
-      candidates[0]?.id ??
-      '';
-    target.value = preferred;
-    const chosen = candidates.find((p) => p.id === target.value),
-      resolvedTarget = attack.targetId
-        ? candidates.find((p) => p.id === attack.targetId)
-        : undefined,
-      die = attack.check?.rolls[0],
-      critical = die === 20,
-      miss = attack.check?.outcome === 'failure';
-    get('combat-attack-result').textContent = attack.check
-      ? attack.actor +
-        ' · ' +
-        attack.preset.label +
-        ': ' +
-        attack.check.total +
-        ' gegen RK ' +
-        attack.check.dc +
-        ' · ' +
-        (critical ? 'Kritischer Treffer' : miss ? 'Verfehlt' : 'Treffer') +
-        (resolvedTarget ? '' : ' · Ziel nicht mehr in der Initiative')
-      : attack.actor +
-        ' · ' +
-        attack.preset.label +
-        ' gegen ' +
-        (chosen?.name ?? 'Ziel') +
-        ' (RK ' +
-        (chosen ? (chosen.armorClass ?? 'offen') : '—') +
-        ')';
-    target.disabled = blocked() || attackPending || !!attack.check;
-    const roll = get<HTMLButtonElement>('combat-attack-roll');
-    roll.hidden = !!attack.check;
-    roll.disabled = blocked() || attackPending || !chosen || chosen.armorClass === null;
-    roll.title = chosen?.armorClass === null ? 'Rüstungsklasse des Ziels zuerst eintragen.' : '';
-    get('combat-attack-hint').textContent =
-      chosen?.armorClass === null && !attack.check
-        ? 'Ziel-RK noch offen. In der RK-Spalte der Figur auf „offen“ klicken und die Rüstungsklasse eintragen.'
-        : 'Das Ziel legt die RK des gespeicherten Angriffswurfs fest. Natürliche 1 und 20 werden automatisch ausgewertet; kritischer Schaden verdoppelt die Schadenswürfel. Bei alternativen Schadensformeln nur die passende Variante würfeln.';
-    const damageRoot = get('combat-attack-damage');
-    damageRoot.replaceChildren();
-    if (attack.check?.outcome === 'success' && resolvedTarget) {
-      const button = document.createElement('button');
-      button.type = 'button';
-      button.textContent = 'Treffer mit allen Schadensanteilen…';
-      button.disabled = blocked() || attackPending;
-      button.onclick = () => {
-        const source = combat.sources?.find((c) => c.id === attack.creatureId),
-          original =
-            source &&
-            [...source.actions, ...source.legendaryActions].find((a) => a.id === attack.actionId);
-        if (source && original)
-          hitPanel?.open({
-            attackerId: attack.attackerId,
-            action: creatureActionForRolls(source, original),
-            targetId: attack.targetId!,
-            check: attack.check!,
-            paidLegendary: attack.paidLegendary,
-            applied: () => {
-              if (pendingAttack === attack) {
-                pendingAttack = null;
-                renderAttackEffect();
-              }
-            },
-          });
-      };
-      damageRoot.append(button);
-    }
-    const discard = get<HTMLButtonElement>('combat-attack-discard');
-    discard.textContent = attack.check ? 'Angriff abschließen' : 'Verwerfen';
-    discard.disabled = blocked() || attackPending;
-  }
-  async function rollAttack() {
-    const attack = pendingAttack,
-      combat = view?.combat,
-      target = combat?.participants.find((p) => p.id === value('combat-attack-target'));
-    if (!attack || !combat || !target || attack.combatId !== combat.id || attack.check) return;
-    if (target.armorClass === null) {
-      tell('Rüstungsklasse des Ziels zuerst eintragen.', true);
-      return;
-    }
-    attack.targetId = target.id;
-    attackPending = true;
-    renderAttackEffect();
-    if (attack.legendary) {
-      if (!(await execute({ kind: 'legendary-action', ...attack.legendary }))) {
-        attackPending = false;
-        renderAttackEffect();
-        return;
-      }
-      attack.paidLegendary = true;
-      delete attack.legendary;
-    }
-    await rollSceneFormula(
-      {
-        label: attack.preset.label + ' gegen ' + target.name,
-        actor: attack.actor,
-        formula: attack.preset.formula,
-        formulaKind: 'attack',
-        dc: target.armorClass,
-        sourceCreatureId: attack.creatureId,
-        sourceActionId: attack.actionId,
-      },
-      (check) => {
-        if (pendingAttack === attack && view?.combat?.id === attack.combatId) attack.check = check;
-      },
-    );
-    attackPending = false;
-    renderAttackEffect();
-  }
-  function stageSave(
-    action: CreatureAction,
-    preset: CreatureRollPreset,
-    attackerId: string,
-    actor: string,
-    creatureId: string,
-    combatId: string,
-    legendary?: PendingLegendary,
-  ) {
-    if (savePending || view?.combat?.id !== combatId) return;
-    const next: PendingSave = {
-        combatId,
-        attackerId,
-        creatureId,
-        actionId: action.id,
-        actor,
-        preset,
-        damages: creatureActionRolls(action).filter((p) => p.kind === 'damage'),
-        rolledDamage: [],
-        resolvedTargets: [],
-        targetId: null,
-        check: null,
-        ...(legendary ? { legendary } : {}),
-      },
-      retained = retainPendingAttack(pendingSave, next);
-    if (retained === pendingSave) {
-      renderSaveEffect();
-      get('combat-save-effect').scrollIntoView({ block: 'nearest' });
-      tell('Offenen Rettungswurf zuerst abschließen oder verwerfen.', true);
-      return;
-    }
-    pendingSave = retained;
-    get<HTMLInputElement>('combat-save-modifier').value = '0';
-    renderSaveEffect();
-    get('combat-save-effect').scrollIntoView({ block: 'nearest' });
-  }
-  function renderSaveEffect() {
-    const box = get('combat-save-effect'),
-      combat = view?.combat,
-      save = pendingSave;
-    if (!save || !combat || save.combatId !== combat.id || !editableCombat(combat)) {
-      box.hidden = true;
-      return;
-    }
-    box.hidden = false;
-    const target = get<HTMLSelectElement>('combat-save-target'),
-      previous = target.value,
-      candidates = combat.participants.filter(
-        (p) => p.id !== save.attackerId && !save.resolvedTargets.includes(p.id),
-      );
-    target.replaceChildren();
-    for (const p of candidates) {
-      const option = document.createElement('option');
-      option.value = p.id;
-      option.textContent = p.name;
-      target.append(option);
-    }
-    const preferred =
-      save.targetId ??
-      (candidates.some((p) => p.id === previous) ? previous : null) ??
-      candidates.find((p) => !!p.characterId)?.id ??
-      candidates[0]?.id ??
-      '';
-    target.value = preferred;
-    const chosen = combat.participants.find((p) => p.id === (save.targetId ?? target.value)),
-      modifier = get<HTMLInputElement>('combat-save-modifier'),
-      outcome = save.check?.outcome;
-    get('combat-save-result').textContent = save.check
-      ? save.actor +
-        ' · ' +
-        save.preset.label +
-        ' für ' +
-        (chosen?.name ?? 'entferntes Ziel') +
-        ': ' +
-        save.check.total +
-        ' gegen SG ' +
-        save.check.dc +
-        ' · ' +
-        (outcome === 'success' ? 'Bestanden' : 'Fehlgeschlagen')
-      : save.actor + ' · ' + save.preset.label + ' · SG ' + save.preset.dc;
-    target.disabled = blocked() || savePending || !!save.check;
-    modifier.disabled = blocked() || savePending || !!save.check;
-    const roll = get<HTMLButtonElement>('combat-save-roll'),
-      modifierValue = Number(modifier.value);
-    roll.hidden = !!save.check;
-    roll.disabled =
-      blocked() ||
-      savePending ||
-      !target.value ||
-      !Number.isSafeInteger(modifierValue) ||
-      Math.abs(modifierValue) > 1000;
-    const damages = get('combat-save-damage');
-    damages.replaceChildren();
-    if (save.check && chosen)
-      for (const damage of save.damages) {
-        const button = document.createElement('button'),
-          done = save.rolledDamage.includes(creatureRollKey(damage));
-        button.type = 'button';
-        button.textContent =
-          damage.label + ' (' + damage.formula + ') würfeln' + (done ? ' ✓' : '');
-        button.disabled = blocked() || savePending || done;
-        button.onclick = () => void rollSaveDamage(damage);
-        damages.append(button);
-      }
-    const repeat = get<HTMLButtonElement>('combat-save-repeat');
-    repeat.hidden = !save.check;
-    repeat.disabled = blocked() || savePending || !candidates.some((p) => p.id !== save.targetId);
-    get<HTMLButtonElement>('combat-save-discard').disabled = blocked() || savePending;
-  }
-  async function rollSave() {
-    const save = pendingSave,
-      combat = view?.combat,
-      target = combat?.participants.find((p) => p.id === value('combat-save-target')),
-      modifier = Number(value('combat-save-modifier'));
-    if (
-      !save ||
-      !combat ||
-      !target ||
-      save.combatId !== combat.id ||
-      save.check ||
-      !Number.isSafeInteger(modifier) ||
-      Math.abs(modifier) > 1000
-    )
-      return;
-    save.targetId = target.id;
-    savePending = true;
-    renderSaveEffect();
-    if (save.legendary) {
-      if (!(await execute({ kind: 'legendary-action', ...save.legendary }))) {
-        savePending = false;
-        renderSaveEffect();
-        return;
-      }
-      delete save.legendary;
-    }
-    await rollSceneCheck(
-      {
-        label: save.actor + ' · ' + save.preset.label,
-        actor: target.name,
-        mode: 'normal',
-        modifier,
-        dc: save.preset.dc,
-        sourceCreatureId: save.creatureId,
-        sourceActionId: save.actionId,
-      },
-      (check) => {
-        if (pendingSave === save && view?.combat?.id === save.combatId) save.check = check;
-      },
-    );
-    savePending = false;
-    renderSaveEffect();
-  }
-  async function rollSaveDamage(damage: CreatureRollPreset) {
-    const save = pendingSave,
-      key = creatureRollKey(damage);
-    if (
-      !save?.check ||
-      !save.targetId ||
-      !view?.combat?.participants.some((p) => p.id === save.targetId) ||
-      save.rolledDamage.includes(key)
-    )
-      return;
-    savePending = true;
-    renderSaveEffect();
-    let rolled = false;
-    await rollSceneFormula(
-      {
-        label: damage.label,
-        actor: save.actor,
-        formula: damage.formula,
-        formulaKind: 'damage',
-        dc: null,
-        sourceCreatureId: save.creatureId,
-        sourceActionId: save.actionId,
-      },
-      (result) => {
-        if (pendingSave === save && view?.combat?.id === save.combatId) {
-          rolled = true;
-          stageDamage(result, save.attackerId, save.combatId, save.targetId!);
-        }
-      },
-    );
-    savePending = false;
-    if (rolled) save.rolledDamage.push(key);
-    renderSaveEffect();
-  }
-  function repeatSave() {
-    const save = pendingSave;
-    if (!save?.check || !save.targetId) return;
-    if (!save.resolvedTargets.includes(save.targetId)) save.resolvedTargets.push(save.targetId);
-    save.targetId = null;
-    save.check = null;
-    save.rolledDamage = [];
-    get<HTMLInputElement>('combat-save-modifier').value = '0';
-    renderSaveEffect();
-  }
-  function stageDamage(check: SceneCheck, attackerId: string, combatId: string, targetId?: string) {
-    const combat = view?.combat;
-    if (
-      !combat ||
-      !editableCombat(combat) ||
-      check.sceneId !== combat.sceneId ||
-      check.rollKind !== 'formula' ||
-      check.formulaKind !== 'damage' ||
-      !Number.isSafeInteger(check.total) ||
-      check.total <= 0
-    )
-      return;
-    const next = enqueuePendingDamage(
-      pendingDamage,
-      { check, combatId, attackerId, targetId },
-      combat.id,
-    );
-    if (next.length === pendingDamage.length) return;
-    pendingDamage = next;
-    renderDamageEffect();
-    get('combat-roll-effect').scrollIntoView({ block: 'nearest' });
-  }
-  function renderDamageEffect() {
-    const box = get('combat-roll-effect'),
-      combat = view?.combat,
-      damage = pendingDamage[0];
-    if (!damage || !combat || damage.combatId !== combat.id || !editableCombat(combat)) {
-      box.hidden = true;
-      return;
-    }
-    const applied = damage.appliedTargets ?? [];
-    box.hidden = false;
-    get('combat-roll-effect-result').textContent =
-      (damage.check.actor ? damage.check.actor + ' · ' : '') +
-      damage.check.label +
-      ': ' +
-      damage.check.total +
-      ' Schaden gewürfelt' +
-      (applied.length
-        ? ' · auf ' + applied.length + ' Ziel' + (applied.length === 1 ? '' : 'e') + ' angewendet'
-        : '') +
-      (pendingDamage.length > 1 ? ' · 1 von ' + pendingDamage.length + ' offenen Würfen' : '');
-    const target = get<HTMLSelectElement>('combat-roll-target'),
-      previous = target.dataset.checkId === damage.check.id ? target.value : '',
-      candidates = combat.participants.filter(
-        (p) => p.healthKnown !== false && !applied.includes(p.id),
-      );
-    target.replaceChildren();
-    target.dataset.checkId = damage.check.id;
-    for (const p of candidates) {
-      const option = document.createElement('option');
-      option.value = p.id;
-      option.textContent =
-        p.name +
-        ' · ' +
-        p.hp +
-        ' / ' +
-        p.maxHp +
-        ' HP' +
-        (p.tempHp ? ' + ' + p.tempHp + ' temp.' : '');
-      target.append(option);
-    }
-    const fallback =
-      candidates.find((p) => p.id === damage.targetId) ??
-      candidates.find((p) => p.id !== damage.attackerId && !!p.characterId) ??
-      candidates.find((p) => p.id !== damage.attackerId) ??
-      candidates[0];
-    target.value = candidates.some((p) => p.id === previous) ? previous : (fallback?.id ?? '');
-    const keep = get<HTMLInputElement>('combat-roll-keep');
-    if (keep.dataset.checkId !== damage.check.id) {
-      keep.dataset.checkId = damage.check.id;
-      keep.checked = false;
-    }
-    const unavailable = blocked() || !target.value;
-    get<HTMLButtonElement>('combat-roll-damage').disabled = unavailable;
-    get<HTMLButtonElement>('combat-roll-half').disabled =
-      unavailable || Math.floor(damage.check.total / 2) < 1;
-    get<HTMLButtonElement>('combat-roll-double').disabled =
-      unavailable || damage.check.total * 2 > 1000000;
-    keep.disabled = blocked();
-    const discard = get<HTMLButtonElement>('combat-roll-discard');
-    discard.textContent = applied.length ? 'Wurf abschließen' : 'Verwerfen';
-    discard.disabled = blocked();
-  }
-  async function applyRolledDamage(scale: 'full' | 'half' | 'double') {
-    const damage = pendingDamage[0],
-      target = value('combat-roll-target');
-    if (!damage || !target || view?.combat?.id !== damage.combatId) return;
-    const amount =
-      scale === 'half'
-        ? Math.floor(damage.check.total / 2)
-        : scale === 'double'
-          ? damage.check.total * 2
-          : damage.check.total;
-    if (amount < 1 || amount > 1000000) return;
-    if (
-      (await execute({
-        kind: 'damage',
-        participantId: target,
-        amount,
-        sourceCheckId: damage.check.id,
-        sourceScale: scale,
-      })) &&
-      pendingDamage[0]?.check.id === damage.check.id
-    ) {
-      if (get<HTMLInputElement>('combat-roll-keep').checked) {
-        damage.appliedTargets = [...(damage.appliedTargets ?? []), target];
-        const available = view?.combat?.participants.some(
-          (p) => p.healthKnown !== false && !damage.appliedTargets!.includes(p.id),
-        );
-        if (!available) pendingDamage = pendingDamage.slice(1);
-      } else pendingDamage = pendingDamage.slice(1);
-      renderDamageEffect();
-    }
-  }
-
   function renderConcentrationEffect() {
     const box = get('combat-concentration-effect'),
       combat = view?.combat,
@@ -1664,214 +1167,6 @@ export function createCombat(host: CombatHost) {
       get<HTMLButtonElement>(id).disabled = blocked();
     modifier.disabled = blocked();
   }
-  const reinforcementBooking = new BookingDialog();
-  function closeReinforcements() {
-    reinforcementBooking.reset();
-    const dialog = get<HTMLDialogElement>('combat-add-dialog');
-    if (typeof dialog.close === 'function') dialog.close();
-    else dialog.removeAttribute('open');
-  }
-  async function submitReinforcement(
-    send: (failed: (message: string) => void) => Promise<boolean>,
-    confirmed = closeReinforcements,
-  ) {
-    if (!workspace) return false;
-    return reinforcementBooking.run({
-      campaignId: workspace.campaign.id,
-      current: editorSession.capture(
-        () => [workspace?.token, scene?.id, editorSession.generation],
-        () => get('combat-add-dialog').hasAttribute('open'),
-      ),
-      send,
-      lock: () => lock(),
-      report: (message) => {
-        get('combat-add-status').textContent = message;
-      },
-      confirmed,
-    });
-  }
-  /** Preparation collects several confirmed species before moving on to initiative. */
-  function catalogAdditionConfirmed(creatureId: string, count: number) {
-    if (view?.combat?.phase !== 'preparing') {
-      closeReinforcements();
-      return;
-    }
-    const name = view.combat.sources?.find((c) => c.id === creatureId)?.name ?? 'Gegner';
-    get('combat-add-status').textContent = count + ' × ' + name + ' übernommen.';
-    reinforcementResults = [];
-    reinforcementSourceChosen = true;
-    get<HTMLSelectElement>('combat-creature-source').value = 'catalog';
-    get<HTMLInputElement>('combat-creature-search').value = '';
-    get('combat-creature-status').textContent = '';
-    get<HTMLInputElement>('combat-creature-count').value = '1';
-    get<HTMLInputElement>('combat-creature-grouped').checked = false;
-    get<HTMLInputElement>('combat-creature-initiative').value = '';
-    renderReinforcements();
-    lock();
-    get<HTMLInputElement>('combat-creature-search').focus();
-  }
-  function openReinforcements(groupId?: string) {
-    if (blocked() || !workspace || !scene) return;
-    reinforcementBooking.reset();
-    get('combat-add-status').textContent = '';
-    get<HTMLSelectElement>('combat-creature-source').value = groupId ? 'group' : 'catalog';
-    reinforcementSourceChosen = true;
-    renderReinforcements();
-    if (groupId) {
-      const select = get<HTMLSelectElement>('combat-creature-select'),
-        target = 'group:' + groupId;
-      if (![...select.options].some((option) => option.value === target)) {
-        tell('Trupp nicht mehr verfügbar. Verstärkung erneut öffnen.', true);
-        return;
-      }
-      select.value = target;
-      get<HTMLInputElement>('combat-creature-count').value = '1';
-    }
-    lock();
-    const dialog = get<HTMLDialogElement>('combat-add-dialog');
-    if (typeof dialog.showModal === 'function') dialog.showModal();
-    else dialog.setAttribute('open', '');
-    get<HTMLInputElement>(
-      value('combat-creature-source') === 'catalog'
-        ? 'combat-creature-search'
-        : 'combat-creature-count',
-    ).focus();
-  }
-  function renderReinforcements() {
-    const select = get<HTMLSelectElement>('combat-creature-select'),
-      previous = select.value,
-      combat = view?.combat;
-    get('combat-preparation-initiative').hidden = combat?.phase !== 'preparing';
-    const source = get<HTMLSelectElement>('combat-creature-source');
-    const groups = combat ? initiativeGroups(combat).filter(canReinforceTroop) : [];
-    if (!reinforcementSourceChosen || !source.value || (source.value === 'group' && !groups.length))
-      source.value = groups.length ? 'group' : 'catalog';
-    source.querySelector<HTMLOptionElement>('option[value="group"]')!.disabled = !groups.length;
-    source.hidden = !groups.length;
-    get('combat-reinforcement').querySelector<HTMLLabelElement>(
-      'label[for="combat-creature-source"]',
-    )!.hidden = !groups.length;
-    const grouped = source.value === 'group';
-    get('combat-creature-search-form').hidden = grouped;
-    get('combat-creature-status').hidden = grouped;
-    get('combat-creature-initiative-field').hidden = grouped || !editableCombat(combat ?? null);
-    get('combat-creature-grouped-field').hidden =
-      grouped || Number(value('combat-creature-count')) <= 1;
-    get('combat-creature-select-label').textContent = grouped
-      ? 'Vorhandener Trupp'
-      : 'Katalogkreatur';
-    get('combat-creature-add').textContent = 'Gegner hinzufügen';
-    get('combat-reinforcement').querySelector<HTMLLabelElement>(
-      'label[for="combat-creature-source"]',
-    )!.textContent = combat?.phase === 'running' ? 'Verstärkung aus' : 'Gegner aus';
-    get('combat-creature-explanation').textContent = grouped
-      ? 'Neue Mitglieder erhalten die Initiative des Trupps.'
-      : 'Übernommene Gegner behalten ihre HP und Zustände auch für spätere Begegnungen.';
-    select.replaceChildren();
-    const add = (id: string, text: string) => {
-      const option = document.createElement('option');
-      option.value = id;
-      option.textContent = text;
-      select.append(option);
-    };
-    if (grouped)
-      for (const members of groups) {
-        const actor = members[0]!;
-        const names =
-          members
-            .slice(0, 2)
-            .map((p) => p.name)
-            .join(', ') + (members.length > 2 ? ' …' : '');
-        add(
-          'group:' + actor.groupId,
-          (actor.groupName ? actor.groupName + ' · ' : '') +
-            names +
-            ' · vorhandene Initiative ' +
-            actor.initiative +
-            ' (' +
-            members.length +
-            ')',
-        );
-      }
-    // A completed catalog search must never silently retain an unrelated troop.
-    else
-      for (const c of reinforcementResults ?? combat?.sources ?? [])
-        add(
-          'creature:' + c.id,
-          c.name +
-            ' · HG ' +
-            c.challengeRating +
-            (typeof c.hp === 'number' ? ' · ' + c.hp + ' HP' : '') +
-            (typeof c.ac === 'number' ? ' · RK ' + c.ac : ''),
-        );
-    if (!select.options.length)
-      add(
-        '',
-        reinforcementBusy
-          ? 'Monster werden gesucht…'
-          : 'Keine Katalogkreatur ausgewählt. Monster suchen.',
-      );
-    select.value = [...select.options].some((o) => o.value === previous)
-      ? previous
-      : (select.options[0]?.value ?? '');
-  }
-  async function searchReinforcements() {
-    const w = workspace,
-      combat = view?.combat;
-    if (!w || !scene || blocked() || reinforcementBusy) return;
-    const g = editorSession.generation,
-      id = combat?.id,
-      load = loadNumber,
-      request = ++reinforcementRequest;
-    get<HTMLSelectElement>('combat-creature-source').value = 'catalog';
-    reinforcementSourceChosen = true;
-    reinforcementBusy = true;
-    reinforcementResults = [];
-    get('combat-creature-status').textContent = 'Monster werden gesucht…';
-    renderReinforcements();
-    lock();
-    try {
-      const result = unwrap(
-        await window.campaign.creatures({
-          text: value('combat-creature-search'),
-          offset: 0,
-          limit: 25,
-          sort: 'name',
-          direction: 'asc',
-        }),
-      );
-      if (
-        g !== editorSession.generation ||
-        request !== reinforcementRequest ||
-        workspace?.token !== w.token ||
-        view?.combat?.id !== id ||
-        load !== loadNumber
-      )
-        return;
-      reinforcementResults = result.rows;
-      get('combat-creature-status').textContent = result.total
-        ? Math.min(25, result.total) + ' von ' + result.total + ' Treffern.'
-        : 'Keine Treffer. Suche ändern oder einen vorhandenen Trupp wählen.';
-    } catch (error) {
-      if (
-        g === editorSession.generation &&
-        request === reinforcementRequest &&
-        view?.combat?.id === id &&
-        load === loadNumber
-      )
-        get('combat-creature-status').textContent =
-          'Suche fehlgeschlagen: ' + (error as Error).message;
-    } finally {
-      if (g === editorSession.generation && request === reinforcementRequest) {
-        reinforcementBusy = false;
-        if (load !== loadNumber)
-          get('combat-creature-status').textContent =
-            'Kampfstand geändert. Bei Bedarf erneut suchen.';
-        renderReinforcements();
-        lock();
-      }
-    }
-  }
   function lockConditionShortcuts() {
     const key = fighterKey(),
       draftOpen = !!key && !!fighterDrafts.get(key);
@@ -1896,9 +1191,9 @@ export function createCombat(host: CombatHost) {
           control.dataset.statblockDisabled === 'true' ||
           control.dataset.combatReadonly === 'true';
     get<HTMLButtonElement>('combat-add-close').disabled =
-      !!pendingWork.value || reinforcementBooking.busy;
+      !!pendingWork.value || reinforcements.booking;
     get<HTMLButtonElement>('combat-preparation-initiative').disabled =
-      blocked() || reinforcementBusy || view?.combat?.phase !== 'preparing';
+      blocked() || reinforcements.reading || view?.combat?.phase !== 'preparing';
     selectionPanel?.lock();
     resolution?.setBlocked(!!blocked());
     get('combat-creation').hidden = loadPending || !!loadError;
@@ -1995,23 +1290,9 @@ export function createCombat(host: CombatHost) {
     renderSaveEffect();
     renderDamageEffect();
     renderConcentrationEffect();
-    if (reinforcementBusy)
-      for (const control of get('combat-reinforcement').querySelectorAll<
-        HTMLInputElement | HTMLButtonElement | HTMLSelectElement
-      >('input,button,select'))
-        control.disabled = true;
-    get<HTMLButtonElement>('combat-creature-add').disabled =
-      blocked() || reinforcementBusy || !value('combat-creature-select');
-    const linked = value('combat-creature-select').startsWith('group:');
-    get('combat-creature-grouped-field').hidden =
-      linked || Number(value('combat-creature-count')) <= 1;
-    if (get('combat-creature-grouped-field').hidden)
-      get<HTMLInputElement>('combat-creature-grouped').checked = false;
-    get<HTMLInputElement>('combat-creature-initiative').disabled =
-      blocked() || reinforcementBusy || linked;
-    get<HTMLInputElement>('combat-creature-grouped').disabled =
-      blocked() || reinforcementBusy || linked;
+    reinforcements.lock();
   }
+
   function render() {
     const combat = view?.combat;
     host.navigation.available(!!scene);
@@ -2041,37 +1322,7 @@ export function createCombat(host: CombatHost) {
               ? ' · Vorlage: ' + combat.planOrigin.name
               : '')
         : '');
-    const additionLabel =
-      !editableCombat(combat ?? null) || combat?.phase === 'preparing'
-        ? 'Gegner vorbereiten'
-        : 'Verstärkung hinzufügen';
-    get('combat-add-open').textContent = additionLabel + '…';
-    get('combat-add-title').textContent = additionLabel;
-    const additions = get<HTMLDialogElement>('combat-add-dialog');
-    if (additions.dataset.combatId !== (combat?.id ?? '') && !reinforcementBooking.busy)
-      closeReinforcements();
-    additions.dataset.combatId = combat?.id ?? '';
-    get('combat-add-context').textContent =
-      combat?.phase === 'running'
-        ? 'Runde ' +
-          combat.round +
-          ' · Am Zug: ' +
-          (combat.participants.find((p) => p.id === combat.turnId)?.name ?? '—') +
-          ' · Zug bleibt erhalten.'
-        : combat?.phase === 'preparing'
-          ? 'Vorbereitet: ' +
-            initiativeGroups(combat)
-              .filter((members) => !members[0]!.characterId)
-              .map(
-                (members) =>
-                  members.length +
-                  ' × ' +
-                  (members[0]!.groupName ??
-                    combat.sources?.find((c) => c.id === members[0]!.sourceId)?.name ??
-                    members[0]!.name),
-              )
-              .join(' · ')
-          : 'Gegner mit Statblock, HP und XP übernehmen.';
+    reinforcements.renderContext();
     get('combat-status').textContent = !combat
       ? 'Bereite hier die nächste Begegnung dieser Gruppe vor.'
       : combat.phase === 'preparing'
@@ -2435,11 +1686,11 @@ export function createCombat(host: CombatHost) {
       openSourceDamage(source, p, action);
       return;
     }
-    if (preset.kind === 'attack' && pendingAttack) {
+    if (preset.kind === 'attack' && rolls.hasAttack) {
       stageAttack(action, preset, p.id, p.name, source.id, combatId);
       return;
     }
-    if ((preset.kind === 'save' || preset.kind === 'check') && pendingSave) {
+    if ((preset.kind === 'save' || preset.kind === 'check') && rolls.hasSave) {
       stageSave(action, preset, p.id, p.name, source.id, combatId);
       return;
     }
@@ -2707,6 +1958,8 @@ export function createCombat(host: CombatHost) {
             editorDraft?: CombatWorkingDraft;
             areaTargetIds?: string[];
             resetConcentration?: boolean;
+            rollAction?: CombatAction;
+            rollGeneration?: number;
           }
         | undefined;
     if (meta?.token === workspace.token && meta.editorDraft) {
@@ -2722,6 +1975,13 @@ export function createCombat(host: CombatHost) {
       (!view?.combat || view.combat.id === result.combat.id)
         ? await load(result.combat.id)
         : false;
+    if (
+      loaded &&
+      meta?.token === token &&
+      meta.rollGeneration === editorSession.generation &&
+      meta.rollAction
+    )
+      rolls.accepted(meta.rollAction, result.combat?.id);
     await refreshProgress();
     if (afterSaved) await afterSaved();
     const current = view?.combat,
@@ -3000,94 +2260,7 @@ export function createCombat(host: CombatHost) {
         });
       })();
     get<HTMLSelectElement>('combat-history').onchange = () => void load(value('combat-history'));
-    get('combat-preparation-initiative').onclick = () => {
-      if (blocked() || reinforcementBusy || view?.combat?.phase !== 'preparing') return;
-      closeReinforcements();
-      void initiativePanel?.open();
-    };
-    get('combat-add-open').onclick = () => openReinforcements();
-    get('combat-add-close').onclick = () => {
-      if (!pendingWork.value) closeReinforcements();
-    };
-    get('combat-add-dialog').addEventListener('cancel', (event) => {
-      event.preventDefault();
-      if (!pendingWork.value) closeReinforcements();
-    });
-    get('combat-creature-source').onchange = () => {
-      reinforcementSourceChosen = true;
-      get<HTMLInputElement>('combat-creature-initiative').value = '';
-      renderReinforcements();
-      lock();
-    };
-    get('combat-creature-search-form').onsubmit = (event) => {
-      event.preventDefault();
-      void searchReinforcements();
-    };
-    get('combat-creature-count').oninput = lock;
-    get('combat-creature-select').onchange = () => {
-      get<HTMLInputElement>('combat-creature-initiative').value = '';
-      lock();
-    };
-    get('combat-creature-form').onsubmit = (event) => {
-      event.preventDefault();
-      if (blocked() || reinforcementBusy) return;
-      const choice = value('combat-creature-select'),
-        groupId = choice.startsWith('group:') ? choice.slice(6) : undefined;
-      const creatureId = groupId
-        ? view?.combat?.participants.find((p) => p.groupId === groupId)?.sourceId
-        : choice.startsWith('creature:')
-          ? choice.slice(9)
-          : null;
-      if (!creatureId) return;
-      if (!editableCombat(view?.combat ?? null)) {
-        void addCatalogCreature(
-          creatureId,
-          Number(value('combat-creature-count')),
-          get<HTMLInputElement>('combat-creature-grouped').checked,
-        );
-        return;
-      }
-      const initiative = value('combat-creature-initiative').trim();
-      get('combat-add-status').textContent = '';
-      const count = Number(value('combat-creature-count'));
-      void submitReinforcement(
-        (failed) =>
-          execute(
-            {
-              kind: 'add-creature',
-              creatureId,
-              count,
-              grouped: !!groupId || get<HTMLInputElement>('combat-creature-grouped').checked,
-              ...(groupId ? { groupId } : initiative ? { initiative: Number(initiative) } : {}),
-            },
-            undefined,
-            () => true,
-            failed,
-          ),
-        () => catalogAdditionConfirmed(creatureId, count),
-      );
-    };
-    get('combat-add-form').onsubmit = (event) => {
-      event.preventDefault();
-      if (blocked()) return;
-      get('combat-add-status').textContent = '';
-      void submitReinforcement((failed) =>
-        execute(
-          {
-            kind: 'add',
-            name: value('enemy-name'),
-            count: Number(value('enemy-count')),
-            grouped: get<HTMLInputElement>('enemy-grouped').checked,
-            maxHp: Number(value('enemy-hp')),
-            armorClass: Number(value('enemy-ac')),
-            initiativeBonus: Number(value('enemy-bonus')),
-          },
-          undefined,
-          () => true,
-          failed,
-        ),
-      );
-    };
+    reinforcements.init();
     get('combat-start').onclick = () => void execute({ kind: 'start' });
     get('combat-next').onclick = () => void execute({ kind: 'next' });
     get('combat-undo').onclick = () => void execute({ kind: 'undo' });
@@ -3200,28 +2373,7 @@ export function createCombat(host: CombatHost) {
       get('fighter-death-' + result).onclick = () => {
         if (selected) void execute({ kind: 'death', participantId: selected, result });
       };
-    get('combat-roll-damage').onclick = () => void applyRolledDamage('full');
-    get('combat-roll-half').onclick = () => void applyRolledDamage('half');
-    get('combat-roll-double').onclick = () => void applyRolledDamage('double');
-    get('combat-roll-discard').onclick = () => {
-      pendingDamage = pendingDamage.slice(1);
-      renderDamageEffect();
-    };
-    get('combat-roll-target').onchange = renderDamageEffect;
-    get('combat-attack-target').onchange = renderAttackEffect;
-    get('combat-attack-roll').onclick = () => void rollAttack();
-    get('combat-attack-discard').onclick = () => {
-      pendingAttack = null;
-      renderAttackEffect();
-    };
-    get('combat-save-target').onchange = renderSaveEffect;
-    get('combat-save-modifier').oninput = renderSaveEffect;
-    get('combat-save-roll').onclick = () => void rollSave();
-    get('combat-save-repeat').onclick = repeatSave;
-    get('combat-save-discard').onclick = () => {
-      pendingSave = null;
-      renderSaveEffect();
-    };
+    rolls.init();
     get('combat-concentration-roll').onclick = () => {
       const actor = view?.combat?.participants.find((p) => p.concentrationChecks?.length);
       if (actor)

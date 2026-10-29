@@ -128,8 +128,11 @@ async function add(lose) {
     source = await page.locator('#combat-creature-source').inputValue();
   if (lose)
     await app.evaluate(({ ipcMain }) => {
-      const write = ipcMain._invokeHandlers.get('campaign:execute-combat'),
-        read = ipcMain._invokeHandlers.get('campaign:commit-status');
+      // Each fault wraps the original handlers, never the preceding logger.
+      const write = (globalThis.qaReinforcementOriginalWrite ??=
+          ipcMain._invokeHandlers.get('campaign:execute-combat')),
+        read = (globalThis.qaReinforcementOriginalRead ??=
+          ipcMain._invokeHandlers.get('campaign:commit-status'));
       let lose = true;
       globalThis.qaReinforcementStatusUnavailable = true;
       globalThis.qaReinforcementWrites = [];

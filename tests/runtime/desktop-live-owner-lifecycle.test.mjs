@@ -3,11 +3,13 @@ import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { buildSync } from 'esbuild';
 import { parseHTML } from '../helpers/dom.mjs';
+import { readWorkspaceMarkup } from '../../tools/desktop-markup.mjs';
 
 buildSync({
   stdin: {
     contents: `export {createLiveRecapEditor} from './src/app/runtime/live-recap-editor';
       export {createLiveKnowledgeUI} from './src/app/runtime/live-knowledge-ui';
+      export {createLivePartyMoveEditor} from './src/app/runtime/live-party-move-editor';
       export {EditorSession} from './src/app/shared/editor-session';`,
     resolveDir: process.cwd(),
   },
@@ -20,6 +22,7 @@ const require = createRequire(import.meta.url);
 const {
   createLiveRecapEditor,
   createLiveKnowledgeUI,
+  createLivePartyMoveEditor,
   EditorSession,
 } = require('../../.build/live-owner-lifecycle.cjs');
 const settle = async () => {
@@ -203,4 +206,215 @@ test('knowledge owners isolate matching IDs and discard the previous generation 
   await settle();
   assert.match(a.get('live-knowledge-results').textContent, /Offen/);
   assert.match(b.get('live-knowledge-results').textContent, /Abgeschlossen/);
+});
+
+function partyMove(send = async () => ({})) {
+  const { document, window } = parseHTML(readWorkspaceMarkup()),
+    session = new EditorSession();
+  const values = new WeakMap();
+  Object.defineProperty(window.HTMLSelectElement.prototype, 'value', {
+    configurable: true,
+    get() {
+      return values.get(this) ?? this.options[0]?.value ?? '';
+    },
+    set(value) {
+      values.set(this, String(value));
+    },
+  });
+  window.HTMLElement.prototype.showModal = function () {
+    this.setAttribute('open', '');
+  };
+  window.HTMLElement.prototype.close = function () {
+    this.removeAttribute('open');
+  };
+  const get = (id) => document.getElementById(id),
+    messages = [],
+    actions = [];
+  let valid = true,
+    blocked = false;
+  const editor = createLivePartyMoveEditor({
+    document,
+    get,
+    session,
+    blocked: () => blocked,
+    writing: () => false,
+    execute: (action) =>
+      session.run(async () => {
+        actions.push(action);
+        return send(action);
+      }),
+    formatInstant: (value) => 'Zeit ' + value,
+    feedback: (...args) => messages.push(args),
+  });
+  editor.init();
+  const snapshot = {
+    token: 'same-token',
+    rosterRevision: 3,
+    focusRevision: 4,
+    source: {
+      id: 'A',
+      label: 'Gruppe A',
+      contentRevision: 5,
+      membershipRevision: 6,
+      clockRevision: 7,
+      instantMs: '1000',
+      members: [
+        { id: 'one', name: 'Arin' },
+        { id: 'two', name: 'Bera' },
+      ],
+    },
+    targets: [
+      { id: 'B', label: 'Gruppe B', membershipRevision: 8, clockRevision: 9, instantMs: '2000' },
+    ],
+  };
+  const open = () => editor.open(snapshot, session.capture(), () => valid);
+  const select = (id) => {
+    const box = get('move-members').querySelector(`input[value="${id}"]`);
+    box.checked = true;
+    box.dispatchEvent(new window.Event('change'));
+  };
+  const title = (text) => {
+    get('move-title').value = text;
+    get('move-title').dispatchEvent(new window.Event('input'));
+  };
+  const target = (id) => {
+    get('move-target').value = id;
+    get('move-target').dispatchEvent(new window.Event('change'));
+  };
+  return {
+    editor,
+    session,
+    snapshot,
+    open,
+    select,
+    title,
+    target,
+    get,
+    messages,
+    actions,
+    valid(value) {
+      valid = value;
+    },
+    blocked(value) {
+      blocked = value;
+    },
+  };
+}
+test('party move owns member choice and the complete source/target revision snapshot', async () => {
+  const x = partyMove();
+  x.open();
+  x.select('one');
+  x.target('B');
+  x.snapshot.source.membershipRevision = 99;
+  x.snapshot.targets[0].clockRevision = 99;
+  assert.equal(await x.editor.submit(), true);
+  assert.deepEqual(x.actions[0], {
+    kind: 'move',
+    sceneId: 'A',
+    expectedRosterRevision: 3,
+    expectedFocusRevision: 4,
+    expectedSceneMembershipRevision: 6,
+    expectedClockRevision: 7,
+    memberIds: ['one'],
+    target: {
+      kind: 'existing',
+      sceneId: 'B',
+      expectedMembershipRevision: 8,
+      expectedClockRevision: 9,
+    },
+  });
+  assert.equal(x.get('move-dialog').hasAttribute('open'), false);
+});
+test('two party move owners isolate matching control IDs, raw group titles and member choices', async () => {
+  const a = partyMove(),
+    b = partyMove();
+  a.open();
+  b.open();
+  a.select('one');
+  b.select('two');
+  a.title('  Eigene Gruppe\r\n');
+  b.title('  Andere Gruppe\r\n');
+  assert.equal(await a.editor.submit(), true);
+  assert.equal(await b.editor.submit(), true);
+  assert.deepEqual(a.actions[0].memberIds, ['one']);
+  assert.deepEqual(b.actions[0].memberIds, ['two']);
+  assert.equal(a.actions[0].target.title, '  Eigene Gruppe\r\n');
+  assert.equal(b.actions[0].target.title, '  Andere Gruppe\r\n');
+});
+test('party move rejects A→B→A reopening and detached member controls', async () => {
+  const x = partyMove();
+  x.open();
+  const old = x.get('move-members').querySelector('input');
+  x.select('one');
+  x.session.generation++;
+  x.editor.reset();
+  x.session.generation++;
+  x.open();
+  old.checked = true;
+  old.onchange();
+  assert.equal(await x.editor.submit(), false);
+  assert.equal(x.actions.length, 0);
+  assert.match(x.messages.at(-1)[0], /Wähle die Figuren/);
+  x.select('two');
+  x.valid(false);
+  assert.equal(await x.editor.submit(), false);
+  assert.equal(x.actions.length, 0);
+  assert.match(x.messages.at(-1)[0], /Auswahl erneut öffnen/);
+});
+test('party move keeps an accepted write in the central close drain after detaching', async () => {
+  const held = deferred(),
+    x = partyMove(async () => {
+      await held.promise;
+      return {};
+    });
+  x.open();
+  x.select('one');
+  const pending = x.editor.submit();
+  await settle();
+  x.session.deactivate();
+  let drained = false;
+  const closing = x.session.settle().then(() => (drained = true));
+  await settle();
+  assert.equal(drained, false);
+  held.resolve();
+  assert.equal(await pending, true);
+  await closing;
+  assert.equal(x.actions.length, 1);
+  assert.equal(x.get('move-dialog').hasAttribute('open'), false);
+});
+test('lost party move answer preserves the dialog until the original action is receipt-confirmed', async () => {
+  const x = partyMove(async () => null);
+  x.open();
+  x.select('one');
+  x.title('  Ungeklärt\r\n');
+  assert.equal(await x.editor.submit(), false);
+  assert.equal(x.actions.length, 1);
+  assert.equal(x.get('move-dialog').hasAttribute('open'), true);
+  x.editor.accepted({ ...x.actions[0] });
+  assert.equal(
+    x.get('move-dialog').hasAttribute('open'),
+    true,
+    'another action cannot close this opening',
+  );
+  x.editor.accepted(x.actions[0]);
+  assert.equal(x.get('move-dialog').hasAttribute('open'), false);
+  assert.equal(x.actions.length, 1);
+});
+test('not-applied party move keeps its choices and retries only by a new explicit submit', async () => {
+  const x = partyMove(async () => null);
+  x.open();
+  x.select('two');
+  x.title('  Unfertig\r\n');
+  assert.equal(await x.editor.submit(), false);
+  x.blocked(true);
+  assert.equal(await x.editor.submit(), false);
+  assert.equal(x.actions.length, 1);
+  x.blocked(false);
+  x.editor.busy(false);
+  await settle();
+  assert.equal(x.actions.length, 1);
+  assert.equal(await x.editor.submit(), false);
+  assert.equal(x.actions.length, 2);
+  assert.notEqual(x.actions[0], x.actions[1]);
+  assert.deepEqual(x.actions[1], x.actions[0]);
 });

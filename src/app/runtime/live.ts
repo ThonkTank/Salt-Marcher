@@ -44,6 +44,7 @@ import { createLiveSessionCloseUI } from './live-session-close-ui';
 import { createLiveSessionReaders } from './live-session-readers';
 import { liveActionUpdatesRecap, liveSessionRecap } from './live-session-recap';
 import { createLiveSessionResumeUI } from './live-session-resume-ui';
+import { createLivePartyMoveEditor } from './live-party-move-editor';
 import { LiveTimeControls } from './live-time-controls';
 import type { MusicEditor } from './music-ui';
 import { partySceneLabels } from './party-overview';
@@ -152,9 +153,7 @@ export function createLive(host: LiveHost) {
   let requestIsTextSave = false;
   const intentBlocked = () => !!requestWork.value && !requestIsTextSave;
   let adoption: Extract<LiveAction, { kind: 'apply-visit' }> | null = null;
-  let moveBasis: Omit<Extract<LiveAction, { kind: 'move' }>, 'memberIds' | 'target'> | null = null;
-  let moveTargets: LiveView['scenes'] = [],
-    preparedNotesSceneId: string | null = null,
+  let preparedNotesSceneId: string | null = null,
     preparedNoteIds = new Set<string>();
   let resetLiveArchives = () => {};
   let liveGenerator: LiveEncounterGenerator;
@@ -206,6 +205,16 @@ export function createLive(host: LiveHost) {
       current?: () => boolean,
       openPacket?: boolean,
     ) => Promise<boolean>;
+  const partyMove = createLivePartyMoveEditor({
+    document,
+    get,
+    session: editorSession,
+    blocked: () => blocked || intentBlocked(),
+    writing: () => !!requestWork.value,
+    execute: (action) => execute(action),
+    formatInstant: formatSceneInstant,
+    feedback: (text, error) => tell(text, error),
+  });
   const originalCharacter = () => data?.roster.find((c) => c.id === selected);
   const content = (scene: LiveScene) => ({
     title: scene.title,
@@ -588,7 +597,7 @@ export function createLive(host: LiveHost) {
     newCharacterBasis = null;
     get('character-result').textContent = '';
     adoption = null;
-    moveBasis = null;
+    partyMove.reset();
     preparedNotesSceneId = null;
     preparedNoteIds.clear();
     knowledgeUI.reset();
@@ -815,8 +824,6 @@ export function createLive(host: LiveHost) {
       'group-move',
       'time-advance',
       'live-archives',
-      'move-confirm',
-      'move-cancel',
       'live-moment-save',
       'live-session-start',
       'live-session-end',
@@ -850,11 +857,7 @@ export function createLive(host: LiveHost) {
     get<HTMLButtonElement>('adoption-preview').disabled =
       (on && !textSave) ||
       !sources?.plans.find((p) => p.id === value('adoption-plan'))?.scenes.length;
-    if (structural) {
-      for (const id of ['move-title', 'move-target']) get<HTMLInputElement>(id).disabled = on;
-      for (const box of get('move-members').querySelectorAll<HTMLInputElement>('input'))
-        box.disabled = on;
-    }
+    partyMove.busy(on && !textSave);
     for (const button of get('roster-list').querySelectorAll('button'))
       (button as HTMLButtonElement).disabled = on;
   }
@@ -947,6 +950,7 @@ export function createLive(host: LiveHost) {
           : s,
       );
     }
+    partyMove.accepted(action);
     // Publish each confirmed LiveAck through the same composition as an opened scene.
     renderList();
     renderCharacter();
@@ -2326,6 +2330,7 @@ export function createLive(host: LiveHost) {
             );
           blocked = false;
           failedState.value = null;
+          partyMove.busy(false);
           get('live-reconcile').hidden = true;
           get('live-refresh').hidden = true;
           tell(
@@ -2340,6 +2345,7 @@ export function createLive(host: LiveHost) {
     };
     get('live-refresh').onclick = () => {
       void (async () => {
+        partyMove.reset();
         blocked = false;
         failedState.value = null;
         characterDraft = null;
@@ -2358,7 +2364,7 @@ export function createLive(host: LiveHost) {
       composing = false;
       schedule();
     });
-    for (const id of ['character-dialog', 'adoption-dialog', 'move-dialog'])
+    for (const id of ['character-dialog', 'adoption-dialog'])
       get<HTMLDialogElement>(id).addEventListener('cancel', (event) => {
         if (requestWork.value) event.preventDefault();
       });
@@ -2483,52 +2489,7 @@ export function createLive(host: LiveHost) {
     get('group-move').onclick = () => {
       void openPartyMove().catch((error) => tell(error.message, true));
     };
-    get('move-all').onclick = () => {
-      for (const box of get('move-members').querySelectorAll<HTMLInputElement>('input'))
-        box.checked = true;
-    };
-    get('move-target').onchange = renderPartyMoveTime;
-    get('move-cancel').onclick = () => {
-      moveBasis = null;
-      get<HTMLDialogElement>('move-dialog').close();
-    };
-    get('move-form').onsubmit = (event) => {
-      event.preventDefault();
-      void (async () => {
-        const basis = moveBasis;
-        if (!basis) return;
-        const memberIds = [
-          ...get('move-members').querySelectorAll<HTMLInputElement>('input:checked'),
-        ].map((box) => box.value);
-        if (!memberIds.length) {
-          tell('Wähle die Figuren aus, die ihre Gruppe wechseln.', true);
-          return;
-        }
-        const targetId = value('move-target'),
-          target = moveTargets.find((g) => g.id === targetId);
-        const action: Extract<LiveAction, { kind: 'move' }> = {
-          ...basis,
-          memberIds,
-          target:
-            targetId && target
-              ? {
-                  kind: 'existing',
-                  sceneId: target.id,
-                  expectedMembershipRevision: target.membershipRevision,
-                  expectedClockRevision: target.clock.revision,
-                }
-              : {
-                  kind: 'new',
-                  title: value('move-title'),
-                  expectedContentRevision: Number(get('move-title').dataset.contentRevision),
-                },
-        };
-        if (await execute(action)) {
-          moveBasis = null;
-          get<HTMLDialogElement>('move-dialog').close();
-        }
-      })();
-    };
+    partyMove.init();
     for (const id of ['time-amount', 'time-unit'])
       get(id).addEventListener('input', renderTimePreview);
     get('time-reason').addEventListener('input', renderTimePreview);
@@ -2973,78 +2934,63 @@ export function createLive(host: LiveHost) {
     const token = ownerToken ?? context?.token;
     if (ownerToken && context?.token !== ownerToken) throw new Error('Kampagne gewechselt.');
     const expectedScene = ownerSceneId ?? data?.scene?.id;
-    if (!stillCurrent() || !(await flushLive()) || context?.token !== token)
+    const current = editorSession.capture(() => [context?.token, data?.scene?.id], stillCurrent);
+    if (!current() || !(await flushLive()) || !current() || context?.token !== token)
       throw new Error('Offene Eingaben oder Kampagnenwechsel. Spieltisch prüfen.');
     await openLive();
     if (
-      !stillCurrent() ||
+      !current() ||
       context?.token !== token ||
       !data?.scene ||
       data.focusRevision === null ||
       expectedScene !== data.scene.id
     )
       throw new Error('Szenenfokus geändert oder keine laufende Sitzung. Auswahl erneut öffnen.');
-    const source = data.scene;
-    moveBasis = {
-      kind: 'move',
-      sceneId: source.id,
-      expectedRosterRevision: data.rosterRevision,
-      expectedFocusRevision: data.focusRevision,
-      expectedSceneMembershipRevision: source.membershipRevision,
-      expectedClockRevision: source.clock.revision,
-    };
-    const labels = partySceneLabels(data);
-    moveTargets = structuredClone(data.scenes);
-    get('move-members').replaceChildren();
-    get('move-source').textContent =
-      (labels.get(source.id) ?? groupLabel({ ...source, primary: source.id === data.primaryId })) +
-      ' · ' +
-      formatSceneInstant(source.clock.instantMs);
-    for (const id of source.members) {
-      const c = data.roster.find((c) => c.id === id)!;
-      const label = document.createElement('label'),
-        box = document.createElement('input');
-      box.type = 'checkbox';
-      box.value = id;
-      label.append(box, document.createTextNode(' ' + c.profile.name));
-      get('move-members').append(label);
-    }
-    const select = get<HTMLSelectElement>('move-target');
-    select.replaceChildren();
-    const fresh = document.createElement('option');
-    fresh.value = '';
-    fresh.textContent = 'Neue unabhängige Gruppe';
-    select.append(fresh);
-    for (const g of moveTargets.filter((g) => g.id !== source.id)) {
-      const option = document.createElement('option');
-      option.value = g.id;
-      option.textContent =
-        (labels.get(g.id) ?? groupLabel(g)) + ' · ' + formatSceneInstant(g.clock.instantMs);
-      select.append(option);
-    }
-    select.value = '';
-    get('move-new-fields').hidden = false;
-    get<HTMLInputElement>('move-title').value = '';
-    renderPartyMoveTime();
-    get<HTMLDialogElement>('move-dialog').showModal();
-    get('move-title').dataset.clockRevision = String(source.clock.revision);
-    get('move-title').dataset.contentRevision = String(source.revision);
-    return true;
-  }
-
-  function renderPartyMoveTime() {
-    const target = moveTargets.find((scene) => scene.id === value('move-target'));
-    get('move-new-fields').hidden = !!target;
-    get('move-time').hidden = !target;
-    get('move-confirm').textContent = target ? 'Zur Zielzeit verschieben' : 'Figuren verschieben';
-    const source = moveTargets.find((scene) => scene.id === moveBasis?.sceneId);
-    if (!target || !source) return;
-    get('move-time').textContent =
-      'Ausgangsgruppe: ' +
-      formatSceneInstant(source.clock.instantMs) +
-      '. Zielgruppe: ' +
-      formatSceneInstant(target.clock.instantMs) +
-      '. Mit „Zur Zielzeit verschieben“ wechseln die gewählten Figuren zur Zeit der Zielgruppe. Beide Gruppenzeiten bleiben unverändert. Eine Rast wird dadurch nicht gebucht.';
+    const source = data.scene,
+      labels = partySceneLabels(data),
+      tokenAtOpen = context!.token,
+      focusAtOpen = data.focusRevision,
+      sourceRosterRevision = data.rosterRevision,
+      sourceContentRevision = source.revision,
+      sourceMembershipRevision = source.membershipRevision,
+      sourceClockRevision = source.clock.revision;
+    return partyMove.open(
+      {
+        token: tokenAtOpen,
+        rosterRevision: data.rosterRevision,
+        focusRevision: focusAtOpen,
+        source: {
+          id: source.id,
+          label:
+            labels.get(source.id) ??
+            groupLabel({ ...source, primary: source.id === data.primaryId }),
+          contentRevision: source.revision,
+          membershipRevision: source.membershipRevision,
+          clockRevision: source.clock.revision,
+          instantMs: source.clock.instantMs,
+          members: source.members.map((id) => ({
+            id,
+            name: data!.roster.find((c) => c.id === id)!.profile.name,
+          })),
+        },
+        targets: data.scenes.map((scene) => ({
+          id: scene.id,
+          label: labels.get(scene.id) ?? groupLabel(scene),
+          membershipRevision: scene.membershipRevision,
+          clockRevision: scene.clock.revision,
+          instantMs: scene.clock.instantMs,
+        })),
+      },
+      editorSession.capture(() => [context?.token]),
+      () =>
+        context?.token === tokenAtOpen &&
+        data?.scene?.id === source.id &&
+        data.focusRevision === focusAtOpen &&
+        data.scene.revision === sourceContentRevision &&
+        data.scene.membershipRevision === sourceMembershipRevision &&
+        data.scene.clock.revision === sourceClockRevision &&
+        data.rosterRevision === sourceRosterRevision,
+    );
   }
 
   editorSession.onDeactivate(() => {

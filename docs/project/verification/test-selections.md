@@ -2,7 +2,7 @@
 
 Status: Current; Auswahlprüfung und Verhaltensnachweis sind getrennt.
 Owner: project
-Last Reviewed: 2026-10-28
+Last Reviewed: 2026-10-29
 Source of Truth: Ausführbare Aufrufe für den bestehenden `tools/run-tests.mjs`; tatsächliche Ablaufzuordnungen besitzt der gemeinsame Capability-Katalog.
 
 Alle Aufrufe beginnen im Repositorywurzelverzeichnis mit Node 22. `--list`
@@ -32,17 +32,46 @@ npm test -- --serial --list \
   tests/shared/desktop-editor-transition.test.mjs
 ```
 
-## Preparation-, Live- und Welteditoren
+## Preparation-, Combat-, Live- und Welteditoren
 
-Produktive Editorinstanzen, Eingaben während des Speicherns, späte Antworten
-nach Kontextwechseln sowie Klärung verlorener Antworten:
+Dies ist der normale erste Prüfweg für Änderungen an den produktiven Besitzern.
+Preparation prüft rohe Eingaben während Bestätigung/Drain, Receiptklärung ohne
+Replay, Navigation/Close und Instanzisolation. Combat prüft Verstärkungs- und
+Würfelbesitzer mit zentraler Schreibgrenze; Live prüft Verschiebedialog,
+Kontextbindung und die erhaltene Flushreihenfolge. Die Weltfälle prüfen ihre
+eigenen Entwurfs- und Lesebesitzer:
 
 ```sh
 npm test -- --serial --list \
   tests/campaign/desktop-preparation-owner.test.mjs \
+  tests/runtime/desktop-combat-owner-lifecycle.test.mjs \
   tests/runtime/desktop-live-owner-lifecycle.test.mjs \
   tests/runtime/desktop-world-owner-lifecycle.test.mjs
 ```
+
+Die Auswahl belegt die konkreten DOM-/SQLiteassertions. Sie ersetzt weder die
+vollständigen Preparation-/Kampf-/Livefachtests noch native Bedienung,
+gemeinsame E2E-Gates oder Candidate. Originale kanonische Writes und unabhängige
+Instanzen bleiben Bestandteil der Tests; die Besitzerschnitte sind kein
+Nachweis für den noch offenen Snapshotstart.
+
+Für Plan-/Quellenübergaben, spätere Sessioneingaben, den ausgeliehenen
+Notizeditor und Ortsabschnitte zusätzlich:
+
+```sh
+npm test -- --serial --list \
+  tests/campaign/desktop-preparation-priority.test.mjs \
+  tests/runtime/desktop-live-priority.test.mjs
+```
+
+Diese zweite Auswahl ergänzt die Besitzergrenzen um die vorhandenen
+Fachübergaben. Die Preparation-Ownerdatei der ersten Auswahl prüft außerdem
+verschachtelte Notizmappennavigation bei weiterer Eingabe, den verspäteten
+Parent-Reread und Packet-Quellenöffnung nach Kampagnenwechsel direkt mit den
+echten Dialogbesitzern, sichtbaren Rohentwürfen und unabhängigem SQLiteorakel.
+Die [Runde-9-Gegenproben und Kosten](../../reference/test-feedback-round9-20261029/README.md)
+grenzen diesen Nachweis ein. Workflow-Dateizuordnungen bleiben ausschließlich
+im gemeinsamen Capability-Katalog.
 
 ## Autorenverweise und Quellprüfung
 

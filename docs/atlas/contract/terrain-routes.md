@@ -40,6 +40,35 @@ unten werden weiterverwendet; sie sind weder Gesamtterrain-/E2E- noch vollständ
 Flussparitätsabnahme. Neue Seen, Erosion, automatische Flussnetze und R6-Gebäude
 gehören nicht zu diesem Abschluss.
 
+### Abgrenzung gegen offene Originalwirkungen
+
+Der [Abgleich WD-010/012 vom 28.10.](../verification/reference-comparison.md#abgleich-für-terrain-meer-und-den-bestätigten-fluss--28102026)
+findet keinen belegten Quellenkonflikt mit dem bestätigten Flusszyklus. Seine
+Wirkung ist ohne weitere Produktinterpretation beschrieben: GM setzt echte
+Pflichtpunkte und Grenzen, sieht Verlauf/Profil, verwirft oder übernimmt einmal;
+späteres Bearbeiten/Löschen entfernt ausschließlich den jeweiligen abgeleiteten
+Bettbeitrag. Basishöhen, andere Objekte und Autoreninhalte bleiben erhalten.
+
+Mündungsbezüge sind gerichtet: Quellfluss → Zielgewässer/-fluss; sie sind keine
+automatische Gegenverbindung und kein Auftrag zum Erzeugen eines Flussnetzes.
+Anschlusspegel und verbundene betroffene Verläufe werden im selben Command
+geprüft. Löschen/Ändern darf keinen still gültigen, verwaisten Anschluss
+hinterlassen; Verhalten betroffener Anschlüsse und gemeinsame Undo-/Redo-Wirkung
+gehören deshalb zur direkten Probe. Unabhängige Campaignkopie remappt die
+Objekt-/Anschluss-IDs gemeinsam und hält keinen Verweis auf die Quelle.
+
+Offen ist die **aktuelle Qualifikation**, nicht die Entscheidung für Pflichtpunkt,
+fallendes Profil oder Abtragsbudget: vor dem Teilabschluss die 28.10.-Hang-/
+Senkenläufe mit direkt zugänglichem Rohbericht samt Quell-/Runtime-/Hostbindung
+versehen; Mündung an Meer und vorhandenem Fluss, schmalen Rücken, unveränderte
+Basishöhen, Anschlussbearbeitung/-löschung, Schutz und frischen Prozess am selben
+Stand nachweisen. Vorhandene numerische und native Teilbelege weiterverwenden;
+fehlende Fälle gezielt ergänzen. Siehe [Beleggrenzen](../../project/verification/end-to-end.md#terrain-wasserbelege-und-zielgerät).
+Weitere WD-Mäander-/Spitzen-/Stil- und Punktbearbeitungswirkungen bleiben mit
+bestehenden IDs vor HEX-13/14 offen. Sollte dabei eine zusätzliche fachliche
+Anschlussregel sichtbar werden, Wirkung/Alternativen/Folgen vor ihrer Aufnahme
+klären; keine unbekannte Formvariante als Aufwand dieses Abschlusses schätzen.
+
 ## Bedienung
 
 Bei Straße/Fluss **Geländegerecht planen** wählen; bestehende Linien bieten denselben Einstieg im Objektinspektor. Die Planung öffnet die Seitenleiste des normalen Atlas; Neigen und Drehen verwenden dessen gemeinsame Kamera. Start, Zwischenpunkte und Ziel anklicken, Punkte ziehen oder ihre Koordinaten korrigieren. Breite, Planungsgrenzen, Koordinaten und Höhenprofil folgen der gemeinsamen Auswahl **Maße** (DnD oder Metrisch), die auch in der Planungsleiste erreichbar ist. Prozentsteigungen bleiben Prozentwerte. Die Umrechnung betrifft ausschließlich Ein- und Ausgabe; Solver und Speicherung behalten Meter. Unbearbeitete Koordinaten werden beim Bearbeiten der anderen Achse nicht gerundet. Der Editor zeigt denselben Verlauf in Draufsicht und gekippt, dazu sein Höhenprofil. **Verlauf einpassen** richtet die Kamera aus.

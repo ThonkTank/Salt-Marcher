@@ -11,7 +11,7 @@ Diese Datei verbindet den vorhandenen Produktstand mit der nächsten Lieferung. 
 
 Der Übergang zu Electron/TypeScript/SQLite ist implementiert. `desktop/main.ts` komponiert den Host; `desktop/preload.ts` vermittelt ausdrücklich freigegebene Fähigkeiten an den eingeschränkten Renderer in `src/app/`. Der kanonische `CampaignStore` läuft im Node-Worker, Main besitzt native Fähigkeiten und Lebenszyklus. Obsidian ist eine historische Referenz, kein Lieferziel. Die [Hostarchitektur](../architecture/desktop-host.md) und der [Storevertrag](../architecture/canonical-store-worker.md) beschreiben die aktuellen Anschlüsse.
 
-Der [aktuelle Atlasplan](../../atlas/architecture/unified-spatial-atlas.md#aktueller-arbeitsstand) gilt für den gemeinsamen Darstellungspfad. Die frühere verbindliche M0–M8-Folge und die Pflicht zu Rust/WASM sind aufgehoben. Vorhandene Testbestände brauchen keine Kompatibilitätsmigration; vollständige fachliche Fähigkeiten, eingeschränkte Rendererrechte und Liefergates bleiben bindend. Datenlinie und Archivkennungen folgen dem [Cutoververtrag](workbench-migration.md).
+Die [Atlasarchitektur](../../atlas/architecture/unified-spatial-atlas.md#dauerhafte-architekturgrenzen) gilt für den gemeinsamen Darstellungspfad. Die frühere verbindliche M0–M8-Folge und die Pflicht zu Rust/WASM sind aufgehoben. Vorhandene Testbestände brauchen keine Kompatibilitätsmigration; vollständige fachliche Fähigkeiten, eingeschränkte Rendererrechte und Liefergates bleiben bindend. Datenlinie und Archivkennungen folgen dem [Cutoververtrag](workbench-migration.md).
 
 ## Vorhandene Umsetzung und nächste Anschlüsse
 
@@ -51,6 +51,12 @@ Das Quellenregister behält unverändert deren Herkunft.
 
 ## Nächste begrenzte Lieferung: Terrain und Meer
 
+Der [bestätigte Ausführungsauftrag](../../atlas/delivery/terrain-water-execution.md)
+besitzt Pakete, Abhängigkeiten, Rollen und Zeitbasis dieser Lieferung; die
+[Atlasarchitektur](../../atlas/architecture/unified-spatial-atlas.md) besitzt ihre
+dauerhaften technischen Grenzen. Die folgende Übersicht beschreibt Nutzerumfang
+und Lieferstand, ohne eine zweite Paketplanung zu führen.
+
 Der bestätigte [Terrain-/Meerumfang](../../atlas/requirements/terrain-relief.md#aktueller-lieferfokus-terrain-und-wasser)
 ist die nächste Lieferung. Er umfasst Grundpinsel samt Parameterwirkung und
 genau einmal übernommenen Zügen, Abbruch, Undo/Redo und Neustart (TW-G1),
@@ -78,6 +84,13 @@ und Runtimefragen sowie Autonomyentscheidungen verhindern den Abschluss der
 Terrainlieferung nicht. Sie werden [vor dem jeweiligen späteren Ausbau](../requirements/scope.md#offene-originalwirkungen-und-klärung-vor-der-lieferung)
 geklärt. Fehler an gemeinsam genutzter Kamera, History, Speicherung oder am
 Erhalt vorhandener Inhalte sind dagegen auch hier Liefermängel.
+
+Die [geklärte Küstenwirkung und konkreten Lieferblocker](../../atlas/requirements/terrain-relief.md#geklärte-küstenwirkung-und-aktuelle-lieferblocker)
+verbinden TW-G1/4 mit WD-005/006/008; der [Flussabgleich](../../atlas/contract/terrain-routes.md#abgrenzung-gegen-offene-originalwirkungen)
+trennt den entschiedenen Zyklus von späteren WD-010/012-Wirkungen. Für den
+Complete-Anteil gilt bereits der [Laufdatenvertrag](../../campaign/contract/archive.md#laufdaten-im-complete-transfer)
+(SRC-D02/TN-19, SMR-AC-15); offen ist dessen vollständiger direkter Nachweis.
+Diese Quellenklärung schließt keine Acceptance und schätzt keine unbekannte Funktion.
 
 ## Kritischer Pfad für E2E-01
 

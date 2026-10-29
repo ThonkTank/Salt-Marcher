@@ -231,7 +231,8 @@ await runNativeProbe(
       );
       await screenshot(page, path.join(out, 'later-edits.png'));
       await close();
-      page = await launch(1);
+      // The retained clue plus the newly added source were both confirmed above.
+      page = await launch(2);
       results.afterReopen = await page.locator('#note-thread-dialog').innerText();
       results.offeredButtons = await page.locator('#note-thread-dialog button').allTextContents();
       await screenshot(page, path.join(out, 'recovery-entry.png'));

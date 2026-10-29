@@ -1045,3 +1045,64 @@ for (const action of ['portrait', 'source'])
     assert.deepEqual(calls, [id], 'the replaced control cannot start another handoff');
     editor.reset();
   });
+
+for (const applied of [false, true])
+  test(`the real move dialog resolves its original ${applied ? 'applied' : 'not-applied'} command without duplicating a split`, async (t) => {
+    const x = await setup(t),
+      writer = x.window.campaign.executeLive,
+      checks = [];
+    await x.ui.openPartyMove();
+    const box = x.el('move-members').querySelector(`input[value="${x.heroes[0].id}"]`);
+    box.checked = true;
+    box.onchange();
+    x.el('move-title').value = '  Gesicherte Teilgruppe\r\n';
+    x.el('move-title').oninput();
+    let first = true;
+    x.window.campaign.executeLive = async (command) => {
+      if (command.action.kind === 'move' && first) {
+        first = false;
+        if (applied) assert.equal((await writer(command)).ok, true);
+        else x.commands.push(command);
+        throw Error('Verschiebeantwort verloren');
+      }
+      return writer(command);
+    };
+    x.window.campaign.liveStatus = async (command, token) => {
+      checks.push(command);
+      return { ok: true, value: x.store.liveStatus(command, token) };
+    };
+    x.el('move-form').onsubmit(new x.window.Event('submit', { cancelable: true }));
+    await settle();
+    const original = x.commands.find((command) => command.action.kind === 'move');
+    assert(original);
+    assert.equal(x.el('move-dialog').open, true);
+    assert.equal(x.el('live-reconcile').hidden, false);
+    x.el('live-reconcile').click();
+    await settle();
+    assert.equal(checks.length, 1);
+    assert.equal(checks[0].commandId, original.commandId);
+    assert.equal(
+      x.commands.filter((command) => command.action.kind === 'move').length,
+      1,
+      'receipt clarification never dispatches the move again',
+    );
+    if (!applied) {
+      assert.equal(x.el('move-dialog').open, true);
+      assert.equal(x.el('move-confirm').disabled, false);
+      assert.equal(x.el('move-title').value, '  Gesicherte Teilgruppe\r\n');
+      assert.equal(box.checked, true);
+      x.el('move-form').onsubmit(new x.window.Event('submit', { cancelable: true }));
+      await settle();
+      const moves = x.commands.filter((command) => command.action.kind === 'move');
+      assert.equal(moves.length, 2);
+      assert.notEqual(moves[1].commandId, original.commandId);
+    }
+    assert.equal(x.el('move-dialog').open, false);
+    const live = x.store.live(x.w.token);
+    assert.equal(live.scenes.length, 2);
+    assert.equal(live.scenes.find((scene) => scene.id !== x.scene.id).members, 1);
+    assert.equal(
+      live.roster.find((character) => character.id === x.heroes[0].id).sceneId === x.scene.id,
+      false,
+    );
+  });

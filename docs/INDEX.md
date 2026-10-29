@@ -2,7 +2,7 @@
 
 Status: Current; offene Ziele sind als solche beschrieben.
 Owner: project
-Last Reviewed: 2026-10-28 (Produkt-, Architektur- und Prüfeinstiege; Fachabnahme separat)
+Last Reviewed: 2026-10-29 (getrennte Architektur- und Ausführungseinstiege; Fachabnahme separat)
 Source of Truth: Dieses Dokument besitzt das benannte Thema; Code belegt den Iststand, das Abnahmeregister den Prüfstand.
 
 Die aktuelle Anwendung ist Electron/TypeScript/SQLite unter `desktop/` und `src/app/`. `npm run build` und `npm run build:desktop` bauen denselben Desktop; der Obsidian-Adapter ist historische Referenz. Build und lokale Prüfvorbereitung stehen in der [Testanleitung](project/verification/testing.md), Codebesitzer in der [Architektur](project/architecture/overview.md#code-nach-zuständigkeit-finden).
@@ -12,11 +12,11 @@ Gesamtprodukt: [Produktziele](project/requirements/product.md), [Umfang](project
 | Ich möchte … | Hier beginnen | Danach nur bei Bedarf |
 | --- | --- | --- |
 | den aktuellen Stand verstehen | [Vorhandene Umsetzung und nächste Anschlüsse](project/delivery/roadmap.md#vorhandene-umsetzung-und-nächste-anschlüsse) und [Produktziele](project/requirements/product.md) | Datierte Fachbelege in `acceptance.json` |
-| Terrain und Meer nutzbar machen | [Bestätigter Lieferfokus und Abnahmekriterien](atlas/requirements/terrain-relief.md#aktueller-lieferfokus-terrain-und-wasser) und [übernommener Umsetzungsplan](atlas/architecture/unified-spatial-atlas.md#terrain-wasserlieferung-umsetzungsplan) | Aktueller Code und gezielte Nutzerabläufe; alte Teilprüfungen ersetzen keine Abnahme |
+| Terrain und Meer nutzbar machen | [Bestätigter Lieferfokus und Abnahmekriterien](atlas/requirements/terrain-relief.md#aktueller-lieferfokus-terrain-und-wasser) und [bestätigter Ausführungsauftrag](atlas/delivery/terrain-water-execution.md) | Aktueller Code und gezielte Nutzerabläufe; alte Teilprüfungen ersetzen keine Abnahme |
 | Gelände ändern | [Gelände: Writer, Datenvertrag und Prüfweg](atlas/architecture/rendering.md#gelände-ändern) | [Aktuelle Bedienung](atlas/guide.md#gelände-formen-und-ansicht-kippen), [fachlicher Geländeumfang](atlas/contract/hex-editing.md) |
 | Reise ändern | [Reise: Writer, Raster und Prüfweg](atlas/architecture/rendering.md#reise-ändern) | [Journey- und Zeitregeln](atlas/contract/hex-travel.md#vorhandener-ablauf-und-datenregeln), kausale Reisehistorie |
 | Atlas-Speicherklärung ändern | [Queue, Receiptregeln und Prüfweg](atlas/architecture/rendering.md#speicherklärung-im-atlas) | [Sichtbarer Klärungsablauf](atlas/guide.md#speicherstand-klären-und-weiterarbeiten), [Speicherwerte und Belege](project/architecture/storage-ports.md) |
-| selbstständig am Atlas weiterarbeiten | [Atlasumstieg und offene Aufgaben](atlas/architecture/unified-spatial-atlas.md#aktueller-arbeitsstand) | Gültige Technik, verbleibende Übernahme und gemeinsame Abnahme |
+| selbstständig am Atlas weiterarbeiten | [Dauerhafte Atlasarchitektur](atlas/architecture/unified-spatial-atlas.md#dauerhafte-architekturgrenzen) und [Terrain-/Wasserauftrag](atlas/delivery/terrain-water-execution.md#meilensteine-und-zuständigkeit) | [Codebesitzer und Prüfwege](atlas/architecture/rendering.md), Fachverträge und getrennte Abnahmen |
 | den nächsten Lieferabschluss umsetzen | [Nächster gemeinsamer E2E-01-Abschluss](project/delivery/roadmap.md#kritischer-pfad-für-e2e-01) und [Fachabhängigkeiten](project/delivery/roadmap.md#fachliche-lieferabhängigkeiten) | [Atlaspakete](atlas/requirements/atlas.md#lieferpakete-und-codeanschlüsse), Fachquelle und passende Tests |
 | die Oberfläche bauen | [Atlas-Besitzer und Prüfweg](project/architecture/overview-2.md#atlasoberfläche-ändern), [gemeinsame Darstellung und Suche](project/architecture/overview-2.md#darstellung-suche-und-spieleranzeige) und Fachplan des gewählten Ablaufs | [Atlasoberfläche](atlas/requirements/atlas.md#informationsarchitektur-der-oberfläche), [Bedienregeln](atlas/requirements/atlas-2.md#gemeinsame-bedienung), Werkzeugkatalog und Objektaktionen |
 | Atlasdarstellung, Auswahl oder Bildausgabe ändern | [Codebesitzer und Schutzregeln](atlas/architecture/rendering.md#wo-ändern-und-prüfen) | [Prüfwege und offene Qualifikation](atlas/architecture/rendering.md#prüfwege-und-offene-qualifikation) |
@@ -27,6 +27,7 @@ Gesamtprodukt: [Produktziele](project/requirements/product.md), [Umfang](project
 | eine Lieferung prüfen | Betroffene Fachabnahme und [gemeinsame E2E-Kriterien](project/verification/end-to-end.md) | [Atlas-Bedienproben](atlas/requirements/atlas-2.md#spätere-bedienabnahme), [GM-Aufgaben](project/verification/gm-workflows.md) und `acceptance.json` |
 | Datenfelder oder unabhängige Kampagnenkopien ändern | [Transferverträge bei den Fachmodellen](campaign/contract/transfer-ownership.md) | [Archivvertrag](campaign/contract/archive.md) und Fachtests |
 | Modulgrenzen oder Architekturkennzahlen prüfen | [Benannte Zuständigkeiten und reproduzierbarer Graphbericht](project/architecture/test-boundaries.md#benannte-zuständigkeiten-und-zyklen) | `node tools/module-graph.mjs --report`; reine Strukturprüfung, keine Produktabnahme |
+| Integration oder Release liefern | [Integrationspflichten](../AGENTS.md#delivery) und [Releasevertrag](project/delivery/github-updates.md#verbindlicher-release-rhythmus-für-agenten) | [Lokale Prüfung](project/verification/testing.md); Terrainpakete wenden diese Regeln im [Ausführungsauftrag](atlas/delivery/terrain-water-execution.md) an |
 | Tests ausführen oder ihren Aufwand beurteilen | [Testvorbereitung, Laufzeiten und Bereinigung](project/verification/testing.md), [Fachanschlüsse und Modulgrenzen](project/architecture/test-boundaries.md) | Betroffene Fachabnahme und tatsächliche Testdateien im Capability-Katalog |
 
 | Thema | Fachliche Quellen |

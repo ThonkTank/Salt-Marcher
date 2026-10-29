@@ -2,7 +2,7 @@
 
 Status: Geltender Fachvertrag; offene Erweiterungen sind als Ziele beschrieben.
 Owner: campaign
-Last Reviewed: 2026-10-24 (Struktur und Quellen; Fachabnahme separat)
+Last Reviewed: 2026-10-28 (Complete-Laufdaten gegen Primärquellen abgegrenzt; Fachabnahme separat)
 Source of Truth: Dieses Dokument besitzt das benannte Thema; Code belegt den Iststand, das Abnahmeregister den Prüfstand.
 
 Stand: 11.10.2026. Dieser Fachplan besitzt Campaign-/Context-, Transfer-,
@@ -176,6 +176,36 @@ stille Weglassung. Quelltestbudgets sind keine künstlichen Produktcaps.
 Salvage zeigt Survivor-/Omissionliste mit Grund und ausgeschlossenen Referenzen
 vor Annahme. Es darf keine unbekannte Teilfolge als Complete ausgeben. Große Imports stagen geprüfte Records in kurzen Transaktionen unter einem unsichtbaren Operationsscope. Der abschließende kurze Commit prüft vollständige Closure/Basis/Rechte und aktiviert das Ziel samt Shareddefinitionsentscheidungen. Dadurch bleibt Livearbeit zwischen den Stagingschritten bedienbar; keine minutenlange offene Schreibtransaktion. Staging ist von bestätigter Wahrheit getrennt; erst der vollständige finale Commit macht das Ziel sichtbar. Cancel vor Commit hinterlässt keine sichtbare Zielcampaign; nach Commit
 klärt derselbe Command den Ausgang und finalisiert nur vorwärts.
+
+### Laufdaten im Complete-Transfer
+
+**Quellenklärung vom 28.10.2026:** Die Regel oben ist keine neue
+Produktentscheidung. [SRC-D02, Complete Campaign Portability L647–656](https://github.com/ThonkTank/Salt-Marcher/blob/9de85c1a26f526acbc1af332ac5962e185c0aab2/docs/project/requirements/requirements-program-capabilities.md#L647-L656)
+fordert dieselben Inhalte und den wiederaufnehmbaren Arbeitszustand ohne Zugriff
+auf den Quellrechner; [TN-19 L302](https://github.com/ThonkTank/Salt-Marcher/blob/9de85c1a26f526acbc1af332ac5962e185c0aab2/docs/project/architecture/program-technical-needs.md#L302)
+konkretisiert die geschlossene Übertragung. Der
+[Dungeonvertrag L241–244 und L255–266](https://github.com/ThonkTank/Salt-Marcher/blob/9de85c1a26f526acbc1af332ac5962e185c0aab2/docs/dungeon/requirements/requirements-dungeon.md#L241-L266)
+verlangt vollständige Erkundungswiederaufnahme und benennt engere Ausschlüsse
+für Dungeonpaket und Dungeonduplikat. Diese unterschiedlichen Befehle kollidieren
+nicht. Die ausdrückliche Complete-Aufzählung steht bereits im
+[übernommenen Campaignplan vom 16.10.](https://github.com/ThonkTank/Salt-Marcher/blob/53f127163/ROADMAP-SALTMARCHER-SMR-01-CAMPAIGN-DATA-PLAN.md#L96-L100).
+Die fünf hier geprüften Primärdateien für Program Capabilities, Technical Needs,
+Dungeon, Dungeon Travel und Dungeon Travel State stimmen mit den SHA-256-Bindungen
+im unveränderten Quellenregister überein.
+
+| Nutzerhandlung | Ergebnis, Daten und Erhaltung | Abnahmebindung |
+| --- | --- | --- |
+| Complete exportieren und als unabhängige Campaign importieren | Authored Secret/Anker/Maximum/Resetregel **und** Discovery je Charakter, aktuelle Charges, laufender Countdown samt bestätigter Zeitbasis sowie benötigte Scene-/Actor-/Reise-/Promptbezüge erhalten. Lokale IDs und sämtliche lokalen Verweise werden gemeinsam remappt; kein Rückverweis auf die Quellcampaign. Ein Countdown startet durch Import/Öffnen nicht neu und verstreicht nicht durch Wall-clock. | SMR-01/07/10, SMR-AC-08/15, E2E-04; Complete-Vertrag und jeweilige Runtimeowner gemeinsam. |
+| Import abbrechen oder nach verlorener Antwort neu starten | Vor Commit keine sichtbare Zielcampaign oder Teiländerung gemeinsamer Definitionen; nach Commit denselben Command klären. Quelle bleibt unverändert, frischer Prozess setzt ausschließlich bestätigte Zielwerte fort. | Bestehende atomare Import-/Receiptregeln; kein pauschales Transfer-Undo zugesagt. |
+| Nur Dungeon duplizieren oder Dungeonpaket ausgeben | Dungeonduplikat: neue authored IDs, keine Runtime/Knowledge/Logs/Undo. Dungeonpaket: authored Truth und stabile Referenzen, keine Party-/Actorpositionen, Reiselogs oder Undo; aus dieser engeren Ausschlussliste keine zusätzlichen unentschiedenen Paketfelder ableiten. | SMR-04/07 und jeweiliger eigener Paketnachweis; kein Complete-Ersatz. |
+
+Konkretes offenes Prüfszenario: zwei Charaktere mit unterschiedlicher Entdeckung,
+eine teilweise verbrauchte Falle und einen laufenden Reset exportieren. Importierte
+Campaign frisch öffnen, dieselbe bestätigte Restzeit prüfen, nur im Ziel Charge/
+Entdeckung ändern und über bestätigte Campaignzeit zurücksetzen; Quelle bleibt
+bytegleich. Ziel-/Quellreferenzclosure und offenen Prompt zusätzlich prüfen.
+Das ist eine **Sollabnahme**, kein hier ausgeführter Test. Vorhandene technische
+Transferbelege schließen SMR-AC-15 und diese vollständige Fachkombination nicht.
 
 ### Trash, Restore und permanente Löschung
 
