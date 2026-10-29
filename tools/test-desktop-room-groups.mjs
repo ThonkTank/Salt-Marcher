@@ -117,6 +117,8 @@ await runNativeProbe({ output: out, name: 'room-groups' }, async (native) => {
     await dialog.waitFor({ state: 'hidden' });
     await atlasCanvasReady(page);
     await page.waitForFunction(() => !document.querySelector('#atlas-section').disabled);
+    // Closing the recipe dialog resolves its choice before the canonical commit.
+    await page.waitForFunction(() => !document.querySelector('#atlas-undo').disabled);
     let state = inventory();
     assert.equal(state.houses.length, 0);
     assert(state.rooms.length > 5);
@@ -124,7 +126,6 @@ await runNativeProbe({ output: out, name: 'room-groups' }, async (native) => {
     assert(binding);
     assert.equal(binding.parent, 'world');
     evidence.checks.push('house is an independent furnished room group without city context');
-    await page.waitForFunction(() => !document.querySelector('#atlas-undo').disabled);
     await page.locator('#atlas-section').selectOption('interior');
     await page.waitForFunction(
       () => document.querySelector('#campaign-atlas').dataset.family === 'interior',

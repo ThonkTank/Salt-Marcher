@@ -1,3 +1,4 @@
+import { revealWorkspaceNavigation } from './native-navigation.mjs';
 import { runNativeProbe } from './native-session.mjs';
 import { createRequire } from 'node:module';
 import { mkdtemp, mkdir, readFile, writeFile, stat } from 'node:fs/promises';
@@ -104,6 +105,8 @@ await runNativeProbe({ output: output, name: 'day-party' }, async (native) => {
         .locator('.campaign-card[data-campaign-id="' + campaign.id + '"]')
         .getByRole('button', { name: 'Fortsetzen', exact: true })
         .click();
+      await revealWorkspaceNavigation(page);
+      await page.locator('#live-tab').click();
       await page.locator('#day-trigger').click();
       await page.locator('#day-mode-progress').click();
       await page.locator('#day-total-xp').fill('1');
@@ -136,6 +139,8 @@ await runNativeProbe({ output: output, name: 'day-party' }, async (native) => {
       await page.locator('#day-current tr').last().scrollIntoViewIfNeeded();
       await page.screenshot({ path: path.join(output, 'party-' + scale + '.png') });
       await page.locator('#day-close').click();
+      await revealWorkspaceNavigation(page);
+      await page.locator('#live-tab').click();
       await page.locator('#day-trigger').click();
       await page.waitForFunction(
         () => document.querySelector('#day-popover').getAttribute('aria-busy') === 'false',

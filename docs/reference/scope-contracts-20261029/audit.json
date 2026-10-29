@@ -1,0 +1,741 @@
+{
+  "reviewedAt": "2026-10-29",
+  "sourceRegisterUnchanged": true,
+  "historicalAcceptanceFieldsUnchanged": true,
+  "cityCandidateMappings": 65,
+  "wonderdraftCaseMappings": 83,
+  "originalInventoryComplete": false,
+  "sourceFiles": [
+    {
+      "path": "docs/autonomy/requirements/requirements-actor-autonomy.md",
+      "revision": "9de85c1a26f526acbc1af332ac5962e185c0aab2",
+      "expectedSha256": "95c42de5341aa005de49e0e5aea8c426f8793ea41ac1a96170a76ee0210abf0c",
+      "actualSha256": "95c42de5341aa005de49e0e5aea8c426f8793ea41ac1a96170a76ee0210abf0c"
+    },
+    {
+      "path": "docs/dungeon/requirements/requirements-dungeon-editor.md",
+      "revision": "9de85c1a26f526acbc1af332ac5962e185c0aab2",
+      "expectedSha256": "b596a4a30d75413a96c1d40b862b473ed8f480baa8ec18ed2217431987cba20d",
+      "actualSha256": "b596a4a30d75413a96c1d40b862b473ed8f480baa8ec18ed2217431987cba20d"
+    },
+    {
+      "path": "docs/dungeon/requirements/requirements-dungeon-travel-state.md",
+      "revision": "9de85c1a26f526acbc1af332ac5962e185c0aab2",
+      "expectedSha256": "d8d0e375947586b606b4ef9d96a295c8478610edc41fff5e8db893f507e095d6",
+      "actualSha256": "d8d0e375947586b606b4ef9d96a295c8478610edc41fff5e8db893f507e095d6"
+    },
+    {
+      "path": "docs/dungeon/requirements/requirements-dungeon-travel.md",
+      "revision": "9de85c1a26f526acbc1af332ac5962e185c0aab2",
+      "expectedSha256": "d9af361470f7ed5be77ded64c20f51b7b34bf0f92e853ca5b48dda8d10ade287",
+      "actualSha256": "d9af361470f7ed5be77ded64c20f51b7b34bf0f92e853ca5b48dda8d10ade287"
+    },
+    {
+      "path": "docs/dungeon/requirements/requirements-dungeon.md",
+      "revision": "9de85c1a26f526acbc1af332ac5962e185c0aab2",
+      "expectedSha256": "60e1e72432c1b9073b162cf9eedb8959dc36ae71cfa0c6ee82d968ed71bb7a0f",
+      "actualSha256": "60e1e72432c1b9073b162cf9eedb8959dc36ae71cfa0c6ee82d968ed71bb7a0f"
+    }
+  ],
+  "historicalEvidenceAvailability": [
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/city-plans/",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/city-plans/city-ui-i01-20261010/cleanup/review.json",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/city-plans/city-ui-i01-20261010/independent-review-consumption.json",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/city-plans/city-ui-i01-20261010/run.json",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i06-20261009-01/reference-manifest.json",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i06-20261009-01/screens/003-editor.png",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i06-20261009-01/screens/005-path-asset.png",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i06-20261009-01/screens/009-path-control-moved.png",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i06-20261009-01/screens/018-main-menu.png",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i07-20261009-01/reference-manifest.json",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i17-20261009/manifest.json",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i20-20261009/manifest.json",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i26-20261009-r01/manifest.json",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i43-20261009-r01/manifest.json",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i43-20261009-r01/review.json",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i47-20261009-r02/manifest.json",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i47-20261009-r02/review.json",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i48a-20261009-r01/manifest.json",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i48b-20261010-r01/manifest.json",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i48b-20261010-r01/reference-review-r48.json",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i01-20261009/ftg-form-observation.json",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/ftg-export-menu.ax.txt",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/ftg-hamlet-overview.jpg",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/ftg-person-general.ax.txt",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/ftg-person-relations.ax.txt",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/ftg-person-relations.jpg",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/ftg-time10-before.ax.txt",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/ftg-time11-after.ax.txt",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/ftg-time11-after.jpg",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/manifest.json",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/manifest-cleaned.json",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/manifest.json",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/watabou-generate-features.jpg",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/watabou-generate-roads.jpg",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/watabou-walled-port-detail.jpg",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/watabou-walled-port-overview.jpg",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i04-20261009/manifest.json",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i05-20261009/manifest.json",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/evidence-cleanup.json",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/ftg-effects-settings.ax.txt",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/ftg-general-settings.ax.txt",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/ftg-sun-settings.ax.txt",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/ftg-time-before.ax.txt",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/manifest.json",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i08-browser-20261009/006-street-view.jpg",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i08-browser-20261009/evidence-cleanup.json",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i08-browser-20261009/manifest.json",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i09-gallery-20261009/cok-official-bridge-detail.jpg",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i09-gallery-20261009/cok-official-harbor.jpg",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i09-gallery-20261009/manifest.json",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i10-edit-20261009/cleanup.json",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i10-edit-20261009/manifest.json",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i11-roads-20261009/cleanup.json",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i11-roads-20261009/manifest.json",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i12-presets-20261009/cleanup.json",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i12-presets-20261009/manifest.json",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i13-saved-settings-20261009/cleanup.json",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i13-saved-settings-20261009/manifest.json",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i14-warp-20261009/cleanup.json",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i14-warp-20261009/manifest.json",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i15-warp-tools-20261009/cleanup.json",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i15-warp-tools-20261009/manifest.json",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i16-export-20261009/cleanup.json",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i16-export-20261009/manifest.json",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i18-residents-20261009/manifest.json",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i19-style-20261009/manifest.json",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i21-landmark-20261009/manifest.json",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i23-landmark-edit-20261009/manifest.json",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i24-alleys-20261009/manifest.json",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i25-trees-20261009/manifest.json",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i27-forest-20261009/manifest.json",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i28-roof-20261009/manifest.json",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i29-building-20261009/manifest.json",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i30-processing-20261009/manifest.json",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i31-processing-output-20261009/manifest.json",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i32-generation-20261009/manifest.json",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i33-roads-20261009/manifest.json",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i34-maximum-20261009/manifest.json",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i35-size-20261009/manifest.json",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i36-custom-size-20261009/manifest.json",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i37-river-20261009/manifest.json",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i38-coast-20261009/manifest.json",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i40-building-20261009/manifest.json",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i42-time-20261009/manifest.json",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i42-time-20261009/review.json",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i45-building-limits-20261009/manifest.json",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i45n-full-20261009/manifest.json",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i45n-full-20261009/review.json",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i46-bulk-20261009/manifest.json",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i46-bulk-20261009/review.json",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-commands-20261009/cleanup-review.json",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-commands-20261009/implementation.json",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-edit-20261009/cleanup-review.json",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-edit-20261009/implementation.json",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-gestures-20261009/implementation.json",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-model-20261009/implementation.json",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-model-20261009/repair.json",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-renderer-20261009/implementation.json",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-renderer-20261009/n08-refinement.json",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-renderer-20261009/r12-review.json",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-scene-20261009/cleanup-review.json",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-scene-20261009/implementation.json",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-tools-20261009/implementation.json",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-tools-20261009/n07-review.json",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/data/Wonderdraft/maps/HEX00-F01.wonderdraft_map",
+      "exists": true
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/maps/A.wonderdraft_map",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/maps/B.wonderdraft_map",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/remaining-sequences-20261009-014011/input-maps/Exit-save.wonderdraft_map",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/remaining-sequences-20261009-014011/original/data/Wonderdraft/maps/backup/backup_1791503888.wonderdraft_map",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/remaining-sequences-20261009-014011/original/screens/103-opacity-negative-clamped.json",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/remaining-sequences-20261009-014011/original/screens/103-opacity-negative-clamped.png",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/remaining-sequences-20261009-014011/original/screens/106-opacity-two-clamped.json",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/remaining-sequences-20261009-014011/original/screens/106-opacity-two-clamped.png",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/remaining-sequences-20261009-014011/original/screens/109-velocity-negative-clamped.json",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/remaining-sequences-20261009-014011/original/screens/109-velocity-negative-clamped.png",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/remaining-sequences-20261009-014011/original/screens/112-velocity-two-clamped.json",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/remaining-sequences-20261009-014011/original/screens/112-velocity-two-clamped.png",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/remaining-sequences-20261009-014011/original/screens/150-velocity-state-commit.json",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/remaining-sequences-20261009-014011/original/screens/150-velocity-state-commit.png",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/remaining-sequences-20261009-014011/theme-maps/Black-White.wonderdraft_map",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/remaining-sequences-20261009-014011/theme-maps/Feudal.wonderdraft_map",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/remaining-sequences-20261009-014011/theme-maps/Imagination.wonderdraft_map",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/remaining-sequences-20261009-014011/theme-maps/Paper.wonderdraft_map",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/remaining-sequences-20261009-014011/theme-maps/Pastel.wonderdraft_map",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/remaining-sequences-20261009-014011/theme-maps/Terra.wonderdraft_map",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/remaining-sequences-20261009-014011/theme-maps/Worn.wonderdraft_map",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/review-20261009-024123/input-maps/B.wonderdraft_map",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/hex-03/city-ui-i01-r01-20261010/review.json",
+      "exists": false
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/wonderdraft-parity/",
+      "exists": false
+    }
+  ],
+  "wonderdraftFiles": [
+    {
+      "path": "/opt/Wonderdraft/Wonderdraft.x86_64",
+      "sha256": "4a560dd2de30a35949b9f5d610ce3169562782e1e7c908c5bbfb8d17fb805faf"
+    },
+    {
+      "path": "/opt/Wonderdraft/Wonderdraft.pck",
+      "sha256": "67f3806a23f97f781420cf6a4a21d9a0e768b711860464c8da96e36dcca5bcac"
+    }
+  ],
+  "movingMeasurement": "/home/aaron/.cache/dungeon-native-qa/wonderdraft-moving-fractals-20261019/measurements.json",
+  "movingImageChecks": [
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/wonderdraft-moving-fractals-20261019/screens/007-raise-fast.png",
+      "sha256": "0567c483a43a7f43b6b0c69fe080d3a551307b4c6ffb8c86028765b6eecd14a0"
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/wonderdraft-moving-fractals-20261019/screens/009-raise-slow.png",
+      "sha256": "03cfda4638a5f787a84a189d0ea7acdca9cac4dfc39dfcf3be2cc751220851ed"
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/wonderdraft-moving-fractals-20261019/screens/012-raise-curve-fast.png",
+      "sha256": "0567c483a43a7f43b6b0c69fe080d3a551307b4c6ffb8c86028765b6eecd14a0"
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/wonderdraft-moving-fractals-20261019/screens/014-raise-curve-slow.png",
+      "sha256": "144932c1db342d0acde521c00e1cac76f3205ef84624739edfb1500fe3748046"
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/wonderdraft-moving-fractals-20261019/screens/016-repeat-1.png",
+      "sha256": "0567c483a43a7f43b6b0c69fe080d3a551307b4c6ffb8c86028765b6eecd14a0"
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/wonderdraft-moving-fractals-20261019/screens/016-repeat-2.png",
+      "sha256": "8006b171577b12fd153f5ca4aa27a74abe9730ca4d617b5d67920d4ba80a4553"
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/wonderdraft-moving-fractals-20261019/screens/016-repeat-3.png",
+      "sha256": "a1874d7b06418b6050db7834828ab73ec3d9493bf7ba64422f70e37f3a28bec2"
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/wonderdraft-moving-fractals-20261019/screens/016-repeat-4.png",
+      "sha256": "a800f491f266339ebeb3f84943bc91fc8cfc05385af7495964362b3649b54868"
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/wonderdraft-moving-fractals-20261019/screens/016-repeat-5.png",
+      "sha256": "362ee385300d80ee0169bc6444b3f37ae3ba10041d38b90a7d9eadcc25c04cd7"
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/wonderdraft-moving-fractals-20261019/screens/016-repeat-6.png",
+      "sha256": "c5d50091a5d2abd59faac948298d33514828edfc09dfa17691b5c4d7cefd4753"
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/wonderdraft-moving-fractals-20261019/screens/018-raise-return.png",
+      "sha256": "567a3241cee9bf0a35bf42cf32939afb49d11ed8bd45bddebca6aa18c81e3430"
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/wonderdraft-moving-fractals-20261019/screens/022-land-fast.png",
+      "sha256": "35ca64249c49d3e4ff647c32f6abade6c08f83dd9dfcb8292dba2df272ac00f4"
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/wonderdraft-moving-fractals-20261019/screens/025-base.png",
+      "sha256": "75517dc3751c7b69a45ea66cd75ce9c6cc698c3c57341d1744ff7952af499543"
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/wonderdraft-moving-fractals-20261019/screens/028-eraser-fast.png",
+      "sha256": "03b1105ea62f90d5a2caf2483b235203dea8720e99d2d7b0e3ce6104ac639a0f"
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/wonderdraft-moving-fractals-20261019/screens/031-lower-fast.png",
+      "sha256": "3267d24d44a4f4ce9be6052094beff107f472b81d24afdce9150ec851d168863"
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/wonderdraft-moving-fractals-20261019/screens/033-lower-slow.png",
+      "sha256": "a2a85ddeb29537d4d5b78599206743d7432274f809446b767ad663408a49acfe"
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/wonderdraft-moving-fractals-20261019/screens/035-lower-curve-fast.png",
+      "sha256": "a4e57a938bb1ea2922fbfa931290db338d61a272ce53b69f96cfd9c4261b18eb"
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/wonderdraft-moving-fractals-20261019/screens/037-lower-curve-slow.png",
+      "sha256": "d3c0d22cd68060d26745be000445065b618b887bbf7e2b5cc9a146b438f2e746"
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/wonderdraft-moving-fractals-20261019/screens/039-lower-repeat-1.png",
+      "sha256": "5ff049d36869a7dcf213850e8e1907160303b2d34687def714470c75288486e2"
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/wonderdraft-moving-fractals-20261019/screens/039-lower-repeat-2.png",
+      "sha256": "6dbf85340b423a74b85647f94e2f4d4505ae7dc328d4271bd3760695c1207a17"
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/wonderdraft-moving-fractals-20261019/screens/039-lower-repeat-3.png",
+      "sha256": "65590e08c624d60dd1f725da17dab777bcea3860babb59431214dd76d6bac86d"
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/wonderdraft-moving-fractals-20261019/screens/039-lower-repeat-4.png",
+      "sha256": "ecba139bf39822590a1c0c0a2a7c08188b7b56080b79f6a90cb6a7217760c72f"
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/wonderdraft-moving-fractals-20261019/screens/039-lower-repeat-5.png",
+      "sha256": "b22e9a001e79014b346e8eb92a3a663472ca9dc596ba12ac8c8d5cde4038119d"
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/wonderdraft-moving-fractals-20261019/screens/039-lower-repeat-6.png",
+      "sha256": "8add2a00c9bfc8cf87552da03c87ebb910adef32ef8a4035b850e3d6e114bb76"
+    },
+    {
+      "path": "/home/aaron/.cache/dungeon-native-qa/wonderdraft-moving-fractals-20261019/screens/041-lower-return.png",
+      "sha256": "1a1cb2d4519d4588713ac60abdca3ec58d595f73e77cf823cb530728b9c27b91"
+    }
+  ],
+  "newEvidenceFiles": [
+    {
+      "path": "docs/reference/scope-contracts-20261029/README.md",
+      "sha256": "d0268222fc00910ce4cc39693cb1ee58c25f458581a1d0a46f31d18d38a141a2"
+    },
+    {
+      "path": "docs/reference/scope-contracts-20261029/ftg-generated-buildings.png",
+      "sha256": "d6c37289d6c3cd49d7d889f97828c36e387961d3fd1c6311e91f525337d62fca"
+    },
+    {
+      "path": "docs/reference/scope-contracts-20261029/ftg-generated-buildings.txt",
+      "sha256": "b338d1bd9f0e35c04891b74b2c51e8fe742d1bdf310248dc804533a10d80517f"
+    },
+    {
+      "path": "docs/reference/scope-contracts-20261029/ftg-generated-people.png",
+      "sha256": "f01f7aca8d4321ebc1bb6f26eaeeba2ae039cee55cfa2f9ab2a7c2a245944e0c"
+    },
+    {
+      "path": "docs/reference/scope-contracts-20261029/ftg-generated-people.txt",
+      "sha256": "fc4fdf06708199fe5429e03cb02331e497e32d88f4e93af487891b5c9adff0ca"
+    },
+    {
+      "path": "docs/reference/scope-contracts-20261029/ftg-person-after.png",
+      "sha256": "8cd2e0fe8ea3e5c2f9c17c856e4716f613d24f50388d0913d28f470b11f8a1d2"
+    },
+    {
+      "path": "docs/reference/scope-contracts-20261029/ftg-person-after.txt",
+      "sha256": "9f685ed8cf9e5017c3db9f0e35a652e3b6d1d5732e5c32ae39e150152a1161fc"
+    },
+    {
+      "path": "docs/reference/scope-contracts-20261029/ftg-person-before.png",
+      "sha256": "f5b57e9a71fa677793d172b792076865c03fcc223bb189d479c3fe21c8eb2814"
+    },
+    {
+      "path": "docs/reference/scope-contracts-20261029/ftg-person-reloaded.txt",
+      "sha256": "9f685ed8cf9e5017c3db9f0e35a652e3b6d1d5732e5c32ae39e150152a1161fc"
+    },
+    {
+      "path": "docs/reference/scope-contracts-20261029/ftg-regeneration-warning.png",
+      "sha256": "62843003d881b371ee6f7efe5d73d516bd4e5e82bd01795f9bbf75bf3f3a0b59"
+    },
+    {
+      "path": "docs/reference/scope-contracts-20261029/ftg-regeneration-warning.txt",
+      "sha256": "22e5f88c9f08afd138d427e01a506049ded5381626816b47774f4529956b9562"
+    },
+    {
+      "path": "docs/reference/scope-contracts-20261029/ftg-relation-applied.txt",
+      "sha256": "378ce727cdab0f9ecc2b5d5dac6c653642aa5ea1d0d3c2da19f4f2d092eabb2e"
+    },
+    {
+      "path": "docs/reference/scope-contracts-20261029/ftg-relation-reciprocal.png",
+      "sha256": "f4e847b2b4650fdb9b529931f0f48701a0513549aed9f04a88cb56b5a7529c0d"
+    },
+    {
+      "path": "docs/reference/scope-contracts-20261029/ftg-relation-reciprocal.txt",
+      "sha256": "fbe9475feb5e638d2f6761d7b13f55383678199cffca82458ed3ee737224bd83"
+    },
+    {
+      "path": "docs/reference/scope-contracts-20261029/ftg-relations-controls.txt",
+      "sha256": "fd230263b71cca03ace7ef5e22a1f1410df6d6ea31908a16205081a6b76a3279"
+    },
+    {
+      "path": "docs/reference/scope-contracts-20261029/ftg-relations-reloaded.png",
+      "sha256": "07ac2b21e99b8ef5d770072d9e4d91260879804233715948548effc4f4bbeadc"
+    },
+    {
+      "path": "docs/reference/scope-contracts-20261029/ftg-relations-reloaded.txt",
+      "sha256": "378ce727cdab0f9ecc2b5d5dac6c653642aa5ea1d0d3c2da19f4f2d092eabb2e"
+    }
+  ]
+}

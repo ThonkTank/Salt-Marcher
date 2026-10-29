@@ -1,3 +1,4 @@
+import { revealWorkspaceNavigation } from './native-navigation.mjs';
 import { runNativeProbe } from './native-session.mjs';
 import { openDesktopKeyReferences, linkDesktopKeyReference } from './qa-key-entry.mjs';
 import { createRequire } from 'node:module';
@@ -86,8 +87,7 @@ await runNativeProbe(
       captures = [];
     let stage = 'launch';
     async function tab(id) {
-      if (!(await page.locator(id).isVisible()))
-        await page.locator('#workspace-nav-summary').click();
+      if (!(await page.locator(id).isVisible())) await revealWorkspaceNavigation(page);
       await page.locator(id).click();
     }
     async function launch() {

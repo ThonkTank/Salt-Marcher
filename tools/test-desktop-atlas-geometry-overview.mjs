@@ -18,11 +18,20 @@ const output = path.resolve(
 const native = await createNativeSession({ root, output, name: 'atlas-geometry-overview' });
 const fixtureGzip = path.join(root, 'tests/fixtures/atlas/mixed-world.sqlite.gz');
 const databasePath = path.join(native.profile, 'workbench.sqlite');
+const fixtureManifest = JSON.parse(
+  await readFile(path.join(root, 'tests/fixtures/atlas/mixed-world-manifest.json'), 'utf8'),
+);
 const frozenFixture = {
-  sha256: '19d4edc88b50d8074578a5c40c870a50331fec1c78a7a8b4f4feee5d463fdb12',
-  bytes: 225546240,
-  compressedBytes: 40236558,
+  sha256: fixtureManifest.decodedSha256,
+  bytes: fixtureManifest.decodedBytes,
+  compressedBytes: fixtureManifest.fixtureBytes,
 };
+assert.match(
+  frozenFixture.sha256,
+  /^[a-f0-9]{64}$/,
+  'Current fixture must bind its decoded source',
+);
+assert.equal(fixtureManifest.model, 'continuous-terrain-v1');
 const files = [
   'src/app/atlas/atlas-scene-geometry.ts',
   'src/app/atlas/atlas-geometry-overview.ts',
@@ -212,7 +221,11 @@ function canonicalSnapshot(campaignId) {
 
 try {
   const compressed = await stat(fixtureGzip);
-  assert.equal(compressed.size, frozenFixture.compressedBytes, 'Use the retained exact M0 fixture');
+  assert.equal(
+    compressed.size,
+    frozenFixture.compressedBytes,
+    'Use the retained exact continuous fixture',
+  );
   await pipeline(
     createReadStream(fixtureGzip),
     createGunzip(),
@@ -223,12 +236,12 @@ try {
   assert.equal(
     sourceHash,
     frozenFixture.sha256,
-    'The decompressed M0 source must match its pinned digest',
+    'The decompressed continuous source must match its pinned digest',
   );
   assert.equal(sourceBytes, frozenFixture.bytes);
   const sourceDb = new Database(databasePath, { readonly: true }),
     campaign = sourceDb.prepare('SELECT id,name FROM campaign ORDER BY rowid LIMIT 1').get();
-  assert(campaign, 'The retained M0 fixture must contain a campaign');
+  assert(campaign, 'The retained continuous fixture must contain a campaign');
   const inventory = {
     roomGroups: sourceDb
       .prepare('SELECT count(*) n FROM room_group WHERE campaign_id=?')

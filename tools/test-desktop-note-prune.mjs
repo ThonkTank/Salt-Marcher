@@ -1,3 +1,4 @@
+import { revealWorkspaceNavigation } from './native-navigation.mjs';
 import { runNativeProbe } from './native-session.mjs';
 import { createRequire } from 'node:module';
 import { mkdtemp, mkdir, readFile, writeFile, stat } from 'node:fs/promises';
@@ -142,6 +143,7 @@ await runNativeProbe(
         .filter({ hasText: campaign.name })
         .getByRole('button', { name: 'Fortsetzen', exact: true })
         .click();
+      await revealWorkspaceNavigation(page);
       await page.locator('#preparation-tab').click();
       await page.locator('#preparation-knowledge').click();
       await page.locator('#world-search').fill(overview.title);

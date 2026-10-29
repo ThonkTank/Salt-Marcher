@@ -1,0 +1,644 @@
+{
+  "catalogueOwner": "docs/project/verification/end-to-end.md",
+  "sourceDigest": "2005f9ed9906fb9fdbd79a15c325d63e2b29228a8c75ac8761e16c6bd2130865",
+  "scope": "All canonical E01/E02 cases and the existing round9 E03/E04 obligation groups. A passed partial script is not a full gate.",
+  "rows": [
+    {
+      "gate": "E2E-01",
+      "case": "E01-N01-context-camera-focus",
+      "status": "passed",
+      "originalStatus": "passed",
+      "entry": "tools/test-desktop-e2e01.mjs",
+      "evidence": "original/e2e01/result.json",
+      "fixture": "e2e01-desktop-v2",
+      "reason": null,
+      "evidenceDetails": []
+    },
+    {
+      "gate": "E2E-01",
+      "case": "E01-N02-late-load",
+      "status": "passed",
+      "originalStatus": "passed",
+      "entry": "tools/test-desktop-e2e01.mjs",
+      "evidence": "original/e2e01/result.json",
+      "fixture": "e2e01-desktop-v2",
+      "reason": null,
+      "evidenceDetails": []
+    },
+    {
+      "gate": "E2E-01",
+      "case": "E01-N03-held-write-switch-fence",
+      "status": "passed",
+      "originalStatus": "passed",
+      "entry": "tools/test-desktop-e2e01.mjs",
+      "evidence": "original/e2e01/result.json",
+      "fixture": "e2e01-desktop-v2",
+      "reason": null,
+      "evidenceDetails": []
+    },
+    {
+      "gate": "E2E-01",
+      "case": "E01-N03b-late-write-after-owner-change",
+      "status": "passed",
+      "originalStatus": "passed",
+      "entry": "tools/test-desktop-e2e01.mjs",
+      "evidence": "original/e2e01/result.json",
+      "fixture": "e2e01-desktop-v2",
+      "reason": null,
+      "evidenceDetails": []
+    },
+    {
+      "gate": "E2E-01",
+      "case": "E01-N04-foreign-campaign",
+      "status": "passed",
+      "originalStatus": "passed",
+      "entry": "tools/test-desktop-e2e01.mjs",
+      "evidence": "original/e2e01/result.json",
+      "fixture": "e2e01-desktop-v2",
+      "reason": null,
+      "evidenceDetails": []
+    },
+    {
+      "gate": "E2E-01",
+      "case": "E01-N04-stale-campaign",
+      "status": "passed",
+      "originalStatus": "passed",
+      "entry": "tools/test-desktop-e2e01.mjs",
+      "evidence": "original/e2e01/result.json",
+      "fixture": "e2e01-desktop-v2",
+      "reason": null,
+      "evidenceDetails": []
+    },
+    {
+      "gate": "E2E-01",
+      "case": "E01-N04-foreign-world",
+      "status": "passed",
+      "originalStatus": "passed",
+      "entry": "tools/test-desktop-e2e01.mjs",
+      "evidence": "original/e2e01/result.json",
+      "fixture": "e2e01-desktop-v2",
+      "reason": null,
+      "evidenceDetails": []
+    },
+    {
+      "gate": "E2E-01",
+      "case": "E01-N04-stale-world",
+      "status": "passed",
+      "originalStatus": "passed",
+      "entry": "tools/test-desktop-e2e01.mjs",
+      "evidence": "original/e2e01/result.json",
+      "fixture": "e2e01-desktop-v2",
+      "reason": null,
+      "evidenceDetails": []
+    },
+    {
+      "gate": "E2E-01",
+      "case": "E01-N04-foreign-location",
+      "status": "passed",
+      "originalStatus": "passed",
+      "entry": "tools/test-desktop-e2e01.mjs",
+      "evidence": "original/e2e01/result.json",
+      "fixture": "e2e01-desktop-v2",
+      "reason": null,
+      "evidenceDetails": []
+    },
+    {
+      "gate": "E2E-01",
+      "case": "E01-N04-stale-location",
+      "status": "passed",
+      "originalStatus": "passed",
+      "entry": "tools/test-desktop-e2e01.mjs",
+      "evidence": "original/e2e01/result.json",
+      "fixture": "e2e01-desktop-v2",
+      "reason": null,
+      "evidenceDetails": []
+    },
+    {
+      "gate": "E2E-01",
+      "case": "E01-N05-lost-commit-reconcile",
+      "status": "passed",
+      "originalStatus": "passed",
+      "entry": "tools/test-desktop-e2e01.mjs",
+      "evidence": "original/e2e01/result.json",
+      "fixture": "e2e01-desktop-v2",
+      "reason": null,
+      "evidenceDetails": []
+    },
+    {
+      "gate": "E2E-01",
+      "case": "E01-N06-missing-source",
+      "status": "passed",
+      "originalStatus": "passed",
+      "entry": "tools/test-desktop-e2e01.mjs",
+      "evidence": "original/e2e01/result.json",
+      "fixture": "e2e01-desktop-v2",
+      "reason": null,
+      "evidenceDetails": []
+    },
+    {
+      "gate": "E2E-01",
+      "case": "E01-N06-unknown-source",
+      "status": "passed",
+      "originalStatus": "passed",
+      "entry": "tools/test-desktop-e2e01.mjs",
+      "evidence": "original/e2e01/result.json",
+      "fixture": "e2e01-desktop-v2",
+      "reason": null,
+      "evidenceDetails": []
+    },
+    {
+      "gate": "E2E-01",
+      "case": "E01-N06-source-version",
+      "status": "passed",
+      "originalStatus": "passed",
+      "entry": "tools/test-desktop-e2e01.mjs",
+      "evidence": "original/e2e01/result.json",
+      "fixture": "e2e01-desktop-v2",
+      "reason": null,
+      "evidenceDetails": []
+    },
+    {
+      "gate": "E2E-01",
+      "case": "E01-N06-unavailable-source",
+      "status": "passed",
+      "originalStatus": "passed",
+      "entry": "tools/test-desktop-e2e01.mjs",
+      "evidence": "original/e2e01/result.json",
+      "fixture": "e2e01-desktop-v2",
+      "reason": null,
+      "evidenceDetails": []
+    },
+    {
+      "gate": "E2E-01",
+      "case": "E01-01-fixture",
+      "status": "passed",
+      "originalStatus": "passed",
+      "entry": "tools/test-desktop-e2e01.mjs",
+      "evidence": "original/e2e01/result.json",
+      "fixture": "e2e01-desktop-v2",
+      "reason": null,
+      "evidenceDetails": []
+    },
+    {
+      "gate": "E2E-01",
+      "case": "E01-02-history",
+      "status": "passed",
+      "originalStatus": "passed",
+      "entry": "tools/test-desktop-e2e01.mjs",
+      "evidence": "original/e2e01/result.json",
+      "fixture": "e2e01-desktop-v2",
+      "reason": null,
+      "evidenceDetails": []
+    },
+    {
+      "gate": "E2E-01",
+      "case": "E01-03-context",
+      "status": "passed",
+      "originalStatus": "passed",
+      "entry": "tools/test-desktop-e2e01.mjs",
+      "evidence": "original/e2e01/result.json",
+      "fixture": "e2e01-desktop-v2",
+      "reason": null,
+      "evidenceDetails": []
+    },
+    {
+      "gate": "E2E-01",
+      "case": "E01-04-fresh",
+      "status": "passed",
+      "originalStatus": "passed",
+      "entry": "tools/test-desktop-e2e01.mjs",
+      "evidence": "original/e2e01/result.json",
+      "fixture": "e2e01-desktop-v2",
+      "reason": null,
+      "evidenceDetails": []
+    },
+    {
+      "gate": "E2E-01",
+      "case": "E01-05-confirmed-crash",
+      "status": "passed",
+      "originalStatus": "passed",
+      "entry": "tools/test-desktop-e2e01.mjs",
+      "evidence": "original/e2e01/result.json",
+      "fixture": "e2e01-desktop-v2",
+      "reason": null,
+      "evidenceDetails": []
+    },
+    {
+      "gate": "E2E-01",
+      "case": "E01-06-complete",
+      "status": "passed",
+      "originalStatus": "passed",
+      "entry": "tools/test-desktop-e2e01.mjs",
+      "evidence": "original/e2e01/result.json",
+      "fixture": "e2e01-desktop-v2",
+      "reason": null,
+      "evidenceDetails": []
+    },
+    {
+      "gate": "E2E-01",
+      "case": "E01-07-versioned-references",
+      "status": "passed",
+      "originalStatus": "passed",
+      "entry": "tools/test-desktop-e2e01.mjs",
+      "evidence": "original/e2e01/result.json",
+      "fixture": "e2e01-desktop-v2",
+      "reason": null,
+      "evidenceDetails": []
+    },
+    {
+      "gate": "E2E-02",
+      "case": "E02-01-preparation-catalogue",
+      "status": "not-yet-executable",
+      "originalStatus": "partial",
+      "entry": "tools/test-desktop-e2e02.mjs",
+      "evidence": "original/e2e02/result.json",
+      "fixture": "e2e02-desktop-v1",
+      "reason": "Production writers seed the references and native UI selects/reads the prepared plan. Native creation by individually choosing Creature and Item remains open.",
+      "evidenceDetails": [
+        "01-preparation.png",
+        "fixture.json",
+        "snapshots.json#01-preparation"
+      ]
+    },
+    {
+      "gate": "E2E-02",
+      "case": "E02-04-split-move-rejoin",
+      "status": "passed",
+      "originalStatus": "passed",
+      "entry": "tools/test-desktop-e2e02.mjs",
+      "evidence": "original/e2e02/result.json",
+      "fixture": "e2e02-desktop-v1",
+      "reason": null,
+      "evidenceDetails": [
+        "03-split-focus.png",
+        "04-rejoined.png",
+        "snapshots.json"
+      ]
+    },
+    {
+      "gate": "E2E-02",
+      "case": "E02-07-chase-combat",
+      "status": "passed",
+      "originalStatus": "passed",
+      "entry": "tools/test-desktop-e2e02.mjs",
+      "evidence": "original/e2e02/result.json",
+      "fixture": "e2e02-desktop-v1",
+      "reason": null,
+      "evidenceDetails": [
+        "05-chase-finished.png",
+        "06-combat-prepared.png",
+        "snapshots.json"
+      ]
+    },
+    {
+      "gate": "E2E-02",
+      "case": "E02-08-combat-progression",
+      "status": "passed",
+      "originalStatus": "passed",
+      "entry": "tools/test-desktop-e2e02.mjs",
+      "evidence": "original/e2e02/result.json",
+      "fixture": "e2e02-desktop-v1",
+      "reason": null,
+      "evidenceDetails": [
+        "07-combat-round-two.png",
+        "snapshots.json#07-combat-round-two"
+      ]
+    },
+    {
+      "gate": "E2E-02",
+      "case": "E02-06-2014-group-individual",
+      "status": "passed",
+      "originalStatus": "passed",
+      "entry": "tools/test-desktop-e2e02.mjs",
+      "evidence": "original/e2e02/result.json",
+      "fixture": "e2e02-desktop-v1",
+      "reason": null,
+      "evidenceDetails": [
+        "01-preparation.png",
+        "06-combat-prepared.png",
+        "08-reward.png",
+        "snapshots.json"
+      ]
+    },
+    {
+      "gate": "E2E-02",
+      "case": "E02-09-loot-reward-once",
+      "status": "passed",
+      "originalStatus": "passed",
+      "entry": "tools/test-desktop-e2e02.mjs",
+      "evidence": "original/e2e02/result.json",
+      "fixture": "e2e02-desktop-v1",
+      "reason": null,
+      "evidenceDetails": [
+        "08-reward.png",
+        "08b-ledger-once.png",
+        "reward-replay.json",
+        "snapshots.json"
+      ]
+    },
+    {
+      "gate": "E2E-02",
+      "case": "E02-10-fresh-process",
+      "status": "passed",
+      "originalStatus": "passed",
+      "entry": "tools/test-desktop-e2e02.mjs",
+      "evidence": "original/e2e02/result.json",
+      "fixture": "e2e02-desktop-v1",
+      "reason": null,
+      "evidenceDetails": [
+        "09-session-ended.png",
+        "10-fresh-process.png",
+        "snapshots.json"
+      ]
+    },
+    {
+      "gate": "E2E-02",
+      "case": "E02-14-receipt-trace",
+      "status": "passed",
+      "originalStatus": "passed",
+      "entry": "tools/test-desktop-e2e02.mjs",
+      "evidence": "original/e2e02/result.json",
+      "fixture": "e2e02-desktop-v1",
+      "reason": null,
+      "evidenceDetails": [
+        "commands.json",
+        "receipt-trace.json",
+        "snapshots.json",
+        "reward-replay.json"
+      ]
+    },
+    {
+      "gate": "E2E-02",
+      "case": "E02-12-publish-failure",
+      "status": "passed",
+      "originalStatus": "passed",
+      "entry": "tools/test-desktop-e2e02.mjs",
+      "evidence": "original/e2e02/result.json",
+      "fixture": "e2e02-desktop-v1",
+      "reason": null,
+      "evidenceDetails": [
+        "publish-failure/result.json",
+        "publish-failure/unconfirmed.png",
+        "publish-failure/resolved.png"
+      ]
+    },
+    {
+      "gate": "E2E-02",
+      "case": "E02-13-reply-loss-retry",
+      "status": "passed",
+      "originalStatus": "passed",
+      "entry": "tools/test-desktop-e2e02.mjs",
+      "evidence": "original/e2e02/result.json",
+      "fixture": "e2e02-desktop-v1",
+      "reason": null,
+      "evidenceDetails": [
+        "reply-loss/result.json",
+        "reply-loss/unconfirmed.png",
+        "reply-loss/resolved.png"
+      ]
+    },
+    {
+      "gate": "E2E-02",
+      "case": "E02-02-immutable-initialize",
+      "status": "prerequisite-blocked",
+      "originalStatus": "open",
+      "entry": "tools/test-desktop-e2e02.mjs",
+      "evidence": "original/e2e02/result.json",
+      "fixture": "e2e02-desktop-v1",
+      "reason": "Initialize accepts only expectedRosterRevision, no PreparationId/Revision/Snapshot or immutable SourceProvenance.",
+      "evidenceDetails": []
+    },
+    {
+      "gate": "E2E-02",
+      "case": "E02-03-independent-runtime",
+      "status": "prerequisite-blocked",
+      "originalStatus": "open",
+      "entry": "tools/test-desktop-e2e02.mjs",
+      "evidence": "original/e2e02/result.json",
+      "fixture": "e2e02-desktop-v1",
+      "reason": "No own LiveSession identity or explicit second independent runtime start from the same snapshot.",
+      "evidenceDetails": []
+    },
+    {
+      "gate": "E2E-02",
+      "case": "E02-05-focus-fail-closed",
+      "status": "not-yet-executable",
+      "originalStatus": "open",
+      "entry": "tools/test-desktop-e2e02.mjs",
+      "evidence": "original/e2e02/result.json",
+      "fixture": "e2e02-desktop-v1",
+      "reason": "Active split focus exercised; complete none/pending/unavailable/foreign/stale/retired/damaged matrix is not part of this run.",
+      "evidenceDetails": []
+    },
+    {
+      "gate": "E2E-02",
+      "case": "E02-11-invalid-catalogue",
+      "status": "not-yet-executable",
+      "originalStatus": "open",
+      "entry": "tools/test-desktop-e2e02.mjs",
+      "evidence": "original/e2e02/result.json",
+      "fixture": "e2e02-desktop-v1",
+      "reason": "Missing, unknown, unavailable and stale source attempts need independent fixture copies and visible before/after checks.",
+      "evidenceDetails": []
+    },
+    {
+      "gate": "E2E-03",
+      "obligationGroup": "Reise Preview/Cancel/Confirm, Unterbrechung, Resume, Undo/Redo, Fresh",
+      "status": "prerequisite-blocked",
+      "gatePrerequisite": "E2E-02",
+      "partialEntries": [
+        "tools/test-desktop-travel-checkpoints.mjs",
+        "tests/runtime/desktop-travel.test.mjs"
+      ],
+      "reason": "Gebundener Plan1-Reiseteil bestanden. Keine gemeinsame fortgeschriebene E2E02-Campaign mit allen Consumern.",
+      "commonExecutableChain": false
+    },
+    {
+      "gate": "E2E-03",
+      "obligationGroup": "Kalender/Clock und Ereignisbindung",
+      "status": "prerequisite-blocked",
+      "gatePrerequisite": "E2E-02",
+      "partialEntries": [
+        "tests/runtime/desktop-restock-journey.test.mjs"
+      ],
+      "reason": "Gemeinsamer Kalendertermin mit tatsächlicher Reise und sichtbarer Folge fehlt.",
+      "commonExecutableChain": false
+    },
+    {
+      "gate": "E2E-03",
+      "obligationGroup": "Shoprestock genau einmal",
+      "status": "prerequisite-blocked",
+      "gatePrerequisite": "E2E-02",
+      "partialEntries": [
+        "tests/runtime/desktop-restock-journey.test.mjs"
+      ],
+      "reason": "Derselbe Stock-/Ereignis-/Receiptbestand in gemeinsamer nativer Reise fehlt.",
+      "commonExecutableChain": false
+    },
+    {
+      "gate": "E2E-03",
+      "obligationGroup": "Wetter und manuelle Priorität",
+      "status": "prerequisite-blocked",
+      "gatePrerequisite": "E2E-02",
+      "partialEntries": [
+        "tools/test-desktop-weather-override.mjs",
+        "tests/runtime/desktop-weather-integrity.test.mjs"
+      ],
+      "reason": "Gepinnte ManualDecision samt Source-/Target-/Consumer-Matrix im gemeinsamen Fixture fehlt.",
+      "commonExecutableChain": false
+    },
+    {
+      "gate": "E2E-03",
+      "obligationGroup": "Lokale Musik/Ambience mit Bytehash",
+      "status": "prerequisite-blocked",
+      "gatePrerequisite": "E2E-02",
+      "partialEntries": [
+        "tools/test-desktop-scene-music-navigation.mjs"
+      ],
+      "reason": "Gemeinsame AudioSourceIds, Metadaten und reale fehlende/beschädigte Varianten fehlen.",
+      "commonExecutableChain": false
+    },
+    {
+      "gate": "E2E-03",
+      "obligationGroup": "Kein verspätetes Audio nach Cancel/Retirement/Providerfehler",
+      "status": "prerequisite-blocked",
+      "gatePrerequisite": "E2E-02",
+      "partialEntries": [
+        "tools/test-desktop-music-stop.mjs",
+        "tests/runtime/desktop-audio-layer-recovery.test.mjs"
+      ],
+      "reason": "Journeycancel, Retirement und echte Audioausgabe in derselben Kette fehlen.",
+      "commonExecutableChain": false
+    },
+    {
+      "gate": "E2E-03",
+      "obligationGroup": "Offline/Crash/Retry, vollständige Zeit-/Ortskonsistenz",
+      "status": "prerequisite-blocked",
+      "gatePrerequisite": "E2E-02",
+      "partialEntries": [
+        "tools/test-desktop-travel-checkpoints.mjs",
+        "tests/runtime/desktop-restock-journey.test.mjs"
+      ],
+      "reason": "Gemeinsamer Receipttrace über alle Consumer fehlt.",
+      "commonExecutableChain": false
+    },
+    {
+      "gate": "E2E-04",
+      "obligationGroup": "CompleteExport und unabhängiger Import",
+      "status": "prerequisite-blocked",
+      "gatePrerequisite": "E2E-03",
+      "partialEntries": [
+        "tools/test-desktop-e2e01.mjs",
+        "tools/atlas-e2e01-fixture.mjs"
+      ],
+      "reason": "E2E01-Minimaltransfer bestanden; vollständige fortgeschriebene Runtime-/Ledger-/Combat-/Chase-Closure fehlt.",
+      "commonExecutableChain": false
+    },
+    {
+      "gate": "E2E-04",
+      "obligationGroup": "BackupRestore mit ID-Erhalt",
+      "status": "prerequisite-blocked",
+      "gatePrerequisite": "E2E-03",
+      "partialEntries": [
+        "tests/shared/desktop-backup-worker.test.mjs",
+        "tests/campaign/desktop-key-discovery.test.mjs"
+      ],
+      "reason": "Eigener nativer Restoreweg auf demselben Spielzustand fehlt.",
+      "commonExecutableChain": false
+    },
+    {
+      "gate": "E2E-04",
+      "obligationGroup": "Ausdrücklich gewähltes Salvage",
+      "status": "prerequisite-blocked",
+      "gatePrerequisite": "E2E-03",
+      "partialEntries": [
+        "tests/campaign/desktop-archive-transfer.test.mjs",
+        "tests/campaign/desktop-archive-error.test.mjs"
+      ],
+      "reason": "Sichtbare Identität/Auswirkung jeder Auslassung fehlt; keine Completequalifikation daraus.",
+      "commonExecutableChain": false
+    },
+    {
+      "gate": "E2E-04",
+      "obligationGroup": "Discovery, Charges und Countdown",
+      "status": "prerequisite-blocked",
+      "gatePrerequisite": "E2E-03",
+      "partialEntries": [
+        "tests/campaign/desktop-key-discovery.test.mjs"
+      ],
+      "reason": "Charges/Countdown fehlen im gemeinsamen Seed und Recoveryweg.",
+      "commonExecutableChain": false
+    },
+    {
+      "gate": "E2E-04",
+      "obligationGroup": "Medien, Referenzclosure, Trash und unknown-retained",
+      "status": "prerequisite-blocked",
+      "gatePrerequisite": "E2E-03",
+      "partialEntries": [
+        "tools/test-desktop-e2e01.mjs",
+        "tests/campaign/desktop-archive-transfer.test.mjs"
+      ],
+      "reason": "Fortgeschriebene vollständige Closure über alle Recoverywege fehlt.",
+      "commonExecutableChain": false
+    },
+    {
+      "gate": "E2E-04",
+      "obligationGroup": "Passives Spielerfenster und Geheimnisse",
+      "status": "prerequisite-blocked",
+      "gatePrerequisite": "E2E-03",
+      "partialEntries": [
+        "tools/test-desktop-player-scene-privacy.mjs",
+        "tools/test-desktop-player-blank.mjs",
+        "tools/test-desktop-player-focus.mjs"
+      ],
+      "reason": "Gemeinsamer DOM-/Pixel-/Accessibility-/Speicher-/Log-/Netzcheck im selben Spielabend fehlt.",
+      "commonExecutableChain": false
+    },
+    {
+      "gate": "E2E-04",
+      "obligationGroup": "Tastatur, kleines Fenster, 100 Prozent",
+      "status": "prerequisite-blocked",
+      "gatePrerequisite": "E2E-03",
+      "partialEntries": [
+        "tools/test-desktop-style-ownership.mjs"
+      ],
+      "reason": "Durchgehende konkrete Aufgaben per Tastatur und kleines Fenster fehlen.",
+      "commonExecutableChain": false
+    },
+    {
+      "gate": "E2E-04",
+      "obligationGroup": "Unabhängiger Host und Zielplattformen",
+      "status": "prerequisite-blocked",
+      "gatePrerequisite": "E2E-03",
+      "partialEntries": [],
+      "reason": "Windows/macOS, unabhängiger Host, Paket/Installation, physische Eingabe und Owner fehlen.",
+      "commonExecutableChain": false
+    },
+    {
+      "gate": "E2E-02 supporting workflow",
+      "case": "source-excerpts-to-session-packet",
+      "status": "passed",
+      "entry": "tools/test-desktop-note-excerpts.mjs",
+      "evidence": "original/note-excerpts/failure.json",
+      "reason": "New native repeat passed including fresh process; original source-excerpt failure did not reproduce at the same source/runtime stand. Instability remains unresolved; no repair or full E2E02 pass.",
+      "historicalStatus": "failed",
+      "currentEvidence": ".build/e2e-reference-round10-final-failure-20261029/result.json"
+    }
+  ],
+  "gateOrder": [
+    "E2E-01",
+    "E2E-02",
+    "E2E-03",
+    "E2E-04"
+  ],
+  "qualification": {
+    "E2E-01": "local-technical-passed",
+    "E2E-02": "open",
+    "E2E-03": "prerequisite-blocked",
+    "E2E-04": "prerequisite-blocked",
+    "candidateMain": "not-bound",
+    "packageInstall": "not-qualified",
+    "targetDevice": "not-qualified",
+    "owner": "open"
+  }
+}

@@ -1,5 +1,5 @@
 import { runNativeProbe } from './native-session.mjs';
-// Integrated metric/mile workflow only; the unmerged DnD unit switch is outside this probe.
+// Metric/mile workflow; display units are explicitly selected before metric inputs.
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { execFileSync } from 'node:child_process';
@@ -101,6 +101,7 @@ await runNativeProbe(
       await page.locator('#atlas-search').fill('');
       await atlasCanvasReady(page);
       await mapOnly();
+      await page.locator('#atlas-units').selectOption('metric');
     }
     async function close() {
       const nativeChild = app.process();

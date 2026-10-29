@@ -2,7 +2,7 @@
 
 Status: Geltender Fachvertrag; offene Erweiterungen sind als Ziele beschrieben.
 Owner: runtime
-Last Reviewed: 2026-10-24 (Struktur und Quellen; Fachabnahme separat)
+Last Reviewed: 2026-10-29 (Read-/Writerbesitzer und Codeanschlüsse; Fachabnahme separat)
 Source of Truth: Dieses Dokument besitzt das benannte Thema; Code belegt den Iststand, das Abnahmeregister den Prüfstand.
 
 Fachrahmen: [Party/Live](smr03-live-scene-contract.md),
@@ -21,7 +21,7 @@ Pfade: `src/app/`; Prüfungen: `tests/`.
 | Szenen-/Mehrgruppenauswahl | `storage/scene-encounter-selection.ts`, `combat-selection-ui.ts`, `storage/combat.ts` | `desktop-scene-encounter-selection.test.mjs` |
 | Gemeinsame PC-Gesundheit | `progression.ts`, `storage/mask-health.ts` | `desktop-combat-hit.test.mjs`, `desktop-review-integrity.test.mjs` |
 | Konzentrationswarteschlange und SG | [storage/combat.ts](../../../src/app/storage/combat.ts): `applyCombatDamage`, Commands `concentration`/`concentration-roll`; [combat-contracts.ts](../../../src/app/runtime/combat-contracts.ts): `concentrationDc`, `checkedCombat` | [desktop-combat-hit.test.mjs (historisch)](https://github.com/ThonkTank/Salt-Marcher/blob/05e8f2f97fc729dba8b6fef3830c566cdc47adad/tests/runtime/desktop-combat-hit.test.mjs) |
-| CON-Vorschlag und Feldkorrektur | [combat.ts](../../../src/app/runtime/combat.ts): `creatureConstitutionSave`, `renderConcentrationEffect`, `execute`, `recoveredCombat` | [desktop-combat-switch.test.mjs (historisch)](https://github.com/ThonkTank/Salt-Marcher/blob/05e8f2f97fc729dba8b6fef3830c566cdc47adad/tests/runtime/desktop-combat-switch.test.mjs), [native Konzentrationsprobe](../../../tools/test-desktop-concentration.mjs) |
+| CON-Vorschlag und Feldkorrektur | [combat.ts](../../../src/app/runtime/combat.ts): `renderConcentrationEffect`; [combat-roll-state.ts](../../../src/app/runtime/combat-roll-state.ts): `creatureConstitutionSave`; [combat-write-coordinator.ts](../../../src/app/runtime/combat-write-coordinator.ts): `execute`, `recoveredCombat` | [desktop-combat-switch.test.mjs (historisch)](https://github.com/ThonkTank/Salt-Marcher/blob/05e8f2f97fc729dba8b6fef3830c566cdc47adad/tests/runtime/desktop-combat-switch.test.mjs), [native Konzentrationsprobe](../../../tools/test-desktop-concentration.mjs) |
 | Legendäre Aktion nach Kopie | `storage/campaign-data.ts`, `storage/mask-health.ts` | `desktop-legendary-transfer-integrity.test.mjs` |
 | Mobdarstellung | `combat-mob-ui.ts` | `desktop-combat-mob.test.mjs` |
 | Abschluss und Schatzverteilung | `storage/combat-resolution.ts`, `combat-resolution-ui.ts` | `desktop-combat-resolution.test.mjs` |
@@ -57,7 +57,7 @@ ausdrücklich zu prüfen; die Zahl ist für GM-Korrekturen editierbar.
 `renderConcentrationEffect` erhält diese flüchtige Korrektur bei erneutem Lesen
 und zusätzlichen Treffern. Erst die bestätigte Prüfung oder Rücknahme setzt
 `checkKey` zurück und beginnt wieder mit dem Statblockwert. Dafür beide
-Bestätigungswege in `execute` und `recoveredCombat` beachten, auch bei verlorener
+Bestätigungswege in `combat-write-coordinator.ts::execute` und `recoveredCombat` beachten, auch bei verlorener
 Antwort; Ablehnung darf den Feldinhalt nicht verwerfen. Gleicher Schaden und SG
 sind keine Prüfidentität. Die Rückbindung nutzt die [gemeinsame
 Buchungsbestätigung](../../project/architecture/overview.md#buchungsantworten-klären) ohne
@@ -77,7 +77,9 @@ benötigen eine zusätzliche gezielte Abfrage. Alle übrigen Listeneinträge wer
 weiterhin auf Prüfsumme, Format und Zuordnung geprüft. Der Read verändert weder
 Kämpfe noch Rohentwürfe.
 
-Leseaufträge behalten ihre eigene laufende Nummer und den Szenen-/Kampagnenbezug.
+`combat-read-owner.ts` besitzt Ladeziel, Figurenwahl, Fehler und getrennte
+Figuren-/Notizleseoperationen. Leseaufträge behalten ihre eigene laufende Nummer
+und den Szenen-/Kampagnenbezug.
 Während eines Wechsels sperrt die Oberfläche alte Schreibaktionen; nur die
 aktuelle Antwort darf Auswahl und Editor übernehmen. Ein Lesefehler erhält das
 angeforderte Ziel für einen ausdrücklichen Retry. Die Fehlermeldung nennt den

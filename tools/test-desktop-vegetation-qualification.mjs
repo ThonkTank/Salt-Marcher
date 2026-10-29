@@ -28,7 +28,7 @@ await runNativeProbe({ output: out, name: 'vegetation-qualification' }, async (n
   buildSync({
     stdin: {
       contents:
-        "export * from './src/app/storage/store';export * from './src/app/atlas/atlas-landscape';export * from './src/app/atlas/terrain-height';export * from './src/app/atlas/vegetation';",
+        "export * from './src/app/storage/store';export * from './src/app/atlas/atlas-landscape';export * from './src/app/atlas/terrain-height';export * from './src/app/atlas/vegetation';export * from './src/app/atlas/atlas-camera';",
       resolveDir: root,
     },
     outfile: out + '/store.cjs',
@@ -37,7 +37,14 @@ await runNativeProbe({ output: out, name: 'vegetation-qualification' }, async (n
     format: 'cjs',
     external: ['better-sqlite3'],
   });
-  const { CampaignStore, heightRecord, emptyRecord, vegetationSpec } = require(out + '/store.cjs'),
+  const {
+      CampaignStore,
+      heightRecord,
+      emptyRecord,
+      vegetationSpec,
+      TerrainSampler,
+      atlasProject,
+    } = require(out + '/store.cjs'),
     Database = require('better-sqlite3'),
     { PNG } = require('pngjs');
   const store = new CampaignStore(dir + '/workbench.sqlite'),
@@ -260,7 +267,21 @@ await runNativeProbe({ output: out, name: 'vegetation-qualification' }, async (n
       height: n.clientHeight,
     }));
   async function at(x, y) {
-    return atlasCanvasPoint(page, { x, y }, false);
+    await atlasCanvasReady(page);
+    const source = db
+        .prepare('SELECT payload FROM atlas_landscape')
+        .all()
+        .map((row) => JSON.parse(row.payload)),
+      ground = new TerrainSampler(source).query({ x, y }),
+      state = await page.locator('#campaign-map').evaluate((canvas) => ({
+        pose: JSON.parse(canvas.dataset.terrainProjection),
+        rect: canvas.getBoundingClientRect().toJSON(),
+      })),
+      projected = atlasProject(state.pose, { x, y }, ground.heightM);
+    return {
+      x: state.rect.x + projected.x * state.rect.width,
+      y: state.rect.y + projected.y * state.rect.height,
+    };
   }
   async function tool(id) {
     await page.locator('[data-atlas-tool="' + id + '"]').click();

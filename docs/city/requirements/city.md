@@ -2,7 +2,7 @@
 
 Status: Verbindlicher Zielumfang; historische Umsetzungsbelege sind keine aktuelle Abnahme.
 Owner: city
-Last Reviewed: 2026-10-24 (Struktur und Quellen; Fachabnahme separat)
+Last Reviewed: 2026-10-29 (CITY-00-Inventur und prüfbare Ergebnisbindungen; Fachabnahme separat)
 Source of Truth: Dieses Dokument besitzt das benannte Thema; Code belegt den Iststand, das Abnahmeregister den Prüfstand.
 
 Diese Erweiterung gehört zur [Hex-Atlas-Roadmap](../../atlas/requirements/atlas.md). **Ein Atlas, eine Kamera, dieselben Werkzeuge und eine durchgehende Bearbeitung. Es gibt keine separaten Welt-, Stadt- oder Dungeonmodi.** Von der obersten Hex-Stufe bis zum Raum eines Hauses sind alle räumlichen Detailstufen allein durch Zoom erreichbar. Auch Bearbeitung und Key-Arbeit bleiben im selben Editor.
@@ -73,7 +73,7 @@ Die vollständigen CITY-Anforderungen bleiben im bestehenden Katalog; Grundfunkt
 
 | Phase | Nutzbarer Umfang | Praxisprüfung |
 |---|---|---|
-| **CITY-00 – Ergebnisvorbilder festlegen** | Kleine Referenzgalerie und Ergebnis-/Bedienkriterien festlegen. | Übersicht und Detail aller drei Vorbilder prüfen; keine Originalgeste als Pflicht übernehmen. |
+| **CITY-00 – Ergebnisvorbilder und Funktionsinventar klären** | Kleine Referenzgalerie sowie sämtliche eigenständigen Nutzerwirkungen der tatsächlich gebundenen Stände inventarisieren; je Wirkung Quelle, Fachvertrag, Abnahmeszenario und Lieferung. | Übersicht/Detail, Erzeugung, Bearbeiten, Erhalt und Wiederöffnung aller drei Vorbilder prüfen. Bekannte 65 CO-Kandidaten sind [zugeordnet](../contract/city.md#ergebnisverträge-und-bestehende-inventarbindungen); unbekannte Voll-/Premiumwirkungen bleiben offen. Galerieabschluss allein schließt CITY-00 nicht. |
 | **CITY-01 – Stadt im Atlas zeichnen** | Native .city direkt am Ort anlegen; Straße, Platz und zwei Häuser im selben Editor bearbeiten. | Nur hinein-/herauszoomen; Haus verschieben, Straße ändern, Undo/Redo, speichern und frisch öffnen. |
 | **CITY-02 – Nutzbare Stadt erzeugen** | Siedlungsfläche, Straßen und Platz vorgeben; Bebauung mit wenigen sichtbaren Vorgaben in Vorschau erzeugen und als direkt editierbaren Grundplan übernehmen. | Dorf und kleine Stadt erzeugen, sofort ein Gebäude und eine Straße ändern; Abbruch ohne Restdaten, Undo, Wiederöffnung. |
 | **CITY-03 – Hausgrundriss und Keys direkt bearbeiten** | Gebäude mit Orts-Key und gemeinsamen Räumen ausarbeiten; Außenform und Räume desselben Objekts im durchgehenden Editor ändern. | Region → Stadt → Haus → Raum nur zoomen; Wandänderung gegenüber Gesamtskalierung prüfen; Straßen-, Gebäude-, Raum- und Key-Änderung mit gemeinsamer Undo-Folge und frischer Öffnung. |

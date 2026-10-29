@@ -11,6 +11,11 @@ import { execFileSync } from 'node:child_process';
 import assert from 'node:assert/strict';
 import { atlasCanvasReady } from './atlas-canvas-probe.mjs';
 
+assert(
+  !(process.argv.includes('--city-only') && process.argv.includes('--raised-floor')),
+  'Cannot combine --city-only and --raised-floor: this would skip every room and city assertion.',
+);
+
 const root = process.cwd(),
   require = createRequire(root + '/package.json'),
   { _electron } = require('playwright-core');

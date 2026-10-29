@@ -114,15 +114,18 @@ for (const { kind, saveFails, changedAfterSave } of [
   { kind: 'location', saveFails: true },
   { kind: 'location', changedAfterSave: true },
   { kind: 'knowledge' },
+  { kind: 'stale-read' },
 ])
   test(
-    kind === 'knowledge'
-      ? 'prepared read-aloud text is adopted and saved without publishing player content'
-      : changedAfterSave
-        ? 'a later saved location cannot receive the earlier image intent'
-        : saveFails
-          ? 'failed location save cannot grant publication authority'
-          : `immediate ${kind} publication uses the visible location draft after saving it`,
+    kind === 'stale-read'
+      ? 'a detached Live factory cannot publish a late open response or replace a reactivated character draft'
+      : kind === 'knowledge'
+        ? 'prepared read-aloud text is adopted and saved without publishing player content'
+        : changedAfterSave
+          ? 'a later saved location cannot receive the earlier image intent'
+          : saveFails
+            ? 'failed location save cannot grant publication authority'
+            : `immediate ${kind} publication uses the visible location draft after saving it`,
     async (t) => {
       const root = mkdtempSync(path.join(tmpdir(), 'live-player-location-')),
         {
@@ -374,6 +377,16 @@ for (const { kind, saveFails, changedAfterSave } of [
         );
         assert.equal(document.getElementById('live-party-details').open, true);
         assert.equal(document.getElementById('live-party-panel').hidden, false);
+        let focused = false;
+        const partyCard = document.querySelector('#live-party-reference [data-character-id]');
+        partyCard.focus = () => {
+          focused = true;
+        };
+        for (const id of ['ledger-character-heading', 'live-party-quick'])
+          document.getElementById(id).scrollIntoView = () => {};
+        await ui.openLiveCharacterLoot(hero.id);
+        document.getElementById('live-loot-back').click();
+        assert.equal(focused, true, 'the loot return focuses its original party card');
       }
       if (kind === 'follow') {
         const original = window.campaign.scenePreparation;
@@ -392,6 +405,38 @@ for (const { kind, saveFails, changedAfterSave } of [
         await ui.refreshScenePreparation();
         assert.ok(messages.some((m) => m.error && m.text === 'Current preparation failure'));
         window.campaign.scenePreparation = original;
+      }
+      if (kind === 'stale-read') {
+        const read = window.campaign.live;
+        let release;
+        window.campaign.live = async (...args) => {
+          const result = await read(...args);
+          return new Promise((resolve) => {
+            release = () => resolve(result);
+          });
+        };
+        const old = ui.openLive();
+        for (let i = 0; i < 8; i++) await tick();
+        assert(release);
+        ui.deactivate();
+        const area = document.getElementById('character-name');
+        area.value = 'Current literal owner';
+        const before = messages.length;
+        release();
+        assert.equal(await old, false);
+        assert.equal(area.value, 'Current literal owner');
+        assert.equal(messages.length, before);
+        window.campaign.live = read;
+        ui.activateLive(context);
+        await ui.openLive();
+        area.value = 'New generation';
+        area.oninput();
+        assert.equal(await ui.flushLive(), true);
+        assert.equal(
+          store.live(context.token).roster.find((c) => c.id === hero.id).profile.name,
+          'New generation',
+        );
+        return;
       }
       if (kind === 'knowledge') {
         const button = [...document.querySelectorAll('#live-knowledge-results button')].find(

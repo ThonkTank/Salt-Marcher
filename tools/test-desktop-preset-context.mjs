@@ -102,7 +102,8 @@ await runNativeProbe(
     }
     async function settings() {
       await revealWorkspaceNavigation(page);
-      await page.locator('#application-trigger').click();
+      if (!(await page.locator('#application-settings').isVisible()))
+        await page.locator('#application-trigger').click();
       await page.getByRole('button', { name: 'Einstellungen', exact: true }).click();
       await page.waitForFunction(
         () =>

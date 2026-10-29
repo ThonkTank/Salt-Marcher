@@ -340,6 +340,9 @@ await runNativeProbe(
         .locator('#note-thread-sources article')
         .filter({ hasText: 'Aktueller Einsatz: Nordtor.' });
       assert.equal(await correct.count(), 1);
+      // Newly linked sources require an explicit current-revision choice.
+      assert.equal(await correct.locator('input[type=checkbox]').isChecked(), false);
+      await correct.locator('input[type=checkbox]').check();
       assert.equal(await correct.locator('input[type=checkbox]').isChecked(), true);
       assert.equal(
         await page

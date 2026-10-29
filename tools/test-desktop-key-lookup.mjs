@@ -1,3 +1,4 @@
+import { openDesktopKeyRoomBrowser } from './qa-key-entry.mjs';
 import { revealWorkspaceNavigation } from './native-navigation.mjs';
 import { runNativeProbe } from './native-session.mjs';
 import { openDesktopKeyFromAtlas } from './qa-key-entry.mjs';
@@ -191,6 +192,7 @@ await runNativeProbe(
         await page.locator('#workspace-nav-summary').click();
       await page.locator('#atlas-tab').click();
       await openDesktopKeyFromAtlas(page, 'Wachstube');
+      await openDesktopKeyRoomBrowser(page);
       await page.locator('#key-dialog').waitFor({ state: 'visible' });
       return page;
     }

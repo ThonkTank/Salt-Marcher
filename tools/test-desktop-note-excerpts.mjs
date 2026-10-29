@@ -246,6 +246,14 @@ await runNativeProbe(
       if ((await page.locator('#note-thread-sources article').count()) !== 4)
         throw Error('Notebook needs extra manual source links');
       await shot('four-auto-linked-sources');
+      // Linking and choosing are separate: newly added sources are not preselected.
+      for (const [title] of tasks)
+        await page
+          .locator('#note-thread-sources article')
+          .filter({ has: page.getByRole('heading', { name: title, exact: true }) })
+          .locator('input[data-thread-source]')
+          .check();
+
       await page.locator('#note-thread-plan-name').fill('Nächste Flut');
       await page.locator('#note-thread-visit-title').fill('Fährsteg · Siv und die Kupfermarke');
       await page.locator('#note-thread-use').click();

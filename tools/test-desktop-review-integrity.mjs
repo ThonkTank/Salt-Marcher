@@ -1,3 +1,4 @@
+import { revealWorkspaceNavigation } from './native-navigation.mjs';
 // Native regression for the second independent review: author links, trash, and Party health.
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
@@ -130,13 +131,7 @@ store.close();
 let page,
   ipcChecked = false;
 async function tab(id) {
-  if (
-    !(await page.locator('#' + id).isVisible()) &&
-    (await page.locator('#atlas-navigation').isVisible())
-  )
-    await page.locator('#atlas-navigation').click();
-  if (!(await page.locator('#' + id).isVisible()))
-    await page.locator('#workspace-nav-summary').click();
+  await revealWorkspaceNavigation(page);
   await page.locator('#' + id).click();
 }
 async function launch() {

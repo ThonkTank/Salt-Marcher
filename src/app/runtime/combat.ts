@@ -1,3 +1,5 @@
+import { createCombatWriteCoordinator } from './combat-write-coordinator';
+import { CombatReadOwner } from './combat-read-owner';
 import { createEditorSurface } from '../shared/editor-surface';
 import { editableCombat, creatureConstitutionSave, deferLegendaryCost } from './combat-roll-state';
 export {
@@ -30,13 +32,7 @@ import {
   type NotesWorkingDraft,
   type CombatWorkingDraft,
 } from './combat-draft-contracts';
-import {
-  writeConfirmed,
-  hasPendingCommit,
-  onCommitState,
-  onCommitResolved,
-  type CommitResolution,
-} from '../shared/commit-confirmation';
+import { hasPendingCommit, onCommitState, onCommitResolved } from '../shared/commit-confirmation';
 import type { WorkspaceGeometry, Result } from '../shared/contracts';
 import type { LiveScene } from './live-scene-contracts';
 import {
@@ -47,7 +43,6 @@ import {
   combatStartIssue,
   type CombatAction,
   type CombatView,
-  type CombatCommand,
 } from './combat-contracts';
 import { type Combatant, type CombatState } from './combat-state-contracts';
 import { prepareFinish, finishRewards, refreshProgress, onProgressChanged } from './progression-ui';
@@ -57,7 +52,6 @@ import type { PreparedGroup } from '../campaign/session-contracts';
 import { rollSceneCheck, rollSceneFormula } from '../catalog/rule-reference-ui';
 import type { SceneCheck } from './scene-check-contracts';
 import { deathSaveControls } from './progression';
-import { type DeathSaveResult } from './character-progress-contracts';
 import {
   isLegendaryAction,
   creatureActionForRolls,
@@ -85,7 +79,6 @@ export function createCombat(host: CombatHost) {
     requestAnimationFrame: host.requestAnimationFrame,
   };
   const editorSession = new EditorSession();
-  const pendingWork = editorSession.operation<Promise<boolean>>();
 
   const value = (id: string) => get<HTMLInputElement>(id).value;
   const unwrap = <T>(r: Result<T>): T => {
@@ -93,16 +86,6 @@ export function createCombat(host: CombatHost) {
     return r.value;
   };
 
-  const deathResultText = (result: DeathSaveResult) =>
-    ({
-      success: 'Erfolg',
-      failure: 'Fehlschlag',
-      'natural-20': 'Natürliche 20 · 1 HP',
-      'natural-1': 'Natürliche 1 · zwei Fehlschläge',
-      stabilize: 'Stabilisiert',
-      reset: 'Zurückgesetzt',
-      dead: 'Als tot markiert',
-    })[result];
   const groupPicker = new CombatGroupPicker(host.api, host.roots[0]!);
   let workspace: WorkspaceGeometry | null = null,
     scene: LiveScene | null = null,
@@ -114,12 +97,7 @@ export function createCombat(host: CombatHost) {
   let hitPanel: CombatHitPanel | null = null;
   let areaPanel: CombatAreaPanel | null = null;
   let initiativePanel: CombatInitiativePanel | null = null;
-  let selected: string | null = null;
   let tell: (text: string, error?: boolean) => void, afterSaved: (() => Promise<void>) | undefined;
-  let loadPending = false,
-    loadError: string | null = null,
-    requestedCombatId: string | null = null,
-    knownRecent: CombatView['recent'] = [];
   function acceptCombat(result: CombatView) {
     if (view?.combat?.id !== result.combat?.id) {
       expandedMobs.clear();
@@ -127,8 +105,7 @@ export function createCombat(host: CombatHost) {
       reinforcements.contextChanged();
     }
     view = result;
-    requestedCombatId = result.combat?.id ?? null;
-    knownRecent = result.recent;
+    reads.accept(result);
     rolls.accept(result.combat);
   }
   const rolls = createCombatRollEditor({
@@ -169,10 +146,10 @@ export function createCombat(host: CombatHost) {
       return scene?.id ?? null;
     },
     get loadVersion() {
-      return loadNumber;
+      return reads.version;
     },
     blocked: () => blocked(),
-    writing: () => !!pendingWork.value,
+    writing: () => writer.writing,
     send: (action, failed) => execute(action, undefined, () => true, failed),
     create: addCatalogCreature,
     initiative: () => {
@@ -186,8 +163,7 @@ export function createCombat(host: CombatHost) {
     submitReinforcement = reinforcements.submit,
     catalogAdditionConfirmed = reinforcements.confirmed,
     renderReinforcements = reinforcements.render;
-  let loadNumber = 0,
-    candidateRequest = 0,
+  let candidateRequest = 0,
     candidatePending = false,
     candidateLoading = false,
     partyContext = '',
@@ -197,12 +173,107 @@ export function createCombat(host: CombatHost) {
   const draftCache = new CombatDraftCache((cam, message) => {
     if (editorSession.status.attached && workspace?.campaign.id === cam) tell(message, true);
   }, host.api);
+  const reads = new CombatReadOwner({
+    session: editorSession,
+    api: host.api,
+    cache: draftCache,
+    context: () =>
+      workspace && scene
+        ? { workspace, sceneId: scene.id, combat: view?.combat ?? null, partyBasis: partyContext }
+        : null,
+    accept: acceptCombat,
+    clear: () => {
+      view = null;
+    },
+    render: () => render(),
+    lock: () => lock(),
+    renderFighter: () => renderEditor(),
+    renderSelection: () => renderSelection(),
+    renderNotes: () => renderNotes(),
+    revealFighter: () => {
+      if (window.matchMedia('(max-width:1099px)').matches)
+        get('combat-participant').scrollIntoView({ block: 'start' });
+    },
+    listDrafts: () => listDrafts(),
+    partyChanged: () => {
+      void refreshPartyCandidates();
+    },
+    loadingStarted: () => {
+      candidateRequest++;
+      candidateLoading = false;
+    },
+    loaded: () => {
+      if (get<HTMLDetailsElement>('combat-creation').open) void selectionPanel?.read();
+    },
+    tell: (message, error) => tell(message, error),
+  });
+  const chooseFighter = reads.choose,
+    loadNotes = reads.loadNotes,
+    load = reads.load;
+  const writer = createCombatWriteCoordinator({
+    session: editorSession,
+    api: host.api,
+    cache: draftCache,
+    context: () => ({ workspace, sceneId: scene?.id ?? null, view }),
+    blocked: () => blocked(),
+    invalidateReads: () => {
+      reads.invalidate();
+      candidateRequest++;
+      candidateLoading = false;
+    },
+    draftFor: (action) => {
+      const editKey = action.kind === 'edit' ? fighterKey() : null,
+        editDraft = editKey ? fighterDrafts.get(editKey) : undefined;
+      const editorDraft =
+        action.kind === 'initiative' && workspace && view?.combat
+          ? draftCache.values.get(
+              combatDraftKey(workspace.campaign.id, view.combat.id, 'initiative', view.combat.id),
+            )
+          : action.kind === 'notes'
+            ? notesDraft()
+            : editDraft;
+      return { editKey, editDraft, editorDraft };
+    },
+    accept: acceptCombat,
+    acceptRoll: (action, id) => rolls.accepted(action, id),
+    acceptInitiative: (draft) => initiativePanel?.accepted(draft),
+    resetConcentration: () => {
+      delete get('combat-concentration-modifier').dataset.checkKey;
+    },
+    clearPartyInitiative: () => {
+      get<HTMLInputElement>('combat-party-initiative').value = '';
+    },
+    listDrafts: () => listDrafts(),
+    revealMembers: revealResultMembers,
+    refresh: async () => {
+      await refreshProgress();
+      if (afterSaved) await afterSaved();
+    },
+    completed: (applied, reveal) => {
+      if (applied) {
+        render();
+        if (reveal) get('combat-concentration-effect').scrollIntoView({ block: 'nearest' });
+      } else lock();
+      if (candidatePending) {
+        candidatePending = false;
+        void refreshPartyCandidates();
+      }
+    },
+    lock: () => lock(),
+    render: () => render(),
+    load,
+    flushFinish: flushFinishDraft,
+    tell: (text, error) => tell(text, error),
+  });
+  const execute = writer.execute,
+    recoveredCombat = writer.recoveredCombat,
+    flushCombat = writer.flush;
   const fighterDrafts = {
     get: (key: string) => draftCache.values.get(key) as FighterDraft | undefined,
   };
   const fighterKey = () =>
-    workspace && view?.combat && selected
-      ? combatDraftKey(workspace.campaign.id, view.combat.id, 'fighter', selected)
+    workspace && view?.combat && reads.selected
+      ? combatDraftKey(workspace.campaign.id, view.combat.id, 'fighter', reads.selected)
       : null;
   const notesKey = () =>
     workspace && view?.combat
@@ -212,20 +283,17 @@ export function createCombat(host: CombatHost) {
     const key = notesKey();
     return key ? (draftCache.values.get(key) as NotesWorkingDraft | undefined) : undefined;
   };
-  let editorLoading = false,
-    notesLoading = false,
-    editorRequest = 0,
-    draftPageRequest = 0,
+  let draftPageRequest = 0,
     draftCursor: string | null = null;
   function keepFighterDraft() {
-    const p = view?.combat?.participants.find((p) => p.id === selected),
+    const p = view?.combat?.participants.find((p) => p.id === reads.selected),
       key = fighterKey();
     if (
       !p ||
       !key ||
       !view?.combat ||
       !workspace ||
-      editorLoading ||
+      reads.editorLoading ||
       draftCache.readFailures.has(key)
     )
       return;
@@ -250,7 +318,7 @@ export function createCombat(host: CombatHost) {
     lockConditionShortcuts();
   }
   function keepNotesDraft() {
-    if (!workspace || !view?.combat || notesLoading) return;
+    if (!workspace || !view?.combat || reads.notesLoading) return;
     const key = notesKey()!;
     if (draftCache.readFailures.has(key)) return;
     const old = notesDraft(),
@@ -267,61 +335,6 @@ export function createCombat(host: CombatHost) {
       };
     void draftCache.put(workspace.token, workspace.campaign.id, d);
     get('combat-notes-draft-status').textContent = 'Notizeingabe offen – noch nicht übernommen.';
-  }
-  async function chooseFighter(id: string) {
-    if (!workspace || !view?.combat) return;
-    selected = id;
-    const token = workspace.token,
-      cam = workspace.campaign.id,
-      combatId = view.combat.id,
-      g = editorSession.generation,
-      r = ++editorRequest;
-    editorLoading = true;
-    renderEditor();
-    renderSelection();
-    lock();
-    try {
-      await draftCache.load(token, cam, combatId, 'fighter', id);
-    } catch (error) {
-      if (g === editorSession.generation && r === editorRequest)
-        tell((error as Error).message, true);
-    } finally {
-      if (
-        g === editorSession.generation &&
-        r === editorRequest &&
-        selected === id &&
-        view?.combat?.id === combatId
-      ) {
-        editorLoading = false;
-        renderEditor();
-        lock();
-        if (
-          typeof window.matchMedia === 'function' &&
-          window.matchMedia('(max-width:1099px)').matches
-        )
-          get('combat-participant').scrollIntoView({ block: 'start' });
-      }
-    }
-  }
-  async function loadNotes() {
-    if (!workspace || !view?.combat) return;
-    const token = workspace.token,
-      cam = workspace.campaign.id,
-      id = view.combat.id,
-      g = editorSession.generation;
-    notesLoading = true;
-    lock();
-    try {
-      await draftCache.load(token, cam, id, 'notes', id);
-    } catch (error) {
-      if (g === editorSession.generation) tell((error as Error).message, true);
-    } finally {
-      if (g === editorSession.generation && view?.combat?.id === id) {
-        notesLoading = false;
-        renderNotes();
-        lock();
-      }
-    }
   }
   function renderNotes() {
     const c = view?.combat,
@@ -462,7 +475,7 @@ export function createCombat(host: CombatHost) {
     get('combat-party-form').hidden = !editableCombat(view?.combat ?? null) || !items.length;
   }
   async function refreshPartyCandidates() {
-    if (pendingWork.value) {
+    if (writer.writing) {
       candidatePending = true;
       return;
     }
@@ -480,7 +493,7 @@ export function createCombat(host: CombatHost) {
         gen !== editorSession.generation ||
         request !== candidateRequest ||
         view?.combat?.id !== id ||
-        pendingWork.value
+        writer.writing
       )
         return;
       if (result.combat?.revision !== combat.revision) {
@@ -551,22 +564,14 @@ export function createCombat(host: CombatHost) {
       if (get<HTMLDialogElement>('combat-finish-dialog').open)
         get<HTMLDialogElement>('combat-finish-dialog').close();
       editorSession.generation++;
-      loadNumber++;
-      loadPending = false;
-      loadError = null;
-      requestedCombatId = null;
-      knownRecent = [];
+      reads.reset();
       candidateRequest++;
       candidatePending = false;
       candidateLoading = false;
-      editorLoading = false;
-      notesLoading = false;
-      editorRequest++;
       draftPageRequest++;
       draftCursor = null;
       get('combat-draft-list').replaceChildren();
       get('combat-draft-preview').hidden = true;
-      selected = null;
       rolls.reset();
       view = null;
       render();
@@ -577,336 +582,11 @@ export function createCombat(host: CombatHost) {
     }
     resolution?.context(workspace, scene, view?.combat ?? null);
   }
-  async function load(id?: string): Promise<boolean> {
-    if (!workspace || !scene) return false;
-    candidateRequest++;
-    candidateLoading = false;
-    const lease = editorSession.read();
-    const gen = editorSession.generation,
-      request = ++loadNumber,
-      basis = partyContext,
-      token = workspace.token,
-      sceneId = scene.id,
-      target = id ?? view?.combat?.id ?? requestedCombatId;
-    requestedCombatId = target ?? null;
-    loadPending = true;
-    loadError = null;
-    lock();
-    const current = () =>
-      lease.current() &&
-      editorSession.generation === gen &&
-      request === loadNumber &&
-      workspace?.token === token &&
-      scene?.id === sceneId;
-    try {
-      const result = unwrap(await window.campaign.combat(token, sceneId, target ?? undefined));
-      if (!current()) return false;
-      if (
-        (result.combat &&
-          (result.combat.sceneId !== sceneId || (target && result.combat.id !== target))) ||
-        (target && !result.combat)
-      )
-        throw new Error('Begegnungsantwort passt nicht zur gewählten Begegnung.');
-      acceptCombat(result);
-      render();
-      await loadNotes();
-      if (!current()) return false;
-      void listDrafts();
-      if (basis !== partyContext) void refreshPartyCandidates();
-      return true;
-    } catch (error) {
-      if (current()) {
-        loadError = (error as Error).message;
-        view = null;
-        selected = null;
-        render();
-        tell(loadError, true);
-      }
-    } finally {
-      lease.finish();
-      if (current()) {
-        loadPending = false;
-        lock();
-        if (get<HTMLDetailsElement>('combat-creation').open) void selectionPanel?.read();
-      }
-    }
-    return false;
-  }
-
   function revealResultMembers(combat: CombatState, targetIds?: readonly string[]) {
     const targets = targetIds ? new Set(targetIds) : null;
     for (const mob of combatMobs(combat))
       if (!targets || mob.members.some((member) => targets.has(member.id)))
         expandedMobs.add(mob.id);
-  }
-  async function execute(
-    action: CombatAction,
-    expectedRevision?: number,
-    stillCurrent: () => boolean = () => true,
-    failed?: (message: string) => void,
-  ): Promise<boolean> {
-    if (!workspace || !scene || blocked() || !stillCurrent()) return false;
-    loadNumber++;
-    candidateRequest++;
-    candidateLoading = false;
-    const editKey = action.kind === 'edit' ? fighterKey() : null,
-      editDraft = editKey ? fighterDrafts.get(editKey) : undefined,
-      editorDraft: CombatWorkingDraft | undefined =
-        action.kind === 'initiative' && workspace && view?.combat
-          ? draftCache.values.get(
-              combatDraftKey(workspace.campaign.id, view.combat.id, 'initiative', view.combat.id),
-            )
-          : action.kind === 'notes'
-            ? notesDraft()
-            : editDraft;
-    const priorDamageDeath =
-      action.kind === 'damage' || action.kind === 'hit'
-        ? structuredClone(
-            view?.combat?.participants.find((p) => p.id === action.participantId)?.death,
-          )
-        : undefined;
-    const priorEffects =
-      action.kind === 'next' || action.kind === 'start'
-        ? (view?.combat?.participants.flatMap((actor) =>
-            (actor.timedEffects ?? []).map((effect) => ({
-              actorId: actor.id,
-              actor: actor.name,
-              ...effect,
-            })),
-          ) ?? [])
-        : [];
-    const gen = editorSession.generation,
-      resetConcentration = ['concentration', 'concentration-roll', 'undo'].includes(action.kind);
-    const command: CombatCommand = {
-      commandId: crypto.randomUUID(),
-      campaignId: workspace.campaign.id,
-      token: workspace.token,
-      combatId: action.kind === 'create' ? null : (view?.combat?.id ?? null),
-      expectedRevision:
-        action.kind === 'create' ? null : (expectedRevision ?? view?.combat?.revision ?? null),
-      action,
-      ...(editorDraft ? { draftWriteId: editorDraft.writeId } : {}),
-    };
-    let applied = false,
-      revealConcentration = false;
-    const task = editorSession.run(async () => {
-      try {
-        if (!(await draftCache.flush(command.campaignId)) || editorSession.generation !== gen)
-          throw new Error('Offene Eingaben zuerst dauerhaft sichern.');
-        if (!stillCurrent()) return false;
-        const result = await writeConfirmed<CombatView>(
-          'combat',
-          command,
-          () => window.campaign.executeCombat(command),
-          () => editorSession.generation === gen && workspace?.token === command.token,
-          {
-            token: command.token,
-            editKey,
-            editDraft,
-            editorDraft,
-            resetConcentration,
-            rollAction: action,
-            rollGeneration: gen,
-            ...(action.kind === 'area-damage'
-              ? { areaTargetIds: action.targets.map((target) => target.participantId) }
-              : {}),
-          },
-        );
-        if (editorSession.generation !== gen) return false;
-        if (resetConcentration) delete get('combat-concentration-modifier').dataset.checkKey;
-        acceptCombat(result);
-        rolls.accepted(action, result.combat?.id);
-        applied = true;
-        if (action.kind === 'add-party')
-          get<HTMLInputElement>('combat-party-initiative').value = '';
-        if (editorDraft) draftCache.consumed(command.campaignId, editorDraft);
-        void listDrafts();
-        if (action.kind === 'area-damage' && result.combat)
-          revealResultMembers(
-            result.combat,
-            action.targets.map((target) => target.participantId),
-          );
-        if (
-          [
-            'create',
-            'edit',
-            'damage',
-            'hit',
-            'area-damage',
-            'heal',
-            'revive',
-            'death',
-            'death-roll',
-            'concentration',
-            'concentration-roll',
-            'undo',
-            'finish',
-            'confirm-npc-losses',
-            'remove',
-            'add-party',
-            'add-prepared-group',
-          ].includes(action.kind)
-        ) {
-          await refreshProgress();
-          if (afterSaved) await afterSaved();
-        }
-        const actor =
-            'participantId' in action
-              ? result.combat?.participants.find((p) => p.id === action.participantId)
-              : undefined,
-          death =
-            action.kind === 'death' || action.kind === 'death-roll'
-              ? actor?.deathLast
-              : (action.kind === 'damage' || action.kind === 'hit') &&
-                  JSON.stringify(priorDamageDeath) !== JSON.stringify(actor?.death)
-                ? actor?.deathLast
-                : undefined;
-        const concentration =
-          action.kind === 'concentration' || action.kind === 'concentration-roll'
-            ? actor?.concentrationLast
-            : undefined;
-        const concentrationActor =
-          action.kind === 'area-damage'
-            ? result.combat?.participants.find((p) => p.concentrationChecks?.length)
-            : actor;
-        const openConcentration =
-          action.kind === 'damage' || action.kind === 'hit' || action.kind === 'area-damage'
-            ? concentrationActor?.concentrationChecks?.[0]
-            : undefined;
-        const legendary = action.kind === 'legendary-action' ? actor?.legendaryActions : undefined;
-        const effectTicks = priorEffects.flatMap((before) => {
-          const after = result.combat?.participants
-            .find((participant) => participant.id === before.actorId)
-            ?.timedEffects?.find((effect) => effect.id === before.id);
-          return !after
-            ? [before.name + ' bei ' + before.actor + ' endet']
-            : after.remaining !== before.remaining
-              ? [
-                  before.name +
-                    ' bei ' +
-                    before.actor +
-                    ': ' +
-                    after.remaining +
-                    ' Runde' +
-                    (after.remaining === 1 ? '' : 'n') +
-                    ' verbleibend',
-                ]
-              : [];
-        });
-        const areaResult =
-          action.kind === 'area-damage'
-            ? 'Flächenschaden gespeichert · ' +
-              action.targets
-                .map((target) => {
-                  const participant = result.combat!.participants.find(
-                    (p) => p.id === target.participantId,
-                  )!;
-                  return (
-                    participant.name +
-                    ' ' +
-                    participant.hp +
-                    '/' +
-                    participant.maxHp +
-                    ' HP' +
-                    (participant.tempHp ? ' + ' + participant.tempHp + ' temp.' : '')
-                  );
-                })
-                .join(' · ') +
-              (openConcentration
-                ? ' · Konzentrationswurf für ' +
-                  concentrationActor!.name +
-                  ' gegen SG ' +
-                  openConcentration.dc +
-                  ' offen.'
-                : '.')
-            : null;
-        revealConcentration = !!openConcentration;
-        tell(
-          areaResult ??
-            (action.kind === 'hit'
-              ? 'Treffer gespeichert · ' +
-                (action.critical ? 'kritisch · ' : '') +
-                actor!.name +
-                ' ' +
-                actor!.hp +
-                '/' +
-                actor!.maxHp +
-                ' HP' +
-                (actor!.death?.dead
-                  ? ' · tot'
-                  : actor!.death
-                    ? ' · Todesrettung ' +
-                      actor!.death.successes +
-                      ' Erfolge / ' +
-                      actor!.death.failures +
-                      ' Fehlschläge'
-                    : '') +
-                (openConcentration
-                  ? ' · Konzentration SG ' + openConcentration.dc + ' offen.'
-                  : '.')
-              : death
-                ? (action.kind === 'damage'
-                    ? 'Schadensfolge: '
-                    : death.roll === null
-                      ? ''
-                      : 'Todesrettungswurf ' + death.roll + ': ') +
-                  deathResultText(death.result) +
-                  '.'
-                : concentration
-                  ? 'Konzentration: ' +
-                    (concentration.roll === null
-                      ? 'manuell'
-                      : concentration.roll +
-                        (concentration.modifier >= 0 ? ' + ' : ' − ') +
-                        Math.abs(concentration.modifier) +
-                        ' = ' +
-                        concentration.total) +
-                    ' gegen SG ' +
-                    concentration.dc +
-                    ' · ' +
-                    (concentration.success ? 'bestanden.' : 'verloren.')
-                  : openConcentration
-                    ? 'Schaden gespeichert. Konzentrationswurf für ' +
-                      concentrationActor!.name +
-                      ' gegen SG ' +
-                      openConcentration.dc +
-                      ' offen.'
-                    : legendary
-                      ? 'Legendäre Aktion eingesetzt · ' +
-                        legendary.remaining +
-                        ' von ' +
-                        legendary.maximum +
-                        ' Punkten verbleiben.'
-                      : effectTicks.length
-                        ? 'Rundeneffekte: ' + effectTicks.join(' · ') + '.'
-                        : 'Kampf gespeichert.'),
-        );
-        return true;
-      } catch (error) {
-        if (editorSession.generation === gen) {
-          const message = (error as Error).message;
-          failed?.(message);
-          tell(message + ' Aktualisiere den Kampfstand, bevor du weiterarbeitest.', true);
-        }
-        return false;
-      } finally {
-        pendingWork.clear(task);
-        if (editorSession.generation === gen) {
-          if (applied) {
-            render();
-            if (revealConcentration)
-              get('combat-concentration-effect').scrollIntoView({ block: 'nearest' });
-          } else lock();
-          if (candidatePending) {
-            candidatePending = false;
-            void refreshPartyCandidates();
-          }
-        }
-      }
-    });
-    pendingWork.value = task;
-    lock();
-    return pendingWork.value;
   }
   function preparationOwner() {
     if (!workspace || !scene) return null;
@@ -1114,19 +794,11 @@ export function createCombat(host: CombatHost) {
       });
     }
   }
-  async function flushCombat(): Promise<boolean> {
-    if (!(await flushFinishDraft())) return false;
-    if (pendingWork.value) return await pendingWork.value;
-    if (!workspace) return true;
-    return (
-      (await draftCache.flush(workspace.campaign.id)) && !hasPendingCommit(workspace.campaign.id)
-    );
-  }
   const blocked = () =>
     !editorSession.status.attached ||
-    loadPending ||
-    !!loadError ||
-    !!pendingWork.value ||
+    reads.loading ||
+    !!reads.error ||
+    writer.writing ||
     (!!workspace && hasPendingCommit(workspace.campaign.id));
   function renderConcentrationEffect() {
     const box = get('combat-concentration-effect'),
@@ -1176,7 +848,7 @@ export function createCombat(host: CombatHost) {
     ))
       button.disabled =
         blocked() ||
-        editorLoading ||
+        reads.editorLoading ||
         (!!key && draftCache.readFailures.has(key)) ||
         draftOpen ||
         button.dataset.statblockDisabled === 'true';
@@ -1190,62 +862,61 @@ export function createCombat(host: CombatHost) {
           blocked() ||
           control.dataset.statblockDisabled === 'true' ||
           control.dataset.combatReadonly === 'true';
-    get<HTMLButtonElement>('combat-add-close').disabled =
-      !!pendingWork.value || reinforcements.booking;
+    get<HTMLButtonElement>('combat-add-close').disabled = writer.writing || reinforcements.booking;
     get<HTMLButtonElement>('combat-preparation-initiative').disabled =
       blocked() || reinforcements.reading || view?.combat?.phase !== 'preparing';
     selectionPanel?.lock();
     resolution?.setBlocked(!!blocked());
-    get('combat-creation').hidden = loadPending || !!loadError;
-    get('combat-status').hidden = loadPending || !!loadError;
+    get('combat-creation').hidden = reads.loading || !!reads.error;
+    get('combat-status').hidden = reads.loading || !!reads.error;
     const contextBlocked =
       !workspace ||
       !scene ||
-      !!pendingWork.value ||
+      writer.writing ||
       (!!workspace && hasPendingCommit(workspace.campaign.id));
     get<HTMLButtonElement>('combat-refresh').disabled = contextBlocked;
-    get<HTMLButtonElement>('combat-history-open').disabled = contextBlocked || loadPending;
+    get<HTMLButtonElement>('combat-history-open').disabled = contextBlocked || reads.loading;
     get<HTMLSelectElement>('combat-history').disabled = contextBlocked;
     const retry = get<HTMLButtonElement>('combat-load-retry');
-    retry.hidden = !loadError;
-    retry.disabled = contextBlocked || loadPending;
+    retry.hidden = !reads.error;
+    retry.disabled = contextBlocked || reads.loading;
     const status = get('combat-load-status'),
-      title = knownRecent.find((c) => c.id === requestedCombatId)?.title;
-    status.hidden = !loadPending && !loadError;
-    status.setAttribute('role', loadError ? 'alert' : 'status');
-    status.textContent = loadError
+      title = reads.knownRecent.find((c) => c.id === reads.requestedId)?.title;
+    status.hidden = !reads.loading && !reads.error;
+    status.setAttribute('role', reads.error ? 'alert' : 'status');
+    status.textContent = reads.error
       ? (title ? '„' + title + '“' : 'Begegnung') +
         ' konnte nicht geladen werden: ' +
-        loadError +
+        reads.error +
         ' Erneut laden oder eine andere Begegnung wählen.'
-      : loadPending
+      : reads.loading
         ? title
           ? '„' + title + '“ wird geladen…'
           : 'Begegnung wird geladen…'
         : '';
-    get('combat-panel').setAttribute('aria-busy', String(loadPending));
+    get('combat-panel').setAttribute('aria-busy', String(reads.loading));
     if (candidateLoading)
       for (const c of get('combat-party-form').querySelectorAll<
         HTMLButtonElement | HTMLSelectElement | HTMLInputElement
       >('select,button,input'))
         c.disabled = true;
     get<HTMLButtonElement>('combat-undo').disabled = !view?.canUndo || blocked();
-    if (editorLoading || (!!fighterKey() && draftCache.readFailures.has(fighterKey()!)))
+    if (reads.editorLoading || (!!fighterKey() && draftCache.readFailures.has(fighterKey()!)))
       for (const c of get('combat-participant').querySelectorAll<
         HTMLInputElement | HTMLButtonElement
       >('#combat-participant-form input,#combat-participant-form button'))
         c.disabled = true;
     lockConditionShortcuts();
-    if (notesLoading || (!!notesKey() && draftCache.readFailures.has(notesKey()!)))
+    if (reads.notesLoading || (!!notesKey() && draftCache.readFailures.has(notesKey()!)))
       for (const c of get('combat-notes-form').querySelectorAll<
         HTMLInputElement | HTMLButtonElement | HTMLTextAreaElement
       >('input,button,textarea'))
         c.disabled = true;
     const unknown =
-      view?.combat?.participants.find((p) => p.id === selected)?.healthKnown === false;
+      view?.combat?.participants.find((p) => p.id === reads.selected)?.healthKnown === false;
     for (const id of ['fighter-damage', 'fighter-heal'])
       get<HTMLButtonElement>(id).disabled = blocked() || unknown;
-    const fighter = view?.combat?.participants.find((p) => p.id === selected),
+    const fighter = view?.combat?.participants.find((p) => p.id === reads.selected),
       deathControls = deathSaveControls(fighter?.death),
       deathUnavailable =
         blocked() || !fighter?.characterId || fighter.healthKnown === false || fighter.hp !== 0;
@@ -1339,7 +1010,7 @@ export function createCombat(host: CombatHost) {
               (combat.participants.find((p) => p.id === combat.turnId)?.name ?? '—');
     const history = get<HTMLSelectElement>('combat-history');
     history.replaceChildren();
-    const recent = [...(view?.recent ?? knownRecent)];
+    const recent = [...(view?.recent ?? reads.knownRecent)];
     if (combat && !recent.some((item) => item.id === combat.id))
       recent.unshift({ id: combat.id, title: combat.title, phase: combat.phase });
     for (const item of recent) {
@@ -1357,7 +1028,7 @@ export function createCombat(host: CombatHost) {
               : ' · vorbereitet');
       history.append(option);
     }
-    history.value = combat?.id ?? requestedCombatId ?? '';
+    history.value = combat?.id ?? reads.requestedId ?? '';
     history.hidden = recent.length < 2;
     const terminal = !!combat && !editableCombat(combat);
     get('combat-controls').hidden = !combat || terminal;
@@ -1393,7 +1064,7 @@ export function createCombat(host: CombatHost) {
       void (async () => {
         if (!current()) return;
         await chooseFighter(id);
-        if (!current() || selected !== id) return;
+        if (!current() || reads.selected !== id) return;
         get<HTMLDetailsElement>('fighter-condition-panel').open = false;
         const target = get<HTMLInputElement>('fighter-amount');
         if (!target.disabled) {
@@ -1407,7 +1078,7 @@ export function createCombat(host: CombatHost) {
       void (async () => {
         if (!current()) return;
         await chooseFighter(id);
-        if (!current() || selected !== id) return;
+        if (!current() || reads.selected !== id) return;
         get<HTMLDetailsElement>('fighter-condition-panel').open = true;
         const target = get('fighter-condition-shortcuts');
         target.scrollIntoView({ block: 'nearest' });
@@ -1430,7 +1101,7 @@ export function createCombat(host: CombatHost) {
         body.append(
           combatMobRow(mob, combat!, {
             expanded: expandedMobs.has(mob.id),
-            selected,
+            selected: reads.selected,
             current,
             choose: (id) => {
               void chooseFighter(id);
@@ -1463,7 +1134,7 @@ export function createCombat(host: CombatHost) {
         choose = document.createElement('button');
       choose.textContent = p.name;
       choose.title = p.name;
-      choose.setAttribute('aria-pressed', String(selected === p.id));
+      choose.setAttribute('aria-pressed', String(reads.selected === p.id));
       choose.onclick = () => {
         void chooseFighter(p.id);
       };
@@ -1541,7 +1212,11 @@ export function createCombat(host: CombatHost) {
               const gen = editorSession.generation,
                 id = combat!.id;
               await chooseFighter(p.id);
-              if (editorSession.generation !== gen || view?.combat?.id !== id || selected !== p.id)
+              if (
+                editorSession.generation !== gen ||
+                view?.combat?.id !== id ||
+                reads.selected !== p.id
+              )
                 return;
               get<HTMLDetailsElement>('fighter-condition-panel').open = false;
               const target = get<HTMLInputElement>(
@@ -1575,7 +1250,7 @@ export function createCombat(host: CombatHost) {
             void (async () => {
               if (!current()) return;
               await chooseFighter(p.id);
-              if (!current() || selected !== p.id) return;
+              if (!current() || reads.selected !== p.id) return;
               get<HTMLDetailsElement>('fighter-values').open = true;
               const field = get<HTMLInputElement>('fighter-ac');
               field.scrollIntoView({ block: 'nearest' });
@@ -1600,7 +1275,7 @@ export function createCombat(host: CombatHost) {
       }
       body.append(tr);
     }
-    if (selected && !combat?.participants.some((p) => p.id === selected)) selected = null;
+    reads.retainSelection(combat ?? null);
     renderPartyCandidates();
     renderEditor();
     renderAttackEffect();
@@ -1613,13 +1288,13 @@ export function createCombat(host: CombatHost) {
     for (const button of get('combat-rows').querySelectorAll<HTMLButtonElement>(
       '.combat-mob-card button[aria-pressed]',
     ))
-      button.setAttribute('aria-pressed', String(button.dataset.mobFrontId === selected));
+      button.setAttribute('aria-pressed', String(button.dataset.mobFrontId === reads.selected));
     for (const row of get('combat-rows').querySelectorAll<HTMLTableRowElement>(
       'tr[data-participant-id]',
     ))
       row
         .querySelector('button')
-        ?.setAttribute('aria-pressed', String(row.dataset.participantId === selected));
+        ?.setAttribute('aria-pressed', String(row.dataset.participantId === reads.selected));
   }
 
   function legendaryControl(source: Creature, p: Combatant, action: CreatureAction) {
@@ -1745,8 +1420,8 @@ export function createCombat(host: CombatHost) {
       if (
         concentration.disabled ||
         blocked() ||
-        editorLoading ||
-        selected !== p.id ||
+        reads.editorLoading ||
+        reads.selected !== p.id ||
         (key && (fighterDrafts.get(key) || draftCache.readFailures.has(key)))
       )
         return;
@@ -1821,7 +1496,7 @@ export function createCombat(host: CombatHost) {
     }
   }
   function renderEditor() {
-    const p = view?.combat?.participants.find((p) => p.id === selected),
+    const p = view?.combat?.participants.find((p) => p.id === reads.selected),
       key = fighterKey(),
       draft = key ? fighterDrafts.get(key) : undefined;
     get('fighter-draft-status').textContent = draft
@@ -1944,61 +1619,6 @@ export function createCombat(host: CombatHost) {
           ? fighterDraftBasisMatches(d.basis, basis as Combatant)
           : JSON.stringify(basis) === JSON.stringify(d.basis);
     return matches ? c.revision : d.revision;
-  }
-  async function recoveredCombat(event: CommitResolution) {
-    if (event.ref.family !== 'combat' || workspace?.campaign.id !== event.ref.campaignId) return;
-    const token = workspace.token,
-      gen = editorSession.generation,
-      result = event.value as CombatView,
-      meta = event.meta as
-        | {
-            token?: string;
-            editKey?: string;
-            editDraft?: FighterDraft;
-            editorDraft?: CombatWorkingDraft;
-            areaTargetIds?: string[];
-            resetConcentration?: boolean;
-            rollAction?: CombatAction;
-            rollGeneration?: number;
-          }
-        | undefined;
-    if (meta?.token === workspace.token && meta.editorDraft) {
-      draftCache.consumed(workspace.campaign.id, meta.editorDraft);
-      if (meta.editorDraft.kind === 'initiative') initiativePanel?.accepted(meta.editorDraft);
-    }
-    if (meta?.token === token && meta.resetConcentration && view?.combat?.id === result.combat?.id)
-      delete get('combat-concentration-modifier').dataset.checkKey;
-    const loaded =
-      result.combat &&
-      scene &&
-      result.combat.sceneId === scene.id &&
-      (!view?.combat || view.combat.id === result.combat.id)
-        ? await load(result.combat.id)
-        : false;
-    if (
-      loaded &&
-      meta?.token === token &&
-      meta.rollGeneration === editorSession.generation &&
-      meta.rollAction
-    )
-      rolls.accepted(meta.rollAction, result.combat?.id);
-    await refreshProgress();
-    if (afterSaved) await afterSaved();
-    const current = view?.combat,
-      targetIds = meta?.token === token ? meta.areaTargetIds : undefined;
-    if (
-      loaded &&
-      current &&
-      editorSession.generation === gen &&
-      workspace?.token === token &&
-      current.id === result.combat?.id &&
-      (targetIds || meta?.token !== token)
-    ) {
-      // Reopen current canonical members, never restore the receipt's historical HP.
-      // After restart only the receipt reference survives, so review all groups.
-      revealResultMembers(current, targetIds);
-      render();
-    }
   }
   let initialized = false;
   let unsubscribe: (() => void)[] = [];
@@ -2159,11 +1779,11 @@ export function createCombat(host: CombatHost) {
       get(id).addEventListener('input', keepFighterDraft);
     get('fighter-reload').onclick = () => {
       void (async () => {
-        if (!workspace || !view?.combat || !selected) return;
+        if (!workspace || !view?.combat || !reads.selected) return;
         const token = workspace.token,
           cam = workspace.campaign.id,
           id = view.combat.id,
-          target = selected,
+          target = reads.selected,
           g = editorSession.generation;
         await draftCache.discard(token, cam, id, 'fighter', target);
         if (g === editorSession.generation) {
@@ -2224,15 +1844,15 @@ export function createCombat(host: CombatHost) {
     };
     get('combat-scene').onclick = host.navigation.scene;
     get('combat-refresh').onclick = get('combat-load-retry').onclick = () => {
-      if (!pendingWork.value) void load(requestedCombatId ?? view?.combat?.id);
+      if (!writer.writing) void load(reads.requestedId ?? view?.combat?.id);
     };
     get('combat-history-open').onclick = () =>
       void (async () => {
         if (
           !workspace ||
           !scene ||
-          pendingWork.value ||
-          loadPending ||
+          writer.writing ||
+          reads.loading ||
           hasPendingCommit(workspace.campaign.id)
         )
           return;
@@ -2267,7 +1887,8 @@ export function createCombat(host: CombatHost) {
     get('combat-participant-form').onsubmit = (event) => {
       event.preventDefault();
       const returnToRoster = document.activeElement === get('fighter-initiative');
-      if (editorLoading || (!!fighterKey() && draftCache.readFailures.has(fighterKey()!))) return;
+      if (reads.editorLoading || (!!fighterKey() && draftCache.readFailures.has(fighterKey()!)))
+        return;
       const hp = value('fighter-hp').trim(),
         maximum = value('fighter-max-hp').trim();
       if (!!hp !== !!maximum) {
@@ -2275,14 +1896,14 @@ export function createCombat(host: CombatHost) {
         return;
       }
       const health = hp && maximum ? { hp: Number(hp), maxHp: Number(maximum) } : {};
-      if (selected)
+      if (reads.selected)
         void execute(
           {
             kind: 'edit',
-            participantId: selected,
+            participantId: reads.selected,
             changes: {
               name: value('fighter-name'),
-              ...(!view?.combat?.participants.find((p) => p.id === selected)?.characterId
+              ...(!view?.combat?.participants.find((p) => p.id === reads.selected)?.characterId
                 ? { groupName: value('fighter-group-name') }
                 : {}),
               initiative: Number(value('fighter-initiative')),
@@ -2303,8 +1924,8 @@ export function createCombat(host: CombatHost) {
     };
     get('fighter-effect-form').onsubmit = (event) => {
       event.preventDefault();
-      if (!selected) return;
-      const participantId = selected;
+      if (!reads.selected) return;
+      const participantId = reads.selected;
       void (async () => {
         if (
           (await execute({
@@ -2314,16 +1935,16 @@ export function createCombat(host: CombatHost) {
             rounds: Number(value('fighter-effect-rounds')),
             tick: value('fighter-effect-tick') as 'start' | 'end',
           })) &&
-          selected === participantId
+          reads.selected === participantId
         )
           get<HTMLInputElement>('fighter-effect-name').value = '';
       })();
     };
     get('fighter-damage').onclick = () => {
-      if (selected)
+      if (reads.selected)
         void execute({
           kind: 'damage',
-          participantId: selected,
+          participantId: reads.selected,
           amount: Number(value('fighter-amount')),
         });
     };
@@ -2343,23 +1964,23 @@ export function createCombat(host: CombatHost) {
         get<HTMLButtonElement>('fighter-damage').click();
     });
     get('fighter-heal').onclick = () => {
-      if (selected)
+      if (reads.selected)
         void execute({
           kind: 'heal',
-          participantId: selected,
+          participantId: reads.selected,
           amount: Number(value('fighter-amount')),
         });
     };
     get('fighter-revive').onclick = () => {
-      if (selected)
+      if (reads.selected)
         void execute({
           kind: 'revive',
-          participantId: selected,
+          participantId: reads.selected,
           hp: Number(value('fighter-revive-hp')),
         });
     };
     get('fighter-death-roll').onclick = () => {
-      if (selected) void execute({ kind: 'death-roll', participantId: selected });
+      if (reads.selected) void execute({ kind: 'death-roll', participantId: reads.selected });
     };
     for (const result of [
       'success',
@@ -2371,7 +1992,7 @@ export function createCombat(host: CombatHost) {
       'reset',
     ] as const)
       get('fighter-death-' + result).onclick = () => {
-        if (selected) void execute({ kind: 'death', participantId: selected, result });
+        if (reads.selected) void execute({ kind: 'death', participantId: reads.selected, result });
       };
     rolls.init();
     get('combat-concentration-roll').onclick = () => {
@@ -2392,10 +2013,10 @@ export function createCombat(host: CombatHost) {
       if (actor) void execute({ kind: 'concentration', participantId: actor.id, success: false });
     };
     get('fighter-remove').onclick = () => {
-      if (selected) void execute({ kind: 'remove', participantId: selected });
+      if (reads.selected) void execute({ kind: 'remove', participantId: reads.selected });
     };
     get('fighter-visibility').onclick = () => {
-      const p = view?.combat?.participants.find((actor) => actor.id === selected);
+      const p = view?.combat?.participants.find((actor) => actor.id === reads.selected);
       if (p && !p.characterId)
         void execute({ kind: 'visibility', participantId: p.id, hidden: !p.hiddenFromPlayers });
     };

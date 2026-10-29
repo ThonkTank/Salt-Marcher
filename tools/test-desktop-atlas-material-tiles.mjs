@@ -6,7 +6,9 @@ import { createNativeSession } from './native-session.mjs';
 import { createAtlasCanonicalFixture } from './atlas-canonical-fixture.mjs';
 
 const root = process.cwd(),
-  output = path.resolve('.build/atlas-material-native', `${Date.now()}-${process.pid}`);
+  output =
+    process.env.QA_EVIDENCE_DIR ??
+    path.resolve('.build/atlas-material-native', `${Date.now()}-${process.pid}`);
 const native = await createNativeSession({ root, output, name: 'atlas-material-tiles' });
 const files = [
   'src/app/atlas/atlas-material-tile.ts',
@@ -37,7 +39,21 @@ const hashes = async () =>
       ]),
     ),
   );
-const channelNames = ['baseColor', 'water', 'forest', 'rock', 'snow'];
+const channelNames = [
+  'baseColor',
+  'water',
+  'forest',
+  'relief',
+  'deciduous',
+  'conifer',
+  'grass',
+  'shrub',
+  'debris',
+  'reed',
+  'furrows',
+  'rock',
+  'snow',
+];
 const channelHashes = (result) =>
   Object.fromEntries(
     channelNames.map((name) => [
@@ -83,9 +99,13 @@ try {
   assert.equal(cold.width, 256);
   assert.equal(cold.height, 256);
   assert.deepEqual(cold.tile, { lod: -2, x: 0, y: 0 });
+  assert.deepEqual(Object.keys(cold.channels).sort(), [...channelNames].sort());
   for (const name of channelNames) {
     assert.equal(cold.cache[name], 'built', `${name} is built on cold open`);
-    assert.equal(cold.channels[name].length, 256 * 256 * (name === 'baseColor' ? 4 : 1));
+    assert.equal(
+      cold.channels[name].length,
+      256 * 256 * (['baseColor', 'relief'].includes(name) ? 4 : 1),
+    );
   }
   const coldHashes = channelHashes(cold),
     style = {
@@ -194,7 +214,7 @@ try {
       padding: '20px',
       font: '16px sans-serif',
       display: 'grid',
-      gridTemplateColumns: 'repeat(3,256px)',
+      gridTemplateColumns: 'repeat(5,128px)',
       gap: '16px',
       alignContent: 'start',
     });
@@ -207,11 +227,13 @@ try {
         label = document.createElement('div'),
         canvas = document.createElement('canvas');
       label.textContent = name;
+      canvas.style.width = '128px';
+      canvas.style.height = '128px';
       canvas.width = 256;
       canvas.height = 256;
       const context = canvas.getContext('2d'),
         frame = context.createImageData(256, 256);
-      if (name === 'baseColor') frame.data.set(bytes);
+      if (['baseColor', 'relief'].includes(name)) frame.data.set(bytes);
       else
         for (let i = 0; i < bytes.length; i++) {
           frame.data[i * 4] = frame.data[i * 4 + 1] = frame.data[i * 4 + 2] = bytes[i];

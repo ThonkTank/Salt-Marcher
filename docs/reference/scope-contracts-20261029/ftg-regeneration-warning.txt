@@ -1,0 +1,214 @@
+Browser tab: 1, Title: "CITY00 Plan3 QA | Fantasy Town Generator", URL: "https://www.fantasytowngenerator.com/temporary-settlement".
+1 AXWebArea CITY00 Plan3 QA | Fantasy Town Generator, URL: fantasytowngenerator.com/temporary-settlement
+	2 container root
+		3 container
+			4 container Interactive settlement map
+			5 container Settlement actions and navigation
+				6 button Exit
+					7 container Exit
+						8 image
+				9 link Description: User guide, Value: docs.fantasytowngenerator.com/useSettlements/map
+				10 button Edit map options dropdown
+					11 container Edit map
+						12 image
+				13 button Population
+					14 container Population
+						15 image
+				16 button Buildings
+					17 container Buildings
+						18 image
+				19 button Factions
+					20 container Factions
+						21 image
+				22 button Districts
+					23 container Districts
+						24 image
+				25 button Open download options dropdown
+					26 container Download
+						27 image
+				28 button Open settings options dropdown
+					29 container Settings
+						30 image
+				31 button Create new temporary settlement
+					32 container Create new temporary settlement
+						33 image
+				34 button Create account and keep settlement permanently
+					35 container Create account and keep settlement permanently
+						36 image
+			37 container settlement name display
+				38 heading CITY00 Plan3 QA, Value: 1
+					39 text CITY00 Plan3 QA
+			40 button Zoom in
+				41 container Zoom in
+					42 image
+			43 button Zoom out
+				44 container Zoom out
+					45 image
+			46 button Reset camera
+				47 container Reset camera
+					48 image
+			49 button Change measurement unit. Current: meters
+				50 container Change measurement unit. Current: meters
+					51 text m
+			52 button Ruler
+				53 container Ruler
+					54 image
+			55 button Toggle 2x2 grid
+				56 container Toggle 2x2 grid
+					57 image
+			58 container Time controls
+				59 text 9:00 Monday
+				60 button Next Hour
+					61 image
+					62 text Next Hour
+				63 button Time Skip
+					64 image
+					65 text Time Skip
+				66 button Open place in world edit settings
+					67 image
+			68 container Map search and layers
+				69 image
+				70 search text field (settable)
+				71 button Map layer dropdown, currently SATELLITE
+					72 container Satellite
+						73 image
+						74 text Satellite
+						75 image
+				76 button Map text layer dropdown, currently DISTRICTS
+					77 container Districts
+						78 image
+						79 text Districts
+						80 image
+			81 container selected person information
+				82 heading Plan3Latra Sandurion, Value: 2
+					83 text Plan3Latra Sandurion
+				84 button Go back to previous view
+					85 image
+				86 button close Plan3Latra Sandurion
+					87 image
+				88 text 39 year old female human farmer.
+				89 text Currently farming at
+				90 button Farm
+					91 image
+					92 text Farm
+				93 button Favourite
+					94 text Favourite
+				95 button Edit
+					96 text Edit
+				97 button Delete
+					98 text Delete
+				99 tab group
+					100 button Switch to General
+						101 heading General, Value: 4
+							102 text General
+					103 button Switch to Relations
+						104 heading Relations, Value: 4
+							105 text Relations
+					106 button Switch to Notes
+						107 heading Notes, Value: 4
+							108 text Notes
+				109 container relations
+					110 text Family
+					111 button Family tree
+					112 button Open details for person Krotem Sandurion
+						113 image
+						114 container
+							115 text Krotem Sandurion
+						116 text Plan3Latra's father
+						117 container Relaxing at home
+							118 image
+					119 button Open details for person Breitsoj Conridas
+						120 image
+						121 container
+							122 text Breitsoj Conridas
+						123 text Plan3Latra's mother
+						124 container Relaxing at home
+							125 image
+					126 button Open details for person Elyx Avronil
+						127 image
+						128 container
+							129 text Elyx Avronil
+						130 text Plan3Latra's brother
+						131 container Working
+							132 image
+					133 button Open details for person Romela Sandurion
+						134 image
+						135 container
+							136 text Romela Sandurion
+						137 text Plan3Latra's brother
+						138 container Working
+							139 image
+					140 button Open details for person Yakhslurya Sandurion
+						141 image
+						142 container
+							143 text Yakhslurya Sandurion
+						144 text Plan3Latra's adoptive sister
+						145 container Working
+							146 image
+					147 text Friends
+					148 button Open details for person Romela Sandurion
+						149 image
+						150 container
+							151 text Romela Sandurion
+						152 text Friend
+						153 container Working
+							154 image
+					155 text Rivals
+					156 button Open details for person Zhassa Quanar
+						157 image
+						158 container
+							159 text Zhassa Quanar
+						160 text Business rival
+						161 container Working
+							162 image
+			163 container
+				164 heading Regenerate area, Value: 1
+					165 text Regenerate area
+				166 button full screen
+					167 image
+				168 button close Regenerate area
+					169 image
+				170 tab group
+					171 tab (selected, settable, boolean) General, Description: Select General tab, Value: 1
+4
+General
+					172 tab (selectable, settable, boolean) Buildings to place, Description: Select Buildings to place tab, Value: 0
+4
+Buildings to place
+					173 tab (selectable, settable, boolean) Building style, Description: Select Building style tab, Value: 0
+4
+Building style
+					174 tab (selectable, settable, boolean) Decoration, Description: Select Decoration tab, Value: 0
+4
+Decoration
+					175 tab (selectable, settable, boolean) Climate, Description: Select Climate tab, Value: 0
+4
+Climate
+					176 tab (selectable, settable, boolean) Roads, Description: Select Roads tab, Value: 0
+4
+Roads
+					177 tab (selectable, settable, boolean) Farmland, Description: Select Farmland tab, Value: 0
+4
+Farmland
+				178 container lots
+					179 container
+						180 text Regenerating an area will destroy all buildings, decorations, and optionally roads in that area, and will create new ones based on your chosen settings.
+						181 text Any residents will be deleted, and new people will be created.  This action cannot be undone.
+					182 text Lots
+					183 button No lots
+						184 text No lots
+						185 image
+					186 text Regeneration type
+					187 container How to regenerate the area. Inner-settlement: generate buildings according to your settings, and place them in the area. Farmland: Generate farmsteads and fields in the area.
+						188 image
+					189 pop up button (collapsed, settable) Description: Select field for regenerationType, Value: Inner-settlement, Secondary Actions: Expand
+						190 menu
+							191 (selected) Inner-settlement
+							192 Farmland
+				193 link Description: User guide, Value: docs.fantasytowngenerator.com/editSettlement/regenerate_area
+				194 text Lots: Required
+				195 container Lots: Required
+					196 image
+				197 button (disabled) Create district
+
+The focused UI element is 166 button full screen

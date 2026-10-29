@@ -5,7 +5,9 @@ import { createNativeSession } from './native-session.mjs';
 import { createAtlasCanonicalFixture } from './atlas-canonical-fixture.mjs';
 import { setBrushWorldRadius, setHeightDirection } from './atlas-brush-probe.mjs';
 const root = process.cwd(),
-  output = path.resolve('.build/atlas-raster-workbench', `${Date.now()}-${process.pid}`);
+  output =
+    process.env.QA_EVIDENCE_DIR ??
+    path.resolve('.build/atlas-raster-workbench', `${Date.now()}-${process.pid}`);
 const native = await createNativeSession({ root, output, name: 'atlas-raster-workbench' });
 const require = createRequire(import.meta.url),
   Database = require('better-sqlite3');

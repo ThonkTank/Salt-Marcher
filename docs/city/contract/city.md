@@ -2,7 +2,7 @@
 
 Status: Geltender Fachvertrag; offene Erweiterungen sind als Ziele beschrieben.
 Owner: city
-Last Reviewed: 2026-10-28 (konkrete offene Originalwirkungen und Lieferzuordnung; Fachabnahme separat)
+Last Reviewed: 2026-10-29 (65 Inventarbindungen und direkte FTG-Teilprobe; vollständige Originalinventur offen)
 Source of Truth: Dieses Dokument besitzt das benannte Thema; Code belegt den Iststand, das Abnahmeregister den Prüfstand.
 
 Stand: 11.10.2026. [Stadtziele](../requirements/city.md) und das vollständige
@@ -180,6 +180,156 @@ genügen; Originalgesten schaffen keine zusätzliche Lieferpflicht. Ohne geklär
 Wirkung nur Klärungsaufwand planen; erst nach Codeprüfung Umsetzungsspannen
 angeben. Fachliche Änderungen gegenüber dem Stadtauftrag bleiben offen zu
 entscheiden und werden nicht durch einen Teilabschluss ratifiziert.
+
+## Ergebnisverträge und bestehende Inventarbindungen
+
+Alle 65 vorhandenen CO-Kennungen besitzen jetzt in
+`acceptance.json.cityPlans.functionalInventory[].scopeContractReview` eine
+bestehende Anforderungs-ID, diesen Fachvertrag, ein konkretes Abnahmeszenario,
+die bisherige CITY-Lieferung und die weiterhin offene Originalwirkung. `gap`,
+`sourceUrl`, Versionsangaben, historische Proben und PASS-Zustände wurden nicht
+ersetzt. Die Szenarien sind **Ziel-/Prüfaufträge**, keine nachträglich erfundenen
+Originalbeobachtungen. Unbekannte Varianten bleiben damit weiterhin unvollständig.
+Die CTY-Fälle prüfen den gemeinsamen Atlasweg; sie ersetzen kein eigenständiges
+CO-Ergebnis. Die neue [Originalteilprobe](../../reference/scope-contracts-20261029/README.md)
+trennt Beobachtung, Dialoghinweis und nicht ausgeführte Wirkung.
+
+Für jeden folgenden Vertrag gilt die Folge Ausgangslage → Aktion → sichtbares
+Ergebnis → gespeicherte Wirkung → Wiederöffnung → geschützte Bearbeitung.
+Die jeweilige Inventarzeile ergänzt das konkrete Beispiel. Nach Apply gehören
+Undo/Redo, Antwortverlust ohne Doppelwirkung, Kontextwechsel und Fresh-Reopen
+zum späteren Hostbeleg; Cancel hinterlässt keine Records oder History. Sichtbare
+Namen sind kein Nachweis stabiler gespeicherter IDs. Quellen-/Gerätezugang,
+Implementierung, automatischer Beleg, Nativeprüfung und Ownerabnahme bleiben
+getrennte Aussagen.
+
+### Ergebnisvertrag Bearbeitung
+
+Ausgangspunkt sind zwei Häuser, eine Straße und ein beschriebener Ort. Der GM
+zeichnet, bewegt, dreht oder entfernt ausgewählte Geometrie. Die Vorschau zeigt
+betroffene Elemente und Bindungen; Übernahme ändert genau diesen Umfang in
+einer gemeinsamen Historyaktion. Gespeichert werden native Geometrie und stabile
+Ownerreferenzen; Wiederöffnung erhält Maße und Texte exakt. Kamera, Stilwahl
+und reine Inspektion verändern keine Autorenwerte. CTY-001.01/002.01–02 und
+CO-FTG-0015/CO-COK-0006–07 liefern CITY-01/03. Die im Original erfolglosen
+CoK-Undo-Versuche streichen unsere bereits zugesagte Undo-Wirkung nicht.
+
+### Ergebnisvertrag Erzeugung
+
+Ausgangspunkt sind Fläche, vorhandene Straße/Platz, Terrain/Wasser und geschützte
+Gebäude. Größe, Layout, Namen und fachliche Vorgaben führen zu einer abbrechbaren
+Vorschau mit sichtbarer Anzahl, Topologie und Zuordnung. Die Annahme erzeugt
+editierbare Records und speichert Recipe, Seed, Algorithmus-/Parameterstand und
+Basisrevisionen; Reopen liest diese Records statt neu zu würfeln. Dieselben
+versionierten Eingaben erzeugen denselben Vorschlag. Manuelle Korrekturen bleiben
+bei bloßem Laden/Recipeöffnen erhalten. CTY-001.02–03/008.01, CO-WAT-0001/0011
+und CO-FTG-0001/0002/0010/0022 liefern CITY-02; Link-/Settingsausgabe zusätzlich
+CITY-08. Reale Größen-, Küsten-, Verteilungs- und Gebäudebedarfsvarianten bleiben
+bis zum beobachteten Ergebnis offen, auch wenn ihre Eingabefelder bekannt sind.
+
+### Ergebnisvertrag Regeneration
+
+Ausgangspunkt ist ein Viertel mit frei generierten Häusern/Bewohnern, einer
+manuell geänderten Person, deren Beziehungen und einem Haus mit Key/Innenraum.
+Der GM wählt den Änderungsbereich und sieht vor Annahme eine vollständige Liste
+veränderbarer, geschützter und nicht zuordenbarer Elemente. Ungeschützte generierte
+Geometrie und generierte Lebensdaten dürfen als expliziter Ersatzvorschlag
+verändert werden; manuelle Personendaten, IDs, Wortlaut, Beziehungen,
+Wohn-/Arbeits-/Fraktionsbindungen und geschützte Gebäude bleiben wertgleich.
+Eine Ersatzzuordnung darf keine zweite Person oder verwaiste Beziehung erfinden;
+nicht zuordenbarer Inhalt bleibt sichtbar erhalten. Änderung eines geschützten
+Elements benötigt dessen ausdrückliche Freigabe und einen erneut prüfbaren
+Vorschlag. Freigabe allein löscht nichts. Ein Commit und seine Rücknahme erfassen
+den gesamten gültigen Ersatz; Reopen erhält exakt das angenommene Ergebnis.
+CTY-003.01–02, CO-WAT-0007–08 und CO-FTG-0016 liefern CITY-04, mit CITY-06 für
+Lebensdaten. Der FTG-Dialog vom 29.10. kündigt dagegen Löschen/Neuerzeugen aller
+Bewohner ohne Undo an. Das wurde nicht ausgeführt; der jüngere ausdrückliche
+SaltMarcher-Schutzvertrag entscheidet unsere abweichende Schutzwirkung bereits.
+
+### Ergebnisvertrag Topologie
+
+Ausgangspunkt sind Regionalweg, Fluss, Tor, Stadtstraße, Platz und ein gebundenes
+Haus. Der GM setzt/ändert Anschluss, Breite, Brücke oder Befestigung; Vorschau
+zeigt verbundene Teile und erklärt unzulässige Kollisionen. Annahme speichert
+stabile Knoten-/Kanten-/Grenzbindungen; Reopen behält denselben zusammenhängenden
+Weg. Keine Doppelstraße oder Verbindung allein durch grafische Nähe. Änderung
+von Tor/Küste darf geschützte Häuser und deren Innenräume nicht verformen.
+CTY-004.01–02, CO-WAT-0003/0010 und CO-COK-0008 liefern CITY-05; CO-WAT-0001 und
+CO-FTG-0010 liefern die Generatorvorbereitung in CITY-02. Gemeinsames Terrain und
+Flussbett bleiben beim Terrainowner; Änderung ihrer Basis invalidiert den alten
+Stadtvorschlag und verlangt eine neue Vorschau, keinen zweiten Wasserstand.
+
+### Ergebnisvertrag Lebensdaten
+
+Ausgangspunkt sind zwei World-NPCs, Haushalt, Wohn-/Arbeitsgebäude und Fraktion.
+Der GM ändert Personendaten, einzelne oder gemeinsam ausgewählte Felder,
+Beziehungen und Zugehörigkeiten. Ergebnisprofil, Suche, Familienansicht und
+Gebäudeinspector zeigen dieselben vorhandenen Identitäten. Gespeichert werden
+World-Personen/-Fraktionen und deren Stadtzuordnungen; Reopen erhält Wortlaut,
+Typen und Referenzen. Aussehen, Persönlichkeit, Ziel, Religion und Werte sind
+konkrete Profilwirkungen; weitere Erzeugungs-/Verteilungsregeln sind noch zu
+belegen. Eine neue Friend-Kante darf neben einer Familienkante zur selben Person
+bestehen: die Originalprobe belegt beide Ansichten gleichzeitig. Der bestehende
+Paarvertrag besitzt ausdrücklich gekoppelte Gegenrichtungen; er verbietet keine
+weiteren unabhängigen typisierten Kanten. Ein Familienbaum projiziert denselben
+Graphen, keine neue Personenliste. Batch-Cancel ändert keine Person;
+Regeneration und Transfer erhalten manuelle Daten und vollständige Referenzclosure.
+CTY-004.03, CO-FTG-0004–0008/0014/0017/0026–0028/0030 und CO-WAT-0006 liefern
+CITY-06. Regierungs-/Wachen-, Religionsverteilungs-, Ereignis- und weitere
+Beziehungseffekte sind trotz dieses geklärten Kerns nicht vollständig beobachtet.
+
+### Ergebnisvertrag Wirtschaft
+
+Ausgangspunkt sind ein Gebäude, referenzierte Item-/Serviceangebote und Generator-
+Bedarfe. Der GM ändert Angebot, Qualität/Preis oder Gebäudetypvorgaben und sieht
+betroffene Angebote bzw. tatsächliche erzeugte Anzahlen. Definition, Stadtangebot
+und gebuchter Stock/Handel bleiben getrennt; Preise erzeugen keine heimliche
+Ledgerbuchung. Wiederöffnung liest dieselben Angebotsreferenzen und Parameter.
+Manuelle Shops/Ownerbindungen werden bei Erzeugung/Regeneration geschützt.
+CO-FTG-0012–13 liefern CITY-06 mit dem bestehenden Shop-/Katalogowner; initiale
+Anzahl über Limit, Fraktionsausnahmen, Mindestgröße sowie Küsten-/Rohstoffbedarf
+sind im Original bisher nur erklärt, noch nicht durch Erzeugung bewiesen.
+
+### Ergebnisvertrag Zeit
+
+Ausgangspunkt ist dieselbe bestätigte Campaignzeit mit Bewohner, Wohnort,
+Arbeitsort, Kalender und Tagesplan. Der GM bestätigt Zeit oder setzt einen
+Ruhetagoverride. Geplante Aktivität, aktueller Aufenthaltsort und beständige
+Wohn-/Arbeitsbindung bleiben unterscheidbar. Ein Plan allein bewegt keinen
+Actor und startet keine Autonomie. Persistiert werden Plan/Override und vom
+jeweiligen Owner bestätigte Laufdaten; Restart und Retry führen keine gemeinsame
+Zeitfolge zweimal aus. CO-FTG-0011/0018/0042 liefern CITY-07, Zeitintegration
+SMR-07/AC-09. Das Original zeigt Arbeit/Heimruhe bei gleichem Zeitpunkt; Reichweite,
+Lebensdauer und Kalenderverhalten des Overrides bei Tagesgrenze/großem Sprung
+bleiben offene Originalfragen. CITY-07 darf dafür keine eigene Uhr erfinden.
+
+### Ergebnisvertrag Gestaltung
+
+Ausgangspunkt ist derselbe bestätigte Karten-/Bewohnerstand mit einer bekannten
+Objektauswahl. Stil, Material, Assetvariante, Gruppe, Licht, Wetterbild oder
+Perspektive ändern ihre jeweils ausgewiesene Darstellung bzw. Pose. Bereits
+platzierte Instanzen ändern sich nicht allein durch die nächste Assetwahl.
+Darstellungswerte und Assetprovenienz werden gespeichert; erneutes Öffnen und
+Bildausgabe zeigen denselben Stand. Vorlage/Lichtwechsel regeneriert keine Stadt.
+Layerverbergen löscht keine Objekte; Sperren schützt vor Bearbeitung. Ein tatsächlicher
+Geometrieeffekt wie Watabou-Processing ist als eigener Änderungsvorschlag mit
+Schutzregeln zu behandeln, statt als harmlose Farboption. CO-COK-0001–04/0009–12,
+CO-WAT-0002/0004/0009 und CO-FTG-0003/0009/0019/0031/0033–36/0039/0041 liefern
+CITY-07. Die vorhandenen Phasenbindungen im Register bleiben maßgeblich.
+
+### Ergebnisvertrag Ausgabe
+
+Ausgangspunkt ist ein bestätigter Ausschnitt mit Gebäuden, Bewohnern, Beziehungen
+und öffentlichen/privaten Texten. Der GM wählt Format, Maßstab, Detail und
+Sichtbarkeit; er erhält die tatsächliche Datei bzw. einen erklärten Fehler.
+Bild- und Datenausgabe lesen denselben Stand ohne Autorenmutation. Ein erneutes
+Öffnen der erzeugten Datei im vorgesehenen Empfänger prüft Maße, Geometrie,
+Zeichen und Referenzen; Bildexport ist kein Nachweis editierbarer Lebensdaten.
+Complete-Kopie folgt dem entschiedenen Campaignvertrag mit lokalen IDs, kein
+Formatadapter darf eine abhängige Referenz auf die Quellkampagne hinterlassen.
+CO-COK-0005, CO-WAT-0005 und CO-FTG-0020–25/0029/0032/0037–38/0040 liefern CITY-08;
+CTY-006.03/007.01/008.02 qualifizieren gemeinsamen Inhalt und Größe. Tatsächliche
+FTG-Dateien, Premiumintegration, Fallback und Metropole bleiben unbewiesen.
 
 ## Technische Arbeitspakete
 

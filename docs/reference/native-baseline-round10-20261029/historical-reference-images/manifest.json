@@ -1,0 +1,86 @@
+{
+  "sourceCommit": "16eb0aa8807ac21704abfea5412ac3a22033a23a",
+  "viewport": {
+    "width": 1280,
+    "height": 852
+  },
+  "artifacts": {
+    "main.cjs": "2c0c21299b0ea7c25e5ffd78ae1d1e439f2cdaf832190d66b2574f82fc65482c",
+    "preload.cjs": "0bb79c61dfcd3b629056519bb0be022e3ba156978cc6c0169f22c8910ced46eb",
+    "player-preload.cjs": "2298bcbc665e510444c6e8b8e4d202ce2cec8bfcde8d328c7121e3c1043091b4",
+    "store-worker.cjs": "9c3f61bda447dca1f38c80cffcdcd9c4d6bcf130ebb3540622521085a84796a9",
+    "atlas-region-worker.cjs": "13445a5764fe3a27b502828c1905def799725c172258940ff2cfddcf71599c33",
+    "room-directory-worker.cjs": "592b6e06096e5c779acce355c95ff2b921cee55b86998d14636acb73c86dc226",
+    "terrain-route-worker.cjs": "554fa9a52139b222785cef38f7d86342e3cf0f6c3843a9055bd3e6b7820c7761",
+    "backup-validation-worker.cjs": "e3812d3d907293eb3c396bdd26a39d60fa5e3422d1ecced817055cd0e9d88eb3",
+    "update-helper.cjs": "fb360030c815848b6eed9de396accc59f8d4c0ae2ebf50bed3d04449a4b5542a",
+    "update-probe.cjs": "22553b0f1e091ce61bd3b8c70ab709bfd0bd43077cedd12c165a86cd17a507ef",
+    "ui/renderer.js": "73ffc1e96cb8af9290f82463b5eda99d71cdcbfaad821201ab65fcdb8b10768e",
+    "ui/atlas-brush-worker.js": "d4dfe704094fbc0724ffd03ecfd28028bb26cddc29c735ba7cfcc9178dde418d",
+    "ui/atlas-deck-runtime.js": "3d6c6666c629cdfb4fb86bebab3e425dae47d39da714f10b83797fbe75cad3f0",
+    "ui/preset-settings.js": "3981d8dc1a1310dd6fb8d141ffe67931c3071ccb0721d08bbdf1002a3935678a",
+    "ui/index.html": "09f9cfe0402cb3cbe4df6c7d5538b7649257023b66246cba8141f99ecf51ced3",
+    "ui/app.css": "d98805ed1a1f73aa67be8b7444a0e7cc42e857b206cb761b26cb18b5f07e0388",
+    "ui/player-display.js": "dc6e45207607ca5ddf222c94f58daa8f9d48e21ba231953ae713753a2d5e11ee",
+    "ui/player-display.html": "7ab27610046c99bd1a829dc9e0b4b0d43686775c51b0971c1392d79de14bbf52",
+    "ui/player.css": "7f82fb6e91227d97b83a8d1421374c74e9f9a5289452b2f1cdf6e032214a8be5",
+    "ui/preset-settings.css": "13c1bf91476633ea63c00700a3440f01a5cdf6e4bc6e447929a3016b3dfdd35b"
+  },
+  "views": [
+    {
+      "target": 32768,
+      "view": {
+        "x": -16354,
+        "y": -13248.967741935483,
+        "width": 32768,
+        "height": 26557.935483870966
+      },
+      "imageSha256": "26f3855c3be370051ff227cdd64b88347f145f106b5bd633057652b5d0c749d6"
+    },
+    {
+      "target": 4096,
+      "view": {
+        "x": -1080.1857635675542,
+        "y": -869.7876551495095,
+        "width": 2220.3715271351084,
+        "height": 1799.575310299019
+      },
+      "imageSha256": "01062a3a55eb00b01e2c70614335dbf3e949262ce31a5a5ec72e85bf7c8acc70"
+    },
+    {
+      "target": 512,
+      "view": {
+        "x": -117.44411389593651,
+        "y": -89.50107618178723,
+        "width": 294.888227791873,
+        "height": 239.00215236357445
+      },
+      "imageSha256": "fa8b6a2cf0bece3278f91797c6d08035165b6cc429c2e956862a2ce3e00b9438"
+    },
+    {
+      "target": 64,
+      "view": {
+        "x": 10.41790172781742,
+        "y": 14.129025190690728,
+        "width": 39.16419654436516,
+        "height": 31.741949618618545
+      },
+      "imageSha256": "2b788b39c81e4e26ef9192d1f63658218f656d01da894e9101c9f47e0e111bf2"
+    },
+    {
+      "target": 16,
+      "view": {
+        "x": 24.90261915030649,
+        "y": 25.868655037143565,
+        "width": 10.194761699387017,
+        "height": 8.262689925712866
+      },
+      "imageSha256": "597da9367630797a49d3e1ef671923b824f86fa8ed5858d70bb0ff4bbe13e13a"
+    }
+  ],
+  "model": "continuous-terrain-v1",
+  "fixtureSha256": "476a8d6b3000ac5935c3962ca6bc0ed5323bebf106de116179e0f0690e7cc5bc",
+  "rendererSource": "ee58456ab98ee74b064dc711284e3fbb972e693d",
+  "rendererDirty": true,
+  "refreshedAt": "2026-10-27T14:33:44.601Z"
+}

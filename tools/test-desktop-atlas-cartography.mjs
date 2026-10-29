@@ -459,10 +459,11 @@ try {
   await page.locator('#atlas-output-back').click();
   await app.evaluate(({ BrowserWindow }) => {
     const w = BrowserWindow.getAllWindows().find((w) => w.getTitle() === 'SaltMarcher');
-    w.setSize(1440, 1000);
+    w.setMinimumSize(320, 240);
+    w.setContentSize(720, 500);
     w.webContents.setZoomFactor(1);
   });
-  await page.waitForFunction(() => innerWidth <= 720);
+  await page.waitForFunction(() => innerWidth === 720 && innerHeight === 500);
   await atlasCanvasReady(page);
   await page.locator('#territory-name').evaluate((n) => (n.closest('details').open = true));
   await page.locator('#territory-name').fill('Westmark Nord');
@@ -477,7 +478,7 @@ try {
   assert.equal(await page.locator('#territory-layer-name').inputValue(), 'Handelsreiche');
   assert.equal(records().find((r) => r.id === 'Westmark').name, 'Westmark Nord');
   await page.locator('#territory-layer-name').scrollIntoViewIfNeeded();
-  await shot('07-region-save-layer-draft-200');
+  await shot('07-region-save-layer-draft-100');
   await page.locator('#territory-layer-save').click();
   await page.waitForFunction(
     () => document.querySelector('#territory-status').textContent === 'Gespeichert',

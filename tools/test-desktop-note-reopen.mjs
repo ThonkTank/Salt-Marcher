@@ -341,8 +341,15 @@ try {
     );
     await page.keyboard.press('Tab');
     assert(
+      await page
+        .locator('#note-thread-clear-selection')
+        .evaluate((el) => document.activeElement === el),
+      'The explicit source-selection action must remain keyboard reachable',
+    );
+    await page.keyboard.press('Tab');
+    assert(
       await page.locator('#note-thread-plan').evaluate((el) => document.activeElement === el),
-      'The destination must follow the source choices',
+      'The destination must follow the source choices and their selection action',
     );
     await sourceChoices.evaluate((el) => (el.scrollTop = 0));
     await page.locator('#note-thread-dialog').evaluate((el) => (el.scrollTop = 0));

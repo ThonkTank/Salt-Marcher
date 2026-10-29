@@ -1,3 +1,5 @@
+import { LiveWriteCoordinator } from './live-write-coordinator';
+import { LiveDraftOwner } from './live-draft-owner';
 import { NpcCastBinder } from '../campaign/npc-cast-ui';
 import type { Preparation } from '../campaign/preparation-contracts';
 import {
@@ -22,14 +24,8 @@ import type { ChronicleView } from './chronicle-contracts';
 import type { CombatEditor } from './combat';
 import { bindSceneGroupDrag } from './combat-group-ui';
 import { initLiveArchives } from './live-archive-ui';
-import {
-  checkedCharacterProfile,
-  type LiveAck,
-  type LiveAction,
-  type LiveCommand,
-  type LiveView,
-} from './live-contracts';
-import { type Character, type CharacterProfile, type LiveScene } from './live-scene-contracts';
+import { type LiveAck, type LiveAction, type LiveView } from './live-contracts';
+import { type CharacterProfile } from './live-scene-contracts';
 import { LiveEncounterGenerator } from './live-generation-ui';
 import { createLiveKnowledgeUI } from './live-knowledge-ui';
 import { createLiveMomentEditor } from './live-moment-editor';
@@ -42,7 +38,7 @@ import { renderLiveNpcChoices } from './live-player-cues';
 import { createLiveRecapEditor } from './live-recap-editor';
 import { createLiveSessionCloseUI } from './live-session-close-ui';
 import { createLiveSessionReaders } from './live-session-readers';
-import { liveActionUpdatesRecap, liveSessionRecap } from './live-session-recap';
+import { liveSessionRecap } from './live-session-recap';
 import { createLiveSessionResumeUI } from './live-session-resume-ui';
 import { createLivePartyMoveEditor } from './live-party-move-editor';
 import { LiveTimeControls } from './live-time-controls';
@@ -118,13 +114,6 @@ export function createLive(host: LiveHost) {
     },
   };
   const editorSession = new EditorSession();
-  const failedState = editorSession.command<{
-    command: LiveCommand;
-    submittedProfile?: CharacterProfile;
-  }>();
-  const requestWork = editorSession.operation<Promise<LiveAck | null>>();
-  const flushingWork = editorSession.operation<Promise<boolean>>();
-
   const value = (id: string) => get<HTMLInputElement>(id).value;
   const unwrap = <T>(result: Result<T>): T => {
     if (!result.ok) throw new Error(result.error);
@@ -132,7 +121,6 @@ export function createLive(host: LiveHost) {
   };
   const equal = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
   let context: WorkspaceGeometry | null = null,
-    data: LiveView | null = null,
     sources: Preparation | null = null,
     liveReadRequest = 0,
     liveSourcesRequest = 0;
@@ -142,16 +130,37 @@ export function createLive(host: LiveHost) {
     sessionChronicleError = '',
     sessionChronicleRequest = 0;
   let readAloudOwner: string | null = null;
-  let selected: string | null = null,
-    characterDraft: Character | null = null,
-    sceneDraft: LiveScene | null = null;
-  let resumed = false,
-    composing = false,
-    blocked = false,
-    timer: ReturnType<typeof setTimeout> | null = null;
-
-  let requestIsTextSave = false;
-  const intentBlocked = () => !!requestWork.value && !requestIsTextSave;
+  const drafts = new LiveDraftOwner();
+  let resumed = false;
+  const writer = new LiveWriteCoordinator({
+    session: editorSession,
+    api: host.api,
+    context: () => context,
+    drafts,
+    flushDependents: async () =>
+      (await momentEditor.flush()) &&
+      (await recapEditor.flush()) &&
+      (await flushSceneDesk()) &&
+      (await flushProgress()) &&
+      (await flushCombat()) &&
+      (await flushChase()),
+    invalidateRead: () => {
+      liveReadRequest++;
+    },
+    accepted: (ack, action, profile) => mergeAck(ack, action, profile),
+    busy: (on, structural, textSave) => busy(on, structural, textSave),
+    renderGroups: () => renderGroups(),
+    recovery: (visible) => {
+      get('live-reconcile').hidden = !visible;
+      get('live-refresh').hidden = !visible;
+    },
+    refreshSession: () => refreshLiveSession(),
+    tell: (text, error) => tell(text, error),
+  });
+  const intentBlocked = () => writer.intentBlocked;
+  const execute = writer.execute,
+    flushLive = writer.flush,
+    schedule = writer.schedule;
   let adoption: Extract<LiveAction, { kind: 'apply-visit' }> | null = null;
   let preparedNotesSceneId: string | null = null,
     preparedNoteIds = new Set<string>();
@@ -167,13 +176,14 @@ export function createLive(host: LiveHost) {
     get,
     api: host.api,
     session: editorSession,
-    context: () => (context && data?.scene ? { workspace: context, scene: data.scene } : null),
+    context: () =>
+      context && drafts.view?.scene ? { workspace: context, scene: drafts.view.scene } : null,
     blocked: intentBlocked,
     accepted: (from) => {
       chaseContext(
         context,
-        resumed ? (data?.scene ?? null) : null,
-        data?.roster ?? [],
+        resumed ? (drafts.view?.scene ?? null) : null,
+        drafts.view?.roster ?? [],
         timeControls.format(from),
       );
       renderGroups();
@@ -209,35 +219,23 @@ export function createLive(host: LiveHost) {
     document,
     get,
     session: editorSession,
-    blocked: () => blocked || intentBlocked(),
-    writing: () => !!requestWork.value,
+    blocked: () => writer.blocked || intentBlocked(),
+    writing: () => writer.writing,
     execute: (action) => execute(action),
     formatInstant: formatSceneInstant,
     feedback: (text, error) => tell(text, error),
   });
-  const originalCharacter = () => data?.roster.find((c) => c.id === selected);
-  const content = (scene: LiveScene) => ({
-    title: scene.title,
-    notes: scene.notes,
-    readAloud: scene.readAloud ?? '',
-    locationId: scene.locationId,
-  });
-  const characterEdited = () =>
-    !!characterDraft &&
-    (!originalCharacter() || !equal(characterDraft.profile, originalCharacter()!.profile));
-  const sceneEdited = () =>
-    !!sceneDraft && (!data?.scene || !equal(content(sceneDraft), content(data.scene)));
-  const changed = () => characterEdited() || sceneEdited();
+  const { originalCharacter, changed } = drafts;
   const playerFocus = () =>
-    data
+    drafts.view
       ? {
-          focusId: data.focusId,
-          focusRevision: data.focusRevision,
-          focusMembershipRevision: data.scene?.membershipRevision ?? null,
+          focusId: drafts.view.focusId,
+          focusRevision: drafts.view.focusRevision,
+          focusMembershipRevision: drafts.view.scene?.membershipRevision ?? null,
           focusLocationId:
-            sceneDraft?.id === data.scene?.id
-              ? (sceneDraft?.locationId ?? null)
-              : (data.scene?.locationId ?? null),
+            drafts.scene?.id === drafts.view.scene?.id
+              ? (drafts.scene?.locationId ?? null)
+              : (drafts.view.scene?.locationId ?? null),
         }
       : null;
 
@@ -267,7 +265,7 @@ export function createLive(host: LiveHost) {
       return renderLiveSession;
     },
     get blocked() {
-      return blocked;
+      return writer.blocked;
     },
   });
   const { recapFields, recapReadError, queueRecapSave } = recapEditor;
@@ -277,7 +275,7 @@ export function createLive(host: LiveHost) {
       return context;
     },
     get data() {
-      return data;
+      return drafts.view;
     },
     get sources() {
       return sources;
@@ -337,7 +335,7 @@ export function createLive(host: LiveHost) {
       return context;
     },
     get data() {
-      return data;
+      return drafts.view;
     },
     get sources() {
       return sources;
@@ -399,7 +397,7 @@ export function createLive(host: LiveHost) {
       return context;
     },
     get data() {
-      return data;
+      return drafts.view;
     },
     get sources() {
       return sources;
@@ -470,7 +468,7 @@ export function createLive(host: LiveHost) {
       return openLive;
     },
     get readAloudText() {
-      return sceneDraft?.readAloud ?? '';
+      return drafts.scene?.readAloud ?? '';
     },
     get useKnowledgeReadAloud() {
       return useKnowledgeReadAloud;
@@ -485,7 +483,7 @@ export function createLive(host: LiveHost) {
       return context;
     },
     get data() {
-      return data;
+      return drafts.view;
     },
     get sources() {
       return sources;
@@ -569,17 +567,12 @@ export function createLive(host: LiveHost) {
     progressionContext(null, null, null);
 
     context = workspace;
-    data = null;
+    drafts.reset();
     sources = null;
     sessionChronicle = null;
     sessionChronicleError = '';
     sessionChronicleRequest++;
-    selected = null;
-    characterDraft = null;
-    sceneDraft = null;
     resumed = false;
-    blocked = false;
-    failedState.value = null;
     activateRuleReferences(workspace);
     get<HTMLInputElement>('live-knowledge-search').value = '';
     get('live-sources-state').hidden = true;
@@ -615,7 +608,8 @@ export function createLive(host: LiveHost) {
     const owner = context,
       token = owner.token,
       n = ++liveReadRequest,
-      current = () => context === owner && n === liveReadRequest;
+      active = editorSession.capture(),
+      current = () => active() && context === owner && n === liveReadRequest;
     const sourceRun = ++liveSourcesRequest;
     try {
       // Main serializes bridge reads: dispatch the required scene first.
@@ -628,40 +622,14 @@ export function createLive(host: LiveHost) {
       if (!current() || !context) return false;
       const live = unwrap(liveResult);
       recapEditor.accept(live);
-      const dirtyScene = sceneEdited(),
-        dirtyCharacter = characterEdited();
-      data = live;
+      drafts.accept(live);
       sources = null;
       liveSourcesLoading = true;
       liveSourcesProblem = 'Vorbereitung wird geladen…';
       knowledgeUI.reset();
-      selected = live.roster.some((c) => c.id === selected)
-        ? selected
-        : (live.roster[0]?.id ?? null);
-      characterDraft =
-        dirtyCharacter && characterDraft?.id === selected && characterEdited()
-          ? {
-              ...originalCharacter()!,
-              profile: characterDraft!.profile,
-              profileRevision: characterDraft!.profileRevision,
-            }
-          : originalCharacter()
-            ? structuredClone(originalCharacter()!)
-            : null;
-      // Reopen an existing table without initializing a group or starting a new evening.
       resumed = !!live.scene;
-      // A confirmed refresh must not replace an edited draft of the same owner.
-      sceneDraft =
-        dirtyScene && sceneDraft?.id === live.scene?.id && sceneEdited()
-          ? { ...live.scene!, ...content(sceneDraft!), revision: sceneDraft!.revision }
-          : live.scene
-            ? structuredClone(live.scene)
-            : null;
       render();
-      if (changed() && !timer && !composing && !blocked)
-        timer = setTimeout(() => {
-          void flushLive();
-        }, 700);
+      writer.resumeAutosave();
       const material = acceptLiveSources(owner, sourceRun, preparation);
       if (planId && (!(await material) || !current())) return false;
       if (planId) {
@@ -673,11 +641,7 @@ export function createLive(host: LiveHost) {
       return true;
     } catch (error) {
       if (!current()) return;
-      const keepScene = sceneEdited(),
-        keepCharacter = characterEdited();
-      data = null;
-      if (!keepScene) sceneDraft = null;
-      if (!keepCharacter) characterDraft = null;
+      drafts.readFailed();
       get('live-sources-state').hidden = true;
       get('live-workspace').hidden = true;
       get('live-focus-bar').hidden = true;
@@ -700,8 +664,9 @@ export function createLive(host: LiveHost) {
     run: number,
     read: Promise<Result<Preparation>>,
   ) {
+    const current = editorSession.capture();
     const result = await read;
-    if (context !== owner || run !== liveSourcesRequest || !data) return false;
+    if (!current() || context !== owner || run !== liveSourcesRequest || !drafts.view) return false;
     sources = result.ok ? result.value : null;
     liveSourcesLoading = false;
     liveSourcesProblem = result.ok ? '' : 'Vorbereitung nicht verfügbar: ' + result.error;
@@ -709,7 +674,7 @@ export function createLive(host: LiveHost) {
     return result.ok;
   }
   async function reloadLiveSources() {
-    if (!context || !data) return false;
+    if (!context || !drafts.view) return false;
     const owner = context,
       run = ++liveSourcesRequest;
     sources = null;
@@ -756,18 +721,21 @@ export function createLive(host: LiveHost) {
   async function ensureLiveRuntime() {
     if (!context) return false;
     const token = context.token,
-      sceneId = data?.scene?.id ?? null;
+      sceneId = drafts.view?.scene?.id ?? null;
     const current = () =>
-      context?.token === token && (sceneId === null || data?.scene?.id === sceneId);
+      context?.token === token && (sceneId === null || drafts.view?.scene?.id === sceneId);
     if (!(await flushLive()) || !current()) return false;
-    if (!data) {
+    if (!drafts.view) {
       await openLive();
       if (!current()) return false;
     }
-    if (!data) return false;
-    if (!data.scene) {
+    if (!drafts.view) return false;
+    if (!drafts.view.scene) {
       if (
-        !(await execute({ kind: 'initialize', expectedRosterRevision: data.rosterRevision })) ||
+        !(await execute({
+          kind: 'initialize',
+          expectedRosterRevision: drafts.view.rosterRevision,
+        })) ||
         !current()
       )
         return false;
@@ -778,13 +746,13 @@ export function createLive(host: LiveHost) {
     }
     if (!resumed) {
       resumed = true;
-      sceneDraft = data.scene ? structuredClone(data.scene) : null;
+      drafts.restoreScene();
       renderScene();
     }
-    return !!data.scene;
+    return !!drafts.view.scene;
   }
   async function openLiveSoundboard() {
-    if (!data?.scene) {
+    if (!drafts.view?.scene) {
       get('live-continue').scrollIntoView({ block: 'center' });
       get<HTMLButtonElement>('live-continue').focus();
       tell('Öffne zuerst eine Gruppe am Spieltisch.');
@@ -862,94 +830,10 @@ export function createLive(host: LiveHost) {
       (button as HTMLButtonElement).disabled = on;
   }
   function mergeAck(ack: LiveAck, action: LiveAction, submittedProfile?: CharacterProfile) {
-    if (!data) return;
+    if (!drafts.view) return;
     liveReadRequest++;
     recapEditor.acceptAck(ack, action);
-    const priorScene = data.scene,
-      priorCharacter = originalCharacter();
-    data.rosterRevision = ack.rosterRevision;
-    if (ack.archivedRosterCount !== undefined) data.archivedRosterCount = ack.archivedRosterCount;
-    if (ack.character) {
-      const current = ack.character;
-      data.roster = data.roster.some((c) => c.id === current.id)
-        ? data.roster.map((c) => (c.id === current.id ? current : c))
-        : [...data.roster, current];
-      if (current.archived) {
-        data.roster = data.roster.filter((c) => c.id !== current.id);
-        if (selected === current.id) {
-          selected = data.roster[0]?.id ?? null;
-          characterDraft = originalCharacter() ? structuredClone(originalCharacter()!) : null;
-        }
-      }
-      if (characterDraft?.id === current.id) {
-        const dirty = priorCharacter && !equal(characterDraft.profile, priorCharacter.profile);
-        const keepProfile =
-          action.kind === 'profile'
-            ? !submittedProfile || characterDraft.profile !== submittedProfile
-            : dirty;
-        characterDraft = keepProfile
-          ? {
-              ...current,
-              profile: characterDraft.profile,
-              profileRevision:
-                action.kind === 'profile'
-                  ? current.profileRevision
-                  : characterDraft.profileRevision,
-            }
-          : structuredClone(current);
-      }
-    }
-    if (ack.session) {
-      const session = ack.session;
-      data.primaryId = session.primaryId;
-      data.focusId = session.focusId;
-      data.focusRevision = session.focusRevision;
-      data.archiveCount = session.archiveCount;
-      data.roster = data.roster.map((c) => ({
-        ...c,
-        ...session.members.find((m) => m.id === c.id),
-      }));
-      if (characterDraft) {
-        const m = session.members.find((m) => m.id === characterDraft!.id);
-        if (m) characterDraft = { ...characterDraft, ...m };
-      }
-      data.scenes = data.scenes
-        .filter((s) => !session.retired.some((r) => r.id === s.id))
-        .map((s) => ({
-          ...s,
-          ...session.groups.find((g) => g.id === s.id),
-          primary: s.id === session.primaryId,
-        }));
-      if (session.createdScene && !data.scenes.some((s) => s.id === session.createdScene!.id))
-        data.scenes.push(session.createdScene);
-    }
-    if (ack.scene) {
-      data.scene = ack.scene;
-      if (action.kind === 'scene-content' && sceneDraft?.id === ack.scene.id)
-        sceneDraft = { ...ack.scene, ...content(sceneDraft) };
-      else if (
-        sceneDraft?.id === ack.scene.id &&
-        priorScene &&
-        !equal(content(sceneDraft), content(priorScene))
-      )
-        sceneDraft = {
-          ...ack.scene,
-          ...content(sceneDraft),
-          revision: sceneDraft.revision,
-        };
-      else sceneDraft = structuredClone(ack.scene);
-      data.scenes = data.scenes.map((s) =>
-        s.id === ack.scene!.id
-          ? {
-              ...s,
-              title: ack.scene!.title,
-              members: ack.scene!.members.length,
-              membershipRevision: ack.scene!.membershipRevision,
-              clock: ack.scene!.clock,
-            }
-          : s,
-      );
-    }
+    drafts.acceptAck(ack, action, submittedProfile);
     partyMove.accepted(action);
     // Publish each confirmed LiveAck through the same composition as an opened scene.
     renderList();
@@ -957,160 +841,22 @@ export function createLive(host: LiveHost) {
     renderScene();
     document.dispatchEvent(new Event('campaign-party-changed'));
   }
-  async function execute(action: LiveAction): Promise<LiveAck | null> {
-    if (!context || blocked || requestWork.value) return null;
-    liveReadRequest++;
-    const submittedProfile = characterDraft?.profile,
-      focusRevision = data?.focusRevision,
-      previousLocationId = data?.scene?.locationId,
-      token = context.token,
-      command: LiveCommand = {
-        commandId: crypto.randomUUID(),
-        campaignId: context.campaign.id,
-        token,
-        action,
-      };
-    const structural = [
-      'focus',
-      'move',
-      'membership',
-      'scene-roster',
-      'archive-character',
-    ].includes(action.kind);
-    // Blur starts a text save before the user's button click arrives. Keep queued
-    // intents available; their handlers await flushLive before writing.
-    requestIsTextSave = action.kind === 'profile' || action.kind === 'scene-content';
-    busy(true, structural, requestIsTextSave);
-    tell('Wird gespeichert…');
-    const current = editorSession.capture();
-    const task = editorSession.run(async () => {
-      try {
-        const ack = unwrap(await window.campaign.executeLive(command));
-        if (!current() || context?.token !== token) return null;
-        if (
-          (action.kind === 'live-moment' ||
-            action.kind === 'scene-content' ||
-            action.kind === 'session-marker') &&
-          (data?.scene?.id !== action.sceneId || data?.focusRevision !== focusRevision)
-        )
-          return ack;
-        mergeAck(ack, action, submittedProfile);
-        if (
-          liveActionUpdatesRecap(action) ||
-          (action.kind === 'scene-content' && ack.scene?.locationId !== previousLocationId)
-        )
-          void refreshLiveSession();
-        tell(changed() ? 'Weitere Eingabe offen – noch nicht gespeichert.' : 'Gespeichert.');
-        return ack;
-      } catch (error) {
-        if (!current() || context?.token !== token) return null;
-        failedState.value = { command, submittedProfile };
-        blocked = true;
-        get('live-reconcile').hidden = false;
-        get('live-refresh').hidden = false;
-        tell(
-          (error as Error).message + ' Entwurf bleibt offen. Zuerst den Speicherstatus prüfen.',
-          true,
-        );
-        return null;
-      } finally {
-        requestWork.clear(task);
-        if (current()) {
-          requestIsTextSave = false;
-          busy(false, structural);
-          renderGroups();
-        }
-      }
-    });
-    requestWork.value = task;
-    return task;
-  }
-  async function flushLive(): Promise<boolean> {
-    if (!(await momentEditor.flush())) return false;
-    if (!(await recapEditor.flush())) return false;
-    if (!(await flushSceneDesk())) return false;
-    if (!(await flushProgress()) || !(await flushCombat()) || !(await flushChase())) return false;
-    if (timer) clearTimeout(timer);
-    timer = null;
-    if (flushingWork.value) {
-      const okay = await flushingWork.value;
-      return okay ? flushLive() : false;
-    }
-    if (requestWork.value) {
-      if (!(await requestWork.value)) return false;
-      return flushLive();
-    }
-    if (!context || !data) return true;
-    if (blocked || composing) return false;
-    if (!changed()) return true;
-    flushingWork.value = (async () => {
-      if (
-        characterDraft &&
-        originalCharacter() &&
-        !equal(characterDraft.profile, originalCharacter()!.profile)
-      ) {
-        try {
-          checkedCharacterProfile(characterDraft.profile);
-        } catch (error) {
-          tell((error as Error).message + ' Entwurf bleibt offen.', true);
-          return false;
-        }
-        if (
-          !(await execute({
-            kind: 'profile',
-            characterId: characterDraft.id,
-            expectedRevision: characterDraft.profileRevision,
-            profile: structuredClone(characterDraft.profile),
-          }))
-        )
-          return false;
-      }
-      if (sceneDraft && data?.scene && !equal(content(sceneDraft), content(data.scene))) {
-        if (
-          !(await execute({
-            kind: 'scene-content',
-            sceneId: sceneDraft.id,
-            expectedRevision: sceneDraft.revision,
-            ...content(sceneDraft),
-          }))
-        )
-          return false;
-      }
-      return true;
-    })();
-    const okay = await flushingWork.value;
-    return okay ? flushLive() : false;
-  }
-  function schedule() {
-    liveReadRequest++;
-    if (timer) clearTimeout(timer);
-    tell(
-      blocked
-        ? 'Schreiben gesperrt. Der Entwurf bleibt offen.'
-        : 'Eingabe offen – noch nicht gespeichert.',
-      blocked,
-    );
-    if (!composing && !blocked)
-      timer = setTimeout(() => {
-        void flushLive();
-      }, 700);
-  }
   type NewCharacterBasis = { token: string; sceneId: string | null; focusRevision: number | null };
   let newCharacterBasis: NewCharacterBasis | null = null,
     creatingCharacter = false;
   function openNewCharacter() {
-    if (!context || !data || creatingCharacter) return;
+    if (!context || !drafts.view || creatingCharacter) return;
     newCharacterBasis = {
       token: context.token,
-      sceneId: data.scene?.id ?? null,
-      focusRevision: data.focusRevision,
+      sceneId: drafts.view.scene?.id ?? null,
+      focusRevision: drafts.view.focusRevision,
     };
-    get('character-create-target').textContent = data.scene
-      ? 'Heute dabei in: ' + (data.scene.title || 'Aktuelle Gruppe')
+    get('character-create-target').textContent = drafts.view.scene
+      ? 'Heute dabei in: ' + (drafts.view.scene.title || 'Aktuelle Gruppe')
       : 'Noch keine Gruppe geöffnet. Die Figur wird zunächst im Roster vorgemerkt.';
     const join = get<HTMLButtonElement>('character-create-active');
-    join.hidden = !data.scene;
-    join.type = data.scene ? 'submit' : 'button';
+    join.hidden = !drafts.view.scene;
+    join.type = drafts.view.scene ? 'submit' : 'button';
     get('character-create-status').textContent = '';
     get<HTMLDialogElement>('character-dialog').showModal();
     get('new-character-name').focus();
@@ -1121,8 +867,10 @@ export function createLive(host: LiveHost) {
     if (creatingCharacter || !basis || !dialog.open) return;
     const current = () =>
       context?.token === basis.token &&
-      !!data &&
-      (!active || (data.scene?.id === basis.sceneId && data.focusRevision === basis.focusRevision));
+      !!drafts.view &&
+      (!active ||
+        (drafts.view.scene?.id === basis.sceneId &&
+          drafts.view.focusRevision === basis.focusRevision));
     if (!current() || (active && !basis.sceneId)) {
       get('character-create-status').textContent =
         'Die Zielgruppe hat sich geändert. Schließe diesen Dialog und wähle die aktuelle Gruppe erneut.';
@@ -1147,8 +895,7 @@ export function createLive(host: LiveHost) {
         return;
       }
       if (context?.token !== basis.token) return;
-      selected = ack.character.id;
-      characterDraft = structuredClone(ack.character);
+      drafts.select(ack.character.id);
       dialog.close();
       newCharacterBasis = null;
       get<HTMLInputElement>('new-character-name').value = '';
@@ -1159,7 +906,7 @@ export function createLive(host: LiveHost) {
           kind: 'membership',
           characterId: ack.character.id,
           expectedRevision: ack.character.membershipRevision,
-          expectedRosterRevision: data!.rosterRevision,
+          expectedRosterRevision: drafts.view!.rosterRevision,
           active: true,
           targetSceneId: basis.sceneId,
           expectedFocusRevision: basis.focusRevision,
@@ -1188,33 +935,32 @@ export function createLive(host: LiveHost) {
     const list = get('roster-list');
     list.replaceChildren();
     const token = context?.token;
-    for (const character of data?.roster ?? []) {
-      const group = data?.scenes.find((s) => s.id === character.sceneId);
+    for (const character of drafts.view?.roster ?? []) {
+      const group = drafts.view?.scenes.find((s) => s.id === character.sceneId);
       const button = document.createElement('button');
       button.textContent =
         character.profile.name +
         (character.active
           ? ' · dabei' +
-            (data!.scenes.length > 1 && group
+            (drafts.view!.scenes.length > 1 && group
               ? ' · ' +
                 (group.title ||
                   (group.primary ? 'Hauptgruppe' : 'Gruppe mit ' + groupPeople(group.id)))
               : '')
           : ' · inaktiv');
-      button.setAttribute('aria-pressed', String(character.id === selected));
+      button.setAttribute('aria-pressed', String(character.id === drafts.selection));
       button.disabled = intentBlocked();
       button.onclick = () => {
         void (async () => {
           if (!(await flushLive()) || context?.token !== token) return;
-          selected = character.id;
-          characterDraft = structuredClone(originalCharacter()!);
+          drafts.select(character.id);
           renderCharacter();
           renderList();
         })();
       };
       list.append(button);
     }
-    if (!data?.roster.length) {
+    if (!drafts.view?.roster.length) {
       const text = document.createElement('p');
       text.textContent = 'Noch keine Figuren. Eine leere Party kann ebenfalls leiten.';
       list.append(text);
@@ -1231,13 +977,13 @@ export function createLive(host: LiveHost) {
   ] as const;
   function renderCharacter() {
     get('character-result').textContent = '';
-    get('character-editor').hidden = !characterDraft;
+    get('character-editor').hidden = !drafts.character;
     for (const [id, field] of profileFields)
-      get<HTMLInputElement>(id).value = String(characterDraft?.profile[field] ?? '');
+      get<HTMLInputElement>(id).value = String(drafts.character?.profile[field] ?? '');
     renderMembership();
   }
   function renderMembership() {
-    progressionContext(context, data, selected);
+    progressionContext(context, drafts.view, drafts.selection);
     const c = originalCharacter();
     get('character-membership').textContent = c?.active
       ? 'Teil der aktuellen Party'
@@ -1260,13 +1006,13 @@ export function createLive(host: LiveHost) {
   }
   function renderVisitRewardEntry() {
     const button = get<HTMLButtonElement>('live-visit-reward'),
-      scene = data?.scene;
+      scene = drafts.view?.scene;
     button.hidden = !resumed || !scene?.adoption;
     button.title = scene?.adoption ? 'Vorbereitete XP und Beute: ' + scene.title : '';
   }
   async function openCurrentVisitReward() {
     const token = context?.token,
-      scene = data?.scene,
+      scene = drafts.view?.scene,
       adoption = scene?.adoption;
     if (!token || !scene || !adoption || !resumed) return;
     const sceneId = scene.id,
@@ -1275,9 +1021,9 @@ export function createLive(host: LiveHost) {
     const current = () =>
       context?.token === token &&
       resumed &&
-      data?.scene?.id === sceneId &&
-      data.scene.membershipRevision === membership &&
-      data.scene.adoption?.id === adoptionId;
+      drafts.view?.scene?.id === sceneId &&
+      drafts.view.scene.membershipRevision === membership &&
+      drafts.view.scene.adoption?.id === adoptionId;
     if (!current() || !(await flushLive()) || !current()) return;
     await openPreparedReward(adoption.planId, adoption.visitId, current);
   }
@@ -1287,21 +1033,21 @@ export function createLive(host: LiveHost) {
     timeNavigator?.contextChanged();
     npcCastBinder?.contextChanged();
     liveGenerator?.contextChanged();
-    sessionNavigatorContext(context, data, sources, resumed);
+    sessionNavigatorContext(context, drafts.view, sources, resumed);
     syncLivePacketContext();
     void refreshMusic();
-    if (context && data?.scene && resumed)
-      void host.world.renderLiveWorld(context.token, data.scene.id);
-    const scene = data?.scene;
+    if (context && drafts.view?.scene && resumed)
+      void host.world.renderLiveWorld(context.token, drafts.view.scene.id);
+    const scene = drafts.view?.scene;
     sceneDeskContext(context, resumed ? (scene ?? null) : null);
-    combatContext(context, resumed ? (scene ?? null) : null, data?.rosterRevision);
+    combatContext(context, resumed ? (scene ?? null) : null, drafts.view?.rosterRevision);
     chaseContext(
       context,
       resumed ? (scene ?? null) : null,
-      data?.roster ?? [],
+      drafts.view?.roster ?? [],
       scene ? formatSceneInstant(scene.clock.instantMs) : '',
     );
-    const active = data?.roster.filter((c) => c.active && c.sceneId === scene?.id) ?? [];
+    const active = drafts.view?.roster.filter((c) => c.active && c.sceneId === scene?.id) ?? [];
     get('live-party').textContent = active.length
       ? 'Dabei: ' + active.map((c) => c.profile.name).join(', ')
       : 'Leere Party – Scene bleibt verfügbar.';
@@ -1317,7 +1063,7 @@ export function createLive(host: LiveHost) {
     renderScenePlace();
   }
   function renderSceneOrigin() {
-    const scene = data?.scene,
+    const scene = drafts.view?.scene,
       origin = get('running-origin');
     origin.replaceChildren();
     if (scene?.adoption) {
@@ -1336,15 +1082,18 @@ export function createLive(host: LiveHost) {
   }
   function renderScenePlace() {
     get('running-context-summary').textContent =
-      (sources?.locations.find((l) => l.document.id === sceneDraft?.locationId)?.document.name ??
-        (sceneDraft?.locationId ? 'Ort nicht verfügbar' : 'Kein Ort')) + ' · Titel und Ort ändern';
-    get<HTMLButtonElement>('running-open-location').disabled = !sceneDraft?.locationId;
-    get<HTMLButtonElement>('running-player-location').disabled = !sceneDraft?.locationId;
+      (sources?.locations.find((l) => l.document.id === drafts.scene?.locationId)?.document.name ??
+        (drafts.scene?.locationId ? 'Ort nicht verfügbar' : 'Kein Ort')) +
+      ' · Titel und Ort ändern';
+    get<HTMLButtonElement>('running-open-location').disabled = !drafts.scene?.locationId;
+    get<HTMLButtonElement>('running-player-location').disabled = !drafts.scene?.locationId;
   }
   function activeParty() {
-    const scene = data?.scene;
+    const scene = drafts.view?.scene;
     return (
-      data?.roster.filter((character) => character.active && character.sceneId === scene?.id) ?? []
+      drafts.view?.roster.filter(
+        (character) => character.active && character.sceneId === scene?.id,
+      ) ?? []
     );
   }
   function renderPassivePerception() {
@@ -1409,17 +1158,17 @@ export function createLive(host: LiveHost) {
       dialog.open ||
       !(await flushLive()) ||
       context?.token !== token ||
-      data?.scene?.id !== sceneId ||
+      drafts.view?.scene?.id !== sceneId ||
       !activeParty().some((c) => c.id === id)
     )
       return;
-    selected = id;
-    characterDraft = structuredClone(originalCharacter()!);
+    drafts.select(id);
     renderCharacter();
     renderList();
     healthOwner = { token: token!, sceneId: sceneId!, characterId: id };
     get('live-health-title').textContent = originalCharacter()!.profile.name + ' · HP und Zustände';
-    get('live-health-group').textContent = 'Gruppe: ' + (data?.scene?.title || 'Aktuelle Gruppe');
+    get('live-health-group').textContent =
+      'Gruppe: ' + (drafts.view?.scene?.title || 'Aktuelle Gruppe');
     get('live-health-status').textContent = '';
     get('live-health-slot').append(get('character-health'));
     get<HTMLDetailsElement>('health-controls').open =
@@ -1434,11 +1183,10 @@ export function createLive(host: LiveHost) {
     const current = () =>
       !!token &&
       context?.token === token &&
-      data?.scene?.id === sceneId &&
+      drafts.view?.scene?.id === sceneId &&
       activeParty().some((c) => c.id === id);
     if (!current() || !(await flushLive()) || !current()) return;
-    selected = id;
-    characterDraft = structuredClone(originalCharacter()!);
+    drafts.select(id);
     renderCharacter();
     renderList();
     lootReturnOwner = { token: token!, sceneId: sceneId!, characterId: id };
@@ -1458,14 +1206,13 @@ export function createLive(host: LiveHost) {
       context?.token !== token
     )
       return;
-    const character = data?.roster.find((c) => c.id === id && !c.archived);
+    const character = drafts.view?.roster.find((c) => c.id === id && !c.archived);
     if (!character) throw new Error('Beuteempfänger ist nicht mehr verfügbar.');
-    selected = id;
-    characterDraft = structuredClone(character);
+    drafts.select(id);
     renderCharacter();
     renderList();
     lootReturnOwner = activeParty().some((c) => c.id === id)
-      ? { token: token!, sceneId: data!.scene!.id, characterId: id }
+      ? { token: token!, sceneId: drafts.view!.scene!.id, characterId: id }
       : null;
     get('live-loot-back').hidden = !lootReturnOwner;
     get('reward-panel').classList.toggle('is-personal-loot', !!lootReturnOwner);
@@ -1481,7 +1228,7 @@ export function createLive(host: LiveHost) {
     if (
       !owner ||
       context?.token !== owner.token ||
-      data?.scene?.id !== owner.sceneId ||
+      drafts.view?.scene?.id !== owner.sceneId ||
       !activeParty().some((c) => c.id === owner.characterId)
     )
       return;
@@ -1497,8 +1244,8 @@ export function createLive(host: LiveHost) {
     if (
       healthOwner &&
       (healthOwner.token !== context?.token ||
-        healthOwner.sceneId !== data?.scene?.id ||
-        healthOwner.characterId !== selected ||
+        healthOwner.sceneId !== drafts.view?.scene?.id ||
+        healthOwner.characterId !== drafts.selection ||
         !active.some((c) => c.id === healthOwner!.characterId))
     )
       closeHealthDialog(false);
@@ -1506,8 +1253,8 @@ export function createLive(host: LiveHost) {
     if (
       lootReturnOwner &&
       (lootReturnOwner.token !== context?.token ||
-        lootReturnOwner.sceneId !== data?.scene?.id ||
-        lootReturnOwner.characterId !== selected ||
+        lootReturnOwner.sceneId !== drafts.view?.scene?.id ||
+        lootReturnOwner.characterId !== drafts.selection ||
         !active.some((c) => c.id === lootReturnOwner!.characterId))
     ) {
       lootReturnOwner = null;
@@ -1560,7 +1307,7 @@ export function createLive(host: LiveHost) {
       button.append(name, facts, passiveLabel, passives, languages, action);
       button.setAttribute('aria-label', profile.name + ' · HP und Zustände bearbeiten');
       const token = context?.token,
-        sceneId = data?.scene?.id;
+        sceneId = drafts.view?.scene?.id;
       button.onclick = () => {
         void openPartyHealth(character.id, token, sceneId).catch((error) =>
           tell((error as Error).message, true),
@@ -1602,12 +1349,12 @@ export function createLive(host: LiveHost) {
     stillCurrent: () => boolean = () => true,
   ) {
     const token = context?.token,
-      focus = data?.focusRevision;
+      focus = drafts.view?.focusRevision;
     const current = () =>
       stillCurrent() &&
       context?.token === token &&
-      data?.scene?.id === expectedSceneId &&
-      data?.focusRevision === focus;
+      drafts.view?.scene?.id === expectedSceneId &&
+      drafts.view?.focusRevision === focus;
     if (
       !token ||
       !current() ||
@@ -1622,8 +1369,8 @@ export function createLive(host: LiveHost) {
       throw new Error('Vorlesetext konnte noch nicht gespeichert werden. Eingabe bleibt offen.');
   }
   function useKnowledgeReadAloud(text: string, title: string) {
-    if (!sceneDraft) return;
-    sceneDraft = { ...sceneDraft, readAloud: text };
+    if (!drafts.scene) return;
+    drafts.editScene({ readAloud: text });
     get<HTMLTextAreaElement>('running-read-aloud').value = text;
     get<HTMLDetailsElement>('running-read-aloud-details').open = true;
     schedule();
@@ -1636,29 +1383,29 @@ export function createLive(host: LiveHost) {
     if (panel.parentElement !== slot) slot.append(panel);
   }
   function renderScene() {
-    if (data && !data.scene && !data.roster.length)
+    if (drafts.view && !drafts.view.scene && !drafts.view.roster.length)
       get<HTMLDetailsElement>('live-party-details').open = true;
-    placePartyEditor(resumed && !!sceneDraft);
-    if (preparedNotesSceneId !== data?.scene?.id) {
-      preparedNotesSceneId = data?.scene?.id ?? null;
+    placePartyEditor(resumed && !!drafts.scene);
+    if (preparedNotesSceneId !== drafts.view?.scene?.id) {
+      preparedNotesSceneId = drafts.view?.scene?.id ?? null;
       preparedNoteIds.clear();
     }
-    get('live-focus-bar').hidden = !resumed || !sceneDraft;
-    get('running-editor').hidden = !resumed || !sceneDraft;
+    get('live-focus-bar').hidden = !resumed || !drafts.scene;
+    get('running-editor').hidden = !resumed || !drafts.scene;
     get('live-start-hint').hidden = resumed;
     get('live-continue').hidden = resumed;
     get('live-play-heading').hidden = resumed;
-    const proseOwner = context && sceneDraft ? context.token + ':' + sceneDraft.id : null;
+    const proseOwner = context && drafts.scene ? context.token + ':' + drafts.scene.id : null;
     const readAloud = get<HTMLTextAreaElement>('running-read-aloud'),
-      nextReadAloud = sceneDraft?.readAloud ?? '';
+      nextReadAloud = drafts.scene?.readAloud ?? '';
     if (readAloudOwner !== proseOwner || (!readAloud.value.trim() && nextReadAloud.trim())) {
       get<HTMLDetailsElement>('running-read-aloud-details').open = !!nextReadAloud.trim();
       readAloudOwner = proseOwner;
     }
-    get<HTMLInputElement>('running-title').value = sceneDraft?.title ?? '';
-    get<HTMLTextAreaElement>('running-notes').value = sceneDraft?.notes ?? '';
-    get<HTMLTextAreaElement>('running-read-aloud').value = sceneDraft?.readAloud ?? '';
-    get<HTMLButtonElement>('running-player-location').disabled = !sceneDraft?.locationId;
+    get<HTMLInputElement>('running-title').value = drafts.scene?.title ?? '';
+    get<HTMLTextAreaElement>('running-notes').value = drafts.scene?.notes ?? '';
+    get<HTMLTextAreaElement>('running-read-aloud').value = drafts.scene?.readAloud ?? '';
+    get<HTMLButtonElement>('running-player-location').disabled = !drafts.scene?.locationId;
     renderLiveMomentDraft();
     renderLocationChoices();
     renderNpcChoices();
@@ -1674,7 +1421,7 @@ export function createLive(host: LiveHost) {
     none.value = '';
     none.textContent = 'Kein Ort';
     select.append(none);
-    const current = sceneDraft?.locationId;
+    const current = drafts.scene?.locationId;
     for (const row of sources?.locations.filter((l) => !l.trashed || l.document.id === current) ??
       []) {
       const option = document.createElement('option');
@@ -1695,7 +1442,7 @@ export function createLive(host: LiveHost) {
   }
   function groupPeople(id: string) {
     return (
-      data?.roster
+      drafts.view?.roster
         .filter((c) => c.active && c.sceneId === id)
         .map((c) => c.profile.name)
         .join(', ') || 'Leere Party'
@@ -1781,9 +1528,9 @@ export function createLive(host: LiveHost) {
   }
   async function refreshChaseConsequences() {
     const owner = context,
-      before = data?.scene;
+      before = drafts.view?.scene;
     if (!owner || !before) return;
-    const current = () => context === owner && data?.scene === before;
+    const current = () => context === owner && drafts.view?.scene === before;
     try {
       const scene = unwrap(await window.campaign.liveScene(owner.token, before.id));
       if (
@@ -1793,8 +1540,7 @@ export function createLive(host: LiveHost) {
         scene.clock.revision < before.clock.revision
       )
         return;
-      before.clock = scene.clock;
-      for (const row of data!.scenes) if (row.id === scene.id) row.clock = scene.clock;
+      drafts.acceptClock(scene);
       renderSceneMeta();
       await refreshLiveSession();
     } catch (error) {
@@ -1816,19 +1562,19 @@ export function createLive(host: LiveHost) {
   }
   async function startLiveSession(sceneId?: string, current: () => boolean = () => true) {
     const token = context?.token,
-      id = data?.scene?.id,
-      focus = data?.focusRevision;
+      id = drafts.view?.scene?.id,
+      focus = drafts.view?.focusRevision;
     const sourceCurrent = () =>
       current() &&
       context?.token === token &&
-      data?.scene?.id === id &&
-      data?.focusRevision === focus;
+      drafts.view?.scene?.id === id &&
+      drafts.view?.focusRevision === focus;
     if (!token || !id || !sourceCurrent() || sessionChronicleError) return false;
-    if (sceneId && data?.focusId !== sceneId) {
+    if (sceneId && drafts.view?.focusId !== sceneId) {
       if (
         !(await changeFocus(sceneId, sourceCurrent)) ||
         context?.token !== token ||
-        data?.scene?.id !== sceneId ||
+        drafts.view?.scene?.id !== sceneId ||
         !current()
       )
         return false;
@@ -1869,18 +1615,18 @@ export function createLive(host: LiveHost) {
     select.replaceChildren();
     const cards = get('group-list');
     cards.replaceChildren();
-    cards.hidden = !resumed || (data?.scenes.length ?? 0) < 2;
-    for (const group of data?.scenes ?? []) {
+    cards.hidden = !resumed || (drafts.view?.scenes.length ?? 0) < 2;
+    for (const group of drafts.view?.scenes ?? []) {
       const option = document.createElement('option');
       option.value = group.id;
       const people =
-        data!.roster
-          .filter((c) => c.active && c.sceneId === group.id)
+        drafts
+          .view!.roster.filter((c) => c.active && c.sceneId === group.id)
           .map((c) => c.profile.name)
           .join(', ') || 'Leere Party';
       option.textContent = groupLabel(group);
       select.append(option);
-      if (group.id === data?.focusId) continue;
+      if (group.id === drafts.view?.focusId) continue;
       const button = document.createElement('button'),
         name = document.createElement('strong'),
         facts = document.createElement('small');
@@ -1888,7 +1634,7 @@ export function createLive(host: LiveHost) {
         (group.title || 'Unbenannte Gruppe') + (group.primary ? ' · Hauptgruppe' : '');
       facts.textContent = people + ' · ' + formatSceneInstant(group.clock.instantMs);
       button.append(name, facts);
-      button.setAttribute('aria-pressed', String(data?.focusId === group.id));
+      button.setAttribute('aria-pressed', String(drafts.view?.focusId === group.id));
       button.disabled = intentBlocked();
       button.onclick = () => {
         void (async () => {
@@ -1897,15 +1643,16 @@ export function createLive(host: LiveHost) {
       };
       cards.append(button);
     }
-    select.value = data?.focusId ?? '';
-    get<HTMLButtonElement>('group-move').disabled = !data?.scene?.members.length || intentBlocked();
-    get('live-archives').hidden = !data?.archiveCount;
+    select.value = drafts.view?.focusId ?? '';
+    get<HTMLButtonElement>('group-move').disabled =
+      !drafts.view?.scene?.members.length || intentBlocked();
+    get('live-archives').hidden = !drafts.view?.archiveCount;
     get('live-archives').textContent =
-      'Frühere Gruppen ansehen (' + (data?.archiveCount ?? 0) + ')';
+      'Frühere Gruppen ansehen (' + (drafts.view?.archiveCount ?? 0) + ')';
   }
   async function changeFocus(id: string, current: () => boolean = () => true) {
     const token = context?.token,
-      revision = data?.focusRevision,
+      revision = drafts.view?.focusRevision,
       combat = get('combat-panel'),
       bounds = combat.getBoundingClientRect?.();
     const atCombat =
@@ -1921,7 +1668,7 @@ export function createLive(host: LiveHost) {
       context?.token !== token ||
       !current()
     ) {
-      if (current()) get<HTMLSelectElement>('scene-focus').value = data?.focusId ?? '';
+      if (current()) get<HTMLSelectElement>('scene-focus').value = drafts.view?.focusId ?? '';
       return false;
     }
     if (await execute({ kind: 'focus', sceneId: id, expectedRevision: revision })) {
@@ -1931,8 +1678,8 @@ export function createLive(host: LiveHost) {
     return false;
   }
   function render() {
-    get('live-empty').hidden = !!data;
-    get('live-workspace').hidden = !data;
+    get('live-empty').hidden = !!drafts.view;
+    get('live-workspace').hidden = !drafts.view;
     renderList();
     renderCharacter();
     renderScene();
@@ -2007,15 +1754,15 @@ export function createLive(host: LiveHost) {
           !token ||
           !(await flushLive()) ||
           context?.token !== token ||
-          data?.scene?.id !== sceneId ||
-          data.scene.adoption?.id !== adoptionId
+          drafts.view?.scene?.id !== sceneId ||
+          drafts.view.scene.adoption?.id !== adoptionId
         )
           return false;
         const ack = await execute({
           kind: 'visit-outcome',
           sceneId,
           adoptionId,
-          expectedRevision: data.scene.revision,
+          expectedRevision: drafts.view.scene.revision,
           status,
           outcome,
         });
@@ -2031,7 +1778,10 @@ export function createLive(host: LiveHost) {
     get('live-session-plan').addEventListener('change', syncLivePacketContext);
     npcCastBinder = new NpcCastBinder(
       status,
-      () => (context && data?.scene && resumed ? { workspace: context, scene: data.scene } : null),
+      () =>
+        context && drafts.view?.scene && resumed
+          ? { workspace: context, scene: drafts.view.scene }
+          : null,
       flushLive,
       useLiveReferenceReadAloud,
       addLiveNpc,
@@ -2062,14 +1812,18 @@ export function createLive(host: LiveHost) {
     castButton.onclick = () => void npcCastBinder.open().catch((e) => tell(e.message, true));
     visitBinder = new SceneVisitBinder(
       status,
-      () => (context && data?.scene && resumed ? { workspace: context, scene: data.scene } : null),
+      () =>
+        context && drafts.view?.scene && resumed
+          ? { workspace: context, scene: drafts.view.scene }
+          : null,
       flushLive,
       useLiveReferenceReadAloud,
       openKnowledgeNote,
     );
     liveGenerator = new LiveEncounterGenerator(
       status,
-      () => (context && data?.scene && resumed ? { workspace: context, live: data } : null),
+      () =>
+        context && drafts.view?.scene && resumed ? { workspace: context, live: drafts.view } : null,
       flushLive,
       prepareGeneratedCombat,
     );
@@ -2081,8 +1835,13 @@ export function createLive(host: LiveHost) {
     lootButton.onclick = () =>
       void (async () => {
         const token = context?.token,
-          id = data?.scene?.id;
-        if (!id || !(await flushLive()) || context?.token !== token || data?.scene?.id !== id)
+          id = drafts.view?.scene?.id;
+        if (
+          !id ||
+          !(await flushLive()) ||
+          context?.token !== token ||
+          drafts.view?.scene?.id !== id
+        )
           return;
         await openTreasureDistribution(undefined, id);
       })().catch((e) => tell(e.message, true));
@@ -2102,15 +1861,7 @@ export function createLive(host: LiveHost) {
         }
       },
       (scene) => {
-        if (
-          !data?.scene ||
-          data.scene.id !== scene.id ||
-          data.scene.clock.epochId !== scene.clock.epochId ||
-          data.scene.clock.revision > scene.clock.revision
-        )
-          return;
-        data.scene.clock = scene.clock;
-        for (const row of data.scenes) if (row.id === scene.id) row.clock = scene.clock;
+        if (!drafts.acceptClock(scene)) return;
         renderSceneMeta();
         renderGroups();
       },
@@ -2146,44 +1897,52 @@ export function createLive(host: LiveHost) {
     };
     for (const [id, field] of profileFields) {
       get(id).oninput = () => {
-        if (!characterDraft) return;
+        if (!drafts.character) return;
         const text = value(id),
-          profile: CharacterProfile = { ...characterDraft.profile };
+          profile: CharacterProfile = { ...drafts.character.profile };
         if (field === 'name') profile.name = text;
         else if (!text) delete profile[field];
         else if (field === 'armorClass' || field === 'passivePerception' || field === 'speedFeet')
           profile[field] = Number(text);
         else profile[field] = text;
-        characterDraft = { ...characterDraft, profile };
+        drafts.editProfile(profile);
         schedule();
       };
       get(id).onblur = () => {
-        if (!composing) void flushLive();
+        if (!writer.composing) void flushLive();
       };
     }
     get('character-toggle').onclick = () => {
       void (async () => {
         const token = context?.token,
-          id = selected;
-        if (!(await flushLive()) || context?.token !== token || selected !== id || !data) return;
+          id = drafts.selection;
+        if (
+          !(await flushLive()) ||
+          context?.token !== token ||
+          drafts.selection !== id ||
+          !drafts.view
+        )
+          return;
         const c = originalCharacter();
         if (!c) return;
         await execute({
           kind: 'membership',
           characterId: c.id,
           expectedRevision: c.membershipRevision,
-          expectedRosterRevision: data.rosterRevision,
+          expectedRosterRevision: drafts.view.rosterRevision,
           active: !c.active,
-          targetSceneId: c.active ? null : data.focusId,
-          expectedFocusRevision: data.focusRevision,
+          targetSceneId: c.active ? null : drafts.view.focusId,
+          expectedFocusRevision: drafts.view.focusRevision,
         });
       })();
     };
     get('live-continue').onclick = () => {
       void (async () => {
         const token = context?.token;
-        if (!(await flushLive()) || context?.token !== token || !data) return;
-        if (await execute({ kind: 'initialize', expectedRosterRevision: data.rosterRevision })) {
+        if (!(await flushLive()) || context?.token !== token || !drafts.view) return;
+        if (
+          await execute({ kind: 'initialize', expectedRosterRevision: drafts.view.rosterRevision })
+        ) {
           if (!(await flushLive())) return;
           resumed = true;
           await openLive();
@@ -2197,24 +1956,23 @@ export function createLive(host: LiveHost) {
       ['running-read-aloud', 'readAloud'],
     ] as const) {
       get(id).oninput = () => {
-        if (sceneDraft) {
+        if (drafts.scene) {
           const text = value(id),
-            before = data?.scene?.[field];
-          sceneDraft = {
-            ...sceneDraft,
+            before = drafts.view?.scene?.[field];
+          drafts.editScene({
             [field]:
               before !== undefined && text === before.replace(/\r\n?/g, '\n') ? before : text,
-          };
+          });
           schedule();
         }
       };
       get(id).onblur = () => {
-        if (!composing) void flushLive();
+        if (!writer.composing) void flushLive();
       };
     }
     get('running-location').onchange = () => {
-      if (sceneDraft) {
-        sceneDraft = { ...sceneDraft, locationId: value('running-location') || null };
+      if (drafts.scene) {
+        drafts.editScene({ locationId: value('running-location') || null });
         renderScenePlace();
         schedule();
       }
@@ -2222,8 +1980,8 @@ export function createLive(host: LiveHost) {
     get('running-open-location').onclick = () => {
       void (async () => {
         const token = context?.token;
-        if ((await flushLive()) && token === context?.token && sceneDraft?.locationId)
-          await openLocation(sceneDraft.locationId);
+        if ((await flushLive()) && token === context?.token && drafts.scene?.locationId)
+          await openLocation(drafts.scene.locationId);
       })();
     };
     get('running-player-follow').onclick = () => {
@@ -2237,12 +1995,12 @@ export function createLive(host: LiveHost) {
       void (async () => {
         const token = context?.token,
           focus = playerFocus(),
-          locationId = sceneDraft?.locationId;
+          locationId = drafts.scene?.locationId;
         if (!focus || !locationId) return;
         if (
           (await flushLive()) &&
           context?.token === token &&
-          sceneDraft?.locationId === locationId
+          drafts.scene?.locationId === locationId
         )
           await cuePlayerImage('location', locationId, focus);
       })();
@@ -2302,13 +2060,10 @@ export function createLive(host: LiveHost) {
     };
     get('live-reconcile').onclick = () => {
       void (async () => {
-        const pending = failedState.value,
-          command = pending?.command,
-          token = context?.token;
-        if (!pending || !command || !token) return;
+        if (!writer.uncertainCommand) return;
         try {
-          const result = unwrap(await window.campaign.liveStatus(command, token));
-          if (context?.token !== token || failedState.value !== pending) return;
+          const result = await writer.resolve();
+          if (!result) return;
           if (result.targetChanged) {
             tell(
               result.receipt
@@ -2318,18 +2073,6 @@ export function createLive(host: LiveHost) {
             );
             return;
           }
-          if (result.receipt)
-            mergeAck(
-              {
-                ...result.receipt,
-                ...(result.currentScene ? { scene: result.currentScene } : {}),
-                ...(result.currentCharacter ? { character: result.currentCharacter } : {}),
-              },
-              command.action,
-              pending.submittedProfile,
-            );
-          blocked = false;
-          failedState.value = null;
           partyMove.busy(false);
           get('live-reconcile').hidden = true;
           get('live-refresh').hidden = true;
@@ -2346,10 +2089,8 @@ export function createLive(host: LiveHost) {
     get('live-refresh').onclick = () => {
       void (async () => {
         partyMove.reset();
-        blocked = false;
-        failedState.value = null;
-        characterDraft = null;
-        sceneDraft = null;
+        writer.discardUncertain();
+        drafts.discardInput();
         get('live-reconcile').hidden = true;
         get('live-refresh').hidden = true;
         await openLive();
@@ -2357,16 +2098,14 @@ export function createLive(host: LiveHost) {
       })();
     };
     get('live').addEventListener('compositionstart', () => {
-      composing = true;
-      if (timer) clearTimeout(timer);
+      writer.composition(true);
     });
     get('live').addEventListener('compositionend', () => {
-      composing = false;
-      schedule();
+      writer.composition(false);
     });
     for (const id of ['character-dialog', 'adoption-dialog'])
       get<HTMLDialogElement>(id).addEventListener('cancel', (event) => {
-        if (requestWork.value) event.preventDefault();
+        if (writer.writing) event.preventDefault();
       });
   }
   let scenePreparationRequest = 0,
@@ -2375,12 +2114,14 @@ export function createLive(host: LiveHost) {
   const openTreasure = host.navigation.treasure ?? null;
   const openGroup = host.navigation.group ?? null;
   async function refreshScenePreparation() {
-    if (!context || !data?.scene || !resumed) return;
+    if (!context || !drafts.view?.scene || !resumed) return;
     const token = context.token,
-      id = data.scene.id,
+      id = drafts.view.scene.id,
       request = ++scenePreparationRequest;
     const current = () =>
-      context?.token === token && data?.scene?.id === id && request === scenePreparationRequest;
+      context?.token === token &&
+      drafts.view?.scene?.id === id &&
+      request === scenePreparationRequest;
     try {
       const result = unwrap(await window.campaign.scenePreparation(token, id));
       if (!current()) return;
@@ -2407,7 +2148,7 @@ export function createLive(host: LiveHost) {
           .map((a) => a.name + ' ' + a.hp + '/' + a.maxHp + ' HP')
           .join(', ');
         button.textContent = 'Begegnung mit diesen Figuren vorbereiten';
-        const selected = new Set(
+        const chosenActors = new Set(
             group.actors.filter((a) => a.hp > 0 && !a.unavailable && !a.defeated).map((a) => a.id),
           ),
           choice = document.createElement('fieldset'),
@@ -2418,12 +2159,12 @@ export function createLive(host: LiveHost) {
           const label = document.createElement('label'),
             box = document.createElement('input');
           box.type = 'checkbox';
-          box.checked = selected.has(actor.id);
+          box.checked = chosenActors.has(actor.id);
           box.disabled = actor.hp <= 0 || actor.unavailable || !!actor.defeated;
           box.onchange = () => {
-            if (box.checked) selected.add(actor.id);
-            else selected.delete(actor.id);
-            button.disabled = !selected.size;
+            if (box.checked) chosenActors.add(actor.id);
+            else chosenActors.delete(actor.id);
+            button.disabled = !chosenActors.size;
           };
           label.className = 'check-label';
           label.append(
@@ -2440,11 +2181,11 @@ export function createLive(host: LiveHost) {
           );
           choice.append(label);
         }
-        button.disabled = !selected.size;
+        button.disabled = !chosenActors.size;
         button.onclick = () => {
           void (async () => {
             if ((await flushLive()) && current())
-              await prepareWorldGroup(group, [...selected], current);
+              await prepareWorldGroup(group, [...chosenActors], current);
           })().catch((error) => tell(error.message, true));
         };
         const reinforce = document.createElement('button');
@@ -2476,7 +2217,11 @@ export function createLive(host: LiveHost) {
         treasures.append(p);
       }
     } catch (error) {
-      if (context?.token === token && data?.scene?.id === id && request === scenePreparationRequest)
+      if (
+        context?.token === token &&
+        drafts.view?.scene?.id === id &&
+        request === scenePreparationRequest
+      )
         tell((error as Error).message, true);
     }
   }
@@ -2501,8 +2246,8 @@ export function createLive(host: LiveHost) {
         if (
           !p ||
           !token ||
-          !data?.scene ||
-          p.sceneId !== data.scene.id ||
+          !drafts.view?.scene ||
+          p.sceneId !== drafts.view.scene.id ||
           !(await flushLive()) ||
           context?.token !== token
         )
@@ -2513,7 +2258,10 @@ export function createLive(host: LiveHost) {
     };
     timeNavigator = new TimeNavigator(
       tell,
-      () => (context && data?.scene && resumed ? { workspace: context, scene: data.scene } : null),
+      () =>
+        context && drafts.view?.scene && resumed
+          ? { workspace: context, scene: drafts.view.scene }
+          : null,
       flushLive,
       async (action, stillCurrent) => {
         const token = context?.token;
@@ -2522,7 +2270,7 @@ export function createLive(host: LiveHost) {
           !(await flushLive()) ||
           !stillCurrent() ||
           context?.token !== token ||
-          data?.scene?.id !== action.sceneId
+          drafts.view?.scene?.id !== action.sceneId
         )
           return false;
         const ack = await execute(action);
@@ -2547,8 +2295,8 @@ export function createLive(host: LiveHost) {
       throw new Error(
         'Offene Eingaben zuerst speichern oder den Speicherstatus im Spieltisch klären.',
       );
-    if (!data) await openLive();
-    if (!stillCurrent() || context?.token !== token || !data)
+    if (!drafts.view) await openLive();
+    if (!stillCurrent() || context?.token !== token || !drafts.view)
       throw new Error('Party oder Auswahl nicht mehr verfügbar.');
     const ack = await execute(action);
     if (!ack)
@@ -2564,10 +2312,10 @@ export function createLive(host: LiveHost) {
   ) {
     if (!stillCurrent() || context?.token !== token || !(await flushLive()))
       throw new Error('Offene Eingaben zuerst speichern oder den Buchungsstatus klären.');
-    if (!data) await openLive();
-    if (!stillCurrent() || context?.token !== token || !data)
+    if (!drafts.view) await openLive();
+    if (!stillCurrent() || context?.token !== token || !drafts.view)
       throw new Error('Party nicht verfügbar oder Auswahl inzwischen geschlossen.');
-    progressionContext(context, data, selected);
+    progressionContext(context, drafts.view, drafts.selection);
     let receipt: import('./progression').ProgressAck | undefined;
     if (
       !(await executePartyProgress(action, stillCurrent, (result) => {
@@ -2586,14 +2334,14 @@ export function createLive(host: LiveHost) {
     stillCurrent: () => boolean = () => true,
   ) {
     const token = context?.token,
-      sceneId = data?.scene?.id,
-      focusRevision = data?.focusRevision;
+      sceneId = drafts.view?.scene?.id,
+      focusRevision = drafts.view?.focusRevision;
     const current = () =>
       stillCurrent() &&
       token === context?.token &&
-      data?.scene?.id === sceneId &&
-      data?.focusRevision === focusRevision;
-    if (!(await flushLive()) || !current() || !data?.scene || !resumed) return false;
+      drafts.view?.scene?.id === sceneId &&
+      drafts.view?.focusRevision === focusRevision;
+    if (!(await flushLive()) || !current() || !drafts.view?.scene || !resumed) return false;
     const plan = sources?.plans.find((p) => p.id === planId),
       visit = plan?.scenes.find((v) => v.id === visitId);
     if (!plan || !visit) return false;
@@ -2605,8 +2353,8 @@ export function createLive(host: LiveHost) {
       planId,
       expectedPlanRevision: plan.revision,
       visitId,
-      sceneId: data.scene.id,
-      expectedRevision: data.scene.revision,
+      sceneId: drafts.view.scene.id,
+      expectedRevision: drafts.view.scene.revision,
       expectedVisitRevision: detail?.revision ?? 0,
     };
     const root = get('adoption-content');
@@ -2686,9 +2434,9 @@ export function createLive(host: LiveHost) {
 
   function livePacketSource(): LivePacketSource | null {
     const w = context,
-      s = data?.scene,
+      s = drafts.view?.scene,
       p = get<HTMLSelectElement>('live-session-plan').value,
-      focus = data?.focusRevision;
+      focus = drafts.view?.focusRevision;
     if (!w || !s || !p || !resumed) return null;
     const token = w.token,
       campaignId = w.campaign.id,
@@ -2699,10 +2447,10 @@ export function createLive(host: LiveHost) {
       context === w &&
       context?.token === token &&
       context?.campaign.id === campaignId &&
-      data?.scene?.id === sceneId &&
-      data.focusRevision === focus &&
-      data.scene.membershipRevision === membership &&
-      data.scene.adoption?.id === adoptionId &&
+      drafts.view?.scene?.id === sceneId &&
+      drafts.view.focusRevision === focus &&
+      drafts.view.scene.membershipRevision === membership &&
+      drafts.view.scene.adoption?.id === adoptionId &&
       get<HTMLSelectElement>('live-session-plan').value === p;
     return {
       sceneId: s.id,
@@ -2724,9 +2472,9 @@ export function createLive(host: LiveHost) {
         if (current()) await previewPlannedVisit(p, id);
       },
       readAloud: async (text, title, active = () => true) => {
-        const before = sceneDraft?.readAloud;
+        const before = drafts.scene?.readAloud;
         if (!current() || !active() || !(await flushLive()) || !current() || !active()) return;
-        if (sceneDraft?.readAloud !== before) {
+        if (drafts.scene?.readAloud !== before) {
           tell('Neuerer Szenentext bleibt erhalten. Vorlesetext erneut wählen.', true);
           return;
         }
@@ -2742,7 +2490,10 @@ export function createLive(host: LiveHost) {
       prepareEncounter: async (groupId, visitId, groupRevision, active = () => true) => {
         const valid = () => current() && active();
         if (!valid() || !(await flushLive()) || !valid()) return;
-        if (data?.scene?.adoption?.planId !== p || data.scene.adoption.visitId !== visitId)
+        if (
+          drafts.view?.scene?.adoption?.planId !== p ||
+          drafts.view.scene.adoption.visitId !== visitId
+        )
           throw new Error(
             'Übernimm diesen Besuch zuerst, damit Ort und vorbereitete Gruppe zum laufenden Szenenstand gehören.',
           );
@@ -2816,21 +2567,21 @@ export function createLive(host: LiveHost) {
     expectedSceneId?: string,
   ) {
     if (!(await ensureLiveRuntime())) return;
-    if (expectedSceneId && data?.scene?.id !== expectedSceneId)
+    if (expectedSceneId && drafts.view?.scene?.id !== expectedSceneId)
       throw new Error('Reisegruppe gewechselt. Reise neu öffnen.');
     await timeNavigator.open(target);
   }
   async function openTravelRest(sceneId: string) {
     if (!(await ensureLiveRuntime()) || !(await flushLive())) return;
-    if (data?.scene?.id !== sceneId) throw new Error('Reisegruppe gewechselt. Reise neu öffnen.');
+    if (drafts.view?.scene?.id !== sceneId)
+      throw new Error('Reisegruppe gewechselt. Reise neu öffnen.');
     await openPartyRest(sceneId);
   }
 
   async function recoverTimeWrite() {
-    const pending = failedState.value,
-      command = pending?.command,
+    const command = writer.uncertainCommand,
       token = context?.token;
-    if (!command) return !blocked;
+    if (!command) return !writer.blocked;
     if (
       !token ||
       command.action.kind !== 'advance-clock' ||
@@ -2840,15 +2591,8 @@ export function createLive(host: LiveHost) {
       return false;
     }
     try {
-      const result = unwrap(await window.campaign.liveStatus(command, token));
-      if (context?.token !== token || failedState.value !== pending) return false;
-      if (result.receipt)
-        mergeAck(
-          { ...result.receipt, ...(result.currentScene ? { scene: result.currentScene } : {}) },
-          command.action,
-        );
-      blocked = false;
-      failedState.value = null;
+      const result = await writer.resolve();
+      if (!result || result.targetChanged) return false;
       timeControls.preview = null;
       get('live-reconcile').hidden = true;
       get('live-refresh').hidden = true;
@@ -2881,15 +2625,15 @@ export function createLive(host: LiveHost) {
   ): Promise<boolean> {
     const owner = context,
       token = owner?.token,
-      sceneId = data?.scene?.id,
-      focusRevision = data?.focusRevision,
+      sceneId = drafts.view?.scene?.id,
+      focusRevision = drafts.view?.focusRevision,
       summary = marker === 'end' ? (submittedSummary ?? recapFields(false).summary) : '',
       handoff = marker === 'end' ? (submittedHandoff ?? recapFields(false).handoff) : '';
     const current = () =>
       stillCurrent() &&
       context?.token === token &&
-      data?.scene?.id === sceneId &&
-      data?.focusRevision === focusRevision;
+      drafts.view?.scene?.id === sceneId &&
+      drafts.view?.focusRevision === focusRevision;
     if (
       !owner ||
       !token ||
@@ -2905,7 +2649,7 @@ export function createLive(host: LiveHost) {
         execute({
           kind: 'session-marker',
           sceneId,
-          expectedRevision: data!.scene!.revision,
+          expectedRevision: drafts.view!.scene!.revision,
           marker,
           summary,
           handoff,
@@ -2933,47 +2677,50 @@ export function createLive(host: LiveHost) {
   ) {
     const token = ownerToken ?? context?.token;
     if (ownerToken && context?.token !== ownerToken) throw new Error('Kampagne gewechselt.');
-    const expectedScene = ownerSceneId ?? data?.scene?.id;
-    const current = editorSession.capture(() => [context?.token, data?.scene?.id], stillCurrent);
+    const expectedScene = ownerSceneId ?? drafts.view?.scene?.id;
+    const current = editorSession.capture(
+      () => [context?.token, drafts.view?.scene?.id],
+      stillCurrent,
+    );
     if (!current() || !(await flushLive()) || !current() || context?.token !== token)
       throw new Error('Offene Eingaben oder Kampagnenwechsel. Spieltisch prüfen.');
     await openLive();
     if (
       !current() ||
       context?.token !== token ||
-      !data?.scene ||
-      data.focusRevision === null ||
-      expectedScene !== data.scene.id
+      !drafts.view?.scene ||
+      drafts.view.focusRevision === null ||
+      expectedScene !== drafts.view.scene.id
     )
       throw new Error('Szenenfokus geändert oder keine laufende Sitzung. Auswahl erneut öffnen.');
-    const source = data.scene,
-      labels = partySceneLabels(data),
+    const source = drafts.view.scene,
+      labels = partySceneLabels(drafts.view),
       tokenAtOpen = context!.token,
-      focusAtOpen = data.focusRevision,
-      sourceRosterRevision = data.rosterRevision,
+      focusAtOpen = drafts.view.focusRevision,
+      sourceRosterRevision = drafts.view.rosterRevision,
       sourceContentRevision = source.revision,
       sourceMembershipRevision = source.membershipRevision,
       sourceClockRevision = source.clock.revision;
     return partyMove.open(
       {
         token: tokenAtOpen,
-        rosterRevision: data.rosterRevision,
+        rosterRevision: drafts.view.rosterRevision,
         focusRevision: focusAtOpen,
         source: {
           id: source.id,
           label:
             labels.get(source.id) ??
-            groupLabel({ ...source, primary: source.id === data.primaryId }),
+            groupLabel({ ...source, primary: source.id === drafts.view.primaryId }),
           contentRevision: source.revision,
           membershipRevision: source.membershipRevision,
           clockRevision: source.clock.revision,
           instantMs: source.clock.instantMs,
           members: source.members.map((id) => ({
             id,
-            name: data!.roster.find((c) => c.id === id)!.profile.name,
+            name: drafts.view!.roster.find((c) => c.id === id)!.profile.name,
           })),
         },
-        targets: data.scenes.map((scene) => ({
+        targets: drafts.view.scenes.map((scene) => ({
           id: scene.id,
           label: labels.get(scene.id) ?? groupLabel(scene),
           membershipRevision: scene.membershipRevision,
@@ -2984,24 +2731,19 @@ export function createLive(host: LiveHost) {
       editorSession.capture(() => [context?.token]),
       () =>
         context?.token === tokenAtOpen &&
-        data?.scene?.id === source.id &&
-        data.focusRevision === focusAtOpen &&
-        data.scene.revision === sourceContentRevision &&
-        data.scene.membershipRevision === sourceMembershipRevision &&
-        data.scene.clock.revision === sourceClockRevision &&
-        data.rosterRevision === sourceRosterRevision,
+        drafts.view?.scene?.id === source.id &&
+        drafts.view.focusRevision === focusAtOpen &&
+        drafts.view.scene.revision === sourceContentRevision &&
+        drafts.view.scene.membershipRevision === sourceMembershipRevision &&
+        drafts.view.scene.clock.revision === sourceClockRevision &&
+        drafts.view.rosterRevision === sourceRosterRevision,
     );
   }
-
-  editorSession.onDeactivate(() => {
-    if (timer) clearTimeout(timer);
-    timer = null;
-  });
 
   editorSession.observeDraft(() => ({
     openInput: changed(),
     retainedDraft: momentEditor.hasSavedDraft() || recapEditor.hasSavedDraft(),
-    unresolvedCommand: !!failedState.value,
+    unresolvedCommand: !!writer.uncertainCommand,
   }));
 
   return {

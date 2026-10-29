@@ -1,3 +1,4 @@
+import { openNativeCampaign } from './native-navigation.mjs';
 import { runNativeProbe } from './native-session.mjs';
 import { _electron as electron } from 'playwright-core';
 import { build } from 'esbuild';
@@ -22,7 +23,7 @@ await runNativeProbe({ output: out, name: 'combat-drafts' }, async (native) => {
   const checks = [],
     exits = [],
     errors = [];
-  let actorId, combatId;
+  let actorId, combatId, campaignId;
   const read = (fn) => {
     const db = new Database(path.join(dataDir, 'workbench.sqlite'), { readonly: true });
     try {
@@ -62,8 +63,10 @@ await runNativeProbe({ output: out, name: 'combat-drafts' }, async (native) => {
     await page.waitForFunction(() => document.body.dataset.tutorialReady === 'true');
     if (await page.locator('#tutorial-dialog').evaluate((e) => e.open))
       await page.locator('#tutorial-skip').click();
+    await openNativeCampaign(page, campaignId);
     await page.locator('#live-tab').click();
-    await page.locator('#live-continue').click();
+    if (await page.locator('#live-continue').isVisible())
+      await page.locator('#live-continue').click();
     await page.locator('#combat-rows button').first().waitFor();
     await page.locator('#combat-rows button').first().click();
     await page.waitForFunction(() => !document.getElementById('fighter-initiative').disabled);
@@ -112,6 +115,7 @@ await runNativeProbe({ output: out, name: 'combat-drafts' }, async (native) => {
         actor = store.executeLive(
           command({ kind: 'create-character', profile: { name: 'Native Figur' } }),
         ).character;
+      campaignId = c.id;
       actorId = actor.id;
       let live = store.live(w.token);
       store.executeLive(

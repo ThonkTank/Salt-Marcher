@@ -14,7 +14,7 @@ const root = process.cwd(),
 buildSync({
   stdin: {
     contents:
-      "export * from './src/app/storage/store';export * from './src/app/atlas/terrain-height';export {bounds} from './src/app/atlas/atlas-landscape';",
+      "export * from './src/app/storage/store';export * from './src/app/atlas/terrain-height';export {bounds} from './src/app/atlas/landscape-geometry';",
     resolveDir: root,
   },
   outfile: '.build/terrain-live-interactions-store.cjs',

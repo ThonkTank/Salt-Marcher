@@ -242,11 +242,12 @@ try {
   await recipe.locator('[name=depth]').fill('25');
   await app.evaluate(({ BrowserWindow }) => {
     const w = BrowserWindow.getAllWindows().find((w) => w.getTitle() === 'SaltMarcher');
-    w.setSize(1440, 1000);
+    w.setMinimumSize(320, 240);
+    w.setContentSize(720, 500);
     w.webContents.setZoomFactor(1);
   });
-  await page.waitForFunction(() => innerWidth <= 720);
-  await frame('building-recipe-200');
+  await page.waitForFunction(() => innerWidth === 720 && innerHeight === 500);
+  await frame('building-recipe-100');
   const overflow = await recipe.evaluate((el) => ({
     width: el.scrollWidth,
     client: el.clientWidth,
@@ -266,10 +267,11 @@ try {
   await page.locator('#atlas-units').selectOption('metric');
   await app.evaluate(({ BrowserWindow }) => {
     const w = BrowserWindow.getAllWindows().find((w) => w.getTitle() === 'SaltMarcher');
-    w.setSize(1440, 1000);
+    w.setMinimumSize(320, 240);
+    w.setContentSize(720, 500);
     w.webContents.setZoomFactor(1);
   });
-  await page.waitForFunction(() => innerWidth <= 720);
+  await page.waitForFunction(() => innerWidth === 720 && innerHeight === 500);
   await atlasCanvasReady(page);
   await frame('metric-100-percent');
   assert.deepEqual(geometry(), beforeUnits, 'Changing display units must not save geometry');

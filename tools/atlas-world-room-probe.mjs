@@ -33,7 +33,9 @@ const {
   gridHeight,
 } = require('../.build/point5/native-math.cjs');
 const scale = Number(process.argv.find((a) => a.startsWith('--scale='))?.split('=')[1] ?? 1);
-const output = path.resolve('.build/point5/native', `${Date.now()}-${process.pid}`);
+const output =
+  process.env.QA_EVIDENCE_DIR ??
+  path.resolve('.build/point5/native', `${Date.now()}-${process.pid}`);
 const sourcePaths = [
   'src/app/atlas/atlas-raster-presentation.ts',
   'src/app/atlas/atlas-canvas.ts',

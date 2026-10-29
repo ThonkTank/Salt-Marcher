@@ -1,3 +1,4 @@
+import { revealWorkspaceNavigation } from './native-navigation.mjs';
 import { createNativeSession } from './native-session.mjs';
 import { createRequire } from 'node:module';
 import { randomUUID } from 'node:crypto';
@@ -162,12 +163,7 @@ function snapshot() {
   }
 }
 async function nav(page, id) {
-  if (
-    !(await page.locator(id).isVisible()) &&
-    (await page.locator('#atlas-navigation').isVisible())
-  )
-    await page.locator('#atlas-navigation').click();
-  if (!(await page.locator(id).isVisible())) await page.locator('#workspace-nav-summary').click();
+  await revealWorkspaceNavigation(page);
   await page.locator(id).click();
 }
 async function launch() {

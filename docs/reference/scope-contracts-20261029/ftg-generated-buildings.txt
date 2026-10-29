@@ -1,0 +1,159 @@
+Browser tab: 1, Title: "CITY00 Plan3 QA | Fantasy Town Generator", URL: "https://www.fantasytowngenerator.com/temporary-settlement".
+1 AXWebArea CITY00 Plan3 QA | Fantasy Town Generator, URL: fantasytowngenerator.com/temporary-settlement
+	2 container root
+		3 container
+			4 container Interactive settlement map
+			5 container Settlement actions and navigation
+				6 button Exit
+					7 container Exit
+						8 image
+				9 link Description: User guide, Value: docs.fantasytowngenerator.com/useSettlements/map
+				10 button Edit map options dropdown
+					11 container Edit map
+						12 image
+				13 button Population
+					14 container Population
+						15 image
+				16 button Buildings
+					17 container Buildings
+						18 image
+				19 button Factions
+					20 container Factions
+						21 image
+				22 button Districts
+					23 container Districts
+						24 image
+				25 button Open download options dropdown
+					26 container Download
+						27 image
+				28 button Open settings options dropdown
+					29 container Settings
+						30 image
+				31 button Create new temporary settlement
+					32 container Create new temporary settlement
+						33 image
+				34 button Create account and keep settlement permanently
+					35 container Create account and keep settlement permanently
+						36 image
+			37 container settlement name display
+				38 heading CITY00 Plan3 QA, Value: 1
+					39 text CITY00 Plan3 QA
+			40 button Zoom in
+				41 container Zoom in
+					42 image
+			43 button Zoom out
+				44 container Zoom out
+					45 image
+			46 button Reset camera
+				47 container Reset camera
+					48 image
+			49 button Change measurement unit. Current: meters
+				50 container Change measurement unit. Current: meters
+					51 text m
+			52 button Ruler
+				53 container Ruler
+					54 image
+			55 button Toggle 2x2 grid
+				56 container Toggle 2x2 grid
+					57 image
+			58 container Time controls
+				59 text 9:00 Monday
+				60 button Next Hour
+					61 image
+					62 text Next Hour
+				63 button Time Skip
+					64 image
+					65 text Time Skip
+				66 button Open place in world edit settings
+					67 image
+			68 container Map search and layers
+				69 image
+				70 search text field (settable)
+				71 button Map layer dropdown, currently SATELLITE
+					72 container Satellite
+						73 image
+						74 text Satellite
+						75 image
+				76 button Map text layer dropdown, currently DISTRICTS
+					77 container Districts
+						78 image
+						79 text Districts
+						80 image
+			81 container population information
+				82 heading Population, Value: 1
+					83 text Population
+				84 button Go back to previous view
+					85 image
+				86 button close Population
+					87 image
+				88 container
+					89 text field (settable) Description: Text field for search, Value: Plan3Latra
+					90 button Advanced search
+						91 container Advanced search
+							92 image
+					93 button (disabled) Search
+				94 button Open details for person Plan3Latra Sandurion
+					95 image
+					96 container
+						97 text Plan3Latra Sandurion
+					98 text Farmer
+					99 container Working
+						100 image
+				101 button Bulk edit
+					102 text Bulk edit
+				103 tab group
+					104 button Switch to Favourite People
+						105 heading Favourite People, Value: 4
+							106 text Favourite People
+					107 button Switch to Demographics
+						108 heading Demographics, Value: 4
+							109 text Demographics
+				110 container demographics
+					111 tab group
+						112 button Switch to Buildings
+							113 heading Buildings, Value: 4
+								114 text Buildings
+						115 button Switch to People
+							116 heading People, Value: 4
+								117 text People
+						118 button Switch to Races
+							119 heading Races, Value: 4
+								120 text Races
+					121 table edit service table
+						122 row
+							123 cell
+								124 text Building
+							125 cell
+								126 text Number
+							127 cell
+								128 text Percentage
+						129 row
+							130 cell
+								131 text lower class home
+							132 cell
+								133 text 11
+							134 cell
+								135 text 40.74 %
+						136 row
+							137 cell
+								138 text middle class home
+							139 cell
+								140 text 10
+							141 cell
+								142 text 37.04 %
+						143 row
+							144 cell
+								145 text farm
+							146 cell
+								147 text 4
+							148 cell
+								149 text 14.81 %
+						150 row
+							151 cell
+								152 text house share
+							153 cell
+								154 text 2
+							155 cell
+								156 text 7.41 %
+
+The focused UI element is 112 button Switch to Buildings

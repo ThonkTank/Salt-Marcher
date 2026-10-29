@@ -21,14 +21,21 @@ const manifest = JSON.parse(
 const fixture = () =>
   gunzipSync(readFileSync(new URL('../fixtures/atlas/mixed-world.sqlite.gz', import.meta.url)));
 buildSync({
-  entryPoints: ['src/app/storage/store.ts'],
+  stdin: {
+    contents:
+      "export {CampaignStore} from './src/app/storage/store'; export {validateBackupCandidate} from './src/app/storage/snapshot-validation';",
+    resolveDir: process.cwd(),
+  },
   outfile: '.build/reference-fixture-store.cjs',
   bundle: true,
   platform: 'node',
   format: 'cjs',
   external: ['better-sqlite3'],
 });
-const { CampaignStore } = require('../../.build/reference-fixture-store.cjs');
+const {
+  CampaignStore,
+  validateBackupCandidate,
+} = require('../../.build/reference-fixture-store.cjs');
 
 test('complete reference world retains every current canonical row through current-store reopen', () => {
   const dir = mkdtempSync(join(tmpdir(), 'atlas-reference-test-')),
@@ -36,6 +43,7 @@ test('complete reference world retains every current canonical row through curre
   let store;
   try {
     writeFileSync(file, fixture());
+    validateBackupCandidate(file);
     for (let i = 0; i < 2; i++) {
       store = new CampaignStore(file);
       assert.equal(store.db.pragma('user_version', { simple: true }), 55);
@@ -45,6 +53,24 @@ test('complete reference world retains every current canonical row through curre
     }
   } finally {
     store?.close();
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('full canonical fixture validation rejects a malformed preset even when its complete inventory remains present', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'atlas-reference-value-test-')),
+    file = join(dir, 'world.sqlite');
+  let db;
+  try {
+    writeFileSync(file, fixture());
+    db = new Database(file);
+    db.prepare(
+      "UPDATE atlas_landscape SET payload=json_remove(payload,'$.vegetation.preset.waterDepth') WHERE id=(SELECT id FROM atlas_landscape WHERE json_extract(payload,'$.kind')='vegetation' ORDER BY id LIMIT 1)",
+    ).run();
+    assertReferenceInventory(db);
+    assert.throws(() => validateBackupCandidate(file));
+  } finally {
+    db?.close();
     rmSync(dir, { recursive: true, force: true });
   }
 });

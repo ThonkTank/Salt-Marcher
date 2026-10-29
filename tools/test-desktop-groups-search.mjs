@@ -189,7 +189,10 @@ await runNativeProbe(
         await page.locator('#chronicle-category').selectOption('party');
         await page.waitForFunction(
           () =>
-            document.querySelector('#chronicle-count').textContent.startsWith('0 ') &&
+            document.querySelectorAll('#chronicle-list article').length === 0 &&
+            /Seite 1 · 0 Einträge · Ende dieses Lesestands/.test(
+              document.querySelector('#chronicle-count').textContent,
+            ) &&
             document.querySelector('#chronicle').getAttribute('aria-busy') === 'false',
         );
         results.timeDoesNotLeakToParty = true;

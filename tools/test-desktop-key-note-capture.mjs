@@ -1,3 +1,4 @@
+import { openDesktopKeyRoomBrowser } from './qa-key-entry.mjs';
 import { revealWorkspaceNavigation } from './native-navigation.mjs';
 import { runNativeProbe } from './native-session.mjs';
 import { openDesktopKeyReferences, linkDesktopKeyReference } from './qa-key-entry.mjs';
@@ -127,6 +128,7 @@ await runNativeProbe(
         await page.locator('#workspace-nav-summary').click();
       await page.locator('#atlas-tab').click();
       await openDesktopKeyFromAtlas(page, 'Archiv');
+      await openDesktopKeyRoomBrowser(page);
       await page.locator('#key-room-list button').filter({ hasText: 'Archiv' }).click();
       await page.locator('#key-search').fill('Archiv');
       return page;
@@ -167,6 +169,7 @@ await runNativeProbe(
         );
         await page.locator('#atlas-tab').click();
         await openDesktopKeyFromAtlas(page, 'Archiv');
+        await openDesktopKeyRoomBrowser(page);
         assert.equal(await page.locator('#key-gm-notes').inputValue(), keyText);
         assert.equal(await page.locator('#key-search').inputValue(), 'Archiv');
         await linkDesktopKeyReference(page, 'Gerücht: ' + title);

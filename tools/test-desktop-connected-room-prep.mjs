@@ -1,6 +1,6 @@
 import { revealWorkspaceNavigation } from './native-navigation.mjs';
 import { runNativeProbe } from './native-session.mjs';
-import { openDesktopKeyReferences } from './qa-key-entry.mjs';
+import { openDesktopKeyFromAtlas, openDesktopKeyReferences } from './qa-key-entry.mjs';
 import { createRequire } from 'node:module';
 import { readFile, writeFile, mkdtemp, mkdir, appendFile, stat } from 'node:fs/promises';
 import { spawn, execFileSync } from 'node:child_process';
@@ -191,8 +191,7 @@ await runNativeProbe(
       return await snapshot();
     }
     async function tab(id) {
-      if (!(await page.locator(id).isVisible()))
-        await page.locator('#workspace-nav-summary').click();
+      if (!(await page.locator(id).isVisible())) await revealWorkspaceNavigation(page);
       await page.locator(id).click();
     }
     async function shot(name) {
@@ -263,12 +262,7 @@ await runNativeProbe(
     }
     async function openKey(name) {
       await tab('#atlas-tab');
-      if (await page.locator('#campaign-atlas').isVisible()) {
-        await page.locator('#atlas-families button[data-family=interior]').click();
-        if ((await page.locator('#atlas-advanced').getAttribute('open')) === null)
-          await page.locator('#atlas-advanced > summary').click();
-      }
-      await page.locator('#key-open').click();
+      await openDesktopKeyFromAtlas(page, name);
       await chooseRoom(name);
     }
     async function refs() {

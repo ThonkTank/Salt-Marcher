@@ -2,7 +2,7 @@
 
 Status: Verbindlicher Zielumfang; historische Umsetzungsbelege sind keine aktuelle Abnahme.
 Owner: project
-Last Reviewed: 2026-10-28 (offene Originalwirkungen und begrenzte Lieferzuordnung; Fachabnahme separat)
+Last Reviewed: 2026-10-29 (einzelne Ergebnisbindungen und datierte Originalteilprobe; Fachabnahme separat)
 Source of Truth: Dieses Dokument besitzt das benannte Thema; Code belegt den Iststand, das Abnahmeregister den Prüfstand.
 
 Historischer Quellenabgleich vom 10. Oktober 2026. Geprüfte SaltMarcher-Revision: **`9de85c1a26f526acbc1af332ac5962e185c0aab2`**, damaliger `main`-Stand und die in unserer Acceptance gebundene Revision. Zielrepository-Ausgang: `d6cd63b52086c944b632a3225cc69a07fcda9b88`. Das [Quellenregister](sources.json) hält Dateihashes, die aktuell gebundenen Anforderungsdateien, die technischen Bedarf-IDs und ihre Zuordnung fest.
@@ -61,6 +61,22 @@ erhalten im bestehenden Register Quelle und Lieferzuordnung; ihre Aufnahme in
 eine laufende Lieferung aktualisiert sichtbar Umfang und Aufwand. Eine fachliche
 Abweichung vom Nutzerauftrag bleibt Entscheidungsbedarf und wird nicht als
 technische Vereinfachung still beschlossen.
+
+Der [Abgleich vom 29.10.](../../reference/scope-contracts-20261029/README.md)
+bindet sämtliche **bekannten** 65 CO-Stadtkandidaten und 83 WD-Varianten im
+bestehenden Register an Anforderungs-ID, Fachvertrag, Aufgabenprobe und bisherige
+Lieferung. Die [Stadtverträge](../../city/contract/city.md#ergebnisverträge-und-bestehende-inventarbindungen),
+[Wonderdraftverträge](../../atlas/verification/reference-comparison.md#ergebnisverträge-je-vorhandener-variante),
+[erweiterte Dungeonmatrix](../../dungeon/requirements/smr04-spatial-coverage.md#prüfbare-wirkungen-der-erweiterten-dungeonlieferung)
+und [Autonomymatrix](../../runtime/contract/actor-autonomy.md#ergebnisverträge-aus-dem-gebundenen-quellenstand)
+konkretisieren Ausgangslage, sichtbare/gespeicherte Wirkung, Wiederöffnung und
+Inhaltsschutz. Die neue FTG-Probe belegt Einzeländerung, beidseitige Freundschaft
+und Browserreload, keine vollständige Generations-/Regenerationswirkung.
+CITY-D01 (unzugänglicher Vollumfang) und CITY-D02 (Ruhetagoverride außerhalb der
+beobachteten Zeit) stehen dort mit Alternativen und Folgen. **Unbekannte
+Originalfunktionen bleiben ein unvollständiger Zwischenstand**, auch wenn alle
+bekannten Kandidaten zugeordnet sind. Kein Quellenhash, beschlossener Küsten-/
+Fluss-/Complete-Vertrag oder Acceptance-PASS wurde dadurch geändert.
 
 ## Quellen und Vorrang
 

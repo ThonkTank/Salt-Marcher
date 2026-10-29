@@ -2,8 +2,21 @@
 
 Status: Current; offene Ziele sind als solche beschrieben.
 Owner: project
-Last Reviewed: 2026-10-28 (datierte lokale Belegbindung und offene Lieferstufen; keine neue Qualifikation)
+Last Reviewed: 2026-10-29 (wiederherstellbarer lokaler Referenzeinstieg; historische und aktuelle Belege getrennt)
 Source of Truth: Dieses Dokument besitzt das benannte Thema; Code belegt den Iststand, das Abnahmeregister den Prüfstand.
+
+## Aktueller wiederherstellbarer Referenzeinstieg
+
+Der [gebundene Kernablaufstand vom 29.10.2026](../../reference/e2e-reference-round10-20261029/README.md)
+führt die übertragbare lokale Kapsel, Wiederherstellungsaufrufe, vollständige
+Pflichtfallmatrix und den praktischen Vergleich eines erfolgreichen Teilablaufs
+sowie separat reproduzierter kontrollierter Speicherfehler. Er verwendet den vollständig archivierten
+Dirty-Korrekturstand aus der nativen Runde 10; spätere Checkoutänderungen werden
+ihm nicht zugerechnet. E2E-01 ist dort lokal technisch bestanden, E2E-02 bleibt
+ein Teilnachweis, E2E-03/04 bleiben mit benannten fehlenden Gesamtstrecken offen.
+Candidate/Main, Paket, Zielgerät und Owner werden separat qualifiziert. Die
+nachstehenden früheren Berichte behalten ihre datierte Bindung und werden nicht
+still zum neuen Ergebnis addiert.
 
 ## Technische Grundlage vom 11.10.2026
 

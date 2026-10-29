@@ -5,7 +5,8 @@ import assert from 'node:assert/strict';
 import path from 'node:path';
 
 const source = process.cwd(),
-  output = path.resolve(process.argv[2] ?? '.build/day-refresh-evidence');
+  output =
+    process.env.QA_EVIDENCE_DIR ?? path.resolve(process.argv[2] ?? '.build/day-refresh-evidence');
 const native = await createNativeSession({ root: source, output, name: 'day-refresh' });
 const require = createRequire(source + '/package.json');
 require('esbuild').buildSync({

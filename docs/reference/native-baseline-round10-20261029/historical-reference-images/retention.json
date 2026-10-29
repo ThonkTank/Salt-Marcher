@@ -1,0 +1,12 @@
+{
+  "scope": "Unveränderte native Bildreferenzen des gebundenen Ausgangslaufs vor Fixturekorrektur. Keine nachträgliche Bindung an die neue Fixture.",
+  "fixtureSha256": "476a8d6b3000ac5935c3962ca6bc0ed5323bebf106de116179e0f0690e7cc5bc",
+  "files": {
+    "manifest.json": "10294c5b86a7775dba6831855250a4414f81db7355cbd5078ab78534ed183d4f",
+    "width-16.png": "597da9367630797a49d3e1ef671923b824f86fa8ed5858d70bb0ff4bbe13e13a",
+    "width-32768.png": "26f3855c3be370051ff227cdd64b88347f145f106b5bd633057652b5d0c749d6",
+    "width-4096.png": "01062a3a55eb00b01e2c70614335dbf3e949262ce31a5a5ec72e85bf7c8acc70",
+    "width-512.png": "fa8b6a2cf0bece3278f91797c6d08035165b6cc429c2e956862a2ce3e00b9438",
+    "width-64.png": "2b788b39c81e4e26ef9192d1f63658218f656d01da894e9101c9f47e0e111bf2"
+  }
+}

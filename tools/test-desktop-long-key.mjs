@@ -178,6 +178,7 @@ await runNativeProbe(
       if (!(await page.locator('#atlas-tab').isVisible()))
         await page.locator('#workspace-nav-summary').click();
       await page.locator('#atlas-tab').click();
+      await page.locator('#atlas-analysis-open').click();
       await page.locator('#dungeon-binder-open').click();
       await page.locator('#dungeon-binder-search').fill('Bernsteinhebel');
       await page.waitForFunction(
@@ -227,6 +228,7 @@ await runNativeProbe(
         await page.waitForFunction(
           () => document.querySelector('#status').textContent === 'Gespeichert.',
         );
+        await page.locator('#atlas-analysis-open').click();
         await page.locator('#dungeon-binder-open').click();
         results.returnedSearch = await page.locator('#dungeon-binder-search').inputValue();
         assert((await page.locator('#dungeon-binder-document').innerText()).includes(changedClue));

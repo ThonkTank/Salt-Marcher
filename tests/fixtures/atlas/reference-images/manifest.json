@@ -5,24 +5,24 @@
     "height": 852
   },
   "artifacts": {
-    "main.cjs": "2c0c21299b0ea7c25e5ffd78ae1d1e439f2cdaf832190d66b2574f82fc65482c",
-    "preload.cjs": "0bb79c61dfcd3b629056519bb0be022e3ba156978cc6c0169f22c8910ced46eb",
+    "main.cjs": "44f219bfaf4b89c43f527343d04de98426c470f0f46a81ffa2f480e337ec77ac",
+    "preload.cjs": "8c89e0558ba5b3f79aa13a1b931c89bd57a3454734430c4accdd1457b3da5361",
     "player-preload.cjs": "2298bcbc665e510444c6e8b8e4d202ce2cec8bfcde8d328c7121e3c1043091b4",
-    "store-worker.cjs": "9c3f61bda447dca1f38c80cffcdcd9c4d6bcf130ebb3540622521085a84796a9",
-    "atlas-region-worker.cjs": "13445a5764fe3a27b502828c1905def799725c172258940ff2cfddcf71599c33",
-    "room-directory-worker.cjs": "592b6e06096e5c779acce355c95ff2b921cee55b86998d14636acb73c86dc226",
-    "terrain-route-worker.cjs": "554fa9a52139b222785cef38f7d86342e3cf0f6c3843a9055bd3e6b7820c7761",
-    "backup-validation-worker.cjs": "e3812d3d907293eb3c396bdd26a39d60fa5e3422d1ecced817055cd0e9d88eb3",
+    "store-worker.cjs": "0cbc01a1ca2d6ad53f333edb772aea4a817df474b96039bc860e1fad05dc6bad",
+    "atlas-region-worker.cjs": "389c77bd32c05255a888ec2e56c7a9723add0afc9567dd31c96a5b3342ac9f8b",
+    "room-directory-worker.cjs": "022e2a82e338b66070fe5c960974dc1ced46ae20dcbd2713c86b2649e1d961c8",
+    "terrain-route-worker.cjs": "79e60c0386be5bb0a55e3ab13a4750cbb6878dc2d877d7a585333f6f8ebe912d",
+    "backup-validation-worker.cjs": "9f39942dc2469be61a3f11d3d1bfeb952f1824d7823534a428057e3f9e880426",
     "update-helper.cjs": "fb360030c815848b6eed9de396accc59f8d4c0ae2ebf50bed3d04449a4b5542a",
-    "update-probe.cjs": "22553b0f1e091ce61bd3b8c70ab709bfd0bd43077cedd12c165a86cd17a507ef",
-    "ui/renderer.js": "73ffc1e96cb8af9290f82463b5eda99d71cdcbfaad821201ab65fcdb8b10768e",
-    "ui/atlas-brush-worker.js": "d4dfe704094fbc0724ffd03ecfd28028bb26cddc29c735ba7cfcc9178dde418d",
-    "ui/atlas-deck-runtime.js": "3d6c6666c629cdfb4fb86bebab3e425dae47d39da714f10b83797fbe75cad3f0",
+    "update-probe.cjs": "bb778f09a55d564cac392148f7ea459f607109515627fc94aa0f4d69cdbfef1f",
+    "ui/renderer.js": "ab6b44fa9889fe08629297ad485b82e8d5f42cde0c9db3f1e03921be72e40d95",
+    "ui/atlas-brush-worker.js": "af8789cdec3cddafef090bc3fd5fbc139db2f189c3188989a7f2a11e4ed87e8e",
+    "ui/atlas-deck-runtime.js": "5239c479ef4b1f5b64886df8bc367d55184fd65bd34f086825d48eee77e542a9",
     "ui/preset-settings.js": "3981d8dc1a1310dd6fb8d141ffe67931c3071ccb0721d08bbdf1002a3935678a",
-    "ui/index.html": "09f9cfe0402cb3cbe4df6c7d5538b7649257023b66246cba8141f99ecf51ced3",
-    "ui/app.css": "d98805ed1a1f73aa67be8b7444a0e7cc42e857b206cb761b26cb18b5f07e0388",
+    "ui/index.html": "a079fffb1c5a40a876df21ccc7fd212944e533095c06f7e3393fa36bc1aad687",
+    "ui/app.css": "e8ef8e14a975789787d5a3a926cd735dd1df6b1603a658f6fd9a6a19439350f6",
     "ui/player-display.js": "dc6e45207607ca5ddf222c94f58daa8f9d48e21ba231953ae713753a2d5e11ee",
-    "ui/player-display.html": "7ab27610046c99bd1a829dc9e0b4b0d43686775c51b0971c1392d79de14bbf52",
+    "ui/player-display.html": "ac6bbc763b22b10375cbbe116e275ed5af51dfc79acb9fb79491dec5f4f67df7",
     "ui/player.css": "7f82fb6e91227d97b83a8d1421374c74e9f9a5289452b2f1cdf6e032214a8be5",
     "ui/preset-settings.css": "13c1bf91476633ea63c00700a3440f01a5cdf6e4bc6e447929a3016b3dfdd35b"
   },
@@ -45,7 +45,7 @@
         "width": 2220.3715271351084,
         "height": 1799.575310299019
       },
-      "imageSha256": "01062a3a55eb00b01e2c70614335dbf3e949262ce31a5a5ec72e85bf7c8acc70"
+      "imageSha256": "0a3a5621b9b97db53591a38e404a992881550a7090e0e8339b9c4b28bfbd3990"
     },
     {
       "target": 512,
@@ -55,7 +55,7 @@
         "width": 294.888227791873,
         "height": 239.00215236357445
       },
-      "imageSha256": "fa8b6a2cf0bece3278f91797c6d08035165b6cc429c2e956862a2ce3e00b9438"
+      "imageSha256": "0f50052203588e3a7f92cf226b5748f0305b1eb4e903b982076c07514340ed09"
     },
     {
       "target": 64,
@@ -65,7 +65,7 @@
         "width": 39.16419654436516,
         "height": 31.741949618618545
       },
-      "imageSha256": "2b788b39c81e4e26ef9192d1f63658218f656d01da894e9101c9f47e0e111bf2"
+      "imageSha256": "9780d8a7e2b6d007d40b83306264cdd50a4970b5fb325d0948740176db5e2869"
     },
     {
       "target": 16,
@@ -75,12 +75,12 @@
         "width": 10.194761699387017,
         "height": 8.262689925712866
       },
-      "imageSha256": "597da9367630797a49d3e1ef671923b824f86fa8ed5858d70bb0ff4bbe13e13a"
+      "imageSha256": "0c9d89cff09d41cabdecb92003ed50f90cafc50f6825ee088177b2ac0acf8b20"
     }
   ],
   "model": "continuous-terrain-v1",
-  "fixtureSha256": "476a8d6b3000ac5935c3962ca6bc0ed5323bebf106de116179e0f0690e7cc5bc",
-  "rendererSource": "ee58456ab98ee74b064dc711284e3fbb972e693d",
+  "fixtureSha256": "38f4d3a3d6ddbfaa549855434f0756ec9cdc65f5a91eba3b5fc03233fce0014c",
+  "rendererSource": "fa2c3eb50af9b8970235f75b2d9c7b05e99602c9",
   "rendererDirty": true,
-  "refreshedAt": "2026-10-27T14:33:44.601Z"
+  "refreshedAt": "2026-10-29T06:12:42.641Z"
 }

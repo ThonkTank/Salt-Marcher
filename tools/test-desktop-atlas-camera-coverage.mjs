@@ -8,7 +8,7 @@ const root = process.cwd(),
   require = createRequire(import.meta.url);
 const native = await createNativeSession({
     root,
-    output: root + '/.build/atlas-camera-coverage',
+    output: process.env.QA_EVIDENCE_DIR ?? root + '/.build/atlas-camera-coverage',
     name: 'atlas-camera-coverage',
   }),
   errors = [],

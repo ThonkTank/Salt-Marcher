@@ -4,7 +4,7 @@ import { currentProcessGroup } from './process-group.mjs';
 import { createRequire } from 'node:module';
 import { mkdtemp, readFile, writeFile, mkdir, stat } from 'node:fs/promises';
 import { spawn } from 'node:child_process';
-import { randomUUID } from 'node:crypto';
+import { randomUUID, createHash } from 'node:crypto';
 import assert from 'node:assert/strict';
 import path from 'node:path';
 const pending = process.argv.includes('--pending');
@@ -90,6 +90,17 @@ await runNativeProbe(
         expectedRevision: null,
       }).combat;
       mask = store.executeCombat({
+        ...command({
+          kind: 'add-creature',
+          creatureId: 'goblin',
+          count: 1,
+          grouped: false,
+          initiative: 12,
+        }),
+        combatId: mask.id,
+        expectedRevision: mask.revision,
+      }).combat;
+      mask = store.executeCombat({
         ...command({ kind: 'start' }),
         combatId: mask.id,
         expectedRevision: mask.revision,
@@ -126,14 +137,37 @@ await runNativeProbe(
       ? store.db.prepare('SELECT payload,checksum FROM ' + mode + ' WHERE id=?').get(mask.id)
       : null;
     const original = store.db.prepare('SELECT * FROM live_scene WHERE id=?').get(scene.id);
+    // Start from a supported, visibly published Art frame in every GM context.
+    const { PNG } = require('pngjs'),
+      png = new PNG({ width: 80, height: 50 });
+    for (let i = 0; i < png.data.length; i += 4) {
+      png.data[i] = 40;
+      png.data[i + 1] = 110;
+      png.data[i + 2] = 150;
+      png.data[i + 3] = 255;
+    }
+    const imageBytes = PNG.sync.write(png),
+      imageSha256 = createHash('sha256').update(imageBytes).digest('hex'),
+      imageId = randomUUID();
+    await mkdir(profile + '/player-images', { recursive: true });
+    await writeFile(profile + '/player-images/' + imageSha256 + '.png', imageBytes);
+    store.registerPlayerAsset(w.token, {
+      id: imageId,
+      kind: 'custom',
+      subjectId: null,
+      title: '',
+      sha256: imageSha256,
+      extension: '.png',
+      bytes: imageBytes.length,
+    });
     const v = store.playerView(w.token);
     store.executePlayer({
       ...command({
         kind: 'settings',
         settings: {
           blank: false,
-          mode: 'scene',
-          imageId: null,
+          mode: 'image',
+          imageId,
           title: '',
           labels: false,
           light: 'daylight',
@@ -176,7 +210,8 @@ await runNativeProbe(
         await page.locator('#tutorial-skip').click();
       await openNativeCampaign(page, campaign.id);
       await page.locator('#live-tab').click();
-      await page.locator('#live-continue').click();
+      if (await page.locator('#live-continue').isVisible())
+        await page.locator('#live-continue').click();
       await page.locator('#combat-panel').waitFor({ state: 'visible' });
       return page;
     }
@@ -200,8 +235,10 @@ await runNativeProbe(
     try {
       let page = await launch(),
         player = await getPlayer();
-      await player.waitForFunction(() =>
-        document.querySelector('#player-stage').classList.contains('player-scene'),
+      await player.waitForFunction(
+        () =>
+          document.querySelector('#player-stage').classList.contains('player-image') &&
+          document.querySelector('#player-stage img')?.naturalWidth === 80,
       );
       await app.evaluate(({ ipcMain }, pending) => {
         globalThis.__qaBlank = { reads: 0, writes: [] };
@@ -244,7 +281,7 @@ await runNativeProbe(
         reads: globalThis.__qaBlank.reads,
         writes: globalThis.__qaBlank.writes,
       }));
-      assert.equal(results.frame.value.frame.mode, before ? 'scene' : 'blank');
+      assert.equal(results.frame.value.frame.mode, before ? 'image' : 'blank');
       assert.deepEqual(results.calls, { reads: before ? 1 : 0, writes: before ? [] : ['blank'] });
       await player.screenshot({ path: path.join(output, 'blank-' + phase + '.png') });
       if (before && pending) await app.evaluate(() => globalThis.__qaBlank.release());

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { createRequire } from 'node:module';
-import { mkdtempSync, rmSync, readFileSync, writeFileSync, renameSync } from 'node:fs';
+import { mkdtempSync, rmSync, readFileSync, writeFileSync, renameSync, mkdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve, dirname } from 'node:path';
 import { gunzipSync, gzipSync } from 'node:zlib';
@@ -13,6 +13,7 @@ import {
   referencePath,
 } from './atlas-reference-fixture.mjs';
 import { rebuildContinuousFixture } from './atlas-terrain-fixture.mjs';
+import { normalizeReferenceLandscapes } from './atlas-reference-normalize.mjs';
 
 // Regenerate a disposable current fixture from its pinned source corpus.
 // This does not add a product database compatibility or migration path.
@@ -31,8 +32,25 @@ assert.equal(createHash('sha256').update(compressed).digest('hex'), previous.sou
 const dir = mkdtempSync(join(tmpdir(), 'atlas-reference-')),
   file = join(dir, 'world.sqlite');
 const temporary = resolve(output) + `.tmp-${process.pid}`;
+const apiFile = resolve(`.build/reference-fixture-api-${process.pid}.cjs`);
 let db;
 try {
+  const require = createRequire(import.meta.url);
+  mkdirSync(dirname(apiFile), { recursive: true });
+  require('esbuild').buildSync({
+    stdin: {
+      contents:
+        "export {vegetationPresets} from './src/app/atlas/vegetation'; export {checkedLandscapeValue} from './src/app/storage/landscape-read'; export {validateBackupCandidate} from './src/app/storage/snapshot-validation';",
+      resolveDir: process.cwd(),
+    },
+    outfile: apiFile,
+    bundle: true,
+    platform: 'node',
+    format: 'cjs',
+    external: ['better-sqlite3'],
+  });
+  const { vegetationPresets, checkedLandscapeValue, validateBackupCandidate } = require(apiFile);
+
   writeFileSync(file, gunzipSync(compressed));
   db = new (createRequire(import.meta.url)('better-sqlite3'))(file);
   assert.equal(db.pragma('user_version', { simple: true }), 54);
@@ -44,17 +62,27 @@ try {
     db.pragma('user_version=55');
   })();
   assert.equal(rebuildContinuousFixture(db), 100000);
+  const canonicalValues = normalizeReferenceLandscapes(db, {
+    presets: vegetationPresets,
+    validate: checkedLandscapeValue,
+  });
   assertReferenceInventory(db);
   const tables = referenceContents(db);
   db.close();
   db = null;
-  const bytes = gzipSync(readFileSync(file), { level: 9 });
+  validateBackupCandidate(file);
+  const decoded = readFileSync(file),
+    bytes = gzipSync(decoded, { level: 9 });
   const manifest = {
     sourceCommit: referenceCommit,
     sourcePath: referencePath,
     sourceSha256: previous.sourceSha256,
     model: 'continuous-terrain-v1',
     fixtureSha256: createHash('sha256').update(bytes).digest('hex'),
+    fixtureBytes: bytes.length,
+    decodedSha256: createHash('sha256').update(decoded).digest('hex'),
+    decodedBytes: decoded.length,
+    canonicalValues,
     originalTables,
     tables,
   };
@@ -69,6 +97,7 @@ try {
   );
 } finally {
   db?.close();
+  rmSync(apiFile, { force: true });
   rmSync(temporary, { force: true });
   rmSync(dir, { recursive: true, force: true });
 }

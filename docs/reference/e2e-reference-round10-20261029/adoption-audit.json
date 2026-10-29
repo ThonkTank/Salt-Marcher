@@ -1,0 +1,47 @@
+{
+  "observedAt": "2026-10-29T12:40:14.334Z",
+  "sourceDigest": "2005f9ed9906fb9fdbd79a15c325d63e2b29228a8c75ac8761e16c6bd2130865",
+  "results": [
+    {
+      "name": "e2e01",
+      "nativeEvidence": "verified",
+      "source": "fa2c3eb50af9b8970235f75b2d9c7b05e99602c9",
+      "launches": 19,
+      "zoom": 1,
+      "status": "passed"
+    },
+    {
+      "name": "e2e02",
+      "nativeEvidence": "verified",
+      "source": "fa2c3eb50af9b8970235f75b2d9c7b05e99602c9",
+      "launches": 2,
+      "zoom": 1,
+      "status": "subset-passed"
+    },
+    {
+      "name": "travel-checkpoints",
+      "nativeEvidence": "verified",
+      "source": "fa2c3eb50af9b8970235f75b2d9c7b05e99602c9",
+      "launches": 4,
+      "zoom": 1,
+      "status": "passed"
+    },
+    {
+      "name": "evening-handoff",
+      "nativeEvidence": "verified",
+      "source": "fa2c3eb50af9b8970235f75b2d9c7b05e99602c9",
+      "launches": 4,
+      "zoom": 1,
+      "status": "passed"
+    },
+    {
+      "name": "note-excerpts",
+      "nativeEvidence": "verified",
+      "source": "fa2c3eb50af9b8970235f75b2d9c7b05e99602c9",
+      "launches": 1,
+      "zoom": 1,
+      "status": "failed"
+    }
+  ],
+  "limits": "Historical Plan-1 local stand, not current Candidate/Main/product acceptance."
+}

@@ -23,11 +23,23 @@ export const responsibilities = {
   'atlas journey': { kind: 'presentation', files: ['src/app/atlas/atlas-journey.ts'] },
   'atlas drawing': { kind: 'presentation', files: ['src/app/atlas/atlas-drawing.ts'] },
   'atlas output': { kind: 'presentation', files: ['src/app/atlas/atlas-output.ts'] },
-  'preparation editor': { kind: 'presentation', files: ['src/app/campaign/preparation.ts'] },
+  'preparation editor': {
+    kind: 'presentation',
+    files: [
+      'src/app/campaign/preparation.ts',
+      'src/app/campaign/preparation-draft-owner.ts',
+      'src/app/campaign/preparation-note-directory.ts',
+      'src/app/campaign/preparation-write-coordinator.ts',
+      'src/app/campaign/preparation-list-view.ts',
+      'src/app/campaign/preparation-excerpt-editor.ts',
+    ],
+  },
   'live editor': {
     kind: 'presentation',
     files: [
       'src/app/runtime/live.ts',
+      'src/app/runtime/live-draft-owner.ts',
+      'src/app/runtime/live-write-coordinator.ts',
       'src/app/runtime/live-recap-editor.ts',
       'src/app/runtime/live-moment-editor.ts',
       'src/app/runtime/live-knowledge-ui.ts',
@@ -35,7 +47,15 @@ export const responsibilities = {
       'src/app/runtime/live-session-resume-ui.ts',
     ],
   },
-  'combat editor': { kind: 'presentation', files: ['src/app/runtime/combat.ts'] },
+  'combat editor': {
+    kind: 'presentation',
+    files: [
+      'src/app/runtime/combat.ts',
+      'src/app/runtime/combat-read-owner.ts',
+      'src/app/runtime/combat-write-coordinator.ts',
+      'src/app/runtime/combat-write-feedback.ts',
+    ],
+  },
   'world composition': {
     kind: 'presentation',
     files: ['src/app/runtime/world-ui.ts', 'src/app/runtime/world-editor-surface.ts'],

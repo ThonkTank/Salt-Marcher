@@ -345,3 +345,131 @@ test('the real preload removes only the subscribing music instance listener', ()
   offB();
   assert.equal(ipcRenderer.listenerCount('music:progress'), 0);
 });
+
+test('late audio change after an acknowledged autosave does not rewrite identical metadata', async (t) => {
+  const a = fixture(t, 'Musikbeschreibung');
+  const asset = a.store.ingestAudio(a.w.token, {
+    sha256: 'a'.repeat(64),
+    extension: '.wav',
+    bytes: 128,
+    mime: 'audio/wav',
+    originalName: 'Original.wav',
+  });
+  const music = createMusicEditor({ roots: [a.get('music'), a.get('music-mini')], api: a.api });
+  music.initMusic(silent, noop);
+  music.activateMusic(a.w);
+  try {
+    await music.openMusic();
+    [...a.get('audio-list').querySelectorAll('button')]
+      .find((button) => button.textContent === 'Beschreibung bearbeiten')
+      .onclick();
+    await new Promise((resolve) => setImmediate(resolve));
+    assert.equal(a.get('audio-editor').hidden, false);
+    a.get('audio-name').value = 'Neue Beschreibung';
+    a.get('audio-editor').oninput();
+    assert.equal(await music.flushMusic(), true);
+    const saved = a.store.audioAsset(asset.id);
+    a.get('audio-editor').onchange();
+    assert.equal(await music.flushMusic(), true);
+    assert.deepEqual(a.store.audioAsset(asset.id), saved);
+    a.get('audio-name').value = 'Noch eine Änderung';
+    a.get('audio-editor').oninput();
+    assert.equal(await music.flushMusic(), true);
+    const next = a.store.audioAsset(asset.id);
+    assert.equal(next.name, 'Noch eine Änderung');
+    assert.equal(next.revision, saved.revision + 1);
+  } finally {
+    await music.dispose();
+  }
+});
+
+test('audio edits made before a prior acknowledgement remain pending and commit once', async (t) => {
+  const a = fixture(t, 'Überlappende Musikbeschreibung');
+  const asset = a.store.ingestAudio(a.w.token, {
+    sha256: 'b'.repeat(64),
+    extension: '.wav',
+    bytes: 128,
+    mime: 'audio/wav',
+    originalName: 'Original.wav',
+  });
+  const music = createMusicEditor({ roots: [a.get('music'), a.get('music-mini')], api: a.api });
+  music.initMusic(silent, noop);
+  music.activateMusic(a.w);
+  let release;
+  const gate = new Promise((resolve) => (release = resolve));
+  try {
+    await music.openMusic();
+    [...a.get('audio-list').querySelectorAll('button')]
+      .find((button) => button.textContent === 'Beschreibung bearbeiten')
+      .onclick();
+    await new Promise((resolve) => setImmediate(resolve));
+    assert.equal(a.get('audio-editor').hidden, false);
+    const original = a.api.executeMusic;
+    let held = false;
+    a.api.executeMusic = async (command) => {
+      const result = await original(command);
+      if (command.action.kind === 'asset' && !held) {
+        held = true;
+        await gate;
+      }
+      return result;
+    };
+    a.get('audio-name').value = 'Erste Änderung';
+    a.get('audio-editor').oninput();
+    const first = music.flushMusic();
+    await new Promise((resolve) => setImmediate(resolve));
+    assert.equal(held, true);
+    a.get('audio-name').value = 'Während der Bestätigung geändert';
+    a.get('audio-editor').oninput();
+    a.get('audio-editor').onchange();
+    release();
+    assert.equal(await first, true);
+    assert.equal(await music.flushMusic(), true);
+    const saved = a.store.audioAsset(asset.id);
+    assert.equal(saved.name, 'Während der Bestätigung geändert');
+    assert.equal(saved.revision, asset.revision + 2);
+    a.get('audio-editor').onchange();
+    assert.equal(await music.flushMusic(), true);
+    assert.deepEqual(a.store.audioAsset(asset.id), saved);
+  } finally {
+    release();
+    await music.dispose();
+  }
+});
+
+test('correcting a rejected audio draft back to its canonical text still confirms exactly one write', async (t) => {
+  const a = fixture(t, 'Korrigierte Musikbeschreibung');
+  const asset = a.store.ingestAudio(a.w.token, {
+    sha256: 'c'.repeat(64),
+    extension: '.wav',
+    bytes: 128,
+    mime: 'audio/wav',
+    originalName: 'Original.wav',
+  });
+  const music = createMusicEditor({ roots: [a.get('music'), a.get('music-mini')], api: a.api });
+  music.initMusic(silent, noop);
+  music.activateMusic(a.w);
+  try {
+    await music.openMusic();
+    [...a.get('audio-list').querySelectorAll('button')]
+      .find((button) => button.textContent === 'Beschreibung bearbeiten')
+      .onclick();
+    await new Promise((resolve) => setImmediate(resolve));
+    const before = a.store.audioAsset(asset.id);
+    a.get('audio-name').value = '';
+    a.get('audio-editor').oninput();
+    assert.equal(await music.flushMusic(), false);
+    assert.deepEqual(a.store.audioAsset(asset.id), before);
+    a.get('audio-name').value = before.name;
+    a.get('audio-editor').oninput();
+    assert.equal(await music.flushMusic(), true);
+    const corrected = a.store.audioAsset(asset.id);
+    assert.equal(corrected.revision, before.revision + 1);
+    assert.equal(corrected.name, before.name);
+    a.get('audio-editor').onchange();
+    assert.equal(await music.flushMusic(), true);
+    assert.deepEqual(a.store.audioAsset(asset.id), corrected);
+  } finally {
+    await music.dispose();
+  }
+});

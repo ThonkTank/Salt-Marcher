@@ -1233,7 +1233,8 @@ export class CampaignAtlasWorkbench {
     const owner = this.owner;
     if (!owner) return;
     if (this.opening?.owner === owner) return this.opening.task;
-    const generation = this.transitionGeneration;
+    const generation = this.transitionGeneration,
+      selectionCurrent = this.author.watchNavigation();
     const task = (async () => {
       await this.regions.openTerrain(owner);
       if (this.owner !== owner || this.root.hidden || this.transitionGeneration !== generation)
@@ -1241,7 +1242,8 @@ export class CampaignAtlasWorkbench {
       await this.regions.refresh();
       if (this.owner !== owner || this.root.hidden || this.transitionGeneration !== generation)
         return;
-      await this.setFamily(this.family, false);
+      // Opening may finish after the user has already selected or navigated.
+      if (selectionCurrent()) await this.setFamily(this.family, false);
     })();
     this.opening = { owner, task };
     try {

@@ -168,7 +168,9 @@ await runNativeProbe(
       );
       assert.equal(await page.locator('#npc-name').inputValue(), renamed);
       await page.locator('#live-tab').click();
-      await page.locator('#live-continue').click();
+      if (await page.locator('#live-continue').isVisible())
+        await page.locator('#live-continue').click();
+      await page.locator('#scene-desk').waitFor({ state: 'visible' });
       await page.locator('#combat-panel').waitFor({ state: 'visible' });
       results.encounters = [];
       for (const c of combats.slice(1)) {
@@ -230,7 +232,9 @@ await runNativeProbe(
         );
         assert.equal(await page.locator('#npc-hp').inputValue(), '5');
         await page.locator('#live-tab').click();
-        await page.locator('#live-continue').click();
+        if (await page.locator('#live-continue').isVisible())
+          await page.locator('#live-continue').click();
+        await page.locator('#scene-desk').waitFor({ state: 'visible' });
         await page
           .locator('#combat-rows')
           .getByRole('button', { name: new RegExp('^' + renamed + ' ·') })

@@ -1,0 +1,160 @@
+Browser tab: 1, Title: "CITY00 Plan3 QA | Fantasy Town Generator", URL: "https://www.fantasytowngenerator.com/temporary-settlement".
+1 AXWebArea CITY00 Plan3 QA | Fantasy Town Generator, URL: fantasytowngenerator.com/temporary-settlement
+	2 container root
+		3 container
+			4 container Interactive settlement map
+			6 container Settlement actions and navigation
+				7 button Exit
+					8 container Exit
+						9 image
+				10 link Description: User guide, Value: docs.fantasytowngenerator.com/useSettlements/map
+				11 button Edit map options dropdown
+					12 container Edit map
+						13 image
+				14 button Population
+					15 container Population
+						16 image
+				17 button Buildings
+					18 container Buildings
+						19 image
+				20 button Factions
+					21 container Factions
+						22 image
+				23 button Districts
+					24 container Districts
+						25 image
+				26 button Open download options dropdown
+					27 container Download
+						28 image
+				29 button Open settings options dropdown
+					30 container Settings
+						31 image
+				32 button Create new temporary settlement
+					33 container Create new temporary settlement
+						34 image
+				35 button Create account and keep settlement permanently
+					36 container Create account and keep settlement permanently
+						37 image
+			38 container settlement name display
+				39 heading CITY00 Plan3 QA, Value: 1
+					40 text CITY00 Plan3 QA
+			41 button Zoom in
+				42 container Zoom in
+					43 image
+			44 button Zoom out
+				45 container Zoom out
+					46 image
+			47 button Reset camera
+				48 container Reset camera
+					49 image
+			50 button Change measurement unit. Current: meters
+				51 container Change measurement unit. Current: meters
+					52 text m
+			53 button Ruler
+				54 container Ruler
+					55 image
+			56 button Toggle 2x2 grid
+				57 container Toggle 2x2 grid
+					58 image
+			59 container Time controls
+				60 text 9:00 Monday
+				61 button Next Hour
+					62 image
+					63 text Next Hour
+				64 button Time Skip
+					65 image
+					66 text Time Skip
+				67 button Open place in world edit settings
+					68 image
+			69 container Map search and layers
+				70 image
+				71 search text field (settable)
+				72 button Map layer dropdown, currently SATELLITE
+					73 container Satellite
+						74 image
+						75 text Satellite
+						76 image
+				77 button Map text layer dropdown, currently DISTRICTS
+					78 container Districts
+						79 image
+						80 text Districts
+						81 image
+			82 container selected person information
+				83 heading Plan3Latra Sandurion, Value: 2
+					84 text Plan3Latra Sandurion
+				85 button Go back to previous view
+					86 image
+				87 button close Plan3Latra Sandurion
+					88 image
+				89 text 39 year old female human farmer.
+				90 text Currently farming at
+				91 button Farm
+					92 image
+					93 text Farm
+				94 button Favourite
+					95 text Favourite
+				96 button Edit
+					97 text Edit
+				98 button Delete
+					99 text Delete
+				100 tab group
+					101 button Switch to General
+						102 heading General, Value: 4
+							103 text General
+					104 button Switch to Relations
+						105 heading Relations, Value: 4
+							106 text Relations
+					107 button Switch to Notes
+						108 heading Notes, Value: 4
+							109 text Notes
+				110 container general
+					111 text Appearance
+					112 text Has short, braided, dark red hair, that is beginning to turn grey, and light blue eyes.
+					113 text Has warm white skin.
+					114 text Stands 170cm (5′ 7″) tall and has a lean build.
+					115 text Personality
+					116 container
+						117 switch (settable, boolean) Description: Simple view, Value: 0
+						118 text Simple view
+					119 text She is especially enthusiastic, and likes to spend time with people. She is extremely pragmatic, and has extremely poor imagination. She is generally undisciplined, and ordinarily leaves things messy. She is especially distrusting, and feels little concern for others. She is moody, and more often than not feels blue.
+					120 text She likes to cook and to get into fights.
+
+					121 text She sings to herself.
+					122 text She worships the good gods.
+					123 text Goal
+					124 text Her main goal is to control others, and she will steal to accomplish it.
+					125 text Locations
+					126 content list
+						127 button Open details for building The Sandurion Residence
+							128 image
+							129 text The Sandurion Residence
+							130 text Middle class home
+							131 container Lives in
+								132 image
+						133 button Open details for building Farm
+							134 image
+							135 text Farm
+							136 text Farm
+							137 container Works at
+								138 image
+					139 text Ability Scores
+					140 text Strength
+					141 container
+						142 text 12 [ +1 ]
+					143 text Dexterity
+					144 container
+						145 text 12 [ +1 ]
+					146 text Constitution
+					147 container
+						148 text 12 [ +1 ]
+					149 text Intelligence
+					150 container
+						151 text 10 [ +0 ]
+					152 text Wisdom
+					153 container
+						154 text 10 [ +0 ]
+					155 text Charisma
+					156 container
+						157 text 10 [ +0 ]
+
+The focused UI element is 1 AXWebArea CITY00 Plan3 QA | Fantasy Town Generator, URL: fantasytowngenerator.com/temporary-settlement

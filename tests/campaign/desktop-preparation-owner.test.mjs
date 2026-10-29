@@ -737,3 +737,44 @@ test('a delayed packet source opening cannot replace the new campaign draft or c
   assert.equal(x.saved(x.b).gmNotes, x.b.note.gmNotes);
   assert(x.store.db.serialize().equals(before));
 });
+
+test('two production Preparation excerpt dialogs isolate their raw selection and destination search', async (t) => {
+  const first = fixture(t),
+    second = fixture(t),
+    held = deferred();
+  await first.activate(first.a);
+  await second.activate(second.b);
+  for (const x of [first, second]) {
+    const area = x.el('note-gm');
+    area.dispatchEvent(new x.window.Event('focus'));
+    area.setSelectionRange(2, 3);
+    x.el('note-excerpt').click();
+  }
+  await tick();
+  assert.equal(first.el('note-excerpt-dialog').open, true);
+  assert.equal(second.el('note-excerpt-dialog').open, true);
+  assert.equal(first.el('note-excerpt-text').value, 'A');
+  assert.equal(second.el('note-excerpt-text').value, 'B');
+  first.api.keyNoteChoices = async () => held.promise;
+  first.el('note-excerpt-title').value = 'First target';
+  first.el('note-excerpt-title').dispatchEvent(new first.window.Event('input'));
+  second.el('note-excerpt-title').value = 'Second target';
+  second.el('note-excerpt-title').dispatchEvent(new second.window.Event('input'));
+  await tick();
+  const secondStatus = second.el('note-excerpt-choices-status').textContent;
+  held.resolve({
+    ok: true,
+    value: {
+      entries: [{ id: 'target', title: 'First target', kind: 'note', revision: 1 }],
+      more: false,
+    },
+  });
+  await tick();
+  assert.match(first.el('note-excerpt-choices').textContent, /First target/);
+  assert.equal(second.el('note-excerpt-choices').textContent, '');
+  assert.equal(second.el('note-excerpt-choices-status').textContent, secondStatus);
+  first.el('note-excerpt-cancel').click();
+  assert.equal(first.el('note-excerpt-dialog').open, false);
+  assert.equal(second.el('note-excerpt-dialog').open, true);
+  second.el('note-excerpt-cancel').click();
+});

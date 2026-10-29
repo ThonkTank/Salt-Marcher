@@ -311,7 +311,7 @@ await runNativeProbe(
       assert(!results.packet.includes(notes[2].gmNotes));
       await page.screenshot({ path: path.join(out, 'next-session-packet.png') });
       await close();
-      page = await launch(1);
+      page = await launch(2);
       await page.waitForFunction(
         (s) => document.querySelector('#note-thread-sources').textContent.includes(s),
         addition,
