@@ -1,4 +1,6 @@
 import { ReactNode, useEffect, useId, useRef } from "react";
+import "./modal.css";
+
 export function Modal({
   title,
   children,
@@ -10,10 +12,11 @@ export function Modal({
 }) {
   const ref = useRef<HTMLDivElement>(null),
     close = useRef(onClose),
+    // Capture before this render makes the invoking workspace inert.
+    previous = useRef(document.activeElement as HTMLElement | null),
     id = useId();
   close.current = onClose;
   useEffect(() => {
-    const previous = document.activeElement as HTMLElement | null;
     const items = () =>
       Array.from(
         ref.current!.querySelectorAll<HTMLElement>(
@@ -27,7 +30,8 @@ export function Modal({
         e.stopPropagation();
         close.current();
       }
-      if (e.key === "Tab") {
+      // WebKitGTK can report Shift+Tab as Unidentified while retaining its code.
+      if (e.key === "Tab" || (e.key === "Unidentified" && e.code === "Tab")) {
         const all = items(),
           first = all[0],
           last = all.at(-1);
@@ -44,7 +48,7 @@ export function Modal({
     node.addEventListener("keydown", key);
     return () => {
       node.removeEventListener("keydown", key);
-      previous?.focus();
+      if (previous.current?.isConnected) previous.current.focus();
     };
   }, []);
   return (

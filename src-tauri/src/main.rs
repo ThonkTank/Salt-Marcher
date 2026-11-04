@@ -1,70 +1,76 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
-mod document;
-use document::Document;
-use serde::Serialize;
-use std::sync::Mutex;
-#[derive(Default)]
-struct Files(Mutex<Option<std::path::PathBuf>>);
-#[derive(Serialize)]
-struct Opened {
-    document: Document,
-    name: String,
-}
+use saltmarcher::{
+    atlas::{AppError, Status, Version},
+    document_worker::DocumentWorker,
+};
+
 #[tauri::command]
-async fn open_atlas(state: tauri::State<'_, Files>) -> Result<Option<Opened>, String> {
+async fn atlas_open(
+    window: tauri::WebviewWindow,
+    state: tauri::State<'_, DocumentWorker>,
+    version: Version,
+) -> Result<Option<Status>, AppError> {
     let Some(handle) = rfd::AsyncFileDialog::new()
-        .add_filter("SaltMarcher Atlas", &["json"])
+        .set_parent(&window)
+        .add_filter("SaltMarcher Atlas", &["saltatlas"])
         .pick_file()
         .await
     else {
         return Ok(None);
     };
-    let document = document::read(handle.path())?;
-    *state.0.lock().map_err(|e| e.to_string())? = Some(handle.path().into());
-    Ok(Some(Opened {
-        document,
-        name: handle.file_name(),
-    }))
+    state
+        .open(version, handle.path().to_path_buf())
+        .await
+        .map(Some)
 }
 #[tauri::command]
-async fn save_atlas(
-    document: Document,
+async fn atlas_save(
+    window: tauri::WebviewWindow,
+    state: tauri::State<'_, DocumentWorker>,
+    version: Version,
     save_as: bool,
-    state: tauri::State<'_, Files>,
-) -> Result<Option<String>, String> {
-    let existing = state.0.lock().map_err(|e| e.to_string())?.clone();
-    let path = match (existing, save_as) {
-        (Some(path), false) => path,
-        _ => {
-            let Some(handle) = rfd::AsyncFileDialog::new()
-                .add_filter("SaltMarcher Atlas", &["json"])
-                .set_file_name("Unbenannter Atlas.saltatlas.json")
-                .save_file()
-                .await
-            else {
-                return Ok(None);
-            };
-            handle.path().to_path_buf()
-        }
+) -> Result<Option<Status>, AppError> {
+    let existing = state.path(version.clone()).await?;
+    let path = if let (false, Some(path)) = (save_as, existing) {
+        path
+    } else {
+        let Some(handle) = rfd::AsyncFileDialog::new()
+            .set_parent(&window)
+            .add_filter("SaltMarcher Atlas", &["saltatlas"])
+            .set_file_name("Unbenannter Atlas.saltatlas")
+            .save_file()
+            .await
+        else {
+            return Ok(None);
+        };
+        handle.path().to_path_buf()
     };
-    document::write(&path, &document)?;
-    let name = path
-        .file_name()
-        .unwrap_or_default()
-        .to_string_lossy()
-        .to_string();
-    *state.0.lock().map_err(|e| e.to_string())? = Some(path);
-    Ok(Some(name))
+    state.save(version, path).await.map(Some)
 }
 #[tauri::command]
-fn new_atlas(state: tauri::State<'_, Files>) -> Result<(), String> {
-    *state.0.lock().map_err(|e| e.to_string())? = None;
-    Ok(())
+async fn atlas_request(
+    state: tauri::State<'_, DocumentWorker>,
+    cmd: String,
+    args: serde_json::Value,
+) -> Result<serde_json::Value, AppError> {
+    if cmd == "save" || cmd == "open" {
+        return Err(saltmarcher::atlas::DomainViolation::InvalidInput {
+            object_ids: vec![],
+            detail: "Dateioperationen benötigen den nativen Dialog und eine Dokumentversion."
+                .into(),
+        }
+        .into());
+    }
+    state.request(cmd, args).await
 }
 fn main() {
     tauri::Builder::default()
-        .manage(Files::default())
-        .invoke_handler(tauri::generate_handler![open_atlas, save_atlas, new_atlas])
+        .manage(DocumentWorker::new())
+        .invoke_handler(tauri::generate_handler![
+            atlas_request,
+            atlas_open,
+            atlas_save
+        ])
         .run(tauri::generate_context!())
         .expect("SaltMarcher konnte nicht gestartet werden");
 }
