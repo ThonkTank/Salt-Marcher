@@ -1,58 +1,52 @@
 # Aktueller Stand
 
-Atlas V7, Dateiformat 11 und Generierungsrezept 3. Stadtansicht als **erster
-Prototyp**; auf Wunsch des Nutzers am 4. November 2026 ohne weitere
-Leistungsoptimierung abgeschlossen.
+Atlas V7, Dateiformat 13, Generierungsrezept 3. Stand: 4. November 2026.
+Straßenrauheit, Übersichtsbearbeitung, Landschaftsassets und Höhenbearbeitung
+sind implementiert. Die Bereinigung erhält diese Funktionen und vorhandene
+Arbeitsänderungen.
 
 [README](../../README.md): Einrichtung und Abnahme;
 [Architektur](../architecture.md): Zuständigkeiten;
-[Produktvertrag](../product-contract.md): Verhalten und Grenzen.
+[Produktvertrag](../product-contract.md): Verhalten, Format und Grenzen.
 
-## Implementiert
+## Bereinigt
 
-- Weltverankerte Übersichtskacheln und transaktionale Bebauungsdichtepyramide.
-  Übersicht lädt keine Innenraumzellen; begrenzte Geometrie-/Namenskandidaten
-  ergänzen die Dichte. Revisionsgebundener Kachelcache mit 64-MiB-Budget.
-- Erweiterter Außenzoom, vereinfachte Darstellung, Navigation in der Übersicht
-  und ausdrückliches Hineinzoomen zur exakten Bearbeitung. Überladene exakte
-  Ausschnitte werden abgelehnt, nicht still gekürzt.
-- Straßen- und Gebäudenamen mit Bildschirmgrößen, Prioritäten,
-  Kollisionsprüfung, Kurvenausrichtung und stabilen Ankern.
-- „Wichtiger Ort“ als Gebäudeeigenschaft mit Queue, Undo/Redo und Speicherung.
-  Format 11 ohne Migration; vorhandene Arbeitsänderungen erhalten.
+- Werkzeugwerte und Aktionen kommen direkt aus `useEditorTools`; die zusätzliche
+  Prop-Übersetzung entfällt. Namen/Symbole stehen gemeinsam in `ToolOptions`.
+- Zwölf Auswahlfelder teilen `SelectField`; Fachaktionen und Validierung bleiben
+  bei ihren Besitzern. Neun reine Rust-Weiterleitungsfunktionen entfallen.
+- `.cargo/config.toml` hält gemeinsame Ressourcenlimits für direkte Cargo-, npm-
+  und Tauri-Aufrufe. Vitest und Playwright behalten ihre Workerlimits.
+  Der Vertragsgenerator formatiert direkt im Speicher ohne zusätzlichen Prozess.
+- Architektur ist nach Besitzern gegliedert, der Produktvertrag nach Bedienung,
+  Planung und Nebenläufigkeit. Es bleiben genau vier maßgebliche Dokumente.
 
-## Prüfstand und Grenzen
+## Prüfstand
 
-Abschließender Nachlauf: beide Stadt-Browsertests, drei Rust-Stadttests,
-Clippy und Formatprüfung bestanden. Insgesamt sind damit 155 unterschiedliche
-Browsertests erfolgreich geprüft.
+`npm run check:all` bestanden: Transportabgleich (91 Dateien), Typprüfung,
+186 TypeScript-Tests, 224 Rusttests (192 Unit-, 16 Dokument-, elf Parzellen-,
+fünf Testservertests), Clippy, Formatprüfung, Webbuild und 163 Browsertests.
+Zwei Rusttests und zwei Browser-Großstadtbenchmarks sind regulär ignoriert;
+der Rust-Transportexport wird separat ausgeführt. Der abschließend vereinfachte
+Vertragsgenerator wurde nochmals gegen alle 91 Dateien geprüft.
 
-Der Gesamtlauf bestand Transportabgleich, Typprüfung, 175 TypeScript-Tests,
-204 Rust-Tests, Clippy, Formatprüfung und Webbuild. 154 Browsertests bestanden;
-ein neuer Checkbox-Test prüfte zu früh vor der asynchronen Bestätigung und wurde
-auf den bestätigten Zustand umgestellt. Gezielt nachgeprüfte Stadt-/Loader-Tests
-bestehen einschließlich eines zusätzlichen A→B→A-Tests (11 Tests im Nachlauf).
-Die abschließenden Funktionsnachläufe stehen im unten genannten Diagnoseverzeichnis.
+Native Abnahme wurde für diese Bereinigung nicht wiederholt. Die letzte
+Linux/WebKitGTK-Abnahme bei DPR 1 deckt Höhenpinsel, Escape, Undo/Redo,
+Hausplattform sowie Speichern/Wiederöffnen einschließlich SQLite-Prüfung ab.
+Native Landschafts-, Mehr-DPR- und vollständige Großstadtabnahme bleiben offen.
 
-Reproduzierbare Teststädte mit 100.000 und 250.000 Gebäuden erzeugt. Die ersten
-Backendmessungen der Bebauungsübersicht lagen bei etwa 2–3 ms / 4 KB und
-4–7 ms / 10 KB; Debug-Aufbau der Arbeitsdaten etwa 72 beziehungsweise 201 s.
-Für die Browserprüfung wurden Straßen und Wasser ergänzt.
+## Offene Grenzen und nächste Abnahme
 
-Browsermessung bei 1440 × 960 mit 100.000 Gebäuden: Öffnen etwa 162 s,
-erste Gesamtansicht 2,6 s, Verschieben im 95. Perzentil 16,8 ms. Das Ziel unter
-33 ms beim Verschieben wurde erreicht; die erste Übersicht verfehlt noch das
-Ein-Sekunden-Ziel. Der Browserlauf mit 250.000 Gebäuden wurde beim Abschluss als
-Prototyp abgebrochen. Keine neue native Desktopabnahme oder Paketierung.
+Die Stadtansicht bleibt ein Prototyp. Offen: Öffnungszeit, Fit-/Übersichtsabfragen,
+Beschriftungen gegenüber Bedienhinweisen und die 250.000er-Browserabnahme.
+Die bisherige 100.000er-Messung erreichte etwa 16,8 ms beim Verschieben im 95. Perzentil, aber nicht eine Sekunde bis zur ersten Übersicht. Große Städte
+mit Höhenrelief wurden nicht gesondert vermessen. Landschaft bietet weiterhin
+keine eigenen Assetimporte, Einzelassetbearbeitung oder Pinselradierer.
 
-Nächster sinnvoller Ausbau: Fit-/Übersichtsabfragen optimieren (Abfrageplan kann
-noch den gesamten Gebäudeindex durchlaufen), Öffnungszeit senken, Beschriftungen
-auch gegenüber Karten-Bedienhinweisen freihalten und dichte Ansichten visuell
-verfeinern. Danach 250.000er-Browserabnahme und native Linux-/DPR-Prüfung.
-Die Bebauungsdichte nutzt Dach-Bounds-Flächen und Mittelpunkte, keine exakten
-zusammengeführten Gebäudeumrisse. Bei hoher Dichte bleiben Einzelgeometrien und
-Namen begrenzt; der Prototyp ist keine vollständige kartografische Generalisierung.
+Nächster Schritt: gemeinsame native Nutzung von Landschaft und Höhen bei mehreren
+Pixeldichten sowie Geländeperformance auf großen Stadtbeständen prüfen.
 
-Belege: `src-tauri/target/diagnostics/city-2026-11-04/`;
-Browserberichte unter `src-tauri/target/diagnostics/playwright-2026-11-04T14-26-09-204Z-678781/`
-und `src-tauri/target/diagnostics/playwright-2026-11-04T14-29-09-893Z-682923/`.
+Belege der Bereinigung: `src-tauri/target/cleanup/simplify-2026-11-04/`;
+Browserberichte: `src-tauri/target/diagnostics/playwright-<run>/`.
+Vorherige native/Messbelege: `src-tauri/target/diagnostics/heights-2026-11-04/`,
+`scenery-2026-11-04/` und `city-2026-11-04/` unter demselben Diagnoseverzeichnis.

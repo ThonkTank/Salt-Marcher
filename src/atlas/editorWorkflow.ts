@@ -3,6 +3,14 @@ import type { GridPose, Intent, Preview, PreviewIssue, Version } from "./model";
 import type { EditorDraft, RoadEditDraft } from "./roadDraft";
 import { sameVersion } from "./documentVersion";
 
+export type WorkflowGate = {
+  version: Version | null;
+  pending: number;
+  exclusive: boolean;
+  uncertain: boolean;
+};
+export type PlannedAction = { operationId: number; intent: Intent };
+
 export type QueueIntent = Extract<
   Intent,
   { type: "room" | "connection" | "rename" | "roof" | "importantPlace" }
@@ -16,7 +24,12 @@ export function intentRoute(intent: Intent): "queue" | "exact" {
     case "roof":
     case "importantPlace":
       return "queue";
+    case "sceneryStroke":
+    case "terrainStroke":
+    case "setWaterLevel":
+    case "setFoundation":
     case "createRoad":
+    case "roughenRoad":
     case "updateRoad":
     case "insertRoadNode":
     case "deleteRoadNode":
@@ -84,6 +97,10 @@ export type DraftOperation =
     }
   | { kind: "newArea"; draft: Extract<EditorDraft, { kind: "newArea" }> };
 export type GeometryOperation =
+  | { kind: "scenery" }
+  | { kind: "terrain" }
+  | { kind: "foundation"; houseId: string }
+  | { kind: "waterLevel" }
   | {
       kind: "editRoad";
       roadId: string;
@@ -142,6 +159,21 @@ export type GeometryCheckedWorkflow = Exact & {
   kind: "geometry";
   rollback: null;
 } & (
+    | {
+        operation: Extract<GeometryOperation, { kind: "scenery" }>;
+        pointer: GeometryPointer<"scenery">;
+      }
+    | {
+        operation: Extract<GeometryOperation, { kind: "terrain" }>;
+        pointer: GeometryPointer<"terrain">;
+      }
+    | {
+        operation: Extract<
+          GeometryOperation,
+          { kind: "waterLevel" | "foundation" }
+        >;
+        pointer: null;
+      }
     | {
         operation: Extract<GeometryOperation, { kind: "editRoad" }>;
         pointer: GeometryPointer<"node">;
@@ -264,6 +296,49 @@ export const workflowMessage = (s: EditorWorkflow): string =>
     : isExact(s) && s.stage.phase === "unchanged"
       ? "Keine Änderung."
       : "";
+/** Shared UI projection; components never interpret lifecycle phases themselves. */
+export function workflowView(state: EditorWorkflow) {
+  const preview = workflowPreview(state);
+  const exact = isExact(state);
+  const issue =
+    exact && state.stage.phase === "failed" ? state.stage.issue : undefined;
+  return {
+    draft: workflowDraft(state),
+    preview,
+    issue,
+    guide:
+      state.kind === "idle" || !state.guide
+        ? null
+        : {
+            ...state.guide,
+            invalid: state.guide.invalid || preview?.valid === false || !!issue,
+          },
+    plannedAction: exact ? state.candidate : null,
+    population: state.kind === "populate",
+    deletion:
+      state.kind === "delete" && state.stage.phase !== "committing"
+        ? state
+        : null,
+    message: workflowMessage(state),
+    displayPreview:
+      state.kind === "idle" ? null : (state.displayPreview ?? preview),
+    planSelection:
+      state.kind === "idle" ? null : (state.selectedPlanParcel ?? null),
+    actions: {
+      visible:
+        (exact && state.kind !== "delete") ||
+        (state.kind === "queuedGesture" && !!preview?.reason),
+      controls: exact && state.kind !== "delete",
+      pending:
+        exact &&
+        ["editing", "checking", "refreshing"].includes(state.stage.phase) &&
+        !!state.candidate,
+      committing: exact && state.stage.phase === "committing",
+      recheck: exact && ["stale", "failed"].includes(state.stage.phase),
+    },
+  };
+}
+
 export function withStage(s: ExactWorkflow, stage: ExactPhase): ExactWorkflow {
   if (s.kind === "delete") {
     if (stage.phase === "editing") return s;
@@ -272,6 +347,20 @@ export function withStage(s: ExactWorkflow, stage: ExactPhase): ExactWorkflow {
   return { ...s, stage };
 }
 export type WorkflowEvent =
+  | {
+      type: "commitRejected";
+      candidate: CandidateToken;
+      message: string;
+      issue?: PreviewIssue;
+    }
+  | { type: "clearInspection" }
+  | { type: "refresh"; candidate: Candidate; request: RequestToken }
+  | {
+      type: "refreshed";
+      request: RequestToken;
+      candidate: Candidate;
+      guide: Guide | null;
+    }
   | { type: "begin"; state: EditorWorkflow }
   | { type: "cancel" }
   | { type: "selectPlanParcel"; key: string | null }
@@ -337,6 +426,43 @@ function reduceWorkflow(
   event: WorkflowEvent,
 ): EditorWorkflow {
   switch (event.type) {
+    case "clearInspection":
+      return s.kind === "queuedGesture" ? { ...s, inspection: null } : s;
+    case "commitRejected":
+      return isExact(s) &&
+        s.stage.phase === "committing" &&
+        sameCandidate(s.candidate?.token, event.candidate)
+        ? withStage(
+            { ...s, candidate: { ...s.candidate!, autoFinish: false } },
+            { phase: "failed", message: event.message, issue: event.issue },
+          )
+        : s;
+    case "refresh":
+      return canRecheckWorkflow(s)
+        ? withStage(
+            {
+              ...s,
+              basis: event.candidate.token.version,
+              candidate: event.candidate,
+            },
+            { phase: "refreshing", request: event.request },
+          )
+        : s;
+    case "refreshed":
+      return isExact(s) &&
+        s.stage.phase === "refreshing" &&
+        sameRequest(s.stage.request, event.request)
+        ? withStage(
+            { ...s, candidate: event.candidate, guide: event.guide },
+            {
+              phase: "checking",
+              request: {
+                candidate: event.candidate.token,
+                requestId: event.request.requestId,
+              },
+            },
+          )
+        : s;
     case "begin":
       return event.state;
     case "cancel":
@@ -424,6 +550,18 @@ export function geometryState(
   pointer: Gesture | null,
 ): GeometryCheckedWorkflow {
   switch (operation.kind) {
+    case "scenery":
+      if (pointer && pointer.kind !== "scenery")
+        throw Error("Ungültige Landschaftsgeste");
+      return { ...base, operation, pointer };
+    case "terrain":
+      if (pointer && pointer.kind !== "terrain")
+        throw Error("Ungültige Höhengeste");
+      return { ...base, operation, pointer };
+    case "foundation":
+    case "waterLevel":
+      if (pointer) throw Error("Keine Pointergeste");
+      return { ...base, operation, pointer };
     case "editRoad":
       if (pointer && pointer.kind !== "node")
         throw Error("Straßenedit benötigt Knotengeste");

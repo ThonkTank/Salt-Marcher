@@ -162,7 +162,7 @@ impl AtlasApplication {
                 .collect::<rusqlite::Result<Vec<_>>>()
                 .map_err(storage_error)?;
             let mut features = Vec::new();
-            for kind in ["area", "road", "house"] {
+            for kind in ["area", "scenery", "road", "house"] {
                 // LIMIT precedes JSON decoding. Density remains complete when
                 // the bounded individual presentation is saturated.
                 let filter = if kind == "house" && args.level > 2 {
@@ -257,6 +257,38 @@ impl AtlasApplication {
                             .into(),
                             width: 0.0,
                             rank: a.order as f64,
+                        },
+                        SceneObject::Scenery(s) => MapFeature {
+                            id: s.id,
+                            kind: "scenery".into(),
+                            name: String::new(),
+                            important: false,
+                            paths: s
+                                .assets
+                                .iter()
+                                .step_by(s.assets.len().div_ceil(512).max(1))
+                                .filter(|a| a.size * 2.0 >= size / 8.0)
+                                .map(|a| {
+                                    (0..8)
+                                        .map(|i| {
+                                            let t = i as f64 * std::f64::consts::TAU / 8.0;
+                                            [
+                                                a.point[0] + a.size * t.cos(),
+                                                a.point[1] + a.size * t.sin(),
+                                            ]
+                                        })
+                                        .collect()
+                                })
+                                .collect(),
+                            color: match s.biome {
+                                crate::atlas::scenery::Biome::Forest => "#477148",
+                                crate::atlas::scenery::Biome::Meadow => "#8ca55b",
+                                crate::atlas::scenery::Biome::Scrub => "#70834b",
+                                crate::atlas::scenery::Biome::Rocks => "#929083",
+                            }
+                            .into(),
+                            width: 0.0,
+                            rank,
                         },
                         SceneObject::Parcel(_) => continue,
                     };

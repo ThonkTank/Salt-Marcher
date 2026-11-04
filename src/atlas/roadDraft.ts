@@ -1,3 +1,4 @@
+import type { RoadRoughness } from "./generated/RoadRoughness";
 import type {
   Area,
   AreaInput,
@@ -13,11 +14,13 @@ import type {
 
 export type NewRoadDraft = RoadProperties & {
   kind: "newRoad";
+  roughness?: RoadRoughness;
   nodes: CurveNodeInput[];
   population: PopulationSettings | null;
 };
 export type RoadExtensionDraft = {
   kind: "extendRoad";
+  roughness?: RoadRoughness;
   roadId: string;
   end: "start" | "end";
   anchor: CurveNodeInput;
@@ -144,6 +147,7 @@ export function toRoadIntent(draft: RoadDraft): Intent | null {
     return draft.nodes.length >= 2
       ? {
           type: "createRoad",
+          roughness: draft.roughness,
           road: {
             name: draft.name,
             width: draft.width,
@@ -157,6 +161,7 @@ export function toRoadIntent(draft: RoadDraft): Intent | null {
   const nodes = draft.nodes.map(nodeInput);
   return {
     type: "extendRoad",
+    roughness: draft.roughness,
     roadId: draft.roadId,
     end: draft.end,
     nodes:

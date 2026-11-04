@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { evaluateGesture, type Gesture } from "./interaction";
-import { parcelGridRange } from "./AtlasCanvas";
+import { parcelGridRange } from "./parcelEditor";
 import {
   contextKey,
   hitScene,
@@ -32,6 +32,7 @@ parcel.polygon = [
 const house: House = {
   kind: "house",
   importantPlace: false,
+  foundation: { height: 1, transition: 10 },
   id: "house-2",
   name: "Haus",
   roof: "#888888",

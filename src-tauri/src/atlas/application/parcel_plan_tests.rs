@@ -933,3 +933,22 @@ fn planned_house_shrinks_but_existing_house_blocks_small_parcel() {
     assert_eq!(moved["changed"], true);
     assert_eq!(app.house(&h.id).unwrap().cells, before.cells);
 }
+
+#[test]
+fn roughening_follows_bound_house_without_rewriting_interior() {
+    let (mut app, road, parcel, house) = fixture(2);
+    let before = raw_interior(&app, &house.id);
+    let action =
+        json!({"type":"roughenRoad","roadId":road.id,"roughness":{"amount":0.2,"seed":42}});
+    let preview = edit(&mut app, "preview", action.clone());
+    assert_eq!(preview["valid"], true, "{preview}");
+    let result = edit(&mut app, "commit", action);
+    assert_eq!(preview["objects"], result["objects"]);
+    assert_eq!(before, raw_interior(&app, &house.id));
+    let after = app.parcel(&parcel.id).unwrap();
+    assert_eq!(after.source, parcel.source);
+    assert_ne!(after.polygon, parcel.polygon);
+    history(&mut app, false);
+    assert_eq!(app.parcel(&parcel.id).unwrap(), parcel);
+    assert_eq!(before, raw_interior(&app, &house.id));
+}

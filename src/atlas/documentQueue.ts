@@ -1,7 +1,7 @@
 import type { AtlasClient } from "./client";
 import type { CheckedPreview } from "./editorWorkflow";
-import type { WorkflowGate } from "./editorWorkflowController";
-import type { PlannedAction } from "./interaction";
+import type { WorkflowGate } from "./editorWorkflow";
+import type { PlannedAction } from "./editorWorkflow";
 import type { Intent, Preview, Status, ValidPreview, Version } from "./model";
 import { PreviewScheduler } from "./previewScheduler";
 import { sameVersion } from "./documentVersion";

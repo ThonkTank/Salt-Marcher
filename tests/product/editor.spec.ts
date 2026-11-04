@@ -114,7 +114,7 @@ test("free terrain polygon and independently rotated interior drawing", async ({
   await expect(page.getByText("Ansicht wird geladen …")).toHaveCount(0);
   const canvas = page.getByTestId("atlas-canvas");
   const box = (await canvas.boundingBox())!;
-  await page.getByRole("button", { name: "Gelände", exact: true }).click();
+  await page.getByRole("button", { name: "Flächen", exact: true }).click();
   for (const [x, y] of [
     [60, 80],
     [220, 70],

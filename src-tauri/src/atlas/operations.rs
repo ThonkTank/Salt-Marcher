@@ -1,6 +1,6 @@
 //! Stateless intent planning and preview projection over typed document reads.
 use crate::atlas::application::AtlasApplication;
-use crate::atlas::change::{Computed, Delta, EditPlan, SmallPatch};
+use crate::atlas::change::{Computed, EditPlan, SmallPatch};
 use crate::atlas::errors::{ensure, invalid, AppError, DomainViolation, IssueGeometry};
 use crate::atlas::geometry::{collision_bounds, contours, occupancy_bounds, occupancy_contours};
 use crate::atlas::model::{
@@ -17,10 +17,20 @@ pub(in crate::atlas) fn compute(
     intent: &Intent,
     diagnostics: &mut PlanDiagnostics,
 ) -> Result<Computed> {
+    if let Some(result) = app.compute_terrain(intent)? {
+        return Ok(result);
+    }
     let mut context = plan_context::PlanContext::new(app);
     let mut plan = EditPlan::new(app.allocator()?);
     match intent {
-        Intent::CreateRoad { road, population } => {
+        Intent::TerrainStroke { .. }
+        | Intent::SetWaterLevel { .. }
+        | Intent::SetFoundation { .. } => unreachable!(),
+        Intent::CreateRoad {
+            road,
+            population,
+            roughness,
+        } => {
             let mut r = Road {
                 id: plan.allocator.allocate("road")?,
                 name: road.name.clone(),
@@ -47,6 +57,12 @@ pub(in crate::atlas) fn compute(
                     id,
                     populated_sides: vec![],
                 });
+            }
+            if let Some(settings) = roughness {
+                let count = r.edge_sections.len();
+                crate::atlas::road_roughness::deform(&mut r, settings, 0..count, || {
+                    plan.allocator.allocate("node")
+                })?;
             }
             app.plan_road(&mut plan, &mut r, diagnostics, &mut context)?;
             if let Some(settings) = population {
@@ -86,6 +102,22 @@ pub(in crate::atlas) fn compute(
                 .collect();
             app.plan_road(&mut plan, &mut r, diagnostics, &mut context)?;
             plan.delta.after.push(FullObject::Road(r));
+        }
+        Intent::RoughenRoad { road_id, roughness } => {
+            let mut r = app.road(road_id)?;
+            plan.delta.before.push(FullObject::Road(r.clone()));
+            let count = r.edge_sections.len();
+            crate::atlas::road_roughness::deform(&mut r, roughness, 0..count, || {
+                plan.allocator.allocate("node")
+            })?;
+            app.plan_road(&mut plan, &mut r, diagnostics, &mut context)?;
+            plan.delta.after.push(FullObject::Road(r));
+        }
+        Intent::SceneryStroke { brush } => {
+            let scenery = super::scenery::scatter(brush, plan.allocator.allocate("scenery")?)?;
+            if !scenery.assets.is_empty() {
+                plan.delta.after.push(FullObject::Scenery(scenery));
+            }
         }
         Intent::CreateArea { area } => {
             plan.delta.after.push(FullObject::Area(Area {
@@ -157,20 +189,17 @@ pub(in crate::atlas) fn compute(
             if kind == "house" {
                 ensure(name(new_name), "Ungültiger Gebäudename oder Dachfarbe")?;
                 let before = app.required_house_header(id)?;
-                if before.name != *new_name {
-                    let mut after = before.clone();
-                    after.name = new_name.clone();
-                    return Ok(Computed::fields(
-                        SmallPatch::HouseName {
-                            id: id.clone(),
-                            before: before.name.clone(),
-                            after: new_name.clone(),
-                        },
-                        before,
-                        after,
-                    ));
-                }
-                return Ok(Computed::geometry(Delta::default()));
+                let mut after = before.clone();
+                after.name = new_name.clone();
+                return Ok(Computed::fields(
+                    SmallPatch::HouseName {
+                        id: id.clone(),
+                        before: before.name.clone(),
+                        after: new_name.clone(),
+                    },
+                    before,
+                    after,
+                ));
             }
             let mut o = app.object(id)?;
             plan.delta.before.push(o.clone());
@@ -182,43 +211,35 @@ pub(in crate::atlas) fn compute(
         }
         Intent::Roof { id, roof } => {
             ensure(
-                roof.len() == 7
-                    && roof.starts_with('#')
-                    && roof.as_bytes()[1..].iter().all(u8::is_ascii_hexdigit),
+                crate::atlas::validation::roof_color(roof),
                 "Ungültiger Gebäudename oder Dachfarbe",
             )?;
             let before = app.required_house_header(id)?;
-            if before.roof != *roof {
-                let mut after = before.clone();
-                after.roof = roof.clone();
-                return Ok(Computed::fields(
-                    SmallPatch::Roof {
-                        id: id.clone(),
-                        before: before.roof.clone(),
-                        after: roof.clone(),
-                    },
-                    before,
-                    after,
-                ));
-            }
-            return Ok(Computed::geometry(Delta::default()));
+            let mut after = before.clone();
+            after.roof = roof.clone();
+            return Ok(Computed::fields(
+                SmallPatch::Roof {
+                    id: id.clone(),
+                    before: before.roof.clone(),
+                    after: roof.clone(),
+                },
+                before,
+                after,
+            ));
         }
         Intent::ImportantPlace { id, value } => {
             let before = app.required_house_header(id)?;
-            if before.important_place != *value {
-                let mut after = before.clone();
-                after.important_place = *value;
-                return Ok(Computed::fields(
-                    SmallPatch::ImportantPlace {
-                        id: id.clone(),
-                        before: before.important_place,
-                        after: *value,
-                    },
-                    before,
-                    after,
-                ));
-            }
-            return Ok(Computed::geometry(Delta::default()));
+            let mut after = before.clone();
+            after.important_place = *value;
+            return Ok(Computed::fields(
+                SmallPatch::ImportantPlace {
+                    id: id.clone(),
+                    before: before.important_place,
+                    after: *value,
+                },
+                before,
+                after,
+            ));
         }
         Intent::Delete { id } => app.plan_delete(id, &mut plan.delta)?,
         Intent::Room {
@@ -238,20 +259,17 @@ pub(in crate::atlas) fn compute(
                     .iter()
                     .find(|r| r.id == *room_id)
                     .ok_or_else(|| invalid("Room not found"))?;
-                if room.name != *new_name {
-                    let before = parts.header;
-                    return Ok(Computed::fields(
-                        SmallPatch::RoomName {
-                            id: building_id.clone(),
-                            room_id: room_id.clone(),
-                            before: room.name.clone(),
-                            after: new_name.clone(),
-                        },
-                        before.clone(),
-                        before,
-                    ));
-                }
-                return Ok(Computed::geometry(Delta::default()));
+                let before = parts.header;
+                return Ok(Computed::fields(
+                    SmallPatch::RoomName {
+                        id: building_id.clone(),
+                        room_id: room_id.clone(),
+                        before: room.name.clone(),
+                        after: new_name.clone(),
+                    },
+                    before.clone(),
+                    before,
+                ));
             }
             let h = app.house(building_id)?;
             let next = interior::edit(&h, crate::interior::LocalEdit::Room(intent.clone()))?;
@@ -350,6 +368,7 @@ pub(in crate::atlas) fn compute(
             plan.delta.after.push(FullObject::Road(r));
         }
         Intent::ExtendRoad {
+            roughness,
             road_id,
             end,
             nodes,
@@ -391,6 +410,16 @@ pub(in crate::atlas) fn compute(
                     r.nodes.extend(new_nodes);
                     r.edge_sections.extend(edges);
                 }
+            }
+            if let Some(settings) = roughness {
+                let count = nodes.len();
+                let range = match end {
+                    RoadEnd::Start => 0..count,
+                    RoadEnd::End => r.edge_sections.len() - count..r.edge_sections.len(),
+                };
+                crate::atlas::road_roughness::deform(&mut r, settings, range, || {
+                    plan.allocator.allocate("node")
+                })?;
             }
             app.plan_road(&mut plan, &mut r, diagnostics, &mut context)?;
             if let Some(settings) = population {
@@ -600,7 +629,7 @@ pub(in crate::atlas) fn preview_parts(computed: &Computed) -> PreviewParts {
         match o {
             FullObject::Road(_) => cascade_counts.roads += 1,
             FullObject::Parcel(_) => cascade_counts.parcels += 1,
-            FullObject::Area(_) => {}
+            FullObject::Area(_) | FullObject::Scenery(_) => {}
             FullObject::House(_) => cascade_counts.houses += 1,
         }
     }

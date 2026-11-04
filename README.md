@@ -24,14 +24,21 @@ npm run format                 # Prettier und rustfmt
 npm run package -- --ci        # natives Release-Paket
 ```
 
-`npm run typecheck` prüft Produktcode, Tests und Toolkonfigurationen gemeinsam.
-Einzeln: `npm test`, `npm run test:rust`, `npm run test:e2e`, `npm run build`.
-Die vollständige Prüfung führt die großen Rust- und Browsersuiten nacheinander aus;
-parallel laufende Last kann die zeitbegrenzten Browserprüfungen beeinflussen.
+Einzeln: `npm run typecheck`, `npm test`, `npm run test:rust`,
+`npm run test:e2e`, `npm run build`. Die Typprüfung umfasst Produktcode,
+Tests und Toolkonfigurationen. `check:all` führt alle Prüfungen nacheinander aus.
+
+Ressourcenlimits: `.cargo/config.toml` begrenzt Cargo-/Tauri-Builds und Rusttests
+standardmäßig auf zwei Jobs beziehungsweise Testthreads; Vitest verwendet zwei,
+Playwright einen Worker. Nicht mehrere vollständige Prüfläufe gleichzeitig
+starten. Unter Linux kann `nice -n 10 npm run check:all` der Desktopbedienung
+Vorrang geben. Cargo-Flags beziehungsweise `RUST_TEST_THREADS` überschreiben die
+Vorgaben bei Bedarf.
+
 Browsertests verwenden den echten Rust-Worker; Ergebnisse liegen unter
-`src-tauri/target/diagnostics/playwright-<run>/`.
-Nach Rust-Transportänderungen `npm run contracts:generate` ausführen.
-`contracts:check` prüft ohne Quelländerung; `src/atlas/generated/` nie manuell ändern.
+`src-tauri/target/diagnostics/playwright-<run>/`. Nach Rust-Transportänderungen
+`npm run contracts:generate` ausführen. `contracts:check` prüft ohne
+Quelländerung; `src/atlas/generated/` nie manuell ändern.
 
 ## Bedienung
 
@@ -42,9 +49,6 @@ beschrieben.
 
 ## Stadtmaßstab prüfen
 
-Die Stadtübersicht verwendet abgeleitete Kacheln; zum Bearbeiten auf mindestens
-20 % hineinzoomen. Gebäude können im Inspector als „Wichtiger Ort“ markiert werden.
-
 Große Testdateien und Messungen bleiben im ignorierten Diagnoseverzeichnis:
 
 ```bash
@@ -53,9 +57,11 @@ ATLAS_CITY_BENCHMARK=1 npm run test:e2e -- city-performance.spec.ts --workers=1
 ```
 
 Der erste Befehl erzeugt reproduzierbare Städte mit 100.000 und 250.000 Häusern,
-Straßen und Wasser unter `src-tauri/target/diagnostics/city-2026-11-04/`.
+Straßen und Wasser unter `src-tauri/target/diagnostics/city/`.
 Der zweite misst Öffnung, erste Übersicht und Navigation bei 1440 × 960.
 Diese zeitintensiven Prüfungen laufen nicht in der normalen Gesamtsuite.
+`ATLAS_CITY_DIR` überschreibt das Fixtureverzeichnis; für gemeinsame Läufe einen
+absoluten Pfad verwenden (Cargo und Browser haben unterschiedliche Arbeitsverzeichnisse).
 
 ## Native Abnahme
 
@@ -70,8 +76,13 @@ Nach Interaktions- oder Dateiänderungen das frisch gebaute Desktopprogramm prü
    abschließen. Enter/Escape in Feldern und die Aktionsleiste bei ausgewählter
    Entwurfsparzelle prüfen. Beide Enden verlängern; Haus-/Parzellengesten und abgelehnte
    Änderungen korrigieren.
-5. Bei 900 × 620 Lösch-/Unsaved-Dialog mit Tab, Umschalt+Tab und Escape bedienen; Fokus kehrt zurück.
-6. Schließen abbrechen, danach mit „Speichern und fortfahren“ abschließen und Datei erneut prüfen.
+5. In der Stadtübersicht Straßen mit und ohne Bebauung zeichnen, Rauheit ändern
+   und abbrechen/übernehmen; Auswahl, Punktbewegung, Einfügen/Löschen und beide
+   Verlängerungsenden prüfen. Während eines Entwurfs hinein-/herauszoomen.
+   „Verlauf aufrauen“, Undo/Redo und Dateirundlauf prüfen; vorhandene Kurven
+   und gebundene Innenräume müssen erhalten bleiben.
+6. Bei 900 × 620 Lösch-/Unsaved-Dialog mit Tab, Umschalt+Tab und Escape bedienen; Fokus kehrt zurück.
+7. Schließen abbrechen, danach mit „Speichern und fortfahren“ abschließen und Datei erneut prüfen.
 
 Plattform, Skalierung und Ergebnisse im ignorierten Diagnoseverzeichnis festhalten.
 Dateivergleiche verwenden SQLite-Integrität und die Autorentabellen in

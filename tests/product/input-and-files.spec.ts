@@ -221,9 +221,9 @@ test("first interior click after idle and an explicit tool switch commits once; 
   await page
     .getByRole("button", { name: "Zur Dorfansicht", exact: true })
     .click();
-  await page.getByRole("button", { name: "Gelände", exact: true }).click();
+  await page.getByRole("button", { name: "Flächen", exact: true }).click();
   await expect(
-    page.getByRole("button", { name: "Gelände", exact: true }),
+    page.getByRole("button", { name: "Flächen", exact: true }),
   ).toHaveAttribute("aria-pressed", "true");
 });
 

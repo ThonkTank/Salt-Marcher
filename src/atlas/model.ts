@@ -73,7 +73,8 @@ export type Parcel = Omit<
   Extract<WireSceneObject, { kind: "parcel" }>,
   "polygon"
 > & { polygon: WorldPoint[] };
-export type MapObject = House | Road | Area | Parcel;
+export type MapObject =
+  House | Road | Area | Parcel | Extract<WireSceneObject, { kind: "scenery" }>;
 export type Scene = Omit<WireSceneResponse, "objects"> & {
   objects: MapObject[];
 };
@@ -210,6 +211,8 @@ export function contains(rings: [number, number][][], p: [number, number]) {
 }
 export function hitObject(o: MapObject, p: WorldPoint, tolerance = 0) {
   if (o.kind === "house") return contains(o.contours, toLocal(p, o.transform));
+  if (o.kind === "scenery")
+    return o.assets.some((a) => distance(a.point, p) <= a.size + tolerance);
   if (o.kind === "area") return contains([o.points], p);
   if (o.kind === "parcel") return contains([o.polygon], p);
   return o.path

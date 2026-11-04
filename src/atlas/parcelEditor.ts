@@ -1,6 +1,7 @@
 import {
   hitObject,
   toWorld,
+  toLocal,
   type Bounds,
   type EditorContext,
   type GridPose,
@@ -96,7 +97,7 @@ export function hitScene(
   tolerance: number,
   visibleParcels: string[],
 ): MapObject | undefined {
-  for (const kind of ["house", "road", "parcel", "area"] as const) {
+  for (const kind of ["house", "road", "parcel", "scenery", "area"] as const) {
     const candidates = objects.filter(
       (o) =>
         o.kind === kind &&
@@ -112,4 +113,34 @@ export function hitScene(
     if (hit) return hit;
   }
   return undefined;
+}
+
+// Bounds restrict generation before clipping; low zoom never builds huge grids.
+export function parcelGridRange(
+  parcel: Parcel,
+  viewport: Bounds,
+  scale: number,
+): Bounds | null {
+  if (5 * scale < 4) return null;
+  const localParcel = polygonBounds(
+    parcel.polygon.map((p) => toLocal(p, parcel.frame)),
+  );
+  const localView = polygonBounds(
+    (
+      [
+        [viewport[0], viewport[1]],
+        [viewport[2], viewport[1]],
+        [viewport[2], viewport[3]],
+        [viewport[0], viewport[3]],
+      ] as WorldPoint[]
+    ).map((p) => toLocal(p, parcel.frame)),
+  );
+  if (!localParcel || !localView) return null;
+  const range: Bounds = [
+    Math.max(localParcel[0], localView[0]),
+    Math.max(localParcel[1], localView[1]),
+    Math.min(localParcel[2], localView[2]),
+    Math.min(localParcel[3], localView[3]),
+  ];
+  return range[0] <= range[2] && range[1] <= range[3] ? range : null;
 }

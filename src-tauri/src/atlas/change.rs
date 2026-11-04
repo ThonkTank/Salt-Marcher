@@ -23,6 +23,11 @@ pub(in crate::atlas) struct Delta {
 }
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub(in crate::atlas) enum SmallPatch {
+    Foundation {
+        id: String,
+        before: super::terrain::Foundation,
+        after: super::terrain::Foundation,
+    },
     HouseName {
         id: String,
         before: String,
@@ -50,7 +55,29 @@ pub(in crate::atlas) enum SmallPatch {
         after: HousePose,
     },
 }
-#[derive(Clone, Debug, Serialize, Deserialize)]
+impl SmallPatch {
+    pub fn id(&self) -> &str {
+        match self {
+            Self::Foundation { id, .. }
+            | Self::HouseName { id, .. }
+            | Self::Roof { id, .. }
+            | Self::ImportantPlace { id, .. }
+            | Self::RoomName { id, .. }
+            | Self::Transform { id, .. } => id,
+        }
+    }
+    fn is_empty(&self) -> bool {
+        match self {
+            Self::HouseName { before, after, .. }
+            | Self::Roof { before, after, .. }
+            | Self::RoomName { before, after, .. } => before == after,
+            Self::Foundation { before, after, .. } => before == after,
+            Self::ImportantPlace { before, after, .. } => before == after,
+            Self::Transform { before, after, .. } => before == after,
+        }
+    }
+}
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub(in crate::atlas) struct HousePose {
     pub(in crate::atlas) transform: Transform,
     pub(in crate::atlas) placement: Placement,
@@ -65,10 +92,14 @@ pub(in crate::atlas) struct History<C = ChangeSet> {
 pub(in crate::atlas) struct ChangeSet {
     pub(in crate::atlas) geometry: Delta,
     pub(in crate::atlas) fields: Vec<SmallPatch>,
+    pub(in crate::atlas) terrain: Option<super::terrain::TerrainDelta>,
 }
 impl ChangeSet {
     pub(in crate::atlas) fn is_empty(&self) -> bool {
-        self.geometry.before.is_empty() && self.geometry.after.is_empty() && self.fields.is_empty()
+        self.terrain.is_none()
+            && self.geometry.before.is_empty()
+            && self.geometry.after.is_empty()
+            && self.fields.is_empty()
     }
 }
 pub(in crate::atlas) struct FieldChange {
@@ -76,7 +107,9 @@ pub(in crate::atlas) struct FieldChange {
     pub(in crate::atlas) before: HouseHeader,
     pub(in crate::atlas) after: HouseHeader,
 }
+#[derive(Default)]
 pub(in crate::atlas) struct Computed {
+    pub terrain_preview: Option<super::terrain::TerrainPreview>,
     pub(in crate::atlas) change: ChangeSet,
     pub(in crate::atlas) headers: Vec<(HouseHeader, HouseHeader)>,
     pub(in crate::atlas) generation: generation::GenerationResponse,
@@ -84,34 +117,36 @@ pub(in crate::atlas) struct Computed {
 }
 impl Computed {
     pub(in crate::atlas) fn geometry(delta: Delta) -> Self {
-        Self {
-            change: ChangeSet {
-                geometry: if delta.before == delta.after {
-                    Delta::default()
-                } else {
-                    delta
-                },
-                fields: vec![],
-            },
-            headers: vec![],
-            generation: generation::GenerationResponse::default(),
-            next_identity: None,
+        let mut computed = Self::default();
+        if delta.before != delta.after {
+            computed.change.geometry = delta;
         }
+        computed
     }
     pub(in crate::atlas) fn fields(
         patch: SmallPatch,
         before: HouseHeader,
         after: HouseHeader,
     ) -> Self {
-        Self {
-            change: ChangeSet {
-                geometry: Delta::default(),
-                fields: vec![patch],
-            },
-            headers: vec![(before, after)],
-            generation: generation::GenerationResponse::default(),
-            next_identity: None,
+        let mut computed = Self::default();
+        if !patch.is_empty() {
+            computed.change.fields.push(patch);
+            computed.headers.push((before, after));
         }
+        computed
+    }
+    pub(in crate::atlas) fn terrain(
+        delta: super::terrain::TerrainDelta,
+        preview: super::terrain::TerrainPreview,
+    ) -> Self {
+        let mut computed = Self {
+            terrain_preview: Some(preview),
+            ..Self::default()
+        };
+        if delta.before != delta.after || delta.water_before != delta.water_after {
+            computed.change.terrain = Some(delta);
+        }
+        computed
     }
 }
 

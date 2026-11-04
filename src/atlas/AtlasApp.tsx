@@ -2,8 +2,7 @@ import { ParcelProperties } from "./ParcelProperties";
 import { NumberField } from "./Fields";
 import { PopulationPanel } from "./PopulationPanel";
 import { EditorActions } from "./EditorActions";
-import { ToolOptions, labels } from "./ToolOptions";
-import type { Tool } from "./editorSelection";
+import { ToolOptions, toolLabels, toolbarTools } from "./ToolOptions";
 import { Inspector } from "./Inspector";
 import { Modal } from "../Modal";
 import { AtlasClient } from "./client";
@@ -90,31 +89,14 @@ export default function AtlasApp({
                 ? "IM GEBÄUDE"
                 : "DORF GESTALTEN"}
           </div>
-          {(interior
-            ? ["select", "draw", "erase", "assign", "opening", "stairs"]
-            : ["select", "road", "area", "house"]
-          ).map((t) => (
+          {toolbarTools(interior).map((t) => (
             <button
               key={t}
               aria-pressed={tool === t}
-              onClick={() => chooseTool(t as Tool)}
+              onClick={() => chooseTool(t)}
             >
-              <span aria-hidden="true">
-                {
-                  {
-                    select: "↖",
-                    road: "↝",
-                    area: "▧",
-                    house: "⌂",
-                    draw: "▱",
-                    erase: "⌫",
-                    assign: "⇥",
-                    opening: "⊓",
-                    stairs: "▥",
-                  }[t]
-                }
-              </span>{" "}
-              {labels[t as Tool]}
+              <span aria-hidden="true">{toolLabels[t].icon}</span>{" "}
+              {toolLabels[t].label}
             </button>
           ))}
         </aside>
@@ -161,7 +143,9 @@ export default function AtlasApp({
           )}
           {!interior && camera.scale < 1.28 && (
             <div className="atlas-overview-hint">
-              Stadtübersicht · Doppelklick zum Hineinzoomen
+              {tool === "road"
+                ? "Straßenplanung · Detailbearbeitung ab 20 %"
+                : "Stadtübersicht · Doppelklick auf freie Karte zum Hineinzoomen"}
             </div>
           )}
           <div className="atlas-navigation">
@@ -271,6 +255,8 @@ export default function AtlasApp({
             <p>Löschung wird vollständig geprüft …</p>
           ) : (
             <p>
+              Betroffene Kartenobjekte:{" "}
+              {deletion.stage.preview.deletedIds.length}.{" "}
               {deletion.stage.preview.cascadeCounts.roads} Straßen ·{" "}
               {deletion.stage.preview.cascadeCounts.parcels} Parzellen ·{" "}
               {deletion.stage.preview.cascadeCounts.houses} Häuser ·{" "}

@@ -76,7 +76,7 @@ test("road options update preview and commit despite delayed old preview", async
 test("terrain material updates preview and commit", async ({ page }) => {
   await page.goto(url);
   await expect(page.getByText("Ansicht wird geladen …")).toHaveCount(0);
-  await page.getByRole("button", { name: "Gelände", exact: true }).click();
+  await page.getByRole("button", { name: "Flächen", exact: true }).click();
   const box = (await page.getByTestId("atlas-canvas").boundingBox())!;
   for (const [x, y] of [
     [100, 100],
@@ -228,7 +228,7 @@ test("canvas selection prioritizes houses and visible parcels over terrain, then
   await ready(page);
   await clickWorld(page, [100, 110]);
   await expect(
-    page.getByRole("heading", { name: "Gelände", exact: true }),
+    page.getByRole("heading", { name: "Flächen", exact: true }),
   ).toBeVisible();
   await expect(page.getByLabel("Flächenmaterial")).toHaveValue("stone");
 });

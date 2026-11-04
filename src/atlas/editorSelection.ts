@@ -2,6 +2,8 @@ export type Tool =
   | "select"
   | "road"
   | "area"
+  | "terrain"
+  | "scenery"
   | "house"
   | "draw"
   | "erase"

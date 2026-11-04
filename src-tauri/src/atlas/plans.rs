@@ -349,5 +349,6 @@ pub(in crate::atlas) fn safe_proposed(o: &SceneObject) -> bool {
                 })
         }
         SceneObject::Area(a) => simple_polygon(&a.points),
+        SceneObject::Scenery(s) => s.validate().is_ok(),
     }
 }

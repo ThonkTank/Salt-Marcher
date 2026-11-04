@@ -15,17 +15,13 @@ import {
   type PopulationSettings,
 } from "./model";
 import type { Tool } from "./editorSelection";
-import {
-  isExact,
-  workflowMessage,
-  workflowDraft,
-  workflowPreview,
-  type EditorWorkflow,
-} from "./editorWorkflow";
+import { type EditorWorkflow, type workflowView } from "./editorWorkflow";
+import { EDIT_SCALE } from "./cityView";
 
 /** One projection for panel precedence, action feedback and retained previews. */
 export function editorView(
   state: EditorWorkflow,
+  workflow: ReturnType<typeof workflowView>,
   context: {
     tool: Tool;
     selectedObject: MapObject | undefined;
@@ -36,14 +32,9 @@ export function editorView(
     interior: boolean;
   },
 ) {
-  const preview = workflowPreview(state);
-  const displayPreview =
-    state.kind === "idle" ? null : (state.displayPreview ?? preview);
+  const { preview, displayPreview, draft, population, planSelection } =
+    workflow;
   const { selectedObject, settings, objects, camera, hoverPoint } = context;
-  const draft = workflowDraft(state);
-  const population = state.kind === "populate";
-  const planSelection =
-    state.kind === "idle" ? null : (state.selectedPlanParcel ?? null);
   const planObjects = preview
     ? preview.valid
       ? preview.objects
@@ -64,12 +55,18 @@ export function editorView(
   const layout = planning
     ? freezeLayout(planObjects, planning.road, settings)
     : (settings.layout ?? []);
-  const planParcel = planning?.objects.find(
-    (o): o is Parcel =>
-      o.kind === "parcel" &&
-      plannedForParcel(layout, o, planning.road)?.key === planSelection,
-  );
-  const planItem = layout.find((p) => p.key === planSelection);
+  const planParcel =
+    camera.scale < EDIT_SCALE
+      ? undefined
+      : planning?.objects.find(
+          (o): o is Parcel =>
+            o.kind === "parcel" &&
+            plannedForParcel(layout, o, planning.road)?.key === planSelection,
+        );
+  const planItem =
+    camera.scale < EDIT_SCALE
+      ? undefined
+      : layout.find((p) => p.key === planSelection);
   const propertyParcel =
     selectedObject?.kind === "parcel" ? selectedObject : null;
   const parcelRoadId =
@@ -83,7 +80,7 @@ export function editorView(
     planParcel ?? (!drawing && !population ? propertyParcel : null);
   const handleRoad = planParcel ? planRoad : propertyRoad;
   const parcelOverlay =
-    handleParcel && handleRoad
+    camera.scale >= EDIT_SCALE && handleParcel && handleRoad
       ? {
           parcel: handleParcel,
           handles: parcelHandles(handleParcel, handleRoad),
@@ -93,8 +90,9 @@ export function editorView(
   if (
     drawing &&
     hoverPoint &&
-    !planSelection &&
-    !planObjects.some((o) => o.kind === "parcel" && hitObject(o, hoverPoint))
+    (camera.scale < EDIT_SCALE || !planSelection) &&
+    (camera.scale < EDIT_SCALE ||
+      !planObjects.some((o) => o.kind === "parcel" && hitObject(o, hoverPoint)))
   ) {
     const nodes = drawingNodes(drawing);
     if (
@@ -106,7 +104,6 @@ export function editorView(
       visualDraft = draftGeometry(smoothRoadDraft(ghost));
     }
   }
-  const exact = isExact(state);
   const panel = !!planItem
     ? "parcel"
     : state.kind === "populate"
@@ -127,19 +124,10 @@ export function editorView(
     parcelOverlay,
     visualDraft,
     actions: {
-      visible:
-        (exact && state.kind !== "delete") ||
-        (state.kind === "queuedGesture" && !!preview?.reason),
-      controls: exact && state.kind !== "delete",
+      ...workflow.actions,
       showGeneration: population || !!drawing?.population,
       preview: displayPreview,
-      message: workflowMessage(state) || preview?.reason || "",
-      pending:
-        exact &&
-        ["editing", "checking", "refreshing"].includes(state.stage.phase) &&
-        !!state.candidate,
-      committing: exact && state.stage.phase === "committing",
-      recheck: exact && ["stale", "failed"].includes(state.stage.phase),
+      message: workflow.message || preview?.reason || "",
     },
   };
 }

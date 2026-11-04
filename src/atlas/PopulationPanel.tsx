@@ -1,4 +1,4 @@
-import { NumberField } from "./Fields";
+import { NumberField, SelectField } from "./Fields";
 import type { PopulationSettings, Preview } from "./model";
 import { previewCounts } from "./editorWorkflow";
 
@@ -37,22 +37,12 @@ export function PopulationSettingsFields({
         className="atlas-population-fields"
       >
         <legend>Maße und Abstände</legend>
-        <label>
-          Straßenseite
-          <select
-            value={settings.side}
-            onChange={(e) =>
-              updateSettings({
-                ...settings,
-                side: e.target.value as PopulationSettings["side"],
-              })
-            }
-          >
-            <option value="both">Beide Seiten</option>
-            <option value="left">Links</option>
-            <option value="right">Rechts</option>
-          </select>
-        </label>
+        <SelectField
+          label="Straßenseite"
+          value={settings.side}
+          options={{ both: "Beide Seiten", left: "Links", right: "Rechts" }}
+          onChange={(side) => updateSettings({ ...settings, side })}
+        />
         {field("setback", "Abstand zur Straße (Fuß)")}
         {settings.houses !== false && field("gap", "Hausabstand (Fuß)")}
         <fieldset>
@@ -76,25 +66,20 @@ export function PopulationSettingsFields({
         )}
         <details>
           <summary>Erweitert</summary>
-          <label>
-            Parzellentiefe
-            <select
-              aria-label="Parzellentiefe"
-              value={settings.parcelDepth === null ? "auto" : "manual"}
-              onChange={(e) =>
-                updateSettings({
-                  ...settings,
-                  parcelDepth:
-                    e.target.value === "auto"
-                      ? null
-                      : 5 * settings.maxDepth + settings.gap,
-                })
-              }
-            >
-              <option value="auto">Auto</option>
-              <option value="manual">Manuell</option>
-            </select>
-          </label>
+          <SelectField
+            label="Parzellentiefe"
+            value={settings.parcelDepth === null ? "auto" : "manual"}
+            options={{ auto: "Auto", manual: "Manuell" }}
+            onChange={(value) =>
+              updateSettings({
+                ...settings,
+                parcelDepth:
+                  value === "auto"
+                    ? null
+                    : 5 * settings.maxDepth + settings.gap,
+              })
+            }
+          />
           {settings.parcelDepth !== null && (
             <NumberField
               label="Parzellentiefe (Fuß)"
@@ -161,19 +146,14 @@ export function PopulationPanel({
   return (
     <section className="atlas-population">
       <h2>Bebauung</h2>
-      <label>
-        Bebauung
-        <select
-          aria-label="Bebauung"
-          value={settings.houses === false ? "parcels" : "houses"}
-          onChange={(e) =>
-            updateSettings({ ...settings, houses: e.target.value === "houses" })
-          }
-        >
-          <option value="houses">Parzellen und Häuser</option>
-          <option value="parcels">Nur Parzellen</option>
-        </select>
-      </label>
+      <SelectField
+        label="Bebauung"
+        value={settings.houses === false ? "parcels" : "houses"}
+        options={{ houses: "Parzellen und Häuser", parcels: "Nur Parzellen" }}
+        onChange={(value) =>
+          updateSettings({ ...settings, houses: value === "houses" })
+        }
+      />
       <PopulationSettingsFields
         settings={settings}
         updateSettings={updateSettings}

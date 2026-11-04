@@ -20,15 +20,16 @@ use serde_json::{json, Value};
 use std::collections::HashSet;
 use std::path::Path;
 
-pub const FORMAT_VERSION: i64 = 11;
+pub const FORMAT_VERSION: i64 = 13;
 const SCHEMA: &str = "
-PRAGMA user_version=11;
 CREATE TABLE document_meta(singleton INTEGER PRIMARY KEY NOT NULL,
  next_identity INTEGER NOT NULL) STRICT, WITHOUT ROWID;
 CREATE TABLE objects(id TEXT PRIMARY KEY NOT NULL,
  kind TEXT NOT NULL, body TEXT NOT NULL) STRICT, WITHOUT ROWID;
 CREATE TABLE house_cells(building_id TEXT PRIMARY KEY NOT NULL,
- payload TEXT NOT NULL) STRICT, WITHOUT ROWID;";
+ payload TEXT NOT NULL) STRICT, WITHOUT ROWID;
+CREATE TABLE terrain(x INTEGER NOT NULL,y INTEGER NOT NULL,z REAL NOT NULL,PRIMARY KEY(x,y)) STRICT, WITHOUT ROWID;
+CREATE TABLE terrain_settings(singleton INTEGER PRIMARY KEY NOT NULL,water REAL NOT NULL) STRICT, WITHOUT ROWID;";
 
 // Shared authored values are strict themselves. File-specific DTOs omit derived
 // runtime data structurally; no FullObject JSON is pruned.
@@ -120,7 +121,7 @@ enum ConnectionDto {
         length: u8,
     },
 }
-dto!(HouseDto { id: String, name: String, roof: String, important_place: bool,
+dto!(HouseDto { id: String, name: String, roof: String, important_place: bool, foundation: crate::atlas::terrain::Foundation,
     placement: PlacementDto, room_counter: i64, connection_counter: i64,
     rooms: Vec<Room>, connections: Vec<ConnectionDto> });
 #[derive(Serialize, Deserialize)]
@@ -130,6 +131,7 @@ enum ObjectDto {
     Road(RoadDto),
     Parcel(ParcelDto),
     Area(Area),
+    Scenery(crate::atlas::scenery::Scenery),
 }
 impl ObjectDto {
     fn identity(&self) -> (&str, &str) {
@@ -138,6 +140,7 @@ impl ObjectDto {
             Self::Road(v) => (&v.id, "road"),
             Self::Parcel(v) => (&v.id, "parcel"),
             Self::Area(v) => (&v.id, "area"),
+            Self::Scenery(v) => (&v.id, "scenery"),
         }
     }
 }
@@ -274,6 +277,7 @@ fn export_header(app: &AtlasApplication, id: &str, kind: &str) -> Result<ObjectD
                 name: h.name,
                 roof: h.roof,
                 important_place: h.important_place,
+                foundation: h.foundation.clone(),
                 placement,
                 room_counter: m.room_counter,
                 connection_counter: m.connection_counter,
@@ -293,6 +297,7 @@ fn export_header(app: &AtlasApplication, id: &str, kind: &str) -> Result<ObjectD
                 population_recipe: r.population_recipe,
             }),
             FullObject::Area(a) => ObjectDto::Area(a),
+            FullObject::Scenery(s) => ObjectDto::Scenery(s),
             FullObject::Parcel(p) => {
                 let source = match p.source {
                     ParcelSource::Road {
@@ -343,6 +348,31 @@ impl AtlasApplication {
         let source = self.db.unchecked_transaction().map_err(storage_error)?;
         let tx = target.transaction().map_err(storage_error)?;
         tx.execute_batch(SCHEMA).map_err(storage_error)?;
+        tx.pragma_update(None, "user_version", FORMAT_VERSION)
+            .map_err(storage_error)?;
+        tx.execute(
+            "INSERT INTO terrain_settings VALUES(1,?)",
+            [super::terrain_store::water(&source)?],
+        )
+        .map_err(storage_error)?;
+        {
+            let mut q = source
+                .prepare("SELECT x,y,z FROM terrain ORDER BY x,y")
+                .map_err(storage_error)?;
+            let mut rows = q.query([]).map_err(storage_error)?;
+            while let Some(r) = rows.next().map_err(storage_error)? {
+                tx.execute(
+                    "INSERT INTO terrain VALUES(?,?,?)",
+                    params![
+                        r.get::<_, i32>(0).map_err(storage_error)?,
+                        r.get::<_, i32>(1).map_err(storage_error)?,
+                        r.get::<_, f64>(2).map_err(storage_error)?
+                    ],
+                )
+                .map_err(storage_error)?;
+            }
+        }
+
         let next: i64 = source
             .query_row(
                 "SELECT next_identity FROM document_meta WHERE singleton=1",
@@ -412,7 +442,7 @@ impl AtlasApplication {
             .map_err(storage_error)?;
         ensure(
             version == FORMAT_VERSION,
-            "Atlas V7 benötigt Dateiformat 11. Ältere Dateiformate werden nicht migriert.",
+            "Atlas V7 benötigt Dateiformat 13. Ältere Dateiformate werden nicht migriert.",
         )?;
         validate_schema(&source_tx)?;
         {
@@ -436,6 +466,41 @@ impl AtlasApplication {
             .unchecked_transaction()
             .map_err(storage_error)?;
         let next_state = stage_document(&source_tx, &candidate)?;
+        let count: i64 = source_tx
+            .query_row("SELECT count(*) FROM terrain_settings", [], |r| r.get(0))
+            .map_err(storage_error)?;
+        ensure(count == 1, "Ungültige Wassereinstellungen")?;
+        let water = super::terrain_store::water(&source_tx)?;
+        ensure(
+            crate::atlas::terrain::valid_height(water),
+            "Ungültiger Wasserstand",
+        )?;
+        tx.execute(
+            "UPDATE terrain_settings SET water=? WHERE singleton=1",
+            [water],
+        )
+        .map_err(storage_error)?;
+        {
+            let mut q = source_tx
+                .prepare("SELECT x,y,z FROM terrain ORDER BY x,y")
+                .map_err(storage_error)?;
+            let mut rows = q.query([]).map_err(storage_error)?;
+            while let Some(r) = rows.next().map_err(storage_error)? {
+                let (x, y, z): (i32, i32, f64) = (
+                    r.get(0).map_err(storage_error)?,
+                    r.get(1).map_err(storage_error)?,
+                    r.get(2).map_err(storage_error)?,
+                );
+                ensure(
+                    x.unsigned_abs() <= 1_000_000
+                        && y.unsigned_abs() <= 1_000_000
+                        && crate::atlas::terrain::valid_height(z)
+                        && z != crate::atlas::terrain::BASE,
+                    "Ungültiger Höhenpunkt",
+                )?;
+                super::terrain_store::write_points(&tx, &[(x, y, z)])?;
+            }
+        }
         tx.commit().map_err(storage_error)?;
         source_tx.commit().map_err(storage_error)?;
         candidate.next_state = next_state;
@@ -479,9 +544,15 @@ fn validate_schema(source: &Connection) -> Result<()> {
         "SELECT type,name,tbl_name FROM main.sqlite_schema ORDER BY lower(type),lower(name)",
         "SELECT schema,name,type,ncol,wr,strict FROM pragma_table_list WHERE schema='main' AND name!='sqlite_schema' ORDER BY lower(name)",
     ] {
-        ensure(structural_rows(source,sql,&[0,1,2])?==structural_rows(&expected,sql,&[0,1,2])?,"Ungültiges Format-11-Schema")?;
+        ensure(structural_rows(source,sql,&[0,1,2])?==structural_rows(&expected,sql,&[0,1,2])?,"Ungültiges Format-13-Schema")?;
     }
-    for table in ["document_meta", "objects", "house_cells"] {
+    for table in [
+        "document_meta",
+        "objects",
+        "house_cells",
+        "terrain",
+        "terrain_settings",
+    ] {
         for (pragma, identifiers) in [
             ("table_xinfo", &[1, 2][..]),
             ("index_list", &[1, 3][..]),
@@ -584,7 +655,7 @@ fn stage_document(source: &Connection, candidate: &AtlasApplication) -> Result<u
         _ => return Err(invalid("Ungültiger Identitätszähler")),
     };
 
-    for kind in ["road", "area"] {
+    for kind in ["road", "area", "scenery"] {
         for_objects(source, Some(kind), |dto| {
             let object = match dto {
                 ObjectDto::Road(r) => {
@@ -604,6 +675,7 @@ fn stage_document(source: &Connection, candidate: &AtlasApplication) -> Result<u
                         .to_vec();
                     FullObject::Road(road)
                 }
+                ObjectDto::Scenery(s) => FullObject::Scenery(s),
                 ObjectDto::Area(a) => {
                     maximum_order = maximum_order.max(a.order);
                     FullObject::Area(a)
@@ -724,6 +796,7 @@ fn stage_document(source: &Connection, candidate: &AtlasApplication) -> Result<u
             name: h.name,
             roof: h.roof,
             important_place: h.important_place,
+            foundation: h.foundation.clone(),
             placement,
             occupancy_bounds: occupancy_bounds(&occupancy_contours, &transform),
             transform,

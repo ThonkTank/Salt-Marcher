@@ -1,3 +1,5 @@
+import { RoughnessControls } from "./RoughnessControls";
+import type { RoadRoughness } from "./generated/RoadRoughness";
 import {
   roadEditInput,
   changeRoadProperties,
@@ -6,7 +8,7 @@ import {
   type RoadEditDraft,
 } from "./roadDraft";
 import { memo, type ReactNode } from "react";
-import { NumberField, Rename } from "./Fields";
+import { NumberField, Rename, SelectField } from "./Fields";
 import type {
   Detail,
   EditorContext,
@@ -15,7 +17,6 @@ import type {
   House,
   Intent,
   MapObject,
-  Road,
 } from "./model";
 import { rotateParcelHouse } from "./parcelEditor";
 const ObjectList = memo(function ObjectList({
@@ -66,6 +67,11 @@ export function Inspector({
   apply,
   onLeave,
   onOpenHouse,
+  onRoughen,
+  roughening,
+  onRoughness,
+  onVariation,
+  overview,
   onPopulate,
   onExtend,
   onDeleteSelection,
@@ -99,6 +105,7 @@ export function Inspector({
           | "rename"
           | "roof"
           | "importantPlace"
+          | "setFoundation"
           | "transformHouse"
           | "updateRoad"
           | "updateArea"
@@ -110,6 +117,11 @@ export function Inspector({
   ) => Promise<unknown>;
   onLeave: () => void;
   onOpenHouse: (house: House) => void;
+  onRoughen?: () => void;
+  roughening?: RoadRoughness | null;
+  onRoughness?: (amount: number) => void;
+  onVariation?: () => void;
+  overview?: boolean;
   onPopulate: () => void;
   onExtend: (end: "start" | "end") => void;
   onDeleteSelection: () => void;
@@ -131,7 +143,8 @@ export function Inspector({
               {
                 house: "Gebäude",
                 road: "Straße",
-                area: "Gelände",
+                area: "Flächen",
+                scenery: "Landschaftsstrich",
                 parcel: "Parzelle",
               }[selectedObject.kind]
             }
@@ -161,6 +174,32 @@ export function Inspector({
                   ? "Haus schließen"
                   : "Innen öffnen"}
               </button>
+              <NumberField
+                label="Fundamenthöhe (Fuß)"
+                value={selectedObject.foundation.height}
+                min={0}
+                max={100}
+                onChange={(height) =>
+                  void apply({
+                    type: "setFoundation",
+                    id: selectedObject.id,
+                    foundation: { ...selectedObject.foundation, height },
+                  })
+                }
+              />
+              <NumberField
+                label="Geländeübergang (Fuß)"
+                value={selectedObject.foundation.transition}
+                min={0}
+                max={500}
+                onChange={(transition) =>
+                  void apply({
+                    type: "setFoundation",
+                    id: selectedObject.id,
+                    foundation: { ...selectedObject.foundation, transition },
+                  })
+                }
+              />
               <label className="atlas-checkbox">
                 <input
                   type="checkbox"
@@ -321,26 +360,31 @@ export function Inspector({
                   })
                 }
               />
-              <label>
-                Straßenmaterial
-                <select
-                  value={roadEdit?.material ?? selectedObject.material}
-                  onChange={(e) =>
-                    void apply({
-                      type: "updateRoad",
-                      roadId: selectedObject.id,
-                      road: roadEditInput(
-                        changeRoadProperties(roadEdit ?? selectedObject, {
-                          material: e.target.value as Road["material"],
-                        }),
-                      ),
-                    })
-                  }
-                >
-                  <option value="earth">Erde</option>
-                  <option value="stone">Stein</option>
-                </select>
-              </label>
+              <SelectField
+                label="Straßenmaterial"
+                value={roadEdit?.material ?? selectedObject.material}
+                options={{ earth: "Erde", stone: "Stein" }}
+                onChange={(material) =>
+                  void apply({
+                    type: "updateRoad",
+                    roadId: selectedObject.id,
+                    road: roadEditInput(
+                      changeRoadProperties(roadEdit ?? selectedObject, {
+                        material,
+                      }),
+                    ),
+                  })
+                }
+              />
+              {roughening && onRoughness && onVariation ? (
+                <RoughnessControls
+                  value={roughening}
+                  onChange={onRoughness}
+                  onVariation={onVariation}
+                />
+              ) : (
+                <button onClick={onRoughen}>Verlauf aufrauen</button>
+              )}
               <button className="atlas-primary" onClick={onPopulate}>
                 Straße bebauen
               </button>
@@ -350,40 +394,44 @@ export function Inspector({
               <button onClick={() => onExtend("end")}>
                 Am Ende verlängern
               </button>
-              {nodeSelection !== null && (
+              {nodeSelection !== null && !roughening && (
                 <>
-                  <button
-                    onClick={() => {
-                      const r = setRoadHandles(
-                        roadEdit ?? selectedObject,
-                        String(nodeSelection),
-                        true,
-                      );
-                      void apply({
-                        type: "updateRoad",
-                        roadId: selectedObject.id,
-                        road: roadEditInput(r),
-                      });
-                    }}
-                  >
-                    Kurvengriffe anlegen
-                  </button>
-                  <button
-                    onClick={() => {
-                      const r = setRoadHandles(
-                        roadEdit ?? selectedObject,
-                        String(nodeSelection),
-                        false,
-                      );
-                      void apply({
-                        type: "updateRoad",
-                        roadId: selectedObject.id,
-                        road: roadEditInput(r),
-                      });
-                    }}
-                  >
-                    Griffe entfernen
-                  </button>
+                  {!overview && (
+                    <button
+                      onClick={() => {
+                        const r = setRoadHandles(
+                          roadEdit ?? selectedObject,
+                          String(nodeSelection),
+                          true,
+                        );
+                        void apply({
+                          type: "updateRoad",
+                          roadId: selectedObject.id,
+                          road: roadEditInput(r),
+                        });
+                      }}
+                    >
+                      Kurvengriffe anlegen
+                    </button>
+                  )}
+                  {!overview && (
+                    <button
+                      onClick={() => {
+                        const r = setRoadHandles(
+                          roadEdit ?? selectedObject,
+                          String(nodeSelection),
+                          false,
+                        );
+                        void apply({
+                          type: "updateRoad",
+                          roadId: selectedObject.id,
+                          road: roadEditInput(r),
+                        });
+                      }}
+                    >
+                      Griffe entfernen
+                    </button>
+                  )}
                   <button onClick={onDeleteSelection}>
                     Verlaufspunkt löschen
                   </button>
@@ -393,28 +441,23 @@ export function Inspector({
           )}
           {selectedObject.kind === "area" && (
             <>
-              <label>
-                Flächenmaterial
-                <select
-                  value={selectedObject.material}
-                  onChange={(e) =>
-                    void apply({
-                      type: "updateArea",
-                      areaId: selectedObject.id,
-                      area: areaInput({
-                        ...selectedObject,
-                        material: e.target.value,
-                      }),
-                    })
-                  }
-                >
-                  {["grass", "earth", "stone", "water"].map((m) => (
-                    <option key={m} value={m}>
-                      {m}
-                    </option>
-                  ))}
-                </select>
-              </label>
+              <SelectField
+                label="Flächenmaterial"
+                value={selectedObject.material}
+                options={{
+                  grass: "grass",
+                  earth: "earth",
+                  stone: "stone",
+                  water: "water",
+                }}
+                onChange={(material) =>
+                  void apply({
+                    type: "updateArea",
+                    areaId: selectedObject.id,
+                    area: areaInput({ ...selectedObject, material }),
+                  })
+                }
+              />
               {nodeSelection !== null && (
                 <button onClick={onDeleteSelection}>Eckpunkt löschen</button>
               )}

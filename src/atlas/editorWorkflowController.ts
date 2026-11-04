@@ -1,5 +1,5 @@
 import { WireError } from "../wireError";
-import type { Gesture, Evaluation, PlannedAction } from "./interaction";
+import type { Gesture, Evaluation } from "./interaction";
 import type { EditorDraft } from "./roadDraft";
 import { toDraftIntent } from "./roadDraft";
 import type { Intent, Scene, ValidPreview, Version } from "./model";
@@ -19,7 +19,8 @@ import {
   type CheckedPreview,
   type EditorWorkflow,
   type ExactIntent,
-  type ExactWorkflow,
+  type WorkflowGate,
+  type PlannedAction,
   type GeometryOperation,
   type WorkflowEvent,
   canAcceptWorkflow,
@@ -36,7 +37,6 @@ import {
   sameCandidate,
   sameRequest,
   transition,
-  withStage,
   workflowPointer,
 } from "./editorWorkflow";
 
@@ -63,12 +63,6 @@ async function ownedEffect<T>(
   }
 }
 
-export type WorkflowGate = {
-  version: Version | null;
-  pending: number;
-  exclusive: boolean;
-  uncertain: boolean;
-};
 export type WorkflowPorts = {
   gate: () => WorkflowGate;
   context: () => string;
@@ -315,6 +309,24 @@ export class EditorWorkflowController {
       this.publish({
         ...old,
         candidate: this.candidate(old.id, exact, old.basis, false),
+      });
+      return Promise.resolve(null);
+    }
+    if (
+      exact.type === "roughenRoad" &&
+      old.kind === "geometry" &&
+      old.candidate?.intent.type === "roughenRoad" &&
+      old.candidate.intent.roadId === exact.roadId &&
+      old.stage.phase === "stale"
+    ) {
+      this.publish({
+        ...old,
+        candidate: this.candidate(
+          old.id,
+          exact,
+          old.candidate.token.version,
+          false,
+        ),
       });
       return Promise.resolve(null);
     }
@@ -847,18 +859,10 @@ export class EditorWorkflowController {
     ) {
       // A rejected edit remains available for correction; it is never retried.
       this.dispatch({
-        type: "begin",
-        state: withStage(
-          {
-            ...s,
-            candidate: { ...candidate, autoFinish: false },
-          } as ExactWorkflow,
-          {
-            phase: "failed",
-            message: result.message,
-            issue: result.error.issue,
-          },
-        ),
+        type: "commitRejected",
+        candidate: candidate.token,
+        message: result.message,
+        issue: result.error.issue,
       });
     } else {
       this.cancel();
@@ -906,7 +910,7 @@ export class EditorWorkflowController {
         !sameVersion(s.inspection.request.candidate.version, gate.version)
       ) {
         this.stopCheck();
-        this.dispatch({ type: "begin", state: { ...s, inspection: null } });
+        this.dispatch({ type: "clearInspection" });
       }
     }
     if (wasExclusive && !gate.exclusive && isExact(this.state))
@@ -928,17 +932,7 @@ export class EditorWorkflowController {
     const request = this.request(freshCandidate.token),
       id = s.id;
     this.stopCheck();
-    this.dispatch({
-      type: "begin",
-      state: withStage(
-        {
-          ...s,
-          basis: { sessionId: version.sessionId, revision: version.revision },
-          candidate: freshCandidate,
-        } as ExactWorkflow,
-        { phase: "refreshing", request },
-      ),
-    });
+    this.dispatch({ type: "refresh", candidate: freshCandidate, request });
     const owned = () => this.ownsRequest(request);
     const target = operationTarget(s.operation);
     const result = target
@@ -972,16 +966,13 @@ export class EditorWorkflowController {
       false,
       s.kind === "geometry",
     );
-    const current = this.state;
-    if (!isExact(current)) return;
     this.publish(
-      withStage(
-        { ...current, candidate, guide: checked.guide } as ExactWorkflow,
-        {
-          phase: "checking",
-          request: this.request(candidate.token),
-        },
-      ),
+      transition(this.state, {
+        type: "refreshed",
+        request,
+        candidate,
+        guide: checked.guide,
+      }),
       true,
     );
   };

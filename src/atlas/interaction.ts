@@ -1,3 +1,6 @@
+import type { Brush } from "./generated/Brush";
+import type { MapFeature } from "./generated/MapFeature";
+import type { RoadRoughness } from "./generated/RoadRoughness";
 import { MIN_CITY_SCALE, zoomIntoCity } from "./cityView";
 import {
   parcelIntent,
@@ -64,13 +67,20 @@ import {
   type RoadEditDraft,
 } from "./roadDraft";
 
-export type PlannedAction = { operationId: number; intent: Intent };
-
 type Base = { pointer: number; start: WorldPoint; screen: ScreenPoint };
 type Interior = { house: House; floor: number };
 export type Gesture = Base &
   (
     | { kind: "pan"; camera: Camera }
+    | {
+        kind: "scenery";
+        brush: import("./generated/SceneryBrush").SceneryBrush;
+      }
+    | {
+        kind: "terrain";
+        brush: Brush;
+        view?: import("./generated/TerrainArgs").TerrainArgs;
+      }
     | {
         kind: "node";
         object: RoadEditDraft;
@@ -118,6 +128,16 @@ export type Evaluation = {
   camera: Camera | null;
   error: string | null;
 };
+function extendStroke<T extends { brush: { points: WorldPoint[] } }>(
+  gesture: T,
+  point: WorldPoint,
+): T {
+  const points = [...gesture.brush.points];
+  const last = points[points.length - 1];
+  if (!last || distance(last, point) > 0.001) points.push(point);
+  return { ...gesture, brush: { ...gesture.brush, points } };
+}
+
 export function evaluateGesture(
   g: Gesture,
   input: {
@@ -138,6 +158,15 @@ export function evaluateGesture(
     camera: null,
     error: null,
   };
+  if (g.kind === "scenery" || g.kind === "terrain") {
+    const gesture = extendStroke(g, p);
+    result.gesture = gesture;
+    result.intent =
+      gesture.kind === "scenery"
+        ? { type: "sceneryStroke", brush: gesture.brush }
+        : { type: "terrainStroke", brush: gesture.brush, view: gesture.view };
+    return result;
+  }
   const moved = Math.hypot(screen[0] - g.screen[0], screen[1] - g.screen[1]);
   if (g.kind === "pan") {
     result.camera = {
@@ -397,6 +426,8 @@ export type CanvasInputSnapshot = Readonly<{
   workflow: EditorWorkflow;
   camera: Camera;
   editable: boolean;
+  overviewRoads?: MapFeature[];
+  roughness?: RoadRoughness;
   deletion: boolean;
   tool: Tool;
   selected: string;
@@ -411,6 +442,13 @@ export type CanvasInputSnapshot = Readonly<{
   parcel: Parcel | undefined;
   selectionParcel: Parcel | undefined;
   boundaries: ReturnType<typeof parcelVisibility>["boundaries"];
+  brush?: Omit<Brush, "points">;
+  scenery?: Omit<
+    import("./generated/SceneryBrush").SceneryBrush,
+    "points" | "seed"
+  >;
+  scenerySeed?: number;
+  terrainView?: import("./generated/TerrainArgs").TerrainArgs;
   roadWidth: number;
   material: string;
   opening: "door" | "passage";
@@ -434,6 +472,7 @@ export type CanvasCommand =
   | { kind: "nodeSelection"; value: string | number | null }
   | { kind: "roomSelection"; room: string }
   | { kind: "connectionSelection"; id: string }
+  | { kind: "selectRoad"; id: string }
   | { kind: "select"; object: MapObject | undefined }
   | { kind: "openHouse"; house: House }
   | { kind: "openParcel"; parcel: Parcel }
@@ -514,7 +553,12 @@ export function decidePointerDown(
     const draft = workflowDraft(snapshot.workflow);
     if (draft?.kind === "newRoad" || draft?.kind === "extendRoad")
       commands.push({ kind: toDraftIntent(draft) ? "accept" : "cancelEditor" });
-    else if (draft?.kind === "newArea" || snapshot.workflow.kind === "populate")
+    else if (
+      draft?.kind === "newArea" ||
+      snapshot.workflow.kind === "populate" ||
+      ("candidate" in snapshot.workflow &&
+        snapshot.workflow.candidate?.intent.type === "roughenRoad")
+    )
       commands.push({ kind: "accept" });
     return decision;
   }
@@ -557,19 +601,42 @@ export function decidePointerDown(
   const roomSelection = (room: string) =>
     commands.push({ kind: "roomSelection", room });
   const intent = (intent: Intent) => commands.push({ kind: "intent", intent });
-  if (
-    input.button === 1 ||
-    input.space ||
-    (context.kind === "exterior" && camera.scale < 1.28)
-  ) {
+  if (input.button === 1 || input.space) {
+    decision.capture = true;
+    begin({ ...base, kind: "pan", camera: { ...camera } });
+    return decision;
+  }
+  const overview = context.kind === "exterior" && camera.scale < 1.28;
+  if (overview && !editable && !deletion && input.button === 0) {
     decision.capture = true;
     begin({ ...base, kind: "pan", camera: { ...camera } });
     return decision;
   }
   if (!editable || deletion) return decision;
   decision.capture = true;
+  if (tool === "scenery" && !interior && snapshot.scenery) {
+    begin({
+      ...base,
+      kind: "scenery",
+      brush: {
+        ...snapshot.scenery,
+        seed: snapshot.scenerySeed ?? 1,
+        points: [p],
+      },
+    });
+    return decision;
+  }
+  if (tool === "terrain" && !interior && snapshot.brush) {
+    begin({
+      ...base,
+      kind: "terrain",
+      view: snapshot.terrainView,
+      brush: { ...snapshot.brush, points: [p] },
+    });
+    return decision;
+  }
   const planning = snapshot.planning;
-  if (planning) {
+  if (planning && !overview) {
     const layout = freezeLayout(
       planning.objects,
       planning.road,
@@ -624,6 +691,7 @@ export function decidePointerDown(
     }
   }
   if (
+    !overview &&
     tool === "select" &&
     selectedObject?.kind === "parcel" &&
     selectedObject.source.kind === "road"
@@ -649,6 +717,7 @@ export function decidePointerDown(
     }
   }
   if (
+    !overview &&
     !planning &&
     snapshot.stalePlanParcels?.some((parcel) => hitObject(parcel, p))
   ) {
@@ -669,6 +738,7 @@ export function decidePointerDown(
             },
             populateRoad ? settings : null,
           );
+    if (!draft) r.roughness = snapshot.roughness;
     const anchor =
       r.kind === "extendRoad" &&
       !r.nodes.length &&
@@ -735,7 +805,9 @@ export function decidePointerDown(
     if (roadEdit) {
       for (let i = 0; i < roadEdit.nodes.length; i++) {
         const n = roadEdit.nodes[i];
-        for (const handle of ["incoming", "outgoing", "point"] as const) {
+        for (const handle of overview
+          ? (["point"] as const)
+          : (["incoming", "outgoing", "point"] as const)) {
           const q = n[handle];
           if (q && distance(p, q) * camera.scale < 9) {
             nodeSelection(n.id);
@@ -750,6 +822,14 @@ export function decidePointerDown(
           }
         }
       }
+    }
+    if (overview) {
+      const hit = overviewRoadAt(snapshot, p);
+      if (hit) {
+        commands.push({ kind: "selectRoad", id: hit.id });
+        decision.capture = false;
+      } else begin({ ...base, kind: "pan", camera: { ...camera } });
+      return decision;
     }
     if (editableObject?.kind === "area") {
       const i = editableObject.points.findIndex(
@@ -995,8 +1075,21 @@ export function decideDoubleClick(
   point: WorldPoint,
 ): CanvasCommand[] {
   const { editable, selectedObject, tool, context } = snapshot;
-  if (context.kind === "exterior" && snapshot.camera.scale < 1.28)
+  if (context.kind === "exterior" && snapshot.camera.scale < 1.28) {
+    if (tool === "road" || workflowDraft(snapshot.workflow)) return [];
+    if (tool === "select" && overviewRoadAt(snapshot, point)) {
+      if (
+        editable &&
+        selectedObject?.kind === "road" &&
+        overviewRoadAt(snapshot, point)?.id === selectedObject.id
+      )
+        return [
+          { kind: "intent", intent: roadInsertion(selectedObject, point) },
+        ];
+      return [];
+    }
     return [{ kind: "camera", camera: zoomIntoCity(snapshot.camera, point) }];
+  }
   if (!editable) return [];
   if (selectedObject?.kind === "road" && tool === "select")
     return [{ kind: "intent", intent: roadInsertion(selectedObject, point) }];
@@ -1038,14 +1131,19 @@ export function evaluatePointer(
 ): Evaluation | null {
   const gesture = workflowPointer(snapshot.workflow);
   return gesture
-    ? evaluateGesture(gesture, {
-        ...input,
-        snapped:
-          gesture.kind === "node"
-            ? snapToRoad(input.point, input.alt, snapshot)
-            : input.point,
-        finish,
-      })
+    ? evaluateGesture(
+        gesture.kind === "terrain"
+          ? { ...gesture, view: snapshot.terrainView }
+          : gesture,
+        {
+          ...input,
+          snapped:
+            gesture.kind === "node"
+              ? snapToRoad(input.point, input.alt, snapshot)
+              : input.point,
+          finish,
+        },
+      )
     : null;
 }
 
@@ -1061,4 +1159,30 @@ export function hoverAtPoint(snapshot: CanvasInputSnapshot, point: WorldPoint) {
         reason: diagnostic.message,
       }
     : null;
+}
+
+function overviewRoadAt(snapshot: CanvasInputSnapshot, point: WorldPoint) {
+  let best: MapFeature | undefined;
+  let distance = Infinity;
+  for (const feature of snapshot.overviewRoads ?? []) {
+    if (
+      feature.kind !== "road" ||
+      (snapshot.camera.scale < 0.064 &&
+        feature.width < 12 &&
+        feature.id !== snapshot.selected)
+    )
+      continue;
+    for (const path of feature.paths)
+      for (let i = 1; i < path.length; i++) {
+        const d = segmentDistance(point, path[i - 1], path[i]);
+        if (
+          d <= feature.width / 2 + 8 / snapshot.camera.scale &&
+          d < distance
+        ) {
+          best = feature;
+          distance = d;
+        }
+      }
+  }
+  return best;
 }

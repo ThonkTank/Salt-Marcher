@@ -11,18 +11,25 @@ import type { InteriorTileArgs } from "./InteriorTileArgs";
 import type { InteriorTileResponse } from "./InteriorTileResponse";
 import type { MapTilesArgs } from "./MapTilesArgs";
 import type { MapTilesResponse } from "./MapTilesResponse";
+import type { ObjectHeaderArgs } from "./ObjectHeaderArgs";
 import type { PathArgs } from "./PathArgs";
 import type { PreviewWire } from "./PreviewWire";
+import type { RoadHeaderArgs } from "./RoadHeaderArgs";
 import type { SceneArgs } from "./SceneArgs";
 import type { SceneResponse } from "./SceneResponse";
 import type { Status } from "./Status";
+import type { TerrainArgs } from "./TerrainArgs";
+import type { TerrainResponse } from "./TerrainResponse";
 import type { ValidPreviewWire } from "./ValidPreviewWire";
 
 export type AllCommands = {
+  terrainTiles: CommandContract<TerrainArgs, TerrainResponse>;
   status: CommandContract<EmptyArgs, Status>;
   new: CommandContract<EmptyArgs, Status>;
   extent: CommandContract<EmptyArgs, [number, number, number, number] | null>;
   mapTiles: CommandContract<MapTilesArgs, MapTilesResponse>;
+  objectHeader: CommandContract<ObjectHeaderArgs, SceneResponse>;
+  roadHeader: CommandContract<RoadHeaderArgs, SceneResponse>;
   scene: CommandContract<SceneArgs, SceneResponse>;
   interiorMetadata: CommandContract<
     InteriorMetadataArgs,

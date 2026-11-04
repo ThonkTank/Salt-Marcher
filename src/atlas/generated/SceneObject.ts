@@ -3,9 +3,11 @@ import type { Area } from "./Area";
 import type { HouseHeader } from "./HouseHeader";
 import type { Parcel } from "./Parcel";
 import type { Road } from "./Road";
+import type { Scenery } from "./Scenery";
 
 export type SceneObject =
   | ({ kind: "house" } & HouseHeader)
   | ({ kind: "road" } & Road)
   | ({ kind: "area" } & Area)
+  | ({ kind: "scenery" } & Scenery)
   | ({ kind: "parcel" } & Parcel);

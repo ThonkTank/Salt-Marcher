@@ -194,3 +194,46 @@ it("never publishes late city tiles after a level A-B-A change", async () => {
   expect(loader.getSnapshot().display?.value.overview?.level).toBe(2);
   loader.dispose();
 });
+
+it("overview resolves only road headers and discards late selection responses", async () => {
+  const headers: Array<{ id: unknown; resolve: (value: Scene) => void }> = [];
+  const requests: string[] = [];
+  const client = new AtlasClient(async (cmd, args) => {
+    requests.push(cmd);
+    if (cmd === "mapTiles")
+      return {
+        status,
+        level: args.level,
+        tiles: (args.tiles as number[][]).map(([x, y]) => ({
+          x,
+          y,
+          density: [],
+          features: [],
+        })),
+      };
+    if (cmd === "roadHeader")
+      return new Promise<Scene>((resolve) =>
+        headers.push({ id: args.roadId, resolve }),
+      );
+    throw Error(`Unexpected full-scene read: ${cmd}`);
+  });
+  const { loader, input } = harness();
+  const base = { ...input, client, cityLevel: 1, detailEnabled: false };
+  loader.update({ ...base, selectedId: "road-a" });
+  await vi.waitFor(() => expect(headers).toHaveLength(1));
+  loader.update({ ...base, selectedId: "road-b" });
+  await vi.waitFor(() => expect(headers).toHaveLength(2));
+  const latest = scene();
+  latest.selectionState.exists = true;
+  headers[1].resolve(latest);
+  await vi.waitFor(() =>
+    expect(loader.getSnapshot().display?.value.selectedId).toBe("road-b"),
+  );
+  headers[0].resolve(scene());
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  expect(loader.getSnapshot().display?.value.selectedId).toBe("road-b");
+  expect(
+    requests.every((cmd) => cmd === "mapTiles" || cmd === "roadHeader"),
+  ).toBe(true);
+  loader.dispose();
+});

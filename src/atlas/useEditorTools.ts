@@ -1,3 +1,6 @@
+import type { SceneryBrush } from "./generated/SceneryBrush";
+import type { Brush } from "./generated/Brush";
+import type { RoadRoughness } from "./generated/RoadRoughness";
 import { useState } from "react";
 import type { Tool } from "./editorSelection";
 import type { SelectionEvent } from "./editorSelection";
@@ -12,6 +15,10 @@ import {
 import { extensionRoadDraft, type EditorDraft } from "./roadDraft";
 
 type ToolSettings = {
+  scenery: Omit<SceneryBrush, "points" | "seed">;
+  brush: Omit<Brush, "points">;
+  contours: boolean;
+  roughness: RoadRoughness;
   material: string;
   roadWidth: number;
   opening: "door" | "passage";
@@ -35,6 +42,10 @@ type Options = {
 // Direct UI callbacks: workflow candidates and selection retain their existing owners.
 export function useEditorTools(options: Options) {
   const [values, setValues] = useState<ToolSettings>({
+    brush: { mode: "raise", radius: 25, amount: 1, strength: 0.25, target: 10 },
+    scenery: { biome: "forest", radius: 30, density: 0.65, size: 8 },
+    contours: true,
+    roughness: { amount: 0.33, seed: 1 },
     material: "earth",
     roadWidth: 15,
     opening: "door",
@@ -56,9 +67,47 @@ export function useEditorTools(options: Options) {
     state.kind === "populate" && state.candidate?.intent.type === "populate"
       ? state.candidate.intent.settings
       : null;
+  const roughening =
+    "candidate" in state && state.candidate?.intent.type === "roughenRoad"
+      ? state.candidate.intent
+      : null;
+  const roughness =
+    roughening?.roughness ?? drawing?.roughness ?? values.roughness;
+  const changeRoughnessValue = (value: RoadRoughness) => {
+    if (roughening) {
+      void controller.beginIntent({ ...roughening, roughness: value }, false);
+      return;
+    }
+    update({ roughness: value });
+    const current = workflowDraft(controller.getSnapshot());
+    if (current?.kind === "newRoad" || current?.kind === "extendRoad")
+      setDraft({ ...current, roughness: value });
+  };
   const settings = drawing?.population ?? population ?? values.settings;
   return {
     ...values,
+    changeScenery: (scenery: ToolSettings["scenery"]) => update({ scenery }),
+    changeBrush: (brush: Omit<Brush, "points">) => update({ brush }),
+    changeContours: (contours: boolean) => update({ contours }),
+    roughness,
+    roughening: roughening?.roughness ?? null,
+    changeRoughness: (amount: number) =>
+      changeRoughnessValue({ ...roughness, amount }),
+    newVariation: () =>
+      changeRoughnessValue({ ...roughness, seed: (roughness.seed + 1) >>> 0 }),
+    beginRoughening() {
+      const road = options.selectedObject;
+      if (road?.kind !== "road" || !options.editable || options.pending) return;
+      cancelInteraction();
+      void controller.beginIntent(
+        {
+          type: "roughenRoad",
+          roadId: road.id,
+          roughness: { amount: 0, seed: values.roughness.seed },
+        },
+        false,
+      );
+    },
     roadWidth: drawing?.width ?? values.roadWidth,
     material:
       drawing?.material ??
@@ -130,7 +179,10 @@ export function useEditorTools(options: Options) {
       const populated = values.populateRoad;
       update({ settings: recipe, populateRoad: populated });
       select({ type: "beginExtension" });
-      setDraft(extensionRoadDraft(road, end, populated ? recipe : null));
+      setDraft({
+        ...extensionRoadDraft(road, end, populated ? recipe : null),
+        roughness: values.roughness,
+      });
     },
     beginPopulation() {
       const road = options.selectedObject;
@@ -199,3 +251,5 @@ export function planSelectionDelete({
     };
   return { kind: "objectConfirmation" };
 }
+
+export type EditorTools = ReturnType<typeof useEditorTools>;

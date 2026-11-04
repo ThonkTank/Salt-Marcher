@@ -67,17 +67,20 @@ enum Access {
 }
 
 commands! {
+    TerrainTiles, "terrainTiles", crate::atlas::terrain::TerrainArgs, crate::atlas::terrain::TerrainResponse, AtlasApplication::terrain_tiles, Read;
     Status, "status", EmptyArgs, Status, status, Client;
     New, "new", EmptyArgs, Status, new, Client;
     Extent, "extent", EmptyArgs, Option<Bounds>, extent, Client;
-    MapTiles, "mapTiles", MapTilesArgs, MapTilesResponse, map_tiles, Read;
-    Scene, "scene", SceneArgs, SceneResponse, scene, Read;
-    InteriorMetadata, "interiorMetadata", InteriorMetadataArgs, InteriorMetadataResponse, interior_metadata, Read;
-    InteriorTile, "interiorTile", InteriorTileArgs, InteriorTileResponse, interior_tile, Read;
-    Preview, "preview", EditArgs, PreviewWire, preview, Client;
-    Commit, "commit", EditArgs, ValidPreviewWire, commit, Client;
+    MapTiles, "mapTiles", MapTilesArgs, MapTilesResponse, AtlasApplication::map_tiles, Read;
+    ObjectHeader, "objectHeader", ObjectHeaderArgs, SceneResponse, object_header, Read;
+    RoadHeader, "roadHeader", RoadHeaderArgs, SceneResponse, reads::road_header, Read;
+    Scene, "scene", SceneArgs, SceneResponse, reads::scene, Read;
+    InteriorMetadata, "interiorMetadata", InteriorMetadataArgs, InteriorMetadataResponse, reads::interior_metadata, Read;
+    InteriorTile, "interiorTile", InteriorTileArgs, InteriorTileResponse, reads::interior_tile, Read;
+    Preview, "preview", EditArgs, PreviewWire, AtlasApplication::preview, Client;
+    Commit, "commit", EditArgs, ValidPreviewWire, AtlasApplication::commit, Client;
     History, "history", HistoryArgs, Status, history, Client;
-    Detail, "detail", DetailArgs, DetailResponse, detail, Adapter;
+    Detail, "detail", DetailArgs, DetailResponse, reads::detail, Adapter;
     Save, "save", PathArgs, Status, save, Adapter;
     Open, "open", PathArgs, Status, open, Adapter;
 }
@@ -91,30 +94,7 @@ fn new(app: &mut AtlasApplication, _: EmptyArgs) -> Result<Status> {
 fn extent(app: &mut AtlasApplication, _: EmptyArgs) -> Result<Option<Bounds>> {
     app.extent()
 }
-fn scene(app: &mut AtlasApplication, input: SceneArgs) -> Result<SceneResponse> {
-    reads::scene(app, input)
-}
-fn interior_metadata(
-    app: &mut AtlasApplication,
-    input: InteriorMetadataArgs,
-) -> Result<InteriorMetadataResponse> {
-    reads::interior_metadata(app, input)
-}
-fn interior_tile(
-    app: &mut AtlasApplication,
-    input: InteriorTileArgs,
-) -> Result<InteriorTileResponse> {
-    reads::interior_tile(app, input)
-}
-fn detail(app: &mut AtlasApplication, input: DetailArgs) -> Result<DetailResponse> {
-    reads::detail(app, input)
-}
-fn preview(app: &mut AtlasApplication, input: EditArgs) -> Result<PreviewWire> {
-    app.preview(input)
-}
-fn commit(app: &mut AtlasApplication, input: EditArgs) -> Result<ValidPreviewWire> {
-    app.commit(input)
-}
+
 fn history(app: &mut AtlasApplication, input: HistoryArgs) -> Result<Status> {
     app.check(&input.version)?;
     app.history(input.redo)?;
@@ -127,6 +107,17 @@ fn open(app: &mut AtlasApplication, input: PathArgs) -> Result<Status> {
     app.open(Path::new(&input.path))
 }
 
-fn map_tiles(app: &mut AtlasApplication, input: MapTilesArgs) -> Result<MapTilesResponse> {
-    app.map_tiles(input)
+fn object_header(app: &mut AtlasApplication, input: ObjectHeaderArgs) -> Result<SceneResponse> {
+    let mut objects = vec![];
+    let selection_state = reads::resolve_owner(app, Some(&input.id), &mut objects)?;
+    Ok(SceneResponse {
+        status: app.status(),
+        objects,
+        context_state: OwnerState {
+            exists: true,
+            house_id: None,
+            parcel_id: None,
+        },
+        selection_state,
+    })
 }

@@ -1,14 +1,20 @@
+import {
+  colors,
+  polygon,
+  roadLine,
+  shape,
+  drawIssue,
+  parcelGrid,
+  interior,
+} from "./canvasPaint";
+import { TerrainPainter, heightAt } from "./terrainView";
 import { paintCity } from "./cityPaint";
-import { sceneFeatures, overviewFeatures } from "./cityView";
+import { prepareCanvasScene } from "./canvasScene";
 import { layoutLabels, paintLabels } from "./mapLabels";
 import type { Guide } from "./interaction";
-import type { DraftGeometry, RoadOverlayGeometry } from "./roadDraft";
+import type { DraftGeometry } from "./roadDraft";
 import { InteriorGeometryCache } from "./interiorGeometryCache";
-import {
-  buildInteriorPaths,
-  type CellGeometry,
-  type InteriorGeometry,
-} from "./interiorPaths";
+import { buildInteriorPaths, type InteriorGeometry } from "./interiorPaths";
 import {
   useLayoutEffect,
   useEffect,
@@ -20,295 +26,19 @@ import {
 } from "react";
 import {
   toWorld,
-  toLocal,
   type Bounds,
   type Parcel,
   openingPoint,
   type Camera,
-  type Detail,
   type House,
-  type MapObject,
   type Preview,
   type PreviewIssue,
   type WorldPoint,
 } from "./model";
-import { polygonBounds } from "./parcelEditor";
 import type { Presentation } from "./usePresentation";
-export const colors: Record<string, string> = {
-  grass: "#9db58b",
-  earth: "#c8b99b",
-  stone: "#aaa9a3",
-  water: "#91bcc5",
-};
-function polygon(c: CanvasRenderingContext2D, rings: WorldPoint[][]) {
-  c.beginPath();
-  for (const ring of rings) {
-    ring.forEach((p, i) => (i ? c.lineTo(p[0], p[1]) : c.moveTo(p[0], p[1])));
-    c.closePath();
-  }
-}
-export function roadLine(c: CanvasRenderingContext2D, r: RoadOverlayGeometry) {
-  c.beginPath();
-  if (r.nodes.length) c.moveTo(r.nodes[0].point[0], r.nodes[0].point[1]);
-  for (let i = 1; i < r.nodes.length; i++) {
-    const a = r.nodes[i - 1],
-      b = r.nodes[i];
-    const outgoing = a.outgoing ?? a.point,
-      incoming = b.incoming ?? b.point;
-    c.bezierCurveTo(
-      outgoing[0],
-      outgoing[1],
-      incoming[0],
-      incoming[1],
-      b.point[0],
-      b.point[1],
-    );
-  }
-  c.lineWidth = r.width;
-  c.lineCap = "round";
-  c.lineJoin = "round";
-  c.stroke();
-}
-function shape(
-  c: CanvasRenderingContext2D,
-  o: MapObject,
-  scale: number,
-  highlight?: string,
-) {
-  const finitePoint = (p: readonly number[]) =>
-    p.length === 2 && p.every(Number.isFinite);
-  // Invalid-preview payloads must never feed unsafe coordinates into canvas.
-  if (
-    o.kind === "road" &&
-    (!Number.isFinite(o.width) || !o.path.every(finitePoint))
-  )
-    return;
-  if (o.kind === "area" && !o.points.every(finitePoint)) return;
-  if (o.kind === "parcel" && !o.polygon.every(finitePoint)) return;
-  if (
-    o.kind === "house" &&
-    (![o.transform.x, o.transform.y, o.transform.angle].every(
-      Number.isFinite,
-    ) ||
-      !o.contours.every((r) => r.every(finitePoint)))
-  )
-    return;
-  c.save();
-  if (o.kind === "road") {
-    c.strokeStyle = highlight ?? colors[o.material];
-    c.lineWidth = o.width;
-    c.lineJoin = "round";
-    c.lineCap = "round";
-    c.beginPath();
-    o.path.forEach((p, i) => (i ? c.lineTo(p[0], p[1]) : c.moveTo(p[0], p[1])));
-    c.stroke();
-  } else if (o.kind === "area") {
-    polygon(c, [o.points]);
-    c.fillStyle = highlight ?? colors[o.material];
-    c.fill();
-  } else if (o.kind === "parcel") {
-    polygon(c, [o.polygon]);
-    c.strokeStyle = highlight ?? "#857950";
-    c.lineWidth = 1 / scale;
-    c.stroke();
-  } else {
-    polygon(
-      c,
-      o.contours.map((r) => r.map((p) => toWorld(p, o.transform))),
-    );
-    c.fillStyle = highlight ?? o.roof;
-    c.fill("evenodd");
-    c.strokeStyle = "#514c43";
-    c.lineWidth = 1 / scale;
-    c.stroke();
-  }
-  c.restore();
-}
-function drawIssue(
-  c: CanvasRenderingContext2D,
-  issue: PreviewIssue,
-  scale: number,
-) {
-  const finite = (p: WorldPoint) => p.length === 2 && p.every(Number.isFinite);
-  c.save();
-  c.strokeStyle = "#e53329";
-  c.fillStyle = "#e5332928";
-  c.lineWidth = 3 / scale;
-  const geometry = issue.geometry;
-  const points =
-    geometry?.kind === "polygon" || geometry?.kind === "path"
-      ? geometry.points
-      : undefined;
-  if (points?.length && points.every(finite)) {
-    c.beginPath();
-    points.forEach((p, i) => (i ? c.lineTo(p[0], p[1]) : c.moveTo(p[0], p[1])));
-    if (geometry?.kind === "polygon") {
-      c.closePath();
-      c.fill();
-    }
-    c.stroke();
-  }
-  if (geometry?.kind === "bounds" && geometry.bounds.every(Number.isFinite)) {
-    const [x, y, X, Y] = geometry.bounds;
-    c.strokeRect(x, y, X - x, Y - y);
-  }
-  if (geometry?.kind === "point" && finite(geometry.point)) {
-    c.beginPath();
-    c.arc(geometry.point[0], geometry.point[1], 7 / scale, 0, Math.PI * 2);
-    c.stroke();
-  }
-  c.restore();
-}
-// Bounds restrict generation before clipping; low zoom never builds huge grids.
-export function parcelGridRange(
-  parcel: Parcel,
-  viewport: Bounds,
-  scale: number,
-): Bounds | null {
-  if (5 * scale < 4) return null;
-  const localParcel = polygonBounds(
-    parcel.polygon.map((p) => toLocal(p, parcel.frame)),
-  );
-  const localView = polygonBounds(
-    (
-      [
-        [viewport[0], viewport[1]],
-        [viewport[2], viewport[1]],
-        [viewport[2], viewport[3]],
-        [viewport[0], viewport[3]],
-      ] as WorldPoint[]
-    ).map((p) => toLocal(p, parcel.frame)),
-  );
-  if (!localParcel || !localView) return null;
-  const range: Bounds = [
-    Math.max(localParcel[0], localView[0]),
-    Math.max(localParcel[1], localView[1]),
-    Math.min(localParcel[2], localView[2]),
-    Math.min(localParcel[3], localView[3]),
-  ];
-  return range[0] <= range[2] && range[1] <= range[3] ? range : null;
-}
-function parcelGrid(
-  c: CanvasRenderingContext2D,
-  parcel: Parcel,
-  viewport: Bounds,
-  scale: number,
-) {
-  const b = parcelGridRange(parcel, viewport, scale);
-  if (!b) return;
-  c.save();
-  c.beginPath();
-  c.rect(
-    viewport[0],
-    viewport[1],
-    viewport[2] - viewport[0],
-    viewport[3] - viewport[1],
-  );
-  c.clip();
-  polygon(c, [parcel.polygon]);
-  c.clip();
-  c.translate(parcel.frame.x, parcel.frame.y);
-  c.rotate(parcel.frame.angle);
-  c.scale(5, 5);
-  c.beginPath();
-  for (let x = Math.ceil(b[0]); x <= b[2]; x++) {
-    c.moveTo(x, b[1]);
-    c.lineTo(x, b[3]);
-  }
-  for (let y = Math.ceil(b[1]); y <= b[3]; y++) {
-    c.moveTo(b[0], y);
-    c.lineTo(b[2], y);
-  }
-  c.strokeStyle = "#6d765b55";
-  c.lineWidth = 1 / (5 * scale);
-  c.stroke();
-  c.restore();
-}
-function interior(
-  c: CanvasRenderingContext2D,
-  h: House,
-  d: Detail,
-  scale: number,
-  room: string,
-  connection: string,
-  lower: boolean,
-  geometry: InteriorGeometry,
-) {
-  c.save();
-  c.translate(h.transform.x, h.transform.y);
-  c.rotate(h.transform.angle);
-  c.scale(5, 5);
-  const drawCells = (paths: CellGeometry, ghost = false) => {
-    for (const [roomId, path] of paths.fills) {
-      c.fillStyle = ghost ? "#c4c2ac" : roomId === room ? "#e6c76a" : "#f5f1e7";
-      c.fill(path);
-    }
-    c.strokeStyle = ghost ? "#969282" : "#635f55";
-    c.lineWidth = (ghost ? 1 : 2) / (scale * 5);
-    c.stroke(paths.walls);
-  };
-  if (lower) {
-    c.globalAlpha = 0.5;
-    drawCells(geometry.ghost, true);
-    c.globalAlpha = 1;
-  }
-  drawCells(geometry.main);
-  if (scale >= 1.28) {
-    c.strokeStyle = "#59675425";
-    c.lineWidth = 1 / (scale * 5);
-    c.stroke(geometry.main.grid);
-  }
-  for (const con of d.connections) {
-    c.strokeStyle = con.id === connection ? "#bf563b" : "#5a4f3d";
-    c.lineWidth = 3 / (scale * 5);
-    if (con.type === "opening" && con.floor === d.floor) {
-      const start = openingPoint(con, 0),
-        dx = con.axis === "horizontal" ? 1 : 0,
-        dy = 1 - dx;
-      c.strokeStyle = "#f5f1e7";
-      c.lineWidth = 5 / (scale * 5);
-      c.beginPath();
-      c.moveTo(start[0] + dx * 0.12, start[1] + dy * 0.12);
-      c.lineTo(start[0] + dx * 0.88, start[1] + dy * 0.88);
-      c.stroke();
-      if (con.kind === "door") {
-        c.strokeStyle = con.id === connection ? "#bf563b" : "#75573f";
-        c.lineWidth = 3 / (scale * 5);
-        c.beginPath();
-        c.moveTo(start[0] + dx * 0.15, start[1] + dy * 0.15);
-        c.lineTo(start[0] + dx * 0.85, start[1] + dy * 0.85);
-        c.stroke();
-      }
-    } else if (
-      con.type === "stairs" &&
-      (con.floor === d.floor || con.floor + 1 === d.floor)
-    ) {
-      const [dx, dy] = {
-        north: [0, -1],
-        east: [1, 0],
-        south: [0, 1],
-        west: [-1, 0],
-      }[con.direction];
-      for (let i = 0; i < con.length; i++) {
-        const x = con.x + dx * i + 0.5,
-          y = con.y + dy * i + 0.5;
-        c.beginPath();
-        c.moveTo(x - dy * 0.4, y + dx * 0.4);
-        c.lineTo(x + dy * 0.4, y - dx * 0.4);
-        c.stroke();
-      }
-      c.beginPath();
-      c.moveTo(con.x + 0.5, con.y + 0.5);
-      c.lineTo(
-        con.x + 0.5 + dx * (con.length - 1),
-        con.y + 0.5 + dy * (con.length - 1),
-      );
-      c.stroke();
-    }
-  }
-  c.restore();
-}
 type Props = {
+  terrainContours?: boolean;
+  brushCursor?: { point: WorldPoint; radius: number; height?: boolean } | null;
   canvasRef: RefObject<HTMLCanvasElement | null>;
   camera: Camera;
   size: { width: number; height: number };
@@ -352,6 +82,7 @@ export function AtlasCanvas(p: Props) {
   const overlay = useRef<HTMLCanvasElement>(null);
   const priorLabels = useRef(new Set<string>());
   const geometry = useRef(new InteriorGeometryCache(buildInteriorPaths));
+  const terrainPainter = useRef(new TerrainPainter());
   const setup = (
     canvas: HTMLCanvasElement,
     dpr = window.devicePixelRatio || 1,
@@ -377,30 +108,57 @@ export function AtlasCanvas(p: Props) {
     if (!p.canvasRef.current) return;
     const paintCanvas = p.canvasRef.current;
     const paintDpr = window.devicePixelRatio || 1;
-    const c = setup(paintCanvas, paintDpr),
-      objects = p.presentation?.scene.objects ?? [];
+    const c = setup(paintCanvas, paintDpr);
+    const scene = prepareCanvasScene(
+      p.presentation,
+      p.preview,
+      p.selected,
+      p.visibility,
+    );
     const detail = p.presentation?.detail;
     let paths: InteriorGeometry | undefined;
     if (!detail) geometry.current.clear();
     else {
       paths = geometry.current.get(detail);
     }
+    const { terrain, terrainPreview, foundationTops } = scene;
+    if (terrain)
+      terrainPainter.current.paint(
+        c,
+        terrain,
+        p.camera.scale,
+        p.terrainContours ?? true,
+        terrainPreview,
+      );
     if (p.presentation?.overview)
-      paintCity(c, p.presentation.overview, p.camera.scale);
-    for (const kind of p.presentation?.overview
-      ? []
-      : ["area", "parcel", "road", "house"])
-      for (const o of objects
-        .filter(
-          (o) =>
-            o.kind === kind &&
-            (o.kind !== "parcel" || p.visibility.boundaries.includes(o.id)),
-        )
-        .sort((a, b) =>
-          a.kind === "area" && b.kind === "area"
-            ? (a.order ?? 0) - (b.order ?? 0)
-            : 0,
-        )) {
+      paintCity(
+        c,
+        p.presentation.overview,
+        p.camera.scale,
+        scene.selectedRoad,
+        () => {
+          if (terrain)
+            terrainPainter.current.paint(
+              c,
+              terrain,
+              p.camera.scale,
+              false,
+              terrainPreview,
+              true,
+            );
+        },
+      );
+    for (const { kind, objects } of scene.layers) {
+      if (kind === "parcel" && terrain)
+        terrainPainter.current.paint(
+          c,
+          terrain,
+          p.camera.scale,
+          false,
+          terrainPreview,
+          true,
+        );
+      for (const o of objects) {
         if (o.kind === "house" && p.presentation?.detail?.buildingId === o.id) {
           c.save();
           c.globalAlpha = 0.18;
@@ -416,43 +174,47 @@ export function AtlasCanvas(p: Props) {
             p.presentation.includeLower,
             paths!,
           );
-        } else shape(c, o, p.camera.scale);
+        } else {
+          if (o.kind === "house") {
+            polygon(
+              c,
+              o.contours.map((r) => r.map((p) => toWorld(p, o.transform))),
+            );
+            c.strokeStyle =
+              terrain &&
+              (foundationTops.get(o.id) ?? Infinity) < terrain.waterLevel
+                ? "#72b8cf"
+                : "#8c8575";
+            c.lineWidth = 4 / p.camera.scale;
+            c.stroke();
+          }
+          c.save();
+          if (o.kind === "area" && terrain && o.material !== "water")
+            c.globalAlpha = 0.55;
+          shape(c, o, p.camera.scale);
+          c.restore();
+        }
       }
+    }
     const viewport: Bounds = [
       -p.camera.x / p.camera.scale,
       -p.camera.y / p.camera.scale,
       (p.size.width - p.camera.x) / p.camera.scale,
       (p.size.height - p.camera.y) / p.camera.scale,
     ];
-    for (const o of objects)
-      if (o.kind === "parcel" && p.visibility.grids.includes(o.id))
-        parcelGrid(c, o, viewport, p.camera.scale);
-    const selectedObject = objects.find((o) => o.id === p.selected);
-    if (
-      selectedObject &&
-      (selectedObject.kind !== "parcel" ||
-        p.visibility.boundaries.includes(selectedObject.id))
-    ) {
+    for (const parcel of scene.grids)
+      parcelGrid(c, parcel, viewport, p.camera.scale);
+    const { selectedObject } = scene;
+    if (selectedObject) {
       c.save();
       c.globalAlpha = 0.2;
       shape(c, selectedObject, p.camera.scale, "#ffe397");
       c.restore();
     }
     if (p.presentation) {
-      const features = p.presentation.overview
-        ? [
-            ...overviewFeatures(p.presentation.overview).filter(
-              (f) => f.id !== p.selected,
-            ),
-            ...sceneFeatures(p.presentation.scene).filter(
-              (f) => f.id === p.selected,
-            ),
-          ]
-        : sceneFeatures(p.presentation.scene);
       c.save();
       c.setTransform(paintDpr, 0, 0, paintDpr, 0, 0);
       c.font = "13px system-ui, sans-serif";
-      const excluded = p.presentation.detail?.buildingId;
       const grips = [...(p.parcelOverlay?.handles.map((h) => h.point) ?? [])];
       const selected =
         p.draft ??
@@ -469,7 +231,7 @@ export function AtlasCanvas(p: Props) {
         return [sx - 12, sy - 12, sx + 12, sy + 12];
       });
       const labels = layoutLabels(
-        features.filter((f) => f.id !== excluded),
+        scene.features,
         p.camera,
         p.size.width,
         p.size.height,
@@ -493,12 +255,14 @@ export function AtlasCanvas(p: Props) {
     visibilityKey,
     p.parcelOverlay,
     p.draft,
+    p.preview,
+    p.terrainContours,
   ]);
   useLayoutEffect(() => {
     if (!overlay.current) return;
     const c = setup(overlay.current),
       scale = p.camera.scale;
-    if (p.presentation?.overview) return;
+    const overview = !!p.presentation?.overview;
     const preview = p.preview;
     if (preview) {
       c.save();
@@ -575,7 +339,14 @@ export function AtlasCanvas(p: Props) {
           preview?.valid === false || p.issue
             ? "#df765f"
             : colors[p.draft.material];
-        roadLine(c, p.draft);
+        if (preview?.valid) {
+          c.setLineDash([4 / scale, 4 / scale]);
+          roadLine(c, { ...p.draft, width: 1 / scale });
+        } else
+          roadLine(c, {
+            ...p.draft,
+            width: Math.max(p.draft.width, 2 / scale),
+          });
       } else {
         polygon(c, [p.draft.points]);
         c.fillStyle = colors[p.draft.material];
@@ -586,7 +357,7 @@ export function AtlasCanvas(p: Props) {
       }
       c.restore();
     }
-    if (p.parcelOverlay) {
+    if (p.parcelOverlay && !overview) {
       const { parcel, handles } = p.parcelOverlay;
       parcelGrid(
         c,
@@ -624,7 +395,9 @@ export function AtlasCanvas(p: Props) {
       p.draft ?? p.presentation?.scene.objects.find((o) => o.id === p.selected);
     if (selected?.kind === "road") {
       for (const n of selected.nodes) {
-        for (const handle of p.automaticCurve ? [] : [n.incoming, n.outgoing])
+        for (const handle of p.automaticCurve || overview
+          ? []
+          : [n.incoming, n.outgoing])
           if (handle) {
             c.strokeStyle = "#e8d6a1";
             c.lineWidth = 1 / scale;
@@ -671,7 +444,7 @@ export function AtlasCanvas(p: Props) {
           c.stroke();
         }
       }
-    } else if (selected?.kind === "area") {
+    } else if (!overview && selected?.kind === "area") {
       for (const point of selected.points) {
         c.fillStyle = "#fff1cc";
         c.fillRect(
@@ -682,6 +455,7 @@ export function AtlasCanvas(p: Props) {
         );
       }
     } else if (
+      !overview &&
       selected?.kind === "house" &&
       p.presentation?.context.kind === "exterior" &&
       selected.placement.kind === "free"
@@ -698,6 +472,34 @@ export function AtlasCanvas(p: Props) {
       c.beginPath();
       c.arc(b[0], b[1], 6 / scale, 0, Math.PI * 2);
       c.fill();
+    }
+    if (p.brushCursor) {
+      const { point, radius } = p.brushCursor;
+      c.beginPath();
+      c.arc(point[0], point[1], radius, 0, Math.PI * 2);
+      c.strokeStyle = "#fff5cf";
+      c.lineWidth = 2 / scale;
+      c.stroke();
+      const cursorTerrain =
+        (p.preview?.valid ? p.preview.terrain?.surface : null) ??
+        p.presentation?.terrain;
+      const z =
+        p.brushCursor.height !== false && cursorTerrain
+          ? heightAt(cursorTerrain, point)
+          : null;
+      if (z !== null) {
+        c.save();
+        c.translate(point[0] + radius + 8 / scale, point[1]);
+        c.scale(1 / scale, 1 / scale);
+        c.font = "13px system-ui";
+        c.lineWidth = 3;
+        c.strokeStyle = "#30382e";
+        c.fillStyle = "#fff5cf";
+        const label = `${z.toFixed(1)} Fuß`;
+        c.strokeText(label, 0, 0);
+        c.fillText(label, 0, 0);
+        c.restore();
+      }
     }
     if (p.guide) {
       c.strokeStyle = p.guide.invalid ? "#e56754" : "#f5cf79";
@@ -727,6 +529,7 @@ export function AtlasCanvas(p: Props) {
     p.issue,
     p.draft,
     p.guide,
+    p.brushCursor,
   ]);
   return (
     <>

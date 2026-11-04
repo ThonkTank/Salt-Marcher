@@ -37,7 +37,7 @@ for (const kind of ["road", "area", "population"] as const) {
       } else {
         await page
           .getByRole("button", {
-            name: kind === "road" ? "Straße" : "Gelände",
+            name: kind === "road" ? "Straße" : "Flächen",
             exact: true,
           })
           .click();
@@ -108,6 +108,8 @@ test("Escape rolls back a dragged road point and retains the completed plan", as
   await page.goto(url);
   await ready(page);
   await page.getByRole("button", { name: "Straße", exact: true }).click();
+  await page.getByLabel("Rauheit", { exact: true }).fill("0");
+  await page.getByLabel("Rauheit", { exact: true }).press("Enter");
   await page.getByLabel("Bebauung", { exact: true }).selectOption("none");
   await clickWorld(page, [0, 0]);
   await clickWorld(page, [120, 0]);

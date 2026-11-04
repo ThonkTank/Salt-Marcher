@@ -4,6 +4,8 @@ export function paintCity(
   c: CanvasRenderingContext2D,
   view: CityView,
   scale: number,
+  exactRoadId?: string,
+  paintWater?: () => void,
 ): MapFeature[] {
   const features = overviewFeatures(view),
     cell = 16 * 2 ** view.level;
@@ -18,9 +20,18 @@ export function paintCity(
     .filter((f) => f.kind === "area")
     .sort((a, b) => a.rank - b.rank)) {
     path(f);
+    c.save();
+    c.globalAlpha = paintWater && f.color !== "#91bcc5" ? 0.55 : 1;
     c.fillStyle = f.color;
     c.fill("evenodd");
+    c.restore();
   }
+  for (const f of features.filter((f) => f.kind === "scenery")) {
+    path(f);
+    c.fillStyle = f.color;
+    c.fill();
+  }
+  paintWater?.();
   c.save();
   c.fillStyle = "#a19586";
   for (const tile of view.tiles)
@@ -37,14 +48,15 @@ export function paintCity(
   c.restore();
   for (const kind of ["road", "house"]) {
     for (const f of features) {
-      if (f.kind !== kind) continue;
+      if (f.kind !== kind || (kind === "road" && f.id === exactRoadId))
+        continue;
       if (kind === "house" && (scale < 0.064 || Math.sqrt(f.rank) * scale < 6))
         continue;
       if (kind === "road" && scale < 0.064 && f.width < 12) continue;
       path(f);
       if (kind === "road") {
         c.strokeStyle = f.color;
-        c.lineWidth = Math.max(f.width, 0.7 / scale);
+        c.lineWidth = Math.max(f.width, 2 / scale);
         c.lineJoin = "round";
         c.lineCap = "round";
         c.stroke();

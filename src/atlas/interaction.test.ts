@@ -48,6 +48,44 @@ const run = (
 ) => evaluateGesture(g, { pointer, point: p, snapped: p, screen, finish })!;
 
 describe("gesture geometry", () => {
+  it("refreshes terrain preview tiles after zoom without changing the stroke", () => {
+    const gesture: Gesture = {
+      ...base,
+      kind: "terrain",
+      view: { level: 0, tiles: [[0, 0]] },
+      brush: {
+        mode: "raise",
+        radius: 25,
+        amount: 1,
+        strength: 0.25,
+        target: 10,
+        points: [[0, 0]],
+      },
+    };
+    const view = { level: 3, tiles: [[-1, 0] as [number, number]] };
+    const snapshot = state({
+      terrainView: view,
+      workflow: geometryState(
+        { ...common, kind: "geometry" },
+        { kind: "terrain" },
+        gesture,
+      ),
+    });
+    for (const finish of [false, true]) {
+      expect(
+        evaluatePointer(snapshot, input([20, 4]), finish)?.intent,
+      ).toMatchObject({
+        type: "terrainStroke",
+        view,
+        brush: {
+          points: [
+            [0, 0],
+            [20, 4],
+          ],
+        },
+      });
+    }
+  });
   it("normalizes all pointer directions and up/down travel to the physical lower-floor run", () => {
     for (const travel of ["up", "down"] as const) {
       for (const [direction, dx, dy, reverse] of [
@@ -187,6 +225,7 @@ const road: Road = {
 const hitHouse: House = {
   kind: "house",
   importantPlace: false,
+  foundation: { height: 1, transition: 10 },
   id: "house",
   name: "H",
   roof: "red",

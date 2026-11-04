@@ -130,3 +130,36 @@ export function Rename({
     />
   );
 }
+
+/** Native select with one typed option list and consistent accessible naming. */
+export function SelectField<T extends string>({
+  label,
+  value,
+  options,
+  onChange,
+  disabled,
+}: {
+  label: string;
+  value: T;
+  options: Record<T, string>;
+  onChange: (value: T) => void;
+  disabled?: boolean;
+}) {
+  return (
+    <label>
+      {label}
+      <select
+        aria-label={label}
+        value={value}
+        disabled={disabled}
+        onChange={(event) => onChange(event.target.value as T)}
+      >
+        {Object.entries<string>(options).map(([key, text]) => (
+          <option key={key} value={key}>
+            {text}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}

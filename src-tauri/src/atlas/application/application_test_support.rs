@@ -78,6 +78,7 @@ pub(super) fn fixture() -> FullHouse {
     }
     FullHouse {
         important_place: false,
+        foundation: crate::atlas::terrain::Foundation::default(),
         id: "house".into(),
         name: "House".into(),
         roof: "#123456".into(),

@@ -141,6 +141,8 @@ test("both extension ends keep original direction, sections, parcel poses and in
     await page
       .getByRole("button", { name: `Am ${end} verlängern`, exact: true })
       .click();
+    await page.getByLabel("Rauheit", { exact: true }).fill("0");
+    await page.getByLabel("Rauheit", { exact: true }).press("Enter");
     await expect(page.getByLabel("Bebauung", { exact: true })).toHaveValue(
       "houses",
     );

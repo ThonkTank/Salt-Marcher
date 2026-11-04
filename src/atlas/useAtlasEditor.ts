@@ -1,4 +1,10 @@
-import { cityLevel, EDIT_SCALE } from "./cityView";
+import { terrainRequest } from "./terrainView";
+import {
+  cityLevel,
+  EDIT_SCALE,
+  overviewFeatures,
+  sceneFeatures,
+} from "./cityView";
 import { editorView } from "./editorView";
 import { parcelIntent, type BoundSource } from "./parcelPlanning";
 import type { WorldPoint } from "./model";
@@ -25,13 +31,7 @@ import { useEditorTools, planSelectionDelete } from "./useEditorTools";
 import { useCanvasInput } from "./useCanvasInput";
 import { contextKey, parcelVisibility, resolvedParcel } from "./parcelEditor";
 import { useEditorWorkflow } from "./useEditorWorkflow";
-import {
-  isExact,
-  workflowPointer,
-  workflowDraft,
-  workflowMessage,
-  workflowPreview,
-} from "./editorWorkflow";
+import { workflowPointer, workflowView } from "./editorWorkflow";
 import { sameVersion } from "./documentVersion";
 
 /** Binds document, workflow and selection lifetimes to the editor view. */
@@ -79,17 +79,19 @@ export function useAtlasEditor(client: AtlasClient) {
   ];
   const cityLod = useRef<number | undefined>(undefined);
   cityLod.current = cityLevel(camera.scale, cityLod.current);
-  const reads = usePresentation(
+  const reads = usePresentation({
       client,
-      session.status,
+      status: session.status,
       bounds,
-      context,
-      selected,
+      editorContext: context,
+      selectedId: selected,
       floor,
-      camera.scale >= 1.28,
-      lower,
-      !interior && camera.scale < EDIT_SCALE ? cityLod.current : null,
-    ),
+      detailEnabled: camera.scale >= EDIT_SCALE,
+      includeLower: lower,
+      cityLevel:
+        !interior && camera.scale < EDIT_SCALE ? cityLod.current : null,
+      terrainScale: camera.scale,
+    }),
     presentation = reads.value;
   const objects = presentation?.scene.objects ?? [],
     currentScene =
@@ -118,9 +120,11 @@ export function useAtlasEditor(client: AtlasClient) {
     abortPointer();
   }, [size.width, size.height, cancelFit]);
   const editable =
-    camera.scale >= EDIT_SCALE &&
+    (camera.scale >= EDIT_SCALE ||
+      (!interior &&
+        (tool === "road" || tool === "select" || tool === "terrain"))) &&
     reads.fresh &&
-    (!interior || camera.scale >= 1.28) &&
+    (!interior || camera.scale >= EDIT_SCALE) &&
     !session.exclusive &&
     !session.uncertain &&
     (session.pending === 0 ||
@@ -135,16 +139,19 @@ export function useAtlasEditor(client: AtlasClient) {
     commitExact: session.commitExact,
     queue: session.commit,
     read: async (id, version, wanted) => {
-      const scene = await scheduledRead(
-        client,
-        "scene",
-        {
-          bounds,
-          context,
-          selectedId: id,
-        },
-        wanted,
-      );
+      const roadRead = !interior && camera.scale < EDIT_SCALE;
+      const scene = roadRead
+        ? await scheduledRead(client, "roadHeader", { roadId: id }, wanted)
+        : await scheduledRead(
+            client,
+            "scene",
+            {
+              bounds,
+              context,
+              selectedId: id,
+            },
+            wanted,
+          );
       if (scene && !sameVersion(scene.status, version))
         throw Error(
           "Dokumentstand während Headerprüfung geändert. Bitte erneut prüfen.",
@@ -155,31 +162,19 @@ export function useAtlasEditor(client: AtlasClient) {
       selectEvent({ type: "exactCompleted", intent, result }),
     error: session.setError,
   });
-  const draft = workflowDraft(workflow.state),
-    preview = workflowPreview(workflow.state),
-    issue =
-      isExact(workflow.state) && workflow.state.stage.phase === "failed"
-        ? workflow.state.stage.issue
-        : undefined,
-    guide =
-      workflow.state.kind === "idle" || !workflow.state.guide
-        ? null
-        : {
-            ...workflow.state.guide,
-            invalid:
-              workflow.state.guide.invalid ||
-              preview?.valid === false ||
-              !!issue,
-          },
-    plannedAction = isExact(workflow.state) ? workflow.state.candidate : null,
-    population = workflow.state.kind === "populate",
-    deletion =
-      workflow.state.kind === "delete" &&
-      workflow.state.stage.phase !== "committing"
-        ? workflow.state
-        : null,
-    canAccept = workflow.controller.canAccept(),
-    workflowError = workflowMessage(workflow.state);
+  const workflowDisplay = workflowView(workflow.state);
+  const {
+    draft,
+    preview,
+    issue,
+    guide,
+    plannedAction,
+    population,
+    deletion,
+    planSelection,
+    message: workflowError,
+  } = workflowDisplay;
+  const canAccept = workflow.controller.canAccept();
   const tools = useEditorTools({
     controller: workflow.controller,
     select: selectEvent,
@@ -199,17 +194,13 @@ export function useAtlasEditor(client: AtlasClient) {
     setDraft,
     chooseTool,
   } = tools;
-  const planSelection =
-    workflow.state.kind === "idle"
-      ? null
-      : (workflow.state.selectedPlanParcel ?? null);
   const setPlanSelection = (key: string | null) =>
     workflow.controller.dispatch({ type: "selectPlanParcel", key });
   const [hoverPoint, setHoverPoint] = useState<WorldPoint | null>(null);
   useEffect(() => {
     if (workflow.state.kind === "idle") setHoverPoint(null);
   }, [workflow.state.kind]);
-  const view = editorView(workflow.state, {
+  const view = editorView(workflow.state, workflowDisplay, {
     tool,
     selectedObject,
     interior,
@@ -247,6 +238,17 @@ export function useAtlasEditor(client: AtlasClient) {
       workflow: workflow.controller.getSnapshot(),
       camera,
       editable,
+      terrainView: terrainRequest(bounds, camera.scale),
+      brush: tools.brush,
+      scenery: tools.scenery,
+      scenerySeed: (session.status?.revision ?? 0) >>> 0,
+      roughness: tools.roughness,
+      overviewRoads: presentation?.overview
+        ? [
+            ...overviewFeatures(presentation.overview),
+            ...(currentScene ? sceneFeatures(currentScene) : []),
+          ]
+        : undefined,
       deletion: !!deletion,
       tool,
       selected,
@@ -361,6 +363,9 @@ export function useAtlasEditor(client: AtlasClient) {
       case "connectionSelection":
         selectEvent({ type: "pointerConnection", id: command.id });
         break;
+      case "selectRoad":
+        selectEvent({ type: "selectObject", id: command.id });
+        break;
       case "select":
         select(command.object);
         break;
@@ -398,22 +403,29 @@ export function useAtlasEditor(client: AtlasClient) {
     }
   };
   const toolOptionsProps = {
+    tools,
+    waterLevel: presentation?.terrain?.waterLevel ?? 0,
+    onWaterLevel: (level: number) => {
+      void apply({
+        type: "setWaterLevel",
+        level,
+        view: terrainRequest(bounds, camera.scale),
+      });
+    },
     tool,
-    roadWidth,
-    material,
-    opening,
-    travel,
-    onRoadWidth: tools.changeRoadWidth,
-    onMaterial: tools.changeMaterial,
-    onOpening: tools.changeOpening,
-    onTravel: tools.changeTravel,
-    populateRoad,
-    onPopulateRoad: tools.changePopulationEnabled,
-    settings,
-    updateSettings: tools.changePopulationSettings,
     extending: draft?.kind === "extendRoad",
   } satisfies ComponentProps<typeof ToolOptions>;
   const canvasProps = {
+    terrainContours: tools.contours,
+    brushCursor:
+      (tool === "terrain" || tool === "scenery") && hoverPoint
+        ? {
+            point: hoverPoint,
+            height: tool === "terrain",
+            radius:
+              tool === "scenery" ? tools.scenery.radius : tools.brush.radius,
+          }
+        : null,
     canvasRef: canvas,
     camera,
     size,
@@ -451,6 +463,11 @@ export function useAtlasEditor(client: AtlasClient) {
     onLeave: leave,
     onOpenHouse: openHouse,
     onPopulate: tools.beginPopulation,
+    onRoughen: tools.beginRoughening,
+    roughening: tools.roughening,
+    onRoughness: tools.changeRoughness,
+    onVariation: tools.newVariation,
+    overview: !interior && camera.scale < EDIT_SCALE,
     onExtend: tools.beginExtension,
     onDeleteSelection: deleteSelection,
     onDeleteObject: requestDeleteObject,
@@ -480,34 +497,38 @@ export function useAtlasEditor(client: AtlasClient) {
       updateSettings: tools.changePopulationSettings,
     },
     session,
-    parcelProperties: planItem
-      ? {
-          source: planItem,
-          excluded: planItem.excluded,
-          onChange: editPlanParcel,
-          onExcluded: (excluded: boolean) => editPlanParcel({ excluded }),
-          onBack: () => setPlanSelection(null),
-          disabled: !preview && !settings.layout,
-        }
-      : propertyParcel?.source.kind === "road" &&
-          !drawing &&
-          !population &&
-          tool === "select"
-        ? {
-            source: propertyParcel.source,
-            disabled: !editable,
-            onChange: (patch: Partial<BoundSource>) => {
-              if (propertyParcel.source.kind === "road")
-                void apply(
-                  parcelIntent(propertyParcel, {
-                    ...propertyParcel.source,
-                    ...patch,
-                  }),
-                );
-            },
-          }
-        : null,
-    excludedParcels: layout.filter((p) => p.excluded),
+    parcelProperties:
+      camera.scale < EDIT_SCALE
+        ? null
+        : planItem
+          ? {
+              source: planItem,
+              excluded: planItem.excluded,
+              onChange: editPlanParcel,
+              onExcluded: (excluded: boolean) => editPlanParcel({ excluded }),
+              onBack: () => setPlanSelection(null),
+              disabled: !preview && !settings.layout,
+            }
+          : propertyParcel?.source.kind === "road" &&
+              !drawing &&
+              !population &&
+              tool === "select"
+            ? {
+                source: propertyParcel.source,
+                disabled: !editable,
+                onChange: (patch: Partial<BoundSource>) => {
+                  if (propertyParcel.source.kind === "road")
+                    void apply(
+                      parcelIntent(propertyParcel, {
+                        ...propertyParcel.source,
+                        ...patch,
+                      }),
+                    );
+                },
+              }
+            : null,
+    excludedParcels:
+      camera.scale < EDIT_SCALE ? [] : layout.filter((p) => p.excluded),
     selectPlanParcel: setPlanSelection,
 
     deletion,

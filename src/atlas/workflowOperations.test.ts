@@ -70,6 +70,7 @@ const parcel: Parcel = {
 const house: House = {
   kind: "house",
   importantPlace: false,
+  foundation: { height: 1, transition: 10 },
   id: "house-6",
   name: "Haus",
   roof: "#888888",

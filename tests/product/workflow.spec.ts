@@ -16,7 +16,7 @@ test("normal pointer capture release and subsequent Blur preserve an admitted ar
 }) => {
   await page.goto(url);
   await ready(page);
-  await page.getByRole("button", { name: "Gelände", exact: true }).click();
+  await page.getByRole("button", { name: "Flächen", exact: true }).click();
   for (const p of [
     [0, 0],
     [50, 0],
@@ -58,6 +58,8 @@ test("pointercancel rolls a new road back to its last completed node", async ({
   await page.goto(url);
   await ready(page);
   await page.getByRole("button", { name: "Straße", exact: true }).click();
+  await page.getByLabel("Rauheit", { exact: true }).fill("0");
+  await page.getByLabel("Rauheit", { exact: true }).blur();
   const first = await screen(page, [0, 0]),
     cancelled = await screen(page, [50, 30]),
     last = await screen(page, [80, 0]);

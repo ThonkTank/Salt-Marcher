@@ -6,6 +6,7 @@ import type { GenerationSummary } from "./GenerationSummary";
 import type { RemovedConnection } from "./RemovedConnection";
 import type { SceneObject } from "./SceneObject";
 import type { Status } from "./Status";
+import type { TerrainPreview } from "./TerrainPreview";
 import type { True } from "./True";
 import type { Version } from "./Version";
 
@@ -19,6 +20,7 @@ export type ValidPreviewWire = {
   cascadeCounts: CascadeCounts;
   removedConnections: Array<RemovedConnection>;
   changed: boolean;
+  terrain?: TerrainPreview;
   generationSummary: GenerationSummary;
   generationDiagnostics: Array<GenerationDiagnostic>;
   generationLimit: GenerationLimit | null;

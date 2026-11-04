@@ -43,6 +43,7 @@ pub fn new_house(
     let contours = contours(&cells);
     let house = FullHouse {
         important_place: false,
+        foundation: crate::atlas::terrain::Foundation::default(),
         id: id.clone(),
         name: format!("Haus {}", index + 1),
         roof: ["#9a705a", "#80756b", "#ad8765", "#6f7775"][index % 4].into(),
@@ -109,11 +110,7 @@ fn check_outer_prefix(h: &FullHouse) -> Result<()> {
         }
     }
     // Preserve the historical structural-error priority over invalid roof metadata.
-    if !h.rooms.is_empty()
-        && !(h.roof.len() == 7
-            && h.roof.starts_with('#')
-            && h.roof.as_bytes()[1..].iter().all(u8::is_ascii_hexdigit))
-    {
+    if !h.rooms.is_empty() && !crate::atlas::validation::roof_color(&h.roof) {
         crate::interior::check_initial_structure(input(h))
             .map_err(|e| errors::local_interior_error(e, &h.id))?;
         return Err(invalid("Invalid metadata").with_context(vec![h.id.clone()]));
@@ -142,6 +139,7 @@ pub fn edit(h: &FullHouse, intent: LocalEdit) -> Result<FullHouse> {
         name: h.name.clone(),
         roof: h.roof.clone(),
         important_place: h.important_place,
+        foundation: h.foundation.clone(),
         transform: h.transform.clone(),
         contours: h.contours.clone(),
         placement: h.placement.clone(),

@@ -49,6 +49,7 @@ impl AtlasApplication {
             CREATE TEMP TABLE history(seq INTEGER PRIMARY KEY,body TEXT NOT NULL);
         "#).map_err(storage_error)?;
         super::map_tiles::install(&db)?;
+        super::terrain_store::install(&db)?;
         Ok(Self {
             db,
             _temp: temp,
@@ -467,6 +468,7 @@ fn assemble_object(db: &Connection, id: &str, body: &str) -> Result<FullObject> 
         }
         SceneObject::Road(v) => FullObject::Road(v),
         SceneObject::Area(v) => FullObject::Area(v),
+        SceneObject::Scenery(v) => FullObject::Scenery(v),
         SceneObject::Parcel(v) => FullObject::Parcel(v),
     })
 }
@@ -478,13 +480,7 @@ fn read_object(db: &Connection, id: &str) -> Result<FullObject> {
 }
 
 fn apply_patch(db: &Connection, patch: &SmallPatch, forward: bool) -> Result<ChangeHints> {
-    let id = match patch {
-        SmallPatch::HouseName { id, .. }
-        | SmallPatch::Roof { id, .. }
-        | SmallPatch::ImportantPlace { id, .. }
-        | SmallPatch::RoomName { id, .. }
-        | SmallPatch::Transform { id, .. } => id,
-    };
+    let id = patch.id();
     let body: String = db
         .query_row("SELECT body FROM objects WHERE id=?", [id], |r| r.get(0))
         .map_err(storage_error)?;
@@ -495,6 +491,9 @@ fn apply_patch(db: &Connection, patch: &SmallPatch, forward: bool) -> Result<Cha
     };
     let old = SceneObject::House(header.clone());
     match patch {
+        SmallPatch::Foundation { before, after, .. } => {
+            header.foundation = if forward { after } else { before }.clone();
+        }
         SmallPatch::HouseName { before, after, .. } => {
             header.name = if forward { after } else { before }.clone()
         }
@@ -560,6 +559,44 @@ fn apply_history_change(db: &Connection, change: &ChangeSet, forward: bool) -> R
     };
     write_delta(db, before, after)?;
     let mut hints = change_hints::from_objects(before, after);
+    if let Some(t) = &change.terrain {
+        super::terrain_store::write_points(db, if forward { &t.after } else { &t.before })?;
+        db.execute(
+            "UPDATE terrain_settings SET water=? WHERE singleton=1",
+            [if forward {
+                t.water_after
+            } else {
+                t.water_before
+            }],
+        )
+        .map_err(storage_error)?;
+        if t.water_before != t.water_after {
+            hints
+                .world
+                .push([-5_000_000.0, -5_000_000.0, 5_000_000.0, 5_000_000.0]);
+        } else if !t.after.is_empty() {
+            let b = crate::atlas::geometry::bounds(
+                t.after
+                    .iter()
+                    .map(|&(x, y, _)| [x as f64 * 5.0, y as f64 * 5.0]),
+            );
+            hints.world.push(crate::atlas::geometry::expand(b, 505.0));
+            let mut q=db.prepare("SELECT o.body FROM spatial s JOIN objects o ON o.rowid=s.key WHERE o.kind='house' AND s.min_x<=?1 AND s.max_x>=?2 AND s.min_y<=?3 AND s.max_y>=?4").map_err(storage_error)?;
+            let rows = q
+                .query_map(
+                    params![b[2] + 5.0, b[0] - 5.0, b[3] + 5.0, b[1] - 5.0],
+                    |r| r.get::<_, String>(0),
+                )
+                .map_err(storage_error)?;
+            for row in rows {
+                let o: SceneObject =
+                    serde_json::from_str(&row.map_err(storage_error)?).map_err(storage_error)?;
+                hints
+                    .world
+                    .push(crate::atlas::geometry::expand(o.bounds(), 500.0));
+            }
+        }
+    }
     for patch in &change.fields {
         change_hints::merge(&mut hints, apply_patch(db, patch, forward)?);
     }
@@ -656,7 +693,7 @@ impl AtlasApplication {
     pub(in crate::atlas) fn extent(&self) -> Result<Option<Bounds>> {
         self.db
             .query_row(
-                "SELECT min(min_x),min(min_y),max(max_x),max(max_y) FROM objects",
+                "SELECT min(min_x),min(min_y),max(max_x),max(max_y) FROM (SELECT min_x,min_y,max_x,max_y FROM objects UNION ALL SELECT x*5.0,y*5.0,x*5.0,y*5.0 FROM terrain)",
                 [],
                 |r| {
                     Ok(r.get::<_, Option<f64>>(0)?.map(|x| {

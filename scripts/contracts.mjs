@@ -9,7 +9,7 @@ import {
   rmSync,
   writeFileSync,
 } from "node:fs";
-import { devNull } from "node:os";
+import { format, resolveConfig } from "prettier";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -32,15 +32,11 @@ function files(directory, prefix = "", result = new Map()) {
   return result;
 }
 
-function run(command, args, options = {}) {
-  execFileSync(command, args, { cwd: root, stdio: "inherit", ...options });
-}
-
 const temporaryRoot = join(root, "src-tauri/target/cleanup");
 mkdirSync(temporaryRoot, { recursive: true });
 const temporary = mkdtempSync(join(temporaryRoot, "contracts-"));
 try {
-  run(
+  execFileSync(
     "cargo",
     [
       "test",
@@ -54,6 +50,8 @@ try {
       "--exact",
     ],
     {
+      cwd: root,
+      stdio: "inherit",
       env: { ...process.env, ATLAS_CONTRACT_OUT: temporary },
     },
   );
@@ -61,23 +59,20 @@ try {
   if (!existsSync(join(temporary, "Commands.ts"))) {
     throw Error("Rust exporter did not produce Commands.ts");
   }
-  const paths = [...files(temporary).keys()]
-    .filter((path) => path.endsWith(".ts"))
-    .sort();
-  // Explicit files under ignored target/ still need an empty ignore file.
-  run(
-    process.execPath,
-    [
-      join(root, "node_modules/prettier/bin/prettier.cjs"),
-      "--ignore-path",
-      devNull,
-      "--write",
-      ...paths.map((path) => join(temporary, path)),
-    ],
-    { stdio: ["ignore", "ignore", "inherit"] },
-  );
-  const expected = files(temporary),
-    actual = files(destination);
+  const config = await resolveConfig(destination);
+  const expected = new Map();
+  for (const [relative, content] of files(temporary)) {
+    expected.set(
+      relative,
+      Buffer.from(
+        await format(content.toString(), {
+          ...config,
+          filepath: join(destination, relative),
+        }),
+      ),
+    );
+  }
+  const actual = files(destination);
   if (mode === "check") {
     const changes = [...new Set([...expected.keys(), ...actual.keys()])]
       .sort()

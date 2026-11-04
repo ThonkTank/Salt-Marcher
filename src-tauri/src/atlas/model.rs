@@ -172,6 +172,7 @@ pub struct FullHouse {
     pub name: String,
     pub roof: String,
     pub important_place: bool,
+    pub foundation: super::terrain::Foundation,
     pub transform: Transform,
     pub contours: Vec<Vec<LocalPoint>>,
     pub placement: Placement,
@@ -258,6 +259,7 @@ pub enum FullObject {
     House(FullHouse),
     Road(Road),
     Area(Area),
+    Scenery(super::scenery::Scenery),
     Parcel(Parcel),
 }
 impl FullObject {
@@ -266,6 +268,7 @@ impl FullObject {
             Self::House(h) => &h.id,
             Self::Road(r) => &r.id,
             Self::Area(a) => &a.id,
+            Self::Scenery(s) => &s.id,
             Self::Parcel(p) => &p.id,
         }
     }
@@ -274,6 +277,7 @@ impl FullObject {
             Self::House(_) => "house",
             Self::Road(_) => "road",
             Self::Area(_) => "area",
+            Self::Scenery(_) => "scenery",
             Self::Parcel(_) => "parcel",
         }
     }
@@ -282,6 +286,7 @@ impl FullObject {
             Self::House(h) => geometry::house_render_bounds(&h.contours, &h.transform),
             Self::Road(r) => expand(bounds(r.path.iter().copied()), r.width / 2.0),
             Self::Area(a) => bounds(a.points.iter().copied()),
+            Self::Scenery(s) => s.bounds(),
             Self::Parcel(p) => bounds(p.polygon.iter().copied()),
         }
     }
@@ -404,6 +409,7 @@ pub(in crate::atlas) struct HouseHeader {
     pub(in crate::atlas) name: String,
     pub(in crate::atlas) roof: String,
     pub(in crate::atlas) important_place: bool,
+    pub foundation: super::terrain::Foundation,
     pub(in crate::atlas) transform: Transform,
     pub(in crate::atlas) contours: Vec<Vec<LocalPoint>>,
     pub(in crate::atlas) placement: Placement,
@@ -432,6 +438,7 @@ impl FullHouse {
             name: self.name.clone(),
             roof: self.roof.clone(),
             important_place: self.important_place,
+            foundation: self.foundation.clone(),
             transform: self.transform.clone(),
             contours: self.contours.clone(),
             placement: self.placement.clone(),
@@ -455,6 +462,7 @@ impl HouseParts {
             name,
             roof,
             important_place,
+            foundation,
             transform,
             contours,
             placement,
@@ -472,6 +480,7 @@ impl HouseParts {
             name,
             roof,
             important_place,
+            foundation,
             transform,
             contours,
             placement,
@@ -492,6 +501,7 @@ pub(in crate::atlas) enum SceneObject {
     House(HouseHeader),
     Road(Road),
     Area(Area),
+    Scenery(super::scenery::Scenery),
     Parcel(Parcel),
 }
 impl SceneObject {
@@ -500,6 +510,7 @@ impl SceneObject {
             Self::House(h) => &h.id,
             Self::Road(r) => &r.id,
             Self::Area(a) => &a.id,
+            Self::Scenery(s) => &s.id,
             Self::Parcel(p) => &p.id,
         }
     }
@@ -508,6 +519,7 @@ impl SceneObject {
             Self::House(h) => geometry::house_render_bounds(&h.contours, &h.transform),
             Self::Road(r) => expand(bounds(r.path.iter().copied()), r.width / 2.0),
             Self::Area(a) => bounds(a.points.iter().copied()),
+            Self::Scenery(s) => s.bounds(),
             Self::Parcel(p) => bounds(p.polygon.iter().copied()),
         }
     }
@@ -518,6 +530,7 @@ impl From<&FullObject> for SceneObject {
             FullObject::House(h) => Self::House(h.header()),
             FullObject::Road(r) => Self::Road(r.clone()),
             FullObject::Area(a) => Self::Area(a.clone()),
+            FullObject::Scenery(s) => Self::Scenery(s.clone()),
             FullObject::Parcel(p) => Self::Parcel(p.clone()),
         }
     }
@@ -604,6 +617,9 @@ pub(in crate::atlas) struct ValidPreviewWire {
     pub(in crate::atlas) generation: generation::GenerationResponse,
     pub(in crate::atlas) removed_connections: Vec<RemovedConnection>,
     pub(in crate::atlas) changed: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(test, ts(optional))]
+    pub(in crate::atlas) terrain: Option<Box<super::terrain::TerrainPreview>>,
 }
 #[cfg_attr(test, derive(ts_rs::TS))]
 #[derive(Serialize)]
@@ -629,10 +645,51 @@ pub(in crate::atlas) enum PreviewWire {
 }
 #[cfg_attr(test, derive(ts_rs::TS))]
 #[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct RoadRoughness {
+    pub amount: f64,
+    pub seed: u32,
+}
+#[cfg_attr(test, derive(ts_rs::TS))]
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(in crate::atlas) struct ObjectHeaderArgs {
+    pub id: String,
+}
+#[cfg_attr(test, derive(ts_rs::TS))]
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(in crate::atlas) struct RoadHeaderArgs {
+    pub road_id: String,
+}
+#[cfg_attr(test, derive(ts_rs::TS))]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "camelCase", deny_unknown_fields)]
 pub enum Intent {
+    SceneryStroke {
+        brush: super::scenery::SceneryBrush,
+    },
+    TerrainStroke {
+        brush: super::terrain::Brush,
+        #[serde(default)]
+        #[cfg_attr(test, ts(optional))]
+        view: Option<super::terrain::TerrainArgs>,
+    },
+    SetWaterLevel {
+        level: f64,
+        #[serde(default)]
+        #[cfg_attr(test, ts(optional))]
+        view: Option<super::terrain::TerrainArgs>,
+    },
+    SetFoundation {
+        id: String,
+        foundation: super::terrain::Foundation,
+    },
     CreateRoad {
         road: NewRoadInput,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        #[cfg_attr(test, ts(optional))]
+        roughness: Option<RoadRoughness>,
         #[serde(deserialize_with = "required_option")]
         population: Option<population::Settings>,
     },
@@ -640,6 +697,11 @@ pub enum Intent {
         #[serde(rename = "roadId")]
         road_id: String,
         road: RoadEditInput,
+    },
+    RoughenRoad {
+        #[serde(rename = "roadId")]
+        road_id: String,
+        roughness: RoadRoughness,
     },
     InsertRoadNode {
         #[serde(rename = "roadId")]
@@ -658,6 +720,9 @@ pub enum Intent {
         #[serde(rename = "roadId")]
         road_id: String,
         end: RoadEnd,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        #[cfg_attr(test, ts(optional))]
+        roughness: Option<RoadRoughness>,
         nodes: Vec<NodeInput>,
         #[serde(rename = "endpointHandle", deserialize_with = "required_option")]
         endpoint_handle: Option<Point>,
@@ -733,8 +798,15 @@ pub enum Intent {
 impl Intent {
     pub(in crate::atlas) fn object_ids(&self) -> Vec<String> {
         match self {
-            Self::CreateRoad { .. } | Self::CreateArea { .. } => vec![],
-            Self::UpdateRoad { road_id, .. } => vec![road_id.clone()],
+            Self::SceneryStroke { .. }
+            | Self::TerrainStroke { .. }
+            | Self::SetWaterLevel { .. }
+            | Self::CreateRoad { .. }
+            | Self::CreateArea { .. } => vec![],
+            Self::SetFoundation { id, .. } => vec![id.clone()],
+            Self::UpdateRoad { road_id, .. } | Self::RoughenRoad { road_id, .. } => {
+                vec![road_id.clone()]
+            }
             Self::UpdateArea { area_id, .. } => vec![area_id.clone()],
             Self::TransformHouse { id, .. }
             | Self::Rename { id, .. }

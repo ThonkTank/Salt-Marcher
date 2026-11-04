@@ -154,3 +154,29 @@ pub(in crate::atlas) fn resolve_owner(
     }
     Ok(state)
 }
+
+pub(in crate::atlas) fn road_header(
+    app: &AtlasApplication,
+    input: super::model::RoadHeaderArgs,
+) -> Result<SceneResponse> {
+    let object = app.scene_header(&input.road_id)?;
+    let state = OwnerState {
+        exists: object.is_some(),
+        house_id: None,
+        parcel_id: None,
+    };
+    let objects = object
+        .into_iter()
+        .filter(|o| matches!(o, SceneObject::Road(_)))
+        .collect();
+    Ok(SceneResponse {
+        status: app.status(),
+        objects,
+        context_state: OwnerState {
+            exists: true,
+            house_id: None,
+            parcel_id: None,
+        },
+        selection_state: state,
+    })
+}

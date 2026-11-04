@@ -1,8 +1,8 @@
+import type { WorkflowGate } from "./editorWorkflow";
 import { WireError } from "../wireError";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   EditorWorkflowController,
-  type WorkflowGate,
   type WorkflowPorts,
 } from "./editorWorkflowController";
 import {
@@ -106,6 +106,7 @@ const parcel: Parcel = {
 const house: House = {
   kind: "house",
   importantPlace: false,
+  foundation: { height: 1, transition: 10 },
   id: "house-6",
   name: "Haus",
   roof: "#888888",
@@ -251,6 +252,65 @@ beforeEach(() => vi.useFakeTimers());
 afterEach(() => vi.useRealTimers());
 
 describe("pure workflow transitions", () => {
+  it("keeps rejection and recheck transitions bound to their candidate and request", () => {
+    const h = harness();
+    h.c.beginGesture(h.node());
+    h.evaluate(h.node(), [90, 0], false);
+    const editing = h.exact();
+    if (!editing.candidate) throw Error("missing candidate");
+    const candidate = editing.candidate;
+    const committing: ExactWorkflow = {
+      ...editing,
+      pointer: null,
+      stage: { phase: "committing" },
+    };
+    expect(
+      transition(committing, {
+        type: "commitRejected",
+        candidate: { ...candidate.token, candidateId: -1 },
+        message: "old",
+      }),
+    ).toBe(committing);
+    const rejected = transition(committing, {
+      type: "commitRejected",
+      candidate: candidate.token,
+      message: "collision",
+    });
+    expect(isExact(rejected) && rejected.stage.phase).toBe("failed");
+    expect(isExact(rejected) && rejected.candidate?.autoFinish).toBe(false);
+    const fresh = {
+      ...candidate,
+      token: {
+        ...candidate.token,
+        candidateId: candidate.token.candidateId + 1,
+        version: status(1),
+      },
+      autoFinish: false,
+    };
+    const request = { candidate: fresh.token, requestId: 42 };
+    const refreshing = transition(rejected, {
+      type: "refresh",
+      candidate: fresh,
+      request,
+    });
+    expect(isExact(refreshing) && refreshing.basis).toEqual(status(1));
+    expect(
+      transition(refreshing, {
+        type: "refreshed",
+        request: { ...request, requestId: 41 },
+        candidate: fresh,
+        guide: null,
+      }),
+    ).toBe(refreshing);
+    const refreshed = transition(refreshing, {
+      type: "refreshed",
+      request,
+      candidate: fresh,
+      guide: null,
+    });
+    expect(isExact(refreshed) && refreshed.stage.phase).toBe("checking");
+    h.c.dispose();
+  });
   it("routes every wire intent explicitly, with metadata and interiors on the queue", () => {
     const types: Intent["type"][] = [
       "createRoad",

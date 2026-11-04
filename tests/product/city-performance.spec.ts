@@ -18,7 +18,8 @@ for (const count of [100_000, 250_000])
         cmd: "open",
         args: {
           path: resolve(
-            `src-tauri/target/diagnostics/city-2026-11-04/city-${count}.saltatlas`,
+            process.env.ATLAS_CITY_DIR ?? "src-tauri/target/diagnostics/city",
+            `city-${count}.saltatlas`,
           ),
         },
       }),

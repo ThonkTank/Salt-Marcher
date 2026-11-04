@@ -234,3 +234,40 @@ fn small_changes_never_touch_cell_tables_or_geometry_and_use_compact_history() {
         assert!(sizes.iter().all(|n| *n < 500), "{sizes:?}");
     }
 }
+
+#[test]
+fn metadata_noops_preserve_document_and_history_without_loading_cells() {
+    let mut a = AtlasApplication::new().unwrap();
+    let created = request_edit(
+        &mut a,
+        "commit",
+        json!({"type":"createHouse","parcelId":null,"transform":{"x":0,"y":0,"angle":0},"width":2,"depth":2}),
+    );
+    let id = created["objects"][0]["id"].as_str().unwrap();
+    let house = a.house(id).unwrap();
+    let status = serde_json::to_value(a.status()).unwrap();
+    let before = storage_tests::dump(&a);
+    a.db.flush_prepared_statement_cache();
+    a.db.authorizer(Some(|ctx: AuthContext<'_>| match ctx.action {
+        AuthAction::Read {
+            table_name: "house_cells" | "local_cells",
+            ..
+        } => Authorization::Deny,
+        _ => Authorization::Allow,
+    }));
+    for intent in [
+        json!({"type":"rename","id":id,"name":house.name}),
+        json!({"type":"roof","id":id,"roof":house.roof}),
+        json!({"type":"importantPlace","id":id,"value":house.important_place}),
+        json!({"type":"setFoundation","id":id,"foundation":house.foundation}),
+        json!({"type":"room","buildingId":id,"intent":{"kind":"rename","roomId":house.rooms[0].id,"name":house.rooms[0].name}}),
+    ] {
+        for command in ["preview", "commit"] {
+            let result = request_edit(&mut a, command, intent.clone());
+            assert_eq!(result["changed"], false);
+            assert_eq!(serde_json::to_value(a.status()).unwrap(), status);
+        }
+    }
+    a.db.authorizer(None::<fn(AuthContext<'_>) -> Authorization>);
+    assert_eq!(storage_tests::dump(&a), before);
+}

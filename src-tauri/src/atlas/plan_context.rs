@@ -581,10 +581,7 @@ pub(in crate::atlas) fn validate_header_shape(
     match header {
         SceneObject::House(h) => {
             ensure(
-                name(&h.name)
-                    && h.roof.len() == 7
-                    && h.roof.starts_with('#')
-                    && h.roof.as_bytes()[1..].iter().all(u8::is_ascii_hexdigit),
+                name(&h.name) && crate::atlas::validation::roof_color(&h.roof),
                 "Ungültiger Gebäudename oder Dachfarbe",
             )?;
             ensure(
@@ -664,6 +661,7 @@ pub(in crate::atlas) fn validate_header_shape(
                 )?;
             }
         }
+        SceneObject::Scenery(s) => s.validate()?,
         SceneObject::Area(a) => ensure(
             material(&a.material) && simple_polygon(&a.points),
             "Gelände benötigt ein einfaches Polygon mit 3–2048 Punkten",

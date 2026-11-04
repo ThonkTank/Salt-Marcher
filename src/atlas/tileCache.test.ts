@@ -1,6 +1,6 @@
+import { knownChanges } from "./documentVersion";
 import { describe, expect, it, vi } from "vitest";
 import {
-  knownChanges,
   tileAffected,
   TileCache,
   tileKey,

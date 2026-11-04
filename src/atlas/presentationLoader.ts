@@ -1,6 +1,8 @@
-import { CityCache, type CityView } from "./cityView";
+import { TerrainCache, CityCache } from "./presentationCache";
+import type { TerrainResponse } from "./generated/TerrainResponse";
+import type { CityView } from "./cityView";
 import type { AtlasClient, ReadCommands } from "./client";
-import { knownChanges, TileCache, tileKey } from "./tileCache";
+import { TileCache, tileKey } from "./tileCache";
 import { DetailAggregate } from "./detailAggregate";
 import {
   interiorBounds,
@@ -15,9 +17,10 @@ import {
   type House,
 } from "./model";
 import { contextKey, polygonBounds } from "./parcelEditor";
-import { sameVersion } from "./documentVersion";
+import { sameVersion, incrementalChanges } from "./documentVersion";
 import { scheduledRead } from "./readScheduler";
 export type Presentation = {
+  terrain?: TerrainResponse;
   overview?: CityView;
   scene: Scene;
   detail: Detail | null;
@@ -56,6 +59,7 @@ const houseBounds = (house: House): Bounds => {
 };
 // Viewport changes share a context; navigation between contexts never shares ownership.
 type LoadContext = {
+  terrainScale?: number;
   client: AtlasClient;
   session: string | undefined;
   revision: number | undefined;
@@ -68,6 +72,7 @@ type LoadContext = {
   retry: number;
 };
 const sameLoadContext = (a: LoadContext, b: LoadContext) =>
+  a.terrainScale === b.terrainScale &&
   a.client === b.client &&
   a.session === b.session &&
   a.revision === b.revision &&
@@ -91,6 +96,7 @@ type Published = {
 };
 
 export type PresentationInput = {
+  terrainScale?: number;
   cityLevel?: number | null;
   client: AtlasClient;
   status: Status | null;
@@ -103,6 +109,7 @@ export type PresentationInput = {
 };
 type Snapshot = { display: Published | null; error: string; loading: boolean };
 const loadContext = (input: PresentationInput, retry: number): LoadContext => ({
+  terrainScale: input.terrainScale,
   cityLevel: input.cityLevel ?? null,
   client: input.client,
   session: input.status?.sessionId,
@@ -117,6 +124,7 @@ const loadContext = (input: PresentationInput, retry: number): LoadContext => ({
 
 /** Owns reads, cache lifetime and the single published snapshot; independent of React. */
 export class PresentationLoader {
+  private terrain = new TerrainCache();
   private city = new CityCache();
   private snapshot: Snapshot = { display: null, error: "", loading: false };
   private listeners = new Set<() => void>();
@@ -268,6 +276,17 @@ export class PresentationLoader {
       wanted: () => boolean = () => this.request === request,
     ) => scheduledRead(client, cmd, args, wanted);
     try {
+      const terrain =
+        input.terrainScale === undefined
+          ? undefined
+          : await this.terrain.load(
+              client,
+              status,
+              queryBounds,
+              input.terrainScale,
+              current,
+            );
+      if (!current() || terrain === null) return;
       if (input.cityLevel != null && editorContext.kind === "exterior") {
         const overview = await this.city.load(
           client,
@@ -278,12 +297,13 @@ export class PresentationLoader {
         );
         if (!overview || !current()) return;
         const emptyOwner = { exists: true, houseId: null, parcelId: null };
+        const priorSelected = previous?.scene.objects.find(
+          (object) => object.id === selectedId,
+        );
         const scene = selectedId
-          ? await read("scene", {
-              bounds: [5000100, 5000100, 5000100, 5000100],
-              context: editorContext,
-              selectedId,
-            })
+          ? priorSelected && priorSelected.kind !== "road"
+            ? await read("objectHeader", { id: selectedId })
+            : await read("roadHeader", { roadId: selectedId })
           : {
               status,
               objects: [],
@@ -296,6 +316,7 @@ export class PresentationLoader {
         publish(
           {
             scene,
+            terrain,
             overview,
             detail: null,
             active: "",
@@ -311,9 +332,9 @@ export class PresentationLoader {
         return;
       }
       const prior = previous?.scene.status;
-      const unchanged = prior?.revision === status.revision;
-      const changes = knownChanges(status);
-      const next = prior?.revision === status.revision - 1 && !!changes;
+      const unchanged = sameVersion(prior, status);
+      const changes = incrementalChanges(prior ?? null, status);
+      const next = !!changes;
       // All forced closure headers participate, including offscreen owners.
       // Missing targets must be rechecked on undo, even outside queryBounds.
       const closureIds = previous
@@ -347,7 +368,21 @@ export class PresentationLoader {
                 ? object.polygon
                 : object.kind === "area"
                   ? object.points
-                  : object.path;
+                  : object.kind === "scenery"
+                    ? object.assets.flatMap(
+                        (asset) =>
+                          [
+                            [
+                              asset.point[0] - asset.size,
+                              asset.point[1] - asset.size,
+                            ],
+                            [
+                              asset.point[0] + asset.size,
+                              asset.point[1] + asset.size,
+                            ],
+                          ] as [number, number][],
+                      )
+                    : object.path;
             if (!points.length) return changes.world.length === 0;
             b = polygonBounds(points)!;
           }
@@ -386,6 +421,7 @@ export class PresentationLoader {
           publish(
             {
               scene,
+              terrain,
               detail: null,
               active: "",
               context: editorContext,
@@ -510,13 +546,14 @@ export class PresentationLoader {
       }
       if (!current()) return;
       const result = {
+        terrain,
         scene,
         detail,
         active: houseId,
         context: editorContext,
         selectedId,
         floor,
-        bounds: fulfilled,
+        bounds: terrain ? queryBounds : fulfilled,
         includeLower,
       };
       publish(result, false);

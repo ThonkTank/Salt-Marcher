@@ -90,8 +90,10 @@ fn important_place_roundtrips_and_invalid_tile_requests_are_rejected() {
 #[ignore = "large-city benchmark; writes evidence under target/diagnostics"]
 fn city_scale_benchmark() {
     use std::time::Instant;
-    let output = std::path::Path::new("target/diagnostics/city-2026-11-04");
-    std::fs::create_dir_all(output).unwrap();
+    let output = std::path::PathBuf::from(
+        std::env::var_os("ATLAS_CITY_DIR").unwrap_or_else(|| "target/diagnostics/city".into()),
+    );
+    std::fs::create_dir_all(&output).unwrap();
     for count in [100_000, 250_000] {
         let mut a = AtlasApplication::new().unwrap();
         let mut h = fixture();

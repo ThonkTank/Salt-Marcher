@@ -41,6 +41,7 @@ fn preview_projections_preserve_json_contract() {
         revision: status.revision,
     };
     let success = ValidPreviewWire {
+        terrain: None,
         valid: True,
         version: version.clone(),
         status: Box::new(status.clone()),
@@ -207,6 +208,9 @@ fn transport_serde_attributes_have_reviewed_mappings() {
         include_str!("errors.rs"),
         include_str!("generation.rs"),
         include_str!("population.rs"),
+        include_str!("terrain.rs"),
+        include_str!("scenery.rs"),
+        include_str!("application/map_tiles.rs"),
         include_str!("../interior/model.rs"),
         include_str!("../interior/stair_geometry.rs"),
     ] {

@@ -195,19 +195,20 @@ function PresentationHarness() {
   });
   window.atlasPresentationSet = (value) =>
     setInput((old) => ({ ...old, ...value }));
-  window.atlasPresentation = usePresentation(
-    input.client === "first" ? client : otherClient,
-    input.status,
-    input.bounds,
-    input.context ??
+  window.atlasPresentation = usePresentation({
+    client: input.client === "first" ? client : otherClient,
+    status: input.status,
+    bounds: input.bounds,
+    editorContext:
+      input.context ??
       (input.active
         ? { kind: "house", houseId: input.active }
         : { kind: "exterior" }),
-    input.selectedId,
-    input.floor,
-    input.enabled,
-    input.lower,
-  );
+    selectedId: input.selectedId,
+    floor: input.floor,
+    detailEnabled: input.enabled,
+    includeLower: input.lower,
+  });
   window.atlasPresentationTrace.push({
     enabled: input.enabled,
     fresh: window.atlasPresentation.fresh,

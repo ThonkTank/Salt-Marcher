@@ -76,6 +76,7 @@ impl AtlasApplication {
         parts: operations::PreviewParts,
     ) -> ValidPreviewWire {
         ValidPreviewWire {
+            terrain: computed.terrain_preview.map(Box::new),
             valid: True,
             version,
             status: Box::new(self.status()),
@@ -129,6 +130,7 @@ impl AtlasApplication {
 
 mod persistence;
 mod storage;
+mod terrain_store;
 
 #[cfg(test)]
 mod parcel_collision_tests;
@@ -165,3 +167,12 @@ mod application_test_support;
 
 #[cfg(test)]
 mod map_tiles_tests;
+
+#[cfg(test)]
+mod road_roughness_tests;
+
+#[cfg(test)]
+mod terrain_tests;
+
+#[cfg(test)]
+mod scenery_tests;

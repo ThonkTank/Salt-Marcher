@@ -59,10 +59,19 @@ export function captureOperation(
 ): OperationResult {
   const objects = source.scene?.objects ?? [];
   switch (intent.type) {
+    case "sceneryStroke":
+      return ok({ kind: "scenery" });
+    case "terrainStroke":
+      return ok({ kind: "terrain" });
+    case "setWaterLevel":
+      return ok({ kind: "waterLevel" });
+    case "setFoundation":
+      return ok({ kind: "foundation", houseId: intent.id });
     case "createRoad":
     case "extendRoad":
     case "createArea":
       return draft ? captureDraftOperation(draft, source) : fail();
+    case "roughenRoad":
     case "updateRoad":
     case "insertRoadNode":
     case "deleteRoadNode": {
@@ -189,6 +198,10 @@ export function captureGestureOperation(
   source: OperationSource,
 ): OperationResult {
   switch (gesture.kind) {
+    case "scenery":
+      return ok({ kind: "scenery" });
+    case "terrain":
+      return ok({ kind: "terrain" });
     case "parcel":
       return captureOperation(
         {
@@ -269,6 +282,12 @@ export function captureHouseDrawingOperation(
 }
 export function operationTarget(operation: WorkflowOperation): string | null {
   switch (operation.kind) {
+    case "scenery":
+    case "terrain":
+    case "waterLevel":
+      return null;
+    case "foundation":
+      return operation.houseId;
     case "newRoad":
     case "newArea":
       return null;

@@ -43,6 +43,9 @@ pub(in crate::atlas) fn validate_road_identity(r: &Road) -> Result<()> {
 pub(in crate::atlas) fn material(s: &str) -> bool {
     ["grass", "earth", "stone", "water"].contains(&s)
 }
+pub(in crate::atlas) fn roof_color(s: &str) -> bool {
+    s.len() == 7 && s.starts_with('#') && s.as_bytes()[1..].iter().all(u8::is_ascii_hexdigit)
+}
 pub(in crate::atlas) fn name(s: &str) -> bool {
     !s.trim().is_empty() && s.chars().count() <= 120
 }
@@ -59,6 +62,7 @@ pub(in crate::atlas) fn validate_object(
 }
 pub(in crate::atlas) fn validate_house_payload(o: &FullObject, external: bool) -> Result<()> {
     if let FullObject::House(h) = o {
+        h.foundation.validate()?;
         ensure(!h.rooms.is_empty() && !h.cells.is_empty(), "Leeres Gebäude")?;
         interior::validate_openings(&h.cells, &h.connections)?;
         if external {

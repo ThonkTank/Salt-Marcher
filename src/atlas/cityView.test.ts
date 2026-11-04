@@ -1,5 +1,6 @@
+import { CityCache } from "./presentationCache";
 import { describe, expect, it } from "vitest";
-import { CityCache, cityLevel, cityTiles, zoomIntoCity } from "./cityView";
+import { cityLevel, cityTiles, zoomIntoCity } from "./cityView";
 import { AtlasClient } from "./client";
 import { layoutLabels } from "./mapLabels";
 import type { MapFeature } from "./generated/MapFeature";

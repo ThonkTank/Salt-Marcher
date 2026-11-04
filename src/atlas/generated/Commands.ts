@@ -2,10 +2,13 @@
 import type { AllCommands } from "./AllCommands";
 export type Commands = Pick<
   AllCommands,
+  | "terrainTiles"
   | "status"
   | "new"
   | "extent"
   | "mapTiles"
+  | "objectHeader"
+  | "roadHeader"
   | "scene"
   | "interiorMetadata"
   | "interiorTile"
@@ -15,6 +18,12 @@ export type Commands = Pick<
 >;
 export type ReadCommands = Pick<
   Commands,
-  "mapTiles" | "scene" | "interiorMetadata" | "interiorTile"
+  | "terrainTiles"
+  | "mapTiles"
+  | "objectHeader"
+  | "roadHeader"
+  | "scene"
+  | "interiorMetadata"
+  | "interiorTile"
 >;
 export type AdapterCommands = Pick<AllCommands, "detail" | "save" | "open">;

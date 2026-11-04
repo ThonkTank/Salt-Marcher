@@ -3,6 +3,7 @@ import { defineConfig } from "@playwright/test";
 const diagnosticsRun =
   (process.env.PLAYWRIGHT_DIAGNOSTICS_RUN ??= `src-tauri/target/diagnostics/playwright-${new Date().toISOString().replace(/[:.]/g, "-")}-${process.pid}`);
 export default defineConfig({
+  workers: 1,
   outputDir: `${diagnosticsRun}/results`,
   reporter: [
     ["list"],

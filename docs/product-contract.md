@@ -72,7 +72,7 @@ Kappen. Ein Kurvensplit erhält dieselbe Mittellinie innerhalb der
 Abflachungsgenauigkeit; verstärkte Offset-/Tangenten-/Hausposeänderungen werden
 kanonisch neu abgeleitet und vollständig geprüft.
 
-Gelände sind einfache geschlossene Polygone mit 3–2.048 Punkten und Material
+Materialflächen sind einfache geschlossene Polygone mit 3–2.048 Punkten und Material
 `grass`, `earth`, `stone` oder `water`; `Area.order` bestimmt ihre
 Erstellungsreihenfolge. Wasser bleibt auch unter späteren Flächen ein Hindernis.
 `createArea/updateArea` erhalten keine leeren IDs und kein clientseitiges Order.
@@ -218,11 +218,80 @@ höchstens 100.000 Zellen;
 es gibt keine allgemeine Gesamtzellgrenze pro Haus. Ein durch mehrere Aktionen
 auf über 100.000 Zellen gewachsener Raum bleibt bewegbar.
 
-## Bedienung, Vorschau und Nebenläufigkeit
+## Landschaftspinsel
+
+„Landschaft“ malt dekorative Assets für Wald, Wiese, Buschland und Felsen im
+Außenbereich ab 20 % Zoom. Linke Taste ziehen streut, Loslassen übernimmt den
+Strich als einen Historyschritt; Escape, Fokusverlust und Pointercancel verwerfen
+die laufende Geste. Auswahl trifft sichtbare Assets; Löschen entfernt den ganzen
+Strich. Einzelne Assets sind noch nicht separat verschiebbar oder radierbar.
+
+Pinselradius: 5–500 Fuß (Vorgabe 30), Dichte: 5–100 % (65 %), Assetradius:
+1–80 Fuß (8). Die Dichte bestimmt die Belegung eines versetzten Rasters;
+Größenvariation 70–125 %, Drehung und vier Symbolvarianten kommen aus einem
+für die Geste fixierten Seed. Die Platzierung folgt dem überstrichenen Kreis,
+nicht der Häufigkeit der Pointerevents. Vorschau und Übernahme verwenden denselben
+reinen Generator. Wiederholtes Übermalen legt zusätzliche Assets an.
+
+Ein Strich enthält höchstens 4.096 Assets und 4.096 Eingabepunkte. Zu lange oder
+aufwendige Striche werden atomar abgelehnt (maximal 100.000 Pfadunterteilungen
+je Segment, 100.000 belegbare Rasterplätze und eine Million Kandidatenprüfungen).
+Ein Strich ohne Treffer ist ein No-op. Assets sind Dekoration ohne Einfluss auf
+Kollisionen, Höhen oder Bebauung; Straßen und Dächer zeichnen darüber.
+Gespeichert werden Landschaftsart und konkrete Position, Radius, Drehung und
+Variante jedes Assets. Zoomen, Undo/Redo und Dateiöffnung verändern sie nicht.
+Die Übersicht zeigt vereinfachte Symbole, höchstens 512 gleichmäßig ausgewählte
+Assets je Strich; unterhalb der sichtbaren Symbolgröße entfallen sie.
+Eigene Assetimporte und Texturmalerei sind nicht Teil dieses Werkzeugs.
+
+## Höhen, Fundamente und Höhenwasser
+
+Natürliches Gelände ist ein dünn belegtes 5-Fuß-Höhenraster, ohne Eintrag 10 Fuß.
+Höhen und globaler Wasserstand sind endlich innerhalb ±100.000 Fuß; der anfängliche
+Wasserstand beträgt 0 Fuß. Interpolation teilt jede Rasterzelle entlang ihrer
+Nordwest-Südost-Diagonale in lineare Dreiecke.
+
+Das Werkzeug „Höhen“ funktioniert im gesamten Außenzoom. Vorgaben: Anheben,
+25 Fuß Radius, 1 Fuß Änderung, 25 % Stärke, Zielhöhe 10 Fuß. Radius 5–500 Fuß,
+Änderung 0,1–100 Fuß, Stärke 0,01–1. Ein Strich enthält höchstens 100.000
+Eingabepunkte und verändert höchstens 100.000 Rasterpunkte. Wegabtastung mit
+max(Radius/4, 2,5 Fuß) ist unabhängig von Ereignisrate und Zoom; wiederholtes
+Überstreichen kumuliert. Glätten nähert sich dem Mittel der neun Nachbarpunkte,
+Einebnen der Zielhöhe, jeweils mit radialem weichem Abfall.
+Loslassen übernimmt einen Strich als einen Historyschritt; Escape, Blur und
+Pointerabbruch verwerfen ihn. Ablehnungen bleiben im gemeinsamen Workflow prüfbar.
+
+Jedes Haus besitzt eine Fundamenthöhe von 0–100 Fuß (Vorgabe 1) und eine
+Übergangsbreite von 0–500 Fuß (Vorgabe 10). Die höchste natürliche Geländehöhe
+unter der oberirdischen Hausgrundfläche bestimmt die ebene Plattform. Ihre
+Fundamentoberkante liegt um die Fundamenthöhe darüber. Keller ohne Dachkontur
+bilden keine Geländeplattform. Der Übergang außerhalb der Grundfläche läuft
+weich aus; überlagerte Übergänge verwenden das Maximum. Hausgrundflächen haben
+Vorrang vor fremden Übergängen. Plattformen werden ausschließlich aus natürlichem
+Gelände berechnet, niemals aus anderen Aufschüttungen. Bau, Bewegung, Grundriss-
+und Höhenänderungen führen sie automatisch nach; Löschen entfernt sie. Räume und
+Geschosse bekommen keine eigenen Welthöhen; Straßen besitzen keine Steigungsregeln.
+
+Höhenwasser liegt überall dort, wo die wirksame Geländeoberfläche niedriger als
+der Wasserstand ist. Es blockiert weder Neubau noch Bestandsänderungen und erzeugt
+keine Warnmeldungen. Wasserstand hebt Fundamente nicht an. Wasser erscheint unter
+Dächern; überflutete Fundamentränder erhalten Wasserfarbe. Manuelle Wasserpolygone
+behalten unabhängig davon ihre bisherigen Kollisionsregeln.
+
+Relief und zuschaltbare Höhenlinien zeigen die Oberfläche; Höhenlinien beginnen
+bei 5 Fuß Abstand und werden bei weitem Zoom ausgedünnt. Die Höhenanzeige am
+Mauszeiger entspricht der dargestellten interpolierten Oberfläche. Übersichtsstufen
+mitteln natürliche Höhen; Hausplattformen werden bis zu einer Abtastweite von
+160 Fuß berücksichtigt. Gröbere Stufen zeigen Landschaftsformen, keine exakten
+Hausfundamente. Bearbeitung bleibt stets auf dem ursprünglichen 5-Fuß-Raster.
+
+## Bedienung
+
+### Navigation und Oberfläche
 
 Mitteltaste oder Leertaste+Ziehen verschiebt die Karte, Mausrad zoomt. Ein Haus
 öffnet per Doppelklick oder „Innen öffnen“; die Kamera bleibt erhalten.
-Außenzoom reicht bis 0,001 %, Außen- und Innenbearbeitung beginnen bei 20 %. Im Parzellenkontext
+Außenzoom reicht bis 0,001 %. Straßen und Höhen lassen sich in der gesamten Außenübersicht bearbeiten; andere Außenobjekte und Innenräume werden ab 20 % bearbeitet. Im Parzellenkontext
 verwendet Fit immer Polygonbounds, auch ohne Haus; ein fehlender Owner bedeutet
 leer, nicht fehlendes Grundstück. Entferntes Kontextobjekt führt nach außen.
 
@@ -243,12 +312,32 @@ Aktionsleiste unter den Einstellungen, auch bei ausgewählter Entwurfsparzelle.
 Die Aktionsleiste enthält Übernehmen, Abbrechen und bei Bedarf Vorschau erneut
 prüfen. Dokument- und Verbindungsfehler stehen im Statusbereich. Feldgrenzen werden am Feld angezeigt und verhindern ungültige Writes.
 
+### Straßenentwürfe und Parzellenplanung
+
 Neue Straßen verwenden automatisch geglättete Verlaufspunkte (zentripetales
 Catmull–Rom als kubische Bézier-Knoten). Klicken setzt Punkte, Ziehen bewegt sie.
 Zwei Punkte ergeben eine Gerade; direkte Doppelpunktsegmente werden verhindert.
-Bestandsstraßen behalten ihre Kurven und Griffbearbeitung. Plusgriffe an den
+Bestandsstraßen behalten ihre Kurven. In der Übersicht erscheinen Verlaufspunkte und Verlängerungsgriffe, ab 20 % zusätzlich Bézier-Griffe. Punktbewegungen verschieben die zugehörigen Griffe gemeinsam, ohne automatische Neuglättung. Plusgriffe an den
 Enden beginnen Verlängerungen; nur die neuen Kanten werden geglättet, vorhandene
 Kanten bleiben erhalten. Die Anschlussrichtung folgt der äußeren Tangente.
+
+Rauheit ist ein Entwurfswerkzeug für echte Geometrie: 0–1, Vorgabe 0,33;
+„Neue Variation“ ändert den entwurfslokalen Seed. Jede Vorschau wird erneut aus
+der Grundkurve berechnet. Die deterministische Querabweichung verwendet maximal
+eine halbe Straßenbreite bei voller Stärke, eine Wellenlänge von mindestens
+acht Straßenbreiten beziehungsweise 40 Fuß und einen weich auslaufenden Verlauf
+an gesetzten Punkten. Diese Punkte und ihre Anschlussrichtungen bleiben fest.
+Zusätzliche Stützpunkte gehören zur jeweiligen ursprünglichen Section.
+„Verlauf aufrauen“ beginnt bei Bestandsstraßen ausdrücklich mit Stärke 0;
+gewöhnliche Punktbewegungen erzeugen keine Rauheit. Übernahme speichert nur die
+resultierenden kubischen Nodes, keine Rauheitsparameter. Zoom und Dateiöffnung
+verändern das Ergebnis nicht. Verlängerungen verändern nur neue Kanten;
+Node-/Samplelimits und alle Konfliktregeln gelten unverändert.
+
+Bebauung kann bereits in der Übersicht erzeugt, geprüft und übernommen werden.
+Gemeinsame Einstellungen sind verfügbar; einzelne Parzellen auswählen, auslassen
+oder über Griffe bearbeiten erfordert den Nahzoom. Bereits angepasste Aufteilungen
+bleiben beim Zoomwechsel erhalten.
 
 Geplante Parzellen sind auf der Karte auswählbar. Griffe ändern Anfang/Ende am
 Straßenabschnitt, Straßenabstand und Tiefe; rechts sind diese Werte numerisch
@@ -274,11 +363,15 @@ ist aber nicht über ihre veralteten Grundstücksflächen bearbeitbar. Numerisch
 Entwurfsänderungen dürfen laufende Kandidaten ersetzen. Rechtsklick übernimmt
 den aktuellen Kandidaten unabhängig vom Abschluss der Rückmeldung.
 
+### Hauszeichnen
+
 Das Hauswerkzeug fixiert beim Pointerdown Grundstück und Rahmen. Eine
 revisionsgleiche Ownerauflösung prüft auch Offscreen-Häuser; Pointerup wartet
 darauf. Ein belegtes Grundstück verlangt Ergänzung im bestehenden Haus;
 ein Grenzübertritt erzeugt keinen freien Ausweichowner. Escape, Blur, neue
 Interaktion und Unmount widerrufen noch nicht angenommene Ownerarbeit.
+
+## Vorschau und Nebenläufigkeit
 
 Ein interaktiver Workflow besitzt unveränderliche Kandidaten. Jede
 Inhaltsänderung ersetzt Kandidat und Vorschauergebnis; Vorschau folgt nach
@@ -350,7 +443,9 @@ Der Maßstab bezeichnet CSS-Pixel pro Fuß; 100 % entsprechen 6,4 Pixeln pro Fu�
 Unter 0,064 zeigt die Stadtübersicht zusammengefasste Bebauung, Gelände und
 Straßen ab 12 Fuß Breite. Ab 0,064 können einzelne Dächer ab sechs Pixeln
 sichtbarer Größe erscheinen, ab 0,32 auch gewöhnliche Gebäudenamen. Ab 1,28
-(20 %) werden exakte Szenen und Bearbeitungswerkzeuge freigegeben.
+(20 %) werden vollständige exakte Szenen und die Detailbearbeitung freigegeben.
+Die Straßenbearbeitung lädt auch darunter gezielt den revisionsgleichen exakten
+Straßenheader; vereinfachte Kachelpfade sind keine Bearbeitungsgeometrie.
 Die Übersicht darf bei hoher Dichte kleinere Einzelobjekte durch Bebauungsdichte
 ersetzen; sie behauptet keine exakten Grundstücks- oder Gebäudegrenzen.
 
@@ -363,11 +458,16 @@ Die vollständige Bebauungsdichte bleibt davon unabhängig erhalten. Überladene
 exakte Ausschnitte mit mehr als 5.000 Objekten verlangen weiteres Hineinzoomen;
 es gibt keine still gekürzte Bearbeitungsszene.
 
-Unterhalb des Bearbeitungsmaßstabs verschiebt auch Ziehen mit der linken Taste
-die Karte. Doppelklick zoomt um den angeklickten Punkt zur nächsten Ansicht
+In der Übersicht verschiebt Ziehen mit der linken Taste im Auswahlwerkzeug
+auf leerer Karte die Ansicht. Das Straßenwerkzeug setzt und bewegt stattdessen
+Verlaufspunkte. Doppelklick auf eine ausgewählte Straße fügt einen Knoten ein;
+auf leerer Karte zoomt er um den angeklickten Punkt zur nächsten Ansicht
 (0,064, 0,32, 1,28); „Zum Bearbeiten hineinzoomen“ erhält den Kartenmittelpunkt.
-Bestehende Auswahl bleibt erhalten, neue Geometrieaktionen benötigen weiterhin
-vollständige, aktuelle Bearbeitungsdaten. Beschriftungen verändern die
+Bestehende Auswahl und Entwürfe bleiben beim Zoomwechsel erhalten. Im
+Straßenzeichnen löst Doppelklick keinen Zoom aus. Geometrieaktionen benötigen
+aktuelle Daten; Bestandsstraßen zusätzlich ihren vollständigen Header.
+Straßenlinien haben mindestens zwei CSS-Pixel Breite. Ausgewählte und geplante
+Straßen bleiben unabhängig von Kachelpriorisierung sichtbar. Beschriftungen verändern die
 Hitpriorität nicht. Innenräume werden weiterhin ausdrücklich geöffnet.
 
 Gebäude besitzen `importantPlace`, standardmäßig false, bearbeitbar als
@@ -389,15 +489,17 @@ Pro Ansicht werden höchstens 3.000 priorisierte Objektkandidaten betrachtet und
 
 ## Dateien und History
 
-`.saltatlas`: SQLite-Format **11**, ohne Migration/Altformate. Genau drei
+`.saltatlas`: SQLite-Format **13**, ohne Migration/Altformate. Genau fünf
 STRICT-/WITHOUT-ROWID-Tabellen: `document_meta(singleton,next_identity)`,
-`objects(id,kind,body)`, `house_cells(building_id,payload)`. Keine Arbeitsindizes,
+`objects(id,kind,body)`, `house_cells(building_id,payload)`,
+`terrain(x,y,z)`, `terrain_settings(singleton,water)`. Keine Arbeitsindizes,
 RTrees, Views, Trigger, History oder redundanten Konturen/Bounds.
 
 Autoritativ sind Straßeneigenschaften/Nodes/Sections/Rezept/Marker,
 Road-Source gebundener Parzellen, eingefrorene Polygon/Frame-Werte gelöster
 Parzellen, Hausidentität/-autoren/Wichtiger-Ort-Markierung/Räume/Verbindungen/Zähler/Placement sowie
-Geländepunkte/-material/-Order. Hauszellen stehen ausschließlich separat.
+Flächenpunkte/-material/-Order, Landschaftsstriche mit konkreten Assets, natürliche Höhenpunkte, Wasserstand und
+Fundamenteinstellungen pro Haus. Hauszellen stehen ausschließlich separat.
 Gebundene Welttransforms und Konturen werden beim Öffnen neu berechnet.
 
 Unbekannte und doppelte verschachtelte JSON-Felder, zusätzliche Schemaobjekte,

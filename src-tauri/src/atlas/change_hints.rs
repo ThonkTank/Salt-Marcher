@@ -110,23 +110,17 @@ pub(in crate::atlas) fn from_patch(
     old: &SceneObject,
     next: &SceneObject,
 ) -> ChangeHints {
-    let id = match patch {
-        SmallPatch::HouseName { id, .. }
-        | SmallPatch::Roof { id, .. }
-        | SmallPatch::ImportantPlace { id, .. }
-        | SmallPatch::RoomName { id, .. }
-        | SmallPatch::Transform { id, .. } => id,
-    };
+    let id = patch.id();
     let mut hints = ChangeHints::default();
     if old != next {
         hints.world.extend([old.bounds(), next.bounds()]);
     }
     if matches!(patch, SmallPatch::RoomName { .. }) {
-        hints.metadata.push(id.clone());
+        hints.metadata.push(id.to_owned());
     }
     if let SmallPatch::Transform { before, after, .. } = patch {
         if placement_owner(&before.placement) != placement_owner(&after.placement) {
-            hints.relations.push(id.clone());
+            hints.relations.push(id.to_owned());
             for pose in [before, after] {
                 if let Placement::Parcel { parcel_id, .. } = &pose.placement {
                     hints.relations.push(parcel_id.clone());

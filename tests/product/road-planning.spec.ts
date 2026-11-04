@@ -21,6 +21,8 @@ test("mouse road planning edits and excludes parcels, commits once and undoes to
   await page.goto(url);
   await ready(page);
   await page.getByRole("button", { name: "Straße", exact: true }).click();
+  await page.getByLabel("Rauheit", { exact: true }).fill("0");
+  await page.getByLabel("Rauheit", { exact: true }).press("Enter");
   await expect(page.getByLabel("Bebauung", { exact: true })).toHaveValue(
     "houses",
   );
@@ -92,6 +94,8 @@ test("right click commits fixed points while preview is held and ignores mouse g
   await page.goto(url);
   await ready(page);
   await page.getByRole("button", { name: "Straße", exact: true }).click();
+  await page.getByLabel("Rauheit", { exact: true }).fill("0");
+  await page.getByLabel("Rauheit", { exact: true }).press("Enter");
   await page.getByLabel("Bebauung", { exact: true }).selectOption("parcels");
   await clickWorld(page, [0, 0]);
   await page.evaluate(() => {

@@ -14,7 +14,7 @@ import {
   type SessionLease,
 } from "./documentQueue";
 import type { Intent, Version } from "./model";
-import type { PlannedAction } from "./interaction";
+import type { PlannedAction } from "./editorWorkflow";
 
 type Choice = "save" | "discard" | "cancel";
 

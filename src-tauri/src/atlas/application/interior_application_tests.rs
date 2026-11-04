@@ -161,7 +161,16 @@ fn real_move_preview_history_and_format11_roundtrip() {
         .unwrap()
         .collect::<rusqlite::Result<_>>()
         .unwrap();
-    assert_eq!(tables, vec!["document_meta", "house_cells", "objects"]);
+    assert_eq!(
+        tables,
+        vec![
+            "document_meta",
+            "house_cells",
+            "objects",
+            "terrain",
+            "terrain_settings"
+        ]
+    );
     drop(db);
     let session = a.session.clone();
     a.request("open", json!({"path":path})).unwrap();
