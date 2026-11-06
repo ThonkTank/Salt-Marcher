@@ -2,7 +2,9 @@ import { GroundCache } from "./presentationCache";
 import type { GroundResponse } from "./generated/GroundResponse";
 import { TerrainCache, CityCache } from "./presentationCache";
 import type { TerrainResponse } from "./generated/TerrainResponse";
-import type { CityView } from "./cityView";
+import { cityRequest, type CityView } from "./cityView";
+import { terrainRequest } from "./terrainView";
+import { groundRequest } from "./groundView";
 import type { AtlasClient, ReadCommands } from "./client";
 import { TileCache, tileKey } from "./tileCache";
 import { DetailAggregate } from "./detailAggregate";
@@ -303,6 +305,13 @@ type CommandLayer<K extends keyof LayerCommands> = PresentationLayer<
   ReadCommands[LayerCommands[K]]["result"]
 >;
 type RasterArgs = { version: Status; bounds: Bounds; level: number };
+// Bounds-based tile budgets may change the effective resolution even when the
+// requested level is unchanged. Reuse only if both requests choose the same level.
+const rasterCovers =
+  (request: (bounds: Bounds, level: number) => { level: number }) =>
+  (a: RasterArgs, b: RasterArgs) =>
+    viewportCovers(a, b, true) &&
+    request(a.bounds, a.level).level === request(b.bounds, b.level).level;
 
 /** Owns reads, cache lifetime and the single published snapshot; independent of React. */
 export class PresentationLoader {
@@ -352,21 +361,21 @@ export class PresentationLoader {
           wanted,
         ),
       () => this.refreshLayers(),
-      undefined,
+      rasterCovers(terrainRequest),
       true,
     ),
     ground: new PresentationLayer(
       (client, args: RasterArgs, wanted) =>
         this.ground.load(client, args.version, args.bounds, args.level, wanted),
       () => this.refreshLayers(),
-      undefined,
+      rasterCovers(groundRequest),
       true,
     ),
     city: new PresentationLayer(
       (client, args: RasterArgs, wanted) =>
         this.city.load(client, args.version, args.bounds, args.level, wanted),
       () => this.refreshLayers(),
-      undefined,
+      rasterCovers(cityRequest),
       true,
     ),
   };
@@ -593,7 +602,14 @@ export class PresentationLoader {
       });
       this.refreshLayers();
     }
-    void this.load(input, status, request, queryBounds, previous);
+    void this.load(
+      input,
+      status,
+      request,
+      queryBounds,
+      previous,
+      !!display && display.request.context.cityLevel === null,
+    );
   }
   private async load(
     input: PresentationInput,
@@ -601,6 +617,7 @@ export class PresentationLoader {
     request: LoadRequest,
     queryBounds: Bounds,
     previous: Presentation | null,
+    previousExact: boolean,
   ) {
     const {
       client,
@@ -736,18 +753,33 @@ export class PresentationLoader {
           }
           return !changes.world.some((world) => intersects(world, b));
         });
+      // Clearing selection needs no new owner header. Only an unchanged exact
+      // exterior scene can provide this local transition; other selections read.
+      const clearSelection =
+        editorContext.kind === "exterior" &&
+        selectedId === "" &&
+        !!previous?.selectedId &&
+        unchanged;
       const sceneReusable =
         previous &&
-        !previous.overview &&
+        // Layer projection may already have removed the old overview image.
+        // The published request, not that image, proves scene completeness.
+        previousExact &&
         contextKey(previous.context) === active &&
-        previous.selectedId === selectedId &&
+        (previous.selectedId === selectedId || clearSelection) &&
         inside(queryBounds, previous.bounds) &&
         (unchanged ||
           (next &&
             closureUnaffected &&
             !changes!.world.some((b) => intersects(b, previous.bounds))));
       const scene = sceneReusable
-        ? { ...previous!.scene, status }
+        ? {
+            ...previous!.scene,
+            status,
+            selectionState: clearSelection
+              ? { exists: true, houseId: null, parcelId: null }
+              : previous!.scene.selectionState,
+          }
         : await read("scene", {
             bounds: queryBounds,
             context: editorContext,

@@ -1,4 +1,5 @@
 import { expect, it, vi } from "vitest";
+import { workflowObjects } from "../../tests/support/atlasFixtures";
 import { AtlasClient } from "./client";
 import type { Scene, Status } from "./model";
 import type { SurfaceTile } from "./generated/SurfaceTile";
@@ -65,6 +66,130 @@ it("keeps one request for equivalent renders and reuses a complete scene inside 
   loader.update(moved);
   expect(loader.fresh(moved)).toBe(true);
   expect(requests).toHaveLength(1);
+  loader.dispose();
+});
+
+it("reuses completed covering scene and rasters only for the same viewport ownership", async () => {
+  const pending: Array<{
+    cmd: string;
+    args: Record<string, unknown>;
+    resolve: (value: unknown) => void;
+  }> = [];
+  const client = new AtlasClient(
+    (cmd, args) =>
+      new Promise((resolve) => pending.push({ cmd, args, resolve })),
+  );
+  const { input, loader } = harness();
+  const initial = { ...input, client, terrainLevel: 0, groundLevel: 0 };
+  loader.update(initial);
+  for (const item of pending)
+    item.resolve(
+      item.cmd === "scene"
+        ? scene()
+        : {
+            status,
+            level: item.args.level,
+            tiles: (item.args.tiles as number[][]).map(([x, y]) =>
+              item.cmd === "terrainTiles"
+                ? terrainTile(x, y)
+                : { x, y, pixels: "" },
+            ),
+          },
+    );
+  await vi.waitFor(() => expect(loader.fresh(initial)).toBe(true));
+  const smaller: PresentationInput = { ...initial, bounds: [20, 20, 80, 80] };
+  const count = pending.length;
+  loader.update(smaller);
+  expect(loader.fresh(smaller)).toBe(true);
+  expect(pending).toHaveLength(count);
+  expect(loader.fresh({ ...smaller, status: { ...status, revision: 2 } })).toBe(
+    false,
+  );
+  expect(
+    loader.fresh({ ...smaller, status: { ...status, sessionId: "other" } }),
+  ).toBe(false);
+  expect(loader.fresh({ ...smaller, selectedId: "other" })).toBe(false);
+  expect(
+    loader.fresh({
+      ...smaller,
+      editorContext: { kind: "house", houseId: "other" },
+    }),
+  ).toBe(false);
+  expect(loader.fresh({ ...smaller, terrainLevel: 1 })).toBe(false);
+  const outside: PresentationInput = { ...smaller, bounds: [20, 20, 200, 80] };
+  loader.update(outside);
+  expect(loader.fresh(outside)).toBe(false);
+  loader.dispose();
+});
+
+it("reloads a covered viewport when its tile budget chooses a finer level", async () => {
+  const pending: Array<{
+    cmd: string;
+    args: Record<string, unknown>;
+    resolve: (value: unknown) => void;
+  }> = [];
+  const client = new AtlasClient(
+    (cmd, args) =>
+      new Promise((resolve) => pending.push({ cmd, args, resolve })),
+  );
+  const { input, loader } = harness();
+  const initial: PresentationInput = {
+    ...input,
+    client,
+    bounds: [0, 0, 10000, 10000],
+    terrainLevel: 0,
+  };
+  loader.update(initial);
+  for (const item of pending)
+    item.resolve(
+      item.cmd === "scene"
+        ? scene()
+        : {
+            status,
+            level: item.args.level,
+            tiles: (item.args.tiles as number[][]).map(([x, y]) =>
+              terrainTile(x, y),
+            ),
+          },
+    );
+  await vi.waitFor(() => expect(loader.fresh(initial)).toBe(true));
+  const smaller: PresentationInput = { ...initial, bounds: [20, 20, 80, 80] };
+  loader.update(smaller);
+  expect(loader.fresh(smaller)).toBe(false);
+  loader.dispose();
+});
+
+it("does not reuse an incomplete raster for a covered smaller viewport", async () => {
+  const pending: Array<{
+    cmd: string;
+    args: Record<string, unknown>;
+    resolve: (value: unknown) => void;
+  }> = [];
+  const client = new AtlasClient(
+    (cmd, args) =>
+      new Promise((resolve) => pending.push({ cmd, args, resolve })),
+  );
+  const { input, loader } = harness();
+  const initial = { ...input, client, terrainLevel: 0, groundLevel: 0 };
+  loader.update(initial);
+  for (const item of pending.filter((item) => item.cmd !== "groundTiles"))
+    item.resolve(
+      item.cmd === "scene"
+        ? scene()
+        : {
+            status,
+            level: item.args.level,
+            tiles: (item.args.tiles as number[][]).map(([x, y]) =>
+              terrainTile(x, y),
+            ),
+          },
+    );
+  await vi.waitFor(() =>
+    expect(loader.getSnapshot().display?.placeholder).not.toBe(true),
+  );
+  const smaller: PresentationInput = { ...initial, bounds: [20, 20, 80, 80] };
+  loader.update(smaller);
+  expect(loader.fresh(smaller)).toBe(false);
   loader.dispose();
 });
 
@@ -322,6 +447,80 @@ it("rejects obsolete layer responses after A → B → A and retains the last co
   loader.dispose();
 });
 
+it("suspends a layer on null, reuses coverage, and rejects late success and error across return", async () => {
+  const pending: Array<{
+    resolve: (value: unknown) => void;
+    reject: (error: Error) => void;
+  }> = [];
+  const client = new AtlasClient(
+    () => new Promise((resolve, reject) => pending.push({ resolve, reject })),
+  );
+  const loader = new PresentationLoader(),
+    layer = loader.layer("rivers");
+  const a = {
+    version: status,
+    bounds: [0, 0, 100, 100] as [number, number, number, number],
+    ids: [],
+  };
+  const inside = { ...a, bounds: [10, 10, 90, 90] as typeof a.bounds };
+  layer.update(client, a);
+  pending[0].resolve({ status, rivers: [] });
+  await vi.waitFor(() => expect(layer.fresh(client, a)).toBe(true));
+  const retained = layer.snapshot.value;
+  layer.update(client, null);
+  expect(layer.fresh(client, null)).toBe(false);
+  layer.update(client, inside);
+  expect(layer.fresh(client, inside)).toBe(true);
+  expect(pending).toHaveLength(1);
+  const nextStatus = { ...status, revision: status.revision + 1 };
+  const next = { ...a, version: nextStatus };
+  layer.update(client, next);
+  expect(layer.fresh(client, next)).toBe(false);
+  layer.update(client, null);
+  layer.update(client, { ...next, bounds: [100, 0, 200, 100] });
+  pending[1].resolve({ status: nextStatus, rivers: [{ obsolete: true }] });
+  await Promise.resolve();
+  expect(layer.snapshot.value).toBe(retained);
+  expect(layer.fresh(client, next)).toBe(false);
+  layer.update(client, null);
+  layer.update(client, next);
+  pending[2].reject(Error("obsolete"));
+  await Promise.resolve();
+  expect(layer.snapshot.error).toBe("");
+  pending[3].reject(Error("current"));
+  await vi.waitFor(() => expect(layer.snapshot.error).toContain("current"));
+  expect(layer.snapshot.value).toBe(retained);
+  layer.update(client, null);
+  expect(layer.snapshot.error).toBe("");
+  expect(layer.snapshot.value).toBe(retained);
+  loader.dispose();
+});
+
+it("does not reuse a truncated overview for a smaller viewport after suspension", async () => {
+  const read = vi.fn(async () => ({
+    status,
+    rivers: Array.from({ length: 128 }, () => ({})),
+  }));
+  const client = new AtlasClient(read);
+  const loader = new PresentationLoader(),
+    layer = loader.layer("rivers");
+  const a = {
+    version: status,
+    bounds: [0, 0, 100, 100] as [number, number, number, number],
+    ids: [],
+    overviewScale: 0.01,
+  };
+  const inside = { ...a, bounds: [10, 10, 90, 90] as typeof a.bounds };
+  layer.update(client, a);
+  await vi.waitFor(() => expect(layer.fresh(client, a)).toBe(true));
+  layer.update(client, null);
+  layer.update(client, inside);
+  expect(layer.fresh(client, inside)).toBe(false);
+  await vi.waitFor(() => expect(read).toHaveBeenCalledTimes(2));
+  await vi.waitFor(() => expect(layer.fresh(client, inside)).toBe(true));
+  loader.dispose();
+});
+
 it("invalidates layer freshness on client replacement and disposal even before the next read", async () => {
   const client = new AtlasClient(async () => ({ status, rivers: [] }));
   const replacement = new AtlasClient(async () => ({ status, rivers: [] }));
@@ -546,3 +745,83 @@ it("drops retained layer data and late reads when sessions switch A → B → A"
   expect(layer.snapshot.value?.rivers).toEqual([]);
   loader.dispose();
 });
+
+it("never promotes an overview-only snapshot to an exact scene", async () => {
+  const commands: string[] = [];
+  const client = new AtlasClient(async (cmd, args) => {
+    commands.push(cmd);
+    if (cmd === "mapTiles") {
+      const request = args as { level: number; tiles: [number, number][] };
+      return {
+        status,
+        level: request.level,
+        tiles: request.tiles.map(([x, y]) => ({
+          x,
+          y,
+          density: [],
+          features: [],
+        })),
+      };
+    }
+    if (cmd === "scene") return scene();
+    throw Error(cmd);
+  });
+  const { loader, input } = harness();
+  const overview = { ...input, client, cityLevel: 0, detailEnabled: false };
+  loader.update(overview);
+  await vi.waitFor(() => expect(loader.fresh(overview)).toBe(true));
+  const exact = { ...overview, cityLevel: null, detailEnabled: true };
+  loader.update(exact);
+  await vi.waitFor(() => expect(loader.fresh(exact)).toBe(true));
+  expect(commands.filter((cmd) => cmd === "scene")).toHaveLength(1);
+  loader.dispose();
+});
+
+it.each([
+  "clear",
+  "other selection",
+  "revision",
+  "context",
+  "bounds",
+  "session",
+] as const)(
+  "reuses exact exterior deselection only with unchanged coverage: %s",
+  async (change) => {
+    const { loader, input, requests } = harness();
+    const { house, parcel } = workflowObjects();
+    const selected = { ...input, selectedId: house.id };
+    loader.update(selected);
+    requests[0].resolve({
+      ...scene(),
+      objects: [house, parcel],
+      selectionState: { exists: true, houseId: house.id, parcelId: parcel.id },
+    });
+    await vi.waitFor(() => expect(loader.fresh(selected)).toBe(true));
+    const next: PresentationInput = { ...selected, selectedId: "" };
+    if (change === "other selection") next.selectedId = "other";
+    if (change === "revision") next.status = { ...status, revision: 2 };
+    if (change === "session") next.status = { ...status, sessionId: "other" };
+    if (change === "context")
+      next.editorContext = { kind: "house", houseId: house.id };
+    if (change === "bounds") next.bounds = [0, 0, 500, 500];
+    loader.update(next);
+    if (change === "clear") {
+      expect(loader.fresh(next)).toBe(true);
+      expect(requests).toHaveLength(1);
+      expect(loader.getSnapshot().display?.value.scene.selectionState).toEqual({
+        exists: true,
+        houseId: null,
+        parcelId: null,
+      });
+      expect(loader.getSnapshot().display?.value.selectedId).toBe("");
+      expect(loader.getSnapshot().display?.value.scene.objects).toEqual([
+        house,
+        parcel,
+      ]);
+    } else {
+      expect(loader.fresh(next)).toBe(false);
+      expect(requests).toHaveLength(2);
+    }
+    loader.dispose();
+  },
+);

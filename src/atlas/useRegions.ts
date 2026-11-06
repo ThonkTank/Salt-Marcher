@@ -13,7 +13,7 @@ export function useRegions(
   status: Status | null,
   bounds: Bounds,
   camera: Camera,
-  active: boolean,
+  { visible, active }: { visible: boolean; active: boolean },
   apply: (i: Intent) => unknown,
   cancel: () => void,
 ) {
@@ -39,7 +39,7 @@ export function useRegions(
     loader,
     "regionCatalog",
     client,
-    status
+    visible && status
       ? {
           version: status,
           bounds: null,
@@ -64,7 +64,13 @@ export function useRegions(
   const rank = ranks.find((r) => r.id === rankId) ?? ranks[0];
   const summaries = current?.summaries ?? [];
   useEffect(() => {
-    if (!current || !sameVersion(current.status, status)) return;
+    if (
+      !visible ||
+      !catalogRead.fresh ||
+      !current ||
+      !sameVersion(current.status, status)
+    )
+      return;
     const pending = creating.current;
     const created = pending
       ? summaries.find(
@@ -86,23 +92,24 @@ export function useRegions(
         creating.current = null;
       }
     }
-  }, [current]);
+  }, [current, visible, catalogRead.fresh]);
   const selection =
     summaries.find((s) => s.id === selected && s.rankId === rank?.id)?.id ?? "";
-  const shown = catalog
-    ? visibleRanks(
-        catalog,
-        summaries,
-        camera.scale,
-        prior.current,
-        active ? rank?.id : undefined,
-      )
-    : [];
+  const shown =
+    visible && catalog
+      ? visibleRanks(
+          catalog,
+          summaries,
+          camera.scale,
+          prior.current,
+          active ? rank?.id : undefined,
+        )
+      : [];
   const read = usePresentationLayer(
     loader,
     "regions",
     client,
-    status && catalogRead.fresh
+    visible && status && catalogRead.fresh
       ? {
           version: status,
           bounds,
@@ -116,7 +123,7 @@ export function useRegions(
   );
   const display =
     read.value?.status.sessionId === status?.sessionId ? read.value : null;
-  const fresh = catalogRead.fresh && read.fresh;
+  const fresh = visible && catalogRead.fresh && read.fresh;
   const region = display?.regions.find((r) => r.id === selection);
   const action = (action: RegionAction) => {
     if (!fresh) return;
@@ -153,27 +160,30 @@ export function useRegions(
     }
   };
   return {
-    markerRanks:
-      catalog?.ranks
-        .filter((r) =>
-          catalog.categories.some((c) => c.id === r.categoryId && c.markers),
-        )
-        .map((r) => r.id) ?? [],
-    catalog,
-    category,
-    rank,
-    ranks,
-    summaries,
-    displaySummaries: display?.summaries ?? summaries,
-    region,
-    selected: selection,
+    markerRanks: !visible
+      ? []
+      : (catalog?.ranks
+          .filter((r) =>
+            catalog.categories.some((c) => c.id === r.categoryId && c.markers),
+          )
+          .map((r) => r.id) ?? []),
+    catalog: visible ? catalog : undefined,
+    category: visible ? category : undefined,
+    rank: visible ? rank : undefined,
+    ranks: visible ? ranks : [],
+    summaries: visible ? summaries : [],
+    displaySummaries: visible ? (display?.summaries ?? summaries) : [],
+    region: visible ? region : undefined,
+    selected: visible ? selection : "",
     diameter,
     mode,
-    error: catalogRead.error || read.error,
+    error: visible ? catalogRead.error || read.error : "",
     fresh,
-    data: display,
-    regions: displayedRegions(display?.regions ?? [], catalog, shown),
-    relations: display?.relations ?? [],
+    data: visible ? display : null,
+    regions: visible
+      ? displayedRegions(display?.regions ?? [], catalog, shown)
+      : [],
+    relations: visible ? (display?.relations ?? []) : [],
     action,
     update,
     select,

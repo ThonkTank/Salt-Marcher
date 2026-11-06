@@ -1,4 +1,4 @@
-import { decideLod } from "./lod";
+import { decideLod, viewScale } from "./lod";
 import { describe, expect, it } from "vitest";
 import {
   evaluateGesture,
@@ -873,6 +873,86 @@ describe("pure canvas input decisions", () => {
         [20, 0],
       ),
     ).toEqual([]);
+  });
+  it("zooms free exact exterior around the world anchor using the physical level", () => {
+    const point: WorldPoint = [23, -11];
+    for (const level of [1, 2]) {
+      const camera = { x: 105, y: -44, scale: viewScale(level) };
+      const commands = decideDoubleClick(state({ camera }), point);
+      expect(commands).toHaveLength(1);
+      expect(commands[0].kind).toBe("camera");
+      if (commands[0].kind !== "camera") throw Error("expected camera");
+      const next = commands[0].camera;
+      expect(next.scale).toBe(viewScale(level - 1));
+      expect(next.x + point[0] * next.scale).toBeCloseTo(
+        camera.x + point[0] * camera.scale,
+      );
+      expect(next.y + point[1] * next.scale).toBeCloseTo(
+        camera.y + point[1] * camera.scale,
+      );
+    }
+    const camera = { x: 0, y: 0, scale: 20 };
+    const lod = decideLod(camera.scale, decideLod(viewScale(1)));
+    expect(lod.navigationLevel).toBe(1);
+    expect(decideDoubleClick(state({ camera, lod }), point)).toMatchObject([
+      { kind: "camera", camera: { scale: viewScale(0) } },
+    ]);
+    expect(
+      decideDoubleClick(
+        state({ camera: { ...camera, scale: viewScale(0) } }),
+        point,
+      ),
+    ).toEqual([]);
+  });
+  it("requires a fresh free exterior scene and no active workflow", () => {
+    const camera = { x: 0, y: 0, scale: viewScale(1) };
+    const point: WorldPoint = [2, 0];
+    const patches: Partial<CanvasInputSnapshot>[] = [
+      { scene: undefined },
+      { editable: false },
+      { context: { kind: "house", houseId: "h" } },
+      { tool: "house" },
+      { tool: "road" },
+      {
+        workflow: geometryState(
+          { ...common, kind: "geometry" },
+          { kind: "terrain" },
+          null,
+        ),
+      },
+      {
+        workflow: {
+          ...idleWorkflow(),
+          navigation: { ...base, kind: "pan", camera },
+        },
+      },
+      {
+        planning: {
+          road,
+          objects: [],
+          settings: defaultPopulation,
+          selectedKey: null,
+        },
+      },
+      { stalePlanParcels: [parcel] },
+    ];
+    for (const patch of patches)
+      expect(decideDoubleClick(state({ camera, ...patch }), point)).toEqual([]);
+    const scenery = {
+      kind: "scenery",
+      id: "s",
+      assets: [{ point, size: 2 }],
+    } as MapObject;
+    for (const object of [hitHouse, road, parcel, scenery, area("a", 0)])
+      expect(
+        decideDoubleClick(sceneState([object], { camera }), point),
+      ).toEqual([]);
+    expect(
+      decideDoubleClick(
+        sceneState([parcel], { camera, boundaries: [] }),
+        point,
+      ),
+    ).toMatchObject([{ kind: "camera" }]);
   });
   it("leaves form keys local and prevents only existing keyboard defaults", () => {
     const key = {

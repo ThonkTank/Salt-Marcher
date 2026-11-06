@@ -13,6 +13,7 @@ it.each<{
   pending: number;
   expected: boolean;
 }>([
+  { tool: "house", interior: false, scale: 3.2, pending: 1, expected: false },
   { tool: "road", interior: false, scale: 0.01, pending: 0, expected: true },
   { tool: "house", interior: false, scale: 0.01, pending: 0, expected: false },
   { tool: "select", interior: true, scale: 0.01, pending: 0, expected: false },

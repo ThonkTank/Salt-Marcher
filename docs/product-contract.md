@@ -658,7 +658,10 @@ unabhängig von Fenstergröße und Pixeldichte. Zehn Prozent Hysterese verhinder
 Flackern. Inhalts- und Kachelgrenzen werden beim Hineinzoomen am Sollwert
 aktiviert und beim Herauszoomen über einen Rücklaufbereich von zehn Prozent
 gehalten; die Koordinatentransformation bleibt unverändert. Die Auswahl springt um den Kartenmittelpunkt; freie Doppelklicks zoomen
-zur nächsten feineren Außenansicht. Auswahl und Entwürfe bleiben erhalten.
+zur nächsten feineren Außenansicht. Im exakten Außenraum gilt dies mit dem
+Auswahlwerkzeug auf freier Karte bei frischen Trefferdaten und ohne laufende
+Geste oder Planung. Objektaktionen haben Vorrang; in der feinsten Ansicht
+gibt es keinen weiteren Schritt. Auswahl und Entwürfe bleiben erhalten.
 
 | Ansicht                 | Referenzbreite  |
 | ----------------------- | --------------- |

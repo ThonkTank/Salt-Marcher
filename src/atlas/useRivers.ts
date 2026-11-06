@@ -25,7 +25,7 @@ export function useRivers(
   bounds: Bounds,
   camera: Camera,
   lod: LodDecision,
-  active: boolean,
+  { visible, active }: { visible: boolean; active: boolean },
   editable: boolean,
   controller: EditorWorkflowController,
 ) {
@@ -63,7 +63,7 @@ export function useRivers(
     loader,
     "rivers",
     client,
-    status
+    visible && status
       ? {
           version: status,
           bounds,
@@ -74,7 +74,7 @@ export function useRivers(
       : null,
   );
   const data = read.value,
-    fresh = read.fresh;
+    fresh = visible && read.fresh;
   useEffect(() => {
     if (fresh && selected && !data?.rivers.some((v) => v.river.id === selected))
       setSelected("");
@@ -88,8 +88,8 @@ export function useRivers(
     : null;
   // Persist clamping after topology changes, but do not lose selection during reads.
   useEffect(() => {
-    if ((fresh || draft) && selection.node !== node) setNode(node);
-  }, [fresh, draft, selection.node, node]);
+    if (visible && (fresh || draft) && selection.node !== node) setNode(node);
+  }, [visible, fresh, draft, selection.node, node]);
   const editDraft = () => editableRiver(draft, river);
   const view = terrainRequest(bounds, lod.terrainLevel);
   useEffect(() => {
@@ -134,30 +134,39 @@ export function useRivers(
     });
   };
   return {
-    input: { river, views, settings, width, mode, fresh },
-    editable,
-    views,
-    selected,
-    draft,
-    preview,
-    error:
-      (editing
-        ? display.message || (preview?.valid === false ? preview.reason : "")
-        : "") || read.error,
+    input: {
+      river: visible ? river : undefined,
+      views: visible ? views : [],
+      settings,
+      width,
+      mode,
+      fresh,
+    },
+    editable: visible && editable,
+    views: visible ? views : [],
+    selected: visible ? selected : "",
+    draft: visible ? draft : null,
+    preview: visible ? preview : null,
+    error: !visible
+      ? ""
+      : (editing
+          ? display.message || (preview?.valid === false ? preview.reason : "")
+          : "") || read.error,
     fresh,
     settings: draft?.settings ?? river?.settings ?? settings,
     width,
-    node,
+    node: visible ? node : null,
     busy,
     mode,
-    river,
-    handles: active ? (draft?.nodes ?? river?.nodes ?? []) : [],
-    maxCut: preview?.valid
-      ? (preview.rivers?.after ?? []).reduce(
-          (m, v) => v.samples.reduce((m, s) => Math.max(m, s.cut), m),
-          0,
-        )
-      : 0,
+    river: visible ? river : undefined,
+    handles: visible && active ? (draft?.nodes ?? river?.nodes ?? []) : [],
+    maxCut:
+      visible && preview?.valid
+        ? (preview.rivers?.after ?? []).reduce(
+            (m, v) => v.samples.reduce((m, s) => Math.max(m, s.cut), m),
+            0,
+          )
+        : 0,
     cancel,
     completed,
     accept,

@@ -227,7 +227,7 @@ export function useAtlasEditor(client: AtlasClient) {
     session.status,
     bounds,
     camera,
-    tool === "regions" && !interior,
+    { visible: !interior, active: tool === "regions" && !interior },
     (intent) => workflow.controller.beginIntent(intent),
     changeContext,
   );
@@ -238,7 +238,7 @@ export function useAtlasEditor(client: AtlasClient) {
     bounds,
     camera,
     lod,
-    tool === "river" && !interior,
+    { visible: !interior, active: tool === "river" && !interior },
     editable,
     workflow.controller,
   );

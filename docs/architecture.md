@@ -153,6 +153,8 @@ veröffentlichte Snapshots. `usePresentation` und `usePresentationLayer` binden
 bestätigte Eingaben, Subscription und Lebensdauer an React. Gelände, Boden,
 Stadtübersicht, Regionskatalog, Regionsausschnitte und Flüsse verwenden denselben
 versionierten Schichtlebenszyklus und laden unabhängig von der exakten Szene.
+Regionskatalog, Regionsausschnitte und Flüsse laden nur bei sichtbarer Außenansicht,
+auch wenn ihr jeweiliges Bearbeitungswerkzeug inaktiv ist.
 Jede Schicht prüft Anfrageidentität und Version und hält bei ausstehenden Reads oder
 Fehlern ihre letzte vollständige Ansicht. Boden und Gelände werden nur bei gleicher
 Dokumentversion kombiniert; auch Vorschaukacheln werden versionsgleich gemischt.

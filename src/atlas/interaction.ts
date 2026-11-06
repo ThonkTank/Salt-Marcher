@@ -1,4 +1,4 @@
-import type { LodDecision } from "./lod";
+import { viewScale, zoomAt, type LodDecision } from "./lod";
 import { riverHit } from "./riverView";
 import type { RiverAction } from "./generated/RiverAction";
 import type { River } from "./generated/River";
@@ -1483,6 +1483,33 @@ export function decideDoubleClick(
       {
         kind: "selection",
         event: { type: "openParcel", id: selectedObject.id },
+      },
+    ];
+  if (
+    context.kind === "exterior" &&
+    snapshot.lod.policy.exact &&
+    tool === "select" &&
+    snapshot.scene &&
+    snapshot.workflow.kind === "idle" &&
+    !workflowPointer(snapshot.workflow) &&
+    !snapshot.planning &&
+    snapshot.lod.navigationLevel > 0 &&
+    !snapshot.stalePlanParcels?.some((parcel) => hitObject(parcel, point)) &&
+    !hitScene(
+      snapshot.scene.objects,
+      point,
+      3 / snapshot.camera.scale,
+      snapshot.boundaries,
+    )
+  )
+    return [
+      {
+        kind: "camera",
+        camera: zoomAt(
+          snapshot.camera,
+          point,
+          viewScale(snapshot.lod.navigationLevel - 1),
+        ),
       },
     ];
   return [];

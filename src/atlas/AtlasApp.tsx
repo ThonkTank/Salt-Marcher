@@ -129,6 +129,9 @@ export default function AtlasApp({
                     : "Haus oder Parzelle auswählen und doppelklicken: Innenraum öffnen."}
                 </p>
               )}
+              {tool === "select" && !interior && lod.policy.exact && (
+                <p>Freie Karte doppelklicken: nächste feinere Ansicht.</p>
+              )}
               <p>
                 Mittlere Maustaste oder Leertaste + Ziehen: Karte bewegen ·
                 Mausrad: Zoom · Escape: Abbrechen
