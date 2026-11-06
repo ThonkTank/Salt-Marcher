@@ -5,18 +5,19 @@ Atlas V7, Dateiformat 18, Generierungsrezept 4. Stand: 6. November 2026.
 [Architektur](../architecture.md) Zuständigkeiten und der
 [Produktvertrag](../product-contract.md) Verhalten und Grenzen.
 
-LOD04/P1 präzisiert den kartographischen Zweck von „Quartier / kleines Dorf“
-und den Inhaltswechsel innerhalb desselben Ansichtsnamens. Das README nennt
-den tatsächlichen Auswahlbereich Raum bis Welt. Laufzeitcode und Tests bleiben
-unverändert. Neu geprüft wurden ausschließlich der Sachabgleich, die
-Markdownformatprüfung der drei geänderten Dokumente und `git diff --check`.
-Dies ist keine kartographische oder Phase-2-Abnahme und keine nachgewiesene
-Beschleunigung. Die unabhängige Prüfung bestätigte Quellenabgleich, Umfang
-und Dokumentchecks ohne korrekturbedürftigen Befund; G war nicht erforderlich.
-Der Stand ist für die reguläre Checkpointveröffentlichung vorbereitet, nicht
-für eine vorweggenommene Mainfreigabe. Belege:
-`src-tauri/target/cleanup/lod-review/lod04/P1/E2/` und
-`src-tauri/target/cleanup/lod-review/lod04/F/`.
+LOD05/P1 präzisiert den kartographischen Zweck von „Dorf / Stadtteil“, die
+vereinfachte Ortsübersicht und ihre Werkzeuggrenzen. Die LOD04-Präzisierung
+bleibt erhalten. Geändert wurden nur Produktvertrag und Status; Laufzeitcode
+und Tests bleiben unverändert. Neu geprüft wurden ausschließlich Quellen- und
+Dateiumfangsabgleich, Markdownformat beider Dokumente und `git diff --check`.
+Der Quellenabgleich belegt Dokumentkonsistenz, keine Bildqualität. Gefüllte
+kartographische und Phase-2-Abnahme sowie große und native Abnahme bleiben
+offen; eine Beschleunigung ist nicht nachgewiesen. Die unabhängige Prüfung
+bestätigte Quellenabgleich, Umfang und Dokumentchecks ohne korrekturbedürftigen
+Befund; G war nicht erforderlich. Der Stand ist für die reguläre
+Checkpointveröffentlichung vorbereitet, nicht für eine vorweggenommene
+Mainfreigabe. Belege: `src-tauri/target/cleanup/lod-review/lod05/P1/E2/`
+und `src-tauri/target/cleanup/lod-review/lod05/F/`.
 
 LOD03/P1 vereinheitlicht normale Straßensichtbarkeit und Übersichtstreffer;
 verborgene normale Straßen geben Auswahl/Pan und freien Doppelklick frei.
@@ -55,12 +56,12 @@ Obergeschoss (`editor.spec.ts:593`) und zurückgehaltenen Etagenreads
 (`interaction-lifecycle.spec.ts:183`) blieb das Basisbild nach Abschalten der
 unteren Darstellung identisch. Ursache/Zuordnung bleiben ungeklärt,
 Folgeassertionen unerreicht; `check:all` Exit 1. Keine zweite Cleanup01-G-Runde
-und keine neue Gesamtprüfung in LOD03/P1 oder LOD04/P1.
+und keine neue Gesamtprüfung in LOD03/P1, LOD04/P1 oder LOD05/P1.
 
 Die drei früheren Erstgestenfälle bestanden zuletzt ohne kausalen Fix ihrer
 Ursachen. Kartographische Ergänzungsbestätigungen für Raum, Haus und Grundstück
-sowie LOD04-Ortsbild und Phase 2 bleiben offen; Innenräume werden ausdrücklich
-geöffnet. V0a/V0b bleiben ohne vollständigen großen Releasevergleich unvollständig.
+sowie die Ortsbilder LOD04 und LOD05 und Phase 2 bleiben offen; Innenräume werden
+ausdrücklich geöffnet. V0a/V0b bleiben ohne vollständigen großen Releasevergleich unvollständig.
 Aktuelle native Bedienungs-/RPM-Abnahme, echte CI-/Mainfreigabe und die begonnene
 Phase-4-Zeichenplanung bleiben offen. Lokale Teilprüfungen begründen keine
 Remote- oder Mainfreigabe.

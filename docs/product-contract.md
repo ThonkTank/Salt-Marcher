@@ -702,6 +702,28 @@ Bestehende Bodenfarben, Gewässer und Landschaft bleiben auch bei gesperrtem
 Malwerkzeug Teil der Darstellung. Haus-, Landschafts- und Innenbearbeitung
 benötigen weiterhin den Nahzoom; ein Innenkontext wird ausdrücklich geöffnet.
 
+„Dorf / Stadtteil“ dient der Orientierung und räumlichen Planung im gesamten
+Dorf oder einem größeren Stadtteil. Zusammenhängende Bebauung und ihre Ränder,
+größere Freiräume, verbindende Straßen, wichtige Orte sowie Wasser und Landschaft
+sollen das Ortsgefüge erkennbar machen. Größere Dächer ergänzen die
+Bebauungsdichte; kleine oder durch die Darstellungsgrenzen verdrängte Einzelobjekte
+müssen nicht separat erscheinen. Die Übersicht vermittelt keine exakten
+Grundstücksgrenzen oder Innenraumdetails.
+
+Diese benannte Ansicht bleibt vollständig im Übersichtsbereich. Gewöhnliche
+Gebäude außerhalb der Auswahl tragen hier keine Namen; wichtige Orte,
+Regions- und Ortschaftsnamen sowie Straßennamen werden nach den gemeinsamen
+Größen-, Prioritäts- und Kollisionsregeln dargestellt. Bestehende Bodenfarben,
+Gewässer und Landschaft bleiben Teil des Ortsbilds, auch wenn ihre Werkzeuge
+gesperrt sind. Kleine Geometrien und Symbole dürfen nach den Darstellungsgrenzen
+entfallen; die Übersicht garantiert nicht die Anzeige jedes Einzelobjekts.
+
+Auswahl und Navigation sowie Straßen-, Fluss-, Höhen- und Regionsbearbeitung
+bleiben nach ihren Werkzeugregeln verfügbar. Boden- und Gewässerpinsel benötigen
+einen feineren Maßstab; Haus-, Landschafts- und Innenbearbeitung weiterhin den
+Nahzoom. Ein Innenkontext wird ausdrücklich geöffnet. Der Ansichtsname legt
+weder eine Regionsrangstufe noch eine Verwaltungsordnung fest.
+
 Diese Bereiche sind keine Verwaltungsordnung. Kachelanfragen sind je Schicht
 auf 64 Kacheln begrenzt und wählen bei Bedarf eine gröbere Darstellung.
 Flussübersichten laden höchstens 128 priorisierte Verläufe mit je 128 Samples;
