@@ -49,6 +49,14 @@ Browserergebnisse liegen unter
 `npm run contracts:generate` ausführen. `contracts:check` prüft ohne
 Quelländerung; `src/atlas/generated/` nie manuell ändern.
 
+## CI
+
+Für Pull Requests prüft GitHub Actions den exakten PR-Head, für Pushes auf
+`main` den jeweiligen Commit. Der erforderliche Check führt `npm run check:all`
+und den konfigurierten nativen RPM-Build aus. Browserdiagnosen und verfügbare
+Prüfprotokolle werden sieben Tage aufbewahrt. Die native Bedienabnahme und die
+getrennten großen Performance-Fixtures bleiben davon unabhängig und ausstehend.
+
 ## Bedienung
 
 Links stehen die Werkzeuge, rechts Einstellungen und Aktionen zum aktuellen

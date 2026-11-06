@@ -1,0 +1,84 @@
+name: Repository baseline
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  baseline:
+    name: Candidate · exact-SHA aggregate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    env:
+      CI: "true"
+      PLAYWRIGHT_DIAGNOSTICS_RUN: src-tauri/target/diagnostics/playwright-ci
+    steps:
+      - name: Check out exact candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Verify candidate identity
+        env:
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+          printf 'Candidate SHA: %s\n' "$EXPECTED_SHA"
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "22"
+          package-manager-cache: false
+      - name: Install Linux build and RPM inspection dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential curl wget file libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev rpm
+      - name: Install stable Rust and components
+        run: |
+          rustup update stable --no-self-update
+          rustup default stable
+          rustup component add rustfmt clippy
+          rustc --version
+          cargo --version
+      - name: Install JavaScript dependencies
+        run: npm ci
+      - name: Install Chromium and system dependencies
+        run: npx playwright install --with-deps chromium
+      - name: Run all active checks
+        timeout-minutes: 75
+        run: |
+          set -o pipefail
+          mkdir -p src-tauri/target/diagnostics/ci-logs
+          npm run check:all 2>&1 | tee src-tauri/target/diagnostics/ci-logs/check-all.log
+      - name: Build configured native RPM
+        timeout-minutes: 35
+        run: |
+          set -o pipefail
+          mkdir -p src-tauri/target/diagnostics/ci-logs
+          npm run package -- --ci 2>&1 | tee src-tauri/target/diagnostics/ci-logs/package.log
+          shopt -s nullglob
+          packages=(src-tauri/target/release/bundle/rpm/*.rpm)
+          test "${#packages[@]}" -gt 0
+          rpm -qip "${packages[@]}"
+      - name: Upload browser diagnostics and check logs
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: atlas-ci-${{ github.event.pull_request.head.sha || github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            src-tauri/target/diagnostics/playwright-ci/report/
+            src-tauri/target/diagnostics/playwright-ci/results/
+            src-tauri/target/diagnostics/ci-logs/
+            !**/*.db
+            !**/*.db-*
+            !**/*.sqlite
+            !**/*.sqlite-*
+            !**/*.sqlite3
+            !**/*.sqlite3-*
+          if-no-files-found: ignore
+          retention-days: 7

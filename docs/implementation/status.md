@@ -35,3 +35,9 @@ bestandene Performanceabnahme; vollständiger Browserlauf, aktuelle große
 Performanceprüfung und native Bedienabnahme gemäß README stehen aus. Der
 Raumstand ist als begrenzter Checkpoint prüfbar; nächster technischer Handoff ist
 der offene Parzellentest und die weitere LOD-Prüfung unter diesen Grenzen.
+
+Für Pull Requests und Pushes auf `main` ist ein CI-Workflow für den exakten
+Commit eingerichtet: Er führt `check:all` und den konfigurierten RPM-Build aus.
+Der erste Lauf und seine Ergebnisse müssen noch am veröffentlichten Commit
+geprüft werden. Verpackung ersetzt weder die native Bedienabnahme noch die
+separaten großen Performance-Fixtures.
