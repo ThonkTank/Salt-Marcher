@@ -318,6 +318,11 @@ export function editorInput(input: {
     bounds,
     regions,
   } = input;
+  const exactRoadId =
+    scene.selectedObject?.kind === "road" &&
+    scene.selectedObject.id === selection.selected
+      ? scene.selectedObject.id
+      : undefined;
   return {
     ...tools,
     ...selection,
@@ -341,7 +346,9 @@ export function editorInput(input: {
     scenerySeed: input.revision >>> 0,
     overviewRoads: presentation?.overview
       ? [
-          ...overviewFeatures(presentation.overview),
+          ...overviewFeatures(presentation.overview).filter(
+            (f) => f.kind !== "road" || f.id !== exactRoadId,
+          ),
           ...(scene.scene ? sceneFeatures(scene.scene) : []),
         ]
       : undefined,

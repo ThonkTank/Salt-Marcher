@@ -26,7 +26,7 @@ import {
   type MapObject,
   type Area,
 } from "./model";
-import { editRoadDraft, extensionRoadDraft } from "./roadDraft";
+import { editRoadDraft, extensionRoadDraft, newRoadDraft } from "./roadDraft";
 
 const house = { id: "h", transform: { x: 0, y: 0, angle: 0 } } as House;
 const base = {
@@ -1272,4 +1272,197 @@ it("routes brush wheel resizing through pure input decisions and freezes it duri
   });
   expect(decideWheel(snapshot, [0, 0], -100, true)).toEqual([]);
   expect(decideWheel(snapshot, [0, 0], -100)).toEqual([]);
+});
+
+it.each([
+  [0.5, 12, 15.98, false],
+  [0.5, 12, 16, true],
+  [0.5, 12, 16.02, true],
+  [viewScale(3), 12, 5, false],
+  [0.05, 11.99, 200, false],
+  [0.05, 12, 200, true],
+  [0.05, 12.01, 200, true],
+  [0.064, 2, 200, true],
+] as const)(
+  "shares painted road eligibility at scale %s width %s proxy %s: %s",
+  (scale, width, proxy, visible) => {
+    const feature = {
+      id: "r",
+      kind: "road",
+      name: "",
+      important: false,
+      paths: [
+        [
+          [0, 0],
+          [proxy, 0],
+        ],
+      ] as WorldPoint[][],
+      width,
+      rank: width * proxy,
+      color: "earth",
+    };
+    const snapshot = state({
+      camera: { x: 17, y: 23, scale },
+      overviewRoads: [feature],
+    });
+    const point: WorldPoint = [proxy / 2, 0];
+    const commands = decidePointerDown(snapshot, input(point)).commands;
+    expect(commands).toMatchObject(
+      visible
+        ? [{ kind: "selection", event: { type: "selectObject", id: "r" } }]
+        : [{ kind: "beginGesture", gesture: { kind: "pan" } }],
+    );
+    const double = decideDoubleClick(snapshot, point);
+    if (visible) expect(double).toEqual([]);
+    else {
+      expect(double).toHaveLength(1);
+      if (double[0].kind !== "camera") throw Error("expected free zoom");
+      expect(
+        double[0].camera.x + point[0] * double[0].camera.scale,
+      ).toBeCloseTo(17 + point[0] * scale, 10);
+      expect(double[0].camera.y).toBe(23);
+      if (scale === viewScale(3)) expect(double[0].camera.scale).toBe(1.28);
+    }
+  },
+);
+
+it("requires the exact matching selected header for short road exceptions and fresh data for writes", () => {
+  const short: Road = {
+    ...road,
+    nodes: [road.nodes[0], { ...road.nodes[1], point: [5, 0] }],
+    path: [
+      [0, 0],
+      [5, 0],
+    ],
+  };
+  for (const scale of [viewScale(3), 0.05]) {
+    const feature = {
+      id: short.id,
+      kind: "road",
+      name: "",
+      important: false,
+      paths: [short.path],
+      width: short.width,
+      rank: 10,
+      color: "earth",
+    };
+    const snapshot = state({
+      camera: { x: 0, y: 0, scale },
+      selected: short.id,
+      selectedObject: short,
+      overviewRoads: [feature],
+    });
+    expect(decideDoubleClick(snapshot, [2.5, 0])).toMatchObject([
+      {
+        kind: "intent",
+        intent: { type: "insertRoadNode", roadId: short.id, afterNodeId: "a" },
+      },
+    ]);
+    expect(gestureOf(snapshot, [0, 0])?.kind).toBe("node");
+    for (const selectedObject of [
+      undefined,
+      {
+        ...short,
+        id: "other",
+        nodes: short.nodes.map((n) => ({
+          ...n,
+          point: [1000, 1000] as WorldPoint,
+        })),
+        path: [
+          [1000, 1000],
+          [1005, 1000],
+        ] as WorldPoint[],
+      },
+    ]) {
+      const missing = { ...snapshot, selectedObject };
+      expect(gestureOf(missing, [2.5, 0])?.kind).toBe("pan");
+      expect(decideDoubleClick(missing, [2.5, 0])).toMatchObject([
+        { kind: "camera" },
+      ]);
+    }
+    expect(
+      decideDoubleClick({ ...snapshot, editable: false }, [2.5, 0]),
+    ).toEqual([]);
+    expect(gestureOf({ ...snapshot, editable: false }, [0, 0])?.kind).not.toBe(
+      "node",
+    );
+    expect(decideDoubleClick({ ...snapshot, tool: "road" }, [2.5, 0])).toEqual(
+      [],
+    );
+    expect(decideDoubleClick({ ...snapshot, tool: "river" }, [2.5, 0])).toEqual(
+      [{ kind: "accept" }],
+    );
+    expect(
+      decideDoubleClick(
+        { ...snapshot, tool: "river", editable: false },
+        [2.5, 0],
+      ),
+    ).toEqual([]);
+  }
+});
+
+it("keeps narrow visible hits in held roof policy and rejects nonroad features", () => {
+  const feature = {
+    id: "r",
+    kind: "road",
+    name: "",
+    important: false,
+    paths: [
+      [
+        [0, 0],
+        [200, 0],
+      ],
+    ] as WorldPoint[][],
+    width: 2,
+    rank: 400,
+    color: "earth",
+  };
+  const snapshot = state({
+    camera: { x: 0, y: 0, scale: 0.06 },
+    lod: decideLod(0.06, decideLod(0.064)),
+    overviewRoads: [feature],
+  });
+  expect(decidePointerDown(snapshot, input([100, 0])).commands).toMatchObject([
+    { kind: "selection" },
+  ]);
+  expect(decideDoubleClick(snapshot, [100, 0])).toEqual([]);
+  expect(
+    decideDoubleClick(
+      { ...snapshot, overviewRoads: [{ ...feature, kind: "house" }] },
+      [100, 0],
+    ),
+  ).toMatchObject([{ kind: "camera" }]);
+});
+
+it("keeps new and extending road doubleclicks as draft actions in overview", () => {
+  const extend = extensionRoadDraft(road, "end", null);
+  const fresh = newRoadDraft(road);
+  const workflows = [
+    draftState(
+      { ...common, kind: "draft" },
+      {
+        kind: "extendRoad",
+        draft: extend,
+        nodeIds: road.nodes.map((n) => n.id),
+      },
+      null,
+    ),
+    draftState(
+      { ...common, kind: "draft" },
+      { kind: "newRoad", draft: fresh },
+      null,
+    ),
+  ];
+  for (const workflow of workflows)
+    for (const tool of ["select", "road"] as const)
+      expect(
+        decideDoubleClick(
+          state({
+            camera: { x: 0, y: 0, scale: viewScale(3) },
+            workflow,
+            tool,
+          }),
+          [200, 200],
+        ),
+      ).toEqual([]);
 });

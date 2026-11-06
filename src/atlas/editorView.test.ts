@@ -1,13 +1,23 @@
-import { decideLod } from "./lod";
+import type { ToolSettings } from "./useEditorTools";
+import type { MapFeature } from "./generated/MapFeature";
+import { defaultPopulation, type Road, type WorldPoint } from "./model";
+import { idleWorkflow } from "./editorWorkflow";
+import { decideDoubleClick, decidePointerDown } from "./interaction";
+import { decideLod, viewScale } from "./lod";
 import { expect, it } from "vitest";
 import type { Gesture } from "./interaction";
 import {
   canEdit,
   editorScene,
+  editorInput,
   terrainBrushInfo,
   toolScaleRestriction,
 } from "./editorView";
-import { initialSelection, type Tool } from "./editorSelection";
+import {
+  initialSelection,
+  type Tool,
+  type EditorSelection,
+} from "./editorSelection";
 import type { Presentation } from "./presentationLoader";
 import { status, workflowObjects } from "../../tests/support/atlasFixtures";
 
@@ -250,4 +260,190 @@ it("uses matching captured brush geometry without mutating settings or pointers"
   ] as const)
     expect(terrainBrushInfo(tool, pointer, 25.6, 40, 0)).toBeNull();
   expect({ pointer, settings }).toEqual(before);
+});
+
+it("keeps street name and separates exact policy from the named view", () => {
+  const base = decideLod(viewScale(3));
+  const entered = decideLod(1.3, base);
+  const held = decideLod(1.2, entered);
+  const left = decideLod(1.14, held);
+  for (const [lod, exact] of [
+    [base, false],
+    [entered, true],
+    [held, true],
+    [left, false],
+  ] as const) {
+    expect(lod.atlasLevel).toBe(3);
+    expect(lod.policy.exact).toBe(exact);
+    for (const tool of [
+      "select",
+      "road",
+      "river",
+      "water",
+      "area",
+      "terrain",
+      "regions",
+    ] as const)
+      expect(toolScaleRestriction(tool, false, lod)).toBeNull();
+    for (const tool of ["house", "scenery"] as const)
+      expect(toolScaleRestriction(tool, false, lod)).toBe(
+        exact ? null : "detail",
+      );
+  }
+});
+
+it("replaces only the selected exact road tile duplicate without creating freshness", () => {
+  const { road: original } = workflowObjects();
+  const road: Road = {
+    ...original,
+    width: 2,
+    path: [
+      [0, 0],
+      [5, 0],
+    ],
+    nodes: [original.nodes[0], { ...original.nodes[1], point: [5, 0] }],
+  };
+  const tile: MapFeature = {
+    id: road.id,
+    kind: "road",
+    name: "",
+    important: false,
+    paths: [
+      [
+        [0, 100],
+        [5, 100],
+      ],
+    ],
+    width: 2,
+    rank: 10,
+    color: "earth",
+  };
+  const other = {
+    ...tile,
+    id: "other",
+    rank: 1000,
+    paths: [
+      [
+        [0, 200],
+        [5, 200],
+      ],
+    ] as WorldPoint[][],
+  };
+  const house = { ...tile, id: "house", kind: "house" };
+  const presentation: Presentation = {
+    scene: {
+      status: status(),
+      objects: [road],
+      contextState: { exists: true, houseId: null, parcelId: null },
+      selectionState: { exists: true, houseId: null, parcelId: null },
+    },
+    active: "",
+    context: { kind: "exterior" },
+    selectedId: road.id,
+    floor: 0,
+    bounds: [-200, -200, 200, 200],
+    includeLower: false,
+    detail: null,
+    overview: {
+      level: 0,
+      tiles: [{ x: 0, y: 0, features: [tile, other, house], density: [] }],
+    },
+  };
+  const selection = { ...initialSelection, selected: road.id };
+  const tools: ToolSettings = {
+    ground: {
+      mode: "paint",
+      tip: "soft",
+      color: [157, 181, 139],
+      diameter: 80,
+      opacity: 1,
+      flow: 1,
+    },
+    groundPicker: false,
+    brush: { mode: "land", radius: 40, amount: 1, strength: 0.25, target: 10 },
+    scenery: { biome: "forest", radius: 40, density: 0.65, size: 8 },
+    contours: true,
+    roughness: { amount: 0.33, seed: 1 },
+    terrainFollow: { tolerance: 0.1 },
+    material: "earth",
+    roadWidth: 15,
+    opening: "door",
+    travel: "up",
+    settings: defaultPopulation,
+    populateRoad: true,
+  };
+  const make = (p = presentation, sel = selection, editable = true) => ({
+    ...editorInput({
+      selection: sel,
+      scene: editorScene(p, sel),
+      tools,
+      view: { planning: undefined, stalePlanParcels: [] },
+      presentation: p,
+      camera: { x: 0, y: 0, scale: viewScale(3) },
+      lod: decideLod(viewScale(3)),
+      bounds: p.bounds,
+      editable,
+      deletion: false,
+      revision: 0,
+      regions: { selected: "", diameter: 80, mode: "paint", fresh: true },
+      river: undefined,
+    }),
+    workflow: idleWorkflow(),
+  });
+  const before = structuredClone(presentation);
+  const snapshot = make();
+  expect(
+    snapshot.overviewRoads?.filter((f) => f.id === road.id).map((f) => f.paths),
+  ).toEqual([[road.path]]);
+  expect(snapshot.overviewRoads).toContain(other);
+  expect(snapshot.overviewRoads).toContain(house);
+  expect(decideDoubleClick(snapshot, [2.5, 0])).toMatchObject([
+    { kind: "intent", intent: { type: "insertRoadNode", roadId: road.id } },
+  ]);
+  expect(decideDoubleClick(snapshot, [2.5, 100])).toMatchObject([
+    { kind: "camera" },
+  ]);
+  const pointer = {
+    pointer: 1,
+    button: 0,
+    point: [2.5, 100] as WorldPoint,
+    screen: [20, 20] as [number, number],
+    alt: false,
+    space: false,
+  };
+  expect(decidePointerDown(snapshot, pointer).commands).toMatchObject([
+    { kind: "beginGesture", gesture: { kind: "pan" } },
+  ]);
+  expect(
+    decideDoubleClick(make(presentation, selection, false), [2.5, 0]),
+  ).toEqual([]);
+  const retained = make(presentation, selection, false);
+  for (const point of [
+    [0, 0],
+    [5 + 22 / viewScale(3), 0],
+  ] as WorldPoint[]) {
+    const decision = decidePointerDown(retained, { ...pointer, point });
+    expect(decision.commands.some((c) => c.kind === "intent")).toBe(false);
+    expect(
+      decision.commands.find((c) => c.kind === "beginGesture")?.gesture.kind,
+    ).toBe("pan");
+  }
+  for (const [p, sel] of [
+    [
+      { ...presentation, scene: { ...presentation.scene, objects: [] } },
+      selection,
+    ],
+    [presentation, { ...selection, selected: "missing" }],
+    [
+      presentation,
+      { ...selection, context: { kind: "house" as const, houseId: "missing" } },
+    ],
+  ] satisfies [Presentation, EditorSelection][]) {
+    const missing = make(p, sel);
+    expect(missing.overviewRoads).toEqual([tile, other, house]);
+    expect(decideDoubleClick(missing, [2.5, 100])).toMatchObject(
+      sel.context.kind === "exterior" ? [{ kind: "camera" }] : [],
+    );
+  }
+  expect(presentation).toEqual(before);
 });

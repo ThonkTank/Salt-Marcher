@@ -10,7 +10,7 @@ import type { GroundArgs } from "./generated/GroundArgs";
 import type { Brush } from "./generated/Brush";
 import type { MapFeature } from "./generated/MapFeature";
 import type { RoadRoughness } from "./generated/RoadRoughness";
-import { MIN_CITY_SCALE, zoomIntoCity } from "./cityView";
+import { MIN_CITY_SCALE, overviewRoadVisible, zoomIntoCity } from "./cityView";
 import {
   parcelIntent,
   resizeParcel,
@@ -1579,11 +1579,18 @@ function overviewRoadAt(snapshot: CanvasInputSnapshot, point: WorldPoint) {
   let best: MapFeature | undefined;
   let distance = Infinity;
   for (const feature of snapshot.overviewRoads ?? []) {
+    const exactSelected =
+      snapshot.selectedObject?.kind === "road" &&
+      snapshot.selectedObject.id === snapshot.selected &&
+      feature.id === snapshot.selectedObject.id;
     if (
       feature.kind !== "road" ||
-      (!snapshot.lod.policy.roofs &&
-        feature.width < 12 &&
-        feature.id !== snapshot.selected)
+      (!exactSelected &&
+        !overviewRoadVisible(
+          feature,
+          snapshot.camera.scale,
+          snapshot.lod.policy,
+        ))
     )
       continue;
     for (const path of feature.paths)

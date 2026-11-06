@@ -715,8 +715,12 @@ exakte Ausschnitte mit mehr als 5.000 Objekten verlangen weiteres Hineinzoomen;
 es gibt keine still gekürzte Bearbeitungsszene.
 
 In der Übersicht verschiebt Ziehen mit der linken Taste im Auswahlwerkzeug
-auf leerer Karte die Ansicht. Das Straßenwerkzeug setzt und bewegt stattdessen
-Verlaufspunkte. Doppelklick auf eine ausgewählte Straße fügt einen Knoten ein;
+auf leerer Karte die Ansicht. Normale, durch Breiten- oder Größenschwelle
+verborgene Straßen sind keine Auswahlziele und fangen weder dieses Verschieben
+noch den freien Doppelklick-Zoom ab. Eine ausgewählte Straße mit vorhandenem
+exaktem Header bleibt auch unter diesen Schwellen sichtbar und treffbar;
+Geometrieaktionen benötigen weiterhin aktuelle Daten. Das Straßenwerkzeug setzt
+und bewegt stattdessen Verlaufspunkte. Doppelklick auf eine ausgewählte Straße fügt einen Knoten ein;
 auf leerer Karte zoomt er um den angeklickten Punkt zur nächsten Ansicht
 gemäß den Atlasansichten; „Zum Bearbeiten hineinzoomen“ erhält den Kartenmittelpunkt.
 Bestehende Auswahl und Entwürfe bleiben beim Zoomwechsel erhalten. Im
@@ -731,7 +735,10 @@ Gebäude besitzen `importantPlace`, standardmäßig false, bearbeitbar als
 sie verändert weder Kollisionen noch Innenräume. Wichtige Orte können schon in
 der Stadtübersicht beschriftet werden. Namenspriorität: Auswahl, wichtige Orte,
 Straßen, gewöhnliche Gebäude; danach Größe/Straßenbedeutung und stabile ID.
-Straßennamen erscheinen in der Stadtübersicht erst ab 20 Fuß Straßenbreite.
+Im groben Inhaltsband unter 0,064 CSS-Pixeln pro Fuß erscheinen Straßennamen
+erst ab 20 Fuß Straßenbreite; der bestehende Rücklaufbereich der Inhaltshysterese
+gilt auch hier. In feineren Inhaltsbändern, einschließlich Straßenzug, dürfen
+bei ausreichendem Platz auch schmalere Straßen Namen tragen.
 
 Namen erscheinen in 13 CSS-Pixeln mit heller Kontur. Gebäudenamen stehen
 horizontal im oder neben dem Dach, Straßennamen folgen geeigneten, ausreichend

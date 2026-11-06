@@ -81,3 +81,129 @@ it("paints supplied immutable features in layer and author order", () => {
     "house",
   ]);
 });
+
+it.each([
+  [0.5, 12, 15.98, false],
+  [0.5, 12, 16, true],
+  [0.5, 12, 16.02, true],
+  [0.6773333333333333, 12, 5, false],
+  [0.05, 11.99, 200, false],
+  [0.05, 12, 200, true],
+  [0.05, 12.01, 200, true],
+  [0.064, 2, 200, true],
+] as const)(
+  "paints normal roads at scale %s width %s proxy %s: %s",
+  (scale, width, proxy, visible) => {
+    const strokes: { color: string; width: number }[] = [];
+    const c = {
+      beginPath() {},
+      moveTo() {},
+      lineTo() {},
+      closePath() {},
+      save() {},
+      restore() {},
+      fillRect() {},
+      stroke(this: CanvasRenderingContext2D) {
+        strokes.push({
+          color: String(this.strokeStyle),
+          width: this.lineWidth,
+        });
+      },
+    } as unknown as CanvasRenderingContext2D;
+    const road: MapFeature = {
+      id: "r",
+      kind: "road",
+      name: "",
+      important: false,
+      paths: [
+        [
+          [0, 0],
+          [proxy, 0],
+        ],
+      ],
+      width,
+      rank: width * proxy,
+      color: "#aaa9a3",
+    };
+    const view = { level: 0, tiles: [] };
+    paintCity(c, view, [road], scale, decideLod(scale).policy);
+    expect(strokes).toEqual(
+      visible ? [{ color: road.color, width: Math.max(width, 2 / scale) }] : [],
+    );
+    strokes.length = 0;
+    paintCity(c, view, [road], scale, decideLod(scale).policy, road.id);
+    expect(strokes).toEqual([]);
+  },
+);
+
+it("retains narrow normal roads in the roof policy hysteresis band", () => {
+  let strokes = 0;
+  const c = {
+    beginPath() {},
+    moveTo() {},
+    lineTo() {},
+    save() {},
+    restore() {},
+    stroke() {
+      strokes++;
+    },
+  } as unknown as CanvasRenderingContext2D;
+  const f: MapFeature = {
+    id: "r",
+    kind: "road",
+    name: "",
+    important: false,
+    paths: [
+      [
+        [0, 0],
+        [200, 0],
+      ],
+    ],
+    width: 2,
+    rank: 400,
+    color: "earth",
+  };
+  paintCity(
+    c,
+    { level: 0, tiles: [] },
+    [f],
+    0.06,
+    decideLod(0.06, decideLod(0.064)).policy,
+  );
+  expect(strokes).toBe(1);
+});
+
+it("does not stroke nonroad map features as roads", () => {
+  let strokes = 0;
+  const c = {
+    save() {},
+    restore() {},
+    stroke() {
+      strokes++;
+    },
+  } as unknown as CanvasRenderingContext2D;
+  paintCity(
+    c,
+    { level: 0, tiles: [] },
+    [
+      {
+        id: "other",
+        kind: "parcel",
+        name: "",
+        important: false,
+        paths: [
+          [
+            [0, 0],
+            [1000, 0],
+          ],
+        ],
+        color: "red",
+        width: 20,
+        rank: 20000,
+      },
+    ],
+    0.5,
+    decideLod(0.5).policy,
+  );
+  expect(strokes).toBe(0);
+});

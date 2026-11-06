@@ -5,6 +5,7 @@ import {
   viewScale,
   zoomAt,
 } from "./lod";
+import type { LodDecision } from "./lod";
 import type { Bounds, Camera, Scene } from "./model";
 import type { MapFeature } from "./generated/MapFeature";
 import type { MapTile } from "./generated/MapTile";
@@ -13,6 +14,17 @@ import { toWorld } from "./model";
 export const MIN_CITY_SCALE = MIN_WORLD_SCALE;
 export const EDIT_SCALE = DETAIL_SCALE;
 export type CityView = { level: number; tiles: MapTile[] };
+export function overviewRoadVisible(
+  feature: MapFeature,
+  scale: number,
+  policy: LodDecision["policy"],
+): boolean {
+  return (
+    feature.kind === "road" &&
+    feature.width >= policy.minRoadWidth &&
+    (feature.rank / Math.max(1, feature.width)) * scale >= 8
+  );
+}
 export function cityRequest(bounds: Bounds, level: number) {
   return tileRequest(bounds, level, 512, 20);
 }

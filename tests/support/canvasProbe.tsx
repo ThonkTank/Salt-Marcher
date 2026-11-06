@@ -159,3 +159,29 @@ export function canvasProbe() {
     },
   };
 }
+
+/** Observe current text on an existing app canvas without mounting another editor. */
+export function observeBaseFrame(canvas: HTMLCanvasElement) {
+  const texts: string[] = [];
+  let frame = 0;
+  const clear = CanvasRenderingContext2D.prototype.clearRect;
+  const fillText = CanvasRenderingContext2D.prototype.fillText;
+  CanvasRenderingContext2D.prototype.clearRect = function (...args) {
+    if (this.canvas === canvas) {
+      frame++;
+      texts.length = 0;
+    }
+    return clear.apply(this, args);
+  };
+  CanvasRenderingContext2D.prototype.fillText = function (...args) {
+    if (this.canvas === canvas) texts.push(args[0]);
+    return fillText.apply(this, args);
+  };
+  return {
+    snapshot: () => ({ frame, texts: [...texts] }),
+    close: () => {
+      CanvasRenderingContext2D.prototype.clearRect = clear;
+      CanvasRenderingContext2D.prototype.fillText = fillText;
+    },
+  };
+}

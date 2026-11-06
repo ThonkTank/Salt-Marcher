@@ -1,5 +1,5 @@
 import type { LodDecision } from "./lod";
-import type { CityView } from "./cityView";
+import { overviewRoadVisible, type CityView } from "./cityView";
 import type { MapFeature } from "./generated/MapFeature";
 export function paintCity(
   c: CanvasRenderingContext2D,
@@ -54,12 +54,7 @@ export function paintCity(
         continue;
       if (kind === "house" && (!policy.roofs || Math.sqrt(f.rank) * scale < 6))
         continue;
-      if (
-        kind === "road" &&
-        (f.width < policy.minRoadWidth ||
-          (f.rank / Math.max(1, f.width)) * scale < 8)
-      )
-        continue;
+      if (kind === "road" && !overviewRoadVisible(f, scale, policy)) continue;
       path(f);
       if (kind === "road") {
         c.strokeStyle = f.color;

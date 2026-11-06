@@ -121,6 +121,11 @@ Skalensperre für Bearbeitungsfreigabe und Bedienhinweise.
 `editorScene` trennt die zuletzt sichtbare Szene von den für Interaktionen gültigen
 Ownerdaten; `canEdit` projiziert die Bearbeitungsfreigabe. `editorInput` stellt
 den Eingabesnapshot einschließlich Kachelanfragen und Regionsfreigabe zusammen.
+`cityView` besitzt die reine normale Straßensichtbarkeitsregel für `cityPaint`
+und Übersichtstreffer in `interaction`. Bei vorhandenem exaktem ausgewähltem
+Straßenheader ersetzt `editorInput` ausschließlich dessen vereinfachten
+Kacheltreffer durch das vorhandene exakte Szenenfeature; die Bearbeitungsfreigabe
+bleibt gesondert geprüft.
 Diese Funktionen in `editorView` besitzen keinen Zustand. Werkzeugwerte werden einmal in `useEditorTools`
 aufgelöst und gemeinsam an Panels und Eingaben weitergegeben. Auch Änderungen
 der Pinselgröße gehören zu diesem Besitzer, für Regionen zum Regionshook:
