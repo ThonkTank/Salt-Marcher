@@ -1230,3 +1230,62 @@ fn multiple_large_houses_stream_one_payload_at_a_time_without_a_global_cell_cap(
     b.save(&second).unwrap();
     assert_eq!(payload_rows(&path), payload_rows(&second));
 }
+
+#[test]
+fn height_import_late_failures_preserve_active_session_and_source() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("invalid-heights.saltatlas");
+    let live_path = dir.path().join("active.saltatlas");
+    let mut source = AtlasApplication::new().unwrap();
+    terrain_store::write_points(&source.db, &[(-1, -1, 0.1)]).unwrap();
+    world_terrain_store::apply(
+        &source.db,
+        &world_terrain_store::WorldTerrainDelta {
+            level: 1,
+            before: vec![],
+            after: vec![(-1, -1, Some(0.2))],
+        },
+        true,
+    )
+    .unwrap();
+    source.save(&path).unwrap();
+    let pristine = std::fs::read(&path).unwrap();
+    let mut live = live_document();
+    terrain_store::write_points(&live.db, &[(-5, 3, 11.2)]).unwrap();
+    world_terrain_store::apply(
+        &live.db,
+        &world_terrain_store::WorldTerrainDelta {
+            level: 2,
+            before: vec![],
+            after: vec![(1, -2, Some(-4.5))],
+        },
+        true,
+    )
+    .unwrap();
+    live.save(&live_path).unwrap();
+    edit(
+        &mut live,
+        json!({"type":"createHouse","parcelId":null,"transform":{"x":2000,"y":2000,"angle":0},"width":2,"depth":2}),
+    );
+    live.history(false).unwrap();
+    let before = dump(&live);
+    let heights = super::terrain_tests::height_rows(&live.db);
+    for sql in [
+        "INSERT INTO terrain VALUES(20000001,0,1.0)",
+        "INSERT INTO terrain_layers VALUES(2,20000000,0,1.0)",
+        "INSERT INTO ground_tiles VALUES(0,0,x'01')",
+    ] {
+        std::fs::write(&path, &pristine).unwrap();
+        let db = Connection::open(&path).unwrap();
+        db.execute(sql, []).unwrap();
+        drop(db);
+        let bytes = std::fs::read(&path).unwrap();
+        assert!(live.open(&path).is_err(), "accepted {sql}");
+        assert_eq!(dump(&live), before, "active session changed: {sql}");
+        assert_eq!(super::terrain_tests::height_rows(&live.db), heights);
+        assert_eq!(std::fs::read(&path).unwrap(), bytes);
+    }
+    live.history(true).unwrap();
+    live.history(false).unwrap();
+    assert_eq!(super::terrain_tests::height_rows(&live.db), heights);
+}

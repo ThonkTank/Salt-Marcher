@@ -825,3 +825,69 @@ it.each([
     loader.dispose();
   },
 );
+
+it("publishes retained raster loading and errors without replacing the display until payload changes", async () => {
+  const pending: Array<{
+    cmd: string;
+    args: Record<string, unknown>;
+    resolve: (v: unknown) => void;
+    reject: (e: Error) => void;
+  }> = [];
+  const client = new AtlasClient(
+    (cmd, args) =>
+      new Promise((resolve, reject) =>
+        pending.push({ cmd, args, resolve, reject }),
+      ),
+  );
+  const { input, loader } = harness();
+  const initial = { ...input, client, terrainLevel: 0 };
+  const reply = (item: (typeof pending)[number]) => ({
+    status,
+    level: item.args.level,
+    tiles: (item.args.tiles as number[][]).map(([x, y]) => terrainTile(x, y)),
+  });
+  loader.update(initial);
+  pending.find((p) => p.cmd === "scene")!.resolve(scene());
+  pending
+    .find((p) => p.cmd === "terrainTiles")!
+    .resolve(reply(pending.find((p) => p.cmd === "terrainTiles")!));
+  await vi.waitFor(() => expect(loader.fresh(initial)).toBe(true));
+  const display = loader.getSnapshot().display;
+  const snapshots: ReturnType<typeof loader.getSnapshot>[] = [];
+  const unsubscribe = loader.subscribe(() =>
+    snapshots.push(loader.getSnapshot()),
+  );
+  const moved = {
+    ...initial,
+    bounds: [200, 0, 300, 100] as [number, number, number, number],
+  };
+  loader.update(moved);
+  expect(loader.getSnapshot().loading).toBe(true);
+  expect(loader.getSnapshot().display).toBe(display);
+  await vi.waitFor(() =>
+    expect(pending.filter((p) => p.cmd === "terrainTiles")).toHaveLength(2),
+  );
+  pending
+    .filter((p) => p.cmd === "terrainTiles")[1]
+    .reject(Error("raster failed"));
+  await vi.waitFor(() =>
+    expect(loader.getSnapshot().error).toContain("raster failed"),
+  );
+  expect(loader.getSnapshot().display).toBe(display);
+  expect(snapshots.some((s) => s.loading)).toBe(true);
+  expect(snapshots.some((s) => s.error.includes("raster failed"))).toBe(true);
+  loader.retry();
+  await vi.waitFor(() =>
+    expect(pending.filter((p) => p.cmd === "terrainTiles")).toHaveLength(3),
+  );
+  const next = pending.filter((p) => p.cmd === "terrainTiles")[2];
+  next.resolve(reply(next));
+  await vi.waitFor(() =>
+    expect(loader.getSnapshot().display?.value.terrain).not.toBe(
+      display?.value.terrain,
+    ),
+  );
+  expect(loader.getSnapshot().display).not.toBe(display);
+  unsubscribe();
+  loader.dispose();
+});

@@ -32,6 +32,51 @@ impl WorldTerrainDelta {
 pub fn install(db: &Connection) -> Result<()> {
     db.execute_batch("CREATE TABLE terrain_layers(level INTEGER NOT NULL,x INTEGER NOT NULL,y INTEGER NOT NULL,z REAL NOT NULL,PRIMARY KEY(level,x,y)) WITHOUT ROWID; CREATE TABLE terrain_layer_overview(source INTEGER NOT NULL,level INTEGER NOT NULL,x INTEGER NOT NULL,y INTEGER NOT NULL,total REAL NOT NULL,n INTEGER NOT NULL,PRIMARY KEY(level,x,y,source)) WITHOUT ROWID;").map_err(storage_error)
 }
+/// Rebuild disposable parents from each author resolution inside the caller's transaction.
+pub fn rebuild_overview(db: &Connection) -> Result<()> {
+    db.execute("DELETE FROM terrain_layer_overview", [])
+        .map_err(storage_error)?;
+    let mut read = db.prepare("SELECT x >> ?1 AS px, y >> ?1 AS py, x, y, z FROM terrain_layers WHERE level=?2 ORDER BY px, py, x, y").map_err(storage_error)?;
+    let mut insert = db
+        .prepare("INSERT INTO terrain_layer_overview(source,level,x,y,total,n) VALUES(?,?,?,?,?,?)")
+        .map_err(storage_error)?;
+    for source in 1..=20 {
+        for level in source + 1..=21 {
+            let mut rows = read
+                .query(params![level - source, source])
+                .map_err(storage_error)?;
+            let mut parent: Option<(i32, i32, f64, i64)> = None;
+            while let Some(row) = rows.next().map_err(storage_error)? {
+                let (x, y, z): (i32, i32, f64) = (
+                    row.get(0).map_err(storage_error)?,
+                    row.get(1).map_err(storage_error)?,
+                    row.get(4).map_err(storage_error)?,
+                );
+                let contribution = z - 0.0;
+                match parent.as_mut() {
+                    Some((px, py, total, n)) if (*px, *py) == (x, y) => {
+                        *total += contribution;
+                        *n += 1;
+                    }
+                    _ => {
+                        if let Some((px, py, total, n)) = parent.take() {
+                            insert
+                                .execute(params![source, level, px, py, total, n])
+                                .map_err(storage_error)?;
+                        }
+                        parent = Some((x, y, contribution, 1));
+                    }
+                }
+            }
+            if let Some((x, y, total, n)) = parent {
+                insert
+                    .execute(params![source, level, x, y, total, n])
+                    .map_err(storage_error)?;
+            }
+        }
+    }
+    Ok(())
+}
 pub fn read(db: &Connection, b: Bounds) -> Result<Layers> {
     read_from(db, b, 0)
 }

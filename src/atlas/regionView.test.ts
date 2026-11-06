@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { hitRegion, visibleRanks, regionNames } from "./regionView";
+import {
+  displayedRegions,
+  hitRegion,
+  visibleRanks,
+  regionNames,
+} from "./regionView";
 import type { Region } from "./generated/Region";
 const catalog = {
   categories: [
@@ -194,4 +199,50 @@ it("uses ordinary region categories for settlement symbols and all their ranks",
       [],
     ),
   ).toEqual([]);
+});
+
+it("keeps rank hysteresis in both directions and category order", () => {
+  const prior = new Map<string, string>();
+  expect(visibleRanks(catalog, summaries, 8, prior)).toEqual(["large"]);
+  expect(visibleRanks(catalog, summaries, 12.7, prior)).toEqual(["large"]);
+  expect(visibleRanks(catalog, summaries, 14, prior)).toEqual(["small"]);
+  expect(visibleRanks(catalog, summaries, 12.5, prior)).toEqual(["small"]);
+  expect(visibleRanks(catalog, summaries, 11, prior)).toEqual(["large"]);
+  const two = {
+    categories: [
+      catalog.categories[0],
+      { ...catalog.categories[0], id: "q", fixedRank: "q-rank" },
+    ],
+    ranks: [...catalog.ranks, { id: "q-rank", name: "Q", categoryId: "q" }],
+  };
+  expect(visibleRanks(two, summaries, 11, prior, "small")).toEqual([
+    "small",
+    "q-rank",
+  ]);
+  expect(
+    visibleRanks(
+      { ...two, categories: [...two.categories].reverse() },
+      summaries,
+      11,
+      prior,
+    ),
+  ).toEqual(["q-rank", "large"]);
+});
+
+it("orders displayed regions by category and stable ID without mutating the source", () => {
+  const categories = {
+    categories: [catalog.categories[0], { ...catalog.categories[0], id: "q" }],
+    ranks: [...catalog.ranks, { id: "q-rank", name: "Q", categoryId: "q" }],
+  };
+  const regions = Object.freeze([
+    { id: "z", rankId: "q-rank" },
+    { id: "b", rankId: "small" },
+    { id: "a", rankId: "small" },
+  ] as Region[]);
+  expect(
+    displayedRegions(regions as Region[], categories, ["q-rank", "small"]).map(
+      (r) => r.id,
+    ),
+  ).toEqual(["a", "b", "z"]);
+  expect(regions.map((r) => r.id)).toEqual(["z", "b", "a"]);
 });

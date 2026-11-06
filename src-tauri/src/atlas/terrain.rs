@@ -314,6 +314,7 @@ pub struct Platform {
     pub rings: Vec<Vec<Point>>,
     pub level: f64,
     pub foundation: Foundation,
+    influence: rstar::AABB<Point>,
 }
 impl Platform {
     pub fn new(rings: Vec<Vec<Point>>, g: &Grid, foundation: Foundation) -> Self {
@@ -374,26 +375,111 @@ impl Platform {
                 }
             }
         }
+        // A segment projection and a ray crossing use a fraction in [0, 1].
+        // Their few rounding operations can move a result only O(eps * M)
+        // outside the endpoint bounds; EPS and 64 eps * M reserve that margin.
+        // The bounds only filter candidates, never replace exact containment.
+        let m = b
+            .iter()
+            .map(|v| v.abs())
+            .fold(1.0_f64, f64::max)
+            .max(b[2] - b[0])
+            .max(b[3] - b[1])
+            .max(foundation.transition);
+        let pad = super::geometry::EPS + 64.0 * f64::EPSILON * m;
+        let influence = super::geometry::expand(b, foundation.transition + pad);
         Self {
             rings,
             level,
             foundation,
+            influence: rstar::AABB::from_corners(
+                [influence[0], influence[1]],
+                [influence[2], influence[3]],
+            ),
         }
     }
 }
+
+struct PlatformEntry {
+    ordinal: usize,
+    envelope: rstar::AABB<Point>,
+}
+impl rstar::RTreeObject for PlatformEntry {
+    type Envelope = rstar::AABB<Point>;
+    fn envelope(&self) -> Self::Envelope {
+        self.envelope
+    }
+}
+pub struct PreparedPlatforms<'a> {
+    platforms: Vec<&'a Platform>,
+    index: rstar::RTree<PlatformEntry>,
+    candidates: Vec<usize>,
+}
+impl<'a> PreparedPlatforms<'a> {
+    pub fn new(platforms: Vec<&'a Platform>) -> Self {
+        let entries = platforms
+            .iter()
+            .enumerate()
+            .map(|(ordinal, p)| PlatformEntry {
+                ordinal,
+                envelope: p.influence,
+            })
+            .collect();
+        Self {
+            platforms,
+            index: rstar::RTree::bulk_load(entries),
+            candidates: Vec::new(),
+        }
+    }
+    pub fn at(&mut self, natural: f64, p: Point) -> f64 {
+        self.candidates.clear();
+        self.candidates.extend(
+            self.index
+                .locate_in_envelope_intersecting(&rstar::AABB::from_point(p))
+                .map(|entry| entry.ordinal),
+        );
+        self.candidates.sort_unstable();
+        evaluate_surface(
+            natural,
+            p,
+            self.candidates.iter().map(|&i| self.platforms[i]),
+        )
+    }
+}
+#[cfg(test)]
 pub fn surface(natural: f64, p: Point, platforms: &[Platform]) -> f64 {
+    evaluate_surface(natural, p, platforms.iter())
+}
+#[cfg(test)]
+thread_local! { static SURFACE_COUNTS: std::cell::Cell<(usize, usize)> = const { std::cell::Cell::new((0, 0)) }; }
+fn evaluate_surface<'a, I>(natural: f64, p: Point, platforms: I) -> f64
+where
+    I: Iterator<Item = &'a Platform> + Clone,
+{
     use super::geometry::{contains, edges, point_segment};
-    for platform in platforms {
+    for platform in platforms.clone() {
+        #[cfg(test)]
+        SURFACE_COUNTS.with(|c| {
+            let (a, b) = c.get();
+            c.set((a + 1, b));
+        });
         if contains(&platform.rings, p) {
             return platform.level;
         }
     }
-    platforms.iter().fold(natural, |z, platform| {
+    platforms.fold(natural, |z, platform| {
         if platform.foundation.transition <= 0.0 {
             return z;
         }
         let distance = edges(&platform.rings)
-            .map(|(a, b)| point_segment(p, a, b))
+            .map(|(a, b)| {
+                #[cfg(test)]
+                SURFACE_COUNTS.with(|c| {
+                    let (a, b) = c.get();
+                    c.set((a, b + 1));
+                });
+                point_segment(p, a, b)
+            })
             .fold(f64::INFINITY, f64::min);
         let t = (1.0 - distance / platform.foundation.transition).clamp(0.0, 1.0);
         z.max(natural + (platform.level - natural).max(0.0) * t * t * (3.0 - 2.0 * t))
@@ -431,4 +517,116 @@ pub fn stroke_centers(b: &Brush) -> Result<Vec<Point>> {
         remaining -= length;
     }
     Ok(centers)
+}
+
+#[cfg(test)]
+mod platform_index_tests {
+    use super::*;
+    fn square(x: f64, y: f64, size: f64) -> Vec<Point> {
+        vec![[x, y], [x + size, y], [x + size, y + size], [x, y + size]]
+    }
+    fn platform(rings: Vec<Vec<Point>>, level: f64, transition: f64) -> Platform {
+        let mut p = Platform::new(
+            rings,
+            &Grid::new(),
+            Foundation {
+                height: 1.,
+                transition,
+            },
+        );
+        p.level = level;
+        p
+    }
+    fn compare(platforms: &[Platform], points: &[Point]) {
+        let mut indexed = PreparedPlatforms::new(platforms.iter().collect());
+        for &p in points {
+            let expected = surface(10., p, platforms);
+            assert!(expected.is_finite());
+            assert_eq!(indexed.at(10., p), expected, "{p:?}");
+        }
+    }
+    #[test]
+    fn indexed_surface_preserves_edges_holes_order_and_world_limits() {
+        let base = platform(vec![square(0., 0., 20.)], 30., 10.);
+        for (point, expected) in [([10., 10.], 30.), ([25., 10.], 20.), ([30., 10.], 10.)] {
+            assert_eq!(surface(10., point, std::slice::from_ref(&base)), expected);
+        }
+        let zero = platform(vec![square(0., 0., 20.)], 30., 0.);
+        assert_eq!(surface(10., [0., 10.], std::slice::from_ref(&zero)), 10.);
+        assert_eq!(
+            surface(
+                10.,
+                [super::super::geometry::EPS / 2., 10.],
+                std::slice::from_ref(&zero)
+            ),
+            10.
+        );
+        assert_eq!(surface(10., [1., 10.], std::slice::from_ref(&zero)), 30.);
+        let hole = platform(vec![square(0., 0., 40.), square(10., 10., 20.)], 30., 10.);
+        assert_eq!(surface(10., [20., 20.], std::slice::from_ref(&hole)), 10.);
+        assert_eq!(surface(10., [15., 20.], std::slice::from_ref(&hole)), 20.);
+        let high = platform(vec![square(0., 0., 20.)], 50., 10.);
+        assert_eq!(surface(10., [10., 10.], &[base.clone(), high.clone()]), 30.);
+        assert_eq!(surface(10., [10., 10.], &[high.clone(), base.clone()]), 50.);
+        let shifted = platform(vec![square(25., 0., 20.)], 15., 10.);
+        assert_eq!(
+            surface(10., [26., 10.], &[high.clone(), shifted.clone()]),
+            15.
+        );
+        let rotated = platform(
+            vec![vec![[-30., 0.], [-20., -10.], [-10., 0.], [-20., 10.]]],
+            40.,
+            500.,
+        );
+        let mut platforms = vec![base, zero, hole, high, shifted, rotated];
+        for origin in [-100_000_000., 99_999_970.] {
+            platforms.push(platform(vec![square(origin, origin, 20.)], 30., 10.));
+        }
+        let mut points = vec![
+            [0., 10.],
+            [f64::from_bits(0.0f64.to_bits() + 1), 10.],
+            [10., 10.],
+            [20., 10.],
+            [25., 10.],
+            [30., 10.],
+            [-20., 0.],
+            [-530., 0.],
+            [510., 0.],
+            [15., 20.],
+            [20., 20.],
+        ];
+        for origin in [-100_000_000., 99_999_970.] {
+            for offset in [-10., 0., 10., 20., 30.] {
+                let x: f64 = origin + offset;
+                points.extend([
+                    [x, origin + 10.],
+                    [f64::from_bits(x.to_bits() - 1), origin + 10.],
+                    [f64::from_bits(x.to_bits() + 1), origin + 10.],
+                ]);
+            }
+        }
+        compare(&platforms, &points);
+        platforms.reverse();
+        compare(&platforms, &points);
+        compare(&[], &points);
+    }
+    #[test]
+    fn indexed_surface_reduces_actual_predicates() {
+        let platforms: Vec<_> = (0..256)
+            .map(|i| platform(vec![square(i as f64 * 100., 0., 20.)], 30., 10.))
+            .collect();
+        let point = [25., 10.];
+        let mut index = PreparedPlatforms::new(platforms.iter().collect());
+        SURFACE_COUNTS.with(|c| c.set((0, 0)));
+        let actual = index.at(10., point);
+        let indexed = SURFACE_COUNTS.with(|c| c.get());
+        SURFACE_COUNTS.with(|c| c.set((0, 0)));
+        let expected = surface(10., point, &platforms);
+        let full = SURFACE_COUNTS.with(|c| c.get());
+        assert_eq!(actual, expected);
+        assert_eq!(actual, 20.);
+        assert_eq!(indexed, (1, 4));
+        assert_eq!(full, (256, 1024));
+        eprintln!("surface predicates: indexed={indexed:?}, unfiltered={full:?}");
+    }
 }

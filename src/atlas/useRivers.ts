@@ -10,6 +10,10 @@ import { usePresentationLayer } from "./usePresentation";
 import type { PresentationLoader } from "./presentationLoader";
 import { terrainRequest } from "./terrainView";
 import { editableRiver } from "./interaction";
+import type { RiverView } from "./generated/RiverView";
+import type { RiverNode } from "./generated/RiverNode";
+const emptyViews = Object.freeze([]) as unknown as RiverView[];
+const emptyNodes = Object.freeze([]) as unknown as RiverNode[];
 type Draft = Extract<RiverAction, { kind: "put" }>;
 const defaults: RiverSettings = {
   tolerance: 0.1,
@@ -80,9 +84,11 @@ export function useRivers(
       setSelected("");
   }, [fresh, data, selected]);
   const views =
-    data?.status.sessionId === status?.sessionId ? (data?.rivers ?? []) : [];
+    data?.status.sessionId === status?.sessionId
+      ? (data?.rivers ?? emptyViews)
+      : emptyViews;
   const river = views.find((v) => v.river.id === selected)?.river;
-  const nodes = draft?.nodes ?? river?.nodes ?? [];
+  const nodes = draft?.nodes ?? river?.nodes ?? emptyNodes;
   const node = nodes.length
     ? Math.max(0, Math.min(selection.node ?? 0, nodes.length - 1))
     : null;
@@ -136,14 +142,14 @@ export function useRivers(
   return {
     input: {
       river: visible ? river : undefined,
-      views: visible ? views : [],
+      views: visible ? views : emptyViews,
       settings,
       width,
       mode,
       fresh,
     },
     editable: visible && editable,
-    views: visible ? views : [],
+    views: visible ? views : emptyViews,
     selected: visible ? selected : "",
     draft: visible ? draft : null,
     preview: visible ? preview : null,
@@ -159,7 +165,7 @@ export function useRivers(
     busy,
     mode,
     river: visible ? river : undefined,
-    handles: visible && active ? (draft?.nodes ?? river?.nodes ?? []) : [],
+    handles: visible && active ? nodes : emptyNodes,
     maxCut:
       visible && preview?.valid
         ? (preview.rivers?.after ?? []).reduce(

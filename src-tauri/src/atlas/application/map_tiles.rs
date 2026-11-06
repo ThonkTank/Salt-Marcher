@@ -5,6 +5,7 @@ use crate::atlas::model::*;
 use crate::atlas::Result;
 use rusqlite::params;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 #[cfg_attr(test, derive(ts_rs::TS))]
 #[derive(Clone, Debug, Deserialize)]
@@ -125,8 +126,156 @@ fn sampled(points: &[Point], tolerance: f64, closed: bool) -> Vec<Point> {
     }
 }
 
+#[cfg(test)]
+thread_local! {
+    static PROJECTIONS: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+}
+
+#[cfg(test)]
+pub(super) fn projection_count(reset: bool) -> usize {
+    PROJECTIONS.with(|count| {
+        let value = count.get();
+        if reset {
+            count.set(0);
+        }
+        value
+    })
+}
+
+pub(super) fn project_feature(object: SceneObject, cell_size: f64) -> Option<MapFeature> {
+    #[cfg(test)]
+    PROJECTIONS.with(|count| count.set(count.get() + 1));
+    let b = object.bounds();
+    let rank = (b[2] - b[0]) * (b[3] - b[1]);
+    let mut feature = match object {
+        SceneObject::House(h) => {
+            let paths = h
+                .contours
+                .iter()
+                .map(|ring| {
+                    ring.iter()
+                        .map(|p| {
+                            let (sin, cos) = h.transform.angle.sin_cos();
+                            [
+                                h.transform.x + 5.0 * (p.0[0] * cos - p.0[1] * sin),
+                                h.transform.y + 5.0 * (p.0[0] * sin + p.0[1] * cos),
+                            ]
+                        })
+                        .collect::<Vec<_>>()
+                })
+                .collect();
+            MapFeature {
+                id: h.id,
+                kind: "house".into(),
+                name: h.name,
+                important: h.important_place,
+                paths,
+                color: h.roof,
+                width: 0.0,
+                rank,
+            }
+        }
+        SceneObject::Road(r) => MapFeature {
+            id: r.id,
+            kind: "road".into(),
+            name: r.name,
+            important: false,
+            paths: vec![sampled(&r.path, cell_size / 8.0, false)],
+            color: match r.material {
+                RoadMaterial::Earth => "#c8b99b",
+                RoadMaterial::Stone => "#aaa9a3",
+            }
+            .into(),
+            width: r.width,
+            rank: r.width * ((b[2] - b[0]).hypot(b[3] - b[1])),
+        },
+        SceneObject::Area(a) => MapFeature {
+            id: a.id,
+            kind: "area".into(),
+            name: String::new(),
+            important: false,
+            paths: vec![sampled(&a.points, cell_size / 8.0, true)],
+            color: match a.material.as_str() {
+                "water" => "#91bcc5",
+                "earth" => "#c8b99b",
+                "stone" => "#aaa9a3",
+                _ => "#9db58b",
+            }
+            .into(),
+            width: 0.0,
+            rank: a.order as f64,
+        },
+        SceneObject::Scenery(s) => MapFeature {
+            id: s.id,
+            kind: "scenery".into(),
+            name: String::new(),
+            important: false,
+            paths: s
+                .assets
+                .iter()
+                .step_by(s.assets.len().div_ceil(512).max(1))
+                .filter(|a| a.size * 2.0 >= cell_size / 8.0)
+                .map(|a| {
+                    (0..8)
+                        .map(|i| {
+                            let t = i as f64 * std::f64::consts::TAU / 8.0;
+                            [a.point[0] + a.size * t.cos(), a.point[1] + a.size * t.sin()]
+                        })
+                        .collect()
+                })
+                .collect(),
+            color: match s.biome {
+                crate::atlas::scenery::Biome::Forest => "#477148",
+                crate::atlas::scenery::Biome::Meadow => "#8ca55b",
+                crate::atlas::scenery::Biome::Scrub => "#70834b",
+                crate::atlas::scenery::Biome::Rocks => "#929083",
+            }
+            .into(),
+            width: 0.0,
+            rank,
+        },
+        SceneObject::Parcel(_) => return None,
+    };
+    // Increase presentation tolerance for unusually complex
+    // paths; never transfer unbounded editing geometry.
+    let mut tolerance = cell_size / 8.0;
+    while feature.paths.iter().map(Vec::len).sum::<usize>() > 4096 && tolerance < 20_000_000.0 {
+        tolerance *= 2.0;
+        feature.paths = feature
+            .paths
+            .iter()
+            .map(|p| sampled(p, tolerance, feature.kind != "road"))
+            .collect();
+    }
+    if feature.paths.iter().map(Vec::len).sum::<usize>() > 4096 {
+        // A house with thousands of disconnected rings remains
+        // represented by density and a label anchor, not a fake roof.
+        feature.paths = vec![vec![[(b[0] + b[2]) / 2.0, (b[1] + b[3]) / 2.0]]];
+    }
+    Some(feature)
+}
+
 impl AtlasApplication {
     pub(in crate::atlas) fn map_tiles(&self, args: MapTilesArgs) -> Result<MapTilesResponse> {
+        let mut cache = HashMap::<String, MapFeature>::new();
+        self.map_tiles_with(args, |id, body, size| {
+            if let Some(feature) = cache.get(&id) {
+                return Ok(Some(feature.clone()));
+            }
+            let object = serde_json::from_str(&body).map_err(storage_error)?;
+            let feature = project_feature(object, size);
+            if let Some(feature) = &feature {
+                cache.insert(id, feature.clone());
+            }
+            Ok(feature)
+        })
+    }
+
+    pub(super) fn map_tiles_with(
+        &self,
+        args: MapTilesArgs,
+        mut project: impl FnMut(String, String, f64) -> Result<Option<MapFeature>>,
+    ) -> Result<MapTilesResponse> {
         ensure(
             args.level <= 20 && args.tiles.len() <= 64,
             "Ungültige Kartenkacheln",
@@ -181,7 +330,7 @@ impl AtlasApplication {
                 } else {
                     ""
                 };
-                let sql=format!("SELECT o.body FROM objects o JOIN spatial s ON o.rowid=s.key WHERE s.min_x<=?1 AND s.max_x>=?2 AND s.min_y<=?3 AND s.max_y>=?4 AND o.kind=?5 AND ?6>0 {filter} ORDER BY {priority} {rank} DESC,o.id LIMIT 128");
+                let sql=format!("SELECT o.id,o.body FROM objects o JOIN spatial s ON o.rowid=s.key WHERE s.min_x<=?1 AND s.max_x>=?2 AND s.min_y<=?3 AND s.max_y>=?4 AND o.kind=?5 AND ?6>0 {filter} ORDER BY {priority} {rank} DESC,o.id LIMIT 128");
                 let mut q = self.db.prepare_cached(&sql).map_err(storage_error)?;
                 let bodies = q
                     .query_map(
@@ -193,125 +342,14 @@ impl AtlasApplication {
                             kind,
                             size
                         ],
-                        |r| r.get::<_, String>(0),
+                        |r| Ok((r.get::<_, String>(0)?, r.get::<_, String>(1)?)),
                     )
                     .map_err(storage_error)?;
                 for body in bodies {
-                    let object: SceneObject = serde_json::from_str(&body.map_err(storage_error)?)
-                        .map_err(storage_error)?;
-                    let b = object.bounds();
-                    let rank = (b[2] - b[0]) * (b[3] - b[1]);
-                    let mut feature = match object {
-                        SceneObject::House(h) => {
-                            let paths = h
-                                .contours
-                                .iter()
-                                .map(|ring| {
-                                    ring.iter()
-                                        .map(|p| {
-                                            let (sin, cos) = h.transform.angle.sin_cos();
-                                            [
-                                                h.transform.x + 5.0 * (p.0[0] * cos - p.0[1] * sin),
-                                                h.transform.y + 5.0 * (p.0[0] * sin + p.0[1] * cos),
-                                            ]
-                                        })
-                                        .collect::<Vec<_>>()
-                                })
-                                .collect();
-                            MapFeature {
-                                id: h.id,
-                                kind: "house".into(),
-                                name: h.name,
-                                important: h.important_place,
-                                paths,
-                                color: h.roof,
-                                width: 0.0,
-                                rank,
-                            }
-                        }
-                        SceneObject::Road(r) => MapFeature {
-                            id: r.id,
-                            kind: "road".into(),
-                            name: r.name,
-                            important: false,
-                            paths: vec![sampled(&r.path, size / 8.0, false)],
-                            color: match r.material {
-                                RoadMaterial::Earth => "#c8b99b",
-                                RoadMaterial::Stone => "#aaa9a3",
-                            }
-                            .into(),
-                            width: r.width,
-                            rank: r.width * ((b[2] - b[0]).hypot(b[3] - b[1])),
-                        },
-                        SceneObject::Area(a) => MapFeature {
-                            id: a.id,
-                            kind: "area".into(),
-                            name: String::new(),
-                            important: false,
-                            paths: vec![sampled(&a.points, size / 8.0, true)],
-                            color: match a.material.as_str() {
-                                "water" => "#91bcc5",
-                                "earth" => "#c8b99b",
-                                "stone" => "#aaa9a3",
-                                _ => "#9db58b",
-                            }
-                            .into(),
-                            width: 0.0,
-                            rank: a.order as f64,
-                        },
-                        SceneObject::Scenery(s) => MapFeature {
-                            id: s.id,
-                            kind: "scenery".into(),
-                            name: String::new(),
-                            important: false,
-                            paths: s
-                                .assets
-                                .iter()
-                                .step_by(s.assets.len().div_ceil(512).max(1))
-                                .filter(|a| a.size * 2.0 >= size / 8.0)
-                                .map(|a| {
-                                    (0..8)
-                                        .map(|i| {
-                                            let t = i as f64 * std::f64::consts::TAU / 8.0;
-                                            [
-                                                a.point[0] + a.size * t.cos(),
-                                                a.point[1] + a.size * t.sin(),
-                                            ]
-                                        })
-                                        .collect()
-                                })
-                                .collect(),
-                            color: match s.biome {
-                                crate::atlas::scenery::Biome::Forest => "#477148",
-                                crate::atlas::scenery::Biome::Meadow => "#8ca55b",
-                                crate::atlas::scenery::Biome::Scrub => "#70834b",
-                                crate::atlas::scenery::Biome::Rocks => "#929083",
-                            }
-                            .into(),
-                            width: 0.0,
-                            rank,
-                        },
-                        SceneObject::Parcel(_) => continue,
-                    };
-                    // Increase presentation tolerance for unusually complex
-                    // paths; never transfer unbounded editing geometry.
-                    let mut tolerance = size / 8.0;
-                    while feature.paths.iter().map(Vec::len).sum::<usize>() > 4096
-                        && tolerance < 20_000_000.0
-                    {
-                        tolerance *= 2.0;
-                        feature.paths = feature
-                            .paths
-                            .iter()
-                            .map(|p| sampled(p, tolerance, feature.kind != "road"))
-                            .collect();
+                    let (id, body) = body.map_err(storage_error)?;
+                    if let Some(feature) = project(id, body, size)? {
+                        features.push(feature);
                     }
-                    if feature.paths.iter().map(Vec::len).sum::<usize>() > 4096 {
-                        // A house with thousands of disconnected rings remains
-                        // represented by density and a label anchor, not a fake roof.
-                        feature.paths = vec![vec![[(b[0] + b[2]) / 2.0, (b[1] + b[3]) / 2.0]]];
-                    }
-                    features.push(feature);
                 }
             }
             tiles.push(MapTile {

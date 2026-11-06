@@ -123,3 +123,51 @@ it("does not mix terrain previews or ground across revisions", () => {
   expect(frame.terrain?.tiles).toEqual([{ x: 1, y: 0 }]);
   expect(frame.ground).toBeUndefined();
 });
+
+it("keeps complete deduplicated city features separate from selection and detail labels", () => {
+  const feature = (id: string, name: string) =>
+    Object.freeze({
+      id,
+      name,
+      kind: "road",
+      paths: [],
+      color: "",
+      width: 20,
+      rank: 1000,
+      important: false,
+    });
+  const first = feature("selected", "overview"),
+    owner = feature("owner", "owner"),
+    last = feature("selected", "last");
+  const tiles = Object.freeze([
+    Object.freeze({ features: Object.freeze([first, owner]) }),
+    Object.freeze({ features: Object.freeze([last]) }),
+  ]);
+  const presentation = {
+    overview: { level: 0, tiles },
+    scene: {
+      objects: [
+        {
+          kind: "road",
+          id: "selected",
+          name: "exact",
+          width: 20,
+          path: [
+            [0, 0],
+            [100, 0],
+          ],
+        },
+      ],
+    },
+    detail: { buildingId: "owner" },
+  } as unknown as Presentation;
+  const frame = prepareCanvasScene(presentation, null, "selected", {
+    boundaries: [],
+    grids: [],
+  });
+  expect(frame.cityFeatures).toEqual([last, owner]);
+  expect(frame.features.map((f) => [f.id, f.name])).toEqual([
+    ["selected", "exact"],
+  ]);
+  expect(tiles[0].features).toEqual([first, owner]);
+});

@@ -511,6 +511,9 @@ impl AtlasApplication {
                 .prepare("SELECT level,x,y,z FROM terrain_layers ORDER BY level,x,y")
                 .map_err(storage_error)?;
             let mut rows = q.query([]).map_err(storage_error)?;
+            let mut insert = tx
+                .prepare("INSERT INTO terrain_layers(level,x,y,z) VALUES(?,?,?,?)")
+                .map_err(storage_error)?;
             while let Some(r) = rows.next().map_err(storage_error)? {
                 let level: u8 = r.get(0).map_err(storage_error)?;
                 let x: i32 = r.get(1).map_err(storage_error)?;
@@ -523,15 +526,9 @@ impl AtlasApplication {
                         && crate::atlas::terrain::valid_height(z),
                     "Ungültige Geländeauflösung",
                 )?;
-                super::world_terrain_store::apply(
-                    &tx,
-                    &super::world_terrain_store::WorldTerrainDelta {
-                        level,
-                        before: vec![],
-                        after: vec![(x, y, Some(z))],
-                    },
-                    true,
-                )?;
+                insert
+                    .execute(rusqlite::params![level, x, y, z])
+                    .map_err(storage_error)?;
             }
         }
         {
@@ -539,6 +536,9 @@ impl AtlasApplication {
                 .prepare("SELECT x,y,z FROM terrain ORDER BY x,y")
                 .map_err(storage_error)?;
             let mut rows = q.query([]).map_err(storage_error)?;
+            let mut insert = tx
+                .prepare("INSERT INTO terrain(x,y,z) VALUES(?,?,?)")
+                .map_err(storage_error)?;
             while let Some(r) = rows.next().map_err(storage_error)? {
                 let (x, y, z): (i32, i32, f64) = (
                     r.get(0).map_err(storage_error)?,
@@ -551,15 +551,22 @@ impl AtlasApplication {
                         && crate::atlas::terrain::valid_height(z),
                     "Ungültiger Höhenpunkt",
                 )?;
-                super::terrain_store::write_points(&tx, &[(x, y, z)])?;
+                insert
+                    .execute(rusqlite::params![x, y, z])
+                    .map_err(storage_error)?;
             }
         }
+        super::terrain_store::rebuild_overview(&tx)?;
+        super::world_terrain_store::rebuild_overview(&tx)?;
         {
             super::river_store::import(&source_tx, &tx)?;
             let mut q = source_tx
                 .prepare("SELECT x,y,pixels FROM ground_tiles ORDER BY x,y")
                 .map_err(storage_error)?;
             let mut rows = q.query([]).map_err(storage_error)?;
+            let mut insert = tx
+                .prepare("INSERT INTO ground_tiles(x,y,pixels) VALUES(?,?,?)")
+                .map_err(storage_error)?;
             while let Some(r) = rows.next().map_err(storage_error)? {
                 let x: i32 = r.get(0).map_err(storage_error)?;
                 let y: i32 = r.get(1).map_err(storage_error)?;
@@ -576,12 +583,12 @@ impl AtlasApplication {
                             .all(|p| p[0] <= p[3] && p[1] <= p[3] && p[2] <= p[3]),
                     "Ungültige Bodenfarbkachel",
                 )?;
-                super::ground_store::write(
-                    &tx,
-                    &[crate::atlas::ground::GroundTile { x, y, pixels }],
-                )?;
+                insert
+                    .execute(rusqlite::params![x, y, pixels])
+                    .map_err(storage_error)?;
             }
         }
+        super::ground_store::rebuild_overview(&tx)?;
         tx.commit().map_err(storage_error)?;
         source_tx.commit().map_err(storage_error)?;
         candidate.next_state = next_state;

@@ -57,23 +57,76 @@ fn pyramid(db: &Connection, tiles: &mut Tiles) -> Result<()> {
                     } else {
                         read(db, key.0, key.1, key.2)?
                     };
-                    for py in 0..32 {
-                        for px in 0..32 {
-                            for c in 0..4 {
-                                let i = (py * 2 * 64 + px * 2) * 4 + c;
-                                let sum = child[i] as u16
-                                    + child[i + 4] as u16
-                                    + child[i + 256] as u16
-                                    + child[i + 260] as u16;
-                                parent[((cy as usize * 32 + py) * 64 + cx as usize * 32 + px)
-                                    * 4
-                                    + c] = ((sum + 2) / 4) as u8;
-                            }
-                        }
-                    }
+                    downsample_quadrant(&mut parent, &child, cx as usize, cy as usize);
                 }
             }
             tiles.insert((level, x, y), parent);
+        }
+    }
+    Ok(())
+}
+#[cfg(test)]
+thread_local! {
+    static FINISHED: std::cell::RefCell<Vec<(u8, i32, i32)>> = const { std::cell::RefCell::new(Vec::new()) };
+}
+#[cfg(test)]
+pub(super) fn take_finished() -> Vec<(u8, i32, i32)> {
+    FINISHED.with(|keys| std::mem::take(&mut *keys.borrow_mut()))
+}
+
+/// Rebuild each completed level in the caller's transaction.
+pub fn rebuild_overview(db: &Connection) -> Result<()> {
+    db.execute("DELETE FROM ground_lod", [])
+        .map_err(storage_error)?;
+    for level in 1u8..=24 {
+        let sql = if level == 1 {
+            "SELECT x,y,pixels FROM ground_tiles ORDER BY x >> 1,y >> 1,x,y"
+        } else {
+            "SELECT x,y,pixels FROM ground_lod WHERE level=?1 ORDER BY x >> 1,y >> 1,x,y"
+        };
+        let mut read = db.prepare(sql).map_err(storage_error)?;
+        let mut rows = if level == 1 {
+            read.query([])
+        } else {
+            read.query(params![level - 1])
+        }
+        .map_err(storage_error)?;
+        let mut insert = db
+            .prepare("INSERT INTO ground_lod(level,x,y,pixels) VALUES(?,?,?,?)")
+            .map_err(storage_error)?;
+        let mut key = None;
+        let mut parent = vec![0; BYTES];
+        let mut finish = |(x, y): (i32, i32), pixels: &[u8]| -> Result<()> {
+            #[cfg(test)]
+            FINISHED.with(|keys| keys.borrow_mut().push((level, x, y)));
+            if pixels.iter().any(|v| *v != 0) {
+                insert
+                    .execute(params![level, x, y, pixels])
+                    .map_err(storage_error)?;
+            }
+            Ok(())
+        };
+        while let Some(row) = rows.next().map_err(storage_error)? {
+            let x: i32 = row.get(0).map_err(storage_error)?;
+            let y: i32 = row.get(1).map_err(storage_error)?;
+            let child: Vec<u8> = row.get(2).map_err(storage_error)?;
+            let next = (x.div_euclid(2), y.div_euclid(2));
+            if key != Some(next) {
+                if let Some(previous) = key {
+                    finish(previous, &parent)?;
+                }
+                parent.fill(0);
+                key = Some(next);
+            }
+            downsample_quadrant(
+                &mut parent,
+                &child,
+                x.rem_euclid(2) as usize,
+                y.rem_euclid(2) as usize,
+            );
+        }
+        if let Some(previous) = key {
+            finish(previous, &parent)?;
         }
     }
     Ok(())

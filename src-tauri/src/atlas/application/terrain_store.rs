@@ -5,14 +5,57 @@ use crate::atlas::errors::{ensure, storage_error};
 use crate::atlas::geometry::{bounds, expand, world};
 use crate::atlas::model::SceneObject;
 use crate::atlas::terrain::{
-    self, Grid, Platform, SurfaceTile, TerrainArgs, TerrainDelta, TerrainPreview, TerrainResponse,
-    BASE, STEP,
+    self, Grid, Platform, PreparedPlatforms, SurfaceTile, TerrainArgs, TerrainDelta,
+    TerrainPreview, TerrainResponse, BASE, STEP,
 };
 use crate::atlas::{Bounds, Intent, Result};
 use rusqlite::{params, Connection, OptionalExtension};
 
 pub fn install(db: &Connection) -> Result<()> {
     db.execute_batch("CREATE TABLE terrain(x INTEGER NOT NULL,y INTEGER NOT NULL,z REAL NOT NULL,PRIMARY KEY(x,y)) WITHOUT ROWID; CREATE TABLE terrain_lod(level INTEGER NOT NULL,x INTEGER NOT NULL,y INTEGER NOT NULL,total REAL NOT NULL,n INTEGER NOT NULL,PRIMARY KEY(level,x,y)) WITHOUT ROWID;").map_err(storage_error)
+}
+/// Rebuild disposable parents from author samples inside the caller's transaction.
+pub fn rebuild_overview(db: &Connection) -> Result<()> {
+    db.execute("DELETE FROM terrain_lod", [])
+        .map_err(storage_error)?;
+    let mut read = db
+        .prepare("SELECT x >> ?1 AS px, y >> ?1 AS py, x, y, z FROM terrain ORDER BY px, py, x, y")
+        .map_err(storage_error)?;
+    let mut insert = db
+        .prepare("INSERT INTO terrain_lod(level,x,y,total,n) VALUES(?,?,?,?,?)")
+        .map_err(storage_error)?;
+    for level in 1..=21 {
+        let mut rows = read.query([level]).map_err(storage_error)?;
+        let mut parent: Option<(i32, i32, f64, i64)> = None;
+        while let Some(row) = rows.next().map_err(storage_error)? {
+            let (x, y, z): (i32, i32, f64) = (
+                row.get(0).map_err(storage_error)?,
+                row.get(1).map_err(storage_error)?,
+                row.get(4).map_err(storage_error)?,
+            );
+            let contribution = 0.0 + (z - BASE);
+            match parent.as_mut() {
+                Some((px, py, total, n)) if (*px, *py) == (x, y) => {
+                    *total += contribution;
+                    *n += 1;
+                }
+                _ => {
+                    if let Some((px, py, total, n)) = parent.take() {
+                        insert
+                            .execute(params![level, px, py, total, n])
+                            .map_err(storage_error)?;
+                    }
+                    parent = Some((x, y, contribution, 1));
+                }
+            }
+        }
+        if let Some((x, y, total, n)) = parent {
+            insert
+                .execute(params![level, x, y, total, n])
+                .map_err(storage_error)?;
+        }
+    }
+    Ok(())
 }
 pub fn grid(db: &Connection, b: Bounds) -> Result<Grid> {
     let mut q = db
@@ -277,13 +320,11 @@ impl AtlasApplication {
                 super::river_store::overlay(&self.db, expand(b, STEP), rivers)?
             };
             let river_surface = crate::atlas::rivers::RiverSurface::new(&river_views);
-            let mut platforms = vec![];
-            let mut foundation_tops = vec![];
+            let mut tile_platform_ids = vec![];
             if args.level <= 5 {
                 for id in self.collision_header_ids(expand(b, 500.0))? {
-                    if let Some(cached) = platform_cache.get(&id) {
-                        foundation_tops.push((id.clone(), cached.level + cached.foundation.height));
-                        platforms.push(cached.clone());
+                    if platform_cache.contains_key(&id) {
+                        tile_platform_ids.push(id);
                         continue;
                     }
                     if let Some(SceneObject::House(h)) = self.scene_header(&id)? {
@@ -314,22 +355,39 @@ impl AtlasApplication {
                             }
                         }
                         let platform = Platform::new(rings, &g, h.foundation);
-                        foundation_tops
-                            .push((id.clone(), platform.level + platform.foundation.height));
-                        platform_cache.insert(id, platform.clone());
-                        platforms.push(platform);
+                        platform_cache.insert(id.clone(), platform);
+                        tile_platform_ids.push(id);
                     }
                 }
             }
-            let layered = Grid {
-                points: Default::default(),
-                layers: super::world_terrain_store::read_from(
-                    &self.db,
-                    expand(b, step),
-                    args.level,
-                )?,
+            let foundation_tops = tile_platform_ids
+                .iter()
+                .map(|id| {
+                    let platform = &platform_cache[id];
+                    (id.clone(), platform.level + platform.foundation.height)
+                })
+                .collect();
+            let mut platforms = PreparedPlatforms::new(
+                tile_platform_ids
+                    .iter()
+                    .map(|id| &platform_cache[id])
+                    .collect(),
+            );
+            let coarse = if args.level > 0 {
+                Some((
+                    Grid {
+                        points: Default::default(),
+                        layers: super::world_terrain_store::read_from(
+                            &self.db,
+                            expand(b, step),
+                            args.level,
+                        )?,
+                    },
+                    super::world_terrain_store::overview(&self.db, b, args.level)?,
+                ))
+            } else {
+                None
             };
-            let overview = super::world_terrain_store::overview(&self.db, b, args.level)?;
             let mut coverage = std::collections::BTreeMap::<(i32, i32), f64>::new();
             let natural = if args.level == 0 {
                 grid(&self.db, expand(b, STEP))?
@@ -353,36 +411,41 @@ impl AtlasApplication {
             for dy in 0..=32 {
                 for dx in 0..=32 {
                     let p = [b[0] + dx as f64 * step, b[1] + dy as f64 * step];
-                    heights.push(terrain::surface(
-                        river_surface
-                            .at(
-                                p,
-                                if args.level == 0 {
-                                    terrain::at(&natural, x * 32 + dx, y * 32 + dy)
-                                } else {
-                                    let mut base = layered.coarse_height(p);
-                                    if let Some(samples) = overview.get(&(x * 32 + dx, y * 32 + dy))
-                                    {
-                                        for &(_, z, coverage) in samples {
-                                            base += (z - base) * coverage;
+                    heights.push(
+                        platforms.at(
+                            river_surface
+                                .at(
+                                    p,
+                                    if args.level == 0 {
+                                        terrain::at(&natural, x * 32 + dx, y * 32 + dy)
+                                    } else {
+                                        let (layered, overview) = coarse
+                                            .as_ref()
+                                            .expect("coarse surface for nonzero level");
+                                        let mut base = layered.coarse_height(p);
+                                        if let Some(samples) =
+                                            overview.get(&(x * 32 + dx, y * 32 + dy))
+                                        {
+                                            for &(_, z, coverage) in samples {
+                                                base += (z - base) * coverage;
+                                            }
                                         }
-                                    }
-                                    natural.get(&(x * 32 + dx, y * 32 + dy)).copied().map_or(
-                                        base,
-                                        |z| {
-                                            base + (z - base)
-                                                * coverage
-                                                    .get(&(x * 32 + dx, y * 32 + dy))
-                                                    .copied()
-                                                    .unwrap_or(0.)
-                                        },
-                                    )
-                                },
-                            )
-                            .0,
-                        p,
-                        &platforms,
-                    ));
+                                        natural.get(&(x * 32 + dx, y * 32 + dy)).copied().map_or(
+                                            base,
+                                            |z| {
+                                                base + (z - base)
+                                                    * coverage
+                                                        .get(&(x * 32 + dx, y * 32 + dy))
+                                                        .copied()
+                                                        .unwrap_or(0.)
+                                            },
+                                        )
+                                    },
+                                )
+                                .0,
+                            p,
+                        ),
+                    );
                 }
             }
             let waters = if args.level > 5 && waters.is_none() {

@@ -405,15 +405,20 @@ export class PresentationLoader {
         (terrain && sameVersion(candidate.status, terrain.status)))
         ? candidate
         : undefined;
-    const overview = this.layers.city.snapshot.value ?? undefined;
-    const value = {
-      ...display.value,
-      terrain,
-      ground,
-      overview:
-        this.committed?.context.cityLevel != null ? overview : undefined,
-    };
-    this.updateSnapshot({ display: { ...display, value } });
+    const overview =
+      this.committed?.context.cityLevel != null
+        ? (this.layers.city.snapshot.value ?? undefined)
+        : undefined;
+    if (
+      terrain !== display.value.terrain ||
+      ground !== display.value.ground ||
+      overview !== display.value.overview
+    ) {
+      const value = { ...display.value, terrain, ground, overview };
+      this.updateSnapshot({ display: { ...display, value } });
+    } else {
+      this.updateSnapshot({});
+    }
   }
   private snapshot: Snapshot = { display: null, error: "", loading: false };
   private sceneError = "";

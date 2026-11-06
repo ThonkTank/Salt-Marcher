@@ -246,3 +246,25 @@ fn river_invalid_coordinates_and_unchanged_edit_preserve_revision() {
     assert_eq!(result["changed"], false);
     assert_eq!(a.status().revision, revision);
 }
+
+#[test]
+fn river_preview_and_commit_use_riverbed_for_house_platform() {
+    let mut a = AtlasApplication::new().unwrap();
+    request_edit(
+        &mut a,
+        "commit",
+        json!({"type":"createHouse","parcelId":null,"transform":{"x":40,"y":17.5,"angle":0},"width":1,"depth":1}),
+    );
+    let before = surface(&mut a)[0]["foundationTops"][0][1].as_f64().unwrap();
+    let intent = create(json!([[10, 20], [100, 20]]));
+    let preview = request_edit(&mut a, "preview", intent.clone());
+    let commit = request_edit(&mut a, "commit", intent);
+    assert_eq!(preview["terrain"], commit["terrain"]);
+    let tiles = surface(&mut a);
+    let after = tiles[0]["foundationTops"][0][1].as_f64().unwrap();
+    assert!(
+        after < before,
+        "riverbed must lower the house platform: {before} -> {after}"
+    );
+    assert_eq!(preview["terrain"]["surface"]["tiles"], tiles);
+}

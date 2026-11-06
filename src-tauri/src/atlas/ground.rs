@@ -5,6 +5,22 @@ use std::collections::BTreeMap;
 pub const SIDE: usize = 64;
 pub const BYTES: usize = SIDE * SIDE * 4;
 pub type Tiles = BTreeMap<(u8, i32, i32), Vec<u8>>;
+/// Reduce one child tile into its quadrant of a parent, retaining premultiplied channels.
+pub(super) fn downsample_quadrant(parent: &mut [u8], child: &[u8], cx: usize, cy: usize) {
+    for py in 0..SIDE / 2 {
+        for px in 0..SIDE / 2 {
+            for c in 0..4 {
+                let i = (py * 2 * SIDE + px * 2) * 4 + c;
+                let sum = child[i] as u16
+                    + child[i + 4] as u16
+                    + child[i + SIDE * 4] as u16
+                    + child[i + SIDE * 4 + 4] as u16;
+                parent[((cy * (SIDE / 2) + py) * SIDE + cx * (SIDE / 2) + px) * 4 + c] =
+                    ((sum + 2) / 4) as u8;
+            }
+        }
+    }
+}
 #[cfg_attr(test, derive(ts_rs::TS))]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]

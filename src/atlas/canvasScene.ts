@@ -73,13 +73,14 @@ export function prepareCanvasScene(
       ),
   }));
   const selectedObject = objects.find((o) => o.id === selected);
+  const cityFeatures = presentation?.overview
+    ? overviewFeatures(presentation.overview)
+    : [];
   const features = !presentation
     ? []
     : presentation.overview
       ? [
-          ...overviewFeatures(presentation.overview).filter(
-            (f) => f.id !== selected,
-          ),
+          ...cityFeatures.filter((f) => f.id !== selected),
           ...sceneFeatures(presentation.scene).filter((f) => f.id === selected),
         ]
       : sceneFeatures(presentation.scene);
@@ -124,6 +125,7 @@ export function prepareCanvasScene(
       (o): o is Extract<MapObject, { kind: "parcel" }> =>
         o.kind === "parcel" && visibility.grids.includes(o.id),
     ),
+    cityFeatures,
     features: features.filter((f) => f.id !== presentation?.detail?.buildingId),
   };
 }

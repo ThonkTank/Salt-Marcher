@@ -37,8 +37,17 @@ Sessionwechsel und baut Arbeitsindizes neu auf. Export ersetzt das Ziel über ei
 synchronisierte benachbarte temporäre Datei. Beide halten höchstens einen
 vollständigen Hauszellpayload gleichzeitig. Unveränderte Autorentabellen werden
 über einen gemeinsamen zeilenweisen SQL-Kopierpfad exportiert; Validierung und
-Rekonstruktion beim Import bleiben bei den jeweiligen Fachmodulen. `ImportIdentities` prüft globale IDs und ihren gemeinsamen Höchstwert;
-zeilenweise Leser halten den Import speicherbegrenzt. Eigene Datei-DTOs gibt es nur für
+Rekonstruktion beim Import bleiben bei den jeweiligen Fachmodulen. Höhenautoren
+werden validiert direkt in die Kandidatentransaktion geschrieben. `terrain_store`
+und `world_terrain_store` leeren und rekonstruieren ihre Höhenübersichten daraus
+parentweise vor dem Flussimport. Nach dem Flussimport schreibt `persistence`
+validierte Groundautoren direkt und `ground_store` baut alle 24 Übersichtsebenen
+in der Kandidatentransaktion aus der jeweils abgeschlossenen unteren Ebene auf.
+Der interaktive Pfad und der Wiederaufbau teilen dieselbe Rundung vormultiplizierter
+Farbkanäle. Rust hält beim Ground-Wiederaufbau den aktuellen Parent und Child;
+SQLite kann für die Sortierung temporären Speicher verwenden. `ImportIdentities` prüft globale
+IDs und ihren gemeinsamen Höchstwert; zeilenweise Leser halten den Import
+speicherbegrenzt. Eigene Datei-DTOs gibt es nur für
 abweichende Strukturen, etwa flache Verbindungen oder ausgelassene Laufzeitwerte.
 
 ## Fachberechnung und lokale Speicherzugriffe
@@ -83,9 +92,21 @@ beim Gestenbeginn. Kachelbudgets verändern nicht die Autorenauflösung.
 Abdeckungsmaske. Feinere Werte überschreiben gröbere, fehlende Randwerte erben
 sie. Übersichtstabellen halten Summen und Belegungsanteile je Quellauflösung.
 Lokale Höhenverbraucher lesen dieselbe zusammengesetzte Oberfläche.
+`surface_tiles` besitzt Hausplattformen in einem Cache für die jeweilige Anfrage.
+Nach dem Füllen einer Kachel referenziert eine lokale RTree-Sicht diese Plattformen
+in der Reihenfolge der Headerabfrage; konservative Einflussbounds filtern nur
+Kandidaten, die gemeinsame Oberflächenformel prüft Dach und Übergang exakt.
+Level 0 lädt benötigte Autorenlayer über das lokale Raster ohne Übersichtsvorbereitung.
 Vorgeschlagene Höhen werden während der Fachberechnung in einer zurückgerollten
 SQLite-Transaktion überlagert, damit Gewässer, Flüsse und Vorschau denselben
 Stand lesen. Erst der normale Commit schreibt die gesamte Änderung atomar.
+
+`map_tiles` wählt Features weiterhin je Kachel und Art mit eigenem SQL-Limit
+und liest die vollständige Dichte unabhängig davon. Ein reiner Projektor
+berechnet die Darstellung aus einem Objekt und der Zellgröße; ein ID-Cache lebt
+nur während einer Anfrage mit festem Level. Wiederholte Treffer klonen das
+projizierte Feature in jede Antwortkachel. SQL liefert weiterhin den Body; der
+Cache hält eigene Keys und Features zusätzlich zu den Antwortkopien.
 
 Ortschaften sind ausschließlich eine Regionskategorie. Die Kategorieoption
 `markers` steuert kartografische Ortssymbole und gemeinsame Rangdarstellung;
@@ -131,6 +152,12 @@ Kontext-, Kandidaten- und Anfrageidentitäten sichern die asynchronen Übergäng
 Die beobachtbaren Regeln für Abbruch, Übernahme und verspätete Antworten stehen
 im [Produktvertrag](product-contract.md#vorschau-und-nebenläufigkeit).
 
+`useRegions` memoisiert Rang- und Regionsprojektionen aus den jeweiligen
+Katalog-, Summary- und Antwortreferenzen. Seine Ranghysterese bleibt sitzungsgebunden;
+kleine Rang-ID-Folgen werden für gleichbleibende Anfragen stabilisiert. Fehlende
+oder unsichtbare Regions- und Flusslisten verwenden gemeinsame unveränderliche
+Leerlisten. `useRivers` reicht vorhandene Flussantwortlisten direkt weiter.
+
 `useRivers` besitzt Flussauswahl und Punktindex gemeinsam. Ein Auswahlwechsel
 setzt den Punkt auf den ersten vorhandenen Knoten; eine leere Liste hat keinen
 ausgewählten Punkt. Nach Topologieänderungen wird der Index auf die verbleibende
@@ -158,7 +185,9 @@ versionierten Schichtlebenszyklus und laden unabhängig von der exakten Szene.
 Regionskatalog, Regionsausschnitte und Flüsse laden nur bei sichtbarer Außenansicht,
 auch wenn ihr jeweiliges Bearbeitungswerkzeug inaktiv ist.
 Jede Schicht prüft Anfrageidentität und Version und hält bei ausstehenden Reads oder
-Fehlern ihre letzte vollständige Ansicht. Boden und Gelände werden nur bei gleicher
+Fehlern ihre letzte vollständige Ansicht. Bei unveränderten Gelände-, Boden- und effektiven Übersichtsreferenzen bleibt der
+sichtbare Presentationwrapper erhalten; Lade- und Fehleränderungen werden weiterhin
+publiziert. Boden und Gelände werden nur bei gleicher
 Dokumentversion kombiniert; auch Vorschaukacheln werden versionsgleich gemischt.
 Solange die exakte Szene noch fehlt, kann eine leere, nicht bearbeitbare Szene die
 bereiten Raster darstellen. Exakte Header, aufgelöster Innenraumowner und dessen
@@ -192,7 +221,10 @@ Exakte Szenen werden erst im Bearbeitungsmaßstab geladen; `roadHeader` und
 Ausschnitte werden abgelehnt, nicht still gekürzt.
 
 `canvasScene` bereitet Schichten, Auswahl, Beschriftungskandidaten und
-Vorschauoberflächen rein vor. `useAtlasEditor` reicht diese vorbereitete Szene
+Vorschauoberflächen rein vor. Es dedupliziert die vollständigen Cityfeatures einmal
+für den Citypainter und leitet davon getrennt die um Auswahl und geöffneten Owner
+angepassten Beschriftungsfeatures ab. Der Painter sortiert nur eine eigene
+Flächenauswahl; Dichte bleibt an die Übersichtskacheln gebunden. `useAtlasEditor` reicht diese vorbereitete Szene
 memoisiert weiter; `editorView` projiziert auch Pinselradien aus Werkzeugvorgaben
 oder der laufenden Geste. `AtlasCanvas` zeichnet in Layout-Effekten mit aktueller
 Kamera und DPR in geplanten Animationsframes; zustandsfreie Painter zeichnen Geometrie.

@@ -181,6 +181,7 @@ export function AtlasCanvas(p: Props) {
         paintCity(
           c,
           p.presentation.overview,
+          scene.cityFeatures,
           p.camera.scale,
           p.lod.policy,
           scene.selectedRoad,

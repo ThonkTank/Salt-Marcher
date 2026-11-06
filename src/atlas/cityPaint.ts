@@ -1,16 +1,16 @@
 import type { LodDecision } from "./lod";
-import { overviewFeatures, type CityView } from "./cityView";
+import type { CityView } from "./cityView";
 import type { MapFeature } from "./generated/MapFeature";
 export function paintCity(
   c: CanvasRenderingContext2D,
   view: CityView,
+  features: readonly MapFeature[],
   scale: number,
   policy: LodDecision["policy"],
   exactRoadId?: string,
   paintWater?: () => void,
-): MapFeature[] {
-  const features = overviewFeatures(view),
-    cell = 16 * 2 ** view.level;
+): void {
+  const cell = 16 * 2 ** view.level;
   const path = (f: MapFeature) => {
     c.beginPath();
     for (const ring of f.paths) {
@@ -78,5 +78,4 @@ export function paintCity(
       }
     }
   }
-  return features;
 }

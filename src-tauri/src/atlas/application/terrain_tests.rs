@@ -257,3 +257,449 @@ fn coarse_preview_matches_committed_height_pyramid() {
         }
     }
 }
+
+#[test]
+fn multi_tile_platform_cache_keeps_local_order_and_never_reads_cells() {
+    use rusqlite::hooks::{AuthAction, AuthContext, Authorization};
+    let mut a = AtlasApplication::new().unwrap();
+    let create = |a: &mut AtlasApplication, x| -> String {
+        request_edit(a, "commit", json!({"type":"createHouse","parcelId":null,"transform":{"x":x,"y":0,"angle":0},"width":1,"depth":1}))["objects"][0]["id"].as_str().unwrap().to_owned()
+    };
+    let first = create(&mut a, 0);
+    let second = create(&mut a, 600);
+    let basement = create(&mut a, 1200);
+    request_edit(
+        &mut a,
+        "commit",
+        json!({"type":"setFoundation","id":first,"foundation":{"height":3,"transition":0}}),
+    );
+    request_edit(
+        &mut a,
+        "commit",
+        json!({"type":"setFoundation","id":second,"foundation":{"height":7,"transition":500}}),
+    );
+    request_edit(
+        &mut a,
+        "commit",
+        json!({"type":"room","buildingId":basement,"intent":{"kind":"draw","floor":-1,"cells":[[0,0]]}}),
+    );
+    request_edit(
+        &mut a,
+        "commit",
+        json!({"type":"room","buildingId":basement,"intent":{"kind":"erase","floor":0,"cells":[[0,0]]}}),
+    );
+    assert!(a.house(&basement).unwrap().contours.is_empty());
+    a.db.flush_prepared_statement_cache();
+    a.db.authorizer(Some(|ctx: AuthContext<'_>| match ctx.action {
+        AuthAction::Read {
+            table_name: "house_cells" | "local_cells",
+            ..
+        } => Authorization::Deny,
+        _ => Authorization::Allow,
+    }));
+    for level in [0, 1, 5, 6] {
+        let coords = [[5, 0], [0, 0], [1, 0], [20, 0]];
+        let multi = a
+            .request("terrainTiles", json!({"level":level,"tiles":coords}))
+            .unwrap();
+        let reverse: Vec<_> = coords.iter().rev().copied().collect();
+        let reversed = a
+            .request("terrainTiles", json!({"level":level,"tiles":reverse}))
+            .unwrap();
+        for (i, xy) in coords.iter().enumerate() {
+            let single = a
+                .request("terrainTiles", json!({"level":level,"tiles":[xy]}))
+                .unwrap();
+            assert_eq!(multi["tiles"][i], single["tiles"][0]);
+            assert_eq!(multi["tiles"][i], reversed["tiles"][3 - i]);
+            let tops = multi["tiles"][i]["foundationTops"].as_array().unwrap();
+            assert!(!tops.iter().any(|v| v[0] == basement));
+            if level == 6 {
+                assert!(tops.is_empty());
+            }
+        }
+        if level == 0 {
+            let ids = |tile: &Value| {
+                tile["foundationTops"]
+                    .as_array()
+                    .unwrap()
+                    .iter()
+                    .map(|v| v[0].as_str().unwrap().to_owned())
+                    .collect::<Vec<_>>()
+            };
+            assert_eq!(ids(&multi["tiles"][0]), vec![second.clone()]);
+            assert_eq!(ids(&multi["tiles"][1]), vec![first.clone(), second.clone()]);
+        }
+    }
+    a.db.authorizer(None::<fn(AuthContext<'_>) -> Authorization>);
+}
+
+#[test]
+fn level_zero_uses_mixed_layers_without_overview_read() {
+    use rusqlite::hooks::{AuthAction, AuthContext, Authorization};
+    let mut a = AtlasApplication::new().unwrap();
+    request_edit(
+        &mut a,
+        "commit",
+        json!({"type":"terrainStroke","brush":{"resolution":4,"mode":"land","radius":1000,"amount":20,"strength":1,"target":40,"points":[[0,0]]},"view":null}),
+    );
+    request_edit(&mut a, "commit", stroke(json!([[0, 0]])));
+    let expected = tile(&mut a)["tiles"].clone();
+    assert!(expected[0]["heights"][0].as_f64().unwrap() > 10.);
+    a.db.flush_prepared_statement_cache();
+    a.db.authorizer(Some(|ctx: AuthContext<'_>| match ctx.action {
+        AuthAction::Read {
+            table_name: "house_cells" | "local_cells" | "terrain_layer_overview",
+            ..
+        } => Authorization::Deny,
+        _ => Authorization::Allow,
+    }));
+    assert_eq!(tile(&mut a)["tiles"], expected);
+    a.db.authorizer(None::<fn(AuthContext<'_>) -> Authorization>);
+}
+
+// The old open path wrote one sorted author row at a time. This reference is
+// deliberately limited to tests, and never assumes a historical edit order.
+type HeightRow = (i64, i64, i64, i64, u64, i64);
+pub(super) fn height_rows(db: &Connection) -> Vec<Vec<HeightRow>> {
+    [
+        "SELECT 0,0,x,y,z,1 FROM terrain ORDER BY x,y",
+        "SELECT level,0,x,y,z,1 FROM terrain_layers ORDER BY level,x,y",
+        "SELECT level,0,x,y,total,n FROM terrain_lod ORDER BY level,x,y",
+        "SELECT level,source,x,y,total,n FROM terrain_layer_overview ORDER BY level,source,x,y",
+    ]
+    .iter()
+    .map(|sql| {
+        let mut q = db.prepare(sql).unwrap();
+        q.query_map([], |r| {
+            Ok((
+                r.get(0)?,
+                r.get(1)?,
+                r.get(2)?,
+                r.get(3)?,
+                r.get::<_, f64>(4)?.to_bits(),
+                r.get(5)?,
+            ))
+        })
+        .unwrap()
+        .collect::<rusqlite::Result<Vec<_>>>()
+        .unwrap()
+    })
+    .collect()
+}
+
+#[test]
+fn height_rebuild_matches_canonical_import_and_actual_open() {
+    use rusqlite::params;
+    let mut reference = AtlasApplication::new().unwrap();
+    let mut direct = AtlasApplication::new().unwrap();
+    let values = [-100_000.0, -100.0, 0.0, 0.1, 100.0, 100_000.0, -0.2, 0.3];
+    for source in [1_u8, 3, 20, 21] {
+        for x in -3_i32..=3 {
+            for y in -3_i32..=3 {
+                if (x + y).rem_euclid(3) == 0 {
+                    continue;
+                }
+                let z = values[((x + 3) * 7 + y + 3) as usize % values.len()];
+                world_terrain_store::apply(
+                    &reference.db,
+                    &world_terrain_store::WorldTerrainDelta {
+                        level: source,
+                        before: vec![],
+                        after: vec![(x, y, Some(z))],
+                    },
+                    true,
+                )
+                .unwrap();
+                direct
+                    .db
+                    .execute(
+                        "INSERT INTO terrain_layers VALUES(?,?,?,?)",
+                        params![source, x, y, z],
+                    )
+                    .unwrap();
+            }
+        }
+    }
+    for x in -9_i32..=9 {
+        for y in -9_i32..=9 {
+            if (x + y).rem_euclid(4) == 0 {
+                continue;
+            }
+            let z = values[((x + 9) * 19 + y + 9) as usize % values.len()];
+            terrain_store::write_points(&reference.db, &[(x, y, z)]).unwrap();
+            direct
+                .db
+                .execute("INSERT INTO terrain VALUES(?,?,?)", params![x, y, z])
+                .unwrap();
+        }
+    }
+    terrain_store::rebuild_overview(&direct.db).unwrap();
+    world_terrain_store::rebuild_overview(&direct.db).unwrap();
+    let expected = height_rows(&reference.db);
+    assert_eq!(height_rows(&direct.db), expected);
+    terrain_store::rebuild_overview(&direct.db).unwrap();
+    world_terrain_store::rebuild_overview(&direct.db).unwrap();
+    assert_eq!(height_rows(&direct.db), expected);
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("heights.saltatlas");
+    direct.save(&path).unwrap();
+    let mut opened = AtlasApplication::new().unwrap();
+    opened.open(&path).unwrap();
+    assert_eq!(height_rows(&opened.db), expected);
+    for level in [0, 1, 5, 6, 21] {
+        let query = json!({"level":level,"tiles":[[-1,-1],[-1,0],[0,-1],[0,0]]});
+        assert_eq!(
+            reference.request("terrainTiles", query.clone()).unwrap()["tiles"],
+            opened.request("terrainTiles", query).unwrap()["tiles"]
+        );
+    }
+    let second = dir.path().join("heights-again.saltatlas");
+    opened.save(&second).unwrap();
+    let mut reopened = AtlasApplication::new().unwrap();
+    reopened.open(&second).unwrap();
+    assert_eq!(height_rows(&reopened.db), expected);
+    direct
+        .db
+        .execute_batch("DELETE FROM terrain; DELETE FROM terrain_layers;")
+        .unwrap();
+    terrain_store::rebuild_overview(&direct.db).unwrap();
+    world_terrain_store::rebuild_overview(&direct.db).unwrap();
+    assert!(height_rows(&direct.db).iter().all(Vec::is_empty));
+}
+
+#[test]
+fn height_sql_shift_matches_euclidean_parents() {
+    let db = Connection::open_in_memory().unwrap();
+    let mut q = db.prepare("SELECT ?1 >> ?3, ?2 >> ?3").unwrap();
+    for shift in 1..=21 {
+        let factor = 1_i32 << shift;
+        let values = [
+            -20_000_000,
+            -factor - 1,
+            -factor,
+            -factor + 1,
+            -3,
+            -2,
+            -1,
+            0,
+            1,
+            factor - 1,
+            factor,
+            factor + 1,
+            20_000_000,
+        ];
+        for x in values {
+            for y in values {
+                let actual: (i32, i32) = q
+                    .query_row(rusqlite::params![x, y, shift], |r| {
+                        Ok((r.get(0)?, r.get(1)?))
+                    })
+                    .unwrap();
+                assert_eq!(actual, (x.div_euclid(factor), y.div_euclid(factor)));
+            }
+        }
+    }
+}
+
+#[test]
+fn height_rebuild_writes_once_per_parent_and_rolls_back_failure() {
+    use rusqlite::params;
+    let reference = AtlasApplication::new().unwrap();
+    let direct = AtlasApplication::new().unwrap();
+    let old_start = reference.db.total_changes();
+    for x in -8..8 {
+        for y in -8..8 {
+            terrain_store::write_points(&reference.db, &[(x, y, 0.1)]).unwrap();
+            direct
+                .db
+                .execute("INSERT INTO terrain VALUES(?,?,?)", params![x, y, 0.1])
+                .unwrap();
+            for source in [1_u8, 3] {
+                world_terrain_store::apply(
+                    &reference.db,
+                    &world_terrain_store::WorldTerrainDelta {
+                        level: source,
+                        before: vec![],
+                        after: vec![(x, y, Some(0.1))],
+                    },
+                    true,
+                )
+                .unwrap();
+                direct
+                    .db
+                    .execute(
+                        "INSERT INTO terrain_layers VALUES(?,?,?,?)",
+                        params![source, x, y, 0.1],
+                    )
+                    .unwrap();
+            }
+        }
+    }
+    let old_writes = reference.db.total_changes() - old_start - 3 * 256;
+    assert_eq!(old_writes, 256 * (21 + 20 + 18));
+    let start = direct.db.total_changes();
+    terrain_store::rebuild_overview(&direct.db).unwrap();
+    world_terrain_store::rebuild_overview(&direct.db).unwrap();
+    let writes = direct.db.total_changes() - start;
+    let snapshot = height_rows(&direct.db);
+    let count = (snapshot[2].len() + snapshot[3].len()) as u64;
+    assert_eq!(writes, count);
+    assert!(writes < old_writes);
+    assert_eq!(snapshot, height_rows(&reference.db));
+    let repeat_start = direct.db.total_changes();
+    terrain_store::rebuild_overview(&direct.db).unwrap();
+    world_terrain_store::rebuild_overview(&direct.db).unwrap();
+    assert_eq!(direct.db.total_changes() - repeat_start, 2 * count);
+    assert_eq!(height_rows(&direct.db), snapshot);
+    println!(
+        "height writes: old={old_writes}, rebuild={writes}, repeat={}",
+        2 * count
+    );
+    direct.db.execute_batch("CREATE TEMP TRIGGER fail_height_rebuild BEFORE INSERT ON terrain_lod BEGIN SELECT RAISE(ABORT,'injected'); END;").unwrap();
+    {
+        let tx = direct.db.unchecked_transaction().unwrap();
+        assert!(terrain_store::rebuild_overview(&tx).is_err());
+        tx.rollback().unwrap();
+    }
+    assert_eq!(height_rows(&direct.db), snapshot);
+    direct.db.execute_batch("DROP TRIGGER fail_height_rebuild; DELETE FROM terrain WHERE x=-8 AND y=-8; UPDATE terrain_layers SET z=9 WHERE level=1 AND x=-8 AND y=-8;").unwrap();
+    terrain_store::rebuild_overview(&direct.db).unwrap();
+    world_terrain_store::rebuild_overview(&direct.db).unwrap();
+    terrain_store::write_samples(&reference.db, &[(-8, -8, None)]).unwrap();
+    world_terrain_store::apply(
+        &reference.db,
+        &world_terrain_store::WorldTerrainDelta {
+            level: 1,
+            before: vec![],
+            after: vec![(-8, -8, Some(9.0))],
+        },
+        true,
+    )
+    .unwrap();
+    // Historical edit order can differ in float bits; compare to a fresh rebuild.
+    terrain_store::rebuild_overview(&reference.db).unwrap();
+    world_terrain_store::rebuild_overview(&reference.db).unwrap();
+    assert_eq!(height_rows(&direct.db), height_rows(&reference.db));
+}
+
+#[test]
+fn mixed_heights_and_river_survive_open_in_reconstruction_order() {
+    let mut a = AtlasApplication::new().unwrap();
+    request_edit(
+        &mut a,
+        "commit",
+        json!({"type":"terrainStroke","brush":{"mode":"raise","radius":25,"amount":5,"strength":0.25,"target":10,"points":[[10,20],[100,20]]},"view":{"level":0,"tiles":[[0,0]]}}),
+    );
+    request_edit(
+        &mut a,
+        "commit",
+        json!({"type":"terrainStroke","brush":{"resolution":2,"mode":"land","radius":100,"amount":20,"strength":1,"target":40,"points":[[0,0]]},"view":{"level":2,"tiles":[]}}),
+    );
+    request_edit(
+        &mut a,
+        "commit",
+        json!({"type":"riverEdit","view":{"level":0,"tiles":[[0,0]]},"action":{"kind":"put","id":null,"name":"Fluss","nodes":[{"id":"","point":[10,20],"width":20},{"id":"","point":[100,20],"width":20}],"settings":{"tolerance":0,"roughness":0,"meander":40,"sourceFade":false,"seed":1},"reverse":false,"automatic":true,"snap":2}}),
+    );
+    let rivers = river_store::local(&a.db, [-1000., -1000., 1000., 1000.]).unwrap();
+    let tiles = a
+        .request("terrainTiles", json!({"level":0,"tiles":[[0,0]]}))
+        .unwrap()["tiles"]
+        .clone();
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("mixed.saltatlas");
+    a.save(&path).unwrap();
+    a.open(&path).unwrap();
+    assert_eq!(
+        river_store::local(&a.db, [-1000., -1000., 1000., 1000.]).unwrap(),
+        rivers
+    );
+    assert_eq!(
+        a.request("terrainTiles", json!({"level":0,"tiles":[[0,0]]}))
+            .unwrap()["tiles"],
+        tiles
+    );
+}
+
+#[test]
+fn height_rebuild_keeps_unrelated_tables_and_history() {
+    let mut a = AtlasApplication::new().unwrap();
+    request_edit(
+        &mut a,
+        "commit",
+        json!({"type":"createHouse","parcelId":null,"transform":{"x":1000,"y":1000,"angle":0},"width":2,"depth":2}),
+    );
+    a.db.execute(
+        "INSERT INTO ground_tiles VALUES(0,0,?1)",
+        [vec![17_u8; crate::atlas::ground::BYTES]],
+    )
+    .unwrap();
+    terrain_store::write_points(&a.db, &[(-1, 0, 0.1)]).unwrap();
+    world_terrain_store::apply(
+        &a.db,
+        &world_terrain_store::WorldTerrainDelta {
+            level: 1,
+            before: vec![],
+            after: vec![(0, 0, Some(0.2))],
+        },
+        true,
+    )
+    .unwrap();
+    let before = dump(&a);
+    let ground: Vec<u8> =
+        a.db.query_row(
+            "SELECT pixels FROM ground_tiles WHERE x=0 AND y=0",
+            [],
+            |r| r.get(0),
+        )
+        .unwrap();
+    let density: Vec<(i32, i32, i32, u64, i64)> = {
+        let mut q =
+            a.db.prepare("SELECT level,x,y,mass,n FROM map_density ORDER BY level,x,y")
+                .unwrap();
+        q.query_map([], |r| {
+            Ok((
+                r.get(0)?,
+                r.get(1)?,
+                r.get(2)?,
+                r.get::<_, f64>(3)?.to_bits(),
+                r.get(4)?,
+            ))
+        })
+        .unwrap()
+        .collect::<rusqlite::Result<_>>()
+        .unwrap()
+    };
+    let authors = height_rows(&a.db);
+    terrain_store::rebuild_overview(&a.db).unwrap();
+    world_terrain_store::rebuild_overview(&a.db).unwrap();
+    assert_eq!(dump(&a), before);
+    assert_eq!(
+        a.db.query_row(
+            "SELECT pixels FROM ground_tiles WHERE x=0 AND y=0",
+            [],
+            |r| r.get::<_, Vec<u8>>(0)
+        )
+        .unwrap(),
+        ground
+    );
+    let mut q =
+        a.db.prepare("SELECT level,x,y,mass,n FROM map_density ORDER BY level,x,y")
+            .unwrap();
+    let after: Vec<(i32, i32, i32, u64, i64)> = q
+        .query_map([], |r| {
+            Ok((
+                r.get(0)?,
+                r.get(1)?,
+                r.get(2)?,
+                r.get::<_, f64>(3)?.to_bits(),
+                r.get(4)?,
+            ))
+        })
+        .unwrap()
+        .collect::<rusqlite::Result<_>>()
+        .unwrap();
+    assert!(!density.is_empty());
+    assert_eq!(after, density);
+    assert_eq!(&height_rows(&a.db)[..2], &authors[..2]);
+}
