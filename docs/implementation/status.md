@@ -38,6 +38,10 @@ der offene Parzellentest und die weitere LOD-Prüfung unter diesen Grenzen.
 
 Für Pull Requests und Pushes auf `main` ist ein CI-Workflow für den exakten
 Commit eingerichtet: Er führt `check:all` und den konfigurierten RPM-Build aus.
-Der erste Lauf und seine Ergebnisse müssen noch am veröffentlichten Commit
-geprüft werden. Verpackung ersetzt weder die native Bedienabnahme noch die
-separaten großen Performance-Fixtures.
+Der erste Lauf scheiterte an drei unvollständigen Gelände-Testantworten;
+die Fixtures entsprechen nun typisiert dem Transportvertrag, alle bisherigen
+Verhaltensprüfungen bleiben erhalten. Lokal bestanden anschließend alle 296
+TypeScript-Tests sowie die Typprüfung. Der neue veröffentlichte Commit muss
+die vollständige CI noch bestehen; ein erfolgreicher RPM-Build ist noch nicht
+belegt. Verpackung ersetzt weder die native Bedienabnahme noch die separaten
+großen Performance-Fixtures.

@@ -1,10 +1,19 @@
 import { expect, it, vi } from "vitest";
 import { AtlasClient } from "./client";
 import type { Scene, Status } from "./model";
+import type { SurfaceTile } from "./generated/SurfaceTile";
 import {
   PresentationLoader,
   type PresentationInput,
 } from "./presentationLoader";
+
+const terrainTile = (x: number, y: number): SurfaceTile => ({
+  x,
+  y,
+  heights: [],
+  foundationTops: [],
+  waters: [],
+});
 
 const status: Status = {
   sessionId: "test",
@@ -370,7 +379,9 @@ it("publishes a ready scene and terrain while ground is held, then reports and r
   terrain.resolve({
     status,
     level: 0,
-    tiles: (terrain.args.tiles as number[][]).map(([x, y]) => ({ x, y })),
+    tiles: (terrain.args.tiles as number[][]).map(([x, y]) =>
+      terrainTile(x, y),
+    ),
   });
   await vi.waitFor(() =>
     expect(loader.getSnapshot().display?.value.terrain).toBeDefined(),
@@ -423,11 +434,11 @@ it("never combines terrain and ground from different revisions", async () => {
         : {
             status: version,
             level: item.args.level,
-            tiles: (item.args.tiles as number[][]).map(([x, y]) => ({
-              x,
-              y,
-              pixels: "",
-            })),
+            tiles: (item.args.tiles as number[][]).map(([x, y]) =>
+              item.cmd === "terrainTiles"
+                ? terrainTile(x, y)
+                : { x, y, pixels: "" },
+            ),
           },
     );
   loader.update(initial);
@@ -493,7 +504,7 @@ it("shows a completed terrain layer while the first scene is held without enabli
       return Promise.resolve({
         status,
         level: args.level,
-        tiles: (args.tiles as number[][]).map(([x, y]) => ({ x, y })),
+        tiles: (args.tiles as number[][]).map(([x, y]) => terrainTile(x, y)),
       });
     throw Error(`Unexpected ${cmd}`);
   });
