@@ -24,9 +24,13 @@ export function intentRoute(intent: Intent): "queue" | "exact" {
     case "roof":
     case "importantPlace":
       return "queue";
+    case "riverEdit":
+    case "regionEdit":
+    case "regionStroke":
+    case "groundStroke":
     case "sceneryStroke":
     case "terrainStroke":
-    case "setWaterLevel":
+    case "waterStroke":
     case "setFoundation":
     case "createRoad":
     case "roughenRoad":
@@ -50,7 +54,7 @@ export function intentRoute(intent: Intent): "queue" | "exact" {
 }
 export const isQueueIntent = (intent: Intent): intent is QueueIntent =>
   intentRoute(intent) === "queue";
-export const assertNever = (value: never): never => {
+const assertNever = (value: never): never => {
   throw Error(`Unbekannte Operation: ${String(value)}`);
 };
 export type CandidateToken = {
@@ -78,7 +82,7 @@ export const sameRequest = (a: RequestToken, b: RequestToken) =>
   a.requestId === b.requestId && sameCandidate(a.candidate, b.candidate);
 export type CheckedPreview = Preview & { actionId: number };
 type Checked = Extract<CheckedPreview, { valid: true }>;
-export type ExactPhase =
+type ExactPhase =
   | { phase: "editing" }
   | { phase: "checking"; request: RequestToken }
   | { phase: "refreshing"; request: RequestToken }
@@ -97,10 +101,16 @@ export type DraftOperation =
     }
   | { kind: "newArea"; draft: Extract<EditorDraft, { kind: "newArea" }> };
 export type GeometryOperation =
+  | {
+      kind: "river";
+      intent: Extract<Intent, { type: "riverEdit" }>;
+      append?: "start" | "end" | null;
+    }
+  | { kind: "region" }
+  | { kind: "ground" }
   | { kind: "scenery" }
   | { kind: "terrain" }
   | { kind: "foundation"; houseId: string }
-  | { kind: "waterLevel" }
   | {
       kind: "editRoad";
       roadId: string;
@@ -145,7 +155,7 @@ type GeometryPointer<Kind extends Gesture["kind"]> = Extract<
   Gesture,
   { kind: Kind }
 > | null;
-export type DraftWorkflow = Exact & {
+type DraftWorkflow = Exact & {
   kind: "draft";
   rollback: EditorDraft | null;
 } & (
@@ -155,56 +165,56 @@ export type DraftWorkflow = Exact & {
       }
     | { operation: Extract<DraftOperation, { kind: "newArea" }>; pointer: null }
   );
-export type GeometryCheckedWorkflow = Exact & {
+// One operation/gesture relation drives both the state union and runtime checks.
+const geometryGestures = {
+  region: { pointers: ["region"], message: "Ungültige Regionsgeste" },
+  ground: { pointers: ["ground"], message: "Ungültige Bodenpinselgeste" },
+  scenery: { pointers: ["scenery"], message: "Ungültige Landschaftsgeste" },
+  terrain: { pointers: ["terrain"], message: "Ungültige Höhengeste" },
+  river: { pointers: ["river"], message: "Ungültige Flussgeste" },
+  foundation: { pointers: [], message: "Keine Pointergeste" },
+  editRoad: { pointers: ["node"], message: "Straßenedit benötigt Knotengeste" },
+  houseTransform: {
+    pointers: ["houseTransform"],
+    message: "Hauspose benötigt Transformgeste",
+  },
+  createHouse: {
+    pointers: ["houseRectangle"],
+    message: "Hausgründung benötigt Rechteckgeste",
+  },
+  createParcelHouse: {
+    pointers: ["parcelRectangle"],
+    message: "Erstzeichnung benötigt Grundstücksgeste",
+  },
+  updateArea: {
+    pointers: ["areaPoint", "moveArea"],
+    message: "Fläche benötigt Flächengeste",
+  },
+  detachParcel: { pointers: [], message: "Lösen besitzt keine Pointergeste" },
+  updateParcel: {
+    pointers: ["parcel"],
+    message: "Parzelle benötigt Grundstücksgeste",
+  },
+} as const satisfies Record<
+  GeometryOperation["kind"],
+  {
+    pointers: readonly Gesture["kind"][];
+    message: string;
+  }
+>;
+type GeometryCheckedWorkflow = Exact & {
   kind: "geometry";
   rollback: null;
-} & (
-    | {
-        operation: Extract<GeometryOperation, { kind: "scenery" }>;
-        pointer: GeometryPointer<"scenery">;
-      }
-    | {
-        operation: Extract<GeometryOperation, { kind: "terrain" }>;
-        pointer: GeometryPointer<"terrain">;
-      }
-    | {
-        operation: Extract<
-          GeometryOperation,
-          { kind: "waterLevel" | "foundation" }
-        >;
-        pointer: null;
-      }
-    | {
-        operation: Extract<GeometryOperation, { kind: "editRoad" }>;
-        pointer: GeometryPointer<"node">;
-      }
-    | {
-        operation: Extract<GeometryOperation, { kind: "houseTransform" }>;
-        pointer: GeometryPointer<"houseTransform">;
-      }
-    | {
-        operation: Extract<GeometryOperation, { kind: "createHouse" }>;
-        pointer: GeometryPointer<"houseRectangle">;
-      }
-    | {
-        operation: Extract<GeometryOperation, { kind: "createParcelHouse" }>;
-        pointer: GeometryPointer<"parcelRectangle">;
-      }
-    | {
-        operation: Extract<GeometryOperation, { kind: "updateArea" }>;
-        pointer: GeometryPointer<"areaPoint" | "moveArea">;
-      }
-    | {
-        operation: Extract<GeometryOperation, { kind: "detachParcel" }>;
-        pointer: null;
-      }
-    | {
-        operation: Extract<GeometryOperation, { kind: "updateParcel" }>;
-        pointer: GeometryPointer<"parcel">;
-      }
-  );
+} & {
+    [K in GeometryOperation["kind"]]: {
+      operation: Extract<GeometryOperation, { kind: K }>;
+      pointer: GeometryPointer<
+        (typeof geometryGestures)[K]["pointers"][number]
+      >;
+    };
+  }[GeometryOperation["kind"]];
 // Owner resolution is legal only for the beginning of a house drawing.
-export type OwnerWorkflow = Active & {
+type OwnerWorkflow = Active & {
   kind: "geometry";
   pointer: GeometryPointer<"houseRectangle">;
   rollback: null;
@@ -214,26 +224,25 @@ export type OwnerWorkflow = Active & {
     phase: "resolveParcelOwner";
     version: Version;
     request: number;
-    finished: boolean;
     resolved: boolean;
   };
 };
-export type GeometryWorkflow = GeometryCheckedWorkflow | OwnerWorkflow;
+type GeometryWorkflow = GeometryCheckedWorkflow | OwnerWorkflow;
 export const isOwner = (s: EditorWorkflow): s is OwnerWorkflow =>
   s.kind === "geometry" && s.stage.phase === "resolveParcelOwner";
-export type PopulateWorkflow = Exact & {
+type PopulateWorkflow = Exact & {
   pointer?: GeometryPointer<"parcel">;
   rollbackIntent?: ExactIntent;
   kind: "populate";
   operation: Extract<WorkflowOperation, { kind: "populate" }>;
 };
-export type DeleteWorkflow = Omit<Exact, "candidate" | "stage"> & {
+type DeleteWorkflow = Omit<Exact, "candidate" | "stage"> & {
   kind: "delete";
   operation: Extract<WorkflowOperation, { kind: "delete" }>;
   candidate: Candidate;
   stage: Exclude<ExactPhase, { phase: "editing" }>;
 };
-export type QueuedGestureWorkflow = Active & {
+type QueuedGestureWorkflow = Active & {
   kind: "queuedGesture";
   owner: string;
   inspection: {
@@ -269,6 +278,24 @@ export function isExact(s: EditorWorkflow): s is ExactWorkflow {
     s.kind === "delete"
   );
 }
+/** These brushes show exact intermediate surfaces while the pointer is held. */
+export const isLiveBrush = (
+  gesture:
+    { kind: Gesture["kind"] | GeometryOperation["kind"] } | null | undefined,
+) =>
+  gesture?.kind === "ground" ||
+  gesture?.kind === "terrain" ||
+  gesture?.kind === "region";
+export function isSurfaceWorkflow(
+  s: EditorWorkflow,
+): s is GeometryCheckedWorkflow & { pointer: Gesture } {
+  return (
+    s.kind === "geometry" &&
+    isExact(s) &&
+    isLiveBrush(s.operation) &&
+    isLiveBrush(s.pointer)
+  );
+}
 export const workflowPointer = (s: EditorWorkflow): Gesture | null =>
   s.navigation ??
   (s.kind === "draft" ||
@@ -290,7 +317,7 @@ export const workflowPreview = (s: EditorWorkflow): CheckedPreview | null =>
     : isExact(s) && "preview" in s.stage
       ? s.stage.preview
       : null;
-export const workflowMessage = (s: EditorWorkflow): string =>
+const workflowMessage = (s: EditorWorkflow): string =>
   isExact(s) && "message" in s.stage
     ? s.stage.message
     : isExact(s) && s.stage.phase === "unchanged"
@@ -326,7 +353,9 @@ export function workflowView(state: EditorWorkflow) {
       state.kind === "idle" ? null : (state.selectedPlanParcel ?? null),
     actions: {
       visible:
-        (exact && state.kind !== "delete") ||
+        (exact &&
+          state.kind !== "delete" &&
+          state.operation.kind !== "river") ||
         (state.kind === "queuedGesture" && !!preview?.reason),
       controls: exact && state.kind !== "delete",
       pending:
@@ -339,7 +368,7 @@ export function workflowView(state: EditorWorkflow) {
   };
 }
 
-export function withStage(s: ExactWorkflow, stage: ExactPhase): ExactWorkflow {
+function withStage(s: ExactWorkflow, stage: ExactPhase): ExactWorkflow {
   if (s.kind === "delete") {
     if (stage.phase === "editing") return s;
     return { ...s, stage };
@@ -367,6 +396,7 @@ export type WorkflowEvent =
   | { type: "queuePreview"; request: RequestToken; preview: CheckedPreview }
   | { type: "checking"; request: RequestToken }
   | { type: "preview"; request: RequestToken; preview: CheckedPreview }
+  | { type: "surfacePreview"; workflowId: number; preview: CheckedPreview }
   | { type: "failure"; request: RequestToken; message: string }
   | { type: "stale"; message: string }
   | { type: "accept"; deletion: boolean }
@@ -418,7 +448,10 @@ export function transition(
       event.type === "selectPlanParcel"
         ? event.key
         : (previous?.selectedPlanParcel ?? null),
-    displayPreview: workflowPreview(next) ?? previous?.displayPreview ?? null,
+    displayPreview:
+      event.type === "surfacePreview"
+        ? next.displayPreview
+        : (workflowPreview(next) ?? previous?.displayPreview ?? null),
   };
 }
 function reduceWorkflow(
@@ -462,6 +495,15 @@ function reduceWorkflow(
               },
             },
           )
+        : s;
+    case "surfacePreview":
+      return isSurfaceWorkflow(s) &&
+        s.id === event.workflowId &&
+        sameVersion(s.basis, event.preview.version) &&
+        event.preview.valid &&
+        (!s.displayPreview ||
+          s.displayPreview.actionId < event.preview.actionId)
+        ? { ...s, displayPreview: event.preview }
         : s;
     case "begin":
       return event.state;
@@ -549,51 +591,14 @@ export function geometryState(
   operation: GeometryOperation,
   pointer: Gesture | null,
 ): GeometryCheckedWorkflow {
-  switch (operation.kind) {
-    case "scenery":
-      if (pointer && pointer.kind !== "scenery")
-        throw Error("Ungültige Landschaftsgeste");
-      return { ...base, operation, pointer };
-    case "terrain":
-      if (pointer && pointer.kind !== "terrain")
-        throw Error("Ungültige Höhengeste");
-      return { ...base, operation, pointer };
-    case "foundation":
-    case "waterLevel":
-      if (pointer) throw Error("Keine Pointergeste");
-      return { ...base, operation, pointer };
-    case "editRoad":
-      if (pointer && pointer.kind !== "node")
-        throw Error("Straßenedit benötigt Knotengeste");
-      return { ...base, operation, pointer };
-    case "houseTransform":
-      if (pointer && pointer.kind !== "houseTransform")
-        throw Error("Hauspose benötigt Transformgeste");
-      return { ...base, operation, pointer };
-    case "createHouse":
-      if (pointer && pointer.kind !== "houseRectangle")
-        throw Error("Hausgründung benötigt Rechteckgeste");
-      return { ...base, operation, pointer };
-    case "createParcelHouse":
-      if (pointer && pointer.kind !== "parcelRectangle")
-        throw Error("Erstzeichnung benötigt Grundstücksgeste");
-      return { ...base, operation, pointer };
-    case "updateArea":
-      if (
-        pointer &&
-        pointer.kind !== "areaPoint" &&
-        pointer.kind !== "moveArea"
-      )
-        throw Error("Fläche benötigt Flächengeste");
-      return { ...base, operation, pointer };
-    case "updateParcel":
-      if (pointer && pointer.kind !== "parcel")
-        throw Error("Parzelle benötigt Grundstücksgeste");
-      return { ...base, operation, pointer };
-    case "detachParcel":
-      if (pointer) throw Error("Lösen besitzt keine Pointergeste");
-      return { ...base, operation, pointer };
-  }
+  const { pointers, message } = geometryGestures[operation.kind];
+  if (
+    pointer &&
+    !(pointers as readonly Gesture["kind"][]).includes(pointer.kind)
+  )
+    throw Error(message);
+  // The table above validates the correlation TypeScript cannot infer here.
+  return { ...base, operation, pointer } as GeometryCheckedWorkflow;
 }
 export function draftState(
   base: Omit<DraftWorkflow, "operation" | "pointer">,

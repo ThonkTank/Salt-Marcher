@@ -53,6 +53,7 @@ test("landscape stroke previews, commits once, cancels, undoes and deletes", asy
   await page.mouse.up();
   expect((await status(page)).revision).toBe(revision);
   await page.getByRole("button", { name: "Auswahl", exact: true }).click();
+  await ready(page);
   if (painted[0].kind !== "scenery") throw Error("missing stroke");
   await clickWorld(page, painted[0].assets[0].point);
   await expect(
@@ -94,8 +95,7 @@ test("all landscape asset sets render and survive saving and opening", async ({
   }
   const painted = (await scene(page)).objects;
   await page.evaluate(async () => {
-    const status = await window.atlasCore("status", {});
-    await window.atlasCore("save", { version: status });
+    await window.atlasCore("save", {});
     await window.atlasCore("open", {});
   });
   expect((await scene(page)).objects).toEqual(painted);

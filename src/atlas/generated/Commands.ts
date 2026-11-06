@@ -2,6 +2,9 @@
 import type { AllCommands } from "./AllCommands";
 export type Commands = Pick<
   AllCommands,
+  | "rivers"
+  | "regions"
+  | "groundTiles"
   | "terrainTiles"
   | "status"
   | "new"
@@ -18,6 +21,9 @@ export type Commands = Pick<
 >;
 export type ReadCommands = Pick<
   Commands,
+  | "rivers"
+  | "regions"
+  | "groundTiles"
   | "terrainTiles"
   | "mapTiles"
   | "objectHeader"

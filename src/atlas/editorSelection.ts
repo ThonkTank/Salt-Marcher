@@ -1,7 +1,10 @@
 export type Tool =
+  | "river"
+  | "regions"
   | "select"
   | "road"
   | "area"
+  | "water"
   | "terrain"
   | "scenery"
   | "house"

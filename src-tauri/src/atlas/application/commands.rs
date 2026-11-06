@@ -67,6 +67,9 @@ enum Access {
 }
 
 commands! {
+    Rivers, "rivers", super::river_store::RiverArgs, super::river_store::RiverResponse, AtlasApplication::rivers, Read;
+    Regions, "regions", super::region_store::RegionArgs, super::region_store::RegionResponse, AtlasApplication::regions, Read;
+    GroundTiles, "groundTiles", crate::atlas::ground::GroundArgs, crate::atlas::ground::GroundResponse, AtlasApplication::ground_tiles, Read;
     TerrainTiles, "terrainTiles", crate::atlas::terrain::TerrainArgs, crate::atlas::terrain::TerrainResponse, AtlasApplication::terrain_tiles, Read;
     Status, "status", EmptyArgs, Status, status, Client;
     New, "new", EmptyArgs, Status, new, Client;

@@ -4,5 +4,4 @@ import type { TerrainResponse } from "./TerrainResponse";
 export type TerrainPreview = {
   surface: TerrainResponse | null;
   points: Array<[number, number, number]>;
-  waterLevel: number;
 };

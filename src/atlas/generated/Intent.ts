@@ -3,26 +3,42 @@ import type { AreaInput } from "./AreaInput";
 import type { Brush } from "./Brush";
 import type { ConnectionIntent } from "./ConnectionIntent";
 import type { Foundation } from "./Foundation";
+import type { GroundArgs } from "./GroundArgs";
+import type { GroundBrush } from "./GroundBrush";
 import type { NewRoadInput } from "./NewRoadInput";
 import type { NodeInput } from "./NodeInput";
 import type { PopulationSettings } from "./PopulationSettings";
+import type { RegionAction } from "./RegionAction";
+import type { RiverAction } from "./RiverAction";
 import type { RoadEditInput } from "./RoadEditInput";
 import type { RoadEnd } from "./RoadEnd";
 import type { RoadRoughness } from "./RoadRoughness";
 import type { RoomIntent } from "./RoomIntent";
 import type { SceneryBrush } from "./SceneryBrush";
 import type { TerrainArgs } from "./TerrainArgs";
+import type { TerrainFollow } from "./TerrainFollow";
 import type { Transform } from "./Transform";
 
 export type Intent =
+  | { type: "riverEdit"; action: RiverAction; view: TerrainArgs | null }
+  | { type: "regionEdit"; action: RegionAction }
+  | {
+      type: "regionStroke";
+      id: string;
+      points: Array<[number, number]>;
+      radius: number;
+      erase: boolean;
+    }
+  | { type: "groundStroke"; brush: GroundBrush; view?: GroundArgs }
   | { type: "sceneryStroke"; brush: SceneryBrush }
   | { type: "terrainStroke"; brush: Brush; view?: TerrainArgs }
-  | { type: "setWaterLevel"; level: number; view?: TerrainArgs }
+  | { type: "waterStroke"; brush: Brush; view?: TerrainArgs }
   | { type: "setFoundation"; id: string; foundation: Foundation }
   | {
       type: "createRoad";
       road: NewRoadInput;
       roughness?: RoadRoughness;
+      terrainFollow?: TerrainFollow;
       population: PopulationSettings | null;
     }
   | { type: "updateRoad"; roadId: string; road: RoadEditInput }
@@ -34,6 +50,7 @@ export type Intent =
       roadId: string;
       end: RoadEnd;
       roughness?: RoadRoughness;
+      terrainFollow?: TerrainFollow;
       nodes: Array<NodeInput>;
       endpointHandle: [number, number] | null;
       population: PopulationSettings | null;

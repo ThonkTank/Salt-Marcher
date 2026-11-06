@@ -1,3 +1,9 @@
+import { deferred } from "../../tests/support/deferred";
+import {
+  status,
+  workflowObjects,
+  preview,
+} from "../../tests/support/atlasFixtures";
 import type { WorkflowGate } from "./editorWorkflow";
 import { WireError } from "../wireError";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -20,124 +26,18 @@ import { evaluateGesture, type Gesture } from "./interaction";
 import {
   defaultPopulation,
   toWorld,
-  type House,
   type Intent,
   type MapObject,
-  type Parcel,
   type Preview,
-  type Road,
   type Scene,
-  type Status,
   type ValidPreview,
-  type Version,
   type WorldPoint,
 } from "./model";
 import { editRoadDraft, extensionRoadDraft, newRoadDraft } from "./roadDraft";
 import { parcelTransform } from "./parcelEditor";
 
-const status = (revision = 0): Status => ({
-  sessionId: "test-session",
-  revision,
-  path: null,
-  dirty: false,
-  canUndo: false,
-  canRedo: false,
-  changes: null,
-});
-function preview(version: Version = status(), changed = true): ValidPreview {
-  return {
-    valid: true,
-    version: { ...version },
-    status: { ...status(), ...version },
-    changed,
-    objects: [],
-    removed: [],
-    deletedIds: [],
-    removedConnections: [],
-    cascadeCounts: {
-      roads: 0,
-      parcels: 0,
-      houses: 0,
-      rooms: 0,
-      connections: 0,
-    },
-    generationSummary: {
-      createdParcels: 0,
-      createdHouses: 0,
-      emptyParcels: 0,
-      skippedParcels: 0,
-      unplacedHouses: 0,
-      limited: false,
-    },
-    generationDiagnostics: [],
-    generationLimit: null,
-  };
-}
-const road: Road = {
-  kind: "road",
-  id: "road-1",
-  name: "Test",
-  width: 10,
-  material: "earth",
-  nodes: [
-    { id: "node-2", point: [0, 0], incoming: null, outgoing: null },
-    { id: "node-3", point: [80, 0], incoming: null, outgoing: null },
-  ],
-  path: [
-    [0, 0],
-    [80, 0],
-  ],
-  sections: [{ id: "section-4", populatedSides: [] }],
-  edgeSections: ["section-4"],
-  populationRecipe: null,
-};
-const parcel: Parcel = {
-  kind: "parcel",
-  id: "parcel-5",
-  source: { kind: "detached" },
-  polygon: [
-    [-20, -20],
-    [60, -20],
-    [60, 100],
-    [-20, 100],
-  ],
-  frame: { x: 10, y: 20, angle: 0.37 },
-};
-const house: House = {
-  kind: "house",
-  importantPlace: false,
-  foundation: { height: 1, transition: 10 },
-  id: "house-6",
-  name: "Haus",
-  roof: "#888888",
-  placement: {
-    kind: "parcel",
-    parcelId: parcel.id,
-    gridPose: { xCells: -2, yCells: 1, quarterTurns: 0 },
-  },
-  transform: parcelTransform(parcel.frame, {
-    xCells: -2,
-    yCells: 1,
-    quarterTurns: 0,
-  }),
-  contours: [
-    [
-      [0, 0],
-      [2, 0],
-      [2, 2],
-      [0, 2],
-    ],
-  ],
-  occupancyContours: [],
-  occupancyBounds: [0, 0, 10, 10],
-};
-const deferred = <T>() => {
-  let resolve!: (value: T) => void;
-  const promise = new Promise<T>((done) => {
-    resolve = done;
-  });
-  return { promise, resolve };
-};
+const { road, parcel, house } = workflowObjects();
+
 const flush = async () => {
   for (let n = 0; n < 8; n++) await Promise.resolve();
 };
@@ -886,25 +786,39 @@ describe("single workflow owner and effect boundaries", () => {
     expect(h.c.canAccept()).toBe(true);
     expect(h.ports.commitExact).not.toHaveBeenCalled();
   });
-  it("keeps edited stale extension and population settings stale until explicit fresh-header recheck", async () => {
-    for (const mode of ["extension", "populate"] as const) {
+  it.each(["extension", "populate", "roughening"] as const)(
+    "keeps edited stale %s settings stale until explicit fresh-header recheck",
+    async (mode) => {
       const h = harness();
       const draft = extensionRoadDraft(road, "end", defaultPopulation);
       draft.nodes = [{ point: [120, 0], incoming: null, outgoing: null }];
-      const begin = (gap: number) =>
-        mode === "extension"
-          ? h.c.beginDraft({
+      const begin = (value: number) => {
+        switch (mode) {
+          case "extension":
+            return h.c.beginDraft({
               ...draft,
-              population: { ...defaultPopulation, gap },
-            })
-          : h.c.beginIntent(
+              population: { ...defaultPopulation, gap: value },
+            });
+          case "populate":
+            return h.c.beginIntent(
               {
                 type: "populate",
                 roadId: road.id,
-                settings: { ...defaultPopulation, gap },
+                settings: { ...defaultPopulation, gap: value },
               },
               false,
             );
+          case "roughening":
+            return h.c.beginIntent(
+              {
+                type: "roughenRoad",
+                roadId: road.id,
+                roughness: { amount: value / 100, seed: 1 },
+              },
+              false,
+            );
+        }
+      };
       begin(10);
       await flush();
       h.gate = { ...h.gate, version: status(1) };
@@ -913,6 +827,7 @@ describe("single workflow owner and effect boundaries", () => {
       begin(15);
       await flush();
       expect(h.exact().stage.phase).toBe("stale");
+      expect(h.exact().basis.revision).toBe(0);
       expect(h.exact().candidate!.token.version.revision).toBe(0);
       expect(h.ports.inspect).toHaveBeenCalledTimes(count);
       expect(h.c.canAccept()).toBe(false);
@@ -931,11 +846,14 @@ describe("single workflow owner and effect boundaries", () => {
           ? intent.settings.gap
           : intent.type === "extendRoad"
             ? intent.population?.gap
-            : null,
+            : intent.type === "roughenRoad"
+              ? intent.roughness.amount * 100
+              : null,
       ).toBe(15);
+      expect(h.ports.commitExact).not.toHaveBeenCalled();
       h.c.dispose();
-    }
-  });
+    },
+  );
   it("never leaves an uncertain commit as a sendable draft after reconciliation", async () => {
     const h = harness(),
       held = deferred<ValidPreview | null>();
@@ -1020,7 +938,14 @@ describe("single workflow owner and effect boundaries", () => {
     h.update();
     expect(h.c.getSnapshot().kind).toBe("idle");
   });
-  it("owner resolution is the house workflow phase and commits only after both final value and read", async () => {
+  it.each([
+    ["read first", "commit"],
+    ["pointer first", "commit"],
+    ["read first", "no-op"],
+    ["pointer first", "no-op"],
+    ["read first", "cancel"],
+    ["pointer first", "cancel"],
+  ] as const)("house owner resolution: %s, %s", async (order, outcome) => {
     const h = harness(),
       held = deferred<Scene | undefined>();
     h.ports.read = vi.fn(() => held.promise);
@@ -1031,24 +956,41 @@ describe("single workflow owner and effect boundaries", () => {
       screen: [0, 0],
       parcel,
     };
+    const resolveOwner = async () => {
+      held.resolve({
+        status: status(),
+        objects: [parcel],
+        contextState: { exists: false, houseId: null, parcelId: null },
+        selectionState: { exists: true, houseId: null, parcelId: parcel.id },
+      });
+      await flush();
+    };
     h.c.beginGesture(g);
-    h.evaluate(g, toWorld([2, 2], parcel.frame));
-    const resolving = h.c.getSnapshot();
-    expect(resolving.kind).toBe("geometry");
-    expect(isOwner(resolving)).toBe(true);
-    held.resolve({
-      status: status(),
-      objects: [parcel],
-      contextState: { exists: false, houseId: null, parcelId: null },
-      selectionState: { exists: true, houseId: null, parcelId: parcel.id },
-    });
+    if (order === "read first") await resolveOwner();
+    expect(isOwner(h.c.getSnapshot())).toBe(true);
+    expect(h.ports.commitExact).not.toHaveBeenCalled();
+    h.evaluate(
+      g,
+      toWorld([2, 2], parcel.frame),
+      true,
+      outcome === "no-op" ? [0, 0] : [30, 30],
+    );
+    if (outcome === "cancel") h.c.cancel();
+    if (order === "pointer first") {
+      expect(h.ports.commitExact).not.toHaveBeenCalled();
+      expect(isOwner(h.c.getSnapshot())).toBe(outcome === "commit");
+      await resolveOwner();
+    }
     await flush();
     expect(h.c.getSnapshot().kind).toBe("idle");
     expect(h.ports.queue).not.toHaveBeenCalled();
     expect(h.ports.inspect).not.toHaveBeenCalled();
-
-    await flush();
-    expect(h.ports.commitExact).toHaveBeenCalledTimes(1);
+    // Once the exact write is accepted, cancellation cannot retract it.
+    expect(h.ports.commitExact).toHaveBeenCalledTimes(
+      outcome === "commit" || (outcome === "cancel" && order === "read first")
+        ? 1
+        : 0,
+    );
   });
   it("owns queued-gesture previews and clears a held old stair result when returning to its start", async () => {
     const h = harness(),
@@ -1308,4 +1250,231 @@ it("retains preview and parcel selection only for the owning plan, including pop
   await h.c.beginIntent(intent, false);
   expect(h.exact().selectedPlanParcel).toBeNull();
   expect(h.exact().displayPreview).toBeNull();
+});
+
+type BrushKind = "ground" | "terrain" | "water" | "region";
+function brushGesture(kind: BrushKind): Gesture {
+  const base = {
+    pointer: 1,
+    start: [0, 0] as WorldPoint,
+    screen: [0, 0] as [number, number],
+  };
+  if (kind === "region")
+    return {
+      ...base,
+      kind,
+      id: "region-1",
+      points: [[0, 0]],
+      radius: 25,
+      erase: false,
+    };
+  if (kind === "ground")
+    return {
+      ...base,
+      kind,
+      started: 0,
+      brush: {
+        mode: "paint",
+        tip: "soft",
+        color: [157, 181, 139],
+        diameter: 60,
+        opacity: 1,
+        flow: 1,
+        seed: 1,
+        points: [[0, 0, 0]],
+      },
+    };
+  return {
+    ...base,
+    kind: "terrain",
+    water: kind === "water",
+    brush: {
+      mode: "raise",
+      radius: 25,
+      amount: 1,
+      strength: 0.25,
+      target: 10,
+      points: [[0, 0]],
+    },
+  };
+}
+
+it.each(["ground", "terrain", "water", "region"] as const)(
+  "coalesces %s previews, retains a visual result and rejects it after abort",
+  async (kind) => {
+    const h = harness();
+    const first = deferred<Awaited<ReturnType<WorkflowPorts["inspect"]>>>();
+    const second = deferred<Awaited<ReturnType<WorkflowPorts["inspect"]>>>();
+    vi.mocked(h.ports.inspect)
+      .mockImplementationOnce(() => first.promise)
+      .mockImplementationOnce(() => second.promise);
+    const gesture = brushGesture(kind);
+    h.c.beginGesture(gesture);
+    h.evaluate(gesture, [10, 0], false);
+    const firstId = h.exact().candidate!.token.candidateId;
+    h.evaluate(gesture, [20, 0], false);
+    expect(h.ports.inspect).toHaveBeenCalledTimes(1);
+    first.resolve({ ...preview(), actionId: firstId });
+    await flush();
+    expect(h.exact().displayPreview?.actionId).toBe(firstId);
+    expect(workflowPreview(h.exact())).toBeNull();
+    expect(h.ports.inspect).toHaveBeenCalledTimes(2);
+    const secondId = h.exact().candidate!.token.candidateId;
+    h.c.abortPointer();
+    second.resolve({ ...preview(), actionId: secondId });
+    await flush();
+    expect(h.c.getSnapshot().kind).toBe("idle");
+    expect(h.ports.commitExact).not.toHaveBeenCalled();
+  },
+);
+
+it.each(["context", "revision", "document", "unmount"] as const)(
+  "rejects held terrain display after %s replacement",
+  async (replacement) => {
+    const h = harness();
+    const pending = deferred<Awaited<ReturnType<WorkflowPorts["inspect"]>>>();
+    vi.mocked(h.ports.inspect).mockImplementationOnce(() => pending.promise);
+    const gesture = brushGesture("terrain");
+    h.c.beginGesture(gesture);
+    h.evaluate(gesture, [10, 0], false);
+    const id = h.exact().candidate!.token.candidateId;
+    if (replacement === "context") h.context = "interior:house:0";
+    if (replacement === "revision") h.gate = { ...h.gate, version: status(1) };
+    if (replacement === "document")
+      h.gate = { ...h.gate, version: { ...status(), sessionId: "new" } };
+    if (replacement === "unmount") h.c.dispose();
+    else h.update();
+    pending.resolve({ ...preview(), actionId: id });
+    await flush();
+    const state = h.c.getSnapshot();
+    expect("displayPreview" in state ? state.displayPreview : null).toBeNull();
+    expect(h.ports.commitExact).not.toHaveBeenCalled();
+  },
+);
+
+it.each(["ground", "terrain", "water", "region"] as const)(
+  "commits the final %s path once while a preview is held, without resurrecting it",
+  async (kind) => {
+    const h = harness(),
+      gesture = brushGesture(kind);
+    const pending = deferred<Awaited<ReturnType<WorkflowPorts["inspect"]>>>();
+    vi.mocked(h.ports.inspect).mockImplementationOnce(() => pending.promise);
+    h.c.beginGesture(gesture);
+    h.evaluate(gesture, [10, 0], false);
+    const previewId = h.exact().candidate!.token.candidateId;
+    h.evaluate(gesture, [20, 0], true);
+    await flush();
+    expect(h.ports.commitExact).toHaveBeenCalledTimes(1);
+    const intent = vi.mocked(h.ports.commitExact).mock.calls[0][0].intent;
+    const points =
+      "brush" in intent
+        ? intent.brush.points
+        : intent.type === "regionStroke"
+          ? intent.points
+          : [];
+    expect(points.at(-1)?.slice(0, 2)).toEqual([20, 0]);
+    expect(h.c.getSnapshot().kind).toBe("idle");
+    pending.resolve({ ...preview(), actionId: previewId });
+    await flush();
+    expect(h.c.getSnapshot().kind).toBe("idle");
+    expect(h.ports.inspect).toHaveBeenCalledTimes(1);
+    expect(h.ports.completed).toHaveBeenCalledTimes(1);
+  },
+);
+
+describe("river workflow ownership", () => {
+  const riverIntent = (): Extract<Intent, { type: "riverEdit" }> => ({
+    type: "riverEdit",
+    view: null,
+    action: {
+      kind: "put",
+      id: null,
+      name: "Fluss",
+      nodes: [
+        { id: "", point: [0, 0], width: 20 },
+        { id: "", point: [80, 0], width: 20 },
+      ],
+      settings: {
+        tolerance: 0.1,
+        roughness: 0.5,
+        meander: 40,
+        sourceFade: true,
+        seed: 1,
+      },
+      automatic: true,
+      reverse: false,
+      snap: 1,
+    },
+  });
+  it("keeps incomplete drafts and does not silently rebase stale edits", () => {
+    const h = harness(),
+      intent = riverIntent();
+    if (intent.action.kind !== "put") throw Error("put expected");
+    intent.action.nodes.pop();
+    h.c.editRiver(intent);
+    expect(h.exact().candidate).toBeNull();
+    expect(h.c.canAccept()).toBe(false);
+    h.gate = { ...h.gate, version: status(1) };
+    h.update();
+    h.c.editRiver(riverIntent());
+    expect(h.exact().basis.revision).toBe(0);
+    expect(h.exact().stage.phase).toBe("stale");
+    expect(h.c.canAccept()).toBe(false);
+    h.c.dispose();
+  });
+  it("finishes a node gesture without committing and accepts exactly once", async () => {
+    const h = harness(),
+      intent = riverIntent();
+    const gesture: Extract<Gesture, { kind: "river" }> = {
+      kind: "river",
+      intent,
+      index: 1,
+      pointer: 1,
+      start: [80, 0],
+      screen: [0, 0],
+    };
+    h.c.editRiver(intent, gesture);
+    h.evaluate(gesture, [90, 20], true);
+    expect(h.ports.commitExact).not.toHaveBeenCalled();
+    expect(workflowPointer(h.c.getSnapshot())).toBeNull();
+    const pending = deferred<ValidPreview>();
+    vi.mocked(h.ports.commitExact).mockImplementation(() => pending.promise);
+    const accepted = h.c.accept();
+    void h.c.accept();
+    expect(h.ports.commitExact).toHaveBeenCalledTimes(1);
+    h.c.cancel();
+    h.c.editRiver(riverIntent());
+    const newer = h.c.getSnapshot();
+    pending.resolve(preview());
+    await accepted;
+    expect(h.c.getSnapshot()).toBe(newer);
+    expect(h.ports.completed).not.toHaveBeenCalled();
+    h.c.dispose();
+  });
+  it("owns extension mode and drops it with a cancelled draft", () => {
+    const h = harness();
+    h.c.editRiver(riverIntent(), null, "start");
+    h.c.editRiver(riverIntent());
+    expect(h.exact().operation).toMatchObject({
+      kind: "river",
+      append: "start",
+    });
+    h.c.cancel();
+    h.c.editRiver(riverIntent());
+    expect(h.exact().operation).toMatchObject({ kind: "river", append: null });
+    h.c.dispose();
+  });
+  it("discards a preview arriving after cancellation", async () => {
+    const h = harness(),
+      pending = deferred<ReturnType<typeof preview> & { actionId: number }>();
+    vi.mocked(h.ports.inspect).mockImplementation(() => pending.promise);
+    h.c.editRiver(riverIntent());
+    await vi.advanceTimersByTimeAsync(120);
+    const candidate = h.exact().candidate!;
+    h.c.cancel();
+    pending.resolve({ ...preview(), actionId: candidate.token.candidateId });
+    await flush();
+    expect(h.c.getSnapshot().kind).toBe("idle");
+    h.c.dispose();
+  });
 });

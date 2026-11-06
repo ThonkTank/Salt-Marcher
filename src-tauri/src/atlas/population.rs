@@ -103,7 +103,7 @@ pub fn validate_settings(s: &Settings) -> Result<()> {
 }
 
 /// FNV-1a identity of a section/side stream, with unambiguous byte framing.
-/// Algorithm 2 retains the v1 random stream; neither accepted-house count nor
+/// Algorithm 4 retains the v1 random stream; neither accepted-house count nor
 /// SQL/header order enters this stream.
 pub fn parcel_seed(seed: u32, section_id: &str, side: Side) -> u32 {
     let mut hash = 2_166_136_261_u32;
@@ -195,6 +195,42 @@ pub const MAX_BOUND_PARCELS: usize = 200;
 pub const MAX_NEW_HOUSES: usize = 200;
 pub const MAX_NEW_CELLS: u32 = 100_000;
 pub const MAX_ATTEMPTS: usize = 10_000;
+
+/// Try the preferred parcel first, then progressively shorter/shallower plots.
+/// Extra frontage also lets an inside bend contain a rectangular house. The
+/// finite list is deterministic and every candidate shares the global budget.
+fn parcel_variants(frontage: f64, depth: f64, remaining: f64, s: &Settings) -> Vec<(f64, f64)> {
+    // On an outside bend even a short centerline interval can have a wide
+    // frontage. House containment, not centerline length, decides the fit.
+    let minimum_front = 2.5;
+    let minimum_depth = 5.0 * f64::from(s.min_depth);
+    let mut fronts = vec![frontage.min(remaining)];
+    let mut front = frontage - 5.0;
+    while front >= minimum_front {
+        fronts.push(front.min(remaining));
+        front -= 5.0;
+    }
+    fronts.push(minimum_front.min(remaining));
+    fronts.extend([frontage + 5.0, frontage + 10.0, frontage * 1.5].map(|f| f.min(remaining)));
+    let mut depths = vec![depth];
+    let mut shallower = (depth / 5.0).floor() * 5.0;
+    while shallower >= minimum_depth {
+        if shallower < depth {
+            depths.push(shallower);
+        }
+        shallower -= 5.0;
+    }
+    let mut unique_fronts = vec![];
+    for front in fronts {
+        if front >= minimum_front && !unique_fronts.contains(&front) {
+            unique_fronts.push(front);
+        }
+    }
+    unique_fronts
+        .into_iter()
+        .flat_map(|front| depths.iter().map(move |&depth| (front, depth)))
+        .collect()
+}
 
 /// Lazy finite integer poses ordered by (abs(x-x0), y, x). Start at the nearest
 /// legal x, so a distant finite interval never causes coordinate-skipping work.
@@ -420,239 +456,304 @@ fn generate_with_attempt_limit(
                     width = p.width;
                     house_depth = p.house_depth;
                     roof_index = p.roof_index;
-                } else if cursor > table.total_length() {
+                }
+                let manual_empty =
+                    settings.houses != Some(false) && depth < 5.0 * f64::from(settings.min_depth);
+                let preferred_end = cursor;
+                let variants =
+                    if explicit.is_some() || (manual_empty && cursor <= table.total_length()) {
+                        vec![(cursor - start, parcel_depth)]
+                    } else if manual_empty {
+                        vec![]
+                    } else {
+                        parcel_variants(
+                            cursor - start,
+                            parcel_depth,
+                            table.total_length() - start,
+                            settings,
+                        )
+                    };
+                if variants.is_empty() {
                     break;
                 }
-                let point = parcels::sample_arc(table, (start + cursor) / 2.0)?.point;
-                let location = GenerationLocation {
-                    road_id: road.id.clone(),
-                    section_id: section_id.to_owned(),
-                    side,
-                    slot_index,
-                    point,
-                    message: String::new(),
-                };
-                let source = ParcelSource::Road {
-                    road_id: road.id.clone(),
-                    section_id: section_id.to_owned(),
-                    side,
-                    start: start / table.total_length(),
-                    end: cursor / table.total_length(),
-                    setback,
-                    depth: parcel_depth,
-                };
-                let geometry = match parcels::derive_from_arc(
-                    road.width,
-                    table,
-                    side,
-                    start / table.total_length(),
-                    cursor / table.total_length(),
-                    setback,
-                    parcel_depth,
-                ) {
-                    Ok(g) => g,
-                    Err(error)
-                        if error.category == ErrorCategory::InvalidInput && explicit.is_none() =>
-                    {
-                        generated.diagnostics.push(GenerationDiagnostic::Parcel {
-                            location: GenerationLocation {
-                                message: error.message,
-                                ..location
-                            },
-                            code: ParcelSkipCode::InvalidParcelGeometry,
-                            obstacle_ids: None,
-                        });
-                        slot_index += 1;
-                        continue;
+                let mut accepted = None;
+                let mut diagnostic = None;
+                for (variant_index, (frontage, parcel_depth)) in variants.into_iter().enumerate() {
+                    if variant_index > 0 {
+                        if generated.attempts == attempt_limit {
+                            generated.limit = Some(GenerationLimit::Attempts);
+                            return Ok(generated);
+                        }
+                        generated.attempts += 1;
                     }
-                    Err(error) => return Err(error),
-                };
-                let mut slot = ParcelSlot {
-                    section_id: section_id.to_owned(),
-                    side,
-                    slot: slot_index,
-                    point,
-                    width,
-                    depth: house_depth,
-                    roof_index,
-                    source,
-                    geometry,
-                };
-                let parcel = slot.parcel(String::new());
-                let b = expand(bounds(parcel.polygon.iter().copied()), settings.gap);
-                let existing = nearby(&slot)?;
-                let previous = accepted_index.query(b);
-                let mut conflict_ids = vec![];
-                let mut blocked = parcels::parcel_conflict(&parcel, Obstacle::Road(road))?;
-                if blocked {
-                    conflict_ids.push(road.id.clone());
-                }
-                for other in &existing {
-                    if let Some(obstacle) = plans::obstacle(other) {
-                        // Transient IDs never confer the owner exception.
-                        if slot_conflict(&parcel, obstacle)? {
-                            blocked = true;
-                            conflict_ids.push(other.id().to_owned());
-                            break;
+                    cursor = (start + frontage).min(table.total_length());
+                    let point = parcels::sample_arc(table, (start + cursor) / 2.0)?.point;
+                    let location = GenerationLocation {
+                        road_id: road.id.clone(),
+                        section_id: section_id.to_owned(),
+                        side,
+                        slot_index,
+                        point,
+                        message: String::new(),
+                    };
+                    let source = ParcelSource::Road {
+                        road_id: road.id.clone(),
+                        section_id: section_id.to_owned(),
+                        side,
+                        start: start / table.total_length(),
+                        end: cursor / table.total_length(),
+                        setback,
+                        depth: parcel_depth,
+                    };
+                    let geometry = match parcels::derive_from_arc(
+                        road.width,
+                        table,
+                        side,
+                        start / table.total_length(),
+                        cursor / table.total_length(),
+                        setback,
+                        parcel_depth,
+                    ) {
+                        Ok(g) => g,
+                        Err(error)
+                            if error.category == ErrorCategory::InvalidInput
+                                && explicit.is_none() =>
+                        {
+                            diagnostic = Some(GenerationDiagnostic::Parcel {
+                                location: GenerationLocation {
+                                    message: error.message,
+                                    ..location
+                                },
+                                code: ParcelSkipCode::InvalidParcelGeometry,
+                                obstacle_ids: None,
+                            });
+                            continue;
+                        }
+                        Err(error) => return Err(error),
+                    };
+                    let mut slot = ParcelSlot {
+                        section_id: section_id.to_owned(),
+                        side,
+                        slot: slot_index,
+                        point,
+                        width,
+                        depth: house_depth,
+                        roof_index,
+                        source,
+                        geometry,
+                    };
+                    let parcel = slot.parcel(String::new());
+                    let b = expand(bounds(parcel.polygon.iter().copied()), settings.gap);
+                    let existing = nearby(&slot)?;
+                    let previous = accepted_index.query(b);
+                    let mut conflict_ids = vec![];
+                    let mut blocked = parcels::parcel_conflict(&parcel, Obstacle::Road(road))?;
+                    if blocked {
+                        conflict_ids.push(road.id.clone());
+                    }
+                    for other in &existing {
+                        if let Some(obstacle) = plans::obstacle(other) {
+                            // Transient IDs never confer the owner exception.
+                            if slot_conflict(&parcel, obstacle)? {
+                                blocked = true;
+                                conflict_ids.push(other.id().to_owned());
+                                break;
+                            }
                         }
                     }
-                }
-                if !blocked {
-                    for &i in &previous {
-                        let other: &AcceptedParcel = &generated.parcels[i];
-                        if parcels::parcel_conflict(
-                            &parcel,
-                            Obstacle::Parcel(&other.slot.parcel(String::new())),
-                        )? {
-                            blocked = true;
-                            break;
-                        }
-                        if let Some(h) = &other.house {
-                            if parcels::parcel_occupancy_conflict(
+                    if !blocked {
+                        for &i in &previous {
+                            let other: &AcceptedParcel = &generated.parcels[i];
+                            if parcels::parcel_conflict(
                                 &parcel,
-                                &Placement::Free {},
-                                &other.slot.contours(),
-                                &h.transform,
+                                Obstacle::Parcel(&other.slot.parcel(String::new())),
                             )? {
                                 blocked = true;
                                 break;
                             }
-                        }
-                    }
-                }
-                if blocked {
-                    ensure(
-                        explicit.is_none(),
-                        "Geplante Parzelle kollidiert mit bestehender Geometrie",
-                    )?;
-                    generated.diagnostics.push(GenerationDiagnostic::Parcel {
-                        location: GenerationLocation {
-                            message: "Parzelle kollidiert mit bestehender Geometrie".into(),
-                            ..location
-                        },
-                        code: ParcelSkipCode::ParcelCollision,
-                        obstacle_ids: (!conflict_ids.is_empty()).then_some(conflict_ids),
-                    });
-                    slot_index += 1;
-                    continue;
-                }
-                let mut house = None;
-                let mut contained = false;
-                let mut sizes = vec![(width, house_depth)];
-                let mut smaller: Vec<_> = (settings.min_width..=width)
-                    .flat_map(|w| (settings.min_depth..=house_depth).map(move |d| (w, d)))
-                    .filter(|size| *size != (width, house_depth))
-                    .collect();
-                smaller.sort_by_key(|(w, d)| (std::cmp::Reverse(w * d), std::cmp::Reverse(*w)));
-                sizes.extend(smaller);
-                if settings.houses == Some(false) {
-                    sizes.clear();
-                }
-                'sizes: for (size_index, (w, d)) in sizes.into_iter().enumerate() {
-                    if size_index > 0 {
-                        if generated.attempts == attempt_limit {
-                            generated.limit = Some(GenerationLimit::Attempts);
-                            return Ok(generated);
-                        }
-                        generated.attempts += 1;
-                    }
-                    slot.width = w;
-                    slot.depth = d;
-                    let contours = slot.contours();
-                    for pose in GridPoses::new(&slot) {
-                        if generated.attempts == attempt_limit {
-                            generated.limit = Some(GenerationLimit::Attempts);
-                            return Ok(generated);
-                        }
-                        generated.attempts += 1;
-                        let transform = match parcels::parcel_house_transform(&parcel.frame, &pose)
-                        {
-                            Ok(t) => t,
-                            Err(error) if error.category == ErrorCategory::InvalidInput => continue,
-                            Err(error) => return Err(error),
-                        };
-                        if !parcels::occupancy_world(&contours, &transform)
-                            .iter()
-                            .flatten()
-                            .copied()
-                            .all(valid_point)
-                            || !parcels::covers_occupancy(&parcel, &contours, &transform)?
-                        {
-                            continue;
-                        }
-                        contained = true;
-                        if house_conflict(&slot, &transform, Obstacle::Road(road), settings.gap)? {
-                            continue;
-                        }
-                        let mut collision = false;
-                        for other in &existing {
-                            if let Some(obstacle) = plans::obstacle(other) {
-                                if house_conflict(&slot, &transform, obstacle, settings.gap)? {
-                                    collision = true;
+                            if let Some(h) = &other.house {
+                                if parcels::parcel_occupancy_conflict(
+                                    &parcel,
+                                    &Placement::Free {},
+                                    &other.slot.contours(),
+                                    &h.transform,
+                                )? {
+                                    blocked = true;
                                     break;
                                 }
                             }
                         }
-                        if collision {
-                            continue;
+                    }
+                    if blocked {
+                        ensure(
+                            explicit.is_none(),
+                            "Geplante Parzelle kollidiert mit bestehender Geometrie",
+                        )?;
+                        diagnostic = Some(GenerationDiagnostic::Parcel {
+                            location: GenerationLocation {
+                                message: "Parzelle kollidiert mit bestehender Geometrie".into(),
+                                ..location
+                            },
+                            code: ParcelSkipCode::ParcelCollision,
+                            obstacle_ids: (!conflict_ids.is_empty()).then_some(conflict_ids),
+                        });
+                        continue;
+                    }
+                    let mut house = None;
+                    let mut contained = false;
+                    let mut sizes = vec![(width, house_depth)];
+                    let mut smaller: Vec<_> = (settings.min_width..=width)
+                        .flat_map(|w| (settings.min_depth..=house_depth).map(move |d| (w, d)))
+                        .filter(|size| *size != (width, house_depth))
+                        .collect();
+                    smaller.sort_by_key(|(w, d)| (std::cmp::Reverse(w * d), std::cmp::Reverse(*w)));
+                    sizes.extend(smaller);
+                    if settings.houses == Some(false) {
+                        sizes.clear();
+                    }
+                    'sizes: for (size_index, (w, d)) in sizes.into_iter().enumerate() {
+                        if size_index > 0 {
+                            if generated.attempts == attempt_limit {
+                                generated.limit = Some(GenerationLimit::Attempts);
+                                return Ok(generated);
+                            }
+                            generated.attempts += 1;
                         }
-                        for &i in &previous {
-                            let other = &generated.parcels[i];
+                        slot.width = w;
+                        slot.depth = d;
+                        let contours = slot.contours();
+                        for pose in GridPoses::new(&slot) {
+                            if generated.attempts == attempt_limit {
+                                generated.limit = Some(GenerationLimit::Attempts);
+                                return Ok(generated);
+                            }
+                            generated.attempts += 1;
+                            let transform =
+                                match parcels::parcel_house_transform(&parcel.frame, &pose) {
+                                    Ok(t) => t,
+                                    Err(error) if error.category == ErrorCategory::InvalidInput => {
+                                        continue
+                                    }
+                                    Err(error) => return Err(error),
+                                };
+                            if !parcels::occupancy_world(&contours, &transform)
+                                .iter()
+                                .flatten()
+                                .copied()
+                                .all(valid_point)
+                                || !parcels::covers_occupancy(&parcel, &contours, &transform)?
+                            {
+                                continue;
+                            }
+                            contained = true;
                             if house_conflict(
                                 &slot,
                                 &transform,
-                                Obstacle::Parcel(&other.slot.parcel(String::new())),
+                                Obstacle::Road(road),
                                 settings.gap,
                             )? {
-                                collision = true;
-                                break;
+                                continue;
                             }
-                            if let Some(h) = &other.house {
-                                if parcels::occupancy_clearance(
-                                    &contours,
+                            let mut collision = false;
+                            for other in &existing {
+                                if let Some(obstacle) = plans::obstacle(other) {
+                                    if house_conflict(&slot, &transform, obstacle, settings.gap)? {
+                                        collision = true;
+                                        break;
+                                    }
+                                }
+                            }
+                            if collision {
+                                continue;
+                            }
+                            for &i in &previous {
+                                let other = &generated.parcels[i];
+                                if house_conflict(
+                                    &slot,
                                     &transform,
-                                    &other.slot.contours(),
-                                    &h.transform,
+                                    Obstacle::Parcel(&other.slot.parcel(String::new())),
                                     settings.gap,
                                 )? {
                                     collision = true;
                                     break;
                                 }
+                                if let Some(h) = &other.house {
+                                    if parcels::occupancy_clearance(
+                                        &contours,
+                                        &transform,
+                                        &other.slot.contours(),
+                                        &h.transform,
+                                        settings.gap,
+                                    )? {
+                                        collision = true;
+                                        break;
+                                    }
+                                }
+                            }
+                            if !collision {
+                                house = Some(InitialHousePlacement {
+                                    grid_pose: pose,
+                                    transform,
+                                });
+                                break 'sizes;
                             }
                         }
-                        if !collision {
-                            house = Some(InitialHousePlacement {
-                                grid_pose: pose,
-                                transform,
-                            });
-                            break 'sizes;
+                    }
+                    let unplaced = (house.is_none() && settings.houses != Some(false)).then_some(
+                        if contained {
+                            HouseUnplacedCode::ClearanceBlocked
+                        } else {
+                            HouseUnplacedCode::NoGridFit
+                        },
+                    );
+                    let candidate = AcceptedParcel {
+                        slot,
+                        house,
+                        unplaced,
+                    };
+                    if candidate.house.is_some()
+                        || settings.houses == Some(false)
+                        || explicit.is_some()
+                        || depth < 5.0 * f64::from(settings.min_depth)
+                    {
+                        accepted = Some(candidate);
+                        break;
+                    }
+                }
+                if let Some(candidate) = accepted {
+                    if candidate.house.is_some() {
+                        if generated.house_count == MAX_NEW_HOUSES {
+                            generated.limit = Some(GenerationLimit::NewHouses);
+                            return Ok(generated);
                         }
+                        if generated.cell_count + candidate.slot.width * candidate.slot.depth
+                            > MAX_NEW_CELLS
+                        {
+                            generated.limit = Some(GenerationLimit::NewCells);
+                            return Ok(generated);
+                        }
+                        generated.house_count += 1;
+                        generated.cell_count += candidate.slot.width * candidate.slot.depth;
                     }
-                }
-                if house.is_some() {
-                    if generated.house_count == MAX_NEW_HOUSES {
-                        generated.limit = Some(GenerationLimit::NewHouses);
-                        return Ok(generated);
+                    if let ParcelSource::Road { end, .. } = candidate.slot.source {
+                        cursor = end * table.total_length();
                     }
-                    if generated.cell_count + slot.width * slot.depth > MAX_NEW_CELLS {
-                        generated.limit = Some(GenerationLimit::NewCells);
-                        return Ok(generated);
+                    accepted_index.insert(
+                        &SceneObject::Parcel(candidate.slot.parcel(String::new())),
+                        generated.parcels.len(),
+                    );
+                    generated.parcels.push(candidate);
+                } else {
+                    if let Some(diagnostic) = diagnostic {
+                        generated.diagnostics.push(diagnostic);
                     }
-                    generated.house_count += 1;
-                    generated.cell_count += slot.width * slot.depth;
-                }
-                let unplaced =
-                    (house.is_none() && settings.houses != Some(false)).then_some(if contained {
-                        HouseUnplacedCode::ClearanceBlocked
+                    // A failed wide plot must not hide a usable stretch behind it.
+                    cursor = if manual_empty {
+                        preferred_end
                     } else {
-                        HouseUnplacedCode::NoGridFit
-                    });
-                accepted_index.insert(&SceneObject::Parcel(parcel), generated.parcels.len());
-                generated.parcels.push(AcceptedParcel {
-                    slot,
-                    house,
-                    unplaced,
-                });
+                        start + 2.5
+                    };
+                }
                 slot_index += 1;
             }
         }

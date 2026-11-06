@@ -1,6 +1,6 @@
 //! Exact SQL work and atomic author/index/history behavior for the storage delta.
 use super::*;
-use crate::atlas::application::storage_tests;
+use crate::atlas::application::application_test_support;
 use crate::atlas::ErrorCategory;
 use serde_json::{json, Value};
 
@@ -95,7 +95,7 @@ fn reset(app: &AtlasApplication) {
     app.db.execute("DELETE FROM cell_audit", []).unwrap();
 }
 fn assert_index(app: &mut AtlasApplication) {
-    for object in storage_tests::objects(app) {
+    for object in application_test_support::objects(app) {
         let FullObject::House(house) = object else {
             continue;
         };
@@ -151,11 +151,11 @@ fn assert_mutations(app: &AtlasApplication, mut expected: Vec<Mutation>) {
     assert_eq!(audit(app), expected);
 }
 fn checked_action(app: &mut AtlasApplication, intent: Value, expected: Vec<Mutation>) {
-    let before = storage_tests::objects(app);
+    let before = application_test_support::objects(app);
     reset(app);
     commit(app, intent);
     assert_mutations(app, expected.clone());
-    let after = storage_tests::objects(app);
+    let after = application_test_support::objects(app);
     assert_index(app);
     reset(app);
     app.request("history", json!({"version":app.status(),"redo":false}))
@@ -180,13 +180,13 @@ fn checked_action(app: &mut AtlasApplication, intent: Value, expected: Vec<Mutat
         })
         .collect();
     assert_mutations(app, reverse);
-    assert_eq!(storage_tests::objects(app), before);
+    assert_eq!(application_test_support::objects(app), before);
     assert_index(app);
     reset(app);
     app.request("history", json!({"version":app.status(),"redo":true}))
         .unwrap();
     assert_mutations(app, expected);
-    assert_eq!(storage_tests::objects(app), after);
+    assert_eq!(application_test_support::objects(app), after);
     assert_index(app);
 }
 #[test]
@@ -303,11 +303,11 @@ fn index_update_and_delete_failures_rollback_all_author_and_history_state() {
     for operation in ["UPDATE", "DELETE"] {
         let (mut app, id) = fixture(5);
         reset(&app);
-        let before = storage_tests::dump(&app);
+        let before = application_test_support::dump(&app);
         app.db.execute_batch(&format!("CREATE TEMP TRIGGER fail_delta BEFORE {operation} ON local_cells BEGIN SELECT RAISE(ABORT,'injected index delta'); END;")).unwrap();
         let error=app.request("commit",json!({"version":app.status(),"intent":room(&id,json!({"kind":"erase","floor":0,"cells":[[2,0]]}))})).unwrap_err();
         assert_eq!(error.category, ErrorCategory::Storage);
-        assert_eq!(storage_tests::dump(&app), before);
+        assert_eq!(application_test_support::dump(&app), before);
         assert!(audit(&app).is_empty());
         app.db.execute_batch("DROP TRIGGER fail_delta").unwrap();
         assert_index(&mut app);
@@ -329,7 +329,7 @@ fn missing_index_rows_are_storage_errors_not_silent_repair() {
             )
             .unwrap();
         reset(&app);
-        let before = storage_tests::dump(&app);
+        let before = application_test_support::dump(&app);
         let intent = if operation == "update" {
             json!({"kind":"assign","floor":0,"cells":[[0,0]],"roomId":"room-2"})
         } else {
@@ -342,7 +342,7 @@ fn missing_index_rows_are_storage_errors_not_silent_repair() {
             )
             .unwrap_err();
         assert_eq!(error.category, ErrorCategory::Storage);
-        assert_eq!(storage_tests::dump(&app), before);
+        assert_eq!(application_test_support::dump(&app), before);
         assert!(audit(&app).is_empty());
     }
 }

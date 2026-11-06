@@ -1,32 +1,35 @@
+declare global {
+  interface Window {
+    transformAggregate: import("../../src/atlas/model").Detail;
+    aggregateBefore: import("../../src/atlas/model").Detail;
+    offscreenCells: import("../../src/atlas/model").Detail["cells"] | undefined;
+  }
+}
+import { editorUrl } from "../support/browserServer";
 import type { Page } from "@playwright/test";
 import type { Intent, Status } from "../../src/atlas/model";
 import { commit, history as coreHistory } from "../support/editor";
 import { expect, test } from "../support/fixture";
 
 async function start(page: Page) {
-  await page.goto("http://127.0.0.1:1420/tests/support/atlas.html");
+  await page.goto(editorUrl);
   const setup = await page.evaluate(async () => {
-    const result = await window.atlasCore<{ objects: { id: string }[] }>(
-      "commit",
-      {
-        version: await window.atlasCore("status", {}),
-        intent: {
-          type: "createHouse",
-          parcelId: null,
-          transform: { x: 0, y: 0, angle: 0 },
-          width: 130,
-          depth: 4,
-        },
+    const result = await window.atlasCore("commit", {
+      version: await window.atlasCore("status", {}),
+      intent: {
+        type: "createHouse",
+        parcelId: null,
+        transform: { x: 0, y: 0, angle: 0 },
+        width: 130,
+        depth: 4,
       },
-    );
+    });
     return {
       active: result.objects[0].id,
-      status: await window.atlasCore<Status>("status", {}),
+      status: await window.atlasCore("status", {}),
     };
   });
-  await page.goto(
-    "http://127.0.0.1:1420/tests/support/atlas.html?presentation",
-  );
+  await page.goto(`${editorUrl}?presentation`);
   await page.evaluate(
     (input) =>
       window.atlasPresentationSet({ ...input, bounds: [0, 0, 700, 20] }),
@@ -77,7 +80,7 @@ test("cell and halo changes refetch on commit, undo and redo while other tiles s
               version: await window.atlasCore("status", {}),
               redo,
             });
-            return window.atlasCore<Status>("status", {});
+            return window.atlasCore("status", {});
           }, step === "redo");
     await publish(page, status);
     const calls = await tileCalls(page);
@@ -106,7 +109,7 @@ test("metadata, transform, floors, deep projection and revision gaps use the rig
 }) => {
   const active = await start(page);
   await page.evaluate(() => {
-    (window as any).transformAggregate = window.atlasPresentation.value!.detail;
+    window.transformAggregate = window.atlasPresentation.value!.detail!;
   });
   const room = await page.evaluate(
     () => window.atlasPresentation.value!.detail!.rooms[0].id,
@@ -146,7 +149,7 @@ test("metadata, transform, floors, deep projection and revision gaps use the rig
 
   expect(
     await page.evaluate(() => {
-      const before = (window as any).transformAggregate;
+      const before = window.transformAggregate;
       const detail = window.atlasPresentation.value!.detail!;
       return (
         detail.cells === before.cells &&
@@ -163,9 +166,7 @@ test("metadata, transform, floors, deep projection and revision gaps use the rig
       buildingId: active,
       intent: { kind: "draw", floor, cells: [[1, 1]] },
     });
-  const current = await page.evaluate(() =>
-    window.atlasCore<Status>("status", {}),
-  );
+  const current = await page.evaluate(() => window.atlasCore("status", {}));
   await page.evaluate(
     (status) => window.atlasPresentationSet({ status, floor: 1, lower: true }),
     current,
@@ -309,7 +310,7 @@ test("aggregate identity follows tile geometry while metadata and camera remain 
 }) => {
   const active = await start(page);
   await page.evaluate(() => {
-    (window as any).aggregateBefore = window.atlasPresentation.value!.detail;
+    window.aggregateBefore = window.atlasPresentation.value!.detail!;
   });
   const room = await page.evaluate(
     () => window.atlasPresentation.value!.detail!.rooms[0].id,
@@ -324,7 +325,7 @@ test("aggregate identity follows tile geometry while metadata and camera remain 
   );
   expect(
     await page.evaluate(() => {
-      const before = (window as any).aggregateBefore;
+      const before = window.aggregateBefore;
       const detail = window.atlasPresentation.value!.detail!;
       return (
         detail.cells === before.cells &&
@@ -339,14 +340,14 @@ test("aggregate identity follows tile geometry while metadata and camera remain 
       version: await window.atlasCore("status", {}),
       redo: false,
     });
-    return window.atlasCore<Status>("status", {});
+    return window.atlasCore("status", {});
   });
   await publish(page, undone);
   expect(
     await page.evaluate(
       () =>
         window.atlasPresentation.value!.detail!.cells ===
-        (window as any).aggregateBefore.cells,
+        window.aggregateBefore.cells,
     ),
   ).toBe(true);
   await page.evaluate(() =>
@@ -365,7 +366,7 @@ test("aggregate identity follows tile geometry while metadata and camera remain 
     await page.evaluate(
       () =>
         window.atlasPresentation.value!.detail!.cells ===
-        (window as any).aggregateBefore.cells,
+        window.aggregateBefore.cells,
     ),
   ).toBe(true);
   await page.evaluate(() =>
@@ -384,7 +385,7 @@ test("aggregate identity follows tile geometry while metadata and camera remain 
     await page.evaluate(
       () =>
         window.atlasPresentation.value!.detail!.cells !==
-        (window as any).aggregateBefore.cells,
+        window.aggregateBefore.cells,
     ),
   ).toBe(true);
   await page.evaluate(() =>
@@ -404,11 +405,11 @@ test("aggregate identity follows tile geometry while metadata and camera remain 
     await page.evaluate(
       () =>
         window.atlasPresentation.value!.detail!.cells ===
-        (window as any).aggregateBefore.cells,
+        window.aggregateBefore.cells,
     ),
   ).toBe(true);
   await page.evaluate(() => {
-    (window as any).aggregateBefore = window.atlasPresentation.value!.detail;
+    window.aggregateBefore = window.atlasPresentation.value!.detail!;
   });
   await publish(
     page,
@@ -422,7 +423,7 @@ test("aggregate identity follows tile geometry while metadata and camera remain 
     await page.evaluate(
       () =>
         window.atlasPresentation.value!.detail!.cells !==
-          (window as any).aggregateBefore.cells &&
+          window.aggregateBefore.cells &&
         !window.atlasPresentation.value!.detail!.cells.some(
           (c) => c.x === 128 && c.y === 2,
         ),
@@ -433,10 +434,10 @@ test("aggregate identity follows tile geometry while metadata and camera remain 
 test("offscreen active house summary and detail follow changes and history", async ({
   page,
 }) => {
-  await page.goto("http://127.0.0.1:1420/tests/support/atlas.html");
+  await page.goto(editorUrl);
   const setup = await page.evaluate(async () => {
     const create = async (x: number) =>
-      window.atlasCore<{ objects: { id: string }[] }>("commit", {
+      window.atlasCore("commit", {
         version: await window.atlasCore("status", {}),
         intent: {
           type: "createHouse",
@@ -451,12 +452,10 @@ test("offscreen active house summary and detail follow changes and history", asy
     return {
       active,
       other,
-      status: await window.atlasCore<Status>("status", {}),
+      status: await window.atlasCore("status", {}),
     };
   });
-  await page.goto(
-    "http://127.0.0.1:1420/tests/support/atlas.html?presentation",
-  );
+  await page.goto(`${editorUrl}?presentation`);
   await page.evaluate(
     ({ active, status }) =>
       window.atlasPresentationSet({
@@ -468,8 +467,7 @@ test("offscreen active house summary and detail follow changes and history", asy
   );
   await expect(page.locator("output")).toHaveText("fresh");
   await page.evaluate(() => {
-    (window as any).offscreenCells =
-      window.atlasPresentation.value!.detail!.cells;
+    window.offscreenCells = window.atlasPresentation.value!.detail!.cells;
   });
   const snapshot = () =>
     page.evaluate((id) => {
@@ -484,7 +482,7 @@ test("offscreen active house summary and detail follow changes and history", asy
           revision: value.detail.status.revision,
           cells: value.detail.cells.length,
         },
-        reused: value.detail?.cells === (window as any).offscreenCells,
+        reused: value.detail?.cells === window.offscreenCells,
         sceneRevision: value.scene.status.revision,
       };
     }, setup.active);
@@ -614,29 +612,24 @@ test("offscreen active house summary and detail follow changes and history", asy
 test("held offscreen scene cannot publish stale summary or claim readiness", async ({
   page,
 }) => {
-  await page.goto("http://127.0.0.1:1420/tests/support/atlas.html");
+  await page.goto(editorUrl);
   const setup = await page.evaluate(async () => {
-    const result = await window.atlasCore<{ objects: { id: string }[] }>(
-      "commit",
-      {
-        version: await window.atlasCore("status", {}),
-        intent: {
-          type: "createHouse",
-          parcelId: null,
-          transform: { x: 0, y: 0, angle: 0.4 },
-          width: 2,
-          depth: 2,
-        },
+    const result = await window.atlasCore("commit", {
+      version: await window.atlasCore("status", {}),
+      intent: {
+        type: "createHouse",
+        parcelId: null,
+        transform: { x: 0, y: 0, angle: 0.4 },
+        width: 2,
+        depth: 2,
       },
-    );
+    });
     return {
       active: result.objects[0].id,
-      status: await window.atlasCore<Status>("status", {}),
+      status: await window.atlasCore("status", {}),
     };
   });
-  await page.goto(
-    "http://127.0.0.1:1420/tests/support/atlas.html?presentation",
-  );
+  await page.goto(`${editorUrl}?presentation`);
   await page.evaluate(
     ({ active, status }) =>
       window.atlasPresentationSet({
@@ -694,10 +687,10 @@ test("held offscreen scene cannot publish stale summary or claim readiness", asy
 test("offscreen cellar-only house uses its transform point for scene invalidation", async ({
   page,
 }) => {
-  await page.goto("http://127.0.0.1:1420/tests/support/atlas.html");
+  await page.goto(editorUrl);
   const setup = await page.evaluate(async () => {
-    const commit = async (intent: object) =>
-      window.atlasCore<{ objects: { id: string }[] }>("commit", {
+    const commit = async (intent: import("../../src/atlas/model").Intent) =>
+      window.atlasCore("commit", {
         version: await window.atlasCore("status", {}),
         intent,
       });
@@ -729,11 +722,9 @@ test("offscreen cellar-only house uses its transform point for scene invalidatio
         ],
       },
     });
-    return { active, status: await window.atlasCore<Status>("status", {}) };
+    return { active, status: await window.atlasCore("status", {}) };
   });
-  await page.goto(
-    "http://127.0.0.1:1420/tests/support/atlas.html?presentation",
-  );
+  await page.goto(`${editorUrl}?presentation`);
   await page.evaluate(
     ({ active, status }) =>
       window.atlasPresentationSet({

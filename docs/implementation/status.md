@@ -1,52 +1,37 @@
 # Aktueller Stand
 
-Atlas V7, Dateiformat 13, Generierungsrezept 3. Stand: 4. November 2026.
-Straßenrauheit, Übersichtsbearbeitung, Landschaftsassets und Höhenbearbeitung
-sind implementiert. Die Bereinigung erhält diese Funktionen und vorhandene
-Arbeitsänderungen.
+Atlas V7, Dateiformat 18, Generierungsrezept 4. Stand: 6. November 2026.
+[README](../../README.md) enthält Einrichtung und Abnahme, die
+[Architektur](../architecture.md) Zuständigkeiten und der
+[Produktvertrag](../product-contract.md) Verhalten und Grenzen.
 
-[README](../../README.md): Einrichtung und Abnahme;
-[Architektur](../architecture.md): Zuständigkeiten;
-[Produktvertrag](../product-contract.md): Verhalten, Format und Grenzen.
+Die Ansicht „Raum“ bleibt ein äußerer Nahzoom mit explizitem Innenraumeinstieg.
+Kontexthilfe und Rückkehrbezeichnung sind angepasst; Höhen und Gewässer zeigen
+Weltdurchmesser und Autorenraster einschließlich des Hinweises für kleine Pinsel.
+Der Canvas-Besitzer verwendet einen sitzungsgebundenen, begrenzten Cache für
+exakte Außengeometrie; die Speichergröße ist eine Schätzung, keine Messung des
+nativen `Path2D`-Speichers. Bearbeitungsdaten bleiben unverändert.
 
-## Bereinigt
+Die direkte Prüfung bestätigte Typen, 39 gezielte Unit-Tests, alle fünf
+Raum-Browsertests und identische Canvas-Pixel in 84 Vergleichen mit der vorherigen
+Darstellung. Der Webbuild der Implementierung bestand; danach wurden ausschließlich
+Tests und dieser Prüfstand geändert. Die abschließende Typ- und Formatprüfung bestand.
 
-- Werkzeugwerte und Aktionen kommen direkt aus `useEditorTools`; die zusätzliche
-  Prop-Übersetzung entfällt. Namen/Symbole stehen gemeinsam in `ToolOptions`.
-- Zwölf Auswahlfelder teilen `SelectField`; Fachaktionen und Validierung bleiben
-  bei ihren Besitzern. Neun reine Rust-Weiterleitungsfunktionen entfallen.
-- `.cargo/config.toml` hält gemeinsame Ressourcenlimits für direkte Cargo-, npm-
-  und Tauri-Aufrufe. Vitest und Playwright behalten ihre Workerlimits.
-  Der Vertragsgenerator formatiert direkt im Speicher ohne zusätzlichen Prozess.
-- Architektur ist nach Besitzern gegliedert, der Produktvertrag nach Bedienung,
-  Planung und Nebenläufigkeit. Es bleiben genau vier maßgebliche Dokumente.
+Ein beobachteter Werkzeugwechsel verkleinert die Karte und löst einen Ladezustand
+aus; sofort folgende Testgesten kamen teils vor der Bearbeitungsfreigabe an.
+Die betroffenen Tests warten nun ausdrücklich auf Layout, Darstellung und
+veröffentlichten Stand. Eingaben, Freigaben und Zeichenplanung im Produkt bleiben
+unverändert. Danach bestanden alle 22 gezielten Fälle einschließlich Raum sowie
+alle 65 Werkzeugregressionen. Der Navigations-/Datei-/Kontextlauf bestand 38 von
+39 Tests: Der bereits zuvor wechselhaft ausgefallene Parzellentest mit Hauszeichnen
+und Alt-Eingabe lieferte erneut keinen Hausowner. Dieser Restbefund bleibt offen;
+eine saubere Gesamtabnahme ist damit nicht erreicht. Frühere Fehlläufe und die
+begrenzte Korrektur bleiben unter `src-tauri/target/cleanup/lod-review/lod00/`
+belegt; aktuelle Prüfung und Korrektur stehen in `F/coordinator/` und `G/`.
 
-## Prüfstand
-
-`npm run check:all` bestanden: Transportabgleich (91 Dateien), Typprüfung,
-186 TypeScript-Tests, 224 Rusttests (192 Unit-, 16 Dokument-, elf Parzellen-,
-fünf Testservertests), Clippy, Formatprüfung, Webbuild und 163 Browsertests.
-Zwei Rusttests und zwei Browser-Großstadtbenchmarks sind regulär ignoriert;
-der Rust-Transportexport wird separat ausgeführt. Der abschließend vereinfachte
-Vertragsgenerator wurde nochmals gegen alle 91 Dateien geprüft.
-
-Native Abnahme wurde für diese Bereinigung nicht wiederholt. Die letzte
-Linux/WebKitGTK-Abnahme bei DPR 1 deckt Höhenpinsel, Escape, Undo/Redo,
-Hausplattform sowie Speichern/Wiederöffnen einschließlich SQLite-Prüfung ab.
-Native Landschafts-, Mehr-DPR- und vollständige Großstadtabnahme bleiben offen.
-
-## Offene Grenzen und nächste Abnahme
-
-Die Stadtansicht bleibt ein Prototyp. Offen: Öffnungszeit, Fit-/Übersichtsabfragen,
-Beschriftungen gegenüber Bedienhinweisen und die 250.000er-Browserabnahme.
-Die bisherige 100.000er-Messung erreichte etwa 16,8 ms beim Verschieben im 95. Perzentil, aber nicht eine Sekunde bis zur ersten Übersicht. Große Städte
-mit Höhenrelief wurden nicht gesondert vermessen. Landschaft bietet weiterhin
-keine eigenen Assetimporte, Einzelassetbearbeitung oder Pinselradierer.
-
-Nächster Schritt: gemeinsame native Nutzung von Landschaft und Höhen bei mehreren
-Pixeldichten sowie Geländeperformance auf großen Stadtbeständen prüfen.
-
-Belege der Bereinigung: `src-tauri/target/cleanup/simplify-2026-11-04/`;
-Browserberichte: `src-tauri/target/diagnostics/playwright-<run>/`.
-Vorherige native/Messbelege: `src-tauri/target/diagnostics/heights-2026-11-04/`,
-`scenery-2026-11-04/` und `city-2026-11-04/` unter demselben Diagnoseverzeichnis.
+Die begonnene Phase-4-Zeichenplanung und ihre Gelände-/Flusscaches sind nicht
+insgesamt abgenommen. Die frühere Release-Browsermessung für Format 18 ist keine
+bestandene Performanceabnahme; vollständiger Browserlauf, aktuelle große
+Performanceprüfung und native Bedienabnahme gemäß README stehen aus. Der
+Raumstand ist als begrenzter Checkpoint prüfbar; nächster technischer Handoff ist
+der offene Parzellentest und die weitere LOD-Prüfung unter diesen Grenzen.

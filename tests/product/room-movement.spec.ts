@@ -1,3 +1,4 @@
+import { settled } from "../support/editor";
 import type { Page } from "@playwright/test";
 import {
   authorSnapshot,
@@ -97,7 +98,7 @@ test("selected room self-overlap and separated endpoints retain one house, prima
   await end(page, 0, 4, false);
   const preview = await page.evaluate(
     async ({ id, room }) =>
-      window.atlasCore<any>("preview", {
+      window.atlasCore("preview", {
         version: await window.atlasCore("status", {}),
         intent: {
           type: "room",
@@ -228,8 +229,8 @@ test("accepted room move remains immutable through selection and tool changes wh
       ],
     },
   });
-  expect((commits[1].args.version as any).revision).toBe(
-    (commits[0].args.version as any).revision + 1,
+  expect(commits[1].args.version.revision).toBe(
+    commits[0].args.version.revision + 1,
   );
   await ready(page);
   expect((await tile(page, house.id)).cells).toContainEqual(
@@ -240,6 +241,7 @@ test("accepted room move remains immutable through selection and tool changes wh
 test("repeated motion within the same snapped room displacement does not duplicate a preview", async ({
   page,
 }) => {
+  await page.clock.install();
   await setup(page);
   const p = await screen(page, [9.8, 7.5]);
   await page.mouse.move(p.x, p.y);
@@ -247,7 +249,8 @@ test("repeated motion within the same snapped room displacement does not duplica
   await page.mouse.move(p.x + 8, p.y);
   await expect.poll(async () => (await calls(page, "preview")).length).toBe(1);
   await page.mouse.move(p.x + 9, p.y);
-  await page.waitForTimeout(130);
+  await page.clock.runFor(130);
+  await settled(page);
   expect(await calls(page, "preview")).toHaveLength(1);
   await page.keyboard.press("Escape");
   await page.mouse.up();

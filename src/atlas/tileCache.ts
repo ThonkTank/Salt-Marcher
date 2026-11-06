@@ -19,8 +19,8 @@ export function tileAffected(
 }
 
 // Bound dense and empty tiles separately.
-export const TILE_CACHE_ENTRIES = 32;
-export const TILE_CACHE_RECORDS = 262_144;
+const TILE_CACHE_ENTRIES = 32;
+const TILE_CACHE_RECORDS = 262_144;
 export type TileContext = {
   session: string;
   revision: number;

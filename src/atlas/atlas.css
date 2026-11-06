@@ -236,10 +236,12 @@
 }
 .atlas-field-pair {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
 }
-.atlas-field-pair input {
+.atlas-field-pair > *,
+.atlas-field-pair input,
+.atlas-field-pair select {
   width: 100%;
   min-width: 0;
 }
@@ -351,4 +353,103 @@
 }
 .atlas-inspector-content > button {
   width: 100%;
+}
+
+.ground-buttons {
+  display: flex;
+  gap: 6px;
+}
+.ground-buttons button {
+  flex: 1;
+  min-width: 0;
+}
+.ground-buttons button[aria-pressed="true"],
+.atlas-settings > button[aria-pressed="true"] {
+  outline: 2px solid #b6c695;
+  outline-offset: -2px;
+}
+.ground-tip {
+  flex-shrink: 0;
+  display: block;
+  width: 32px;
+  height: 32px;
+  margin: 3px auto 5px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #dce8c5, #dce8c500 72%);
+}
+.ground-tip.hard {
+  background: #dce8c5;
+}
+.ground-tip.cloud {
+  background:
+    radial-gradient(ellipse at 35% 35%, #dce8c5, transparent 43%),
+    radial-gradient(ellipse at 65% 60%, #dce8c5, transparent 50%),
+    radial-gradient(ellipse at 30% 70%, #dce8c5aa, transparent 40%);
+}
+.ground-swatch {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  margin-right: 4px;
+  border-radius: 50%;
+}
+.ground-slider input[type="range"] {
+  width: 100%;
+}
+.ground-buttons[aria-label="Pinselspitze"] button {
+  flex-direction: column;
+  gap: 0;
+}
+
+.region-panel fieldset {
+  border: 0;
+  padding: 0;
+  min-width: 0;
+  display: grid;
+  gap: 10px;
+}
+.region-list {
+  display: grid;
+  gap: 4px;
+  max-height: 220px;
+  overflow: auto;
+}
+.region-panel details button {
+  display: block;
+  width: 100%;
+  margin: 4px 0;
+}
+.region-panel input[type="checkbox"] {
+  width: auto;
+}
+
+.atlas-river-controls {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
+
+.atlas-scale {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 11px;
+  gap: 3px;
+}
+.atlas-scale > span {
+  display: block;
+  border: solid currentColor;
+  border-width: 0 1px 2px;
+  height: 5px;
+}
+
+.atlas-navigation select {
+  width: 180px;
+  max-width: 100%;
+  font-size: 12px;
+  padding: 5px;
+}
+.atlas-map-help {
+  bottom: 100px;
 }

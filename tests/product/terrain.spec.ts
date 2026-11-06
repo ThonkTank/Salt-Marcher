@@ -1,19 +1,18 @@
-import { test, expect } from "../support/fixture";
 import {
-  ready,
-  selectObject,
-  url,
-  dragWorld,
-  status,
-  screen,
   calls,
-  scene,
   commit,
+  dragWorld,
+  ready,
+  scene,
+  screen,
+  selectObject,
+  status,
+  url,
 } from "../support/editor";
-import type { TerrainResponse } from "../../src/atlas/generated/TerrainResponse";
+import { expect, test } from "../support/fixture";
 const terrain = (page: import("@playwright/test").Page) =>
   page.evaluate(() =>
-    window.atlasCore<TerrainResponse>("terrainTiles", {
+    window.atlasCore("terrainTiles", {
       level: 0,
       tiles: [[0, 0]],
     }),
@@ -24,7 +23,7 @@ test("height brush previews, commits once, cancels and survives undo/redo", asyn
   await page.goto(url);
   await ready(page);
   await page.getByRole("button", { name: "Höhen", exact: true }).click();
-  await expect(page.getByLabel("Pinselmodus")).toHaveValue("raise");
+  await expect(page.getByLabel("Pinselmodus")).toHaveValue("land");
   await dragWorld(page, [20, 30], [50, 30], false);
   await expect
     .poll(async () =>
@@ -40,7 +39,7 @@ test("height brush previews, commits once, cancels and survives undo/redo", asyn
   await expect.poll(async () => (await status(page)).revision).toBe(1);
   await ready(page);
   const raised = (await terrain(page)).tiles[0].heights;
-  expect(Math.max(...raised)).toBeGreaterThan(10);
+  expect(Math.max(...raised)).toBe(10);
   expect(
     (await calls(page, "commit")).filter(
       (c) =>
@@ -50,7 +49,7 @@ test("height brush previews, commits once, cancels and survives undo/redo", asyn
   ).toHaveLength(1);
   await page.getByRole("button", { name: "Rückgängig", exact: true }).click();
   await ready(page);
-  expect(Math.max(...(await terrain(page)).tiles[0].heights)).toBe(10);
+  expect(Math.max(...(await terrain(page)).tiles[0].heights)).toBe(-100);
   await page.getByRole("button", { name: "Wiederholen", exact: true }).click();
   await ready(page);
   expect((await terrain(page)).tiles[0].heights).toEqual(raised);
@@ -73,9 +72,11 @@ test("water allows flooded building and foundation edits; brush works in overvie
   await page.goto(url);
   await ready(page);
   await page.getByRole("button", { name: "Höhen", exact: true }).click();
-  await page.getByLabel("Wasserstand (Fuß)").fill("30");
-  await page.getByLabel("Wasserstand (Fuß)").blur();
-  await expect.poll(async () => (await terrain(page)).waterLevel).toBe(30);
+  await page.getByRole("button", { name: "Gewässer", exact: true }).click();
+  await dragWorld(page, [40, 40], [50, 40]);
+  await expect
+    .poll(async () => (await terrain(page)).tiles[0].waters.length)
+    .toBeGreaterThan(0);
   await ready(page);
   const made = await commit(page, {
     type: "createHouse",
@@ -94,6 +95,11 @@ test("water allows flooded building and foundation edits; brush works in overvie
   const p = await screen(page, [40, 40]);
   await page.mouse.move(p.x, p.y);
   await page.mouse.wheel(0, 1300);
+  // Wheel dispatch returns before the camera changes; wait for the requested
+  // overview before testing readiness and admitting the brush gesture.
+  await expect(
+    page.getByRole("button", { name: "Zum Bearbeiten hineinzoomen" }),
+  ).toBeVisible();
   await ready(page);
   const rev = (await status(page)).revision;
   await dragWorld(page, [40, 40], [80, 40]);
@@ -120,7 +126,7 @@ test("relief, coast and adjustable house foundation are visible", async ({
     },
   });
   await commit(page, {
-    type: "terrainStroke",
+    type: "waterStroke",
     brush: {
       mode: "lower",
       radius: 55,

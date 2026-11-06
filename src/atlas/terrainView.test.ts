@@ -1,3 +1,4 @@
+import { decideLod } from "./lod";
 import { TerrainCache } from "./presentationCache";
 import { describe, it, expect } from "vitest";
 import { terrainRequest, heightAt } from "./terrainView";
@@ -6,6 +7,7 @@ import type { Status } from "./model";
 import type { TerrainResponse } from "./generated/TerrainResponse";
 const status = { sessionId: "terrain-test", revision: 0 } as Status;
 const tile = {
+  waters: [],
   foundationTops: [] as [string, number][],
   x: 0,
   y: 0,
@@ -19,7 +21,6 @@ describe("terrain presentation", () => {
     const view: TerrainResponse = {
       status,
       level: 0,
-      waterLevel: 0,
       tiles: [tile],
     };
     expect(heightAt(view, [2.5, 2.5])).toBe(1);
@@ -40,7 +41,7 @@ describe("terrain presentation", () => {
         1000 / scale,
         500 / scale,
       ];
-      const args = terrainRequest(bounds, scale);
+      const args = terrainRequest(bounds, decideLod(scale).terrainLevel);
       expect(args.tiles.length).toBeGreaterThan(0);
       expect(args.tiles.length).toBeLessThanOrEqual(64);
       expect(args.level).toBeLessThanOrEqual(21);
@@ -54,34 +55,55 @@ describe("terrain presentation", () => {
     } as unknown as AtlasClient;
     const cache = new TerrainCache();
     let wanted = true;
-    const first = cache.load(client, status, [0, 0, 20, 20], 3.2, () => wanted);
+    const first = cache.load(client, status, [0, 0, 20, 20], 0, () => wanted);
     await Promise.resolve();
     await Promise.resolve();
     expect(requests).toHaveLength(1);
     wanted = false;
-    requests[0].resolve({ status, level: 0, waterLevel: 0, tiles: [tile] });
+    requests[0].resolve({ status, level: 0, tiles: [tile] });
     expect(await first).toBeNull();
     const nextStatus = { ...status, revision: 1 };
-    const next = cache.load(
-      client,
-      nextStatus,
-      [0, 0, 20, 20],
-      3.2,
-      () => true,
-    );
+    const next = cache.load(client, nextStatus, [0, 0, 20, 20], 0, () => true);
     await Promise.resolve();
     await Promise.resolve();
     requests[1].resolve({
       status: nextStatus,
       level: 0,
-      waterLevel: 12,
       tiles: [tile],
     });
-    expect((await next)?.waterLevel).toBe(12);
+    expect((await next)?.status).toEqual(nextStatus);
     expect(
-      (await cache.load(client, nextStatus, [0, 0, 20, 20], 3.2, () => true))
+      (await cache.load(client, nextStatus, [0, 0, 20, 20], 0, () => true))
         ?.tiles[0],
     ).toEqual(tile);
     expect(requests).toHaveLength(2);
   });
+});
+
+it("samples independent neighboring tiles across negative coordinates and LOD changes", () => {
+  for (const level of [0, 8]) {
+    const step = 5 * 2 ** level;
+    const tiles = Array.from({ length: 64 }, (_, i) => {
+      const x = (i % 8) - 4,
+        y = Math.floor(i / 8) - 4;
+      return {
+        ...tile,
+        x,
+        y,
+        heights: Array.from(
+          { length: 1089 },
+          (_, j) =>
+            ((x * 32 + (j % 33)) * 0.25 + (y * 32 + Math.floor(j / 33)) * 0.5) *
+            step,
+        ),
+      };
+    });
+    const view = { status, level, tiles };
+    for (const tile of tiles) {
+      const x = (tile.x * 32 + 0.25) * step;
+      const y = (tile.y * 32 + 31.75) * step;
+      expect(heightAt(view, [x, y])).toBeCloseTo(x * 0.25 + y * 0.5);
+    }
+    expect(heightAt(view, [4 * 32 * step, 0])).toBeNull();
+  }
 });

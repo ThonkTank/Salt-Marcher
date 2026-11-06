@@ -1,3 +1,12 @@
+import type { LodDecision } from "./lod";
+import { riverHit } from "./riverView";
+import type { RiverAction } from "./generated/RiverAction";
+import type { River } from "./generated/River";
+import type { RiverView } from "./generated/RiverView";
+import type { RiverSettings } from "./generated/RiverSettings";
+import type { TerrainFollow } from "./generated/TerrainFollow";
+import type { GroundBrush } from "./generated/GroundBrush";
+import type { GroundArgs } from "./generated/GroundArgs";
 import type { Brush } from "./generated/Brush";
 import type { MapFeature } from "./generated/MapFeature";
 import type { RoadRoughness } from "./generated/RoadRoughness";
@@ -40,8 +49,9 @@ import {
   parcelTransform,
   type parcelVisibility,
 } from "./parcelEditor";
-import type { Tool } from "./editorSelection";
+import type { SelectionEvent, Tool } from "./editorSelection";
 import {
+  isLiveBrush,
   workflowDraft,
   workflowPointer,
   workflowPreview,
@@ -71,13 +81,27 @@ type Base = { pointer: number; start: WorldPoint; screen: ScreenPoint };
 type Interior = { house: House; floor: number };
 export type Gesture = Base &
   (
+    | {
+        kind: "region";
+        id: string;
+        points: WorldPoint[];
+        radius: number;
+        erase: boolean;
+      }
+    | {
+        kind: "river";
+        index: number;
+        intent: Extract<Intent, { type: "riverEdit" }>;
+      }
     | { kind: "pan"; camera: Camera }
+    | { kind: "ground"; brush: GroundBrush; view?: GroundArgs; started: number }
     | {
         kind: "scenery";
         brush: import("./generated/SceneryBrush").SceneryBrush;
       }
     | {
         kind: "terrain";
+        water?: boolean;
         brush: Brush;
         view?: import("./generated/TerrainArgs").TerrainArgs;
       }
@@ -146,6 +170,7 @@ export function evaluateGesture(
     screen: ScreenPoint;
     snapped: WorldPoint;
     finish: boolean;
+    time?: number;
   },
 ): Evaluation | null {
   if (g.pointer !== input.pointer) return null;
@@ -158,13 +183,60 @@ export function evaluateGesture(
     camera: null,
     error: null,
   };
+  if (g.kind === "river") {
+    const intent = structuredClone(g.intent);
+    if (intent.action.kind !== "put") return null;
+    intent.action.nodes[g.index].point = p;
+    result.gesture = { ...g, intent };
+    result.intent = intent;
+    return result;
+  }
+  if (g.kind === "region") {
+    const gesture = { ...g, points: [...g.points, p] };
+    result.gesture = gesture;
+    result.intent = {
+      type: "regionStroke",
+      id: g.id,
+      points: gesture.points,
+      radius: g.radius,
+      erase: g.erase,
+    };
+    return result;
+  }
+  if (g.kind === "ground") {
+    const elapsed = Math.max(
+      g.brush.points[g.brush.points.length - 1][2],
+      (input.time ?? g.started) - g.started,
+    );
+    const gesture = {
+      ...g,
+      brush: {
+        ...g.brush,
+        points: [
+          ...g.brush.points,
+          [p[0], p[1], elapsed] as [number, number, number],
+        ],
+      },
+    };
+    result.gesture = gesture;
+    result.intent = {
+      type: "groundStroke",
+      brush: gesture.brush,
+      view: gesture.view,
+    };
+    return result;
+  }
   if (g.kind === "scenery" || g.kind === "terrain") {
     const gesture = extendStroke(g, p);
     result.gesture = gesture;
     result.intent =
       gesture.kind === "scenery"
         ? { type: "sceneryStroke", brush: gesture.brush }
-        : { type: "terrainStroke", brush: gesture.brush, view: gesture.view };
+        : {
+            type: gesture.water ? "waterStroke" : "terrainStroke",
+            brush: gesture.brush,
+            view: gesture.view,
+          };
     return result;
   }
   const moved = Math.hypot(screen[0] - g.screen[0], screen[1] - g.screen[1]);
@@ -307,21 +379,7 @@ export function evaluateGesture(
         floor: g.floor,
         cells: rectangle(start, end),
       };
-      const x = Math.min(start[0], end[0]),
-        y = Math.min(start[1], end[1]);
-      const X = Math.max(start[0], end[0]) + 1,
-        Y = Math.max(start[1], end[1]) + 1;
-      result.guide = {
-        points: (
-          [
-            [x, y],
-            [X, y],
-            [X, Y],
-            [x, Y],
-          ] as LocalPoint[]
-        ).map((q) => toWorld(q, g.parcel.frame)),
-        closed: true,
-      };
+      result.guide = cellRectangleGuide(start, end, g.parcel.frame);
     } else {
       const cell = (q: WorldPoint): LocalPoint => {
         const v = toLocal(q, g.house.transform);
@@ -397,21 +455,7 @@ export function evaluateGesture(
               ? { kind: "assign", floor: g.floor, cells, roomId: g.room }
               : { kind: g.tool, floor: g.floor, cells },
         };
-        const x = Math.min(a[0], end[0]),
-          y = Math.min(a[1], end[1]),
-          X = Math.max(a[0], end[0]) + 1,
-          Y = Math.max(a[1], end[1]) + 1;
-        result.guide = {
-          points: (
-            [
-              [x, y],
-              [X, y],
-              [X, Y],
-              [x, Y],
-            ] as LocalPoint[]
-          ).map((q) => toWorld(q, g.house.transform)),
-          closed: true,
-        };
+        result.guide = cellRectangleGuide(a, end, g.house.transform);
       }
     }
   } catch (e) {
@@ -420,14 +464,57 @@ export function evaluateGesture(
   return result;
 }
 
+function cellRectangleGuide(
+  start: LocalPoint,
+  end: LocalPoint,
+  transform: House["transform"],
+): Guide {
+  const x = Math.min(start[0], end[0]),
+    y = Math.min(start[1], end[1]),
+    X = Math.max(start[0], end[0]) + 1,
+    Y = Math.max(start[1], end[1]) + 1;
+  return {
+    points: (
+      [
+        [x, y],
+        [X, y],
+        [X, Y],
+        [x, Y],
+      ] as LocalPoint[]
+    ).map((point) => toWorld(point, transform)),
+    closed: true,
+  };
+}
+
+export function editableRiver(
+  draft: RiverAction | null,
+  river: River | undefined,
+): Extract<RiverAction, { kind: "put" }> | null {
+  if (draft?.kind === "put") return structuredClone(draft);
+  return river
+    ? {
+        kind: "put",
+        id: river.id,
+        name: river.name,
+        nodes: structuredClone(river.nodes),
+        settings: { ...river.settings },
+        automatic: false,
+        reverse: false,
+        snap: 0,
+      }
+    : null;
+}
+
 // A borrowed view of the current controller state and passive App data. This is
 // never retained by the input binding or used as another editor state.
 export type CanvasInputSnapshot = Readonly<{
   workflow: EditorWorkflow;
   camera: Camera;
+  lod: LodDecision;
   editable: boolean;
   overviewRoads?: MapFeature[];
   roughness?: RoadRoughness;
+  terrainFollow?: TerrainFollow;
   deletion: boolean;
   tool: Tool;
   selected: string;
@@ -442,6 +529,22 @@ export type CanvasInputSnapshot = Readonly<{
   parcel: Parcel | undefined;
   selectionParcel: Parcel | undefined;
   boundaries: ReturnType<typeof parcelVisibility>["boundaries"];
+  ground?: Omit<GroundBrush, "points" | "seed">;
+  groundView?: GroundArgs;
+  groundPicker?: boolean;
+  river?: {
+    river: River | undefined;
+    views: RiverView[];
+    settings: RiverSettings;
+    width: number;
+    mode: "draw" | "select";
+    fresh: boolean;
+  };
+  region?: {
+    id: string;
+    diameter: number;
+    mode: "paint" | "erase" | "select" | "label";
+  };
   brush?: Omit<Brush, "points">;
   scenery?: Omit<
     import("./generated/SceneryBrush").SceneryBrush,
@@ -464,35 +567,39 @@ export type CanvasInputSnapshot = Readonly<{
   };
 }>;
 export type CanvasCommand =
+  | { kind: "riverSelection"; id: string }
+  | {
+      kind: "riverDraft";
+      intent: Extract<Intent, { type: "riverEdit" }>;
+      node: number;
+      pointer: Extract<Gesture, { kind: "river" }> | null;
+    }
+  | { kind: "regionPick"; point: WorldPoint; label: boolean }
+  | { kind: "groundSize"; factor: number }
+  | { kind: "groundPick"; point: WorldPoint }
   | { kind: "planParcel"; key: string | null }
   | { kind: "extend"; end: "start" | "end" }
   | { kind: "beginGesture"; gesture: Gesture; rollback?: EditorDraft | null }
   | { kind: "draft"; draft: EditorDraft }
   | { kind: "intent"; intent: Intent }
-  | { kind: "nodeSelection"; value: string | number | null }
-  | { kind: "roomSelection"; room: string }
-  | { kind: "connectionSelection"; id: string }
-  | { kind: "selectRoad"; id: string }
-  | { kind: "select"; object: MapObject | undefined }
-  | { kind: "openHouse"; house: House }
-  | { kind: "openParcel"; parcel: Parcel }
+  | { kind: "selection"; event: SelectionEvent }
   | { kind: "cancelEditor" }
   | { kind: "accept" }
   | { kind: "deleteSelection" }
   | { kind: "history"; redo: boolean }
   | { kind: "document"; kindOfDocument: "save" | "saveAs" }
-  | { kind: "floor"; delta: -1 | 1 }
   | { kind: "tool"; value: Tool }
   | { kind: "camera"; camera: Camera };
 export type PointerInput = {
   pointer: number;
+  time?: number;
   button: number;
   point: WorldPoint;
   screen: ScreenPoint;
   alt: boolean;
   space: boolean;
 };
-export type InputDecision = {
+type InputDecision = {
   focus: boolean;
   capture: boolean;
   commands: CanvasCommand[];
@@ -534,6 +641,449 @@ export function snapToRoad(
   return nearest;
 }
 
+const pointerBase = (input: PointerInput): Base => ({
+  pointer: input.pointer,
+  start: input.point,
+  screen: input.screen,
+});
+
+function roadPointerDown(
+  snapshot: CanvasInputSnapshot,
+  input: PointerInput,
+  decision: InputDecision,
+): InputDecision {
+  const { camera, roadWidth, material, populateRoad, settings } = snapshot;
+  const p = input.point;
+  const draft = workflowDraft(snapshot.workflow);
+  const base = pointerBase(input);
+  const { commands } = decision;
+  const begin = (gesture: Gesture, rollback?: EditorDraft | null) =>
+    commands.push({ kind: "beginGesture", gesture, rollback });
+  commands.push({ kind: "planParcel", key: null });
+  const q = snapToRoad(p, input.alt, snapshot);
+  const r =
+    draft?.kind === "newRoad" || draft?.kind === "extendRoad"
+      ? structuredClone(draft)
+      : newRoadDraft(
+          {
+            name: "Straße",
+            width: roadWidth,
+            material: material === "stone" ? "stone" : "earth",
+          },
+          populateRoad ? settings : null,
+        );
+  if (!draft) {
+    r.roughness = snapshot.roughness;
+    r.terrainFollow = snapshot.terrainFollow;
+  }
+  const anchor =
+    r.kind === "extendRoad" &&
+    !r.nodes.length &&
+    distance(q, r.anchor.point) * camera.scale < 9;
+  const hitIndex = drawingNodes(r).findIndex(
+    (n) => distance(n.point, p) * camera.scale < 9,
+  );
+  if (hitIndex < 0 && !anchor) {
+    const last = drawingNodes(r).at(-1);
+    if (last && distance(last.point, q) < 1e-7) return decision;
+    r.nodes.push({ point: q, incoming: null, outgoing: null });
+  }
+  begin(
+    {
+      ...base,
+      kind: "newNode",
+      index: hitIndex >= 0 ? hitIndex : drawingNodes(r).length - 1,
+      draft: smoothRoadDraft(r),
+    },
+    draft,
+  );
+  return decision;
+}
+
+function nodePointerDown(
+  snapshot: CanvasInputSnapshot,
+  input: PointerInput,
+  decision: InputDecision,
+): boolean {
+  const { selectedObject, camera } = snapshot;
+  const draft = workflowDraft(snapshot.workflow);
+  const overview =
+    snapshot.context.kind === "exterior" && !snapshot.lod.policy.exact;
+  const p = input.point;
+  const base = pointerBase(input);
+  const { commands } = decision;
+  const begin = (gesture: Gesture) =>
+    commands.push({ kind: "beginGesture", gesture });
+  const nodeSelection = (value: string | number | null) =>
+    commands.push({ kind: "selection", event: { type: "pointerNode", value } });
+  const roadEdit =
+    draft?.kind === "editRoad" && draft.roadId === selectedObject?.id
+      ? draft
+      : selectedObject?.kind === "road"
+        ? editRoadDraft(selectedObject)
+        : null;
+  if (selectedObject?.kind === "road" && !draft) {
+    for (const end of ["start", "end"] as const) {
+      const nodes = selectedObject.nodes,
+        n = nodes[end === "start" ? 0 : nodes.length - 1],
+        other = nodes[end === "start" ? 1 : nodes.length - 2];
+      const dx = n.point[0] - other.point[0],
+        dy = n.point[1] - other.point[1],
+        norm = Math.hypot(dx, dy) || 1;
+      if (
+        distance(p, [
+          n.point[0] + ((dx / norm) * 22) / camera.scale,
+          n.point[1] + ((dy / norm) * 22) / camera.scale,
+        ]) *
+          camera.scale <
+        9
+      ) {
+        commands.push({ kind: "extend", end });
+        decision.capture = false;
+        return true;
+      }
+    }
+  }
+  if (roadEdit) {
+    for (let i = 0; i < roadEdit.nodes.length; i++) {
+      const n = roadEdit.nodes[i];
+      for (const handle of overview
+        ? (["point"] as const)
+        : (["incoming", "outgoing", "point"] as const)) {
+        const q = n[handle];
+        if (q && distance(p, q) * camera.scale < 9) {
+          nodeSelection(n.id);
+          begin({
+            ...base,
+            kind: "node",
+            index: i,
+            handle,
+            object: structuredClone(roadEdit),
+          });
+          return true;
+        }
+      }
+    }
+  }
+  if (!overview && selectedObject?.kind === "area") {
+    const i = selectedObject.points.findIndex(
+      (q) => distance(p, q) * camera.scale < 9,
+    );
+    if (i >= 0) {
+      nodeSelection(i);
+      begin({
+        ...base,
+        kind: "areaPoint",
+        index: i,
+        object: structuredClone(selectedObject),
+      });
+      return true;
+    }
+  }
+  return false;
+}
+
+function interiorPointerDown(
+  snapshot: CanvasInputSnapshot,
+  input: PointerInput,
+  decision: InputDecision,
+): boolean {
+  const { house, detail, floor, room } = snapshot;
+  if (!house || !detail) return false;
+  const p = input.point;
+  const base = pointerBase(input);
+  const { commands } = decision;
+  const begin = (gesture: Gesture) =>
+    commands.push({ kind: "beginGesture", gesture });
+  const connectionSelection = (id: string) =>
+    commands.push({
+      kind: "selection",
+      event: { type: "pointerConnection", id },
+    });
+  const roomSelection = (room: string) =>
+    commands.push({
+      kind: "selection",
+      event: { type: "pointerRoom", id: room },
+    });
+  const q = toLocal(p, house.transform);
+  const con = detail.connections.find((c) => {
+    if (c.type === "opening")
+      return c.floor === floor && distance(q, openingPoint(c, 0.5)) < 0.25;
+    if (c.floor !== floor && c.floor + 1 !== floor) return false;
+    const [dx, dy] = {
+      north: [0, -1],
+      east: [1, 0],
+      south: [0, 1],
+      west: [-1, 0],
+    }[c.direction];
+    return Array.from({ length: c.length }, (_, i) => [
+      c.x + dx * i,
+      c.y + dy * i,
+    ]).some(([x, y]) => Math.floor(q[0]) === x && Math.floor(q[1]) === y);
+  });
+  if (con) {
+    connectionSelection(con.id);
+    roomSelection("");
+    return true;
+  }
+  const hit = detail.cells.find(
+    (c) => c.x === Math.floor(q[0]) && c.y === Math.floor(q[1]),
+  );
+  if (hit) {
+    connectionSelection("");
+    if (room === hit.roomId) {
+      begin({
+        ...base,
+        kind: "roomMove",
+        room,
+        house: structuredClone(house),
+        floor,
+        cells: detail.cells
+          .filter((c) => c.roomId === room)
+          .map((c) => [c.x, c.y]),
+      });
+    } else roomSelection(hit.roomId);
+    return true;
+  }
+  return false;
+}
+
+function drawingPointerDown(
+  snapshot: CanvasInputSnapshot,
+  input: PointerInput,
+  decision: InputDecision,
+): InputDecision {
+  const { context, house, parcel, tool, floor, opening, travel, room } =
+    snapshot;
+  const interior = context.kind !== "exterior";
+  const active = house?.id ?? "";
+  const objects = snapshot.scene?.objects ?? [];
+  const p = input.point;
+  const base = pointerBase(input);
+  const begin = (gesture: Gesture) =>
+    decision.commands.push({ kind: "beginGesture", gesture });
+  const intent = (intent: Intent) =>
+    decision.commands.push({ kind: "intent", intent });
+  if (interior && !house && !parcel) return decision;
+  if (tool === "opening" && house) {
+    const q = toLocal(p, house.transform),
+      x = Math.floor(q[0]),
+      y = Math.floor(q[1]);
+    const vertical =
+      Math.min(q[0] - x, 1 - (q[0] - x)) < Math.min(q[1] - y, 1 - (q[1] - y));
+    intent({
+      type: "connection",
+      buildingId: active,
+      intent: {
+        action: "createOpening",
+        floor,
+        x: vertical ? Math.round(q[0]) : x,
+        y: vertical ? y : Math.round(q[1]),
+        axis: vertical ? "vertical" : "horizontal",
+        kind: opening,
+      },
+    });
+    return decision;
+  }
+  if (tool === "house") {
+    // Geometry identifies the target polygon; only a scene selection closure
+    // may decide whether it has an owner (including an offscreen owner).
+    const target = objects.find(
+      (o): o is Parcel => o.kind === "parcel" && hitObject(o, p),
+    );
+    begin({
+      ...base,
+      kind: "houseRectangle",
+      parcel: target ? structuredClone(target) : undefined,
+    });
+  } else if (!house && parcel && tool === "draw")
+    begin({
+      ...base,
+      kind: "parcelRectangle",
+      parcel: structuredClone(parcel),
+      floor,
+    });
+  else if (house && tool === "stairs")
+    begin({
+      ...base,
+      kind: "stairs",
+      house: structuredClone(house),
+      floor,
+      travel,
+      axis: null,
+    });
+  else if (house && (tool === "draw" || tool === "erase" || tool === "assign"))
+    begin({
+      ...base,
+      kind: "interiorRectangle",
+      house: structuredClone(house),
+      floor,
+      tool,
+      room,
+    });
+
+  return decision;
+}
+
+function riverPointerDown(
+  snapshot: CanvasInputSnapshot,
+  input: PointerInput,
+  decision: InputDecision,
+): InputDecision {
+  const { camera } = snapshot;
+  const p = input.point;
+  const base = pointerBase(input);
+  const { commands } = decision;
+  const r = snapshot.river;
+  if (!snapshot.editable || snapshot.deletion || !r?.fresh) return decision;
+  const operation =
+    snapshot.workflow.kind === "geometry" &&
+    snapshot.workflow.operation.kind === "river"
+      ? snapshot.workflow.operation
+      : null;
+  const current = editableRiver(operation?.intent.action ?? null, r.river);
+  const append = operation?.append ?? null;
+  const edit = (
+    action: NonNullable<typeof current>,
+    node: number,
+    dragging = false,
+  ) => {
+    const intent = {
+      type: "riverEdit" as const,
+      action,
+      view: snapshot.terrainView ?? null,
+    };
+    decision.capture = dragging;
+    commands.push({
+      kind: "riverDraft",
+      intent,
+      node,
+      pointer: dragging
+        ? { ...base, kind: "river", index: node, intent }
+        : null,
+    });
+  };
+  if (current && !append) {
+    const index = current.nodes.findIndex(
+      (node) => distance(node.point, p) * camera.scale < 9,
+    );
+    if (index >= 0) {
+      edit(current, index, true);
+      return decision;
+    }
+  }
+  if (r.mode === "select" && !append) {
+    commands.push({
+      kind: "riverSelection",
+      id: riverHit(r.views, p, camera.scale)?.view.river.id ?? "",
+    });
+    return decision;
+  }
+  const next =
+    current && (append || !current.id)
+      ? current
+      : {
+          kind: "put" as const,
+          id: null,
+          name: "Fluss",
+          nodes: [],
+          settings: { ...r.settings },
+          automatic: true,
+          reverse: false,
+          snap: 8 / camera.scale,
+        };
+  const last = append === "start" ? next.nodes[0] : next.nodes.at(-1);
+  if (last && distance(last.point, p) * camera.scale < 2) return decision;
+  const node = { id: "", point: p, width: r.width };
+  if (append === "start") next.nodes.unshift(node);
+  else next.nodes.push(node);
+  next.snap = next.id ? 0 : 8 / camera.scale;
+  edit(next, append === "start" ? 0 : next.nodes.length - 1);
+  return decision;
+}
+
+function brushPointerDown(
+  snapshot: CanvasInputSnapshot,
+  input: PointerInput,
+  decision: InputDecision,
+): boolean {
+  const { tool, camera, context } = snapshot;
+  if (context.kind !== "exterior") return false;
+  const p = input.point;
+  const base = pointerBase(input);
+  const { commands } = decision;
+  const begin = (gesture: Gesture) =>
+    commands.push({ kind: "beginGesture", gesture });
+  if (tool === "regions" && snapshot.region) {
+    const r = snapshot.region;
+    if (r.mode === "select" || r.mode === "label") {
+      decision.capture = false;
+      commands.push({
+        kind: "regionPick",
+        point: p,
+        label: r.mode === "label",
+      });
+    } else if (r.id)
+      begin({
+        ...base,
+        kind: "region",
+        id: r.id,
+        points: [p],
+        radius: r.diameter / 2 / camera.scale,
+        erase: r.mode === "erase",
+      });
+    return true;
+  }
+  if (tool === "area" && snapshot.ground) {
+    if (snapshot.groundPicker) {
+      decision.capture = false;
+      commands.push({ kind: "groundPick", point: p });
+    } else
+      begin({
+        ...base,
+        kind: "ground",
+        started: input.time ?? 0,
+        view: snapshot.groundView,
+        brush: {
+          ...snapshot.ground,
+          diameter: snapshot.ground.diameter / camera.scale,
+          seed: snapshot.scenerySeed ?? 1,
+          points: [[p[0], p[1], 0]],
+        },
+      });
+    return true;
+  }
+  if (tool === "scenery" && snapshot.scenery) {
+    begin({
+      ...base,
+      kind: "scenery",
+      brush: {
+        ...snapshot.scenery,
+        radius: snapshot.scenery.radius / camera.scale,
+        seed: snapshot.scenerySeed ?? 1,
+        points: [p],
+      },
+    });
+    return true;
+  }
+  if ((tool === "terrain" || tool === "water") && snapshot.brush) {
+    begin({
+      ...base,
+      kind: "terrain",
+      water: tool === "water",
+      view: snapshot.terrainView,
+      brush: {
+        ...snapshot.brush,
+        resolution: tool === "water" ? 0 : snapshot.lod.authorTerrainLevel,
+        radius: snapshot.brush.radius / camera.scale,
+        points: [p],
+      },
+    });
+    return true;
+  }
+  return false;
+}
+
 export function decidePointerDown(
   snapshot: CanvasInputSnapshot,
   input: PointerInput,
@@ -554,6 +1104,7 @@ export function decidePointerDown(
     if (draft?.kind === "newRoad" || draft?.kind === "extendRoad")
       commands.push({ kind: toDraftIntent(draft) ? "accept" : "cancelEditor" });
     else if (
+      snapshot.tool === "river" ||
       draft?.kind === "newArea" ||
       snapshot.workflow.kind === "populate" ||
       ("candidate" in snapshot.workflow &&
@@ -573,40 +1124,23 @@ export function decidePointerDown(
     selected,
     selectedObject,
     context,
-    floor,
-    room,
-    house,
-    parcel,
     selectionParcel,
-    detail,
-    roadWidth,
-    material,
-    opening,
-    travel,
-    populateRoad,
-    settings,
   } = snapshot;
   const p = input.point,
     interior = context.kind !== "exterior";
-  const objects = snapshot.scene?.objects ?? [],
-    active = house?.id ?? "";
+  const objects = snapshot.scene?.objects ?? [];
   const draft = workflowDraft(snapshot.workflow);
-  const base = { pointer: input.pointer, start: p, screen: input.screen };
+  const base = pointerBase(input);
   const begin = (gesture: Gesture, rollback?: EditorDraft | null) =>
     commands.push({ kind: "beginGesture", gesture, rollback });
-  const nodeSelection = (value: string | number | null) =>
-    commands.push({ kind: "nodeSelection", value });
-  const connectionSelection = (id: string) =>
-    commands.push({ kind: "connectionSelection", id });
-  const roomSelection = (room: string) =>
-    commands.push({ kind: "roomSelection", room });
-  const intent = (intent: Intent) => commands.push({ kind: "intent", intent });
   if (input.button === 1 || input.space) {
     decision.capture = true;
     begin({ ...base, kind: "pan", camera: { ...camera } });
     return decision;
   }
-  const overview = context.kind === "exterior" && camera.scale < 1.28;
+  if (tool === "river" && !interior)
+    return riverPointerDown(snapshot, input, decision);
+  const overview = context.kind === "exterior" && !snapshot.lod.policy.exact;
   if (overview && !editable && !deletion && input.button === 0) {
     decision.capture = true;
     begin({ ...base, kind: "pan", camera: { ...camera } });
@@ -614,27 +1148,7 @@ export function decidePointerDown(
   }
   if (!editable || deletion) return decision;
   decision.capture = true;
-  if (tool === "scenery" && !interior && snapshot.scenery) {
-    begin({
-      ...base,
-      kind: "scenery",
-      brush: {
-        ...snapshot.scenery,
-        seed: snapshot.scenerySeed ?? 1,
-        points: [p],
-      },
-    });
-    return decision;
-  }
-  if (tool === "terrain" && !interior && snapshot.brush) {
-    begin({
-      ...base,
-      kind: "terrain",
-      view: snapshot.terrainView,
-      brush: { ...snapshot.brush, points: [p] },
-    });
-    return decision;
-  }
+  if (brushPointerDown(snapshot, input, decision)) return decision;
   const planning = snapshot.planning;
   if (planning && !overview) {
     const layout = freezeLayout(
@@ -724,170 +1238,22 @@ export function decidePointerDown(
     decision.capture = false;
     return decision;
   }
-  if (tool === "road") {
-    commands.push({ kind: "planParcel", key: null });
-    const q = snapToRoad(p, input.alt, snapshot);
-    const r =
-      draft?.kind === "newRoad" || draft?.kind === "extendRoad"
-        ? structuredClone(draft)
-        : newRoadDraft(
-            {
-              name: "Straße",
-              width: roadWidth,
-              material: material === "stone" ? "stone" : "earth",
-            },
-            populateRoad ? settings : null,
-          );
-    if (!draft) r.roughness = snapshot.roughness;
-    const anchor =
-      r.kind === "extendRoad" &&
-      !r.nodes.length &&
-      distance(q, r.anchor.point) * camera.scale < 9;
-    const hitIndex = drawingNodes(r).findIndex(
-      (n) => distance(n.point, p) * camera.scale < 9,
-    );
-    if (hitIndex < 0 && !anchor) {
-      const last = drawingNodes(r).at(-1);
-      if (last && distance(last.point, q) < 1e-7) return decision;
-      r.nodes.push({ point: q, incoming: null, outgoing: null });
-    }
-    begin(
-      {
-        ...base,
-        kind: "newNode",
-        index: hitIndex >= 0 ? hitIndex : drawingNodes(r).length - 1,
-        draft: smoothRoadDraft(r),
-      },
-      draft,
-    );
-    return decision;
-  }
-  if (tool === "area") {
-    const a: EditorDraft =
-      draft?.kind === "newArea"
-        ? structuredClone(draft)
-        : { kind: "newArea", material, points: [] };
-    a.points.push(p);
-    commands.push({ kind: "draft", draft: a });
-    decision.capture = false;
-    return decision;
-  }
+  if (tool === "road") return roadPointerDown(snapshot, input, decision);
+
   if (tool === "select") {
-    const editableObject = selectedObject;
-    const roadEdit =
-      draft?.kind === "editRoad" && draft.roadId === selectedObject?.id
-        ? draft
-        : selectedObject?.kind === "road"
-          ? editRoadDraft(selectedObject)
-          : null;
-    if (selectedObject?.kind === "road" && !draft) {
-      for (const end of ["start", "end"] as const) {
-        const nodes = selectedObject.nodes,
-          n = nodes[end === "start" ? 0 : nodes.length - 1],
-          other = nodes[end === "start" ? 1 : nodes.length - 2];
-        const dx = n.point[0] - other.point[0],
-          dy = n.point[1] - other.point[1],
-          norm = Math.hypot(dx, dy) || 1;
-        if (
-          distance(p, [
-            n.point[0] + ((dx / norm) * 22) / camera.scale,
-            n.point[1] + ((dy / norm) * 22) / camera.scale,
-          ]) *
-            camera.scale <
-          9
-        ) {
-          commands.push({ kind: "extend", end });
-          decision.capture = false;
-          return decision;
-        }
-      }
-    }
-    if (roadEdit) {
-      for (let i = 0; i < roadEdit.nodes.length; i++) {
-        const n = roadEdit.nodes[i];
-        for (const handle of overview
-          ? (["point"] as const)
-          : (["incoming", "outgoing", "point"] as const)) {
-          const q = n[handle];
-          if (q && distance(p, q) * camera.scale < 9) {
-            nodeSelection(n.id);
-            begin({
-              ...base,
-              kind: "node",
-              index: i,
-              handle,
-              object: structuredClone(roadEdit),
-            });
-            return decision;
-          }
-        }
-      }
-    }
+    if (nodePointerDown(snapshot, input, decision)) return decision;
     if (overview) {
       const hit = overviewRoadAt(snapshot, p);
       if (hit) {
-        commands.push({ kind: "selectRoad", id: hit.id });
+        commands.push({
+          kind: "selection",
+          event: { type: "selectObject", id: hit.id },
+        });
         decision.capture = false;
       } else begin({ ...base, kind: "pan", camera: { ...camera } });
       return decision;
     }
-    if (editableObject?.kind === "area") {
-      const i = editableObject.points.findIndex(
-        (q) => distance(p, q) * camera.scale < 9,
-      );
-      if (i >= 0) {
-        nodeSelection(i);
-        begin({
-          ...base,
-          kind: "areaPoint",
-          index: i,
-          object: structuredClone(editableObject),
-        });
-        return decision;
-      }
-    }
-    if (house && detail) {
-      const q = toLocal(p, house.transform);
-      const con = detail.connections.find((c) => {
-        if (c.type === "opening")
-          return c.floor === floor && distance(q, openingPoint(c, 0.5)) < 0.25;
-        if (c.floor !== floor && c.floor + 1 !== floor) return false;
-        const [dx, dy] = {
-          north: [0, -1],
-          east: [1, 0],
-          south: [0, 1],
-          west: [-1, 0],
-        }[c.direction];
-        return Array.from({ length: c.length }, (_, i) => [
-          c.x + dx * i,
-          c.y + dy * i,
-        ]).some(([x, y]) => Math.floor(q[0]) === x && Math.floor(q[1]) === y);
-      });
-      if (con) {
-        connectionSelection(con.id);
-        roomSelection("");
-        return decision;
-      }
-      const hit = detail.cells.find(
-        (c) => c.x === Math.floor(q[0]) && c.y === Math.floor(q[1]),
-      );
-      if (hit) {
-        connectionSelection("");
-        if (room === hit.roomId) {
-          begin({
-            ...base,
-            kind: "roomMove",
-            room,
-            house: structuredClone(house),
-            floor,
-            cells: detail.cells
-              .filter((c) => c.roomId === room)
-              .map((c) => [c.x, c.y]),
-          });
-        } else roomSelection(hit.roomId);
-        return decision;
-      }
-    }
+    if (interiorPointerDown(snapshot, input, decision)) return decision;
     if (
       selectedObject?.kind === "house" &&
       !interior &&
@@ -922,68 +1288,18 @@ export function decidePointerDown(
       });
       return decision;
     }
-    if (!interior) commands.push({ kind: "select", object: hit });
+    if (!interior)
+      commands.push({
+        kind: "selection",
+        event: { type: "selectObject", id: hit?.id ?? "" },
+      });
     return decision;
   }
-  if (interior && !house && !parcel) return decision;
-  if (tool === "opening" && house) {
-    const q = toLocal(p, house.transform),
-      x = Math.floor(q[0]),
-      y = Math.floor(q[1]);
-    const vertical =
-      Math.min(q[0] - x, 1 - (q[0] - x)) < Math.min(q[1] - y, 1 - (q[1] - y));
-    intent({
-      type: "connection",
-      buildingId: active,
-      intent: {
-        action: "createOpening",
-        floor,
-        x: vertical ? Math.round(q[0]) : x,
-        y: vertical ? y : Math.round(q[1]),
-        axis: vertical ? "vertical" : "horizontal",
-        kind: opening,
-      },
-    });
-    return decision;
-  }
-  if (tool === "house") {
-    // Geometry identifies the target polygon; only a scene selection closure
-    // may decide whether it has an owner (including an offscreen owner).
-    const target = objects.find(
-      (o): o is Parcel => o.kind === "parcel" && hitObject(o, p),
-    );
-    begin({
-      ...base,
-      kind: "houseRectangle",
-      parcel: target ? structuredClone(target) : undefined,
-    });
-  } else if (!house && parcel && tool === "draw")
-    begin({
-      ...base,
-      kind: "parcelRectangle",
-      parcel: structuredClone(parcel),
-      floor,
-    });
-  else if (house && tool === "stairs")
-    begin({
-      ...base,
-      kind: "stairs",
-      house: structuredClone(house),
-      floor,
-      travel,
-      axis: null,
-    });
-  else if (house && (tool === "draw" || tool === "erase" || tool === "assign"))
-    begin({
-      ...base,
-      kind: "interiorRectangle",
-      house: structuredClone(house),
-      floor,
-      tool,
-      room,
-    });
+  return drawingPointerDown(snapshot, input, decision);
+}
 
-  return decision;
+function isBrushTool(tool: Tool) {
+  return ["area", "terrain", "water", "scenery", "regions"].includes(tool);
 }
 
 export function decideKey(
@@ -1008,6 +1324,25 @@ export function decideKey(
     commands,
   };
   if (key.formTarget) return result;
+  if (
+    snapshot.tool === "river" &&
+    (key.ctrl || key.meta) &&
+    ["z", "y", "o", "n"].includes(key.key.toLowerCase())
+  )
+    commands.push({ kind: "cancelEditor" });
+  if (
+    isBrushTool(snapshot.tool) &&
+    !key.ctrl &&
+    !key.meta &&
+    ["[", "]"].includes(key.key)
+  ) {
+    result.preventDefault = true;
+    commands.push({
+      kind: "groundSize",
+      factor: key.key === "]" ? 1.1 : 1 / 1.1,
+    });
+    return result;
+  }
   if (key.key === "Escape") {
     commands.push({ kind: "cancelEditor" });
     return result;
@@ -1039,20 +1374,29 @@ export function decideKey(
     result.preventDefault = true;
     if (snapshot.context.kind !== "exterior")
       commands.push({
-        kind: "floor",
-        delta: key.key === "PageUp" ? 1 : -1,
+        kind: "selection",
+        event: { type: "stepFloor", delta: key.key === "PageUp" ? 1 : -1 },
       });
   }
   if (key.key.toLowerCase() === "v")
     commands.push({ kind: "tool", value: "select" });
   return result;
 }
+export function decideBlur(snapshot: CanvasInputSnapshot): CanvasCommand[] {
+  return snapshot.tool === "river" ? [{ kind: "cancelEditor" }] : [];
+}
+
 export function decideWheel(
   snapshot: CanvasInputSnapshot,
   point: WorldPoint,
   deltaY: number,
+  alt = false,
 ): CanvasCommand[] {
-  if (workflowPointer(snapshot.workflow)) return [];
+  const pointer = workflowPointer(snapshot.workflow);
+  if (isLiveBrush(pointer) || pointer?.kind === "scenery") return [];
+  if (alt && isBrushTool(snapshot.tool))
+    return [{ kind: "groundSize", factor: deltaY < 0 ? 1.1 : 1 / 1.1 }];
+  if (pointer) return [];
   const { camera, context } = snapshot;
   const scale = Math.max(
     context.kind === "house" ? 1.28 : MIN_CITY_SCALE,
@@ -1075,7 +1419,9 @@ export function decideDoubleClick(
   point: WorldPoint,
 ): CanvasCommand[] {
   const { editable, selectedObject, tool, context } = snapshot;
-  if (context.kind === "exterior" && snapshot.camera.scale < 1.28) {
+  if (tool === "river" && context.kind === "exterior")
+    return editable ? [{ kind: "accept" }] : [];
+  if (context.kind === "exterior" && !snapshot.lod.policy.exact) {
     if (tool === "road" || workflowDraft(snapshot.workflow)) return [];
     if (tool === "select" && overviewRoadAt(snapshot, point)) {
       if (
@@ -1088,7 +1434,16 @@ export function decideDoubleClick(
         ];
       return [];
     }
-    return [{ kind: "camera", camera: zoomIntoCity(snapshot.camera, point) }];
+    return [
+      {
+        kind: "camera",
+        camera: zoomIntoCity(
+          snapshot.camera,
+          point,
+          snapshot.lod.navigationLevel,
+        ),
+      },
+    ];
   }
   if (!editable) return [];
   if (selectedObject?.kind === "road" && tool === "select")
@@ -1117,24 +1472,36 @@ export function decideDoubleClick(
     ];
   }
   if (selectedObject?.kind === "house" && context.kind === "exterior")
-    return [{ kind: "openHouse", house: selectedObject }];
+    return [
+      {
+        kind: "selection",
+        event: { type: "openHouse", id: selectedObject.id },
+      },
+    ];
   if (selectedObject?.kind === "parcel" && context.kind === "exterior")
-    return [{ kind: "openParcel", parcel: selectedObject }];
+    return [
+      {
+        kind: "selection",
+        event: { type: "openParcel", id: selectedObject.id },
+      },
+    ];
   return [];
 }
 
 // Move and finish share exactly the same geometry and node-snap evaluation.
 export function evaluatePointer(
   snapshot: CanvasInputSnapshot,
-  input: Pick<PointerInput, "pointer" | "point" | "screen" | "alt">,
+  input: Pick<PointerInput, "pointer" | "point" | "screen" | "alt" | "time">,
   finish: boolean,
 ): Evaluation | null {
   const gesture = workflowPointer(snapshot.workflow);
   return gesture
     ? evaluateGesture(
-        gesture.kind === "terrain"
-          ? { ...gesture, view: snapshot.terrainView }
-          : gesture,
+        gesture.kind === "ground"
+          ? { ...gesture, view: snapshot.groundView }
+          : gesture.kind === "terrain"
+            ? { ...gesture, view: snapshot.terrainView }
+            : gesture,
         {
           ...input,
           snapped:
@@ -1145,6 +1512,26 @@ export function evaluatePointer(
         },
       )
     : null;
+}
+
+export function evaluateHold(
+  snapshot: CanvasInputSnapshot,
+  time: number,
+): Evaluation | null {
+  const gesture = workflowPointer(snapshot.workflow);
+  if (gesture?.kind !== "ground") return null;
+  const last = gesture.brush.points[gesture.brush.points.length - 1];
+  return evaluatePointer(
+    snapshot,
+    {
+      pointer: gesture.pointer,
+      point: [last[0], last[1]],
+      screen: gesture.screen,
+      alt: false,
+      time,
+    },
+    false,
+  );
 }
 
 export function hoverAtPoint(snapshot: CanvasInputSnapshot, point: WorldPoint) {
@@ -1167,7 +1554,7 @@ function overviewRoadAt(snapshot: CanvasInputSnapshot, point: WorldPoint) {
   for (const feature of snapshot.overviewRoads ?? []) {
     if (
       feature.kind !== "road" ||
-      (snapshot.camera.scale < 0.064 &&
+      (!snapshot.lod.policy.roofs &&
         feature.width < 12 &&
         feature.id !== snapshot.selected)
     )

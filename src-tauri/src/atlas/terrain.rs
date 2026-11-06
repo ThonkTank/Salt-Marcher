@@ -4,10 +4,9 @@ use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct TerrainDelta {
+    pub missing_before: Vec<(i32, i32)>,
     pub before: Vec<(i32, i32, f64)>,
     pub after: Vec<(i32, i32, f64)>,
-    pub water_before: f64,
-    pub water_after: f64,
 }
 #[cfg_attr(test, derive(ts_rs::TS))]
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -15,7 +14,6 @@ pub struct TerrainDelta {
 pub struct TerrainPreview {
     pub surface: Option<TerrainResponse>,
     pub points: Vec<(i32, i32, f64)>,
-    pub water_level: f64,
 }
 #[cfg_attr(test, derive(ts_rs::TS))]
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -28,6 +26,7 @@ pub struct TerrainArgs {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SurfaceTile {
+    pub waters: Vec<super::water::WaterBody>,
     pub foundation_tops: Vec<(String, f64)>,
     pub x: i32,
     pub y: i32,
@@ -39,17 +38,84 @@ pub struct SurfaceTile {
 pub struct TerrainResponse {
     pub status: Status,
     pub level: u8,
-    pub water_level: f64,
     pub tiles: Vec<SurfaceTile>,
 }
-pub const BASE: f64 = 10.0;
+pub const BASE: f64 = -100.0;
 pub const STEP: f64 = 5.0;
 pub const LIMIT: usize = 100_000;
-pub type Grid = BTreeMap<(i32, i32), f64>;
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct Grid {
+    pub points: BTreeMap<(i32, i32), f64>,
+    pub layers: BTreeMap<u8, BTreeMap<(i32, i32), f64>>,
+}
+impl Grid {
+    pub fn new() -> Self {
+        Self::default()
+    }
+    pub fn merge(&mut self, other: Self) {
+        self.points.extend(other.points);
+        for (level, points) in other.layers {
+            self.layers.entry(level).or_default().extend(points);
+        }
+    }
+    pub fn coarse_height(&self, p: Point) -> f64 {
+        let mut value = BASE;
+        for (&level, points) in self.layers.iter().rev() {
+            let step = STEP * 2f64.powi(level as i32);
+            let x = (p[0] / step).floor() as i32;
+            let y = (p[1] / step).floor() as i32;
+            let u = p[0] / step - x as f64;
+            let v = p[1] / step - y as f64;
+            let get = |dx, dy| *points.get(&(x + dx, y + dy)).unwrap_or(&value);
+            value = if u >= v {
+                get(0, 0) * (1. - u) + get(1, 0) * (u - v) + get(1, 1) * v
+            } else {
+                get(0, 0) * (1. - v) + get(1, 1) * u + get(0, 1) * (v - u)
+            };
+        }
+        value
+    }
+}
+impl std::ops::Deref for Grid {
+    type Target = BTreeMap<(i32, i32), f64>;
+    fn deref(&self) -> &Self::Target {
+        &self.points
+    }
+}
+impl std::ops::DerefMut for Grid {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.points
+    }
+}
+impl FromIterator<((i32, i32), f64)> for Grid {
+    fn from_iter<T: IntoIterator<Item = ((i32, i32), f64)>>(iter: T) -> Self {
+        Self {
+            points: iter.into_iter().collect(),
+            layers: BTreeMap::new(),
+        }
+    }
+}
+impl<'a> IntoIterator for &'a Grid {
+    type Item = (&'a (i32, i32), &'a f64);
+    type IntoIter = std::collections::btree_map::Iter<'a, (i32, i32), f64>;
+    fn into_iter(self) -> Self::IntoIter {
+        self.points.iter()
+    }
+}
+impl IntoIterator for Grid {
+    type Item = ((i32, i32), f64);
+    type IntoIter = std::collections::btree_map::IntoIter<(i32, i32), f64>;
+    fn into_iter(self) -> Self::IntoIter {
+        self.points.into_iter()
+    }
+}
 #[cfg_attr(test, derive(ts_rs::TS))]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct Brush {
+    #[serde(default)]
+    #[cfg_attr(test, ts(optional))]
+    pub resolution: Option<u8>,
     pub mode: BrushMode,
     pub radius: f64,
     pub amount: f64,
@@ -61,6 +127,8 @@ pub struct Brush {
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum BrushMode {
+    Land,
+    Sea,
     Raise,
     Lower,
     Smooth,
@@ -70,7 +138,9 @@ pub fn valid_height(z: f64) -> bool {
     z.is_finite() && z.abs() <= 100_000.0
 }
 pub fn at(g: &Grid, x: i32, y: i32) -> f64 {
-    *g.get(&(x, y)).unwrap_or(&BASE)
+    g.get(&(x, y))
+        .copied()
+        .unwrap_or_else(|| g.coarse_height([x as f64 * STEP, y as f64 * STEP]))
 }
 pub fn height(g: &Grid, p: Point) -> f64 {
     let x = (p[0] / STEP).floor() as i32;
@@ -98,8 +168,8 @@ pub fn triangle_height(p: Point, x: i32, y: i32, z: [f64; 4]) -> f64 {
 }
 pub fn stroke(g: &mut Grid, b: &Brush) -> Result<()> {
     ensure(
-        b.radius.is_finite() && (5.0..=500.0).contains(&b.radius),
-        "Pinselradius: 5–500 Fuß",
+        b.radius.is_finite() && (0.001..=10_000_000.0).contains(&b.radius),
+        "Ungültiger Pinselradius",
     )?;
     ensure(
         b.amount.is_finite() && (0.1..=100.0).contains(&b.amount),
@@ -115,7 +185,7 @@ pub fn stroke(g: &mut Grid, b: &Brush) -> Result<()> {
             && b.points
                 .iter()
                 .flatten()
-                .all(|v| v.is_finite() && v.abs() <= 5_000_000.0),
+                .all(|v| v.is_finite() && v.abs() <= 100_000_000.0),
         "Ungültiger Pinselpfad",
     )?;
     let centers = stroke_centers(b)?;
@@ -133,7 +203,7 @@ pub fn stroke(g: &mut Grid, b: &Brush) -> Result<()> {
                     continue;
                 }
                 ensure(
-                    x.abs() <= 1_000_000 && y.abs() <= 1_000_000,
+                    x.abs() <= 20_000_000 && y.abs() <= 20_000_000,
                     "Gelände außerhalb der Welt",
                 )?;
                 touched.insert((x, y));
@@ -144,6 +214,8 @@ pub fn stroke(g: &mut Grid, b: &Brush) -> Result<()> {
                 let w = (1.0 - d * d).powi(2);
                 let old = at(g, x, y);
                 let z = match b.mode {
+                    BrushMode::Land => old.max(10.0),
+                    BrushMode::Sea => old.min(-10.0),
                     BrushMode::Raise => old + b.amount * w,
                     BrushMode::Lower => old - b.amount * w,
                     BrushMode::Flatten => old + (b.target - old) * b.strength * w,
@@ -170,6 +242,7 @@ mod tests {
     use super::*;
     fn brush(points: Vec<Point>) -> Brush {
         Brush {
+            resolution: None,
             mode: BrushMode::Lower,
             radius: 25.0,
             amount: 1.0,
@@ -258,6 +331,20 @@ impl Platform {
                 level = level.max(z);
             }
         }
+        for (&resolution, samples) in &g.layers {
+            let step = STEP * 2f64.powi(resolution as i32);
+            for &(x, y) in samples.keys() {
+                let p = [x as f64 * step, y as f64 * step];
+                if p[0] >= b[0]
+                    && p[0] <= b[2]
+                    && p[1] >= b[1]
+                    && p[1] <= b[3]
+                    && contains(&rings, p)
+                {
+                    level = level.max(height(g, p));
+                }
+            }
+        }
         for (a, b) in edges(&rings) {
             let d = [b[0] - a[0], b[1] - a[1]];
             for (start, delta) in [(a[0], d[0]), (a[1], d[1]), (a[0] - a[1], d[0] - d[1])] {
@@ -279,8 +366,10 @@ impl Platform {
                     if !g.contains_key(&(x, y))
                         && contains(&rings, [x as f64 * STEP, y as f64 * STEP])
                     {
-                        level = BASE;
-                        break 'rows;
+                        level = level.max(at(g, x, y));
+                        if level >= BASE {
+                            break 'rows;
+                        }
                     }
                 }
             }
@@ -314,11 +403,15 @@ pub fn surface(natural: f64, p: Point, platforms: &[Platform]) -> f64 {
 pub fn stroke_centers(b: &Brush) -> Result<Vec<Point>> {
     ensure(
         b.radius.is_finite()
-            && (5.0..=500.0).contains(&b.radius)
+            && (0.001..=10_000_000.0).contains(&b.radius)
             && !b.points.is_empty()
             && b.points.len() <= LIMIT
             && b.points.iter().all(|p| super::geometry::valid_point(*p)),
         "Ungültiger Pinselpfad",
+    )?;
+    ensure(
+        (2.0 * b.radius / STEP + 3.0).powi(2) <= 400_000.0,
+        "Höhenpinsel zu groß; bitte hineinzoomen oder Pinsel verkleinern",
     )?;
     let spacing = (b.radius / 4.0).max(2.5);
     let mut centers = vec![b.points[0]];

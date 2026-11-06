@@ -1,3 +1,5 @@
+import { GroundCache } from "./presentationCache";
+import type { GroundResponse } from "./generated/GroundResponse";
 import { TerrainCache, CityCache } from "./presentationCache";
 import type { TerrainResponse } from "./generated/TerrainResponse";
 import type { CityView } from "./cityView";
@@ -21,6 +23,7 @@ import { sameVersion, incrementalChanges } from "./documentVersion";
 import { scheduledRead } from "./readScheduler";
 export type Presentation = {
   terrain?: TerrainResponse;
+  ground?: GroundResponse;
   overview?: CityView;
   scene: Scene;
   detail: Detail | null;
@@ -59,7 +62,8 @@ const houseBounds = (house: House): Bounds => {
 };
 // Viewport changes share a context; navigation between contexts never shares ownership.
 type LoadContext = {
-  terrainScale?: number;
+  terrainLevel?: number;
+  groundLevel?: number;
   client: AtlasClient;
   session: string | undefined;
   revision: number | undefined;
@@ -72,7 +76,6 @@ type LoadContext = {
   retry: number;
 };
 const sameLoadContext = (a: LoadContext, b: LoadContext) =>
-  a.terrainScale === b.terrainScale &&
   a.client === b.client &&
   a.session === b.session &&
   a.revision === b.revision &&
@@ -81,7 +84,7 @@ const sameLoadContext = (a: LoadContext, b: LoadContext) =>
   a.floor === b.floor &&
   a.lower === b.lower &&
   a.enabled === b.enabled &&
-  a.cityLevel === b.cityLevel &&
+  (a.cityLevel === null) === (b.cityLevel === null) &&
   a.retry === b.retry;
 type LoadRequest = {
   id: number;
@@ -93,10 +96,12 @@ type Published = {
   value: Presentation;
   request: LoadRequest;
   interim: boolean;
+  placeholder?: boolean;
 };
 
 export type PresentationInput = {
-  terrainScale?: number;
+  terrainLevel?: number;
+  groundLevel?: number;
   cityLevel?: number | null;
   client: AtlasClient;
   status: Status | null;
@@ -109,7 +114,8 @@ export type PresentationInput = {
 };
 type Snapshot = { display: Published | null; error: string; loading: boolean };
 const loadContext = (input: PresentationInput, retry: number): LoadContext => ({
-  terrainScale: input.terrainScale,
+  terrainLevel: input.terrainLevel,
+  groundLevel: input.groundLevel,
   cityLevel: input.cityLevel ?? null,
   client: input.client,
   session: input.status?.sessionId,
@@ -122,11 +128,287 @@ const loadContext = (input: PresentationInput, retry: number): LoadContext => ({
   retry,
 });
 
+const editorContextCity = (input: PresentationInput) =>
+  input.editorContext.kind === "exterior" ? input.cityLevel : null;
+
+export type LayerCommands = {
+  rivers: "rivers";
+  regionCatalog: "regions";
+  regions: "regions";
+};
+type LayerSnapshot<T> = {
+  value: T | null;
+  error: string;
+  key: string;
+  loading: boolean;
+};
+// All independent reads share the same request ownership and retry lifecycle.
+class PresentationLayer<
+  A extends { version: { sessionId: string; revision: number } },
+  T extends { status: Status },
+> {
+  snapshot: LayerSnapshot<T> = {
+    value: null,
+    error: "",
+    key: "",
+    loading: false,
+  };
+  private generation = 0;
+  private client: AtlasClient | null = null;
+  private requested = "";
+  private requestArgs: A | null = null;
+  private completeArgs: A | null = null;
+  private timer: ReturnType<typeof setTimeout> | undefined;
+  constructor(
+    private load: (
+      client: AtlasClient,
+      args: A,
+      wanted: () => boolean,
+    ) => Promise<T | null | undefined>,
+    private publish: () => void,
+    private covers: (a: A, b: A, value: T | null) => boolean = (a, b) =>
+      JSON.stringify(a) === JSON.stringify(b),
+    private debounceViewport = false,
+  ) {}
+  fresh(client: AtlasClient, args: A | null) {
+    return (
+      !!args &&
+      !!this.requested &&
+      this.client === client &&
+      !!this.completeArgs &&
+      this.covers(this.completeArgs, args, this.snapshot.value) &&
+      !this.snapshot.loading &&
+      !this.snapshot.error
+    );
+  }
+  cancel() {
+    this.generation++;
+    this.requested = "";
+    this.requestArgs = null;
+    if (this.timer) clearTimeout(this.timer);
+    this.timer = undefined;
+  }
+  invalidate() {
+    this.cancel();
+    this.completeArgs = null;
+  }
+  update(client: AtlasClient, args: A | null) {
+    const key = JSON.stringify(args);
+    if (this.client === client && this.requested === key) return;
+    if (
+      this.client === client &&
+      args &&
+      this.requestArgs &&
+      this.snapshot.loading &&
+      this.covers(this.requestArgs, args, null)
+    )
+      return;
+    const changedClient = this.client !== client;
+    const previousRequest = this.requestArgs;
+    this.cancel();
+    this.client = client;
+    this.requested = key;
+    this.requestArgs = args;
+    const generation = this.generation;
+    const current = () => generation === this.generation;
+    const value =
+      !changedClient &&
+      (!args ||
+        this.snapshot.value?.status.sessionId === args.version.sessionId)
+        ? this.snapshot.value
+        : null;
+    if (!value) this.completeArgs = null;
+    if (
+      args &&
+      value &&
+      this.completeArgs &&
+      this.covers(this.completeArgs, args, value)
+    ) {
+      this.snapshot = { value, error: "", key, loading: false };
+      this.publish();
+      return;
+    }
+    this.snapshot = { value, error: "", key: "", loading: !!args };
+    this.publish();
+    if (!args) return;
+    const run = () => {
+      this.timer = undefined;
+      if (!current()) return;
+      void this.load(client, args, current)
+        .then((result) => {
+          if (!current() || !result) return;
+          if (!sameVersion(result.status, args.version))
+            throw Error("Dokumentstand geändert. Bitte erneut laden.");
+          this.completeArgs = args;
+          this.snapshot = { value: result, error: "", key, loading: false };
+          this.publish();
+        })
+        .catch((error) => {
+          if (!current()) return;
+          this.snapshot = {
+            ...this.snapshot,
+            error: String(error),
+            loading: false,
+          };
+          this.publish();
+        });
+    };
+    if (
+      this.debounceViewport &&
+      !changedClient &&
+      previousRequest &&
+      sameNavigationOptions(previousRequest, args)
+    )
+      this.timer = setTimeout(run, 50);
+    else run();
+  }
+}
+// Exact queries have no result cap. Overview coverage is reusable only when
+// its response proves that no viewport-prioritized entries were truncated.
+function sameViewportOptions(a: object, b: object) {
+  const { bounds: _a, ...left } = a as { bounds?: Bounds };
+  const { bounds: _b, ...right } = b as { bounds?: Bounds };
+  return JSON.stringify(left) === JSON.stringify(right);
+}
+function sameNavigationOptions(a: object, b: object) {
+  const {
+    bounds: _a,
+    scale: _as,
+    overviewScale: _ao,
+    ...left
+  } = a as { bounds?: Bounds; scale?: number; overviewScale?: number };
+  const {
+    bounds: _b,
+    scale: _bs,
+    overviewScale: _bo,
+    ...right
+  } = b as { bounds?: Bounds; scale?: number; overviewScale?: number };
+  return JSON.stringify(left) === JSON.stringify(right);
+}
+function viewportCovers<A extends { bounds: Bounds | null }>(
+  a: A,
+  b: A,
+  complete: boolean,
+) {
+  return (
+    complete &&
+    !!a.bounds &&
+    !!b.bounds &&
+    inside(b.bounds, a.bounds) &&
+    sameViewportOptions(a, b)
+  );
+}
+type CommandLayer<K extends keyof LayerCommands> = PresentationLayer<
+  ReadCommands[LayerCommands[K]]["args"],
+  ReadCommands[LayerCommands[K]]["result"]
+>;
+type RasterArgs = { version: Status; bounds: Bounds; level: number };
+
 /** Owns reads, cache lifetime and the single published snapshot; independent of React. */
 export class PresentationLoader {
   private terrain = new TerrainCache();
+  private ground = new GroundCache();
   private city = new CityCache();
+  private layers = {
+    rivers: new PresentationLayer(
+      (client, args: ReadCommands["rivers"]["args"], wanted) =>
+        scheduledRead(client, "rivers", args, wanted),
+      () => this.notify(),
+      (a, b, value) =>
+        JSON.stringify(a) === JSON.stringify(b) ||
+        viewportCovers(
+          a,
+          b,
+          a.overviewScale === undefined ||
+            (!!value && value.rivers.length < 128),
+        ),
+      true,
+    ),
+    regionCatalog: new PresentationLayer(
+      (client, args: ReadCommands["regions"]["args"], wanted) =>
+        scheduledRead(client, "regions", args, wanted),
+      () => this.notify(),
+    ),
+    regions: new PresentationLayer(
+      (client, args: ReadCommands["regions"]["args"], wanted) =>
+        scheduledRead(client, "regions", args, wanted),
+      () => this.notify(),
+      (a, b, value) =>
+        JSON.stringify(a) === JSON.stringify(b) ||
+        viewportCovers(
+          a,
+          b,
+          a.exact || (!!value && value.regions.length < 1000),
+        ),
+      true,
+    ),
+    terrain: new PresentationLayer(
+      (client, args: RasterArgs, wanted) =>
+        this.terrain.load(
+          client,
+          args.version,
+          args.bounds,
+          args.level,
+          wanted,
+        ),
+      () => this.refreshLayers(),
+      undefined,
+      true,
+    ),
+    ground: new PresentationLayer(
+      (client, args: RasterArgs, wanted) =>
+        this.ground.load(client, args.version, args.bounds, args.level, wanted),
+      () => this.refreshLayers(),
+      undefined,
+      true,
+    ),
+    city: new PresentationLayer(
+      (client, args: RasterArgs, wanted) =>
+        this.city.load(client, args.version, args.bounds, args.level, wanted),
+      () => this.refreshLayers(),
+      undefined,
+      true,
+    ),
+  };
+  private notify() {
+    for (const listener of this.listeners) listener();
+  }
+  layer<K extends keyof LayerCommands>(name: K): CommandLayer<K> {
+    return this.layers[name] as unknown as CommandLayer<K>;
+  }
+  private refreshLayers() {
+    const display = this.snapshot.display;
+    if (!display) {
+      this.updateSnapshot({});
+      return;
+    }
+    const terrain =
+      this.committed?.input.terrainLevel == null
+        ? undefined
+        : (this.layers.terrain.snapshot.value ?? undefined);
+    const candidate =
+      this.committed?.input.groundLevel == null
+        ? undefined
+        : (this.layers.ground.snapshot.value ?? undefined);
+    const ground =
+      candidate &&
+      (this.committed?.input.terrainLevel == null ||
+        (terrain && sameVersion(candidate.status, terrain.status)))
+        ? candidate
+        : undefined;
+    const overview = this.layers.city.snapshot.value ?? undefined;
+    const value = {
+      ...display.value,
+      terrain,
+      ground,
+      overview:
+        this.committed?.context.cityLevel != null ? overview : undefined,
+    };
+    this.updateSnapshot({ display: { ...display, value } });
+  }
   private snapshot: Snapshot = { display: null, error: "", loading: false };
+  private sceneError = "";
+  private sceneLoading = false;
   private listeners = new Set<() => void>();
   private tiles = new TileCache();
   private aggregate = new DetailAggregate();
@@ -146,7 +428,22 @@ export class PresentationLoader {
     return () => this.listeners.delete(listener);
   };
   private updateSnapshot(patch: Partial<Snapshot>) {
-    const next = { ...this.snapshot, ...patch };
+    if (patch.error !== undefined) this.sceneError = patch.error;
+    if (patch.loading !== undefined) this.sceneLoading = patch.loading;
+    const layers = [
+      this.layers.terrain.snapshot,
+      this.layers.ground.snapshot,
+      this.layers.city.snapshot,
+    ];
+    const next = {
+      ...this.snapshot,
+      ...patch,
+      error:
+        this.sceneError ||
+        layers.map((layer) => layer.error).find(Boolean) ||
+        "",
+      loading: this.sceneLoading || layers.some((layer) => layer.loading),
+    };
     if (
       next.display === this.snapshot.display &&
       next.error === this.snapshot.error &&
@@ -158,11 +455,15 @@ export class PresentationLoader {
   }
   dispose = () => {
     this.generation++;
+    for (const layer of Object.values(this.layers)) layer.cancel();
     if (this.request) this.tiles.release(this.request.tilesOwner);
     this.request = null;
   };
   retry = () => {
     this.retries++;
+    this.layers.terrain.invalidate();
+    this.layers.ground.invalidate();
+    this.layers.city.invalidate();
     if (this.committed) this.update(this.committed.input);
   };
   fresh(input: PresentationInput) {
@@ -170,6 +471,7 @@ export class PresentationLoader {
     return (
       !!input.status &&
       !!display &&
+      !display.placeholder &&
       sameLoadContext(
         display.request.context,
         loadContext(input, this.retries),
@@ -177,7 +479,24 @@ export class PresentationLoader {
       display.request.owner === this.generation &&
       inside(input.bounds, display.value.bounds) &&
       (!loading || display.interim) &&
-      !error
+      !error &&
+      this.rastersFresh(input)
+    );
+  }
+  private rastersFresh(input: PresentationInput) {
+    const committed = this.committed;
+    if (!input.status || !committed) return false;
+    const bounds = JSON.parse(committed.key) as Bounds;
+    if (!inside(input.bounds, bounds)) return false;
+    const args = (level: number | null | undefined): RasterArgs | null =>
+      level == null ? null : { version: input.status!, bounds, level };
+    return (
+      (input.terrainLevel == null ||
+        this.layers.terrain.fresh(input.client, args(input.terrainLevel))) &&
+      (input.groundLevel == null ||
+        this.layers.ground.fresh(input.client, args(input.groundLevel))) &&
+      (editorContextCity(input) == null ||
+        this.layers.city.fresh(input.client, args(editorContextCity(input))))
     );
   }
   // Called only with committed UI inputs, never during a speculative React render.
@@ -195,6 +514,13 @@ export class PresentationLoader {
     ];
     const key = JSON.stringify(queryBounds);
     this.committed = { input, context, key };
+    const raster = (level: number | null | undefined): RasterArgs | null =>
+      status && level != null
+        ? { version: status, bounds: queryBounds, level }
+        : null;
+    this.layers.terrain.update(client, raster(input.terrainLevel));
+    this.layers.ground.update(client, raster(input.groundLevel));
+    this.layers.city.update(client, raster(editorContextCity(input)));
     if (
       !changed &&
       prior.key === key &&
@@ -208,7 +534,10 @@ export class PresentationLoader {
       this.tiles.setContext(null);
       this.aggregate.clear();
     }
-    if (!status) return;
+    if (!status) {
+      this.updateSnapshot({ display: null, error: "", loading: false });
+      return;
+    }
     const request: LoadRequest = {
       id: ++this.sequence,
       context,
@@ -219,6 +548,7 @@ export class PresentationLoader {
     const display = this.snapshot.display;
     const previous =
       display &&
+      !display.placeholder &&
       display.request.context.client === client &&
       display.request.context.session === status.sessionId &&
       display.request.context.retry === this.retries
@@ -227,10 +557,42 @@ export class PresentationLoader {
     this.updateSnapshot({
       loading: true,
       display:
+        display?.request.context.client !== client ||
         display?.value.scene.status.sessionId !== status.sessionId
           ? null
           : display,
     });
+    if (
+      !this.snapshot.display &&
+      (input.terrainLevel != null ||
+        input.groundLevel != null ||
+        editorContextCity(input) != null)
+    ) {
+      const emptyOwner = { exists: false, houseId: null, parcelId: null };
+      this.updateSnapshot({
+        display: {
+          request,
+          interim: false,
+          placeholder: true,
+          value: {
+            scene: {
+              status,
+              objects: [],
+              contextState: emptyOwner,
+              selectionState: emptyOwner,
+            },
+            detail: null,
+            active: "",
+            context: input.editorContext,
+            selectedId: input.selectedId,
+            floor: input.floor,
+            bounds: queryBounds,
+            includeLower: input.includeLower,
+          },
+        },
+      });
+      this.refreshLayers();
+    }
     void this.load(input, status, request, queryBounds, previous);
   }
   private async load(
@@ -266,9 +628,13 @@ export class PresentationLoader {
     const publish = (value: Presentation, interim: boolean) => {
       if (
         !this.snapshot.display ||
-        request.id > this.snapshot.display.request.id
-      )
+        request.id > this.snapshot.display.request.id ||
+        (request.id === this.snapshot.display.request.id &&
+          this.snapshot.display.placeholder)
+      ) {
         this.updateSnapshot({ display: { value, request, interim } });
+        this.refreshLayers();
+      }
     };
     const read = <K extends keyof ReadCommands>(
       cmd: K,
@@ -276,26 +642,7 @@ export class PresentationLoader {
       wanted: () => boolean = () => this.request === request,
     ) => scheduledRead(client, cmd, args, wanted);
     try {
-      const terrain =
-        input.terrainScale === undefined
-          ? undefined
-          : await this.terrain.load(
-              client,
-              status,
-              queryBounds,
-              input.terrainScale,
-              current,
-            );
-      if (!current() || terrain === null) return;
       if (input.cityLevel != null && editorContext.kind === "exterior") {
-        const overview = await this.city.load(
-          client,
-          status,
-          queryBounds,
-          input.cityLevel,
-          current,
-        );
-        if (!overview || !current()) return;
         const emptyOwner = { exists: true, houseId: null, parcelId: null };
         const priorSelected = previous?.scene.objects.find(
           (object) => object.id === selectedId,
@@ -316,8 +663,9 @@ export class PresentationLoader {
         publish(
           {
             scene,
-            terrain,
-            overview,
+            terrain: undefined,
+            ground: undefined,
+            overview: undefined,
             detail: null,
             active: "",
             context: editorContext,
@@ -421,7 +769,8 @@ export class PresentationLoader {
           publish(
             {
               scene,
-              terrain,
+              terrain: undefined,
+              ground: undefined,
               detail: null,
               active: "",
               context: editorContext,
@@ -546,14 +895,15 @@ export class PresentationLoader {
       }
       if (!current()) return;
       const result = {
-        terrain,
+        terrain: undefined,
+        ground: undefined,
         scene,
         detail,
         active: houseId,
         context: editorContext,
         selectedId,
         floor,
-        bounds: terrain ? queryBounds : fulfilled,
+        bounds: fulfilled,
         includeLower,
       };
       publish(result, false);

@@ -11,8 +11,8 @@ import {
 import type { PlannedParcel } from "./generated/PlannedParcel";
 export type ParcelHandle = "start" | "end" | "setback" | "depth";
 export type BoundSource = Extract<Parcel["source"], { kind: "road" }>;
-export const sectionIds = (road: Road) => [...new Set(road.edgeSections)];
-export function sectionPath(road: Road, sectionId: string): WorldPoint[] {
+const sectionIds = (road: Road) => [...new Set(road.edgeSections)];
+function sectionPath(road: Road, sectionId: string): WorldPoint[] {
   const points: WorldPoint[] = [];
   for (let i = 0; i < road.edgeSections.length; i++)
     if (road.edgeSections[i] === sectionId) {
@@ -37,7 +37,7 @@ function arc(path: WorldPoint[]) {
     lengths.push(lengths[i - 1] + distance(path[i - 1], path[i]));
   return lengths;
 }
-export function sampleSection(road: Road, source: BoundSource, t: number) {
+function sampleSection(road: Road, source: BoundSource, t: number) {
   const path = sectionPath(road, source.sectionId),
     lengths = arc(path),
     total = lengths.at(-1) ?? 0;

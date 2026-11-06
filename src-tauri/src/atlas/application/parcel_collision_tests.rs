@@ -98,7 +98,7 @@ fn header_only_transform_blocks_foreign_parcel_and_basement_world_overflow() {
     }));
     for transform in [
         json!({"x":-20,"y":-20,"angle":0}),
-        json!({"x":4_999_980,"y":0,"angle":0}),
+        json!({"x":99_999_980,"y":0,"angle":0}),
     ] {
         let preview = edit(
             &mut a,

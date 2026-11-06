@@ -205,3 +205,78 @@ pub(super) fn validate_rtree(
     }
     Ok(())
 }
+
+pub(super) fn objects(a: &AtlasApplication) -> Vec<FullObject> {
+    let mut q = a.db.prepare("SELECT id FROM objects ORDER BY id").unwrap();
+    q.query_map([], |r| r.get::<_, String>(0))
+        .unwrap()
+        .map(|id| a.object(&id.unwrap()).unwrap())
+        .collect()
+}
+pub(super) fn dump(a: &AtlasApplication) -> Value {
+    use rusqlite::types::ValueRef;
+    let mut tables = Vec::new();
+    for table in [
+        "objects",
+        "house_cells",
+        "local_cells",
+        "spatial",
+        "occupancy_spatial",
+        "document_meta",
+        "history",
+    ] {
+        let mut q =
+            a.db.prepare(&format!("SELECT * FROM {table} ORDER BY rowid"))
+                .unwrap();
+        let count = q.column_count();
+        let rows: Vec<Vec<Value>> = q
+            .query_map([], |r| {
+                (0..count)
+                    .map(|i| {
+                        Ok(match r.get_ref(i)? {
+                            ValueRef::Null => Value::Null,
+                            ValueRef::Integer(n) => json!(n),
+                            ValueRef::Real(n) => json!(n),
+                            ValueRef::Text(s) => json!(std::str::from_utf8(s).unwrap()),
+                            ValueRef::Blob(b) => json!(b),
+                        })
+                    })
+                    .collect()
+            })
+            .unwrap()
+            .collect::<rusqlite::Result<_>>()
+            .unwrap();
+        tables.push(json!([table, rows]));
+    }
+    json!([
+        a.status(),
+        a.cursor,
+        a.tip,
+        a.history_floor,
+        a.state,
+        a.saved,
+        a.next_state,
+        tables
+    ])
+}
+
+pub(super) fn snapshot_rows(path: &Path) -> Vec<(String, String, String)> {
+    let db = Connection::open(path).unwrap();
+    let mut q = db
+        .prepare("SELECT id,kind,body FROM objects ORDER BY id")
+        .unwrap();
+    q.query_map([], |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)))
+        .unwrap()
+        .collect::<rusqlite::Result<_>>()
+        .unwrap()
+}
+pub(super) fn payload_rows(path: &Path) -> Vec<(String, String)> {
+    let db = Connection::open(path).unwrap();
+    let mut q = db
+        .prepare("SELECT building_id,payload FROM house_cells ORDER BY building_id")
+        .unwrap();
+    q.query_map([], |r| Ok((r.get(0)?, r.get(1)?)))
+        .unwrap()
+        .collect::<rusqlite::Result<_>>()
+        .unwrap()
+}

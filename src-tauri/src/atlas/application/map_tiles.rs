@@ -137,7 +137,8 @@ impl AtlasApplication {
             let left = f64::from(x) * 32.0 * size;
             let top = f64::from(y) * 32.0 * size;
             ensure(
-                left.abs() <= 22_000_000.0 && top.abs() <= 22_000_000.0,
+                left.abs() <= 100_000_000.0 + size * 32.0
+                    && top.abs() <= 100_000_000.0 + size * 32.0,
                 "Ungültige Kartenkachel",
             )?;
             let mut query=self.db.prepare_cached("SELECT x,y,mass FROM map_density WHERE level=? AND x>=? AND x<? AND y>=? AND y<? AND n>0").map_err(storage_error)?;

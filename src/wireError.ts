@@ -23,7 +23,7 @@ const point = (value: unknown): value is [number, number] =>
   value.length === 2 &&
   value.every(
     (n: unknown) =>
-      typeof n === "number" && Number.isFinite(n) && Math.abs(n) <= 5_000_000,
+      typeof n === "number" && Number.isFinite(n) && Math.abs(n) <= 100_000_000,
   );
 function polygon(points: [number, number][]): boolean {
   // Match the exterior polygon limit; crossing/degenerate rings are never overlays.

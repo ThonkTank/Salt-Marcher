@@ -1,5 +1,4 @@
-import { selectObject, finishRoad } from "../support/editor";
-import type { Scene } from "../../src/atlas/model";
+import { finishRoad, selectObject } from "../support/editor";
 import { expect, test } from "../support/fixture";
 
 import { url } from "../support/editor";
@@ -7,6 +6,7 @@ import { url } from "../support/editor";
 test("road options update preview and commit despite delayed old preview", async ({
   page,
 }) => {
+  await page.clock.install();
   await page.goto(url);
   await expect(page.getByText("Ansicht wird geladen …")).toHaveCount(0);
   await page.getByRole("button", { name: "Straße", exact: true }).click();
@@ -20,7 +20,8 @@ test("road options update preview and commit despite delayed old preview", async
   await page.getByLabel("Straßenbreite (Fuß)").fill("30");
   await page.getByLabel("Straßenbreite (Fuß)").blur();
   await page.getByLabel("Material").selectOption("stone");
-  await page.waitForTimeout(200);
+  // Advance the preview debounce while the old response remains held.
+  await page.clock.runFor(200);
   expect(
     await page.evaluate(
       () => window.atlasCalls.filter((c) => c.cmd === "preview").length,
@@ -37,8 +38,9 @@ test("road options update preview and commit despite delayed old preview", async
         window.atlasCalls.some(
           (c) =>
             c.cmd === "preview" &&
-            (c.args.intent as any).road?.width === 30 &&
-            (c.args.intent as any).road?.material === "stone",
+            c.args.intent.type === "createRoad" &&
+            c.args.intent.road.width === 30 &&
+            c.args.intent.road.material === "stone",
         ),
       ),
     )
@@ -53,15 +55,16 @@ test("road options update preview and commit despite delayed old preview", async
     )
     .toBe(true);
   const intent = await page.evaluate(
-    () => window.atlasCalls.find((c) => c.cmd === "commit")!.args.intent as any,
+    () => window.atlasCalls.find((c) => c.cmd === "commit")!.args.intent,
   );
+  if (intent.type !== "createRoad") throw Error("Expected road creation");
   expect(intent.road).toMatchObject({ width: 30, material: "stone" });
   await expect
     .poll(() =>
       page.evaluate(
         async () =>
           (
-            await window.atlasCore<Scene>("scene", {
+            await window.atlasCore("scene", {
               context: { kind: "exterior" },
               bounds: [-1000, -1000, 1000, 1000],
             })
@@ -70,69 +73,6 @@ test("road options update preview and commit despite delayed old preview", async
     )
     .toContainEqual(
       expect.objectContaining({ kind: "road", width: 30, material: "stone" }),
-    );
-});
-
-test("terrain material updates preview and commit", async ({ page }) => {
-  await page.goto(url);
-  await expect(page.getByText("Ansicht wird geladen …")).toHaveCount(0);
-  await page.getByRole("button", { name: "Flächen", exact: true }).click();
-  const box = (await page.getByTestId("atlas-canvas").boundingBox())!;
-  for (const [x, y] of [
-    [100, 100],
-    [300, 100],
-    [300, 300],
-  ])
-    await page.mouse.click(box.x + x, box.y + y);
-  await expect
-    .poll(() =>
-      page.evaluate(() =>
-        window.atlasCalls.some(
-          (c) =>
-            c.cmd === "preview" &&
-            (c.args.intent as any).area?.material === "earth",
-        ),
-      ),
-    )
-    .toBe(true);
-  await page.getByLabel("Material").selectOption("stone");
-  await expect
-    .poll(() =>
-      page.evaluate(() =>
-        window.atlasCalls.some(
-          (c) =>
-            c.cmd === "preview" &&
-            (c.args.intent as any).area?.material === "stone",
-        ),
-      ),
-    )
-    .toBe(true);
-  await page.getByRole("button", { name: "Übernehmen" }).click();
-  await expect
-    .poll(() =>
-      page.evaluate(() =>
-        window.atlasCalls.some(
-          (c) =>
-            c.cmd === "commit" &&
-            (c.args.intent as any).area?.material === "stone",
-        ),
-      ),
-    )
-    .toBe(true);
-  await expect
-    .poll(() =>
-      page.evaluate(
-        async () =>
-          (
-            await window.atlasCore<Scene>("scene", {
-              context: { kind: "exterior" },
-              bounds: [-1000, -1000, 1000, 1000],
-            })
-          ).objects,
-      ),
-    )
-    .toContainEqual(
-      expect.objectContaining({ kind: "area", material: "stone" }),
     );
 });
 
@@ -178,8 +118,11 @@ test("rapid interior clicks queue immutable intents against successive revisions
     window.atlasCalls
       .filter((c) => c.cmd === "commit")
       .map((c) => ({
-        revision: (c.args.version as any).revision,
-        cells: (c.args.intent as any).intent.cells,
+        revision: c.args.version.revision,
+        cells:
+          c.args.intent.type === "room" && c.args.intent.intent.kind === "erase"
+            ? c.args.intent.intent.cells
+            : null,
       })),
   );
   expect(calls.map((c) => c.cells)).toEqual([[[1, 1]], [[2, 1]], [[3, 1]]]);

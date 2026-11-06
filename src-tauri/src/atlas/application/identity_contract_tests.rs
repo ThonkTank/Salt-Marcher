@@ -31,7 +31,7 @@ fn strict_wire_unions_require_owners_and_discrete_rotation() {
     missing.as_object_mut().unwrap().remove("parcelId");
     assert!(serde_json::from_value::<Intent>(missing).is_err());
     assert!(serde_json::from_value::<AlgorithmVersion>(json!(1)).is_err());
-    assert_eq!(serde_json::to_value(AlgorithmVersion).unwrap(), json!(3));
+    assert_eq!(serde_json::to_value(AlgorithmVersion).unwrap(), json!(4));
 }
 #[test]
 fn allocator_is_local_atomic_monotone_and_separate_from_history_state() {

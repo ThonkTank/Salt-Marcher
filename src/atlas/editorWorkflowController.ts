@@ -21,7 +21,6 @@ import {
   type ExactIntent,
   type WorkflowGate,
   type PlannedAction,
-  type GeometryOperation,
   type WorkflowEvent,
   canAcceptWorkflow,
   canRecheckWorkflow,
@@ -33,6 +32,7 @@ import {
   idleWorkflow,
   isQueueIntent,
   isExact,
+  isSurfaceWorkflow,
   isOwner,
   sameCandidate,
   sameRequest,
@@ -163,13 +163,7 @@ export class EditorWorkflowController {
     );
   }
   private ownsReadVersion(version: Version) {
-    const gate = this.ports.gate();
-    return (
-      !gate.pending &&
-      !gate.exclusive &&
-      !gate.uncertain &&
-      sameVersion(gate.version, version)
-    );
+    return sameVersion(this.available(), version);
   }
   private ownsRequest(request: RequestToken) {
     const s = this.state;
@@ -216,7 +210,71 @@ export class EditorWorkflowController {
       final,
     };
   }
+  private surfaceChecking = false;
+  private checkSurface() {
+    const state = this.state;
+    if (
+      this.surfaceChecking ||
+      !isSurfaceWorkflow(state) ||
+      !state.candidate ||
+      !this.ownsReadVersion(state.basis)
+    )
+      return;
+    const candidate = state.candidate;
+    this.surfaceChecking = true;
+    void this.ports
+      .inspect(
+        { operationId: candidate.token.candidateId, intent: candidate.intent },
+        state.basis,
+      )
+      .then((preview) => {
+        if (
+          preview &&
+          this.ownsLifetime(state.id, state.sessionId, state.context) &&
+          this.ownsReadVersion(state.basis)
+        )
+          this.dispatch({
+            type: "surfacePreview",
+            workflowId: state.id,
+            preview,
+          });
+      })
+      .catch(() => {})
+      .finally(() => {
+        this.surfaceChecking = false;
+        const next = this.state;
+        if (
+          isSurfaceWorkflow(next) &&
+          next.candidate?.token.candidateId !== candidate.token.candidateId
+        )
+          this.checkSurface();
+      });
+  }
   private publish(state: EditorWorkflow, immediate = false) {
+    if (isOwner(state) && !state.pointer) {
+      if (!state.candidate) {
+        this.cancel();
+        return;
+      }
+      if (state.stage.resolved) {
+        state = geometryState(
+          {
+            ...state,
+            basis: { ...state.stage.version },
+            stage: { phase: "editing" },
+          },
+          state.operation,
+          null,
+        );
+        immediate = true;
+      }
+    }
+    if (isSurfaceWorkflow(state)) {
+      clearTimeout(this.timer);
+      this.dispatch({ type: "begin", state });
+      this.checkSurface();
+      return;
+    }
     this.stopCheck();
     this.dispatch({ type: "begin", state });
     if (isExact(state) && state.candidate && state.stage.phase !== "stale") {
@@ -255,12 +313,6 @@ export class EditorWorkflowController {
       return;
     }
     const operation = captured.operation;
-    if (
-      operation.kind !== "newRoad" &&
-      operation.kind !== "extendRoad" &&
-      operation.kind !== "newArea"
-    )
-      return;
     this.publish(
       draftState(
         {
@@ -277,6 +329,41 @@ export class EditorWorkflowController {
         pointer,
       ),
     );
+  };
+  editRiver = (
+    intent: Extract<Intent, { type: "riverEdit" }>,
+    pointer: Extract<Gesture, { kind: "river" }> | null = null,
+    append?: "start" | "end",
+  ) => {
+    const version = this.available();
+    if (!version) return;
+    const old = this.state;
+    const prior =
+      old.kind === "geometry" && old.operation.kind === "river" && isExact(old)
+        ? old
+        : null;
+    if (prior?.stage.phase === "committing") return;
+    const basis = prior?.basis ?? version;
+    const id = prior?.id ?? ++this.nextWorkflow;
+    const complete =
+      intent.action.kind !== "put" || intent.action.nodes.length >= 2;
+    this.publish({
+      ...this.common(id, basis),
+      kind: "geometry",
+      rollback: null,
+      pointer,
+      basis,
+      operation: {
+        kind: "river",
+        intent: structuredClone(intent),
+        append:
+          append ??
+          (prior?.operation.kind === "river" ? prior.operation.append : null),
+      },
+      candidate: complete ? this.candidate(id, intent, basis, false) : null,
+      stage:
+        prior?.stage.phase === "stale" ? prior.stage : { phase: "editing" },
+    });
   };
   beginIntent = (
     intent: Intent,
@@ -300,33 +387,23 @@ export class EditorWorkflowController {
     if (!version) return Promise.resolve(null);
     const exact = intent as ExactIntent;
     const old = this.state;
-    if (
+    const samePopulation =
       exact.type === "populate" &&
       old.kind === "populate" &&
-      old.operation.roadId === exact.roadId &&
-      old.stage.phase === "stale"
+      old.operation.roadId === exact.roadId;
+    const sameRoughening =
+      exact.type === "roughenRoad" &&
+      old.kind === "geometry" &&
+      old.candidate?.intent.type === "roughenRoad" &&
+      old.candidate.intent.roadId === exact.roadId;
+    if (
+      isExact(old) &&
+      old.stage.phase === "stale" &&
+      (samePopulation || sameRoughening)
     ) {
       this.publish({
         ...old,
         candidate: this.candidate(old.id, exact, old.basis, false),
-      });
-      return Promise.resolve(null);
-    }
-    if (
-      exact.type === "roughenRoad" &&
-      old.kind === "geometry" &&
-      old.candidate?.intent.type === "roughenRoad" &&
-      old.candidate.intent.roadId === exact.roadId &&
-      old.stage.phase === "stale"
-    ) {
-      this.publish({
-        ...old,
-        candidate: this.candidate(
-          old.id,
-          exact,
-          old.candidate.token.version,
-          false,
-        ),
       });
       return Promise.resolve(null);
     }
@@ -336,12 +413,7 @@ export class EditorWorkflowController {
       return Promise.resolve(null);
     }
     const operation = captured.operation;
-    const id =
-        exact.type === "populate" &&
-        old.kind === "populate" &&
-        old.operation.roadId === exact.roadId
-          ? old.id
-          : ++this.nextWorkflow,
+    const id = samePopulation ? old.id : ++this.nextWorkflow,
       candidate = this.candidate(
         id,
         exact,
@@ -353,17 +425,17 @@ export class EditorWorkflowController {
       basis: { sessionId: version.sessionId, revision: version.revision },
       candidate,
     };
-    switch (exact.type) {
-      case "createRoad":
+    switch (operation.kind) {
+      case "newRoad":
       case "extendRoad":
-      case "createArea":
+      case "newArea":
         throw Error("Neue Geometrie muss als Entwurf beginnen");
       case "delete":
         this.publish(
           {
             ...common,
             kind: "delete",
-            operation: { kind: "delete", id: exact.id },
+            operation,
             stage: {
               phase: "checking",
               request: this.request(candidate.token),
@@ -376,7 +448,7 @@ export class EditorWorkflowController {
         this.publish({
           ...common,
           kind: "populate",
-          operation: { kind: "populate", roadId: exact.roadId },
+          operation,
           stage: { phase: "editing" },
         });
         break;
@@ -389,7 +461,7 @@ export class EditorWorkflowController {
               stage: { phase: "editing" },
               rollback: null,
             },
-            operation as GeometryOperation,
+            operation,
             pointer,
           ),
           !pointer && autoFinish,
@@ -428,8 +500,7 @@ export class EditorWorkflowController {
     const version = this.available(queued);
     if (!version) return;
     const id = ++this.nextWorkflow,
-      common = this.common(id, version),
-      pointer = structuredClone(gesture);
+      common = this.common(id, version);
     if (queued) {
       this.publish({
         ...common,
@@ -440,20 +511,13 @@ export class EditorWorkflowController {
       });
       return;
     }
+    const pointer = structuredClone(gesture);
     const captured = captureGestureOperation(gesture, this.source(version));
     if (!captured.ok) {
       this.ports.error(captured.message);
       return;
     }
     const operation = captured.operation;
-    if (
-      operation.kind === "newRoad" ||
-      operation.kind === "extendRoad" ||
-      operation.kind === "newArea" ||
-      operation.kind === "populate" ||
-      operation.kind === "delete"
-    )
-      return;
     if (
       operation.kind === "createHouse" &&
       operation.parcelId &&
@@ -471,7 +535,6 @@ export class EditorWorkflowController {
           phase: "resolveParcelOwner",
           version: { sessionId: version.sessionId, revision: version.revision },
           request,
-          finished: false,
           resolved: false,
         },
       });
@@ -511,25 +574,7 @@ export class EditorWorkflowController {
             throw Error(
               "Parzelle bereits bebaut – Räume im vorhandenen Haus ergänzen",
             );
-          if (s.stage.finished)
-            this.publish(
-              geometryState(
-                {
-                  ...s,
-                  kind: "geometry",
-                  basis: { ...s.stage.version },
-                  stage: { phase: "editing" },
-                },
-                s.operation,
-                s.pointer,
-              ),
-              true,
-            );
-          else
-            this.dispatch({
-              type: "begin",
-              state: { ...s, stage: { ...s.stage, resolved: true } },
-            });
+          this.publish({ ...s, stage: { ...s.stage, resolved: true } });
         } catch (error) {
           if (owned()) {
             this.fail(String(error));
@@ -661,7 +706,12 @@ export class EditorWorkflowController {
     const operation = captured.operation;
     if (operation.kind === "populate" || operation.kind === "delete") return;
     const candidate = intent
-      ? this.candidate(s.id, intent, version, finish && s.kind !== "draft")
+      ? this.candidate(
+          s.id,
+          intent,
+          version,
+          finish && s.kind !== "draft" && operation.kind !== "river",
+        )
       : null;
     const pointer = finish
       ? null
@@ -672,26 +722,13 @@ export class EditorWorkflowController {
         (pointer && pointer.kind !== "houseRectangle")
       )
         return;
-      const next = {
+      this.publish({
         ...s,
         operation,
         pointer,
         candidate,
         guide: result.guide,
-        stage: { ...s.stage, finished: finish },
-      };
-      if (finish && !candidate) this.cancel();
-      else if (finish && s.stage.resolved)
-        this.publish(
-          {
-            ...next,
-            kind: "geometry",
-            basis: { ...s.stage.version },
-            stage: { phase: "editing" },
-          },
-          true,
-        );
-      else this.publish(next);
+      });
     } else if (s.kind === "draft") {
       if (
         operation.kind !== "newRoad" &&

@@ -126,19 +126,19 @@ pub struct PopulationRecipe {
 }
 #[derive(Clone, Copy, Debug, PartialEq)]
 #[cfg_attr(test, derive(ts_rs::TS))]
-#[cfg_attr(test, ts(type = "3"))]
+#[cfg_attr(test, ts(type = "4"))]
 pub struct AlgorithmVersion;
 impl Serialize for AlgorithmVersion {
     fn serialize<S: serde::Serializer>(&self, s: S) -> std::result::Result<S::Ok, S::Error> {
-        s.serialize_u8(3)
+        s.serialize_u8(4)
     }
 }
 impl<'de> Deserialize<'de> for AlgorithmVersion {
     fn deserialize<D: serde::Deserializer<'de>>(d: D) -> std::result::Result<Self, D::Error> {
-        if u8::deserialize(d)? == 3 {
+        if u8::deserialize(d)? == 4 {
             Ok(Self)
         } else {
-            Err(serde::de::Error::custom("algorithmVersion must be 3"))
+            Err(serde::de::Error::custom("algorithmVersion must be 4"))
         }
     }
 }
@@ -620,6 +620,14 @@ pub(in crate::atlas) struct ValidPreviewWire {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[cfg_attr(test, ts(optional))]
     pub(in crate::atlas) terrain: Option<Box<super::terrain::TerrainPreview>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(test, ts(optional))]
+    pub(in crate::atlas) ground: Option<Box<super::ground::GroundResponse>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(in crate::atlas) regions: Option<Vec<super::regions::Region>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(test, ts(optional))]
+    pub(in crate::atlas) rivers: Option<super::rivers::RiverDelta>,
 }
 #[cfg_attr(test, derive(ts_rs::TS))]
 #[derive(Serialize)]
@@ -645,10 +653,13 @@ pub(in crate::atlas) enum PreviewWire {
 }
 #[cfg_attr(test, derive(ts_rs::TS))]
 #[derive(Clone, Debug, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct RoadRoughness {
     pub amount: f64,
     pub seed: u32,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(test, ts(optional))]
+    pub view_scale: Option<f64>,
 }
 #[cfg_attr(test, derive(ts_rs::TS))]
 #[derive(Deserialize)]
@@ -666,6 +677,25 @@ pub(in crate::atlas) struct RoadHeaderArgs {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "camelCase", deny_unknown_fields)]
 pub enum Intent {
+    RiverEdit {
+        action: super::rivers::RiverAction,
+        view: Option<super::terrain::TerrainArgs>,
+    },
+    RegionEdit {
+        action: super::regions::RegionAction,
+    },
+    RegionStroke {
+        id: String,
+        points: Vec<Point>,
+        radius: f64,
+        erase: bool,
+    },
+    GroundStroke {
+        brush: super::ground::GroundBrush,
+        #[serde(default)]
+        #[cfg_attr(test, ts(optional))]
+        view: Option<super::ground::GroundArgs>,
+    },
     SceneryStroke {
         brush: super::scenery::SceneryBrush,
     },
@@ -675,8 +705,8 @@ pub enum Intent {
         #[cfg_attr(test, ts(optional))]
         view: Option<super::terrain::TerrainArgs>,
     },
-    SetWaterLevel {
-        level: f64,
+    WaterStroke {
+        brush: super::terrain::Brush,
         #[serde(default)]
         #[cfg_attr(test, ts(optional))]
         view: Option<super::terrain::TerrainArgs>,
@@ -690,6 +720,13 @@ pub enum Intent {
         #[serde(default, skip_serializing_if = "Option::is_none")]
         #[cfg_attr(test, ts(optional))]
         roughness: Option<RoadRoughness>,
+        #[serde(
+            default,
+            rename = "terrainFollow",
+            skip_serializing_if = "Option::is_none"
+        )]
+        #[cfg_attr(test, ts(optional))]
+        terrain_follow: Option<super::road_terrain::TerrainFollow>,
         #[serde(deserialize_with = "required_option")]
         population: Option<population::Settings>,
     },
@@ -723,6 +760,13 @@ pub enum Intent {
         #[serde(default, skip_serializing_if = "Option::is_none")]
         #[cfg_attr(test, ts(optional))]
         roughness: Option<RoadRoughness>,
+        #[serde(
+            default,
+            rename = "terrainFollow",
+            skip_serializing_if = "Option::is_none"
+        )]
+        #[cfg_attr(test, ts(optional))]
+        terrain_follow: Option<super::road_terrain::TerrainFollow>,
         nodes: Vec<NodeInput>,
         #[serde(rename = "endpointHandle", deserialize_with = "required_option")]
         endpoint_handle: Option<Point>,
@@ -798,9 +842,13 @@ pub enum Intent {
 impl Intent {
     pub(in crate::atlas) fn object_ids(&self) -> Vec<String> {
         match self {
-            Self::SceneryStroke { .. }
+            Self::RiverEdit { .. }
+            | Self::RegionEdit { .. }
+            | Self::RegionStroke { .. }
+            | Self::GroundStroke { .. }
+            | Self::SceneryStroke { .. }
             | Self::TerrainStroke { .. }
-            | Self::SetWaterLevel { .. }
+            | Self::WaterStroke { .. }
             | Self::CreateRoad { .. }
             | Self::CreateArea { .. } => vec![],
             Self::SetFoundation { id, .. } => vec![id.clone()],

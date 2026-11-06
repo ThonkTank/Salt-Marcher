@@ -10,7 +10,7 @@ use crate::atlas::Result;
 pub(in crate::atlas) fn scene(app: &AtlasApplication, input: SceneArgs) -> Result<SceneResponse> {
     let b = input.bounds;
     ensure(
-        b.iter().all(|x| x.is_finite() && x.abs() <= 5_000_100.0) && b[0] <= b[2] && b[1] <= b[3],
+        b.iter().all(|x| x.is_finite() && x.abs() <= 100_001_000.0) && b[0] <= b[2] && b[1] <= b[3],
         "Ungültiger Ausschnitt",
     )?;
     let mut objects = app.query(b)?;

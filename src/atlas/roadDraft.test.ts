@@ -39,7 +39,7 @@ const road: Road = {
   ],
   sections: [{ id: "section-4", populatedSides: ["left"] }],
   edgeSections: ["section-4"],
-  populationRecipe: { settings: defaultPopulation, algorithmVersion: 3 },
+  populationRecipe: { settings: defaultPopulation, algorithmVersion: 4 },
 };
 const nodes: CurveNodeInput[] = [
   { point: [-20, 10], incoming: [-15, 8], outgoing: [-25, 12] },

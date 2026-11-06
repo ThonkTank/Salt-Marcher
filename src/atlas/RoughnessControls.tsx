@@ -29,7 +29,10 @@ export function RoughnessControls({
         onChange={(e) => onChange(Number(e.target.value))}
       />
       <button onClick={onVariation}>Neue Variation</button>
-      <small>Formt die echte Straße. Übernehmen fixiert den Verlauf.</small>
+      <small>
+        Bleibt im Entwurf beim Zoomen gleich groß sichtbar. Übernehmen fixiert
+        den Verlauf.
+      </small>
     </div>
   );
 }

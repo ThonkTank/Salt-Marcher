@@ -1,4 +1,5 @@
-import { expect, test } from "@playwright/test";
+import { editorUrl } from "../support/browserServer";
+import { expect, test } from "../support/fixture";
 import { startCoreTransport } from "../support/coreTransport";
 
 const echo = `const rl = require('node:readline').createInterface({ input: process.stdin });
@@ -107,4 +108,20 @@ test("unsolicited response fails the transport and future requests", async () =>
   } finally {
     await core.close();
   }
+});
+
+test("raw negative-test boundary rejects malformed commands without changing the document", async ({
+  page,
+}) => {
+  await page.goto(editorUrl);
+  const before = await page.evaluate(() => window.atlasCore("status", {}));
+  await expect(
+    page.evaluate(() => window.atlasRaw("commit", {})),
+  ).rejects.toThrow();
+  await expect(
+    page.evaluate(() => window.atlasRaw("missing", {})),
+  ).rejects.toThrow();
+  expect(await page.evaluate(() => window.atlasCore("status", {}))).toEqual(
+    before,
+  );
 });

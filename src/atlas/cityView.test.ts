@@ -1,6 +1,7 @@
+import { decideLod } from "./lod";
 import { CityCache } from "./presentationCache";
 import { describe, expect, it } from "vitest";
-import { cityLevel, cityTiles, zoomIntoCity } from "./cityView";
+import { cityRequest, zoomIntoCity } from "./cityView";
 import { AtlasClient } from "./client";
 import { layoutLabels } from "./mapLabels";
 import type { MapFeature } from "./generated/MapFeature";
@@ -34,25 +35,33 @@ const house = (id: string, x: number, important = false): MapFeature => ({
 const measure = (s: string) => [...s].length * 7;
 describe("city presentation", () => {
   it("uses floor coordinates and retains a level inside its hysteresis band", () => {
-    expect(cityTiles([-1, -1, 1, 1], 0)).toEqual([
+    expect(cityRequest([-1, -1, 1, 1], 0).tiles).toEqual([
       [-1, -1],
-      [-1, 0],
       [0, -1],
+      [-1, 0],
       [0, 0],
     ]);
-    const level = cityLevel(0.03);
-    expect(cityLevel(0.031, level)).toBe(level);
-    expect(cityLevel(0.3, level)).not.toBe(level);
-    expect(zoomIntoCity({ scale: 0.01, x: 100, y: 50 }, [20, 30])).toEqual({
-      scale: 0.064,
-      x: 98.92,
-      y: 48.38,
+    const decision = decideLod(0.03);
+    const level = decision.cityLevel;
+    expect(decideLod(0.031, decision).cityLevel).toBe(level);
+    expect(decideLod(0.3, decision).cityLevel).not.toBe(level);
+    expect(
+      zoomIntoCity(
+        { scale: 0.01, x: 100, y: 50 },
+        [20, 30],
+        decideLod(0.01).navigationLevel,
+      ),
+    ).toEqual({
+      scale: 304.8 / 11250,
+      x: 100 + 20 * (0.01 - 304.8 / 11250),
+      y: 50 + 30 * (0.01 - 304.8 / 11250),
     });
   });
   it("prioritizes important places and avoids overlap across objects", () => {
     const labels = layoutLabels(
       [house("ordinary", 0), house("Rathaus", 2, true)],
       { scale: 1, x: 100, y: 100 },
+      decideLod(1).policy,
       800,
       600,
       "",
@@ -70,6 +79,7 @@ describe("city presentation", () => {
     const overview = layoutLabels(
       [house("ordinary", 0), house("Rathaus", 2, true)],
       { scale: 0.02, x: 100, y: 100 },
+      decideLod(0.02).policy,
       800,
       600,
       "",
@@ -96,6 +106,7 @@ describe("city presentation", () => {
     const labels = layoutLabels(
       [road],
       { scale: 1, x: 0, y: 0 },
+      decideLod(1).policy,
       1200,
       400,
       "",
@@ -106,6 +117,7 @@ describe("city presentation", () => {
     const shifted = layoutLabels(
       [road],
       { scale: 1, x: 5, y: 0 },
+      decideLod(1).policy,
       1200,
       400,
       "",
@@ -120,6 +132,7 @@ describe("city presentation", () => {
     const labels = layoutLabels(
       [f],
       { scale: 1, x: 200, y: 100 },
+      decideLod(1).policy,
       800,
       600,
       "",
@@ -131,6 +144,7 @@ describe("city presentation", () => {
       layoutLabels(
         [f],
         { scale: 1, x: 200, y: 100 },
+        decideLod(1).policy,
         800,
         600,
         "",

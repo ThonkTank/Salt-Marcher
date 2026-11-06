@@ -513,7 +513,7 @@ fn curved_parcel_authorship_follow_history_file_detach_and_cascade_form_one_life
 }
 
 #[test]
-fn both_sides_empty_authorship_extensions_format13_and_detached_grid_lifecycle() {
+fn both_sides_empty_authorship_extensions_format18_and_detached_grid_lifecycle() {
     use saltmarcher::atlas::{GridPose, QuarterTurns, Transform};
     let mut a = AtlasApplication::new().unwrap();
     let directory = tempfile::tempdir().unwrap();
@@ -524,7 +524,7 @@ fn both_sides_empty_authorship_extensions_format13_and_detached_grid_lifecycle()
         assert_eq!(
             db.query_row("PRAGMA user_version", [], |r| r.get::<_, i64>(0))
                 .unwrap(),
-            13
+            18
         );
         let result = db
             .prepare("SELECT building_id,payload FROM house_cells ORDER BY building_id")

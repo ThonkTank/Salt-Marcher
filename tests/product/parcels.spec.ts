@@ -1,13 +1,17 @@
-import { selectObject } from "../support/editor";
+declare global {
+  interface Window {
+    parcelOldCells: import("../../src/atlas/model").Detail["cells"];
+    parcelOldLower: import("../../src/atlas/model").Detail["lower"];
+  }
+}
 import type { Page } from "@playwright/test";
-import type {
-  House,
-  Parcel,
-  Scene,
-  Status,
-  WorldPoint,
-} from "../../src/atlas/model";
-import { ready, screen, seedParcels as seed } from "../support/editor";
+import type { House, Parcel, WorldPoint } from "../../src/atlas/model";
+import {
+  ready,
+  screen,
+  seedParcels as seed,
+  selectObject,
+} from "../support/editor";
 import { expect, test } from "../support/fixture";
 
 import { url } from "../support/editor";
@@ -30,7 +34,7 @@ async function drag(page: Page, a: WorldPoint, b: WorldPoint) {
 async function owner(page: Page, parcelId: string) {
   return page.evaluate(
     (parcelId) =>
-      window.atlasCore<Scene>("scene", {
+      window.atlasCore("scene", {
         bounds: [10000, 10000, 10010, 10010],
         context: { kind: "parcel", parcelId },
         selectedId: parcelId,
@@ -86,7 +90,7 @@ test("empty parcel remains open through first draw, last erase, Fit and rebirth;
     .toBeNull();
   await ready(page);
   await expect(
-    page.getByRole("button", { name: "Zur Dorfansicht" }),
+    page.getByRole("button", { name: "Zur Atlasansicht" }),
   ).toBeVisible();
   await page.getByRole("button", { name: "Einpassen", exact: true }).click();
   await ready(page);
@@ -126,7 +130,7 @@ test("empty parcel remains open through first draw, last erase, Fit and rebirth;
   expect(scene.objects.filter((o) => o.kind === "house")).toHaveLength(1);
   const metadata = await page.evaluate(
     (buildingId) =>
-      window.atlasCore<{ rooms: { floor: number }[] }>("interiorMetadata", {
+      window.atlasCore("interiorMetadata", {
         buildingId,
       }),
     second,
@@ -314,7 +318,7 @@ test("offscreen empty owner closure refreshes on relation changes and undo witho
   );
   await expect(page.locator("output")).toHaveText("fresh");
   await page.evaluate(async (parcelId) => {
-    const r = await window.atlasCore<{ status: Status }>("commit", {
+    const r = await window.atlasCore("commit", {
       version: await window.atlasCore("status", {}),
       intent: {
         type: "createParcelHouse",
@@ -334,7 +338,7 @@ test("offscreen empty owner closure refreshes on relation changes and undo witho
     )
     .not.toBeNull();
   await page.evaluate(async () => {
-    const status = await window.atlasCore<Status>("history", {
+    const status = await window.atlasCore("history", {
       version: await window.atlasCore("status", {}),
       redo: false,
     });
@@ -372,14 +376,12 @@ test("pure bound movement reloads world owner headers while preserving local cel
   );
   await expect(page.locator("output")).toHaveText("fresh");
   await page.evaluate(() => {
-    (window as any).parcelOldCells =
-      window.atlasPresentation.value!.detail!.cells;
-    (window as any).parcelOldLower =
-      window.atlasPresentation.value!.detail!.lower;
+    window.parcelOldCells = window.atlasPresentation.value!.detail!.cells;
+    window.parcelOldLower = window.atlasPresentation.value!.detail!.lower;
     window.atlasCalls = [];
   });
   await page.evaluate(async (house) => {
-    const r = await window.atlasCore<{ status: Status }>("commit", {
+    const r = await window.atlasCore("commit", {
       version: await window.atlasCore("status", {}),
       intent: {
         type: "transformHouse",
@@ -392,11 +394,9 @@ test("pure bound movement reloads world owner headers while preserving local cel
   await expect(page.locator("output")).toHaveText("fresh");
   const state = await page.evaluate(() => ({
     cells:
-      window.atlasPresentation.value!.detail!.cells ===
-      (window as any).parcelOldCells,
+      window.atlasPresentation.value!.detail!.cells === window.parcelOldCells,
     lower:
-      window.atlasPresentation.value!.detail!.lower ===
-      (window as any).parcelOldLower,
+      window.atlasPresentation.value!.detail!.lower === window.parcelOldLower,
     calls: window.atlasCalls.map((c) => c.cmd),
     house: window.atlasPresentation.value!.scene.objects.find(
       (o) => o.kind === "house",

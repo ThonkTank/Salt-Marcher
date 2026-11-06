@@ -36,7 +36,7 @@ export type Commands = {
 };
 export type ReadCommands = Pick<Commands, keyof WireReadCommands>;
 // The untyped transport is isolated here; callers cannot choose the result type.
-export type Transport = (
+type Transport = (
   cmd: string,
   args: Record<string, unknown>,
 ) => Promise<unknown>;

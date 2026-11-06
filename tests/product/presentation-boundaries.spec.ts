@@ -198,7 +198,7 @@ test("large house metadata and visible tiles stay bounded with many independent 
   expect(meta.rooms.every((r) => r.buildingId === house.id)).toBe(true);
   const result = await page.evaluate(
     (buildingId) =>
-      window.atlasCore<any>("interiorTile", {
+      window.atlasCore("interiorTile", {
         buildingId,
         floor: 0,
         bounds: [0, 0, 15, 15],

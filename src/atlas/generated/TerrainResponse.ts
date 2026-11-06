@@ -5,6 +5,5 @@ import type { SurfaceTile } from "./SurfaceTile";
 export type TerrainResponse = {
   status: Status;
   level: number;
-  waterLevel: number;
   tiles: Array<SurfaceTile>;
 };

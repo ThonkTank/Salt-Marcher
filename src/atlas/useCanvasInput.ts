@@ -4,14 +4,16 @@ import {
   type CanvasHTMLAttributes,
   type RefObject,
 } from "react";
-import { workflowPointer } from "./editorWorkflow";
+import { workflowPointer, isLiveBrush } from "./editorWorkflow";
 import type { EditorWorkflowController } from "./editorWorkflowController";
 import {
+  decideBlur,
   decideDoubleClick,
   decideKey,
   decidePointerDown,
   decideWheel,
   evaluatePointer,
+  evaluateHold,
   hoverAtPoint,
   type CanvasCommand,
   type CanvasInputSnapshot,
@@ -22,7 +24,7 @@ type Options = {
   host: RefObject<HTMLDivElement | null>;
   canvas: RefObject<HTMLCanvasElement | null>;
   controller: EditorWorkflowController;
-  snapshot: () => CanvasInputSnapshot;
+  snapshot: () => Omit<CanvasInputSnapshot, "workflow">;
   dispatch: (command: CanvasCommand) => void;
   setSize: (size: { width: number; height: number }) => void;
   setHoverPoint?: (point: import("./model").WorldPoint | null) => void;
@@ -43,7 +45,6 @@ type Handlers = Required<
 >;
 
 export function useCanvasInput(options: Options): Handlers & {
-  releaseCapture(pointer?: number): void;
   abortPointer(pointer?: number): void;
 } {
   const current = useRef(options);
@@ -77,6 +78,32 @@ export function useCanvasInput(options: Options): Handlers & {
   };
   const execute = (commands: CanvasCommand[]) =>
     commands.forEach(current.current.dispatch);
+  const evaluate = (
+    state: CanvasInputSnapshot,
+    event: {
+      pointerId: number;
+      clientX: number;
+      clientY: number;
+      altKey: boolean;
+    },
+    finish: boolean,
+    alt = event.altKey,
+  ) => {
+    const result = evaluatePointer(
+      state,
+      {
+        time: performance.now(),
+        pointer: event.pointerId,
+        point: point(event, state),
+        screen: [event.clientX, event.clientY],
+        alt,
+      },
+      finish,
+    );
+    if (result) current.current.controller.evaluate(result, finish);
+    if (finish) releaseCapture(event.pointerId);
+    if (result?.camera) execute([{ kind: "camera", camera: result.camera }]);
+  };
   useEffect(() => {
     const host = current.current.host.current;
     const observer = new ResizeObserver(([entry]) =>
@@ -90,7 +117,7 @@ export function useCanvasInput(options: Options): Handlers & {
       const decision = decideKey(snapshot(), {
         key: event.key,
         code: event.code,
-        ctrl: event.ctrlKey,
+        ctrl: event.ctrlKey && !event.getModifierState("AltGraph"),
         meta: event.metaKey,
         shift: event.shiftKey,
         formTarget:
@@ -104,14 +131,20 @@ export function useCanvasInput(options: Options): Handlers & {
     const up = (event: KeyboardEvent) => {
       if (event.code === "Space") space.current = false;
     };
+    const tick = window.setInterval(() => {
+      const result = evaluateHold(snapshot(), performance.now());
+      if (result) current.current.controller.evaluate(result, false);
+    }, 120);
     const blur = () => {
       space.current = false;
+      execute(decideBlur(snapshot()));
       abortPointer();
     };
     window.addEventListener("keydown", down);
     window.addEventListener("keyup", up);
     window.addEventListener("blur", blur);
     return () => {
+      window.clearInterval(tick);
       observer.disconnect();
       window.removeEventListener("keydown", down);
       window.removeEventListener("keyup", up);
@@ -120,11 +153,11 @@ export function useCanvasInput(options: Options): Handlers & {
     };
   }, []);
   return {
-    releaseCapture,
     abortPointer,
     onPointerDown: (event) => {
       const state = snapshot();
       const decision = decidePointerDown(state, {
+        time: performance.now(),
         pointer: event.pointerId,
         button: event.button,
         point: point(event, state),
@@ -138,6 +171,10 @@ export function useCanvasInput(options: Options): Handlers & {
         capturedPointer.current = event.pointerId;
       }
       execute(decision.commands);
+      const started = snapshot();
+      if (isLiveBrush(workflowPointer(started.workflow))) {
+        evaluate(started, event, false, false);
+      }
     },
     onPointerLeave: () => current.current.setHoverPoint?.(null),
     onPointerMove: (event) => {
@@ -148,36 +185,12 @@ export function useCanvasInput(options: Options): Handlers & {
         current.current.setHover(hoverAtPoint(state, p));
         return;
       }
-      const result = evaluatePointer(
-        state,
-        {
-          pointer: event.pointerId,
-          point: p,
-          screen: [event.clientX, event.clientY],
-          alt: event.altKey,
-        },
-        false,
-      );
-      if (!result) return;
-      current.current.controller.evaluate(result, false);
-      if (result.camera) execute([{ kind: "camera", camera: result.camera }]);
+      evaluate(state, event, false);
     },
     onPointerUp: (event) => {
       const state = snapshot();
-      const result = evaluatePointer(
-        state,
-        {
-          pointer: event.pointerId,
-          point: point(event, state),
-          screen: [event.clientX, event.clientY],
-          alt: event.altKey,
-        },
-        true,
-      );
       // Finish removes the active pointer before normal lostcapture is delivered.
-      if (result) current.current.controller.evaluate(result, true);
-      releaseCapture(event.pointerId);
-      if (result?.camera) execute([{ kind: "camera", camera: result.camera }]);
+      evaluate(state, event, true);
     },
     onPointerCancel: (event) => abortPointer(event.pointerId),
     onLostPointerCapture: (event) => {
@@ -186,7 +199,9 @@ export function useCanvasInput(options: Options): Handlers & {
     },
     onWheel: (event) => {
       const state = snapshot();
-      execute(decideWheel(state, point(event, state), event.deltaY));
+      execute(
+        decideWheel(state, point(event, state), event.deltaY, event.altKey),
+      );
     },
     onDoubleClick: (event) => {
       const state = snapshot();

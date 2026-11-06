@@ -1,3 +1,4 @@
+import { MIN_WORLD_SCALE, clampCamera } from "./lod";
 import {
   useCallback,
   useEffect,
@@ -26,7 +27,9 @@ export function useCamera({
   context,
   floor,
   setCameraState,
+  size,
 }: {
+  size: { width: number; height: number };
   status: Status | null;
   context: EditorContext;
   floor: number;
@@ -55,9 +58,15 @@ export function useCamera({
   const setCamera = useCallback(
     (next: SetStateAction<Camera>) => {
       cancelFit();
-      setCameraState(next);
+      setCameraState((prior) =>
+        clampCamera(
+          typeof next === "function" ? next(prior) : next,
+          size.width,
+          size.height,
+        ),
+      );
     },
-    [cancelFit, setCameraState],
+    [cancelFit, setCameraState, size.width, size.height],
   );
   const fit = async (
     client: AtlasClient,
@@ -103,18 +112,24 @@ export function useCamera({
       } else b = await client.request("extent", {});
       if (!current() || !b) return;
       const scale = Math.max(
-        context.kind === "house" ? 1.28 : 0.000064,
+        context.kind === "house" ? 1.28 : MIN_WORLD_SCALE,
         Math.min(
           25.6,
           (size.width - 100) / Math.max(1, b[2] - b[0]),
           (size.height - 100) / Math.max(1, b[3] - b[1]),
         ),
       );
-      setCameraState({
-        scale,
-        x: size.width / 2 - ((b[0] + b[2]) / 2) * scale,
-        y: size.height / 2 - ((b[1] + b[3]) / 2) * scale,
-      });
+      setCameraState(
+        clampCamera(
+          {
+            scale,
+            x: size.width / 2 - ((b[0] + b[2]) / 2) * scale,
+            y: size.height / 2 - ((b[1] + b[3]) / 2) * scale,
+          },
+          size.width,
+          size.height,
+        ),
+      );
     } catch (error) {
       if (current()) throw error;
     } finally {

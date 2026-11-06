@@ -1,5 +1,6 @@
 import { spawn, type SpawnOptions } from "node:child_process";
 import { createInterface } from "node:readline";
+import { coreBinary } from "./corePaths";
 
 type Pending = {
   resolve: (line: string) => void;
@@ -7,13 +8,15 @@ type Pending = {
 };
 
 /** One JSONL FIFO and process lifetime; wire decoding belongs to the caller. */
-export function startCoreTransport(options: {
-  binary: string;
-  args?: string[];
-  env?: SpawnOptions["env"];
-  stderr?: (line: string) => void;
-}) {
-  const child = spawn(options.binary, options.args ?? [], {
+export function startCoreTransport(
+  options: {
+    binary?: string;
+    args?: string[];
+    env?: SpawnOptions["env"];
+    stderr?: (line: string) => void;
+  } = {},
+) {
+  const child = spawn(options.binary ?? coreBinary, options.args ?? [], {
     stdio: ["pipe", "pipe", options.stderr ? "pipe" : "inherit"],
     env: options.env,
   });

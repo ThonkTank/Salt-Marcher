@@ -1,9 +1,9 @@
+import type { ExteriorGeometryCache } from "./exteriorGeometryCache";
 import { paintScenery } from "./sceneryPaint";
 import { parcelGridRange } from "./parcelEditor";
 import type { RoadOverlayGeometry } from "./roadDraft";
 import type { CellGeometry, InteriorGeometry } from "./interiorPaths";
 import {
-  toWorld,
   openingPoint,
   type Bounds,
   type Parcel,
@@ -53,56 +53,37 @@ export function shape(
   c: CanvasRenderingContext2D,
   o: MapObject,
   scale: number,
+  geometry: ExteriorGeometryCache,
   highlight?: string,
 ) {
-  const finitePoint = (p: readonly number[]) =>
-    p.length === 2 && p.every(Number.isFinite);
-  // Invalid-preview payloads must never feed unsafe coordinates into canvas.
-  if (
-    o.kind === "road" &&
-    (!Number.isFinite(o.width) || !o.path.every(finitePoint))
-  )
+  if (o.kind === "scenery") {
+    c.save();
+    paintScenery(c, o, scale, highlight);
+    c.restore();
     return;
-  if (o.kind === "area" && !o.points.every(finitePoint)) return;
-  if (o.kind === "parcel" && !o.polygon.every(finitePoint)) return;
-  if (
-    o.kind === "house" &&
-    (![o.transform.x, o.transform.y, o.transform.angle].every(
-      Number.isFinite,
-    ) ||
-      !o.contours.every((r) => r.every(finitePoint)))
-  )
-    return;
+  }
+  const path = geometry.get(o);
+  if (!path) return;
   c.save();
   if (o.kind === "road") {
     c.strokeStyle = highlight ?? colors[o.material];
     c.lineWidth = Math.max(o.width, 2 / scale);
     c.lineJoin = "round";
     c.lineCap = "round";
-    c.beginPath();
-    o.path.forEach((p, i) => (i ? c.lineTo(p[0], p[1]) : c.moveTo(p[0], p[1])));
-    c.stroke();
-  } else if (o.kind === "scenery") {
-    paintScenery(c, o, scale, highlight);
+    c.stroke(path);
   } else if (o.kind === "area") {
-    polygon(c, [o.points]);
     c.fillStyle = highlight ?? colors[o.material];
-    c.fill();
+    c.fill(path);
   } else if (o.kind === "parcel") {
-    polygon(c, [o.polygon]);
     c.strokeStyle = highlight ?? "#857950";
     c.lineWidth = 1 / scale;
-    c.stroke();
+    c.stroke(path);
   } else {
-    polygon(
-      c,
-      o.contours.map((r) => r.map((p) => toWorld(p, o.transform))),
-    );
     c.fillStyle = highlight ?? o.roof;
-    c.fill("evenodd");
+    c.fill(path, "evenodd");
     c.strokeStyle = "#514c43";
     c.lineWidth = 1 / scale;
-    c.stroke();
+    c.stroke(path);
   }
   c.restore();
 }

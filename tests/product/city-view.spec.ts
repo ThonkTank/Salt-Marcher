@@ -59,13 +59,12 @@ test("important place is editable and survives history and reopen", async ({
   await expect
     .poll(async () =>
       page.evaluate(async (id) => {
-        const scene = await window.atlasCore<{
-          objects: Array<{ id: string; importantPlace?: boolean }>;
-        }>("scene", {
+        const scene = await window.atlasCore("scene", {
           context: { kind: "exterior" },
           bounds: [0, 0, 100, 100],
         });
-        return scene.objects.find((o) => o.id === id)?.importantPlace;
+        const object = scene.objects.find((o) => o.id === id);
+        return object?.kind === "house" && object.importantPlace;
       }, id),
     )
     .toBe(true);
@@ -77,10 +76,7 @@ test("important place is editable and survives history and reopen", async ({
   await page.keyboard.press("Control+s");
   await expect
     .poll(() =>
-      page.evaluate(
-        async () =>
-          (await window.atlasCore<{ dirty: boolean }>("status", {})).dirty,
-      ),
+      page.evaluate(async () => (await window.atlasCore("status", {})).dirty),
     )
     .toBe(false);
   await page.evaluate(() => window.atlasCore("open", {}));

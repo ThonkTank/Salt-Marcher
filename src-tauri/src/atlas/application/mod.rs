@@ -15,6 +15,7 @@ use rusqlite::Connection;
 use serde_json::{json, Value};
 use std::path::{Path, PathBuf};
 pub struct AtlasApplication {
+    region_cache: std::cell::RefCell<region_store::RegionReadCache>,
     db: Connection,
     _temp: tempfile::TempDir,
     session: String,
@@ -66,8 +67,26 @@ impl AtlasApplication {
         diagnostics: &mut PlanDiagnostics,
     ) -> Result<Computed> {
         self.check(&input.version)?;
-        operations::compute(self, &input.intent, diagnostics)
-            .map_err(|e| e.with_context(input.intent.object_ids()))
+        let mut computed = operations::compute(self, &input.intent, diagnostics)
+            .map_err(|e| e.with_context(input.intent.object_ids()))?;
+        // Preview derived effects against the proposed coarse surface, then restore authors.
+        let surface_tx = self
+            .db
+            .unchecked_transaction()
+            .map_err(crate::atlas::errors::storage_error)?;
+        if let Some(delta) = &computed.change.world_terrain {
+            world_terrain_store::apply(&surface_tx, delta, true)?;
+        }
+        if let Some(delta) = &computed.change.terrain {
+            terrain_store::write_points(&surface_tx, &delta.after)?;
+        }
+        self.trim_water(&mut computed)?;
+        self.refresh_rivers(&mut computed)?;
+        self.prepare_surface_preview(&input.intent, &mut computed)?;
+        surface_tx
+            .rollback()
+            .map_err(crate::atlas::errors::storage_error)?;
+        Ok(computed)
     }
     fn success_response(
         &self,
@@ -77,6 +96,9 @@ impl AtlasApplication {
     ) -> ValidPreviewWire {
         ValidPreviewWire {
             terrain: computed.terrain_preview.map(Box::new),
+            ground: computed.ground_preview.map(Box::new),
+            regions: computed.region_preview,
+            rivers: computed.river_preview,
             valid: True,
             version,
             status: Box::new(self.status()),
@@ -128,9 +150,14 @@ impl AtlasApplication {
     }
 }
 
+mod ground_store;
 mod persistence;
+pub(in crate::atlas) mod region_store;
+pub(in crate::atlas) mod river_store;
+mod road_terrain_store;
 mod storage;
 mod terrain_store;
+pub(in crate::atlas) mod world_terrain_store;
 
 #[cfg(test)]
 mod parcel_collision_tests;
@@ -176,3 +203,22 @@ mod terrain_tests;
 
 #[cfg(test)]
 mod scenery_tests;
+
+#[cfg(test)]
+mod ground_tests;
+
+#[cfg(test)]
+mod road_terrain_tests;
+
+#[cfg(test)]
+mod region_tests;
+
+#[cfg(test)]
+mod river_tests;
+
+pub(in crate::atlas) mod water_store;
+#[cfg(test)]
+mod water_tests;
+
+#[cfg(test)]
+mod world_terrain_tests;

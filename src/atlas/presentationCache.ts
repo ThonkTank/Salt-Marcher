@@ -1,159 +1,205 @@
 import type { AtlasClient } from "./client";
-import type { Bounds, Status, Version } from "./model";
+import type { Bounds, Status } from "./model";
 import type { MapTile } from "./generated/MapTile";
 import type { SurfaceTile } from "./generated/SurfaceTile";
-import type { TerrainResponse } from "./generated/TerrainResponse";
-import { cityTiles, type CityView } from "./cityView";
+import type { GroundTile } from "./generated/GroundTile";
+import { cityRequest } from "./cityView";
 import { terrainRequest } from "./terrainView";
+import { groundRequest } from "./groundView";
 import { scheduledRead } from "./readScheduler";
-import { sameVersion } from "./documentVersion";
-import { incrementalChanges } from "./documentVersion";
+import { incrementalChanges, sameVersion } from "./documentVersion";
 import { BudgetCache } from "./budgetCache";
+import { CACHE_BUDGETS } from "./cacheBudgets";
 
+type TileRequest = { level: number; tiles: [number, number][] };
+type TileResponse<T> = { status: Status; tiles: T[] };
+type CachePolicy<T> = {
+  budget: { bytes: number; entries: number };
+  bounds: (tile: T, level: number) => Bounds;
+  cost?: (tile: T) => number;
+  verifyRevision?: boolean;
+  error: string;
+  read: (
+    client: AtlasClient,
+    args: TileRequest,
+    wanted: () => boolean,
+  ) => Promise<TileResponse<T> | undefined>;
+};
 const overlaps = (a: Bounds, b: Bounds) =>
   a[0] <= b[2] && a[2] >= b[0] && a[1] <= b[3] && a[3] >= b[1];
+const tileBounds = (
+  x: number,
+  y: number,
+  size: number,
+  margin: number,
+): Bounds => [
+  x * size - margin,
+  y * size - margin,
+  (x + 1) * size + margin,
+  (y + 1) * size + margin,
+];
 
-/** Byte-budgeted viewport cache, owned by PresentationLoader. */
-export class CityCache {
-  private cache = new BudgetCache<string, { tile: MapTile; bounds: Bounds }>(
-    64 * 1024 * 1024,
-  );
+/** Shared lifetime and batch loading; each layer owns its spatial invalidation policy. */
+class WorldTileCache<T extends { x: number; y: number }> {
+  private tiles: BudgetCache<string, { tile: T; bounds: Bounds }>;
   private status: Status | null = null;
   private client: AtlasClient | null = null;
+  private generation = 0;
+  private verified = false;
+  constructor(private policy: CachePolicy<T>) {
+    this.tiles = new BudgetCache(policy.budget.bytes, policy.budget.entries);
+  }
   async load(
+    client: AtlasClient,
+    status: Status,
+    args: TileRequest,
+    wanted: () => boolean,
+  ) {
+    if (this.client !== client || !sameVersion(this.status, status)) {
+      const changes =
+        this.client === client ? incrementalChanges(this.status, status) : null;
+      for (const [key, entry] of this.tiles) {
+        if (!changes || changes.world.some((b) => overlaps(b, entry.bounds)))
+          this.tiles.delete(key);
+      }
+      this.client = client;
+      this.status = status;
+      this.generation++;
+      this.verified = false;
+    }
+    const generation = this.generation;
+    const current = () => generation === this.generation && wanted();
+    const key = (x: number, y: number) => `${args.level}:${x}:${y}`;
+    const missing = args.tiles.filter(([x, y]) => !this.tiles.has(key(x, y)));
+    if (missing.length || (this.policy.verifyRevision && !this.verified)) {
+      const result = await this.policy.read(
+        client,
+        { ...args, tiles: missing },
+        current,
+      );
+      if (!result || !current()) return null;
+      if (!sameVersion(result.status, status)) throw Error(this.policy.error);
+      this.verified = true;
+      for (const tile of result.tiles) {
+        this.tiles.set(
+          key(tile.x, tile.y),
+          {
+            tile,
+            bounds: this.policy.bounds(tile, args.level),
+          },
+          this.policy.cost?.(tile),
+        );
+      }
+    }
+    const tiles = args.tiles.map(([x, y]) => {
+      const entry = this.tiles.get(key(x, y));
+      if (!entry) throw Error(this.policy.error);
+      return entry.tile;
+    });
+    this.tiles.trim();
+    return { status, level: args.level, tiles };
+  }
+}
+
+export class CityCache {
+  private cache = new WorldTileCache<MapTile>({
+    budget: CACHE_BUDGETS.city,
+    bounds: (t, level) =>
+      tileBounds(t.x, t.y, 512 * 2 ** level, 16 * 2 ** level),
+    // Structural allowance for JS objects, arrays, numbers and UTF-16 strings.
+    cost: (tile) =>
+      1024 +
+      tile.density.length * 64 +
+      tile.features.reduce(
+        (total, f) =>
+          total +
+          256 +
+          2 * (f.id.length + f.name.length + f.kind.length + f.color.length) +
+          f.paths.reduce((sum, path) => sum + 32 + path.length * 48, 0),
+        0,
+      ),
+    error: "Kartenstand hat sich geändert. Bitte erneut laden.",
+    read: (client, args, wanted) =>
+      scheduledRead(client, "mapTiles", args, wanted),
+  });
+  load(
     client: AtlasClient,
     status: Status,
     bounds: Bounds,
     level: number,
-    current: () => boolean,
-  ): Promise<CityView | null> {
-    if (this.client !== client || !sameVersion(this.status, status)) {
-      const changes =
-        this.client === client ? incrementalChanges(this.status, status) : null;
-      for (const [key, entry] of this.cache) {
-        if (!changes || changes.world.some((b) => overlaps(b, entry.bounds))) {
-          this.cache.delete(key);
-        }
-      }
-      this.client = client;
-      this.status = status;
-    }
-    let coords = cityTiles(bounds, level);
-    while (coords.length > 64 && level < 20)
-      coords = cityTiles(bounds, ++level);
-    const missing = coords.filter(
-      ([x, y]) => !this.cache.has(`${level}/${x}/${y}`),
-    );
-    if (missing.length) {
-      const response = await scheduledRead(
-        client,
-        "mapTiles",
-        { level, tiles: missing },
-        current,
-      );
-      if (
-        !response ||
-        !current() ||
-        this.client !== client ||
-        !sameVersion(this.status, status)
-      )
-        return null;
-      if (!sameVersion(response.status, status))
-        throw Error("Kartenstand hat sich geändert. Bitte erneut laden.");
-      for (const tile of response.tiles) {
-        const key = `${level}/${tile.x}/${tile.y}`,
-          size = 512 * 2 ** level;
-        // Conservative allowance for JS numbers, strings, arrays and objects.
-        const bytes = JSON.stringify(tile).length * 6 + 1024;
-        this.cache.set(
-          key,
-          {
-            tile,
-            bounds: [
-              tile.x * size - size / 32,
-              tile.y * size - size / 32,
-              (tile.x + 1) * size + size / 32,
-              (tile.y + 1) * size + size / 32,
-            ],
-          },
-          bytes,
-        );
-      }
-    }
-    const tiles: MapTile[] = [];
-    for (const [x, y] of coords) {
-      const key = `${level}/${x}/${y}`,
-        entry = this.cache.get(key);
-      if (!entry) throw Error("Kartenkachel fehlt. Bitte erneut laden.");
-      tiles.push(entry.tile);
-    }
-    this.cache.trim();
-    return { level, tiles };
+    wanted: () => boolean,
+  ) {
+    return this.cache.load(client, status, cityRequest(bounds, level), wanted);
   }
 }
-/** Revision-bound, bounded cache. Publication remains owned by PresentationLoader. */
+
 export class TerrainCache {
-  private status: Status | null = null;
-  private client: AtlasClient | null = null;
-  private tiles = new BudgetCache<string, SurfaceTile>(256);
-  private water = 0;
-  private waterVersion: Version | null = null;
-  async load(
+  private cache = new WorldTileCache<SurfaceTile>({
+    budget: CACHE_BUDGETS.terrain,
+    cost: (tile) =>
+      512 +
+      tile.heights.length * 8 +
+      tile.foundationTops.reduce((n, [id]) => n + 48 + id.length * 2, 0) +
+      tile.waters.reduce(
+        (n, water) =>
+          n +
+          128 +
+          water.id.length * 2 +
+          water.polygons.reduce(
+            (sum, polygon) =>
+              sum +
+              64 +
+              [polygon.outer, ...polygon.holes].reduce(
+                (r, ring) => r + 32 + ring.length * 48,
+                0,
+              ),
+            0,
+          ),
+        0,
+      ),
+    bounds: (t, level) => tileBounds(t.x, t.y, 160 * 2 ** level, 505),
+    verifyRevision: true,
+    error: "Geländestand hat sich geändert. Bitte erneut laden.",
+    read: (client, args, wanted) =>
+      scheduledRead(client, "terrainTiles", args, wanted),
+  });
+  load(
     client: AtlasClient,
     status: Status,
     bounds: Bounds,
-    scale: number,
+    level: number,
     wanted: () => boolean,
-  ): Promise<TerrainResponse | null> {
-    const changed = !sameVersion(this.status, status) || this.client !== client;
-    if (changed) {
-      const changes =
-        this.client === client ? incrementalChanges(this.status, status) : null;
-      if (changes) {
-        for (const [key] of this.tiles) {
-          const [level, x, y] = key.split(":").map(Number),
-            w = 160 * 2 ** level;
-          if (
-            changes.world.some(
-              (b) =>
-                x * w <= b[2] + 505 &&
-                (x + 1) * w >= b[0] - 505 &&
-                y * w <= b[3] + 505 &&
-                (y + 1) * w >= b[1] - 505,
-            )
-          )
-            this.tiles.delete(key);
-        }
-      } else this.tiles.clear();
-      this.status = status;
-      this.client = client;
-    }
-    const args = terrainRequest(bounds, scale),
-      key = (x: number, y: number) => `${args.level}:${x}:${y}`;
-    const missing = args.tiles.filter(([x, y]) => !this.tiles.has(key(x, y)));
-    if (missing.length || changed || !sameVersion(this.waterVersion, status)) {
-      const result = await scheduledRead(
-        client,
-        "terrainTiles",
-        { ...args, tiles: missing },
-        wanted,
-      );
-      if (
-        !result ||
-        !wanted() ||
-        this.client !== client ||
-        !sameVersion(this.status, status)
-      )
-        return null;
-      if (!sameVersion(result.status, status))
-        throw Error("Geländestand hat sich geändert. Bitte erneut laden.");
-      this.water = result.waterLevel;
-      this.waterVersion = status;
-      for (const tile of result.tiles)
-        this.tiles.set(key(tile.x, tile.y), tile);
-    }
-    const tiles = args.tiles.map(([x, y]) => this.tiles.get(key(x, y))!);
-    this.tiles.trim();
-    return { status, level: args.level, waterLevel: this.water, tiles };
+  ) {
+    return this.cache.load(
+      client,
+      status,
+      terrainRequest(bounds, level),
+      wanted,
+    );
+  }
+}
+
+export class GroundCache {
+  private cache = new WorldTileCache<GroundTile>({
+    budget: CACHE_BUDGETS.ground,
+    bounds: (t, level) => tileBounds(t.x, t.y, 64 * 2 ** level, 2 ** level),
+    cost: (tile) => tile.pixels.length * 2 + 66 * 66 * 4 + 512,
+    error: "Bodenfarben haben sich geändert. Bitte erneut laden.",
+    read: (client, args, wanted) =>
+      scheduledRead(client, "groundTiles", args, wanted),
+  });
+  load(
+    client: AtlasClient,
+    status: Status,
+    bounds: Bounds,
+    level: number,
+    wanted: () => boolean,
+  ) {
+    return this.cache.load(
+      client,
+      status,
+      groundRequest(bounds, level),
+      wanted,
+    );
   }
 }

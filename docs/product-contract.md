@@ -7,7 +7,7 @@ Prüfstand: [Status](implementation/status.md); Befehle: [README](../README.md).
 
 | Größe                     | Vertrag                                                         |
 | ------------------------- | --------------------------------------------------------------- |
-| Außenkoordinaten / Winkel | Endliche Fuß innerhalb ±5.000.000 / endliche Radiant            |
+| Außenkoordinaten / Winkel | Endliche Fuß innerhalb ±100.000.000 / endliche Radiant          |
 | Innenraster               | 5 × 5 Fuß; ganzzahlige Zellkoordinaten innerhalb ±1.000.000     |
 | Geschosse                 | i32; negative Werte sind Keller                                 |
 | Namen                     | 1–120 Unicode-Codepoints, nicht ausschließlich Unicode-Leerraum |
@@ -103,7 +103,7 @@ Komposition; halbe Zellversätze oder freie Winkel werden nicht eingerastet.
 
 ## Deterministische Bebauung
 
-Rezeptversion **3**: Seed, Section-/Seitenidentität und Ausgangsbestand bestimmen
+Rezeptversion **4**: Seed, Section-/Seitenidentität und Ausgangsbestand bestimmen
 den Verbund deterministisch. Bebauung startet mit „Parzellen und Häuser“; alternativ stehen „Nur Parzellen“
 und „Keine“ zur Wahl. Modus und Vorgaben bleiben sitzungsweit erhalten. Bestehende Straßen laden ihr
 Rezept. „Neue Variante“ betrifft nur offene Kandidaten/neue Parzellen, niemals
@@ -127,12 +127,24 @@ nach manueller Bearbeitung gelten Containment und Kollisionsfreiheit.
 
 Reihenfolge: Sections in Straßenreihenfolge, links/rechts, Slots vom
 Abschnittsanfang. Jeder Slot zieht genau Breite, Tiefe und Dachindex vor
-Konfliktprüfung. Ein unvollständiger letzter Slot wird nicht platziert.
+Konfliktprüfung. Die letzte Front wird auf die verbleibende Abschnittslänge
+gekürzt und ebenfalls geprüft.
 Der Zufallsstrom ist FNV-1a-u32 über ASCII `saltmarcher.parcels`, NUL, `v1`, NUL,
 Seed u32LE, Section-ID-Bytelänge u32LE, UTF8-ID und Seitenbyte 0/1; Start
 2166136261, Faktor 16777619, wrapping u32. Anschließend LCG
 `1664525*x+1013904223`, wrapping u32, Bereich per Modulo. Die `v1`-Hashdomäne
-bleibt im Rezept 3 erhalten. Skips und Suchposen ziehen keinen neuen Zufall.
+bleibt im Rezept 4 erhalten. Skips und Suchposen ziehen keinen neuen Zufall.
+
+Die automatische Planung probiert zuerst die bevorzugte Front und Tiefe.
+Bei Geometriefehlern, Kollisionen oder fehlendem Hausfit folgen flachere Grundstücke
+in 5-Fuß-Schritten bis zur Mindesthaustiefe, dann kürzere Fronten in 5-Fuß-Schritten
+bis 2,5 Fuß. Auch ein kurzes Mittellinienintervall kann an der Außenkurve eine
+ausreichend breite Front ergeben; die exakte Hausprüfung entscheidet. Zusätzlich werden für Innenkurven um 5 beziehungsweise
+10 Fuß und auf das 1,5-Fache verbreiterte Fronten geprüft. Fronten werden auf den
+Abschnittsrest begrenzt; doppelte Varianten entfallen. Abstand, Mindesthausmaße,
+Raster und Kollisionsregeln bleiben verbindlich. Nach vollständig erfolgloser
+Suche geht es nur 2,5 Fuß weiter, statt eine ganze Hausbreite zu überspringen.
+Explizit angepasste Planungen behalten ihre Fronten und Tiefen unverändert.
 
 Zuerst wird das Grundstück geprüft, dann werden die vorgeschlagenen Hausmaße im
 Raster gesucht. Ohne Fit werden kleinere Maße innerhalb der Mindestmaße geprüft:
@@ -144,15 +156,18 @@ enthaltene kollisions-/abstandsfreie Pose gewinnt. Es werden alle zulässigen
 Tiefen einer bevorzugten x-Distanz vor der nächsten Distanz geprüft. Bounds
 begrenzen den Suchraum konservativ, exakte Prädikate entscheiden.
 
-Ein gültiges Grundstück ohne Hausfit bleibt leer und manuell befüllbar:
+Automatische Hausplanung reserviert nach erfolgloser Variantensuche kein leeres
+Grundstück, das spätere Hausplätze blockieren würde. Explizite Planungen und bewusst
+unterhalb der Mindesthaustiefe eingestellte Grundstücke dürfen leer bleiben:
 `noGridFit` bedeutet keine enthaltene Pose, `clearanceBlocked` mindestens eine
-enthaltene, aber blockierte Pose. Ungültige Grundstücke werden ausgelassen.
+enthaltene, aber blockierte Pose. „Nur Parzellen“ benötigt weiterhin keinen Hausfit.
+Ungültige Grundstücke werden ausgelassen.
 IDs/Namen entstehen erst für den fertigen Verbund; Häuser erhalten sie nur bei
 tatsächlicher Befüllung.
 
 Limits: **200 gebundene Parzellen je Straße** (auch leere, ohne gelöste); je
 Generierung **200 neue Häuser**, **100.000 neue Zellen**, **10.000 Versuche**.
-Slot und jede Pose verbrauchen vor Prüfung dasselbe Versuchsbudget. Die letzte
+Slot, jede zusätzliche Grundstücksvariante und jede Pose verbrauchen vor Prüfung dasselbe Versuchsbudget. Die letzte
 erlaubte Pose darf abschließen; Budgetende im Slot verwirft nur diesen Slot ohne
 Erzeugungs-/Skip-/Unplaced-Zählung. Fertige Vorgänger bleiben vorgeschlagen.
 Bei gleichzeitig erreichten Limits hat die Parzellengrenze Vorrang.
@@ -218,6 +233,121 @@ höchstens 100.000 Zellen;
 es gibt keine allgemeine Gesamtzellgrenze pro Haus. Ein durch mehrere Aktionen
 auf über 100.000 Zellen gewachsener Raum bleibt bewegbar.
 
+## Bildschirmpinsel
+
+Boden, Höhen, Gewässer, Landschaft und Regionen verwenden einen runden Pinsel mit 8–512
+CSS-Pixeln Durchmesser, Vorgabe 80. `[`/`]` und Alt+Mausrad ändern ihn um etwa
+zehn Prozent. Der Kreis bleibt zwischen Strichen beim Zoomen gleich groß;
+Pointerdown fixiert den daraus berechneten Weltradius für die Geste. Aktive
+Pinselgesten blockieren Zoom. Assetgröße, Stärke, Deckkraft und Farbfluss bleiben
+unabhängig. Arbeitsbudgets gelten weiterhin; zu große Striche werden vollständig
+abgelehnt statt still verkleinert. Höhen prüfen vor Rasterarbeit zusätzlich
+höchstens 400.000 Kandidatenpositionen pro Abdruck. Höhen und Gewässer zeigen
+Weltdurchmesser und Höhenrasterabstand als Information; kleine Pinsel zwischen
+Rasterpunkten können ohne Höhenänderung bleiben.
+
+## Regionen
+
+„Regionen“ funktioniert im gesamten Außenzoom. Malen ergänzt die ausgewählte
+Region, Radieren entfernt nur deren Fläche. Loslassen übernimmt einen Strich als
+einen atomaren Historyschritt; Escape, Blur, Pointercancel und Werkzeugwechsel
+verwerfen ihn. Ein Auswahlmodus trifft exakte Regionsflächen der aktiven Rangstufe.
+Getrennte Teilflächen, Löcher und benannte leere Regionen sind erlaubt.
+
+Regionen besitzen Namen, Rangstufe, Farbe, Fülltransparenz und Randstil.
+Vorgaben: 15 % Füllung, 2 CSS-Pixel Rand, durchgezogen; alternativ gestrichelt
+oder gepunktet. Randbreite 0,5–12 Pixel, Füllung 0–100 %. Keine Küstenerkennung,
+Grenzrauheit oder Lasso. Füllung liegt unter Landschaft/Straßen/Häusern, Grenzen
+und Namen darüber; Griffe behalten Vorrang.
+
+Kategorien sind frei benennbar, sortierbar und ein-/ausblendbar. Jede besitzt
+geordnete, bearbeitbare Rangstufen von klein nach groß. Neue Dokumente enthalten:
+
+- Politisch: Viertel, Stadtteil, Ortschaft, Bezirk, Grafschaft, Herzogtum,
+  Königreich, Kaiserreich. „Ortschaft“ umfasst Städte und Dörfer; dies ist eine
+  bearbeitbare Fantasyvorlage, keine universelle Verwaltungsordnung.
+- Geographisch: Örtlichkeit, Landschaft, Großlandschaft, Subkontinent, Kontinent.
+- Ortschaften: Gehöft, Dorf, Stadt, Metropole. Dies sind gewöhnliche Regionen, keine zusätzlichen Objekte oder Hausowner.
+- Eigene Kategorien starten mit „Gebiet“.
+
+Politisch und Ortschaften sind zunächst sichtbar, Geographisch verborgen. Übermalen überträgt
+Gebiet ausschließlich zwischen Regionen derselben Rangstufe. Andere Rangstufen
+und Kategorien bleiben unverändert. Ein Wechsel der Regionszuordnung lehnt
+Flächenkonflikte auf der Zielrangstufe ab. Löschen einer Region löscht keine
+räumlich zugeordneten Regionen; Kategorie-/Ranglöschung entfernt die explizit
+enthaltenen Einträge nach Bestätigung ihrer Anzahl. Änderungen verlangen erneute
+Bestätigung. Die gesamte Aktion ist rückgängig machbar.
+
+Zugehörigkeiten sind geometrische N:N-Beziehungen innerhalb einer Kategorie:
+Jede untere Region gehört zu jeder höheren mit positiver Schnittfläche, unabhängig
+von Zwischenstufen. Randberührung zählt nicht. Numerisches Flächenrauschen bis
+`(1e-6 + 1e-12*M)²` Quadratfuß zählt als null, mit `M` als maximaler absoluter
+Boundskoordinate beider Regionen, mindestens 1. Es gibt weder Elterncontainment
+noch transitive Ersatzbeziehungen. Das Panel gruppiert Beziehungen nach Rangstufe
+und zeigt den überdeckten Anteil der jeweils unteren Region.
+
+Automatische Anzeige wählt pro sichtbarer Kategorie die nichtleere Rangstufe,
+deren Median von `sqrt(Fläche)` projiziert 400 CSS-Pixeln am nächsten liegt
+(logarithmischer Abstand). Die bisherige Stufe bleibt innerhalb von `ln(1,2)`
+Abstand zur besten Wahl erhalten. Eine feste Rangstufe überschreibt die Automatik;
+während der Bearbeitung ist die aktive Rangstufe sichtbar. Kategorieordnung
+bestimmt die Zeichenreihenfolge.
+
+Namen liegen standardmäßig an einem stabilen Innenanker des größten Flächenteils.
+Sie erscheinen bei 80–1.400 Pixeln projizierter `sqrt(Fläche)` mit 14–28 Pixeln
+Schriftgröße. Namensposition und unterer/oberer Anzeigezoom sind pro Region
+anpassbar und auf Automatik zurücksetzbar. Auswahl und wichtige Orte haben vor
+Regionsnamen Vorrang, danach folgen Straßen/Gebäude. Gemeinsame Kollisionsprüfung
+und das Limit von 500 Beschriftungen bleiben erhalten.
+
+Kategorien können „Kleine Regionen als Ortssymbole“ verwenden; für Ortschaften
+ist dies vorgegeben. Ihre Rangstufen werden gemeinsam angezeigt. Unter 80 Pixeln
+projizierter Flächengröße erscheint ein Punkt mit 13-Pixel-Beschriftung, auch
+wenn die eigentliche Fläche kleiner als ein Pixel wird. Eine leere Region kann über
+„Name platzieren“ einen Weltanker erhalten. Kategorien und Regionen bleiben frei
+umbenennbar. Diese Darstellung erzeugt weder Bebauung noch Besitzbeziehungen.
+
+Limits: 64 Kategorien, 512 Rangstufen, 100.000 Regionen; 100.000 Konturpunkte pro
+Region, 4.096 Pfadpunkte pro Strich. Räumliche Reads betrachten höchstens 10.000
+Bounds-Treffer, liefern höchstens 2.000 Regionen und 250.000 Konturpunkte.
+Übersichten wählen vor dem Laden der Geometrien höchstens 1.000 Regionen nach
+Flächengröße und ID; ausdrücklich angefragte Details bleiben enthalten. Auch
+das Übersichtsverzeichnis ist auf 1.000 Einträge begrenzt. Erst das aktive
+Regionswerkzeug lädt das vollständige Verzeichnis.
+Übertragung und Beziehungsabfragen begrenzen ihre Geometriearbeit auf zwei
+Millionen Konturpunkte. Grenzenfehler sind atomar. Regionen speichern kanonische
+Multipolygone; Darstellung darf sie vereinfachen, Bearbeitung verwendet exakte
+Flächen. Vorgegebene Katalogeinträge besitzen reservierte `builtin-`-IDs;
+neu angelegte Kategorien, Rangstufen und Regionen nutzen den globalen Allocator.
+
+## Bodenfarbpinsel
+
+„Boden“ ersetzt das Erstellen neuer Materialpolygone in der Werkzeugleiste.
+Bestehende Flächenobjekte bleiben auswählbar und bearbeitbar. Ab 0,32 CSS-Pixeln pro Fuß
+malt Ziehen oder Halten mit der linken Taste Bodenfarbe; Loslassen übernimmt einen
+Strich als einen Historyschritt. Escape, Blur, Pointercancel und Werkzeugwechsel
+verwerfen die laufende Geste. Deckkraft begrenzt den Auftrag pro Strich; Farbfluss
+steuert den zeitlichen Aufbau. Erneutes Übermalen verstärkt beziehungsweise mischt
+Farbe. Einstellungen werden beim Beginn eines Strichs fixiert.
+
+Spitzen: weich, hart und wolkig; Vorgabe weich. Größe folgt dem gemeinsamen [Bildschirmpinsel](#bildschirmpinsel). Deckkraft und Farbfluss: 1–100 %, Vorgabe jeweils 100 %.
+Farbvorlagen: Gras `#9db58b`, Erde `#c8b99b`, Stein `#aaa9a3`; Vorgabe Gras.
+Freie Farbauswahl und Pipette ergänzen die Vorlagen. Die Pipette nimmt die ungeschattete
+Bodenfarbe der dargestellten Rasterstufe auf. Der lokale Radierer entfernt nur
+Bodenfarbe und legt den ursprünglichen Untergrund frei; er verwendet dieselben
+Spitzen und Auftragsparameter. Größenänderung und Zoom folgen dem gemeinsamen Bildschirmpinselvertrag.
+
+Bodenfarbe ist ein separates, dünn belegtes Raster mit einem Fuß Auflösung und
+64×64-Pixel-Kacheln in vormultipliziertem RGBA. Die Darstellung interpoliert weich,
+erhält die Reliefschattierung und liegt unter Wasser, Landschaft, Straßen und
+Gebäuden. Bodenfarbe verändert keine Höhen, Fundamente oder Kollisionen.
+Ein Strich enthält höchstens 100.000 zeitgestempelte Pfadpunkte, dauert höchstens
+eine Stunde und berührt höchstens eine Million Rasterpixel. Die Berechnung ist
+zusätzlich auf 100.000 Abdrücke und 40 Millionen Pixelprüfungen begrenzt; Überschreitung
+lehnt den gesamten Strich ab. Weg- und Zeitabtastung sind von der Eingabeereignisrate
+unabhängig; die Wolkenmaske ist durch den Seed reproduzierbar. Vorschau und Commit
+teilen die Berechnung. Kein globales Füllen, Symbol-Einfärben oder Texturimport.
+
 ## Landschaftspinsel
 
 „Landschaft“ malt dekorative Assets für Wald, Wiese, Buschland und Felsen im
@@ -226,7 +356,7 @@ Strich als einen Historyschritt; Escape, Fokusverlust und Pointercancel verwerfe
 die laufende Geste. Auswahl trifft sichtbare Assets; Löschen entfernt den ganzen
 Strich. Einzelne Assets sind noch nicht separat verschiebbar oder radierbar.
 
-Pinselradius: 5–500 Fuß (Vorgabe 30), Dichte: 5–100 % (65 %), Assetradius:
+Pinselgröße: gemeinsamer Bildschirmdurchmesser, Dichte: 5–100 % (65 %), Assetradius:
 1–80 Fuß (8). Die Dichte bestimmt die Belegung eines versetzten Rasters;
 Größenvariation 70–125 %, Drehung und vier Symbolvarianten kommen aus einem
 für die Geste fixierten Seed. Die Platzierung folgt dem überstrichenen Kreis,
@@ -244,22 +374,36 @@ Die Übersicht zeigt vereinfachte Symbole, höchstens 512 gleichmäßig ausgewä
 Assets je Strich; unterhalb der sichtbaren Symbolgröße entfallen sie.
 Eigene Assetimporte und Texturmalerei sind nicht Teil dieses Werkzeugs.
 
-## Höhen, Fundamente und Höhenwasser
+## Höhen und Fundamente
 
-Natürliches Gelände ist ein dünn belegtes 5-Fuß-Höhenraster, ohne Eintrag 10 Fuß.
-Höhen und globaler Wasserstand sind endlich innerhalb ±100.000 Fuß; der anfängliche
-Wasserstand beträgt 0 Fuß. Interpolation teilt jede Rasterzelle entlang ihrer
-Nordwest-Südost-Diagonale in lineare Dreiecke.
+Neue Welten beginnen als Ozean mit Meeresspiegel 0 Fuß und natürlichem Untergrund
+−100 Fuß. Land/Meer im Höhenwerkzeug hebt auf mindestens +10 beziehungsweise
+senkt auf höchstens −10 Fuß. Lokale Seen behalten ihren eigenen Pegel und haben
+innerhalb ihrer Kontur Vorrang vor dem Ozean. Höhen sind endlich innerhalb
+±100.000 Fuß.
 
-Das Werkzeug „Höhen“ funktioniert im gesamten Außenzoom. Vorgaben: Anheben,
-25 Fuß Radius, 1 Fuß Änderung, 25 % Stärke, Zielhöhe 10 Fuß. Radius 5–500 Fuß,
-Änderung 0,1–100 Fuß, Stärke 0,01–1. Ein Strich enthält höchstens 100.000
-Eingabepunkte und verändert höchstens 100.000 Rasterpunkte. Wegabtastung mit
-max(Radius/4, 2,5 Fuß) ist unabhängig von Ereignisrate und Zoom; wiederholtes
-Überstreichen kumuliert. Glätten nähert sich dem Mittel der neun Nachbarpunkte,
-Einebnen der Zielhöhe, jeweils mit radialem weichem Abfall.
+Die natürliche Oberfläche kombiniert dünn belegte Raster mit Abständen
+`5 × 2^level` Fuß, Level 0–21. Fehlende Werte erben die gröbere Oberfläche;
+feinere absolute Werte haben Vorrang. Unbelegte Randstützpunkte interpolieren
+zur gröberen Oberfläche. Lokale Details bleiben bei späterer großräumiger
+Bearbeitung erhalten. Undo entfernt zuvor fehlende Stützpunkte wieder vollständig.
+Rasterzellen sind entlang ihrer Nordwest-Südost-Diagonale in lineare Dreiecke geteilt.
+
+„Höhen“ funktioniert im gesamten Außenzoom. Vorgaben: Land, 80 CSS-Pixel
+Durchmesser, 1 Fuß Änderung, 25 % Stärke, Zielhöhe 10 Fuß. Anheben, Absenken,
+Glätten und Einebnen ergänzen Land/Meer. Änderung 0,1–100 Fuß, Stärke 0,01–1.
+Die Autorenauflösung folgt ungefähr acht CSS-Pixeln Rasterabstand und wird bei
+Pointerdown fixiert; sie ist von der angefragten Vorschauauflösung unabhängig.
+Ein grober Strich schreibt keine feineren Rasterpunkte. Höchstens 100.000 Werte
+werden je Aktion verändert; grobe Striche erlauben 4.096 Pfadpunkte und 400.000
+vorbereitete Rasterkandidaten. Lokale Striche erlauben 100.000 Pfadpunkte.
+Wegabtastung erfolgt je Auflösung mit max(Radius/4, halber Rasterweite).
+Glätten verwendet neun Nachbarpunkte; Einebnen nähert sich der Zielhöhe.
 Loslassen übernimmt einen Strich als einen Historyschritt; Escape, Blur und
 Pointerabbruch verwerfen ihn. Ablehnungen bleiben im gemeinsamen Workflow prüfbar.
+
+Live-Vorschau und Übernahme folgen dem gemeinsamen Vertrag unter
+[Vorschau und Nebenläufigkeit](#vorschau-und-nebenläufigkeit).
 
 Jedes Haus besitzt eine Fundamenthöhe von 0–100 Fuß (Vorgabe 1) und eine
 Übergangsbreite von 0–500 Fuß (Vorgabe 10). Die höchste natürliche Geländehöhe
@@ -270,20 +414,19 @@ weich aus; überlagerte Übergänge verwenden das Maximum. Hausgrundflächen hab
 Vorrang vor fremden Übergängen. Plattformen werden ausschließlich aus natürlichem
 Gelände berechnet, niemals aus anderen Aufschüttungen. Bau, Bewegung, Grundriss-
 und Höhenänderungen führen sie automatisch nach; Löschen entfernt sie. Räume und
-Geschosse bekommen keine eigenen Welthöhen; Straßen besitzen keine Steigungsregeln.
+Geschosse bekommen keine eigenen Welthöhen; Straßen besitzen keine harte Steigungsgrenze.
 
-Höhenwasser liegt überall dort, wo die wirksame Geländeoberfläche niedriger als
-der Wasserstand ist. Es blockiert weder Neubau noch Bestandsänderungen und erzeugt
-keine Warnmeldungen. Wasserstand hebt Fundamente nicht an. Wasser erscheint unter
-Dächern; überflutete Fundamentränder erhalten Wasserfarbe. Manuelle Wasserpolygone
-behalten unabhängig davon ihre bisherigen Kollisionsregeln.
+Lokales Gewässerwasser blockiert weder Neubau noch Bestandsänderungen und erzeugt
+keine Warnmeldungen. Wasser hebt Fundamente nicht an und erscheint unter Dächern.
+Manuelle Wasserpolygone behalten ihre bisherigen Kollisionsregeln.
 
 Relief und zuschaltbare Höhenlinien zeigen die Oberfläche; Höhenlinien beginnen
 bei 5 Fuß Abstand und werden bei weitem Zoom ausgedünnt. Die Höhenanzeige am
 Mauszeiger entspricht der dargestellten interpolierten Oberfläche. Übersichtsstufen
 mitteln natürliche Höhen; Hausplattformen werden bis zu einer Abtastweite von
 160 Fuß berücksichtigt. Gröbere Stufen zeigen Landschaftsformen, keine exakten
-Hausfundamente. Bearbeitung bleibt stets auf dem ursprünglichen 5-Fuß-Raster.
+Hausfundamente. Die Übersicht gewichtet lokale Verfeinerungen nach ihrem belegten Flächenanteil;
+sie ist keine exakte Einzelpunktmessung.
 
 ## Bedienung
 
@@ -291,7 +434,10 @@ Hausfundamente. Bearbeitung bleibt stets auf dem ursprünglichen 5-Fuß-Raster.
 
 Mitteltaste oder Leertaste+Ziehen verschiebt die Karte, Mausrad zoomt. Ein Haus
 öffnet per Doppelklick oder „Innen öffnen“; die Kamera bleibt erhalten.
-Außenzoom reicht bis 0,001 %. Straßen und Höhen lassen sich in der gesamten Außenübersicht bearbeiten; andere Außenobjekte und Innenräume werden ab 20 % bearbeitet. Im Parzellenkontext
+Außenzoom reicht bis 0,000002 CSS-Pixel pro Fuß. Straßen, Regionen und Höhen
+lassen sich in der gesamten Außenübersicht bearbeiten. Boden und lokale Gewässer
+benötigen mindestens 0,32 CSS-Pixel pro Fuß, Landschaft sowie andere
+Außenobjekte und Innenräume mindestens 1,28. Im Parzellenkontext
 verwendet Fit immer Polygonbounds, auch ohne Haus; ein fehlender Owner bedeutet
 leer, nicht fehlendes Grundstück. Entferntes Kontextobjekt führt nach außen.
 
@@ -312,9 +458,49 @@ Aktionsleiste unter den Einstellungen, auch bei ausgewählter Entwurfsparzelle.
 Die Aktionsleiste enthält Übernehmen, Abbrechen und bei Bedarf Vorschau erneut
 prüfen. Dokument- und Verbindungsfehler stehen im Statusbereich. Feldgrenzen werden am Feld angezeigt und verhindern ungültige Writes.
 
+### Geländeabhängige Straßen
+
+„Gelände folgen“ ist für neue Straßen und Verlängerungen standardmäßig aktiv.
+Spielraum: 0–30 %, Vorgabe 10 %, bezogen auf die direkten Abstände der gesetzten
+Punkte. Start und Ziel bleiben exakt. Zwischenpunkte werden in Reihenfolge innerhalb
+eines Radius aus Spielraum mal kürzerer Nachbarstrecke erreicht; jede Teilstrecke
+hat ihren eigenen kapselförmigen Suchkorridor. Ohne Geländefolge gilt die bisherige
+Kurvenzeichnung. Bestehende Straßen werden nie automatisch umgeplant.
+
+Eine deterministische Suche mit acht Nachbarn, Richtungszustand und geordneten
+Zielbereichen optimiert natürliche Höhen und Wasser. Hausplattformen zählen nicht.
+Pro Streckenlänge gelten Grundkosten 1, Längssteigung² × 100, Querneigung² × 25
+und Wasserzuschlag 100; Richtungswechsel kosten Straßenbreite × Winkel² (Radiant),
+Zwischenpunktverschiebungen ihre Distanz. Wasser umfasst lokale Gewässerflächen, Flusswasser und Wasserpolygone; deren bisherige Kollisionsregeln bleiben erhalten.
+Steile und unvermeidbar überflutete Strecken sind keine eigenen Ablehnungsgründe.
+
+Höchstens 200.000 Suchzustände, mindestens fünf Fuß Rasterweite, bei großen
+Korridoren zunächst gröber und danach lokale Verfeinerung im verbleibenden Budget.
+Der direkte Verlauf ist der vollständige Ausgangskandidat; Budgetende behält den
+besten vollständigen gefundenen Kandidaten. Auch Originalpunkte sind Suchknoten.
+Die Kostenintegration verwendet mindestens fünf Fuß Abtastweite, bei sehr langen
+Routen gröber (direkte Gesamtlänge / 16.000). Diese endliche Suche garantiert kein
+globales Optimum und keine Erkennung beliebig kleiner Hindernisse zwischen Samples.
+
+Vereinfachung, kubische Glättung und anschließende Rauheit müssen Zielbereiche,
+Korridore und Kosten erhalten. Griffe werden verkürzt; nötigenfalls bleiben gerade
+Teilstücke. An Verlängerungen bleibt die alte Geometrie erhalten, der neue Anschluss
+behält seine Tangentenrichtung; bei Spielraum null kann sein Griff praktisch null
+lang werden. Rauheit wird maximal achtmal halbiert, sonst weggelassen. Das gilt
+zusätzlich zu den bisherigen 512-Knoten-/32.768-Samplegrenzen. Auf ebenen direkten
+Verbindungen kann dadurch die zusätzliche Rauheit vollständig entfallen.
+
+`createRoad`/`extendRoad` akzeptieren optional `terrainFollow: { tolerance }`;
+fehlende Einstellungen behalten für direkte Kernaufrufe das frühere Verhalten.
+Sections bleiben den gesetzten Teilstrecken zugeordnet; Bebauung erfolgt erst am
+fertigen Verlauf. Die Geländeroute ist zoomunabhängig; nur zusätzliche Rauheit
+verwendet weiterhin Bildschirmmaße. Vorschau und Commit rechnen denselben Entwurf
+auf derselben Revision. Gespeichert werden ausschließlich resultierende Nodes;
+keine neue Formatversion, Abflachung, Brücken, Tunnel oder Bestandsumplanung.
+
 ### Straßenentwürfe und Parzellenplanung
 
-Neue Straßen verwenden automatisch geglättete Verlaufspunkte (zentripetales
+Ohne Geländefolge verwenden neue Straßen automatisch geglättete Verlaufspunkte (zentripetales
 Catmull–Rom als kubische Bézier-Knoten). Klicken setzt Punkte, Ziehen bewegt sie.
 Zwei Punkte ergeben eine Gerade; direkte Doppelpunktsegmente werden verhindert.
 Bestandsstraßen behalten ihre Kurven. In der Übersicht erscheinen Verlaufspunkte und Verlängerungsgriffe, ab 20 % zusätzlich Bézier-Griffe. Punktbewegungen verschieben die zugehörigen Griffe gemeinsam, ohne automatische Neuglättung. Plusgriffe an den
@@ -323,16 +509,30 @@ Kanten bleiben erhalten. Die Anschlussrichtung folgt der äußeren Tangente.
 
 Rauheit ist ein Entwurfswerkzeug für echte Geometrie: 0–1, Vorgabe 0,33;
 „Neue Variation“ ändert den entwurfslokalen Seed. Jede Vorschau wird erneut aus
-der Grundkurve berechnet. Die deterministische Querabweichung verwendet maximal
-eine halbe Straßenbreite bei voller Stärke, eine Wellenlänge von mindestens
-acht Straßenbreiten beziehungsweise 40 Fuß und einen weich auslaufenden Verlauf
-an gesetzten Punkten. Diese Punkte und ihre Anschlussrichtungen bleiben fest.
-Zusätzliche Stützpunkte gehören zur jeweiligen ursprünglichen Section.
+der Grundkurve berechnet. Die Oberfläche übergibt den aktuellen Entwurfszoom:
+Die deterministische Querabweichung hat bei voller Stärke eine maximale
+Auslenkung von 24 CSS-Pixeln und eine Wellenlänge von mindestens 128 CSS-Pixeln.
+Weltmaße ergeben sich durch Division durch den Kameramaßstab; Straßenbreite
+und Pixeldichte verändern die Bildschirmmaße nicht. Zoomänderungen berechnen
+aktive Straßen-, Verlängerungs- und Aufrauentwürfe erneut mit demselben Seed.
+Der Verlauf läuft an gesetzten Punkten weich aus; diese Punkte und ihre
+Anschlussrichtungen bleiben fest. Zusätzliche Stützpunkte gehören zur jeweiligen
+ursprünglichen Section. Kernaufrufe ohne optionalen `viewScale` verwenden weiterhin
+höchstens eine halbe Straßenbreite Auslenkung und mindestens acht Straßenbreiten
+beziehungsweise 40 Fuß Wellenlänge.
 „Verlauf aufrauen“ beginnt bei Bestandsstraßen ausdrücklich mit Stärke 0;
 gewöhnliche Punktbewegungen erzeugen keine Rauheit. Übernahme speichert nur die
-resultierenden kubischen Nodes, keine Rauheitsparameter. Zoom und Dateiöffnung
-verändern das Ergebnis nicht. Verlängerungen verändern nur neue Kanten;
-Node-/Samplelimits und alle Konfliktregeln gelten unverändert.
+resultierenden kubischen Nodes, keine Rauheits- oder Zoomparameter. Zoom und
+Dateiöffnung verändern übernommene Straßen nicht. Verlängerungen verändern nur
+neue Kanten.
+Pro Aufrauen wird höchstens die Hälfte der noch freien Knotenplätze verwendet.
+Zusätzliche Stützpunkte werden proportional zum Unterteilungsbedarf verteilt;
+Rundungsreste erhalten die Kanten in ihrer Reihenfolge. Bei knappen Budgets
+werden die Wellen gröber (höchstens eine Welle je vier Teilstücke). Kanten ohne
+zusätzliche Stützpunkte bleiben unverändert; ohne Budget ist Aufrauen ein No-op.
+Überschreitet erst die erzeugte Rauheit das Samplelimit, wird das Zusatzbudget
+halbiert und erneut aus der Grundkurve gerechnet. Ungültige Ausgangsgeometrie
+und Konflikte werden weiterhin abgelehnt. Node-/Samplelimits bleiben erhalten.
 
 Bebauung kann bereits in der Übersicht erzeugt, geprüft und übernommen werden.
 Gemeinsame Einstellungen sind verfügbar; einzelne Parzellen auswählen, auslassen
@@ -373,6 +573,15 @@ Interaktion und Unmount widerrufen noch nicht angenommene Ownerarbeit.
 
 ## Vorschau und Nebenläufigkeit
 
+Aktive Boden-, Höhen-, Gewässer- und Regionsstriche starten ihre erste exakte Vorschau sofort. Höchstens eine
+Berechnung läuft; währenddessen bleibt nur der neueste wartende Stand erhalten.
+Fertige Zwischenstände desselben Strichs dürfen als Darstellung erscheinen, ohne
+den aktuellen Kandidaten zu bestätigen. Die letzte gültige Oberfläche bleibt bis
+zur nächsten Antwort sichtbar. Version, Kontext, Strichidentität und Lebensdauer
+sperren alte Antworten nach Abbruch, Werkzeug-/Dokumentwechsel und Unmount.
+Pointerup verwirft wartende Vorschauen und übernimmt den vollständigen finalen Pfad.
+Es gibt keine lokale Näherungsberechnung oder feste Bildratengarantie.
+
 Ein interaktiver Workflow besitzt unveränderliche Kandidaten. Jede
 Inhaltsänderung ersetzt Kandidat und Vorschauergebnis; Vorschau folgt nach
 100 ms. Unvollständige Entwürfe bleiben lokal. Geometrieeingaben benötigen
@@ -381,7 +590,7 @@ Snapshot mit der aktuellen Kamera synchron vor der nächsten Darstellung;
 separate Paint-Bestätigungen existieren nicht. Navigation bleibt während Reads
 möglich, die letzte vollständige Ansicht bleibt sichtbar.
 
-Neue Straßen, Verlängerungen, Gelände und Populate werden über denselben Ablauf
+Neue Straßen, Verlängerungen und Populate werden über denselben Ablauf
 mit Übernehmen, Enter oder Rechtsklick auf die Karte abgeschlossen. Rechtsklick
 übernimmt ausschließlich gesetzte Punkte, nicht die schwebende Verbindung zur
 Maus. Ein unvollständiger Straßenbeginn wird verworfen; ohne vollständigen
@@ -437,6 +646,46 @@ Fehlertexten abgeleitet. Preview/Commit liefern dieselbe erste Verletzung.
 `storage`/`staleVersion` bleiben getrennt; ungültige Geometrie erscheint nicht
 als reguläres Overlayobjekt.
 
+## Atlasansichten
+
+Die flache Karte umfasst rund 60.960 km je Achse, ohne Kugelprojektion oder
+umlaufende Ränder. Weltkoordinaten bleiben Fuß, die Maßstabsleiste zeigt Meter
+oder Kilometer. Navigation wird am Weltrand begrenzt. Innenräume werden
+weiterhin ausdrücklich geöffnet und behalten Geschosswahl und Hausraster.
+
+Die Ansichtsbezeichnung basiert auf der Kartenbreite bei 1.000 CSS-Pixeln,
+unabhängig von Fenstergröße und Pixeldichte. Zehn Prozent Hysterese verhindert
+Flackern. Inhalts- und Kachelgrenzen werden beim Hineinzoomen am Sollwert
+aktiviert und beim Herauszoomen über einen Rücklaufbereich von zehn Prozent
+gehalten; die Koordinatentransformation bleibt unverändert. Die Auswahl springt um den Kartenmittelpunkt; freie Doppelklicks zoomen
+zur nächsten feineren Außenansicht. Auswahl und Entwürfe bleiben erhalten.
+
+| Ansicht                 | Referenzbreite  |
+| ----------------------- | --------------- |
+| Raum                    | bis 15 m        |
+| Haus                    | 15–60 m         |
+| Grundstück              | 60–240 m        |
+| Straßenzug              | 240–600 m       |
+| Quartier / kleines Dorf | 600 m–1,5 km    |
+| Dorf / Stadtteil        | 1,5–4 km        |
+| Stadt                   | 4–15 km         |
+| Umland                  | 15–50 km        |
+| Teilregion              | 50–150 km       |
+| Region                  | 150–500 km      |
+| Land                    | 500–1.500 km    |
+| Großregion              | 1.500–4.000 km  |
+| Kontinent               | 4.000–12.000 km |
+| Welt                    | ab 12.000 km    |
+
+Diese Bereiche sind keine Verwaltungsordnung. Kachelanfragen sind je Schicht
+auf 64 Kacheln begrenzt und wählen bei Bedarf eine gröbere Darstellung.
+Flussübersichten laden höchstens 128 priorisierte Verläufe mit je 128 Samples;
+explizit gewählte Flüsse und die Flussbearbeitung laden exakte Daten.
+Grobe Oberflächenkacheln begrenzen lokale Seen auf 32 nach Größe priorisierte
+Flächen mit jeweils höchstens 64 Konturpunkten. Exakte Bearbeitung wird niemals
+stillschweigend gekürzt. Einzelne Straßen unter acht Bildschirmpixeln Länge
+entfallen in der Übersicht; ausgewählte Straßen behalten ihren exakten Header.
+
 ## Stadtübersicht und Kartenbeschriftung
 
 Der Maßstab bezeichnet CSS-Pixel pro Fuß; 100 % entsprechen 6,4 Pixeln pro Fuß.
@@ -462,7 +711,7 @@ In der Übersicht verschiebt Ziehen mit der linken Taste im Auswahlwerkzeug
 auf leerer Karte die Ansicht. Das Straßenwerkzeug setzt und bewegt stattdessen
 Verlaufspunkte. Doppelklick auf eine ausgewählte Straße fügt einen Knoten ein;
 auf leerer Karte zoomt er um den angeklickten Punkt zur nächsten Ansicht
-(0,064, 0,32, 1,28); „Zum Bearbeiten hineinzoomen“ erhält den Kartenmittelpunkt.
+gemäß den Atlasansichten; „Zum Bearbeiten hineinzoomen“ erhält den Kartenmittelpunkt.
 Bestehende Auswahl und Entwürfe bleiben beim Zoomwechsel erhalten. Im
 Straßenzeichnen löst Doppelklick keinen Zoom aus. Geometrieaktionen benötigen
 aktuelle Daten; Bestandsstraßen zusätzlich ihren vollständigen Header.
@@ -489,17 +738,21 @@ Pro Ansicht werden höchstens 3.000 priorisierte Objektkandidaten betrachtet und
 
 ## Dateien und History
 
-`.saltatlas`: SQLite-Format **13**, ohne Migration/Altformate. Genau fünf
+`.saltatlas`: SQLite-Format **18**, ohne Migration/Altformate. Genau zehn
 STRICT-/WITHOUT-ROWID-Tabellen: `document_meta(singleton,next_identity)`,
 `objects(id,kind,body)`, `house_cells(building_id,payload)`,
-`terrain(x,y,z)`, `terrain_settings(singleton,water)`. Keine Arbeitsindizes,
+`terrain(x,y,z)`, `terrain_layers(level,x,y,z)`, `waters(id,body)`, `ground_tiles(x,y,pixels)`, `region_catalog(singleton,body)`, `regions(id,body)`, `rivers(id,body)`. Keine Arbeitsindizes,
 RTrees, Views, Trigger, History oder redundanten Konturen/Bounds.
 
 Autoritativ sind Straßeneigenschaften/Nodes/Sections/Rezept/Marker,
 Road-Source gebundener Parzellen, eingefrorene Polygon/Frame-Werte gelöster
 Parzellen, Hausidentität/-autoren/Wichtiger-Ort-Markierung/Räume/Verbindungen/Zähler/Placement sowie
-Flächenpunkte/-material/-Order, Landschaftsstriche mit konkreten Assets, natürliche Höhenpunkte, Wasserstand und
-Fundamenteinstellungen pro Haus. Hauszellen stehen ausschließlich separat.
+Flächenpunkte/-material/-Order, Landschaftsstriche mit konkreten Assets, natürliche Höhenpunkte, lokale Gewässerflächen/-pegel und
+Fundamenteinstellungen pro Haus, Bodenfarbkacheln sowie Regionskatalog,
+Regionsflächen, Namen, Stile und Beschriftungseinstellungen sowie Flussknoten,
+Breiten, Einstellungen und resultierende Verläufe. Regionsbeziehungen
+werden aus den Flächen abgeleitet. Leere Bodenfarbkacheln
+werden nicht gespeichert; ihre Übersichtspyramide wird beim Öffnen neu aufgebaut. Hauszellen stehen ausschließlich separat.
 Gebundene Welttransforms und Konturen werden beim Öffnen neu berechnet.
 
 Unbekannte und doppelte verschachtelte JSON-Felder, zusätzliche Schemaobjekte,
@@ -524,3 +777,100 @@ monotonen Allocator getrennt vom Erstellungs-/Historyzähler. Preview reserviert
 nur lokal; Fehler/No-op verbrauchen nichts. Undo senkt den globalen Allocator
 nicht; Überlauf wird vor Mutation abgelehnt. SQL-Rollback veröffentlicht weder
 Revision noch Dirtyzustand vor dem Commit.
+
+## Flüsse
+
+Das Werkzeug „Fluss“ arbeitet im gesamten Außenzoom mit gesetzten Verlaufspunkten.
+Enter, Rechtsklick und Doppelklick übernehmen; Escape, Fokusverlust und
+Werkzeugwechsel verwerfen den Entwurf. Auswahl und Punktverschiebung erfolgen im
+Flusswerkzeug. Punkte lassen sich einfügen und entfernen, beide Enden verlängern,
+Namen und Breiten bearbeiten. Eine Aktion ist ein atomarer Undo-Schritt.
+
+Vorgaben: Breite 20 Fuß (2–1.000), Geländespielraum 10 % (0–30), Windungsstärke
+50 % (0–100), Mäanderweite 40 Fuß (0–10.000), schmale Quelle aktiv.
+Breiten gelten je Verlaufspunkt; Weltmaße bleiben beim Zoomen unverändert.
+Varianten besitzen einen gespeicherten Seed. Endhöhen bestimmen die anfängliche
+Richtung, bei Gleichstand die Zeichenrichtung; der Entwurf erlaubt Umkehrung.
+Anschlüsse orientieren neue Zuflüsse zur Einmündung. Vorschaupfeile zeigen die
+berechnete Richtung. Gespeicherte Richtungen ändern sich bei Höhenmalerei nicht.
+
+Die begrenzte Suche bevorzugt kurze Verläufe und vermeidet Anstiege innerhalb des
+Suchkorridors. Sie nutzt insgesamt höchstens 200.000 Zustände je Flussroute,
+verteilt auf deren Teilstrecken; ein vollständiger direkter Ausgangskandidat
+bleibt verfügbar. Mäander bleiben im Korridor. Der Planer garantiert kein globales
+Minimum des Aushubs. Starke Einschnitte werden ab 10 Fuß orange und ab 30 Fuß rot
+markiert und mit der maximalen Tiefe angegeben. Sie blockieren keine Übernahme
+und benötigen keine Bestätigung. Technische Geometrie- und Höhengrenzen gelten weiter.
+
+Flüsse besitzen gemeinsame stabile Verbindungsknoten. Ein neuer Verlauf endet
+beim ersten Schnitt mit einem bestehenden Fluss; Endpunkte rasten innerhalb von
+acht Bildschirmpixeln an dessen Verlauf ein. Einmündungen teilen eine Wasserhöhe.
+Mehrere Zuflüsse sind erlaubt, Teilungen, Selbstkreuzungen und Zyklen nicht.
+Das Bewegen gemeinsamer Knoten führt die angeschlossenen Verläufe mit. Ein
+Verbindungsknoten kann nicht einzeln entfernt werden; das Löschen seines
+Hauptflusses lässt verbleibende Zuflüsse als freie Enden bestehen.
+
+Wasserprofile sind stückweise linear und niemals ansteigend; ebene Abschnitte sind
+zulässig. Der Solver propagiert die niedrigste vorgelagerte Höhe stromabwärts und
+berücksichtigt lokale Gewässerpegel als Anschlussbedingungen. Niedrige Zuflüsse
+können den folgenden Hauptfluss absenken; ein höheres empfangendes Gewässer erzeugt
+Rückstau stromaufwärts. Widersprüchliche feste Anschlusspegel werden abgelehnt.
+Untergetauchte Abschnitte gehen optisch im Gewässer auf. Freie Enden sind erlaubt. Manuelle Wasserpolygone erhalten keine
+eigene hydrologische Anschlusshöhe. Deltas, Abflussmengen, Wasserfallanimationen,
+Überschwemmungsausbreitung und automatische Brücken werden nicht simuliert.
+
+Das Grundhöhenraster bleibt erhalten. Ein abgeleitetes Flussbett senkt die
+Oberfläche bis zwei Fuß unter das Wasserprofil ab, mit weichem Übergang über etwa
+eine Flussbreite. Zur Darstellung schmaler Kanäle wird der Stützbereich des
+5-Fuß-Rasters berücksichtigt. Es gibt keine Aufschüttung. Verschieben und Löschen
+entfernen die alte Flusswirkung, eigene Höhenbearbeitungen bleiben erhalten.
+Höhenmalerei berechnet betroffene Wasserprofile und Betten neu, ohne die
+Kartenverläufe umzuplanen. Die Fundamentberechnung verwendet das Gelände nach der
+Flussabsenkung. Überlagerungen mit Häusern, Grundstücken und Straßen sind in beiden
+Richtungen erlaubt; Flusswasser zählt für die Straßenroutensuche als Wasser.
+Relief, Höhenlinien und Höhenanzeige berücksichtigen das Bett. Grobe
+Übersichtshöhen bleiben eine Darstellung, keine exakte Kanalquerschnittmessung.
+
+Grenzen: 512 Verlaufspunkte und 32.768 Samples je Fluss; 2.000 Flüsse und 200.000
+Samples je bearbeitetem Netz beziehungsweise geladener Ansicht. Zu große oder
+ungültige Entwürfe bleiben korrigierbar und werden nicht teilweise übernommen.
+Die gespeicherten Flussdaten und abgeleiteten Werte sind unter
+[Dateien und History](#dateien-und-history) festgelegt.
+
+## Gewässerpinsel
+
+„Gewässer“ malt lokale Seen ab 0,32 CSS-Pixeln pro Fuß ohne Objektauswahl, Namen
+oder Radierer. Meere und großräumige Küsten entstehen über Land/Meer im
+Höhenwerkzeug. Lokale Wasserflächen besitzen einen eigenen konstanten Pegel. Pinselgröße: gemeinsamer Bildschirmpinsel, Vorgabe
+80 Pixel. Absenkung: 0,1–100 Fuß, Vorgabe 1 Fuß. Ziehen senkt das tatsächliche
+5-Fuß-Höhenraster mit Abtastung und weichem Profil des Höhenpinsels; wiederholtes
+Übermalen vertieft es. Halten ohne Bewegung vertieft nicht weiter.
+
+Ohne Wasserkontakt bestimmt die Geländeoberfläche am Strichbeginn vor der
+Absenkung den Pegel, einschließlich Flussbett, ohne Hausplattformen. Berührt der
+Strich vorhandene Gewässer oder Flusswasser, gewinnt der niedrigste vorhandene
+Kontaktpegel. Die verbundenen Gewässer werden vereinigt; trockenfallende Teile
+entfallen. Bestehende Becken werden bei einer Pegelsenkung nicht automatisch
+vertieft. Hohe Bereiche benötigen gegebenenfalls mehrere Striche, bis Wasser
+sichtbar wird. Wasser breitet sich nicht außerhalb der gemalten Fläche aus.
+
+Niedriges Gelände am äußeren Ufer wird bis zum Pegel aufgeschüttet, mit einem
+weichen Übergang über ein Viertel des Weltradius, mindestens fünf Fuß. Höheres
+Gelände und Wasseranschlüsse erhalten keinen zusätzlichen Wall. Bei nachträglicher
+Höhenbearbeitung verschwinden trockengelegte Teile dauerhaft aus der Wasserfläche.
+Späteres Absenken allein stellt sie nicht wieder her. Inseln und getrennte
+Restgewässer entstehen aus der verbleibenden Fläche; vollständiges Trockenlegen
+entfernt das Gewässer. Land und Wasser teilen einen atomaren Undo-/Redo-Schritt.
+
+Live-Vorschau, Pointerup und Abbruch folgen
+[Vorschau und Nebenläufigkeit](#vorschau-und-nebenläufigkeit).
+Der Kern berechnet Pegel und Vorschau aus dem bestätigten Ausgangszustand.
+Gewässeränderungen führen betroffene Flussprofile und Fundamente nach; Flussverläufe
+bleiben erhalten. Straßenrouten berücksichtigen lokale Wasserflächen.
+
+Technische Grenzen: 4.096 Pfadpunkte, 100.000 geänderte Höhenpunkte einschließlich
+Ufer, 400.000 Rasterkandidaten im Strichrechteck und 200.000 Konturpunkte je Aktion
+oder geladener Ansicht. Pegeländerungen bestehender Gewässer erlauben höchstens
+100.000 Rasterkandidaten je betroffenem Gewässerrechteck; Flusskontaktabtastung ist
+auf insgesamt 200.000 Prüfungen begrenzt. Zu große Aktionen werden vollständig
+abgelehnt. Persistenz und Import folgen [Dateien und History](#dateien-und-history).

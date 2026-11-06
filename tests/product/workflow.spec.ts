@@ -1,5 +1,4 @@
-import { selectObject } from "../support/editor";
-import { type WorldPoint } from "../../src/atlas/model";
+import { selectObject, commit } from "../support/editor";
 import {
   calls,
   clearCalls,
@@ -16,21 +15,18 @@ test("normal pointer capture release and subsequent Blur preserve an admitted ar
 }) => {
   await page.goto(url);
   await ready(page);
-  await page.getByRole("button", { name: "Flächen", exact: true }).click();
-  for (const p of [
-    [0, 0],
-    [50, 0],
-    [50, 40],
-  ] as WorldPoint[]) {
-    const s = await screen(page, p);
-    await page.mouse.click(s.x, s.y);
-  }
-  const accept = page.getByRole("button", {
-    name: "Übernehmen",
-    exact: true,
+  await commit(page, {
+    type: "createArea",
+    area: {
+      material: "earth",
+      points: [
+        [0, 0],
+        [50, 0],
+        [50, 40],
+      ],
+    },
   });
-  await expect(accept).toBeEnabled();
-  await accept.click();
+  await page.reload();
   await ready(page);
   const s = await screen(page, [30, 10]);
   await page.mouse.click(s.x, s.y); // select tool is explicit below

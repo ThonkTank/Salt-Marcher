@@ -1,12 +1,15 @@
+import { decideLod } from "./lod";
 import { describe, expect, it } from "vitest";
 import {
   evaluateGesture,
   type Gesture,
+  decideBlur,
   decideDoubleClick,
   decideKey,
   decidePointerDown,
   decideWheel,
   evaluatePointer,
+  evaluateHold,
   snapToRoad,
   type CanvasInputSnapshot,
   type PointerInput,
@@ -302,6 +305,7 @@ const state = (
   populateRoad: false,
   settings: defaultPopulation,
   ...patch,
+  lod: patch.lod ?? decideLod(patch.camera?.scale ?? 2),
 });
 const input = (
   point: WorldPoint = [2.5, 2.5],
@@ -363,7 +367,173 @@ const detail: Detail = {
   ],
 };
 
+const brushSettings = {
+  ground: {
+    mode: "paint" as const,
+    tip: "soft" as const,
+    color: [10, 20, 30] as [number, number, number],
+    diameter: 80,
+    opacity: 1,
+    flow: 1,
+  },
+  brush: {
+    mode: "raise" as const,
+    radius: 40,
+    amount: 1,
+    strength: 0.25,
+    target: 10,
+  },
+  scenery: {
+    biome: "forest" as const,
+    radius: 40,
+    density: 0.65,
+    size: 8,
+  },
+  region: { id: "r", diameter: 80, mode: "paint" as const },
+} satisfies Partial<CanvasInputSnapshot>;
+
 describe("pure canvas input decisions", () => {
+  it.each(
+    (["area", "terrain", "water", "scenery", "regions"] as const).flatMap(
+      (tool) => [2, 8].map((scale) => ({ tool, scale })),
+    ),
+  )(
+    "keeps $tool diameter at 80 CSS pixels (scale $scale)",
+    ({ tool, scale }) => {
+      const stroke = gestureOf(
+        state({
+          ...brushSettings,
+          camera: { x: 0, y: 0, scale },
+          tool,
+        }),
+      );
+      if (!stroke) throw Error("Missing gesture");
+      const radius =
+        stroke.kind === "ground"
+          ? stroke.brush.diameter / 2
+          : stroke.kind === "region"
+            ? stroke.radius
+            : stroke.kind === "terrain" || stroke.kind === "scenery"
+              ? stroke.brush.radius
+              : 0;
+      expect(radius * 2 * scale).toBe(80);
+    },
+  );
+
+  it("freezes physical author resolution at stroke start across later LOD changes", () => {
+    const entered = decideLod(0.4);
+    const lod = decideLod(0.37, entered);
+    expect(lod.terrainLevel).not.toBe(lod.authorTerrainLevel);
+    const gesture = gestureOf(
+      state({
+        ...brushSettings,
+        tool: "terrain",
+        camera: { x: 0, y: 0, scale: 0.37 },
+        lod,
+      }),
+    );
+    if (gesture?.kind !== "terrain") throw Error("Missing terrain stroke");
+    expect(gesture.brush.resolution).toBe(lod.authorTerrainLevel);
+    const later = state({
+      camera: { x: 0, y: 0, scale: 2 },
+      tool: "terrain",
+      terrainView: { level: 0, tiles: [[0, 0]] },
+      workflow: geometryState(
+        { ...common, kind: "geometry" },
+        { kind: "terrain" },
+        gesture,
+      ),
+    });
+    expect(evaluatePointer(later, input([20, 4]), true)?.intent).toMatchObject({
+      type: "terrainStroke",
+      brush: { resolution: lod.authorTerrainLevel },
+    });
+  });
+
+  it("continues held ground flow at the last point with monotonic elapsed time", () => {
+    const pointer = gestureOf(state({ ...brushSettings, tool: "area" }));
+    if (pointer?.kind !== "ground") throw Error("Missing ground stroke");
+    const gesture = {
+      ...pointer,
+      started: 100,
+      brush: {
+        ...pointer.brush,
+        points: [
+          [2, 3, 0],
+          [4, 5, 200],
+        ] as [number, number, number][],
+      },
+    };
+    const snapshot = state({
+      workflow: geometryState(
+        {
+          ...common,
+          kind: "geometry",
+          basis: status,
+          stage: { phase: "editing" },
+        },
+        { kind: "ground" },
+        gesture,
+      ),
+    });
+    const result = evaluateHold(snapshot, 450);
+    expect(result?.intent).toMatchObject({
+      type: "groundStroke",
+      brush: {
+        points: [
+          [2, 3, 0],
+          [4, 5, 200],
+          [4, 5, 350],
+        ],
+      },
+    });
+    expect(evaluateHold(snapshot, 150)?.intent).toMatchObject({
+      brush: {
+        points: [
+          [2, 3, 0],
+          [4, 5, 200],
+          [4, 5, 200],
+        ],
+      },
+    });
+    expect(gesture.brush.points).toEqual([
+      [2, 3, 0],
+      [4, 5, 200],
+    ]);
+    expect(evaluateHold(state(), 450)).toBeNull();
+  });
+
+  it.each(["terrain", "water", "scenery", "regions"] as const)(
+    "does not repeat a held %s brush",
+    (tool) => {
+      const pointer = gestureOf(state({ ...brushSettings, tool }));
+      if (
+        !pointer ||
+        (pointer.kind !== "terrain" &&
+          pointer.kind !== "scenery" &&
+          pointer.kind !== "region")
+      )
+        throw Error("Missing brush");
+      expect(
+        evaluateHold(
+          state({
+            workflow: geometryState(
+              {
+                ...common,
+                kind: "geometry",
+                basis: status,
+                stage: { phase: "editing" },
+              },
+              { kind: pointer.kind },
+              pointer,
+            ),
+          }),
+          450,
+        ),
+      ).toBeNull();
+    },
+  );
+
   it("rejects active and foreign pointers and unsupported buttons before focus", () => {
     const snapshot = state({
       workflow: {
@@ -405,8 +575,8 @@ describe("pure canvas input decisions", () => {
       handle: "incoming",
     });
     expect(decidePointerDown(snapshot, input([0, 0])).commands[0]).toEqual({
-      kind: "nodeSelection",
-      value: "a",
+      kind: "selection",
+      event: { type: "pointerNode", value: "a" },
     });
   });
   it("prioritizes selected area vertices over active interior connections", () => {
@@ -438,8 +608,8 @@ describe("pure canvas input decisions", () => {
       context: { kind: "house", houseId: hitHouse.id },
     });
     expect(decidePointerDown(snapshot, input([2.5, 0])).commands).toEqual([
-      { kind: "connectionSelection", id: "door" },
-      { kind: "roomSelection", room: "" },
+      { kind: "selection", event: { type: "pointerConnection", id: "door" } },
+      { kind: "selection", event: { type: "pointerRoom", id: "" } },
     ]);
   });
   it("selects a room on its first hit and moves it on a second hit", () => {
@@ -449,8 +619,8 @@ describe("pure canvas input decisions", () => {
       context: { kind: "house", houseId: hitHouse.id },
     });
     expect(decidePointerDown(snapshot, input()).commands).toEqual([
-      { kind: "connectionSelection", id: "" },
-      { kind: "roomSelection", room: "r" },
+      { kind: "selection", event: { type: "pointerConnection", id: "" } },
+      { kind: "selection", event: { type: "pointerRoom", id: "r" } },
     ]);
     expect(gestureOf({ ...snapshot, room: "r" })).toMatchObject({
       kind: "roomMove",
@@ -492,7 +662,11 @@ describe("pure canvas input decisions", () => {
       decidePointerDown(
         sceneState(items, { boundaries }),
         input([2.5, 0.5]),
-      ).commands.find((c) => c.kind === "select")?.object?.id;
+      ).commands.flatMap((c) =>
+        c.kind === "selection" && c.event.type === "selectObject"
+          ? [c.event.id]
+          : [],
+      )[0];
     expect(selectedAt(objects)).toBe(hitHouse.id);
     expect(selectedAt(objects.filter((o) => o.kind !== "house"))).toBe(road.id);
     expect(
@@ -504,7 +678,7 @@ describe("pure canvas input decisions", () => {
       "young",
     );
   });
-  it("keeps extension anchor clicks node-free and area draft clicks capture-free", () => {
+  it("keeps extension anchors node-free and starts a captured ground stroke", () => {
     const draft = extensionRoadDraft(road, "end", null);
     const workflow = draftState(
       { ...common, kind: "draft" },
@@ -523,12 +697,26 @@ describe("pure canvas input decisions", () => {
         rollback: draft,
       },
     ]);
-    const areaDecision = decidePointerDown(state({ tool: "area" }), input());
-    expect(areaDecision.capture).toBe(false);
-    expect(areaDecision.commands).toEqual([
+    const ground = {
+      mode: "paint" as const,
+      tip: "soft" as const,
+      color: [157, 181, 139] as [number, number, number],
+      diameter: 60,
+      opacity: 1,
+      flow: 1,
+    };
+    const areaDecision = decidePointerDown(
+      state({ tool: "area", ground }),
+      input(),
+    );
+    expect(areaDecision.capture).toBe(true);
+    expect(areaDecision.commands).toMatchObject([
       {
-        kind: "draft",
-        draft: { kind: "newArea", material: "earth", points: [[2.5, 2.5]] },
+        kind: "beginGesture",
+        gesture: {
+          kind: "ground",
+          brush: { ...ground, diameter: 30, points: [[2.5, 2.5, 0]] },
+        },
       },
     ]);
     expect(draft.nodes).toEqual([]);
@@ -671,10 +859,14 @@ describe("pure canvas input decisions", () => {
     expect(a.points).toHaveLength(3);
     expect(
       decideDoubleClick(state({ selectedObject: hitHouse }), [0, 0]),
-    ).toEqual([{ kind: "openHouse", house: hitHouse }]);
+    ).toEqual([
+      { kind: "selection", event: { type: "openHouse", id: hitHouse.id } },
+    ]);
     expect(
       decideDoubleClick(state({ selectedObject: parcel }), [0, 0]),
-    ).toEqual([{ kind: "openParcel", parcel }]);
+    ).toEqual([
+      { kind: "selection", event: { type: "openParcel", id: parcel.id } },
+    ]);
     expect(
       decideDoubleClick(
         state({ selectedObject: road, editable: false }),
@@ -760,7 +952,12 @@ describe("pure canvas input decisions", () => {
         state({ floor, context: { kind: "parcel", parcelId: parcel.id } }),
         event,
       ).commands,
-    ).toEqual([{ kind: "floor", delta: key === "PageUp" ? 1 : -1 }]);
+    ).toEqual([
+      {
+        kind: "selection",
+        event: { type: "stepFloor", delta: key === "PageUp" ? 1 : -1 },
+      },
+    ]);
 
     expect(decideKey(state(), event)).toMatchObject({
       preventDefault: true,
@@ -779,9 +976,9 @@ describe("pure canvas input decisions", () => {
           kind: "camera",
 
           camera: {
-            scale: context.kind === "house" ? 1.28 : 0.000064,
-            x: 160 + 10 * (2 - (context.kind === "house" ? 1.28 : 0.000064)),
-            y: 120 + 20 * (2 - (context.kind === "house" ? 1.28 : 0.000064)),
+            scale: context.kind === "house" ? 1.28 : 0.000002,
+            x: 160 + 10 * (2 - (context.kind === "house" ? 1.28 : 0.000002)),
+            y: 120 + 20 * (2 - (context.kind === "house" ? 1.28 : 0.000002)),
           },
         },
       ]);
@@ -802,4 +999,176 @@ describe("pure canvas input decisions", () => {
       ),
     ).toEqual([]);
   });
+});
+
+describe("river input through the shared decision path", () => {
+  const river: NonNullable<CanvasInputSnapshot["river"]> = {
+    river: undefined,
+    views: [],
+    fresh: true,
+    width: 20,
+    mode: "draw",
+    settings: {
+      tolerance: 0.1,
+      roughness: 0.5,
+      meander: 40,
+      sourceFade: true,
+      seed: 1,
+    },
+  };
+  const riverState = (patch: Partial<CanvasInputSnapshot> = {}) =>
+    state({ tool: "river", river, ...patch });
+  const first = () => {
+    const command = decidePointerDown(riverState(), input([20, 30]))
+      .commands[0];
+    if (command.kind !== "riverDraft") throw Error("Expected river draft");
+    return command;
+  };
+  it("creates a typed draft without capture and preserves navigation priority", () => {
+    const command = first();
+    expect(command.intent.action).toMatchObject({
+      kind: "put",
+      nodes: [{ point: [20, 30], width: 20 }],
+    });
+    expect(command.pointer).toBeNull();
+    for (const patch of [{ space: true }, { button: 1 }]) {
+      const decision = decidePointerDown(riverState(), input([20, 30], patch));
+      expect(decision.capture).toBe(true);
+      expect(decision.commands).toMatchObject([
+        { kind: "beginGesture", gesture: { kind: "pan" } },
+      ]);
+    }
+    expect(
+      decidePointerDown(
+        riverState({ river: { ...river, fresh: false } }),
+        input(),
+      ).commands,
+    ).toEqual([]);
+    expect(
+      decidePointerDown(riverState({ editable: false }), input()).commands,
+    ).toEqual([]);
+  });
+  it("captures node hits before selection and rejects a competing pointer", () => {
+    const command = first();
+    const workflow = geometryState(
+      { ...common, kind: "geometry" },
+      { kind: "river", intent: command.intent },
+      null,
+    );
+    const snapshot = riverState({
+      workflow,
+      river: { ...river, mode: "select" },
+    });
+    const decision = decidePointerDown(snapshot, input([20, 30]));
+    const next = decision.commands[0];
+    expect(decision.capture).toBe(true);
+    if (next.kind !== "riverDraft" || !next.pointer)
+      throw Error("Expected river gesture");
+    expect(next.pointer.index).toBe(0);
+    const dragging = geometryState(
+      { ...common, kind: "geometry" },
+      { kind: "river", intent: command.intent },
+      next.pointer,
+    );
+    expect(
+      decidePointerDown(
+        { ...snapshot, workflow: dragging },
+        input([40, 50], { pointer: 8 }),
+      ).commands,
+    ).toEqual([]);
+    expect(
+      evaluatePointer(
+        { ...snapshot, workflow: dragging },
+        input([40, 50]),
+        true,
+      )?.intent,
+    ).toMatchObject({ action: { nodes: [{ point: [40, 50] }] } });
+  });
+  it("extends the chosen end without changing existing node data", () => {
+    const command = first();
+    const workflow = geometryState(
+      { ...common, kind: "geometry" },
+      { kind: "river", intent: command.intent, append: "start" },
+      null,
+    );
+    const decision = decidePointerDown(
+      riverState({ workflow }),
+      input([0, 10]),
+    );
+    expect(decision.commands[0]).toMatchObject({
+      kind: "riverDraft",
+      node: 0,
+      intent: { action: { nodes: [{ point: [0, 10] }, { point: [20, 30] }] } },
+    });
+    expect(command.intent.action).toMatchObject({
+      nodes: [{ point: [20, 30] }],
+    });
+  });
+  it("routes right click and double click to acceptance without overview zoom", () => {
+    const snapshot = riverState({ camera: { x: 0, y: 0, scale: 0.1 } });
+    expect(
+      decidePointerDown(snapshot, input([20, 30], { button: 2 })).commands,
+    ).toEqual([{ kind: "accept" }]);
+    expect(decideDoubleClick(snapshot, [20, 30])).toEqual([{ kind: "accept" }]);
+  });
+  it("keeps local field keys local and cancels river drafts on blur and document shortcuts", () => {
+    const key = {
+      key: "z",
+      code: "KeyZ",
+      ctrl: true,
+      meta: false,
+      shift: false,
+      formTarget: false,
+    };
+    expect(decideKey(riverState(), key).commands).toEqual([
+      { kind: "cancelEditor" },
+      { kind: "history", redo: false },
+    ]);
+    expect(
+      decideKey(riverState(), { ...key, formTarget: true }).commands,
+    ).toEqual([]);
+    expect(decideBlur(riverState())).toEqual([{ kind: "cancelEditor" }]);
+    expect(decideBlur(state())).toEqual([]);
+  });
+});
+
+it("routes brush wheel resizing through pure input decisions and freezes it during a stroke", () => {
+  for (const tool of [
+    "area",
+    "terrain",
+    "water",
+    "scenery",
+    "regions",
+  ] as const) {
+    const snapshot = state({ tool });
+    expect(decideWheel(snapshot, [0, 0], -100, true)).toEqual([
+      { kind: "groundSize", factor: 1.1 },
+    ]);
+    expect(decideWheel(snapshot, [0, 0], 100, true)).toEqual([
+      { kind: "groundSize", factor: 1 / 1.1 },
+    ]);
+    expect(decideWheel(snapshot, [0, 0], -100)[0].kind).toBe("camera");
+  }
+  const gesture: Gesture = {
+    ...base,
+    kind: "terrain",
+    brush: {
+      mode: "raise",
+      radius: 25,
+      amount: 1,
+      strength: 0.25,
+      target: 10,
+      points: [[0, 0]],
+    },
+  };
+  const snapshot = state({
+    tool: "terrain",
+    workflow: geometryState(
+      { ...common, kind: "geometry" },
+      { kind: "terrain" },
+      gesture,
+    ),
+  });
+  expect(decideWheel(snapshot, [0, 0], -100, true)).toEqual([]);
+  expect(decideWheel(snapshot, [0, 0], -100)).toEqual([]);
 });

@@ -7,12 +7,42 @@ import {
   worldToScreen,
   toLocal,
   contains,
+  containsPolygon,
   interiorBounds,
   interiorTiles,
   interiorTileCoordinate,
   mergeDetails,
   type Detail,
+  type WorldPoint,
 } from "./model";
+it("polygon hit testing preserves holes and the existing half-open boundary rule", () => {
+  const square = (x: number, y: number, size: number): WorldPoint[] => [
+    [x, y],
+    [x + size, y],
+    [x + size, y + size],
+    [x, y + size],
+  ];
+  const polygon = { outer: square(0, 0, 10), holes: [square(2, 2, 2)] };
+  for (const [point, expected] of [
+    [[1, 1], true],
+    [[3, 3], false],
+    [[15, 5], false],
+    [[0, 0], true],
+    [[10, 5], false],
+    [[5, 10], false],
+    [[2, 3], false],
+    [[4, 3], true],
+  ] as [WorldPoint, boolean][]) {
+    expect(containsPolygon(polygon, point)).toBe(expected);
+    expect(
+      containsPolygon(
+        { outer: [...polygon.outer].reverse(), holes: polygon.holes },
+        point,
+      ),
+    ).toBe(expected);
+  }
+  expect(containsPolygon({ outer: [], holes: [] }, [0, 0])).toBe(false);
+});
 describe("local building transforms", () => {
   it("round trips arbitrary rotations and negative positions", () => {
     for (const angle of [0, 0.3, -1.7, Math.PI, 5.9]) {

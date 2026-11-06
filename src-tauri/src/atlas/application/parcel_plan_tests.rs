@@ -664,7 +664,7 @@ fn empty_parcels_have_real_ids_manual_owner_and_header_only_follow() {
         r.population_recipe.as_ref().unwrap().algorithm_version,
         AlgorithmVersion
     );
-    assert_eq!(road_json["populationRecipe"]["algorithmVersion"], 3);
+    assert_eq!(road_json["populationRecipe"]["algorithmVersion"], 4);
     let parcel = a.parcel_headers_for_road(&r.id).unwrap()[0].clone();
     let again = edit(
         &mut a,
@@ -951,4 +951,43 @@ fn roughening_follows_bound_house_without_rewriting_interior() {
     history(&mut app, false);
     assert_eq!(app.parcel(&parcel.id).unwrap(), parcel);
     assert_eq!(before, raw_interior(&app, &house.id));
+}
+
+#[test]
+fn adaptive_short_road_population_preview_history_and_file_roundtrip() {
+    let mut app = AtlasApplication::new().unwrap();
+    let mut input = road_input();
+    input["road"]["nodes"][1]["point"] = json!([25, 0]);
+    input["population"] = json!({"side":"both","setback":5,"gap":10,"minWidth":4,"maxWidth":7,"minDepth":4,"maxDepth":8,"seed":1,"parcelDepth":null});
+    let preview = edit(&mut app, "preview", input.clone());
+    assert_eq!(preview["valid"], true);
+    assert_eq!(preview["generationSummary"]["createdHouses"], 2);
+    let committed = edit(&mut app, "commit", input);
+    generation_invariants(&committed);
+    assert_eq!(preview["objects"], committed["objects"]);
+    assert_eq!(preview["generationSummary"], committed["generationSummary"]);
+    let parcels: Vec<Parcel> = committed["objects"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter(|o| o["kind"] == "parcel")
+        .map(|o| match serde_json::from_value(o.clone()).unwrap() {
+            SceneObject::Parcel(p) => p,
+            _ => unreachable!(),
+        })
+        .collect();
+    assert_eq!(parcels.len(), 2);
+    app.history(false).unwrap();
+    for p in &parcels {
+        assert!(app.parcel(&p.id).is_err());
+    }
+    app.history(true).unwrap();
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("adaptive.saltatlas");
+    app.save(&path).unwrap();
+    let mut reopened = AtlasApplication::new().unwrap();
+    reopened.open(&path).unwrap();
+    for p in parcels {
+        assert_eq!(reopened.parcel(&p.id).unwrap(), p);
+    }
 }

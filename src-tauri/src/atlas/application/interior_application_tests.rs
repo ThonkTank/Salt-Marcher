@@ -1,6 +1,6 @@
 //! Document integration: atomic edits, persistence, ownership and adapter errors.
 use super::application_test_support::{request_edit as edit, *};
-use super::{storage_tests, *};
+use super::*;
 use crate::interior::{LocalEdit, RoomIntent};
 
 fn create(a: &mut AtlasApplication) -> String {
@@ -9,10 +9,6 @@ fn create(a: &mut AtlasApplication) -> String {
 }
 fn room(id: &str, intent: Value) -> Value {
     json!({"type":"room", "buildingId":id, "intent":intent})
-}
-fn history(a: &mut AtlasApplication, redo: bool) {
-    a.request("history", json!({"version":a.status(), "redo":redo}))
-        .unwrap();
 }
 
 #[test]
@@ -60,7 +56,7 @@ fn production_solver_survives_session_replacement() {
 }
 
 #[test]
-fn real_move_preview_history_and_format11_roundtrip() {
+fn real_move_preview_history_and_file_roundtrip() {
     let mut a = AtlasApplication::new().unwrap();
     let id = create(&mut a);
     let dir = tempfile::tempdir().unwrap();
@@ -68,11 +64,11 @@ fn real_move_preview_history_and_format11_roundtrip() {
     a.request("save", json!({"path":path})).unwrap();
     let before_house = a.house(&id).unwrap();
     assert_eq!(before_house.connections[0].offset, 0.5);
-    let before = storage_tests::dump(&a);
+    let before = dump(&a);
     let intent = room(&id, json!({"kind":"move","roomId":"room-0","dx":2,"dy":1}));
     let preview = edit(&mut a, "preview", intent.clone());
     assert_eq!(preview["valid"], true);
-    assert_eq!(storage_tests::dump(&a), before);
+    assert_eq!(dump(&a), before);
 
     let revision = a.revision;
     let cursor = a.cursor;
@@ -132,7 +128,7 @@ fn real_move_preview_history_and_format11_roundtrip() {
     assert_eq!(hints.interiors[0].building_id, id);
     assert_eq!(hints.interiors[0].floor, 0);
     assert_eq!(hints.interiors[0].bounds, [0.0, 0.0, 5.0, 3.0]);
-    let indices_after: Value = storage_tests::dump(&a)[7].clone();
+    let indices_after: Value = dump(&a)[7].clone();
     history(&mut a, false);
     assert_eq!(a.house(&id).unwrap(), before_house);
     assert!(!a.status().dirty && a.status().can_redo);
@@ -141,13 +137,13 @@ fn real_move_preview_history_and_format11_roundtrip() {
     assert!(a.status().dirty && !a.status().can_redo);
     // Real redo reconstructs the same objects, payload and both local/spatial indices.
     assert_eq!(
-        storage_tests::dump(&a)[7].as_array().unwrap()[0..5],
+        dump(&a)[7].as_array().unwrap()[0..5],
         indices_after.as_array().unwrap()[0..5]
     );
     a.request("save", json!({"path":path})).unwrap();
     assert!(!a.status().dirty);
-    let rows = storage_tests::snapshot_rows(&path);
-    let payloads = storage_tests::payload_rows(&path);
+    let rows = snapshot_rows(&path);
+    let payloads = payload_rows(&path);
     let db = Connection::open(&path).unwrap();
     assert_eq!(
         db.query_row("PRAGMA user_version", [], |r| r.get::<_, i64>(0))
@@ -165,10 +161,15 @@ fn real_move_preview_history_and_format11_roundtrip() {
         tables,
         vec![
             "document_meta",
+            "ground_tiles",
             "house_cells",
             "objects",
+            "region_catalog",
+            "regions",
+            "rivers",
             "terrain",
-            "terrain_settings"
+            "terrain_layers",
+            "waters"
         ]
     );
     drop(db);
@@ -181,8 +182,8 @@ fn real_move_preview_history_and_format11_roundtrip() {
     assert_eq!(a.house(&id).unwrap(), moved);
     let second = dir.path().join("again.saltatlas");
     a.request("save", json!({"path":second})).unwrap();
-    assert_eq!(storage_tests::snapshot_rows(&second), rows);
-    assert_eq!(storage_tests::payload_rows(&second), payloads);
+    assert_eq!(snapshot_rows(&second), rows);
+    assert_eq!(payload_rows(&second), payloads);
 }
 
 #[test]
@@ -220,7 +221,7 @@ fn move_rejections_and_late_document_sql_failures_are_atomic() {
         preview["removedConnections"],
         json!([{"buildingId":id,"connection":stair}])
     );
-    let before = storage_tests::dump(&a);
+    let before = dump(&a);
     for trigger in [
         "CREATE TEMP TRIGGER fail_history BEFORE INSERT ON history BEGIN SELECT RAISE(ABORT,'injected history'); END;",
         "CREATE TEMP TRIGGER fail_local_insert BEFORE INSERT ON local_cells BEGIN SELECT RAISE(ABORT,'injected local index'); END;",
@@ -230,7 +231,7 @@ fn move_rejections_and_late_document_sql_failures_are_atomic() {
         assert_eq!(error.category,ErrorCategory::Storage);
         assert!(error.issue.is_none());
 
-        assert_eq!(storage_tests::dump(&a),before);
+        assert_eq!(dump(&a),before);
         a.db.execute_batch("DROP TRIGGER IF EXISTS fail_history; DROP TRIGGER IF EXISTS fail_local_insert;").unwrap();
     }
     for invalid in [
@@ -248,7 +249,7 @@ fn move_rejections_and_late_document_sql_failures_are_atomic() {
         assert_eq!(error.category, ErrorCategory::InvalidInput);
         assert_eq!(preview["reason"], error.message);
         assert_eq!(preview["issues"], json!([error.issue.unwrap()]));
-        assert_eq!(storage_tests::dump(&a), before);
+        assert_eq!(dump(&a), before);
     }
     let committed = edit(&mut a, "commit", intent);
     assert_eq!(
@@ -261,14 +262,14 @@ fn move_rejections_and_late_document_sql_failures_are_atomic() {
     history(&mut a, false);
     assert_eq!(a.house(&id).unwrap(), house);
     // Zero move is a real no-op; preserve saved redo/history/allocator.
-    let unchanged = storage_tests::dump(&a);
+    let unchanged = dump(&a);
     let response = edit(
         &mut a,
         "commit",
         room(&id, json!({"kind":"move","roomId":"room-0","dx":0,"dy":0})),
     );
     assert_eq!(response["changed"], false);
-    assert_eq!(storage_tests::dump(&a), unchanged);
+    assert_eq!(dump(&a), unchanged);
     history(&mut a, true);
     assert_eq!(a.house(&id).unwrap(), moved);
 }
@@ -413,8 +414,8 @@ fn roof_and_local_errors_preserve_context_and_precedence() {
         .unwrap();
         drop(db);
         let corrupted = std::fs::read(&path).unwrap();
-        let before = storage_tests::dump(&live);
-        assert_eq!(storage_tests::dump(&live), before, "old {case}");
+        let before = dump(&live);
+        assert_eq!(dump(&live), before, "old {case}");
         assert_eq!(std::fs::read(&path).unwrap(), corrupted);
 
         {
@@ -433,7 +434,7 @@ fn roof_and_local_errors_preserve_context_and_precedence() {
                 expected_validate,
                 "open {case}"
             );
-            assert_eq!(storage_tests::dump(&live), before, "open {case}");
+            assert_eq!(dump(&live), before, "open {case}");
             assert_eq!(std::fs::read(&path).unwrap(), corrupted);
         }
     }
@@ -447,13 +448,13 @@ fn roof_and_local_errors_preserve_context_and_precedence() {
     .unwrap();
     drop(db);
     let corrupted = std::fs::read(&path).unwrap();
-    let before = storage_tests::dump(&live);
+    let before = dump(&live);
 
     let error = live.open(&path).unwrap_err();
     assert_eq!(error.message, "Invalid room owner");
     assert_eq!(error.issue.unwrap().object_ids, vec![house.id]);
 
-    assert_eq!(storage_tests::dump(&live), before);
+    assert_eq!(dump(&live), before);
     assert_eq!(std::fs::read(&path).unwrap(), corrupted);
     history(&mut live, true);
     history(&mut live, false);
@@ -523,17 +524,17 @@ fn population_and_final_parcel_founding_use_real_validator() {
     edit(&mut a, "commit", json!({"type":"delete","id":id}));
     let action =
         json!({"type":"createParcelHouse","parcelId":parcel_id,"floor":-1,"cells":[[0,1],[2,1]]});
-    let before = storage_tests::dump(&a);
+    let before = dump(&a);
     let preview = edit(&mut a, "preview", action.clone());
     assert_eq!(preview["valid"], true);
-    assert_eq!(storage_tests::dump(&a), before);
+    assert_eq!(dump(&a), before);
 
     a.db.execute_batch("CREATE TEMP TRIGGER fail_history BEFORE INSERT ON history BEGIN SELECT RAISE(ABORT,'injected founding history'); END;").unwrap();
     let error = a
         .request("commit", json!({"version":a.status(),"intent":action}))
         .unwrap_err();
     assert_eq!(error.category, ErrorCategory::Storage);
-    assert_eq!(storage_tests::dump(&a), before);
+    assert_eq!(dump(&a), before);
 
     a.db.execute_batch("DROP TRIGGER fail_history").unwrap();
     let result = edit(&mut a, "commit", action);
@@ -567,11 +568,11 @@ fn population_and_final_parcel_founding_use_real_validator() {
 
 // Each action uses the actual compute, transactional apply and serialized history.
 fn checked_action(a: &mut AtlasApplication, intent: Value) -> Value {
-    let before = storage_tests::dump(a);
+    let before = dump(a);
     let before_author = author_state(a);
     let preview = edit(a, "preview", intent.clone());
     assert_eq!(preview["valid"], true, "{preview}");
-    assert_eq!(storage_tests::dump(a), before);
+    assert_eq!(dump(a), before);
     let cursor = a.cursor;
     let revision = a.revision;
     let result = edit(a, "commit", intent);
@@ -606,7 +607,7 @@ fn checked_action(a: &mut AtlasApplication, intent: Value) -> Value {
 // fields and raw payload by authored key, and bind both RTrees to that same ID.
 // Rejections still compare the unsorted complete dump including history/allocator.
 fn author_state(a: &AtlasApplication) -> Value {
-    let snapshot = storage_tests::dump(a);
+    let snapshot = dump(a);
     let mut tables = snapshot[7].as_array().unwrap()[..3].to_vec();
     for table in &mut tables {
         table[1]
@@ -622,7 +623,7 @@ fn author_state(a: &AtlasApplication) -> Value {
     json!([tables, spatial])
 }
 fn reject(a: &mut AtlasApplication, intent: Value) -> AppError {
-    let before = storage_tests::dump(a);
+    let before = dump(a);
     let p = edit(a, "preview", intent.clone());
     assert_eq!(p["valid"], false, "{p}");
     let e = a
@@ -631,7 +632,7 @@ fn reject(a: &mut AtlasApplication, intent: Value) -> AppError {
     assert_eq!(e.category, ErrorCategory::InvalidInput);
     assert_eq!(p["reason"], e.message);
     assert_eq!(p["issues"], json!([e.issue.clone().unwrap()]));
-    assert_eq!(storage_tests::dump(a), before);
+    assert_eq!(dump(a), before);
     e
 }
 fn connection(id: &str, intent: Value) -> Value {
@@ -775,12 +776,12 @@ fn grown_room_move_exceeds_selection_limit_without_truncation() {
     let dir = tempfile::tempdir().unwrap();
     let path = dir.path().join("grown.saltatlas");
     a.save(&path).unwrap();
-    let raw = storage_tests::payload_rows(&path);
+    let raw = payload_rows(&path);
     a.open(&path).unwrap();
     assert_eq!(a.house(&id).unwrap(), after);
     let second = dir.path().join("grown-again.saltatlas");
     a.save(&second).unwrap();
-    assert_eq!(storage_tests::payload_rows(&second), raw);
+    assert_eq!(payload_rows(&second), raw);
 }
 
 #[test]
@@ -843,7 +844,7 @@ fn roof_occupancy_lower_and_tile_bounds_stay_outer_contracts() {
         )["lower"],
         json!([])
     );
-    let before = storage_tests::dump(&a);
+    let before = dump(&a);
     for b in [
         json!([1, 0, 0, 0]),
         json!([0, 0, 400, 400]),
@@ -856,7 +857,7 @@ fn roof_occupancy_lower_and_tile_bounds_stay_outer_contracts() {
                 json!({"buildingId":id,"floor":0,"bounds":b,"includeLower":true})
             )
             .is_err());
-        assert_eq!(storage_tests::dump(&a), before);
+        assert_eq!(dump(&a), before);
     }
     for floor in [i64::from(i32::MIN) - 1, i64::from(i32::MAX) + 1] {
         assert!(a
@@ -1046,7 +1047,7 @@ fn rejections_noops_and_document_read_failures_are_atomic() {
     ] {
         reject(&mut a, intent);
     }
-    let before = storage_tests::dump(&a);
+    let before = dump(&a);
     let invalid = room(&id, json!({"kind":"move","roomId":"missing","dx":1,"dy":0}));
     for cmd in ["preview", "commit"] {
         let mut version = json!(a.status());
@@ -1058,7 +1059,7 @@ fn rejections_noops_and_document_read_failures_are_atomic() {
         assert!(e.issue.is_none());
     }
 
-    assert_eq!(storage_tests::dump(&a), before);
+    assert_eq!(dump(&a), before);
     for table in ["document_meta", "house_cells"] {
         a.db.flush_prepared_statement_cache();
         a.db.authorizer(Some(move |ctx: AuthContext<'_>| match ctx.action {
@@ -1073,7 +1074,7 @@ fn rejections_noops_and_document_read_failures_are_atomic() {
             assert!(e.issue.is_none());
         }
         a.db.authorizer(None::<fn(AuthContext<'_>) -> Authorization>);
-        assert_eq!(storage_tests::dump(&a), before);
+        assert_eq!(dump(&a), before);
     }
 }
 
@@ -1083,11 +1084,11 @@ fn active_connection_wire_defaults_length_and_rejects_free_endpoints() {
     let id = create(&mut a);
     let area: Vec<_> = (0..3).map(|x| [x, 0]).collect();
     draw(&mut a, &id, 1, &area);
-    let before = storage_tests::dump(&a);
+    let before = dump(&a);
     for cmd in ["preview", "commit"] {
         let e=a.request(cmd,json!({"version":a.status(),"intent":connection(&id,json!({"action":"createStairs","floor":0,"x":0,"y":0,"toFloor":1,"toX":2,"toY":0}))})).unwrap_err();
         assert_eq!(e.category, ErrorCategory::InvalidInput);
-        assert_eq!(storage_tests::dump(&a), before);
+        assert_eq!(dump(&a), before);
     }
 
     checked_action(
@@ -1139,7 +1140,7 @@ fn mutate_saved_house(path: &Path, id: &str, mutator: impl FnOnce(&mut Value, &m
     }
 }
 #[test]
-fn format11_corruption_preserves_live_session_and_source() {
+fn file_corruption_preserves_live_session_and_source() {
     let dir = tempfile::tempdir().unwrap();
     let path = dir.path().join("late-house.saltatlas");
     let (mut live, id) = {
@@ -1293,7 +1294,7 @@ fn format11_corruption_preserves_live_session_and_source() {
                 }
             }
             "roof" => h["roof"] = json!("bad"),
-            "world" => h["placement"]["transform"]["x"] = json!(5_000_000),
+            "world" => h["placement"]["transform"]["x"] = json!(100_000_000),
             "external_collision" => {
                 h["placement"]["transform"]["x"] = json!(0);
                 h["placement"]["transform"]["y"] = json!(0);
@@ -1301,11 +1302,11 @@ fn format11_corruption_preserves_live_session_and_source() {
             _ => unreachable!("{label}"),
         });
         let bytes = std::fs::read(&path).unwrap();
-        let before = storage_tests::dump(&live);
+        let before = dump(&live);
 
         let e = live.request("open", json!({"path":path})).unwrap_err();
         assert_eq!(e, expected, "{label}");
-        assert_eq!(storage_tests::dump(&live), before, "{label}");
+        assert_eq!(dump(&live), before, "{label}");
         assert_eq!(std::fs::read(&path).unwrap(), bytes, "{label}");
         history(&mut live, true);
         history(&mut live, false);
@@ -1351,14 +1352,14 @@ fn format11_corruption_preserves_live_session_and_source() {
                 a.open(&second).unwrap();
                 assert_eq!(a.house(&id).unwrap(), h);
             } else {
-                let before = storage_tests::dump(&a);
+                let before = dump(&a);
                 for cmd in ["preview", "commit"] {
                     let e = a
                         .request(cmd, json!({"version":a.status(),"intent":intent}))
                         .unwrap_err();
                     assert_eq!(e.category, ErrorCategory::Storage);
                     assert!(e.issue.is_none());
-                    assert_eq!(storage_tests::dump(&a), before);
+                    assert_eq!(dump(&a), before);
                 }
             }
         }
@@ -1484,7 +1485,7 @@ fn parcel_lifecycle_and_cascades_are_single_history_actions() {
     checked_action(&mut a, json!({"type":"detachParcel","id":parcel_id}));
     let retained = a.house(&fresh).unwrap();
     let detached = a.parcel(&parcel_id).unwrap();
-    let before = storage_tests::objects(&a);
+    let before = objects(&a);
     let mut expected:Vec<_>=before.iter().filter(|o|match o{FullObject::Road(r)=>r.id==road,FullObject::Parcel(p)=>matches!(&p.source,ParcelSource::Road{road_id,..} if road_id==&road),FullObject::House(h)=>placement_owner(&h.placement).is_some_and(|p|before.iter().any(|o|matches!(o,FullObject::Parcel(q) if q.id==p&&matches!(&q.source,ParcelSource::Road{road_id,..} if road_id==&road)))),_=>false}).map(|o|o.id().to_owned()).collect();
     expected.sort();
     let result = checked_action(&mut a, json!({"type":"delete","id":road}));
@@ -1551,7 +1552,7 @@ fn connection_cycle_and_disconnected_groups_keep_one_authoritative_owner() {
         assert!(a.status().changes.unwrap().interiors.is_empty());
     }
     assert!(a.house(&id).unwrap().connections.is_empty());
-    assert_eq!(storage_tests::objects(&a).len(), 1);
+    assert_eq!(objects(&a).len(), 1);
     for sign in [-1, 1] {
         let (mut a, id, moving) = stair_fixture(0, false);
         let before = a.house(&id).unwrap();
@@ -1569,7 +1570,7 @@ fn connection_cycle_and_disconnected_groups_keep_one_authoritative_owner() {
             (&after.id, &after.name, &after.roof),
             (&before.id, &before.name, &before.roof)
         );
-        assert_eq!(storage_tests::objects(&a).len(), 1);
+        assert_eq!(objects(&a).len(), 1);
     }
 }
 
@@ -1613,11 +1614,11 @@ fn basement_collisions_are_symmetric_and_rejected_on_open() {
             h["placement"]["transform"]["x"] = json!(50);
             h["placement"]["transform"]["y"] = json!(50);
         });
-        let before = storage_tests::dump(&a);
+        let before = dump(&a);
         let bytes = std::fs::read(&path).unwrap();
         let error = a.open(&path).unwrap_err();
         assert_eq!(error.issue.unwrap().code, IssueCode::Collision);
-        assert_eq!(storage_tests::dump(&a), before);
+        assert_eq!(dump(&a), before);
         assert_eq!(std::fs::read(&path).unwrap(), bytes);
     }
 }

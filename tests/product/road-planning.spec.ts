@@ -39,7 +39,7 @@ test("mouse road planning edits and excludes parcels, commits once and undoes to
     .poll(async () => {
       const last = (await calls(page, "preview")).at(-1)!;
       preview = await page.evaluate(
-        (args) => window.atlasCore<Preview>("preview", args),
+        (args) => window.atlasCore("preview", args),
         last.args,
       );
       return (
@@ -66,8 +66,11 @@ test("mouse road planning edits and excludes parcels, commits once and undoes to
   await dragWorld(page, handle.point, [handle.point[0], handle.point[1] - 5]);
   await expect
     .poll(async () => {
-      const intent = (await calls(page, "preview")).at(-1)?.args.intent as any;
-      return intent?.population?.layout?.some((p: any) => p.depth === 45);
+      const intent = (await calls(page, "preview")).at(-1)?.args.intent;
+      return (
+        intent?.type === "createRoad" &&
+        intent.population?.layout?.some((p) => p.depth === 45)
+      );
     })
     .toBe(true);
   await page.getByLabel("Parzelle auslassen").check();
@@ -75,6 +78,8 @@ test("mouse road planning edits and excludes parcels, commits once and undoes to
   await page.getByLabel("Parzelle auslassen").check();
   await page.getByRole("button", { name: "← Zur Straßenplanung" }).click();
   await expect(page.getByText(/Ausgelassene Parzellen/)).toBeVisible();
+  // Capture the completed candidate, not a timing-dependent older preview.
+  await expect(page.getByRole("status", { name: "Aktionsstatus" })).toBeEmpty();
   await page.screenshot({ path: test.info().outputPath("road-plan-1440.png") });
   await rightClick(page);
   await expect.poll(async () => (await status(page)).revision).toBe(1);
@@ -159,7 +164,7 @@ test("existing parcel handles reject a house cut and preserve the document", asy
   await expect
     .poll(async () =>
       (await calls(page, "commit")).some(
-        (c) => (c.args.intent as any).type === "updateParcel",
+        (c) => c.args.intent.type === "updateParcel",
       ),
     )
     .toBe(true);

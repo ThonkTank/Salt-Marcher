@@ -17,19 +17,33 @@ pub(in crate::atlas) fn compute(
     intent: &Intent,
     diagnostics: &mut PlanDiagnostics,
 ) -> Result<Computed> {
+    if let Some(result) = app.compute_rivers(intent)? {
+        return Ok(result);
+    }
+    if let Some(result) = app.compute_regions(intent)? {
+        return Ok(result);
+    }
+    if let Some(result) = app.compute_ground(intent)? {
+        return Ok(result);
+    }
     if let Some(result) = app.compute_terrain(intent)? {
         return Ok(result);
     }
     let mut context = plan_context::PlanContext::new(app);
     let mut plan = EditPlan::new(app.allocator()?);
     match intent {
-        Intent::TerrainStroke { .. }
-        | Intent::SetWaterLevel { .. }
+        Intent::RiverEdit { .. }
+        | Intent::RegionEdit { .. }
+        | Intent::RegionStroke { .. }
+        | Intent::GroundStroke { .. }
+        | Intent::TerrainStroke { .. }
+        | Intent::WaterStroke { .. }
         | Intent::SetFoundation { .. } => unreachable!(),
         Intent::CreateRoad {
             road,
             population,
             roughness,
+            terrain_follow,
         } => {
             let mut r = Road {
                 id: plan.allocator.allocate("road")?,
@@ -58,7 +72,12 @@ pub(in crate::atlas) fn compute(
                     populated_sides: vec![],
                 });
             }
-            if let Some(settings) = roughness {
+            if let Some(settings) = terrain_follow {
+                let count = r.edge_sections.len();
+                app.follow_road(&mut r, 0..count, settings, roughness.as_ref(), || {
+                    plan.allocator.allocate("node")
+                })?;
+            } else if let Some(settings) = roughness {
                 let count = r.edge_sections.len();
                 crate::atlas::road_roughness::deform(&mut r, settings, 0..count, || {
                     plan.allocator.allocate("node")
@@ -369,6 +388,7 @@ pub(in crate::atlas) fn compute(
         }
         Intent::ExtendRoad {
             roughness,
+            terrain_follow,
             road_id,
             end,
             nodes,
@@ -411,7 +431,15 @@ pub(in crate::atlas) fn compute(
                     r.edge_sections.extend(edges);
                 }
             }
-            if let Some(settings) = roughness {
+            if let Some(settings) = terrain_follow {
+                let range = match end {
+                    RoadEnd::Start => 0..nodes.len(),
+                    RoadEnd::End => r.edge_sections.len() - nodes.len()..r.edge_sections.len(),
+                };
+                app.follow_road(&mut r, range, settings, roughness.as_ref(), || {
+                    plan.allocator.allocate("node")
+                })?;
+            } else if let Some(settings) = roughness {
                 let count = nodes.len();
                 let range = match end {
                     RoadEnd::Start => 0..count,

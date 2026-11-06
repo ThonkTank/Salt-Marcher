@@ -1,3 +1,5 @@
+import type { terrainBrushInfo as projectTerrainBrushInfo } from "./editorView";
+import { GroundControls } from "./GroundControls";
 import { RoughnessControls } from "./RoughnessControls";
 import type { EditorTools } from "./useEditorTools";
 import type { Tool } from "./editorSelection";
@@ -5,9 +7,12 @@ import { NumberField, SelectField } from "./Fields";
 import { PopulationSettingsFields } from "./PopulationPanel";
 
 export const toolLabels: Record<Tool, { label: string; icon: string }> = {
+  water: { label: "Gewässer", icon: "≈" },
+  river: { label: "Fluss", icon: "≋" },
+  regions: { label: "Regionen", icon: "⚑" },
   select: { label: "Auswahl", icon: "↖" },
   road: { label: "Straße", icon: "↝" },
-  area: { label: "Flächen", icon: "▧" },
+  area: { label: "Boden", icon: "▧" },
   terrain: { label: "Höhen", icon: "▵" },
   scenery: { label: "Landschaft", icon: "♣" },
   house: { label: "Haus", icon: "⌂" },
@@ -20,20 +25,28 @@ export const toolLabels: Record<Tool, { label: string; icon: string }> = {
 export function toolbarTools(interior: boolean): Tool[] {
   return interior
     ? ["select", "draw", "erase", "assign", "opening", "stairs"]
-    : ["select", "road", "area", "terrain", "scenery", "house"];
+    : [
+        "select",
+        "road",
+        "river",
+        "water",
+        "area",
+        "terrain",
+        "scenery",
+        "regions",
+        "house",
+      ];
 }
 export function ToolOptions({
   tools,
-  waterLevel,
-  onWaterLevel,
   tool,
   extending,
+  terrainBrushInfo,
 }: {
   tools: EditorTools;
-  waterLevel: number;
-  onWaterLevel: (value: number) => void;
   tool: Tool;
   extending: boolean;
+  terrainBrushInfo: ReturnType<typeof projectTerrainBrushInfo>;
 }) {
   const {
     scenery,
@@ -75,11 +88,13 @@ export function ToolOptions({
             onChange={(biome) => changeScenery({ ...scenery, biome })}
           />
           <NumberField
-            label="Pinselradius (Fuß)"
-            value={scenery.radius}
-            min={5}
-            max={500}
-            onChange={(radius) => changeScenery({ ...scenery, radius })}
+            label="Pinselgröße (Pixel)"
+            value={scenery.radius * 2}
+            min={8}
+            max={512}
+            onChange={(radius) =>
+              changeScenery({ ...scenery, radius: radius / 2 })
+            }
           />
           <NumberField
             label="Dichte (%)"
@@ -104,12 +119,41 @@ export function ToolOptions({
           </small>
         </>
       )}
+      {tool === "water" && (
+        <>
+          <NumberField
+            label="Pinselgröße (Pixel)"
+            value={brush.radius * 2}
+            min={8}
+            max={512}
+            onChange={(diameter) =>
+              changeBrush({ ...brush, radius: diameter / 2 })
+            }
+          />
+          <TerrainBrushInfo info={terrainBrushInfo} />
+          <NumberField
+            label="Absenkung (Fuß)"
+            value={brush.amount}
+            min={0.1}
+            max={100}
+            step={0.1}
+            onChange={(amount) => changeBrush({ ...brush, amount })}
+          />
+          <small>
+            Ziehen: Gewässer malen · Loslassen: Übernehmen · Escape: Abbrechen.
+            Bestehendes Wasser bestimmt den Pegel. Mit Höhenwerkzeugen Inseln
+            und Küsten formen.
+          </small>
+        </>
+      )}
       {tool === "terrain" && (
         <>
           <SelectField
             label="Pinselmodus"
             value={brush.mode}
             options={{
+              land: "Land",
+              sea: "Meer",
               raise: "Anheben",
               lower: "Absenken",
               smooth: "Glätten",
@@ -118,12 +162,13 @@ export function ToolOptions({
             onChange={(mode) => changeBrush({ ...brush, mode })}
           />
           <NumberField
-            label="Pinselradius (Fuß)"
-            value={brush.radius}
-            min={5}
-            max={500}
-            onChange={(radius) => changeBrush({ ...brush, radius })}
+            label="Pinselgröße (Pixel)"
+            value={brush.radius * 2}
+            min={8}
+            max={512}
+            onChange={(radius) => changeBrush({ ...brush, radius: radius / 2 })}
           />
+          <TerrainBrushInfo info={terrainBrushInfo} />
           {(brush.mode === "raise" || brush.mode === "lower") && (
             <NumberField
               label="Höhenänderung (Fuß)"
@@ -153,13 +198,6 @@ export function ToolOptions({
               onChange={(target) => changeBrush({ ...brush, target })}
             />
           )}
-          <NumberField
-            label="Wasserstand (Fuß)"
-            value={waterLevel}
-            min={-100000}
-            max={100000}
-            onChange={onWaterLevel}
-          />
           <label className="atlas-checkbox">
             <input
               type="checkbox"
@@ -175,26 +213,56 @@ export function ToolOptions({
       )}
       {tool === "road" && (
         <>
-          {!extending && (
-            <NumberField
-              label="Straßenbreite (Fuß)"
-              value={roadWidth}
-              min={2}
-              max={100}
-              onChange={changeRoadWidth}
+          <div className="atlas-field-pair">
+            {!extending && (
+              <NumberField
+                label="Straßenbreite (Fuß)"
+                value={roadWidth}
+                min={2}
+                max={100}
+                onChange={changeRoadWidth}
+              />
+            )}
+            <SelectField
+              label="Material"
+              value={material}
+              disabled={extending}
+              options={{ earth: "Erde", stone: "Stein" }}
+              onChange={changeMaterial}
             />
-          )}
+          </div>
+          <div
+            className="atlas-field-pair"
+            title="Start und Ziel bleiben fest. Zwischenpunkte dürfen innerhalb ihres Spielraums ausweichen."
+          >
+            <label className="atlas-checkbox">
+              <input
+                type="checkbox"
+                checked={!!tools.terrainFollow}
+                onChange={(e) =>
+                  tools.changeTerrainFollow(
+                    e.target.checked ? { tolerance: 0.1 } : undefined,
+                  )
+                }
+              />
+              Gelände folgen
+            </label>
+            {tools.terrainFollow && (
+              <NumberField
+                label="Spielraum (%)"
+                value={tools.terrainFollow.tolerance * 100}
+                min={0}
+                max={30}
+                onChange={(v) =>
+                  tools.changeTerrainFollow({ tolerance: v / 100 })
+                }
+              />
+            )}
+          </div>
           <RoughnessControls
             value={roughness}
             onChange={changeRoughness}
             onVariation={newVariation}
-          />
-          <SelectField
-            label="Material"
-            value={material}
-            disabled={extending}
-            options={{ earth: "Erde", stone: "Stein" }}
-            onChange={changeMaterial}
           />
           <SelectField
             label="Bebauung"
@@ -229,19 +297,7 @@ export function ToolOptions({
           {extending && <small>Verlängerung · nur neue Abschnitte</small>}
         </>
       )}
-      {tool === "area" && (
-        <SelectField
-          label="Material"
-          value={material}
-          options={{
-            grass: "Gras",
-            earth: "Erde",
-            stone: "Stein",
-            water: "Wasser",
-          }}
-          onChange={changeMaterial}
-        />
-      )}
+      {tool === "area" && <GroundControls tools={tools} />}
       {tool === "opening" && (
         <SelectField
           label="Art"
@@ -259,5 +315,31 @@ export function ToolOptions({
         />
       )}
     </div>
+  );
+}
+
+const brushNumber = new Intl.NumberFormat("de-DE", {
+  maximumFractionDigits: 2,
+  useGrouping: false,
+});
+function TerrainBrushInfo({
+  info,
+}: {
+  info: ReturnType<typeof projectTerrainBrushInfo>;
+}) {
+  if (!info) return null;
+  return (
+    <>
+      <small>
+        Durchmesser: {brushNumber.format(info.diameter)} Fuß · Höhenraster:{" "}
+        {brushNumber.format(info.spacing)} Fuß
+      </small>
+      {info.subgrid && (
+        <small>
+          Kleine Pinsel können zwischen den Rasterpunkten ohne Höhenänderung
+          bleiben. Pinsel vergrößern oder den Strich versetzen.
+        </small>
+      )}
+    </>
   );
 }

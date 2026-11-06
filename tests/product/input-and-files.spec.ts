@@ -1,3 +1,9 @@
+import { settled } from "../support/editor";
+declare global {
+  interface Window {
+    fifo: Promise<unknown>;
+  }
+}
 import { showObjects } from "../support/editor";
 import { selectObject } from "../support/editor";
 import type { Page } from "@playwright/test";
@@ -57,7 +63,7 @@ test("room no-op preserves redo; queued history and Save keep FIFO and save the 
       });
       const redo = window.atlasHook.history(true);
       const save = window.atlasHook.document("save");
-      (window as any).fifo = Promise.all([noop, redo, save]);
+      window.fifo = Promise.all([noop, redo, save]);
     },
     { id, room: room.id },
   );
@@ -65,7 +71,7 @@ test("room no-op preserves redo; queued history and Save keep FIFO and save the 
   expect((await status(page)).revision).toBe(before.revision);
   expect((await status(page)).canRedo).toBe(true);
   await releaseResponse(page);
-  await page.evaluate(() => (window as any).fifo);
+  await page.evaluate(() => window.fifo);
   expect(
     (await page.evaluate(() => window.atlasCalls))
       .filter((c) => ["commit", "history", "save"].includes(c.cmd))
@@ -204,13 +210,15 @@ for (const operation of ["save", "cancelSave", "cancelOpen"] as const) {
 test("first interior click after idle and an explicit tool switch commits once; room selection then terrain retains its chosen tool", async ({
   page,
 }) => {
+  await page.clock.install();
   await page.goto(url);
   const house = await seedHouse(page, 4, 4, [0]);
   await openHouse(page, house);
   await selectRoom(page, house.id);
   await page.getByRole("button", { name: "Raum", exact: true }).click();
   await clearCalls(page);
-  await page.waitForTimeout(120);
+  await page.clock.runFor(120);
+  await settled(page);
   await clickWorld(page, [27.5, 2.5]);
   await expect.poll(async () => (await calls(page, "commit")).length).toBe(1);
   expect((await calls(page, "commit"))[0].args.intent).toMatchObject({
@@ -219,11 +227,11 @@ test("first interior click after idle and an explicit tool switch commits once; 
   });
   await ready(page);
   await page
-    .getByRole("button", { name: "Zur Dorfansicht", exact: true })
+    .getByRole("button", { name: "Zur Atlasansicht", exact: true })
     .click();
-  await page.getByRole("button", { name: "Flächen", exact: true }).click();
+  await page.getByRole("button", { name: "Boden", exact: true }).click();
   await expect(
-    page.getByRole("button", { name: "Flächen", exact: true }),
+    page.getByRole("button", { name: "Boden", exact: true }),
   ).toHaveAttribute("aria-pressed", "true");
 });
 

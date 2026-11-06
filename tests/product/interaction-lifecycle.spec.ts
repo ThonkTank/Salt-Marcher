@@ -1,5 +1,4 @@
 import { selectObject } from "../support/editor";
-import type { Scene, Status } from "../../src/atlas/model";
 import { expect, test } from "../support/fixture";
 
 import { url } from "../support/editor";
@@ -60,7 +59,7 @@ test("capture loss and blur cancel gestures; cancellation after enqueue preserve
       async () =>
         (
           await page.evaluate(() =>
-            window.atlasCore<Scene>("scene", {
+            window.atlasCore("scene", {
               context: { kind: "exterior" },
               bounds: [-1000, -1000, 1000, 1000],
             }),
@@ -112,7 +111,7 @@ test("new waits for accepted edit and clears the replaced session selection", as
   expect(
     (
       await page.evaluate(() =>
-        window.atlasCore<Scene>("scene", {
+        window.atlasCore("scene", {
           context: { kind: "exterior" },
           bounds: [-1000, -1000, 1000, 1000],
         }),
@@ -129,9 +128,9 @@ test("held lower and floor reads keep pixels and readiness coherent", async ({
 }) => {
   await page.goto(url);
   await page.evaluate(async () => {
-    const commit = async (intent: object) =>
-      window.atlasCore<{ objects: { id: string }[] }>("commit", {
-        version: await window.atlasCore<Status>("status", {}),
+    const commit = async (intent: import("../../src/atlas/model").Intent) =>
+      window.atlasCore("commit", {
+        version: await window.atlasCore("status", {}),
         intent,
       });
     const h = await commit({
@@ -270,8 +269,10 @@ test("a newer interior gesture survives an older held commit", async ({
   const intents = await page.evaluate(() =>
     window.atlasCalls
       .filter((c) => c.cmd === "commit")
-      .map((c) => c.args.intent as any),
+      .map((c) => c.args.intent),
   );
+  if (intents[1].type !== "room" || intents[1].intent.kind !== "erase")
+    throw Error("Expected room erase");
   expect(intents[1].intent.cells).toEqual([
     [2, 1],
     [3, 1],

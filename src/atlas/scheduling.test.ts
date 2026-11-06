@@ -1,16 +1,9 @@
+import { deferred } from "../../tests/support/deferred";
 import type { AtlasClient } from "./client";
 import type { Bounds, Scene } from "./model";
 import { scheduledRead } from "./readScheduler";
 import { describe, expect, it, vi } from "vitest";
 import { PreviewScheduler } from "./previewScheduler";
-
-function deferred<T>() {
-  let resolve!: (value: T) => void;
-  const promise = new Promise<T>((r) => {
-    resolve = r;
-  });
-  return { promise, resolve };
-}
 
 describe("preview scheduling", () => {
   it("runs the first and last request, and settles replaced jobs", async () => {

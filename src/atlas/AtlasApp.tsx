@@ -1,3 +1,6 @@
+import { ATLAS_VIEWS, scaleBar } from "./lod";
+import { RiverPanel } from "./RiverPanel";
+import { RegionPanel } from "./RegionPanel";
 import { ParcelProperties } from "./ParcelProperties";
 import { NumberField } from "./Fields";
 import { PopulationPanel } from "./PopulationPanel";
@@ -16,6 +19,8 @@ export default function AtlasApp({
   client?: AtlasClient;
 }) {
   const {
+    regions,
+    rivers,
     view,
     actions,
     populationProps,
@@ -35,8 +40,11 @@ export default function AtlasApp({
     house,
     presentation,
     zoomToEdit,
+    zoomToLevel,
+    atlasLevel,
     floor,
     camera,
+    lod,
     fit,
     history,
     selectEvent,
@@ -87,7 +95,7 @@ export default function AtlasApp({
               ? "IN DER PARZELLE"
               : interior
                 ? "IM GEBÄUDE"
-                : "DORF GESTALTEN"}
+                : "WELT GESTALTEN"}
           </div>
           {toolbarTools(interior).map((t) => (
             <button
@@ -104,16 +112,23 @@ export default function AtlasApp({
           <AtlasCanvas {...canvasProps} />
           <div className="atlas-map-help">
             <span>
-              {tool === "road"
+              {tool === "road" || tool === "river"
                 ? "Klicken: Punkt · Enter / Rechtsklick: Übernehmen"
                 : tool === "area"
-                  ? "Klicken: Eckpunkt · Enter / Rechtsklick: Übernehmen"
+                  ? "Ziehen / Halten: Boden malen · Loslassen: Übernehmen"
                   : tool === "select"
                     ? "Klicken: Auswählen · Ziehen: Bearbeiten"
                     : "Ziehen: Zeichnen"}
             </span>
             <details>
               <summary>Hilfe</summary>
+              {tool === "select" && (interior || lod.policy.exact) && (
+                <p>
+                  {interior
+                    ? "Raum auswählen und ziehen: Raum bewegen. Türen und Treppen anklicken: Verbindung auswählen."
+                    : "Haus oder Parzelle auswählen und doppelklicken: Innenraum öffnen."}
+                </p>
+              )}
               <p>
                 Mittlere Maustaste oder Leertaste + Ziehen: Karte bewegen ·
                 Mausrad: Zoom · Escape: Abbrechen
@@ -134,26 +149,56 @@ export default function AtlasApp({
           <div className="atlas-map-title">
             {interior
               ? `${house?.name ?? (context.kind === "parcel" ? "Leere Parzelle" : "Gebäude")} · Geschoss ${presentation?.floor ?? floor}`
-              : "Atlas · Stadtkarte"}
+              : `Atlas · ${ATLAS_VIEWS[atlasLevel].name}`}
           </div>
-          {interior && camera.scale < 1.28 && (
+          {interior && !lod.policy.exact && (
             <div className="atlas-transition">
               Zum Innenbearbeiten auf mindestens 20 % zoomen.
             </div>
           )}
-          {!interior && camera.scale < 1.28 && (
+          {!interior && !lod.policy.exact && (
             <div className="atlas-overview-hint">
-              {tool === "road"
+              {tool === "road" || tool === "river"
                 ? "Straßenplanung · Detailbearbeitung ab 20 %"
-                : "Stadtübersicht · Doppelklick auf freie Karte zum Hineinzoomen"}
+                : "Übersicht · Doppelklick auf freie Karte zum Hineinzoomen"}
             </div>
           )}
           <div className="atlas-navigation">
-            {!interior && camera.scale < 1.28 && (
+            {!interior &&
+              !lod.policy.detailBrushes &&
+              ["area", "scenery", "water"].includes(tool) && (
+                <span>
+                  Lokales Detailwerkzeug · Für Küsten Land/Meer unter Höhen
+                  wählen.
+                </span>
+              )}
+            {!interior && !lod.policy.exact && (
               <button onClick={zoomToEdit}>Zum Bearbeiten hineinzoomen</button>
             )}
+            {!interior && (
+              <select
+                aria-label="Ansichtsmaßstab"
+                value={atlasLevel}
+                onChange={(e) => zoomToLevel(Number(e.target.value))}
+              >
+                {ATLAS_VIEWS.map((v, i) => (
+                  <option key={v.name} value={i}>
+                    {v.name}
+                  </option>
+                ))}
+              </select>
+            )}
             <button onClick={fit}>Einpassen</button>
-            <span>{Number(((camera.scale / 6.4) * 100).toPrecision(3))} %</span>
+            <span className="atlas-scale">
+              <span style={{ width: scaleBar(camera.scale).pixels }} />
+              {scaleBar(camera.scale).label}
+            </span>
+            <span className="atlas-zoom">
+              {camera.scale >= 0.064
+                ? Math.round((camera.scale / 6.4) * 100)
+                : Number(((camera.scale / 6.4) * 100).toPrecision(3))}{" "}
+              %
+            </span>
             {interior && (
               <>
                 <button
@@ -177,15 +222,19 @@ export default function AtlasApp({
                 >
                   Geschoss +
                 </button>
-                <button onClick={leave}>Zur Dorfansicht</button>
+                <button onClick={leave}>Zur Atlasansicht</button>
               </>
             )}
           </div>
-          {!reads.error && (!reads.fresh || fitPending) && (
-            <div className="atlas-transition atlas-readiness">
-              Ansicht wird geladen …
-            </div>
-          )}
+          {!reads.error &&
+            (!reads.fresh ||
+              fitPending ||
+              (tool === "regions" && !regions.fresh && !regions.error) ||
+              (tool === "river" && !rivers.fresh && !rivers.error)) && (
+              <div className="atlas-transition atlas-readiness">
+                Ansicht wird geladen …
+              </div>
+            )}
           {reads.error && (
             <div className="atlas-transition">
               {reads.error}
@@ -217,7 +266,29 @@ export default function AtlasApp({
               ) : view.panel === "population" ? (
                 <PopulationPanel {...populationProps} />
               ) : view.panel === "tool" ? (
-                <ToolOptions {...toolOptionsProps} />
+                tool === "river" ? (
+                  <RiverPanel
+                    editor={rivers}
+                    disabled={
+                      !rivers.fresh ||
+                      !!session.pending ||
+                      session.exclusive ||
+                      session.uncertain
+                    }
+                  />
+                ) : tool === "regions" ? (
+                  <RegionPanel
+                    editor={regions}
+                    disabled={
+                      !regions.fresh ||
+                      !!session.pending ||
+                      session.exclusive ||
+                      session.uncertain
+                    }
+                  />
+                ) : (
+                  <ToolOptions {...toolOptionsProps} />
+                )
               ) : (
                 <Inspector
                   {...inspectorProps}

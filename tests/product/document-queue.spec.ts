@@ -1,6 +1,26 @@
+import type { PlannedAction } from "../../src/atlas/editorWorkflow";
+import type { Intent } from "../../src/atlas/model";
+type Hook = Window["atlasHook"];
+declare global {
+  interface Window {
+    action: PlannedAction;
+    first: ReturnType<Hook["inspect"]>;
+    queued: ReturnType<Hook["inspect"]>;
+    next: ReturnType<Hook["inspect"]>;
+    remounted: ReturnType<Hook["inspect"]>;
+    oldHook: Hook;
+    doc: Promise<void>;
+    refresh: Promise<void>;
+    docPromise: Promise<void>;
+    docSettled: boolean;
+    write1: ReturnType<Hook["commit"]>;
+    write2: ReturnType<Hook["commit"]>;
+  }
+}
+import { editorUrl } from "../support/browserServer";
 import { expect, test } from "../support/fixture";
 
-const url = "http://127.0.0.1:1420/tests/support/atlas.html?hook";
+const url = `${editorUrl}?hook`;
 
 test("document replacement and StrictMode unmount settle pending previews", async ({
   page,
@@ -12,7 +32,7 @@ test("document replacement and StrictMode unmount settle pending previews", asyn
   await page.evaluate(() => window.atlasHook.document("save"));
   await page.evaluate(() => {
     window.atlasHold = { cmd: "preview" };
-    const action: any = {
+    const action: PlannedAction = {
       operationId: 1,
       intent: {
         type: "createRoad",
@@ -28,18 +48,18 @@ test("document replacement and StrictMode unmount settle pending previews", asyn
         population: null,
       },
     };
-    (window as any).action = action;
-    (window as any).first = window.atlasHook.inspect(action);
+    window.action = action;
+    window.first = window.atlasHook.inspect(action);
   });
   await expect.poll(() => page.evaluate(() => !!window.atlasHeld)).toBe(true);
   await page.evaluate(() => {
-    (window as any).queued = window.atlasHook.inspect((window as any).action);
-    (window as any).doc = window.atlasHook.document("open");
+    window.queued = window.atlasHook.inspect(window.action);
+    window.doc = window.atlasHook.document("open");
   });
-  expect(await page.evaluate(() => (window as any).queued)).toBeNull();
-  await page.evaluate(() => (window as any).doc);
+  expect(await page.evaluate(() => window.queued)).toBeNull();
+  await page.evaluate(() => window.doc);
   await page.evaluate(() => {
-    (window as any).next = window.atlasHook.inspect((window as any).action);
+    window.next = window.atlasHook.inspect(window.action);
     window.atlasUnmount!();
   });
   await expect
@@ -47,24 +67,20 @@ test("document replacement and StrictMode unmount settle pending previews", asyn
       page.evaluate(() => document.getElementById("root")!.childNodes.length),
     )
     .toBe(0);
-  expect(await page.evaluate(() => (window as any).next)).toBeNull();
+  expect(await page.evaluate(() => window.next)).toBeNull();
   await page.evaluate(() => {
-    (window as any).oldHook = window.atlasHook;
+    window.oldHook = window.atlasHook;
     window.atlasRemount!();
   });
   await expect
     .poll(() =>
       page.evaluate(
-        () =>
-          window.atlasHook !== (window as any).oldHook &&
-          !!window.atlasHook.status,
+        () => window.atlasHook !== window.oldHook && !!window.atlasHook.status,
       ),
     )
     .toBe(true);
   await page.evaluate(() => {
-    (window as any).remounted = window.atlasHook.inspect(
-      (window as any).action,
-    );
+    window.remounted = window.atlasHook.inspect(window.action);
   });
   expect(
     await page.evaluate(
@@ -72,10 +88,8 @@ test("document replacement and StrictMode unmount settle pending previews", asyn
     ),
   ).toBe(1);
   await page.evaluate(() => window.atlasRelease!());
-  expect(await page.evaluate(() => (window as any).first)).toBeNull();
-  expect((await page.evaluate(() => (window as any).remounted))?.actionId).toBe(
-    1,
-  );
+  expect(await page.evaluate(() => window.first)).toBeNull();
+  expect((await page.evaluate(() => window.remounted))?.actionId).toBe(1);
   expect(
     await page.evaluate(
       () => window.atlasCalls.filter((c) => c.cmd === "preview").length,
@@ -92,22 +106,21 @@ test("accepted writes drain in order after real unmount", async ({ page }) => {
   await page.evaluate(() => {
     window.atlasCalls = [];
     window.atlasHold = { cmd: "commit" };
-    const intent = (name: string, y: number) =>
-      ({
-        type: "createRoad",
-        road: {
-          name,
-          width: 10,
-          material: "earth",
-          nodes: [
-            { point: [0, y], incoming: null, outgoing: null },
-            { point: [100, y], incoming: null, outgoing: null },
-          ],
-        },
-        population: null,
-      }) as any;
-    (window as any).write1 = window.atlasHook.commit(intent("First", 0));
-    (window as any).write2 = window.atlasHook.commit(intent("Second", 100));
+    const intent = (name: string, y: number): Intent => ({
+      type: "createRoad",
+      road: {
+        name,
+        width: 10,
+        material: "earth",
+        nodes: [
+          { point: [0, y], incoming: null, outgoing: null },
+          { point: [100, y], incoming: null, outgoing: null },
+        ],
+      },
+      population: null,
+    });
+    window.write1 = window.atlasHook.commit(intent("First", 0));
+    window.write2 = window.atlasHook.commit(intent("Second", 100));
   });
   await expect.poll(() => page.evaluate(() => !!window.atlasHeld)).toBe(true);
   const unmounts = await page.evaluate(() => window.atlasUnmounts ?? 0);
@@ -116,20 +129,18 @@ test("accepted writes drain in order after real unmount", async ({ page }) => {
     .poll(() => page.evaluate(() => window.atlasUnmounts ?? 0))
     .toBe(unmounts + 1);
   await page.evaluate(() => {
-    (window as any).oldHook = window.atlasHook;
+    window.oldHook = window.atlasHook;
     window.atlasRemount!();
   });
   await expect
-    .poll(() =>
-      page.evaluate(() => window.atlasHook !== (window as any).oldHook),
-    )
+    .poll(() => page.evaluate(() => window.atlasHook !== window.oldHook))
     .toBe(true);
   expect(await page.evaluate(() => window.atlasHook.status)).toBeNull();
   await page.evaluate(() => window.atlasRelease!());
   const results = await page.evaluate(() =>
-    Promise.all([(window as any).write1, (window as any).write2]),
+    Promise.all([window.write1, window.write2]),
   );
-  expect(results.map((r: any) => r?.status?.revision)).toEqual([
+  expect(results.map((r) => r?.status?.revision)).toEqual([
     initial + 1,
     initial + 2,
   ]);
@@ -137,15 +148,16 @@ test("accepted writes drain in order after real unmount", async ({ page }) => {
     window.atlasCalls
       .filter((c) => c.cmd === "commit")
       .map((c) => ({
-        name: (c.args.intent as any).road.name,
-        revision: (c.args.version as any).revision,
+        name:
+          c.args.intent.type === "createRoad" ? c.args.intent.road.name : null,
+        revision: c.args.version.revision,
       })),
   );
   expect(calls).toEqual([
     { name: "First", revision: initial },
     { name: "Second", revision: initial + 1 },
   ]);
-  const status = await page.evaluate(() => window.atlasCore<any>("status", {}));
+  const status = await page.evaluate(() => window.atlasCore("status", {}));
   expect(status.revision).toBe(initial + 2);
   await expect
     .poll(() => page.evaluate(() => window.atlasHook.status?.revision))
@@ -166,12 +178,10 @@ test("unmount cancels an abandoned unsaved confirmation", async ({ page }) => {
       depth: 2,
     });
     window.atlasCalls = [];
-    (window as any).docSettled = false;
-    (window as any).docPromise = window.atlasHook
-      .document("new")
-      .finally(() => {
-        (window as any).docSettled = true;
-      });
+    window.docSettled = false;
+    window.docPromise = window.atlasHook.document("new").finally(() => {
+      window.docSettled = true;
+    });
   });
   await expect
     .poll(() => page.evaluate(() => !!window.atlasHook.unsaved))
@@ -181,9 +191,7 @@ test("unmount cancels an abandoned unsaved confirmation", async ({ page }) => {
   await expect
     .poll(() => page.evaluate(() => window.atlasUnmounts ?? 0))
     .toBe(unmounts + 1);
-  await expect
-    .poll(() => page.evaluate(() => (window as any).docSettled))
-    .toBe(true);
+  await expect.poll(() => page.evaluate(() => window.docSettled)).toBe(true);
   await page.evaluate(() => window.atlasRemount!());
   await expect
     .poll(() => page.evaluate(() => !!window.atlasHook.status))
@@ -221,29 +229,25 @@ for (const operation of ["open", "save"] as const) {
           window.atlasCalls = [];
           window.atlasHold = { cmd: kind };
           window.atlasFailFile = lose ? kind : undefined;
-          (window as any).doc = window.atlasHook.document(kind);
+          window.doc = window.atlasHook.document(kind);
         },
         { kind: operation, lose: loseReply },
       );
       await expect
         .poll(() => page.evaluate(() => !!window.atlasHeld))
         .toBe(true);
-      const actual = await page.evaluate(() =>
-        window.atlasCore<any>("status", {}),
-      );
+      const actual = await page.evaluate(() => window.atlasCore("status", {}));
       const unmounts = await page.evaluate(() => window.atlasUnmounts ?? 0);
       await page.evaluate(() => window.atlasUnmount!());
       await expect
         .poll(() => page.evaluate(() => window.atlasUnmounts ?? 0))
         .toBe(unmounts + 1);
       await page.evaluate(() => {
-        (window as any).oldHook = window.atlasHook;
+        window.oldHook = window.atlasHook;
         window.atlasRemount!();
       });
       await expect
-        .poll(() =>
-          page.evaluate(() => window.atlasHook !== (window as any).oldHook),
-        )
+        .poll(() => page.evaluate(() => window.atlasHook !== window.oldHook))
         .toBe(true);
       expect(await page.evaluate(() => window.atlasHook.status)).toBeNull();
       expect(await page.evaluate(() => window.atlasHook.exclusive)).toBe(true);
@@ -259,7 +263,7 @@ for (const operation of ["open", "save"] as const) {
         ),
       ).toBeNull();
       await page.evaluate(() => {
-        (window as any).refresh = window.atlasHook.reconcile();
+        window.refresh = window.atlasHook.reconcile();
       });
       expect(
         await page.evaluate(
@@ -267,9 +271,7 @@ for (const operation of ["open", "save"] as const) {
         ),
       ).toBe(0);
       await page.evaluate(() => window.atlasRelease!());
-      await page.evaluate(() =>
-        Promise.all([(window as any).doc, (window as any).refresh]),
-      );
+      await page.evaluate(() => Promise.all([window.doc, window.refresh]));
       await expect
         .poll(() => page.evaluate(() => window.atlasHook.status?.sessionId))
         .toBe(actual.sessionId);

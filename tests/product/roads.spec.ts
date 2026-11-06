@@ -1,14 +1,16 @@
-import { finishRoad, populationDetails } from "../support/editor";
-import { selectObject } from "../support/editor";
-import type { House, Preview, Road, Status } from "../../src/atlas/model";
+import { settled } from "../support/editor";
+import type { House, Road, Status } from "../../src/atlas/model";
 import {
   calls,
   clearCalls,
   clickWorld,
+  finishRoad,
+  populationDetails,
   ready,
   scene,
   screen,
   seedRoad,
+  selectObject,
   population as settings,
   url,
   status as version,
@@ -119,7 +121,7 @@ test("both extension ends keep original direction, sections, parcel poses and in
       Promise.all(
         ids.map(async (buildingId) => ({
           buildingId,
-          tile: await window.atlasCore<any>("interiorTile", {
+          tile: await window.atlasCore("interiorTile", {
             buildingId,
             floor: 0,
             bounds: [-100, -100, 100, 100],
@@ -176,7 +178,7 @@ test("both extension ends keep original direction, sections, parcel poses and in
   for (const old of interiors) {
     const tile = await page.evaluate(
       (buildingId) =>
-        window.atlasCore<any>("interiorTile", {
+        window.atlasCore("interiorTile", {
           buildingId,
           floor: 0,
           bounds: [-100, -100, 100, 100],
@@ -286,7 +288,7 @@ test("final node pointerup collision replaces a valid move preview, stays visibl
   const end: [number, number] = [80, 150];
   const proposed = await page.evaluate(
     async ({ road, end }) =>
-      window.atlasCore<Preview>("preview", {
+      window.atlasCore("preview", {
         version: await window.atlasCore("status", {}),
         intent: {
           type: "updateRoad",
@@ -336,7 +338,7 @@ test("final node pointerup collision replaces a valid move preview, stays visibl
   await expect
     .poll(async () => (await calls(page, "preview")).length)
     .toBeGreaterThan(0);
-  await page.waitForTimeout(180);
+  await settled(page);
   await page.getByTestId("atlas-canvas").evaluate(
     (canvas: HTMLCanvasElement, p) =>
       canvas.dispatchEvent(
@@ -353,12 +355,11 @@ test("final node pointerup collision replaces a valid move preview, stays visibl
   await expect(
     page.getByRole("status", { name: "Aktionsstatus" }),
   ).toContainText(/kollid|überschneid|Parzell/i);
-  await page.waitForTimeout(250);
+  await settled(page);
   expect(await calls(page, "commit")).toHaveLength(1);
   expect((await version(page)).revision).toBe(2);
-  const finalIntent = (await calls(page, "commit")).at(-1)!.args.intent as {
-    road: Road;
-  };
+  const finalIntent = (await calls(page, "commit")).at(-1)!.args.intent;
+  if (finalIntent.type !== "updateRoad") throw Error("Expected road update");
   expect(finalIntent.road.nodes[1].point[0]).toBeCloseTo(end[0], 4);
   expect(finalIntent.road.nodes[1].point[1]).toBeCloseTo(end[1], 4);
   const pixels = await page
@@ -394,7 +395,7 @@ test("existing road width and node edits commit directly; Escape preserves accep
   await page.getByLabel("Breite (Fuß)", { exact: true }).blur();
   await expect.poll(() => page.evaluate(() => !!window.atlasHeld)).toBe(true);
   await page.evaluate(() => window.atlasRelease?.());
-  await page.waitForTimeout(180);
+  await settled(page);
   await expect.poll(async () => (await calls(page, "commit")).length).toBe(1);
   await ready(page);
   const mid = await screen(page, [40, 0]);
@@ -428,7 +429,7 @@ test("existing road width and node edits commit directly; Escape preserves accep
   await expect.poll(() => page.evaluate(() => !!window.atlasHeld)).toBe(true);
   await page.keyboard.press("Escape");
   await page.evaluate(() => window.atlasRelease?.());
-  await page.waitForTimeout(250);
+  await settled(page);
   expect(await calls(page, "commit")).toHaveLength(4);
   expect(
     ((await scene(page)).objects.find((o) => o.kind === "road") as Road).width,
@@ -474,7 +475,7 @@ test("lost compound commit is reconciled without automatic replay or an Enter qu
     page.locator(".atlas-actions .atlas-preview-summary"),
   ).toHaveCount(0);
   await page.keyboard.press("Enter");
-  await page.waitForTimeout(250);
+  await settled(page);
   expect(await calls(page, "commit")).toHaveLength(1);
   expect((await version(page)).revision).toBe(1);
   await page.keyboard.press("Escape");
@@ -511,7 +512,7 @@ test("rejected final curve preserves author data and renders structured issues",
   await expect(
     page.getByRole("status", { name: "Aktionsstatus" }),
   ).toContainText(/Parzell|Geometrie|Umkehr|Kurve/i);
-  await page.waitForTimeout(200);
+  await settled(page);
   expect(await calls(page, "commit")).toHaveLength(1);
   expect((await version(page)).revision).toBe(2);
   const red = await page

@@ -60,7 +60,7 @@ impl Scenery {
                         && a.angle.is_finite()
                         && (0.0..std::f64::consts::TAU).contains(&a.angle)
                         && a.variant < 4
-                        && a.point.iter().all(|v| v.abs() + a.size <= 5_000_000.0)
+                        && a.point.iter().all(|v| v.abs() + a.size <= 100_000_000.0)
                 }),
             "Ungültige Landschafts-Assets",
         )
@@ -76,7 +76,7 @@ fn random(x: i32, y: i32, seed: u32, salt: u32) -> f64 {
 pub fn scatter(b: &SceneryBrush, id: String) -> Result<Scenery> {
     ensure(
         b.radius.is_finite()
-            && (5.0..=500.0).contains(&b.radius)
+            && (0.001..=10_000_000.0).contains(&b.radius)
             && b.density.is_finite()
             && (0.05..=1.0).contains(&b.density)
             && b.size.is_finite()
@@ -202,7 +202,7 @@ mod tests {
         b.radius = f64::NAN;
         assert!(scatter(&b, "s".into()).is_err());
         b = brush();
-        b.points = vec![[-5e6, 0.0], [5e6, 0.0]];
+        b.points = vec![[-1e8, 0.0], [1e8, 0.0]];
         assert!(scatter(&b, "s".into()).is_err());
         b = brush();
         b.size = 1.0;

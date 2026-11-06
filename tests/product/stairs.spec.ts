@@ -94,7 +94,8 @@ test("stair click is empty; dominant-axis ties retain the last axis and final po
     await expect
       .poll(async () => {
         const previews = await calls(page, "preview");
-        return (previews.at(-1)?.args.intent as any)?.intent;
+        const intent = previews.at(-1)?.args.intent;
+        return intent?.type === "connection" ? intent.intent : null;
       })
       .toMatchObject({ direction, length });
   }
@@ -187,7 +188,7 @@ test("invalid whole stair footprint paints red and displays the backend reason b
   await page.getByRole("button", { name: "Treppe", exact: true }).click();
   const response = await page.evaluate(
     async (id) =>
-      window.atlasCore<any>("preview", {
+      window.atlasCore("preview", {
         version: await window.atlasCore("status", {}),
         intent: {
           type: "connection",
@@ -205,6 +206,7 @@ test("invalid whole stair footprint paints red and displays the backend reason b
     house.id,
   );
   expect(response.valid).toBe(false);
+  if (response.valid) throw Error("Expected invalid stairs preview");
   const before = await authorSnapshot(page, house.id);
   const version = await status(page);
   await clearCalls(page);

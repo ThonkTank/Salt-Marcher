@@ -34,7 +34,7 @@ pub fn world(LocalPoint(p): LocalPoint, t: &Transform) -> Point {
     ]
 }
 pub fn valid_point(p: Point) -> bool {
-    p.iter().all(|x| x.is_finite() && x.abs() <= 5_000_000.0)
+    p.iter().all(|x| x.is_finite() && x.abs() <= 100_000_000.0)
 }
 pub fn bounds(points: impl Iterator<Item = Point>) -> Bounds {
     let mut b = [
@@ -167,6 +167,18 @@ pub fn simple_polygon(p: &[Point]) -> bool {
     }
     true
 }
+pub(in crate::atlas) fn check_road_samples(actual: usize) -> Result<()> {
+    if actual > 32_768 {
+        return Err(super::errors::DomainViolation::Limit {
+            kind: "Straßensamples".into(),
+            actual,
+            maximum: 32_768,
+            object_ids: vec![],
+        }
+        .into());
+    }
+    Ok(())
+}
 pub(in crate::atlas) fn flatten(
     a: Point,
     b: Point,
@@ -175,7 +187,7 @@ pub(in crate::atlas) fn flatten(
     depth: u8,
     out: &mut Vec<Point>,
 ) -> Result<()> {
-    ensure(out.len() < 32768, "Straße ist zu komplex")?;
+    check_road_samples(out.len() + 1)?;
     if point_segment(b, a, d).max(point_segment(c, a, d)) <= 0.05 {
         out.push(d);
         return Ok(());

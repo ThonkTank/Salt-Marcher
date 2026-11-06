@@ -1,4 +1,5 @@
 import React from "react";
+import type { BrowserCall, BrowserRequest } from "./browserContract";
 import "../../src/base.css";
 import { createRoot } from "react-dom/client";
 import AtlasApp from "../../src/atlas/AtlasApp";
@@ -9,7 +10,9 @@ import { usePresentation } from "../../src/atlas/usePresentation";
 import type { EditorContext, Bounds } from "../../src/atlas/model";
 declare global {
   interface Window {
-    atlasCore: <T>(cmd: string, args: Record<string, unknown>) => Promise<T>;
+    atlasCore: BrowserRequest;
+    atlasRaw: (cmd: string, args: Record<string, unknown>) => Promise<unknown>;
+    atlasPending: number;
     atlasFailStatus?: boolean;
     atlasFailRead?: "mapTiles" | "scene" | "interiorMetadata" | "interiorTile";
     atlasClose?: () => void;
@@ -27,7 +30,7 @@ declare global {
     atlasUnmount?: () => void;
     atlasRemount?: () => void;
     atlasUnmounts?: number;
-    atlasCalls: { cmd: string; args: Record<string, unknown> }[];
+    atlasCalls: BrowserCall[];
     atlasHook: ReturnType<typeof useDocumentSession>;
     atlasPresentationSet: (value: Partial<PresentationInput>) => void;
     atlasPresentation: ReturnType<typeof usePresentation>;
@@ -49,14 +52,15 @@ window.atlasCalls = [];
 window.atlasTileReleases = [];
 window.atlasSceneHeld = [];
 window.atlasPresentationTrace = [];
-async function browserTransportInner<T>(
+async function browserTransportInner(
   cmd: string,
   args: Record<string, unknown>,
-): Promise<T> {
-  window.atlasCalls.push({ cmd, args });
+): Promise<unknown> {
+  // AtlasClient owns the typed side of this raw transport boundary.
+  window.atlasCalls.push({ cmd, args } as BrowserCall);
   if (cmd === "status" && window.atlasFailStatus)
     throw Error("Core unavailable");
-  const result = await window.atlasCore<T>(cmd, args);
+  const result = await window.atlasRaw(cmd, args);
   if (cmd === "scene" && window.atlasSceneBarrier) {
     const held = {
       args: structuredClone(args),
@@ -102,12 +106,14 @@ async function browserTransportInner<T>(
   }
   return result;
 }
+window.atlasPending = 0;
 window.atlasReadActive = 0;
 window.atlasReadMax = 0;
-async function browserTransport<T>(
+async function browserTransport(
   cmd: string,
   args: Record<string, unknown>,
-): Promise<T> {
+): Promise<unknown> {
+  window.atlasPending++;
   const read =
     cmd === "mapTiles" ||
     cmd === "scene" ||
@@ -118,11 +124,13 @@ async function browserTransport<T>(
     window.atlasReadMax = Math.max(window.atlasReadMax, window.atlasReadActive);
   }
   try {
-    return await browserTransportInner<T>(cmd, args);
+    return await browserTransportInner(cmd, args);
   } finally {
     if (read) window.atlasReadActive--;
+    window.atlasPending--;
   }
 }
+const browserRequest = browserTransport as BrowserRequest;
 class BrowserClient extends AtlasClient {
   constructor() {
     super(browserTransport);
@@ -150,13 +158,13 @@ class BrowserClient extends AtlasClient {
   override async open(_version: Version) {
     await this.picker("open");
     if (window.atlasCancelOpen) return null;
-    return browserTransport<Status>("open", {});
+    return browserRequest("open", {});
   }
   override async save(_version: Version, _saveAs = false) {
     await this.picker("save");
     return window.atlasCancelSave
       ? Promise.resolve(null)
-      : browserTransport<Status>("save", {});
+      : browserRequest("save", {});
   }
 }
 const client = new BrowserClient();

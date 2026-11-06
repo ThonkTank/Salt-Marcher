@@ -74,7 +74,7 @@ impl PreparedRoadGeometry {
             )?;
 
             samples += raw.len() - 1;
-            ensure(samples <= MAX_SAMPLES, "Straße ist zu komplex")?;
+            geometry::check_road_samples(samples)?;
             full.extend(raw.iter().skip(1).copied());
             let id = &road.edge_sections[index];
             if paths.last().is_none_or(|(previous, _)| previous != id) {

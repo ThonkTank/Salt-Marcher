@@ -1,3 +1,4 @@
+import { deferred } from "../../tests/support/deferred";
 import { describe, expect, it, vi } from "vitest";
 import { AtlasClient, type Commands } from "./client";
 import {
@@ -8,14 +9,6 @@ import {
 import type { Intent, Status, ValidPreview, Version } from "./model";
 import { WireError } from "../wireError";
 
-function deferred<T>() {
-  let resolve!: (value: T) => void, reject!: (error: unknown) => void;
-  const promise = new Promise<T>((yes, no) => {
-    resolve = yes;
-    reject = no;
-  });
-  return { promise, resolve, reject };
-}
 const status = (revision = 0, sessionId = "one"): Status => ({
   sessionId,
   revision,

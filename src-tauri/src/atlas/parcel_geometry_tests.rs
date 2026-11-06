@@ -161,7 +161,7 @@ fn canonical_polygons_reject_crossings_touches_zero_area_and_complexity() {
             [5.0, 5.0],
         ],
         vec![[0.0, 0.0], [10.0, 0.0], [10.0, 10.0], [0.0, 0.0]],
-        rect(5_000_000.0, 0.0, 1.0, 1.0),
+        rect(100_000_000.0, 0.0, 1.0, 1.0),
     ] {
         assert!(canonical_polygon(invalid).is_err());
     }

@@ -1,31 +1,61 @@
 import { expect, type Page } from "@playwright/test";
 import type {
   House,
-  Parcel,
   Intent,
-  InteriorMetadata,
-  DetailTile,
+  Parcel,
   Road,
-  Scene,
-  Status,
-  ValidPreview,
   WorldPoint,
 } from "../../src/atlas/model";
+import type { BrowserCall, BrowserCommand } from "./browserContract";
 
-export const url = "http://127.0.0.1:1420/tests/support/atlas.html";
+export { editorUrl as url } from "./browserServer";
 
-// Readiness follows a complete published snapshot. Canvas draws it in layout.
+// Published readiness does not by itself await layout or the scheduled Canvas paint.
 export async function ready(page: Page) {
   await expect(page.getByTestId("atlas-canvas")).toBeVisible();
   await expect(page.getByText("Ansicht wird geladen …")).toHaveCount(0);
   await expect(page.locator(".atlas-map .atlas-transition")).toHaveCount(0);
 }
+// Opt in after layout/zoom changes, before gestures or Canvas pixel/transform reads.
+// Do not use while intentionally holding a presentation response or unmounted.
+export async function paintedReady(page: Page) {
+  const frames = () =>
+    page.evaluate(
+      () =>
+        new Promise<void>((resolve) =>
+          requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+        ),
+    );
+  await frames();
+  await ready(page);
+  await expect
+    .poll(() =>
+      page.getByTestId("atlas-canvas").evaluate((canvas: HTMLCanvasElement) => {
+        const dpr = devicePixelRatio || 1;
+        return (
+          Math.abs(canvas.width - canvas.clientWidth * dpr) <= 1 &&
+          Math.abs(canvas.height - canvas.clientHeight * dpr) <= 1
+        );
+      }),
+    )
+    .toBe(true);
+  await frames();
+  await ready(page);
+}
+// Wait for admitted transport work and its visible workflow/presentation result.
+export async function settled(page: Page) {
+  await expect.poll(() => page.evaluate(() => window.atlasPending)).toBe(0);
+  await expect(
+    page.getByText(/Vorschau wird aktualisiert|Änderung wird übernommen/),
+  ).toHaveCount(0);
+  await ready(page);
+}
 export function status(page: Page) {
-  return page.evaluate(() => window.atlasCore<Status>("status", {}));
+  return page.evaluate(() => window.atlasCore("status", {}));
 }
 export function scene(page: Page) {
   return page.evaluate(() =>
-    window.atlasCore<Scene>("scene", {
+    window.atlasCore("scene", {
       context: { kind: "exterior" },
       bounds: [-10000, -10000, 10000, 10000],
     }),
@@ -34,8 +64,8 @@ export function scene(page: Page) {
 export function commit(page: Page, intent: Intent) {
   return page.evaluate(
     async (intent) =>
-      window.atlasCore<ValidPreview>("commit", {
-        version: await window.atlasCore<Status>("status", {}),
+      window.atlasCore("commit", {
+        version: await window.atlasCore("status", {}),
         intent,
       }),
     intent,
@@ -44,8 +74,8 @@ export function commit(page: Page, intent: Intent) {
 export function history(page: Page, redo = false) {
   return page.evaluate(
     async (redo) =>
-      window.atlasCore<Status>("history", {
-        version: await window.atlasCore<Status>("status", {}),
+      window.atlasCore("history", {
+        version: await window.atlasCore("status", {}),
         redo,
       }),
     redo,
@@ -53,8 +83,7 @@ export function history(page: Page, redo = false) {
 }
 export function metadata(page: Page, buildingId: string) {
   return page.evaluate(
-    (buildingId) =>
-      window.atlasCore<InteriorMetadata>("interiorMetadata", { buildingId }),
+    (buildingId) => window.atlasCore("interiorMetadata", { buildingId }),
     buildingId,
   );
 }
@@ -62,11 +91,11 @@ export function tile(
   page: Page,
   buildingId: string,
   floor = 0,
-  bounds = [-2, -2, 140, 140],
+  bounds: import("../../src/atlas/model").Bounds = [-2, -2, 140, 140],
 ) {
   return page.evaluate(
     ({ buildingId, floor, bounds }) =>
-      window.atlasCore<DetailTile>("interiorTile", {
+      window.atlasCore("interiorTile", {
         buildingId,
         floor,
         bounds,
@@ -75,9 +104,12 @@ export function tile(
     { buildingId, floor, bounds },
   );
 }
-export function calls(page: Page, cmd: string) {
+export function calls<K extends BrowserCommand>(
+  page: Page,
+  cmd: K,
+): Promise<BrowserCall<K>[]> {
   return page.evaluate(
-    (cmd) => window.atlasCalls.filter((c) => c.cmd === cmd),
+    (cmd) => window.atlasCalls.filter((c) => c.cmd === cmd) as BrowserCall<K>[],
     cmd,
   );
 }
@@ -241,39 +273,36 @@ export async function setFloor(page: Page, floor: number) {
 export async function seedParcels(page: Page, empty = false, offset = 0) {
   return page.evaluate(
     async ({ empty, offset }) => {
-      const result = await window.atlasCore<{ objects: Scene["objects"] }>(
-        "commit",
-        {
-          version: await window.atlasCore("status", {}),
-          intent: {
-            type: "createRoad",
-            road: {
-              name: "Teststraße",
-              width: 10,
-              material: "earth",
-              nodes: [
-                { point: [offset, 0], incoming: null, outgoing: null },
-                {
-                  point: [offset + 80, 0],
-                  incoming: null,
-                  outgoing: null,
-                },
-              ],
-            },
-            population: {
-              side: "right",
-              setback: 5,
-              gap: 10,
-              minWidth: 8,
-              maxWidth: 8,
-              minDepth: 8,
-              maxDepth: 8,
-              seed: 1,
-              parcelDepth: 100,
-            },
+      const result = await window.atlasCore("commit", {
+        version: await window.atlasCore("status", {}),
+        intent: {
+          type: "createRoad",
+          road: {
+            name: "Teststraße",
+            width: 10,
+            material: "earth",
+            nodes: [
+              { point: [offset, 0], incoming: null, outgoing: null },
+              {
+                point: [offset + 80, 0],
+                incoming: null,
+                outgoing: null,
+              },
+            ],
+          },
+          population: {
+            side: "right",
+            setback: 5,
+            gap: 10,
+            minWidth: 8,
+            maxWidth: 8,
+            minDepth: 8,
+            maxDepth: 8,
+            seed: 1,
+            parcelDepth: 100,
           },
         },
-      );
+      });
       const parcel = result.objects.find(
         (o): o is Parcel => o.kind === "parcel",
       )!;
@@ -286,7 +315,7 @@ export async function seedParcels(page: Page, empty = false, offset = 0) {
       return {
         parcel,
         house,
-        status: await window.atlasCore<Status>("status", {}),
+        status: await window.atlasCore("status", {}),
       };
     },
     { empty, offset },
@@ -305,7 +334,6 @@ export async function showObjects(page: Page) {
     await list.locator("summary").first().click();
 }
 export async function selectObject(page: Page, name: string | RegExp) {
-  await page.getByRole("button", { name: "Auswahl", exact: true }).click();
   await showObjects(page);
   await page
     .getByRole("button", { name, exact: typeof name === "string" })

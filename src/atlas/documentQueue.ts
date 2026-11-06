@@ -7,7 +7,7 @@ import { PreviewScheduler } from "./previewScheduler";
 import { sameVersion } from "./documentVersion";
 import { WireError } from "../wireError";
 
-export type DocumentSnapshot = Readonly<{
+type DocumentSnapshot = Readonly<{
   status: Status | null;
   committed: Preview | null;
   error: string;

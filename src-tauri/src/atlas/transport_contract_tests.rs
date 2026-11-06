@@ -14,7 +14,7 @@ fn config() -> Config {
 fn generated_contract_exceptional_shapes() {
     let cfg = config();
     assert_eq!(QuarterTurns::inline(&cfg), "0 | 1 | 2 | 3");
-    assert_eq!(AlgorithmVersion::inline(&cfg), "3");
+    assert_eq!(AlgorithmVersion::inline(&cfg), "4");
     assert_eq!(True::inline(&cfg), "true");
     assert_eq!(False::inline(&cfg), "false");
     assert!(SceneArgs::decl(&cfg).contains("selectedId?: string | null"));
@@ -41,7 +41,10 @@ fn preview_projections_preserve_json_contract() {
         revision: status.revision,
     };
     let success = ValidPreviewWire {
+        rivers: None,
+        regions: None,
         terrain: None,
+        ground: None,
         valid: True,
         version: version.clone(),
         status: Box::new(status.clone()),
@@ -101,7 +104,7 @@ fn defaults_nullability_and_literal_serialization_match() {
         );
     }
     assert!(serde_json::from_value::<QuarterTurns>(json!(4)).is_err());
-    assert_eq!(serde_json::to_value(AlgorithmVersion).unwrap(), json!(3));
+    assert_eq!(serde_json::to_value(AlgorithmVersion).unwrap(), json!(4));
     assert!(serde_json::from_value::<AlgorithmVersion>(json!(1)).is_err());
     let missing = json!({"id":"n", "point":[0,0], "outgoing":null});
     assert!(serde_json::from_value::<ExistingNodeInput>(missing.clone()).is_err());

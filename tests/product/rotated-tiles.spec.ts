@@ -1,3 +1,4 @@
+import { editorUrl } from "../support/browserServer";
 import { selectObject } from "../support/editor";
 import { ready } from "../support/editor";
 import { expect, test } from "../support/fixture";
@@ -10,10 +11,12 @@ for (const dpr of [1, 2]) {
     test.use({ deviceScaleFactor: dpr });
     for (const width of [64, 128]) {
       test(`rotated partial upper floor ${width}`, async ({ page }) => {
-        await page.goto("http://127.0.0.1:1420/tests/support/atlas.html");
+        await page.goto(editorUrl);
         await page.evaluate(async (width) => {
-          const commit = async (intent: object) =>
-            window.atlasCore<{ objects: { id: string }[] }>("commit", {
+          const commit = async (
+            intent: import("../../src/atlas/model").Intent,
+          ) =>
+            window.atlasCore("commit", {
               version: await window.atlasCore("status", {}),
               intent,
             });
@@ -24,10 +27,13 @@ for (const dpr of [1, 2]) {
             width,
             depth: width,
           });
-          const cells = Array.from({ length: (width * width) / 2 }, (_, i) => [
-            i % (width / 2),
-            Math.floor(i / (width / 2)),
-          ]);
+          const cells = Array.from(
+            { length: (width * width) / 2 },
+            (_, i): [number, number] => [
+              i % (width / 2),
+              Math.floor(i / (width / 2)),
+            ],
+          );
           await commit({
             type: "room",
             buildingId: house.objects[0].id,
@@ -67,10 +73,10 @@ for (const dpr of [1, 2]) {
 }
 
 test("rotated wall crossing fixed tile boundary", async ({ page }) => {
-  await page.goto("http://127.0.0.1:1420/tests/support/atlas.html");
+  await page.goto(editorUrl);
   await page.evaluate(async () => {
-    const commit = async (intent: object) =>
-      window.atlasCore<{ objects: { id: string }[] }>("commit", {
+    const commit = async (intent: import("../../src/atlas/model").Intent) =>
+      window.atlasCore("commit", {
         version: await window.atlasCore("status", {}),
         intent,
       });
@@ -81,7 +87,7 @@ test("rotated wall crossing fixed tile boundary", async ({ page }) => {
       width: 64,
       depth: 64,
     });
-    const cells = Array.from({ length: 64 * 32 }, (_, i) => [
+    const cells = Array.from({ length: 64 * 32 }, (_, i): [number, number] => [
       (i % 64) - 32,
       Math.floor(i / 64),
     ]);

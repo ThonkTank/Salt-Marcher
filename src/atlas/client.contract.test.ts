@@ -1,4 +1,4 @@
-import { execFileSync } from "node:child_process";
+import buildCore from "../../tests/support/buildCore";
 import {
   startCoreTransport,
   type CoreTransport,
@@ -9,28 +9,16 @@ import { normalizeWireError, WireError } from "../wireError";
 
 let core: CoreTransport | undefined;
 let client: AtlasClient;
-let send: (cmd: string, args: Record<string, unknown>) => Promise<unknown>;
+let sendRaw: (cmd: string, args: Record<string, unknown>) => Promise<unknown>;
 beforeAll(() => {
-  execFileSync(
-    "cargo",
-    [
-      "build",
-      "--manifest-path",
-      `${process.cwd()}/src-tauri/Cargo.toml`,
-      "--example",
-      "atlas_test_server",
-    ],
-    { stdio: "pipe" },
-  );
-  core = startCoreTransport({
-    binary: "src-tauri/target/debug/examples/atlas_test_server",
-  });
-  send = async (cmd, args) => {
+  buildCore();
+  core = startCoreTransport();
+  sendRaw = async (cmd, args) => {
     const response = JSON.parse(await core!.request({ cmd, args }));
     if (response.error) throw response.error;
     return response.value;
   };
-  client = new AtlasClient(send);
+  client = new AtlasClient(sendRaw);
 }, 120_000);
 afterAll(async () => {
   await core?.close();
@@ -195,7 +183,7 @@ test("Rust worker responses are consumed through the typed Atlas client", async 
   const fresh = await client.request("new", {});
   expect(fresh).toMatchObject({ revision: 0, dirty: false });
   expect(fresh.sessionId).not.toBe(status.sessionId);
-  const storage = await send("open", {
+  const storage = await sendRaw("open", {
     path: "/no-such-atlas-file.saltatlas",
   }).catch(normalizeWireError);
   expect(storage).toBeInstanceOf(WireError);
@@ -280,7 +268,7 @@ test("Rust scene object variants and malformed input stay on the wire contract",
   );
   expect(scene.status.revision).toBe(status.revision);
   await expect(
-    send("interiorTile", {
+    sendRaw("interiorTile", {
       buildingId: "missing",
       floor: "wrong",
       bounds: [0, 0, 1, 1],
@@ -290,7 +278,7 @@ test("Rust scene object variants and malformed input stay on the wire contract",
     }),
   ).rejects.toMatchObject({ category: "invalidInput" });
   await expect(
-    send("unknown", {}).catch((e) => {
+    sendRaw("unknown", {}).catch((e) => {
       throw normalizeWireError(e);
     }),
   ).rejects.toMatchObject({ category: "invalidInput" });

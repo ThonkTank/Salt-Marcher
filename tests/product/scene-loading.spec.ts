@@ -1,16 +1,12 @@
+import { editorUrl } from "../support/browserServer";
 import { showObjects } from "../support/editor";
-import type { Status } from "../../src/atlas/model";
 import { expect, test } from "../support/fixture";
 
 test("covering superseded scene advances the view while newest request remains pending", async ({
   page,
 }) => {
-  await page.goto(
-    "http://127.0.0.1:1420/tests/support/atlas.html?presentation",
-  );
-  const status = await page.evaluate(() =>
-    window.atlasCore<Status>("status", {}),
-  );
+  await page.goto(`${editorUrl}?presentation`);
+  const status = await page.evaluate(() => window.atlasCore("status", {}));
   await page.evaluate(
     (status) => window.atlasPresentationSet({ status }),
     status,
@@ -71,12 +67,8 @@ test("covering superseded scene advances the view while newest request remains p
 });
 
 async function startHeld(page: import("@playwright/test").Page) {
-  await page.goto(
-    "http://127.0.0.1:1420/tests/support/atlas.html?presentation",
-  );
-  const status = await page.evaluate(() =>
-    window.atlasCore<Status>("status", {}),
-  );
+  await page.goto(`${editorUrl}?presentation`);
+  const status = await page.evaluate(() => window.atlasCore("status", {}));
   await page.evaluate(
     (status) => window.atlasPresentationSet({ status }),
     status,
@@ -213,7 +205,7 @@ for (const kind of ["session", "revision"] as const) {
             depth: 8,
           },
         });
-      return window.atlasCore<Status>("status", {});
+      return window.atlasCore("status", {});
     }, kind);
     if (kind === "session") expect(next.sessionId).not.toBe(old.sessionId);
     else expect(next.revision).toBeGreaterThan(old.revision);
@@ -422,12 +414,8 @@ test("floor A-B-A cannot revive an old matching-context request", async ({
 test("exterior remains fresh across detail threshold when bounds and scene are unchanged", async ({
   page,
 }) => {
-  await page.goto(
-    "http://127.0.0.1:1420/tests/support/atlas.html?presentation",
-  );
-  const status = await page.evaluate(() =>
-    window.atlasCore<Status>("status", {}),
-  );
+  await page.goto(`${editorUrl}?presentation`);
+  const status = await page.evaluate(() => window.atlasCore("status", {}));
   await page.evaluate(
     (status) => window.atlasPresentationSet({ status }),
     status,
@@ -462,7 +450,7 @@ test("exterior remains fresh across detail threshold when bounds and scene are u
 test("covering interim scene permits real Canvas edits while the latest read is pending", async ({
   page,
 }) => {
-  await page.goto("http://127.0.0.1:1420/tests/support/atlas.html");
+  await page.goto(editorUrl);
   await expect(page.getByText("Ansicht wird geladen …")).toHaveCount(0);
   const canvas = page.getByTestId("atlas-canvas");
   await page.getByRole("button", { name: "Haus", exact: true }).click();
@@ -471,7 +459,7 @@ test("covering interim scene permits real Canvas edits while the latest read is 
     window.atlasCalls = [];
     window.atlasSceneHeld = [];
     window.atlasSceneBarrier = true;
-    return window.atlasCore<Status>("status", {});
+    return window.atlasCore("status", {});
   });
   await page.mouse.move(box.x + 350, box.y + 300);
   await page.mouse.down({ button: "middle" });
@@ -533,9 +521,7 @@ test("covering interim scene permits real Canvas edits while the latest read is 
       ),
     )
     .toBe(1);
-  const edited = await page.evaluate(() =>
-    window.atlasCore<Status>("status", {}),
-  );
+  const edited = await page.evaluate(() => window.atlasCore("status", {}));
   expect(edited.sessionId).toBe(before.sessionId);
   expect(edited.revision).toBeGreaterThan(before.revision);
   await showObjects(page);
@@ -557,9 +543,7 @@ test("covering interim scene permits real Canvas edits while the latest read is 
     page.getByRole("button", { name: "⌂ Haus 1", exact: true }),
   ).toBeVisible();
   await expect(page.getByText("Ansicht wird geladen …")).toHaveCount(0);
-  const final = await page.evaluate(() =>
-    window.atlasCore<Status>("status", {}),
-  );
+  const final = await page.evaluate(() => window.atlasCore("status", {}));
   expect(final.sessionId).toBe(edited.sessionId);
   expect(final.revision).toBe(edited.revision);
 });

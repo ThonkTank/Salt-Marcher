@@ -20,16 +20,21 @@ use serde_json::{json, Value};
 use std::collections::HashSet;
 use std::path::Path;
 
-pub const FORMAT_VERSION: i64 = 13;
+pub const FORMAT_VERSION: i64 = 18;
 const SCHEMA: &str = "
+CREATE TABLE rivers(id TEXT PRIMARY KEY NOT NULL,body TEXT NOT NULL) STRICT, WITHOUT ROWID;
+CREATE TABLE region_catalog(singleton INTEGER PRIMARY KEY NOT NULL,body TEXT NOT NULL) STRICT, WITHOUT ROWID;
+CREATE TABLE regions(id TEXT PRIMARY KEY NOT NULL,body TEXT NOT NULL) STRICT, WITHOUT ROWID;
 CREATE TABLE document_meta(singleton INTEGER PRIMARY KEY NOT NULL,
  next_identity INTEGER NOT NULL) STRICT, WITHOUT ROWID;
 CREATE TABLE objects(id TEXT PRIMARY KEY NOT NULL,
  kind TEXT NOT NULL, body TEXT NOT NULL) STRICT, WITHOUT ROWID;
 CREATE TABLE house_cells(building_id TEXT PRIMARY KEY NOT NULL,
  payload TEXT NOT NULL) STRICT, WITHOUT ROWID;
+CREATE TABLE terrain_layers(level INTEGER NOT NULL,x INTEGER NOT NULL,y INTEGER NOT NULL,z REAL NOT NULL,PRIMARY KEY(level,x,y)) STRICT, WITHOUT ROWID;
 CREATE TABLE terrain(x INTEGER NOT NULL,y INTEGER NOT NULL,z REAL NOT NULL,PRIMARY KEY(x,y)) STRICT, WITHOUT ROWID;
-CREATE TABLE terrain_settings(singleton INTEGER PRIMARY KEY NOT NULL,water REAL NOT NULL) STRICT, WITHOUT ROWID;";
+CREATE TABLE ground_tiles(x INTEGER NOT NULL,y INTEGER NOT NULL,pixels BLOB NOT NULL,PRIMARY KEY(x,y)) STRICT, WITHOUT ROWID;
+CREATE TABLE waters(id TEXT PRIMARY KEY NOT NULL,body TEXT NOT NULL) STRICT, WITHOUT ROWID;";
 
 // Shared authored values are strict themselves. File-specific DTOs omit derived
 // runtime data structurally; no FullObject JSON is pruned.
@@ -85,7 +90,7 @@ enum PlacementDto {
         grid_pose: GridPose,
     },
 }
-// A flat, strict enum avoids flatten's unknown-field ambiguity in legacy connections.
+// A flat, strict enum avoids flatten's unknown-field ambiguity in connections.
 #[derive(Serialize, Deserialize)]
 #[serde(
     tag = "type",
@@ -329,6 +334,24 @@ fn export_header(app: &AtlasApplication, id: &str, kind: &str) -> Result<ObjectD
     })
 }
 
+/// Stream authored SQL values without parsing or collecting the whole table.
+fn copy_rows(source: &Connection, target: &Connection, select: &str, insert: &str) -> Result<()> {
+    let mut query = source.prepare(select).map_err(storage_error)?;
+    let columns = query.column_count();
+    let mut write = target.prepare(insert).map_err(storage_error)?;
+    let mut rows = query.query([]).map_err(storage_error)?;
+    while let Some(row) = rows.next().map_err(storage_error)? {
+        let values = (0..columns)
+            .map(|i| row.get::<_, rusqlite::types::Value>(i))
+            .collect::<rusqlite::Result<Vec<_>>>()
+            .map_err(storage_error)?;
+        write
+            .execute(rusqlite::params_from_iter(values))
+            .map_err(storage_error)?;
+    }
+    Ok(())
+}
+
 impl AtlasApplication {
     pub fn save(&mut self, path: &Path) -> Result<Status> {
         self.save_snapshot(path, |_| Ok(()))
@@ -351,28 +374,43 @@ impl AtlasApplication {
         tx.pragma_update(None, "user_version", FORMAT_VERSION)
             .map_err(storage_error)?;
         tx.execute(
-            "INSERT INTO terrain_settings VALUES(1,?)",
-            [super::terrain_store::water(&source)?],
+            "INSERT INTO region_catalog VALUES(1,?)",
+            [
+                serde_json::to_string(&super::region_store::catalog(&source)?)
+                    .map_err(storage_error)?,
+            ],
         )
         .map_err(storage_error)?;
-        {
-            let mut q = source
-                .prepare("SELECT x,y,z FROM terrain ORDER BY x,y")
-                .map_err(storage_error)?;
-            let mut rows = q.query([]).map_err(storage_error)?;
-            while let Some(r) = rows.next().map_err(storage_error)? {
-                tx.execute(
-                    "INSERT INTO terrain VALUES(?,?,?)",
-                    params![
-                        r.get::<_, i32>(0).map_err(storage_error)?,
-                        r.get::<_, i32>(1).map_err(storage_error)?,
-                        r.get::<_, f64>(2).map_err(storage_error)?
-                    ],
-                )
-                .map_err(storage_error)?;
-            }
+        // These tables already contain exactly the authored file values.
+        // Copy one row at a time; spatial indices and derived data stay local.
+        for (select, insert) in [
+            (
+                "SELECT id,body FROM regions ORDER BY id",
+                "INSERT INTO regions VALUES(?,?)",
+            ),
+            (
+                "SELECT id,body FROM rivers ORDER BY id",
+                "INSERT INTO rivers VALUES(?,?)",
+            ),
+            (
+                "SELECT id,body FROM waters ORDER BY id",
+                "INSERT INTO waters VALUES(?,?)",
+            ),
+            (
+                "SELECT level,x,y,z FROM terrain_layers ORDER BY level,x,y",
+                "INSERT INTO terrain_layers VALUES(?,?,?,?)",
+            ),
+            (
+                "SELECT x,y,z FROM terrain ORDER BY x,y",
+                "INSERT INTO terrain VALUES(?,?,?)",
+            ),
+            (
+                "SELECT x,y,pixels FROM ground_tiles ORDER BY x,y",
+                "INSERT INTO ground_tiles VALUES(?,?,?)",
+            ),
+        ] {
+            copy_rows(&source, &tx, select, insert)?;
         }
-
         let next: i64 = source
             .query_row(
                 "SELECT next_identity FROM document_meta WHERE singleton=1",
@@ -442,7 +480,7 @@ impl AtlasApplication {
             .map_err(storage_error)?;
         ensure(
             version == FORMAT_VERSION,
-            "Atlas V7 benötigt Dateiformat 13. Ältere Dateiformate werden nicht migriert.",
+            &format!("Atlas V7 benötigt Dateiformat {FORMAT_VERSION}. Ältere Dateiformate werden nicht migriert."),
         )?;
         validate_schema(&source_tx)?;
         {
@@ -466,20 +504,36 @@ impl AtlasApplication {
             .unchecked_transaction()
             .map_err(storage_error)?;
         let next_state = stage_document(&source_tx, &candidate)?;
-        let count: i64 = source_tx
-            .query_row("SELECT count(*) FROM terrain_settings", [], |r| r.get(0))
-            .map_err(storage_error)?;
-        ensure(count == 1, "Ungültige Wassereinstellungen")?;
-        let water = super::terrain_store::water(&source_tx)?;
-        ensure(
-            crate::atlas::terrain::valid_height(water),
-            "Ungültiger Wasserstand",
-        )?;
-        tx.execute(
-            "UPDATE terrain_settings SET water=? WHERE singleton=1",
-            [water],
-        )
-        .map_err(storage_error)?;
+        super::region_store::import(&source_tx, &tx)?;
+        super::water_store::import(&source_tx, &tx)?;
+        {
+            let mut q = source_tx
+                .prepare("SELECT level,x,y,z FROM terrain_layers ORDER BY level,x,y")
+                .map_err(storage_error)?;
+            let mut rows = q.query([]).map_err(storage_error)?;
+            while let Some(r) = rows.next().map_err(storage_error)? {
+                let level: u8 = r.get(0).map_err(storage_error)?;
+                let x: i32 = r.get(1).map_err(storage_error)?;
+                let y: i32 = r.get(2).map_err(storage_error)?;
+                let z: f64 = r.get(3).map_err(storage_error)?;
+                let step = 5. * 2f64.powi(level as i32);
+                ensure(
+                    (1..=21).contains(&level)
+                        && crate::atlas::geometry::valid_point([x as f64 * step, y as f64 * step])
+                        && crate::atlas::terrain::valid_height(z),
+                    "Ungültige Geländeauflösung",
+                )?;
+                super::world_terrain_store::apply(
+                    &tx,
+                    &super::world_terrain_store::WorldTerrainDelta {
+                        level,
+                        before: vec![],
+                        after: vec![(x, y, Some(z))],
+                    },
+                    true,
+                )?;
+            }
+        }
         {
             let mut q = source_tx
                 .prepare("SELECT x,y,z FROM terrain ORDER BY x,y")
@@ -492,13 +546,40 @@ impl AtlasApplication {
                     r.get(2).map_err(storage_error)?,
                 );
                 ensure(
-                    x.unsigned_abs() <= 1_000_000
-                        && y.unsigned_abs() <= 1_000_000
-                        && crate::atlas::terrain::valid_height(z)
-                        && z != crate::atlas::terrain::BASE,
+                    x.unsigned_abs() <= 20_000_000
+                        && y.unsigned_abs() <= 20_000_000
+                        && crate::atlas::terrain::valid_height(z),
                     "Ungültiger Höhenpunkt",
                 )?;
                 super::terrain_store::write_points(&tx, &[(x, y, z)])?;
+            }
+        }
+        {
+            super::river_store::import(&source_tx, &tx)?;
+            let mut q = source_tx
+                .prepare("SELECT x,y,pixels FROM ground_tiles ORDER BY x,y")
+                .map_err(storage_error)?;
+            let mut rows = q.query([]).map_err(storage_error)?;
+            while let Some(r) = rows.next().map_err(storage_error)? {
+                let x: i32 = r.get(0).map_err(storage_error)?;
+                let y: i32 = r.get(1).map_err(storage_error)?;
+                let pixels: Vec<u8> = r.get(2).map_err(storage_error)?;
+                ensure(
+                    x.unsigned_abs() <= 1_562_500
+                        && y.unsigned_abs() <= 1_562_500
+                        && pixels.len() == crate::atlas::ground::BYTES
+                        && pixels.iter().any(|v| *v != 0)
+                        && pixels
+                            .as_chunks::<4>()
+                            .0
+                            .iter()
+                            .all(|p| p[0] <= p[3] && p[1] <= p[3] && p[2] <= p[3]),
+                    "Ungültige Bodenfarbkachel",
+                )?;
+                super::ground_store::write(
+                    &tx,
+                    &[crate::atlas::ground::GroundTile { x, y, pixels }],
+                )?;
             }
         }
         tx.commit().map_err(storage_error)?;
@@ -544,14 +625,19 @@ fn validate_schema(source: &Connection) -> Result<()> {
         "SELECT type,name,tbl_name FROM main.sqlite_schema ORDER BY lower(type),lower(name)",
         "SELECT schema,name,type,ncol,wr,strict FROM pragma_table_list WHERE schema='main' AND name!='sqlite_schema' ORDER BY lower(name)",
     ] {
-        ensure(structural_rows(source,sql,&[0,1,2])?==structural_rows(&expected,sql,&[0,1,2])?,"Ungültiges Format-13-Schema")?;
+        ensure(structural_rows(source,sql,&[0,1,2])?==structural_rows(&expected,sql,&[0,1,2])?,"Ungültiges Format-18-Schema")?;
     }
     for table in [
         "document_meta",
         "objects",
         "house_cells",
         "terrain",
-        "terrain_settings",
+        "terrain_layers",
+        "waters",
+        "ground_tiles",
+        "rivers",
+        "region_catalog",
+        "regions",
     ] {
         for (pragma, identifiers) in [
             ("table_xinfo", &[1, 2][..]),
@@ -584,22 +670,40 @@ fn validate_schema(source: &Connection) -> Result<()> {
     Ok(())
 }
 
-fn register_identity(
-    id: &str,
-    prefix: &str,
-    identities: &mut HashSet<String>,
-    maximum: &mut i64,
+#[derive(Default)]
+struct ImportIdentities {
+    seen: HashSet<String>,
+    maximum: i64,
+}
+impl ImportIdentities {
+    fn register(&mut self, id: &str, prefix: &str) -> Result<()> {
+        let suffix = id
+            .strip_prefix(prefix)
+            .and_then(|s| s.strip_prefix('-'))
+            .and_then(|s| s.parse::<i64>().ok())
+            .ok_or_else(|| invalid("Ungültige globale Identität"))?;
+        ensure(
+            suffix >= 1 && id == format!("{prefix}-{suffix}") && self.seen.insert(id.to_owned()),
+            "Ungültige oder doppelte globale Identität",
+        )?;
+        self.maximum = self.maximum.max(suffix);
+        Ok(())
+    }
+    fn read(&mut self, source: &Connection, sql: &str, prefix: &str) -> Result<()> {
+        for_strings(source, sql, |id| self.register(&id, prefix))
+    }
+}
+
+fn for_strings(
+    source: &Connection,
+    sql: &str,
+    mut visit: impl FnMut(String) -> Result<()>,
 ) -> Result<()> {
-    let suffix = id
-        .strip_prefix(prefix)
-        .and_then(|s| s.strip_prefix('-'))
-        .and_then(|s| s.parse::<i64>().ok())
-        .ok_or_else(|| invalid("Ungültige globale Identität"))?;
-    ensure(
-        suffix >= 1 && id == format!("{prefix}-{suffix}") && identities.insert(id.to_owned()),
-        "Ungültige oder doppelte globale Identität",
-    )?;
-    *maximum = (*maximum).max(suffix);
+    let mut query = source.prepare(sql).map_err(storage_error)?;
+    let mut rows = query.query([]).map_err(storage_error)?;
+    while let Some(row) = rows.next().map_err(storage_error)? {
+        visit(row.get(0).map_err(storage_error)?)?;
+    }
     Ok(())
 }
 fn for_objects(
@@ -626,30 +730,71 @@ fn for_objects(
 }
 fn stage_document(source: &Connection, candidate: &AtlasApplication) -> Result<u64> {
     let mut prepared = plan_context::PreparedRoads::new();
-    let mut identities = HashSet::new();
-    let mut maximum = 0;
+    let mut identities = ImportIdentities::default();
     let mut maximum_order = 0;
     // Pass 1 only holds global IDs and one metadata record, never cell data.
 
     for_objects(source, None, |dto| {
         let (id, kind) = dto.identity();
-        register_identity(id, kind, &mut identities, &mut maximum)?;
+        identities.register(id, kind)?;
         if let ObjectDto::Road(r) = dto {
             for n in r.nodes {
-                register_identity(&n.id, "node", &mut identities, &mut maximum)?;
+                identities.register(&n.id, "node")?;
             }
             for s in r.sections {
-                register_identity(&s.id, "section", &mut identities, &mut maximum)?;
+                identities.register(&s.id, "section")?;
             }
         }
         Ok(())
     })?;
 
+    let catalog = super::region_store::catalog(source)?;
+    for c in catalog.categories {
+        if ![
+            "builtin-category-1",
+            "builtin-category-2",
+            "builtin-category-16",
+        ]
+        .contains(&c.id.as_str())
+        {
+            identities.register(&c.id, "category")?;
+        }
+    }
+    for r in catalog.ranks {
+        if !(3..=20)
+            .filter(|n| *n != 16)
+            .any(|n| r.id == format!("builtin-rank-{n}"))
+        {
+            identities.register(&r.id, "rank")?;
+        }
+    }
+    identities.read(source, "SELECT id FROM regions", "region")?;
+    {
+        let mut nodes = std::collections::BTreeMap::new();
+        for_strings(source, "SELECT body FROM rivers ORDER BY id", |body| {
+            let r: crate::atlas::rivers::River = serde_json::from_str(&body).map_err(invalid)?;
+            identities.register(&r.id, "river")?;
+            for n in r.nodes {
+                if let Some(p) = nodes.get(&n.id) {
+                    ensure(*p == n.point, "Ungültige Flussverbindung")?;
+                } else {
+                    identities.register(&n.id, "rnode")?;
+                    nodes.insert(n.id, n.point);
+                }
+            }
+            Ok(())
+        })?;
+    }
+    identities.read(source, "SELECT id FROM waters ORDER BY id", "water")?;
     let meta = pragma_rows(source, "SELECT singleton,next_identity FROM document_meta")?;
     use rusqlite::types::Value as SqlValue;
     let next = match meta.as_slice() {
         [row] => match row.as_slice() {
-            [SqlValue::Integer(1), SqlValue::Integer(n)] if *n > maximum && *n < i64::MAX => *n,
+            [SqlValue::Integer(1), SqlValue::Integer(n)]
+                if *n > identities.maximum && *n < i64::MAX =>
+            {
+                *n
+            }
             _ => return Err(invalid("Ungültiger Identitätszähler")),
         },
         _ => return Err(invalid("Ungültiger Identitätszähler")),

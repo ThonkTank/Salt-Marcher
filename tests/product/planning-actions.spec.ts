@@ -12,7 +12,7 @@ import {
   url,
 } from "../support/editor";
 
-for (const kind of ["road", "area", "population"] as const) {
+for (const kind of ["road", "population"] as const) {
   for (const finish of ["button", "enter", "right"] as const) {
     test(`${kind}: ${finish} commits the current plan once while preview is pending`, async ({
       page,
@@ -37,13 +37,12 @@ for (const kind of ["road", "area", "population"] as const) {
       } else {
         await page
           .getByRole("button", {
-            name: kind === "road" ? "Straße" : "Flächen",
+            name: "Straße",
             exact: true,
           })
           .click();
         await clickWorld(page, [0, 0]);
         await clickWorld(page, [140, 0]);
-        if (kind === "area") await clickWorld(page, [140, 60]);
       }
       await expect
         .poll(() => page.evaluate(() => !!window.atlasHeld))
@@ -52,8 +51,6 @@ for (const kind of ["road", "area", "population"] as const) {
       await expect(
         actions.getByRole("button", { name: "Übernehmen", exact: true }),
       ).toBeEnabled();
-      if (kind === "area")
-        await expect(actions.locator(".atlas-preview-summary")).toHaveCount(0);
       if (finish === "button")
         await actions
           .getByRole("button", { name: "Übernehmen", exact: true })

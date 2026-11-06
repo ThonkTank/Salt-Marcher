@@ -83,7 +83,7 @@ describe("shared Atlas wire errors", () => {
     for (const geometry of [
       { kind: "point", point: [NaN, 0] },
       { kind: "point", point: [Infinity, 0] },
-      { kind: "point", point: [5_000_001, 0] },
+      { kind: "point", point: [100_000_001, 0] },
       { kind: "bounds", bounds: [10, 0, 0, 10] },
       { kind: "path", points: [[0, 0]] },
       { kind: "path", points: Array.from({ length: 32_769 }, () => [0, 0]) },

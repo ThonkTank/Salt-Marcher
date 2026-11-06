@@ -1,26 +1,33 @@
+import { tileRequest } from "./lod";
 import { BudgetCache } from "./budgetCache";
+import { CACHE_BUDGETS } from "./cacheBudgets";
 import type { TerrainResponse } from "./generated/TerrainResponse";
 import type { TerrainArgs } from "./generated/TerrainArgs";
 import type { SurfaceTile } from "./generated/SurfaceTile";
 import type { TerrainPreview } from "./generated/TerrainPreview";
 import type { Bounds, WorldPoint } from "./model";
 
-export function terrainRequest(bounds: Bounds, scale: number): TerrainArgs {
-  let level = Math.max(0, Math.ceil(Math.log2(8 / (5 * scale))));
-  const keys = (level: number): [number, number][] => {
-    const width = 160 * 2 ** level,
-      out: [number, number][] = [];
-    const x0 = Math.floor(Math.max(-5e6, bounds[0]) / width),
-      x1 = Math.floor(Math.min(5e6, bounds[2]) / width);
-    const y0 = Math.floor(Math.max(-5e6, bounds[1]) / width),
-      y1 = Math.floor(Math.min(5e6, bounds[3]) / width);
-    if ((x1 - x0 + 1) * (y1 - y0 + 1) > 64) return [];
-    for (let y = y0; y <= y1; y++)
-      for (let x = x0; x <= x1; x++) out.push([x, y]);
-    return out;
-  };
-  while (level < 21 && !keys(level).length) level++;
-  return { level: Math.min(21, level), tiles: keys(Math.min(21, level)) };
+export function terrainRequest(bounds: Bounds, level: number): TerrainArgs {
+  return tileRequest(bounds, level, 160, 21);
+}
+
+// Published surfaces are immutable; the index dies with its response.
+const surfaceIndices = new WeakMap<
+  TerrainResponse,
+  Map<number, Map<number, SurfaceTile>>
+>();
+function surfaceIndex(view: TerrainResponse) {
+  let index = surfaceIndices.get(view);
+  if (!index) {
+    index = new Map();
+    for (const tile of view.tiles) {
+      let column = index.get(tile.x);
+      if (!column) index.set(tile.x, (column = new Map()));
+      column.set(tile.y, tile);
+    }
+    surfaceIndices.set(view, index);
+  }
+  return index;
 }
 export function heightAt(view: TerrainResponse, p: WorldPoint): number | null {
   const step = 5 * 2 ** view.level,
@@ -28,7 +35,7 @@ export function heightAt(view: TerrainResponse, p: WorldPoint): number | null {
     y = Math.floor(p[1] / step);
   const tx = Math.floor(x / 32),
     ty = Math.floor(y / 32),
-    tile = view.tiles.find((t) => t.x === tx && t.y === ty);
+    tile = surfaceIndex(view).get(tx)?.get(ty);
   if (!tile) return null;
   const dx = x - tx * 32,
     dy = y - ty * 32,
@@ -62,19 +69,85 @@ function paintTerrainRaw(
   preview?: TerrainPreview,
   waterOnly = false,
   relief = true,
+  localLevel?: number,
 ) {
+  if (waterOnly && localLevel === undefined) {
+    const source = preview?.surface ?? view;
+    for (const tile of source.tiles) {
+      const width = 160 * 2 ** source.level;
+      c.save();
+      c.beginPath();
+      c.rect(tile.x * width, tile.y * width, width, width);
+      for (const water of tile.waters ?? [])
+        for (const polygon of water.polygons)
+          for (const ring of [polygon.outer, ...polygon.holes]) {
+            ring.forEach((p, i) => (i ? c.lineTo(...p) : c.moveTo(...p)));
+            c.closePath();
+          }
+      c.clip("evenodd");
+      paintTerrainRaw(
+        c,
+        { ...source, tiles: [tile] },
+        scale,
+        false,
+        undefined,
+        true,
+        false,
+        0,
+      );
+      c.restore();
+    }
+    const width = 160 * 2 ** source.level;
+    for (const tile of source.tiles)
+      for (const water of tile.waters ?? []) {
+        c.save();
+        c.beginPath();
+        c.rect(tile.x * width, tile.y * width, width, width);
+        c.clip();
+        c.beginPath();
+        for (const polygon of water.polygons)
+          for (const ring of [polygon.outer, ...polygon.holes]) {
+            ring.forEach((p, i) =>
+              i ? c.lineTo(p[0], p[1]) : c.moveTo(p[0], p[1]),
+            );
+            c.closePath();
+          }
+        if (source.level > 0) {
+          c.fillStyle = "#86b8c6";
+          c.fill("evenodd");
+        } else {
+          c.clip("evenodd");
+          paintTerrainRaw(
+            c,
+            { ...source, tiles: [tile] },
+            scale,
+            false,
+            preview,
+            true,
+            false,
+            water.level,
+          );
+        }
+        c.restore();
+      }
+    return;
+  }
   const step = 5 * 2 ** view.level,
-    water = preview?.waterLevel ?? view.waterLevel;
+    water = localLevel ?? 0;
   const overrides = new Map(
-    preview?.points.map(([x, y, z]) => [`${x}:${y}`, z]),
+    (preview?.surface ? [] : preview?.points)?.map(([x, y, z]) => [
+      `${x}:${y}`,
+      z,
+    ]),
   );
   const interval = 5 * 2 ** Math.max(0, Math.ceil(Math.log2(0.4 / scale)));
-  const path = (v: Vertex[]) => {
-    c.beginPath();
+  const path = (v: Vertex[], reset = true) => {
+    if (reset) c.beginPath();
     v.forEach((p, i) => (i ? c.lineTo(p[0], p[1]) : c.moveTo(p[0], p[1])));
     c.closePath();
   };
   for (const tile of view.tiles) {
+    if (waterOnly) c.beginPath();
     const vertex = (x: number, y: number): Vertex => {
       const wx = (tile.x * 32 + x) * step,
         wy = (tile.y * 32 + y) * step;
@@ -146,23 +219,106 @@ function paintTerrainRaw(
           } else {
             const wet = clipped(tri, water);
             if (wet.length >= 3) {
-              path(wet);
-              c.fillStyle = "#86b8c6";
-              c.fill();
+              path(wet, false);
             }
           }
         }
       }
+    if (waterOnly) {
+      c.fillStyle = "#86b8c6";
+      c.fill();
+    }
   }
 }
 
 type Raster = {
   key: string;
+  baseKey: string;
+  neighbors: (SurfaceTile | undefined)[];
   land: HTMLCanvasElement;
   water: HTMLCanvasElement;
 };
 export class TerrainPainter {
-  private rasters = new BudgetCache<SurfaceTile, Raster>(32 * 1024 * 1024);
+  private contours = new BudgetCache<
+    SurfaceTile,
+    { key: string; segments: number[] }
+  >(CACHE_BUDGETS.contourGeometry.bytes, CACHE_BUDGETS.contourGeometry.entries);
+  paintContours(
+    c: CanvasRenderingContext2D,
+    view: TerrainResponse,
+    scale: number,
+    preview?: TerrainPreview,
+  ) {
+    if (preview) {
+      paintTerrainRaw(c, view, scale, true, preview, false, false);
+      return;
+    }
+    const step = 5 * 2 ** view.level;
+    const interval = 5 * 2 ** Math.max(0, Math.ceil(Math.log2(0.4 / scale)));
+    const key = `${view.level}:${interval}`;
+    c.lineWidth = 0.7 / scale;
+    c.strokeStyle = "#55674e80";
+    for (const tile of view.tiles) {
+      let entry = this.contours.get(tile);
+      if (!entry || entry.key !== key) {
+        const segments: number[] = [];
+        const vertex = (x: number, y: number): Vertex => [
+          (tile.x * 32 + x) * step,
+          (tile.y * 32 + y) * step,
+          tile.heights[y * 33 + x],
+        ];
+        for (let y = 0; y < 32; y++)
+          for (let x = 0; x < 32; x++) {
+            const a = vertex(x, y),
+              b = vertex(x + 1, y),
+              d = vertex(x, y + 1),
+              e = vertex(x + 1, y + 1);
+            for (const tri of [
+              [a, b, e],
+              [a, e, d],
+            ]) {
+              const lo = Math.min(...tri.map((p) => p[2]));
+              const hi = Math.max(...tri.map((p) => p[2]));
+              const every =
+                interval * Math.max(1, Math.ceil((hi - lo) / interval / 16));
+              for (
+                let level = Math.ceil(lo / every) * every;
+                level < hi;
+                level += every
+              ) {
+                const points: number[] = [];
+                for (let i = 0; i < 3; i++) {
+                  const p = tri[i],
+                    q = tri[(i + 1) % 3];
+                  if (p[2] < level !== q[2] < level) {
+                    const t = (level - p[2]) / (q[2] - p[2]);
+                    points.push(
+                      p[0] + t * (q[0] - p[0]),
+                      p[1] + t * (q[1] - p[1]),
+                    );
+                  }
+                }
+                if (points.length === 4) segments.push(...points);
+              }
+            }
+          }
+        entry = { key, segments };
+        this.contours.set(tile, entry, 128 + segments.length * 8);
+      }
+      const segments = entry.segments;
+      for (let i = 0; i < segments.length; i += 4) {
+        c.beginPath();
+        c.moveTo(segments[i], segments[i + 1]);
+        c.lineTo(segments[i + 2], segments[i + 3]);
+        c.stroke();
+      }
+    }
+    this.contours.trim();
+  }
+  private rasters = new BudgetCache<SurfaceTile, Raster>(
+    CACHE_BUDGETS.rasterTerrain.bytes,
+    CACHE_BUDGETS.rasterTerrain.entries,
+  );
   paint(
     c: CanvasRenderingContext2D,
     view: TerrainResponse,
@@ -194,7 +350,8 @@ export class TerrainPainter {
           ),
       ),
     );
-    const key = `${pixels}:${view.level}:${view.waterLevel}:${contours}`;
+    const baseKey = `${pixels}:${view.level}:${globalThis.devicePixelRatio || 1}`;
+    const key = `${baseKey}:${contours}:${contours ? scale : ""}`;
     const neighboringTiles = new Map(
       view.tiles.map((tile) => [`${tile.x}:${tile.y}`, tile]),
     );
@@ -205,13 +362,19 @@ export class TerrainPainter {
       return tile?.heights[(y - ty * 32) * 33 + x - tx * 32];
     };
     for (const tile of view.tiles) {
+      // Relief samples cross tile edges and corners. Presence matters as much as
+      // identity: adding or removing a neighbor changes the edge gradient.
+      const neighbors = [-1, 0, 1].flatMap((dy) =>
+        [-1, 0, 1].map((dx) =>
+          neighboringTiles.get(`${tile.x + dx}:${tile.y + dy}`),
+        ),
+      );
       let cached = this.rasters.get(tile);
-      // Keep the contour preference identical between the land and water passes.
       if (
         !cached ||
+        cached.baseKey !== baseKey ||
         (!waterOnly && cached.key !== key) ||
-        (waterOnly &&
-          !cached.key.startsWith(`${pixels}:${view.level}:${view.waterLevel}:`))
+        cached.neighbors.some((neighbor, i) => neighbor !== neighbors[i])
       ) {
         const make = (wet: boolean) => {
           const canvas = document.createElement("canvas");
@@ -278,49 +441,6 @@ export class TerrainPainter {
                 raster.data[at + 3] = 255;
               }
             context.putImageData(raster, 0, 0);
-          } else {
-            const raster = context.createImageData(pixels, pixels),
-              step = width / 32;
-            for (let y = 0; y < pixels; y++)
-              for (let x = 0; x < pixels; x++) {
-                const gx = ((x + 0.5) * 32) / pixels,
-                  gy = ((y + 0.5) * 32) / pixels,
-                  ix = Math.floor(gx),
-                  iy = Math.floor(gy),
-                  u = gx - ix,
-                  v = gy - iy,
-                  i = iy * 33 + ix;
-                const a = tile.heights[i],
-                  b = tile.heights[i + 1],
-                  d = tile.heights[i + 33],
-                  e = tile.heights[i + 34];
-                const z =
-                  u >= v
-                    ? a * (1 - u) + b * (u - v) + e * v
-                    : a * (1 - v) + e * u + d * (v - u);
-                const slope =
-                  Math.hypot(u >= v ? b - a : e - d, u >= v ? e - b : d - a) /
-                  step;
-                const coverage =
-                  slope < 1e-9
-                    ? z < view.waterLevel
-                      ? 1
-                      : 0
-                    : Math.max(
-                        0,
-                        Math.min(
-                          1,
-                          0.5 +
-                            ((view.waterLevel - z) * pixels) / width / slope,
-                        ),
-                      );
-                const at = (y * pixels + x) * 4;
-                raster.data[at] = 134;
-                raster.data[at + 1] = 184;
-                raster.data[at + 2] = 198;
-                raster.data[at + 3] = 255 * coverage;
-              }
-            context.putImageData(raster, 0, 0);
           }
           context.setTransform(
             pixels / width,
@@ -330,19 +450,26 @@ export class TerrainPainter {
             -tile.x * pixels,
             -tile.y * pixels,
           );
-          if (!wet)
-            paintTerrainRaw(
-              context,
-              { ...view, tiles: [tile] },
-              scale,
-              contours,
-              undefined,
-              wet,
-              false,
-            );
+          paintTerrainRaw(
+            context,
+            { ...view, tiles: [tile] },
+            scale,
+            false,
+            undefined,
+            wet,
+            false,
+          );
+          if (!wet && contours)
+            this.paintContours(context, { ...view, tiles: [tile] }, scale);
           return canvas;
         };
-        cached = { key, land: make(false), water: make(true) };
+        cached = {
+          key,
+          baseKey,
+          neighbors,
+          land: make(false),
+          water: make(true),
+        };
         this.rasters.set(tile, cached, cached.land.width ** 2 * 8);
         this.rasters.trim();
       }

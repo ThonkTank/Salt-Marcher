@@ -1,15 +1,27 @@
-import { terrainRequest } from "./terrainView";
+import { decideLod, viewScale, zoomAt, type LodDecision } from "./lod";
+import { prepareCanvasScene } from "./canvasScene";
+import { useRivers } from "./useRivers";
+import { useRegions } from "./useRegions";
+import { groundColorAt } from "./groundView";
+import { EDIT_SCALE } from "./cityView";
 import {
-  cityLevel,
-  EDIT_SCALE,
-  overviewFeatures,
-  sceneFeatures,
-} from "./cityView";
-import { editorView } from "./editorView";
+  brushCursor,
+  terrainBrushInfo,
+  editorView,
+  editorScene,
+  editorInput,
+  canEdit,
+} from "./editorView";
 import { parcelIntent, type BoundSource } from "./parcelPlanning";
 import type { WorldPoint } from "./model";
 import { useCamera } from "./useCamera";
-import { useEffect, useRef, useState, type ComponentProps } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ComponentProps,
+} from "react";
 import type { ToolOptions } from "./ToolOptions";
 import type { Inspector } from "./Inspector";
 import type { AtlasClient } from "./client";
@@ -27,9 +39,13 @@ import {
 } from "./model";
 import type { CanvasCommand } from "./interaction";
 import { useEditorSelection } from "./useEditorSelection";
-import { useEditorTools, planSelectionDelete } from "./useEditorTools";
+import {
+  useEditorTools,
+  planSelectionDelete,
+  resizeBrushDiameter,
+} from "./useEditorTools";
 import { useCanvasInput } from "./useCanvasInput";
-import { contextKey, parcelVisibility, resolvedParcel } from "./parcelEditor";
+import { contextKey } from "./parcelEditor";
 import { useEditorWorkflow } from "./useEditorWorkflow";
 import { workflowPointer, workflowView } from "./editorWorkflow";
 import { sameVersion } from "./documentVersion";
@@ -37,16 +53,25 @@ import { sameVersion } from "./documentVersion";
 /** Binds document, workflow and selection lifetimes to the editor view. */
 export function useAtlasEditor(client: AtlasClient) {
   const session = useDocumentSession(client),
-    [camera, setCameraState] = useState<Camera>({ x: 160, y: 120, scale: 3.2 }),
+    [physicalCamera, setCameraState] = useState<Camera>({
+      x: 160,
+      y: 120,
+      scale: 3.2,
+    }),
     [size, setSize] = useState({ width: 800, height: 600 }),
     [lower, setLower] = useState(true);
+  const lodRef = useRef<LodDecision | undefined>(undefined);
+  const lod = useMemo(
+    () => (lodRef.current = decideLod(physicalCamera.scale, lodRef.current)),
+    [physicalCamera.scale],
+  );
+  const camera = physicalCamera;
   const selection = useEditorSelection({
     sessionId: session.status?.sessionId,
     recoveryEpoch: session.recoveryEpoch,
     cleanup: () => {
       cancelFit();
       abortPointer();
-      releaseCapture();
       workflow.controller.cancel();
     },
   });
@@ -65,6 +90,7 @@ export function useAtlasEditor(client: AtlasClient) {
     context,
     floor,
     setCameraState,
+    size,
   });
   const { cancelFit, setCamera } = navigation;
   const [hoverReason, setHoverReason] = useState<{
@@ -77,8 +103,6 @@ export function useAtlasEditor(client: AtlasClient) {
     (size.width - camera.x) / camera.scale,
     (size.height - camera.y) / camera.scale,
   ];
-  const cityLod = useRef<number | undefined>(undefined);
-  cityLod.current = cityLevel(camera.scale, cityLod.current);
   const reads = usePresentation({
       client,
       status: session.status,
@@ -86,50 +110,34 @@ export function useAtlasEditor(client: AtlasClient) {
       editorContext: context,
       selectedId: selected,
       floor,
-      detailEnabled: camera.scale >= EDIT_SCALE,
+      detailEnabled: lod.policy.exact,
       includeLower: lower,
-      cityLevel:
-        !interior && camera.scale < EDIT_SCALE ? cityLod.current : null,
-      terrainScale: camera.scale,
+      cityLevel: !interior && !lod.policy.exact ? lod.cityLevel : null,
+      terrainLevel: lod.terrainLevel,
+      groundLevel: lod.groundLevel,
     }),
     presentation = reads.value;
-  const objects = presentation?.scene.objects ?? [],
-    currentScene =
-      presentation &&
-      contextKey(presentation.context) === contextKey(context) &&
-      presentation.selectedId === selected
-        ? presentation.scene
-        : undefined,
-    selectedObject = currentScene?.objects.find((o) => o.id === selected),
-    active = currentScene?.contextState.houseId ?? "",
-    house = currentScene?.objects.find(
-      (o): o is House => o.kind === "house" && o.id === active,
-    ),
-    parcel = currentScene ? resolvedParcel(currentScene, "context") : undefined,
-    selectionParcel = currentScene
-      ? resolvedParcel(currentScene, "selection")
-      : undefined,
-    detail = currentScene ? presentation?.detail : null;
-  const visibility = parcelVisibility(currentScene, context, tool);
+  const sceneState = editorScene(presentation, selection.state);
+  const {
+    objects,
+    scene: currentScene,
+    selectedObject,
+    active,
+    house,
+    selectionParcel,
+    detail,
+    visibility,
+  } = sceneState;
   const fitPending = navigation.pending;
   useEffect(() => {
-    if (presentation) session.acknowledge(presentation.scene.status);
-  }, [presentation]);
+    if (presentation && reads.fresh)
+      session.acknowledge(presentation.scene.status);
+  }, [presentation, reads.fresh]);
   useEffect(() => {
     cancelFit();
     abortPointer();
   }, [size.width, size.height, cancelFit]);
-  const editable =
-    (camera.scale >= EDIT_SCALE ||
-      (!interior &&
-        (tool === "road" || tool === "select" || tool === "terrain"))) &&
-    reads.fresh &&
-    (!interior || camera.scale >= EDIT_SCALE) &&
-    !session.exclusive &&
-    !session.uncertain &&
-    (session.pending === 0 ||
-      ["draw", "erase", "assign", "opening", "stairs"].includes(tool) ||
-      (interior && tool === "select"));
+  const editable = canEdit(tool, interior, lod, reads.fresh, session);
   const workflow = useEditorWorkflow({
     gate: session.getGate,
     context: () => `${contextKey(context)}:${floor}`,
@@ -139,7 +147,7 @@ export function useAtlasEditor(client: AtlasClient) {
     commitExact: session.commitExact,
     queue: session.commit,
     read: async (id, version, wanted) => {
-      const roadRead = !interior && camera.scale < EDIT_SCALE;
+      const roadRead = !interior && !lod.policy.exact;
       const scene = roadRead
         ? await scheduledRead(client, "roadHeader", { roadId: id }, wanted)
         : await scheduledRead(
@@ -158,8 +166,10 @@ export function useAtlasEditor(client: AtlasClient) {
         );
       return scene;
     },
-    completed: (intent, result) =>
-      selectEvent({ type: "exactCompleted", intent, result }),
+    completed: (intent, result) => {
+      if (intent.type === "riverEdit") rivers.completed(intent, result);
+      else selectEvent({ type: "exactCompleted", intent, result });
+    },
     error: session.setError,
   });
   const workflowDisplay = workflowView(workflow.state);
@@ -176,6 +186,7 @@ export function useAtlasEditor(client: AtlasClient) {
   } = workflowDisplay;
   const canAccept = workflow.controller.canAccept();
   const tools = useEditorTools({
+    viewScale: camera.scale,
     controller: workflow.controller,
     select: selectEvent,
     cancelInteraction: changeContext,
@@ -184,16 +195,7 @@ export function useAtlasEditor(client: AtlasClient) {
     pending: session.pending,
     draft,
   });
-  const {
-    material,
-    roadWidth,
-    opening,
-    travel,
-    settings,
-    populateRoad,
-    setDraft,
-    chooseTool,
-  } = tools;
+  const { settings, setDraft, chooseTool } = tools;
   const setPlanSelection = (key: string | null) =>
     workflow.controller.dispatch({ type: "selectPlanParcel", key });
   const [hoverPoint, setHoverPoint] = useState<WorldPoint | null>(null);
@@ -207,11 +209,11 @@ export function useAtlasEditor(client: AtlasClient) {
     settings,
     objects,
     camera,
+    lod,
     hoverPoint,
   });
   const {
     displayPreview,
-    planning,
     layout,
     planItem,
     propertyParcel,
@@ -219,6 +221,27 @@ export function useAtlasEditor(client: AtlasClient) {
     parcelOverlay,
     visualDraft,
   } = view;
+  const regions = useRegions(
+    reads.loader,
+    client,
+    session.status,
+    bounds,
+    camera,
+    tool === "regions" && !interior,
+    (intent) => workflow.controller.beginIntent(intent),
+    changeContext,
+  );
+  const rivers = useRivers(
+    reads.loader,
+    client,
+    session.status,
+    bounds,
+    camera,
+    lod,
+    tool === "river" && !interior,
+    editable,
+    workflow.controller,
+  );
   const editPlanParcel = (
     patch: Partial<BoundSource> & { excluded?: boolean },
   ) => {
@@ -230,55 +253,27 @@ export function useAtlasEditor(client: AtlasClient) {
       ),
     });
   };
-  const { releaseCapture, abortPointer, ...canvasInput } = useCanvasInput({
+  const { abortPointer, ...canvasInput } = useCanvasInput({
     host,
     canvas,
     controller: workflow.controller,
-    snapshot: () => ({
-      workflow: workflow.controller.getSnapshot(),
-      camera,
-      editable,
-      terrainView: terrainRequest(bounds, camera.scale),
-      brush: tools.brush,
-      scenery: tools.scenery,
-      scenerySeed: (session.status?.revision ?? 0) >>> 0,
-      roughness: tools.roughness,
-      overviewRoads: presentation?.overview
-        ? [
-            ...overviewFeatures(presentation.overview),
-            ...(currentScene ? sceneFeatures(currentScene) : []),
-          ]
-        : undefined,
-      deletion: !!deletion,
-      tool,
-      selected,
-      selectedObject,
-      context,
-      floor,
-      room,
-      connection,
-      scene: currentScene,
-      detail,
-      house,
-      parcel,
-      selectionParcel,
-      boundaries: visibility.boundaries,
-      roadWidth,
-      material,
-      opening,
-      travel,
-      populateRoad,
-      settings,
-      planning,
-      stalePlanParcels:
-        !preview && (drawing || population) && displayPreview
-          ? (displayPreview.valid
-              ? displayPreview.objects
-              : displayPreview.proposedObjects
-            ).filter((o): o is Parcel => o.kind === "parcel")
-          : [],
-    }),
-    dispatch: (command) => dispatchInput(command),
+    snapshot: () =>
+      editorInput({
+        selection: selection.state,
+        scene: sceneState,
+        tools: tools.input,
+        view,
+        presentation,
+        camera,
+        lod,
+        bounds,
+        editable,
+        deletion: !!deletion,
+        revision: session.status?.revision ?? 0,
+        regions,
+        river: rivers.input,
+      }),
+    dispatch: dispatchInput,
     setSize,
     setHover: setHoverReason,
     setHoverPoint,
@@ -297,6 +292,10 @@ export function useAtlasEditor(client: AtlasClient) {
   }, [reads.fresh, currentScene, context, selected, selectEvent]);
   const apply = (intent: Intent) => workflow.controller.beginIntent(intent);
   const finish = () => {
+    if (tool === "river") {
+      void rivers.accept();
+      return;
+    }
     if (!deletion) void workflow.controller.accept(false);
   };
   const openHouse = (house: House) =>
@@ -324,6 +323,10 @@ export function useAtlasEditor(client: AtlasClient) {
     );
   };
   const deleteSelection = () => {
+    if (tool === "river") {
+      rivers.remove();
+      return;
+    }
     if (deletion || !editable) return;
     const action = planSelectionDelete({
       selectedObject,
@@ -337,8 +340,36 @@ export function useAtlasEditor(client: AtlasClient) {
       if (action.clear) selectEvent({ type: action.clear });
     }
   };
-  const dispatchInput = (command: CanvasCommand) => {
+  function dispatchInput(command: CanvasCommand) {
     switch (command.kind) {
+      case "riverSelection":
+        rivers.select(command.id);
+        break;
+      case "riverDraft":
+        workflow.controller.editRiver(command.intent, command.pointer);
+        rivers.setNode(command.node);
+        break;
+      case "regionPick":
+        regions.pick(command.point, command.label);
+        break;
+      case "groundSize": {
+        if (workflowPointer(workflow.controller.getSnapshot())) break;
+        if (tool === "regions")
+          regions.setDiameter(
+            resizeBrushDiameter(regions.diameter, command.factor),
+          );
+        else tools.resizeBrush(tool, command.factor);
+        break;
+      }
+      case "groundPick": {
+        const color = groundColorAt(presentation?.ground, command.point);
+        if (color) {
+          tools.changeGround({ ...tools.ground, color, mode: "paint" });
+          tools.changeGroundPicker(false);
+        }
+        break;
+      }
+
       case "planParcel":
         setPlanSelection(command.key);
         break;
@@ -354,28 +385,15 @@ export function useAtlasEditor(client: AtlasClient) {
       case "intent":
         void apply(command.intent);
         break;
-      case "nodeSelection":
-        selectEvent({ type: "pointerNode", value: command.value });
-        break;
-      case "roomSelection":
-        selectEvent({ type: "pointerRoom", id: command.room });
-        break;
-      case "connectionSelection":
-        selectEvent({ type: "pointerConnection", id: command.id });
-        break;
-      case "selectRoad":
-        selectEvent({ type: "selectObject", id: command.id });
-        break;
-      case "select":
-        select(command.object);
-        break;
-      case "openHouse":
-        openHouse(command.house);
-        break;
-      case "openParcel":
-        openParcel(command.parcel);
+      case "selection":
+        selectEvent(command.event);
         break;
       case "cancelEditor":
+        if (tool === "river") rivers.cancel();
+        if (tools.groundPicker) {
+          tools.changeGroundPicker(false);
+          break;
+        }
         if (workflowPointer(workflow.controller.getSnapshot())) abortPointer();
         else changeContext();
         break;
@@ -391,9 +409,6 @@ export function useAtlasEditor(client: AtlasClient) {
       case "document":
         void session.document(command.kindOfDocument);
         break;
-      case "floor":
-        selectEvent({ type: "stepFloor", delta: command.delta });
-        break;
       case "tool":
         chooseTool(command.value);
         break;
@@ -401,45 +416,71 @@ export function useAtlasEditor(client: AtlasClient) {
         setCamera(command.camera);
         break;
     }
-  };
+  }
   const toolOptionsProps = {
     tools,
-    waterLevel: presentation?.terrain?.waterLevel ?? 0,
-    onWaterLevel: (level: number) => {
-      void apply({
-        type: "setWaterLevel",
-        level,
-        view: terrainRequest(bounds, camera.scale),
-      });
-    },
     tool,
     extending: draft?.kind === "extendRoad",
+    terrainBrushInfo: terrainBrushInfo(
+      tool,
+      workflowPointer(workflow.state),
+      camera.scale,
+      tools.brush.radius,
+      lod.authorTerrainLevel,
+    ),
   } satisfies ComponentProps<typeof ToolOptions>;
+  const canvasPreview = rivers.preview ?? displayPreview ?? session.committed;
+  const scene = useMemo(
+    () =>
+      prepareCanvasScene(presentation, canvasPreview, selected, visibility, {
+        rivers: interior ? [] : rivers.views,
+        regions: interior ? [] : regions.regions,
+      }),
+    [
+      presentation,
+      canvasPreview,
+      selected,
+      JSON.stringify(visibility),
+      interior,
+      rivers.views,
+      regions.regions,
+    ],
+  );
   const canvasProps = {
+    scene,
+    selectedRiver: tool === "river" ? rivers.selected : "",
+    riverHandles: rivers.handles,
+    riverPreview: !!rivers.draft,
+    regionSummaries: regions.displaySummaries,
+    regionMarkerRanks: regions.markerRanks,
+    selectedRegion: tool === "regions" ? regions.selected : "",
     terrainContours: tools.contours,
-    brushCursor:
-      (tool === "terrain" || tool === "scenery") && hoverPoint
-        ? {
-            point: hoverPoint,
-            height: tool === "terrain",
-            radius:
-              tool === "scenery" ? tools.scenery.radius : tools.brush.radius,
-          }
-        : null,
+    brushCursor: brushCursor(
+      tool,
+      workflowPointer(workflow.state),
+      hoverPoint,
+      camera.scale,
+      {
+        region: regions.diameter / 2,
+        ground: tools.ground.diameter / 2,
+        scenery: tools.scenery.radius,
+        terrain: tools.brush.radius,
+      },
+    ),
     canvasRef: canvas,
     camera,
+    lod,
     size,
     presentation,
     selected,
     room,
     connection,
-    preview: displayPreview ?? session.committed,
+    preview: canvasPreview,
     issue,
     draft: visualDraft,
     parcelOverlay,
     automaticCurve: !!drawing,
     guide,
-    visibility,
     ...canvasInput,
   } satisfies ComponentProps<typeof AtlasCanvas>;
   const inspectorProps = {
@@ -467,7 +508,7 @@ export function useAtlasEditor(client: AtlasClient) {
     roughening: tools.roughening,
     onRoughness: tools.changeRoughness,
     onVariation: tools.newVariation,
-    overview: !interior && camera.scale < EDIT_SCALE,
+    overview: !interior && !lod.policy.exact,
     onExtend: tools.beginExtension,
     onDeleteSelection: deleteSelection,
     onDeleteObject: requestDeleteObject,
@@ -497,38 +538,36 @@ export function useAtlasEditor(client: AtlasClient) {
       updateSettings: tools.changePopulationSettings,
     },
     session,
-    parcelProperties:
-      camera.scale < EDIT_SCALE
-        ? null
-        : planItem
+    parcelProperties: !lod.policy.exact
+      ? null
+      : planItem
+        ? {
+            source: planItem,
+            excluded: planItem.excluded,
+            onChange: editPlanParcel,
+            onExcluded: (excluded: boolean) => editPlanParcel({ excluded }),
+            onBack: () => setPlanSelection(null),
+            disabled: !preview && !settings.layout,
+          }
+        : propertyParcel?.source.kind === "road" &&
+            !drawing &&
+            !population &&
+            tool === "select"
           ? {
-              source: planItem,
-              excluded: planItem.excluded,
-              onChange: editPlanParcel,
-              onExcluded: (excluded: boolean) => editPlanParcel({ excluded }),
-              onBack: () => setPlanSelection(null),
-              disabled: !preview && !settings.layout,
+              source: propertyParcel.source,
+              disabled: !editable,
+              onChange: (patch: Partial<BoundSource>) => {
+                if (propertyParcel.source.kind === "road")
+                  void apply(
+                    parcelIntent(propertyParcel, {
+                      ...propertyParcel.source,
+                      ...patch,
+                    }),
+                  );
+              },
             }
-          : propertyParcel?.source.kind === "road" &&
-              !drawing &&
-              !population &&
-              tool === "select"
-            ? {
-                source: propertyParcel.source,
-                disabled: !editable,
-                onChange: (patch: Partial<BoundSource>) => {
-                  if (propertyParcel.source.kind === "road")
-                    void apply(
-                      parcelIntent(propertyParcel, {
-                        ...propertyParcel.source,
-                        ...patch,
-                      }),
-                    );
-                },
-              }
-            : null,
-    excludedParcels:
-      camera.scale < EDIT_SCALE ? [] : layout.filter((p) => p.excluded),
+          : null,
+    excludedParcels: !lod.policy.exact ? [] : layout.filter((p) => p.excluded),
     selectPlanParcel: setPlanSelection,
 
     deletion,
@@ -544,6 +583,20 @@ export function useAtlasEditor(client: AtlasClient) {
     presentation,
     floor,
     camera,
+    atlasLevel: lod.atlasLevel,
+    lod,
+    zoomToLevel: (level: number) =>
+      !workflowPointer(workflow.controller.getSnapshot()) &&
+      setCamera(
+        zoomAt(
+          camera,
+          [
+            (size.width / 2 - camera.x) / camera.scale,
+            (size.height / 2 - camera.y) / camera.scale,
+          ],
+          viewScale(level),
+        ),
+      ),
     zoomToEdit: () =>
       setCamera({
         scale: EDIT_SCALE,
@@ -566,6 +619,8 @@ export function useAtlasEditor(client: AtlasClient) {
     workflow,
     canvasProps,
     toolOptionsProps,
+    regions,
+    rivers,
     inspectorProps,
   };
 }

@@ -63,9 +63,9 @@ fn rough_extensions_preserve_existing_cubics_at_both_ends() {
         let result = edit(&mut app, "commit", input());
         let old: Road = serde_json::from_value(result["objects"][0].clone()).unwrap();
         let (point, handle) = if end == "start" {
-            ([-300, 0], [-100, 0])
+            ([-100000, 0], [-100, 0])
         } else {
-            ([600, 0], [400, 0])
+            ([100000, 0], [400, 0])
         };
         let action = json!({"type":"extendRoad","roadId":old.id,"end":end,"nodes":[{"point":point,"incoming":null,"outgoing":null}],"endpointHandle":handle,"population":null,"roughness":{"amount":0.5,"seed":2}});
         edit(&mut app, "commit", action);
@@ -86,18 +86,29 @@ fn rough_extensions_preserve_existing_cubics_at_both_ends() {
     }
 }
 #[test]
-fn roughness_limits_are_atomic_and_road_header_reads_no_cells() {
+fn long_roughness_succeeds_and_road_header_reads_no_cells() {
     let mut app = AtlasApplication::new().unwrap();
     let mut action = input();
     action["road"]["nodes"][1]["point"] = json!([100000, 0]);
-    let revision = app.status().revision;
     let preview = edit(&mut app, "preview", action.clone());
-    assert_eq!(preview["valid"], false);
-    assert!(app
-        .request("commit", json!({"version":app.status(),"intent":action}))
-        .is_err());
-    assert_eq!(app.status().revision, revision);
-    let result = edit(&mut app, "commit", input());
+    assert_eq!(preview["valid"], true);
+    let result = edit(&mut app, "commit", action);
+    assert_eq!(preview["objects"], result["objects"]);
+    let road: Road = serde_json::from_value(result["objects"][0].clone()).unwrap();
+    assert!(road.nodes.len() > 2 && road.nodes.len() <= 257);
+    assert!(road.path.iter().any(|p| p[1].abs() > 0.1));
+    history(&mut app, false);
+    assert!(app.scene_header(&road.id).unwrap().is_none());
+    history(&mut app, true);
+    assert_eq!(app.road(&road.id).unwrap(), road);
+    let path = std::env::temp_dir().join(format!(
+        "atlas-long-roughness-{}.saltatlas",
+        std::process::id()
+    ));
+    app.save(&path).unwrap();
+    app.open(&path).unwrap();
+    assert_eq!(app.road(&road.id).unwrap(), road);
+    std::fs::remove_file(path).unwrap();
     let id = result["objects"][0]["id"].as_str().unwrap();
     app.db.flush_prepared_statement_cache();
     app.db
@@ -112,4 +123,60 @@ fn roughness_limits_are_atomic_and_road_header_reads_no_cells() {
         }));
     let header = app.request("roadHeader", json!({"roadId":id})).unwrap();
     assert_eq!(header["objects"], result["objects"]);
+}
+
+#[test]
+fn roughness_scales_across_lengths_widths_seeds_and_amounts() {
+    for length in [30.0, 100_000.0] {
+        for width in [2, 16, 100] {
+            for seed in [1, 42] {
+                for amount in [0.0, 0.33, 1.0] {
+                    let mut app = AtlasApplication::new().unwrap();
+                    let mut action = input();
+                    action["road"]["width"] = json!(width);
+                    action["road"]["nodes"] = json!([
+                        {"point":[0,0],"incoming":null,"outgoing":[length/6.0,0]},
+                        {"point":[length/2.0,0],"incoming":[length/3.0,0],"outgoing":[length*2.0/3.0,0]},
+                        {"point":[length,0],"incoming":[length*5.0/6.0,0],"outgoing":null}]);
+                    action["roughness"] = json!({"amount":amount,"seed":seed});
+                    let preview = edit(&mut app, "preview", action.clone());
+                    let result = edit(&mut app, "commit", action);
+                    assert_eq!(preview["objects"], result["objects"]);
+                    let road: Road = serde_json::from_value(result["objects"][0].clone()).unwrap();
+                    assert!(road.nodes.len() <= 257);
+                    for point in [[0.0, 0.0], [length / 2.0, 0.0], [length, 0.0]] {
+                        assert!(road.nodes.iter().any(|n| n.point == point));
+                    }
+                }
+            }
+        }
+    }
+}
+
+#[test]
+fn repeated_roughening_reserves_capacity_and_eventually_is_noop() {
+    let mut app = AtlasApplication::new().unwrap();
+    let mut action = input();
+    action["road"]["nodes"][1]["point"] = json!([100000, 0]);
+    let result = edit(&mut app, "commit", action);
+    let mut old: Road = serde_json::from_value(result["objects"][0].clone()).unwrap();
+    for _ in 0..12 {
+        let action =
+            json!({"type":"roughenRoad","roadId":old.id,"roughness":{"amount":0.33,"seed":17}});
+        let result = edit(&mut app, "commit", action);
+        let new = app.road(&old.id).unwrap();
+        assert!(new.nodes.len() <= old.nodes.len() + (512 - old.nodes.len()) / 2);
+        for node in &old.nodes {
+            assert_eq!(
+                new.nodes.iter().find(|n| n.id == node.id).unwrap().point,
+                node.point
+            );
+        }
+        if result["changed"] == false {
+            assert_eq!(new, old);
+            return;
+        }
+        old = new;
+    }
+    panic!("repeated roughening must settle within the fixed budget");
 }

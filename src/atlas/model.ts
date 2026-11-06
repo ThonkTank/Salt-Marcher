@@ -43,13 +43,13 @@ export type ScreenPoint = Point<"screen">;
 export type WorldPoint = Point<"world">;
 export type LocalPoint = Point<"local">;
 export type Bounds = WireInteriorTileResponse["bounds"];
-export type Node = Omit<WireNode, "point" | "incoming" | "outgoing"> & {
+type Node = Omit<WireNode, "point" | "incoming" | "outgoing"> & {
   point: WorldPoint;
   incoming: WorldPoint | null;
   outgoing: WorldPoint | null;
 };
 export type PopulationSettings = WirePopulationSettings;
-export type PopulationRecipe = WirePopulationRecipe;
+type PopulationRecipe = WirePopulationRecipe;
 export type House = Omit<
   Extract<WireSceneObject, { kind: "house" }>,
   "contours" | "occupancyContours"
@@ -158,7 +158,7 @@ export type Preview =
 type RefineDiagnostic<T> = T extends { point: CoordinatePoint }
   ? Omit<T, "point"> & { point: WorldPoint }
   : T;
-export type GenerationDiagnostic = RefineDiagnostic<WireGenerationDiagnostic>;
+type GenerationDiagnostic = RefineDiagnostic<WireGenerationDiagnostic>;
 
 export const defaultPopulation: PopulationSettings = {
   side: "both",
@@ -208,6 +208,15 @@ export function contains(rings: [number, number][][], p: [number, number]) {
         hit = !hit;
     }
   return hit;
+}
+export function containsPolygon(
+  polygon: { outer: WorldPoint[]; holes: WorldPoint[][] },
+  point: WorldPoint,
+) {
+  return (
+    contains([polygon.outer], point) &&
+    !polygon.holes.some((hole) => contains([hole], point))
+  );
 }
 export function hitObject(o: MapObject, p: WorldPoint, tolerance = 0) {
   if (o.kind === "house") return contains(o.contours, toLocal(p, o.transform));
@@ -268,9 +277,9 @@ export function interiorBounds(b: Bounds, t: Transform): Bounds {
     Math.ceil(Math.max(...points.map((p) => p[1]))) + 1,
   ];
 }
-export const INTERIOR_TILE_SIZE = 128;
+const INTERIOR_TILE_SIZE = 128;
 const INTERIOR_QUERY_LIMIT = 1_000_001;
-export type InteriorTile = {
+type InteriorTile = {
   x: number;
   y: number;
   core: Bounds;

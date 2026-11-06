@@ -1,3 +1,4 @@
+import { status, workflowObjects } from "../../tests/support/atlasFixtures";
 import { it, expect } from "vitest";
 import {
   captureOperation,
@@ -14,10 +15,6 @@ import type {
 import {
   defaultPopulation,
   toWorld,
-  type Road,
-  type Parcel,
-  type House,
-  type Status,
   type Scene,
   type MapObject,
 } from "./model";
@@ -28,73 +25,7 @@ import {
   editRoadDraft,
 } from "./roadDraft";
 import { parcelTransform } from "./parcelEditor";
-const status = (revision = 0): Status => ({
-  sessionId: "test-session",
-  revision,
-  path: null,
-  dirty: false,
-  canUndo: false,
-  canRedo: false,
-  changes: null,
-});
-const road: Road = {
-  kind: "road",
-  id: "road-1",
-  name: "Test",
-  width: 10,
-  material: "earth",
-  nodes: [
-    { id: "node-2", point: [0, 0], incoming: null, outgoing: null },
-    { id: "node-3", point: [80, 0], incoming: null, outgoing: null },
-  ],
-  path: [
-    [0, 0],
-    [80, 0],
-  ],
-  sections: [{ id: "section-4", populatedSides: [] }],
-  edgeSections: ["section-4"],
-  populationRecipe: null,
-};
-const parcel: Parcel = {
-  kind: "parcel",
-  id: "parcel-5",
-  source: { kind: "detached" },
-  polygon: [
-    [-20, -20],
-    [60, -20],
-    [60, 100],
-    [-20, 100],
-  ],
-  frame: { x: 10, y: 20, angle: 0.37 },
-};
-const house: House = {
-  kind: "house",
-  importantPlace: false,
-  foundation: { height: 1, transition: 10 },
-  id: "house-6",
-  name: "Haus",
-  roof: "#888888",
-  placement: {
-    kind: "parcel",
-    parcelId: parcel.id,
-    gridPose: { xCells: -2, yCells: 1, quarterTurns: 0 },
-  },
-  transform: parcelTransform(parcel.frame, {
-    xCells: -2,
-    yCells: 1,
-    quarterTurns: 0,
-  }),
-  contours: [
-    [
-      [0, 0],
-      [2, 0],
-      [2, 2],
-      [0, 2],
-    ],
-  ],
-  occupancyContours: [],
-  occupancyBounds: [0, 0, 10, 10],
-};
+const { road, parcel, house } = workflowObjects();
 
 const scene = (
   objects: MapObject[] = [road, parcel, house],

@@ -1,34 +1,20 @@
+import {
+  tileRequest,
+  MIN_WORLD_SCALE,
+  DETAIL_SCALE,
+  viewScale,
+  zoomAt,
+} from "./lod";
 import type { Bounds, Camera, Scene } from "./model";
 import type { MapFeature } from "./generated/MapFeature";
 import type { MapTile } from "./generated/MapTile";
 import { toWorld } from "./model";
 
-export const MIN_CITY_SCALE = 0.000064;
-export const EDIT_SCALE = 1.28;
+export const MIN_CITY_SCALE = MIN_WORLD_SCALE;
+export const EDIT_SCALE = DETAIL_SCALE;
 export type CityView = { level: number; tiles: MapTile[] };
-export function cityLevel(scale: number, previous?: number) {
-  const ideal = Math.max(0, Math.min(20, Math.floor(Math.log2(1 / scale))));
-  if (previous !== undefined) {
-    const pixels = 16 * 2 ** previous * scale;
-    if (pixels >= 7.2 && pixels <= 17.6) return previous;
-  }
-  return ideal;
-}
-export function cityTiles(bounds: Bounds, level: number): [number, number][] {
-  const size = 512 * 2 ** level;
-  const result: [number, number][] = [];
-  for (
-    let x = Math.floor(bounds[0] / size);
-    x <= Math.floor(bounds[2] / size);
-    x++
-  )
-    for (
-      let y = Math.floor(bounds[1] / size);
-      y <= Math.floor(bounds[3] / size);
-      y++
-    )
-      result.push([x, y]);
-  return result;
+export function cityRequest(bounds: Bounds, level: number) {
+  return tileRequest(bounds, level, 512, 20);
 }
 export function sceneFeatures(scene: Scene): MapFeature[] {
   return scene.objects.flatMap((o): MapFeature[] => {
@@ -93,12 +79,11 @@ export function overviewFeatures(view: CityView): MapFeature[] {
     ).values(),
   ];
 }
-export function zoomIntoCity(camera: Camera, point: [number, number]): Camera {
-  const scale =
-    camera.scale < 0.064 ? 0.064 : camera.scale < 0.32 ? 0.32 : EDIT_SCALE;
-  return {
-    scale,
-    x: camera.x + point[0] * (camera.scale - scale),
-    y: camera.y + point[1] * (camera.scale - scale),
-  };
+export function zoomIntoCity(
+  camera: Camera,
+  point: [number, number],
+  level: number,
+): Camera {
+  const scale = Math.min(EDIT_SCALE, viewScale(Math.max(2, level - 1)));
+  return zoomAt(camera, point, Math.max(camera.scale, scale));
 }

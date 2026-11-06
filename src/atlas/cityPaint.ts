@@ -1,9 +1,11 @@
+import type { LodDecision } from "./lod";
 import { overviewFeatures, type CityView } from "./cityView";
 import type { MapFeature } from "./generated/MapFeature";
 export function paintCity(
   c: CanvasRenderingContext2D,
   view: CityView,
   scale: number,
+  policy: LodDecision["policy"],
   exactRoadId?: string,
   paintWater?: () => void,
 ): MapFeature[] {
@@ -50,9 +52,14 @@ export function paintCity(
     for (const f of features) {
       if (f.kind !== kind || (kind === "road" && f.id === exactRoadId))
         continue;
-      if (kind === "house" && (scale < 0.064 || Math.sqrt(f.rank) * scale < 6))
+      if (kind === "house" && (!policy.roofs || Math.sqrt(f.rank) * scale < 6))
         continue;
-      if (kind === "road" && scale < 0.064 && f.width < 12) continue;
+      if (
+        kind === "road" &&
+        (f.width < policy.minRoadWidth ||
+          (f.rank / Math.max(1, f.width)) * scale < 8)
+      )
+        continue;
       path(f);
       if (kind === "road") {
         c.strokeStyle = f.color;
@@ -63,7 +70,7 @@ export function paintCity(
       } else {
         c.fillStyle = f.color;
         c.fill("evenodd");
-        if (scale >= 0.32) {
+        if (policy.buildingNames) {
           c.strokeStyle = "#514c43";
           c.lineWidth = 0.7 / scale;
           c.stroke();

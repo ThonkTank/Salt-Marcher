@@ -7,21 +7,22 @@ import { editAreaDraft, roadEditInput, type EditorDraft } from "./roadDraft";
 import type {
   Candidate,
   DraftOperation,
+  GeometryOperation,
   ExactIntent,
   WorkflowOperation,
 } from "./editorWorkflow";
 
 export type OperationSource = Readonly<{ scene: Scene | undefined }>;
-export type OperationResult =
-  { ok: true; operation: WorkflowOperation } | { ok: false; message: string };
+type OperationResult<T = WorkflowOperation> =
+  { ok: true; operation: T } | { ok: false; message: string };
 const missing =
   "Aktueller Header konnte nicht gelesen werden. Bitte neue Aktion beginnen.";
 const ownerChanged = "Parzellenzuordnung geändert. Bitte neue Aktion beginnen.";
-const ok = (operation: WorkflowOperation): OperationResult => ({
-  ok: true,
+const ok = <T extends WorkflowOperation>(operation: T) => ({
+  ok: true as const,
   operation: structuredClone(operation),
 });
-const fail = (message = missing): OperationResult => ({ ok: false, message });
+const fail = (message = missing) => ({ ok: false as const, message });
 function relativePose(
   transform: { x: number; y: number; angle: number },
   frame: { x: number; y: number; angle: number },
@@ -57,20 +58,49 @@ export function captureOperation(
   source: OperationSource,
   draft: EditorDraft | null = null,
 ): OperationResult {
-  const objects = source.scene?.objects ?? [];
   switch (intent.type) {
-    case "sceneryStroke":
-      return ok({ kind: "scenery" });
-    case "terrainStroke":
-      return ok({ kind: "terrain" });
-    case "setWaterLevel":
-      return ok({ kind: "waterLevel" });
-    case "setFoundation":
-      return ok({ kind: "foundation", houseId: intent.id });
     case "createRoad":
     case "extendRoad":
     case "createArea":
       return draft ? captureDraftOperation(draft, source) : fail();
+    case "populate":
+      return source.scene?.objects.some(
+        (o) => o.kind === "road" && o.id === intent.roadId,
+      )
+        ? ok({ kind: "populate", roadId: intent.roadId })
+        : fail();
+    case "delete":
+      return source.scene?.objects.some((o) => o.id === intent.id)
+        ? ok({ kind: "delete", id: intent.id })
+        : fail();
+    default:
+      return captureGeometryOperation(intent, source, draft);
+  }
+}
+function captureGeometryOperation(
+  intent: Exclude<
+    ExactIntent,
+    { type: "createRoad" | "extendRoad" | "createArea" | "populate" | "delete" }
+  >,
+  source: OperationSource,
+  draft: EditorDraft | null = null,
+): OperationResult<GeometryOperation> {
+  const objects = source.scene?.objects ?? [];
+  switch (intent.type) {
+    case "riverEdit":
+      return ok({ kind: "river", intent });
+    case "regionEdit":
+    case "regionStroke":
+      return ok({ kind: "region" });
+    case "groundStroke":
+      return ok({ kind: "ground" });
+    case "sceneryStroke":
+      return ok({ kind: "scenery" });
+    case "waterStroke":
+    case "terrainStroke":
+      return ok({ kind: "terrain" });
+    case "setFoundation":
+      return ok({ kind: "foundation", houseId: intent.id });
     case "roughenRoad":
     case "updateRoad":
     case "insertRoadNode":
@@ -156,25 +186,18 @@ export function captureOperation(
           })
         : fail();
     }
-    case "populate":
-      return objects.some((o) => o.kind === "road" && o.id === intent.roadId)
-        ? ok({ kind: "populate", roadId: intent.roadId })
-        : fail();
-    case "delete":
-      return objects.some((o) => o.id === intent.id)
-        ? ok({ kind: "delete", id: intent.id })
-        : fail();
   }
 }
 export function captureDraftOperation(
   draft: EditorDraft,
   source: OperationSource,
   previous?: DraftOperation,
-): OperationResult {
+): OperationResult<DraftOperation> {
   switch (draft.kind) {
     case "newRoad":
+      return ok({ kind: "newRoad", draft });
     case "newArea":
-      return ok({ kind: draft.kind, draft } as DraftOperation);
+      return ok({ kind: "newArea", draft });
     case "extendRoad": {
       const road = source.scene?.objects.find((o) => o.id === draft.roadId);
       const nodeIds =
@@ -196,14 +219,20 @@ export function captureGestureOperation(
     { kind: "pan" | "newNode" | "roomMove" | "interiorRectangle" | "stairs" }
   >,
   source: OperationSource,
-): OperationResult {
+): OperationResult<GeometryOperation> {
   switch (gesture.kind) {
+    case "river":
+      return ok({ kind: "river", intent: gesture.intent });
+    case "region":
+      return ok({ kind: "region" });
+    case "ground":
+      return ok({ kind: "ground" });
     case "scenery":
       return ok({ kind: "scenery" });
     case "terrain":
       return ok({ kind: "terrain" });
     case "parcel":
-      return captureOperation(
+      return captureGeometryOperation(
         {
           type: "updateParcel",
           id: gesture.parcel.id,
@@ -215,7 +244,7 @@ export function captureGestureOperation(
         source,
       );
     case "node":
-      return captureOperation(
+      return captureGeometryOperation(
         {
           type: "updateRoad",
           roadId: gesture.object.roadId,
@@ -225,7 +254,7 @@ export function captureGestureOperation(
       );
     case "areaPoint":
     case "moveArea":
-      return captureOperation(
+      return captureGeometryOperation(
         {
           type: "updateArea",
           areaId: gesture.object.id,
@@ -238,7 +267,7 @@ export function captureGestureOperation(
         editAreaDraft(gesture.object),
       );
     case "houseTransform":
-      return captureOperation(
+      return captureGeometryOperation(
         {
           type: "transformHouse",
           id: gesture.object.id,
@@ -254,7 +283,7 @@ export function captureGestureOperation(
         gridPose: null,
       });
     case "parcelRectangle":
-      return captureOperation(
+      return captureGeometryOperation(
         {
           type: "createParcelHouse",
           parcelId: gesture.parcel.id,
@@ -282,9 +311,11 @@ export function captureHouseDrawingOperation(
 }
 export function operationTarget(operation: WorkflowOperation): string | null {
   switch (operation.kind) {
+    case "region":
+    case "ground":
     case "scenery":
     case "terrain":
-    case "waterLevel":
+    case "river":
       return null;
     case "foundation":
       return operation.houseId;

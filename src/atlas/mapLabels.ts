@@ -1,6 +1,8 @@
+import type { RegionName } from "./regionView";
+import type { LodDecision } from "./lod";
 import type { MapFeature } from "./generated/MapFeature";
 import type { Bounds, Camera } from "./model";
-export type MapLabel = {
+type MapLabel = {
   key: string;
   lines: string[];
   x: number;
@@ -31,18 +33,20 @@ function linesFor(
 }
 /** Screen-space decluttering shared by every visible tile. Stable world anchors
  * keep labels still during pan; prior choices win only within their priority. */
-export function layoutLabels(
+export function layoutMapLabels(
   features: MapFeature[],
   camera: Camera,
+  policy: LodDecision["policy"],
   width: number,
   height: number,
   selected: string,
   measure: Measure,
   prior = new Set<string>(),
   obstacles: Bounds[] = [],
-): MapLabel[] {
+  regionCandidates: RegionName[] = [],
+): { labels: MapLabel[]; regions: RegionName[] } {
   const candidates: MapLabel[] = [];
-  const ordered = features
+  const orderedFeatures = features
     .filter((f) => f.name && f.kind !== "area")
     .sort((a, b) => {
       const priority = (f: MapFeature) =>
@@ -50,13 +54,36 @@ export function layoutLabels(
       return (
         priority(b) - priority(a) || b.rank - a.rank || a.id.localeCompare(b.id)
       );
-    })
+    });
+  // Count feature owners and regions together before creating placement options.
+  const owners = [
+    ...orderedFeatures.map((feature) => ({
+      feature,
+      priority:
+        feature.id === selected
+          ? 4
+          : feature.important
+            ? 3
+            : feature.kind === "road"
+              ? 2
+              : 1,
+    })),
+    ...regionCandidates.map((region) => ({ region, priority: 2.5 })),
+  ]
+    .sort((a, b) => b.priority - a.priority)
     .slice(0, 3000);
+  const ordered = owners.flatMap((item) =>
+    "feature" in item ? [item.feature] : [],
+  );
+  const eligibleRegions = owners.flatMap((item) =>
+    "region" in item ? [item.region] : [],
+  );
   for (const f of ordered) {
     const isRoad = f.kind === "road",
       focused = f.id === selected;
-    if (!focused && !f.important && !isRoad && camera.scale < 0.32) continue;
-    if (!focused && isRoad && camera.scale < 0.064 && f.width < 20) continue;
+    if (!focused && !f.important && !isRoad && !policy.buildingNames) continue;
+    if (!focused && isRoad && f.width < policy.minRoadLabelWidth) continue;
+    if (!focused && !isRoad && f.important && !policy.importantNames) continue;
     const lines = linesFor(f.name, measure, isRoad ? 180 : 160, !isRoad);
     const textWidth = Math.max(...lines.map(measure));
     const textHeight = lines.length * 16;
@@ -207,7 +234,8 @@ export function layoutLabels(
   );
   const grid = new Map<string, Bounds[]>(),
     accepted: MapLabel[] = [],
-    owners = new Map<string, [number, number][]>();
+    acceptedRegions: RegionName[] = [],
+    acceptedOwners = new Map<string, [number, number][]>();
   const keys = (b: Bounds) => {
     const result: string[] = [];
     for (let x = Math.floor(b[0] / 64); x <= Math.floor(b[2] / 64); x++)
@@ -217,10 +245,30 @@ export function layoutLabels(
   };
   for (const box of obstacles)
     for (const key of keys(box)) grid.set(key, [...(grid.get(key) ?? []), box]);
-  for (const label of candidates) {
+  const placements = [
+    ...candidates.map((label) => ({ label, priority: label.priority })),
+    ...eligibleRegions.map((region) => ({ region, priority: 2.5 })),
+  ].sort((a, b) => b.priority - a.priority);
+  for (const placement of placements) {
+    if ("region" in placement) {
+      const region = placement.region;
+      const cells = keys(region.box);
+      if (
+        cells.some((key) =>
+          (grid.get(key) ?? []).some((box) => collide(region.box, box)),
+        )
+      )
+        continue;
+      acceptedRegions.push(region);
+      for (const key of cells)
+        grid.set(key, [...(grid.get(key) ?? []), region.box]);
+      if (accepted.length + acceptedRegions.length >= 500) break;
+      continue;
+    }
+    const label = placement.label;
     const owner = label.key.slice(0, label.key.lastIndexOf("/"));
     if (
-      (owners.get(owner) ?? []).some(
+      (acceptedOwners.get(owner) ?? []).some(
         (p) => Math.hypot(p[0] - label.x, p[1] - label.y) < 400,
       )
     )
@@ -233,12 +281,20 @@ export function layoutLabels(
     )
       continue;
     accepted.push(label);
-    owners.set(owner, [...(owners.get(owner) ?? []), [label.x, label.y]]);
+    acceptedOwners.set(owner, [
+      ...(acceptedOwners.get(owner) ?? []),
+      [label.x, label.y],
+    ]);
     for (const key of cells)
       grid.set(key, [...(grid.get(key) ?? []), label.box]);
-    if (accepted.length >= 500) break;
+    if (accepted.length + acceptedRegions.length >= 500) break;
   }
-  return accepted;
+  return { labels: accepted, regions: acceptedRegions };
+}
+export function layoutLabels(
+  ...args: Parameters<typeof layoutMapLabels>
+): MapLabel[] {
+  return layoutMapLabels(...args).labels;
 }
 export function paintLabels(c: CanvasRenderingContext2D, labels: MapLabel[]) {
   c.save();

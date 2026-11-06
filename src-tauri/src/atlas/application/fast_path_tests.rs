@@ -163,14 +163,14 @@ fn geometry_history_collision_branch_and_file_preserve_exact_house() {
     }
     assert!(!a.status().can_redo);
     history(&mut a, false);
-    let unchanged = storage_tests::dump(&a);
+    let unchanged = dump(&a);
     for intent in [
         json!({"type":"room","buildingId":id,"intent":{"kind":"move","roomId":"room-0","dx":0,"dy":0}}),
         json!({"type":"connection","buildingId":id,"intent":{"action":"convert","connectionId":"connection-0","kind":"door"}}),
         json!({"type":"room","buildingId":id,"intent":{"kind":"assign","floor":0,"roomId":"room-0","cells":[[100,100]]}}),
     ] {
         assert_eq!(request_edit(&mut a, "commit", intent)["changed"], false);
-        assert_eq!(storage_tests::dump(&a), unchanged);
+        assert_eq!(dump(&a), unchanged);
         assert!(a.status().can_redo);
     }
     let branch =
@@ -246,7 +246,7 @@ fn metadata_noops_preserve_document_and_history_without_loading_cells() {
     let id = created["objects"][0]["id"].as_str().unwrap();
     let house = a.house(id).unwrap();
     let status = serde_json::to_value(a.status()).unwrap();
-    let before = storage_tests::dump(&a);
+    let before = dump(&a);
     a.db.flush_prepared_statement_cache();
     a.db.authorizer(Some(|ctx: AuthContext<'_>| match ctx.action {
         AuthAction::Read {
@@ -269,5 +269,5 @@ fn metadata_noops_preserve_document_and_history_without_loading_cells() {
         }
     }
     a.db.authorizer(None::<fn(AuthContext<'_>) -> Authorization>);
-    assert_eq!(storage_tests::dump(&a), before);
+    assert_eq!(dump(&a), before);
 }

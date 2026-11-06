@@ -19,15 +19,18 @@ fn terrain_preview_history_water_and_file_roundtrip() {
     let committed = request_edit(&mut a, "commit", intent);
     assert_eq!(preview["terrain"], committed["terrain"]);
     let raised = tile(&mut a)["tiles"].clone();
-    assert!(raised[0]["heights"][2 * 33 + 2].as_f64().unwrap() > 10.0);
+    assert!(raised[0]["heights"][2 * 33 + 2].as_f64().unwrap() > terrain::BASE);
     history(&mut a, false);
-    assert_eq!(tile(&mut a)["tiles"][0]["heights"][2 * 33 + 2], 10.0);
+    assert_eq!(
+        tile(&mut a)["tiles"][0]["heights"][2 * 33 + 2],
+        terrain::BASE
+    );
     history(&mut a, true);
     assert_eq!(tile(&mut a)["tiles"], raised);
     request_edit(
         &mut a,
         "commit",
-        json!({"type":"setWaterLevel","level":100}),
+        json!({"type":"waterStroke","brush":{"mode":"lower","radius":25,"amount":5,"strength":0.25,"target":10,"points":[[80,80]]}}),
     );
     request_edit(
         &mut a,
@@ -57,20 +60,26 @@ fn terrain_preview_history_water_and_file_roundtrip() {
     a.save(&path).unwrap();
     a.open(&path).unwrap();
     assert_eq!(tile(&mut a)["tiles"], surface["tiles"]);
-    assert_eq!(tile(&mut a)["waterLevel"], 100.0);
+    assert!(!tile(&mut a)["tiles"][0]["waters"]
+        .as_array()
+        .unwrap()
+        .is_empty());
     assert_eq!(a.house(&id).unwrap().foundation.height, 3.0);
 }
 #[test]
 fn terrain_rejection_noop_and_sql_failure_are_atomic() {
     let mut a = AtlasApplication::new().unwrap();
     let mut intent = stroke(json!([[0, 0]]));
-    intent["brush"]["radius"] = json!(501);
+    intent["brush"]["radius"] = json!(0);
     let status = a.status();
     assert!(a
         .request("commit", json!({"version":status,"intent":intent}))
         .is_err());
     assert_eq!(a.status().revision, 0);
-    let no = request_edit(&mut a, "commit", json!({"type":"setWaterLevel","level":0}));
+    let mut noop = stroke(json!([[0, 0]]));
+    noop["brush"]["mode"] = json!("flatten");
+    noop["brush"]["target"] = json!(terrain::BASE);
+    let no = request_edit(&mut a, "commit", noop);
     assert_eq!(no["changed"], false);
     a.db.execute_batch("CREATE TEMP TRIGGER fail_terrain BEFORE INSERT ON terrain_lod BEGIN SELECT RAISE(ABORT,'injected'); END;").unwrap();
     assert!(a
@@ -102,11 +111,11 @@ fn platforms_follow_natural_ground_without_accumulating() {
         10.0
     );
     let mid = terrain::surface(10., [25., 10.], &[p]);
-    assert!(mid > 10. && mid < 25.);
+    assert!(mid > terrain::BASE && mid < 25.);
     let p = Platform::new(rings.clone(), &g, Foundation::default());
     assert_eq!(p.level, 25.0);
     g.insert((1, 1), 5.0);
-    assert_eq!(Platform::new(rings, &g, Foundation::default()).level, 10.0);
+    assert_eq!(Platform::new(rings, &g, Foundation::default()).level, 5.0);
 }
 #[test]
 fn foundations_move_delete_and_undo_without_reading_cells() {
@@ -146,11 +155,12 @@ fn foundations_move_delete_and_undo_without_reading_cells() {
 #[test]
 fn stroke_sampling_modes_limits_and_negative_tiles() {
     let brush = Brush {
+        resolution: None,
         mode: BrushMode::Raise,
         radius: 25.,
         amount: 1.,
         strength: 0.25,
-        target: 4.,
+        target: terrain::BASE - 6.,
         points: vec![[-20., -10.], [30., -10.]],
     };
     let mut a = Grid::new();
@@ -161,7 +171,7 @@ fn stroke_sampling_modes_limits_and_negative_tiles() {
     terrain::stroke(&mut b, &split).unwrap();
     assert_eq!(a, b);
     let raised = terrain::height(&a, [0., -10.]);
-    assert!(raised > 10.);
+    assert!(raised > terrain::BASE);
     for mode in [BrushMode::Lower, BrushMode::Smooth, BrushMode::Flatten] {
         let mut b = brush.clone();
         b.mode = mode;
@@ -210,12 +220,15 @@ fn neighboring_platforms_do_not_raise_each_other() {
     );
     let low = Platform::new(square(25.), &g, Foundation::default());
     assert_eq!(high.level, 30.);
-    assert_eq!(low.level, 10.);
+    assert_eq!(low.level, terrain::BASE);
     assert_eq!(
         terrain::surface(10., [30., 10.], &[high.clone(), low.clone()]),
-        10.
+        terrain::BASE
     );
-    assert_eq!(terrain::surface(10., [30., 10.], &[low, high]), 10.);
+    assert_eq!(
+        terrain::surface(10., [30., 10.], &[low, high]),
+        terrain::BASE
+    );
 }
 
 #[test]

@@ -50,7 +50,13 @@ impl AtlasApplication {
         "#).map_err(storage_error)?;
         super::map_tiles::install(&db)?;
         super::terrain_store::install(&db)?;
+        super::world_terrain_store::install(&db)?;
+        super::water_store::install(&db)?;
+        super::ground_store::install(&db)?;
+        super::region_store::install(&db)?;
+        super::river_store::install(&db)?;
         Ok(Self {
+            region_cache: Default::default(),
             db,
             _temp: temp,
             session: format!(
@@ -559,22 +565,51 @@ fn apply_history_change(db: &Connection, change: &ChangeSet, forward: bool) -> R
     };
     write_delta(db, before, after)?;
     let mut hints = change_hints::from_objects(before, after);
+    if let Some(d) = &change.waters {
+        super::water_store::apply(db, d, forward)?;
+        hints.world.extend(
+            d.before
+                .iter()
+                .chain(&d.after)
+                .filter_map(|w| crate::atlas::regions::bounds(&crate::atlas::water::geometry(w))),
+        );
+    }
+    if let Some(d) = &change.rivers {
+        super::river_store::apply(db, d, forward)?;
+        hints.world.extend(d.before.iter().chain(&d.after).map(|v| {
+            crate::atlas::geometry::expand(crate::atlas::rivers::river_bounds(&v.river), 505.)
+        }));
+    }
+    if let Some(d) = &change.regions {
+        super::region_store::apply(db, d, forward)?;
+    }
+    if let Some(g) = &change.ground {
+        super::ground_store::write(db, if forward { &g.after } else { &g.before })?;
+        hints.world.extend(g.after.iter().map(|t| {
+            [
+                t.x as f64 * 64.0,
+                t.y as f64 * 64.0,
+                (t.x as f64 + 1.0) * 64.0,
+                (t.y as f64 + 1.0) * 64.0,
+            ]
+        }));
+    }
+    if let Some(t) = &change.world_terrain {
+        super::world_terrain_store::apply(db, t, forward)?;
+        hints.world.push(t.bounds());
+    }
     if let Some(t) = &change.terrain {
         super::terrain_store::write_points(db, if forward { &t.after } else { &t.before })?;
-        db.execute(
-            "UPDATE terrain_settings SET water=? WHERE singleton=1",
-            [if forward {
-                t.water_after
-            } else {
-                t.water_before
-            }],
-        )
-        .map_err(storage_error)?;
-        if t.water_before != t.water_after {
-            hints
-                .world
-                .push([-5_000_000.0, -5_000_000.0, 5_000_000.0, 5_000_000.0]);
-        } else if !t.after.is_empty() {
+        if !forward {
+            super::terrain_store::write_samples(
+                db,
+                &t.missing_before
+                    .iter()
+                    .map(|&(x, y)| (x, y, None))
+                    .collect::<Vec<_>>(),
+            )?;
+        }
+        if !t.after.is_empty() {
             let b = crate::atlas::geometry::bounds(
                 t.after
                     .iter()
@@ -693,7 +728,7 @@ impl AtlasApplication {
     pub(in crate::atlas) fn extent(&self) -> Result<Option<Bounds>> {
         self.db
             .query_row(
-                "SELECT min(min_x),min(min_y),max(max_x),max(max_y) FROM (SELECT min_x,min_y,max_x,max_y FROM objects UNION ALL SELECT x*5.0,y*5.0,x*5.0,y*5.0 FROM terrain)",
+                "SELECT min(min_x),min(min_y),max(max_x),max(max_y) FROM (SELECT min_x,min_y,max_x,max_y FROM objects UNION ALL SELECT x*5.0,y*5.0,x*5.0,y*5.0 FROM terrain UNION ALL SELECT x*5.0*(1<<level),y*5.0*(1<<level),x*5.0*(1<<level),y*5.0*(1<<level) FROM terrain_layers UNION ALL SELECT min_x,min_y,max_x,max_y FROM regions WHERE min_x IS NOT NULL UNION ALL SELECT min_x,min_y,max_x,max_y FROM rivers UNION ALL SELECT min_x,min_y,max_x,max_y FROM waters UNION ALL SELECT x*64.0,y*64.0,(x+1)*64.0,(y+1)*64.0 FROM ground_tiles)",
                 [],
                 |r| {
                     Ok(r.get::<_, Option<f64>>(0)?.map(|x| {

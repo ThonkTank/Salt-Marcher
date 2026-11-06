@@ -1,3 +1,4 @@
+import type { TerrainFollow } from "./generated/TerrainFollow";
 import type { RoadRoughness } from "./generated/RoadRoughness";
 import type {
   Area,
@@ -12,15 +13,17 @@ import type {
   WorldPoint,
 } from "./model";
 
-export type NewRoadDraft = RoadProperties & {
+type NewRoadDraft = RoadProperties & {
   kind: "newRoad";
   roughness?: RoadRoughness;
+  terrainFollow?: TerrainFollow;
   nodes: CurveNodeInput[];
   population: PopulationSettings | null;
 };
-export type RoadExtensionDraft = {
+type RoadExtensionDraft = {
   kind: "extendRoad";
   roughness?: RoadRoughness;
+  terrainFollow?: TerrainFollow;
   roadId: string;
   end: "start" | "end";
   anchor: CurveNodeInput;
@@ -35,8 +38,8 @@ export type RoadEditDraft = RoadProperties & {
   nodes: ExistingNodeInput[];
 };
 export type DrawingRoadDraft = NewRoadDraft | RoadExtensionDraft;
-export type RoadDraft = DrawingRoadDraft | RoadEditDraft;
-export type AreaDraft =
+type RoadDraft = DrawingRoadDraft | RoadEditDraft;
+type AreaDraft =
   | { kind: "newArea"; material: string; points: WorldPoint[] }
   | {
       kind: "editArea";
@@ -148,6 +151,7 @@ export function toRoadIntent(draft: RoadDraft): Intent | null {
       ? {
           type: "createRoad",
           roughness: draft.roughness,
+          terrainFollow: draft.terrainFollow,
           road: {
             name: draft.name,
             width: draft.width,
@@ -162,6 +166,7 @@ export function toRoadIntent(draft: RoadDraft): Intent | null {
   return {
     type: "extendRoad",
     roughness: draft.roughness,
+    terrainFollow: draft.terrainFollow,
     roadId: draft.roadId,
     end: draft.end,
     nodes:

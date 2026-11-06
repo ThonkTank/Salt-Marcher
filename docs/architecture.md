@@ -1,120 +1,237 @@
 # Architektur
 
 `src/main.tsx` startet Atlas V7 in Tauri. React zeichnet auf Canvas; Rust besitzt
-das Dokument in SQLite. [Produktvertrag](product-contract.md): Verhalten, Format
-und Grenzen; [README](../README.md): Einrichtung und Befehle;
-[Status](implementation/status.md): geprüfter Stand und offene Arbeit.
+das Dokument in SQLite. Der [Produktvertrag](product-contract.md) definiert
+Verhalten, Dateiformat und Grenzen. [README](../README.md) beschreibt Einrichtung
+und Befehle, [Status](implementation/status.md) Prüfstand und offene Abnahmen.
 
-## Rust: Dokument und Fachkern
+## Dokument, Änderungen und Dateien
 
-| Besitzer                               | Verantwortung                                                                                                |
-| -------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| `DocumentWorker`                       | Dokumentthread mit begrenzter FIFO, gemeinsam für Desktop und Browsertests                                   |
-| `atlas/application`                    | SQLite und Dokumentstatus; `commands` dispatcht direkt zu Methoden und Reads                                 |
-| `storage`                              | Arbeitsdaten, abgeleitete Indizes und History                                                                |
-| `persistence`                          | Validierter Import und atomarer Export                                                                       |
-| `map_tiles`, `terrain_store`           | Indizierte Stadtübersicht beziehungsweise Höhenraster und Höhenpyramide                                      |
-| `operations`, `PlanContext`            | Änderungen berechnen; operationslokale Straßen-, Spatial- und Headerabfragen                                 |
-| `EditPlan`, `plans`, `follow_parcel`   | Geometrie, Feldpatches und lokale IDs sammeln; abhängige Grundstücke/Häuser komponieren und gemeinsam prüfen |
-| `interior`                             | Reiner hauslokaler Solver für Räume, Zellen, Verbindungen und Zähler, ohne SQL/Weltkoordinaten               |
-| `terrain`, `scenery`, `road_roughness` | Reine Berechnung von Höhen/Plattformen, Assetverteilung und Straßenrauheit                                   |
-
-`Computed` normalisiert Änderungen und No-ops. Vorschau und Commit teilen
-Berechnung und Fehlerübersetzung. Commit, Undo und Redo verwenden denselben
-Änderungssatz mit Vorher-/Nachherslices. Autorendaten, Indizes und History werden
-atomar geschrieben; Status wird erst nach SQL-Commit veröffentlicht.
-Patchidentität, Metadatenprädikate und Änderungshinweise werden zentral abgeleitet.
-
-Der Atlas-Adapter des Innenraumsolvers erhält Hausidentität, Placement und
-Metadaten und berechnet Konturen nach Zelländerungen. Gründung, Bearbeitung und
-Import verwenden gemeinsame Validatoren. Pose- und Metadatenänderungen laden
-keine Zellen; auch `follow_parcel` führt Häuser ohne Zellzugriff mit.
-
-## Arbeitsdaten und Dateien
-
-Typisierte JSON-Header, Innenmetadaten und Zellpayloads liegen getrennt.
-Headerabfragen teilen einen SQL-/JSON-Lesepfad. Räumliche Indizes, Zellindex,
-Stadtdichte- und Höhenpyramide sind abgeleitete Arbeitsdaten.
-
-Persistenz nutzt strikte Autorendatentypen. Eigene DTOs gibt es nur für abweichende
-Dateistrukturen, etwa flache Verbindungen oder ausgelassene Laufzeitwerte. Import
-validiert einen unveränderlichen Snapshot vor dem Sessionwechsel und baut Indizes
-neu auf. Export ersetzt das Ziel über eine synchronisierte benachbarte temporäre
-Datei. Beide halten höchstens einen vollständigen Hauszellpayload gleichzeitig.
+`DocumentWorker` besitzt den Dokumentthread mit begrenzter FIFO für Desktop und
+Browsertests. `atlas/application` besitzt SQLite und Dokumentstatus; seine einzige
+Commandliste verbindet Deserialisierung, Dispatch, Antworttypen und TypeScript-Export.
 Native Dateidialoge laufen außerhalb des Workers; Session und Revision sichern
-ihre Ergebnisse ab.
+anschließende Dateioperationen ab.
 
-Landschaftsstriche sind normale Objektowner mit konkreten Assets und nutzen
-Spatial-, Vorschau-, History- und Dateipfade. Höhen und Wasserstand nutzen dieselbe
-Transaktion und History; Fundamente sind Headerpatches. Hausplattformen entstehen
-aus Dachkonturen und Transform, niemals aus Hauszellen. `terrain_store` liest
-Rasterregionen entlang des Strichs. Vorschau und bestätigte Oberflächenreads teilen
-die Berechnung. Straßenrauheit wird stets aus der Grundkurve berechnet.
+Eine Änderung durchläuft dieselbe Berechnung für Vorschau und Commit:
 
-## React: Zustand und Eingaben
+1. Version prüfen und in `operations` den fachlichen Änderungssatz berechnen.
+2. Gewässer nach Höhenänderungen zurückschneiden und betroffene Flussprofile nachführen.
+3. Die angefragte Oberfläche einmal aus Grundhöhen, Änderungen, Flussbetten,
+   Hausplattformen und Gewässern zusammensetzen.
+4. Für Commit den normalisierten Änderungssatz einschließlich Indizes, Zählern
+   und History atomar schreiben; erst danach Dokumentstatus veröffentlichen.
 
-`AtlasApp` rendert die Oberfläche. `useAtlasEditor` verbindet die folgenden Besitzer:
+`Computed` normalisiert No-ops. `ChangeSet` trägt Vorher-/Nachherwerte für Objekte,
+Feldpatches, Höhen, Bodenfarben, Regionen, Flüsse und Gewässer. Commit, Undo und
+Redo verwenden denselben Schreibpfad. Patchidentität, Metadatenprädikate und
+Änderungshinweise werden zentral abgeleitet.
 
-| Besitzer                                         | Verantwortung                                                                                                      |
-| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------ |
-| `documentQueue`, `useDocumentSession`            | Bestätigter Status, serielle Writes, Dateireservierungen und Abgleich unsicherer Ergebnisse; React-/Dateianbindung |
-| `editorWorkflow`                                 | Reine Zustandsübergänge und Zulassungsregeln; Kandidaten, Entwurfsparzellenauswahl und letzte Vorschau             |
-| `EditorWorkflowController`, `workflowOperations` | Timer, Reads, Vorschau und Übernahme; fachliche Operationen erfassen und anhand frischer Header neu prüfen         |
-| `interaction`, `useCanvasInput`                  | Reine Gestenberechnung einschließlich Pinselpfaden; DOM-Koordinaten, Listener, Capture und Fokusverlust            |
-| `editorSelection`, `useEditorTools`              | Auswahlübergänge beziehungsweise Werkzeugvorgaben und Aktionen                                                     |
-| `workflowView`, `editorView`                     | Vorschau/Fehler/Aktionen sowie Panel, Planungsgeometrie und Grundstücksgriffe projizieren                          |
-| `roadDraft`, `parcelPlanning`                    | Kurvenentwürfe und Frontendprojektion der Planung; exakte Parzellen und Konflikte bleiben in Rust                  |
-| `useCamera`                                      | Navigation und Fit-Anfragekennung                                                                                  |
+`storage` hält Arbeitsdaten und History. Typisierte JSON-Header, Innenmetadaten und
+Zellpayloads liegen getrennt; Headerabfragen teilen einen SQL-/JSON-Lesepfad.
+Spatial-/Zellindizes und Übersichtspyramiden sind abgeleitete Arbeitsdaten.
+Pose-, Metadaten- und Grundstücksnachführung laden keine Hauszellen.
 
-Angenommene Writes gehören der Queue und überleben Unmount. Session-, Kontext-,
-Interaktions- und Requestidentitäten verhindern die Übernahme alter Antworten.
-`EditorActions` bündelt Planungsaktionen und Rückmeldungen. `Fields` teilt
-Fokus-/Abbruch-/Übernahmelogik; `SelectField` rendert typisierte Auswahloptionen.
-Werkzeugnamen und Symbole stehen in `ToolOptions`; dessen Werte und Aktionen
-kommen direkt als `EditorTools` aus `useEditorTools`. CSS liegt bei Grundlayout,
-Editor und Modal.
+`persistence` importiert einen strikt validierten, unveränderlichen Snapshot vor
+Sessionwechsel und baut Arbeitsindizes neu auf. Export ersetzt das Ziel über eine
+synchronisierte benachbarte temporäre Datei. Beide halten höchstens einen
+vollständigen Hauszellpayload gleichzeitig. Unveränderte Autorentabellen werden
+über einen gemeinsamen zeilenweisen SQL-Kopierpfad exportiert; Validierung und
+Rekonstruktion beim Import bleiben bei den jeweiligen Fachmodulen. `ImportIdentities` prüft globale IDs und ihren gemeinsamen Höchstwert;
+zeilenweise Leser halten den Import speicherbegrenzt. Eigene Datei-DTOs gibt es nur für
+abweichende Strukturen, etwa flache Verbindungen oder ausgelassene Laufzeitwerte.
+
+## Fachberechnung und lokale Speicherzugriffe
+
+| Fachkern                                          | Verantwortung und Anbindung                                                                                                                                                                                                 |
+| ------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `interior`                                        | Reiner hauslokaler Solver für Räume, Zellen, Verbindungen und Zähler; ohne SQL oder Weltkoordinaten. Der Atlas-Adapter erhält Identität, Placement und Metadaten und berechnet Konturen nach Zelländerungen.                |
+| `operations`, `PlanContext`, `EditPlan`           | Änderungen mit operationslokalen Straßen-/Spatial-/Headerabfragen berechnen; `plans` und `follow_parcel` komponieren abhängige Parzellen und Häuser und prüfen sie gemeinsam.                                               |
+| `parcel_geometry`, `population`                   | Grundstücksableitung, Containment und Kollisionen; deterministische Front-/Tiefen-/Rasterposensuche mit gemeinsamem Versuchsbudget. Erst fertige Kandidaten reservieren Fläche und IDs.                                     |
+| `road_roughness`, `road_terrain`                  | Rauheit aus der Grundkurve und begrenzte richtungsabhängige Routensuche. `road_terrain_store` liest natürliche Höhen und Wasser lokal, ohne Hausplattformen. Neue Nodes erhalten erst nach erfolgreicher Prüfung Autor-IDs. |
+| `terrain`, `terrain_store`, `world_terrain_store` | Höhenraster, Pyramide und Plattformen aus Hausdachkonturen. Bestätigte Reads und Vorschauen teilen `surface_tiles`; optionale Höhen-/Fluss-/Gewässeränderungen überlagern den bestätigten Bestand.                          |
+| `water`, `water_store`                            | Lokale Pegel und Flächen, Verschneidung mit dem Höhenraster, Pegelzusammenführung, Ufer und dauerhaftes Trockenlegen. Ein Gewässerstrich ergänzt denselben Höhenänderungssatz.                                              |
+| `rivers`, `river_store`                           | Deterministische Routen, gemeinsame Knoten, Topologie und Profilsolver. Store lädt lokale Flüsse und verbundene Komponenten. Betten sind abgeleitet und verändern keine natürlichen Höhen.                                  |
+| `ground`, `ground_store`                          | Reiner Farbauftrag auf vormultiplizierten RGBA-Pixeln; dünn belegte Autorenkacheln und Übersichtspyramide. Transport nutzt Base64, Dateien rohe BLOBs.                                                                      |
+| `regions`, `region_store`                         | Multipolygonoperationen und Validierung; Katalog, Flächen und RTree. Revisiongebundener Readcache; Beziehungen entstehen aus Schnittflächen und werden nicht persistiert. Polygonkonvertierung wird mit Gewässern geteilt.  |
+| `scenery`                                         | Reine Assetverteilung; Landschaftsstriche sind gewöhnliche Objektowner und verwenden gemeinsame Spatial-, Vorschau-, History- und Dateipfade.                                                                               |
+
+Der Flussprofilsolver kombiniert natürliche Absenkung stromabwärts und Rückstau
+stromaufwärts mit lokalen Pegelbedingungen. Unvereinbare feste Pegel liefern einen
+Fachfehler. Oberflächenberechnung wendet Flussbetten vor Hausplattformen an;
+Straßenrouting berücksichtigt Flusswasser und lokale Gewässer. Import rekonstruiert
+Profile und Indizes aus Autorendaten.
+
+## Mehrskalige Welt
+
+`lod` besitzt Atlasansichten, Weltzoom, metrische Maßstabsleiste,
+Kamerabegrenzung und Darstellungsregeln. Die reine, typisierte `LodDecision`
+vereint benannte Ansicht, Inhaltsregeln und Stadt-, Höhen- und Bodenstufen.
+`useAtlasEditor` hält die vorherige Entscheidung für die jeweiligen Rücklaufbereiche;
+die Stadtstufe behält ihre eigene pixelbasierte Hysterese. Die physische Kamera
+bleibt davon getrennt. Darstellung, Werkzeugfreigabe und Kachelanfragen erhalten
+dieselbe Entscheidung. `tileRequest` begrenzt den
+Ausschnitt auf die Welt und prüft das Kachelbudget vor der Koordinatenerzeugung;
+Stadt, Höhen und Boden geben nur Ausgangsstufe, Kachelgröße und Höchststufe vor.
+Die Bodenauflösung besitzt ebenfalls den Rücklaufbereich für Zoomwechsel.
+Autorenauflösung und angefragte
+Darstellungsauflösung sind getrennt: Ein Höhenstrich speichert seine Auflösung
+beim Gestenbeginn. Kachelbudgets verändern nicht die Autorenauflösung.
+
+`terrain::Grid` kombiniert lokale Werte und gröbere Autorenauflösungen.
+`world_terrain_store` speichert diese dünn belegt; fehlende Werte sind die
+Abdeckungsmaske. Feinere Werte überschreiben gröbere, fehlende Randwerte erben
+sie. Übersichtstabellen halten Summen und Belegungsanteile je Quellauflösung.
+Lokale Höhenverbraucher lesen dieselbe zusammengesetzte Oberfläche.
+Vorgeschlagene Höhen werden während der Fachberechnung in einer zurückgerollten
+SQLite-Transaktion überlagert, damit Gewässer, Flüsse und Vorschau denselben
+Stand lesen. Erst der normale Commit schreibt die gesamte Änderung atomar.
+
+Ortschaften sind ausschließlich eine Regionskategorie. Die Kategorieoption
+`markers` steuert kartografische Ortssymbole und gemeinsame Rangdarstellung;
+Identität, Flächen, Beschriftung, History und Persistenz bleiben beim Regionskern.
+Es gibt keinen zusätzlichen Siedlungsowner und keine eigene Bearbeitungsqueue.
+
+## Editorzustand und Eingaben
+
+`AtlasApp` rendert die Oberfläche; `useAtlasEditor` verbindet die Besitzer.
+`editorScene` trennt die zuletzt sichtbare Szene von den für Interaktionen gültigen
+Ownerdaten; `canEdit` projiziert die Bearbeitungsfreigabe. `editorInput` stellt
+den Eingabesnapshot einschließlich Kachelanfragen und Regionsfreigabe zusammen.
+Diese Funktionen in `editorView` besitzen keinen Zustand. Werkzeugwerte werden einmal in `useEditorTools`
+aufgelöst und gemeinsam an Panels und Eingaben weitergegeben. Auch Änderungen
+der Pinselgröße gehören zu diesem Besitzer, für Regionen zum Regionshook:
+
+| Besitzer                                                    | Verantwortung                                                                                                                                                                       |
+| ----------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `documentQueue`, `useDocumentSession`                       | Bestätigter Status, serielle Writes, Dateireservierungen und Abgleich unsicherer Ergebnisse; React-/Dateianbindung.                                                                 |
+| `editorWorkflow`, `EditorWorkflowController`                | Reine Zustandsübergänge sowie Lebensdauer von Entwürfen, Kandidaten, Vorschauen und Übernahmen. Flussentwürfe einschließlich unvollständiger Verläufe gehören demselben Controller. |
+| `workflowOperations`                                        | Fachliche Aktionen erfassen und anhand frischer Header neu prüfen.                                                                                                                  |
+| `interaction`, `useCanvasInput`                             | Reine Gestenberechnung; gemeinsame DOM-Koordinaten, Pointercapture, Tastatur und Fokusverlust für alle Werkzeuge, einschließlich Flussknoten.                                       |
+| `editorSelection`, `useEditorTools`                         | Auswahlübergänge, Werkzeugvorgaben und Aktionen.                                                                                                                                    |
+| `useRegions`, `useRivers`                                   | Fachliche Werkzeugauswahl, Einstellungen und Panelaktionen; keine eigenen Read- oder Vorschau-Lebenszyklen.                                                                         |
+| `workflowView`, `editorView`, `roadDraft`, `parcelPlanning` | Ansichtsprojektionen und Entwurfsgeometrie. Exakte Parzellen und Konflikte bleiben in Rust. `workflowView` ist eine Funktion in `editorWorkflow`.                                   |
+| `useCamera`                                                 | Navigation und Fit-Anfragekennung.                                                                                                                                                  |
+
+`editorWorkflow` definiert die zulässigen Operation-/Gestenpaare einmal für
+Zustandstypen und Laufzeitprüfung. Seine Live-Pinselklassifikation verbindet
+Pointerdown, Zoomsperre und fortlaufende Oberflächenvorschau. Der Controller
+prüft Kandidaten auf der gemeinsamen Dokumentfreigabe; veraltete Einstellungen
+behalten ihre Basis bis zur expliziten Neuprüfung. Die Operationserfassung liefert
+getrennt typisierte Entwurfs- und Geometrieoperationen; der Controller übernimmt
+diese Werte auch für Löschung und Populate ohne erneute Konstruktion.
+Beim Hauszeichnen entscheidet
+ein gemeinsamer Übergang über den Abschluss, sobald die Eigentümerabfrage
+aufgelöst und der Pointer beendet ist; ein zweiter Abschlusszustand entfällt.
+
+Die Queue übernimmt angenommene Writes unabhängig vom Workflow. Session-,
+Kontext-, Kandidaten- und Anfrageidentitäten sichern die asynchronen Übergänge.
+Die beobachtbaren Regeln für Abbruch, Übernahme und verspätete Antworten stehen
+im [Produktvertrag](product-contract.md#vorschau-und-nebenläufigkeit).
+
+`useRivers` besitzt Flussauswahl und Punktindex gemeinsam. Ein Auswahlwechsel
+setzt den Punkt auf den ersten vorhandenen Knoten; eine leere Liste hat keinen
+ausgewählten Punkt. Nach Topologieänderungen wird der Index auf die verbleibende
+Liste begrenzt, ohne ihn bei vorübergehend ausstehenden Reads zu verlieren.
+
+`interaction` trennt die fachlichen Gestenzweige und erhält ihre Trefferpriorität.
+Es entscheidet auch über Doppelklick, Tastatur, Mausrad und gehaltenen Pinselauftrag.
+Tastatur und Mausrad teilen ihre Pinselwerkzeug-Klassifikation. `useCanvasInput` teilt
+die Pointerauswertung für Down, Move und Up und besitzt ausschließlich die
+DOM-Anbindung, keine Werkzeughooks. Auswahlaktionen verwenden direkt die Events
+von `editorSelection`; der Editor übersetzt keine parallele Kommandoliste.
+Pointercapture wird intern freigegeben, beim Abbruch zusammen mit dem Pointer.
+
+`EditorActions` zeigt Planungsaktionen und Rückmeldungen; `Fields` teilt
+Fokus-/Abbruch-/Übernahmelogik. Werkzeugnamen und Symbole stehen in `ToolOptions`,
+Einstellungen kommen aus `useEditorTools`. CSS liegt bei Grundlayout, Editor und Modal.
 
 ## Laden und Zeichnen
 
-`PresentationLoader` besitzt Ladeplanung, Anfragegenerationen, Caches und einen
-veröffentlichten Snapshot; `usePresentation` bindet bestätigte Eingaben,
-Subscription und Lebensdauer an React. Kontext- und Viewportwechsel sind getrennt.
-Alte Antworten werden auch nach A→B→A verworfen; ausstehende Reads und Fehler
-erhalten die letzte vollständige Ansicht, die zugleich der Wiederverwendung dient.
+`PresentationLoader` besitzt Ladeplanung, Anfragegenerationen, Caches und
+veröffentlichte Snapshots. `usePresentation` und `usePresentationLayer` binden
+bestätigte Eingaben, Subscription und Lebensdauer an React. Gelände, Boden,
+Stadtübersicht, Regionskatalog, Regionsausschnitte und Flüsse verwenden denselben
+versionierten Schichtlebenszyklus und laden unabhängig von der exakten Szene.
+Jede Schicht prüft Anfrageidentität und Version und hält bei ausstehenden Reads oder
+Fehlern ihre letzte vollständige Ansicht. Boden und Gelände werden nur bei gleicher
+Dokumentversion kombiniert; auch Vorschaukacheln werden versionsgleich gemischt.
+Solange die exakte Szene noch fehlt, kann eine leere, nicht bearbeitbare Szene die
+bereiten Raster darstellen. Exakte Header, aufgelöster Innenraumowner und dessen
+Metadaten/Kacheln behalten ihren gemeinsamen Veröffentlichungspfad; ein überholter
+Außenszenenread darf weiterhin als Zwischenstand dienen, wenn er den aktuellen
+Ausschnitt vollständig abdeckt. Die Aktualitätsprüfung sperrt veraltete Daten für
+Interaktionen und berücksichtigt Clientwechsel vor dem nächsten React-Effekt.
+Bestätigte Vorschauen werden erst nach einer frischen Darstellung quittiert.
 
-`readScheduler` begrenzt physische Reads je Client über Remounts hinweg;
-Darstellung, Fit und Ownerauflösung teilen ihn. `PreviewScheduler` hält eine
-laufende und die neueste wartende Vorschau. `presentationCache` besitzt Stadt-
-und Oberflächenkacheln, `TileCache` Innenraumkacheln und geteilte Reads.
-`BudgetCache` übernimmt Verdrängung, `documentVersion` prüft Versionen und
-Änderungshinweise. Fachliche Invalidierung bleibt beim jeweiligen Cache;
-unbekannte Revisionssprünge verwerfen Wiederverwendung.
+Ladekontexte verwenden diskrete Höhen-, Boden- und Stadtstufen. Ausschnitt und
+Bearbeitungskontext bleiben gesondert geprüft. Rasche Ausschnitts-/Zoomänderungen
+werden vor dem Absenden zusammengefasst; exakte Regions- und Flussreads dürfen einen
+kleineren Ausschnitt abdecken. Begrenzte Übersichten dürfen dies nur, wenn die
+Antwort nachweislich unter der jeweiligen Begrenzung blieb.
 
-`map_tiles` nutzt eine per SQL-Trigger gepflegte Dichtepyramide und begrenzte,
-vereinfachte Geometrien/Namen. Wichtige Orte haben einen eigenen Indexzugriff;
-Innenmetadaten und Zellen bleiben außen vor. `roadHeader` und `objectHeader` liefern
-exakte Ownerdaten auch in der Übersicht. Exakte Szenen werden erst im
-Bearbeitungsmaßstab geladen; überladene Ausschnitte werden abgelehnt.
+`readScheduler` begrenzt physische Reads je Client über Remounts hinweg; Darstellung,
+Fit und Ownerauflösung teilen ihn. `PreviewScheduler` begrenzt Vorschauanfragen.
+`presentationCache` hält Stadt-, Oberflächen- und Bodenfarbkacheln in einem
+`WorldTileCache` mit drei fachlichen Adaptern. Client-/Revisionswechsel,
+Anfragegeneration, fehlende Kacheln und Antwortprüfung haben einen gemeinsamen
+Pfad. Die Adapter bestimmen räumliche Invalidierungsränder und Speicherbudgets;
+Gelände bestätigt zusätzlich jede neue Revision, auch ohne fehlende Kacheln.
+`TileCache` hält Innenraumkacheln mit geteilten Reads. `BudgetCache` übernimmt Verdrängung;
+`documentVersion` prüft Versionen und Änderungshinweise. Fachliche Invalidierung
+bleibt beim jeweiligen Cache; unbekannte Revisionssprünge verwerfen Wiederverwendung.
+
+`map_tiles` nutzt eine per SQL-Trigger gepflegte Dichtepyramide mit begrenzten,
+vereinfachten Geometrien/Namen. Wichtige Orte haben einen eigenen Indexzugriff.
+Exakte Szenen werden erst im Bearbeitungsmaßstab geladen; `roadHeader` und
+`objectHeader` liefern exakte Ownerdaten auch in der Übersicht. Überladene exakte
+Ausschnitte werden abgelehnt, nicht still gekürzt.
 
 `canvasScene` bereitet Schichten, Auswahl, Beschriftungskandidaten und
-Vorschauoberflächen rein vor. `AtlasCanvas` zeichnet in Layout-Effekten mit aktueller
-Kamera und DPR; `canvasPaint` enthält zustandsfreie Zeichenfunktionen.
-`TerrainPainter` besitzt den Rastercache, Innenraumgeometrie einen begrenzten
-`Path2D`-Cache. `cityView` bestimmt Übersicht und Zoomübergänge, `cityPaint` und
-`sceneryPaint` zeichnen Übersicht beziehungsweise Assets. `mapLabels` platziert
-Namen in CSS-Pixeln über räumliche Belegung und stabile Weltanker.
+Vorschauoberflächen rein vor. `useAtlasEditor` reicht diese vorbereitete Szene
+memoisiert weiter; `editorView` projiziert auch Pinselradien aus Werkzeugvorgaben
+oder der laufenden Geste. `AtlasCanvas` zeichnet in Layout-Effekten mit aktueller
+Kamera und DPR in geplanten Animationsframes; zustandsfreie Painter zeichnen Geometrie.
+Der Canvas-Besitzer teilt einen sitzungsgebundenen, begrenzten `Path2D`-Cache für
+exakte Außengeometrie anhand unveränderlicher Objektidentität; Bearbeitungsdaten
+bleiben unverändert. `TerrainPainter` besitzt den Rastercache, Innenraumgeometrie
+einen eigenen begrenzten `Path2D`-Cache. Bodenfarben
+verwenden einen Pixelhalo gegen Kachelnähte. Ihre Raster hängen von unveränderlichen
+benachbarten Höhenkacheln einschließlich Relief-Abtastrand ab; neue Antwortwrapper
+oder entfernte Änderungen verwerfen sie nicht. Höhenabfragen verwenden einen
+schwach an die unveränderliche Oberfläche gebundenen Koordinatenindex. `mapLabels` platziert Namen in CSS-Pixeln
+über räumliche Belegung und stabile Weltanker. Untergetauchte Flussbänder werden an
+Gewässerflächen ausgeschnitten.
 
-## Transport und Prüfungen
+Regionen und Gewässer teilen `containsPolygon` im Modell: Außenring abzüglich
+Löchern, mit dem bestehenden Ring-Treffertest. Die Fachansichten behalten ihre
+jeweilige Auswahlreihenfolge.
 
-Die Rust-Commandliste verbindet Deserialisierung, Ausführung, Antworttypen und
-TypeScript-Export. `scripts/contracts.mjs` formatiert den Export im Speicher und
-vergleicht oder schreibt Transporttypen. Fehler und Änderungshinweise werden
-zusätzlich zur Laufzeit geprüft. Ein TypeScript-Projekt umfasst Produktcode,
-Tests und Toolkonfigurationen.
+## Entwicklung und Prüfungen
 
-Rusttests prüfen Fachregeln, Atomarität, Dateien und Zugriffspfade. Anwendungstests
-liegen bei `application`, SQL-Prüfhelfer in `application_test_support`. TypeScript
-prüft Queue, Workflow, Darstellung und Caches. Browsertests ergänzen DOM-/Canvas-
-Integration mit echtem Worker und injizierten Transportverzögerungen/-fehlern.
-Native Plattformabnahme erfolgt nach README. `.cargo/config.toml` hält gemeinsame
-Ressourcenlimits für Cargo und Tauri; npm komponiert die Gesamtsuite sequenziell.
+`scripts/contracts.mjs` formatiert den Rust-TypeScript-Export im Speicher und
+vergleicht oder schreibt ausschließlich das generierte Verzeichnis. Fehler und
+Änderungshinweise werden zusätzlich zur Laufzeit geprüft. Ein TypeScript-Projekt
+umfasst Produktcode, Tests und Toolkonfigurationen.
+
+Rusttests prüfen Fachregeln, Atomarität, Dateien und Zugriffspfade. TypeScript prüft
+Queue, Workflow, Darstellung und Caches; Browsertests ergänzen DOM-/Canvas-Integration
+mit echtem Worker und injizierten Transportverzögerungen/-fehlern. Native Abnahme
+folgt dem README. Beide Testsuiten bauen den Rust-Worker über
+`tests/support/buildCore.ts`; Playwright ruft ihn als globales Setup auf.
+`corePaths` legt das projektlokale Cargo-Ausgabeverzeichnis und den Workerpfad
+für Build und Start fest; `coreTransport` besitzt die Prozesslebensdauer.
+`browserServer` definiert Testport und Editoradresse. Playwright startet seinen
+eigenen Server ohne Wiederverwendung eines vorhandenen Servers.
+`browserContract` leitet Testaufrufe und diskriminierte Aufrufprotokolle aus den
+vorhandenen Commandtypen ab. Dateipfade gehören der isolierten Fixture;
+`atlasRaw` bleibt die untypisierte Grenze für Transportinjektion und Negativtests.
+Nebenläufigkeitstests verwenden gehaltene Antworten, ausstehende Transportarbeit
+und sichtbare Abschlüsse; Debouncefälle steuern die Browseruhr. Echte Zeit bleibt
+für gehaltenen Bodenauftrag und Live-Geländemessungen erhalten.
+`tests/support/atlasFixtures.ts` liefert isolierte Workflowobjekte und Antworten,
+`deferred.ts` steuerbare Promises. Gemeinsame Rust-Snapshots gehören in
+`application_test_support`; Testmodule hängen nicht voneinander ab.
+Playwright besitzt eine einzige Produktsuite ohne zusätzliche Projektauswahl.
+npm komponiert die Gesamtsuite sequenziell; Cargo verwendet das
+Lockfile. `.cargo/config.toml` hält gemeinsame Ressourcenlimits für Cargo und Tauri.

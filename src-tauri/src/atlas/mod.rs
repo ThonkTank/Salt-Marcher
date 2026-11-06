@@ -5,6 +5,7 @@ mod change_hints;
 mod errors;
 pub mod generation;
 mod geometry;
+mod ground;
 mod interior;
 mod model;
 mod operations;
@@ -13,7 +14,10 @@ mod plan_context;
 mod plans;
 pub mod population;
 mod reads;
+pub mod regions;
+pub mod rivers;
 mod road_roughness;
+mod road_terrain;
 mod scenery;
 mod terrain;
 mod validation;
@@ -30,3 +34,5 @@ pub type Result<T> = std::result::Result<T, AppError>;
 mod test_inputs;
 #[cfg(test)]
 mod transport_contract_tests;
+
+pub mod water;
