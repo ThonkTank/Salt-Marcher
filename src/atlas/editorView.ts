@@ -56,20 +56,17 @@ export function editorScene(
   };
 }
 
-export function canEdit(
+export function toolScaleRestriction(
   tool: Tool,
   interior: boolean,
   lod: LodDecision,
-  fresh: boolean,
-  gate: Pick<WorkflowGate, "exclusive" | "uncertain" | "pending">,
-) {
-  if (!fresh || gate.exclusive || gate.uncertain) return false;
+): "detail" | "localBrush" | null {
   if (
     !interior &&
     (tool === "area" || tool === "scenery" || tool === "water") &&
     !lod.policy.detailBrushes
   )
-    return false;
+    return "localBrush";
   if (
     !lod.policy.exact &&
     (interior ||
@@ -83,7 +80,19 @@ export function canEdit(
         "regions",
       ].includes(tool))
   )
-    return false;
+    return "detail";
+  return null;
+}
+
+export function canEdit(
+  tool: Tool,
+  interior: boolean,
+  lod: LodDecision,
+  fresh: boolean,
+  gate: Pick<WorkflowGate, "exclusive" | "uncertain" | "pending">,
+) {
+  if (!fresh || gate.exclusive || gate.uncertain) return false;
+  if (toolScaleRestriction(tool, interior, lod) !== null) return false;
   return (
     gate.pending === 0 ||
     ["draw", "erase", "assign", "opening", "stairs"].includes(tool) ||

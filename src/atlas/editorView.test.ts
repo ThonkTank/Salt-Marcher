@@ -1,7 +1,12 @@
 import { decideLod } from "./lod";
 import { expect, it } from "vitest";
 import type { Gesture } from "./interaction";
-import { canEdit, editorScene, terrainBrushInfo } from "./editorView";
+import {
+  canEdit,
+  editorScene,
+  terrainBrushInfo,
+  toolScaleRestriction,
+} from "./editorView";
 import { initialSelection, type Tool } from "./editorSelection";
 import type { Presentation } from "./presentationLoader";
 import { status, workflowObjects } from "../../tests/support/atlasFixtures";
@@ -42,6 +47,82 @@ it.each<{
     ).toBe(false);
   },
 );
+
+it("shares scale restrictions with edit readiness across hysteresis", () => {
+  const gate = { pending: 0, exclusive: false, uncertain: false };
+  const check = (
+    lod: ReturnType<typeof decideLod>,
+    interior: boolean,
+    cases: [Tool, "detail" | "localBrush" | null][],
+  ) => {
+    for (const [tool, restriction] of cases) {
+      expect(toolScaleRestriction(tool, interior, lod)).toBe(restriction);
+      expect(canEdit(tool, interior, lod, true, gate)).toBe(
+        restriction === null,
+      );
+    }
+  };
+  const cold = decideLod(1.27);
+  expect(cold.atlasLevel).toBe(2);
+  check(cold, false, [
+    ["house", "detail"],
+    ["scenery", "detail"],
+    ["area", null],
+    ["water", null],
+    ["river", null],
+    ["road", null],
+    ["select", null],
+    ["terrain", null],
+    ["regions", null],
+  ]);
+  const retained = decideLod(1.27, decideLod(1.28));
+  expect(retained.atlasLevel).toBe(2);
+  check(retained, false, [
+    ["house", null],
+    ["scenery", null],
+  ]);
+  check(decideLod(0.31), false, [
+    ["area", "localBrush"],
+    ["scenery", "localBrush"],
+    ["water", "localBrush"],
+    ["house", "detail"],
+    ["road", null],
+    ["river", null],
+    ["terrain", null],
+  ]);
+  check(cold, true, [
+    ["draw", "detail"],
+    ["select", "detail"],
+    ["area", "detail"],
+  ]);
+  check(decideLod(1.28), true, [
+    ["draw", null],
+    ["select", null],
+  ]);
+  expect(toolScaleRestriction("road", false, cold)).toBeNull();
+  expect(canEdit("road", false, cold, false, gate)).toBe(false);
+  expect(canEdit("road", false, cold, true, { ...gate, exclusive: true })).toBe(
+    false,
+  );
+  expect(canEdit("road", false, cold, true, { ...gate, uncertain: true })).toBe(
+    false,
+  );
+  for (const tool of [
+    "draw",
+    "erase",
+    "assign",
+    "opening",
+    "stairs",
+    "select",
+  ] as const)
+    expect(
+      canEdit(tool, true, decideLod(1.28), true, { ...gate, pending: 1 }),
+    ).toBe(true);
+  for (const tool of ["select", "house"] as const)
+    expect(
+      canEdit(tool, false, decideLod(1.28), true, { ...gate, pending: 1 }),
+    ).toBe(false);
+});
 
 it("keeps the last scene visible while withholding interaction data for another context or selection", () => {
   const { house, parcel } = workflowObjects();

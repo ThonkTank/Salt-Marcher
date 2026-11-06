@@ -5,45 +5,49 @@ Atlas V7, Dateiformat 18, Generierungsrezept 4. Stand: 6. November 2026.
 [Architektur](../architecture.md) Zuständigkeiten und der
 [Produktvertrag](../product-contract.md) Verhalten und Grenzen.
 
-Raum und Haus bleiben äußere Nahansichten mit ausdrücklich geöffneten Innenräumen.
-Die Raum-Kontexthilfe, der Weltpinsel-/Rasterhinweis und der begrenzte gemeinsame
-Cache für exakte Außengeometrie bleiben erhalten. Innen werden unsichtbare
-Regionskatalog-, Regions- und Flussreads unterbrochen; passive Außenlayer bleiben
-sichtbar. Vollständige Rasterabdeckung wird bei passender Version und effektiver
-Auflösung wiederverwendet.
+Raum, Haus und Grundstück bleiben äußere Nahansichten mit ausdrücklich geöffneten
+Innenräumen. Die Kontexthilfe, der Weltpinsel-/Rasterhinweis, der begrenzte Cache
+exakter Außengeometrie und die Wiederverwendung vollständig abgedeckter Raster
+bleiben erhalten. Unsichtbare Regions-/Flussreads werden innen unterbrochen.
+Exakte Szenenwiederverwendung prüft ihre Anfrageherkunft; reine Abwahl darf eine
+revisionsgleiche vollständige Außenszene mit geleerten Ownerdaten wiederverwenden.
 
-Die Hausprüfung fand einen geerbten Fehler bei der Rückkehr aus der Übersicht:
-Darstellungsdaten konnten ohne exakten Szenenread als bearbeitbar gelten. Die
-Wiederverwendung prüft jetzt die Herkunft der veröffentlichten Anfrage. Eine
-revisionsgleiche vollständige exakte Außenszene darf eine reine Abwahl lokal
-übernehmen; Ownerinformationen werden dabei geleert. Andere Auswahl-, Kontext-,
-Versions- und Abdeckungswechsel behalten ihre Prüfungen.
+Die Grundstückänderungen bereiten Parzellen-ID-Mitgliedschaft einmal pro
+Szenenvorbereitung beziehungsweise Treffertest vor und teilen die reine
+Skalensperre zwischen Bearbeitungsfreigabe und Werkzeughinweis. Reihenfolge,
+Objektidentität, Schwellen und Hysterese bleiben erhalten. Gesperrte Werkzeuge
+fordern zum Hineinzoomen auf; Flussplanung hat einen eigenen Hinweis. Ein Zeit-
+oder FPS-Gewinn ist nicht gemessen.
 
-Nach dieser einmaligen Korrektur bestanden Typprüfung und alle 311 TypeScript-Tests.
-Im gezielten Browserlauf bestanden 11 von 13 Fällen, darunter Übersichtsrückkehr,
-Innenlayer, belegtes/leeres Grundstück mit Alt, Raumkontext, Capture, angenommener
-Edit, Straßenpreview und Landschaftsauswahl. Zwei Fälle blieben rot:
+Das unabhängige Grundstückreview bestand mit 114 gezielten Unit-Tests und
+Typprüfung; der Browserlauf bestand 14 von 17 Fällen. Der anschließende einzige
+G-Durchgang korrigierte ausschließlich die Kamerabeobachtung im Browsertest:
+Transformation und verfügbare Viewportfläche werden getrennt geprüft. Der
+Inspector darf die Canvasbreite ändern; x/y/Skala müssen beim Auswählen und
+expliziten Innenöffnen/-verlassen exakt erhalten bleiben. Das begründete
+Canvasquantisierungsbudget unter 0,001 CSS-Pixel und die mathematische
+Ankerprüfung auf neun Dezimalstellen bleiben bestehen.
 
-- Haus-Doppelklick erreicht jetzt Raum und den Zielmaßstab, scheitert aber an der
-  aus dem Canvas zurückgelesenen Ankerprüfung: Abweichung rund 0,000077 CSS-Pixel
-  gegenüber der erwarteten Toleranz unter 0,00005. Die nachfolgenden Kamera-/
-  History-/Innenkontextprüfungen dieses Falls wurden nicht erreicht.
-- Die erste Hausgeste nach Auswahl → Haus erzeugte erneut keinen Owner, obwohl
-  sie zuvor im Review bestanden hatte. Der Kontrollfall Haus → Straße → Haus
-  bestand; die verbleibende Ursache ist nicht geklärt.
+Nach G bestand die Typprüfung; im einmaligen regulären Browserlauf bestanden
+15 von 17 Fällen. Beide Haus-/Grundstück-Zoomfälle bestanden erstmals vollständig
+mit Anker, Nullcommits, History und Innenöffnen/-verlassen. Zwei Erstgestenfälle
+blieben rot: Auswahl→Haus im ursprünglichen Startmaßstab und erstmals auch der
+zusätzliche Grundstückmaßstab-Fall erzeugten kein Objekt. Die folgenden
+Commit-/Historyassertionen dieser Fälle wurden nicht erreicht. Der Kontrollwechsel
+Haus→Straße→Haus bestand. Ein einzelner instrumentierter Diagnosefall bestand,
+belegt aber keine Ursache der roten Abläufe; Resize und Freshness bleiben
+Hypothesen. Es gab keine spekulative Produktkorrektur, Wartehilfe, zweite Geste
+oder weitere Reparaturschleife. Landschaftsauswahl bestand, ihre frühere
+wechselhafte Ursache bleibt ungeklärt.
 
-Die zuvor fehlgeschlagene Landschaftsauswahl bestand diesmal; damit ist ihre
-wechselhafte Ursache nicht erklärt. Es gab keine gelockerten Assertions, neue
-Retries oder weitere Korrekturschleife. Detailbelege und Paketberichte liegen unter
-`src-tauri/target/cleanup/lod-review/lod01/`, insbesondere `F/` und `G/`.
-Der Hausstand ist nicht vollständig abgenommen.
+Der Grundstückstand ist nicht vollständig abgenommen. Belege liegen unter
+`src-tauri/target/cleanup/lod-review/lod02/F/` und `G/`. Nächster Schritt ist H
+zur ehrlichen Veröffentlichung des erhaltenen Stands unter bestehenden Checks;
+keine zweite G-Runde. Danach folgt der separate frische Cleanup-Abschnitt.
 
-Der bisherige veröffentlichte CI-Stand bestand Transportprüfung, Typen,
-TypeScript-/Rusttests, Clippy, Format und Webbuild, scheiterte jedoch mit sieben
-Browserfehlern (198 bestanden, zwei übersprungen); RPM wurde nicht ausgeführt.
-Die lokalen Hausänderungen haben noch keinen vollständigen CI-/Browserlauf.
-Main-Veröffentlichung bleibt an die bestehenden Checks gebunden. Native
-Bedienabnahme, RPM-Nachweis, aktuelle große Performanceprüfung und die gesamte
-begonnene Phase-4-Zeichenplanung bleiben offen; Browserteilprüfungen ersetzen sie
-nicht. Nächster Handoff ist die verbleibende Erstgesten-/Ankerprüfung ohne Verlust
-der bestehenden Sicherheits- und Funktionsaussagen.
+Eine aktuelle vollständige Browser-/CI-Freigabe fehlt. Der bekannte ältere
+veröffentlichte Lauf scheiterte an sieben Browserfällen; ein späterer
+Vorläuferlauf war zuletzt dokumentiert in_progress und wurde hier nicht erneut
+abgefragt. Main-Veröffentlichung bleibt an echte Checks des tatsächlichen
+Kandidaten gebunden. Native Bedienung, RPM-Nachweis, große Performanceprüfung
+und die vollständige begonnene Phase-4-Zeichenplanung bleiben offen.

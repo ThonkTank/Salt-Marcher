@@ -37,20 +37,38 @@ it("combines same-level preview terrain without discarding untouched tiles", () 
 it("orders material layers and omits hidden parcel selection without mutating the scene", () => {
   const objects = [
     { kind: "area", id: "new", order: 2 },
+    { kind: "parcel", id: "first" },
+    { kind: "scenery", id: "scenery" },
     { kind: "parcel", id: "hidden" },
+    { kind: "road", id: "road", width: 2, path: [] },
     { kind: "area", id: "old", order: 1 },
+    { kind: "parcel", id: "second" },
+    { kind: "house", id: "house", contours: [] },
   ];
+  const before = structuredClone(objects);
+  const visibility = {
+    boundaries: ["second", "first"],
+    grids: ["hidden", "first"],
+  };
+  const visibilityBefore = structuredClone(visibility);
   const presentation = { scene: { objects } } as unknown as Presentation;
-  const frame = prepareCanvasScene(presentation, null, "hidden", {
-    boundaries: [],
-    grids: [],
-  });
+  const frame = prepareCanvasScene(presentation, null, "hidden", visibility);
   expect(
-    frame.layers.find((l) => l.kind === "area")?.objects.map((o) => o.id),
-  ).toEqual(["old", "new"]);
-  expect(frame.layers.find((l) => l.kind === "parcel")?.objects).toEqual([]);
+    frame.layers.map((layer) => [layer.kind, layer.objects.map((o) => o.id)]),
+  ).toEqual([
+    ["area", ["old", "new"]],
+    ["scenery", ["scenery"]],
+    ["parcel", ["first", "second"]],
+    ["road", ["road"]],
+    ["house", ["house"]],
+  ]);
   expect(frame.selectedObject).toBeUndefined();
-  expect(objects.map((o) => o.id)).toEqual(["new", "hidden", "old"]);
+  expect(
+    prepareCanvasScene(presentation, null, "second", visibility).selectedObject,
+  ).toBe(objects[6]);
+  expect(frame.grids).toEqual([objects[1], objects[3]]);
+  expect(objects).toEqual(before);
+  expect(visibility).toEqual(visibilityBefore);
 });
 
 it("merges ground preview tiles only for the current level and revision", () => {

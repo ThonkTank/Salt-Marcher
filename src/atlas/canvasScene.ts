@@ -56,6 +56,7 @@ export function prepareCanvasScene(
     !sameVersion(groundCandidate.status, terrain.status)
       ? undefined
       : groundCandidate;
+  const visibleBoundaries = new Set(visibility.boundaries);
   const kinds = presentation?.overview
     ? ["road"]
     : ["area", "scenery", "parcel", "road", "house"];
@@ -65,7 +66,7 @@ export function prepareCanvasScene(
       .filter(
         (o) =>
           o.kind === kind &&
-          (o.kind !== "parcel" || visibility.boundaries.includes(o.id)),
+          (o.kind !== "parcel" || visibleBoundaries.has(o.id)),
       )
       .sort((a, b) =>
         a.kind === "area" && b.kind === "area" ? a.order - b.order : 0,
@@ -113,7 +114,7 @@ export function prepareCanvasScene(
     selectedObject:
       selectedObject &&
       (selectedObject.kind !== "parcel" ||
-        visibility.boundaries.includes(selectedObject.id))
+        visibleBoundaries.has(selectedObject.id))
         ? selectedObject
         : undefined,
     selectedRoad: objects.some((o) => o.kind === "road" && o.id === selected)

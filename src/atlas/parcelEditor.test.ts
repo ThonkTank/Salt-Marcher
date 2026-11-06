@@ -239,6 +239,32 @@ describe("parcel editor geometry and identities", () => {
     expect(
       hitScene([{ ...area, id: "new", order: 2 }, area], point, 0, [])?.id,
     ).toBe("new");
+    const second = { ...parcel, id: "parcel-2" };
+    const hidden = { ...parcel, id: "parcel-hidden" };
+    const newest = { ...area, id: "newest", order: 2 };
+    const scenery = {
+      kind: "scenery" as const,
+      id: "scenery",
+      biome: "forest" as const,
+      assets: [{ point, size: 2, angle: 0, variant: 0 }],
+    };
+    const mixed = [newest, parcel, scenery, second, area, hidden];
+    const visible = [second.id, parcel.id];
+    const before = structuredClone(mixed);
+    const visibleBefore = [...visible];
+    expect(hitScene(mixed, point, 0, visible)).toBe(second);
+    expect(hitScene(mixed, point, 0, [parcel.id])).toBe(parcel);
+    expect(hitScene(mixed, point, 0, [])).toBe(scenery);
+    expect(
+      hitScene(
+        mixed.filter((o) => o !== scenery),
+        point,
+        0,
+        [],
+      ),
+    ).toBe(newest);
+    expect(mixed).toEqual(before);
+    expect(visible).toEqual(visibleBefore);
   });
   it("uses scene owner states for visibility including offscreen owners", () => {
     const scene = {

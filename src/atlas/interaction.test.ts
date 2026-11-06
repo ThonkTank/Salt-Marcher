@@ -886,11 +886,32 @@ describe("pure canvas input decisions", () => {
       expect(next.scale).toBe(viewScale(level - 1));
       expect(next.x + point[0] * next.scale).toBeCloseTo(
         camera.x + point[0] * camera.scale,
+        9,
       );
       expect(next.y + point[1] * next.scale).toBeCloseTo(
         camera.y + point[1] * camera.scale,
+        9,
       );
     }
+    const measuredCamera = {
+      x: -87.90000000000003,
+      y: -47.5,
+      scale: 6.773333333333333,
+    };
+    const anchor: WorldPoint = [
+      (413 - measuredCamera.x) / measuredCamera.scale,
+      (378 - measuredCamera.y) / measuredCamera.scale,
+    ];
+    const measuredCommands = decideDoubleClick(
+      state({ camera: measuredCamera }),
+      anchor,
+    );
+    expect(measuredCommands).toHaveLength(1);
+    if (measuredCommands[0].kind !== "camera") throw Error("expected camera");
+    const measuredNext = measuredCommands[0].camera;
+    expect(measuredNext.scale).toBe(25.6);
+    expect(measuredNext.x + anchor[0] * measuredNext.scale).toBeCloseTo(413, 9);
+    expect(measuredNext.y + anchor[1] * measuredNext.scale).toBeCloseTo(378, 9);
     const camera = { x: 0, y: 0, scale: 20 };
     const lod = decideLod(camera.scale, decideLod(viewScale(1)));
     expect(lod.navigationLevel).toBe(1);

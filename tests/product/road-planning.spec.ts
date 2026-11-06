@@ -150,11 +150,16 @@ test("compact controls fit a small window and cancel an incomplete road", async 
 test("existing parcel handles reject a house cut and preserve the document", async ({
   page,
 }) => {
-  const { seedParcels, selectObject } = await import("../support/editor");
+  const { seedParcels, selectObject, paintedReady } =
+    await import("../support/editor");
   await page.goto(url);
   const { parcel } = await seedParcels(page);
   await page.reload();
   await ready(page);
+  await page
+    .getByLabel("Ansichtsmaßstab")
+    .selectOption({ label: "Grundstück" });
+  await paintedReady(page);
   await selectObject(page, "▱ Parzelle");
   await ready(page);
   const before = await scene(page),

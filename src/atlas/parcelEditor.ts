@@ -97,11 +97,11 @@ export function hitScene(
   tolerance: number,
   visibleParcels: string[],
 ): MapObject | undefined {
+  const visibleParcelIds = new Set(visibleParcels);
   for (const kind of ["house", "road", "parcel", "scenery", "area"] as const) {
     const candidates = objects.filter(
       (o) =>
-        o.kind === kind &&
-        (o.kind !== "parcel" || visibleParcels.includes(o.id)),
+        o.kind === kind && (o.kind !== "parcel" || visibleParcelIds.has(o.id)),
     );
     if (kind === "area")
       candidates.sort((a, b) =>

@@ -95,6 +95,8 @@ Es gibt keinen zusätzlichen Siedlungsowner und keine eigene Bearbeitungsqueue.
 ## Editorzustand und Eingaben
 
 `AtlasApp` rendert die Oberfläche; `useAtlasEditor` verbindet die Besitzer.
+`toolScaleRestriction` in `editorView` projiziert die gemeinsame reine
+Skalensperre für Bearbeitungsfreigabe und Bedienhinweise.
 `editorScene` trennt die zuletzt sichtbare Szene von den für Interaktionen gültigen
 Ownerdaten; `canEdit` projiziert die Bearbeitungsfreigabe. `editorInput` stellt
 den Eingabesnapshot einschließlich Kachelanfragen und Regionsfreigabe zusammen.

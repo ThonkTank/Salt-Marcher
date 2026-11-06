@@ -432,6 +432,10 @@ sie ist keine exakte Einzelpunktmessung.
 
 ### Navigation und Oberfläche
 
+Auswählbare, durch den Maßstab gesperrte Werkzeuge zeigen statt einer
+Zeicheneinladung einen Hinweis zum Hineinzoomen. Der Name der Ansicht allein
+garantiert keine Bearbeitungsfreigabe.
+
 Mitteltaste oder Leertaste+Ziehen verschiebt die Karte, Mausrad zoomt. Ein Haus
 öffnet per Doppelklick oder „Innen öffnen“; die Kamera bleibt erhalten.
 Außenzoom reicht bis 0,000002 CSS-Pixel pro Fuß. Straßen, Regionen und Höhen

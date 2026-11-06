@@ -11,6 +11,7 @@ import { Modal } from "../Modal";
 import { AtlasClient } from "./client";
 import { AtlasCanvas } from "./AtlasCanvas";
 import { useAtlasEditor } from "./useAtlasEditor";
+import { toolScaleRestriction } from "./editorView";
 import "./atlas.css";
 const desktop = new AtlasClient();
 export default function AtlasApp({
@@ -59,6 +60,7 @@ export default function AtlasApp({
     toolOptionsProps,
     inspectorProps,
   } = useAtlasEditor(client);
+  const restriction = toolScaleRestriction(tool, interior, lod);
   return (
     <div className="atlas-app">
       <header className="atlas-header" inert={session.exclusive || !!deletion}>
@@ -111,15 +113,19 @@ export default function AtlasApp({
         <main className="atlas-map" ref={host}>
           <AtlasCanvas {...canvasProps} />
           <div className="atlas-map-help">
-            <span>
-              {tool === "road" || tool === "river"
-                ? "Klicken: Punkt · Enter / Rechtsklick: Übernehmen"
-                : tool === "area"
-                  ? "Ziehen / Halten: Boden malen · Loslassen: Übernehmen"
-                  : tool === "select"
-                    ? "Klicken: Auswählen · Ziehen: Bearbeiten"
-                    : "Ziehen: Zeichnen"}
-            </span>
+            {(!interior || restriction === null) && (
+              <span>
+                {!interior && restriction !== null
+                  ? `${toolLabels[tool].label} · Für diese Bearbeitung hineinzoomen.`
+                  : tool === "road" || tool === "river"
+                    ? "Klicken: Punkt · Enter / Rechtsklick: Übernehmen"
+                    : tool === "area"
+                      ? "Ziehen / Halten: Boden malen · Loslassen: Übernehmen"
+                      : tool === "select"
+                        ? "Klicken: Auswählen · Ziehen: Bearbeiten"
+                        : "Ziehen: Zeichnen"}
+              </span>
+            )}
             <details>
               <summary>Hilfe</summary>
               {tool === "select" && (interior || lod.policy.exact) && (
@@ -154,27 +160,27 @@ export default function AtlasApp({
               ? `${house?.name ?? (context.kind === "parcel" ? "Leere Parzelle" : "Gebäude")} · Geschoss ${presentation?.floor ?? floor}`
               : `Atlas · ${ATLAS_VIEWS[atlasLevel].name}`}
           </div>
-          {interior && !lod.policy.exact && (
+          {interior && restriction === "detail" && (
             <div className="atlas-transition">
               Zum Innenbearbeiten auf mindestens 20 % zoomen.
             </div>
           )}
           {!interior && !lod.policy.exact && (
             <div className="atlas-overview-hint">
-              {tool === "road" || tool === "river"
+              {tool === "road"
                 ? "Straßenplanung · Detailbearbeitung ab 20 %"
-                : "Übersicht · Doppelklick auf freie Karte zum Hineinzoomen"}
+                : tool === "river"
+                  ? "Flussplanung"
+                  : "Übersicht · Doppelklick auf freie Karte zum Hineinzoomen"}
             </div>
           )}
           <div className="atlas-navigation">
-            {!interior &&
-              !lod.policy.detailBrushes &&
-              ["area", "scenery", "water"].includes(tool) && (
-                <span>
-                  Lokales Detailwerkzeug · Für Küsten Land/Meer unter Höhen
-                  wählen.
-                </span>
-              )}
+            {!interior && restriction === "localBrush" && (
+              <span>
+                Lokales Detailwerkzeug · Für Küsten Land/Meer unter Höhen
+                wählen.
+              </span>
+            )}
             {!interior && !lod.policy.exact && (
               <button onClick={zoomToEdit}>Zum Bearbeiten hineinzoomen</button>
             )}
