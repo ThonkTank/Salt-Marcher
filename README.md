@@ -65,7 +65,7 @@ Planung und Dateiabläufe sind im [Produktvertrag](docs/product-contract.md)
 beschrieben.
 
 Neue Dokumente beginnen als Ozean. „Höhen → Land“ legt Landflächen an;
-die Ansichtsauswahl navigiert vom Grundstück bis zur Welt. Ortschaften werden
+die Ansichtsauswahl navigiert vom Raum bis zur Welt. Ortschaften werden
 über die gleichnamige Kategorie in „Regionen“ angelegt, nicht als eigene Objekte.
 Dateiformat 18 ersetzt die bisherigen Entwicklungsdateien ohne Migration.
 

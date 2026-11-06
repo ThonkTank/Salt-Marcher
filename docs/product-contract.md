@@ -684,6 +684,24 @@ gibt es keinen weiteren Schritt. Auswahl und Entwürfe bleiben erhalten.
 | Kontinent               | 4.000–12.000 km |
 | Welt                    | ab 12.000 km    |
 
+„Quartier / kleines Dorf“ dient der Orientierung und Planung über mehrere Straßen.
+Straßenführung, Bebauungsgruppen, größere Freiräume, wichtige Orte sowie Wasser
+und Landschaft bilden das Ortsbild. Ausreichend große Dächer können einzeln
+erscheinen; kleinere oder durch die Darstellungsgrenzen verdrängte Gebäude tragen
+weiterhin zur Bebauungsdichte bei. Die Übersicht zeigt keine exakten
+Grundstücksgrenzen oder Innenraumdetails. Namen werden nach den Regeln der
+Stadtübersicht und der Regionen priorisiert und begrenzt.
+
+Innerhalb dieser benannten Ansicht liegt die Inhaltsgrenze für gewöhnliche
+Gebäudenamen sowie Boden- und Gewässerbearbeitung. Die Ansichtsauswahl landet
+im gröberen Teil: Gewöhnliche Gebäude außerhalb der Auswahl tragen dort keine
+Namen, und die beiden Pinsel sind gesperrt. Beim Hineinzoomen können diese Namen
+und Werkzeuge bei gleichbleibendem Ansichtsnamen verfügbar werden. Es gelten
+die Inhaltsgrenzen und Rücklaufbereiche der Stadtübersicht und der Werkzeugregeln.
+Bestehende Bodenfarben, Gewässer und Landschaft bleiben auch bei gesperrtem
+Malwerkzeug Teil der Darstellung. Haus-, Landschafts- und Innenbearbeitung
+benötigen weiterhin den Nahzoom; ein Innenkontext wird ausdrücklich geöffnet.
+
 Diese Bereiche sind keine Verwaltungsordnung. Kachelanfragen sind je Schicht
 auf 64 Kacheln begrenzt und wählen bei Bedarf eine gröbere Darstellung.
 Flussübersichten laden höchstens 128 priorisierte Verläufe mit je 128 Samples;
