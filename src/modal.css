@@ -1,0 +1,32 @@
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: #000a;
+  z-index: 10;
+  padding: 24px;
+}
+.modal {
+  width: min(460px, 100%);
+  padding: 24px;
+  border-radius: 10px;
+  border: 1px solid #ffffff20;
+  background: var(--panel);
+  box-shadow: 0 20px 80px #0005;
+}
+.modal h2 {
+  font-size: 18px;
+}
+.modal p {
+  font-size: 14px;
+  line-height: 1.7;
+  color: #c4c4c4;
+}
+
+.modal .section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
