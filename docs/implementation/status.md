@@ -75,4 +75,6 @@ p95 vorher 427–516 ms, danach 339–376 ms; Nachlauf vorher 259–427 ms, dana
 ist nicht belegt; keine weitere Zeitmessreihe wurde begonnen.
 
 RPM-Installation, große Stadt-/Weltlastfälle und der umfangreiche Release-Treiber
-bleiben offen. Die vollständige CI des neuen Landschaftsstandes steht aus.
+bleiben offen. Die vollständige CI des neuen Landschaftsstandes steht aus. Ihr erster Lauf
+meldete eine verbliebene Format-21-Erwartung im Parzellen-Integrationstest.
+Die Erwartung entspricht nun Format 22; alle elf Parzellenfälle bestehen lokal.
