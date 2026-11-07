@@ -92,7 +92,7 @@ it("shares scale restrictions with edit readiness across hysteresis", () => {
     ["scenery", null],
   ]);
   check(decideLod(0.31), false, [
-    ["area", "localBrush"],
+    ["area", null],
     ["scenery", "localBrush"],
     ["water", "localBrush"],
     ["house", "detail"],

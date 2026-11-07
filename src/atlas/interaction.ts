@@ -1,4 +1,4 @@
-import { landAuthorResolution, WORLD_LIMIT } from "./lod";
+import { groundResolution, landAuthorResolution, WORLD_LIMIT } from "./lod";
 import { viewScale, zoomAt, type LodDecision } from "./lod";
 import { riverHit } from "./riverView";
 import type { RiverAction } from "./generated/RiverAction";
@@ -1060,6 +1060,7 @@ function brushPointerDown(
         view: snapshot.groundView,
         brush: {
           ...snapshot.ground,
+          resolution: groundResolution(camera.scale),
           diameter: snapshot.ground.diameter / camera.scale,
           seed: snapshot.scenerySeed ?? 1,
           points: [[p[0], p[1], 0]],
