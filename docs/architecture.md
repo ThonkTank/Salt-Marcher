@@ -110,7 +110,14 @@ Darstellungsbudget ab. `terrain_raster` unterteilt nichtkonstante Bereiche bis z
 Abtastauflösung und berechnet Relief, Wasserabdeckung und Höhenlinien aus der
 kanonischen Oberfläche samt Flussbetten, Plattformen und lokalen Gewässern.
 Gemeinsame Weltabtastpunkte und ein Pixelrand ermöglichen Kachelfilterung;
-konstante Raster werden kompakt übertragen. Binärdaten verwenden Base64.
+konstante Raster werden kompakt übertragen. Für natürliche Oberflächen ohne lokale
+Gewässer, Flüsse oder Plattformen beweisen konservative Höhenintervalle die
+vollständige Wasserabdeckung beziehungsweise Trockenheit einschließlich des
+Antialiasing-Rands. Nur unentschiedene Küstenbereiche benötigen dichte Höhenknoten.
+Die Intervallprüfung unterteilt bis zu begrenzten Rasterblöcken; exakte Knoten
+werden an gemeinsamen Kanten innerhalb der Anfrage wiederverwendet. Relief und
+Höhenlinien behalten ihre unabhängige, unveränderte Höhenabtastung. Bei abgeleiteten
+Einflüssen bleibt die vollständige Abtastung erhalten. Binärdaten verwenden Base64.
 Reliefgradienten verwenden das bereits berechnete 33×33-Höhenraster und
 werten nur die 280 fehlenden Punkte des zweischrittigen Randes zusätzlich aus.
 
