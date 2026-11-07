@@ -2,7 +2,7 @@ import { afterEach, expect, it, vi } from "vitest";
 import {
   decodeBytes,
   terrainImage,
-  prepareReliefSampler,
+  prepareMaterialSampler,
 } from "./terrainRaster";
 import type { SurfaceTile } from "./generated/SurfaceTile";
 import type { TerrainResponse } from "./generated/TerrainResponse";
@@ -34,6 +34,7 @@ it("decodes opaque relief and constant water with a shared pixel halo", () => {
       contourInterval: 5,
       pixels: 2,
       relief: btoa(String.fromCharCode(...rgba)),
+      materials: btoa(String.fromCharCode(0, 0, 222)),
       water: btoa(String.fromCharCode(127)),
       contours: [],
     },
@@ -61,9 +62,9 @@ it("decodes opaque relief and constant water with a shared pixel halo", () => {
     Array.from({ length: 16 }, (_, i) => i * 17),
   );
   expect(
-    prepareReliefSampler({ level: 0, tiles: [tile] } as TerrainResponse)(
+    prepareMaterialSampler({ level: 0, tiles: [tile] } as TerrainResponse)(
       -80,
       80,
-    ),
-  ).toBe(1);
+    )[2],
+  ).toBeCloseTo(1, 2);
 });

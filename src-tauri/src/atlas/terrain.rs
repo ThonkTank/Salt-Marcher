@@ -83,6 +83,9 @@ pub struct SurfaceRaster {
     pub ocean: String,
     /// Base64 RGBA relief, with one pixel halo on each edge.
     pub relief: String,
+    /// Base64 35×35 RGB control nodes (one node halo), or one constant triple.
+    /// Rock coverage, snow coverage, illumination (255 = 1.15).
+    pub materials: String,
     /// Base64 water coverage with the same halo; local water takes precedence.
     pub water: String,
     pub contours: Vec<[f64; 4]>,
@@ -178,6 +181,9 @@ pub struct Brush {
     #[serde(default)]
     #[cfg_attr(test, ts(optional))]
     pub roughness: Option<f64>,
+    #[serde(default)]
+    #[cfg_attr(test, ts(optional))]
+    pub feature_height: Option<f64>,
     pub mode: BrushMode,
     pub radius: f64,
     pub amount: f64,
@@ -195,6 +201,9 @@ pub enum BrushMode {
     Lower,
     Smooth,
     Flatten,
+    Mountains,
+    Hills,
+    Canyon,
 }
 pub fn valid_height(z: f64) -> bool {
     z.is_finite() && z.abs() <= 100_000.0
@@ -437,6 +446,11 @@ pub fn stroke_prepared(
                 let z = match b.mode {
                     BrushMode::Land => old.max(10.0),
                     BrushMode::Sea => old.min(-10.0),
+                    BrushMode::Mountains | BrushMode::Hills | BrushMode::Canyon => {
+                        let q = [x as f64 * STEP / b.radius, y as f64 * STEP / b.radius];
+                        let shape = feature_profile(b.mode, q, d);
+                        old + b.feature_height.unwrap_or(100.0) * shape
+                    }
                     BrushMode::Raise => old + b.amount * w,
                     BrushMode::Lower => old - b.amount * w,
                     BrushMode::Flatten => old + (b.target - old) * b.strength * w,
@@ -465,6 +479,7 @@ mod tests {
         Brush {
             resolution: None,
             roughness: None,
+            feature_height: None,
             mode: BrushMode::Lower,
             radius: 25.0,
             amount: 1.0,
@@ -473,6 +488,35 @@ mod tests {
             points,
         }
     }
+    #[test]
+    fn feature_relief_is_bounded_varied_and_accumulates() {
+        for mode in [BrushMode::Mountains, BrushMode::Hills, BrushMode::Canyon] {
+            let mut b = brush(vec![[-100., -20.], [0., 20.], [100., -20.]]);
+            b.mode = mode;
+            b.radius = 80.;
+            b.feature_height = Some(1000.);
+            let mut grid = Grid::new();
+            stroke(&mut grid, &b).unwrap();
+            let first = grid.clone();
+            let base = at(&Grid::new(), 0, 0);
+            let sign = if matches!(mode, BrushMode::Canyon) {
+                -1.
+            } else {
+                1.
+            };
+            assert!(first.iter().all(|(_, z)| (z - base) * sign >= 0.));
+            assert!((at(&first, 0, 0) - base) * sign > 10.);
+            assert_eq!(at(&first, 0, 40), base);
+            assert!((at(&first, 0, 0) - at(&first, 8, 0)).abs() > 1.);
+            stroke(&mut grid, &b).unwrap();
+            for (&key, &z) in first.iter() {
+                assert!((grid.get(&key).unwrap() - base - 2. * (z - base)).abs() < 1e-8);
+            }
+            b.feature_height = Some(f64::NAN);
+            assert!(stroke(&mut grid, &b).is_err());
+        }
+    }
+
     #[test]
     fn resampling_and_negative_tiles() {
         let mut a = Grid::new();
@@ -709,7 +753,38 @@ where
     })
 }
 
+// World-anchored relief, invariant when points and radius are scaled into an
+// author grid. The 15/64 factor normalizes the quartic kernel at radius/4 spacing.
+fn feature_profile(mode: BrushMode, q: Point, d: f64) -> f64 {
+    // Rotate and gently warp the field so lattice axes do not become straight
+    // east-west / north-south ridges. The warp is spatial, never event-random.
+    let rotated = [0.8 * q[0] - 0.6 * q[1], 0.6 * q[0] + 0.8 * q[1]];
+    let warped = [
+        rotated[0] + 0.6 * (coast_noise([rotated[0] * 1.7 + 5.2, rotated[1] * 1.7 + 9.1]) - 0.5),
+        rotated[1] + 0.6 * (coast_noise([rotated[0] * 1.7 - 8.3, rotated[1] * 1.7 + 2.4]) - 0.5),
+    ];
+    let noise = |f: f64| coast_noise([warped[0] * f + 17.3, warped[1] * f - 43.7]);
+    let w = (1.0 - d * d).powi(2);
+    match mode {
+        BrushMode::Hills => w * (0.12 + 0.88 * noise(3.5).powi(2)) * 0.234375,
+        BrushMode::Mountains => {
+            let ridge = |f| (1.0 - (2.0 * noise(f) - 1.0).abs()).powi(3);
+            w * (0.12 + 0.65 * ridge(2.5) + 0.23 * ridge(7.5)) * 0.234375
+        }
+        BrushMode::Canyon => {
+            let floor = (1.0 - d.powi(4)).max(0.0).powi(8);
+            -floor * (0.85 + 0.15 * noise(5.0)) * 0.2
+        }
+        _ => 0.0,
+    }
+}
+
 fn validate_stroke(b: &Brush) -> Result<()> {
+    ensure(
+        b.feature_height
+            .is_none_or(|h| h.is_finite() && (0.1..=30_000.0).contains(&h)),
+        "Reliefhöhe: 0,1–30.000 Fuß",
+    )?;
     ensure(
         b.roughness
             .is_none_or(|r| r.is_finite() && (0.0..=1.0).contains(&r)),
@@ -885,6 +960,7 @@ mod swept_land_tests {
             let mut brush = Brush {
                 resolution: None,
                 roughness: Some(0.8),
+                feature_height: None,
                 mode,
                 radius: 80.,
                 amount: 1.,
@@ -925,6 +1001,7 @@ mod swept_land_tests {
         let mut brush = Brush {
             resolution: None,
             roughness: None,
+            feature_height: None,
             mode: BrushMode::Land,
             radius: 25.,
             amount: 1.,
@@ -963,6 +1040,7 @@ mod swept_land_tests {
                 let brush = Brush {
                     resolution: None,
                     roughness: None,
+                    feature_height: None,
                     mode,
                     radius: 21.,
                     amount: 1.,
@@ -1010,6 +1088,7 @@ mod swept_land_tests {
         let brush = Brush {
             resolution: None,
             roughness: None,
+            feature_height: None,
             mode: BrushMode::Land,
             radius: 10.,
             amount: 1.,

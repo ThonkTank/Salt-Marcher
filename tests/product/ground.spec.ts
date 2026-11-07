@@ -1,6 +1,7 @@
 import { test, expect } from "../support/fixture";
 import {
   ready,
+  paintedReady,
   commit,
   url,
   screen,
@@ -192,3 +193,71 @@ test("ground final pointerup commits once while an obsolete preview is held", as
   ).toHaveLength(1);
   expect(alpha(await ground(page))).toBeGreaterThan(0);
 });
+
+for (const navigation of ["preset", "wheel"] as const) {
+  test(`ground paints and erases at world scale via ${navigation}`, async ({
+    page,
+  }) => {
+    await page.goto(url);
+    await paintedReady(page);
+    await commit(page, {
+      type: "terrainStroke",
+      brush: {
+        mode: "land",
+        resolution: 19,
+        radius: 40_000_000,
+        amount: 1,
+        strength: 1,
+        target: 10,
+        points: [[0, 0]],
+      },
+    });
+    await page.reload();
+    await paintedReady(page);
+    await page.getByLabel("Ansichtsmaßstab").selectOption({ label: "Welt" });
+    await paintedReady(page);
+    await page.getByRole("button", { name: "Boden", exact: true }).click();
+    await paintedReady(page);
+    let p = await screen(page, [0, 0]);
+    if (navigation === "wheel") {
+      await page.mouse.move(p.x, p.y);
+      await page.mouse.wheel(0, 1500);
+      await paintedReady(page);
+      p = await screen(page, [0, 0]);
+    }
+    await page.getByRole("button", { name: "Erde", exact: true }).click();
+    const before = await canvasPixel(page, p);
+    const revision = (await status(page)).revision;
+    await page.mouse.move(p.x, p.y);
+    await page.mouse.down();
+    await expect.poll(() => canvasPixel(page, p)).not.toEqual(before);
+    await page.mouse.move(p.x + 25, p.y + 15, { steps: 8 });
+    await page.mouse.up();
+    await expect
+      .poll(async () => (await status(page)).revision)
+      .toBe(revision + 1);
+    await paintedReady(page);
+    const painted = await canvasPixel(page, p);
+    expect(painted).not.toEqual(before);
+    const edits = (await calls(page, "commit")).filter(
+      (c) => (c.args.intent as { type: string }).type === "groundStroke",
+    );
+    expect(edits.at(-1)?.args.intent).toMatchObject({
+      brush: { resolution: expect.any(Number) },
+    });
+    await page.keyboard.press("Control+z");
+    await paintedReady(page);
+    await expect.poll(() => canvasPixel(page, p)).toEqual(before);
+    await page.keyboard.press("Control+Shift+z");
+    await paintedReady(page);
+    await expect.poll(() => canvasPixel(page, p)).toEqual(painted);
+    await page.getByRole("button", { name: "Radieren", exact: true }).click();
+    await page.mouse.move(p.x, p.y);
+    await page.mouse.down();
+    await expect.poll(() => canvasPixel(page, p)).not.toEqual(painted);
+    await page.mouse.up();
+    await expect
+      .poll(async () => (await status(page)).revision)
+      .toBeGreaterThan(revision + 1);
+  });
+}

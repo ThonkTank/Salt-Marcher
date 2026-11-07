@@ -235,7 +235,7 @@ auf über 100.000 Zellen gewachsener Raum bleibt bewegbar.
 
 ## Bildschirmpinsel
 
-Boden, Höhen, Gewässer, Landschaft und Regionen verwenden einen runden Pinsel mit 8–512
+Boden, klassische Höhenmodi, Gewässer, Landschaft und Regionen verwenden einen runden Pinsel mit 8–512
 CSS-Pixeln Durchmesser, Vorgabe 80. `[`/`]` und Alt+Mausrad ändern ihn um etwa
 zehn Prozent. Der Kreis bleibt zwischen Strichen beim Zoomen gleich groß;
 Pointerdown fixiert den daraus berechneten Weltradius für die Geste. Aktive
@@ -328,7 +328,7 @@ neu angelegte Kategorien, Rangstufen und Regionen nutzen den globalen Allocator.
 ## Bodenfarbpinsel
 
 „Boden“ ersetzt das Erstellen neuer Materialpolygone in der Werkzeugleiste.
-Bestehende Flächenobjekte bleiben auswählbar und bearbeitbar. Ab 0,32 CSS-Pixeln pro Fuß
+Bestehende Flächenobjekte bleiben auswählbar und bearbeitbar. In jeder Außenansicht
 malt Ziehen oder Halten mit der linken Taste Bodenfarbe; Loslassen übernimmt einen
 Strich als einen Historyschritt. Escape, Blur, Pointercancel und Werkzeugwechsel
 verwerfen die laufende Geste. Deckkraft begrenzt den Auftrag pro Strich; Farbfluss
@@ -338,16 +338,29 @@ Farbe. Einstellungen werden beim Beginn eines Strichs fixiert.
 Spitzen: weich, hart und wolkig; Vorgabe weich. Größe folgt dem gemeinsamen [Bildschirmpinsel](#bildschirmpinsel). Deckkraft und Farbfluss: 1–100 %, Vorgabe jeweils 100 %.
 Farbvorlagen: Gras `#9db58b`, Erde `#c8b99b`, Stein `#aaa9a3`; Vorgabe Gras.
 Freie Farbauswahl und Pipette ergänzen die Vorlagen. Die Pipette nimmt die ungeschattete
-Bodenfarbe der dargestellten Rasterstufe auf. Der lokale Radierer entfernt nur
-Bodenfarbe und legt den ursprünglichen Untergrund frei; er verwendet dieselben
+Farbe der gewählten Ebene in der dargestellten Rasterstufe auf, ohne Schnee oder
+Schattierung. Der lokale Radierer entfernt nur Farbe dieser Ebene und legt ihren
+natürlichen Grundton frei; er verwendet dieselben
 Spitzen und Auftragsparameter. Größenänderung und Zoom folgen dem gemeinsamen Bildschirmpinselvertrag.
 
-Bodenfarbe ist ein separates, dünn belegtes Raster mit einem Fuß Auflösung und
-64×64-Pixel-Kacheln in vormultipliziertem RGBA. Die Darstellung interpoliert weich,
+„Farbebene“ wählt Boden oder Fels. Beide speichern ihren Farbauftrag unabhängig.
+Fels erscheint an steilen Hängen mit weichem Übergang zwischen 30 und 45 Grad;
+sein natürlicher Grundton ist steingrau. Hohe Gipfel werden zwischen 3500 und
+5000 Metern über Meeresspiegel zunehmend schneeweiß. Schnee liegt über beiden
+Farben. Höhenänderungen passen die sichtbaren Materialbereiche an; verborgene
+Farbaufträge bleiben erhalten. Die Regeln gelten auch ohne vorherige Bodenmalerei.
+
+Bodenfarbe verwendet dünn belegte 64×64-Pixel-Autorenkacheln mit zwei getrennten
+vormultiplizierten RGBA-Ebenen (Boden, dann Fels; insgesamt 32.768 Bytes). Die beim Strichbeginn feste Auflösung beträgt 2^Stufe Fuß (Stufen 0–24),
+maßstabsabhängig ungefähr ein halbes bis ein Bildschirmpixel, mindestens einen Fuß.
+Feinere Kacheln erben grobe Farbe; spätere grobe Striche bearbeiten vorhandene
+Feinkacheln mit demselben Farbauftrag, ohne leere Feinraster anzulegen. Radierte
+transparente Autorenwerte verdecken geerbte Farbe. Die Darstellung interpoliert weich,
 erhält die Reliefschattierung und liegt unter Wasser, Landschaft, Straßen und
 Gebäuden. Bodenfarbe verändert keine Höhen, Fundamente oder Kollisionen.
 Ein Strich enthält höchstens 100.000 zeitgestempelte Pfadpunkte, dauert höchstens
-eine Stunde und berührt höchstens eine Million Rasterpixel. Die Berechnung ist
+eine Stunde und bearbeitet höchstens eine Million Rasterpixel einschließlich
+betroffener vorhandener Feinkacheln. Die Berechnung ist
 zusätzlich auf 100.000 Abdrücke und 40 Millionen Pixelprüfungen begrenzt; Überschreitung
 lehnt den gesamten Strich ab. Weg- und Zeitabtastung sind von der Eingabeereignisrate
 unabhängig; die Wolkenmaske ist durch den Seed reproduzierbar. Vorschau und Commit
@@ -401,6 +414,28 @@ bestimmen nicht die Meer-/Landgrenze.
 „Höhen“ funktioniert im gesamten Außenzoom. Vorgaben: Land, 80 CSS-Pixel
 Durchmesser, 1 Fuß Änderung, 25 % Stärke, Zielhöhe 10 Fuß. Anheben, Absenken,
 Glätten und Einebnen ergänzen Land/Meer. Änderung 0,1–100 Fuß, Stärke 0,01–1.
+Bergkette, Hügel und Schlucht erzeugen Relief entlang des Strichs. Die Größenwahl
+koppelt reale Breite und Reliefhöhe/-tiefe: Bergkette bietet Kleiner Berg
+(6 km / 300 m), Alpenmassiv (40 km / 2500 m) und Achttausender (100 km / 8500 m);
+Hügel bietet Sanfte Hügel (800 m / 30 m), Hügelland (2500 m / 100 m) und Hohe
+Hügel (6 km / 300 m); Schlucht bietet Kerbe (200 m / 30 m), Schlucht
+(1500 m / 200 m) und Großer Canyon (12 km / 1500 m). Breite (10–200.000 m)
+und Relief (1–9000 m) können einzeln geändert werden. Die Reliefangabe ist eine
+Formstärke relativ zum bestehenden Gelände, keine garantierte Gipfelhöhe über
+Meer; Wegüberlappungen verstärken den Auftrag. Wiederholtes Malen macht Hügel
+höher, Bergketten ausgeprägter und Schluchten tiefer. Halten allein verstärkt nicht.
+Unter Meeresspiegel entsteht Wasser; kleine Hügel auf tiefem Meeresboden können
+unter Wasser bleiben. Zum Aufbau einer Landschaft zuerst Land anlegen.
+
+Diese drei Modi behalten ihre reale Breite beim Zoomen. Modus- und Vorlagenwahl
+passen die Ansicht auf etwa 160 Pixel Pinseldurchmesser an; „Auf Pinselgröße zoomen“
+stellt diese Ansicht auch nach manueller Größenänderung her. Größenkurzbefehle
+ändern ihre reale Breite. Die Autorenauflösung hängt vom Radius ab (etwa 32–64
+Rasterintervalle pro Radius, mindestens 5 Fuß), nicht vom Kamerazoom. Bergketten
+verwenden unregelmäßige Grate, Hügel weiche ortsfeste Kuppen, Schluchten ein
+steiles negatives Querprofil. Die Form bleibt über Paketgrenzen stabil. Jeder
+Strich ist ein Undo-Schritt; gespeichert werden nur die entstandenen Höhenwerte.
+
 Land/Meer bietet die Küstenformen „Rund“ (Vorgabe) und „Kräuselig“.
 Kräuselig beginnt mit 65 % Küstenrauheit; der Regler reicht von 5 bis 100 %.
 Die Struktur formt Buchten und Landzungen innerhalb des Pinselkreises. Mehr
@@ -411,7 +446,7 @@ mit denselben Einstellungen würfelt die Küste nicht neu aus. Zoomen skaliert d
 bereits geschriebene Küste unverändert. Andere Höhenmodi verwenden keine Küstenrauheit.
 Für Land/Meer wird beim Pointerdown eine Autorenauflösung mit höchstens zwei
 CSS-Pixeln Rasterabstand gewählt, begrenzt durch das feinste 5-Fuß-Raster.
-Die übrigen Höhenmodi folgen ungefähr acht CSS-Pixeln. Die Auflösung bleibt
+Anheben, Absenken, Glätten und Einebnen folgen ungefähr acht CSS-Pixeln. Die Auflösung bleibt
 während des Strichs fixiert und ist unabhängig von Kachelbudgets und Darstellung.
 Ein grober Strich schreibt keine feineren Rasterpunkte. Land/Meer verwendet den
 Abstand zur gesamten überstrichenen Linie einschließlich runder Enden; die
@@ -485,8 +520,8 @@ garantiert keine Bearbeitungsfreigabe.
 
 Mitteltaste oder Leertaste+Ziehen verschiebt die Karte, Mausrad zoomt. Ein Haus
 öffnet per Doppelklick oder „Innen öffnen“; die Kamera bleibt erhalten.
-Außenzoom reicht bis 0,000002 CSS-Pixel pro Fuß. Straßen, Regionen und Höhen
-lassen sich in der gesamten Außenübersicht bearbeiten. Boden und lokale Gewässer
+Außenzoom reicht bis 0,000002 CSS-Pixel pro Fuß. Straßen, Boden, Regionen und Höhen
+lassen sich in der gesamten Außenübersicht bearbeiten. Lokale Gewässer
 benötigen mindestens 0,32 CSS-Pixel pro Fuß, Landschaft sowie andere
 Außenobjekte und Innenräume mindestens 1,28. Im Parzellenkontext
 verwendet Fit immer Polygonbounds, auch ohne Haus; ein fehlender Owner bedeutet
@@ -744,9 +779,9 @@ Grundstücksgrenzen oder Innenraumdetails. Namen werden nach den Regeln der
 Stadtübersicht und der Regionen priorisiert und begrenzt.
 
 Innerhalb dieser benannten Ansicht liegt die Inhaltsgrenze für gewöhnliche
-Gebäudenamen sowie Boden- und Gewässerbearbeitung. Die Ansichtsauswahl landet
+Gebäudenamen sowie Gewässerbearbeitung. Die Ansichtsauswahl landet
 im gröberen Teil: Gewöhnliche Gebäude außerhalb der Auswahl tragen dort keine
-Namen, und die beiden Pinsel sind gesperrt. Beim Hineinzoomen können diese Namen
+Namen, und der Gewässerpinsel ist gesperrt. Beim Hineinzoomen können diese Namen
 und Werkzeuge bei gleichbleibendem Ansichtsnamen verfügbar werden. Es gelten
 die Inhaltsgrenzen und Rücklaufbereiche der Stadtübersicht und der Werkzeugregeln.
 Bestehende Bodenfarben, Gewässer und Landschaft bleiben auch bei gesperrtem
@@ -770,7 +805,7 @@ gesperrt sind. Kleine Geometrien und Symbole dürfen nach den Darstellungsgrenze
 entfallen; die Übersicht garantiert nicht die Anzeige jedes Einzelobjekts.
 
 Auswahl und Navigation sowie Straßen-, Fluss-, Höhen- und Regionsbearbeitung
-bleiben nach ihren Werkzeugregeln verfügbar. Boden- und Gewässerpinsel benötigen
+bleiben nach ihren Werkzeugregeln verfügbar. Boden bleibt in allen Außenmaßstäben bearbeitbar; der Gewässerpinsel benötigt
 einen feineren Maßstab; Haus-, Landschafts- und Innenbearbeitung weiterhin den
 Nahzoom. Ein Innenkontext wird ausdrücklich geöffnet. Der Ansichtsname legt
 weder eine Regionsrangstufe noch eine Verwaltungsordnung fest.
@@ -846,10 +881,10 @@ Pro Ansicht werden höchstens 3.000 priorisierte Objektkandidaten betrachtet und
 
 ## Dateien und History
 
-`.saltatlas`: SQLite-Format **19**, ohne Migration/Altformate. Genau zehn
+`.saltatlas`: SQLite-Format **21**, ohne Migration/Altformate. Genau zehn
 STRICT-/WITHOUT-ROWID-Tabellen: `document_meta(singleton,next_identity)`,
 `objects(id,kind,body)`, `house_cells(building_id,payload)`,
-`terrain(x,y,z)`, `terrain_layers(level,x,y,z)`, `waters(id,body)`, `ground_tiles(x,y,pixels)`, `region_catalog(singleton,body)`, `regions(id,body)`, `rivers(id,body)`. Keine Arbeitsindizes,
+`terrain(x,y,z)`, `terrain_layers(level,x,y,z)`, `waters(id,body)`, `ground_tiles(level,x,y,pixels)`, `region_catalog(singleton,body)`, `regions(id,body)`, `rivers(id,body)`. Keine Arbeitsindizes,
 RTrees, Views, Trigger, History oder redundanten Konturen/Bounds.
 
 Autoritativ sind Straßeneigenschaften/Nodes/Sections/Rezept/Marker,
@@ -859,8 +894,7 @@ Flächenpunkte/-material/-Order, Landschaftsstriche mit konkreten Assets, natür
 Fundamenteinstellungen pro Haus, Bodenfarbkacheln sowie Regionskatalog,
 Regionsflächen, Namen, Stile und Beschriftungseinstellungen sowie Flussknoten,
 Breiten, Einstellungen und resultierende Verläufe. Regionsbeziehungen
-werden aus den Flächen abgeleitet. Leere Bodenfarbkacheln
-werden nicht gespeichert; ihre Übersichtspyramide wird beim Öffnen neu aufgebaut. Hauszellen stehen ausschließlich separat.
+werden aus den Flächen abgeleitet. Transparente Bodenfarbkacheln bleiben als explizite Überschreibungen erhalten; ihre Übersichtspyramide wird beim Öffnen neu aufgebaut. Hauszellen stehen ausschließlich separat.
 Gebundene Welttransforms und Konturen werden beim Öffnen neu berechnet.
 
 Unbekannte und doppelte verschachtelte JSON-Felder, zusätzliche Schemaobjekte,

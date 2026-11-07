@@ -452,6 +452,30 @@ describe("pure canvas input decisions", () => {
     },
   );
 
+  it.each([0.000002, 0.002, 0.4])(
+    "keeps feature width and author resolution fixed at zoom %s",
+    (scale) => {
+      const gesture = gestureOf(
+        state({
+          ...brushSettings,
+          brush: {
+            ...brushSettings.brush,
+            mode: "mountains",
+            radius: 65536,
+            featureHeight: 8000,
+          },
+          tool: "terrain",
+          camera: { x: 0, y: 0, scale },
+          lod: decideLod(scale),
+        }),
+      );
+      if (gesture?.kind !== "terrain") throw Error("Missing feature stroke");
+      expect(gesture.brush.radius).toBe(65536);
+      expect(gesture.brush.featureHeight).toBe(8000);
+      expect(gesture.brush.resolution).toBe(8);
+    },
+  );
+
   it("freezes physical author resolution at stroke start across later LOD changes", () => {
     const entered = decideLod(0.4);
     const lod = decideLod(0.37, entered);
@@ -481,6 +505,37 @@ describe("pure canvas input decisions", () => {
       brush: { resolution: lod.authorTerrainLevel },
     });
   });
+
+  it.each([0.31, 0.0001, 0.000002])(
+    "starts ground strokes without a zoom gate at %s",
+    (scale) => {
+      const gesture = gestureOf(
+        state({
+          ...brushSettings,
+          tool: "area",
+          camera: { x: 0, y: 0, scale },
+          lod: decideLod(scale),
+        }),
+      );
+      if (gesture?.kind !== "ground") throw Error("Missing ground stroke");
+      expect(gesture.brush.diameter * scale).toBe(80);
+      const resolution = gesture.brush.resolution!;
+      expect(2 ** resolution * scale).toBeGreaterThanOrEqual(0.5);
+      expect(2 ** resolution * scale).toBeLessThanOrEqual(1);
+      const later = state({
+        tool: "area",
+        camera: { x: 0, y: 0, scale: 2 },
+        workflow: geometryState(
+          { ...common, kind: "geometry" },
+          { kind: "ground" },
+          gesture,
+        ),
+      });
+      expect(
+        evaluatePointer(later, input([20, 4]), true)?.intent,
+      ).toMatchObject({ type: "groundStroke", brush: { resolution } });
+    },
+  );
 
   it("continues held ground flow at the last point with monotonic elapsed time", () => {
     const pointer = gestureOf(state({ ...brushSettings, tool: "area" }));

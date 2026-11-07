@@ -5,6 +5,7 @@ import type { TerrainResponse } from "./generated/TerrainResponse";
 
 type Decoded = {
   relief: Uint8Array;
+  materials: Uint8Array;
   land?: HTMLCanvasElement;
   water?: HTMLCanvasElement;
 };
@@ -21,11 +22,15 @@ export function decodeBytes(text: string): Uint8Array {
 function entry(tile: SurfaceTile): Decoded {
   let value = decoded.get(tile.contentId);
   if (!value) {
-    value = { relief: decodeBytes(tile.raster!.relief) };
+    value = {
+      relief: decodeBytes(tile.raster!.relief),
+      materials: decodeBytes(tile.raster!.materials),
+    };
     decoded.set(
       tile.contentId,
       value,
       value.relief.length +
+        value.materials.length +
         128 +
         (value.relief.length === 4 ? 4 : (tile.raster!.pixels + 2) ** 2 * 4) +
         (tile.raster!.water.length === 4
@@ -66,17 +71,15 @@ export function terrainImage(
   value[key] = canvas;
   return canvas;
 }
-/** Ground colors reuse the prepared relief; this is image sampling, not terrain reconstruction. */
-export function prepareReliefSampler(
+/** Sample prepared material weights and illumination, without reconstructing terrain. */
+export function prepareMaterialSampler(
   view: TerrainResponse,
-): (x: number, y: number) => number {
+): (x: number, y: number) => [number, number, number] {
   const width = 160 * 2 ** view.level;
   let tx = NaN,
     ty = NaN;
   let tile: SurfaceTile | undefined;
   let bytes: Uint8Array | undefined;
-  // Scanline callers stay in the same tile for many pixels. Keep only that
-  // decoded reference for this paint call, not another persistent cache.
   return (x, y) => {
     const nextX = Math.floor(x / width),
       nextY = Math.floor(y / width);
@@ -84,13 +87,25 @@ export function prepareReliefSampler(
       tx = nextX;
       ty = nextY;
       tile = view.tiles.find((t) => t.x === tx && t.y === ty);
-      bytes = tile?.raster ? entry(tile).relief : undefined;
+      bytes = tile?.raster ? entry(tile).materials : undefined;
     }
-    if (!tile?.raster || !bytes) return 1;
-    if (bytes.length === 4) return bytes[0] / 178;
-    const n = tile.raster.pixels;
-    const px = Math.floor((x / width - tx) * n) + 1;
-    const py = Math.floor((y / width - ty) * n) + 1;
-    return bytes[(py * (n + 2) + px) * 4] / 178;
+    if (!tile?.raster || !bytes) return [0, 0, 1];
+    if (bytes.length === 3)
+      return [bytes[0] / 255, bytes[1] / 255, (bytes[2] / 255) * 1.15];
+    const gx = (x / width - tx) * 32 + 1,
+      gy = (y / width - ty) * 32 + 1;
+    const ix = Math.floor(gx),
+      iy = Math.floor(gy),
+      u = gx - ix,
+      v = gy - iy;
+    const i = iy * 35 + ix;
+    const channel = (k: number) =>
+      Math.round(
+        bytes![i * 3 + k] * (1 - u) * (1 - v) +
+          bytes![(i + 1) * 3 + k] * u * (1 - v) +
+          bytes![(i + 35) * 3 + k] * (1 - u) * v +
+          bytes![(i + 36) * 3 + k] * u * v,
+      ) / 255;
+    return [channel(0), channel(1), channel(2) * 1.15];
   };
 }

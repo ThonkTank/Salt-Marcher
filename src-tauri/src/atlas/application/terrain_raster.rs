@@ -162,6 +162,34 @@ fn compact(bytes: &[u8]) -> String {
         bytes
     })
 }
+/// Physical height and slope determine material, independently of the pigment layers.
+fn material(z: f64, slope: f64, shade: f64) -> [u8; 3] {
+    let smooth = |x: f64, lo: f64, hi: f64| {
+        let t = ((x - lo) / (hi - lo)).clamp(0., 1.);
+        t * t * (3. - 2. * t)
+    };
+    [
+        (255. * smooth(slope, 30f64.to_radians().tan(), 45f64.to_radians().tan())).round() as u8,
+        (255. * smooth(z * 0.3048, 3500., 5000.)).round() as u8,
+        (255. * shade / 1.15).round() as u8,
+    ]
+}
+fn material_color(m: [u8; 3]) -> [u8; 4] {
+    let rock = m[0] as f64 / 255.;
+    let snow = m[1] as f64 / 255.;
+    let shade = m[2] as f64 / 255. * 1.15;
+    let soil = [178., 185., 151.];
+    let stone = [145., 142., 137.];
+    let ice = [245., 247., 250.];
+    let mut out = [0, 0, 0, 255];
+    for k in 0..3 {
+        out[k] = (((soil[k] * (1. - rock) + stone[k] * rock) * (1. - snow) + ice[k] * snow) * shade)
+            .round()
+            .clamp(0., 255.) as u8;
+    }
+    out
+}
+
 /// Natural surface and all derived influences are evaluated at shared world nodes.
 /// The halo supplies filtering across tile boundaries without neighbor dependencies.
 pub fn display(
@@ -185,7 +213,8 @@ pub fn display(
             heights: STANDARD.encode((lo as f32).to_le_bytes()),
             #[cfg(test)]
             ocean: STANDARD.encode([if lo < 0. { 255 } else { 0 }]),
-            relief: STANDARD.encode([178u8, 185, 151, 255]),
+            relief: STANDARD.encode(material_color(material(lo, 0., 1.))),
+            materials: STANDARD.encode(material(lo, 0., 1.)),
             water: STANDARD.encode([if lo < 0. { 255 } else { 0 }]),
             contours: vec![],
         });
@@ -346,15 +375,19 @@ pub fn display(
             };
         }
     }
-    let mut shades = vec![0.; 35 * 35];
+    // Material and illumination vary on the existing relief control grid.
+    // Transfer this small grid once, rather than another pixel-sized texture.
+    let mut materials = vec![0; 35 * 35 * 3];
     for y in 0..35 {
         for x in 0..35 {
             let i = (y + 1) * 37 + x + 1;
             let dx = (relief_nodes[i + 1] - relief_nodes[i - 1]) / (2. * h);
             let dy = (relief_nodes[i + 37] - relief_nodes[i - 37]) / (2. * h);
-            shades[y * 35 + x] = (0.38
+            let shade = (0.38
                 + 0.62 * (1. + 0.45 * dx - 0.55 * dy) / (1. + dx * dx + dy * dy).sqrt())
             .clamp(0.58, 1.15);
+            let at = (y * 35 + x) * 3;
+            materials[at..at + 3].copy_from_slice(&material(relief_nodes[i], dx.hypot(dy), shade));
         }
     }
     let mut relief = vec![0; (n + 2) * (n + 2) * 4];
@@ -367,15 +400,16 @@ pub fn display(
             let u = gx - ix as f64;
             let v = gy - iy as f64;
             let i = iy * 35 + ix;
-            let shade = shades[i] * (1. - u) * (1. - v)
-                + shades[i + 1] * u * (1. - v)
-                + shades[i + 35] * (1. - u) * v
-                + shades[i + 36] * u * v;
-            let at = (y * (n + 2) + x) * 4;
-            for (k, color) in [178., 185., 151.].iter().enumerate() {
-                relief[at + k] = (color * shade).round() as u8;
+            let mut m = [0; 3];
+            for (k, value) in m.iter_mut().enumerate() {
+                *value = (materials[i * 3 + k] as f64 * (1. - u) * (1. - v)
+                    + materials[(i + 1) * 3 + k] as f64 * u * (1. - v)
+                    + materials[(i + 35) * 3 + k] as f64 * (1. - u) * v
+                    + materials[(i + 36) * 3 + k] as f64 * u * v)
+                    .round() as u8;
             }
-            relief[at + 3] = 255;
+            let pixel = y * (n + 2) + x;
+            relief[pixel * 4..pixel * 4 + 4].copy_from_slice(&material_color(m));
         }
     }
     #[cfg(test)]
@@ -396,6 +430,7 @@ pub fn display(
         #[cfg(test)]
         ocean: compact(&ocean),
         relief: STANDARD.encode(relief),
+        materials: STANDARD.encode(materials),
         water: compact(&water),
         contours: contours(
             bounds,
@@ -492,6 +527,53 @@ mod tests {
             .map(|b| f32::from_le_bytes(*b))
             .collect()
     }
+    #[test]
+    fn material_thresholds_use_physical_height_and_slope() {
+        assert_eq!(&material(0., 0., 1.)[..2], &[0, 0]);
+        assert_eq!(&material(5000. / 0.3048, 0., 1.)[..2], &[0, 255]);
+        assert_eq!(&material(100., 1., 1.)[..2], &[255, 0]);
+        let transition = material(4250. / 0.3048, 0.8, 1.);
+        assert!((1..255).contains(&transition[0]));
+        assert_eq!(transition[1], 128);
+        let snow = material_color(material(6000. / 0.3048, 0., 1.));
+        assert!(snow[..3].iter().all(|&v| v >= 245));
+        let stone = material_color(material(100., 1., 1.));
+        assert_eq!(stone, [145, 142, 137, 255]);
+    }
+
+    #[test]
+    fn material_halos_match_at_adjacent_tile_edges() {
+        let app = AtlasApplication::new().unwrap();
+        let points: Vec<_> = (-5..=37)
+            .flat_map(|y| (-5..=69).map(move |x| (x, y, 13000. + x as f64 * 6.)))
+            .collect();
+        terrain_store::write_points(&app.db, &points).unwrap();
+        let mut sampler = Sampler::new(&app.db).unwrap();
+        let mut render = |left: f64| {
+            let heights: Vec<_> = (0..=32)
+                .flat_map(|_| (0..=32).map(move |x| 13000. + (left + x as f64 * 5.) * 1.2))
+                .collect();
+            display(
+                &mut sampler,
+                [left, 0., left + 160., 160.],
+                32,
+                &heights,
+                &[],
+                |_, z| z,
+                false,
+            )
+            .unwrap()
+        };
+        let a = STANDARD.decode(render(0.).materials).unwrap();
+        let b = STANDARD.decode(render(160.).materials).unwrap();
+        for y in 0..35 {
+            assert_eq!(
+                &a[(y * 35 + 33) * 3..(y * 35 + 34) * 3],
+                &b[(y * 35 + 1) * 3..(y * 35 + 2) * 3]
+            );
+        }
+    }
+
     #[test]
     fn uniform_coverage_proof_preserves_steep_antialiasing_and_zero() {
         assert_eq!(uniform_ocean(0., 0.), Some(0.));

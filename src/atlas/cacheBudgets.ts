@@ -10,6 +10,10 @@ export const CACHE_BUDGETS = {
   riverGeometry: { bytes: 16 * MiB, entries: 256 },
 } as const;
 
-// RGBA relief + alpha as UTF-16 Base64, decoded relief and two RGBA canvases.
+// RGBA relief, alpha and a fixed material control grid as UTF-16 Base64, decoded arrays and two canvases.
 // The request allowance includes halo/array overhead; payload costs use actual lengths.
-export const TERRAIN_RASTER_BYTES = { decoded: 12, request: 28 } as const;
+export const TERRAIN_RASTER_BYTES = {
+  decoded: 12,
+  request: 28,
+  materials: 16 * 1024,
+} as const;

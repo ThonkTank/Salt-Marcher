@@ -110,7 +110,7 @@ function terrainResolution(scale: number, screenStep = 8): number {
   );
 }
 
-function groundResolution(scale: number): number {
+export function groundResolution(scale: number): number {
   return Math.max(0, Math.min(24, Math.ceil(Math.log2(1 / scale)) - 1));
 }
 

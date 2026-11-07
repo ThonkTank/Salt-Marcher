@@ -1,4 +1,9 @@
-import { landAuthorResolution, WORLD_LIMIT } from "./lod";
+import {
+  isFeatureBrush,
+  featureResolution,
+  terrainScreenRadius,
+} from "./featureBrush";
+import { groundResolution, landAuthorResolution, WORLD_LIMIT } from "./lod";
 import { viewScale, zoomAt, type LodDecision } from "./lod";
 import { riverHit } from "./riverView";
 import type { RiverAction } from "./generated/RiverAction";
@@ -1060,6 +1065,7 @@ function brushPointerDown(
         view: snapshot.groundView,
         brush: {
           ...snapshot.ground,
+          resolution: groundResolution(camera.scale),
           diameter: snapshot.ground.diameter / camera.scale,
           seed: snapshot.scenerySeed ?? 1,
           points: [[p[0], p[1], 0]],
@@ -1091,10 +1097,14 @@ function brushPointerDown(
         resolution:
           tool === "water"
             ? 0
-            : snapshot.brush.mode === "land" || snapshot.brush.mode === "sea"
-              ? landAuthorResolution(camera.scale)
-              : snapshot.lod.authorTerrainLevel,
-        radius: snapshot.brush.radius / camera.scale,
+            : isFeatureBrush(snapshot.brush.mode)
+              ? featureResolution(snapshot.brush.radius)
+              : snapshot.brush.mode === "land" || snapshot.brush.mode === "sea"
+                ? landAuthorResolution(camera.scale)
+                : snapshot.lod.authorTerrainLevel,
+        radius:
+          terrainScreenRadius(snapshot.brush, camera.scale, tool === "water") /
+          camera.scale,
         points: [p],
       },
     });
