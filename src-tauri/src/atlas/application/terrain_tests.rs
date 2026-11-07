@@ -747,3 +747,136 @@ fn versioned_surface_points_match_raster_nodes_and_foundation_influences() {
         })
         .is_err());
 }
+
+#[test]
+fn brush_author_reads_ignore_distant_rows_in_the_same_columns() {
+    use std::sync::{
+        atomic::{AtomicUsize, Ordering},
+        Arc,
+    };
+    for level in [0, 4, 21] {
+        let a = AtlasApplication::new().unwrap();
+        let factor = 2f64.powi(level as i32);
+        let regions = [[-80. * factor, -80. * factor, 80. * factor, 80. * factor]];
+        let insert = if level == 0 {
+            "INSERT INTO terrain VALUES(?1,?2,?3)"
+        } else {
+            "INSERT INTO terrain_layers VALUES(?4,?1,?2,?3)"
+        };
+        for y in -2..=2 {
+            if level == 0 {
+                a.db.execute(insert, rusqlite::params![0, y, 10.]).unwrap();
+            } else {
+                a.db.execute(insert, rusqlite::params![0, y, 10., level])
+                    .unwrap();
+            }
+        }
+        let read = || {
+            let steps = Arc::new(AtomicUsize::new(0));
+            let count = steps.clone();
+            a.db.progress_handler(
+                100,
+                Some(move || {
+                    count.fetch_add(1, Ordering::Relaxed);
+                    false
+                }),
+            );
+            let grid = terrain_store::brush_grid(&a.db, &regions, level).unwrap();
+            a.db.progress_handler(0, None::<fn() -> bool>);
+            (grid, steps.load(Ordering::Relaxed))
+        };
+        let (before, budget) = read();
+        for y in 10000..12000 {
+            if level == 0 {
+                a.db.execute(insert, rusqlite::params![0, y, 10.]).unwrap();
+            } else {
+                a.db.execute(insert, rusqlite::params![0, y, 10., level])
+                    .unwrap();
+            }
+        }
+        let (after, actual) = read();
+        assert_eq!(before, after);
+        assert!(
+            actual <= budget + 20,
+            "source {level}: {budget} -> {actual} VM batches"
+        );
+    }
+}
+
+#[test]
+fn brush_author_blocks_match_rectangular_reference_and_deduplicate_sources() {
+    use std::sync::{
+        atomic::{AtomicUsize, Ordering},
+        Arc,
+    };
+    let a = AtlasApplication::new().unwrap();
+    for level in 0..=21 {
+        for y in (-40..=40).step_by(3) {
+            for x in (-40..=40).step_by(3) {
+                let z = ((x * 7 + y * 13 + level) % 29) as f64;
+                a.db.execute(
+                    "INSERT INTO terrain_layers VALUES(?,?,?,?)",
+                    rusqlite::params![level, x, y, z],
+                )
+                .unwrap();
+                if level == 0 {
+                    a.db.execute(
+                        "INSERT INTO terrain VALUES(?,?,?)",
+                        rusqlite::params![x, y, z + 1.],
+                    )
+                    .unwrap();
+                }
+            }
+        }
+    }
+    for min in [0, 1, 4, 21] {
+        let factor = 2f64.powi(min as i32);
+        let regions: Vec<_> = [
+            [-160., -160., 0., 0.],
+            [-80., -80., 80., 80.],
+            [80., -160., 160., -80.],
+            [-160., 80., -80., 160.],
+        ]
+        .map(|b| b.map(|v| v * factor))
+        .into();
+        let mut reference = Grid::new();
+        for &b in &regions {
+            if min == 0 {
+                reference.merge(terrain_store::grid(&a.db, b).unwrap());
+            } else {
+                reference.merge(Grid {
+                    points: Default::default(),
+                    layers: world_terrain_store::read_from(&a.db, b, min).unwrap(),
+                });
+            }
+        }
+        let read = |regions: &[crate::atlas::Bounds]| {
+            let count = Arc::new(AtomicUsize::new(0));
+            let steps = count.clone();
+            a.db.progress_handler(
+                100,
+                Some(move || {
+                    steps.fetch_add(1, Ordering::Relaxed);
+                    false
+                }),
+            );
+            let result = terrain_store::brush_grid(&a.db, regions, min).unwrap();
+            a.db.progress_handler(0, None::<fn() -> bool>);
+            (result, count.load(Ordering::Relaxed))
+        };
+        let (actual, work) = read(&regions);
+        assert_eq!(actual, reference, "source {min}");
+        let repeated: Vec<_> = regions
+            .iter()
+            .copied()
+            .cycle()
+            .take(regions.len() * 32)
+            .collect();
+        let (actual, repeated_work) = read(&repeated);
+        assert_eq!(actual, reference);
+        assert!(
+            repeated_work <= work + 1,
+            "source {min}: {work} -> {repeated_work}"
+        );
+    }
+}

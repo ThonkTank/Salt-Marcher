@@ -129,22 +129,18 @@ impl AtlasApplication {
             .map(|&(x, y)| (x.div_euclid(16), y.div_euclid(16)))
             .collect();
         ensure(blocks.len() <= 4096, "Geländestrich zu groß")?;
-        let mut source = Grid::new();
-        for (x, y) in blocks {
-            source.merge(Grid {
-                points: Default::default(),
-                layers: read_from(
-                    &self.db,
-                    [
-                        x as f64 * 80. * factor,
-                        y as f64 * 80. * factor,
-                        (x + 1) as f64 * 80. * factor,
-                        (y + 1) as f64 * 80. * factor,
-                    ],
-                    level,
-                )?,
-            });
-        }
+        let regions: Vec<_> = blocks
+            .into_iter()
+            .map(|(x, y)| {
+                [
+                    x as f64 * 80. * factor,
+                    y as f64 * 80. * factor,
+                    (x + 1) as f64 * 80. * factor,
+                    (y + 1) as f64 * 80. * factor,
+                ]
+            })
+            .collect();
+        let source = super::terrain_store::brush_grid(&self.db, &regions, level)?;
         if let Some(points) = source.layers.get(&level) {
             original.extend(points.iter().map(|(&p, &z)| (p, z)));
         }

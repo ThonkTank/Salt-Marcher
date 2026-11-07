@@ -35,6 +35,74 @@ pub fn grid(db: &Connection, b: Bounds) -> Result<Grid> {
     g.layers = super::world_terrain_store::read(db, b)?;
     Ok(g)
 }
+// Only the brush's bounded author regions use this reader. General view bounds
+// may span the world and must not enumerate every empty block in that rectangle.
+pub(super) fn brush_grid(db: &Connection, regions: &[Bounds], min: u8) -> Result<Grid> {
+    use std::collections::BTreeMap;
+    let mut result = Grid::new();
+    for source in min..=21 {
+        // Local authors and the level-zero layer remain distinct sources.
+        for local in [true, false] {
+            if local && source != 0 {
+                continue;
+            }
+            let exists: bool = if local {
+                db.query_row("SELECT EXISTS(SELECT 1 FROM terrain)", [], |r| r.get(0))
+            } else {
+                db.query_row(
+                    "SELECT EXISTS(SELECT 1 FROM terrain_layers WHERE level=?1)",
+                    [source],
+                    |r| r.get(0),
+                )
+            }
+            .map_err(storage_error)?;
+            if !exists {
+                continue;
+            }
+            let step = STEP * 2f64.powi(source as i32);
+            // Sixteen row masks preserve the exact union of the old padded
+            // rectangles, including holes, without reading any block twice.
+            let mut blocks: BTreeMap<(i32, i32), [u16; 16]> = BTreeMap::new();
+            for b in regions {
+                let x0 = (b[0] / step).floor() as i32 - 2;
+                let y0 = (b[1] / step).floor() as i32 - 2;
+                let x1 = (b[2] / step).ceil() as i32 + 2;
+                let y1 = (b[3] / step).ceil() as i32 + 2;
+                for by in y0.div_euclid(16)..=y1.div_euclid(16) {
+                    for bx in x0.div_euclid(16)..=x1.div_euclid(16) {
+                        let rows = blocks.entry((bx, by)).or_default();
+                        let lo = (x0 - bx * 16).max(0) as u32;
+                        let hi = (x1 - bx * 16).min(15) as u32;
+                        let mask = (((1u32 << (hi + 1)) - 1) & !((1u32 << lo) - 1)) as u16;
+                        for y in (y0 - by * 16).max(0)..=(y1 - by * 16).min(15) {
+                            rows[y as usize] |= mask;
+                        }
+                    }
+                }
+            }
+            let mut q = db
+                .prepare_cached(super::terrain_blocks::author_block_query(local))
+                .map_err(storage_error)?;
+            let mut points = BTreeMap::new();
+            for ((bx, by), mask) in blocks {
+                let mut rows = q.query(params![source, bx, by]).map_err(storage_error)?;
+                while let Some(row) = rows.next().map_err(storage_error)? {
+                    let x: i32 = row.get(0).map_err(storage_error)?;
+                    let y: i32 = row.get(1).map_err(storage_error)?;
+                    if mask[y.rem_euclid(16) as usize] & (1 << x.rem_euclid(16)) != 0 {
+                        points.insert((x, y), row.get(2).map_err(storage_error)?);
+                    }
+                }
+            }
+            if local {
+                result.points = points;
+            } else if !points.is_empty() {
+                result.layers.insert(source, points);
+            }
+        }
+    }
+    Ok(result)
+}
 pub fn write_points(db: &Connection, points: &[(i32, i32, f64)]) -> Result<()> {
     write_samples(
         db,
@@ -101,7 +169,6 @@ impl AtlasApplication {
                     brush.radius.is_finite() && brush.points.len() <= terrain::LIMIT,
                     "Ungültiger Pinsel",
                 )?;
-                let mut old = Grid::new();
                 // Read only tiles along the stroke, never its potentially enormous bounding box.
                 let mut regions = std::collections::BTreeSet::new();
                 for p in &brush.points {
@@ -133,17 +200,18 @@ impl AtlasApplication {
                         }
                     }
                 }
-                for (x, y) in regions {
-                    old.merge(grid(
-                        &self.db,
+                let regions: Vec<_> = regions
+                    .into_iter()
+                    .map(|(x, y)| {
                         [
-                            x as f64 * 160.0,
-                            y as f64 * 160.0,
-                            (x + 1) as f64 * 160.0,
-                            (y + 1) as f64 * 160.0,
-                        ],
-                    )?);
-                }
+                            x as f64 * 160.,
+                            y as f64 * 160.,
+                            (x + 1) as f64 * 160.,
+                            (y + 1) as f64 * 160.,
+                        ]
+                    })
+                    .collect();
+                let mut old = brush_grid(&self.db, &regions, 0)?;
                 let mut next = old.clone();
                 if matches!(intent, Intent::WaterStroke { .. }) {
                     let (delta, identity) = self.water_stroke(brush, &mut old, &mut next)?;
