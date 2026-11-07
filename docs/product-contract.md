@@ -401,6 +401,14 @@ bestimmen nicht die Meer-/Landgrenze.
 „Höhen“ funktioniert im gesamten Außenzoom. Vorgaben: Land, 80 CSS-Pixel
 Durchmesser, 1 Fuß Änderung, 25 % Stärke, Zielhöhe 10 Fuß. Anheben, Absenken,
 Glätten und Einebnen ergänzen Land/Meer. Änderung 0,1–100 Fuß, Stärke 0,01–1.
+Land/Meer bietet die Küstenformen „Rund“ (Vorgabe) und „Kräuselig“.
+Kräuselig beginnt mit 65 % Küstenrauheit; der Regler reicht von 5 bis 100 %.
+Die Struktur formt Buchten und Landzungen innerhalb des Pinselkreises. Mehr
+Rauheit verstärkt die Einbuchtungen, ohne isoliertes Zufallsrauschen ins Innere
+zu streuen. Gleicher Weg, Ort, Radius und Rauheit erzeugen dieselben Autorenwerte,
+unabhängig von Paketaufteilung und Zeichengeschwindigkeit; wiederholter Auftrag
+mit denselben Einstellungen würfelt die Küste nicht neu aus. Zoomen skaliert die
+bereits geschriebene Küste unverändert. Andere Höhenmodi verwenden keine Küstenrauheit.
 Für Land/Meer wird beim Pointerdown eine Autorenauflösung mit höchstens zwei
 CSS-Pixeln Rasterabstand gewählt, begrenzt durch das feinste 5-Fuß-Raster.
 Die übrigen Höhenmodi folgen ungefähr acht CSS-Pixeln. Die Auflösung bleibt

@@ -3,6 +3,7 @@ import type { BrushMode } from "./BrushMode";
 
 export type Brush = {
   resolution?: number;
+  roughness?: number;
   mode: BrushMode;
   radius: number;
   amount: number;

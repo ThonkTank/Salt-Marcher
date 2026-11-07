@@ -156,6 +156,7 @@ fn foundations_move_delete_and_undo_without_reading_cells() {
 fn stroke_sampling_modes_limits_and_negative_tiles() {
     let brush = Brush {
         resolution: None,
+        roughness: None,
         mode: BrushMode::Raise,
         radius: 25.,
         amount: 1.,

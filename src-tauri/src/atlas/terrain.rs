@@ -175,6 +175,9 @@ pub struct Brush {
     #[serde(default)]
     #[cfg_attr(test, ts(optional))]
     pub resolution: Option<u8>,
+    #[serde(default)]
+    #[cfg_attr(test, ts(optional))]
+    pub roughness: Option<f64>,
     pub mode: BrushMode,
     pub radius: f64,
     pub amount: f64,
@@ -250,6 +253,43 @@ pub fn stroke(g: &mut Grid, b: &Brush) -> Result<()> {
 /// Exact swept-disk samples in author coordinates. Blocks only carry nearby
 /// segments; horizontal strip clipping keeps long diagonals spatially local.
 pub type LandSamples = BTreeMap<(i32, i32), f64>;
+
+// A continuous spatial field, independent of event spacing, section boundaries,
+// or traversal direction. Coordinates and radius scale together for coarse authors.
+fn coast_noise(p: Point) -> f64 {
+    fn value(x: i64, y: i64) -> f64 {
+        let mut h =
+            (x as u32).wrapping_mul(374761393) ^ (y as u32).wrapping_mul(668265263) ^ 0x9e3779b9;
+        h = (h ^ (h >> 13)).wrapping_mul(1274126177);
+        (h ^ (h >> 16)) as f64 / u32::MAX as f64
+    }
+    let x = p[0].floor() as i64;
+    let y = p[1].floor() as i64;
+    let smooth = |t: f64| t * t * t * (t * (t * 6. - 15.) + 10.);
+    let tx = smooth(p[0] - x as f64);
+    let ty = smooth(p[1] - y as f64);
+    let mix = |a: f64, b: f64, t: f64| a + (b - a) * t;
+    mix(
+        mix(value(x, y), value(x + 1, y), tx),
+        mix(value(x, y + 1), value(x + 1, y + 1), tx),
+        ty,
+    )
+}
+
+fn coast_inset(b: &Brush, p: Point) -> f64 {
+    let roughness = b.roughness.unwrap_or(0.);
+    if roughness == 0. {
+        return 0.;
+    }
+    let q = [p[0] / b.radius, p[1] / b.radius];
+    let noise = [(1.5, 0.2), (4.5, 0.5), (11., 0.3)]
+        .into_iter()
+        .map(|(frequency, weight)| {
+            weight * coast_noise([q[0] * frequency + 17.3, q[1] * frequency - 43.7])
+        })
+        .sum::<f64>();
+    b.radius * roughness * 0.6 * ((noise - 0.5) * 1.8 + 0.5).clamp(0., 1.)
+}
 pub fn land_samples(b: &Brush) -> Result<Option<LandSamples>> {
     if !matches!(b.mode, BrushMode::Land | BrushMode::Sea) {
         return Ok(None);
@@ -312,7 +352,7 @@ pub fn land_samples(b: &Brush) -> Result<Option<LandSamples>> {
                     if x.abs() > 20_000_000 || y.abs() > 20_000_000 {
                         continue;
                     }
-                    samples.insert((x, y), distance);
+                    samples.insert((x, y), distance + coast_inset(b, p));
                     ensure(
                         samples.len() <= LIMIT,
                         "Höchstens 100.000 Höhenpunkte je Aktion",
@@ -424,6 +464,7 @@ mod tests {
     fn brush(points: Vec<Point>) -> Brush {
         Brush {
             resolution: None,
+            roughness: None,
             mode: BrushMode::Lower,
             radius: 25.0,
             amount: 1.0,
@@ -670,6 +711,11 @@ where
 
 fn validate_stroke(b: &Brush) -> Result<()> {
     ensure(
+        b.roughness
+            .is_none_or(|r| r.is_finite() && (0.0..=1.0).contains(&r)),
+        "Küstenrauheit: 0–100 %",
+    )?;
+    ensure(
         b.radius.is_finite()
             && (0.001..=10_000_000.0).contains(&b.radius)
             && !b.points.is_empty()
@@ -834,6 +880,70 @@ mod platform_index_tests {
 mod swept_land_tests {
     use super::*;
     #[test]
+    fn crinkled_coast_is_spatial_continuous_and_packet_independent() {
+        for mode in [BrushMode::Land, BrushMode::Sea] {
+            let mut brush = Brush {
+                resolution: None,
+                roughness: Some(0.8),
+                mode,
+                radius: 80.,
+                amount: 1.,
+                strength: 1.,
+                target: 10.,
+                points: vec![
+                    [-150., -30.],
+                    [-70., 50.],
+                    [40., 20.],
+                    [0., -40.],
+                    [-70., 50.],
+                ],
+            };
+            let mut full = Grid::new();
+            if matches!(mode, BrushMode::Sea) {
+                for point in land_samples(&brush).unwrap().unwrap().keys() {
+                    full.insert(*point, 10.);
+                }
+            }
+            let mut split = full.clone();
+            stroke(&mut full, &brush).unwrap();
+            for segment in brush.points.windows(2) {
+                let mut part = brush.clone();
+                part.points = segment.to_vec();
+                stroke(&mut split, &part).unwrap();
+            }
+            assert_eq!(full, split);
+            stroke(&mut split, &brush).unwrap();
+            assert_eq!(full, split, "overpainting must not randomize the coast");
+            let samples = land_samples(&brush).unwrap().unwrap();
+            brush.roughness = Some(0.);
+            let smooth = land_samples(&brush).unwrap().unwrap();
+            assert_eq!(samples.len(), smooth.len());
+            assert!(samples.iter().filter(|(p, d)| **d > smooth[p] + 5.).count() > 100);
+            brush.roughness = None;
+            assert_eq!(smooth, land_samples(&brush).unwrap().unwrap());
+        }
+        let mut brush = Brush {
+            resolution: None,
+            roughness: None,
+            mode: BrushMode::Land,
+            radius: 25.,
+            amount: 1.,
+            strength: 1.,
+            target: 10.,
+            points: vec![[0., 0.]],
+        };
+        brush.roughness = Some(1.);
+        for p in [[-80., 40.], [0., 0.], [100_000_000., -100_000_000.]] {
+            let inset = coast_inset(&brush, p);
+            assert!((0.0..=brush.radius * 0.6).contains(&inset));
+            assert!((coast_inset(&brush, [p[0] + 1e-5, p[1]]) - inset).abs() < 1e-4);
+        }
+        for invalid in [-0.01, 1.01, f64::NAN, f64::INFINITY] {
+            brush.roughness = Some(invalid);
+            assert!(stroke(&mut Grid::new(), &brush).is_err());
+        }
+    }
+    #[test]
     fn spatial_land_matches_full_segment_reference_and_packet_splits() {
         let paths = [
             vec![[-80., -80.]],
@@ -852,6 +962,7 @@ mod swept_land_tests {
             for mode in [BrushMode::Land, BrushMode::Sea] {
                 let brush = Brush {
                     resolution: None,
+                    roughness: None,
                     mode,
                     radius: 21.,
                     amount: 1.,
@@ -898,6 +1009,7 @@ mod swept_land_tests {
     fn long_diagonal_uses_corridor_not_bounding_rectangle() {
         let brush = Brush {
             resolution: None,
+            roughness: None,
             mode: BrushMode::Land,
             radius: 10.,
             amount: 1.,

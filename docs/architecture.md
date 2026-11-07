@@ -139,6 +139,13 @@ werten nur die 280 fehlenden Punkte des zweischrittigen Randes zusätzlich aus.
 Land/Meer bestimmt exakte Abstände im überstrichenen Korridor. Ein temporärer
 Segmentindex und zeilenweise Streckenbegrenzung liefern die Kandidaten für
 Autorenreads und Höhenauftrag. Dieser Index lebt nur während eines Abschnitts.
+Die optionale Küstenrauheit addiert zum exakten Wegabstand einen stetigen,
+ortsgebundenen Einzug aus drei begrenzten Rauschfrequenzen. Koordinaten und Radius
+werden gemeinsam in Autorenkoordinaten skaliert; die Form hängt nicht von
+Ereignisanzahl, Abschnittsgrenzen oder Zufallszustand ab. Sie bleibt innerhalb des
+vorhandenen Kandidatenkorridors. Rauheit null erhält den runden Auftrag exakt.
+Der Wert gehört zum eingefrorenen Strichparameter, gespeichert werden weiterhin
+nur die entstandenen Höhenautoren; es gibt keine zusätzliche Vorschau oder Cacheebene.
 Lokale und grobe Pinsel sammeln die benötigten Autorenblöcke je Quellauflösung
 für den gesamten Abschnitt. Zeilenmasken erhalten exakt die Vereinigung der
 Lesebereiche samt Spline-Stützrand; überlappende Bereiche lesen denselben Block
