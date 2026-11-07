@@ -260,106 +260,125 @@ for (const level of [0, 3])
   });
 
 for (const navigation of ["preset", "wheel", "wheel-after-error"] as const)
-  test(`world land follows a continuous stroke before release via ${navigation}`, async ({
-    page,
-  }) => {
-    await page.goto(url);
-    await ready(page);
-    await page.getByRole("button", { name: "Höhen", exact: true }).click();
-    if (navigation === "preset")
-      await page.getByLabel("Ansichtsmaßstab").selectOption({ label: "Welt" });
-    else {
-      const canvas = page.getByTestId("atlas-canvas");
-      await canvas.hover();
-      for (let i = 0; i < 20; i++) await page.mouse.wheel(0, 1000);
-      await expect
-        .poll(() =>
-          canvas.evaluate(
-            (c: HTMLCanvasElement) =>
-              c.getContext("2d")!.getTransform().a / devicePixelRatio,
-          ),
-        )
-        .toBeCloseTo(0.000002, 12);
-    }
-    await paintedReady(page);
-    if (navigation !== "preset") {
-      const outside = await screen(page, [-120_000_000, 0]);
-      await page.mouse.move(outside.x, outside.y);
-      await expect(
-        page.getByText("Außerhalb der Welt · zum Malen hineinzoomen"),
-      ).toBeVisible();
-      const pixel = await page
-        .getByTestId("atlas-canvas")
-        .evaluate((canvas: HTMLCanvasElement, point) => {
-          const bounds = canvas.getBoundingClientRect();
-          const ratio = canvas.width / bounds.width;
-          return Array.from(
-            canvas
+  for (const coast of ["round", "crinkled"] as const)
+    test(`world land follows a continuous stroke before release via ${navigation} with ${coast} coast`, async ({
+      page,
+    }) => {
+      await page.goto(url);
+      await ready(page);
+      await page.getByRole("button", { name: "Höhen", exact: true }).click();
+      await page.getByLabel("Küstenform").selectOption(coast);
+      if (coast === "crinkled")
+        await expect(page.getByLabel("Küstenrauheit")).toHaveValue("65");
+      if (navigation === "preset")
+        await page
+          .getByLabel("Ansichtsmaßstab")
+          .selectOption({ label: "Welt" });
+      else {
+        const canvas = page.getByTestId("atlas-canvas");
+        await canvas.hover();
+        for (let i = 0; i < 20; i++) await page.mouse.wheel(0, 1000);
+        await expect
+          .poll(() =>
+            canvas.evaluate(
+              (c: HTMLCanvasElement) =>
+                c.getContext("2d")!.getTransform().a / devicePixelRatio,
+            ),
+          )
+          .toBeCloseTo(0.000002, 12);
+      }
+      await paintedReady(page);
+      if (navigation !== "preset") {
+        const outside = await screen(page, [-120_000_000, 0]);
+        await page.mouse.move(outside.x, outside.y);
+        await expect(
+          page.getByText("Außerhalb der Welt · zum Malen hineinzoomen"),
+        ).toBeVisible();
+        const pixel = await page
+          .getByTestId("atlas-canvas")
+          .evaluate((canvas: HTMLCanvasElement, point) => {
+            const bounds = canvas.getBoundingClientRect();
+            const ratio = canvas.width / bounds.width;
+            return Array.from(
+              canvas
+                .getContext("2d")!
+                .getImageData(
+                  Math.floor((point.x - bounds.left) * ratio),
+                  Math.floor((point.y - bounds.top) * ratio),
+                  1,
+                  1,
+                ).data,
+            );
+          }, outside);
+        expect(pixel).toEqual([36, 37, 39, 255]);
+      }
+      if (navigation === "wheel-after-error") {
+        const outside = await screen(page, [-120_000_000, 0]);
+        await page.mouse.click(outside.x, outside.y);
+        await expect(
+          page.getByRole("status", { name: "Dokumentstatus" }),
+        ).toContainText("Ungültiger Geländepfad");
+        await paintedReady(page);
+      }
+      const box = (await page.getByTestId("atlas-canvas").boundingBox())!;
+      // Sample only the base canvas: cursor/overlay movement cannot satisfy this test.
+      const row = () =>
+        page
+          .getByTestId("atlas-canvas")
+          .evaluate((canvas: HTMLCanvasElement) => {
+            const ratio = canvas.width / canvas.getBoundingClientRect().width;
+            const pixels = canvas
               .getContext("2d")!
               .getImageData(
-                Math.floor((point.x - bounds.left) * ratio),
-                Math.floor((point.y - bounds.top) * ratio),
+                0,
+                Math.floor(canvas.height / 2),
+                canvas.width,
                 1,
-                1,
-              ).data,
-          );
-        }, outside);
-      expect(pixel).toEqual([36, 37, 39, 255]);
-    }
-    if (navigation === "wheel-after-error") {
-      const outside = await screen(page, [-120_000_000, 0]);
-      await page.mouse.click(outside.x, outside.y);
-      await expect(
-        page.getByRole("status", { name: "Dokumentstatus" }),
-      ).toContainText("Ungültiger Geländepfad");
-      await paintedReady(page);
-    }
-    const box = (await page.getByTestId("atlas-canvas").boundingBox())!;
-    // Sample only the base canvas: cursor/overlay movement cannot satisfy this test.
-    const row = () =>
-      page.getByTestId("atlas-canvas").evaluate((canvas: HTMLCanvasElement) => {
-        const ratio = canvas.width / canvas.getBoundingClientRect().width;
-        const pixels = canvas
-          .getContext("2d")!
-          .getImageData(0, Math.floor(canvas.height / 2), canvas.width, 1).data;
-        return Array.from({ length: 81 }, (_, i) => {
-          const x = Math.floor(canvas.width / 2 + (-160 + i * 4) * ratio) * 4;
-          return Array.from(pixels.slice(x, x + 4)).join(",");
-        });
-      });
-    const initial = await row();
-    const counts = new Set<number>();
-    await page.mouse.move(box.x + box.width / 2 - 160, box.y + box.height / 2);
-    await page.mouse.down();
-    for (let i = 1; i <= 80; i++) {
+              ).data;
+            return Array.from({ length: 81 }, (_, i) => {
+              const x =
+                Math.floor(canvas.width / 2 + (-160 + i * 4) * ratio) * 4;
+              return Array.from(pixels.slice(x, x + 4)).join(",");
+            });
+          });
+      const initial = await row();
+      const counts = new Set<number>();
       await page.mouse.move(
-        box.x + box.width / 2 - 160 + i * 4,
-        box.y + box.height / 2 + Math.sin(i / 8) * 20,
+        box.x + box.width / 2 - 160,
+        box.y + box.height / 2,
       );
-      await page.waitForTimeout(25);
-      if (i % 10 === 0) {
-        const pixels = await row();
-        counts.add(pixels.filter((v, j) => v !== initial[j]).length);
+      await page.mouse.down();
+      for (let i = 1; i <= 80; i++) {
+        await page.mouse.move(
+          box.x + box.width / 2 - 160 + i * 4,
+          box.y + box.height / 2 + Math.sin(i / 8) * 20,
+        );
+        await page.waitForTimeout(25);
+        if (i % 10 === 0) {
+          const pixels = await row();
+          counts.add(pixels.filter((v, j) => v !== initial[j]).length);
+        }
       }
-    }
-    const beforeRelease = [...counts].filter((n) => n > 0);
-    await page.mouse.up();
-    await settled(page);
-    await paintedReady(page);
-    expect(beforeRelease.length).toBeGreaterThan(2);
-    const final = await row();
-    expect(final.filter((v, j) => v !== initial[j]).length).toBe(81);
-    await page.getByRole("button", { name: "Rückgängig", exact: true }).click();
-    await settled(page);
-    await paintedReady(page);
-    expect(await row()).toEqual(initial);
-    await page
-      .getByRole("button", { name: "Wiederholen", exact: true })
-      .click();
-    await settled(page);
-    await paintedReady(page);
-    expect(await row()).toEqual(final);
-  });
+      const beforeRelease = [...counts].filter((n) => n > 0);
+      await page.mouse.up();
+      await settled(page);
+      await paintedReady(page);
+      expect(beforeRelease.length).toBeGreaterThan(2);
+      const final = await row();
+      expect(final.filter((v, j) => v !== initial[j]).length).toBe(81);
+      await page
+        .getByRole("button", { name: "Rückgängig", exact: true })
+        .click();
+      await settled(page);
+      await paintedReady(page);
+      expect(await row()).toEqual(initial);
+      await page
+        .getByRole("button", { name: "Wiederholen", exact: true })
+        .click();
+      await settled(page);
+      await paintedReady(page);
+      expect(await row()).toEqual(final);
+    });
 
 for (const held of ["beginTerrainStroke", "appendTerrainStroke"]) {
   test(`direct height has no draft actions while ${held} is pending`, async ({

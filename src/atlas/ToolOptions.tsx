@@ -161,6 +161,44 @@ export function ToolOptions({
             }}
             onChange={(mode) => changeBrush({ ...brush, mode })}
           />
+          {(brush.mode === "land" || brush.mode === "sea") && (
+            <>
+              <SelectField
+                label="Küstenform"
+                value={(brush.roughness ?? 0) > 0 ? "crinkled" : "round"}
+                options={{ round: "Rund", crinkled: "Kräuselig" }}
+                onChange={(shape) =>
+                  changeBrush({
+                    ...brush,
+                    roughness: shape === "crinkled" ? 0.65 : 0,
+                  })
+                }
+              />
+              {(brush.roughness ?? 0) > 0 && (
+                <label>
+                  Küstenrauheit: {Math.round(brush.roughness! * 100)} %
+                  <input
+                    type="range"
+                    aria-label="Küstenrauheit"
+                    min={5}
+                    max={100}
+                    step={5}
+                    value={Math.round(brush.roughness! * 100)}
+                    onChange={(event) =>
+                      changeBrush({
+                        ...brush,
+                        roughness: Number(event.target.value) / 100,
+                      })
+                    }
+                  />
+                  <small>
+                    Unregelmäßige Buchten und Landzungen innerhalb des
+                    Pinselkreises.
+                  </small>
+                </label>
+              )}
+            </>
+          )}
           <NumberField
             label="Pinselgröße (Pixel)"
             value={brush.radius * 2}

@@ -10,6 +10,67 @@ fn height(a: &AtlasApplication, p: [f64; 2]) -> f64 {
     )
 }
 #[test]
+fn crinkled_direct_strokes_keep_coast_across_packets_resolutions_and_history() {
+    fn authors(a: &AtlasApplication) -> Vec<(i32, i32, f64)> {
+        a.db.prepare(
+            "SELECT x,y,z FROM terrain UNION ALL SELECT x,y,z FROM terrain_layers ORDER BY 1,2",
+        )
+        .unwrap()
+        .query_map([], |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)))
+        .unwrap()
+        .map(|r| r.unwrap())
+        .collect()
+    }
+    let mut local = None;
+    for level in [0, 17] {
+        let factor = 2f64.powi(level);
+        let points: Vec<_> = (0..40)
+            .map(|i| {
+                [
+                    (i as f64 * 8. - 160.) * factor,
+                    (i as f64 / 5.).sin() * 30. * factor,
+                ]
+            })
+            .collect();
+        let brush = json!({"mode":"land","resolution":level,"roughness":0.8,"radius":40.*factor,"amount":1,"strength":1,"target":10,"points":points});
+        let mut full = AtlasApplication::new().unwrap();
+        request_edit(
+            &mut full,
+            "commit",
+            json!({"type":"terrainStroke","brush":brush}),
+        );
+        let expected = authors(&full);
+        if let Some(ref local) = local {
+            assert_eq!(&expected, local);
+        } else {
+            local = Some(expected.clone());
+        }
+        for packet in [1, 3, 32] {
+            let mut a = AtlasApplication::new().unwrap();
+            let mut start = brush.clone();
+            start["points"] = json!([points[0]]);
+            a.request(
+                "beginTerrainStroke",
+                json!({"version":a.status(),"strokeId":"coast","brush":start}),
+            )
+            .unwrap();
+            for (sequence, part) in points[1..].chunks(packet).enumerate() {
+                a.request("appendTerrainStroke", json!({"sessionId":a.status().session_id,"strokeId":"coast","sequence":sequence+1,"points":part})).unwrap();
+            }
+            a.request(
+                "endTerrainStroke",
+                json!({"sessionId":a.status().session_id,"strokeId":"coast"}),
+            )
+            .unwrap();
+            assert_eq!(authors(&a), expected);
+            history(&mut a, false);
+            assert!(authors(&a).is_empty());
+            history(&mut a, true);
+            assert_eq!(authors(&a), expected);
+        }
+    }
+}
+#[test]
 fn height_brush_clips_authors_at_world_edges_and_keeps_history() {
     fn authors(a: &AtlasApplication) -> Vec<(u8, i32, i32, f64)> {
         a.db.prepare("SELECT 0,x,y,z FROM terrain UNION ALL SELECT level,x,y,z FROM terrain_layers ORDER BY 1,2,3")

@@ -4,46 +4,52 @@ Atlas V7, Dateiformat 19, Generierungsrezept 4. Stand: 7. November 2026.
 [README](../../README.md) enthält Befehle, [Architektur](../architecture.md)
 Zuständigkeiten, [Produktvertrag](../product-contract.md) Verhalten und Grenzen.
 
-## Aktuelle Korrektur: Höhenpinsel nach manuellem Herauszoomen
+## Aktuelle Funktion: kräuseliger Höhenpinsel
 
-Der Nutzer meldete einen leeren Landstrich nach manuellem Herauszoomen. Der
-bisherige Welt-Test verwendete nur die feste Ansichtsauswahl. Der neue Mausradfall
-bis zum kleinsten Maßstab reproduzierte die Ablehnung: Pinselrand und Spline-
-Stützbereich konnten die Weltgrenze überschreiten, obwohl der Startpunkt innerhalb
-lag. Lokale und grobe Höhenaufträge schreiben jetzt nur Autoren innerhalb der Welt.
-Der Canvas maskiert überstehende Kachelränder; außerhalb erscheint ein Grenzhinweis.
-Ungültige Startpunkte bleiben abgelehnt. Arbeits- und Historybudgets gelten weiter.
+Land und Meer bieten zusätzlich zur runden Spitze „Kräuselig“ mit 5–100 %
+Küstenrauheit, Vorgabe beim Einschalten 65 %. Ein ortsgebundenes stetiges Feld
+formt Buchten, Landzungen und bei hoher Rauheit vorgelagerte Inselchen innerhalb
+des bisherigen Pinselkreises. Der vorhandene räumliche Auftrag, 32-Punkte-Pakete,
+bestätigte Zwischenstände und ein Undo-Schritt bleiben erhalten. Gespeichert werden
+weiterhin nur Höhenautoren; Dateiformat und Darstellungspipeline ändern sich nicht.
+Als Referenz dienten Wonderdrafts Beschreibung automatisch gestalteter Küsten und
+die dokumentierte Trennung von glatten und rauen Landwerkzeugen; keine Behauptung
+über Wonderdrafts internen Algorithmus oder eine identische Implementierung.
 
-Ein zweiter reproduzierter Fehler betraf den nächsten Versuch nach einer Ablehnung:
-Das Verschwinden der Fehlerschaltfläche änderte die Canvashöhe und beendete den
-begonnenen Strich. Die Statusleiste reserviert jetzt die benötigte Höhe.
+Die erste Desktopfassung war optisch zu weich; mittlere und feine Küstenstruktur
+wurden nach Sichtprüfung verstärkt. Der frische Release-/RPM-Build wurde mit
+manuellem Mausradzoom bis Welt und zurück, Land/Meer, 16/80/256/512 Pixeln,
+65/100 % Rauheit, überlappenden Strichen, Werkzeugwechsel und Escape bedient.
+Undo/Redo sowie Speichern/Wiederöffnen stellen den geprüften Kartenausschnitt
+pixelgleich wieder her. 512 Pixel erreichten bei einem Maßstab das bestehende
+100.000-Kontrollwertlimit; nach Hineinzoomen war der Auftrag möglich. Diese Grenze
+bleibt bestehen. Keine neue Zeitmessreihe oder vollständige Bedienabnahme.
 
-Lokal bestehen 350 Rust- und 368 Frontendtests, 129 Transportverträge, Typprüfung
-und Clippy; fünf Rustfälle bleiben ignoriert. Die 18 übrigen Terrain-/Weltbrowserfälle
-bestanden; beide neuen Mausradfälle bestehen nach der Korrektur ebenfalls. Sie
-prüfen sichtbare Zwischenstände, vollständigen Strich, Undo/Redo, Weltmaske und den
-erneuten Strich nach einer Fehlermeldung. Rust prüft gespeicherte Autoren und exakte
-History an positiven/negativen Weltkanten für lokale und grobe Höhenmodi.
-Typ- und Formatprüfung sowie Release-/RPM-Build bestehen. Der frische native
-Build bestätigte bei 1440×960 nach manuellem Mausradzoom bis 0,000002: einen
-abgelehnten Start außerhalb der Welt, anschließend einen durchgehenden
-80-Pixel-Landstrich mit sichtbaren Zwischenständen bis an beide Weltkanten.
-Undo entfernt den Strich, Redo stellt den Kartenausschnitt pixelgleich wieder her.
-Keine neue Messreihe. Die vollständige CI der Korrektur steht noch aus.
-
-Die vorherige Flussoptimierung verwendet den begrenzten Terrain-Sampler auch für
-Planung, Nachführung und Import; der separate Regionscache und doppelte
-Profilhöhenabfragen entfallen. Konstante dünn belegte Höhenfelder bleiben exakt
-konstant, damit Rundung keine flache Flussrichtung umkehrt. Ihre Belege liegen
-unter `src-tauri/target/diagnostics/river-sampling-*`.
+Die Gesamtsuite bestand 351 Rust- und 368 Frontendtests sowie 129 Transportverträge
+und Typprüfung; ein anschließend ergänzter Anwendungstest sowie der erweiterte
+Geometrietest bestehen zusätzlich im finalen Stand (352 Rustfälle insgesamt).
+Die neuen Tests vergleichen ganze Striche mit Paketen von 1, 3 und 32 Punkten,
+lokale/grobe Autorenauflösungen, wiederholtes Übermalen, negative Koordinaten,
+Rauheit null und ungültige Parameter sowie genaue Autorenwerte nach Undo/Redo.
+27 relevante Browserfälle, die abschließende Formatprüfung und Clippy bestehen.
+Die vollständige CI der neuen Funktion steht noch aus.
 
 ## Bestehender geprüfter Stand
 
-[PR #1446](https://github.com/ThonkTank/Salt-Marcher/pull/1446) ist auf `main`
+[PR #1447](https://github.com/ThonkTank/Salt-Marcher/pull/1447) ist auf `main`
 integriert. Der exakte Kandidat bestand 129 Transportverträge, Typprüfung,
-368 Frontend-, 349 Rust- und 227 Browsertests sowie Clippy, Format, Webbuild
+368 Frontend-, 350 Rust- und 229 Browsertests sowie Clippy, Format, Webbuild
 und Release-/RPM-Build. Fünf Rustfälle bleiben ausdrücklich ignoriert.
 Die ursprüngliche lokale Historie bleibt in `codex/atlas-v7-preserved-histories`.
+
+Höhenstriche begrenzen ihren Auftrag an der Weltkante, statt bei überstehendem
+Spline-Stützrand vollständig zu scheitern. Der Canvas kennzeichnet den Bereich
+außerhalb der Welt; die Statusleiste behält beim Verschwinden einer Fehlermeldung
+ihre Höhe, damit der nächste Strich nicht durch Resize abbricht. Beide Fehler
+wurden nach Nutzerrückmeldung mit manuellem Herauszoomen reproduziert und behoben.
+
+Flussplanung, Nachführung und Import teilen den begrenzten Terrain-Sampler;
+doppelte Profilhöhenabfragen und der separate Regionscache entfallen.
 
 Oberflächenvorschauen, bestätigte Höhenabschnitte und frische Reads teilen einen
 Kachelpfad mit denselben Übersichtsbudgets. Gewässer-/Flussdeltas umgehen diese
@@ -120,7 +126,8 @@ operationslokale Wiederverwendung bereits vorbereiteter Geometrie bleibt zu prü
 Allgemeine große Terrain-Autorenreads für Straßen, Gewässer und Plattformen
 bleiben offen; leere Weltrechtecke dürfen dabei nicht blockweise enumeriert werden.
 
-Aktuelle Belege: `src-tauri/target/diagnostics/manual-world-*`.
+Aktuelle Belege: `src-tauri/target/diagnostics/crinkled-*`.
+Vorige Belege: `src-tauri/target/diagnostics/manual-world-*`.
 Vorige Belege: `src-tauri/target/diagnostics/surface-consistency-*`.
 Vorige Belege: `src-tauri/target/diagnostics/water-footprint-*`.
 Vorige Gewässerbelege: `src-tauri/target/diagnostics/water-locality-*`.
