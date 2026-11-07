@@ -16,7 +16,13 @@ Worker, Queue, History und Präsentationsbesitzer bleiben erhalten.
 Nah entstehen stabile Weltkoordinaten-Symbole, mittel kartographische Signaturen,
 fern unmittelbar aus Deckungen berechnete Farben. Symbolkandidaten und Kacheln
 bleiben begrenzt; ein Kronenrand erhält über den Bildschirmrand ragende Symbole.
-Leere Antwortkacheln übertragen keine Pixelbytes und erzeugen keine Rasterarbeit.
+Leere Landschaftsantwortkacheln übertragen keine Pixelbytes und erzeugen keine
+Rasterarbeit. Vollständig unbenutzte Boden-/Landschaftsebenen überspringen nun
+bereits im Store Vererbungsreads und Haloaufbau. Eine Autoren-Existenzprüfung
+genügt; Vorschauwerte und explizit leere Autoren behalten ihren normalen Pfad.
+Elf betroffene Rustfälle bestehen, einschließlich eines neuen Leerfalltests mit
+64 Kacheln auf drei Auflösungen: gesperrte Pixel-/Übersichtsreads, unveränderte
+Antwortformate und weiterhin wirksame Argumentgrenzen.
 Wasser maskiert die Darstellung ohne Autorenverlust. Schnee bleibt sichtbar.
 Konturen und Regionsfüllung liegen über Landschaftsfarbe, aber unter Symbolen.
 

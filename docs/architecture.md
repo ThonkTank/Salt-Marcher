@@ -255,6 +255,9 @@ teilt Vererbung, räumlich begrenzte Autorenreads, Halo und Pyramidenaufbau;
 fachliche Validierung und Mischregeln bleiben getrennt. LandscapeStroke benutzt
 den vorhandenen transaktionalen Vorschau-/Commit-/Historypfad. Persistenz speichert
 nur Autoren und rekonstruiert Übersichten beim Öffnen.
+Bei vollständig unbenutzten Rasterebenen genügt eine Autoren-Existenzprüfung:
+Ohne Vorschauwerte liefert der Store leere Kacheln direkt, ohne Vererbungsreads
+oder Haloaufbau. Argumentprüfung und die bestehenden Transportformate bleiben erhalten.
 
 Der `PresentationLoader` lädt Landschaft als eigene versionierte Schicht über
 seinen bestehenden WorldTileCache. Sie wird ausschließlich mit revisionsgleichem

@@ -434,6 +434,51 @@ fn ground_material_layers_are_independent_across_resolution_history_and_file() {
 }
 
 #[test]
+fn empty_raster_layers_do_not_read_pixels_or_overviews() {
+    use rusqlite::hooks::{AuthAction, AuthContext, Authorization};
+    let mut a = AtlasApplication::new().unwrap();
+    a.db.authorizer(Some(|ctx: AuthContext<'_>| match ctx.action {
+        AuthAction::Read {
+            table_name: "ground_tiles" | "landscape_tiles",
+            column_name: "pixels",
+            ..
+        }
+        | AuthAction::Read {
+            table_name: "ground_lod" | "landscape_lod",
+            ..
+        } => Authorization::Deny,
+        _ => Authorization::Allow,
+    }));
+    let tiles: Vec<_> = (-4..4).flat_map(|x| (-4..4).map(move |y| [x, y])).collect();
+    for level in [0, 18, 24] {
+        for command in ["groundTiles", "landscapeTiles"] {
+            let response = a
+                .request(command, json!({"level":level,"tiles":tiles}))
+                .unwrap();
+            let output: Vec<crate::atlas::ground::GroundTile> =
+                serde_json::from_value(response["tiles"].clone()).unwrap();
+            assert_eq!(output.len(), tiles.len());
+            for (tile, [x, y]) in output.iter().zip(&tiles) {
+                assert_eq!([tile.x, tile.y], [*x, *y]);
+                if command == "landscapeTiles" {
+                    assert!(tile.pixels.is_empty());
+                } else {
+                    assert_eq!(tile.pixels.len(), 66 * 66 * 4 * 2);
+                    assert!(tile.pixels.iter().all(|&v| v == 0));
+                }
+            }
+        }
+    }
+    // The shortcut must not bypass normal request validation.
+    for command in ["groundTiles", "landscapeTiles"] {
+        assert!(a.request(command, json!({"level":25,"tiles":[]})).is_err());
+        assert!(a
+            .request(command, json!({"level":0,"tiles":vec![[0,0];65]}))
+            .is_err());
+    }
+}
+
+#[test]
 fn landscape_density_inherits_without_materializing_world_and_roundtrips() {
     use crate::atlas::landscape::LandscapeTile;
     let mut a = AtlasApplication::new().unwrap();

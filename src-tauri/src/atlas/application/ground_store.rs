@@ -255,6 +255,35 @@ fn response(
     mut cache: Tiles,
 ) -> Result<GroundResponse> {
     validate_args(kind, &args)?;
+    // With no authors, every requested tile and its halo are empty. Avoid
+    // probing all inheritance levels and assembling neighbors for unused layers.
+    if cache.is_empty()
+        && !app
+            .db
+            .query_row(
+                &format!("SELECT EXISTS(SELECT 1 FROM {})", kind.authors()),
+                [],
+                |r| r.get::<_, bool>(0),
+            )
+            .map_err(storage_error)?
+    {
+        return Ok(GroundResponse {
+            status: app.status(),
+            level: args.level,
+            tiles: args
+                .tiles
+                .into_iter()
+                .map(|[x, y]| GroundTile {
+                    x,
+                    y,
+                    pixels: match kind {
+                        RasterKind::Ground => vec![0; 66 * 66 * 4 * kind.planes()],
+                        RasterKind::Landscape => Vec::new(),
+                    },
+                })
+                .collect(),
+        });
+    }
     let mut tiles = vec![];
     for [x, y] in args.tiles {
         // One pixel halo allows bilinear filtering across tile boundaries.
