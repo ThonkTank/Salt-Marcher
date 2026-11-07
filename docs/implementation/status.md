@@ -58,16 +58,19 @@ Benutzertestfenster bleibt unberührt.
 
 ## Integration und offene Abnahmen
 
-PR #1450 ist auf Main. Die Seenrasterung besteht die vollständige CI einschließlich
-RPM. Der kombinierte Landschaftsstand in PR #1454 wartet auf vollständige CI;
-Leerkachel- und Signaturänderungen sind Folgeänderungen. Der erste vollständige
-Landschaftslauf auf Format-22-Testbasis meldete 239 erfolgreiche Browserfälle
-und drei Fehler. Die veralteten Landschafts-Zoomsperren sind nun durch Prüfungen
-der erlaubten Bearbeitung ersetzt. Der Haus-Erstgestenfall wartet nach dem
-Werkzeugwechsel auf die geänderte Präsentation. Alle fünf betroffenen
-Grundstücks-/Straßenzugfälle bestehen lokal; die Korrektur ist in Main-Kandidat
-und Folgeänderungen enthalten. Die vollständigen CI-Nachläufe stehen aus.
-Belege: `src-tauri/target/diagnostics/landscape-integration-fixed/`.
+PR #1450 ist auf Main. Der vollständige Landschaftsstand einschließlich
+Blätterdächern, Nahbäumen, leeren Rasterantworten und sichtbarkeitsbegrenztem
+Rasteraufbau ist jetzt in PR #1456 direkt gegen Main gerichtet. Der vorherige
+Zwischenbranch verursachte einen PR-Konflikt und verhinderte neue CI-Läufe.
+Der konfliktfreie Mergevergleich gegen Main ergibt exakt den aktuellen Dateibaum;
+keine Produktänderung wurde bei der Zusammenführung verworfen. Automatisches
+Mergen der älteren Kandidaten #1451 und #1454 ist deaktiviert.
+
+Alle 412 Frontendtests bestehen auf dem vollständigen Stand. Die gezielten
+Boden-/Landschafts-Browserfälle und der frische Release-/RPM-Build sind oben belegt.
+Die vollständige CI muss noch den exakten finalen Commit freigeben; Main ist
+noch nicht auf diesem Stand. Ältere PRs bleiben bis zur erfolgreichen Integration
+erhalten. Belege: `src-tauri/target/diagnostics/landscape-main-integration/`.
 
 Genau eine frühere Vorher-/Nachher-Reihe mit je drei Weltstrichen ist abgeschlossen:
 erste sichtbare Änderung vorher 275–304 ms, danach 119–134 ms; sichtbare Bestätigung
