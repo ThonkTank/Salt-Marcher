@@ -56,6 +56,18 @@ nahtfrei. Belege liegen auch im erhaltenen Landschafts-Worktree unter
 `src-tauri/target/diagnostics/landscape-native-blend/`. Das ursprüngliche
 Benutzertestfenster bleibt unberührt.
 
+Die Folgeänderung auf `codex/visible-terrain-raster` erweitert dieselbe
+Sichtbarkeitsprüfung auf Relief-/Wasserraster und Höhenlinien. Ein gemeinsamer
+Helper enthält den Rundungsrand; Höhenlinien ergänzen ihre tatsächliche halbe
+Strichbreite. Unsichtbare Texturen werden nicht decodiert, vorhandene Raster
+bleiben beim Zurückschieben wiederverwendbar. Alle 415 Frontendtests und Typen
+bestehen, einschließlich DPR-Rand und direkter Vorschau. Alle 37 Boden-,
+Landschafts-, Höhen- und Gewässer-Browserfälle bestehen; darunter Weltmalen
+nach freiem Zoom, runde/kräuselige Küsten und Fehlererholung. Der frische
+Release-/RPM-Build besteht; native Bedienung bleibt mangels UI-Zugriff offen. Diese Folgeänderung
+ist vom unverändert laufenden Main-Kandidaten getrennt.
+Belege: `src-tauri/target/diagnostics/terrain-visibility/`.
+
 ## Integration und offene Abnahmen
 
 PR #1450 ist auf Main. Der vollständige Landschaftsstand einschließlich

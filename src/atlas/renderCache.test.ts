@@ -34,6 +34,7 @@ function context() {
   const segments: number[][] = [];
   let start: number[] = [];
   return {
+    canvas: { width: 1440, height: 960 },
     segments,
     beginPath: vi.fn(),
     closePath: vi.fn(),
@@ -251,4 +252,64 @@ describe("render cache", () => {
     cancelUnmount();
     expect(queued.size).toBe(0);
   });
+});
+
+it.each([false, true])(
+  "defers invisible terrain textures (water=%s) until panned into view",
+  (wet) => {
+    const create = vi.fn(() => ({
+      width: 0,
+      height: 0,
+      getContext: () => context(),
+    }));
+    vi.stubGlobal("document", { createElement: create });
+    const target = context();
+    let e = 0;
+    target.getTransform = () => ({ a: 1, d: 1, e, f: 0 });
+    const c = target as unknown as CanvasRenderingContext2D;
+    const painter = new TerrainPainter();
+    const source = tile(20, 0, wet ? 121 : 122);
+    source.raster!.relief = "!";
+    painter.paint(c, response([source]), 1, false, undefined, wet);
+    expect(create).not.toHaveBeenCalled();
+    expect(target.drawImage).not.toHaveBeenCalled();
+    source.raster!.relief = btoa(String.fromCharCode(...Array(64).fill(120)));
+    e = -3200;
+    painter.paint(c, response([source]), 1, false, undefined, wet);
+    expect(create).toHaveBeenCalledTimes(1);
+    const image = target.drawImage.mock.calls[0][0];
+    e = 0;
+    painter.paint(c, response([source]), 1, false, undefined, wet);
+    expect(target.drawImage).toHaveBeenCalledTimes(1);
+    e = -3200;
+    painter.paint(c, response([source]), 1, false, undefined, wet);
+    expect(create).toHaveBeenCalledTimes(1);
+    expect(target.drawImage.mock.calls[1][0]).toBe(image);
+  },
+);
+
+it("culls invisible contours but retains thick DPR strokes touching the viewport", () => {
+  const source = tile(20, 0, 123);
+  const contours = vi.fn(() => [[3200, 0, 3200, 50]]);
+  Object.defineProperty(source.raster!, "contours", { get: contours });
+  const target = context();
+  const painter = new TerrainPainter();
+  const c = target as unknown as CanvasRenderingContext2D;
+  painter.paintContours(c, response([source]), 1);
+  expect(contours).not.toHaveBeenCalled();
+  // At DPR 8 a 0.7 CSS-pixel contour extends 2.8 device pixels beyond its tile.
+  target.getTransform = () => ({ a: 8, d: 8, e: -3200 * 8 + 1442, f: 0 });
+  painter.paintContours(c, response([source]), 1);
+  expect(contours).toHaveBeenCalledTimes(1);
+  expect(target.stroke).toHaveBeenCalledTimes(1);
+  target.getTransform = () => ({ a: 8, d: 8, e: -3200 * 8 + 1446, f: 0 });
+  painter.paintContours(c, response([source]), 1);
+  expect(contours).toHaveBeenCalledTimes(1);
+  const visible = tile(0, 0, 124);
+  target.getTransform = () => ({ a: 1, d: 1, e: 0, f: 0 });
+  painter.paintContours(c, response([source]), 1, {
+    surface: response([visible]),
+    points: [],
+  });
+  expect(target.segments.at(-1)).toEqual(visible.raster!.contours[0]);
 });

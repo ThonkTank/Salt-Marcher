@@ -1,3 +1,4 @@
+import { visibleRasterTile } from "./rasterVisibility";
 import { forestCanopyAt } from "./forestCanopy";
 import type { LandscapeResponse } from "./generated/LandscapeResponse";
 import {
@@ -59,22 +60,6 @@ export function groundColorAt(
     number,
     number,
   ];
-}
-/** Editor cameras are axis-aligned. Keep a device-pixel guard for rounded clips. */
-function visibleRasterTile(
-  tile: GroundTile,
-  width: number,
-  transform: DOMMatrix,
-  canvas: HTMLCanvasElement,
-): boolean {
-  const left = tile.x * width * transform.a + transform.e;
-  const top = tile.y * width * transform.d + transform.f;
-  return (
-    left <= canvas.width + 1 &&
-    top <= canvas.height + 1 &&
-    left + width * transform.a >= -1 &&
-    top + width * transform.d >= -1
-  );
 }
 type GroundRaster = {
   raster: HTMLCanvasElement;

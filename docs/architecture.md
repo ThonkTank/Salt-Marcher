@@ -276,9 +276,11 @@ Waldgewichten. Geringe Dichte öffnet Lücken, hohe Dichte schließt das Dach.
 Der bestehende Landschaftsrastercache hält das optionale 130×130-Kronenraster
 einschließlich Halo im selben Bytebudget. Es entsteht erst im mittleren Band
 und nur für Kacheln mit Waldanteil; Pan und Zoom verwenden es wieder.
-Boden- und Landschaftspainter prüfen vor Decodierung, Nachbarschaftsabgleich und
-Rasteraufbau, ob der Kachelkörper den Viewport berührt (mit einem Geräte-Pixel
-Rundungsrand). Geladene unsichtbare Kacheln bleiben im Präsentationscache; ihre
+Boden-, Landschafts- und Geländepainter prüfen über `rasterVisibility` vor
+Decodierung, Nachbarschaftsabgleich und Rasteraufbau, ob der Kachelkörper den
+Viewport berührt (mit einem Geräte-Pixel Rundungsrand). Unsichtbare Höhenlinien
+werden ebenfalls übersprungen; ihr Prüfrand enthält zusätzlich die halbe
+Strichbreite in Geräte-Pixeln. Geladene unsichtbare Kacheln bleiben im Präsentationscache; ihre
 Zeichenraster entstehen erst beim Hineinschieben und werden beim Zurückschieben wiederverwendet.
 Buschland, Wiese und Felsgebiet verwenden dort weiterhin aufrechte Gruppen
 aus drei Zeichen im Vektorpainter.
