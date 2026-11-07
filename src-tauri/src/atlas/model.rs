@@ -623,6 +623,9 @@ pub(in crate::atlas) struct ValidPreviewWire {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[cfg_attr(test, ts(optional))]
     pub(in crate::atlas) ground: Option<Box<super::ground::GroundResponse>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(test, ts(optional))]
+    pub(in crate::atlas) landscape: Option<Box<super::landscape::LandscapeResponse>>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub(in crate::atlas) regions: Option<Vec<super::regions::Region>>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -689,6 +692,12 @@ pub enum Intent {
         points: Vec<Point>,
         radius: f64,
         erase: bool,
+    },
+    LandscapeStroke {
+        brush: super::landscape::LandscapeBrush,
+        #[serde(default)]
+        #[cfg_attr(test, ts(optional))]
+        view: Option<super::landscape::LandscapeArgs>,
     },
     GroundStroke {
         brush: super::ground::GroundBrush,
@@ -846,6 +855,7 @@ impl Intent {
             | Self::RegionEdit { .. }
             | Self::RegionStroke { .. }
             | Self::GroundStroke { .. }
+            | Self::LandscapeStroke { .. }
             | Self::SceneryStroke { .. }
             | Self::TerrainStroke { .. }
             | Self::WaterStroke { .. }

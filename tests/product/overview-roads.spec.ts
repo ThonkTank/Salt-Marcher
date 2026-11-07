@@ -17,7 +17,7 @@ async function overview(page: import("@playwright/test").Page) {
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
   await page.mouse.wheel(0, 700);
   await expect(
-    page.getByRole("button", { name: "Zum Bearbeiten hineinzoomen" }),
+    page.getByRole("button", { name: "Zur Detailansicht" }),
   ).toBeVisible();
   await ready(page);
 }
@@ -42,9 +42,7 @@ test("overview draws rough roads with optional population, preserves draft acros
   expect(await calls(page, "scene")).toHaveLength(0);
   expect(await calls(page, "interiorTile")).toHaveLength(0);
   await page.screenshot({ path: test.info().outputPath("overview-road.png") });
-  await page
-    .getByRole("button", { name: "Zum Bearbeiten hineinzoomen" })
-    .click();
+  await page.getByRole("button", { name: "Zur Detailansicht" }).click();
   await ready(page);
   await expect(page.getByLabel("Rauheit", { exact: true })).toHaveValue("0.33");
   await page.getByRole("button", { name: "Übernehmen", exact: true }).click();

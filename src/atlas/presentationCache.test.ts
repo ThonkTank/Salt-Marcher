@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { AtlasClient } from "./client";
-import { CityCache, GroundCache, TerrainCache } from "./presentationCache";
+import {
+  CityCache,
+  GroundCache,
+  LandscapeCache,
+  TerrainCache,
+} from "./presentationCache";
 import { status as makeStatus } from "../../tests/support/atlasFixtures";
 import { deferred } from "../../tests/support/deferred";
 import type { Status } from "./model";
@@ -9,6 +14,7 @@ import type { Status } from "./model";
 for (const [name, Cache, verifyRevision] of [
   ["city", CityCache, false],
   ["ground", GroundCache, false],
+  ["landscape", LandscapeCache, false],
   ["terrain", TerrainCache, true],
 ] as const) {
   describe(`${name} cache lifetime`, () => {

@@ -355,6 +355,30 @@ impl<'a> Sampler<'a> {
                 }
             }
             if count > 0 {
+                // Small views of coarse authors can lie entirely in constant
+                // spline patches even when their enclosing blocks are sparse.
+                // Prove full support in at most four patches before falling
+                // back to the conservative block interval.
+                if x1 - x0 <= 4 && y1 - y0 <= 4 && !(count == capacity && min == max) {
+                    let mut exact_low = f64::INFINITY;
+                    let mut exact_high = f64::NEG_INFINITY;
+                    let mut complete = true;
+                    for y in y0 + 1..=y1 - 2 {
+                        for x in x0 + 1..=x1 - 2 {
+                            if let Some((z, true)) = self.patch(source, x, y)?.constant {
+                                exact_low = exact_low.min(z);
+                                exact_high = exact_high.max(z);
+                            } else {
+                                complete = false;
+                            }
+                        }
+                    }
+                    if complete {
+                        low = exact_low;
+                        high = exact_high;
+                        continue;
+                    }
+                }
                 if count == capacity {
                     low = min;
                     high = max;
@@ -461,6 +485,51 @@ mod tests {
         }
         assert!(sampler.blocks.len() <= BLOCK_CACHE && sampler.nodes.len() <= NODE_CACHE);
     }
+    #[test]
+    fn small_views_prove_constant_coarse_patches_without_assuming_sparse_support() {
+        let app = AtlasApplication::new().unwrap();
+        let level = 19;
+        let step = terrain::STEP * 2f64.powi(level);
+        for y in -2..=2 {
+            for x in -2..=2 {
+                app.db
+                    .execute(
+                        "INSERT INTO terrain_layers VALUES(?1,?2,?3,17.3)",
+                        params![level, x, y],
+                    )
+                    .unwrap();
+            }
+        }
+        // A different value in the same index block must not spoil the local proof.
+        app.db
+            .execute("INSERT INTO terrain_layers VALUES(?1,10,10,900)", [level])
+            .unwrap();
+        for bounds in [[-160., -160., 160., 160.], [1., 1., 320., 320.]] {
+            let mut sampler = Sampler::new(&app.db).unwrap();
+            assert_eq!(sampler.range(bounds).unwrap(), [17.3, 17.3]);
+            assert_eq!(sampler.height([bounds[0], bounds[1]]).unwrap(), 17.3);
+            let edge = [1.5 * step, 1.5 * step];
+            let interval = sampler
+                .range([edge[0], edge[1], edge[0] + 1., edge[1] + 1.])
+                .unwrap();
+            let height = sampler.height(edge).unwrap();
+            assert!(interval[0] <= height && height <= interval[1]);
+            assert_ne!(interval, [17.3, 17.3]);
+        }
+        // A missing contributing control must restore inherited variation.
+        app.db
+            .execute(
+                "DELETE FROM terrain_layers WHERE level=?1 AND x=0 AND y=0",
+                [level],
+            )
+            .unwrap();
+        let mut sampler = Sampler::new(&app.db).unwrap();
+        let interval = sampler.range([-160., -160., 160., 160.]).unwrap();
+        assert_ne!(interval, [17.3, 17.3]);
+        let height = sampler.height([0., 0.]).unwrap();
+        assert!(interval[0] <= height && height <= interval[1]);
+    }
+
     #[test]
     fn sparse_uniform_authors_preserve_exact_inherited_height() {
         for source in [0, 4] {

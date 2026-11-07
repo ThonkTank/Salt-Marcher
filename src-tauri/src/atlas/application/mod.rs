@@ -114,6 +114,7 @@ impl AtlasApplication {
         ValidPreviewWire {
             terrain: computed.terrain_preview.map(Box::new),
             ground: computed.ground_preview.map(Box::new),
+            landscape: computed.landscape_preview.map(Box::new),
             regions: computed.region_preview,
             rivers: computed.river_preview,
             valid: True,

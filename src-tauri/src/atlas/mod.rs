@@ -7,6 +7,7 @@ pub mod generation;
 mod geometry;
 mod ground;
 mod interior;
+mod landscape;
 mod model;
 mod operations;
 pub mod parcel_geometry;

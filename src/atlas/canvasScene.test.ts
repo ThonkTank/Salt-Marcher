@@ -104,6 +104,43 @@ it("merges ground preview tiles only for the current level and revision", () => 
   ).toEqual([left, right]);
 });
 
+it("merges landscape preview tiles only for the current level and revision", () => {
+  const status = { sessionId: "s", revision: 1 };
+  const left = { x: 0, y: 0, pixels: "old" },
+    right = { x: 1, y: 0, pixels: "untouched" },
+    changed = { ...left, pixels: "painted" };
+  const presentation = {
+    scene: { objects: [] },
+    landscape: { status, level: 0, tiles: [left, right] },
+  } as unknown as Presentation;
+  const preview = {
+    valid: true,
+    landscape: { status, level: 0, tiles: [changed] },
+  } as unknown as Preview;
+  const visibility = { boundaries: [], grids: [] };
+  expect(
+    prepareCanvasScene(presentation, preview, "", visibility).landscape?.tiles,
+  ).toEqual([changed, right]);
+  const stale = {
+    valid: true,
+    landscape: {
+      status: { ...status, revision: 0 },
+      level: 0,
+      tiles: [changed],
+    },
+  } as unknown as Preview;
+  expect(
+    prepareCanvasScene(presentation, stale, "", visibility).landscape?.tiles,
+  ).toEqual([left, right]);
+  const coarse = {
+    valid: true,
+    landscape: { status, level: 1, tiles: [changed] },
+  } as unknown as Preview;
+  expect(
+    prepareCanvasScene(presentation, coarse, "", visibility).landscape?.tiles,
+  ).toEqual([left, right]);
+});
+
 it("does not mix terrain previews or ground across revisions", () => {
   const status = { sessionId: "s", revision: 1 };
   const newer = { ...status, revision: 2 };
@@ -111,6 +148,7 @@ it("does not mix terrain previews or ground across revisions", () => {
     scene: { objects: [] },
     terrain: { status, level: 0, tiles: [{ x: 0, y: 0 }] },
     ground: { status, level: 0, tiles: [{ x: 0, y: 0 }] },
+    landscape: { status, level: 0, tiles: [{ x: 0, y: 0 }] },
   } as unknown as Presentation;
   const preview = {
     valid: true,
@@ -122,6 +160,7 @@ it("does not mix terrain previews or ground across revisions", () => {
   });
   expect(frame.terrain?.tiles).toEqual([{ x: 1, y: 0 }]);
   expect(frame.ground).toBeUndefined();
+  expect(frame.landscape).toBeUndefined();
 });
 
 it("keeps complete deduplicated city features separate from selection and detail labels", () => {

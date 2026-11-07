@@ -48,7 +48,7 @@ test("water allows flooded building and foundation edits; brush works in overvie
   // Wheel dispatch returns before the camera changes; wait for the requested
   // overview before testing readiness and admitting the brush gesture.
   await expect(
-    page.getByRole("button", { name: "Zum Bearbeiten hineinzoomen" }),
+    page.getByRole("button", { name: "Zur Detailansicht" }),
   ).toBeVisible();
   await ready(page);
   const rev = (await status(page)).revision;

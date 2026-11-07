@@ -92,6 +92,8 @@ function captureGeometryOperation(
     case "regionEdit":
     case "regionStroke":
       return ok({ kind: "region" });
+    case "landscapeStroke":
+      return ok({ kind: "landscape" });
     case "groundStroke":
       return ok({ kind: "ground" });
     case "sceneryStroke":
@@ -225,6 +227,8 @@ export function captureGestureOperation(
       return ok({ kind: "river", intent: gesture.intent });
     case "region":
       return ok({ kind: "region" });
+    case "landscape":
+      return ok({ kind: "landscape" });
     case "ground":
       return ok({ kind: "ground" });
     case "scenery":
@@ -312,6 +316,7 @@ export function captureHouseDrawingOperation(
 export function operationTarget(operation: WorkflowOperation): string | null {
   switch (operation.kind) {
     case "region":
+    case "landscape":
     case "ground":
     case "scenery":
     case "terrain":

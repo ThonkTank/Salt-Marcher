@@ -667,6 +667,118 @@ it("never combines terrain and ground from different revisions", async () => {
   loader.dispose();
 });
 
+it("publishes a ready scene and terrain while landscape is held, then reports and retries its error", async () => {
+  const pending: Array<{
+    cmd: string;
+    args: Record<string, unknown>;
+    resolve: (value: unknown) => void;
+    reject: (error: Error) => void;
+  }> = [];
+  const client = new AtlasClient(
+    (cmd, args) =>
+      new Promise((resolve, reject) =>
+        pending.push({ cmd, args, resolve, reject }),
+      ),
+  );
+  const { input, loader } = harness();
+  const current = { ...input, client, terrainLevel: 0, landscapeLevel: 0 };
+  loader.update(current);
+  const request = (name: string) => pending.find((p) => p.cmd === name)!;
+  request("scene").resolve(scene());
+  const terrain = request("terrainTiles");
+  terrain.resolve({
+    status,
+    level: 0,
+    tiles: (terrain.args.tiles as number[][]).map(([x, y]) =>
+      terrainTile(x, y),
+    ),
+  });
+  await vi.waitFor(() =>
+    expect(loader.getSnapshot().display?.value.terrain).toBeDefined(),
+  );
+  expect(loader.getSnapshot().display?.value.scene.status).toEqual(status);
+  expect(loader.getSnapshot().display?.value.landscape).toBeUndefined();
+  expect(loader.fresh(current)).toBe(false);
+  request("landscapeTiles").reject(Error("landscape failed"));
+  await vi.waitFor(() =>
+    expect(loader.getSnapshot().error).toContain("landscape failed"),
+  );
+  expect(loader.getSnapshot().display?.value.terrain).toBeDefined();
+  loader.retry();
+  await vi.waitFor(() =>
+    expect(pending.filter((p) => p.cmd === "landscapeTiles")).toHaveLength(2),
+  );
+  const retryLandscape = pending.filter((p) => p.cmd === "landscapeTiles")[1];
+  retryLandscape.resolve({
+    status,
+    level: 0,
+    tiles: (retryLandscape.args.tiles as number[][]).map(([x, y]) => ({
+      x,
+      y,
+      pixels: "",
+    })),
+  });
+  const retryScene = pending.filter((p) => p.cmd === "scene")[1];
+  retryScene.resolve(scene());
+  await vi.waitFor(() => expect(loader.fresh(current)).toBe(true));
+  expect(loader.getSnapshot().display?.value.landscape).toBeDefined();
+  loader.dispose();
+});
+
+it("never combines terrain and landscape from different revisions", async () => {
+  const pending: Array<{
+    cmd: string;
+    args: Record<string, unknown>;
+    resolve: (value: unknown) => void;
+  }> = [];
+  const client = new AtlasClient(
+    (cmd, args) =>
+      new Promise((resolve) => pending.push({ cmd, args, resolve })),
+  );
+  const { input, loader } = harness();
+  const initial = { ...input, client, terrainLevel: 0, landscapeLevel: 0 };
+  const reply = (item: (typeof pending)[number], version: Status) =>
+    item.resolve(
+      item.cmd === "scene"
+        ? scene(version)
+        : {
+            status: version,
+            level: item.args.level,
+            tiles: (item.args.tiles as number[][]).map(([x, y]) =>
+              item.cmd === "terrainTiles"
+                ? terrainTile(x, y)
+                : { x, y, pixels: "" },
+            ),
+          },
+    );
+  loader.update(initial);
+  pending.forEach((item) => reply(item, status));
+  await vi.waitFor(() => expect(loader.fresh(initial)).toBe(true));
+  const nextStatus = { ...status, revision: 2 };
+  const next = { ...initial, status: nextStatus };
+  loader.update(next);
+  const terrain = pending.filter((p) => p.cmd === "terrainTiles").at(-1)!;
+  reply(terrain, nextStatus);
+  await vi.waitFor(() =>
+    expect(loader.getSnapshot().display?.value.terrain?.status.revision).toBe(
+      2,
+    ),
+  );
+  expect(loader.getSnapshot().display?.value.landscape).toBeUndefined();
+  expect(loader.fresh(next)).toBe(false);
+  const landscape = pending.filter((p) => p.cmd === "landscapeTiles").at(-1)!;
+  reply(landscape, nextStatus);
+  pending
+    .filter((p) => p.cmd === "scene")
+    .at(-1)!
+    .resolve(scene(nextStatus));
+  await vi.waitFor(() => expect(loader.fresh(next)).toBe(true));
+  expect(loader.getSnapshot().display?.value.landscape?.status.revision).toBe(
+    2,
+  );
+  loader.dispose();
+});
+
 it("coalesces rapid viewport changes and reuses a complete covering exact read", async () => {
   const calls: Array<{ bounds: [number, number, number, number] }> = [];
   const client = new AtlasClient(async (_cmd, args) => {

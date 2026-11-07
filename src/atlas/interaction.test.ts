@@ -419,7 +419,6 @@ const brushSettings = {
     biome: "forest" as const,
     radius: 40,
     density: 0.65,
-    size: 8,
   },
   region: { id: "r", diameter: 80, mode: "paint" as const },
 } satisfies Partial<CanvasInputSnapshot>;
@@ -441,7 +440,7 @@ describe("pure canvas input decisions", () => {
       );
       if (!stroke) throw Error("Missing gesture");
       const radius =
-        stroke.kind === "ground"
+        stroke.kind === "ground" || stroke.kind === "landscape"
           ? stroke.brush.diameter / 2
           : stroke.kind === "region"
             ? stroke.radius
@@ -537,6 +536,52 @@ describe("pure canvas input decisions", () => {
     },
   );
 
+  it.each([2, 0.31, 0.000002])(
+    "paints semantic landscape at every scale %s with frozen settings",
+    (scale) => {
+      const gesture = gestureOf(
+        state({
+          ...brushSettings,
+          tool: "scenery",
+          camera: { x: 0, y: 0, scale },
+          lod: decideLod(scale),
+        }),
+      );
+      if (gesture?.kind !== "landscape")
+        throw Error("Missing landscape stroke");
+      expect(gesture.brush).toMatchObject({
+        biome: "forest",
+        density: 0.65,
+        mode: "paint",
+      });
+      expect(gesture.brush.diameter * scale).toBe(80);
+      const later = state({
+        tool: "scenery",
+        scenery: { biome: "rocks", radius: 100, density: 1, mode: "erase" },
+        workflow: geometryState(
+          { ...common, kind: "geometry" },
+          { kind: "landscape" },
+          gesture,
+        ),
+      });
+      expect(evaluateHold(later, 450)?.intent).toMatchObject({
+        type: "landscapeStroke",
+        brush: { ...gesture.brush, points: expect.any(Array) },
+      });
+      expect(
+        evaluatePointer(later, input([20, 4]), true)?.intent,
+      ).toMatchObject({
+        type: "landscapeStroke",
+        brush: {
+          biome: "forest",
+          density: 0.65,
+          mode: "paint",
+          resolution: gesture.brush.resolution,
+        },
+      });
+    },
+  );
+
   it("continues held ground flow at the last point with monotonic elapsed time", () => {
     const pointer = gestureOf(state({ ...brushSettings, tool: "area" }));
     if (pointer?.kind !== "ground") throw Error("Missing ground stroke");
@@ -590,7 +635,7 @@ describe("pure canvas input decisions", () => {
     expect(evaluateHold(state(), 450)).toBeNull();
   });
 
-  it.each(["terrain", "water", "scenery", "regions"] as const)(
+  it.each(["terrain", "water", "regions"] as const)(
     "does not repeat a held %s brush",
     (tool) => {
       const pointer = gestureOf(state({ ...brushSettings, tool }));

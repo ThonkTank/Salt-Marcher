@@ -2,6 +2,8 @@
 const MiB = 1024 * 1024;
 export const CACHE_BUDGETS = {
   city: { bytes: 64 * MiB, entries: 256 },
+  landscape: { bytes: 16 * MiB, entries: 256 },
+  rasterLandscape: { bytes: 16 * MiB, entries: 256 },
   ground: { bytes: 32 * MiB, entries: 256 },
   terrain: { bytes: 32 * MiB, entries: 256 },
   rasterTerrain: { bytes: 32 * MiB, entries: 256 },

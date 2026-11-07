@@ -4,6 +4,7 @@ import type { GenerationDiagnostic } from "./GenerationDiagnostic";
 import type { GenerationLimit } from "./GenerationLimit";
 import type { GenerationSummary } from "./GenerationSummary";
 import type { GroundResponse } from "./GroundResponse";
+import type { LandscapeResponse } from "./LandscapeResponse";
 import type { Region } from "./Region";
 import type { RemovedConnection } from "./RemovedConnection";
 import type { RiverDelta } from "./RiverDelta";
@@ -25,6 +26,7 @@ export type ValidPreviewWire = {
   changed: boolean;
   terrain?: TerrainPreview;
   ground?: GroundResponse;
+  landscape?: LandscapeResponse;
   regions?: Array<Region> | null;
   rivers?: RiverDelta;
   generationSummary: GenerationSummary;

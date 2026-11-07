@@ -357,7 +357,9 @@ Feinere Kacheln erben grobe Farbe; spätere grobe Striche bearbeiten vorhandene
 Feinkacheln mit demselben Farbauftrag, ohne leere Feinraster anzulegen. Radierte
 transparente Autorenwerte verdecken geerbte Farbe. Die Darstellung interpoliert weich,
 erhält die Reliefschattierung und liegt unter Wasser, Landschaft, Straßen und
-Gebäuden. Bodenfarbe verändert keine Höhen, Fundamente oder Kollisionen.
+Gebäuden. Vollständig leere Darstellungskacheln übertragen einen leeren Pixelstring;
+dies betrifft beide Farbebenen einschließlich ihrer Ränder und löscht keine Autoren.
+Bodenfarbe verändert keine Höhen, Fundamente oder Kollisionen.
 Ein Strich enthält höchstens 100.000 zeitgestempelte Pfadpunkte, dauert höchstens
 eine Stunde und bearbeitet höchstens eine Million Rasterpixel einschließlich
 betroffener vorhandener Feinkacheln. Die Berechnung ist
@@ -368,29 +370,58 @@ teilen die Berechnung. Kein globales Füllen, Symbol-Einfärben oder Texturimpor
 
 ## Landschaftspinsel
 
-„Landschaft“ malt dekorative Assets für Wald, Wiese, Buschland und Felsen im
-Außenbereich ab 20 % Zoom. Linke Taste ziehen streut, Loslassen übernimmt den
-Strich als einen Historyschritt; Escape, Fokusverlust und Pointercancel verwerfen
-die laufende Geste. Auswahl trifft sichtbare Assets; Löschen entfernt den ganzen
-Strich. Einzelne Assets sind noch nicht separat verschiebbar oder radierbar.
+„Landschaft“ malt zusammenhängenden Landschaftsbestand im gesamten Außenzoom.
+Vorlagen sind Wald, Buschland, Wiese und Felsgebiet. Felsgebiet bezeichnet
+landschaftliche Felsen; es ist unabhängig vom steilen Felsmaterial und dessen
+Bodenfarbe. Pinselgröße folgt dem gemeinsamen Bildschirmpinsel. Zieldichte (5–100 %, Vorgabe 65 %)
+bestimmt den gewünschten Bestand. Wiederholtes Übermalen nähert sich dieser
+Dichte und erzeugt keine zusätzlichen gespeicherten Einzelobjekte. Andere
+Landschaftsanteile werden dabei anteilig verdrängt. „Entfernen“ radiert alle
+Landschaftsanteile lokal; Boden-/Felsfarbe und Höhen bleiben erhalten.
 
-Pinselgröße: gemeinsamer Bildschirmdurchmesser, Dichte: 5–100 % (65 %), Assetradius:
-1–80 Fuß (8). Die Dichte bestimmt die Belegung eines versetzten Rasters;
-Größenvariation 70–125 %, Drehung und vier Symbolvarianten kommen aus einem
-für die Geste fixierten Seed. Die Platzierung folgt dem überstrichenen Kreis,
-nicht der Häufigkeit der Pointerevents. Vorschau und Übernahme verwenden denselben
-reinen Generator. Wiederholtes Übermalen legt zusätzliche Assets an.
+Loslassen übernimmt einen Strich als einen Historyschritt. Escape, Fokusverlust,
+Pointercancel und Werkzeugwechsel verwerfen die laufende Vorschau. Einstellungen
+und Autorenauflösung werden beim Beginn fixiert. Grobe Autoren werden beim
+Hineinzoomen vererbt; spätere grobe Striche aktualisieren bestehende feine Autoren
+mit demselben Auftrag, ohne ein leeres Feinraster über die ganze Welt anzulegen.
+Explizit leere Autoren erhalten lokale Lichtungen gegenüber geerbtem Bestand.
 
-Ein Strich enthält höchstens 4.096 Assets und 4.096 Eingabepunkte. Zu lange oder
-aufwendige Striche werden atomar abgelehnt (maximal 100.000 Pfadunterteilungen
-je Segment, 100.000 belegbare Rasterplätze und eine Million Kandidatenprüfungen).
-Ein Strich ohne Treffer ist ein No-op. Assets sind Dekoration ohne Einfluss auf
-Kollisionen, Höhen oder Bebauung; Straßen und Dächer zeichnen darüber.
-Gespeichert werden Landschaftsart und konkrete Position, Radius, Drehung und
-Variante jedes Assets. Zoomen, Undo/Redo und Dateiöffnung verändern sie nicht.
-Die Übersicht zeigt vereinfachte Symbole, höchstens 512 gleichmäßig ausgewählte
-Assets je Strich; unterhalb der sichtbaren Symbolgröße entfallen sie.
-Eigene Assetimporte und Texturmalerei sind nicht Teil dieses Werkzeugs.
+Ein Strich erlaubt höchstens 100.000 zeitgestempelte Pfadpunkte, eine Stunde
+Dauer, eine Million bearbeitete Rasterpixel einschließlich vorhandener Feinautoren,
+100.000 Abdrücke und 40 Millionen Pixelprüfungen. Überschreitungen lehnen den
+gesamten Strich ab. Je Darstellung werden höchstens 64 Kacheln angefordert;
+Einzelsymbole verwenden höchstens 16.384 Kandidaten einschließlich Kronenrand.
+
+Gespeichert werden dünn belegte 64×64-Kacheln mit Auflösung 2^Stufe Fuß (0–24)
+und vier normierten Gewichten für Wald, Buschland, Wiese und Felsgebiet. Die Summe
+ist höchstens 255. Diese Gewichte beschreiben alternative Landschaftsanteile
+und Bestandsdichte, keine vier frei übereinanderliegenden Ebenen. Wald enthält
+seinen Unterwuchs; ein einzelner Felsen im Wald ist nicht durch eine zusätzliche
+Felsgebiet-Ebene modelliert. Autorendaten bleiben beim Zoomen unverändert.
+
+Nah erscheinen deterministisch aus Weltkoordinaten erzeugte Bäume und andere
+Symbole. Baumkronen erscheinen als unregelmäßige, fein konturierte Federzeichnungen
+mit gedeckten Grünfarben; Blattdetails folgen der sichtbaren Größe. Mehr Dichte ergänzt stabile Kandidaten statt vorhandene Positionen neu
+zu würfeln. Mittlere Maßstäbe zeigen Wald als zusammenhängende Blätterdächer:
+Die gemalte Zieldichte bestimmt sichtbare Lücken und den Kronenschluss. Lokale
+Lichtungen bleiben erhalten. Buschland, Wiese und Felsgebiet verwenden sparsame
+kartographische Signaturen aus kleinen Gruppen; ferne Maßstäbe
+ausschließlich Flächenfarben. Übersichten entstehen
+direkt aus den Deckungen, ohne zuerst unsichtbare Einzelbäume zu erzeugen.
+Mittlere Blätterdächer beziehungsweise Signaturen und nahe Symbole gehen überlappend ineinander über;
+beim Wechsel gibt es kein ausschließlich durch den Zoom verursachtes Leerband.
+Das gemeinsame Kandidatenbudget gilt auch während dieses Übergangs. Auf großen
+Ansichtsflächen bleibt das Blätterdach länger sichtbar, bis die Einzelbäume in
+das Arbeitsbudget passen; Verschieben allein verändert die Überblendung nicht.
+Die Darstellung ist auf den sichtbaren Ausschnitt und ein festes Symbolbudget
+begrenzt; bei zu großem Detailumfang bleibt die zusammenhängende Flächendarstellung.
+Wasser maskiert Landschaft, ohne darunterliegende Autoren zu löschen. Schnee
+bleibt sichtbar. Landschaft verändert weder Höhen, Fundamente noch Kollisionen.
+
+Der bestehende Objekttyp dekorativer Landschaftsstriche behält konkrete Assets
+und bleibt auswählbar und als ganzer Strich löschbar. Die neue Malerei erzeugt
+solche Striche nicht mehr. Einzelobjektplatzierung, lokale Verschiebeausnahmen,
+Feldumrisse und eigene Assetimporte sind noch nicht Bestandteil dieser Ausbaustufe.
 
 ## Höhen und Fundamente
 
@@ -520,9 +551,9 @@ garantiert keine Bearbeitungsfreigabe.
 
 Mitteltaste oder Leertaste+Ziehen verschiebt die Karte, Mausrad zoomt. Ein Haus
 öffnet per Doppelklick oder „Innen öffnen“; die Kamera bleibt erhalten.
-Außenzoom reicht bis 0,000002 CSS-Pixel pro Fuß. Straßen, Boden, Regionen und Höhen
+Außenzoom reicht bis 0,000002 CSS-Pixel pro Fuß. Straßen, Boden, Landschaft, Regionen und Höhen
 lassen sich in der gesamten Außenübersicht bearbeiten. Lokale Gewässer
-benötigen mindestens 0,32 CSS-Pixel pro Fuß, Landschaft sowie andere
+benötigen mindestens 0,32 CSS-Pixel pro Fuß, andere
 Außenobjekte und Innenräume mindestens 1,28. Im Parzellenkontext
 verwendet Fit immer Polygonbounds, auch ohne Haus; ein fehlender Owner bedeutet
 leer, nicht fehlendes Grundstück. Entferntes Kontextobjekt führt nach außen.
@@ -785,7 +816,7 @@ Namen, und der Gewässerpinsel ist gesperrt. Beim Hineinzoomen können diese Nam
 und Werkzeuge bei gleichbleibendem Ansichtsnamen verfügbar werden. Es gelten
 die Inhaltsgrenzen und Rücklaufbereiche der Stadtübersicht und der Werkzeugregeln.
 Bestehende Bodenfarben, Gewässer und Landschaft bleiben auch bei gesperrtem
-Malwerkzeug Teil der Darstellung. Haus-, Landschafts- und Innenbearbeitung
+Malwerkzeug Teil der Darstellung. Haus- und Innenbearbeitung
 benötigen weiterhin den Nahzoom; ein Innenkontext wird ausdrücklich geöffnet.
 
 „Dorf / Stadtteil“ dient der Orientierung und räumlichen Planung im gesamten
@@ -800,13 +831,13 @@ Diese benannte Ansicht bleibt vollständig im Übersichtsbereich. Gewöhnliche
 Gebäude außerhalb der Auswahl tragen hier keine Namen; wichtige Orte,
 Regions- und Ortschaftsnamen sowie Straßennamen werden nach den gemeinsamen
 Größen-, Prioritäts- und Kollisionsregeln dargestellt. Bestehende Bodenfarben,
-Gewässer und Landschaft bleiben Teil des Ortsbilds, auch wenn ihre Werkzeuge
-gesperrt sind. Kleine Geometrien und Symbole dürfen nach den Darstellungsgrenzen
+Gewässer bleiben Teil des Ortsbilds, auch wenn ihr Werkzeug
+gesperrt ist; Landschaft bleibt auf dieser Stufe bearbeitbar. Kleine Geometrien und Symbole dürfen nach den Darstellungsgrenzen
 entfallen; die Übersicht garantiert nicht die Anzeige jedes Einzelobjekts.
 
 Auswahl und Navigation sowie Straßen-, Fluss-, Höhen- und Regionsbearbeitung
-bleiben nach ihren Werkzeugregeln verfügbar. Boden bleibt in allen Außenmaßstäben bearbeitbar; der Gewässerpinsel benötigt
-einen feineren Maßstab; Haus-, Landschafts- und Innenbearbeitung weiterhin den
+bleiben nach ihren Werkzeugregeln verfügbar. Boden und Landschaft bleiben in allen Außenmaßstäben bearbeitbar; der Gewässerpinsel benötigt
+einen feineren Maßstab; Haus- und Innenbearbeitung weiterhin den
 Nahzoom. Ein Innenkontext wird ausdrücklich geöffnet. Der Ansichtsname legt
 weder eine Regionsrangstufe noch eine Verwaltungsordnung fest.
 
@@ -851,7 +882,7 @@ exaktem Header bleibt auch unter diesen Schwellen sichtbar und treffbar;
 Geometrieaktionen benötigen weiterhin aktuelle Daten. Das Straßenwerkzeug setzt
 und bewegt stattdessen Verlaufspunkte. Doppelklick auf eine ausgewählte Straße fügt einen Knoten ein;
 auf leerer Karte zoomt er um den angeklickten Punkt zur nächsten Ansicht
-gemäß den Atlasansichten; „Zum Bearbeiten hineinzoomen“ erhält den Kartenmittelpunkt.
+gemäß den Atlasansichten; „Zur Detailansicht“ erhält den Kartenmittelpunkt.
 Bestehende Auswahl und Entwürfe bleiben beim Zoomwechsel erhalten. Im
 Straßenzeichnen löst Doppelklick keinen Zoom aus. Geometrieaktionen benötigen
 aktuelle Daten; Bestandsstraßen zusätzlich ihren vollständigen Header.
@@ -881,17 +912,17 @@ Pro Ansicht werden höchstens 3.000 priorisierte Objektkandidaten betrachtet und
 
 ## Dateien und History
 
-`.saltatlas`: SQLite-Format **21**, ohne Migration/Altformate. Genau zehn
+`.saltatlas`: SQLite-Format **22**, ohne Migration/Altformate. Genau elf
 STRICT-/WITHOUT-ROWID-Tabellen: `document_meta(singleton,next_identity)`,
 `objects(id,kind,body)`, `house_cells(building_id,payload)`,
-`terrain(x,y,z)`, `terrain_layers(level,x,y,z)`, `waters(id,body)`, `ground_tiles(level,x,y,pixels)`, `region_catalog(singleton,body)`, `regions(id,body)`, `rivers(id,body)`. Keine Arbeitsindizes,
+`terrain(x,y,z)`, `terrain_layers(level,x,y,z)`, `waters(id,body)`, `ground_tiles(level,x,y,pixels)`, `landscape_tiles(level,x,y,pixels)`, `region_catalog(singleton,body)`, `regions(id,body)`, `rivers(id,body)`. Keine Arbeitsindizes,
 RTrees, Views, Trigger, History oder redundanten Konturen/Bounds.
 
 Autoritativ sind Straßeneigenschaften/Nodes/Sections/Rezept/Marker,
 Road-Source gebundener Parzellen, eingefrorene Polygon/Frame-Werte gelöster
 Parzellen, Hausidentität/-autoren/Wichtiger-Ort-Markierung/Räume/Verbindungen/Zähler/Placement sowie
 Flächenpunkte/-material/-Order, Landschaftsstriche mit konkreten Assets, natürliche Höhenpunkte, lokale Gewässerflächen/-pegel und
-Fundamenteinstellungen pro Haus, Bodenfarbkacheln sowie Regionskatalog,
+Fundamenteinstellungen pro Haus, Bodenfarbkacheln, Landschaftsdeckungskacheln sowie Regionskatalog,
 Regionsflächen, Namen, Stile und Beschriftungseinstellungen sowie Flussknoten,
 Breiten, Einstellungen und resultierende Verläufe. Regionsbeziehungen
 werden aus den Flächen abgeleitet. Transparente Bodenfarbkacheln bleiben als explizite Überschreibungen erhalten; ihre Übersichtspyramide wird beim Öffnen neu aufgebaut. Hauszellen stehen ausschließlich separat.

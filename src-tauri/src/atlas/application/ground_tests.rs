@@ -432,3 +432,166 @@ fn ground_material_layers_are_independent_across_resolution_history_and_file() {
     a.open(&path).unwrap();
     assert_eq!(channels(&mut a), both);
 }
+
+#[test]
+fn empty_raster_layers_do_not_read_pixels_or_overviews() {
+    use rusqlite::hooks::{AuthAction, AuthContext, Authorization};
+    let mut a = AtlasApplication::new().unwrap();
+    a.db.authorizer(Some(|ctx: AuthContext<'_>| match ctx.action {
+        AuthAction::Read {
+            table_name: "ground_tiles" | "landscape_tiles",
+            column_name: "pixels",
+            ..
+        }
+        | AuthAction::Read {
+            table_name: "ground_lod" | "landscape_lod",
+            ..
+        } => Authorization::Deny,
+        _ => Authorization::Allow,
+    }));
+    let tiles: Vec<_> = (-4..4).flat_map(|x| (-4..4).map(move |y| [x, y])).collect();
+    for level in [0, 18, 24] {
+        for command in ["groundTiles", "landscapeTiles"] {
+            let response = a
+                .request(command, json!({"level":level,"tiles":tiles}))
+                .unwrap();
+            let output: Vec<crate::atlas::ground::GroundTile> =
+                serde_json::from_value(response["tiles"].clone()).unwrap();
+            assert_eq!(output.len(), tiles.len());
+            for (tile, [x, y]) in output.iter().zip(&tiles) {
+                assert_eq!([tile.x, tile.y], [*x, *y]);
+                assert!(tile.pixels.is_empty());
+            }
+        }
+    }
+    // The shortcut must not bypass normal request validation.
+    for command in ["groundTiles", "landscapeTiles"] {
+        assert!(a.request(command, json!({"level":25,"tiles":[]})).is_err());
+        assert!(a
+            .request(command, json!({"level":0,"tiles":vec![[0,0];65]}))
+            .is_err());
+    }
+}
+
+#[test]
+fn landscape_density_inherits_without_materializing_world_and_roundtrips() {
+    use crate::atlas::landscape::LandscapeTile;
+    let mut a = AtlasApplication::new().unwrap();
+    let paint = |level: u8, mode: &str, biome: &str, density: f64| json!({"type":"landscapeStroke","brush":{"resolution":level,"biome":biome,"mode":mode,"diameter":12.0*(1u32<<level) as f64,"density":density,"points":[[0,0,0],[0,0,3000]]},"view":{"level":level,"tiles":[[-1,-1],[0,0]]}});
+    let pixel = |a: &mut AtlasApplication, level| {
+        let response = a
+            .request("landscapeTiles", json!({"level":level,"tiles":[[0,0]]}))
+            .unwrap();
+        let tiles: Vec<LandscapeTile> = serde_json::from_value(response["tiles"].clone()).unwrap();
+        if tiles[0].pixels.is_empty() {
+            return vec![0; 4];
+        }
+        assert_eq!(tiles[0].pixels.len(), 66 * 66 * 4);
+        tiles[0].pixels[(66 + 1) * 4..(66 + 2) * 4].to_vec()
+    };
+    let blank = a
+        .request(
+            "landscapeTiles",
+            json!({"level":18,"tiles":[[0,0],[-1,-1]]}),
+        )
+        .unwrap();
+    let blank: Vec<LandscapeTile> = serde_json::from_value(blank["tiles"].clone()).unwrap();
+    assert!(blank.iter().all(|t| t.pixels.is_empty()));
+    request_edit(&mut a, "commit", paint(18, "paint", "forest", 0.5));
+    assert_eq!(pixel(&mut a, 0), vec![127, 0, 0, 0]);
+    assert_eq!(pixel(&mut a, 0), pixel(&mut a, 18));
+    let count: i64 =
+        a.db.query_row("SELECT count(*) FROM landscape_tiles", [], |r| r.get(0))
+            .unwrap();
+    assert!(count <= 4);
+    let bounds = a.extent().unwrap().unwrap();
+    assert!(bounds[0] < 0. && bounds[2] > 1_000_000.);
+    assert!(ground_rows(&a.db).is_empty());
+    request_edit(&mut a, "commit", paint(0, "paint", "scrub", 1.));
+    assert_eq!(pixel(&mut a, 0), vec![0, 255, 0, 0]);
+    let op = paint(18, "paint", "meadow", 0.8);
+    let preview = request_edit(&mut a, "preview", op.clone());
+    assert_eq!(pixel(&mut a, 0), vec![0, 255, 0, 0]);
+    let commit = request_edit(&mut a, "commit", op);
+    assert_eq!(preview["landscape"]["tiles"], commit["landscape"]["tiles"]);
+    assert_eq!(pixel(&mut a, 0), vec![0, 0, 204, 0]);
+    history(&mut a, false);
+    assert_eq!(pixel(&mut a, 0), vec![0, 255, 0, 0]);
+    history(&mut a, true);
+    request_edit(&mut a, "commit", paint(0, "erase", "forest", 1.));
+    assert_eq!(pixel(&mut a, 0), vec![0; 4]);
+    assert_eq!(pixel(&mut a, 18), vec![0, 0, 204, 0]);
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("landscape.saltatlas");
+    a.save(&path).unwrap();
+    for _ in 0..4 {
+        history(&mut a, false);
+    }
+    let count: i64 =
+        a.db.query_row("SELECT count(*) FROM landscape_tiles", [], |r| r.get(0))
+            .unwrap();
+    assert_eq!(count, 0);
+    a.open(&path).unwrap();
+    assert_eq!(pixel(&mut a, 0), vec![0; 4]);
+    assert_eq!(pixel(&mut a, 18), vec![0, 0, 204, 0]);
+    let db = Connection::open(&path).unwrap();
+    db.execute(
+        "UPDATE landscape_tiles SET pixels=?",
+        [vec![255u8; crate::atlas::ground::PLANE_BYTES]],
+    )
+    .unwrap();
+    drop(db);
+    assert!(a.open(&path).is_err());
+    assert_eq!(pixel(&mut a, 18), vec![0, 0, 204, 0]);
+}
+
+#[test]
+fn landscape_failure_rolls_back_authors_and_budget_rejects_before_write() {
+    let mut a = AtlasApplication::new().unwrap();
+    let stroke = json!({"type":"landscapeStroke","brush":{"biome":"forest","mode":"paint","diameter":12,"density":1,"points":[[0,0,0],[0,0,1000]]}});
+    a.db.execute_batch("CREATE TEMP TRIGGER fail_landscape BEFORE INSERT ON landscape_lod BEGIN SELECT RAISE(ABORT,'injected'); END;").unwrap();
+    let status = a.status();
+    assert!(a
+        .request("commit", json!({"version":status,"intent":stroke}))
+        .is_err());
+    assert_eq!(a.status().revision, status.revision);
+    let count: i64 =
+        a.db.query_row("SELECT count(*) FROM landscape_tiles", [], |r| r.get(0))
+            .unwrap();
+    assert_eq!(count, 0);
+    a.db.execute_batch("DROP TRIGGER fail_landscape").unwrap();
+    let excessive = json!({"type":"landscapeStroke","brush":{"biome":"forest","mode":"paint","diameter":256000000,"density":1,"points":[[0,0,0]]}});
+    assert!(a
+        .request("commit", json!({"version":a.status(),"intent":excessive}))
+        .is_err());
+    assert_eq!(a.status().revision, status.revision);
+}
+
+#[test]
+fn ground_empty_encoding_preserves_halo_only_pigment_in_either_plane() {
+    use crate::atlas::ground::GroundTile;
+    for (layer, offset) in [("soil", 0), ("rock", 66 * 66 * 4)] {
+        let mut a = AtlasApplication::new().unwrap();
+        request_edit(
+            &mut a,
+            "commit",
+            json!({"type":"groundStroke","brush":{
+                "layer":layer,"mode":"paint","tip":"hard","color":[90,120,150],
+                "diameter":2,"opacity":1,"flow":1,"seed":1,
+                "points":[[63,30,0],[63,30,1000]]
+            }}),
+        );
+        let response = a
+            .request("groundTiles", json!({"level":0,"tiles":[[1,0],[2,0]]}))
+            .unwrap();
+        let output: Vec<GroundTile> = serde_json::from_value(response["tiles"].clone()).unwrap();
+        assert_eq!(output[0].pixels.len(), 66 * 66 * 4 * 2);
+        assert!(output[1].pixels.is_empty());
+        assert!((1..65).any(|y| output[0].pixels[offset + y * 66 * 4 + 3] > 0));
+        for y in 1..65 {
+            for x in 1..65 {
+                assert_eq!(output[0].pixels[offset + (y * 66 + x) * 4 + 3], 0);
+            }
+        }
+    }
+}

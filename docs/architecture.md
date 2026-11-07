@@ -85,7 +85,7 @@ Dateischema, gespeicherte Autoren und Importgrenzen sind ausschließlich unter
 | `terrain`, `terrain_store`, `world_terrain_store`, `terrain_blocks`, `terrain_raster` | Höhenautoren, kanonische Oberfläche, räumlicher Index und fertige Raster.                                                                          |
 | `water`, `water_store`                                                                | Pegel, Polygone, Ufer und Trockenlegen; Wasser- und Höhenänderungen bilden eine Aktion.                                                            |
 | `rivers`, `river_store`                                                               | Routen, gemeinsame Knoten und Profile; lokale Flüsse samt verbundenen Komponenten laden.                                                           |
-| `ground`, `ground_store`                                                              | Farbauftrag auf dünn belegte RGBA-Autorenkacheln und deren Übersichtspyramide.                                                                     |
+| `ground`, `landscape`, `ground_store`                                                 | Getrennte Pigment-/Landschaftsautoren mit gemeinsamen begrenzten Raster- und Pyramidenmechanismen.                                                 |
 | `regions`, `region_store`                                                             | Katalog, Polygone, RTree und revisionsgebundene Reads; Beziehungen aus Schnittflächen ableiten.                                                    |
 | `scenery`                                                                             | Deterministische Assetverteilung; Landschaftsstriche sind gewöhnliche Objektowner.                                                                 |
 
@@ -139,7 +139,11 @@ Caches für Indexknoten, 16×16-Blöcke und lokale Koeffizienten. Quellen außer
 ihrer Einflussbounds werden übersprungen. Der gehaltene Lesespeicher hängt vom
 Darstellungsbudget ab. Konstante Kontrollwerte über einer identisch hohen
 geerbten Fläche bleiben auch bei dünner Belegung exakt konstant; die
-Polynomauswertung darf dort keine künstliche Steigung erzeugen. `terrain_raster` unterteilt nichtkonstante Bereiche bis zur
+Polynomauswertung darf dort keine künstliche Steigung erzeugen. Für kleine
+Ausschnitte grober Autoren prüft der Sampler zusätzlich höchstens vier
+vollständig belegte konstante Spline-Abschnitte. Damit kann eine lokal ebene
+Fläche trotz dünn belegtem oder unterschiedlich hohem Indexblock exakt erkannt
+werden; fehlende Stützwerte behalten die konservative Intervallberechnung. `terrain_raster` unterteilt nichtkonstante Bereiche bis zur
 Abtastauflösung und berechnet Relief, Wasserabdeckung und Höhenlinien aus der
 kanonischen Oberfläche samt Flussbetten, Plattformen und lokalen Gewässern.
 Gemeinsame Weltabtastpunkte und ein Pixelrand ermöglichen Kachelfilterung;
@@ -246,6 +250,59 @@ Ein anfragegebundener ID-Cache vermeidet wiederholte Projektion.
 Exakte Szenen laden im Bearbeitungsmaßstab; `roadHeader` und `objectHeader` liefern
 Ownerdaten auch in Übersichten. Zu große exakte Ausschnitte werden abgelehnt.
 
+## Landschaftsdeckung
+
+`landscape` besitzt die semantischen Pinsel-/Transporttypen und die normierten
+Wald-/Buschland-/Wiesen-/Felsgebietsgewichte. `landscape_tiles` und `landscape_lod`
+sind von Bodenpigmenten getrennt. Der interne feste `RasterKind` im Rasterstore
+teilt Vererbung, räumlich begrenzte Autorenreads, Halo und Pyramidenaufbau;
+fachliche Validierung und Mischregeln bleiben getrennt. LandscapeStroke benutzt
+den vorhandenen transaktionalen Vorschau-/Commit-/Historypfad. Persistenz speichert
+nur Autoren und rekonstruiert Übersichten beim Öffnen.
+Bei vollständig unbenutzten Rasterebenen genügt eine Autoren-Existenzprüfung:
+Ohne Vorschauwerte liefert der Store leere Kacheln direkt, ohne Vererbungsreads
+oder Haloaufbau. Argumentprüfung und die bestehenden Transportformate bleiben erhalten.
+
+Der `PresentationLoader` lädt Landschaft als eigene versionierte Schicht über
+seinen bestehenden WorldTileCache. Sie wird ausschließlich mit revisionsgleichem
+Gelände kombiniert. Vorschaukacheln ersetzen nur betroffene Kacheln. Vollständig leere
+Darstellungskacheln übertragen einen leeren Pixelstring; der Painter überspringt
+sie vor Rasterallokation und Symbolarbeit. Explizit leere Autoren bleiben davon
+unabhängig gespeichert. Es gibt
+keinen zusätzlichen Dokumentworker oder unabhängigen Cachebesitzer. Der vorhandene
+Rasterpainter hält begrenzte Landschaftsraster und zeichnet aus denselben Gewichten
+ferne Farben, mittlere Blätterdächer beziehungsweise Signaturen und nahe Symbole. Zwischen 0,35 und 0,5
+CSS-Pixeln pro Fuß beginnt die Überblendung zu nahen Symbolen. `landscapeLod`
+begrenzt deren Anteil zusätzlich anhand einer kamerapositionsunabhängigen Obergrenze
+der Kandidaten für die Viewportgröße; große Fenster behalten dadurch das
+Blätterdach bis zur möglichen Detaildarstellung. Beide Bänder teilen sich
+das Kandidatenbudget. Painter, Symbolprojektion und Kachelanfrager verwenden
+dieselbe Auswahl; der Anfrager erhält bis zum Ende den groben Kronenrand.
+Mittlerer Wald entsteht als durchgehendes, weltverankertes Kronenfeld aus den
+Waldgewichten. Geringe Dichte öffnet Lücken, hohe Dichte schließt das Dach.
+`forestCanopy` berechnet ausschließlich Darstellung; die Autoren bleiben unverändert.
+Der bestehende Landschaftsrastercache hält das optionale 130×130-Kronenraster
+einschließlich Halo im selben Bytebudget. Es entsteht erst im mittleren Band
+und nur für Kacheln mit Waldanteil; Pan und Zoom verwenden es wieder.
+Boden-, Landschafts- und Geländepainter prüfen über `rasterVisibility` vor
+Decodierung, Nachbarschaftsabgleich und Rasteraufbau, ob der Kachelkörper den
+Viewport berührt (mit einem Geräte-Pixel Rundungsrand). Unsichtbare Höhenlinien
+werden ebenfalls übersprungen; ihr Prüfrand enthält zusätzlich die halbe
+Strichbreite in Geräte-Pixeln. Geladene unsichtbare Kacheln bleiben im Präsentationscache; ihre
+Zeichenraster entstehen erst beim Hineinschieben und werden beim Zurückschieben wiederverwendet.
+Die Stadtübersicht verwendet dieselbe Kachelprüfung vor dem Durchlaufen der
+Bebauungsdichtezellen; außerhalb des Viewports entfallen deren Rechteckaufträge.
+Buschland, Wiese und Felsgebiet verwenden dort weiterhin aufrechte Gruppen
+aus drei Zeichen im Vektorpainter.
+Nahe Waldbäume verwenden vier eigene, unregelmäßige Federzeichnungs-Kronen mit
+gebrochenen inneren Blattkonturen und gedeckter Lasur. Der Vektorpainter hält
+höchstens vier feste Path2D-Zeichnungen; Pan und Zoom erzeugen keine neue
+Kronengeometrie. Innere Konturen und Schraffur werden erst ab lesbarer
+Bildschirmgröße gezeichnet. Bestehende dekorative Waldbäume nutzen denselben Painter.
+Detailkandidaten hängen nur
+von Weltkoordinaten ab und werden ausschließlich für den sichtbaren Ausschnitt
+innerhalb eines festen Budgets erzeugt. Autoren enthalten keine generierten Bäume.
+
 ## Eingaben und Lebensdauer
 
 `AtlasApp` verbindet über `useAtlasEditor` die Besitzer. `editorView`,
@@ -298,6 +355,10 @@ reserviert nur deren tatsächliche Rastergröße im bestehenden Budgetcache.
 Bodenautoren enthalten zwei planare 64×64-RGBA-Ebenen für Boden und Fels;
 Vererbung, Übersichtspyramide, Halo, History und Dateipersistenz führen beide
 gemeinsam. Malen, Radieren und Pipette betreffen ausschließlich die gewählte Ebene.
+Eine vollständig pigmentfreie Antwortkachel einschließlich beider Halos verwendet
+wie Landschaft einen leeren Pixelstring. Der Painter überspringt sie vor Decodierung,
+Materialabfrage und Canvas-Allokation; die Pipette liefert weiterhin die Grundfarbe.
+Autoren und Pyramide behalten ihre vollständigen planaren Pixelwerte.
 Bodenfarben verwenden je Zeichenaufruf einen Materialleser, der die aktuelle
 Kachelreferenz über benachbarte Pixel hinweg wiederverwendet. Es entsteht kein
 zusätzlicher persistenter Cache. Beschriftungen verwerfen unsichtbare und nach
@@ -334,7 +395,13 @@ Innenraumgeometrie; `mapLabels` platziert Namen über Weltanker und räumliche B
 Gerätepixelkanten vermeiden transparente Kachelnähte; der Quellhalo bleibt für die
 Filterung erhalten. `terrainRaster` cached dekodierte Bilder nach Inhaltskennung,
 ohne Transportobjekte festzuhalten. Bodenfarben verwenden vorbereitete Reliefwerte
-und einen eigenen Pixelhalo. Untergetauchte Flussbänder werden an Gewässerflächen
+und einen eigenen Pixelhalo. Die Seenrasterung ordnet nicht horizontale Uferkanten einmal nach ihrer unteren
+Y-Grenze. Pro aufsteigender Subpixelzeile bleiben nur kreuzende Kanten aktiv;
+jede Kante ist einmal gespeichert. Schnittpunkte werden je Polygon einschließlich
+seiner Löcher gepaart, überlagernde Pegel nehmen weiterhin das Minimum.
+Die direkte Schnittformel vermeidet schrittweise Rundungsdrift, Halo und
+Vierfachabtastung je Achse bleiben erhalten. Der Zeilenpuffer wird wiederverwendet.
+Untergetauchte Flussbänder werden an Gewässerflächen
 ausgeschnitten. `containsPolygon` liefert den gemeinsamen Außenring-/Lochtest.
 
 ## Entwicklung und Prüfungen

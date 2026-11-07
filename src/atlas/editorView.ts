@@ -1,3 +1,4 @@
+import { landscapeRequest } from "./landscapeRequest";
 import type { LodDecision } from "./lod";
 import {
   freezeLayout,
@@ -61,11 +62,7 @@ export function toolScaleRestriction(
   interior: boolean,
   lod: LodDecision,
 ): "detail" | "localBrush" | null {
-  if (
-    !interior &&
-    (tool === "scenery" || tool === "water") &&
-    !lod.policy.detailBrushes
-  )
+  if (!interior && tool === "water" && !lod.policy.detailBrushes)
     return "localBrush";
   if (
     !lod.policy.exact &&
@@ -77,6 +74,7 @@ export function toolScaleRestriction(
         "terrain",
         "water",
         "area",
+        "scenery",
         "regions",
       ].includes(tool))
   )
@@ -244,8 +242,8 @@ export function brushCursor(
       break;
     case "scenery":
       radius =
-        pointer?.kind === "scenery"
-          ? pointer.brush.radius
+        pointer?.kind === "landscape"
+          ? pointer.brush.diameter / 2
           : radii.scenery / scale;
       break;
     case "terrain":
@@ -345,6 +343,12 @@ export function editorInput(input: {
           tiles: presentation.ground.tiles.map((t) => [t.x, t.y]),
         }
       : groundRequest(bounds, lod.groundLevel),
+    landscapeView: presentation?.landscape
+      ? {
+          level: presentation.landscape.level,
+          tiles: presentation.landscape.tiles.map((t) => [t.x, t.y]),
+        }
+      : landscapeRequest(bounds, lod.groundLevel, camera.scale),
     scenerySeed: input.revision >>> 0,
     overviewRoads: presentation?.overview
       ? [

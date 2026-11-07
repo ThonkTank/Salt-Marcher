@@ -1254,7 +1254,7 @@ it("retains preview and parcel selection only for the owning plan, including pop
   expect(h.exact().displayPreview).toBeNull();
 });
 
-type BrushKind = "ground" | "terrain" | "water" | "region";
+type BrushKind = "landscape" | "ground" | "terrain" | "water" | "region";
 function brushGesture(kind: BrushKind): Gesture {
   const base = {
     pointer: 1,
@@ -1269,6 +1269,19 @@ function brushGesture(kind: BrushKind): Gesture {
       points: [[0, 0]],
       radius: 25,
       erase: false,
+    };
+  if (kind === "landscape")
+    return {
+      ...base,
+      kind,
+      started: 0,
+      brush: {
+        mode: "paint",
+        biome: "forest",
+        diameter: 60,
+        density: 0.7,
+        points: [[0, 0, 0]],
+      },
     };
   if (kind === "ground")
     return {
@@ -1301,7 +1314,7 @@ function brushGesture(kind: BrushKind): Gesture {
   };
 }
 
-it.each(["ground", "water", "region"] as const)(
+it.each(["ground", "landscape", "water", "region"] as const)(
   "coalesces %s previews, retains a visual result and rejects it after abort",
   async (kind) => {
     const h = harness();
@@ -1354,7 +1367,7 @@ it.each(["context", "revision", "document", "unmount"] as const)(
   },
 );
 
-it.each(["ground", "water", "region"] as const)(
+it.each(["ground", "landscape", "water", "region"] as const)(
   "commits the final %s path once while a preview is held, without resurrecting it",
   async (kind) => {
     const h = harness(),

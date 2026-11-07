@@ -7,6 +7,8 @@ import type { CityView } from "./cityView";
 it("paints supplied immutable features in layer and author order", () => {
   const calls: string[] = [];
   const c = {
+    canvas: { width: 1000, height: 1000 },
+    getTransform: () => ({ a: 1, d: 1, e: 0, f: 0 }),
     beginPath() {},
     moveTo() {},
     lineTo() {},
@@ -96,6 +98,8 @@ it.each([
   (scale, width, proxy, visible) => {
     const strokes: { color: string; width: number }[] = [];
     const c = {
+      canvas: { width: 1000, height: 1000 },
+      getTransform: () => ({ a: 1, d: 1, e: 0, f: 0 }),
       beginPath() {},
       moveTo() {},
       lineTo() {},
@@ -139,6 +143,8 @@ it.each([
 it("retains narrow normal roads in the roof policy hysteresis band", () => {
   let strokes = 0;
   const c = {
+    canvas: { width: 1000, height: 1000 },
+    getTransform: () => ({ a: 1, d: 1, e: 0, f: 0 }),
     beginPath() {},
     moveTo() {},
     lineTo() {},
@@ -176,6 +182,8 @@ it("retains narrow normal roads in the roof policy hysteresis band", () => {
 it("does not stroke nonroad map features as roads", () => {
   let strokes = 0;
   const c = {
+    canvas: { width: 1000, height: 1000 },
+    getTransform: () => ({ a: 1, d: 1, e: 0, f: 0 }),
     save() {},
     restore() {},
     stroke() {
@@ -206,4 +214,42 @@ it("does not stroke nonroad map features as roads", () => {
     decideLod(0.5).policy,
   );
   expect(strokes).toBe(0);
+});
+
+it("does not visit offscreen density cells and restores them after panning", () => {
+  let reads = 0;
+  const drawn: number[][] = [];
+  let offset = 0;
+  const context = {
+    canvas: { width: 256, height: 256 },
+    getTransform: () => ({ a: 2, d: 2, e: offset, f: 0 }),
+    save() {},
+    restore() {},
+    fillRect: (...args: number[]) => drawn.push(args),
+  } as unknown as CanvasRenderingContext2D;
+  const view = {
+    level: 0,
+    tiles: [
+      {
+        x: -2,
+        y: 0,
+        features: [],
+        get density(): [number, number, number][] {
+          reads++;
+          return [[0, 0, 1]];
+        },
+      },
+    ],
+  };
+  const paint = () => paintCity(context, view, [], 1, decideLod(1).policy);
+  paint();
+  expect(reads).toBe(0);
+  expect(drawn).toEqual([]);
+  offset = 2048;
+  paint();
+  expect(reads).toBe(1);
+  expect(drawn).toEqual([[-1024, 0, 16, 16]]);
+  offset = 0;
+  paint();
+  expect(reads).toBe(1);
 });

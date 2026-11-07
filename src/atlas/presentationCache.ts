@@ -2,9 +2,11 @@ import type { AtlasClient } from "./client";
 import type { Bounds, Status } from "./model";
 import type { MapTile } from "./generated/MapTile";
 import type { SurfaceTile } from "./generated/SurfaceTile";
+import type { LandscapeTile } from "./generated/LandscapeTile";
 import type { GroundTile } from "./generated/GroundTile";
 import { cityRequest } from "./cityView";
 import { terrainRequest } from "./terrainView";
+import { landscapeRequest } from "./landscapeRequest";
 import { groundRequest } from "./groundView";
 import { scheduledRead } from "./readScheduler";
 import { incrementalChanges, sameVersion } from "./documentVersion";
@@ -285,6 +287,32 @@ export class GroundCache {
       client,
       status,
       groundRequest(bounds, level),
+      wanted,
+    );
+  }
+}
+
+export class LandscapeCache {
+  private cache = new WorldTileCache<LandscapeTile>({
+    budget: CACHE_BUDGETS.landscape,
+    bounds: (t, level) => tileBounds(t.x, t.y, 64 * 2 ** level, 2 ** level),
+    cost: (tile) => tile.pixels.length * 2 + 66 * 66 * 4 + 512,
+    error: "Landschaftsflächen haben sich geändert. Bitte erneut laden.",
+    read: (client, args, wanted) =>
+      scheduledRead(client, "landscapeTiles", args, wanted),
+  });
+  load(
+    client: AtlasClient,
+    status: Status,
+    bounds: Bounds,
+    level: number,
+    wanted: () => boolean,
+    scale?: number,
+  ) {
+    return this.cache.load(
+      client,
+      status,
+      landscapeRequest(bounds, level, scale),
       wanted,
     );
   }

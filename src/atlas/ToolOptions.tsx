@@ -99,7 +99,7 @@ export function ToolOptions({
               forest: "Wald",
               meadow: "Wiese",
               scrub: "Buschland",
-              rocks: "Felsen",
+              rocks: "Felsgebiet",
             }}
             onChange={(biome) => changeScenery({ ...scenery, biome })}
           />
@@ -113,7 +113,7 @@ export function ToolOptions({
             }
           />
           <NumberField
-            label="Dichte (%)"
+            label="Ziel-Dichte (%)"
             value={scenery.density * 100}
             min={5}
             max={100}
@@ -121,17 +121,15 @@ export function ToolOptions({
               changeScenery({ ...scenery, density: density / 100 })
             }
           />
-          <NumberField
-            label="Assetgröße (Fuß)"
-            value={scenery.size}
-            min={1}
-            max={80}
-            onChange={(size) => changeScenery({ ...scenery, size })}
+          <SelectField
+            label="Auftrag"
+            value={scenery.mode ?? "paint"}
+            options={{ paint: "Malen", erase: "Entfernen" }}
+            onChange={(mode) => changeScenery({ ...scenery, mode })}
           />
           <small>
-            Ziehen: Assets streuen · Loslassen: Übernehmen · Escape: Abbrechen.
-            Größe bezeichnet den ungefähren Radius. Auswahl und Entf löschen
-            einen ganzen Strich.
+            Flächen malen · Dichte bestimmt den Zielbestand. Entfernen schafft
+            Lichtungen. Darstellung folgt dem Maßstab.
           </small>
         </>
       )}

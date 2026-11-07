@@ -20,7 +20,7 @@ use serde_json::{json, Value};
 use std::collections::HashSet;
 use std::path::Path;
 
-pub const FORMAT_VERSION: i64 = 21;
+pub const FORMAT_VERSION: i64 = 22;
 const SCHEMA: &str = "
 CREATE TABLE rivers(id TEXT PRIMARY KEY NOT NULL,body TEXT NOT NULL) STRICT, WITHOUT ROWID;
 CREATE TABLE region_catalog(singleton INTEGER PRIMARY KEY NOT NULL,body TEXT NOT NULL) STRICT, WITHOUT ROWID;
@@ -34,6 +34,7 @@ CREATE TABLE house_cells(building_id TEXT PRIMARY KEY NOT NULL,
 CREATE TABLE terrain_layers(level INTEGER NOT NULL,x INTEGER NOT NULL,y INTEGER NOT NULL,z REAL NOT NULL,PRIMARY KEY(level,x,y)) STRICT, WITHOUT ROWID;
 CREATE TABLE terrain(x INTEGER NOT NULL,y INTEGER NOT NULL,z REAL NOT NULL,PRIMARY KEY(x,y)) STRICT, WITHOUT ROWID;
 CREATE TABLE ground_tiles(level INTEGER NOT NULL,x INTEGER NOT NULL,y INTEGER NOT NULL,pixels BLOB NOT NULL,PRIMARY KEY(level,x,y)) STRICT, WITHOUT ROWID;
+CREATE TABLE landscape_tiles(level INTEGER NOT NULL,x INTEGER NOT NULL,y INTEGER NOT NULL,pixels BLOB NOT NULL,PRIMARY KEY(level,x,y)) STRICT, WITHOUT ROWID;
 CREATE TABLE waters(id TEXT PRIMARY KEY NOT NULL,body TEXT NOT NULL) STRICT, WITHOUT ROWID;";
 
 // Shared authored values are strict themselves. File-specific DTOs omit derived
@@ -410,6 +411,10 @@ impl AtlasApplication {
                 "SELECT level,x,y,pixels FROM ground_tiles ORDER BY level,x,y",
                 "INSERT INTO ground_tiles VALUES(?,?,?,?)",
             ),
+            (
+                "SELECT level,x,y,pixels FROM landscape_tiles ORDER BY level,x,y",
+                "INSERT INTO landscape_tiles VALUES(?,?,?,?)",
+            ),
         ] {
             copy_rows(&source, &tx, select, insert)?;
         }
@@ -591,6 +596,37 @@ impl AtlasApplication {
                     .map_err(storage_error)?;
             }
         }
+        {
+            let mut q = source_tx
+                .prepare("SELECT level,x,y,pixels FROM landscape_tiles ORDER BY level,x,y")
+                .map_err(storage_error)?;
+            let mut rows = q.query([]).map_err(storage_error)?;
+            let mut insert = tx
+                .prepare("INSERT INTO landscape_tiles(level,x,y,pixels) VALUES(?,?,?,?)")
+                .map_err(storage_error)?;
+            while let Some(r) = rows.next().map_err(storage_error)? {
+                let level: u8 = r.get(0).map_err(storage_error)?;
+                let x: i32 = r.get(1).map_err(storage_error)?;
+                let y: i32 = r.get(2).map_err(storage_error)?;
+                let pixels: Vec<u8> = r.get(3).map_err(storage_error)?;
+                ensure(
+                    level <= 24
+                        && (x as i64).abs() <= (1_562_500i64 >> level) + 1
+                        && (y as i64).abs() <= (1_562_500i64 >> level) + 1
+                        && pixels.len() == crate::atlas::ground::PLANE_BYTES
+                        && pixels
+                            .as_chunks::<4>()
+                            .0
+                            .iter()
+                            .all(|p| p.iter().map(|&v| u16::from(v)).sum::<u16>() <= 255),
+                    "Ungültige Landschaftskachel",
+                )?;
+                insert
+                    .execute(rusqlite::params![level, x, y, pixels])
+                    .map_err(storage_error)?;
+            }
+        }
+        super::ground_store::rebuild_landscape(&tx)?;
         super::ground_store::rebuild_overview(&tx)?;
         tx.commit().map_err(storage_error)?;
         source_tx.commit().map_err(storage_error)?;
@@ -635,7 +671,7 @@ fn validate_schema(source: &Connection) -> Result<()> {
         "SELECT type,name,tbl_name FROM main.sqlite_schema ORDER BY lower(type),lower(name)",
         "SELECT schema,name,type,ncol,wr,strict FROM pragma_table_list WHERE schema='main' AND name!='sqlite_schema' ORDER BY lower(name)",
     ] {
-        ensure(structural_rows(source,sql,&[0,1,2])?==structural_rows(&expected,sql,&[0,1,2])?,"Ungültiges Format-21-Schema")?;
+        ensure(structural_rows(source,sql,&[0,1,2])?==structural_rows(&expected,sql,&[0,1,2])?,"Ungültiges Format-22-Schema")?;
     }
     for table in [
         "document_meta",
@@ -645,6 +681,7 @@ fn validate_schema(source: &Connection) -> Result<()> {
         "terrain_layers",
         "waters",
         "ground_tiles",
+        "landscape_tiles",
         "rivers",
         "region_catalog",
         "regions",

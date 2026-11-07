@@ -7,6 +7,7 @@ export type Commands = Pick<
   | "endTerrainStroke"
   | "rivers"
   | "regions"
+  | "landscapeTiles"
   | "groundTiles"
   | "surfacePoints"
   | "terrainTiles"
@@ -27,6 +28,7 @@ export type ReadCommands = Pick<
   Commands,
   | "rivers"
   | "regions"
+  | "landscapeTiles"
   | "groundTiles"
   | "surfacePoints"
   | "terrainTiles"

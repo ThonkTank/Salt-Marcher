@@ -1,3 +1,4 @@
+import { visibleRasterTile } from "./rasterVisibility";
 import { terrainImage } from "./terrainRaster";
 import { CACHE_BUDGETS, TERRAIN_RASTER_BYTES } from "./cacheBudgets";
 import { tileRequest } from "./lod";
@@ -56,9 +57,13 @@ export class TerrainPainter {
     preview?: TerrainPreview,
   ) {
     const source = preview?.surface ?? view;
+    const transform = c.getTransform();
+    const width = 160 * 2 ** source.level;
+    const guard = 1 + (0.35 / scale) * Math.max(transform.a, transform.d);
     c.lineWidth = 0.7 / scale;
     c.strokeStyle = "#55674e80";
     for (const tile of source.tiles) {
+      if (!visibleRasterTile(tile, width, transform, c.canvas, guard)) continue;
       c.beginPath();
       for (const [x, y, u, v] of tile.raster?.contours ?? []) {
         c.moveTo(x, y);
@@ -79,7 +84,8 @@ export class TerrainPainter {
     const width = 160 * 2 ** source.level;
     const transform = c.getTransform();
     for (const tile of source.tiles) {
-      if (!tile.raster) continue;
+      if (!tile.raster || !visibleRasterTile(tile, width, transform, c.canvas))
+        continue;
       // Shared device-pixel edges avoid antialiased clip gaps and alpha overlaps.
       // The axis-aligned editor camera moves an edge by at most half a device pixel.
       const x =

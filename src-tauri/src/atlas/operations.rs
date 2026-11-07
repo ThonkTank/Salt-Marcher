@@ -36,6 +36,7 @@ pub(in crate::atlas) fn compute(
         | Intent::RegionEdit { .. }
         | Intent::RegionStroke { .. }
         | Intent::GroundStroke { .. }
+        | Intent::LandscapeStroke { .. }
         | Intent::TerrainStroke { .. }
         | Intent::WaterStroke { .. }
         | Intent::SetFoundation { .. } => unreachable!(),

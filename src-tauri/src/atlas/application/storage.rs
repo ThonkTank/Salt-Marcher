@@ -718,6 +718,17 @@ fn apply_history_change(
             ]
         }));
     }
+    if let Some(g) = &change.landscape {
+        super::ground_store::write_landscape(db, if forward { &g.after } else { &g.before })?;
+        hints.world.extend(g.after.iter().map(|t| {
+            [
+                t.x as f64 * 64.0 * (1u32 << t.level) as f64,
+                t.y as f64 * 64.0 * (1u32 << t.level) as f64,
+                (t.x as f64 + 1.0) * 64.0 * (1u32 << t.level) as f64,
+                (t.y as f64 + 1.0) * 64.0 * (1u32 << t.level) as f64,
+            ]
+        }));
+    }
     if let Some(t) = &change.world_terrain {
         if !terrain_written {
             super::world_terrain_store::apply(db, t, forward)?;
@@ -856,7 +867,7 @@ impl AtlasApplication {
     pub(in crate::atlas) fn extent(&self) -> Result<Option<Bounds>> {
         self.db
             .query_row(
-                "SELECT min(min_x),min(min_y),max(max_x),max(max_y) FROM (SELECT min_x,min_y,max_x,max_y FROM objects UNION ALL SELECT x*5.0,y*5.0,x*5.0,y*5.0 FROM terrain UNION ALL SELECT x*5.0*(1<<level),y*5.0*(1<<level),x*5.0*(1<<level),y*5.0*(1<<level) FROM terrain_layers UNION ALL SELECT min_x,min_y,max_x,max_y FROM regions WHERE min_x IS NOT NULL UNION ALL SELECT min_x,min_y,max_x,max_y FROM rivers UNION ALL SELECT min_x,min_y,max_x,max_y FROM waters UNION ALL SELECT x*64.0*(1<<level),y*64.0*(1<<level),(x+1)*64.0*(1<<level),(y+1)*64.0*(1<<level) FROM ground_tiles)",
+                "SELECT min(min_x),min(min_y),max(max_x),max(max_y) FROM (SELECT min_x,min_y,max_x,max_y FROM objects UNION ALL SELECT x*5.0,y*5.0,x*5.0,y*5.0 FROM terrain UNION ALL SELECT x*5.0*(1<<level),y*5.0*(1<<level),x*5.0*(1<<level),y*5.0*(1<<level) FROM terrain_layers UNION ALL SELECT min_x,min_y,max_x,max_y FROM regions WHERE min_x IS NOT NULL UNION ALL SELECT min_x,min_y,max_x,max_y FROM rivers UNION ALL SELECT min_x,min_y,max_x,max_y FROM waters UNION ALL SELECT x*64.0*(1<<level),y*64.0*(1<<level),(x+1)*64.0*(1<<level),(y+1)*64.0*(1<<level) FROM ground_tiles UNION ALL SELECT x*64.0*(1<<level),y*64.0*(1<<level),(x+1)*64.0*(1<<level),(y+1)*64.0*(1<<level) FROM landscape_tiles)",
                 [],
                 |r| {
                     Ok(r.get::<_, Option<f64>>(0)?.map(|x| {

@@ -186,6 +186,7 @@ export function AtlasCanvas(p: Props) {
         terrain,
         terrainPreview,
         ground,
+        landscape,
         foundationTops,
         waters,
         regions,
@@ -195,20 +196,32 @@ export function AtlasCanvas(p: Props) {
           c,
           terrain,
           p.camera.scale,
-          !ground && (p.terrainContours ?? true),
+          !ground && !landscape && (p.terrainContours ?? true),
           terrainPreview,
         );
-      if (ground) {
-        groundPainter.current.paint(c, ground, terrain);
-        if (terrain && (p.terrainContours ?? true))
-          terrainPainter.current.paintContours(
-            c,
-            terrain,
-            p.camera.scale,
-            terrainPreview,
-          );
-      }
+      if (ground) groundPainter.current.paint(c, ground, terrain);
+      if (landscape)
+        groundPainter.current.paintLandscape(
+          c,
+          landscape,
+          terrain,
+          p.camera.scale,
+        );
+      if ((ground || landscape) && terrain && (p.terrainContours ?? true))
+        terrainPainter.current.paintContours(
+          c,
+          terrain,
+          p.camera.scale,
+          terrainPreview,
+        );
       paintRegions(c, regions, p.camera.scale, true, p.selectedRegion ?? "");
+      if (landscape)
+        groundPainter.current.paintLandscapeSymbols(
+          c,
+          landscape,
+          terrain,
+          p.camera.scale,
+        );
       const rivers = () =>
         paintRivers(
           c,
