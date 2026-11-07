@@ -6,19 +6,19 @@ Zuständigkeiten, [Produktvertrag](../product-contract.md) Verhalten und Grenzen
 
 ## Integration
 
-Main enthält Landschaft, Darstellungsbegrenzung, Sampler-Fix und die Korrekturen
-für Außengeometrie und Höhenbeginn während Ansichtsreads. PR #1460 ist als
-`707953e17` integriert; der Main-Baum entspricht exakt dem geprüften Kandidaten
-`c4baf9ecf`. Dessen vollständige CI besteht: 337 Rust-Librarytests und 32
-Integration-/Adaptertests, fünf absichtlich ignorierte Fälle, 245 Browserfälle,
-Frontendtests, Typen, Transportverträge, Clippy, Format und Release-/RPM-Build.
-Die ersetzten Vorstufen #1458 und #1459 sind geschlossen.
+Main enthält Landschaft, Darstellungsbegrenzung, Sampler-Fix sowie die Korrekturen
+für Geometriecaches und Eingaben während Ansichtsreads. PR #1461 ist als
+`bd65b88ff` integriert; der Main-Baum entspricht exakt dem geprüften Kandidaten
+`80eb52907`. Beide vollständigen CI-Läufe bestehen: jeweils 337 Rust-Librarytests
+und 32 Integration-/Adaptertests, fünf absichtlich ignorierte Fälle, 246
+Browserfälle, Frontendtests, Typen, Transportverträge, Clippy, Format und
+Release-/RPM-Build.
 
-PR #1461 bündelt Flusscache, Zoomwiederverwendung, Dichteanzeige und Zahleneingabe
-vor dem ersten Kartenklick. Die vollständige Main-CI läuft mit automatischer
-Übernahme. Lesbare Pinselmaße, verständliche Grenzmeldungen und der frühe Rückweg für leere
-Höhenkachelanfragen liegen auf einem Folgebranch; dessen Integration wartet auf #1461. Lokale Ergebnisse ersetzen
-keine vollständige CI-Freigabe.
+Der Folgekandidat bündelt lesbare Pinselmaße, verständliche Grenzmeldungen und
+den frühen Rückweg für leere Höhenkachelanfragen. Er enthält den identischen
+freigegebenen Main-Baum plus die lokal geprüften Folgeänderungen. Seine
+vollständige Main-CI steht noch aus; lokale Ergebnisse ersetzen diese Freigabe
+nicht. Produktcode und Tests wurden durch die Main-Integration nicht verändert.
 
 ## Geprüftes Verhalten
 
