@@ -147,6 +147,13 @@ und Blattaktualisierungen verlangen ausdrücklich die vorhandenen räumlichen
 SQL-Indizes: Ein bloßer Level-Filter darf keinen globalen Quellscan verursachen.
 Allgemeine große Ausschnittreads enumerieren weiterhin keine leeren Blockflächen.
 
+Höhenauftrag filtert Autoren außerhalb der Weltgrenze: lokal im Rasterkern,
+bei groben Quellen nach Rückrechnung in Weltkoordinaten vor dem Delta.
+Eingabepunkte und Arbeitsbudgets bleiben validiert. Der Canvas maskiert den
+überstehenden Rand vollständiger Darstellungskacheln außerhalb der Welt;
+die Statusleiste reserviert die Höhe ihrer Fehlerschaltfläche, damit deren
+Verschwinden keinen begonnenen Strich durch einen Resize abbricht.
+
 Die Gewässernachführung sucht zuerst betroffene Wasserflächen im vorhandenen
 räumlichen Index. Ohne Treffer entfallen ihre Autorenreads. Andernfalls sammelt
 sie die begrenzten Kachelbereiche samt Stützrand über denselben Blockleser wie

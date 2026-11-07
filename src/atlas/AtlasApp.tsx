@@ -148,7 +148,7 @@ export default function AtlasApp({
               </p>
             </details>
           </div>
-          {hoverReason && plannedAction && (
+          {hoverReason && (plannedAction || hoverReason.outsideWorld) && (
             <div
               className="atlas-hover"
               style={{

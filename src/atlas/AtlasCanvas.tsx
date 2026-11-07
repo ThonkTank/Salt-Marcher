@@ -5,7 +5,7 @@ import type { AtlasClient } from "./client";
 import type { Status } from "./model";
 import { ExteriorGeometryCache } from "./exteriorGeometryCache";
 import { scheduleCanvasFrame } from "./canvasFrame";
-import type { LodDecision } from "./lod";
+import { WORLD_LIMIT, type LodDecision } from "./lod";
 import { waterAt } from "./waterView";
 import { paintRivers } from "./riverView";
 import type { RiverNode } from "./generated/RiverNode";
@@ -354,6 +354,25 @@ export function AtlasCanvas(p: Props) {
         priorLabels.current = new Set(labels.map((label) => label.key));
         paintLabels(c, labels);
         paintRegionNames(c, regionText);
+        c.restore();
+      }
+      // Edge tiles extend beyond the finite authoring world. Do not present
+      // their padding (or the canvas background) as paintable terrain.
+      if (
+        p.camera.scale * WORLD_LIMIT <
+        Math.max(p.size.width, p.size.height)
+      ) {
+        c.save();
+        c.setTransform(paintDpr, 0, 0, paintDpr, 0, 0);
+        const edge = WORLD_LIMIT * p.camera.scale;
+        c.beginPath();
+        c.rect(0, 0, p.size.width, p.size.height);
+        c.rect(p.camera.x - edge, p.camera.y - edge, edge * 2, edge * 2);
+        c.fillStyle = "#242527";
+        c.fill("evenodd");
+        c.strokeStyle = "#65706a";
+        c.lineWidth = 1;
+        c.strokeRect(p.camera.x - edge, p.camera.y - edge, edge * 2, edge * 2);
         c.restore();
       }
       painted();
