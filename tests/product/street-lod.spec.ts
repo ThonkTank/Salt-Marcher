@@ -695,6 +695,7 @@ test("filled street map paints its layers and labels and preserves tools at exac
       ["Gewässer", "Absenkung (Fuß)", "Ziehen: Zeichnen"],
       ["Höhen", "Pinselmodus", "Ziehen: Zeichnen"],
       ["Regionen", "Regionsmodus", "Ziehen: Zeichnen"],
+      ["Landschaft", "Landschaftsart", "Ziehen: Zeichnen"],
     ] as const) {
       const button = toolbar.getByRole("button", { name, exact: true });
       await button.click();
@@ -752,7 +753,7 @@ test("filled street map paints its layers and labels and preserves tools at exac
       }
     }
     const beforeBlocked = (await calls(page, "commit")).length;
-    for (const name of ["Haus", "Landschaft"]) {
+    for (const name of ["Haus"]) {
       const button = toolbar.getByRole("button", { name, exact: true });
       await button.click();
       await expect(button).toHaveAttribute("aria-pressed", "true");
@@ -804,7 +805,7 @@ test("filled street map paints its layers and labels and preserves tools at exac
       );
       for (const name of ["Haus", "Landschaft"]) {
         await toolbar.getByRole("button", { name, exact: true }).click();
-        if (blocked)
+        if (blocked && name === "Haus")
           await expect(help).toContainText(
             `${name} · Für diese Bearbeitung hineinzoomen.`,
           );

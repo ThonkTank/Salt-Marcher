@@ -82,11 +82,10 @@ Landschaftsdeckung behauptet diese Funktionen nicht.
 
 Die bisherigen Gelände-, Material-, Wasser- und Cacheoptimierungen sind erhalten.
 PR #1450 ist nach vollständiger CI einschließlich RPM auf Main integriert.
-Der Produktbaum der zeilenlokalen Seenrasterung besteht ebenfalls die vollständige
-CI einschließlich RPM. Beim unveränderten Produktbaum auf der aktuellen Main-Basis
-scheiterte ein zweiter Lauf an einem einzelnen fünfsekündigen Canyon-Write-Timeout
-(237 Browserfälle bestanden); ein unveränderter Nachlauf ist gestartet. Integration
-läuft separat über PR #1451. Architektur und Produktvertrag beschreiben den fachlichen Stand.
+Die zeilenlokale Seenrasterung besteht die vollständige CI einschließlich RPM.
+Der kombinierte Landschaftsstand einschließlich dieser Änderungen ist in PR #1454
+gegen Main zusammengeführt; automatische Integration erfordert dessen vollständige CI.
+Architektur und Produktvertrag beschreiben den fachlichen Stand.
 
 Genau eine frühere Vorher-/Nachher-Reihe mit je drei Weltstrichen ist abgeschlossen:
 erste sichtbare Änderung vorher 275–304 ms, danach 119–134 ms; sichtbare Bestätigung
@@ -95,6 +94,11 @@ p95 vorher 427–516 ms, danach 339–376 ms; Nachlauf vorher 259–427 ms, dana
 ist nicht belegt; keine weitere Zeitmessreihe wurde begonnen.
 
 RPM-Installation, große Stadt-/Weltlastfälle und der umfangreiche Release-Treiber
-bleiben offen. Die vollständige CI des neuen Landschaftsstandes steht aus. Ihr erster Lauf
-meldete eine verbliebene Format-21-Erwartung im Parzellen-Integrationstest.
-Die Erwartung entspricht nun Format 22; alle elf Parzellenfälle bestehen lokal.
+bleiben offen. Die vollständige Landschafts-CI auf Format-22-Testbasis meldete
+239 erfolgreiche Browserfälle und drei Fehler. Zwei Tests erwarteten noch die
+alte Zoomsperre für Landschaft; sie prüfen jetzt die erlaubte Bearbeitung und
+weiterhin gesperrte Hausbearbeitung. Der Haus-Erstgestenfall wartet nach dem
+Werkzeugwechsel auf die durch das Panel geänderte Präsentation und liest erst
+dann die Kartenfläche. Alle fünf betroffenen Grundstücks-/Straßenzugfälle bestehen
+lokal, einschließlich erster Hausgeste und History. Der vollständige Nachlauf steht
+aus. Belege: `src-tauri/target/diagnostics/landscape-integration-fixed/`.

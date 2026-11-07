@@ -54,7 +54,7 @@ test("parcel name and actual scale share editing restrictions and hysteresis", a
   expect(await scale(page)).toBeLessThan(1.28);
   const before = await status(page),
     objects = (await scene(page)).objects;
-  for (const tool of ["Haus", "Landschaft"]) {
+  for (const tool of ["Haus"]) {
     await page.getByRole("button", { name: tool, exact: true }).click();
     await paintedReady(page);
     await expect(page.locator(".atlas-map-help > span")).toContainText(
@@ -72,27 +72,31 @@ test("parcel name and actual scale share editing restrictions and hysteresis", a
     expect(await status(page)).toEqual(before);
     expect((await scene(page)).objects).toEqual(objects);
   }
-  await page.getByRole("button", { name: "Boden", exact: true }).click();
-  await paintedReady(page);
-  await expect(page.locator(".atlas-map-help > span")).toContainText(
-    "Boden malen",
-  );
-  await expect(page.locator(".atlas-navigation")).not.toContainText(
-    "Lokales Detailwerkzeug",
-  );
-  await clearCalls(page);
-  await gesture(page);
-  await expect
-    .poll(async () => (await status(page)).revision)
-    .toBe(before.revision + 1);
-  expect(
-    (await calls(page, "commit")).filter(
-      (c) => c.args.intent.type === "groundStroke",
-    ),
-  ).toHaveLength(1);
-  await page.getByRole("button", { name: "Rückgängig", exact: true }).click();
-  await settled(page);
-  expect((await scene(page)).objects).toEqual(objects);
+  for (const [tool, intent, hint] of [
+    ["Boden", "groundStroke", "Boden malen"],
+    ["Landschaft", "landscapeStroke", "Ziehen: Zeichnen"],
+  ] as const) {
+    await page.getByRole("button", { name: tool, exact: true }).click();
+    await paintedReady(page);
+    await expect(page.locator(".atlas-map-help > span")).toContainText(hint);
+    await expect(page.locator(".atlas-navigation")).not.toContainText(
+      "Lokales Detailwerkzeug",
+    );
+    const beforeEdit = await status(page);
+    await clearCalls(page);
+    await gesture(page);
+    await expect
+      .poll(async () => (await status(page)).revision)
+      .toBe(beforeEdit.revision + 1);
+    expect(
+      (await calls(page, "commit")).filter(
+        (c) => c.args.intent.type === intent,
+      ),
+    ).toHaveLength(1);
+    await page.getByRole("button", { name: "Rückgängig", exact: true }).click();
+    await settled(page);
+    expect((await scene(page)).objects).toEqual(objects);
+  }
   await page.getByRole("button", { name: "Fluss", exact: true }).click();
   await expect(page.locator(".atlas-overview-hint")).toContainText(
     "Flussplanung",
@@ -134,8 +138,10 @@ test("first house gesture at named parcel scale commits once and restores histor
   );
   await expect.poll(() => scale(page)).toBeCloseTo(304.8 / 180, 5);
   const before = await status(page);
-  const box = (await page.getByTestId("atlas-canvas").boundingBox())!;
   await page.getByRole("button", { name: "Haus", exact: true }).click();
+  // Opening tool settings changes the viewport and its presentation request.
+  await paintedReady(page);
+  const box = (await page.getByTestId("atlas-canvas").boundingBox())!;
   await page.mouse.move(box.x + 200, box.y + 160);
   await page.mouse.down();
   await page.mouse.move(box.x + 264, box.y + 224);
