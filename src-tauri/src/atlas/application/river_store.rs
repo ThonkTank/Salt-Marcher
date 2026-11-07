@@ -1,11 +1,11 @@
 //! Local river reads, shared-node connectivity, and transaction-local history.
-use super::{terrain_store, AtlasApplication};
+use super::{terrain_blocks, AtlasApplication};
 use crate::atlas::{
     change::Computed,
     errors::{ensure, invalid, storage_error},
     model::{Status, Version},
     rivers::*,
-    terrain, Bounds, Intent, Point, Result,
+    Bounds, Intent, Point, Result,
 };
 use rusqlite::{params, Connection};
 use serde::{Deserialize, Serialize};
@@ -127,48 +127,6 @@ pub fn apply(db: &Connection, d: &RiverDelta, forward: bool) -> Result<()> {
     }
     Ok(())
 }
-struct Sampler<'a> {
-    db: &'a Connection,
-    regions: BTreeMap<(i32, i32), terrain::Grid>,
-    overrides: &'a [(i32, i32, f64)],
-}
-impl Sampler<'_> {
-    fn at(&mut self, p: Point) -> Result<f64> {
-        let k = ((p[0] / 160.).floor() as i32, (p[1] / 160.).floor() as i32);
-        if !self.regions.contains_key(&k) {
-            if self.regions.len() >= 512 {
-                self.regions.pop_first();
-            }
-            let b = [
-                k.0 as f64 * 160. - 5.,
-                k.1 as f64 * 160. - 5.,
-                (k.0 + 1) as f64 * 160. + 5.,
-                (k.1 + 1) as f64 * 160. + 5.,
-            ];
-            let mut g = terrain_store::grid(self.db, b)?;
-            g.extend(
-                self.overrides
-                    .iter()
-                    .filter(|&&(x, y, _)| {
-                        x as f64 * 5. >= b[0]
-                            && x as f64 * 5. <= b[2]
-                            && y as f64 * 5. >= b[1]
-                            && y as f64 * 5. <= b[3]
-                    })
-                    .map(|&(x, y, z)| ((x, y), z)),
-            );
-            self.regions.insert(k, g);
-        }
-        Ok(terrain::height(&self.regions[&k], p))
-    }
-}
-fn sampler(db: &Connection) -> Sampler<'_> {
-    Sampler {
-        db,
-        regions: BTreeMap::new(),
-        overrides: &[],
-    }
-}
 impl AtlasApplication {
     pub(in crate::atlas) fn rivers(&self, a: RiverArgs) -> Result<RiverResponse> {
         self.check(&a.version)?;
@@ -219,7 +177,7 @@ impl AtlasApplication {
             return Ok(None);
         };
         let mut alloc = self.allocator()?;
-        let mut sample = sampler(&self.db);
+        let mut sample = terrain_blocks::Sampler::new(&self.db)?;
 
         let mut before = vec![];
         let mut after = vec![];
@@ -276,7 +234,8 @@ impl AtlasApplication {
                     }
                 }
                 if *automatic
-                    && sample.at(r.nodes[0].point)? < sample.at(r.nodes.last().unwrap().point)?
+                    && sample.height(r.nodes[0].point)?
+                        < sample.height(r.nodes.last().unwrap().point)?
                 {
                     r.nodes.reverse();
                 }
@@ -384,11 +343,11 @@ impl AtlasApplication {
                         }
                     }
                     if moved {
-                        route(&mut other, &mut |p| Ok((sample.at(p)?, false)))?;
+                        route(&mut other, &mut |p| Ok((sample.height(p)?, false)))?;
                     }
                     after.push(other);
                 }
-                route(&mut r, &mut |p| Ok((sample.at(p)?, false)))?;
+                route(&mut r, &mut |p| Ok((sample.height(p)?, false)))?;
                 if let Some(old) = before.iter().find(|v| v.river.id == r.id) {
                     if old.river.settings == r.settings {
                         preserve_segments(&old.river, &mut r);
@@ -455,7 +414,7 @@ impl AtlasApplication {
             )?;
         }
         let mut after = profiles(after, &mut |p| water_level(&self.db, p, None), &mut |p| {
-            sample.at(p)
+            sample.height(p)
         })?;
         before.sort_by(|a, b| a.river.id.cmp(&b.river.id));
         after.sort_by(|a, b| a.river.id.cmp(&b.river.id));
@@ -518,15 +477,11 @@ impl AtlasApplication {
         if before.is_empty() {
             return Ok(());
         }
-        let mut s = Sampler {
-            db: &self.db,
-            regions: BTreeMap::new(),
-            overrides: heights,
-        };
+        let mut s = terrain_blocks::Sampler::new(&self.db)?;
         let after = profiles(
             before.iter().map(|v| v.river.clone()).collect(),
             &mut |p| water_level(&self.db, p, c.change.waters.as_ref()),
-            &mut |p| s.at(p),
+            &mut |p| s.height(p),
         )?;
         c.change.rivers = Some(RiverDelta { before, after });
         c.river_preview = c.change.rivers.clone();
@@ -558,7 +513,7 @@ pub fn import(source: &Connection, target: &Connection) -> Result<()> {
         )?;
     }
     let mut visited = BTreeSet::new();
-    let mut s = sampler(target);
+    let mut s = terrain_blocks::Sampler::new(target)?;
 
     for id in ids {
         if visited.contains(&id) {
@@ -571,7 +526,7 @@ pub fn import(source: &Connection, target: &Connection) -> Result<()> {
         for v in profiles(
             component.into_iter().map(|v| v.river).collect(),
             &mut |p| water_level(target, p, None),
-            &mut |p| s.at(p),
+            &mut |p| s.height(p),
         )? {
             put(target, &v)?;
         }

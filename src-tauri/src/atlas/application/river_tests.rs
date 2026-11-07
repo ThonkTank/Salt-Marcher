@@ -396,3 +396,166 @@ fn long_river_surface_uses_same_overview_for_preview_sections_and_delete() {
         a.request("terrainTiles", view).unwrap()["tiles"]
     );
 }
+
+#[test]
+fn river_sampling_matches_authored_surface_across_sparse_layers_and_boundaries() {
+    let mut a = AtlasApplication::new().unwrap();
+    for level in [2, 5, 11] {
+        for x in -4..=4 {
+            for y in -3..=3 {
+                a.db.execute(
+                    "INSERT INTO terrain_layers VALUES(?1,?2,?3,?4)",
+                    rusqlite::params![level, x, y, 20. + (x * 7 + y * 3) as f64],
+                )
+                .unwrap();
+            }
+        }
+    }
+    terrain_store::write_points(
+        &a.db,
+        &[
+            (-33, -1, 40.),
+            (-32, 0, -10.),
+            (-17, 0, 12.),
+            (-1, 0, 30.),
+            (0, 1, -20.),
+            (16, 0, 50.),
+            (33, 1, 25.),
+        ],
+    )
+    .unwrap();
+    let mut intent = create(json!([
+        [-190., -1.3],
+        [-81., 2.1],
+        [-0.7, 0.3],
+        [83., 1.7],
+        [190., -2.3]
+    ]));
+    intent["view"] = Value::Null;
+    intent["action"]["automatic"] = json!(false);
+    request_edit(&mut a, "commit", intent);
+    let actual = views(&a);
+    let grid = terrain_store::grid(&a.db, [-300., -100., 300., 100.]).unwrap();
+    let expected = profiles(
+        actual.iter().map(|v| v.river.clone()).collect(),
+        &mut |_| Ok(None),
+        &mut |p| Ok(crate::atlas::terrain::height(&grid, p)),
+    )
+    .unwrap();
+    assert_eq!(actual.len(), expected.len());
+    for (a, b) in actual.iter().zip(&expected) {
+        assert_eq!(a.river, b.river);
+        assert_eq!(a.samples.len(), b.samples.len());
+        for (a, b) in a.samples.iter().zip(&b.samples) {
+            assert_eq!(a.point, b.point);
+            assert!((a.water - b.water).abs() < 1e-9);
+            assert!((a.cut - b.cut).abs() < 1e-9);
+        }
+    }
+}
+
+#[test]
+fn river_planning_reads_do_not_scan_distant_height_rows() {
+    use std::sync::{
+        atomic::{AtomicUsize, Ordering},
+        Arc,
+    };
+    for source in [0, 4, 10] {
+        let mut a = AtlasApplication::new().unwrap();
+        let put = |a: &AtlasApplication, y: i32| {
+            if source == 0 {
+                a.db.execute("INSERT INTO terrain VALUES(0,?1,10)", [y])
+                    .unwrap();
+            } else {
+                a.db.execute(
+                    "INSERT INTO terrain_layers VALUES(?1,0,?2,10)",
+                    rusqlite::params![source, y],
+                )
+                .unwrap();
+            }
+        };
+        put(&a, 0);
+        terrain_blocks::refresh(&a.db).unwrap();
+        let mut intent = create(json!([[-20, 0], [80, 0]]));
+        intent["view"] = Value::Null;
+        let measure = |a: &mut AtlasApplication| {
+            let count = Arc::new(AtomicUsize::new(0));
+            let steps = count.clone();
+            a.db.progress_handler(
+                100,
+                Some(move || {
+                    steps.fetch_add(1, Ordering::Relaxed);
+                    false
+                }),
+            );
+            let response = request_edit(a, "preview", intent.clone());
+            a.db.progress_handler(0, None::<fn() -> bool>);
+            (response, count.load(Ordering::Relaxed))
+        };
+        let (before, budget) = measure(&mut a);
+        assert_eq!(before["valid"], true);
+        for y in 10000..12000 {
+            put(&a, y);
+        }
+        terrain_blocks::refresh(&a.db).unwrap();
+        let (after, work) = measure(&mut a);
+        assert_eq!(before, after);
+        assert!(
+            work <= budget + 30,
+            "source {source}: {budget} -> {work} VM batches"
+        );
+    }
+}
+
+#[test]
+fn river_profiles_sample_each_shared_node_once_including_lake_contacts() {
+    let mut a = AtlasApplication::new().unwrap();
+    request_edit(&mut a, "commit", create(json!([[0, 50], [150, 50]])));
+    request_edit(&mut a, "commit", create(json!([[70, -80], [70, 50]])));
+    let rivers: Vec<_> = views(&a).into_iter().map(|v| v.river).collect();
+    let mut calls = std::collections::BTreeMap::new();
+    let result = profiles(
+        rivers,
+        &mut |p| Ok((p == [150., 50.]).then_some(-90.)),
+        &mut |p| {
+            *calls.entry((p[0].to_bits(), p[1].to_bits())).or_insert(0) += 1;
+            Ok(-100.)
+        },
+    )
+    .unwrap();
+    assert!(calls.values().all(|&count| count == 1));
+    assert!(result
+        .iter()
+        .flat_map(|r| &r.samples)
+        .all(|s| s.water == -90. && s.cut == 0.));
+    assert!(result.iter().map(|r| r.samples.len()).sum::<usize>() > calls.len());
+}
+
+#[test]
+fn sparse_equal_height_authors_do_not_reverse_flat_rivers() {
+    for height in [10., 17.3, -100.] {
+        let mut a = AtlasApplication::new().unwrap();
+        for x in -3..=3 {
+            for y in -3..=3 {
+                a.db.execute(
+                    "INSERT INTO terrain_layers VALUES(5,?1,?2,?3)",
+                    rusqlite::params![x, y, height],
+                )
+                .unwrap();
+            }
+        }
+        terrain_store::write_points(&a.db, &[(0, 0, height), (1, 1, height), (-1, 0, height)])
+            .unwrap();
+        for start in [[0., 0.], [1.3, 2.7], [-2.3, -0.7], [4.1, 0.3]] {
+            let mut intent = create(json!([start, [80., 0.]]));
+            intent["view"] = Value::Null;
+            intent["action"]["automatic"] = json!(true);
+            let preview = request_edit(&mut a, "preview", intent);
+            assert_eq!(
+                preview["rivers"]["after"][0]["river"]["nodes"][0]["point"],
+                json!(start),
+                "height {height}"
+            );
+        }
+    }
+}

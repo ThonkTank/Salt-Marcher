@@ -266,6 +266,7 @@ pub fn profiles(
     let mut positions: Vec<Point> = vec![];
     let mut rows = vec![];
     let mut heights: Vec<f64> = vec![];
+    let mut natural: Vec<f64> = vec![];
     let mut levels: Vec<Option<f64>> = vec![];
     let mut outgoing: Vec<Option<usize>> = vec![];
     let mut incoming: Vec<usize> = vec![];
@@ -285,7 +286,9 @@ pub fn profiles(
                 keys.insert(key, idx);
                 positions.push(v.point);
                 let level = water(v.point)?;
-                heights.push(level.unwrap_or(sample(v.point)?));
+                let height = sample(v.point)?;
+                natural.push(height);
+                heights.push(level.unwrap_or(height));
                 levels.push(level);
                 outgoing.push(None);
                 incoming.push(0);
@@ -357,7 +360,7 @@ pub fn profiles(
                         point: v.point,
                         width: v.width,
                         water: heights[i],
-                        cut: (sample(v.point)? - (heights[i] - 2.)).max(0.),
+                        cut: (natural[i] - (heights[i] - 2.)).max(0.),
                     })
                 })
                 .collect::<Result<Vec<_>>>()?;

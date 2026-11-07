@@ -6,39 +6,48 @@ Zuständigkeiten, [Produktvertrag](../product-contract.md) Verhalten und Grenzen
 
 ## Aktuelle Optimierung
 
-Oberflächenvorschauen, bestätigte Höhenabschnitte und frische Reads verwenden
-jetzt denselben Kachelpfad. Die bisherige Deltaüberlagerung konnte in groben
-Stufen die Gewässer-/Flussübersichten umgehen und andere Raster, Konturen und
-Inhaltskennungen liefern. Zwei Regressionen haben diese Abweichung vor der
-Änderung reproduziert. Vorschauen schreiben berechnete Gewässer und Flüsse nur
-bei angeforderter Oberfläche in ihre ohnehin zurückgerollte Transaktion.
-Bestätigte Striche lesen den bereits geschriebenen Stand. Der separate
-Fluss-Overlaypfad ist entfernt; zusätzliche Worker oder Caches entstehen nicht.
+Flussplanung, Profilnachführung und Import verwenden den bestehenden begrenzten
+Terrain-Sampler. Der eigene Cache von bis zu 512 vollständigen Höhenregionen,
+allgemeine Rechteckreads je Cachemiss und wiederholte Scans lokaler Overrides
+entfallen. Die Nachführung liest die bereits transaktional geschriebenen Autoren;
+der Import beginnt nach dem Aufbau des Blockindex. Der Profilsolver verwendet die
+natürliche Höhe eines gemeinsamen Knotens für Wasserprofil und Einschnitt wieder.
 
-Die neuen Tests vergleichen ganze Kacheln einschließlich Raster und
-Inhaltskennung: Detail-/Übersichtsgrenze, Gewässerteilung über Begin/Append,
-32 priorisierte Seen mit je höchstens 64 Konturpunkten sowie ein langer Fluss
-mit 128 Darstellungssamples, Profiländerung und Löschen. Autoren bleiben
-vollständig. Vorschau und fehlgeschlagene Oberflächenreads stellen Daten,
-Status und räumliche Indizes wieder her; Undo/Redo erhält den gesamten Strich.
-Lokal bestehen 344 Rust- und 368 Frontendtests, 129 Transportverträge, Typprüfung,
-Clippy, Format sowie 32 relevante Browserfälle. Fünf Rustfälle bleiben ignoriert.
-Der frische Release-/RPM-Build bestätigt Flussvorschau, Abbruch und Übernahme im
-Umland sowie pixelgleiches Undo/Redo und Rückkehr nach dem Zoomwechsel zur Stadt.
-Der erste CI-Lauf bestand alle Kernprüfungen und 226 von 227 Browserfällen.
-Ein bestehender Maßstabstest las nach dem Mausradereignis noch den alten
-Canvasmaßstab; er wartet jetzt ausdrücklich auf den gezeichneten Zielmaßstab.
-Beide Maßstabsfälle bestehen damit lokal in je fünf Wiederholungen.
+Neue Tests prüfen die Übereinstimmung mit der bisherigen Höhenrekonstruktion bei
+sparsamen gemischten Auflösungen, negativen Koordinaten und Blockgrenzen sowie
+die automatische Richtung flacher Flüsse. Dabei wurde eine Rundungsabweichung
+bei dünn belegten, gleich hohen Autoren über einer gleich hohen Grundfläche
+reproduziert: Die Polynomauswertung konnte eine ebene Flussrichtung umkehren.
+Der gemeinsame Sampler erhält solche Flächen jetzt exakt konstant; ein eigener
+Test prüft dies für lokale und grobe Quellen. Kleine Rundungsdifferenzen der äquivalenten
+Polynom-/Splineauswertung werden mit einer Höhentoleranz von 1e-9 Fuß geprüft.
+Ein Zugriffstest ergänzt 2.000 entfernte Autoren in denselben X-Spalten, lokal
+sowie auf Quellstufen 4 und 10. Im alten lokalen Pfad stieg die SQL-Arbeit von
+15 auf 415 Blöcke zu je 100 VM-Anweisungen; der gemeinsame Sampler hält das
+bestehende begrenzte Testbudget ein. Ein weiterer Test prüft genau eine
+Höhenabtastung je gemeinsamem Profilknoten einschließlich Gewässerkontakt.
+Beide Arbeitstests schlugen vor der Änderung fehl. Lokal bestehen 349 Rust- und
+368 Frontendtests, 129 Transportverträge, Typprüfung, Clippy, Format und 32
+relevante Browserfälle. Fünf Rustfälle bleiben ignoriert. Der frische Release-/RPM-
+Build bestätigt Flussplanung auf einer ebenen Insel und die Nachführung nach
+einem 80-Pixel-Meerstrich in Umland: Auch der Kanal außerhalb des Pinselbereichs
+ändert sich; Undo/Redo stellt beide Kartenausschnitte pixelgleich wieder her.
 Die Freigabe auf Main erfordert den vollständigen grünen CI-Check am exakten PR-Head.
-Keine zusätzliche Zeitmessreihe wurde begonnen.
+Keine zusätzliche Zeitmessreihe.
 
 ## Bestehender geprüfter Stand
 
-[PR #1444](https://github.com/ThonkTank/Salt-Marcher/pull/1444) ist auf `main`
+[PR #1445](https://github.com/ThonkTank/Salt-Marcher/pull/1445) ist auf `main`
 integriert. Der exakte Kandidat bestand 129 Transportverträge, Typprüfung,
-368 Frontend-, 339 Rust- und 227 Browsertests sowie Clippy, Format, Webbuild
+368 Frontend-, 344 Rust- und 227 Browsertests sowie Clippy, Format, Webbuild
 und Release-/RPM-Build. Fünf Rustfälle bleiben ausdrücklich ignoriert.
 Die ursprüngliche lokale Historie bleibt in `codex/atlas-v7-preserved-histories`.
+
+Oberflächenvorschauen, bestätigte Höhenabschnitte und frische Reads teilen einen
+Kachelpfad mit denselben Übersichtsbudgets. Gewässer-/Flussdeltas umgehen diese
+Grenzen nicht mehr. Der native Build bestätigte Flussvorschau, Abbruch, Übernahme,
+pixelgleiches Undo/Redo und Umland → Stadt → Umland. Maßstabstests warten auf den
+tatsächlich gezeichneten Zielmaßstab statt einen möglicherweise alten Frame.
 
 Die Gewässernachführung überspringt Höhenreads ohne Kandidaten und prüft nur
 Rasterzellen an den jeweiligen Gewässerbounds. Grobe Änderungen sammeln die
@@ -103,13 +112,14 @@ nicht ausgeführt.
 
 Nächster Schwerpunkt bleibt das 50-ms-Ziel für bestätigte Pinselbilder.
 Weiterer Prüfpunkt ist die Flussnachführung: Ihre Auswahl bei groben
-Höhenänderungen verwendet weiterhin ein gemeinsames Änderungsrechteck. Ihr
-regionaler Höhensampler liest begrenzte Bereiche über den allgemeinen
-Rechteckpfad und durchsucht lokale Override-Werte je neuem Bereich vollständig.
+Höhenänderungen verwendet weiterhin ein gemeinsames Änderungsrechteck. Die
+Gewässerkontaktabfrage lädt dagegen weiterhin Konturen je Profilpunkt erneut;
+operationslokale Wiederverwendung bereits vorbereiteter Geometrie bleibt zu prüfen.
 Allgemeine große Terrain-Autorenreads für Straßen, Gewässer und Plattformen
 bleiben offen; leere Weltrechtecke dürfen dabei nicht blockweise enumeriert werden.
 
-Aktuelle Belege: `src-tauri/target/diagnostics/surface-consistency-*`.
+Aktuelle Belege: `src-tauri/target/diagnostics/river-sampling-*`.
+Vorige Belege: `src-tauri/target/diagnostics/surface-consistency-*`.
 Vorige Belege: `src-tauri/target/diagnostics/water-footprint-*`.
 Vorige Gewässerbelege: `src-tauri/target/diagnostics/water-locality-*`.
 Gestenzustandsbelege: `src-tauri/target/diagnostics/direct-state-*`.
