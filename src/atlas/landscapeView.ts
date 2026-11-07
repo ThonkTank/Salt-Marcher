@@ -1,4 +1,9 @@
-import { landscapeMargin } from "./landscapeRequest";
+import {
+  landscapeDetails,
+  landscapeSymbolBudget,
+  landscapeSymbolMargin,
+} from "./landscapeLod";
+export { landscapeDetails } from "./landscapeLod";
 import type { Biome } from "./generated/Biome";
 import type { SceneryAsset } from "./generated/SceneryAsset";
 import type { Bounds } from "./model";
@@ -22,24 +27,6 @@ const random = (x: number, y: number, salt: number) => {
   n = Math.imul(n ^ (n >>> 13), 1274126177);
   return ((n ^ (n >>> 16)) >>> 0) / 4294967296;
 };
-export function landscapeDetails(
-  scale: number,
-): { spacing: number; alpha: number; near: boolean }[] {
-  // Both representations coexist only in the transition band. No tree
-  // candidates are generated for continental/world views.
-  if (scale <= 0.03) return [];
-  const nearAlpha = Math.max(0, Math.min(1, (scale - 0.35) / 0.15));
-  const details = [];
-  if (nearAlpha < 1)
-    details.push({
-      spacing: 512,
-      alpha: Math.min(1, (scale - 0.03) / 0.03) * (1 - nearAlpha),
-      near: false,
-    });
-  if (nearAlpha > 0)
-    details.push({ spacing: 32, alpha: nearAlpha, near: true });
-  return details;
-}
 /** Bounded, stateless projection. Candidate identity depends on world cells,
  * never on camera, tile boundaries, sampling order or density. */
 export function landscapeSymbols(
@@ -47,10 +34,10 @@ export function landscapeSymbols(
   scale: number,
   sample: (x: number, y: number) => LandscapeWeights,
 ): { biome: Biome; asset: SceneryAsset; near: boolean }[] {
-  const details = landscapeDetails(scale);
-  const margin = landscapeMargin(scale);
+  const details = landscapeDetails(scale, bounds);
   const ranges = details.map((detail) => {
     const { spacing } = detail;
+    const margin = landscapeSymbolMargin(detail.near);
     return {
       ...detail,
       left: Math.floor((bounds[0] - margin) / spacing),
@@ -64,7 +51,7 @@ export function landscapeSymbols(
     ranges.reduce(
       (n, r) => n + (r.right - r.left + 1) * (r.bottom - r.top + 1),
       0,
-    ) > 16384
+    ) > landscapeSymbolBudget
   )
     return [];
   const result: ReturnType<typeof landscapeSymbols> = [];

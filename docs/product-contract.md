@@ -410,7 +410,9 @@ ausschließlich Flächenfarben. Übersichten entstehen
 direkt aus den Deckungen, ohne zuerst unsichtbare Einzelbäume zu erzeugen.
 Mittlere Blätterdächer beziehungsweise Signaturen und nahe Symbole gehen überlappend ineinander über;
 beim Wechsel gibt es kein ausschließlich durch den Zoom verursachtes Leerband.
-Das gemeinsame Kandidatenbudget gilt auch während dieses Übergangs.
+Das gemeinsame Kandidatenbudget gilt auch während dieses Übergangs. Auf großen
+Ansichtsflächen bleibt das Blätterdach länger sichtbar, bis die Einzelbäume in
+das Arbeitsbudget passen; Verschieben allein verändert die Überblendung nicht.
 Die Darstellung ist auf den sichtbaren Ausschnitt und ein festes Symbolbudget
 begrenzt; bei zu großem Detailumfang bleibt die zusammenhängende Flächendarstellung.
 Wasser maskiert Landschaft, ohne darunterliegende Autoren zu löschen. Schnee

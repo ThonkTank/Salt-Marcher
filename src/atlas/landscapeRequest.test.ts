@@ -30,3 +30,17 @@ it("requests enough coverage for offscreen crowns without growing the tile budge
     }
   }
 });
+
+it("includes medium crowns when a wide viewport postpones near detail", () => {
+  const bounds: [number, number, number, number] = [-15, -12, 7680, 4320];
+  expect(landscapeMargin(0.5, bounds)).toBe(188);
+  const request = landscapeRequest(bounds, 0, 0.5);
+  const width = 64 * 2 ** request.level;
+  expect(request.tiles.length).toBeLessThanOrEqual(64);
+  expect(
+    Math.min(...request.tiles.map(([x]) => x * width)),
+  ).toBeLessThanOrEqual(bounds[0] - 188);
+  expect(
+    Math.max(...request.tiles.map(([x]) => (x + 1) * width)),
+  ).toBeGreaterThanOrEqual(bounds[2] + 188);
+});

@@ -127,10 +127,15 @@ test("landscape coverage previews, erases locally, cancels and survives history/
   expect((await landscape(page)).tiles).toEqual(erased.tiles);
 });
 
-for (const label of ["Straßenzug", "Welt"])
-  test(`landscape paints visible coverage at ${label} without creating scenery objects`, async ({
+for (const [label, width, height] of [
+  ["Straßenzug", 1440, 960],
+  ["Welt", 1440, 960],
+  ["Welt", 3840, 2160],
+] as const)
+  test(`landscape paints visible coverage at ${label} ${width} without creating scenery objects`, async ({
     page,
   }) => {
+    await page.setViewportSize({ width, height });
     await land(page, true);
     await page.getByLabel("Ansichtsmaßstab").selectOption({ label });
     await paintedReady(page);
@@ -176,7 +181,13 @@ for (const label of ["Straßenzug", "Welt"])
       await paintedReady(page);
       // Follow the same world anchor through the representation bands. The
       // source coverage must survive independently of generated detail symbols.
-      for (const view of ["Umland", "Dorf / Stadtteil", "Grundstück", "Welt"]) {
+      for (const view of [
+        "Umland",
+        "Dorf / Stadtteil",
+        "Straßenzug",
+        "Grundstück",
+        "Welt",
+      ]) {
         await page.getByLabel("Ansichtsmaßstab").selectOption({ label: view });
         await paintedReady(page);
         const anchor = await screen(page, [0, 0]);
@@ -185,14 +196,20 @@ for (const label of ["Straßenzug", "Welt"])
         expect(anchor.y).toBeGreaterThan(box.y);
         expect(anchor.y).toBeLessThan(box.y + box.height);
         expect(await pixel(page, anchor)).not.toEqual(before);
-        if (view === "Dorf / Stadtteil" || view === "Grundstück")
+        if (
+          view === "Dorf / Stadtteil" ||
+          view === "Grundstück" ||
+          view === "Straßenzug"
+        )
           await page.screenshot({
             path: test
               .info()
               .outputPath(
                 view === "Grundstück"
                   ? "landscape-near.png"
-                  : "landscape-middle.png",
+                  : view === "Straßenzug"
+                    ? "landscape-street.png"
+                    : "landscape-middle.png",
               ),
           });
       }

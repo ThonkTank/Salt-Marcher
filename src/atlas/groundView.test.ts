@@ -436,7 +436,7 @@ it("lazily reuses canopy rasters and matches their shared world-edge halos", () 
       return { a: 1, d: 1, e: 1024, f: 1024 };
     },
     clip() {},
-    drawImage() {},
+    drawImage: vi.fn(),
   } as unknown as CanvasRenderingContext2D;
   const view = {
     status,
@@ -463,6 +463,17 @@ it("lazily reuses canopy rasters and matches their shared world-edge halos", () 
       }
     for (const scale of [0.2, 0.4, 1, 0.00001, 0.15])
       painter.paintLandscape(context, view, undefined, scale);
+    expect(create).toHaveBeenCalledTimes(4);
+    // At DPR 2 / scale 0.5, a wide viewport must retain both canopy rasters.
+    context.canvas.width = 7680;
+    context.canvas.height = 4320;
+    vi.mocked(context.drawImage).mockClear();
+    painter.paintLandscape(context, view, undefined, 0.5);
+    expect(context.drawImage).toHaveBeenCalledTimes(4);
+    context.canvas.width = context.canvas.height = 2048;
+    vi.mocked(context.drawImage).mockClear();
+    painter.paintLandscape(context, view, undefined, 1);
+    expect(context.drawImage).toHaveBeenCalledTimes(2);
     expect(create).toHaveBeenCalledTimes(4);
     const meadow = {
       ...view,

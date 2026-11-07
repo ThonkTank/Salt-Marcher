@@ -1,16 +1,23 @@
+import { landscapeDetails, landscapeSymbolMargin } from "./landscapeLod";
 import { tileRequest } from "./lod";
 import type { Bounds } from "./model";
 
 /** Covers crowns intersecting the viewport whose centers are just outside it. */
-export function landscapeMargin(scale?: number): number {
-  return scale === undefined || scale < 0.03 ? 0 : scale < 0.5 ? 188 : 18;
+export function landscapeMargin(scale?: number, bounds?: Bounds): number {
+  return scale === undefined
+    ? 0
+    : landscapeDetails(scale, bounds).reduce(
+        (margin, detail) =>
+          Math.max(margin, landscapeSymbolMargin(detail.near)),
+        0,
+      );
 }
 export function landscapeRequest(
   bounds: Bounds,
   level: number,
   scale?: number,
 ) {
-  const margin = landscapeMargin(scale);
+  const margin = landscapeMargin(scale, bounds);
   return tileRequest(
     [
       bounds[0] - margin,

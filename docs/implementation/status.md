@@ -19,8 +19,9 @@ Nahe Waldbäume sind eigene Federzeichnungen:
 vier unregelmäßige Kronen, gebrochene Blattkonturen, gedeckte Grünlasuren und
 größenabhängige Schraffur, orientiert an den offiziellen Canvas-of-Kings-Bildern.
 Vier feste Zeichenpfade werden geteilt; Autoren und Verteilung bleiben erhalten. Der gemeinsame
-Kandidatenrahmen umfasst auch die Überblendung zwischen 0,35 und 0,5 CSS-Pixeln
-pro Fuß. Rasterziele und Clips in Gerätekoordinaten vermeiden die gefundenen
+Kandidatenrahmen umfasst auch die Überblendung ab 0,35 CSS-Pixeln pro Fuß.
+Große Viewports behalten das Blätterdach, bis der gemeinsame Kandidatenrahmen
+Einzelbäume erlaubt; Raster, Symbole und Kachelanfragen teilen diese Auswahl. Rasterziele und Clips in Gerätekoordinaten vermeiden die gefundenen
 nativen Kachelnähte. Wasser maskiert Bestand, Schnee bleibt sichtbar.
 
 Für die Landschaftsdarstellung bestehen 31 Präsentationstests einschließlich monotoner
@@ -60,13 +61,21 @@ Die Folgeänderung auf `codex/visible-terrain-raster` erweitert dieselbe
 Sichtbarkeitsprüfung auf Relief-/Wasserraster und Höhenlinien. Ein gemeinsamer
 Helper enthält den Rundungsrand; Höhenlinien ergänzen ihre tatsächliche halbe
 Strichbreite. Unsichtbare Texturen werden nicht decodiert, vorhandene Raster
-bleiben beim Zurückschieben wiederverwendbar. Alle 415 Frontendtests und Typen
+bleiben beim Zurückschieben wiederverwendbar. Alle 417 Frontendtests und Typen
 bestehen, einschließlich DPR-Rand und direkter Vorschau. Alle 40 Boden-,
 Landschafts-, Höhen-, Reliefpinsel- und Gewässer-Browserfälle bestehen; darunter Weltmalen
 nach freiem Zoom, runde/kräuselige Küsten und Fehlererholung. Der frische
 Release-/RPM-Build besteht; native Bedienung bleibt mangels UI-Zugriff offen. Diese Folgeänderung
 ist vom unverändert laufenden Main-Kandidaten getrennt.
 Belege: `src-tauri/target/diagnostics/terrain-visibility/`.
+Die zusätzliche Landschaftsprüfung bei 3840×2160 besteht im isolierten Nachlauf;
+der erste Lauf scheiterte vor dem Malen beim Laden der Karte am Fünf-Sekunden-Limit.
+Das ist keine belegte Reparatur dieses Ladefehlers. Die vier bisherigen
+Landschaftsfälle bestehen; mittlere Darstellung und großer Zoomübergang wurden
+an den Browserbildern visuell geprüft. Die neuen Unitprüfungen sichern den
+Kandidatenrahmen, positionsunabhängige Überblendung, Kronenrand und Rasterreuse.
+134 Transportverträge, Typen, Format und der frische Release-/RPM-Build bestehen.
+Belege: `src-tauri/target/diagnostics/landscape-capacity/`.
 
 ## Integration und offene Abnahmen
 

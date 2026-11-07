@@ -268,8 +268,12 @@ unabhängig gespeichert. Es gibt
 keinen zusätzlichen Dokumentworker oder unabhängigen Cachebesitzer. Der vorhandene
 Rasterpainter hält begrenzte Landschaftsraster und zeichnet aus denselben Gewichten
 ferne Farben, mittlere Blätterdächer beziehungsweise Signaturen und nahe Symbole. Zwischen 0,35 und 0,5
-CSS-Pixeln pro Fuß überblendet er mittlere und nahe Symbole; beide teilen sich
-das Kandidatenbudget, der Kachelanfrager erhält bis zum Ende den groben Kronenrand.
+CSS-Pixeln pro Fuß beginnt die Überblendung zu nahen Symbolen. `landscapeLod`
+begrenzt deren Anteil zusätzlich anhand einer kamerapositionsunabhängigen Obergrenze
+der Kandidaten für die Viewportgröße; große Fenster behalten dadurch das
+Blätterdach bis zur möglichen Detaildarstellung. Beide Bänder teilen sich
+das Kandidatenbudget. Painter, Symbolprojektion und Kachelanfrager verwenden
+dieselbe Auswahl; der Anfrager erhält bis zum Ende den groben Kronenrand.
 Mittlerer Wald entsteht als durchgehendes, weltverankertes Kronenfeld aus den
 Waldgewichten. Geringe Dichte öffnet Lücken, hohe Dichte schließt das Dach.
 `forestCanopy` berechnet ausschließlich Darstellung; die Autoren bleiben unverändert.

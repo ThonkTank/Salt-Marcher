@@ -78,3 +78,33 @@ it("keeps both transition representations within the shared budget at desktop si
     expect(symbols.some((s) => !s.near)).toBe(true);
   }
 });
+
+it("retains canopy until near symbols fit a large viewport, independently of pan", () => {
+  for (const scale of [0.35, 0.5, 0.7, 0.8, 1, 2]) {
+    const bounds: [number, number, number, number] = [
+      0,
+      0,
+      3840 / scale,
+      2160 / scale,
+    ];
+    const details = landscapeDetails(scale, bounds);
+    expect(details.reduce((sum, d) => sum + d.alpha, 0)).toBeCloseTo(1);
+    expect(
+      landscapeDetails(scale, [
+        -12345,
+        -6789,
+        bounds[2] - 12345,
+        bounds[3] - 6789,
+      ]),
+    ).toEqual(details);
+    const sample = vi.fn(() => [0, 255, 0, 0] as const);
+    const symbols = landscapeSymbols(bounds, scale, sample);
+    expect(sample.mock.calls.length).toBeLessThanOrEqual(16384);
+    for (const detail of details)
+      expect(symbols.some((s) => s.near === detail.near)).toBe(true);
+    if (scale <= 0.7)
+      expect(details).toEqual([{ spacing: 512, alpha: 1, near: false }]);
+    if (scale >= 1)
+      expect(details).toEqual([{ spacing: 32, alpha: 1, near: true }]);
+  }
+});

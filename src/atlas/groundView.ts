@@ -61,6 +61,15 @@ export function groundColorAt(
     number,
   ];
 }
+function viewportBounds(c: CanvasRenderingContext2D): Bounds {
+  const t = c.getTransform();
+  return [
+    -t.e / t.a,
+    -t.f / t.d,
+    (c.canvas.width - t.e) / t.a,
+    (c.canvas.height - t.f) / t.d,
+  ];
+}
 type GroundRaster = {
   raster: HTMLCanvasElement;
   canopy?: HTMLCanvasElement | null;
@@ -91,7 +100,8 @@ export class GroundPainter {
     c.imageSmoothingEnabled = true;
     const transform = c.getTransform();
     const canopyAlpha =
-      landscapeDetails(scale).find((detail) => !detail.near)?.alpha ?? 0;
+      landscapeDetails(scale, viewportBounds(c)).find((detail) => !detail.near)
+        ?.alpha ?? 0;
     for (const tile of view.tiles) {
       if (!tile.pixels || !visibleRasterTile(tile, width, transform, c.canvas))
         continue;
@@ -249,8 +259,10 @@ export class GroundPainter {
     terrain: TerrainResponse | undefined,
     scale: number,
   ) {
-    const details = landscapeDetails(scale);
-    if (!details.length || view.tiles.every((tile) => !tile.pixels)) return;
+    if (scale <= 0.03 || view.tiles.every((tile) => !tile.pixels)) return;
+    const bounds = viewportBounds(c);
+    const details = landscapeDetails(scale, bounds);
+    if (!details.length) return;
     const step = 2 ** view.level,
       width = 64 * step;
     const materialAt = terrain ? prepareMaterialSampler(terrain) : undefined;
@@ -279,13 +291,6 @@ export class GroundPainter {
     };
     c.save();
     {
-      const t = c.getTransform();
-      const bounds: Bounds = [
-        -t.e / t.a,
-        -t.f / t.d,
-        (c.canvas.width - t.e) / t.a,
-        (c.canvas.height - t.f) / t.d,
-      ];
       const symbols = landscapeSymbols(bounds, scale, sample);
       for (const detail of details) {
         c.globalAlpha = detail.alpha;
