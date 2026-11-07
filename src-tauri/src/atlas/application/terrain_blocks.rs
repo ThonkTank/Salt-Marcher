@@ -49,6 +49,16 @@ struct Interval {
     count: i64,
 }
 
+// SQLite can prefer the level prefix of the primary key over an expression
+// index. Require the spatial index so each read is bounded to one author block.
+pub(super) fn author_block_query(local: bool) -> &'static str {
+    if local {
+        "SELECT x,y,z FROM terrain INDEXED BY terrain_block_authors WHERE (x >> 4)=?2 AND (y >> 4)=?3 AND ?1=0"
+    } else {
+        "SELECT x,y,z FROM terrain_layers INDEXED BY world_block_authors WHERE level=?1 AND (x >> 4)=?2 AND (y >> 4)=?3"
+    }
+}
+
 pub fn install(db: &Connection) -> Result<()> {
     db.execute_batch("CREATE TABLE terrain_blocks(source INTEGER NOT NULL,depth INTEGER NOT NULL,x INTEGER NOT NULL,y INTEGER NOT NULL,low REAL NOT NULL,high REAL NOT NULL,n INTEGER NOT NULL,min_x INTEGER NOT NULL,min_y INTEGER NOT NULL,max_x INTEGER NOT NULL,max_y INTEGER NOT NULL,PRIMARY KEY(source,depth,x,y)) WITHOUT ROWID;
         CREATE TABLE terrain_dirty_blocks(depth INTEGER NOT NULL,source INTEGER NOT NULL,x INTEGER NOT NULL,y INTEGER NOT NULL,PRIMARY KEY(depth,source,x,y)) WITHOUT ROWID;
@@ -103,8 +113,8 @@ pub fn refresh(db: &Connection) -> Result<()> {
         .prepare_cached("DELETE FROM terrain_blocks WHERE source=? AND depth=? AND x=? AND y=?")
         .map_err(storage_error)?;
     let mut parent = db.prepare_cached("INSERT INTO terrain_blocks SELECT ?1,?2,?3,?4,min(low),max(high),sum(n),min(min_x),min(min_y),max(max_x),max(max_y) FROM terrain_blocks WHERE source=?1 AND depth=?5 AND x IN (?6,?6+1) AND y IN (?7,?7+1) HAVING count(*)>0").map_err(storage_error)?;
-    let mut local = db.prepare_cached("INSERT INTO terrain_blocks SELECT 0,0,?1,?2,min(z),max(z),count(*),min(x),min(y),max(x),max(y) FROM terrain WHERE (x >> 4)=?1 AND (y >> 4)=?2 HAVING count(*)>0").map_err(storage_error)?;
-    let mut world = db.prepare_cached("INSERT INTO terrain_blocks SELECT ?1,0,?2,?3,min(z),max(z),count(*),min(x),min(y),max(x),max(y) FROM terrain_layers WHERE level=?1 AND (x >> 4)=?2 AND (y >> 4)=?3 HAVING count(*)>0").map_err(storage_error)?;
+    let mut local = db.prepare_cached("INSERT INTO terrain_blocks SELECT 0,0,?1,?2,min(z),max(z),count(*),min(x),min(y),max(x),max(y) FROM terrain INDEXED BY terrain_block_authors WHERE (x >> 4)=?1 AND (y >> 4)=?2 HAVING count(*)>0").map_err(storage_error)?;
+    let mut world = db.prepare_cached("INSERT INTO terrain_blocks SELECT ?1,0,?2,?3,min(z),max(z),count(*),min(x),min(y),max(x),max(y) FROM terrain_layers INDEXED BY world_block_authors WHERE level=?1 AND (x >> 4)=?2 AND (y >> 4)=?3 HAVING count(*)>0").map_err(storage_error)?;
     let mut clean = db
         .prepare_cached(
             "DELETE FROM terrain_dirty_blocks WHERE depth=? AND source=? AND x=? AND y=?",
@@ -218,12 +228,10 @@ impl<'a> Sampler<'a> {
         }
         let key = (source, bx, by);
         if !self.blocks.contains_key(&key) {
-            let sql = if source == 0 {
-                "SELECT x,y,z FROM terrain WHERE (x >> 4)=?2 AND (y >> 4)=?3 AND ?1=0"
-            } else {
-                "SELECT x,y,z FROM terrain_layers WHERE level=?1 AND (x >> 4)=?2 AND (y >> 4)=?3"
-            };
-            let mut q = self.db.prepare_cached(sql).map_err(storage_error)?;
+            let mut q = self
+                .db
+                .prepare_cached(author_block_query(source == 0))
+                .map_err(storage_error)?;
             let mut rows = q.query(params![source, bx, by]).map_err(storage_error)?;
             let mut values = vec![None; 256];
             while let Some(row) = rows.next().map_err(storage_error)? {
@@ -356,6 +364,53 @@ impl<'a> Sampler<'a> {
 mod tests {
     use super::*;
     use crate::atlas::application::{terrain_store, AtlasApplication};
+    #[test]
+    fn sampling_and_dirty_leaf_refresh_ignore_distant_authors() {
+        use std::sync::{
+            atomic::{AtomicUsize, Ordering},
+            Arc,
+        };
+        for source in [0, 4, 21] {
+            let app = AtlasApplication::new().unwrap();
+            let put = |y: i32, z: f64| {
+                if source == 0 {
+                    app.db.execute("INSERT INTO terrain VALUES(0,?1,?2) ON CONFLICT(x,y) DO UPDATE SET z=excluded.z", params![y,z]).unwrap();
+                } else {
+                    app.db.execute("INSERT INTO terrain_layers VALUES(?1,0,?2,?3) ON CONFLICT(level,x,y) DO UPDATE SET z=excluded.z", params![source,y,z]).unwrap();
+                }
+            };
+            put(0, 10.);
+            refresh(&app.db).unwrap();
+            let measure = || {
+                put(0, 11.);
+                let count = Arc::new(AtomicUsize::new(0));
+                let steps = count.clone();
+                app.db.progress_handler(
+                    100,
+                    Some(move || {
+                        steps.fetch_add(1, Ordering::Relaxed);
+                        false
+                    }),
+                );
+                // Includes refreshing exactly the changed leaf and its ancestors.
+                let mut sampler = Sampler::new(&app.db).unwrap();
+                let height = sampler.height([0., 0.]).unwrap();
+                app.db.progress_handler(0, None::<fn() -> bool>);
+                (height, count.load(Ordering::Relaxed))
+            };
+            let (height, budget) = measure();
+            for y in 10000..12000 {
+                put(y, 10.);
+            }
+            refresh(&app.db).unwrap();
+            let (actual, work) = measure();
+            assert_eq!(height, actual);
+            assert!(
+                work <= budget + 30,
+                "source {source}: {budget} -> {work} VM batches"
+            );
+        }
+    }
     fn summaries(db: &Connection) -> Vec<(u8, u8, i32, i32, f64, f64, i64)> {
         db.prepare(
             "SELECT source,depth,x,y,low,high,n FROM terrain_blocks ORDER BY source,depth,x,y",

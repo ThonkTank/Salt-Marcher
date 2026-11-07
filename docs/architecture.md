@@ -124,6 +124,13 @@ werten nur die 280 fehlenden Punkte des zweischrittigen Randes zusätzlich aus.
 Land/Meer bestimmt exakte Abstände im überstrichenen Korridor. Ein temporärer
 Segmentindex und zeilenweise Streckenbegrenzung liefern die Kandidaten für
 Autorenreads und Höhenauftrag. Dieser Index lebt nur während eines Abschnitts.
+Lokale und grobe Pinsel sammeln die benötigten Autorenblöcke je Quellauflösung
+für den gesamten Abschnitt. Zeilenmasken erhalten exakt die Vereinigung der
+Lesebereiche samt Spline-Stützrand; überlappende Bereiche lesen denselben Block
+nur einmal. Unbelegte Quellauflösungen werden vorher übersprungen. Blockreads
+und Blattaktualisierungen verlangen ausdrücklich die vorhandenen räumlichen
+SQL-Indizes: Ein bloßer Level-Filter darf keinen globalen Quellscan verursachen.
+Allgemeine große Ausschnittreads enumerieren weiterhin keine leeren Blockflächen.
 
 `surface_tiles` und der versionierte Punktread `surfacePoints` teilen Sampler,
 Flussauswertung und Plattformaufbau. `SurfacePointReader` hält eine laufende
