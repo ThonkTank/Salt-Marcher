@@ -33,7 +33,12 @@ den Kronenrand. Vorher-/Nachher-Rendererbilder wurden bei sechs Maßstäben
 angesehen; Belege liegen unter `src-tauri/target/diagnostics/landscape-transition/`.
 Vier Landschafts-Browserfälle bestehen einschließlich Welt→Nah→Welt,
 History, Datei und Ozeanmaskierung. Typen und Format bestehen.
-Die native Abnahme dieses ergänzenden Übergangs steht noch aus.
+Release-/RPM-Build und native Kontrolle dieses Übergangs bestehen: Die Kopie
+der gespeicherten Waldkarte wurde in einer zweiten Instanz geöffnet, per Mausrad
+zwischen angezeigten 4–9 % gezoomt und im Übergang verschoben. Signaturen und
+Einzelbäume bleiben sichtbar; im geprüften Ausschnitt entstehen keine Kachelnähte.
+Die Dateikopie blieb bytegleich, die bisherige Testinstanz unberührt. Belege:
+`src-tauri/target/diagnostics/landscape-native-blend/`.
 
 Geprüft: 334 Rust-Bibliotheksfälle bestanden, fünf bestehende Lastfälle ignoriert;
 anschließend drei Landschaftsfälle auf dem finalen Backend und Clippy bestanden.
