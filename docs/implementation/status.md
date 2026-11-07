@@ -4,7 +4,25 @@ Atlas V7, Dateiformat 21, Generierungsrezept 4. Stand: 7. November 2026.
 [README](../../README.md) enthält Befehle, [Architektur](../architecture.md)
 Zuständigkeiten, [Produktvertrag](../product-contract.md) Verhalten und Grenzen.
 
-## Aktuelle Arbeit: Gewässerkontakte wiederverwenden
+## Aktuelle Arbeit: konstante Höhenraster ohne Einzelabfragen
+
+Das 33×33-Relief-/Konturgitter verwendet jetzt den vorhandenen adaptiven
+Rasterkern. Nachweislich konstante Bereiche benötigen keine einzelnen Höhenreads;
+Flussbetten und Hausplattformen werden weiterhin anschließend je Knoten angewendet.
+Ein Referenztest vergleicht alle Knoten exakt mit dichter Abtastung für Ozean,
+konstantes Land, Gefälle und gemischte sparse Autorenauflösungen an negativen
+Koordinaten und Kachelgrenzen. Konstante Testflächen laden keine Autorenpayloads.
+
+330 Rust-Bibliotheksfälle (fünf bestehende Lastfälle ignoriert), Clippy und 37
+Browserfälle bestehen, einschließlich Weltmalerei nach Mausrad-Zoom, Materialien,
+Flussbearbeitung, Fundamente und History. Typprüfung, Format und Release-/RPM-Build
+bestehen. Nativ geprüft: Ozean, Wiederöffnen mit pixelgleichem Fluss-/Seekartenausschnitt
+zum vorherigen Build, Mausradnavigation und sichtbarer Landauftrag während des
+Ziehens in Welt. Undo entfernt den Strich; Redo stellt ihn pixelgleich wieder her.
+Belege unter `src-tauri/target/diagnostics/relief-grid-audit/`.
+Keine zusätzliche Latenzmessreihe; das Zeitabnahmeziel bleibt offen.
+
+## Geprüfte vorherige Änderungen
 
 Flussprofile verwenden für eine unveränderte punktlokale Gewässerauswahl einmal
 vorbereitete Polygone. Ein Auswahlwechsel ersetzt den bisherigen Bestand;

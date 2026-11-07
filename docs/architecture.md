@@ -217,6 +217,13 @@ Kachelstufe. Priorisierung, Geometriebudgets, Raster und Inhaltskennungen stimme
 damit auch nach Gewässerteilungen und Flussänderungen überein. Vorschau-Rollback
 stellt Autoren und Indizes auch nach einem Oberflächenfehler gemeinsam wieder her.
 
+Das natürliche 33×33-Relief-/Konturgitter verwendet denselben adaptiven
+Rasterkern wie die dichte Wasserabtastung. Konservative Blockintervalle füllen
+nachweislich konstante Bereiche ohne einzelne Höhenreads; alle übrigen Knoten
+behalten ihre exakten Weltpositionen und kanonischen Höhen. Flussbetten und
+Hausplattformen werden anschließend unverändert pro Knoten angewendet.
+Es entsteht kein zusätzlicher Rastercache.
+
 `terrain_tiles` und der versionierte Punktread `surfacePoints` teilen Sampler,
 Flussauswertung und Plattformaufbau. `SurfacePointReader` hält eine laufende
 Anfrage und nur den neuesten wartenden Cursorpunkt. Überholte Antworten werden

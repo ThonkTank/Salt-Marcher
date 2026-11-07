@@ -443,11 +443,12 @@ impl AtlasApplication {
                     .map(|id| &platform_cache[id])
                     .collect(),
             );
-            let mut heights = Vec::with_capacity(1089);
-            for dy in 0..=32 {
-                for dx in 0..=32 {
-                    let p = [b[0] + dx as f64 * step, b[1] + dy as f64 * step];
-                    heights.push(platforms.at(river_surface.at(p, sampler.height(p)?).0, p));
+            let mut heights = super::terrain_raster::natural_grid(&mut sampler, b, 32)?;
+            let influenced = !river_views.is_empty() || !tile_platform_ids.is_empty();
+            if influenced {
+                for (i, z) in heights.iter_mut().enumerate() {
+                    let p = [b[0] + (i % 33) as f64 * step, b[1] + (i / 33) as f64 * step];
+                    *z = platforms.at(river_surface.at(p, *z).0, p);
                 }
             }
             let waters = if args.level > 5 {
@@ -469,7 +470,7 @@ impl AtlasApplication {
                 &heights,
                 &waters,
                 |p, z| platforms.at(river_surface.at(p, z).0, p),
-                !river_views.is_empty() || !tile_platform_ids.is_empty(),
+                influenced,
             )?;
             if let Some(interval) = args.contour_interval {
                 prepared.contour_interval = interval;

@@ -46,6 +46,24 @@ impl Raster<'_, '_> {
         Ok(())
     }
 }
+/// Canonical natural nodes; interval proofs skip constant regions without changing
+/// sample positions. Derived river/platform effects are applied by the caller.
+pub(super) fn natural_grid(
+    sampler: &mut Sampler<'_>,
+    bounds: Bounds,
+    pixels: usize,
+) -> Result<Vec<f64>> {
+    debug_assert!(pixels.is_power_of_two());
+    let mut raster = Raster {
+        sampler,
+        bounds,
+        pixels,
+        heights: vec![f64::NAN; (pixels + 1) * (pixels + 1)],
+    };
+    raster.fill(0, 0, pixels)?;
+    Ok(raster.heights)
+}
+
 fn coverage(z: f64, gradient: f64) -> f64 {
     if gradient > 1e-12 {
         (0.5 - z / gradient).clamp(0., 1.)
@@ -236,13 +254,7 @@ pub fn display(
         ocean.render()?;
         (ocean.nodes, ocean.coverage)
     } else {
-        let mut raster = Raster {
-            sampler,
-            bounds,
-            pixels: n,
-            heights: vec![f64::NAN; (n + 1) * (n + 1)],
-        };
-        raster.fill(0, 0, n)?;
+        let natural = natural_grid(sampler, bounds, n)?;
         let mut nodes = vec![0.; stride * stride];
         for y in 0..stride {
             for x in 0..stride {
@@ -251,9 +263,9 @@ pub fn display(
                     bounds[1] + (y as f64 - 1.) * step,
                 ];
                 let z = if x > 0 && y > 0 && x <= n + 1 && y <= n + 1 {
-                    raster.heights[(y - 1) * (n + 1) + x - 1]
+                    natural[(y - 1) * (n + 1) + x - 1]
                 } else {
-                    raster.sampler.height(p)?
+                    sampler.height(p)?
                 };
                 nodes[y * stride + x] = if influenced { influence(p, z) } else { z };
             }
@@ -527,6 +539,59 @@ mod tests {
             .map(|b| f32::from_le_bytes(*b))
             .collect()
     }
+    #[test]
+    fn natural_grid_matches_dense_nodes_and_skips_constant_author_reads() {
+        for shape in 0..4 {
+            let app = AtlasApplication::new().unwrap();
+            if shape > 0 {
+                let points: Vec<_> = (-64..64)
+                    .flat_map(|y| {
+                        (-64..64).filter_map(move |x| {
+                            if shape == 3 && (x + y) % 3 == 0 {
+                                return None;
+                            }
+                            Some((
+                                x,
+                                y,
+                                if shape == 1 {
+                                    17.3
+                                } else {
+                                    (x + y) as f64 * 0.7
+                                },
+                            ))
+                        })
+                    })
+                    .collect();
+                terrain_store::write_points(&app.db, &points).unwrap();
+            }
+            if shape == 3 {
+                app.db.execute_batch("WITH RECURSIVE v(n) AS (SELECT -16 UNION ALL SELECT n+1 FROM v WHERE n<16) INSERT INTO terrain_layers SELECT 3,a.n,b.n,12 FROM v a CROSS JOIN v b;").unwrap();
+            }
+            for bounds in [
+                [-160., -160., 0., 0.],
+                [0., 0., 160., 160.],
+                [-83., -47., 77., 113.],
+            ] {
+                let mut adaptive = Sampler::new(&app.db).unwrap();
+                let actual = natural_grid(&mut adaptive, bounds, 32).unwrap();
+                if shape <= 1 {
+                    assert_eq!(
+                        adaptive.loaded_controls, 0,
+                        "constant grid needs no author payloads"
+                    );
+                }
+                let mut dense = Sampler::new(&app.db).unwrap();
+                for (i, z) in actual.iter().enumerate() {
+                    let p = [
+                        bounds[0] + (i % 33) as f64 * 5.,
+                        bounds[1] + (i / 33) as f64 * 5.,
+                    ];
+                    assert_eq!(*z, dense.height(p).unwrap(), "shape {shape}, point {p:?}");
+                }
+            }
+        }
+    }
+
     #[test]
     fn material_thresholds_use_physical_height_and_slope() {
         assert_eq!(&material(0., 0., 1.)[..2], &[0, 0]);
