@@ -6,32 +6,45 @@ Zuständigkeiten, [Produktvertrag](../product-contract.md) Verhalten und Grenzen
 
 ## Aktuelle Optimierung
 
-Die Gewässernachführung sucht Wasserflächen vor den Höhenreads und beendet sich
-bei fehlenden Treffern sofort. Betroffene Kachelbereiche teilen den vorhandenen
-Blockleser; Welt-Rasterlimits greifen vor der Auswertung. Beim Trockenlegen
-werden nur Rasterzellen innerhalb der jeweiligen Gewässerbounds fein abgetastet
-und in Schnittpolygone zerlegt. Berührende Randzellen bleiben enthalten.
+Grobe Höhenänderungen begrenzen die Gewässernachführung auf die Überlappung
+geänderter Spline-Einflussbereiche mit Gewässerbounds. Ein unberührter See im
+gemeinsamen Änderungsrechteck blockiert einen Strich nicht mehr. Große Seen
+können lokal bearbeitet werden, solange die tatsächlich ausgewählte Rastermenge
+im Abschnittsbudget bleibt. Metadatenabfragen verwenden den bestehenden RTree;
+Konturen werden einmal je betroffenem Gewässer geladen. Die Uferberechnung nutzt
+direkt kanonische Höhen aus lokalen und groben Autoren. Die bisherige zusätzliche
+Interpolation temporär erzeugter lokaler Kontrollwerte entfällt. Bestätigte
+Kacheln geteilter Seen enthalten jedes Gewässer einmal und in derselben
+Reihenfolge wie ein frischer Read; eine zuvor reproduzierte Duplizierung neuer
+Teilgewässer ist korrigiert.
 
-Die neuen Regressionen prüfen ausbleibende Autorenreads ohne Gewässer,
-frühzeitige Budgetablehnung und unveränderte lokale Arbeitsmenge bei 40.000
-entfernten Zellen. Die Küstenreferenz umfasst trockene und nasse Flächen,
-Verläufe, gemischte Autorenauflösungen, Löcher, getrennte Flächen, negative
-Koordinaten und Blockränder. Konturstruktur und jeder Punkt werden verglichen;
-ein Millionstel Fuß berücksichtigt die eingabebereichsabhängige Rundung der
-Polygonbibliothek. Alle 333 Rusttests, Clippy, 129 Transportverträge, Typ- und
-Formatprüfung sowie 23 Browserfälle bestehen lokal. Die Browserfälle umfassen
-kontinuierliche Weltstriche, sichtbare Zwischenstände, Ufer, Trockenlegung,
-Vorschauabbruch, Undo/Redo und Dateirundlauf. Die Freigabe auf Main erfordert den
-vollständigen grünen CI-Check am exakten PR-Head. Keine weitere Zeitmessreihe und
-keine neue Messinfrastruktur wurden ergänzt.
+Alle 339 Rusttests bestehen lokal. Neue Regressionen decken diagonale und
+lückenhafte Änderungen, negative Koordinaten, Blockgrenzen, gemischte
+Autorenauflösungen, frühe Budgetablehnung, Überlappungszählung und große Seen ab.
+Küsten stimmen exakt mit der direkten kanonischen Berechnung überein. Ein
+Referenzfall unterscheidet ausdrücklich die frühere zweite Interpolation.
+Die Teilungsregression vergleicht komplette bestätigte Kacheln mit frischen Reads,
+auch mit einem unveränderten weiteren See im Ausschnitt.
+Undo/Redo und injizierte Schreibfehler prüfen fehlende Autoren und Gewässer
+zusammen. Clippy, Typ- und Formatprüfung, 129 Transportverträge und 24 Browserfälle bestehen
+lokal. Der neue Browserfall bearbeitet einen großen L-förmigen See mit groben
+Höhen, erhält lokale Wasserflächen und prüft die Oberflächen über Undo/Redo.
+Der frische native Release-/RPM-Build bestätigt lokale Gewässer im
+20-Fuß-Höhenraster sowie pixelgleiches Undo/Redo. Die Freigabe auf Main erfordert
+den vollständigen grünen CI-Check am exakten PR-Head. Keine zusätzliche
+Zeitmessreihe wurde begonnen.
 
 ## Bestehender geprüfter Stand
 
-[PR #1442](https://github.com/ThonkTank/Salt-Marcher/pull/1442) ist auf `main`
+[PR #1443](https://github.com/ThonkTank/Salt-Marcher/pull/1443) ist auf `main`
 integriert. Der exakte Kandidat bestand 129 Transportverträge, Typprüfung,
-368 Frontend-, 329 Rust- und 226 Browsertests sowie Clippy, Format, Webbuild
+368 Frontend-, 333 Rust- und 226 Browsertests sowie Clippy, Format, Webbuild
 und Release-/RPM-Build. Fünf Rustfälle bleiben ausdrücklich ignoriert.
 Die ursprüngliche lokale Historie bleibt in `codex/atlas-v7-preserved-histories`.
+
+Die Gewässernachführung überspringt Höhenreads ohne Kandidaten und prüft nur
+Rasterzellen an den jeweiligen Gewässerbounds. Der frische native Release-/RPM-
+Build bestätigte einen durch Höhen geteilten See mit pixelgleichem Undo/Redo.
 
 Direkte Höhenstriche besitzen einen eigenen Gestenzustand ohne Vorschaukandidat,
 Prüfphase oder veraltbare Basisrevision. Bestätigte Abschnitte setzen die Geste
@@ -88,13 +101,20 @@ bleiben offen. Der umfangreiche Release-Treiber mit neun Fixtures wurde hier
 nicht ausgeführt.
 
 Nächster Schwerpunkt bleibt das 50-ms-Ziel für bestätigte Pinselbilder.
-Nächster lesender Prüfpunkt ist die grobe Gewässerauswahl bei Welt-Höhenänderungen:
-Das gemeinsame Änderungsrechteck kann Wasserflächen außerhalb eines dünnen
-Pinselwegs einschließen. Allgemeine große Terrain-Autorenreads für Straßen,
-Gewässer und Plattformen bleiben ebenfalls offen; sie dürfen weder entfernte
-Spalten durchsuchen noch große leere Rechtecke blockweise enumerieren.
+Nächster lesender Prüfpunkt ist die Darstellungsregel bestätigter Oberflächen:
+Bei Gewässer-/Flussdeltas wird auch in groben Stufen ein Overlay verwendet,
+während frische Reads dort Übersichten nutzen. Gleiche Darstellungsbudgets und
+Ergebnisse müssen über diese beiden Pfade geprüft werden.
 
-Aktuelle Belege: `src-tauri/target/diagnostics/water-locality-*`.
+Weiterer Prüfpunkt ist die Flussnachführung: Ihre Auswahl bei groben
+Höhenänderungen verwendet weiterhin ein gemeinsames Änderungsrechteck. Ihr
+regionaler Höhensampler liest begrenzte Bereiche über den allgemeinen
+Rechteckpfad und durchsucht lokale Override-Werte je neuem Bereich vollständig.
+Allgemeine große Terrain-Autorenreads für Straßen, Gewässer und Plattformen
+bleiben offen; leere Weltrechtecke dürfen dabei nicht blockweise enumeriert werden.
+
+Aktuelle Belege: `src-tauri/target/diagnostics/water-footprint-*`.
+Vorige Gewässerbelege: `src-tauri/target/diagnostics/water-locality-*`.
 Gestenzustandsbelege: `src-tauri/target/diagnostics/direct-state-*`.
 Terrain-Read-Belege: `src-tauri/target/diagnostics/brush-reads-*`.
 Hausindexbelege: `src-tauri/target/diagnostics/house-index-*.log`.

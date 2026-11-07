@@ -41,7 +41,13 @@ pub fn local(db: &Connection, b: Bounds) -> Result<Vec<WaterBody>> {
 pub fn overlay(db: &Connection, b: Bounds, delta: Option<&WaterDelta>) -> Result<Vec<WaterBody>> {
     let mut out = local(db, b)?;
     if let Some(d) = delta {
-        out.retain(|w| !d.before.iter().any(|v| v.id == w.id));
+        let replaced: BTreeSet<_> = d
+            .before
+            .iter()
+            .chain(&d.after)
+            .map(|w| w.id.as_str())
+            .collect();
+        out.retain(|w| !replaced.contains(w.id.as_str()));
         out.extend(
             d.after
                 .iter()
@@ -52,6 +58,7 @@ pub fn overlay(db: &Connection, b: Bounds, delta: Option<&WaterDelta>) -> Result
                 })
                 .cloned(),
         );
+        out.sort_unstable_by(|a, b| a.id.cmp(&b.id));
     }
     water::check_budget(&out)?;
     Ok(out)
@@ -120,6 +127,100 @@ pub fn cells(points: &[(i32, i32, f64)]) -> BTreeSet<(i32, i32)> {
             (-2..=1).flat_map(move |dy| (-2..=1).map(move |dx| (x + dx, y + dy)))
         })
         .collect()
+}
+#[derive(Default)]
+struct WaterFootprint {
+    cells: BTreeSet<(i32, i32)>,
+    rows: BTreeSet<i64>,
+}
+
+// A coarse author influences only its four-by-four spline support. Query
+// existing water bounds per occupied source block, then clip that exact support
+// before enumerating local cells. Neither empty world rectangles nor whole lake
+// rectangles are rasterized; water bodies are loaded only after this budget check.
+fn world_water_cells(
+    db: &Connection,
+    delta: &super::world_terrain_store::WorldTerrainDelta,
+) -> Result<WaterFootprint> {
+    if delta.after.is_empty() {
+        return Ok(WaterFootprint::default());
+    }
+    // Most world strokes meet no local water. Reject that case with one index
+    // lookup before constructing the finer footprint.
+    let b = delta.bounds();
+    let nearby: bool = db.query_row(
+        "SELECT EXISTS(SELECT 1 FROM water_spatial WHERE min_x<=?1 AND max_x>=?2 AND min_y<=?3 AND max_y>=?4)",
+        params![b[2], b[0], b[3], b[1]], |r| r.get(0)
+    ).map_err(storage_error)?;
+    if !nearby {
+        return Ok(WaterFootprint::default());
+    }
+    let step = terrain::STEP * 2f64.powi(delta.level as i32);
+    let mut blocks: BTreeMap<(i32, i32), Vec<crate::atlas::Point>> = BTreeMap::new();
+    for &(x, y, _) in &delta.after {
+        blocks
+            .entry((x.div_euclid(16), y.div_euclid(16)))
+            .or_default()
+            .push([x as f64 * step, y as f64 * step]);
+    }
+    let mut query = db.prepare_cached(
+        "SELECT w.rowid,w.min_x,w.min_y,w.max_x,w.max_y FROM water_spatial s JOIN waters w ON w.rowid=s.key WHERE s.min_x<=?1 AND s.max_x>=?2 AND s.min_y<=?3 AND s.max_y>=?4"
+    ).map_err(storage_error)?;
+    let mut affected = BTreeSet::new();
+    let mut waters = BTreeSet::new();
+    for points in blocks.into_values() {
+        let bounds = expand(
+            crate::atlas::geometry::bounds(points.iter().copied()),
+            2. * step,
+        );
+        let mut rows = query
+            .query(params![bounds[2], bounds[0], bounds[3], bounds[1]])
+            .map_err(storage_error)?;
+        while let Some(row) = rows.next().map_err(storage_error)? {
+            let key: i64 = row.get(0).map_err(storage_error)?;
+            let water: Bounds = [
+                row.get(1).map_err(storage_error)?,
+                row.get(2).map_err(storage_error)?,
+                row.get(3).map_err(storage_error)?,
+                row.get(4).map_err(storage_error)?,
+            ];
+            for p in &points {
+                let b = [
+                    (p[0] - 2. * step).max(water[0]),
+                    (p[1] - 2. * step).max(water[1]),
+                    (p[0] + 2. * step).min(water[2]),
+                    (p[1] + 2. * step).min(water[3]),
+                ];
+                if b[0] > b[2] || b[1] > b[3] {
+                    continue;
+                }
+                let x0 = (b[0] / terrain::STEP).ceil() as i32 - 1;
+                let y0 = (b[1] / terrain::STEP).ceil() as i32 - 1;
+                let x1 = (b[2] / terrain::STEP).floor() as i32;
+                let y1 = (b[3] / terrain::STEP).floor() as i32;
+                let count =
+                    (i64::from(x1) - i64::from(x0) + 1) * (i64::from(y1) - i64::from(y0) + 1);
+                ensure(
+                    count <= terrain::LIMIT as i64,
+                    "Gewässernachführung zu groß",
+                )?;
+                waters.insert(key);
+                for x in x0..=x1 {
+                    for y in y0..=y1 {
+                        affected.insert((x, y));
+                        ensure(
+                            affected.len() <= terrain::LIMIT,
+                            "Gewässernachführung zu groß",
+                        )?;
+                    }
+                }
+            }
+        }
+    }
+    Ok(WaterFootprint {
+        cells: affected,
+        rows: waters,
+    })
 }
 impl AtlasApplication {
     pub(super) fn water_stroke(
@@ -288,46 +389,40 @@ impl AtlasApplication {
         if c.change.waters.is_some() {
             return Ok(());
         }
-        let mut world_samples = crate::atlas::terrain::TerrainDelta {
-            before: vec![],
-            after: vec![],
-            missing_before: vec![],
+        let WaterFootprint {
+            cells: mut affected,
+            rows: world_rows,
+        } = if let Some(d) = &c.change.world_terrain {
+            world_water_cells(&self.db, d)?
+        } else {
+            WaterFootprint::default()
         };
-        if let Some(d) = &c.change.world_terrain {
-            for water in local(&self.db, d.bounds())? {
-                if let Some(b) = regions::bounds(&water::geometry(&water)) {
-                    let x0 = (b[0] / 5.).floor() as i32;
-                    let x1 = (b[2] / 5.).ceil() as i32;
-                    let y0 = (b[1] / 5.).floor() as i32;
-                    let y1 = (b[3] / 5.).ceil() as i32;
-                    let count =
-                        (i64::from(x1) - i64::from(x0) + 1) * (i64::from(y1) - i64::from(y0) + 1);
-                    ensure(
-                        world_samples.after.len() as i64 + count <= 100000,
-                        "Gewässernachführung zu groß",
-                    )?;
-                    let g = terrain_store::grid(&self.db, b)?;
-                    for y in y0..=y1 {
-                        for x in x0..=x1 {
-                            world_samples.after.push((x, y, terrain::at(&g, x, y)));
-                        }
-                    }
-                }
+        if let Some(t) = &c.change.terrain {
+            affected.extend(cells(&t.after));
+        }
+        if affected.is_empty() {
+            return Ok(());
+        }
+        let mut candidates = BTreeMap::new();
+        if !world_rows.is_empty() {
+            let mut query = self
+                .db
+                .prepare_cached("SELECT body FROM waters WHERE rowid=?")
+                .map_err(storage_error)?;
+            let mut contour_points = 0;
+            for row in world_rows {
+                let body: String = query
+                    .query_row([row], |r| r.get(0))
+                    .map_err(storage_error)?;
+                let water: WaterBody = serde_json::from_str(&body).map_err(storage_error)?;
+                contour_points += water::point_count(&water);
+                ensure(
+                    contour_points <= water::POINT_LIMIT,
+                    "Gewässeransicht überschreitet 200.000 Konturpunkte",
+                )?;
+                candidates.insert(water.id.clone(), water);
             }
         }
-        let Some(t) = c
-            .change
-            .terrain
-            .as_ref()
-            .or_else(|| (!world_samples.after.is_empty()).then_some(&world_samples))
-        else {
-            return Ok(());
-        };
-        if t.after.is_empty() {
-            return Ok(());
-        }
-        let affected = cells(&t.after);
-        let mut candidates = BTreeMap::new();
         let mut regions = Vec::new();
         let tiles: BTreeSet<_> = affected
             .iter()
@@ -341,15 +436,19 @@ impl AtlasApplication {
                 (y + 1) as f64 * 160. + 5.,
             ];
             regions.push(b);
-            for w in local(&self.db, b)? {
-                candidates.insert(w.id.clone(), w);
+            if c.change.terrain.is_some() {
+                for w in local(&self.db, b)? {
+                    candidates.insert(w.id.clone(), w);
+                }
             }
         }
         if candidates.is_empty() {
             return Ok(());
         }
         let mut grid = terrain_store::brush_grid(&self.db, &regions, 0)?;
-        grid.extend(t.after.iter().map(|&(x, y, z)| ((x, y), z)));
+        if let Some(t) = &c.change.terrain {
+            grid.extend(t.after.iter().map(|&(x, y, z)| ((x, y), z)));
+        }
         let mut before = vec![];
         let mut after = vec![];
         let mut alloc = self.allocator()?;

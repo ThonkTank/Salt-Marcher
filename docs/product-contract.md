@@ -964,5 +964,10 @@ Technische Grenzen: 4.096 Pfadpunkte, 100.000 geänderte Höhenpunkte einschlie�
 Ufer, 400.000 Rasterkandidaten im Strichrechteck und 200.000 Konturpunkte je Aktion
 oder geladener Ansicht. Pegeländerungen bestehender Gewässer erlauben höchstens
 100.000 Rasterkandidaten je betroffenem Gewässerrechteck; Flusskontaktabtastung ist
-auf insgesamt 200.000 Prüfungen begrenzt. Zu große Aktionen werden vollständig
+auf insgesamt 200.000 Prüfungen begrenzt. Die Gewässernachführung grober
+Höhenänderungen erlaubt insgesamt 100.000 verschiedene betroffene 5-Fuß-Rasterzellen
+je Abschnitt. Dafür zählt die Überlappung des geänderten Spline-Einflussbereichs
+mit den umschließenden Gewässerrechtecken; überlappende Einflüsse zählen einmal.
+Lokale Höhenautoren
+bleiben bei groben Änderungen erhalten. Zu große Aktionen werden vollständig
 abgelehnt. Persistenz und Import folgen [Dateien und History](#dateien-und-history).

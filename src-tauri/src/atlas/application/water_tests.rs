@@ -323,7 +323,7 @@ fn oversized_world_water_followup_rejects_before_reading_authors() {
     }));
     let mut computed = crate::atlas::change::Computed::default();
     computed.change.world_terrain = Some(world_terrain_store::WorldTerrainDelta {
-        level: 4,
+        level: 10,
         before: vec![(0, 0, None)],
         after: vec![(0, 0, Some(10.))],
     });
@@ -335,4 +335,222 @@ fn oversized_world_water_followup_rejects_before_reading_authors() {
     assert_eq!(error.message, "Gewässernachführung zu groß");
     assert!(computed.change.waters.is_none());
     assert!(computed.next_identity.is_none());
+}
+
+#[test]
+fn world_water_outside_changed_support_never_reads_authors() {
+    use rusqlite::hooks::{AuthAction, AuthContext, Authorization};
+    for (level, points, b) in [
+        (
+            4,
+            (0..=100).map(|i| (i, i)).collect::<Vec<_>>(),
+            [1000., 5000., 3000., 7000.],
+        ),
+        (1, vec![(0, 0), (15, 15)], [40., 90., 80., 130.]),
+        (1, vec![(-16, -16), (-1, -1)], [-120., -70., -80., -30.]),
+        (1, vec![(0, 0)], [25., 25., 50., 50.]),
+    ] {
+        let a = AtlasApplication::new().unwrap();
+        water_store::put(
+            &a.db,
+            &water::WaterBody {
+                id: "off-path".into(),
+                level: 0.,
+                polygons: vec![crate::atlas::regions::RegionPolygon {
+                    outer: vec![[b[0], b[1]], [b[2], b[1]], [b[2], b[3]], [b[0], b[3]]],
+                    holes: vec![],
+                }],
+            },
+        )
+        .unwrap();
+        a.db.authorizer(Some(|context: AuthContext<'_>| {
+            if matches!(
+                context.action,
+                AuthAction::Read {
+                    table_name: "terrain" | "terrain_layers",
+                    ..
+                } | AuthAction::Read {
+                    table_name: "waters",
+                    column_name: "body",
+                    ..
+                }
+            ) {
+                Authorization::Deny
+            } else {
+                Authorization::Allow
+            }
+        }));
+        let mut computed = crate::atlas::change::Computed::default();
+        computed.change.world_terrain = Some(world_terrain_store::WorldTerrainDelta {
+            level,
+            before: vec![],
+            after: points.into_iter().map(|(x, y)| (x, y, Some(10.))).collect(),
+        });
+        a.trim_water(&mut computed).unwrap();
+        assert!(computed.change.waters.is_none());
+        assert!(computed.next_identity.is_none());
+    }
+}
+
+fn large_lake(a: &AtlasApplication) -> water::WaterBody {
+    let water = water::WaterBody {
+        id: "wide-lake".into(),
+        level: -90.,
+        polygons: vec![crate::atlas::regions::RegionPolygon {
+            outer: vec![
+                [-2000., -2000.],
+                [2000., -2000.],
+                [2000., 2000.],
+                [-2000., 2000.],
+            ],
+            holes: vec![],
+        }],
+    };
+    water_store::put(&a.db, &water).unwrap();
+    water
+}
+
+#[test]
+fn world_water_uses_canonical_heights_without_materializing_local_authors() {
+    for (level, x, y, local) in [
+        (1, 0, 0, false),
+        (1, -16, -17, true),
+        (3, 16, -1, false),
+        (5, 0, 0, false),
+    ] {
+        let a = AtlasApplication::new().unwrap();
+        let water = large_lake(&a);
+        let cx = x * (1 << level);
+        let cy = y * (1 << level);
+        if local {
+            terrain_store::write_points(&a.db, &[(cx, cy, terrain::BASE)]).unwrap();
+        }
+        let mut computed = crate::atlas::change::Computed::default();
+        let delta = world_terrain_store::WorldTerrainDelta {
+            level,
+            before: vec![(x, y, None)],
+            after: vec![(x, y, Some(100.))],
+        };
+        world_terrain_store::apply(&a.db, &delta, true).unwrap();
+        computed.change.world_terrain = Some(delta);
+        a.trim_water(&mut computed).unwrap();
+        let grid = terrain_store::grid(&a.db, [-2000., -2000., 2000., 2000.]).unwrap();
+        let radius = 2 * (1 << level);
+        let cells = (cx - radius - 1..=cx + radius)
+            .flat_map(|x| (cy - radius - 1..=cy + radius).map(move |y| (x, y)))
+            .collect();
+        let expected = crate::atlas::regions::authored(water::trim(&water, &grid, &cells));
+        assert_ne!(expected, water.polygons);
+        if level == 1 && !local {
+            let mut resampled = grid.clone();
+            for sx in cx - radius - 3..=cx + radius + 3 {
+                for sy in cy - radius - 3..=cy + radius + 3 {
+                    resampled.insert((sx, sy), terrain::at(&grid, sx, sy));
+                }
+            }
+            assert_ne!(
+                expected,
+                crate::atlas::regions::authored(water::trim(&water, &resampled, &cells)),
+                "The fixture must detect the old second interpolation of inherited heights"
+            );
+        }
+        let change = computed.change.waters.unwrap();
+        assert_eq!(change.before, vec![water]);
+        assert_eq!(change.after.len(), 1);
+        assert_eq!(change.after[0].polygons, expected);
+        assert_eq!(grid.points.len(), usize::from(local));
+        assert!(computed.change.terrain.is_none());
+    }
+}
+
+fn begin_world_raise(a: &mut AtlasApplication) -> crate::atlas::Result<Value> {
+    a.request("beginTerrainStroke", json!({"version":a.status(),"strokeId":"world-water","brush":{"resolution":1,"mode":"raise","radius":20,"amount":100,"strength":1,"target":10,"points":[[0,0]]},"view":null}))
+}
+
+#[test]
+fn world_sections_trim_large_lake_and_history_restores_missing_authors() {
+    let mut a = AtlasApplication::new().unwrap();
+    let water = large_lake(&a);
+    begin_world_raise(&mut a).unwrap();
+    a.request("appendTerrainStroke", json!({"sessionId":a.session,"strokeId":"world-water","sequence":1,"points":[[100,0]],"view":null})).unwrap();
+    let after = all(&a);
+    let authors = world_terrain_store::read(&a.db, [-2000., -2000., 2000., 2000.]).unwrap();
+    assert_ne!(after, vec![water.clone()]);
+    assert_eq!(a.cursor, 1);
+    history(&mut a, false);
+    assert_eq!(all(&a), vec![water]);
+    assert!(
+        world_terrain_store::read(&a.db, [-2000., -2000., 2000., 2000.])
+            .unwrap()
+            .is_empty()
+    );
+    history(&mut a, true);
+    assert_eq!(all(&a), after);
+    assert_eq!(
+        world_terrain_store::read(&a.db, [-2000., -2000., 2000., 2000.]).unwrap(),
+        authors
+    );
+}
+
+#[test]
+fn world_water_failure_rolls_back_authors_and_contours() {
+    let mut a = AtlasApplication::new().unwrap();
+    let water = large_lake(&a);
+    a.db.execute_batch("CREATE TEMP TRIGGER fail_water BEFORE INSERT ON waters BEGIN SELECT RAISE(ABORT,'injected'); END;").unwrap();
+    let status = a.status();
+    assert!(begin_world_raise(&mut a).is_err());
+    assert_eq!(
+        serde_json::to_value(a.status()).unwrap(),
+        serde_json::to_value(status).unwrap()
+    );
+    assert_eq!(all(&a), vec![water]);
+    assert!(
+        world_terrain_store::read(&a.db, [-2000., -2000., 2000., 2000.])
+            .unwrap()
+            .is_empty()
+    );
+    assert!(terrain_store::grid(&a.db, [-100., -100., 100., 100.])
+        .unwrap()
+        .points
+        .is_empty());
+}
+
+#[test]
+fn world_water_budget_counts_union_not_overlapping_supports() {
+    let a = AtlasApplication::new().unwrap();
+    large_lake(&a);
+    let delta = world_terrain_store::WorldTerrainDelta {
+        level: 4,
+        before: vec![],
+        after: (0..5)
+            .flat_map(|x| (0..5).map(move |y| (x, y, Some(-99.))))
+            .collect(),
+    };
+    world_terrain_store::apply(&a.db, &delta, true).unwrap();
+    let mut computed = crate::atlas::change::Computed::default();
+    computed.change.world_terrain = Some(delta);
+    // 25 supports each touch 66x66 local cells (>100000 in total),
+    // but their union contains only 130x130 cells. The lake remains wet.
+    a.trim_water(&mut computed).unwrap();
+    assert!(computed.change.waters.is_none());
+}
+
+#[test]
+fn confirmed_split_water_tiles_equal_fresh_reads_with_unaffected_lakes() {
+    let mut a = AtlasApplication::new().unwrap();
+    request_edit(&mut a, "commit", paint(json!([[40, 40], [120, 40]]), 20.));
+    request_edit(&mut a, "commit", paint(json!([[120, 120]]), 10.));
+    let before = all(&a);
+    assert_eq!(before.len(), 2);
+    let view = json!({"level":0,"tiles":[[0,0]],"pixels":32});
+    a.request("beginTerrainStroke", json!({"version":a.status(),"strokeId":"split-water","brush":{"resolution":0,"mode":"raise","radius":10,"amount":100,"strength":1,"target":10,"points":[[80,10]]},"view":view})).unwrap();
+    let reply = a.request("appendTerrainStroke", json!({"sessionId":a.session,"strokeId":"split-water","sequence":1,"points":[[80,70]],"view":view})).unwrap();
+    let after = all(&a);
+    assert_eq!(after.len(), 3);
+    let fresh = a.request("terrainTiles", view).unwrap();
+    assert_eq!(reply["surface"]["tiles"], fresh["tiles"]);
+    history(&mut a, false);
+    assert_eq!(all(&a), before);
+    history(&mut a, true);
+    assert_eq!(all(&a), after);
 }
