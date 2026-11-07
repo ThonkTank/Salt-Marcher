@@ -1,4 +1,4 @@
-import { drawn, paintedReady, selectObject } from "../support/editor";
+import { drawn, paintedReady, selectObject, screen } from "../support/editor";
 import { expect, test } from "../support/fixture";
 
 import { url } from "../support/editor";
@@ -226,16 +226,18 @@ test("a newer interior gesture survives an older held commit", async ({
   await page.getByRole("button", { name: "Innen öffnen" }).click();
   await expect(page.getByText("Ansicht wird geladen …")).toHaveCount(0);
   await page.getByRole("button", { name: "Radieren", exact: true }).click();
-  const box = (await page.getByTestId("atlas-canvas").boundingBox())!;
+  const first = await screen(page, [5.625, 5.625]);
+  const start = await screen(page, [10.625, 5.625]);
+  const end = await screen(page, [15.625, 10.625]);
   await page.evaluate(() => {
     window.atlasCalls = [];
     window.atlasHold = { cmd: "commit" };
   });
-  await page.mouse.click(box.x + 178, box.y + 138);
+  await page.mouse.click(first.x, first.y);
   await expect.poll(() => page.evaluate(() => !!window.atlasHeld)).toBe(true);
-  await page.mouse.move(box.x + 194, box.y + 138);
+  await page.mouse.move(start.x, start.y);
   await page.mouse.down();
-  await page.mouse.move(box.x + 210, box.y + 154);
+  await page.mouse.move(end.x, end.y);
   await page.evaluate(() => window.atlasRelease!());
   await expect
     .poll(() =>

@@ -327,7 +327,11 @@ Schreibaktionen oder Ziele außerhalb des bestätigten Bereichs frei.
 `interaction` berechnet Gesten; `useCanvasInput` besitzt DOM-Ereignisse,
 Koordinaten und Pointercapture. Bekannte Panelwechsel werden im Layoutschritt
 ausgemessen; echte Größenänderungen brechen die alte Geste vor Veröffentlichung
-des neuen Ausschnitts ab. Doppelte Resize-Meldungen verändern keine Geste.
+des neuen Ausschnitts ab. `useCamera` erhält bei Fenster-/Panelgrößenwechseln
+den Weltmittelpunkt anhand der letzten tatsächlich gemessenen Größe; die initiale
+Platzhaltergröße löst keine Verschiebung aus. Bei einer durch Karten-Pointerdown
+ausgelösten Auswahl bleibt stattdessen der Punkt unter dem Zeiger fest.
+Doppelte Resize-Meldungen verändern weder Kamera noch Geste.
 `useCanvasInput` übernimmt beim Karten-Pointerdown fokussierte Zahlenfelder
 für Zeichenwerkzeuge synchron vor dem Eingabesnapshot. Der Auswahlmodus behält
 seinen bisherigen Ablauf, damit ein Inspector-Write beim Fokusverlust die bereits

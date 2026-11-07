@@ -1,6 +1,8 @@
 import { editorUrl } from "../support/browserServer";
 import {
   finishRoad,
+  clickWorld,
+  screen,
   ready,
   paintedReady,
   selectObject,
@@ -240,9 +242,7 @@ test("house movement is continuous and cancels on return, escape and blur", asyn
   );
   await page.reload();
   await selectObject(page, "⌂ Haus 1");
-  const box = (await page.getByTestId("atlas-canvas").boundingBox())!,
-    x = box.x + 200,
-    y = box.y + 170;
+  const { x, y } = await screen(page, [12.5, 15.625]);
   await expect(page.getByText("Ansicht wird geladen …")).toHaveCount(0);
   await page.evaluate(() => {
     window.atlasCalls = [];
@@ -372,11 +372,7 @@ test("centered door on a rotated even-width house can be selected and converted"
   await selectObject(page, "⌂ Haus 1");
   await page.getByRole("button", { name: "Innen öffnen", exact: true }).click();
   await expect(page.getByText("Ansicht wird geladen …")).toHaveCount(0);
-  const box = (await page.getByTestId("atlas-canvas").boundingBox())!;
-  await page.mouse.click(
-    box.x + 160 + 32 * Math.cos(0.4),
-    box.y + 120 + 32 * Math.sin(0.4),
-  );
+  await clickWorld(page, [10 * Math.cos(0.4), 10 * Math.sin(0.4)]);
   await page.evaluate(() => {
     window.atlasCalls = [];
   });

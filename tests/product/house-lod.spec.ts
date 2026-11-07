@@ -39,7 +39,7 @@ async function camera(page: Page) {
   return snapshot;
 }
 
-// Viewport size follows the inspector layout; Camera owns only this transform.
+// Context entry preserves the camera when viewport dimensions stay unchanged.
 function transform(snapshot: Awaited<ReturnType<typeof camera>>) {
   return { x: snapshot.x, y: snapshot.y, scale: snapshot.scale };
 }
@@ -146,7 +146,15 @@ for (const { title, start, startScale, target, targetScale } of [
     expect(await calls(page, "commit")).toEqual([]);
     await selectObject(page, "⌂ Haus 1");
     const beforeOpen = await camera(page);
-    expect(transform(beforeOpen)).toEqual(transform(after));
+    expect(beforeOpen.scale).toBe(after.scale);
+    expect(beforeOpen.x - after.x).toBeCloseTo(
+      (beforeOpen.width - after.width) / 2,
+      3,
+    );
+    expect(beforeOpen.y - after.y).toBeCloseTo(
+      (beforeOpen.height - after.height) / 2,
+      3,
+    );
     await page
       .getByRole("button", { name: "Innen öffnen", exact: true })
       .click();
@@ -175,7 +183,7 @@ test("free double click uses current anchor geometry while an expanded viewport 
   await page.evaluate(() => {
     window.atlasHold = { cmd: "scene" };
   });
-  await page.setViewportSize({ width: 1440, height: 620 });
+  await page.setViewportSize({ width: 2400, height: 620 });
   await expect.poll(() => page.evaluate(() => !!window.atlasHeld)).toBe(true);
   expect(await page.evaluate(() => window.atlasPaint?.dataReady)).toBe(false);
   await page.mouse.dblclick(box.x + box.width / 2, box.y + box.height / 2);
@@ -184,4 +192,48 @@ test("free double click uses current anchor geometry while an expanded viewport 
   expect(await calls(page, "commit")).toEqual([]);
   await page.evaluate(() => window.atlasRelease!());
   await paintedReady(page);
+});
+
+test("tool panels preserve the world center before subsequent zoom and window resize", async ({
+  page,
+}) => {
+  await page.goto(url);
+  await paintedReady(page);
+  await page
+    .getByLabel("Ansichtsmaßstab")
+    .selectOption({ label: "Dorf / Stadtteil" });
+  await paintedReady(page);
+  const center = (c: Awaited<ReturnType<typeof camera>>) => [
+    (c.width / 2 - c.x) / c.scale,
+    (c.height / 2 - c.y) / c.scale,
+  ];
+  const baseline = await camera(page);
+  const anchor = center(baseline);
+  const expectCenter = async () => {
+    await paintedReady(page);
+    const current = await camera(page);
+    const actual = center(current);
+    // Canvas may quantize its matrix to float32; tolerate a small screen fraction.
+    expect(Math.abs(actual[0] - anchor[0]) * current.scale).toBeLessThan(0.01);
+    expect(Math.abs(actual[1] - anchor[1]) * current.scale).toBeLessThan(0.01);
+    return current;
+  };
+  await page.getByRole("button", { name: "Landschaft", exact: true }).click();
+  const withPanel = await expectCenter();
+  expect(withPanel.width).toBeLessThan(baseline.width);
+  expect(withPanel.scale).toBe(baseline.scale);
+  await page
+    .getByLabel("Ansichtsmaßstab")
+    .selectOption({ label: "Grundstück" });
+  await expectCenter();
+  await page.getByRole("button", { name: "Auswahl", exact: true }).click();
+  await expectCenter();
+  const beforeResize = await camera(page);
+  await page.setViewportSize({ width: 900, height: 620 });
+  await expect
+    .poll(async () => (await camera(page)).width)
+    .toBeLessThan(beforeResize.width);
+  await expectCenter();
+  expect((await status(page)).revision).toBe(0);
+  expect(await calls(page, "commit")).toEqual([]);
 });

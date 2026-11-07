@@ -1,4 +1,4 @@
-import { selectObject, commit } from "../support/editor";
+import { selectObject, commit, clickWorld } from "../support/editor";
 import {
   calls,
   clearCalls,
@@ -31,7 +31,7 @@ test("normal pointer capture release and subsequent Blur preserve an admitted ar
   const s = await screen(page, [30, 10]);
   await page.mouse.click(s.x, s.y); // select tool is explicit below
   await page.getByRole("button", { name: "Auswahl", exact: true }).click();
-  await page.mouse.click(s.x, s.y);
+  await clickWorld(page, [30, 10]);
   await ready(page);
   await clearCalls(page);
   await page.evaluate(() => {

@@ -6,19 +6,15 @@ Zuständigkeiten, [Produktvertrag](../product-contract.md) Verhalten und Grenzen
 
 ## Integration
 
-Main enthält die Höhen-/Landschaftsarbeiten, stabile Geometriecaches und
-Eingabekorrekturen. PR #1462 ist als `50595d7ff` integriert; der Main-Baum
-entspricht exakt dem geprüften Kandidaten `fd22c2927`. Seine vollständige CI
-besteht: 338 Rust-Librarytests und 32 Integration-/Adaptertests, fünf absichtlich
-ignorierte Fälle, 246 Browserfälle, Frontendtests, Typen, Transportverträge,
-Clippy, Format und Release-/RPM-Build.
+Main enthält die Höhen-/Landschaftsarbeiten, stabile Geometriecaches,
+Eingabekorrekturen, Kartenschrift, Dachdetails und die lokale Materialkachelzuordnung.
+PR #1464 ist als `288582d19` integriert; sein Baum entspricht exakt dem vollständig
+CI-geprüften Kandidaten `c7486a32b`. Damit sind auch die Änderungen aus #1463 enthalten.
 
-PR #1463 enthält Kartenschrift und begrenzte Dachdetails; PR #1464 ergänzt die
-lokale Kachelzuordnung für Materialabtastung. Beide enthalten korrigierte
-Pixelproben für schattierte Dächer und Auswahl außerhalb von Beschriftungen.
-Der aktuelle Folgekandidat ergänzt Terrainpfade im vorhandenen Rastercache.
-Für diese Folgeänderungen stehen vollständige CI-Freigaben und Main-Übernahmen
-noch aus. Lokale Ergebnisse ersetzen diese Freigaben nicht.
+Der aktuelle Folgekandidat ergänzt Terrainpfade im vorhandenen Rastercache und
+erhält den Weltmittelpunkt beim Öffnen von Werkzeugleisten und bei Fensterresizes.
+Seine Main-Abstammung berücksichtigt die bereits integrierten Änderungen.
+Vollständige CI-Freigabe und Main-Übernahme dieses Folgekandidaten stehen aus.
 
 ## Geprüfter Produktstand
 
@@ -46,6 +42,20 @@ lokale Font-Fallbacks können sich je Plattform unterscheiden. Dachdetails blend
 beim Herauszoomen aus. Innenhöfe und komplexe Dächer erhalten keine unpassenden
 Walmdachlinien. Dies ist ein erster Stilstand, keine abgeschlossene Gestaltung.
 
+Die gemischte Browser-Bedienprobe bestätigt Häuser, Wald, Lichtung und Dachfarbe
+über fünf Zoomstufen. Nach Öffnen der Landschaftsleiste bleiben Häuser beim
+Hineinzoomen im Bild. Lichtung und Dachfarbe sind sichtbar; Undo/Redo stellt
+pixelgenau den jeweiligen Zustand wieder her. Nahe und mittlere Screenshots
+wurden visuell geprüft. Ein Regressionstest belegt zuvor 122 CSS-Pixel
+Mittelpunktversatz und nach der Korrektur weniger als 0,01 Pixel.
+Kartenklick-Auswahl behält ihren Mausanker auch beim Inspectorwechsel.
+
+Für die Kamerakorrektur bestehen alle 248 Browserfälle über Gesamtlauf und
+gezielte Wiederholungen: 240 direkt, acht nach Anpassung bisher fester
+Testkoordinaten beziehungsweise Ausschnittannahmen. Die Assertions für Autoren,
+History und Nebenläufigkeit bleiben erhalten. Der neue Mittelpunkt-Test besteht
+für Werkzeugöffnung/-schließung, anschließenden Zoom und Fensterresize.
+
 ## Aktuelle Arbeits- und Prüfnachweise
 
 Außen-/Flussgeometrie behalten einen nützlichen Teil auch über dem Eintragsbudget.
@@ -66,14 +76,11 @@ beim nächsten Bild null statt 16.384 Koordinatenzugriffe. Geänderte Vorschauen
 verwenden neue Geometrie. Relief-/Materialdekodierung erfolgt erst bei Bedarf;
 dekodierte Reliefbytes werden nach der Bilderstellung nicht zusätzlich gehalten.
 
-436 Frontendtests, Typen und Format bestehen. 30 Raum-/Live-Höhenbrowserfälle
-bestehen; nach Entfernung der redundanten Reliefbytes bestehen erneut vier
-gezielte Fälle. Der unabhängige Canvasvergleich bestätigt exakte Pixelgleichheit
-über vier Kameratransformationen. Die Haus-/Raum-/Navigationsfälle prüfen außerdem
-unter anderem Dachbewegung, Auswahl, Innenraumwechsel und Präsentationsstabilität.
-Nach der zusätzlichen Cache-Aufnahmeprüfung bestehen erneut die komplette
-Frontendsuite und der Pixelvergleich. Der frische Release-/RPM-Build besteht
-(7,52 MiB). Die Speicher-/Arbeitsnachweise sind keine Latenzmessungen.
+Nach der Kamerakorrektur bestehen erneut 436 Frontendtests, Typen,
+Transportverträge und Format. Der frische Release-/RPM-Build besteht (7,52 MiB).
+Der unabhängige Canvasvergleich bestätigt exakte
+Pixelgleichheit der Terrainpfade über vier Kameratransformationen. Die
+Speicher-/Arbeitsnachweise sind keine Latenzmessungen.
 
 ## Offene Abnahmen
 
@@ -93,3 +100,5 @@ Feldumrisse und Assetimporte bleiben Folgeumfang.
 Aktuelle Belege unter `src-tauri/target/diagnostics/`: `feature-input-review/`,
 `roof-review/`, `roof-movement-final/`, `map-typography/`, `material-tile-index/`
 und `retained-terrain-contours/` beziehungsweise `retained-terrain-contours-final/`.
+Die Kamerakorrektur ist in `viewport-center-before/`, `viewport-center-full/`,
+`viewport-center-regressions/` und `mixed-scene-review/` belegt.
