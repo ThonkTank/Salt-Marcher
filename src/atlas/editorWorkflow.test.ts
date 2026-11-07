@@ -18,6 +18,7 @@ import {
   sameCandidate,
   transition,
   workflowPointer,
+  workflowView,
   workflowPreview,
   type EditorWorkflow,
   type ExactWorkflow,
@@ -51,6 +52,7 @@ function harness() {
   let objects: MapObject[] = structuredClone([road, parcel, house]);
   let context = "exterior:0";
   const ports: WorkflowPorts = {
+    terrain: { begin: vi.fn(), append: vi.fn(), finish: vi.fn() },
     gate: () => gate,
     context: () => context,
     source: () => ({
@@ -1299,7 +1301,7 @@ function brushGesture(kind: BrushKind): Gesture {
   };
 }
 
-it.each(["ground", "terrain", "water", "region"] as const)(
+it.each(["ground", "water", "region"] as const)(
   "coalesces %s previews, retains a visual result and rejects it after abort",
   async (kind) => {
     const h = harness();
@@ -1329,12 +1331,12 @@ it.each(["ground", "terrain", "water", "region"] as const)(
 );
 
 it.each(["context", "revision", "document", "unmount"] as const)(
-  "rejects held terrain display after %s replacement",
+  "rejects held water preview after %s replacement",
   async (replacement) => {
     const h = harness();
     const pending = deferred<Awaited<ReturnType<WorkflowPorts["inspect"]>>>();
     vi.mocked(h.ports.inspect).mockImplementationOnce(() => pending.promise);
-    const gesture = brushGesture("terrain");
+    const gesture = brushGesture("water");
     h.c.beginGesture(gesture);
     h.evaluate(gesture, [10, 0], false);
     const id = h.exact().candidate!.token.candidateId;
@@ -1352,7 +1354,7 @@ it.each(["context", "revision", "document", "unmount"] as const)(
   },
 );
 
-it.each(["ground", "terrain", "water", "region"] as const)(
+it.each(["ground", "water", "region"] as const)(
   "commits the final %s path once while a preview is held, without resurrecting it",
   async (kind) => {
     const h = harness(),
@@ -1478,3 +1480,71 @@ describe("river workflow ownership", () => {
     h.c.dispose();
   });
 });
+
+it("keeps a direct terrain gesture outside preview candidates across confirmed revisions", async () => {
+  const h = harness();
+  const source = vi.spyOn(h.ports, "source");
+  const gesture = brushGesture("terrain");
+  h.c.beginGesture(gesture);
+  expect(h.c.getSnapshot().kind).toBe("terrainGesture");
+  expect(h.ports.terrain.begin).toHaveBeenCalledTimes(1);
+  for (let i = 1; i <= 100; i++) {
+    h.evaluate(gesture, [i, 0], false);
+    h.gate = { ...h.gate, version: status(i), pending: 1 };
+    h.update();
+    const state = h.c.getSnapshot();
+    expect(state.kind).toBe("terrainGesture");
+    expect("candidate" in state).toBe(false);
+    expect("stage" in state).toBe(false);
+    expect(workflowView(state).actions).toMatchObject({
+      visible: false,
+      controls: false,
+      pending: false,
+      recheck: false,
+    });
+    const pointer = workflowPointer(state);
+    expect(pointer?.kind === "terrain" && pointer.brush.points.length).toBe(1);
+  }
+  h.evaluate(gesture, [101, 0], true);
+  await flush();
+  expect(h.ports.terrain.append).toHaveBeenCalledTimes(101);
+  expect(h.ports.terrain.finish).toHaveBeenCalledTimes(1);
+  expect(h.c.getSnapshot().kind).toBe("idle");
+  expect(source).not.toHaveBeenCalled();
+  expect(h.ports.inspect).not.toHaveBeenCalled();
+  expect(h.ports.commitExact).not.toHaveBeenCalled();
+});
+
+it.each([
+  "abort",
+  "context",
+  "document",
+  "exclusive",
+  "uncertain",
+  "unmount",
+] as const)(
+  "finishes accepted direct terrain points on %s without a preview rollback",
+  (boundary) => {
+    const h = harness();
+    const gesture = brushGesture("terrain");
+    h.c.beginGesture(gesture);
+    h.evaluate(gesture, [20, 0], false);
+    h.c.abortPointer(999);
+    expect(h.c.getSnapshot().kind).toBe("terrainGesture");
+    if (boundary === "context") h.context = "interior:house:0";
+    if (boundary === "document")
+      h.gate = { ...h.gate, version: { ...status(), sessionId: "new" } };
+    if (boundary === "exclusive") h.gate = { ...h.gate, exclusive: true };
+    if (boundary === "uncertain") h.gate = { ...h.gate, uncertain: true };
+    if (boundary === "abort") h.c.abortPointer(gesture.pointer);
+    else if (boundary === "unmount") h.c.dispose();
+    else h.update();
+    h.evaluate(gesture, [40, 0], true);
+    expect(h.c.getSnapshot().kind).toBe("idle");
+    expect(h.ports.terrain.begin).toHaveBeenCalledTimes(1);
+    expect(h.ports.terrain.append).toHaveBeenCalledTimes(1);
+    expect(h.ports.terrain.finish).toHaveBeenCalledTimes(1);
+    expect(h.ports.inspect).not.toHaveBeenCalled();
+    expect(h.ports.commitExact).not.toHaveBeenCalled();
+  },
+);

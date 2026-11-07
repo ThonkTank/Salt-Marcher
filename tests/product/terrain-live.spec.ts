@@ -1,5 +1,7 @@
 import {
   calls,
+  holdResponse,
+  releaseResponse,
   commit,
   ready,
   paintedReady,
@@ -309,3 +311,46 @@ test("world land follows a continuous stroke before release", async ({
   await paintedReady(page);
   expect(await row()).toEqual(final);
 });
+
+for (const held of ["beginTerrainStroke", "appendTerrainStroke"]) {
+  test(`direct height has no draft actions while ${held} is pending`, async ({
+    page,
+  }) => {
+    await page.goto(url);
+    await ready(page);
+    await page.getByRole("button", { name: "Höhen", exact: true }).click();
+    await paintedReady(page);
+    const p = await screen(page, [10, 10]);
+    await holdResponse(page, held);
+    await page.mouse.move(p.x, p.y);
+    await page.mouse.down();
+    await page.mouse.move(p.x + 100, p.y + 20, { steps: 20 });
+    await expect.poll(() => page.evaluate(() => !!window.atlasHeld)).toBe(true);
+    await expect(
+      page.getByRole("region", { name: "Planung abschließen" }),
+    ).toHaveCount(0);
+    await expect(
+      page.getByRole("button", { name: "Übernehmen", exact: true }),
+    ).toHaveCount(0);
+    await expect(
+      page.getByRole("button", { name: "Abbrechen", exact: true }),
+    ).toHaveCount(0);
+    expect(await calls(page, "preview")).toHaveLength(0);
+    await page.mouse.up();
+    expect(await calls(page, "endTerrainStroke")).toHaveLength(0);
+    await releaseResponse(page);
+    await settled(page);
+    await expect
+      .poll(async () => (await calls(page, "endTerrainStroke")).length)
+      .toBe(1);
+    expect(await calls(page, "appendTerrainStroke")).not.toHaveLength(0);
+    await page.getByRole("button", { name: "Rückgängig", exact: true }).click();
+    await ready(page);
+    await expect(
+      page.getByRole("button", { name: "Rückgängig", exact: true }),
+    ).toBeDisabled();
+    await expect(
+      page.getByRole("button", { name: "Wiederholen", exact: true }),
+    ).toBeEnabled();
+  });
+}

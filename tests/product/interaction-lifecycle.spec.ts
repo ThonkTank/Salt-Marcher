@@ -1,4 +1,4 @@
-import { selectObject } from "../support/editor";
+import { drawn, paintedReady, selectObject } from "../support/editor";
 import { expect, test } from "../support/fixture";
 
 import { url } from "../support/editor";
@@ -159,6 +159,7 @@ test("held lower and floor reads keep pixels and readiness coherent", async ({
   await page.getByRole("button", { name: "Geschoss +" }).click();
   await page.getByRole("button", { name: "Einpassen" }).click();
   await expect(page.getByText("Ansicht wird geladen …")).toHaveCount(0);
+  await paintedReady(page);
   const canvas = page.getByTestId("atlas-canvas");
   const pixels = () => canvas.evaluate((c: HTMLCanvasElement) => c.toDataURL());
   const original = await pixels();
@@ -170,15 +171,11 @@ test("held lower and floor reads keep pixels and readiness coherent", async ({
   await expect.poll(() => page.evaluate(() => !!window.atlasHeld)).toBe(true);
   await expect(page.getByText("Ansicht wird geladen …")).toBeVisible();
   // A rendered frame while the read is held must still use the published lower mode.
-  await page.evaluate(
-    () =>
-      new Promise<void>((resolve) =>
-        requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
-      ),
-  );
+  await drawn(page);
   expect(await pixels()).toBe(original);
   await page.evaluate(() => window.atlasRelease!());
   await expect(page.getByText("Ansicht wird geladen …")).toHaveCount(0);
+  await paintedReady(page);
   const withoutLower = await pixels();
   expect(withoutLower).not.toBe(original);
   await page.evaluate(() => {
@@ -187,15 +184,11 @@ test("held lower and floor reads keep pixels and readiness coherent", async ({
   await toggle.check();
   await expect.poll(() => page.evaluate(() => !!window.atlasHeld)).toBe(true);
   await expect(page.getByText("Ansicht wird geladen …")).toBeVisible();
-  await page.evaluate(
-    () =>
-      new Promise<void>((resolve) =>
-        requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
-      ),
-  );
+  await drawn(page);
   expect(await pixels()).toBe(withoutLower);
   await page.evaluate(() => window.atlasRelease!());
   await expect(page.getByText("Ansicht wird geladen …")).toHaveCount(0);
+  await paintedReady(page);
   expect(await pixels()).toBe(original);
   await page.evaluate(() => {
     window.atlasHold = { cmd: "interiorTile", floor: 0 };
@@ -205,8 +198,10 @@ test("held lower and floor reads keep pixels and readiness coherent", async ({
   await expect(page.getByText("Ansicht wird geladen …")).toBeVisible();
   await page.evaluate(() => window.atlasRelease!());
   await expect(page.getByText("Ansicht wird geladen …")).toHaveCount(0);
+  await paintedReady(page);
   await page.getByRole("button", { name: "Geschoss +" }).click();
   await expect(page.getByText("Ansicht wird geladen …")).toHaveCount(0);
+  await paintedReady(page);
   expect(await pixels()).toBe(original);
 });
 

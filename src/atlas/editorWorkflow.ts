@@ -255,6 +255,11 @@ type QueuedGestureWorkflow = Active & {
     { kind: "roomMove" | "interiorRectangle" | "stairs" }
   >;
 };
+// Confirmed terrain writes belong to the document queue, not preview phases.
+type TerrainGestureWorkflow = Active & {
+  kind: "terrainGesture";
+  pointer: Extract<Gesture, { kind: "terrain" }> & { water: false };
+};
 export type ExactWorkflow =
   DraftWorkflow | GeometryCheckedWorkflow | PopulateWorkflow | DeleteWorkflow;
 export type EditorWorkflow = Navigation &
@@ -265,6 +270,7 @@ export type EditorWorkflow = Navigation &
     | PopulateWorkflow
     | DeleteWorkflow
     | QueuedGestureWorkflow
+    | TerrainGestureWorkflow
   );
 export const idleWorkflow = (): EditorWorkflow => ({
   kind: "idle",
@@ -301,6 +307,7 @@ export const workflowPointer = (s: EditorWorkflow): Gesture | null =>
   (s.kind === "draft" ||
   s.kind === "geometry" ||
   s.kind === "queuedGesture" ||
+  s.kind === "terrainGesture" ||
   s.kind === "populate"
     ? (s.pointer ?? null)
     : null);

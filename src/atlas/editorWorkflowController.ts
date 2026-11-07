@@ -64,7 +64,7 @@ async function ownedEffect<T>(
 }
 
 export type WorkflowPorts = {
-  terrain?: {
+  terrain: {
     begin: (intent: Extract<Intent, { type: "terrainStroke" }>) => void;
     append: (
       points: Extract<Intent, { type: "terrainStroke" }>["brush"]["points"],
@@ -132,7 +132,7 @@ export class EditorWorkflowController {
     this.ports.cancelInspect();
   }
   cancel = () => {
-    this.ports.terrain?.finish();
+    this.ports.terrain.finish();
     this.stopCheck();
     this.dispatch({ type: "cancel" });
   };
@@ -260,16 +260,6 @@ export class EditorWorkflowController {
       });
   }
   private publish(state: EditorWorkflow, immediate = false) {
-    const pointer = workflowPointer(state);
-    if (this.ports.terrain && pointer?.kind === "terrain" && !pointer.water) {
-      this.dispatch({ type: "begin", state });
-      this.ports.terrain.begin({
-        type: "terrainStroke",
-        brush: pointer.brush,
-        view: pointer.view,
-      });
-      return;
-    }
     if (isOwner(state) && !state.pointer) {
       if (!state.candidate) {
         this.cancel();
@@ -531,6 +521,23 @@ export class EditorWorkflowController {
       return;
     }
     const pointer = structuredClone(gesture);
+    if (pointer.kind === "terrain" && !pointer.water) {
+      this.stopCheck();
+      this.dispatch({
+        type: "begin",
+        state: {
+          ...common,
+          kind: "terrainGesture",
+          pointer: { ...pointer, water: false },
+        },
+      });
+      this.ports.terrain.begin({
+        type: "terrainStroke",
+        brush: pointer.brush,
+        view: pointer.view,
+      });
+      return;
+    }
     const captured = captureGestureOperation(gesture, this.source(version));
     if (!captured.ok) {
       this.ports.error(captured.message);
@@ -625,19 +632,22 @@ export class EditorWorkflowController {
       return;
     }
     if (result.error) this.ports.error(result.error);
-    if (
-      this.ports.terrain &&
-      g.kind === "terrain" &&
-      !g.water &&
-      result.intent?.type === "terrainStroke"
-    ) {
-      this.ports.terrain.append(result.intent.brush.points, result.intent.view);
-      if (finish) this.ports.terrain.finish();
-      if (finish) this.dispatch({ type: "cancel" });
-      else if (s.kind === "geometry" && isExact(s))
+    if (s.kind === "terrainGesture") {
+      if (result.intent?.type === "terrainStroke")
+        this.ports.terrain.append(
+          result.intent.brush.points,
+          result.intent.view,
+        );
+      if (finish) {
+        this.ports.terrain.finish();
+        this.dispatch({ type: "cancel" });
+      } else if (result.gesture.kind === "terrain" && !result.gesture.water)
         this.dispatch({
           type: "begin",
-          state: geometryState(s, s.operation, result.gesture),
+          state: {
+            ...s,
+            pointer: { ...result.gesture, water: false },
+          },
         });
       return;
     }
@@ -960,8 +970,7 @@ export class EditorWorkflowController {
         this.cancel();
         return;
       }
-      const pointer = workflowPointer(s);
-      if (this.ports.terrain && pointer?.kind === "terrain" && !pointer.water) {
+      if (s.kind === "terrainGesture") {
         if (gate.exclusive) this.cancel();
         return;
       }
