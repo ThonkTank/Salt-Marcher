@@ -157,6 +157,7 @@ fn stroke_sampling_modes_limits_and_negative_tiles() {
     let brush = Brush {
         resolution: None,
         roughness: None,
+        feature_height: None,
         mode: BrushMode::Raise,
         radius: 25.,
         amount: 1.,

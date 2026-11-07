@@ -1,6 +1,18 @@
+import {
+  isFeatureBrush,
+  featureResolution,
+  terrainScreenRadius,
+} from "./featureBrush";
 import { useDevicePixelRatio } from "./useDevicePixelRatio";
 import { landAuthorResolution } from "./lod";
-import { decideLod, viewScale, zoomAt, type LodDecision } from "./lod";
+import {
+  decideLod,
+  viewScale,
+  zoomAt,
+  MIN_WORLD_SCALE,
+  MAX_SCALE,
+  type LodDecision,
+} from "./lod";
 import { prepareCanvasScene } from "./canvasScene";
 import { useRivers } from "./useRivers";
 import { useRegions } from "./useRegions";
@@ -441,14 +453,29 @@ export function useAtlasEditor(client: AtlasClient) {
     tools,
     tool,
     extending: draft?.kind === "extendRoad",
+    focusTerrainBrush: (radius: number) => {
+      if (workflowPointer(workflow.controller.getSnapshot())) return;
+      setCamera(
+        zoomAt(
+          camera,
+          [
+            (size.width / 2 - camera.x) / camera.scale,
+            (size.height / 2 - camera.y) / camera.scale,
+          ],
+          Math.max(MIN_WORLD_SCALE, Math.min(MAX_SCALE, 80 / radius)),
+        ),
+      );
+    },
     terrainBrushInfo: terrainBrushInfo(
       tool,
       workflowPointer(workflow.state),
       camera.scale,
-      tools.brush.radius,
-      tools.brush.mode === "land" || tools.brush.mode === "sea"
-        ? landAuthorResolution(camera.scale)
-        : lod.authorTerrainLevel,
+      terrainScreenRadius(tools.brush, camera.scale, tool === "water"),
+      isFeatureBrush(tools.brush.mode)
+        ? featureResolution(tools.brush.radius)
+        : tools.brush.mode === "land" || tools.brush.mode === "sea"
+          ? landAuthorResolution(camera.scale)
+          : lod.authorTerrainLevel,
     ),
   } satisfies ComponentProps<typeof ToolOptions>;
   const canvasPreview = rivers.preview ?? displayPreview ?? session.committed;
@@ -495,7 +522,11 @@ export function useAtlasEditor(client: AtlasClient) {
         region: regions.diameter / 2,
         ground: tools.ground.diameter / 2,
         scenery: tools.scenery.radius,
-        terrain: tools.brush.radius,
+        terrain: terrainScreenRadius(
+          tools.brush,
+          camera.scale,
+          tool === "water",
+        ),
       },
     ),
     canvasRef: canvas,

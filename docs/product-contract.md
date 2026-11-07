@@ -235,7 +235,7 @@ auf über 100.000 Zellen gewachsener Raum bleibt bewegbar.
 
 ## Bildschirmpinsel
 
-Boden, Höhen, Gewässer, Landschaft und Regionen verwenden einen runden Pinsel mit 8–512
+Boden, klassische Höhenmodi, Gewässer, Landschaft und Regionen verwenden einen runden Pinsel mit 8–512
 CSS-Pixeln Durchmesser, Vorgabe 80. `[`/`]` und Alt+Mausrad ändern ihn um etwa
 zehn Prozent. Der Kreis bleibt zwischen Strichen beim Zoomen gleich groß;
 Pointerdown fixiert den daraus berechneten Weltradius für die Geste. Aktive
@@ -406,6 +406,28 @@ bestimmen nicht die Meer-/Landgrenze.
 „Höhen“ funktioniert im gesamten Außenzoom. Vorgaben: Land, 80 CSS-Pixel
 Durchmesser, 1 Fuß Änderung, 25 % Stärke, Zielhöhe 10 Fuß. Anheben, Absenken,
 Glätten und Einebnen ergänzen Land/Meer. Änderung 0,1–100 Fuß, Stärke 0,01–1.
+Bergkette, Hügel und Schlucht erzeugen Relief entlang des Strichs. Die Größenwahl
+koppelt reale Breite und Reliefhöhe/-tiefe: Bergkette bietet Kleiner Berg
+(6 km / 300 m), Alpenmassiv (40 km / 2500 m) und Achttausender (100 km / 8500 m);
+Hügel bietet Sanfte Hügel (800 m / 30 m), Hügelland (2500 m / 100 m) und Hohe
+Hügel (6 km / 300 m); Schlucht bietet Kerbe (200 m / 30 m), Schlucht
+(1500 m / 200 m) und Großer Canyon (12 km / 1500 m). Breite (10–200.000 m)
+und Relief (1–9000 m) können einzeln geändert werden. Die Reliefangabe ist eine
+Formstärke relativ zum bestehenden Gelände, keine garantierte Gipfelhöhe über
+Meer; Wegüberlappungen verstärken den Auftrag. Wiederholtes Malen macht Hügel
+höher, Bergketten ausgeprägter und Schluchten tiefer. Halten allein verstärkt nicht.
+Unter Meeresspiegel entsteht Wasser; kleine Hügel auf tiefem Meeresboden können
+unter Wasser bleiben. Zum Aufbau einer Landschaft zuerst Land anlegen.
+
+Diese drei Modi behalten ihre reale Breite beim Zoomen. Modus- und Vorlagenwahl
+passen die Ansicht auf etwa 160 Pixel Pinseldurchmesser an; „Auf Pinselgröße zoomen“
+stellt diese Ansicht auch nach manueller Größenänderung her. Größenkurzbefehle
+ändern ihre reale Breite. Die Autorenauflösung hängt vom Radius ab (etwa 32–64
+Rasterintervalle pro Radius, mindestens 5 Fuß), nicht vom Kamerazoom. Bergketten
+verwenden unregelmäßige Grate, Hügel weiche ortsfeste Kuppen, Schluchten ein
+steiles negatives Querprofil. Die Form bleibt über Paketgrenzen stabil. Jeder
+Strich ist ein Undo-Schritt; gespeichert werden nur die entstandenen Höhenwerte.
+
 Land/Meer bietet die Küstenformen „Rund“ (Vorgabe) und „Kräuselig“.
 Kräuselig beginnt mit 65 % Küstenrauheit; der Regler reicht von 5 bis 100 %.
 Die Struktur formt Buchten und Landzungen innerhalb des Pinselkreises. Mehr
@@ -416,7 +438,7 @@ mit denselben Einstellungen würfelt die Küste nicht neu aus. Zoomen skaliert d
 bereits geschriebene Küste unverändert. Andere Höhenmodi verwenden keine Küstenrauheit.
 Für Land/Meer wird beim Pointerdown eine Autorenauflösung mit höchstens zwei
 CSS-Pixeln Rasterabstand gewählt, begrenzt durch das feinste 5-Fuß-Raster.
-Die übrigen Höhenmodi folgen ungefähr acht CSS-Pixeln. Die Auflösung bleibt
+Anheben, Absenken, Glätten und Einebnen folgen ungefähr acht CSS-Pixeln. Die Auflösung bleibt
 während des Strichs fixiert und ist unabhängig von Kachelbudgets und Darstellung.
 Ein grober Strich schreibt keine feineren Rasterpunkte. Land/Meer verwendet den
 Abstand zur gesamten überstrichenen Linie einschließlich runder Enden; die

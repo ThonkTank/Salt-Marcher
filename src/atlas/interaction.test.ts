@@ -452,6 +452,30 @@ describe("pure canvas input decisions", () => {
     },
   );
 
+  it.each([0.000002, 0.002, 0.4])(
+    "keeps feature width and author resolution fixed at zoom %s",
+    (scale) => {
+      const gesture = gestureOf(
+        state({
+          ...brushSettings,
+          brush: {
+            ...brushSettings.brush,
+            mode: "mountains",
+            radius: 65536,
+            featureHeight: 8000,
+          },
+          tool: "terrain",
+          camera: { x: 0, y: 0, scale },
+          lod: decideLod(scale),
+        }),
+      );
+      if (gesture?.kind !== "terrain") throw Error("Missing feature stroke");
+      expect(gesture.brush.radius).toBe(65536);
+      expect(gesture.brush.featureHeight).toBe(8000);
+      expect(gesture.brush.resolution).toBe(8);
+    },
+  );
+
   it("freezes physical author resolution at stroke start across later LOD changes", () => {
     const entered = decideLod(0.4);
     const lod = decideLod(0.37, entered);

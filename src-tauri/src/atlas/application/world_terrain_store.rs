@@ -140,19 +140,16 @@ impl AtlasApplication {
                 ]
             })
             .collect();
-        let source = super::terrain_store::brush_grid(&self.db, &regions, level)?;
-        if let Some(points) = source.layers.get(&level) {
-            original.extend(points.iter().map(|(&p, &z)| (p, z)));
+        let mut source = super::terrain_store::brush_grid(&self.db, &regions, level)?;
+        // Missing controls inherit only coarser authors, never the spline of
+        // neighbours just written by a previous packet at this same level.
+        if let Some(points) = source.layers.remove(&level) {
+            original.extend(points);
         }
         for (x, y) in candidates {
-            let z = source
-                .layers
-                .get(&level)
-                .and_then(|layer| layer.get(&(x, y)))
-                .copied()
-                .unwrap_or_else(|| {
-                    source.coarse_height([x as f64 * 5. * factor, y as f64 * 5. * factor])
-                });
+            let z = original.get(&(x, y)).copied().unwrap_or_else(|| {
+                source.coarse_height([x as f64 * 5. * factor, y as f64 * 5. * factor])
+            });
             g.insert((x, y), z);
         }
         let old = g.clone();

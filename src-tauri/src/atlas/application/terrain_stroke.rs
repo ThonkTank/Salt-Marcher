@@ -235,8 +235,8 @@ mod tests {
         );
     }
     #[test]
-    fn packet_partition_does_not_change_raise_or_land() {
-        for mode in ["raise", "land"] {
+    fn packet_partition_does_not_change_height_modes() {
+        for mode in ["raise", "land", "mountains", "hills", "canyon"] {
             let mut a = AtlasApplication::new().unwrap();
             let mut b = AtlasApplication::new().unwrap();
             start(&mut a, mode);
@@ -252,6 +252,57 @@ mod tests {
             );
         }
     }
+    #[test]
+    fn feature_strokes_coarse_partition_history_and_file() {
+        for mode in ["mountains", "hills", "canyon"] {
+            let mut a = AtlasApplication::new().unwrap();
+            let mut b = AtlasApplication::new().unwrap();
+            for app in [&mut a, &mut b] {
+                app.request("beginTerrainStroke", json!({"version":app.status(),"strokeId":"test",
+                    "brush":{"resolution":6,"mode":mode,"radius":6400.,"featureHeight":2000.,
+                    "amount":1.,"strength":0.25,"target":10.,"points":[[-3200.,-3200.]]},"view":null})).unwrap();
+            }
+            let points = json!([[-1280., 640.], [2240., 1920.], [3840., -320.]]);
+            append(&mut a, 1, points.clone());
+            for (i, point) in points.as_array().unwrap().iter().enumerate() {
+                append(&mut b, i as u32 + 1, json!([point]));
+            }
+            let values = |app: &AtlasApplication| {
+                app.db
+                    .prepare("SELECT level,x,y,z FROM terrain_layers ORDER BY level,x,y")
+                    .unwrap()
+                    .query_map([], |r| {
+                        Ok((
+                            r.get::<_, i32>(0)?,
+                            r.get::<_, i32>(1)?,
+                            r.get::<_, i32>(2)?,
+                            r.get::<_, f64>(3)?,
+                        ))
+                    })
+                    .unwrap()
+                    .collect::<rusqlite::Result<Vec<_>>>()
+                    .unwrap()
+            };
+            let painted = values(&a);
+            assert!(!painted.is_empty());
+            let partitioned = values(&b);
+            assert_eq!(painted.len(), partitioned.len(), "{mode} count");
+            for (a, b) in painted.iter().zip(&partitioned) {
+                assert_eq!((a.0, a.1, a.2), (b.0, b.1, b.2));
+                assert!((a.3 - b.3).abs() < 1e-8, "{mode}: {a:?} != {b:?}");
+            }
+            a.history(false).unwrap();
+            assert!(values(&a).is_empty());
+            a.history(true).unwrap();
+            assert_eq!(painted, values(&a));
+            let dir = tempfile::tempdir().unwrap();
+            let path = dir.path().join("feature.saltatlas");
+            a.save(&path).unwrap();
+            a.open(&path).unwrap();
+            assert_eq!(painted, values(&a));
+        }
+    }
+
     #[test]
     fn invalid_section_keeps_confirmed_history_and_ends_stroke() {
         let mut app = AtlasApplication::new().unwrap();

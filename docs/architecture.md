@@ -154,6 +154,16 @@ Ereignisanzahl, Abschnittsgrenzen oder Zufallszustand ab. Sie bleibt innerhalb d
 vorhandenen Kandidatenkorridors. Rauheit null erhält den runden Auftrag exakt.
 Der Wert gehört zum eingefrorenen Strichparameter, gespeichert werden weiterhin
 nur die entstandenen Höhenautoren; es gibt keine zusätzliche Vorschau oder Cacheebene.
+Die Reliefmodi Bergkette, Hügel und Schlucht nutzen denselben räumlich abgetasteten
+Auftrag wie Anheben/Absenken. Stetiges, radiusnormiertes Ortsrauschen moduliert
+positive Grat-/Kuppenprofile beziehungsweise ein negatives Schluchtprofil.
+`featureHeight` bleibt beim Skalieren in Autorenkoordinaten in Welt-Fuß erhalten.
+`featureBrush` übersetzt physische UI-Vorlagen aus Metern und wählt die
+Autorenauflösung aus dem Radius. Der UI-Radius dieser Modi ist physisch; Cursor
+und Transport rechnen ihn ausdrücklich um. Gewässer behalten ihren Pixelradius.
+Fehlende grobe Autoren erben ausschließlich höhere Auflösungslevel, nicht die
+Splinefläche bereits geschriebener Nachbarn ihres eigenen Levels. So erzeugen
+Abschnittsgrenzen keinen zusätzlichen Höhenauftrag.
 Lokale und grobe Pinsel sammeln die benötigten Autorenblöcke je Quellauflösung
 für den gesamten Abschnitt. Zeilenmasken erhalten exakt die Vereinigung der
 Lesebereiche samt Spline-Stützrand; überlappende Bereiche lesen denselben Block

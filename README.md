@@ -32,6 +32,8 @@ npm run desktop
 ```
 
 Neue Dokumente beginnen als Ozean; „Höhen → Land“ legt Land an.
+„Höhen → Bergkette / Hügel / Schlucht“ ergänzt Relief mit Größenvorlagen und
+einstellbarer Breite sowie Höhe/Tiefe in Metern.
 Werkzeuge, Gesten, Ansichtsauswahl und Dateiabläufe beschreibt der Produktvertrag.
 
 ## Entwicklung und automatisierte Abnahme
