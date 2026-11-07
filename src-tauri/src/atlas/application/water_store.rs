@@ -63,6 +63,71 @@ pub fn overlay(db: &Connection, b: Bounds, delta: Option<&WaterDelta>) -> Result
     water::check_budget(&out)?;
     Ok(out)
 }
+/// Reuse only the last point-local candidate set. Authors/delta stay fixed during
+/// one solve; a changed set replaces (rather than accumulates) prepared geometry.
+pub struct ContactReader<'a> {
+    db: &'a Connection,
+    delta: Option<&'a WaterDelta>,
+    changed_bounds: Vec<Option<Bounds>>,
+    candidates: Option<(Vec<String>, Vec<usize>)>,
+    prepared: Vec<water::PreparedWater>,
+    #[cfg(test)]
+    preparations: usize,
+}
+impl<'a> ContactReader<'a> {
+    pub fn new(db: &'a Connection, delta: Option<&'a WaterDelta>) -> Self {
+        Self {
+            db,
+            delta,
+            changed_bounds: delta
+                .into_iter()
+                .flat_map(|d| &d.after)
+                .map(|w| regions::bounds(&water::geometry(w)))
+                .collect(),
+            candidates: None,
+            prepared: vec![],
+            #[cfg(test)]
+            preparations: 0,
+        }
+    }
+    pub fn level_at(&mut self, p: crate::atlas::Point) -> Result<Option<f64>> {
+        let mut q = self.db.prepare_cached("SELECT w.id FROM waters w JOIN water_spatial s ON s.key=w.rowid WHERE s.min_x<=?1 AND s.max_x>=?1 AND s.min_y<=?2 AND s.max_y>=?2 ORDER BY w.id").map_err(storage_error)?;
+        let ids = q
+            .query_map(params![p[0], p[1]], |r| r.get::<_, String>(0))
+            .map_err(storage_error)?
+            .collect::<rusqlite::Result<Vec<_>>>()
+            .map_err(storage_error)?;
+        let changed: Vec<_> = self
+            .changed_bounds
+            .iter()
+            .enumerate()
+            .filter_map(|(i, b)| {
+                b.filter(|b| b[0] <= p[0] && b[2] >= p[0] && b[1] <= p[1] && b[3] >= p[1])
+                    .map(|_| i)
+            })
+            .collect();
+        let candidates = (ids, changed);
+        if self.candidates.as_ref() != Some(&candidates) {
+            // Release the previous set before loading another bounded selection.
+            self.candidates = None;
+            self.prepared.clear();
+            // Keep the exact existing point-local budget and overlay semantics.
+            let waters = overlay(self.db, [p[0], p[1], p[0], p[1]], self.delta)?;
+            self.prepared = waters.iter().map(water::PreparedWater::new).collect();
+            self.candidates = Some(candidates);
+            #[cfg(test)]
+            {
+                self.preparations += 1;
+            }
+        }
+        Ok(self
+            .prepared
+            .iter()
+            .filter_map(|w| w.level_at(p))
+            .min_by(f64::total_cmp))
+    }
+}
+
 pub fn put(db: &Connection, w: &WaterBody) -> Result<()> {
     water::validate(w)?;
     let b = regions::bounds(&water::geometry(w)).ok_or_else(|| invalid("Leeres Gewässer"))?;
@@ -509,4 +574,114 @@ pub fn overview(db: &Connection, b: Bounds, step: f64) -> Result<Vec<WaterBody>>
         }
     }
     Ok(out)
+}
+
+#[cfg(test)]
+mod contact_tests {
+    use super::*;
+    use crate::atlas::{application::AtlasApplication, regions::RegionPolygon, Point};
+
+    fn rectangle(a: f64, b: f64) -> Vec<Point> {
+        vec![[a, a], [b, a], [b, b], [a, b]]
+    }
+    fn lake(id: &str, level: f64, a: f64, b: f64) -> WaterBody {
+        WaterBody {
+            id: id.into(),
+            level,
+            polygons: vec![RegionPolygon {
+                outer: rectangle(a, b),
+                holes: vec![],
+            }],
+        }
+    }
+    #[test]
+    fn prepared_contacts_match_point_local_reference_and_reuse_candidate_set() {
+        let app = AtlasApplication::new().unwrap();
+        let mut main = lake("main", 20., -20., 20.);
+        main.polygons[0].holes.push(rectangle(-5., 5.));
+        main.polygons.push(RegionPolygon {
+            outer: rectangle(-1., 1.),
+            holes: vec![],
+        });
+        let other = lake("other", 7., 12., 18.);
+        put(&app.db, &main).unwrap();
+        put(&app.db, &other).unwrap();
+        let delta = WaterDelta {
+            before: vec![main.clone(), other.clone()],
+            after: vec![lake("main", 30., 100., 120.), lake("new", 3., -8., 8.)],
+        };
+        for delta in [None, Some(&delta)] {
+            let mut reader = ContactReader::new(&app.db, delta);
+            for p in [
+                [-30., 0.],
+                [-20., 0.],
+                [-15., 10.],
+                [-5., 0.],
+                [3., 3.],
+                [0., 0.],
+                [14., 14.],
+                [100., 100.],
+                [110., 110.],
+                [200., 200.],
+            ] {
+                let reference = overlay(&app.db, [p[0], p[1], p[0], p[1]], delta).unwrap();
+                assert_eq!(
+                    reader.level_at(p).unwrap(),
+                    water::level_at(&reference, p),
+                    "point {p:?}"
+                );
+            }
+        }
+        let mut reader = ContactReader::new(&app.db, None);
+        for i in 0..100 {
+            assert_eq!(
+                reader.level_at([-15. + i as f64 / 100., 10.]).unwrap(),
+                Some(20.)
+            );
+        }
+        assert_eq!(reader.preparations, 1);
+        assert_eq!(reader.prepared.len(), 1);
+        assert_eq!(reader.level_at([14., 14.]).unwrap(), Some(7.));
+        assert_eq!(reader.prepared.len(), 2);
+        assert_eq!(reader.level_at([200., 200.]).unwrap(), None);
+        assert!(reader.prepared.is_empty());
+        drop(reader);
+        let updated = lake("main", 40., -20., 20.);
+        put(&app.db, &updated).unwrap();
+        assert_eq!(
+            ContactReader::new(&app.db, None)
+                .level_at([0., 0.])
+                .unwrap(),
+            Some(40.)
+        );
+    }
+    #[test]
+    fn contact_reader_keeps_the_existing_point_local_contour_budget() {
+        let app = AtlasApplication::new().unwrap();
+        // Deliberately malformed stored data: reject at the existing read budget,
+        // before constructing contact geometry, even if an overlay removes it.
+        let mut oversized = lake("too-many", 10., -1., 1.);
+        oversized.polygons[0].outer = vec![[0., 0.]; water::POINT_LIMIT + 1];
+        app.db
+            .execute(
+                "INSERT INTO waters VALUES(?1,?2,-1,-1,1,1)",
+                params![oversized.id, serde_json::to_string(&oversized).unwrap()],
+            )
+            .unwrap();
+        let delta = WaterDelta {
+            before: vec![oversized],
+            after: vec![],
+        };
+        for delta in [None, Some(&delta)] {
+            let reference = overlay(&app.db, [0., 0., 0., 0.], delta).unwrap_err();
+            let mut reader = ContactReader::new(&app.db, delta);
+            assert_eq!(
+                reader.level_at([0., 0.]).unwrap_err().to_string(),
+                reference.to_string()
+            );
+            assert_eq!(reader.preparations, 0);
+            assert!(reader.prepared.is_empty());
+            assert_eq!(reader.level_at([10., 10.]).unwrap(), None);
+        }
+    }
 }

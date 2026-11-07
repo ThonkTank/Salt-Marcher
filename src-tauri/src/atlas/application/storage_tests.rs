@@ -1273,7 +1273,7 @@ fn height_import_late_failures_preserve_active_session_and_source() {
     for sql in [
         "INSERT INTO terrain VALUES(20000001,0,1.0)",
         "INSERT INTO terrain_layers VALUES(2,20000000,0,1.0)",
-        "INSERT INTO ground_tiles VALUES(0,0,x'01')",
+        "INSERT INTO ground_tiles VALUES(0,0,0,x'01')",
     ] {
         std::fs::write(&path, &pristine).unwrap();
         let db = Connection::open(&path).unwrap();

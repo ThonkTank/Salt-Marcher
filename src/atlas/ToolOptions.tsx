@@ -1,3 +1,10 @@
+import {
+  featurePreset,
+  featurePresets,
+  isFeatureBrush,
+  metres,
+  terrainScreenRadius,
+} from "./featureBrush";
 import type { terrainBrushInfo as projectTerrainBrushInfo } from "./editorView";
 import { GroundControls } from "./GroundControls";
 import { RoughnessControls } from "./RoughnessControls";
@@ -42,10 +49,12 @@ export function ToolOptions({
   tool,
   extending,
   terrainBrushInfo,
+  focusTerrainBrush,
 }: {
   tools: EditorTools;
   tool: Tool;
   extending: boolean;
+  focusTerrainBrush: (radius: number) => void;
   terrainBrushInfo: ReturnType<typeof projectTerrainBrushInfo>;
 }) {
   const {
@@ -71,6 +80,13 @@ export function ToolOptions({
     changeRoughness,
     newVariation,
   } = tools;
+  const featureIndex = isFeatureBrush(brush.mode)
+    ? featurePresets[brush.mode].findIndex(
+        (p) =>
+          Math.abs(p.width - brush.radius * 2 * metres) < 0.01 &&
+          Math.abs(p.height - (brush.featureHeight ?? 100) * metres) < 0.01,
+      )
+    : -1;
   return (
     <div className="atlas-settings">
       <h2>{toolLabels[tool].label}</h2>
@@ -123,11 +139,15 @@ export function ToolOptions({
         <>
           <NumberField
             label="Pinselgröße (Pixel)"
-            value={brush.radius * 2}
+            value={terrainScreenRadius(brush, 1, true) * 2}
             min={8}
             max={512}
             onChange={(diameter) =>
-              changeBrush({ ...brush, radius: diameter / 2 })
+              changeBrush({
+                ...brush,
+                mode: isFeatureBrush(brush.mode) ? "land" : brush.mode,
+                radius: diameter / 2,
+              })
             }
           />
           <TerrainBrushInfo info={terrainBrushInfo} />
@@ -154,12 +174,26 @@ export function ToolOptions({
             options={{
               land: "Land",
               sea: "Meer",
+              mountains: "Bergkette",
+              hills: "Hügel",
+              canyon: "Schlucht",
               raise: "Anheben",
               lower: "Absenken",
               smooth: "Glätten",
               flatten: "Einebnen",
             }}
-            onChange={(mode) => changeBrush({ ...brush, mode })}
+            onChange={(mode) => {
+              if (isFeatureBrush(mode)) {
+                const next = featurePreset(brush, mode, 1);
+                changeBrush(next);
+                focusTerrainBrush(next.radius);
+              } else
+                changeBrush({
+                  ...brush,
+                  mode,
+                  radius: isFeatureBrush(brush.mode) ? 40 : brush.radius,
+                });
+            }}
           />
           {(brush.mode === "land" || brush.mode === "sea") && (
             <>
@@ -199,13 +233,71 @@ export function ToolOptions({
               )}
             </>
           )}
-          <NumberField
-            label="Pinselgröße (Pixel)"
-            value={brush.radius * 2}
-            min={8}
-            max={512}
-            onChange={(radius) => changeBrush({ ...brush, radius: radius / 2 })}
-          />
+          {isFeatureBrush(brush.mode) ? (
+            <>
+              <SelectField
+                label="Geländegröße"
+                value={String(featureIndex)}
+                options={{
+                  ...(featureIndex === -1 ? { "-1": "Eigene Größe" } : {}),
+                  ...Object.fromEntries(
+                    featurePresets[brush.mode].map((p, i) => [
+                      String(i),
+                      p.label,
+                    ]),
+                  ),
+                }}
+                onChange={(index) => {
+                  if (index === "-1" || !isFeatureBrush(brush.mode)) return;
+                  const next = featurePreset(brush, brush.mode, Number(index));
+                  changeBrush(next);
+                  focusTerrainBrush(next.radius);
+                }}
+              />
+              <NumberField
+                label="Breite (Meter)"
+                value={Math.round(brush.radius * 2 * metres)}
+                min={10}
+                max={200000}
+                onChange={(width) =>
+                  changeBrush({ ...brush, radius: width / (2 * metres) })
+                }
+              />
+              <NumberField
+                label={
+                  brush.mode === "canyon"
+                    ? "Relieftiefe (Meter)"
+                    : "Reliefhöhe (Meter)"
+                }
+                value={Math.round((brush.featureHeight ?? 100) * metres)}
+                min={1}
+                max={9000}
+                onChange={(height) =>
+                  changeBrush({ ...brush, featureHeight: height / metres })
+                }
+              />
+              <button onClick={() => focusTerrainBrush(brush.radius)}>
+                Auf Pinselgröße zoomen
+              </button>
+              <small>
+                Breite bleibt beim Zoomen gleich. Relief pro Zug, abhängig von
+                Form und Überlappung. Erneutes Übermalen verstärkt das Gelände.
+                {brush.mode === "canyon"
+                  ? " Unter dem Meeresspiegel erscheint Wasser."
+                  : ""}
+              </small>
+            </>
+          ) : (
+            <NumberField
+              label="Pinselgröße (Pixel)"
+              value={brush.radius * 2}
+              min={8}
+              max={512}
+              onChange={(radius) =>
+                changeBrush({ ...brush, radius: radius / 2 })
+              }
+            />
+          )}
           <TerrainBrushInfo info={terrainBrushInfo} />
           {(brush.mode === "raise" || brush.mode === "lower") && (
             <NumberField

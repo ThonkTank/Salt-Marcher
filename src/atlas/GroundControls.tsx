@@ -1,4 +1,4 @@
-import { NumberField } from "./Fields";
+import { NumberField, SelectField } from "./Fields";
 import type { EditorTools } from "./useEditorTools";
 const hex = (c: number[]) =>
   "#" + c.map((v) => v.toString(16).padStart(2, "0")).join("");
@@ -31,6 +31,21 @@ export function GroundControls({ tools }: { tools: EditorTools }) {
   );
   return (
     <>
+      <SelectField
+        label="Farbebene"
+        value={g.layer ?? "soil"}
+        options={{ soil: "Boden", rock: "Fels" }}
+        onChange={(layer) => {
+          change({ ...g, layer });
+          tools.changeGroundPicker(false);
+        }}
+      />
+      <small>
+        {g.layer === "rock"
+          ? "Felsfarbe erscheint an steilen Hängen. Radieren legt die natürliche Felsfarbe frei."
+          : "Bodenfarbe bleibt unabhängig von der Felsfarbe."}{" "}
+        Schnee liegt über beiden Ebenen.
+      </small>
       <div
         className="ground-buttons"
         role="group"
@@ -128,7 +143,7 @@ export function GroundControls({ tools }: { tools: EditorTools }) {
       </button>
       <small>
         {tools.groundPicker
-          ? "Auf den Boden klicken: Farbe aufnehmen."
+          ? "Auf die Karte klicken: Farbe der gewählten Ebene aufnehmen."
           : "Ziehen oder halten: malen · Loslassen: übernehmen · Escape: abbrechen. [ / ] oder Alt+Mausrad: Größe."}
       </small>
     </>

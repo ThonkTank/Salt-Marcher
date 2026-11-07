@@ -1,5 +1,5 @@
 import { tileRequest } from "./lod";
-import { decodeBytes, prepareReliefSampler } from "./terrainRaster";
+import { decodeBytes, prepareMaterialSampler } from "./terrainRaster";
 import type { TerrainResponse } from "./generated/TerrainResponse";
 import type { GroundArgs } from "./generated/GroundArgs";
 import type { GroundResponse } from "./generated/GroundResponse";
@@ -8,6 +8,10 @@ import type { GroundTile } from "./generated/GroundTile";
 import type { Bounds, WorldPoint } from "./model";
 import { BudgetCache } from "./budgetCache";
 import { CACHE_BUDGETS } from "./cacheBudgets";
+
+const soilBase = [178, 185, 151],
+  rockBase = [145, 142, 137],
+  snowBase = [245, 247, 250];
 
 const decoded = new WeakMap<GroundTile, Uint8Array>();
 function groundPixels(tile: GroundTile): Uint8Array {
@@ -24,6 +28,7 @@ export function groundRequest(bounds: Bounds, level: number): GroundArgs {
 export function groundColorAt(
   view: GroundResponse | undefined,
   point: WorldPoint,
+  layer: "soil" | "rock" = "soil",
 ): [number, number, number] | null {
   if (!view) return null;
   const step = 2 ** view.level,
@@ -34,11 +39,12 @@ export function groundColorAt(
   const tile = view.tiles.find((t) => t.x === tx && t.y === ty);
   if (!tile) return null;
   const i =
+    (layer === "rock" ? 66 * 66 * 4 : 0) +
     ((Math.floor(y) - ty * 64 + 1) * 66 + Math.floor(x) - tx * 64 + 1) * 4;
   const pixels = groundPixels(tile);
-  const a = pixels[i + 3] / 255;
-  const base = [178, 185, 151];
-  return base.map((c, k) => Math.round(pixels[i + k] + c * (1 - a))) as [
+  const a = (pixels[i + 3] ?? 0) / 255;
+  const base = layer === "rock" ? rockBase : soilBase;
+  return base.map((c, k) => Math.round((pixels[i + k] ?? 0) + c * (1 - a))) as [
     number,
     number,
     number,
@@ -65,7 +71,7 @@ export class GroundPainter {
     c.globalCompositeOperation = "source-over";
     const step = 2 ** view.level,
       width = 64 * step;
-    const shadeAt = terrain ? prepareReliefSampler(terrain) : undefined;
+    const materialAt = terrain ? prepareMaterialSampler(terrain) : undefined;
     for (const tile of view.tiles) {
       // Include the pixel halo and all four relief samples. Compare immutable
       // tiles, not response wrappers: panning often publishes the same surface.
@@ -95,18 +101,27 @@ export class GroundPainter {
         const data = context.createImageData(66, 66);
         const pixels = groundPixels(tile);
         for (let i = 0; i < data.data.length; i += 4) {
-          const a = pixels[i + 3];
-          let shade = 1;
-          if (a && terrain) {
-            const x = (tile.x * 64 + ((i / 4) % 66) - 0.5) * step,
-              y = (tile.y * 64 + Math.floor(i / 4 / 66) - 0.5) * step;
-            shade = shadeAt!(x, y);
+          const soilAlpha = pixels[i + 3] / 255;
+          const rockAt = i + 66 * 66 * 4;
+          const rockAlpha = (pixels[rockAt + 3] ?? 0) / 255;
+          const alpha = Math.max(soilAlpha, rockAlpha);
+          if (!alpha) continue;
+          const x = (tile.x * 64 + ((i / 4) % 66) - 0.5) * step;
+          const y = (tile.y * 64 + Math.floor(i / 4 / 66) - 0.5) * step;
+          const [rock, snow, shade] = materialAt?.(x, y) ?? [0, 0, 1];
+          // Exact overlay over the automatic material mixture. Each pigment
+          // replaces only its own base color; snow remains above both layers.
+          for (let k = 0; k < 3; k++) {
+            const soil = pixels[i + k] + soilBase[k] * (alpha - soilAlpha);
+            const stone =
+              (pixels[rockAt + k] ?? 0) + rockBase[k] * (alpha - rockAlpha);
+            data.data[i + k] = Math.round(
+              (((soil * (1 - rock) + stone * rock) / alpha) * (1 - snow) +
+                snowBase[k] * snow) *
+                shade,
+            );
           }
-          for (let k = 0; k < 3; k++)
-            data.data[i + k] = a
-              ? Math.round(((pixels[i + k] * 255) / a) * shade)
-              : 0;
-          data.data[i + 3] = a;
+          data.data[i + 3] = Math.round(alpha * 255);
         }
         context.putImageData(data, 0, 0);
         this.cache.set(

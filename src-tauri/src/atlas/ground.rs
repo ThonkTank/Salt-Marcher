@@ -3,28 +3,44 @@ use super::{errors::ensure, geometry::valid_point, Result, Status};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 pub const SIDE: usize = 64;
-pub const BYTES: usize = SIDE * SIDE * 4;
+pub const PLANE_BYTES: usize = SIDE * SIDE * 4;
+/// Two independent premultiplied RGBA planes: soil, then rock.
+pub const BYTES: usize = PLANE_BYTES * 2;
 pub type Tiles = BTreeMap<(u8, i32, i32), Vec<u8>>;
 /// Reduce one child tile into its quadrant of a parent, retaining premultiplied channels.
 pub(super) fn downsample_quadrant(parent: &mut [u8], child: &[u8], cx: usize, cy: usize) {
-    for py in 0..SIDE / 2 {
-        for px in 0..SIDE / 2 {
-            for c in 0..4 {
-                let i = (py * 2 * SIDE + px * 2) * 4 + c;
-                let sum = child[i] as u16
-                    + child[i + 4] as u16
-                    + child[i + SIDE * 4] as u16
-                    + child[i + SIDE * 4 + 4] as u16;
-                parent[((cy * (SIDE / 2) + py) * SIDE + cx * (SIDE / 2) + px) * 4 + c] =
-                    ((sum + 2) / 4) as u8;
+    for (parent, child) in parent
+        .as_chunks_mut::<PLANE_BYTES>()
+        .0
+        .iter_mut()
+        .zip(child.as_chunks::<PLANE_BYTES>().0.iter())
+    {
+        for py in 0..SIDE / 2 {
+            for px in 0..SIDE / 2 {
+                for c in 0..4 {
+                    let i = (py * 2 * SIDE + px * 2) * 4 + c;
+                    let sum = child[i] as u16
+                        + child[i + 4] as u16
+                        + child[i + SIDE * 4] as u16
+                        + child[i + SIDE * 4 + 4] as u16;
+                    parent[((cy * (SIDE / 2) + py) * SIDE + cx * (SIDE / 2) + px) * 4 + c] =
+                        ((sum + 2) / 4) as u8;
+                }
             }
         }
     }
 }
+
 #[cfg_attr(test, derive(ts_rs::TS))]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct GroundBrush {
+    #[serde(default)]
+    #[cfg_attr(test, ts(optional))]
+    pub resolution: Option<u8>,
+    #[serde(default)]
+    #[cfg_attr(test, ts(optional))]
+    pub layer: Option<GroundLayer>,
     pub mode: GroundMode,
     pub tip: GroundTip,
     pub color: [u8; 3],
@@ -35,6 +51,14 @@ pub struct GroundBrush {
     /// World x/y and elapsed milliseconds, starting at zero.
     pub points: Vec<[f64; 3]>,
 }
+#[cfg_attr(test, derive(ts_rs::TS))]
+#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum GroundLayer {
+    Soil,
+    Rock,
+}
+
 #[cfg_attr(test, derive(ts_rs::TS))]
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -62,6 +86,7 @@ pub struct GroundArgs {
 pub struct GroundTile {
     pub x: i32,
     pub y: i32,
+    /// Base64 of two 66×66 premultiplied RGBA planes: soil, then rock, including halos.
     #[serde(with = "pixel_wire")]
     #[cfg_attr(test, ts(type = "string"))]
     pub pixels: Vec<u8>,
@@ -74,9 +99,18 @@ pub struct GroundResponse {
     pub tiles: Vec<GroundTile>,
 }
 #[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct GroundAuthorTile {
+    pub level: u8,
+    pub x: i32,
+    pub y: i32,
+    /// Empty means absent; transparent tiles override inherited color.
+    #[serde(with = "pixel_wire")]
+    pub pixels: Vec<u8>,
+}
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct GroundDelta {
-    pub before: Vec<GroundTile>,
-    pub after: Vec<GroundTile>,
+    pub before: Vec<GroundAuthorTile>,
+    pub after: Vec<GroundAuthorTile>,
 }
 
 fn noise(x: f64, y: f64, seed: u32) -> f64 {
@@ -115,7 +149,7 @@ pub fn coverage(brush: &GroundBrush) -> Result<BTreeMap<(i32, i32), f64>> {
     )?;
     ensure(
         brush.diameter.is_finite()
-            && (0.002..=20_000_000.0).contains(&brush.diameter)
+            && (0.002..=256_000_000.0).contains(&brush.diameter)
             && brush.opacity.is_finite()
             && (0.01..=1.0).contains(&brush.opacity)
             && brush.flow.is_finite()
@@ -262,6 +296,8 @@ mod tests {
     use super::*;
     fn brush() -> GroundBrush {
         GroundBrush {
+            resolution: None,
+            layer: None,
             mode: GroundMode::Paint,
             tip: GroundTip::Soft,
             color: [80, 130, 60],

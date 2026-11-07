@@ -1,3 +1,8 @@
+import {
+  isFeatureBrush,
+  resizeFeatureRadius,
+  terrainScreenRadius,
+} from "./featureBrush";
 import type { TerrainFollow } from "./generated/TerrainFollow";
 import type { GroundBrush } from "./generated/GroundBrush";
 import type { SceneryBrush } from "./generated/SceneryBrush";
@@ -160,7 +165,19 @@ export function useEditorTools(options: Options) {
         resizeBrushDiameter(diameter, factor);
       if (tool === "terrain" || tool === "water")
         update({
-          brush: { ...input.brush, radius: resize(input.brush.radius * 2) / 2 },
+          brush: {
+            ...input.brush,
+            mode:
+              tool === "water" && isFeatureBrush(input.brush.mode)
+                ? "land"
+                : input.brush.mode,
+            radius:
+              tool === "terrain" && isFeatureBrush(input.brush.mode)
+                ? resizeFeatureRadius(input.brush.radius, factor)
+                : resize(
+                    terrainScreenRadius(input.brush, 1, tool === "water") * 2,
+                  ) / 2,
+          },
         });
       else if (tool === "scenery")
         update({

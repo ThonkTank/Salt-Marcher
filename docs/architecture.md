@@ -63,7 +63,15 @@ und deren Höchstwert. Die Fachmodule validieren und rekonstruieren ihre Daten.
 Arbeitsindizes sind abgeleitet und werden beim Import neu aufgebaut:
 `terrain_blocks` vor dem Flussimport, die Bodenfarbpyramide nach dem Flussimport.
 `ground_store` verwendet beim Wiederaufbau dieselbe Rundung vormultiplizierter
-Farben wie bei interaktiven Writes. SQLite kann Sortierspeicher benötigen.
+Farben wie bei interaktiven Writes. Elternraster entstehen vollständig aus vier
+Kindquadranten; ein vorheriger Farb-Read des überschriebenen Elternrasters entfällt. Die Autorenkacheln tragen eine Auflösungsstufe.
+Fehlende Kacheln erben vom nächsten gröberen Autor; vorhandene feinere Autoren
+werden bei grobem Übermalen mit aktualisiert. Transparente Autoren und fehlende
+Autoren sind auch in Historydeltas verschieden. `ground_lod` enthält ausschließlich
+abgeleitete Übersichten; deren betroffene Vorfahren und vorhandene Nachfahren
+werden nach Änderungen neu aufgelöst. Import hält Kachelschlüssel und jeweils
+einen Eltern-/Kindfarbsatz, keine vollständige Sammlung aller Farbpixel.
+SQLite kann Sortierspeicher benötigen.
 Dateischema, gespeicherte Autoren und Importgrenzen sind ausschließlich unter
 [Dateien und History](product-contract.md#dateien-und-history) festgelegt.
 
@@ -81,17 +89,27 @@ Dateischema, gespeicherte Autoren und Importgrenzen sind ausschließlich unter
 | `regions`, `region_store`                                                             | Katalog, Polygone, RTree und revisionsgebundene Reads; Beziehungen aus Schnittflächen ableiten.                                                    |
 | `scenery`                                                                             | Deterministische Assetverteilung; Landschaftsstriche sind gewöhnliche Objektowner.                                                                 |
 
-Flussplanung, Profilnachführung und Import verwenden denselben begrenzten
+Straßenplanung, Flussplanung, Profilnachführung und Import verwenden denselben begrenzten
 `terrain_blocks::Sampler` wie Oberflächenreads. Ein eigener Cache vollständiger
 Höhenregionen und wiederholte Scans lokaler Override-Werte entfallen. Bei der
 Nachführung sind lokale und grobe Autoren bereits in derselben Transaktion
 geschrieben; der Sampler wird erst danach erzeugt. Beim Import ist der Blockindex
 vor der Flussrekonstruktion aufgebaut. Während einer Abtastung ändern sich keine
-Höhenautoren.
+Höhenautoren. Die Straßenplanung hält in ihren räumlich begrenzten Regionen nur
+Gewässerdaten; natürliche Höhen teilen sich einen operationslokalen Blockleser
+über alle Regionen und Wiederholungen der Routensuche.
 
 Der Flussprofilsolver liest die natürliche Höhe einmal je gemeinsamem Netzknoten
 und verwendet sie auch für den Einschnitt. Gewässerkontakt bestimmt weiterhin den
-Wasserpegel. Er verbindet Absenkung stromabwärts und Rückstau stromaufwärts
+Wasserpegel. Der operationslokale `ContactReader` fragt weiterhin punktlokale
+Kandidaten über den Gewässer-RTree ab. Solange deren Identitäten und die
+überlappenden vorgeschlagenen Gewässer gleich bleiben, verwendet er dieselben
+dekodierten Kontaktpolygone. Bei einer anderen Auswahl ersetzt er diese vollständig;
+die bisherigen Konturlimits und die Vorschauüberlagerung gelten unverändert.
+Der Leser lebt nur bei unveränderten Gewässerautoren innerhalb einer Berechnung.
+Straßenregionen halten vorbereitete Seegeometrie anstelle der erneut umzuwandelnden
+Autorenringe. Es gibt keinen dokumentweiten Kontaktcache.
+Der Profilsolver verbindet Absenkung stromabwärts und Rückstau stromaufwärts
 mit lokalen Pegeln. Flussbetten bleiben abgeleitet. Die Oberfläche wendet sie vor
 Hausplattformen an; Straßenrouting berücksichtigt Flüsse und lokale Gewässer.
 Ortschaften gehören zur Regionskategorie mit `markers`; Identität, Beschriftung,
@@ -135,6 +153,10 @@ Höhenlinien behalten ihre unabhängige, unveränderte Höhenabtastung. Bei abge
 Einflüssen bleibt die vollständige Abtastung erhalten. Binärdaten verwenden Base64.
 Reliefgradienten verwenden das bereits berechnete 33×33-Höhenraster und
 werten nur die 280 fehlenden Punkte des zweischrittigen Randes zusätzlich aus.
+Daraus entstehen auch Fels-/Schneedeckung und Beleuchtung: ein 35×35-RGB-Gitter
+mit einem Knoten Rand, bei konstanten Flächen ein einzelnes Tripel. Relief und
+Bodenfarbkomposition interpolieren dieselben quantisierten Materialwerte. Es gibt
+keine zusätzliche Höhenabfrage und keinen weiteren Cachebesitzer.
 
 Land/Meer bestimmt exakte Abstände im überstrichenen Korridor. Ein temporärer
 Segmentindex und zeilenweise Streckenbegrenzung liefern die Kandidaten für
@@ -146,6 +168,16 @@ Ereignisanzahl, Abschnittsgrenzen oder Zufallszustand ab. Sie bleibt innerhalb d
 vorhandenen Kandidatenkorridors. Rauheit null erhält den runden Auftrag exakt.
 Der Wert gehört zum eingefrorenen Strichparameter, gespeichert werden weiterhin
 nur die entstandenen Höhenautoren; es gibt keine zusätzliche Vorschau oder Cacheebene.
+Die Reliefmodi Bergkette, Hügel und Schlucht nutzen denselben räumlich abgetasteten
+Auftrag wie Anheben/Absenken. Stetiges, radiusnormiertes Ortsrauschen moduliert
+positive Grat-/Kuppenprofile beziehungsweise ein negatives Schluchtprofil.
+`featureHeight` bleibt beim Skalieren in Autorenkoordinaten in Welt-Fuß erhalten.
+`featureBrush` übersetzt physische UI-Vorlagen aus Metern und wählt die
+Autorenauflösung aus dem Radius. Der UI-Radius dieser Modi ist physisch; Cursor
+und Transport rechnen ihn ausdrücklich um. Gewässer behalten ihren Pixelradius.
+Fehlende grobe Autoren erben ausschließlich höhere Auflösungslevel, nicht die
+Splinefläche bereits geschriebener Nachbarn ihres eigenen Levels. So erzeugen
+Abschnittsgrenzen keinen zusätzlichen Höhenauftrag.
 Lokale und grobe Pinsel sammeln die benötigten Autorenblöcke je Quellauflösung
 für den gesamten Abschnitt. Zeilenmasken erhalten exakt die Vereinigung der
 Lesebereiche samt Spline-Stützrand; überlappende Bereiche lesen denselben Block
@@ -184,6 +216,13 @@ transaktionalen Zustand und wählt Detail oder Übersicht ausschließlich nach d
 Kachelstufe. Priorisierung, Geometriebudgets, Raster und Inhaltskennungen stimmen
 damit auch nach Gewässerteilungen und Flussänderungen überein. Vorschau-Rollback
 stellt Autoren und Indizes auch nach einem Oberflächenfehler gemeinsam wieder her.
+
+Das natürliche 33×33-Relief-/Konturgitter verwendet denselben adaptiven
+Rasterkern wie die dichte Wasserabtastung. Konservative Blockintervalle füllen
+nachweislich konstante Bereiche ohne einzelne Höhenreads; alle übrigen Knoten
+behalten ihre exakten Weltpositionen und kanonischen Höhen. Flussbetten und
+Hausplattformen werden anschließend unverändert pro Knoten angewendet.
+Es entsteht kein zusätzlicher Rastercache.
 
 `terrain_tiles` und der versionierte Punktread `surfacePoints` teilen Sampler,
 Flussauswertung und Plattformaufbau. `SurfacePointReader` hält eine laufende
@@ -256,7 +295,10 @@ bereite Raster darstellen. Bestätigte Vorschauen enden mit frischer Darstellung
 
 Der Rasterdekoder hält konstante Relief-/Wasserflächen als 1×1-Bilder und
 reserviert nur deren tatsächliche Rastergröße im bestehenden Budgetcache.
-Bodenfarben verwenden je Zeichenaufruf einen Reliefleser, der die aktuelle
+Bodenautoren enthalten zwei planare 64×64-RGBA-Ebenen für Boden und Fels;
+Vererbung, Übersichtspyramide, Halo, History und Dateipersistenz führen beide
+gemeinsam. Malen, Radieren und Pipette betreffen ausschließlich die gewählte Ebene.
+Bodenfarben verwenden je Zeichenaufruf einen Materialleser, der die aktuelle
 Kachelreferenz über benachbarte Pixel hinweg wiederverwendet. Es entsteht kein
 zusätzlicher persistenter Cache. Beschriftungen verwerfen unsichtbare und nach
 Maßstab ausgeschlossene Kandidaten vor Schriftmessung und Platzierungsbudget.

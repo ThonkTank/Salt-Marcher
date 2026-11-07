@@ -92,7 +92,7 @@ fn ground_noop_failure_and_invalid_file_are_atomic() {
 
 type GroundRows = Vec<(u8, i32, i32, Vec<u8>)>;
 fn ground_rows(db: &Connection) -> GroundRows {
-    let mut q = db.prepare("SELECT 0,x,y,pixels FROM ground_tiles UNION ALL SELECT level,x,y,pixels FROM ground_lod ORDER BY 1,2,3").unwrap();
+    let mut q = db.prepare("SELECT level,x,y,pixels FROM ground_tiles UNION ALL SELECT level,x,y,pixels FROM ground_lod ORDER BY 1,2,3").unwrap();
     q.query_map([], |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?)))
         .unwrap()
         .collect::<rusqlite::Result<_>>()
@@ -149,7 +149,7 @@ fn ground_rebuild_matches_incremental_and_finalizes_each_parent_once() {
         direct
             .db
             .execute(
-                "INSERT INTO ground_tiles VALUES(?,?,?)",
+                "INSERT INTO ground_tiles VALUES(0,?,?,?)",
                 params![x, y, fixture_tile(i as u8)],
             )
             .unwrap();
@@ -159,7 +159,7 @@ fn ground_rebuild_matches_incremental_and_finalizes_each_parent_once() {
     direct
         .db
         .execute(
-            "INSERT INTO ground_tiles VALUES(?,?,?)",
+            "INSERT INTO ground_tiles VALUES(0,?,?,?)",
             params![10, 10, weak],
         )
         .unwrap();
@@ -188,8 +188,8 @@ fn ground_rebuild_matches_incremental_and_finalizes_each_parent_once() {
     assert_eq!(ground_rows(&direct.db), expected_rows);
     let mut expected = BTreeSet::new();
     for level in 1..=24 {
-        for (_, x, y, _) in expected_rows.iter().filter(|r| r.0 == level - 1) {
-            expected.insert((level, x.div_euclid(2), y.div_euclid(2)));
+        for (_, x, y, _) in expected_rows.iter().filter(|r| r.0 == 0) {
+            expected.insert((level, x.div_euclid(1 << level), y.div_euclid(1 << level)));
         }
     }
     assert_eq!(actual.len(), expected.len());
@@ -322,13 +322,15 @@ fn ground_late_import_errors_leave_source_and_session_unchanged() {
     for (x, pixels) in [
         (100, vec![1, 2]),
         (100, nonpremul),
-        (100, vec![0; crate::atlas::ground::BYTES]),
-        (1_562_501, fixture_tile(1)),
+        (1_562_502, fixture_tile(1)),
     ] {
         std::fs::write(&path, &pristine).unwrap();
         let db = Connection::open(&path).unwrap();
-        db.execute("INSERT INTO ground_tiles VALUES(?,0,?)", params![x, pixels])
-            .unwrap();
+        db.execute(
+            "INSERT INTO ground_tiles VALUES(0,?,0,?)",
+            params![x, pixels],
+        )
+        .unwrap();
         drop(db);
         let bytes = std::fs::read(&path).unwrap();
         assert!(live.open(&path).is_err());
@@ -340,4 +342,93 @@ fn ground_late_import_errors_leave_source_and_session_unchanged() {
     history(&mut live, true);
     history(&mut live, false);
     assert_eq!(ground_rows(&live.db), ground);
+}
+
+#[test]
+fn ground_world_local_overpaint_erase_preview_and_history_roundtrip() {
+    use crate::atlas::ground::GroundTile;
+    let mut a = AtlasApplication::new().unwrap();
+    let paint = |level: u8, mode: &str, color: [u8; 3]| json!({"type":"groundStroke","brush":{"resolution":level,"mode":mode,"tip":"hard","color":color,"diameter":12.0*(1u32<<level) as f64,"opacity":1,"flow":1,"seed":1,"points":[[0,0,0],[0,0,1000]]},"view":{"level":level,"tiles":[[-1,-1],[0,0]]}});
+    let pixel = |a: &mut AtlasApplication, level| {
+        let response = a
+            .request("groundTiles", json!({"level":level,"tiles":[[0,0]]}))
+            .unwrap();
+        let tiles: Vec<GroundTile> = serde_json::from_value(response["tiles"].clone()).unwrap();
+        tiles[0].pixels[(66 + 1) * 4..(66 + 2) * 4].to_vec()
+    };
+    let blank = ground_rows(&a.db);
+    request_edit(&mut a, "commit", paint(18, "paint", [100, 200, 50]));
+    assert_eq!(pixel(&mut a, 0), pixel(&mut a, 18));
+    let world = ground_rows(&a.db);
+    assert!(world.len() < 40);
+    request_edit(&mut a, "commit", paint(0, "paint", [220, 50, 90]));
+    let local = pixel(&mut a, 0);
+    assert_eq!(local, vec![220, 50, 90, 255]);
+    let p = paint(18, "paint", [50, 80, 160]);
+    let preview = request_edit(&mut a, "preview", p.clone());
+    assert_eq!(pixel(&mut a, 0), local);
+    let commit = request_edit(&mut a, "commit", p);
+    assert_eq!(preview["ground"]["tiles"], commit["ground"]["tiles"]);
+    assert_eq!(pixel(&mut a, 0), vec![50, 80, 160, 255]);
+    history(&mut a, false);
+    assert_eq!(pixel(&mut a, 0), local);
+    history(&mut a, true);
+    request_edit(&mut a, "commit", paint(0, "erase", [0; 3]));
+    assert_eq!(pixel(&mut a, 0), vec![0; 4]);
+    let erased = ground_rows(&a.db);
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("world.saltatlas");
+    a.save(&path).unwrap();
+    // Undo all four strokes removes absent authors, not just their pigment.
+    for _ in 0..4 {
+        history(&mut a, false);
+    }
+    assert_eq!(ground_rows(&a.db), blank);
+    a.open(&path).unwrap();
+    assert_eq!(ground_rows(&a.db), erased);
+    assert_eq!(pixel(&mut a, 0), vec![0; 4]);
+    assert_eq!(pixel(&mut a, 18), vec![50, 80, 160, 255]);
+}
+
+#[test]
+fn ground_material_layers_are_independent_across_resolution_history_and_file() {
+    use crate::atlas::ground::GroundTile;
+    let mut a = AtlasApplication::new().unwrap();
+    let paint = |layer: &str, level: u8, mode: &str, color: [u8; 3]| json!({"type":"groundStroke","brush":{"layer":layer,"resolution":level,"mode":mode,"tip":"hard","color":color,"diameter":12.0*(1u32<<level) as f64,"opacity":1,"flow":1,"seed":1,"points":[[0,0,0],[0,0,1000]]},"view":{"level":level,"tiles":[[0,0]]}});
+    let channels = |a: &mut AtlasApplication| {
+        let response = a
+            .request("groundTiles", json!({"level":0,"tiles":[[0,0]]}))
+            .unwrap();
+        let tiles: Vec<GroundTile> = serde_json::from_value(response["tiles"].clone()).unwrap();
+        let i = (66 + 1) * 4;
+        [
+            tiles[0].pixels[i..i + 4].to_vec(),
+            tiles[0].pixels[66 * 66 * 4 + i..66 * 66 * 4 + i + 4].to_vec(),
+        ]
+    };
+    request_edit(&mut a, "commit", paint("soil", 18, "paint", [200, 80, 20]));
+    let before = ground_rows(&a.db);
+    let preview = request_edit(&mut a, "preview", paint("rock", 0, "paint", [30, 60, 180]));
+    assert_eq!(before, ground_rows(&a.db));
+    let committed = request_edit(&mut a, "commit", paint("rock", 0, "paint", [30, 60, 180]));
+    assert_eq!(preview["ground"]["tiles"], committed["ground"]["tiles"]);
+    assert_eq!(
+        channels(&mut a),
+        [vec![200, 80, 20, 255], vec![30, 60, 180, 255]]
+    );
+    request_edit(&mut a, "commit", paint("soil", 18, "paint", [40, 160, 50]));
+    let both = channels(&mut a);
+    assert_eq!(both, [vec![40, 160, 50, 255], vec![30, 60, 180, 255]]);
+    request_edit(&mut a, "commit", paint("rock", 18, "erase", [0; 3]));
+    assert_eq!(channels(&mut a), [vec![40, 160, 50, 255], vec![0; 4]]);
+    history(&mut a, false);
+    assert_eq!(channels(&mut a), both);
+    history(&mut a, true);
+    assert_eq!(channels(&mut a)[1], vec![0; 4]);
+    history(&mut a, false);
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("materials.saltatlas");
+    a.save(&path).unwrap();
+    a.open(&path).unwrap();
+    assert_eq!(channels(&mut a), both);
 }

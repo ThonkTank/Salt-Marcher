@@ -31,6 +31,24 @@ pub fn level_at(waters: &[WaterBody], p: Point) -> Option<f64> {
         .map(|w| w.level)
         .min_by(f64::total_cmp)
 }
+/// Operation-local contact geometry. Retain this instead of rebuilding authored rings per point.
+pub struct PreparedWater {
+    geometry: MultiPolygon<f64>,
+    level: f64,
+}
+impl PreparedWater {
+    pub fn new(w: &WaterBody) -> Self {
+        Self {
+            geometry: geometry(w),
+            level: w.level,
+        }
+    }
+    pub fn level_at(&self, p: Point) -> Option<f64> {
+        self.geometry
+            .intersects(&geo::Point::from(p))
+            .then_some(self.level)
+    }
+}
 pub fn point_count(w: &WaterBody) -> usize {
     w.polygons
         .iter()

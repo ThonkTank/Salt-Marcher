@@ -20,6 +20,7 @@ const tile = (x: number, y: number, value = 0): SurfaceTile => ({
     contourInterval: 5,
     pixels: 2,
     relief: btoa(String.fromCharCode(...Array(64).fill(value))),
+    materials: btoa(String.fromCharCode(0, 0, 222)),
     water: btoa("\0"),
     contours: [[0, 0, 1, 1]],
   },
