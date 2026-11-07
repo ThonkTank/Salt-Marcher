@@ -267,11 +267,17 @@ sie vor Rasterallokation und Symbolarbeit. Explizit leere Autoren bleiben davon
 unabhängig gespeichert. Es gibt
 keinen zusätzlichen Dokumentworker oder unabhängigen Cachebesitzer. Der vorhandene
 Rasterpainter hält begrenzte Landschaftsraster und zeichnet aus denselben Gewichten
-ferne Farben, mittlere Signaturen und nahe Symbole. Zwischen 0,35 und 0,5
+ferne Farben, mittlere Blätterdächer beziehungsweise Signaturen und nahe Symbole. Zwischen 0,35 und 0,5
 CSS-Pixeln pro Fuß überblendet er mittlere und nahe Symbole; beide teilen sich
 das Kandidatenbudget, der Kachelanfrager erhält bis zum Ende den groben Kronenrand.
-Mittlere Signaturen verwenden im vorhandenen Vektorpainter aufrechte Gruppen
-aus drei Baum-, Busch-, Gras- oder Steinzeichen ohne gerichtete Glanzlichter.
+Mittlerer Wald entsteht als durchgehendes, weltverankertes Kronenfeld aus den
+Waldgewichten. Geringe Dichte öffnet Lücken, hohe Dichte schließt das Dach.
+`forestCanopy` berechnet ausschließlich Darstellung; die Autoren bleiben unverändert.
+Der bestehende Landschaftsrastercache hält das optionale 130×130-Kronenraster
+einschließlich Halo im selben Bytebudget. Es entsteht erst im mittleren Band
+und nur für Kacheln mit Waldanteil; Pan und Zoom verwenden es wieder.
+Buschland, Wiese und Felsgebiet verwenden dort weiterhin aufrechte Gruppen
+aus drei Zeichen im Vektorpainter.
 Nahe Waldbäume verwenden vier eigene, unregelmäßige Federzeichnungs-Kronen mit
 gebrochenen inneren Blattkonturen und gedeckter Lasur. Der Vektorpainter hält
 höchstens vier feste Path2D-Zeichnungen; Pan und Zoom erzeugen keine neue

@@ -58,7 +58,7 @@ it("crossfades overview and near symbols without an empty band", () => {
       1,
     );
     const symbols = landscapeSymbols([-1000, -1000, 1000, 1000], scale, () => [
-      255, 0, 0, 0,
+      0, 255, 0, 0,
     ]);
     for (const detail of details)
       expect(symbols.some((symbol) => symbol.near === detail.near)).toBe(true);
@@ -67,7 +67,7 @@ it("crossfades overview and near symbols without an empty band", () => {
 
 it("keeps both transition representations within the shared budget at desktop size", () => {
   for (const scale of [0.351, 0.38, 0.42, 0.49]) {
-    const sample = vi.fn(() => [255, 0, 0, 0] as const);
+    const sample = vi.fn(() => [0, 255, 0, 0] as const);
     const symbols = landscapeSymbols(
       [0, 0, 1440 / scale, 960 / scale],
       scale,

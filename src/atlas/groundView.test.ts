@@ -404,3 +404,66 @@ it("skips empty ground raster work while preserving soil and rock pipette colors
     vi.unstubAllGlobals();
   }
 });
+
+it("lazily reuses canopy rasters and matches their shared world-edge halos", () => {
+  const outputs: Uint8ClampedArray[] = [];
+  const create = vi.fn(() => ({
+    getContext: () => ({
+      createImageData: (w: number, h: number) => ({
+        data: new Uint8ClampedArray(w * h * 4),
+      }),
+      putImageData: (image: { data: Uint8ClampedArray }) =>
+        outputs.push(image.data),
+    }),
+  }));
+  vi.stubGlobal("document", { createElement: create });
+  const context = {
+    globalAlpha: 1,
+    save() {},
+    restore() {},
+    beginPath() {},
+    rect() {},
+    setTransform() {},
+    getTransform() {
+      return { a: 1, d: 1, e: 0, f: 0 };
+    },
+    clip() {},
+    drawImage() {},
+  } as unknown as CanvasRenderingContext2D;
+  const view = {
+    status,
+    level: 4,
+    tiles: [-1, 0].map((x) => ({
+      x,
+      y: -1,
+      pixels: pixelString(166, 0, 0, 0),
+    })),
+  };
+  try {
+    const painter = new GroundPainter();
+    painter.paintLandscape(context, view, undefined, 0.00001);
+    expect(create).toHaveBeenCalledTimes(2);
+    painter.paintLandscape(context, view, undefined, 0.15);
+    expect(create).toHaveBeenCalledTimes(4);
+    const [left, right] = outputs.filter((p) => p.length === 130 * 130 * 4);
+    expect(left.some((v, i) => i % 4 === 3 && v > 0)).toBe(true);
+    for (let y = 0; y < 130; y++)
+      for (let x = 0; x < 2; x++) {
+        const a = (y * 130 + 128 + x) * 4,
+          b = (y * 130 + x) * 4;
+        expect(left.slice(a, a + 4)).toEqual(right.slice(b, b + 4));
+      }
+    for (const scale of [0.2, 0.4, 1, 0.00001, 0.15])
+      painter.paintLandscape(context, view, undefined, scale);
+    expect(create).toHaveBeenCalledTimes(4);
+    const meadow = {
+      ...view,
+      tiles: [{ x: 0, y: 0, pixels: pixelString(0, 0, 255, 0) }],
+    };
+    painter.paintLandscape(context, meadow, undefined, 0.15);
+    painter.paintLandscape(context, meadow, undefined, 0.2);
+    expect(create).toHaveBeenCalledTimes(5);
+  } finally {
+    vi.unstubAllGlobals();
+  }
+});

@@ -201,7 +201,12 @@ export function AtlasCanvas(p: Props) {
         );
       if (ground) groundPainter.current.paint(c, ground, terrain);
       if (landscape)
-        groundPainter.current.paintLandscape(c, landscape, terrain);
+        groundPainter.current.paintLandscape(
+          c,
+          landscape,
+          terrain,
+          p.camera.scale,
+        );
       if ((ground || landscape) && terrain && (p.terrainContours ?? true))
         terrainPainter.current.paintContours(
           c,

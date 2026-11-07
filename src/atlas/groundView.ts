@@ -1,3 +1,4 @@
+import { forestCanopyAt } from "./forestCanopy";
 import type { LandscapeResponse } from "./generated/LandscapeResponse";
 import {
   landscapeColors,
@@ -61,6 +62,7 @@ export function groundColorAt(
 }
 type GroundRaster = {
   raster: HTMLCanvasElement;
+  canopy?: HTMLCanvasElement | null;
   level: number;
   terrainLevel: number | undefined;
   neighbors: SurfaceTile[];
@@ -78,6 +80,7 @@ export class GroundPainter {
     c: CanvasRenderingContext2D,
     view: LandscapeResponse,
     terrain: TerrainResponse | undefined,
+    scale = 0,
   ) {
     if (view.tiles.every((tile) => !tile.pixels)) return;
     const step = 2 ** view.level,
@@ -86,6 +89,8 @@ export class GroundPainter {
     c.save();
     c.imageSmoothingEnabled = true;
     const transform = c.getTransform();
+    const canopyAlpha =
+      landscapeDetails(scale).find((detail) => !detail.near)?.alpha ?? 0;
     for (const tile of view.tiles) {
       if (!tile.pixels) continue;
       const tw = terrain ? 160 * 2 ** terrain.level : 0;
@@ -100,6 +105,7 @@ export class GroundPainter {
         ) ?? [];
       const old = this.landscapeCache.get(tile);
       let raster = old?.raster;
+      let canopy = old?.canopy;
       if (
         !old ||
         old.level !== view.level ||
@@ -107,6 +113,7 @@ export class GroundPainter {
         old.neighbors.length !== neighbors.length ||
         old.neighbors.some((t, i) => t !== neighbors[i])
       ) {
+        canopy = undefined;
         raster = document.createElement("canvas");
         raster.width = raster.height = 66;
         const ctx = raster.getContext("2d")!,
@@ -147,6 +154,55 @@ export class GroundPainter {
           66 * 66 * 4,
         );
       }
+      if (canopyAlpha > 0 && canopy === undefined) {
+        const pixels = groundPixels(tile);
+        canopy = null;
+        if (pixels.some((v, i) => i % 4 === 0 && v > 0)) {
+          canopy = document.createElement("canvas");
+          canopy.width = canopy.height = 130;
+          const ctx = canopy.getContext("2d")!;
+          const data = ctx.createImageData(130, 130);
+          for (let y = 0; y < 130; y++)
+            for (let x = 0; x < 130; x++) {
+              // Two foliage samples per author texel, with one output halo texel.
+              const px = (x - 0.5) / 2 + 0.5,
+                py = (y - 0.5) / 2 + 0.5;
+              const ix = Math.floor(px),
+                iy = Math.floor(py);
+              const fx = px - ix,
+                fy = py - iy;
+              let density = 0;
+              for (let yy = 0; yy < 2; yy++)
+                for (let xx = 0; xx < 2; xx++)
+                  density +=
+                    ((pixels[((iy + yy) * 66 + ix + xx) * 4] ?? 0) *
+                      (xx ? fx : 1 - fx) *
+                      (yy ? fy : 1 - fy)) /
+                    255;
+              if (!density) continue;
+              const wx = (tile.x * 64 + (x - 0.5) / 2) * step;
+              const wy = (tile.y * 64 + (y - 0.5) / 2) * step;
+              const rgba = forestCanopyAt(wx, wy, density);
+              if (!rgba[3]) continue;
+              const [, snow, shade] = materialAt?.(wx, wy) ?? [0, 0, 1];
+              const i = (y * 130 + x) * 4;
+              for (let k = 0; k < 3; k++) data.data[i + k] = rgba[k] * shade;
+              data.data[i + 3] = rgba[3] * (1 - snow);
+            }
+          ctx.putImageData(data, 0, 0);
+        }
+        this.landscapeCache.set(
+          tile,
+          {
+            raster: raster!,
+            canopy,
+            level: view.level,
+            terrainLevel: terrain?.level,
+            neighbors,
+          },
+          (66 * 66 + (canopy ? 130 * 130 : 0)) * 4,
+        );
+      }
       c.save();
       c.beginPath();
       // Keep both clipping and image destinations in device space. WebKit can
@@ -170,6 +226,16 @@ export class GroundPainter {
         (width + 2 * step) * transform.a,
         (width + 2 * step) * transform.d,
       );
+      if (canopy && canopyAlpha > 0) {
+        c.globalAlpha *= canopyAlpha;
+        c.drawImage(
+          canopy,
+          tile.x * width * transform.a + transform.e - (step * transform.a) / 2,
+          tile.y * width * transform.d + transform.f - (step * transform.d) / 2,
+          (width + step) * transform.a,
+          (width + step) * transform.d,
+        );
+      }
       c.restore();
     }
     this.landscapeCache.trim();

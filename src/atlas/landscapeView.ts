@@ -79,6 +79,8 @@ export function landscapeSymbols(
         for (let k = 0; k < 4; k++) {
           total += weights[k];
           if (threshold >= total) continue;
+          // Medium forest is a continuous density field in the landscape raster.
+          if (!near && k === 0) break;
           const size =
             (near ? (k === 0 ? 12 : k === 1 ? 7 : 5) : 130) *
             (0.8 + random(x, y, 43) * 0.4);

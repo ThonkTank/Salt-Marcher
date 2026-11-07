@@ -11,8 +11,11 @@ mit Zieldichte, lokalen Lichtungen, grober Vererbung und vollständiger History.
 Boden-/Felsfarbe bleibt unabhängig. Bestehender Worker, Rasterstore, Queue und
 Präsentationscache besitzen weiterhin die Arbeit; Autoren enthalten keine Bäume.
 
-Fern erscheinen Flächenfarben, mittel aufrechte Gruppen aus drei einfachen Baum-,
-Busch-, Gras- oder Steinzeichen. Nahe Waldbäume sind jetzt eigene Federzeichnungen:
+Fern erscheinen Flächenfarben, mittlerer Wald als durchgehendes Blätterdach mit
+dichteabhängigen Lücken. Buschland, Wiese und Felsgebiet behalten gruppierte
+Signaturen. Das optionale Kronenraster entsteht nur im mittleren Band bei Waldanteil
+und teilt das bestehende Cachebudget; Autorendaten und UI bleiben unverändert.
+Nahe Waldbäume sind eigene Federzeichnungen:
 vier unregelmäßige Kronen, gebrochene Blattkonturen, gedeckte Grünlasuren und
 größenabhängige Schraffur, orientiert an den offiziellen Canvas-of-Kings-Bildern.
 Vier feste Zeichenpfade werden geteilt; Autoren und Verteilung bleiben erhalten. Der gemeinsame
@@ -20,15 +23,17 @@ Kandidatenrahmen umfasst auch die Überblendung zwischen 0,35 und 0,5 CSS-Pixeln
 pro Fuß. Rasterziele und Clips in Gerätekoordinaten vermeiden die gefundenen
 nativen Kachelnähte. Wasser maskiert Bestand, Schnee bleibt sichtbar.
 
-Für die Baumüberarbeitung bestehen 25 Präsentationstests und vier Landschafts-
-Browserfälle einschließlich Welt→Mittel→Nah→Welt, History, Datei und Wassermaske.
-Typen, Format sowie frischer Release-/RPM-Build bestehen.
-Die Bildproben aller vier Kronen in vier Maßstäben sowie das vollständige
-Nah-Kartenbild wurden visuell geprüft. Belege:
-`src-tauri/target/diagnostics/landscape-ink-trees/`.
-Eine erneute native Bedienprüfung dieser Kronen steht aus: Der verfügbare
-UI-Zugriff dieser Runde umfasst nur Browser. Frühere native Prüfungen belegen
-noch die alte Baumzeichnung. Das ursprüngliche Benutzertestfenster bleibt unberührt.
+Für die Blätterdächer bestehen 29 Präsentationstests einschließlich monotoner
+Deckung, negativer Koordinaten, identischer Kachelhalos und Rasterwiederverwendung.
+Vier Landschafts-Browserfälle bestehen einschließlich History, Datei, Wassermaske
+und Welt→Mittel→Nah→Welt. Die Bildprobe mit 25/65/100 Prozent Walddeckung sowie
+das abschließende mittlere Kartenbild wurden visuell geprüft. Typen, Format und
+frischer Release-/RPM-Build bestehen. Der erste Buildversuch wurde per SIGTERM
+beendet; nach bestätigtem Prozessende bestand der erneute Build.
+Belege: `src-tauri/target/diagnostics/landscape-canopy/`.
+Eine erneute native Bedienprüfung bleibt offen: Der verfügbare UI-Zugriff
+umfasst nur Browser. Frühere native Prüfungen belegen noch die alte Zeichnung.
+Das ursprüngliche Benutzertestfenster bleibt unberührt.
 
 Leere Boden-/Landschaftskacheln übertragen keine Pixelnutzlast und erzeugen keine
 Zeichenraster. Vollständig unbenutzte Ebenen überspringen Vererbung und Haloaufbau.

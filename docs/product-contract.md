@@ -402,11 +402,13 @@ Felsgebiet-Ebene modelliert. Autorendaten bleiben beim Zoomen unverändert.
 Nah erscheinen deterministisch aus Weltkoordinaten erzeugte Bäume und andere
 Symbole. Baumkronen erscheinen als unregelmäßige, fein konturierte Federzeichnungen
 mit gedeckten Grünfarben; Blattdetails folgen der sichtbaren Größe. Mehr Dichte ergänzt stabile Kandidaten statt vorhandene Positionen neu
-zu würfeln. Mittlere Maßstäbe zeigen Flächen mit sparsamen kartographischen
-Signaturen aus kleinen Baum-, Busch-, Gras- oder Steingruppen; ferne Maßstäbe
+zu würfeln. Mittlere Maßstäbe zeigen Wald als zusammenhängende Blätterdächer:
+Die gemalte Zieldichte bestimmt sichtbare Lücken und den Kronenschluss. Lokale
+Lichtungen bleiben erhalten. Buschland, Wiese und Felsgebiet verwenden sparsame
+kartographische Signaturen aus kleinen Gruppen; ferne Maßstäbe
 ausschließlich Flächenfarben. Übersichten entstehen
 direkt aus den Deckungen, ohne zuerst unsichtbare Einzelbäume zu erzeugen.
-Mittlere Signaturen und nahe Symbole gehen überlappend ineinander über;
+Mittlere Blätterdächer beziehungsweise Signaturen und nahe Symbole gehen überlappend ineinander über;
 beim Wechsel gibt es kein ausschließlich durch den Zoom verursachtes Leerband.
 Das gemeinsame Kandidatenbudget gilt auch während dieses Übergangs.
 Die Darstellung ist auf den sichtbaren Ausschnitt und ein festes Symbolbudget
