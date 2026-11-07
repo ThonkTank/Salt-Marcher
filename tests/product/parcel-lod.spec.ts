@@ -64,7 +64,7 @@ test("parcel name and actual scale share editing restrictions and hysteresis", a
       "Ziehen: Zeichnen",
     );
     await expect(
-      page.getByRole("button", { name: "Zum Bearbeiten hineinzoomen" }),
+      page.getByRole("button", { name: "Zur Detailansicht" }),
     ).toBeVisible();
     await clearCalls(page);
     await gesture(page);
@@ -104,9 +104,7 @@ test("parcel name and actual scale share editing restrictions and hysteresis", a
   await expect(page.locator(".atlas-map-help > span")).toContainText(
     "hineinzoomen",
   );
-  await page
-    .getByRole("button", { name: "Zum Bearbeiten hineinzoomen" })
-    .click();
+  await page.getByRole("button", { name: "Zur Detailansicht" }).click();
   await paintedReady(page);
   await expect(page.locator(".atlas-map-help > span")).toContainText(
     "Ziehen: Zeichnen",

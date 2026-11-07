@@ -5,7 +5,7 @@ import {
 } from "./featureBrush";
 import type { TerrainFollow } from "./generated/TerrainFollow";
 import type { GroundBrush } from "./generated/GroundBrush";
-import type { SceneryBrush } from "./generated/SceneryBrush";
+import type { LandscapeSettings } from "./landscapeView";
 import type { Brush } from "./generated/Brush";
 import type { RoadRoughness } from "./generated/RoadRoughness";
 import { useEffect, useState } from "react";
@@ -24,7 +24,7 @@ import { extensionRoadDraft, type EditorDraft } from "./roadDraft";
 export type ToolSettings = {
   ground: Omit<GroundBrush, "points" | "seed">;
   groundPicker: boolean;
-  scenery: Omit<SceneryBrush, "points" | "seed">;
+  scenery: LandscapeSettings;
   brush: Omit<Brush, "points">;
   contours: boolean;
   roughness: RoadRoughness;
@@ -66,7 +66,7 @@ export function useEditorTools(options: Options) {
     },
     groundPicker: false,
     brush: { mode: "land", radius: 40, amount: 1, strength: 0.25, target: 10 },
-    scenery: { biome: "forest", radius: 40, density: 0.65, size: 8 },
+    scenery: { biome: "forest", radius: 40, density: 0.65, mode: "paint" },
     contours: true,
     roughness: { amount: 0.33, seed: 1 },
     terrainFollow: { tolerance: 0.1 },

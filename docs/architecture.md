@@ -85,7 +85,7 @@ Dateischema, gespeicherte Autoren und Importgrenzen sind ausschließlich unter
 | `terrain`, `terrain_store`, `world_terrain_store`, `terrain_blocks`, `terrain_raster` | Höhenautoren, kanonische Oberfläche, räumlicher Index und fertige Raster.                                                                          |
 | `water`, `water_store`                                                                | Pegel, Polygone, Ufer und Trockenlegen; Wasser- und Höhenänderungen bilden eine Aktion.                                                            |
 | `rivers`, `river_store`                                                               | Routen, gemeinsame Knoten und Profile; lokale Flüsse samt verbundenen Komponenten laden.                                                           |
-| `ground`, `ground_store`                                                              | Farbauftrag auf dünn belegte RGBA-Autorenkacheln und deren Übersichtspyramide.                                                                     |
+| `ground`, `landscape`, `ground_store`                                                 | Getrennte Pigment-/Landschaftsautoren mit gemeinsamen begrenzten Raster- und Pyramidenmechanismen.                                                 |
 | `regions`, `region_store`                                                             | Katalog, Polygone, RTree und revisionsgebundene Reads; Beziehungen aus Schnittflächen ableiten.                                                    |
 | `scenery`                                                                             | Deterministische Assetverteilung; Landschaftsstriche sind gewöhnliche Objektowner.                                                                 |
 
@@ -245,6 +245,28 @@ Y-Bereich aus dem zusammengesetzten Primärschlüssel. Damit werden höchstens d
 Ein anfragegebundener ID-Cache vermeidet wiederholte Projektion.
 Exakte Szenen laden im Bearbeitungsmaßstab; `roadHeader` und `objectHeader` liefern
 Ownerdaten auch in Übersichten. Zu große exakte Ausschnitte werden abgelehnt.
+
+## Landschaftsdeckung
+
+`landscape` besitzt die semantischen Pinsel-/Transporttypen und die normierten
+Wald-/Buschland-/Wiesen-/Felsgebietsgewichte. `landscape_tiles` und `landscape_lod`
+sind von Bodenpigmenten getrennt. Der interne feste `RasterKind` im Rasterstore
+teilt Vererbung, räumlich begrenzte Autorenreads, Halo und Pyramidenaufbau;
+fachliche Validierung und Mischregeln bleiben getrennt. LandscapeStroke benutzt
+den vorhandenen transaktionalen Vorschau-/Commit-/Historypfad. Persistenz speichert
+nur Autoren und rekonstruiert Übersichten beim Öffnen.
+
+Der `PresentationLoader` lädt Landschaft als eigene versionierte Schicht über
+seinen bestehenden WorldTileCache. Sie wird ausschließlich mit revisionsgleichem
+Gelände kombiniert. Vorschaukacheln ersetzen nur betroffene Kacheln. Vollständig leere
+Darstellungskacheln übertragen einen leeren Pixelstring; der Painter überspringt
+sie vor Rasterallokation und Symbolarbeit. Explizit leere Autoren bleiben davon
+unabhängig gespeichert. Es gibt
+keinen zusätzlichen Dokumentworker oder unabhängigen Cachebesitzer. Der vorhandene
+Rasterpainter hält begrenzte Landschaftsraster und zeichnet aus denselben Gewichten
+ferne Farben, mittlere Signaturen und nahe Symbole. Detailkandidaten hängen nur
+von Weltkoordinaten ab und werden ausschließlich für den sichtbaren Ausschnitt
+innerhalb eines festen Budgets erzeugt. Autoren enthalten keine generierten Bäume.
 
 ## Eingaben und Lebensdauer
 

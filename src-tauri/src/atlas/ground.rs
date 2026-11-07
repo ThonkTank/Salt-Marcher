@@ -143,9 +143,15 @@ fn mask(tip: GroundTip, dx: f64, dy: f64, x: f64, y: f64, radius: f64, seed: u32
 }
 /// Canonical 60 Hz integration with spatial subdivision, independent of input event density.
 pub fn coverage(brush: &GroundBrush) -> Result<BTreeMap<(i32, i32), f64>> {
+    coverage_named(brush, "Bodenpinsel")
+}
+pub(super) fn coverage_named(
+    brush: &GroundBrush,
+    label: &str,
+) -> Result<BTreeMap<(i32, i32), f64>> {
     ensure(
         !brush.points.is_empty() && brush.points.len() <= 100_000,
-        "Zu viele Bodenpinsel-Punkte",
+        &format!("Zu viele {label}-Punkte"),
     )?;
     ensure(
         brush.diameter.is_finite()
@@ -154,7 +160,7 @@ pub fn coverage(brush: &GroundBrush) -> Result<BTreeMap<(i32, i32), f64>> {
             && (0.01..=1.0).contains(&brush.opacity)
             && brush.flow.is_finite()
             && (0.01..=1.0).contains(&brush.flow),
-        "Ungültiger Bodenpinsel",
+        &format!("Ungültiger {label}"),
     )?;
     let mut last = 0.0;
     for (i, p) in brush.points.iter().enumerate() {
@@ -164,7 +170,7 @@ pub fn coverage(brush: &GroundBrush) -> Result<BTreeMap<(i32, i32), f64>> {
                 && p[2] >= last
                 && p[2] <= 3_600_000.0
                 && (i != 0 || p[2] == 0.0),
-            "Ungültiger Bodenpinsel-Pfad",
+            &format!("Ungültiger {label}-Pfad"),
         )?;
         last = p[2];
     }
@@ -179,7 +185,7 @@ pub fn coverage(brush: &GroundBrush) -> Result<BTreeMap<(i32, i32), f64>> {
         work = work.saturating_add(((x1 - x0 + 1) as usize).saturating_mul((y1 - y0 + 1) as usize));
         ensure(
             work <= 40_000_000,
-            "Bodenpinselstrich zu aufwendig; bitte kürzere Striche verwenden",
+            &format!("{label}strich zu aufwendig; bitte kürzere Striche verwenden"),
         )?;
         for y in y0..=y1 {
             for x in x0..=x1 {
@@ -196,7 +202,7 @@ pub fn coverage(brush: &GroundBrush) -> Result<BTreeMap<(i32, i32), f64>> {
                     *out.entry((x, y)).or_insert(0.0) += amount * dt;
                     ensure(
                         out.len() <= 1_000_000,
-                        "Bodenpinselstrich überschreitet eine Million Pixel",
+                        &format!("{label}strich überschreitet eine Million Pixel"),
                     )?;
                 }
             }
@@ -226,7 +232,7 @@ pub fn coverage(brush: &GroundBrush) -> Result<BTreeMap<(i32, i32), f64>> {
                 return Ok(());
             }
         }
-        ensure(stamps.len() < 100_000, "Bodenpinselpfad zu aufwendig")?;
+        ensure(stamps.len() < 100_000, &format!("{label}pfad zu aufwendig"))?;
         stamps.push((point, dt));
         Ok(())
     };
@@ -252,7 +258,7 @@ pub fn coverage(brush: &GroundBrush) -> Result<BTreeMap<(i32, i32), f64>> {
         let steps = ((next[0] - previous[0]).hypot(next[1] - previous[1]) / (radius / 4.0).max(0.5))
             .ceil()
             .max(1.0) as usize;
-        ensure(steps <= 100_000, "Bodenpinselpfad zu lang")?;
+        ensure(steps <= 100_000, &format!("{label}pfad zu lang"))?;
         for i in 0..steps {
             let u = (i as f64 + 0.5) / steps as f64;
             add_stamp(
@@ -372,7 +378,7 @@ mod tests {
     }
 }
 
-mod pixel_wire {
+pub(super) mod pixel_wire {
     use base64::Engine;
     use serde::{Deserialize, Deserializer, Serializer};
     pub fn serialize<S: Serializer>(

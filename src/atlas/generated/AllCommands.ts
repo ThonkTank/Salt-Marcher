@@ -14,6 +14,8 @@ import type { InteriorMetadataArgs } from "./InteriorMetadataArgs";
 import type { InteriorMetadataResponse } from "./InteriorMetadataResponse";
 import type { InteriorTileArgs } from "./InteriorTileArgs";
 import type { InteriorTileResponse } from "./InteriorTileResponse";
+import type { LandscapeArgs } from "./LandscapeArgs";
+import type { LandscapeResponse } from "./LandscapeResponse";
 import type { MapTilesArgs } from "./MapTilesArgs";
 import type { MapTilesResponse } from "./MapTilesResponse";
 import type { ObjectHeaderArgs } from "./ObjectHeaderArgs";
@@ -46,6 +48,7 @@ export type AllCommands = {
   endTerrainStroke: CommandContract<EndTerrainStroke, Status>;
   rivers: CommandContract<RiverArgs, RiverResponse>;
   regions: CommandContract<RegionArgs, RegionResponse>;
+  landscapeTiles: CommandContract<LandscapeArgs, LandscapeResponse>;
   groundTiles: CommandContract<GroundArgs, GroundResponse>;
   surfacePoints: CommandContract<SurfacePointsArgs, SurfacePointsResponse>;
   terrainTiles: CommandContract<TerrainArgs, TerrainResponse>;

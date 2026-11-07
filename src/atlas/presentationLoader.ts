@@ -1,9 +1,11 @@
-import { GroundCache } from "./presentationCache";
+import { GroundCache, LandscapeCache } from "./presentationCache";
+import type { LandscapeResponse } from "./generated/LandscapeResponse";
 import type { GroundResponse } from "./generated/GroundResponse";
 import { terrainCacheFor, CityCache } from "./presentationCache";
 import type { TerrainResponse } from "./generated/TerrainResponse";
 import { cityRequest, type CityView } from "./cityView";
 import { terrainRequest } from "./terrainView";
+import { landscapeRequest, landscapeMargin } from "./landscapeRequest";
 import { groundRequest } from "./groundView";
 import type { AtlasClient, ReadCommands } from "./client";
 import { TileCache, tileKey } from "./tileCache";
@@ -26,6 +28,7 @@ import { scheduledRead } from "./readScheduler";
 export type Presentation = {
   terrain?: TerrainResponse;
   ground?: GroundResponse;
+  landscape?: LandscapeResponse;
   overview?: CityView;
   scene: Scene;
   detail: Detail | null;
@@ -66,6 +69,7 @@ const houseBounds = (house: House): Bounds => {
 type LoadContext = {
   terrainLevel?: number;
   groundLevel?: number;
+  landscapeLevel?: number;
   client: AtlasClient;
   session: string | undefined;
   revision: number | undefined;
@@ -106,6 +110,7 @@ export type PresentationInput = {
   terrainDpr?: number;
   terrainLevel?: number;
   groundLevel?: number;
+  landscapeLevel?: number;
   cityLevel?: number | null;
   client: AtlasClient;
   status: Status | null;
@@ -120,6 +125,7 @@ type Snapshot = { display: Published | null; error: string; loading: boolean };
 const loadContext = (input: PresentationInput, retry: number): LoadContext => ({
   terrainLevel: input.terrainLevel,
   groundLevel: input.groundLevel,
+  landscapeLevel: input.landscapeLevel,
   cityLevel: input.cityLevel ?? null,
   client: input.client,
   session: input.status?.sessionId,
@@ -324,6 +330,7 @@ const rasterCovers =
 /** Owns reads, cache lifetime and the single published snapshot; independent of React. */
 export class PresentationLoader {
   private ground = new GroundCache();
+  private landscape = new LandscapeCache();
   private city = new CityCache();
   private layers = {
     rivers: new PresentationLayer(
@@ -385,6 +392,24 @@ export class PresentationLoader {
       rasterCovers(groundRequest),
       true,
     ),
+    landscape: new PresentationLayer(
+      (client, args: RasterArgs, wanted) =>
+        this.landscape.load(
+          client,
+          args.version,
+          args.bounds,
+          args.level,
+          wanted,
+          args.scale,
+        ),
+      () => this.refreshLayers(),
+      (a, b) =>
+        viewportCovers(a, b, true) &&
+        landscapeRequest(a.bounds, a.level, a.scale).level ===
+          landscapeRequest(b.bounds, b.level, b.scale).level &&
+        landscapeMargin(a.scale) === landscapeMargin(b.scale),
+      true,
+    ),
     city: new PresentationLayer(
       (client, args: RasterArgs, wanted) =>
         this.city.load(client, args.version, args.bounds, args.level, wanted),
@@ -419,6 +444,16 @@ export class PresentationLoader {
         (terrain && sameVersion(candidate.status, terrain.status)))
         ? candidate
         : undefined;
+    const landscapeCandidate =
+      this.committed?.input.landscapeLevel == null
+        ? undefined
+        : (this.layers.landscape.snapshot.value ?? undefined);
+    const landscape =
+      landscapeCandidate &&
+      (this.committed?.input.terrainLevel == null ||
+        (terrain && sameVersion(landscapeCandidate.status, terrain.status)))
+        ? landscapeCandidate
+        : undefined;
     const overview =
       this.committed?.context.cityLevel != null
         ? (this.layers.city.snapshot.value ?? undefined)
@@ -426,9 +461,10 @@ export class PresentationLoader {
     if (
       terrain !== display.value.terrain ||
       ground !== display.value.ground ||
+      landscape !== display.value.landscape ||
       overview !== display.value.overview
     ) {
-      const value = { ...display.value, terrain, ground, overview };
+      const value = { ...display.value, terrain, ground, landscape, overview };
       this.updateSnapshot({ display: { ...display, value } });
     } else {
       this.updateSnapshot({});
@@ -461,6 +497,7 @@ export class PresentationLoader {
     const layers = [
       this.layers.terrain.snapshot,
       this.layers.ground.snapshot,
+      this.layers.landscape.snapshot,
       this.layers.city.snapshot,
     ];
     const next = {
@@ -491,6 +528,7 @@ export class PresentationLoader {
     this.retries++;
     this.layers.terrain.invalidate();
     this.layers.ground.invalidate();
+    this.layers.landscape.invalidate();
     this.layers.city.invalidate();
     if (this.committed) this.update(this.committed.input);
   };
@@ -527,6 +565,11 @@ export class PresentationLoader {
         })) &&
       (input.groundLevel == null ||
         this.layers.ground.fresh(input.client, args(input.groundLevel))) &&
+      (input.landscapeLevel == null ||
+        this.layers.landscape.fresh(input.client, {
+          ...args(input.landscapeLevel)!,
+          scale: input.terrainScale,
+        })) &&
       (editorContextCity(input) == null ||
         this.layers.city.fresh(input.client, args(editorContextCity(input))))
     );
@@ -558,6 +601,11 @@ export class PresentationLoader {
         : null,
     );
     this.layers.ground.update(client, raster(input.groundLevel));
+    const landscapeArgs = raster(input.landscapeLevel);
+    this.layers.landscape.update(
+      client,
+      landscapeArgs ? { ...landscapeArgs, scale: input.terrainScale } : null,
+    );
     this.layers.city.update(client, raster(editorContextCity(input)));
     if (
       !changed &&
@@ -604,6 +652,7 @@ export class PresentationLoader {
       !this.snapshot.display &&
       (input.terrainLevel != null ||
         input.groundLevel != null ||
+        input.landscapeLevel != null ||
         editorContextCity(input) != null)
     ) {
       const emptyOwner = { exists: false, houseId: null, parcelId: null };
@@ -711,6 +760,7 @@ export class PresentationLoader {
             scene,
             terrain: undefined,
             ground: undefined,
+            landscape: undefined,
             overview: undefined,
             detail: null,
             active: "",
@@ -832,6 +882,7 @@ export class PresentationLoader {
               scene,
               terrain: undefined,
               ground: undefined,
+              landscape: undefined,
               detail: null,
               active: "",
               context: editorContext,
@@ -958,6 +1009,7 @@ export class PresentationLoader {
       const result = {
         terrain: undefined,
         ground: undefined,
+        landscape: undefined,
         scene,
         detail,
         active: houseId,

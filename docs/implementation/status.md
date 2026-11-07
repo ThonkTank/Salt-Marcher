@@ -1,63 +1,72 @@
 # Aktueller Stand
 
-Atlas V7, Dateiformat 21, Generierungsrezept 4. Stand: 7. November 2026.
+Atlas V7, Dateiformat 22, Generierungsrezept 4. Stand: 7. November 2026.
 [README](../../README.md) enthält Befehle, [Architektur](../architecture.md)
 Zuständigkeiten, [Produktvertrag](../product-contract.md) Verhalten und Grenzen.
 
-## Aktuelle Arbeit: zeilenlokale Seenrasterung
+## Aktuelle Arbeit: Landschaftsdeckung auf allen Außenmaßstäben
 
-Uferkanten werden einmal nach ihrer unteren Y-Grenze geordnet. Die Rasterung
-wertet nur Kanten aus, welche die aktuelle Subpixelzeile kreuzen. Polygon-/Loch-
-zuordnung, minimale überlappende Pegel, direkte Schnittformel und Halo bleiben
-unverändert. Jede Kante wird höchstens einmal gespeichert; der Pegelzeilenpuffer
-wird wiederverwendet. Es entsteht kein persistenter Cache.
+Landschaft speichert getrennte normierte Bestandsgewichte für Wald, Buschland,
+Wiese und Felsgebiet. Malen nähert sich einer Zieldichte, Entfernen schafft lokale
+Lichtungen. Grobe Autoren werden vererbt; grobes Übermalen aktualisiert bereits
+vorhandene Feinautoren. Boden-/Felsfarben bleiben unabhängig. Der bestehende
+Rasterstore teilt seine begrenzten Mechanismen über einen festen RasterKind;
+Worker, Queue, History und Präsentationsbesitzer bleiben erhalten.
 
-Ein Referenztest vergleicht mit dem bisherigen vollständigen Ringscan, einschließlich
-exakter Eckpunkte, Lochränder, überlappender Pegel und negativer/großer Koordinaten.
-Bei seiner detaillierten Kontur bleiben weniger als 2.048 aktive Kantenbesuche
-gegenüber 299.280 bisherigen Zeilen-/Kantenprüfungen. Das ist ein Arbeitsnachweis,
-keine Zeitmessung. Zwölf Rasterfälle, 21 Wasserfälle, acht Browserfälle, Clippy,
-Typen, Format und Release-/RPM-Build bestehen. Nativ bleiben Detail- und
-herausgezoomter Fluss-/Seekartenausschnitt pixelgleich zum vorherigen Build;
-Mausradnavigation hin und zurück funktioniert. Belege unter
-`src-tauri/target/diagnostics/lake-raster-audit/`.
+Nah entstehen stabile Weltkoordinaten-Symbole, mittel kartographische Signaturen,
+fern unmittelbar aus Deckungen berechnete Farben. Symbolkandidaten und Kacheln
+bleiben begrenzt; ein Kronenrand erhält über den Bildschirmrand ragende Symbole.
+Leere Antwortkacheln übertragen keine Pixelbytes und erzeugen keine Rasterarbeit.
+Wasser maskiert die Darstellung ohne Autorenverlust. Schnee bleibt sichtbar.
+Konturen und Regionsfüllung liegen über Landschaftsfarbe, aber unter Symbolen.
 
-## Integrierter Stand
+Geprüft: 334 Rust-Bibliotheksfälle bestanden, fünf bestehende Lastfälle ignoriert;
+anschließend drei Landschaftsfälle auf dem finalen Backend und Clippy bestanden.
+16 Ground-/Landschaftsfälle prüfen den gemeinsam verwendeten Rasterpfad.
+134 Transportverträge erzeugt und gegen Rust geprüft. 167 betroffene Frontendfälle einschließlich
+Transport/Interaktion sowie 21 abschließende Rendererfälle bestanden;
+55 Präsentations-/Cache-/Szenefälle und ein Kachelrandfall ebenfalls. Typprüfung
+besteht. Die erste vollständige Frontendsuite hatte 383 erfolgreiche Fälle;
+der Vertragsbuild wartete auf den kalten Cargo-Build und wurde anschließend
+gezielt erfolgreich nachgeprüft. Der Timeout wurde nicht erhöht.
 
-PR #1450 ist auf Main (`1f5767ba5`) integriert. Die vollständige CI des geprüften
-Heads `22dfa9b10` besteht: 362 Rustfälle (fünf Lastfälle ignoriert), 377 Frontendfälle,
-238 Browserfälle, 130 Verträge, Typen, Clippy, Format, Webbuild und RPM.
-Der Welt-Bodentest wartet nach Mausrad-Zoom auf die neue Kamerageneration;
-auch dieser Bedienweg besteht in der vollständigen Suite.
+Elf Browserfälle für Boden, Landschaft und bestehende dekorative Assets bestehen:
+sichtbare Vorschau auf Land, Welt und Straßenzug, Welt→Nah→Welt, lokale Entfernung,
+History, Abbruch, Datei und Ozeanmaskierung. Ein ergänzender Zweifall-Nachlauf prüft
+bestehende dekorative Assets auf Land, mit Pixelprüfung pro Vorlage und angesehenem
+Screenshot. Sechs abschließende Landschafts-/Navigationsfälle bestehen auch nach
+der Rasterclip-Korrektur und Umbenennung des unverändert arbeitenden Shortcuts
+in „Zur Detailansicht“. Ein weiterer Welt→Nah→Welt-Fall besteht nach der Zeichnung in
+Gerätekoordinaten; neun Rendererfälle prüfen diesen bei drei Pixeldichten und großen
+positiven/negativen Weltkoordinaten.
+Initiale neue Testannahmen über monotone Historyrevisionen und die
+Zeichenbestätigung wurden korrigiert; die Nachläufe bestätigen das Verhalten.
+Belege unter `src-tauri/target/diagnostics/landscape-tool/`, `landscape/`,
+`landscape-frontend/` und den zugehörigen `playwright-*/`-Verzeichnissen.
 
-Enthalten sind die Reliefpinsel Bergkette/Hügel/Schlucht, Bodenmalerei in allen
-Außenmaßstäben, Schnee und getrennte Boden-/Felsfarben. Straßen und Flüsse teilen
-den kanonischen Blockleser; Gewässerkontakte verwenden vorbereitete Geometrie
-innerhalb ihrer begrenzten lokalen Auswahl. Konstante natürliche Reliefgitter
-verwenden die vorhandene adaptive Rasterabtastung statt einzelner Höhenreads.
-Die oben beschriebene zeilenlokale Seenrasterung folgt separat in PR #1451;
-ihre vollständige CI auf der neuen Main-Basis steht noch aus.
+Release-/RPM-Build, Typen und Format bestehen. Nativ sind Weltmalen mit
+sichtbarer Vorschau, freie Mausradnavigation bis zu Einzelbäumen, lokale Lichtung,
+Undo/Redo sowie Speichern geprüft. Bodenfarbe in der Lichtung verändert keine
+Landschaftsautoren. Bei nativen Kachelnähten sind die gespeicherten Halos als
+Ursache ausgeschlossen: 14.784 überlappende Pixelpaare stimmen überein.
+Landschaftsraster werden deshalb einschließlich Clip und Bildziel in kleinen
+Gerätekoordinaten gezeichnet. Im frisch gebauten Desktopprogramm sind dieselbe
+Datei und derselbe 44%-Ausschnitt jetzt nahtfrei; Pixelvergleiche bestätigen den
+gleichen Grundton an früheren Nahtstellen und ihren Nachbarn. Welt→Nah per
+Mausrad und erneutes Öffnen erhalten Darstellung und Autorenwerte. Dateiformat 22
+ersetzt Entwicklungsformat 21 ohne Migration. Einzelobjektplatzierung, lokale
+Verschiebeausnahmen, Feldumrisse und Assetimporte bleiben Folgeumfang; die
+Landschaftsdeckung behauptet diese Funktionen nicht.
 
-Native Belege umfassen Weltmalerei vor Pointerup, beide Farbebenen, Schnee,
-Radierer, Navigation, Straßen mit Bebauung, Flusskontakt, Undo/Redo und
-Speichern/Wiederöffnen. Verglichene gespeicherte Kartenausschnitte bleiben
-pixelgleich. Die aus dem RPM entpackte Anwendung startet korrekt; Desktopstarter,
-Bibliotheken und Paketinhalt sind geprüft, keine Systeminstallation.
-Dateiformat 21 ersetzt 20 ohne Migration von Entwicklungsdateien.
-Belege unter `materials-*`, `road-sampler-*`, `water-contact-*` und
-`relief-grid-audit/` im ignorierten Diagnoseverzeichnis.
+## Bestehender Stand und offene Abnahmen
 
-## Bestehender Stand und Grenzen
-
-Der kräuselige Land-/Meerpinsel ist über PR #1448 integriert. Boden in allen
-Außenmaßstäben ist über PR #1450 integriert. Weitere integrierte Änderungen
-begrenzen Höhenpakete auf 32 Punkte, lesen räumlich begrenzte Autorenblöcke,
-entfernen ungenutzte Höhenübersichten und begrenzen Striche an der Weltkante.
-
-Feinere absolute Autoren behalten Vorrang vor späteren gröberen Änderungen.
-Relief unter Meeresspiegel erscheint unter Wasser. Die vorhandenen Kontrollwert-
-und Weltgrenzen bleiben bestehen. Nicht alle Kombinationen maximaler Pinselbreite,
-Reliefhöhe und Strichlänge sind nativ geprüft.
+Die bisherigen Gelände-, Material-, Wasser- und Cacheoptimierungen sind erhalten.
+PR #1450 ist nach vollständiger CI einschließlich RPM auf Main integriert.
+Der Produktbaum der zeilenlokalen Seenrasterung besteht ebenfalls die vollständige
+CI einschließlich RPM. Beim unveränderten Produktbaum auf der aktuellen Main-Basis
+scheiterte ein zweiter Lauf an einem einzelnen fünfsekündigen Canyon-Write-Timeout
+(237 Browserfälle bestanden); ein unveränderter Nachlauf ist gestartet. Integration
+läuft separat über PR #1451. Architektur und Produktvertrag beschreiben den fachlichen Stand.
 
 Genau eine frühere Vorher-/Nachher-Reihe mit je drei Weltstrichen ist abgeschlossen:
 erste sichtbare Änderung vorher 275–304 ms, danach 119–134 ms; sichtbare Bestätigung
@@ -66,6 +75,4 @@ p95 vorher 427–516 ms, danach 339–376 ms; Nachlauf vorher 259–427 ms, dana
 ist nicht belegt; keine weitere Zeitmessreihe wurde begonnen.
 
 RPM-Installation, große Stadt-/Weltlastfälle und der umfangreiche Release-Treiber
-mit neun Fixtures bleiben offen. Aktuelle Belege: `src-tauri/target/diagnostics/features-*`
-und `playwright-*/`; vorherige Belege unter `ground-*`, `crinkled-*`,
-`manual-world-*` und `world-brush/` im selben ignorierten Verzeichnis.
+bleiben offen. Die vollständige CI des neuen Landschaftsstandes steht aus.

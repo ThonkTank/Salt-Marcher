@@ -35,6 +35,8 @@ Neue Dokumente beginnen als Ozean; „Höhen → Land“ legt Land an.
 „Höhen → Bergkette / Hügel / Schlucht“ ergänzt Relief mit Größenvorlagen und
 einstellbarer Breite sowie Höhe/Tiefe in Metern. Hohe Gipfel erscheinen schneeweiß,
 steile Hänge steinig. „Boden → Farbebene“ färbt Boden und Fels unabhängig.
+„Landschaft“ malt Wald, Buschland, Wiese und Felsgebiet auf allen Außenmaßstäben;
+Zieldichte und lokales Entfernen bearbeiten den Bestand, die Darstellung folgt dem Zoom.
 Werkzeuge, Gesten, Ansichtsauswahl und Dateiabläufe beschreibt der Produktvertrag.
 
 ## Entwicklung und automatisierte Abnahme

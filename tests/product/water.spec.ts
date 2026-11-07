@@ -89,7 +89,7 @@ test("Gewässer bleiben in der Übersicht malbar und Höhen entfernen Inselwasse
   await page.mouse.move(p.x, p.y);
   await page.mouse.wheel(0, 900);
   await expect(
-    page.getByRole("button", { name: "Zum Bearbeiten hineinzoomen" }),
+    page.getByRole("button", { name: "Zur Detailansicht" }),
   ).toBeVisible();
   await ready(page);
   await dragWorld(page, [40, 40], [70, 40]);

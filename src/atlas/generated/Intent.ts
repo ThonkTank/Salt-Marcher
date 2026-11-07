@@ -5,6 +5,8 @@ import type { ConnectionIntent } from "./ConnectionIntent";
 import type { Foundation } from "./Foundation";
 import type { GroundArgs } from "./GroundArgs";
 import type { GroundBrush } from "./GroundBrush";
+import type { LandscapeArgs } from "./LandscapeArgs";
+import type { LandscapeBrush } from "./LandscapeBrush";
 import type { NewRoadInput } from "./NewRoadInput";
 import type { NodeInput } from "./NodeInput";
 import type { PopulationSettings } from "./PopulationSettings";
@@ -29,6 +31,7 @@ export type Intent =
       radius: number;
       erase: boolean;
     }
+  | { type: "landscapeStroke"; brush: LandscapeBrush; view?: LandscapeArgs }
   | { type: "groundStroke"; brush: GroundBrush; view?: GroundArgs }
   | { type: "sceneryStroke"; brush: SceneryBrush }
   | { type: "terrainStroke"; brush: Brush; view?: TerrainArgs }

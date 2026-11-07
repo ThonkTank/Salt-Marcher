@@ -23,7 +23,7 @@ test("city overview loads tiles, keeps navigation and returns to exact editing",
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
   await page.mouse.wheel(0, 1600);
   await expect(
-    page.getByRole("button", { name: "Zum Bearbeiten hineinzoomen" }),
+    page.getByRole("button", { name: "Zur Detailansicht" }),
   ).toBeVisible();
   await expect
     .poll(async () => (await calls(page, "mapTiles")).length)
@@ -32,9 +32,7 @@ test("city overview loads tiles, keeps navigation and returns to exact editing",
   await clearCalls(page);
   await page.mouse.click(box.x + 100, box.y + 100);
   expect(await calls(page, "commit")).toHaveLength(0);
-  await page
-    .getByRole("button", { name: "Zum Bearbeiten hineinzoomen" })
-    .click();
+  await page.getByRole("button", { name: "Zur Detailansicht" }).click();
   await ready(page);
   await expect
     .poll(async () => (await calls(page, "scene")).length)

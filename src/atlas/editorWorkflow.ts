@@ -27,6 +27,7 @@ export function intentRoute(intent: Intent): "queue" | "exact" {
     case "riverEdit":
     case "regionEdit":
     case "regionStroke":
+    case "landscapeStroke":
     case "groundStroke":
     case "sceneryStroke":
     case "terrainStroke":
@@ -107,6 +108,7 @@ export type GeometryOperation =
       append?: "start" | "end" | null;
     }
   | { kind: "region" }
+  | { kind: "landscape" }
   | { kind: "ground" }
   | { kind: "scenery" }
   | { kind: "terrain" }
@@ -168,6 +170,7 @@ type DraftWorkflow = Exact & {
 // One operation/gesture relation drives both the state union and runtime checks.
 const geometryGestures = {
   region: { pointers: ["region"], message: "Ungültige Regionsgeste" },
+  landscape: { pointers: ["landscape"], message: "Ungültige Landschaftsgeste" },
   ground: { pointers: ["ground"], message: "Ungültige Bodenpinselgeste" },
   scenery: { pointers: ["scenery"], message: "Ungültige Landschaftsgeste" },
   terrain: { pointers: ["terrain"], message: "Ungültige Höhengeste" },
@@ -289,6 +292,7 @@ export const isLiveBrush = (
   gesture:
     { kind: Gesture["kind"] | GeometryOperation["kind"] } | null | undefined,
 ) =>
+  gesture?.kind === "landscape" ||
   gesture?.kind === "ground" ||
   gesture?.kind === "terrain" ||
   gesture?.kind === "region";

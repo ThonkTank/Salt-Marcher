@@ -96,6 +96,7 @@ pub(in crate::atlas) struct ChangeSet {
     pub(in crate::atlas) world_terrain:
         Option<super::application::world_terrain_store::WorldTerrainDelta>,
     pub(in crate::atlas) terrain: Option<super::terrain::TerrainDelta>,
+    pub(in crate::atlas) landscape: Option<super::ground::GroundDelta>,
     pub(in crate::atlas) ground: Option<super::ground::GroundDelta>,
     pub(in crate::atlas) regions: Option<super::regions::RegionDelta>,
 }
@@ -105,6 +106,7 @@ impl ChangeSet {
             && self.rivers.is_none()
             && self.regions.is_none()
             && self.ground.is_none()
+            && self.landscape.is_none()
             && self.terrain.is_none()
             && self.world_terrain.is_none()
             && self.geometry.before.is_empty()
@@ -120,6 +122,7 @@ pub(in crate::atlas) struct FieldChange {
 #[derive(Default)]
 pub(in crate::atlas) struct Computed {
     pub river_preview: Option<super::rivers::RiverDelta>,
+    pub landscape_preview: Option<super::landscape::LandscapeResponse>,
     pub ground_preview: Option<super::ground::GroundResponse>,
     pub region_preview: Option<Vec<super::regions::Region>>,
     pub terrain_preview: Option<super::terrain::TerrainPreview>,

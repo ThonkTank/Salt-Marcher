@@ -11,6 +11,8 @@ import type { River } from "./generated/River";
 import type { RiverView } from "./generated/RiverView";
 import type { RiverSettings } from "./generated/RiverSettings";
 import type { TerrainFollow } from "./generated/TerrainFollow";
+import type { LandscapeBrush } from "./generated/LandscapeBrush";
+import type { LandscapeSettings } from "./landscapeView";
 import type { GroundBrush } from "./generated/GroundBrush";
 import type { GroundArgs } from "./generated/GroundArgs";
 import type { Brush } from "./generated/Brush";
@@ -97,6 +99,12 @@ export type Gesture = Base &
       }
     | { kind: "pan"; camera: Camera }
     | { kind: "ground"; brush: GroundBrush; view?: GroundArgs; started: number }
+    | {
+        kind: "landscape";
+        brush: LandscapeBrush;
+        view?: GroundArgs;
+        started: number;
+      }
     | {
         kind: "scenery";
         brush: import("./generated/SceneryBrush").SceneryBrush;
@@ -205,27 +213,24 @@ export function evaluateGesture(
     };
     return result;
   }
-  if (g.kind === "ground") {
+  if (g.kind === "ground" || g.kind === "landscape") {
     const elapsed = Math.max(
       g.brush.points[g.brush.points.length - 1][2],
       (input.time ?? g.started) - g.started,
     );
-    const gesture = {
-      ...g,
-      brush: {
-        ...g.brush,
-        points: [
-          ...g.brush.points,
-          [p[0], p[1], elapsed] as [number, number, number],
-        ],
-      },
-    };
+    const points: [number, number, number][] = [
+      ...g.brush.points,
+      [p[0], p[1], elapsed],
+    ];
+    const gesture =
+      g.kind === "ground"
+        ? { ...g, brush: { ...g.brush, points } }
+        : { ...g, brush: { ...g.brush, points } };
     result.gesture = gesture;
-    result.intent = {
-      type: "groundStroke",
-      brush: gesture.brush,
-      view: gesture.view,
-    };
+    result.intent =
+      gesture.kind === "ground"
+        ? { type: "groundStroke", brush: gesture.brush, view: gesture.view }
+        : { type: "landscapeStroke", brush: gesture.brush, view: gesture.view };
     return result;
   }
   if (g.kind === "terrain" && !g.water) {
@@ -550,6 +555,7 @@ export type CanvasInputSnapshot = Readonly<{
   boundaries: ReturnType<typeof parcelVisibility>["boundaries"];
   ground?: Omit<GroundBrush, "points" | "seed">;
   groundView?: GroundArgs;
+  landscapeView?: GroundArgs;
   groundPicker?: boolean;
   river?: {
     river: River | undefined;
@@ -565,10 +571,7 @@ export type CanvasInputSnapshot = Readonly<{
     mode: "paint" | "erase" | "select" | "label";
   };
   brush?: Omit<Brush, "points">;
-  scenery?: Omit<
-    import("./generated/SceneryBrush").SceneryBrush,
-    "points" | "seed"
-  >;
+  scenery?: LandscapeSettings;
   scenerySeed?: number;
   terrainView?: import("./generated/TerrainArgs").TerrainArgs;
   roadWidth: number;
@@ -1076,12 +1079,16 @@ function brushPointerDown(
   if (tool === "scenery" && snapshot.scenery) {
     begin({
       ...base,
-      kind: "scenery",
+      kind: "landscape",
+      started: input.time ?? 0,
+      view: snapshot.landscapeView,
       brush: {
-        ...snapshot.scenery,
-        radius: snapshot.scenery.radius / camera.scale,
-        seed: snapshot.scenerySeed ?? 1,
-        points: [p],
+        biome: snapshot.scenery.biome,
+        mode: snapshot.scenery.mode ?? "paint",
+        density: snapshot.scenery.density,
+        resolution: groundResolution(camera.scale),
+        diameter: (snapshot.scenery.radius * 2) / camera.scale,
+        points: [[p[0], p[1], 0]],
       },
     });
     return true;
@@ -1573,11 +1580,13 @@ export function evaluatePointer(
   const gesture = workflowPointer(snapshot.workflow);
   return gesture
     ? evaluateGesture(
-        gesture.kind === "ground"
-          ? { ...gesture, view: snapshot.groundView }
-          : gesture.kind === "terrain"
-            ? { ...gesture, view: snapshot.terrainView }
-            : gesture,
+        gesture.kind === "landscape"
+          ? { ...gesture, view: snapshot.landscapeView }
+          : gesture.kind === "ground"
+            ? { ...gesture, view: snapshot.groundView }
+            : gesture.kind === "terrain"
+              ? { ...gesture, view: snapshot.terrainView }
+              : gesture,
         {
           ...input,
           snapped:
@@ -1595,7 +1604,7 @@ export function evaluateHold(
   time: number,
 ): Evaluation | null {
   const gesture = workflowPointer(snapshot.workflow);
-  if (gesture?.kind !== "ground") return null;
+  if (gesture?.kind !== "ground" && gesture?.kind !== "landscape") return null;
   const last = gesture.brush.points[gesture.brush.points.length - 1];
   return evaluatePointer(
     snapshot,

@@ -45,6 +45,7 @@ fn preview_projections_preserve_json_contract() {
         regions: None,
         terrain: None,
         ground: None,
+        landscape: None,
         valid: True,
         version: version.clone(),
         status: Box::new(status.clone()),

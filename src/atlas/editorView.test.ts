@@ -76,7 +76,7 @@ it("shares scale restrictions with edit readiness across hysteresis", () => {
   expect(cold.atlasLevel).toBe(2);
   check(cold, false, [
     ["house", "detail"],
-    ["scenery", "detail"],
+    ["scenery", null],
     ["area", null],
     ["water", null],
     ["river", null],
@@ -93,7 +93,7 @@ it("shares scale restrictions with edit readiness across hysteresis", () => {
   ]);
   check(decideLod(0.31), false, [
     ["area", null],
-    ["scenery", "localBrush"],
+    ["scenery", null],
     ["water", "localBrush"],
     ["house", "detail"],
     ["road", null],
@@ -285,7 +285,7 @@ it("keeps street name and separates exact policy from the named view", () => {
       "regions",
     ] as const)
       expect(toolScaleRestriction(tool, false, lod)).toBeNull();
-    for (const tool of ["house", "scenery"] as const)
+    for (const tool of ["house"] as const)
       expect(toolScaleRestriction(tool, false, lod)).toBe(
         exact ? null : "detail",
       );
@@ -361,7 +361,7 @@ it("replaces only the selected exact road tile duplicate without creating freshn
     },
     groundPicker: false,
     brush: { mode: "land", radius: 40, amount: 1, strength: 0.25, target: 10 },
-    scenery: { biome: "forest", radius: 40, density: 0.65, size: 8 },
+    scenery: { biome: "forest", radius: 40, density: 0.65 },
     contours: true,
     roughness: { amount: 0.33, seed: 1 },
     terrainFollow: { tolerance: 0.1 },

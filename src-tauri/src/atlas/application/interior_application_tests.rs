@@ -163,6 +163,7 @@ fn real_move_preview_history_and_file_roundtrip() {
             "document_meta",
             "ground_tiles",
             "house_cells",
+            "landscape_tiles",
             "objects",
             "region_catalog",
             "regions",

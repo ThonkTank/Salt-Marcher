@@ -98,6 +98,10 @@ it("reuses shaded rasters across navigation and redraws only changed local depen
     restore() {},
     beginPath() {},
     rect() {},
+    setTransform() {},
+    getTransform() {
+      return { a: 1, d: 1, e: 0, f: 0 };
+    },
     clip() {},
     drawImage() {},
   } as unknown as CanvasRenderingContext2D;
@@ -154,6 +158,10 @@ it("keeps soil and rock pigments separate and snow above both", () => {
     restore() {},
     beginPath() {},
     rect() {},
+    setTransform() {},
+    getTransform() {
+      return { a: 1, d: 1, e: 0, f: 0 };
+    },
     clip() {},
     drawImage() {},
   } as unknown as CanvasRenderingContext2D;
@@ -200,3 +208,180 @@ it("keeps soil and rock pigments separate and snow above both", () => {
     vi.unstubAllGlobals();
   }
 });
+
+it("composes semantic landscape weights independently and preserves snow", () => {
+  let output = new Uint8ClampedArray();
+  vi.stubGlobal("document", {
+    createElement: () => ({
+      getContext: () => ({
+        createImageData: () => ({ data: new Uint8ClampedArray(66 * 66 * 4) }),
+        putImageData: (image: { data: Uint8ClampedArray }) => {
+          output = image.data;
+        },
+      }),
+    }),
+  });
+  const context = {
+    save() {},
+    restore() {},
+    beginPath() {},
+    rect() {},
+    setTransform() {},
+    getTransform() {
+      return { a: 1, d: 1, e: 0, f: 0 };
+    },
+    clip() {},
+    drawImage() {},
+  } as unknown as CanvasRenderingContext2D;
+  try {
+    const painter = new GroundPainter();
+    const view = {
+      status,
+      level: 0,
+      tiles: [{ x: 0, y: 0, pixels: pixelString(128, 0, 0, 0) }],
+    };
+    painter.paintLandscape(context, view, undefined);
+    expect(Array.from(output.slice(0, 4))).toEqual([77, 112, 70, 128]);
+    const terrain = {
+      status,
+      level: 0,
+      tiles: [
+        {
+          x: 0,
+          y: 0,
+          contentId: "landscape-snow",
+          heights: [],
+          waters: [],
+          foundationTops: [],
+          raster: {
+            pixels: 2,
+            contourInterval: 5,
+            contours: [],
+            relief: btoa(String.fromCharCode(178, 185, 151, 255)),
+            materials: btoa(String.fromCharCode(0, 255, 222)),
+            water: btoa("\0"),
+          },
+        },
+      ],
+    };
+    painter.paintLandscape(context, view, terrain);
+    const i = (2 * 66 + 2) * 4;
+    expect(Array.from(output.slice(i, i + 4))).toEqual([245, 247, 250, 128]);
+  } finally {
+    vi.unstubAllGlobals();
+  }
+});
+
+it("does no raster or symbol work for wholly empty landscape responses", () => {
+  const create = vi.fn();
+  vi.stubGlobal("document", { createElement: create });
+  const context = {} as CanvasRenderingContext2D;
+  try {
+    new GroundPainter().paintLandscape(
+      context,
+      { status, level: 0, tiles: [{ x: 0, y: 0, pixels: "" }] },
+      undefined,
+    );
+    new GroundPainter().paintLandscapeSymbols(
+      context,
+      { status, level: 0, tiles: [{ x: 0, y: 0, pixels: "" }] },
+      undefined,
+      1,
+    );
+    expect(create).not.toHaveBeenCalled();
+  } finally {
+    vi.unstubAllGlobals();
+  }
+});
+
+it.each(
+  [1, 1.5, 2].flatMap((dpr) =>
+    [-130000, 0, 130000].map((origin) => ({ dpr, origin })),
+  ),
+)(
+  "clips adjacent landscapes directly in device pixels at DPR $dpr and world tile $origin",
+  ({ dpr, origin }) => {
+    const transform = {
+      a: 0.73 * dpr,
+      b: 0,
+      c: 0,
+      d: 0.73 * dpr,
+      e: (-origin * 256 * 0.73 + 13.37) * dpr,
+      f: (origin * 256 * 0.73 + 5.19) * dpr,
+    };
+    let active: number[] = [
+      transform.a,
+      0,
+      0,
+      transform.d,
+      transform.e,
+      transform.f,
+    ];
+    const clips: number[][] = [];
+    const drawImage = vi.fn((..._args: unknown[]) =>
+      expect(active).toEqual([1, 0, 0, 1, 0, 0]),
+    );
+    const context = {
+      save() {},
+      restore() {},
+      beginPath() {},
+      clip() {},
+      getTransform: () => transform,
+      setTransform: (...args: unknown[]) => {
+        active =
+          args.length === 1
+            ? [transform.a, 0, 0, transform.d, transform.e, transform.f]
+            : (args as number[]);
+      },
+      rect: (...args: number[]) => {
+        expect(active).toEqual([1, 0, 0, 1, 0, 0]);
+        clips.push(args);
+      },
+      drawImage,
+    } as unknown as CanvasRenderingContext2D;
+    vi.stubGlobal("document", {
+      createElement: () => ({
+        getContext: () => ({
+          createImageData: () => ({ data: new Uint8ClampedArray(66 * 66 * 4) }),
+          putImageData() {},
+        }),
+      }),
+    });
+    try {
+      const tiles = [origin - 1, origin, origin + 1].map((x) => ({
+        x,
+        y: -origin,
+        pixels: pixelString(128, 0, 0, 0),
+      }));
+      new GroundPainter().paintLandscape(
+        context,
+        { status, level: 2, tiles },
+        undefined,
+      );
+      for (const clip of clips) expect(clip.every(Number.isInteger)).toBe(true);
+      expect(clips[0][0] + clips[0][2]).toBe(clips[1][0]);
+      expect(clips[1][0] + clips[1][2]).toBe(clips[2][0]);
+      for (let i = 0; i < tiles.length; i++) {
+        expect(
+          Math.abs(
+            clips[i][0] - (tiles[i].x * 256 * transform.a + transform.e),
+          ),
+        ).toBeLessThanOrEqual(0.5);
+        const imageArgs = drawImage.mock.calls[i].slice(1) as number[];
+        const expected = [
+          ((i - 1) * 256 * 0.73 + 13.37 - 4 * 0.73) * dpr,
+          (5.19 - 4 * 0.73) * dpr,
+          264 * 0.73 * dpr,
+          264 * 0.73 * dpr,
+        ];
+        // Translating the viewport by millions of feet must still send the same
+        // small device coordinates to the raster API (including its full halo).
+        expected.forEach((value, k) =>
+          expect(imageArgs[k]).toBeCloseTo(value, 6),
+        );
+      }
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  },
+);

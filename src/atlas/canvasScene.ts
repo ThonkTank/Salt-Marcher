@@ -56,6 +56,29 @@ export function prepareCanvasScene(
     !sameVersion(groundCandidate.status, terrain.status)
       ? undefined
       : groundCandidate;
+  const landscapeBase = presentation?.landscape;
+  const landscapePreview = preview?.valid ? preview.landscape : undefined;
+  const landscapeCandidate =
+    landscapeBase &&
+    landscapePreview &&
+    landscapeBase.level === landscapePreview.level &&
+    sameVersion(landscapeBase.status, landscapePreview.status)
+      ? {
+          ...landscapeBase,
+          tiles: landscapeBase.tiles.map(
+            (tile) =>
+              landscapePreview.tiles.find(
+                (p) => p.x === tile.x && p.y === tile.y,
+              ) ?? tile,
+          ),
+        }
+      : (landscapeBase ?? landscapePreview);
+  const landscapeView =
+    landscapeCandidate &&
+    terrain &&
+    !sameVersion(landscapeCandidate.status, terrain.status)
+      ? undefined
+      : landscapeCandidate;
   const visibleBoundaries = new Set(visibility.boundaries);
   const kinds = presentation?.overview
     ? ["road"]
@@ -106,6 +129,7 @@ export function prepareCanvasScene(
     rivers,
     waters,
     ground,
+    landscape: landscapeView,
     terrain,
     terrainPreview: terrainPreview?.surface ? undefined : terrainPreview,
     foundationTops: new Map(

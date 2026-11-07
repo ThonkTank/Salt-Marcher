@@ -186,7 +186,7 @@ export default function AtlasApp({
               </span>
             )}
             {!interior && !lod.policy.exact && (
-              <button onClick={zoomToEdit}>Zum Bearbeiten hineinzoomen</button>
+              <button onClick={zoomToEdit}>Zur Detailansicht</button>
             )}
             {!interior && (
               <select

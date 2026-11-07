@@ -163,7 +163,7 @@ test("ground aborts, shortcuts, pipette, tips, overview and file roundtrip", asy
   await page.mouse.move(p.x, p.y);
   await page.mouse.wheel(0, 1300);
   await expect(
-    page.getByRole("button", { name: "Zum Bearbeiten hineinzoomen" }),
+    page.getByRole("button", { name: "Zur Detailansicht" }),
   ).toBeVisible();
   await ready(page);
   await dragWorld(page, [25, 25], [65, 25]);

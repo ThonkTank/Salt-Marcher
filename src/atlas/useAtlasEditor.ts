@@ -133,6 +133,7 @@ export function useAtlasEditor(client: AtlasClient) {
       cityLevel: !interior && !lod.policy.exact ? lod.cityLevel : null,
       terrainLevel: lod.terrainLevel,
       groundLevel: lod.groundLevel,
+      landscapeLevel: lod.groundLevel,
     }),
     presentation = reads.value;
   const sceneState = editorScene(presentation, selection.state);

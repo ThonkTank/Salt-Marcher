@@ -72,6 +72,7 @@ commands! {
     EndTerrainStroke, "endTerrainStroke", super::terrain_stroke::EndTerrainStroke, Status, AtlasApplication::end_terrain_stroke, Client;
     Rivers, "rivers", super::river_store::RiverArgs, super::river_store::RiverResponse, AtlasApplication::rivers, Read;
     Regions, "regions", super::region_store::RegionArgs, super::region_store::RegionResponse, AtlasApplication::regions, Read;
+    LandscapeTiles, "landscapeTiles", crate::atlas::landscape::LandscapeArgs, crate::atlas::landscape::LandscapeResponse, AtlasApplication::landscape_tiles, Read;
     GroundTiles, "groundTiles", crate::atlas::ground::GroundArgs, crate::atlas::ground::GroundResponse, AtlasApplication::ground_tiles, Read;
     SurfacePoints, "surfacePoints", crate::atlas::terrain::SurfacePointsArgs, crate::atlas::terrain::SurfacePointsResponse, AtlasApplication::surface_points, Read;
     TerrainTiles, "terrainTiles", crate::atlas::terrain::TerrainArgs, crate::atlas::terrain::TerrainResponse, AtlasApplication::terrain_tiles, Read;
