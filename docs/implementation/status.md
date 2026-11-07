@@ -6,20 +6,22 @@ Zuständigkeiten, [Produktvertrag](../product-contract.md) Verhalten und Grenzen
 
 ## Integration
 
-Main enthält Landschaft, Darstellungsbegrenzung, Sampler-Fix sowie die Korrekturen
-für Geometriecaches und Eingaben während Ansichtsreads. PR #1461 ist als
-`bd65b88ff` integriert; der Main-Baum entspricht exakt dem geprüften Kandidaten
-`80eb52907`. Beide vollständigen CI-Läufe bestehen: jeweils 337 Rust-Librarytests
-und 32 Integration-/Adaptertests, fünf absichtlich ignorierte Fälle, 246
-Browserfälle, Frontendtests, Typen, Transportverträge, Clippy, Format und
-Release-/RPM-Build.
+Main enthält Landschaft, Darstellungsbegrenzung, Sampler-Fix, stabile
+Geometriecaches und Eingaben während Ansichtsreads. PR #1462 ist als
+`50595d7ff` integriert; der Main-Baum entspricht exakt dem geprüften Kandidaten
+`fd22c2927`. Die vollständige CI besteht: 338 Rust-Librarytests und 32
+Integration-/Adaptertests, fünf absichtlich ignorierte Fälle, 246 Browserfälle,
+Frontendtests, Typen, Transportverträge, Clippy, Format und Release-/RPM-Build.
+Damit sind auch lesbare Pinselmaße, verständliche Grenzmeldungen und der frühe
+Rückweg für leere Höhenkachelanfragen auf Main.
 
-Die ausstehenden Kandidaten bauen auf diesem Main-Baum auf: PR #1462 enthält
-lesbare Pinselmaße, verständliche Grenzmeldungen und den frühen Rückweg für leere
-Höhenkachelanfragen. PR #1463 ergänzt Kartenschrift und begrenzte Dachdetails.
-Darauf folgt die lokale Kachelzuordnung für Materialabtastung. Die vollständigen
-CI-Freigaben und Main-Übernahmen dieser Folgeänderungen stehen noch aus;
-lokale Ergebnisse ersetzen diese Freigaben nicht.
+Die ausstehenden Folgeänderungen bauen auf diesem Main-Baum auf: PR #1463
+enthält Kartenschrift und begrenzte Dachdetails; PR #1464 ergänzt die lokale
+Kachelzuordnung für Materialabtastung. Beide enthalten korrigierte Pixelproben
+für schattierte Dächer und Auswahl außerhalb von Beschriftungen. Ihre
+vollständigen CI-Freigaben und Main-Übernahmen stehen noch aus; lokale Ergebnisse
+ersetzen diese Freigaben nicht. Die Main-Integration in den Folgekandidaten
+ändert weder Produktcode noch Tests.
 
 ## Gestalterische Richtung
 
