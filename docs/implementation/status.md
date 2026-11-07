@@ -41,6 +41,13 @@ History und Sessionwechsel. Der frische Release-/RPM-Build besteht. Die Änderun
 liegt als Folgebranch hinter dem noch laufenden Main-Kandidaten; eine native
 Bedienprüfung und eine neue Latenzaussage sind damit nicht belegt.
 
+Die Walddichte zeigt nach einer Prozenteingabe keine binären Rundungsreste mehr.
+Die Browserprobe reproduzierte zuvor `55.00000000000001` nach Eingabe von `55`.
+Nach der reinen Anzeigeänderung bleiben 55, 55,5, 55,12345 sowie die Grenzen
+5 und 100 lesbar und unverändert. Typen, Format und frischer Release-/RPM-Build
+bestehen; Autorenberechnung
+und Eingabegrenzen wurden nicht geändert.
+
 ## Höhenstrich während eines Ansichtswechsels
 
 Eine schrittweise Browserprobe mit echtem Dokumentkern zeigte: Weltmalen nach
