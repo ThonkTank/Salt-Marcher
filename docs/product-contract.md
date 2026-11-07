@@ -408,7 +408,9 @@ führen den verbleibenden Abstand über Paketgrenzen weiter. Glätten verwendet
 neun Nachbarpunkte; Einebnen nähert sich der Zielhöhe. Halten vertieft nicht weiter.
 
 Höhenstriche ändern das Dokument während des Ziehens direkt und verwenden keine
-getrennte Vorschau. Höchstens ein Abschnitt ist unterwegs; weitere Punkte werden
+getrennte Vorschau. Auch während ausstehender Writes erscheinen dafür keine
+Übernehmen-/Abbrechen-Aktionen; Beenden behält das Gemalte, Rückgängig entfernt
+den Strich. Höchstens ein Abschnitt ist unterwegs; weitere Punkte werden
 geordnet gesammelt. Der Editor sendet höchstens 32 neue Pfadpunkte je Paket,
 ohne angenommene Punkte auszulassen. Jeder Abschnitt ist atomar, der gesamte Strich ein
 Undo-Schritt. Loslassen, Escape, Blur, Pointerabbruch und Werkzeugwechsel beenden

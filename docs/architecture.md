@@ -180,8 +180,11 @@ Kandidaten tragen Version, Kontext und Identität. Inhaltsänderungen ersetzen s
 Neuprüfung liest frische Header. Bei Hauszeichnungen entscheidet der Workflow
 gemeinsam über abgeschlossene Pointergeste und aufgelösten Owner.
 `DocumentQueue` besitzt angenommene Writes unabhängig vom Workflow und über
-UI-Remounts hinweg. Direkte Höhengesten halten nur letzten Punkt und Führungsdaten;
-die Queue bündelt neue Punkte und sendet begrenzte Abschnitte seriell. Ein
+UI-Remounts hinweg. Der eigene Zustand `terrainGesture` hält für direkte
+Höhengesten nur den letzten Punkt und die erfassten Gestendaten, ohne
+Vorschaukandidat, Prüfphase oder veraltbare Basisrevision. Bestätigte Revisionen
+setzen dieselbe Geste fort; Dokument-, Kontext- und exklusive Grenzen schließen
+sie ab. Die Queue bündelt neue Punkte und sendet begrenzte Abschnitte seriell. Ein
 angenommener Pfad reserviert seinen Abschluss vor nachfolgenden Aktionen.
 Dateigrenzen und Unmount schließen den Rest ab. Gewässer behalten ihren
 vollständigen Vorschaupfad. Die Bedienregeln stehen unter
