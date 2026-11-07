@@ -90,23 +90,33 @@ Belege: `src-tauri/target/diagnostics/city-density-visibility/`.
 PR #1450 ist auf Main. PR #1456 bündelt den vollständigen Landschaftsstand
 und die anschließend geprüften Sichtbarkeits-/Zoomänderungen direkt gegen Main.
 Der konfliktfreie Mergevergleich ergibt denselben Produktbaum; bestehende Arbeit
-bleibt vollständig erhalten. #1457 dient bis zur Integration als erhaltene
-Zwischenreferenz. Die älteren Kandidaten #1451 und #1454 haben kein Auto-Merge.
+bleibt vollständig erhalten. #1457 ist in den Kandidatenbranch integriert. Die älteren Kandidaten #1451 und #1454 haben kein Auto-Merge.
 
-Die Gesamtprüfung von `1bc2a9be3` bestand 336 Rusttests (fünf ignoriert),
-32 Integrationstests, Frontend/Typen/Verträge/Clippy/Format sowie 241 von 242
-Browserfällen. Der Dateiablauf-Test erwartete nach sofortigem Werkzeugwechsel
-noch die automatische Auswahl aus dem alten Haus-Zeichenablauf. Die Diagnose
-zeigt das bestätigte Haus in Revision 1 und vollständig gezeichnete Daten ohne
-ausstehende Arbeit. Der Test wählt das bestätigte Haus jetzt ausdrücklich aus;
-der Dateiablauf besteht gezielt einschließlich Abbrechen, Speichern und Ersetzen.
-Die Unterdrückung verspäteter Auswahlantworten bleibt unverändert. Der frühere
-Schluchtfehler trat in diesem Gesamtprüflauf nicht auf.
+Die Gesamtprüfung von `d721bbd4d` bestand Rust, Frontend, Typen, Verträge,
+Clippy, Format und 242 von 243 Browserfällen. Der korrigierte Dateiablauf-Test
+besteht. Der verbleibende 4K-Landschaftsfall wartete beim Laden auf 54
+Detail-Geländekacheln aus groben Autoren; die fünfsekündige Bereitschaftsgrenze
+wurde überschritten. Das Diagnosebild enthielt eine laufende Abfrage und keine
+ausstehenden Writes.
 
-Der gebündelte finale Commit benötigt weiterhin seine vollständige CI-Freigabe;
-Main ist noch nicht auf diesem Stand. Native Bedienprüfung und Referenzlatenzen
-sind damit nicht belegt. Belege: `src-tauri/target/diagnostics/house-file-boundary/`
-und `src-tauri/target/diagnostics/landscape-main-integration/`.
+Der Sampler beweist jetzt für kleine Ausschnitte höchstens vier vollständig
+belegte konstante Spline-Abschnitte, auch wenn die umschließenden Indexblöcke
+nicht konstant oder nur dünn belegt sind. Die unveränderte kanonische Oberfläche
+kann dadurch als konstantes Raster zurückgegeben werden. Fehlende Stützwerte
+fallen auf den konservativen Pfad zurück. Sechs Blockindex- und zwölf
+Rastertests bestehen, einschließlich negativer Koordinaten, fehlender Autoren,
+Küsten, Materialhalos und Vergleich mit der kanonischen Oberfläche. Der zuvor
+gescheiterte 4K-Browserfall besteht lokal ohne geändertes Zeitlimit. Alle 27
+Landschafts-/Live-Höhen-Browserfälle bestehen, einschließlich Weltzoom per
+Mausrad, runder/kräuseliger Küsten, Fehlererholung, Abbruch und History.
+Clippy, Typen, Format und der frische Release-/RPM-Build bestehen.
+Belege: `src-tauri/target/diagnostics/coarse-flat-proof/` und
+`src-tauri/target/diagnostics/landscape-main-integration/`.
+
+Der finale Commit benötigt weiterhin seine vollständige CI-Freigabe; Main ist
+noch nicht auf diesem Stand. Der native UI-Zugriff dieser Sitzung bietet keine
+Desktopanwendungen. Die native Bedienabnahme bleibt daher ausdrücklich offen;
+ein Releasebuild allein ersetzt sie nicht.
 
 Genau eine frühere Vorher-/Nachher-Reihe mit je drei Weltstrichen ist abgeschlossen:
 erste sichtbare Änderung vorher 275–304 ms, danach 119–134 ms; sichtbare Bestätigung

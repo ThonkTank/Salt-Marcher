@@ -139,7 +139,11 @@ Caches für Indexknoten, 16×16-Blöcke und lokale Koeffizienten. Quellen außer
 ihrer Einflussbounds werden übersprungen. Der gehaltene Lesespeicher hängt vom
 Darstellungsbudget ab. Konstante Kontrollwerte über einer identisch hohen
 geerbten Fläche bleiben auch bei dünner Belegung exakt konstant; die
-Polynomauswertung darf dort keine künstliche Steigung erzeugen. `terrain_raster` unterteilt nichtkonstante Bereiche bis zur
+Polynomauswertung darf dort keine künstliche Steigung erzeugen. Für kleine
+Ausschnitte grober Autoren prüft der Sampler zusätzlich höchstens vier
+vollständig belegte konstante Spline-Abschnitte. Damit kann eine lokal ebene
+Fläche trotz dünn belegtem oder unterschiedlich hohem Indexblock exakt erkannt
+werden; fehlende Stützwerte behalten die konservative Intervallberechnung. `terrain_raster` unterteilt nichtkonstante Bereiche bis zur
 Abtastauflösung und berechnet Relief, Wasserabdeckung und Höhenlinien aus der
 kanonischen Oberfläche samt Flussbetten, Plattformen und lokalen Gewässern.
 Gemeinsame Weltabtastpunkte und ein Pixelrand ermöglichen Kachelfilterung;
