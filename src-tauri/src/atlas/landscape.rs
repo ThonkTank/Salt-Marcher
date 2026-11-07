@@ -77,11 +77,7 @@ impl From<ground::GroundResponse> for LandscapeResponse {
                 .map(|t| LandscapeTile {
                     x: t.x,
                     y: t.y,
-                    pixels: if t.pixels.iter().all(|&v| v == 0) {
-                        Vec::new()
-                    } else {
-                        t.pixels
-                    },
+                    pixels: t.pixels,
                 })
                 .collect(),
         }

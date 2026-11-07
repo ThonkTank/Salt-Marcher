@@ -5,6 +5,7 @@ export type GroundTile = {
   y: number;
   /**
    * Base64 of two 66×66 premultiplied RGBA planes: soil, then rock, including halos.
+   * Empty means both planes and their halos have zero pigment.
    */
   pixels: string;
 };

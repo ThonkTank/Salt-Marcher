@@ -357,7 +357,9 @@ Feinere Kacheln erben grobe Farbe; spätere grobe Striche bearbeiten vorhandene
 Feinkacheln mit demselben Farbauftrag, ohne leere Feinraster anzulegen. Radierte
 transparente Autorenwerte verdecken geerbte Farbe. Die Darstellung interpoliert weich,
 erhält die Reliefschattierung und liegt unter Wasser, Landschaft, Straßen und
-Gebäuden. Bodenfarbe verändert keine Höhen, Fundamente oder Kollisionen.
+Gebäuden. Vollständig leere Darstellungskacheln übertragen einen leeren Pixelstring;
+dies betrifft beide Farbebenen einschließlich ihrer Ränder und löscht keine Autoren.
+Bodenfarbe verändert keine Höhen, Fundamente oder Kollisionen.
 Ein Strich enthält höchstens 100.000 zeitgestempelte Pfadpunkte, dauert höchstens
 eine Stunde und bearbeitet höchstens eine Million Rasterpixel einschließlich
 betroffener vorhandener Feinkacheln. Die Berechnung ist

@@ -326,6 +326,10 @@ reserviert nur deren tatsächliche Rastergröße im bestehenden Budgetcache.
 Bodenautoren enthalten zwei planare 64×64-RGBA-Ebenen für Boden und Fels;
 Vererbung, Übersichtspyramide, Halo, History und Dateipersistenz führen beide
 gemeinsam. Malen, Radieren und Pipette betreffen ausschließlich die gewählte Ebene.
+Eine vollständig pigmentfreie Antwortkachel einschließlich beider Halos verwendet
+wie Landschaft einen leeren Pixelstring. Der Painter überspringt sie vor Decodierung,
+Materialabfrage und Canvas-Allokation; die Pipette liefert weiterhin die Grundfarbe.
+Autoren und Pyramide behalten ihre vollständigen planaren Pixelwerte.
 Bodenfarben verwenden je Zeichenaufruf einen Materialleser, der die aktuelle
 Kachelreferenz über benachbarte Pixel hinweg wiederverwendet. Es entsteht kein
 zusätzlicher persistenter Cache. Beschriftungen verwerfen unsichtbare und nach

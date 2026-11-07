@@ -16,13 +16,19 @@ Worker, Queue, History und Präsentationsbesitzer bleiben erhalten.
 Nah entstehen stabile Weltkoordinaten-Symbole, mittel kartographische Signaturen,
 fern unmittelbar aus Deckungen berechnete Farben. Symbolkandidaten und Kacheln
 bleiben begrenzt; ein Kronenrand erhält über den Bildschirmrand ragende Symbole.
-Leere Landschaftsantwortkacheln übertragen keine Pixelbytes und erzeugen keine
+Leere Boden- und Landschaftsantwortkacheln übertragen keine Pixelbytes und erzeugen keine
 Rasterarbeit. Vollständig unbenutzte Boden-/Landschaftsebenen überspringen nun
 bereits im Store Vererbungsreads und Haloaufbau. Eine Autoren-Existenzprüfung
 genügt; Vorschauwerte und explizit leere Autoren behalten ihren normalen Pfad.
-Elf betroffene Rustfälle bestehen, einschließlich eines neuen Leerfalltests mit
-64 Kacheln auf drei Auflösungen: gesperrte Pixel-/Übersichtsreads, unveränderte
-Antwortformate und weiterhin wirksame Argumentgrenzen.
+Zwölf betroffene Rustfälle bestehen, einschließlich 64 leerer Kacheln auf drei
+Auflösungen ohne Pixel-/Übersichtsreads und mit weiterhin wirksamen Argumentgrenzen.
+Ein ergänzender Fall erhält Kacheln mit ausschließlich im Halo vorhandenen
+Boden- oder Felspigmenten. 67 Frontend-/Cache-/Loaderfälle bestehen; die Pipette
+liefert für leere Kacheln weiterhin die Grundfarben. Die leere Boden-Nutzlast
+entfällt damit ebenfalls; dies ist eine Transportoptimierung ohne neue Zeitmessung.
+Zehn Browserfälle für Boden, Landschaft und Schnee/Fels bestehen einschließlich
+Weltzoom per Auswahl/Mausrad, History und Datei. Typen, 134 Transportverträge,
+Clippy und Format bestehen.
 Wasser maskiert die Darstellung ohne Autorenverlust. Schnee bleibt sichtbar.
 Konturen und Regionsfüllung liegen über Landschaftsfarbe, aber unter Symbolen.
 Der Übergang von Signaturen zu Einzelbäumen überblendet beide Darstellungen
@@ -82,11 +88,13 @@ Landschaftsdeckung behauptet diese Funktionen nicht.
 
 Die bisherigen Gelände-, Material-, Wasser- und Cacheoptimierungen sind erhalten.
 PR #1450 ist nach vollständiger CI einschließlich RPM auf Main integriert.
-Der Produktbaum der zeilenlokalen Seenrasterung besteht ebenfalls die vollständige
-CI einschließlich RPM. Beim unveränderten Produktbaum auf der aktuellen Main-Basis
-scheiterte ein zweiter Lauf an einem einzelnen fünfsekündigen Canyon-Write-Timeout
-(237 Browserfälle bestanden); ein unveränderter Nachlauf ist gestartet. Integration
-läuft separat über PR #1451. Architektur und Produktvertrag beschreiben den fachlichen Stand.
+Die zeilenlokale Seenrasterung besteht die vollständige CI einschließlich RPM
+auch auf dem aktuellen Kandidaten. Ein vorausgegangener Canyon-Write-Timeout
+trat im unveränderten Nachlauf nicht mehr auf. Der vollständige Landschaftsstand
+mit diesen Änderungen ist in PR #1454 gegen Main zusammengeführt; dessen
+vollständige CI und automatische Integration stehen noch aus. Die kompakte
+Leerkachelantwort für Boden ist ein separat geprüfter Folgeänderungsstand.
+Architektur und Produktvertrag beschreiben den fachlichen Stand.
 
 Genau eine frühere Vorher-/Nachher-Reihe mit je drei Weltstrichen ist abgeschlossen:
 erste sichtbare Änderung vorher 275–304 ms, danach 119–134 ms; sichtbare Bestätigung

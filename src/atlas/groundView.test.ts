@@ -385,3 +385,22 @@ it.each(
     }
   },
 );
+
+it("skips empty ground raster work while preserving soil and rock pipette colors", () => {
+  const view: GroundResponse = {
+    status,
+    level: 0,
+    tiles: [{ x: -1, y: -1, pixels: "" }],
+  };
+  const create = vi.fn();
+  vi.stubGlobal("document", { createElement: create });
+  try {
+    new GroundPainter().paint({} as CanvasRenderingContext2D, view);
+    expect(create).not.toHaveBeenCalled();
+    expect(groundColorAt(view, [-1, -1], "soil")).toEqual([178, 185, 151]);
+    expect(groundColorAt(view, [-1, -1], "rock")).toEqual([145, 142, 137]);
+    expect(groundColorAt(view, [100, 100])).toBeNull();
+  } finally {
+    vi.unstubAllGlobals();
+  }
+});

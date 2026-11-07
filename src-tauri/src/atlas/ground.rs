@@ -87,6 +87,7 @@ pub struct GroundTile {
     pub x: i32,
     pub y: i32,
     /// Base64 of two 66×66 premultiplied RGBA planes: soil, then rock, including halos.
+    /// Empty means both planes and their halos have zero pigment.
     #[serde(with = "pixel_wire")]
     #[cfg_attr(test, ts(type = "string"))]
     pub pixels: Vec<u8>,

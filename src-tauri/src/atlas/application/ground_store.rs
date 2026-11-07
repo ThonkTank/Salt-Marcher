@@ -276,10 +276,7 @@ fn response(
                 .map(|[x, y]| GroundTile {
                     x,
                     y,
-                    pixels: match kind {
-                        RasterKind::Ground => vec![0; 66 * 66 * 4 * kind.planes()],
-                        RasterKind::Landscape => Vec::new(),
-                    },
+                    pixels: Vec::new(),
                 })
                 .collect(),
         });
@@ -305,6 +302,10 @@ fn response(
                     );
                 }
             }
+        }
+        // Include both pigment planes and the full halo in the empty test.
+        if pixels.iter().all(|&v| v == 0) {
+            pixels.clear();
         }
         tiles.push(GroundTile { x, y, pixels });
     }

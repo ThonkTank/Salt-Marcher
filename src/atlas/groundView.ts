@@ -242,6 +242,7 @@ export class GroundPainter {
     view: GroundResponse,
     terrain?: TerrainResponse,
   ) {
+    if (view.tiles.every((tile) => !tile.pixels)) return;
     c.save();
     c.imageSmoothingEnabled = true;
     c.globalCompositeOperation = "source-over";
@@ -249,6 +250,7 @@ export class GroundPainter {
       width = 64 * step;
     const materialAt = terrain ? prepareMaterialSampler(terrain) : undefined;
     for (const tile of view.tiles) {
+      if (!tile.pixels) continue;
       // Include the pixel halo and all four relief samples. Compare immutable
       // tiles, not response wrappers: panning often publishes the same surface.
       const margin = 2 * step + (terrain ? 5 * 2 ** terrain.level : 0);

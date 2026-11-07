@@ -460,12 +460,7 @@ fn empty_raster_layers_do_not_read_pixels_or_overviews() {
             assert_eq!(output.len(), tiles.len());
             for (tile, [x, y]) in output.iter().zip(&tiles) {
                 assert_eq!([tile.x, tile.y], [*x, *y]);
-                if command == "landscapeTiles" {
-                    assert!(tile.pixels.is_empty());
-                } else {
-                    assert_eq!(tile.pixels.len(), 66 * 66 * 4 * 2);
-                    assert!(tile.pixels.iter().all(|&v| v == 0));
-                }
+                assert!(tile.pixels.is_empty());
             }
         }
     }
@@ -570,4 +565,33 @@ fn landscape_failure_rolls_back_authors_and_budget_rejects_before_write() {
         .request("commit", json!({"version":a.status(),"intent":excessive}))
         .is_err());
     assert_eq!(a.status().revision, status.revision);
+}
+
+#[test]
+fn ground_empty_encoding_preserves_halo_only_pigment_in_either_plane() {
+    use crate::atlas::ground::GroundTile;
+    for (layer, offset) in [("soil", 0), ("rock", 66 * 66 * 4)] {
+        let mut a = AtlasApplication::new().unwrap();
+        request_edit(
+            &mut a,
+            "commit",
+            json!({"type":"groundStroke","brush":{
+                "layer":layer,"mode":"paint","tip":"hard","color":[90,120,150],
+                "diameter":2,"opacity":1,"flow":1,"seed":1,
+                "points":[[63,30,0],[63,30,1000]]
+            }}),
+        );
+        let response = a
+            .request("groundTiles", json!({"level":0,"tiles":[[1,0],[2,0]]}))
+            .unwrap();
+        let output: Vec<GroundTile> = serde_json::from_value(response["tiles"].clone()).unwrap();
+        assert_eq!(output[0].pixels.len(), 66 * 66 * 4 * 2);
+        assert!(output[1].pixels.is_empty());
+        assert!((1..65).any(|y| output[0].pixels[offset + y * 66 * 4 + 3] > 0));
+        for y in 1..65 {
+            for x in 1..65 {
+                assert_eq!(output[0].pixels[offset + (y * 66 + x) * 4 + 3], 0);
+            }
+        }
+    }
 }
