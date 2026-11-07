@@ -25,6 +25,15 @@ Elf betroffene Rustfälle bestehen, einschließlich eines neuen Leerfalltests mi
 Antwortformate und weiterhin wirksame Argumentgrenzen.
 Wasser maskiert die Darstellung ohne Autorenverlust. Schnee bleibt sichtbar.
 Konturen und Regionsfüllung liegen über Landschaftsfarbe, aber unter Symbolen.
+Der Übergang von Signaturen zu Einzelbäumen überblendet beide Darstellungen
+zwischen 0,35 und 0,5 CSS-Pixeln pro Fuß. Das zuvor sichtbare reine Farbband
+entfällt. 24 betroffene Frontendtests prüfen unter anderem stabile Positionen,
+überlappende Darstellung, das gemeinsame Kandidatenbudget bei 1440×960 und
+den Kronenrand. Vorher-/Nachher-Rendererbilder wurden bei sechs Maßstäben
+angesehen; Belege liegen unter `src-tauri/target/diagnostics/landscape-transition/`.
+Vier Landschafts-Browserfälle bestehen einschließlich Welt→Nah→Welt,
+History, Datei und Ozeanmaskierung. Typen und Format bestehen.
+Die native Abnahme dieses ergänzenden Übergangs steht noch aus.
 
 Geprüft: 334 Rust-Bibliotheksfälle bestanden, fünf bestehende Lastfälle ignoriert;
 anschließend drei Landschaftsfälle auf dem finalen Backend und Clippy bestanden.

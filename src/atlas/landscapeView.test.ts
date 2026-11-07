@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { landscapeSymbols, landscapeDetail } from "./landscapeView";
+import { landscapeSymbols, landscapeDetails } from "./landscapeView";
 
 describe("landscape scale projection", () => {
   it("does no individual asset work in world views or beyond the candidate budget", () => {
@@ -9,8 +9,8 @@ describe("landscape scale projection", () => {
     );
     expect(landscapeSymbols([-1e8, -1e8, 1e8, 1e8], 1, sample)).toEqual([]);
     expect(sample).not.toHaveBeenCalled();
-    expect(landscapeDetail(0.1)?.near).toBe(false);
-    expect(landscapeDetail(1)?.near).toBe(true);
+    expect(landscapeDetails(0.1)[0]?.near).toBe(false);
+    expect(landscapeDetails(1)[0]?.near).toBe(true);
   });
   it("retains world positions and variants across pan, zoom and density", () => {
     const full = () => [255, 0, 0, 0] as const;
@@ -49,4 +49,32 @@ it("keeps visible crowns whose center lies just outside the viewport", () => {
     () => [255, 0, 0, 0],
   );
   expect(clipped).toContainEqual(tree);
+});
+
+it("crossfades overview and near symbols without an empty band", () => {
+  for (const scale of [0.27, 0.32, 0.35, 0.38, 0.42, 0.5]) {
+    const details = landscapeDetails(scale);
+    expect(details.reduce((sum, detail) => sum + detail.alpha, 0)).toBeCloseTo(
+      1,
+    );
+    const symbols = landscapeSymbols([-1000, -1000, 1000, 1000], scale, () => [
+      255, 0, 0, 0,
+    ]);
+    for (const detail of details)
+      expect(symbols.some((symbol) => symbol.near === detail.near)).toBe(true);
+  }
+});
+
+it("keeps both transition representations within the shared budget at desktop size", () => {
+  for (const scale of [0.351, 0.38, 0.42, 0.49]) {
+    const sample = vi.fn(() => [255, 0, 0, 0] as const);
+    const symbols = landscapeSymbols(
+      [0, 0, 1440 / scale, 960 / scale],
+      scale,
+      sample,
+    );
+    expect(sample.mock.calls.length).toBeLessThanOrEqual(16384);
+    expect(symbols.some((s) => s.near)).toBe(true);
+    expect(symbols.some((s) => !s.near)).toBe(true);
+  }
 });

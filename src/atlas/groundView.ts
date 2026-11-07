@@ -2,7 +2,7 @@ import type { LandscapeResponse } from "./generated/LandscapeResponse";
 import {
   landscapeColors,
   landscapeBiomes,
-  landscapeDetail,
+  landscapeDetails,
   landscapeSymbols,
   type LandscapeWeights,
 } from "./landscapeView";
@@ -181,9 +181,8 @@ export class GroundPainter {
     terrain: TerrainResponse | undefined,
     scale: number,
   ) {
-    const detail = landscapeDetail(scale);
-    if (!detail || !detail.alpha || view.tiles.every((tile) => !tile.pixels))
-      return;
+    const details = landscapeDetails(scale);
+    if (!details.length || view.tiles.every((tile) => !tile.pixels)) return;
     const step = 2 ** view.level,
       width = 64 * step;
     const materialAt = terrain ? prepareMaterialSampler(terrain) : undefined;
@@ -220,19 +219,21 @@ export class GroundPainter {
         (c.canvas.height - t.f) / t.d,
       ];
       const symbols = landscapeSymbols(bounds, scale, sample);
-      c.globalAlpha = detail.alpha;
-      for (const biome of landscapeBiomes)
-        paintScenery(
-          c,
-          {
-            id: "",
-            biome,
-            assets: symbols
-              .filter((s) => s.biome === biome)
-              .map((s) => s.asset),
-          },
-          scale,
-        );
+      for (const detail of details) {
+        c.globalAlpha = detail.alpha;
+        for (const biome of landscapeBiomes)
+          paintScenery(
+            c,
+            {
+              id: "",
+              biome,
+              assets: symbols
+                .filter((s) => s.biome === biome && s.near === detail.near)
+                .map((s) => s.asset),
+            },
+            scale,
+          );
+      }
     }
     c.restore();
   }

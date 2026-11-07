@@ -402,6 +402,9 @@ Symbole. Mehr Dichte ergänzt stabile Kandidaten statt vorhandene Positionen neu
 zu würfeln. Mittlere Maßstäbe zeigen Flächen mit sparsamen kartographischen
 Signaturen; ferne Maßstäbe ausschließlich Flächenfarben. Übersichten entstehen
 direkt aus den Deckungen, ohne zuerst unsichtbare Einzelbäume zu erzeugen.
+Mittlere Signaturen und nahe Symbole gehen überlappend ineinander über;
+beim Wechsel gibt es kein ausschließlich durch den Zoom verursachtes Leerband.
+Das gemeinsame Kandidatenbudget gilt auch während dieses Übergangs.
 Die Darstellung ist auf den sichtbaren Ausschnitt und ein festes Symbolbudget
 begrenzt; bei zu großem Detailumfang bleibt die zusammenhängende Flächendarstellung.
 Wasser maskiert Landschaft, ohne darunterliegende Autoren zu löschen. Schnee

@@ -2,7 +2,7 @@ import { expect, it } from "vitest";
 import { landscapeMargin, landscapeRequest } from "./landscapeRequest";
 
 it("requests enough coverage for offscreen crowns without growing the tile budget", () => {
-  for (const scale of [25.6, 1, 0.1, 0.000002]) {
+  for (const scale of [25.6, 1, 0.35, 0.42, 0.5, 0.1, 0.000002]) {
     const bounds: [number, number, number, number] = [
       -15,
       -12,

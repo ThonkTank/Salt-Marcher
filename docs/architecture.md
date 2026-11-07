@@ -267,7 +267,10 @@ sie vor Rasterallokation und Symbolarbeit. Explizit leere Autoren bleiben davon
 unabhängig gespeichert. Es gibt
 keinen zusätzlichen Dokumentworker oder unabhängigen Cachebesitzer. Der vorhandene
 Rasterpainter hält begrenzte Landschaftsraster und zeichnet aus denselben Gewichten
-ferne Farben, mittlere Signaturen und nahe Symbole. Detailkandidaten hängen nur
+ferne Farben, mittlere Signaturen und nahe Symbole. Zwischen 0,35 und 0,5
+CSS-Pixeln pro Fuß überblendet er mittlere und nahe Symbole; beide teilen sich
+das Kandidatenbudget, der Kachelanfrager erhält bis zum Ende den groben Kronenrand.
+Detailkandidaten hängen nur
 von Weltkoordinaten ab und werden ausschließlich für den sichtbaren Ausschnitt
 innerhalb eines festen Budgets erzeugt. Autoren enthalten keine generierten Bäume.
 

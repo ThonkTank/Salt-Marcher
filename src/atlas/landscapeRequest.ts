@@ -3,7 +3,7 @@ import type { Bounds } from "./model";
 
 /** Covers crowns intersecting the viewport whose centers are just outside it. */
 export function landscapeMargin(scale?: number): number {
-  return scale === undefined || scale < 0.03 ? 0 : scale < 0.35 ? 188 : 18;
+  return scale === undefined || scale < 0.03 ? 0 : scale < 0.5 ? 188 : 18;
 }
 export function landscapeRequest(
   bounds: Bounds,
