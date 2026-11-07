@@ -1,41 +1,38 @@
 # Aktueller Stand
 
-Atlas V7, Dateiformat 20, Generierungsrezept 4. Stand: 7. November 2026.
+Atlas V7, Dateiformat 21, Generierungsrezept 4. Stand: 7. November 2026.
 [README](../../README.md) enthält Befehle, [Architektur](../architecture.md)
 Zuständigkeiten, [Produktvertrag](../product-contract.md) Verhalten und Grenzen.
 
-## Aktuelle Arbeit: Bergketten, Hügel und Schluchten
+## Aktuelle Arbeit: Schnee, Fels und getrennte Farbebenen
 
-Drei neue Höhenmodi erzeugen Relief entlang eines Strichs. Größenvorlagen koppeln
-physische Breite und Reliefhöhe/-tiefe; beide bleiben einzeln in Metern einstellbar.
-Die Ansicht passt sich beim Vorlagenwechsel an den Pinsel an. Zoomen verändert die
-reale Breite nicht. Wiederholtes Malen verstärkt das Relief, insbesondere Hügel.
-Die vorhandene Abschnittsqueue, bestätigte Zwischenstände, Autorenhierarchie und
-ein Undo-Schritt pro Strich bleiben erhalten. Keine neue Vorschau-, Worker- oder
-Messarchitektur; das Dateiformat bleibt unverändert.
+Hohe Gipfel erhalten Schnee zwischen 3500 und 5000 Metern, steile Hänge Fels
+zwischen 30 und 45 Grad. Der Bodenpinsel wählt unabhängig gespeicherte Boden- oder
+Felsfarbe. Pipette und Radierer arbeiten auf der gewählten Ebene; Schnee bleibt
+über beiden. Höhenänderungen steuern die Sichtbarkeit, ohne Pigment zu löschen.
+Die zwei RGBA-Ebenen teilen Autorenkacheln, Pyramide, Vorschau, History und
+Persistenz. Dateiformat 21 ersetzt 20 ohne Migration der Entwicklungsdateien.
 
-Ein neuer Pakettest deckte einen vorhandenen Fehler beim Ergänzen grober Autoren
-auf: Fehlende Werte erbten auch Nachbarn desselben Levels. Jetzt erben sie nur
-höhere Level; Paketgrenzen erzeugen keinen zusätzlichen Höhenauftrag.
+Materialdeckung und Beleuchtung entstehen aus den vorhandenen Reliefknoten und
+werden als kleines 35×35-RGB-Gitter mit Rand übertragen. Keine zusätzliche
+Höhenabtastung, kein neuer Worker und keine weitere Cacheebene. Das vorhandene
+Darstellungsbudget erhält die maximale Rasterauflösung.
 
-Die vollständige Rustsuite besteht mit 355 Fällen (fünf vorhandene Last-/Fixturefälle
-ignoriert), die Frontendsuite mit 376 Fällen. Nach der abschließenden Formkorrektur
-bestehen die zwei neuen Rustfälle nochmals sowie alle 25 Browserfälle für neue
-und bisherige direkte Höhenmodi. Die Browserfälle prüfen Größenwahl, sichtbare
-Zwischenstände ohne Warten nach Pointerdown, Undo/Redo, Werkzeugwechsel und
-Weltmalerei nach manuellem Herauszoomen. Typprüfung, Clippy, Formatprüfung,
-129 Transportverträge und finaler Release-/RPM-Build bestehen.
+Die vollständige Rustsuite besteht mit 358 Fällen (fünf vorhandene Last-/Fixturefälle
+ignoriert), die Frontendsuite mit 377 Fällen. Neue Fälle prüfen physische
+Materialschwellen, Kachelränder, getrennte Farben, Auflösungsvererbung,
+Vorschau, Undo/Redo und Datei-Rundlauf. Typprüfung, Clippy und 130 Transportverträge
+bestehen. Alle 37 Browserfälle für Materialien, Boden, direkte Höhenstriche,
+Küsten und Kachelinvalidierung bestehen.
 
-Nativ unter Linux/X11/WebKit geprüft: gekrümmte Bergketten, kleine Berge,
-Alpenmassiv/Achttausender, Hügel mit wiederholtem Auftrag, Schluchten im Relief,
-eigene Tiefe, Größenwechsel, Höhenlinien, Gewässerwechsel und manuelles Zoomen
-mit Rückkehr zur Pinselgröße. Sichtbare Gitterrichtungen im ersten Formfeld wurden
-durch räumliches Drehen und Verzerren reduziert und erneut nativ beurteilt.
-Hügel-Undo/Redo im ersten Build sowie ein weiterer Bergstrich mit Undo/Redo im
-finalen Build stellen die geprüften Kartenausschnitte pixelgleich her. Auch
-Speichern/Wiederöffnen im finalen Build erhält den verglichenen Ausschnitt exakt.
-Der frische Build bleibt mit `features-native-final.saltatlas` zum Testen geöffnet.
-Keine neue Zeitmessreihe; keine vollständige native Prüfung aller Kombinationen.
+Nativ unter Linux/X11/WebKit geprüft: eigene Berggröße mit hohen Gipfeln und
+steilen Hängen, Fels übermalen, Boden getrennt übermalen, Schnee erhalten,
+Fels radieren, Undo/Redo sowie Heraus-/Hineinzoomen. Speichern/Wiederöffnen erhält
+den geprüften Kartenausschnitt pixelgleich; auch Undo stellt den verglichenen
+Ausschnitt exakt wieder her. Der Release-/RPM-Build besteht;
+die Anwendung bleibt mit `materials-native-final.saltatlas` geöffnet.
+Belege liegen unter `src-tauri/target/diagnostics/materials-*`. Keine neue Messreihe
+und keine vollständige native Prüfung aller Material-/Maßstabskombinationen.
 
 ## Bestehender Stand und Grenzen
 

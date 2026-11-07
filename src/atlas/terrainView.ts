@@ -24,7 +24,8 @@ export function terrainRequest(
               Math.floor(
                 Math.log2(
                   Math.sqrt(
-                    CACHE_BUDGETS.terrain.bytes /
+                    (CACHE_BUDGETS.terrain.bytes -
+                      TERRAIN_RASTER_BYTES.materials * request.tiles.length) /
                       (TERRAIN_RASTER_BYTES.request *
                         Math.max(1, request.tiles.length)),
                   ),

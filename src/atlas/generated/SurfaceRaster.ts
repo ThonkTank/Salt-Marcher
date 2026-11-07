@@ -8,6 +8,11 @@ export type SurfaceRaster = {
    */
   relief: string;
   /**
+   * Base64 35×35 RGB control nodes (one node halo), or one constant triple.
+   * Rock coverage, snow coverage, illumination (255 = 1.15).
+   */
+  materials: string;
+  /**
    * Base64 water coverage with the same halo; local water takes precedence.
    */
   water: string;

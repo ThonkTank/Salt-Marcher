@@ -90,6 +90,7 @@ test("fractional tile positions preserve opaque relief and translucent water wit
           contourInterval: 5,
           contours: [],
           relief: btoa(String.fromCharCode(178, 185, 151, 255)),
+          materials: btoa(String.fromCharCode(0, 0, 222)),
           water: btoa(String.fromCharCode(128)),
         },
       })),

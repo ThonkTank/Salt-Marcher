@@ -394,7 +394,11 @@ export function useAtlasEditor(client: AtlasClient) {
         break;
       }
       case "groundPick": {
-        const color = groundColorAt(presentation?.ground, command.point);
+        const color = groundColorAt(
+          presentation?.ground,
+          command.point,
+          tools.ground.layer ?? "soil",
+        );
         if (color) {
           tools.changeGround({ ...tools.ground, color, mode: "paint" });
           tools.changeGroundPicker(false);

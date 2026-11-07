@@ -48,7 +48,10 @@ fn base(db: &Connection, authors: &Tiles, key: Key) -> Result<Vec<u8>> {
                     let py = (key.2.rem_euclid(factor) as i64 * 64 + y) / factor as i64;
                     let src = (py * 64 + px) as usize * 4;
                     let dst = (y * 64 + x) as usize * 4;
-                    out[dst..dst + 4].copy_from_slice(&value[src..src + 4]);
+                    for offset in [0, PLANE_BYTES] {
+                        out[offset + dst..offset + dst + 4]
+                            .copy_from_slice(&value[offset + src..offset + src + 4]);
+                    }
                 }
             }
             return Ok(out);
@@ -238,13 +241,18 @@ fn response(app: &AtlasApplication, args: GroundArgs, mut cache: Tiles) -> Resul
                 overlay_read(&app.db, &mut cache, args.level, x + dx, y + dy)?;
             }
         }
-        let mut pixels = vec![0; 66 * 66 * 4];
+        let plane = 66 * 66 * 4;
+        let mut pixels = vec![0; plane * 2];
         for py in -1i32..=64 {
             for px in -1i32..=64 {
                 let source = &cache[&(args.level, x + px.div_euclid(64), y + py.div_euclid(64))];
                 let src = (py.rem_euclid(64) * 64 + px.rem_euclid(64)) as usize * 4;
                 let dst = ((py + 1) * 66 + px + 1) as usize * 4;
-                pixels[dst..dst + 4].copy_from_slice(&source[src..src + 4]);
+                for layer in 0..2 {
+                    pixels[layer * plane + dst..layer * plane + dst + 4].copy_from_slice(
+                        &source[layer * PLANE_BYTES + src..layer * PLANE_BYTES + src + 4],
+                    );
+                }
             }
         }
         tiles.push(GroundTile { x, y, pixels });
@@ -262,6 +270,11 @@ impl AtlasApplication {
     pub(in crate::atlas) fn compute_ground(&self, intent: &Intent) -> Result<Option<Computed>> {
         let Intent::GroundStroke { brush, view } = intent else {
             return Ok(None);
+        };
+        let plane = if matches!(brush.layer, Some(GroundLayer::Rock)) {
+            PLANE_BYTES
+        } else {
+            0
         };
         let level = brush.resolution.unwrap_or(0);
         ensure(level <= 24, "Ungültige Bodenauflösung")?;
@@ -298,7 +311,7 @@ impl AtlasApplication {
             let tile = after
                 .get_mut(&(level, x.div_euclid(64), y.div_euclid(64)))
                 .unwrap();
-            let i = (y.rem_euclid(64) * 64 + x.rem_euclid(64)) as usize * 4;
+            let i = plane + (y.rem_euclid(64) * 64 + x.rem_euclid(64)) as usize * 4;
             blend(&mut tile[i..i + 4], brush.color, brush.mode, alpha);
         }
         // Apply the same coarse pigment operation to existing finer authors.
@@ -342,7 +355,7 @@ impl AtlasApplication {
                             let cx = (key.1 as i64 * 64 + px).div_euclid(factor) as i32;
                             let cy = (key.2 as i64 * 64 + py).div_euclid(factor) as i32;
                             if let Some(&alpha) = coverage.get(&(cx, cy)) {
-                                let i = (py * 64 + px) as usize * 4;
+                                let i = plane + (py * 64 + px) as usize * 4;
                                 blend(&mut changed[i..i + 4], brush.color, brush.mode, alpha);
                             }
                         }

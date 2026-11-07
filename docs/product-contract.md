@@ -338,12 +338,20 @@ Farbe. Einstellungen werden beim Beginn eines Strichs fixiert.
 Spitzen: weich, hart und wolkig; Vorgabe weich. Größe folgt dem gemeinsamen [Bildschirmpinsel](#bildschirmpinsel). Deckkraft und Farbfluss: 1–100 %, Vorgabe jeweils 100 %.
 Farbvorlagen: Gras `#9db58b`, Erde `#c8b99b`, Stein `#aaa9a3`; Vorgabe Gras.
 Freie Farbauswahl und Pipette ergänzen die Vorlagen. Die Pipette nimmt die ungeschattete
-Bodenfarbe der dargestellten Rasterstufe auf. Der lokale Radierer entfernt nur
-Bodenfarbe und legt den ursprünglichen Untergrund frei; er verwendet dieselben
+Farbe der gewählten Ebene in der dargestellten Rasterstufe auf, ohne Schnee oder
+Schattierung. Der lokale Radierer entfernt nur Farbe dieser Ebene und legt ihren
+natürlichen Grundton frei; er verwendet dieselben
 Spitzen und Auftragsparameter. Größenänderung und Zoom folgen dem gemeinsamen Bildschirmpinselvertrag.
 
-Bodenfarbe verwendet dünn belegte 64×64-Pixel-Autorenkacheln in vormultipliziertem
-RGBA. Die beim Strichbeginn feste Auflösung beträgt 2^Stufe Fuß (Stufen 0–24),
+„Farbebene“ wählt Boden oder Fels. Beide speichern ihren Farbauftrag unabhängig.
+Fels erscheint an steilen Hängen mit weichem Übergang zwischen 30 und 45 Grad;
+sein natürlicher Grundton ist steingrau. Hohe Gipfel werden zwischen 3500 und
+5000 Metern über Meeresspiegel zunehmend schneeweiß. Schnee liegt über beiden
+Farben. Höhenänderungen passen die sichtbaren Materialbereiche an; verborgene
+Farbaufträge bleiben erhalten. Die Regeln gelten auch ohne vorherige Bodenmalerei.
+
+Bodenfarbe verwendet dünn belegte 64×64-Pixel-Autorenkacheln mit zwei getrennten
+vormultiplizierten RGBA-Ebenen (Boden, dann Fels; insgesamt 32.768 Bytes). Die beim Strichbeginn feste Auflösung beträgt 2^Stufe Fuß (Stufen 0–24),
 maßstabsabhängig ungefähr ein halbes bis ein Bildschirmpixel, mindestens einen Fuß.
 Feinere Kacheln erben grobe Farbe; spätere grobe Striche bearbeiten vorhandene
 Feinkacheln mit demselben Farbauftrag, ohne leere Feinraster anzulegen. Radierte
@@ -873,7 +881,7 @@ Pro Ansicht werden höchstens 3.000 priorisierte Objektkandidaten betrachtet und
 
 ## Dateien und History
 
-`.saltatlas`: SQLite-Format **20**, ohne Migration/Altformate. Genau zehn
+`.saltatlas`: SQLite-Format **21**, ohne Migration/Altformate. Genau zehn
 STRICT-/WITHOUT-ROWID-Tabellen: `document_meta(singleton,next_identity)`,
 `objects(id,kind,body)`, `house_cells(building_id,payload)`,
 `terrain(x,y,z)`, `terrain_layers(level,x,y,z)`, `waters(id,body)`, `ground_tiles(level,x,y,pixels)`, `region_catalog(singleton,body)`, `regions(id,body)`, `rivers(id,body)`. Keine Arbeitsindizes,

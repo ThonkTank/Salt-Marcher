@@ -216,6 +216,7 @@ it("keeps resolution and contour variants separate and trims confirmations immed
           pixels: args.pixels,
           contourInterval: args.contourInterval,
           relief: "",
+          materials: btoa(String.fromCharCode(0, 0, 222)),
           water: "",
           contours: [],
         },

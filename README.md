@@ -33,7 +33,8 @@ npm run desktop
 
 Neue Dokumente beginnen als Ozean; „Höhen → Land“ legt Land an.
 „Höhen → Bergkette / Hügel / Schlucht“ ergänzt Relief mit Größenvorlagen und
-einstellbarer Breite sowie Höhe/Tiefe in Metern.
+einstellbarer Breite sowie Höhe/Tiefe in Metern. Hohe Gipfel erscheinen schneeweiß,
+steile Hänge steinig. „Boden → Farbebene“ färbt Boden und Fels unabhängig.
 Werkzeuge, Gesten, Ansichtsauswahl und Dateiabläufe beschreibt der Produktvertrag.
 
 ## Entwicklung und automatisierte Abnahme

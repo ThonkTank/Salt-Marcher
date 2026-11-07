@@ -83,6 +83,9 @@ pub struct SurfaceRaster {
     pub ocean: String,
     /// Base64 RGBA relief, with one pixel halo on each edge.
     pub relief: String,
+    /// Base64 35×35 RGB control nodes (one node halo), or one constant triple.
+    /// Rock coverage, snow coverage, illumination (255 = 1.15).
+    pub materials: String,
     /// Base64 water coverage with the same halo; local water takes precedence.
     pub water: String,
     pub contours: Vec<[f64; 4]>,

@@ -143,6 +143,10 @@ Höhenlinien behalten ihre unabhängige, unveränderte Höhenabtastung. Bei abge
 Einflüssen bleibt die vollständige Abtastung erhalten. Binärdaten verwenden Base64.
 Reliefgradienten verwenden das bereits berechnete 33×33-Höhenraster und
 werten nur die 280 fehlenden Punkte des zweischrittigen Randes zusätzlich aus.
+Daraus entstehen auch Fels-/Schneedeckung und Beleuchtung: ein 35×35-RGB-Gitter
+mit einem Knoten Rand, bei konstanten Flächen ein einzelnes Tripel. Relief und
+Bodenfarbkomposition interpolieren dieselben quantisierten Materialwerte. Es gibt
+keine zusätzliche Höhenabfrage und keinen weiteren Cachebesitzer.
 
 Land/Meer bestimmt exakte Abstände im überstrichenen Korridor. Ein temporärer
 Segmentindex und zeilenweise Streckenbegrenzung liefern die Kandidaten für
@@ -274,7 +278,10 @@ bereite Raster darstellen. Bestätigte Vorschauen enden mit frischer Darstellung
 
 Der Rasterdekoder hält konstante Relief-/Wasserflächen als 1×1-Bilder und
 reserviert nur deren tatsächliche Rastergröße im bestehenden Budgetcache.
-Bodenfarben verwenden je Zeichenaufruf einen Reliefleser, der die aktuelle
+Bodenautoren enthalten zwei planare 64×64-RGBA-Ebenen für Boden und Fels;
+Vererbung, Übersichtspyramide, Halo, History und Dateipersistenz führen beide
+gemeinsam. Malen, Radieren und Pipette betreffen ausschließlich die gewählte Ebene.
+Bodenfarben verwenden je Zeichenaufruf einen Materialleser, der die aktuelle
 Kachelreferenz über benachbarte Pixel hinweg wiederverwendet. Es entsteht kein
 zusätzlicher persistenter Cache. Beschriftungen verwerfen unsichtbare und nach
 Maßstab ausgeschlossene Kandidaten vor Schriftmessung und Platzierungsbudget.

@@ -20,7 +20,7 @@ use serde_json::{json, Value};
 use std::collections::HashSet;
 use std::path::Path;
 
-pub const FORMAT_VERSION: i64 = 20;
+pub const FORMAT_VERSION: i64 = 21;
 const SCHEMA: &str = "
 CREATE TABLE rivers(id TEXT PRIMARY KEY NOT NULL,body TEXT NOT NULL) STRICT, WITHOUT ROWID;
 CREATE TABLE region_catalog(singleton INTEGER PRIMARY KEY NOT NULL,body TEXT NOT NULL) STRICT, WITHOUT ROWID;
@@ -635,7 +635,7 @@ fn validate_schema(source: &Connection) -> Result<()> {
         "SELECT type,name,tbl_name FROM main.sqlite_schema ORDER BY lower(type),lower(name)",
         "SELECT schema,name,type,ncol,wr,strict FROM pragma_table_list WHERE schema='main' AND name!='sqlite_schema' ORDER BY lower(name)",
     ] {
-        ensure(structural_rows(source,sql,&[0,1,2])?==structural_rows(&expected,sql,&[0,1,2])?,"Ungültiges Format-20-Schema")?;
+        ensure(structural_rows(source,sql,&[0,1,2])?==structural_rows(&expected,sql,&[0,1,2])?,"Ungültiges Format-21-Schema")?;
     }
     for table in [
         "document_meta",

@@ -907,6 +907,7 @@ it("publishes terrain readiness with scale and DPR and reloads changed raster re
           pixels: args.pixels,
           contourInterval: args.contourInterval,
           relief: "",
+          materials: btoa(String.fromCharCode(0, 0, 222)),
           water: "",
           contours: [],
         },

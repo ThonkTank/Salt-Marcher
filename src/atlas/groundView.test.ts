@@ -136,3 +136,67 @@ it("reuses shaded rasters across navigation and redraws only changed local depen
     vi.unstubAllGlobals();
   }
 });
+
+it("keeps soil and rock pigments separate and snow above both", () => {
+  let output = new Uint8ClampedArray();
+  vi.stubGlobal("document", {
+    createElement: () => ({
+      getContext: () => ({
+        createImageData: () => ({ data: new Uint8ClampedArray(66 * 66 * 4) }),
+        putImageData: (image: { data: Uint8ClampedArray }) => {
+          output = image.data;
+        },
+      }),
+    }),
+  });
+  const context = {
+    save() {},
+    restore() {},
+    beginPath() {},
+    rect() {},
+    clip() {},
+    drawImage() {},
+  } as unknown as CanvasRenderingContext2D;
+  const pixels = btoa(
+    atob(pixelString(255, 0, 0, 255)) + atob(pixelString(0, 0, 255, 255)),
+  );
+  const view = { status, level: 0, tiles: [{ x: 0, y: 0, pixels }] };
+  try {
+    expect(groundColorAt(view, [1, 1], "soil")).toEqual([255, 0, 0]);
+    expect(groundColorAt(view, [1, 1], "rock")).toEqual([0, 0, 255]);
+    for (const [rock, snow, expected] of [
+      [0, 0, [255, 0, 0, 255]],
+      [255, 0, [0, 0, 255, 255]],
+      [128, 0, [127, 0, 128, 255]],
+      [255, 255, [245, 247, 250, 255]],
+    ] as const) {
+      const terrain = {
+        status,
+        level: 0,
+        tiles: [
+          {
+            x: 0,
+            y: 0,
+            contentId: `material-test:${rock}:${snow}`,
+            heights: [],
+            waters: [],
+            foundationTops: [],
+            raster: {
+              pixels: 2,
+              contourInterval: 5,
+              contours: [],
+              relief: btoa(String.fromCharCode(178, 185, 151, 255)),
+              materials: btoa(String.fromCharCode(rock, snow, 222)),
+              water: btoa("\0"),
+            },
+          },
+        ],
+      };
+      new GroundPainter().paint(context, view, terrain);
+      const i = (2 * 66 + 2) * 4;
+      expect(Array.from(output.slice(i, i + 4))).toEqual(expected);
+    }
+  } finally {
+    vi.unstubAllGlobals();
+  }
+});

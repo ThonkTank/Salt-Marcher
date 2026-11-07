@@ -202,7 +202,10 @@ export class TerrainCache {
       tile.contentId.length * 2 +
       tile.heights.length * 8 +
       (tile.raster
-        ? 2 * (tile.raster.relief.length + tile.raster.water.length) +
+        ? 2 *
+            (tile.raster.relief.length +
+              tile.raster.water.length +
+              tile.raster.materials.length) +
           tile.raster.contours.length * 32
         : 0) +
       tile.foundationTops.reduce((n, [id]) => n + 48 + id.length * 2, 0) +
@@ -266,7 +269,7 @@ export class GroundCache {
   private cache = new WorldTileCache<GroundTile>({
     budget: CACHE_BUDGETS.ground,
     bounds: (t, level) => tileBounds(t.x, t.y, 64 * 2 ** level, 2 ** level),
-    cost: (tile) => tile.pixels.length * 2 + 66 * 66 * 4 + 512,
+    cost: (tile) => tile.pixels.length * 2 + 66 * 66 * 8 + 512,
     error: "Bodenfarben haben sich geändert. Bitte erneut laden.",
     read: (client, args, wanted) =>
       scheduledRead(client, "groundTiles", args, wanted),
