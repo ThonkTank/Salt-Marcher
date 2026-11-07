@@ -89,13 +89,15 @@ Dateischema, gespeicherte Autoren und Importgrenzen sind ausschließlich unter
 | `regions`, `region_store`                                                             | Katalog, Polygone, RTree und revisionsgebundene Reads; Beziehungen aus Schnittflächen ableiten.                                                    |
 | `scenery`                                                                             | Deterministische Assetverteilung; Landschaftsstriche sind gewöhnliche Objektowner.                                                                 |
 
-Flussplanung, Profilnachführung und Import verwenden denselben begrenzten
+Straßenplanung, Flussplanung, Profilnachführung und Import verwenden denselben begrenzten
 `terrain_blocks::Sampler` wie Oberflächenreads. Ein eigener Cache vollständiger
 Höhenregionen und wiederholte Scans lokaler Override-Werte entfallen. Bei der
 Nachführung sind lokale und grobe Autoren bereits in derselben Transaktion
 geschrieben; der Sampler wird erst danach erzeugt. Beim Import ist der Blockindex
 vor der Flussrekonstruktion aufgebaut. Während einer Abtastung ändern sich keine
-Höhenautoren.
+Höhenautoren. Die Straßenplanung hält in ihren räumlich begrenzten Regionen nur
+Gewässerdaten; natürliche Höhen teilen sich einen operationslokalen Blockleser
+über alle Regionen und Wiederholungen der Routensuche.
 
 Der Flussprofilsolver liest die natürliche Höhe einmal je gemeinsamem Netzknoten
 und verwendet sie auch für den Einschnitt. Gewässerkontakt bestimmt weiterhin den

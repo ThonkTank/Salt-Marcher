@@ -1,11 +1,11 @@
 //! Local, bounded natural-height/water reads for the pure road planner.
-use super::{terrain_store, AtlasApplication};
+use super::{terrain_blocks, AtlasApplication};
 use crate::atlas::{
     errors::storage_error,
     model::{Node, Road, RoadRoughness, SceneObject},
     parcel_geometry::PreparedRoadGeometry,
     road_terrain::{self, Corridor, Route, TerrainFollow},
-    terrain, Point, Result,
+    Point, Result,
 };
 use rusqlite::params;
 use std::{
@@ -13,13 +13,13 @@ use std::{
     ops::Range,
 };
 struct Region {
-    heights: terrain::Grid,
     rivers: crate::atlas::rivers::RiverSurface,
     water: Vec<Vec<Point>>,
     lakes: Vec<crate::atlas::water::WaterBody>,
 }
 struct Sampler<'a> {
     app: &'a AtlasApplication,
+    heights: terrain_blocks::Sampler<'a>,
     regions: BTreeMap<(i32, i32), Region>,
 }
 fn inside(p: Point, polygon: &[Point]) -> bool {
@@ -53,8 +53,6 @@ impl Sampler<'_> {
                 (key.0 + 1) as f64 * 160.,
                 (key.1 + 1) as f64 * 160.,
             ];
-            let heights =
-                terrain_store::grid(&self.app.db, [b[0] - 5., b[1] - 5., b[2] + 5., b[3] + 5.])?;
             let mut query=self.app.db.prepare_cached("SELECT o.body FROM objects o JOIN spatial s ON o.rowid=s.key WHERE o.kind='area' AND s.min_x<=?1 AND s.max_x>=?2 AND s.min_y<=?3 AND s.max_y>=?4 ORDER BY o.id").map_err(storage_error)?;
             let rows = query
                 .query_map(params![b[2], b[0], b[3], b[1]], |r| r.get::<_, String>(0))
@@ -73,7 +71,6 @@ impl Sampler<'_> {
                 key,
                 Region {
                     lakes: super::water_store::local(&self.app.db, b)?,
-                    heights,
                     water,
                     rivers: crate::atlas::rivers::RiverSurface::new(&super::river_store::local(
                         &self.app.db,
@@ -83,7 +80,7 @@ impl Sampler<'_> {
             );
         }
         let region = &self.regions[&key];
-        let (z, river_wet) = region.rivers.at(p, terrain::height(&region.heights, p));
+        let (z, river_wet) = region.rivers.at(p, self.heights.height(p)?);
         Ok((
             z,
             z < 0.0
@@ -172,6 +169,7 @@ impl AtlasApplication {
         let sections = road.edge_sections[range.clone()].to_vec();
         let mut sampler = Sampler {
             app: self,
+            heights: terrain_blocks::Sampler::new(&self.db)?,
             regions: BTreeMap::new(),
         };
         let mut sample = |p| sampler.sample(p);
@@ -336,5 +334,68 @@ impl AtlasApplication {
         }
         *road = chosen;
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::atlas::{
+        application::{terrain_store, world_terrain_store},
+        terrain,
+    };
+
+    #[test]
+    fn road_samples_share_canonical_blocks_across_region_boundaries() {
+        let app = AtlasApplication::new().unwrap();
+        let coarse = (-4..=4)
+            .flat_map(|y| (-4..=4).map(move |x| (x, y, Some(200. + x as f64 * 3.))))
+            .collect();
+        world_terrain_store::apply(
+            &app.db,
+            &world_terrain_store::WorldTerrainDelta {
+                level: 6,
+                before: vec![],
+                after: coarse,
+            },
+            true,
+        )
+        .unwrap();
+        let local: Vec<_> = (-32..=32)
+            .flat_map(|y| {
+                (-32..=32).filter_map(move |x| {
+                    ((x + y) % 3 != 0).then_some((x, y, 50. + (x * x + y * y) as f64 / 100.))
+                })
+            })
+            .collect();
+        terrain_store::write_points(&app.db, &local).unwrap();
+        let reference = terrain_store::grid(&app.db, [-165., -165., 165., 165.]).unwrap();
+        let mut sampler = Sampler {
+            app: &app,
+            heights: terrain_blocks::Sampler::new(&app.db).unwrap(),
+            regions: BTreeMap::new(),
+        };
+        let points = [
+            [-0.25, -0.25],
+            [0.25, 0.25],
+            [-0.25, 0.25],
+            [0.25, -0.25],
+            [0., 0.],
+        ];
+        for p in points {
+            let (height, wet) = sampler.sample(p).unwrap();
+            assert!((height - terrain::height(&reference, p)).abs() < 1e-8);
+            assert!(!wet);
+        }
+        let loaded = sampler.heights.loaded_controls;
+        assert!(loaded <= 5 * 16 * 16, "loaded {loaded} controls");
+        assert!(loaded < local.len());
+        for _ in 0..100 {
+            for p in points {
+                sampler.sample(p).unwrap();
+            }
+        }
+        assert_eq!(sampler.heights.loaded_controls, loaded);
+        assert_eq!(sampler.regions.len(), 4);
     }
 }
