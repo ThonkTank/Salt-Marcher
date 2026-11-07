@@ -81,7 +81,17 @@ Dateischema, gespeicherte Autoren und Importgrenzen sind ausschließlich unter
 | `regions`, `region_store`                                                             | Katalog, Polygone, RTree und revisionsgebundene Reads; Beziehungen aus Schnittflächen ableiten.                                                    |
 | `scenery`                                                                             | Deterministische Assetverteilung; Landschaftsstriche sind gewöhnliche Objektowner.                                                                 |
 
-Der Flussprofilsolver verbindet Absenkung stromabwärts und Rückstau stromaufwärts
+Flussplanung, Profilnachführung und Import verwenden denselben begrenzten
+`terrain_blocks::Sampler` wie Oberflächenreads. Ein eigener Cache vollständiger
+Höhenregionen und wiederholte Scans lokaler Override-Werte entfallen. Bei der
+Nachführung sind lokale und grobe Autoren bereits in derselben Transaktion
+geschrieben; der Sampler wird erst danach erzeugt. Beim Import ist der Blockindex
+vor der Flussrekonstruktion aufgebaut. Während einer Abtastung ändern sich keine
+Höhenautoren.
+
+Der Flussprofilsolver liest die natürliche Höhe einmal je gemeinsamem Netzknoten
+und verwendet sie auch für den Einschnitt. Gewässerkontakt bestimmt weiterhin den
+Wasserpegel. Er verbindet Absenkung stromabwärts und Rückstau stromaufwärts
 mit lokalen Pegeln. Flussbetten bleiben abgeleitet. Die Oberfläche wendet sie vor
 Hausplattformen an; Straßenrouting berücksichtigt Flüsse und lokale Gewässer.
 Ortschaften gehören zur Regionskategorie mit `markers`; Identität, Beschriftung,
@@ -109,7 +119,9 @@ nicht erneut je Block und Vorfahr.
 Der anfragegebundene `Sampler` liest Intervalle und Kontrollwerte über begrenzte
 Caches für Indexknoten, 16×16-Blöcke und lokale Koeffizienten. Quellen außerhalb
 ihrer Einflussbounds werden übersprungen. Der gehaltene Lesespeicher hängt vom
-Darstellungsbudget ab. `terrain_raster` unterteilt nichtkonstante Bereiche bis zur
+Darstellungsbudget ab. Konstante Kontrollwerte über einer identisch hohen
+geerbten Fläche bleiben auch bei dünner Belegung exakt konstant; die
+Polynomauswertung darf dort keine künstliche Steigung erzeugen. `terrain_raster` unterteilt nichtkonstante Bereiche bis zur
 Abtastauflösung und berechnet Relief, Wasserabdeckung und Höhenlinien aus der
 kanonischen Oberfläche samt Flussbetten, Plattformen und lokalen Gewässern.
 Gemeinsame Weltabtastpunkte und ein Pixelrand ermöglichen Kachelfilterung;

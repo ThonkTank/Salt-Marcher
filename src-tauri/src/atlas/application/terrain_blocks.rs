@@ -1,5 +1,5 @@
-//! Disposable spatial summaries and bounded canonical sampling for display reads.
-//! Authoring keeps its exact read limits; display never materializes a whole area.
+//! Disposable spatial summaries and bounded canonical point/display sampling.
+//! Area authoring keeps its exact read limits; sampling never materializes a whole area.
 use crate::atlas::{errors::storage_error, terrain, Bounds, Point, Result};
 use rusqlite::{params, Connection, OptionalExtension};
 use std::collections::HashMap;
@@ -11,7 +11,7 @@ const PATCH_CACHE: usize = 2048;
 struct Patch {
     values: [f64; 16],
     mask: [f64; 16],
-    constant: Option<f64>,
+    constant: Option<(f64, bool)>,
     empty: bool,
 }
 fn coefficients(samples: &[f64; 16]) -> [f64; 16] {
@@ -276,7 +276,11 @@ impl<'a> Sampler<'a> {
             let patch = Patch {
                 values: coefficients(&values),
                 mask: coefficients(&mask),
-                constant: if count == 16 && uniform { first } else { None },
+                constant: if uniform {
+                    first.map(|z| (z, count == 16))
+                } else {
+                    None
+                },
                 empty: count == 0,
             };
             if self.patches.len() == PATCH_CACHE {
@@ -302,9 +306,13 @@ impl<'a> Sampler<'a> {
             if patch.empty {
                 continue;
             }
-            if let Some(z) = patch.constant {
-                value = z;
-                continue;
+            if let Some((z, complete)) = patch.constant {
+                // Sparse equal-valued authors over the same inherited height are
+                // exactly flat too. Preserve that invariant before polynomial rounding.
+                if complete || value == z {
+                    value = z;
+                    continue;
+                }
             }
             let u = gx - x as f64;
             let v = gy - y as f64;
@@ -452,6 +460,48 @@ mod tests {
             }
         }
         assert!(sampler.blocks.len() <= BLOCK_CACHE && sampler.nodes.len() <= NODE_CACHE);
+    }
+    #[test]
+    fn sparse_uniform_authors_preserve_exact_inherited_height() {
+        for source in [0, 4] {
+            for height in [17.3, -100., 100000.] {
+                let app = AtlasApplication::new().unwrap();
+                for x in -5..=5 {
+                    for y in -5..=5 {
+                        app.db
+                            .execute(
+                                "INSERT INTO terrain_layers VALUES(?1,?2,?3,?4)",
+                                params![source + 4, x, y, height],
+                            )
+                            .unwrap();
+                    }
+                }
+                for (x, y) in [(-1, 0), (0, 0), (1, 1), (16, -17)] {
+                    if source == 0 {
+                        terrain_store::write_points(&app.db, &[(x, y, height)]).unwrap();
+                    } else {
+                        app.db
+                            .execute(
+                                "INSERT INTO terrain_layers VALUES(?1,?2,?3,?4)",
+                                params![source, x, y, height],
+                            )
+                            .unwrap();
+                    }
+                }
+                let mut sampler = Sampler::new(&app.db).unwrap();
+                let step = terrain::STEP * 2f64.powi(source);
+                for x in -3..=18 {
+                    for y in -19..=3 {
+                        let p = [(x as f64 + 0.26) * step, (y as f64 + 0.54) * step];
+                        assert_eq!(
+                            sampler.height(p).unwrap(),
+                            height,
+                            "source {source}, point {p:?}"
+                        );
+                    }
+                }
+            }
+        }
     }
     #[test]
     fn incremental_index_matches_rebuild_and_transaction_rollback() {
