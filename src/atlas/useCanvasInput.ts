@@ -5,6 +5,7 @@ import {
   type CanvasHTMLAttributes,
   type RefObject,
 } from "react";
+import { flushSync } from "react-dom";
 import { workflowPointer, isLiveBrush } from "./editorWorkflow";
 import type { EditorWorkflowController } from "./editorWorkflowController";
 import {
@@ -174,6 +175,16 @@ export function useCanvasInput(options: Options): Handlers & {
   return {
     abortPointer,
     onPointerDown: (event) => {
+      // Native blur follows pointerdown. Drawing tools must see the committed
+      // numeric setting on their first point. Selection keeps its original
+      // snapshot so an inspector write on blur does not swallow the selection.
+      const focused = event.currentTarget.ownerDocument.activeElement;
+      if (
+        focused instanceof HTMLInputElement &&
+        focused.type === "number" &&
+        snapshot().tool !== "select"
+      )
+        flushSync(() => focused.blur());
       const state = snapshot();
       const decision = decidePointerDown(state, {
         time: performance.now(),

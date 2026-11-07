@@ -30,6 +30,31 @@ test("Fluss zeichnen, bearbeiten und mit einem Schritt zurücknehmen", async ({
   await page.getByRole("button", { name: "Rückgängig", exact: true }).click();
   await expect.poll(async () => (await status(page)).revision).toBe(3);
 });
+test("erster Kartenklick verwendet die gerade eingegebene Flussbreite", async ({
+  page,
+}) => {
+  await page.goto(url);
+  await ready(page);
+  await page.getByRole("button", { name: "Fluss", exact: true }).click();
+  await paintedReady(page);
+  await page.getByLabel("Flussbreite (Fuß)", { exact: true }).fill("2");
+  // No Tab/Enter: clicking the map must commit the field before placing node one.
+  await clickWorld(page, [15, 35]);
+  await clickWorld(page, [130, 35]);
+  await page
+    .getByRole("button", { name: "Fluss übernehmen", exact: true })
+    .click();
+  await expect.poll(async () => (await status(page)).revision).toBe(1);
+  const widths = await page.evaluate(async () => {
+    const view = await window.atlasCore("rivers", {
+      version: await window.atlasCore("status", {}),
+      bounds: [-1000, -1000, 1000, 1000],
+      ids: [],
+    });
+    return view.rivers[0].river.nodes.map((node) => node.width);
+  });
+  expect(widths).toEqual([2, 2]);
+});
 test("Escape verwirft den Flussentwurf ohne Dokumentänderung", async ({
   page,
 }) => {

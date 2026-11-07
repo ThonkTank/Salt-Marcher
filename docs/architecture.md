@@ -324,8 +324,11 @@ Schreibaktionen oder Ziele außerhalb des bestätigten Bereichs frei.
 Koordinaten und Pointercapture. Bekannte Panelwechsel werden im Layoutschritt
 ausgemessen; echte Größenänderungen brechen die alte Geste vor Veröffentlichung
 des neuen Ausschnitts ab. Doppelte Resize-Meldungen verändern keine Geste.
-`editorSelection` besitzt Auswahlübergänge,
-`useCamera` Navigation und Fit-Identität. `useRivers` hält Flussauswahl und
+`useCanvasInput` übernimmt beim Karten-Pointerdown fokussierte Zahlenfelder
+für Zeichenwerkzeuge synchron vor dem Eingabesnapshot. Der Auswahlmodus behält
+seinen bisherigen Ablauf, damit ein Inspector-Write beim Fokusverlust die bereits
+beabsichtigte Auswahl nicht verschluckt.
+`editorSelection` besitzt Auswahlübergänge, `useCamera` Navigation und Fit-Identität. `useRivers` hält Flussauswahl und
 Punktindex zusammen; `useRegions` projiziert Katalog, Ränge und Beziehungen.
 Beide verwenden den gemeinsamen Workflow und Lesepfad.
 
