@@ -4,144 +4,73 @@ Atlas V7, Dateiformat 22, Generierungsrezept 4. Stand: 7. November 2026.
 [README](../../README.md) enthält Befehle, [Architektur](../architecture.md)
 Zuständigkeiten, [Produktvertrag](../product-contract.md) Verhalten und Grenzen.
 
-## Landschaft und Darstellung
+## Geprüfter Produktstand
 
-Wald, Buschland, Wiese und Felsgebiet verwenden getrennte normierte Bestandsgewichte
-mit Zieldichte, lokalen Lichtungen, grober Vererbung und vollständiger History.
-Boden-/Felsfarbe bleibt unabhängig. Bestehender Worker, Rasterstore, Queue und
-Präsentationscache besitzen weiterhin die Arbeit; Autoren enthalten keine Bäume.
-
-Fern erscheinen Flächenfarben, mittlerer Wald als durchgehendes Blätterdach mit
-dichteabhängigen Lücken. Buschland, Wiese und Felsgebiet behalten gruppierte
-Signaturen. Das optionale Kronenraster entsteht nur im mittleren Band bei Waldanteil
-und teilt das bestehende Cachebudget; Autorendaten und UI bleiben unverändert.
-Nahe Waldbäume sind eigene Federzeichnungen:
-vier unregelmäßige Kronen, gebrochene Blattkonturen, gedeckte Grünlasuren und
-größenabhängige Schraffur, orientiert an den offiziellen Canvas-of-Kings-Bildern.
-Vier feste Zeichenpfade werden geteilt; Autoren und Verteilung bleiben erhalten. Der gemeinsame
-Kandidatenrahmen umfasst auch die Überblendung ab 0,35 CSS-Pixeln pro Fuß.
-Große Viewports behalten das Blätterdach, bis der gemeinsame Kandidatenrahmen
-Einzelbäume erlaubt; Raster, Symbole und Kachelanfragen teilen diese Auswahl. Rasterziele und Clips in Gerätekoordinaten vermeiden die gefundenen
-nativen Kachelnähte. Wasser maskiert Bestand, Schnee bleibt sichtbar.
-
-Für die Landschaftsdarstellung bestehen 31 Präsentationstests einschließlich monotoner
-Deckung, negativer Koordinaten, identischer Kachelhalos und Rasterwiederverwendung.
-Neun Boden-/Landschafts-Browserfälle bestehen einschließlich History, Datei,
-Wassermaske, freiem Weltzoom und Welt→Mittel→Nah→Welt. Die Bildprobe mit 25/65/100 Prozent Walddeckung sowie
-das abschließende mittlere Kartenbild wurden visuell geprüft. Typen, Format und
-frischer Release-/RPM-Build bestehen.
-Boden- und Landschaftskacheln außerhalb des Viewports überspringen jetzt
-Decodierung, Relief-Nachbarschaftsabgleich und Rasteraufbau. Zwei zusätzliche
-Regressionen prüfen alle vier Außenrichtungen sowie Hinein-/Zurückschieben
-mit Wiederverwendung der sichtbaren Raster. Ein Geräte-Pixel bleibt als Rundungsrand.
-Belege: `src-tauri/target/diagnostics/landscape-canopy/` und
-`src-tauri/target/diagnostics/raster-visibility/`.
-Eine erneute native Bedienprüfung bleibt offen: Der verfügbare UI-Zugriff
-umfasst nur Browser. Frühere native Prüfungen belegen noch die alte Zeichnung.
-Das ursprüngliche Benutzertestfenster bleibt unberührt.
+Landschaftsdeckung für Wald, Buschland, Wiese und Felsgebiet funktioniert auf
+allen Außenmaßstäben mit Zieldichte, Lichtungen, grober Vererbung und History.
+Boden-/Felsfarbe bleibt unabhängig. Fern erscheinen Flächenfarben, mittlerer Wald
+als durchgehendes Blätterdach mit dichteabhängigen Lücken, nahe Bäume als eigene
+Federzeichnungen mit unregelmäßigen Kronen und Schraffur. Große Viewports behalten
+das Blätterdach, bis Einzelbäume in das gemeinsame Kandidatenbudget passen.
+Mittlere Darstellung, 25/65/100-Prozent-Deckung und große Zoomübergänge wurden an
+Browserbildern visuell geprüft. Rasterhalos und Geräte-Pixel-Clips sichern Nähte.
 
 Leere Boden-/Landschaftskacheln übertragen keine Pixelnutzlast und erzeugen keine
-Zeichenraster. Vollständig unbenutzte Ebenen überspringen Vererbung und Haloaufbau.
-Zwölf Rustfälle prüfen Raster, History, Datei, Rollback und ausschließlich im Halo
-vorhandene Boden-/Felspigmente. 67 Frontend-/Cache-/Loaderfälle, zehn zugehörige
-Browserfälle, 134 Transportverträge, Typen, Clippy und Format bestehen.
-Nativ geprüft: leere Weltkarte, Landanlage, erster Bodenauftrag mit Vorschau,
-Undo/Redo, Mausradzoom und Speichern mit vollständigen Autorenkacheln.
-Belege: `src-tauri/target/diagnostics/compact-empty-ground/`.
+Zeichenraster. Unsichtbare Boden-, Landschafts-, Gelände- und Stadtdichtekacheln
+überspringen ihre teure Verarbeitung. Kleine ebene Ausschnitte grober Höhenautoren
+werden durch höchstens vier vollständige konstante Spline-Abschnitte erkannt;
+fehlende Stützwerte bleiben konservativ. Der vollständige Rusttestlauf auf diesem
+Sampler-Fix besteht, ebenso 27 Landschafts-/Live-Höhen-Browserfälle einschließlich
+des zuvor gescheiterten 4K-Ladefalls, ohne verlängerte Zeitlimits.
 
-Die vorherige native Landschaftsabnahme umfasst Weltmalen, freie Navigation bis
-Einzelbäumen, Lichtungen, Undo/Redo, unabhängige Bodenfarbe und Speichern/Öffnen.
-14.784 Halo-Pixelpaare stimmen überein; der korrigierte native 44%-Ausschnitt ist
-nahtfrei. Belege liegen auch im erhaltenen Landschafts-Worktree unter
-`src-tauri/target/diagnostics/landscape-tool/` sowie im Hauptworktree unter
-`src-tauri/target/diagnostics/landscape-native-blend/`. Das ursprüngliche
-Benutzertestfenster bleibt unberührt.
+Der Außengeometriecache behält weiterhin benötigte Konturen innerhalb unveränderter
+256 Einträge und 16 MiB. Basis, Auswahl und Vorschau teilen den Abgleich; entfallene
+Referenzen geben Platz frei. Die temporäre Schlüsselmenge ist ebenfalls begrenzt.
+Ein reproduzierter Fall mit drei Objekten und zwei Plätzen baut jetzt pro weiterem
+Bild eine statt drei Konturen neu. Sieben Geometrietests und 18 Stadt-/Straßen-/
+Parzellen-Browserfälle bestehen. Daraus wird keine Latenzverbesserung abgeleitet.
 
-Die Folgeänderung auf `codex/visible-terrain-raster` erweitert dieselbe
-Sichtbarkeitsprüfung auf Relief-/Wasserraster und Höhenlinien. Ein gemeinsamer
-Helper enthält den Rundungsrand; Höhenlinien ergänzen ihre tatsächliche halbe
-Strichbreite. Unsichtbare Texturen werden nicht decodiert, vorhandene Raster
-bleiben beim Zurückschieben wiederverwendbar. Alle 418 Frontendtests und Typen
-bestehen, einschließlich DPR-Rand und direkter Vorschau. Alle 40 Boden-,
-Landschafts-, Höhen-, Reliefpinsel- und Gewässer-Browserfälle bestehen; darunter Weltmalen
-nach freiem Zoom, runde/kräuselige Küsten und Fehlererholung. Der frische
-Release-/RPM-Build besteht; native Bedienung bleibt mangels UI-Zugriff offen. Diese Folgeänderung
-ist nach Abschluss dessen erster Gesamtprüfung in den Main-Kandidaten integriert.
-Belege: `src-tauri/target/diagnostics/terrain-visibility/`.
-Alle fünf Landschafts-Browserfälle bestehen auch gemeinsam ohne parallele
-lokale Prüfungen, einschließlich 3840×2160. Die später in CI reproduzierte
-Ladeüberschreitung und ihre Korrektur sind unter Integration beschrieben.
-Mittlere Darstellung und großer Zoomübergang wurden
-an den Browserbildern visuell geprüft. Die neuen Unitprüfungen sichern den
-Kandidatenrahmen, positionsunabhängige Überblendung, Kronenrand und Rasterreuse.
-134 Transportverträge, Typen, Format und der frische Release-/RPM-Build bestehen.
-Belege: `src-tauri/target/diagnostics/landscape-capacity/`.
+## Höhenstrich während eines Ansichtswechsels
 
-Die Stadtübersicht prüft jetzt auch Dichtekacheln vor der Zellauswertung auf
-Viewportüberschneidung. Der Regressionstest belegt ausgelassene Zellzugriffe
-außerhalb des Fensters und erneutes Zeichnen nach dem Verschieben bei DPR 2.
-Alle sieben Stadtübersichts-/Straßen-Browserfälle bestehen, einschließlich
-Navigation zurück zur Detailbearbeitung und History/Datei. Der frische
-Release-/RPM-Build besteht; die native Bedienprüfung bleibt offen.
-Belege: `src-tauri/target/diagnostics/city-density-visibility/`.
+Eine schrittweise Browserprobe mit echtem Dokumentkern zeigte: Weltmalen nach
+freiem Herauszoomen liefert sichtbare Zwischenstände und vollständiges Undo/Redo.
+Ein unmittelbar während des Ansichtswechsels begonnener Strich wurde dagegen
+wegen der Darstellungssperre als Verschieben behandelt. Der neue Browsertest
+reproduzierte null gestartete Höhenstriche bei zurückgehaltener Weltansicht.
 
-## Außengeometrie bei großen sichtbaren Beständen
-
-Der Außengeometriecache verdrängt weiterhin benötigte Konturen nicht mehr durch
-jedes überzählige Objekt. Basis, Auswahl und Vorschau teilen einen Abgleich;
-entfallene Referenzen geben Platz frei, Sessionwechsel leeren den Bestand.
-Die Grenzen von 256 Einträgen und 16 MiB bleiben unverändert. Der Abgleich hält
-höchstens 256 temporäre Schlüssel und endet, sobald alle behaltenen Objekte
-gefunden sind. Überzählige Geometrie wird weiterhin vollständig gezeichnet.
-
-Der Regressionstest reproduzierte zuvor drei neue Konturen pro Bild bei drei
-Objekten und zwei Plätzen; jetzt entsteht nur eine neue Kontur. Sieben Geometrietests
-prüfen außerdem Kostengrenze, Vorschauaustausch, Sessionwechsel und unveränderte
-Zeichenpfade. Alle 420 Frontendtests sowie 18 Browserfälle für Stadtübersicht,
-Straßen und Parzellen bestehen; Typen, Quellformat und frischer Release-/RPM-Build
-ebenfalls. Die native Bedienprüfung bleibt mangels UI-Zugriff offen. Eine Latenzverbesserung ist daraus
-nicht abgeleitet; eine weitere Messreihe wurde nicht begonnen.
-Belege: `src-tauri/target/diagnostics/stable-exterior-geometry/`.
+Die Eingabefreigabe verwendet für Außenhöhen jetzt den bereiten Dokumentstatus.
+Der Worker liest die Autorenwerte; aktuelle Kamera und Pinsel bestimmen den
+Auftrag. Fehlender Status, Dateiaktionen, unsicherer Status und ausstehende Writes
+sperren weiterhin den Start. Szenenabhängige Werkzeuge behalten ihre Datensperre.
+Alle 421 Frontendtests, Typprüfung und Formatprüfung bestehen. Alle 29 Höhen-/
+Navigations-Browserfälle bestehen einschließlich des neuen Tests, unveränderter
+Kamera, History, Weltzoom, runder/kräuseliger Küsten, Fehlererholung und Abbruch.
+Der frische Release-/RPM-Build besteht ebenfalls (7,52 MiB).
 
 ## Integration und offene Abnahmen
 
-PR #1450 ist auf Main. PR #1456 bündelt den vollständigen Landschaftsstand
-und die anschließend geprüften Sichtbarkeits-/Zoomänderungen direkt gegen Main.
-Der konfliktfreie Mergevergleich ergibt denselben Produktbaum; bestehende Arbeit
-bleibt vollständig erhalten. #1457 ist in den Kandidatenbranch integriert. Die älteren Kandidaten #1451 und #1454 haben kein Auto-Merge.
+Main enthält PR #1450. #1456 bündelt Landschaft und Darstellungsänderungen samt
+Sampler-Fix; seine Gesamt-CI läuft noch, Auto-Merge ist aktiv. #1457 ist in dessen
+Kandidatenbranch integriert. #1458 enthält die separat geprüfte Geometriecache-
+Folgeänderung. Die Höhenfreigabe baut darauf auf. Ältere Kandidaten werden erst
+nach belegter Main-Integration als ersetzt geschlossen. Lokales Grün ersetzt
+keine vollständige CI-Freigabe.
 
-Die Gesamtprüfung von `d721bbd4d` bestand Rust, Frontend, Typen, Verträge,
-Clippy, Format und 242 von 243 Browserfällen. Der korrigierte Dateiablauf-Test
-besteht. Der verbleibende 4K-Landschaftsfall wartete beim Laden auf 54
-Detail-Geländekacheln aus groben Autoren; die fünfsekündige Bereitschaftsgrenze
-wurde überschritten. Das Diagnosebild enthielt eine laufende Abfrage und keine
-ausstehenden Writes.
-
-Der Sampler beweist jetzt für kleine Ausschnitte höchstens vier vollständig
-belegte konstante Spline-Abschnitte, auch wenn die umschließenden Indexblöcke
-nicht konstant oder nur dünn belegt sind. Die unveränderte kanonische Oberfläche
-kann dadurch als konstantes Raster zurückgegeben werden. Fehlende Stützwerte
-fallen auf den konservativen Pfad zurück. Sechs Blockindex- und zwölf
-Rastertests bestehen, einschließlich negativer Koordinaten, fehlender Autoren,
-Küsten, Materialhalos und Vergleich mit der kanonischen Oberfläche. Der zuvor
-gescheiterte 4K-Browserfall besteht lokal ohne geändertes Zeitlimit. Alle 27
-Landschafts-/Live-Höhen-Browserfälle bestehen, einschließlich Weltzoom per
-Mausrad, runder/kräuseliger Küsten, Fehlererholung, Abbruch und History.
-Clippy, Typen, Format und der frische Release-/RPM-Build bestehen.
-Belege: `src-tauri/target/diagnostics/coarse-flat-proof/` und
-`src-tauri/target/diagnostics/landscape-main-integration/`.
-
-Der finale Commit benötigt weiterhin seine vollständige CI-Freigabe; Main ist
-noch nicht auf diesem Stand. Der native UI-Zugriff dieser Sitzung bietet keine
-Desktopanwendungen. Die native Bedienabnahme bleibt daher ausdrücklich offen;
-ein Releasebuild allein ersetzt sie nicht.
+Frühere native Prüfungen umfassen Weltmalen, Bodenfarben, Landschaft, Navigation,
+Lichtungen, History und Datei-Rundlauf. Die neueren Zeichnungen und Änderungen
+sind noch nicht nativ bedient: Diese Sitzung bietet keinen nativen UI-Zugriff.
+Das ursprüngliche Benutzertestfenster bleibt unberührt. Ein frischer Releasebuild
+ersetzt diese Abnahme nicht.
 
 Genau eine frühere Vorher-/Nachher-Reihe mit je drei Weltstrichen ist abgeschlossen:
-erste sichtbare Änderung vorher 275–304 ms, danach 119–134 ms; sichtbare Bestätigung
-p95 vorher 427–516 ms, danach 339–376 ms; Nachlauf vorher 259–427 ms, danach
-231–345 ms. Spätere Änderungen sind darin nicht enthalten. Das Ziel p95 ≤50 ms
-ist nicht belegt; keine weitere Zeitmessreihe wurde begonnen.
-
-RPM-Installation, große Stadt-/Weltlastfälle und der umfangreiche Release-Treiber
+erste sichtbare Änderung 275–304 → 119–134 ms, sichtbare Bestätigung p95
+427–516 → 339–376 ms, Nachlauf 259–427 → 231–345 ms. Spätere Änderungen sind darin
+nicht enthalten. Das Ziel p95 ≤50 ms bleibt unbelegt; keine weitere Zeitmessreihe.
+RPM-Installation, große Stadt-/Weltlastfälle und umfangreicher Release-Treiber
 bleiben offen. Einzelobjektplatzierung, lokale Verschiebeausnahmen, Feldumrisse
 und Assetimporte bleiben Folgeumfang der Landschaftsdeckung.
+
+Belege unter `src-tauri/target/diagnostics/`: `landscape-canopy/`,
+`landscape-capacity/`, `compact-empty-ground/`, `terrain-visibility/`,
+`city-density-visibility/`, `coarse-flat-proof/`, `landscape-main-integration/`,
+`stable-exterior-geometry/` und `terrain-view-load/`.

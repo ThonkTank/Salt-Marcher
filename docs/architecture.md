@@ -38,7 +38,11 @@ verwenden denselben Schreibpfad für Autoren, Indizes, Zähler und History; erst
 nach erfolgreichem Abschluss wird die neue Revision veröffentlicht.
 
 Direkte Höhenstriche besitzen `beginTerrainStroke`, `appendTerrainStroke` und
-`endTerrainStroke`. `terrain_stroke` hält Identität, Paketfolge, Autorenauflösung
+`endTerrainStroke`. Ihre Eingabefreigabe verwendet den bereiten Dokumentstatus,
+nicht die Fertigstellung der Präsentationsreads nach einer Kamerabewegung.
+Pfad, Autorenauflösung und Oberflächenanforderung entstehen aus der aktuellen
+Kamera; Autorenwerte liest der Worker. Szenenabhängige Werkzeuge benötigen
+weiterhin aktuelle Darstellungsdaten. `terrain_stroke` hält Identität, Paketfolge, Autorenauflösung
 und Wegabtastungsrest. Jeder Abschnitt ist eine eigene abgeschlossene
 SQL-Transaktion. Begin/Append antworten mit `TerrainAcknowledgement` aus Status
 und optionalen geänderten Darstellungskacheln; End liefert Status. Die

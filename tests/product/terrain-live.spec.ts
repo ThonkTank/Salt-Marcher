@@ -422,3 +422,39 @@ for (const held of ["beginTerrainStroke", "appendTerrainStroke"]) {
     ).toBeEnabled();
   });
 }
+
+test("height drawing starts during a held world view load without panning", async ({
+  page,
+}) => {
+  await page.goto(url);
+  await ready(page);
+  await page.getByRole("button", { name: "Höhen", exact: true }).click();
+  await holdResponse(page, "terrainTiles");
+  await page.getByLabel("Ansichtsmaßstab").selectOption({ label: "Welt" });
+  await expect.poll(() => page.evaluate(() => window.atlasHeld)).toBe(true);
+  const canvas = page.getByTestId("atlas-canvas");
+  const camera = () =>
+    canvas.evaluate((c: HTMLCanvasElement) => {
+      const m = c.getContext("2d")!.getTransform();
+      return [m.a, m.e, m.f];
+    });
+  const before = await camera();
+  const box = (await canvas.boundingBox())!;
+  await page.mouse.move(box.x + box.width * 0.4, box.y + box.height * 0.5);
+  await page.mouse.down();
+  await page.mouse.move(box.x + box.width * 0.6, box.y + box.height * 0.5, {
+    steps: 12,
+  });
+  await page.mouse.up();
+  await expect
+    .poll(async () => (await calls(page, "beginTerrainStroke")).length)
+    .toBe(1);
+  expect(await camera()).toEqual(before);
+  await releaseResponse(page);
+  await settled(page);
+  await paintedReady(page);
+  expect((await status(page)).revision).toBeGreaterThan(0);
+  await page.getByRole("button", { name: "Rückgängig", exact: true }).click();
+  await settled(page);
+  expect((await status(page)).canUndo).toBe(false);
+});

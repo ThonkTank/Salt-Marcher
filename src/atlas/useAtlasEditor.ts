@@ -152,7 +152,7 @@ export function useAtlasEditor(client: AtlasClient) {
     if (presentation && reads.fresh)
       session.acknowledge(presentation.scene.status);
   }, [presentation, reads.fresh]);
-  const editable = canEdit(tool, interior, lod, reads.fresh, session);
+  const editable = canEdit(tool, interior, lod, reads.fresh, session.getGate());
   const workflow = useEditorWorkflow({
     gate: session.getGate,
     context: () => `${contextKey(context)}:${floor}`,

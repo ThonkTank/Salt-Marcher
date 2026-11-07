@@ -87,9 +87,12 @@ export function canEdit(
   interior: boolean,
   lod: LodDecision,
   fresh: boolean,
-  gate: Pick<WorkflowGate, "exclusive" | "uncertain" | "pending">,
+  gate: WorkflowGate,
 ) {
-  if (!fresh || gate.exclusive || gate.uncertain) return false;
+  if (!gate.version || gate.exclusive || gate.uncertain) return false;
+  // Height strokes read their author values in the document worker. A camera
+  // change does not require a fresh presentation before accepting their path.
+  if (!fresh && !(tool === "terrain" && !interior)) return false;
   if (toolScaleRestriction(tool, interior, lod) !== null) return false;
   return (
     gate.pending === 0 ||

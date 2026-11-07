@@ -38,7 +38,12 @@ it.each<{
 ])(
   "edit readiness: $tool, interior=$interior, scale=$scale, pending=$pending",
   ({ tool, interior, scale, pending, expected }) => {
-    const gate = { pending, exclusive: false, uncertain: false };
+    const gate = {
+      version: status(),
+      pending,
+      exclusive: false,
+      uncertain: false,
+    };
     expect(canEdit(tool, interior, decideLod(scale), true, gate)).toBe(
       expected,
     );
@@ -59,7 +64,12 @@ it.each<{
 );
 
 it("shares scale restrictions with edit readiness across hysteresis", () => {
-  const gate = { pending: 0, exclusive: false, uncertain: false };
+  const gate = {
+    version: status(),
+    pending: 0,
+    exclusive: false,
+    uncertain: false,
+  };
   const check = (
     lod: ReturnType<typeof decideLod>,
     interior: boolean,
@@ -446,4 +456,29 @@ it("replaces only the selected exact road tile duplicate without creating freshn
     );
   }
   expect(presentation).toEqual(before);
+});
+
+it("height authoring needs a ready document, not a loaded camera presentation", () => {
+  const gate = {
+    version: status(),
+    pending: 0,
+    exclusive: false,
+    uncertain: false,
+  };
+  for (const scale of [1.28, 0.000001]) {
+    const lod = decideLod(scale);
+    expect(canEdit("terrain", false, lod, false, gate)).toBe(true);
+    for (const patch of [
+      { version: null },
+      { pending: 1 },
+      { exclusive: true },
+      { uncertain: true },
+    ])
+      expect(canEdit("terrain", false, lod, false, { ...gate, ...patch })).toBe(
+        false,
+      );
+    expect(canEdit("terrain", true, lod, false, gate)).toBe(false);
+    expect(canEdit("road", false, lod, false, gate)).toBe(false);
+    expect(canEdit("area", false, lod, false, gate)).toBe(false);
+  }
 });
