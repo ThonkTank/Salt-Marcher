@@ -69,8 +69,8 @@ Release-/RPM-Build besteht; native Bedienung bleibt mangels UI-Zugriff offen. Di
 ist nach Abschluss dessen erster Gesamtprüfung in den Main-Kandidaten integriert.
 Belege: `src-tauri/target/diagnostics/terrain-visibility/`.
 Alle fünf Landschafts-Browserfälle bestehen auch gemeinsam ohne parallele
-lokale Prüfungen, einschließlich 3840×2160. Der erste Lauf scheiterte vor dem
-Malen beim Laden der Karte am Fünf-Sekunden-Limit; dessen Ursache bleibt offen.
+lokale Prüfungen, einschließlich 3840×2160. Die später in CI reproduzierte
+Ladeüberschreitung und ihre Korrektur sind unter Integration beschrieben.
 Mittlere Darstellung und großer Zoomübergang wurden
 an den Browserbildern visuell geprüft. Die neuen Unitprüfungen sichern den
 Kandidatenrahmen, positionsunabhängige Überblendung, Kronenrand und Rasterreuse.
@@ -84,6 +84,24 @@ Alle sieben Stadtübersichts-/Straßen-Browserfälle bestehen, einschließlich
 Navigation zurück zur Detailbearbeitung und History/Datei. Der frische
 Release-/RPM-Build besteht; die native Bedienprüfung bleibt offen.
 Belege: `src-tauri/target/diagnostics/city-density-visibility/`.
+
+## Außengeometrie bei großen sichtbaren Beständen
+
+Der Außengeometriecache verdrängt weiterhin benötigte Konturen nicht mehr durch
+jedes überzählige Objekt. Basis, Auswahl und Vorschau teilen einen Abgleich;
+entfallene Referenzen geben Platz frei, Sessionwechsel leeren den Bestand.
+Die Grenzen von 256 Einträgen und 16 MiB bleiben unverändert. Der Abgleich hält
+höchstens 256 temporäre Schlüssel und endet, sobald alle behaltenen Objekte
+gefunden sind. Überzählige Geometrie wird weiterhin vollständig gezeichnet.
+
+Der Regressionstest reproduzierte zuvor drei neue Konturen pro Bild bei drei
+Objekten und zwei Plätzen; jetzt entsteht nur eine neue Kontur. Sieben Geometrietests
+prüfen außerdem Kostengrenze, Vorschauaustausch, Sessionwechsel und unveränderte
+Zeichenpfade. Alle 420 Frontendtests sowie 18 Browserfälle für Stadtübersicht,
+Straßen und Parzellen bestehen; Typen, Quellformat und frischer Release-/RPM-Build
+ebenfalls. Die native Bedienprüfung bleibt mangels UI-Zugriff offen. Eine Latenzverbesserung ist daraus
+nicht abgeleitet; eine weitere Messreihe wurde nicht begonnen.
+Belege: `src-tauri/target/diagnostics/stable-exterior-geometry/`.
 
 ## Integration und offene Abnahmen
 

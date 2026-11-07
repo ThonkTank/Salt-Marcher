@@ -147,25 +147,59 @@ describe("exterior geometry retention", () => {
     shape(ctx, area([[NaN, 0]]), 1, c);
     expect(ctx.save).not.toHaveBeenCalled();
   });
-  it("uses LRU entry and estimated-cost limits without oversized eviction", () => {
+  it("bounds entries and cost, releasing only shapes no longer needed", () => {
     const a = area([[0, 0]]),
       b = area([[1, 1]]),
       d = area([[2, 2]]);
     const c = new ExteriorGeometryCache({ bytes: 576, entries: 2 });
     const first = c.get(a),
       second = c.get(b);
-    expect(c.get(a)).toBe(first);
     c.get(d);
     expect(c.get(a)).toBe(first);
-    expect(c.get(b)).not.toBe(second);
+    expect(c.get(b)).toBe(second);
+    c.retain([b, d]);
+    const third = c.get(d);
+    expect(c.get(d)).toBe(third);
+    expect(c.get(b)).toBe(second);
     const oversized = area(Array.from({ length: 11 }, () => [0, 0]));
-    const keep = c.get(b);
     expect(c.get(oversized)).not.toBe(c.get(oversized));
-    expect(c.get(b)).toBe(keep);
+    expect(c.get(b)).toBe(second);
     const byCost = new ExteriorGeometryCache({ bytes: 575, entries: 10 });
     const old = byCost.get(a);
-    byCost.get(b);
-    expect(byCost.get(a)).not.toBe(old);
+    expect(byCost.get(b)).not.toBe(byCost.get(b));
+    expect(byCost.get(a)).toBe(old);
+    byCost.retain([b]);
+    const admitted = byCost.get(b);
+    expect(byCost.get(b)).toBe(admitted);
+  });
+  it("shares retained base and preview geometry and releases obsolete replacements", () => {
+    const c = new ExteriorGeometryCache({ bytes: 4096, entries: 2 });
+    const base = area(),
+      preview = area(),
+      replacement = area();
+    c.retain([base, preview]);
+    const basePath = c.get(base),
+      previewPath = c.get(preview);
+    c.retain([base, preview]);
+    expect(c.get(base)).toBe(basePath);
+    expect(c.get(preview)).toBe(previewPath);
+    c.retain([base, replacement]);
+    const replacementPath = c.get(replacement);
+    expect(c.get(base)).toBe(basePath);
+    expect(c.get(replacement)).toBe(replacementPath);
+    c.retain([]);
+    expect(c.get(base)).not.toBe(basePath);
+  });
+  it("retains a useful subset when every frame exceeds the entry budget", () => {
+    const c = new ExteriorGeometryCache({ bytes: 4096, entries: 2 });
+    const objects = [area(), area(), area()];
+    for (const object of objects) c.get(object);
+    expect(builds).toBe(3);
+    for (let frame = 0; frame < 4; frame++) {
+      const before = builds;
+      for (const object of objects) c.get(object);
+      expect(builds - before).toBe(1);
+    }
   });
   it("applies styles at paint time while reusing geometry", () => {
     const c = new ExteriorGeometryCache();

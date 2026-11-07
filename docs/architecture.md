@@ -390,6 +390,13 @@ rein vor. Cityfeatures werden für den Painter dedupliziert; Auswahl und geöffn
 Owner beeinflussen die Beschriftungsprojektion. `AtlasCanvas` plant Basis- und
 Overlayframes mit Kamera und DPR. Begrenzte `Path2D`-Caches halten Außen- und
 Innenraumgeometrie; `mapLabels` platziert Namen über Weltanker und räumliche Belegung.
+Der Außengeometriecache behält innerhalb seines unveränderten Byte-/Eintragsbudgets
+bereits aufgenommene Objekte, solange Basis, Auswahl oder Vorschau sie benötigen.
+Ein gemeinsamer Abgleich vor den Zeichenframes entfernt entfallene Referenzen;
+seine temporäre Schlüsselmenge ist höchstens so groß wie der Cache. Überzählige
+Objekte werden ohne Aufnahme gezeichnet, damit ein großer sichtbarer Bestand
+nicht bei jedem Frame alle weiterhin benötigten Konturen gegenseitig verdrängt.
+Sessionwechsel leeren den Cache; ersetzte Objektwerte erhalten neue Konturen.
 
 `TerrainPainter` zeichnet fertige Raster und Höhenlinien. Gemeinsame gerundete
 Gerätepixelkanten vermeiden transparente Kachelnähte; der Quellhalo bleibt für die
