@@ -555,7 +555,10 @@ Auswählbare, durch den Maßstab gesperrte Werkzeuge zeigen statt einer
 Zeicheneinladung einen Hinweis zum Hineinzoomen. Der Name der Ansicht allein
 garantiert keine Bearbeitungsfreigabe.
 
-Mitteltaste oder Leertaste+Ziehen verschiebt die Karte, Mausrad zoomt. Ein Haus
+Mitteltaste oder Leertaste+Ziehen verschiebt die Karte, Mausrad zoomt.
+Fenstergrößen- und Werkzeugleistenwechsel erhalten den Weltmittelpunkt und den
+Maßstab innerhalb der Weltgrenzen. Öffnet oder schließt eine Auswahl per
+Kartenklick den Inspector, bleibt der Punkt unter dem Zeiger stehen. Ein Haus
 öffnet per Doppelklick oder „Innen öffnen“; die Kamera bleibt erhalten.
 Außenzoom reicht bis 0,000002 CSS-Pixel pro Fuß. Straßen, Boden, Landschaft, Regionen und Höhen
 lassen sich in der gesamten Außenübersicht bearbeiten. Lokale Gewässer

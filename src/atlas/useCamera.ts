@@ -68,6 +68,26 @@ export function useCamera({
     },
     [cancelFit, setCameraState, size.width, size.height],
   );
+  const resize = (
+    next: typeof size,
+    previous: typeof size | null,
+    preserveCenter: boolean,
+  ) => {
+    cancelFit();
+    // The initial editor size is only a placeholder, not a measured viewport.
+    if (previous && preserveCenter)
+      setCameraState((prior) =>
+        clampCamera(
+          {
+            ...prior,
+            x: prior.x + (next.width - previous.width) / 2,
+            y: prior.y + (next.height - previous.height) / 2,
+          },
+          next.width,
+          next.height,
+        ),
+      );
+  };
   const fit = async (
     client: AtlasClient,
     scene: Scene | undefined,
@@ -136,5 +156,5 @@ export function useCamera({
       if (current()) setPending(false);
     }
   };
-  return { cancelFit, setCamera, fit, pending };
+  return { cancelFit, setCamera, resize, fit, pending };
 }

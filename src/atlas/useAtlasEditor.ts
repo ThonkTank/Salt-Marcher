@@ -304,8 +304,8 @@ export function useAtlasEditor(client: AtlasClient) {
         river: rivers.input,
       }),
     dispatch: dispatchInput,
-    setSize: (next) => {
-      cancelFit();
+    setSize: (next, previous, preserveCenter) => {
+      navigation.resize(next, previous, preserveCenter);
       setSize(next);
     },
     setHover: setHoverReason,

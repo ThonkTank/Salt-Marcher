@@ -1,5 +1,5 @@
 import { editorUrl } from "../support/browserServer";
-import { showObjects } from "../support/editor";
+import { showObjects, drawn } from "../support/editor";
 import { expect, test } from "../support/fixture";
 
 test("covering superseded scene advances the view while newest request remains pending", async ({
@@ -463,11 +463,11 @@ test("covering interim scene permits real Canvas edits while the latest read is 
   });
   await page.mouse.move(box.x + 350, box.y + 300);
   await page.mouse.down({ button: "middle" });
-  await page.mouse.move(box.x + 430, box.y + 300);
+  await page.mouse.move(box.x + 550, box.y + 300);
   await expect
     .poll(() => page.evaluate(() => window.atlasSceneHeld.length))
     .toBe(1);
-  await page.mouse.move(box.x + 450, box.y + 300);
+  await page.mouse.move(box.x + 570, box.y + 300);
   await expect
     .poll(() => page.evaluate(() => window.atlasSceneHeld.length))
     .toBe(2);
@@ -488,13 +488,18 @@ test("covering interim scene permits real Canvas edits while the latest read is 
   const a = requests[0].args.bounds as number[],
     b = requests[1].args.bounds as number[];
   expect(a).not.toEqual(b);
-  // Initial camera (160,120,3.2), followed by the exact 100 px middle drag.
-  const current = [
-    -260 / 3.2,
-    -120 / 3.2,
-    (box.width - 260) / 3.2,
-    (box.height - 120) / 3.2,
-  ];
+  // The first pan crosses the loaded margin; the second requests another
+  // quantum while remaining covered by the first response.
+  await drawn(page);
+  const current = await canvas.evaluate((element: HTMLCanvasElement) => {
+    const t = element.getContext("2d")!.getTransform();
+    return [
+      -t.e / t.a,
+      -t.f / t.d,
+      (element.width - t.e) / t.a,
+      (element.height - t.f) / t.d,
+    ];
+  });
   expect(a[0]).toBeLessThanOrEqual(current[0]);
   expect(a[1]).toBeLessThanOrEqual(current[1]);
   expect(a[2]).toBeGreaterThanOrEqual(current[2]);

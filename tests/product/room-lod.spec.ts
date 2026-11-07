@@ -539,3 +539,73 @@ test("exact exterior paths match independent Canvas primitives across repaint an
   });
   expect(results.every(Boolean)).toBe(true);
 });
+
+test("retained terrain contours match direct Canvas segments across camera transforms", async ({
+  page,
+}) => {
+  await page.goto(url);
+  const comparisons = await page.evaluate(async () => {
+    const terrainModule = "/src/atlas/terrainView.ts";
+    const { TerrainPainter } = await import(/* @vite-ignore */ terrainModule);
+    const painter = new TerrainPainter();
+    const contours = Array.from({ length: 120 }, (_, i) => [
+      -155 + i,
+      10 + (i % 7) * 8,
+      -145 + i,
+      100 + (i % 5) * 8,
+    ]);
+    const tile = {
+      contentId: "contour-pixel-reference",
+      x: -1,
+      y: 0,
+      heights: [],
+      waters: [],
+      foundationTops: [],
+      raster: {
+        pixels: 128,
+        relief: btoa(String.fromCharCode(178, 185, 151, 255)),
+        materials: btoa(String.fromCharCode(0, 0, 222)),
+        water: btoa("\0"),
+        contourInterval: 5,
+        contours,
+      },
+    };
+    const view = { level: 0, tiles: [tile] };
+    const results = [];
+    for (const [scale, x, y] of [
+      [1, 160, 0],
+      [1.5, 230, -20],
+      [0.75, 130, 30],
+      [1, 160, 0],
+    ]) {
+      const canvas = () => {
+        const c = document.createElement("canvas");
+        c.width = 320;
+        c.height = 220;
+        const ctx = c.getContext("2d")!;
+        ctx.setTransform(scale, 0, 0, scale, x, y);
+        return ctx;
+      };
+      const actual = canvas(),
+        reference = canvas();
+      painter.paintContours(actual, view, scale);
+      reference.lineWidth = 0.7 / scale;
+      reference.strokeStyle = "#55674e80";
+      reference.beginPath();
+      for (const [a, b, c, d] of contours) {
+        reference.moveTo(a, b);
+        reference.lineTo(c, d);
+      }
+      reference.stroke();
+      const pixels = actual.getImageData(0, 0, 320, 220).data;
+      results.push({
+        same: actual.canvas.toDataURL() === reference.canvas.toDataURL(),
+        visible: pixels.some((v, i) => i % 4 === 3 && v > 0),
+      });
+    }
+    return results;
+  });
+  expect(comparisons).toEqual(
+    Array.from({ length: 4 }, () => ({ same: true, visible: true })),
+  );
+});

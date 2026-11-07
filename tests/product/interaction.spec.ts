@@ -1,4 +1,4 @@
-import { finishRoad, selectObject } from "../support/editor";
+import { finishRoad, selectObject, screen } from "../support/editor";
 import { expect, test } from "../support/fixture";
 
 import { url } from "../support/editor";
@@ -97,15 +97,17 @@ test("rapid interior clicks queue immutable intents against successive revisions
   await page.getByRole("button", { name: "Innen öffnen" }).click();
   await expect(page.getByText("Ansicht wird geladen …")).toHaveCount(0);
   await page.getByRole("button", { name: "Radieren", exact: true }).click();
-  const box = (await page.getByTestId("atlas-canvas").boundingBox())!;
+  const points = await Promise.all(
+    [1.1, 2.1, 3.1].map((x) => screen(page, [x * 5, 5.5])),
+  );
   await page.evaluate(() => {
     window.atlasHold = { cmd: "commit" };
     window.atlasCalls = [];
   });
-  await page.mouse.click(box.x + 160 + 16 * 1.1, box.y + 120 + 16 * 1.1);
+  await page.mouse.click(points[0].x, points[0].y);
   await expect.poll(() => page.evaluate(() => window.atlasHeld)).toBe(true);
-  await page.mouse.click(box.x + 160 + 16 * 2.1, box.y + 120 + 16 * 1.1);
-  await page.mouse.click(box.x + 160 + 16 * 3.1, box.y + 120 + 16 * 1.1);
+  await page.mouse.click(points[1].x, points[1].y);
+  await page.mouse.click(points[2].x, points[2].y);
   await page.evaluate(() => window.atlasRelease!());
   await expect
     .poll(() =>
@@ -155,6 +157,15 @@ test("canvas selection prioritizes houses and visible parcels over terrain, then
       },
     });
   await page.reload();
+  await ready(page);
+  // Keep every fixture target visible when the inspector narrows the map.
+  const generation = await page.evaluate(
+    () => window.atlasPaint!.cameraGeneration,
+  );
+  await page.getByRole("button", { name: "Einpassen", exact: true }).click();
+  await expect
+    .poll(() => page.evaluate(() => window.atlasPaint!.cameraGeneration))
+    .toBeGreaterThan(generation);
   await ready(page);
   // Selecting the parcel makes its boundary hittable in the select tool.
   await selectObject(page, "▱ Parzelle");

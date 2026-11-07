@@ -1,7 +1,9 @@
+import { BudgetCache } from "./budgetCache";
 import { afterEach, expect, it, vi } from "vitest";
 import {
   decodeBytes,
   terrainImage,
+  terrainContourPath,
   prepareMaterialSampler,
 } from "./terrainRaster";
 import type { SurfaceTile } from "./generated/SurfaceTile";
@@ -112,4 +114,45 @@ it("indexes material tiles once across repeated boundaries, including negative a
   expect(sample(-640, -640)[0]).toBe(0);
   expect(sample(-480, -640)[0]).toBe(1 / 255);
   expect(coordinateReads).toBeLessThanOrEqual(128);
+});
+
+it("contour-only draws decode no raster channels, then material reads decode only materials", () => {
+  vi.stubGlobal(
+    "Path2D",
+    class {
+      moveTo() {}
+      lineTo() {}
+    },
+  );
+  const decode = vi.spyOn(globalThis, "atob");
+  const trim = vi.spyOn(BudgetCache.prototype, "trim");
+  const tile = {
+    contentId: "lazy-contour-channels",
+    x: 0,
+    y: 0,
+    heights: [],
+    waters: [],
+    foundationTops: [],
+    raster: {
+      pixels: 128,
+      relief: btoa(String.fromCharCode(178, 185, 151, 255)),
+      materials: btoa(String.fromCharCode(0, 0, 222)),
+      water: btoa("\0"),
+      contourInterval: 5,
+      contours: [[0, 0, 10, 10]],
+    },
+  } as SurfaceTile;
+  const path = terrainContourPath(tile);
+  expect(terrainContourPath(structuredClone(tile))).toBe(path);
+  expect(decode).not.toHaveBeenCalled();
+  expect(trim).not.toHaveBeenCalled();
+  expect(
+    prepareMaterialSampler({ level: 0, tiles: [tile] } as TerrainResponse)(
+      5,
+      5,
+    )[2],
+  ).toBeCloseTo(1, 2);
+  expect(decode).toHaveBeenCalledExactlyOnceWith(tile.raster!.materials);
+  decode.mockRestore();
+  trim.mockRestore();
 });

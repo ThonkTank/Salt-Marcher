@@ -1,4 +1,5 @@
-import { settled } from "../support/editor";
+import type { Page } from "@playwright/test";
+import { settled, paintedReady } from "../support/editor";
 import type { House, Road, Status } from "../../src/atlas/model";
 import {
   calls,
@@ -17,6 +18,17 @@ import {
 } from "../support/editor";
 import { expect, test } from "../support/fixture";
 
+// The fixtures exercise negative-x endpoints. Pan them into the narrowed map
+// instead of depending on the editor's initial pixel translation.
+async function revealWesternEndpoints(page: Page) {
+  const box = (await page.getByTestId("atlas-canvas").boundingBox())!;
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.mouse.down({ button: "middle" });
+  await page.mouse.move(box.x + box.width / 2 + 200, box.y + box.height / 2);
+  await page.mouse.up({ button: "middle" });
+  await paintedReady(page);
+}
+
 test("new compound road accepts the latest candidate while an obsolete preview is held", async ({
   page,
 }) => {
@@ -27,6 +39,7 @@ test("new compound road accepts the latest candidate while an obsolete preview i
     "houses",
   );
   await page.getByLabel("Bebauung", { exact: true }).selectOption("houses");
+  await revealWesternEndpoints(page);
   await clickWorld(page, [-20, 30]);
   await page.evaluate(() => {
     window.atlasHold = { cmd: "preview" };
@@ -135,6 +148,7 @@ test("both extension ends keep original direction, sections, parcel poses and in
   await ready(page);
   await selectObject(page, "↝ Testweg");
   await ready(page);
+  await revealWesternEndpoints(page);
   for (const [end, p] of [
     ["Ende", [160, 0]],
     ["Anfang", [-40, 0]],
@@ -492,6 +506,7 @@ test("rejected final curve preserves author data and renders structured issues",
   await ready(page);
   await selectObject(page, "↝ Testweg");
   await ready(page);
+  await revealWesternEndpoints(page);
   await clickWorld(page, [0, 0]);
   await page
     .getByRole("button", { name: "Kurvengriffe anlegen", exact: true })

@@ -327,7 +327,11 @@ Schreibaktionen oder Ziele außerhalb des bestätigten Bereichs frei.
 `interaction` berechnet Gesten; `useCanvasInput` besitzt DOM-Ereignisse,
 Koordinaten und Pointercapture. Bekannte Panelwechsel werden im Layoutschritt
 ausgemessen; echte Größenänderungen brechen die alte Geste vor Veröffentlichung
-des neuen Ausschnitts ab. Doppelte Resize-Meldungen verändern keine Geste.
+des neuen Ausschnitts ab. `useCamera` erhält bei Fenster-/Panelgrößenwechseln
+den Weltmittelpunkt anhand der letzten tatsächlich gemessenen Größe; die initiale
+Platzhaltergröße löst keine Verschiebung aus. Bei einer durch Karten-Pointerdown
+ausgelösten Auswahl bleibt stattdessen der Punkt unter dem Zeiger fest.
+Doppelte Resize-Meldungen verändern weder Kamera noch Geste.
 `useCanvasInput` übernimmt beim Karten-Pointerdown fokussierte Zahlenfelder
 für Zeichenwerkzeuge synchron vor dem Eingabesnapshot. Der Auswahlmodus behält
 seinen bisherigen Ablauf, damit ein Inspector-Write beim Fokusverlust die bereits
@@ -431,8 +435,16 @@ Caches bleibt unverändert.
 
 `TerrainPainter` zeichnet fertige Raster und Höhenlinien. Gemeinsame gerundete
 Gerätepixelkanten vermeiden transparente Kachelnähte; der Quellhalo bleibt für die
-Filterung erhalten. `terrainRaster` cached dekodierte Bilder nach Inhaltskennung,
-ohne Transportobjekte festzuhalten. Bodenfarben verwenden vorbereitete Reliefwerte
+Filterung erhalten. `terrainRaster` hält Bilder und bei Bedarf vorbereitete
+Höhenlinienpfade gemeinsam nach Inhaltskennung, ohne Transportobjekte festzuhalten.
+Relief, Materialien und Wasser werden erst für ihre tatsächliche Verwendung
+dekodiert. Dekodierte Reliefbytes leben nur bis zur Bilderstellung; dauerhaft
+bleiben das fertige Canvas und bei Bedarf die Materialbytes erhalten.
+Linienpfade verwenden exakt die Workersegmente und benötigen keine
+Neuberechnung beim Verschieben oder Zoomen. Ihre geschätzten Speicherkosten zählen
+zum bestehenden Terrainrasterbudget; die optionale Aufnahme verdrängt keine
+bereits gehaltenen Raster. Ohne freien Platz bleibt der Pfad nur für den aktuellen
+Zeichenaufruf erhalten. Bodenfarben verwenden vorbereitete Reliefwerte
 und einen eigenen Pixelhalo. Die Seenrasterung ordnet nicht horizontale Uferkanten einmal nach ihrer unteren
 Y-Grenze. Pro aufsteigender Subpixelzeile bleiben nur kreuzende Kanten aktiv;
 jede Kante ist einmal gespeichert. Schnittpunkte werden je Polygon einschließlich
