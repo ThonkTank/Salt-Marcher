@@ -204,7 +204,7 @@ for (const tool of ["Höhen", "Gewässer"] as const) {
     await ready(page);
     await paintedCamera(page);
     await expect(
-      page.getByText("Durchmesser: 3,13 Fuß · Höhenraster: 5 Fuß", {
+      page.getByText("Durchmesser: 0,953 m · Höhenraster: 1,52 m", {
         exact: true,
       }),
     ).toBeVisible();
@@ -250,7 +250,7 @@ for (const tool of ["Höhen", "Gewässer"] as const) {
     await page.getByLabel("Pinselgröße (Pixel)").fill("256");
     await page.getByLabel("Pinselgröße (Pixel)").blur();
     await expect(
-      page.getByText("Durchmesser: 10 Fuß · Höhenraster: 5 Fuß", {
+      page.getByText("Durchmesser: 3,05 m · Höhenraster: 1,52 m", {
         exact: true,
       }),
     ).toBeVisible();
@@ -342,7 +342,7 @@ test("subgrid water can extend metadata without changing a height sample", async
   await page.getByLabel("Pinselgröße (Pixel)").fill("8");
   await page.getByLabel("Pinselgröße (Pixel)").blur();
   await expect(
-    page.getByText("Durchmesser: 0,31 Fuß · Höhenraster: 5 Fuß", {
+    page.getByText("Durchmesser: 0,0953 m · Höhenraster: 1,52 m", {
       exact: true,
     }),
   ).toBeVisible();

@@ -243,7 +243,8 @@ Pinselgesten blockieren Zoom. Assetgröße, Stärke, Deckkraft und Farbfluss ble
 unabhängig. Arbeitsbudgets gelten weiterhin; zu große Striche werden vollständig
 abgelehnt statt still verkleinert. Höhen prüfen vor Rasterarbeit zusätzlich
 höchstens 400.000 Kandidatenpositionen pro Abdruck. Höhen und Gewässer zeigen
-Weltdurchmesser und Höhenrasterabstand als Information; kleine Pinsel zwischen
+Weltdurchmesser und Höhenrasterabstand in Metern beziehungsweise ab einem Kilometer
+in Kilometern mit höchstens drei signifikanten Ziffern; kleine Pinsel zwischen
 Rasterpunkten können ohne Höhenänderung bleiben.
 
 Der Höhenpinsel begrenzt seinen Auftrag an der Weltgrenze; ein überstehender

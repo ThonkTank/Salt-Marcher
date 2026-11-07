@@ -61,7 +61,21 @@ Der Regressionstest scheiterte vorher; danach speichern beide Knoten 2 Fuß.
 Die erneute Browserprobe einschließlich Heraus-/Hineinzoomen bestätigt die
 schmale Kontur. Alle 22 Fluss-, Datei- und Fokuswechseltests bestehen, einschließlich
 Umbenennen mit anschließender Haus-/Raumauswahl; 429 Frontendtests und Typen bestehen.
-Der frische Release-/RPM-Build besteht ebenfalls (7,52 MiB).
+Der frische Release-/RPM-Build besteht ebenfalls (7,52 MiB). Zusätzlich bestehen
+30 Höhen-/Navigationstests. Eine direkte Browserprobe auf Welt plus freiem
+Herauszoomen bestätigt 128 Pixel ab Strichbeginn, sichtbares Land vor Pointerup
+und vollständiges Undo nach sofortigem Losmalen aus dem Zahlenfeld.
+
+## Lesbare Pinselmaße
+
+Der Hinweis für Höhen und Gewässer zeigt Durchmesser und Höhenraster jetzt in
+Metern beziehungsweise Kilometern mit höchstens drei signifikanten Ziffern.
+In der weit herausgezoomten Weltansicht stehen beispielsweise 11.500 km und
+99,9 km statt langer Fußzahlen. Die Darstellung wurde am Browserbild geprüft;
+drei bestehende Raum-Browserfälle prüfen metrische Werte, kleine Pinsel,
+Rasterhinweise und History. Typ- und Formatprüfung sowie der frische Release-/
+RPM-Build bestehen. Die Änderung liegt
+auf einem Folgebranch; die laufende CI von #1461 wird nicht neu gestartet.
 
 ## Höhenstrich während eines Ansichtswechsels
 
