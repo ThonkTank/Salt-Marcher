@@ -55,6 +55,106 @@ fn coverage(z: f64, gradient: f64) -> f64 {
         0.
     }
 }
+/// The interval also bounds the antialias gradient: for four corners,
+/// (|b+d-a-c|+|c+d-a-b|)/2 = max(|d-a|,|b-c|) <= high-low.
+/// Same-sign heights alone are insufficient near a steep coast.
+fn uniform_ocean(low: f64, high: f64) -> Option<f64> {
+    if low == high {
+        return Some(if low < 0. { 1. } else { 0. });
+    }
+    let margin = (high - low) / 2. + 1e-9 * low.abs().max(high.abs()).max(1.);
+    if low > margin {
+        Some(0.)
+    } else if high < -margin {
+        Some(1.)
+    } else {
+        None
+    }
+}
+fn ocean_cell([a, b, c, d]: [f64; 4]) -> f64 {
+    coverage(
+        (a + b + c + d) / 4.,
+        ((b + d - a - c).abs() + (c + d - a - b).abs()) / 2.,
+    )
+}
+
+/// Request-local water coverage. Only uncertain coastal cells need exact nodes;
+/// the independent relief/contour grid always retains its true heights.
+struct OceanRaster<'a, 'db> {
+    sampler: &'a mut Sampler<'db>,
+    bounds: Bounds,
+    pixels: usize,
+    nodes: Vec<f64>,
+    coverage: Vec<f64>,
+    #[cfg(test)]
+    samples: usize,
+}
+impl OceanRaster<'_, '_> {
+    fn render(&mut self) -> Result<()> {
+        let n = self.pixels;
+        // Keep the power-of-two interior aligned; including the two halo
+        // pixels in its quadtree would create extra, uneven subdivisions.
+        self.fill(1, 1, n, n)?;
+        self.fill(0, 0, n + 2, 1)?;
+        self.fill(0, n + 1, n + 2, 1)?;
+        self.fill(0, 1, 1, n)?;
+        self.fill(n + 1, 1, 1, n)
+    }
+    fn point(&self, x: usize, y: usize) -> [f64; 2] {
+        let step = (self.bounds[2] - self.bounds[0]) / self.pixels as f64;
+        [
+            self.bounds[0] + (x as f64 - 1.) * step,
+            self.bounds[1] + (y as f64 - 1.) * step,
+        ]
+    }
+    fn node(&mut self, x: usize, y: usize) -> Result<f64> {
+        let i = y * (self.pixels + 3) + x;
+        if self.nodes[i].is_nan() {
+            self.nodes[i] = self.sampler.height(self.point(x, y))?;
+            #[cfg(test)]
+            {
+                self.samples += 1;
+            }
+        }
+        Ok(self.nodes[i])
+    }
+    fn fill(&mut self, x: usize, y: usize, w: usize, h: usize) -> Result<()> {
+        let a = self.point(x, y);
+        let b = self.point(x + w, y + h);
+        let [low, high] = self.sampler.range([a[0], a[1], b[0], b[1]])?;
+        if let Some(alpha) = uniform_ocean(low, high) {
+            for row in y..y + h {
+                let start = row * (self.pixels + 2) + x;
+                self.coverage[start..start + w].fill(alpha);
+            }
+        } else if w <= 16 && h <= 16 {
+            for row in y..y + h {
+                for col in x..x + w {
+                    let corners = [
+                        self.node(col, row)?,
+                        self.node(col + 1, row)?,
+                        self.node(col, row + 1)?,
+                        self.node(col + 1, row + 1)?,
+                    ];
+                    self.coverage[row * (self.pixels + 2) + col] = ocean_cell(corners);
+                }
+            }
+        } else if w > 16 && h > 16 {
+            for (dy, height) in [(y, h / 2), (y + h / 2, h - h / 2)] {
+                for (dx, width) in [(x, w / 2), (x + w / 2, w - w / 2)] {
+                    self.fill(dx, dy, width, height)?;
+                }
+            }
+        } else if w >= h {
+            self.fill(x, y, w / 2, h)?;
+            self.fill(x + w / 2, y, w - w / 2, h)?;
+        } else {
+            self.fill(x, y, w, h / 2)?;
+            self.fill(x, y + h / 2, w, h - h / 2)?;
+        }
+        Ok(())
+    }
+}
 fn compact(bytes: &[u8]) -> String {
     STANDARD.encode(if bytes.iter().all(|&v| v == bytes[0]) {
         &bytes[..1]
@@ -93,51 +193,80 @@ pub fn display(
     let n = pixels as usize;
     let width = bounds[2] - bounds[0];
     let step = width / n as f64;
-    let mut raster = Raster {
-        sampler,
-        bounds,
-        pixels: n,
-        heights: vec![f64::NAN; (n + 1) * (n + 1)],
-    };
-    raster.fill(0, 0, n)?;
     let stride = n + 3;
-    let mut nodes = vec![0.; stride * stride];
-    for y in 0..stride {
-        for x in 0..stride {
-            let p = [
-                bounds[0] + (x as f64 - 1.) * step,
-                bounds[1] + (y as f64 - 1.) * step,
-            ];
-            let z = if x > 0 && y > 0 && x <= n + 1 && y <= n + 1 {
-                raster.heights[(y - 1) * (n + 1) + x - 1]
-            } else {
-                raster.sampler.height(p)?
-            };
-            nodes[y * stride + x] = if influenced { influence(p, z) } else { z };
-        }
-    }
-    #[cfg(test)]
-    let mut ocean = vec![0; n * n];
-    let mut ocean_coverage = vec![0.; (n + 2) * (n + 2)];
-    for y in 0..n + 2 {
-        for x in 0..n + 2 {
-            let i = y * stride + x;
-            let [a, b, c, d] = [
-                nodes[i],
-                nodes[i + 1],
-                nodes[i + stride],
-                nodes[i + stride + 1],
-            ];
-            let gradient = ((b + d - a - c).abs() + (c + d - a - b).abs()) / 2.;
-            let z = (a + b + c + d) / 4.;
-            let ocean_alpha = coverage(z, gradient);
+    let (nodes, ocean_coverage) = if !influenced && waters.is_empty() {
+        let mut ocean = OceanRaster {
+            sampler,
+            bounds,
+            pixels: n,
+            nodes: vec![f64::NAN; stride * stride],
+            coverage: vec![0.; (n + 2) * (n + 2)],
             #[cfg(test)]
-            if x > 0 && y > 0 && x <= n && y <= n {
-                ocean[(y - 1) * n + x - 1] = (255. * ocean_alpha).round() as u8;
+            samples: 0,
+        };
+        ocean.render()?;
+        (ocean.nodes, ocean.coverage)
+    } else {
+        let mut raster = Raster {
+            sampler,
+            bounds,
+            pixels: n,
+            heights: vec![f64::NAN; (n + 1) * (n + 1)],
+        };
+        raster.fill(0, 0, n)?;
+        let mut nodes = vec![0.; stride * stride];
+        for y in 0..stride {
+            for x in 0..stride {
+                let p = [
+                    bounds[0] + (x as f64 - 1.) * step,
+                    bounds[1] + (y as f64 - 1.) * step,
+                ];
+                let z = if x > 0 && y > 0 && x <= n + 1 && y <= n + 1 {
+                    raster.heights[(y - 1) * (n + 1) + x - 1]
+                } else {
+                    raster.sampler.height(p)?
+                };
+                nodes[y * stride + x] = if influenced { influence(p, z) } else { z };
             }
-            ocean_coverage[y * (n + 2) + x] = ocean_alpha;
         }
-    }
+        let mut ocean = vec![0.; (n + 2) * (n + 2)];
+        for y in 0..n + 2 {
+            for x in 0..n + 2 {
+                let i = y * stride + x;
+                ocean[y * (n + 2) + x] = ocean_cell([
+                    nodes[i],
+                    nodes[i + 1],
+                    nodes[i + stride],
+                    nodes[i + stride + 1],
+                ]);
+            }
+        }
+        (nodes, ocean)
+    };
+    // Diagnostic heights remain exact even where production only needs a
+    // proven constant coverage. They are never used to compute ocean alpha.
+    #[cfg(test)]
+    let nodes = {
+        let mut nodes = nodes;
+        for y in 0..stride {
+            for x in 0..stride {
+                if nodes[y * stride + x].is_nan() {
+                    nodes[y * stride + x] = sampler.height([
+                        bounds[0] + (x as f64 - 1.) * step,
+                        bounds[1] + (y as f64 - 1.) * step,
+                    ])?;
+                }
+            }
+        }
+        nodes
+    };
+    #[cfg(test)]
+    let ocean: Vec<u8> = (1..=n)
+        .flat_map(|y| {
+            let coverage = &ocean_coverage;
+            (1..=n).map(move |x| (255. * coverage[y * (n + 2) + x]).round() as u8)
+        })
+        .collect();
     let mut water_coverage = ocean_coverage.clone();
     // Scan authored rings once per subpixel row. Repeated polygon predicates per
     // pixel would make a detailed lake cost pixels times contour complexity.
@@ -208,7 +337,7 @@ pub fn display(
                     bounds[0] + (x as f64 - 2.) * h,
                     bounds[1] + (y as f64 - 2.) * h,
                 ];
-                let z = raster.sampler.height(p)?;
+                let z = sampler.height(p)?;
                 if influenced {
                     influence(p, z)
                 } else {
@@ -363,6 +492,127 @@ mod tests {
             .map(|b| f32::from_le_bytes(*b))
             .collect()
     }
+    #[test]
+    fn uniform_coverage_proof_preserves_steep_antialiasing_and_zero() {
+        assert_eq!(uniform_ocean(0., 0.), Some(0.));
+        assert_eq!(uniform_ocean(1., 10.), None);
+        assert!(ocean_cell([1., 1., 1., 10.]) > 0.);
+        let values: [f64; 9] = [-100., -10., -1., -1e-14, 0., 1e-14, 1., 10., 100.];
+        for a in values {
+            for b in values {
+                for c in values {
+                    for d in values {
+                        let low = a.min(b).min(c).min(d);
+                        let high = a.max(b).max(c).max(d);
+                        if let Some(alpha) = uniform_ocean(low, high) {
+                            assert_eq!(alpha, ocean_cell([a, b, c, d]), "{a} {b} {c} {d}");
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn adaptive_ocean_matches_dense_reference_and_skips_noncoastal_samples() {
+        for shape in 0..4 {
+            let app = AtlasApplication::new().unwrap();
+            let points: Vec<_> = (-64..64)
+                .flat_map(|y| {
+                    (-64..64).filter_map(move |x| {
+                        if shape == 3 && (x + y) % 5 == 0 {
+                            return None;
+                        }
+                        let z = match shape {
+                            0 => 200. + x as f64 * 0.1 + y as f64 * 0.2,
+                            1 => -200. + x as f64 * 0.1 + y as f64 * 0.2,
+                            2 => x as f64 * 2. + y as f64 * 0.25,
+                            _ => {
+                                if x * x + y * y < 200 {
+                                    10.
+                                } else {
+                                    -100.
+                                }
+                            }
+                        };
+                        Some((x, y, z))
+                    })
+                })
+                .collect();
+            terrain_store::write_points(&app.db, &points).unwrap();
+            let mut sampler = Sampler::new(&app.db).unwrap();
+            let n = 128;
+            let bounds = [-160., -160., 160., 160.];
+            let mut ocean = OceanRaster {
+                sampler: &mut sampler,
+                bounds,
+                pixels: n,
+                nodes: vec![f64::NAN; (n + 3) * (n + 3)],
+                coverage: vec![0.; (n + 2) * (n + 2)],
+                samples: 0,
+            };
+            ocean.render().unwrap();
+            let samples = ocean.samples;
+            let actual = ocean.coverage;
+            let mut nodes = vec![0.; (n + 3) * (n + 3)];
+            for y in 0..n + 3 {
+                for x in 0..n + 3 {
+                    nodes[y * (n + 3) + x] = sampler
+                        .height([
+                            bounds[0] + (x as f64 - 1.) * 320. / n as f64,
+                            bounds[1] + (y as f64 - 1.) * 320. / n as f64,
+                        ])
+                        .unwrap();
+                }
+            }
+            for y in 0..n + 2 {
+                for x in 0..n + 2 {
+                    let i = y * (n + 3) + x;
+                    let expected =
+                        ocean_cell([nodes[i], nodes[i + 1], nodes[i + n + 3], nodes[i + n + 4]]);
+                    assert_eq!(
+                        (actual[y * (n + 2) + x] * 255.).round(),
+                        (expected * 255.).round(),
+                        "shape {shape}, cell {x},{y}"
+                    );
+                }
+            }
+            let mut relief = Vec::new();
+            for y in 0..=32 {
+                for x in 0..=32 {
+                    relief.push(
+                        sampler
+                            .height([bounds[0] + x as f64 * 10., bounds[1] + y as f64 * 10.])
+                            .unwrap(),
+                    );
+                }
+            }
+            let adaptive = display(
+                &mut sampler,
+                bounds,
+                n as u16,
+                &relief,
+                &[],
+                |_, z| z,
+                false,
+            )
+            .unwrap();
+            // Identity influence deliberately selects the existing dense path.
+            let dense =
+                display(&mut sampler, bounds, n as u16, &relief, &[], |_, z| z, true).unwrap();
+            assert_eq!(adaptive.water, dense.water, "water shape {shape}");
+            assert_eq!(adaptive.relief, dense.relief, "relief shape {shape}");
+            assert_eq!(adaptive.contours, dense.contours, "contours shape {shape}");
+            assert_eq!(adaptive.heights, dense.heights, "heights shape {shape}");
+            if shape < 2 {
+                assert_eq!(samples, 0, "noncoastal shape {shape}");
+            }
+            if shape == 2 {
+                assert!(samples < (n + 3) * (n + 3), "coast uses {samples} samples");
+            }
+        }
+    }
+
     #[test]
     fn relief_reuses_interior_samples_and_only_evaluates_the_missing_halo() {
         let app = AtlasApplication::new().unwrap();

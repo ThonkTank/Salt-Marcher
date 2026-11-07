@@ -6,31 +6,41 @@ Zuständigkeiten, [Produktvertrag](../product-contract.md) Verhalten und Grenzen
 
 ## Aktuelle Optimierung
 
-Die Bebauungsdichte einer Übersichtskachel wird über 32 feste X-Werte und
-jeweils den lokalen Y-Bereich des vorhandenen Primärschlüssels gelesen.
-Eine Kachel betrachtet damit höchstens ihre 32×32 Dichtezellen. Entfernte
-Bebauung im gleichen Nord-Süd-Streifen verursacht keinen linearen Scan mehr.
-Darstellung, Priorisierung, History, Dateiformat und Cachebesitzer bleiben erhalten;
-es gibt keinen zusätzlichen Index und keine neue Messinfrastruktur.
+Die Wasserabdeckung natürlicher Oberflächen verwendet die bestehenden
+Höhenintervalle, um sicher vollständig trockene oder bedeckte Bereiche zu erkennen.
+Dort entfallen dichte Höhenabfragen; Küsten werden weiter exakt abgetastet.
+Die Prüfung berücksichtigt den Antialiasing-Gradienten, nicht nur das Vorzeichen.
+Relief und Höhenlinien behalten ihre echte Höhenabtastung. Lokale Gewässer,
+Flüsse und Hausplattformen verwenden weiterhin den vollständigen Rasterpfad.
+Es gibt keine zusätzliche persistente Cacheebene oder Messinfrastruktur.
 
-Der neue Regressionstest vergleicht die vollständigen Kachelinhalte mit einer
-einfachen Referenz einschließlich negativer Koordinaten, Zellgrenzen und
-Deckungssättigung. Zusätzlich prüft er den SQLite-Arbeitsaufwand nach dem
-Einfügen von 20.000 entfernten Dichtezellen. Vor der Korrektur stieg dieser von
-379 auf 1.381 Blöcke à 100 VM-Anweisungen; die begrenzte Abfrage besteht den
-Arbeitsbudgettest. Dies ist ein deterministischer Zugriffstest, keine Latenzmessung.
-Alle acht aktiven Kartenkern-Tests bestehen; das große Stadtbenchmark bleibt opt-in.
-Auch alle 321 Rusttests, Clippy und Formatprüfung sowie die neun Browserfälle
-für Stadtübersicht und Kachelinvalidierung bestehen lokal. Die vollständige
-CI-Freigabe erfolgt über den verpflichtenden Check am exakten PR-Head.
+Ein direkter Vergleich mit dem bisherigen dichten Pfad liefert bytegleiche
+Wasser-/Reliefbilder, identische Höhenlinien und Diagnosehöhen für unebene
+Land-/Meeresflächen, schräge Küsten und dünn belegte Inselkontrollwerte.
+Zwei unebene Flächen fern der Küste benötigen keine der sonst 17.161 dichten
+Höhenabfragen eines 128er Rasters einschließlich Rand. Die konservativen
+Blockintervalle sparen an manchen schrägen Küsten dagegen nur wenig Arbeit.
+Alle 323 Rusttests bestanden; nach der abschließenden Trennung von regulärem
+Raster und Pixelrand wurden die acht Rastertests einschließlich Küstenmatrix
+nochmals geprüft. Alle 21 gezielten Browserfälle für Live-Striche, Weltkarte,
+Küsten und Gewässer bestehen. Ein vorheriger Weltfall lief während des parallelen
+Release-Baus in den Abschluss-Timeout; der erneute sequenzielle Lauf ist grün.
+Clippy, Formatprüfung und frischer Release-/RPM-Build bestehen. Der endgültige
+native Build zeigt bei 1440×960 mit dem 80-Pixel-Weltpinsel erneut zwei wachsende
+Zwischenstände vor dem Loslassen; Undo stellt die leeren Kartenpixel wieder her,
+Redo entspricht dem abgeschlossenen Strich. Dies ist eine Funktionsprüfung.
+Es wurde keine zusätzliche Zeitmessreihe gestartet.
 
 ## Bestehender geprüfter Stand
 
-[PR #1437](https://github.com/ThonkTank/Salt-Marcher/pull/1437) ist auf `main`
+[PR #1438](https://github.com/ThonkTank/Salt-Marcher/pull/1438) ist auf `main`
 integriert. Der exakte Kandidat bestand 129 Transportverträge, Typprüfung,
-363 Frontend-, 320 Rust- und 224 Browsertests sowie Clippy, Format, Webbuild
+363 Frontend-, 321 Rust- und 224 Browsertests sowie Clippy, Format, Webbuild
 und Release-/RPM-Build. Fünf Rustfälle bleiben ausdrücklich ignoriert.
 Die ursprüngliche lokale Historie bleibt in `codex/atlas-v7-preserved-histories`.
+
+Dichtekacheln lesen höchstens ihre 32×32 Zellen über den vorhandenen Index;
+entfernte Bebauung im gleichen Nord-Süd-Streifen verursacht keinen linearen Scan.
 
 Höhenstriche verwenden begrenzte 32-Punkte-Pakete, exakte räumliche
 Land-/Meerberechnung und bestätigte Zwischenstände. Unbenutzte Höhenübersichten
@@ -65,6 +75,7 @@ Risikos in Weltansichten verworfen. Eine Lösung muss beide Fälle begrenzen.
 Der native Direktstrich zeigt bei ausstehenden Writes noch die allgemeinen
 Übernehmen-/Abbrechen-Aktionen; die Darstellung sollte dem Direktstrichvertrag folgen.
 
-Aktuelle Belege: `src-tauri/target/diagnostics/density-*.log`.
+Aktuelle Belege: `src-tauri/target/diagnostics/ocean-*` (Logs und native Bilder).
+Dichtebelege: `src-tauri/target/diagnostics/density-*.log`.
 Vorige Mess- und native Belege: `src-tauri/target/diagnostics/world-brush/`.
 Browserbelege: `src-tauri/target/diagnostics/playwright-*/`.
