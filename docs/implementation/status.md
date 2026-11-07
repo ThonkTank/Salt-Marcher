@@ -61,8 +61,8 @@ Sichtbarkeitsprüfung auf Relief-/Wasserraster und Höhenlinien. Ein gemeinsamer
 Helper enthält den Rundungsrand; Höhenlinien ergänzen ihre tatsächliche halbe
 Strichbreite. Unsichtbare Texturen werden nicht decodiert, vorhandene Raster
 bleiben beim Zurückschieben wiederverwendbar. Alle 415 Frontendtests und Typen
-bestehen, einschließlich DPR-Rand und direkter Vorschau. Alle 37 Boden-,
-Landschafts-, Höhen- und Gewässer-Browserfälle bestehen; darunter Weltmalen
+bestehen, einschließlich DPR-Rand und direkter Vorschau. Alle 40 Boden-,
+Landschafts-, Höhen-, Reliefpinsel- und Gewässer-Browserfälle bestehen; darunter Weltmalen
 nach freiem Zoom, runde/kräuselige Küsten und Fehlererholung. Der frische
 Release-/RPM-Build besteht; native Bedienung bleibt mangels UI-Zugriff offen. Diese Folgeänderung
 ist vom unverändert laufenden Main-Kandidaten getrennt.
@@ -80,8 +80,14 @@ Mergen der älteren Kandidaten #1451 und #1454 ist deaktiviert.
 
 Alle 412 Frontendtests bestehen auf dem vollständigen Stand. Die gezielten
 Boden-/Landschafts-Browserfälle und der frische Release-/RPM-Build sind oben belegt.
-Die vollständige CI muss noch den exakten finalen Commit freigeben; Main ist
-noch nicht auf diesem Stand. Ältere PRs bleiben bis zur erfolgreichen Integration
+Ein älterer vollständiger Lauf (#1454, `ad75084fe`) bestand alle Rustprüfungen
+und 241 von 242 Browserfällen; beim Schluchtfall überschritt der Schreibabschluss
+das bestehende Fünf-Sekunden-Testlimit. Auf dem aktuellen Folgebranch bestehen
+alle drei Reliefpinsel-Fälle unverändert, einschließlich Schlucht und History.
+Das belegt keine Reparatur des CI-Zeitüberschreitens; die aktuelle vollständige
+CI muss den exakten finalen Commit noch freigeben. Main ist noch nicht auf diesem Stand.
+Belege zur Fehleranalyse: `src-tauri/target/diagnostics/canyon-ci-review/` und
+`src-tauri/target/diagnostics/landscape-main-integration/`. Ältere PRs bleiben bis zur erfolgreichen Integration
 erhalten. Belege: `src-tauri/target/diagnostics/landscape-main-integration/`.
 
 Genau eine frühere Vorher-/Nachher-Reihe mit je drei Weltstrichen ist abgeschlossen:
