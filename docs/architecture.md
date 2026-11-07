@@ -403,8 +403,11 @@ nicht bei jedem Frame alle weiterhin benötigten Konturen gegenseitig verdrängt
 Sessionwechsel leeren den Cache; ersetzte Objektwerte erhalten neue Konturen.
 `BudgetCache.retain` und `setIfFits` besitzen diesen begrenzten Abgleich und die
 Aufnahme ohne Verdrängung. Der Flusszeichner verwendet dieselben Methoden für
-seinen vorhandenen Pfadcache: entfallene Flussansichten und geänderte Maßstäbe
-geben Einträge frei. Mehr sichtbare Flüsse als Cacheplätze verdrängen damit nicht
+seinen vorhandenen Pfadcache: entfallene Flussansichten geben Einträge frei.
+Maßstabswechsel verwenden die Weltkontur weiter, sofern weder alter noch neuer
+Maßstab eine Samplebreite auf die Mindestbreite von 1,5 CSS-Pixeln anhebt. Die
+kleinste Autorenbreite entsteht beim ohnehin nötigen Konturaufbau; sonst ersetzt
+der Zeichner den Pfad. Mehr sichtbare Flüsse als Cacheplätze verdrängen damit nicht
 bei jedem Bild alle noch benötigten Flussbänder. Die normale LRU-Aufnahme anderer
 Caches bleibt unverändert.
 

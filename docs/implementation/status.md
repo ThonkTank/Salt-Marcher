@@ -34,8 +34,11 @@ Der Flusspfadcache verwendet jetzt denselben begrenzten Abgleich und dieselbe
 Aufnahme ohne Verdrängung aus `BudgetCache`. Die entsprechende eigene
 Kostenverwaltung des Außengeometriecaches entfällt. Ein reproduzierter Bestand
 von 257 Flüssen bei 256 Plätzen baute zuvor 257 Pfade je weiterem Bild neu;
-jetzt entsteht nur ein neuer Pfad. Ausschnitts-/Objektwechsel und Maßstabswechsel
-bleiben invalidierend. Alle 429 Frontendtests, Typen, Format sowie zehn Fluss-
+jetzt entsteht nur ein neuer Pfad. Ausschnitts-/Objektwechsel bleiben invalidierend.
+Beim Zoomen bleiben Konturen erhalten, solange die Mindestbreite von 1,5
+Bildschirmpixeln an keinem Sample eingreift. Der Regressionstest scheiterte vorher
+an einem unnötigen Neuaufbau; er prüft jetzt Wiederverwendung sowie korrekte
+Konturkoordinaten beim Heraus- und erneuten Hineinzoomen. Alle 429 Frontendtests, Typen, Format sowie zehn Fluss-
 Browserfälle bestehen, einschließlich Vorschauabbruch, Navigation, Topologie,
 History und Sessionwechsel. Der frische Release-/RPM-Build besteht. Die Änderung
 liegt als Folgebranch hinter dem noch laufenden Main-Kandidaten; eine native
