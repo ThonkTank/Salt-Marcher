@@ -145,6 +145,9 @@ Kontrollwerts wird mit den Gewässerbounds geschnitten; die Vereinigung der
 betroffenen lokalen Rasterzellen bestimmt das Arbeitsbudget. Gewässerkonturen
 werden anschließend einmal je ID geladen. Die Uferberechnung liest direkt die
 kanonische Oberfläche aus tatsächlichen lokalen und groben Autorenwerten.
+Gewässerüberlagerungen ersetzen IDs beider Deltaseiten und sortieren das
+Ergebnis wie der normale Read. Damit ist dieselbe Überlagerung vor und nach
+dem transaktionalen Schreiben eindeutig, auch wenn ein See geteilt wird.
 
 `surface_tiles` und der versionierte Punktread `surfacePoints` teilen Sampler,
 Flussauswertung und Plattformaufbau. `SurfacePointReader` hält eine laufende

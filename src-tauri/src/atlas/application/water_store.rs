@@ -41,7 +41,13 @@ pub fn local(db: &Connection, b: Bounds) -> Result<Vec<WaterBody>> {
 pub fn overlay(db: &Connection, b: Bounds, delta: Option<&WaterDelta>) -> Result<Vec<WaterBody>> {
     let mut out = local(db, b)?;
     if let Some(d) = delta {
-        out.retain(|w| !d.before.iter().any(|v| v.id == w.id));
+        let replaced: BTreeSet<_> = d
+            .before
+            .iter()
+            .chain(&d.after)
+            .map(|w| w.id.as_str())
+            .collect();
+        out.retain(|w| !replaced.contains(w.id.as_str()));
         out.extend(
             d.after
                 .iter()
@@ -52,6 +58,7 @@ pub fn overlay(db: &Connection, b: Bounds, delta: Option<&WaterDelta>) -> Result
                 })
                 .cloned(),
         );
+        out.sort_unstable_by(|a, b| a.id.cmp(&b.id));
     }
     water::check_budget(&out)?;
     Ok(out)

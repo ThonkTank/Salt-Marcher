@@ -13,13 +13,18 @@ können lokal bearbeitet werden, solange die tatsächlich ausgewählte Rastermen
 im Abschnittsbudget bleibt. Metadatenabfragen verwenden den bestehenden RTree;
 Konturen werden einmal je betroffenem Gewässer geladen. Die Uferberechnung nutzt
 direkt kanonische Höhen aus lokalen und groben Autoren. Die bisherige zusätzliche
-Interpolation temporär erzeugter lokaler Kontrollwerte entfällt.
+Interpolation temporär erzeugter lokaler Kontrollwerte entfällt. Bestätigte
+Kacheln geteilter Seen enthalten jedes Gewässer einmal und in derselben
+Reihenfolge wie ein frischer Read; eine zuvor reproduzierte Duplizierung neuer
+Teilgewässer ist korrigiert.
 
-Alle 338 Rusttests bestehen lokal. Neue Regressionen decken diagonale und
+Alle 339 Rusttests bestehen lokal. Neue Regressionen decken diagonale und
 lückenhafte Änderungen, negative Koordinaten, Blockgrenzen, gemischte
 Autorenauflösungen, frühe Budgetablehnung, Überlappungszählung und große Seen ab.
 Küsten stimmen exakt mit der direkten kanonischen Berechnung überein. Ein
 Referenzfall unterscheidet ausdrücklich die frühere zweite Interpolation.
+Die Teilungsregression vergleicht komplette bestätigte Kacheln mit frischen Reads,
+auch mit einem unveränderten weiteren See im Ausschnitt.
 Undo/Redo und injizierte Schreibfehler prüfen fehlende Autoren und Gewässer
 zusammen. Clippy, Typ- und Formatprüfung, 129 Transportverträge und 24 Browserfälle bestehen
 lokal. Der neue Browserfall bearbeitet einen großen L-förmigen See mit groben
@@ -96,7 +101,12 @@ bleiben offen. Der umfangreiche Release-Treiber mit neun Fixtures wurde hier
 nicht ausgeführt.
 
 Nächster Schwerpunkt bleibt das 50-ms-Ziel für bestätigte Pinselbilder.
-Nächster lesender Prüfpunkt ist die Flussnachführung: Ihre Auswahl bei groben
+Nächster lesender Prüfpunkt ist die Darstellungsregel bestätigter Oberflächen:
+Bei Gewässer-/Flussdeltas wird auch in groben Stufen ein Overlay verwendet,
+während frische Reads dort Übersichten nutzen. Gleiche Darstellungsbudgets und
+Ergebnisse müssen über diese beiden Pfade geprüft werden.
+
+Weiterer Prüfpunkt ist die Flussnachführung: Ihre Auswahl bei groben
 Höhenänderungen verwendet weiterhin ein gemeinsames Änderungsrechteck. Ihr
 regionaler Höhensampler liest begrenzte Bereiche über den allgemeinen
 Rechteckpfad und durchsucht lokale Override-Werte je neuem Bereich vollständig.

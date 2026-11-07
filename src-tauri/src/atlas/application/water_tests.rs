@@ -534,3 +534,23 @@ fn world_water_budget_counts_union_not_overlapping_supports() {
     a.trim_water(&mut computed).unwrap();
     assert!(computed.change.waters.is_none());
 }
+
+#[test]
+fn confirmed_split_water_tiles_equal_fresh_reads_with_unaffected_lakes() {
+    let mut a = AtlasApplication::new().unwrap();
+    request_edit(&mut a, "commit", paint(json!([[40, 40], [120, 40]]), 20.));
+    request_edit(&mut a, "commit", paint(json!([[120, 120]]), 10.));
+    let before = all(&a);
+    assert_eq!(before.len(), 2);
+    let view = json!({"level":0,"tiles":[[0,0]],"pixels":32});
+    a.request("beginTerrainStroke", json!({"version":a.status(),"strokeId":"split-water","brush":{"resolution":0,"mode":"raise","radius":10,"amount":100,"strength":1,"target":10,"points":[[80,10]]},"view":view})).unwrap();
+    let reply = a.request("appendTerrainStroke", json!({"sessionId":a.session,"strokeId":"split-water","sequence":1,"points":[[80,70]],"view":view})).unwrap();
+    let after = all(&a);
+    assert_eq!(after.len(), 3);
+    let fresh = a.request("terrainTiles", view).unwrap();
+    assert_eq!(reply["surface"]["tiles"], fresh["tiles"]);
+    history(&mut a, false);
+    assert_eq!(all(&a), before);
+    history(&mut a, true);
+    assert_eq!(all(&a), after);
+}
