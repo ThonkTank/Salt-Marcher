@@ -163,14 +163,12 @@ impl AtlasApplication {
             after: vec![],
         };
         for (&(x, y), &z) in &g {
-            if terrain::at(&old, x, y) != z {
-                ensure(
-                    crate::atlas::geometry::valid_point([
-                        x as f64 * 5. * factor,
-                        y as f64 * 5. * factor,
-                    ]),
-                    "Gelände außerhalb der Welt",
-                )?;
+            if terrain::at(&old, x, y) != z
+                && crate::atlas::geometry::valid_point([
+                    x as f64 * 5. * factor,
+                    y as f64 * 5. * factor,
+                ])
+            {
                 delta.before.push((x, y, original.get(&(x, y)).copied()));
                 delta.after.push((x, y, Some(z)));
             }

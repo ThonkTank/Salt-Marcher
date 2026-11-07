@@ -1,4 +1,4 @@
-import { landAuthorResolution } from "./lod";
+import { landAuthorResolution, WORLD_LIMIT } from "./lod";
 import { viewScale, zoomAt, type LodDecision } from "./lod";
 import { riverHit } from "./riverView";
 import type { RiverAction } from "./generated/RiverAction";
@@ -1601,6 +1601,15 @@ export function evaluateHold(
 }
 
 export function hoverAtPoint(snapshot: CanvasInputSnapshot, point: WorldPoint) {
+  if (
+    snapshot.context.kind === "exterior" &&
+    point.some((v) => Math.abs(v) > WORLD_LIMIT)
+  )
+    return {
+      point: worldToScreen(point, snapshot.camera),
+      reason: "Außerhalb der Welt · zum Malen hineinzoomen",
+      outsideWorld: true,
+    };
   const diagnostic = workflowPreview(
     snapshot.workflow,
   )?.generationDiagnostics.find(

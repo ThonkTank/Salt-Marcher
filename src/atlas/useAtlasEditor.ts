@@ -99,6 +99,7 @@ export function useAtlasEditor(client: AtlasClient) {
   const [hoverReason, setHoverReason] = useState<{
     point: ScreenPoint;
     reason: string;
+    outsideWorld?: boolean;
   } | null>(null);
   const bounds: Bounds = [
     -camera.x / camera.scale,

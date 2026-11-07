@@ -309,10 +309,9 @@ pub fn land_samples(b: &Brush) -> Result<Option<LandSamples>> {
                     })
                     .fold(f64::INFINITY, f64::min);
                 if distance < pad {
-                    ensure(
-                        x.abs() <= 20_000_000 && y.abs() <= 20_000_000,
-                        "Gelände außerhalb der Welt",
-                    )?;
+                    if x.abs() > 20_000_000 || y.abs() > 20_000_000 {
+                        continue;
+                    }
                     samples.insert((x, y), distance);
                     ensure(
                         samples.len() <= LIMIT,
@@ -385,10 +384,9 @@ pub fn stroke_prepared(
                 if d >= 1.0 {
                     continue;
                 }
-                ensure(
-                    x.abs() <= 20_000_000 && y.abs() <= 20_000_000,
-                    "Gelände außerhalb der Welt",
-                )?;
+                if x.abs() > 20_000_000 || y.abs() > 20_000_000 {
+                    continue;
+                }
                 touched.insert((x, y));
                 ensure(
                     touched.len() <= LIMIT,

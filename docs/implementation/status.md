@@ -4,42 +4,44 @@ Atlas V7, Dateiformat 19, Generierungsrezept 4. Stand: 7. November 2026.
 [README](../../README.md) enthält Befehle, [Architektur](../architecture.md)
 Zuständigkeiten, [Produktvertrag](../product-contract.md) Verhalten und Grenzen.
 
-## Aktuelle Optimierung
+## Aktuelle Korrektur: Höhenpinsel nach manuellem Herauszoomen
 
-Flussplanung, Profilnachführung und Import verwenden den bestehenden begrenzten
-Terrain-Sampler. Der eigene Cache von bis zu 512 vollständigen Höhenregionen,
-allgemeine Rechteckreads je Cachemiss und wiederholte Scans lokaler Overrides
-entfallen. Die Nachführung liest die bereits transaktional geschriebenen Autoren;
-der Import beginnt nach dem Aufbau des Blockindex. Der Profilsolver verwendet die
-natürliche Höhe eines gemeinsamen Knotens für Wasserprofil und Einschnitt wieder.
+Der Nutzer meldete einen leeren Landstrich nach manuellem Herauszoomen. Der
+bisherige Welt-Test verwendete nur die feste Ansichtsauswahl. Der neue Mausradfall
+bis zum kleinsten Maßstab reproduzierte die Ablehnung: Pinselrand und Spline-
+Stützbereich konnten die Weltgrenze überschreiten, obwohl der Startpunkt innerhalb
+lag. Lokale und grobe Höhenaufträge schreiben jetzt nur Autoren innerhalb der Welt.
+Der Canvas maskiert überstehende Kachelränder; außerhalb erscheint ein Grenzhinweis.
+Ungültige Startpunkte bleiben abgelehnt. Arbeits- und Historybudgets gelten weiter.
 
-Neue Tests prüfen die Übereinstimmung mit der bisherigen Höhenrekonstruktion bei
-sparsamen gemischten Auflösungen, negativen Koordinaten und Blockgrenzen sowie
-die automatische Richtung flacher Flüsse. Dabei wurde eine Rundungsabweichung
-bei dünn belegten, gleich hohen Autoren über einer gleich hohen Grundfläche
-reproduziert: Die Polynomauswertung konnte eine ebene Flussrichtung umkehren.
-Der gemeinsame Sampler erhält solche Flächen jetzt exakt konstant; ein eigener
-Test prüft dies für lokale und grobe Quellen. Kleine Rundungsdifferenzen der äquivalenten
-Polynom-/Splineauswertung werden mit einer Höhentoleranz von 1e-9 Fuß geprüft.
-Ein Zugriffstest ergänzt 2.000 entfernte Autoren in denselben X-Spalten, lokal
-sowie auf Quellstufen 4 und 10. Im alten lokalen Pfad stieg die SQL-Arbeit von
-15 auf 415 Blöcke zu je 100 VM-Anweisungen; der gemeinsame Sampler hält das
-bestehende begrenzte Testbudget ein. Ein weiterer Test prüft genau eine
-Höhenabtastung je gemeinsamem Profilknoten einschließlich Gewässerkontakt.
-Beide Arbeitstests schlugen vor der Änderung fehl. Lokal bestehen 349 Rust- und
-368 Frontendtests, 129 Transportverträge, Typprüfung, Clippy, Format und 32
-relevante Browserfälle. Fünf Rustfälle bleiben ignoriert. Der frische Release-/RPM-
-Build bestätigt Flussplanung auf einer ebenen Insel und die Nachführung nach
-einem 80-Pixel-Meerstrich in Umland: Auch der Kanal außerhalb des Pinselbereichs
-ändert sich; Undo/Redo stellt beide Kartenausschnitte pixelgleich wieder her.
-Die Freigabe auf Main erfordert den vollständigen grünen CI-Check am exakten PR-Head.
-Keine zusätzliche Zeitmessreihe.
+Ein zweiter reproduzierter Fehler betraf den nächsten Versuch nach einer Ablehnung:
+Das Verschwinden der Fehlerschaltfläche änderte die Canvashöhe und beendete den
+begonnenen Strich. Die Statusleiste reserviert jetzt die benötigte Höhe.
+
+Lokal bestehen 350 Rust- und 368 Frontendtests, 129 Transportverträge, Typprüfung
+und Clippy; fünf Rustfälle bleiben ignoriert. Die 18 übrigen Terrain-/Weltbrowserfälle
+bestanden; beide neuen Mausradfälle bestehen nach der Korrektur ebenfalls. Sie
+prüfen sichtbare Zwischenstände, vollständigen Strich, Undo/Redo, Weltmaske und den
+erneuten Strich nach einer Fehlermeldung. Rust prüft gespeicherte Autoren und exakte
+History an positiven/negativen Weltkanten für lokale und grobe Höhenmodi.
+Typ- und Formatprüfung sowie Release-/RPM-Build bestehen. Der frische native
+Build bestätigte bei 1440×960 nach manuellem Mausradzoom bis 0,000002: einen
+abgelehnten Start außerhalb der Welt, anschließend einen durchgehenden
+80-Pixel-Landstrich mit sichtbaren Zwischenständen bis an beide Weltkanten.
+Undo entfernt den Strich, Redo stellt den Kartenausschnitt pixelgleich wieder her.
+Keine neue Messreihe. Die vollständige CI der Korrektur steht noch aus.
+
+Die vorherige Flussoptimierung verwendet den begrenzten Terrain-Sampler auch für
+Planung, Nachführung und Import; der separate Regionscache und doppelte
+Profilhöhenabfragen entfallen. Konstante dünn belegte Höhenfelder bleiben exakt
+konstant, damit Rundung keine flache Flussrichtung umkehrt. Ihre Belege liegen
+unter `src-tauri/target/diagnostics/river-sampling-*`.
 
 ## Bestehender geprüfter Stand
 
-[PR #1445](https://github.com/ThonkTank/Salt-Marcher/pull/1445) ist auf `main`
+[PR #1446](https://github.com/ThonkTank/Salt-Marcher/pull/1446) ist auf `main`
 integriert. Der exakte Kandidat bestand 129 Transportverträge, Typprüfung,
-368 Frontend-, 344 Rust- und 227 Browsertests sowie Clippy, Format, Webbuild
+368 Frontend-, 349 Rust- und 227 Browsertests sowie Clippy, Format, Webbuild
 und Release-/RPM-Build. Fünf Rustfälle bleiben ausdrücklich ignoriert.
 Die ursprüngliche lokale Historie bleibt in `codex/atlas-v7-preserved-histories`.
 
@@ -118,7 +120,7 @@ operationslokale Wiederverwendung bereits vorbereiteter Geometrie bleibt zu prü
 Allgemeine große Terrain-Autorenreads für Straßen, Gewässer und Plattformen
 bleiben offen; leere Weltrechtecke dürfen dabei nicht blockweise enumeriert werden.
 
-Aktuelle Belege: `src-tauri/target/diagnostics/river-sampling-*`.
+Aktuelle Belege: `src-tauri/target/diagnostics/manual-world-*`.
 Vorige Belege: `src-tauri/target/diagnostics/surface-consistency-*`.
 Vorige Belege: `src-tauri/target/diagnostics/water-footprint-*`.
 Vorige Gewässerbelege: `src-tauri/target/diagnostics/water-locality-*`.

@@ -246,6 +246,11 @@ höchstens 400.000 Kandidatenpositionen pro Abdruck. Höhen und Gewässer zeigen
 Weltdurchmesser und Höhenrasterabstand als Information; kleine Pinsel zwischen
 Rasterpunkten können ohne Höhenänderung bleiben.
 
+Der Höhenpinsel begrenzt seinen Auftrag an der Weltgrenze; ein überstehender
+Pinselrand verwirft nicht den Strich innerhalb der Welt. Der Startpunkt muss
+innerhalb der Welt liegen. Außerhalb wird keine Kartenfläche dargestellt;
+beim Zeigen erscheint ein Hinweis auf die Weltgrenze.
+
 ## Regionen
 
 „Regionen“ funktioniert im gesamten Außenzoom. Malen ergänzt die ausgewählte

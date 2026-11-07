@@ -165,7 +165,10 @@
   flex: none;
   justify-content: space-between;
   background: #202123;
-  min-height: 30px;
+  /* Reserve the dismiss-button height so clearing an error at pointerdown
+     does not resize the canvas and cancel the new stroke. */
+  min-height: 38px;
+  line-height: 18px;
   padding: 6px 16px;
   font-size: 12px;
   color: #b9bcb5;

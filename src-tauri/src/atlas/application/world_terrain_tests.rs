@@ -10,6 +10,41 @@ fn height(a: &AtlasApplication, p: [f64; 2]) -> f64 {
     )
 }
 #[test]
+fn height_brush_clips_authors_at_world_edges_and_keeps_history() {
+    fn authors(a: &AtlasApplication) -> Vec<(u8, i32, i32, f64)> {
+        a.db.prepare("SELECT 0,x,y,z FROM terrain UNION ALL SELECT level,x,y,z FROM terrain_layers ORDER BY 1,2,3")
+            .unwrap().query_map([], |r| Ok((r.get(0)?,r.get(1)?,r.get(2)?,r.get(3)?)))
+            .unwrap().map(|r| r.unwrap()).collect()
+    }
+    for level in [0, 17] {
+        for mode in ["land", "sea", "raise", "lower", "flatten"] {
+            for sign in [-1., 1.] {
+                let mut a = AtlasApplication::new().unwrap();
+                let radius = 25. * 2f64.powi(level);
+                let p = [sign * (100_000_000. - radius / 2.); 2];
+                if mode == "sea" {
+                    request_edit(&mut a, "commit", stroke("land", level as u8, p, radius));
+                }
+                let before = authors(&a);
+                request_edit(&mut a, "commit", stroke(mode, level as u8, p, radius));
+                let after = authors(&a);
+                assert_ne!(before, after, "{mode}, level {level}");
+                for &(source, x, y, _) in &after {
+                    let step = 5. * 2f64.powi(source as i32);
+                    assert!(crate::atlas::geometry::valid_point([
+                        x as f64 * step,
+                        y as f64 * step
+                    ]));
+                }
+                history(&mut a, false);
+                assert_eq!(authors(&a), before);
+                history(&mut a, true);
+                assert_eq!(authors(&a), after);
+            }
+        }
+    }
+}
+#[test]
 fn world_land_refinement_history_and_roundtrip() {
     let mut a = AtlasApplication::new().unwrap();
     let p = [50_000_000., -50_000_000.];

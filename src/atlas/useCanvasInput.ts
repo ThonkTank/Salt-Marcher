@@ -30,7 +30,13 @@ type Options = {
   dispatch: (command: CanvasCommand) => void;
   setSize: (size: { width: number; height: number }) => void;
   setHoverPoint?: (point: import("./model").WorldPoint | null) => void;
-  setHover: (hover: { point: ScreenPoint; reason: string } | null) => void;
+  setHover: (
+    hover: {
+      point: ScreenPoint;
+      reason: string;
+      outsideWorld?: boolean;
+    } | null,
+  ) => void;
 };
 type Handlers = Required<
   Pick<
