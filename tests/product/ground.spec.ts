@@ -220,13 +220,22 @@ for (const navigation of ["preset", "wheel"] as const) {
     await paintedReady(page);
     let p = await screen(page, [0, 0]);
     if (navigation === "wheel") {
+      const camera = await page.evaluate(
+        () => window.atlasPaint!.cameraGeneration,
+      );
       await page.mouse.move(p.x, p.y);
       await page.mouse.wheel(0, 1500);
+      // wheel() can return before the event updates the camera. Waiting only
+      // for a painted frame could accept the preceding frame and stale coordinates.
+      await expect
+        .poll(() => page.evaluate(() => window.atlasPaint!.cameraGeneration))
+        .toBeGreaterThan(camera);
       await paintedReady(page);
       p = await screen(page, [0, 0]);
     }
     await page.getByRole("button", { name: "Erde", exact: true }).click();
     const before = await canvasPixel(page, p);
+    expect(before).not.toEqual([134, 184, 198, 255]);
     const revision = (await status(page)).revision;
     await page.mouse.move(p.x, p.y);
     await page.mouse.down();
