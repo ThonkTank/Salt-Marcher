@@ -48,10 +48,13 @@ Benutzertestfenster bleibt unberührt.
 PR #1450 ist auf Main. Die Seenrasterung besteht die vollständige CI einschließlich
 RPM. Der kombinierte Landschaftsstand in PR #1454 wartet auf vollständige CI;
 Leerkachel- und Signaturänderungen sind Folgeänderungen. Der erste vollständige
-Landschaftslauf auf der korrigierten Format-22-Testbasis meldet drei Browserfehler:
-zwei veraltete Erwartungen zur Landschafts-Zoomsperre und einen fehlgeschlagenen
-Haus-Erstgestenfall. 239 Browserfälle bestanden. Diese Integrationsfehler sind
-noch zu korrigieren; es wird keine vollständige Abnahme behauptet.
+Landschaftslauf auf Format-22-Testbasis meldete 239 erfolgreiche Browserfälle
+und drei Fehler. Die veralteten Landschafts-Zoomsperren sind nun durch Prüfungen
+der erlaubten Bearbeitung ersetzt. Der Haus-Erstgestenfall wartet nach dem
+Werkzeugwechsel auf die geänderte Präsentation. Alle fünf betroffenen
+Grundstücks-/Straßenzugfälle bestehen lokal; die Korrektur ist in Main-Kandidat
+und Folgeänderungen enthalten. Die vollständigen CI-Nachläufe stehen aus.
+Belege: `src-tauri/target/diagnostics/landscape-integration-fixed/`.
 
 Genau eine frühere Vorher-/Nachher-Reihe mit je drei Weltstrichen ist abgeschlossen:
 erste sichtbare Änderung vorher 275–304 ms, danach 119–134 ms; sichtbare Bestätigung
