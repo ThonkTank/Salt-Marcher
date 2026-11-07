@@ -107,6 +107,11 @@ p95 vorher 427–516 ms, danach 339–376 ms; Nachlauf vorher 259–427 ms, dana
 ist nicht belegt; keine weitere Zeitmessreihe wurde begonnen.
 
 RPM-Installation, große Stadt-/Weltlastfälle und der umfangreiche Release-Treiber
-bleiben offen. Die vollständige CI des neuen Landschaftsstandes steht aus. Ihr erster Lauf
-meldete eine verbliebene Format-21-Erwartung im Parzellen-Integrationstest.
-Die Erwartung entspricht nun Format 22; alle elf Parzellenfälle bestehen lokal.
+bleiben offen. Die vollständige Landschafts-CI auf Format-22-Testbasis meldete
+239 erfolgreiche Browserfälle und drei Fehler. Zwei Tests erwarteten noch die
+alte Zoomsperre für Landschaft; sie prüfen jetzt die erlaubte Bearbeitung und
+weiterhin gesperrte Hausbearbeitung. Der Haus-Erstgestenfall wartet nach dem
+Werkzeugwechsel auf die durch das Panel geänderte Präsentation und liest erst
+dann die Kartenfläche. Alle fünf betroffenen Grundstücks-/Straßenzugfälle bestehen
+lokal, einschließlich erster Hausgeste und History. Der vollständige Nachlauf steht
+aus. Belege: `src-tauri/target/diagnostics/landscape-integration-fixed/`.
