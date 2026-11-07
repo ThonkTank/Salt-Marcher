@@ -767,7 +767,10 @@ auf 64 Kacheln begrenzt und wählen bei Bedarf eine gröbere Darstellung.
 Flussübersichten laden höchstens 128 priorisierte Verläufe mit je 128 Samples;
 explizit gewählte Flüsse und die Flussbearbeitung laden exakte Daten.
 Grobe Oberflächenkacheln begrenzen lokale Seen auf 32 nach Größe priorisierte
-Flächen mit jeweils höchstens 64 Konturpunkten. Exakte Bearbeitung wird niemals
+Flächen mit jeweils höchstens 64 Konturpunkten. Diese Auswahl und Begrenzung
+gilt ebenso für Vorschauoberflächen und bestätigte Zwischenstände. Bei gleichem
+Dokumentstand und gleicher Kachelanfrage stimmen sie mit frisch geladenen
+Oberflächen überein. Exakte Bearbeitung wird niemals
 stillschweigend gekürzt. Einzelne Straßen unter acht Bildschirmpixeln Länge
 entfallen in der Übersicht; ausgewählte Straßen behalten ihren exakten Header.
 

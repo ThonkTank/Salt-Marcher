@@ -30,7 +30,10 @@ Dokumenttransaktion und keinen Workflowabschluss.
 normalisiert No-ops; `ChangeSet` enthält Vorher-/Nachherwerte für Objekte und
 Feldpatches sowie Höhen, Boden, Regionen, Flüsse und Gewässer. Änderungen führen
 abhängige Gewässer, Flussprofile und Oberflächen nach. Vorschauen überlagern
-Autoren innerhalb einer zurückgerollten SQLite-Transaktion. Commit, Undo und Redo
+Autoren innerhalb einer zurückgerollten SQLite-Transaktion. Angeforderte
+Oberflächenvorschauen schreiben dort auch die berechneten Gewässer und Flüsse
+samt räumlichen Indizes vorübergehend. Ohne Oberflächenanfrage entfallen diese
+zusätzlichen Writes. Commit, Undo und Redo
 verwenden denselben Schreibpfad für Autoren, Indizes, Zähler und History; erst
 nach erfolgreichem Abschluss wird die neue Revision veröffentlicht.
 
@@ -149,7 +152,14 @@ Gewässerüberlagerungen ersetzen IDs beider Deltaseiten und sortieren das
 Ergebnis wie der normale Read. Damit ist dieselbe Überlagerung vor und nach
 dem transaktionalen Schreiben eindeutig, auch wenn ein See geteilt wird.
 
-`surface_tiles` und der versionierte Punktread `surfacePoints` teilen Sampler,
+Vorschau, bestätigte Höhenabschnitte und frische Reads verwenden denselben
+`terrain_tiles`-Pfad ohne nachträgliche Deltaüberlagerung. Er liest den jeweiligen
+transaktionalen Zustand und wählt Detail oder Übersicht ausschließlich nach der
+Kachelstufe. Priorisierung, Geometriebudgets, Raster und Inhaltskennungen stimmen
+damit auch nach Gewässerteilungen und Flussänderungen überein. Vorschau-Rollback
+stellt Autoren und Indizes auch nach einem Oberflächenfehler gemeinsam wieder her.
+
+`terrain_tiles` und der versionierte Punktread `surfacePoints` teilen Sampler,
 Flussauswertung und Plattformaufbau. `SurfacePointReader` hält eine laufende
 Anfrage und nur den neuesten wartenden Cursorpunkt. Überholte Antworten werden
 verworfen. Oberflächenmathematik und Küstenabdeckung liegen ausschließlich in Rust.

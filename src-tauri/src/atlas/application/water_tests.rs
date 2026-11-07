@@ -554,3 +554,126 @@ fn confirmed_split_water_tiles_equal_fresh_reads_with_unaffected_lakes() {
     history(&mut a, true);
     assert_eq!(all(&a), after);
 }
+
+#[test]
+fn water_overview_preview_and_confirmed_sections_match_fresh_tiles() {
+    let mut a = AtlasApplication::new().unwrap();
+    request_edit(&mut a, "commit", paint(json!([[40, 40], [120, 40]]), 20.));
+    let before = all(&a);
+    let status = serde_json::to_value(a.status()).unwrap();
+    let view = json!({"level":6,"tiles":[[0,0]],"pixels":32});
+    let original = a.request("terrainTiles", view.clone()).unwrap()["tiles"].clone();
+    let brush = json!({"resolution":0,"mode":"raise","radius":10,"amount":100,"strength":1,"target":10,"points":[[80,10],[80,70]]});
+    let preview = request_edit(
+        &mut a,
+        "preview",
+        json!({"type":"terrainStroke","brush":brush,"view":view}),
+    );
+    assert_eq!(all(&a), before);
+    assert_eq!(serde_json::to_value(a.status()).unwrap(), status);
+    assert_eq!(
+        a.request("terrainTiles", view.clone()).unwrap()["tiles"],
+        original
+    );
+    let mut begin = brush;
+    begin["points"] = json!([[80, 10]]);
+    let reply = a
+        .request(
+            "beginTerrainStroke",
+            json!({"version":a.status(),"strokeId":"overview-water","brush":begin,"view":view}),
+        )
+        .unwrap();
+    assert_eq!(
+        reply["surface"]["tiles"],
+        a.request("terrainTiles", view.clone()).unwrap()["tiles"]
+    );
+    let reply = a.request("appendTerrainStroke", json!({"sessionId":a.session,"strokeId":"overview-water","sequence":1,"points":[[80,70]],"view":view})).unwrap();
+    assert_eq!(all(&a).len(), 2);
+    let fresh = a.request("terrainTiles", view.clone()).unwrap()["tiles"].clone();
+    assert_eq!(reply["surface"]["tiles"], fresh);
+    assert_eq!(preview["terrain"]["surface"]["tiles"], fresh);
+    assert_eq!(fresh[0]["waters"], json!([]));
+    history(&mut a, false);
+    assert_eq!(all(&a), before);
+    assert_eq!(
+        a.request("terrainTiles", view.clone()).unwrap()["tiles"],
+        original
+    );
+    history(&mut a, true);
+    assert_eq!(a.request("terrainTiles", view).unwrap()["tiles"], fresh);
+}
+
+#[test]
+fn water_preview_uses_overview_priority_and_point_budgets_without_truncating_authors() {
+    let mut a = AtlasApplication::new().unwrap();
+    for i in 0..40 {
+        let x = 600. + (i % 8) as f64 * 1200.;
+        let y = 600. + (i / 8) as f64 * 1200.;
+        let radius = 400. + i as f64;
+        let outer = (0..128)
+            .map(|j| {
+                let angle = j as f64 * std::f64::consts::TAU / 128.;
+                [x + radius * angle.cos(), y + radius * angle.sin()]
+            })
+            .collect();
+        water_store::put(
+            &a.db,
+            &water::WaterBody {
+                id: format!("water-{}", i + 1),
+                level: -99.,
+                polygons: vec![crate::atlas::regions::RegionPolygon {
+                    outer,
+                    holes: vec![],
+                }],
+            },
+        )
+        .unwrap();
+    }
+    a.db.execute("UPDATE document_meta SET next_identity=41", [])
+        .unwrap();
+    let bounds = [0., 0., 10240., 10240.];
+    let before = water_store::local(&a.db, bounds).unwrap();
+    let view = json!({"level":6,"tiles":[[0,0]],"pixels":32});
+    let mut intent = height_edit(json!([[600, 600]]), "raise", 100., 20.);
+    intent["view"] = view.clone();
+    let preview = request_edit(&mut a, "preview", intent.clone());
+    assert_eq!(water_store::local(&a.db, bounds).unwrap(), before);
+    let committed = request_edit(&mut a, "commit", intent);
+    let fresh = a.request("terrainTiles", view).unwrap()["tiles"].clone();
+    assert_eq!(preview["terrain"]["surface"]["tiles"], fresh);
+    assert_eq!(committed["terrain"]["surface"]["tiles"], fresh);
+    let displayed: Vec<water::WaterBody> =
+        serde_json::from_value(fresh[0]["waters"].clone()).unwrap();
+    assert_eq!(displayed.len(), 32);
+    assert!(displayed.iter().all(|w| water::point_count(w) <= 64));
+    assert_eq!(displayed.first().unwrap().id, "water-40");
+    assert_eq!(displayed.last().unwrap().id, "water-9");
+    let authored = water_store::local(&a.db, bounds).unwrap();
+    assert_eq!(authored.len(), 40);
+    assert_ne!(authored, before);
+    assert!(authored.iter().all(|w| water::point_count(w) >= 128));
+}
+
+#[test]
+fn failed_surface_read_restores_preview_water_and_height_indexes() {
+    let mut a = dry_world();
+    let status = serde_json::to_value(a.status()).unwrap();
+    let view = json!({"level":0,"tiles":[[0,0]],"pixels":32});
+    let before = a.request("terrainTiles", view.clone()).unwrap();
+    let mut intent = paint(json!([[40, 40], [80, 40]]), 20.);
+    intent["view"]["pixels"] = json!(31);
+    assert_eq!(
+        a.request("preview", json!({"version":a.status(),"intent":intent}))
+            .unwrap()["valid"],
+        false
+    );
+    assert_eq!(serde_json::to_value(a.status()).unwrap(), status);
+    assert!(all(&a).is_empty());
+    assert_eq!(
+        a.db.query_row("SELECT count(*) FROM water_spatial", [], |r| r
+            .get::<_, i64>(0))
+            .unwrap(),
+        0
+    );
+    assert_eq!(a.request("terrainTiles", view).unwrap(), before);
+}
