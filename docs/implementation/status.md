@@ -66,7 +66,7 @@ bestehen, einschließlich DPR-Rand und direkter Vorschau. Alle 40 Boden-,
 Landschafts-, Höhen-, Reliefpinsel- und Gewässer-Browserfälle bestehen; darunter Weltmalen
 nach freiem Zoom, runde/kräuselige Küsten und Fehlererholung. Der frische
 Release-/RPM-Build besteht; native Bedienung bleibt mangels UI-Zugriff offen. Diese Folgeänderung
-ist vom unverändert laufenden Main-Kandidaten getrennt.
+ist nach Abschluss dessen erster Gesamtprüfung in den Main-Kandidaten integriert.
 Belege: `src-tauri/target/diagnostics/terrain-visibility/`.
 Alle fünf Landschafts-Browserfälle bestehen auch gemeinsam ohne parallele
 lokale Prüfungen, einschließlich 3840×2160. Der erste Lauf scheiterte vor dem
@@ -87,25 +87,26 @@ Belege: `src-tauri/target/diagnostics/city-density-visibility/`.
 
 ## Integration und offene Abnahmen
 
-PR #1450 ist auf Main. Der vollständige Landschaftsstand einschließlich
-Blätterdächern, Nahbäumen, leeren Rasterantworten und sichtbarkeitsbegrenztem
-Rasteraufbau ist jetzt in PR #1456 direkt gegen Main gerichtet. Der vorherige
-Zwischenbranch verursachte einen PR-Konflikt und verhinderte neue CI-Läufe.
-Der konfliktfreie Mergevergleich gegen Main ergibt exakt den aktuellen Dateibaum;
-keine Produktänderung wurde bei der Zusammenführung verworfen. Automatisches
-Mergen der älteren Kandidaten #1451 und #1454 ist deaktiviert.
+PR #1450 ist auf Main. PR #1456 bündelt den vollständigen Landschaftsstand
+und die anschließend geprüften Sichtbarkeits-/Zoomänderungen direkt gegen Main.
+Der konfliktfreie Mergevergleich ergibt denselben Produktbaum; bestehende Arbeit
+bleibt vollständig erhalten. #1457 dient bis zur Integration als erhaltene
+Zwischenreferenz. Die älteren Kandidaten #1451 und #1454 haben kein Auto-Merge.
 
-Alle 412 Frontendtests bestehen auf dem vollständigen Stand. Die gezielten
-Boden-/Landschafts-Browserfälle und der frische Release-/RPM-Build sind oben belegt.
-Ein älterer vollständiger Lauf (#1454, `ad75084fe`) bestand alle Rustprüfungen
-und 241 von 242 Browserfällen; beim Schluchtfall überschritt der Schreibabschluss
-das bestehende Fünf-Sekunden-Testlimit. Auf dem aktuellen Folgebranch bestehen
-alle drei Reliefpinsel-Fälle unverändert, einschließlich Schlucht und History.
-Das belegt keine Reparatur des CI-Zeitüberschreitens; die aktuelle vollständige
-CI muss den exakten finalen Commit noch freigeben. Main ist noch nicht auf diesem Stand.
-Belege zur Fehleranalyse: `src-tauri/target/diagnostics/canyon-ci-review/` und
-`src-tauri/target/diagnostics/landscape-main-integration/`. Ältere PRs bleiben bis zur erfolgreichen Integration
-erhalten. Belege: `src-tauri/target/diagnostics/landscape-main-integration/`.
+Die Gesamtprüfung von `1bc2a9be3` bestand 336 Rusttests (fünf ignoriert),
+32 Integrationstests, Frontend/Typen/Verträge/Clippy/Format sowie 241 von 242
+Browserfällen. Der Dateiablauf-Test erwartete nach sofortigem Werkzeugwechsel
+noch die automatische Auswahl aus dem alten Haus-Zeichenablauf. Die Diagnose
+zeigt das bestätigte Haus in Revision 1 und vollständig gezeichnete Daten ohne
+ausstehende Arbeit. Der Test wählt das bestätigte Haus jetzt ausdrücklich aus;
+der Dateiablauf besteht gezielt einschließlich Abbrechen, Speichern und Ersetzen.
+Die Unterdrückung verspäteter Auswahlantworten bleibt unverändert. Der frühere
+Schluchtfehler trat in diesem Gesamtprüflauf nicht auf.
+
+Der gebündelte finale Commit benötigt weiterhin seine vollständige CI-Freigabe;
+Main ist noch nicht auf diesem Stand. Native Bedienprüfung und Referenzlatenzen
+sind damit nicht belegt. Belege: `src-tauri/target/diagnostics/house-file-boundary/`
+und `src-tauri/target/diagnostics/landscape-main-integration/`.
 
 Genau eine frühere Vorher-/Nachher-Reihe mit je drei Weltstrichen ist abgeschlossen:
 erste sichtbare Änderung vorher 275–304 ms, danach 119–134 ms; sichtbare Bestätigung

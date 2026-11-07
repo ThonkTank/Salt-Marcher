@@ -172,7 +172,10 @@ test("unsaved document boundary supports cancel, save and replacement", async ({
   await page.mouse.down();
   await page.mouse.move(box.x + 400, box.y + 300, { steps: 5 });
   await page.mouse.up();
-  await page.getByRole("button", { name: "Auswahl", exact: true }).click();
+  // File-boundary setup must not depend on whether creation completes before
+  // or after a tool switch invalidates the old workflow's selection callback.
+  await expect.poll(async () => (await status(page)).revision).toBe(1);
+  await selectObject(page, /^⌂ /);
   await paintedReady(page);
   await expect(
     page.getByRole("button", { name: "Innen öffnen", exact: true }),
