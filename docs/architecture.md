@@ -139,7 +139,10 @@ Eingabesnapshot. Ein exakt ausgewählter Straßenheader ersetzt dort die
 vereinfachte Übersichtsdarstellung. `canEdit` prüft die Bearbeitungsfreigabe.
 
 `interaction` berechnet Gesten; `useCanvasInput` besitzt DOM-Ereignisse,
-Koordinaten und Pointercapture. `editorSelection` besitzt Auswahlübergänge,
+Koordinaten und Pointercapture. Bekannte Panelwechsel werden im Layoutschritt
+ausgemessen; echte Größenänderungen brechen die alte Geste vor Veröffentlichung
+des neuen Ausschnitts ab. Doppelte Resize-Meldungen verändern keine Geste.
+`editorSelection` besitzt Auswahlübergänge,
 `useCamera` Navigation und Fit-Identität. `useRivers` hält Flussauswahl und
 Punktindex zusammen; `useRegions` projiziert Katalog, Ränge und Beziehungen.
 Beide verwenden den gemeinsamen Workflow und Lesepfad.

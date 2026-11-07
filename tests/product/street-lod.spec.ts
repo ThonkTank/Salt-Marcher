@@ -785,6 +785,11 @@ test("filled street map paints its layers and labels and preserves tools at exac
         anchor = await screen(page, [0, 0]);
       await page.mouse.move(anchor.x, anchor.y);
       await page.mouse.wheel(0, -Math.log(target / current.scale) / 0.0015);
+      // Playwright wheel delivery is asynchronous; an old painted generation
+      // cannot acknowledge this requested camera change.
+      await expect
+        .poll(async () => (await camera(page)).scale)
+        .toBeCloseTo(target, 6);
       await settled(page);
       await paintedReady(page);
       expect((await camera(page)).scale).toBeCloseTo(target, 6);

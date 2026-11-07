@@ -138,10 +138,6 @@ export function useAtlasEditor(client: AtlasClient) {
     if (presentation && reads.fresh)
       session.acknowledge(presentation.scene.status);
   }, [presentation, reads.fresh]);
-  useEffect(() => {
-    cancelFit();
-    abortPointer();
-  }, [size.width, size.height, cancelFit]);
   const editable = canEdit(tool, interior, lod, reads.fresh, session);
   const workflow = useEditorWorkflow({
     gate: session.getGate,
@@ -265,6 +261,7 @@ export function useAtlasEditor(client: AtlasClient) {
   };
   const { abortPointer, ...canvasInput } = useCanvasInput({
     host,
+    layout: view.panel,
     canvas,
     controller: workflow.controller,
     snapshot: () =>
@@ -284,7 +281,10 @@ export function useAtlasEditor(client: AtlasClient) {
         river: rivers.input,
       }),
     dispatch: dispatchInput,
-    setSize,
+    setSize: (next) => {
+      cancelFit();
+      setSize(next);
+    },
     setHover: setHoverReason,
     setHoverPoint,
   });

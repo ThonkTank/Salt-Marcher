@@ -27,17 +27,25 @@ verbrauchen keine Schriftmessungen oder sichtbaren Platzierungsslots.
 
 129 Transportverträge, Typprüfung, 362 Frontendtests und 320 Rusttests
 bestanden; fünf ausdrücklich ignorierte Rustfälle bleiben separat. Clippy,
-Formatprüfung und Webbuild sind grün. Alle Prüfstufen von `check:all` meldeten
-Erfolg, zuletzt alle 222 Browserfälle. Die Gesamtshell lieferte danach allerdings
-Exitcode 143; ein sauberer Gesamtprozessabschluss ist damit nicht belegt. Eine
-gezielte Küsten-Browsernachprüfung bestand beide Fälle mit Exitcode 0.
-Unter den 222 Fällen sind alle 14 Ansichten,
-Boden, Gewässer, Flüsse, Beschriftungen, Innenräume und der kontinuierliche
-Weltkartenstrich mit Zwischenständen vor Pointerup und vollständigem Undo/Redo.
+Formatprüfung und Webbuild bestanden. Lokal meldeten zunächst alle 222 Browserfälle
+Erfolg; die Gesamtshell lieferte danach Exitcode 143, eine Browser-Nachprüfung 0.
+
+Der erste CI-Lauf bestand 217 von 222 Browserfällen und deckte verlorene erste
+Gesten nach Panelwechseln sowie eine unzureichende Mausrad-Bestätigung im Test auf.
+Bekannte Layoutwechsel werden jetzt vor der nächsten Eingabe ausgemessen. Echte
+Größenänderungen brechen die alte Geste vor Veröffentlichung der neuen Größe ab;
+verspätete Doppelmeldungen dürfen die nächste Geste nicht abbrechen. Ein gezielter
+Test reproduzierte den Verlust vor der Korrektur und besteht danach einschließlich
+echtem Resize-Abbruch. Alle 15 betroffenen Browserfälle und drei weitere
+Datei-/Resize-Grenzfälle bestehen lokal; 362 Frontendtests, Typprüfung, Format und
+nativer Release-/RPM-Build sind nach der Korrektur erneut grün. Die vollständige
+CI-Abnahme mit nun 223 Browserfällen steht erneut aus.
 
 Der frische native Release-Build samt RPM wurde erfolgreich gebaut. Im nativen
 X11/WebKit-Fenster (1440×960) zeigte derselbe 80-Pixel-Weltpinselpfad zwei wachsende
-Geländestände vor dem Loslassen. Ein Undo stellt den leeren Ozean wieder her;
+Geländestände vor dem Loslassen, auch nach der Layoutkorrektur. Die erste
+Hausgeste direkt nach dem Werkzeugwechsel wurde ebenfalls nativ geprüft.
+Ein Undo stellt den leeren Ozean wieder her;
 Redo entspricht den fertigen Kartenpixeln. Die native Prüfung ist ein
 Funktionsnachweis, keine native Latenzmessung oder vollständige Bedienabnahme.
 
@@ -53,7 +61,9 @@ in diesen Zeitwerten noch nicht enthalten; keine zusätzliche Messreihe gestarte
 
 Native Datei-/Eingabeabnahme über den geprüften Weltstrich hinaus,
 RPM-Installation sowie große Stadt-/Weltlastfälle
-bleiben offen. Lokale Checks belegen keine CI-Freigabe.
+bleiben offen. PR #1437 enthält den linearen Integrationsstand; Auto-Merge
+wartet auf den verpflichtenden CI-Check. Die ursprüngliche lokale Historie bleibt
+im Branch `codex/atlas-v7-preserved-histories` erhalten.
 
 Nächster Schwerpunkt bleibt das 50-ms-Ziel für bestätigte Pinselbilder. Ein
 zusätzlicher SQL-Versuch zeigte globale Hausfilterarbeit bei lokalen Kartenreads;

@@ -232,3 +232,74 @@ for (const rapidSwitch of [false, true]) {
     expect((await scene(page)).objects).toHaveLength(1);
   });
 }
+
+test("a delayed resize notification from opening tool options cannot cancel the next gesture", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    const Original = window.ResizeObserver;
+    const state = { hold: false, pending: [] as (() => void)[] };
+    Object.assign(window, { resizeDelivery: state });
+    window.ResizeObserver = class extends Original {
+      constructor(callback: ResizeObserverCallback) {
+        super((entries, observer) => {
+          const deliver = () => callback(entries, observer);
+          if (state.hold) state.pending.push(deliver);
+          else deliver();
+        });
+      }
+    };
+  });
+  const { paintedReady, scene } = await import("../support/editor");
+  await page.goto(url);
+  await paintedReady(page);
+  await page.evaluate(() => {
+    (
+      window as unknown as { resizeDelivery: { hold: boolean } }
+    ).resizeDelivery.hold = true;
+  });
+  await page.getByRole("button", { name: "Haus", exact: true }).click();
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () =>
+          (window as unknown as { resizeDelivery: { pending: unknown[] } })
+            .resizeDelivery.pending.length,
+      ),
+    )
+    .toBeGreaterThan(0);
+  const box = (await page.getByTestId("atlas-canvas").boundingBox())!;
+  await page.mouse.move(box.x + 200, box.y + 160);
+  await page.mouse.down();
+  await page.mouse.move(box.x + 264, box.y + 224);
+  await page.evaluate(() => {
+    const state = (
+      window as unknown as {
+        resizeDelivery: { hold: boolean; pending: (() => void)[] };
+      }
+    ).resizeDelivery;
+    state.hold = false;
+    for (const deliver of state.pending.splice(0)) deliver();
+  });
+  await page.mouse.up();
+  await expect.poll(async () => (await scene(page)).objects.length).toBe(1);
+  await paintedReady(page);
+  await page.mouse.move(box.x + 400, box.y + 300);
+  await page.mouse.down();
+  await page.mouse.move(box.x + 464, box.y + 364);
+  await page.setViewportSize({ width: 1400, height: 920 });
+  await expect
+    .poll(() =>
+      page
+        .getByTestId("atlas-canvas")
+        .evaluate(
+          (canvas: HTMLCanvasElement) =>
+            canvas.width ===
+            Math.round(canvas.getBoundingClientRect().width * devicePixelRatio),
+        ),
+    )
+    .toBe(true);
+  await paintedReady(page);
+  await page.mouse.up();
+  expect((await scene(page)).objects).toHaveLength(1);
+});

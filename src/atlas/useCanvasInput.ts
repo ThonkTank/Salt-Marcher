@@ -1,5 +1,6 @@
 import {
   useEffect,
+  useLayoutEffect,
   useRef,
   type CanvasHTMLAttributes,
   type RefObject,
@@ -22,6 +23,7 @@ import { screenToWorld, type ScreenPoint } from "./model";
 
 type Options = {
   host: RefObject<HTMLDivElement | null>;
+  layout: string;
   canvas: RefObject<HTMLCanvasElement | null>;
   controller: EditorWorkflowController;
   snapshot: () => Omit<CanvasInputSnapshot, "workflow">;
@@ -104,14 +106,25 @@ export function useCanvasInput(options: Options): Handlers & {
     if (finish) releaseCapture(event.pointerId);
     if (result?.camera) execute([{ kind: "camera", camera: result.camera }]);
   };
+  const measured = useRef<{ width: number; height: number } | null>(null);
+  const measureSize = () => {
+    const host = current.current.host.current;
+    if (!host) return;
+    const { width, height } = host.getBoundingClientRect();
+    if (measured.current?.width === width && measured.current.height === height)
+      return;
+    measured.current = { width, height };
+    // Revoke the old gesture before publishing the new viewport. A later
+    // duplicate ResizeObserver delivery must not cancel the next gesture.
+    abortPointer();
+    current.current.setSize({ width, height });
+  };
+  // Tool/inspector layout changes are known during commit, before the next
+  // pointer event. Ordinary window resizing still uses the same observer path.
+  useLayoutEffect(measureSize, [options.layout]);
   useEffect(() => {
     const host = current.current.host.current;
-    const observer = new ResizeObserver(([entry]) =>
-      current.current.setSize({
-        width: entry.contentRect.width,
-        height: entry.contentRect.height,
-      }),
-    );
+    const observer = new ResizeObserver(measureSize);
     if (host) observer.observe(host);
     const down = (event: KeyboardEvent) => {
       const decision = decideKey(snapshot(), {
