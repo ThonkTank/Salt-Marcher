@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { TerrainPainter } from "./terrainView";
 import { paintRivers } from "./riverView";
 import { layoutMapLabels } from "./mapLabels";
@@ -30,6 +30,17 @@ const response = (tiles: SurfaceTile[]): TerrainResponse => ({
   level: 0,
   tiles,
 });
+class ContourPath {
+  segments: number[][] = [];
+  private start: number[] = [];
+  moveTo(x: number, y: number) {
+    this.start = [x, y];
+  }
+  lineTo(x: number, y: number) {
+    this.segments.push([...this.start, x, y]);
+  }
+}
+beforeEach(() => vi.stubGlobal("Path2D", ContourPath));
 function context() {
   const segments: number[][] = [];
   let start: number[] = [];
@@ -49,7 +60,9 @@ function context() {
     }),
     arc: vi.fn(),
     fill: vi.fn(),
-    stroke: vi.fn(),
+    stroke: vi.fn((path?: ContourPath) => {
+      if (path?.segments) segments.push(...path.segments);
+    }),
     save: vi.fn(),
     restore: vi.fn(),
     setTransform: vi.fn(),
@@ -361,4 +374,47 @@ it("culls invisible contours but retains thick DPR strokes touching the viewport
     points: [],
   });
   expect(target.segments.at(-1)).toEqual(visible.raster!.contours[0]);
+});
+
+it("does not replay unchanged contour segments when panning or zooming", () => {
+  const source = tile(0, 0, 201);
+  let coordinates = 0;
+  source.raster!.contours = Array.from(
+    { length: 4096 },
+    (_, i) =>
+      new Proxy([i % 160, 10, i % 160, 20], {
+        get(target, key, receiver) {
+          if (typeof key === "string" && /^[0-3]$/.test(key)) coordinates++;
+          return Reflect.get(target, key, receiver);
+        },
+      }),
+  );
+  const target = context();
+  const painter = new TerrainPainter();
+  painter.paintContours(
+    target as unknown as CanvasRenderingContext2D,
+    response([source]),
+    1,
+  );
+  expect(coordinates).toBe(4096 * 4);
+  const path = target.stroke.mock.calls[0][0];
+  coordinates = 0;
+  target.getTransform = () => ({ a: 2, d: 2, e: -5, f: 0 });
+  painter.paintContours(
+    target as unknown as CanvasRenderingContext2D,
+    response([source]),
+    2,
+  );
+  expect(coordinates).toBe(0);
+  expect(target.stroke.mock.calls[1][0]).toBe(path);
+  const changed = tile(0, 0, 202);
+  changed.raster!.contours = [[12, 13, 14, 15]];
+  painter.paintContours(
+    target as unknown as CanvasRenderingContext2D,
+    response([source]),
+    2,
+    { surface: response([changed]), points: [] },
+  );
+  expect(target.stroke.mock.calls[2][0]).not.toBe(path);
+  expect(target.segments.at(-1)).toEqual([12, 13, 14, 15]);
 });

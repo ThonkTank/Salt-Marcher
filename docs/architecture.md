@@ -431,8 +431,16 @@ Caches bleibt unverändert.
 
 `TerrainPainter` zeichnet fertige Raster und Höhenlinien. Gemeinsame gerundete
 Gerätepixelkanten vermeiden transparente Kachelnähte; der Quellhalo bleibt für die
-Filterung erhalten. `terrainRaster` cached dekodierte Bilder nach Inhaltskennung,
-ohne Transportobjekte festzuhalten. Bodenfarben verwenden vorbereitete Reliefwerte
+Filterung erhalten. `terrainRaster` hält Bilder und bei Bedarf vorbereitete
+Höhenlinienpfade gemeinsam nach Inhaltskennung, ohne Transportobjekte festzuhalten.
+Relief, Materialien und Wasser werden erst für ihre tatsächliche Verwendung
+dekodiert. Dekodierte Reliefbytes leben nur bis zur Bilderstellung; dauerhaft
+bleiben das fertige Canvas und bei Bedarf die Materialbytes erhalten.
+Linienpfade verwenden exakt die Workersegmente und benötigen keine
+Neuberechnung beim Verschieben oder Zoomen. Ihre geschätzten Speicherkosten zählen
+zum bestehenden Terrainrasterbudget; die optionale Aufnahme verdrängt keine
+bereits gehaltenen Raster. Ohne freien Platz bleibt der Pfad nur für den aktuellen
+Zeichenaufruf erhalten. Bodenfarben verwenden vorbereitete Reliefwerte
 und einen eigenen Pixelhalo. Die Seenrasterung ordnet nicht horizontale Uferkanten einmal nach ihrer unteren
 Y-Grenze. Pro aufsteigender Subpixelzeile bleiben nur kreuzende Kanten aktiv;
 jede Kante ist einmal gespeichert. Schnittpunkte werden je Polygon einschließlich

@@ -1,5 +1,5 @@
 import { visibleRasterTile } from "./rasterVisibility";
-import { terrainImage } from "./terrainRaster";
+import { terrainImage, terrainContourPath } from "./terrainRaster";
 import { CACHE_BUDGETS, TERRAIN_RASTER_BYTES } from "./cacheBudgets";
 import { tileRequest } from "./lod";
 import type { TerrainResponse } from "./generated/TerrainResponse";
@@ -64,12 +64,8 @@ export class TerrainPainter {
     c.strokeStyle = "#55674e80";
     for (const tile of source.tiles) {
       if (!visibleRasterTile(tile, width, transform, c.canvas, guard)) continue;
-      c.beginPath();
-      for (const [x, y, u, v] of tile.raster?.contours ?? []) {
-        c.moveTo(x, y);
-        c.lineTo(u, v);
-      }
-      c.stroke();
+      const path = terrainContourPath(tile);
+      if (path) c.stroke(path);
     }
   }
   paint(

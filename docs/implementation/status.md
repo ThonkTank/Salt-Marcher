@@ -6,131 +6,90 @@ Zuständigkeiten, [Produktvertrag](../product-contract.md) Verhalten und Grenzen
 
 ## Integration
 
-Main enthält Landschaft, Darstellungsbegrenzung, Sampler-Fix, stabile
-Geometriecaches und Eingaben während Ansichtsreads. PR #1462 ist als
-`50595d7ff` integriert; der Main-Baum entspricht exakt dem geprüften Kandidaten
-`fd22c2927`. Die vollständige CI besteht: 338 Rust-Librarytests und 32
-Integration-/Adaptertests, fünf absichtlich ignorierte Fälle, 246 Browserfälle,
-Frontendtests, Typen, Transportverträge, Clippy, Format und Release-/RPM-Build.
-Damit sind auch lesbare Pinselmaße, verständliche Grenzmeldungen und der frühe
-Rückweg für leere Höhenkachelanfragen auf Main.
+Main enthält die Höhen-/Landschaftsarbeiten, stabile Geometriecaches und
+Eingabekorrekturen. PR #1462 ist als `50595d7ff` integriert; der Main-Baum
+entspricht exakt dem geprüften Kandidaten `fd22c2927`. Seine vollständige CI
+besteht: 338 Rust-Librarytests und 32 Integration-/Adaptertests, fünf absichtlich
+ignorierte Fälle, 246 Browserfälle, Frontendtests, Typen, Transportverträge,
+Clippy, Format und Release-/RPM-Build.
 
-Die ausstehenden Folgeänderungen bauen auf diesem Main-Baum auf: PR #1463
-enthält Kartenschrift und begrenzte Dachdetails; PR #1464 ergänzt die lokale
-Kachelzuordnung für Materialabtastung. Beide enthalten korrigierte Pixelproben
-für schattierte Dächer und Auswahl außerhalb von Beschriftungen. Ihre
-vollständigen CI-Freigaben und Main-Übernahmen stehen noch aus; lokale Ergebnisse
-ersetzen diese Freigaben nicht. Die Main-Integration in den Folgekandidaten
-ändert weder Produktcode noch Tests.
+PR #1463 enthält Kartenschrift und begrenzte Dachdetails; PR #1464 ergänzt die
+lokale Kachelzuordnung für Materialabtastung. Beide enthalten korrigierte
+Pixelproben für schattierte Dächer und Auswahl außerhalb von Beschriftungen.
+Der aktuelle Folgekandidat ergänzt Terrainpfade im vorhandenen Rastercache.
+Für diese Folgeänderungen stehen vollständige CI-Freigaben und Main-Übernahmen
+noch aus. Lokale Ergebnisse ersetzen diese Freigaben nicht.
 
-## Gestalterische Richtung
+## Geprüfter Produktstand
 
-Ziel ist eine stilisierte Fantasykarte: nahe an Canvas of Kings orientierte
-Federzeichnung, mittlere und ferne Ansichten mittelalterlich inspirierte
-Kartografie. Die gemeinsame Serifenschrift für Kartenbeschriftungen ist ein
-erster begrenzter Schritt, keine abgeschlossene Stilüberarbeitung. Objekt-,
-Straßen- und Regionsnamen verwenden dieselbe Definition bei Vermessung und
-Zeichnen. UI-Hinweise behalten ihre Schrift; lokale Font-Fallbacks können je
-Plattform unterschiedlich aussehen. Keine Downloads oder neuen Caches.
-Zwölf bestehende Layouttests, acht Regions-/Präsentationsbrowserfälle, Typen
-und Format bestehen. Regionsnamen in der Weltansicht und separate Zeichenproben
-für kleine Objektnamen wurden in Chromium visuell geprüft. Der frische
-Release-/RPM-Build besteht (7,52 MiB). Belege unter
-`src-tauri/target/diagnostics/map-typography/`. Native Sichtprüfung bleibt offen.
+Weltmalen funktioniert auch nach freiem Herauszoomen und während Ansichtsreads;
+128 Pixel werden schon beim ersten Kartenklick ohne vorheriges Tab/Enter
+übernommen. Bestätigte Zwischenstände und vollständiges Undo wurden durch
+Browserbedienproben geprüft. Übergröße zeigt einen verständlichen Fehler;
+anschließendes Malen mit kleinerem Pinsel funktioniert bei 900 × 620 ohne
+Veränderung der Statuszeilenhöhe. Leere Höhenkachelanfragen liefern Status,
+ohne Autoren oder Blockindex zu lesen. Die spezialisierte Bergkette, Hügel und
+Schlucht wurden mit sichtbaren Zwischenständen und exaktem Undo/Redo geprüft.
 
-Rechteckige einzelne Hausdächer erhalten nahe Walmdachflächen und Firstlinien,
-mit weicher Zoom-/Größenblende und aus Nordwesten einfallendem Licht. Die
-vorhandene Außenkontur begrenzt die Zeichnung; Innenhöfe und komplexe Grundrisse
-bleiben unverändert. Kein Dachsolver, neuer Cache oder gespeicherter Dachtyp.
-433 Frontendtests, darunter vier neue Kontur-/Darstellungsgrenztests, Typen,
-Format und 24 Browserfälle für Haus-/Raumnavigation, Dachbewegung, Innenraumwechsel
-und Präsentationsstabilität bestehen. Dach-Pixelproben liegen außerhalb von
-Beschriftungen und vergleichen die schattierte Fläche vor/nach Bewegung. Der frische Release-/RPM-Build besteht
-(7,52 MiB). Vorher/Nachher der Nahansicht mit gedrehten
-Gebäuden und anschließender Straßenzugansicht wurde visuell geprüft. Belege:
-`src-tauri/target/diagnostics/roof-review/`. Diese Geometrie ist ein erster
-Dachstil; komplexe Dachformen und die vollständige gestalterische Abnahme bleiben
-offen.
+Landschaftsdeckung, Dichte, Lichtungen, grobe Vererbung, History und Datei-Rundlauf
+sind geprüft. Browserproben bestätigen 25/65/100-Prozent-Dichte über mehrere
+Zoomstufen. Mittlerer Wald erscheint als Blätterdach mit Dichtelücken, nahe als
+gezeichnete Kronen; große Viewports bleiben innerhalb des Kandidatenbudgets.
+Boden- und Felsfarbe bleiben unabhängig. Rasterhalos und Geräte-Pixel-Clips
+sichern Nähte; unsichtbare Raster überspringen teure Verarbeitung.
 
-## Geprüftes Verhalten
+Die Stilrichtung ist eine stilisierte Fantasykarte: nahe an Canvas of Kings
+orientierte Federzeichnung, mittlere/ferne Ansichten mittelalterlich inspirierte
+Kartografie. Gemeinsame Serifenschrift und einfache Walmdachdetails wurden im
+Browser visuell geprüft. Die Schriftdefinition gilt für Messung und Zeichnen;
+lokale Font-Fallbacks können sich je Plattform unterscheiden. Dachdetails blenden
+beim Herauszoomen aus. Innenhöfe und komplexe Dächer erhalten keine unpassenden
+Walmdachlinien. Dies ist ein erster Stilstand, keine abgeschlossene Gestaltung.
 
-Materialabtastung für Boden, Blätterdächer und Landschaftsdetails verwendet eine
-erst bei Bedarf aufgebaute lokale Kachelzuordnung. Der Regressionstest mit
-64 Kacheln und vier Durchläufen einschließlich negativer/fehlender Kacheln
-reduziert gelesene Kachelkoordinaten von 9.605 auf höchstens 128 bei gleichen
-Materialwerten. 39 Raster-/Boden-/Landschafts-/Rendercachetests, Typen und
-Quellformat bestehen. Das ist ein deterministischer Arbeitsnachweis, keine
-Latenzmessung. Zehn Boden-/Landschaftsbrowserfälle bestehen, einschließlich
-Weltansicht mit freiem Zoom, 3840-Pixel-Viewport sowie History und Datei-Rundlauf.
-Der frische Release-/RPM-Build besteht (7,52 MiB).
-Belege: `src-tauri/target/diagnostics/material-tile-index/`.
+## Aktuelle Arbeits- und Prüfnachweise
 
-Wald, Buschland, Wiese und Felsgebiet lassen sich auf allen Außenmaßstäben mit
-Zieldichte, Lichtungen, grober Vererbung und History malen. Boden-/Felsfarbe bleibt
-unabhängig. Fern erscheinen Flächenfarben, mittlerer Wald als Blätterdach mit
-Dichtelücken, nahe Bäume als Federzeichnungen mit unregelmäßigen Kronen. Große
-Viewports behalten das Blätterdach, bis Einzelbäume in das Kandidatenbudget passen.
-Eine erneute Browserprobe über echte UI-Aktionen bestätigt 25/65/100-Prozent-
-Eingaben ab dem ersten Zug und sichtbare Dichteunterschiede über mehrere Zoomstufen.
-Rasterhalos und Geräte-Pixel-Clips sichern Nähte. Leere Kacheln übertragen keine
-Pixelnutzlast; unsichtbare Boden-, Landschafts-, Gelände- und Stadtdichtekacheln
-überspringen teure Verarbeitung. Ebene Ausschnitte grober Höhenautoren verwenden
-den begrenzten Spline-Nachweis; fehlende Stützwerte bleiben konservativ.
+Außen-/Flussgeometrie behalten einen nützlichen Teil auch über dem Eintragsbudget.
+Der 257-Flüsse-Fall baut bei 256 Cacheplätzen pro weiterem Bild einen statt 257
+Pfade neu. Zoom verwendet Flusskonturen weiter, solange Mindestbreiten unverändert
+bleiben. Zahlenfelder werden vor dem ersten Zeichnen übernommen.
 
-Außen- und Flussgeometrie behalten benötigte Konturen innerhalb unveränderter
-Budgets. Der 257-Flüsse-Fall bei 256 Cacheplätzen baut pro weiterem Bild einen
-statt 257 Pfade neu. Zoom verwendet Weltkonturen weiter, solange keine Samplebreite
-auf 1,5 Bildschirmpixel angehoben wird; der Test prüft auch Konturkoordinaten beim
-Grenzübertritt. Die Dichteanzeige unterdrückt binäre Rundungsreste.
+Materialabtastung indiziert ihre aktuellen Höhenkacheln erst beim ersten Sample.
+Vier Durchläufe über 64 Kacheln benötigen im Regressionstest höchstens 128 statt
+9.605 Koordinatenzugriffe bei identischen Ergebnissen; negative und fehlende
+Kacheln sind abgedeckt. Zehn Boden-/Landschaftsbrowserfälle bestehen, einschließlich
+Weltansicht bei 3840 Pixeln, freiem Zoom, History und Datei-Rundlauf.
 
-Ein Höhenstrich kann mit bereitem Dokumentstatus während des Ansichtslesens
-beginnen. Gesperrte Malwerkzeuge verschieben die Karte nicht versehentlich.
-Zeichenwerkzeuge übernehmen Zahlenfelder vor dem ersten Karten-Pointerdown;
-die reproduzierten Flussknotenbreiten `[20, 2]` nach Eingabe von 2 Fuß sind jetzt
-`[2, 2]`. Der Auswahlmodus behält die Reihenfolge für Inspector-Writes und Auswahl.
-22 Fluss-/Datei-/Fokuswechseltests und 30 Höhen-/Navigationstests bestehen.
-Eine direkte Weltprobe nach freiem Herauszoomen bestätigt 128 Pixel ab Beginn,
-sichtbares Land vor Pointerup und vollständiges Undo ohne vorheriges Tab/Enter.
+Terrain-Höhenlinien verwenden bei freiem Platz denselben Rastercache wie Bilder.
+Optionale Pfade verdrängen bei ihrer Aufnahme keine gehaltenen Raster; ihre
+Speicherkosten zählen als Schätzung zum Budget. 4.096 unveränderte Segmente erfordern
+beim nächsten Bild null statt 16.384 Koordinatenzugriffe. Geänderte Vorschauen
+verwenden neue Geometrie. Relief-/Materialdekodierung erfolgt erst bei Bedarf;
+dekodierte Reliefbytes werden nach der Bilderstellung nicht zusätzlich gehalten.
 
-Pinselhinweise zeigen Meter beziehungsweise Kilometer mit höchstens drei
-signifikanten Ziffern. Drei bestehende Raum-Browserfälle prüfen die metrischen
-Werte, Rasterhinweise, kleine Pinsel und History; die Weltanzeige wurde visuell
-geprüft. Bei Überschreitung der Höhengrenze empfiehlt die Meldung jetzt einen
-kleineren Pinsel oder kürzere Striche. Fachfehler zeigen keinen technischen
-`WireError`-Präfix; Kategorien und strukturierte Fehlerdaten bleiben erhalten.
-Die Browserprobe bei 900 × 620 zeigt Ablehnung ohne Autorenänderung und direkt
-anschließend erfolgreiches Malen mit kleinerem Pinsel. Beide Zustände behalten
-38 Pixel Statuszeilenhöhe. 429 Frontendtests, 27 Terrain-Rusttests (ein Benchmark
-absichtlich ignoriert), Typen, 134 Transportverträge und Format bestehen.
-Der frische Release-/RPM-Build besteht ebenfalls (7,52 MiB).
-
-Leere Höhenkachelanfragen zur Versionsprüfung validieren ihre Parameter und
-liefern anschließend Status und leere Kachelliste ohne Sampler-/Blockindexarbeit.
-Der Regressionstest scheiterte zuvor an einem gesperrten Dirty-Block-Read; er
-besteht jetzt ohne Terrainzugriffe und prüft weiterhin ungültige Parameter.
-40 Terrain-/Strich-Rusttests (ein Benchmark ignoriert), 17 Präsentationscachetests
-und vier Browserfälle für sichtbare Zwischenstände, Welt-Voreinstellung,
-freies Zoomen und Malen nach Fehlererholung bestehen. Der frische Release-/RPM-Build
-besteht ebenfalls. Keine neue Latenzaussage.
+436 Frontendtests, Typen und Format bestehen. 30 Raum-/Live-Höhenbrowserfälle
+bestehen; nach Entfernung der redundanten Reliefbytes bestehen erneut vier
+gezielte Fälle. Der unabhängige Canvasvergleich bestätigt exakte Pixelgleichheit
+über vier Kameratransformationen. Die Haus-/Raum-/Navigationsfälle prüfen außerdem
+unter anderem Dachbewegung, Auswahl, Innenraumwechsel und Präsentationsstabilität.
+Nach der zusätzlichen Cache-Aufnahmeprüfung bestehen erneut die komplette
+Frontendsuite und der Pixelvergleich. Der frische Release-/RPM-Build besteht
+(7,52 MiB). Die Speicher-/Arbeitsnachweise sind keine Latenzmessungen.
 
 ## Offene Abnahmen
 
 Frühere native Prüfungen umfassen Weltmalen, Bodenfarben, Landschaft, Navigation,
-Lichtungen, History und Datei-Rundlauf. Neuere Änderungen wurden noch nicht nativ
-bedient: Diese Sitzung bietet keinen nativen UI-Zugriff. Das ursprüngliche
-Benutzertestfenster bleibt unberührt; Browserprüfungen und Releasebuild ersetzen
-die native Abnahme nicht.
+Lichtungen, History und Datei-Rundlauf. Neuere Änderungen sind nicht nativ bedient:
+Diese Sitzung bietet keinen nativen UI-Zugriff. Das ursprüngliche Testfenster
+bleibt unberührt; Browserprüfungen und Releasebuild ersetzen die native Abnahme nicht.
 
 Genau eine frühere Vorher-/Nachher-Reihe mit je drei Weltstrichen ist abgeschlossen:
 erste sichtbare Änderung 275–304 → 119–134 ms, sichtbare Bestätigung p95
 427–516 → 339–376 ms, Nachlauf 259–427 → 231–345 ms. Spätere Änderungen sind darin
 nicht enthalten. Das Ziel p95 ≤50 ms bleibt unbelegt; keine weitere Zeitmessreihe.
 RPM-Installation, große Stadt-/Weltlastfälle und umfangreicher Release-Treiber
-bleiben offen. Einzelobjektplatzierung, lokale Verschiebeausnahmen, Feldumrisse
-und Assetimporte bleiben Folgeumfang der Landschaftsdeckung.
+bleiben offen. Komplexe Dachstile, Einzelobjektplatzierung, lokale Verschiebeausnahmen,
+Feldumrisse und Assetimporte bleiben Folgeumfang.
 
-Belege unter `src-tauri/target/diagnostics/`: insbesondere `landscape-canopy/`,
-`landscape-capacity/`, `coarse-flat-proof/`, `landscape-main-integration/`,
-`stable-exterior-geometry/`, `terrain-view-load/`, `blocked-brush-navigation/`,
-`stable-river-geometry/`, `river-zoom-reuse/`, `field-before-canvas/`,
-`readable-brush-distances/`, `landscape-input-review/`, `actionable-brush-limits/`.
+Aktuelle Belege unter `src-tauri/target/diagnostics/`: `feature-input-review/`,
+`roof-review/`, `roof-movement-final/`, `map-typography/`, `material-tile-index/`
+und `retained-terrain-contours/` beziehungsweise `retained-terrain-contours-final/`.
