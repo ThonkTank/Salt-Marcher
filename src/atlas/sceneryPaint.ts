@@ -6,6 +6,7 @@ export function paintScenery(
   scenery: Scenery,
   scale: number,
   highlight?: string,
+  signature = false,
 ) {
   const transform = c.getTransform();
   const pixels = Math.hypot(transform.a, transform.b);
@@ -22,7 +23,7 @@ export function paintScenery(
       continue;
     c.save();
     c.translate(...a.point);
-    c.rotate(a.angle);
+    c.rotate(signature ? 0 : a.angle);
     c.scale(a.size, a.size);
     const circle = (x: number, y: number, r: number, fill: string) => {
       c.beginPath();
@@ -30,7 +31,9 @@ export function paintScenery(
       c.fillStyle = highlight ?? fill;
       c.fill();
     };
-    if (a.size * scale < 2) {
+    if (signature) {
+      paintSignature(c, scenery.biome, a.variant, highlight);
+    } else if (a.size * scale < 2) {
       circle(0, 0, 0.85, scenery.biome === "rocks" ? "#929083" : "#688348");
     } else if (scenery.biome === "forest" || scenery.biome === "scrub") {
       circle(0.12, 0.16, 0.78, "#293d3038");
@@ -111,5 +114,66 @@ export function paintScenery(
       c.stroke();
     }
     c.restore();
+  }
+}
+
+/** Area signatures use small groups with a shared upright orientation. They
+ * describe a kind of landscape, not a physically oversized individual asset. */
+function paintSignature(
+  c: CanvasRenderingContext2D,
+  biome: Scenery["biome"],
+  variant: number,
+  highlight?: string,
+) {
+  c.lineWidth = 0.055;
+  c.lineJoin = "round";
+  c.lineCap = "round";
+  c.strokeStyle = highlight ?? (biome === "rocks" ? "#686d60" : "#526b43");
+  c.fillStyle =
+    highlight ??
+    (biome === "rocks"
+      ? "#a3a28f"
+      : biome === "forest"
+        ? "#71885b"
+        : "#8c9b68");
+  // Back-to-front groups retain depth without directional highlights or shadows.
+  for (const [x, y, r] of [
+    [0, -0.3, 0.33],
+    [-0.48, 0.25, 0.27],
+    [0.45, 0.29, 0.29],
+  ]) {
+    const size = r * (0.94 + variant * 0.04);
+    if (biome === "forest") {
+      c.beginPath();
+      c.moveTo(x, y + size * 0.6);
+      c.lineTo(x, y + size + 0.17);
+      c.stroke();
+      c.beginPath();
+      c.arc(x, y, size, 0, Math.PI * 2);
+      c.fill();
+      c.stroke();
+    } else if (biome === "scrub") {
+      c.beginPath();
+      c.ellipse(x, y, size, size * 0.6, 0, 0, Math.PI * 2);
+      c.fill();
+      c.stroke();
+    } else if (biome === "meadow") {
+      c.beginPath();
+      c.moveTo(x - size, y);
+      c.quadraticCurveTo(x - size * 0.3, y, x, y + size * 0.6);
+      c.lineTo(x, y - size * 0.55);
+      c.moveTo(x, y + size * 0.6);
+      c.quadraticCurveTo(x + size * 0.3, y, x + size, y - size * 0.1);
+      c.stroke();
+    } else {
+      c.beginPath();
+      c.moveTo(x - size, y + size * 0.55);
+      c.lineTo(x - size * 0.45, y - size * 0.65);
+      c.lineTo(x + size * 0.3, y - size);
+      c.lineTo(x + size, y + size * 0.35);
+      c.closePath();
+      c.fill();
+      c.stroke();
+    }
   }
 }

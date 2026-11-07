@@ -270,6 +270,9 @@ Rasterpainter hält begrenzte Landschaftsraster und zeichnet aus denselben Gewic
 ferne Farben, mittlere Signaturen und nahe Symbole. Zwischen 0,35 und 0,5
 CSS-Pixeln pro Fuß überblendet er mittlere und nahe Symbole; beide teilen sich
 das Kandidatenbudget, der Kachelanfrager erhält bis zum Ende den groben Kronenrand.
+Mittlere Signaturen verwenden im vorhandenen Vektorpainter aufrechte Gruppen
+aus drei Baum-, Busch-, Gras- oder Steinzeichen ohne gerichtete Glanzlichter.
+Nahe Symbole und bestehende dekorative Objekte behalten ihre Detailzeichnung.
 Detailkandidaten hängen nur
 von Weltkoordinaten ab und werden ausschließlich für den sichtbaren Ausschnitt
 innerhalb eines festen Budgets erzeugt. Autoren enthalten keine generierten Bäume.

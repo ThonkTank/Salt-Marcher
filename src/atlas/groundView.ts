@@ -232,6 +232,8 @@ export class GroundPainter {
                 .map((s) => s.asset),
             },
             scale,
+            undefined,
+            !detail.near,
           );
       }
     }

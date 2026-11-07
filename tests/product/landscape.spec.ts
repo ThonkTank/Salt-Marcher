@@ -142,6 +142,11 @@ for (const label of ["Straßenzug", "Welt"])
     await page.mouse.move(p.x, p.y);
     await page.mouse.down();
     await expect.poll(() => pixel(page, p)).not.toEqual(before);
+    // Let the held brush establish enough coverage to inspect scale symbols,
+    // rather than releasing at the first nearly transparent preview pixel.
+    await expect
+      .poll(async () => before[0] - (await pixel(page, p))[0])
+      .toBeGreaterThan(30);
     await page.mouse.move(p.x + 35, p.y + 15, { steps: 8 });
     await page.mouse.up();
     await expect.poll(async () => (await status(page)).revision).toBe(base + 1);
@@ -157,13 +162,33 @@ for (const label of ["Straßenzug", "Welt"])
     await paintedReady(page);
     expect(await pixel(page, p)).toEqual(painted);
     if (label === "Welt") {
+      // Preset zoom keeps the viewport center. Center the authored anchor first
+      // so later pixel checks cannot accidentally sample transparent offscreen data.
+      const origin = await screen(page, [0, 0]);
+      const box = (await page.getByTestId("atlas-canvas").boundingBox())!;
+      await page.mouse.move(origin.x, origin.y);
+      await page.mouse.down({ button: "middle" });
+      await page.mouse.move(
+        Math.round(box.x + box.width / 2),
+        Math.round(box.y + box.height / 2),
+      );
+      await page.mouse.up({ button: "middle" });
+      await paintedReady(page);
       // Follow the same world anchor through the representation bands. The
       // source coverage must survive independently of generated detail symbols.
-      for (const view of ["Umland", "Grundstück", "Welt"]) {
+      for (const view of ["Umland", "Dorf / Stadtteil", "Grundstück", "Welt"]) {
         await page.getByLabel("Ansichtsmaßstab").selectOption({ label: view });
         await paintedReady(page);
         const anchor = await screen(page, [0, 0]);
+        expect(anchor.x).toBeGreaterThan(box.x);
+        expect(anchor.x).toBeLessThan(box.x + box.width);
+        expect(anchor.y).toBeGreaterThan(box.y);
+        expect(anchor.y).toBeLessThan(box.y + box.height);
         expect(await pixel(page, anchor)).not.toEqual(before);
+        if (view === "Dorf / Stadtteil")
+          await page.screenshot({
+            path: test.info().outputPath("landscape-middle.png"),
+          });
       }
       expect(await pixel(page, await screen(page, [0, 0]))).toEqual(painted);
     }

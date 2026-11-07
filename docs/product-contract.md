@@ -402,7 +402,8 @@ Felsgebiet-Ebene modelliert. Autorendaten bleiben beim Zoomen unverändert.
 Nah erscheinen deterministisch aus Weltkoordinaten erzeugte Bäume und andere
 Symbole. Mehr Dichte ergänzt stabile Kandidaten statt vorhandene Positionen neu
 zu würfeln. Mittlere Maßstäbe zeigen Flächen mit sparsamen kartographischen
-Signaturen; ferne Maßstäbe ausschließlich Flächenfarben. Übersichten entstehen
+Signaturen aus kleinen Baum-, Busch-, Gras- oder Steingruppen; ferne Maßstäbe
+ausschließlich Flächenfarben. Übersichten entstehen
 direkt aus den Deckungen, ohne zuerst unsichtbare Einzelbäume zu erzeugen.
 Mittlere Signaturen und nahe Symbole gehen überlappend ineinander über;
 beim Wechsel gibt es kein ausschließlich durch den Zoom verursachtes Leerband.
