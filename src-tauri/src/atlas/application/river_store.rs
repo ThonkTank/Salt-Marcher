@@ -578,27 +578,6 @@ pub fn import(source: &Connection, target: &Connection) -> Result<()> {
     }
     Ok(())
 }
-pub fn overlay(db: &Connection, b: Bounds, delta: Option<&RiverDelta>) -> Result<Vec<RiverView>> {
-    let mut views = local(db, b)?;
-    if let Some(d) = delta {
-        views.retain(|v| {
-            !d.before
-                .iter()
-                .chain(&d.after)
-                .any(|r| r.river.id == v.river.id)
-        });
-        views.extend(
-            d.after
-                .iter()
-                .filter(|v| {
-                    let q = river_bounds(&v.river);
-                    q[0] <= b[2] && q[2] >= b[0] && q[1] <= b[3] && q[3] >= b[1]
-                })
-                .cloned(),
-        );
-    }
-    Ok(views)
-}
 fn preserve_segments(old: &River, new: &mut River) {
     let mut path = vec![];
     for pair in new.nodes.windows(2) {

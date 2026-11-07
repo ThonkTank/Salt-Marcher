@@ -300,11 +300,7 @@ impl AtlasApplication {
                     })
                 });
             }
-            let surface = self.surface_tiles(
-                view,
-                computed.change.rivers.as_ref(),
-                computed.change.waters.as_ref(),
-            )?;
+            let surface = self.terrain_tiles(view)?;
             computed
                 .terrain_preview
                 .get_or_insert_with(|| TerrainPreview {
@@ -318,7 +314,6 @@ impl AtlasApplication {
     fn surface_platform_ids(
         &self,
         b: Bounds,
-        rivers: Option<&crate::atlas::rivers::RiverDelta>,
         platform_cache: &mut std::collections::HashMap<String, Platform>,
     ) -> Result<Vec<String>> {
         let mut tile_platform_ids = vec![];
@@ -338,7 +333,7 @@ impl AtlasApplication {
                     .collect();
                 let hb = bounds(rings.iter().flatten().copied());
                 let mut g = grid(&self.db, expand(hb, STEP))?;
-                let house_rivers = super::river_store::overlay(&self.db, expand(hb, STEP), rivers)?;
+                let house_rivers = super::river_store::local(&self.db, expand(hb, STEP))?;
                 let house_surface = crate::atlas::rivers::RiverSurface::new(&house_rivers);
                 if !house_rivers.is_empty() {
                     for y in ((hb[1] - STEP) / STEP).floor() as i32
@@ -378,9 +373,9 @@ impl AtlasApplication {
         let mut heights = vec![];
         for p in args.points {
             let b = [p[0] - STEP, p[1] - STEP, p[0] + STEP, p[1] + STEP];
-            let rivers = super::river_store::overlay(&self.db, b, None)?;
+            let rivers = super::river_store::local(&self.db, b)?;
             let river = crate::atlas::rivers::RiverSurface::new(&rivers);
-            let ids = self.surface_platform_ids(b, None, &mut cache)?;
+            let ids = self.surface_platform_ids(b, &mut cache)?;
             let mut platforms = PreparedPlatforms::new(ids.iter().map(|id| &cache[id]).collect());
             heights.push(platforms.at(river.at(p, sampler.height(p)?).0, p));
         }
@@ -390,14 +385,6 @@ impl AtlasApplication {
         })
     }
     pub(in crate::atlas) fn terrain_tiles(&self, args: TerrainArgs) -> Result<TerrainResponse> {
-        self.surface_tiles(args, None, None)
-    }
-    fn surface_tiles(
-        &self,
-        args: TerrainArgs,
-        rivers: Option<&crate::atlas::rivers::RiverDelta>,
-        waters: Option<&crate::atlas::water::WaterDelta>,
-    ) -> Result<TerrainResponse> {
         ensure(
             args.level <= 21 && args.tiles.len() <= 64,
             "Ungültige Höhenkacheln",
@@ -432,14 +419,14 @@ impl AtlasApplication {
                 (x + 1) as f64 * width,
                 (y + 1) as f64 * width,
             ];
-            let river_views = if args.level > 5 && rivers.is_none() {
+            let river_views = if args.level > 5 {
                 super::river_store::overview(&self.db, expand(b, 2. * step), 8. / step)?
             } else {
-                super::river_store::overlay(&self.db, expand(b, 2. * step), rivers)?
+                super::river_store::local(&self.db, expand(b, 2. * step))?
             };
             let river_surface = crate::atlas::rivers::RiverSurface::new(&river_views);
             let tile_platform_ids = if args.level <= 5 {
-                self.surface_platform_ids(expand(b, 2. * step), rivers, &mut platform_cache)?
+                self.surface_platform_ids(expand(b, 2. * step), &mut platform_cache)?
             } else {
                 vec![]
             };
@@ -463,10 +450,10 @@ impl AtlasApplication {
                     heights.push(platforms.at(river_surface.at(p, sampler.height(p)?).0, p));
                 }
             }
-            let waters = if args.level > 5 && waters.is_none() {
+            let waters = if args.level > 5 {
                 super::water_store::overview(&self.db, expand(b, width / f64::from(pixels)), step)?
             } else {
-                super::water_store::overlay(&self.db, expand(b, width / f64::from(pixels)), waters)?
+                super::water_store::local(&self.db, expand(b, width / f64::from(pixels)))?
             };
             for w in &waters {
                 water_points += crate::atlas::water::point_count(w);

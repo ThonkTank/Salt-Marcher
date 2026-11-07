@@ -7,7 +7,7 @@ use crate::atlas::model::{
     ValidPreviewWire, Version,
 };
 use crate::atlas::plans::safe_proposed;
-use crate::atlas::{operations, Result};
+use crate::atlas::{operations, Intent, Result};
 pub(in crate::atlas) mod commands;
 use commands::Request;
 pub(in crate::atlas) mod map_tiles;
@@ -84,6 +84,21 @@ impl AtlasApplication {
         }
         self.trim_water(&mut computed)?;
         self.refresh_rivers(&mut computed)?;
+        // Only surface requests need the derived candidate in SQLite. The transaction
+        // restores authors and spatial indexes together, including on read failure.
+        if matches!(
+            &input.intent,
+            Intent::TerrainStroke { view: Some(_), .. }
+                | Intent::WaterStroke { view: Some(_), .. }
+                | Intent::RiverEdit { view: Some(_), .. }
+        ) {
+            if let Some(delta) = &computed.change.waters {
+                water_store::apply(&surface_tx, delta, true)?;
+            }
+            if let Some(delta) = &computed.change.rivers {
+                river_store::apply(&surface_tx, delta, true)?;
+            }
+        }
         self.prepare_surface_preview(&input.intent, &mut computed, None)?;
         surface_tx
             .rollback()

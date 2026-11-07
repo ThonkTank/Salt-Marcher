@@ -285,3 +285,114 @@ fn direct_sections_restore_river_profiles_in_one_history_action() {
     history(&mut a, true);
     assert_eq!(views(&a), after);
 }
+
+#[test]
+fn river_overview_preview_matches_fresh_surface_and_rolls_back_indexes() {
+    for level in [5, 6] {
+        let mut a = AtlasApplication::new().unwrap();
+        let view = json!({"level":level,"tiles":[[0,0]],"pixels":32});
+        let original = a.request("terrainTiles", view.clone()).unwrap()["tiles"].clone();
+        let status = serde_json::to_value(a.status()).unwrap();
+        let mut intent = create(json!([[300, 320], [400, 320]]));
+        intent["view"] = view.clone();
+        let preview = request_edit(&mut a, "preview", intent.clone());
+        let mut invalid_view = intent.clone();
+        invalid_view["view"]["pixels"] = json!(31);
+        assert_eq!(
+            request_edit(&mut a, "preview", invalid_view)["valid"],
+            false
+        );
+        assert!(views(&a).is_empty());
+        assert_eq!(serde_json::to_value(a.status()).unwrap(), status);
+        assert_eq!(
+            a.request("terrainTiles", view.clone()).unwrap()["tiles"],
+            original
+        );
+        for table in ["river_spatial", "river_nodes"] {
+            assert_eq!(
+                a.db.query_row(&format!("SELECT count(*) FROM {table}"), [], |r| r
+                    .get::<_, i64>(0))
+                    .unwrap(),
+                0
+            );
+        }
+        let committed = request_edit(&mut a, "commit", intent);
+        let fresh = a.request("terrainTiles", view.clone()).unwrap()["tiles"].clone();
+        assert_eq!(
+            preview["terrain"]["surface"]["tiles"], fresh,
+            "level {level}"
+        );
+        assert_eq!(committed["terrain"]["surface"]["tiles"], fresh);
+        if level == 6 {
+            assert_eq!(fresh, original);
+        } else {
+            assert_ne!(fresh, original);
+        }
+        history(&mut a, false);
+        assert_eq!(
+            a.request("terrainTiles", view.clone()).unwrap()["tiles"],
+            original
+        );
+        history(&mut a, true);
+        assert_eq!(a.request("terrainTiles", view).unwrap()["tiles"], fresh);
+    }
+}
+
+#[test]
+fn long_river_surface_uses_same_overview_for_preview_sections_and_delete() {
+    let mut a = AtlasApplication::new().unwrap();
+    let view = json!({"level":6,"tiles":[[0,0]],"pixels":32});
+    let points: Vec<_> = (0..201)
+        .map(|i| [320. + i as f64 * 20., 320. + (i as f64 / 10.).sin() * 100.])
+        .collect();
+    let mut intent = create(json!(points));
+    intent["action"]["automatic"] = json!(false);
+    intent["view"] = view.clone();
+    let preview = request_edit(&mut a, "preview", intent.clone());
+    request_edit(&mut a, "commit", intent);
+    let before = river_store::local(&a.db, [0., 0., 10240., 10240.]).unwrap();
+    assert!(before[0].samples.len() > 128);
+    assert_eq!(
+        river_store::overview(&a.db, [0., 0., 10240., 10240.], 8. / 320.).unwrap()[0]
+            .samples
+            .len(),
+        128
+    );
+    assert_eq!(
+        preview["terrain"]["surface"]["tiles"],
+        a.request("terrainTiles", view.clone()).unwrap()["tiles"]
+    );
+    let reply = a.request("beginTerrainStroke", json!({"version":a.status(),"strokeId":"overview-river","brush":{"resolution":0,"mode":"lower","radius":20,"amount":10,"strength":1,"target":10,"points":[[320,320]]},"view":view})).unwrap();
+    assert_eq!(
+        reply["surface"]["tiles"],
+        a.request("terrainTiles", view.clone()).unwrap()["tiles"]
+    );
+    let reply = a.request("appendTerrainStroke", json!({"sessionId":a.session,"strokeId":"overview-river","sequence":1,"points":[[340,330]],"view":view})).unwrap();
+    let fresh = a.request("terrainTiles", view.clone()).unwrap()["tiles"].clone();
+    assert_eq!(reply["surface"]["tiles"], fresh);
+    let after = river_store::local(&a.db, [0., 0., 10240., 10240.]).unwrap();
+    assert_ne!(before, after);
+    assert_eq!(before[0].river, after[0].river);
+    history(&mut a, false);
+    assert_eq!(
+        river_store::local(&a.db, [0., 0., 10240., 10240.]).unwrap(),
+        before
+    );
+    history(&mut a, true);
+    assert_eq!(
+        a.request("terrainTiles", view.clone()).unwrap()["tiles"],
+        fresh
+    );
+    let delete =
+        json!({"type":"riverEdit","view":view,"action":{"kind":"delete","id":after[0].river.id}});
+    let preview = request_edit(&mut a, "preview", delete.clone());
+    assert_eq!(
+        river_store::local(&a.db, [0., 0., 10240., 10240.]).unwrap(),
+        after
+    );
+    request_edit(&mut a, "commit", delete);
+    assert_eq!(
+        preview["terrain"]["surface"]["tiles"],
+        a.request("terrainTiles", view).unwrap()["tiles"]
+    );
+}
