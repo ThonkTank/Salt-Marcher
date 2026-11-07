@@ -109,6 +109,9 @@ export class WireError extends Error {
     super(message);
     this.name = "WireError";
   }
+  override toString() {
+    return this.message;
+  }
 }
 export function normalizeWireError(error: unknown): Error {
   if (error instanceof WireError) return error;

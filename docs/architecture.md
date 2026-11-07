@@ -232,6 +232,10 @@ behalten ihre exakten Weltpositionen und kanonischen Höhen. Flussbetten und
 Hausplattformen werden anschließend unverändert pro Knoten angewendet.
 Es entsteht kein zusätzlicher Rastercache.
 
+Leere `terrain_tiles`-Anfragen validieren weiterhin Stufe, Rasterbudget und
+Höhenlinienabstand, liefern danach aber nur Status und leere Kachelliste. Die
+Versionsprüfung des Präsentationscaches benötigt dafür weder Sampler noch
+Autoren-/Blockindexzugriffe; nötige Indexpflege erfolgt beim nächsten Sampling.
 `terrain_tiles` und der versionierte Punktread `surfacePoints` teilen Sampler,
 Flussauswertung und Plattformaufbau. `SurfacePointReader` hält eine laufende
 Anfrage und nur den neuesten wartenden Cursorpunkt. Überholte Antworten werden

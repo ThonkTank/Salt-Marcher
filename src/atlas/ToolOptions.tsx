@@ -448,9 +448,14 @@ export function ToolOptions({
 }
 
 const brushNumber = new Intl.NumberFormat("de-DE", {
-  maximumFractionDigits: 2,
-  useGrouping: false,
+  maximumSignificantDigits: 3,
 });
+function brushDistance(feet: number) {
+  const meters = feet * metres;
+  return meters >= 1000
+    ? `${brushNumber.format(meters / 1000)} km`
+    : `${brushNumber.format(meters)} m`;
+}
 function TerrainBrushInfo({
   info,
 }: {
@@ -460,8 +465,8 @@ function TerrainBrushInfo({
   return (
     <>
       <small>
-        Durchmesser: {brushNumber.format(info.diameter)} Fuß · Höhenraster:{" "}
-        {brushNumber.format(info.spacing)} Fuß
+        Durchmesser: {brushDistance(info.diameter)} · Höhenraster:{" "}
+        {brushDistance(info.spacing)}
       </small>
       {info.subgrid && (
         <small>

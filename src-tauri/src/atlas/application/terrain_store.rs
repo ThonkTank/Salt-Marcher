@@ -232,7 +232,7 @@ impl AtlasApplication {
                         .filter(|(&(x, y), &z)| terrain::at(&old, x, y) != z)
                         .count()
                         <= terrain::LIMIT,
-                    "Höchstens 100.000 Höhenpunkte je Aktion",
+                    "Höchstens 100.000 Höhenpunkte je Aktion. Pinsel verkleinern oder kürzere Striche malen.",
                 )?;
                 for (&(x, y), &z) in &next {
                     let prior = terrain::at(&old, x, y);
@@ -401,6 +401,14 @@ impl AtlasApplication {
                 && usize::from(pixels).pow(2) * args.tiles.len() <= 64 * 512 * 512,
             "Ungültiges Geländerasterbudget",
         )?;
+        // Empty requests verify the document version without sampling terrain.
+        if args.tiles.is_empty() {
+            return Ok(TerrainResponse {
+                status: self.status(),
+                level: args.level,
+                tiles: vec![],
+            });
+        }
         let mut sampler = super::terrain_blocks::Sampler::new(&self.db)?;
         let step = STEP * (1u32 << args.level) as f64;
         let width = 32.0 * step;
