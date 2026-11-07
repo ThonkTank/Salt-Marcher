@@ -400,7 +400,8 @@ seinen Unterwuchs; ein einzelner Felsen im Wald ist nicht durch eine zusätzlich
 Felsgebiet-Ebene modelliert. Autorendaten bleiben beim Zoomen unverändert.
 
 Nah erscheinen deterministisch aus Weltkoordinaten erzeugte Bäume und andere
-Symbole. Mehr Dichte ergänzt stabile Kandidaten statt vorhandene Positionen neu
+Symbole. Baumkronen erscheinen als unregelmäßige, fein konturierte Federzeichnungen
+mit gedeckten Grünfarben; Blattdetails folgen der sichtbaren Größe. Mehr Dichte ergänzt stabile Kandidaten statt vorhandene Positionen neu
 zu würfeln. Mittlere Maßstäbe zeigen Flächen mit sparsamen kartographischen
 Signaturen aus kleinen Baum-, Busch-, Gras- oder Steingruppen; ferne Maßstäbe
 ausschließlich Flächenfarben. Übersichten entstehen

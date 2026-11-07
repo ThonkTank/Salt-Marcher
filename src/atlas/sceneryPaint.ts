@@ -35,12 +35,11 @@ export function paintScenery(
       paintSignature(c, scenery.biome, a.variant, highlight);
     } else if (a.size * scale < 2) {
       circle(0, 0, 0.85, scenery.biome === "rocks" ? "#929083" : "#688348");
-    } else if (scenery.biome === "forest" || scenery.biome === "scrub") {
+    } else if (scenery.biome === "forest") {
+      paintTree(c, a.variant, a.size * scale, highlight);
+    } else if (scenery.biome === "scrub") {
       circle(0.12, 0.16, 0.78, "#293d3038");
-      const tones =
-        scenery.biome === "forest"
-          ? ["#395b3f", "#426b48", "#4d764c", "#3e6654"]
-          : ["#697b44", "#7c8c50", "#5b7547", "#87915d"];
+      const tones = ["#697b44", "#7c8c50", "#5b7547", "#87915d"];
       circle(0, 0, 0.82, tones[a.variant]);
       for (let i = 0; i < 7; i++) {
         const t = (i * Math.PI * 2) / 7;
@@ -51,12 +50,7 @@ export function paintScenery(
           tones[(a.variant + (i % 2)) % 4],
         );
       }
-      circle(
-        -0.18,
-        -0.2,
-        0.44,
-        scenery.biome === "forest" ? "#699159" : "#99a86c",
-      );
+      circle(-0.18, -0.2, 0.44, "#99a86c");
       c.strokeStyle = "#c4d59960";
       c.lineWidth = 0.045;
       c.beginPath();
@@ -176,4 +170,114 @@ function paintSignature(
       c.stroke();
     }
   }
+}
+
+// Four original pen-and-wash crowns. These bounded drawing paths are shared by
+// all trees; camera movement never regenerates foliage or changes a tree's shape.
+type TreeDrawing = { crown: Path2D; folds: Path2D; hatch: Path2D };
+const treeDrawings: TreeDrawing[] = [];
+function treeDrawing(variant: number): TreeDrawing {
+  if (treeDrawings[variant]) return treeDrawings[variant];
+  const crown = new Path2D(),
+    folds = new Path2D(),
+    hatch = new Path2D();
+  const noise = (n: number) => {
+    const v = Math.sin(n * 127.1 + variant * 311.7) * 43758.5453;
+    return v - Math.floor(v);
+  };
+  const count = 38;
+  const point = (i: number, inset = 0) => {
+    const t = (i / count) * Math.PI * 2;
+    const r =
+      0.78 +
+      0.075 * Math.sin(t * 3 + variant) +
+      0.06 * Math.cos(t * 5 - variant) +
+      noise(i % count) * 0.08 -
+      inset;
+    return [
+      Math.cos(t) * r * (variant === 1 ? 0.85 : 1),
+      Math.sin(t) * r * (variant === 2 ? 0.86 : 1),
+    ] as const;
+  };
+  crown.moveTo(...point(0));
+  for (let i = 0; i < count; i++) {
+    const a = point(i),
+      b = point((i + 1) % count);
+    const t = ((i + 0.5) / count) * Math.PI * 2;
+    const bulge = 0.075 + noise(i + 50) * 0.07;
+    crown.quadraticCurveTo(
+      (a[0] + b[0]) / 2 + Math.cos(t) * bulge,
+      (a[1] + b[1]) / 2 + Math.sin(t) * bulge,
+      ...b,
+    );
+  }
+  crown.closePath();
+  // Broken, asymmetric interior boughs keep the crown readable as one tree.
+  for (let j = 0; j < 6; j++) {
+    const t = j * 2.399 + variant * 0.4;
+    const cx = Math.cos(t) * (j === 0 ? 0.06 : 0.36);
+    const cy = Math.sin(t) * (j === 0 ? 0.06 : 0.36);
+    const r = 0.22 + noise(j + 100) * 0.08;
+    const start = t + 0.3;
+    folds.moveTo(cx + Math.cos(start) * r, cy + Math.sin(start) * r);
+    for (let k = 0; k < 5; k++) {
+      const a = start + k * 0.48,
+        b = a + 0.48;
+      folds.quadraticCurveTo(
+        cx + Math.cos((a + b) / 2) * (r + 0.08),
+        cy + Math.sin((a + b) / 2) * (r + 0.08),
+        cx + Math.cos(b) * r,
+        cy + Math.sin(b) * r,
+      );
+    }
+  }
+  for (let i = 0; i < 24; i++) {
+    const p = point(i, 0.055 + noise(i + 200) * 0.04);
+    hatch.moveTo(...p);
+    hatch.lineTo(p[0] - 0.035, p[1] - 0.065 - noise(i + 250) * 0.04);
+  }
+  return (treeDrawings[variant] = { crown, folds, hatch });
+}
+function paintTree(
+  c: CanvasRenderingContext2D,
+  variant: number,
+  radiusPixels: number,
+  highlight?: string,
+) {
+  const { crown, folds, hatch } = treeDrawing(variant);
+  c.lineJoin = "round";
+  c.lineCap = "round";
+  c.save();
+  c.translate(0.09, 0.12);
+  c.fillStyle = "#30382c25";
+  c.fill(crown);
+  c.restore();
+  c.fillStyle =
+    highlight ?? ["#aab58a", "#b7bd96", "#9faa82", "#b0b696"][variant];
+  c.fill(crown);
+  c.strokeStyle = highlight ?? "#49513d";
+  c.lineWidth = Math.max(0.018, Math.min(0.045, 0.7 / radiusPixels));
+  c.stroke(crown);
+  if (radiusPixels < 7) return;
+  c.save();
+  c.clip(crown);
+  // A broad translucent wash unifies the crown without glossy circular spots.
+  c.beginPath();
+  c.moveTo(-0.9, 0.4);
+  c.bezierCurveTo(-0.4, 0.72, 0.65, 0.2, 0.48, -0.8);
+  c.lineTo(1, -0.8);
+  c.lineTo(1, 1);
+  c.lineTo(-0.9, 1);
+  c.closePath();
+  c.fillStyle = "#45543822";
+  c.fill();
+  c.strokeStyle = highlight ?? "#535d446f";
+  c.lineWidth *= 0.8;
+  c.stroke(folds);
+  if (radiusPixels >= 24) {
+    c.strokeStyle = highlight ?? "#50583f75";
+    c.lineWidth *= 0.75;
+    c.stroke(hatch);
+  }
+  c.restore();
 }

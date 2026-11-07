@@ -272,7 +272,11 @@ CSS-Pixeln pro Fuß überblendet er mittlere und nahe Symbole; beide teilen sich
 das Kandidatenbudget, der Kachelanfrager erhält bis zum Ende den groben Kronenrand.
 Mittlere Signaturen verwenden im vorhandenen Vektorpainter aufrechte Gruppen
 aus drei Baum-, Busch-, Gras- oder Steinzeichen ohne gerichtete Glanzlichter.
-Nahe Symbole und bestehende dekorative Objekte behalten ihre Detailzeichnung.
+Nahe Waldbäume verwenden vier eigene, unregelmäßige Federzeichnungs-Kronen mit
+gebrochenen inneren Blattkonturen und gedeckter Lasur. Der Vektorpainter hält
+höchstens vier feste Path2D-Zeichnungen; Pan und Zoom erzeugen keine neue
+Kronengeometrie. Innere Konturen und Schraffur werden erst ab lesbarer
+Bildschirmgröße gezeichnet. Bestehende dekorative Waldbäume nutzen denselben Painter.
 Detailkandidaten hängen nur
 von Weltkoordinaten ab und werden ausschließlich für den sichtbaren Ausschnitt
 innerhalb eines festen Budgets erzeugt. Autoren enthalten keine generierten Bäume.

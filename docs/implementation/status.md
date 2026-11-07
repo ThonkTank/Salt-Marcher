@@ -12,19 +12,23 @@ Boden-/Felsfarbe bleibt unabhängig. Bestehender Worker, Rasterstore, Queue und
 Präsentationscache besitzen weiterhin die Arbeit; Autoren enthalten keine Bäume.
 
 Fern erscheinen Flächenfarben, mittel aufrechte Gruppen aus drei einfachen Baum-,
-Busch-, Gras- oder Steinzeichen, nah die bisherigen Detailsymbole. Der gemeinsame
+Busch-, Gras- oder Steinzeichen. Nahe Waldbäume sind jetzt eigene Federzeichnungen:
+vier unregelmäßige Kronen, gebrochene Blattkonturen, gedeckte Grünlasuren und
+größenabhängige Schraffur, orientiert an den offiziellen Canvas-of-Kings-Bildern.
+Vier feste Zeichenpfade werden geteilt; Autoren und Verteilung bleiben erhalten. Der gemeinsame
 Kandidatenrahmen umfasst auch die Überblendung zwischen 0,35 und 0,5 CSS-Pixeln
 pro Fuß. Rasterziele und Clips in Gerätekoordinaten vermeiden die gefundenen
 nativen Kachelnähte. Wasser maskiert Bestand, Schnee bleibt sichtbar.
 
-Für die neuen Signaturen bestehen 25 Präsentationstests, Typen und Format,
-vier Landschafts-Browserfälle sowie zwei verschärfte Sichtbarkeitstests und ein
-abschließender Welt→Mittel→Nah→Welt-Fall. Dieser zentriert den gemalten Bereich
-und prüft Bildschirmgrenzen; zuvor konnten transparente Pixel außerhalb des
-Bildes fälschlich als veränderte Darstellung gelten. Die mittlere Aufnahme zeigt
-jetzt tatsächlich Waldsignaturen. Bildproben aller vier Arten und native Waldansicht
-nach freiem Mausradzoom/Verschieben wurden angesehen; Release-/RPM-Build besteht.
-Belege: `src-tauri/target/diagnostics/landscape-signatures/`.
+Für die Baumüberarbeitung bestehen 25 Präsentationstests und vier Landschafts-
+Browserfälle einschließlich Welt→Mittel→Nah→Welt, History, Datei und Wassermaske.
+Typen, Format sowie frischer Release-/RPM-Build bestehen.
+Die Bildproben aller vier Kronen in vier Maßstäben sowie das vollständige
+Nah-Kartenbild wurden visuell geprüft. Belege:
+`src-tauri/target/diagnostics/landscape-ink-trees/`.
+Eine erneute native Bedienprüfung dieser Kronen steht aus: Der verfügbare
+UI-Zugriff dieser Runde umfasst nur Browser. Frühere native Prüfungen belegen
+noch die alte Baumzeichnung. Das ursprüngliche Benutzertestfenster bleibt unberührt.
 
 Leere Boden-/Landschaftskacheln übertragen keine Pixelnutzlast und erzeugen keine
 Zeichenraster. Vollständig unbenutzte Ebenen überspringen Vererbung und Haloaufbau.

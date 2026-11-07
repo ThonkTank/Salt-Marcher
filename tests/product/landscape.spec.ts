@@ -185,9 +185,15 @@ for (const label of ["Straßenzug", "Welt"])
         expect(anchor.y).toBeGreaterThan(box.y);
         expect(anchor.y).toBeLessThan(box.y + box.height);
         expect(await pixel(page, anchor)).not.toEqual(before);
-        if (view === "Dorf / Stadtteil")
+        if (view === "Dorf / Stadtteil" || view === "Grundstück")
           await page.screenshot({
-            path: test.info().outputPath("landscape-middle.png"),
+            path: test
+              .info()
+              .outputPath(
+                view === "Grundstück"
+                  ? "landscape-near.png"
+                  : "landscape-middle.png",
+              ),
           });
       }
       expect(await pixel(page, await screen(page, [0, 0]))).toEqual(painted);
