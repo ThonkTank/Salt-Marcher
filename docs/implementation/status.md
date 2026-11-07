@@ -58,12 +58,19 @@ Der erneute Release-/RPM-Build besteht; native Bedienung bleibt offen.
 
 ## Integration und offene Abnahmen
 
-Main enthält PR #1450. #1456 bündelt Landschaft und Darstellungsänderungen samt
-Sampler-Fix; seine Gesamt-CI läuft noch, Auto-Merge ist aktiv. #1457 ist in dessen
-Kandidatenbranch integriert. #1458 enthält die separat geprüfte Geometriecache-
-Folgeänderung. Die Höhenfreigabe baut darauf auf. Ältere Kandidaten werden erst
-nach belegter Main-Integration als ersetzt geschlossen. Lokales Grün ersetzt
-keine vollständige CI-Freigabe.
+Main enthält jetzt PR #1456 als `f075508bb`: Landschaft, Darstellungsbegrenzung
+und Sampler-Fix. Der Main-Baum ist identisch mit dem geprüften Kandidaten
+`a0bcf36be`. Dessen vollständige CI besteht: 337 Rust-Librarytests und 32
+Integration-/Adaptertests, fünf absichtlich ignorierte Fälle, 243 Browserfälle,
+Frontendtests, Typen, Transportverträge, Clippy, Format und Release-/RPM-Build.
+
+Der aktuelle Kandidat bündelt die drei Folgefixes: stabile Außengeometrie,
+Höhenbeginn während Ansichtsreads und keine Kartenverschiebung durch gesperrte
+Pinsel. Die Übernahme von Main erforderte ausschließlich die Auflösung des
+Statusdokuments; der Produktcode entspricht unverändert dem lokal geprüften
+Stand. PR #1460 wird direkt gegen Main geprüft. #1458 und #1459 bleiben bis zur
+Integration als ersetzte Vorstufen erhalten. Lokales Grün ersetzt keine
+vollständige CI-Freigabe des neuen Merge-Commits.
 
 Frühere native Prüfungen umfassen Weltmalen, Bodenfarben, Landschaft, Navigation,
 Lichtungen, History und Datei-Rundlauf. Die neueren Zeichnungen und Änderungen
