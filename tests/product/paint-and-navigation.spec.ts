@@ -204,8 +204,12 @@ test("isolated upper roof remains visible after movement while basement stays ou
         { x: p.x - box.x, y: p.y - box.y },
       );
   };
-  expect(await pixel([47.5, 7.5])).toEqual([18, 52, 86]);
-  expect(await pixel([7.5, 7.5])).not.toEqual([18, 52, 86]);
+  // Sample inside a roof face, away from the decorative hip lines. Its blue
+  // authored pigment remains visible under shading and must move unchanged.
+  const roofPixel = await pixel([47.5, 6.25]);
+  expect(roofPixel[2]).toBeGreaterThan(roofPixel[1]);
+  expect(roofPixel[1]).toBeGreaterThan(roofPixel[0]);
+  expect(await pixel([7.5, 6.25])).not.toEqual(roofPixel);
   await selectObject(page, "⌂ Haus 1");
   await dragWorld(page, [47.5, 7.5], [67.5, 7.5]);
   await ready(page);
@@ -214,11 +218,11 @@ test("isolated upper roof remains visible after movement while basement stays ou
       (await scene(page)).objects.find((o) => o.id === house.id),
     )
     .toMatchObject({ transform: { x: 20, y: 0, angle: 0 } });
-  // Selection tint is a separate overlay on the authored roof color.
+  // Selection tint is separate from the shaded roof drawing.
   await clickWorld(page, [100, 100]);
   await ready(page);
-  await expect.poll(() => pixel([67.5, 7.5])).toEqual([18, 52, 86]);
-  expect(await pixel([47.5, 7.5])).not.toEqual([18, 52, 86]);
+  await expect.poll(() => pixel([67.5, 6.25])).toEqual(roofPixel);
+  expect(await pixel([47.5, 6.25])).not.toEqual(roofPixel);
 });
 
 test("whole-house long drag uses one transform candidate, keeps the base fixed and cancels without rectangle allocation", async ({
