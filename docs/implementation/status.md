@@ -6,21 +6,64 @@ Zuständigkeiten, [Produktvertrag](../product-contract.md) Verhalten und Grenzen
 
 ## Integration
 
-Main enthält Landschaft, Darstellungsbegrenzung, Sampler-Fix sowie die Korrekturen
-für Geometriecaches und Eingaben während Ansichtsreads. PR #1461 ist als
-`bd65b88ff` integriert; der Main-Baum entspricht exakt dem geprüften Kandidaten
-`80eb52907`. Beide vollständigen CI-Läufe bestehen: jeweils 337 Rust-Librarytests
-und 32 Integration-/Adaptertests, fünf absichtlich ignorierte Fälle, 246
-Browserfälle, Frontendtests, Typen, Transportverträge, Clippy, Format und
-Release-/RPM-Build.
+Main enthält Landschaft, Darstellungsbegrenzung, Sampler-Fix, stabile
+Geometriecaches und Eingaben während Ansichtsreads. PR #1462 ist als
+`50595d7ff` integriert; der Main-Baum entspricht exakt dem geprüften Kandidaten
+`fd22c2927`. Die vollständige CI besteht: 338 Rust-Librarytests und 32
+Integration-/Adaptertests, fünf absichtlich ignorierte Fälle, 246 Browserfälle,
+Frontendtests, Typen, Transportverträge, Clippy, Format und Release-/RPM-Build.
+Damit sind auch lesbare Pinselmaße, verständliche Grenzmeldungen und der frühe
+Rückweg für leere Höhenkachelanfragen auf Main.
 
-Der Folgekandidat bündelt lesbare Pinselmaße, verständliche Grenzmeldungen und
-den frühen Rückweg für leere Höhenkachelanfragen. Er enthält den identischen
-freigegebenen Main-Baum plus die lokal geprüften Folgeänderungen. Seine
-vollständige Main-CI steht noch aus; lokale Ergebnisse ersetzen diese Freigabe
-nicht. Produktcode und Tests wurden durch die Main-Integration nicht verändert.
+Die ausstehenden Folgeänderungen bauen auf diesem Main-Baum auf: PR #1463
+enthält Kartenschrift und begrenzte Dachdetails; PR #1464 ergänzt die lokale
+Kachelzuordnung für Materialabtastung. Beide enthalten korrigierte Pixelproben
+für schattierte Dächer und Auswahl außerhalb von Beschriftungen. Ihre
+vollständigen CI-Freigaben und Main-Übernahmen stehen noch aus; lokale Ergebnisse
+ersetzen diese Freigaben nicht. Die Main-Integration in den Folgekandidaten
+ändert weder Produktcode noch Tests.
+
+## Gestalterische Richtung
+
+Ziel ist eine stilisierte Fantasykarte: nahe an Canvas of Kings orientierte
+Federzeichnung, mittlere und ferne Ansichten mittelalterlich inspirierte
+Kartografie. Die gemeinsame Serifenschrift für Kartenbeschriftungen ist ein
+erster begrenzter Schritt, keine abgeschlossene Stilüberarbeitung. Objekt-,
+Straßen- und Regionsnamen verwenden dieselbe Definition bei Vermessung und
+Zeichnen. UI-Hinweise behalten ihre Schrift; lokale Font-Fallbacks können je
+Plattform unterschiedlich aussehen. Keine Downloads oder neuen Caches.
+Zwölf bestehende Layouttests, acht Regions-/Präsentationsbrowserfälle, Typen
+und Format bestehen. Regionsnamen in der Weltansicht und separate Zeichenproben
+für kleine Objektnamen wurden in Chromium visuell geprüft. Der frische
+Release-/RPM-Build besteht (7,52 MiB). Belege unter
+`src-tauri/target/diagnostics/map-typography/`. Native Sichtprüfung bleibt offen.
+
+Rechteckige einzelne Hausdächer erhalten nahe Walmdachflächen und Firstlinien,
+mit weicher Zoom-/Größenblende und aus Nordwesten einfallendem Licht. Die
+vorhandene Außenkontur begrenzt die Zeichnung; Innenhöfe und komplexe Grundrisse
+bleiben unverändert. Kein Dachsolver, neuer Cache oder gespeicherter Dachtyp.
+433 Frontendtests, darunter vier neue Kontur-/Darstellungsgrenztests, Typen,
+Format und 24 Browserfälle für Haus-/Raumnavigation, Dachbewegung, Innenraumwechsel
+und Präsentationsstabilität bestehen. Dach-Pixelproben liegen außerhalb von
+Beschriftungen und vergleichen die schattierte Fläche vor/nach Bewegung. Der frische Release-/RPM-Build besteht
+(7,52 MiB). Vorher/Nachher der Nahansicht mit gedrehten
+Gebäuden und anschließender Straßenzugansicht wurde visuell geprüft. Belege:
+`src-tauri/target/diagnostics/roof-review/`. Diese Geometrie ist ein erster
+Dachstil; komplexe Dachformen und die vollständige gestalterische Abnahme bleiben
+offen.
 
 ## Geprüftes Verhalten
+
+Materialabtastung für Boden, Blätterdächer und Landschaftsdetails verwendet eine
+erst bei Bedarf aufgebaute lokale Kachelzuordnung. Der Regressionstest mit
+64 Kacheln und vier Durchläufen einschließlich negativer/fehlender Kacheln
+reduziert gelesene Kachelkoordinaten von 9.605 auf höchstens 128 bei gleichen
+Materialwerten. 39 Raster-/Boden-/Landschafts-/Rendercachetests, Typen und
+Quellformat bestehen. Das ist ein deterministischer Arbeitsnachweis, keine
+Latenzmessung. Zehn Boden-/Landschaftsbrowserfälle bestehen, einschließlich
+Weltansicht mit freiem Zoom, 3840-Pixel-Viewport sowie History und Datei-Rundlauf.
+Der frische Release-/RPM-Build besteht (7,52 MiB).
+Belege: `src-tauri/target/diagnostics/material-tile-index/`.
 
 Wald, Buschland, Wiese und Felsgebiet lassen sich auf allen Außenmaßstäben mit
 Zieldichte, Lichtungen, grober Vererbung und History malen. Boden-/Felsfarbe bleibt

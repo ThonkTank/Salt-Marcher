@@ -68,3 +68,48 @@ it("decodes opaque relief and constant water with a shared pixel halo", () => {
     )[2],
   ).toBeCloseTo(1, 2);
 });
+
+it("indexes material tiles once across repeated boundaries, including negative and absent tiles", () => {
+  let coordinateReads = 0;
+  const tiles = Array.from({ length: 64 }, (_, i) => {
+    const tile = {
+      contentId: `material-index:${i}`,
+      x: (i % 8) - 4,
+      y: Math.floor(i / 8) - 4,
+      heights: [],
+      waters: [],
+      foundationTops: [],
+      raster: {
+        pixels: 128,
+        relief: btoa(String.fromCharCode(178, 185, 151, 255)),
+        materials: btoa(String.fromCharCode(i, 255 - i, 222)),
+        water: btoa("\0"),
+        contourInterval: 5,
+        contours: [],
+      },
+    } as SurfaceTile;
+    return new Proxy(tile, {
+      get(target, key, receiver) {
+        if (key === "x" || key === "y") coordinateReads++;
+        return Reflect.get(target, key, receiver);
+      },
+    });
+  });
+  const sample = prepareMaterialSampler({ level: 0, tiles } as TerrainResponse);
+  expect(coordinateReads).toBe(0); // warm raster draws never need an index
+  for (let pass = 0; pass < 4; pass++)
+    for (let i = 0; i < 64; i++) {
+      const [rock, snow, shade] = sample(
+        ((i % 8) - 4) * 160 + 80,
+        (Math.floor(i / 8) - 4) * 160 + 80,
+      );
+      expect(rock).toBe(i / 255);
+      expect(snow).toBe((255 - i) / 255);
+      expect(shade).toBeCloseTo(1, 2);
+    }
+  expect(sample(-641, -641)).toEqual([0, 0, 1]);
+  expect(sample(640, 640)).toEqual([0, 0, 1]);
+  expect(sample(-640, -640)[0]).toBe(0);
+  expect(sample(-480, -640)[0]).toBe(1 / 255);
+  expect(coordinateReads).toBeLessThanOrEqual(128);
+});

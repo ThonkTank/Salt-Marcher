@@ -78,6 +78,8 @@ export function prepareMaterialSampler(
   const width = 160 * 2 ** view.level;
   let tx = NaN,
     ty = NaN;
+  // Raster cache hits never sample materials, so build only on first use.
+  let tiles: Map<string, SurfaceTile> | undefined;
   let tile: SurfaceTile | undefined;
   let bytes: Uint8Array | undefined;
   return (x, y) => {
@@ -86,7 +88,8 @@ export function prepareMaterialSampler(
     if (nextX !== tx || nextY !== ty) {
       tx = nextX;
       ty = nextY;
-      tile = view.tiles.find((t) => t.x === tx && t.y === ty);
+      tiles ??= new Map(view.tiles.map((t) => [`${t.x},${t.y}`, t]));
+      tile = tiles.get(`${tx},${ty}`);
       bytes = tile?.raster ? entry(tile).materials : undefined;
     }
     if (!tile?.raster || !bytes) return [0, 0, 1];

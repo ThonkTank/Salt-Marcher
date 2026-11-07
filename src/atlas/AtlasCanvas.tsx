@@ -1,3 +1,4 @@
+import { mapLabelFont } from "./mapTypography";
 import { CanvasPaintTracker, type CanvasPaintState } from "./canvasPaintState";
 import { useDevicePixelRatio } from "./useDevicePixelRatio";
 import { SurfacePointReader } from "./surfacePointReader";
@@ -337,7 +338,7 @@ export function AtlasCanvas(p: Props) {
       if (p.presentation) {
         c.save();
         c.setTransform(paintDpr, 0, 0, paintDpr, 0, 0);
-        c.font = "13px system-ui, sans-serif";
+        c.font = mapLabelFont();
         const grips = [...(p.parcelOverlay?.handles.map((h) => h.point) ?? [])];
         const selected =
           p.draft ??
@@ -362,7 +363,7 @@ export function AtlasCanvas(p: Props) {
           p.size.height,
           p.regionMarkerRanks,
         );
-        c.font = "13px system-ui, sans-serif";
+        c.font = mapLabelFont();
         const { labels, regions: regionText } = layoutMapLabels(
           scene.features,
           p.camera,

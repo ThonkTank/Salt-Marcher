@@ -1,3 +1,4 @@
+import { mapLabelFont } from "./mapTypography";
 import type { RegionName } from "./regionView";
 import type { LodDecision } from "./lod";
 import type { MapFeature } from "./generated/MapFeature";
@@ -323,7 +324,7 @@ export function layoutLabels(
 }
 export function paintLabels(c: CanvasRenderingContext2D, labels: MapLabel[]) {
   c.save();
-  c.font = "13px system-ui, sans-serif";
+  c.font = mapLabelFont();
   c.textAlign = "center";
   c.textBaseline = "middle";
   c.lineJoin = "round";

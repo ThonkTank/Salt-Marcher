@@ -1,3 +1,4 @@
+import { mapLabelFont } from "./mapTypography";
 import { containsPolygon } from "./model";
 import type { Region } from "./generated/Region";
 import type { RegionResponse } from "./generated/RegionResponse";
@@ -173,7 +174,7 @@ export function regionNameCandidates(
       (marker ? anchorY + 5 : y + size / 2 + 4) > height - 4
     )
       continue;
-    c.font = `${size}px system-ui, sans-serif`;
+    c.font = mapLabelFont(size);
     let name = r.name;
     while (name.length > 1 && c.measureText(name).width > 300)
       name = name.slice(0, -2) + "…";
@@ -242,7 +243,7 @@ export function paintRegionNames(
   c.textBaseline = "middle";
   c.lineJoin = "round";
   for (const n of names) {
-    c.font = `${n.size}px system-ui, sans-serif`;
+    c.font = mapLabelFont(n.size);
     c.lineWidth = 4;
     c.strokeStyle = "#f8f3e6";
     c.strokeText(n.name, n.x, n.y);

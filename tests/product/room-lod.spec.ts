@@ -130,7 +130,8 @@ test("named Raum keeps exterior tools and explicit owner entry/leave preserves c
           ).data,
         ];
       },
-      [cx - 3.5, cy] as [number, number],
+      // Stay clear of the centered name and its opaque text halo.
+      [cx - 3.5, cy - 1.5] as [number, number],
     );
   const unselectedRoof = await selectedRoofPixel();
   await selectObject(page, "⌂ Haus 1");
