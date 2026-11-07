@@ -47,6 +47,15 @@ Navigations-Browserfälle bestehen einschließlich des neuen Tests, unverändert
 Kamera, History, Weltzoom, runder/kräuseliger Küsten, Fehlererholung und Abbruch.
 Der frische Release-/RPM-Build besteht ebenfalls (7,52 MiB).
 
+Die Übersicht behandelt auch bei gesperrten Malwerkzeugen linkes Ziehen nicht
+mehr als Kartenverschiebung. Fünf Regressionen reproduzierten zuvor dieses
+Fehlverhalten; sie prüfen nun alle Malwerkzeuge sowie weiterhin verfügbare
+Navigation per mittlerer Taste und Leertaste. Alle 426 Frontendtests und Typen
+bestehen. Vier Browserfälle prüfen ausstehende Begin-/Append-Antworten,
+Zeichnen während des Ladens sowie einen zweiten Strich während des Abschlusses.
+Der Beginn eines neuen Strichs während ausstehender Writes bleibt gesperrt.
+Der erneute Release-/RPM-Build besteht; native Bedienung bleibt offen.
+
 ## Integration und offene Abnahmen
 
 Main enthält PR #1450. #1456 bündelt Landschaft und Darstellungsänderungen samt
@@ -73,4 +82,4 @@ und Assetimporte bleiben Folgeumfang der Landschaftsdeckung.
 Belege unter `src-tauri/target/diagnostics/`: `landscape-canopy/`,
 `landscape-capacity/`, `compact-empty-ground/`, `terrain-visibility/`,
 `city-density-visibility/`, `coarse-flat-proof/`, `landscape-main-integration/`,
-`stable-exterior-geometry/` und `terrain-view-load/`.
+`stable-exterior-geometry/`, `terrain-view-load/` und `blocked-brush-navigation/`.

@@ -879,7 +879,10 @@ exakte Ausschnitte mit mehr als 5.000 Objekten verlangen weiteres Hineinzoomen;
 es gibt keine still gekürzte Bearbeitungsszene.
 
 In der Übersicht verschiebt Ziehen mit der linken Taste im Auswahlwerkzeug
-auf leerer Karte die Ansicht. Normale, durch Breiten- oder Größenschwelle
+auf leerer Karte die Ansicht. Ein momentan gesperrter Höhen-, Boden-, Gewässer-,
+Landschafts- oder Regionspinsel deutet linkes Ziehen nicht als Verschieben um.
+Navigation mit mittlerer Maustaste oder Leertaste bleibt möglich.
+Normale, durch Breiten- oder Größenschwelle
 verborgene Straßen sind keine Auswahlziele und fangen weder dieses Verschieben
 noch den freien Doppelklick-Zoom ab. Eine ausgewählte Straße mit vorhandenem
 exaktem Header bleibt auch unter diesen Schwellen sichtbar und treffbar;

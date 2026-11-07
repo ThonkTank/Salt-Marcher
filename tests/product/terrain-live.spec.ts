@@ -458,3 +458,41 @@ test("height drawing starts during a held world view load without panning", asyn
   await settled(page);
   expect((await status(page)).canUndo).toBe(false);
 });
+
+test("blocked height stroke does not pan while the previous stroke finishes", async ({
+  page,
+}) => {
+  await page.goto(url);
+  await ready(page);
+  await page.getByRole("button", { name: "Höhen", exact: true }).click();
+  await page.getByLabel("Ansichtsmaßstab").selectOption({ label: "Welt" });
+  await paintedReady(page);
+  const canvas = page.getByTestId("atlas-canvas");
+  const box = (await canvas.boundingBox())!;
+  const camera = () =>
+    canvas.evaluate((c: HTMLCanvasElement) => {
+      const m = c.getContext("2d")!.getTransform();
+      return [m.a, m.e, m.f];
+    });
+  const before = await camera();
+  await holdResponse(page, "beginTerrainStroke");
+  await page.mouse.move(box.x + box.width * 0.45, box.y + box.height * 0.5);
+  await page.mouse.down();
+  await page.mouse.move(box.x + box.width * 0.5, box.y + box.height * 0.5, {
+    steps: 4,
+  });
+  await page.mouse.up();
+  await expect.poll(() => page.evaluate(() => window.atlasHeld)).toBe(true);
+  await page.mouse.down();
+  await page.mouse.move(box.x + box.width * 0.6, box.y + box.height * 0.5, {
+    steps: 4,
+  });
+  await page.mouse.up();
+  expect(await camera()).toEqual(before);
+  expect(await calls(page, "beginTerrainStroke")).toHaveLength(1);
+  await releaseResponse(page);
+  await settled(page);
+  await page.getByRole("button", { name: "Rückgängig", exact: true }).click();
+  await settled(page);
+  expect((await status(page)).canUndo).toBe(false);
+});
