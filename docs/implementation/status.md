@@ -40,8 +40,9 @@ mit weicher Zoom-/Größenblende und aus Nordwesten einfallendem Licht. Die
 vorhandene Außenkontur begrenzt die Zeichnung; Innenhöfe und komplexe Grundrisse
 bleiben unverändert. Kein Dachsolver, neuer Cache oder gespeicherter Dachtyp.
 433 Frontendtests, darunter vier neue Kontur-/Darstellungsgrenztests, Typen,
-Format und elf Browserfälle für Hausnavigation, Innenraumwechsel und
-Präsentationsstabilität bestehen. Der frische Release-/RPM-Build besteht
+Format und 24 Browserfälle für Haus-/Raumnavigation, Dachbewegung, Innenraumwechsel
+und Präsentationsstabilität bestehen. Dach-Pixelproben liegen außerhalb von
+Beschriftungen und vergleichen die schattierte Fläche vor/nach Bewegung. Der frische Release-/RPM-Build besteht
 (7,52 MiB). Vorher/Nachher der Nahansicht mit gedrehten
 Gebäuden und anschließender Straßenzugansicht wurde visuell geprüft. Belege:
 `src-tauri/target/diagnostics/roof-review/`. Diese Geometrie ist ein erster
