@@ -403,7 +403,9 @@ Felsgebiet-Ebene modelliert. Autorendaten bleiben beim Zoomen unverändert.
 
 Nah erscheinen deterministisch aus Weltkoordinaten erzeugte Bäume und andere
 Symbole. Baumkronen erscheinen als unregelmäßige, fein konturierte Federzeichnungen
-mit gedeckten Grünfarben; Blattdetails folgen der sichtbaren Größe. Mehr Dichte ergänzt stabile Kandidaten statt vorhandene Positionen neu
+mit gedeckten Grünfarben; Blattdetails folgen der sichtbaren Größe. Dichter
+Bestand bildet auch nahe überlappende Kronengruppen, lockerer Bestand behält
+sichtbare Lücken. Mehr Dichte ergänzt stabile Kandidaten statt vorhandene Positionen neu
 zu würfeln. Mittlere Maßstäbe zeigen Wald als zusammenhängende Blätterdächer:
 Die gemalte Zieldichte bestimmt sichtbare Lücken und den Kronenschluss. Lokale
 Lichtungen bleiben erhalten. Buschland, Wiese und Felsgebiet verwenden sparsame

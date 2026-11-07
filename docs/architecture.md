@@ -305,7 +305,9 @@ aus drei Zeichen im Vektorpainter.
 Nahe Waldbäume verwenden vier eigene, unregelmäßige Federzeichnungs-Kronen mit
 gebrochenen inneren Blattkonturen und gedeckter Lasur. Der Vektorpainter hält
 höchstens vier feste Path2D-Zeichnungen; Pan und Zoom erzeugen keine neue
-Kronengeometrie. Innere Konturen und Schraffur werden erst ab lesbarer
+Kronengeometrie. Nahe Waldkronen verwenden einen nominalen Größenfaktor von
+24 Fuß bei unverändertem 32-Fuß-Kandidatenabstand. Größenvariation und Zeichenrand
+erfordern einen 35-Fuß-Suchrand; Kachelanfrage, Budget und Projektion teilen ihn. Innere Konturen und Schraffur werden erst ab lesbarer
 Bildschirmgröße gezeichnet. Bestehende dekorative Waldbäume nutzen denselben Painter.
 Detailkandidaten hängen nur
 von Weltkoordinaten ab und werden ausschließlich für den sichtbaren Ausschnitt

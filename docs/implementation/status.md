@@ -13,8 +13,13 @@ CI-geprüften Kandidaten `c7486a32b`. Damit sind auch die Änderungen aus #1463 
 
 Der aktuelle Folgekandidat ergänzt Terrainpfade im vorhandenen Rastercache und
 erhält den Weltmittelpunkt beim Öffnen von Werkzeugleisten und bei Fensterresizes.
+Die Kamerakorrektur liegt in PR #1466 mit laufender CI und automatischer
+Main-Übernahme. Der darauf aufbauende Waldkandidat vergrößert nahe Kronen bei
+gleichem Kandidatenabstand und berücksichtigt deren größeren sichtbaren Rand.
 Seine Main-Abstammung berücksichtigt die bereits integrierten Änderungen.
 Vollständige CI-Freigabe und Main-Übernahme dieses Folgekandidaten stehen aus.
+Zuerst #1466 integrieren; danach `codex/near-forest-canopy` auf den verifizierten
+Main-Stand beziehen. Der laufende Check von #1466 wird nicht neu gestartet.
 
 ## Geprüfter Produktstand
 
@@ -31,6 +36,11 @@ Landschaftsdeckung, Dichte, Lichtungen, grobe Vererbung, History und Datei-Rundl
 sind geprüft. Browserproben bestätigen 25/65/100-Prozent-Dichte über mehrere
 Zoomstufen. Mittlerer Wald erscheint als Blätterdach mit Dichtelücken, nahe als
 gezeichnete Kronen; große Viewports bleiben innerhalb des Kandidatenbudgets.
+Die Nahdarstellung wurde zusätzlich mit 25/65/100-Prozent-Bestand visuell geprüft:
+100 Prozent bildet nun weitgehend geschlossene Kronengruppen statt eines lockeren
+Hains. Baumpositionen, Varianten und Kandidatenbudget bleiben stabil. Die gemischte
+Browserprobe mit Häusern, Lichtung, Dachfarbe, fünf Zoomstufen und pixelgenauem
+Undo/Redo besteht auch mit den größeren Kronen.
 Boden- und Felsfarbe bleiben unabhängig. Rasterhalos und Geräte-Pixel-Clips
 sichern Nähte; unsichtbare Raster überspringen teure Verarbeitung.
 
@@ -76,8 +86,10 @@ beim nächsten Bild null statt 16.384 Koordinatenzugriffe. Geänderte Vorschauen
 verwenden neue Geometrie. Relief-/Materialdekodierung erfolgt erst bei Bedarf;
 dekodierte Reliefbytes werden nach der Bilderstellung nicht zusätzlich gehalten.
 
-Nach der Kamerakorrektur bestehen erneut 436 Frontendtests, Typen,
-Transportverträge und Format. Der frische Release-/RPM-Build besteht (7,52 MiB).
+Mit den größeren Waldkronen bestehen erneut 436 Frontendtests, Typen und Format
+sowie alle fünf Landschafts-Browserfälle einschließlich Welt bei 3840 Pixeln.
+Transportverträge sind auf dem unveränderten Kern geprüft. Der frische
+Release-/RPM-Build mit den Waldkronen besteht (7,52 MiB).
 Der unabhängige Canvasvergleich bestätigt exakte
 Pixelgleichheit der Terrainpfade über vier Kameratransformationen. Die
 Speicher-/Arbeitsnachweise sind keine Latenzmessungen.
@@ -102,3 +114,4 @@ Aktuelle Belege unter `src-tauri/target/diagnostics/`: `feature-input-review/`,
 und `retained-terrain-contours/` beziehungsweise `retained-terrain-contours-final/`.
 Die Kamerakorrektur ist in `viewport-center-before/`, `viewport-center-full/`,
 `viewport-center-regressions/` und `mixed-scene-review/` belegt.
+Wald-Bildproben und Bedienprüfung liegen unter `forest-density-review/`.

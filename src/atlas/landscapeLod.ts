@@ -1,7 +1,8 @@
 import type { Bounds } from "./model";
 
 export const landscapeSymbolBudget = 16384;
-export const landscapeSymbolMargin = (near: boolean) => (near ? 18 : 188);
+// Largest near crown: 24 feet × 1.2 size variation × 1.2 drawing extent.
+export const landscapeSymbolMargin = (near: boolean) => (near ? 35 : 188);
 
 export function landscapeDetails(
   scale: number,
