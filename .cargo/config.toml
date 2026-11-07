@@ -1,0 +1,6 @@
+# Shared defaults for npm, direct Cargo commands and Tauri builds.
+[build]
+jobs = 2
+
+[env]
+RUST_TEST_THREADS = "2"

@@ -1,122 +1,158 @@
-# SaltMarcher
+# SaltMarcher · Atlas V7
 
-Status: Aktuell
-Owner: SaltMarcher
-Last Reviewed: 2026-10-24
-Source of Truth: docs/INDEX.md (Facheinstiege), package.json (Befehle)
+Lokaler 2D-Weltatlas vom Raum bis zur Welt mit Straßen, Gelände, Gewässern,
+Regionen, Parzellen und Hausinnenräumen. React zeichnet auf Canvas, Rust verwaltet
+SQLite, Tauri stellt die Desktopanwendung bereit. Im normalen Browser erscheint
+ein Desktop-Hinweis.
 
-Ein lokaler Arbeitsraum für Spielleitungen: Eine Kampagnenkarte und ihre Raum-Keys bearbeiten, Kampagnen vorbereiten und zusammenhängend live spielen. Das Produkt ist eine eigenständige Desktopanwendung mit Electron, TypeScript und SQLite. Obsidian wird nicht weitergeführt; sein Code und frühere Nachweise bleiben als historische Quellen im Repository.
+| Dokument                                   | Maßgeblicher Inhalt                                            |
+| ------------------------------------------ | -------------------------------------------------------------- |
+| Dieses README                              | Einrichtung, Befehle und Abnahmeablauf                         |
+| [Architektur](docs/architecture.md)        | Besitzer, Datenfluss, Transaktions- und Cachegrenzen           |
+| [Produktvertrag](docs/product-contract.md) | Beobachtbares Verhalten, Dateiformat und Grenzen               |
+| [Status](docs/implementation/status.md)    | Zuletzt belegter Prüfstand, offene Fehler und nächste Übergabe |
 
-**Entwicklungsstand:** Dungeon-, Atlas-, Stadt- und Kampagnenfunktionen sind in unterschiedlicher Tiefe umgesetzt. Der dokumentierte Gesamtumfang und die plattformübergreifende Produktabnahme sind noch offen.
+Diese vier Dokumente werden ersetzt und aktualisiert, nicht als Arbeitschronik
+fortgeschrieben. Messreihen, Sicherungen und Detailprotokolle gehören unter die
+ignorierten Pfade `src-tauri/target/cleanup/` oder `src-tauri/target/diagnostics/`.
 
-SaltMarcher wird seit dem 16. Oktober 2026 auf Basis der bisherigen Kampagnenwerkstatt weiterentwickelt. Das frühere SaltMarcher ist im Archivzweig `archive/saltmarcher-before-workbench-20261016` und in der Git-Historie erhalten. [Übernahme, Daten und Arbeitsweise](docs/project/delivery/workbench-migration.md).
+## Einrichtung
 
-## Hier anfangen
-
-- [Produktziele](docs/project/requirements/product.md#für-wen-und-wozu): Zweck und Nutzungsergebnisse.
-- [Umfang und Quellenvorrang](docs/project/requirements/scope.md#quellen-und-vorrang): Anforderungen und ihre verbindlichen Quellen.
-- [Lieferfolge](docs/project/delivery/roadmap.md#lieferfolge-des-gesamtprodukts): Abnahmefolge und fachliche Abhängigkeiten.
-- [Atlas auf einen Blick](docs/atlas/requirements/atlas.md#atlas-auf-einen-blick): integrierter Atlasstand und offene Lücken.
-- [Dokumentationsindex](docs/INDEX.md): Fachanforderungen und Nachweise.
-- [Architektur](docs/project/architecture/overview.md#prozesse-und-verantwortlichkeiten): Prozesse, Fachbesitzer und Schutzgrenzen.
-- [Code nach Zuständigkeit](docs/project/architecture/overview.md#code-nach-zuständigkeit-finden): Appbereiche, Tests und historischer Adapter.
-
-
-## Lokal entwickeln
-
-Node.js 22 und npm verwenden; diese Version entspricht der PR-CI.
+CI und Referenzmessungen verwenden Node.js 22.19.0 aus `.node-version` und
+Rust 1.99.1 samt rustfmt/Clippy aus `rust-toolchain.toml`. Node muss entsprechend
+installiert/ausgewählt sein; rustup liest die Toolchaindatei im Repository.
+Benötigt werden außerdem npm und Tauri-Systembibliotheken. Unter Fedora:
 
 ```bash
+sudo dnf install -y gcc-c++ make webkit2gtk4.1-devel openssl-devel libappindicator-gtk3-devel librsvg2-devel libxdo-devel
+rustup show active-toolchain
 npm ci
-npm run dev -- --data-dir /tmp/campaign-workbench-smoke
+npx playwright install chromium # einmalig; optional --with-deps
+npm run desktop
 ```
 
-Gezielt prüfen (die gemeinsamen Testartefakte werden automatisch vorbereitet):
+Neue Dokumente beginnen als Ozean; „Höhen → Land“ legt Land an.
+Werkzeuge, Gesten, Ansichtsauswahl und Dateiabläufe beschreibt der Produktvertrag.
+
+## Entwicklung und automatisierte Abnahme
 
 ```bash
-npm test -- tests/runtime/desktop-combat-switch.test.mjs
-npm test -- --list
-npm run check
-npm run check:desktop
+npm run check           # Verträge, Typen, TypeScript- und Rusttests
+npm run check:all       # zusätzlich Clippy, Format, Webbuild und Browsertests
+npm run package -- --ci # konfiguriertes natives Release-/RPM-Paket
+npm run format          # Prettier und rustfmt
 ```
 
-Vollständige Qualifikation entspricht dem Candidate-Check:
+Einzelprüfungen: `npm run typecheck`, `npm test`, `npm run test:rust`,
+`npm run check:rust`, `npm run format:check`, `npm run build:web` und
+`npm run test:e2e -- terrain-live.spec.ts`. Nach Änderungen an Rust-Transporttypen
+`npm run contracts:generate` ausführen; `contracts:check` prüft ohne Quelländerung.
+`src/atlas/generated/` wird ausschließlich aus Rust erzeugt.
+
+Cargo-Prüfungen verwenden `--locked`, JavaScript-Abhängigkeiten `npm ci`.
+`.cargo/config.toml` begrenzt Builds und Rusttests auf zwei Jobs/Testthreads;
+Vitest verwendet zwei, Playwright einen Worker. `check:all` führt Prüfungen
+sequenziell aus. Nicht mehrere Gesamtprüfungen gleichzeitig starten; unter Linux
+kann `nice -n 10 npm run check:all` der Desktopbedienung Vorrang geben.
+
+Der Entwicklungsserver verwendet Port 1420. Produkttests starten ihren eigenen
+Vite-Server auf `127.0.0.1:1421`; ein belegter Port führt zum Abbruch.
+Testworker-Build und -Start verwenden `src-tauri/target/`, unabhängig von
+`CARGO_TARGET_DIR`. Browserbelege liegen unter
+`src-tauri/target/diagnostics/playwright-<run>/`. Testanbindung und
+Zeichenbestätigungen stehen in der [Architektur](docs/architecture.md#entwicklung-und-prüfungen).
+
+GitHub Actions prüft den exakten PR-Head beziehungsweise den gepushten Main-Commit.
+Der erforderliche Check führt `check:all` und den konfigurierten RPM-Build aus.
+Browserdiagnosen und vorhandene Checklogs werden sieben Tage aufbewahrt.
+Native Bedienabnahme und Referenzlatenzen sind getrennte Prüfschritte.
+
+## Performanceabnahme
+
+`npm run test:lod` prüft Kachelbudgets, Auflösungswechsel und Cachelebensdauer;
+`npm run test:lod:e2e` prüft Ansichten, Navigation und Invalidierung mit echtem
+Kern. Diese Teilmengen gehören zur Gesamtsuite. Deterministische Arbeits- und
+Speicherbudgets gelten in CI; maschinenabhängige Zeitziele in der Referenzabnahme.
+
+### Gelände vergleichen
+
+Der Release-Treiber verwendet neun feste Fälle: zwei Pinselgrößen und Pfadlängen
+auf leerer/bebauter Küste sowie eine Übersicht mit 120.000 Kontrollwerten.
+Autorenfixtures, Seed und Weltpfade sind festgelegt. Er misst Workerzeit,
+Transportvolumen, Bestätigung, Zeichnen und sichtbare Bestätigung.
 
 ```bash
-npm run check:repo
-npm run check
-npm run check:desktop
-npm test
-npm run build
-npm run build:desktop
+# Vor dem Umbau: Release-Artefakte samt Quell-/Binärhashes sichern
+npm run perf:terrain:capture -- src-tauri/target/cleanup/terrain-before
+# Nach dem Umbau: dieselben Fälle und Fixtures gegen beide Builds messen
+npm run perf:terrain -- src-tauri/target/cleanup/terrain-before
+# Nur den aktuellen Stand messen
+npm run perf:terrain
 ```
 
-`npm run build` und `npm run build:desktop` bauen dieselbe aktive Anwendung
-unter `.build/desktop`. Beide Befehle bleiben Teil des vorgeschriebenen Candidate.
-Der historische Adapter wird nur ausdrücklich mit `npm run build:legacy:obsidian`
-gebaut; seine Ausgaben liegen unter `.build/legacy-obsidian`. Historische Adapter-,
-ADR- und externe Referenztests wurden aus dem Testbestand entfernt.
-`npm test` führt ohne Dateiauswahl die vollständige aktive Suite lokal mit einem
-Testprozess aus. Die [Testanleitung](docs/project/verification/testing.md)
-beschreibt Auswahl, serielle Diagnose und Laufberichte.
-Native GUI-Prüfungen bleiben getrennte Aufrufe.
+Der Treiber prüft die exakten Node-/Rustversionen, baut mit Lockfile und erzeugt
+Fixtures vor der Messung. Er überschreibt keine Sicherung und verwirft veränderte
+Fingerprints oder unvergleichbare Fälle. Rohmessungen, Umgebungsdaten und
+`comparison.json` liegen unter `src-tauri/target/cleanup/atlas-simplify/terrain-<run>/`.
+Reihenfolge ist Baseline vor Kandidat; der Betriebssystemcache wird nicht geleert.
+Die Pause von 16 ms ist eine Mindestpause, keine garantierte Eingaberate.
 
-### Lesbarer Code
+Auf derselben Referenzmaschine gelten für die interaktiven Geländefälle
+p95 ≤16,7 ms Zeichenzeit und ≤50 ms bis zur sichtbaren Bestätigung. Der Bericht
+bewertet diese Ziele, ohne sie als CI-Zeitlimits zu erzwingen. Mehrere vergleichbare
+Läufe sind erforderlich; bei Zielverfehlung bleibt die Performanceabnahme offen.
+Der Browser-/JSONL-Pfad ersetzt keine native Tauri-IPC-Abnahme. Aufbau und
+Messgrenzen beschreibt die Architektur, den erreichten Stand das Statusdokument.
 
-`npm run format` formatiert den aktiven App- und Desktopcode sowie die zugehörigen
-Node-Tests und Entwicklungswerkzeuge mit der gemeinsamen Prettier-Konfiguration.
-`npm run format:check` prüft dieselbe Auswahl, ohne Dateien zu ändern; der
-Candidate-Check führt diese Prüfung ebenfalls aus.
+Für einen direkten Playwrightlauf zuerst `npm run perf:build` und den ignorierten
+Rust-Test `terrain_performance_fixtures` ausführen. Danach:
+`npm run perf:measure -- terrain.spec.ts`. `ATLAS_TERRAIN_FIXTURES` wählt das
+Fixtureverzeichnis; Vorgabe ist `src-tauri/target/diagnostics/terrain-performance`.
 
-Die Auswahl steht in `package.json`; `.prettierignore` schützt generierte Daten,
-Katalogreferenzen, Fixtures und historische Quellen. HTML und eingebettete
-Sprachen werden nicht pauschal umgeschrieben. Formatierungsänderungen separat
-von fachlichen Änderungen und Verschiebungen committen.
+Der kleine Weltkartenfall benötigt keine Fixtures: nach `npm run perf:build`
+`npm run perf:measure -- world-brush.spec.ts --repeat-each=3` ausführen.
 
-### Desktop-Testlauf
+### Große Stadt-/Weltfixtures
+
+Diese opt-in Fixtures werden aus dem aktuellen Dateiformat neu erzeugt und liegen
+unter `src-tauri/target/diagnostics/city/` beziehungsweise `world/`:
 
 ```bash
-npm run start:desktop -- --data-dir /tmp/campaign-workbench-smoke
+cargo test --locked --manifest-path src-tauri/Cargo.toml --lib city_scale_benchmark -- --ignored --nocapture
+cargo test --locked --manifest-path src-tauri/Cargo.toml --lib world_scale_benchmark -- --ignored --nocapture
+npm run perf:build
+npm run perf:measure -- release.spec.ts
+# Optionaler Stadt-Navigationstest mit seinen eigenen Zeitgrenzen
+ATLAS_CITY_BENCHMARK=1 npm run perf:measure -- city-navigation.spec.ts
 ```
 
-Für laufende Produktarbeit startet `npm run dev` einen inkrementellen Watch-Zyklus
-mit CSS-Aktualisierung, sicheren Neustarts und eigenem dauerhaftem Entwicklungsprofil.
-Details und Grenzen: [Kurzer Entwicklungszyklus](docs/project/verification/testing.md#kurzer-desktop-entwicklungszyklus).
+`ATLAS_PERF_FIXTURE` begrenzt den Release-Lauf auf `city-100000`, `city-250000`
+oder `world-10000`. Er misst erstes Öffnen in einem neuen Worker, erneutes Öffnen
+im selben Worker, erste Ansicht, Einpassen, Verschieben und alle 14 Ansichten.
+Chromium läuft bei 1440 × 960 CSS-Pixeln und DPR 1 auf Port 1422.
+Ergebnisse liegen unter `src-tauri/target/cleanup/atlas-simplify/performance-<run>/`;
+`ATLAS_PERF_OUTPUT` wählt einen anderen Ausgabepfad. JSONL enthält Roundtrip und
+Transportbytes; `ATLAS_MEASURE_WORKER=1` ergänzt Workerzeit einschließlich Queue.
 
-Die Desktopanwendung speichert ohne `--data-dir` im lokalen Appdatenordner `CampaignWorkbench`. Er verbindet Kampagnenverwaltung, Vorbereitung, Live-Spiel, Katalog, Gegenstände, einen gemeinsamen Atlas für Landschaft, Städte und Dungeonräume, Musik und eine getrennte Spieleranzeige. Die Desktopfunktion ist ein Entwicklungsstand; offene Produktlücken und Abnahmen stehen in den Fachplänen.
+## Native Abnahme und Übergabe
 
-Ein lokales Linux-x64-Paket entsteht mit:
+Nach Interaktions- oder Dateiänderungen das frisch gebaute Desktopprogramm prüfen.
+Die folgenden Szenarien ergänzen die automatischen Tests; erwartetes Verhalten
+und Grenzen werden ausschließlich im Produktvertrag gepflegt.
 
-```bash
-npm run package:desktop -- /tmp/saltmarcher-linux-x64
-```
+| Bereich                | Manuell durchspielen                                                                                                                           |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| Dateien                | Neu, Öffnen, Speichern, Speichern unter und Schließen; jeweils Annahme und Abbruch mit ungespeicherten Änderungen.                             |
+| Häuser und Innenräume  | Zeichnen, Umbenennen, Bewegen, Geschoss-/Kontextwechsel, Undo/Redo, Abbruch und anschließendes Weiterarbeiten.                                 |
+| Straßen und Parzellen  | Entwurf, automatische Bebauung, Varianten, Nodes, Verlängerung, Rauheit, Geländefolge; Übernahme per Button/Enter/Rechtsklick nach Navigation. |
+| Höhen und Gewässer     | Alle Modi, kleine/große Pinsel, Detail/Übersicht, sichtbare Zwischenstände, Abbruch, History, Ufer, Inseln, Flusskontakt und Datei-Rundlauf.   |
+| Bodenfarben            | Spitzen, Halten, Deckkraft, Farbfluss, Pipette, Radierer, Kachelnähte, Abbruch, History und Wiederöffnen.                                      |
+| Regionen               | Malen/Radieren, Nachbarn, Beziehungen, Kategorien/Ränge, Namen, Stile, Beschriftungsgrenzen und Datei-Rundlauf.                                |
+| Flüsse                 | Nodes, gemeinsame Knoten, Breite, Verlängerung, Richtung und Profile; verspätete Vorschauen, Navigation, Übernahme, Abbruch und History.       |
+| Navigation und Dialoge | Welt bis Grundstück, erhaltene lokale Details; bei 900 × 620 Dialogfokus, Tab/Umschalt+Tab, Escape und Fehlerkorrektur.                        |
 
-Der Linux-Updatepfad mit Erstinstallation und bewusster Releasefreigabe steht unter
-[GitHub-Updates](docs/project/delivery/github-updates.md).
-
-Die ursprünglichen Produktanforderungen bleiben erhalten. Für neue Kampagnen gilt das [gemeinsame Atlasmodell](docs/atlas/guide.md); alte Testbestände ohne Atlaswurzel werden nicht als mehrere Karten migriert.
-
-## Repositorykarte
-
-- `src/`: Produktcode, historischer Obsidian-Anschluss und Desktopoberfläche unter `src/app/`.
-- `desktop/`: privilegierter Desktopprozess und schmale Preload-Brücken.
-- `tests/`: automatisierte Prüfungen und synthetische Fixtures.
-- `tools/`: Build-, Paket-, Referenz-, Fixture- und Hostwerkzeuge.
-- `docs/`: Produktziele, Fachanforderungen, Architektur und Prüfwege; Einstieg in `docs/INDEX.md`.
-- `docs/project/architecture/overview.md`: Architekturentscheidungen; `acceptance.json`: Anforderungen und Abnahmen.
-
-Historische Laufstände und Einzelpläne bleiben im Git-Verlauf zugänglich. Quellen- und Datenattribution: [NOTICE.md](NOTICE.md), [SRD 5.1](src/features/catalog/SRD-5.1-ATTRIBUTION.md) und [Itemquellen](src/features/catalog/SRD-5.1-ITEMS-ATTRIBUTION.md).
-
-## Noch zu prüfen und umzusetzen
-
-Es gilt **Make it Work → Make it Efficient →
-Make it Beautiful**, mit KISS und YAGNI. Neue Oberfläche oder grüne Tests
-schließen fehlende Fachfunktionen nicht ab.
-
-Native Speicherung nach einem neuen Prozessstart, Dateidialog-/Fehlerwege,
-Spielerfenster auf externen Monitoren, vollständige Hex-/Stadt-/Dungeonparität,
-große reale Pläne und durchgängige Vorbereitung/Spiel/Nachbereitung benötigen
-jeweils ihren eigenen Nachweis. Lokale Store- und kontrollierte DOMtests belegen
-nur die dort geprüften Abläufe. Verbindlich sind die betroffenen Einträge in
-`acceptance.json` und die Fachpläne; Build, Push oder Paketierung sind keine
-Produktabnahme.
+Plattform, Skalierung und Ergebnisse im ignorierten Diagnoseverzeichnis festhalten.
+Dateivergleiche verwenden SQLite-Integrität und Autorentabellen in Primärschlüsselreihenfolge.
+Anschließend den kurzen Status durch den gemeinsam geprüften Stand, verbleibende
+Abnahmen und nächste Übergabe ersetzen. Einzelne erfolgreiche Teilprüfungen
+belegen weder Gesamtgrün noch CI-Freigabe.

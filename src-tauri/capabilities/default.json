@@ -1,0 +1,6 @@
+{
+  "identifier": "main",
+  "description": "Atlas window controls",
+  "windows": ["main"],
+  "permissions": ["core:default", "core:window:allow-destroy"]
+}
