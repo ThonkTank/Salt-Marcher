@@ -20,6 +20,21 @@ freigegebenen Main-Baum plus die lokal geprüften Folgeänderungen. Seine
 vollständige Main-CI steht noch aus; lokale Ergebnisse ersetzen diese Freigabe
 nicht. Produktcode und Tests wurden durch die Main-Integration nicht verändert.
 
+## Gestalterische Richtung
+
+Ziel ist eine stilisierte Fantasykarte: nahe an Canvas of Kings orientierte
+Federzeichnung, mittlere und ferne Ansichten mittelalterlich inspirierte
+Kartografie. Die gemeinsame Serifenschrift für Kartenbeschriftungen ist ein
+erster begrenzter Schritt, keine abgeschlossene Stilüberarbeitung. Objekt-,
+Straßen- und Regionsnamen verwenden dieselbe Definition bei Vermessung und
+Zeichnen. UI-Hinweise behalten ihre Schrift; lokale Font-Fallbacks können je
+Plattform unterschiedlich aussehen. Keine Downloads oder neuen Caches.
+Zwölf bestehende Layouttests, acht Regions-/Präsentationsbrowserfälle, Typen
+und Format bestehen. Regionsnamen in der Weltansicht und separate Zeichenproben
+für kleine Objektnamen wurden in Chromium visuell geprüft. Der frische
+Release-/RPM-Build besteht (7,52 MiB). Belege unter
+`src-tauri/target/diagnostics/map-typography/`. Native Sichtprüfung bleibt offen.
+
 ## Geprüftes Verhalten
 
 Wald, Buschland, Wiese und Felsgebiet lassen sich auf allen Außenmaßstäben mit

@@ -401,6 +401,9 @@ rein vor. Cityfeatures werden für den Painter dedupliziert; Auswahl und geöffn
 Owner beeinflussen die Beschriftungsprojektion. `AtlasCanvas` plant Basis- und
 Overlayframes mit Kamera und DPR. Begrenzte `Path2D`-Caches halten Außen- und
 Innenraumgeometrie; `mapLabels` platziert Namen über Weltanker und räumliche Belegung.
+`mapTypography` liefert die gemeinsame lokale Schriftdefinition für Vermessung
+und Zeichnen von Objekt-, Straßen- und Regionsnamen, ohne Fontdownload oder
+zusätzlichen Cache.
 Der Außengeometriecache behält innerhalb seines unveränderten Byte-/Eintragsbudgets
 bereits aufgenommene Objekte, solange Basis, Auswahl oder Vorschau sie benötigen.
 Ein gemeinsamer Abgleich vor den Zeichenframes entfernt entfallene Referenzen;

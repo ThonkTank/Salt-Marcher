@@ -912,7 +912,10 @@ erst ab 20 Fuß Straßenbreite; der bestehende Rücklaufbereich der Inhaltshyste
 gilt auch hier. In feineren Inhaltsbändern, einschließlich Straßenzug, dürfen
 bei ausreichendem Platz auch schmalere Straßen Namen tragen.
 
-Namen erscheinen in 13 CSS-Pixeln mit heller Kontur. Gebäudenamen stehen
+Kartenbeschriftungen verwenden eine gemeinsame lokale Serifenschrift (Georgia,
+Times New Roman oder System-Serif). Vermessung und Zeichnen verwenden dieselbe
+Schrift; Bedienhinweise behalten ihre UI-Schrift. Objekt- und Straßennamen
+erscheinen in 13 CSS-Pixeln mit heller Kontur. Gebäudenamen stehen
 horizontal im oder neben dem Dach, Straßennamen folgen geeigneten, ausreichend
 geraden Teilstrecken und stehen nie kopfüber. Wiederholungen derselben Straße
 halten mindestens 400 Pixel Abstand. Namen kollidieren weder miteinander noch
