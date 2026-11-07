@@ -14,11 +14,12 @@ und 32 Integration-/Adaptertests, fünf absichtlich ignorierte Fälle, 246
 Browserfälle, Frontendtests, Typen, Transportverträge, Clippy, Format und
 Release-/RPM-Build.
 
-Der Folgekandidat bündelt lesbare Pinselmaße, verständliche Grenzmeldungen und
-den frühen Rückweg für leere Höhenkachelanfragen. Er enthält den identischen
-freigegebenen Main-Baum plus die lokal geprüften Folgeänderungen. Seine
-vollständige Main-CI steht noch aus; lokale Ergebnisse ersetzen diese Freigabe
-nicht. Produktcode und Tests wurden durch die Main-Integration nicht verändert.
+Die ausstehenden Kandidaten bauen auf diesem Main-Baum auf: PR #1462 enthält
+lesbare Pinselmaße, verständliche Grenzmeldungen und den frühen Rückweg für leere
+Höhenkachelanfragen. PR #1463 ergänzt Kartenschrift und begrenzte Dachdetails.
+Darauf folgt die lokale Kachelzuordnung für Materialabtastung. Die vollständigen
+CI-Freigaben und Main-Übernahmen dieser Folgeänderungen stehen noch aus;
+lokale Ergebnisse ersetzen diese Freigaben nicht.
 
 ## Gestalterische Richtung
 
@@ -49,6 +50,17 @@ Dachstil; komplexe Dachformen und die vollständige gestalterische Abnahme bleib
 offen.
 
 ## Geprüftes Verhalten
+
+Materialabtastung für Boden, Blätterdächer und Landschaftsdetails verwendet eine
+erst bei Bedarf aufgebaute lokale Kachelzuordnung. Der Regressionstest mit
+64 Kacheln und vier Durchläufen einschließlich negativer/fehlender Kacheln
+reduziert gelesene Kachelkoordinaten von 9.605 auf höchstens 128 bei gleichen
+Materialwerten. 39 Raster-/Boden-/Landschafts-/Rendercachetests, Typen und
+Quellformat bestehen. Das ist ein deterministischer Arbeitsnachweis, keine
+Latenzmessung. Zehn Boden-/Landschaftsbrowserfälle bestehen, einschließlich
+Weltansicht mit freiem Zoom, 3840-Pixel-Viewport sowie History und Datei-Rundlauf.
+Der frische Release-/RPM-Build besteht (7,52 MiB).
+Belege: `src-tauri/target/diagnostics/material-tile-index/`.
 
 Wald, Buschland, Wiese und Felsgebiet lassen sich auf allen Außenmaßstäben mit
 Zieldichte, Lichtungen, grober Vererbung und History malen. Boden-/Felsfarbe bleibt

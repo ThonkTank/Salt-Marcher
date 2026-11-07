@@ -401,6 +401,10 @@ rein vor. Cityfeatures werden für den Painter dedupliziert; Auswahl und geöffn
 Owner beeinflussen die Beschriftungsprojektion. `AtlasCanvas` plant Basis- und
 Overlayframes mit Kamera und DPR. Begrenzte `Path2D`-Caches halten Außen- und
 Innenraumgeometrie; `mapLabels` platziert Namen über Weltanker und räumliche Belegung.
+`prepareMaterialSampler` indiziert die Kacheln seiner aktuellen Höhenantwort
+beim ersten Sample nach Rasterkoordinaten. Boden-, Blätterdach- und Assetzeichnung
+verwenden diese lokale Zuordnung statt wiederholter linearer Kachelsuche;
+reine Raster-Cachetreffer bauen keine Zuordnung auf. Sie endet mit dem Sampler.
 `houseRoof` ergänzt ausschließlich einzelne rechteckige Dachkonturen mit
 konstant vier Flächen und einem Linienzug, geclippt an der vorhandenen
 Außenkontur. Zoom-/Größenblende begrenzen diese abgeleitete Nahdarstellung;
