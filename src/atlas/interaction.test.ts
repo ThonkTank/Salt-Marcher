@@ -1498,3 +1498,45 @@ it("keeps new and extending road doubleclicks as draft actions in overview", () 
         ),
       ).toEqual([]);
 });
+
+it("navigates only inside current known geometry while the expanded viewport loads", () => {
+  const camera = { x: 0, y: 0, scale: viewScale(1) };
+  const snapshot = state({
+    camera,
+    editable: false,
+    scene: undefined,
+    navigation: { bounds: [-50, -50, 50, 50], scene: state().scene! },
+  });
+  expect(decideDoubleClick(snapshot, [20, 20])).toMatchObject([
+    { kind: "camera" },
+  ]);
+  for (const point of [
+    [51, 0],
+    [50, 0],
+    [-51, 0],
+    [0, 51],
+    [0, -51],
+  ] as WorldPoint[])
+    expect(decideDoubleClick(snapshot, point)).toEqual([]);
+  expect(
+    decideDoubleClick({ ...snapshot, navigation: undefined }, [20, 20]),
+  ).toEqual([]);
+  expect(decideDoubleClick({ ...snapshot, selected: "h" }, [20, 20])).toEqual(
+    [],
+  );
+  expect(decideDoubleClick({ ...snapshot, deletion: true }, [20, 20])).toEqual(
+    [],
+  );
+  expect(
+    decideDoubleClick(
+      {
+        ...snapshot,
+        navigation: {
+          ...snapshot.navigation!,
+          scene: { ...state().scene!, objects: [hitHouse] },
+        },
+      },
+      [0, 0],
+    ),
+  ).toEqual([]);
+});

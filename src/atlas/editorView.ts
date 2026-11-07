@@ -293,6 +293,7 @@ export function editorInput(input: {
   tools: ToolSettings;
   view: Pick<ReturnType<typeof editorView>, "planning" | "stalePlanParcels">;
   presentation: Presentation | null;
+  navigation?: Pick<Presentation, "scene" | "bounds">;
   camera: Camera;
   lod: LodDecision;
   bounds: Bounds;
@@ -330,6 +331,7 @@ export function editorInput(input: {
     camera,
     lod,
     editable: input.editable && (selection.tool !== "regions" || regions.fresh),
+    navigation: input.navigation,
     river: input.river,
     region: {
       id: regions.selected,

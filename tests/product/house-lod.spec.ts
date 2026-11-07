@@ -162,3 +162,26 @@ for (const { title, start, startScale, target, targetScale } of [
     );
     expect(transform(await camera(page))).toEqual(transform(beforeOpen));
   });
+
+test("free double click uses current anchor geometry while an expanded viewport read is held", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 900, height: 620 });
+  await page.goto(url);
+  await paintedReady(page);
+  await page.getByLabel("Ansichtsmaßstab").selectOption({ label: "Haus" });
+  await paintedReady(page);
+  const box = (await page.getByTestId("atlas-canvas").boundingBox())!;
+  await page.evaluate(() => {
+    window.atlasHold = { cmd: "scene" };
+  });
+  await page.setViewportSize({ width: 1440, height: 620 });
+  await expect.poll(() => page.evaluate(() => !!window.atlasHeld)).toBe(true);
+  expect(await page.evaluate(() => window.atlasPaint?.dataReady)).toBe(false);
+  await page.mouse.dblclick(box.x + box.width / 2, box.y + box.height / 2);
+  await expect(page.locator(".atlas-map-title")).toHaveText("Atlas · Raum");
+  expect((await status(page)).revision).toBe(0);
+  expect(await calls(page, "commit")).toEqual([]);
+  await page.evaluate(() => window.atlasRelease!());
+  await paintedReady(page);
+});

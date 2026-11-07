@@ -271,6 +271,15 @@ export function useAtlasEditor(client: AtlasClient) {
         tools: tools.input,
         view,
         presentation,
+        navigation:
+          !interior &&
+          presentation?.context.kind === "exterior" &&
+          sameVersion(presentation.scene.status, session.status) &&
+          !session.pending &&
+          !session.exclusive &&
+          !session.uncertain
+            ? presentation
+            : undefined,
         camera,
         lod,
         bounds,

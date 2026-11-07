@@ -698,7 +698,9 @@ aktiviert und beim Herauszoomen über einen Rücklaufbereich von zehn Prozent
 gehalten; die Koordinatentransformation bleibt unverändert. Die Auswahl springt um den Kartenmittelpunkt; freie Doppelklicks zoomen
 zur nächsten feineren Außenansicht. Im exakten Außenraum gilt dies mit dem
 Auswahlwerkzeug auf freier Karte bei frischen Trefferdaten und ohne laufende
-Geste oder Planung. Objektaktionen haben Vorrang; in der feinsten Ansicht
+Geste oder Planung. Dafür genügen aktuelle Trefferdaten am Zeiger einschließlich
+Trefferrand; ein noch ladender, neu sichtbarer Kartenrand blockiert diesen Zoom
+nicht. Objektaktionen haben Vorrang; in der feinsten Ansicht
 gibt es keinen weiteren Schritt. Auswahl und Entwürfe bleiben erhalten.
 
 | Ansicht                 | Referenzbreite  |

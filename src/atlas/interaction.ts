@@ -45,11 +45,7 @@ import {
   type WorldPoint,
 } from "./model";
 import { stairPlacement } from "../interiorContract";
-import {
-  hitScene,
-  parcelTransform,
-  type parcelVisibility,
-} from "./parcelEditor";
+import { hitScene, parcelTransform, parcelVisibility } from "./parcelEditor";
 import type { SelectionEvent, Tool } from "./editorSelection";
 import {
   isLiveBrush,
@@ -526,6 +522,10 @@ export type CanvasInputSnapshot = Readonly<{
   camera: Camera;
   lod: LodDecision;
   editable: boolean;
+  navigation?: {
+    bounds: import("./model").Bounds;
+    scene: Scene;
+  };
   overviewRoads?: MapFeature[];
   roughness?: RoadRoughness;
   terrainFollow?: TerrainFollow;
@@ -1464,6 +1464,53 @@ export function decideDoubleClick(
       },
     ];
   }
+  // Camera navigation only needs current geometry under its anchor, not
+  // completed raster reads for a newly exposed inspector-side margin.
+  const known = snapshot.navigation;
+  const pad = 3 / snapshot.camera.scale;
+  const navigation =
+    known &&
+    point[0] - pad >= known.bounds[0] &&
+    point[1] - pad >= known.bounds[1] &&
+    point[0] + pad <= known.bounds[2] &&
+    point[1] + pad <= known.bounds[3]
+      ? {
+          objects: known.scene.objects,
+          boundaries: parcelVisibility(known.scene, context, tool).boundaries,
+        }
+      : editable && snapshot.scene
+        ? { objects: snapshot.scene.objects, boundaries: snapshot.boundaries }
+        : undefined;
+  if (
+    context.kind === "exterior" &&
+    snapshot.lod.policy.exact &&
+    tool === "select" &&
+    navigation &&
+    !selectedObject &&
+    !snapshot.selected &&
+    !snapshot.deletion &&
+    snapshot.workflow.kind === "idle" &&
+    !workflowPointer(snapshot.workflow) &&
+    !snapshot.planning &&
+    snapshot.lod.navigationLevel > 0 &&
+    !snapshot.stalePlanParcels?.some((parcel) => hitObject(parcel, point)) &&
+    !hitScene(
+      navigation.objects,
+      point,
+      3 / snapshot.camera.scale,
+      navigation.boundaries,
+    )
+  )
+    return [
+      {
+        kind: "camera",
+        camera: zoomAt(
+          snapshot.camera,
+          point,
+          viewScale(snapshot.lod.navigationLevel - 1),
+        ),
+      },
+    ];
   if (!editable) return [];
   if (selectedObject?.kind === "road" && tool === "select")
     return [{ kind: "intent", intent: roadInsertion(selectedObject, point) }];
@@ -1502,33 +1549,6 @@ export function decideDoubleClick(
       {
         kind: "selection",
         event: { type: "openParcel", id: selectedObject.id },
-      },
-    ];
-  if (
-    context.kind === "exterior" &&
-    snapshot.lod.policy.exact &&
-    tool === "select" &&
-    snapshot.scene &&
-    snapshot.workflow.kind === "idle" &&
-    !workflowPointer(snapshot.workflow) &&
-    !snapshot.planning &&
-    snapshot.lod.navigationLevel > 0 &&
-    !snapshot.stalePlanParcels?.some((parcel) => hitObject(parcel, point)) &&
-    !hitScene(
-      snapshot.scene.objects,
-      point,
-      3 / snapshot.camera.scale,
-      snapshot.boundaries,
-    )
-  )
-    return [
-      {
-        kind: "camera",
-        camera: zoomAt(
-          snapshot.camera,
-          point,
-          viewScale(snapshot.lod.navigationLevel - 1),
-        ),
       },
     ];
   return [];

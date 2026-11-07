@@ -137,6 +137,10 @@ liegen in `useEditorTools`, Regionswerte in `useRegions`. `editorScene` trennt
 sichtbare Daten von bearbeitbaren Ownerdaten; `editorInput` erzeugt den
 Eingabesnapshot. Ein exakt ausgewählter Straßenheader ersetzt dort die
 vereinfachte Übersichtsdarstellung. `canEdit` prüft die Bearbeitungsfreigabe.
+Freier Doppelklick-Zoom darf aktuelle Außengeometrie im bereits geladenen Bereich
+unter dem Anker verwenden, während ein vergrößerter Ausschnitt noch lädt. Diese
+anfragefreie Projektion leiht vorhandene Geometrie und Bounds; sie gibt keine
+Schreibaktionen oder Ziele außerhalb des bestätigten Bereichs frei.
 
 `interaction` berechnet Gesten; `useCanvasInput` besitzt DOM-Ereignisse,
 Koordinaten und Pointercapture. Bekannte Panelwechsel werden im Layoutschritt
