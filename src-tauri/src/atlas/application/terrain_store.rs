@@ -232,7 +232,7 @@ impl AtlasApplication {
                         .filter(|(&(x, y), &z)| terrain::at(&old, x, y) != z)
                         .count()
                         <= terrain::LIMIT,
-                    "Höchstens 100.000 Höhenpunkte je Aktion",
+                    "Höchstens 100.000 Höhenpunkte je Aktion. Pinsel verkleinern oder kürzere Striche malen.",
                 )?;
                 for (&(x, y), &z) in &next {
                     let prior = terrain::at(&old, x, y);

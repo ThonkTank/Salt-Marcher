@@ -219,7 +219,7 @@ impl AtlasApplication {
             let added = record_terrain_controls(tx, seq, &c.change)?;
             crate::atlas::errors::ensure(
                 controls + added <= crate::atlas::terrain::LIMIT,
-                "Höchstens 100.000 Höhenpunkte je Strich",
+                "Höchstens 100.000 Höhenpunkte je Strich. Pinsel verkleinern oder kürzere Striche malen.",
             )?;
             tx.execute(
                 "UPDATE history SET controls=? WHERE seq=?",

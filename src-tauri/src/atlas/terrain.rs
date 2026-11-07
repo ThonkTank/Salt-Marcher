@@ -364,7 +364,7 @@ pub fn land_samples(b: &Brush) -> Result<Option<LandSamples>> {
                     samples.insert((x, y), distance + coast_inset(b, p));
                     ensure(
                         samples.len() <= LIMIT,
-                        "Höchstens 100.000 Höhenpunkte je Aktion",
+                        "Höchstens 100.000 Höhenpunkte je Aktion. Pinsel verkleinern oder kürzere Striche malen.",
                     )?;
                 }
             }
@@ -439,7 +439,7 @@ pub fn stroke_prepared(
                 touched.insert((x, y));
                 ensure(
                     touched.len() <= LIMIT,
-                    "Höchstens 100.000 Höhenpunkte je Aktion",
+                    "Höchstens 100.000 Höhenpunkte je Aktion. Pinsel verkleinern oder kürzere Striche malen.",
                 )?;
                 let w = (1.0 - d * d).powi(2);
                 let old = at(g, x, y);
