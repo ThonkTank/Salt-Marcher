@@ -35,7 +35,7 @@ pub fn grid(db: &Connection, b: Bounds) -> Result<Grid> {
     g.layers = super::world_terrain_store::read(db, b)?;
     Ok(g)
 }
-// Only the brush's bounded author regions use this reader. General view bounds
+// Brush and water follow-up use bounded author regions here. General view bounds
 // may span the world and must not enumerate every empty block in that rectangle.
 pub(super) fn brush_grid(db: &Connection, regions: &[Bounds], min: u8) -> Result<Grid> {
     use std::collections::BTreeMap;

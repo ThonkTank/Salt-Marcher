@@ -296,25 +296,22 @@ impl AtlasApplication {
         if let Some(d) = &c.change.world_terrain {
             for water in local(&self.db, d.bounds())? {
                 if let Some(b) = regions::bounds(&water::geometry(&water)) {
-                    let g = terrain_store::grid(&self.db, b)?;
                     let x0 = (b[0] / 5.).floor() as i32;
                     let x1 = (b[2] / 5.).ceil() as i32;
                     let y0 = (b[1] / 5.).floor() as i32;
                     let y1 = (b[3] / 5.).ceil() as i32;
+                    let count =
+                        (i64::from(x1) - i64::from(x0) + 1) * (i64::from(y1) - i64::from(y0) + 1);
                     ensure(
-                        (i64::from(x1) - i64::from(x0) + 1) * (i64::from(y1) - i64::from(y0) + 1)
-                            <= 100000,
+                        world_samples.after.len() as i64 + count <= 100000,
                         "Gewässernachführung zu groß",
                     )?;
+                    let g = terrain_store::grid(&self.db, b)?;
                     for y in y0..=y1 {
                         for x in x0..=x1 {
                             world_samples.after.push((x, y, terrain::at(&g, x, y)));
                         }
                     }
-                    ensure(
-                        world_samples.after.len() <= 100000,
-                        "Gewässernachführung zu groß",
-                    )?;
                 }
             }
         }
@@ -331,7 +328,7 @@ impl AtlasApplication {
         }
         let affected = cells(&t.after);
         let mut candidates = BTreeMap::new();
-        let mut grid = Grid::new();
+        let mut regions = Vec::new();
         let tiles: BTreeSet<_> = affected
             .iter()
             .map(|&(x, y)| (x.div_euclid(32), y.div_euclid(32)))
@@ -343,11 +340,15 @@ impl AtlasApplication {
                 (x + 1) as f64 * 160. + 5.,
                 (y + 1) as f64 * 160. + 5.,
             ];
-            grid.merge(terrain_store::grid(&self.db, b)?);
+            regions.push(b);
             for w in local(&self.db, b)? {
                 candidates.insert(w.id.clone(), w);
             }
         }
+        if candidates.is_empty() {
+            return Ok(());
+        }
+        let mut grid = terrain_store::brush_grid(&self.db, &regions, 0)?;
         grid.extend(t.after.iter().map(|&(x, y, z)| ((x, y), z)));
         let mut before = vec![];
         let mut after = vec![];

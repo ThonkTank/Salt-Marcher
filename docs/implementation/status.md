@@ -6,30 +6,39 @@ Zuständigkeiten, [Produktvertrag](../product-contract.md) Verhalten und Grenzen
 
 ## Aktuelle Optimierung
 
-Direkte Höhenstriche besitzen im Editor einen eigenen Gestenzustand ohne
-Vorschaukandidat, Prüfphase oder veraltbare Basisrevision. Bestätigte Abschnitte
-setzen die Geste fort. Die irreführenden Übernehmen-/Abbrechen-Aktionen erscheinen
-auch bei ausstehenden Writes nicht mehr. Der frühere optionale Vorschau-Ersatzpfad
-für Höhengesten entfällt; Gewässer behalten ihre tatsächliche Vorschau.
+Die Gewässernachführung sucht Wasserflächen vor den Höhenreads und beendet sich
+bei fehlenden Treffern sofort. Betroffene Kachelbereiche teilen den vorhandenen
+Blockleser; Welt-Rasterlimits greifen vor der Auswertung. Beim Trockenlegen
+werden nur Rasterzellen innerhalb der jeweiligen Gewässerbounds fein abgetastet
+und in Schnittpolygone zerlegt. Berührende Randzellen bleiben enthalten.
 
-Alle 368 Frontendtests, Typ- und Formatprüfung sowie 26 Browserfälle bestehen
-lokal. Die Abdeckung umfasst 100 Eingaben über bestätigte Revisionen, Abschluss
-an Lebensdauergrenzen, verzögerte Begin-/Append-Antworten, kontinuierliche
-Weltstriche, Undo/Redo und unveränderte Gewässervorschauen. Ein bestehender
-Geschoss-Pixeltest wartet jetzt auf die bereits vorhandene Zeichenbestätigung
-statt nur auf Datenbereitschaft; sämtliche Pixelassertionen bleiben erhalten.
-Der frische native Release-/RPM-Build bestätigt den 80-Pixel-Weltstrich mit
-sichtbaren Zwischenständen ohne Entwurfsaktionen sowie vollständigem Undo und
-pixelgleichem Redo. Die Freigabe auf Main erfordert den vollständigen grünen
-CI-Check am exakten PR-Head. Es wurde keine weitere Zeitmessreihe gestartet.
+Die neuen Regressionen prüfen ausbleibende Autorenreads ohne Gewässer,
+frühzeitige Budgetablehnung und unveränderte lokale Arbeitsmenge bei 40.000
+entfernten Zellen. Die Küstenreferenz umfasst trockene und nasse Flächen,
+Verläufe, gemischte Autorenauflösungen, Löcher, getrennte Flächen, negative
+Koordinaten und Blockränder. Konturstruktur und jeder Punkt werden verglichen;
+ein Millionstel Fuß berücksichtigt die eingabebereichsabhängige Rundung der
+Polygonbibliothek. Alle 333 Rusttests, Clippy, 129 Transportverträge, Typ- und
+Formatprüfung sowie 23 Browserfälle bestehen lokal. Die Browserfälle umfassen
+kontinuierliche Weltstriche, sichtbare Zwischenstände, Ufer, Trockenlegung,
+Vorschauabbruch, Undo/Redo und Dateirundlauf. Die Freigabe auf Main erfordert den
+vollständigen grünen CI-Check am exakten PR-Head. Keine weitere Zeitmessreihe und
+keine neue Messinfrastruktur wurden ergänzt.
 
 ## Bestehender geprüfter Stand
 
-[PR #1441](https://github.com/ThonkTank/Salt-Marcher/pull/1441) ist auf `main`
+[PR #1442](https://github.com/ThonkTank/Salt-Marcher/pull/1442) ist auf `main`
 integriert. Der exakte Kandidat bestand 129 Transportverträge, Typprüfung,
-363 Frontend-, 329 Rust- und 224 Browsertests sowie Clippy, Format, Webbuild
+368 Frontend-, 329 Rust- und 226 Browsertests sowie Clippy, Format, Webbuild
 und Release-/RPM-Build. Fünf Rustfälle bleiben ausdrücklich ignoriert.
 Die ursprüngliche lokale Historie bleibt in `codex/atlas-v7-preserved-histories`.
+
+Direkte Höhenstriche besitzen einen eigenen Gestenzustand ohne Vorschaukandidat,
+Prüfphase oder veraltbare Basisrevision. Bestätigte Abschnitte setzen die Geste
+fort; irreführende Übernehmen-/Abbrechen-Aktionen entfallen auch bei ausstehenden
+Writes. Gewässer behalten ihre tatsächliche Vorschau. Der frische native Build
+bestätigte den 80-Pixel-Weltstrich mit sichtbaren Zwischenständen, vollständigem
+Undo und pixelgleichem Redo.
 
 Die vorbereitenden Pinselreads sammeln Autorenblöcke je Abschnitt und
 Quellauflösung einmal. Blockreads und Blattaktualisierungen verlangen die
@@ -79,11 +88,14 @@ bleiben offen. Der umfangreiche Release-Treiber mit neun Fixtures wurde hier
 nicht ausgeführt.
 
 Nächster Schwerpunkt bleibt das 50-ms-Ziel für bestätigte Pinselbilder.
-Nächster lesender Prüfpunkt sind allgemeine große Terrain-Autorenreads für
-Straßen, Gewässer und Plattformen. Sie dürfen weder entfernte Spalten durchsuchen
-noch große leere Rechtecke blockweise enumerieren.
+Nächster lesender Prüfpunkt ist die grobe Gewässerauswahl bei Welt-Höhenänderungen:
+Das gemeinsame Änderungsrechteck kann Wasserflächen außerhalb eines dünnen
+Pinselwegs einschließen. Allgemeine große Terrain-Autorenreads für Straßen,
+Gewässer und Plattformen bleiben ebenfalls offen; sie dürfen weder entfernte
+Spalten durchsuchen noch große leere Rechtecke blockweise enumerieren.
 
-Aktuelle Belege: `src-tauri/target/diagnostics/direct-state-*`.
+Aktuelle Belege: `src-tauri/target/diagnostics/water-locality-*`.
+Gestenzustandsbelege: `src-tauri/target/diagnostics/direct-state-*`.
 Terrain-Read-Belege: `src-tauri/target/diagnostics/brush-reads-*`.
 Hausindexbelege: `src-tauri/target/diagnostics/house-index-*.log`.
 Rasterbelege: `src-tauri/target/diagnostics/ocean-*` (Logs und native Bilder).

@@ -242,3 +242,97 @@ fn direct_sections_restore_water_contours_in_one_history_action() {
     history(&mut a, true);
     assert_eq!(all(&a), after);
 }
+
+#[test]
+fn water_followup_without_candidates_never_reads_height_authors() {
+    use rusqlite::hooks::{AuthAction, AuthContext, Authorization};
+    for distant_water in [false, true] {
+        let a = AtlasApplication::new().unwrap();
+        if distant_water {
+            water_store::put(
+                &a.db,
+                &water::WaterBody {
+                    id: "distant".into(),
+                    level: 0.,
+                    polygons: vec![crate::atlas::regions::RegionPolygon {
+                        outer: vec![
+                            [10000., 10000.],
+                            [10010., 10000.],
+                            [10010., 10010.],
+                            [10000., 10010.],
+                        ],
+                        holes: vec![],
+                    }],
+                },
+            )
+            .unwrap();
+        }
+        a.db.authorizer(Some(|context: AuthContext<'_>| {
+            if matches!(
+                context.action,
+                AuthAction::Read {
+                    table_name: "terrain" | "terrain_layers",
+                    ..
+                }
+            ) {
+                Authorization::Deny
+            } else {
+                Authorization::Allow
+            }
+        }));
+        let mut computed = crate::atlas::change::Computed::default();
+        computed.change.terrain = Some(terrain::TerrainDelta {
+            before: vec![(0, 0, terrain::BASE)],
+            after: vec![(0, 0, 10.)],
+            missing_before: vec![(0, 0)],
+        });
+        a.trim_water(&mut computed).unwrap();
+        assert!(computed.change.waters.is_none());
+        assert!(computed.next_identity.is_none());
+    }
+}
+
+#[test]
+fn oversized_world_water_followup_rejects_before_reading_authors() {
+    use rusqlite::hooks::{AuthAction, AuthContext, Authorization};
+    let a = AtlasApplication::new().unwrap();
+    water_store::put(
+        &a.db,
+        &water::WaterBody {
+            id: "oversized".into(),
+            level: 0.,
+            polygons: vec![crate::atlas::regions::RegionPolygon {
+                outer: vec![[0., 0.], [2000., 0.], [2000., 2000.], [0., 2000.]],
+                holes: vec![],
+            }],
+        },
+    )
+    .unwrap();
+    a.db.authorizer(Some(|context: AuthContext<'_>| {
+        if matches!(
+            context.action,
+            AuthAction::Read {
+                table_name: "terrain" | "terrain_layers",
+                ..
+            }
+        ) {
+            Authorization::Deny
+        } else {
+            Authorization::Allow
+        }
+    }));
+    let mut computed = crate::atlas::change::Computed::default();
+    computed.change.world_terrain = Some(world_terrain_store::WorldTerrainDelta {
+        level: 4,
+        before: vec![(0, 0, None)],
+        after: vec![(0, 0, Some(10.))],
+    });
+    let error = a.trim_water(&mut computed).unwrap_err();
+    assert_eq!(
+        error.category,
+        crate::atlas::errors::ErrorCategory::InvalidInput
+    );
+    assert_eq!(error.message, "Gewässernachführung zu groß");
+    assert!(computed.change.waters.is_none());
+    assert!(computed.next_identity.is_none());
+}
