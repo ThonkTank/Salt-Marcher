@@ -902,6 +902,14 @@ Straßenlinien haben mindestens zwei CSS-Pixel Breite. Ausgewählte und geplante
 Straßen bleiben unabhängig von Kachelpriorisierung sichtbar. Beschriftungen verändern die
 Hitpriorität nicht. Innenräume werden weiterhin ausdrücklich geöffnet.
 
+Rechteckige einzelne Dachkonturen erhalten in der Nahansicht dekorative
+Walmdachflächen und Firstlinien mit gemeinsamer Beleuchtung aus Nordwesten.
+Die Details blenden nach Bildschirmgröße und Zoom ein; unter 0,32 CSS-Pixeln
+pro Fuß und bei weniger als 12 Pixeln schmaler Dachseite entfallen sie.
+Dachfarbe, Grundriss und Auswahl bleiben maßgeblich. Innenhöfe, getrennte oder
+konkave Konturen erhalten keine vereinfachte Walmdachkonstruktion. Diese
+Darstellung ist kein gespeicherter Dachtyp und beeinflusst Innenräume nicht.
+
 Gebäude besitzen `importantPlace`, standardmäßig false, bearbeitbar als
 „Wichtiger Ort“. Die Markierung ist Autorendatum mit Undo/Redo und Dateipersistenz;
 sie verändert weder Kollisionen noch Innenräume. Wichtige Orte können schon in

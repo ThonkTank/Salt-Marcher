@@ -35,6 +35,19 @@ für kleine Objektnamen wurden in Chromium visuell geprüft. Der frische
 Release-/RPM-Build besteht (7,52 MiB). Belege unter
 `src-tauri/target/diagnostics/map-typography/`. Native Sichtprüfung bleibt offen.
 
+Rechteckige einzelne Hausdächer erhalten nahe Walmdachflächen und Firstlinien,
+mit weicher Zoom-/Größenblende und aus Nordwesten einfallendem Licht. Die
+vorhandene Außenkontur begrenzt die Zeichnung; Innenhöfe und komplexe Grundrisse
+bleiben unverändert. Kein Dachsolver, neuer Cache oder gespeicherter Dachtyp.
+433 Frontendtests, darunter vier neue Kontur-/Darstellungsgrenztests, Typen,
+Format und elf Browserfälle für Hausnavigation, Innenraumwechsel und
+Präsentationsstabilität bestehen. Der frische Release-/RPM-Build besteht
+(7,52 MiB). Vorher/Nachher der Nahansicht mit gedrehten
+Gebäuden und anschließender Straßenzugansicht wurde visuell geprüft. Belege:
+`src-tauri/target/diagnostics/roof-review/`. Diese Geometrie ist ein erster
+Dachstil; komplexe Dachformen und die vollständige gestalterische Abnahme bleiben
+offen.
+
 ## Geprüftes Verhalten
 
 Wald, Buschland, Wiese und Felsgebiet lassen sich auf allen Außenmaßstäben mit

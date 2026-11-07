@@ -1,3 +1,4 @@
+import { paintHouseRoof } from "./houseRoof";
 import type { ExteriorGeometryCache } from "./exteriorGeometryCache";
 import { paintScenery } from "./sceneryPaint";
 import { parcelGridRange } from "./parcelEditor";
@@ -81,6 +82,7 @@ export function shape(
   } else {
     c.fillStyle = highlight ?? o.roof;
     c.fill(path, "evenodd");
+    if (!highlight) paintHouseRoof(c, o, path, scale);
     c.strokeStyle = "#514c43";
     c.lineWidth = 1 / scale;
     c.stroke(path);
