@@ -97,6 +97,7 @@ fn failed_sql_write_rolls_back_objects_indices_counter_and_history() {
         "objects",
         "spatial",
         "occupancy_spatial",
+        "map_houses",
         "house_cells",
         "local_cells",
         "history",

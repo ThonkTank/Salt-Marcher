@@ -615,6 +615,125 @@ fn selection_budgets_ties_density_and_neighbor_tiles_are_independent() {
 }
 
 #[test]
+fn house_selection_prunes_distant_and_below_scale_authors() {
+    use std::sync::{
+        atomic::{AtomicUsize, Ordering},
+        Arc,
+    };
+    for local in [true, false] {
+        let a = AtlasApplication::new().unwrap();
+        put(&a, test_house("visible", 10., 10., 5., true));
+        let read = || {
+            let steps = Arc::new(AtomicUsize::new(0));
+            let count = steps.clone();
+            a.db.progress_handler(
+                100,
+                Some(move || {
+                    count.fetch_add(1, Ordering::Relaxed);
+                    false
+                }),
+            );
+            let result = a
+                .map_tiles(map_tiles::MapTilesArgs {
+                    level: if local { 3 } else { 20 },
+                    tiles: vec![[0, 0]],
+                })
+                .unwrap();
+            a.db.progress_handler(0, None::<fn() -> bool>);
+            (result, steps.load(Ordering::Relaxed))
+        };
+        let (before, baseline) = read();
+        a.db.execute_batch("BEGIN").unwrap();
+        for i in 0..1000 {
+            let x = if local {
+                100_000. + i as f64 * 40.
+            } else {
+                100. + i as f64 * 40.
+            };
+            put(
+                &a,
+                test_house(&format!("unrelated-{i}"), x, 100., 10., local),
+            );
+        }
+        a.db.execute_batch("COMMIT").unwrap();
+        let (after, work) = read();
+        assert_eq!(
+            serde_json::to_value(&before.tiles[0].features).unwrap(),
+            serde_json::to_value(&after.tiles[0].features).unwrap()
+        );
+        assert!(
+            work <= baseline + 50,
+            "local={local}: {baseline} -> {work} batches of 100 VM instructions"
+        );
+    }
+}
+
+#[test]
+fn house_index_tracks_size_and_rolls_back_failed_metadata_writes() {
+    let mut a = AtlasApplication::new().unwrap();
+    let id = house(&mut a, 10., 10.);
+    let ids = |a: &AtlasApplication| {
+        a.map_tiles(map_tiles::MapTilesArgs {
+            level: 3,
+            tiles: vec![[0, 0]],
+        })
+        .unwrap()
+        .tiles[0]
+            .features
+            .iter()
+            .map(|f| f.id.clone())
+            .collect::<Vec<_>>()
+    };
+    assert!(ids(&a).is_empty());
+    {
+        let tx = a.db.unchecked_transaction().unwrap();
+        storage::write_object(&tx, &test_house(&id, 10., 10., 100., false), false).unwrap();
+        assert_eq!(ids(&a).as_slice(), std::slice::from_ref(&id));
+        tx.rollback().unwrap();
+    }
+    assert!(ids(&a).is_empty());
+    let intent = json!({"type":"importantPlace","id":id,"value":true});
+    request_edit(&mut a, "preview", intent.clone());
+    assert!(ids(&a).is_empty());
+    a.db.execute_batch("CREATE TEMP TRIGGER fail_map_history BEFORE INSERT ON history BEGIN SELECT RAISE(ABORT,'injected failure'); END;").unwrap();
+    let status = json!(a.status());
+    assert!(a
+        .request("commit", json!({"version":a.status(),"intent":intent}))
+        .is_err());
+    assert_eq!(json!(a.status()), status);
+    assert!(ids(&a).is_empty());
+    a.db.execute_batch("DROP TRIGGER fail_map_history").unwrap();
+    request_edit(&mut a, "commit", intent);
+    assert_eq!(ids(&a).as_slice(), std::slice::from_ref(&id));
+    history(&mut a, false);
+    assert!(ids(&a).is_empty());
+    history(&mut a, true);
+    assert_eq!(ids(&a), [id]);
+}
+
+#[test]
+fn house_scale_cutoff_is_exact_despite_spatial_index_rounding() {
+    let a = AtlasApplication::new().unwrap();
+    for (id, side) in [("below", 96. - 1e-7), ("equal", 96.), ("above", 96. + 1e-7)] {
+        put(&a, test_house(id, -100., -100., side, false));
+    }
+    let response = a
+        .map_tiles(map_tiles::MapTilesArgs {
+            level: 3,
+            tiles: vec![[-1, -1]],
+        })
+        .unwrap();
+    assert_eq!(
+        response.tiles[0]
+            .features
+            .iter()
+            .map(|f| f.id.as_str())
+            .collect::<Vec<_>>(),
+        ["above", "equal"]
+    );
+}
+
+#[test]
 fn fixed_house_filter_priority_and_road_sql_rank() {
     let a = AtlasApplication::new().unwrap();
     put(&a, test_house("important", 10.0, 10.0, 5.0, true));

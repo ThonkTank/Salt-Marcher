@@ -53,8 +53,10 @@ pub(super) fn install(db: &rusqlite::Connection) -> Result<()> {
         WITH RECURSIVE levels(n) AS (SELECT 0 UNION ALL SELECT n+1 FROM levels WHERE n<20)
         INSERT INTO map_levels SELECT n,16*(1<<n) FROM levels;
         CREATE TABLE map_density(level INTEGER,x INTEGER,y INTEGER,mass REAL NOT NULL,n INTEGER NOT NULL,PRIMARY KEY(level,x,y)) WITHOUT ROWID;
-        CREATE INDEX map_named ON objects(kind,CASE WHEN json_valid(body) THEN json_extract(body,'$.importantPlace') END);
-        CREATE INDEX map_large ON objects(kind,max(max_x-min_x,max_y-min_y));") .map_err(storage_error)?;
+        CREATE INDEX objects_kind ON objects(kind);
+        CREATE VIRTUAL TABLE map_houses USING rtree(
+            key,min_x,max_x,min_y,max_y,min_size,max_size,
+            +object_id,+important,+size,+rank);") .map_err(storage_error)?;
     // SQLite CAST truncates toward zero; floor must also work west/south of origin.
     let add = |row: &str| {
         format!("INSERT INTO map_density SELECT level,
@@ -76,6 +78,29 @@ pub(super) fn install(db: &rusqlite::Connection) -> Result<()> {
         CREATE TRIGGER map_move BEFORE UPDATE OF min_x,min_y,max_x,max_y ON objects
         WHEN old.kind='house' AND (old.min_x!=new.min_x OR old.min_y!=new.min_y OR old.max_x!=new.max_x OR old.max_y!=new.max_y)
         BEGIN {remove} {} END;", add("new"), add("new"))).map_err(storage_error)?;
+    // Index position and display eligibility together. Important places are
+    // eligible at every supported map level; exact size stays in an auxiliary
+    // column because RTree coordinates conservatively round to float32.
+    let important = |row: &str| {
+        format!("CASE WHEN json_valid({row}.body) THEN coalesce(json_extract({row}.body,'$.importantPlace'),0) ELSE 0 END")
+    };
+    let mark = important("new");
+    let extent = "max(new.max_x-new.min_x,new.max_y-new.min_y)";
+    let eligible = format!("CASE WHEN ({mark})=1 THEN 200000000.0 ELSE {extent} END");
+    let insert = format!(
+        "INSERT INTO map_houses SELECT new.rowid,new.min_x,new.max_x,new.min_y,new.max_y,
+        {eligible},{eligible},new.id,{mark},{extent},(new.max_x-new.min_x)*(new.max_y-new.min_y)
+        WHERE new.kind='house';"
+    );
+    db.execute_batch(&format!("
+        CREATE TRIGGER map_house_insert AFTER INSERT ON objects WHEN new.kind='house' BEGIN {insert} END;
+        CREATE TRIGGER map_house_delete AFTER DELETE ON objects WHEN old.kind='house'
+        BEGIN DELETE FROM map_houses WHERE key=old.rowid; END;
+        CREATE TRIGGER map_house_update AFTER UPDATE OF id,kind,body,min_x,max_x,min_y,max_y ON objects
+        WHEN (old.kind='house' OR new.kind='house') AND (
+            old.kind!=new.kind OR old.id!=new.id OR old.min_x!=new.min_x OR old.max_x!=new.max_x
+            OR old.min_y!=new.min_y OR old.max_y!=new.max_y OR ({}) IS NOT ({mark}))
+        BEGIN DELETE FROM map_houses WHERE key=old.rowid; {insert} END;",important("old"))).map_err(storage_error)?;
     Ok(())
 }
 
@@ -327,38 +352,43 @@ impl AtlasApplication {
             for kind in ["area", "scenery", "road", "house"] {
                 // LIMIT precedes JSON decoding. Density remains complete when
                 // the bounded individual presentation is saturated.
-                let filter = if kind == "house" && args.level > 2 {
-                    " AND o.rowid IN (SELECT rowid FROM objects WHERE kind='house' AND (CASE WHEN json_valid(body) THEN json_extract(body,'$.importantPlace') END)=1 UNION SELECT rowid FROM objects WHERE kind='house' AND max(max_x-min_x,max_y-min_y)>=?6*0.75)"
+                let sql = if kind == "house" {
+                    // Materialize only ranked scalar headers before fetching
+                    // up to 128 JSON bodies. Both XY and eligibility prune in
+                    // the RTree before offscreen/below-scale rows reach ranking.
+                    "WITH selected AS MATERIALIZED (
+                        SELECT key,object_id,important,rank FROM map_houses
+                        WHERE min_x<=?1 AND max_x>=?2 AND min_y<=?3 AND max_y>=?4
+                            AND max_size>=?5 AND (important=1 OR size>=?5)
+                        ORDER BY important DESC,rank DESC,object_id LIMIT 128)
+                    SELECT s.object_id,o.body FROM selected s CROSS JOIN objects o ON o.rowid=s.key
+                    ORDER BY s.important DESC,s.rank DESC,s.object_id"
+                        .to_owned()
                 } else {
-                    ""
+                    let rank = if kind == "road" {
+                        "json_extract(o.body,'$.width') * max(o.max_x-o.min_x,o.max_y-o.min_y)"
+                    } else {
+                        "(o.max_x-o.min_x)*(o.max_y-o.min_y)"
+                    };
+                    format!("SELECT o.id,o.body FROM objects o JOIN spatial s ON o.rowid=s.key WHERE s.min_x<=?1 AND s.max_x>=?2 AND s.min_y<=?3 AND s.max_y>=?4 AND o.kind=?5 ORDER BY {rank} DESC,o.id LIMIT 128")
                 };
-                let rank = if kind == "road" {
-                    "json_extract(o.body,'$.width') * max(o.max_x-o.min_x,o.max_y-o.min_y)"
-                } else {
-                    "(o.max_x-o.min_x)*(o.max_y-o.min_y)"
-                };
-                let priority = if kind == "house" {
-                    "json_extract(o.body,'$.importantPlace') DESC,"
-                } else {
-                    ""
-                };
-                let sql=format!("SELECT o.id,o.body FROM objects o JOIN spatial s ON o.rowid=s.key WHERE s.min_x<=?1 AND s.max_x>=?2 AND s.min_y<=?3 AND s.max_y>=?4 AND o.kind=?5 AND ?6>0 {filter} ORDER BY {priority} {rank} DESC,o.id LIMIT 128");
                 let mut q = self.db.prepare_cached(&sql).map_err(storage_error)?;
-                let bodies = q
-                    .query_map(
-                        params![
-                            left + size * 32.0 + size,
-                            left - size,
-                            top + size * 32.0 + size,
-                            top - size,
-                            kind,
-                            size
-                        ],
-                        |r| Ok((r.get::<_, String>(0)?, r.get::<_, String>(1)?)),
-                    )
-                    .map_err(storage_error)?;
-                for body in bodies {
-                    let (id, body) = body.map_err(storage_error)?;
+                let bounds = [
+                    left + size * 32. + size,
+                    left - size,
+                    top + size * 32. + size,
+                    top - size,
+                ];
+                let mut rows = if kind == "house" {
+                    let minimum = if args.level > 2 { size * 0.75 } else { 0. };
+                    q.query(params![bounds[0], bounds[1], bounds[2], bounds[3], minimum])
+                } else {
+                    q.query(params![bounds[0], bounds[1], bounds[2], bounds[3], kind])
+                }
+                .map_err(storage_error)?;
+                while let Some(row) = rows.next().map_err(storage_error)? {
+                    let id = row.get(0).map_err(storage_error)?;
+                    let body = row.get(1).map_err(storage_error)?;
                     if let Some(feature) = project(id, body, size)? {
                         features.push(feature);
                     }
