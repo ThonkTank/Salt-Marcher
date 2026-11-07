@@ -482,6 +482,37 @@ describe("pure canvas input decisions", () => {
     });
   });
 
+  it.each([0.31, 0.0001, 0.000002])(
+    "starts ground strokes without a zoom gate at %s",
+    (scale) => {
+      const gesture = gestureOf(
+        state({
+          ...brushSettings,
+          tool: "area",
+          camera: { x: 0, y: 0, scale },
+          lod: decideLod(scale),
+        }),
+      );
+      if (gesture?.kind !== "ground") throw Error("Missing ground stroke");
+      expect(gesture.brush.diameter * scale).toBe(80);
+      const resolution = gesture.brush.resolution!;
+      expect(2 ** resolution * scale).toBeGreaterThanOrEqual(0.5);
+      expect(2 ** resolution * scale).toBeLessThanOrEqual(1);
+      const later = state({
+        tool: "area",
+        camera: { x: 0, y: 0, scale: 2 },
+        workflow: geometryState(
+          { ...common, kind: "geometry" },
+          { kind: "ground" },
+          gesture,
+        ),
+      });
+      expect(
+        evaluatePointer(later, input([20, 4]), true)?.intent,
+      ).toMatchObject({ type: "groundStroke", brush: { resolution } });
+    },
+  );
+
   it("continues held ground flow at the last point with monotonic elapsed time", () => {
     const pointer = gestureOf(state({ ...brushSettings, tool: "area" }));
     if (pointer?.kind !== "ground") throw Error("Missing ground stroke");

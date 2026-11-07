@@ -63,7 +63,7 @@ export function toolScaleRestriction(
 ): "detail" | "localBrush" | null {
   if (
     !interior &&
-    (tool === "area" || tool === "scenery" || tool === "water") &&
+    (tool === "scenery" || tool === "water") &&
     !lod.policy.detailBrushes
   )
     return "localBrush";

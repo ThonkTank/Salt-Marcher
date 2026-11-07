@@ -328,7 +328,7 @@ neu angelegte Kategorien, Rangstufen und Regionen nutzen den globalen Allocator.
 ## Bodenfarbpinsel
 
 „Boden“ ersetzt das Erstellen neuer Materialpolygone in der Werkzeugleiste.
-Bestehende Flächenobjekte bleiben auswählbar und bearbeitbar. Ab 0,32 CSS-Pixeln pro Fuß
+Bestehende Flächenobjekte bleiben auswählbar und bearbeitbar. In jeder Außenansicht
 malt Ziehen oder Halten mit der linken Taste Bodenfarbe; Loslassen übernimmt einen
 Strich als einen Historyschritt. Escape, Blur, Pointercancel und Werkzeugwechsel
 verwerfen die laufende Geste. Deckkraft begrenzt den Auftrag pro Strich; Farbfluss
@@ -342,12 +342,17 @@ Bodenfarbe der dargestellten Rasterstufe auf. Der lokale Radierer entfernt nur
 Bodenfarbe und legt den ursprünglichen Untergrund frei; er verwendet dieselben
 Spitzen und Auftragsparameter. Größenänderung und Zoom folgen dem gemeinsamen Bildschirmpinselvertrag.
 
-Bodenfarbe ist ein separates, dünn belegtes Raster mit einem Fuß Auflösung und
-64×64-Pixel-Kacheln in vormultipliziertem RGBA. Die Darstellung interpoliert weich,
+Bodenfarbe verwendet dünn belegte 64×64-Pixel-Autorenkacheln in vormultipliziertem
+RGBA. Die beim Strichbeginn feste Auflösung beträgt 2^Stufe Fuß (Stufen 0–24),
+maßstabsabhängig ungefähr ein halbes bis ein Bildschirmpixel, mindestens einen Fuß.
+Feinere Kacheln erben grobe Farbe; spätere grobe Striche bearbeiten vorhandene
+Feinkacheln mit demselben Farbauftrag, ohne leere Feinraster anzulegen. Radierte
+transparente Autorenwerte verdecken geerbte Farbe. Die Darstellung interpoliert weich,
 erhält die Reliefschattierung und liegt unter Wasser, Landschaft, Straßen und
 Gebäuden. Bodenfarbe verändert keine Höhen, Fundamente oder Kollisionen.
 Ein Strich enthält höchstens 100.000 zeitgestempelte Pfadpunkte, dauert höchstens
-eine Stunde und berührt höchstens eine Million Rasterpixel. Die Berechnung ist
+eine Stunde und bearbeitet höchstens eine Million Rasterpixel einschließlich
+betroffener vorhandener Feinkacheln. Die Berechnung ist
 zusätzlich auf 100.000 Abdrücke und 40 Millionen Pixelprüfungen begrenzt; Überschreitung
 lehnt den gesamten Strich ab. Weg- und Zeitabtastung sind von der Eingabeereignisrate
 unabhängig; die Wolkenmaske ist durch den Seed reproduzierbar. Vorschau und Commit
@@ -485,8 +490,8 @@ garantiert keine Bearbeitungsfreigabe.
 
 Mitteltaste oder Leertaste+Ziehen verschiebt die Karte, Mausrad zoomt. Ein Haus
 öffnet per Doppelklick oder „Innen öffnen“; die Kamera bleibt erhalten.
-Außenzoom reicht bis 0,000002 CSS-Pixel pro Fuß. Straßen, Regionen und Höhen
-lassen sich in der gesamten Außenübersicht bearbeiten. Boden und lokale Gewässer
+Außenzoom reicht bis 0,000002 CSS-Pixel pro Fuß. Straßen, Boden, Regionen und Höhen
+lassen sich in der gesamten Außenübersicht bearbeiten. Lokale Gewässer
 benötigen mindestens 0,32 CSS-Pixel pro Fuß, Landschaft sowie andere
 Außenobjekte und Innenräume mindestens 1,28. Im Parzellenkontext
 verwendet Fit immer Polygonbounds, auch ohne Haus; ein fehlender Owner bedeutet
@@ -744,9 +749,9 @@ Grundstücksgrenzen oder Innenraumdetails. Namen werden nach den Regeln der
 Stadtübersicht und der Regionen priorisiert und begrenzt.
 
 Innerhalb dieser benannten Ansicht liegt die Inhaltsgrenze für gewöhnliche
-Gebäudenamen sowie Boden- und Gewässerbearbeitung. Die Ansichtsauswahl landet
+Gebäudenamen sowie Gewässerbearbeitung. Die Ansichtsauswahl landet
 im gröberen Teil: Gewöhnliche Gebäude außerhalb der Auswahl tragen dort keine
-Namen, und die beiden Pinsel sind gesperrt. Beim Hineinzoomen können diese Namen
+Namen, und der Gewässerpinsel ist gesperrt. Beim Hineinzoomen können diese Namen
 und Werkzeuge bei gleichbleibendem Ansichtsnamen verfügbar werden. Es gelten
 die Inhaltsgrenzen und Rücklaufbereiche der Stadtübersicht und der Werkzeugregeln.
 Bestehende Bodenfarben, Gewässer und Landschaft bleiben auch bei gesperrtem
@@ -770,7 +775,7 @@ gesperrt sind. Kleine Geometrien und Symbole dürfen nach den Darstellungsgrenze
 entfallen; die Übersicht garantiert nicht die Anzeige jedes Einzelobjekts.
 
 Auswahl und Navigation sowie Straßen-, Fluss-, Höhen- und Regionsbearbeitung
-bleiben nach ihren Werkzeugregeln verfügbar. Boden- und Gewässerpinsel benötigen
+bleiben nach ihren Werkzeugregeln verfügbar. Boden bleibt in allen Außenmaßstäben bearbeitbar; der Gewässerpinsel benötigt
 einen feineren Maßstab; Haus-, Landschafts- und Innenbearbeitung weiterhin den
 Nahzoom. Ein Innenkontext wird ausdrücklich geöffnet. Der Ansichtsname legt
 weder eine Regionsrangstufe noch eine Verwaltungsordnung fest.
@@ -846,10 +851,10 @@ Pro Ansicht werden höchstens 3.000 priorisierte Objektkandidaten betrachtet und
 
 ## Dateien und History
 
-`.saltatlas`: SQLite-Format **19**, ohne Migration/Altformate. Genau zehn
+`.saltatlas`: SQLite-Format **20**, ohne Migration/Altformate. Genau zehn
 STRICT-/WITHOUT-ROWID-Tabellen: `document_meta(singleton,next_identity)`,
 `objects(id,kind,body)`, `house_cells(building_id,payload)`,
-`terrain(x,y,z)`, `terrain_layers(level,x,y,z)`, `waters(id,body)`, `ground_tiles(x,y,pixels)`, `region_catalog(singleton,body)`, `regions(id,body)`, `rivers(id,body)`. Keine Arbeitsindizes,
+`terrain(x,y,z)`, `terrain_layers(level,x,y,z)`, `waters(id,body)`, `ground_tiles(level,x,y,pixels)`, `region_catalog(singleton,body)`, `regions(id,body)`, `rivers(id,body)`. Keine Arbeitsindizes,
 RTrees, Views, Trigger, History oder redundanten Konturen/Bounds.
 
 Autoritativ sind Straßeneigenschaften/Nodes/Sections/Rezept/Marker,
@@ -859,8 +864,7 @@ Flächenpunkte/-material/-Order, Landschaftsstriche mit konkreten Assets, natür
 Fundamenteinstellungen pro Haus, Bodenfarbkacheln sowie Regionskatalog,
 Regionsflächen, Namen, Stile und Beschriftungseinstellungen sowie Flussknoten,
 Breiten, Einstellungen und resultierende Verläufe. Regionsbeziehungen
-werden aus den Flächen abgeleitet. Leere Bodenfarbkacheln
-werden nicht gespeichert; ihre Übersichtspyramide wird beim Öffnen neu aufgebaut. Hauszellen stehen ausschließlich separat.
+werden aus den Flächen abgeleitet. Transparente Bodenfarbkacheln bleiben als explizite Überschreibungen erhalten; ihre Übersichtspyramide wird beim Öffnen neu aufgebaut. Hauszellen stehen ausschließlich separat.
 Gebundene Welttransforms und Konturen werden beim Öffnen neu berechnet.
 
 Unbekannte und doppelte verschachtelte JSON-Felder, zusätzliche Schemaobjekte,

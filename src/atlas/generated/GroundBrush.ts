@@ -3,6 +3,7 @@ import type { GroundMode } from "./GroundMode";
 import type { GroundTip } from "./GroundTip";
 
 export type GroundBrush = {
+  resolution?: number;
   mode: GroundMode;
   tip: GroundTip;
   color: [number, number, number];

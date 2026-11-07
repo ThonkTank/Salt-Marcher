@@ -25,6 +25,9 @@ pub(super) fn downsample_quadrant(parent: &mut [u8], child: &[u8], cx: usize, cy
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct GroundBrush {
+    #[serde(default)]
+    #[cfg_attr(test, ts(optional))]
+    pub resolution: Option<u8>,
     pub mode: GroundMode,
     pub tip: GroundTip,
     pub color: [u8; 3],
@@ -74,9 +77,18 @@ pub struct GroundResponse {
     pub tiles: Vec<GroundTile>,
 }
 #[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct GroundAuthorTile {
+    pub level: u8,
+    pub x: i32,
+    pub y: i32,
+    /// Empty means absent; transparent tiles override inherited color.
+    #[serde(with = "pixel_wire")]
+    pub pixels: Vec<u8>,
+}
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct GroundDelta {
-    pub before: Vec<GroundTile>,
-    pub after: Vec<GroundTile>,
+    pub before: Vec<GroundAuthorTile>,
+    pub after: Vec<GroundAuthorTile>,
 }
 
 fn noise(x: f64, y: f64, seed: u32) -> f64 {
@@ -115,7 +127,7 @@ pub fn coverage(brush: &GroundBrush) -> Result<BTreeMap<(i32, i32), f64>> {
     )?;
     ensure(
         brush.diameter.is_finite()
-            && (0.002..=20_000_000.0).contains(&brush.diameter)
+            && (0.002..=256_000_000.0).contains(&brush.diameter)
             && brush.opacity.is_finite()
             && (0.01..=1.0).contains(&brush.opacity)
             && brush.flow.is_finite()
@@ -262,6 +274,7 @@ mod tests {
     use super::*;
     fn brush() -> GroundBrush {
         GroundBrush {
+            resolution: None,
             mode: GroundMode::Paint,
             tip: GroundTip::Soft,
             color: [80, 130, 60],

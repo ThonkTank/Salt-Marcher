@@ -620,7 +620,7 @@ fn height_rebuild_keeps_unrelated_tables_and_history() {
         json!({"type":"createHouse","parcelId":null,"transform":{"x":1000,"y":1000,"angle":0},"width":2,"depth":2}),
     );
     a.db.execute(
-        "INSERT INTO ground_tiles VALUES(0,0,?1)",
+        "INSERT INTO ground_tiles VALUES(0,0,0,?1)",
         [vec![17_u8; crate::atlas::ground::BYTES]],
     )
     .unwrap();
