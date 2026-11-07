@@ -204,9 +204,9 @@ test("isolated upper roof remains visible after movement while basement stays ou
         { x: p.x - box.x, y: p.y - box.y },
       );
   };
-  // Sample inside a roof face, away from the decorative hip lines. Its blue
-  // authored pigment remains visible under shading and must move unchanged.
-  const roofPixel = await pixel([47.5, 6.25]);
+  // Sample the upper roof face, clear of the centered label/halo and hip lines.
+  // Its authored blue pigment must remain visible and move unchanged.
+  const roofPixel = await pixel([45, 1.25]);
   expect(roofPixel[2]).toBeGreaterThan(roofPixel[1]);
   expect(roofPixel[1]).toBeGreaterThan(roofPixel[0]);
   expect(await pixel([7.5, 6.25])).not.toEqual(roofPixel);
@@ -221,8 +221,8 @@ test("isolated upper roof remains visible after movement while basement stays ou
   // Selection tint is separate from the shaded roof drawing.
   await clickWorld(page, [100, 100]);
   await ready(page);
-  await expect.poll(() => pixel([67.5, 6.25])).toEqual(roofPixel);
-  expect(await pixel([47.5, 6.25])).not.toEqual(roofPixel);
+  await expect.poll(() => pixel([65, 1.25])).toEqual(roofPixel);
+  expect(await pixel([45, 1.25])).not.toEqual(roofPixel);
 });
 
 test("whole-house long drag uses one transform candidate, keeps the base fixed and cancels without rectangle allocation", async ({

@@ -14,6 +14,11 @@ CI-geprüften Kandidaten `c7486a32b`. Damit sind auch die Änderungen aus #1463 
 Der aktuelle Folgekandidat ergänzt Terrainpfade im vorhandenen Rastercache und
 erhält den Weltmittelpunkt beim Öffnen von Werkzeugleisten und bei Fensterresizes.
 Seine Main-Abstammung berücksichtigt die bereits integrierten Änderungen.
+CI für `509b41595` besteht bis auf einen Dach-Pixelvergleich: 247 Browserfälle
+bestehen, der native CI-Build wurde danach übersprungen. Die alte Pixelprobe
+traf den Rand der Hausbeschriftung; eine isolierte Canvasprobe reproduziert
+exakt den abweichenden Farbwert. Die korrigierte Probe liegt auf einer freien
+Dachfläche und behält die exakte Farberwartung beim Verschieben bei.
 Vollständige CI-Freigabe und Main-Übernahme dieses Folgekandidaten stehen aus.
 
 ## Geprüfter Produktstand
@@ -102,3 +107,7 @@ Aktuelle Belege unter `src-tauri/target/diagnostics/`: `feature-input-review/`,
 und `retained-terrain-contours/` beziehungsweise `retained-terrain-contours-final/`.
 Die Kamerakorrektur ist in `viewport-center-before/`, `viewport-center-full/`,
 `viewport-center-regressions/` und `mixed-scene-review/` belegt.
+
+Die Korrektur des Dachvergleichs besteht mit allen acht Fällen der betroffenen
+Browserdatei in drei Wiederholungen (24/24), dazu Typ- und Formatprüfung.
+Belege liegen unter `roof-pixel-ci/`; die erneute CI-Prüfung steht aus.
