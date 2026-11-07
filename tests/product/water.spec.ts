@@ -1,5 +1,8 @@
 import {
   calls,
+  commit,
+  paintedReady,
+  settled,
   dragWorld,
   holdResponse,
   ready,
@@ -118,4 +121,67 @@ test("Gewässer bleiben in der Übersicht malbar und Höhen entfernen Inselwasse
     .toBeGreaterThan(raisedRevision);
   await ready(page);
   expect(waterAt((await terrain(page)).tiles[0].waters, [40, 40])).toBeNull();
+});
+
+test("coarse height edits beside a large lake keep local water and one-step history", async ({
+  page,
+}) => {
+  test.setTimeout(90000);
+  const { waterAt } = await import("../../src/atlas/waterView");
+  await page.goto(url);
+  await ready(page);
+  // Two narrow strokes form a lake whose bounding rectangle exceeds the old
+  // world-follow-up budget, although the following height edit is local.
+  for (const points of [
+    [
+      [0, 0],
+      [3000, 0],
+    ],
+    [
+      [3000, 0],
+      [3000, 3000],
+    ],
+  ] as const) {
+    await commit(page, {
+      type: "waterStroke",
+      brush: {
+        mode: "lower",
+        radius: 20,
+        amount: 5,
+        strength: 1,
+        target: 10,
+        points: points.map((p) => [...p]),
+      },
+    });
+  }
+  await page.reload();
+  await ready(page);
+  await page
+    .getByLabel("Ansichtsmaßstab")
+    .selectOption({ label: "Quartier / kleines Dorf" });
+  await page.getByRole("button", { name: "Höhen", exact: true }).click();
+  await page.getByLabel("Pinselmodus").selectOption("raise");
+  await page.getByLabel("Höhenänderung (Fuß)").fill("100");
+  await page.getByLabel("Höhenänderung (Fuß)").blur();
+  await paintedReady(page);
+  const before = (await terrain(page)).tiles;
+  const revision = (await status(page)).revision;
+  await dragWorld(page, [0, 0], [10, 0]);
+  await expect
+    .poll(async () => (await status(page)).revision)
+    .toBeGreaterThan(revision);
+  await settled(page);
+  await paintedReady(page);
+  expect(
+    (await calls(page, "beginTerrainStroke"))[0].args.brush.resolution,
+  ).toBeGreaterThan(0);
+  const after = (await terrain(page)).tiles;
+  expect(after).not.toEqual(before);
+  expect(waterAt(after[0].waters, [0, 0])).toBe(-100);
+  await page.getByRole("button", { name: "Rückgängig", exact: true }).click();
+  await settled(page);
+  expect((await terrain(page)).tiles).toEqual(before);
+  await page.getByRole("button", { name: "Wiederholen", exact: true }).click();
+  await settled(page);
+  expect((await terrain(page)).tiles).toEqual(after);
 });
