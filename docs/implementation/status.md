@@ -17,6 +17,11 @@ Die Kamerakorrektur liegt in PR #1466 mit laufender CI und automatischer
 Main-Übernahme. Der darauf aufbauende Waldkandidat vergrößert nahe Kronen bei
 gleichem Kandidatenabstand und berücksichtigt deren größeren sichtbaren Rand.
 Seine Main-Abstammung berücksichtigt die bereits integrierten Änderungen.
+CI für `509b41595` besteht bis auf einen Dach-Pixelvergleich: 247 Browserfälle
+bestehen, der native CI-Build wurde danach übersprungen. Die alte Pixelprobe
+traf den Rand der Hausbeschriftung; eine isolierte Canvasprobe reproduziert
+exakt den abweichenden Farbwert. Die korrigierte Probe liegt auf einer freien
+Dachfläche und behält die exakte Farberwartung beim Verschieben bei.
 Vollständige CI-Freigabe und Main-Übernahme dieses Folgekandidaten stehen aus.
 Zuerst #1466 integrieren; danach `codex/near-forest-canopy` auf den verifizierten
 Main-Stand beziehen. Der laufende Check von #1466 wird nicht neu gestartet.
@@ -115,3 +120,9 @@ und `retained-terrain-contours/` beziehungsweise `retained-terrain-contours-fina
 Die Kamerakorrektur ist in `viewport-center-before/`, `viewport-center-full/`,
 `viewport-center-regressions/` und `mixed-scene-review/` belegt.
 Wald-Bildproben und Bedienprüfung liegen unter `forest-density-review/`.
+
+Die Korrektur des Dachvergleichs besteht mit allen acht Fällen der betroffenen
+Browserdatei in drei Wiederholungen (24/24), dazu Typ- und Formatprüfung.
+Belege liegen unter `roof-pixel-ci/`; die erneute CI-Prüfung für `ea4ca9d02` läuft.
+Die Testkorrektur ist auch im Waldkandidaten enthalten; dessen Produktcode
+ist gegenüber dem bereits lokal geprüften Stand unverändert.
