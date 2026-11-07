@@ -28,7 +28,11 @@ liefert für leere Kacheln weiterhin die Grundfarben. Die leere Boden-Nutzlast
 entfällt damit ebenfalls; dies ist eine Transportoptimierung ohne neue Zeitmessung.
 Zehn Browserfälle für Boden, Landschaft und Schnee/Fels bestehen einschließlich
 Weltzoom per Auswahl/Mausrad, History und Datei. Typen, 134 Transportverträge,
-Clippy und Format bestehen.
+Clippy und Format bestehen. Der neue Release-/RPM-Build ist nativ auf einer
+leeren Weltkarte geprüft: Land anlegen, erster Bodenauftrag mit sichtbarer
+Vorschau, Undo/Redo, freier Mausradzoom und Speichern funktionieren. Die gespeicherte
+Datei besteht die SQLite-Integritätsprüfung und enthält weiterhin vollständige
+32.768-Byte-Autorenkacheln. Belege: `src-tauri/target/diagnostics/compact-empty-ground/`.
 Wasser maskiert die Darstellung ohne Autorenverlust. Schnee bleibt sichtbar.
 Konturen und Regionsfüllung liegen über Landschaftsfarbe, aber unter Symbolen.
 Der Übergang von Signaturen zu Einzelbäumen überblendet beide Darstellungen
