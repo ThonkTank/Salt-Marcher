@@ -6,79 +6,65 @@ Zuständigkeiten, [Produktvertrag](../product-contract.md) Verhalten und Grenzen
 
 ## Aktuelle Optimierung
 
-Die ungenutzten Höhenübersichten `terrain_lod` und `terrain_layer_overview`
-samt Writes und Import-Rebuild sind entfernt. `terrain_blocks` bleibt der einzige
-abgeleitete Höhenindex. Land/Meer berechnet exakte Kandidaten entlang des Strichs
-über einen temporären 16×16-Blockindex; lange Diagonalen verwenden ihren Korridor.
-Autorenreads und Auftrag teilen diese Kandidaten. Die Queue sendet höchstens
-32 neue Punkte je Append und reserviert den vollständigen Abschluss vor
-History-/Dateigrenzen. Schon Begin liefert nur betroffene Oberflächenkacheln.
+Die Bebauungsdichte einer Übersichtskachel wird über 32 feste X-Werte und
+jeweils den lokalen Y-Bereich des vorhandenen Primärschlüssels gelesen.
+Eine Kachel betrachtet damit höchstens ihre 32×32 Dichtezellen. Entfernte
+Bebauung im gleichen Nord-Süd-Streifen verursacht keinen linearen Scan mehr.
+Darstellung, Priorisierung, History, Dateiformat und Cachebesitzer bleiben erhalten;
+es gibt keinen zusätzlichen Index und keine neue Messinfrastruktur.
 
-Konstante Relief-/Wasserraster bleiben im Frontend 1×1-Bilder; der Dekoder
-vermeidet Pixel-Zwischenarrays. Reliefgradienten verwenden das vorhandene
-33×33-Höhenraster und nur 280 zusätzliche Randpunkte. Die Darstellung zielt auf
-kleinere Kacheln, unabhängig von Autorenauflösung und weiterhin innerhalb des
-64-Kachelbudgets. Blockindex-Updates verwenden vorbereitete SQL-Anweisungen für
-den gesamten Durchlauf. Bodenfarben suchen/holen Reliefdaten nicht mehr je Pixel neu.
-Unsichtbare beziehungsweise im Maßstab ausgeschlossene Kartenbeschriftungen
-verbrauchen keine Schriftmessungen oder sichtbaren Platzierungsslots.
+Der neue Regressionstest vergleicht die vollständigen Kachelinhalte mit einer
+einfachen Referenz einschließlich negativer Koordinaten, Zellgrenzen und
+Deckungssättigung. Zusätzlich prüft er den SQLite-Arbeitsaufwand nach dem
+Einfügen von 20.000 entfernten Dichtezellen. Vor der Korrektur stieg dieser von
+379 auf 1.381 Blöcke à 100 VM-Anweisungen; die begrenzte Abfrage besteht den
+Arbeitsbudgettest. Dies ist ein deterministischer Zugriffstest, keine Latenzmessung.
+Alle acht aktiven Kartenkern-Tests bestehen; das große Stadtbenchmark bleibt opt-in.
+Auch alle 321 Rusttests, Clippy und Formatprüfung sowie die neun Browserfälle
+für Stadtübersicht und Kachelinvalidierung bestehen lokal. Die vollständige
+CI-Freigabe erfolgt über den verpflichtenden Check am exakten PR-Head.
 
-## Geprüft und gemessen
+## Bestehender geprüfter Stand
 
-129 Transportverträge, Typprüfung und 320 Rusttests bestanden; fünf ausdrücklich
-ignorierte Rustfälle bleiben separat. Clippy, Formatprüfung und Webbuild bestanden.
-Lokal sind 363 Frontendtests grün; nach der abschließenden Eingabeprojektion wurden
-alle 78 betroffenen Unit-Tests erneut geprüft.
+[PR #1437](https://github.com/ThonkTank/Salt-Marcher/pull/1437) ist auf `main`
+integriert. Der exakte Kandidat bestand 129 Transportverträge, Typprüfung,
+363 Frontend-, 320 Rust- und 224 Browsertests sowie Clippy, Format, Webbuild
+und Release-/RPM-Build. Fünf Rustfälle bleiben ausdrücklich ignoriert.
+Die ursprüngliche lokale Historie bleibt in `codex/atlas-v7-preserved-histories`.
 
-Die CI deckte einen verlorenen ersten Strich nach Panelwechseln auf. Bekannte
-Layoutwechsel werden jetzt vor der nächsten Eingabe ausgemessen; verspätete
-Resize-Doppelmeldungen dürfen keine neue Geste abbrechen. Der gezielte Test
-reproduzierte den Fehler vorher und besteht danach samt echtem Resize-Abbruch.
-Diese Korrektur und die zuvor betroffenen fünf Browserfälle bestanden anschließend
-auch in CI. Zwei dort noch gemeldete Doppelklick-Fälle sind ebenfalls korrigiert:
-Aktuelle Geometrie am Anker genügt zur Navigation, wenn nur der neu sichtbare Rand
-noch lädt. Ein gehaltener Read sichert dies ohne Write ab. Alle neun gezielten
-Navigations-Browserfälle bestehen lokal; der gesamte Browserumfang beträgt nun
-224 Fälle. Maßgeblich für die vollständige CI-Freigabe ist der exakte PR-Head in
-[PR #1437](https://github.com/ThonkTank/Salt-Marcher/pull/1437).
+Höhenstriche verwenden begrenzte 32-Punkte-Pakete, exakte räumliche
+Land-/Meerberechnung und bestätigte Zwischenstände. Unbenutzte Höhenübersichten
+sind entfernt; Raster-, Relief-, Zeichen- und Beschriftungsarbeit ist reduziert.
+Verspätete Resize-Meldungen dürfen keine neue Geste abbrechen. Freier Doppelklick
+kann aktuelle Geometrie am Anker nutzen, während der neu sichtbare Rand noch lädt.
 
-Der frische native Release-Build samt RPM wurde erfolgreich gebaut. Im nativen
-X11/WebKit-Fenster (1440×960) zeigte derselbe 80-Pixel-Weltpinselpfad zwei wachsende
-Geländestände vor dem Loslassen, auch nach der Layoutkorrektur. Die erste
-Hausgeste direkt nach dem Werkzeugwechsel wurde ebenfalls nativ geprüft.
-Der abschließende native Build bestätigt bei 900×620 auch den freien
-Doppelklick von „Haus“ nach „Raum“ beim Abwählen des Hauses.
-Ein Undo stellt den leeren Ozean wieder her;
-Redo entspricht den fertigen Kartenpixeln. Die native Prüfung ist ein
-Funktionsnachweis, keine native Latenzmessung oder vollständige Bedienabnahme.
+Der frische native Build bestätigte den 80-Pixel-Weltstrich mit zwei sichtbaren
+Zwischenständen, vollständigem Undo/Redo, die erste Hausgeste nach Werkzeugwechsel
+und den freien Doppelklick Haus → Raum beim Abwählen des Hauses (900×620).
+Diese Funktionsprüfungen ersetzen keine vollständige native Bedienabnahme.
 
 Genau eine kleine Release-Vergleichsreihe mit je drei identischen Weltstrichen
 (1440×960, DPR 1, 80-Pixel-Landpinsel) ist abgeschlossen. Erste sichtbare Änderung:
 vorher 275–304 ms, danach 119–134 ms. Sichtbare Bestätigung p95: vorher
 427–516 ms, danach 339–376 ms. Nachlauf nach Loslassen: vorher 259–427 ms,
-danach 231–345 ms. Das 50-ms-Ziel ist damit noch nicht erreicht. Die anschließend
-verkleinerten Darstellungskacheln und weiteren lokalen Zeichenoptimierungen sind
-in diesen Zeitwerten noch nicht enthalten; keine zusätzliche Messreihe gestartet.
+danach 231–345 ms. Das 50-ms-Ziel ist noch nicht erreicht. Spätere kleinere
+Darstellungskacheln und lokale Zeichenoptimierungen sind in diesen Zeitwerten
+nicht enthalten; keine zusätzliche Messreihe gestartet.
 
 ## Offene Abnahme und nächste Arbeit
 
-Native Datei-/Eingabeabnahme über den geprüften Weltstrich hinaus,
-RPM-Installation sowie große Stadt-/Weltlastfälle
-bleiben offen. PR #1437 enthält den linearen Integrationsstand; Auto-Merge
-setzt einen erfolgreichen verpflichtenden CI-Check voraus. Die ursprüngliche lokale Historie bleibt
-im Branch `codex/atlas-v7-preserved-histories` erhalten.
+Native Datei-/Eingabeabnahme über die geprüften Fälle hinaus,
+RPM-Installation und große Stadt-/Weltlastfälle
+bleiben offen. Der umfangreiche Release-Treiber mit neun Fixtures wurde hier
+nicht ausgeführt.
 
-Nächster Schwerpunkt bleibt das 50-ms-Ziel für bestätigte Pinselbilder. Ein
-zusätzlicher SQL-Versuch zeigte globale Hausfilterarbeit bei lokalen Kartenreads;
-der Versuch wurde zurückgenommen, weil ein ausschließlich räumlicher Zugriff
-Weltansichten mit vielen kleinen Häusern verteuern könnte. Eine spätere Lösung
-muss beide Fälle begrenzen. Der native Direktstrich zeigt während ausstehender
-Writes noch die allgemeinen Übernehmen-/Abbrechen-Aktionen; deren Darstellung
-sollte an den bereits bestätigten Strichvertrag angepasst werden.
+Nächster Schwerpunkt bleibt das 50-ms-Ziel für bestätigte Pinselbilder.
+Die Hausfilterabfrage kann weiterhin globale Arbeit bei lokalen Kartenreads
+verursachen; ein ausschließlich räumlicher Zugriff wurde wegen des gegenteiligen
+Risikos in Weltansichten verworfen. Eine Lösung muss beide Fälle begrenzen.
+Der native Direktstrich zeigt bei ausstehenden Writes noch die allgemeinen
+Übernehmen-/Abbrechen-Aktionen; die Darstellung sollte dem Direktstrichvertrag folgen.
 
-Der parallel vorhandene umfangreiche Release-Treiber und seine neun Fixtures
-wurden hier nicht ausgeführt; diese Arbeit verwendet nur den kleinen Weltfall.
-Toolchain-Dateien und die übrigen vorhandenen Arbeitsänderungen bleiben erhalten.
-
-Belege und Sicherung: `src-tauri/target/diagnostics/world-brush/`.
-Browserbilder und Fehlerkontexte: `src-tauri/target/diagnostics/playwright-*/`.
+Aktuelle Belege: `src-tauri/target/diagnostics/density-*.log`.
+Vorige Mess- und native Belege: `src-tauri/target/diagnostics/world-brush/`.
+Browserbelege: `src-tauri/target/diagnostics/playwright-*/`.

@@ -10,6 +10,71 @@ fn density(a: &mut AtlasApplication) -> Value {
         .unwrap()["tiles"]
         .clone()
 }
+
+#[test]
+fn density_reads_ignore_distant_cells_in_the_same_columns() {
+    use std::sync::{
+        atomic::{AtomicUsize, Ordering},
+        Arc,
+    };
+    let a = AtlasApplication::new().unwrap();
+    // Populate the derived index directly to isolate density access from the
+    // independent feature queries. Include edges, empty cells and saturation.
+    a.db.execute_batch(
+        "WITH RECURSIVE coords(n) AS (
+        SELECT -33 UNION ALL SELECT n+1 FROM coords WHERE n<32)
+        INSERT INTO map_density SELECT 4,x.n,y.n,CASE WHEN x.n=0 THEN 999999 ELSE 256 END,1
+        FROM coords x CROSS JOIN coords y;",
+    )
+    .unwrap();
+    let read = || {
+        let steps = Arc::new(AtomicUsize::new(0));
+        let counter = steps.clone();
+        a.db.progress_handler(
+            100,
+            Some(move || {
+                counter.fetch_add(1, Ordering::Relaxed);
+                false
+            }),
+        );
+        let result = a
+            .map_tiles(map_tiles::MapTilesArgs {
+                level: 4,
+                tiles: vec![[-1, -1], [0, 0], [1, 1]],
+            })
+            .unwrap();
+        a.db.progress_handler(0, None::<fn() -> bool>);
+        (result, steps.load(Ordering::Relaxed))
+    };
+    let (before, base_steps) = read();
+    for tile in &before.tiles {
+        let mut expected = a.db.prepare("SELECT x,y,mass FROM map_density WHERE level=4 AND x>=?1 AND x<?1+32 AND y>=?2 AND y<?2+32 AND n>0 ORDER BY x,y").unwrap();
+        let expected: Vec<[f64; 3]> = expected
+            .query_map([tile.x * 32, tile.y * 32], |r| {
+                Ok([
+                    r.get::<_, f64>(0)? - f64::from(tile.x) * 32.0,
+                    r.get::<_, f64>(1)? - f64::from(tile.y) * 32.0,
+                    (r.get::<_, f64>(2)? / 256.0_f64.powi(2)).clamp(0.0, 1.0),
+                ])
+            })
+            .unwrap()
+            .collect::<rusqlite::Result<_>>()
+            .unwrap();
+        assert_eq!(tile.density, expected);
+    }
+    // All rows share queried X coordinates, but are far north/south. A single
+    // range on X scans them despite the Y predicate on the composite key.
+    a.db.execute_batch("WITH RECURSIVE coords(n) AS (
+        SELECT 1 UNION ALL SELECT n+1 FROM coords WHERE n<20000)
+        INSERT INTO map_density SELECT 4,n%32,CASE WHEN n%2=0 THEN n+1000 ELSE -n-1000 END,256,1 FROM coords;").unwrap();
+    let (after, crowded_steps) = read();
+    assert_eq!(
+        serde_json::to_value(&before).unwrap(),
+        serde_json::to_value(&after).unwrap()
+    );
+    assert!(crowded_steps <= base_steps + 100,
+        "offscreen density must not add a linear scan: {base_steps} -> {crowded_steps} batches of 100 VM instructions");
+}
 #[test]
 fn city_index_tracks_moves_deletion_and_history_without_cells() {
     let mut a = AtlasApplication::new().unwrap();
