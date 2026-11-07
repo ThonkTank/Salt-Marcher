@@ -95,8 +95,41 @@ pub fn trim(
     grid: &terrain::Grid,
     cells: &std::collections::BTreeSet<(i32, i32)>,
 ) -> MultiPolygon<f64> {
+    let surface = geometry(w);
+    let Some(bounds) = regions::bounds(&surface) else {
+        return surface;
+    };
+    trim_cells(
+        surface,
+        w.level,
+        grid,
+        intersecting_cells(cells, bounds).copied(),
+    )
+}
+
+// Dry triangles cannot affect a water body outside its bounds. Keep touching
+// cells as well, so exact boundary and negative-coordinate cases are unchanged.
+fn intersecting_cells(
+    cells: &std::collections::BTreeSet<(i32, i32)>,
+    bounds: super::Bounds,
+) -> impl Iterator<Item = &(i32, i32)> {
+    let x0 = (bounds[0] / terrain::STEP).ceil() as i32 - 1;
+    let x1 = (bounds[2] / terrain::STEP).floor() as i32;
+    cells
+        .range((x0, i32::MIN)..=(x1, i32::MAX))
+        .filter(move |&&(_, y)| {
+            y as f64 * terrain::STEP <= bounds[3] && (y as f64 + 1.) * terrain::STEP >= bounds[1]
+        })
+}
+
+fn trim_cells(
+    surface: MultiPolygon<f64>,
+    level: f64,
+    grid: &terrain::Grid,
+    cells: impl IntoIterator<Item = (i32, i32)>,
+) -> MultiPolygon<f64> {
     let mut dry = vec![];
-    for &(x, y) in cells {
+    for (x, y) in cells {
         // The author grid is a control lattice, not a triangulated surface.
         // Subdivide its smooth reconstruction for polygon Boolean operations.
         for sy in 0..4 {
@@ -114,7 +147,7 @@ pub fn trim(
                 let z = pts.map(|p| terrain::height(grid, p));
                 for ix in [[0, 1, 2], [0, 2, 3]] {
                     if let Some(poly) =
-                        wet_triangle(ix.map(|i| pts[i]), ix.map(|i| -z[i]), -w.level + 1e-8)
+                        wet_triangle(ix.map(|i| pts[i]), ix.map(|i| -z[i]), -level + 1e-8)
                     {
                         dry.push(poly);
                     }
@@ -123,7 +156,110 @@ pub fn trim(
         }
     }
     if dry.is_empty() {
-        return geometry(w);
+        return surface;
     }
-    geometry(w).difference(&geo::algorithm::bool_ops::unary_union(&dry))
+    surface.difference(&geo::algorithm::bool_ops::unary_union(&dry))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::collections::BTreeSet;
+
+    fn rectangle(x: f64, y: f64, size: f64) -> RegionPolygon {
+        RegionPolygon {
+            outer: vec![[x, y], [x + size, y], [x + size, y + size], [x, y + size]],
+            holes: vec![],
+        }
+    }
+
+    #[test]
+    fn local_trim_matches_unrestricted_reference() {
+        for origin in [[0., 0.], [-85., -165.], [79.75, 159.75]] {
+            let [ox, oy] = origin;
+            let mut polygon = rectangle(ox, oy, 15.);
+            polygon.holes.push(rectangle(ox + 5., oy + 5., 3.).outer);
+            let water = WaterBody {
+                id: "reference".into(),
+                level: 0.,
+                polygons: vec![polygon, rectangle(ox + 25., oy + 5., 5.)],
+            };
+            validate(&water).unwrap();
+            let x0 = (ox / terrain::STEP).floor() as i32;
+            let y0 = (oy / terrain::STEP).floor() as i32;
+            let cells: BTreeSet<_> = (-4..=10)
+                .flat_map(|x| (-4..=8).map(move |y| (x0 + x, y0 + y)))
+                .collect();
+            for profile in 0..5 {
+                let mut grid = terrain::Grid::new();
+                for &(x, y) in &cells {
+                    let z = match profile {
+                        0 => -10.,
+                        1 => 10.,
+                        2 => (x - x0) as f64 * 4. - 8.,
+                        _ => {
+                            ((x - x0) as f64 * 0.7).sin() * 15.
+                                + ((y - y0) as f64 * 0.9).cos() * 10.
+                        }
+                    };
+                    grid.insert((x, y), z);
+                }
+                if profile == 4 {
+                    grid.layers.insert(2, grid.points.clone());
+                    grid.retain(|&(x, y), _| (x + y).rem_euclid(3) == 0);
+                }
+                let reference =
+                    trim_cells(geometry(&water), water.level, &grid, cells.iter().copied());
+                let actual = regions::authored(trim(&water, &grid, &cells));
+                let expected = regions::authored(reference);
+                assert_eq!(
+                    actual.len(),
+                    expected.len(),
+                    "origin={origin:?}, profile={profile}"
+                );
+                for (a, e) in actual.iter().zip(&expected) {
+                    assert_eq!(a.holes.len(), e.holes.len());
+                    for (ar, er) in std::iter::once(&a.outer)
+                        .chain(&a.holes)
+                        .zip(std::iter::once(&e.outer).chain(&e.holes))
+                    {
+                        assert_eq!(ar.len(), er.len());
+                        for (ap, ep) in ar.iter().zip(er) {
+                            // Boolean operations quantize relative to their input
+                            // extent. Removing remote triangles changes only this
+                            // rounding. With these <=75-foot inputs, 1e-6 feet
+                            // covers both Boolean rounds' integer-grid precision;
+                            // topology and every contour vertex must still match.
+                            assert!(
+                                super::super::geometry::distance(*ap, *ep) <= 1e-6,
+                                "origin={origin:?}, profile={profile}: {ap:?} != {ep:?}"
+                            );
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn trim_selection_keeps_touching_cells_and_excludes_distant_work() {
+        let bounds = [-80., -160., -65., -145.];
+        let near: BTreeSet<_> = (-17..=-13)
+            .flat_map(|x| (-33..=-29).map(move |y| (x, y)))
+            .collect();
+        let mut cells = near.clone();
+        for i in 1..=10000 {
+            cells.extend([(i, -32), (-16, i), (-i - 100, -32), (-16, -i - 100)]);
+        }
+        assert_eq!(
+            intersecting_cells(&cells, bounds)
+                .copied()
+                .collect::<BTreeSet<_>>(),
+            near
+        );
+        assert_eq!(
+            intersecting_cells(&cells, [-79.9, -159.9, -65.1, -145.1]).count(),
+            9
+        );
+    }
 }

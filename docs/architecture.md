@@ -132,6 +132,14 @@ und Blattaktualisierungen verlangen ausdrücklich die vorhandenen räumlichen
 SQL-Indizes: Ein bloßer Level-Filter darf keinen globalen Quellscan verursachen.
 Allgemeine große Ausschnittreads enumerieren weiterhin keine leeren Blockflächen.
 
+Die Gewässernachführung sucht zuerst betroffene Wasserflächen im vorhandenen
+räumlichen Index. Ohne Treffer entfallen ihre Autorenreads. Andernfalls sammelt
+sie die begrenzten Kachelbereiche samt Stützrand über denselben Blockleser wie
+der Pinsel. Rasterlimits greifen vor den Höhenreads. Die Trockenlegung verwirft
+betroffene Rasterzellen außerhalb der jeweiligen Gewässerbounds vor Abtastung
+und Polygonaufbau; berührende Randzellen bleiben enthalten. Uferunterteilung,
+kanonische Höhen und atomare History bleiben erhalten.
+
 `surface_tiles` und der versionierte Punktread `surfacePoints` teilen Sampler,
 Flussauswertung und Plattformaufbau. `SurfacePointReader` hält eine laufende
 Anfrage und nur den neuesten wartenden Cursorpunkt. Überholte Antworten werden
