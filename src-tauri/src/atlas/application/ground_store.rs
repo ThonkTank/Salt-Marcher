@@ -107,7 +107,12 @@ fn pyramid(db: &Connection, authors: &Tiles) -> Result<Tiles> {
     let mut out = Tiles::new();
     for key in affected(db, authors)? {
         let (level, x, y) = key;
-        let mut parent = base(db, authors, key)?;
+        // Every quadrant is replaced below; only leaf authors need an initial read.
+        let mut parent = if level == 0 {
+            base(db, authors, key)?
+        } else {
+            vec![0; BYTES]
+        };
         if level > 0 {
             for cy in 0..2 {
                 for cx in 0..2 {
@@ -193,7 +198,7 @@ pub fn rebuild_overview(db: &Connection) -> Result<()> {
     }
     for key in keys {
         let (level, x, y) = key;
-        let mut parent = base(db, &Tiles::new(), key)?;
+        let mut parent = vec![0; BYTES];
         for cy in 0..2 {
             for cx in 0..2 {
                 let child = read(db, level - 1, x * 2 + cx, y * 2 + cy)?;

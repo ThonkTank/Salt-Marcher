@@ -14,6 +14,14 @@ History verwenden die gemeinsame Kachelhierarchie. Fehlende Autoren erben Farbe;
 explizit transparente Autoren verdecken sie. Die gespeicherte Auflösungsstufe
 führt zum Entwicklungsformat 20 ohne Migration älterer Testdateien.
 
+Nachprüfung: Der Aufbau von Bodenübersichten liest das anschließend vollständig
+überschriebene Elternraster nicht mehr vorab. Das gilt für interaktive Änderungen
+und den Wiederaufbau beim Öffnen. Der benötigte Vergleich mit geerbter Farbe bleibt
+erhalten; Autorenwerte, Rundung und Darstellung ändern sich nicht. Neun relevante
+Rustfälle bestehen nach dieser Korrektur erneut (`ground-parent-reads.log`).
+Die unten beschriebene native Abnahme gehört zum vorhergehenden Bodenbuild;
+das bereits geöffnete Testprogramm wurde für diese reine Read-Korrektur nicht ersetzt.
+
 Die Rustprüfung bestand 321 Bibliotheksfälle und 16 Dokumentfälle. Die einzige
 fehlgeschlagene Parzellenprüfung erwartete noch Format 19; nach Anpassung bestehen
 alle 11 Parzellenfälle. Fünf Last-/Fixturefälle bleiben ignoriert. Neun relevante
