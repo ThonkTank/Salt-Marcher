@@ -61,21 +61,29 @@ Die Folgeänderung auf `codex/visible-terrain-raster` erweitert dieselbe
 Sichtbarkeitsprüfung auf Relief-/Wasserraster und Höhenlinien. Ein gemeinsamer
 Helper enthält den Rundungsrand; Höhenlinien ergänzen ihre tatsächliche halbe
 Strichbreite. Unsichtbare Texturen werden nicht decodiert, vorhandene Raster
-bleiben beim Zurückschieben wiederverwendbar. Alle 417 Frontendtests und Typen
+bleiben beim Zurückschieben wiederverwendbar. Alle 418 Frontendtests und Typen
 bestehen, einschließlich DPR-Rand und direkter Vorschau. Alle 40 Boden-,
 Landschafts-, Höhen-, Reliefpinsel- und Gewässer-Browserfälle bestehen; darunter Weltmalen
 nach freiem Zoom, runde/kräuselige Küsten und Fehlererholung. Der frische
 Release-/RPM-Build besteht; native Bedienung bleibt mangels UI-Zugriff offen. Diese Folgeänderung
 ist vom unverändert laufenden Main-Kandidaten getrennt.
 Belege: `src-tauri/target/diagnostics/terrain-visibility/`.
-Die zusätzliche Landschaftsprüfung bei 3840×2160 besteht im isolierten Nachlauf;
-der erste Lauf scheiterte vor dem Malen beim Laden der Karte am Fünf-Sekunden-Limit.
-Das ist keine belegte Reparatur dieses Ladefehlers. Die vier bisherigen
-Landschaftsfälle bestehen; mittlere Darstellung und großer Zoomübergang wurden
+Alle fünf Landschafts-Browserfälle bestehen auch gemeinsam ohne parallele
+lokale Prüfungen, einschließlich 3840×2160. Der erste Lauf scheiterte vor dem
+Malen beim Laden der Karte am Fünf-Sekunden-Limit; dessen Ursache bleibt offen.
+Mittlere Darstellung und großer Zoomübergang wurden
 an den Browserbildern visuell geprüft. Die neuen Unitprüfungen sichern den
 Kandidatenrahmen, positionsunabhängige Überblendung, Kronenrand und Rasterreuse.
 134 Transportverträge, Typen, Format und der frische Release-/RPM-Build bestehen.
 Belege: `src-tauri/target/diagnostics/landscape-capacity/`.
+
+Die Stadtübersicht prüft jetzt auch Dichtekacheln vor der Zellauswertung auf
+Viewportüberschneidung. Der Regressionstest belegt ausgelassene Zellzugriffe
+außerhalb des Fensters und erneutes Zeichnen nach dem Verschieben bei DPR 2.
+Alle sieben Stadtübersichts-/Straßen-Browserfälle bestehen, einschließlich
+Navigation zurück zur Detailbearbeitung und History/Datei. Der frische
+Release-/RPM-Build besteht; die native Bedienprüfung bleibt offen.
+Belege: `src-tauri/target/diagnostics/city-density-visibility/`.
 
 ## Integration und offene Abnahmen
 

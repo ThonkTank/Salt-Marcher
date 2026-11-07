@@ -286,6 +286,8 @@ Viewport berührt (mit einem Geräte-Pixel Rundungsrand). Unsichtbare Höhenlini
 werden ebenfalls übersprungen; ihr Prüfrand enthält zusätzlich die halbe
 Strichbreite in Geräte-Pixeln. Geladene unsichtbare Kacheln bleiben im Präsentationscache; ihre
 Zeichenraster entstehen erst beim Hineinschieben und werden beim Zurückschieben wiederverwendet.
+Die Stadtübersicht verwendet dieselbe Kachelprüfung vor dem Durchlaufen der
+Bebauungsdichtezellen; außerhalb des Viewports entfallen deren Rechteckaufträge.
 Buschland, Wiese und Felsgebiet verwenden dort weiterhin aufrechte Gruppen
 aus drei Zeichen im Vektorpainter.
 Nahe Waldbäume verwenden vier eigene, unregelmäßige Federzeichnungs-Kronen mit

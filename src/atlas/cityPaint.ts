@@ -1,3 +1,4 @@
+import { visibleRasterTile } from "./rasterVisibility";
 import type { LodDecision } from "./lod";
 import { overviewRoadVisible, type CityView } from "./cityView";
 import type { MapFeature } from "./generated/MapFeature";
@@ -36,7 +37,9 @@ export function paintCity(
   paintWater?.();
   c.save();
   c.fillStyle = "#a19586";
-  for (const tile of view.tiles)
+  const transform = c.getTransform();
+  for (const tile of view.tiles) {
+    if (!visibleRasterTile(tile, 32 * cell, transform, c.canvas)) continue;
     for (const [x, y, mass] of tile.density) {
       if (mass <= 0) continue;
       c.globalAlpha = Math.min(0.75, 0.12 + Math.sqrt(mass) * 0.63);
@@ -47,6 +50,7 @@ export function paintCity(
         cell,
       );
     }
+  }
   c.restore();
   for (const kind of ["road", "house"]) {
     for (const f of features) {
