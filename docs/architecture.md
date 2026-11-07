@@ -324,8 +324,11 @@ Schreibaktionen oder Ziele außerhalb des bestätigten Bereichs frei.
 Koordinaten und Pointercapture. Bekannte Panelwechsel werden im Layoutschritt
 ausgemessen; echte Größenänderungen brechen die alte Geste vor Veröffentlichung
 des neuen Ausschnitts ab. Doppelte Resize-Meldungen verändern keine Geste.
-`editorSelection` besitzt Auswahlübergänge,
-`useCamera` Navigation und Fit-Identität. `useRivers` hält Flussauswahl und
+`useCanvasInput` übernimmt beim Karten-Pointerdown fokussierte Zahlenfelder
+für Zeichenwerkzeuge synchron vor dem Eingabesnapshot. Der Auswahlmodus behält
+seinen bisherigen Ablauf, damit ein Inspector-Write beim Fokusverlust die bereits
+beabsichtigte Auswahl nicht verschluckt.
+`editorSelection` besitzt Auswahlübergänge, `useCamera` Navigation und Fit-Identität. `useRivers` hält Flussauswahl und
 Punktindex zusammen; `useRegions` projiziert Katalog, Ränge und Beziehungen.
 Beide verwenden den gemeinsamen Workflow und Lesepfad.
 
@@ -401,6 +404,15 @@ seine temporäre Schlüsselmenge ist höchstens so groß wie der Cache. Überzä
 Objekte werden ohne Aufnahme gezeichnet, damit ein großer sichtbarer Bestand
 nicht bei jedem Frame alle weiterhin benötigten Konturen gegenseitig verdrängt.
 Sessionwechsel leeren den Cache; ersetzte Objektwerte erhalten neue Konturen.
+`BudgetCache.retain` und `setIfFits` besitzen diesen begrenzten Abgleich und die
+Aufnahme ohne Verdrängung. Der Flusszeichner verwendet dieselben Methoden für
+seinen vorhandenen Pfadcache: entfallene Flussansichten geben Einträge frei.
+Maßstabswechsel verwenden die Weltkontur weiter, sofern weder alter noch neuer
+Maßstab eine Samplebreite auf die Mindestbreite von 1,5 CSS-Pixeln anhebt. Die
+kleinste Autorenbreite entsteht beim ohnehin nötigen Konturaufbau; sonst ersetzt
+der Zeichner den Pfad. Mehr sichtbare Flüsse als Cacheplätze verdrängen damit nicht
+bei jedem Bild alle noch benötigten Flussbänder. Die normale LRU-Aufnahme anderer
+Caches bleibt unverändert.
 
 `TerrainPainter` zeichnet fertige Raster und Höhenlinien. Gemeinsame gerundete
 Gerätepixelkanten vermeiden transparente Kachelnähte; der Quellhalo bleibt für die

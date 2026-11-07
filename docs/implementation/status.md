@@ -30,6 +30,39 @@ Ein reproduzierter Fall mit drei Objekten und zwei Plätzen baut jetzt pro weite
 Bild eine statt drei Konturen neu. Sieben Geometrietests und 18 Stadt-/Straßen-/
 Parzellen-Browserfälle bestehen. Daraus wird keine Latenzverbesserung abgeleitet.
 
+Der Flusspfadcache verwendet jetzt denselben begrenzten Abgleich und dieselbe
+Aufnahme ohne Verdrängung aus `BudgetCache`. Die entsprechende eigene
+Kostenverwaltung des Außengeometriecaches entfällt. Ein reproduzierter Bestand
+von 257 Flüssen bei 256 Plätzen baute zuvor 257 Pfade je weiterem Bild neu;
+jetzt entsteht nur ein neuer Pfad. Ausschnitts-/Objektwechsel bleiben invalidierend.
+Beim Zoomen bleiben Konturen erhalten, solange die Mindestbreite von 1,5
+Bildschirmpixeln an keinem Sample eingreift. Der Regressionstest scheiterte vorher
+an einem unnötigen Neuaufbau; er prüft jetzt Wiederverwendung sowie korrekte
+Konturkoordinaten beim Heraus- und erneuten Hineinzoomen. Alle 429 Frontendtests, Typen, Format sowie zehn Fluss-
+Browserfälle bestehen, einschließlich Vorschauabbruch, Navigation, Topologie,
+History und Sessionwechsel. Der frische Release-/RPM-Build besteht. Die Änderung
+liegt als Folgebranch hinter dem integrierten Main-Kandidaten; eine native
+Bedienprüfung und eine neue Latenzaussage sind damit nicht belegt.
+
+Die Walddichte zeigt nach einer Prozenteingabe keine binären Rundungsreste mehr.
+Die Browserprobe reproduzierte zuvor `55.00000000000001` nach Eingabe von `55`.
+Nach der reinen Anzeigeänderung bleiben 55, 55,5, 55,12345 sowie die Grenzen
+5 und 100 lesbar und unverändert. Typen, Format und frischer Release-/RPM-Build
+bestehen; Autorenberechnung
+und Eingabegrenzen wurden nicht geändert.
+
+## Zahleneingabe vor dem ersten Kartenklick
+
+Eine Browserprobe reproduzierte nach Eingabe von 2 Fuß Flussbreite die gespeicherten
+Knotenbreiten `[20, 2]`: Der erste Pointerdown las vor dem Feld-Blur den alten Wert.
+Zeichenwerkzeuge übernehmen fokussierte Zahlenfelder jetzt vor ihrem Snapshot.
+Der Auswahlmodus behält die Reihenfolge für Inspector-Writes und Auswahlabsichten.
+Der Regressionstest scheiterte vorher; danach speichern beide Knoten 2 Fuß.
+Die erneute Browserprobe einschließlich Heraus-/Hineinzoomen bestätigt die
+schmale Kontur. Alle 22 Fluss-, Datei- und Fokuswechseltests bestehen, einschließlich
+Umbenennen mit anschließender Haus-/Raumauswahl; 429 Frontendtests und Typen bestehen.
+Der frische Release-/RPM-Build besteht ebenfalls (7,52 MiB).
+
 ## Höhenstrich während eines Ansichtswechsels
 
 Eine schrittweise Browserprobe mit echtem Dokumentkern zeigte: Weltmalen nach
@@ -58,19 +91,17 @@ Der erneute Release-/RPM-Build besteht; native Bedienung bleibt offen.
 
 ## Integration und offene Abnahmen
 
-Main enthält jetzt PR #1456 als `f075508bb`: Landschaft, Darstellungsbegrenzung
-und Sampler-Fix. Der Main-Baum ist identisch mit dem geprüften Kandidaten
-`a0bcf36be`. Dessen vollständige CI besteht: 337 Rust-Librarytests und 32
-Integration-/Adaptertests, fünf absichtlich ignorierte Fälle, 243 Browserfälle,
+Main enthält Landschaft, Darstellungsbegrenzung, Sampler-Fix sowie die drei
+Folgekorrekturen für Außengeometrie und Höhenbeginn während Ansichtsreads.
+PR #1460 ist als `707953e17` integriert; der Main-Baum entspricht exakt dem
+geprüften Kandidaten `c4baf9ecf`. Die vollständige CI besteht: 337 Rust-Librarytests,
+32 Integration-/Adaptertests, fünf absichtlich ignorierte Fälle, 245 Browserfälle,
 Frontendtests, Typen, Transportverträge, Clippy, Format und Release-/RPM-Build.
+Die ersetzten Vorstufen #1458 und #1459 sind geschlossen.
 
-Der aktuelle Kandidat bündelt die drei Folgefixes: stabile Außengeometrie,
-Höhenbeginn während Ansichtsreads und keine Kartenverschiebung durch gesperrte
-Pinsel. Die Übernahme von Main erforderte ausschließlich die Auflösung des
-Statusdokuments; der Produktcode entspricht unverändert dem lokal geprüften
-Stand. PR #1460 wird direkt gegen Main geprüft. #1458 und #1459 bleiben bis zur
-Integration als ersetzte Vorstufen erhalten. Lokales Grün ersetzt keine
-vollständige CI-Freigabe des neuen Merge-Commits.
+Der nächste Kandidat umfasst Flusscache, Zoomwiederverwendung, Dichteanzeige und
+die Korrektur der Zahleneingabe vor dem ersten Kartenklick. Seine vollständige
+Main-CI steht noch aus; lokale Ergebnisse ersetzen diese Freigabe nicht.
 
 Frühere native Prüfungen umfassen Weltmalen, Bodenfarben, Landschaft, Navigation,
 Lichtungen, History und Datei-Rundlauf. Die neueren Zeichnungen und Änderungen
@@ -89,4 +120,5 @@ und Assetimporte bleiben Folgeumfang der Landschaftsdeckung.
 Belege unter `src-tauri/target/diagnostics/`: `landscape-canopy/`,
 `landscape-capacity/`, `compact-empty-ground/`, `terrain-visibility/`,
 `city-density-visibility/`, `coarse-flat-proof/`, `landscape-main-integration/`,
-`stable-exterior-geometry/`, `terrain-view-load/` und `blocked-brush-navigation/`.
+`stable-exterior-geometry/`, `terrain-view-load/`, `blocked-brush-navigation/`
+und `stable-river-geometry/`.

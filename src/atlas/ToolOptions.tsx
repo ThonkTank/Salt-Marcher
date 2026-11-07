@@ -114,7 +114,7 @@ export function ToolOptions({
           />
           <NumberField
             label="Ziel-Dichte (%)"
-            value={scenery.density * 100}
+            value={Number((scenery.density * 100).toPrecision(15))}
             min={5}
             max={100}
             onChange={(density) =>

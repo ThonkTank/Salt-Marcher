@@ -46,16 +46,24 @@ export function riverHit(views: RiverView[], p: WorldPoint, scale: number) {
     }
   return best;
 }
-const ribbons = new BudgetCache<RiverView, { scale: number; path: Path2D }>(
-  CACHE_BUDGETS.riverGeometry.bytes,
-  CACHE_BUDGETS.riverGeometry.entries,
-);
+const ribbons = new BudgetCache<
+  RiverView,
+  { scale: number; minimumWidth: number; path: Path2D }
+>(CACHE_BUDGETS.riverGeometry.bytes, CACHE_BUDGETS.riverGeometry.entries);
 function ribbon(view: RiverView, scale: number): Path2D {
   const cached = ribbons.get(view);
-  if (cached && cached.scale === scale) return cached.path;
+  // Reuse world-space geometry while neither scale clamps any sample width.
+  if (
+    cached &&
+    (cached.scale === scale ||
+      cached.minimumWidth >= 1.5 / Math.min(cached.scale, scale))
+  )
+    return cached.path;
   const s = view.samples;
   const c = new Path2D();
+  let minimumWidth = Infinity;
   const sides = s.map((v, i) => {
+    minimumWidth = Math.min(minimumWidth, v.width);
     const a = s[Math.max(0, i - 1)].point,
       b = s[Math.min(s.length - 1, i + 1)].point;
     const dx = b[0] - a[0],
@@ -85,8 +93,11 @@ function ribbon(view: RiverView, scale: number): Path2D {
   const start = sides[0];
   c.arc(...s[0].point, start.half, start.angle + Math.PI, start.angle, true);
   c.closePath();
-  ribbons.set(view, { scale, path: c }, 256 + s.length * 96);
-  ribbons.trim();
+  ribbons.setIfFits(
+    view,
+    { scale, minimumWidth, path: c },
+    256 + s.length * 96,
+  );
   return c;
 }
 export function paintRivers(
@@ -97,6 +108,7 @@ export function paintRivers(
   preview = false,
   waters: import("./generated/WaterBody").WaterBody[] = [],
 ) {
+  ribbons.retain(views);
   c.save();
   c.lineCap = "round";
   c.lineJoin = "round";

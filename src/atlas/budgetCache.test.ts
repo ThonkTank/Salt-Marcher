@@ -31,3 +31,37 @@ it("bounds empty entries too and releases accounting after deletion and clear", 
   cache.trim();
   expect([...cache]).toEqual([[5, 5]]);
 });
+
+it("admits without evicting useful entries and accounts for replacements", () => {
+  const cache = new BudgetCache<string, string>(10, 2);
+  expect(cache.setIfFits("a", "first", 6)).toBe(true);
+  expect(cache.setIfFits("b", "second", 4)).toBe(true);
+  expect(cache.setIfFits("c", "overflow", 0)).toBe(false);
+  expect(cache.setIfFits("a", "oversized replacement", 7)).toBe(false);
+  expect(cache.get("a")).toBe("first");
+  expect(cache.setIfFits("a", "smaller", 5)).toBe(true);
+  expect(cache.setIfFits("b", "larger", 5)).toBe(true);
+  cache.retain(["b", "c"]);
+  expect(cache.setIfFits("c", "new", 5)).toBe(true);
+  expect([...cache]).toEqual([
+    ["b", "larger"],
+    ["c", "new"],
+  ]);
+  cache.retain([]);
+  expect(cache.setIfFits("d", "full", 10)).toBe(true);
+});
+it("stops working-set traversal after finding every retained key", () => {
+  const cache = new BudgetCache<number, number>(1, 1);
+  cache.setIfFits(1, 1);
+  let visits = 0;
+  cache.retain(
+    (function* () {
+      visits++;
+      yield 1;
+      visits++;
+      yield 2;
+    })(),
+  );
+  expect(visits).toBe(1);
+  expect(cache.get(1)).toBe(1);
+});

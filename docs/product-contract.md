@@ -723,6 +723,9 @@ Ziehgeste wird nur diese auf ihren Ausgangszustand zurückgesetzt.
 Enter und Escape in Eingabefeldern wirken lokal: gültigen Feldwert übernehmen
 beziehungsweise Feldeingabe zurücksetzen, ohne die Planung abzuschließen oder
 abzubrechen. Ungültige Werte bleiben mit Feldfehler korrigierbar.
+Nach einer gültigen Zahleneingabe in einem Zeichenwerkzeug verwendet bereits
+der erste anschließende Kartenklick den neuen Wert; vorheriges Tab oder Enter
+ist nicht erforderlich.
 Ein vollständiger Kandidat darf auch während einer laufenden Vorschau bestätigt
 werden; bekannte ungültige, unveränderte oder veraltete Kandidaten verlangen
 Korrektur beziehungsweise Neuprüfung. Vorhandene Geometrieänderungen senden den
