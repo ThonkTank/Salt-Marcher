@@ -25,6 +25,10 @@ Lokal bestehen 344 Rust- und 368 Frontendtests, 129 Transportverträge, Typprüf
 Clippy, Format sowie 32 relevante Browserfälle. Fünf Rustfälle bleiben ignoriert.
 Der frische Release-/RPM-Build bestätigt Flussvorschau, Abbruch und Übernahme im
 Umland sowie pixelgleiches Undo/Redo und Rückkehr nach dem Zoomwechsel zur Stadt.
+Der erste CI-Lauf bestand alle Kernprüfungen und 226 von 227 Browserfällen.
+Ein bestehender Maßstabstest las nach dem Mausradereignis noch den alten
+Canvasmaßstab; er wartet jetzt ausdrücklich auf den gezeichneten Zielmaßstab.
+Beide Maßstabsfälle bestehen damit lokal in je fünf Wiederholungen.
 Die Freigabe auf Main erfordert den vollständigen grünen CI-Check am exakten PR-Head.
 Keine zusätzliche Zeitmessreihe wurde begonnen.
 

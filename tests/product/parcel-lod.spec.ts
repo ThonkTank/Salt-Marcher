@@ -27,6 +27,8 @@ async function wheelTo(page: Page, start: number, target: number) {
   const box = (await page.getByTestId("atlas-canvas").boundingBox())!;
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
   await page.mouse.wheel(0, -Math.log(target / start) / 0.0015);
+  // Wheel dispatch may finish before React has requested the new camera frame.
+  await expect.poll(() => scale(page)).toBeCloseTo(target, 5);
   await paintedReady(page);
 }
 async function gesture(page: Page) {
@@ -132,7 +134,7 @@ test("first house gesture at named parcel scale commits once and restores histor
   await expect(page.locator(".atlas-map-title")).toHaveText(
     "Atlas · Grundstück",
   );
-  expect(await scale(page)).toBeCloseTo(304.8 / 180, 5);
+  await expect.poll(() => scale(page)).toBeCloseTo(304.8 / 180, 5);
   const before = await status(page);
   const box = (await page.getByTestId("atlas-canvas").boundingBox())!;
   await page.getByRole("button", { name: "Haus", exact: true }).click();
