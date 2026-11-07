@@ -23,14 +23,18 @@ Kandidatenrahmen umfasst auch die Überblendung zwischen 0,35 und 0,5 CSS-Pixeln
 pro Fuß. Rasterziele und Clips in Gerätekoordinaten vermeiden die gefundenen
 nativen Kachelnähte. Wasser maskiert Bestand, Schnee bleibt sichtbar.
 
-Für die Blätterdächer bestehen 29 Präsentationstests einschließlich monotoner
+Für die Landschaftsdarstellung bestehen 31 Präsentationstests einschließlich monotoner
 Deckung, negativer Koordinaten, identischer Kachelhalos und Rasterwiederverwendung.
-Vier Landschafts-Browserfälle bestehen einschließlich History, Datei, Wassermaske
-und Welt→Mittel→Nah→Welt. Die Bildprobe mit 25/65/100 Prozent Walddeckung sowie
+Neun Boden-/Landschafts-Browserfälle bestehen einschließlich History, Datei,
+Wassermaske, freiem Weltzoom und Welt→Mittel→Nah→Welt. Die Bildprobe mit 25/65/100 Prozent Walddeckung sowie
 das abschließende mittlere Kartenbild wurden visuell geprüft. Typen, Format und
-frischer Release-/RPM-Build bestehen. Der erste Buildversuch wurde per SIGTERM
-beendet; nach bestätigtem Prozessende bestand der erneute Build.
-Belege: `src-tauri/target/diagnostics/landscape-canopy/`.
+frischer Release-/RPM-Build bestehen.
+Boden- und Landschaftskacheln außerhalb des Viewports überspringen jetzt
+Decodierung, Relief-Nachbarschaftsabgleich und Rasteraufbau. Zwei zusätzliche
+Regressionen prüfen alle vier Außenrichtungen sowie Hinein-/Zurückschieben
+mit Wiederverwendung der sichtbaren Raster. Ein Geräte-Pixel bleibt als Rundungsrand.
+Belege: `src-tauri/target/diagnostics/landscape-canopy/` und
+`src-tauri/target/diagnostics/raster-visibility/`.
 Eine erneute native Bedienprüfung bleibt offen: Der verfügbare UI-Zugriff
 umfasst nur Browser. Frühere native Prüfungen belegen noch die alte Zeichnung.
 Das ursprüngliche Benutzertestfenster bleibt unberührt.

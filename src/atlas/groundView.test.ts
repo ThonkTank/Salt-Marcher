@@ -87,6 +87,7 @@ describe("ground presentation", () => {
 it("reuses shaded rasters across navigation and redraws only changed local dependencies", () => {
   const rasterize = vi.fn();
   const context = {
+    canvas: { width: 2048, height: 2048 },
     createImageData: () => ({ data: new Uint8ClampedArray(66 * 66 * 4) }),
     putImageData: rasterize,
   };
@@ -94,6 +95,7 @@ it("reuses shaded rasters across navigation and redraws only changed local depen
     createElement: () => ({ getContext: () => context }),
   });
   const c = {
+    canvas: { width: 2048, height: 2048 },
     save() {},
     restore() {},
     beginPath() {},
@@ -154,6 +156,7 @@ it("keeps soil and rock pigments separate and snow above both", () => {
     }),
   });
   const context = {
+    canvas: { width: 2048, height: 2048 },
     save() {},
     restore() {},
     beginPath() {},
@@ -222,6 +225,7 @@ it("composes semantic landscape weights independently and preserves snow", () =>
     }),
   });
   const context = {
+    canvas: { width: 2048, height: 2048 },
     save() {},
     restore() {},
     beginPath() {},
@@ -275,7 +279,9 @@ it("composes semantic landscape weights independently and preserves snow", () =>
 it("does no raster or symbol work for wholly empty landscape responses", () => {
   const create = vi.fn();
   vi.stubGlobal("document", { createElement: create });
-  const context = {} as CanvasRenderingContext2D;
+  const context = {
+    canvas: { width: 2048, height: 2048 },
+  } as CanvasRenderingContext2D;
   try {
     new GroundPainter().paintLandscape(
       context,
@@ -322,6 +328,7 @@ it.each(
       expect(active).toEqual([1, 0, 0, 1, 0, 0]),
     );
     const context = {
+      canvas: { width: 2048, height: 2048 },
       save() {},
       restore() {},
       beginPath() {},
@@ -418,6 +425,7 @@ it("lazily reuses canopy rasters and matches their shared world-edge halos", () 
   }));
   vi.stubGlobal("document", { createElement: create });
   const context = {
+    canvas: { width: 2048, height: 2048 },
     globalAlpha: 1,
     save() {},
     restore() {},
@@ -425,7 +433,7 @@ it("lazily reuses canopy rasters and matches their shared world-edge halos", () 
     rect() {},
     setTransform() {},
     getTransform() {
-      return { a: 1, d: 1, e: 0, f: 0 };
+      return { a: 1, d: 1, e: 1024, f: 1024 };
     },
     clip() {},
     drawImage() {},
@@ -467,3 +475,68 @@ it("lazily reuses canopy rasters and matches their shared world-edge halos", () 
     vi.unstubAllGlobals();
   }
 });
+
+it.each(["ground", "landscape"] as const)(
+  "%s defers offscreen raster work and reuses it after panning back",
+  (kind) => {
+    const create = vi.fn(() => ({
+      getContext: () => ({
+        createImageData: (w: number, h: number) => ({
+          data: new Uint8ClampedArray(w * h * 4),
+        }),
+        putImageData() {},
+      }),
+    }));
+    vi.stubGlobal("document", { createElement: create });
+    let e = 0;
+    const drawImage = vi.fn();
+    const context = {
+      canvas: { width: 100, height: 100 },
+      globalAlpha: 1,
+      save() {},
+      restore() {},
+      beginPath() {},
+      rect() {},
+      clip() {},
+      setTransform() {},
+      getTransform: () => ({ a: 1, d: 1, e, f: 0 }),
+      drawImage,
+    } as unknown as CanvasRenderingContext2D;
+    const painter = new GroundPainter();
+    const paint = (tiles: GroundResponse["tiles"]) => {
+      const view = { status, level: 0, tiles };
+      if (kind === "ground") painter.paint(context, view);
+      else painter.paintLandscape(context, view, undefined, 0.15);
+    };
+    try {
+      // Invalid payloads would throw during decoding: invisible tile data is not touched.
+      paint(
+        [
+          [10, 0],
+          [-10, 0],
+          [0, 10],
+          [0, -10],
+        ].map(([x, y]) => ({ x, y, pixels: "!" })),
+      );
+      expect(create).not.toHaveBeenCalled();
+      expect(drawImage).not.toHaveBeenCalled();
+      const tiles = [0, 10].map((x) => ({
+        x,
+        y: 0,
+        pixels: pixelString(166, 0, 0, kind === "ground" ? 255 : 0),
+      }));
+      const perTile = kind === "ground" ? 1 : 2;
+      paint(tiles);
+      expect(create).toHaveBeenCalledTimes(perTile);
+      e = -640;
+      paint(tiles);
+      expect(create).toHaveBeenCalledTimes(perTile * 2);
+      e = 0;
+      paint(tiles);
+      expect(create).toHaveBeenCalledTimes(perTile * 2);
+      expect(drawImage).toHaveBeenCalledTimes(perTile * 3);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  },
+);

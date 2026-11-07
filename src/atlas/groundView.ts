@@ -60,6 +60,22 @@ export function groundColorAt(
     number,
   ];
 }
+/** Editor cameras are axis-aligned. Keep a device-pixel guard for rounded clips. */
+function visibleRasterTile(
+  tile: GroundTile,
+  width: number,
+  transform: DOMMatrix,
+  canvas: HTMLCanvasElement,
+): boolean {
+  const left = tile.x * width * transform.a + transform.e;
+  const top = tile.y * width * transform.d + transform.f;
+  return (
+    left <= canvas.width + 1 &&
+    top <= canvas.height + 1 &&
+    left + width * transform.a >= -1 &&
+    top + width * transform.d >= -1
+  );
+}
 type GroundRaster = {
   raster: HTMLCanvasElement;
   canopy?: HTMLCanvasElement | null;
@@ -92,7 +108,8 @@ export class GroundPainter {
     const canopyAlpha =
       landscapeDetails(scale).find((detail) => !detail.near)?.alpha ?? 0;
     for (const tile of view.tiles) {
-      if (!tile.pixels) continue;
+      if (!tile.pixels || !visibleRasterTile(tile, width, transform, c.canvas))
+        continue;
       const tw = terrain ? 160 * 2 ** terrain.level : 0;
       const margin = 2 * step + (terrain ? 5 * 2 ** terrain.level : 0);
       const neighbors =
@@ -317,8 +334,10 @@ export class GroundPainter {
     const step = 2 ** view.level,
       width = 64 * step;
     const materialAt = terrain ? prepareMaterialSampler(terrain) : undefined;
+    const transform = c.getTransform();
     for (const tile of view.tiles) {
-      if (!tile.pixels) continue;
+      if (!tile.pixels || !visibleRasterTile(tile, width, transform, c.canvas))
+        continue;
       // Include the pixel halo and all four relief samples. Compare immutable
       // tiles, not response wrappers: panning often publishes the same surface.
       const margin = 2 * step + (terrain ? 5 * 2 ** terrain.level : 0);
