@@ -63,7 +63,8 @@ und deren Höchstwert. Die Fachmodule validieren und rekonstruieren ihre Daten.
 Arbeitsindizes sind abgeleitet und werden beim Import neu aufgebaut:
 `terrain_blocks` vor dem Flussimport, die Bodenfarbpyramide nach dem Flussimport.
 `ground_store` verwendet beim Wiederaufbau dieselbe Rundung vormultiplizierter
-Farben wie bei interaktiven Writes. Die Autorenkacheln tragen eine Auflösungsstufe.
+Farben wie bei interaktiven Writes. Elternraster entstehen vollständig aus vier
+Kindquadranten; ein vorheriger Farb-Read des überschriebenen Elternrasters entfällt. Die Autorenkacheln tragen eine Auflösungsstufe.
 Fehlende Kacheln erben vom nächsten gröberen Autor; vorhandene feinere Autoren
 werden bei grobem Übermalen mit aktualisiert. Transparente Autoren und fehlende
 Autoren sind auch in Historydeltas verschieden. `ground_lod` enthält ausschließlich
