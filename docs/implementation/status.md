@@ -16,8 +16,8 @@ Die ersetzten Vorstufen #1458 und #1459 sind geschlossen.
 
 PR #1461 bündelt Flusscache, Zoomwiederverwendung, Dichteanzeige und Zahleneingabe
 vor dem ersten Kartenklick. Die vollständige Main-CI läuft mit automatischer
-Übernahme. Lesbare Pinselmaße und verständliche Grenzmeldungen liegen auf einem
-Folgebranch; dessen Integration wartet auf #1461. Lokale Ergebnisse ersetzen
+Übernahme. Lesbare Pinselmaße, verständliche Grenzmeldungen und der frühe Rückweg für leere
+Höhenkachelanfragen liegen auf einem Folgebranch; dessen Integration wartet auf #1461. Lokale Ergebnisse ersetzen
 keine vollständige CI-Freigabe.
 
 ## Geprüftes Verhalten
@@ -60,6 +60,15 @@ anschließend erfolgreiches Malen mit kleinerem Pinsel. Beide Zustände behalten
 38 Pixel Statuszeilenhöhe. 429 Frontendtests, 27 Terrain-Rusttests (ein Benchmark
 absichtlich ignoriert), Typen, 134 Transportverträge und Format bestehen.
 Der frische Release-/RPM-Build besteht ebenfalls (7,52 MiB).
+
+Leere Höhenkachelanfragen zur Versionsprüfung validieren ihre Parameter und
+liefern anschließend Status und leere Kachelliste ohne Sampler-/Blockindexarbeit.
+Der Regressionstest scheiterte zuvor an einem gesperrten Dirty-Block-Read; er
+besteht jetzt ohne Terrainzugriffe und prüft weiterhin ungültige Parameter.
+40 Terrain-/Strich-Rusttests (ein Benchmark ignoriert), 17 Präsentationscachetests
+und vier Browserfälle für sichtbare Zwischenstände, Welt-Voreinstellung,
+freies Zoomen und Malen nach Fehlererholung bestehen. Der frische Release-/RPM-Build
+besteht ebenfalls. Keine neue Latenzaussage.
 
 ## Offene Abnahmen
 

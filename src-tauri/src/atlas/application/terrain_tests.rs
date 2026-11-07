@@ -882,3 +882,38 @@ fn brush_author_blocks_match_rectangular_reference_and_deduplicate_sources() {
         );
     }
 }
+
+#[test]
+fn empty_terrain_view_validates_without_reading_authors_or_blocks() {
+    use rusqlite::hooks::{AuthAction, AuthContext, Authorization};
+    let mut a = AtlasApplication::new().unwrap();
+    a.db.flush_prepared_statement_cache();
+    a.db.authorizer(Some(|ctx: AuthContext<'_>| match ctx.action {
+        AuthAction::Read { table_name, .. }
+        | AuthAction::Update { table_name, .. }
+        | AuthAction::Insert { table_name }
+        | AuthAction::Delete { table_name }
+            if table_name.starts_with("terrain") =>
+        {
+            Authorization::Deny
+        }
+        _ => Authorization::Allow,
+    }));
+    let response = a
+        .request("terrainTiles", json!({"level":3,"tiles":[],"pixels":128}))
+        .unwrap();
+    assert_eq!(response["level"], 3);
+    assert_eq!(response["tiles"], json!([]));
+    assert_eq!(
+        response["status"],
+        serde_json::to_value(a.status()).unwrap()
+    );
+    for invalid in [
+        json!({"level":22,"tiles":[]}),
+        json!({"level":0,"tiles":[],"pixels":33}),
+        json!({"level":0,"tiles":[],"contourInterval":1.}),
+    ] {
+        assert!(a.request("terrainTiles", invalid).is_err());
+    }
+    a.db.authorizer(None::<fn(AuthContext<'_>) -> Authorization>);
+}
