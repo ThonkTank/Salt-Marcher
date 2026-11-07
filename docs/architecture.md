@@ -101,7 +101,15 @@ Gewässerdaten; natürliche Höhen teilen sich einen operationslokalen Blocklese
 
 Der Flussprofilsolver liest die natürliche Höhe einmal je gemeinsamem Netzknoten
 und verwendet sie auch für den Einschnitt. Gewässerkontakt bestimmt weiterhin den
-Wasserpegel. Er verbindet Absenkung stromabwärts und Rückstau stromaufwärts
+Wasserpegel. Der operationslokale `ContactReader` fragt weiterhin punktlokale
+Kandidaten über den Gewässer-RTree ab. Solange deren Identitäten und die
+überlappenden vorgeschlagenen Gewässer gleich bleiben, verwendet er dieselben
+dekodierten Kontaktpolygone. Bei einer anderen Auswahl ersetzt er diese vollständig;
+die bisherigen Konturlimits und die Vorschauüberlagerung gelten unverändert.
+Der Leser lebt nur bei unveränderten Gewässerautoren innerhalb einer Berechnung.
+Straßenregionen halten vorbereitete Seegeometrie anstelle der erneut umzuwandelnden
+Autorenringe. Es gibt keinen dokumentweiten Kontaktcache.
+Der Profilsolver verbindet Absenkung stromabwärts und Rückstau stromaufwärts
 mit lokalen Pegeln. Flussbetten bleiben abgeleitet. Die Oberfläche wendet sie vor
 Hausplattformen an; Straßenrouting berücksichtigt Flüsse und lokale Gewässer.
 Ortschaften gehören zur Regionskategorie mit `markers`; Identität, Beschriftung,

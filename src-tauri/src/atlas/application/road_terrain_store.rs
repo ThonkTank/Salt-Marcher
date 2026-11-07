@@ -15,7 +15,7 @@ use std::{
 struct Region {
     rivers: crate::atlas::rivers::RiverSurface,
     water: Vec<Vec<Point>>,
-    lakes: Vec<crate::atlas::water::WaterBody>,
+    lakes: Vec<crate::atlas::water::PreparedWater>,
 }
 struct Sampler<'a> {
     app: &'a AtlasApplication,
@@ -70,7 +70,10 @@ impl Sampler<'_> {
             self.regions.insert(
                 key,
                 Region {
-                    lakes: super::water_store::local(&self.app.db, b)?,
+                    lakes: super::water_store::local(&self.app.db, b)?
+                        .iter()
+                        .map(crate::atlas::water::PreparedWater::new)
+                        .collect(),
                     water,
                     rivers: crate::atlas::rivers::RiverSurface::new(&super::river_store::local(
                         &self.app.db,
@@ -85,7 +88,12 @@ impl Sampler<'_> {
             z,
             z < 0.0
                 || river_wet
-                || crate::atlas::water::level_at(&region.lakes, p).is_some_and(|level| z < level)
+                || region
+                    .lakes
+                    .iter()
+                    .filter_map(|w| w.level_at(p))
+                    .min_by(f64::total_cmp)
+                    .is_some_and(|level| z < level)
                 || region.water.iter().any(|poly| inside(p, poly)),
         ))
     }

@@ -413,9 +413,8 @@ impl AtlasApplication {
                 "Fluss kreuzt einen Netzabschnitt ohne Verbindung; Verlauf korrigieren",
             )?;
         }
-        let mut after = profiles(after, &mut |p| water_level(&self.db, p, None), &mut |p| {
-            sample.height(p)
-        })?;
+        let mut water = super::water_store::ContactReader::new(&self.db, None);
+        let mut after = profiles(after, &mut |p| water.level_at(p), &mut |p| sample.height(p))?;
         before.sort_by(|a, b| a.river.id.cmp(&b.river.id));
         after.sort_by(|a, b| a.river.id.cmp(&b.river.id));
         let delta = RiverDelta { before, after };
@@ -478,9 +477,10 @@ impl AtlasApplication {
             return Ok(());
         }
         let mut s = terrain_blocks::Sampler::new(&self.db)?;
+        let mut water = super::water_store::ContactReader::new(&self.db, c.change.waters.as_ref());
         let after = profiles(
             before.iter().map(|v| v.river.clone()).collect(),
-            &mut |p| water_level(&self.db, p, c.change.waters.as_ref()),
+            &mut |p| water.level_at(p),
             &mut |p| s.height(p),
         )?;
         c.change.rivers = Some(RiverDelta { before, after });
@@ -514,6 +514,7 @@ pub fn import(source: &Connection, target: &Connection) -> Result<()> {
     }
     let mut visited = BTreeSet::new();
     let mut s = terrain_blocks::Sampler::new(target)?;
+    let mut water = super::water_store::ContactReader::new(target, None);
 
     for id in ids {
         if visited.contains(&id) {
@@ -525,7 +526,7 @@ pub fn import(source: &Connection, target: &Connection) -> Result<()> {
         }
         for v in profiles(
             component.into_iter().map(|v| v.river).collect(),
-            &mut |p| water_level(target, p, None),
+            &mut |p| water.level_at(p),
             &mut |p| s.height(p),
         )? {
             put(target, &v)?;
@@ -676,17 +677,6 @@ fn first_crossing(r: &River, others: &[RiverView]) -> Result<Option<Hit>> {
         }
     }
     Ok(None)
-}
-
-fn water_level(
-    db: &Connection,
-    p: Point,
-    delta: Option<&crate::atlas::water::WaterDelta>,
-) -> Result<Option<f64>> {
-    Ok(crate::atlas::water::level_at(
-        &super::water_store::overlay(db, [p[0], p[1], p[0], p[1]], delta)?,
-        p,
-    ))
 }
 
 /// Bounded display only; exact editing and profile solving use `local`/`get`.

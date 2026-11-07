@@ -4,31 +4,44 @@ Atlas V7, Dateiformat 21, Generierungsrezept 4. Stand: 7. November 2026.
 [README](../../README.md) enthält Befehle, [Architektur](../architecture.md)
 Zuständigkeiten, [Produktvertrag](../product-contract.md) Verhalten und Grenzen.
 
-## Aktuelle Arbeit: gemeinsamer Höhenleser für Straßen
+## Aktuelle Arbeit: Gewässerkontakte wiederverwenden
 
-Der Straßenplaner verwendet jetzt denselben begrenzten kanonischen Blockleser wie
-Gelände und Flüsse. Vollständige Höhenraster je besuchtem 160-Fuß-Feld entfallen.
-Gewässer und Flussbetten behalten ihre bestehenden räumlich begrenzten Leser;
-Routensuche, Bewertungsfunktion und gespeicherte Straßen bleiben unverändert.
+Flussprofile verwenden für eine unveränderte punktlokale Gewässerauswahl einmal
+vorbereitete Polygone. Ein Auswahlwechsel ersetzt den bisherigen Bestand;
+es entsteht kein wachsender oder dokumentweiter Kontaktcache. Straßenregionen
+halten vorbereitete Seegeometrie statt sie bei jeder Wegprobe neu aufzubauen.
+Räumliche RTree-Auswahl, Konturlimits, vorgeschlagene Gewässeränderungen,
+Randkontakt und kleinster überlappender Pegel bleiben erhalten.
 
-Sieben vorhandene Rustfälle für Straßen/Geländefolge bestehen. Ein zusätzlicher
-Fall vergleicht lokale Autoren über grobem Gelände an negativen Koordinaten und
-vier Regionsgrenzen mit der bisherigen Rasterreferenz: gleiche Höhen, höchstens
-1280 geladene Kontrollwerte und keine weiteren Kontrollwertreads bei 500
-wiederholten Abfragen. Der Browserfall für Geländefolge, Zoom, Übernahme und
-Undo/Redo besteht ebenso wie Clippy und der Release-/RPM-Build. Nativ unter
-Linux/X11/WebKit geprüft: Umfahren eines Hügels, Übernahme samt Bebauung,
-Undo/Redo und Speichern. Die vollständige Suite wurde für diese isolierte
-Leserumstellung nicht erneut ausgeführt.
-Keine zusätzliche Messreihe oder neue Cacheebene. Belege unter
-`src-tauri/target/diagnostics/road-sampler-*`.
+30 Wasserfälle, 19 Flussfälle, acht Straßen-/Geländefälle und Clippy bestehen.
+Neue Referenzfälle prüfen Inseln, Löcher, Ufer, überlappende Pegel, Ersatz/Löschung,
+Lesegrenzen und einen frischen Leser nach Autorenänderung. 100 Kontakte bei
+identischer Auswahl bereiten die Geometrie nur einmal vor; eine leere Auswahl
+verwirft den bisherigen Bestand. 15 betroffene Browserfälle, Typprüfung, Format
+und der frische Release-/RPM-Build bestehen. Nativ geprüft: Fluss in See zeichnen,
+Gewässer bearbeiten, Undo/Redo und Speichern/Wiederöffnen. Der gespeicherte
+Kartenausschnitt bleibt nach Wiederöffnen pixelgleich.
+Keine neue Latenzmessreihe. Belege unter `src-tauri/target/diagnostics/water-contact-*`.
+
+Die vorherige Straßenumstellung auf den gemeinsamen Höhenleser ist mit acht
+Rustfällen, einem Browserfall, Clippy, RPM und nativer Bedienung geprüft.
+Vollständige Höhenraster pro Straßenregion entfallen. Referenzvergleiche an vier
+Regionsgrenzen bestätigen gleiche Höhen und wiederverwendete Kontrollwerte.
+Belege unter `road-sampler-*`.
+
+Die CI des vorherigen Standes bestand mit 359 Rustfällen, 377 Frontendfällen,
+130 Verträgen und 237 Browserfällen; ein Welt-Bodentest scheiterte an veralteten
+Bildschirmkoordinaten nach dem Mausrad-Zoom. Das Fehlerartefakt zeigt den Strich
+außerhalb des vorbereiteten Landes. Der Test wartet jetzt auf die neue
+Kamerageneration und prüft vor dem Malen Land; drei Wiederholungen bestehen.
+Die vollständige CI des neuen Standes steht noch aus.
 
 Schnee und getrennte Boden-/Felsfarben sind im vorherigen Commit geprüft:
 358 Rustfälle (fünf vorhandene Last-/Fixturefälle ignoriert), 377 Frontendfälle,
 37 Browserfälle, Typen, Clippy, Format, 130 Verträge und Release-/RPM-Build.
 Nativ geprüft sind beide Farbebenen, Schnee, Radieren, Undo/Redo und Zoom;
 Wiederöffnen im finalen Build erhält den geprüften Kartenausschnitt pixelgleich.
-Das geöffnete Material-Testfenster bleibt erhalten. Dateiformat 21 ersetzt 20
+Dateiformat 21 ersetzt 20
 ohne Migration von Entwicklungsdateien. Materialbelege liegen unter `materials-*`.
 
 ## Bestehender Stand und Grenzen
