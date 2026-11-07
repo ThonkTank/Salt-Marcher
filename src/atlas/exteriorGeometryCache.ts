@@ -1,4 +1,3 @@
-import { BudgetCache } from "./budgetCache";
 import { CACHE_BUDGETS } from "./cacheBudgets";
 import { toWorld, type MapObject, type WorldPoint } from "./model";
 
@@ -7,22 +6,38 @@ type Budget = { bytes: number; entries: number };
 
 /** Retention cost is an estimate, not a measurement of native Path2D memory. */
 export class ExteriorGeometryCache {
-  private readonly paths: BudgetCache<ExteriorShape, Path2D>;
+  private readonly paths = new Map<
+    ExteriorShape,
+    { path: Path2D; cost: number }
+  >();
+  private cost = 0;
   private session: string | null = null;
   constructor(
     private readonly budget: Budget = CACHE_BUDGETS.exteriorGeometry,
-  ) {
-    this.paths = new BudgetCache(budget.bytes, budget.entries);
-  }
+  ) {}
   setSession(session: string | null) {
     if (session !== this.session) {
       this.paths.clear();
+      this.cost = 0;
       this.session = session;
+    }
+  }
+  /** Base and overlay share one working set; overflow must not evict its peers. */
+  retain(objects: Iterable<MapObject>) {
+    if (!this.paths.size) return;
+    const obsolete = new Set(this.paths.keys());
+    for (const object of objects) {
+      if (object.kind !== "scenery") obsolete.delete(object);
+      if (!obsolete.size) return;
+    }
+    for (const object of obsolete) {
+      this.cost -= this.paths.get(object)!.cost;
+      this.paths.delete(object);
     }
   }
   get(object: ExteriorShape): Path2D | null {
     const cached = this.paths.get(object);
-    if (cached) return cached;
+    if (cached) return cached.path;
     const finite = (p: readonly number[]) =>
       p.length === 2 && p.every(Number.isFinite);
     let rings: WorldPoint[][];
@@ -59,9 +74,12 @@ export class ExteriorGeometryCache {
       if (object.kind !== "road") path.closePath();
     }
     const cost = 256 + 32 * count;
-    if (cost <= this.budget.bytes && this.budget.entries > 0) {
-      this.paths.set(object, path, cost);
-      this.paths.trim();
+    if (
+      this.cost + cost <= this.budget.bytes &&
+      this.paths.size < this.budget.entries
+    ) {
+      this.paths.set(object, { path, cost });
+      this.cost += cost;
     }
     return path;
   }

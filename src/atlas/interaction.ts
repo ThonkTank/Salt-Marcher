@@ -1177,7 +1177,13 @@ export function decidePointerDown(
   if (tool === "river" && !interior)
     return riverPointerDown(snapshot, input, decision);
   const overview = context.kind === "exterior" && !snapshot.lod.policy.exact;
-  if (overview && !editable && !deletion && input.button === 0) {
+  if (
+    overview &&
+    !editable &&
+    !deletion &&
+    input.button === 0 &&
+    !isBrushTool(tool)
+  ) {
     decision.capture = true;
     begin({ ...base, kind: "pan", camera: { ...camera } });
     return decision;

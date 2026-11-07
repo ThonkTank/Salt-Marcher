@@ -143,6 +143,20 @@ export function AtlasCanvas(p: Props) {
   const geometry = useRef(new InteriorGeometryCache(buildInteriorPaths));
   const terrainPainter = useRef(new TerrainPainter());
   const groundPainter = useRef(new GroundPainter());
+  useLayoutEffect(() => {
+    const cache = exteriorGeometry.current;
+    cache.setSession(p.presentation?.scene.status.sessionId ?? null);
+    cache.retain(
+      (function* () {
+        for (const layer of p.scene.layers) yield* layer.objects;
+        if (p.scene.selectedObject) yield p.scene.selectedObject;
+        if (p.preview)
+          yield* p.preview.valid
+            ? p.preview.objects
+            : p.preview.proposedObjects;
+      })(),
+    );
+  }, [p.scene, p.preview, p.presentation?.scene.status.sessionId]);
   const setup = (
     canvas: HTMLCanvasElement,
     dpr = window.devicePixelRatio || 1,
@@ -167,9 +181,6 @@ export function AtlasCanvas(p: Props) {
   useLayoutEffect(() => {
     const painted = paintTracker.request("base");
     return scheduleCanvasFrame(() => {
-      exteriorGeometry.current.setSession(
-        p.presentation?.scene.status.sessionId ?? null,
-      );
       if (!p.canvasRef.current) return;
       const paintStarted = performance.now();
       const paintCanvas = p.canvasRef.current;
@@ -426,9 +437,6 @@ export function AtlasCanvas(p: Props) {
   useLayoutEffect(() => {
     const painted = paintTracker.request("overlay");
     return scheduleCanvasFrame(() => {
-      exteriorGeometry.current.setSession(
-        p.presentation?.scene.status.sessionId ?? null,
-      );
       if (!overlay.current) return;
       const c = setup(overlay.current),
         scale = p.camera.scale;

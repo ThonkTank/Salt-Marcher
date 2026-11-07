@@ -1640,3 +1640,26 @@ it("navigates only inside current known geometry while the expanded viewport loa
     ),
   ).toEqual([]);
 });
+
+it.each(["terrain", "area", "water", "scenery", "regions"] as const)(
+  "does not reinterpret a blocked %s stroke as overview panning",
+  (tool) => {
+    const snapshot = state({
+      tool,
+      editable: false,
+      camera: { x: 160, y: 120, scale: 0.001 },
+      lod: decideLod(0.001),
+    });
+    expect(decidePointerDown(snapshot, input())).toMatchObject({
+      capture: false,
+      commands: [],
+    });
+    for (const patch of [{ button: 1 }, { space: true }])
+      expect(
+        decidePointerDown(snapshot, input(undefined, patch)),
+      ).toMatchObject({
+        capture: true,
+        commands: [{ kind: "beginGesture", gesture: { kind: "pan" } }],
+      });
+  },
+);
