@@ -169,6 +169,46 @@ describe("render cache", () => {
     paintRivers(c, [river], 2);
     expect(makePath).toHaveBeenCalledTimes(2);
   });
+  it("retains river ribbons across a visible set larger than the entry budget", () => {
+    let builds = 0;
+    vi.stubGlobal(
+      "Path2D",
+      class {
+        constructor() {
+          builds++;
+        }
+        moveTo() {}
+        lineTo() {}
+        arc() {}
+        closePath() {}
+      },
+    );
+    const rivers = Array.from(
+      { length: 257 },
+      (_, i) =>
+        ({
+          river: { id: String(i) },
+          samples: [
+            { point: [0, i], width: 5, cut: 0 },
+            { point: [10, i], width: 5, cut: 0 },
+          ],
+        }) as RiverView,
+    );
+    const c = context() as unknown as CanvasRenderingContext2D;
+    paintRivers(c, rivers, 1);
+    expect(builds).toBe(257);
+    paintRivers(c, rivers, 1);
+    expect(builds).toBe(258);
+    paintRivers(c, [rivers[256]], 1);
+    const afterMove = builds;
+    paintRivers(c, [rivers[256]], 1);
+    expect(builds).toBe(afterMove);
+    paintRivers(c, [rivers[256]], 2);
+    expect(builds).toBe(afterMove + 1);
+    paintRivers(c, [], 2);
+    paintRivers(c, [rivers[256]], 2);
+    expect(builds).toBe(afterMove + 2);
+  });
   it("shares collision space and puts important features ahead of regions and roads", () => {
     const feature = (
       id: string,

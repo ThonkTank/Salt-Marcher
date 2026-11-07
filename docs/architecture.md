@@ -401,6 +401,12 @@ seine temporäre Schlüsselmenge ist höchstens so groß wie der Cache. Überzä
 Objekte werden ohne Aufnahme gezeichnet, damit ein großer sichtbarer Bestand
 nicht bei jedem Frame alle weiterhin benötigten Konturen gegenseitig verdrängt.
 Sessionwechsel leeren den Cache; ersetzte Objektwerte erhalten neue Konturen.
+`BudgetCache.retain` und `setIfFits` besitzen diesen begrenzten Abgleich und die
+Aufnahme ohne Verdrängung. Der Flusszeichner verwendet dieselben Methoden für
+seinen vorhandenen Pfadcache: entfallene Flussansichten und geänderte Maßstäbe
+geben Einträge frei. Mehr sichtbare Flüsse als Cacheplätze verdrängen damit nicht
+bei jedem Bild alle noch benötigten Flussbänder. Die normale LRU-Aufnahme anderer
+Caches bleibt unverändert.
 
 `TerrainPainter` zeichnet fertige Raster und Höhenlinien. Gemeinsame gerundete
 Gerätepixelkanten vermeiden transparente Kachelnähte; der Quellhalo bleibt für die

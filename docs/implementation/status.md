@@ -30,6 +30,17 @@ Ein reproduzierter Fall mit drei Objekten und zwei Plätzen baut jetzt pro weite
 Bild eine statt drei Konturen neu. Sieben Geometrietests und 18 Stadt-/Straßen-/
 Parzellen-Browserfälle bestehen. Daraus wird keine Latenzverbesserung abgeleitet.
 
+Der Flusspfadcache verwendet jetzt denselben begrenzten Abgleich und dieselbe
+Aufnahme ohne Verdrängung aus `BudgetCache`. Die entsprechende eigene
+Kostenverwaltung des Außengeometriecaches entfällt. Ein reproduzierter Bestand
+von 257 Flüssen bei 256 Plätzen baute zuvor 257 Pfade je weiterem Bild neu;
+jetzt entsteht nur ein neuer Pfad. Ausschnitts-/Objektwechsel und Maßstabswechsel
+bleiben invalidierend. Alle 429 Frontendtests, Typen, Format sowie zehn Fluss-
+Browserfälle bestehen, einschließlich Vorschauabbruch, Navigation, Topologie,
+History und Sessionwechsel. Der frische Release-/RPM-Build besteht. Die Änderung
+liegt als Folgebranch hinter dem noch laufenden Main-Kandidaten; eine native
+Bedienprüfung und eine neue Latenzaussage sind damit nicht belegt.
+
 ## Höhenstrich während eines Ansichtswechsels
 
 Eine schrittweise Browserprobe mit echtem Dokumentkern zeigte: Weltmalen nach
@@ -89,4 +100,5 @@ und Assetimporte bleiben Folgeumfang der Landschaftsdeckung.
 Belege unter `src-tauri/target/diagnostics/`: `landscape-canopy/`,
 `landscape-capacity/`, `compact-empty-ground/`, `terrain-visibility/`,
 `city-density-visibility/`, `coarse-flat-proof/`, `landscape-main-integration/`,
-`stable-exterior-geometry/`, `terrain-view-load/` und `blocked-brush-navigation/`.
+`stable-exterior-geometry/`, `terrain-view-load/`, `blocked-brush-navigation/`
+und `stable-river-geometry/`.

@@ -85,8 +85,7 @@ function ribbon(view: RiverView, scale: number): Path2D {
   const start = sides[0];
   c.arc(...s[0].point, start.half, start.angle + Math.PI, start.angle, true);
   c.closePath();
-  ribbons.set(view, { scale, path: c }, 256 + s.length * 96);
-  ribbons.trim();
+  ribbons.setIfFits(view, { scale, path: c }, 256 + s.length * 96);
   return c;
 }
 export function paintRivers(
@@ -97,6 +96,9 @@ export function paintRivers(
   preview = false,
   waters: import("./generated/WaterBody").WaterBody[] = [],
 ) {
+  ribbons.retain(views);
+  for (const [view, cached] of ribbons)
+    if (cached.scale !== scale) ribbons.delete(view);
   c.save();
   c.lineCap = "round";
   c.lineJoin = "round";

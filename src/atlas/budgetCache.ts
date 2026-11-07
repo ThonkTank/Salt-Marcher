@@ -24,6 +24,27 @@ export class BudgetCache<K, V> {
     this.values.set(key, { value, cost });
     this.cost += cost;
   }
+  /** Admit without displacing entries still needed by the current working set. */
+  setIfFits(key: K, value: V, cost = 1): boolean {
+    const previous = this.values.get(key);
+    if (
+      this.cost - (previous?.cost ?? 0) + cost > this.maxCost ||
+      this.values.size + (previous ? 0 : 1) > this.maxEntries
+    )
+      return false;
+    this.set(key, value, cost);
+    return true;
+  }
+  /** The temporary set is bounded by retained entries, not the incoming scene. */
+  retain(keys: Iterable<K>) {
+    if (!this.values.size) return;
+    const obsolete = new Set(this.values.keys());
+    for (const key of keys) {
+      obsolete.delete(key);
+      if (!obsolete.size) return;
+    }
+    for (const key of obsolete) this.delete(key);
+  }
   delete(key: K) {
     const entry = this.values.get(key);
     if (entry) {
