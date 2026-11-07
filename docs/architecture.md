@@ -125,7 +125,10 @@ verworfen. Oberflächenmathematik und Küstenabdeckung liegen ausschließlich in
 
 `map_tiles` verwendet eine per SQL-Trigger gepflegte Dichtepyramide und begrenzte
 Geometrie-/Namensabfragen je Kachel und Art; wichtige Orte haben einen eigenen
-Indexzugriff. Ein anfragegebundener ID-Cache vermeidet wiederholte Projektion.
+Indexzugriff. Dichtekacheln lesen über 32 feste X-Werte jeweils den lokalen
+Y-Bereich aus dem zusammengesetzten Primärschlüssel. Damit werden höchstens die
+32×32 Zellen der Kachel gelesen, keine entfernten Zellen desselben Nord-Süd-Streifens.
+Ein anfragegebundener ID-Cache vermeidet wiederholte Projektion.
 Exakte Szenen laden im Bearbeitungsmaßstab; `roadHeader` und `objectHeader` liefern
 Ownerdaten auch in Übersichten. Zu große exakte Ausschnitte werden abgelehnt.
 

@@ -290,7 +290,19 @@ impl AtlasApplication {
                     && top.abs() <= 100_000_000.0 + size * 32.0,
                 "Ungültige Kartenkachel",
             )?;
-            let mut query=self.db.prepare_cached("SELECT x,y,mass FROM map_density WHERE level=? AND x>=? AND x<? AND y>=? AND y<? AND n>0").map_err(storage_error)?;
+            // Equality on level/X lets the composite primary key also bound Y.
+            // CROSS JOIN keeps the 32 columns outside the indexed range lookup;
+            // a single X range would scan distant north/south cells as well.
+            let mut query = self
+                .db
+                .prepare_cached(
+                    "WITH RECURSIVE columns(x) AS (
+                SELECT ?2 UNION ALL SELECT x+1 FROM columns WHERE x+1<?3)
+                SELECT d.x,d.y,d.mass FROM columns c CROSS JOIN map_density d
+                WHERE d.level=?1 AND d.x=c.x AND d.y>=?4 AND d.y<?5 AND d.n>0
+                ORDER BY d.x,d.y",
+                )
+                .map_err(storage_error)?;
             let density = query
                 .query_map(
                     params![
