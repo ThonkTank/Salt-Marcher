@@ -334,7 +334,13 @@ Innenraumgeometrie; `mapLabels` platziert Namen über Weltanker und räumliche B
 Gerätepixelkanten vermeiden transparente Kachelnähte; der Quellhalo bleibt für die
 Filterung erhalten. `terrainRaster` cached dekodierte Bilder nach Inhaltskennung,
 ohne Transportobjekte festzuhalten. Bodenfarben verwenden vorbereitete Reliefwerte
-und einen eigenen Pixelhalo. Untergetauchte Flussbänder werden an Gewässerflächen
+und einen eigenen Pixelhalo. Die Seenrasterung ordnet nicht horizontale Uferkanten einmal nach ihrer unteren
+Y-Grenze. Pro aufsteigender Subpixelzeile bleiben nur kreuzende Kanten aktiv;
+jede Kante ist einmal gespeichert. Schnittpunkte werden je Polygon einschließlich
+seiner Löcher gepaart, überlagernde Pegel nehmen weiterhin das Minimum.
+Die direkte Schnittformel vermeidet schrittweise Rundungsdrift, Halo und
+Vierfachabtastung je Achse bleiben erhalten. Der Zeilenpuffer wird wiederverwendet.
+Untergetauchte Flussbänder werden an Gewässerflächen
 ausgeschnitten. `containsPolygon` liefert den gemeinsamen Außenring-/Lochtest.
 
 ## Entwicklung und Prüfungen

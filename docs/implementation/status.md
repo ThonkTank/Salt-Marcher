@@ -4,70 +4,53 @@ Atlas V7, Dateiformat 21, Generierungsrezept 4. Stand: 7. November 2026.
 [README](../../README.md) enthält Befehle, [Architektur](../architecture.md)
 Zuständigkeiten, [Produktvertrag](../product-contract.md) Verhalten und Grenzen.
 
-## Aktuelle Arbeit: konstante Höhenraster ohne Einzelabfragen
+## Aktuelle Arbeit: zeilenlokale Seenrasterung
 
-Das 33×33-Relief-/Konturgitter verwendet jetzt den vorhandenen adaptiven
-Rasterkern. Nachweislich konstante Bereiche benötigen keine einzelnen Höhenreads;
-Flussbetten und Hausplattformen werden weiterhin anschließend je Knoten angewendet.
-Ein Referenztest vergleicht alle Knoten exakt mit dichter Abtastung für Ozean,
-konstantes Land, Gefälle und gemischte sparse Autorenauflösungen an negativen
-Koordinaten und Kachelgrenzen. Konstante Testflächen laden keine Autorenpayloads.
+Uferkanten werden einmal nach ihrer unteren Y-Grenze geordnet. Die Rasterung
+wertet nur Kanten aus, welche die aktuelle Subpixelzeile kreuzen. Polygon-/Loch-
+zuordnung, minimale überlappende Pegel, direkte Schnittformel und Halo bleiben
+unverändert. Jede Kante wird höchstens einmal gespeichert; der Pegelzeilenpuffer
+wird wiederverwendet. Es entsteht kein persistenter Cache.
 
-330 Rust-Bibliotheksfälle (fünf bestehende Lastfälle ignoriert), Clippy und 37
-Browserfälle bestehen, einschließlich Weltmalerei nach Mausrad-Zoom, Materialien,
-Flussbearbeitung, Fundamente und History. Typprüfung, Format und Release-/RPM-Build
-bestehen. Nativ geprüft: Ozean, Wiederöffnen mit pixelgleichem Fluss-/Seekartenausschnitt
-zum vorherigen Build, Mausradnavigation und sichtbarer Landauftrag während des
-Ziehens in Welt. Undo entfernt den Strich; Redo stellt ihn pixelgleich wieder her.
-Belege unter `src-tauri/target/diagnostics/relief-grid-audit/`.
-Keine zusätzliche Latenzmessreihe; das Zeitabnahmeziel bleibt offen.
+Ein Referenztest vergleicht mit dem bisherigen vollständigen Ringscan, einschließlich
+exakter Eckpunkte, Lochränder, überlappender Pegel und negativer/großer Koordinaten.
+Bei seiner detaillierten Kontur bleiben weniger als 2.048 aktive Kantenbesuche
+gegenüber 299.280 bisherigen Zeilen-/Kantenprüfungen. Das ist ein Arbeitsnachweis,
+keine Zeitmessung. Zwölf Rasterfälle, 21 Wasserfälle, acht Browserfälle, Clippy,
+Typen, Format und Release-/RPM-Build bestehen. Nativ bleiben Detail- und
+herausgezoomter Fluss-/Seekartenausschnitt pixelgleich zum vorherigen Build;
+Mausradnavigation hin und zurück funktioniert. Belege unter
+`src-tauri/target/diagnostics/lake-raster-audit/`.
 
-## Geprüfte vorherige Änderungen
+## Integrierter Stand
 
-Flussprofile verwenden für eine unveränderte punktlokale Gewässerauswahl einmal
-vorbereitete Polygone. Ein Auswahlwechsel ersetzt den bisherigen Bestand;
-es entsteht kein wachsender oder dokumentweiter Kontaktcache. Straßenregionen
-halten vorbereitete Seegeometrie statt sie bei jeder Wegprobe neu aufzubauen.
-Räumliche RTree-Auswahl, Konturlimits, vorgeschlagene Gewässeränderungen,
-Randkontakt und kleinster überlappender Pegel bleiben erhalten.
+PR #1450 ist auf Main (`1f5767ba5`) integriert. Die vollständige CI des geprüften
+Heads `22dfa9b10` besteht: 362 Rustfälle (fünf Lastfälle ignoriert), 377 Frontendfälle,
+238 Browserfälle, 130 Verträge, Typen, Clippy, Format, Webbuild und RPM.
+Der Welt-Bodentest wartet nach Mausrad-Zoom auf die neue Kamerageneration;
+auch dieser Bedienweg besteht in der vollständigen Suite.
 
-30 Wasserfälle, 19 Flussfälle, acht Straßen-/Geländefälle und Clippy bestehen.
-Neue Referenzfälle prüfen Inseln, Löcher, Ufer, überlappende Pegel, Ersatz/Löschung,
-Lesegrenzen und einen frischen Leser nach Autorenänderung. 100 Kontakte bei
-identischer Auswahl bereiten die Geometrie nur einmal vor; eine leere Auswahl
-verwirft den bisherigen Bestand. 15 betroffene Browserfälle, Typprüfung, Format
-und der frische Release-/RPM-Build bestehen. Nativ geprüft: Fluss in See zeichnen,
-Gewässer bearbeiten, Undo/Redo und Speichern/Wiederöffnen. Der gespeicherte
-Kartenausschnitt bleibt nach Wiederöffnen pixelgleich.
-Keine neue Latenzmessreihe. Belege unter `src-tauri/target/diagnostics/water-contact-*`.
+Enthalten sind die Reliefpinsel Bergkette/Hügel/Schlucht, Bodenmalerei in allen
+Außenmaßstäben, Schnee und getrennte Boden-/Felsfarben. Straßen und Flüsse teilen
+den kanonischen Blockleser; Gewässerkontakte verwenden vorbereitete Geometrie
+innerhalb ihrer begrenzten lokalen Auswahl. Konstante natürliche Reliefgitter
+verwenden die vorhandene adaptive Rasterabtastung statt einzelner Höhenreads.
+Die oben beschriebene zeilenlokale Seenrasterung folgt separat in PR #1451;
+ihre vollständige CI auf der neuen Main-Basis steht noch aus.
 
-Die vorherige Straßenumstellung auf den gemeinsamen Höhenleser ist mit acht
-Rustfällen, einem Browserfall, Clippy, RPM und nativer Bedienung geprüft.
-Vollständige Höhenraster pro Straßenregion entfallen. Referenzvergleiche an vier
-Regionsgrenzen bestätigen gleiche Höhen und wiederverwendete Kontrollwerte.
-Belege unter `road-sampler-*`.
-
-Die CI des vorherigen Standes bestand mit 359 Rustfällen, 377 Frontendfällen,
-130 Verträgen und 237 Browserfällen; ein Welt-Bodentest scheiterte an veralteten
-Bildschirmkoordinaten nach dem Mausrad-Zoom. Das Fehlerartefakt zeigt den Strich
-außerhalb des vorbereiteten Landes. Der Test wartet jetzt auf die neue
-Kamerageneration und prüft vor dem Malen Land; drei Wiederholungen bestehen.
-Die vollständige CI des neuen Standes steht noch aus.
-
-Schnee und getrennte Boden-/Felsfarben sind im vorherigen Commit geprüft:
-358 Rustfälle (fünf vorhandene Last-/Fixturefälle ignoriert), 377 Frontendfälle,
-37 Browserfälle, Typen, Clippy, Format, 130 Verträge und Release-/RPM-Build.
-Nativ geprüft sind beide Farbebenen, Schnee, Radieren, Undo/Redo und Zoom;
-Wiederöffnen im finalen Build erhält den geprüften Kartenausschnitt pixelgleich.
-Dateiformat 21 ersetzt 20
-ohne Migration von Entwicklungsdateien. Materialbelege liegen unter `materials-*`.
+Native Belege umfassen Weltmalerei vor Pointerup, beide Farbebenen, Schnee,
+Radierer, Navigation, Straßen mit Bebauung, Flusskontakt, Undo/Redo und
+Speichern/Wiederöffnen. Verglichene gespeicherte Kartenausschnitte bleiben
+pixelgleich. Die aus dem RPM entpackte Anwendung startet korrekt; Desktopstarter,
+Bibliotheken und Paketinhalt sind geprüft, keine Systeminstallation.
+Dateiformat 21 ersetzt 20 ohne Migration von Entwicklungsdateien.
+Belege unter `materials-*`, `road-sampler-*`, `water-contact-*` und
+`relief-grid-audit/` im ignorierten Diagnoseverzeichnis.
 
 ## Bestehender Stand und Grenzen
 
 Der kräuselige Land-/Meerpinsel ist über PR #1448 integriert. Boden in allen
-Außenmaßstäben ist ebenfalls enthalten und lokal sowie nativ geprüft. Die separate
-Boden-CI bestand einschließlich RPM; die Integration erfolgt mit dem aktuellen
-Gesamtstand. Die zuvor integrierten Änderungen
+Außenmaßstäben ist über PR #1450 integriert. Weitere integrierte Änderungen
 begrenzen Höhenpakete auf 32 Punkte, lesen räumlich begrenzte Autorenblöcke,
 entfernen ungenutzte Höhenübersichten und begrenzen Striche an der Weltkante.
 

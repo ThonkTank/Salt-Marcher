@@ -173,6 +173,101 @@ impl OceanRaster<'_, '_> {
         Ok(())
     }
 }
+struct LakeEdge<'a> {
+    a: &'a crate::atlas::Point,
+    b: &'a crate::atlas::Point,
+    polygon: usize,
+}
+impl LakeEdge<'_> {
+    fn low(&self) -> f64 {
+        self.a[1].min(self.b[1])
+    }
+    fn high(&self) -> f64 {
+        self.a[1].max(self.b[1])
+    }
+}
+/// A monotone scan retains each edge once, never once per crossed row. Polygon
+/// identity keeps each outer ring and its holes paired independently.
+struct LakeScanlines<'a> {
+    edges: Vec<LakeEdge<'a>>,
+    next: usize,
+    active: Vec<usize>,
+    levels: Vec<f64>,
+    #[cfg(test)]
+    visits: usize,
+}
+impl<'a> LakeScanlines<'a> {
+    fn new(waters: &'a [crate::atlas::water::WaterBody], first: f64, last: f64) -> Self {
+        let mut edges = Vec::new();
+        let mut levels = Vec::new();
+        for water in waters {
+            for polygon in &water.polygons {
+                let id = levels.len();
+                levels.push(water.level);
+                for ring in std::iter::once(&polygon.outer).chain(&polygon.holes) {
+                    for i in 0..ring.len() {
+                        let edge = LakeEdge {
+                            a: &ring[i],
+                            b: &ring[(i + 1) % ring.len()],
+                            polygon: id,
+                        };
+                        if edge.low() != edge.high() && edge.low() <= last && edge.high() > first {
+                            edges.push(edge);
+                        }
+                    }
+                }
+            }
+        }
+        edges.sort_by(|a, b| a.low().total_cmp(&b.low()));
+        Self {
+            edges,
+            next: 0,
+            active: vec![],
+            levels,
+            #[cfg(test)]
+            visits: 0,
+        }
+    }
+    /// Calls must have nondecreasing y, as in the subpixel raster traversal.
+    fn fill(&mut self, y: f64, origin: f64, step: f64, levels: &mut [f64]) {
+        levels.fill(f64::INFINITY);
+        self.active.retain(|&i| self.edges[i].high() > y);
+        while self.next < self.edges.len() && self.edges[self.next].low() <= y {
+            if self.edges[self.next].high() > y {
+                self.active.push(self.next);
+            }
+            self.next += 1;
+        }
+        let mut crossings = std::collections::BTreeMap::<usize, Vec<f64>>::new();
+        for &i in &self.active {
+            let edge = &self.edges[i];
+            let (a, b) = (edge.a, edge.b);
+            crossings
+                .entry(edge.polygon)
+                .or_default()
+                .push(a[0] + (y - a[1]) * (b[0] - a[0]) / (b[1] - a[1]));
+        }
+        #[cfg(test)]
+        {
+            self.visits += self.active.len();
+        }
+        for (polygon, mut xs) in crossings {
+            xs.sort_by(f64::total_cmp);
+            for span in xs.as_chunks::<2>().0 {
+                let index = |x: f64| {
+                    ((4. * (x - origin) / step + 3.5).ceil() as i64).clamp(0, levels.len() as i64)
+                        as usize
+                };
+                let start = index(span[0]);
+                let end = index(span[1]);
+                for level in &mut levels[start..end] {
+                    *level = level.min(self.levels[polygon]);
+                }
+            }
+        }
+    }
+}
+
 fn compact(bytes: &[u8]) -> String {
     STANDARD.encode(if bytes.iter().all(|&v| v == bytes[0]) {
         &bytes[..1]
@@ -312,38 +407,16 @@ pub fn display(
     // Scan authored rings once per subpixel row. Repeated polygon predicates per
     // pixel would make a detailed lake cost pixels times contour complexity.
     if !waters.is_empty() {
+        let first = bounds[1] + (-1. + 0.5 / 4.) * step;
+        let last = bounds[1] + (n as f64 + 3.5 / 4.) * step;
+        let mut scanlines = LakeScanlines::new(waters, first, last);
+        let mut levels = vec![f64::INFINITY; (n + 2) * 4];
         for y in 0..n + 2 {
             for sy in 0..4 {
                 let v = (sy as f64 + 0.5) / 4.;
                 let wy = bounds[1] + (y as f64 - 1. + v) * step;
-                let mut levels = vec![f64::INFINITY; (n + 2) * 4];
-                for water in waters {
-                    for polygon in &water.polygons {
-                        let mut crossings = vec![];
-                        for ring in std::iter::once(&polygon.outer).chain(&polygon.holes) {
-                            for i in 0..ring.len() {
-                                let a = ring[i];
-                                let b = ring[(i + 1) % ring.len()];
-                                if (a[1] > wy) != (b[1] > wy) {
-                                    crossings
-                                        .push(a[0] + (wy - a[1]) * (b[0] - a[0]) / (b[1] - a[1]));
-                                }
-                            }
-                        }
-                        crossings.sort_by(f64::total_cmp);
-                        for span in crossings.as_chunks::<2>().0 {
-                            let index = |x: f64| {
-                                ((4. * (x - bounds[0]) / step + 3.5).ceil() as i64)
-                                    .clamp(0, ((n + 2) * 4) as i64)
-                                    as usize
-                            };
-                            for level in &mut levels[index(span[0])..index(span[1])] {
-                                *level = level.min(water.level);
-                            }
-                        }
-                    }
-                }
-                for (sx, level) in levels.into_iter().enumerate() {
+                scanlines.fill(wy, bounds[0], step, &mut levels);
+                for (sx, &level) in levels.iter().enumerate() {
                     if !level.is_finite() {
                         continue;
                     }
@@ -801,6 +874,100 @@ mod tests {
             assert_eq!(rgba[3], 255);
         }
     }
+    #[test]
+    fn active_lake_edges_match_full_ring_scans_at_vertices_and_large_coordinates() {
+        use crate::atlas::{regions::RegionPolygon, water::WaterBody};
+        for offset in [0., -1000., 99_900_000.] {
+            let square = |a: f64, b: f64| {
+                vec![
+                    [offset + a, offset + a],
+                    [offset + b, offset + a],
+                    [offset + b, offset + b],
+                    [offset + a, offset + b],
+                ]
+            };
+            let circle = (0..2048)
+                .map(|i| {
+                    let angle = i as f64 * std::f64::consts::TAU / 2048.;
+                    [
+                        offset + 8. + 2. * angle.cos(),
+                        offset + 9. + 2. * angle.sin(),
+                    ]
+                })
+                .collect();
+            let waters = vec![
+                WaterBody {
+                    id: "holes".into(),
+                    level: 10.,
+                    polygons: vec![
+                        RegionPolygon {
+                            outer: square(0., 12.),
+                            holes: vec![square(3., 5.)],
+                        },
+                        RegionPolygon {
+                            outer: square(13., 15.),
+                            holes: vec![],
+                        },
+                    ],
+                },
+                WaterBody {
+                    id: "overlap".into(),
+                    level: 5.,
+                    polygons: vec![RegionPolygon {
+                        outer: square(6., 14.),
+                        holes: vec![],
+                    }],
+                },
+                WaterBody {
+                    id: "detailed".into(),
+                    level: 2.,
+                    polygons: vec![RegionPolygon {
+                        outer: circle,
+                        holes: vec![],
+                    }],
+                },
+            ];
+            let mut ys: Vec<f64> = (0..136)
+                .map(|i| offset + (i as f64 / 4. - 0.875) * 0.5)
+                .collect();
+            ys.extend([-1., 0., 3., 5., 6., 8., 12., 14., 20.].map(|y| y + offset));
+            ys.sort_by(f64::total_cmp);
+            let mut scan = LakeScanlines::new(&waters, ys[0], *ys.last().unwrap());
+            let mut actual = vec![f64::INFINITY; 136];
+            for y in ys {
+                scan.fill(y, offset, 0.5, &mut actual);
+                let mut expected = vec![f64::INFINITY; 136];
+                for water in &waters {
+                    for polygon in &water.polygons {
+                        let mut xs = vec![];
+                        for ring in std::iter::once(&polygon.outer).chain(&polygon.holes) {
+                            for i in 0..ring.len() {
+                                let (a, b) = (ring[i], ring[(i + 1) % ring.len()]);
+                                if (a[1] > y) != (b[1] > y) {
+                                    xs.push(a[0] + (y - a[1]) * (b[0] - a[0]) / (b[1] - a[1]));
+                                }
+                            }
+                        }
+                        xs.sort_by(f64::total_cmp);
+                        for pair in xs.as_chunks::<2>().0 {
+                            let index = |x: f64| {
+                                ((4. * (x - offset) / 0.5 + 3.5).ceil() as i64).clamp(0, 136)
+                                    as usize
+                            };
+                            for value in &mut expected[index(pair[0])..index(pair[1])] {
+                                *value = value.min(water.level);
+                            }
+                        }
+                    }
+                }
+                assert_eq!(actual, expected, "offset {offset}, y {y}");
+            }
+            // The detailed shore is visited at its crossings, not for every row.
+            assert!(scan.visits < 2048, "{} active-edge visits", scan.visits);
+            assert!(scan.edges.len() <= 2064);
+        }
+    }
+
     #[test]
     fn scanline_lakes_preserve_holes_and_override_ocean_including_the_halo() {
         use crate::atlas::{
