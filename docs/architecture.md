@@ -131,8 +131,16 @@ Anfrage und nur den neuesten wartenden Cursorpunkt. Überholte Antworten werden
 verworfen. Oberflächenmathematik und Küstenabdeckung liegen ausschließlich in Rust.
 
 `map_tiles` verwendet eine per SQL-Trigger gepflegte Dichtepyramide und begrenzte
-Geometrie-/Namensabfragen je Kachel und Art; wichtige Orte haben einen eigenen
-Indexzugriff. Dichtekacheln lesen über 32 feste X-Werte jeweils den lokalen
+Geometrie-/Namensabfragen je Kachel und Art. Der abgeleitete `map_houses`-RTree
+verbindet räumliche Bounds mit der Sichtbarkeit nach Hausgröße beziehungsweise
+Wichtiger-Ort-Markierung. Er ersetzt die getrennten globalen Hausfilter; ein
+einfacher Objekttypindex unterstützt die übrigen Arten. Exakte Größenwerte und
+Sortierschlüssel liegen als skalare Zusatzspalten im Hausindex. Der genaue
+Größenvergleich korrigiert konservative RTree-Rundung. Erst nach Priorisierung
+und Begrenzung auf 128 Treffer werden Hausheader gelesen und projiziert.
+Transaktionale Trigger pflegen den Index bei Import, Writes und History;
+Rollback stellt ihn mit den Autoren wieder her. Namensänderungen benötigen
+keinen räumlichen Neuaufbau. Dichtekacheln lesen über 32 feste X-Werte jeweils den lokalen
 Y-Bereich aus dem zusammengesetzten Primärschlüssel. Damit werden höchstens die
 32×32 Zellen der Kachel gelesen, keine entfernten Zellen desselben Nord-Süd-Streifens.
 Ein anfragegebundener ID-Cache vermeidet wiederholte Projektion.

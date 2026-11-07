@@ -6,38 +6,38 @@ Zuständigkeiten, [Produktvertrag](../product-contract.md) Verhalten und Grenzen
 
 ## Aktuelle Optimierung
 
-Die Wasserabdeckung natürlicher Oberflächen verwendet die bestehenden
-Höhenintervalle, um sicher vollständig trockene oder bedeckte Bereiche zu erkennen.
-Dort entfallen dichte Höhenabfragen; Küsten werden weiter exakt abgetastet.
-Die Prüfung berücksichtigt den Antialiasing-Gradienten, nicht nur das Vorzeichen.
-Relief und Höhenlinien behalten ihre echte Höhenabtastung. Lokale Gewässer,
-Flüsse und Hausplattformen verwenden weiterhin den vollständigen Rasterpfad.
-Es gibt keine zusätzliche persistente Cacheebene oder Messinfrastruktur.
+Hausübersichten filtern Ort und Sichtbarkeit gemeinsam über einen abgeleiteten
+RTree. Entfernte wichtige Häuser und im Maßstab zu kleine Gebäude erreichen die
+Sortierung nicht mehr. Exakte Größenwerte sichern die bisherige Sichtbarkeit
+an Rundungsgrenzen. Nur die höchstens 128 priorisierten Hausheader werden geladen.
+Die bisherigen getrennten globalen Hausfilterindizes sind durch diesen Raumindex
+und einen einfachen Objekttypindex ersetzt. Dateiformat und Darstellungsregeln
+bleiben erhalten; es gibt keine zusätzliche Cacheebene oder Messinfrastruktur.
 
-Ein direkter Vergleich mit dem bisherigen dichten Pfad liefert bytegleiche
-Wasser-/Reliefbilder, identische Höhenlinien und Diagnosehöhen für unebene
-Land-/Meeresflächen, schräge Küsten und dünn belegte Inselkontrollwerte.
-Zwei unebene Flächen fern der Küste benötigen keine der sonst 17.161 dichten
-Höhenabfragen eines 128er Rasters einschließlich Rand. Die konservativen
-Blockintervalle sparen an manchen schrägen Küsten dagegen nur wenig Arbeit.
-Alle 323 Rusttests bestanden; nach der abschließenden Trennung von regulärem
-Raster und Pixelrand wurden die acht Rastertests einschließlich Küstenmatrix
-nochmals geprüft. Alle 21 gezielten Browserfälle für Live-Striche, Weltkarte,
-Küsten und Gewässer bestehen. Ein vorheriger Weltfall lief während des parallelen
-Release-Baus in den Abschluss-Timeout; der erneute sequenzielle Lauf ist grün.
-Clippy, Formatprüfung und frischer Release-/RPM-Build bestehen. Der endgültige
-native Build zeigt bei 1440×960 mit dem 80-Pixel-Weltpinsel erneut zwei wachsende
-Zwischenstände vor dem Loslassen; Undo stellt die leeren Kartenpixel wieder her,
-Redo entspricht dem abgeschlossenen Strich. Dies ist eine Funktionsprüfung.
-Es wurde keine zusätzliche Zeitmessreihe gestartet.
+Der Zugriffstest fügt 1.000 entfernte wichtige beziehungsweise im Weltmaßstab
+zu kleine Häuser hinzu. Vorher stieg die lokale Abfrage von 9 auf 381 Blöcke
+à 100 SQLite-VM-Anweisungen; beide Arbeitsbudgettests bestehen jetzt.
+Elf Kartenkerntests prüfen außerdem Priorisierung, Größenknappheiten, negative
+Koordinaten, Größenänderungen, fehlgeschlagene Writes, Vorschau, History,
+Wiederöffnen und unveränderte Projektion. Alle 326 Rusttests, Clippy und
+Formatprüfung sowie 22 Browserfälle für LOD-Wechsel, Navigation, Stadtübersicht
+und Kachelinvalidierung bestehen lokal. Die vollständige CI-Freigabe erfolgt
+über den verpflichtenden Check am exakten PR-Head.
+Es wurde keine weitere Zeitmessreihe gestartet.
 
 ## Bestehender geprüfter Stand
 
-[PR #1438](https://github.com/ThonkTank/Salt-Marcher/pull/1438) ist auf `main`
+[PR #1439](https://github.com/ThonkTank/Salt-Marcher/pull/1439) ist auf `main`
 integriert. Der exakte Kandidat bestand 129 Transportverträge, Typprüfung,
-363 Frontend-, 321 Rust- und 224 Browsertests sowie Clippy, Format, Webbuild
+363 Frontend-, 323 Rust- und 224 Browsertests sowie Clippy, Format, Webbuild
 und Release-/RPM-Build. Fünf Rustfälle bleiben ausdrücklich ignoriert.
 Die ursprüngliche lokale Historie bleibt in `codex/atlas-v7-preserved-histories`.
+
+Die Wasserabdeckung natürlicher Oberflächen spart dichte Höhenabfragen, wenn
+vorhandene Höhenintervalle vollständige Bedeckung oder Trockenheit einschließlich
+Antialiasing beweisen. Küsten, Relief und Höhenlinien bleiben unverändert;
+lokale Gewässer, Flüsse und Plattformen behalten den vollständigen Rasterpfad.
+Referenztests vergleichen Wasser-/Reliefbilder und Konturen direkt.
 
 Dichtekacheln lesen höchstens ihre 32×32 Zellen über den vorhandenen Index;
 entfernte Bebauung im gleichen Nord-Süd-Streifen verursacht keinen linearen Scan.
@@ -69,13 +69,11 @@ bleiben offen. Der umfangreiche Release-Treiber mit neun Fixtures wurde hier
 nicht ausgeführt.
 
 Nächster Schwerpunkt bleibt das 50-ms-Ziel für bestätigte Pinselbilder.
-Die Hausfilterabfrage kann weiterhin globale Arbeit bei lokalen Kartenreads
-verursachen; ein ausschließlich räumlicher Zugriff wurde wegen des gegenteiligen
-Risikos in Weltansichten verworfen. Eine Lösung muss beide Fälle begrenzen.
 Der native Direktstrich zeigt bei ausstehenden Writes noch die allgemeinen
 Übernehmen-/Abbrechen-Aktionen; die Darstellung sollte dem Direktstrichvertrag folgen.
 
-Aktuelle Belege: `src-tauri/target/diagnostics/ocean-*` (Logs und native Bilder).
+Aktuelle Belege: `src-tauri/target/diagnostics/house-index-*.log`.
+Rasterbelege: `src-tauri/target/diagnostics/ocean-*` (Logs und native Bilder).
 Dichtebelege: `src-tauri/target/diagnostics/density-*.log`.
 Vorige Mess- und native Belege: `src-tauri/target/diagnostics/world-brush/`.
 Browserbelege: `src-tauri/target/diagnostics/playwright-*/`.
