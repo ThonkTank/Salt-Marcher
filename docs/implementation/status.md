@@ -170,8 +170,15 @@ native Präsentationszuordnung auf einer qualifizierten Referenz. Softwaregrafik
 RAF und Render-Submission ersetzen diesen Nachweis nicht. Bestehende 50-ms-Ziele,
 M10-Ziele und die 100-ms-Fortschrittsgrenze bleiben erhalten.
 
-V7-Vergleich, Rust-Gesamtprüfung, RPM-Installation und echte OS-Dateidialogbedienung
-sind ebenfalls offen. Hier fehlen `cargo`, RPM-Werkzeuge und ein natives Display.
-Die Teilnachweise sind keine Freigabe durch `Candidate · exact-SHA aggregate`;
-PR #1469 bleibt ein Draft. Der vollständige Ausbau P1–P9 folgt erst auf das im
-bestehenden Plan festgelegte P0-Gate.
+Der veröffentlichte Implementierungsstand
+`b0f15875704e47c8dde6af067b9848d895db6638` hat die
+[GitHub-Gesamtprüfung `Candidate · exact-SHA aggregate`](https://github.com/ThonkTank/Salt-Marcher/actions/runs/42519099321)
+vollständig bestanden: alle aktiven Prüfungen einschließlich Rust-, Browser- und
+P0-Tests sowie Bau und Paketmetadatenprüfung des konfigurierten Tauri-/V7-RPM.
+Der abschließende Nachtrag aktualisiert ausschließlich diesen Prüfstand;
+Produktcode, Prüfprogramme und Lockdatei bleiben unverändert.
+
+V7-Vergleich, RPM-Installation und echte OS-Dateidialogbedienung bleiben offen.
+Die grüne Repository-Prüfung ersetzt die fehlende native P0-Leistungsabnahme
+nicht. PR #1469 bleibt ein Draft. Der vollständige Ausbau P1–P9 folgt erst auf das
+im bestehenden Plan festgelegte P0-Gate.
