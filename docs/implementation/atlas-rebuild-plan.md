@@ -853,10 +853,11 @@ pauschales „Parität erledigt“ ohne diese Zuordnung.
 
 ## 5. Arbeitspakete und Abhängigkeiten
 
-**Aktueller Wiedereinstieg:** `ecbad25` als geprüften Produktstand verwenden.
-**P0a → P0b → P0d/P0f → P0-Abschluss**. P0d und P0f dürfen nach festem D11-Vertrag
-parallel umgesetzt werden; ein Integrator hält Freigabe, Zeitgrenzen und Read-
-Antworten konsistent. P0c und P0e sind vorhandene funktionale Grundlagen;
+**Aktueller Wiedereinstieg:** D11, lokale Rasterpriorität und entkoppelte Reads
+sind umgesetzt; [status.md](status.md) benennt den ausgeführten Kandidaten und
+seine noch offenen Nachweise. **P0-Abschluss vor P1.** Die Umsetzung setzt auf
+der Planrevision `0c56dcc` auf. Ein Integrator hält Freigabe, Zeitgrenzen und
+Read-Antworten konsistent. P0c und P0e sind vorhandene funktionale Grundlagen;
 ihre Umsetzung nicht nochmals beginnen. Betroffene Nachweise gezielt erhalten.
 Erst anschließend **P1 → P2/P3 → P4 → P5/P6/P7/P8 → P9**.
 

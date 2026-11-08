@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { Graphics } from "pixi.js";
 import { EditorController } from "../EditorController";
+import { editorBudgets } from "../budgets";
 import type {
   AtlasDesktop,
   CommitRequest,
@@ -327,8 +328,6 @@ it("requires an actual local submission, not only source readiness or uploaded p
   expect(world.regionDisplayed(area, false)).toBe(false);
   expect(world.regionDisplayed(area)).toBe(false);
   frame();
-  worker.deliver();
-  expect(world.regionDisplayed(area, false)).toBe(false);
   const render = vi
     .spyOn(world.renderer, "render")
     .mockImplementationOnce(() => {
@@ -337,7 +336,7 @@ it("requires an actual local submission, not only source readiness or uploaded p
       expect(world.regionDisplayed(area, false)).toBe(false);
       expect(world.regionDisplayed(area)).toBe(false);
     });
-  frame();
+  worker.deliver();
   expect(render).toHaveBeenCalledOnce();
   expect(world.regionDisplayed(area, false)).toBe(true);
   expect(world.regionDisplayed(area)).toBe(true);
@@ -345,6 +344,34 @@ it("requires an actual local submission, not only source readiness or uploaded p
     frame: world.state().lastSubmittedFrame,
     viewGeneration: world.state().viewGeneration,
   });
+});
+
+it("publishes arriving terrain before another RAF without admitting a dose or dispatching more work", async () => {
+  const { world, worker, frame, change, observation, document } =
+    await readyRenderer();
+  const update = change([200, 200]);
+  frame();
+  const advance = vi.fn(() => change([200, 200]));
+  world.advanceFrame = advance;
+  const priorSubmission = world.submission().frame;
+  const priorBatches = worker.batches.length;
+  const priorRevision = document.revision;
+  worker.deliver();
+  expect(world.regionDisplayed(update.bounds)).toBe(true);
+  expect(world.submission().frame).toBeGreaterThan(priorSubmission);
+  expect(
+    observation
+      .read()
+      .filter((event) => event.kind === "submit")
+      .at(-1)?.exactRevision,
+  ).toBe(priorRevision);
+  expect(advance).not.toHaveBeenCalled();
+  expect(document.revision).toBe(priorRevision);
+  expect(worker.batches).toHaveLength(priorBatches);
+  frame();
+  expect(advance).toHaveBeenCalledOnce();
+  expect(document.revision).toBe(priorRevision + 1);
+  expect(worker.batches).toHaveLength(priorBatches + 1);
 });
 
 it("requires a new submitted view after camera changes, resize and session replacement", async () => {
@@ -406,9 +433,8 @@ it("keeps a drawn foundation during its own pending edit without confirming the 
   expect(world.regionDisplayed(update.bounds, false)).toBe(true);
   expect(world.regionDisplayed(update.bounds)).toBe(false);
   frame();
-  worker.deliver();
   expect(world.regionDisplayed(update.bounds)).toBe(false);
-  frame();
+  worker.deliver();
   expect(world.regionDisplayed(update.bounds)).toBe(true);
 });
 
@@ -652,8 +678,7 @@ it("does not call mixed tile prefixes a current exact region", async () => {
     minPaintedRevision: 1,
     maxPaintedRevision: 1,
   });
-  worker.deliver();
-  // Model the real result CPU cap: one tile uploads this frame, one next frame.
+  // Model the real result CPU cap: one tile uploads on arrival, one next RAF.
   let now = performance.now();
   const clock = vi.spyOn(performance, "now").mockImplementation(() => now);
   const originalEvent = observation.event.bind(observation);
@@ -663,9 +688,9 @@ it("does not call mixed tile prefixes a current exact region", async () => {
       originalEvent(kind, details);
       if (kind === "raster-upload") now += 3;
     });
-  frame();
-  events.mockRestore();
-  clock.mockRestore();
+  const batch = worker.deliver();
+  // Another reply before RAF cannot replenish the same result CPU budget.
+  worker.onmessage!({ data: batch } as MessageEvent<RasterBatchResult>);
   expect(world.regionCoverage(first.bounds, 1)).toEqual({
     minPaintedRevision: 1,
     maxPaintedRevision: 2,
@@ -673,12 +698,21 @@ it("does not call mixed tile prefixes a current exact region", async () => {
   expect(world.regionCoverage(first.bounds, 2)).toBeNull();
   expect(world.regionExact(first.bounds)).toBe(false);
   expect(world.state().submittedRevision).toBe(0);
+  expect(world.frameCpuMax).toBeGreaterThanOrEqual(3);
   frame();
+  events.mockRestore();
+  clock.mockRestore();
   expect(world.regionExact(first.bounds)).toBe(true);
   expect(world.regionCoverage(first.bounds, 2)).toEqual({
     minPaintedRevision: 2,
     maxPaintedRevision: 2,
   });
+  expect(
+    observation
+      .read()
+      .filter((event) => event.kind === "frame")
+      .at(-1)?.cpuMs,
+  ).toBeGreaterThanOrEqual(6);
 });
 
 it("keeps painted execution revisions monotone through Undo, Redo and late duplicate replies", async () => {
@@ -750,6 +784,60 @@ it("keeps drop-render negative control and recovers through the same real raster
   world.fault = "none";
   frame();
   expect(world.regionExact(update.bounds)).toBe(true);
+});
+
+it("keeps one upload budget across delayed arrivals and publishes them without another RAF", async () => {
+  const { world, worker, frame, observation } = await readyRenderer({
+    width: 1152,
+    height: 896,
+    rendered: false,
+  });
+  const timers: (() => void)[] = [];
+  vi.stubGlobal("window", {
+    setTimeout: (callback: () => void) => timers.push(callback),
+  });
+  // Isolate the byte limit from the independent CPU limit in this test.
+  vi.spyOn(performance, "now").mockReturnValue(1000);
+  world.fault = "delay-render";
+  world.invalidate(world.bounds());
+  frame();
+  for (let step = 0; step < 100 && worker.completed.length; step++) {
+    worker.deliver();
+    frame();
+  }
+  const totalTiles = worker.tasks.length;
+  const tileBytes = 128 * 128 * 4;
+  expect(totalTiles * tileBytes).toBeGreaterThan(
+    editorBudgets.uploadBytesPerFrame,
+  );
+  expect(world.regionDisplayed(world.bounds(), false)).toBe(false);
+  const advance = vi.fn();
+  world.advanceFrame = advance;
+  const before = world.submission().frame;
+  for (const callback of timers) callback();
+  const uploads = () =>
+    observation.read().filter((event) => event.kind === "raster-upload");
+  expect(uploads().length * tileBytes).toBe(editorBudgets.uploadBytesPerFrame);
+  expect(world.submission().frame).toBeGreaterThan(before);
+  expect(world.regionDisplayed(world.bounds())).toBe(false);
+  expect(advance).not.toHaveBeenCalled();
+  frame();
+  expect(advance).toHaveBeenCalledOnce();
+  expect(uploads()).toHaveLength(totalTiles);
+  expect(world.regionDisplayed(world.bounds())).toBe(true);
+});
+
+it("does not publish an arriving result during a pointerup-render fault's active gesture", async () => {
+  const { world, worker, frame, change, document } = await readyRenderer();
+  world.fault = "pointerup-render";
+  const update = change([200, 200]);
+  frame();
+  document.beginGesture({ level: 0, radius: 20, amount: 400 });
+  worker.deliver();
+  expect(world.regionDisplayed(update.bounds)).toBe(false);
+  document.finishGesture();
+  frame();
+  expect(world.regionDisplayed(update.bounds)).toBe(true);
 });
 
 it("keeps the same certified source area during a small camera move", async () => {

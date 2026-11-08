@@ -649,13 +649,18 @@ Antwortprüfung und lokale Patchprojektion schützen vor einem Rückfall auf ein
 Verbindung für diese Priorisierung.
 
 Darstellungskacheln mit 128 × 128 Pixeln sind von Autorenkacheln getrennt.
-Für Folgeimpulse übernimmt der gemeinsame Frameablauf zuerst gültige Ergebnisse,
-zeichnet sie und bestätigt die dadurch aktuelle Region. Danach nimmt er höchstens einen
-begrenzten Pinselschritt am aktuellen Ort an und wählt Rasteraufträge aus dem
-neuen Bedarf. Damit kann die nächste Änderung den gerade fertig gewordenen
-Stand nicht vor seiner Darstellung wieder entwerten. Ein zweiter Gesten-RAF und
-Dispatch mitten in einer Folge von Pinselabschnitten entfallen. Lokale
-Dirtybereiche begrenzen Rasterarbeit und Uploads.
+Ein gemeinsamer Veröffentlichungsschritt übernimmt gültige Ergebnisse,
+zeichnet sie und bestätigt die dadurch aktuelle Region. Er läuft bei Eingang
+einer Rasterantwort und im normalen RAF. Fertige Ergebnisse warten damit nicht
+pauschal auf den nächsten RAF; Übernahmezeit und Uploads teilen sich weiterhin
+dieselben Budgets pro RAF-Intervall. Die dazwischen ausgeführte CPU-Arbeit bleibt
+in der Framebilanz enthalten. Nur der normale RAF nimmt nach der Veröffentlichung
+höchstens einen begrenzten Folgeimpuls am aktuellen Ort an und wählt Rasteraufträge
+aus dem neuen Bedarf. Eine schnelle Antwort erzeugt keine zusätzliche Dosis.
+Damit kann die nächste Änderung den gerade fertig gewordenen Stand nicht vor
+seiner Darstellung wieder entwerten. Ein zweiter Gesten-RAF und Dispatch mitten
+in einer Folge von Pinselabschnitten entfallen. Lokale Dirtybereiche begrenzen
+Rasterarbeit und Uploads.
 
 Der vorhandene Dispatcher priorisiert die angenommene lokale Änderung, den für
 die Werkzeugfreigabe benötigten Bildaufbau und anschließend übrige sichtbare
