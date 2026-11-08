@@ -22,12 +22,16 @@ ignorierten Pfade `src-tauri/target/cleanup/`, `src-tauri/target/diagnostics/`
 oder für P0 unter `artifacts/atlas-rebuild/`.
 
 Der angeforderte [ausführbare Atlas-Neubau- und Aufräumplan](docs/implementation/atlas-rebuild-plan.md)
-enthält den vollständigen Zielumfang F01–F19 mit den vereinbarten D01–D10,
+enthält den vollständigen Zielumfang F01–F19 mit D01–D11,
 Architekturentscheidungen, Arbeitspaketen und Abschlusskriterien. Ein Verweis
 darauf mit „erledige das“ beauftragt seine vollständige Ausführung P0–P9.
-Der aktuelle Auftrag vom 8. November 2026 ist die **Umsetzung des Aufräumplans**.
-P0b/P0d/P0e wurden strukturell überarbeitet: gemeinsamer Prüfablauf,
-begrenzter Patch-/Renderweg und numerische Übersicht über feine Quellen.
+Der Aufräumplan wurde zur Umsetzung beauftragt; nach dem Review vom 8. November
+ist die nächste Fortsetzung zunächst **geplant**. D11 präzisiert: Erst sichtbares,
+lokal bereites Gelände bearbeiten, den Wartezustand anzeigen und verkürzen.
+Eine gemeinsame Freigabe, lokale Rasterpriorität und Reads während Save sind
+die nächsten Pakete; diese Änderungen sind noch nicht implementiert.
+Im bisherigen P0-Kern sind ein gemeinsamer Prüfablauf, ein begrenzter Patch-/Renderweg
+und numerische Übersichten über feine Quellen bereits umgesetzt.
 Der vollständige Ausbau folgt dem P0-Gate; die tatsächlichen Produktnachweise
 und verbliebenen Fehler entscheiden über diesen Übergang.
 Der [Status](docs/implementation/status.md) hält die vorhandenen Teilnachweise

@@ -1086,6 +1086,13 @@ abgelehnt. Persistenz und Import folgen [Dateien und History](#dateien-und-histo
 
 ## Optionaler Atlas-P0-Versuch
 
+Dieser Abschnitt beschreibt den implementierten Stand `ecbad25`. Die nach dem
+Review vereinbarte Zieländerung [D11 im Ausführungsplan](implementation/atlas-rebuild-plan.md#d11-konkret-sichtbares-gelände-vor-dem-gestenbeginn)
+verlangt sichtbares, lokal bereites Gelände vor dem Eingriff sowie einen klaren
+Wartezustand. Der Plan entfernt dabei die Vormerkung früher Gesten. Diese
+Freigabeänderung ist noch nicht implementiert; [Status](implementation/status.md)
+trennt sie von den bisherigen Funktions- und Zeitnachweisen.
+
 P0 ist ein eigener, ausdrücklich gewählter Höheneditor. Er bietet Verschieben
 und Zoom vom Nahbereich bis zur Welt, Raster ein/aus, Anheben und Absenken,
 Undo/Redo sowie Neu, Öffnen, Speichern und Speichern unter. Die Pinselgröße wird

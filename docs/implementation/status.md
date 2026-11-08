@@ -8,19 +8,35 @@ Befehle, [Architektur](../architecture.md) Zuständigkeiten und
 
 ## Ergebnis und Auftragsgrenze
 
-Der vollständige [Aufräumplan](atlas-rebuild-plan.md) P0–P9 ist beauftragt.
-P0b/P0d/P0e sind strukturell umgesetzt. Die ausdrücklich ergänzte D10 ist
+Der vollständige [Aufräumplan](atlas-rebuild-plan.md) P0–P9 wurde beauftragt.
+Das bisherige Aufräumen an Prüf-, Render- und Übersichtspfad ist implementiert.
+Die ausdrücklich ergänzte D10 ist
 implementiert und funktional geprüft: **Halten wirkt weiter, langsamere Züge
 wirken stärker, verzögerte Verarbeitung sammelt keine große Nachholdosis an.**
 Die frühere 512-Quellen-Sperre grober Ansichten ist durch numerische Übersichten
 behoben; 32, 1.024 und 9.000 echte Quellen bestehen den Funktionsrundlauf.
 
-**P0 ist dennoch nicht abgeschlossen.** Große und kalte schnelle Gesten verfehlen
-im Software-Labor weiterhin Teile der strengen Live-/Reaktionsziele. Native
+**P0 ist dennoch nicht abgeschlossen.** Große warme Gesten verfehlen im
+Software-Labor weiterhin Reaktionsziele. Die kalten Altproben verwenden nur
+Quellenbereitschaft; sie erfüllen den nachstehend präzisierten Vertrag nicht. Native
 Präsentation und qualifizierte Referenz fehlen. Der vollständige Ausbau P1–P9
 bleibt gemäß Plan am P0-Gate; F01–F19 ist im kleinen Höheneditor nicht vollständig
 umgesetzt. V7 bleibt der reguläre Einstieg. Eine generelle Überlegenheit von
 Electron/Pixi gegenüber V7 ist nicht belegt.
+
+**Aktueller Planungsauftrag nach dem Review:** Aaron bestätigt ausdrücklich,
+dass unsichtbares Gelände nicht bearbeitbar sein soll. Der Wartezustand muss
+sichtbar sein und möglichst kurz bleiben. Die geplante D11 verbindet deshalb
+angezeigtes lokales Terrain mit den benötigten Daten. Als Vereinfachung werden
+vor Freigabe begonnene Gesten nicht vorgemerkt; ein neuer Druck beginnt die
+Bearbeitung. Diese Änderung, die Rasterpriorität und Reads während Save sind
+geplant, noch nicht implementiert. Produktcode, Prüfprogramme und Lockdatei
+bleiben auf dem Stand `ecbad25`/`b0f1587`.
+
+Die folgenden Messwerte und PASS/FAIL-Angaben beschreiben unverändert den damaligen
+ausgeführten Stand und Vertrag. Sie werden nicht nachträglich umgedeutet. Insbesondere
+belegen die alten kalten Fälle keine korrekte D11-Sperre: Die erste Modelländerung
+geschah bereits vor der passenden Bilddarstellung.
 
 ## Umgesetzter Kern
 
@@ -163,20 +179,47 @@ Die erneute native Vorprüfung endet vor Fixtureerzeugung mit Exit 2 und
 
 ## Offene Abnahme und Fortsetzung
 
-Die normale sowie die grobe Bearbeitung kann weiter auf dem lokalen Kern aufbauen.
-Für das P0-Abschlussgate fehlen die ausreichende Reaktion großer/kalter Gesten
-unter Last, die vollständige Stichprobe in drei unabhängigen Gruppen und die
-native Präsentationszuordnung auf einer qualifizierten Referenz. Softwaregrafik,
-RAF und Render-Submission ersetzen diesen Nachweis nicht. Bestehende 50-ms-Ziele,
-M10-Ziele und die 100-ms-Fortschrittsgrenze bleiben erhalten.
+Den lokalen Datenkern und die numerischen Übersichten behalten. Der nächste
+Auftrag steht einmal in [Planabschnitt 5](atlas-rebuild-plan.md#5-arbeitspakete-und-abhängigkeiten):
+P0a/D11 festlegen, P0b/Freigabe und gemeinsame Prüfregeln umsetzen, dann
+P0d/Rasterreihenfolge und P0f/Reads während Save. Je Paket ersetzte Zustände,
+Wartepfade und Tests entfernen; keine zweite Vorschau, kein weiterer Worker und
+kein allgemeines Scheduling-Framework.
+
+Die Review-Auswertung vorhandener Rohjournale grenzt zwei Warteketten ein:
+
+- `time-cold`: Quellen nach 23,7 ms bereit, Modelledit nach weiteren 6,6 ms.
+  Danach vier Rasterbatches ohne geänderte Kachel; der erste betroffene Batch
+  beginnt etwa 117 ms nach der Modelländerung. D11 verlangt zuerst sichtbares
+  Terrain; lokale Priorität soll diese Wartephase verkürzen, keine unsichtbare
+  Bearbeitung vorziehen. `WorldRenderer.dispatch` bevorzugt bisher gemalte
+  Kacheln; neue Kacheln haben keinen Bezug zum lokalen Arbeitsbereich.
+- `time-cold-busy`: Der 504,7-ms-Snapshot beginnt 1,3 ms vor der Navigation;
+  Quellen treffen 4,4 ms nach seinem Ende ein. Zusammen mit der pauschalen
+  Promise-Queue in `store-process.ts` erklärt dies sehr plausibel fast die
+  gesamte 509,4-ms-Quellenbereitschaft. Synchrone reine Reads sollen diese Queue
+  umgehen; geordnete Mutationen und konsistenter Snapshot bleiben erhalten.
+
+Die Belege liegen unverändert in den bereits genannten `artifacts/atlas-rebuild/`-
+Unterordnern; dies ist eine Auswertung, keine neue Produktmessung. Der warme große
+Pinsel bleibt ein eigener Fall mit verteilter Eingabe-, Raster- und Framezeit.
+
+Neue M10-Proben messen Navigation → **sichtbar lokal bereit** bei p95 ≤500 ms,
+anschließend normale Eingabe → exaktes Ergebnis bei p95 ≤50 ms und die vollständige
+Navigation → erste Änderung bei p95 ≤750 ms. Die 2.000-ms-Maxima und die
+100-ms-Fortschrittsgrenze bleiben. Frühe abgewiesene Eingaben werden separat auf
+sichtbares Warten und ausbleibendes Replay geprüft. Native Präsentationszuordnung
+und qualifizierte Referenz fehlen weiterhin; Softwaregrafik, RAF und Submission
+ersetzen sie nicht. Die volle Stichprobe folgt nach den gezielten Korrekturen.
 
 Der veröffentlichte Implementierungsstand
 `b0f15875704e47c8dde6af067b9848d895db6638` hat die
 [GitHub-Gesamtprüfung `Candidate · exact-SHA aggregate`](https://github.com/ThonkTank/Salt-Marcher/actions/runs/42519099321)
 vollständig bestanden: alle aktiven Prüfungen einschließlich Rust-, Browser- und
 P0-Tests sowie Bau und Paketmetadatenprüfung des konfigurierten Tauri-/V7-RPM.
-Der abschließende Nachtrag aktualisiert ausschließlich diesen Prüfstand;
-Produktcode, Prüfprogramme und Lockdatei bleiben unverändert.
+Der damalige Dokumentationsabschluss `ecbad25` aktualisierte ausschließlich
+diesen Prüfstand. Die jetzige Planrevision verändert ebenfalls keinen Produktcode,
+keine Prüfprogramme und keine Lockdatei; sie ist kein neuer Laufzeitnachweis.
 
 V7-Vergleich, RPM-Installation und echte OS-Dateidialogbedienung bleiben offen.
 Die grüne Repository-Prüfung ersetzt die fehlende native P0-Leistungsabnahme
