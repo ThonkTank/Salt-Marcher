@@ -3,6 +3,11 @@
 Verhalten, Format und Grenzen des Atlas-Editors. Umsetzung: [Architektur](architecture.md);
 Prüfstand: [Status](implementation/status.md); Befehle: [README](../README.md).
 
+Die bestehenden Abschnitte beschreiben den weiterhin aktiven Atlas V7. Für den
+separat gestarteten, begrenzten P0-Höhenversuch gilt ausschließlich der ergänzende
+[P0-Abschnitt](#optionaler-atlas-p0-versuch); er übernimmt noch nicht den gesamten
+V7-Funktionsumfang oder die Arbeitspakete P1–P9.
+
 ## Koordinaten, Eigentum und Lebenszyklus
 
 | Größe                     | Vertrag                                                         |
@@ -1078,3 +1083,52 @@ mit den umschließenden Gewässerrechtecken; überlappende Einflüsse zählen ei
 Lokale Höhenautoren
 bleiben bei groben Änderungen erhalten. Zu große Aktionen werden vollständig
 abgelehnt. Persistenz und Import folgen [Dateien und History](#dateien-und-history).
+
+## Optionaler Atlas-P0-Versuch
+
+P0 ist ein eigener, ausdrücklich gewählter Höheneditor. Er bietet Verschieben
+und Zoom vom Nahbereich bis zur Welt, Raster ein/aus, Anheben und Absenken,
+Undo/Redo sowie Neu, Öffnen, Speichern und Speichern unter. Die Pinselgröße wird
+in Bildschirmpixeln, der Höhenbetrag in Metern eingestellt; die Berechnung
+verwendet Fuß. Straßen, Häuser, Innenräume, Landschaft, Regionen und lokale
+Gewässerwerkzeuge gehören weiter zur V7-Anwendung und sind im P0-Fenster nicht
+verfügbar.
+
+Eine neue P0-Welt ist Ozean mit natürlicher Höhe −100 Fuß und Meeresspiegel 0.
+Die natürliche Oberfläche entsteht aus der Summe relativer Höhenfelder mit
+Abständen von `5 × 2^level` Fuß auf Stufen 0–21. Erst die vollständig
+rekonstruierte Summe wird auf ±100.000 Fuß begrenzt. Weltkoordinaten müssen
+endlich und innerhalb ±100.000.000 Fuß sein. Grobes Anheben oder Absenken lässt
+die feineren Restwerte unverändert; an den Höhenlimits kann die abschließende
+Begrenzung Relief abschneiden. Küsten folgen der zusammengesetzten Oberfläche,
+sie besitzen keine getrennten Höhenautoren.
+
+Ein Strich hält seine Autorenstufe und Pinselparameter bis zum Abschluss fest.
+Räumliche Abtastung begrenzt die Abhängigkeit von der Ereignisrate; Halten ohne
+Bewegung vertieft nicht weiter. Jeder angenommene Abschnitt wirkt live. Pointerup
+fasst den angenommenen Strich zu einem Undo-Schritt zusammen. Escape,
+Fokusverlust und Pointercancel erhalten bereits angenommene Änderungen;
+noch auf Quellen wartende Eingaben werden verworfen. Fehlende lokale Daten
+bleiben als Wartezustand sichtbar und werden nicht als leeres Gelände behandelt.
+Grenzen für Arbeit und Speicher werden vor der jeweiligen Änderung geprüft;
+eine Ablehnung späterer Abschnitte erhält den vorher angenommenen Teil als
+rückgängig machbare Aktion.
+
+P0-Projekte verwenden `.saltatlas` als SQLite-Format **23** mit Schemakennung
+`atlas-p0-height-1`. Gespeichert werden sparse relative Höhenkacheln und
+Projektmetadaten. Dieses Versuchsformat ist getrennt vom V7-Format 22 und wird
+nicht migriert. Öffnen arbeitet auf einer temporären Kopie; Undo/Redo bleibt
+auf die Sitzung begrenzt. Eine lokale Änderung, ihre Bestätigung in der
+Arbeitskopie und ihre Speicherung in der Projektdatei sind verschiedene Zustände.
+Speichern veröffentlicht den reservierten Stand atomar. Spätere Bearbeitungen
+bleiben ungespeichert, bis ein weiterer Speichervorgang auch sie erfasst.
+
+Der Versuch prüft die grundlegende Tragfähigkeit dieses Höhenpfads. Ein
+softwaregerenderter Headless-Lauf belegt Funktionen und Dateirundläufe, keine
+native Performancefreigabe. Die P0a-Rust-Baseline, eine eindeutige Zuordnung von
+Atlas-Generation zu Compositor-Präsentation und die vollständige native
+Stichprobe aus drei unabhängigen Release-Läufen fehlen; im Labor ist
+`displayHz: 0`. Auch ein funktionierender Forge-Paketstart belegt keine
+RPM-Installation. Die Busy-/Save-Überlappung muss tatsächlich beobachtet werden;
+fehlt der Nachweis, bleibt dieser Punkt `OPEN`. Der konkrete Prüfstand und die
+noch offenen Abnahmen werden ausschließlich im Statusdokument gepflegt.

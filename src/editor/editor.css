@@ -1,0 +1,327 @@
+:root {
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  color: #e5e9e6;
+  background: #14242d;
+  font-synthesis: none;
+  color-scheme: dark;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+}
+button,
+input {
+  font: inherit;
+}
+button {
+  border: 1px solid #43534f;
+  background: #263b40;
+  color: inherit;
+  padding: 9px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+button:hover {
+  background: #334c50;
+}
+button:disabled {
+  opacity: 0.38;
+  cursor: default;
+}
+button:focus-visible,
+input:focus-visible,
+canvas:focus-visible {
+  outline: 2px solid #d6b66b;
+  outline-offset: 2px;
+}
+.atlas-shell {
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  grid-template-rows: 66px minmax(0, 1fr);
+  height: 100vh;
+  min-width: 900px;
+  min-height: 620px;
+}
+.atlas-header {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  padding: 0 22px;
+  border-bottom: 1px solid #3c514f;
+  background: #192d34;
+  z-index: 2;
+}
+.atlas-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 210px;
+}
+.brand-mark {
+  font-size: 34px;
+  color: #ddbf7d;
+}
+.atlas-brand strong {
+  letter-spacing: 4px;
+  font-size: 17px;
+}
+.atlas-brand div > span {
+  display: block;
+  color: #a9b9b4;
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+.project-label {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 600;
+}
+.save-indicator {
+  display: block;
+  font-size: 10px;
+  font-weight: 400;
+  color: #b5b9a3;
+  margin-top: 3px;
+}
+.save-indicator.saved {
+  color: #8dc69b;
+}
+.atlas-header nav {
+  display: flex;
+  gap: 6px;
+}
+.primary {
+  background: #d2b574;
+  color: #203238;
+  border-color: #d2b574;
+}
+.primary:hover {
+  background: #e3ca91;
+}
+.atlas-panel {
+  padding: 25px 21px 16px;
+  background: #1a2e34;
+  overflow: auto;
+  border-right: 1px solid #425653;
+}
+.eyebrow {
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: #b7c7bb;
+  font-weight: 700;
+  margin: 0 0 9px;
+}
+h1 {
+  font-family: Georgia, serif;
+  font-size: 25px;
+  font-weight: 400;
+  margin: 0 0 8px;
+  line-height: 1.15;
+  color: #f1e6cd;
+}
+.intro {
+  font-size: 12px;
+  line-height: 1.6;
+  color: #a9bcb5;
+  margin: 0 0 24px;
+}
+.tool-list {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 22px;
+}
+.tool-list button {
+  text-align: left;
+}
+.tool-list button span {
+  display: inline-block;
+  width: 32px;
+  color: #d0b371;
+  font-size: 20px;
+}
+.tool-list button[aria-pressed="true"] {
+  background: #3b4d42;
+  border-color: #b7a678;
+  color: #f1e2b9;
+}
+.field {
+  margin-bottom: 15px;
+}
+.field label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  margin-bottom: 6px;
+}
+.field label span {
+  color: #91a49e;
+}
+input[type="number"] {
+  width: 100%;
+  border: 1px solid #435954;
+  background: #142a31;
+  border-radius: 5px;
+  padding: 8px 10px;
+  color: #e4e6d8;
+}
+.history {
+  display: flex;
+  gap: 5px;
+  margin-top: 18px;
+}
+.history button {
+  font-size: 10px;
+  padding: 8px;
+  flex: 1;
+}
+hr {
+  border: 0;
+  border-top: 1px solid #3a4e4c;
+  margin: 22px 0;
+}
+.view-buttons {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 5px;
+}
+.view-buttons button {
+  font-size: 11px;
+  text-align: left;
+}
+.check {
+  display: flex;
+  gap: 9px;
+  align-items: center;
+  font-size: 12px;
+  margin: 15px 0;
+}
+input[type="checkbox"] {
+  accent-color: #d2b574;
+}
+details {
+  font-size: 11px;
+  color: #aabbaf;
+  margin-top: 13px;
+}
+summary {
+  cursor: pointer;
+}
+.coordinates {
+  display: flex;
+  gap: 5px;
+  margin: 10px 0;
+}
+.coordinates label {
+  min-width: 0;
+  flex: 1;
+}
+.coordinates input {
+  margin-top: 4px;
+}
+.experiment {
+  border-top: 1px solid #3a4e4c;
+  margin-top: 24px;
+  padding-top: 18px;
+}
+.experiment button {
+  font-size: 11px;
+  width: 100%;
+}
+.experiment p:not(.eyebrow) {
+  font-size: 10px;
+  line-height: 1.5;
+  color: #95aaa2;
+}
+.hint {
+  font-size: 10px;
+  line-height: 1.7;
+  color: #8fa79f;
+  margin-top: 20px;
+}
+.atlas-map {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  background: #294e63;
+}
+.atlas-map canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+  touch-action: none;
+  outline: none;
+}
+.map-label {
+  position: absolute;
+  left: 28px;
+  top: 22px;
+  pointer-events: none;
+  text-shadow: 0 1px 5px #18333c;
+}
+.map-label span {
+  display: block;
+  font-size: 9px;
+  letter-spacing: 3px;
+  color: #d5dcce;
+  margin-bottom: 5px;
+}
+.map-label strong {
+  font-family: Georgia, serif;
+  font-size: 21px;
+  font-weight: 400;
+  color: #e7e2cc;
+}
+.map-status {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 20px;
+  font-size: 10px;
+  letter-spacing: 0.2px;
+  background: #142c36e8;
+  color: #bacdc5;
+  pointer-events: none;
+}
+.loading {
+  color: #efd292;
+}
+.error-banner {
+  position: absolute;
+  left: 20px;
+  right: 20px;
+  top: 82px;
+  padding: 12px 15px;
+  color: #ffe5da;
+  background: #6b332ce8;
+  border: 1px solid #b97861;
+  border-radius: 6px;
+  font-size: 12px;
+}
+@media (max-height: 760px) {
+  .atlas-panel {
+    padding-top: 16px;
+  }
+  .intro {
+    margin-bottom: 15px;
+  }
+  .tool-list {
+    margin-bottom: 16px;
+  }
+  .experiment {
+    margin-top: 16px;
+  }
+  hr {
+    margin: 16px 0;
+  }
+  .hint {
+    margin-bottom: 0;
+  }
+}

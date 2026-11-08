@@ -12,13 +12,13 @@
     "package": "tauri build",
     "test:e2e": "playwright test",
     "test:rust": "cargo test --locked --manifest-path src-tauri/Cargo.toml",
-    "format": "prettier --write scripts src tests *.ts *.json README.md docs && cargo fmt --manifest-path src-tauri/Cargo.toml",
+    "format": "prettier --write scripts src desktop tests *.ts *.json *.cjs README.md docs && cargo fmt --manifest-path src-tauri/Cargo.toml",
     "typecheck": "tsc --noEmit",
-    "format:check": "prettier --check scripts src tests *.ts *.json README.md docs && cargo fmt --manifest-path src-tauri/Cargo.toml --check",
+    "format:check": "prettier --check scripts src desktop tests *.ts *.json *.cjs README.md docs && cargo fmt --manifest-path src-tauri/Cargo.toml --check",
     "check:rust": "cargo clippy --locked --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings",
     "check": "npm run contracts:check && npm run typecheck && npm test && npm run test:rust",
     "build:web": "vite build",
-    "check:all": "npm run check && npm run check:rust && npm run format:check && npm run build:web && npm run test:e2e",
+    "check:all": "npm run check && npm run check:rust && npm run format:check && npm run build:web && npm run test:e2e && npm run check:atlas-p0",
     "contracts:generate": "node scripts/contracts.mjs generate",
     "contracts:check": "node scripts/contracts.mjs check",
     "test:lod": "vitest run src/atlas/lod.test.ts src/atlas/cityView.test.ts src/atlas/terrainView.test.ts src/atlas/groundView.test.ts src/atlas/presentationCache.test.ts src/atlas/presentationLoader.test.ts",
@@ -26,26 +26,51 @@
     "perf:build": "vite build --config vite.performance.config.ts && cargo build --release --locked --target-dir src-tauri/target --manifest-path src-tauri/Cargo.toml --example atlas_test_server",
     "perf:measure": "playwright test --config playwright.performance.config.ts",
     "perf:terrain": "node scripts/terrain-performance.mjs run",
-    "perf:terrain:capture": "node scripts/terrain-performance.mjs capture"
+    "perf:terrain:capture": "node scripts/terrain-performance.mjs capture",
+    "build:atlas-p0": "node scripts/build-atlas-p0.mjs",
+    "desktop:atlas-p0": "npm run build:atlas-p0 && electron .",
+    "test:atlas-p0": "vitest run src/editor",
+    "p0:lab": "node scripts/atlas-p0-run.mjs --lab",
+    "p0:native": "node scripts/atlas-p0-run.mjs --native",
+    "p0:evaluate": "node scripts/atlas-p0-evaluate.mjs",
+    "package:atlas-p0": "npm run build:atlas-p0 && electron-forge package",
+    "make:atlas-p0": "npm run build:atlas-p0 && electron-forge make",
+    "check:atlas-p0": "node scripts/check-atlas-p0.mjs"
   },
   "dependencies": {
     "@tauri-apps/api": "^2",
+    "better-sqlite3": "13.0.3",
+    "pixi.js": "8.22.0",
     "react": "^19",
     "react-dom": "^19"
   },
   "devDependencies": {
+    "@electron-forge/cli": "8.0.1",
+    "@electron-forge/maker-rpm": "8.0.1",
+    "@electron-forge/maker-zip": "8.0.1",
+    "@electron/rebuild": "4.2.1",
     "@playwright/test": "^1.51",
     "@tauri-apps/cli": "^2",
+    "@types/better-sqlite3": "7.6.13",
     "@types/node": "^22.20.5",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@vitejs/plugin-react": "^4",
+    "electron": "44.10.2",
+    "esbuild": "0.25.12",
     "prettier": "^3.9.10",
     "typescript": "~5.7.2",
     "vite": "^6",
     "vitest": "^5.0.5"
   },
   "engines": {
-    "node": "^22.12.0 || ^24.0.0 || >=26.0.0"
+    "node": "^22.13.0 || ^24.0.0 || >=26.0.0"
+  },
+  "main": "desktop-dist/main.cjs",
+  "description": "SaltMarcher Atlas world editor",
+  "author": "SaltMarcher contributors",
+  "license": "UNLICENSED",
+  "config": {
+    "forge": "./forge.atlas.config.cjs"
   }
 }

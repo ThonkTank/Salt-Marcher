@@ -1,7 +1,12 @@
 # Atlas-Neubau: ausführbarer Implementierungsplan
 
 Stand: 8. November 2026, nach Architekturprüfung überarbeitet.
-**Ausführungsauftrag konkretisiert; Implementierung und Leistungsnachweise offen.**
+**Begrenzter P0-Höhenversuch implementiert; native P0-Freigabe blockiert.**
+
+Der am 8. November zusätzlich beauftragte erste Machbarkeitsversuch umfasst
+P0 als begrenzte Prüfung der Richtung. Er aktiviert nicht den vollständigen
+P1–P9-Auftrag. Tatsächlicher Prüfstand und offene Messkriterien stehen in
+[status.md](status.md); die folgenden Zielverträge bleiben unverändert.
 
 Ausgangsstand: `1bb3932fcffcb2d5fea47fae616c3b69489443bc` auf `main`.
 Dieser ausdrücklich angeforderte, versionierte Arbeitsauftrag beschreibt den
@@ -1136,21 +1141,22 @@ ausweisen, nicht als erfolgreichen Teil der CI interpretieren.
 ## 7. Arbeits- und Abnahmematrix
 
 Diese Tabelle am aktuellen Stand pflegen. `Nachweis` enthält später Commit und
-konkreten Test-/Artefaktbezug, keine lange Chronik. Alle Implementierungspakete
-sind auch nach dieser Planüberarbeitung offen.
+konkreten Test-/Artefaktbezug, keine lange Chronik. Der begrenzte P0-Versuch
+liefert erste Komponenten; die native P0-Abnahme bleibt blockiert. P1–P9
+sind offen und wurden durch den gesonderten Machbarkeitsauftrag nicht gestartet.
 
-| Paket | Pflichtumfang / Entscheidung                                                                                    | Umsetzung | Nachweis am Stand | Status |
-| ----- | --------------------------------------------------------------------------------------------------------------- | --------- | ----------------- | ------ |
-| P0    | P0a–P0c: Ausgangsbefund, Laufzeitwahl, native Präsentationsmessung, kleiner echter Höhenpfad und M10-Höhenfall  | —         | —                 | offen  |
-| P1    | Gemeinsamer Kern, A02–A06, D01/D02-Grundlage                                                                    | —         | —                 | offen  |
-| P2    | F19, A07, echte Projektdateien                                                                                  | —         | —                 | offen  |
-| P3    | F01–F04/F18-Basis; Welt-bis-Haus, Grob-/Feinskalierung, exakte Bearbeitung unter Last, D03-Szene, M10-Teilfälle | —         | —                 | offen  |
-| P4    | F04–F07, D01/D02, komplette Flächenwerkzeuge                                                                    | —         | —                 | offen  |
-| P5    | F08–F12, D04, Straßen/Parzellen/Außenhäuser                                                                     | —         | —                 | offen  |
-| P6    | F02/F12–F14, lokale Innenräume                                                                                  | —         | —                 | offen  |
-| P7    | F09/F16/F17, D03, Flüsse/Seen/Nachführung                                                                       | —         | —                 | offen  |
-| P8    | F03/F15/F18, vollständige UI und Kartografie                                                                    | —         | —                 | offen  |
-| P9    | F01–F19 integriert, M01–M10, RPM, Altpfadabbau, Dokumentation                                                   | —         | —                 | offen  |
+| Paket | Pflichtumfang / Entscheidung                                                                                    | Umsetzung                                                                                                                              | Nachweis am Stand                                                                          | Status    |
+| ----- | --------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ | --------- |
+| P0    | P0a–P0c: Ausgangsbefund, Laufzeitwahl, native Präsentationsmessung, kleiner echter Höhenpfad und M10-Höhenfall  | Optionaler Electron-/Pixi-Höheneditor mit SQLite und Pilot-/Fehlerfalltreiber; native Messzuordnung und vollständige Stichprobe fehlen | Code `cbdc072`; [Prüfstand](status.md); `artifacts/atlas-rebuild/p0-final/packaged-final/` | blockiert |
+| P1    | Gemeinsamer Kern, A02–A06, D01/D02-Grundlage                                                                    | —                                                                                                                                      | —                                                                                          | offen     |
+| P2    | F19, A07, echte Projektdateien                                                                                  | —                                                                                                                                      | —                                                                                          | offen     |
+| P3    | F01–F04/F18-Basis; Welt-bis-Haus, Grob-/Feinskalierung, exakte Bearbeitung unter Last, D03-Szene, M10-Teilfälle | —                                                                                                                                      | —                                                                                          | offen     |
+| P4    | F04–F07, D01/D02, komplette Flächenwerkzeuge                                                                    | —                                                                                                                                      | —                                                                                          | offen     |
+| P5    | F08–F12, D04, Straßen/Parzellen/Außenhäuser                                                                     | —                                                                                                                                      | —                                                                                          | offen     |
+| P6    | F02/F12–F14, lokale Innenräume                                                                                  | —                                                                                                                                      | —                                                                                          | offen     |
+| P7    | F09/F16/F17, D03, Flüsse/Seen/Nachführung                                                                       | —                                                                                                                                      | —                                                                                          | offen     |
+| P8    | F03/F15/F18, vollständige UI und Kartografie                                                                    | —                                                                                                                                      | —                                                                                          | offen     |
+| P9    | F01–F19 integriert, M01–M10, RPM, Altpfadabbau, Dokumentation                                                   | —                                                                                                                                      | —                                                                                          | offen     |
 
 ## 8. Definition von „erledigt“
 

@@ -1,129 +1,169 @@
 # Aktueller Stand
 
-Atlas V7, Dateiformat 22, Generierungsrezept 4. Stand: 7. November 2026.
+Stand: 8. November 2026. Regulärer Produkteinstieg: Atlas V7, Dateiformat 22,
+Generierungsrezept 4. Der zusätzliche Atlas-P0-Versuch verwendet ein eigenes
+Dateiformat 23 und ist noch keine Produkt- oder Leistungsfreigabe.
 [README](../../README.md) enthält Befehle, [Architektur](../architecture.md)
 Zuständigkeiten, [Produktvertrag](../product-contract.md) Verhalten und Grenzen.
 
-## Nächster Implementierungsauftrag
+## Aktueller Auftrag und Entscheidung
 
-Der [ausführbare Atlas-Neubauplan](atlas-rebuild-plan.md) ist auf Basis von
-Main `1bb3932fcffcb2d5fea47fae616c3b69489443bc` angelegt und nach Architekturprüfung
-überarbeitet (8. November 2026).
-Er umfasst den vollständigen Ersatz des aktiven Editors mit Funktionsmatrix,
-bewussten Verhaltensänderungen und P0–P9. Vor dem vollständigen Kern-/Dateiausbau
-stehen native Ursachenprüfung, Präsentationsmessung und ein echter Höhenpfad.
-Electron/TypeScript/Pixi ist der bevorzugte, früh zu belegende Ansatz; reine
-Fachkerne dürfen nach den festgelegten Kriterien isoliert übernommen werden.
-Die Desktop-/Performanceabnahme umfasst M01–M10, exakte Bearbeitung unter Last
-und die Zeit bis zur Bearbeitbarkeit nach kalter Navigation.
-Ein Verweis mit „erledige das“ beauftragt die vollständige Ausführung.
-Alle Implementierungspakete sind offen. Diese Planüberarbeitung verändert keine Laufzeit;
-die folgenden bisherigen Prüfaussagen sind keine Nachweise für den Neubau.
+Aaron hat nach Sichtung des [Neubauplans](atlas-rebuild-plan.md) ausdrücklich
+den vorgeschlagenen ersten Machbarkeitsversuch beauftragt: kleiner echter
+Höheneditor, Datei-Rundlauf und belastbare Messprüfung. Dieser Auftrag umfasst
+den P0-Versuch; P1–P9 sind damit nicht gestartet. Arbeitsbranch:
+`work/atlas-p0-feasibility`, auf Planstand
+`88e24a05120cb398eb732d46a3ae6806c428b3e5`, dessen Produktbasis
+`1bb3932fcffcb2d5fea47fae616c3b69489443bc` ist.
 
-## Integration
+Der bevorzugte Aufbau ist als optional startbare Anwendung implementiert:
+Electron 44.10.2, TypeScript, React-Panels, Pixi 8.22.0/WebGL und SQLite über
+`better-sqlite3` 13.0.3 in einem eigenen Utility-Prozess. Eine lokale Änderung
+aktualisiert zuerst das autoritative Dokument und dessen Darstellung; der
+Speicherprozess bestätigt sie danach. Ein Worker liest eigene unveränderliche
+Quelldaten. Der kleine fachliche Durchlauf funktioniert. Ob dieser Aufbau die
+vereinbarten nativen Latenzen erreicht, ist weiterhin offen; **P0 ist blockiert**.
 
-Main enthält die Höhen-/Landschaftsarbeiten, stabile Geometriecaches,
-Eingabekorrekturen, Kartenschrift, Dachdetails und die lokale Materialkachelzuordnung.
-PR #1464 ist als `288582d19` integriert; sein Baum entspricht exakt dem vollständig
-CI-geprüften Kandidaten `c7486a32b`. Damit sind auch die Änderungen aus #1463 enthalten.
+## Implementierter und geprüfter Teil
 
-Der aktuelle Folgekandidat ergänzt Terrainpfade im vorhandenen Rastercache und
-erhält den Weltmittelpunkt beim Öffnen von Werkzeugleisten und bei Fensterresizes.
-Seine Main-Abstammung berücksichtigt die bereits integrierten Änderungen.
-CI für `509b41595` besteht bis auf einen Dach-Pixelvergleich: 247 Browserfälle
-bestehen, der native CI-Build wurde danach übersprungen. Die alte Pixelprobe
-traf den Rand der Hausbeschriftung; eine isolierte Canvasprobe reproduziert
-exakt den abweichenden Farbwert. Die korrigierte Probe liegt auf einer freien
-Dachfläche und behält die exakte Farberwartung beim Verschieben bei.
-Vollständige CI-Freigabe und Main-Übernahme dieses Folgekandidaten stehen aus.
+- Sparse relative Höhenkacheln, einmalige Sättigung der summierten Höhe,
+  begrenzte Quellen-/Darstellungs-/Historybudgets, explizit unbekannte und
+  bestätigte leere Quellen. Grobes Anheben schreibt die feinen Grabenquellen
+  nicht um. Ein Randfall sichert die unterschiedliche Rasterausdehnung an der
+  Weltgrenze; alte Workerantworten dürfen neu erzeugte Kacheln nicht ersetzen.
+- Echte Eingaben, Werkzeugwechsel, freier Kameraweg, UI-Ortswechsel,
+  Undo/Redo und begrenzte Annahme noch nicht bearbeitbarer Pinselstellen.
+  Abbruch erhält bereits angenommene Höhenänderungen und verwirft den
+  unangenommenen Rest. Dateiwechsel verhindert Eingaben in die alte Session.
+- Enger Preload-Vertrag, isolierter Renderer, echte SQLite-Arbeitskopie,
+  räumliche Quellenauswahl und geordnete Transaktionen. Speichern reserviert
+  einen konsistenten Snapshot vor der Dialogantwort und veröffentlicht ihn
+  atomar; spätere Änderungen bleiben ungespeichert. Fehlgeschlagenes Öffnen
+  oder Speichern erhält den bisherigen Zustand.
+- 53 Tests für Höhenkern, Weltgrenze, Messauswertung, Traceanalyse und die
+  Identität tatsächlich gestarteter Pakete bestehen.
+  Die Messauswertung verwirft fehlende Werte, unzureichende Stichproben,
+  ungültige Zeiten und unbewiesene Präsentationszuordnung. Pointerup und
+  laufende Striche haben getrennte Stichproben und Grenzwerte. Kalte Navigation
+  verwendet ihre eigenen Zeitbasen und Grenzen (500 ms bis Bereitschaft,
+  750 ms bis zum ersten exakten Ergebnis ab Navigation).
+- Neun SQLite-Tests bestehen im tatsächlichen Electron-ABI 149, einschließlich
+  Snapshot während späterer Writes, fehlgeschlagenem Dateiaustausch,
+  beschädigtem räumlichem Index, alten Sessions und zu großen Read-Ergebnissen.
+- Die vollständige bisherige Frontendsuite wurde mitgeprüft: 474 Tests
+  bestanden, fünf Fälle einer Suite wurden wegen fehlendem `cargo` nicht
+  ausgeführt; deren Rust-Testserver konnte nicht starten. Das ist keine
+  vollständig grüne Repository-Prüfung. Spätere P0-Ergänzungen sind in den
+  oben genannten 53 aktuellen P0-Tests enthalten.
 
-## Geprüfter Produktstand
+**Geprüfter Codecommit:** `cbdc07262e767eab4f6f74ce8309642e894ffb07`, gebaut aus
+sauberem Arbeitsbaum. Der anschließende Dokumentationscommit verändert diesen
+Code nicht. Quellhash:
+`da743d04a7c11eb7b7808e8fa0d1af60ce449b82824481115cb7f816f7edbd4d`.
+Der tatsächlich gestartete Forge-Paketstand hat SHA-256
+`4d7a1e492b1293265ad1b98d8f357bba7c1c3847551e4b93eac688da3649e679`.
 
-Weltmalen funktioniert auch nach freiem Herauszoomen und während Ansichtsreads;
-128 Pixel werden schon beim ersten Kartenklick ohne vorheriges Tab/Enter
-übernommen. Bestätigte Zwischenstände und vollständiges Undo wurden durch
-Browserbedienproben geprüft. Übergröße zeigt einen verständlichen Fehler;
-anschließendes Malen mit kleinerem Pinsel funktioniert bei 900 × 620 ohne
-Veränderung der Statuszeilenhöhe. Leere Höhenkachelanfragen liefern Status,
-ohne Autoren oder Blockindex zu lesen. Die spezialisierte Bergkette, Hügel und
-Schlucht wurden mit sichtbaren Zwischenständen und exaktem Undo/Redo geprüft.
+Der Abschlusslauf unter `artifacts/atlas-rebuild/p0-final/packaged-final/`
+besteht mit **13 Funktionskriterien und drei Renderkontrollen** (Exit 0).
+Alle sechs Prozessstarts verwenden das gebaute Paket ohne Entwicklungsserver;
+Manifest und Quell-/Lockhash werden aus der tatsächlich ausgeführten Anwendung
+geprüft. Fehlendes oder abweichendes Paketmanifest bricht die Prüfung ab.
+Das Fenster misst 1440 × 960 bei DPR 1, der geprüfte Kartenausschnitt 1180 × 894.
+Die sichtbare Küstenverschiebung wurde zusätzlich anhand der Vorher-/Nachherbilder
+geprüft; die feinen Höhenpayloads bleiben bytegleich. Bearbeitung während eines
+wirklichen SQLite-Snapshots bei aktivem Rechenworker ist zeitlich belegt.
 
-Landschaftsdeckung, Dichte, Lichtungen, grobe Vererbung, History und Datei-Rundlauf
-sind geprüft. Browserproben bestätigen 25/65/100-Prozent-Dichte über mehrere
-Zoomstufen. Mittlerer Wald erscheint als Blätterdach mit Dichtelücken, nahe als
-gezeichnete Kronen; große Viewports bleiben innerhalb des Kandidatenbudgets.
-Boden- und Felsfarbe bleiben unabhängig. Rasterhalos und Geräte-Pixel-Clips
-sichern Nähte; unsichtbare Raster überspringen teure Verarbeitung.
+Die Kontrolle mit 250 ms absichtlicher Renderverzögerung wird als zu langsam
+abgewiesen; ausbleibendes Zeichnen wird als fehlende exakte Submission erkannt.
+Ein frischer Normalstart stellt die Darstellung wieder her, erhält aber nur
+`PROXY_ONLY`. Diese Kontrollen qualifizieren keine native Präsentationsmessung.
+Der vollständige Abnahmeauswerter endet am selben Bericht korrekt mit Exit 1;
+der native Startversuch mit Exit 2 (`NO_NATIVE_DISPLAY`).
 
-Die Stilrichtung ist eine stilisierte Fantasykarte: nahe an Canvas of Kings
-orientierte Federzeichnung, mittlere/ferne Ansichten mittelalterlich inspirierte
-Kartografie. Gemeinsame Serifenschrift und einfache Walmdachdetails wurden im
-Browser visuell geprüft. Die Schriftdefinition gilt für Messung und Zeichnen;
-lokale Font-Fallbacks können sich je Plattform unterscheiden. Dachdetails blenden
-beim Herauszoomen aus. Innenhöfe und komplexe Dächer erhalten keine unpassenden
-Walmdachlinien. Dies ist ein erster Stilstand, keine abgeschlossene Gestaltung.
+Build-/Storelog, Unitlog, Paketlog und die blockierte native Vorprüfung liegen
+daneben unter `artifacts/atlas-rebuild/p0-final/`. Rohdaten, SQLite-Fixtures,
+Screenshots und Traces bleiben ignoriert. Die TypeScript-Prüfungen und Prettier
+bestehen; die Rust-Anteile von Vertrags-, Format- und Gesamtprüfung sind wegen
+fehlendem `cargo` nicht ausführbar. Das ist keine vollständige CI-Freigabe.
 
-Die gemischte Browser-Bedienprobe bestätigt Häuser, Wald, Lichtung und Dachfarbe
-über fünf Zoomstufen. Nach Öffnen der Landschaftsleiste bleiben Häuser beim
-Hineinzoomen im Bild. Lichtung und Dachfarbe sind sichtbar; Undo/Redo stellt
-pixelgenau den jeweiligen Zustand wieder her. Nahe und mittlere Screenshots
-wurden visuell geprüft. Ein Regressionstest belegt zuvor 122 CSS-Pixel
-Mittelpunktversatz und nach der Korrektur weniger als 0,01 Pixel.
-Kartenklick-Auswahl behält ihren Mausanker auch beim Inspectorwechsel.
+## Was die Messung bislang belegt und was fehlt
 
-Für die Kamerakorrektur bestehen alle 248 Browserfälle über Gesamtlauf und
-gezielte Wiederholungen: 240 direkt, acht nach Anpassung bisher fester
-Testkoordinaten beziehungsweise Ausschnittannahmen. Die Assertions für Autoren,
-History und Nebenläufigkeit bleiben erhalten. Der neue Mittelpunkt-Test besteht
-für Werkzeugöffnung/-schließung, anschließenden Zoom und Fensterresize.
+Der Labortreiber bedient eine wirkliche Electron-Anwendung mit Pixi/WebGL,
+Preload, Main, Utility-Prozess und SQLite-Datei. Er prüft leere Navigation
+mit/ohne Raster, Anheben einer vorbereiteten Küste mit feinem Graben,
+unabhängig erwartete Höhen, sichtbare Wasser-/Landpixel, Undo/Redo, unveränderte
+Feinpayloads, Speichern, Reopen, echten Prozessneustart sowie einen zunächst
+ungeladenen Zielort. Ein Rechenworker bearbeitet echte Höhenquellen. Der
+Speicherprozess protokolliert tatsächliche Snapshot-/Publishintervalle;
+Bearbeitung unter gleichzeitigem Speichern zählt nur bei nachgewiesener
+zeitlicher Überlappung. Ein früher oder später abgeschlossener Save genügt nicht.
 
-## Aktuelle Arbeits- und Prüfnachweise
+Diese Umgebung bietet Softwaregrafik (ANGLE/SwiftShader) und eine virtuelle
+Displayfrequenz von 0 Hz. Sie ist keine native Referenzmaschine. Eingabe bis
+exakte Renderübergabe wird nur als Diagnose ausgegeben. Ein Chromium-Trace
+zeigt konkret, dass der auf ein Eingabeereignis reagierende Frame noch altes
+Terrain enthalten kann und die exakte Geländeänderung erst in einem späteren
+Frame abgegeben wird. Die Traceauswertung erhält 64-Bit-Framekennungen als
+Strings, statt sie beim JSON-Einlesen zu runden.
 
-Außen-/Flussgeometrie behalten einen nützlichen Teil auch über dem Eintragsbudget.
-Der 257-Flüsse-Fall baut bei 256 Cacheplätzen pro weiterem Bild einen statt 257
-Pfade neu. Zoom verwendet Flusskonturen weiter, solange Mindestbreiten unverändert
-bleiben. Zahlenfelder werden vor dem ersten Zeichnen übernommen.
+Auch die diagnostischen Einzelwerte sind keine Zeitfreigabe: Im finalen Lauf
+braucht die Live-Eingabe des Grobhubs **56,4 ms bis zur Renderübergabe**, Pointerup
+45,8 ms. Schon die erste Untergrenze überschreitet damit 50 ms. Unter Last waren
+es im vorausgehenden Paketlauf 50,2 ms und im Abschlusslauf 17,4 ms; beide Proben
+bleiben erhalten. Die kalte Einzelprobe erreicht Bereitschaft nach 22,9 ms und
+Renderübergabe nach 447,1 ms ab Navigation. Das sind wenige Softwareproben ohne
+Präsentationszeit; daraus wird kein belastbarer p95 und kein Bestehen von M10
+abgeleitet. Der frühere Lauf liegt getrennt unter `p0-final/packaged-run/`.
 
-Materialabtastung indiziert ihre aktuellen Höhenkacheln erst beim ersten Sample.
-Vier Durchläufe über 64 Kacheln benötigen im Regressionstest höchstens 128 statt
-9.605 Koordinatenzugriffe bei identischen Ergebnissen; negative und fehlende
-Kacheln sind abgedeckt. Zehn Boden-/Landschaftsbrowserfälle bestehen, einschließlich
-Weltansicht bei 3840 Pixeln, freiem Zoom, History und Datei-Rundlauf.
+Folgende Kriterien bleiben offen beziehungsweise blockiert:
 
-Terrain-Höhenlinien verwenden bei freiem Platz denselben Rastercache wie Bilder.
-Optionale Pfade verdrängen bei ihrer Aufnahme keine gehaltenen Raster; ihre
-Speicherkosten zählen als Schätzung zum Budget. 4.096 unveränderte Segmente erfordern
-beim nächsten Bild null statt 16.384 Koordinatenzugriffe. Geänderte Vorschauen
-verwenden neue Geometrie. Relief-/Materialdekodierung erfolgt erst bei Bedarf;
-dekodierte Reliefbytes werden nach der Bilderstellung nicht zusätzlich gehalten.
+1. **P0a:** Die kurze native V7-Vergleichsreihe fehlt. Hier fehlen Rust-Werkzeuge,
+   ein gebauter V7-Host und ein qualifiziertes natives Display.
+2. **P0b:** Die beweisbare Verbindung von semantischer Atlas-Rendergeneration
+   zur tatsächlich verbrauchten Canvasressource und zum präsentierten
+   Compositorframe ist noch nicht implementiert. Zeitnähe, RAF, Cursorbilder
+   und Renderübergabe sind kein Ersatz. Die native Hardware-/Displayreferenz
+   und Clockkalibrierung fehlen ebenfalls.
+3. **P0c/M10:** Der Treiber führt einen funktionalen Pilotlauf aus. Die vollständige
+   Sammlung der vorgeschriebenen Stichproben in drei unabhängigen nativen
+   Release-Läufen ist noch nicht implementiert und durchgeführt. `--full`
+   oder `--native` machen aus dem Pilotlauf keine bestandene Abnahme.
+4. **Auslieferung:** Forge kann ein eigenständig startbares Linux-Verzeichnis
+   bauen. Ein RPM wurde hier nicht gebaut oder installiert; `rpm`/`rpmbuild`
+   fehlen. Der Paketstart ersetzt diese Prüfung nicht. Der Pilot beantwortet
+   OS-Dateidialoge über den Testadapter; die echte native Dialogbedienung ist
+   ebenfalls noch offen.
+5. **Skalierung und spätere Funktionen:** Der kleine Bestand belegt keine
+   Weltgröße. Der bisherige Öffnungspfad scannt den Quellindex beim Aufbau
+   der Arbeitskopie; große Dateien, vollständige Dateifehlerprüfung,
+   sämtliche Werkzeuge, Wasser-/Fundamentfolgen und Lastprofile gehören
+   weiterhin zu den nachfolgenden Planpaketen. Der P0-Rechenjob ist eine
+   begrenzte Höhenabtastung und kein Hydrologie-Nachweis.
 
-Nach der Kamerakorrektur bestehen erneut 436 Frontendtests, Typen,
-Transportverträge und Format. Der frische Release-/RPM-Build besteht (7,52 MiB).
-Der unabhängige Canvasvergleich bestätigt exakte
-Pixelgleichheit der Terrainpfade über vier Kameratransformationen. Die
-Speicher-/Arbeitsnachweise sind keine Latenzmessungen.
+Nächster erforderlicher Schritt ist die fehlende Präsentationszuordnung am
+gebauten Kandidaten, anschließend die kurze alte Baseline und die vollständige
+P0-Stichprobe auf einer festgehaltenen nativen Referenz. Erst deren Ergebnis
+entscheidet über die Leistungsfähigkeit des Ansatzes. Der aktuelle Treiber
+weist fehlende Voraussetzungen ausdrücklich als Fehler beziehungsweise
+Blockade aus; Grenzwerte werden nicht an die Umgebung angepasst.
 
-## Offene Abnahmen
+## Bisheriger Produktstand und Integration
 
-Frühere native Prüfungen umfassen Weltmalen, Bodenfarben, Landschaft, Navigation,
-Lichtungen, History und Datei-Rundlauf. Neuere Änderungen sind nicht nativ bedient:
-Diese Sitzung bietet keinen nativen UI-Zugriff. Das ursprüngliche Testfenster
-bleibt unberührt; Browserprüfungen und Releasebuild ersetzen die native Abnahme nicht.
+Die früher dokumentierten V7-Nachweise betreffen Höhen-/Landschaftsarbeiten,
+stabile Geometriecaches, Kameramittelpunkt, Eingabeübernahme, Kartenschrift,
+Dachdetails und lokale Materialkachelzuordnung. Main enthält PR #1464 als
+`288582d19`; die geprüfte Kamerakorrektur und die Dachpixel-Probe wurden im
+vorherigen Arbeitsstand gesondert geprüft. Diese historischen Funktions- und
+Buildnachweise gelten nicht für den neuen Electron-Pfad. Die frühere kleine
+native Strichreihe hat das Ziel p95 ≤50 ms ebenfalls nicht belegt.
 
-Genau eine frühere Vorher-/Nachher-Reihe mit je drei Weltstrichen ist abgeschlossen:
-erste sichtbare Änderung 275–304 → 119–134 ms, sichtbare Bestätigung p95
-427–516 → 339–376 ms, Nachlauf 259–427 → 231–345 ms. Spätere Änderungen sind darin
-nicht enthalten. Das Ziel p95 ≤50 ms bleibt unbelegt; keine weitere Zeitmessreihe.
-RPM-Installation, große Stadt-/Weltlastfälle und umfangreicher Release-Treiber
-bleiben offen. Komplexe Dachstile, Einzelobjektplatzierung, lokale Verschiebeausnahmen,
-Feldumrisse und Assetimporte bleiben Folgeumfang.
+Aaron hat Push und Draft-PR zu `ThonkTank/Salt-Marcher` ausdrücklich freigegeben.
+Der Kandidat auf `work/atlas-p0-feasibility` wird als Draft-PR gegen
+`planning/atlas-rebuild-20261108` veröffentlicht. Der zuvor blockierte
+Veröffentlichungsschritt ist damit autorisiert; die Freigabe ersetzt keine
+technische Abnahme und erweitert den Auftrag nicht auf P1–P9.
 
-Aktuelle Belege unter `src-tauri/target/diagnostics/`: `feature-input-review/`,
-`roof-review/`, `roof-movement-final/`, `map-typography/`, `material-tile-index/`
-und `retained-terrain-contours/` beziehungsweise `retained-terrain-contours-final/`.
-Die Kamerakorrektur ist in `viewport-center-before/`, `viewport-center-full/`,
-`viewport-center-regressions/` und `mixed-scene-review/` belegt.
-
-Die Korrektur des Dachvergleichs besteht mit allen acht Fällen der betroffenen
-Browserdatei in drei Wiederholungen (24/24), dazu Typ- und Formatprüfung.
-Belege liegen unter `roof-pixel-ci/`; die erneute CI-Prüfung steht aus.
+`Candidate · exact-SHA aggregate`, native Leistungsabnahme und Übernahme nach
+Main stehen weiterhin aus. Die bestehenden Checks wurden nicht abgeschaltet;
+`check:all` enthält zusätzlich den P0-Build und die SQLite-Prüfung im tatsächlichen
+Electron-ABI. Die Formatprüfung umfasst auch die neuen Desktopdateien.

@@ -5,6 +5,10 @@ Regionen, Parzellen und Hausinnenräumen. React zeichnet auf Canvas, Rust verwal
 SQLite, Tauri stellt die Desktopanwendung bereit. Im normalen Browser erscheint
 ein Desktop-Hinweis.
 
+Atlas V7 bleibt die Standardanwendung. Daneben ist ein ausdrücklich optionaler
+[Atlas-P0-Höhenversuch](#optionaler-atlas-p0-versuch) mit Electron und PixiJS
+implementiert, der die Tragfähigkeit der geplanten Architektur untersucht.
+
 | Dokument                                   | Maßgeblicher Inhalt                                            |
 | ------------------------------------------ | -------------------------------------------------------------- |
 | Dieses README                              | Einrichtung, Befehle und Abnahmeablauf                         |
@@ -14,14 +18,17 @@ ein Desktop-Hinweis.
 
 Diese vier Dokumente werden ersetzt und aktualisiert, nicht als Arbeitschronik
 fortgeschrieben. Messreihen, Sicherungen und Detailprotokolle gehören unter die
-ignorierten Pfade `src-tauri/target/cleanup/` oder `src-tauri/target/diagnostics/`.
+ignorierten Pfade `src-tauri/target/cleanup/`, `src-tauri/target/diagnostics/`
+oder für P0 unter `artifacts/atlas-rebuild/`.
 
 Der angeforderte [ausführbare Atlas-Neubauplan](docs/implementation/atlas-rebuild-plan.md)
 enthält den vollständigen nächsten Implementierungsauftrag einschließlich
 Funktionsumfang, Architekturentscheidungen, Arbeitspaketen und Abschlusskriterien.
 Ein Verweis darauf mit „erledige das“ beauftragt seine vollständige Ausführung.
-Der Plan beschreibt den Zielzustand; die folgenden Befehle und Produktdokumente
-beschreiben weiterhin die bestehende Anwendung bis zu ihrer tatsächlichen Ablösung.
+Der Plan beschreibt den Zielzustand P0–P9. Der derzeit beauftragte Versuch ist
+ausdrücklich auf die erste P0-Prüfung begrenzt; P1–P9 werden damit nicht begonnen.
+Die V7-Abschnitte beschreiben die bestehende Standardanwendung, die gesonderten
+P0-Abschnitte den implementierten Höhenversuch und seine Prüfgrenzen.
 
 ## Einrichtung
 
@@ -46,11 +53,57 @@ steile Hänge steinig. „Boden → Farbebene“ färbt Boden und Fels unabhäng
 Zieldichte und lokales Entfernen bearbeiten den Bestand, die Darstellung folgt dem Zoom.
 Werkzeuge, Gesten, Ansichtsauswahl und Dateiabläufe beschreibt der Produktvertrag.
 
+## Optionaler Atlas-P0-Versuch
+
+Der Versuch startet einen eigenen Electron-44-Desktop mit PixiJS-8-Darstellung,
+lokalem TypeScript-Höhenmodell und SQLite in einem Utility-Prozess. Er umfasst
+Navigation, Anheben/Absenken, Undo/Redo sowie echte Projektdateien. Die
+[Architektur](docs/architecture.md#optionaler-atlas-p0-versuch) beschreibt die
+Besitzer, der [Produktvertrag](docs/product-contract.md#optionaler-atlas-p0-versuch)
+den begrenzten Funktionsumfang. `npm run desktop` und `npm run package` bleiben
+die V7-/Tauri-Befehle.
+
+Vorgegeben bleibt Node.js 22.19.0 aus `.node-version`; Forge benötigt mindestens
+22.13.0. Die P0-Arbeitssitzung verwendet Node.js 24.22.1. Nach `npm ci` bereitet
+`build:atlas-p0` auch die native SQLite-Bibliothek für die gepinnte Electron-ABI
+vor: Es prüft eine echte Datenbanköffnung und führt bei Bedarf `@electron/rebuild`
+aus. Dafür werden gegebenenfalls ein C++-Buildwerkzeug und Python benötigt.
+
+| Befehl                                        | Zweck                                                                                          |
+| --------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| `npm run build:atlas-p0`                      | P0-Typprüfung, Renderer-/Desktopbuild und SQLite-ABI-Vorbereitung.                             |
+| `npm run desktop:atlas-p0`                    | P0 bauen und im eigenen Electron-Fenster starten.                                              |
+| `npm run test:atlas-p0`                       | Modell-, Raster- und Auswertertests unter `src/editor/`.                                       |
+| `npm run check:atlas-p0`                      | P0 bauen und die SQLite-Storetests in Electrons Node-Laufzeit ausführen.                       |
+| `npm run p0:lab`                              | Den zuvor gebauten Stand im softwaregerenderten Headless-Labor funktional prüfen.              |
+| `npm run p0:native`                           | Den zuvor gebauten Stand auf einem vorhandenen nativen Display funktional prüfen.              |
+| `npm run p0:evaluate -- pfad/zum/report.json` | Einen Bericht gegen die festen P0-Nachweisanforderungen auswerten.                             |
+| `npm run package:atlas-p0`                    | Mit Electron Forge ein startbares Anwendungsverzeichnis erzeugen.                              |
+| `npm run make:atlas-p0`                       | Mit Electron Forge RPM-/ZIP-Artefakte erzeugen; RPM benötigt die Systemwerkzeuge zum Paketbau. |
+
+Die Runner schreiben Berichte, Traces und Inhaltsbelege unter
+`artifacts/atlas-rebuild/runs/`. `--negative-controls` ergänzt absichtlich
+gestörte Renderläufe; `--executable /absoluter/pfad/zur/anwendung` prüft einen
+Forge-Paketstand. Beide Optionen werden mit `--` an `p0:lab` oder `p0:native`
+weitergereicht. Das Forge-Paket lässt sich starten; eine RPM-Installation ist
+noch nicht geprüft. Der konkrete Prüfstand steht ausschließlich im Statusdokument.
+
+Ein erfolgreicher Funktionstest im softwaregerenderten Headless-Labor ist keine
+native Performancefreigabe. Die P0a-Rust-Baseline fehlt; im Labor ist
+`displayHz: 0`. Atlas-Generation und tatsächliche Compositor-Präsentation sind
+noch nicht eindeutig verbunden, und die vollständige native Stichprobe aus drei
+unabhängigen Release-Läufen fehlt. Auch `p0:native` beziehungsweise `--full`
+erheben derzeit nur einen funktionalen Pilotlauf; das native Gate bleibt
+`BLOCKED`. Submission- und RAF-Zeiten ersetzen den Präsentationsnachweis nicht.
+Wird die tatsächliche Überlappung von Bearbeitung, Hintergrundarbeit und
+Speichern nicht nachgewiesen, bleibt dieser Einzelcheck `OPEN` und `p0:lab`
+endet mit Exit 1.
+
 ## Entwicklung und automatisierte Abnahme
 
 ```bash
 npm run check           # Verträge, Typen, TypeScript- und Rusttests
-npm run check:all       # zusätzlich Clippy, Format, Webbuild und Browsertests
+npm run check:all       # zusätzlich Clippy, Format, Webbuild, Browsertests und check:atlas-p0
 npm run package -- --ci # konfiguriertes natives Release-/RPM-Paket
 npm run format          # Prettier und rustfmt
 ```

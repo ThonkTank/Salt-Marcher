@@ -6,6 +6,10 @@ auf Canvas; Rust besitzt Dokument, Fachberechnung und SQLite. Der
 [README](../README.md) Einrichtung und Prüfablauf, [Status](implementation/status.md)
 den zuletzt belegten Stand und offene Abnahmen.
 
+Die folgenden V7-Besitzer und Zugriffspfade bleiben der Standard. Der gesonderte
+[optionale P0-Versuch](#optionaler-atlas-p0-versuch) ergänzt einen begrenzten
+Höheneditor, ohne den V7-Startpfad zu ersetzen.
+
 ## Besitzer und Datenfluss
 
 | Besitzer                                     | Verantwortung                                                                                                                                           |
@@ -484,3 +488,74 @@ Artefaktstände. `atlas.terrain.confirmed` und `atlas.canvas.paint` liefern Zeit
 Workerzeit enthält Queuearbeit und ist kein isoliertes Funktionsprofil. Berichte
 und Sicherungen sind ignorierte Diagnoseartefakte. Zeitziele und native Abnahme
 werden getrennt vom deterministischen CI-Gesamtcheck bewertet.
+
+## Optionaler Atlas-P0-Versuch
+
+Der P0-Startpfad liegt in `src/editor/main.tsx` und `desktop/`. Electron 44.10.2
+stellt das Fenster bereit, React die Bedienelemente und PixiJS 8.22.0 die
+beibehaltene WebGL-Szene. Der Versuch umfasst den Höhenpfad des Neubauplans;
+die späteren Fachwerkzeuge und Arbeitspakete P1–P9 sind damit nicht umgesetzt.
+
+| Besitzer                                               | Verantwortung                                                                                                                         |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `EditorController`                                     | Kamera, Eingaben, lokale Datenbereitschaft, begrenzte vorgemerkte Striche und geordnete Persistenzaufträge.                           |
+| `model/EditorDocument`                                 | Live-Autoren, kanonische Höhenberechnung, Gestentransaktionen, lokale History, Dirtybereiche und Speicherbudgets im Renderer-Prozess. |
+| `render/WorldRenderer`                                 | Beibehaltene Pixi-Kacheln, lokale Invalidierung, GPU-Ressourcen und Veröffentlichung aktueller Rasterergebnisse.                      |
+| `render/raster.worker.ts`, `render/work.worker.ts`     | Rasterberechnung aus eigenen unveränderlichen Quellkopien beziehungsweise echte Hintergrundberechnung für den Belastungsfall.         |
+| `desktop/main.ts`, `desktop/preload.ts`                | Fenster, native Dialoge, Session-/Dateigrenzen und eng begrenzte IPC-Brücke.                                                          |
+| `desktop/store-process.ts`, `desktop/project-store.ts` | SQLite-Arbeitskopie, räumliche Reads, Patchtransaktionen und Dateisnapshots im eigenen Electron-Utility-Prozess.                      |
+
+Der Renderer besitzt keine Node-Integration. Context Isolation und Sandbox sind
+aktiv; das Preload bietet ausschließlich die typisierte Projektbrücke an.
+`better-sqlite3` läuft im Utility-Prozess. Main und Renderer führen weder SQL
+noch Dateiexporte aus. Das Buildskript prüft die SQLite-Bindung in der tatsächlichen
+Electron-Laufzeit und baut sie bei unpassender ABI neu.
+
+Höhenautoren sind sparse 64 × 64 große `Float64`-Kacheln mit relativen Restwerten
+auf Stufen 0–21; der Abstand beträgt `5 × 2^level` Fuß. Der gemeinsame Sampler
+rekonstruiert jede vorhandene Stufe mit dem positiven kubischen B-Spline aus dem
+V7-Kern, addiert alle Restfelder zum Ozean-Grundwert und begrenzt erst die fertige
+Summe. Der vorbereitete Sampler indiziert nur vorhandene Stufen. Ein grober Strich
+ändert ausschließlich seine Autorenstufe; feinere Kontrollwerte werden nicht
+umgeschrieben. Die beobachtbaren Höhen- und Dateigrenzen stehen im
+[P0-Produktvertrag](product-contract.md#optionaler-atlas-p0-versuch).
+
+Räumliche Reads liefern nur vorhandene Kacheln, deren Spline-Stützbereich den
+angeforderten Ausschnitt berührt. Ein SQLite-RTree begrenzt die Kandidaten;
+die genaue Prüfung erfolgt gegen die gespeicherten Bounds. Erst ein vollständiger
+Read bestätigt die Abdeckung des Ausschnitts. `unknown`, `loading`, `ready`,
+`absent` und `error` bleiben verschieden; fehlende Daten werden vor einem Read
+nicht als Ozean behandelt. Die leere Welt braucht keine Aufzählung aller feinen
+Kacheln. Bestätigte entfernte Quellen können aus dem Cache fallen, während aktive
+und noch unbestätigte Änderungen erhalten bleiben. Ausgelagerte vorhandene
+Quellen werden wieder unbekannt.
+
+Ein angenommener Gestenabschnitt ändert das lokale Modell direkt. Der Abschluss
+fasst die angenommenen Abschnitte zu einem Undo-Schritt zusammen und erzeugt
+Patches ausschließlich für berührte Kacheln. Vorherbilder bleiben in der lokalen
+History; nur Nachherbilder gehen an den Store. Undo und Redo erzeugen ebenfalls
+geordnete Patchtransaktionen. Der Store prüft Session, Sequenz und
+Transaktionsidentität; identische Wiederholungen werden bestätigt, widersprüchliche
+Wiederholungen abgelehnt. Live-Revision, bestätigte Arbeitskopie und gespeicherte
+Projektsequenz sind getrennt. Speichern fixiert einen SQLite-Lesesnapshot und
+veröffentlicht ihn über eine synchronisierte temporäre Datei mit atomarem Rename;
+spätere Änderungen können währenddessen weiterlaufen.
+
+Darstellungskacheln mit 128 × 128 Pixeln sind abgeleitet und von Autorenkacheln
+getrennt. Lokale Dirtybereiche begrenzen Rasterarbeit und Uploads. Kameraoffsets
+werden vor der GPU-Übergabe abgezogen; Session, Revision und monotone Kacheltokens
+schützen vor überholten Ergebnissen. `budgets.ts` begrenzt Quell-, History-,
+Präsentations-, GPU- und Pending-Speicher sowie Arbeit pro Frame. Diese Mechanismen
+und die kleinen echten Küsten-/Grabenfixtures sind ein P0-Ausschnitt; die
+Skalierungsabnahme mit großer feiner Datenbelegung bleibt eine spätere Aufgabe.
+
+Der P0-Runner startet die gebaute Electron-Anwendung mit echter Persistenz im
+Utility-Prozess und protokolliert Inhalte, Änderungen, Dateirundläufe und
+Chromium-Traces. Im Headless-Labor zeichnet SwiftShader; `displayHz: 0` qualifiziert kein
+Referenzdisplay. Semantische Atlas-Generationen sind noch nicht beweisbar einer
+Compositor-Präsentation zugeordnet. Submission und RAF bleiben daher
+Diagnosewerte. P0a-Rust-Baseline und vollständige native Stichproben aus drei
+unabhängigen Release-Läufen fehlen; das native Gate bleibt `BLOCKED`.
+Ein fehlender Nachweis tatsächlicher Busy-/Save-Überlappung bleibt `OPEN` und kann
+den Lab-Lauf mit Exit 1 beenden. Befehle und Paketgrenzen stehen im README,
+Ergebnisse im Statusdokument.
