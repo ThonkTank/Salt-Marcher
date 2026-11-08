@@ -131,9 +131,6 @@ export class WorldRenderer {
   private localBatches = 0;
   private requestFrame = true;
   private lastFrameAt = 0;
-  private resultCpuUsed = 0;
-  private uploadBytesUsed = 0;
-  private betweenFrameCpuMs = 0;
   private lastSubmit = "";
   private pendingDelay = new Set<number>();
   private destroyed = false;
@@ -191,32 +188,20 @@ export class WorldRenderer {
         this.maxRasterMs = Math.max(this.maxRasterMs, result.cpuMs);
         this.totalSamples += result.samples;
       }
-      this.maxRasterBatchMs = Math.max(this.maxRasterBatchMs, batch.cpuMs);
-      this.requestFrame = true;
       if (this.faultArmed && this.fault === "delay-render") {
         const timer = window.setTimeout(() => {
           this.pendingDelay.delete(timer);
-          this.publishBatch(batch);
+          this.results.push(...batch.results);
+          this.requestFrame = true;
         }, 250);
         this.pendingDelay.add(timer);
-      } else this.publishBatch(batch);
+      } else this.results.push(...batch.results);
+      this.maxRasterBatchMs = Math.max(this.maxRasterBatchMs, batch.cpuMs);
+      this.requestFrame = true;
+      // Apply completed rectangles before selecting the next batch, so newly
+      // dirty local regions outrank loading unrelated, previously blank tiles.
     };
     this.raster.onerror = (event) => this.onError(new Error(event.message));
-  }
-
-  private publishBatch(batch: RasterBatchResult): void {
-    if (this.destroyed || batch.sessionId !== this.sessionId) return;
-    const start = performance.now();
-    this.results.push(...batch.results);
-    this.requestFrame = true;
-    try {
-      this.publish();
-    } finally {
-      // Moving publication out of RAF must not remove its CPU work from the
-      // frame interval's accounting. Admission and dispatch still wait for RAF.
-      this.betweenFrameCpuMs += performance.now() - start;
-      this.frameCpuMax = Math.max(this.frameCpuMax, this.betweenFrameCpuMs);
-    }
   }
 
   async init(canvas: HTMLCanvasElement): Promise<void> {
@@ -799,17 +784,16 @@ export class WorldRenderer {
     }
   }
 
-  /** The same bounded publication runs on result arrival and on ordinary RAF. */
-  private publish(): void {
-    if (this.destroyed || !this.document) return;
+  private tick = (now: number): void => {
+    if (this.destroyed) return;
+    const start = performance.now();
     const resultStart = performance.now();
-    const remainingCpuMs = editorBudgets.resultCpuMs - this.resultCpuUsed;
     let uploaded = 0;
     while (
       !this.heldForPointerup &&
       !(this.faultArmed && this.fault === "drop-render") &&
       this.results.length &&
-      performance.now() - resultStart < remainingCpuMs
+      performance.now() - resultStart < editorBudgets.resultCpuMs
     ) {
       const result = this.results.shift()!;
       const tile = this.tiles.get(result.key);
@@ -827,7 +811,7 @@ export class WorldRenderer {
         continue;
       }
       const bytes = SIZE * SIZE * 4;
-      if (this.uploadBytesUsed + bytes > editorBudgets.uploadBytesPerFrame) {
+      if (uploaded + bytes > editorBudgets.uploadBytesPerFrame) {
         this.results.unshift(result);
         break;
       }
@@ -841,7 +825,6 @@ export class WorldRenderer {
       }
       tile.source.update();
       uploaded += bytes;
-      this.uploadBytesUsed += bytes;
       // One pending task contains all accumulated changes through its revision.
       // Paint it completely; later changes remain dirty for the follow-up task.
       tile.paintedRevision = result.revision;
@@ -858,7 +841,6 @@ export class WorldRenderer {
       });
       this.requestFrame = true;
     }
-    this.resultCpuUsed += performance.now() - resultStart;
     if (this.requestFrame && this.document) {
       // Submit callbacks may request another overlay frame as readiness changes.
       this.requestFrame = false;
@@ -901,18 +883,6 @@ export class WorldRenderer {
       }
       this.lastSubmit = identity;
     }
-  }
-
-  private tick = (now: number): void => {
-    if (this.destroyed) return;
-    const start = performance.now();
-    const earlierCpuMs = this.betweenFrameCpuMs;
-    this.betweenFrameCpuMs = 0;
-    // Arrivals between two RAF callbacks share these limits with that RAF's
-    // publication; repeated replies cannot replenish the result/upload budget.
-    this.resultCpuUsed = 0;
-    this.uploadBytesUsed = 0;
-    this.publish();
     // Publish the accepted state before admitting the next bounded brush dose.
     // All newly accepted input still precedes selection of the next raster batch.
     try {
@@ -922,14 +892,13 @@ export class WorldRenderer {
     }
     if (this.destroyed) return;
     this.dispatch();
-    const cpuMs = performance.now() - start + earlierCpuMs;
     if (this.lastFrameAt)
       this.observation.event("frame", {
         interval: now - this.lastFrameAt,
-        cpuMs,
+        cpuMs: performance.now() - start,
       });
     this.lastFrameAt = now;
-    this.frameCpuMax = Math.max(this.frameCpuMax, cpuMs);
+    this.frameCpuMax = Math.max(this.frameCpuMax, performance.now() - start);
     this.animation = requestAnimationFrame(this.tick);
   };
 
