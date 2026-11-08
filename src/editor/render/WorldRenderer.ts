@@ -60,6 +60,9 @@ interface RasterTile {
   lastJob: number;
   /** Whole-tile prefix: every changed rectangle through this revision is painted. */
   paintedRevision: number;
+  /** Uploaded content actually included in a renderer submission. */
+  submittedRevision: number;
+  submittedFrame: number;
   visible: boolean;
   touched: number;
   source: BufferImageSource;
@@ -68,6 +71,7 @@ interface RasterTile {
 }
 const SIZE = HEIGHT_OVERVIEW_SIZE;
 const WHOLE: Rect = [0, 0, SIZE, SIZE];
+const LOCAL_BATCHES_BEFORE_VIEW_PROGRESS = 4;
 const merged = (a: Rect, b: Rect): Rect => [
   Math.min(a[0], b[0]),
   Math.min(a[1], b[1]),
@@ -76,6 +80,16 @@ const merged = (a: Rect, b: Rect): Rect => [
 ];
 const overlaps = (a: Rect, b: Rect): boolean =>
   a[0] < b[2] && a[2] > b[0] && a[1] < b[3] && a[3] > b[1];
+
+function intersection(a: Bounds, b: Bounds): Bounds | null {
+  const area: Bounds = [
+    Math.max(a[0], b[0]),
+    Math.max(a[1], b[1]),
+    Math.min(a[2], b[2]),
+    Math.min(a[3], b[3]),
+  ];
+  return area[0] < area[2] && area[1] < area[3] ? area : null;
+}
 
 function pixelRect(tile: RasterTile, bounds: Bounds): Rect {
   const stepX = (tile.bounds[2] - tile.bounds[0]) / SIZE;
@@ -111,6 +125,10 @@ export class WorldRenderer {
   private frame = 0;
   private viewGeneration = 0;
   private preparedViewGeneration = -1;
+  private lastSubmittedViewGeneration = -1;
+  private focusBounds: Bounds | null = null;
+  private feedbackBounds: Bounds | null = null;
+  private localBatches = 0;
   private requestFrame = true;
   private lastFrameAt = 0;
   private lastSubmit = "";
@@ -122,7 +140,12 @@ export class WorldRenderer {
   width = 1000;
   height = 760;
   grid = true;
-  cursor: { x: number; y: number; radius: number } | null = null;
+  cursor: {
+    x: number;
+    y: number;
+    radius: number;
+    waiting?: boolean;
+  } | null = null;
   fault:
     | "none"
     | "delay-render"
@@ -208,6 +231,11 @@ export class WorldRenderer {
     this.workerSourceBytes = 0;
     this.submittedRevision = -1;
     this.submittedViewGeneration = -1;
+    this.preparedViewGeneration = -1;
+    this.lastSubmittedViewGeneration = -1;
+    this.focusBounds = null;
+    this.feedbackBounds = null;
+    this.localBatches = 0;
     this.faultArmed = false;
     this.raster.postMessage({
       kind: "sources",
@@ -240,6 +268,7 @@ export class WorldRenderer {
   moveCamera(camera: Camera): void {
     this.camera = { ...camera };
     this.viewGeneration++;
+    this.localBatches = 0;
     this.observation.event("view-change", {
       sessionId: this.sessionId,
       viewGeneration: this.viewGeneration,
@@ -451,6 +480,8 @@ export class WorldRenderer {
             pending: null,
             lastJob: 0,
             paintedRevision: -1,
+            submittedRevision: -1,
+            submittedFrame: 0,
             visible: true,
             touched: performance.now(),
             pixels,
@@ -488,6 +519,51 @@ export class WorldRenderer {
 
   redraw(): void {
     this.requestFrame = true;
+  }
+
+  /** Scheduling hints only; readiness is derived from sources and submitted tiles. */
+  setPriorityAreas(focus: Bounds | null, feedback: Bounds | null = null): void {
+    this.focusBounds = focus ? [...focus] : null;
+    this.feedbackBounds = feedback ? [...feedback] : null;
+  }
+
+  /** The last real render, including a locally useful but incomplete view. */
+  submission(): { frame: number; viewGeneration: number } {
+    return {
+      frame: this.lastSubmittedViewGeneration < 0 ? 0 : this.frame,
+      viewGeneration: this.lastSubmittedViewGeneration,
+    };
+  }
+
+  /**
+   * Only the visible part of the requested (possibly swept) area needs a display.
+   * A drawn foundation may survive its own pending edit; current=true also
+   * requires all changes in that area to have reached an actual submission.
+   */
+  regionDisplayed(bounds: Bounds, current = true): boolean {
+    const area = intersection(bounds, this.bounds());
+    if (!area) return true;
+    if (
+      this.preparedViewGeneration !== this.viewGeneration ||
+      this.lastSubmittedViewGeneration !== this.viewGeneration
+    )
+      return false;
+    let covered = false;
+    for (const tile of this.tiles.values()) {
+      if (!tile.visible || !intersectsBounds(tile.bounds, area)) continue;
+      covered = true;
+      if (tile.submittedRevision < 0 || tile.submittedFrame !== this.frame)
+        return false;
+      if (!current) continue;
+      const rect = pixelRect(tile, area);
+      if (
+        tile.submittedRevision !== tile.paintedRevision ||
+        (tile.dirty && overlaps(tile.dirty, rect)) ||
+        (tile.pending && overlaps(tile.pending.rect, rect))
+      )
+        return false;
+    }
+    return covered;
   }
 
   regionExact(bounds: Bounds): boolean {
@@ -567,6 +643,8 @@ export class WorldRenderer {
       totalSamples: this.totalSamples,
       submittedRevision: this.submittedRevision,
       submittedViewGeneration: this.submittedViewGeneration,
+      lastSubmittedFrame: this.submission().frame,
+      lastSubmittedViewGeneration: this.lastSubmittedViewGeneration,
       viewGeneration: this.viewGeneration,
       fault: this.fault,
       heldForPointerup: this.heldForPointerup,
@@ -585,6 +663,32 @@ export class WorldRenderer {
       this.heldForPointerup
     )
       return;
+    const view = this.bounds();
+    const feedback =
+      this.feedbackBounds && intersection(this.feedbackBounds, view);
+    const halfPixel = 0.5 / this.camera.scale;
+    const focus =
+      (this.focusBounds && intersection(this.focusBounds, view)) ??
+      ([
+        this.camera.x - halfPixel,
+        this.camera.y - halfPixel,
+        this.camera.x + halfPixel,
+        this.camera.y + halfPixel,
+      ] as Bounds);
+    const priority = (tile: RasterTile): number => {
+      // With no live dose, previously drawn dirty tiles are still accepted
+      // changes (for example Undo). Initial loading never dirties drawn tiles.
+      if (
+        (feedback && overlaps(tile.dirty!, pixelRect(tile, feedback))) ||
+        (!feedback && tile.paintedRevision >= 0)
+      )
+        return 0;
+      return overlaps(tile.dirty!, pixelRect(tile, focus)) ? 1 : 2;
+    };
+    const center = feedback ?? focus;
+    const distance = (tile: RasterTile): number =>
+      Math.abs(tile.bounds[0] + tile.bounds[2] - center[0] - center[2]) +
+      Math.abs(tile.bounds[1] + tile.bounds[3] - center[1] - center[3]);
     // Latest pending rectangle per tile replaces obsolete work, never source edits.
     const candidates = [...this.tiles.values()]
       .filter(
@@ -596,16 +700,24 @@ export class WorldRenderer {
       )
       .sort(
         (a, b) =>
-          Number(b.paintedRevision >= 0) - Number(a.paintedRevision >= 0) ||
-          a.lastJob - b.lastJob,
+          priority(a) - priority(b) ||
+          a.lastJob - b.lastJob ||
+          distance(a) - distance(b),
       );
+    // A held brush can produce another local dose after every submitted frame.
+    // Let one bounded remaining tile progress periodically, without trapping a
+    // local result in the same batch or growing a second work queue.
+    const remaining = candidates.find((tile) => priority(tile) === 2);
+    const viewProgress =
+      this.localBatches >= LOCAL_BATCHES_BEFORE_VIEW_PROGRESS && remaining;
+    const selected = viewProgress ? [viewProgress] : candidates;
     const tasks: RasterTask[] = [];
     let pixels = 0;
-    for (const tile of candidates) {
+    const batchPriority = selected.length ? priority(selected[0]) : -1;
+    for (const tile of selected) {
       if (tasks.length === MAX_RASTER_BATCH_TILES) break;
-      // A small ready edit should not wait for unrelated initial view loading.
-      if (tile.paintedRevision >= 0 !== candidates[0].paintedRevision >= 0)
-        break;
+      // A local result is returned without waiting for unrelated view loading.
+      if (priority(tile) !== batchPriority) break;
       const rect = tile.dirty!;
       const count = (rect[2] - rect[0]) * (rect[3] - rect[1]);
       if (pixels + count > MAX_RASTER_BATCH_PIXELS) break;
@@ -635,10 +747,14 @@ export class WorldRenderer {
       tasks,
     };
     this.running = batch;
+    this.localBatches =
+      batchPriority < 2 && remaining ? this.localBatches + 1 : 0;
     this.observation.event("raster-batch-start", {
       id: batch.id,
       tiles: tasks.length,
       pixels,
+      priority: batchPriority,
+      viewProgress: Boolean(viewProgress),
     });
     for (const task of tasks)
       this.observation.event("raster-start", {
@@ -726,6 +842,8 @@ export class WorldRenderer {
       this.requestFrame = true;
     }
     if (this.requestFrame && this.document) {
+      // Submit callbacks may request another overlay frame as readiness changes.
+      this.requestFrame = false;
       this.drawOverlay();
       const exact =
         this.preparedViewGeneration === this.viewGeneration &&
@@ -741,6 +859,12 @@ export class WorldRenderer {
         exact && this.tiles.size ? this.document.revision : -1;
       this.renderer.render(this.stage);
       this.frame++;
+      this.lastSubmittedViewGeneration = this.viewGeneration;
+      for (const tile of this.tiles.values())
+        if (tile.visible && tile.paintedRevision >= 0) {
+          tile.submittedRevision = tile.paintedRevision;
+          tile.submittedFrame = this.frame;
+        }
       const identity = `${this.sessionId}.${this.frame}.${this.viewGeneration}.${exactRevision}`;
       this.observation.mark("submit", identity, {
         frame: this.frame,
@@ -758,7 +882,6 @@ export class WorldRenderer {
         this.onExact(exactRevision);
       }
       this.lastSubmit = identity;
-      this.requestFrame = false;
     }
     // Publish the accepted state before admitting the next bounded brush dose.
     // All newly accepted input still precedes selection of the next raster batch.
@@ -781,11 +904,36 @@ export class WorldRenderer {
 
   private drawOverlay(): void {
     this.overlay.clear();
+    // Missing current-scale terrain remains visibly loading, even if retained
+    // coarser tiles are underneath it or the pointer is outside the map.
+    const view = this.bounds();
+    const loading =
+      this.preparedViewGeneration !== this.viewGeneration
+        ? [view]
+        : [...this.tiles.values()]
+            .filter((tile) => tile.visible && tile.paintedRevision < 0)
+            .map((tile) => intersection(tile.bounds, view))
+            .filter((area): area is Bounds => area !== null);
+    for (const area of loading) {
+      const left =
+        (area[0] - this.camera.x) * this.camera.scale + this.width / 2;
+      const top =
+        (area[1] - this.camera.y) * this.camera.scale + this.height / 2;
+      const right =
+        (area[2] - this.camera.x) * this.camera.scale + this.width / 2;
+      const bottom =
+        (area[3] - this.camera.y) * this.camera.scale + this.height / 2;
+      for (let x = left - (bottom - top); x < right; x += 24) {
+        const x0 = Math.max(left, x);
+        const x1 = Math.min(right, x + bottom - top);
+        this.overlay.moveTo(x0, top + x0 - x).lineTo(x1, top + x1 - x);
+      }
+    }
+    this.overlay.stroke({ color: 0xc9d2d4, width: 1, alpha: 0.2 });
     if (this.grid) {
       const step =
         5 *
         2 ** Math.max(0, Math.ceil(Math.log2(70 / (5 * this.camera.scale))));
-      const view = this.bounds();
       for (let x = Math.ceil(view[0] / step) * step; x < view[2]; x += step) {
         const px = (x - this.camera.x) * this.camera.scale + this.width / 2;
         this.overlay.moveTo(px, 0).lineTo(px, this.height);
@@ -799,7 +947,11 @@ export class WorldRenderer {
     if (this.cursor)
       this.overlay
         .circle(this.cursor.x, this.cursor.y, this.cursor.radius)
-        .stroke({ color: 0xf1d49c, width: 1.2, alpha: 0.9 });
+        .stroke({
+          color: this.cursor.waiting ? 0xc9d2d4 : 0xf1d49c,
+          width: 1.2,
+          alpha: this.cursor.waiting ? 0.45 : 0.9,
+        });
   }
 
   private prune(): void {

@@ -2,7 +2,6 @@ import { ProjectStore } from "./project-store";
 import type {
   CommitRequest,
   ReadRegionRequest,
-  ReadTilesRequest,
   ReadPresentationRequest,
   SourceBoundary,
 } from "../src/editor/bridge";
@@ -42,8 +41,6 @@ async function dispatch({ method, argument }: ParentMessage) {
       return store.status();
     case "metrics":
       return store.metrics();
-    case "readTiles":
-      return store.readTiles(argument as ReadTilesRequest);
     case "readRegion":
       return store.readRegion(argument as ReadRegionRequest);
     case "readPresentation":
@@ -72,22 +69,29 @@ async function dispatch({ method, argument }: ParentMessage) {
   }
 }
 
-// One ordered stream owns SQLite. An async snapshot finishes before later
-// writes; a snapshot's subsequent dialog and target publication are separate calls.
-let queue: Promise<unknown> = Promise.resolve();
+const reply = async (data: ParentMessage): Promise<void> => {
+  try {
+    const value = await dispatch(data);
+    port.postMessage({ id: data.id, value });
+  } catch (error) {
+    port.postMessage({
+      id: data.id,
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
+};
+
+// Mutations, save phases and project lifecycle stay ordered. Both local reads
+// are synchronous on this same SQLite owner: they cannot interrupt a transaction,
+// but may answer while a snapshot or file publication yields to the event loop.
+let queue = Promise.resolve();
 port.on("message", ({ data }: { data: ParentMessage }) => {
   if (!data || !Number.isSafeInteger(data.id) || data.id <= 0) return;
-  queue = queue.then(async () => {
-    try {
-      const value = await dispatch(data);
-      port.postMessage({ id: data.id, value });
-    } catch (error) {
-      port.postMessage({
-        id: data.id,
-        error: error instanceof Error ? error.message : String(error),
-      });
-    }
-  });
+  if (data.method === "readRegion" || data.method === "readPresentation") {
+    void reply(data);
+  } else {
+    queue = queue.then(() => reply(data));
+  }
 });
 
 process.on("SIGTERM", () => {

@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { Graphics } from "pixi.js";
 import { EditorController } from "../EditorController";
 import type {
   AtlasDesktop,
@@ -236,6 +237,7 @@ async function readyRenderer({
   height = 64,
   x = 256,
   y = 256,
+  rendered = true,
 } = {}) {
   let worker!: RasterWorker;
   let callback!: FrameRequestCallback;
@@ -270,11 +272,17 @@ async function readyRenderer({
   );
   world.refresh();
   const frame = () => callback(performance.now());
-  for (let step = 0; step < 100 && !world.regionExact(world.bounds()); step++) {
-    if (worker.completed.length) worker.deliver();
-    frame();
+  if (rendered) {
+    for (
+      let step = 0;
+      step < 100 && !world.regionExact(world.bounds());
+      step++
+    ) {
+      if (worker.completed.length) worker.deliver();
+      frame();
+    }
+    expect(world.regionExact(world.bounds())).toBe(true);
   }
-  expect(world.regionExact(world.bounds())).toBe(true);
   const change = (
     point: [number, number],
     brush = { level: 0, radius: 20, amount: 400 },
@@ -312,6 +320,215 @@ it("confirms a current edited region while another part of its tile still render
   );
 });
 
+it("requires an actual local submission, not only source readiness or uploaded pixels", async () => {
+  const { world, worker, frame } = await readyRenderer({ rendered: false });
+  const area: Bounds = [200, 200, 240, 240];
+  expect(world.isPresentationReady(area)).toBe(true);
+  expect(world.regionDisplayed(area, false)).toBe(false);
+  expect(world.regionDisplayed(area)).toBe(false);
+  frame();
+  worker.deliver();
+  expect(world.regionDisplayed(area, false)).toBe(false);
+  const render = vi
+    .spyOn(world.renderer, "render")
+    .mockImplementationOnce(() => {
+      // The upload is complete, but this call has not submitted it yet.
+      expect(world.regionExact(area)).toBe(true);
+      expect(world.regionDisplayed(area, false)).toBe(false);
+      expect(world.regionDisplayed(area)).toBe(false);
+    });
+  frame();
+  expect(render).toHaveBeenCalledOnce();
+  expect(world.regionDisplayed(area, false)).toBe(true);
+  expect(world.regionDisplayed(area)).toBe(true);
+  expect(world.submission()).toEqual({
+    frame: world.state().lastSubmittedFrame,
+    viewGeneration: world.state().viewGeneration,
+  });
+});
+
+it("requires a new submitted view after camera changes, resize and session replacement", async () => {
+  const { world, frame } = await readyRenderer();
+  const area: Bounds = [200, 200, 240, 240];
+  const first = world.submission();
+  world.moveCamera({ ...world.camera, x: world.camera.x + 4 });
+  world.refresh();
+  expect(world.regionExact(area)).toBe(true);
+  expect(world.submission()).toEqual(first);
+  expect(world.regionDisplayed(area, false)).toBe(false);
+  frame();
+  expect(world.regionDisplayed(area)).toBe(true);
+  expect(world.submission().frame).toBeGreaterThan(first.frame);
+  world.resize(68, 68);
+  world.refresh();
+  expect(world.regionDisplayed(area, false)).toBe(false);
+  frame();
+  expect(world.regionDisplayed(area)).toBe(true);
+  world.reset(new EditorDocument("replacement", { empty: true }));
+  expect(world.submission()).toEqual({ frame: 0, viewGeneration: -1 });
+  expect(world.regionDisplayed(area, false)).toBe(false);
+});
+
+it("marks a still-unprepared view as loading even without a pointer or terrain tiles", async () => {
+  const { world, frame } = await readyRenderer();
+  const lines = vi.spyOn(Graphics.prototype, "lineTo");
+  const camera = { ...world.camera };
+  world.moveCamera({ ...camera, x: 50_000 });
+  frame();
+  expect(world.cursor).toBeNull();
+  expect(lines).toHaveBeenCalled();
+  lines.mockClear();
+  world.moveCamera(camera);
+  world.refresh();
+  frame();
+  expect(lines).not.toHaveBeenCalled();
+});
+
+it("preserves a readiness overlay redraw requested by a submit callback", async () => {
+  const { world, frame } = await readyRenderer();
+  const render = vi.spyOn(world.renderer, "render");
+  world.onSubmit = () => {
+    world.onSubmit = () => {};
+    world.redraw();
+  };
+  world.redraw();
+  frame();
+  expect(render).toHaveBeenCalledTimes(1);
+  frame();
+  expect(render).toHaveBeenCalledTimes(2);
+  frame();
+  expect(render).toHaveBeenCalledTimes(2);
+});
+
+it("keeps a drawn foundation during its own pending edit without confirming the new content", async () => {
+  const { world, worker, frame, change } = await readyRenderer();
+  const update = change([200, 200]);
+  expect(world.regionDisplayed(update.bounds, false)).toBe(true);
+  expect(world.regionDisplayed(update.bounds)).toBe(false);
+  frame();
+  worker.deliver();
+  expect(world.regionDisplayed(update.bounds)).toBe(false);
+  frame();
+  expect(world.regionDisplayed(update.bounds)).toBe(true);
+});
+
+it("checks the entire visible swept area without waiting for unrelated screen tiles", async () => {
+  const { world, worker, frame } = await readyRenderer({
+    width: 320,
+    x: 768,
+    rendered: false,
+  });
+  const left: Bounds = [240, 240, 272, 272];
+  const right: Bounds = [1264, 240, 1296, 272];
+  world.setPriorityAreas(left);
+  frame();
+  worker.deliver();
+  world.setPriorityAreas(right);
+  frame();
+  expect(world.regionDisplayed(left)).toBe(true);
+  expect(world.regionDisplayed(right, false)).toBe(false);
+  worker.deliver();
+  frame();
+  expect(world.regionDisplayed(left)).toBe(true);
+  expect(world.regionDisplayed(right)).toBe(true);
+  expect(world.regionExact(world.bounds())).toBe(false);
+  // Both endpoints are drawn; the unpainted middle still prohibits this sweep.
+  expect(world.regionDisplayed([240, 240, 1296, 272], false)).toBe(false);
+});
+
+it("does not require offscreen brush or halo pixels even inside a partially visible tile", async () => {
+  const { world } = await readyRenderer();
+  const offscreen: Bounds = [400, 160, 420, 180];
+  world.invalidate(offscreen);
+  expect(world.regionExact([160, 160, 420, 180])).toBe(false);
+  expect(world.regionDisplayed([160, 160, 420, 180])).toBe(true);
+  expect(world.regionDisplayed(offscreen)).toBe(true);
+});
+
+it("loads the current local focus before unrelated cold tiles without queueing old focus areas", async () => {
+  const { world, worker, frame } = await readyRenderer({
+    width: 320,
+    height: 320,
+    x: 0,
+    y: 0,
+    rendered: false,
+  });
+  const focus: Bounds = [560, 560, 600, 600];
+  world.setPriorityAreas([-600, -600, -560, -560]);
+  world.setPriorityAreas(focus);
+  frame();
+  expect(worker.batches[0].tasks.map((task) => task.key)).toEqual(["2:1:1"]);
+  expect(worker.batches[0].tasks[0].rect).toEqual([0, 0, 128, 128]);
+  expect(world.regionDisplayed(focus, false)).toBe(false);
+  worker.deliver();
+  frame();
+  expect(world.regionDisplayed(focus)).toBe(true);
+  expect(world.regionExact(world.bounds())).toBe(false);
+});
+
+it("returns an accepted local edit before loading a newly requested cold focus", async () => {
+  const { world, worker, frame, change } = await readyRenderer({
+    width: 320,
+    height: 320,
+    x: 0,
+    y: 0,
+    rendered: false,
+  });
+  const first: Bounds = [-600, -600, -560, -560];
+  const next: Bounds = [560, 560, 600, 600];
+  world.setPriorityAreas(first);
+  frame();
+  worker.deliver();
+  let changed: Bounds | null = null;
+  world.advanceFrame = () => {
+    changed = change([-580, -580]).bounds;
+    world.setPriorityAreas(next, changed);
+    world.advanceFrame = () => {};
+  };
+  frame();
+  expect(world.regionDisplayed(first, false)).toBe(true);
+  expect(world.regionDisplayed(changed!)).toBe(false);
+  expect(worker.batches[1].tasks.map((task) => task.key)).toEqual(["2:-2:-2"]);
+  worker.deliver();
+  frame();
+  expect(world.regionDisplayed(changed!)).toBe(true);
+  expect(world.regionDisplayed(next, false)).toBe(false);
+  expect(worker.batches[2].tasks.map((task) => task.key)).toEqual(["2:1:1"]);
+});
+
+it("continues loading the rest of the view during sustained local edits", async () => {
+  const { world, worker, frame, change, observation } = await readyRenderer({
+    width: 320,
+    height: 320,
+    x: 0,
+    y: 0,
+    rendered: false,
+  });
+  const focus: Bounds = [-600, -600, -560, -560];
+  let previous: Bounds | null = null;
+  let accepted = 0;
+  world.setPriorityAreas(focus);
+  world.advanceFrame = () => {
+    if (!world.regionDisplayed(previous ?? focus)) return;
+    previous = change([-580, -580]).bounds;
+    world.setPriorityAreas(focus, previous);
+    accepted++;
+  };
+  frame();
+  for (let step = 0; step < 20; step++) {
+    if (worker.completed.length) worker.deliver();
+    frame();
+  }
+  expect(accepted).toBeGreaterThan(4);
+  expect(
+    observation
+      .read()
+      .some(
+        (event) => event.kind === "raster-upload" && event.key !== "2:-2:-2",
+      ),
+  ).toBe(true);
+});
+
 it("finishes a large brush batch without main-thread redispatch and coalesces newer inputs", async () => {
   const { world, worker, frame, change, document } = await readyRenderer({
     width: 320,
@@ -320,7 +537,8 @@ it("finishes a large brush batch without main-thread redispatch and coalesces ne
     y: -300,
   });
   // Initial full tiles must also obey the total pixel cap, not only tile count.
-  expect(worker.batches[0].tasks).toHaveLength(8);
+  expect(worker.batches[0].tasks).toHaveLength(1);
+  expect(worker.batches.some((batch) => batch.tasks.length === 8)).toBe(true);
   const before = worker.batches.length;
   const brush = { level: 3, radius: 512, amount: 40 };
   const first = change([-800, -300], brush);
@@ -568,12 +786,21 @@ it("keeps result progress and the main loop after a slow or failed input hook", 
   clock.mockRestore();
 });
 
-async function readyController(sourceTiles = 0) {
+async function readyController(
+  sourceTiles = 0,
+  options: {
+    diagnostics?: boolean;
+    ready?: boolean;
+    readFailure?: boolean;
+    width?: number;
+    height?: number;
+  } = {},
+) {
   let worker!: RasterWorker;
   let nextFrame = 0;
   let now = 1000;
-  let width = 64;
-  let height = 64;
+  let width = options.width ?? 64;
+  let height = options.height ?? 64;
   let resized!: () => void;
   vi.spyOn(performance, "now").mockImplementation(() => now);
   const callbacks = new Map<number, FrameRequestCallback>();
@@ -632,12 +859,11 @@ async function readyController(sourceTiles = 0) {
     sourceTiles,
   };
   const bridge = {
-    diagnostics: true,
+    diagnostics: options.diagnostics ?? true,
     status: async () => info,
-    readTiles: vi.fn(),
     readPresentation: vi.fn(async (request: ReadPresentationRequest) => ({
       ...request,
-      sequence: 0,
+      sequence: info.sequence,
       tiles: [],
       overviews: [],
       overviewKeys: heightOverviewKeys(request.bounds, request.power),
@@ -645,15 +871,18 @@ async function readyController(sourceTiles = 0) {
     readRegion: vi.fn(
       async (request: ReadRegionRequest): Promise<RegionRead> => ({
         ...request,
-        sequence: 0,
+        sequence: info.sequence,
         tiles: [],
       }),
     ),
-    commit: vi.fn(async (request: CommitRequest) => ({
-      sessionId: request.sessionId,
-      sequence: request.sequence,
-      transactionId: request.transactionId,
-    })),
+    commit: vi.fn(async (request: CommitRequest) => {
+      info.sequence = request.sequence;
+      return {
+        sessionId: request.sessionId,
+        sequence: request.sequence,
+        transactionId: request.transactionId,
+      };
+    }),
     newProject: vi.fn(),
     openProject: vi.fn(),
     saveProject: vi.fn(),
@@ -663,6 +892,10 @@ async function readyController(sourceTiles = 0) {
     canvas as unknown as HTMLCanvasElement,
     bridge,
   );
+  if (options.readFailure)
+    bridge.readPresentation.mockRejectedValueOnce(
+      new Error("Lokaler Lesefehler"),
+    );
   const frame = (elapsedMs = 16) => {
     now += elapsedMs;
     const pending = [...callbacks.values()];
@@ -696,7 +929,7 @@ async function readyController(sourceTiles = 0) {
   };
   await controller.init();
   controller.setGrid(false);
-  await drainView();
+  if (options.ready !== false) await drainView();
   const advance = (elapsedMs: number) => {
     now += elapsedMs;
   };
@@ -947,8 +1180,8 @@ it("accepts at most one bounded dose from many queued moves", async () => {
   controller.destroy();
 });
 
-it("ends obsolete feedback only after navigating completely away from its region", async () => {
-  const { controller, frame, pointer } = await readyController();
+it("ends obsolete feedback only after navigating completely away, then waits for the new displayed basis", async () => {
+  const { controller, frame, pointer, drainView } = await readyController();
   controller.setBrush(16, 400);
   pointer("pointerdown", 20, 20);
   pointer("pointerup", 20, 20);
@@ -963,7 +1196,7 @@ it("ends obsolete feedback only after navigating completely away from its region
   ).toBe(false);
   controller.goTo(new Event("navigate"), 10_000, 0, 0.25);
   pointer("pointerdown", 20, 20);
-  expect(controller.observe().document!.revision).toBe(2);
+  expect(controller.observe().document!.revision).toBe(1);
   const obsolete = controller.observation
     .read()
     .filter((event) => event.kind === "brush-feedback-obsolete");
@@ -974,23 +1207,31 @@ it("ends obsolete feedback only after navigating completely away from its region
     reason: "outside-view",
   });
   pointer("pointerup", 20, 20);
+  await drainView();
+  pointer("pointerdown", 20, 20);
+  expect(controller.observe().document!.revision).toBe(2);
+  pointer("pointerup", 20, 20);
   frame();
   controller.destroy();
 });
 
-it("does not keep an invisible feedback lock after a real viewport resize", async () => {
-  const { controller, pointer, resize } = await readyController();
+it("releases offscreen feedback on resize without accepting the not-yet-drawn view", async () => {
+  const { controller, pointer, resize, drainView } = await readyController();
   controller.setBrush(8, 400);
   pointer("pointerdown", 2, 32);
   pointer("pointerup", 2, 32);
   resize(8);
   pointer("pointerdown", 4, 32);
-  expect(controller.observe().document!.revision).toBe(2);
+  expect(controller.observe().document!.revision).toBe(1);
   expect(
     controller.observation
       .read()
       .filter((event) => event.kind === "brush-feedback-obsolete"),
   ).toHaveLength(1);
+  pointer("pointerup", 4, 32);
+  await drainView();
+  pointer("pointerdown", 4, 32);
+  expect(controller.observe().document!.revision).toBe(2);
   pointer("pointerup", 4, 32);
   controller.destroy();
 });
@@ -1011,8 +1252,10 @@ it.each(["pointerup", "cancel", "blur", "visibility", "escape", "destroy"])(
         }),
     );
     pointer("pointerdown");
-    expect(controller.observe().gesture!.pending).toBe(true);
+    expect(controller.observe().gesture).toBeNull();
     expect(controller.observe().document!.revision).toBe(0);
+    frame();
+    for (let step = 0; step < 5; step++) await Promise.resolve();
     advance(200);
     if (ending === "pointerup") pointer("pointerup");
     else if (ending === "cancel") pointer("pointercancel");
@@ -1041,7 +1284,7 @@ it.each(["pointerup", "cancel", "blur", "visibility", "escape", "destroy"])(
   },
 );
 
-it("resumes a still held cold press with only its explicit small impulse", async () => {
+it("never resumes a held early press; release and a new press are required after sources arrive", async () => {
   const { controller, bridge, worker, frame, pointer, drainView, advance } =
     await readyController(1);
   controller.goTo(new Event("navigate"), 10_000, 0, 1 / 64);
@@ -1056,6 +1299,7 @@ it("resumes a still held cold press with only its explicit small impulse", async
   );
   pointer("pointerdown");
   frame(200);
+  for (let step = 0; step < 5; step++) await Promise.resolve();
   advance(500);
   const request = bridge.readRegion.mock.calls.at(-1)![0];
   resume({ ...request, sequence: 0, tiles: [] });
@@ -1065,8 +1309,31 @@ it("resumes a still held cold press with only its explicit small impulse", async
   const intervals = controller.observation
     .read()
     .filter((event) => event.kind === "brush-interval");
-  expect(intervals).toHaveLength(1);
-  expect(intervals[0]).toMatchObject({
+  expect(intervals).toHaveLength(0);
+  expect(controller.observe().gesture).toBeNull();
+  expect(controller.state.needsPress).toBe(true);
+  expect(controller.state.message).toBe(
+    "Zum Bearbeiten loslassen und erneut drücken",
+  );
+  pointer("pointerdown");
+  expect(controller.observe().gesture).toBeNull();
+  expect(controller.observe().document!.revision).toBe(0);
+  pointer("pointermove", 36, 32);
+  frame(200);
+  expect(controller.observe().document!.revision).toBe(0);
+  expect(bridge.commit).not.toHaveBeenCalled();
+  pointer("pointerup");
+  pointer("pointerdown");
+  expect(
+    controller.observation
+      .read()
+      .filter((event) => event.kind === "brush-interval"),
+  ).toHaveLength(1);
+  expect(
+    controller.observation
+      .read()
+      .find((event) => event.kind === "brush-interval"),
+  ).toMatchObject({
     cause: "press",
     acceptedElapsedMs: 1000 / 60,
     rawElapsedMs: 0,
@@ -1075,6 +1342,391 @@ it("resumes a still held cold press with only its explicit small impulse", async
   if (worker.completed.length) worker.deliver();
   frame(200);
   expect(controller.observe().document!.revision).toBe(1);
+  controller.destroy();
+});
+
+it("uses the displayed-terrain gate in normal startup without diagnostic callbacks", async () => {
+  const { controller, bridge, pointer, frame, drainView } =
+    await readyController(0, {
+      diagnostics: false,
+      ready: false,
+    });
+  controller.setBrush(16, 400);
+  expect(controller.observe().readiness.reason).toBe("terrain");
+  expect(controller.state.loading).toBe(true);
+  pointer("pointerdown", 20, 20);
+  pointer("pointermove", 24, 20);
+  expect(controller.observe().gesture).toBeNull();
+  expect(controller.observe().document!.revision).toBe(0);
+  expect(controller.state.canUndo).toBe(false);
+  await drainView();
+  frame(500);
+  expect(controller.state.loading).toBe(false);
+  expect(controller.state.needsPress).toBe(true);
+  expect(controller.state.message).toBe(
+    "Zum Bearbeiten loslassen und erneut drücken",
+  );
+  expect(controller.observe().document!.revision).toBe(0);
+  expect(bridge.commit).not.toHaveBeenCalled();
+  pointer("pointerup", 24, 20);
+  pointer("pointerdown", 24, 20);
+  pointer("pointerup", 24, 20);
+  expect(controller.observe().document!.revision).toBe(1);
+  await drainView();
+  expect(bridge.commit).toHaveBeenCalledOnce();
+  expect(controller.state.canUndo).toBe(true);
+  expect(controller.observation.read()).toEqual([]);
+  controller.undo();
+  await drainView();
+  expect(controller.observe([[-32, -48]]).samples[0]).toBe(-100);
+  controller.destroy();
+});
+
+it("prepares an off-center finer tool on hover and size change without a gesture", async () => {
+  const { controller, bridge, pointer, drainView } = await readyController(1, {
+    width: 512,
+  });
+  controller.goTo(new Event("navigate"), 100_000, 0, 1 / 64);
+  await drainView();
+  controller.setBrush(8, 400);
+  pointer("pointermove", 450, 32);
+  expect(controller.observe().readiness.reason).toBe("sources");
+  await drainView();
+  const { point, bounds, ready } = controller.observe().readiness;
+  expect(point).toEqual([112_416, 0]);
+  expect(bounds[0]).toBeGreaterThan(100_000);
+  expect(bridge.readRegion.mock.calls.at(-1)![0]).toMatchObject({
+    bounds,
+    minLevel: 2,
+  });
+  expect(ready).toBe(true);
+  expect(controller.observe().gesture).toBeNull();
+  expect(controller.state.canUndo).toBe(false);
+  pointer("pointerdown", 450, 32);
+  pointer("pointerup", 450, 32);
+  expect(controller.observe().document!.revision).toBe(1);
+  controller.destroy();
+});
+
+it("marks navigation ready only after the actual matching local submit", async () => {
+  const { controller, frame, pointer, drainView } = await readyController(1);
+  controller.goTo(new Event("navigate"), 20_000, 0, 0.25);
+  expect(controller.observe().readiness.ready).toBe(false);
+  frame();
+  for (let step = 0; step < 8; step++) await Promise.resolve();
+  let events = controller.observation.read();
+  expect(events.some((event) => event.kind === "sources-ready")).toBe(true);
+  expect(events.some((event) => event.kind === "input-ready")).toBe(false);
+  pointer("pointerdown");
+  pointer("pointerup");
+  expect(controller.observe().document!.revision).toBe(0);
+  await drainView();
+  events = controller.observation.read();
+  const ready = events.find((event) => event.kind === "input-ready")!;
+  const submit = events.find(
+    (event) => event.kind === "submit" && event.frame === ready.frame,
+  )!;
+  expect(ready).toMatchObject({
+    sessionId: "shared-frame",
+    ready: true,
+    reason: null,
+    revision: 0,
+  });
+  expect(submit.cameraGeneration).toBe(ready.viewGeneration);
+  expect(events.indexOf(submit)).toBeLessThan(events.indexOf(ready));
+  pointer("pointerdown");
+  pointer("pointerup");
+  expect(controller.observe().document!.revision).toBe(1);
+  controller.destroy();
+});
+
+it("ends a stroke before an unseen gap even when its two endpoints are visible", async () => {
+  const { controller, bridge, frame, pointer, drainView } =
+    await readyController(0, { width: 512 });
+  controller.setBrush(16, 400);
+  const displayed = controller.world.regionDisplayed.bind(controller.world);
+  const gap = vi
+    .spyOn(controller.world, "regionDisplayed")
+    .mockImplementation((bounds, current) =>
+      bounds[0] < 0 && bounds[2] > 0 ? false : displayed(bounds, current),
+    );
+  pointer("pointerdown", 64, 32);
+  const accepted = controller.observe().document!.revision;
+  pointer("pointermove", 448, 32);
+  frame();
+  expect(controller.observe().gesture).toBeNull();
+  expect(controller.observe().document!.revision).toBe(accepted);
+  expect(controller.state.needsPress).toBe(true);
+  for (let step = 0; step < 4; step++) await Promise.resolve();
+  expect(bridge.commit).toHaveBeenCalledOnce();
+  gap.mockRestore();
+  await drainView();
+  frame(500);
+  expect(controller.observe().document!.revision).toBe(accepted);
+  pointer("pointerup", 448, 32);
+  controller.undo();
+  await drainView();
+  expect(
+    controller.observe([
+      [-768, 0],
+      [0, 0],
+      [768, 0],
+    ]).samples,
+  ).toEqual([-100, -100, -100]);
+  controller.destroy();
+});
+
+it("permits a partial edge footprint but ends before a captured pointer paints wholly outside the viewport", async () => {
+  const { controller, bridge, pointer, frame, drainView } =
+    await readyController();
+  controller.setBrush(16, 400);
+  pointer("pointerdown", 1, 32);
+  expect(controller.observe().document!.revision).toBe(1);
+  pointer("pointermove", 1000, 32);
+  frame();
+  expect(controller.observe().gesture).toBeNull();
+  expect(controller.observe().document!.revision).toBe(1);
+  expect(controller.observe().readiness.reason).toBe("outside");
+  expect(controller.state.loading).toBe(false);
+  pointer("pointermove", 32, 32);
+  await drainView();
+  frame(500);
+  expect(controller.state.needsPress).toBe(true);
+  expect(controller.observe().document!.revision).toBe(1);
+  expect(bridge.commit).toHaveBeenCalledOnce();
+  pointer("pointerup");
+  controller.undo();
+  await drainView();
+  expect(
+    controller.observe([
+      [-124, 0],
+      [0, 0],
+      [1000, 0],
+    ]).samples,
+  ).toEqual([-100, -100, -100]);
+  controller.destroy();
+});
+
+it("rereads both source paths when an acknowledgement has already overtaken their sequence", async () => {
+  const { controller, bridge, pointer, drainView } = await readyController(1);
+  controller.setBrush(16, 400);
+  pointer("pointerdown");
+  pointer("pointerup");
+  await drainView();
+  expect(controller.observe().document!.sequence).toBe(1);
+  bridge.readPresentation.mockImplementationOnce(async (request) => ({
+    ...request,
+    sequence: 0,
+    tiles: [],
+    overviews: [],
+    overviewKeys: heightOverviewKeys(request.bounds, request.power),
+  }));
+  const previous = bridge.readPresentation.mock.calls.length;
+  controller.setBrush(80, 400);
+  controller.goTo(new Event("navigate"), 100_000, 0, 1 / 64);
+  await drainView();
+  expect(bridge.readPresentation.mock.calls.length - previous).toBe(2);
+  bridge.readRegion.mockImplementationOnce(async (request) => ({
+    ...request,
+    sequence: 0,
+    tiles: [],
+  }));
+  const regions = bridge.readRegion.mock.calls.length;
+  controller.setBrush(8, 400);
+  await drainView();
+  expect(bridge.readRegion.mock.calls.length - regions).toBe(2);
+  expect(controller.observe().readiness.ready).toBe(true);
+  expect(controller.state.error).toBeNull();
+  controller.destroy();
+});
+
+it.each(["presentation", "region"] as const)(
+  "consumes a %s read atomically before an acknowledgement microtask releases its patches",
+  async (purpose) => {
+    const { controller, bridge, worker, pointer, drainView } =
+      await readyController(1);
+    const point: [number, number] = purpose === "region" ? [10_000, 0] : [0, 0];
+    if (purpose === "region") {
+      controller.goTo(new Event("navigate"), point[0], point[1], 1 / 16);
+      await drainView();
+    }
+    controller.setBrush(purpose === "region" ? 80 : 32, 400);
+    let acknowledge!: () => void;
+    let written!: CommitRequest;
+    bridge.commit.mockImplementationOnce(
+      (request) =>
+        new Promise((resolve) => {
+          written = request;
+          acknowledge = () =>
+            resolve({
+              sessionId: request.sessionId,
+              sequence: request.sequence,
+              transactionId: request.transactionId,
+            });
+        }),
+    );
+    pointer("pointerdown");
+    pointer("pointerup");
+    await drainView();
+    expect(bridge.commit).toHaveBeenCalledOnce();
+    expect(controller.state.writing).toBe(true);
+    const expected = prepareHeightSampler(
+      written.patches.flatMap((patch) => (patch.after ? [patch.after] : [])),
+    )(...point);
+    const sinceEvent = controller.observation.read().length;
+    // The store has reached S+1, but this response was captured at S. The ack
+    // arrives in the exact microtask gap an async validation-only helper creates.
+    bridge.readPresentation.mockImplementation(async (request) => ({
+      ...request,
+      sequence: 1,
+      tiles: [],
+      overviews: [],
+      overviewKeys: heightOverviewKeys(request.bounds, request.power),
+    }));
+    bridge.readRegion.mockImplementation(async (request) => ({
+      ...request,
+      sequence: 1,
+      tiles: [],
+    }));
+    const releaseAck = () => queueMicrotask(() => queueMicrotask(acknowledge));
+    if (purpose === "presentation") {
+      bridge.readPresentation.mockImplementationOnce((request) => {
+        releaseAck();
+        return Promise.resolve({
+          ...request,
+          sequence: 0,
+          tiles: [],
+          overviews: [],
+          overviewKeys: heightOverviewKeys(request.bounds, request.power),
+        });
+      });
+      controller.goTo(new Event("navigate"), 0, 0, 1 / 64);
+    } else {
+      bridge.readRegion.mockImplementationOnce((request) => {
+        releaseAck();
+        return Promise.resolve({ ...request, sequence: 0, tiles: [] });
+      });
+      controller.setBrush(8, 400);
+    }
+    await drainView();
+    for (let step = 0; step < 8; step++) await Promise.resolve();
+    const events = controller.observation.read().slice(sinceEvent);
+    const consumed = events.findIndex(
+      (event) =>
+        event.kind === "sources" &&
+        (purpose === "presentation"
+          ? event.power !== undefined
+          : event.power === undefined),
+    );
+    const acknowledged = events.findIndex(
+      (event) => event.kind === "persisted" && event.sequence === 1,
+    );
+    expect(consumed).toBeGreaterThanOrEqual(0);
+    expect(acknowledged).toBeGreaterThan(consumed);
+    expect(controller.state.error).toBeNull();
+    expect(controller.state.writing).toBe(false);
+    expect(controller.observe().readiness.ready).toBe(true);
+    expect(controller.state.canUndo).toBe(true);
+    expect(controller.observe([point]).samples[0]).toBeCloseTo(expected, 10);
+    if (purpose === "presentation")
+      expect(
+        [...worker.overviews.values()].some((tile) =>
+          tile.values.some((value) => value !== 0),
+        ),
+      ).toBe(true);
+    controller.destroy();
+  },
+);
+
+it("edits a submitted warm local area while the outer presentation read is still pending", async () => {
+  const { controller, bridge, worker, frame, pointer } =
+    await readyController(1);
+  controller.setBrush(16, 400);
+  let resume!: (
+    reply: Awaited<ReturnType<typeof bridge.readPresentation>>,
+  ) => void;
+  bridge.readPresentation.mockImplementationOnce(
+    () =>
+      new Promise((resolve) => {
+        resume = resolve;
+      }),
+  );
+  controller.goTo(new Event("navigate"), 400, 0, 0.25);
+  expect(controller.observe().readiness.ready).toBe(false);
+  pointer("pointerdown");
+  pointer("pointerup");
+  expect(controller.observe().document!.revision).toBe(0);
+  frame();
+  for (let step = 0; step < 8; step++) await Promise.resolve();
+  expect(resume).toBeTypeOf("function");
+  expect(controller.observe().readiness.ready).toBe(true);
+  expect(controller.state.loading).toBe(false);
+  pointer("pointerdown");
+  pointer("pointerup");
+  expect(controller.observe().document!.revision).toBe(1);
+  for (let step = 0; step < 6; step++) {
+    if (worker.completed.length) worker.deliver();
+    frame();
+    await Promise.resolve();
+  }
+  expect(controller.observe().readiness.ready).toBe(true);
+  expect(controller.state.loading).toBe(false);
+  expect(bridge.commit).toHaveBeenCalledOnce();
+  controller.destroy();
+  const request = bridge.readPresentation.mock.calls.at(-1)![0];
+  resume({
+    ...request,
+    sequence: 0,
+    tiles: [],
+    overviews: [],
+    overviewKeys: heightOverviewKeys(request.bounds, request.power),
+  });
+  for (let step = 0; step < 8; step++) await Promise.resolve();
+});
+
+it("shows an initial read failure and recovers through the ordinary retry without an early edit", async () => {
+  const { controller, pointer, drainView } = await readyController(1, {
+    ready: false,
+    readFailure: true,
+  });
+  expect(controller.state.error).toBe("Lokaler Lesefehler");
+  expect(controller.state.loading).toBe(true);
+  pointer("pointerdown");
+  pointer("pointerup");
+  expect(controller.observe().document!.revision).toBe(0);
+  controller.retryLoad();
+  await drainView();
+  expect(controller.state.error).toBeNull();
+  expect(controller.observe().readiness.ready).toBe(true);
+  expect(controller.observe().document!.revision).toBe(0);
+  pointer("pointerdown");
+  pointer("pointerup");
+  expect(controller.observe().document!.revision).toBe(1);
+  controller.destroy();
+});
+
+it("ends a held stroke on resize instead of painting at a world point different from its cursor", async () => {
+  const { controller, pointer, resize, frame, drainView } =
+    await readyController();
+  controller.setBrush(16, 400);
+  pointer("pointerdown", 32, 32);
+  expect(controller.observe().document!.revision).toBe(1);
+  resize(128);
+  expect(controller.observe().gesture).toBeNull();
+  await drainView();
+  frame(500);
+  expect(controller.observe().document!.revision).toBe(1);
+  expect(controller.state.needsPress).toBe(true);
+  pointer("pointerup", 32, 32);
+  pointer("pointerdown", 32, 32);
+  pointer("pointerup", 32, 32);
+  expect(controller.observe().document!.revision).toBe(2);
+  expect(
+    controller.observation
+      .read()
+      .filter((event) => event.kind === "brush-interval")
+      .at(-1),
+  ).toMatchObject({ from: [-128, 0], to: [-128, 0] });
   controller.destroy();
 });
 

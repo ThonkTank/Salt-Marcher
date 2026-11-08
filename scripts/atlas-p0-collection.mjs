@@ -5,6 +5,8 @@ import {
   strokeEvidence,
   evaluateScenario,
   evaluateStrokeContent,
+  extractColdSamples,
+  evaluateBlockedInput,
 } from "./atlas-p0-evaluate.mjs";
 import {
   snapshot,
@@ -108,6 +110,49 @@ function retainSamples(scenario, samples) {
   }
 }
 
+/** One post-stroke content/Undo check for warm and newly released cold edits. */
+async function verifyStrokeContent(
+  session,
+  spec,
+  record,
+  points,
+  before,
+  after,
+) {
+  record.beforeHeight = before[0];
+  record.afterHeight = after.samples[0];
+  record.content = { points, before, after: after.samples };
+  const probes = [points[0], points.at(-1)];
+  // These observations occur only after the measured stroke has ended.
+  record.changedImage = await capture(
+    session,
+    `${spec.id}-${record.attempt + 1}-changed`,
+    probes,
+  );
+  await button(session.page, /Rückgängig/);
+  await exact(session.page, 5000);
+  await waitForWrites(session.page);
+  const undone = await stateSnapshot(session.page, points);
+  record.undoneHeight = undone.samples[0];
+  if (!before.every((height, index) => near(undone.samples[index], height)))
+    throw new Error("Undo did not restore the repeated stroke's source");
+  record.undoneImage = await capture(
+    session,
+    `${spec.id}-${record.attempt + 1}-undone`,
+    probes,
+  );
+  record.content.undone = undone.samples;
+  record.content.evaluation = evaluateStrokeContent({
+    ...record.content,
+    changedPixels: record.changedImage.pixels,
+    restoredPixels: record.undoneImage.pixels,
+  });
+  if (!record.content.evaluation.passed)
+    throw new Error(
+      "Moving stroke did not change terrain pixels at both endpoints",
+    );
+}
+
 async function collectWarm(context, session, spec, scenario) {
   const { page } = session;
   await button(page, spec.coarse ? "Regionsansicht" : "Nahansicht");
@@ -178,49 +223,16 @@ async function collectWarm(context, session, spec, scenario) {
       record.time = edit.time;
       const after = await stateSnapshot(page, points);
       scenario.droppedEvents = after.droppedEvents;
-      record.beforeHeight = before.samples[0];
-      record.afterHeight = after.samples[0];
-      record.content = { points, before: before.samples, after: after.samples };
       if (after.document.sequence !== before.document.sequence + 1)
         throw new Error("Moving stroke did not commit exactly one action");
-      const probes = [points[0], points.at(-1)];
-      // No preparatory gesture or screenshot paces/warms the measured stroke.
-      // Both real image checks occur after its final submission timestamp.
-      record.changedImage = await capture(
+      await verifyStrokeContent(
         session,
-        `${spec.id}-${attempt + 1}-changed`,
-        probes,
-      );
-      // Undo is outside the measured stroke and prevents saturation/drifting fixtures.
-      await button(page, /Rückgängig/);
-      await exact(page, 5000);
-      await waitForWrites(page);
-      const undone = await stateSnapshot(page, points);
-      record.undoneHeight = undone.samples[0];
-      if (
-        !before.samples.every((height, index) =>
-          near(undone.samples[index], height),
-        )
-      )
-        throw new Error("Undo did not restore the repeated stroke's source");
-      record.undoneImage = await capture(
-        session,
-        `${spec.id}-${attempt + 1}-undone`,
-        probes,
-      );
-      record.content.undone = undone.samples;
-      record.content.evaluation = evaluateStrokeContent({
+        spec,
+        record,
         points,
-        before: before.samples,
-        after: after.samples,
-        undone: undone.samples,
-        changedPixels: record.changedImage.pixels,
-        restoredPixels: record.undoneImage.pixels,
-      });
-      if (!record.content.evaluation.passed)
-        throw new Error(
-          "Moving stroke did not change terrain pixels at both endpoints",
-        );
+        before.samples,
+        after,
+      );
       record.passed =
         record.stroke.passed &&
         record.time.passed &&
@@ -375,10 +387,17 @@ async function navigateDuringSave(session, at) {
   return monitor;
 }
 
-/** Poll only observations; dispatch ordinary native inputs at the first ready state. */
+/** Poll the real local gate; dispatch native input immediately, without a warmup. */
 export function startReadyStrokeMonitor(
   session,
-  { afterInputId, screenPoint, sessionId, point, sinceEvent = 0 },
+  {
+    afterInputId,
+    screenPoint,
+    sessionId,
+    point,
+    probes = point ? [point] : [],
+    sinceEvent = 0,
+  },
 ) {
   const inputs = strokeInputs(
     Array.from({ length: 5 }, (_, step) => ({
@@ -389,18 +408,19 @@ export function startReadyStrokeMonitor(
   return session.app.evaluate(
     async (
       { BrowserWindow },
-      { sessionId, cutoff, inputs, point, sinceEvent },
+      { sessionId, cutoff, inputs, probes, sinceEvent },
     ) => {
       const contents = BrowserWindow.getAllWindows()[0].webContents;
       const deadline = performance.now() + 5000;
       let cursor = sinceEvent,
         navigation,
-        ready;
+        gate;
       while (performance.now() < deadline) {
         const read = `(() => {
-          const o = window.atlasObserve(${JSON.stringify(point ? [point] : [])}, { sinceEvent: ${cursor} });
+          const o = window.atlasObserve(${JSON.stringify(probes)}, { sinceEvent: ${cursor} });
           return { sessionId:o.sessionId, error:o.state.error, events:o.events, eventCount:o.eventCount,
-            droppedEvents:o.droppedEvents, background:o.background, beforeHeight:o.samples[0] ?? null };
+            droppedEvents:o.droppedEvents, background:o.background, readiness:o.readiness,
+            beforeHeight:o.samples[0] ?? null, beforeHeights:o.samples };
         })()`;
         const { events, eventCount, ...observed } =
           await contents.executeJavaScript(read);
@@ -413,18 +433,25 @@ export function startReadyStrokeMonitor(
             event.inputKind === "navigation" &&
             event.id > cutoff,
         );
-        ready ??=
+        gate ??=
           navigation &&
           events.find(
             (event) =>
-              ["ready", "input-ready"].includes(event.kind) &&
-              event.input === navigation.id,
+              event.kind === "input-ready" &&
+              event.input === navigation.id &&
+              event.sessionId === sessionId,
           );
-        Object.assign(observed, { navigation, ready });
+        Object.assign(observed, { navigation, gate });
         if (observed.error)
           return { dispatched: false, error: observed.error, observed };
         sessionId ??= observed.sessionId;
-        if (observed.sessionId === sessionId && ready) {
+        if (
+          observed.sessionId === sessionId &&
+          gate &&
+          observed.readiness?.ready === true &&
+          observed.readiness.viewGeneration === gate.viewGeneration &&
+          observed.readiness.frame >= gate.frame
+        ) {
           let released = false;
           try {
             for (const input of inputs) {
@@ -438,13 +465,13 @@ export function startReadyStrokeMonitor(
           } finally {
             if (!released) contents.sendInputEvent(inputs.at(-1).event);
           }
-          return { dispatched: true, navigation, ready, observed };
+          return { dispatched: true, navigation, gate, observed };
         }
         await new Promise((resolve) => setTimeout(resolve, 1));
       }
       return { dispatched: false, timedOut: true };
     },
-    { sessionId, cutoff: afterInputId, inputs, point, sinceEvent },
+    { sessionId, cutoff: afterInputId, inputs, probes, sinceEvent },
   );
 }
 
@@ -501,6 +528,10 @@ async function collectCold(context, session, spec, scenario) {
         y: Math.round(box.y + box.height / 2),
       };
       before = await stateSnapshot(page, [target]);
+      const points = Array.from({ length: 5 }, (_, step) => [
+        target[0] + (step * 32) / before.camera.scale,
+        target[1] + ((step % 2) * 4) / before.camera.scale,
+      ]);
       record.coldBeforeNavigation = before.samples[0] === null;
       if (!record.coldBeforeNavigation)
         throw new Error("Target is already warm before navigation");
@@ -510,6 +541,7 @@ async function collectCold(context, session, spec, scenario) {
         sinceEvent: before.eventCount ?? 0,
         screenPoint: center,
         point: target,
+        probes: points,
       });
       const navigationTrigger = spec.busy
         ? await navigateDuringSave(session, targetButton)
@@ -520,7 +552,7 @@ async function collectCold(context, session, spec, scenario) {
         sinceEvent: navigationTrigger.sinceEvent,
       };
       const trigger = await monitor;
-      record.readyTrigger = {
+      record.gateTrigger = {
         dispatched: trigger.dispatched,
         timedOut: trigger.timedOut,
         error: trigger.error,
@@ -531,42 +563,35 @@ async function collectCold(context, session, spec, scenario) {
           `Cold first stroke was not dispatched: ${JSON.stringify(trigger)}`,
         );
       const observedStroke = await observeStroke(session, before, 5000);
-      const { samples, timedOut } = observedStroke;
+      const { timedOut } = observedStroke;
+      const samples = extractColdSamples(
+        observedStroke.after.events,
+        observedStroke.samples,
+        {
+          sessionId: before.sessionId,
+          afterInputId: cutoff(before),
+          coldBeforeNavigation: record.coldBeforeNavigation,
+        },
+      );
+      retainSamples(scenario, samples);
       record.inputIds = samples.map((sample) => sample.inputId);
       record.sessionId = observedStroke.after.sessionId;
-      const after = await stateSnapshot(page, [target]);
+      const after = await stateSnapshot(page, points);
       scenario.droppedEvents = after.droppedEvents;
       const first = samples.find((s) => s.inputKind === "edit");
       const navigation = trigger.observed?.navigation;
-      const ready = trigger.observed?.ready;
       if (first) {
-        const coldSample = {
-          ...first,
-          navigationId: navigation?.id,
-          navigationAt: navigation?.createdAt ?? null,
-          readyAt: ready?.at ?? null,
-          coldBeforeNavigation: record.coldBeforeNavigation,
-          timeout: timedOut,
-        };
-        retainSamples(scenario, [coldSample]);
-        record.readyToInputMs = finite(ready?.at)
-          ? first.createdAt - ready.at
+        record.gateToInputMs = finite(first.gateAt)
+          ? first.createdAt - first.gateAt
           : null;
+        record.readyToInputMs = null;
       }
-      // A cold first render is governed by M10's navigation budget, not the
-      // warmed-up requirement to redraw each ordinary live stroke immediately.
-      record.stroke = strokeEvidence({ samples, timedOut }, false);
+      record.stroke = strokeEvidence({ samples, timedOut });
       record.time = observedStroke.time;
       record.beforeHeightExpected = -20;
       record.beforeHeightObserved = trigger.observed?.beforeHeight ?? null;
       record.afterHeight = after.samples[0];
-      if (
-        !navigationTrigger.dispatched ||
-        !trigger.dispatched ||
-        !first ||
-        !record.stroke.passed ||
-        !record.time.passed
-      )
+      if (!navigationTrigger.dispatched || !trigger.dispatched || !first)
         throw new Error(
           "Cold target did not produce the required first moving stroke",
         );
@@ -574,10 +599,17 @@ async function collectCold(context, session, spec, scenario) {
         throw new Error(
           "Cold edit did not raise the expected sea point to land",
         );
-      record.image = await capture(session, `${spec.id}-${attempt + 1}`, [
-        target,
-      ]);
-      if (!landPixel(record.image.pixels[0]))
+      if (after.document.sequence !== before.document.sequence + 1)
+        throw new Error("Cold stroke did not commit exactly one action");
+      await verifyStrokeContent(
+        session,
+        spec,
+        record,
+        points,
+        trigger.observed.beforeHeights,
+        after,
+      );
+      if (!landPixel(record.changedImage.pixels[0]))
         throw new Error("Cold edited terrain is not visibly land");
       if (spec.busy) {
         // The overlap is decided from the original input timestamps. Waiting
@@ -627,7 +659,16 @@ async function collectCold(context, session, spec, scenario) {
             "Cold navigation/first edit did not both overlap real save and active worker",
           );
       }
-      record.passed = true;
+      record.passed = record.stroke.passed && record.time.passed;
+      if (!record.passed) {
+        record.error = !record.time.passed
+          ? record.time.issues.map((issue) => issue.code).join(", ")
+          : "Cold released stroke failed the ordinary live criterion";
+        if (context.purpose !== "acceptance") {
+          scenario.aborted = true;
+          break;
+        }
+      }
       if (
         (attempt + 1) % 10 === 0 ||
         attempt + 1 === scenario.requestedAttempts
@@ -662,30 +703,14 @@ async function collectCold(context, session, spec, scenario) {
           );
           record.inputIds ??= observedSamples.map((sample) => sample.inputId);
           record.sessionId ??= after.sessionId;
-          const first = observedSamples.find((s) => s.inputKind === "edit");
-          const navigation = after.events.find(
-            (e) =>
-              e.kind === "input" &&
-              e.id > cutoff(before) &&
-              e.inputKind === "navigation",
+          retainSamples(
+            scenario,
+            extractColdSamples(after.events, observedSamples, {
+              sessionId: after.sessionId,
+              afterInputId: cutoff(before),
+              coldBeforeNavigation: record.coldBeforeNavigation,
+            }),
           );
-          const ready =
-            navigation &&
-            after.events.find(
-              (e) =>
-                ["ready", "input-ready"].includes(e.kind) &&
-                e.input === navigation.id,
-            );
-          if (first)
-            retainSamples(scenario, [
-              {
-                ...first,
-                navigationId: navigation?.id,
-                navigationAt: navigation?.createdAt ?? null,
-                readyAt: ready?.at ?? null,
-                coldBeforeNavigation: record.coldBeforeNavigation,
-              },
-            ]);
           scenario.droppedEvents = after.droppedEvents;
         } catch (observationError) {
           record.observationError = String(observationError);
@@ -695,6 +720,223 @@ async function collectCold(context, session, spec, scenario) {
       break;
     }
   }
+}
+
+/** Separate, untimed D11 cases. They cannot rescue or warm a measured trial. */
+async function collectBlockedInputs(session, spec) {
+  const cases = [];
+  const target = [79_200, 0];
+  for (const holdUntilReady of [false, true]) {
+    const record = { holdUntilReady };
+    cases.push(record);
+    try {
+      await reopen(session.page);
+      await brush(session.page, spec.diameter, spec.amount);
+      await exact(session.page, 5000);
+      const navigationPoint = await prepareTarget(session.page, target);
+      const box = await session.page.locator("canvas").boundingBox();
+      if (!box) throw new Error("Blocked-input canvas unavailable");
+      const screen = {
+        x: Math.round(box.x + box.width / 2),
+        y: Math.round(box.y + box.height / 2),
+      };
+      const before = await stateSnapshot(session.page, [target]);
+      if (before.samples[0] !== null)
+        throw new Error("Blocked-input target is already warm");
+      const observed = await session.app.evaluate(
+        async ({ BrowserWindow }, args) => {
+          const contents = BrowserWindow.getAllWindows()[0].webContents;
+          const events = [];
+          let cursor = args.sinceEvent;
+          const read = async () => {
+            const observed = await contents.executeJavaScript(`(() => {
+              const o = window.atlasObserve(${JSON.stringify([args.target])}, { sinceEvent: ${cursor} });
+              const status = document.querySelector('.map-status');
+              const rect = status?.getBoundingClientRect();
+              const style = status && getComputedStyle(status);
+              return { sessionId:o.sessionId, document:o.document, readiness:o.readiness,
+                needsPress:o.state.needsPress, error:o.state.error, samples:o.samples,
+                statusText:status?.textContent ?? '',
+                statusVisible:!!rect && rect.width > 0 && rect.height > 0 &&
+                  style.display !== 'none' && style.visibility !== 'hidden',
+                events:o.events, eventCount:o.eventCount, droppedEvents:o.droppedEvents };
+            })()`);
+            if (observed.error) throw new Error(observed.error);
+            if (observed.droppedEvents)
+              throw new Error("Observation events were dropped");
+            events.push(...observed.events);
+            cursor = observed.eventCount;
+            const { events: _events, ...state } = observed;
+            return state;
+          };
+          const send = (type, point, extra = {}) =>
+            contents.sendInputEvent({ type, ...point, ...extra });
+          let released = false;
+          try {
+            send("mouseMove", args.navigationPoint);
+            send("mouseDown", args.navigationPoint, {
+              button: "left",
+              clickCount: 1,
+            });
+            send("mouseUp", args.navigationPoint, {
+              button: "left",
+              clickCount: 1,
+            });
+            // The first press deliberately precedes local data/terrain. All
+            // events still use the ordinary native path, including held moves.
+            send("mouseMove", args.screen);
+            send("mouseDown", args.screen, { button: "left", clickCount: 1 });
+            send(
+              "mouseMove",
+              { x: args.screen.x + 1, y: args.screen.y },
+              { modifiers: ["leftButtonDown"] },
+            );
+            send("mouseMove", args.screen, { modifiers: ["leftButtonDown"] });
+            if (!args.holdUntilReady) {
+              send("mouseUp", args.screen, { button: "left", clickCount: 1 });
+              released = true;
+            }
+            const deadline = performance.now() + 5000;
+            let waiting, gate, ready, releasedAt;
+            while (performance.now() < deadline) {
+              const current = await read();
+              const down = events.find(
+                (event) =>
+                  event.kind === "input" && event.eventType === "pointerdown",
+              );
+              if (
+                down &&
+                current.readiness?.ready === false &&
+                current.statusVisible &&
+                /geladen|lädt/i.test(current.statusText)
+              )
+                waiting ??= current;
+              gate ??= events.find(
+                (event) =>
+                  event.kind === "input-ready" &&
+                  event.sessionId === args.sessionId,
+              );
+              if (gate && current.readiness?.ready === true) {
+                ready ??= current;
+                const afterGate = events.filter(
+                  (event) => event.kind === "frame" && event.at > gate.at,
+                ).length;
+                if (afterGate >= 2 && !released) {
+                  send("mouseUp", args.screen, {
+                    button: "left",
+                    clickCount: 1,
+                  });
+                  released = true;
+                  releasedAt = events.at(-1)?.at;
+                }
+                const release = events.find(
+                  (event) =>
+                    event.kind === "input" && event.inputKind === "pointerup",
+                );
+                if (
+                  released &&
+                  release &&
+                  events.filter(
+                    (event) =>
+                      event.kind === "frame" &&
+                      event.at > Math.max(gate.at, release.at, releasedAt ?? 0),
+                  ).length >= 2
+                )
+                  return {
+                    waiting,
+                    ready,
+                    settled: current,
+                    gateAt: gate.at,
+                    events,
+                  };
+              }
+              await new Promise((resolve) => setTimeout(resolve, 1));
+            }
+            throw new Error("Blocked-input readiness/release timed out");
+          } finally {
+            if (!released)
+              send("mouseUp", args.screen, { button: "left", clickCount: 1 });
+          }
+        },
+        {
+          navigationPoint,
+          screen,
+          target,
+          holdUntilReady,
+          sessionId: before.sessionId,
+          sinceEvent: before.eventCount,
+        },
+      );
+      const compact = (state) =>
+        state && {
+          sessionId: state.sessionId,
+          document: Object.fromEntries(
+            [
+              "revision",
+              "sequence",
+              "historyActions",
+              "canUndo",
+              "canRedo",
+              "active",
+            ].map((key) => [key, state.document[key]]),
+          ),
+          readiness: state.readiness,
+          needsPress: state.needsPress,
+          statusText: state.statusText,
+          statusVisible: state.statusVisible,
+        };
+      const inputIds = observed.events
+        .filter(
+          (event) =>
+            event.kind === "input" &&
+            ["edit", "pointerup"].includes(event.inputKind),
+        )
+        .map((event) => event.id);
+      Object.assign(record, {
+        before: compact(before),
+        waiting: compact(observed.waiting),
+        ready: compact(observed.ready),
+        settled: compact(observed.settled),
+        gateAt: observed.gateAt,
+        samples: extractEditSamples(
+          observed.events,
+          inputIds,
+          before.sessionId,
+        ),
+        mutationEvents: observed.events.filter((event) =>
+          [
+            "brush-start",
+            "brush-interval",
+            "model",
+            "commit",
+            "persisted",
+          ].includes(event.kind),
+        ),
+      });
+      // This new deliberate press belongs only to the rejection/recovery case.
+      const recovery = await movingStroke(session, [target]);
+      const after = await stateSnapshot(session.page, [target]);
+      const first = recovery.samples.find(
+        (sample) => sample.inputKind === "edit",
+      );
+      record.recovery = {
+        timePassed: recovery.time.passed,
+        eventType: first?.eventType,
+        createdAt: first?.createdAt,
+        modelAt: first?.modelAt,
+        heightBefore: observed.settled.samples[0],
+        heightAfter: after.samples[0],
+        sequenceAfter: after.document.sequence,
+        historyAfter: after.document.historyActions,
+      };
+      record.evaluation = evaluateBlockedInput(record);
+      record.passed = record.evaluation.passed;
+    } catch (error) {
+      record.error = String(error);
+      record.passed = false;
+    }
+  }
+  return { cases, passed: cases.every((record) => record.passed) };
 }
 
 /** Collect edit/cold cases, optionally one diagnostic case. M01 belongs to its runner. */
@@ -732,6 +974,7 @@ export async function collectRepeatedScenarios(context) {
             : 100
           : 1,
       purpose: context.purpose ?? "probe",
+      readinessContract: "D11-local-terrain-submit-v1",
       attempts: [],
       aborted: false,
     };
@@ -751,9 +994,10 @@ export async function collectRepeatedScenarios(context) {
       session.instance.scenarios.push(scenario);
       await exact(session.page, 5000);
       await session.page.getByLabel("Raster anzeigen").uncheck();
-      if (spec.kind === "cold")
+      if (spec.kind === "cold") {
         await collectCold(context, session, spec, scenario);
-      else await collectWarm(context, session, spec, scenario);
+        scenario.blockedInputs = await collectBlockedInputs(session, spec);
+      } else await collectWarm(context, session, spec, scenario);
     } catch (error) {
       scenario.error = String(error);
       scenario.aborted = true;
@@ -770,7 +1014,8 @@ export async function collectRepeatedScenarios(context) {
     scenario.collectionPassed =
       !scenario.aborted &&
       scenario.attempts.length === scenario.requestedAttempts &&
-      scenario.attempts.every((a) => a.passed);
+      scenario.attempts.every((a) => a.passed) &&
+      (spec.kind !== "cold" || scenario.blockedInputs?.passed === true);
     scenario.evaluation = evaluateScenario(scenario);
     scenario.collectionPassed &&= scenario.evaluation.status !== "FAIL";
     const resultFile = join(

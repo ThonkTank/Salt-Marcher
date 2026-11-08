@@ -22,6 +22,7 @@ export const P0_FUNCTIONAL_CHECKS = Object.freeze([
   "held-dose-response",
   "movement-duration-response",
   "cold-edit-content",
+  "cold-blocked-inputs",
   "world-detail-roundtrip",
 ]);
 
@@ -71,12 +72,14 @@ export const P0_REQUIREMENTS = Object.freeze({
       kind: "cold",
       minSamples: 30,
       minTotalSamples: 100,
+      requiredInputKinds: ["edit", "pointerup"],
     },
     {
       id: "M10-height-cold-busy",
       kind: "cold",
       minSamples: 30,
       minTotalSamples: 100,
+      requiredInputKinds: ["edit", "pointerup"],
     },
   ],
   requiredChecks: P0_FUNCTIONAL_CHECKS,
@@ -124,6 +127,7 @@ export function selectP0Scope(selection = "all", scenarioId = null) {
     "cold-edit-after-navigation",
     "worker-and-save-executed",
     "cold-edit-content",
+    "cold-blocked-inputs",
   ]);
   return {
     navigation: interactions,
@@ -435,10 +439,27 @@ export function extractEditSamples(events, inputIds, sessionId) {
           e.frame === edit.frame &&
           e.sessionId === sessionId,
       );
+    const gesture = events.find(
+      (start) =>
+        start.kind === "brush-start" &&
+        start.sessionId === sessionId &&
+        start.input <= inputId &&
+        start.at <= input?.at &&
+        events.some(
+          (end) =>
+            end.kind === "brush-end" &&
+            end.sessionId === sessionId &&
+            end.gestureId === start.gestureId &&
+            end.at >= (noop?.at ?? input?.at),
+        ),
+    );
     return {
       inputId,
       inputKind: input?.inputKind ?? null,
+      eventType: input?.eventType ?? null,
       sessionId,
+      gestureId: model?.gestureId ?? gesture?.gestureId ?? null,
+      discardedDuringGesture: Boolean(noop && gesture),
       createdAt: input?.createdAt ?? null,
       handlerAt: input?.at ?? null,
       modelAt: model?.at ?? null,
@@ -457,6 +478,130 @@ export function extractEditSamples(events, inputIds, sessionId) {
   });
 }
 
+/** One navigation/gate extraction for collection, failed trials and journal replay. */
+export function extractColdBoundary(events, navigationId, sessionId) {
+  const navigation = events.find(
+    (event) =>
+      event.kind === "input" &&
+      event.inputKind === "navigation" &&
+      event.id === navigationId,
+  );
+  const sources = events.find(
+    (event) =>
+      event.kind === "sources-ready" &&
+      event.input === navigationId &&
+      event.sessionId === sessionId,
+  );
+  const gate = events.find(
+    (event) =>
+      event.kind === "input-ready" &&
+      event.input === navigationId &&
+      event.sessionId === sessionId,
+  );
+  const submit =
+    gate &&
+    events.find(
+      (event) =>
+        event.kind === "submit" &&
+        event.sessionId === sessionId &&
+        event.frame === gate.frame &&
+        event.cameraGeneration === gate.viewGeneration &&
+        event.revision >= gate.revision &&
+        event.at <= gate.at &&
+        event.at >= navigation?.at,
+    );
+  const view =
+    gate &&
+    events.findLast(
+      (event) =>
+        event.kind === "view-change" &&
+        event.sessionId === sessionId &&
+        event.at <= gate.at,
+    );
+  return {
+    coldFirst: true,
+    navigationId,
+    navigationAt: navigation?.createdAt ?? null,
+    sourcesAt: sources?.at ?? null,
+    gateAt: gate?.at ?? null,
+    gateSubmissionAt: submit?.at ?? null,
+    gateFrameId: gate?.frame ?? null,
+    gateRevision: gate?.revision ?? null,
+    gateViewGeneration: gate?.viewGeneration ?? null,
+    gateSessionId: gate?.sessionId ?? null,
+    gateEvidence:
+      submit && view?.viewGeneration === gate.viewGeneration
+        ? "local-terrain-submit-v1"
+        : null,
+    // These require a separate native frame join. A product gate is not a
+    // presentation receipt, and neither a screenshot nor a later input fills it.
+    readyAt: null,
+    readyPresentation: null,
+  };
+}
+
+export function extractColdSamples(
+  events,
+  samples,
+  { sessionId, afterInputId = -1, coldBeforeNavigation = false } = {},
+) {
+  const navigation = events.filter(
+    (event) =>
+      event.kind === "input" &&
+      event.inputKind === "navigation" &&
+      event.id > afterInputId,
+  );
+  const firsts = new Map();
+  for (let index = 0; index < navigation.length; index++) {
+    const event = navigation[index];
+    const first = samples.find(
+      (sample) =>
+        sample.inputKind === "edit" &&
+        sample.inputId > event.id &&
+        sample.inputId < (navigation[index + 1]?.id ?? Infinity),
+    );
+    if (first)
+      firsts.set(first.inputId, {
+        ...extractColdBoundary(events, event.id, first.sessionId ?? sessionId),
+        coldBeforeNavigation,
+      });
+  }
+  return samples.map((sample) => ({
+    ...sample,
+    ...firsts.get(sample.inputId),
+  }));
+}
+
+const coldFirstSamples = (samples) =>
+  samples.filter(
+    (sample) => sample.coldFirst === true || sample.navigationId !== undefined,
+  );
+
+function validColdGate(sample) {
+  return (
+    sample.coldBeforeNavigation === true &&
+    sample.gateEvidence === "local-terrain-submit-v1" &&
+    sample.gateSessionId === sample.sessionId &&
+    Number.isSafeInteger(sample.navigationId) &&
+    Number.isSafeInteger(sample.gateFrameId) &&
+    Number.isSafeInteger(sample.gateRevision) &&
+    Number.isSafeInteger(sample.gateViewGeneration) &&
+    [
+      sample.navigationAt,
+      sample.sourcesAt,
+      sample.gateSubmissionAt,
+      sample.gateAt,
+      sample.createdAt,
+    ].every(finite) &&
+    sample.sourcesAt >= sample.navigationAt &&
+    sample.sourcesAt <= sample.gateAt &&
+    sample.gateSubmissionAt >= sample.navigationAt &&
+    sample.gateAt >= sample.gateSubmissionAt &&
+    sample.createdAt >= sample.gateAt &&
+    sample.gateRevision < sample.revision
+  );
+}
+
 /** An explicit processed no-op is complete input evidence, never an edit/submit. */
 export function isProcessedNoop(sample) {
   return (
@@ -468,6 +613,90 @@ export function isProcessedNoop(sample) {
     !finite(sample.modelAt) &&
     !finite(sample.submissionAt)
   );
+}
+
+/** D10 may discard sampled movement; it never certifies an edit or a lost press. */
+function isD10Discard(sample) {
+  return (
+    isProcessedNoop(sample) &&
+    sample.accepted === false &&
+    sample.inputKind === "edit" &&
+    sample.eventType === "pointermove" &&
+    Number.isSafeInteger(sample.gestureId) &&
+    sample.discardedDuringGesture === true &&
+    ["coalesced", "stale", "feedback"].includes(sample.noopReason)
+  );
+}
+
+/** D11 rejection is a separate behavior case, never a successful edit sample. */
+export function evaluateBlockedInput(evidence = {}) {
+  const issues = [];
+  const fail = (code) => issues.push({ code });
+  const samples = Array.isArray(evidence.samples) ? evidence.samples : [];
+  const first = samples[0];
+  const up = samples.at(-1);
+  if (
+    samples.length < 3 ||
+    first?.eventType !== "pointerdown" ||
+    up?.eventType !== "pointerup" ||
+    !samples.some((sample) => sample.eventType === "pointermove") ||
+    !samples.every(isProcessedNoop) ||
+    !samples.every((sample) => sample.accepted === false) ||
+    !["sources", "terrain"].includes(first?.noopReason) ||
+    !finite(evidence.gateAt) ||
+    !(first?.createdAt < evidence.gateAt) ||
+    typeof evidence.holdUntilReady !== "boolean" ||
+    (evidence.holdUntilReady
+      ? !(up?.createdAt >= evidence.gateAt)
+      : !(up?.createdAt < evidence.gateAt))
+  )
+    fail("BLOCKED_INPUT_RECEIPTS_INVALID");
+  const waiting = evidence.waiting;
+  if (
+    waiting?.readiness?.ready !== false ||
+    !["sources", "terrain"].includes(waiting?.readiness?.reason) ||
+    waiting?.statusVisible !== true ||
+    !/geladen|lädt/i.test(waiting?.statusText ?? "")
+  )
+    fail("BLOCKED_WAIT_STATE_UNPROVEN");
+  if (
+    evidence.ready?.readiness?.ready !== true ||
+    evidence.settled?.readiness?.ready !== true ||
+    (evidence.holdUntilReady && evidence.ready?.needsPress !== true) ||
+    evidence.settled?.needsPress !== false
+  )
+    fail("BLOCKED_READINESS_OR_RELEASE_UNPROVEN");
+  const before = evidence.before;
+  for (const stage of [evidence.ready, evidence.settled]) {
+    if (
+      !before ||
+      !stage ||
+      stage.sessionId !== before.sessionId ||
+      stage.document?.active !== false ||
+      ["revision", "sequence", "historyActions", "canUndo", "canRedo"].some(
+        (key) =>
+          before.document?.[key] === undefined ||
+          stage.document?.[key] !== before.document[key],
+      )
+    ) {
+      fail("BLOCKED_INPUT_CHANGED_DOCUMENT");
+      break;
+    }
+  }
+  if (!Array.isArray(evidence.mutationEvents) || evidence.mutationEvents.length)
+    fail("BLOCKED_INPUT_REPLAYED");
+  const recovery = evidence.recovery;
+  if (
+    recovery?.timePassed !== true ||
+    recovery?.eventType !== "pointerdown" ||
+    !(recovery?.createdAt > up?.createdAt) ||
+    !(recovery?.modelAt >= recovery?.createdAt) ||
+    !(recovery?.heightAfter > recovery?.heightBefore) ||
+    recovery?.sequenceAfter !== before?.document?.sequence + 1 ||
+    recovery?.historyAfter !== before?.document?.historyActions + 1
+  )
+    fail("BLOCKED_INPUT_RECOVERY_FAILED");
+  return { passed: issues.length === 0, issues };
 }
 
 /** One unpublished dose per session, including across gesture boundaries. */
@@ -998,6 +1227,7 @@ export function evaluateSubmissionDiagnostics(samples, limitMs = 50) {
   for (const sample of samples) {
     const detail = { inputId: sample.inputId };
     if (sample.modelChanged === false) {
+      if (isD10Discard(sample)) continue;
       issues.push({
         code: isProcessedNoop(sample)
           ? sample.accepted === false
@@ -1078,6 +1308,7 @@ export function evaluateSubmissionDiagnostics(samples, limitMs = 50) {
     presentationProven: false,
     sampleCount: samples.length,
     processedNoops: samples.filter(isProcessedNoop).length,
+    d10DiscardedInputs: samples.filter(isD10Discard).length,
     notAccepted: samples.filter(
       (sample) => isProcessedNoop(sample) && sample.accepted === false,
     ).length,
@@ -1094,14 +1325,19 @@ export function evaluateSubmissionDiagnostics(samples, limitMs = 50) {
   };
 }
 
-/** M10 starts at target navigation; a cold first edit is not a warm M03 sample. */
+/** D11 adds navigation/gate timing to the ordinary 50-ms edit contract. */
 export function evaluateColdSubmissionDiagnostics(samples) {
-  const base = evaluateSubmissionDiagnostics(samples, Infinity);
+  const base = evaluateSubmissionDiagnostics(samples);
   const issues = [...base.issues];
-  const readiness = [],
+  const sources = [],
+    gate = [],
+    gateToInput = [],
+    firstInput = [],
     submission = [];
-  const outliers = [];
-  for (const sample of samples) {
+  const outliers = [...base.outliers];
+  const firsts = coldFirstSamples(samples);
+  if (!firsts.length) issues.push({ code: "COLD_NAVIGATION_SAMPLES_MISSING" });
+  for (const sample of firsts) {
     const detail = {
       inputId: sample.inputId,
       navigationId: sample.navigationId,
@@ -1110,33 +1346,30 @@ export function evaluateColdSubmissionDiagnostics(samples) {
       issues.push({ code: "SAMPLE_TIMEOUT", ...detail });
     if (sample.coldBeforeNavigation !== true)
       issues.push({ code: "COLD_SOURCE_STATE_UNPROVEN", ...detail });
-    if (
-      !finite(sample.navigationAt) ||
-      !finite(sample.readyAt) ||
-      !finite(sample.createdAt) ||
-      sample.readyAt < sample.navigationAt ||
-      sample.createdAt < sample.readyAt
-    ) {
+    if (!validColdGate(sample)) {
       issues.push({ code: "INVALID_COLD_NAVIGATION_BOUNDARY", ...detail });
       continue;
     }
-    const readyMs = sample.readyAt - sample.navigationAt;
-    readiness.push(readyMs);
-    if (readyMs > 500)
+    const gateMs = sample.gateAt - sample.navigationAt;
+    sources.push(sample.sourcesAt - sample.navigationAt);
+    gate.push(gateMs);
+    gateToInput.push(sample.createdAt - sample.gateAt);
+    if (gateMs > 500)
       outliers.push({
-        code: "COLD_READINESS_TARGET_EXCEEDED",
-        milliseconds: readyMs,
+        code: "COLD_GATE_LOWER_BOUND_EXCEEDS_LIMIT",
+        milliseconds: gateMs,
         limitMs: 500,
         ...detail,
       });
-    if (readyMs > 2000)
+    if (gateMs > 2000)
       issues.push({
         code: "COLD_MAXIMUM_EXCEEDED",
-        milliseconds: readyMs,
+        milliseconds: gateMs,
         limitMs: 2000,
         ...detail,
       });
     if (finite(sample.submissionAt)) {
+      firstInput.push(sample.submissionAt - sample.createdAt);
       const submissionMs = sample.submissionAt - sample.navigationAt;
       submission.push(submissionMs);
       if (submissionMs > 750)
@@ -1155,13 +1388,21 @@ export function evaluateColdSubmissionDiagnostics(samples) {
         });
     }
   }
-  const navigationToReadyMs = distribution(readiness);
+  const navigationToGateMs = distribution(gate);
   const navigationToSubmissionMs = distribution(submission);
-  if (navigationToReadyMs.p95 > 500)
+  const firstInputToSubmissionMs = distribution(firstInput);
+  if (firstInputToSubmissionMs.p95 > 50)
     issues.push({
-      code: "COLD_READINESS_TARGET_EXCEEDED",
+      code: "COLD_FIRST_INPUT_LOWER_BOUND_EXCEEDS_LIMIT",
       metric: "p95",
-      milliseconds: navigationToReadyMs.p95,
+      milliseconds: firstInputToSubmissionMs.p95,
+      limitMs: 50,
+    });
+  if (navigationToGateMs.p95 > 500)
+    issues.push({
+      code: "COLD_GATE_LOWER_BOUND_EXCEEDS_LIMIT",
+      metric: "p95",
+      milliseconds: navigationToGateMs.p95,
       limitMs: 500,
     });
   if (navigationToSubmissionMs.p95 > 750)
@@ -1175,18 +1416,22 @@ export function evaluateColdSubmissionDiagnostics(samples) {
     ...base,
     status: issues.length ? "FAIL" : "PROXY_ONLY",
     contract:
-      "M10 cold: navigation to readiness 500 ms, navigation to exact presentation 750 ms; submission is only a lower bound",
-    navigationToReadyMs,
+      "D11/M10: p95 navigation to visible readiness 500 ms, accepted edit/pointerup 50 ms, navigation to first exact presentation 750 ms; gate/submit are lower bounds only",
+    navigationCount: firsts.length,
+    navigationToSourcesMs: distribution(sources),
+    navigationToGateMs,
+    gateToInputMs: distribution(gateToInput),
+    firstInputToSubmissionMs,
     navigationToSubmissionMs,
     inputToSubmissionInterpretation:
-      "informational cold-edit duration; no warm 50-ms judgment",
+      "ordinary 50-ms reaction after product gate; native visible readiness requires its own presented frame",
     issues,
     outliers,
   };
 }
 
 /** The same exact, revision-bound live criterion is used by collection and replay. */
-export function strokeEvidence(edit, requireBeforeRelease = true) {
+export function strokeEvidence(edit) {
   const samples = edit.samples ?? [];
   const live = samples.filter((sample) => sample.inputKind === "edit");
   const up = samples.filter((sample) => sample.inputKind === "pointerup");
@@ -1346,15 +1591,16 @@ export function strokeEvidence(edit, requireBeforeRelease = true) {
     complete,
     passed:
       complete &&
-      processedNoops.length === 0 &&
-      (!requireBeforeRelease || (beforeReleaseFrames.size >= 2 && continuous)),
+      processedNoops.every(isD10Discard) &&
+      beforeReleaseFrames.size >= 2 &&
+      continuous,
     minimumFrameControlPassed: beforeReleaseFrames.size >= 2,
     minimumFrameControlMeaning:
       "Two distinct frames only establish the minimum live control; all input timings and feedback pauses are evaluated too.",
     timeline,
     continuity: {
-      enforced: requireBeforeRelease,
-      passed: !requireBeforeRelease || continuous,
+      enforced: true,
+      passed: continuous,
       startedAt,
       releasedAt,
       maximumPendingGapMs,
@@ -1428,6 +1674,17 @@ export function evaluateScenario(scenario) {
     };
   }
   const attempts = scenario.attempts ?? [];
+  if (scenario.kind === "cold" && scenario.contentObserved !== false) {
+    const cases = scenario.blockedInputs?.cases ?? [];
+    if (
+      cases.length !== 2 ||
+      new Set(cases.map((entry) => entry.holdUntilReady)).size !== 2
+    )
+      fail("BLOCKED_INPUT_EVIDENCE_MISSING");
+    for (const entry of cases)
+      for (const issue of evaluateBlockedInput(entry).issues)
+        fail(issue.code, { holdUntilReady: entry.holdUntilReady });
+  }
   if (
     scenario.requestedAttempts !== undefined &&
     attempts.length !== scenario.requestedAttempts
@@ -1444,7 +1701,6 @@ export function evaluateScenario(scenario) {
         error: attempt.error,
       });
     else if (
-      scenario.kind === "edit" &&
       !evaluateStrokeContent({
         ...attempt.content,
         changedPixels: attempt.changedImage?.pixels,
@@ -1464,19 +1720,11 @@ export function evaluateScenario(scenario) {
           : [{ code: "BRUSH_TIME_EVIDENCE_INVALID" }]
         ).map((issue) => ({ ...issue, attempt: attempt.attempt })),
       );
-  // M10 times its first edit against navigation. Its already-collected moving
-  // stroke still contains every later input, including discarded movement.
-  const live =
-    scenario.kind === "cold"
-      ? attempts.flatMap((attempt) =>
-          attempt.stroke
-            ? [{ attempt: attempt.attempt, ...attempt.stroke }]
-            : [],
-        )
-      : strokesFromSamples(samples).map((stroke, attempt) => ({
-          attempt,
-          ...strokeEvidence({ samples: stroke }),
-        }));
+  // Cold and warm retain and evaluate the entire same ordinary gesture.
+  const live = strokesFromSamples(samples).map((stroke, attempt) => ({
+    attempt,
+    ...strokeEvidence({ samples: stroke }),
+  }));
   for (const stroke of live)
     if (!stroke.passed) {
       if (!stroke.continuity.passed)
@@ -1485,30 +1733,6 @@ export function evaluateScenario(scenario) {
           milliseconds: stroke.continuity.maximumMovingStallMs,
           limitMs: 100,
         });
-      if (scenario.kind === "cold") {
-        const noops = stroke.timeline.filter((entry) => entry.processedNoop);
-        for (const entry of noops)
-          fail(
-            entry.accepted === false
-              ? "INPUT_NOT_ACCEPTED"
-              : "EXPECTED_EDIT_NO_CHANGE",
-            {
-              attempt: stroke.attempt,
-              inputId: entry.inputId,
-              modelChanged: false,
-              accepted: entry.accepted,
-              reason: entry.noopReason,
-            },
-          );
-        if (!stroke.complete || !noops.length)
-          fail(
-            stroke.complete ? "COLD_MOVING_STROKE_FAILED" : "INCOMPLETE_STROKE",
-            {
-              attempt: stroke.attempt,
-            },
-          );
-        continue;
-      }
       if (stroke.complete && stroke.minimumFrameControlPassed) continue;
       fail(
         stroke.complete ? "LIVE_EXACT_UPDATES_MISSING" : "INCOMPLETE_STROKE",
@@ -1534,14 +1758,13 @@ export function evaluateScenario(scenario) {
     contentPassed:
       attempts.length > 0 &&
       scenario.contentObserved !== false &&
-      attempts.every((attempt) =>
-        scenario.kind === "cold"
-          ? attempt.passed === true
-          : evaluateStrokeContent({
-              ...attempt.content,
-              changedPixels: attempt.changedImage?.pixels,
-              restoredPixels: attempt.undoneImage?.pixels,
-            }).passed,
+      attempts.every(
+        (attempt) =>
+          evaluateStrokeContent({
+            ...attempt.content,
+            changedPixels: attempt.changedImage?.pixels,
+            restoredPixels: attempt.undoneImage?.pixels,
+          }).passed,
       ),
     liveFeedback: {
       status:
@@ -1550,7 +1773,7 @@ export function evaluateScenario(scenario) {
           : "SUBMISSION_ONLY",
       presentationProven: false,
       inputLatencyLimit:
-        "p95 <= 50 ms for all warm inputs and separately edit/pointerup; cold uses M10",
+        "p95 <= 50 ms for ordinary accepted edit/pointerup and separately the first cold edit after the product gate; D11 also adds M10 navigation bounds",
       inputCount: live.reduce((sum, stroke) => sum + stroke.timeline.length, 0),
       processedNoops: live.reduce(
         (sum, stroke) => sum + stroke.processedNoops,
@@ -1604,29 +1827,11 @@ export function evaluateObservation(observation, { id, kind = "edit" } = {}) {
   });
   let selected = samples;
   if (kind === "cold") {
-    const navigation = events.filter(
-      (event) => event.kind === "input" && event.inputKind === "navigation",
-    );
-    selected = navigation.map((event, index) => {
-      const first = samples.find(
-        (sample) =>
-          sample.inputKind === "edit" &&
-          sample.inputId > event.id &&
-          sample.inputId < (navigation[index + 1]?.id ?? Infinity),
-      );
-      const ready = events.find(
-        (entry) =>
-          ["ready", "input-ready"].includes(entry.kind) &&
-          entry.input === event.id,
-      );
-      return {
-        ...(first ?? {}),
-        navigationId: event.id,
-        navigationAt: event.createdAt,
-        readyAt: ready?.at ?? null,
-        // Readiness alone cannot prove the target was cold before navigation.
-        coldBeforeNavigation: ready?.cold === true,
-      };
+    selected = extractColdSamples(events, samples, {
+      sessionId: observation.sessionId,
+      // The journal alone cannot prove an empty application cache before a
+      // target switch. Do not manufacture that independent fixture evidence.
+      coldBeforeNavigation: observation.coldBeforeNavigation === true,
     });
   }
   return evaluateScenario({
@@ -1710,11 +1915,16 @@ export function evaluateAcceptance(report, requirements = P0_REQUIREMENTS) {
           fail(issue.code, { ...issue, ...context });
       }
       const samples = Array.isArray(scenario.samples) ? scenario.samples : [];
-      total += samples.length;
-      if (samples.length < spec.minSamples)
+      const firstCold = spec.kind === "cold" ? coldFirstSamples(samples) : [];
+      const countedSamples =
+        spec.kind === "cold"
+          ? firstCold
+          : samples.filter((sample) => !isD10Discard(sample));
+      total += countedSamples.length;
+      if (countedSamples.length < spec.minSamples)
         fail("INSUFFICIENT_SAMPLES", {
           ...context,
-          actual: samples.length,
+          actual: countedSamples.length,
           required: spec.minSamples,
         });
       if (
@@ -1729,12 +1939,16 @@ export function evaluateAcceptance(report, requirements = P0_REQUIREMENTS) {
         fail("DUPLICATE_INPUT_SAMPLES", context);
       if (
         spec.kind === "cold" &&
-        (samples.some((s) => s.navigationId === undefined) ||
-          new Set(samples.map((s) => s.navigationId)).size !== samples.length)
+        (!firstCold.length ||
+          firstCold.some((s) => s.navigationId === undefined) ||
+          new Set(firstCold.map((s) => `${s.sessionId}:${s.navigationId}`))
+            .size !== firstCold.length)
       )
         fail("COLD_TARGETS_NOT_INDEPENDENT", context);
       const latency = [],
         ready = [],
+        readyToInput = [],
+        firstColdLatency = [],
         totalCold = [];
       const byInputKind = new Map();
       let missing = 0;
@@ -1751,6 +1965,7 @@ export function evaluateAcceptance(report, requirements = P0_REQUIREMENTS) {
         }
         if (spec.kind !== "navigation") {
           if (sample.modelChanged === false) {
+            if (isD10Discard(sample)) continue;
             fail(
               isProcessedNoop(sample)
                 ? sample.accepted === false
@@ -1772,19 +1987,47 @@ export function evaluateAcceptance(report, requirements = P0_REQUIREMENTS) {
             fail("STALE_OR_INVALID_SUBMISSION", detail);
         }
         let validColdBoundary = true;
-        if (spec.kind === "cold") {
-          validColdBoundary =
-            sample.coldBeforeNavigation === true &&
-            finite(sample.navigationAt) &&
-            finite(sample.readyAt) &&
-            sample.readyAt >= sample.navigationAt &&
-            sample.createdAt >= sample.readyAt;
+        const isFirstCold = firstCold.includes(sample);
+        if (isFirstCold) {
+          validColdBoundary = validColdGate(sample);
           if (!validColdBoundary)
             fail("INVALID_COLD_NAVIGATION_BOUNDARY", detail);
           else {
-            ready.push(sample.readyAt - sample.navigationAt);
-            if (sample.readyAt - sample.navigationAt > 2000)
+            if (sample.gateAt - sample.navigationAt > 2000)
               fail("COLD_MAXIMUM_EXCEEDED", detail);
+            const baseline = sample.readyPresentation;
+            if (!baseline || !finite(baseline.at)) {
+              block("MISSING_READY_PRESENTATION", detail);
+              missing++;
+            } else if (
+              baseline.evidence !== "chromium-presented-frame" ||
+              baseline.state !== "presented-all" ||
+              baseline.inputId !== sample.navigationId ||
+              baseline.frameId !== sample.gateFrameId ||
+              baseline.sessionId !== sample.gateSessionId ||
+              baseline.revision !== sample.gateRevision ||
+              baseline.viewGeneration !== sample.gateViewGeneration ||
+              !nonempty(baseline.surfaceFrameTraceId) ||
+              !nonempty(baseline.displayTraceId)
+            ) {
+              fail("UNMATCHED_OR_STALE_READY_PRESENTATION", detail);
+            } else if (baseline.at < sample.gateSubmissionAt) {
+              fail("INVALID_READY_PRESENTATION_CLOCK", detail);
+            } else {
+              // The product gate and native presentation are distinct clocks.
+              // An immediately dispatched event may precede the latter; it
+              // cannot then be called an input after visible readiness.
+              const readyAt = Math.max(sample.gateAt, baseline.at);
+              ready.push(readyAt - sample.navigationAt);
+              readyToInput.push(sample.createdAt - readyAt);
+              if (sample.createdAt < readyAt)
+                fail("INPUT_PRECEDES_VISIBLE_READY", {
+                  ...detail,
+                  milliseconds: readyAt - sample.createdAt,
+                });
+              if (readyAt - sample.navigationAt > 2000)
+                fail("COLD_MAXIMUM_EXCEEDED", detail);
+            }
           }
         }
         const p = sample.presentation;
@@ -1819,7 +2062,8 @@ export function evaluateAcceptance(report, requirements = P0_REQUIREMENTS) {
         const kindSamples = byInputKind.get(sample.inputKind) ?? [];
         kindSamples.push(duration);
         byInputKind.set(sample.inputKind, kindSamples);
-        if (spec.kind === "cold" && validColdBoundary) {
+        if (isFirstCold && validColdBoundary) {
+          firstColdLatency.push(duration);
           totalCold.push(p.at - sample.navigationAt);
           if (p.at - sample.navigationAt > 2000)
             fail("COLD_MAXIMUM_EXCEEDED", detail);
@@ -1831,7 +2075,7 @@ export function evaluateAcceptance(report, requirements = P0_REQUIREMENTS) {
         missing,
         inputToPresentationMs: distribution(latency),
       };
-      if (spec.kind === "edit" && result.inputToPresentationMs.p95 > 50)
+      if (spec.kind !== "navigation" && result.inputToPresentationMs.p95 > 50)
         fail("WARM_P95_EXCEEDED", {
           ...context,
           actual: result.inputToPresentationMs.p95,
@@ -1839,7 +2083,9 @@ export function evaluateAcceptance(report, requirements = P0_REQUIREMENTS) {
       if (spec.requiredInputKinds) {
         result.inputKinds = {};
         for (const kind of spec.requiredInputKinds) {
-          const count = samples.filter((s) => s.inputKind === kind).length;
+          const count = samples.filter(
+            (s) => s.inputKind === kind && !isD10Discard(s),
+          ).length;
           const timings = distribution(byInputKind.get(kind) ?? []);
           result.inputKinds[kind] = {
             sampleCount: count,
@@ -1852,7 +2098,7 @@ export function evaluateAcceptance(report, requirements = P0_REQUIREMENTS) {
               actual: count,
               required: spec.minSamples,
             });
-          if (spec.kind === "edit" && timings.p95 > 50)
+          if (spec.kind !== "navigation" && timings.p95 > 50)
             fail("INPUT_KIND_P95_EXCEEDED", {
               ...context,
               inputKind: kind,
@@ -1861,8 +2107,13 @@ export function evaluateAcceptance(report, requirements = P0_REQUIREMENTS) {
         }
       }
       if (spec.kind === "cold") {
+        result.navigationCount = firstCold.length;
         result.navigationToReadyMs = distribution(ready);
+        result.readyToInputMs = distribution(readyToInput);
         result.navigationToPresentationMs = distribution(totalCold);
+        result.firstInputToPresentationMs = distribution(firstColdLatency);
+        if (result.firstInputToPresentationMs.p95 > 50)
+          fail("COLD_FIRST_INPUT_P95_EXCEEDED", context);
         if (result.navigationToReadyMs.p95 > 500)
           fail("COLD_READY_P95_EXCEEDED", context);
         if (result.navigationToPresentationMs.p95 > 750)

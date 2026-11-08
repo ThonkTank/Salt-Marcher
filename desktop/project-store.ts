@@ -16,7 +16,6 @@ import type {
   CommitRequest,
   ProjectInfo,
   ReadRegionRequest,
-  ReadTilesRequest,
   RegionRead,
   SaveResult,
   SourceBoundary,
@@ -712,25 +711,6 @@ export class ProjectStore {
     this.counters.returnedTiles += tiles.length;
     this.counters.returnedBytes += tiles.length * TILE_BYTES;
     return { sessionId: project.sessionId, sequence: project.sequence, tiles };
-  }
-
-  readTiles(request: ReadTilesRequest): SourceRead {
-    const project = this.session(request.sessionId);
-    check(
-      Array.isArray(request.keys) && request.keys.length <= MAX_TRANSFER_TILES,
-      "Zu viele Höhenschlüssel.",
-    );
-    const keys = [...new Set(request.keys)].map(coordinates);
-    const statement = project.database.prepare(
-      "SELECT level, tile_x, tile_y, revision, values_blob AS 'values' FROM height_tiles WHERE level = ? AND tile_x = ? AND tile_y = ?",
-    );
-    const rows: StoredTile[] = [];
-    for (const key of keys) {
-      const row = statement.get(key.level, key.tileX, key.tileY) as
-        StoredTile | undefined;
-      if (row) rows.push(row);
-    }
-    return this.sourceRead(project, rows);
   }
 
   readRegion(request: ReadRegionRequest): RegionRead {

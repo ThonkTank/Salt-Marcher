@@ -256,6 +256,9 @@ summary {
   touch-action: none;
   outline: none;
 }
+.atlas-map canvas.waiting {
+  cursor: progress;
+}
 .map-label {
   position: absolute;
   left: 28px;
@@ -294,6 +297,10 @@ summary {
   color: #efd292;
 }
 .error-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
   position: absolute;
   left: 20px;
   right: 20px;

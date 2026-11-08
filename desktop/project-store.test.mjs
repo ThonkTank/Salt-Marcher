@@ -1,9 +1,10 @@
 import assert from "node:assert/strict";
 import { afterEach, test } from "node:test";
 import { createRequire } from "node:module";
-import { mkdtemp, readFile, rm, copyFile } from "node:fs/promises";
+import { mkdtemp, readFile, rm, copyFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { _electron as electron } from "@playwright/test";
 
 const require = createRequire(import.meta.url);
 const fsPromises = require("node:fs/promises");
@@ -186,6 +187,219 @@ test("a real SQLite save pins S while later commits change the live WAL", async 
   assert.ok(activity[3].epochMs >= activity[2].epochMs);
 });
 
+test("the utility dispatcher answers local reads during a real snapshot and orders later writes", async () => {
+  const { store, directory } = await fresh();
+  write(store, heightTilesFromControls(0, [[0, 0, 40]]));
+  const fixture = join(directory, "fixture.saltatlas");
+  await store.saveProject(store.status(), fixture);
+  const main = join(directory, "main.cjs");
+  const worker = join(directory, "store-test.cjs");
+  await writeFile(
+    main,
+    'require("electron").app.disableHardwareAcceleration();',
+  );
+  // Hold the real SQLite backup after its first copied page. This controls only
+  // the test's I/O timing; the utility port, dispatcher and database stay real.
+  await writeFile(
+    worker,
+    `const Database = require(${JSON.stringify(require.resolve("better-sqlite3"))});
+const backup = Database.prototype.backup;
+let released = false;
+process.parentPort.on("message", ({ data }) => {
+  if (data.releaseSnapshot) released = true;
+});
+Database.prototype.backup = function(path, options) {
+  if (!path.includes("snapshot-")) return backup.call(this, path, options);
+  let announced = false;
+  return backup.call(this, path, { ...options, progress(progress) {
+    if (released) return 100;
+    if (progress.remainingPages === progress.totalPages) return 1;
+    if (!announced) {
+      announced = true;
+      process.parentPort.postMessage({ snapshotPaused: progress });
+    }
+    return 0;
+  }});
+};
+require(${JSON.stringify(require.resolve("../desktop-dist/store-process.cjs"))});
+`,
+  );
+  const env = { ...process.env, ATLAS_P0_DIAGNOSTICS: "1" };
+  delete env.ELECTRON_RUN_AS_NODE;
+  const app = await electron.launch({
+    executablePath: require("electron"),
+    args: ["--ozone-platform=headless", main],
+    env,
+    timeout: 15_000,
+  });
+  try {
+    const result = await app.evaluate(
+      async ({ app, utilityProcess }, { worker, directory, fixture }) => {
+        await app.whenReady();
+        const child = utilityProcess.fork(worker, [directory], {
+          stdio: "pipe",
+        });
+        const pending = new Map();
+        const events = [];
+        const ready = Promise.withResolvers();
+        const paused = Promise.withResolvers();
+        ready.promise.catch(() => {});
+        paused.promise.catch(() => {});
+        const watchdog = setTimeout(() => child.kill(), 15_000);
+        let serial = 0;
+        let output = "";
+        child.stderr.on("data", (data) => (output += String(data)));
+        child.on("message", (message) => {
+          if (message.ready) ready.resolve();
+          if (message.fatal) ready.reject(new Error(message.fatal));
+          if (message.activity)
+            events.push(`${message.activity.kind}:${message.activity.phase}`);
+          if (message.snapshotPaused) paused.resolve(message.snapshotPaused);
+          const task = pending.get(message.id);
+          if (!task) return;
+          pending.delete(message.id);
+          clearTimeout(task.timer);
+          events.push(task.method);
+          if (message.error) task.reject(new Error(message.error));
+          else task.resolve(message.value);
+        });
+        child.on("exit", (code) => {
+          const error = new Error(`Utility exited (${code}): ${output}`);
+          ready.reject(error);
+          paused.reject(error);
+          for (const task of pending.values()) {
+            clearTimeout(task.timer);
+            task.reject(error);
+          }
+          pending.clear();
+        });
+        function request(method, argument) {
+          const id = ++serial;
+          const promise = new Promise((resolve, reject) => {
+            const timer = setTimeout(() => {
+              pending.delete(id);
+              reject(new Error(`Utility request timed out: ${method}`));
+            }, 5_000);
+            pending.set(id, { method, resolve, reject, timer });
+            child.postMessage({ id, method, argument });
+          });
+          // A failure is rethrown by its await, including requests kept pending
+          // deliberately while the read overtakes the snapshot and commit.
+          promise.catch(() => {});
+          return promise;
+        }
+        try {
+          await ready.promise;
+          const initial = await request("openProject", { path: fixture });
+          const bounds = [-1, -1, 1, 1];
+          const query = { sessionId: initial.sessionId, bounds };
+          const original = (await request("readRegion", query)).tiles[0];
+          const changed = {
+            ...original,
+            revision: 2,
+            values: original.values.slice(),
+          };
+          changed.values[0] = 70;
+          const preparing = request("prepareSave", initial);
+          const progress = await Promise.race([
+            paused.promise,
+            preparing.then(() => {
+              throw new Error(
+                "Snapshot finished before the controlled read overlap.",
+              );
+            }),
+          ]);
+          const committing = request("commit", {
+            sessionId: initial.sessionId,
+            sequence: initial.sequence + 1,
+            transactionId: "after-snapshot",
+            patches: [{ key: changed.key, after: changed }],
+          });
+          const [region, presentation, stale] = await Promise.all([
+            request("readRegion", query),
+            request("readPresentation", { ...query, power: 0 }),
+            request("readRegion", {
+              ...query,
+              sessionId: "stale-session",
+            }).catch((error) => error.message),
+          ]);
+          const beforeRelease = events.slice();
+          child.postMessage({ releaseSnapshot: true });
+          const prepared = await preparing;
+          const receipt = await committing;
+          const target = `${directory}/saved.saltatlas`;
+          const saved = await request("publishSave", {
+            token: prepared.token,
+            path: target,
+          });
+          const live = await request("readRegion", query);
+          const reopened = await request("openProject", {
+            path: target,
+            expected: receipt,
+          });
+          const restored = await request("readRegion", {
+            ...query,
+            sessionId: reopened.sessionId,
+          });
+          await request("close", reopened);
+          const closed = await request("readRegion", {
+            ...query,
+            sessionId: reopened.sessionId,
+          }).catch((error) => error.message);
+          return {
+            progress,
+            beforeRelease,
+            events,
+            sameSession:
+              region.sessionId === initial.sessionId &&
+              presentation.sessionId === initial.sessionId,
+            region: {
+              sequence: region.sequence,
+              height: region.tiles[0].values[0],
+            },
+            presentation: {
+              sequence: presentation.sequence,
+              height: presentation.tiles[0].values[0],
+            },
+            stale,
+            saved,
+            live: { sequence: live.sequence, height: live.tiles[0].values[0] },
+            restored: {
+              sequence: restored.sequence,
+              height: restored.tiles[0].values[0],
+            },
+            closed,
+          };
+        } finally {
+          clearTimeout(watchdog);
+          child.kill();
+        }
+      },
+      { worker, directory: join(directory, "utility-work"), fixture },
+    );
+    assert.ok(result.progress.remainingPages > 0);
+    assert.ok(result.progress.remainingPages < result.progress.totalPages);
+    assert.ok(result.beforeRelease.includes("snapshot:start"));
+    assert.ok(!result.beforeRelease.includes("snapshot:end"));
+    assert.ok(!result.beforeRelease.includes("commit"));
+    assert.equal(result.sameSession, true);
+    assert.deepEqual(result.region, { sequence: 1, height: 40 });
+    assert.deepEqual(result.presentation, { sequence: 1, height: 40 });
+    assert.match(result.stale, /Veraltete/);
+    const snapshotEnd = result.events.indexOf("snapshot:end");
+    assert.ok(
+      snapshotEnd >= 0 && snapshotEnd < result.events.indexOf("commit"),
+    );
+    assert.equal(result.saved.savedSequence, 1);
+    assert.equal(result.saved.sequence, 2);
+    assert.deepEqual(result.live, { sequence: 2, height: 70 });
+    assert.deepEqual(result.restored, { sequence: 1, height: 40 });
+    assert.match(result.closed, /geschlossen/);
+  } finally {
+    await app.close();
+  }
+});
+
 test("an injected target-replacement failure preserves the old real file and saved boundary", async (t) => {
   const { store, directory } = await fresh();
   const tile = heightTilesFromControls(0, [[1, 1, 25]])[0];
@@ -249,7 +463,20 @@ test("source deletion becomes absence and old sessions cannot write or read a ne
   assert.equal(store.status().sourceTiles, 0);
   store.newProject();
   assert.throws(
-    () => store.readTiles({ sessionId: old.sessionId, keys: [tile.key] }),
+    () =>
+      store.readRegion({
+        sessionId: old.sessionId,
+        bounds: [-10, -10, 10, 10],
+      }),
+    /Veraltete/,
+  );
+  assert.throws(
+    () =>
+      store.readPresentation({
+        sessionId: old.sessionId,
+        bounds: [-10, -10, 10, 10],
+        power: 0,
+      }),
     /Veraltete/,
   );
   assert.throws(

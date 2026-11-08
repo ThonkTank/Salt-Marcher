@@ -129,10 +129,32 @@ declare module "*atlas-p0-evaluate.mjs" {
     status: "FAIL" | "PROXY_ONLY";
     presentationProven: false;
     inputToSubmissionMs: Distribution;
-    navigationToReadyMs: Distribution;
+    navigationToGateMs: Distribution;
+    navigationToSourcesMs: Distribution;
+    gateToInputMs: Distribution;
+    firstInputToSubmissionMs: Distribution;
+    navigationCount: number;
     navigationToSubmissionMs: Distribution;
     issues: Issue[];
     outliers: Issue[];
+  };
+  export function extractColdBoundary(
+    events: unknown,
+    navigationId: number,
+    sessionId: string,
+  ): Record<string, unknown>;
+  export function extractColdSamples(
+    events: unknown,
+    samples: unknown,
+    options?: {
+      sessionId?: string;
+      afterInputId?: number;
+      coldBeforeNavigation?: boolean;
+    },
+  ): Record<string, unknown>[];
+  export function evaluateBlockedInput(evidence?: unknown): {
+    passed: boolean;
+    issues: Issue[];
   };
   interface ScenarioEvaluation {
     status: "FAIL" | "INCOMPLETE" | "PROXY_ONLY";
@@ -152,10 +174,7 @@ declare module "*atlas-p0-evaluate.mjs" {
       notAccepted: number;
     };
   }
-  export function strokeEvidence(
-    edit: unknown,
-    requireBeforeRelease?: boolean,
-  ): {
+  export function strokeEvidence(edit: unknown): {
     complete: boolean;
     passed: boolean;
     processedNoops: number;
@@ -232,4 +251,11 @@ declare module "*atlas-p0-trace.mjs" {
     exactSubmissionCandidates: { enclosingMainFrameIds: (string | number)[] }[];
     clockObservation: { calibrated: false };
   };
+}
+
+declare module "*atlas-p0-collection.mjs" {
+  export function startReadyStrokeMonitor(
+    session: unknown,
+    options: unknown,
+  ): Promise<{ dispatched: boolean; [key: string]: unknown }>;
 }

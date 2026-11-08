@@ -271,7 +271,13 @@ function Atlas() {
         </p>
       </aside>
       <section className="atlas-map" aria-label="Weltkarte">
-        <canvas ref={canvas} tabIndex={0} aria-label="Geländekarte" />
+        <canvas
+          ref={canvas}
+          tabIndex={0}
+          aria-label="Geländekarte"
+          aria-busy={state?.loading ?? true}
+          className={state?.loading ? "waiting" : ""}
+        />
         <div className="map-label">
           <span>GELÄNDESTUDIE</span>
           <strong>Vom Detail zur Region</strong>
@@ -279,13 +285,19 @@ function Atlas() {
         {(startupError || state?.error) && (
           <div className="error-banner" role="alert">
             {startupError || state?.error}
+            {!startupError && state?.loading && (
+              <button onClick={() => action((e) => e.retryLoad())}>
+                Erneut laden
+              </button>
+            )}
           </div>
         )}
         <footer className="map-status">
-          <span className={state?.loading ? "loading" : ""}>
-            {state?.loading
-              ? "Ausschnitt wird geladen …"
-              : (state?.message ?? "Editor startet …")}
+          <span
+            role="status"
+            className={state?.loading || state?.needsPress ? "loading" : ""}
+          >
+            {state?.message ?? "Editor startet …"}
           </span>
           <span>
             {state

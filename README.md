@@ -25,17 +25,17 @@ Der angeforderte [ausführbare Atlas-Neubau- und Aufräumplan](docs/implementati
 enthält den vollständigen Zielumfang F01–F19 mit D01–D11,
 Architekturentscheidungen, Arbeitspaketen und Abschlusskriterien. Ein Verweis
 darauf mit „erledige das“ beauftragt seine vollständige Ausführung P0–P9.
-Der Aufräumplan wurde zur Umsetzung beauftragt; nach dem Review vom 8. November
-ist die nächste Fortsetzung zunächst **geplant**. D11 präzisiert: Erst sichtbares,
+Die Fortsetzung nach dem Review vom 8. November setzt D11 um: Erst sichtbares,
 lokal bereites Gelände bearbeiten, den Wartezustand anzeigen und verkürzen.
-Eine gemeinsame Freigabe, lokale Rasterpriorität und Reads während Save sind
-die nächsten Pakete; diese Änderungen sind noch nicht implementiert.
+Eine gemeinsame lokale Freigabe ersetzt vorgemerkte frühe Gesten; ein neuer
+Druck beginnt die Bearbeitung. Der bestehende Rasterpfad priorisiert den
+Arbeitsbereich, und reine Reads laufen während asynchroner Save-Phasen weiter.
 Im bisherigen P0-Kern sind ein gemeinsamer Prüfablauf, ein begrenzter Patch-/Renderweg
 und numerische Übersichten über feine Quellen bereits umgesetzt.
 Der vollständige Ausbau folgt dem P0-Gate; die tatsächlichen Produktnachweise
 und verbliebenen Fehler entscheiden über diesen Übergang.
-Der [Status](docs/implementation/status.md) hält die vorhandenen Teilnachweise
-und die weiterhin offene native Abnahme fest.
+Der [Status](docs/implementation/status.md) trennt Implementierung,
+Funktionsnachweise, gemessene Wartezeiten und die weiterhin offene native Abnahme.
 Der P0-Pinsel verwendet die vereinbarte zeitabhängige Wirkung: Halten wirkt
 weiter, langsamere Züge wirken stärker. Kleine Dosen folgen dem sichtbaren
 Fortschritt; bei Verzögerungen wird keine zusätzliche Wirkung für später

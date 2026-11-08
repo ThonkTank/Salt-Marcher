@@ -297,14 +297,6 @@ function registerBridge() {
           return store.request("status");
         case "metrics":
           return store.request("metrics");
-        case "readTiles":
-          if (
-            !argument ||
-            !Array.isArray(argument.keys) ||
-            argument.keys.length > 512
-          )
-            throw new Error("Ungültige Quellenabfrage.");
-          return store.request("readTiles", argument);
         case "readRegion":
         case "readPresentation":
           if (

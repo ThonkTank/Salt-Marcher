@@ -496,15 +496,15 @@ stellt das Fenster bereit, React die Bedienelemente und PixiJS 8.22.0 die
 beibehaltene WebGL-Szene. Der Versuch umfasst den Höhenpfad des Neubauplans;
 der vollständige F01–F19-Ausbau folgt erst nach dessen P0-Gate.
 
-| Besitzer                                           | Verantwortung                                                                                                         |
-| -------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| `EditorController`                                 | Effektive Einstellungen, Fehler, Kamera, Eingaben, lokale Bereitschaft, Gesten und geordnete Persistenzaufträge.      |
-| `model/EditorDocument`                             | Live-Autoren, Gestentransaktionen, eigene Patches, lokale History, Bereitschaft und Speicherbudgets.                  |
-| `model/height.ts`, `height-grid.ts`, `overview.ts` | Gemeinsame Höhenmathematik, regelmäßiges Abtastraster und numerische Übersicht.                                       |
-| `render/WorldRenderer`                             | Beibehaltene Pixi-Kacheln, lokale Invalidierung, begrenzte Rasteraufträge und Veröffentlichung aktueller Teilflächen. |
-| `render/raster.worker.ts`                          | Rasterberechnung aus eigenen Quellkopien; keine zweite Dokumentautorität.                                             |
-| `desktop/main.ts`, `preload.ts`                    | Fenster, native Dialoge, Session-/Dateigrenzen und typisierte IPC-Brücke.                                             |
-| `desktop/store-process.ts`, `project-store.ts`     | SQLite-Arbeitskopie, räumliche Reads, Autoren-/Übersichtstransaktionen und Dateisnapshots im Utility-Prozess.         |
+| Besitzer                                           | Verantwortung                                                                                                                  |
+| -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `EditorController`                                 | Effektive Einstellungen, Fehler, Kamera, Eingaben, abgeleitete lokale Freigabe, Gesten und geordnete Persistenzaufträge.       |
+| `model/EditorDocument`                             | Live-Autoren, Gestentransaktionen, eigene Patches, lokale History, Quellenbereitschaft und Speicherbudgets.                    |
+| `model/height.ts`, `height-grid.ts`, `overview.ts` | Gemeinsame Höhenmathematik, regelmäßiges Abtastraster und numerische Übersicht.                                                |
+| `render/WorldRenderer`                             | Beibehaltene Pixi-Kacheln, lokale Invalidierung, priorisierte Rasteraufträge und Belege tatsächlich eingereichter Teilflächen. |
+| `render/raster.worker.ts`                          | Rasterberechnung aus eigenen Quellkopien; keine zweite Dokumentautorität.                                                      |
+| `desktop/main.ts`, `preload.ts`                    | Fenster, native Dialoge, Session-/Dateigrenzen und typisierte IPC-Brücke.                                                      |
+| `desktop/store-process.ts`, `project-store.ts`     | SQLite-Arbeitskopie, räumliche Reads, Autoren-/Übersichtstransaktionen und Dateisnapshots im Utility-Prozess.                  |
 
 React hält noch nicht übernommene Texte numerischer Eingabefelder; Blur oder
 Enter übernimmt sie in den Controller. Werkzeugmodus, Größe, Stärke, Raster
@@ -550,17 +550,54 @@ feiner Treffer ist nicht der verwendete Pfad. Die Grenze von 512 gelieferten
 Autorenkacheln bleibt bestehen; grobe Darstellung verlangt keine vollständige
 Feinquellenabdeckung. Unbestätigte Feinwerte bleiben ausdrücklich unbekannt.
 
-Bereitschaft gehört zu Ausschnitt und Quellenstufen. `unknown`, `loading`,
+Quellenbereitschaft gehört zu Ausschnitt und Quellenstufen. `unknown`, `loading`,
 `ready`, `absent` und `error` bleiben verschieden. Bestätigte entfernte Autoren
 können aus dem Cache fallen; aktive und unbestätigte Änderungen bleiben erhalten.
-Der Controller hält höchstens einen laufenden Übersichtsread und merkt sich den
-aktuellen Folgeauftrag. Session-/Navigationswechsel verwerfen überholte Antworten.
+Der gemeinsame Ladeablauf hält einen laufenden Read und den aktuellen Folgebedarf.
+Zeigerbewegung, geänderte Pinselgröße und ein abgewiesener Druck können benötigte
+lokale Quellen auch ohne Modellgeste anfordern. Eine Read-Antwort beginnt oder
+reaktiviert keine Geste.
+
+Beide Lesezwecke verwenden `readCurrent` für dieselbe Session-/Navigations- und
+Sequenzprüfung. Hat eine Persistenzbestätigung den gelesenen Stand überholt,
+wird erneut gelesen. Eine gültige Antwort wird unmittelbar synchron übernommen;
+zwischen Prüfung und Übernahme beziehungsweise Patchprojektion liegt kein weiteres
+`await`, in dem eine Bestätigung die noch benötigten Patches freigeben könnte.
 Lokale noch unbestätigte und aktive Patches werden auf den zurückgegebenen
-Sequenzstand projiziert. Hat eine Persistenzbestätigung den Read überholt, wird
-er erneut angefordert; bestätigte Patches bleiben dafür nicht dauerhaft erhalten.
+Sequenzstand projiziert. Bestätigte Patches bleiben dafür nicht dauerhaft erhalten.
 Das Pendingbudget zählt die für diese Projektion gehaltenen Vorher- und
 Nachherwerte, einschließlich Löschungen. Aktive Gesten reservieren ihren
 künftigen Patchumfang vor der Mutation; eine Bestätigung gibt ihn wieder frei.
+
+### Lokale Freigabe und Eingaben
+
+`localReadiness` leitet einen gemeinsamen Zustand für Eingabeannahme, Cursor,
+Status und lesende Diagnose ab. Nötige Quellen und Halos müssen vorhanden oder
+bestätigt leer sein. Die Pinselfläche muss das Fenster mit positiver Fläche
+schneiden. Der sichtbare Wirkbereich der nächsten Dosis, bei Bewegung einschließlich
+des Segments vom letzten angenommenen zum aktuellen Punkt, muss im normalen
+Renderpfad gezeichnet sein. Unsichtbare Teile des Eingriffs einschließlich seiner
+Halos benötigen keine eigene Darstellung; fremde fehlende Bildschirmkacheln
+sperren den lokalen Bereich nicht.
+
+`regionDisplayed` prüft dazu die tatsächlichen Submitstempel der Kacheln und die
+zuletzt eingereichte Ansicht. Vorbereitete Kacheln, hochgeladene Pixel oder eine
+bereits geänderte Kamera vor dem nächsten Render genügen nicht. Eine bereits
+gezeichnete Grundlage bleibt während einer eigenen noch ausstehenden Dosis
+erkennbar; deren aktuelle Darstellung ist eine getrennte Rückkopplungsbedingung.
+Kameraänderungen und Resize bereiten die neue Kachelauswahl synchron vor,
+bevor ein Read für den übrigen Ausschnitt oder Navigationsrand abgeschlossen ist.
+Die eigentliche Freigabe folgt anschließend dem lokalen Renderfortschritt,
+auch im Normalstart ohne Diagnoseanbindung.
+
+Noch ungezeichnete Flächen erhalten eine Schraffur; Cursor und Status zeigen
+fehlende Bereitschaft sowie Ladefehler an. Ein Druck vor Freigabe erzeugt weder
+Modellgeste noch vorgemerkte Dosis. Nach einer abgewiesenen oder wegen fehlender
+Grundlage beendeten Geste ist ein neuer Druck nötig. Bei noch gehaltener Taste
+erscheint der Hinweis zum Loslassen und erneuten Drücken. Quellen-Promises halten
+keine Geste am Leben. Eine aktive Höhengeste besitzt den letzten angenommenen
+Punkt, höchstens einen neuesten Zeigerpunkt und eine noch nicht dargestellte
+Dosis; ältere noch nicht angenommene Punkte werden mit einem Grund verworfen.
 
 ### Änderung, Darstellung und Datei
 
@@ -571,11 +608,16 @@ den Startpunkt. Der reine Fachkern besitzt keine Uhr und keine Bildratenlogik.
 Der Controller begrenzt jeden Schritt auf höchstens 50 ms Dosis und wartet vor
 dem nächsten auf die aktuelle Darstellung des vorherigen Bereichs; diese
 Schranke gilt auch über schnelle aufeinanderfolgende Gesten. Ein kleiner
-Pressimpuls von 1/60 Sekunde erhält kurze Klicks. Wartezeit auf Darstellung oder
-Quellen sowie Zeit oberhalb der Schrittgrenze verfällt. Nach einer solchen Pause
-setzt der Pinsel am aktuellen Ort neu an; ausgelassene Wege werden nicht später
-nachgemalt. Pointerup und Abbruch nehmen keine weitere Dosis an. Eine verzögerte
-Darstellung bereits angenommener Änderungen bleibt möglich.
+Pressimpuls von 1/60 Sekunde erhält kurze Klicks. Wartezeit auf Darstellung sowie
+Zeit oberhalb der Schrittgrenze verfällt. Der gültige Pressimpuls verwendet
+denselben Freigabe-/Dosisvertrag wie Folgeframes und wird synchron angenommen;
+auch Down und Up zwischen zwei Frames bleiben ein wirksamer kurzer Klick.
+Während des Wartens auf eine eigene Dosis bleibt die Geste bestehen und setzt
+nach der Rückmeldung am aktuellen Ort fort, ohne ausgelassene Wege oder Zeit
+nachzuholen. Fehlen dagegen
+neu benötigte Quellen oder die gezeichnete Grundlage für den nächsten Abschnitt,
+endet die Geste vor diesem Abschnitt. Pointerup und Abbruch nehmen keine weitere
+Dosis an. Eine verzögerte Darstellung bereits angenommener Änderungen bleibt möglich.
 Bei einem ausdrücklichen Ortswechsel kann die Darstellungsverpflichtung für
 einen vollständig verlassenen Bereich enden. Das wird gesondert beobachtet;
 der Inhalt bleibt im Modell und wird bei Rückkehr aktuell dargestellt.
@@ -595,18 +637,42 @@ Speichern fixiert einen SQLite-Lesesnapshot und veröffentlicht ihn über eine
 synchronisierte temporäre Datei mit atomarem Rename; spätere Änderungen können
 währenddessen weiterlaufen.
 
+`readRegion` und `readPresentation` werden synchron im selben Utility-Prozess
+und auf derselben Arbeitskopie beantwortet. Sie können während eines asynchronen
+Snapshots oder Dateipublish antworten, ohne auf dessen Ende in der gemeinsamen
+Queue zu warten. Commits, Save-Phasen,
+Projektwechsel und Schließen bleiben gemeinsam geordnet; synchrone Transaktionen
+werden nicht halb gelesen. Ein Read kann einen wartenden Write überholen und
+benennt deshalb seine tatsächliche Session und Sequenz. Die gemeinsame
+Antwortprüfung und lokale Patchprojektion schützen vor einem Rückfall auf einen
+überholten Stand. Es gibt keinen zweiten SQLite-Besitzer und keine zusätzliche
+Verbindung für diese Priorisierung.
+
 Darstellungskacheln mit 128 × 128 Pixeln sind von Autorenkacheln getrennt.
-Ein gemeinsamer Frameablauf übernimmt zuerst gültige Ergebnisse, zeichnet sie
-und bestätigt die dadurch aktuelle Region. Danach nimmt er höchstens einen
+Für Folgeimpulse übernimmt der gemeinsame Frameablauf zuerst gültige Ergebnisse,
+zeichnet sie und bestätigt die dadurch aktuelle Region. Danach nimmt er höchstens einen
 begrenzten Pinselschritt am aktuellen Ort an und wählt Rasteraufträge aus dem
 neuen Bedarf. Damit kann die nächste Änderung den gerade fertig gewordenen
 Stand nicht vor seiner Darstellung wieder entwerten. Ein zweiter Gesten-RAF und
 Dispatch mitten in einer Folge von Pinselabschnitten entfallen. Lokale
 Dirtybereiche begrenzen Rasterarbeit und Uploads.
+
+Der vorhandene Dispatcher priorisiert die angenommene lokale Änderung, den für
+die Werkzeugfreigabe benötigten Bildaufbau und anschließend übrige sichtbare
+Kacheln. Der Werkzeugort beziehungsweise die Ansichtsmitte geben kalten Kacheln
+eine räumliche Priorität. Ein neuer Bedarf ersetzt den alten; es entsteht keine
+zusätzliche Auftragsqueue. Lokale Ergebnisse werden nicht im selben Batch hinter
+unabhängigem Bildaufbau zurückgehalten. Damit ein dauerhaft gehaltener Pinsel den
+übrigen Bildaufbau nicht verdrängt, erhält nach vier konkurrierenden lokalen
+Batches höchstens eine Restkachel ein eigenes begrenztes Paket; danach gilt
+wieder die lokale Priorität.
+
 Ein Worker verarbeitet
 höchstens einen begrenzten Batch mit 16 Kacheln und 131.072 Pixeln gleichzeitig.
 Innerhalb dieses Batches benötigen die Teilaufgaben keinen erneuten Hauptthread-
-Roundtrip und verwenden denselben Quellstand. Neuere Änderungen werden pro Kachel
+Roundtrip und verwenden denselben Quellstand. Der Batch enthält keine asynchrone
+Unterbrechung, die neuere Quellen unter alten Revisionsangaben einmischen könnte.
+Neuere Änderungen werden pro Kachel
 als weiterer Dirtybereich zusammengefasst. Je Kachel gibt es nur einen noch nicht
 übernommenen Auftrag. Ein passendes fertig berechnetes Rechteck wird vollständig
 übernommen, auch wenn inzwischen weitere Eingaben vorliegen. Sein Quellstand
@@ -624,7 +690,10 @@ Eingabe und die kleinste/größte sichtbare Kachelrevision. Ein solcher Zwischen
 kann unterschiedliche Revisionen enthalten; er ist kein Nachweis einer gemeinsam
 aktuellen Region. Er ersetzt weder `edit-submit` noch dessen unveränderte
 50-ms-Prüfung. `submittedRevision` und `exactRevision` bestätigen weiterhin nur
-den neuesten vollständig dargestellten Modellstand. Pointerup fordert auch
+den neuesten vollständig dargestellten Modellstand. `submission()` und die
+lokalen Kachelstempel erfassen dagegen auch einen tatsächlich eingereichten,
+lokal brauchbaren Teilviewport. Submitcallbacks können bei geänderter Freigabe
+einen weiteren Overlayframe anfordern. Pointerup fordert auch
 dann einen tatsächlichen Frame an, wenn die letzte Live-Revision schon sichtbar
 war. Kameraoffsets werden vor der GPU-Übergabe abgezogen; Session, Revision und
 monotone Tokens schützen vor überholten Ergebnissen. `budgets.ts` begrenzt
@@ -664,6 +733,15 @@ erfundene Modelländerung oder Renderbestätigung.
 Eine unveränderte Revision nach Loslassen ersetzt dessen Commit-/Submit-Zuordnung
 nicht. Hintergrundreads gelten nicht allein aufgrund ihrer Existenz als
 Kamerablockade; maßgeblich ist die beobachtete Eingabe-/Kamerareihenfolge.
+
+Kalte Fälle unterscheiden Quellenbereitschaft (`sources-ready`) und die wirkliche
+Produktfreigabe (`input-ready`). Der erste danach ausgelöste Strich verwendet
+denselben Ablauf und dieselben Live-/50-ms-Kriterien wie ein warmer Strich.
+Navigation, Ladezeit und Verzögerung zwischen Freigabe und Eingabe bleiben im
+Journal und in den Gesamtzeiten enthalten. Frühe abgewiesene Eingaben werden
+separat auf sichtbares Warten, ausbleibende Wirkung und einen späteren gültigen
+neuen Gestenbeginn geprüft. Eine nachträglich angenommene Dosis ist keine
+erfolgreiche Erholung dieses Vorabfalls.
 
 `--full` verlangt drei unabhängige Gruppen mit je 100 Strichen pro warmem Fall,
 34 kalten Ortswechseln mit Bearbeitung pro kaltem Fall und mindestens 30 Sekunden

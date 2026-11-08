@@ -1086,13 +1086,6 @@ abgelehnt. Persistenz und Import folgen [Dateien und History](#dateien-und-histo
 
 ## Optionaler Atlas-P0-Versuch
 
-Dieser Abschnitt beschreibt den implementierten Stand `ecbad25`. Die nach dem
-Review vereinbarte Zieländerung [D11 im Ausführungsplan](implementation/atlas-rebuild-plan.md#d11-konkret-sichtbares-gelände-vor-dem-gestenbeginn)
-verlangt sichtbares, lokal bereites Gelände vor dem Eingriff sowie einen klaren
-Wartezustand. Der Plan entfernt dabei die Vormerkung früher Gesten. Diese
-Freigabeänderung ist noch nicht implementiert; [Status](implementation/status.md)
-trennt sie von den bisherigen Funktions- und Zeitnachweisen.
-
 P0 ist ein eigener, ausdrücklich gewählter Höheneditor. Er bietet Verschieben
 und Zoom vom Nahbereich bis zur Welt, Raster ein/aus, Anheben und Absenken,
 Undo/Redo sowie Neu, Öffnen, Speichern und Speichern unter. Die Pinselgröße wird
@@ -1111,22 +1104,52 @@ die feineren Restwerte unverändert; an den Höhenlimits kann die abschließende
 Begrenzung Relief abschneiden. Küsten folgen der zusammengesetzten Oberfläche,
 sie besitzen keine getrennten Höhenautoren.
 
+**Bearbeitung beginnt auf sichtbarem, lokal bereitem Gelände.** Diese Freigabe
+setzt [D11](implementation/atlas-rebuild-plan.md#d11-konkret-sichtbares-gelände-vor-dem-gestenbeginn)
+um und gilt auch ohne Diagnosemodus. Die nötigen Quellen müssen vorhanden oder
+bestätigt leer sein; der sichtbare Wirkbereich muss zum aktuellen Ausschnitt
+passen und tatsächlich gezeichnet sein. Bei Bewegung gehört das angenommene
+Segment dazu. Eine reguläre numerische Übersicht auf dem gewählten Maßstab und
+ein gezeichneter leerer Ozean sind gültige Grundlagen. Ein alter Ersatzframe,
+eine Ladefläche oder bloß vorhandene Daten genügen nicht.
+
+Die Pinselfläche muss das Fenster mit positiver Fläche schneiden. Ein über den
+Fensterrand ragender Pinsel benötigt nur für den sichtbaren Teil ein Bild; die
+Daten für den vollständigen Eingriff bleiben erforderlich. Fehlende entfernte
+Bildschirmteile sperren einen bereits bereiten lokalen Ort nicht. Noch
+ungezeichnete Flächen sind schraffiert. Über einem nicht bereiten Ort sind Pinsel
+und Status als wartend erkennbar; bei Fehlern wird ein erneuter Ladeversuch
+angeboten. Navigation bleibt bedienbar. Lokale Daten werden auch beim Bewegen
+des Zeigers oder Ändern der Pinselgröße ohne aktive Geste angefordert.
+
+Ein Druck vor Freigabe wird abgewiesen. Er erzeugt keine Modelländerung, keinen
+Undo-Schritt und keine vorgemerkte Wirkung. Auch wenn die Taste bis nach dem
+Laden gehalten wird, beginnt kein Strich automatisch. Zum Bearbeiten muss der
+Nutzer loslassen und erneut drücken; bei weiter gehaltener Taste erklärt ein
+Hinweis diesen Zustand. Wartezeit und währenddessen zurückgelegte Wege werden
+nicht nachgeholt.
+
 Ein Strich hält seine Autorenstufe und Pinselparameter bis zum Abschluss fest.
 **Gedrücktes Halten bearbeitet die Stelle fortlaufend weiter. Langsame Züge
 wirken stärker als schnelle, weil der Pinsel länger auf den betroffenen Stellen
 verweilt.** Die Stärke ist eine Zielrate pro Sekunde. Ein kleiner begrenzter
-Anfangsimpuls erhält die Klickfunktion. Weitere Schritte folgen dem tatsächlichen
+Anfangsimpuls wird bei einem zulässigen Druck sofort angenommen und erhält auch
+sehr kurze Klicks. Weitere Schritte folgen dem tatsächlichen
 Darstellungsfortschritt und enthalten jeweils höchstens 50 ms Dosis. Höchstens
 ein Schritt darf noch auf seine Darstellung warten. Bei langsamer Verarbeitung
 wirkt der Pinsel entsprechend schwächer; verworfene Wartezeit wird nicht später
 als großer Auftrag nachgeholt. Der reine Fachkern integriert die ausdrücklich
-angenommene Zeit und den Weg. Jeder angenommene Abschnitt wirkt live. Pointerup
-fasst den angenommenen Strich zu einem Undo-Schritt zusammen. Escape,
+angenommene Zeit und den Weg. Jeder angenommene Abschnitt wirkt live. Eine noch
+ausstehende Darstellung der eigenen Dosis pausiert nur weitere Wirkung; der
+gehaltene Strich kann nach dieser Rückmeldung am aktuellen Ort weitergehen.
+Verlässt er dagegen seine sichtbar bereite Grundlage oder fehlen neu benötigte
+Quellen, endet er vor dem unzulässigen Abschnitt. Die bereits angenommenen
+Änderungen bleiben ein gemeinsamer Undo-Schritt; zum Weiterarbeiten ist ein neuer
+Druck nötig. Pointerup fasst ebenfalls den angenommenen Strich zu einem
+Undo-Schritt zusammen. Escape,
 Fokusverlust, Pointercancel und ein ausdrücklicher Ansichtwechsel beenden die
-laufende Einwirkung und erhalten bereits angenommene Änderungen;
-noch auf Quellen wartende Eingaben werden verworfen. Fehlende lokale Daten
-bleiben als Wartezustand sichtbar und werden nicht als leeres Gelände behandelt.
-Während einer solchen Quellenpause wird keine unbemerkte Zeitdosis angesammelt.
+laufende Einwirkung und erhalten bereits angenommene Änderungen. Fehlende lokale
+Daten bleiben als Wartezustand sichtbar und werden nicht als leeres Gelände behandelt.
 Nach Loslassen oder Abbruch wird keine weitere Dosis angenommen. Bereits
 angenommene Änderungen dürfen noch sichtbar werden; ein wartender Restweg oder
 angesammelte Haltezeit darf keine neue Bearbeitung auslösen.
@@ -1148,8 +1171,9 @@ Grobe Ansichten verwenden numerische Übersichten feiner Höhenbeiträge. Sie
 erhalten den Einfluss lokaler Details auf die zusammengesetzte Oberfläche und
 deren Küste; sie verlangen keine vollständige Feindatenabdeckung im aktiven
 Editor. Genaue beliebige Punktabfragen bleiben bei ungeladenen Feindaten
-unbekannt, bis die betreffende Detailansicht geladen ist. Lokale Bearbeitung
-wartet auf die Quellen ihrer festen Autorenstufe und gröbere Beiträge.
+unbekannt, bis die betreffende Detailansicht geladen ist. Für die lokale
+Bearbeitungsfreigabe werden die Quellen der gewählten Autorenstufe und gröbere
+Beiträge benötigt.
 
 P0-Projekte verwenden `.saltatlas` als SQLite-Format **24** mit Schemakennung
 `atlas-p0-height-2`. Gespeichert werden sparse relative Höhenkacheln,
@@ -1161,6 +1185,9 @@ auf die Sitzung begrenzt. Eine lokale Änderung, ihre Bestätigung in der
 Arbeitskopie und ihre Speicherung in der Projektdatei sind verschiedene Zustände.
 Speichern veröffentlicht den reservierten Stand atomar. Spätere Bearbeitungen
 bleiben ungespeichert, bis ein weiterer Speichervorgang auch sie erfasst.
+Das Lesen benötigter Ausschnitte kann während des asynchronen Speicherns
+weiterlaufen. Schreibaufträge und Projektwechsel bleiben geordnet; die Datei
+enthält weiterhin genau den reservierten Stand.
 
 Der normale Start sammelt kein ausführliches Diagnosejournal und zeigt keine
 künstlichen Belastungswerkzeuge. Eine ausdrücklich gestartete Diagnose darf

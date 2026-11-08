@@ -1,4 +1,4 @@
-import type { AtlasDesktop, ProjectInfo } from "./bridge";
+import type { AtlasDesktop, ProjectInfo, SourceBoundary } from "./bridge";
 import { editorBudgets } from "./budgets";
 import {
   clipBounds,
@@ -27,6 +27,7 @@ export interface EditorState {
   message: string;
   error: string | null;
   loading: boolean;
+  needsPress: boolean;
   writing: boolean;
   saved: boolean;
   canUndo: boolean;
@@ -47,10 +48,16 @@ interface Gesture {
   point: Point;
   pointAt: number;
   clock: number;
-  points: BrushPoint[];
-  pressPending: boolean;
-  pending: boolean;
-  cancelled: boolean;
+  latest: BrushPoint | null;
+}
+interface LocalReadiness {
+  ready: boolean;
+  reason: "sources" | "terrain" | "feedback" | "busy" | "outside" | null;
+  bounds: Bounds;
+  point: Point;
+  brush: HeightBrush;
+  frame: number;
+  viewGeneration: number;
 }
 interface PendingEdit {
   input?: number;
@@ -84,6 +91,7 @@ export class EditorController {
   private loadToken = 0;
   private navInput: number | null = null;
   private readyNavInput: number | null = null;
+  private sourcesNavInput: number | null = null;
   private pendingEdits: PendingEdit[] = [];
   private awaitingDose: {
     bounds: Bounds;
@@ -100,6 +108,7 @@ export class EditorController {
   private disposed = false;
   private changingProject = false;
   private pointer: Point = [0, 0];
+  private editPointer: number | null = null;
   private backgroundStats: Record<string, unknown> = { active: false };
   private backgroundStarting = false;
   state: EditorState = {
@@ -111,6 +120,7 @@ export class EditorController {
     message: "Projekt wird geöffnet …",
     error: null,
     loading: true,
+    needsPress: false,
     writing: false,
     saved: false,
     canUndo: false,
@@ -129,19 +139,30 @@ export class EditorController {
     this.observation = new Observation(bridge.diagnostics);
     this.world = new WorldRenderer(this.observation);
     this.resizeObserver = new ResizeObserver(() => {
+      this.finishGesture(undefined, "resize");
       this.loadToken++;
       const bounds = (
         this.canvas.parentElement ?? this.canvas
       ).getBoundingClientRect();
       if (this.world.renderer.canvas) {
         this.world.resize(bounds.width, bounds.height);
+        this.world.refresh();
         this.releaseOffscreenFeedback();
       }
-      if (this.doc) this.scheduleLoad();
+      if (this.doc) {
+        this.checkLocalReady();
+        this.scheduleLoad();
+      }
     });
     this.world.onError = this.fail;
     this.world.advanceFrame = this.advanceFrame;
     this.world.onSubmit = (frame) => {
+      if (
+        this.awaitingDose &&
+        this.world.regionDisplayed(this.awaitingDose.bounds)
+      )
+        this.awaitingDose = null;
+      this.checkLocalReady();
       if (!bridge.diagnostics) return;
       const pending: PendingEdit[] = [];
       for (const edit of this.pendingEdits) {
@@ -238,7 +259,7 @@ export class EditorController {
       this.world.fault = fault;
     this.installEvents();
     this.setProject(await this.bridge.status());
-    await this.loadView();
+    await this.loadView().catch(this.fail);
   }
 
   private setProject(info: ProjectInfo): void {
@@ -253,16 +274,19 @@ export class EditorController {
       maxHistoryActions: editorBudgets.historyActions,
     });
     this.gesture = null;
+    this.editPointer = null;
     this.awaitingDose = null;
     this.pendingEdits = [];
     this.navInput = null;
     this.readyNavInput = null;
+    this.sourcesNavInput = null;
     this.writeQueue = Promise.resolve();
     this.writeError = null;
     this.backgroundStats = { active: false };
     this.work?.postMessage({ cancel: true });
     this.world.reset(this.doc);
     this.world.moveCamera({ x: 0, y: 0, scale: 0.25 });
+    this.world.refresh();
     this.publish({
       title: info.title,
       saved: info.savedSequence === info.sequence,
@@ -273,7 +297,10 @@ export class EditorController {
     });
   }
 
-  private publish(change: Partial<EditorState> = {}): void {
+  private publish(
+    change: Partial<EditorState> = {},
+    readiness = this.localReadiness(),
+  ): void {
     const previous = this.state;
     this.state = { ...this.state, ...change };
     this.state = {
@@ -289,7 +316,23 @@ export class EditorController {
         this.project?.savedSequence === this.doc.sequence &&
         !this.doc.active,
       ),
+      loading:
+        readiness.reason === "sources" ||
+        readiness.reason === "terrain" ||
+        (readiness.reason === "feedback" && !this.gesture),
+      needsPress: this.editPointer !== null && !this.gesture,
     };
+    this.state.message = this.state.error
+      ? this.state.error
+      : this.state.loading
+        ? "Kartenbereich wird geladen …"
+        : readiness.reason === "outside"
+          ? "Zeiger außerhalb des sichtbaren Kartenbereichs"
+          : this.state.needsPress
+            ? "Zum Bearbeiten loslassen und erneut drücken"
+            : this.changingProject
+              ? "Projekt wird geöffnet …"
+              : "Bereit";
     if (
       (Object.keys(this.state) as (keyof EditorState)[]).some(
         (key) => !Object.is(previous[key], this.state[key]),
@@ -325,6 +368,7 @@ export class EditorController {
 
   setMode(mode: EditorState["mode"]): void {
     this.publish({ mode });
+    this.updateToolNeed();
   }
 
   setGrid(grid: boolean): void {
@@ -352,6 +396,7 @@ export class EditorController {
       diameter: Math.max(8, Math.min(512, diameter)),
       amount: Math.max(0.1, Math.min(10000, amount)),
     });
+    this.updateToolNeed();
   }
 
   private worldPoint(event: PointerEvent | WheelEvent): Point {
@@ -377,9 +422,11 @@ export class EditorController {
     this.finishGesture(undefined, "navigation");
     this.loadToken++;
     this.world.moveCamera(this.clampedCamera(camera));
+    this.world.refresh();
     this.releaseOffscreenFeedback();
     this.navInput = input;
     this.readyNavInput = null;
+    this.sourcesNavInput = null;
     this.observation.mark("camera", String(input), {
       input,
       camera: { ...this.world.camera },
@@ -418,38 +465,63 @@ export class EditorController {
     });
   }
 
-  private async ensure(bounds: Bounds, minLevel: number): Promise<void> {
-    if (this.doc.isReady(bounds, HEIGHT_LEVELS.slice(minLevel))) return;
+  private async ensure(bounds: Bounds, minLevel: number): Promise<boolean> {
+    if (this.doc.isReady(bounds, HEIGHT_LEVELS.slice(minLevel))) return true;
     const document = this.doc;
-    const reply = await this.bridge
-      .readRegion({
-        sessionId: document.sessionId,
-        bounds,
-        minLevel,
-      })
-      .catch((error: unknown) => {
-        if (document !== this.doc || this.disposed) return null;
+    return this.readCurrent(
+      document,
+      () =>
+        this.bridge.readRegion({
+          sessionId: document.sessionId,
+          bounds,
+          minLevel,
+        }),
+      (reply) => {
+        document.acceptCoverage(
+          bounds,
+          reply.tiles,
+          reply.sequence,
+          reply.sessionId,
+          minLevel,
+        );
+        this.observation.event("sources", {
+          sessionId: reply.sessionId,
+          bounds,
+          tiles: reply.tiles.length,
+          bytes: reply.tiles.reduce((n, tile) => n + tile.values.byteLength, 0),
+        });
+      },
+    );
+  }
+
+  /** Reads may pass a queued write; an acknowledged newer state must never regress. */
+  private async readCurrent<T extends SourceBoundary>(
+    document: EditorDocument,
+    read: () => Promise<T>,
+    consume: (reply: T) => void,
+    token = this.loadToken,
+  ): Promise<boolean> {
+    const current = () =>
+      !this.disposed && document === this.doc && token === this.loadToken;
+    while (current()) {
+      const reply = await read().catch((error: unknown) => {
+        if (!current()) return null;
         throw error;
       });
-    if (
-      !reply ||
-      this.doc !== document ||
-      reply.sessionId !== document.sessionId
-    )
-      return;
-    document.acceptCoverage(
-      bounds,
-      reply.tiles,
-      reply.sequence,
-      reply.sessionId,
-      minLevel,
-    );
-    this.observation.event("sources", {
-      sessionId: reply.sessionId,
-      bounds,
-      tiles: reply.tiles.length,
-      bytes: reply.tiles.reduce((n, tile) => n + tile.values.byteLength, 0),
-    });
+      if (!reply || !current() || reply.sessionId !== document.sessionId)
+        return false;
+      // The acknowledgement released its local patches. Read the actual store
+      // again rather than trying to project a response older than those patches.
+      if (!Number.isSafeInteger(reply.sequence) || reply.sequence < 0)
+        throw new Error("Ungültige Lesesequenz der Arbeitskopie.");
+      if (reply.sequence >= document.persistedSequence) {
+        // Validation and projection are synchronous together: an ack must not
+        // release the patches in an extra await between these two steps.
+        consume(reply);
+        return true;
+      }
+    }
+    return false;
   }
 
   private loadView(): Promise<void> {
@@ -462,6 +534,10 @@ export class EditorController {
         }
       })().finally(() => {
         this.viewRead = null;
+        // A newer hover/brush request can arrive after the loop ended but before
+        // this promise settled. It still represents the current need, not a queue.
+        if (this.viewLoadPending && !this.disposed)
+          void this.loadView().catch(this.fail);
       });
     }
     return this.viewRead;
@@ -475,103 +551,167 @@ export class EditorController {
     const bounds = this.world.sourceBounds();
     document.evictConfirmedOutside(bounds);
     if (!this.world.isPresentationReady(bounds, power)) {
-      this.publish({ loading: true });
-      const reply = await this.bridge
-        .readPresentation({
-          sessionId: document.sessionId,
-          bounds,
-          power,
-        })
-        .catch((error: unknown) => {
-          if (
-            document !== this.doc ||
-            token !== this.loadToken ||
-            this.disposed
-          )
-            return null;
-          throw error;
-        });
-      if (
-        !reply ||
-        this.disposed ||
-        token !== this.loadToken ||
-        document !== this.doc ||
-        reply.sessionId !== document.sessionId
-      )
-        return;
-      // An ack can overtake a read reply. Its patches have already been released;
-      // reread rather than replacing the visible local projection with old data.
-      if (reply.sequence < document.persistedSequence) {
-        this.viewLoadPending = true;
-        return;
-      }
-      document.acceptCoverage(
-        bounds,
-        reply.tiles,
-        reply.sequence,
-        reply.sessionId,
-        minLevel,
+      this.checkLocalReady();
+      const loaded = await this.readCurrent(
+        document,
+        () =>
+          this.bridge.readPresentation({
+            sessionId: document.sessionId,
+            bounds,
+            power,
+          }),
+        (reply) => {
+          document.acceptCoverage(
+            bounds,
+            reply.tiles,
+            reply.sequence,
+            reply.sessionId,
+            minLevel,
+          );
+          const projected = projectHeightOverviewPatches(
+            reply.overviews,
+            reply.overviewKeys,
+            document.presentationPatchesAfter(reply.sequence),
+          );
+          this.world.updatePresentation(
+            document.snapshot(bounds, HEIGHT_LEVELS.slice(minLevel)).tiles,
+            projected,
+            reply.overviewKeys,
+            true,
+          );
+          this.observation.event("sources", {
+            sessionId: reply.sessionId,
+            bounds,
+            power,
+            tiles: reply.tiles.length,
+            bytes: reply.tiles.reduce(
+              (n, tile) => n + tile.values.byteLength,
+              0,
+            ),
+            overviewTiles: reply.overviews.length,
+            overviewBytes: reply.overviews.reduce(
+              (n, tile) => n + tile.values.byteLength,
+              0,
+            ),
+          });
+        },
+        token,
       );
-      const projected = projectHeightOverviewPatches(
-        reply.overviews,
-        reply.overviewKeys,
-        document.presentationPatchesAfter(reply.sequence),
-      );
-      this.world.updatePresentation(
-        document.snapshot(bounds, HEIGHT_LEVELS.slice(minLevel)).tiles,
-        projected,
-        reply.overviewKeys,
-        true,
-      );
-      this.observation.event("sources", {
-        sessionId: reply.sessionId,
-        bounds,
-        power,
-        tiles: reply.tiles.length,
-        bytes: reply.tiles.reduce((n, tile) => n + tile.values.byteLength, 0),
-        overviewTiles: reply.overviews.length,
-        overviewBytes: reply.overviews.reduce(
-          (n, tile) => n + tile.values.byteLength,
-          0,
-        ),
-      });
+      if (!loaded) return;
     }
-    this.world.refresh();
-    const brush = this.currentBrush();
-    await this.ensure(
-      brushBounds(
-        [this.world.camera.x, this.world.camera.y],
-        brush.radius + 2 * heightSpacing(brush.level),
-      ),
-      brush.level,
-    );
+    if (this.disposed || token !== this.loadToken || document !== this.doc)
+      return;
+    const { bounds: needed, brush } = this.localReadiness();
+    await this.ensure(needed, brush.level);
     if (this.disposed || token !== this.loadToken || document !== this.doc)
       return;
     this.checkLocalReady();
-    this.publish({ loading: false, message: "Bereit" });
   }
 
-  private checkLocalReady(): void {
-    if (
-      !this.doc ||
-      this.navInput === null ||
-      this.readyNavInput === this.navInput
-    )
-      return;
-    const brush = this.currentBrush();
-    const bounds = brushBounds(
-      [this.world.camera.x, this.world.camera.y],
-      brush.radius + 2 * heightSpacing(brush.level),
+  private toolPoint(): Point {
+    const { camera, cursor, width, height } = this.world;
+    return cursor
+      ? [
+          camera.x + (cursor.x - width / 2) / camera.scale,
+          camera.y + (cursor.y - height / 2) / camera.scale,
+        ]
+      : [camera.x, camera.y];
+  }
+
+  /** One derived contract for input, the normal UI and read-only observation. */
+  private localReadiness(
+    point = this.toolPoint(),
+    brush = this.gesture?.brush ?? this.currentBrush(),
+  ): LocalReadiness {
+    const inWorld = point.every(
+      (value) => Number.isFinite(value) && Math.abs(value) <= 100_000_000,
     );
-    if (this.doc.isReady(bounds, HEIGHT_LEVELS.slice(brush.level))) {
-      this.readyNavInput = this.navInput;
-      this.observation.mark("ready", String(this.navInput), {
-        input: this.navInput,
-        bounds,
-        point: [this.world.camera.x, this.world.camera.y],
-        brush: { ...brush },
-      });
+    const bounds =
+      this.doc && inWorld
+        ? this.doc.readBoundsForPoint(point, brush)
+        : brushBounds(point, brush.radius + 2 * heightSpacing(brush.level));
+    const view = this.world.bounds();
+    const visible =
+      Math.hypot(
+        Math.max(view[0] - point[0], 0, point[0] - view[2]),
+        Math.max(view[1] - point[1], 0, point[1] - view[3]),
+      ) < brush.radius;
+    const reason = !inWorld
+      ? "outside"
+      : !visible
+        ? "outside"
+        : this.writeError || this.changingProject
+          ? "busy"
+          : !this.doc?.isReady(bounds, HEIGHT_LEVELS.slice(brush.level))
+            ? "sources"
+            : !this.world.regionDisplayed(bounds, false)
+              ? "terrain"
+              : this.awaitingDose &&
+                  !this.world.regionDisplayed(this.awaitingDose.bounds)
+                ? "feedback"
+                : !this.world.regionDisplayed(bounds)
+                  ? "terrain"
+                  : null;
+    const submitted = this.world.submission();
+    return {
+      ready: reason === null,
+      reason,
+      bounds,
+      point,
+      brush,
+      frame: submitted.frame,
+      viewGeneration: submitted.viewGeneration,
+    };
+  }
+
+  private checkLocalReady(): LocalReadiness {
+    const readiness = this.localReadiness();
+    this.world.setPriorityAreas(readiness.bounds, this.awaitingDose?.bounds);
+    if (this.world.cursor) {
+      const waiting =
+        !readiness.ready && !(readiness.reason === "feedback" && this.gesture);
+      if (Boolean(this.world.cursor.waiting) !== waiting) {
+        this.world.cursor.waiting = waiting;
+        this.world.redraw();
+      }
     }
+    if (this.doc && this.navInput !== null) {
+      const details = {
+        input: this.navInput,
+        sessionId: this.doc.sessionId,
+        ...readiness,
+        revision: this.doc.revision,
+      };
+      if (
+        this.sourcesNavInput !== this.navInput &&
+        this.doc.isReady(
+          readiness.bounds,
+          HEIGHT_LEVELS.slice(readiness.brush.level),
+        )
+      ) {
+        this.sourcesNavInput = this.navInput;
+        this.observation.mark("sources-ready", String(this.navInput), details);
+      }
+      if (readiness.ready && this.readyNavInput !== this.navInput) {
+        this.readyNavInput = this.navInput;
+        this.observation.mark("input-ready", String(this.navInput), details);
+      }
+    }
+    this.publish({}, readiness);
+    return readiness;
+  }
+
+  private updateToolNeed(): void {
+    const readiness = this.checkLocalReady();
+    if (readiness.reason === "sources") this.scheduleLoad();
+    this.world.redraw();
+  }
+
+  retryLoad(): void {
+    this.publish({ error: null });
+    this.scheduleLoad();
+    this.world.refresh();
+    this.updateToolNeed();
   }
 
   private down = (event: PointerEvent): void => {
@@ -590,16 +730,27 @@ export class EditorController {
       };
       return;
     }
+    this.updatePointer(event);
+    if (this.editPointer !== null) {
+      this.skipInput(input, this.gesture ? "busy" : "new-press-required");
+      return;
+    }
+    this.editPointer = event.pointerId;
     if (this.gesture || this.writeError || this.changingProject) {
       this.skipInput(input, "busy");
+      this.checkLocalReady();
       return;
     }
     const brush = this.currentBrush();
     const point = this.worldPoint(event);
-    const bounds = brushBounds(
-      point,
-      brush.radius + 2 * heightSpacing(brush.level),
-    );
+    const readiness = this.localReadiness(point, brush);
+    if (!readiness.ready) {
+      this.skipInput(input, readiness.reason!);
+      this.checkLocalReady();
+      if (readiness.reason === "sources") this.scheduleLoad();
+      return;
+    }
+    this.awaitingDose = null;
     const now = performance.now();
     const gesture: Gesture = {
       id: input,
@@ -607,10 +758,7 @@ export class EditorController {
       point: [...point],
       pointAt: this.inputTime(event),
       clock: now,
-      points: [],
-      pressPending: true,
-      pending: false,
-      cancelled: false,
+      latest: null,
     };
     this.gesture = gesture;
     this.observation.event("brush-start", {
@@ -624,29 +772,32 @@ export class EditorController {
       radius: brush.radius,
       level: brush.level,
     });
-    if (!this.doc.isReady(bounds, HEIGHT_LEVELS.slice(brush.level)))
-      this.publish({
-        message: "Lokale Daten werden geladen; Pinsel pausiert …",
-      });
     try {
       this.doc.beginGesture(brush);
       this.doc.applyPoint(point, 0);
-      this.acceptPress(gesture);
+      // A valid down/up between frames must keep its small immediate click dose.
+      this.applyDose(gesture, point, now, now, 0, "press", input);
     } catch (error) {
       this.gestureFailure(error);
     }
     this.world.redraw();
   };
 
-  private move = (event: PointerEvent): void => {
+  private updatePointer(event: PointerEvent): void {
     const rect = this.canvas.getBoundingClientRect();
     this.pointer = this.worldPoint(event);
     this.world.cursor = {
       x: event.clientX - rect.left,
       y: event.clientY - rect.top,
-      radius: this.diameter / 2,
+      radius: this.gesture
+        ? this.gesture.brush.radius * this.world.camera.scale
+        : this.diameter / 2,
     };
     this.world.redraw();
+  }
+
+  private move = (event: PointerEvent): void => {
+    this.updatePointer(event);
     if (this.pan) {
       const camera = {
         ...this.pan.camera,
@@ -661,22 +812,26 @@ export class EditorController {
     } else if (this.gesture) {
       const events = event.getCoalescedEvents?.() ?? [];
       for (const e of events.length ? events : [event]) {
-        if (this.gesture.points.length >= 512) {
-          this.finishGesture(undefined, "input-limit");
-          this.fail(
-            new Error(
-              "Der noch nicht verarbeitete Pinselpfad ist zu lang. Bitte einen kürzeren Strich verwenden.",
-            ),
-          );
-          break;
-        }
-        this.gesture.points.push({
+        const latest: BrushPoint = {
           point: this.worldPoint(e),
           input: this.observation.input(e, "edit"),
           at: this.inputTime(e),
-        });
+        };
+        if (this.gesture.latest && latest.at < this.gesture.latest.at) {
+          this.skipInput(latest.input, "stale");
+          continue;
+        }
+        if (this.gesture.latest)
+          this.skipInput(this.gesture.latest.input, "coalesced");
+        this.gesture.latest = latest;
       }
-      this.world.redraw();
+    } else {
+      if (this.editPointer !== null)
+        this.skipInput(
+          this.observation.input(event, "edit"),
+          "new-press-required",
+        );
+      this.updateToolNeed();
     }
   };
 
@@ -685,9 +840,12 @@ export class EditorController {
       this.pan = null;
       return;
     }
-    if (!this.gesture) return;
+    if (this.editPointer !== event.pointerId) return;
+    this.editPointer = null;
     const input = this.observation.input(event, "pointerup");
-    this.finishGesture(input, "pointerup", event);
+    if (this.gesture) this.finishGesture(input, "pointerup", event);
+    else this.skipInput(input, "no-gesture");
+    this.checkLocalReady();
   };
 
   private wheel = (event: WheelEvent): void => {
@@ -723,7 +881,13 @@ export class EditorController {
   }
 
   private skipInput(input: number, reason: string): void {
-    this.observation.event("noop", { input, accepted: false, reason });
+    this.observation.event("noop", {
+      input,
+      accepted: false,
+      reason,
+      sessionId: this.doc.sessionId,
+      gestureId: this.gesture?.id ?? null,
+    });
   }
 
   private discardTime(
@@ -749,65 +913,15 @@ export class EditorController {
     gesture.pointAt = at;
   }
 
-  private skipQueued(
+  private skipLatest(
     gesture: Gesture,
     reason: string,
     trackPosition = true,
   ): void {
-    const latest = gesture.points.reduce<BrushPoint | undefined>(
-      (newest, point) => (!newest || point.at >= newest.at ? point : newest),
-      undefined,
-    );
-    for (const entry of gesture.points) this.skipInput(entry.input, reason);
-    gesture.points = [];
+    const latest = gesture.latest;
+    gesture.latest = null;
+    if (latest) this.skipInput(latest.input, reason);
     if (latest && trackPosition) this.anchor(gesture, latest.point, latest.at);
-  }
-
-  private waitForSources(
-    gesture: Gesture,
-    point: Point,
-    at = gesture.pointAt,
-  ): void {
-    // Paused movement is not painted later as one long connecting segment.
-    this.anchor(gesture, point, at);
-    const bounds = this.doc.readBoundsForPoint(point, gesture.brush);
-    gesture.pending = true;
-    this.observation.event("brush-wait", {
-      sessionId: this.doc.sessionId,
-      gestureId: gesture.id,
-      bounds,
-      level: gesture.brush.level,
-    });
-    void this.ensure(bounds, gesture.brush.level)
-      .then(() => {
-        if (this.disposed || gesture.cancelled || this.gesture !== gesture)
-          return;
-        const now = performance.now();
-        this.discardTime(gesture, gesture.clock, now, "sources");
-        gesture.clock = now;
-        this.skipQueued(gesture, "sources");
-        gesture.pending = false;
-        this.world.redraw();
-      })
-      .catch((error: unknown) => {
-        if (this.disposed || gesture.cancelled || this.gesture !== gesture)
-          return;
-        this.gestureFailure(error);
-      });
-  }
-
-  private acceptPress(gesture: Gesture): void {
-    if (this.awaitingDose && !this.world.regionExact(this.awaitingDose.bounds))
-      return;
-    this.awaitingDose = null;
-    const needed = this.doc.readBoundsForPoint(gesture.point, gesture.brush);
-    if (!this.doc.isReady(needed, HEIGHT_LEVELS.slice(gesture.brush.level))) {
-      this.waitForSources(gesture, gesture.point);
-      return;
-    }
-    const now = performance.now();
-    this.applyDose(gesture, gesture.point, now, now, 0, "press", gesture.id);
-    gesture.pressPending = false;
   }
 
   private applyDose(
@@ -873,7 +987,7 @@ export class EditorController {
         point: [...point],
         gestureReleased: false,
       });
-    this.publish({ saved: false });
+    this.checkLocalReady();
   }
 
   private advanceFrame = (now: number): void => {
@@ -886,35 +1000,30 @@ export class EditorController {
     let accountedTo = fromAt;
     const previousInterval = this.intervalId;
     try {
-      const blocked = gesture.pending
-        ? "sources"
-        : this.awaitingDose && !this.world.regionExact(this.awaitingDose.bounds)
-          ? "feedback"
-          : null;
-      if (blocked) {
-        this.discardTime(gesture, fromAt, toAt, blocked);
+      const latest = gesture.latest;
+      const point =
+        latest && latest.at >= gesture.pointAt ? latest.point : gesture.point;
+      // Check the complete next segment before moving its model anchor. Waiting
+      // for our own accepted dose is ordinary feedback; a new cold area ends it.
+      const readiness = this.localReadiness(point, gesture.brush);
+      if (!readiness.ready) {
+        this.discardTime(gesture, fromAt, toAt, readiness.reason!);
         accountedTo = toAt;
-        this.skipQueued(gesture, blocked);
+        this.skipLatest(
+          gesture,
+          readiness.reason!,
+          readiness.reason === "feedback",
+        );
+        if (readiness.reason !== "feedback") {
+          this.finishGesture(undefined, readiness.reason!);
+          this.updateToolNeed();
+        }
         return;
       }
       this.awaitingDose = null;
-      if (gesture.pressPending) {
-        this.discardTime(gesture, fromAt, toAt, "press");
-        accountedTo = toAt;
-        this.skipQueued(gesture, "press");
-        this.acceptPress(gesture);
-        return;
-      }
       const rawElapsedMs = toAt - fromAt;
       if (rawElapsedMs <= 0) return;
-      const points = gesture.points.splice(0);
-      const latest = points.reduce<BrushPoint | undefined>(
-        (newest, point) => (!newest || point.at >= newest.at ? point : newest),
-        undefined,
-      );
-      for (const entry of points)
-        if (entry !== latest) this.skipInput(entry.input, "coalesced");
-      const point = latest?.point ?? gesture.point;
+      gesture.latest = null;
       if (latest && latest.at < fromAt) {
         this.discardTime(gesture, fromAt, toAt, "stale");
         accountedTo = toAt;
@@ -927,14 +1036,6 @@ export class EditorController {
         this.discardTime(gesture, fromAt, acceptedFrom, "cap");
         accountedTo = acceptedFrom;
         this.anchor(gesture, point, latest?.at);
-      }
-      const needed = this.doc.readBoundsForPoint(point, gesture.brush);
-      if (!this.doc.isReady(needed, HEIGHT_LEVELS.slice(gesture.brush.level))) {
-        this.discardTime(gesture, acceptedFrom, toAt, "sources");
-        accountedTo = toAt;
-        if (latest) this.skipInput(latest.input, "sources");
-        this.waitForSources(gesture, point, latest?.at);
-        return;
       }
       const moving =
         point[0] !== gesture.point[0] || point[1] !== gesture.point[1];
@@ -965,9 +1066,7 @@ export class EditorController {
     if (!gesture) return;
     const endAt = performance.now();
     this.discardTime(gesture, gesture.clock, endAt, reason);
-    this.skipQueued(gesture, reason, false);
-    if (gesture.pressPending) this.skipInput(gesture.id, reason);
-    gesture.cancelled = true;
+    this.skipLatest(gesture, reason, false);
     this.gesture = null;
     this.observation.event("brush-end", {
       sessionId: this.doc.sessionId,
@@ -1096,6 +1195,7 @@ export class EditorController {
       }
     } finally {
       this.changingProject = false;
+      this.checkLocalReady();
     }
   }
 
@@ -1110,7 +1210,7 @@ export class EditorController {
         // this diagnostic canonical sampling job on a bounded exact local patch.
         const { x, y } = this.world.camera;
         bounds = clipBounds([x - 320, y - 320, x + 320, y + 320]);
-        await this.ensure(bounds, 0);
+        if (!(await this.ensure(bounds, 0))) return;
       }
       if (document !== this.doc || this.disposed) return;
       const snapshot = document.snapshot(bounds);
@@ -1151,11 +1251,11 @@ export class EditorController {
       gesture: this.gesture
         ? {
             active: this.doc.active,
-            pending: this.gesture.pending,
-            queuedPoints: this.gesture.points.length,
+            pendingInput: this.gesture.latest !== null,
             brush: { ...this.gesture.brush },
           }
         : null,
+      readiness: this.localReadiness(),
       renderer: this.world.state(),
       background: { ...this.backgroundStats },
       document: this.doc
@@ -1195,23 +1295,35 @@ export class EditorController {
     }
   };
   private blur = (event: Event): void => {
+    this.editPointer = null;
     this.finishGesture(undefined, "blur", event);
     this.pan = null;
+    this.checkLocalReady();
   };
   private cancel = (event: Event): void => {
+    this.editPointer = null;
     this.finishGesture(undefined, "cancel", event);
     this.pan = null;
+    this.checkLocalReady();
   };
   private visibility = (event: Event): void => {
     if (document.visibilityState !== "hidden") return;
+    this.editPointer = null;
     this.finishGesture(undefined, "visibility", event);
     this.pan = null;
+    this.checkLocalReady();
+  };
+  private leave = (): void => {
+    if (this.editPointer !== null || this.pan) return;
+    this.world.cursor = null;
+    this.updateToolNeed();
   };
   private installEvents(): void {
     this.canvas.addEventListener("pointerdown", this.down);
     this.canvas.addEventListener("pointermove", this.move);
     this.canvas.addEventListener("pointerup", this.up);
     this.canvas.addEventListener("pointercancel", this.cancel);
+    this.canvas.addEventListener("pointerleave", this.leave);
     this.canvas.addEventListener("wheel", this.wheel, { passive: false });
     window.addEventListener("keydown", this.key);
     window.addEventListener("blur", this.blur);
@@ -1229,6 +1341,7 @@ export class EditorController {
     this.canvas.removeEventListener("pointermove", this.move);
     this.canvas.removeEventListener("pointerup", this.up);
     this.canvas.removeEventListener("pointercancel", this.cancel);
+    this.canvas.removeEventListener("pointerleave", this.leave);
     this.canvas.removeEventListener("wheel", this.wheel);
     window.removeEventListener("keydown", this.key);
     window.removeEventListener("blur", this.blur);

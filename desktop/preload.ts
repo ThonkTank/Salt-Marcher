@@ -7,7 +7,6 @@ const call = (method: string, argument?: unknown) =>
 const api: AtlasDesktop = {
   diagnostics: process.argv.includes("--atlas-diagnostics"),
   status: () => call("status"),
-  readTiles: (request) => call("readTiles", request),
   readRegion: (request) => call("readRegion", request),
   readPresentation: (request) => call("readPresentation", request),
   commit: (request) =>

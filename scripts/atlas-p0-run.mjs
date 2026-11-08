@@ -256,6 +256,7 @@ async function scenarioCompleted(scenario, resultFile) {
     );
   }
   if (scenario.id === "M10-height-cold") {
+    recordCheck("cold-blocked-inputs", scenario.blockedInputs?.passed === true);
     recordCheck(
       "cold-before-navigation",
       passed &&
@@ -272,7 +273,7 @@ async function scenarioCompleted(scenario, resultFile) {
           (attempt) =>
             Math.abs(attempt.beforeHeightObserved + 20) < 1e-7 &&
             attempt.afterHeight > 0 &&
-            landPixel(attempt.image?.pixels[0]),
+            landPixel(attempt.changedImage?.pixels[0]),
         ),
     );
   }

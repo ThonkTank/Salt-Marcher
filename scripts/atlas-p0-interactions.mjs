@@ -601,8 +601,8 @@ export async function observeStroke(session, before, timeout = 5000) {
             const input = o.events.find(
               (event) => event.kind === "input" && event.id === id,
             );
-            // This input was processed, but produced no terrain change. Retain
-            // it as an explicit functional failure, not a five-second timeout.
+            // Retain a processed input without inventing an edit or waiting five
+            // seconds. Its reason, gesture context and live result decide validity.
             if (
               input &&
               o.events.some(
@@ -669,8 +669,8 @@ export async function observeStroke(session, before, timeout = 5000) {
     missingInputKinds: ["edit", "pointerup"].filter(
       (kind) => !inputs.some((input) => input.inputKind === kind),
     ),
-    // A processed no-op or missing result stays in this set and fails the gate;
-    // neither a formerly exact frame nor pointerup alone completes the gesture.
+    // A processed no-op or missing result stays explicit. D10 discards are
+    // evaluated as such; old exact frames or pointerup alone prove no progress.
     samples: extractEditSamples(after.events, inputIds, after.sessionId).map(
       (sample) => ({ ...sample, timeout: timedOut }),
     ),

@@ -22,11 +22,6 @@ export interface SourceBoundary {
   sequence: number;
 }
 
-export interface ReadTilesRequest {
-  sessionId: string;
-  keys: string[];
-}
-
 export interface ReadRegionRequest {
   sessionId: string;
   bounds: Bounds;
@@ -78,7 +73,6 @@ export interface StoreMetrics {
 export interface AtlasDesktop {
   readonly diagnostics: boolean;
   status(): Promise<ProjectInfo>;
-  readTiles(request: ReadTilesRequest): Promise<SourceRead>;
   readRegion(request: ReadRegionRequest): Promise<RegionRead>;
   readPresentation(request: ReadPresentationRequest): Promise<PresentationRead>;
   commit(request: CommitRequest): Promise<CommitReceipt>;

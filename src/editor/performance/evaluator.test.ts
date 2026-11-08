@@ -6,6 +6,9 @@ import {
   evaluateSubmissionDiagnostics,
   evaluateColdSubmissionDiagnostics,
   extractEditSamples,
+  extractColdBoundary,
+  extractColdSamples,
+  evaluateBlockedInput,
   checkBuildIdentity,
   evaluateFunctional,
   evaluateObservation,
@@ -24,6 +27,7 @@ import {
 } from "../../../scripts/atlas-p0-evaluate.mjs";
 import { analyzeTrace, parseTrace } from "../../../scripts/atlas-p0-trace.mjs";
 import { observeStroke } from "../../../scripts/atlas-p0-interactions.mjs";
+import { startReadyStrokeMonitor } from "../../../scripts/atlas-p0-collection.mjs";
 
 const oneCase = {
   scope: "evaluator-test-only",
@@ -110,6 +114,43 @@ function sample(index: number, delay = 16) {
       frameId: index + 3,
       surfaceFrameTraceId: `surface-${index}`,
       displayTraceId: `display-${index}`,
+    },
+  };
+}
+
+function coldSample(index: number, delay = 16) {
+  const entry = {
+    ...sample(index, delay),
+    inputKind: "edit",
+    eventType: "pointerdown",
+  };
+  const navigationId = index + 1000;
+  const gateAt = entry.createdAt - 20;
+  return {
+    ...entry,
+    coldFirst: true,
+    navigationId,
+    navigationAt: entry.createdAt - 100,
+    coldBeforeNavigation: true,
+    sourcesAt: entry.createdAt - 50,
+    gateAt,
+    gateSubmissionAt: gateAt - 1,
+    gateFrameId: entry.frameId - 1,
+    gateRevision: entry.revision - 1,
+    gateViewGeneration: 2,
+    gateSessionId: entry.sessionId,
+    gateEvidence: "local-terrain-submit-v1",
+    readyPresentation: {
+      at: gateAt + 1,
+      evidence: "chromium-presented-frame",
+      state: "presented-all",
+      inputId: navigationId,
+      sessionId: entry.sessionId,
+      revision: entry.revision - 1,
+      frameId: entry.frameId - 1,
+      viewGeneration: 2,
+      surfaceFrameTraceId: `ready-surface-${index}`,
+      displayTraceId: `ready-display-${index}`,
     },
   };
 }
@@ -734,15 +775,10 @@ describe("P0 acceptance cannot turn missing evidence into a pass", () => {
 
   it("measures cold total latency per sample and enforces its maximum", () => {
     const report = knownGood();
-    const samples = report.runs[0].scenarios[0].samples;
-    samples.forEach((entry) =>
-      Object.assign(entry, {
-        navigationId: entry.inputId + 1000,
-        coldBeforeNavigation: true,
-        navigationAt: entry.createdAt - 300,
-        readyAt: entry.createdAt - 1,
-      }),
+    const samples = Array.from({ length: 100 }, (_, index) =>
+      coldSample(index),
     );
+    report.runs[0].scenarios[0].samples = samples;
     Object.assign(samples[0], { navigationAt: samples[0].createdAt - 2100 });
     const requirements = {
       ...oneCase,
@@ -1715,22 +1751,121 @@ describe("actual save and worker overlap", () => {
   });
 });
 
-describe("M10 has its own navigation-based diagnostic contract", () => {
+function blockedEvidence(holdUntilReady = true) {
+  const document = {
+    revision: 0,
+    sequence: 5,
+    historyActions: 0,
+    canUndo: false,
+    canRedo: false,
+    active: false,
+  };
+  const state = {
+    sessionId: "session-a",
+    document,
+    readiness: { ready: true, reason: null },
+    needsPress: false,
+  };
+  const samples = ["pointerdown", "pointermove", "pointerup"].map(
+    (eventType, index) => {
+      const createdAt =
+        index === 2 ? (holdUntilReady ? 120 : 14) : 10 + index * 2;
+      return {
+        inputId: index + 1,
+        inputKind: index === 2 ? "pointerup" : "edit",
+        eventType,
+        sessionId: state.sessionId,
+        createdAt,
+        handlerAt: createdAt + 1,
+        noopAt: createdAt + 1,
+        modelChanged: false,
+        accepted: false,
+        modelAt: null,
+        submissionAt: null,
+        noopReason:
+          index === 0
+            ? "terrain"
+            : index === 2
+              ? "no-gesture"
+              : "new-press-required",
+      };
+    },
+  );
+  return {
+    holdUntilReady,
+    before: structuredClone(state),
+    waiting: {
+      ...structuredClone(state),
+      readiness: { ready: false, reason: "terrain" },
+      statusVisible: true,
+      statusText: "Kartenbereich wird geladen …",
+    },
+    ready: { ...structuredClone(state), needsPress: holdUntilReady },
+    settled: structuredClone(state),
+    gateAt: 50,
+    samples,
+    mutationEvents: [] as { kind: string }[],
+    recovery: {
+      timePassed: true,
+      eventType: "pointerdown",
+      createdAt: 150,
+      modelAt: 151,
+      heightBefore: -20,
+      heightAfter: 40,
+      sequenceAfter: 6,
+      historyAfter: 1,
+    },
+  };
+}
+
+describe("D11 rejects early gestures without creating delayed work", () => {
+  it.each([false, true])(
+    "accepts visible blocking and a new press after release (held=%s)",
+    (held) => {
+      expect(evaluateBlockedInput(blockedEvidence(held))).toEqual({
+        passed: true,
+        issues: [],
+      });
+    },
+  );
+  it("rejects an invisible wait, an early mutation, replay, or no deliberate recovery", () => {
+    const invisible = blockedEvidence();
+    invisible.waiting.statusVisible = false;
+    expect(evaluateBlockedInput(invisible).issues).toContainEqual({
+      code: "BLOCKED_WAIT_STATE_UNPROVEN",
+    });
+    const changed = blockedEvidence();
+    changed.ready.document.revision++;
+    expect(evaluateBlockedInput(changed).issues).toContainEqual({
+      code: "BLOCKED_INPUT_CHANGED_DOCUMENT",
+    });
+    const replay = blockedEvidence();
+    replay.mutationEvents.push({ kind: "brush-interval" });
+    expect(evaluateBlockedInput(replay).issues).toContainEqual({
+      code: "BLOCKED_INPUT_REPLAYED",
+    });
+    const missing = blockedEvidence();
+    missing.recovery.timePassed = false;
+    expect(evaluateBlockedInput(missing).issues).toContainEqual({
+      code: "BLOCKED_INPUT_RECOVERY_FAILED",
+    });
+  });
+});
+
+describe("D11/M10 uses a real local gate and the ordinary edit contract", () => {
   function coldStroke(discarded: boolean) {
     const first = {
-      ...sample(0),
-      inputKind: "edit",
-      createdAt: 100,
-      handlerAt: 101,
-      modelAt: 102,
-      submissionAt: 300,
+      ...coldSample(1),
+      submissionAt: discarded ? 300 : 116,
       presentation: null,
     };
     const movement = Array.from({ length: 4 }, (_, index) => {
       const createdAt = 124 + index * 24;
+      const entry = sample(index + 2);
       return {
-        ...first,
-        inputId: index + 2,
+        ...entry,
+        inputKind: "edit",
+        eventType: "pointermove",
         createdAt,
         handlerAt: createdAt + 1,
         modelAt: discarded ? null : createdAt + 2,
@@ -1738,126 +1873,262 @@ describe("M10 has its own navigation-based diagnostic contract", () => {
         accepted: !discarded,
         noopAt: discarded ? createdAt + 2 : null,
         noopReason: discarded ? "feedback" : null,
-        submissionAt: discarded ? null : 300,
-        frameId: discarded ? null : first.frameId,
+        discardedDuringGesture: discarded,
+        gestureId: first.inputId,
+        submissionAt: discarded ? null : createdAt + 16,
+        frameId: discarded ? null : entry.frameId,
       };
     });
     const up = {
-      ...first,
-      inputId: 6,
+      ...sample(6),
       inputKind: "pointerup",
+      eventType: "pointerup",
       createdAt: 220,
       handlerAt: 221,
       modelAt: 222,
+      submissionAt: 224,
       sequence: 1,
     };
-    const stroke = strokeEvidence({ samples: [first, ...movement, up] }, false);
+    const samples = [first, ...movement, up];
+    const stroke = strokeEvidence({ samples });
     return {
       kind: "cold",
       droppedEvents: 0,
       requestedAttempts: 1,
-      samples: [
+      samples,
+      blockedInputs: { cases: [blockedEvidence(false), blockedEvidence(true)] },
+      attempts: [
         {
-          ...first,
-          navigationId: 100,
-          navigationAt: 0,
-          readyAt: 80,
-          coldBeforeNavigation: true,
+          attempt: 0,
+          passed: stroke.passed,
+          stroke,
+          content: {
+            points: [
+              [0, 0],
+              [400, 0],
+            ],
+            before: [-20, -20],
+            after: [40, 40],
+            undone: [-20, -20],
+          },
+          changedImage: {
+            pixels: [
+              [20, 100, 30],
+              [20, 100, 30],
+            ],
+          },
+          undoneImage: {
+            pixels: [
+              [0, 10, 120],
+              [0, 10, 120],
+            ],
+          },
         },
       ],
-      attempts: [{ attempt: 0, passed: stroke.passed, stroke }],
     };
   }
-  it("reports every cold movement input and pause without timing them as warm edits", () => {
+
+  it("retains every cold input and fails stalled feedback without calling D10 discards lost edits", () => {
     const result = evaluateScenario(coldStroke(true));
     expect(result.status).toBe("FAIL");
-    expect(result.sampleCount).toBe(1);
+    expect(result.sampleCount).toBe(6);
     expect(result.liveFeedback).toMatchObject({
-      status: "FAIL",
       inputCount: 6,
       processedNoops: 4,
       notAccepted: 4,
       maximumMovingStallMs: 120,
     });
-    expect(result.live[0]).toMatchObject({
-      liveInputs: 5,
-      liveFramesBeforeRelease: 0,
-    });
-    expect(result.submission.inputToSubmissionMs.p95).toBe(200);
-    expect(result.submission.issues).toEqual([]);
+    expect(result.failures).toContainEqual(
+      expect.objectContaining({ code: "CONTINUOUS_SUBMISSION_STALL" }),
+    );
+    expect(result.failures).toContainEqual(
+      expect.objectContaining({
+        code: "COLD_FIRST_INPUT_LOWER_BOUND_EXCEEDS_LIMIT",
+      }),
+    );
     expect(
-      result.failures.filter((issue) => issue.code === "INPUT_NOT_ACCEPTED"),
-    ).toHaveLength(4);
+      result.failures.some((issue) => issue.code === "INPUT_NOT_ACCEPTED"),
+    ).toBe(false);
   });
-  it("retains the existing M10 boundary for a complete cold stroke", () => {
-    const result = evaluateScenario(coldStroke(false));
+
+  it("uses the same live/content criteria after cold or warm readiness", () => {
+    const cold = coldStroke(false);
+    const result = evaluateScenario(cold);
     expect(result.status).toBe("PROXY_ONLY");
     expect(result.liveFeedback.inputCount).toBe(6);
-    expect(result.liveFeedback.processedNoops).toBe(0);
-    expect(result.submission.issues).toEqual([]);
-    expect(result.submission.inputToSubmissionMs.count).toBe(1);
+    expect(result.submission.inputToSubmissionMs.count).toBe(6);
+    expect(result.live[0].passed).toBe(true);
+    expect(evaluateScenario({ ...cold, kind: "edit" }).live).toEqual(
+      result.live,
+    );
   });
-  it("keeps rare cold overshoots separate from p95 and enforces the absolute maximum", () => {
+
+  it("permits proven movement coalescing without accepting a lost press or inventing a submit", () => {
+    const scenario = coldStroke(false);
+    Object.assign(scenario.samples[2], {
+      modelAt: null,
+      submissionAt: null,
+      modelChanged: false,
+      accepted: false,
+      noopAt: 150,
+      noopReason: "coalesced",
+      discardedDuringGesture: true,
+      gestureId: scenario.samples[0].inputId,
+      frameId: null,
+    });
+    expect(evaluateScenario(scenario).status).toBe("PROXY_ONLY");
+    expect(
+      evaluateSubmissionDiagnostics(scenario.samples).inputToSubmissionMs.count,
+    ).toBe(5);
+    Object.assign(scenario.samples[2], { eventType: "pointerdown" });
+    expect(evaluateScenario(scenario).failures).toContainEqual(
+      expect.objectContaining({ code: "INPUT_NOT_ACCEPTED" }),
+    );
+  });
+
+  it("dispatches immediately on the first product gate, not the old data-ready event", async () => {
+    vi.useFakeTimers();
+    try {
+      const sendInputEvent = vi.fn();
+      const executeJavaScript = vi
+        .fn()
+        .mockResolvedValueOnce({
+          sessionId: "session-a",
+          eventCount: 2,
+          droppedEvents: 0,
+          readiness: { ready: true, frame: 1, viewGeneration: 2 },
+          events: [
+            {
+              kind: "input",
+              inputKind: "navigation",
+              id: 1,
+              createdAt: 10,
+              at: 11,
+            },
+            { kind: "ready", input: 1, at: 12 },
+          ],
+        })
+        .mockResolvedValueOnce({
+          sessionId: "session-a",
+          eventCount: 3,
+          droppedEvents: 0,
+          readiness: { ready: true, frame: 5, viewGeneration: 2 },
+          events: [
+            {
+              kind: "input-ready",
+              input: 1,
+              at: 30,
+              sessionId: "session-a",
+              frame: 5,
+              viewGeneration: 2,
+            },
+          ],
+        });
+      const electron = {
+        BrowserWindow: {
+          getAllWindows: () => [
+            { webContents: { executeJavaScript, sendInputEvent } },
+          ],
+        },
+      };
+      const session = {
+        app: {
+          evaluate: (
+            fn: (electron: unknown, args: unknown) => unknown,
+            args: unknown,
+          ) => fn(electron, args),
+        },
+      };
+      const pending = startReadyStrokeMonitor(session, {
+        afterInputId: 0,
+        screenPoint: { x: 400, y: 300 },
+        sessionId: "session-a",
+        point: [0, 0],
+      });
+      await vi.advanceTimersByTimeAsync(0);
+      expect(sendInputEvent).not.toHaveBeenCalled();
+      await vi.advanceTimersByTimeAsync(1);
+      expect(executeJavaScript).toHaveBeenCalledTimes(2);
+      expect(sendInputEvent.mock.calls.map(([event]) => event.type)).toEqual([
+        "mouseMove",
+        "mouseDown",
+      ]);
+      await vi.advanceTimersByTimeAsync(120);
+      expect((await pending).dispatched).toBe(true);
+      expect(executeJavaScript).toHaveBeenCalledTimes(2);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("keeps rare cold overshoots in the report and enforces the absolute maximum", () => {
     const samples = Array.from({ length: 100 }, (_, index) => {
       const navigationAt = index * 3000;
+      const gateAt = navigationAt + (index < 5 ? 600 : 20);
       return {
-        ...sample(index),
-        navigationId: index + 1000,
+        ...coldSample(index),
         navigationAt,
-        readyAt: navigationAt + (index < 5 ? 600 : 20),
+        sourcesAt: navigationAt + 10,
+        gateAt,
+        gateSubmissionAt: gateAt - 1,
         createdAt: navigationAt + 700,
         handlerAt: navigationAt + 701,
         modelAt: navigationAt + 702,
         submissionAt: navigationAt + (index < 5 ? 800 : 704),
-        coldBeforeNavigation: true,
       };
     });
     const result = evaluateColdSubmissionDiagnostics(samples);
     expect(result.status).toBe("PROXY_ONLY");
-    expect(result.outliers).toHaveLength(10);
-    expect(result.navigationToReadyMs.p95).toBe(20);
+    expect(
+      result.outliers.filter(
+        (issue) => issue.code === "COLD_GATE_LOWER_BOUND_EXCEEDS_LIMIT",
+      ),
+    ).toHaveLength(5);
+    expect(
+      result.outliers.filter(
+        (issue) => issue.code === "COLD_SUBMISSION_LOWER_BOUND_EXCEEDS_LIMIT",
+      ),
+    ).toHaveLength(5);
+    expect(result.navigationToGateMs.p95).toBe(20);
     expect(result.navigationToSubmissionMs.p95).toBe(704);
     samples[6].submissionAt = samples[6].navigationAt + 2100;
     expect(evaluateColdSubmissionDiagnostics(samples).issues).toContainEqual(
       expect.objectContaining({ code: "COLD_MAXIMUM_EXCEEDED", inputId: 7 }),
     );
   });
-  it("does not fail a 282.2-ms cold edit merely for exceeding the warm 50-ms budget", () => {
-    const entry = {
-      ...sample(5),
-      submissionAt: 782.2,
-      presentation: null,
-      navigationId: 100,
-      navigationAt: 400,
-      readyAt: 426.9,
-      coldBeforeNavigation: true,
-    };
+
+  it("fails a 282.2-ms first edit despite navigation-to-edit remaining below 750 ms", () => {
+    const entry = { ...coldSample(5), submissionAt: 782.2, presentation: null };
     const result = evaluateColdSubmissionDiagnostics([entry]);
-    expect(result.status).toBe("PROXY_ONLY");
+    expect(result.status).toBe("FAIL");
     expect(result.presentationProven).toBe(false);
     expect(result.inputToSubmissionMs.maximum).toBeCloseTo(282.2);
     expect(result.navigationToSubmissionMs.maximum).toBeCloseTo(382.2);
-    expect(result.issues).toEqual([]);
-    expect(evaluateSubmissionDiagnostics([entry]).status).toBe("FAIL");
+    expect(result.issues).toContainEqual(
+      expect.objectContaining({
+        code: "COLD_FIRST_INPUT_LOWER_BOUND_EXCEEDS_LIMIT",
+        limitMs: 50,
+      }),
+    );
   });
 
-  it("still rejects late navigation readiness, late submission, and missing evidence", () => {
+  it("rejects late gates, late submission, missing gates and the old data-only ready boundary", () => {
     const entry = {
-      ...sample(7),
-      navigationId: 100,
+      ...coldSample(7),
       navigationAt: 0,
-      readyAt: 600,
-      coldBeforeNavigation: true,
+      sourcesAt: 20,
+      gateAt: 600,
+      gateSubmissionAt: 599,
     };
     expect(evaluateColdSubmissionDiagnostics([entry]).issues).toContainEqual(
       expect.objectContaining({
-        code: "COLD_READINESS_TARGET_EXCEEDED",
+        code: "COLD_GATE_LOWER_BOUND_EXCEEDS_LIMIT",
         limitMs: 500,
       }),
     );
     expect(
       evaluateColdSubmissionDiagnostics([
-        { ...entry, readyAt: 20, submissionAt: 800 },
+        { ...entry, gateAt: 30, gateSubmissionAt: 29, submissionAt: 800 },
       ]).issues,
     ).toContainEqual(
       expect.objectContaining({
@@ -1866,37 +2137,158 @@ describe("M10 has its own navigation-based diagnostic contract", () => {
       }),
     );
     expect(
-      evaluateColdSubmissionDiagnostics([
-        { ...entry, readyAt: 20, submissionAt: null },
-      ]).status,
+      evaluateColdSubmissionDiagnostics([{ ...entry, gateAt: null }]).status,
     ).toBe("FAIL");
+    expect(
+      evaluateColdSubmissionDiagnostics([
+        { ...entry, gateEvidence: null, readyAt: 20 },
+      ]).issues,
+    ).toContainEqual(
+      expect.objectContaining({ code: "INVALID_COLD_NAVIGATION_BOUNDARY" }),
+    );
   });
 
-  it("uses the cold contract in native evaluation too, with presentation still mandatory", () => {
+  const nativeRequirements = {
+    ...oneCase,
+    scenarios: [
+      { id: "warm", kind: "cold", minSamples: 100, minTotalSamples: 100 },
+    ],
+  };
+  function nativeCold(delay = 16) {
     const report = knownGood();
     report.runs[0].scenarios[0].samples = Array.from(
       { length: 100 },
-      (_, i) => {
-        const entry = sample(i + 2, 280);
-        return Object.assign(entry, {
-          navigationId: i + 1000,
-          navigationAt: entry.createdAt - 100,
-          readyAt: entry.createdAt - 20,
-          coldBeforeNavigation: true,
-        });
-      },
+      (_, index) => coldSample(index, delay),
     );
-    const requirements = {
-      ...oneCase,
-      scenarios: [
-        { id: "warm", kind: "cold", minSamples: 100, minTotalSamples: 100 },
-      ],
-    };
-    expect(evaluateAcceptance(report, requirements).status).toBe("PASS");
-    Object.assign(report.runs[0].scenarios[0].samples[0], {
-      presentation: null,
+    return report;
+  }
+
+  it("requires ordinary 50-ms native response as well as the cold navigation budget", () => {
+    expect(evaluateAcceptance(nativeCold(), nativeRequirements).status).toBe(
+      "PASS",
+    );
+    expect(
+      evaluateAcceptance(nativeCold(280), nativeRequirements).failures,
+    ).toContainEqual(
+      expect.objectContaining({ code: "COLD_FIRST_INPUT_P95_EXCEEDED" }),
+    );
+  });
+
+  it("blocks a missing native readiness join and rejects a stale baseline or premature input", () => {
+    const missing = nativeCold();
+    Object.assign(missing.runs[0].scenarios[0].samples[0], {
+      readyPresentation: null,
     });
-    expect(evaluateAcceptance(report, requirements).passed).toBe(false);
+    const blocked = evaluateAcceptance(missing, nativeRequirements);
+    expect(blocked.status).toBe("BLOCKED");
+    expect(blocked.blockers).toContainEqual(
+      expect.objectContaining({ code: "MISSING_READY_PRESENTATION" }),
+    );
+    const stale = nativeCold();
+    const staleSample = stale.runs[0].scenarios[0].samples[0] as ReturnType<
+      typeof coldSample
+    >;
+    staleSample.readyPresentation.viewGeneration++;
+    expect(
+      evaluateAcceptance(stale, nativeRequirements).failures,
+    ).toContainEqual(
+      expect.objectContaining({
+        code: "UNMATCHED_OR_STALE_READY_PRESENTATION",
+      }),
+    );
+    const early = nativeCold();
+    const earlySample = early.runs[0].scenarios[0].samples[0] as ReturnType<
+      typeof coldSample
+    >;
+    earlySample.readyPresentation.at = earlySample.createdAt + 5;
+    expect(
+      evaluateAcceptance(early, nativeRequirements).failures,
+    ).toContainEqual(
+      expect.objectContaining({
+        code: "INPUT_PRECEDES_VISIBLE_READY",
+        milliseconds: 5,
+      }),
+    );
+  });
+
+  it("extracts the first real input once and requires its actual submitted view", () => {
+    const events = [
+      { kind: "input", inputKind: "navigation", id: 1, at: 10, createdAt: 9 },
+      {
+        kind: "view-change",
+        at: 11,
+        sessionId: "session-a",
+        viewGeneration: 2,
+      },
+      { kind: "sources-ready", at: 20, sessionId: "session-a", input: 1 },
+      {
+        kind: "submit",
+        at: 30,
+        sessionId: "session-a",
+        frame: 5,
+        revision: 0,
+        cameraGeneration: 2,
+      },
+      {
+        kind: "input-ready",
+        at: 31,
+        sessionId: "session-a",
+        input: 1,
+        frame: 5,
+        revision: 0,
+        viewGeneration: 2,
+      },
+    ];
+    const edits = [
+      {
+        ...sample(1),
+        inputKind: "edit",
+        createdAt: 32,
+        handlerAt: 33,
+        modelAt: 34,
+        submissionAt: 36,
+      },
+      {
+        ...sample(2),
+        inputKind: "edit",
+        createdAt: 50,
+        handlerAt: 51,
+        modelAt: 52,
+        submissionAt: 54,
+      },
+    ];
+    const extracted = extractColdSamples(events, edits, {
+      sessionId: "session-a",
+      coldBeforeNavigation: true,
+    });
+    expect(extracted).toHaveLength(2);
+    expect(extracted[0]).toMatchObject({
+      navigationId: 1,
+      gateAt: 31,
+      gateSubmissionAt: 30,
+      sourcesAt: 20,
+      gateEvidence: "local-terrain-submit-v1",
+      readyAt: null,
+    });
+    expect(extracted[1]).not.toHaveProperty("navigationId");
+    const stale = [
+      ...events.slice(0, 4),
+      {
+        kind: "view-change",
+        at: 30.5,
+        sessionId: "session-a",
+        viewGeneration: 3,
+      },
+      events[4],
+    ];
+    expect(extractColdBoundary(stale, 1, "session-a").gateEvidence).toBeNull();
+    expect(
+      extractColdBoundary(
+        events.filter((event) => event.kind !== "input-ready"),
+        1,
+        "session-a",
+      ).gateAt,
+    ).toBeNull();
   });
 });
 
