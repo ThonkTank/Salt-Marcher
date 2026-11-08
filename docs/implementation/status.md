@@ -35,20 +35,20 @@ der Lockhash ist `b471b4a1da63f4226f95a28b60f3345aa03e51803f0ef1982624cd16a2d35b
 Der veröffentlichte [Implementierungscommit](https://github.com/ThonkTank/Salt-Marcher/commit/b2f09f0ef56ed45f4b41bd9f886ae3f95b0f06f5)
 hat exakt denselben Git-Baum wie dieser lokale Buildcommit. Der Editor-/Storecode ist seither unverändert. Spätere Korrekturen betreffen
 Berichtsauswertung und RPM-Anbindung. Der abschließende Paketbuild
-`774c3b80a74a2296e35e415ab72d75c59fb76877` ist ebenfalls sauber; sein Produktquellhash
-`7b7f62ae30beda426fdc762e67500eb78655afdd8cfbe23ade390519fa85fd08` unterscheidet sich
+`33bc6f21a5f42ff9d649eeca97908c819d6292b6` ist ebenfalls sauber; sein Produktquellhash
+`ab3166b0270d539027a408836515280c618c752c793af9f33af3d6fa058bda4d` unterscheidet sich
 ausschließlich durch Forge-Konfiguration und Paketprüfbefehl. Der Lockhash bleibt gleich.
 
-| Prüfung                                                | Ergebnis                                                                                                                                                                                     |
-| ------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Produkt-TypeScript und Auswerter-CheckJs               | Bestanden; Produkt bleibt strikt typgeprüft.                                                                                                                                                 |
-| Modell, Renderer, Controller, Auswerter und Vorprüfung | 234 P0-Tests bestanden, einschließlich negativer Profil-/Zeit-/Inhaltsfälle.                                                                                                                 |
-| SQLite-/Utility-Dispatcher und Skalierungsfixtures     | 15 Tests bestanden, einschließlich geordnetem Commit, idempotenter Wiederholung, Save exakt S und Reads während Snapshot.                                                                    |
-| Neuer Desktop-Smoke auf sauberem Build                 | 83 Checks bestanden: 13 Normalstart, 19 echte Hängerprüfungen und 51 Lifecyclechecks in 13 Datei-/Schließfällen.                                                                             |
-| Navigation und Coastworkflow                           | 16 Checks und fünf Fehlerkontrollen bestanden; absichtlich falsche Darstellung fällt durch, anschließende Erholung besteht.                                                                  |
-| 32 / 1.024 / 9.000 reale Autorenquellen                | Alle drei Rundläufe bestanden: grobe Bearbeitung, geschützte Feindaten, Detailrückkehr, History, Save und Prozessneustart.                                                                   |
-| Tatsächliches Forge-Paket                              | 130 ASAR-Einträge geprüft, native SQLite vorhanden, keine unerlaubten/fehlenden Dateien. Keine der 2.289 Archivdateien wäre enthalten. Echter Paketstart ohne Diagnose: 13 Checks bestanden. |
-| Native Vorprüfung in dieser Umgebung                   | Exit 2, `BLOCKED`, keine Fixtures: `NO_NATIVE_DISPLAY` und `NATIVE_PRESENTATION_ADAPTER_UNIMPLEMENTED` bleiben getrennt sichtbar.                                                            |
+| Prüfung                                                | Ergebnis                                                                                                                                                                                                            |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Produkt-TypeScript und Auswerter-CheckJs               | Bestanden; Produkt bleibt strikt typgeprüft.                                                                                                                                                                        |
+| Modell, Renderer, Controller, Auswerter und Vorprüfung | 234 P0-Tests bestanden, einschließlich negativer Profil-/Zeit-/Inhaltsfälle.                                                                                                                                        |
+| SQLite-/Utility-Dispatcher und Skalierungsfixtures     | 15 Tests bestanden, einschließlich geordnetem Commit, idempotenter Wiederholung, Save exakt S und Reads während Snapshot.                                                                                           |
+| Neuer Desktop-Smoke auf sauberem Build                 | 83 Checks bestanden: 13 Normalstart, 19 echte Hängerprüfungen und 51 Lifecyclechecks in 13 Datei-/Schließfällen.                                                                                                    |
+| Navigation und Coastworkflow                           | 16 Checks und fünf Fehlerkontrollen bestanden; absichtlich falsche Darstellung fällt durch, anschließende Erholung besteht.                                                                                         |
+| 32 / 1.024 / 9.000 reale Autorenquellen                | Alle drei Rundläufe bestanden: grobe Bearbeitung, geschützte Feindaten, Detailrückkehr, History, Save und Prozessneustart.                                                                                          |
+| Tatsächliches Forge-Paket                              | 123 ASAR-Einträge geprüft, genau eine SQLite-Bibliothek für das Paketziel, keine unerlaubten/fehlenden Dateien. Keine der 2.289 Archivdateien wäre enthalten. Echter Paketstart ohne Diagnose: 13 Checks bestanden. |
+| Native Vorprüfung in dieser Umgebung                   | Exit 2, `BLOCKED`, keine Fixtures: `NO_NATIVE_DISPLAY` und `NATIVE_PRESENTATION_ADAPTER_UNIMPLEMENTED` bleiben getrennt sichtbar.                                                                                   |
 
 Der Lifecycle-Smoke umfasst aktive Geste, zwei lokal ausstehende Writes und vor
 Commit abgewiesene Writes jeweils mit Save/Discard/Cancel. Er prüft außerdem
@@ -57,10 +57,12 @@ Beim echten 500-ms-Hänger wird nach Loslassen nichts nachgeholt; weitergehalten
 Gesten nehmen nur begrenzte Zeit an und wirken danach nachweisbar weiter.
 
 Der RPM-Maker verwendet denselben ausführbaren Dateinamen wie der Packager.
-Ein zusätzlicher Test prüft die tatsächliche Metadaten-/Options-/Symlinkvorbereitung
-am gebauten ASAR: Der alte Defaultname reproduziert den Fehler, die gemeinsame
-Konfiguration findet die Anwendung. Der erneute Paketstart besteht alle 13 Checks.
-Diese Vorbereitung ersetzt nicht den echten RPM-Bau in CI.
+Die Paketkopie enthält nur den SQLite-Prebuild für das tatsächliche Forge-Ziel;
+fremde Plattformen und Architekturen bleiben ausgeschlossen. Zwei Regressionen
+prüfen die echte Installer-Vorbereitung und den ASAR-Inhalt einschließlich eines
+vom Buildhost abweichenden Ziels. Beide bestehen. Der Paketcheck prüft unabhängig
+den tatsächlichen Inhalt und Start; RPM-Strip bleibt aktiv. Diese lokalen Prüfungen
+ersetzen nicht den echten RPM-Bau in CI.
 
 ## Großpinsel: Befund und Grenze
 
@@ -100,10 +102,10 @@ Der P0-Paketcheck läuft vor dem langen Gesamtcheck, damit Makerfehler früh auf
 Das Gate prüft den veröffentlichten PR-Head einschließlich V7-/Rust-Verträgen,
 Clippy, Format, Browserfällen, P0-Smoke und beiden Paketpfaden. Maßgeblich ist
 sein Ergebnis an den [aktuellen PR-Checks](https://github.com/ThonkTank/Salt-Marcher/pull/1469/checks).
-Die erste CI-Runde auf `b458f3a` hat den vollständigen `check:all` einschließlich
-248 V7-Browserfällen, 15 P0-Storetests und 83 Desktopchecks bestanden. Der danach
-aufgetretene RPM-Fehler war ein abweichender ausführbarer Dateiname; diese
-Anbindung ist korrigiert und wird am neuen Kandidaten erneut geprüft.
+Der vollständige `check:all` hat auf `b458f3a` einschließlich 248 V7-Browserfällen,
+15 P0-Storetests und 83 Desktopchecks bestanden. Die anschließend korrigierten
+RPM-Paketgrenzen werden zusammen mit allen Pflichtprüfungen am aktuellen Head
+erneut geprüft; ein früherer grüner Teilcheck ersetzt dieses Ergebnis nicht.
 Lokal fehlen `cargo` und `rpmbuild`: Der Gesamt-Vitestlauf scheitert deshalb an
 der Rust-gestützten V7-Vertragssuite, nicht an einem P0-Test. Die Rust-gestützten Pflichtprüfungen bleiben deshalb im CI-Gate erhalten.
 

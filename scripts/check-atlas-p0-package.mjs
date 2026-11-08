@@ -4,6 +4,7 @@ import { createRequire } from "node:module";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { listPackage, extractFile } from "@electron/asar";
+import { assertNativePackageBindings } from "./atlas-p0-native-package.mjs";
 
 const require = createRequire(import.meta.url);
 const config = require("../forge.atlas.config.cjs");
@@ -33,6 +34,7 @@ const missing = required.filter((file) => !files.includes(file));
 const sqliteBinary = files.some((file) =>
   /\/better-sqlite3\/.*\.node$/.test(file),
 );
+const nativeBindings = files.filter((file) => file.endsWith(".node"));
 const packagedBuild = JSON.parse(
   extractFile(asar, "desktop-dist/build.json").toString("utf8"),
 );
@@ -58,6 +60,7 @@ const evidence = {
   rejected,
   missing,
   sqliteBinary,
+  nativeBindings,
   legacyFilesChecked: tracked.length,
   leakedArchive,
   files,
@@ -73,6 +76,9 @@ assert.deepEqual(
 );
 assert.deepEqual(missing, [], "Package is missing a runtime entrypoint");
 assert.equal(sqliteBinary, true, "Package is missing its native SQLite binary");
+// This command starts the packaged executable on the current machine, so its
+// asserted target is the same platform/architecture used to select directory.
+assertNativePackageBindings(files, process.platform, process.arch);
 assert.deepEqual(
   leakedArchive,
   [],
