@@ -4,6 +4,16 @@ Atlas V7, Dateiformat 22, Generierungsrezept 4. Stand: 7. November 2026.
 [README](../../README.md) enthält Befehle, [Architektur](../architecture.md)
 Zuständigkeiten, [Produktvertrag](../product-contract.md) Verhalten und Grenzen.
 
+## Nächster Implementierungsauftrag
+
+Der [ausführbare Atlas-Neubauplan](atlas-rebuild-plan.md) ist auf Basis von
+Main `1bb3932fcffcb2d5fea47fae616c3b69489443bc` angelegt (8. November 2026).
+Er umfasst den vollständigen Ersatz des aktiven Editors mit Funktionsmatrix,
+bewussten Verhaltensänderungen, P0–P9 und verbindlicher Desktop-/Performanceabnahme.
+Ein Verweis mit „erledige das“ beauftragt die vollständige Ausführung.
+Alle Implementierungspakete sind offen. Diese Plananlage verändert keine Laufzeit;
+die folgenden bisherigen Prüfaussagen sind keine Nachweise für den Neubau.
+
 ## Integration
 
 Main enthält die Höhen-/Landschaftsarbeiten, stabile Geometriecaches,
