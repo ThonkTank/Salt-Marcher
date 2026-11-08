@@ -33,8 +33,11 @@ mit `dirty: false`. Sein Produktquellhash ist
 `3a44a2a75c05f8f8a1e81425c7b7b60796f213569b4a08f28a684afb7b2810d4`;
 der Lockhash ist `b471b4a1da63f4226f95a28b60f3345aa03e51803f0ef1982624cd16a2d35bc2`.
 Der veröffentlichte [Implementierungscommit](https://github.com/ThonkTank/Salt-Marcher/commit/b2f09f0ef56ed45f4b41bd9f886ae3f95b0f06f5)
-hat exakt denselben Git-Baum wie dieser lokale Buildcommit. Nachfolgende
-Berichts-/Dokumentationskorrekturen ändern diese Produktquellen nicht.
+hat exakt denselben Git-Baum wie dieser lokale Buildcommit. Der Editor-/Storecode ist seither unverändert. Spätere Korrekturen betreffen
+Berichtsauswertung und RPM-Anbindung. Der abschließende Paketbuild
+`774c3b80a74a2296e35e415ab72d75c59fb76877` ist ebenfalls sauber; sein Produktquellhash
+`7b7f62ae30beda426fdc762e67500eb78655afdd8cfbe23ade390519fa85fd08` unterscheidet sich
+ausschließlich durch Forge-Konfiguration und Paketprüfbefehl. Der Lockhash bleibt gleich.
 
 | Prüfung                                                | Ergebnis                                                                                                                                                                                     |
 | ------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -52,6 +55,12 @@ Commit abgewiesene Writes jeweils mit Save/Discard/Cancel. Er prüft außerdem
 verlorene Bestätigung ohne Doppelcommit, dauerhaften Fehler und Neu/Öffnen.
 Beim echten 500-ms-Hänger wird nach Loslassen nichts nachgeholt; weitergehaltene
 Gesten nehmen nur begrenzte Zeit an und wirken danach nachweisbar weiter.
+
+Der RPM-Maker verwendet denselben ausführbaren Dateinamen wie der Packager.
+Ein zusätzlicher Test prüft die tatsächliche Metadaten-/Options-/Symlinkvorbereitung
+am gebauten ASAR: Der alte Defaultname reproduziert den Fehler, die gemeinsame
+Konfiguration findet die Anwendung. Der erneute Paketstart besteht alle 13 Checks.
+Diese Vorbereitung ersetzt nicht den echten RPM-Bau in CI.
 
 ## Großpinsel: Befund und Grenze
 
@@ -87,9 +96,14 @@ fehlender nativer Nachweise.
 ## CI, Belege und nächste Grenze
 
 Der zentrale Check heißt unverändert `Candidate · exact-SHA aggregate`.
-Er prüft den veröffentlichten PR-Head einschließlich V7-/Rust-Verträgen,
+Der P0-Paketcheck läuft vor dem langen Gesamtcheck, damit Makerfehler früh auffallen.
+Das Gate prüft den veröffentlichten PR-Head einschließlich V7-/Rust-Verträgen,
 Clippy, Format, Browserfällen, P0-Smoke und beiden Paketpfaden. Maßgeblich ist
 sein Ergebnis an den [aktuellen PR-Checks](https://github.com/ThonkTank/Salt-Marcher/pull/1469/checks).
+Die erste CI-Runde auf `b458f3a` hat den vollständigen `check:all` einschließlich
+248 V7-Browserfällen, 15 P0-Storetests und 83 Desktopchecks bestanden. Der danach
+aufgetretene RPM-Fehler war ein abweichender ausführbarer Dateiname; diese
+Anbindung ist korrigiert und wird am neuen Kandidaten erneut geprüft.
 Lokal fehlen `cargo` und `rpmbuild`: Der Gesamt-Vitestlauf scheitert deshalb an
 der Rust-gestützten V7-Vertragssuite, nicht an einem P0-Test. Die Rust-gestützten Pflichtprüfungen bleiben deshalb im CI-Gate erhalten.
 

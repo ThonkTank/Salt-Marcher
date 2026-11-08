@@ -2,6 +2,7 @@
 // Electron itself and SQLite. Keep one explicit package boundary, independent of
 // whether the source checkout happens to be sparse or complete.
 const runtimeModules = new Set(["better-sqlite3", "node-addon-api"]);
+const executableName = "saltmarcher-atlas-p0";
 const desktopFiles = new Set([
   "main.cjs",
   "preload.cjs",
@@ -12,7 +13,7 @@ const desktopFiles = new Set([
 module.exports = {
   packagerConfig: {
     name: "Atlas P0",
-    executableName: "saltmarcher-atlas-p0",
+    executableName,
     asar: { unpack: "**/*.node" },
     // The allowlist below owns dependency selection. Packager's generic pruner
     // would otherwise retain all shared V7 production modules before ignore().
@@ -38,7 +39,8 @@ module.exports = {
       name: "@electron-forge/maker-rpm",
       config: {
         options: {
-          name: "saltmarcher-atlas-p0",
+          name: executableName,
+          bin: executableName,
           productName: "Atlas P0",
           description: "Atlas terrain feasibility study",
           homepage: "https://github.com/ThonkTank/Salt-Marcher",
