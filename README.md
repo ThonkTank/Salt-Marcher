@@ -16,6 +16,13 @@ Diese vier Dokumente werden ersetzt und aktualisiert, nicht als Arbeitschronik
 fortgeschrieben. Messreihen, Sicherungen und Detailprotokolle gehören unter die
 ignorierten Pfade `src-tauri/target/cleanup/` oder `src-tauri/target/diagnostics/`.
 
+Der angeforderte [ausführbare Atlas-Neubauplan](docs/implementation/atlas-rebuild-plan.md)
+enthält den vollständigen nächsten Implementierungsauftrag einschließlich
+Funktionsumfang, Architekturentscheidungen, Arbeitspaketen und Abschlusskriterien.
+Ein Verweis darauf mit „erledige das“ beauftragt seine vollständige Ausführung.
+Der Plan beschreibt den Zielzustand; die folgenden Befehle und Produktdokumente
+beschreiben weiterhin die bestehende Anwendung bis zu ihrer tatsächlichen Ablösung.
+
 ## Einrichtung
 
 CI und Referenzmessungen verwenden Node.js 22.19.0 aus `.node-version` und
