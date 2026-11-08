@@ -21,14 +21,16 @@ fortgeschrieben. Messreihen, Sicherungen und Detailprotokolle gehören unter die
 ignorierten Pfade `src-tauri/target/cleanup/`, `src-tauri/target/diagnostics/`
 oder für P0 unter `artifacts/atlas-rebuild/`.
 
-Der angeforderte [ausführbare Atlas-Neubauplan](docs/implementation/atlas-rebuild-plan.md)
-enthält den vollständigen nächsten Implementierungsauftrag einschließlich
-Funktionsumfang, Architekturentscheidungen, Arbeitspaketen und Abschlusskriterien.
-Ein Verweis darauf mit „erledige das“ beauftragt seine vollständige Ausführung.
-Der Plan beschreibt den Zielzustand P0–P9. Der derzeit beauftragte Versuch ist
-ausdrücklich auf die erste P0-Machbarkeitsprüfung begrenzt: zunächst die
-architektonische Richtung prüfen. P1–P9 werden damit nicht begonnen. Die
-vollständigen Wiederholungsreihen sind für eine spätere Leistungsabnahme verfügbar.
+Der angeforderte [ausführbare Atlas-Neubau- und Aufräumplan](docs/implementation/atlas-rebuild-plan.md)
+enthält den vollständigen Zielumfang F01–F19 mit den vereinbarten D01–D09,
+Architekturentscheidungen, Arbeitspaketen und Abschlusskriterien. Ein Verweis
+darauf mit „erledige das“ beauftragt seine vollständige Ausführung P0–P9.
+Der aktuelle Auftrag vom 8. November 2026 ist die **Aufräumplanung**;
+diese Überarbeitung startet keine Laufzeitänderungen oder neuen Messreihen.
+Zuerst sollen der gemeinsame Prüfablauf, die Darstellung beim großen Pinsel
+und die begrenzte Übersicht über viele feine Quellen geklärt werden.
+Der [Status](docs/implementation/status.md) hält die vorhandenen Teilnachweise
+und die weiterhin offene native Abnahme fest.
 Die V7-Abschnitte beschreiben die bestehende Standardanwendung, die gesonderten
 P0-Abschnitte den implementierten Höhenversuch und seine Prüfgrenzen.
 
