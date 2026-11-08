@@ -17,6 +17,7 @@ jobs:
     env:
       CI: "true"
       PLAYWRIGHT_DIAGNOSTICS_RUN: src-tauri/target/diagnostics/playwright-ci
+      ATLAS_P0_SMOKE_OUTPUT: artifacts/atlas-rebuild/ci-smoke
     steps:
       - name: Check out exact candidate
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -54,6 +55,15 @@ jobs:
           set -o pipefail
           mkdir -p src-tauri/target/diagnostics/ci-logs
           npm run check:all 2>&1 | tee src-tauri/target/diagnostics/ci-logs/check-all.log
+      - name: Build and run the Atlas P0 package
+        timeout-minutes: 20
+        run: |
+          set -o pipefail
+          npm run check:atlas-p0:package 2>&1 | tee src-tauri/target/diagnostics/ci-logs/p0-package.log
+          shopt -s nullglob
+          packages=(out/make/rpm/*/*.rpm)
+          test "${#packages[@]}" -gt 0
+          rpm -qip "${packages[@]}"
       - name: Build configured native RPM
         timeout-minutes: 35
         run: |
@@ -64,7 +74,7 @@ jobs:
           packages=(src-tauri/target/release/bundle/rpm/*.rpm)
           test "${#packages[@]}" -gt 0
           rpm -qip "${packages[@]}"
-      - name: Upload browser diagnostics and check logs
+      - name: Upload browser, P0 and package diagnostics
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
@@ -73,11 +83,15 @@ jobs:
             src-tauri/target/diagnostics/playwright-ci/report/
             src-tauri/target/diagnostics/playwright-ci/results/
             src-tauri/target/diagnostics/ci-logs/
+            artifacts/atlas-rebuild/ci-smoke/
+            artifacts/atlas-rebuild/ci-package/
             !**/*.db
             !**/*.db-*
             !**/*.sqlite
             !**/*.sqlite-*
             !**/*.sqlite3
             !**/*.sqlite3-*
+            !**/*.saltatlas
+            !**/*.saltatlas-*
           if-no-files-found: ignore
           retention-days: 7

@@ -22,6 +22,16 @@ export interface SourceBoundary {
   sequence: number;
 }
 
+/** Every accepted local edit is finished before this replacement boundary. */
+export interface PreparedDocument extends SourceBoundary {
+  persistenceError: string | null;
+}
+
+export interface FileActionRequest {
+  kind: "prepare" | "resume" | "recover";
+  error?: string;
+}
+
 export interface ReadRegionRequest {
   sessionId: string;
   bounds: Bounds;
@@ -72,13 +82,16 @@ export interface StoreMetrics {
 
 export interface AtlasDesktop {
   readonly diagnostics: boolean;
+  onFileAction(
+    handler: (request: FileActionRequest) => Promise<PreparedDocument | null>,
+  ): () => void;
   status(): Promise<ProjectInfo>;
   readRegion(request: ReadRegionRequest): Promise<RegionRead>;
   readPresentation(request: ReadPresentationRequest): Promise<PresentationRead>;
   commit(request: CommitRequest): Promise<CommitReceipt>;
   /** Null means the user cancelled the native file/unsaved-changes dialog. */
-  newProject(): Promise<ProjectInfo | null>;
-  openProject(): Promise<ProjectInfo | null>;
+  newProject(prepared: PreparedDocument): Promise<ProjectInfo | null>;
+  openProject(prepared: PreparedDocument): Promise<ProjectInfo | null>;
   saveProject(request: SaveRequest): Promise<SaveResult | null>;
   /** Observation only; it neither waits for nor changes document readiness. */
   metrics(): Promise<StoreMetrics>;

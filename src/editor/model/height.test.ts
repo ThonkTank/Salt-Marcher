@@ -8,15 +8,15 @@ import {
   TRENCH_POINT,
   WORLD_LIMIT,
   createCoastFixture,
+  cloneHeightTile,
   heightControlAddress,
-  heightTileFromRecord,
   heightTileKey,
-  heightTileToRecord,
   heightTilesFromControls,
   prepareHeightSampler,
   quarticBrushSegmentIntegral,
   requiredHeightSources,
   splineWeights,
+  validateHeightTile,
   type Bounds,
   type HeightTile,
   type Point,
@@ -129,18 +129,15 @@ describe("canonical relative height reconstruction", () => {
     expect(sample(-5, -5)).toBeCloseTo(-96, 12);
   });
 
-  it("validates serialized sources without treating residue as absolute height", () => {
+  it("validates owned typed sources without clipping relative values", () => {
     const tile = constant(0, 150_000)[0];
-    const reopened = heightTileFromRecord(
-      JSON.parse(JSON.stringify(heightTileToRecord(tile))),
-    );
-    expect(values([reopened])).toEqual(values([tile]));
+    expect(() => validateHeightTile(tile)).not.toThrow();
     expect(() =>
-      heightTileFromRecord({ ...heightTileToRecord(tile), values: [0] }),
+      validateHeightTile({ ...tile, values: new Float64Array(1) }),
     ).toThrow();
-    const bad = heightTileToRecord(tile);
+    const bad = { ...tile, values: tile.values.slice() };
     bad.values[0] = Number.POSITIVE_INFINITY;
-    expect(() => heightTileFromRecord(bad)).toThrow();
+    expect(() => validateHeightTile(bad)).toThrow();
     expect(() => prepareHeightSampler([tile])(-WORLD_LIMIT - 1, 0)).toThrow();
     expect(() => prepareHeightSampler([tile])(Number.NaN, 0)).toThrow();
   });
@@ -196,16 +193,13 @@ describe("local source readiness and ownership", () => {
     expect(doc.isReady([-9000, -9000, 9000, 9000])).toBe(true);
   });
 
-  it("keeps failed/loading sources unready and permits a complete retry", () => {
-    const doc = new EditorDocument("errors");
+  it("keeps unknown data unready until a complete read proves absence", () => {
+    const doc = new EditorDocument("read-retry");
     const keys = doc.requiredSources([-20, -20, 20, 20]);
-    doc.markLoading(keys);
-    expect(doc.sourceState(keys[0])).toBe("loading");
-    doc.failSources(keys, "Disk read failed");
-    expect(doc.sourceState(keys[0])).toBe("error");
-    expect(doc.sourceError(keys[0])).toBe("Disk read failed");
+    expect(doc.sourceState(keys[0])).toBe("unknown");
     expect(doc.isReady([-20, -20, 20, 20])).toBe(false);
     doc.acceptSources(keys, []);
+    expect(doc.sourceState(keys[0])).toBe("absent");
     expect(doc.isReady([-20, -20, 20, 20])).toBe(true);
   });
 
@@ -297,15 +291,6 @@ describe("local source readiness and ownership", () => {
     // Author tile(-1,0) ends at x=0, but its cubic field contributes inside this view.
     expect(doc.evictConfirmedOutside([0, 90, 5, 110])).toBe(0);
     expect(doc.sampleHeight(0, 100)).toBe(before);
-  });
-
-  it("keeps snapshots valid for unrelated edits and rejects newly introduced local sources", () => {
-    const doc = new EditorDocument("jobs", { empty: true });
-    const snapshot = doc.snapshot([-10, -10, 10, 10]);
-    stroke(doc, [[10_000, 10_000]]);
-    expect(doc.isSnapshotCurrent(snapshot)).toBe(true);
-    stroke(doc, [[0, 0]]);
-    expect(doc.isSnapshotCurrent(snapshot)).toBe(false);
   });
 });
 
@@ -790,16 +775,12 @@ describe("local gestures, history and persistence patches", () => {
     expect(first.transactionId).toBe("reopened:8");
     expect(first.patches.length).toBeLessThan(fixture.length);
     expect(first.patches.every((p) => p.after?.level === 0)).toBe(true);
-    const stored = new Map(fixture.map((t) => [t.key, heightTileToRecord(t)]));
+    const stored = new Map(fixture.map((t) => [t.key, cloneHeightTile(t)]));
     for (const patch of first.patches)
-      if (patch.after) stored.set(patch.key, heightTileToRecord(patch.after));
+      if (patch.after) stored.set(patch.key, cloneHeightTile(patch.after));
       else stored.delete(patch.key);
     const restored = new EditorDocument("new-session", { sequence: 8 });
-    restored.acceptCoverage(
-      ALL,
-      [...stored.values()].map(heightTileFromRecord),
-      8,
-    );
+    restored.acceptCoverage(ALL, [...stored.values()].map(cloneHeightTile), 8);
     expect(restored.sampleHeight(...TRENCH_POINT)).toBe(
       doc.sampleHeight(...TRENCH_POINT),
     );

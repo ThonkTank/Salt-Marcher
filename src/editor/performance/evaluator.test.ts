@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { assert, describe, expect, it, vi } from "vitest";
 
 // The executable evaluator is intentionally shared with the command-line runner.
 import {
@@ -1514,6 +1514,7 @@ describe("saved moving-stroke evidence and explicit probe scope", () => {
     });
     expect(result.status).toBe("FAIL");
     expect(result.sampleCount).toBe(5);
+    assert(result.live, "The replayed edit scenario must expose live evidence");
     expect(result.live[0].liveSubmissionsBeforeRelease).toBe(0);
     expect(result.failures).toContainEqual(
       expect.objectContaining({ code: "LIVE_EXACT_UPDATES_MISSING" }),
@@ -1524,8 +1525,13 @@ describe("saved moving-stroke evidence and explicit probe scope", () => {
     expect(result.blockers).toContainEqual({
       code: "EXACT_NATIVE_PRESENTATION_UNPROVEN",
     });
-    expect(evaluateScenario(scenario(true)).contentPassed).toBe(true);
-    expect(evaluateScenario(scenario(true)).liveFeedback.status).toBe("FAIL");
+    const evaluated = evaluateScenario(scenario(true));
+    expect(evaluated.contentPassed).toBe(true);
+    assert(
+      evaluated.liveFeedback,
+      "An edit must expose its live feedback result",
+    );
+    expect(evaluated.liveFeedback.status).toBe("FAIL");
   });
   it("accepts early exact submissions, while retaining missing or stale evidence as failures", () => {
     expect(strokeEvidence({ samples: stroke() }).passed).toBe(true);
@@ -1536,7 +1542,9 @@ describe("saved moving-stroke evidence and explicit probe scope", () => {
     regionExact.events.find(
       (event) => event.kind === "submit" && event.frame === 3,
     )!.exactRevision = -1;
-    expect(evaluateObservation(regionExact).live[0].passed).toBe(true);
+    const exactResult = evaluateObservation(regionExact);
+    assert(exactResult.live, "The replayed edit must expose live evidence");
+    expect(exactResult.live[0].passed).toBe(true);
     const partial = journal();
     partial.events.find(
       (event) => event.kind === "submit" && event.frame === 3,
@@ -1578,6 +1586,7 @@ describe("saved moving-stroke evidence and explicit probe scope", () => {
     expect(evidence.passed).toBe(false);
     const result = evaluateScenario({ ...scenario(), samples });
     expect(result.contentPassed).toBe(true);
+    assert(result.liveFeedback, "An edit must expose its live feedback result");
     expect(result.liveFeedback.status).toBe("FAIL");
     expect(result.status).toBe("FAIL");
     expect(result.failures).toContainEqual({
@@ -1984,6 +1993,12 @@ describe("D11/M10 uses a real local gate and the ordinary edit contract", () => 
     const cold = coldStroke(false);
     const result = evaluateScenario(cold);
     expect(result.status).toBe("PROXY_ONLY");
+    assert(
+      result.liveFeedback,
+      "A cold edit must expose its live feedback result",
+    );
+    assert(result.submission, "A cold edit must expose submission diagnostics");
+    assert(result.live, "A cold edit must expose live evidence");
     expect(result.liveFeedback.inputCount).toBe(6);
     expect(result.submission.inputToSubmissionMs.count).toBe(6);
     expect(result.live[0].passed).toBe(true);

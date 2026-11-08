@@ -1105,8 +1105,7 @@ Begrenzung Relief abschneiden. Küsten folgen der zusammengesetzten Oberfläche,
 sie besitzen keine getrennten Höhenautoren.
 
 **Bearbeitung beginnt auf sichtbarem, lokal bereitem Gelände.** Diese Freigabe
-setzt [D11](implementation/atlas-rebuild-plan.md#d11-konkret-sichtbares-gelände-vor-dem-gestenbeginn)
-um und gilt auch ohne Diagnosemodus. Die nötigen Quellen müssen vorhanden oder
+gilt auch ohne Diagnosemodus. Die nötigen Quellen müssen vorhanden oder
 bestätigt leer sein; der sichtbare Wirkbereich muss zum aktuellen Ausschnitt
 passen und tatsächlich gezeichnet sein. Bei Bewegung gehört das angenommene
 Segment dazu. Eine reguläre numerische Übersicht auf dem gewählten Maßstab und
@@ -1189,10 +1188,22 @@ Das Lesen benötigter Ausschnitte kann während des asynchronen Speicherns
 weiterlaufen. Schreibaufträge und Projektwechsel bleiben geordnet; die Datei
 enthält weiterhin genau den reservierten Stand.
 
+Neu, Öffnen und Schließen beenden zunächst den laufenden Höhenstrich und warten
+auf ausstehende Schreibaufträge. Bei ungespeicherten Änderungen stehen
+**Speichern, Verwerfen und Abbrechen** zur Wahl. Abbrechen erhält den vollständigen
+abgeschlossenen Strich samt History und lässt das Dokument geöffnet. Ein Fehler
+beim Speichern oder eine fehlende Bestätigung des Editors schließt das Fenster nicht.
+
+Nach einem Schreibfehler bleiben die angenommenen Änderungen im Editor und der
+Fehler sichtbar. Weitere Bearbeitungen und Historyaktionen pausieren; Navigation
+bleibt möglich. **Speicherstand prüfen** gleicht die erhaltenen Änderungen mit der
+Arbeitskopie ab und versucht eine sichere Fortsetzung. Speichern nutzt bei Bedarf
+denselben Weg. Schlägt er fehl, bleiben Fehler und Änderungen erhalten. Neu,
+Öffnen oder Schließen ermöglichen weiterhin das ausdrückliche Verwerfen; andere
+Bedienelemente dürfen den Speicherfehler nicht als „Bereit“ verbergen.
+
 Der normale Start sammelt kein ausführliches Diagnosejournal und zeigt keine
 künstlichen Belastungswerkzeuge. Eine ausdrücklich gestartete Diagnose darf
-das Verhalten nur beobachten. Ein softwaregerenderter Headless-Lauf belegt
-Funktionen und Dateirundläufe; native Leistung verlangt eine qualifizierte
-Referenz und echte Präsentationszuordnung. Auch ein Forge-Paketstart ersetzt
-keine RPM-Installation. Der konkrete Prüfstand und die noch offenen Abnahmen
-stehen ausschließlich im Statusdokument.
+das Verhalten nur beobachten. Prüfverfahren stehen im
+[Neubauplan](implementation/atlas-rebuild-plan.md#6-prüf--und-performancevertrag),
+der erreichte Stand und offene Abnahmen im [Status](implementation/status.md).

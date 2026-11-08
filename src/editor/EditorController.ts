@@ -1,4 +1,10 @@
-import type { AtlasDesktop, ProjectInfo, SourceBoundary } from "./bridge";
+import type {
+  AtlasDesktop,
+  CommitReceipt,
+  PreparedDocument,
+  ProjectInfo,
+  SourceBoundary,
+} from "./bridge";
 import { editorBudgets } from "./budgets";
 import {
   clipBounds,
@@ -26,6 +32,9 @@ export interface EditorState {
   title: string;
   message: string;
   error: string | null;
+  persistenceError: string | null;
+  recovering: boolean;
+  fileAction: boolean;
   loading: boolean;
   needsPress: boolean;
   writing: boolean;
@@ -86,7 +95,12 @@ export class EditorController {
   private gesture: Gesture | null = null;
   private pan: { x: number; y: number; camera: Camera } | null = null;
   private writeQueue: Promise<void> = Promise.resolve();
+  // These are the existing bounded ChangeSets, not another work queue or copy.
+  // Keep them until an authoritative receipt also makes retry/reconciliation safe.
+  private readonly unconfirmedWrites = new Map<number, ChangeSet>();
   private writeError: Error | null = null;
+  private recovering = false;
+  private releaseFileAction: () => void;
   private pendingWrites = 0;
   private loadToken = 0;
   private navInput: number | null = null;
@@ -106,7 +120,7 @@ export class EditorController {
   private resizeObserver: ResizeObserver;
   private work: Worker | null = null;
   private disposed = false;
-  private changingProject = false;
+  private fileActionOwner: "renderer" | "native" | null = null;
   private pointer: Point = [0, 0];
   private editPointer: number | null = null;
   private backgroundStats: Record<string, unknown> = { active: false };
@@ -119,6 +133,9 @@ export class EditorController {
     title: "Neue Karte",
     message: "Projekt wird geöffnet …",
     error: null,
+    persistenceError: null,
+    recovering: false,
+    fileAction: false,
     loading: true,
     needsPress: false,
     writing: false,
@@ -138,6 +155,16 @@ export class EditorController {
   ) {
     this.observation = new Observation(bridge.diagnostics);
     this.world = new WorldRenderer(this.observation);
+    this.releaseFileAction = bridge.onFileAction(async (request) => {
+      if (request.kind === "prepare") return this.prepareFileAction("native");
+      if (request.kind === "recover") {
+        await this.recoverWrites();
+        return this.preparedDocument();
+      }
+      this.resumeFileAction("native");
+      if (request.error) this.fail(new Error(request.error));
+      return null;
+    });
     this.resizeObserver = new ResizeObserver(() => {
       this.finishGesture(undefined, "resize");
       this.loadToken++;
@@ -281,6 +308,7 @@ export class EditorController {
     this.readyNavInput = null;
     this.sourcesNavInput = null;
     this.writeQueue = Promise.resolve();
+    this.unconfirmedWrites.clear();
     this.writeError = null;
     this.backgroundStats = { active: false };
     this.work?.postMessage({ cancel: true });
@@ -305,8 +333,19 @@ export class EditorController {
     this.state = { ...this.state, ...change };
     this.state = {
       ...this.state,
-      canUndo: this.doc?.canUndo ?? false,
-      canRedo: this.doc?.canRedo ?? false,
+      canUndo:
+        !this.writeError &&
+        !this.changingProject &&
+        !this.recovering &&
+        (this.doc?.canUndo ?? false),
+      canRedo:
+        !this.writeError &&
+        !this.changingProject &&
+        !this.recovering &&
+        (this.doc?.canRedo ?? false),
+      persistenceError: this.writeError?.message ?? null,
+      recovering: this.recovering,
+      fileAction: this.changingProject,
       scale: this.world.camera.scale,
       sequence: this.doc?.sequence ?? 0,
       level: this.currentBrush().level,
@@ -322,17 +361,21 @@ export class EditorController {
         (readiness.reason === "feedback" && !this.gesture),
       needsPress: this.editPointer !== null && !this.gesture,
     };
-    this.state.message = this.state.error
-      ? this.state.error
-      : this.state.loading
-        ? "Kartenbereich wird geladen …"
-        : readiness.reason === "outside"
-          ? "Zeiger außerhalb des sichtbaren Kartenbereichs"
-          : this.state.needsPress
-            ? "Zum Bearbeiten loslassen und erneut drücken"
-            : this.changingProject
-              ? "Projekt wird geöffnet …"
-              : "Bereit";
+    this.state.message = this.recovering
+      ? "Speicherstand wird geprüft …"
+      : this.state.persistenceError
+        ? "Speicherfehler: Änderungen bleiben im Editor erhalten"
+        : this.state.error
+          ? this.state.error
+          : this.state.loading
+            ? "Kartenbereich wird geladen …"
+            : readiness.reason === "outside"
+              ? "Zeiger außerhalb des sichtbaren Kartenbereichs"
+              : this.state.needsPress
+                ? "Zum Bearbeiten loslassen und erneut drücken"
+                : this.changingProject
+                  ? "Projekt wird geöffnet …"
+                  : "Bereit";
     if (
       (Object.keys(this.state) as (keyof EditorState)[]).some(
         (key) => !Object.is(previous[key], this.state[key]),
@@ -640,7 +683,7 @@ export class EditorController {
       ? "outside"
       : !visible
         ? "outside"
-        : this.writeError || this.changingProject
+        : this.writeError || this.changingProject || this.recovering
           ? "busy"
           : !this.doc?.isReady(bounds, HEIGHT_LEVELS.slice(brush.level))
             ? "sources"
@@ -980,6 +1023,7 @@ export class EditorController {
     if (input !== undefined)
       this.observation.mark("model", String(input), {
         input,
+        sessionId: this.doc.sessionId,
         gestureId: gesture.id,
         intervalId,
         revision: this.doc.revision,
@@ -1102,13 +1146,14 @@ export class EditorController {
   }
 
   private persist(change: ChangeSet): void {
+    this.unconfirmedWrites.set(change.sequence, change);
     this.pendingWrites++;
     this.publish({ saved: false });
     const document = this.doc;
     this.writeQueue = this.writeQueue
       .then(async () => {
         const receipt = await this.bridge.commit(change);
-        if (document === this.doc) document.acceptPersistence(receipt.sequence);
+        if (document === this.doc) this.acceptReceipt(change, receipt);
         this.observation.event("persisted", {
           sequence: receipt.sequence,
           sessionId: receipt.sessionId,
@@ -1135,6 +1180,7 @@ export class EditorController {
     this.history(true);
   }
   private history(redo: boolean): void {
+    if (this.writeError || this.changingProject || this.recovering) return;
     this.finishGesture(undefined, "history");
     try {
       const change = redo ? this.doc.redo() : this.doc.undo();
@@ -1153,9 +1199,18 @@ export class EditorController {
   }
 
   async save(saveAs = false): Promise<void> {
+    if (this.changingProject) return;
     this.finishGesture(undefined, "save");
-    await this.writeQueue;
     const document = this.doc;
+    if (this.writeError) await this.recoverWrites();
+    // Include writes accepted while an earlier write was still being acknowledged.
+    for (;;) {
+      const queue = this.writeQueue;
+      await queue;
+      if (queue === this.writeQueue) break;
+    }
+    if (document !== this.doc)
+      throw new Error("Das Projekt wurde inzwischen gewechselt.");
     const result = await this.bridge.saveProject({
       sessionId: document.sessionId,
       sequence: document.sequence,
@@ -1182,19 +1237,117 @@ export class EditorController {
   }
   private async changeProject(empty: boolean): Promise<void> {
     if (this.changingProject) return;
-    this.changingProject = true;
     try {
-      this.finishGesture(undefined, "project");
-      await this.writeQueue;
+      const prepared = await this.prepareFileAction();
       const next = empty
-        ? await this.bridge.newProject()
-        : await this.bridge.openProject();
+        ? await this.bridge.newProject(prepared)
+        : await this.bridge.openProject(prepared);
       if (next) {
         this.setProject(next);
         await this.loadView();
       }
     } finally {
-      this.changingProject = false;
+      this.resumeFileAction();
+    }
+  }
+
+  private preparedDocument(): PreparedDocument {
+    return {
+      sessionId: this.doc.sessionId,
+      sequence: this.doc.sequence,
+      persistenceError: this.writeError?.message ?? null,
+    };
+  }
+
+  private get changingProject(): boolean {
+    return this.fileActionOwner !== null;
+  }
+
+  /** Shared by native close and the renderer's New/Open commands. */
+  private async prepareFileAction(
+    owner: "renderer" | "native" = "renderer",
+  ): Promise<PreparedDocument> {
+    if (this.changingProject || this.recovering)
+      throw new Error(
+        "Ein Datei- oder Wiederherstellungsvorgang ist bereits offen.",
+      );
+    this.fileActionOwner = owner;
+    try {
+      this.finishGesture(undefined, "file-action");
+      this.publish();
+      await this.writeQueue.catch(() => {});
+      return this.preparedDocument();
+    } catch (error) {
+      this.resumeFileAction(owner);
+      throw error;
+    }
+  }
+
+  private resumeFileAction(owner: "renderer" | "native" = "renderer"): void {
+    // A rejected native close must not unlock an already running New/Open.
+    if (this.fileActionOwner !== owner) return;
+    this.fileActionOwner = null;
+    this.checkLocalReady();
+  }
+
+  private acceptReceipt(change: ChangeSet, receipt: CommitReceipt): void {
+    if (
+      receipt.sessionId !== change.sessionId ||
+      receipt.sequence !== change.sequence ||
+      receipt.transactionId !== change.transactionId
+    )
+      throw new Error(
+        "Die Speicherbestätigung gehört nicht zur ausstehenden Änderung.",
+      );
+    this.doc.acceptPersistence(receipt.sequence);
+    this.unconfirmedWrites.delete(change.sequence);
+  }
+
+  /** Explicit recovery first checks the authoritative store, then verifies/replays IDs. */
+  async recoverWrites(): Promise<void> {
+    if (this.recovering)
+      throw new Error("Der Speicherstand wird bereits geprüft.");
+    this.recovering = true;
+    this.finishGesture(undefined, "recovery");
+    this.publish();
+    try {
+      await this.writeQueue.catch(() => {});
+      const actual = await this.bridge.status();
+      if (
+        actual.sessionId !== this.doc.sessionId ||
+        actual.sequence < this.doc.persistedSequence ||
+        actual.sequence > this.doc.sequence
+      )
+        throw new Error(
+          "Die Arbeitskopie passt nicht zum erhaltenen Editorstand. Änderungen bleiben im Editor; sie wurden nicht verworfen.",
+        );
+      let checkedSequence = actual.sequence;
+      for (const change of this.unconfirmedWrites.values()) {
+        if (change.sequence > checkedSequence + 1)
+          throw new Error(
+            "Die ausstehenden Änderungen sind nicht lückenlos wiederherstellbar.",
+          );
+        // At/below checkedSequence this only accepts the existing identical
+        // transaction+payload receipt. At +1 the authoritative status proved
+        // absence. ProjectStore checks identity/order again in either case.
+        const receipt = await this.bridge.commit(change);
+        this.acceptReceipt(change, receipt);
+        checkedSequence = Math.max(checkedSequence, receipt.sequence);
+      }
+      if (checkedSequence !== this.doc.sequence)
+        throw new Error(
+          "Die Arbeitskopie enthält noch nicht alle angenommenen Änderungen.",
+        );
+      this.writeQueue = Promise.resolve();
+      this.writeError = null;
+      this.publish({ error: null });
+    } catch (error) {
+      this.writeError =
+        error instanceof Error ? error : new Error(String(error));
+      this.fail(this.writeError);
+      throw error;
+    } finally {
+      this.recovering = false;
       this.checkLocalReady();
     }
   }
@@ -1335,6 +1488,7 @@ export class EditorController {
     this.loadToken++;
     cancelAnimationFrame(this.loadRequest);
     this.resizeObserver.disconnect();
+    this.releaseFileAction();
     this.world.destroy();
     this.work?.terminate();
     this.canvas.removeEventListener("pointerdown", this.down);

@@ -312,6 +312,14 @@ summary {
   border-radius: 6px;
   font-size: 12px;
 }
+.error-banner small {
+  display: block;
+  margin-top: 6px;
+  line-height: 1.4;
+}
+.error-banner button {
+  flex-shrink: 0;
+}
 @media (max-height: 760px) {
   .atlas-panel {
     padding-top: 16px;

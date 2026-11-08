@@ -2,6 +2,17 @@ import { readFile, writeFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import { pathToFileURL } from "node:url";
 
+// FrameSubscriber consumes FrameSinkVideoCapture, not display presentation
+// feedback: https://github.com/electron/electron/blob/v44.10.2/shell/browser/api/frame_subscriber.cc
+export const nativePresentationCapability = Object.freeze({
+  status: "unsupported",
+  code: "NATIVE_PRESENTATION_ADAPTER_UNIMPLEMENTED",
+  method: null,
+  reason:
+    "The pinned Electron API/trace adapter does not yet join an Atlas canvas generation to the actual displayed frame. A reference profile, capturePage, frame subscription, RAF or the first following draw cannot supply that proof.",
+  clock: Object.freeze({ calibrated: false }),
+});
+
 /** Chromium's uint64 frame IDs must not be rounded into JavaScript doubles. */
 export function parseTrace(text) {
   return JSON.parse(text, (_key, value, context) => {
@@ -128,7 +139,7 @@ export function analyzeTrace(text) {
       explanation:
         "Observed user-timing startTime to trace-ts offsets; no acceptance-grade clock calibration is inferred.",
     },
-    mappingStatus: "unsupported",
+    mappingStatus: nativePresentationCapability.status,
     missingEdge:
       "Atlas semantic render generation -> the actual Canvas/shared-image resource consumed by this compositor frame. Mark containment and first subsequent draw are insufficient.",
     cautions: [

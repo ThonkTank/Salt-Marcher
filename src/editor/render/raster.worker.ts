@@ -34,6 +34,8 @@ export interface RasterBatch {
   id: number;
   sessionId: string;
   tasks: RasterTask[];
+  /** Diagnostic clock only; never a native presentation timestamp. */
+  sentAt?: number;
 }
 export interface RasterBatchResult {
   kind: "raster-batch-result";
@@ -41,6 +43,7 @@ export interface RasterBatchResult {
   sessionId: string;
   results: RasterResult[];
   cpuMs: number;
+  timing?: { sentAt: number; startedAt: number; finishedAt: number };
 }
 export type RasterMessage =
   | RasterBatch
@@ -118,6 +121,10 @@ self.onmessage = (event: MessageEvent<RasterMessage>) => {
     return;
   }
   if (message.sessionId !== sessionId) return;
+  const startedAt =
+    message.sentAt === undefined
+      ? undefined
+      : performance.timeOrigin + performance.now();
   const pixels = message.tasks.reduce(
     (sum, task) =>
       sum + (task.rect[2] - task.rect[0]) * (task.rect[3] - task.rect[1]),
@@ -140,6 +147,15 @@ self.onmessage = (event: MessageEvent<RasterMessage>) => {
     sessionId,
     results,
     cpuMs: performance.now() - begin,
+    ...(startedAt === undefined
+      ? {}
+      : {
+          timing: {
+            sentAt: message.sentAt!,
+            startedAt,
+            finishedAt: performance.timeOrigin + performance.now(),
+          },
+        }),
   };
   self.postMessage(result, {
     transfer: results.map((tile) => tile.pixels.buffer),

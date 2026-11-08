@@ -860,6 +860,7 @@ async function readyController(
   };
   const bridge = {
     diagnostics: options.diagnostics ?? true,
+    onFileAction: vi.fn(() => () => {}),
     status: async () => info,
     readPresentation: vi.fn(async (request: ReadPresentationRequest) => ({
       ...request,

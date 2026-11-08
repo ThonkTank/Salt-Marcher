@@ -491,286 +491,199 @@ werden getrennt vom deterministischen CI-Gesamtcheck bewertet.
 
 ## Optionaler Atlas-P0-Versuch
 
-Der P0-Startpfad liegt in `src/editor/main.tsx` und `desktop/`. Electron 44.10.2
-stellt das Fenster bereit, React die Bedienelemente und PixiJS 8.22.0 die
-beibehaltene WebGL-Szene. Der Versuch umfasst den Höhenpfad des Neubauplans;
-der vollständige F01–F19-Ausbau folgt erst nach dessen P0-Gate.
+`src/editor/main.tsx` und `desktop/` bilden den gesonderten P0-Einstieg:
+Electron 44.10.2, React-Panels und eine beibehaltene PixiJS-8.22.0-WebGL-Szene.
+Der [Produktvertrag](product-contract.md#optionaler-atlas-p0-versuch) besitzt
+Bedienverhalten, Format und Grenzen. Ausbau und Abnahme stehen im
+[Neubauplan](implementation/atlas-rebuild-plan.md), aktuelle Ergebnisse im
+[Status](implementation/status.md).
 
-| Besitzer                                           | Verantwortung                                                                                                                  |
-| -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| `EditorController`                                 | Effektive Einstellungen, Fehler, Kamera, Eingaben, abgeleitete lokale Freigabe, Gesten und geordnete Persistenzaufträge.       |
-| `model/EditorDocument`                             | Live-Autoren, Gestentransaktionen, eigene Patches, lokale History, Quellenbereitschaft und Speicherbudgets.                    |
-| `model/height.ts`, `height-grid.ts`, `overview.ts` | Gemeinsame Höhenmathematik, regelmäßiges Abtastraster und numerische Übersicht.                                                |
-| `render/WorldRenderer`                             | Beibehaltene Pixi-Kacheln, lokale Invalidierung, priorisierte Rasteraufträge und Belege tatsächlich eingereichter Teilflächen. |
-| `render/raster.worker.ts`                          | Rasterberechnung aus eigenen Quellkopien; keine zweite Dokumentautorität.                                                      |
-| `desktop/main.ts`, `preload.ts`                    | Fenster, native Dialoge, Session-/Dateigrenzen und typisierte IPC-Brücke.                                                      |
-| `desktop/store-process.ts`, `project-store.ts`     | SQLite-Arbeitskopie, räumliche Reads, Autoren-/Übersichtstransaktionen und Dateisnapshots im Utility-Prozess.                  |
+| Besitzer                                           | Verantwortung                                                                                                            |
+| -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `EditorController`                                 | Effektive Einstellungen, Fehler, Kamera, Eingaben, abgeleitete lokale Freigabe, Gesten und geordnete Persistenzaufträge. |
+| `model/EditorDocument`                             | Aktive Autoren, Gestentransaktionen, eigene Patches, lokale History, Quellenbereitschaft und Speicherbudgets.            |
+| `model/height.ts`, `height-grid.ts`, `overview.ts` | Gemeinsame Höhenmathematik, regelmäßiges Abtastraster und numerische Übersicht.                                          |
+| `render/WorldRenderer`                             | Beibehaltene Pixi-Kacheln, lokale Invalidierung, priorisierte Rasteraufträge und tatsächliche Submitstempel.             |
+| `render/raster.worker.ts`                          | Rasterberechnung aus eigenen Quellkopien; keine zweite Dokumentautorität.                                                |
+| `desktop/main.ts`, `preload.ts`                    | Fenster, native Dialoge, Session-/Dateigrenzen und typisierte IPC-Brücke.                                                |
+| `desktop/store-process.ts`, `project-store.ts`     | SQLite-Arbeitskopie, räumliche Reads, Autoren-/Übersichtstransaktionen und Dateisnapshots im Utility-Prozess.            |
 
-React hält noch nicht übernommene Texte numerischer Eingabefelder; Blur oder
-Enter übernimmt sie in den Controller. Werkzeugmodus, Größe, Stärke, Raster
-und Laufzeitfehler haben dort einen wirksamen Zustand. Gespeichert/ungespeichert
-folgt der Dokumentsequenz, gespeicherten Sequenz und aktiven Geste.
-Der Renderer besitzt keine Node-Integration. Context Isolation und Sandbox sind
-aktiv; Main und Renderer führen weder SQL noch Dateiexporte aus. Das Buildskript
-prüft die SQLite-Bindung in der tatsächlichen Electron-Laufzeit und baut sie bei
-unpassender ABI neu.
+React hält nur noch nicht übernommene Texte numerischer Felder; Blur oder Enter
+übernimmt sie in den Controller. Werkzeugmodus, Größe, Stärke, Raster und
+Laufzeitfehler besitzen dort einen wirksamen Zustand. Saved/Dirty folgt
+Dokumentsequenz, gespeicherter Sequenz und aktiver Geste.
 
-### Autoren und maßstabsgerechte Reads
+Der Renderer besitzt keine Node-Integration; Context Isolation und Sandbox sind
+aktiv. Main und Renderer führen weder SQL noch Dateiexporte aus. Das Buildskript
+prüft SQLite in der tatsächlichen Electron-Laufzeit und baut bei unpassender ABI neu.
 
-Höhenautoren sind sparse 64 × 64 große `Float64`-Kacheln mit relativen Restwerten
-auf Stufen 0–21; der Abstand beträgt `5 × 2^level` Fuß. Der gemeinsame Sampler
-rekonstruiert vorhandene Stufen mit dem positiven kubischen B-Spline aus dem
-V7-Kern, addiert alle Restfelder zum Ozean-Grundwert und begrenzt erst die fertige
-Summe. Grobe Striche verändern ausschließlich ihre Autorenstufe.
-`height-grid.ts` verwendet dieselbe Mathematik und nutzt horizontale Beiträge
-zwischen Zeilen des regelmäßigen Rasters wieder. Extremwerte behalten die
-kanonische Akkumulationsreihenfolge. Die beobachtbaren Grenzen stehen im
-[P0-Produktvertrag](product-contract.md#optionaler-atlas-p0-versuch).
+### Quellen, Übersicht und Reads
 
-`readPresentation` liefert die für eine Darstellungsstufe nötigen groben Autoren
-und numerische Übersichtskacheln der feineren Beiträge. Deren 128 × 128 feste
-Weltabtastpunkte folgen dem Darstellungsraster; am Weltrand wird das Raster nicht
-gestaucht. Die Übersicht enthält unbeschnittene, durch 32 skalierte relative
-Höhenbeiträge, keine Farben und keinen Ozeangrundwert. Erst beim Rasterisieren
-kommen grobe Autoren und Grundwert hinzu; danach erfolgt die einzige Begrenzung.
-Eine veränderte Küste kann dadurch auch in der Übersicht neu entstehen.
+Höhenautoren sind sparse 64×64-`Float64`-Kacheln mit relativen Restwerten auf
+Stufen 0–21. Der gemeinsame Sampler rekonstruiert die positiven kubischen
+B-Spline-Restfelder, addiert sie zum Ozean-Grundwert und begrenzt erst die fertige
+Summe. Grobe Striche ändern ausschließlich ihre Autorenstufe. `height-grid.ts`
+verwendet dieselbe Mathematik, teilt horizontale Beiträge zwischen Rasterzeilen
+und erhält die kanonische Akkumulationsreihenfolge bei Extremwerten.
 
-Autoren und betroffene Übersichtsvorfahren werden in derselben geordneten
-SQLite-Transaktion gepflegt. Der Übersichtsschreibcache ist auf 32 MiB begrenzt;
-Aufbau-, Commit-, Read- und Writekosten bleiben beobachtbar. Der Store verwendet
-dieselben reinen Deltafunktionen wie die lokale Projektion. Beim Öffnen wird
-keine vollständige numerische Übersicht aus allen Autoren neu gerechnet.
-Das eigenständige P0-Format 24 speichert die abgeleiteten Kacheln und ihren
-bestätigten Sequenzstand; frühere Versuchsformate werden nicht migriert.
+`readPresentation` liefert benötigte grobe Autoren und numerische Übersichten
+feinerer Beiträge. Deren 128×128 Weltabtastpunkte folgen dem Darstellungsraster,
+auch am Weltrand ohne Stauchung. Sie speichern unbeschnittene, durch 32 skalierte
+relative Beiträge; weder Farben noch Ozeangrundwert. Erst Rasterisierung addiert
+grobe Autoren und Grundwert und begrenzt die Summe. Quellen und Übersichten sind
+verschiedene Typen.
 
-Exakte lokale Bearbeitung fordert über `readRegion(minLevel)` nur die nötige
-Autorenstufe und gröbere Stufen an. Die räumliche und die Stufenbegrenzung liegen
-im SQLite-RTree selbst. Ein äußerer Stufenfilter nach vollständiger Enumeration
-feiner Treffer ist nicht der verwendete Pfad. Die Grenze von 512 gelieferten
-Autorenkacheln bleibt bestehen; grobe Darstellung verlangt keine vollständige
-Feinquellenabdeckung. Unbestätigte Feinwerte bleiben ausdrücklich unbekannt.
+Autoren und betroffene Übersichtsvorfahren werden in einer geordneten
+SQLite-Transaktion gepflegt. Store und lokale Projektion teilen die reinen
+Deltafunktionen. Der Übersichtsschreibcache ist auf 32 MiB begrenzt;
+Aufbau-/Commit-/Readkosten bleiben beobachtbar. Format 24 speichert die abgeleiteten
+Kacheln mit bestätigter Sequenz; Öffnen berechnet keine weltweite Übersicht neu.
 
-Quellenbereitschaft gehört zu Ausschnitt und Quellenstufen. `unknown`, `loading`,
-`ready`, `absent` und `error` bleiben verschieden. Bestätigte entfernte Autoren
-können aus dem Cache fallen; aktive und unbestätigte Änderungen bleiben erhalten.
-Der gemeinsame Ladeablauf hält einen laufenden Read und den aktuellen Folgebedarf.
-Zeigerbewegung, geänderte Pinselgröße und ein abgewiesener Druck können benötigte
-lokale Quellen auch ohne Modellgeste anfordern. Eine Read-Antwort beginnt oder
-reaktiviert keine Geste.
+`readRegion(minLevel)` liefert exakte Quellen der benötigten Autorenstufe und
+gröberer Stufen. Raum und Stufe werden bereits im RTree begrenzt, vor der
+Enumeration feiner Treffer. Höchstens 512 Autorenkacheln werden geliefert;
+grobe Darstellung verlangt keine vollständige Feinquellenabdeckung.
 
-Beide Lesezwecke verwenden `readCurrent` für dieselbe Session-/Navigations- und
-Sequenzprüfung. Hat eine Persistenzbestätigung den gelesenen Stand überholt,
-wird erneut gelesen. Eine gültige Antwort wird unmittelbar synchron übernommen;
-zwischen Prüfung und Übernahme beziehungsweise Patchprojektion liegt kein weiteres
-`await`, in dem eine Bestätigung die noch benötigten Patches freigeben könnte.
-Lokale noch unbestätigte und aktive Patches werden auf den zurückgegebenen
-Sequenzstand projiziert. Bestätigte Patches bleiben dafür nicht dauerhaft erhalten.
-Das Pendingbudget zählt die für diese Projektion gehaltenen Vorher- und
-Nachherwerte, einschließlich Löschungen. Aktive Gesten reservieren ihren
-künftigen Patchumfang vor der Mutation; eine Bestätigung gibt ihn wieder frei.
+Quellenbereitschaft gehört zu Ausschnitt und Stufen. Das Modell unterscheidet
+`unknown`, vorhandene `ready`-Quellen und bestätigte Abwesenheit (`absent`).
+Laufende Reads und Ladefehler gehören zum Controller; sie erzeugen keine
+zusätzlichen Quellenzustände. Bestätigte entfernte Autoren sind verdrängbar;
+aktive und unbestätigte Änderungen nicht. Der gemeinsame
+Ladeablauf hält einen laufenden Read und den aktuellen Folgebedarf. Kamerabewegung
+und aktueller Werkzeugbedarf fordern Daten unabhängig von Modellgesten an.
 
-### Lokale Freigabe und Eingaben
+Beide Lesezwecke teilen `readCurrent` für Session-/Navigations- und Sequenzprüfung.
+Überholt ein Persistenz-Ack den gelesenen Stand, wird neu gelesen. Gültige Antworten
+werden synchron übernommen: Zwischen Prüfung, Übernahme und lokaler
+Patchprojektion liegt kein `await`, in dem das Ack benötigte Patches freigeben
+könnte. Eigene aktive/unbestätigte Patches werden auf den gelesenen Stand
+projiziert; bestätigte Patches bleiben nicht dauerhaft erhalten. Das Pendingbudget
+zählt dafür Vorher-/Nachherwerte einschließlich Löschungen; Gesten reservieren
+künftigen Patchumfang vor Mutation, Acks geben ihn frei.
 
-`localReadiness` leitet einen gemeinsamen Zustand für Eingabeannahme, Cursor,
-Status und lesende Diagnose ab. Nötige Quellen und Halos müssen vorhanden oder
-bestätigt leer sein. Die Pinselfläche muss das Fenster mit positiver Fläche
-schneiden. Der sichtbare Wirkbereich der nächsten Dosis, bei Bewegung einschließlich
-des Segments vom letzten angenommenen zum aktuellen Punkt, muss im normalen
-Renderpfad gezeichnet sein. Unsichtbare Teile des Eingriffs einschließlich seiner
-Halos benötigen keine eigene Darstellung; fremde fehlende Bildschirmkacheln
-sperren den lokalen Bereich nicht.
+### Lokale Freigabe und Frameablauf
 
-`regionDisplayed` prüft dazu die tatsächlichen Submitstempel der Kacheln und die
-zuletzt eingereichte Ansicht. Vorbereitete Kacheln, hochgeladene Pixel oder eine
-bereits geänderte Kamera vor dem nächsten Render genügen nicht. Eine bereits
-gezeichnete Grundlage bleibt während einer eigenen noch ausstehenden Dosis
-erkennbar; deren aktuelle Darstellung ist eine getrennte Rückkopplungsbedingung.
-Kameraänderungen und Resize bereiten die neue Kachelauswahl synchron vor,
-bevor ein Read für den übrigen Ausschnitt oder Navigationsrand abgeschlossen ist.
-Die eigentliche Freigabe folgt anschließend dem lokalen Renderfortschritt,
-auch im Normalstart ohne Diagnoseanbindung.
+`localReadiness` verbindet Quellenabdeckung und tatsächlich eingereichtes lokales
+Terrain zu einem abgeleiteten Zustand. Eingabe, Cursor/Status und lesende Diagnose
+verwenden denselben Wert. `regionDisplayed` prüft Kachel-Submitstempel und die
+zuletzt eingereichte Ansicht, nicht bloß vorbereitete Texturen oder die aktuelle
+Kameravariable. Der sichtbare Wirkbereich umfasst bei Bewegung das Segment;
+unsichtbare Halos benötigen Quellen, keine eigene Darstellung. Die genaue
+Gesten- und Wartesemantik steht im Produktvertrag.
 
-Noch ungezeichnete Flächen erhalten eine Schraffur; Cursor und Status zeigen
-fehlende Bereitschaft sowie Ladefehler an. Ein Druck vor Freigabe erzeugt weder
-Modellgeste noch vorgemerkte Dosis. Nach einer abgewiesenen oder wegen fehlender
-Grundlage beendeten Geste ist ein neuer Druck nötig. Bei noch gehaltener Taste
-erscheint der Hinweis zum Loslassen und erneuten Drücken. Quellen-Promises halten
-keine Geste am Leben. Eine aktive Höhengeste besitzt den letzten angenommenen
-Punkt, höchstens einen neuesten Zeigerpunkt und eine noch nicht dargestellte
-Dosis; ältere noch nicht angenommene Punkte werden mit einem Grund verworfen.
+Kameraänderungen und Resize bereiten die neue Kachelauswahl synchron vor.
+Quellenantworten beginnen oder reaktivieren keine Geste. Eine Höhengeste hält
+letzten angenommenen Punkt, neuesten Zeigerpunkt und höchstens eine ausstehende
+Dosis. Der reine Fachkern integriert nur die ausdrücklich angenommene Zeit;
+Uhr, Begrenzung und Rückkopplung gehören zum Controller.
 
-### Änderung, Darstellung und Datei
+Der gemeinsame Frameablauf übernimmt gültige Ergebnisse, zeichnet sie und
+bestätigt aktuelle Regionen. Erst danach nimmt er einen weiteren zulässigen
+Pinselschritt an und disponiert neue Rasterarbeit. Dadurch entwertet die nächste
+Änderung ein fertiges Ergebnis nicht vor dessen Darstellung. Kein zweiter
+Gesten-RAF oder Dispatch mitten in einem angenommenen Abschnitt.
 
-Die Pinselstärke ist eine Rate. `applyPoint(point, elapsedMs)` integriert
-ausschließlich die ausdrücklich angenommene Dauer entlang des Segments; bei
-Stillstand wirkt derselbe Kern am festen Ort weiter. Ein Nullintervall setzt nur
-den Startpunkt. Der reine Fachkern besitzt keine Uhr und keine Bildratenlogik.
-Der Controller begrenzt jeden Schritt auf höchstens 50 ms Dosis und wartet vor
-dem nächsten auf die aktuelle Darstellung des vorherigen Bereichs; diese
-Schranke gilt auch über schnelle aufeinanderfolgende Gesten. Ein kleiner
-Pressimpuls von 1/60 Sekunde erhält kurze Klicks. Wartezeit auf Darstellung sowie
-Zeit oberhalb der Schrittgrenze verfällt. Der gültige Pressimpuls verwendet
-denselben Freigabe-/Dosisvertrag wie Folgeframes und wird synchron angenommen;
-auch Down und Up zwischen zwei Frames bleiben ein wirksamer kurzer Klick.
-Während des Wartens auf eine eigene Dosis bleibt die Geste bestehen und setzt
-nach der Rückmeldung am aktuellen Ort fort, ohne ausgelassene Wege oder Zeit
-nachzuholen. Fehlen dagegen
-neu benötigte Quellen oder die gezeichnete Grundlage für den nächsten Abschnitt,
-endet die Geste vor diesem Abschnitt. Pointerup und Abbruch nehmen keine weitere
-Dosis an. Eine verzögerte Darstellung bereits angenommener Änderungen bleibt möglich.
-Bei einem ausdrücklichen Ortswechsel kann die Darstellungsverpflichtung für
-einen vollständig verlassenen Bereich enden. Das wird gesondert beobachtet;
-der Inhalt bleibt im Modell und wird bei Rückkehr aktuell dargestellt.
+Angenommene Abschnitte liefern eigene Patches nur für geänderte Quellen an
+Renderer und Worker. Vollständige Ausschnittskopien je Eingabe entfallen.
+Lokale Dirtybereiche begrenzen Rasterarbeit und Uploads. Der Dispatcher ordnet
+angenommene lokale Änderung, Bildaufbau zur lokalen Freigabe und übrige sichtbare
+Kacheln; Werkzeugort beziehungsweise Ansichtsmitte priorisieren kalte Kacheln.
+Bedarf wird ersetzt statt als weitere Queue angehängt. Nach vier konkurrierenden
+lokalen Batches darf eine Restkachel ein eigenes begrenztes Paket erhalten.
 
-Ein angenommener Gestenabschnitt verändert das lokale Modell direkt und liefert
-eigene Patches ausschließlich für geänderte Quellen. Diese gehen an Renderer
-und Worker; vollständige Ausschnittskopien je Eingabe entfallen. Der Abschluss
-fasst die Abschnitte zu einem Undo-Schritt zusammen. Vorherbilder bleiben lokal;
-nur Nachherbilder gehen an den Store. Undo/Redo verwenden denselben Patchpfad.
-Die gemeinsame Grenze von 512 Autorenkacheln je atomarer Aktion gilt bereits
-vor der Modelländerung und erneut an Host und Store. Ein abgewiesener Abschnitt
-verändert nichts; der vorher angenommene Teil bleibt abschließbar und umkehrbar.
-Der Store prüft Session, Sequenz und Transaktionsidentität: identische
-Wiederholungen werden bestätigt, widersprüchliche Wiederholungen abgelehnt.
-Live-Revision, Arbeitskopie und ausdrücklich gespeicherte Sequenz sind getrennt.
+Ein Worker verarbeitet höchstens einen synchronen Batch mit 16 Kacheln und
+131.072 Pixeln. Aufgaben teilen denselben Quellstand; kein `await` mischt neuere
+Quellen unter alte Revisionsangaben. Je Kachel existiert höchstens ein laufender
+Auftrag plus zusammengefasster neuer Dirtybedarf. Ein gültiges fertiges Rechteck
+wird vollständig übernommen, auch bei neueren Eingaben; sein Stand darf nicht
+älter als der bereits angezeigte sein. Neuere Änderungen bleiben für Folgearbeit
+vorgemerkt. Session und monotone Tokens schützen vor überholten Ergebnissen.
+
+Ein exakter lokaler Submit verlangt den vollständigen aktuellen Bereich, nicht
+eine einzelne aktuelle Kachel. `input-covered` belegt nur Versionsabdeckung,
+auch über gemischte Revisionen; es ersetzt kein `edit-submit`.
+`submittedRevision`/`exactRevision` bezeichnen den neuesten vollständig
+gezeichneten Modellstand. Lokale Kachelstempel können zusätzlich eine brauchbare
+Teilansicht belegen. Geänderte Freigabe und Pointerup können einen Overlayframe
+anfordern, auch ohne neue Modellrevision. Kameraoffsets werden vor der
+GPU-Übergabe abgezogen. `budgets.ts` begrenzt Quellen, History, Pendingdaten,
+CPU-/GPU-Darstellungen und Arbeit pro Frame.
+
+### History, Persistenz und Datei
+
+Gestenabschluss fasst Abschnitte zu einer Undo-Aktion zusammen. Vorherbilder
+bleiben lokal, Nachherbilder gehen an den Store; Undo/Redo teilen den Patchpfad.
+Die gemeinsame Grenze von 512 Autorenkacheln je atomarer Aktion gilt vor der
+Modellmutation sowie an Host und Store. Der Store prüft Session, Sequenz und
+Transaktionsidentität: identische Wiederholungen werden bestätigt, widersprüchliche
+abgelehnt. Live-Revision, Arbeitskopie und gespeicherte Sequenz bleiben getrennt.
+
+Neu, Öffnen und natives Schließen verwenden dieselbe Renderer-Vorbereitung:
+Eingabe sperren, aktive Geste abschließen und ausstehende Writes abwarten. Erst
+der bestätigte lokale Stand erreicht Save/Discard/Cancel im Host. Abbruch oder
+fehlende Rendererbestätigung halten das Fenster und Dokument offen. Eine
+Besitzkennung verhindert, dass eine abgewiesene parallele Aktion die Sperre eines
+anderen Dateivorgangs aufhebt.
+
+Bei Schreibfehlern bleiben die bestehenden begrenzten ChangeSets bis zur
+Bestätigung erhalten. Der sichtbare Persistenzfehler bleibt unabhängig von
+anderen UI-Aktionen bestehen. Wiederherstellung liest zuerst Session und Sequenz
+der Arbeitskopie und sendet erhaltene Transaktionskennungen über denselben
+idempotenten Commitpfad. Er prüft auch den Payloadhash; ein verlorenes Ack kann
+keine zweite Anwendung auslösen. Erst der vollständige Abgleich setzt die
+Schreibqueue zurück. Ausdrückliches Verwerfen erlaubt den Projektwechsel auch
+bei ausgefallenem Store; ein fehlgeschlagener Rettungsversuch erhält die Änderungen.
+
 Speichern fixiert einen SQLite-Lesesnapshot und veröffentlicht ihn über eine
-synchronisierte temporäre Datei mit atomarem Rename; spätere Änderungen können
-währenddessen weiterlaufen.
+synchronisierte temporäre Datei mit atomarem Rename. `readRegion` und
+`readPresentation` laufen synchron auf derselben Arbeitskopie im selben
+Utility-Prozess. Während asynchroner Snapshot-/Publishphasen umgehen sie die
+Mutationsqueue; Commit, Dateivorgänge und Projektlebenszyklus bleiben geordnet.
+Synchrone Transaktionen werden nicht halb gelesen. Reads dürfen wartende Writes
+überholen und benennen deshalb ihre tatsächliche Session/Sequenz. Gemeinsame
+Antwortprüfung und lokale Projektion verhindern Rückfälle auf ältere Daten.
+Es gibt dafür weder eine zweite SQLite-Verbindung noch eine zweite Dokumentautorität.
 
-`readRegion` und `readPresentation` werden synchron im selben Utility-Prozess
-und auf derselben Arbeitskopie beantwortet. Sie können während eines asynchronen
-Snapshots oder Dateipublish antworten, ohne auf dessen Ende in der gemeinsamen
-Queue zu warten. Commits, Save-Phasen,
-Projektwechsel und Schließen bleiben gemeinsam geordnet; synchrone Transaktionen
-werden nicht halb gelesen. Ein Read kann einen wartenden Write überholen und
-benennt deshalb seine tatsächliche Session und Sequenz. Die gemeinsame
-Antwortprüfung und lokale Patchprojektion schützen vor einem Rückfall auf einen
-überholten Stand. Es gibt keinen zweiten SQLite-Besitzer und keine zusätzliche
-Verbindung für diese Priorisierung.
+### Diagnose und Prüfgrenze
 
-Darstellungskacheln mit 128 × 128 Pixeln sind von Autorenkacheln getrennt.
-Für Folgeimpulse übernimmt der gemeinsame Frameablauf zuerst gültige Ergebnisse,
-zeichnet sie und bestätigt die dadurch aktuelle Region. Danach nimmt er höchstens einen
-begrenzten Pinselschritt am aktuellen Ort an und wählt Rasteraufträge aus dem
-neuen Bedarf. Damit kann die nächste Änderung den gerade fertig gewordenen
-Stand nicht vor seiner Darstellung wieder entwerten. Ein zweiter Gesten-RAF und
-Dispatch mitten in einer Folge von Pinselabschnitten entfallen. Lokale
-Dirtybereiche begrenzen Rasterarbeit und Uploads.
+Ausführliche Beobachtung, synthetischer Sampling-Lastworker und Renderstörungen
+entstehen nur mit `ATLAS_P0_DIAGNOSTICS=1`. Der Normalstart besitzt keine
+`atlasObserve`-Anbindung, Host-Diagnose, Atlas-Performance-Marks oder Belastungs-UI.
+Produktfreigabe und Renderabschluss hängen nicht von Diagnose ab.
 
-Der vorhandene Dispatcher priorisiert die angenommene lokale Änderung, den für
-die Werkzeugfreigabe benötigten Bildaufbau und anschließend übrige sichtbare
-Kacheln. Der Werkzeugort beziehungsweise die Ansichtsmitte geben kalten Kacheln
-eine räumliche Priorität. Ein neuer Bedarf ersetzt den alten; es entsteht keine
-zusätzliche Auftragsqueue. Lokale Ergebnisse werden nicht im selben Batch hinter
-unabhängigem Bildaufbau zurückgehalten. Damit ein dauerhaft gehaltener Pinsel den
-übrigen Bildaufbau nicht verdrängt, erhält nach vier konkurrierenden lokalen
-Batches höchstens eine Restkachel ein eigenes begrenztes Paket; danach gilt
-wieder die lokale Priorität.
+Diagnosebatches erfassen Versand, Workerbeginn/-ende und Rendererempfang über
+`performance.timeOrigin + performance.now`. Der bestehende Journalpfad verbindet
+sie mit lokal erforderlichen Uploads und Submit. Die Zeitzerlegung verwendet den
+letzten erforderlichen Upload; frühere Batcharbeit bleibt in der Wartezeit vor
+dessen Dispatch enthalten. Fehlende oder widersprüchliche Zeitstempel bleiben
+als unvollständiger Nachweis sichtbar. Diese Uhren belegen keine native Präsentation.
 
-Ein Worker verarbeitet
-höchstens einen begrenzten Batch mit 16 Kacheln und 131.072 Pixeln gleichzeitig.
-Innerhalb dieses Batches benötigen die Teilaufgaben keinen erneuten Hauptthread-
-Roundtrip und verwenden denselben Quellstand. Der Batch enthält keine asynchrone
-Unterbrechung, die neuere Quellen unter alten Revisionsangaben einmischen könnte.
-Neuere Änderungen werden pro Kachel
-als weiterer Dirtybereich zusammengefasst. Je Kachel gibt es nur einen noch nicht
-übernommenen Auftrag. Ein passendes fertig berechnetes Rechteck wird vollständig
-übernommen, auch wenn inzwischen weitere Eingaben vorliegen. Sein Quellstand
-muss mindestens so neu sein wie der bereits angezeigte Stand; Session und Token
-müssen passen. Alle neueren Änderungen bleiben für den Folgeauftrag vorgemerkt.
-So werden echte berechnete Zwischenstände sichtbar, statt überlappende Ergebnisse
-während eines laufenden Strichs fortwährend zu verwerfen. Die sichtbare Revision
-ersetzt das frühere reine Bereitschafts-Flag. Wenige frühe Ergebnisse sind kein
-hinreichender Nachweis kontinuierlicher Bearbeitung.
+Zustandsabfragen übertragen kein Journal. Monotone Ereignis-/Storecursor und
+referenzierte Intervalle vermeiden Journalvollkopien pro Versuch. Ergebnisse
+werden nach jedem Szenario mit Auswertung gesichert; ein atomarer Laufindex
+enthält auch Fehler und fehlende Fälle. Produktquellen, Harness, Fixture und
+Build besitzen getrennte Identitäten. Vorprüfung erfolgt vor Fixtureerzeugung;
+Traces entstehen nur auf ausdrückliche Anforderung.
 
-Ein exakter lokaler Submit wartet nur auf die betreffende Region. Eine teilweise
-aktuelle Kachel bestätigt keinen noch offenen Bereich. Das getrennte Diagnose-
-Receipt `input-covered` zeigt lediglich die vollständige Versionsabdeckung einer
-Eingabe und die kleinste/größte sichtbare Kachelrevision. Ein solcher Zwischenstand
-kann unterschiedliche Revisionen enthalten; er ist kein Nachweis einer gemeinsam
-aktuellen Region. Er ersetzt weder `edit-submit` noch dessen unveränderte
-50-ms-Prüfung. `submittedRevision` und `exactRevision` bestätigen weiterhin nur
-den neuesten vollständig dargestellten Modellstand. `submission()` und die
-lokalen Kachelstempel erfassen dagegen auch einen tatsächlich eingereichten,
-lokal brauchbaren Teilviewport. Submitcallbacks können bei geänderter Freigabe
-einen weiteren Overlayframe anfordern. Pointerup fordert auch
-dann einen tatsächlichen Frame an, wenn die letzte Live-Revision schon sichtbar
-war. Kameraoffsets werden vor der GPU-Übergabe abgezogen; Session, Revision und
-monotone Tokens schützen vor überholten Ergebnissen. `budgets.ts` begrenzt
-Quell-, History-, Präsentations-, GPU- und Pending-Speicher sowie Arbeit pro Frame.
+Smoke und Messsammlung teilen Prozessstart und Pixelerfassung. Der kurze CI-Smoke
+prüft Normalstart ohne Diagnose, reale Eingaben/Dateien, einen echten Rendererhänger
+und Fehler im Dateilebenszyklus. Ein separater Paketcheck prüft den tatsächlichen
+ASAR-Inhalt und startet das gepackte Programm. Die Paketgrenze erlaubt nur
+Renderer-/Desktopbuild und benötigte SQLite-Module, unabhängig von Sparse Checkout.
+Die Typen des Auswerters werden direkt aus seinem geprüften JavaScript/JSDoc
+abgeleitet; eine parallele manuelle Signaturdatei entfällt.
 
-### Diagnose und gemeinsamer Prüfablauf
+Kurze Probe und vollständige Sammlung teilen Gesten und Inhaltsprüfer. Echte
+Eingaben, angenommene/verfallene Dosis, lokale Modelländerung und Render-Submit
+bleiben unterscheidbar; Beobachtung setzt keine Bereitschaft. Gemessene Gesten
+enthalten keine Screenshot-/Warmup-Pausen. Analytische Werte, räumlich getrennte
+Pixelproben, History und gespeicherte Feindaten ergänzen den Inhaltstest.
+Lastnachweise verlangen echte Sessionfortschritte und Überlappung mit erfolgreich
+beendeten Dateioperationen. Der synthetische Worker ersetzt keine späteren Fachjobs.
 
-Ausführliche Beobachtung und der synthetische Sampling-Lastworker entstehen nur
-beim Start mit `ATLAS_P0_DIAGNOSTICS=1`. Der normale Start hat weder `atlasObserve`
-noch Host-Diagnose, Ereignisjournal, Atlas-Performance-Marks oder Belastungs-UI.
-Auch künstliche Renderstörungen sind an diesen Diagnosestart gebunden.
-Beobachtung setzt niemals Bereitschaft oder Renderabschluss.
-
-Zustandsabfragen übertragen kein Journal. Diagnose liest monotone Ereignis- und
-Storecursor; Rohereignisse werden einmal je Prozess gesichert. Ein Szenarioablauf
-liefert ein Ergebnis und seine sofortige Auswertung. Der atomare Laufindex nennt
-geplante, laufende, abgeschlossene und fehlgeschlagene Fälle; ein Abbruch behält
-Teilbelege und fehlende Fälle. Der Bericht referenziert Ereignisintervalle, statt
-vergangene Save-Aktivität in jedem Versuch zu vervielfachen. Traces entstehen nur
-mit `--trace`. Produktquellen, Prüfprogramm, Fixture und ausgeführter Build werden
-getrennt identifiziert; die Umgebungsprüfung läuft vor der Fixtureerzeugung.
-
-Die kurze Probe und `--full` verwenden dieselben realen Eingaben und Inhaltsprüfer.
-Zeitlich gemessene bewegte Gesten laufen mit festen Eingabeintervallen ohne
-Screenshots oder zusätzliche Wartephasen innerhalb der Geste. Analytische
-Höhenproben, getrennte Bildpunkte und gespeicherte Feindaten-Digests ergänzen die
-Zuordnung von Eingabe, Modell, Commit und tatsächlichem Render-Submit.
-Zwei Zwischenstände verlangen zwei verschiedene Frames vor Pointerup und bleiben
-eine Mindestkontrolle. Zusätzlich werden sämtliche Eingaben, offene Rückstände
-und die längste Aktualisierungspause während weiterer Eingaben ausgewertet.
-Das Pinseljournal trennt echte Mausereignisse, den nominalen Pressimpuls,
-angenommene Halte-/Bewegungsintervalle und ausdrücklich verworfene Wartezeit.
-Es prüft die Dosisgrenze und die tatsächliche Darstellung eines Schritts vor dem
-nächsten sowie ausdrücklich beendete Darstellungsverpflichtungen bei einem
-Ortswechsel. Absichtlich nicht angenommene Eingaben erhalten einen Grund und keine
-erfundene Modelländerung oder Renderbestätigung.
-Eine unveränderte Revision nach Loslassen ersetzt dessen Commit-/Submit-Zuordnung
-nicht. Hintergrundreads gelten nicht allein aufgrund ihrer Existenz als
-Kamerablockade; maßgeblich ist die beobachtete Eingabe-/Kamerareihenfolge.
-
-Kalte Fälle unterscheiden Quellenbereitschaft (`sources-ready`) und die wirkliche
-Produktfreigabe (`input-ready`). Der erste danach ausgelöste Strich verwendet
-denselben Ablauf und dieselben Live-/50-ms-Kriterien wie ein warmer Strich.
-Navigation, Ladezeit und Verzögerung zwischen Freigabe und Eingabe bleiben im
-Journal und in den Gesamtzeiten enthalten. Frühe abgewiesene Eingaben werden
-separat auf sichtbares Warten, ausbleibende Wirkung und einen späteren gültigen
-neuen Gestenbeginn geprüft. Eine nachträglich angenommene Dosis ist keine
-erfolgreiche Erholung dieses Vorabfalls.
-
-`--full` verlangt drei unabhängige Gruppen mit je 100 Strichen pro warmem Fall,
-34 kalten Ortswechseln mit Bearbeitung pro kaltem Fall und mindestens 30 Sekunden
-Navigation mit beziehungsweise ohne Raster. Kalte Fälle beginnen nach normalem
-Projektöffnen in einem ungeladenen Anwendungsausschnitt; sie behaupten keinen
-geleerten Betriebssystem-Dateicache. Pflichtfälle, Fehlversuche und Timeouts
-bleiben erhalten. Teilauswahl verkleinert das Abnahmemanifest nicht.
-
-Scaling verwendet echte SQLite-Projekte mit 32, 1.024 und 9.000 Quellkacheln,
-entsprechend 1, 32 und 281,25 MiB dekodierter ursprünglicher Autoren. Die größte
-Menge überschreitet das aktive Quellbudget von 256 MiB. Gleiche Übersichten,
-grobe Bearbeitung, Küsten-/Reliefpixel, Detailrückkehr, History, Save und
-Prozessneustart müssen funktionieren. Vollständige Fine-Digests prüfen, dass
-grobe Änderungen die feinen Autoren nicht umschreiben. Reads während einzelner
-Zoomstufen, aktive Speicherstände und Übersichtspflege werden getrennt erfasst.
-
-Der Busy-Fall verwendet eine Datei mit 9.008 echten Quellen und zweiter Küste.
-Seine Speicherlast stammt aus diesem Inhalt. Der Sampling-Worker arbeitet auf
-einem exakten Ausschnitt; bei grober Ansicht wird dafür ein begrenzter lokaler
-Bereich geladen. Er gehört zur Projektsession und wird beim Wechsel abgebrochen.
-Busy-Prüfungen verlangen tatsächlichen Fortschritt der aktuellen Session und
-Überlappung mit erfolgreich beendeten Save-/Publishintervallen. Ein aktives Flag
-allein reicht nicht. Dieser Lastfall ersetzt keine späteren produktiven Fachjobs.
-
-Die Störungen `ignore-zoom`, `pointerup-render`, `delay-render` und `drop-render`
-müssen die jeweiligen Prüfungen scheitern lassen; derselbe normale Pfad muss
-sich erholen. Fehlende Inhalte, Ereignisverlust, überschrittene Budgets und
-fehlende Lastüberlappung verhindern das funktionale PASS.
-Submission und RAF bleiben Diagnosewerte. Native Leistung verlangt eine
-qualifizierte Referenz sowie die Zuordnung von Atlas-Generation zur tatsächlich
-präsentierten Canvas-/Compositorressource. Befehle stehen im README;
-vorhandene Belege und offene Abnahmen ausschließlich im Statusdokument.
+Das verbindliche Szenarienmanifest, Stichproben, Fehlerkontrollen und native
+Präsentationsanforderungen stehen im
+[Prüfvertrag](implementation/atlas-rebuild-plan.md#6-prüf--und-performancevertrag).
+Befehle stehen im README, vorhandene Nachweise und offene Implementierungs- oder
+Umgebungsgrenzen ausschließlich im Status. Fehlende Präsentationszuordnung darf
+nicht aus Submission- oder RAF-Zeiten ergänzt werden.

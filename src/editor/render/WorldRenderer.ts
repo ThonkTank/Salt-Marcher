@@ -160,7 +160,6 @@ export class WorldRenderer {
   totalSamples = 0;
   frameCpuMax = 0;
   advanceFrame: (now: number) => void = () => {};
-  onExact: (revision: number) => void = () => {};
   onSubmit: (frame: number) => void = () => {};
   onError: (error: Error) => void = () => {};
 
@@ -169,12 +168,25 @@ export class WorldRenderer {
     this.terrain.sortableChildren = true;
     this.raster.onmessage = (event: MessageEvent<RasterBatchResult>) => {
       const batch = event.data;
+      const receivedAt = batch.timing
+        ? performance.timeOrigin + performance.now()
+        : undefined;
       if (this.running?.id === batch.id) this.running = null;
       if (batch.sessionId !== this.sessionId) return;
       this.observation.event("raster-batch-result", {
         id: batch.id,
         tiles: batch.results.length,
         cpuMs: batch.cpuMs,
+        ...(batch.timing
+          ? {
+              timing: {
+                ...batch.timing,
+                receivedAt,
+                // Translate worker/main timestamps to this journal's clock.
+                timeOrigin: performance.timeOrigin,
+              },
+            }
+          : {}),
       });
       for (const result of batch.results) {
         this.observation.event("raster-result", {
@@ -760,11 +772,16 @@ export class WorldRenderer {
       this.observation.event("raster-start", {
         id: task.id,
         batchId: batch.id,
+        sessionId: task.sessionId,
         key: task.key,
+        bounds: task.bounds,
+        size: task.size,
         rect: task.rect,
         revision: task.revision,
         pixels: (task.rect[2] - task.rect[0]) * (task.rect[3] - task.rect[1]),
       });
+    if (this.observation.enabled)
+      batch.sentAt = performance.timeOrigin + performance.now();
     this.raster.postMessage(batch);
   }
 
@@ -832,6 +849,7 @@ export class WorldRenderer {
       tile.sprite.visible = intersectsBounds(tile.bounds, this.bounds());
       this.observation.event("raster-upload", {
         id: result.id,
+        sessionId: result.sessionId,
         key: result.key,
         paintedRevision: tile.paintedRevision,
         requiredRevision: tile.revision,
@@ -879,7 +897,6 @@ export class WorldRenderer {
       if (exactRevision >= 0 && identity !== this.lastSubmit) {
         this.submittedRevision = exactRevision;
         this.submittedViewGeneration = this.viewGeneration;
-        this.onExact(exactRevision);
       }
       this.lastSubmit = identity;
     }

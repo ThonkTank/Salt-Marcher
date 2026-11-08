@@ -1,6 +1,4 @@
-import { createHash } from "node:crypto";
-import { writeFile } from "node:fs/promises";
-import { join } from "node:path";
+import { captureCanvas } from "./atlas-p0-desktop.mjs";
 import {
   extractEditSamples,
   strokeEvidence,
@@ -114,46 +112,17 @@ export async function capture(session, name, points = [], fixedPixels) {
   const state = await stateSnapshot(session.page);
   const box = await session.page.locator("canvas").boundingBox();
   if (!box) throw new Error("Canvas unavailable for image check");
-  const rect = {
-    x: Math.ceil(box.x),
-    y: Math.ceil(box.y),
-    width: Math.floor(box.width),
-    height: Math.floor(box.height),
-  };
   const samples =
     fixedPixels ??
     points.map(([x, y]) => ({
       x: Math.round(box.width / 2 + (x - state.camera.x) * state.camera.scale),
       y: Math.round(box.height / 2 + (y - state.camera.y) * state.camera.scale),
     }));
-  const result = await session.app.evaluate(
-    async ({ BrowserWindow }, { rect, samples }) => {
-      const image =
-        await BrowserWindow.getAllWindows()[0].webContents.capturePage(rect);
-      const size = image.getSize(),
-        bitmap = image.toBitmap();
-      const pixels = samples.map(({ x, y }) => {
-        if (x < 0 || y < 0 || x >= size.width || y >= size.height) return null;
-        const i = (y * size.width + x) * 4;
-        return [bitmap[i + 2], bitmap[i + 1], bitmap[i], bitmap[i + 3]];
-      });
-      return { size, pixels, png: image.toPNG().toString("base64") };
-    },
-    { rect, samples },
-  );
-  const bytes = Buffer.from(result.png, "base64");
-  await writeFile(join(session.directory, `${name}.png`), bytes);
   return {
-    file: `${session.instance.id}/${name}.png`,
-    size: result.size,
-    pixels: result.pixels,
-    screenPoints: samples,
+    ...(await captureCanvas(session, name, samples)),
     points,
     camera: state.camera,
     revision: state.document.revision,
-    sha256: createHash("sha256").update(bytes).digest("hex"),
-    method:
-      "Electron capturePage outside timed interval; content evidence only",
   };
 }
 export const waterPixel = (p) => Boolean(p && p[2] > p[0] + 20);

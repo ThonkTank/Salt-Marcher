@@ -10,6 +10,11 @@ const run = (command, args, extraEnv = {}) => {
   if (result.error) throw result.error;
   if (result.status !== 0) process.exit(result.status ?? 1);
 };
+run(process.execPath, [
+  "node_modules/typescript/bin/tsc",
+  "--project",
+  "tsconfig.tools.json",
+]);
 run(process.execPath, ["scripts/build-atlas-p0.mjs"]);
 run(
   require("electron"),
@@ -22,3 +27,4 @@ run(
     ELECTRON_RUN_AS_NODE: "1",
   },
 );
+run(process.execPath, ["scripts/atlas-p0-smoke.mjs"]);

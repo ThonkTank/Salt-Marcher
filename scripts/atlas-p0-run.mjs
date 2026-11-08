@@ -1,4 +1,4 @@
-import { _electron as electron } from "@playwright/test";
+import { launchAtlasDesktop } from "./atlas-p0-desktop.mjs";
 import { createRequire } from "node:module";
 import { createHash, randomUUID } from "node:crypto";
 import { spawnSync } from "node:child_process";
@@ -27,6 +27,12 @@ import {
   P0_REQUIREMENTS,
 } from "./atlas-p0-evaluate.mjs";
 import { analyzeTrace } from "./atlas-p0-trace.mjs";
+import {
+  nativePreflight,
+  evaluateNativePreflight,
+  nativePresentationCapability,
+} from "./atlas-p0-native.mjs";
+import { summarizeSubmissionTiming } from "./atlas-p0-timing.mjs";
 import {
   snapshot,
   stateSnapshot,
@@ -64,7 +70,31 @@ const lab = argv.includes("--lab"),
   native = argv.includes("--native");
 const full = argv.includes("--full") || argv.includes("--acceptance");
 const traceRequested = argv.includes("--trace");
-const purpose = full ? "acceptance" : "probe";
+const preflightOnly = argv.includes("--preflight");
+const probeNative = argv.includes("--probe-native");
+const referenceIndex = argv.indexOf("--reference");
+const referencePath = referenceIndex < 0 ? undefined : argv[referenceIndex + 1];
+if (preflightOnly && probeNative)
+  throw new Error("Choose either --preflight or --probe-native");
+if (
+  (preflightOnly || probeNative) &&
+  (full ||
+    argv.includes("--only") ||
+    argv.includes("--case") ||
+    argv.includes("--runs"))
+)
+  throw new Error("Native preflight/probe does not collect scenario samples");
+if ((preflightOnly || probeNative || referenceIndex >= 0) && !native)
+  throw new Error("Native preflight/reference options require --native");
+if (referenceIndex >= 0 && (!referencePath || referencePath.startsWith("--")))
+  throw new Error("--reference requires a JSON reference profile");
+const purpose = preflightOnly
+  ? "native-preflight"
+  : probeNative
+    ? "native-presentation-investigation"
+    : full
+      ? "acceptance"
+      : "probe";
 const onlyIndex = argv.indexOf("--only");
 const only = onlyIndex < 0 ? null : argv[onlyIndex + 1];
 if (only && !["interactions", "scaling", "collection"].includes(only))
@@ -102,14 +132,18 @@ const out = resolve(
 );
 if (lab === native) {
   console.error(
-    "Usage: node scripts/atlas-p0-run.mjs (--lab | --native) [--executable packaged-binary] [--full] [--only interactions|scaling|collection] [--case collection-id --runs 1|2|3] [--out directory]",
+    "Usage: node scripts/atlas-p0-run.mjs (--lab | --native) [--executable packaged-binary] [--reference profile.json] [--preflight|--probe-native] [--full] [--only interactions|scaling|collection] [--case collection-id --runs 1|2|3] [--out directory]",
   );
   process.exit(2);
 }
 await mkdir(out, { recursive: true });
 const hash = (value) => createHash("sha256").update(value).digest("hex");
 const log = (message) => console.log(`[atlas-p0] ${message}`);
-if (full && only)
+if (preflightOnly || probeNative)
+  log(
+    "Native preflight/investigation only; no fixture or scenario collection.",
+  );
+else if (full && only)
   log(
     `Partial ${only} diagnostics in ${selectedRuns ?? 3} group(s)${scenarioId ? `; case ${scenarioId}` : ""}. Full acceptance still requires all cases and three independent complete runs.`,
   );
@@ -125,11 +159,14 @@ const report = {
   schemaVersion: 2,
   purpose,
   mode: lab ? "lab" : "native",
-  scope: only
-    ? `P0 partial ${only} diagnostics${scenarioId ? `: ${scenarioId}` : ""}`
-    : full
-      ? "P0 full scenario collection plus representative scaling"
-      : "P0 architecture probe; shared scenarios with one attempt each",
+  scope:
+    preflightOnly || probeNative
+      ? "native prerequisites only; no scenario collection"
+      : only
+        ? `P0 partial ${only} diagnostics${scenarioId ? `: ${scenarioId}` : ""}`
+        : full
+          ? "P0 full scenario collection plus representative scaling"
+          : "P0 architecture probe; shared scenarios with one attempt each",
   selection: only ?? "all",
   diagnosticSelection: { scenarioId, selectedRuns },
   startedAt: new Date().toISOString(),
@@ -150,13 +187,7 @@ const report = {
       os: `${process.platform} ${release()}`,
     },
   },
-  presentationMapping: {
-    status: "unsupported",
-    method: null,
-    reason:
-      "No proven join from Atlas semantic render generation to Chromium surface-frame/display-frame presentation. Submission and RAF remain proxies.",
-    clock: { calibrated: false },
-  },
+  presentationMapping: nativePresentationCapability,
   functional: { checks: [] },
   runs: [],
   negativeControls: [],
@@ -204,7 +235,10 @@ async function atomicJson(file, value) {
 let checkpointTask = Promise.resolve();
 function checkpoint() {
   checkpointTask = checkpointTask.then(async () => {
-    report.evaluation = evaluateRun(report);
+    report.evaluation =
+      native && report.collectionStarted !== true
+        ? evaluateNativePreflight(report.preflight, report.errors)
+        : evaluateRun(report);
     await atomicJson(join(out, "report.json"), report);
     await atomicJson(join(out, "run-index.json"), {
       schemaVersion: 2,
@@ -353,40 +387,19 @@ async function launch(project, label, fault = "none") {
   if (role === "scenario") label = `${independentRunId}-${label}`;
   const sessionDirectory = join(out, label);
   await mkdir(sessionDirectory, { recursive: true });
-  const env = {
-    ...process.env,
-    ATLAS_P0_PROJECT: project,
-    ATLAS_P0_DIALOG_OPEN: project,
-    ATLAS_P0_DIALOG_SAVE: project,
-    ATLAS_P0_DIALOG_UNSAVED: "discard",
-    ATLAS_P0_DIAGNOSTICS: "1",
-  };
-  delete env.ELECTRON_RUN_AS_NODE;
-  delete env.ATLAS_P0_FAULT;
-  if (fault !== "none") env.ATLAS_P0_FAULT = fault;
-  const args = lab
-    ? [
-        "--ozone-platform=headless",
-        "--ozone-override-screen-size=1600,1200",
-        "--use-gl=angle",
-        "--use-angle=swiftshader",
-        "--enable-unsafe-swiftshader",
-      ]
-    : [];
-  if (!packaged) args.push(join(root, "desktop-dist/main.cjs"));
-  const app = await electron.launch({
-    executablePath,
-    args,
-    env,
-    timeout: 30_000,
+  const desktop = await launchAtlasDesktop({
+    executablePath: packaged ? executablePath : undefined,
+    lab,
+    diagnostics: true,
+    project,
+    env: {
+      ATLAS_P0_DIALOG_OPEN: project,
+      ATLAS_P0_DIALOG_SAVE: project,
+      ATLAS_P0_DIALOG_UNSAVED: "discard",
+      ...(fault === "none" ? {} : { ATLAS_P0_FAULT: fault }),
+    },
   });
-  const output = [];
-  app.process().stdout?.on("data", (data) => output.push(String(data)));
-  app.process().stderr?.on("data", (data) => output.push(String(data)));
-  const page = await app.firstWindow();
-  const pageErrors = [];
-  page.on("pageerror", (error) => pageErrors.push(String(error)));
-  page.setDefaultTimeout(20_000);
+  const { app, page, args, output, errors: pageErrors } = desktop;
   try {
     await page.waitForFunction(
       () => {
@@ -413,7 +426,7 @@ async function launch(project, label, fault = "none") {
     await page
       .screenshot({ path: join(sessionDirectory, "startup-failure.png") })
       .catch(() => {});
-    await app.close();
+    await desktop.close();
     await writeFile(join(sessionDirectory, "electron.log"), output.join(""));
     throw new Error(
       `Electron renderer startup failed: ${JSON.stringify(details)}`,
@@ -446,7 +459,7 @@ async function launch(project, label, fault = "none") {
       join(sessionDirectory, "build-identity-failure.json"),
       JSON.stringify(evidence, null, 2),
     );
-    await app.close();
+    await desktop.close();
     await writeFile(join(sessionDirectory, "electron.log"), output.join(""));
     report.errors.push({
       code: "EXECUTED_BUILD_IDENTITY_FAILED",
@@ -519,8 +532,9 @@ async function launch(project, label, fault = "none") {
       metadata.display?.displayFrequency ??
       metadata.displayFrequency ??
       null;
-    // A display existing is insufficient to silently nominate it as the reference.
-    report.reference.qualified = false;
+    // Explicit observed/profile qualification is separate from presentation proof.
+    report.reference.qualified =
+      native && report.preflight?.qualification.qualified === true;
   }
   await writeFile(
     join(sessionDirectory, "environment.json"),
@@ -540,6 +554,15 @@ async function launch(project, label, fault = "none") {
       closing = (async () => {
         try {
           const final = await snapshot(page);
+          const timing = summarizeSubmissionTiming(final.events);
+          const timingFile = join(sessionDirectory, "submission-timing.json");
+          await writeFile(timingFile, JSON.stringify(timing, null, 2));
+          instance.submissionTiming = {
+            file: timingFile,
+            samples: timing.samples.length,
+            incomplete: timing.incomplete.length,
+            distributions: timing.distributions,
+          };
           instance.brushPublication = evaluateBrushPublicationOrder(
             final.events,
           );
@@ -590,7 +613,7 @@ async function launch(project, label, fault = "none") {
           if (pageErrors.length)
             throw new Error(`Renderer errors: ${pageErrors.join("; ")}`);
         } finally {
-          await app.close();
+          await desktop.close();
           await writeFile(
             join(sessionDirectory, "electron.log"),
             output.join(""),
@@ -1498,13 +1521,51 @@ async function scalingJourney() {
 }
 
 try {
-  if (native && !process.env.DISPLAY && !process.env.WAYLAND_DISPLAY) {
-    const error = new Error(
-      "Native mode requires the regular reference display; no fixtures or traces were generated.",
-    );
-    error.code = "NO_NATIVE_DISPLAY";
-    throw error;
+  if (native) {
+    report.preflight = await nativePreflight({
+      out,
+      executablePath: packaged ? executablePath : undefined,
+      profilePath: referencePath,
+      probe: probeNative,
+    });
+    const observed = report.preflight.observed;
+    report.reference = {
+      qualified: report.preflight.qualification.qualified,
+      profile: report.preflight.profile ?? null,
+      softwareRendering: observed?.softwareRendering ?? null,
+      displayHz: observed?.displayHz ?? null,
+      viewport: observed?.viewport ?? null,
+      hardware: observed
+        ? {
+            cpu: observed.cpu,
+            gpu: observed.gpu,
+            os: observed.os,
+            ramBytes: observed.ramBytes,
+          }
+        : report.reference.hardware,
+    };
+    report.presentationMapping = report.preflight.presentation;
+    // Collection cannot prove native acceptance while the adapter is missing.
+    // Preserve a BLOCKED preflight, not invented failures from unstarted scenarios.
+    if (preflightOnly || probeNative || report.preflight.status !== "PASS") {
+      report.finishedAt = new Date().toISOString();
+      report.collectionStarted = false;
+      for (const entry of report.planned)
+        entry.state = "blocked-before-collection";
+      await checkpoint();
+      log(
+        JSON.stringify({
+          status: report.evaluation.status,
+          blockers: report.preflight.blockers,
+          errors: report.preflight.errors,
+          fixturesCreated: false,
+          report: join(out, "native-preflight.json"),
+        }),
+      );
+      process.exit(report.preflight.status === "FAIL" ? 1 : 2);
+    }
   }
+  report.collectionStarted = true;
   const harnessFiles = (await readdir(join(root, "scripts")))
     .filter(
       (file) =>

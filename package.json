@@ -30,12 +30,15 @@
     "build:atlas-p0": "node scripts/build-atlas-p0.mjs",
     "desktop:atlas-p0": "npm run build:atlas-p0 && electron .",
     "test:atlas-p0": "vitest run src/editor",
+    "typecheck:p0-tools": "tsc --project tsconfig.tools.json",
+    "test:atlas-p0:smoke": "node scripts/atlas-p0-smoke.mjs",
     "p0:lab": "node scripts/atlas-p0-run.mjs --lab",
     "p0:native": "node scripts/atlas-p0-run.mjs --native",
     "p0:evaluate": "node scripts/atlas-p0-evaluate.mjs",
     "package:atlas-p0": "npm run build:atlas-p0 && electron-forge package",
     "make:atlas-p0": "npm run build:atlas-p0 && electron-forge make",
-    "check:atlas-p0": "node scripts/check-atlas-p0.mjs"
+    "check:atlas-p0": "node scripts/check-atlas-p0.mjs",
+    "check:atlas-p0:package": "npm run make:atlas-p0 && node scripts/check-atlas-p0-package.mjs"
   },
   "dependencies": {
     "@tauri-apps/api": "^2",
@@ -48,6 +51,7 @@
     "@electron-forge/cli": "8.0.1",
     "@electron-forge/maker-rpm": "8.0.1",
     "@electron-forge/maker-zip": "8.0.1",
+    "@electron/asar": "4.3.1",
     "@electron/rebuild": "4.2.1",
     "@playwright/test": "^1.51",
     "@tauri-apps/cli": "^2",

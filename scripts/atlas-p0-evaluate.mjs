@@ -1,6 +1,55 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { pathToFileURL } from "node:url";
 
+/**
+ * The executable evaluator owns its contracts. Optional report fields remain
+ * runtime-validated: a TypeScript annotation must never turn missing evidence
+ * into a successful check. Consumers infer these declarations from this module.
+ *
+ * @typedef {object} ScenarioRequirement
+ * @property {string} id
+ * @property {string} kind
+ * @property {number} minSamples
+ * @property {number} [minDurationMs]
+ * @property {number} [minTotalSamples]
+ * @property {readonly string[]} [requiredInputKinds]
+ *
+ * @typedef {object} Requirements
+ * @property {string} scope
+ * @property {number} independentRuns
+ * @property {readonly ScenarioRequirement[]} scenarios
+ * @property {readonly string[]} [requiredChecks]
+ * @property {{minimumSourceTiles: readonly number[], tileBytes: number, sourceBudgetBytes: number}} [scaling]
+ * @property {readonly {fault: string, primaryCheck: string, primaryFailureCode: string}[]} [requiredFaultControls]
+ *
+ * @typedef {{code: string, inputId?: number | string | null, [detail: string]: unknown}} EvaluationIssue
+ * @typedef {{milliseconds: number, limitMs: number, code?: string, inputId?: number | string | null, inputKind?: string, navigationId?: number}} TimingOutlier
+ * @typedef {{count: number, invalid: number, p50: number | null, p95: number | null, p99: number | null, maximum: number | null}} Distribution
+ *
+ * @typedef {object} AcceptanceGroup
+ * @property {string} run
+ * @property {string} scenario
+ * @property {number} sampleCount
+ * @property {number} missing
+ * @property {Distribution} inputToPresentationMs
+ * @property {Record<string, {sampleCount: number, inputToPresentationMs: Distribution}>} [inputKinds]
+ * @property {number} [navigationCount]
+ * @property {Distribution} [navigationToReadyMs]
+ * @property {Distribution} [readyToInputMs]
+ * @property {Distribution} [navigationToPresentationMs]
+ * @property {Distribution} [firstInputToPresentationMs]
+ * @property {Distribution} [cpuWorkMs]
+ * @property {Distribution} [presentationFrameIntervalsMs]
+ *
+ * @typedef {object} AcceptanceReport
+ * @property {string} scope
+ * @property {"FAIL" | "BLOCKED" | "PASS"} status
+ * @property {boolean} passed
+ * @property {EvaluationIssue[]} failures
+ * @property {EvaluationIssue[]} blockers
+ * @property {AcceptanceGroup[]} groups
+ */
+
 export const P0_FUNCTIONAL_CHECKS = Object.freeze([
   "canonical-fixture",
   "coarse-preserves-fine",
@@ -26,7 +75,10 @@ export const P0_FUNCTIONAL_CHECKS = Object.freeze([
   "world-detail-roundtrip",
 ]);
 
-/** These are requirements, never inferred from whichever samples happened to arrive. */
+/**
+ * These are requirements, never inferred from whichever samples happened to arrive.
+ * @satisfies {Requirements}
+ */
 export const P0_REQUIREMENTS = Object.freeze({
   scope: "P0-height-subset",
   independentRuns: 3,
@@ -102,7 +154,11 @@ export const P0_REQUIREMENTS = Object.freeze({
   ],
 });
 
-/** One selection drives execution, fixtures, the run index and scoped checks. */
+/**
+ * One selection drives execution, fixtures, the run index and scoped checks.
+ * @param {string} [selection]
+ * @param {string | null} [scenarioId]
+ */
 export function selectP0Scope(selection = "all", scenarioId = null) {
   if (!["all", "interactions", "collection", "scaling"].includes(selection))
     throw new Error(`Unknown P0 selection: ${selection}`);
@@ -147,8 +203,16 @@ export function selectP0Scope(selection = "all", scenarioId = null) {
   };
 }
 
+/** @param {unknown} value @returns {value is number} */
 const finite = (value) => typeof value === "number" && Number.isFinite(value);
+/** @param {unknown} value @returns {value is string} */
 const nonempty = (value) => typeof value === "string" && value.length > 0;
+
+/** Missing measurements are handled by their evidence check, not a numeric limit.
+ * @param {number | null} value
+ * @param {number} limit
+ */
+const exceeds = (value, limit) => value !== null && value > limit;
 
 /** A release run can use several processes; control processes are never repetitions. */
 function releaseRuns(report, fail) {
@@ -181,8 +245,12 @@ function releaseRuns(report, fail) {
   return [...groups.values()];
 }
 
-/** The laboratory gate also fails closed: passing timings cannot replace behavior. */
+/**
+ * The laboratory gate also fails closed: passing timings cannot replace behavior.
+ * @param {Requirements} [requirements]
+ */
 export function evaluateFunctional(report, requirements = P0_REQUIREMENTS) {
+  /** @type {EvaluationIssue[]} */
   const failures = [];
   const fail = (code, detail = {}) => failures.push({ code, ...detail });
   if (report.errors !== undefined && !Array.isArray(report.errors))
@@ -355,6 +423,7 @@ export function evaluateFunctional(report, requirements = P0_REQUIREMENTS) {
 
 /** A package must identify its executed code; workspace metadata is no fallback. */
 export function checkBuildIdentity(workspace, executed, provenance) {
+  /** @type {EvaluationIssue[]} */
   const failures = [];
   const validHash = (value) =>
     typeof value === "string" && /^[a-f0-9]{64}$/.test(value);
@@ -381,6 +450,7 @@ export function checkBuildIdentity(workspace, executed, provenance) {
   return { passed: failures.length === 0, failures };
 }
 
+/** @param {readonly unknown[]} values @returns {Distribution} */
 export function distribution(values) {
   const sorted = values.filter(finite).sort((a, b) => a - b);
   const quantile = (p) =>
@@ -540,6 +610,11 @@ export function extractColdBoundary(events, navigationId, sessionId) {
   };
 }
 
+/**
+ * @param events Raw observation journal; evidence is checked below.
+ * @param samples Extracted samples, including explicitly missing evidence.
+ * @param {{sessionId?: string, afterInputId?: number, coldBeforeNavigation?: boolean}} [options]
+ */
 export function extractColdSamples(
   events,
   samples,
@@ -630,6 +705,7 @@ function isD10Discard(sample) {
 
 /** D11 rejection is a separate behavior case, never a successful edit sample. */
 export function evaluateBlockedInput(evidence = {}) {
+  /** @type {EvaluationIssue[]} */
   const issues = [];
   const fail = (code) => issues.push({ code });
   const samples = Array.isArray(evidence.samples) ? evidence.samples : [];
@@ -933,7 +1009,7 @@ export function evaluateBrushTime(events, inputIds, sessionId) {
         step.intervalId === interval.intervalId &&
         step.gestureId === interval.gestureId,
     );
-    if (finite(step?.submittedAt))
+    if (step && finite(step.submittedAt))
       submissions.push({
         intervalId: interval.intervalId,
         frame: step.frameId,
@@ -1178,6 +1254,9 @@ export function evaluateSaveOverlap({
   };
 }
 
+/**
+ * @param {{points?: readonly (readonly number[])[], before?: readonly number[], after?: readonly number[], undone?: readonly number[], changedPixels?: readonly (readonly number[])[], restoredPixels?: readonly (readonly number[])[]}} [evidence]
+ */
 export function evaluateStrokeContent({
   points,
   before,
@@ -1189,9 +1268,10 @@ export function evaluateStrokeContent({
   if (
     !Array.isArray(points) ||
     points.length < 2 ||
-    ![before, after, undone].every(
-      (values) => Array.isArray(values) && values.length === points.length,
-    )
+    !Array.isArray(before) ||
+    !Array.isArray(after) ||
+    !Array.isArray(undone) ||
+    [before, after, undone].some((values) => values.length !== points.length)
   )
     return { passed: false, probes: [] };
   const indices = [0, points.length - 1];
@@ -1237,9 +1317,11 @@ export function evaluateStrokeContent({
 
 /** Submission can disprove a deadline; submission alone can never prove visibility. */
 export function evaluateSubmissionDiagnostics(samples, limitMs = 50) {
+  /** @type {EvaluationIssue[]} */
   const issues = [];
   const values = [];
   const byInputKind = new Map();
+  /** @type {TimingOutlier[]} */
   const outliers = [];
   if (!samples.length) issues.push({ code: "NO_INPUT_SAMPLES" });
   for (const sample of samples) {
@@ -1409,21 +1491,21 @@ export function evaluateColdSubmissionDiagnostics(samples) {
   const navigationToGateMs = distribution(gate);
   const navigationToSubmissionMs = distribution(submission);
   const firstInputToSubmissionMs = distribution(firstInput);
-  if (firstInputToSubmissionMs.p95 > 50)
+  if (exceeds(firstInputToSubmissionMs.p95, 50))
     issues.push({
       code: "COLD_FIRST_INPUT_LOWER_BOUND_EXCEEDS_LIMIT",
       metric: "p95",
       milliseconds: firstInputToSubmissionMs.p95,
       limitMs: 50,
     });
-  if (navigationToGateMs.p95 > 500)
+  if (exceeds(navigationToGateMs.p95, 500))
     issues.push({
       code: "COLD_GATE_LOWER_BOUND_EXCEEDS_LIMIT",
       metric: "p95",
       milliseconds: navigationToGateMs.p95,
       limitMs: 500,
     });
-  if (navigationToSubmissionMs.p95 > 750)
+  if (exceeds(navigationToSubmissionMs.p95, 750))
     issues.push({
       code: "COLD_SUBMISSION_LOWER_BOUND_EXCEEDS_LIMIT",
       metric: "p95",
@@ -1656,7 +1738,9 @@ function strokesFromSamples(samples) {
 
 /** Evaluate the selected scenario now, independently of a later complete run. */
 export function evaluateScenario(scenario) {
+  /** @type {EvaluationIssue[]} */
   const failures = [];
+  /** @type {EvaluationIssue[]} */
   const missing = [];
   const samples = scenario.samples ?? [];
   const fail = (code, detail = {}) => failures.push({ code, ...detail });
@@ -1673,7 +1757,7 @@ export function evaluateScenario(scenario) {
     if (scenario.authorChanges !== 0) fail("NAVIGATION_CHANGED_DOCUMENT");
     const cpuWorkMs = distribution(scenario.cpuWorkMs ?? []);
     if (!cpuWorkMs.count) fail("NAVIGATION_CPU_SAMPLES_MISSING");
-    else if (cpuWorkMs.p95 > 8)
+    else if (exceeds(cpuWorkMs.p95, 8))
       fail("NAVIGATION_CPU_P95_EXCEEDED", {
         milliseconds: cpuWorkMs.p95,
         limitMs: 8,
@@ -1819,7 +1903,11 @@ export function evaluateScenario(scenario) {
   };
 }
 
-/** Re-evaluate saved raw observations without rerunning the product. */
+/**
+ * Re-evaluate saved raw observations without rerunning the product.
+ * @param observation Raw recorded evidence; never trusted as an accepted result.
+ * @param {{id?: string, kind?: string}} [options]
+ */
 export function evaluateObservation(observation, { id, kind = "edit" } = {}) {
   const events = observation.events ?? [];
   const inputs = events.filter(
@@ -1861,11 +1949,18 @@ export function evaluateObservation(observation, { id, kind = "edit" } = {}) {
   });
 }
 
-/** Pure fail-closed evaluator. The CLI always uses the fixed P0 requirements above. */
+/**
+ * Pure fail-closed evaluator. The CLI always uses the fixed P0 requirements above.
+ * @param {Requirements} [requirements]
+ * @returns {AcceptanceReport}
+ */
 export function evaluateAcceptance(report, requirements = P0_REQUIREMENTS) {
-  const failures = [],
-    blockers = [],
-    groups = [];
+  /** @type {EvaluationIssue[]} */
+  const failures = [];
+  /** @type {EvaluationIssue[]} */
+  const blockers = [];
+  /** @type {AcceptanceGroup[]} */
+  const groups = [];
   const fail = (code, detail = {}) => failures.push({ code, ...detail });
   const block = (code, detail = {}) => blockers.push({ code, ...detail });
   if (report.selection && report.selection !== "all")
@@ -2087,13 +2182,17 @@ export function evaluateAcceptance(report, requirements = P0_REQUIREMENTS) {
             fail("COLD_MAXIMUM_EXCEEDED", detail);
         }
       }
+      /** @type {AcceptanceGroup} */
       const result = {
         ...context,
         sampleCount: samples.length,
         missing,
         inputToPresentationMs: distribution(latency),
       };
-      if (spec.kind !== "navigation" && result.inputToPresentationMs.p95 > 50)
+      if (
+        spec.kind !== "navigation" &&
+        exceeds(result.inputToPresentationMs.p95, 50)
+      )
         fail("WARM_P95_EXCEEDED", {
           ...context,
           actual: result.inputToPresentationMs.p95,
@@ -2116,7 +2215,7 @@ export function evaluateAcceptance(report, requirements = P0_REQUIREMENTS) {
               actual: count,
               required: spec.minSamples,
             });
-          if (spec.kind !== "navigation" && timings.p95 > 50)
+          if (spec.kind !== "navigation" && exceeds(timings.p95, 50))
             fail("INPUT_KIND_P95_EXCEEDED", {
               ...context,
               inputKind: kind,
@@ -2130,11 +2229,11 @@ export function evaluateAcceptance(report, requirements = P0_REQUIREMENTS) {
         result.readyToInputMs = distribution(readyToInput);
         result.navigationToPresentationMs = distribution(totalCold);
         result.firstInputToPresentationMs = distribution(firstColdLatency);
-        if (result.firstInputToPresentationMs.p95 > 50)
+        if (exceeds(result.firstInputToPresentationMs.p95, 50))
           fail("COLD_FIRST_INPUT_P95_EXCEEDED", context);
-        if (result.navigationToReadyMs.p95 > 500)
+        if (exceeds(result.navigationToReadyMs.p95, 500))
           fail("COLD_READY_P95_EXCEEDED", context);
-        if (result.navigationToPresentationMs.p95 > 750)
+        if (exceeds(result.navigationToPresentationMs.p95, 750))
           fail("COLD_PRESENTATION_P95_EXCEEDED", context);
       }
       if (spec.kind === "navigation") {
@@ -2157,7 +2256,11 @@ export function evaluateAcceptance(report, requirements = P0_REQUIREMENTS) {
         result.presentationFrameIntervalsMs = frames;
         if (!cpu.count || !frames.count)
           block("NAVIGATION_MEASUREMENT_MISSING", context);
-        if (cpu.p95 > 8 || frames.p95 > 20 || frames.maximum > 100)
+        if (
+          exceeds(cpu.p95, 8) ||
+          exceeds(frames.p95, 20) ||
+          exceeds(frames.maximum, 100)
+        )
           fail("NAVIGATION_TARGET_EXCEEDED", context);
         if (scenario.authorChanges !== 0)
           fail("NAVIGATION_CHANGED_DOCUMENT", context);
@@ -2198,8 +2301,10 @@ export function evaluateRun(report) {
       ? P0_REQUIREMENTS.requiredFaultControls
       : [],
   };
-  const failures = [],
-    missing = [];
+  /** @type {EvaluationIssue[]} */
+  const failures = [];
+  /** @type {EvaluationIssue[]} */
+  const missing = [];
   const functional = evaluateFunctional(
     {
       ...report,
@@ -2313,11 +2418,12 @@ if (
       if (process.argv[3] && !process.argv[3].startsWith("--"))
         await writeFile(process.argv[3], JSON.stringify(result, null, 2));
       console.log(JSON.stringify(result, null, 2));
-      process.exitCode = result.passed
-        ? 0
-        : ["BLOCKED", "INCOMPLETE", "PROXY_ONLY"].includes(result.status)
-          ? 2
-          : 1;
+      process.exitCode =
+        "passed" in result && result.passed
+          ? 0
+          : ["BLOCKED", "INCOMPLETE", "PROXY_ONLY"].includes(result.status)
+            ? 2
+            : 1;
     } catch (error) {
       console.error(String(error));
       process.exitCode = 1;

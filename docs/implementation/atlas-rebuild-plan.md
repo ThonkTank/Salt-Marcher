@@ -1,25 +1,17 @@
 # Atlas-Neubau und Aufräumen: ausführbarer Implementierungsplan
 
-Stand: 8. November 2026, Umsetzung der Fortsetzung auf `0c56dcc`. **D11, lokale Rasterpriorität und entkoppelte Reads implementiert und funktional geprüft; großer warmer Pinsel verfehlt weiterhin das Zeitlimit, native P0-Abnahme blockiert.**
-Der P0-Höhenversuch besitzt jetzt einen gemeinsamen Diagnoseablauf,
-maßstabsgerechte numerische Übersichten und einen begrenzten Patch-/Renderpfad.
-Begrenzte kontinuierliche Pinselwirkung und große Datenbestände sind funktional
-geprüft. Die neue große warme Richtungsprobe erreicht 50,0–68,7 ms Edit→Submit und verfehlt damit zweimal das unveränderte 50-ms-Ziel. Für kalte Orte
-gilt jetzt Aarons Präzisierung D11: Erst sichtbares, lokal bereites Gelände
-bearbeiten; die Wartephase sichtbar machen und verkürzen. Die historischen kalten
-Ausgangsproben starteten bereits bei Datenbereitschaft und beweisen diesen Vertrag nicht.
-Die native Abnahme bleibt offen. Konkrete Ergebnisse stehen in [status.md](status.md).
+Dieser Plan erhält den vollständigen Zielumfang **F01–F19 mit D01–D11** und die
+Pakete P0–P9. Der aktuelle Auftrag aus dem Review von PR #1469 ist dagegen das
+begrenzte **Konsolidierungspaket K1–K6 in Abschnitt 5**. Es behebt konkrete
+Lebenszyklus-, Fehler-, Nachweis- und Wartungsprobleme am vorhandenen P0-Kandidaten;
+es aktiviert nicht den vollständigen Funktionsneubau.
 
-Aaron hat die Umsetzung dieses Plans beauftragt: gleiche vereinbarte Nutzerfunktionen,
-aber eine einfache, saubere Umsetzung mit wenigen eindeutigen Zuständigkeiten.
-P0b/P0d/P0e wurden gemeinsam überarbeitet und am gebauten Kandidaten geprüft.
-Aaron hat anschließend die nächsten Schritte zur Umsetzung beauftragt. D11 und
-die unten beschriebene Fortsetzung sind implementiert; die gemeinsamen Nachweise
-stehen am gebauten Kandidaten in [status.md](status.md). Vorhandener Datenkern, numerische
-Übersichten und Dateiformat bleiben. Freigabe, Eingaben, Rasterreihenfolge und
-Speicherzugriff verwenden die vereinfachten Pfade.
-Ausgangsvertrag bleibt `1bb3932fcffcb2d5fea47fae616c3b69489443bc`;
-die Aufräumarbeiten bauen auf der P0-Ausgangsprüfung von `442576c` auf.
+[Status](status.md) nennt allein den geprüften Commit, Messergebnisse, offene
+Fehler und Umgebungsgrenzen. [Produktvertrag](../product-contract.md) und
+[Architektur](../architecture.md) beschreiben den implementierten Zustand.
+Dieser Plan enthält künftige Entscheidungen, Restarbeit und ihre Abschlusskriterien.
+Ausgangsvertrag für den vollständigen Ersatz bleibt
+`1bb3932fcffcb2d5fea47fae616c3b69489443bc`; V7 bleibt bis zur Ablösung regulärer Einstieg.
 
 ## 1. Auftrag und Ausführung
 
@@ -35,16 +27,10 @@ und bearbeiten. Navigation, lokale Eingriffe und Weiterarbeiten nach einem
 Ortswechsel bleiben zügig, auch neben Speichern und längeren Berechnungen.
 Arbeit hängt von Ausschnitt, Maßstab und tatsächlich geänderten Daten ab.
 
-**„Gleiche Nutzerfunktionalität“ bedeutet F01–F19 mit D01–D11.** D01–D09
-stammen aus der vereinbarten Planung. Aaron hat während der Umsetzung D10
-präzisiert: Halten wirkt weiter, langsame Züge wirken stärker; bei Verzögerungen
-entsteht keine Nachholdosis. Diese ausdrückliche Nutzeranforderung ersetzt die
-frühere Annahme, dass stilles Halten nichts bewirkt. D11 ergänzt die ausdrückliche
-Korrektur aus dem Review: Unsichtbares Gelände ist nicht bearbeitbar. Laden ist
-ein verständlicher Produktzustand; die Freigabe verbindet sichtbare lokale
-Darstellung mit den tatsächlich benötigten Daten.
-V7 bleibt Funktionsreferenz und bis zur vollständigen Ablösung der normale
-Einstieg. Der kleine P0-Höheneditor ist nicht der vollständige Zielumfang.
+**Gleiche Nutzerfunktionalität bedeutet F01–F19 mit D01–D11.** Die ausdrücklich
+vereinbarten D10-/D11-Regeln für zeitabhängige Pinselwirkung und sichtbare lokale
+Freigabe sind im aktuellen P0-Vertrag umgesetzt und bleiben beim Ausbau erhalten.
+V7 bleibt Funktionsreferenz; der kleine Höheneditor ist nicht der Zielumfang.
 Innere Formate, ungenutzte APIs und Implementierungstests haben keinen Bestandsschutz.
 
 | Nutzerbereich                    | Erhaltener Umfang                                                                      |
@@ -56,45 +42,33 @@ Innere Formate, ungenutzte APIs und Implementierungstests haben keinen Bestandss
 | Regionen, Wasser und Kartenbild  | F15–F18: Regionen, Flüsse/Seen, Nachführung und lesbare Fantasykartografie             |
 | Projekte und sichere Bearbeitung | F19: Dateien, Shortcuts, History, Fehler-, Abbruch- und Sessionverhalten               |
 
-### Was beim Aufräumen konkret entfällt
+### Vereinfachungsmaßstab
 
-| Heutige Komplexität                                                                     | Ziel                                                                                        | Ersetzter Pfad entfällt spätestens |
-| --------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- | ---------------------------------- |
-| Wirksame Werkzeugeinstellungen/Fehler in React und Controller                           | Ein effektiver Editorzustand; React hält nur noch nicht übernommene Feldentwürfe            | P1                                 |
-| Vollbereichsreads aller Höhenstufen für grobe Ansichten                                 | Übersicht und exakte Bearbeitungsquellen getrennt anfordern                                 | P0e                                |
-| Vollständige Ausschnittskopien nach einzelnen Pinselereignissen                         | Begrenzte eigene Kopien geänderter Quellen/Patches                                          | P0d                                |
-| Wiederholt veraltende Rasteraufträge und unklare Bestätigungen                          | Ein begrenzter Renderablauf mit explizitem aktuellem Inhalt und Fortgang                    | P0d                                |
-| Alternative unbenutzte Lese-/JSON-/Snapshot-APIs                                        | Ein tatsächlich verwendeter Vertrag je Lesezweck                                            | P1                                 |
-| Mehrfache Gestenabläufe, Szenarioobjekte und Journalvollkopien                          | Ein Ablauf und ein Ergebnis je Szenario; Rohereignisse einmal                               | P0b                                |
-| Dauernde Diagnose im normalen Programmstart                                             | Explizite, lesende Diagnoseanbindung; kein dauerhaftes Ereignisjournal                      | P0b                                |
-| Daten-`ready`, UI-„Bereit“ und tatsächliche Eingabefreigabe mit verschiedenen Kriterien | Eine abgeleitete lokale Freigabe für UI, Eingabe und lesende Diagnose                       | P0b                                |
-| Vorgemerkte frühe Striche, `pressPending` und Wiederaufnahme nach Quellenladen          | Neuer bewusster Gestenbeginn auf sichtbarem, bereitem Gelände                               | P0b                                |
-| Höhen-Punktwarteschlange, deren ältere Punkte ohnehin verworfen werden                  | Aktueller Zeigerpunkt und höchstens eine noch nicht dargestellte Dosis                      | P0b/P0d                            |
-| Bildaufbau nach Zeilenreihenfolge ohne Bezug zum lokalen Arbeitsbereich                 | Eine Reihenfolge im bestehenden Rasterpfad für lokale Rückmeldung und sichtbaren Bildaufbau | P0d                                |
-| Reine Ausschnittsreads hinter vollständig abgewarteten Dateisnapshots                   | Synchrone Reads im selben Speicherprozess; eine Queue für Mutationen und Dateilebenszyklus  | P0f                                |
-| Eigene schwächere Live-/Zeitregeln für den nach Freigabe begonnenen kalten Strich       | Gemeinsamer Strich und gemeinsame Interaktionsprüfung, ergänzt um Navigationszeiten         | P0b                                |
-| Zwei Hosts, App-Einstiege und Prüfwelten                                                | Ein regulärer Editor samt einem Build-/Paketpfad                                            | P9 nach vollständigem Ersatz       |
+Ein Paket ist aufgeräumt, wenn seine Nutzerfälle bestehen und der ersetzte Weg
+mit Aufrufern, Tests, Konfiguration und Dokumentation entfernt ist. Weniger
+Dateien oder Zeilen sind kein eigenes Erfolgsmaß. Vor einer Änderung die
+entfallende Zuständigkeit, Wartebedingung oder Wiederholungsarbeit benennen.
+Notwendige Unterschiede zwischen Modell, History, Persistenz und Darstellung
+bleiben erhalten; kein globales `fresh`-Flag und keine Hüllen allein wegen Dateilänge.
 
-Weniger Dateien oder Zeilen sind keine eigenen Erfolgsmaße. Ein Paket ist
-aufgeräumt, wenn seine Nutzerfälle bestehen und der ersetzte Weg einschließlich
-Aufrufern, Tests, Konfiguration und Dokumentation entfernt ist.
-Jede Fortsetzungsänderung benennt vorab die entfallende Zuständigkeit, Queue,
-Wartebedingung oder Wiederholungsarbeit. Aufteilen langer Dateien allein genügt
-nicht. Notwendige Unterschiede zwischen Modell, History, Persistenz und
-Darstellung bleiben erhalten; sie werden nicht in ein globales `fresh`-Flag gepresst.
+Bereits umgesetzt sind ein effektiver Controllerzustand mit React-Feldentwürfen,
+maßstabsgerechte Reads, Quellenpatches statt Vollkopien, lokale sichtbare Freigabe,
+begrenzte Dosis, priorisierter Rasterablauf und Reads während asynchroner Saves.
+Diese Grundlagen erweitern und gezielt absichern; nicht erneut als offene
+Aufräumprojekte beginnen. Aktuelle Restarbeit steht ausschließlich in Abschnitt 5.
+Zwei Hosts und Prüfpfade bleiben bis zur vollständigen Ablösung in P9 nötig.
 
 ### Arbeitsregeln
 
 1. `AGENTS.md`, relevante Teile der vier kanonischen Dokumente und diesen Plan
    lesen. Head und fremde Änderungen feststellen. Seit dem Ausgangsstand
    hinzugekommene aktive Funktionen in F01–F19 einordnen.
-2. A01–A10 konkret umsetzen; keine zusätzliche generische Service-, Eventbus-,
+2. A01–A10 im jeweils beauftragten Paket anwenden; keine generische Service-, Eventbus-,
    Plugin- oder Jobserver-Schicht. Bestehende brauchbare Komponenten erweitern.
    Ein Sprachwechsel oder die Erhaltung alten Codes ist kein eigenes Ziel.
-3. P0 zuerst mit sichtbarer lokaler Freigabe und den beiden belegten Warteketten
-   im Raster- und Speicherpfad abschließen. Kleine, dafür
-   notwendige Teile von P1/P2 dürfen in P0 entstehen; der vollständige Ausbau
-   wartet auf das P0-Gate. Die Reihenfolge steht einmal in Abschnitt 5.
+3. Den begrenzten Konsolidierungsauftrag aus Abschnitt 5 ausführen. P0 bleibt
+   bis zu seiner fachlichen und nativen Abnahme offen; P1–P9 werden dadurch nicht
+   aktiviert. Kleine dafür notwendige gemeinsame Teile dürfen in P0 entstehen.
 4. Jedes Paket benennt Nutzerergebnis, betroffene Pfade, entfallende Altlogik und
    gezielten Nachweis. Unabhängige Fachpakete können parallel bearbeitet werden;
    Dokumentautorität, Integration und gemeinsame Verträge haben einen Besitzer.
@@ -104,9 +78,10 @@ Darstellung bleiben erhalten; sie werden nicht in ein globales `fresh`-Flag gepr
 6. Nachweise am ausgeführten Stand führen. Relevante Änderungen öffnen nur ihre
    betroffenen Nachweise. Die kurze Richtungsprobe und die vollständige native
    Leistungsabnahme sind verschiedene Prüfzwecke, keine verschiedenen Produktwege.
-7. Nur die Arbeitsmatrix in Abschnitt 7 pflegen. Status ersetzt den bisherigen
-   Kurzstand; Rohbelege liegen ignoriert unter `artifacts/atlas-rebuild/<run>/`.
-   Keine parallelen Pläne, Fortschrittsberichte oder neuen Prüfframeworks.
+7. Die Arbeitsmatrix in Abschnitt 7 enthält nur Paketstatus und Verweise.
+   Ergebnisse stehen ausschließlich im ersetzten Kurzstatus; Rohbelege liegen
+   ignoriert unter `artifacts/atlas-rebuild/<run>/`. Keine parallelen Pläne,
+   Fortschrittsberichte oder neuen Prüfframeworks.
 8. Bei Umsetzung bestehende Branchregeln und `Candidate · exact-SHA aggregate`
    einhalten. Keine Schwellen absenken, Fehler verschlucken oder Prüfungen
    ungenutzter Software als Ersatz anführen. Äußere Blocker konkret benennen;
@@ -124,13 +99,13 @@ Es bestehen laut `AGENTS.md` keine zu migrierenden Produktionsdaten.
 Ein neues Format ist zulässig; keine Altformatadapter auf Vorrat.
 Fremde Dateien werden nicht gelöscht oder bei fehlgeschlagenem Öffnen überschrieben.
 
-### Gesicherter Ausgangsbefund und offene Ursache
+### Gesicherter V7-Ausgangsbefund
 
-Der heutige Kamerapfad verändert den Zustand lokal (`useCamera.ts`); vorhandene
+Der V7-Kamerapfad verändert den Zustand lokal (`useCamera.ts`); vorhandene
 Darstellung kann während weiterer Reads gezeichnet werden. Raster und Geometrie
 werden bereits teilweise wiederverwendet. Die Ursache der gemeldeten langsamen
 leeren Navigation ist deshalb nicht allein durch einen angeblichen SQL-Roundtrip
-jedes Zoomereignisses erklärt. P0a trennt Eingabe, React-/Framevorbereitung,
+jedes Zoomereignisses erklärt. Die Ursachenmessung trennt Eingabe, React-/Framevorbereitung,
 Zeichnen, Nachladen und native Grafikdarstellung.
 
 Bei Höhenabschnitten sind dagegen Quellenwrite, Gewässer-/Flussnachführung und
@@ -162,107 +137,19 @@ Testanzahl und exakte Canvas-Antialiasingpixel müssen nicht erhalten werden.
 | D10 | Halten wirkt weiter, langsame Züge stärker; bei Hängern entsteht keine Nachholdosis.                                            | Kleine Schritte mit begrenzter Dosis folgen dem Darstellungsfortschritt. Stärke ist eine Zielrate, Wartezeit darf verfallen. Ein kleiner Klickimpuls bleibt möglich.                                                                                        |
 | D11 | Bearbeitung beginnt auf sichtbarem, lokal bereitem Gelände; fehlende Bereitschaft ist sichtbar.                                 | Keine Eingriffe oder vorgemerkten Striche auf noch unsichtbarem Gelände. UI, Eingabeannahme und Beobachtung verwenden dieselbe lokale Freigabe. Nach einer abgewiesenen Geste ist ein neuer Gestenbeginn nötig.                                             |
 
-### D10 konkret: kontinuierliche Pinselwirkung mit begrenzter Dosis
+### D10/D11: bestehender P0-Vertrag
 
-Aaron hat während der Umsetzung ausdrücklich festgelegt: **Stilles Halten
-vertieft das Ergebnis; langsamere Züge bewirken mehr als schnelle.** Zugleich
-darf die Wirkung von Eingaben und Verarbeitungsgeschwindigkeit abhängen:
-**Wenn die Anzeige hängt, darf zusätzliche Haltezeit keinen großen späteren
-Auf-/Abtrag ansammeln.** Diese Präzisierung ersetzt die vorherige Annahme einer
-vollständig nachzuholenden, von der Bildrate unabhängigen Zeitdosis.
+Die vollständigen beobachtbaren Regeln stehen einmal im
+[P0-Produktvertrag](../product-contract.md#optionaler-atlas-p0-versuch): Halten und
+langsame Züge wirken stärker, höchstens eine begrenzte Dosis wartet auf ihre
+Darstellung, Hänger erzeugen keine Nachholdosis. Ein Strich beginnt erst auf
+sichtbarem lokalem Terrain; vorherige Eingaben werden nicht vorgemerkt.
 
-Kontinuierliche Höhenpinsel verwenden eine Stärke als Zielrate pro Sekunde.
-Ein kleiner, ausdrücklich begrenzter Anfangsimpuls erhält die Klickfunktion;
-er entspricht höchstens einem normalen Verarbeitungsschritt, keinem vollen
-Sekundenstempel. Danach entstehen während des Haltens weitere kleine Schritte.
-Jeder Schritt umfasst höchstens **50 ms Dosis**, und höchstens ein Schritt darf
-noch auf seine Darstellung warten. Ein weiterer Schritt folgt erst auf die
-aktuelle Darstellung des vorherigen. Während einer Verzögerung verworfene Zeit
-wird nicht auf spätere Schritte verteilt. Nach Loslassen oder Abbruch entsteht
-keine neue Dosis; bereits angenommene Änderungen werden noch korrekt dargestellt.
-Die Rückkopplung gilt auch zwischen schnellen Klicks. Wechselt der Nutzer
-ausdrücklich zu einem anderen Ausschnitt, darf eine vollständig verlassene
-Region den neuen Ort nicht sperren. Ihre lokale Darstellungsverpflichtung endet
-ausdrücklich; der angenommene Inhalt bleibt erhalten und wird bei Rückkehr
-dargestellt. Das Ende der Verpflichtung ist kein Rendernachweis.
-
-Der bestehende quartische Pinselkern bleibt erhalten. Der reine Fachkern
-berechnet bei Stillstand Rate × angenommene Zeit × Kernwert; bei Bewegung
-integriert er denselben Kern entlang des angenommenen Segments. Das ersetzt
-die groben Wegabstände zwischen einzelnen Dabs. Derselbe angenommene Zeitpfad
-hat unabhängig von seiner rechnerischen Unterteilung dieselbe Wirkung.
-Die tatsächlich angenommene Dosis darf bei langsamer Verarbeitung kleiner sein.
-
-Vor einer Geste gilt D11. Verlässt eine laufende Geste ihre sichtbar bereite
-Grundlage oder fehlen neu benötigte Quellen, endet sie vor dem unzulässigen
-Abschnitt. Bereits angenommene Höhenänderungen bleiben genau eine Undo-Aktion;
-es entsteht keine auf das Laden wartende Geste. Die kurz ausstehende Darstellung
-einer eigenen, gültig angenommenen Dosis bleibt dagegen die normale D10-
-Rückkopplung: keine weitere Dosis bis zur Rückmeldung, keine nachgeholte Zeit.
-Loslassen, Escape, Fokusverlust und Pointercancel beenden weitere Wirkung.
-Diagnose unterscheidet echte Eingaben, angenommene Dosis, Rückkopplungspausen und
-eine vor Beginn abgewiesene Geste.
-
-Nachweis: Klick, stationäres Halten, längere Einwirkdauer, gleicher Weg langsam/
-schnell und korrektes Ende beim Loslassen/Abbruch. Ein verzögerter Renderpfad
-muss ausdrücklich ohne Dosisstau auskommen. Dazu laufender Inhalt, Undo/Redo
-und Dateirundlauf. Die kurze schnelle Pflichtgeste und die bestehenden Zeitziele
-bleiben bestehen; Teststärken werden offen als Raten angegeben. Verworfene
-Eingaben sind keine erfolgreichen Modell- oder Renderbestätigungen. Das gezielte
-Abweisen einer vor Freigabe begonnenen Geste ist ein eigener korrekter Nutzerfall;
-es darf weder als erfolgreiche Bearbeitung noch als Ereignisverlust gezählt werden.
-
-### D11 konkret: sichtbares Gelände vor dem Gestenbeginn
-
-**Nutzerentscheidung:** Es ist richtig, einen noch nicht sichtbaren Bereich nicht
-bearbeiten zu können. Der Zustand muss erkennbar sein und so kurz wie möglich dauern.
-
-- **Lokale Freigabe:** Der vom Werkzeug betroffene Bereich besitzt den zur
-  aktuellen Ansicht passenden, tatsächlich gezeichneten Kartenstand und die
-  nötigen Quellen, Halos und Ownerdaten. Session, Ansicht und lokaler Inhalt passen
-  zusammen. Numerische Übersichten auf dem gewählten Maßstab sind reguläre
-  Darstellung; ein alter Ersatzframe, eine Ladefläche oder nur ein Cursor sind
-  keine Grundlage. Die Darstellungspflicht betrifft den sichtbaren Wirkbereich
-  der tatsächlich anzunehmenden Dosis, bei Bewegung einschließlich des Segments
-  vom letzten angenommenen zum aktuellen Punkt. Die vorhandene Segmentgeometrie
-  genügt; kein neuer Pfadpuffer. Geprüft wird der Schnitt mit dem Fenster; Quellen für den vollständigen Eingriff samt Halo
-  bleiben nötig. Kein zusätzlicher Renderzwang für unsichtbare Halos. Fremde
-  ungeladene Bildschirmbereiche sperren bereite Stellen nicht.
-- **Ein Kriterium:** Der Controller leitet die Freigabe aus vorhandenem Dokument-
-  und Rendererzustand ab. Eingabe, Cursor/Status und Diagnose lesen dasselbe
-  Ergebnis. Keine unabhängig geschriebenen `dataReady`-/`viewReady`-/`canEdit`-
-  Schattenzustände. Quellenzustände wie unbekannt und bestätigt leer bleiben
-  fachlich getrennt. Ein bestätigter, gezeichneter leerer Ozean ist bearbeitbar.
-- **Sichtbarer Zustand:** Nicht bereite Flächen sind als ladend erkennbar. Über
-  ihnen zeigt das Werkzeug einen Wartecursor beziehungsweise einen gedimmten
-  Pinsel und „Kartenbereich wird geladen …“. Sobald der lokale Bereich bereit ist,
-  verschwinden Markierung und Sperre gemeinsam. Bei Fehlern steht ein konkreter
-  Fehler mit erneutem Ladeversuch; kein endloser Spinner. Kein erfundener Prozentwert.
-  Navigation sowie bereits sichtbare, bereite Bereiche bleiben bedienbar.
-  Ist nach einer abgewiesenen oder beendeten Geste die Taste noch gehalten,
-  erklärt „Zum Bearbeiten loslassen und erneut drücken“ die ausbleibende Wirkung.
-  Dieser Hinweis folgt dem Pointer-/Gestenzustand; er hält keine Geste vor.
-- **Einfachheitsentscheidung — keine Vormerkung:** Pointerdown vor Freigabe beginnt keine Modellgeste.
-  Halten, Bewegen und Loslassen während der Wartephase erzeugen keine Höhenwerte,
-  History, Schreibaufträge oder spätere Dosis. Auch eine beim Ende der Wartephase
-  noch gehaltene Taste startet nicht automatisch. Der nächste bewusste Druck
-  beginnt den normalen Strich. Bei einem lokalen Verlust der Grundlage gelten
-  die bisherigen Abschluss-/Abbruchregeln des Werkzeugs gemäß A05; kein Restpfad
-  wird später wieder aufgenommen.
-- **Darstellungsbezug:** Die Produktfreigabe folgt dem echten Produkt-Renderablauf
-  und funktioniert ohne Diagnosemodus. Keine Freigabe durch Testhilfen, feste
-  Wartezeiten oder zusätzliche Screenshots. Keine neue native Bestätigungs-API
-  im Produkt nur für diesen Zustand. Die Leistungsabnahme prüft weiterhin die
-  tatsächliche Präsentation und unterscheidet sie von Render-Submission.
-  Die synchrone Prüfung beim Druck verwendet den zuletzt tatsächlich
-  eingereichten lokalen Terrain-/Ansichtsstand; vorbereitete Kacheln oder eine
-  bereits umgestellte Kamera vor dem nächsten Render reichen nicht.
-
-Der bisherige kalte Test begann bei bloßer Datenbereitschaft. Seine frühen
-Modelledits und verworfenen Bewegungen werden nicht durch Umbenennung zu einem
-bestandenen D11-Nachweis. Historische Berichte bleiben erhalten. Neue Prüfungen
-trennen sichtbar blockierte Vorabgesten von der normalen, nach Freigabe begonnenen
-Bearbeitung und messen beide Phasen nach M10.
+Diese Nutzerentscheidungen gelten für Konsolidierung und späteren Ausbau.
+Ihre Besitzer und Rückkopplungsgrenzen stehen in der Architektur. M03/M10 prüfen
+sie am tatsächlichen Produktpfad, mit getrennten Belegen für bewusst blockierte
+Vorabgesten und danach begonnene Bearbeitung. Historische Proben, die nur
+Quellenbereitschaft abwarteten, belegen keine sichtbare Freigabe.
 
 ### D03 konkret: Wasser, Flüsse, Fundamente und History
 
@@ -374,10 +261,8 @@ und Prüfpfad wählen. Liegt der Fehler im gemeinsamen Algorithmus, diesen ände
 ein weiterer Hostwechsel ersetzt keine Ursachenklärung. Keine zwei vollständigen
 Editoren und kein allgemeines Mehrhost-Framework bauen.
 
-Die bestätigte Laufzeit, Speicheranbindung und Abweichungen mit Entscheidungsgrund,
-betroffenen Paketen und Prüfnachweis im bestehenden Status festhalten. Entsprechende
-Stellen dieses Plans konkretisieren; der ausführende Agent benötigt dafür keine
-routinemäßige Nutzerentscheidung. Fehlender GPU-/Display-/Paketquellenzugriff ist
+Die gewählte Laufzeit, Speicheranbindung und Abweichungen mit Grund und
+Nachweis im Status festhalten und die Zielstellen dieses Plans angleichen. Fehlender GPU-/Display-/Paketquellenzugriff ist
 ein Umgebungsblocker und kein Beweis gegen einen Stack. Ein alternativer Host muss
 dieselbe native Datei-, Paket- und Präsentationsabnahme ermöglichen.
 
@@ -470,12 +355,10 @@ Die Übersicht speichert keine Autoren und kein bereits eingefärbtes Bild.
    unabhängig erwartete Werte prüfen. Ein hoher Bestand darf nicht hinter
    Vorladen oder einem nachträglich geleerten Cache verschwinden.
 
-**Dies ist ein zu beweisender Algorithmuskandidat, kein bestätigter Befund.**
-P0e prüft Genauigkeit, Updatekosten und kalte Read-Wartezeit gemeinsam.
-Eine feste Zahl von Stufen beweist allein keine ausreichende Geschwindigkeit.
-Wenn der Kandidat normale Eingriffe nicht begrenzt abbildet, die konkrete
-Alternative innerhalb dieses Modells begründen; keine allgemeinen Versprechen
-durch „Caching“, „Versionierung“ oder eine neue Hostwahl ersetzen.
+Der Höhenpfad ist implementiert; sein erreichter Nachweisumfang steht im Status.
+Farb-/Landschaftsausbau und native Leistung bleiben eigenständig zu beweisen.
+Eine feste Stufenzahl allein beweist keine ausreichende Geschwindigkeit. Nur ein
+konkreter neuer Befund rechtfertigt eine andere Übersichtslösung.
 
 Farb-/Landschaftsübersichten folgen ihren Masken-/Vererbungsregeln, nicht der
 additiven Höhenformel. P3/P4 erweitern den Höhenbeweis darauf.
@@ -498,35 +381,18 @@ Es gibt zwei Lesezwecke mit einer gemeinsamen, typisierten Antwortgrenze:
   die benötigten groben Quellen. Keine Vollständigkeitsfreigabe sämtlicher
   Feindaten des sichtbaren Weltbereichs.
 
-SQLite-RTree begrenzt die räumliche Auswahl; ein passender Stufen-/Übersichtsindex
-begrenzt die Auflösung. Nur räumliches Filtern genügt für eine Weltübersicht nicht.
-Für aktive Geometrie einen kleinen räumlichen Index nutzen. Objektliste, Labels,
-Auswahl und Kollision laden nicht sämtliche Weltobjekte; ausgewählte vereinfachte
-Straßen/Flüsse erhalten ihren exakten Header. Innenpayloads bleiben getrennt.
+SQLite-RTree begrenzt räumliche Auswahl und Quellenstufe vor der Enumeration.
+Für zusätzliche aktive Geometrie einen kleinen räumlichen Index nutzen. Objektliste,
+Labels, Auswahl und Kollision laden nicht sämtliche Weltobjekte; ausgewählte
+vereinfachte Straßen/Flüsse erhalten exakte Header. Innenpayloads bleiben getrennt.
 
-`unknown`, `loading`, `ready`, `absent` und `error` sind echte unterschiedliche
-Zustände. Eine bestätigte Abwesenheit ist kein Cachemiss. Antworten tragen Session,
-lokale Abhängigkeiten und bestätigten Stand; aktive neuere Patches bleiben gültig.
-Einen integrierten Lesevertrag je Zweck behalten, alternative unbenutzte
-`acceptRegion`-/`readSources`-/Snapshot-APIs anschließend entfernen oder ersetzen.
-
-Sichtbares Gebiet und einen kleinen Navigationsrand vorladen. D11 definiert die
-eine lokale Freigabe aus Daten und angezeigtem Kartenstand. Quellenbereitschaft
-allein bleibt ein Diagnosewert. Ein vor Freigabe ausgelöster Gestenbeginn wird
-sichtbar abgewiesen; kein Quellen-Promise hält einen Pinsel oder Restpfad am Leben.
-Der aktuelle Werkzeugbedarf fordert fehlende Eingriffsquellen auch ohne Geste
-an: bei Ansichts-, Zeiger-, Werkzeug- oder Größenänderung sowie abgewiesenem
-Druck. Nur den aktuellen Bedarf über den vorhandenen begrenzten Ladeweg halten,
-alte Bedarfe ersetzen. Eine Antwort aktualisiert Daten und Freigabe, beginnt
-aber keine Geste. Der Auslöser darf nach Entfernen von `waitForSources` nicht
-auf die Kameramitte beschränkt bleiben.
-Bereits zulässige Hausgesten dürfen nötige Offscreen-Owner revisionsgleich
-auflösen; daraus entsteht keine globale Sichtbarkeitsfreigabe.
-
-M10 misst ab wirklicher Navigation bis zur sichtbaren lokalen Bearbeitbarkeit
-und ersten exakten Änderung. Vorabdruck, gehaltene Taste, Abbruch und ein neuer
-gültiger Strich prüfen D11 separat. UI-Freigabe und Beobachtung folgen auch dem
-Renderfortschritt im Normalstart, nicht nur einem Read-Abschluss oder Diagnosehook.
+Die vorhandenen Quellenzustände, lokale Freigabe und gemeinsame Antwortprüfung
+stehen in der Architektur. Neue Felder/Objekte müssen dieselben Session-,
+Sequenz- und Patchprojektionsregeln verwenden; keine zweite Ladestrategie aufbauen.
+Der aktuelle Werkzeugbedarf bleibt von einer Modellgeste unabhängig. Bereits
+zulässige Hausgesten dürfen nötige Offscreen-Owner revisionsgleich auflösen;
+daraus entsteht keine globale Sichtbarkeitsfreigabe. M10 erweitert den bestehenden
+kalten Höhenfall auf die neuen Quellen und Werkzeuge.
 
 ### A05 — Befehle, Gesten und direkte Bearbeitung
 
@@ -543,24 +409,13 @@ Saved/Dirty wird aus den tatsächlichen Grenzen abgeleitet. Session, Quellrevisi
 abgeschlossene Aktion, bestätigte Arbeitskopie und gespeicherte Datei bleiben
 verschieden; sie dürfen nicht zu einem einzelnen `fresh`-Flag zusammenfallen.
 
-- Kamera und hochfrequente Pointerzustände außerhalb von React-State verwalten.
-  Eingaben pro Frame bündeln. Bereits angenommene Modelländerungen bleiben
-  erhalten; noch nicht angenommene Höhen-Eingaben werden nach D10 begrenzt,
-  verworfen oder am aktuellen Ort neu verankert. Andere Flächenpinsel erhalten
-  ihren vereinbarten räumlichen Pfad und bei Farbfluss die Zeit. Ersetzbare
-  Darstellungs-/Vorschauaufträge dürfen `latest wins` sein.
-- Vor Gestenbeginn gilt D11. Für Höhen genügen letzter angenommener Punkt,
-  aktueller Zeigerpunkt und eine noch nicht dargestellte Dosis. Keine Liste alter
-  Punkte behalten, die der nächste Frame ohnehin verwirft. Echte Eingaben dürfen
-  im ausdrücklich eingeschalteten Diagnosejournal beobachtet werden. Kurze
-  gültige Klicks behalten ihren einmaligen begrenzten Pressimpuls, auch wenn
-  Down und Up zwischen zwei Frames liegen; keine neue Dosis nach Up einführen.
-- Eine aktive Geste hält Originalwerte und geänderte Bereiche. Kleine Änderungen
-  an bereitliegenden Quellen sind sofort exakt und sichtbar. Punktbewegungen
-  validieren lokal; große Geometrie-/Netzoperationen werden Hintergrundaufgaben.
-- **Höhen:** Loslassen, Escape, Blur, Werkzeugwechsel oder Pointerabbruch beenden
-  und behalten den übernommenen Strich; ein Undo entfernt ihn. Fehler behalten
-  nur bereits gültig übernommene Teile als genau einen rückgängig machbaren Strich.
+- Kamera und hochfrequente Pointerzustände bleiben außerhalb von React-State.
+  Ersetzbare Darstellung/Vorschau darf `latest wins` sein, angenommene
+  Quellenänderungen nicht. Die bestehenden D10-/D11-Höhengesten bleiben erhalten.
+- Aktive Gesten halten Originalwerte und geänderte Bereiche. Kleine Änderungen
+  verändern bereite Quellen direkt; große Geometrie-/Netzoperationen werden
+  Hintergrundaufgaben. Andere Flächenpinsel erhalten ihren räumlichen Pfad und
+  bei Farbfluss die Zeit.
 - **Boden/Landschaft/Region/Gewässer:** Loslassen übernimmt; Escape, Blur,
   Pointercancel und Werkzeugwechsel setzen die aktive Geste auf ihre Vorherwerte
   zurück. Live-Anzeige darf dieselben Daten benutzen, benötigt aber echte Rücknahme.
@@ -584,46 +439,16 @@ wartet nicht auf SQL und rasterisiert nicht bei jeder Bewegung die ganze Szene.
 Grobere vorhandene Darstellung darf überbrücken; sie ist weder exakte
 Bearbeitungsquelle noch Inhalt einer anderen Projektsession.
 
-**Quellenübergabe:** Beim Laden eigene unveränderliche Ausschnittskopien übertragen,
-danach nur geänderte Quellkacheln/Patches und ausdrückliche Entfernungen.
-Keine erneute vollständige Ausschnittssuche je Pinselereignis.
-Kanonische/History-Arrays nie versehentlich durch Transfer abtrennen.
-History verwendet denselben Patch-/Invalidierungspfad wie gewöhnliche Eingriffe.
+Der vorhandene Quellenpatch-, Raster- und lokale Submitpfad ist in der
+[Architektur](../architecture.md#lokale-freigabe-und-frameablauf) beschrieben.
+Diesen auf neue Schichten erweitern: begrenzte eigene Quellkopien, aktuelle
+lokale Ergebnisse vor unabhängigem Bildaufbau, versionierte Teilresultate und
+begrenzte Uploads. Keine zweite Vorschau-/Commitdarstellung. Angenommene
+Autorenänderungen dürfen nicht mit überholbaren Darstellungsaufträgen verwechselt werden.
 
-**Ein Renderablauf:** Pro Darstellungskachel den benötigten Quellenstand,
-einen gegebenenfalls laufenden Auftrag und höchstens einen ersetzenden
-zusammengefassten Bedarf führen. Gemeinsame Datenidentitäten aus A04/A05
-verwenden; keine zusätzliche globale Freigabe aller Kacheln.
-
-Der vorhandene Dispatcher hat eine einzige nachvollziehbare Reihenfolge:
-laufende angenommene lokale Änderung, danach der für die lokale D11-Freigabe
-benötigte Bildaufbau, danach übrige sichtbare Kacheln und zuletzt der kleine
-Navigationsrand. Vor einer Geste darf der aktuelle Werkzeugort beziehungsweise
-bei Navigation die Ansichtsmitte den Bildaufbau priorisieren; das nimmt keine
-Bearbeitung vorweg. Neue kalte Kacheln erhalten dadurch einen Ortsbezug statt
-allein Zeilenreihenfolge. Schnelle Ortswechsel ersetzen alten Bedarf; übrige
-sichtbare Kacheln müssen weiter Fortschritt machen. Kein zweiter Rasterpfad,
-kein neuer allgemeiner Scheduler und kein künstlicher Vorschaustand.
-
-- Darstellungsaufträge dürfen überholt werden; angenommene Autorenänderungen nie.
-  Wiederholte Änderungen erweitern nur die tatsächlich nötigen Rasterbereiche.
-- Kurze Arbeitseinheiten ermöglichen beobachtbaren Fortschritt unter bewegtem
-  großen Pinsel. Große bereits laufende Arbeit darf dringende lokale Aktualisierung
-  nicht bis zu ihrem gesamten Ende aufhalten.
-- Veraltete Arbeit vor Start entfernen und während längerer Arbeit kooperativ
-  beenden beziehungsweise einen gemessen kurzen direkten Pfad verwenden.
-  Ein stets neu veraltendes Ganzkachelresultat ist kein akzeptabler Live-Pfad.
-- Übernahme/Uploads bleiben begrenzt. Session, Quellabhängigkeit und Inhalt müssen
-  stimmen; ein kleiner Upload oder ein Cursor darf nicht als fertige Änderung gelten.
-- Eine Eingabe wird nur dem tatsächlich aktuellen Inhalt ihres betroffenen Bereichs
-  zugeordnet. Eine fremde schmutzige Kachel außerhalb dieses Bereichs hält sie nicht
-  auf. Teilbilder und vollständiger exakter Bereich sind verschiedene Beobachtungen.
-
-P0d misst zunächst Auftragsstart/-ende, Pixelarbeit, Annahme/Verwerfung, Upload
-und Bereichsbestätigung an einem kleinen und großen Strich. Erst danach die
-einfachste passende Änderung wählen. CPU-Rasterung bleibt zulässig, solange
-sie die Ziele erfüllt. Nur bei belegtem Rechenengpass einen gezielten anderen
-Rasterpfad erproben; keine zweite Produktionsmathematik oder vorsorgliche GPU-Neuentwicklung.
+Der verbleibende Höhen-Leistungsfall wird im Konsolidierungspaket gezielt
+diagnostiziert. CPU-Rasterung bleibt zulässig; alternative Rasterung nur bei
+belegtem Rechenengpass erproben. Keine zweite Produktionsmathematik auf Vorrat.
 
 Längere Fachjobs erhalten unveränderliche Eingaben und vollständige lokale
 Readsets: vorhandene Quellen, bestätigte Abwesenheit und räumliche Abfragen.
@@ -663,16 +488,10 @@ oder einen Zwischenstand erkennbar als noch nicht aktuell ausweisen.
   Navigation bleibt frei; spätere Änderungen bleiben gegenüber S ungespeichert.
   Die Implementierung muss den Snapshot von S auch bei weiterlaufenden Writes
   beweisen, etwa durch eine passende SQLite-Lesesnapshot-/Backup-Grenze.
-- **Dringende Reads:** Synchrone reine `readRegion`-/`readPresentation`-Reads
-  dürfen im bestehenden Utility-Prozess während eines asynchronen Snapshots oder
-  Dateipublish beantwortet werden. `readTiles` nur einbeziehen, solange es einen
-  tatsächlichen Abnehmer besitzt. Eine Queue ordnet weiter Commit, Dateivorgänge
-  und Projektlebenszyklus; keine zweite Queue für Quellenänderungen. Reads liefern
-  ihre tatsächliche Session und Sequenz. Synchrone Transaktionen werden nicht
-  halb gelesen. Eine vom bestätigten Stand überholte Antwort wird für beide
-  Lesezwecke gleich behandelt: verwerfen und aktuell nachlesen; unbestätigte
-  lokale Patches bleiben korrekt projiziert. Keine neue Datenbankverbindung oder
-  ein weiterer Prozess allein für diese Priorisierung.
+- **Dringende Reads:** Die vorhandene Trennung synchroner Reads von geordneten
+  Mutationen und asynchronen Dateioperationen erhalten. Neue Lesezwecke verwenden
+  dieselbe Session-/Sequenzprüfung und lokale Patchprojektion; keine weitere
+  Datenbankverbindung oder zweite Queue für Quellenänderungen auf Vorrat.
 - Saved-Status hängt am erfolgreich ersetzten Ziel, nicht an einer Workerantwort
   über die temporäre Arbeitskopie. Speicherdialogabbruch verändert kein Ziel.
   Fehler behalten den aktuellen Zustand und die vorherige gültige Zieldatei.
@@ -853,207 +672,90 @@ pauschales „Parität erledigt“ ohne diese Zuordnung.
 
 ## 5. Arbeitspakete und Abhängigkeiten
 
-**Aktueller Wiedereinstieg:** D11, lokale Rasterpriorität und entkoppelte Reads
-sind umgesetzt; [status.md](status.md) benennt Produktidentität, Nachweise und
-offene Grenzen. **P0-Abschluss vor P1.** Beim großen warmen Pinsel bleiben
-Eingabe-/Workerantwort-Wartezeiten zu trennen; der zusätzliche Versuch sofortiger
-Ergebnisveröffentlichung wurde nach der fehlgeschlagenen Gesamtprobe zurückgenommen.
-Keine ungeprüfte Variante erneut als Ausgangspunkt verwenden. Ein Integrator hält
-Freigabe, Zeitgrenzen und Read-Antworten konsistent. P0c und P0e sind vorhandene
-funktionale Grundlagen; ihre Umsetzung nicht nochmals beginnen.
-Erst anschließend **P1 → P2/P3 → P4 → P5/P6/P7/P8 → P9**.
+### Aktueller Auftrag: P0-Konsolidierung K1–K6
 
-P0d und P0e sind kleine Kernversuche, keine vorgezogene vollständige P3-Phase.
-Fehlender nativer Displayzugriff blockiert ihre unabhängige strukturelle Arbeit
-nicht; er bleibt vor vollständigem P1/P2-Ausbau und bei Leistungsbehauptungen offen.
-P6 darf seinen reinen hauslokalen Kern parallel vorbereiten; gemeinsame
-Dokument-, Oberflächen- und Undo-Verträge werden nicht mehrfach implementiert.
+Dieses begrenzte Paket folgt aus dem Review von PR #1469. Vorhandenes Verhalten,
+Höhenmodell und Format bleiben Grundlage. Es endet mit den unten benannten
+Nachweisen und einem aktualisierten Status; **F01–F19 und P1–P9 werden nicht in
+diesem Auftrag umgesetzt**. Eine offene native oder zeitliche P0-Abnahme wird
+nicht durch den Abschluss des Konsolidierungspakets ersetzt.
 
-### P0 — Sichtbar bereit werden, danach unmittelbar bearbeiten
+1. **K1 — Projekt- und Prozesslebenszyklus:** Neu/Öffnen erst nach erfolgreicher
+   Vorbereitung auf das neue Dokument umschalten; bei Fehler den bisherigen
+   Editorzustand und seine Änderungen erhalten. Schließen mit aktiver oder
+   ungesicherter Arbeit über den vorgesehenen Save/Discard/Cancel-Pfad führen.
+   Fenster, Store-Utility und Listener gemeinsam beenden. Mit echten
+   Prozess-/Dateifällen Fehler beim Öffnen, Abbruch, Wechsel und Shutdown prüfen.
+2. **K2 — Persistenzfehler:** Angenommene, noch unbestätigte Änderungen bei
+   Schreibfehlern erhalten, keine falsche Saved-Meldung und keine unbegrenzt
+   weiterwachsende Schreibannahme. Fehler, gesicherter Stand und mögliche
+   Fortsetzung eindeutig halten; Wiederholungen nur mit Session-/Sequenz- und
+   Transaktionsabgleich. Einen echten Storefehler über die Anbindung prüfen;
+   sichtbarer Fehler und erhaltene Modell-/Historydaten gehören zum Nachweis.
+3. **K3 — Nativen Nachweis ausführbar vorbereiten:** Referenzprofil ausdrücklich
+   auswählen und Umgebungs-/Nachweisvorprüfung vor Fixtures und Sammlung ausführen.
+   Ein kleiner Probeweg darf benötigte Referenz-/Trace-Metadaten erheben. Er ist
+   keine Leistungsabnahme. Fehlende qualifizierte Referenz und noch nicht
+   implementierte Präsentationszuordnung als verschiedene Blocker benennen.
+   Die eigentliche Atlas-Generation→Compositor-Präsentationszuordnung benötigt
+   geeignete native Belege und bleibt bis dahin offene P0-Arbeit. Keine Captures,
+   RAF-Zeiten, ersten Folgeframes oder bloße Markernähe als Präsentation umetikettieren.
+   Eine positive Profilmarkierung allein erfüllt das Gate nicht. Ohne nutzbare
+   Zuordnung vor der teuren Vollsammlung stoppen; bekannte Inhalts-/Zeitfehler
+   daneben weiterhin als `FAIL` ausweisen.
+4. **K4 — CI und sauberes Paket:** Einen begrenzten echten Electron-Smoke mit
+   normalem Einstieg, Preload/IPC, SQLite und Dateirundlauf im bestehenden Gate
+   ausführen. Den P0-Paketbau aus einem sauberen Stand und den ausgelieferten
+   Einstieg prüfen; zufällig vorhandene Dev-Dateien dürfen kein Paket retten.
+   V7 bleibt aktiv und behält seine Checks. Software-CI behauptet keine native
+   Zeitabnahme, ein Paketstart keine installierte RPM-Bedienabnahme.
+5. **K5 — Gemeinsame Verträge und tote APIs:** Produktverbraucher der alten
+   Quellen-/Snapshot-/JSON-Hilfen und Transportfelder prüfen; ungenutzte Pfade
+   samt reinen Spiegeltests entfernen. Duplizierte gemeinsame Typen aus einer
+   passenden vorhandenen Quelle beziehen. Quellenzustände und Validierung an
+   Prozess-/Dateigrenzen erhalten. Keine allgemeine neue Abstraktionsschicht.
+   Doku nach README/Architektur/Produktvertrag/Status/Plan entflechten.
+6. **K6 — Begrenzte Großpinsel-Diagnose:** Im vorhandenen Journal die bisher
+   zusammengefasste Zeit zwischen Dispatch, Workerbeginn/-ende, Main-Antwort und
+   tatsächlichem Submit aufteilen. Dieselbe kurze große warme Geste prüfen;
+   Eingaben, Dosis und Inhalt bleiben unverändert. Nur auf einen dominierenden
+   Befund eine begründete Änderung folgen lassen. Ohne erwartete Verbesserung
+   Hypothese verwerfen, nicht weitere Caches/Worker/Shaderpfade hinzufügen.
 
-#### P0a — Vertrag und konkreten Rückstand festhalten
+**Abschluss dieses Pakets:** K1/K2/K4/K5 sowie Referenzprofil, Probeweg und
+fehlerschließende Vorprüfung aus K3 mit gezielten positiven/negativen Fällen
+geprüft. Die tatsächliche native Präsentationszuordnung ist ein gesonderter
+P0-Restnachweis, wenn geeignete Belege fehlen. K6 liefert eine nachvollziehbare
+Ursache oder ausdrücklich noch unaufgelöste Zeitanteile. Ersetzte Pfade sind
+entfernt, vorgeschriebene Repo-Checks am veröffentlichten Kandidaten belegt und
+Doku konsistent. Nicht gelöste
+Leistungs- oder native Nachweisprobleme bleiben im Status offen. Keine
+vollständige Sammlung allein zum Wiederholen eines bekannten Fehlers.
 
-**Lieferung:** D11, F01–F19/D01–D11, zwei belegte Warteketten und der verbleibende
-warme Großpinsel-Fall im bestehenden Status; keine neue Ursachenstudie des ganzen Repos.
+### P0 — Vorhandene Grundlage und verbleibendes Gate
 
-Die kalten Altproben starteten den Strich nach Quellenbereitschaft. Der Code
-meldet damit zu früh „Bereit“ und erlaubt die erste Modelländerung vor passender
-Darstellung. Unter D11 ist die richtige Korrektur eine sichtbare lokale Sperre
-mit kürzerer Lade-/Darstellungszeit. Frühe verworfene Eingaben allein entscheiden
-nicht über Produktfehler. Nach Freigabe bleiben die normalen Reaktionsziele gültig.
+P0a–P0f bezeichnen die Teile des Höhenversuchs, keinen erneuten Bauauftrag:
 
-Vorhandene Rohjournale belegen zwei konkrete Ansatzpunkte: Bildaufbau ohne
-Priorität für den lokalen Arbeitsbereich und Ausschnittsreads hinter einem
-Dateisnapshot. Beim warmen großen Pinsel sind Eingabe-, Raster- und Framezeiten
-getrennt zu betrachten. Kein weiterer Hostwechsel ohne hostbezogene Ursache.
-Die Matrix in Abschnitt 7 kennzeichnet Planung und unveränderten Produktstand.
+| Teil | Vorhandene Grundlage                                                  | Verbleibende Verantwortung                                                                     |
+| ---- | --------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| P0a  | Nutzervertrag D01–D11 und enger Auftrag festgelegt.                   | Neue Befunde in Status und Restauftrag einordnen; keine obligatorische neue V7-Benchmarkreihe. |
+| P0b  | Gemeinsame lokale Freigabe und normaler Produkt-/Prüfpfad.            | Referenz/Vorprüfung nach K3; tatsächliche Präsentationszuordnung bis P0-Abschluss nachweisen.  |
+| P0c  | Höhenmodell, Graben, grobe Änderung, History und Dateirundlauf.       | Bei Änderungen relevante Funktionsbelege erhalten.                                             |
+| P0d  | Ein priorisierter begrenzter Rasterpfad mit Live-Zwischenständen.     | Großen warmen Zeitfall nach K6 klären und anschließend unveränderte Ziele prüfen.              |
+| P0e  | Numerische Übersicht, 32/1.024/9.000-Quellenfälle und Detailerhalt.   | Betroffene Reads/Übersichten/History/Dateifälle bei Änderungen erneut prüfen.                  |
+| P0f  | Reine Reads während asynchroner Snapshots, gemeinsame Antwortprüfung. | Snapshot S, spätere Dirty-Änderungen und tatsächliche Read-/Save-Überlappung erhalten.         |
 
-#### P0b — Eine sichtbare lokale Freigabe und einen gemeinsamen Prüfvertrag
+**P0-Abschluss:** M01 sowie Höhenanteile aus M03/M04/M10 mit D10/D11 bestehen
+im gebauten Kandidaten. Dazu gehören Inhalt, laufender Verlauf, History,
+Dateirundlauf, Budgets sowie qualifizierte Referenz, tatsächlich zugeordnete
+Präsentation und die Stichprobe aus Abschnitt 6. Funktionserfolg oder schneller
+Submit allein schließen dieses Gate nicht. Fehlende Umgebung/Zuordnung ist
+`blockiert`; ein bekannter Inhalts-/Budget-/Zeitfehler bleibt `FAIL`.
 
-**Pfade:** `EditorController`, `WorldRenderer`-Regionsabfrage, `main.tsx`/Cursor,
-`atlas-p0-collection.mjs`, `atlas-p0-evaluate.mjs`, bestehende Renderer-/Auswertertests.
-
-1. Aus vorhandener Quellenabdeckung, tatsächlich gezeichnetem lokalem Terrain
-   und gegebenenfalls einer angenommenen Dosis genau eine Freigabe mit konkretem
-   Warte-/Fehlergrund ableiten. D11 definiert Fläche, Rand und Semantik.
-   `regionCoverage` bleibt Diagnose und wird keine schwächere zweite Freigabe.
-2. UI und Eingabebeginn daran anschließen, einschließlich Renderfortschritt ohne
-   Diagnosebetrieb. Vor Freigabe keine Modellgeste erstellen. Bei Verlust der
-   Grundlage bestehende Werkzeug-Abbruchregeln anwenden und neuen Beginn verlangen.
-   Fehlende lokale Eingriffsdaten über den aktuellen Werkzeugbedarf nach A04
-   laden; dazu weder eine Geste noch einen Wiederaufnahme-Callback vorhalten.
-3. Anfangsimpuls und Folgeimpulse verwenden denselben Freigabe-/Dosisvertrag.
-   Kurze gültige Klicks zwischen Frames bleiben wirksam; keine pauschale RAF-
-   Verschiebung einführen, die nach Up noch Dosis erzeugt oder Klicks verliert.
-   Für Höhen nur aktuellen Punkt und eine offene Dosis halten. Gespeicherte
-   Wartepfade, `pressPending` und Quellen-Promises mit Gestenwiederaufnahme entfernen.
-4. Den bestehenden Collector auf die Produktfreigabe umstellen. Nach Freigabe
-   exakt denselben kurzen Strich und dieselbe Live-/50-ms-Auswertung wie im warmen
-   Fall verwenden. Navigation, erster Input und alle weiteren Inputs bleiben in
-   einem Journal. Die bisher dreifache Zuordnung von Navigation/Freigabe im
-   Normal-, Fehler- und Neuauswertungsweg in einem kleinen Extractor bündeln.
-5. `evaluateColdSubmissionDiagnostics` und native Cold-Abnahme erhalten die
-   50-ms-Prüfung nach Freigabe; `strokeEvidence(..., false)` und `Infinity` sind
-   dort keine Sondererlaubnis mehr. Tests, die 280-ms-Eingaben nach Freigabe als
-   erfolgreich festschreiben, ersetzen. Abgewiesene Vorabgesten separat prüfen,
-   mit Sollwert null für Modelländerung, History und spätere Wirkung.
-
-**Entfällt:** Quellen-`ready` als Bedienfreigabe, manuelles Terrain-„Bereit“ nach
-Read, abweichende Press-/Folgefreigabe, wartende Quellengesten und Punktlisten ohne
-Produktnutzen, Cold-Sonderregeln für gewöhnliche Bearbeitung. Eine offene
-angenommene Dosis, Quellenzustände und Session-/Revisionsschutz bleiben erhalten.
-
-**Nachweis:** D11 im Normalstart sichtbar; frühes Down/Move/Up sowie weiterhin
-gehaltene Taste erzeugen auch nach dem Laden nichts; neuer Druck funktioniert.
-Teilbereiter Viewport, ein Ziel außerhalb der Ansichtsmitte, Größenwechsel und
-Fensterkante funktionieren lokal; ein Segment darf keine unsichtbare Lücke
-zwischen sichtbaren Endpunkten bearbeiten. Kleiner/großer
-normaler Strich, kurzer Klick, Halten, Undo/Redo und vorhandener 500-ms-Hänger
-behalten ihre Semantik. Verzögertes Bild, alter Frame und verzögerter erster
-freigegebener Edit müssen die jeweils falsche Freigabe oder Zeitabnahme erkennen.
-
-#### P0c — Kleinen vollständigen Höhenpfad wiederverwenden
-
-Der bereits vorhandene Fall bleibt: wenige echte Sparse-Quellen, feiner Graben,
-grobe Anhebung mit Küstenänderung, laufender Strich, eine Undo-Aktion,
-Save/Neustart/Reopen und kalte Zielbearbeitung.
-Nur die hierfür erforderlichen Teile aus A02–A07 verwenden.
-Eigene Originalmathematik, Testhilfen zum Setzen von Bereitschaft oder eine
-wegzuwerfende zweite Demo sind ausgeschlossen.
-**Nachweis:** unabhängige Modellwerte und tatsächlicher Bildinhalt stimmen;
-angenommene Arbeit, Dateibestätigung und History sind auseinandergehalten.
-**Entfällt:** Sonderpfad nur für den Vorführfall, sobald gemeinsamer Pfad ihn trägt.
-
-#### P0d — Den bestehenden Rasterpfad nach sichtbarem Bedarf ordnen
-
-**Pfade:** `EditorController.advanceFrame`/`applyDose`, `WorldRenderer`,
-`raster.worker.ts`, `raster.ts` und Quellpatch-Ausgabe des Modells.
-
-1. A06 im vorhandenen Dispatcher umsetzen: angenommene lokale Änderung, lokaler
-   Bildaufbau für D11, übrige sichtbare Kacheln. Der erste brauchbare Bereich darf
-   unabhängig von seiner Position in der bisherigen Zeilenreihenfolge entstehen.
-   Anfangs wird nur Sichtbarkeit hergestellt; vor D11-Freigabe wird nicht gemalt.
-2. Dringende lokale Ergebnisse nicht im selben Batch hinter unabhängigen
-   Bildaufbauaufgaben zurückhalten. Ein Worker, ein laufender Batch und dieselben
-   Quellenpatches bleiben. Arbeitspakete anhand vorhandener Laufzeiten begrenzen.
-   Keine `await`-Unterbrechung innerhalb eines Batches, die zwischenzeitliche
-   Quellenpatches unter alter Revisionsangabe einmischt.
-3. Den großen warmen Strich nach derselben Freigabe untersuchen: Eingabequeue,
-   Modell, Raster-CPU, Wartezeit und Upload getrennt. `update.bounds` umfasst
-   bereits den Support veränderter Kontrollpunkte, nicht pauschal ganze
-   Autorenkacheln. Keine erneute „kleinere Dirty-Bounds“-Optimierung ohne Befund.
-4. Nur bei nachgewiesen dominierendem Rasteraufwand den bestehenden Grid-
-   Vorbereitungsschritt vereinfachen: Er wird heute bei Quellenpatches vollständig
-   verworfen. Erst Messung, dann höchstens eine begründete Änderung am vorhandenen
-   Index beziehungsweise an der Paketgröße. Keine zusätzliche Cachehierarchie,
-   keine weiteren Worker und kein Shaderumbau ohne neue konkrete Ursache.
-
-**Entfällt:** die bloße Sortierung „schon gemalt vor kalt“ plus Zeilenreihenfolge
-als Priorität, unnötiges Warten auf unabhängige Aufgaben und nachweislich
-redundante Vorbereitung. Keine zweite Vorschau-/Commitdarstellung hinzufügen.
-
-**Nachweis:** kalter Zielbereich mit sichtbarer Warteanzeige bis D11, danach
-derselbe kleine/große Strich; laufende Resultate, Endzustand und ein Undo stimmen.
-Die 100-ms-Fortschrittsgrenze und 50-ms-Reaktion gelten nach Freigabe weiter.
-Navigation, schnelle Ortswechsel und übriger Bildaufbau behalten Fortschritt.
-Eine geänderte Bereitschaftsdefinition ist allein noch kein Geschwindigkeitsgewinn.
-
-#### P0e — Maßstabsgerechte Übersicht und exakte Detailrückkehr
-
-**Fortsetzungsstatus:** Numerische Übersicht und der Funktionsrundlauf sind am
-Ausgangsstand vorhanden. Diese Grundlage behalten. Die folgenden Kriterien sind
-Erhaltungskriterien; nur durch Änderungen betroffene Belege erneut erheben.
-
-**Pfade:** A03-Sampler/Übersicht, `EditorDocument`-Bereitschaft,
-Controller-Leseplanung, `desktop/project-store.ts` und Renderquellen.
-
-1. Den numerischen Kandidaten A03 mit einem eindeutig festgelegten Abtastraster
-   und begrenzter Vorfahrenpflege implementieren. Bestehende kanonische Mathematik
-   gemeinsam verwenden; der Store berechnet daraus nur abgeleitete Werte.
-2. Exakte lokale Reads und Übersichtsreads trennen. Neue, geänderte und entfernte
-   Quellen sowie lokale noch unbestätigte Patches korrekt zusammensetzen.
-3. Gleichen groben Ausschnitt mit 32, 1024 und 9000 echten Quellen bearbeiten.
-   Die größte Menge überschreitet das aktive Quellenbudget.
-   Reads, dekodierte Bytes, Samplearbeit und Modell-/Worker-/Übersichtsspeicher
-   während Navigation, Bearbeitung und Commit beobachten.
-4. Veränderte Küste, zusätzliches Relief, Detailrückkehr, Undo/Redo und
-   Save/Neustart/Reopen einschließlich kaltem Ziel nachweisen.
-   Die große Pinselprobe aus P0d muss auf dem neuen Pfad ebenfalls funktionieren.
-
-**Entfällt:** vollständige Feinquellenabdeckung als Voraussetzung grober
-Darstellung/Bearbeitung; alternative unbenutzte Ladestrategien.
-512er-Limit erhöhen, sämtliches Detailmaterial paginieren oder Quellen weglassen
-gilt nicht als Lösung. Eine technisch große atomare Aktion bleibt separat begrenzt.
-**Nachweis:** normaler grober Aufwand hängt vom Maßstab/aktiven Bereich ab,
-nicht von einer vollständigen Enumeration aller feinen Nachfahren.
-Vorfahren-Commitkosten und kalte Read-Wartezeit werden nicht aus der Rechnung entfernt.
-
-#### P0f — Lokale Reads während des Speicherns beantworten
-
-**Pfade:** `desktop/store-process.ts`, `project-store.ts`, die beiden
-Read-Antwortpfade des `EditorController` und vorhandene Desktopintegration.
-
-1. Die tatsächlich verwendeten reinen synchronen Reads, derzeit `readRegion` und
-   `readPresentation`, aus der pauschalen Promise-Queue nehmen. Ungenutzte
-   Alternativen wie den bloß durchgereichten `readTiles`-Pfad nach Verbrauchersuche
-   entfernen; reine Implementierungstests geben ihm keinen Bestandsschutz.
-   Derselbe Utility-Prozess und dieselbe
-   Arbeitskopie beantworten sie während der asynchronen Dateioperation.
-   Alle Mutationen, Save-Phasen, Projektwechsel und Close bleiben geordnet.
-2. Bestehenden gepinnten Snapshot S, atomare Zielveröffentlichung, Fehler- und
-   Aufräumregeln erhalten. Keine neuen Verbindungen, Prozesse oder Leases.
-   Keine parallelen Writes einführen, um lediglich kalte Reads zu beschleunigen.
-3. Beide Antwortpfade verwenden dieselbe kleine Session-/Sequenzregel aus A07.
-   Ein Read darf einen wartenden Write überholen; das Ergebnis benennt den
-   gelesenen Stand. Lokale neuere Patches dürfen weder verloren gehen noch doppelt
-   projiziert werden. Dokumentwechsel oder ein überholter Stand gibt nichts frei.
-
-**Entfällt:** die pauschale Reihenfolge zwischen reinen Reads und vollständig
-abgewarteten Dateioperationen, getrennte Varianten derselben Antwortprüfung.
-
-**Nachweis:** Über den echten Utility-Dispatcher muss ein lokaler Read während
-eines noch laufenden Snapshots enden; ein direkter `ProjectStore`-Aufruf allein
-beweist das nicht. Export bleibt exakt S, spätere lokale Änderungen bleiben
-ungespeichert erhalten. Fehler beim Publish, alte Session, Undo/Redo und Reopen
-behalten ihre Verträge. Danach denselben kalten Fall mit Save prüfen; beide
-Warteabschnitte und tatsächliche Lastüberlappung berichten.
-
-#### P0-Abschluss und Entscheidung
-
-**Richtungsprobe:** D11-Normalstart und Blockiert-/Erholungsfälle, beide warmen
-Pinsel sowie kalter Ort ohne und mit Save. Die vorhandenen drei Bestandsgrößen
-erneut prüfen, soweit Daten-, Read- oder Übersichtswege betroffen sind. Pro
-Warteursache erst eine begründete Änderung, dann derselbe kurze Fall. Ohne
-erwartete Wirkung die Hypothese verwerfen oder verengen; keine Folge spekulativer
-Mikrooptimierungen. Bestehende gemeinsame Gesten und Auswerter verwenden.
-
-**Native P0-Abnahme:** M01 sowie Höhenanteile aus M03/M04/M10 einschließlich
-P0d/P0e/P0f und D11 bestehen im gebauten Kandidaten mit qualifizierter Referenz,
-zugeordneter Präsentation und Stichprobe aus Abschnitt 6.
-Fehlende Messumgebung ist `blockiert`; ein bekannter Inhalts-/Budgetfehler ist
-ein Fehler und wird nicht dahinter versteckt. Laufzeit und kurzer Renderpfad
-sind entschieden. Bei Scheitern genau den betroffenen Algorithmus/Bestandteil
-neu wählen, bevor weitere Fachwerkzeuge folgen.
+Erst nach bestandenem P0-Gate und entsprechendem Umsetzungsauftrag gilt
+**P1 → P2/P3 → P4 → P5/P6/P7/P8 → P9**. P6 darf seinen reinen hauslokalen Kern
+parallel vorbereiten; gemeinsame Dokument-, Oberflächen- und Undo-Verträge
+werden nicht mehrfach implementiert.
 
 ### P1 — Zustände, Datenverträge und Fachkern konsolidieren
 
@@ -1062,22 +764,20 @@ neu wählen, bevor weitere Fachwerkzeuge folgen.
 - Vorhandenen `EditorDocument` erweitern: Quellen/Masken, Objektheader,
   getrennte Innenpayloads, IDs, lokale Abhängigkeiten, atomare Patches und History.
   A03/A04 auf Boden/Landschaft/Geometrie übertragen; A08-Kerne gezielt anbinden.
-- Effektive Einstellungen/Fehler in einen Editorzustand überführen.
+- Den vorhandenen effektiven Controllerzustand auf neue Werkzeuge erweitern.
   React-Feldentwürfe bleiben lokal; Kamera-/Pointerarbeit bleibt außerhalb
-  hochfrequenter React-Updates. Saved/Dirty aus tatsächlichen Grenzen ableiten.
+  hochfrequenter React-Updates. Keine erneute Zentralisierung bereits gemeinsamer Einstellungen.
 - Reine Koordinaten-, Schlüssel-, Bounds- und Patchverträge gemeinsam verwenden.
   Fachliche und binäre Eingangsvalidierung erhalten. Kleine Module nach
   Verantwortung schneiden, keine Hüllen nur zum Weiterreichen.
-- Nur benutzte Lese-/Snapshot-APIs behalten. Konkret prüfen:
-  `HeightTileRecord`/JSON-Konvertierungen, `sampleHeightLoaded`,
-  `readSources`, `acceptRegion`, `isSnapshotCurrent`,
-  Ladehilfen und `ProjectInfo.activeLevels`. Benötigten selektiven Leseweg
-  zuerst integrieren; nicht blind nützliche Sourcezustände entfernen.
+- Den nach K5 bereinigten Quellen-/Transportvertrag erweitern, ohne entfernte
+  Alternativen wieder einzuführen. Selektive Lesezwecke und tatsächliche
+  Quellenzustände erhalten.
 - Eine konkrete begrenzte Jobverwaltung gemäß A06 anbinden. Keine zweite
   Dokumentautorität und keine pro Werkzeug separat entwickelte Queue.
 
-**Entfällt:** doppelte UI-Wahrheiten, unbenutzte Transportfelder/APIs,
-Konverter ohne Produktconsumer und deren reine Spiegeltests.
+**Entfällt:** bislang erforderliche Höhen-Sonderverträge, soweit der erweiterte
+Quellen-/Objektkern ihre Verbraucher übernimmt. In K5 entfernte Alt-APIs bleiben entfernt.
 **Nachweis:** Koordinatenränder, fehlend/explizit leer, lokale Bereitschaft,
 Grob-/Fein-Semantik, No-op/IDs/History und stale Jobs.
 Neue leere Welt bleibt sparse. P0-Belege nur nach betroffenen Änderungen erneuern.
@@ -1479,8 +1179,8 @@ Keine automatische Dauersammlung derselben nicht zuordenbaren Chromium-Traces.
 
 Bestehende Vitest-/Playwright-Infrastruktur weiterverwenden. Für Desktopintegration
 die gebaute Anwendung einschließlich Hostanbindung, Store und echten Dateien
-starten. Beim Electron-Default Playwrights Electron-Anbindung bereits in P0b mit
-der gewählten Version erproben; bei einer Alternative deren reale native Anbindung.
+starten. Beim Electron-Default die vorhandene Playwright-Electron-Anbindung
+verwenden; bei einer Alternative deren reale native Anbindung nachweisen.
 Deterministische Dateitests dürfen ausschließlich die OS-Dialogantwort ersetzen;
 der nachfolgende Produktpfad bleibt echt. Sichtbare native Dialoge ergänzend bedienen.
 
@@ -1506,31 +1206,23 @@ ausweisen, nicht als erfolgreichen Teil der CI interpretieren.
 
 ## 7. Arbeits- und Abnahmematrix
 
-Diese Tabelle am aktuellen Stand pflegen. D11, neue Rasterpriorität und
-Read-Entkopplung sind implementiert; Funktionsproben und neue kalte Fälle bestehen.
-Der große warme Pinsel verfehlt weiterhin das Zeitlimit; die native P0-Abnahme
-bleibt blockiert. Die vorhandenen P0-Komponenten und D10 bleiben erhalten.
-Historische kalte Ausgangsproben sind kein Nachweis der neuen sichtbaren Freigabe.
-P1–P9 hängen weiterhin am P0-Abschlussgate. Keine vergangenen Rohberichte umschreiben.
+Nur Paketstatus und Verweise hier pflegen. Commit, Prüfzahlen, Messwerte und
+konkrete Fehler stehen ausschließlich im [Status](status.md). Historische
+Rohbelege werden nicht umgeschrieben.
 
-| Paket | Pflichtumfang / Entscheidung                                                                                    | Umsetzung                                                                                                                                                      | Nachweis am Stand                                                                                                | Status                                                |
-| ----- | --------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
-| P0    | P0a–P0f, D10/D11 und native Höhenabnahme                                                                        | D11, Rasterpriorität und entkoppelte Reads implementiert und funktional geprüft.                                                                               | [Produktnachweise, Identität und offene Grenzen](status.md)                                                      | offen; großer Zeitfall FAIL, native Abnahme blockiert |
-| P0a   | Nutzerkorrektur, Befunde und enger nächster Auftrag                                                             | D11, M10 und Vereinfachungsziele in diesem Plan festgehalten; keine Produktänderung.                                                                           | Review von `ecbad25`, Planabschnitte 2/5/6                                                                       | verifiziert (Plan)                                    |
-| P0b   | Eine lokale Freigabe, sichtbares Warten, keine Vormerkung, gemeinsame Tests                                     | Ein Kriterium aus Quellen und tatsächlichem Submit; aktueller Werkzeugbedarf ohne wartende Geste. Cold-Sonderausnahmen entfernt.                               | 194 Editor-Tests; Normalstart, blockierte frühe Gesten, sichtbarer Loslasshinweis und Cold-Striche geprüft.      | funktional verifiziert; native Abnahme offen          |
-| P0c   | Höhen-/History-/Dateipfad erhalten                                                                              | Bestehender funktionaler Kern bleibt.                                                                                                                          | Vorhandene Modell-/Coast-/Dateinachweise in [status.md](status.md)                                               | funktional verifiziert                                |
-| P0d   | Lokalen Bildaufbau und angenommene Änderung priorisieren                                                        | Ein Dispatcher priorisiert Feedback und lokalen Bildaufbau; begrenzter übriger Fortschritt verhindert Verhungern. Zusätzlichen Publish-Versuch zurückgenommen. | Teilviewport-/Session-/Fortschrittsregressionen bestehen; großer warmer Edit-p95 54,3 / 68,7 / 50,0 ms.          | umgesetzt; Zeitnachweis FAIL                          |
-| P0e   | Numerische Übersicht und Detailerhalt erhalten                                                                  | Bestehender Kern bleibt; betroffene 32/1.024/9.000-Rundläufe am finalen Produkt erneuert.                                                                      | Alle drei Fälle einschließlich Feindaten-Digest, Detailrückkehr, History und Dateineustart bestehen.             | funktional verifiziert                                |
-| P0f   | Reine Reads während asynchroner Dateioperationen                                                                | Zwei reine Reads umgehen dieselbe Mutations-/Dateiqueue; ungenutztes readTiles entfernt. Gemeinsame synchrone Antwortprüfung/-übernahme.                       | 15 Store-/Fixturetests; reale kalte Save-Überlappung mit Quellen nach 19,0 ms und lokaler Freigabe nach 53,7 ms. | funktional verifiziert; native Abnahme offen          |
-| P1    | Gemeinsamer Kern, ein effektiver UI-Zustand und verwendete Verträge, A02–A06/D01/D02                            | —                                                                                                                                                              | —                                                                                                                | offen                                                 |
-| P2    | F19, A07, echte Projektdateien                                                                                  | —                                                                                                                                                              | —                                                                                                                | offen                                                 |
-| P3    | F01–F04/F18-Basis; Welt-bis-Haus, Grob-/Feinskalierung, exakte Bearbeitung unter Last, D03-Szene, M10-Teilfälle | —                                                                                                                                                              | —                                                                                                                | offen                                                 |
-| P4    | F04–F07, D01/D02, komplette Flächenwerkzeuge                                                                    | —                                                                                                                                                              | —                                                                                                                | offen                                                 |
-| P5    | F08–F12, D04, Straßen/Parzellen/Außenhäuser                                                                     | —                                                                                                                                                              | —                                                                                                                | offen                                                 |
-| P6    | F02/F12–F14, lokale Innenräume                                                                                  | —                                                                                                                                                              | —                                                                                                                | offen                                                 |
-| P7    | F09/F16/F17, D03, Flüsse/Seen/Nachführung                                                                       | —                                                                                                                                                              | —                                                                                                                | offen                                                 |
-| P8    | F03/F15/F18, vollständige UI und Kartografie                                                                    | —                                                                                                                                                              | —                                                                                                                | offen                                                 |
-| P9    | F01–F19 integriert, M01–M10, RPM, Altpfadabbau, Dokumentation                                                   | —                                                                                                                                                              | —                                                                                                                | offen                                                 |
+| Paket | Umfang                                                                | Status / Nachweis                                                     |
+| ----- | --------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| K1–K6 | Begrenzte Konsolidierung aus Abschnitt 5.                             | Beauftragt; geprüfter Abschluss im Status.                            |
+| P0    | Höhenversuch P0a–P0f, D10/D11 und native Höhenabnahme.                | Grundlage implementiert; Gate offen, genaue Fehler/Blocker im Status. |
+| P1    | Gemeinsamer Kern für F01–F19, A02–A06/D01/D02.                        | Offen; benötigt P0-Gate.                                              |
+| P2    | F19, A07 und vollständige Projektdateien.                             | Offen.                                                                |
+| P3    | F01–F04/F18-Basis, Mehrskaligkeit, Konkurrenz, D03 und M10-Teilfälle. | Offen.                                                                |
+| P4    | F04–F07, D01/D02 und komplette Flächenwerkzeuge.                      | Offen.                                                                |
+| P5    | F08–F12/D04: Straßen, Parzellen und Außenhäuser.                      | Offen.                                                                |
+| P6    | F02/F12–F14: hauslokale Innenräume.                                   | Offen.                                                                |
+| P7    | F09/F16/F17/D03: Gewässer und Nachführung.                            | Offen.                                                                |
+| P8    | F03/F15/F18: Regionen, Bedienung und Kartografie.                     | Offen.                                                                |
+| P9    | F01–F19 integriert, M01–M10, RPM, Altpfadabbau und Doku.              | Offen.                                                                |
 
 ## 8. Definition von „erledigt“
 
@@ -1572,9 +1264,11 @@ Gesamtauftrag offen beziehungsweise `blockiert`. Der Kandidat kann trotzdem als
 vollständig implementiert und geprüft bezeichnet werden; der Gesamtauftrag ist
 damit noch nicht erledigt.
 
-Nicht erfüllte native beziehungsweise Zeitabnahme bedeutet `blockiert`, nicht
-„fertig, nur noch manuell testen“. Nach bestandenen Kriterien abschließen;
-keine weiteren optionalen Features oder Optimierungsrunden anhängen.
+Fehlende native Umgebung oder nicht herstellbare Präsentationszuordnung bedeutet
+`blockiert`; ein gemessen verfehltes Inhalts-, Budget- oder Zeitziel bedeutet
+`FAIL`. Beide Zustände können zugleich bestehen. Keiner bedeutet „fertig, nur
+noch manuell testen“. Nach bestandenen Kriterien abschließen, ohne weitere
+optionale Features oder Optimierungsrunden anzuhängen.
 
 ## 9. Quellen und Lesereihenfolge
 

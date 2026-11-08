@@ -44,7 +44,6 @@ interface Entry {
   state: SourceState;
   tile?: HeightTile;
   localSequence: number;
-  error?: string;
 }
 
 interface Coverage {
@@ -254,34 +253,6 @@ export class EditorDocument {
       : "unknown";
   }
 
-  sourceError(key: string): string | undefined {
-    return this.entries.get(key)?.error;
-  }
-
-  markLoading(keys: readonly string[]): void {
-    for (const key of keys) {
-      parseHeightTileKey(key);
-      if (["ready", "absent"].includes(this.sourceState(key))) continue;
-      this.entries.set(key, {
-        state: "loading",
-        localSequence: this.entries.get(key)?.localSequence ?? 0,
-      });
-    }
-  }
-
-  failSources(keys: readonly string[], message: string): void {
-    for (const key of keys) {
-      parseHeightTileKey(key);
-      if (["ready", "absent"].includes(this.sourceState(key))) continue;
-      this.entries.set(key, {
-        state: "error",
-        error: message,
-        localSequence: this.entries.get(key)?.localSequence ?? 0,
-      });
-    }
-    this.generation++;
-  }
-
   requiredSources(
     bounds: Bounds,
     levels: readonly number[] = HEIGHT_LEVELS,
@@ -311,17 +282,6 @@ export class EditorDocument {
       storeSequence,
       sessionId,
     );
-  }
-
-  acceptRegion(
-    level: number,
-    bounds: Bounds,
-    tiles: readonly HeightTile[],
-    storeSequence = this.persistedSequence,
-    sessionId = this.sessionId,
-  ): void {
-    assertLevel(level);
-    this.acceptRead({ level, bounds }, null, tiles, storeSequence, sessionId);
   }
 
   acceptSources(
@@ -506,30 +466,7 @@ export class EditorDocument {
       bounds: [...bounds],
       levels: [...levels],
       tiles,
-      dependencies: tiles.map(({ key, revision }) => ({ key, revision })),
     };
-  }
-
-  isSnapshotCurrent(snapshot: HeightSnapshot): boolean {
-    if (
-      snapshot.sessionId !== this.sessionId ||
-      !this.isReady(snapshot.bounds, snapshot.levels)
-    )
-      return false;
-    const expected = new Map(
-      snapshot.dependencies.map((s) => [s.key, s.revision]),
-    );
-    for (const entry of this.entries.values()) {
-      if (
-        !entry.tile ||
-        !snapshot.levels.includes(entry.tile.level) ||
-        !intersectsBounds(heightTileSupport(entry.tile), snapshot.bounds)
-      )
-        continue;
-      if (expected.get(entry.tile.key) !== entry.tile.revision) return false;
-      expected.delete(entry.tile.key);
-    }
-    return expected.size === 0;
   }
 
   sampleHeight(x: number, y: number): number {
@@ -544,10 +481,6 @@ export class EditorDocument {
       y + epsilon,
     ]);
     return prepareHeightSampler(this.snapshot(bounds))(x, y);
-  }
-
-  sampleHeightLoaded(x: number, y: number): number {
-    return this.sampleHeight(x, y);
   }
 
   evictSources(keys: readonly string[]): number {

@@ -25,16 +25,8 @@ export interface HeightTile {
   values: Float64Array;
 }
 
-export interface HeightTileRecord extends Omit<HeightTile, "values"> {
-  values: number[];
-}
-
-export type SourceState = "unknown" | "loading" | "ready" | "absent" | "error";
-
-export interface SourceStamp {
-  key: string;
-  revision: number;
-}
+/** Load progress and errors belong to the controller, not cached source data. */
+export type SourceState = "unknown" | "ready" | "absent";
 
 export interface HeightPatch {
   key: string;
@@ -61,7 +53,6 @@ export interface HeightSnapshot {
   levels: readonly number[];
   /** Owned copies: transferring these buffers cannot detach document sources. */
   tiles: HeightTile[];
-  dependencies: SourceStamp[];
 }
 
 export interface HeightBrush {
@@ -205,17 +196,4 @@ export function validateHeightTile(tile: HeightTile): void {
 
 export function cloneHeightTile(tile: HeightTile): HeightTile {
   return { ...tile, values: tile.values.slice() };
-}
-
-export function heightTileToRecord(tile: HeightTile): HeightTileRecord {
-  validateHeightTile(tile);
-  return { ...tile, values: Array.from(tile.values) };
-}
-
-export function heightTileFromRecord(record: HeightTileRecord): HeightTile {
-  if (!Array.isArray(record.values))
-    throw new RangeError("Höhenwerte fehlen im Datensatz.");
-  const tile = { ...record, values: new Float64Array(record.values) };
-  validateHeightTile(tile);
-  return tile;
 }

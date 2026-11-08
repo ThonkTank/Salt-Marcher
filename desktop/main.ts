@@ -15,6 +15,8 @@ import { mkdtempSync, readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import type {
+  FileActionRequest,
+  PreparedDocument,
   ProjectInfo,
   SaveRequest,
   SaveResult,
@@ -24,6 +26,7 @@ import type { PreparedSave, StoreActivity } from "./project-store";
 import { HEIGHT_MAX_ACTION_TILES } from "../src/editor/model/types";
 
 const CHANNEL = "atlas:p0";
+const FILE_ACTION_CHANNEL = "atlas:p0:file-action";
 const MAX_PENDING = 64;
 const diagnostics = process.env.ATLAS_P0_DIAGNOSTICS === "1";
 const indexPath = resolve(__dirname, "../dist-editor/index.html");
@@ -177,8 +180,19 @@ let window: BrowserWindow;
 let store: StoreProcess;
 let fileActionPending = false;
 let allowClose = false;
+let workingDirectory: string;
+let fileActionSerial = 0;
+let pendingFileAction: {
+  id: number;
+  resolve: (value: PreparedDocument | null) => void;
+  reject: (error: Error) => void;
+  timer: ReturnType<typeof setTimeout>;
+} | null = null;
+let diagnosticCommitAttempts = 0;
 
-function trustedSender(event: IpcMainInvokeEvent) {
+function trustedSender(
+  event: Pick<IpcMainInvokeEvent, "sender" | "senderFrame">,
+) {
   if (
     event.sender !== window.webContents ||
     event.senderFrame !== window.webContents.mainFrame ||
@@ -186,6 +200,44 @@ function trustedSender(event: IpcMainInvokeEvent) {
   ) {
     throw new Error("Die Anfrage stammt nicht aus dem aktiven Atlas-Fenster.");
   }
+}
+
+function checkedPreparedDocument(value: unknown): PreparedDocument {
+  const boundary = checkedBoundary(value);
+  const candidate = value as PreparedDocument;
+  if (
+    candidate.persistenceError !== null &&
+    (typeof candidate.persistenceError !== "string" ||
+      candidate.persistenceError.length > 10_000)
+  )
+    throw new Error("Ungültiger lokaler Speicherzustand.");
+  return { ...boundary, persistenceError: candidate.persistenceError };
+}
+
+function requestFileAction(
+  request: FileActionRequest,
+): Promise<PreparedDocument | null> {
+  if (pendingFileAction)
+    return Promise.reject(new Error("Ein Editorabschluss ist bereits offen."));
+  const id = ++fileActionSerial;
+  return new Promise((resolveRequest, reject) => {
+    const timer = setTimeout(() => {
+      pendingFileAction = null;
+      reject(
+        new Error(
+          "Der Editor hat seinen lokalen Stand nicht bestätigt. Das Fenster bleibt geöffnet.",
+        ),
+      );
+    }, 35_000);
+    pendingFileAction = { id, resolve: resolveRequest, reject, timer };
+    try {
+      window.webContents.send(FILE_ACTION_CHANNEL, { ...request, id });
+    } catch (error) {
+      pendingFileAction = null;
+      clearTimeout(timer);
+      reject(error);
+    }
+  });
 }
 
 function checkedBoundary(value: unknown): SourceBoundary {
@@ -256,9 +308,32 @@ async function save(request: SaveRequest): Promise<SaveResult | null> {
   }
 }
 
-async function mayReplace(project: ProjectInfo): Promise<boolean> {
-  if (project.sequence === 0 && project.path === null) return true;
-  if (project.savedSequence === project.sequence) return true;
+/** A null boundary permits replacing an unavailable store only after explicit discard. */
+async function mayReplace(
+  local: PreparedDocument,
+): Promise<{ boundary: SourceBoundary | null } | null> {
+  let project: ProjectInfo | null;
+  try {
+    project = await store.request<ProjectInfo>("status");
+  } catch {
+    project = null;
+  }
+  if (
+    project &&
+    (project.sessionId !== local.sessionId ||
+      project.sequence > local.sequence ||
+      (!local.persistenceError && project.sequence !== local.sequence))
+  )
+    throw new Error(
+      "Der lokale Editorstand und die Arbeitskopie stimmen nicht überein.",
+    );
+  if (
+    project &&
+    !local.persistenceError &&
+    ((local.sequence === 0 && project.path === null) ||
+      project.savedSequence === local.sequence)
+  )
+    return { boundary: checkedBoundary(project) };
   const automation = process.env.ATLAS_P0_DIALOG_UNSAVED;
   const response =
     automation === "save"
@@ -272,19 +347,74 @@ async function mayReplace(project: ProjectInfo): Promise<boolean> {
                 type: "question",
                 title: "Ungespeicherte Änderungen",
                 message:
-                  "Die Änderungen an dieser Welt sind noch nicht in einer Projektdatei gespeichert.",
+                  local.persistenceError || !project
+                    ? "Nicht alle lokalen Änderungen sind bestätigt. Speichern prüft den tatsächlichen Speicherstand und versucht die erhaltenen Änderungen sicher zu übernehmen. Verwerfen gibt diese Änderungen ausdrücklich auf."
+                    : "Die Änderungen an dieser Welt sind noch nicht in einer Projektdatei gespeichert.",
                 buttons: ["Speichern", "Verwerfen", "Abbrechen"],
                 defaultId: 0,
                 cancelId: 2,
                 noLink: true,
               })
             ).response;
-  if (response === 2) return false;
-  if (response === 1) return true;
-  return (await save(project)) !== null;
+  if (response === 2) return null;
+  if (response === 1)
+    return { boundary: project ? checkedBoundary(project) : null };
+  const prepared =
+    local.persistenceError || !project
+      ? await requestFileAction({ kind: "recover" })
+      : local;
+  if (!prepared || prepared.persistenceError)
+    throw new Error(
+      prepared?.persistenceError ?? "Der Editorstand wurde nicht bestätigt.",
+    );
+  if (!(await save(prepared))) return null;
+  return { boundary: checkedBoundary(prepared) };
+}
+
+async function replaceUnavailableStore(): Promise<void> {
+  store.terminate();
+  workingDirectory = mkdtempSync(join(app.getPath("temp"), "atlas-p0-"));
+  store = new StoreProcess(workingDirectory);
+  await store.ready;
 }
 
 function registerBridge() {
+  ipcMain.on(
+    FILE_ACTION_CHANNEL,
+    (
+      event,
+      reply: {
+        id?: number;
+        value?: PreparedDocument | null;
+        error?: string;
+      },
+    ) => {
+      try {
+        trustedSender(event);
+        const pending = pendingFileAction;
+        if (!pending || reply?.id !== pending.id) return;
+        pendingFileAction = null;
+        clearTimeout(pending.timer);
+        if (typeof reply.error === "string")
+          pending.reject(new Error(reply.error));
+        else {
+          try {
+            pending.resolve(
+              reply.value === null
+                ? null
+                : checkedPreparedDocument(reply.value),
+            );
+          } catch (error) {
+            pending.reject(
+              error instanceof Error ? error : new Error(String(error)),
+            );
+          }
+        }
+      } catch {
+        // Untrusted frames cannot settle the active editor's lifecycle request.
+      }
+    },
+  );
   ipcMain.handle(
     CHANNEL,
     async (event, request: { method?: string; argument?: unknown }) => {
@@ -315,26 +445,56 @@ function registerBridge() {
           )
             throw new Error("Ungültige Quellenänderung.");
           // Full numeric/payload validation belongs to the utility process, not UI Main.
-          return store.request("commit", argument);
+          const attempt = ++diagnosticCommitAttempts;
+          if (diagnostics) {
+            const delay = Number(process.env.ATLAS_P0_COMMIT_DELAY_MS ?? 0);
+            if (attempt === 1 && Number.isFinite(delay) && delay > 0)
+              await new Promise((resolveDelay) =>
+                setTimeout(resolveDelay, Math.min(delay, 5_000)),
+              );
+            const commitFault = process.env.ATLAS_P0_COMMIT_FAULT;
+            if (
+              commitFault === "always-before" ||
+              (commitFault === "before-once" && attempt === 1)
+            )
+              throw new Error(
+                "Diagnose: Schreibauftrag vor der Transaktion abgewiesen.",
+              );
+          }
+          const receipt = await store.request("commit", argument);
+          if (
+            diagnostics &&
+            process.env.ATLAS_P0_COMMIT_FAULT === "after-once" &&
+            attempt === 1
+          )
+            throw new Error(
+              "Diagnose: Bestätigung nach erfolgreicher Transaktion verloren.",
+            );
+          return receipt;
         }
         case "saveProject":
           checkedBoundary(argument);
           return oneFileAction(() => save(argument as unknown as SaveRequest));
         case "newProject":
           return oneFileAction(async () => {
-            const previous = await store.request<ProjectInfo>("status");
-            if (!(await mayReplace(previous))) return null;
-            return store.request("newProject", checkedBoundary(previous));
+            const permit = await mayReplace(checkedPreparedDocument(argument));
+            if (!permit) return null;
+            if (!permit.boundary) {
+              await replaceUnavailableStore();
+              return store.request("status");
+            }
+            return store.request("newProject", permit.boundary);
           });
         case "openProject":
           return oneFileAction(async () => {
-            const previous = await store.request<ProjectInfo>("status");
-            if (!(await mayReplace(previous))) return null;
+            const permit = await mayReplace(checkedPreparedDocument(argument));
+            if (!permit) return null;
             const path = await chooseOpen();
             if (!path) return null;
+            if (!permit.boundary) await replaceUnavailableStore();
             return store.request("openProject", {
               path,
-              expected: checkedBoundary(previous),
+              expected: permit.boundary ?? undefined,
             });
           });
         default:
@@ -443,7 +603,7 @@ async function start() {
   app.setName("Atlas Machbarkeitsversuch");
   await app.whenReady();
   Menu.setApplicationMenu(null);
-  const workingDirectory = mkdtempSync(join(app.getPath("temp"), "atlas-p0-"));
+  workingDirectory = mkdtempSync(join(app.getPath("temp"), "atlas-p0-"));
   store = new StoreProcess(workingDirectory);
   await store.ready;
   if (process.env.ATLAS_P0_PROJECT)
@@ -484,11 +644,22 @@ async function start() {
     if (closing) return;
     closing = true;
     void oneFileAction(async () => {
-      const previous = await store.request<ProjectInfo>("status");
-      if (!(await mayReplace(previous))) return;
-      await store.request("close", checkedBoundary(previous));
-      allowClose = true;
-      window.close();
+      let error: string | undefined;
+      let prepared: PreparedDocument | null = null;
+      try {
+        prepared = await requestFileAction({ kind: "prepare" });
+        if (!prepared) throw new Error("Der lokale Editorstand fehlt.");
+        const permit = await mayReplace(prepared);
+        if (!permit) return;
+        if (permit.boundary) await store.request("close", permit.boundary);
+        else store.terminate();
+        allowClose = true;
+        window.close();
+      } catch (failure) {
+        error = failure instanceof Error ? failure.message : String(failure);
+      } finally {
+        if (!allowClose) await requestFileAction({ kind: "resume", error });
+      }
     })
       .catch((error) =>
         dialog.showErrorBox(

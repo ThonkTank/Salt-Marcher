@@ -1,128 +1,69 @@
 # Aktueller Stand
 
-Stand: 8. November 2026. Regulärer Produkteinstieg bleibt Atlas V7 mit
-Dateiformat 22 und Generierungsrezept 4. Der optionale Electron-/Pixi-Höhenversuch
-verwendet Format 24 (`atlas-p0-height-2`). [README](../../README.md) enthält
-Befehle, [Architektur](../architecture.md) Zuständigkeiten und
-[Produktvertrag](../product-contract.md) Verhalten und Grenzen.
-
-## Ergebnis und Auftragsgrenze
-
-Die beauftragten nächsten Schritte des [Aufräumplans](atlas-rebuild-plan.md)
-sind implementiert: D11, lokale Rasterpriorität und reine Reads während des
-Speicherns. Die Funktionsnachweise bestehen am gebauten Produktquellstand.
-**Die Leistungsabnahme bleibt offen:** Der große warme Pinsel überschreitet in
-zwei von drei kurzen Proben 50 ms; die native Referenz ist weiterhin blockiert.
-Der vollständige F01–F19-Ausbau P1–P9 wartet deshalb auf das bestehende P0-Gate.
+Stand: 8. November 2026. Atlas V7 bleibt der reguläre Produkteinstieg mit
+Dateiformat 22; der optionale Electron-/Pixi-Höheneditor verwendet Format 24.
+[README](../../README.md) enthält Befehle, [Architektur](../architecture.md)
+Zuständigkeiten und [Produktvertrag](../product-contract.md) Verhalten und Grenzen.
 [PR #1469](https://github.com/ThonkTank/Salt-Marcher/pull/1469) bleibt Draft.
 
-## Umgesetzt und vereinfacht
+## Konsolidierung und verbleibende Abnahme
 
-- Eine aus Quellen und tatsächlich eingereichtem lokalem Terrain abgeleitete
-  Freigabe steuert UI, Gestenbeginn und lesende Beobachtung. Alte Ansichten oder
-  bloß geladene Daten geben keine Bearbeitung frei. Schraffur, wartender Pinsel,
-  Status und Wiederholen bei Ladefehlern machen den Zustand sichtbar.
-- Ein früher Druck beginnt keine Modellgeste. Halten und Bewegen lösen später
-  nichts aus; Loslassen und ein neuer Druck sind erforderlich. `pressPending`,
-  wartende Quellengesten und der Punktepfad sind entfernt. Der aktuelle
-  Werkzeugbedarf lädt unabhängig von einer Geste. Es bleiben höchstens der
-  neueste Eingabepunkt und eine noch nicht dargestellte angenommene Dosis.
-- Ein Dispatcher priorisiert angenommene lokale Änderungen, lokalen Bildaufbau
-  und anschließend übrige sichtbare Kacheln. Bedarfsklassen werden nicht im selben
-  Batch vermischt. Nach vier konkurrierenden lokalen Batches darf höchstens eine
-  Restkachel fortschreiten. Ein Worker, eine laufende Anfrage und gemeinsame
-  Quellen je synchronem Batch bleiben erhalten.
-- `readRegion` und `readPresentation` umgehen die Mutationsqueue während
-  asynchroner Save-Phasen im selben Speicherprozess. Mutationen und
-  Dateilebenszyklus bleiben geordnet. Der ungenutzte `readTiles`-Vertrag ist
-  vollständig entfernt. Beide Antwortpfade teilen Session-/Sequenzprüfung und
-  synchrone Übernahme; ein Ack kann benötigte Patches nicht dazwischen freigeben.
-- Der Cold-Collector startet unmittelbar nach der lokalen Freigabe. Danach
-  gelten dieselben Live- und 50-ms-Regeln wie beim warmen Strich. Quellen,
-  Freigabe-Submit und native Bereitschaftspräsentation bleiben getrennt. Frühe
-  blockierte Gesten und der tatsächlich sichtbare Hinweis zum erneuten Druck
-  werden separat geprüft.
+Das begrenzte [Konsolidierungspaket K1–K6](atlas-rebuild-plan.md#aktueller-auftrag-p0-konsolidierung-k1k6)
+folgt dem Review dieses PR. Lokale Freigabe, zeitabhängige Höhengesten, numerische
+Übersichten, begrenzter Rasterdispatcher und Reads während Save bleiben die Grundlage.
+Der vollständige F01–F19-Ausbau P1–P9 ist weiterhin an das offene P0-Gate gebunden.
 
-Kurze gültige Klicks, fortlaufendes Halten, stärkere langsame Züge, eine
-Undo-Aktion je Strich und begrenzte Dosen bleiben erhalten. Vollständig außerhalb
-des Fensters oder nach Resize wirkt eine gehaltene Geste nicht an einem falschen
-Ort weiter. Datenmodell, numerische Übersichten, Dateiformat und V7-Fachfunktionen
-wurden nicht ersetzt. P0 ist weiterhin kein vollständiger V7-Ersatz.
+| Paket                  | Implementierter Stand                                                                                                                                                                                                                  |
+| ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| K1 Lebenszyklus        | Neu/Öffnen/natives Schließen schließen dieselbe lokale Geste ab und warten alle angenommenen Writes ab. Save/Discard/Cancel beurteilt den vollständigen lokalen Stand. Fehler und Abbruch erhalten das Dokument.                       |
+| K2 Schreibfehler       | Dauerhafter sichtbarer Persistenzfehler; erhaltene ChangeSets werden erst nach Session-/Sequenzabgleich über denselben idempotenten Transaktionspfad wiederholt. Verlorene Bestätigungen führen nicht zu doppelten Änderungen.         |
+| K3 Nativer Nachweisweg | Explizites Referenzprofil, Umgebungsabgleich, kleine Traceprobe und Vorprüfung vor Fixtures. Fehlende Präsentationszuordnung bleibt ein eigener Implementierungsblocker; die native Abnahme bleibt offen.                              |
+| K4 CI/Paket            | Echter Normalstart, Rendererhänger und Dateilebenszyklus sind Teil des bestehenden Aggregatchecks. Ein separater Schritt baut und startet das P0-Paket. Die Laufzeit-Allowlist schließt das Archiv auch im vollständigen Checkout aus. |
+| K5 Bereinigung         | Tote Quellen-/Snapshot-/JSON-APIs samt Spiegeltests entfernt. Auswertertypen kommen direkt aus geprüftem JavaScript/JSDoc. Bestehende Dokumente gekürzt und nach Zuständigkeit geordnet.                                               |
+| K6 Großpinsel          | Diagnose zerlegt Eingabe→Modell→Dispatch→Worker→Rückweg→Upload→Submit. Die kurze Gegenprobe am sauberen Integrationsstand steht noch aus.                                                                                              |
 
-## Funktionsnachweise
+## Bisherige Funktionsprüfung dieses Pakets
 
-| Prüfung                                                        | Ergebnis                                                                                                                                                                                                  |
-| -------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Editor, Modell, Renderer, Beobachtung und Auswerter            | **194 Tests bestanden**, beide TypeScript-Prüfungen bestanden                                                                                                                                             |
-| SQLite-/Utility-Dispatcher und Skalierungsfixtures in Electron | **15 Tests bestanden**; beide Reads vor Snapshotende, geordneter Write danach, Export exakt S und Reopen erhalten                                                                                         |
-| Regulärer Start ohne Diagnose                                  | **14 Checks bestanden**: echte Pixel, Zahlentwürfe, Undo/Redo, Speichern und Öffnen; keine Diagnoseanbindung und keine Fehler                                                                             |
-| Navigation und Coastworkflow                                   | **16 Checks und fünf Fehlerkontrollen bestanden**, einschließlich Halten, langsamer Bewegung und Dateineustart                                                                                            |
-| 32 / 1.024 / 9.000 echte Quellen                               | **Alle drei Rundläufe bestanden**, einschließlich grober Bearbeitung, geschützter Feindaten, Detailrückkehr, History, Save und Neustart                                                                   |
-| Echter 500-ms-Renderer-Hänger                                  | **26 Checks in zwei Fällen bestanden**: bei Loslassen 0 ms des Hängers als Dosis; beim Weiterhalten 48,5 ms angenommen und 451,5 ms verworfen; keine Nachholdosis, ein Undo stellt den Ausgang wieder her |
+Der gemeinsame Entwicklungsbuild enthält die vollständigen Produktänderungen.
+Sein Produktquellhash lautet
+`fb3aa5ef25297b344572189643880db57c46d7d88a06c46c9899c6a2a08b4a87`.
+Sein Manifest ist wegen der noch uncommitteten Integration als dirty markiert;
+diese Läufe werden nicht als native Leistungsabnahme verwendet.
 
-Das Repository-Gate `Candidate · exact-SHA aggregate` wird am veröffentlichten
-PR-Head geprüft; maßgeblich sind dessen [Checks](https://github.com/ThonkTank/Salt-Marcher/pull/1469/checks).
-Die lokale Umgebung besitzt kein `cargo`; Rust-/Vertragsgenerator-/RPM-Prüfungen
-werden deshalb durch dieses Gate belegt. Der frühere grüne CI-Lauf auf `b0f1587`
-wird nicht als Freigabe des neuen Produktstands verwendet.
+| Prüfung                                         | Ergebnis                                                                                                                                                                                            |
+| ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Produkt-TypeScript, Auswerter-CheckJs, P0-Tests | Bestanden; 196 P0-Tests einschließlich Zeitzerlegung.                                                                                                                                               |
+| Echter Dateilebenszyklus                        | 51 Checks in 13 Appfällen bestanden: aktive Geste, zwei lokale ausstehende Writes und abgewiesener Write jeweils mit Save/Discard/Cancel; verlorene Bestätigung, dauerhafter Fehler und Neu/Öffnen. |
+| Normalstart ohne Diagnose                       | 13 Checks bestanden: sichtbare Pixel, Feldentwürfe, Undo/Redo, Speichern, Öffnen und neuer Prozess.                                                                                                 |
+| Echter 500-ms-Rendererhänger                    | 19 Checks bestanden: keine Nachholdosis nach Loslassen, begrenzte Annahme beim Weiterhalten und danach tatsächlich fortgesetzte Wirkung.                                                            |
+| Forge-Anwendungsverzeichnis                     | 130 ASAR-Einträge geprüft; keine Archive/Quellen/unnötigen Laufzeitmodule, native SQLite vorhanden. Echter Paketstart mit 13 Funktionschecks bestanden.                                             |
 
-## Gemessene Richtung und verbleibender Fehler
+Rohbelege liegen ignoriert unter `artifacts/atlas-rebuild/` in
+`consolidation-lifecycle/`, `consolidation-normal/`, `consolidation-stall-complete/`
+und `ci-package/`. Der abschließende saubere Build, Storetests, Zeitprobe und
+Repository-Checks werden vor der endgültigen Übergabe ergänzt.
 
-Die folgende kurze Collection lief mit Electron 44.10.2, 1.440 × 960, DPR 1 und
-ANGLE/SwiftShader. Es sind **Submission-Proxies einzelner kurzer Gesten**, keine
-native Präsentationsabnahme und keine belastbare allgemeine p95-Verteilung.
+## Offene P0-Grenzen
 
-| Fall                                          | Gemessene Zeiten und Ergebnis                                                                                                                               |
-| --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Kleiner warmer Pinsel, drei Proben            | Edit→Submit p95 **42,8 / 29,6 / 29,8 ms**; Inhalt, Live-Verlauf und Undo bestehen                                                                           |
-| Großer warmer Pinsel, drei Proben             | Edit→Submit p95 **54,3 / 68,7 / 50,0 ms**; Inhalt und Undo bestehen, zweimal Zeitfehler                                                                     |
-| Grob über fein / warme Bearbeitung unter Last | Je ein Fall mit **47,7 / 33,9 ms** Edit→Submit p95; Inhalt, Live-Verlauf und Undo bestehen                                                                  |
-| Kalter Ort                                    | Quellen **21,6 ms**, lokale Freigabe **49,9 ms** nach Navigation; erster freigegebener Edit **40,8 ms**, Navigation→erste geänderte Submission **99,1 ms**  |
-| Kalter Ort während Save                       | Quellen **19,0 ms**, lokale Freigabe **53,7 ms** nach Navigation; erster freigegebener Edit **47,6 ms**, Navigation→erste geänderte Submission **104,8 ms** |
+Die bisherige große warme SwiftShader-Probe lag bei 54,3 / 68,7 / 50,0 ms
+Edit→Submit-p95 und belegt das 50-ms-Ziel nicht. Die neue Zeitzerlegung darf diese
+Werte weder umdeuten noch Schwellen absenken. Ein begründeter Renderumbau folgt
+nur aus einem dominierenden gemessenen Zeitanteil.
 
-Im kalten Lastfall antworten die Quellen während des tatsächlich noch laufenden
-Snapshots; auch der Edit überlappt ihn. Die frühere Probe wartete ungefähr
-509 ms allein bis zu den Quellen und 690,5 ms bis zur ersten geänderten Submission.
-Die damalige Datenbereitschaft ist ausdrücklich nicht dieselbe Freigabe wie D11.
-Die neue Collection bleibt insgesamt **FAIL**: Nach den beiden großen Zeitfehlern
-wurden die jeweiligen Gruppen abgebrochen. **10 von 18 Fällen** wurden ausgeführt;
-acht fehlen. Die späteren kalten Ergebnisse machen diese Ausfälle nicht grün.
+Native Bildschirmpräsentation ist weiterhin nicht nachgewiesen. Dem gepinnten
+Electron-/Traceadapter fehlt die belegte Zuordnung einer Atlas-Generation zu
+ihrem tatsächlich dargestellten Frame. Ein benannter Rechner, Capture, RAF oder
+erster Folgeframe ersetzt sie nicht. Ohne geeignete Anbindung endet die native
+Vorprüfung vor der teuren Sammlung. Zusätzlich besitzt diese Arbeitsumgebung
+kein natives Display. Vollständige native Stichprobe und installierte RPM-Abnahme
+bleiben offen.
 
-Ein zusätzlicher Versuch, fertige Ergebnisse unmittelbar beim Worker-Eingang zu
-veröffentlichen, wurde [zurückgenommen](https://github.com/ThonkTank/Salt-Marcher/commit/ad63fea7c8698f2b68d77b2ca0f13e48493419d5).
-Er verkürzte diesen Teil der Wartezeit, belegte aber keine verlässliche
-Gesamtverbesserung: 52,2 ms bei Up und ein unveränderter letzter kleiner
-Strichabschnitt blieben in seiner Probe. Der Controller war dabei unverändert;
-eine neue D11-Ursache ist nicht nachgewiesen. Die einfachere RAF-Veröffentlichung
-bleibt bestehen. Die verworfene Variante ist keine neue Ausgangsbasis und ihre
-Berichte ersetzen keinen Nachweis des beibehaltenen Produktstands.
+Das Repository-Gate `Candidate · exact-SHA aggregate` prüft den veröffentlichten
+PR-Head; maßgeblich sind dessen [Checks](https://github.com/ThonkTank/Salt-Marcher/pull/1469/checks).
+Lokal fehlen `cargo` und `rpmbuild`; Rust, Vertragsgenerator und RPM-Bau werden
+über diesen bestehenden CI-Weg geprüft. Ein Paketstart ist kein Beleg einer
+RPM-Installation oder nativer Leistungsziele.
 
-## Identität, Belege und nächste Übergabe
-
-Der abschließend gebaute Produktcommit ist
-[`ad63fea`](https://github.com/ThonkTank/Salt-Marcher/commit/ad63fea7c8698f2b68d77b2ca0f13e48493419d5).
-Sein Produktquellhash ist
-`44852ffb3f5f4143bc937e12c8cc802ae288ca783018b78285f838e17faf9a1c`.
-Die Collection lief aus sauberem lokalem `bf83faa` mit exakt demselben
-Produktquellhash; ihr Harness enthält bereits die Prüfung des sichtbaren
-Loslasshinweises. Abschließende Interaktions-, Skalierungs-, Normalstart- und
-Hängerläufe verwenden den tatsächlich ausgeführten Build von `ad63fea`.
-Der abschließende Dokumentationscommit ändert weder Produkt noch Harness.
-
-Rohbelege liegen unter `artifacts/atlas-rebuild/`: `d11-collection/`,
-`d11-final-interactions/`, `d11-final-scaling/`, `d11-final-normal/`,
-`d11-final-stall/` und `d11-native-preflight/`. Die verworfene Variante steht unter
-`d11-publish-collection/` und den weiteren `d11-publish-*/`-Pfaden; ihr
-Produktquellhash beginnt mit `1b593154`. Checklogs liegen unter
-`src-tauri/target/diagnostics/d11-checks/`. Historische Rohberichte bleiben
-unverändert; der [vorherige Prüfstand](https://github.com/ThonkTank/Salt-Marcher/blob/0c56dcc27676f1dcc749604d61e903747e8b7ffe/docs/implementation/status.md)
-ist weiterhin nachvollziehbar.
-
-Die native Vorprüfung endet vor Fixtureerzeugung mit Exit 2 und
-`NO_NATIVE_DISPLAY`. Qualifizierte Referenz, echte Präsentationszuordnung und
-vollständige native Stichprobe fehlen. P0 bleibt offen; P1–P9 werden nicht
-vorzeitig als erledigt markiert. Für den verbleibenden großen warmen Fall müssen
-vor weiteren Eingriffen die noch zusammengefassten Wartezeiten zwischen Dispatch,
-Worker und Main-Thread-Antwort getrennt werden. Der untersuchte Gridaufbau war
-nicht dominant. Keine zusätzliche Cachehierarchie, weitere Worker oder niedrigere
-Zeitgrenzen sind durch die bisherigen Befunde gerechtfertigt.
+Der [vorherige Prüfstand](https://github.com/ThonkTank/Salt-Marcher/blob/6855e6cdc11894548b5a73f8ba736be85cb2aaee/docs/implementation/status.md)
+enthält die historische D11-Collection und deren Identitäten. Seine erfolgreichen
+Teilprüfungen gelten nicht automatisch für diesen Integrationsstand.

@@ -90,13 +90,28 @@ function Atlas() {
           </span>
         </div>
         <nav aria-label="Datei">
-          <button onClick={() => action((e) => e.newProject())}>Neu</button>
-          <button onClick={() => action((e) => e.open())}>Öffnen</button>
-          <button className="primary" onClick={() => action((e) => e.save())}>
+          <button
+            disabled={state?.fileAction || state?.recovering}
+            onClick={() => action((e) => e.newProject())}
+          >
+            Neu
+          </button>
+          <button
+            disabled={state?.fileAction || state?.recovering}
+            onClick={() => action((e) => e.open())}
+          >
+            Öffnen
+          </button>
+          <button
+            disabled={state?.fileAction || state?.recovering}
+            className="primary"
+            onClick={() => action((e) => e.save())}
+          >
             Speichern
           </button>
           <button
             aria-label="Speichern unter"
+            disabled={state?.fileAction || state?.recovering}
             onClick={() => action((e) => e.save(true))}
           >
             …
@@ -282,10 +297,29 @@ function Atlas() {
           <span>GELÄNDESTUDIE</span>
           <strong>Vom Detail zur Region</strong>
         </div>
-        {(startupError || state?.error) && (
+        {(startupError || state?.persistenceError || state?.error) && (
           <div className="error-banner" role="alert">
-            {startupError || state?.error}
-            {!startupError && state?.loading && (
+            <span>
+              {startupError || state?.persistenceError || state?.error}
+              {state?.persistenceError && (
+                <small>
+                  Die Änderungen bleiben im Editor erhalten. Speicherstand
+                  prüfen oder bei Neu, Öffnen beziehungsweise Schließen
+                  ausdrücklich verwerfen.
+                </small>
+              )}
+            </span>
+            {!startupError && state?.persistenceError && (
+              <button
+                disabled={state?.recovering || state?.fileAction}
+                onClick={() => action((e) => e.recoverWrites())}
+              >
+                {state?.recovering
+                  ? "Speicherstand wird geprüft …"
+                  : "Speicherstand prüfen"}
+              </button>
+            )}
+            {!startupError && !state?.persistenceError && state?.loading && (
               <button onClick={() => action((e) => e.retryLoad())}>
                 Erneut laden
               </button>
