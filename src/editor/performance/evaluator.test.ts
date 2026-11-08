@@ -7,6 +7,9 @@ import {
   evaluateColdSubmissionDiagnostics,
   extractEditSamples,
   checkBuildIdentity,
+  evaluateFunctional,
+  P0_FUNCTIONAL_CHECKS,
+  P0_REQUIREMENTS,
 } from "../../../scripts/atlas-p0-evaluate.mjs";
 import { analyzeTrace, parseTrace } from "../../../scripts/atlas-p0-trace.mjs";
 
@@ -125,6 +128,7 @@ function knownGood() {
     runs: [
       {
         id: "release-1",
+        independentRunId: "release-1",
         instanceId: "process-1",
         scenarios: [
           {
@@ -137,6 +141,389 @@ function knownGood() {
     ],
   };
 }
+
+function knownFunctional() {
+  return {
+    errors: [] as unknown[],
+    runs: [
+      {
+        id: "workflow",
+        independentRunId: "release-1",
+        instanceId: "workflow-1",
+        role: "scenario",
+        scenarios: [],
+      },
+    ],
+    functional: {
+      // The evaluator must recompute this summary, never trust it.
+      passed: true,
+      checks: P0_FUNCTIONAL_CHECKS.map((id) => ({
+        id,
+        independentRunId: "release-1",
+        passed: true,
+        ...(id === "continuous-stroke-live"
+          ? {
+              liveBeforeRelease: true,
+              firstLiveAt: 100,
+              releasedAt: 500,
+              checkedIntermediateStates: 3,
+            }
+          : {}),
+      })),
+    },
+    scaling: {
+      passed: true,
+      cases: [32, 1024, 9000].map((sourceTiles) => ({
+        id: `scale-${sourceTiles}`,
+        sourceTiles,
+        decodedBytes: sourceTiles * 32_768,
+        passed: true,
+        coarseReadiness: {
+          documentSourceBytes: 32_768,
+          rendererSourceBytes: 32_768,
+          workerSourceBytes: 32_768,
+        },
+        coarseEdit: {
+          documentSourceBytes: 65_536,
+          rendererSourceBytes: 65_536,
+          workerSourceBytes: 65_536,
+        },
+        stageReadDeltas: {
+          coarseReadiness: {
+            reads: 1,
+            returnedTiles: 1,
+            returnedBytes: 32_768,
+          },
+          coarseEdit: { reads: 0, returnedTiles: 0, returnedBytes: 0 },
+        },
+      })),
+    },
+    negativeControls: P0_REQUIREMENTS.requiredFaultControls.map((spec) => ({
+      ...spec,
+      passed: true,
+      observedFault: spec.fault,
+      primaryPassed: false,
+      recovery: { primaryCheck: spec.primaryCheck, passed: true },
+    })),
+  };
+}
+
+describe("representative functional evidence controls the aggregate", () => {
+  it("accepts complete behavior, real source-size coverage, and fault recovery", () => {
+    expect(evaluateFunctional(knownFunctional())).toEqual({
+      status: "PASS",
+      passed: true,
+      failures: [],
+    });
+  });
+
+  it.each([
+    "visible-zoom",
+    "pan-anchor",
+    "continuous-stroke-live",
+    "continuous-stroke-undo",
+    "cold-edit-content",
+    "world-detail-roundtrip",
+  ])("rejects a missing, duplicate, or failed %s check", (id) => {
+    for (const corruption of ["missing", "duplicate", "failed"]) {
+      const report = knownFunctional();
+      const index = report.functional.checks.findIndex((c) => c.id === id);
+      if (corruption === "missing") report.functional.checks.splice(index, 1);
+      else if (corruption === "duplicate")
+        report.functional.checks.push({ ...report.functional.checks[index] });
+      else report.functional.checks[index].passed = false;
+      expect(report.functional.passed).toBe(true);
+      expect(evaluateFunctional(report).passed).toBe(false);
+    }
+  });
+
+  it("requires intermediate terrain evidence before pointer release", () => {
+    for (const corrupted of [
+      { liveBeforeRelease: false },
+      { firstLiveAt: undefined },
+      { releasedAt: undefined },
+      { firstLiveAt: 500 },
+      { firstLiveAt: 510 },
+      { checkedIntermediateStates: 1 },
+      { checkedIntermediateStates: 2.5 },
+    ]) {
+      const report = knownFunctional();
+      Object.assign(
+        report.functional.checks.find(
+          (c) => c.id === "continuous-stroke-live",
+        )!,
+        corrupted,
+      );
+      expect(evaluateFunctional(report).failures).toContainEqual({
+        code: "CONTINUOUS_STROKE_LIVE_EVIDENCE_MISSING",
+        run: "release-1",
+        check: "continuous-stroke-live",
+      });
+    }
+  });
+
+  it("does not hide a failed extra check or runner failure behind required passes", () => {
+    const report = knownFunctional();
+    report.functional.checks.push({
+      id: "additional-content-invariant",
+      independentRunId: "release-1",
+      passed: false,
+    });
+    expect(evaluateFunctional(report).failures).toContainEqual({
+      code: "FUNCTIONAL_CHECK_FAILED",
+      run: "release-1",
+      check: "additional-content-invariant",
+    });
+    report.functional.checks.pop();
+    report.errors.push({ code: "SOURCE_READ_FAILED" });
+    expect(evaluateFunctional(report).passed).toBe(false);
+  });
+
+  it("requires the checks in every release rather than accepting one good release", () => {
+    const report = knownFunctional();
+    report.runs.push({
+      ...report.runs[0],
+      id: "workflow-2",
+      independentRunId: "release-2",
+      instanceId: "workflow-2",
+    });
+    expect(evaluateFunctional(report).failures).toContainEqual({
+      code: "FUNCTIONAL_CHECK_MISSING_OR_FAILED",
+      run: "release-2",
+      check: "visible-zoom",
+    });
+    report.functional.checks.push(
+      ...report.functional.checks.map((c) => ({
+        ...c,
+        independentRunId: "release-2",
+      })),
+    );
+    expect(evaluateFunctional(report).passed).toBe(true);
+  });
+
+  it("cannot approve omitted, undersized, or failed source-scaling cases", () => {
+    for (const corruption of ["missing", "too-small", "failed", "error"]) {
+      const report = knownFunctional();
+      if (corruption === "missing") report.scaling.cases.pop();
+      if (corruption === "too-small")
+        Object.assign(report.scaling.cases[2], {
+          sourceTiles: 8192,
+          decodedBytes: 256 * 1024 ** 2,
+        });
+      if (corruption === "failed") report.scaling.cases[1].passed = false;
+      if (corruption === "error")
+        Object.assign(report.scaling.cases[1], {
+          error: "read exceeds 512 source tiles",
+        });
+      // An expected limit/failure is useful evidence, never successful scaling.
+      expect(report.scaling.passed).toBe(true);
+      expect(evaluateFunctional(report).passed).toBe(false);
+    }
+  });
+
+  it("rejects invented source-byte coverage and duplicated scale cases", () => {
+    const report = knownFunctional();
+    report.scaling.cases[2].decodedBytes = 9000;
+    expect(evaluateFunctional(report).failures).toContainEqual({
+      code: "SCALING_CASE_SIZE_INVALID",
+      case: "scale-9000",
+    });
+    const duplicate = knownFunctional();
+    duplicate.scaling.cases.push({ ...duplicate.scaling.cases[2] });
+    expect(evaluateFunctional(duplicate).passed).toBe(false);
+  });
+
+  it("requires bounded actual working sets before and during coarse editing", () => {
+    for (const stage of ["coarseReadiness", "coarseEdit"] as const) {
+      for (const field of [
+        "documentSourceBytes",
+        "rendererSourceBytes",
+        "workerSourceBytes",
+      ] as const) {
+        for (const invalid of [
+          undefined,
+          -1,
+          Number.NaN,
+          256 * 1024 ** 2 + 1,
+        ]) {
+          const report = knownFunctional();
+          Object.assign(report.scaling.cases[2][stage], { [field]: invalid });
+          expect(evaluateFunctional(report).passed).toBe(false);
+        }
+      }
+    }
+  });
+
+  it("rejects missing read evidence and a whole-large-fixture read despite small final caches", () => {
+    for (const stage of ["coarseReadiness", "coarseEdit"] as const) {
+      const missing = knownFunctional();
+      Object.assign(missing.scaling.cases[2].stageReadDeltas, {
+        [stage]: undefined,
+      });
+      expect(evaluateFunctional(missing).failures).toContainEqual({
+        code: "SCALING_SOURCE_READS_MISSING_OR_INVALID",
+        case: "scale-9000",
+        stage,
+      });
+      const allSources = knownFunctional();
+      allSources.scaling.cases[2].stageReadDeltas[stage] = {
+        reads: 1,
+        returnedTiles: 9000,
+        returnedBytes: 9000 * 32_768,
+      };
+      expect(evaluateFunctional(allSources).failures).toContainEqual({
+        code: "SCALING_SOURCE_READ_BUDGET_EXCEEDED",
+        case: "scale-9000",
+        stage,
+        returnedTiles: 9000,
+        returnedBytes: 9000 * 32_768,
+        maximumBytes: 256 * 1024 ** 2,
+      });
+    }
+  });
+
+  it.each(["ignore-zoom", "pointerup-render"])(
+    "requires %s to fail its real primary check and recover normally",
+    (fault) => {
+      for (const corruption of [
+        "not-injected",
+        "primary-passed",
+        "wrong-primary",
+        "wrong-failure",
+        "unexpected-exception",
+        "recovery-failed",
+        "control-failed",
+        "missing",
+        "duplicate",
+      ]) {
+        const report = knownFunctional();
+        const index = report.negativeControls.findIndex(
+          (c) => c.fault === fault,
+        );
+        const control = report.negativeControls[index];
+        if (corruption === "not-injected") control.observedFault = "none";
+        if (corruption === "primary-passed") control.primaryPassed = true;
+        if (corruption === "wrong-primary") control.primaryCheck = "unrelated";
+        if (corruption === "wrong-failure")
+          control.primaryFailureCode = "UNRELATED_TIMEOUT";
+        if (corruption === "unexpected-exception")
+          Object.assign(control, { mutant: { error: "renderer crashed" } });
+        if (corruption === "recovery-failed") control.recovery.passed = false;
+        if (corruption === "control-failed") control.passed = false;
+        if (corruption === "missing") report.negativeControls.splice(index, 1);
+        if (corruption === "duplicate")
+          report.negativeControls.push({ ...control });
+        expect(evaluateFunctional(report).passed).toBe(false);
+      }
+    },
+  );
+
+  it("propagates functional failure into the same native acceptance result", () => {
+    const timing = knownGood();
+    const report = { ...knownFunctional(), ...timing };
+    const requirements = {
+      ...oneCase,
+      requiredChecks: P0_FUNCTIONAL_CHECKS,
+      scaling: P0_REQUIREMENTS.scaling,
+      requiredFaultControls: P0_REQUIREMENTS.requiredFaultControls,
+    };
+    expect(evaluateAcceptance(report, requirements).passed).toBe(true);
+    report.scaling.cases[1].passed = false;
+    const failure = evaluateAcceptance(report, requirements);
+    expect(failure.status).toBe("FAIL");
+    expect(failure.failures).toContainEqual({
+      code: "SCALING_CASE_FAILED",
+      case: "scale-1024",
+    });
+  });
+});
+
+describe("release grouping preserves independent coverage", () => {
+  it("allows scenario subprocesses without pretending they are separate releases", () => {
+    const report = knownGood();
+    const next = structuredClone(report.runs[0]);
+    next.id = "second-scenario-process";
+    next.instanceId = "process-2";
+    next.scenarios[0].id = "second";
+    report.runs.push(next);
+    const requirements = {
+      ...oneCase,
+      scenarios: [
+        ...oneCase.scenarios,
+        { ...oneCase.scenarios[0], id: "second" },
+      ],
+    };
+    expect(evaluateAcceptance(report, requirements).passed).toBe(true);
+    expect(
+      evaluateAcceptance(report, { ...requirements, independentRuns: 3 })
+        .failures,
+    ).toContainEqual({
+      code: "INSUFFICIENT_INDEPENDENT_RUNS",
+      actual: 1,
+      required: 3,
+    });
+  });
+
+  it("does not use fault-control launches as release repetitions", () => {
+    const report = knownGood();
+    for (let index = 2; index <= 3; index++) {
+      const control = structuredClone(report.runs[0]);
+      Object.assign(control, {
+        id: `control-${index}`,
+        independentRunId: `release-${index}`,
+        instanceId: `process-${index}`,
+        role: "control",
+      });
+      report.runs.push(control);
+    }
+    expect(
+      evaluateAcceptance(report, { ...oneCase, independentRuns: 3 }).failures,
+    ).toContainEqual({
+      code: "INSUFFICIENT_INDEPENDENT_RUNS",
+      actual: 1,
+      required: 3,
+    });
+  });
+
+  it("rejects absent release identity instead of counting process IDs", () => {
+    const report = knownGood();
+    Object.assign(report.runs[0], { independentRunId: undefined });
+    expect(evaluateAcceptance(report, oneCase).failures).toContainEqual({
+      code: "INDEPENDENT_RUN_ID_MISSING",
+      run: "release-1",
+    });
+  });
+
+  it("fails omitted and duplicate scenarios even across separate subprocesses", () => {
+    const report = knownGood();
+    const duplicate = structuredClone(report.runs[0]);
+    duplicate.id = "second-process";
+    duplicate.instanceId = "process-2";
+    report.runs.push(duplicate);
+    expect(evaluateAcceptance(report, oneCase).failures).toContainEqual({
+      code: "MISSING_OR_DUPLICATE_SCENARIO",
+      run: "release-1",
+      scenario: "warm",
+    });
+    report.runs = [report.runs[0]];
+    report.runs[0].scenarios = [];
+    expect(evaluateAcceptance(report, oneCase).failures).toContainEqual({
+      code: "MISSING_OR_DUPLICATE_SCENARIO",
+      run: "release-1",
+      scenario: "warm",
+    });
+  });
+
+  it("retains a failed collection even when enough fast samples were captured", () => {
+    const report = knownGood();
+    Object.assign(report.runs[0].scenarios[0], { collectionPassed: false });
+    expect(evaluateAcceptance(report, oneCase).failures).toContainEqual({
+      code: "SCENARIO_COLLECTION_FAILED",
+      run: "release-1",
+      scenario: "warm",
+    });
+  });
+});
 
 describe("P0 acceptance cannot turn missing evidence into a pass", () => {
   it("accepts a complete independently specified fast profile", () => {
@@ -216,9 +603,11 @@ describe("P0 acceptance cannot turn missing evidence into a pass", () => {
     const report = knownGood();
     const second = structuredClone(report.runs[0]);
     second.id = "release-2";
+    second.independentRunId = "release-2";
     second.instanceId = "process-2";
     const third = structuredClone(report.runs[0]);
     third.id = "release-3";
+    third.independentRunId = "release-3";
     third.instanceId = "process-3";
     third.scenarios[0].samples = Array.from({ length: 100 }, (_, i) =>
       sample(i, 75),
@@ -353,6 +742,30 @@ describe("P0 acceptance cannot turn missing evidence into a pass", () => {
         actual: 80,
       }),
     );
+  });
+
+  it("does not substitute many live edits for missing pointerup samples", () => {
+    const report = knownGood();
+    report.runs[0].scenarios[0].samples = Array.from({ length: 101 }, (_, i) =>
+      Object.assign(sample(i), { inputKind: i < 100 ? "edit" : "pointerup" }),
+    );
+    const result = evaluateAcceptance(report, {
+      ...oneCase,
+      scenarios: [
+        {
+          ...oneCase.scenarios[0],
+          requiredInputKinds: ["edit", "pointerup"],
+        },
+      ],
+    });
+    expect(result.failures).toContainEqual({
+      code: "INSUFFICIENT_INPUT_KIND_SAMPLES",
+      run: "release-1",
+      scenario: "warm",
+      inputKind: "pointerup",
+      actual: 1,
+      required: 100,
+    });
   });
 });
 

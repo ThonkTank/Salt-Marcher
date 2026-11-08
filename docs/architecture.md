@@ -530,12 +530,30 @@ Kacheln. Bestätigte entfernte Quellen können aus dem Cache fallen, während ak
 und noch unbestätigte Änderungen erhalten bleiben. Ausgelagerte vorhandene
 Quellen werden wieder unbekannt.
 
+Der Controller fordert den Ausschnitt ohne Filter auf eine Quellenstufe an;
+der aktuelle Leser begrenzt einen Read auf 512 Quellkacheln. Mehr
+Treffer führen zu einem Fehler; es gibt dabei weder eine gekürzte Teillieferung
+noch Paging oder eine gröbere Ersatzquelle. Auch ein grober Ausschnitt kann
+deshalb an vielen darin liegenden feinen Autoren scheitern. Diese unveränderte
+P0-Grenze wird von den dichten Skalierungsfällen als Fehler erfasst; die für P3
+geplante Skalierung ist damit noch nicht umgesetzt.
+
 Ein angenommener Gestenabschnitt ändert das lokale Modell direkt. Der Abschluss
 fasst die angenommenen Abschnitte zu einem Undo-Schritt zusammen und erzeugt
-Patches ausschließlich für berührte Kacheln. Vorherbilder bleiben in der lokalen
+Patches ausschließlich für berührte Kacheln. Er fordert einen abschließenden
+Zeichenframe auch dann an, wenn die letzte Live-Änderung bereits dargestellt
+war. Die Eingabe beim Loslassen wird erst von dieser tatsächlichen
+Renderübergabe bestätigt. Vorherbilder bleiben in der lokalen
 History; nur Nachherbilder gehen an den Store. Undo und Redo erzeugen ebenfalls
-geordnete Patchtransaktionen. Der Store prüft Session, Sequenz und
-Transaktionsidentität; identische Wiederholungen werden bestätigt, widersprüchliche
+geordnete Patchtransaktionen. Für die Darstellung übergibt
+`WorldRenderer.updateSourcePatches` eigene Kopien der autoritativen
+Patch-Nachherbilder an den Rasterworker; entfernte Quellen werden ausdrücklich
+mitgeteilt. Die Dirtybereiche begrenzen weiterhin die Rasterinvalidierung,
+werden für diesen Quelltransfer aber nicht erneut als vollständiger Ausschnitt
+gelesen. Dadurch hängt der Quelltransfer einer groben History-Aktion nicht von
+unveränderten feinen Quellen ab, die inzwischen aus dem Cache ausgelagert
+wurden. Der Store prüft Session, Sequenz und Transaktionsidentität; identische
+Wiederholungen werden bestätigt, widersprüchliche
 Wiederholungen abgelehnt. Live-Revision, bestätigte Arbeitskopie und gespeicherte
 Projektsequenz sind getrennt. Speichern fixiert einen SQLite-Lesesnapshot und
 veröffentlicht ihn über eine synchronisierte temporäre Datei mit atomarem Rename;
@@ -545,17 +563,78 @@ Darstellungskacheln mit 128 × 128 Pixeln sind abgeleitet und von Autorenkacheln
 getrennt. Lokale Dirtybereiche begrenzen Rasterarbeit und Uploads. Kameraoffsets
 werden vor der GPU-Übergabe abgezogen; Session, Revision und monotone Kacheltokens
 schützen vor überholten Ergebnissen. `budgets.ts` begrenzt Quell-, History-,
-Präsentations-, GPU- und Pending-Speicher sowie Arbeit pro Frame. Diese Mechanismen
-und die kleinen echten Küsten-/Grabenfixtures sind ein P0-Ausschnitt; die
-Skalierungsabnahme mit großer feiner Datenbelegung bleibt eine spätere Aufgabe.
+Präsentations-, GPU- und Pending-Speicher sowie Arbeit pro Frame.
+
+Hintergrundarbeit und ihre Beobachtungsstatistik gehören zur jeweiligen
+Projektsession. Beim Projektwechsel setzt der Controller die Statistik zurück
+und bricht die bisherige Arbeit ab; Antworten einer anderen Session werden
+verworfen. Busy-Prüfungen verlangen Fortschritt aus der aktuellen Session und
+eine tatsächliche zeitliche Überlappung mit erfolgreich ausgeführten
+Speichersnapshots beziehungsweise deren Veröffentlichung. Ein altes
+`active`-Flag oder der bloße Start eines Workers ist kein Belastungsnachweis.
 
 Der P0-Runner startet die gebaute Electron-Anwendung mit echter Persistenz im
 Utility-Prozess und protokolliert Inhalte, Änderungen, Dateirundläufe und
-Chromium-Traces. Im Headless-Labor zeichnet SwiftShader; `displayHz: 0` qualifiziert kein
+Chromium-Traces. Reine Zustandsabfragen übertragen das Ereignisjournal nicht.
+Messungen lesen über einen monotonen Journalcursor alle Ereignisse seit ihrem
+Beginn; das vollständige Journal bleibt für den Abschlussdump erhalten. So
+wächst die Übertragungsarbeit einer Zustandsabfrage nicht mit der bisherigen
+Laufdauer. Journalgrenze und Zähler verworfener Ereignisse bleiben unverändert.
+`atlas-p0-interactions.mjs` prüft sichtbaren Zoom, den
+Kameraanker beim Verschieben, fortlaufende Striche vor dem Loslassen,
+Bearbeitung nach kalter Navigation sowie den Weg zwischen Welt- und
+Detailansicht. Analytische Höhenproben, Bildinhalte und gespeicherte
+Feindaten-Hashes ergänzen die Zeitbeobachtung. Die verpflichtenden Störungen
+`ignore-zoom` und `pointerup-render` müssen den zugehörigen Inhaltscheck aus
+dem vorgesehenen Grund scheitern lassen; derselbe Check muss ohne Störung
+wieder bestehen. Dazu kommen die bestehenden verzögerten und ausgelassenen
+Renderläufe samt Erholung.
+
+`atlas-p0-collection.mjs` sammelt mit `--full` in drei unabhängigen Gruppen
+jeweils 100 echte bewegte Striche pro warmem Fall und 34 kalte Ortswechsel mit
+Bearbeitung pro kaltem Fall. Warme Fälle sind kleiner und großer Pinsel, grobe
+Bearbeitung über feinen Quellen und Bearbeitung unter Hintergrundlast samt
+Speichern. Die kalten Fälle laufen ohne und mit Hintergrundlast. Normales
+Projektöffnen erneuert vor jedem kalten Versuch den Anwendungscache; der noch
+ungeladene Zielausschnitt wird belegt. Die Zeitbasis beginnt mit der Navigation,
+und nach beobachteter Bereitschaft folgt eine gewöhnliche Eingabegeste. Ein
+kalter Betriebssystem-Dateicache wird nicht behauptet. Die Navigationsfälle
+mit und ohne Raster laufen je Gruppe mindestens 30 Sekunden.
+
+Eine Gruppe kann mehrere frische Szenarioprozesse enthalten; ihre gemeinsame
+`independentRunId` ordnet sie einer Wiederholung zu. Kontrollprozesse zählen
+nicht als zusätzliche Wiederholungen. Die Auswertung verlangt jeden Pflichtfall
+in jeder Gruppe, behält Fehlversuche bei und prüft laufende Eingaben und
+Pointerup getrennt. `--only` wählt eine unvollständige Diagnose aus und senkt
+die Anforderungen der Gesamtauswertung nicht.
+
+`atlas-p0-scaling.mjs` erzeugt echte SQLite-Projekte mit 32, 1024 und 9000
+Quellkacheln im selben groben Ausschnitt. Jede Kachel enthält 64 × 64
+`Float64`-Kontrollwerte; zusätzliche feine Kacheln tragen ein deterministisches
+Relief, während die lokalen Küsten- und Grabenproben erhalten bleiben. Die
+Quelldaten belegen dekodiert 1, 32 beziehungsweise 281,25 MiB und überschreiten
+im größten Fall das Quellbudget von 256 MiB. Die Daten entstehen in begrenzten
+echten Patchtransaktionen und werden gespeichert und wieder geöffnet. Ein
+Streaming-Digest über Schlüssel und feine Werte prüft deren Erhalt bei grober
+Bearbeitung, History und Dateirundlauf. Die Anwendung muss über normale
+Navigation und Eingaben denselben groben Bereich bearbeiten und in die
+Detailansicht zurückkehren. Die Prüfung erfasst Quellspeicher und zusätzliche
+Store-Reads bereits bei grober Datenbereitschaft und Bearbeitung, bevor ein
+späterer Cacheabbau die Belastung verdecken könnte. Feine Quellen dürfen dabei
+ausgelagert bleiben: kanonische Punktabfragen sind dann ausdrücklich unbekannt.
+Der grobe Ridge-Landpixel bleibt Pflicht; genaue Höhen aller geprüften Quellen
+müssen bei Detailrückkehr und in der gespeicherten Datei stimmen. So verlangt
+die Prüfung nicht das vollständige Laden der feinen Autoren für eine Übersicht.
+Der Busy-Fall verwendet
+zusätzlich eine Datei mit 9008 echten Quellkacheln und einer zweiten Küste als
+kaltes Ziel. Seine Speicherlast entsteht aus dem realen Dateiinhalt.
+
+Fehlende Inhalte, unvollständige Pflichtfälle, ungültige Kontrollen,
+überschrittene Budgets oder fehlende Busy-/Save-Überlappung verhindern das
+funktionale `PASS`. Der 512-Kachel-Fehler bleibt im Skalierungsergebnis rot.
+Im Headless-Labor zeichnet SwiftShader; `displayHz: 0` qualifiziert kein
 Referenzdisplay. Semantische Atlas-Generationen sind noch nicht beweisbar einer
 Compositor-Präsentation zugeordnet. Submission und RAF bleiben daher
-Diagnosewerte. P0a-Rust-Baseline und vollständige native Stichproben aus drei
-unabhängigen Release-Läufen fehlen; das native Gate bleibt `BLOCKED`.
-Ein fehlender Nachweis tatsächlicher Busy-/Save-Überlappung bleibt `OPEN` und kann
-den Lab-Lauf mit Exit 1 beenden. Befehle und Paketgrenzen stehen im README,
-Ergebnisse im Statusdokument.
+Diagnosewerte. P0a-Rust-Baseline und qualifizierter nativer Präsentationsnachweis
+fehlen; das native Gate bleibt auch bei vollständiger Sammlung `BLOCKED`.
+Befehle und Paketgrenzen stehen im README, Ergebnisse im Statusdokument.

@@ -6,11 +6,26 @@ export interface ObservationEvent {
   [key: string]: unknown;
 }
 
+export interface ObservationOptions {
+  /** Omit journal entries from this read without changing the retained journal. */
+  events?: boolean;
+  /** Return entries starting at this zero-based journal index. */
+  sinceEvent?: number;
+}
+
 /** Observes the product. It cannot complete a render, make sources ready, or edit. */
 export class Observation {
   private events: ObservationEvent[] = [];
   private serial = 0;
   dropped = 0;
+
+  get eventCount(): number {
+    return this.events.length;
+  }
+
+  get lastInputId(): number {
+    return this.serial;
+  }
 
   event(kind: string, details: Record<string, unknown> = {}): void {
     if (this.events.length >= editorBudgets.observationEvents) {
@@ -28,7 +43,12 @@ export class Observation {
         ? event.timeStamp - performance.timeOrigin
         : event.timeStamp;
     performance.mark(`atlas.input.${id}`);
-    this.event("input", { id, inputKind: kind, createdAt });
+    this.event("input", {
+      id,
+      inputKind: kind,
+      eventType: event.type,
+      createdAt,
+    });
     return id;
   }
 
@@ -37,7 +57,10 @@ export class Observation {
     this.event(kind, details);
   }
 
-  read(): ObservationEvent[] {
-    return this.events.map((event) => ({ ...event }));
+  read(options: ObservationOptions = {}): ObservationEvent[] {
+    if (options.events === false) return [];
+    return this.events
+      .slice(options.sinceEvent ?? 0)
+      .map((event) => ({ ...event }));
   }
 }

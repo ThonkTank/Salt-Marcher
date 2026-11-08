@@ -11,6 +11,14 @@ const run = (command, args, extraEnv = {}) => {
   if (result.status !== 0) process.exit(result.status ?? 1);
 };
 run(process.execPath, ["scripts/build-atlas-p0.mjs"]);
-run(require("electron"), ["--test", "desktop/project-store.test.mjs"], {
-  ELECTRON_RUN_AS_NODE: "1",
-});
+run(
+  require("electron"),
+  [
+    "--test",
+    "desktop/project-store.test.mjs",
+    "scripts/atlas-p0-scaling.test.mjs",
+  ],
+  {
+    ELECTRON_RUN_AS_NODE: "1",
+  },
+);

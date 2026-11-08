@@ -14,13 +14,29 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   evaluateAcceptance,
+  evaluateFunctional,
   evaluateSubmissionDiagnostics,
   evaluateColdSubmissionDiagnostics,
-  extractEditSamples,
   checkBuildIdentity,
   P0_REQUIREMENTS,
 } from "./atlas-p0-evaluate.mjs";
 import { analyzeTrace } from "./atlas-p0-trace.mjs";
+import {
+  snapshot,
+  stateSnapshot,
+  button,
+  brush,
+  exact,
+  position,
+  capture,
+  navigateTo,
+  zoomAndPan,
+  heldStroke,
+  waitForSaveCompletion,
+  observeStroke as observeDab,
+  waterPixel,
+  landPixel,
+} from "./atlas-p0-interactions.mjs";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
 process.chdir(root);
@@ -35,7 +51,29 @@ const executablePath = packaged
 const lab = argv.includes("--lab"),
   native = argv.includes("--native");
 const full = argv.includes("--full") || argv.includes("--acceptance");
-const controls = argv.includes("--negative-controls");
+const onlyIndex = argv.indexOf("--only");
+const only = onlyIndex < 0 ? null : argv[onlyIndex + 1];
+if (only && !["interactions", "scaling", "collection"].includes(only))
+  throw new Error("Unknown --only selection");
+const caseIndex = argv.indexOf("--case");
+const scenarioId = caseIndex < 0 ? null : argv[caseIndex + 1];
+const runsIndex = argv.indexOf("--runs");
+const selectedRuns = runsIndex < 0 ? null : Number(argv[runsIndex + 1]);
+if ((caseIndex >= 0 || runsIndex >= 0) && (only !== "collection" || !full))
+  throw new Error("--case/--runs require --full --only collection diagnostics");
+if (
+  caseIndex >= 0 &&
+  !P0_REQUIREMENTS.scenarios.some(
+    (scenario) => scenario.id === scenarioId && scenario.kind !== "navigation",
+  )
+)
+  throw new Error("Unknown collection case");
+if (
+  runsIndex >= 0 &&
+  (!Number.isInteger(selectedRuns) || selectedRuns < 1 || selectedRuns > 3)
+)
+  throw new Error("Diagnostic --runs must be 1, 2 or 3");
+let independentRunId = "pilot-1";
 const outIndex = argv.indexOf("--out");
 const out = resolve(
   outIndex >= 0
@@ -49,22 +87,35 @@ const out = resolve(
 );
 if (lab === native) {
   console.error(
-    "Usage: node scripts/atlas-p0-run.mjs (--lab | --native) [--executable packaged-binary] [--negative-controls] [--full] [--out directory]",
+    "Usage: node scripts/atlas-p0-run.mjs (--lab | --native) [--executable packaged-binary] [--full] [--only interactions|scaling|collection] [--case collection-id --runs 1|2|3] [--out directory]",
   );
   process.exit(2);
 }
 await mkdir(out, { recursive: true });
 const hash = (value) => createHash("sha256").update(value).digest("hex");
 const log = (message) => console.log(`[atlas-p0] ${message}`);
-if (native || full)
+if (full && only)
   log(
-    "This command collects a functional pilot. Full three-release P0 measurement collection is not implemented; acceptance remains blocked without the full manifest and exact presentation mapping.",
+    `Partial ${only} diagnostics in ${selectedRuns ?? 3} group(s)${scenarioId ? `; case ${scenarioId}` : ""}. Full acceptance still requires all cases and three independent complete runs.`,
+  );
+else if (full)
+  log(
+    "Full collection requests three independent complete scenario runs. Native acceptance still requires a qualified display and proven exact-frame presentation mapping.",
+  );
+else if (native)
+  log(
+    "Native pilot only; use --full for the required repetitions. Acceptance still requires a qualified display and proven exact-frame presentation mapping.",
   );
 const report = {
   schemaVersion: 1,
   mode: lab ? "lab" : "native",
-  scope:
-    "P0 functional height pilot; diagnostic sample counts are not release acceptance",
+  scope: only
+    ? `P0 partial ${only} diagnostics${scenarioId ? `: ${scenarioId}` : ""}`
+    : full
+      ? "P0 full scenario collection plus representative scaling"
+      : "P0 representative functional pilot plus scaling; limited timing samples",
+  selection: only ?? "all",
+  diagnosticSelection: { scenarioId, selectedRuns },
   startedAt: new Date().toISOString(),
   manifest: P0_REQUIREMENTS,
   excluded: [
@@ -96,7 +147,12 @@ const report = {
   errors: [],
 };
 const check = (id, passed, details = {}) => {
-  report.functional.checks.push({ id, passed: Boolean(passed), ...details });
+  report.functional.checks.push({
+    id,
+    independentRunId,
+    passed: Boolean(passed),
+    ...details,
+  });
   if (!passed) throw new Error(`Functional check failed: ${id}`);
 };
 const closeEnough = (actual, expected) =>
@@ -105,8 +161,16 @@ const closeEnough = (actual, expected) =>
     (value, index) =>
       Number.isFinite(value) && Math.abs(value - expected[index]) < 1e-7,
   );
-const snapshot = (page, points = []) =>
-  page.evaluate((points) => window.atlasObserve(points), points);
+// A coarse overview may evict fine authors. An unknown canonical sample stays
+// null; known values must still be exact. Detail views and saved files below
+// require every sample, so this never certifies missing fine data as preserved.
+const knownValuesAgree = (actual, expected) =>
+  actual.length === expected.length &&
+  actual.every(
+    (value, index) =>
+      value === null ||
+      (Number.isFinite(value) && Math.abs(value - expected[index]) < 1e-7),
+  );
 
 function fixtureCommand(...args) {
   const result = spawnSync(
@@ -116,7 +180,7 @@ function fixtureCommand(...args) {
       cwd: root,
       env: { ...process.env, ELECTRON_RUN_AS_NODE: "1" },
       encoding: "utf8",
-      timeout: 30_000,
+      timeout: 300_000,
       maxBuffer: 8 * 1024 ** 2,
     },
   );
@@ -128,6 +192,11 @@ function fixtureCommand(...args) {
 }
 
 async function launch(project, label, fault = "none") {
+  const role =
+    label.startsWith("control-") || label.startsWith("scaling-")
+      ? "control"
+      : "scenario";
+  if (role === "scenario") label = `${independentRunId}-${label}`;
   const sessionDirectory = join(out, label);
   await mkdir(sessionDirectory, { recursive: true });
   const env = {
@@ -267,6 +336,8 @@ async function launch(project, label, fault = "none") {
   });
   const instance = {
     id: label,
+    independentRunId,
+    role,
     instanceId: randomUUID(),
     pid: app.process().pid,
     executablePath,
@@ -338,120 +409,36 @@ async function launch(project, label, fault = "none") {
   };
 }
 
-async function exact(page, timeout = 20_000) {
-  await page.waitForFunction(
-    () => {
-      const o = window.atlasObserve();
-      if (o.state.error) throw new Error(o.state.error);
-      return (
-        !o.state.loading &&
-        o.events.some(
-          (event) =>
-            event.kind === "submit" &&
-            event.sessionId === o.sessionId &&
-            event.exactRevision === o.document.revision &&
-            event.cameraGeneration === o.renderer.viewGeneration,
-        )
-      );
-    },
-    null,
-    { timeout },
-  );
-}
-
 async function values(page, points) {
-  return (await snapshot(page, points)).samples;
-}
-async function button(page, name) {
-  await page
-    .getByRole("button", { name, exact: typeof name === "string" })
-    .click();
-}
-async function brush(page, diameter, amountFeet) {
-  await page.getByLabel("Pinselgröße", { exact: true }).fill(String(diameter));
-  await page
-    .getByLabel("Höhenänderung", { exact: true })
-    .fill(String(amountFeet * 0.3048));
-  await button(page, /Anheben/);
-}
-async function position(page, point = [0, 0]) {
-  const o = await snapshot(page);
-  const box = await page.locator("canvas").boundingBox();
-  if (!box) throw new Error("Canvas has no bounding box");
-  return {
-    x: box.x + box.width / 2 + (point[0] - o.camera.x) * o.camera.scale,
-    y: box.y + box.height / 2 + (point[1] - o.camera.y) * o.camera.scale,
-  };
+  return (await stateSnapshot(page, points)).samples;
 }
 async function dab(session, point = [0, 0], timeout = 5000) {
-  const before = await snapshot(session.page);
+  const before = await stateSnapshot(session.page);
   const at = await position(session.page, point);
   await session.page.mouse.move(at.x, at.y);
   await session.page.mouse.down();
   await session.page.mouse.up();
   return observeDab(session, before, timeout);
 }
-async function observeDab(session, before, timeout = 5000) {
-  const priorIds = new Set(
-    before.events.filter((e) => e.kind === "input").map((e) => e.id),
-  );
-  const cutoff = Math.max(0, ...priorIds);
-  await session.page.waitForFunction(
-    (cutoff) => {
-      const events = window.atlasObserve().events;
-      return ["edit", "pointerup"].every((kind) =>
-        events.some(
-          (e) => e.kind === "input" && e.id > cutoff && e.inputKind === kind,
-        ),
-      );
-    },
-    cutoff,
-    { timeout },
-  );
-  const early = await snapshot(session.page);
-  const ids = early.events
-    .filter(
-      (e) =>
-        e.kind === "input" &&
-        !priorIds.has(e.id) &&
-        ["edit", "pointerup"].includes(e.inputKind),
-    )
-    .map((e) => e.id);
-  let timedOut = false;
-  try {
-    await session.page.waitForFunction(
-      (ids) => {
-        const o = window.atlasObserve();
-        return ids.every((id) =>
-          o.events.some(
-            (e) =>
-              e.kind === "edit-submit" &&
-              e.input === id &&
-              e.sessionId === o.sessionId,
-          ),
-        );
-      },
-      ids,
-      { timeout },
-    );
-  } catch (error) {
-    if (error.name !== "TimeoutError") throw error;
-    timedOut = true;
-  }
-  const after = await snapshot(session.page);
-  return {
-    before,
-    after,
-    inputIds: ids,
-    timedOut,
-    samples: extractEditSamples(after.events, ids, after.sessionId),
-  };
-}
-
 async function editDuringActualSave(session, point) {
   const attempts = [];
   for (let attempt = 0; attempt < 3; attempt++) {
-    const before = await snapshot(session.page, [point]);
+    const worker = await stateSnapshot(session.page);
+    if (
+      worker.background.active !== true ||
+      worker.background.sessionId !== worker.sessionId
+    ) {
+      await button(session.page, "Hintergrundarbeit starten");
+      await session.page.waitForFunction(() => {
+        const o = window.atlasObserve([], { events: false });
+        return (
+          o.background.active === true &&
+          o.background.sessionId === o.sessionId &&
+          o.background.samples > 0
+        );
+      });
+    }
+    const before = await stateSnapshot(session.page, [point]);
     const at = await position(session.page, point);
     const previous = await session.app.evaluate(
       () => globalThis.__atlasHost.storeActivity?.() ?? [],
@@ -477,6 +464,19 @@ async function editDuringActualSave(session, point) {
           );
           if (active) {
             const contents = BrowserWindow.getAllWindows()[0].webContents;
+            const observedWorker = await contents.executeJavaScript(
+              "(() => { const o = window.atlasObserve([], { events: false }); return { sessionId: o.sessionId, background: o.background }; })()",
+            );
+            if (
+              observedWorker.background.active !== true ||
+              observedWorker.background.sessionId !== observedWorker.sessionId
+            )
+              return {
+                dispatched: false,
+                reason: "worker-finished-before-input",
+                observedActive: active,
+                observedWorker,
+              };
             const coordinates = { x: Math.round(at.x), y: Math.round(at.y) };
             contents.sendInputEvent({ type: "mouseMove", ...coordinates });
             contents.sendInputEvent({
@@ -485,13 +485,23 @@ async function editDuringActualSave(session, point) {
               clickCount: 1,
               ...coordinates,
             });
+            for (let step = 1; step <= 4; step++) {
+              await new Promise((resolve) => setTimeout(resolve, 24));
+              contents.sendInputEvent({
+                type: "mouseMove",
+                x: coordinates.x + step * 32,
+                y: coordinates.y + (step % 2) * 4,
+                modifiers: ["leftButtonDown"],
+              });
+            }
             contents.sendInputEvent({
               type: "mouseUp",
               button: "left",
               clickCount: 1,
-              ...coordinates,
+              x: coordinates.x + 128,
+              y: coordinates.y,
             });
-            return { dispatched: true, observedActive: active };
+            return { dispatched: true, observedActive: active, observedWorker };
           }
           await new Promise((resolve) => setTimeout(resolve, 1));
         }
@@ -503,13 +513,39 @@ async function editDuringActualSave(session, point) {
     const trigger = await monitor;
     if (!trigger.dispatched) {
       attempts.push({ attempt, trigger, overlapProven: false });
+      const started =
+        trigger.observedActive ??
+        (await session.app.evaluate(
+          (_electron, known) =>
+            globalThis.__atlasHost
+              .storeActivity()
+              .find(
+                (event) =>
+                  event.phase === "start" && !known.includes(event.token),
+              ),
+          known,
+        ));
+      if (started) await waitForSaveCompletion(session, started);
       continue;
     }
     const edit = await observeDab(session, before);
     const afterHeight = (await values(session.page, [point]))[0];
-    const activity = await session.app.evaluate(() =>
-      globalThis.__atlasHost.storeActivity(),
+    // Completion is only needed to verify the observed interval succeeded. The
+    // original native input and model/submission timestamps remain unchanged.
+    await session.page.waitForFunction(
+      () => {
+        const { state } = window.atlasObserve([], { events: false });
+        if (state.error) throw new Error(state.error);
+        return !state.writing;
+      },
+      null,
+      { timeout: 10_000 },
     );
+    const activity = await waitForSaveCompletion(
+      session,
+      trigger.observedActive,
+    );
+    const finished = await stateSnapshot(session.page);
     const intervals = activity
       .filter((e) => e.phase === "start" && !known.includes(e.token))
       .map((start) => ({
@@ -524,6 +560,7 @@ async function editDuringActualSave(session, point) {
       .filter((pair) => pair.end?.success === true);
     const matches = edit.samples
       .filter((sample) => sample.inputKind === "edit")
+      .slice(0, 1)
       .flatMap((sample) =>
         intervals
           .filter(({ start, end }) => {
@@ -543,7 +580,14 @@ async function editDuringActualSave(session, point) {
     const overlapProven =
       matches.length > 0 &&
       before.background.active &&
-      edit.after.background.active &&
+      before.background.sessionId === before.sessionId &&
+      trigger.observedWorker?.sessionId === before.sessionId &&
+      trigger.observedWorker?.background.sessionId === before.sessionId &&
+      trigger.observedWorker?.background.active === true &&
+      finished.background.sessionId === before.sessionId &&
+      Number.isFinite(before.background.samples) &&
+      before.background.samples > 0 &&
+      finished.background.samples > before.background.samples &&
       Number.isFinite(before.samples[0]) &&
       Number.isFinite(afterHeight) &&
       afterHeight > before.samples[0] &&
@@ -560,94 +604,20 @@ async function editDuringActualSave(session, point) {
       beforeHeight: before.samples[0],
       afterHeight,
       backgroundBefore: before.background,
-      backgroundAfter: edit.after.background,
+      backgroundAfter: finished.background,
     });
     if (overlapProven) return { passed: true, attempts, edit };
-    // Preserve completed real edits before a bounded next attempt. No store delay,
-    // synthetic workload, or fixture inflation is used to force an overlap.
+    // Keep failed dispatched attempts in the evidence. The populated terrain
+    // fixture supplies real save work; no artificial store delay is inserted.
     await session.page.waitForFunction(
-      () => !window.atlasObserve().state.writing,
+      () => !window.atlasObserve([], { events: false }).state.writing,
     );
   }
   return { passed: false, attempts };
 }
 
-async function capture(session, name, points) {
-  const state = await snapshot(session.page);
-  const box = await session.page.locator("canvas").boundingBox();
-  if (!box) throw new Error("Canvas unavailable for image check");
-  const rect = {
-    x: Math.ceil(box.x),
-    y: Math.ceil(box.y),
-    width: Math.floor(box.width),
-    height: Math.floor(box.height),
-  };
-  const samples = points.map(([x, y]) => ({
-    x: Math.round(box.width / 2 + (x - state.camera.x) * state.camera.scale),
-    y: Math.round(box.height / 2 + (y - state.camera.y) * state.camera.scale),
-  }));
-  const image = await session.app.evaluate(
-    async ({ BrowserWindow }, { rect, samples }) => {
-      const win = BrowserWindow.getAllWindows()[0];
-      const image = await win.webContents.capturePage(rect);
-      const size = image.getSize(),
-        bitmap = image.toBitmap();
-      const pixels = samples.map(({ x, y }) => {
-        if (x < 0 || y < 0 || x >= size.width || y >= size.height) return null;
-        const index = (y * size.width + x) * 4;
-        return [
-          bitmap[index + 2],
-          bitmap[index + 1],
-          bitmap[index],
-          bitmap[index + 3],
-        ];
-      });
-      return { size, pixels, png: image.toPNG().toString("base64") };
-    },
-    { rect, samples },
-  );
-  await writeFile(
-    join(session.directory, `${name}.png`),
-    Buffer.from(image.png, "base64"),
-  );
-  return {
-    file: `${session.instance.id}/${name}.png`,
-    size: image.size,
-    pixels: image.pixels,
-    points,
-    revision: state.document.revision,
-    camera: state.camera,
-    method:
-      "Electron capturePage outside timed interval; content evidence only",
-  };
-}
-
-async function navigateTo(page, point) {
-  const details = page.locator("details");
-  if ((await details.getAttribute("open")) === null)
-    await page.getByText("Zu Koordinaten", { exact: true }).click();
-  await page
-    .getByLabel("Ziel X", { exact: true })
-    .fill(String(point[0] * 0.3048));
-  await page
-    .getByLabel("Ziel Y", { exact: true })
-    .fill(String(point[1] * 0.3048));
-  const before = await snapshot(page);
-  await button(page, "Zum Ziel");
-  const after = await snapshot(page);
-  const lastId = Math.max(
-    0,
-    ...before.events.filter((e) => e.kind === "input").map((e) => e.id),
-  );
-  const input = after.events.find(
-    (e) => e.kind === "input" && e.inputKind === "navigation" && e.id > lastId,
-  );
-  if (!input) throw new Error("No genuine target-navigation input observed");
-  return input;
-}
-
 async function emptyNavigation(fixture) {
-  const file = join(out, "empty-working.saltatlas");
+  const file = join(out, `${independentRunId}-empty-working.saltatlas`);
   await copyFile(fixture.files.empty, file);
   const session = await launch(file, "empty-navigation");
   try {
@@ -659,15 +629,43 @@ async function emptyNavigation(fixture) {
         globalThis.__atlasHost.metrics(),
       );
       const start = performance.now();
-      const p = await position(session.page);
-      await session.page.mouse.move(p.x, p.y);
-      for (let i = 0; i < 8; i++) {
-        await session.page.mouse.wheel(0, i % 2 ? -80 : 80);
-        await session.page.waitForTimeout(40);
-      }
-      await session.page.mouse.down({ button: "middle" });
-      await session.page.mouse.move(p.x + 120, p.y + 70, { steps: 12 });
-      await session.page.mouse.up({ button: "middle" });
+      const wheelChecks = [];
+      do {
+        const canvas = await session.page.locator("canvas").boundingBox();
+        if (!canvas) throw new Error("Navigation canvas unavailable");
+        // Pan moves the world origin. Keep native input on the actual canvas
+        // instead of following that origin out of the window during long runs.
+        const p = {
+          x: Math.round(canvas.x + canvas.width / 2),
+          y: Math.round(canvas.y + canvas.height / 2),
+        };
+        await session.page.mouse.move(p.x, p.y);
+        for (let i = 0; i < 8; i++) {
+          const old = (await stateSnapshot(session.page)).camera;
+          const delta = i % 2 ? -80 : 80;
+          await session.page.mouse.wheel(0, delta);
+          await session.page.waitForFunction(
+            ({ scale, delta }) => {
+              const current = window.atlasObserve([], { events: false }).camera
+                .scale;
+              return delta > 0 ? current < scale : current > scale;
+            },
+            { scale: old.scale, delta },
+            { timeout: 2000 },
+          );
+          const now = (await stateSnapshot(session.page)).camera;
+          wheelChecks.push({
+            before: old,
+            after: now,
+            delta,
+            passed: delta > 0 ? now.scale < old.scale : now.scale > old.scale,
+          });
+          await session.page.waitForTimeout(40);
+        }
+        await session.page.mouse.down({ button: "middle" });
+        await session.page.mouse.move(p.x + 120, p.y + 70, { steps: 12 });
+        await session.page.mouse.up({ button: "middle" });
+      } while (performance.now() - start < 30_000);
       const after = await snapshot(session.page);
       const metricsAfter = await session.app.evaluate(() =>
         globalThis.__atlasHost.metrics(),
@@ -703,6 +701,8 @@ async function emptyNavigation(fixture) {
       check(
         grid ? "empty-navigation-grid-on" : "empty-navigation-grid-off",
         inputs.length > 0 &&
+          wheelChecks.length >= 8 &&
+          wheelChecks.every((c) => c.passed) &&
           before.document.sequence === after.document.sequence &&
           metricsAfter.commits === metricsBefore.commits &&
           metricsAfter.reads === metricsBefore.reads &&
@@ -710,6 +710,7 @@ async function emptyNavigation(fixture) {
             after.camera.y !== before.camera.y),
         {
           inputs: inputs.length,
+          wheelChecks,
           authorChanges: 0,
           storeReads: metricsAfter.reads - metricsBefore.reads,
         },
@@ -739,7 +740,7 @@ async function traceSummary(file) {
 }
 
 async function coastJourney(fixture) {
-  const file = join(out, "coast-working.saltatlas");
+  const file = join(out, `${independentRunId}-coast-working.saltatlas`);
   await copyFile(fixture.files.coast, file);
   const session = await launch(file, "coast-journey");
   const points = fixture.expected.points;
@@ -749,6 +750,46 @@ async function coastJourney(fixture) {
     check(
       "canonical-fixture",
       closeEnough(await values(session.page, points), fixture.expected.before),
+    );
+    const navigationBehavior = await zoomAndPan(session);
+    check(
+      "visible-zoom",
+      navigationBehavior.zoom.passed,
+      navigationBehavior.zoom,
+    );
+    check("pan-anchor", navigationBehavior.pan.passed, navigationBehavior.pan);
+    const continuous = await heldStroke(session);
+    check("continuous-stroke-live", continuous.live.passed, continuous.live);
+    check("continuous-stroke-undo", continuous.undo.passed, continuous.undo);
+    await button(session.page, "Weltansicht");
+    await exact(session.page);
+    const world = await snapshot(session.page);
+    const worldImage = await capture(session, "world-view", []);
+    await button(session.page, "Nahansicht");
+    await exact(session.page);
+    const nearAgain = await values(session.page, points);
+    const remoteChecks = [];
+    for (const origin of fixture.origins.slice(2)) {
+      await navigateTo(session.page, origin);
+      await exact(session.page);
+      const actual = await values(
+        session.page,
+        points.map(([x, y]) => [x + origin[0], y + origin[1]]),
+      );
+      remoteChecks.push({
+        origin,
+        actual,
+        passed: closeEnough(actual, fixture.expected.before),
+      });
+    }
+    await navigateTo(session.page, [0, 0]);
+    await exact(session.page);
+    check(
+      "world-detail-roundtrip",
+      world.camera.scale === 0.000002 &&
+        closeEnough(nearAgain, fixture.expected.before) &&
+        remoteChecks.every((c) => c.passed),
+      { worldCamera: world.camera, worldImage, nearAgain, remoteChecks },
     );
     const beforeImage = await capture(session, "coast-before", [[-800, 0]]);
     await button(session.page, "Regionsansicht");
@@ -774,12 +815,13 @@ async function coastJourney(fixture) {
         error: String(error),
       };
     }
-    session.instance.scenarios.push({
-      id: "M04-coarse-fine",
-      kind: "edit",
-      samples: coarse.samples,
-      droppedEvents: coarse.after.droppedEvents,
-    });
+    if (!full)
+      session.instance.scenarios.push({
+        id: "M04-coarse-fine",
+        kind: "edit",
+        samples: coarse.samples,
+        droppedEvents: coarse.after.droppedEvents,
+      });
     report.submissionDiagnostics = evaluateSubmissionDiagnostics(
       coarse.samples,
     );
@@ -853,30 +895,53 @@ async function coastJourney(fixture) {
 
     // Cold source absence is observed before the real navigation. No preparatory
     // dataReady wait or direct camera/model invocation is permitted here.
-    const target = [80_000, 0];
+    const target = [79_200, 0];
     const coldBefore = (await values(session.page, [target]))[0] === null;
     check("cold-before-navigation", coldBefore, {
       target,
       cache: "application cache; OS cache unchanged",
     });
-    await brush(session.page, 16, 10);
-    const navigation = await navigateTo(session.page, target);
-    await session.page.waitForFunction(
-      (id) =>
-        window
-          .atlasObserve()
-          .events.some(
-            (e) => ["ready", "input-ready"].includes(e.kind) && e.input === id,
-          ),
-      navigation.id,
-      { timeout: 5000 },
+    await brush(session.page, 128, 120);
+    const coldStart = await stateSnapshot(session.page);
+    const canvasBox = await session.page.locator("canvas").boundingBox();
+    if (!canvasBox) throw new Error("Cold target canvas unavailable");
+    const { startReadyStrokeMonitor } =
+      await import("./atlas-p0-collection.mjs");
+    const monitor = startReadyStrokeMonitor(session, {
+      sessionId: coldStart.sessionId,
+      afterInputId: coldStart.lastInputId,
+      sinceEvent: coldStart.eventCount,
+      screenPoint: {
+        x: Math.round(canvasBox.x + canvasBox.width / 2),
+        y: Math.round(canvasBox.y + canvasBox.height / 2),
+      },
+      point: target,
+    });
+    await navigateTo(session.page, target);
+    const trigger = await monitor;
+    if (!trigger.dispatched)
+      throw new Error(
+        `Cold first input was not dispatched: ${JSON.stringify(trigger)}`,
+      );
+    const navigation = trigger.navigation;
+    const ready = trigger.ready;
+    const cold = await observeDab(session, coldStart);
+    const coldAfterHeight = (await values(session.page, [target]))[0];
+    const coldAfterImage = await capture(session, "cold-after-edit", [target]);
+    check(
+      "cold-edit-content",
+      Math.abs(trigger.observed.beforeHeight + 20) < 1e-7 &&
+        coldAfterHeight > 0 &&
+        landPixel(coldAfterImage.pixels[0]),
+      {
+        point: target,
+        expectedBefore: -20,
+        before: trigger.observed.beforeHeight,
+        after: coldAfterHeight,
+        coldAfterImage,
+        driverDelayMs: cold.samples[0]?.createdAt - ready.at,
+      },
     );
-    const readyState = await snapshot(session.page);
-    const ready = readyState.events.find(
-      (e) =>
-        ["ready", "input-ready"].includes(e.kind) && e.input === navigation.id,
-    );
-    const cold = await dab(session, target);
     const coldSamples = cold.samples
       .filter((sample) => sample.inputKind === "edit")
       .slice(0, 1)
@@ -888,12 +953,13 @@ async function coastJourney(fixture) {
         coldBeforeNavigation: coldBefore,
         timeout: cold.timedOut,
       }));
-    session.instance.scenarios.push({
-      id: "M10-height-cold",
-      kind: "cold",
-      samples: coldSamples,
-      droppedEvents: cold.after.droppedEvents,
-    });
+    if (!full)
+      session.instance.scenarios.push({
+        id: "M10-height-cold",
+        kind: "cold",
+        samples: coldSamples,
+        droppedEvents: cold.after.droppedEvents,
+      });
     check(
       "cold-edit-after-navigation",
       !cold.timedOut &&
@@ -908,44 +974,6 @@ async function coastJourney(fixture) {
       },
     );
 
-    await button(session.page, "Hintergrundarbeit starten");
-    await session.page.waitForFunction(
-      () => window.atlasObserve().background.active === true,
-    );
-    const busyBefore = await snapshot(session.page);
-    const metricsBefore = await session.app.evaluate(() =>
-      globalThis.__atlasHost.metrics(),
-    );
-    const overlap = await editDuringActualSave(session, [target[0] + 180, 140]);
-    await button(session.page, "Speichern");
-    await session.page.waitForFunction(() => window.atlasObserve().state.saved);
-    const metricsAfter = await session.app.evaluate(() =>
-      globalThis.__atlasHost.metrics(),
-    );
-    const busyAfter = await snapshot(session.page);
-    session.instance.scenarios.push({
-      id: "M06-height-busy",
-      kind: "edit",
-      samples: overlap.edit?.samples ?? [],
-      droppedEvents: busyAfter.droppedEvents,
-    });
-    check(
-      "worker-and-save-executed",
-      busyBefore.background.active &&
-        metricsAfter.snapshots > metricsBefore.snapshots,
-      {
-        snapshots: metricsAfter.snapshots - metricsBefore.snapshots,
-        backgroundBefore: busyBefore.background,
-      },
-    );
-    report.functional.checks.push({
-      id: "busy-worker-and-save",
-      passed: overlap.passed,
-      status: overlap.passed ? "PASS" : "OPEN",
-      attempts: overlap.attempts,
-      explanation:
-        "Input creation epoch must lie inside an actual successful utility snapshot/publish interval while canonical worker activity is present. Button order alone is insufficient.",
-    });
     await capture(session, "final-coast-lab", []);
   } finally {
     await session.close();
@@ -962,6 +990,74 @@ async function coastJourney(fixture) {
     );
   } finally {
     await restarted.close();
+  }
+}
+
+async function busyJourney(fixture) {
+  const file = join(out, `${independentRunId}-busy-working.saltatlas`);
+  await copyFile(fixture.busy.file, file);
+  const session = await launch(file, "busy-journey");
+  try {
+    await exact(session.page);
+    await session.page.getByLabel("Raster anzeigen").uncheck();
+    await brush(session.page, 128, 120);
+    await button(session.page, "Hintergrundarbeit starten");
+    await session.page.waitForFunction(() => {
+      const observed = window.atlasObserve([], { events: false });
+      return (
+        observed.background.active === true &&
+        observed.background.sessionId === observed.sessionId &&
+        observed.background.samples > 0
+      );
+    });
+    const busyBefore = await stateSnapshot(session.page);
+    const metricsBefore = await session.app.evaluate(() =>
+      globalThis.__atlasHost.metrics(),
+    );
+    const overlap = await editDuringActualSave(session, [-800, -300]);
+    await button(session.page, "Speichern");
+    await session.page.waitForFunction(() => window.atlasObserve().state.saved);
+    const metricsAfter = await session.app.evaluate(() =>
+      globalThis.__atlasHost.metrics(),
+    );
+    const busyAfter = await stateSnapshot(session.page);
+    if (!full)
+      session.instance.scenarios.push({
+        id: "M06-height-busy",
+        kind: "edit",
+        samples: overlap.attempts.flatMap((attempt) => attempt.samples ?? []),
+        droppedEvents: busyAfter.droppedEvents,
+      });
+    check(
+      "worker-and-save-executed",
+      busyBefore.background.active &&
+        busyBefore.background.sessionId === busyBefore.sessionId &&
+        busyAfter.background.sessionId === busyBefore.sessionId &&
+        busyAfter.background.samples > busyBefore.background.samples &&
+        metricsAfter.snapshots > metricsBefore.snapshots,
+      {
+        fixtureSourceTiles: fixture.busy.sourceTiles,
+        fixtureBytes: fixture.busy.decodedBytes,
+        snapshots: metricsAfter.snapshots - metricsBefore.snapshots,
+        backgroundBefore: busyBefore.background,
+        backgroundAfter: busyAfter.background,
+      },
+    );
+    check(
+      "busy-worker-and-save",
+      overlap.passed &&
+        overlap.attempts.every(
+          (attempt) => !attempt.samples?.length || attempt.overlapProven,
+        ),
+      {
+        attempts: overlap.attempts,
+        explanation:
+          "Native input creation must fall inside an observed successful snapshot/publish interval with current-session worker activity and progress. All dispatched attempts remain in the result.",
+      },
+    );
+    await capture(session, "busy-final", [[-800, -300]]);
+  } finally {
+    await session.close();
   }
 }
 
@@ -1008,6 +1104,308 @@ async function negativeControl(fixture, fault) {
   } finally {
     await session.close();
   }
+}
+
+async function interactionControls(fixture) {
+  for (const [fault, primaryCheck] of [
+    ["ignore-zoom", "visible-zoom"],
+    ["pointerup-render", "continuous-stroke-live"],
+  ]) {
+    const results = [];
+    for (const current of [fault, "none"]) {
+      const label = `control-${fault}-${current === "none" ? "recovery" : "mutant"}`;
+      const file = join(out, `${label}.saltatlas`);
+      await copyFile(fixture.files.coast, file);
+      const session = await launch(file, label, current);
+      try {
+        await exact(session.page);
+        const result =
+          fault === "ignore-zoom"
+            ? (await zoomAndPan(session, label)).zoom
+            : (await heldStroke(session, label)).live;
+        const observed = await snapshot(session.page);
+        results.push({ ...result, observedFault: observed.renderer.fault });
+      } catch (error) {
+        results.push({
+          passed: false,
+          error: String(error),
+          observedFault: (await snapshot(session.page)).renderer.fault,
+        });
+      } finally {
+        await session.close();
+      }
+    }
+    const [mutant, recovery] = results;
+    const primaryFailureCode =
+      fault === "ignore-zoom"
+        ? mutant.failureCode === "ZOOM_DID_NOT_CHANGE_SCALE"
+          ? mutant.failureCode
+          : null
+        : mutant.failureCode === "LIVE_TERRAIN_NOT_VISIBLE_BEFORE_RELEASE"
+          ? mutant.failureCode
+          : null;
+    const passed =
+      mutant.observedFault === fault &&
+      mutant.passed === false &&
+      !mutant.error &&
+      !mutant.failure &&
+      primaryFailureCode !== null &&
+      recovery.observedFault === "none" &&
+      recovery.passed === true &&
+      !recovery.error;
+    report.negativeControls.push({
+      fault,
+      primaryCheck,
+      passed,
+      primaryPassed: mutant.passed,
+      primaryFailureCode,
+      observedFault: mutant.observedFault,
+      mutant,
+      recovery: { primaryCheck, ...recovery },
+    });
+    log(
+      `${fault}: primary ${mutant.passed ? "PASS (unexpected)" : "FAIL (expected)"}; recovery ${recovery.passed ? "PASS" : "FAIL"}`,
+    );
+  }
+}
+
+/** Identical coarse region, actual fine payloads, and normal UI input at every size. */
+async function scalingJourney() {
+  const manifest = fixtureCommand(
+    "create-scaling",
+    join(out, "scaling-fixtures"),
+  );
+  report.scaling = { manifest, cases: [], passed: false };
+  const sourceFootprint = (observed) => ({
+    documentSourceBytes: observed.document.sourceBytes,
+    rendererSourceBytes: observed.renderer.sourceBytes,
+    workerSourceBytes: observed.renderer.workerSourceBytes,
+  });
+  const readDelta = (before, after) =>
+    Object.fromEntries(
+      ["reads", "returnedTiles", "returnedBytes"].map((key) => [
+        key,
+        after[key] - before[key],
+      ]),
+    );
+  const assertSourceBudget = (footprint, reads) => {
+    const maximum = P0_REQUIREMENTS.scaling.sourceBudgetBytes;
+    if (
+      Object.values(footprint).some(
+        (bytes) => !Number.isFinite(bytes) || bytes < 0 || bytes > maximum,
+      ) ||
+      reads.returnedBytes > maximum ||
+      reads.returnedTiles > maximum / P0_REQUIREMENTS.scaling.tileBytes
+    )
+      throw new Error("Scaling stage exceeded the declared source budget");
+  };
+  for (const fixture of manifest.fixtures) {
+    const file = join(out, `scaling-${fixture.id}-working.saltatlas`);
+    await copyFile(fixture.file, file);
+    const result = {
+      id: fixture.id,
+      sourceTiles: fixture.sourceTiles,
+      decodedBytes: fixture.decodedBytes,
+      passed: false,
+      stage: "launch",
+      expected: manifest.expected,
+      stageReadDeltas: {},
+    };
+    report.scaling.cases.push(result);
+    let session;
+    try {
+      session = await launch(file, `scaling-${fixture.id}`);
+      await exact(session.page);
+      result.before = await values(session.page, manifest.expected.points);
+      if (!closeEnough(result.before, manifest.expected.before))
+        throw new Error("Initial scaling source values differ");
+      const initialReads = await session.app.evaluate(() =>
+        globalThis.__atlasHost.metrics(),
+      );
+      await session.page.getByLabel("Raster anzeigen").uncheck();
+      result.stage = "coarse-navigation";
+      const origin = await position(session.page);
+      await session.page.mouse.move(origin.x, origin.y);
+      const initialScale = (await snapshot(session.page)).camera.scale;
+      let remaining =
+        Math.log(initialScale / manifest.region.coarseCamera.scale) / 0.0018;
+      let wheelSteps = 0;
+      while (Math.abs(remaining) > 1e-10 && wheelSteps++ < 8) {
+        const delta = Math.max(-500, Math.min(500, remaining));
+        const previous = (await snapshot(session.page)).camera.scale;
+        await session.page.mouse.wheel(0, delta);
+        await session.page.waitForFunction(
+          ({ scale, delta }) => {
+            const o = window.atlasObserve();
+            if (o.state.error) throw new Error(o.state.error);
+            return delta > 0 ? o.camera.scale < scale : o.camera.scale > scale;
+          },
+          { scale: previous, delta },
+          { timeout: 5000 },
+        );
+        await exact(session.page, 5000);
+        // Native wheel deltas have finite precision. Correct through another
+        // ordinary wheel event so the fixed analytic brush oracle stays exact.
+        remaining =
+          Math.log(
+            (await snapshot(session.page)).camera.scale /
+              manifest.region.coarseCamera.scale,
+          ) / 0.0018;
+      }
+      const camera = (await snapshot(session.page)).camera;
+      result.camera = camera;
+      if (Math.abs(camera.scale - manifest.region.coarseCamera.scale) > 1e-14)
+        throw new Error("Scaling case did not reach its declared camera");
+      const coarseReads = await session.app.evaluate(() =>
+        globalThis.__atlasHost.metrics(),
+      );
+      result.coarseReadiness = sourceFootprint(await snapshot(session.page));
+      result.stageReadDeltas.coarseReadiness = readDelta(
+        initialReads,
+        coarseReads,
+      );
+      assertSourceBudget(
+        result.coarseReadiness,
+        result.stageReadDeltas.coarseReadiness,
+      );
+      result.ridgeBefore = await values(
+        session.page,
+        manifest.expected.ridgePoints,
+      );
+      if (!knownValuesAgree(result.ridgeBefore, manifest.expected.ridgeBefore))
+        throw new Error("Known coarse-view ridge heights are incorrect");
+      await brush(
+        session.page,
+        manifest.region.brush.diameter,
+        manifest.region.brush.amount,
+      );
+      const beforeImage = await capture(session, "coarse-before", [
+        manifest.region.pixelProbe,
+        manifest.region.ridgePixelProbe,
+      ]);
+      result.stage = "coarse-edit";
+      const edit = await dab(session, manifest.region.brush.center);
+      const afterImage = await capture(session, "coarse-after", [
+        manifest.region.pixelProbe,
+        manifest.region.ridgePixelProbe,
+      ]);
+      result.after = await values(session.page, manifest.expected.points);
+      result.ridgeAfter = await values(
+        session.page,
+        manifest.expected.ridgePoints,
+      );
+      result.samples = edit.samples;
+      result.images = { beforeImage, afterImage };
+      const editedReads = await session.app.evaluate(() =>
+        globalThis.__atlasHost.metrics(),
+      );
+      result.coarseEdit = sourceFootprint(await snapshot(session.page));
+      result.stageReadDeltas.coarseEdit = readDelta(coarseReads, editedReads);
+      assertSourceBudget(result.coarseEdit, result.stageReadDeltas.coarseEdit);
+      if (
+        edit.timedOut ||
+        !knownValuesAgree(result.after, manifest.expected.afterCoarseDab) ||
+        !knownValuesAgree(
+          result.ridgeAfter,
+          manifest.expected.ridgeAfterCoarseDab,
+        ) ||
+        !waterPixel(beforeImage.pixels[0]) ||
+        !landPixel(afterImage.pixels[0]) ||
+        !landPixel(beforeImage.pixels[1]) ||
+        !landPixel(afterImage.pixels[1])
+      )
+        throw new Error(
+          "Coarse scaling edit failed its independent height/pixel oracle",
+        );
+      result.stage = "detail-return-history";
+      await button(session.page, "Nahansicht");
+      await exact(session.page);
+      result.detail = await values(session.page, manifest.expected.points);
+      await button(session.page, /Rückgängig/);
+      await exact(session.page);
+      result.undone = await values(session.page, manifest.expected.points);
+      await button(session.page, /Wiederholen/);
+      await exact(session.page);
+      result.redone = await values(session.page, manifest.expected.points);
+      if (
+        !closeEnough(result.detail, manifest.expected.afterCoarseDab) ||
+        !closeEnough(result.undone, manifest.expected.before) ||
+        !closeEnough(result.redone, manifest.expected.afterCoarseDab)
+      )
+        throw new Error("Scaling detail return or history differs");
+      result.stage = "ridge-detail-return";
+      await navigateTo(session.page, manifest.region.ridgePixelProbe);
+      await exact(session.page);
+      result.ridgeDetail = await values(session.page, [
+        manifest.region.ridgePixelProbe,
+      ]);
+      if (
+        !closeEnough(result.ridgeDetail, [
+          manifest.expected.ridgePixelAfterCoarseDab,
+        ])
+      )
+        throw new Error("Detail return lost the populated fine ridge terrain");
+      result.stage = "save-restart";
+      await button(session.page, "Speichern");
+      await session.page.waitForFunction(
+        () => window.atlasObserve().state.saved,
+      );
+      result.saved = fixtureCommand("inspect-scaling", file);
+      if (result.saved.fineSha256 !== fixture.fineSha256)
+        throw new Error("Coarse edit changed saved fine-source payloads");
+      if (
+        !closeEnough(
+          result.saved.ridgeSamples,
+          manifest.expected.ridgeAfterCoarseDab,
+        )
+      )
+        throw new Error("Saved coarse/fine ridge composition differs");
+      result.resources = (await snapshot(session.page)).renderer;
+      result.storeMetrics = await session.app.evaluate(() =>
+        globalThis.__atlasHost.metrics(),
+      );
+      await session.close();
+      session = null;
+      session = await launch(file, `scaling-${fixture.id}-restart`);
+      await exact(session.page);
+      result.reopened = await values(session.page, manifest.expected.points);
+      if (!closeEnough(result.reopened, manifest.expected.afterCoarseDab))
+        throw new Error("Scaling restart differs");
+      await navigateTo(session.page, manifest.region.ridgePixelProbe);
+      await exact(session.page);
+      result.ridgeReopened = await values(session.page, [
+        manifest.region.ridgePixelProbe,
+      ]);
+      if (
+        !closeEnough(result.ridgeReopened, [
+          manifest.expected.ridgePixelAfterCoarseDab,
+        ])
+      )
+        throw new Error("Restart lost the populated fine ridge terrain");
+      result.stage = "complete";
+      result.passed = true;
+    } catch (error) {
+      result.error = String(error);
+      if (session) {
+        const observed = await snapshot(session.page);
+        result.productError = observed.state.error;
+        result.resources = observed.renderer;
+        result.document = observed.document;
+        result.storeMetrics = await session.app.evaluate(() =>
+          globalThis.__atlasHost.metrics(),
+        );
+        await capture(session, "failure", []);
+      }
+    } finally {
+      if (session) await session.close();
+    }
+    log(
+      `scaling ${fixture.sourceTiles} sources: ${result.passed ? "PASS" : `FAIL at ${result.stage}: ${result.productError ?? result.error}`}`,
+    );
+  }
+  report.scaling.passed =
+    report.scaling.cases.length === 3 &&
+    report.scaling.cases.every((c) => c.passed);
 }
 
 try {
@@ -1079,14 +1477,65 @@ try {
     });
   } else {
     const fixture = fixtureCommand("create", join(out, "fixtures"));
+    if (only !== "scaling")
+      fixture.busy = fixtureCommand("create-busy", join(out, "busy-fixture"));
     report.fixture = fixture.coast;
     report.fixtureManifest = fixture;
     log("real .saltatlas fixtures created; starting built Electron app");
-    await emptyNavigation(fixture);
-    await coastJourney(fixture);
-    if (controls)
+    const guarded = async (name, action) => {
+      try {
+        await action();
+      } catch (error) {
+        report.errors.push({
+          code: "SCENARIO_FAILURE",
+          stage: name,
+          independentRunId,
+          message: String(error),
+          stack: error.stack,
+        });
+        log(`${name}: FAIL ${error}`);
+      }
+    };
+    const repetitions = selectedRuns ?? (full ? 3 : 1);
+    for (let run = 1; run <= repetitions; run++) {
+      independentRunId = full ? `release-${run}` : "pilot-1";
+      if (!only)
+        await guarded("empty-navigation", () => emptyNavigation(fixture));
+      if (!only || only === "interactions")
+        await guarded("coast-journey", () => coastJourney(fixture));
+      if (!only || only === "interactions")
+        await guarded("busy-journey", () => busyJourney(fixture));
+      if (full && (!only || only === "collection")) {
+        await guarded("repeated-scenarios", async () => {
+          const { collectRepeatedScenarios } =
+            await import("./atlas-p0-collection.mjs");
+          const result = await collectRepeatedScenarios({
+            launch,
+            fixture,
+            out,
+            independentRunId,
+            fixtureCommand,
+            editDuringActualSave,
+            ...(scenarioId ? { scenarioId } : {}),
+          });
+          (report.collection ??= []).push({ independentRunId, ...result });
+          if (!result.passed)
+            report.errors.push({
+              code: "COLLECTION_FAILURE",
+              independentRunId,
+              errors: result.errors,
+            });
+        });
+      }
+    }
+    if (!only || only === "interactions") {
+      await guarded("interaction-controls", () => interactionControls(fixture));
       for (const fault of ["delay-render", "drop-render", "recovery"])
-        await negativeControl(fixture, fault);
+        await guarded(`control-${fault}`, () =>
+          negativeControl(fixture, fault),
+        );
+    }
+    if (!only || only === "scaling") await guarded("scaling", scalingJourney);
   }
 } catch (error) {
   report.errors.push({
@@ -1098,26 +1547,16 @@ try {
 } finally {
   report.finishedAt = new Date().toISOString();
   report.acceptance = evaluateAcceptance(report);
-  const requiredFunctional = [
-    ...P0_REQUIREMENTS.requiredChecks,
-    "empty-navigation-grid-on",
-    "empty-navigation-grid-off",
-    "coarse-exact-values",
-    "cold-edit-after-navigation",
-  ];
-  report.functional.passed =
-    report.errors.length === 0 &&
-    requiredFunctional.every((id) =>
-      report.functional.checks.some((c) => c.id === id && c.passed),
-    );
+  report.functional.evaluation = evaluateFunctional(report);
+  report.functional.passed = report.functional.evaluation.passed;
   report.nativeGate = {
     status: "BLOCKED",
     passed: false,
     reason: lab
-      ? "Software headless laboratory: no qualified native reference; exact presentation mapping and full release collection remain unavailable."
+      ? "Software headless laboratory: no qualified native reference; exact presentation mapping remains unavailable; collected sample counts are reported independently."
       : report.errors.some((error) => error.code === "NO_NATIVE_DISPLAY")
-        ? "No native display is available; exact presentation mapping and full release collection remain unavailable."
-        : "Native functional pilot only: this display is not yet qualified, exact presentation mapping and full three-release collection remain unavailable.",
+        ? "No native display is available; exact presentation mapping remains unavailable; collected sample counts are reported independently."
+        : "This display is not yet qualified and exact presentation mapping remains unavailable. Collection mode and actual sample counts are reported separately.",
     fullEvaluation: report.acceptance.status,
   };
   report.proxySummary = report.runs.flatMap((r) =>
@@ -1140,6 +1579,22 @@ try {
       {
         output: out,
         functional: report.functional.passed ? "PASS" : "FAIL",
+        scaling: report.scaling?.cases.map(
+          ({ id, sourceTiles, passed, stage, error }) => ({
+            id,
+            sourceTiles,
+            passed,
+            stage,
+            error,
+          }),
+        ),
+        collection: report.collection?.map(
+          ({ independentRunId, passed, errors }) => ({
+            independentRunId,
+            passed,
+            errors,
+          }),
+        ),
         nativeGate: report.nativeGate,
         negativeControls: report.negativeControls.map(({ fault, passed }) => ({
           fault,

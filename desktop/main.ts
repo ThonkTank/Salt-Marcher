@@ -25,11 +25,15 @@ import type { PreparedSave, StoreActivity } from "./project-store";
 const CHANNEL = "atlas:p0";
 const MAX_PENDING = 64;
 const indexPath = resolve(__dirname, "../dist-editor/index.html");
-const fault = ["delay-render", "drop-render"].includes(
-  process.env.ATLAS_P0_FAULT ?? "",
-)
-  ? process.env.ATLAS_P0_FAULT
-  : undefined;
+// Faults belong to explicit diagnostic launches. A normal packaged start never
+// inherits a broken editor just because a stale fault variable remains set.
+const fault =
+  process.env.ATLAS_P0_DIAGNOSTICS === "1" &&
+  ["delay-render", "drop-render", "ignore-zoom", "pointerup-render"].includes(
+    process.env.ATLAS_P0_FAULT ?? "",
+  )
+    ? process.env.ATLAS_P0_FAULT
+    : undefined;
 const initialURL = new URL(pathToFileURL(indexPath).href);
 if (fault) initialURL.searchParams.set("fault", fault);
 const indexURL = initialURL.href;
@@ -406,6 +410,7 @@ function registerDiagnostics() {
       }),
       metrics: () => store.request("metrics"),
       storeActivity: () => store.activity(),
+      fileActionPending: () => fileActionPending,
       startTrace: () =>
         contentTracing.startRecording({
           included_categories: [

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { EditorController, type EditorState } from "./EditorController";
 import type { Point } from "./model";
+import type { ObservationOptions } from "./observation";
 import "./editor.css";
 
 declare global {
@@ -9,6 +10,7 @@ declare global {
     /** Read-only lab observation; ordinary input and the real file path do the work. */
     atlasObserve?: (
       points?: Point[],
+      options?: ObservationOptions,
     ) => ReturnType<EditorController["observe"]>;
   }
 }
@@ -39,7 +41,8 @@ function Atlas() {
     void editor
       .init()
       .then(() => {
-        window.atlasObserve = (points) => editor.observe(points);
+        window.atlasObserve = (points, options) =>
+          editor.observe(points, options);
       })
       .catch((e: unknown) => setError(String(e)));
     return () => {

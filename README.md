@@ -26,7 +26,9 @@ enthält den vollständigen nächsten Implementierungsauftrag einschließlich
 Funktionsumfang, Architekturentscheidungen, Arbeitspaketen und Abschlusskriterien.
 Ein Verweis darauf mit „erledige das“ beauftragt seine vollständige Ausführung.
 Der Plan beschreibt den Zielzustand P0–P9. Der derzeit beauftragte Versuch ist
-ausdrücklich auf die erste P0-Prüfung begrenzt; P1–P9 werden damit nicht begonnen.
+ausdrücklich auf die erste P0-Machbarkeitsprüfung begrenzt: zunächst die
+architektonische Richtung prüfen. P1–P9 werden damit nicht begonnen. Die
+vollständigen Wiederholungsreihen sind für eine spätere Leistungsabnahme verfügbar.
 Die V7-Abschnitte beschreiben die bestehende Standardanwendung, die gesonderten
 P0-Abschnitte den implementierten Höhenversuch und seine Prüfgrenzen.
 
@@ -69,35 +71,75 @@ Vorgegeben bleibt Node.js 22.19.0 aus `.node-version`; Forge benötigt mindesten
 vor: Es prüft eine echte Datenbanköffnung und führt bei Bedarf `@electron/rebuild`
 aus. Dafür werden gegebenenfalls ein C++-Buildwerkzeug und Python benötigt.
 
-| Befehl                                        | Zweck                                                                                          |
-| --------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| `npm run build:atlas-p0`                      | P0-Typprüfung, Renderer-/Desktopbuild und SQLite-ABI-Vorbereitung.                             |
-| `npm run desktop:atlas-p0`                    | P0 bauen und im eigenen Electron-Fenster starten.                                              |
-| `npm run test:atlas-p0`                       | Modell-, Raster- und Auswertertests unter `src/editor/`.                                       |
-| `npm run check:atlas-p0`                      | P0 bauen und die SQLite-Storetests in Electrons Node-Laufzeit ausführen.                       |
-| `npm run p0:lab`                              | Den zuvor gebauten Stand im softwaregerenderten Headless-Labor funktional prüfen.              |
-| `npm run p0:native`                           | Den zuvor gebauten Stand auf einem vorhandenen nativen Display funktional prüfen.              |
-| `npm run p0:evaluate -- pfad/zum/report.json` | Einen Bericht gegen die festen P0-Nachweisanforderungen auswerten.                             |
-| `npm run package:atlas-p0`                    | Mit Electron Forge ein startbares Anwendungsverzeichnis erzeugen.                              |
-| `npm run make:atlas-p0`                       | Mit Electron Forge RPM-/ZIP-Artefakte erzeugen; RPM benötigt die Systemwerkzeuge zum Paketbau. |
+| Befehl                                        | Zweck                                                                                                        |
+| --------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `npm run build:atlas-p0`                      | P0-Typprüfung, Renderer-/Desktopbuild und SQLite-ABI-Vorbereitung.                                           |
+| `npm run desktop:atlas-p0`                    | P0 bauen und im eigenen Electron-Fenster starten.                                                            |
+| `npm run test:atlas-p0`                       | Modell-, Raster-, Renderer- und Auswertertests unter `src/editor/`.                                          |
+| `npm run check:atlas-p0`                      | P0 bauen sowie SQLite-Store- und Skalierungsfixturetests in Electrons Node-Laufzeit ausführen.               |
+| `npm run p0:lab`                              | Den zuvor gebauten Stand im softwaregerenderten Headless-Labor funktional und auf Skalierungsgrenzen prüfen. |
+| `npm run p0:native`                           | Dieselben Prüfungen auf einem vorhandenen nativen Display ausführen.                                         |
+| `npm run p0:lab -- --full`                    | Zusätzlich die vollständige P0-Stichprobe in drei unabhängigen Gruppen sammeln.                              |
+| `npm run p0:native -- --full`                 | Die vollständige Sammlung auf einem vorhandenen nativen Display ausführen.                                   |
+| `npm run p0:evaluate -- pfad/zum/report.json` | Einen Bericht gegen die festen P0-Nachweisanforderungen auswerten.                                           |
+| `npm run package:atlas-p0`                    | Mit Electron Forge ein startbares Anwendungsverzeichnis erzeugen.                                            |
+| `npm run make:atlas-p0`                       | Mit Electron Forge RPM-/ZIP-Artefakte erzeugen; RPM benötigt die Systemwerkzeuge zum Paketbau.               |
 
 Die Runner schreiben Berichte, Traces und Inhaltsbelege unter
-`artifacts/atlas-rebuild/runs/`. `--negative-controls` ergänzt absichtlich
-gestörte Renderläufe; `--executable /absoluter/pfad/zur/anwendung` prüft einen
-Forge-Paketstand. Beide Optionen werden mit `--` an `p0:lab` oder `p0:native`
-weitergereicht. Das Forge-Paket lässt sich starten; eine RPM-Installation ist
-noch nicht geprüft. Der konkrete Prüfstand steht ausschließlich im Statusdokument.
+`artifacts/atlas-rebuild/runs/`. Zusätzliche Optionen werden mit `--` an `p0:lab`
+oder `p0:native` weitergereicht. `--executable /absoluter/pfad/zur/anwendung`
+prüft einen Forge-Paketstand. Das Forge-Paket lässt sich starten; eine
+RPM-Installation ist noch nicht geprüft. Der konkrete Prüfstand steht
+ausschließlich im Statusdokument.
+
+Ohne `--full` läuft ein funktionaler Pilot mit begrenzten Zeitstichproben.
+`--full` beauftragt drei unabhängige Gruppen mit jeweils 100 echten bewegten
+Strichen je warmem Fall (kleiner und großer Pinsel, grob über fein sowie unter
+Hintergrundarbeit und Speichern) und 34 kalten Ortswechseln mit anschließender
+Bearbeitung je kaltem Fall. Die beiden kalten Fälle laufen ohne und mit
+Hintergrundlast. Die Navigationsfälle mit und ohne Raster laufen je Gruppe
+jeweils mindestens 30 Sekunden.
+Fehlgeschlagene oder abgebrochene Versuche bleiben im Bericht; fehlende
+Stichproben werden nicht durch andere Fälle ersetzt. Kalte Daten bedeuten einen
+zuvor nicht geladenen Ausschnitt nach normalem Projektöffnen, keinen geleerten
+Betriebssystem-Dateicache.
+
+Für gezielte Diagnosen stehen `--only interactions`, `--only scaling` und
+`--full --only collection` zur Verfügung. Diese Auswahl ist ausdrücklich
+unvollständig: Die Gesamtauswertung verlangt weiterhin alle Pflichtfälle und
+kann deshalb aus einer Teilprüfung kein Gesamt-`PASS` ableiten.
+Die Sammlung lässt sich dabei mit `--case M06-height-busy --runs 1` auf einen
+benannten Fall und eine Gruppe begrenzen; die Abnahmeanforderungen bleiben
+unverändert bei allen Fällen und drei unabhängigen Gruppen.
+
+Die Skalierungsfälle verwenden echte gespeicherte Höhenprojekte mit 32, 1024
+und 9000 Quellkacheln im selben groben Ausschnitt. Ihre dekodierten Quelldaten
+umfassen 1, 32 beziehungsweise 281,25 MiB; der größte Fall überschreitet damit
+das Quellbudget von 256 MiB. Die Busy-Datei enthält 9008 echte Quellkacheln
+einschließlich einer zweiten Küste für kalte Ortswechsel. Die Tests prüfen
+kanonische Höhen, sichtbare Änderungen, erhaltene Feindaten und Dateirundläufe;
+die Skalierungsfälle erfassen außerdem den aktiven Quellspeicher und die
+Store-Reads während grober Navigation und Bearbeitung. Der unveränderte
+P0-Leser weist Ausschnitte mit mehr als 512 berührten Quellkacheln ab. Diese
+Skalierungsgrenze bleibt ein roter Testfall und wird nicht durch höhere Limits
+oder übersprungene Fälle verdeckt; die Umsetzung von P3 ist damit nicht erfolgt.
+
+Die Fehlerkontrollen gehören verpflichtend zum vollständigen Funktionslauf:
+`ignore-zoom` muss am sichtbaren Zoom scheitern, `pointerup-render` an der
+laufenden Darstellung vor dem Loslassen. Jeweils muss derselbe Check ohne
+Störung wieder bestehen. Die bestehenden Kontrollen `delay-render`,
+`drop-render` und ihre Erholung bleiben erhalten. `--negative-controls` ist
+dafür nicht mehr erforderlich. Fehlen verpflichtende Inhalte, Kontrollen oder
+der Nachweis der Überlappung von Bearbeitung, Hintergrundarbeit und Speichern,
+verhindert dies das funktionale `PASS` und führt zu Exit 1.
 
 Ein erfolgreicher Funktionstest im softwaregerenderten Headless-Labor ist keine
 native Performancefreigabe. Die P0a-Rust-Baseline fehlt; im Labor ist
 `displayHz: 0`. Atlas-Generation und tatsächliche Compositor-Präsentation sind
-noch nicht eindeutig verbunden, und die vollständige native Stichprobe aus drei
-unabhängigen Release-Läufen fehlt. Auch `p0:native` beziehungsweise `--full`
-erheben derzeit nur einen funktionalen Pilotlauf; das native Gate bleibt
-`BLOCKED`. Submission- und RAF-Zeiten ersetzen den Präsentationsnachweis nicht.
-Wird die tatsächliche Überlappung von Bearbeitung, Hintergrundarbeit und
-Speichern nicht nachgewiesen, bleibt dieser Einzelcheck `OPEN` und `p0:lab`
-endet mit Exit 1.
+noch nicht eindeutig verbunden, und ein qualifizierter nativer Nachweis steht
+weiter aus. Auch eine vollständige Sammlung mit `--full` lässt das native Gate
+deshalb `BLOCKED`. Submission- und RAF-Zeiten ersetzen den Präsentationsnachweis
+nicht. Die Arbeit bleibt auf den P0-Höhenversuch begrenzt.
 
 ## Entwicklung und automatisierte Abnahme
 

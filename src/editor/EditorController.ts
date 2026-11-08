@@ -9,7 +9,7 @@ import {
   type HeightBrush,
   type Point,
 } from "./model";
-import { Observation } from "./observation";
+import { Observation, type ObservationOptions } from "./observation";
 import { WorldRenderer, type Camera } from "./render/WorldRenderer";
 
 export interface EditorState {
@@ -143,7 +143,12 @@ export class EditorController {
     ).getBoundingClientRect();
     this.world.resize(rect.width, rect.height);
     const fault = new URLSearchParams(location.search).get("fault");
-    if (fault === "delay-render" || fault === "drop-render")
+    if (
+      fault === "delay-render" ||
+      fault === "drop-render" ||
+      fault === "ignore-zoom" ||
+      fault === "pointerup-render"
+    )
       this.world.fault = fault;
     this.installEvents();
     this.setProject(await this.bridge.status());
@@ -167,6 +172,7 @@ export class EditorController {
     this.readyNavInput = null;
     this.writeQueue = Promise.resolve();
     this.writeError = null;
+    this.backgroundStats = { active: false };
     this.work.postMessage({ cancel: true });
     this.world.reset(this.doc);
     this.world.moveCamera({ x: 0, y: 0, scale: 0.25 });
@@ -312,6 +318,8 @@ export class EditorController {
       this.observation.mark("ready", String(this.navInput), {
         input: this.navInput,
         bounds,
+        point: [this.world.camera.x, this.world.camera.y],
+        brush: { ...brush },
       });
     }
   }
@@ -418,6 +426,10 @@ export class EditorController {
     event.preventDefault();
     if (this.gesture) return;
     const input = this.observation.input(event, "navigation");
+    if (this.world.fault === "ignore-zoom") {
+      this.observation.event("fault", { fault: "ignore-zoom", input });
+      return;
+    }
     const anchor = this.worldPoint(event);
     const previous = this.world.camera;
     const scale = this.clampedCamera({
@@ -505,6 +517,8 @@ export class EditorController {
         input: entry.input,
         revision: this.doc.revision,
         bounds,
+        point: [...entry.point],
+        gestureReleased: gesture.released,
       });
     }
     this.publish({ saved: false });
@@ -532,6 +546,9 @@ export class EditorController {
         revision: change.revision,
       });
     }
+    // The final revision may already be visible while held. Submit the committed
+    // state once more so pointerup is acknowledged by an actual rendered frame.
+    this.world.redraw();
     this.persist(change);
   }
 
@@ -573,11 +590,10 @@ export class EditorController {
     try {
       const change = redo ? this.doc.redo() : this.doc.undo();
       if (!change) return;
-      const removed = change.patches
-        .filter((patch) => !patch.after)
-        .map((patch) => patch.key);
+      // A broad history region can contain evicted, unchanged fine sources.
+      // Transfer the authoritative changed tiles without reloading that region.
+      this.world.updateSourcePatches(change.patches);
       for (const bounds of change.dirtyBounds) {
-        this.world.updateSources(bounds, removed);
         this.world.invalidate(bounds);
       }
       this.persist(change);
@@ -648,7 +664,7 @@ export class EditorController {
     );
   }
 
-  observe(points: Point[] = []) {
+  observe(points: Point[] = [], options: ObservationOptions = {}) {
     let height: number | null = null;
     try {
       height = this.doc.sampleHeight(this.pointer[0], this.pointer[1]);
@@ -666,6 +682,17 @@ export class EditorController {
       sessionId: this.doc?.sessionId,
       state: { ...this.state },
       camera: { ...this.world.camera },
+      brush: this.currentBrush(),
+      gesture: this.gesture
+        ? {
+            active: this.doc.active,
+            released: this.gesture.released,
+            pending: this.gesture.pending,
+            queuedPoints: this.gesture.points.length,
+            brush: { ...this.gesture.brush },
+            upInput: this.gesture.upInput ?? null,
+          }
+        : null,
       renderer: this.world.state(),
       background: { ...this.backgroundStats },
       document: this.doc
@@ -681,7 +708,9 @@ export class EditorController {
       pointer: [...this.pointer],
       height,
       samples,
-      events: this.observation.read(),
+      eventCount: this.observation.eventCount,
+      lastInputId: this.observation.lastInputId,
+      events: this.observation.read(options),
       droppedEvents: this.observation.dropped,
       timeOrigin: performance.timeOrigin,
     };

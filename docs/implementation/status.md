@@ -1,169 +1,115 @@
 # Aktueller Stand
 
-Stand: 8. November 2026. Regulärer Produkteinstieg: Atlas V7, Dateiformat 22,
-Generierungsrezept 4. Der zusätzliche Atlas-P0-Versuch verwendet ein eigenes
-Dateiformat 23 und ist noch keine Produkt- oder Leistungsfreigabe.
-[README](../../README.md) enthält Befehle, [Architektur](../architecture.md)
-Zuständigkeiten, [Produktvertrag](../product-contract.md) Verhalten und Grenzen.
+Stand: 8. November 2026. Regulärer Produkteinstieg bleibt Atlas V7 mit
+Dateiformat 22 und Generierungsrezept 4. Der optionale Electron-/Pixi-Höhenversuch
+verwendet Dateiformat 23. [README](../../README.md) enthält Befehle,
+[Architektur](../architecture.md) Zuständigkeiten und
+[Produktvertrag](../product-contract.md) Verhalten und Grenzen.
 
-## Aktueller Auftrag und Entscheidung
+## Aktueller Auftrag und Richtungsentscheidung
 
-Aaron hat nach Sichtung des [Neubauplans](atlas-rebuild-plan.md) ausdrücklich
-den vorgeschlagenen ersten Machbarkeitsversuch beauftragt: kleiner echter
-Höheneditor, Datei-Rundlauf und belastbare Messprüfung. Dieser Auftrag umfasst
-den P0-Versuch; P1–P9 sind damit nicht gestartet. Arbeitsbranch:
-`work/atlas-p0-feasibility`, auf Planstand
-`88e24a05120cb398eb732d46a3ae6806c428b3e5`, dessen Produktbasis
-`1bb3932fcffcb2d5fea47fae616c3b69489443bc` ist.
+Aaron hat den aktuellen Zweck ausdrücklich eingegrenzt: zunächst prüfen, ob
+die architektonische Richtung sinnvoll ist. Die Testreparatur dient diesem
+Machbarkeitsnachweis. Eine vollständige Leistungsabnahme und der Ausbau P1–P9
+sind damit nicht beauftragt. Die zusätzlichen Wiederholungen wurden deshalb
+bewusst beendet; weitere Software-Messgruppen würden die offene Architekturfrage
+nicht beantworten.
 
-Der bevorzugte Aufbau ist als optional startbare Anwendung implementiert:
-Electron 44.10.2, TypeScript, React-Panels, Pixi 8.22.0/WebGL und SQLite über
-`better-sqlite3` 13.0.3 in einem eigenen Utility-Prozess. Eine lokale Änderung
-aktualisiert zuerst das autoritative Dokument und dessen Darstellung; der
-Speicherprozess bestätigt sie danach. Ein Worker liest eigene unveränderliche
-Quelldaten. Der kleine fachliche Durchlauf funktioniert. Ob dieser Aufbau die
-vereinbarten nativen Latenzen erreicht, ist weiterhin offen; **P0 ist blockiert**.
+**Die Richtung ist ein tragfähiger Kandidat für den weiteren kleinen Versuch.**
+Der lokale Höhenpfad liefert während laufender Gesten echte Geländeänderungen,
+feine relative Höhen überleben grobe Eingriffe und History, und Bearbeitung kann
+mit realer Persistenz und Hintergrundrechnung überlappen. Das unterstützt die
+Trennung von aktivem Modell, Darstellung, Hintergrundarbeit und Dateispeicher.
+Eine allgemeine Überlegenheit von Electron/Pixi gegenüber V7 ist damit nicht
+belegt.
 
-## Implementierter und geprüfter Teil
+**Die Skalierung grober Ansichten bleibt die entscheidende offene Frage.**
+Der derzeitige räumliche Leser verlangt alle berührten Quellenstufen und scheitert
+bei den dichten Dateien an seiner Grenze von 512 Quellkacheln. Die im
+[Neubauplan](atlas-rebuild-plan.md) vorgesehene Übersicht mit begrenztem Nachladen
+ist noch nicht umgesetzt. Dieser Befund begrenzt den gegenwärtigen Versuch; er
+entscheidet nicht allein über die Eignung der gewählten Sprache oder Laufzeit.
 
-- Sparse relative Höhenkacheln, einmalige Sättigung der summierten Höhe,
-  begrenzte Quellen-/Darstellungs-/Historybudgets, explizit unbekannte und
-  bestätigte leere Quellen. Grobes Anheben schreibt die feinen Grabenquellen
-  nicht um. Ein Randfall sichert die unterschiedliche Rasterausdehnung an der
-  Weltgrenze; alte Workerantworten dürfen neu erzeugte Kacheln nicht ersetzen.
-- Echte Eingaben, Werkzeugwechsel, freier Kameraweg, UI-Ortswechsel,
-  Undo/Redo und begrenzte Annahme noch nicht bearbeitbarer Pinselstellen.
-  Abbruch erhält bereits angenommene Höhenänderungen und verwirft den
-  unangenommenen Rest. Dateiwechsel verhindert Eingaben in die alte Session.
-- Enger Preload-Vertrag, isolierter Renderer, echte SQLite-Arbeitskopie,
-  räumliche Quellenauswahl und geordnete Transaktionen. Speichern reserviert
-  einen konsistenten Snapshot vor der Dialogantwort und veröffentlicht ihn
-  atomar; spätere Änderungen bleiben ungespeichert. Fehlgeschlagenes Öffnen
-  oder Speichern erhält den bisherigen Zustand.
-- 53 Tests für Höhenkern, Weltgrenze, Messauswertung, Traceanalyse und die
-  Identität tatsächlich gestarteter Pakete bestehen.
-  Die Messauswertung verwirft fehlende Werte, unzureichende Stichproben,
-  ungültige Zeiten und unbewiesene Präsentationszuordnung. Pointerup und
-  laufende Striche haben getrennte Stichproben und Grenzwerte. Kalte Navigation
-  verwendet ihre eigenen Zeitbasen und Grenzen (500 ms bis Bereitschaft,
-  750 ms bis zum ersten exakten Ergebnis ab Navigation).
-- Neun SQLite-Tests bestehen im tatsächlichen Electron-ABI 149, einschließlich
-  Snapshot während späterer Writes, fehlgeschlagenem Dateiaustausch,
-  beschädigtem räumlichem Index, alten Sessions und zu großen Read-Ergebnissen.
-- Die vollständige bisherige Frontendsuite wurde mitgeprüft: 474 Tests
-  bestanden, fünf Fälle einer Suite wurden wegen fehlendem `cargo` nicht
-  ausgeführt; deren Rust-Testserver konnte nicht starten. Das ist keine
-  vollständig grüne Repository-Prüfung. Spätere P0-Ergänzungen sind in den
-  oben genannten 53 aktuellen P0-Tests enthalten.
+## Reparierte Prüfung und dabei gefundene Fehler
 
-**Geprüfter Codecommit:** `cbdc07262e767eab4f6f74ce8309642e894ffb07`, gebaut aus
-sauberem Arbeitsbaum. Der anschließende Dokumentationscommit verändert diesen
-Code nicht. Quellhash:
-`da743d04a7c11eb7b7808e8fa0d1af60ce449b82824481115cb7f816f7edbd4d`.
-Der tatsächlich gestartete Forge-Paketstand hat SHA-256
-`4d7a1e492b1293265ad1b98d8f357bba7c1c3847551e4b93eac688da3649e679`.
+- Sichtbarer Zoom und Kameraanker werden getrennt geprüft. Ein ignoriertes
+  Mausrad kann nicht mehr durch erfolgreiches Verschieben verdeckt werden.
+- Ein gehaltener bewegter Strich muss an zwei getrennten Stellen schon vor dem
+  Loslassen korrektes Gelände zeigen und genau eine rückgängig machbare Aktion
+  erzeugen. Modellwerte, tatsächliche Canvasbilder und Renderübergaben werden
+  gemeinsam geprüft.
+- Echte Dateien mit 32, 1024 und 9000 Quellen belasten denselben groben Bereich;
+  die größte Quellmenge überschreitet 256 MiB. Sichtbares zusätzliches Relief,
+  genaue Detailrückkehr, gespeicherte Komposition und unveränderte Feindaten
+  verhindern einen scheinbaren Erfolg durch weggelassene Quellen.
+- Last entsteht aus einer Datei mit 9008 echten Quellen sowie einem rechnenden
+  Worker. Eingaben müssen reale Speicherintervalle und aktuelle Workerarbeit
+  überlappen. Kalte Ziele sind nach gewöhnlichem Projektöffnen ungeladen;
+  der Betriebssystem-Dateicache wird nicht als kalt ausgegeben.
+- Die Fehlerkontrollen erkennen ignorierten Zoom, Zeichnen erst bei Pointerup,
+  verzögerte und fehlende Renderübergaben. Der normale Pfad muss sich anschließend
+  wieder erholen. Ein beliebiger Testfehler zählt nicht als erfolgreiche Kontrolle.
+- History überträgt eigene Source-Patch-Kopien auch nach Quellenauslagerung.
+  Pointerup fordert einen echten Frame an, wenn der letzte Live-Stand bereits
+  gezeichnet war. Hintergrundstatistik wird beim Projektwechsel zurückgesetzt.
+- Zustandsabfragen kopieren nicht mehr ständig das wachsende Ereignisjournal.
+  Messungen lesen seit ihrem Beginn hinzugekommene Ereignisse; das vollständige
+  Journal und sein Verlustzähler bleiben erhalten. Native Klickziele werden
+  nach dem möglicherweise scrollenden Hintergrundstart ermittelt.
 
-Der Abschlusslauf unter `artifacts/atlas-rebuild/p0-final/packaged-final/`
-besteht mit **13 Funktionskriterien und drei Renderkontrollen** (Exit 0).
-Alle sechs Prozessstarts verwenden das gebaute Paket ohne Entwicklungsserver;
-Manifest und Quell-/Lockhash werden aus der tatsächlich ausgeführten Anwendung
-geprüft. Fehlendes oder abweichendes Paketmanifest bricht die Prüfung ab.
-Das Fenster misst 1440 × 960 bei DPR 1, der geprüfte Kartenausschnitt 1180 × 894.
-Die sichtbare Küstenverschiebung wurde zusätzlich anhand der Vorher-/Nachherbilder
-geprüft; die feinen Höhenpayloads bleiben bytegleich. Bearbeitung während eines
-wirklichen SQLite-Snapshots bei aktivem Rechenworker ist zeitlich belegt.
+## Identität und vorhandene Belege
 
-Die Kontrolle mit 250 ms absichtlicher Renderverzögerung wird als zu langsam
-abgewiesen; ausbleibendes Zeichnen wird als fehlende exakte Submission erkannt.
-Ein frischer Normalstart stellt die Darstellung wieder her, erhält aber nur
-`PROXY_ONLY`. Diese Kontrollen qualifizieren keine native Präsentationsmessung.
-Der vollständige Abnahmeauswerter endet am selben Bericht korrekt mit Exit 1;
-der native Startversuch mit Exit 2 (`NO_NATIVE_DISPLAY`).
+Der Laufzeitkandidat wurde aus sauberem Arbeitsbaum gebaut und als eigenständiges
+Forge-Paket gestartet. Nachfolgende Änderungen betreffen die Dokumentation.
 
-Build-/Storelog, Unitlog, Paketlog und die blockierte native Vorprüfung liegen
-daneben unter `artifacts/atlas-rebuild/p0-final/`. Rohdaten, SQLite-Fixtures,
-Screenshots und Traces bleiben ignoriert. Die TypeScript-Prüfungen und Prettier
-bestehen; die Rust-Anteile von Vertrags-, Format- und Gesamtprüfung sind wegen
-fehlendem `cargo` nicht ausführbar. Das ist keine vollständige CI-Freigabe.
+| Identität     | Wert                                                               |
+| ------------- | ------------------------------------------------------------------ |
+| Codecommit    | `442576ccb9bce95cb6d7c63758b4a2829f77af63`                         |
+| Quell-SHA-256 | `f8261ae209f3e1db73fc505b7d2befe356af2719cfc530bc16b20ce4fb5b74f4` |
+| Lock-SHA-256  | `8f90d72914d5d7599759b5d117e4c40457f883f4213f870940a1167db6a17839` |
+| Paket-SHA-256 | `3dd319c486e0e55056737539e29bead6869dc00a39af010c3de24a388568c165` |
 
-## Was die Messung bislang belegt und was fehlt
+| Prüfung                                                 | Nachweis                                                                                                                                                              |
+| ------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| P0-Modell, Raster, Renderer, Beobachtung und Auswertung | 80 Tests bestanden am Codekandidaten.                                                                                                                                 |
+| SQLite-Store und Skalierungsfixtures                    | 12 Tests bestanden in Electrons tatsächlicher Laufzeit.                                                                                                               |
+| TypeScript, Syntax und Format der Änderungen            | Bestanden.                                                                                                                                                            |
+| Gezielte Interaktionsvorprüfung                         | 17 Inhalts-/Interaktionschecks und fünf Fehlerkontrollen bestanden (`repair-interactions-5`).                                                                         |
+| Gezielter warmer Lastsammler                            | 100 Striche, 600 Eingaben einschließlich Pointerup, vollständige Sammlung ohne Ereignisverlust (`repair-busy-series-2`).                                              |
+| Gezielter kalter Lastsammler                            | 34 Ortswechsel vollständig mit belegter Speicher-/Workerüberlappung, ohne Ereignisverlust (`repair-cold-busy-series-2`).                                              |
+| Skalierungsvorprüfung                                   | 32 Quellen bestanden einschließlich Relief, History und Dateirundlauf; 1024 und 9000 Quellen scheiterten an der unveränderten 512-Kachel-Grenze (`repair-scaling-4`). |
+| Native Vorprüfung des Pakets                            | Exit 2, `NO_NATIVE_DISPLAY` (`representative-final/442576c-native-preflight`).                                                                                        |
 
-Der Labortreiber bedient eine wirkliche Electron-Anwendung mit Pixi/WebGL,
-Preload, Main, Utility-Prozess und SQLite-Datei. Er prüft leere Navigation
-mit/ohne Raster, Anheben einer vorbereiteten Küste mit feinem Graben,
-unabhängig erwartete Höhen, sichtbare Wasser-/Landpixel, Undo/Redo, unveränderte
-Feinpayloads, Speichern, Reopen, echten Prozessneustart sowie einen zunächst
-ungeladenen Zielort. Ein Rechenworker bearbeitet echte Höhenquellen. Der
-Speicherprozess protokolliert tatsächliche Snapshot-/Publishintervalle;
-Bearbeitung unter gleichzeitigem Speichern zählt nur bei nachgewiesener
-zeitlicher Überlappung. Ein früher oder später abgeschlossener Save genügt nicht.
+Alle genannten Pfade liegen unter `artifacts/atlas-rebuild/`. Die gezielten
+Vorprüfungen sind keine vollständige Abnahme des danach gepackten Kandidaten.
+Ihre Ergebnisse und fehlgeschlagenen Vorläufe bleiben als solche erhalten.
 
-Diese Umgebung bietet Softwaregrafik (ANGLE/SwiftShader) und eine virtuelle
-Displayfrequenz von 0 Hz. Sie ist keine native Referenzmaschine. Eingabe bis
-exakte Renderübergabe wird nur als Diagnose ausgegeben. Ein Chromium-Trace
-zeigt konkret, dass der auf ein Eingabeereignis reagierende Frame noch altes
-Terrain enthalten kann und die exakte Geländeänderung erst in einem späteren
-Frame abgegeben wird. Die Traceauswertung erhält 64-Bit-Framekennungen als
-Strings, statt sie beim JSON-Einlesen zu runden.
+Der zusätzliche Paketlauf unter
+`artifacts/atlas-rebuild/representative-final/442576c-packaged-full/` wurde mit
+SIGINT/Exit 130 beendet. Vorhanden sind Log, ausdrücklich partielle Metadaten und
+19 abgeschlossene Beobachtungsdateien ohne verworfene Ereignisse. Je Gruppe 1
+und 2 wurden 400 warme Striche erfasst. Drei kalte Serien mit jeweils 34 Wechseln
+sind vollständig protokolliert; die zweite kalte Lastserie ist unvollständig.
+Gruppe 3 und die nachgelagerten Kontrollen/Skalierungsfälle wurden nicht erreicht.
+Es gibt keinen abschließenden `report.json` und kein Gesamt-PASS für diesen Lauf.
+Erfasste Eingabezahlen werden nicht als bestandene Einzelversuche ausgegeben.
 
-Auch die diagnostischen Einzelwerte sind keine Zeitfreigabe: Im finalen Lauf
-braucht die Live-Eingabe des Grobhubs **56,4 ms bis zur Renderübergabe**, Pointerup
-45,8 ms. Schon die erste Untergrenze überschreitet damit 50 ms. Unter Last waren
-es im vorausgehenden Paketlauf 50,2 ms und im Abschlusslauf 17,4 ms; beide Proben
-bleiben erhalten. Die kalte Einzelprobe erreicht Bereitschaft nach 22,9 ms und
-Renderübergabe nach 447,1 ms ab Navigation. Das sind wenige Softwareproben ohne
-Präsentationszeit; daraus wird kein belastbarer p95 und kein Bestehen von M10
-abgeleitet. Der frühere Lauf liegt getrennt unter `p0-final/packaged-run/`.
+## Grenzen der Aussage und nächste technische Frage
 
-Folgende Kriterien bleiben offen beziehungsweise blockiert:
+Die formale native P0-Abnahme bleibt **blockiert**. Es fehlt die eindeutige
+Zuordnung von Atlas-Generation über die verbrauchte Canvasressource zum tatsächlich
+präsentierten Compositorframe. Softwaregrafik, Renderübergaben und RAF ersetzen
+weder diese Messung noch eine qualifizierte Hardware-/Displayreferenz. Einzelne
+Überschreitungen der strengen Submission-Diagnostik sind außerdem nicht mit einem
+Verstoß gegen das getrennt zu prüfende p95-Ziel gleichzusetzen.
 
-1. **P0a:** Die kurze native V7-Vergleichsreihe fehlt. Hier fehlen Rust-Werkzeuge,
-   ein gebauter V7-Host und ein qualifiziertes natives Display.
-2. **P0b:** Die beweisbare Verbindung von semantischer Atlas-Rendergeneration
-   zur tatsächlich verbrauchten Canvasressource und zum präsentierten
-   Compositorframe ist noch nicht implementiert. Zeitnähe, RAF, Cursorbilder
-   und Renderübergabe sind kein Ersatz. Die native Hardware-/Displayreferenz
-   und Clockkalibrierung fehlen ebenfalls.
-3. **P0c/M10:** Der Treiber führt einen funktionalen Pilotlauf aus. Die vollständige
-   Sammlung der vorgeschriebenen Stichproben in drei unabhängigen nativen
-   Release-Läufen ist noch nicht implementiert und durchgeführt. `--full`
-   oder `--native` machen aus dem Pilotlauf keine bestandene Abnahme.
-4. **Auslieferung:** Forge kann ein eigenständig startbares Linux-Verzeichnis
-   bauen. Ein RPM wurde hier nicht gebaut oder installiert; `rpm`/`rpmbuild`
-   fehlen. Der Paketstart ersetzt diese Prüfung nicht. Der Pilot beantwortet
-   OS-Dateidialoge über den Testadapter; die echte native Dialogbedienung ist
-   ebenfalls noch offen.
-5. **Skalierung und spätere Funktionen:** Der kleine Bestand belegt keine
-   Weltgröße. Der bisherige Öffnungspfad scannt den Quellindex beim Aufbau
-   der Arbeitskopie; große Dateien, vollständige Dateifehlerprüfung,
-   sämtliche Werkzeuge, Wasser-/Fundamentfolgen und Lastprofile gehören
-   weiterhin zu den nachfolgenden Planpaketen. Der P0-Rechenjob ist eine
-   begrenzte Höhenabtastung und kein Hydrologie-Nachweis.
+Der nächste erkenntnisreiche kleine Versuch wäre eine begrenzte grobe Übersicht:
+bei 32, 1024 und 9000 Quellen denselben Ausschnitt darstellen und bearbeiten,
+mit begrenzten Reads und Speicherbedarf, danach exakte feine Details wiederfinden.
+Er prüft die noch offene architektonische Annahme. Weitere große Wiederholungsreihen
+oder Fachwerkzeuge sind für diese Richtungsentscheidung nicht der nächste Schritt.
 
-Nächster erforderlicher Schritt ist die fehlende Präsentationszuordnung am
-gebauten Kandidaten, anschließend die kurze alte Baseline und die vollständige
-P0-Stichprobe auf einer festgehaltenen nativen Referenz. Erst deren Ergebnis
-entscheidet über die Leistungsfähigkeit des Ansatzes. Der aktuelle Treiber
-weist fehlende Voraussetzungen ausdrücklich als Fehler beziehungsweise
-Blockade aus; Grenzwerte werden nicht an die Umgebung angepasst.
-
-## Bisheriger Produktstand und Integration
-
-Die früher dokumentierten V7-Nachweise betreffen Höhen-/Landschaftsarbeiten,
-stabile Geometriecaches, Kameramittelpunkt, Eingabeübernahme, Kartenschrift,
-Dachdetails und lokale Materialkachelzuordnung. Main enthält PR #1464 als
-`288582d19`; die geprüfte Kamerakorrektur und die Dachpixel-Probe wurden im
-vorherigen Arbeitsstand gesondert geprüft. Diese historischen Funktions- und
-Buildnachweise gelten nicht für den neuen Electron-Pfad. Die frühere kleine
-native Strichreihe hat das Ziel p95 ≤50 ms ebenfalls nicht belegt.
-
-Aaron hat Push und Draft-PR zu `ThonkTank/Salt-Marcher` ausdrücklich freigegeben.
-Der Kandidat auf `work/atlas-p0-feasibility` wird als Draft-PR gegen
-`planning/atlas-rebuild-20261108` veröffentlicht. Der zuvor blockierte
-Veröffentlichungsschritt ist damit autorisiert; die Freigabe ersetzt keine
-technische Abnahme und erweitert den Auftrag nicht auf P1–P9.
-
-`Candidate · exact-SHA aggregate`, native Leistungsabnahme und Übernahme nach
-Main stehen weiterhin aus. Die bestehenden Checks wurden nicht abgeschaltet;
-`check:all` enthält zusätzlich den P0-Build und die SQLite-Prüfung im tatsächlichen
-Electron-ABI. Die Formatprüfung umfasst auch die neuen Desktopdateien.
+Die V7-Vergleichsreihe, native Leistungsabnahme, RPM-Installation und echte
+OS-Dateidialogbedienung bleiben offen. Ohne `cargo` konnten hier die Rust-Anteile
+der Gesamtprüfung nicht ausgeführt werden. Die vorhandenen Teilnachweise ersetzen
+keine Freigabe durch `Candidate · exact-SHA aggregate`; der PR bleibt ein Draft.

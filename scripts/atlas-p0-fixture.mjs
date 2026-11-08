@@ -3,6 +3,12 @@ import { createHash, randomUUID } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import {
+  createBusyFixture,
+  createScalingFixtures,
+  finePayloadDigest,
+  inspectScalingFixture,
+} from "./atlas-p0-scaling.mjs";
 
 // Launch with ELECTRON_RUN_AS_NODE=1 and the installed Electron executable, so
 // better-sqlite3 uses the same native ABI as the real utility process.
@@ -130,9 +136,40 @@ if (command === "create" && argument) {
 } else if (command === "inspect" && argument) {
   const origin = extra.length === 2 ? extra.map(Number) : [0, 0];
   console.log(JSON.stringify(await inspect(resolve(argument), origin)));
+} else if (command === "create-scaling" && argument) {
+  console.log(
+    JSON.stringify(
+      await createScalingFixtures(argument, {
+        ...(extra.length ? { ids: extra } : {}),
+        onProgress: ({
+          id,
+          sourceTiles,
+          decodedBytes,
+          creationAndVerificationMs,
+        }) =>
+          console.error(
+            `[atlas-p0-fixture] ${id}: ${sourceTiles} real source tiles, ${decodedBytes} decoded bytes, ${creationAndVerificationMs.toFixed(0)} ms including save/reopen verification`,
+          ),
+      }),
+    ),
+  );
+} else if (command === "inspect-scaling" && argument) {
+  console.log(JSON.stringify(await inspectScalingFixture(argument)));
+} else if (command === "create-busy" && argument) {
+  if (extra.length > 1)
+    throw new Error("create-busy accepts only one optional base file.");
+  console.log(
+    JSON.stringify(
+      await createBusyFixture(argument, {
+        ...(extra.length ? { baseFile: extra[0] } : {}),
+      }),
+    ),
+  );
+} else if (command === "digest-fine" && argument) {
+  console.log(JSON.stringify(finePayloadDigest(argument)));
 } else {
   console.error(
-    "Usage: Electron-as-Node atlas-p0-fixture.mjs create <directory> | inspect <file> [originX originY]",
+    "Usage: Electron-as-Node atlas-p0-fixture.mjs create <directory> | inspect <file> [originX originY] | create-scaling <directory> [baseline medium large] | create-busy <directory> [large-fixture-file] | inspect-scaling <file> | digest-fine <file>",
   );
   process.exitCode = 2;
 }

@@ -10,10 +10,13 @@ import {
 import "pixi.js/unsafe-eval";
 import { editorBudgets } from "../budgets";
 import {
+  cloneHeightTile,
   clipBounds,
   intersectsBounds,
   type Bounds,
   type EditorDocument,
+  type HeightPatch,
+  type HeightTile,
 } from "../model";
 import { Observation } from "../observation";
 import type { RasterMessage, RasterResult, RasterTask } from "./raster.worker";
@@ -80,7 +83,12 @@ export class WorldRenderer {
   height = 760;
   grid = true;
   cursor: { x: number; y: number; radius: number } | null = null;
-  fault: "none" | "delay-render" | "drop-render" = "none";
+  fault:
+    | "none"
+    | "delay-render"
+    | "drop-render"
+    | "ignore-zoom"
+    | "pointerup-render" = "none";
   private faultArmed = false;
   maxRasterMs = 0;
   sourceBytes = 0;
@@ -179,11 +187,29 @@ export class WorldRenderer {
   /** Main document owns arrays; only owned snapshot copies cross the boundary. */
   updateSources(bounds: Bounds, removed: string[] = [], replace = false): void {
     const snapshot = this.document.snapshot(bounds);
+    this.sendSources(snapshot.tiles, removed, replace);
+  }
+
+  /** History already owns complete changed sources, even after distant eviction. */
+  updateSourcePatches(patches: readonly HeightPatch[]): void {
+    this.sendSources(
+      patches.flatMap((patch) =>
+        patch.after ? [cloneHeightTile(patch.after)] : [],
+      ),
+      patches.filter((patch) => !patch.after).map((patch) => patch.key),
+    );
+  }
+
+  private sendSources(
+    tiles: HeightTile[],
+    removed: string[] = [],
+    replace = false,
+  ): void {
     if (replace) this.sourceSizes.clear();
     for (const key of removed) this.sourceSizes.delete(key);
-    for (const tile of snapshot.tiles)
+    for (const tile of tiles)
       this.sourceSizes.set(tile.key, tile.values.byteLength);
-    this.sourceBytes = snapshot.tiles.reduce(
+    this.sourceBytes = tiles.reduce(
       (total, tile) => total + tile.values.byteLength,
       0,
     );
@@ -200,10 +226,10 @@ export class WorldRenderer {
         kind: "sources",
         reset: replace,
         sessionId: this.sessionId,
-        tiles: snapshot.tiles,
+        tiles,
         removed,
       } satisfies RasterMessage,
-      snapshot.tiles.map((tile) => tile.values.buffer as ArrayBuffer),
+      tiles.map((tile) => tile.values.buffer as ArrayBuffer),
     );
   }
 
@@ -341,11 +367,22 @@ export class WorldRenderer {
       submittedRevision: this.submittedRevision,
       viewGeneration: this.viewGeneration,
       fault: this.fault,
+      heldForPointerup: this.heldForPointerup,
     };
   }
 
+  private get heldForPointerup(): boolean {
+    return this.fault === "pointerup-render" && Boolean(this.document?.active);
+  }
+
   private dispatch(): void {
-    if (this.running || !this.document || this.destroyed) return;
+    if (
+      this.running ||
+      !this.document ||
+      this.destroyed ||
+      this.heldForPointerup
+    )
+      return;
     // Latest pending rectangle per tile replaces obsolete work, never source edits.
     const tile = [...this.tiles.values()].find(
       (tile) =>
@@ -391,6 +428,7 @@ export class WorldRenderer {
     const start = performance.now();
     let uploaded = 0;
     while (
+      !this.heldForPointerup &&
       this.results.length &&
       performance.now() - start < editorBudgets.resultCpuMs
     ) {

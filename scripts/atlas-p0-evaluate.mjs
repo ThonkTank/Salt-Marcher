@@ -1,6 +1,28 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { pathToFileURL } from "node:url";
 
+export const P0_FUNCTIONAL_CHECKS = Object.freeze([
+  "canonical-fixture",
+  "coarse-preserves-fine",
+  "undo-redo",
+  "save-reopen",
+  "process-restart",
+  "cold-before-navigation",
+  "busy-worker-and-save",
+  "terrain-pixels",
+  "empty-navigation-grid-on",
+  "empty-navigation-grid-off",
+  "coarse-exact-values",
+  "cold-edit-after-navigation",
+  "worker-and-save-executed",
+  "visible-zoom",
+  "pan-anchor",
+  "continuous-stroke-live",
+  "continuous-stroke-undo",
+  "cold-edit-content",
+  "world-detail-roundtrip",
+]);
+
 /** These are requirements, never inferred from whichever samples happened to arrive. */
 export const P0_REQUIREMENTS = Object.freeze({
   scope: "P0-height-subset",
@@ -55,20 +77,231 @@ export const P0_REQUIREMENTS = Object.freeze({
       minTotalSamples: 100,
     },
   ],
-  requiredChecks: [
-    "canonical-fixture",
-    "coarse-preserves-fine",
-    "undo-redo",
-    "save-reopen",
-    "process-restart",
-    "cold-before-navigation",
-    "busy-worker-and-save",
-    "terrain-pixels",
+  requiredChecks: P0_FUNCTIONAL_CHECKS,
+  scaling: {
+    minimumSourceTiles: [32, 1024, 9000],
+    tileBytes: 64 * 64 * 8,
+    sourceBudgetBytes: 256 * 1024 * 1024,
+  },
+  requiredFaultControls: [
+    {
+      fault: "ignore-zoom",
+      primaryCheck: "visible-zoom",
+      primaryFailureCode: "ZOOM_DID_NOT_CHANGE_SCALE",
+    },
+    {
+      fault: "pointerup-render",
+      primaryCheck: "continuous-stroke-live",
+      primaryFailureCode: "LIVE_TERRAIN_NOT_VISIBLE_BEFORE_RELEASE",
+    },
   ],
 });
 
 const finite = (value) => typeof value === "number" && Number.isFinite(value);
 const nonempty = (value) => typeof value === "string" && value.length > 0;
+
+/** A release run can use several processes; control processes are never repetitions. */
+function releaseRuns(report, fail) {
+  const processes = (Array.isArray(report.runs) ? report.runs : []).filter(
+    (run) => run.role !== "control",
+  );
+  const identities = processes.map((run) => run.instanceId);
+  if (
+    identities.some((id) => !nonempty(id)) ||
+    new Set(identities).size !== processes.length
+  )
+    fail("RUNS_NOT_INDEPENDENT");
+  const groups = new Map();
+  for (const process of processes) {
+    if (!nonempty(process.independentRunId)) {
+      fail("INDEPENDENT_RUN_ID_MISSING", { run: process.id });
+      continue;
+    }
+    let group = groups.get(process.independentRunId);
+    if (!group) {
+      group = { id: process.independentRunId, scenarios: [] };
+      groups.set(process.independentRunId, group);
+    }
+    if (!Array.isArray(process.scenarios)) {
+      fail("RUN_SCENARIOS_MISSING", { run: process.id });
+      continue;
+    }
+    group.scenarios.push(...process.scenarios);
+  }
+  return [...groups.values()];
+}
+
+/** The laboratory gate also fails closed: passing timings cannot replace behavior. */
+export function evaluateFunctional(report, requirements = P0_REQUIREMENTS) {
+  const failures = [];
+  const fail = (code, detail = {}) => failures.push({ code, ...detail });
+  if (report.errors !== undefined && !Array.isArray(report.errors))
+    fail("RUNNER_ERRORS_INVALID");
+  for (const error of Array.isArray(report.errors) ? report.errors : [])
+    fail("RUNNER_OR_PRODUCT_FAILURE", { error });
+  const runs = releaseRuns(report, fail);
+  const checks = Array.isArray(report.functional?.checks)
+    ? report.functional.checks
+    : [];
+  const required = requirements.requiredChecks ?? [];
+  const runIds = new Set(runs.map((run) => run.id));
+  if (required.length && !runs.length) fail("FUNCTIONAL_RUN_MISSING");
+  const identities = new Set();
+  for (const check of checks) {
+    const detail = { run: check.independentRunId, check: check.id };
+    if (!nonempty(check.id)) fail("FUNCTIONAL_CHECK_ID_MISSING", detail);
+    if (!runIds.has(check.independentRunId))
+      fail("FUNCTIONAL_RUN_IDENTITY_MISSING", detail);
+    const identity = `${check.independentRunId}:${check.id}`;
+    if (identities.has(identity)) fail("DUPLICATE_FUNCTIONAL_CHECK", detail);
+    identities.add(identity);
+    if (check.passed !== true) fail("FUNCTIONAL_CHECK_FAILED", detail);
+    if (
+      check.id === "continuous-stroke-live" &&
+      (check.liveBeforeRelease !== true ||
+        !finite(check.firstLiveAt) ||
+        check.firstLiveAt < 0 ||
+        !finite(check.releasedAt) ||
+        check.firstLiveAt >= check.releasedAt ||
+        !Number.isInteger(check.checkedIntermediateStates) ||
+        check.checkedIntermediateStates < 2)
+    )
+      fail("CONTINUOUS_STROKE_LIVE_EVIDENCE_MISSING", detail);
+  }
+  for (const run of runs)
+    for (const id of required) {
+      const matches = checks.filter(
+        (check) => check.id === id && check.independentRunId === run.id,
+      );
+      if (matches.length !== 1 || matches[0].passed !== true)
+        fail("FUNCTIONAL_CHECK_MISSING_OR_FAILED", { run: run.id, check: id });
+    }
+
+  const scalingSpec = requirements.scaling;
+  if (scalingSpec) {
+    const scaling = report.scaling ?? {};
+    const cases = Array.isArray(scaling.cases) ? scaling.cases : [];
+    const minimums = scalingSpec.minimumSourceTiles;
+    if (scaling.passed !== true) fail("SCALING_FAILED_OR_MISSING");
+    if (cases.length < minimums.length)
+      fail("SCALING_CASES_MISSING", {
+        actual: cases.length,
+        required: minimums.length,
+      });
+    const ids = new Set();
+    const sizes = new Set();
+    for (const entry of cases) {
+      const detail = { case: entry.id };
+      if (!nonempty(entry.id) || ids.has(entry.id))
+        fail("SCALING_CASE_ID_MISSING_OR_DUPLICATE", detail);
+      ids.add(entry.id);
+      if (
+        !Number.isSafeInteger(entry.sourceTiles) ||
+        entry.sourceTiles <= 0 ||
+        sizes.has(entry.sourceTiles) ||
+        !finite(entry.decodedBytes) ||
+        entry.decodedBytes < entry.sourceTiles * scalingSpec.tileBytes
+      )
+        fail("SCALING_CASE_SIZE_INVALID", detail);
+      sizes.add(entry.sourceTiles);
+      if (entry.passed !== true || entry.error != null)
+        fail("SCALING_CASE_FAILED", detail);
+      // A larger fixture is only useful if interaction keeps its active working
+      // set bounded. Raising the reader cap to decode the entire fixture is not
+      // an implementation of the plan's coarse/fine scaling requirement.
+      for (const stage of ["coarseReadiness", "coarseEdit"]) {
+        for (const field of [
+          "documentSourceBytes",
+          "rendererSourceBytes",
+          "workerSourceBytes",
+        ]) {
+          const bytes = entry[stage]?.[field];
+          if (!finite(bytes) || bytes < 0)
+            fail("SCALING_FOOTPRINT_MISSING_OR_INVALID", {
+              ...detail,
+              stage,
+              field,
+            });
+          else if (bytes > scalingSpec.sourceBudgetBytes)
+            fail("SCALING_SOURCE_BUDGET_EXCEEDED", {
+              ...detail,
+              stage,
+              field,
+              actual: bytes,
+              maximum: scalingSpec.sourceBudgetBytes,
+            });
+        }
+        const delta = entry.stageReadDeltas?.[stage];
+        if (
+          !delta ||
+          ["reads", "returnedTiles", "returnedBytes"].some(
+            (field) => !Number.isSafeInteger(delta[field]) || delta[field] < 0,
+          )
+        )
+          fail("SCALING_SOURCE_READS_MISSING_OR_INVALID", { ...detail, stage });
+        else if (
+          delta.returnedBytes > scalingSpec.sourceBudgetBytes ||
+          delta.returnedTiles >
+            Math.floor(scalingSpec.sourceBudgetBytes / scalingSpec.tileBytes)
+        )
+          fail("SCALING_SOURCE_READ_BUDGET_EXCEEDED", {
+            ...detail,
+            stage,
+            returnedTiles: delta.returnedTiles,
+            returnedBytes: delta.returnedBytes,
+            maximumBytes: scalingSpec.sourceBudgetBytes,
+          });
+      }
+    }
+    const ordered = [...cases].sort((a, b) => a.sourceTiles - b.sourceTiles);
+    for (let i = 0; i < minimums.length; i++)
+      if (!(ordered[i]?.sourceTiles >= minimums[i]))
+        fail("SCALING_FIXTURE_TOO_SMALL", {
+          case: ordered[i]?.id,
+          requiredSourceTiles: minimums[i],
+        });
+    if (
+      !cases.some((entry) => entry.decodedBytes > scalingSpec.sourceBudgetBytes)
+    )
+      fail("SCALING_SOURCE_BUDGET_NOT_EXERCISED", {
+        sourceBudgetBytes: scalingSpec.sourceBudgetBytes,
+      });
+  }
+
+  const controls = Array.isArray(report.negativeControls)
+    ? report.negativeControls
+    : [];
+  for (const control of controls)
+    if (control.passed !== true)
+      fail("FAULT_CONTROL_FAILED", { fault: control.fault });
+  for (const spec of requirements.requiredFaultControls ?? []) {
+    const matches = controls.filter((control) => control.fault === spec.fault);
+    if (matches.length !== 1) {
+      fail("FAULT_CONTROL_MISSING_OR_DUPLICATE", { fault: spec.fault });
+      continue;
+    }
+    const control = matches[0];
+    if (
+      control.passed !== true ||
+      control.observedFault !== spec.fault ||
+      control.primaryCheck !== spec.primaryCheck ||
+      control.primaryPassed !== false ||
+      control.primaryFailureCode !== spec.primaryFailureCode ||
+      control.error != null ||
+      control.mutant?.error != null ||
+      control.mutant?.failure != null ||
+      control.recovery?.primaryCheck !== spec.primaryCheck ||
+      control.recovery?.passed !== true ||
+      control.recovery?.error != null
+    )
+      fail("FAULT_CONTROL_NOT_PROVEN", { fault: spec.fault });
+  }
+  return {
+    status: failures.length ? "FAIL" : "PASS",
+    passed: failures.length === 0,
+    failures,
+  };
+}
 
 /** A package must identify its executed code; workspace metadata is no fallback. */
 export function checkBuildIdentity(workspace, executed, provenance) {
@@ -316,23 +549,15 @@ export function evaluateAcceptance(report, requirements = P0_REQUIREMENTS) {
     mapping.clock?.calibrated !== true
   )
     block("EXACT_PRESENTATION_MAPPING_UNAVAILABLE");
-  for (const id of requirements.requiredChecks ?? []) {
-    const check = report.functional?.checks?.find((c) => c.id === id);
-    if (!check || check.passed !== true)
-      fail("FUNCTIONAL_CHECK_MISSING_OR_FAILED", { check: id });
-  }
-  const runs = Array.isArray(report.runs) ? report.runs : [];
+  failures.push(...evaluateFunctional(report, requirements).failures);
+  // evaluateFunctional records malformed identities once. Reuse exactly the
+  // same release grouping for timing coverage, excluding all control launches.
+  const runs = releaseRuns(report, () => {});
   if (runs.length < requirements.independentRuns)
     fail("INSUFFICIENT_INDEPENDENT_RUNS", {
       actual: runs.length,
       required: requirements.independentRuns,
     });
-  const identities = runs.map((r) => r.instanceId);
-  if (
-    identities.some((id) => !nonempty(id)) ||
-    new Set(identities).size !== runs.length
-  )
-    fail("RUNS_NOT_INDEPENDENT");
   for (const spec of requirements.scenarios) {
     let total = 0;
     for (const run of runs) {
@@ -343,6 +568,8 @@ export function evaluateAcceptance(report, requirements = P0_REQUIREMENTS) {
         continue;
       }
       const scenario = scenarios[0];
+      if (scenario.collectionPassed === false || scenario.aborted === true)
+        fail("SCENARIO_COLLECTION_FAILED", context);
       const samples = Array.isArray(scenario.samples) ? scenario.samples : [];
       total += samples.length;
       if (samples.length < spec.minSamples)

@@ -1,5 +1,33 @@
 /** Type contracts for the JavaScript CLIs exercised by the TypeScript tests. */
 declare module "*atlas-p0-evaluate.mjs" {
+  export const P0_FUNCTIONAL_CHECKS: readonly string[];
+  export const P0_REQUIREMENTS: {
+    scope: string;
+    independentRuns: number;
+    scenarios: {
+      id: string;
+      kind: string;
+      minSamples: number;
+      minDurationMs?: number;
+      minTotalSamples?: number;
+      requiredInputKinds?: string[];
+    }[];
+    requiredChecks: readonly string[];
+    scaling: {
+      minimumSourceTiles: number[];
+      tileBytes: number;
+      sourceBudgetBytes: number;
+    };
+    requiredFaultControls: {
+      fault: string;
+      primaryCheck: string;
+      primaryFailureCode: string;
+    }[];
+  };
+  export function evaluateFunctional(
+    report: unknown,
+    requirements?: unknown,
+  ): { status: "PASS" | "FAIL"; passed: boolean; failures: Issue[] };
   export function checkBuildIdentity(
     workspace: unknown,
     executed: unknown,
