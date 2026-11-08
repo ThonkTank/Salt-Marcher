@@ -7,11 +7,17 @@ Zuständigkeiten, [Produktvertrag](../product-contract.md) Verhalten und Grenzen
 ## Nächster Implementierungsauftrag
 
 Der [ausführbare Atlas-Neubauplan](atlas-rebuild-plan.md) ist auf Basis von
-Main `1bb3932fcffcb2d5fea47fae616c3b69489443bc` angelegt (8. November 2026).
+Main `1bb3932fcffcb2d5fea47fae616c3b69489443bc` angelegt und nach Architekturprüfung
+überarbeitet (8. November 2026).
 Er umfasst den vollständigen Ersatz des aktiven Editors mit Funktionsmatrix,
-bewussten Verhaltensänderungen, P0–P9 und verbindlicher Desktop-/Performanceabnahme.
+bewussten Verhaltensänderungen und P0–P9. Vor dem vollständigen Kern-/Dateiausbau
+stehen native Ursachenprüfung, Präsentationsmessung und ein echter Höhenpfad.
+Electron/TypeScript/Pixi ist der bevorzugte, früh zu belegende Ansatz; reine
+Fachkerne dürfen nach den festgelegten Kriterien isoliert übernommen werden.
+Die Desktop-/Performanceabnahme umfasst M01–M10, exakte Bearbeitung unter Last
+und die Zeit bis zur Bearbeitbarkeit nach kalter Navigation.
 Ein Verweis mit „erledige das“ beauftragt die vollständige Ausführung.
-Alle Implementierungspakete sind offen. Diese Plananlage verändert keine Laufzeit;
+Alle Implementierungspakete sind offen. Diese Planüberarbeitung verändert keine Laufzeit;
 die folgenden bisherigen Prüfaussagen sind keine Nachweise für den Neubau.
 
 ## Integration
