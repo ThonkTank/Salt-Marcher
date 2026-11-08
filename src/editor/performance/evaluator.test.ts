@@ -1801,6 +1801,15 @@ function blockedEvidence(holdUntilReady = true) {
       statusText: "Kartenbereich wird geladen …",
     },
     ready: { ...structuredClone(state), needsPress: holdUntilReady },
+    heldHint: holdUntilReady
+      ? {
+          ...structuredClone(state),
+          observedAt: 100,
+          needsPress: true,
+          statusVisible: true,
+          statusText: "Zum Bearbeiten loslassen und erneut drücken",
+        }
+      : undefined,
     settled: structuredClone(state),
     gateAt: 50,
     samples,
@@ -1828,6 +1837,26 @@ describe("D11 rejects early gestures without creating delayed work", () => {
       });
     },
   );
+  it("requires the visible recovery hint while the rejected press is still held", () => {
+    const missing = blockedEvidence();
+    missing.heldHint = undefined;
+    expect(evaluateBlockedInput(missing).issues).toContainEqual({
+      code: "BLOCKED_HELD_HINT_UNPROVEN",
+    });
+    for (const patch of [
+      { statusText: "Kartenbereich wird geladen …" },
+      { statusVisible: false },
+      { needsPress: false },
+      { observedAt: 49 },
+      { observedAt: 121 },
+    ]) {
+      const invalid = blockedEvidence();
+      Object.assign(invalid.heldHint!, patch);
+      expect(evaluateBlockedInput(invalid).issues).toContainEqual({
+        code: "BLOCKED_HELD_HINT_UNPROVEN",
+      });
+    }
+  });
   it("rejects an invisible wait, an early mutation, replay, or no deliberate recovery", () => {
     const invisible = blockedEvidence();
     invisible.waiting.statusVisible = false;

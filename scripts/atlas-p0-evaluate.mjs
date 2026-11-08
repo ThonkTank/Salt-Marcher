@@ -666,8 +666,26 @@ export function evaluateBlockedInput(evidence = {}) {
     evidence.settled?.needsPress !== false
   )
     fail("BLOCKED_READINESS_OR_RELEASE_UNPROVEN");
+  const heldHint = evidence.heldHint;
+  if (
+    evidence.holdUntilReady &&
+    (heldHint?.readiness?.ready !== true ||
+      heldHint?.needsPress !== true ||
+      heldHint?.statusVisible !== true ||
+      !(heldHint?.statusText ?? "").includes(
+        "Zum Bearbeiten loslassen und erneut drücken",
+      ) ||
+      !finite(heldHint?.observedAt) ||
+      !(heldHint.observedAt >= evidence.gateAt) ||
+      !(heldHint.observedAt <= up?.createdAt))
+  )
+    fail("BLOCKED_HELD_HINT_UNPROVEN");
   const before = evidence.before;
-  for (const stage of [evidence.ready, evidence.settled]) {
+  for (const stage of [
+    evidence.ready,
+    ...(evidence.holdUntilReady && heldHint ? [heldHint] : []),
+    evidence.settled,
+  ]) {
     if (
       !before ||
       !stage ||

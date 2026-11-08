@@ -754,7 +754,7 @@ async function collectBlockedInputs(session, spec) {
               const status = document.querySelector('.map-status');
               const rect = status?.getBoundingClientRect();
               const style = status && getComputedStyle(status);
-              return { sessionId:o.sessionId, document:o.document, readiness:o.readiness,
+              return { observedAt:performance.now(), sessionId:o.sessionId, document:o.document, readiness:o.readiness,
                 needsPress:o.state.needsPress, error:o.state.error, samples:o.samples,
                 statusText:status?.textContent ?? '',
                 statusVisible:!!rect && rect.width > 0 && rect.height > 0 &&
@@ -797,7 +797,7 @@ async function collectBlockedInputs(session, spec) {
               released = true;
             }
             const deadline = performance.now() + 5000;
-            let waiting, gate, ready, releasedAt;
+            let waiting, gate, ready, heldHint, releasedAt;
             while (performance.now() < deadline) {
               const current = await read();
               const down = events.find(
@@ -818,10 +818,21 @@ async function collectBlockedInputs(session, spec) {
               );
               if (gate && current.readiness?.ready === true) {
                 ready ??= current;
+                // Readiness may precede React's status commit. Keep holding
+                // until the actual visible recovery hint has been observed.
+                if (
+                  !released &&
+                  current.needsPress === true &&
+                  current.statusVisible &&
+                  current.statusText.includes(
+                    "Zum Bearbeiten loslassen und erneut drücken",
+                  )
+                )
+                  heldHint ??= current;
                 const afterGate = events.filter(
                   (event) => event.kind === "frame" && event.at > gate.at,
                 ).length;
-                if (afterGate >= 2 && !released) {
+                if (afterGate >= 2 && !released && heldHint) {
                   send("mouseUp", args.screen, {
                     button: "left",
                     clickCount: 1,
@@ -845,6 +856,7 @@ async function collectBlockedInputs(session, spec) {
                   return {
                     waiting,
                     ready,
+                    heldHint,
                     settled: current,
                     gateAt: gate.at,
                     events,
@@ -869,6 +881,7 @@ async function collectBlockedInputs(session, spec) {
       );
       const compact = (state) =>
         state && {
+          observedAt: state.observedAt,
           sessionId: state.sessionId,
           document: Object.fromEntries(
             [
@@ -896,6 +909,7 @@ async function collectBlockedInputs(session, spec) {
         before: compact(before),
         waiting: compact(observed.waiting),
         ready: compact(observed.ready),
+        heldHint: compact(observed.heldHint),
         settled: compact(observed.settled),
         gateAt: observed.gateAt,
         samples: extractEditSamples(
