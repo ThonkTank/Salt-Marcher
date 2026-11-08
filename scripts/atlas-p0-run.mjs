@@ -29,7 +29,6 @@ import {
 import { analyzeTrace } from "./atlas-p0-trace.mjs";
 import {
   nativePreflight,
-  evaluateNativePreflight,
   nativePresentationCapability,
 } from "./atlas-p0-native.mjs";
 import { summarizeSubmissionTiming } from "./atlas-p0-timing.mjs";
@@ -159,6 +158,7 @@ const report = {
   schemaVersion: 2,
   purpose,
   mode: lab ? "lab" : "native",
+  collectionStarted: false,
   scope:
     preflightOnly || probeNative
       ? "native prerequisites only; no scenario collection"
@@ -235,10 +235,7 @@ async function atomicJson(file, value) {
 let checkpointTask = Promise.resolve();
 function checkpoint() {
   checkpointTask = checkpointTask.then(async () => {
-    report.evaluation =
-      native && report.collectionStarted !== true
-        ? evaluateNativePreflight(report.preflight, report.errors)
-        : evaluateRun(report);
+    report.evaluation = evaluateRun(report);
     await atomicJson(join(out, "report.json"), report);
     await atomicJson(join(out, "run-index.json"), {
       schemaVersion: 2,

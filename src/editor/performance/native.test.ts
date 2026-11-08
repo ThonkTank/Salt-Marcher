@@ -1,13 +1,18 @@
 import { describe, expect, it } from "vitest";
+import { spawnSync } from "node:child_process";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import {
   qualifyNativeReference,
-  evaluateNativePreflight,
   nativePreflight,
   nativePresentationCapability,
 } from "../../../scripts/atlas-p0-native.mjs";
+import {
+  evaluateNativePreflight,
+  evaluateRun,
+} from "../../../scripts/atlas-p0-evaluate.mjs";
 import { analyzeTrace } from "../../../scripts/atlas-p0-trace.mjs";
 
 function observed() {
@@ -176,6 +181,75 @@ describe("explicit native reference qualification", () => {
 });
 
 describe("native preflight evidence and result boundary", () => {
+  it.each([
+    { status: "BLOCKED", errors: [], exit: 2 },
+    {
+      status: "FAIL",
+      errors: [
+        {
+          code: "NATIVE_PREFLIGHT_CLOSE_FAILED",
+          message: "close failed",
+        },
+      ],
+      exit: 1,
+    },
+  ])(
+    "preserves a saved $status preflight in the shared evaluator and CLI exit $exit",
+    async ({ status, errors, exit }) => {
+      const out = await mkdtemp(join(tmpdir(), "atlas-native-evaluate-"));
+      try {
+        const preflight = {
+          status,
+          errors,
+          blockers: [{ code: nativePresentationCapability.code }],
+        };
+        const report = {
+          schemaVersion: 2,
+          purpose: "native-preflight",
+          mode: "native",
+          collectionStarted: false,
+          preflight,
+          errors: [],
+          planned: [
+            {
+              run: "probe-1",
+              id: "M03-height-large",
+              state: "blocked-before-collection",
+            },
+          ],
+        };
+        const checkpoint = evaluateRun(report);
+        expect(checkpoint).toEqual(evaluateNativePreflight(preflight));
+        expect(checkpoint.status).toBe(status);
+        expect(checkpoint.failures).toEqual(errors);
+        expect(checkpoint.missing).toEqual([]);
+        const path = join(out, "report.json");
+        await writeFile(
+          path,
+          JSON.stringify({ ...report, evaluation: checkpoint }),
+        );
+        const result = spawnSync(
+          process.execPath,
+          [
+            fileURLToPath(
+              new URL(
+                "../../../scripts/atlas-p0-evaluate.mjs",
+                import.meta.url,
+              ),
+            ),
+            path,
+          ],
+          { encoding: "utf8" },
+        );
+        expect(result.stderr).toBe("");
+        expect(result.status).toBe(exit);
+        expect(JSON.parse(result.stdout)).toEqual(checkpoint);
+      } finally {
+        await rm(out, { recursive: true, force: true });
+      }
+    },
+  );
+
   it("does not turn deliberately unstarted scenarios into measured failures", () => {
     const result = evaluateNativePreflight({
       status: "BLOCKED",

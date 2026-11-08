@@ -2286,8 +2286,38 @@ export function evaluateAcceptance(report, requirements = P0_REQUIREMENTS) {
   };
 }
 
+/**
+ * Collection did not start: missing samples are neither measured failures nor passes.
+ * @param {{errors?: EvaluationIssue[], blockers?: EvaluationIssue[], [detail: string]: unknown} | null | undefined} preflight
+ * @param {EvaluationIssue[]} [runnerErrors]
+ */
+export function evaluateNativePreflight(preflight, runnerErrors = []) {
+  const failures = [...(preflight?.errors ?? []), ...runnerErrors];
+  const blockers = preflight?.blockers ?? [
+    { code: "NATIVE_PREFLIGHT_PENDING" },
+  ];
+  return {
+    phase: "preflight",
+    status: failures.length ? "FAIL" : "BLOCKED",
+    passed: false,
+    scopePassed: false,
+    collectionStarted: false,
+    failures,
+    missing: [],
+    blockers,
+    nativeAcceptance: {
+      status: "BLOCKED",
+      passed: false,
+      evaluated: false,
+      unmetRequirements: [],
+    },
+  };
+}
+
 /** Selected execution and fixed native acceptance are separate, explicit claims. */
 export function evaluateRun(report) {
+  if (report.mode === "native" && report.collectionStarted === false)
+    return evaluateNativePreflight(report.preflight, report.errors);
   const selection = report.selection ?? "all";
   const scope = selectP0Scope(
     selection,

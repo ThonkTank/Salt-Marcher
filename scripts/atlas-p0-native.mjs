@@ -74,30 +74,6 @@ export function qualifyNativeReference(profile, observed = {}) {
   return { qualified: blockers.length === 0, blockers };
 }
 
-/** Collection did not start: its missing samples are neither measured failures nor passes. */
-export function evaluateNativePreflight(preflight, runnerErrors = []) {
-  const failures = [...(preflight?.errors ?? []), ...runnerErrors];
-  const blockers = preflight?.blockers ?? [
-    { code: "NATIVE_PREFLIGHT_PENDING" },
-  ];
-  return {
-    phase: "preflight",
-    status: failures.length ? "FAIL" : "BLOCKED",
-    passed: false,
-    scopePassed: false,
-    collectionStarted: false,
-    failures,
-    missing: [],
-    blockers,
-    nativeAcceptance: {
-      status: "BLOCKED",
-      passed: false,
-      evaluated: false,
-      unmetRequirements: [],
-    },
-  };
-}
-
 /**
  * A small native-only investigation. Never creates fixtures or claims acceptance.
  * @param {{out: string, executablePath?: string, profilePath?: string, probe?: boolean, env?: NodeJS.ProcessEnv}} options

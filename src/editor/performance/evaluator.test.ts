@@ -1651,6 +1651,8 @@ describe("saved moving-stroke evidence and explicit probe scope", () => {
       purpose: "probe",
       selection: "collection",
       mode: "lab",
+      // A native preflight marker must not bypass the laboratory's checks.
+      collectionStarted: false,
       errors: [],
       functional: { checks: [] },
       planned: [{ run: "probe-1", id: "M03-height-large", state: "completed" }],
