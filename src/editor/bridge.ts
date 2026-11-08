@@ -1,10 +1,14 @@
 import type { Bounds, HeightTile } from "./model";
+import type {
+  HeightPresentationRead,
+  HeightPresentationRequest,
+} from "./model/overview";
 
 /** The renderer can request document operations, never arbitrary paths or SQL. */
 export interface ProjectInfo {
   sessionId: string;
   projectId: string;
-  format: 23;
+  format: 24;
   title: string;
   sequence: number;
   savedSequence: number | null;
@@ -28,7 +32,12 @@ export interface ReadRegionRequest {
   bounds: Bounds;
   /** Omit to request every level whose cubic support intersects the region. */
   level?: number;
+  /** Explicit lowest author level needed by this editing operation. */
+  minLevel?: number;
 }
+
+export type ReadPresentationRequest = HeightPresentationRequest;
+export type PresentationRead = HeightPresentationRead;
 
 export interface SourceRead extends SourceBoundary {
   tiles: HeightTile[];
@@ -67,9 +76,11 @@ export interface StoreMetrics {
 }
 
 export interface AtlasDesktop {
+  readonly diagnostics: boolean;
   status(): Promise<ProjectInfo>;
   readTiles(request: ReadTilesRequest): Promise<SourceRead>;
   readRegion(request: ReadRegionRequest): Promise<RegionRead>;
+  readPresentation(request: ReadPresentationRequest): Promise<PresentationRead>;
   commit(request: CommitRequest): Promise<CommitReceipt>;
   /** Null means the user cancelled the native file/unsaved-changes dialog. */
   newProject(): Promise<ProjectInfo | null>;

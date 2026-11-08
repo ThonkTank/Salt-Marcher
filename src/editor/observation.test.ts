@@ -1,9 +1,9 @@
-import { expect, it } from "vitest";
+import { expect, it, vi } from "vitest";
 import { editorBudgets } from "./budgets";
 import { Observation } from "./observation";
 
 it("reads incremental observations without consuming the retained journal", () => {
-  const observation = new Observation();
+  const observation = new Observation(true);
   observation.event("ready", { sessionId: "first" });
   const firstInput = observation.input(new Event("pointerdown"), "edit");
   const first = observation.read();
@@ -26,7 +26,7 @@ it("reads incremental observations without consuming the retained journal", () =
 });
 
 it("omits events without copying the journal and still returns owned event records", () => {
-  const observation = new Observation();
+  const observation = new Observation(true);
   observation.event("ready");
   let reads = 0;
   const journal = observation["events"];
@@ -44,7 +44,7 @@ it("omits events without copying the journal and still returns owned event recor
 });
 
 it("keeps the journal cap and dropped counter across lightweight and incremental reads", () => {
-  const observation = new Observation();
+  const observation = new Observation(true);
   for (let index = 0; index < editorBudgets.observationEvents; index++)
     observation.event("frame", { index });
   const last = observation.read({ sinceEvent: observation.eventCount - 1 });
@@ -60,4 +60,20 @@ it("keeps the journal cap and dropped counter across lightweight and incremental
   );
   expect(observation.read()).toHaveLength(editorBudgets.observationEvents);
   expect(observation.dropped).toBe(1);
+});
+
+it("retains input identity without collecting events or trace marks in a normal start", () => {
+  const mark = vi.spyOn(performance, "mark");
+  const observation = new Observation();
+  for (let index = 0; index <= editorBudgets.observationEvents; index++)
+    observation.event("frame", { index });
+  expect(observation.input(new Event("pointerdown"), "edit")).toBe(1);
+  observation.mark("model", "1", { input: 1 });
+  expect(observation.input(new Event("pointerup"), "pointerup")).toBe(2);
+  expect(observation.lastInputId).toBe(2);
+  expect(observation.read()).toEqual([]);
+  expect(observation.eventCount).toBe(0);
+  expect(observation.dropped).toBe(0);
+  expect(mark).not.toHaveBeenCalled();
+  mark.mockRestore();
 });

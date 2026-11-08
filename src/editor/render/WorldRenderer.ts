@@ -12,14 +12,36 @@ import { editorBudgets } from "../budgets";
 import {
   cloneHeightTile,
   clipBounds,
+  HEIGHT_LEVELS,
   intersectsBounds,
   type Bounds,
   type EditorDocument,
   type HeightPatch,
   type HeightTile,
 } from "../model";
+import {
+  HEIGHT_OVERVIEW_BYTES,
+  HEIGHT_OVERVIEW_SIZE,
+  applyPreparedHeightOverviewDelta,
+  createHeightOverviewTile,
+  heightOverviewDeltaKeys,
+  heightOverviewBounds,
+  heightOverviewKeys,
+  minimumCoarseHeightLevel,
+  parseHeightOverviewKey,
+  prepareHeightOverviewDelta,
+  validateHeightOverviewTile,
+  type HeightOverviewTile,
+} from "../model/overview";
 import { Observation } from "../observation";
-import type { RasterMessage, RasterResult, RasterTask } from "./raster.worker";
+import { MAX_RASTER_BATCH_PIXELS, MAX_RASTER_BATCH_TILES } from "./raster";
+import type {
+  RasterBatch,
+  RasterBatchResult,
+  RasterMessage,
+  RasterResult,
+  RasterTask,
+} from "./raster.worker";
 
 export interface Camera {
   x: number;
@@ -34,14 +56,17 @@ interface RasterTile {
   token: number;
   revision: number;
   dirty: Rect | null;
-  ready: boolean;
+  pending: RasterTask | null;
+  lastJob: number;
+  /** Whole-tile prefix: every changed rectangle through this revision is painted. */
+  paintedRevision: number;
   visible: boolean;
   touched: number;
   source: BufferImageSource;
   sprite: Sprite;
   pixels: Uint8Array;
 }
-const SIZE = 128;
+const SIZE = HEIGHT_OVERVIEW_SIZE;
 const WHOLE: Rect = [0, 0, SIZE, SIZE];
 const merged = (a: Rect, b: Rect): Rect => [
   Math.min(a[0], b[0]),
@@ -49,6 +74,19 @@ const merged = (a: Rect, b: Rect): Rect => [
   Math.max(a[2], b[2]),
   Math.max(a[3], b[3]),
 ];
+const overlaps = (a: Rect, b: Rect): boolean =>
+  a[0] < b[2] && a[2] > b[0] && a[1] < b[3] && a[3] > b[1];
+
+function pixelRect(tile: RasterTile, bounds: Bounds): Rect {
+  const stepX = (tile.bounds[2] - tile.bounds[0]) / SIZE;
+  const stepY = (tile.bounds[3] - tile.bounds[1]) / SIZE;
+  return [
+    Math.max(0, Math.floor((bounds[0] - tile.bounds[0]) / stepX)),
+    Math.max(0, Math.floor((bounds[1] - tile.bounds[1]) / stepY)),
+    Math.min(SIZE, Math.ceil((bounds[2] - tile.bounds[0]) / stepX)),
+    Math.min(SIZE, Math.ceil((bounds[3] - tile.bounds[1]) / stepY)),
+  ];
+}
 
 /** Retained display tiles. Camera transforms never read or write the store. */
 export class WorldRenderer {
@@ -61,9 +99,10 @@ export class WorldRenderer {
     type: "module",
   });
   private results: RasterResult[] = [];
-  private running: RasterTask | null = null;
-  private scheduled = new Map<string, number>();
+  private running: RasterBatch | null = null;
   private sourceSizes = new Map<string, number>();
+  private overviews = new Map<string, HeightOverviewTile>();
+  private knownOverviews = new Set<string>();
   private jobId = 0;
   private tileToken = 0;
   private document!: EditorDocument;
@@ -78,6 +117,7 @@ export class WorldRenderer {
   private pendingDelay = new Set<number>();
   private destroyed = false;
   private submittedRevision = -1;
+  private submittedViewGeneration = -1;
   camera: Camera = { x: 0, y: 0, scale: 0.25 };
   width = 1000;
   height = 760;
@@ -91,10 +131,12 @@ export class WorldRenderer {
     | "pointerup-render" = "none";
   private faultArmed = false;
   maxRasterMs = 0;
+  maxRasterBatchMs = 0;
   sourceBytes = 0;
   workerSourceBytes = 0;
   totalSamples = 0;
   frameCpuMax = 0;
+  advanceFrame: (now: number) => void = () => {};
   onExact: (revision: number) => void = () => {};
   onSubmit: (frame: number) => void = () => {};
   onError: (error: Error) => void = () => {};
@@ -102,23 +144,39 @@ export class WorldRenderer {
   constructor(private observation: Observation) {
     this.stage.addChild(this.terrain, this.overlay);
     this.terrain.sortableChildren = true;
-    this.raster.onmessage = (event: MessageEvent<RasterResult>) => {
-      const result = event.data;
-      if (this.running?.id === result.id) this.running = null;
-      if (result.sessionId !== this.sessionId) return;
+    this.raster.onmessage = (event: MessageEvent<RasterBatchResult>) => {
+      const batch = event.data;
+      if (this.running?.id === batch.id) this.running = null;
+      if (batch.sessionId !== this.sessionId) return;
+      this.observation.event("raster-batch-result", {
+        id: batch.id,
+        tiles: batch.results.length,
+        cpuMs: batch.cpuMs,
+      });
+      for (const result of batch.results) {
+        this.observation.event("raster-result", {
+          id: result.id,
+          batchId: batch.id,
+          key: result.key,
+          rect: result.rect,
+          cpuMs: result.cpuMs,
+          pixels: result.samples,
+        });
+        this.maxRasterMs = Math.max(this.maxRasterMs, result.cpuMs);
+        this.totalSamples += result.samples;
+      }
       if (this.faultArmed && this.fault === "delay-render") {
         const timer = window.setTimeout(() => {
           this.pendingDelay.delete(timer);
-          this.results.push(result);
+          this.results.push(...batch.results);
           this.requestFrame = true;
         }, 250);
         this.pendingDelay.add(timer);
-      } else if (!this.faultArmed || this.fault !== "drop-render")
-        this.results.push(result);
-      this.maxRasterMs = Math.max(this.maxRasterMs, result.cpuMs);
-      this.totalSamples += result.samples;
+      } else this.results.push(...batch.results);
+      this.maxRasterBatchMs = Math.max(this.maxRasterBatchMs, batch.cpuMs);
       this.requestFrame = true;
-      this.dispatch();
+      // Apply completed rectangles before selecting the next batch, so newly
+      // dirty local regions outrank loading unrelated, previously blank tiles.
     };
     this.raster.onerror = (event) => this.onError(new Error(event.message));
   }
@@ -143,11 +201,13 @@ export class WorldRenderer {
     this.tiles.clear();
     this.results = [];
     this.running = null;
-    this.scheduled.clear();
     this.sourceSizes.clear();
+    this.overviews.clear();
+    this.knownOverviews.clear();
     this.sourceBytes = 0;
     this.workerSourceBytes = 0;
     this.submittedRevision = -1;
+    this.submittedViewGeneration = -1;
     this.faultArmed = false;
     this.raster.postMessage({
       kind: "sources",
@@ -180,23 +240,80 @@ export class WorldRenderer {
   moveCamera(camera: Camera): void {
     this.camera = { ...camera };
     this.viewGeneration++;
+    this.observation.event("view-change", {
+      sessionId: this.sessionId,
+      viewGeneration: this.viewGeneration,
+      bounds: this.bounds(),
+      camera: { ...this.camera },
+    });
     this.requestFrame = true;
     this.positionTiles();
   }
 
-  /** Main document owns arrays; only owned snapshot copies cross the boundary. */
-  updateSources(bounds: Bounds, removed: string[] = [], replace = false): void {
-    const snapshot = this.document.snapshot(bounds);
-    this.sendSources(snapshot.tiles, removed, replace);
+  /** Sources and numeric overview share one raster path and one certified mesh. */
+  updatePresentation(
+    tiles: readonly HeightTile[],
+    overviews: readonly HeightOverviewTile[],
+    overviewKeys: readonly string[],
+    replace = false,
+  ): void {
+    if (replace) {
+      this.overviews.clear();
+      this.knownOverviews.clear();
+    }
+    for (const key of overviewKeys) {
+      parseHeightOverviewKey(key);
+      this.knownOverviews.add(key);
+      this.overviews.delete(key);
+    }
+    for (const tile of overviews) {
+      validateHeightOverviewTile(tile);
+      if (!this.knownOverviews.has(tile.key))
+        throw new Error("Nicht bestätigte Höhenübersicht.");
+      this.overviews.set(tile.key, { ...tile, values: tile.values.slice() });
+    }
+    this.sendSources(
+      tiles.map(cloneHeightTile),
+      [],
+      replace,
+      overviews.map((tile) => ({ ...tile, values: tile.values.slice() })),
+      [...overviewKeys],
+    );
   }
 
   /** History already owns complete changed sources, even after distant eviction. */
   updateSourcePatches(patches: readonly HeightPatch[]): void {
+    const changed = new Set<string>();
+    const powers = new Set(
+      [...this.knownOverviews].map((key) => parseHeightOverviewKey(key).power),
+    );
+    for (const patch of patches) {
+      const delta = prepareHeightOverviewDelta(patch);
+      if (!delta) continue;
+      for (const power of powers)
+        for (const key of heightOverviewDeltaKeys(delta, power)) {
+          if (!this.knownOverviews.has(key)) continue;
+          const at = parseHeightOverviewKey(key);
+          const tile =
+            this.overviews.get(key) ??
+            createHeightOverviewTile(at.power, at.tileX, at.tileY);
+          if (applyPreparedHeightOverviewDelta(tile, delta)) {
+            this.overviews.set(key, tile);
+            changed.add(key);
+          }
+        }
+    }
     this.sendSources(
       patches.flatMap((patch) =>
         patch.after ? [cloneHeightTile(patch.after)] : [],
       ),
       patches.filter((patch) => !patch.after).map((patch) => patch.key),
+      false,
+      [...changed].map((key) => {
+        const tile = this.overviews.get(key)!;
+        return { ...tile, values: tile.values.slice() };
+      }),
+      [...changed],
     );
   }
 
@@ -204,6 +321,8 @@ export class WorldRenderer {
     tiles: HeightTile[],
     removed: string[] = [],
     replace = false,
+    overviews: HeightOverviewTile[] = [],
+    overviewKeys: string[] = [],
   ): void {
     if (replace) this.sourceSizes.clear();
     for (const key of removed) this.sourceSizes.delete(key);
@@ -221,6 +340,14 @@ export class WorldRenderer {
       throw new Error(
         "Die Darstellungsquellen überschreiten das Speicherbudget.",
       );
+    if (
+      this.overviews.size * HEIGHT_OVERVIEW_BYTES * 2 +
+        this.tiles.size * SIZE * SIZE * 4 >
+      editorBudgets.presentationBytes
+    )
+      throw new Error(
+        "Die Höhenübersichten überschreiten das Darstellungsbudget.",
+      );
     this.raster.postMessage(
       {
         kind: "sources",
@@ -228,8 +355,13 @@ export class WorldRenderer {
         sessionId: this.sessionId,
         tiles,
         removed,
+        overviews,
+        overviewKeys,
       } satisfies RasterMessage,
-      tiles.map((tile) => tile.values.buffer as ArrayBuffer),
+      [
+        ...tiles.map((tile) => tile.values.buffer as ArrayBuffer),
+        ...overviews.map((tile) => tile.values.buffer as ArrayBuffer),
+      ],
     );
   }
 
@@ -244,8 +376,33 @@ export class WorldRenderer {
     return power;
   }
 
+  presentationPower(): number {
+    return this.tilePower();
+  }
+
+  isPresentationReady(bounds: Bounds, power = this.tilePower()): boolean {
+    const clipped = clipBounds(bounds);
+    return (
+      this.document.isReady(
+        clipped,
+        HEIGHT_LEVELS.slice(minimumCoarseHeightLevel(power)),
+      ) &&
+      heightOverviewKeys(clipped, power).every((key) => {
+        const area = heightOverviewBounds(parseHeightOverviewKey(key));
+        return !overlaps(area, clipped) || this.knownOverviews.has(key);
+      })
+    );
+  }
+
   sourceBounds(): Bounds {
-    return this.bounds(SIZE * 2 ** this.tilePower());
+    const span = SIZE * 2 ** this.tilePower();
+    const bounds = this.bounds(span);
+    return clipBounds([
+      Math.floor(bounds[0] / span) * span,
+      Math.floor(bounds[1] / span) * span,
+      Math.ceil(bounds[2] / span) * span,
+      Math.ceil(bounds[3] / span) * span,
+    ]);
   }
 
   refresh(): void {
@@ -264,12 +421,12 @@ export class WorldRenderer {
         x <= Math.floor(view[2] / span);
         x++
       ) {
-        const bounds: Bounds = clipBounds([
+        const bounds: Bounds = [
           x * span,
           y * span,
           (x + 1) * span,
           (y + 1) * span,
-        ]);
+        ];
         const key = `${power}:${x}:${y}`;
         current.add(key);
         let tile = this.tiles.get(key);
@@ -291,7 +448,9 @@ export class WorldRenderer {
             token: ++this.tileToken,
             revision: this.document.revision,
             dirty: [...WHOLE],
-            ready: false,
+            pending: null,
+            lastJob: 0,
+            paintedRevision: -1,
             visible: true,
             touched: performance.now(),
             pixels,
@@ -312,7 +471,6 @@ export class WorldRenderer {
     this.prune();
     this.preparedViewGeneration = this.viewGeneration;
     this.positionTiles();
-    this.dispatch();
     this.requestFrame = true;
   }
 
@@ -320,19 +478,11 @@ export class WorldRenderer {
     this.faultArmed = true;
     for (const tile of this.tiles.values()) {
       if (!intersectsBounds(tile.bounds, bounds)) continue;
-      const step = (tile.bounds[2] - tile.bounds[0]) / SIZE;
-      const stepY = (tile.bounds[3] - tile.bounds[1]) / SIZE;
-      const rect: Rect = [
-        Math.max(0, Math.floor((bounds[0] - tile.bounds[0]) / step)),
-        Math.max(0, Math.floor((bounds[1] - tile.bounds[1]) / stepY)),
-        Math.min(SIZE, Math.ceil((bounds[2] - tile.bounds[0]) / step)),
-        Math.min(SIZE, Math.ceil((bounds[3] - tile.bounds[1]) / stepY)),
-      ];
+      const rect = pixelRect(tile, bounds);
+      if (rect[0] >= rect[2] || rect[1] >= rect[3]) continue;
       tile.dirty = tile.dirty ? merged(tile.dirty, rect) : rect;
-      tile.token = ++this.tileToken;
       tile.revision = this.document.revision;
     }
-    this.dispatch();
     this.requestFrame = true;
   }
 
@@ -346,8 +496,54 @@ export class WorldRenderer {
       (tile) => tile.visible && intersectsBounds(tile.bounds, bounds),
     );
     return (
-      relevant.length > 0 && relevant.every((tile) => tile.ready && !tile.dirty)
+      relevant.length > 0 &&
+      relevant.every((tile) => {
+        const rect = pixelRect(tile, bounds);
+        return (
+          tile.paintedRevision >= 0 &&
+          (!tile.dirty || !overlaps(tile.dirty, rect)) &&
+          (!tile.pending || !overlaps(tile.pending.rect, rect))
+        );
+      })
     );
+  }
+
+  /** Input-version coverage only; mixed tile prefixes are not a current exact region. */
+  regionCoverage(
+    bounds: Bounds,
+    requiredRevision: number,
+  ): { minPaintedRevision: number; maxPaintedRevision: number } | null {
+    if (
+      this.preparedViewGeneration !== this.viewGeneration ||
+      !Number.isSafeInteger(requiredRevision) ||
+      requiredRevision < 0 ||
+      requiredRevision > this.document.revision
+    )
+      return null;
+    const relevant = [...this.tiles.values()].filter(
+      (tile) => tile.visible && intersectsBounds(tile.bounds, bounds),
+    );
+    if (!relevant.length) return null;
+    for (const tile of relevant) {
+      if (tile.paintedRevision < 0) return null;
+      // A tile not changed by later input already contains that input's version.
+      if (tile.paintedRevision >= Math.min(requiredRevision, tile.revision))
+        continue;
+      const rect = pixelRect(tile, bounds);
+      if (
+        (tile.dirty && overlaps(tile.dirty, rect)) ||
+        (tile.pending && overlaps(tile.pending.rect, rect))
+      )
+        return null;
+    }
+    return {
+      minPaintedRevision: Math.min(
+        ...relevant.map((tile) => tile.paintedRevision),
+      ),
+      maxPaintedRevision: Math.max(
+        ...relevant.map((tile) => tile.paintedRevision),
+      ),
+    };
   }
 
   state() {
@@ -355,16 +551,22 @@ export class WorldRenderer {
       tiles: this.tiles.size,
       cpuRasterBytes:
         this.tiles.size * SIZE * SIZE * 4 +
-        this.results.reduce((n, r) => n + r.pixels.byteLength, 0),
+        this.results.reduce((n, r) => n + r.pixels.byteLength, 0) +
+        this.overviews.size * HEIGHT_OVERVIEW_BYTES * 2,
       gpuBytes: this.tiles.size * SIZE * SIZE * 4,
       sourceBytes: this.sourceBytes,
       workerSourceBytes: this.workerSourceBytes,
-      queuedTiles: [...this.tiles.values()].filter((t) => t.visible && t.dirty)
-        .length,
+      overviewBytes: this.overviews.size * HEIGHT_OVERVIEW_BYTES,
+      workerOverviewBytes: this.overviews.size * HEIGHT_OVERVIEW_BYTES,
+      queuedTiles: [...this.tiles.values()].filter(
+        (t) => t.visible && (t.dirty || t.pending),
+      ).length,
       running: Boolean(this.running),
       maxRasterMs: this.maxRasterMs,
+      maxRasterBatchMs: this.maxRasterBatchMs,
       totalSamples: this.totalSamples,
       submittedRevision: this.submittedRevision,
+      submittedViewGeneration: this.submittedViewGeneration,
       viewGeneration: this.viewGeneration,
       fault: this.fault,
       heldForPointerup: this.heldForPointerup,
@@ -384,28 +586,70 @@ export class WorldRenderer {
     )
       return;
     // Latest pending rectangle per tile replaces obsolete work, never source edits.
-    const tile = [...this.tiles.values()].find(
-      (tile) =>
-        tile.visible &&
-        tile.dirty &&
-        this.scheduled.get(tile.key) !== tile.token &&
-        this.document.isReady(tile.bounds),
-    );
-    if (!tile || !tile.dirty) return;
-    const task: RasterTask = {
-      kind: "raster",
-      id: ++this.jobId,
+    const candidates = [...this.tiles.values()]
+      .filter(
+        (tile) =>
+          tile.visible &&
+          tile.dirty &&
+          !tile.pending &&
+          this.isPresentationReady(tile.bounds, tile.power),
+      )
+      .sort(
+        (a, b) =>
+          Number(b.paintedRevision >= 0) - Number(a.paintedRevision >= 0) ||
+          a.lastJob - b.lastJob,
+      );
+    const tasks: RasterTask[] = [];
+    let pixels = 0;
+    for (const tile of candidates) {
+      if (tasks.length === MAX_RASTER_BATCH_TILES) break;
+      // A small ready edit should not wait for unrelated initial view loading.
+      if (tile.paintedRevision >= 0 !== candidates[0].paintedRevision >= 0)
+        break;
+      const rect = tile.dirty!;
+      const count = (rect[2] - rect[0]) * (rect[3] - rect[1]);
+      if (pixels + count > MAX_RASTER_BATCH_PIXELS) break;
+      const task: RasterTask = {
+        kind: "raster",
+        id: ++this.jobId,
+        sessionId: this.sessionId,
+        key: tile.key,
+        token: tile.token,
+        revision: tile.revision,
+        power: tile.power,
+        bounds: tile.bounds,
+        size: SIZE,
+        rect: [...rect],
+      };
+      tasks.push(task);
+      pixels += count;
+      tile.pending = task;
+      tile.dirty = null;
+      tile.lastJob = task.id;
+    }
+    if (!tasks.length) return;
+    const batch: RasterBatch = {
+      kind: "raster-batch",
+      id: tasks[0].id,
       sessionId: this.sessionId,
-      key: tile.key,
-      token: tile.token,
-      revision: tile.revision,
-      bounds: tile.bounds,
-      size: SIZE,
-      rect: [...tile.dirty],
+      tasks,
     };
-    this.running = task;
-    this.scheduled.set(tile.key, tile.token);
-    this.raster.postMessage(task);
+    this.running = batch;
+    this.observation.event("raster-batch-start", {
+      id: batch.id,
+      tiles: tasks.length,
+      pixels,
+    });
+    for (const task of tasks)
+      this.observation.event("raster-start", {
+        id: task.id,
+        batchId: batch.id,
+        key: task.key,
+        rect: task.rect,
+        revision: task.revision,
+        pixels: (task.rect[2] - task.rect[0]) * (task.rect[3] - task.rect[1]),
+      });
+    this.raster.postMessage(batch);
   }
 
   private positionTiles(): void {
@@ -419,18 +663,21 @@ export class WorldRenderer {
       tile.sprite.height =
         (tile.bounds[3] - tile.bounds[1]) * this.camera.scale;
       tile.sprite.visible =
-        tile.ready && intersectsBounds(tile.bounds, this.bounds());
+        tile.paintedRevision >= 0 &&
+        intersectsBounds(tile.bounds, this.bounds());
     }
   }
 
   private tick = (now: number): void => {
     if (this.destroyed) return;
     const start = performance.now();
+    const resultStart = performance.now();
     let uploaded = 0;
     while (
       !this.heldForPointerup &&
+      !(this.faultArmed && this.fault === "drop-render") &&
       this.results.length &&
-      performance.now() - start < editorBudgets.resultCpuMs
+      performance.now() - resultStart < editorBudgets.resultCpuMs
     ) {
       const result = this.results.shift()!;
       const tile = this.tiles.get(result.key);
@@ -438,39 +685,58 @@ export class WorldRenderer {
         result.sessionId !== this.sessionId ||
         !tile ||
         tile.token !== result.token ||
-        tile.revision !== result.revision
-      )
+        tile.pending?.id !== result.id ||
+        result.revision < tile.paintedRevision
+      ) {
+        this.observation.event("raster-discard", {
+          id: result.id,
+          reason: "session-tile-or-revision",
+        });
         continue;
+      }
       const bytes = SIZE * SIZE * 4;
       if (uploaded + bytes > editorBudgets.uploadBytesPerFrame) {
         this.results.unshift(result);
         break;
       }
       const [x0, y0, x1, y1] = result.rect;
-      for (let row = y0; row < y1; row++)
+      for (let row = y0; row < y1; row++) {
+        const offset = (row - y0) * (x1 - x0) * 4;
         tile.pixels.set(
-          result.pixels.subarray(
-            (row - y0) * (x1 - x0) * 4,
-            (row - y0 + 1) * (x1 - x0) * 4,
-          ),
+          result.pixels.subarray(offset, offset + (x1 - x0) * 4),
           (row * SIZE + x0) * 4,
         );
+      }
       tile.source.update();
       uploaded += bytes;
-      tile.dirty = null;
-      this.scheduled.delete(tile.key);
-      tile.ready = true;
+      // One pending task contains all accumulated changes through its revision.
+      // Paint it completely; later changes remain dirty for the follow-up task.
+      tile.paintedRevision = result.revision;
+      tile.pending = null;
       tile.sprite.visible = intersectsBounds(tile.bounds, this.bounds());
+      this.observation.event("raster-upload", {
+        id: result.id,
+        key: result.key,
+        paintedRevision: tile.paintedRevision,
+        requiredRevision: tile.revision,
+        acceptedPixels: (x1 - x0) * (y1 - y0),
+        supersededPixels: 0,
+        remainingDirty: tile.dirty,
+      });
       this.requestFrame = true;
     }
-    this.dispatch();
     if (this.requestFrame && this.document) {
       this.drawOverlay();
       const exact =
         this.preparedViewGeneration === this.viewGeneration &&
         [...this.tiles.values()]
           .filter((tile) => tile.visible)
-          .every((tile) => tile.ready && !tile.dirty);
+          .every(
+            (tile) =>
+              tile.paintedRevision >= tile.revision &&
+              !tile.dirty &&
+              !tile.pending,
+          );
       const exactRevision =
         exact && this.tiles.size ? this.document.revision : -1;
       this.renderer.render(this.stage);
@@ -488,11 +754,21 @@ export class WorldRenderer {
       // This is explicitly submission, not an invented presentation timestamp.
       if (exactRevision >= 0 && identity !== this.lastSubmit) {
         this.submittedRevision = exactRevision;
+        this.submittedViewGeneration = this.viewGeneration;
         this.onExact(exactRevision);
       }
       this.lastSubmit = identity;
       this.requestFrame = false;
     }
+    // Publish the accepted state before admitting the next bounded brush dose.
+    // All newly accepted input still precedes selection of the next raster batch.
+    try {
+      this.advanceFrame(performance.now());
+    } catch (error) {
+      this.onError(error instanceof Error ? error : new Error(String(error)));
+    }
+    if (this.destroyed) return;
+    this.dispatch();
     if (this.lastFrameAt)
       this.observation.event("frame", {
         interval: now - this.lastFrameAt,

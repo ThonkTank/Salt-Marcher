@@ -1,16 +1,18 @@
 # Atlas-Neubau und Aufräumen: ausführbarer Implementierungsplan
 
-Stand: 8. November 2026. **Aufräumplanung; Umsetzung noch nicht beauftragt.**
-Der vorhandene P0-Höhenversuch liefert erste Komponenten. Sein großer Pinsel
-und der Zugriff für grobe Ansichten sind noch nicht tragfähig nachgewiesen;
-die native Leistungsabnahme bleibt blockiert. Konkrete Ergebnisse stehen
+Stand: 8. November 2026. **Umsetzung P0–P9 beauftragt; P0-Kern aufgeräumt, Abnahme offen.**
+Der P0-Höhenversuch besitzt jetzt einen gemeinsamen Diagnoseablauf,
+maßstabsgerechte numerische Übersichten und einen begrenzten Patch-/Renderpfad.
+Begrenzte kontinuierliche Pinselwirkung und große Datenbestände sind funktional
+geprüft. Große und kalte schnelle Gesten verfehlen weiterhin Teile der strengen
+Leistungsziele; die native Abnahme bleibt blockiert. Konkrete Ergebnisse stehen
 ausschließlich in [status.md](status.md).
 
-Diese Überarbeitung plant Aarons Auftrag: gleiche vereinbarte Nutzerfunktionen,
+Aaron hat die Umsetzung dieses Plans beauftragt: gleiche vereinbarte Nutzerfunktionen,
 aber eine einfache, saubere Umsetzung mit wenigen eindeutigen Zuständigkeiten.
-Sie startet weder den Runtime-Umbau noch weitere Messreihen.
+P0b/P0d/P0e wurden gemeinsam überarbeitet und am gebauten Kandidaten geprüft.
 Ausgangsvertrag bleibt `1bb3932fcffcb2d5fea47fae616c3b69489443bc`;
-der untersuchte P0-Laufzeitstand ist `442576c`.
+die Aufräumarbeiten bauen auf der P0-Ausgangsprüfung von `442576c` auf.
 
 ## 1. Auftrag und Ausführung
 
@@ -26,9 +28,12 @@ und bearbeiten. Navigation, lokale Eingriffe und Weiterarbeiten nach einem
 Ortswechsel bleiben zügig, auch neben Speichern und längeren Berechnungen.
 Arbeit hängt von Ausschnitt, Maßstab und tatsächlich geänderten Daten ab.
 
-**„Gleiche Nutzerfunktionalität“ bedeutet F01–F19 mit den bereits festgelegten
-D01–D09.** Diese Planung fügt keine weiteren Kürzungen oder Verhaltensänderungen
-hinzu. V7 bleibt Funktionsreferenz und bis zur vollständigen Ablösung der normale
+**„Gleiche Nutzerfunktionalität“ bedeutet F01–F19 mit D01–D10.** D01–D09
+stammen aus der vereinbarten Planung. Aaron hat während der Umsetzung D10
+präzisiert: Halten wirkt weiter, langsame Züge wirken stärker; bei Verzögerungen
+entsteht keine Nachholdosis. Diese ausdrückliche Nutzeranforderung ersetzt die
+frühere Annahme, dass stilles Halten nichts bewirkt.
+V7 bleibt Funktionsreferenz und bis zur vollständigen Ablösung der normale
 Einstieg. Der kleine P0-Höheneditor ist nicht der vollständige Zielumfang.
 Innere Formate, ungenutzte APIs und Implementierungstests haben keinen Bestandsschutz.
 
@@ -133,6 +138,52 @@ Testanzahl und exakte Canvas-Antialiasingpixel müssen nicht erhalten werden.
 | D07 | Reine Altbestandstypen ohne aktuelles Erzeugungswerkzeug entfallen.                                                             | Die alten Materialpolygone und dekorativen Landschaftsstriche mit konkreten Assets werden nicht neu gebaut. Boden-/Felsfarbe und Landschaftsdeckung ersetzen sie vollständig. Entsprechende Legacy-Tests gezielt ausmustern; aktive Werkzeugfälle erhalten. |
 | D08 | Grafik wird fachlich und visuell gleichwertig auf der GPU dargestellt.                                                          | Reihenfolge, Positionen, Löcher, Materialien, Lesbarkeit und Auswahl stimmen; alte Canvas-Pixelbilder sind keine bindende Rastervorgabe.                                                                                                                    |
 | D09 | Fachliche Einheiten und Weltumfang bleiben bestehen.                                                                            | Fuß als interne Längeneinheit, metrische Anzeige, 5-Fuß-Innenraster, vorhandene 14 Ansichten und maßstabsabhängige Werkzeugfreigaben. Kein zusätzlicher Produktumbau der Maßstäbe.                                                                          |
+| D10 | Halten wirkt weiter, langsame Züge stärker; bei Hängern entsteht keine Nachholdosis.                                            | Kleine Schritte mit begrenzter Dosis folgen dem Darstellungsfortschritt. Stärke ist eine Zielrate, Wartezeit darf verfallen. Ein kleiner Klickimpuls bleibt möglich.                                                                                        |
+
+### D10 konkret: kontinuierliche Pinselwirkung mit begrenzter Dosis
+
+Aaron hat während der Umsetzung ausdrücklich festgelegt: **Stilles Halten
+vertieft das Ergebnis; langsamere Züge bewirken mehr als schnelle.** Zugleich
+darf die Wirkung von Eingaben und Verarbeitungsgeschwindigkeit abhängen:
+**Wenn die Anzeige hängt, darf zusätzliche Haltezeit keinen großen späteren
+Auf-/Abtrag ansammeln.** Diese Präzisierung ersetzt die vorherige Annahme einer
+vollständig nachzuholenden, von der Bildrate unabhängigen Zeitdosis.
+
+Kontinuierliche Höhenpinsel verwenden eine Stärke als Zielrate pro Sekunde.
+Ein kleiner, ausdrücklich begrenzter Anfangsimpuls erhält die Klickfunktion;
+er entspricht höchstens einem normalen Verarbeitungsschritt, keinem vollen
+Sekundenstempel. Danach entstehen während des Haltens weitere kleine Schritte.
+Jeder Schritt umfasst höchstens **50 ms Dosis**, und höchstens ein Schritt darf
+noch auf seine Darstellung warten. Ein weiterer Schritt folgt erst auf die
+aktuelle Darstellung des vorherigen. Während einer Verzögerung verworfene Zeit
+wird nicht auf spätere Schritte verteilt. Nach Loslassen oder Abbruch entsteht
+keine neue Dosis; bereits angenommene Änderungen werden noch korrekt dargestellt.
+Die Rückkopplung gilt auch zwischen schnellen Klicks. Wechselt der Nutzer
+ausdrücklich zu einem anderen Ausschnitt, darf eine vollständig verlassene
+Region den neuen Ort nicht sperren. Ihre lokale Darstellungsverpflichtung endet
+ausdrücklich; der angenommene Inhalt bleibt erhalten und wird bei Rückkehr
+dargestellt. Das Ende der Verpflichtung ist kein Rendernachweis.
+
+Der bestehende quartische Pinselkern bleibt erhalten. Der reine Fachkern
+berechnet bei Stillstand Rate × angenommene Zeit × Kernwert; bei Bewegung
+integriert er denselben Kern entlang des angenommenen Segments. Das ersetzt
+die groben Wegabstände zwischen einzelnen Dabs. Derselbe angenommene Zeitpfad
+hat unabhängig von seiner rechnerischen Unterteilung dieselbe Wirkung.
+Die tatsächlich angenommene Dosis darf bei langsamer Verarbeitung kleiner sein.
+
+Fehlende Quellen pausieren die Einwirkung ebenfalls; warten und später alles
+nachmalen ist ausgeschlossen. Nach einer Lücke wird die aktuelle Position neu
+verankert, damit kein alter Weg überraschend nachgezeichnet wird. Loslassen,
+Escape, Fokusverlust und Pointercancel beenden weitere Wirkung. Der angenommene
+Strich bleibt eine gemeinsame Undo-Aktion. Diagnose unterscheidet echte
+Mausereignisse, angenommene Dosisintervalle, Pausen und verworfene Zeit.
+
+Nachweis: Klick, stationäres Halten, längere Einwirkdauer, gleicher Weg langsam/
+schnell und korrektes Ende beim Loslassen/Abbruch. Ein verzögerter Renderpfad
+muss ausdrücklich ohne Dosisstau auskommen. Dazu laufender Inhalt, Undo/Redo
+und Dateirundlauf. Die kurze schnelle Pflichtgeste und die bestehenden Zeitziele
+bleiben bestehen; Teststärken werden offen als Raten angegeben. Verworfene
+Eingaben sind keine erfolgreichen Modell- oder Renderbestätigungen.
 
 ### D03 konkret: Wasser, Flüsse, Fundamente und History
 
@@ -383,7 +434,10 @@ Einen integrierten Lesevertrag je Zweck behalten, alternative unbenutzte
 Sichtbares Gebiet und kleinen Navigationsrand vorladen. Lokale Bereitschaft
 hängt vom wirklichen Eingriff ab; ferne ungeladene Bildschirmteile blockieren ihn
 nicht. Bei kalter Stelle darf ein Flächenpinsel einen begrenzten, sichtbar
-ausstehenden Pfad halten. Abbruch/Dokumentwechsel widerruft nur noch nicht
+ausstehenden Pfad halten. Für Höhen gilt D10: Nur ein weiterhin gehaltener
+Anfangsimpuls beziehungsweise die aktuelle Position wartet auf Quellen;
+ausgelassene Wege und Zeit werden nicht nachgeholt.
+Abbruch/Dokumentwechsel widerruft nur noch nicht
 angenommene Arbeit. Haus-/Raumgesten ohne nötige lokale Grundlage beginnen nicht
 und werden später nicht überraschend nachgeholt. Bereits zulässige Hausgesten
 dürfen zusätzliche Offscreen-Owner revisionsgleich auflösen.
@@ -408,8 +462,11 @@ abgeschlossene Aktion, bestätigte Arbeitskopie und gespeicherte Datei bleiben
 verschieden; sie dürfen nicht zu einem einzelnen `fresh`-Flag zusammenfallen.
 
 - Kamera und hochfrequente Pointerzustände außerhalb von React-State verwalten.
-  Eingaben pro Frame bündeln; den räumlichen Pinselpfad und bei Farbfluss die Zeit
-  erhalten. Nur ersetzbare Darstellungs-/Vorschauaufträge dürfen `latest wins` sein.
+  Eingaben pro Frame bündeln. Bereits angenommene Modelländerungen bleiben
+  erhalten; noch nicht angenommene Höhen-Eingaben werden nach D10 begrenzt,
+  verworfen oder am aktuellen Ort neu verankert. Andere Flächenpinsel erhalten
+  ihren vereinbarten räumlichen Pfad und bei Farbfluss die Zeit. Ersetzbare
+  Darstellungs-/Vorschauaufträge dürfen `latest wins` sein.
 - Eine aktive Geste hält Originalwerte und geänderte Bereiche. Kleine Änderungen
   an bereitliegenden Quellen sind sofort exakt und sichtbar. Punktbewegungen
   validieren lokal; große Geometrie-/Netzoperationen werden Hintergrundaufgaben.
@@ -493,9 +550,10 @@ oder einen Zwischenstand erkennbar als noch nicht aktuell ausweisen.
 - Neues Projekt beginnt in einer temporären SQLite-Arbeitskopie. Abgeschlossene
   Aktionen erhalten eine Sequenznummer und werden in Reihenfolge transaktional
   geschrieben. Die Bestätigung benennt die letzte gesicherte Arbeitssequenz.
-- Projektdatei bleibt `.saltatlas`; neue eindeutige Versionskennung, am
-  Ausgangsstand Format 23 statt 22. Bei später geänderter Basis nächste freie
-  Version wählen. Schema umfasst Metadaten/Versionen, Quellkacheln mit Masken,
+- Projektdatei bleibt `.saltatlas`; neue eindeutige Versionskennung. Der aktuelle
+  P0-Kern verwendet Format 24 für persistierte numerische Übersichten; der frühere
+  Versuch verwendete 23 statt V7s 22. Bei weiterer Schemaänderung die nächste
+  freie Version wählen. Das vollständige Schema umfasst Metadaten/Versionen, Quellkacheln mit Masken,
   Objektheader, getrennte Innenpayloads, Regionen/Katalog und Hydrologiedaten.
   Räumliche Indizes und Vorschauen sind abgeleitet und rekonstruierbar.
 - Arbeitskopie und Quellenrevisionen werden nicht bei jeder Navigation geschrieben.
@@ -635,7 +693,7 @@ Prüfungen gegen ungenutzte Software im Gesamtgate.
 
 Die Abschnitte des [Produktvertrags am Ausgangsstand](https://github.com/ThonkTank/Salt-Marcher/blob/1bb3932fcffcb2d5fea47fae616c3b69489443bc/docs/product-contract.md)
 enthalten die detaillierten Fachfälle. F01–F19 werden über die Pakete verteilt;
-D01–D09 überschreiben nur ihre ausdrücklich genannten Punkte. Pfade in der
+D01–D10 überschreiben nur ihre ausdrücklich genannten Punkte. Pfade in der
 Tabelle sind **Istanker**, keine Vorgabe, die alte Architektur zu erhalten.
 
 | ID  | Pflichtumfang                                                                                                                                                               | Istanker / vorhandene Verhaltenstests                                                                                                                                 | Paket  |
@@ -750,7 +808,7 @@ angenommene Arbeit, Dateibestätigung und History sind auseinandergehalten.
 
 #### P0d — Großen bewegten Pinsel durchgängig aktualisieren
 
-**Pfade:** `EditorController.flushGesture`, `WorldRenderer`,
+**Pfade:** `EditorController.advanceFrame`/`applyDose`, `WorldRenderer`,
 `raster.worker.ts`, `raster.ts` und Quellpatch-Ausgabe des Modells.
 
 1. Einen kleinen und einen 256-Pixel-Strich mit bereits bereiten Quellen
@@ -760,9 +818,17 @@ angenommene Arbeit, Dateibestätigung und History sind auseinandergehalten.
    Einen begrenzten Renderablauf mit lokalem Fortgang umsetzen.
 3. Die aus der Beobachtung begründete Änderung mit demselben Verlauf vergleichen.
    Keine Kombination spekulativer Cache-, Worker- und Shaderumbauten.
-4. Während gehaltener Bewegung mindestens zwei aktuelle inhaltliche Zwischenstände
-   an getrennten Stellen belegen; exakten Bereich und Pointerup gesondert prüfen.
+4. **Das tatsächliche Pinselresultat folgt der gesamten Bewegung kontinuierlich.**
+   Aaron hat diese Anforderung bei der Umsetzung ausdrücklich bestätigt.
+   Mindestens zwei aktuelle Zwischenstände an getrennten Stellen sind nur eine
+   notwendige Mindestkontrolle. Sie genügen nicht als Nachweis einer flüssigen
+   laufenden Bearbeitung. Alle Eingaben und längste Feedbackpausen über den
+   gesamten Strich prüfen; exakten Bereich und Pointerup gesondert zuordnen.
    Die Geste nicht künstlich verlängern oder den Pinsel verkleinern, damit sie besteht.
+5. D10 im selben Pfad umsetzen: begrenzte Halte-/Bewegungsdosis,
+   darstellungsabhängige Annahme und ausdrückliches Verwerfen von Wartezeit.
+   Auch schnelle neue Klicks und verspätete Mausereignisse dürfen keine
+   unsichtbaren Schritte oder nachzuholenden Wege ansammeln.
 
 **Entfällt:** der ersetzte Snapshot-/Dispatch-/Bestätigungsweg, seine
 parallelen Zustände und ausschließlich ihn spiegelnde Tests.
@@ -1094,6 +1160,14 @@ Die folgenden Werte sind **verbindliche Zielwerte, keine vorhandenen Ergebnisse*
   zählen nicht. Zusätzlich Pointerup → atomar übernommener und präsentierter
   Aktionsstand messen; für diese gewöhnlichen lokalen Aktionen ebenfalls p95
   höchstens 50 ms. Aufwendige Werkzeuge mit gesonderter Übernahme separat ausweisen.
+- Bei fortlaufender Pinselbewegung darf die Ergebnisanzeige nicht nach wenigen
+  frühen Zwischenständen stehen bleiben. Die längste Pause mit ausstehenden
+  Änderungen während weiterer Eingaben wird zusätzlich ausgewiesen; mehr als
+  **100 ms** sind ein Live-Fehler, kein erlaubtes Ziel für gewöhnliche Reaktion.
+  Das ist eine Stillstandsgrenze für den laufenden Verlauf, kein neues
+  pauschales Maximum für jede einzelne Eingabe. Fehlt native Präsentation,
+  belegt schon eine entsprechend lange Submit-Pause das verfehlte Mindestziel;
+  ein kurzer Submit-Abstand allein beweist keine native Sichtbarkeit.
 - M10: p95 Zielnavigation → lokale Bearbeitbarkeit höchstens **500 ms** und p95
   Zielnavigation → erste exakt präsentierte Änderung höchstens **750 ms**.
   Beide Zeiten dürfen in keinem regulären Abnahmefall **2.000 ms** überschreiten.
@@ -1219,21 +1293,22 @@ ausweisen, nicht als erfolgreichen Teil der CI interpretieren.
 Diese Tabelle am aktuellen Stand pflegen. `Nachweis` enthält später Commit und
 konkreten Test-/Artefaktbezug, keine lange Chronik. Der begrenzte P0-Versuch
 liefert erste Komponenten; die native P0-Abnahme bleibt blockiert.
-Die Aufräumplanung ist dokumentiert, ihre Umsetzung wurde nicht begonnen.
-P1–P9 sind weiterhin offen.
+P0b/P0d/P0e und D10 sind implementiert und funktional geprüft. Große und kalte
+schnelle Gesten bestehen ihre strengen Leistungsprüfungen noch nicht.
+Der vollständige Ausbau P1–P9 hängt weiterhin am P0-Abschlussgate.
 
-| Paket | Pflichtumfang / Entscheidung                                                                                    | Umsetzung                                                                                                                                                    | Nachweis am Stand                                                                                                        | Status    |
-| ----- | --------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------ | --------- |
-| P0    | P0a–P0e: kurze ehrliche Prüfung, direkter Renderpfad, begrenzte Übersicht und native Höhenabnahme               | Lokales Modell/Dateipfad vorhanden. Großer Pinsel verspätet; dichte Grobansichten scheitern an 512 Quellen. P0b/d/e-Aufräumen geplant, native Abnahme offen. | Code `442576c`; [Prüfstand](status.md); `artifacts/atlas-rebuild/representative-final/442576c-packaged-full/` (partiell) | blockiert |
-| P1    | Gemeinsamer Kern, ein effektiver UI-Zustand und verwendete Verträge, A02–A06/D01/D02                            | —                                                                                                                                                            | —                                                                                                                        | offen     |
-| P2    | F19, A07, echte Projektdateien                                                                                  | —                                                                                                                                                            | —                                                                                                                        | offen     |
-| P3    | F01–F04/F18-Basis; Welt-bis-Haus, Grob-/Feinskalierung, exakte Bearbeitung unter Last, D03-Szene, M10-Teilfälle | —                                                                                                                                                            | —                                                                                                                        | offen     |
-| P4    | F04–F07, D01/D02, komplette Flächenwerkzeuge                                                                    | —                                                                                                                                                            | —                                                                                                                        | offen     |
-| P5    | F08–F12, D04, Straßen/Parzellen/Außenhäuser                                                                     | —                                                                                                                                                            | —                                                                                                                        | offen     |
-| P6    | F02/F12–F14, lokale Innenräume                                                                                  | —                                                                                                                                                            | —                                                                                                                        | offen     |
-| P7    | F09/F16/F17, D03, Flüsse/Seen/Nachführung                                                                       | —                                                                                                                                                            | —                                                                                                                        | offen     |
-| P8    | F03/F15/F18, vollständige UI und Kartografie                                                                    | —                                                                                                                                                            | —                                                                                                                        | offen     |
-| P9    | F01–F19 integriert, M01–M10, RPM, Altpfadabbau, Dokumentation                                                   | —                                                                                                                                                            | —                                                                                                                        | offen     |
+| Paket | Pflichtumfang / Entscheidung                                                                                    | Umsetzung                                                                                                                                                                                                                                | Nachweis am Stand                                                | Status    |
+| ----- | --------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- | --------- |
+| P0    | P0a–P0e: ehrliche Prüfung, direkter Renderpfad, begrenzte Übersicht, D10 und native Höhenabnahme                | Gemeinsamer Diagnoseablauf, Quellenpatches, begrenzte Batches, numerische Übersicht und rückgekoppelte Zeitdosis implementiert. Funktionsnachweise vorhanden; große/kalte schnelle Gesten verfehlen strenge Ziele, native Abnahme offen. | [Aktueller Prüfstand mit Identitäten und Belegpfaden](status.md) | blockiert |
+| P1    | Gemeinsamer Kern, ein effektiver UI-Zustand und verwendete Verträge, A02–A06/D01/D02                            | —                                                                                                                                                                                                                                        | —                                                                | offen     |
+| P2    | F19, A07, echte Projektdateien                                                                                  | —                                                                                                                                                                                                                                        | —                                                                | offen     |
+| P3    | F01–F04/F18-Basis; Welt-bis-Haus, Grob-/Feinskalierung, exakte Bearbeitung unter Last, D03-Szene, M10-Teilfälle | —                                                                                                                                                                                                                                        | —                                                                | offen     |
+| P4    | F04–F07, D01/D02, komplette Flächenwerkzeuge                                                                    | —                                                                                                                                                                                                                                        | —                                                                | offen     |
+| P5    | F08–F12, D04, Straßen/Parzellen/Außenhäuser                                                                     | —                                                                                                                                                                                                                                        | —                                                                | offen     |
+| P6    | F02/F12–F14, lokale Innenräume                                                                                  | —                                                                                                                                                                                                                                        | —                                                                | offen     |
+| P7    | F09/F16/F17, D03, Flüsse/Seen/Nachführung                                                                       | —                                                                                                                                                                                                                                        | —                                                                | offen     |
+| P8    | F03/F15/F18, vollständige UI und Kartografie                                                                    | —                                                                                                                                                                                                                                        | —                                                                | offen     |
+| P9    | F01–F19 integriert, M01–M10, RPM, Altpfadabbau, Dokumentation                                                   | —                                                                                                                                                                                                                                        | —                                                                | offen     |
 
 ## 8. Definition von „erledigt“
 
@@ -1243,7 +1318,7 @@ P1–P9 sind weiterhin offen.
       vollständige Abnahme verwenden dieselben Regeln. Teil-/Fehlerfälle werden
       sofort sichtbar, Diagnose belastet den normalen Produktstart nicht.
 - [ ] F01–F19 vollständig auf dem neuen aktiven Pfad umgesetzt und geprüft;
-      D01–D09 ausdrücklich im neuen Produktvertrag beschrieben.
+      D01–D10 ausdrücklich im neuen Produktvertrag beschrieben.
 - [ ] Welt→Raum→Welt, Grob-/Feinbearbeitung, Undo/Redo und Reopen funktionieren
       zusammen; die erste Demo wurde zum vollständigen Produkt ausgebaut.
 - [ ] Kamerabewegung benötigt weder Quellenmutation noch synchronen Speicher-/

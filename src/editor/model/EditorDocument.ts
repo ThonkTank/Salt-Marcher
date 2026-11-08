@@ -1,6 +1,7 @@
-import { prepareHeightSampler } from "./height";
+import { prepareHeightSampler, quarticBrushSegmentIntegral } from "./height";
 import {
   HEIGHT_LEVELS,
+  HEIGHT_MAX_ACTION_TILES,
   HEIGHT_TILE_BYTES,
   HEIGHT_TILE_CELLS,
   HEIGHT_TILE_SIZE,
@@ -48,7 +49,19 @@ interface Entry {
 
 interface Coverage {
   level: number | null;
+  minLevel?: number;
   bounds: Bounds;
+}
+
+const coversLevel = (coverage: Coverage, level: number) =>
+  coverage.level === null
+    ? level >= (coverage.minLevel ?? 0)
+    : coverage.level === level;
+
+export interface HeightUpdate {
+  bounds: Bounds;
+  /** Owned changed sources only; unrelated fine sources are never copied. */
+  patches: HeightPatch[];
 }
 
 interface HistoryAction {
@@ -63,8 +76,9 @@ interface Gesture {
   before: Map<string, HeightTile | null>;
   cells: Map<string, Set<number>>;
   cellCount: number;
+  /** Reserved before/after payloads if this live action finishes now. */
+  retainedBytes: number;
   previous: Point | null;
-  remaining: number;
   bounds: Bounds | null;
 }
 
@@ -128,9 +142,11 @@ function copyPatch(patch: HeightPatch): HeightPatch {
   };
 }
 
-function writeBytes(patches: HeightPatch[]): number {
+function retainedPatchBytes(patches: readonly HeightPatch[]): number {
   return patches.reduce(
-    (sum, patch) => sum + (patch.after ? HEIGHT_TILE_BYTES : 0),
+    (sum, patch) =>
+      sum +
+      (Number(!!patch.before) + Number(!!patch.after)) * HEIGHT_TILE_BYTES,
     0,
   );
 }
@@ -167,7 +183,10 @@ export class EditorDocument {
   private gesture: Gesture | null = null;
   private history: HistoryAction[] = [];
   private historyPosition = 0;
-  private readonly pending = new Map<number, number>();
+  private readonly pending = new Map<
+    number,
+    { bytes: number; patches: readonly HeightPatch[] }
+  >();
   private sourceBytes = 0;
   private historyBytes = 0;
   private pendingBytes = 0;
@@ -229,8 +248,7 @@ export class EditorDocument {
     const support = heightTileSupport(parsed);
     return this.coverage.some(
       (c) =>
-        (c.level === null || c.level === parsed.level) &&
-        intersectsBounds(support, c.bounds),
+        coversLevel(c, parsed.level) && intersectsBounds(support, c.bounds),
     )
       ? "absent"
       : "unknown";
@@ -278,9 +296,16 @@ export class EditorDocument {
     tiles: readonly HeightTile[],
     storeSequence = this.persistedSequence,
     sessionId = this.sessionId,
+    minLevel = 0,
   ): void {
+    if (
+      !Number.isInteger(minLevel) ||
+      minLevel < 0 ||
+      minLevel > HEIGHT_LEVELS.length
+    )
+      throw new RangeError("Ungültige untere Quellenstufe.");
     this.acceptRead(
-      { level: null, bounds },
+      { level: null, minLevel, bounds },
       null,
       tiles,
       storeSequence,
@@ -328,8 +353,7 @@ export class EditorDocument {
     const affects = (key: string) =>
       keys
         ? keys.has(key)
-        : (coverage!.level === null ||
-            parseHeightTileKey(key).level === coverage!.level) &&
+        : coversLevel(coverage!, parseHeightTileKey(key).level) &&
           intersectsBounds(
             heightTileSupport(parseHeightTileKey(key)),
             coverage!.bounds,
@@ -382,13 +406,17 @@ export class EditorDocument {
     if (coverage) {
       const copy = {
         level: coverage.level,
+        minLevel: coverage.minLevel,
         bounds: [...coverage.bounds] as Bounds,
       };
       this.coverage = this.coverage.filter(
         (old) =>
           !(
-            (copy.level === null || copy.level === old.level) &&
-            contained(copy.bounds, old.bounds)
+            (copy.level === null
+              ? old.level === null
+                ? (old.minLevel ?? 0) >= (copy.minLevel ?? 0)
+                : coversLevel(copy, old.level)
+              : copy.level === old.level) && contained(copy.bounds, old.bounds)
           ),
       );
       this.coverage.push(copy);
@@ -408,7 +436,7 @@ export class EditorDocument {
       levels.every((level) => {
         let remaining: Bounds[] = [bounds];
         for (const coverage of this.coverage) {
-          if (coverage.level !== null && coverage.level !== level) continue;
+          if (!coversLevel(coverage, level)) continue;
           if (contained(coverage.bounds, bounds)) return true;
           remaining = remaining.flatMap((area) =>
             subtract(area, coverage.bounds),
@@ -456,11 +484,19 @@ export class EditorDocument {
     return result;
   }
 
-  snapshot(bounds: Bounds): HeightSnapshot {
-    if (!this.isReady(bounds)) throw new SourcesNotReadyError(bounds);
+  snapshot(
+    bounds: Bounds,
+    levels: readonly number[] = HEIGHT_LEVELS,
+  ): HeightSnapshot {
+    if (!this.isReady(bounds, levels)) throw new SourcesNotReadyError(bounds);
+    const selected = new Set(levels);
     const tiles: HeightTile[] = [];
     for (const entry of this.entries.values())
-      if (entry.tile && intersectsBounds(heightTileSupport(entry.tile), bounds))
+      if (
+        entry.tile &&
+        selected.has(entry.tile.level) &&
+        intersectsBounds(heightTileSupport(entry.tile), bounds)
+      )
         tiles.push(cloneHeightTile(entry.tile));
     return {
       sessionId: this.sessionId,
@@ -468,13 +504,17 @@ export class EditorDocument {
       revision: this.revision,
       sequence: this.sequence,
       bounds: [...bounds],
+      levels: [...levels],
       tiles,
       dependencies: tiles.map(({ key, revision }) => ({ key, revision })),
     };
   }
 
   isSnapshotCurrent(snapshot: HeightSnapshot): boolean {
-    if (snapshot.sessionId !== this.sessionId || !this.isReady(snapshot.bounds))
+    if (
+      snapshot.sessionId !== this.sessionId ||
+      !this.isReady(snapshot.bounds, snapshot.levels)
+    )
       return false;
     const expected = new Map(
       snapshot.dependencies.map((s) => [s.key, s.revision]),
@@ -482,6 +522,7 @@ export class EditorDocument {
     for (const entry of this.entries.values()) {
       if (
         !entry.tile ||
+        !snapshot.levels.includes(entry.tile.level) ||
         !intersectsBounds(heightTileSupport(entry.tile), snapshot.bounds)
       )
         continue;
@@ -569,142 +610,158 @@ export class EditorDocument {
       before: new Map(),
       cells: new Map(),
       cellCount: 0,
+      retainedBytes: 0,
       previous: null,
-      remaining: Math.max(brush.radius / 4, step / 2),
       bounds: null,
     };
   }
 
-  applyPoint(point: Point): Bounds | null {
+  /** Complete segment support, using the model's last accepted point only. */
+  readBoundsForPoint(point: Point, brush: HeightBrush): Bounds {
+    assertPoint(point);
+    const activeBrush = this.gesture?.brush ?? brush;
+    const halo = activeBrush.radius + 2 * heightSpacing(activeBrush.level);
+    const previous = this.gesture?.previous ?? point;
+    return clipBounds([
+      Math.min(previous[0], point[0]) - halo,
+      Math.min(previous[1], point[1]) - halo,
+      Math.max(previous[0], point[0]) + halo,
+      Math.max(previous[1], point[1]) + halo,
+    ]);
+  }
+
+  /** Apply one elapsed time interval; a zero-duration point only sets its origin. */
+  applyPoint(point: Point, elapsedMs: number): HeightUpdate | null {
     const gesture = this.gesture;
     if (!gesture) throw new Error("Keine aktive Höhengeste.");
     assertPoint(point);
+    if (!Number.isFinite(elapsedMs) || elapsedMs < 0)
+      throw new RangeError(
+        "Die Pinselzeit muss endlich und nichtnegativ sein.",
+      );
     const { brush } = gesture;
     const step = heightSpacing(brush.level);
-    const stride = Math.max(brush.radius / 4, step / 2);
-    const centers: Point[] = [];
-    let remaining = gesture.remaining;
-    if (!gesture.previous) centers.push([...point]);
-    else {
-      let start = [...gesture.previous] as Point;
-      let distance = Math.hypot(point[0] - start[0], point[1] - start[1]);
-      if (distance / stride > this.options.maxGestureCells)
-        throw new RangeError(
-          "Pinselpfad überschreitet die Grenze dieser lokalen Aktion.",
-        );
-      while (distance >= remaining && distance > 1e-10) {
-        const t = remaining / distance;
-        start = [
-          start[0] + (point[0] - start[0]) * t,
-          start[1] + (point[1] - start[1]) * t,
-        ];
-        centers.push(start);
-        distance = Math.hypot(point[0] - start[0], point[1] - start[1]);
-        remaining = stride;
-      }
-      remaining -= distance;
-    }
-    if (!centers.length || brush.amount === 0) {
+    const from = gesture.previous ?? point;
+    const dx = point[0] - from[0];
+    const dy = point[1] - from[1];
+    const length = Math.hypot(dx, dy);
+    if (elapsedMs === 0 || brush.amount === 0) {
       gesture.previous = [...point];
-      gesture.remaining = remaining;
       return null;
     }
-    const centerBounds = centers.reduce<Bounds>(
-      (bounds, center) =>
-        unionBounds(bounds, [center[0], center[1], center[0], center[1]]),
-      [centers[0][0], centers[0][1], centers[0][0], centers[0][1]],
-    );
-    const sampleBounds = clipBounds([
-      centerBounds[0] - brush.radius - 2 * step,
-      centerBounds[1] - brush.radius - 2 * step,
-      centerBounds[2] + brush.radius + 2 * step,
-      centerBounds[3] + brush.radius + 2 * step,
-    ]);
+    const sampleBounds = this.readBoundsForPoint(point, brush);
     const levels = HEIGHT_LEVELS.slice(brush.level);
     if (!this.isReady(sampleBounds, levels))
       throw new SourcesNotReadyError(sampleBounds);
+    const minX = Math.max(
+      Math.ceil(-WORLD_LIMIT / step),
+      Math.ceil((Math.min(from[0], point[0]) - brush.radius) / step),
+    );
+    const minY = Math.max(
+      Math.ceil(-WORLD_LIMIT / step),
+      Math.ceil((Math.min(from[1], point[1]) - brush.radius) / step),
+    );
+    const maxX = Math.min(
+      Math.floor(WORLD_LIMIT / step),
+      Math.floor((Math.max(from[0], point[0]) + brush.radius) / step),
+    );
+    const maxY = Math.min(
+      Math.floor(WORLD_LIMIT / step),
+      Math.floor((Math.max(from[1], point[1]) + brush.radius) / step),
+    );
+    if ((maxX - minX + 1) * (maxY - minY + 1) > 400_000)
+      throw new RangeError(
+        "Pinselabschnitt ist zu groß für die direkte lokale Bearbeitung.",
+      );
+    const directionX = length ? dx / length : 0;
+    const directionY = length ? dy / length : 0;
     const updates = new Map<
       string,
       { tileX: number; tileY: number; values: Map<number, number> }
     >();
-    let visits = 0;
     let newCells = 0;
     let dirty: Bounds | null = null;
-    for (const center of centers) {
-      const minX = Math.max(
-        Math.ceil(-WORLD_LIMIT / step),
-        Math.ceil((center[0] - brush.radius) / step),
-      );
-      const minY = Math.max(
-        Math.ceil(-WORLD_LIMIT / step),
-        Math.ceil((center[1] - brush.radius) / step),
-      );
-      const maxX = Math.min(
-        Math.floor(WORLD_LIMIT / step),
-        Math.floor((center[0] + brush.radius) / step),
-      );
-      const maxY = Math.min(
-        Math.floor(WORLD_LIMIT / step),
-        Math.floor((center[1] + brush.radius) / step),
-      );
-      visits += (maxX - minX + 1) * (maxY - minY + 1);
-      if (visits > 400_000)
-        throw new RangeError(
-          "Pinselabschnitt ist zu groß für die direkte lokale Bearbeitung.",
-        );
-      for (let y = minY; y <= maxY; y++)
-        for (let x = minX; x <= maxX; x++) {
-          const dx = (x * step - center[0]) / brush.radius;
-          const dy = (y * step - center[1]) / brush.radius;
-          const d2 = dx * dx + dy * dy;
-          if (d2 >= 1) continue;
-          const { key, tileX, tileY, index } = heightControlAddress(
-            brush.level,
-            x,
-            y,
-          );
-          let update = updates.get(key);
-          if (!update)
-            updates.set(key, (update = { tileX, tileY, values: new Map() }));
-          const old =
-            update.values.get(index) ??
-            this.entries.get(key)?.tile?.values[index] ??
-            0;
-          const value = old + brush.amount * (1 - d2) ** 2;
-          if (!Number.isFinite(value))
-            throw new RangeError("Relative Höhe ist nicht endlich.");
-          if (value === old) continue;
-          if (!gesture.cells.get(key)?.has(index) && !update.values.has(index))
-            newCells++;
-          if (gesture.cellCount + newCells > this.options.maxGestureCells)
-            throw new RangeError(
-              "Höchstens 100.000 Höhenpunkte je Aktion; einen kürzeren Strich malen.",
-            );
-          update.values.set(index, value);
-          const changed: Bounds = [
-            x * step - 2 * step,
-            y * step - 2 * step,
-            x * step + 2 * step,
-            y * step + 2 * step,
-          ];
-          dirty = dirty ? unionBounds(dirty, changed) : changed;
+    for (let y = minY; y <= maxY; y++)
+      for (let x = minX; x <= maxX; x++) {
+        const qx = x * step - from[0];
+        const qy = y * step - from[1];
+        let weight: number;
+        if (length > 0) {
+          weight =
+            quarticBrushSegmentIntegral(
+              qx * directionX + qy * directionY,
+              qx * directionY - qy * directionX,
+              length,
+              brush.radius,
+            ) / length;
+        } else {
+          const d2 = (qx / brush.radius) ** 2 + (qy / brush.radius) ** 2;
+          weight = d2 < 1 ? (1 - d2) ** 2 : 0;
         }
-    }
+        if (weight === 0) continue;
+        const { key, tileX, tileY, index } = heightControlAddress(
+          brush.level,
+          x,
+          y,
+        );
+        let update = updates.get(key);
+        if (!update)
+          updates.set(key, (update = { tileX, tileY, values: new Map() }));
+        const old = this.entries.get(key)?.tile?.values[index] ?? 0;
+        const value = old + brush.amount * ((elapsedMs / 1000) * weight);
+        if (!Number.isFinite(value))
+          throw new RangeError("Relative Höhe ist nicht endlich.");
+        if (value === old) continue;
+        if (!gesture.cells.get(key)?.has(index) && !update.values.has(index))
+          newCells++;
+        if (gesture.cellCount + newCells > this.options.maxGestureCells)
+          throw new RangeError(
+            "Höchstens 100.000 Höhenpunkte je Aktion; einen kürzeren Strich malen.",
+          );
+        update.values.set(index, value);
+        const changed: Bounds = [
+          x * step - 2 * step,
+          y * step - 2 * step,
+          x * step + 2 * step,
+          y * step + 2 * step,
+        ];
+        dirty = dirty ? unionBounds(dirty, changed) : changed;
+      }
     for (const [key, update] of updates)
       if (!update.values.size) updates.delete(key);
     if (!updates.size) {
       gesture.previous = [...point];
-      gesture.remaining = remaining;
       return null;
     }
     const newKeys = [...updates.keys()].filter(
       (key) => !gesture.before.has(key),
     );
     const totalGestureTiles = gesture.before.size + newKeys.length;
-    if (
-      this.pendingBytes + totalGestureTiles * HEIGHT_TILE_BYTES >
-      this.options.maxPendingBytes
-    )
+    if (totalGestureTiles > HEIGHT_MAX_ACTION_TILES)
+      throw new RangeError(
+        `Eine Höhengeste darf höchstens ${HEIGHT_MAX_ACTION_TILES} Höhenkacheln ändern; einen kürzeren Strich malen.`,
+      );
+    let retainedBytes = gesture.retainedBytes;
+    for (const [key, update] of updates) {
+      const live = this.entries.get(key)?.tile;
+      const alreadyChanged = gesture.before.has(key);
+      if (!alreadyChanged && live) retainedBytes += HEIGHT_TILE_BYTES;
+      const hadAfter =
+        alreadyChanged && Boolean(live?.values.some((value) => value !== 0));
+      let hasAfter = false;
+      for (const value of update.values.values())
+        if (value !== 0) {
+          hasAfter = true;
+          break;
+        }
+      if (!hasAfter && live)
+        hasAfter = live.values.some(
+          (value, index) => value !== 0 && !update.values.has(index),
+        );
+      retainedBytes +=
+        (Number(hasAfter) - Number(hadAfter)) * HEIGHT_TILE_BYTES;
+    }
+    if (this.pendingBytes + retainedBytes > this.options.maxPendingBytes)
       throw new RangeError(
         "Die Arbeitskopie muss vorhandene Änderungen sichern, bevor dieser Pinselabschnitt angenommen werden kann.",
       );
@@ -726,8 +783,10 @@ export class EditorDocument {
         "Aktive Höhenquellen überschreiten das Speicherbudget.",
       );
     this.revision++;
+    const patches: HeightPatch[] = [];
     for (const [key, update] of updates) {
       let entry = this.entries.get(key);
+      const before = entry?.tile ? cloneHeightTile(entry.tile) : null;
       if (!gesture.before.has(key))
         gesture.before.set(
           key,
@@ -757,16 +816,17 @@ export class EditorDocument {
       }
       entry.localSequence = this.sequence + 1;
       entry.tile!.revision = this.revision;
+      patches.push({ key, before, after: cloneHeightTile(entry.tile!) });
     }
     gesture.cellCount += newCells;
+    gesture.retainedBytes = retainedBytes;
     gesture.previous = [...point];
-    gesture.remaining = remaining;
     dirty = clipBounds(dirty!);
     gesture.bounds = gesture.bounds
       ? unionBounds(gesture.bounds, dirty)
       : dirty;
     this.generation++;
-    return dirty;
+    return { bounds: dirty, patches };
   }
 
   /** Heights keep accepted live changes on release, Escape, blur and cancel. */
@@ -796,11 +856,7 @@ export class EditorDocument {
         (gesture.brush.amount >= 0 ? "Gelände anheben" : "Gelände absenken"),
       patches,
       dirtyBounds: gesture.bounds ? [gesture.bounds] : [],
-      bytes: patches.reduce(
-        (sum, p) =>
-          sum + (Number(!!p.before) + Number(!!p.after)) * HEIGHT_TILE_BYTES,
-        0,
-      ),
+      bytes: retainedPatchBytes(patches),
     };
     for (const discarded of this.history.splice(this.historyPosition))
       this.historyBytes -= discarded.bytes;
@@ -823,8 +879,8 @@ export class EditorDocument {
     dirtyBounds: Bounds[],
   ): ChangeSet {
     this.sequence++;
-    const bytes = writeBytes(patches);
-    this.pending.set(this.sequence, bytes);
+    const bytes = retainedPatchBytes(patches);
+    this.pending.set(this.sequence, { bytes, patches });
     this.pendingBytes += bytes;
     return {
       sessionId: this.sessionId,
@@ -856,6 +912,13 @@ export class EditorDocument {
   }
 
   private restore(action: HistoryAction, forward: boolean): ChangeSet {
+    if (
+      this.pendingBytes + retainedPatchBytes(action.patches) >
+      this.options.maxPendingBytes
+    )
+      throw new RangeError(
+        "Die Arbeitskopie muss vorhandene Änderungen zuerst sichern.",
+      );
     const revision = this.revision + 1;
     const patches = action.patches.map((patch): HeightPatch => {
       const expected = forward ? patch.before : patch.after;
@@ -873,10 +936,6 @@ export class EditorDocument {
         after: target ? { ...cloneHeightTile(target), revision } : null,
       };
     });
-    if (this.pendingBytes + writeBytes(patches) > this.options.maxPendingBytes)
-      throw new RangeError(
-        "Die Arbeitskopie muss vorhandene Änderungen zuerst sichern.",
-      );
     const nextSourceBytes =
       this.sourceBytes +
       patches.reduce(
@@ -920,10 +979,38 @@ export class EditorDocument {
     )
       throw new Error("Ungültige Speicherbestätigung.");
     this.persistedSequence = sequence;
-    for (const [pendingSequence, bytes] of this.pending)
+    for (const [pendingSequence, { bytes }] of this.pending)
       if (pendingSequence <= sequence) {
         this.pending.delete(pendingSequence);
         this.pendingBytes -= bytes;
       }
+  }
+
+  /** Overlay only changes absent from this store read, then the current live action.
+   * A reply older than an acknowledged boundary must be reread: acknowledged
+   * patches are released, never retained as a second permanent change journal.
+   */
+  presentationPatchesAfter(sequence: number): HeightPatch[] {
+    if (
+      !Number.isSafeInteger(sequence) ||
+      sequence < this.persistedSequence ||
+      sequence > this.sequence
+    )
+      throw new Error("Die gelesene Übersicht ist nicht mehr aktuell.");
+    const patches: HeightPatch[] = [];
+    for (const [pendingSequence, change] of this.pending)
+      if (pendingSequence > sequence)
+        patches.push(...change.patches.map(copyPatch));
+    for (const [key, before] of this.gesture?.before ?? []) {
+      const live = this.entries.get(key)?.tile;
+      patches.push({
+        key,
+        before: before ? cloneHeightTile(before) : null,
+        after: live?.values.some((value) => value !== 0)
+          ? cloneHeightTile(live)
+          : null,
+      });
+    }
+    return patches;
   }
 }

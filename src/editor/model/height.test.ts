@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   COAST_FIXTURE_BOUNDS,
   EditorDocument,
+  HEIGHT_MAX_ACTION_TILES,
   HEIGHT_TILE_BYTES,
   SourcesNotReadyError,
   TRENCH_POINT,
@@ -13,6 +14,7 @@ import {
   heightTileToRecord,
   heightTilesFromControls,
   prepareHeightSampler,
+  quarticBrushSegmentIntegral,
   requiredHeightSources,
   splineWeights,
   type Bounds,
@@ -38,7 +40,7 @@ function stroke(
   radius = 20,
 ) {
   doc.beginGesture({ level, radius, amount });
-  const bounds = points.map((p) => doc.applyPoint(p));
+  const bounds = points.map((p) => doc.applyPoint(p, 1000)?.bounds ?? null);
   const change = doc.finishGesture();
   return { change, bounds };
 }
@@ -47,6 +49,11 @@ function values(tiles: HeightTile[]) {
   return [...tiles]
     .sort((a, b) => a.key.localeCompare(b.key))
     .map(({ key, values }) => ({ key, values: Array.from(values) }));
+}
+
+function control(doc: EditorDocument, x: number, y: number, level = 0) {
+  const { key, index } = heightControlAddress(level, x, y);
+  return doc.readSources([key])[0]?.values[index] ?? 0;
 }
 
 describe("canonical relative height reconstruction", () => {
@@ -238,7 +245,7 @@ describe("local source readiness and ownership", () => {
   it("evicts only confirmed sources and never reinterprets an evicted tile as ocean", () => {
     const doc = new EditorDocument("eviction", { empty: true });
     doc.beginGesture({ level: 0, amount: 10, radius: 20 });
-    doc.applyPoint([100, 100]);
+    doc.applyPoint([100, 100], 1000);
     expect(doc.evictConfirmedSources()).toBe(0);
     const change = doc.finishGesture()!;
     expect(doc.evictConfirmedSources()).toBe(0);
@@ -263,7 +270,7 @@ describe("local source readiness and ownership", () => {
     doc.acceptPersistence(distant.sequence);
     const pending = stroke(doc, [[20_000, 20_000]]).change!;
     doc.beginGesture({ level: 0, radius: 20, amount: 10 });
-    doc.applyPoint([30_000, 30_000]);
+    doc.applyPoint([30_000, 30_000], 1000);
     const activeHeight = doc.sampleHeight(30_000, 30_000);
     expect(doc.evictConfirmedOutside(LOCAL)).toBe(1);
     expect(doc.sampleHeight(100, 100)).toBeGreaterThan(-100);
@@ -315,7 +322,7 @@ describe("local gestures, history and persistence patches", () => {
         empty: true,
       });
       doc.beginGesture({ level, radius, amount: 100 });
-      expect(doc.applyPoint([0, 0])).not.toBeNull();
+      expect(doc.applyPoint([0, 0], 1000)).not.toBeNull();
       expect(doc.metrics.gestureCells).toBeLessThan(2000);
       const change = doc.finishGesture()!;
       expect(change.patches.every((p) => p.after?.level === level)).toBe(true);
@@ -388,33 +395,21 @@ describe("local gestures, history and persistence patches", () => {
     expect(values(doc.snapshot(LOCAL).tiles)).toEqual(values(after.tiles));
   });
 
-  it("preserves the spatial path under event subdivision and does not deepen while held", () => {
+  it("preserves a time-parametrized path under event subdivision", () => {
     const a = new EditorDocument("a", { empty: true });
     const b = new EditorDocument("b", { empty: true });
-    stroke(
-      a,
-      [
-        [0, 0],
-        [60, 0],
-      ],
-      0,
-      -2,
-      30,
-    );
-    stroke(
-      b,
-      [
-        [0, 0],
-        [10, 0],
-        [20, 0],
-        [35, 0],
-        [60, 0],
-        [60, 0],
-      ],
-      0,
-      -2,
-      30,
-    );
+    for (const doc of [a, b]) {
+      doc.beginGesture({ level: 0, amount: -2, radius: 30 });
+      expect(doc.applyPoint([0, 0], 0)).toBeNull();
+    }
+    a.applyPoint([60, 0], 1000);
+    let previous = 0;
+    for (const x of [10, 20, 35, 60]) {
+      b.applyPoint([x, 0], ((x - previous) / 60) * 1000);
+      previous = x;
+    }
+    a.finishGesture();
+    b.finishGesture();
     const av = values(a.snapshot(LOCAL).tiles),
       bv = values(b.snapshot(LOCAL).tiles);
     expect(av.map((t) => t.key)).toEqual(bv.map((t) => t.key));
@@ -425,15 +420,206 @@ describe("local gestures, history and persistence patches", () => {
     expect(b.sequence).toBe(1);
   });
 
+  it("integrates the quartic kernel analytically without a hidden initial pulse", () => {
+    const doc = new EditorDocument("integral-oracle", { empty: true });
+    doc.beginGesture({ level: 0, radius: 30, amount: -2 });
+    expect(doc.applyPoint([-30, 0], 0)).toBeNull();
+    expect(doc.metrics.readyTiles).toBe(0);
+    doc.applyPoint([30, 0], 1000);
+    // Integral from -r to r is 16r/15. Averaged over length 2r, a
+    // one-second rate -2 gives -16/15, with no separate click contribution.
+    expect(control(doc, 0, 0)).toBeCloseTo(-16 / 15, 12);
+    expect(control(doc, 0, 3)).toBeCloseTo((-16 / 15) * (3 / 4) ** 2.5, 12);
+    expect(control(doc, -6, 0)).toBeCloseTo(-8 / 15, 12);
+    const tiny = quarticBrushSegmentIntegral(-15, 0, 1e-8, 30);
+    // At u=1/2 the kernel is 9/16; over this tiny interval its change is <1e-9.
+    expect(Math.abs(tiny / 1e-8 - 9 / 16)).toBeLessThan(1e-9);
+  });
+
+  it("deepens during stationary holding at the configured rate and undoes one whole stroke", () => {
+    const doc = new EditorDocument("stationary-rate", { empty: true });
+    doc.beginGesture({ level: 0, radius: 20, amount: 20 });
+    expect(doc.applyPoint([100, 100], 0)).toBeNull();
+    expect(doc.revision).toBe(0);
+    for (let interval = 0; interval < 12; interval++) {
+      expect(doc.applyPoint([100, 100], 250)).not.toBeNull();
+      expect(control(doc, 20, 20)).toBe((interval + 1) * 5);
+    }
+    expect(control(doc, 21, 20)).toBeCloseTo(60 * (15 / 16) ** 2, 12);
+    const revision = doc.revision;
+    expect(doc.applyPoint([100, 100], 0)).toBeNull();
+    expect(doc.revision).toBe(revision);
+    // Long elapsed intervals have no artificial duration cap.
+    doc.applyPoint([100, 100], 120_000);
+    expect(control(doc, 20, 20)).toBe(2460);
+    const after = values(doc.snapshot(LOCAL).tiles);
+    const change = doc.finishGesture()!;
+    expect(change.sequence).toBe(1);
+    expect(doc.metrics.historyActions).toBe(1);
+    doc.undo();
+    expect(control(doc, 20, 20)).toBe(0);
+    doc.redo();
+    expect(values(doc.snapshot(LOCAL).tiles)).toEqual(after);
+
+    const click = new EditorDocument("short-click", { empty: true });
+    click.beginGesture({ level: 0, radius: 20, amount: 20 });
+    click.applyPoint([100, 100], 5);
+    expect(control(click, 20, 20)).toBeCloseTo(0.1, 14);
+  });
+
+  it("makes slower travel proportionally stronger and updates every short interval", () => {
+    const fast = new EditorDocument("fast", { empty: true });
+    const slow = new EditorDocument("slow", { empty: true });
+    const divided = new EditorDocument("short-intervals", { empty: true });
+    const brush = { level: 3, radius: 512, amount: 40 };
+    for (const doc of [fast, slow, divided]) {
+      doc.beginGesture(brush);
+      doc.applyPoint([-1000, -300], 0);
+    }
+    fast.applyPoint([-160, -300], 960);
+    slow.applyPoint([-160, -300], 1920);
+    for (let i = 1; i <= 40; i++)
+      expect(divided.applyPoint([-1000 + 21 * i, -300], 24)).not.toBeNull();
+    expect(divided.revision).toBe(40);
+    const area: Bounds = [-2000, -1500, 1000, 1000];
+    const baseline = values(fast.snapshot(area).tiles);
+    const twice = values(slow.snapshot(area).tiles);
+    const split = values(divided.snapshot(area).tiles);
+    expect(twice.map((tile) => tile.key)).toEqual(
+      baseline.map((tile) => tile.key),
+    );
+    expect(split.map((tile) => tile.key)).toEqual(
+      baseline.map((tile) => tile.key),
+    );
+    for (let tile = 0; tile < baseline.length; tile++)
+      for (let index = 0; index < baseline[tile].values.length; index++) {
+        expect(twice[tile].values[index]).toBeCloseTo(
+          baseline[tile].values[index] * 2,
+          11,
+        );
+        expect(split[tile].values[index]).toBeCloseTo(
+          baseline[tile].values[index],
+          11,
+        );
+      }
+  });
+
+  it("requires the whole segment and halo across a gap between ready endpoints", () => {
+    const doc = new EditorDocument("segment-readiness");
+    const brush = { level: 0, radius: 20, amount: 10 };
+    doc.acceptCoverage([-50, -50, 50, 50], []);
+    doc.acceptCoverage([950, -50, 1050, 50], []);
+    doc.beginGesture(brush);
+    doc.applyPoint([0, 0], 100);
+    const needed = doc.readBoundsForPoint([1000, 0], brush);
+    expect(needed).toEqual([-30, -30, 1030, 30]);
+    expect(doc.isReady([970, -30, 1030, 30])).toBe(true);
+    const before = { metrics: doc.metrics, revision: doc.revision };
+    expect(() => doc.applyPoint([1000, 0], 1000)).toThrow(SourcesNotReadyError);
+    expect({ metrics: doc.metrics, revision: doc.revision }).toEqual(before);
+    expect(doc.readBoundsForPoint([1000, 0], brush)).toEqual(needed);
+    doc.acceptCoverage(needed, []);
+    doc.applyPoint([1000, 0], 1000);
+
+    const uninterrupted = new EditorDocument("known-segment", { empty: true });
+    uninterrupted.beginGesture(brush);
+    uninterrupted.applyPoint([0, 0], 100);
+    uninterrupted.applyPoint([1000, 0], 1000);
+    expect(values(doc.snapshot(needed).tiles)).toEqual(
+      values(uninterrupted.snapshot(needed).tiles),
+    );
+  });
+
+  it("keeps timed negative strokes and subdivision exact at both world edges", () => {
+    for (const sign of [-1, 1]) {
+      const doc = new EditorDocument(`edge-${sign}`, { empty: true });
+      const divided = new EditorDocument(`edge-split-${sign}`, { empty: true });
+      const from: Point = [
+        sign * (WORLD_LIMIT - 40),
+        sign * (WORLD_LIMIT - 20),
+      ];
+      const to: Point = [sign * WORLD_LIMIT, sign * WORLD_LIMIT];
+      const brush = { level: 0, radius: 30, amount: -2 };
+      for (const target of [doc, divided]) {
+        target.beginGesture(brush);
+        target.applyPoint(from, 0);
+      }
+      const bounds = doc.readBoundsForPoint(to, brush);
+      expect(bounds.every((value) => Math.abs(value) <= WORLD_LIMIT)).toBe(
+        true,
+      );
+      doc.applyPoint(to, 1000);
+      for (let i = 1; i <= 10; i++)
+        divided.applyPoint(
+          [
+            from[0] + ((to[0] - from[0]) * i) / 10,
+            from[1] + ((to[1] - from[1]) * i) / 10,
+          ],
+          100,
+        );
+      expect(control(doc, to[0] / 5, to[1] / 5)).toBeCloseTo(
+        -32 / Math.hypot(40, 20),
+        12,
+      );
+      const whole = values(doc.snapshot(bounds).tiles);
+      const split = values(divided.snapshot(bounds).tiles);
+      expect(split.map((tile) => tile.key)).toEqual(
+        whole.map((tile) => tile.key),
+      );
+      for (let tile = 0; tile < whole.length; tile++)
+        for (let index = 0; index < whole[tile].values.length; index++)
+          expect(split[tile].values[index]).toBeCloseTo(
+            whole[tile].values[index],
+            11,
+          );
+      doc.finishGesture();
+      doc.undo();
+      expect(doc.sampleHeight(...to)).toBe(-100);
+      doc.redo();
+      expect(values(doc.snapshot(bounds).tiles)).toEqual(whole);
+    }
+  });
+
+  it("rejects invalid time and oversized intervals before changing an accepted prefix", () => {
+    const doc = new EditorDocument("timed-budget", {
+      empty: true,
+      maxGestureCells: 100,
+    });
+    const brush = { level: 0, radius: 20, amount: 10 };
+    doc.beginGesture(brush);
+    doc.applyPoint([0, 0], 100);
+    const before = {
+      metrics: doc.metrics,
+      revision: doc.revision,
+      height: doc.sampleHeight(0, 0),
+    };
+    for (const duration of [-1, NaN, Infinity])
+      expect(() => doc.applyPoint([10, 0], duration)).toThrow(/Pinselzeit/);
+    expect(() => doc.applyPoint([1000, 0], 1000)).toThrow(/Höhenpunkte/);
+    expect({
+      metrics: doc.metrics,
+      revision: doc.revision,
+      height: doc.sampleHeight(0, 0),
+    }).toEqual(before);
+    expect(doc.readBoundsForPoint([1000, 0], brush)).toEqual([
+      -30, -30, 1030, 30,
+    ]);
+    expect(doc.finishGesture()).not.toBeNull();
+    doc.undo();
+    expect(doc.sampleHeight(0, 0)).toBe(-100);
+  });
+
   it("rejects unready edits before mutation and preserves a valid partial stroke on failure", () => {
     const doc = new EditorDocument("partial");
     doc.beginGesture({ level: 0, amount: 10, radius: 20 });
-    expect(() => doc.applyPoint([100, 100])).toThrow(SourcesNotReadyError);
+    expect(() => doc.applyPoint([100, 100], 1000)).toThrow(
+      SourcesNotReadyError,
+    );
     expect(doc.metrics.gestureCells).toBe(0);
     doc.acceptCoverage(LOCAL, []);
-    doc.applyPoint([100, 100]);
+    doc.applyPoint([100, 100], 1000);
     const accepted = doc.sampleHeight(100, 100);
-    expect(() => doc.applyPoint([50_000, 50_000])).toThrow();
+    expect(() => doc.applyPoint([50_000, 50_000], 1000)).toThrow();
     expect(doc.sampleHeight(100, 100)).toBe(accepted);
     const change = doc.finishGesture()!;
     expect(change.sequence).toBe(1);
@@ -456,20 +642,143 @@ describe("local gestures, history and persistence patches", () => {
     expect(doc.sampleHeight(100, 100)).toBeGreaterThan(-100);
   });
 
-  it("reserves pending-write capacity before accepting another local change", () => {
+  it("reserves retained patch capacity before accepting another local change", () => {
     const doc = new EditorDocument("backlog", {
       empty: true,
-      maxPendingBytes: HEIGHT_TILE_BYTES,
+      maxPendingBytes: HEIGHT_TILE_BYTES * 2,
     });
     const first = stroke(doc, [[100, 100]]).change!;
     const original = doc.sampleHeight(100, 100);
     doc.beginGesture({ level: 0, radius: 20, amount: 10 });
-    expect(() => doc.applyPoint([100, 100])).toThrow(/Arbeitskopie/);
+    expect(() => doc.applyPoint([100, 100], 1000)).toThrow(/Arbeitskopie/);
     expect(doc.finishGesture()).toBeNull();
     expect(doc.sampleHeight(100, 100)).toBe(original);
     doc.acceptPersistence(first.sequence);
     expect(stroke(doc, [[100, 100]]).change).not.toBeNull();
+    expect(doc.metrics.pendingBytes).toBe(HEIGHT_TILE_BYTES * 2);
+  });
+
+  it("budgets deleted authors retained for projection and releases them only after ACK", () => {
+    const doc = new EditorDocument("deletion-backlog", {
+      maxPendingBytes: HEIGHT_TILE_BYTES,
+    });
+    doc.acceptCoverage(
+      ALL,
+      heightTilesFromControls(0, [
+        [20, 20, 10],
+        [84, 20, 10],
+      ]),
+    );
+    doc.beginGesture({ level: 0, radius: 1, amount: -10 });
+    doc.applyPoint([100, 100], 1000);
+    const live = doc.presentationPatchesAfter(0);
+    expect(live).toHaveLength(1);
+    expect(live[0].before?.values.byteLength).toBe(HEIGHT_TILE_BYTES);
+    expect(live[0].after).toBeNull();
+    const acceptedDeletion = { metrics: doc.metrics, revision: doc.revision };
+    // Continuing onto a zero neighbour would retain a nonempty after as well.
+    expect(() => doc.applyPoint([105, 100], 1000)).toThrow(/Arbeitskopie/);
+    expect({ metrics: doc.metrics, revision: doc.revision }).toEqual(
+      acceptedDeletion,
+    );
+    const first = doc.finishGesture()!;
+    expect(first.patches[0].after).toBeNull();
     expect(doc.metrics.pendingBytes).toBe(HEIGHT_TILE_BYTES);
+
+    const before = { metrics: doc.metrics, revision: doc.revision };
+    const unchanged = doc.sampleHeight(420, 100);
+    doc.beginGesture({ level: 0, radius: 1, amount: -10 });
+    expect(() => doc.applyPoint([420, 100], 1000)).toThrow(/Arbeitskopie/);
+    expect(doc.finishGesture()).toBeNull();
+    expect({ metrics: doc.metrics, revision: doc.revision }).toEqual(before);
+    expect(doc.sampleHeight(420, 100)).toBe(unchanged);
+
+    doc.acceptPersistence(first.sequence);
+    expect(doc.metrics.pendingBytes).toBe(0);
+    const second = stroke(doc, [[420, 100]], 0, -10, 1).change!;
+    expect(second.patches[0].after).toBeNull();
+    expect(doc.metrics.pendingBytes).toBe(HEIGHT_TILE_BYTES);
+    const pending = doc.presentationPatchesAfter(first.sequence);
+    expect(pending).toHaveLength(1);
+    expect(pending[0].before?.values.byteLength).toBe(HEIGHT_TILE_BYTES);
+    expect(pending[0].after).toBeNull();
+    doc.acceptPersistence(second.sequence);
+    expect(doc.metrics.pendingBytes).toBe(0);
+  });
+
+  it("counts both versions of an existing author before mutation, Undo and Redo", () => {
+    const source = heightTilesFromControls(0, [[20, 20, 10]]);
+    const tooSmall = new EditorDocument("one-payload-budget", {
+      maxPendingBytes: HEIGHT_TILE_BYTES,
+    });
+    tooSmall.acceptCoverage(ALL, source);
+    const original = tooSmall.sampleHeight(100, 100);
+    tooSmall.beginGesture({ level: 0, radius: 1, amount: 5 });
+    expect(() => tooSmall.applyPoint([100, 100], 1000)).toThrow(/Arbeitskopie/);
+    expect(tooSmall.finishGesture()).toBeNull();
+    expect(tooSmall.sampleHeight(100, 100)).toBe(original);
+    expect(tooSmall.metrics.historyActions).toBe(0);
+
+    const doc = new EditorDocument("two-payload-budget", {
+      maxPendingBytes: HEIGHT_TILE_BYTES * 2,
+    });
+    doc.acceptCoverage(ALL, source);
+    const changed = stroke(doc, [[100, 100]], 0, 5, 1).change!;
+    const raised = doc.sampleHeight(100, 100);
+    expect(doc.metrics.pendingBytes).toBe(HEIGHT_TILE_BYTES * 2);
+    const state = () => ({
+      metrics: doc.metrics,
+      revision: doc.revision,
+      sequence: doc.sequence,
+      canUndo: doc.canUndo,
+      canRedo: doc.canRedo,
+      height: doc.sampleHeight(100, 100),
+    });
+    const beforeUndo = state();
+    expect(() => doc.undo()).toThrow(/Arbeitskopie/);
+    expect(state()).toEqual(beforeUndo);
+    doc.acceptPersistence(changed.sequence);
+    const undone = doc.undo()!;
+    expect(doc.sampleHeight(100, 100)).toBe(original);
+    expect(doc.metrics.pendingBytes).toBe(HEIGHT_TILE_BYTES * 2);
+    const beforeRedo = state();
+    expect(() => doc.redo()).toThrow(/Arbeitskopie/);
+    expect(state()).toEqual(beforeRedo);
+    doc.acceptPersistence(undone.sequence);
+    doc.redo();
+    expect(doc.sampleHeight(100, 100)).toBe(raised);
+    expect(doc.metrics.pendingBytes).toBe(HEIGHT_TILE_BYTES * 2);
+  });
+
+  it("stops a long narrow stroke before a 513th author while its accepted part remains undoable", () => {
+    const doc = new EditorDocument("action-tile-limit", { empty: true });
+    // The supported 8px brush at maximum zoom has this world radius. A
+    // continuous line can span 513 source tiles with only 32,769 changed
+    // controls, so the cell and byte budgets alone do not bound a commit.
+    doc.beginGesture({ level: 0, radius: 8 / (2 * 25.6), amount: 10 });
+    for (let tile = 0; tile < HEIGHT_MAX_ACTION_TILES; tile++)
+      doc.applyPoint([tile * 320, 0], 1000);
+    const lastPoint: Point = [(HEIGHT_MAX_ACTION_TILES - 1) * 320, 0];
+    const lastKey = heightTileKey(0, HEIGHT_MAX_ACTION_TILES - 1, 0);
+    const accepted = doc.readSources([lastKey])[0].values;
+    const acceptedHeight = doc.sampleHeight(...lastPoint);
+    const before = { metrics: doc.metrics, revision: doc.revision };
+    expect(() =>
+      doc.applyPoint([HEIGHT_MAX_ACTION_TILES * 320, 0], 1000),
+    ).toThrow(/höchstens 512 Höhenkacheln/);
+    expect({ metrics: doc.metrics, revision: doc.revision }).toEqual(before);
+    expect(doc.readSources([lastKey])[0].values).toEqual(accepted);
+    expect(doc.sourceState(heightTileKey(0, HEIGHT_MAX_ACTION_TILES, 0))).toBe(
+      "absent",
+    );
+
+    const change = doc.finishGesture()!;
+    expect(change.patches).toHaveLength(HEIGHT_MAX_ACTION_TILES);
+    doc.acceptPersistence(change.sequence);
+    expect(doc.undo()!.patches).toHaveLength(HEIGHT_MAX_ACTION_TILES);
+    expect(doc.sampleHeight(...lastPoint)).toBe(-100);
+    expect(doc.redo()!.patches).toHaveLength(HEIGHT_MAX_ACTION_TILES);
+    expect(doc.sampleHeight(...lastPoint)).toBe(acceptedHeight);
   });
 
   it("returns only changed authors and continues the reopened store sequence", () => {
@@ -508,10 +817,74 @@ describe("local gestures, history and persistence patches", () => {
       doc.beginGesture({ level: 0, radius: Number.NaN, amount: 1 }),
     ).toThrow();
     doc.beginGesture({ level: 0, radius: 20, amount: 1 });
-    expect(() => doc.applyPoint([Number.POSITIVE_INFINITY, 0])).toThrow();
-    expect(() => doc.applyPoint([0, 0])).toThrow(/Speicherbudget/);
+    expect(() => doc.applyPoint([Number.POSITIVE_INFINITY, 0], 1000)).toThrow();
+    expect(() => doc.applyPoint([0, 0], 1000)).toThrow(/Speicherbudget/);
     expect(doc.finishGesture()).toBeNull();
     expect(doc.sequence).toBe(0);
     expect(doc.metrics.readyTiles).toBe(0);
+  });
+});
+
+describe("bounded source reads and presentation projection", () => {
+  it("certifies coarse absence without claiming unknown fine authors are absent", () => {
+    const doc = new EditorDocument("coarse-read");
+    doc.acceptCoverage(ALL, [], 0, doc.sessionId, 8);
+    expect(doc.isReady(LOCAL, [8, 9, 21])).toBe(true);
+    expect(doc.sourceState(heightTileKey(0, 0, 0))).toBe("unknown");
+    expect(doc.isReady(LOCAL)).toBe(false);
+    doc.beginGesture({ level: 8, radius: 10_000, amount: 10 });
+    const update = doc.applyPoint([0, 0], 1000);
+    expect(update?.patches.length).toBeGreaterThan(0);
+    expect(update?.patches.every((p) => p.after?.level === 8)).toBe(true);
+    expect(doc.snapshot(LOCAL, [8]).tiles.length).toBeGreaterThan(0);
+    expect(() => doc.sampleHeight(0, 0)).toThrow(SourcesNotReadyError);
+  });
+
+  it("returns incremental owned source patches while one gesture retains its original undo values", () => {
+    const doc = new EditorDocument("live-patches", { empty: true });
+    doc.beginGesture({ level: 0, radius: 20, amount: 10 });
+    const first = doc.applyPoint([0, 0], 1000)!;
+    const firstValues = values(
+      first.patches.flatMap((p) => (p.after ? [p.after] : [])),
+    );
+    const next = doc.applyPoint([10, 0], 1000)!;
+    const repeated = next.patches.find(
+      (p) => p.before && first.patches.some((prior) => prior.key === p.key),
+    )!;
+    expect(repeated.before?.values).toEqual(
+      first.patches.find((p) => p.key === repeated.key)!.after!.values,
+    );
+    expect(
+      values(first.patches.flatMap((p) => (p.after ? [p.after] : []))),
+    ).toEqual(firstValues);
+    const transfer = first.patches[0].after!.values.buffer as ArrayBuffer;
+    structuredClone(transfer, { transfer: [transfer] });
+    expect(Number.isFinite(doc.sampleHeight(0, 0))).toBe(true);
+    doc.finishGesture();
+    doc.undo();
+    expect(doc.sampleHeight(0, 0)).toBe(-100);
+  });
+
+  it("projects pending actions and live edits exactly once for the returned store boundary", () => {
+    const doc = new EditorDocument("pending-projection", { empty: true });
+    const a = stroke(doc, [[0, 0]]).change!;
+    const b = stroke(doc, [[100, 0]]).change!;
+    expect(doc.presentationPatchesAfter(0)).toHaveLength(
+      a.patches.length + b.patches.length,
+    );
+    expect(doc.presentationPatchesAfter(a.sequence)).toHaveLength(
+      b.patches.length,
+    );
+    doc.acceptPersistence(a.sequence);
+    expect(() => doc.presentationPatchesAfter(0)).toThrow(/aktuell/);
+    doc.beginGesture({ level: 0, radius: 20, amount: 10 });
+    const live = doc.applyPoint([200, 0], 1000)!;
+    const pending = doc.presentationPatchesAfter(b.sequence);
+    expect(pending).toHaveLength(live.patches.length);
+    pending[0].after!.values.fill(0);
+    expect(doc.sampleHeight(200, 0)).toBeGreaterThan(-100);
+    doc.finishGesture();
+    doc.undo();
+    expect(doc.sampleHeight(200, 0)).toBe(-100);
   });
 });

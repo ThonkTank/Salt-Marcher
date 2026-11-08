@@ -21,14 +21,16 @@ import type {
   SourceBoundary,
 } from "../src/editor/bridge";
 import type { PreparedSave, StoreActivity } from "./project-store";
+import { HEIGHT_MAX_ACTION_TILES } from "../src/editor/model/types";
 
 const CHANNEL = "atlas:p0";
 const MAX_PENDING = 64;
+const diagnostics = process.env.ATLAS_P0_DIAGNOSTICS === "1";
 const indexPath = resolve(__dirname, "../dist-editor/index.html");
 // Faults belong to explicit diagnostic launches. A normal packaged start never
 // inherits a broken editor just because a stale fault variable remains set.
 const fault =
-  process.env.ATLAS_P0_DIAGNOSTICS === "1" &&
+  diagnostics &&
   ["delay-render", "drop-render", "ignore-zoom", "pointerup-render"].includes(
     process.env.ATLAS_P0_FAULT ?? "",
   )
@@ -43,7 +45,9 @@ class StoreProcess {
   readonly ready: Promise<void>;
   private serial = 0;
   private failure: Error | null = null;
-  private readonly activityEvents: StoreActivity[] = [];
+  private readonly activityEvents: (StoreActivity & { index: number })[] = [];
+  private activityCount = 0;
+  private droppedActivity = 0;
   private readonly pending = new Map<
     number,
     {
@@ -79,9 +83,11 @@ class StoreProcess {
           error?: string;
           activity?: StoreActivity;
         }) => {
-          if (message.activity) {
-            this.activityEvents.push(message.activity);
-            if (this.activityEvents.length > 2048) this.activityEvents.shift();
+          if (diagnostics && message.activity) {
+            const index = this.activityCount++;
+            if (this.activityEvents.length < 20_000)
+              this.activityEvents.push({ ...message.activity, index });
+            else this.droppedActivity++;
           }
           if (message.ready) resolveReady();
           if (message.fatal) {
@@ -154,8 +160,16 @@ class StoreProcess {
     this.child.kill();
   }
 
-  activity() {
-    return this.activityEvents.map((event) => ({ ...event }));
+  activity({ sinceEvent = 0 }: { sinceEvent?: number } = {}) {
+    if (!Number.isSafeInteger(sinceEvent) || sinceEvent < 0)
+      throw new Error("Ungültiger Beobachtungscursor.");
+    return {
+      events: this.activityEvents
+        .slice(sinceEvent)
+        .map((event) => ({ ...event })),
+      eventCount: this.activityCount,
+      droppedEvents: this.droppedActivity,
+    };
   }
 }
 
@@ -292,19 +306,20 @@ function registerBridge() {
             throw new Error("Ungültige Quellenabfrage.");
           return store.request("readTiles", argument);
         case "readRegion":
+        case "readPresentation":
           if (
             !argument ||
             !Array.isArray(argument.bounds) ||
             argument.bounds.length !== 4
           )
             throw new Error("Ungültige Ausschnittabfrage.");
-          return store.request("readRegion", argument);
+          return store.request(request.method, argument);
         case "commit": {
           checkedBoundary(argument);
           if (
             !argument ||
             !Array.isArray(argument.patches) ||
-            argument.patches.length > 512
+            argument.patches.length > HEIGHT_MAX_ACTION_TILES
           )
             throw new Error("Ungültige Quellenänderung.");
           // Full numeric/payload validation belongs to the utility process, not UI Main.
@@ -338,7 +353,7 @@ function registerBridge() {
 }
 
 function registerDiagnostics() {
-  if (process.env.ATLAS_P0_DIAGNOSTICS !== "1") return;
+  if (!diagnostics) return;
   const manifestPath = join(__dirname, "build.json");
   let build: Record<string, unknown> | null = null;
   const buildProvenance: {
@@ -409,7 +424,8 @@ function registerDiagnostics() {
         })),
       }),
       metrics: () => store.request("metrics"),
-      storeActivity: () => store.activity(),
+      storeActivity: (options?: { sinceEvent?: number }) =>
+        store.activity(options),
       fileActionPending: () => fileActionPending,
       startTrace: () =>
         contentTracing.startRecording({
@@ -454,6 +470,7 @@ async function start() {
       sandbox: true,
       nodeIntegration: false,
       backgroundThrottling: false,
+      additionalArguments: diagnostics ? ["--atlas-diagnostics"] : [],
     },
   });
   window.webContents.setWindowOpenHandler(() => ({ action: "deny" }));

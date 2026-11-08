@@ -1,24 +1,48 @@
 import { expect, it } from "vitest";
-import { rasterize } from "./raster";
+import { HEIGHT_SUM_SCALE } from "../model/height";
+import { colour, rasterize } from "./raster";
 
-it("samples a clipped world-edge tile inside each axis, including partial updates", () => {
-  const visited: [number, number][] = [];
-  const sample = (x: number, y: number) => {
-    if (x < 0 || x > 67_108_864 || y < 67_108_864 || y > 100_000_000)
-      throw new Error("World-edge sampling escaped the world");
-    visited.push([x, y]);
-    return -100;
-  };
-  const bounds: [number, number, number, number] = [
-    0, 67_108_864, 67_108_864, 100_000_000,
-  ];
-  const pixels = rasterize(sample, bounds, 128, [126, 126, 128, 128]);
-  expect(visited).toHaveLength(4);
-  expect(visited[3]).toEqual([
-    (67_108_864 * 127.5) / 128,
-    67_108_864 + (32_891_136 * 127.5) / 128,
-  ]);
+it("combines fine and coarse numeric height before one clamp and classification", () => {
+  const fine = new Float64Array(16);
+  fine[10] = -200_100 / HEIGHT_SUM_SCALE;
+  fine[11] = -200_000 / HEIGHT_SUM_SCALE;
+  fine[14] = -199_990 / HEIGHT_SUM_SCALE;
+  fine[15] = -199_980 / HEIGHT_SUM_SCALE;
+  const pixels = rasterize(
+    new Float64Array(4).fill(200_000 / HEIGHT_SUM_SCALE),
+    [0, 0, 16, 16],
+    4,
+    [2, 2, 4, 4],
+    fine,
+  );
+  expect([...pixels]).toEqual(
+    [-100, 0, 10, 20].flatMap((height) => [...colour(height), 255]),
+  );
+});
+
+it("keeps the unscaled world-edge mesh and leaves only out-of-world pixels transparent", () => {
+  const pixels = rasterize(
+    new Float64Array(4).fill(-100 / HEIGHT_SUM_SCALE),
+    [99_999_872, 0, 100_000_384, 512],
+    128,
+    [30, 0, 34, 1],
+  );
   expect([...pixels]).toEqual([
-    76, 128, 151, 255, 76, 128, 151, 255, 76, 128, 151, 255, 76, 128, 151, 255,
+    76, 128, 151, 255, 76, 128, 151, 255, 0, 0, 0, 0, 0, 0, 0, 0,
   ]);
+});
+
+it("rejects incomplete numeric display inputs", () => {
+  expect(() =>
+    rasterize(new Float64Array(1), [0, 0, 4, 4], 4, [0, 0, 2, 2]),
+  ).toThrow("Unvollständige Höhenwerte");
+  expect(() =>
+    rasterize(
+      new Float64Array(4),
+      [0, 0, 4, 4],
+      4,
+      [0, 0, 2, 2],
+      new Float64Array(1),
+    ),
+  ).toThrow("Unvollständige numerische Höhenübersicht");
 });

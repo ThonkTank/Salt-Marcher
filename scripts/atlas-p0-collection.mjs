@@ -1,6 +1,11 @@
-import { copyFile } from "node:fs/promises";
+import { copyFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { extractEditSamples } from "./atlas-p0-evaluate.mjs";
+import {
+  extractEditSamples,
+  strokeEvidence,
+  evaluateScenario,
+  evaluateStrokeContent,
+} from "./atlas-p0-evaluate.mjs";
 import {
   snapshot,
   stateSnapshot,
@@ -13,6 +18,9 @@ import {
   movingStroke,
   observeStroke,
   waitForSaveCompletion,
+  storeActivityPosition,
+  storeIntervalReference,
+  strokeInputs,
 } from "./atlas-p0-interactions.mjs";
 
 const finite = (value) => typeof value === "number" && Number.isFinite(value);
@@ -23,23 +31,32 @@ const cutoff = (state) =>
     0,
     ...(state.events ?? []).filter((e) => e.kind === "input").map((e) => e.id),
   );
+// Fixed 4000 ft/s (1219.2 m/s) makes endpoint changes visible above the
+// actual raster/color quantization under bounded time-based painting. Geometry,
+// existing input programs, latency gates and pixel checks stay unchanged; no warmup.
 const specs = [
-  { id: "M03-height-small", kind: "edit", diameter: 16, amount: 10 },
-  { id: "M03-height-large", kind: "edit", diameter: 256, amount: 40 },
+  { id: "M03-height-small", kind: "edit", diameter: 16, amount: 4000 },
+  { id: "M03-height-large", kind: "edit", diameter: 256, amount: 4000 },
   {
     id: "M04-coarse-fine",
     kind: "edit",
     diameter: 64,
-    amount: 100,
+    amount: 4000,
     coarse: true,
   },
-  { id: "M06-height-busy", kind: "edit", diameter: 16, amount: 10, busy: true },
-  { id: "M10-height-cold", kind: "cold", diameter: 128, amount: 120 },
+  {
+    id: "M06-height-busy",
+    kind: "edit",
+    diameter: 16,
+    amount: 4000,
+    busy: true,
+  },
+  { id: "M10-height-cold", kind: "cold", diameter: 128, amount: 4000 },
   {
     id: "M10-height-cold-busy",
     kind: "cold",
     diameter: 128,
-    amount: 120,
+    amount: 4000,
     busy: true,
   },
 ];
@@ -91,31 +108,6 @@ function retainSamples(scenario, samples) {
   }
 }
 
-function strokeEvidence(edit, requireBeforeRelease = true) {
-  const live = edit.samples.filter((s) => s.inputKind === "edit");
-  const up = edit.samples.filter((s) => s.inputKind === "pointerup");
-  const releasedAt = up[0]?.createdAt;
-  const beforeRelease = live.filter(
-    (s) => finite(s.submissionAt) && s.submissionAt < releasedAt,
-  );
-  const complete =
-    !edit.timedOut &&
-    live.length >= 3 &&
-    up.length === 1 &&
-    edit.samples.every(
-      (s) => finite(s.createdAt) && finite(s.modelAt) && finite(s.submissionAt),
-    );
-  return {
-    complete,
-    passed: complete && (!requireBeforeRelease || beforeRelease.length >= 2),
-    liveInputs: live.length,
-    pointerups: up.length,
-    liveSubmissionsBeforeRelease: beforeRelease.length,
-    releasedAt,
-    timedOut: edit.timedOut,
-  };
-}
-
 async function collectWarm(context, session, spec, scenario) {
   const { page } = session;
   await button(page, spec.coarse ? "Regionsansicht" : "Nahansicht");
@@ -141,57 +133,126 @@ async function collectWarm(context, session, spec, scenario) {
           [-560, -300],
           [-440, -300],
         ];
-  for (let attempt = 0; attempt < 100; attempt++) {
+  for (let attempt = 0; attempt < scenario.requestedAttempts; attempt++) {
     const record = { attempt, passed: false };
     scenario.attempts.push(record);
     let before;
     try {
       await waitForWrites(page);
-      before = await stateSnapshot(page, [points[0]]);
+      before = await stateSnapshot(page, points);
       if (!finite(before.samples[0])) throw new Error("Warm source is unknown");
+      if (
+        Math.hypot(
+          points[0][0] - points.at(-1)[0],
+          points[0][1] - points.at(-1)[1],
+        ) <= before.brush.radius
+      )
+        throw new Error("Moving-stroke endpoint lies inside the initial brush");
       let edit;
       if (spec.busy) {
         await background(session);
-        const overlap = await context.editDuringActualSave(session, points[0]);
-        record.saveAttempts = overlap.attempts;
-        // Keep all dispatched attempts, including a failed overlap before a retry.
+        const overlap = await context.editDuringActualSave(session, points);
+        record.saveAttempts = overlap.attempts.map(
+          ({ samples, trigger, ...attempt }) => ({
+            ...attempt,
+            inputIds: (samples ?? []).map((sample) => sample.inputId),
+            trigger: {
+              dispatched: trigger.dispatched,
+              reason: trigger.reason,
+              startEvent: trigger.observedActive?.index,
+            },
+          }),
+        );
+        // Keep every dispatched input, even when the real overlap's stroke fails.
         for (const actual of overlap.attempts)
           retainSamples(scenario, actual.samples ?? []);
-        if (!overlap.passed || !overlap.edit)
-          throw new Error("No proven edit overlap with real worker and save");
-        if (overlap.attempts.some((a) => a.samples?.length && !a.overlapProven))
-          throw new Error(
-            "A dispatched busy stroke lacked the required overlap",
-          );
+        record.overlapProven = overlap.passed;
+        if (!overlap.edit)
+          throw new Error("No stroke dispatched during real worker and save");
         edit = overlap.edit;
       } else edit = await movingStroke(session, points);
       retainSamples(scenario, edit.samples);
+      record.inputIds = edit.samples.map((sample) => sample.inputId);
+      record.sessionId = edit.after.sessionId;
       record.stroke = strokeEvidence(edit);
-      const after = await stateSnapshot(page, [points[0]]);
+      record.time = edit.time;
+      const after = await stateSnapshot(page, points);
       scenario.droppedEvents = after.droppedEvents;
       record.beforeHeight = before.samples[0];
       record.afterHeight = after.samples[0];
-      if (!record.stroke.complete || !(after.samples[0] > before.samples[0]))
-        throw new Error(
-          "Moving stroke lacks complete input/submission evidence or changed content",
-        );
+      record.content = { points, before: before.samples, after: after.samples };
       if (after.document.sequence !== before.document.sequence + 1)
         throw new Error("Moving stroke did not commit exactly one action");
+      const probes = [points[0], points.at(-1)];
+      // No preparatory gesture or screenshot paces/warms the measured stroke.
+      // Both real image checks occur after its final submission timestamp.
+      record.changedImage = await capture(
+        session,
+        `${spec.id}-${attempt + 1}-changed`,
+        probes,
+      );
       // Undo is outside the measured stroke and prevents saturation/drifting fixtures.
       await button(page, /Rückgängig/);
       await exact(page, 5000);
       await waitForWrites(page);
-      const undone = await stateSnapshot(page, [points[0]]);
+      const undone = await stateSnapshot(page, points);
       record.undoneHeight = undone.samples[0];
-      if (!near(undone.samples[0], before.samples[0]))
+      if (
+        !before.samples.every((height, index) =>
+          near(undone.samples[index], height),
+        )
+      )
         throw new Error("Undo did not restore the repeated stroke's source");
-      record.passed = record.stroke.passed;
+      record.undoneImage = await capture(
+        session,
+        `${spec.id}-${attempt + 1}-undone`,
+        probes,
+      );
+      record.content.undone = undone.samples;
+      record.content.evaluation = evaluateStrokeContent({
+        points,
+        before: before.samples,
+        after: after.samples,
+        undone: undone.samples,
+        changedPixels: record.changedImage.pixels,
+        restoredPixels: record.undoneImage.pixels,
+      });
+      if (!record.content.evaluation.passed)
+        throw new Error(
+          "Moving stroke did not change terrain pixels at both endpoints",
+        );
+      record.passed =
+        record.stroke.passed &&
+        record.time.passed &&
+        (!spec.busy || record.overlapProven);
       if (!record.passed)
         record.error =
-          "Exact terrain was not submitted at two intermediate points before release";
-      if ((attempt + 1) % 10 === 0)
+          spec.busy && !record.overlapProven
+            ? "Input/model did not overlap a successful save and active worker"
+            : !record.time.passed
+              ? record.time.issues.map((issue) => issue.code).join(", ")
+              : !record.stroke.complete
+                ? "Moving stroke lacks complete input/submission evidence"
+                : !record.stroke.continuity.passed
+                  ? `Exact regional submission paused for ${record.stroke.continuity.maximumMovingStallMs} ms while movement continued`
+                  : record.stroke.processedNoops
+                    ? `${record.stroke.processedNoops} expected terrain edits were processed without a change`
+                    : "Minimum live control failed: fewer than two distinct exact frames before release";
+      if (!record.passed) {
+        console.error(
+          `[atlas-p0] ${session.instance.id}: attempt ${attempt + 1} FAIL: ${record.error}`,
+        );
+        if (context.purpose !== "acceptance") {
+          scenario.aborted = true;
+          break;
+        }
+      }
+      if (
+        (attempt + 1) % 10 === 0 ||
+        attempt + 1 === scenario.requestedAttempts
+      )
         console.log(
-          `[atlas-p0] ${session.instance.id}: ${attempt + 1}/100 strokes`,
+          `[atlas-p0] ${session.instance.id}: ${attempt + 1}/${scenario.requestedAttempts} strokes`,
         );
     } catch (error) {
       record.error = String(error);
@@ -200,7 +261,10 @@ async function collectWarm(context, session, spec, scenario) {
           const after = await snapshot(page, [], {
             sinceEvent: before.eventCount ?? 0,
           });
-          record.events = after.events;
+          record.observationRange = {
+            from: before.eventCount ?? 0,
+            to: after.eventCount,
+          };
           const inputs = after.events.filter(
             (e) =>
               e.kind === "input" &&
@@ -260,19 +324,23 @@ async function prepareTarget(page, target) {
 }
 
 async function navigateDuringSave(session, at) {
-  const previous = await session.app.evaluate(() =>
-    globalThis.__atlasHost.storeActivity(),
-  );
-  const known = [...new Set(previous.map((e) => e.token))];
+  const sinceEvent = await storeActivityPosition(session);
   const monitor = session.app.evaluate(
-    async ({ BrowserWindow }, { at, known }) => {
+    async ({ BrowserWindow }, { at, sinceEvent }) => {
+      let cursor = sinceEvent;
+      const activity = [];
       const deadline = performance.now() + 1000;
       while (performance.now() < deadline) {
-        const activity = globalThis.__atlasHost.storeActivity();
+        const observed = globalThis.__atlasHost.storeActivity({
+          sinceEvent: cursor,
+        });
+        if (observed.droppedEvents)
+          throw new Error("Store activity events were dropped");
+        activity.push(...observed.events);
+        cursor = observed.eventCount;
         const active = activity.find(
           (event) =>
             event.phase === "start" &&
-            !known.includes(event.token) &&
             !activity.some(
               (end) =>
                 end.token === event.token &&
@@ -295,13 +363,13 @@ async function navigateDuringSave(session, at) {
             clickCount: 1,
             ...at,
           });
-          return { dispatched: true, active, known };
+          return { dispatched: true, active, sinceEvent };
         }
         await new Promise((resolve) => setTimeout(resolve, 1));
       }
-      return { dispatched: false, known };
+      return { dispatched: false, sinceEvent };
     },
-    { at, known },
+    { at, sinceEvent },
   );
   await button(session.page, "Speichern");
   return monitor;
@@ -312,75 +380,82 @@ export function startReadyStrokeMonitor(
   session,
   { afterInputId, screenPoint, sessionId, point, sinceEvent = 0 },
 ) {
+  const inputs = strokeInputs(
+    Array.from({ length: 5 }, (_, step) => ({
+      x: screenPoint.x + step * 32,
+      y: screenPoint.y + (step % 2) * 4,
+    })),
+  );
   return session.app.evaluate(
     async (
       { BrowserWindow },
-      { sessionId, cutoff, center, point, sinceEvent },
+      { sessionId, cutoff, inputs, point, sinceEvent },
     ) => {
       const contents = BrowserWindow.getAllWindows()[0].webContents;
       const deadline = performance.now() + 5000;
-      const read = `(() => {
-      const o = window.atlasObserve(${JSON.stringify(point ? [point] : [])}, ${JSON.stringify({ sinceEvent })});
-      const navigation = o.events.find(e => e.kind === 'input' && e.inputKind === 'navigation' && e.id > ${cutoff});
-      const ready = navigation && o.events.find(e => (e.kind === 'ready' || e.kind === 'input-ready') && e.input === navigation.id);
-      return { sessionId:o.sessionId, error:o.state.error, navigation, ready, background:o.background,
-        beforeHeight:o.samples[0] ?? null };
-    })()`;
+      let cursor = sinceEvent,
+        navigation,
+        ready;
       while (performance.now() < deadline) {
-        const observed = await contents.executeJavaScript(read);
+        const read = `(() => {
+          const o = window.atlasObserve(${JSON.stringify(point ? [point] : [])}, { sinceEvent: ${cursor} });
+          return { sessionId:o.sessionId, error:o.state.error, events:o.events, eventCount:o.eventCount,
+            droppedEvents:o.droppedEvents, background:o.background, beforeHeight:o.samples[0] ?? null };
+        })()`;
+        const { events, eventCount, ...observed } =
+          await contents.executeJavaScript(read);
+        cursor = eventCount;
+        if (observed.droppedEvents)
+          throw new Error("Observation events were dropped");
+        navigation ??= events.find(
+          (event) =>
+            event.kind === "input" &&
+            event.inputKind === "navigation" &&
+            event.id > cutoff,
+        );
+        ready ??=
+          navigation &&
+          events.find(
+            (event) =>
+              ["ready", "input-ready"].includes(event.kind) &&
+              event.input === navigation.id,
+          );
+        Object.assign(observed, { navigation, ready });
         if (observed.error)
           return { dispatched: false, error: observed.error, observed };
         sessionId ??= observed.sessionId;
-        if (observed.sessionId === sessionId && observed.ready) {
-          contents.sendInputEvent({ type: "mouseMove", ...center });
-          contents.sendInputEvent({
-            type: "mouseDown",
-            button: "left",
-            clickCount: 1,
-            ...center,
-          });
+        if (observed.sessionId === sessionId && ready) {
+          let released = false;
           try {
-            for (let step = 1; step <= 4; step++) {
-              await new Promise((resolve) => setTimeout(resolve, 24));
-              contents.sendInputEvent({
-                type: "mouseMove",
-                x: center.x + step * 32,
-                y: center.y + (step % 2) * 4,
-                modifiers: ["leftButtonDown"],
-              });
+            for (const input of inputs) {
+              if (input.delayMs)
+                await new Promise((resolve) =>
+                  setTimeout(resolve, input.delayMs),
+                );
+              contents.sendInputEvent(input.event);
+              if (input.event.type === "mouseUp") released = true;
             }
           } finally {
-            contents.sendInputEvent({
-              type: "mouseUp",
-              button: "left",
-              clickCount: 1,
-              x: center.x + 128,
-              y: center.y,
-            });
+            if (!released) contents.sendInputEvent(inputs.at(-1).event);
           }
-          return {
-            dispatched: true,
-            navigation: observed.navigation,
-            ready: observed.ready,
-            observed,
-          };
+          return { dispatched: true, navigation, ready, observed };
         }
         await new Promise((resolve) => setTimeout(resolve, 1));
       }
       return { dispatched: false, timedOut: true };
     },
-    { sessionId, cutoff: afterInputId, center: screenPoint, point, sinceEvent },
+    { sessionId, cutoff: afterInputId, inputs, point, sinceEvent },
   );
 }
 
-function matchingIntervals(activity, sessionId, timeOrigin, at, known) {
+function matchingIntervals(activity, sessionId, timeOrigin, at, sinceEvent) {
   const epoch = timeOrigin + at;
   return activity
     .filter(
       (start) =>
         start.phase === "start" &&
         start.sessionId === sessionId &&
-        !known.includes(start.token),
+        start.index >= sinceEvent,
     )
     .flatMap((start) => {
       const end = activity.find(
@@ -391,7 +466,7 @@ function matchingIntervals(activity, sessionId, timeOrigin, at, known) {
           e.success === true,
       );
       return end && epoch >= start.epochMs && epoch <= end.epochMs
-        ? [{ start, end, epoch }]
+        ? [storeIntervalReference({ start, end, epoch })]
         : [];
     });
 }
@@ -399,7 +474,7 @@ function matchingIntervals(activity, sessionId, timeOrigin, at, known) {
 async function collectCold(context, session, spec, scenario) {
   const { page } = session;
   const target = [79_200, 0];
-  for (let attempt = 0; attempt < 34; attempt++) {
+  for (let attempt = 0; attempt < scenario.requestedAttempts; attempt++) {
     const record = {
       attempt,
       target,
@@ -439,16 +514,26 @@ async function collectCold(context, session, spec, scenario) {
       const navigationTrigger = spec.busy
         ? await navigateDuringSave(session, targetButton)
         : { dispatched: true, navigation: await navigateTo(page, target) };
-      record.navigationTrigger = navigationTrigger;
+      record.navigationTrigger = {
+        dispatched: navigationTrigger.dispatched,
+        startEvent: navigationTrigger.active?.index,
+        sinceEvent: navigationTrigger.sinceEvent,
+      };
       const trigger = await monitor;
-      record.readyTrigger = trigger;
+      record.readyTrigger = {
+        dispatched: trigger.dispatched,
+        timedOut: trigger.timedOut,
+        error: trigger.error,
+        navigationId: trigger.navigation?.id,
+      };
       if (!trigger.dispatched)
         throw new Error(
           `Cold first stroke was not dispatched: ${JSON.stringify(trigger)}`,
         );
       const observedStroke = await observeStroke(session, before, 5000);
       const { samples, timedOut } = observedStroke;
-      record.samples = samples;
+      record.inputIds = samples.map((sample) => sample.inputId);
+      record.sessionId = observedStroke.after.sessionId;
       const after = await stateSnapshot(page, [target]);
       scenario.droppedEvents = after.droppedEvents;
       const first = samples.find((s) => s.inputKind === "edit");
@@ -471,6 +556,7 @@ async function collectCold(context, session, spec, scenario) {
       // A cold first render is governed by M10's navigation budget, not the
       // warmed-up requirement to redraw each ordinary live stroke immediately.
       record.stroke = strokeEvidence({ samples, timedOut }, false);
+      record.time = observedStroke.time;
       record.beforeHeightExpected = -20;
       record.beforeHeightObserved = trigger.observed?.beforeHeight ?? null;
       record.afterHeight = after.samples[0];
@@ -478,7 +564,8 @@ async function collectCold(context, session, spec, scenario) {
         !navigationTrigger.dispatched ||
         !trigger.dispatched ||
         !first ||
-        !record.stroke.passed
+        !record.stroke.passed ||
+        !record.time.passed
       )
         throw new Error(
           "Cold target did not produce the required first moving stroke",
@@ -500,20 +587,23 @@ async function collectCold(context, session, spec, scenario) {
           session,
           navigationTrigger.active,
         );
-        record.activity = activity;
+        record.storeRange = {
+          from: activity[0]?.index,
+          to: (activity.at(-1)?.index ?? -1) + 1,
+        };
         record.navigationSaveIntervals = matchingIntervals(
           activity,
           after.sessionId,
           after.timeOrigin,
           navigation.createdAt,
-          navigationTrigger.known,
+          navigationTrigger.sinceEvent,
         );
         record.editSaveIntervals = matchingIntervals(
           activity,
           after.sessionId,
           after.timeOrigin,
           first.createdAt,
-          navigationTrigger.known,
+          navigationTrigger.sinceEvent,
         );
         record.workerBefore = before.background;
         record.workerAtInput = trigger.observed.background;
@@ -538,9 +628,12 @@ async function collectCold(context, session, spec, scenario) {
           );
       }
       record.passed = true;
-      if ((attempt + 1) % 10 === 0 || attempt === 33)
+      if (
+        (attempt + 1) % 10 === 0 ||
+        attempt + 1 === scenario.requestedAttempts
+      )
         console.log(
-          `[atlas-p0] ${session.instance.id}: ${attempt + 1}/34 cold switches`,
+          `[atlas-p0] ${session.instance.id}: ${attempt + 1}/${scenario.requestedAttempts} cold switches`,
         );
     } catch (error) {
       if (monitor) await monitor.catch(() => {});
@@ -550,7 +643,10 @@ async function collectCold(context, session, spec, scenario) {
           const after = await snapshot(page, [], {
             sinceEvent: before.eventCount ?? 0,
           });
-          record.events = after.events;
+          record.observationRange = {
+            from: before.eventCount ?? 0,
+            to: after.eventCount,
+          };
           const inputs = after.events.filter(
             (e) =>
               e.kind === "input" &&
@@ -559,12 +655,14 @@ async function collectCold(context, session, spec, scenario) {
           );
           // Preserve the first observation, including any timeout/missing
           // submission. A later error snapshot must not heal that failed trial.
-          record.samples ??= extractEditSamples(
+          const observedSamples = extractEditSamples(
             after.events,
             inputs.map((e) => e.id),
             after.sessionId,
           );
-          const first = record.samples.find((s) => s.inputKind === "edit");
+          record.inputIds ??= observedSamples.map((sample) => sample.inputId);
+          record.sessionId ??= after.sessionId;
+          const first = observedSamples.find((s) => s.inputKind === "edit");
           const navigation = after.events.find(
             (e) =>
               e.kind === "input" &&
@@ -612,20 +710,31 @@ export async function collectRepeatedScenarios(context) {
   const result = {
     independentRunId: context.independentRunId,
     passed: false,
-    scenarios: [],
+    completed: [],
     errors: [],
   };
   for (const spec of selectedSpecs) {
+    await context.beforeScenario?.(spec.id);
     const scenario = {
       id: spec.id,
       kind: spec.kind,
+      brush: {
+        diameterPx: spec.diameter,
+        rateFtPerSecond: spec.amount,
+        rateMetersPerSecond: spec.amount * 0.3048,
+      },
       samples: [],
       droppedEvents: 0,
-      requestedAttempts: spec.kind === "cold" ? 34 : 100,
+      requestedAttempts:
+        context.purpose === "acceptance"
+          ? spec.kind === "cold"
+            ? 34
+            : 100
+          : 1,
+      purpose: context.purpose ?? "probe",
       attempts: [],
       aborted: false,
     };
-    result.scenarios.push(scenario);
     let session;
     try {
       const label = `${context.independentRunId}-${spec.id}`;
@@ -636,7 +745,7 @@ export async function collectRepeatedScenarios(context) {
           : context.fixture.coast;
       scenario.fixture = source;
       await copyFile(source.file ?? context.fixture.files.coast, file);
-      session = await context.launch(file, label);
+      session = await context.launch(file, spec.id);
       session.instance.independentRunId = context.independentRunId;
       session.instance.role = "scenario";
       session.instance.scenarios.push(scenario);
@@ -662,7 +771,20 @@ export async function collectRepeatedScenarios(context) {
       !scenario.aborted &&
       scenario.attempts.length === scenario.requestedAttempts &&
       scenario.attempts.every((a) => a.passed);
-    if (!scenario.collectionPassed)
+    scenario.evaluation = evaluateScenario(scenario);
+    scenario.collectionPassed &&= scenario.evaluation.status !== "FAIL";
+    const resultFile = join(
+      session?.directory ?? context.out,
+      `${spec.id}-result.json`,
+    );
+    await writeFile(resultFile, JSON.stringify(scenario, null, 2));
+    result.completed.push({
+      id: spec.id,
+      resultFile,
+      status: scenario.evaluation.status,
+    });
+    await context.onScenario?.(scenario, resultFile);
+    if (!scenario.collectionPassed || scenario.evaluation.status === "FAIL")
       result.errors.push({
         scenario: spec.id,
         requested: scenario.requestedAttempts,
@@ -672,12 +794,17 @@ export async function collectRepeatedScenarios(context) {
           (scenario.aborted
             ? scenario.attempts.at(-1)?.error
             : scenario.attempts.find((a) => !a.passed)?.error) ??
+          scenario.evaluation.failures[0]?.code ??
           "Collection incomplete",
         failedAttempts: scenario.attempts
           .filter((attempt) => !attempt.passed)
           .map(({ attempt, error }) => ({ attempt, error })),
       });
+    if (context.purpose !== "acceptance" && result.errors.length) break;
   }
-  result.passed = result.errors.length === 0;
+  result.missing = selectedSpecs
+    .filter((spec) => !result.completed.some((entry) => entry.id === spec.id))
+    .map((spec) => spec.id);
+  result.passed = result.errors.length === 0 && result.missing.length === 0;
   return result;
 }

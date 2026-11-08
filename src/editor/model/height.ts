@@ -26,10 +26,48 @@ export function splineWeights(t: number): [number, number, number, number] {
   ];
 }
 
+/** Integral of the quartic brush along one segment, in world-length units. */
+export function quarticBrushSegmentIntegral(
+  along: number,
+  perpendicular: number,
+  length: number,
+  radius: number,
+): number {
+  const distance = Math.abs(perpendicular) / radius;
+  if (distance >= 1 || length <= 0) return 0;
+  const h = (1 - distance) * (1 + distance);
+  const reach = radius * Math.sqrt(h);
+  const lower = Math.max(0, along - reach);
+  const upper = Math.min(length, along + reach);
+  if (lower >= upper) return 0;
+  const span = upper - lower;
+  const midpoint = (lower - along + span / 2) / radius;
+  const halfWidth = span / (2 * radius);
+  const m2 = midpoint * midpoint;
+  const v2 = halfWidth * halfWidth;
+  const a = h - m2;
+  // Integrate around the midpoint instead of subtracting nearly equal values
+  // of h²u - 2hu³/3 + u⁵/5 at the ends of a short movement.
+  return span * (a * a + (2 * m2 - (2 * h) / 3) * v2 + (v2 * v2) / 5);
+}
+
 interface PreparedLevel {
   step: number;
   bounds: Bounds;
   rows: Map<number, Map<number, Float64Array>>;
+}
+
+/** Binary scaling keeps all 22 finite level contributions below overflow. */
+export const HEIGHT_SUM_SCALE = 32;
+
+/** Clamp only the complete sum, after fine and coarse contributions are combined. */
+export function heightFromScaledSum(sum: number): number {
+  return (
+    Math.max(
+      -HEIGHT_LIMIT / HEIGHT_SUM_SCALE,
+      Math.min(HEIGHT_LIMIT / HEIGHT_SUM_SCALE, sum),
+    ) * HEIGHT_SUM_SCALE
+  );
 }
 
 /**
@@ -38,7 +76,7 @@ interface PreparedLevel {
  * Call EditorDocument.snapshot first to prove local completeness. A raw tile list
  * is useful for an immutable, already-complete worker payload or a unit fixture.
  */
-export function prepareHeightSampler(
+export function prepareScaledHeightSum(
   source: readonly HeightTile[] | HeightSnapshot,
   bounds?: Bounds,
 ): (x: number, y: number) => number {
@@ -50,13 +88,8 @@ export function prepareHeightSampler(
     (Array.isArray(source) ? undefined : (source as HeightSnapshot).bounds);
   if (sampleBounds) assertBounds(sampleBounds);
   const indexed = new Map<number, PreparedLevel>();
-  let largeValues = false;
   for (const tile of tiles) {
     validateHeightTile(tile);
-    // Ordinary terrain stays in the faster uncompensated path. Scaling the
-    // exceptional path prevents finite residuals overflowing before cancellation.
-    if (!largeValues && tile.values.some((v) => Math.abs(v) > 1e290))
-      largeValues = true;
     let level = indexed.get(tile.level);
     const support = heightTileSupport(tile);
     if (!level) {
@@ -84,7 +117,6 @@ export function prepareHeightSampler(
   const levels = [...indexed.entries()]
     .sort(([a], [b]) => b - a)
     .map(([, level]) => level);
-  const divisor = largeValues ? levels.length + 1 : 1;
   return (x, y) => {
     if (
       !Number.isFinite(x) ||
@@ -101,7 +133,7 @@ export function prepareHeightSampler(
         y > sampleBounds[3])
     )
       throw new RangeError("Abfrage außerhalb des bestätigten Snapshots.");
-    let value = HEIGHT_BASE / divisor;
+    let value = HEIGHT_BASE / HEIGHT_SUM_SCALE;
     for (const level of levels) {
       if (
         x <= level.bounds[0] ||
@@ -114,8 +146,10 @@ export function prepareHeightSampler(
       const gy = y / level.step;
       const ix = Math.floor(gx);
       const iy = Math.floor(gy);
-      const tx = gx - ix;
-      const ty = gy - iy;
+      // Subtract the integer world origin before dividing to retain precision
+      // near the world edge, just as the GPU camera transform does.
+      const tx = (x - ix * level.step) / level.step;
+      const ty = (y - iy * level.step) / level.step;
       const tx2 = tx * tx,
         tx3 = tx2 * tx;
       const ty2 = ty * ty,
@@ -148,12 +182,21 @@ export function prepareHeightSampler(
           const values = row.get(tileX);
           if (values)
             value +=
-              (values[rowOffset + cx - tileX * HEIGHT_TILE_SIZE] / divisor) *
+              (values[rowOffset + cx - tileX * HEIGHT_TILE_SIZE] /
+                HEIGHT_SUM_SCALE) *
               wx[i] *
               wy[j];
         }
       }
     }
-    return Math.max(-HEIGHT_LIMIT, Math.min(HEIGHT_LIMIT, value * divisor));
+    return value;
   };
+}
+
+export function prepareHeightSampler(
+  source: readonly HeightTile[] | HeightSnapshot,
+  bounds?: Bounds,
+): (x: number, y: number) => number {
+  const sum = prepareScaledHeightSum(source, bounds);
+  return (x, y) => heightFromScaledSum(sum(x, y));
 }

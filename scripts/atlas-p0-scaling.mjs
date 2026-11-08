@@ -288,6 +288,7 @@ export async function inspectScalingFixture(
     const samplePoints = (points) =>
       points.map(([x, y]) => {
         const read = store.readRegion({
+          minLevel: 0,
           sessionId: project.sessionId,
           bounds: [x - 1, y - 1, x + 1, y + 1],
         });
@@ -404,6 +405,7 @@ export async function createScalingFixtures(
     }
     const startedAt = performance.now();
     const store = new ProjectStore(join(directory, `work-${definition.id}`));
+    let constructionMetrics;
     try {
       let batch = [];
       const commit = () => {
@@ -431,6 +433,7 @@ export async function createScalingFixtures(
         { sessionId: status.sessionId, sequence: status.sequence },
         file,
       );
+      constructionMetrics = store.metrics();
     } finally {
       store.close();
     }
@@ -440,6 +443,8 @@ export async function createScalingFixtures(
       id: definition.id,
       ...saved,
       creationAndVerificationMs: performance.now() - startedAt,
+      // One-time real construction work, not hidden navigation setup.
+      constructionMetrics,
       verified: true,
     };
     report.fixtures.push(result);

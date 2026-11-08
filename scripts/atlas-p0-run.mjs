@@ -7,16 +7,22 @@ import {
   mkdir,
   readdir,
   readFile,
+  rename,
   writeFile,
 } from "node:fs/promises";
 import { cpus, release, totalmem } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
-  evaluateAcceptance,
-  evaluateFunctional,
+  evaluateRun,
+  selectP0Scope,
+  evaluateScenario,
+  extractNavigationSamples,
+  evaluateNavigationDiagnostics,
+  strokeEvidence,
   evaluateSubmissionDiagnostics,
-  evaluateColdSubmissionDiagnostics,
+  evaluateBrushPublicationOrder,
+  evaluateSaveOverlap,
   checkBuildIdentity,
   P0_REQUIREMENTS,
 } from "./atlas-p0-evaluate.mjs";
@@ -32,7 +38,13 @@ import {
   navigateTo,
   zoomAndPan,
   heldStroke,
+  brushDoseBehavior,
   waitForSaveCompletion,
+  storeActivityPosition,
+  storeIntervalReference,
+  movingStroke,
+  prepareStroke,
+  strokeInputs,
   observeStroke as observeDab,
   waterPixel,
   landPixel,
@@ -51,6 +63,8 @@ const executablePath = packaged
 const lab = argv.includes("--lab"),
   native = argv.includes("--native");
 const full = argv.includes("--full") || argv.includes("--acceptance");
+const traceRequested = argv.includes("--trace");
+const purpose = full ? "acceptance" : "probe";
 const onlyIndex = argv.indexOf("--only");
 const only = onlyIndex < 0 ? null : argv[onlyIndex + 1];
 if (only && !["interactions", "scaling", "collection"].includes(only))
@@ -59,8 +73,8 @@ const caseIndex = argv.indexOf("--case");
 const scenarioId = caseIndex < 0 ? null : argv[caseIndex + 1];
 const runsIndex = argv.indexOf("--runs");
 const selectedRuns = runsIndex < 0 ? null : Number(argv[runsIndex + 1]);
-if ((caseIndex >= 0 || runsIndex >= 0) && (only !== "collection" || !full))
-  throw new Error("--case/--runs require --full --only collection diagnostics");
+if ((caseIndex >= 0 || runsIndex >= 0) && only !== "collection")
+  throw new Error("--case/--runs require --only collection diagnostics");
 if (
   caseIndex >= 0 &&
   !P0_REQUIREMENTS.scenarios.some(
@@ -73,6 +87,7 @@ if (
   (!Number.isInteger(selectedRuns) || selectedRuns < 1 || selectedRuns > 3)
 )
   throw new Error("Diagnostic --runs must be 1, 2 or 3");
+const selectedScope = selectP0Scope(only ?? "all", scenarioId);
 let independentRunId = "pilot-1";
 const outIndex = argv.indexOf("--out");
 const out = resolve(
@@ -107,13 +122,14 @@ else if (native)
     "Native pilot only; use --full for the required repetitions. Acceptance still requires a qualified display and proven exact-frame presentation mapping.",
   );
 const report = {
-  schemaVersion: 1,
+  schemaVersion: 2,
+  purpose,
   mode: lab ? "lab" : "native",
   scope: only
     ? `P0 partial ${only} diagnostics${scenarioId ? `: ${scenarioId}` : ""}`
     : full
       ? "P0 full scenario collection plus representative scaling"
-      : "P0 representative functional pilot plus scaling; limited timing samples",
+      : "P0 architecture probe; shared scenarios with one attempt each",
   selection: only ?? "all",
   diagnosticSelection: { scenarioId, selectedRuns },
   startedAt: new Date().toISOString(),
@@ -146,6 +162,139 @@ const report = {
   negativeControls: [],
   errors: [],
 };
+const repetitions = selectedRuns ?? (full ? 3 : 1);
+report.planned = [];
+for (let run = 1; run <= repetitions; run++) {
+  const runId = full ? `release-${run}` : `probe-${run}`;
+  if (selectedScope.workflow)
+    report.planned.push({ run: runId, id: "coast-workflow", state: "planned" });
+  for (const spec of selectedScope.scenarios)
+    report.planned.push({ run: runId, id: spec.id, state: "planned" });
+}
+if (selectedScope.controls)
+  for (const fault of [
+    "ignore-zoom",
+    "pointerup-render",
+    "delay-render",
+    "drop-render",
+    "recovery",
+  ])
+    report.planned.push({
+      run: null,
+      id: `control-${fault}`,
+      state: "planned",
+    });
+if (selectedScope.scaling)
+  for (const size of P0_REQUIREMENTS.scaling.minimumSourceTiles)
+    report.planned.push({ run: null, id: `scaling-${size}`, state: "planned" });
+
+const activeSessions = new Set();
+let interrupted = false;
+const progress = (id, state, details = {}, run = independentRunId) => {
+  const entry = report.planned.find(
+    (entry) => entry.id === id && entry.run === run,
+  );
+  if (entry) Object.assign(entry, { state, ...details });
+};
+async function atomicJson(file, value) {
+  const temporary = `${file}.tmp`;
+  await writeFile(temporary, JSON.stringify(value, null, 2));
+  await rename(temporary, file);
+}
+let checkpointTask = Promise.resolve();
+function checkpoint() {
+  checkpointTask = checkpointTask.then(async () => {
+    report.evaluation = evaluateRun(report);
+    await atomicJson(join(out, "report.json"), report);
+    await atomicJson(join(out, "run-index.json"), {
+      schemaVersion: 2,
+      purpose,
+      selection: report.selection,
+      startedAt: report.startedAt,
+      finishedAt: report.finishedAt,
+      interrupted,
+      status: report.evaluation.status,
+      build: report.build,
+      harness: report.harness,
+      cases: report.planned,
+    });
+  });
+  return checkpointTask;
+}
+async function scenarioCompleted(scenario, resultFile) {
+  const passed = scenario.collectionPassed === true;
+  const recordCheck = (id, valid) =>
+    report.functional.checks.push({
+      id,
+      independentRunId,
+      passed: Boolean(valid),
+      scenario: scenario.id,
+      resultFile,
+    });
+  if (scenario.id === "M06-height-busy") {
+    recordCheck(
+      "busy-worker-and-save",
+      passed &&
+        scenario.attempts.every(
+          (attempt) =>
+            attempt.saveAttempts?.some((save) => save.overlapProven) &&
+            attempt.saveAttempts.every(
+              (save) => !save.inputIds.length || save.overlapProven,
+            ),
+        ),
+    );
+    recordCheck(
+      "worker-and-save-executed",
+      scenario.attempts.length > 0 &&
+        scenario.attempts.every((attempt) =>
+          attempt.saveAttempts?.some(
+            (save) =>
+              save.overlapProven &&
+              save.backgroundAfter.samples > save.backgroundBefore.samples,
+          ),
+        ),
+    );
+  }
+  if (scenario.id === "M10-height-cold") {
+    recordCheck(
+      "cold-before-navigation",
+      passed &&
+        scenario.attempts.every((attempt) => attempt.coldBeforeNavigation),
+    );
+    recordCheck(
+      "cold-edit-after-navigation",
+      passed && scenario.attempts.every((attempt) => attempt.stroke?.passed),
+    );
+    recordCheck(
+      "cold-edit-content",
+      passed &&
+        scenario.attempts.every(
+          (attempt) =>
+            Math.abs(attempt.beforeHeightObserved + 20) < 1e-7 &&
+            attempt.afterHeight > 0 &&
+            landPixel(attempt.image?.pixels[0]),
+        ),
+    );
+  }
+  progress(
+    scenario.id,
+    scenario.evaluation.status === "FAIL" || !passed ? "failed" : "completed",
+    { resultFile },
+  );
+  await checkpoint();
+}
+for (const signal of ["SIGINT", "SIGTERM"])
+  process.once(signal, async () => {
+    interrupted = true;
+    report.interrupted = signal;
+    report.finishedAt = new Date().toISOString();
+    await Promise.allSettled(
+      [...activeSessions].map((session) => session.close()),
+    );
+    await checkpoint();
+    process.exit(signal === "SIGINT" ? 130 : 143);
+  });
+await checkpoint();
 const check = (id, passed, details = {}) => {
   report.functional.checks.push({
     id,
@@ -161,6 +310,10 @@ const closeEnough = (actual, expected) =>
     (value, index) =>
       Number.isFinite(value) && Math.abs(value - expected[index]) < 1e-7,
   );
+// Independent fixture constants describe a 1-s stationary dose at their
+// declared rate. The UI's accepted press/hold dose scales those constants.
+const atStationaryDose = (before, afterOneSecond, factor) =>
+  before.map((value, i) => value + (afterOneSecond[i] - value) * factor);
 // A coarse overview may evict fine authors. An unknown canonical sample stays
 // null; known values must still be exact. Detail views and saved files below
 // require every sample, so this never certifies missing fine data as preserved.
@@ -375,52 +528,89 @@ async function launch(project, label, fault = "none") {
   log(
     `${label}: Electron ${metadata.versions.electron}; ${view.width}×${view.height} DPR ${view.dpr}; ${gpu.renderer}`,
   );
-  return {
+  let closing;
+  const session = {
     app,
     page,
     instance,
     directory: sessionDirectory,
-    async close() {
-      try {
-        const final = await snapshot(page);
-        await writeFile(
-          join(sessionDirectory, "observation.json"),
-          JSON.stringify(final, null, 2),
-        );
-        instance.final = {
-          document: final.document,
-          state: final.state,
-          renderer: final.renderer,
-          droppedEvents: final.droppedEvents,
-          background: final.background,
-        };
-        instance.storeMetrics = await app.evaluate(() =>
-          globalThis.__atlasHost.metrics(),
-        );
-        instance.pageErrors = pageErrors;
-      } finally {
-        await app.close();
-        await writeFile(
-          join(sessionDirectory, "electron.log"),
-          output.join(""),
-        );
-      }
+    close() {
+      if (closing) return closing;
+      closing = (async () => {
+        try {
+          const final = await snapshot(page);
+          instance.brushPublication = evaluateBrushPublicationOrder(
+            final.events,
+          );
+          const publicationFailures = instance.brushPublication.issues.filter(
+            (issue) =>
+              !(
+                fault === "drop-render" &&
+                issue.code === "BRUSH_STEP_SUBMISSION_MISSING"
+              ),
+          );
+          if (publicationFailures.length)
+            report.errors.push({
+              code: "BRUSH_PUBLICATION_ORDER_FAILED",
+              instance: instance.id,
+              issues: publicationFailures,
+            });
+          const activity = await app.evaluate(() =>
+            globalThis.__atlasHost.storeActivity(),
+          );
+          instance.observationFile = join(sessionDirectory, "observation.json");
+          instance.storeActivityFile = join(
+            sessionDirectory,
+            "store-activity.json",
+          );
+          await writeFile(
+            instance.observationFile,
+            JSON.stringify(final, null, 2),
+          );
+          await writeFile(
+            instance.storeActivityFile,
+            JSON.stringify(activity, null, 2),
+          );
+          instance.final = {
+            document: final.document,
+            state: final.state,
+            renderer: final.renderer,
+            droppedEvents: final.droppedEvents,
+            background: final.background,
+          };
+          instance.storeMetrics = await app.evaluate(() =>
+            globalThis.__atlasHost.metrics(),
+          );
+          instance.pageErrors = pageErrors;
+          if (final.droppedEvents || activity.droppedEvents)
+            throw new Error(
+              "Diagnostic evidence was dropped; this process cannot pass",
+            );
+          if (pageErrors.length)
+            throw new Error(`Renderer errors: ${pageErrors.join("; ")}`);
+        } finally {
+          await app.close();
+          await writeFile(
+            join(sessionDirectory, "electron.log"),
+            output.join(""),
+          );
+          activeSessions.delete(session);
+        }
+      })();
+      return closing;
     },
   };
+  activeSessions.add(session);
+  return session;
 }
 
 async function values(page, points) {
   return (await stateSnapshot(page, points)).samples;
 }
 async function dab(session, point = [0, 0], timeout = 5000) {
-  const before = await stateSnapshot(session.page);
-  const at = await position(session.page, point);
-  await session.page.mouse.move(at.x, at.y);
-  await session.page.mouse.down();
-  await session.page.mouse.up();
-  return observeDab(session, before, timeout);
+  return movingStroke(session, [point], { intervalMs: 1000, timeout });
 }
-async function editDuringActualSave(session, point) {
+async function editDuringActualSave(session, points) {
   const attempts = [];
   for (let attempt = 0; attempt < 3; attempt++) {
     const worker = await stateSnapshot(session.page);
@@ -438,23 +628,27 @@ async function editDuringActualSave(session, point) {
         );
       });
     }
-    const before = await stateSnapshot(session.page, [point]);
-    const at = await position(session.page, point);
-    const previous = await session.app.evaluate(
-      () => globalThis.__atlasHost.storeActivity?.() ?? [],
-    );
-    const known = [...new Set(previous.map((e) => e.token))];
+    const { before, positions } = await prepareStroke(session, points);
+    const inputs = strokeInputs(positions);
+    const sinceEvent = await storeActivityPosition(session);
     // Observe real utility-process activity. Send ordinary native mouse events
     // only while a new real snapshot/publish interval is actually open.
     const monitor = session.app.evaluate(
-      async ({ BrowserWindow }, { at, known }) => {
+      async ({ BrowserWindow }, { inputs, sinceEvent }) => {
+        let cursor = sinceEvent;
+        const events = [];
         const deadline = performance.now() + 800;
         while (performance.now() < deadline) {
-          const events = globalThis.__atlasHost.storeActivity?.() ?? [];
+          const observed = globalThis.__atlasHost.storeActivity({
+            sinceEvent: cursor,
+          });
+          if (observed.droppedEvents)
+            throw new Error("Store activity events were dropped");
+          events.push(...observed.events);
+          cursor = observed.eventCount;
           const active = events.find(
             (e) =>
               e.phase === "start" &&
-              !known.includes(e.token) &&
               !events.some(
                 (end) =>
                   end.token === e.token &&
@@ -477,37 +671,26 @@ async function editDuringActualSave(session, point) {
                 observedActive: active,
                 observedWorker,
               };
-            const coordinates = { x: Math.round(at.x), y: Math.round(at.y) };
-            contents.sendInputEvent({ type: "mouseMove", ...coordinates });
-            contents.sendInputEvent({
-              type: "mouseDown",
-              button: "left",
-              clickCount: 1,
-              ...coordinates,
-            });
-            for (let step = 1; step <= 4; step++) {
-              await new Promise((resolve) => setTimeout(resolve, 24));
-              contents.sendInputEvent({
-                type: "mouseMove",
-                x: coordinates.x + step * 32,
-                y: coordinates.y + (step % 2) * 4,
-                modifiers: ["leftButtonDown"],
-              });
+            let released = false;
+            try {
+              for (const input of inputs) {
+                if (input.delayMs)
+                  await new Promise((resolve) =>
+                    setTimeout(resolve, input.delayMs),
+                  );
+                contents.sendInputEvent(input.event);
+                if (input.event.type === "mouseUp") released = true;
+              }
+            } finally {
+              if (!released) contents.sendInputEvent(inputs.at(-1).event);
             }
-            contents.sendInputEvent({
-              type: "mouseUp",
-              button: "left",
-              clickCount: 1,
-              x: coordinates.x + 128,
-              y: coordinates.y,
-            });
             return { dispatched: true, observedActive: active, observedWorker };
           }
           await new Promise((resolve) => setTimeout(resolve, 1));
         }
         return { dispatched: false };
       },
-      { at, known },
+      { inputs, sinceEvent },
     );
     await button(session.page, "Speichern");
     const trigger = await monitor;
@@ -516,20 +699,17 @@ async function editDuringActualSave(session, point) {
       const started =
         trigger.observedActive ??
         (await session.app.evaluate(
-          (_electron, known) =>
+          (_electron, sinceEvent) =>
             globalThis.__atlasHost
-              .storeActivity()
-              .find(
-                (event) =>
-                  event.phase === "start" && !known.includes(event.token),
-              ),
-          known,
+              .storeActivity({ sinceEvent })
+              .events.find((event) => event.phase === "start"),
+          sinceEvent,
         ));
       if (started) await waitForSaveCompletion(session, started);
       continue;
     }
     const edit = await observeDab(session, before);
-    const afterHeight = (await values(session.page, [point]))[0];
+    const afterHeight = (await values(session.page, [points[0]]))[0];
     // Completion is only needed to verify the observed interval succeeded. The
     // original native input and model/submission timestamps remain unchanged.
     await session.page.waitForFunction(
@@ -547,7 +727,7 @@ async function editDuringActualSave(session, point) {
     );
     const finished = await stateSnapshot(session.page);
     const intervals = activity
-      .filter((e) => e.phase === "start" && !known.includes(e.token))
+      .filter((e) => e.phase === "start" && e.index >= sinceEvent)
       .map((start) => ({
         start,
         end: activity.find(
@@ -558,39 +738,26 @@ async function editDuringActualSave(session, point) {
         ),
       }))
       .filter((pair) => pair.end?.success === true);
-    const matches = edit.samples
-      .filter((sample) => sample.inputKind === "edit")
-      .slice(0, 1)
-      .flatMap((sample) =>
-        intervals
-          .filter(({ start, end }) => {
-            const epoch = edit.after.timeOrigin + sample.createdAt;
-            return (
-              start.sessionId === edit.after.sessionId &&
-              epoch >= start.epochMs &&
-              epoch <= end.epochMs
-            );
-          })
-          .map((interval) => ({
-            inputId: sample.inputId,
-            inputEpochMs: edit.after.timeOrigin + sample.createdAt,
-            ...interval,
-          })),
-      );
-    const overlapProven =
-      matches.length > 0 &&
-      before.background.active &&
-      before.background.sessionId === before.sessionId &&
-      trigger.observedWorker?.sessionId === before.sessionId &&
-      trigger.observedWorker?.background.sessionId === before.sessionId &&
-      trigger.observedWorker?.background.active === true &&
-      finished.background.sessionId === before.sessionId &&
-      Number.isFinite(before.background.samples) &&
-      before.background.samples > 0 &&
-      finished.background.samples > before.background.samples &&
-      Number.isFinite(before.samples[0]) &&
-      Number.isFinite(afterHeight) &&
-      afterHeight > before.samples[0] &&
+    const first = edit.samples.find((sample) => sample.inputKind === "edit");
+    const overlap = evaluateSaveOverlap({
+      sample: first,
+      timeOrigin: edit.after.timeOrigin,
+      sessionId: edit.after.sessionId,
+      intervals,
+      before,
+      observedWorker: trigger.observedWorker,
+      finished,
+    });
+    const matches = overlap.matches.map((interval) =>
+      storeIntervalReference({
+        ...interval,
+        inputId: first.inputId,
+        inputEpochMs: overlap.inputEpochMs,
+        modelEpochMs: overlap.modelEpochMs,
+      }),
+    );
+    const overlapProven = overlap.passed;
+    const inputSubmissionComplete =
       !edit.timedOut &&
       edit.samples.length >= 2 &&
       edit.samples.every((s) => Number.isFinite(s.submissionAt));
@@ -598,20 +765,21 @@ async function editDuringActualSave(session, point) {
       attempt,
       trigger,
       overlapProven,
+      inputSubmissionComplete,
       matches,
-      activity,
+      storeRange: {
+        from: sinceEvent,
+        to: (activity.at(-1)?.index ?? sinceEvent - 1) + 1,
+      },
       samples: edit.samples,
       beforeHeight: before.samples[0],
       afterHeight,
       backgroundBefore: before.background,
       backgroundAfter: finished.background,
     });
-    if (overlapProven) return { passed: true, attempts, edit };
-    // Keep failed dispatched attempts in the evidence. The populated terrain
-    // fixture supplies real save work; no artificial store delay is inserted.
-    await session.page.waitForFunction(
-      () => !window.atlasObserve([], { events: false }).state.writing,
-    );
+    // Once dispatched, this is the measured stroke, including any failed input.
+    // Its collector checks content/Undo/timing; no rescue stroke replaces it.
+    return { passed: overlapProven, attempts, edit };
   }
   return { passed: false, attempts };
 }
@@ -623,8 +791,10 @@ async function emptyNavigation(fixture) {
   try {
     await exact(session.page);
     for (const grid of [true, false]) {
+      progress(grid ? "M01-grid-on" : "M01-grid-off", "running");
+      await checkpoint();
       await session.page.getByLabel("Raster anzeigen").setChecked(grid);
-      const before = await snapshot(session.page);
+      const before = await stateSnapshot(session.page);
       const metricsBefore = await session.app.evaluate(() =>
         globalThis.__atlasHost.metrics(),
       );
@@ -665,54 +835,66 @@ async function emptyNavigation(fixture) {
         await session.page.mouse.down({ button: "middle" });
         await session.page.mouse.move(p.x + 120, p.y + 70, { steps: 12 });
         await session.page.mouse.up({ button: "middle" });
-      } while (performance.now() - start < 30_000);
-      const after = await snapshot(session.page);
+      } while (performance.now() - start < (full ? 30_000 : 1_000));
+      const after = await snapshot(session.page, [], {
+        sinceEvent: before.eventCount,
+      });
       const metricsAfter = await session.app.evaluate(() =>
         globalThis.__atlasHost.metrics(),
       );
-      const cutoff = Math.max(
-        0,
-        ...before.events.filter((e) => e.kind === "input").map((e) => e.id),
-      );
+      const cutoff = before.lastInputId;
       const inputs = after.events.filter(
         (e) =>
           e.kind === "input" && e.id > cutoff && e.inputKind === "navigation",
       );
-      const frames = after.events
-        .slice(before.events.length)
-        .filter((e) => e.kind === "frame");
-      session.instance.scenarios.push({
+      const navigationSamples = extractNavigationSamples(after.events);
+      const navigation = evaluateNavigationDiagnostics(navigationSamples);
+      const frames = after.events.filter((e) => e.kind === "frame");
+      const scenario = {
         id: grid ? "M01-grid-on" : "M01-grid-off",
         kind: "navigation",
         durationMs: performance.now() - start,
-        samples: inputs.map((e) => ({
-          inputId: e.id,
-          createdAt: e.createdAt,
-          handlerAt: e.at,
-          presentation: null,
-        })),
+        samples: navigationSamples,
+        gestureBoundaryInputIds: inputs
+          .filter((input) => input.eventType === "pointerdown")
+          .map((input) => input.id),
         authorChanges: after.document.sequence - before.document.sequence,
-        cameraBlockedOnStore: metricsAfter.reads !== metricsBefore.reads,
+        storeReads: metricsAfter.reads - metricsBefore.reads,
+        returnedTiles: metricsAfter.returnedTiles - metricsBefore.returnedTiles,
+        returnedBytes: metricsAfter.returnedBytes - metricsBefore.returnedBytes,
         cpuWorkMs: frames.map((e) => e.cpuMs),
         rafFrameIntervalsMs: frames.map((e) => e.interval),
         presentationFrameIntervalsMs: [],
         droppedEvents: after.droppedEvents,
-      });
+      };
+      session.instance.scenarios.push(scenario);
+      scenario.collectionPassed =
+        inputs.length > 0 &&
+        wheelChecks.length >= 8 &&
+        wheelChecks.every((c) => c.passed) &&
+        before.document.sequence === after.document.sequence &&
+        metricsAfter.commits === metricsBefore.commits &&
+        navigation.passed &&
+        (after.camera.x !== before.camera.x ||
+          after.camera.y !== before.camera.y);
+      scenario.evaluation = evaluateScenario(scenario);
+      const resultFile = join(session.directory, `${scenario.id}-result.json`);
+      await atomicJson(resultFile, scenario);
+      progress(
+        scenario.id,
+        scenario.evaluation.status === "FAIL" ? "failed" : "completed",
+        { resultFile },
+      );
+      await checkpoint();
       check(
         grid ? "empty-navigation-grid-on" : "empty-navigation-grid-off",
-        inputs.length > 0 &&
-          wheelChecks.length >= 8 &&
-          wheelChecks.every((c) => c.passed) &&
-          before.document.sequence === after.document.sequence &&
-          metricsAfter.commits === metricsBefore.commits &&
-          metricsAfter.reads === metricsBefore.reads &&
-          (after.camera.x !== before.camera.x ||
-            after.camera.y !== before.camera.y),
+        scenario.collectionPassed,
         {
           inputs: inputs.length,
           wheelChecks,
-          authorChanges: 0,
-          storeReads: metricsAfter.reads - metricsBefore.reads,
+          authorChanges: scenario.authorChanges,
+          storeReads: scenario.storeReads,
+          navigation,
         },
       );
     }
@@ -744,6 +926,7 @@ async function coastJourney(fixture) {
   await copyFile(fixture.files.coast, file);
   const session = await launch(file, "coast-journey");
   const points = fixture.expected.points;
+  let doseExpected;
   try {
     await exact(session.page);
     await session.page.getByLabel("Raster anzeigen").uncheck();
@@ -761,6 +944,13 @@ async function coastJourney(fixture) {
     const continuous = await heldStroke(session);
     check("continuous-stroke-live", continuous.live.passed, continuous.live);
     check("continuous-stroke-undo", continuous.undo.passed, continuous.undo);
+    const rateBehavior = await brushDoseBehavior(session);
+    check("held-dose-response", rateBehavior.held.passed, rateBehavior.held);
+    check(
+      "movement-duration-response",
+      rateBehavior.movement.passed,
+      rateBehavior.movement,
+    );
     await button(session.page, "Weltansicht");
     await exact(session.page);
     const world = await snapshot(session.page);
@@ -794,49 +984,44 @@ async function coastJourney(fixture) {
     const beforeImage = await capture(session, "coast-before", [[-800, 0]]);
     await button(session.page, "Regionsansicht");
     await exact(session.page);
-    await brush(session.page, 64, 100);
-    await session.app.evaluate(() => globalThis.__atlasHost.startTrace());
+    await brush(session.page, 64, 200);
+    if (traceRequested)
+      await session.app.evaluate(() => globalThis.__atlasHost.startTrace());
     const coarse = await dab(session);
-    // Preserve presentation reporter completion after submission. This tail is
-    // outside the measured input/model/submission intervals and adds no samples.
-    await session.page.waitForTimeout(500);
-    const tracePath = join(session.directory, "chromium-trace.json");
-    const actualTracePath = await session.app.evaluate(
-      (_electron, path) => globalThis.__atlasHost.stopTrace(path),
-      tracePath,
+    doseExpected = atStationaryDose(
+      fixture.expected.before,
+      fixture.expected.afterCoarseDab,
+      coarse.time.acceptedDoseFt / fixture.expected.brush.amount,
     );
-    try {
+    if (traceRequested) {
+      // Optional trace tails are outside the gesture and are never presentation proof.
+      await session.page.waitForTimeout(500);
+      const tracePath = join(session.directory, "chromium-trace.json");
+      const actualTracePath = await session.app.evaluate(
+        (_electron, path) => globalThis.__atlasHost.stopTrace(path),
+        tracePath,
+      );
       report.trace = await traceSummary(actualTracePath);
-    } catch (error) {
-      report.trace = {
-        requestedPath: tracePath,
-        actualPath: actualTracePath,
-        status: "unavailable",
-        error: String(error),
-      };
     }
-    if (!full)
-      session.instance.scenarios.push({
-        id: "M04-coarse-fine",
-        kind: "edit",
-        samples: coarse.samples,
-        droppedEvents: coarse.after.droppedEvents,
-      });
-    report.submissionDiagnostics = evaluateSubmissionDiagnostics(
-      coarse.samples,
-    );
     check(
       "coarse-exact-values",
       !coarse.timedOut &&
+        coarse.time.passed &&
+        coarse.time.stationary &&
         coarse.samples.length >= 2 &&
         coarse.samples.every((s) => Number.isFinite(s.submissionAt)) &&
-        closeEnough(
-          await values(session.page, points),
-          fixture.expected.afterCoarseDab,
-        ),
+        closeEnough(await values(session.page, points), doseExpected),
       {
         samples: await values(session.page, points),
-        expected: fixture.expected.afterCoarseDab,
+        expected: doseExpected,
+        time: coarse.time,
+        requestedHoldMs: 1000,
+        rateFtPerSecond: 200,
+        reference: {
+          rateFtPerSecond: fixture.expected.brush.amount,
+          acceptedMs: 1000,
+          expected: fixture.expected.afterCoarseDab,
+        },
       },
     );
     await button(session.page, "Nahansicht");
@@ -862,116 +1047,35 @@ async function coastJourney(fixture) {
     check(
       "undo-redo",
       closeEnough(undone, fixture.expected.before) &&
-        closeEnough(redone, fixture.expected.afterCoarseDab),
+        closeEnough(redone, doseExpected),
       { undone, redone },
     );
     await button(session.page, "Speichern");
-    await session.page.waitForFunction(() => window.atlasObserve().state.saved);
+    await session.page.waitForFunction(
+      () => window.atlasObserve([], { events: false }).state.saved,
+    );
     const stored = fixtureCommand("inspect", file);
     check(
       "coarse-preserves-fine",
       stored.fineSha256 === fixture.coast.fineSha256 &&
-        closeEnough(stored.samples, fixture.expected.afterCoarseDab),
+        closeEnough(stored.samples, doseExpected),
       {
         beforeFineSha256: fixture.coast.fineSha256,
         afterFineSha256: stored.fineSha256,
         storedSamples: stored.samples,
       },
     );
-    const previousSession = (await snapshot(session.page)).sessionId;
+    const previousSession = (await stateSnapshot(session.page)).sessionId;
     await button(session.page, "Öffnen");
     await session.page.waitForFunction(
-      (previous) => window.atlasObserve().sessionId !== previous,
+      (previous) =>
+        window.atlasObserve([], { events: false }).sessionId !== previous,
       previousSession,
     );
     await exact(session.page);
     check(
       "save-reopen",
-      closeEnough(
-        await values(session.page, points),
-        fixture.expected.afterCoarseDab,
-      ),
-    );
-
-    // Cold source absence is observed before the real navigation. No preparatory
-    // dataReady wait or direct camera/model invocation is permitted here.
-    const target = [79_200, 0];
-    const coldBefore = (await values(session.page, [target]))[0] === null;
-    check("cold-before-navigation", coldBefore, {
-      target,
-      cache: "application cache; OS cache unchanged",
-    });
-    await brush(session.page, 128, 120);
-    const coldStart = await stateSnapshot(session.page);
-    const canvasBox = await session.page.locator("canvas").boundingBox();
-    if (!canvasBox) throw new Error("Cold target canvas unavailable");
-    const { startReadyStrokeMonitor } =
-      await import("./atlas-p0-collection.mjs");
-    const monitor = startReadyStrokeMonitor(session, {
-      sessionId: coldStart.sessionId,
-      afterInputId: coldStart.lastInputId,
-      sinceEvent: coldStart.eventCount,
-      screenPoint: {
-        x: Math.round(canvasBox.x + canvasBox.width / 2),
-        y: Math.round(canvasBox.y + canvasBox.height / 2),
-      },
-      point: target,
-    });
-    await navigateTo(session.page, target);
-    const trigger = await monitor;
-    if (!trigger.dispatched)
-      throw new Error(
-        `Cold first input was not dispatched: ${JSON.stringify(trigger)}`,
-      );
-    const navigation = trigger.navigation;
-    const ready = trigger.ready;
-    const cold = await observeDab(session, coldStart);
-    const coldAfterHeight = (await values(session.page, [target]))[0];
-    const coldAfterImage = await capture(session, "cold-after-edit", [target]);
-    check(
-      "cold-edit-content",
-      Math.abs(trigger.observed.beforeHeight + 20) < 1e-7 &&
-        coldAfterHeight > 0 &&
-        landPixel(coldAfterImage.pixels[0]),
-      {
-        point: target,
-        expectedBefore: -20,
-        before: trigger.observed.beforeHeight,
-        after: coldAfterHeight,
-        coldAfterImage,
-        driverDelayMs: cold.samples[0]?.createdAt - ready.at,
-      },
-    );
-    const coldSamples = cold.samples
-      .filter((sample) => sample.inputKind === "edit")
-      .slice(0, 1)
-      .map((sample) => ({
-        ...sample,
-        navigationId: navigation.id,
-        navigationAt: navigation.createdAt,
-        readyAt: ready.at,
-        coldBeforeNavigation: coldBefore,
-        timeout: cold.timedOut,
-      }));
-    if (!full)
-      session.instance.scenarios.push({
-        id: "M10-height-cold",
-        kind: "cold",
-        samples: coldSamples,
-        droppedEvents: cold.after.droppedEvents,
-      });
-    check(
-      "cold-edit-after-navigation",
-      !cold.timedOut &&
-        cold.samples.length > 0 &&
-        cold.samples.every((s) => Number.isFinite(s.submissionAt)) &&
-        ready.at >= navigation.createdAt,
-      {
-        navigationCreatedAt: navigation.createdAt,
-        readyAt: ready.at,
-        readyDelayMs: ready.at - navigation.createdAt,
-        submissionOnly: true,
-      },
+      closeEnough(await values(session.page, points), doseExpected),
     );
 
     await capture(session, "final-coast-lab", []);
@@ -985,79 +1089,11 @@ async function coastJourney(fixture) {
       "process-restart",
       closeEnough(
         await values(restarted.page, fixture.expected.points),
-        fixture.expected.afterCoarseDab,
+        doseExpected,
       ),
     );
   } finally {
     await restarted.close();
-  }
-}
-
-async function busyJourney(fixture) {
-  const file = join(out, `${independentRunId}-busy-working.saltatlas`);
-  await copyFile(fixture.busy.file, file);
-  const session = await launch(file, "busy-journey");
-  try {
-    await exact(session.page);
-    await session.page.getByLabel("Raster anzeigen").uncheck();
-    await brush(session.page, 128, 120);
-    await button(session.page, "Hintergrundarbeit starten");
-    await session.page.waitForFunction(() => {
-      const observed = window.atlasObserve([], { events: false });
-      return (
-        observed.background.active === true &&
-        observed.background.sessionId === observed.sessionId &&
-        observed.background.samples > 0
-      );
-    });
-    const busyBefore = await stateSnapshot(session.page);
-    const metricsBefore = await session.app.evaluate(() =>
-      globalThis.__atlasHost.metrics(),
-    );
-    const overlap = await editDuringActualSave(session, [-800, -300]);
-    await button(session.page, "Speichern");
-    await session.page.waitForFunction(() => window.atlasObserve().state.saved);
-    const metricsAfter = await session.app.evaluate(() =>
-      globalThis.__atlasHost.metrics(),
-    );
-    const busyAfter = await stateSnapshot(session.page);
-    if (!full)
-      session.instance.scenarios.push({
-        id: "M06-height-busy",
-        kind: "edit",
-        samples: overlap.attempts.flatMap((attempt) => attempt.samples ?? []),
-        droppedEvents: busyAfter.droppedEvents,
-      });
-    check(
-      "worker-and-save-executed",
-      busyBefore.background.active &&
-        busyBefore.background.sessionId === busyBefore.sessionId &&
-        busyAfter.background.sessionId === busyBefore.sessionId &&
-        busyAfter.background.samples > busyBefore.background.samples &&
-        metricsAfter.snapshots > metricsBefore.snapshots,
-      {
-        fixtureSourceTiles: fixture.busy.sourceTiles,
-        fixtureBytes: fixture.busy.decodedBytes,
-        snapshots: metricsAfter.snapshots - metricsBefore.snapshots,
-        backgroundBefore: busyBefore.background,
-        backgroundAfter: busyAfter.background,
-      },
-    );
-    check(
-      "busy-worker-and-save",
-      overlap.passed &&
-        overlap.attempts.every(
-          (attempt) => !attempt.samples?.length || attempt.overlapProven,
-        ),
-      {
-        attempts: overlap.attempts,
-        explanation:
-          "Native input creation must fall inside an observed successful snapshot/publish interval with current-session worker activity and progress. All dispatched attempts remain in the result.",
-      },
-    );
-    await capture(session, "busy-final", [[-800, -300]]);
-  } finally {
-    await session.close();
   }
 }
 
@@ -1071,31 +1107,49 @@ async function negativeControl(fixture, fault) {
   );
   try {
     await exact(session.page);
-    await brush(session.page, 16, 10);
-    const result = await dab(
+    await brush(session.page, 16, 1000);
+    await button(session.page, "Nahansicht");
+    await exact(session.page);
+    const result = await movingStroke(
       session,
-      [0, 0],
-      fault === "drop-render" ? 5000 : 10_000,
+      [
+        [-800, -300],
+        [-680, -300],
+        [-560, -300],
+        [-440, -300],
+      ],
+      { timeout: fault === "drop-render" ? 5000 : 10_000 },
     );
     const evaluation = evaluateSubmissionDiagnostics(result.samples);
+    const live = strokeEvidence(result);
+    const doseBounded =
+      fault !== "delay-render" ||
+      (result.time.passed &&
+        result.time.maximumStepMs <= 50 &&
+        (result.time.discardMs.feedback ?? 0) > 0 &&
+        result.time.timedDoseMs === 0);
     const code =
       fault === "delay-render"
         ? "SUBMISSION_LOWER_BOUND_EXCEEDS_LIMIT"
         : "MISSING_SUBMISSION";
     const valid =
-      fault === "recovery"
-        ? result.samples.length > 0 &&
-          result.samples.every((s) => Number.isFinite(s.submissionAt)) &&
+      doseBounded &&
+      (fault === "recovery"
+        ? live.passed &&
+          evaluation.status === "PROXY_ONLY" &&
           result.after.renderer.fault === "none"
         : result.after.renderer.fault === fault &&
           evaluation.status === "FAIL" &&
-          evaluation.issues.some((e) => e.code === code);
+          evaluation.issues.some((e) => e.code === code));
     report.negativeControls.push({
       fault,
       passed: valid,
       actualFault: result.after.renderer.fault,
       evaluation,
+      live,
       samples: result.samples,
+      time: result.time,
+      doseBounded,
     });
     if (!valid)
       throw new Error(
@@ -1111,6 +1165,8 @@ async function interactionControls(fixture) {
     ["ignore-zoom", "visible-zoom"],
     ["pointerup-render", "continuous-stroke-live"],
   ]) {
+    progress(`control-${fault}`, "running", {}, null);
+    await checkpoint();
     const results = [];
     for (const current of [fault, "none"]) {
       const label = `control-${fault}-${current === "none" ? "recovery" : "mutant"}`;
@@ -1129,7 +1185,7 @@ async function interactionControls(fixture) {
         results.push({
           passed: false,
           error: String(error),
-          observedFault: (await snapshot(session.page)).renderer.fault,
+          observedFault: (await stateSnapshot(session.page)).renderer.fault,
         });
       } finally {
         await session.close();
@@ -1163,6 +1219,8 @@ async function interactionControls(fixture) {
       mutant,
       recovery: { primaryCheck, ...recovery },
     });
+    progress(`control-${fault}`, passed ? "completed" : "failed", {}, null);
+    await checkpoint();
     log(
       `${fault}: primary ${mutant.passed ? "PASS (unexpected)" : "FAIL (expected)"}; recovery ${recovery.passed ? "PASS" : "FAIL"}`,
     );
@@ -1200,6 +1258,8 @@ async function scalingJourney() {
       throw new Error("Scaling stage exceeded the declared source budget");
   };
   for (const fixture of manifest.fixtures) {
+    progress(`scaling-${fixture.sourceTiles}`, "running", {}, null);
+    await checkpoint();
     const file = join(out, `scaling-${fixture.id}-working.saltatlas`);
     await copyFile(fixture.file, file);
     const result = {
@@ -1277,7 +1337,7 @@ async function scalingJourney() {
       await brush(
         session.page,
         manifest.region.brush.diameter,
-        manifest.region.brush.amount,
+        manifest.region.brush.amount * 2,
       );
       const beforeImage = await capture(session, "coarse-before", [
         manifest.region.pixelProbe,
@@ -1285,6 +1345,37 @@ async function scalingJourney() {
       ]);
       result.stage = "coarse-edit";
       const edit = await dab(session, manifest.region.brush.center);
+      result.time = edit.time;
+      result.brush = {
+        diameterPx: manifest.region.brush.diameter,
+        rateFtPerSecond: manifest.region.brush.amount * 2,
+        requestedHoldMs: 1000,
+      };
+      result.referenceExpected = manifest.expected;
+      const factor = edit.time.acceptedDoseFt / manifest.region.brush.amount;
+      const expected = {
+        ...manifest.expected,
+        afterCoarseDab: atStationaryDose(
+          manifest.expected.before,
+          manifest.expected.afterCoarseDab,
+          factor,
+        ),
+        ridgeAfterCoarseDab: atStationaryDose(
+          manifest.expected.ridgeBefore,
+          manifest.expected.ridgeAfterCoarseDab,
+          factor,
+        ),
+        ridgePixelAfterCoarseDab:
+          manifest.expected.ridgePixelBefore +
+          (manifest.expected.ridgePixelAfterCoarseDab -
+            manifest.expected.ridgePixelBefore) *
+            factor,
+        ridgePixelWithoutFineAfterCoarseDab:
+          -100 +
+          (manifest.expected.ridgePixelWithoutFineAfterCoarseDab + 100) *
+            factor,
+      };
+      result.expected = expected;
       const afterImage = await capture(session, "coarse-after", [
         manifest.region.pixelProbe,
         manifest.region.ridgePixelProbe,
@@ -1304,11 +1395,10 @@ async function scalingJourney() {
       assertSourceBudget(result.coarseEdit, result.stageReadDeltas.coarseEdit);
       if (
         edit.timedOut ||
-        !knownValuesAgree(result.after, manifest.expected.afterCoarseDab) ||
-        !knownValuesAgree(
-          result.ridgeAfter,
-          manifest.expected.ridgeAfterCoarseDab,
-        ) ||
+        !edit.time.passed ||
+        !edit.time.stationary ||
+        !knownValuesAgree(result.after, expected.afterCoarseDab) ||
+        !knownValuesAgree(result.ridgeAfter, expected.ridgeAfterCoarseDab) ||
         !waterPixel(beforeImage.pixels[0]) ||
         !landPixel(afterImage.pixels[0]) ||
         !landPixel(beforeImage.pixels[1]) ||
@@ -1328,9 +1418,9 @@ async function scalingJourney() {
       await exact(session.page);
       result.redone = await values(session.page, manifest.expected.points);
       if (
-        !closeEnough(result.detail, manifest.expected.afterCoarseDab) ||
+        !closeEnough(result.detail, expected.afterCoarseDab) ||
         !closeEnough(result.undone, manifest.expected.before) ||
-        !closeEnough(result.redone, manifest.expected.afterCoarseDab)
+        !closeEnough(result.redone, expected.afterCoarseDab)
       )
         throw new Error("Scaling detail return or history differs");
       result.stage = "ridge-detail-return";
@@ -1339,26 +1429,17 @@ async function scalingJourney() {
       result.ridgeDetail = await values(session.page, [
         manifest.region.ridgePixelProbe,
       ]);
-      if (
-        !closeEnough(result.ridgeDetail, [
-          manifest.expected.ridgePixelAfterCoarseDab,
-        ])
-      )
+      if (!closeEnough(result.ridgeDetail, [expected.ridgePixelAfterCoarseDab]))
         throw new Error("Detail return lost the populated fine ridge terrain");
       result.stage = "save-restart";
       await button(session.page, "Speichern");
       await session.page.waitForFunction(
-        () => window.atlasObserve().state.saved,
+        () => window.atlasObserve([], { events: false }).state.saved,
       );
       result.saved = fixtureCommand("inspect-scaling", file);
       if (result.saved.fineSha256 !== fixture.fineSha256)
         throw new Error("Coarse edit changed saved fine-source payloads");
-      if (
-        !closeEnough(
-          result.saved.ridgeSamples,
-          manifest.expected.ridgeAfterCoarseDab,
-        )
-      )
+      if (!closeEnough(result.saved.ridgeSamples, expected.ridgeAfterCoarseDab))
         throw new Error("Saved coarse/fine ridge composition differs");
       result.resources = (await snapshot(session.page)).renderer;
       result.storeMetrics = await session.app.evaluate(() =>
@@ -1369,7 +1450,7 @@ async function scalingJourney() {
       session = await launch(file, `scaling-${fixture.id}-restart`);
       await exact(session.page);
       result.reopened = await values(session.page, manifest.expected.points);
-      if (!closeEnough(result.reopened, manifest.expected.afterCoarseDab))
+      if (!closeEnough(result.reopened, expected.afterCoarseDab))
         throw new Error("Scaling restart differs");
       await navigateTo(session.page, manifest.region.ridgePixelProbe);
       await exact(session.page);
@@ -1377,9 +1458,7 @@ async function scalingJourney() {
         manifest.region.ridgePixelProbe,
       ]);
       if (
-        !closeEnough(result.ridgeReopened, [
-          manifest.expected.ridgePixelAfterCoarseDab,
-        ])
+        !closeEnough(result.ridgeReopened, [expected.ridgePixelAfterCoarseDab])
       )
         throw new Error("Restart lost the populated fine ridge terrain");
       result.stage = "complete";
@@ -1402,6 +1481,15 @@ async function scalingJourney() {
     log(
       `scaling ${fixture.sourceTiles} sources: ${result.passed ? "PASS" : `FAIL at ${result.stage}: ${result.productError ?? result.error}`}`,
     );
+    const resultFile = join(out, `scaling-${fixture.sourceTiles}-result.json`);
+    await atomicJson(resultFile, result);
+    progress(
+      `scaling-${fixture.sourceTiles}`,
+      result.passed ? "completed" : "failed",
+      { resultFile },
+      null,
+    );
+    await checkpoint();
   }
   report.scaling.passed =
     report.scaling.cases.length === 3 &&
@@ -1409,6 +1497,29 @@ async function scalingJourney() {
 }
 
 try {
+  if (native && !process.env.DISPLAY && !process.env.WAYLAND_DISPLAY) {
+    const error = new Error(
+      "Native mode requires the regular reference display; no fixtures or traces were generated.",
+    );
+    error.code = "NO_NATIVE_DISPLAY";
+    throw error;
+  }
+  const harnessFiles = (await readdir(join(root, "scripts")))
+    .filter(
+      (file) =>
+        /^atlas-p0.*\.mjs$/.test(file) &&
+        !/fixture|scaling|\.test\./.test(file),
+    )
+    .map((file) => `scripts/${file}`)
+    .sort();
+  const harnessHash = createHash("sha256");
+  for (const file of harnessFiles)
+    harnessHash
+      .update(file)
+      .update("\0")
+      .update(await readFile(join(root, file)))
+      .update("\0");
+  report.harness = { sha256: harnessHash.digest("hex"), files: harnessFiles };
   const buildMetadata = JSON.parse(
     await readFile(join(root, "desktop-dist/build.json"), "utf8"),
   );
@@ -1469,22 +1580,24 @@ try {
       files: packageFiles,
     };
   }
-  if (native && !process.env.DISPLAY && !process.env.WAYLAND_DISPLAY) {
-    report.errors.push({
-      code: "NO_NATIVE_DISPLAY",
-      message:
-        "Native mode requires the regular reference display. Use --lab only for software headless functional evidence.",
-    });
-  } else {
-    const fixture = fixtureCommand("create", join(out, "fixtures"));
-    if (only !== "scaling")
+  {
+    const fixture = selectedScope.needsBaseFixture
+      ? fixtureCommand("create", join(out, "fixtures"))
+      : null;
+    if (selectedScope.needsBusyFixture)
       fixture.busy = fixtureCommand("create-busy", join(out, "busy-fixture"));
-    report.fixture = fixture.coast;
-    report.fixtureManifest = fixture;
-    log("real .saltatlas fixtures created; starting built Electron app");
-    const guarded = async (name, action) => {
+    if (fixture) {
+      report.fixture = fixture.coast;
+      report.fixtureManifest = fixture;
+    }
+    log("required real .saltatlas fixtures ready; starting built Electron app");
+    const guarded = async (name, action, run = independentRunId) => {
+      if (interrupted) return;
+      progress(name, "running", {}, run);
+      await checkpoint();
       try {
         await action();
+        progress(name, "completed", {}, run);
       } catch (error) {
         report.errors.push({
           code: "SCENARIO_FAILURE",
@@ -1493,19 +1606,22 @@ try {
           message: String(error),
           stack: error.stack,
         });
+        progress(name, "failed", { error: String(error) }, run);
+        for (const entry of report.planned)
+          if (entry.run === run && entry.state === "running")
+            Object.assign(entry, { state: "failed", error: String(error) });
         log(`${name}: FAIL ${error}`);
       }
+      await checkpoint();
     };
-    const repetitions = selectedRuns ?? (full ? 3 : 1);
     for (let run = 1; run <= repetitions; run++) {
-      independentRunId = full ? `release-${run}` : "pilot-1";
-      if (!only)
+      if (interrupted) break;
+      independentRunId = full ? `release-${run}` : `probe-${run}`;
+      if (selectedScope.navigation)
         await guarded("empty-navigation", () => emptyNavigation(fixture));
-      if (!only || only === "interactions")
-        await guarded("coast-journey", () => coastJourney(fixture));
-      if (!only || only === "interactions")
-        await guarded("busy-journey", () => busyJourney(fixture));
-      if (full && (!only || only === "collection")) {
+      if (selectedScope.workflow)
+        await guarded("coast-workflow", () => coastJourney(fixture));
+      if (selectedScope.collection && !interrupted) {
         await guarded("repeated-scenarios", async () => {
           const { collectRepeatedScenarios } =
             await import("./atlas-p0-collection.mjs");
@@ -1516,6 +1632,12 @@ try {
             independentRunId,
             fixtureCommand,
             editDuringActualSave,
+            purpose,
+            onScenario: scenarioCompleted,
+            beforeScenario: async (id) => {
+              progress(id, "running");
+              await checkpoint();
+            },
             ...(scenarioId ? { scenarioId } : {}),
           });
           (report.collection ??= []).push({ independentRunId, ...result });
@@ -1528,93 +1650,56 @@ try {
         });
       }
     }
-    if (!only || only === "interactions") {
+    if (selectedScope.controls) {
       await guarded("interaction-controls", () => interactionControls(fixture));
       for (const fault of ["delay-render", "drop-render", "recovery"])
-        await guarded(`control-${fault}`, () =>
-          negativeControl(fixture, fault),
+        await guarded(
+          `control-${fault}`,
+          () => negativeControl(fixture, fault),
+          null,
         );
     }
-    if (!only || only === "scaling") await guarded("scaling", scalingJourney);
+    if (selectedScope.scaling) await guarded("scaling", scalingJourney);
   }
 } catch (error) {
   report.errors.push({
-    code: "RUNNER_OR_PRODUCT_FAILURE",
+    code: error.code ?? "RUNNER_OR_PRODUCT_FAILURE",
     message: String(error),
     stack: error.stack,
   });
   console.error(error);
 } finally {
   report.finishedAt = new Date().toISOString();
-  report.acceptance = evaluateAcceptance(report);
-  report.functional.evaluation = evaluateFunctional(report);
-  report.functional.passed = report.functional.evaluation.passed;
-  report.nativeGate = {
-    status: "BLOCKED",
-    passed: false,
-    reason: lab
-      ? "Software headless laboratory: no qualified native reference; exact presentation mapping remains unavailable; collected sample counts are reported independently."
-      : report.errors.some((error) => error.code === "NO_NATIVE_DISPLAY")
-        ? "No native display is available; exact presentation mapping remains unavailable; collected sample counts are reported independently."
-        : "This display is not yet qualified and exact presentation mapping remains unavailable. Collection mode and actual sample counts are reported separately.",
-    fullEvaluation: report.acceptance.status,
-  };
-  report.proxySummary = report.runs.flatMap((r) =>
-    r.scenarios
-      .filter((s) => s.kind !== "navigation")
-      .map((s) => ({
-        run: r.id,
-        scenario: s.id,
-        diagnosticOnly: true,
-        samples: s.samples.length,
-        submission:
-          s.kind === "cold"
-            ? evaluateColdSubmissionDiagnostics(s.samples)
-            : evaluateSubmissionDiagnostics(s.samples),
-      })),
-  );
-  await writeFile(join(out, "report.json"), JSON.stringify(report, null, 2));
+  await checkpoint();
   console.log(
     JSON.stringify(
       {
         output: out,
-        functional: report.functional.passed ? "PASS" : "FAIL",
-        scaling: report.scaling?.cases.map(
-          ({ id, sourceTiles, passed, stage, error }) => ({
-            id,
-            sourceTiles,
-            passed,
-            stage,
-            error,
-          }),
-        ),
-        collection: report.collection?.map(
-          ({ independentRunId, passed, errors }) => ({
-            independentRunId,
-            passed,
-            errors,
-          }),
-        ),
-        nativeGate: report.nativeGate,
-        negativeControls: report.negativeControls.map(({ fault, passed }) => ({
-          fault,
-          passed,
-        })),
-        errors: report.errors,
+        purpose,
+        status: report.evaluation.status,
+        selectedScopePassed: report.evaluation.scopePassed,
+        nativeAcceptance: report.evaluation.nativeAcceptance.status,
+        failureCodes: [
+          ...new Set(report.evaluation.failures.map((issue) => issue.code)),
+        ],
+        missingCases: report.planned.filter(
+          (entry) => !["completed", "failed"].includes(entry.state),
+        ).length,
+        blockerCodes: [
+          ...new Set(report.evaluation.blockers.map((issue) => issue.code)),
+        ],
+        report: join(out, "report.json"),
+        index: join(out, "run-index.json"),
       },
       null,
       2,
     ),
   );
-  process.exitCode = report.errors.some(
-    (error) => error.code === "NO_NATIVE_DISPLAY",
-  )
-    ? 2
-    : !report.functional.passed
-      ? 1
-      : native || full
-        ? report.acceptance.passed
-          ? 0
-          : 2
-        : 0;
+  process.exitCode = report.evaluation.failures.length
+    ? 1
+    : report.evaluation.scopePassed && lab && !full
+      ? 0
+      : report.evaluation.passed
+        ? 0
+        : 2;
 }

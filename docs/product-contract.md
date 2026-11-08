@@ -1089,8 +1089,9 @@ abgelehnt. Persistenz und Import folgen [Dateien und History](#dateien-und-histo
 P0 ist ein eigener, ausdrücklich gewählter Höheneditor. Er bietet Verschieben
 und Zoom vom Nahbereich bis zur Welt, Raster ein/aus, Anheben und Absenken,
 Undo/Redo sowie Neu, Öffnen, Speichern und Speichern unter. Die Pinselgröße wird
-in Bildschirmpixeln, der Höhenbetrag in Metern eingestellt; die Berechnung
-verwendet Fuß. Straßen, Häuser, Innenräume, Landschaft, Regionen und lokale
+in Bildschirmpixeln, die Höhenänderungsrate in Metern pro Sekunde eingestellt;
+die Berechnung verwendet Fuß und Sekunden. Straßen, Häuser, Innenräume,
+Landschaft, Regionen und lokale
 Gewässerwerkzeuge gehören weiter zur V7-Anwendung und sind im P0-Fenster nicht
 verfügbar.
 
@@ -1104,31 +1105,60 @@ Begrenzung Relief abschneiden. Küsten folgen der zusammengesetzten Oberfläche,
 sie besitzen keine getrennten Höhenautoren.
 
 Ein Strich hält seine Autorenstufe und Pinselparameter bis zum Abschluss fest.
-Räumliche Abtastung begrenzt die Abhängigkeit von der Ereignisrate; Halten ohne
-Bewegung vertieft nicht weiter. Jeder angenommene Abschnitt wirkt live. Pointerup
+**Gedrücktes Halten bearbeitet die Stelle fortlaufend weiter. Langsame Züge
+wirken stärker als schnelle, weil der Pinsel länger auf den betroffenen Stellen
+verweilt.** Die Stärke ist eine Zielrate pro Sekunde. Ein kleiner begrenzter
+Anfangsimpuls erhält die Klickfunktion. Weitere Schritte folgen dem tatsächlichen
+Darstellungsfortschritt und enthalten jeweils höchstens 50 ms Dosis. Höchstens
+ein Schritt darf noch auf seine Darstellung warten. Bei langsamer Verarbeitung
+wirkt der Pinsel entsprechend schwächer; verworfene Wartezeit wird nicht später
+als großer Auftrag nachgeholt. Der reine Fachkern integriert die ausdrücklich
+angenommene Zeit und den Weg. Jeder angenommene Abschnitt wirkt live. Pointerup
 fasst den angenommenen Strich zu einem Undo-Schritt zusammen. Escape,
-Fokusverlust und Pointercancel erhalten bereits angenommene Änderungen;
+Fokusverlust, Pointercancel und ein ausdrücklicher Ansichtwechsel beenden die
+laufende Einwirkung und erhalten bereits angenommene Änderungen;
 noch auf Quellen wartende Eingaben werden verworfen. Fehlende lokale Daten
 bleiben als Wartezustand sichtbar und werden nicht als leeres Gelände behandelt.
+Während einer solchen Quellenpause wird keine unbemerkte Zeitdosis angesammelt.
+Nach Loslassen oder Abbruch wird keine weitere Dosis angenommen. Bereits
+angenommene Änderungen dürfen noch sichtbar werden; ein wartender Restweg oder
+angesammelte Haltezeit darf keine neue Bearbeitung auslösen.
+Auch schnelle aufeinanderfolgende Klicks stapeln keine unsichtbaren Schritte.
+Ein ausdrücklicher Wechsel zu einem anderen Kartenausschnitt beendet das Warten
+auf vollständig verlassene Bereiche; ihre angenommenen Änderungen bleiben
+erhalten und erscheinen bei Rückkehr.
 Grenzen für Arbeit und Speicher werden vor der jeweiligen Änderung geprüft;
 eine Ablehnung späterer Abschnitte erhält den vorher angenommenen Teil als
 rückgängig machbare Aktion.
 
-P0-Projekte verwenden `.saltatlas` als SQLite-Format **23** mit Schemakennung
-`atlas-p0-height-1`. Gespeichert werden sparse relative Höhenkacheln und
-Projektmetadaten. Dieses Versuchsformat ist getrennt vom V7-Format 22 und wird
-nicht migriert. Öffnen arbeitet auf einer temporären Kopie; Undo/Redo bleibt
+Während einer gehaltenen Bewegung folgt das tatsächliche Gelände dem Pinsel
+kontinuierlich. Wenige frühe Zwischenbilder und ein korrektes Endbild genügen
+dafür nicht. Cursor und Pinselkreis ersetzen die laufende Ergebnisdarstellung
+nicht; Eingabe, lokale Änderung, exakter Renderstand und Pointerup werden getrennt
+beobachtet. Verfehlte Live- oder Zeitziele bleiben im Prüfstand ausdrücklich offen.
+
+Grobe Ansichten verwenden numerische Übersichten feiner Höhenbeiträge. Sie
+erhalten den Einfluss lokaler Details auf die zusammengesetzte Oberfläche und
+deren Küste; sie verlangen keine vollständige Feindatenabdeckung im aktiven
+Editor. Genaue beliebige Punktabfragen bleiben bei ungeladenen Feindaten
+unbekannt, bis die betreffende Detailansicht geladen ist. Lokale Bearbeitung
+wartet auf die Quellen ihrer festen Autorenstufe und gröbere Beiträge.
+
+P0-Projekte verwenden `.saltatlas` als SQLite-Format **24** mit Schemakennung
+`atlas-p0-height-2`. Gespeichert werden sparse relative Höhenkacheln,
+Projektmetadaten und abgeleitete numerische Übersichten desselben bestätigten
+Sequenzstands. Dieses Versuchsformat ist getrennt vom V7-Format 22; auch das
+frühere P0-Format 23 wird verständlich abgelehnt und nicht migriert.
+Öffnen arbeitet auf einer temporären Kopie; Undo/Redo bleibt
 auf die Sitzung begrenzt. Eine lokale Änderung, ihre Bestätigung in der
 Arbeitskopie und ihre Speicherung in der Projektdatei sind verschiedene Zustände.
 Speichern veröffentlicht den reservierten Stand atomar. Spätere Bearbeitungen
 bleiben ungespeichert, bis ein weiterer Speichervorgang auch sie erfasst.
 
-Der Versuch prüft die grundlegende Tragfähigkeit dieses Höhenpfads. Ein
-softwaregerenderter Headless-Lauf belegt Funktionen und Dateirundläufe, keine
-native Performancefreigabe. Die P0a-Rust-Baseline, eine eindeutige Zuordnung von
-Atlas-Generation zu Compositor-Präsentation und die vollständige native
-Stichprobe aus drei unabhängigen Release-Läufen fehlen; im Labor ist
-`displayHz: 0`. Auch ein funktionierender Forge-Paketstart belegt keine
-RPM-Installation. Die Busy-/Save-Überlappung muss tatsächlich beobachtet werden;
-fehlt der Nachweis, bleibt dieser Punkt `OPEN`. Der konkrete Prüfstand und die
-noch offenen Abnahmen werden ausschließlich im Statusdokument gepflegt.
+Der normale Start sammelt kein ausführliches Diagnosejournal und zeigt keine
+künstlichen Belastungswerkzeuge. Eine ausdrücklich gestartete Diagnose darf
+das Verhalten nur beobachten. Ein softwaregerenderter Headless-Lauf belegt
+Funktionen und Dateirundläufe; native Leistung verlangt eine qualifizierte
+Referenz und echte Präsentationszuordnung. Auch ein Forge-Paketstart ersetzt
+keine RPM-Installation. Der konkrete Prüfstand und die noch offenen Abnahmen
+stehen ausschließlich im Statusdokument.

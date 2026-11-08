@@ -3,6 +3,7 @@ import type {
   CommitRequest,
   ReadRegionRequest,
   ReadTilesRequest,
+  ReadPresentationRequest,
   SourceBoundary,
 } from "../src/editor/bridge";
 
@@ -22,8 +23,11 @@ let store: ProjectStore;
 try {
   const directory = process.argv[2];
   if (!directory) throw new Error("Arbeitsverzeichnis fehlt.");
-  store = new ProjectStore(directory, (activity) =>
-    port.postMessage({ activity }),
+  store = new ProjectStore(
+    directory,
+    process.env.ATLAS_P0_DIAGNOSTICS === "1"
+      ? (activity) => port.postMessage({ activity })
+      : undefined,
   );
 } catch (error) {
   port.postMessage({
@@ -42,6 +46,8 @@ async function dispatch({ method, argument }: ParentMessage) {
       return store.readTiles(argument as ReadTilesRequest);
     case "readRegion":
       return store.readRegion(argument as ReadRegionRequest);
+    case "readPresentation":
+      return store.readPresentation(argument as ReadPresentationRequest);
     case "commit":
       return store.commit(argument as CommitRequest);
     case "newProject":

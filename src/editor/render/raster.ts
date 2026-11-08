@@ -1,4 +1,9 @@
-import type { Bounds } from "../model";
+import { heightFromScaledSum } from "../model/height";
+import { WORLD_LIMIT, type Bounds } from "../model/types";
+import type { RasterRect } from "../model/height-grid";
+
+export const MAX_RASTER_BATCH_TILES = 16;
+export const MAX_RASTER_BATCH_PIXELS = 128 * 1024;
 
 /** Exact height is sampled first; colour is a pure display classification. */
 export function colour(height: number): [number, number, number] {
@@ -20,24 +25,34 @@ export function colour(height: number): [number, number, number] {
 }
 
 export function rasterize(
-  sample: (x: number, y: number) => number,
+  scaledHeights: Float64Array,
   bounds: Bounds,
   size: number,
-  rect: [number, number, number, number],
+  rect: RasterRect,
+  fineHeights?: Float64Array,
 ): Uint8Array {
   const [x0, y0, x1, y1] = rect;
   const width = x1 - x0,
     height = y1 - y0;
   const pixels = new Uint8Array(width * height * 4);
-  // World-edge tiles can be clipped on only one axis.
+  if (scaledHeights.length !== width * height)
+    throw new Error("Unvollständige Höhenwerte für das Darstellungsraster.");
+  if (fineHeights && fineHeights.length !== size * size)
+    throw new Error("Unvollständige numerische Höhenübersicht.");
   const stepX = (bounds[2] - bounds[0]) / size;
   const stepY = (bounds[3] - bounds[1]) / size;
   for (let row = 0; row < height; row++) {
     const y = bounds[1] + (y0 + row + 0.5) * stepY;
     for (let column = 0; column < width; column++) {
       const x = bounds[0] + (x0 + column + 0.5) * stepX;
-      const rgb = colour(sample(x, y));
       const i = (row * width + column) * 4;
+      // Preserve the canonical mesh at the world edge; never stretch the last
+      // tile's sample spacing to fit its clipped drawable/query bounds.
+      if (Math.abs(x) > WORLD_LIMIT || Math.abs(y) > WORLD_LIMIT) continue;
+      const fine = fineHeights?.[(y0 + row) * size + x0 + column] ?? 0;
+      const rgb = colour(
+        heightFromScaledSum(scaledHeights[row * width + column] + fine),
+      );
       pixels[i] = rgb[0];
       pixels[i + 1] = rgb[1];
       pixels[i + 2] = rgb[2];

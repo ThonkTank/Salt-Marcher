@@ -22,15 +22,20 @@ ignorierten Pfade `src-tauri/target/cleanup/`, `src-tauri/target/diagnostics/`
 oder für P0 unter `artifacts/atlas-rebuild/`.
 
 Der angeforderte [ausführbare Atlas-Neubau- und Aufräumplan](docs/implementation/atlas-rebuild-plan.md)
-enthält den vollständigen Zielumfang F01–F19 mit den vereinbarten D01–D09,
+enthält den vollständigen Zielumfang F01–F19 mit den vereinbarten D01–D10,
 Architekturentscheidungen, Arbeitspaketen und Abschlusskriterien. Ein Verweis
 darauf mit „erledige das“ beauftragt seine vollständige Ausführung P0–P9.
-Der aktuelle Auftrag vom 8. November 2026 ist die **Aufräumplanung**;
-diese Überarbeitung startet keine Laufzeitänderungen oder neuen Messreihen.
-Zuerst sollen der gemeinsame Prüfablauf, die Darstellung beim großen Pinsel
-und die begrenzte Übersicht über viele feine Quellen geklärt werden.
+Der aktuelle Auftrag vom 8. November 2026 ist die **Umsetzung des Aufräumplans**.
+P0b/P0d/P0e wurden strukturell überarbeitet: gemeinsamer Prüfablauf,
+begrenzter Patch-/Renderweg und numerische Übersicht über feine Quellen.
+Der vollständige Ausbau folgt dem P0-Gate; die tatsächlichen Produktnachweise
+und verbliebenen Fehler entscheiden über diesen Übergang.
 Der [Status](docs/implementation/status.md) hält die vorhandenen Teilnachweise
 und die weiterhin offene native Abnahme fest.
+Der P0-Pinsel verwendet die vereinbarte zeitabhängige Wirkung: Halten wirkt
+weiter, langsamere Züge wirken stärker. Kleine Dosen folgen dem sichtbaren
+Fortschritt; bei Verzögerungen wird keine zusätzliche Wirkung für später
+angesammelt.
 Die V7-Abschnitte beschreiben die bestehende Standardanwendung, die gesonderten
 P0-Abschnitte den implementierten Höhenversuch und seine Prüfgrenzen.
 
@@ -87,14 +92,21 @@ aus. Dafür werden gegebenenfalls ein C++-Buildwerkzeug und Python benötigt.
 | `npm run package:atlas-p0`                    | Mit Electron Forge ein startbares Anwendungsverzeichnis erzeugen.                                            |
 | `npm run make:atlas-p0`                       | Mit Electron Forge RPM-/ZIP-Artefakte erzeugen; RPM benötigt die Systemwerkzeuge zum Paketbau.               |
 
-Die Runner schreiben Berichte, Traces und Inhaltsbelege unter
+Die Runner schreiben Berichte und Inhaltsbelege unter
 `artifacts/atlas-rebuild/runs/`. Zusätzliche Optionen werden mit `--` an `p0:lab`
 oder `p0:native` weitergereicht. `--executable /absoluter/pfad/zur/anwendung`
-prüft einen Forge-Paketstand. Das Forge-Paket lässt sich starten; eine
-RPM-Installation ist noch nicht geprüft. Der konkrete Prüfstand steht
+prüft einen Forge-Paketstand. `--trace` aktiviert zusätzlich eine begrenzte
+Chromium-Aufzeichnung. Der normale Produktstart sammelt kein Diagnosejournal;
+die Runner schalten es ausdrücklich ein. Die native Umgebungsprüfung erfolgt
+vor der Fixtureerzeugung. Ein Paketstart ersetzt keine RPM-Installation.
+Der konkrete Prüfstand steht
 ausschließlich im Statusdokument.
 
-Ohne `--full` läuft ein funktionaler Pilot mit begrenzten Zeitstichproben.
+Ohne `--full` läuft eine kurze Architekturprobe mit einem Versuch je Fall.
+Sie verwendet denselben Gesten- und Inhaltsprüfer wie die vollständige Sammlung.
+Ergebnis und Auswertung werden nach jedem Szenario gesichert; der Laufindex
+behält fehlgeschlagene und noch nicht ausgeführte Fälle. Rohereignisse stehen
+einmal pro Prozess, statt in jedem Versuch erneut eingebettet zu werden.
 `--full` beauftragt drei unabhängige Gruppen mit jeweils 100 echten bewegten
 Strichen je warmem Fall (kleiner und großer Pinsel, grob über fein sowie unter
 Hintergrundarbeit und Speichern) und 34 kalten Ortswechseln mit anschließender
@@ -121,10 +133,12 @@ das Quellbudget von 256 MiB. Die Busy-Datei enthält 9008 echte Quellkacheln
 einschließlich einer zweiten Küste für kalte Ortswechsel. Die Tests prüfen
 kanonische Höhen, sichtbare Änderungen, erhaltene Feindaten und Dateirundläufe;
 die Skalierungsfälle erfassen außerdem den aktiven Quellspeicher und die
-Store-Reads während grober Navigation und Bearbeitung. Der unveränderte
-P0-Leser weist Ausschnitte mit mehr als 512 berührten Quellkacheln ab. Diese
-Skalierungsgrenze bleibt ein roter Testfall und wird nicht durch höhere Limits
-oder übersprungene Fälle verdeckt; die Umsetzung von P3 ist damit nicht erfolgt.
+Store-Reads während grober Navigation und Bearbeitung. Grobe Ansichten lesen
+maßstabsgerechte numerische Übersichten und nur erforderliche grobe Autoren.
+Exakte Detailreads behalten ihre Grenze von 512 gelieferten Autorenkacheln.
+Die Auswahl begrenzt Raum und Quellenstufe bereits im RTree. Übersichtspflege,
+Zwischenstufen der Navigation und kalte Detailreads bleiben Teil des Nachweises;
+dieser P0-Kernversuch ist noch nicht die vollständige Umsetzung von P3.
 
 Die Fehlerkontrollen gehören verpflichtend zum vollständigen Funktionslauf:
 `ignore-zoom` muss am sichtbaren Zoom scheitern, `pointerup-render` an der
@@ -141,7 +155,7 @@ native Performancefreigabe. Die P0a-Rust-Baseline fehlt; im Labor ist
 noch nicht eindeutig verbunden, und ein qualifizierter nativer Nachweis steht
 weiter aus. Auch eine vollständige Sammlung mit `--full` lässt das native Gate
 deshalb `BLOCKED`. Submission- und RAF-Zeiten ersetzen den Präsentationsnachweis
-nicht. Die Arbeit bleibt auf den P0-Höhenversuch begrenzt.
+nicht. Der vollständige Ausbau P1–P9 wartet auf das P0-Gate.
 
 ## Entwicklung und automatisierte Abnahme
 

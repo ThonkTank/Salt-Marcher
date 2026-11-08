@@ -80,10 +80,14 @@ test("the independent coarse-dab oracle holds after a real save and fine digest 
     // This small case can be completely loaded. Larger fixtures deliberately
     // cannot use this as a product bypass; the browser scenario reads normally.
     const bounds = [-60000, -60000, 60000, 60000];
-    const sources = store.readRegion({ sessionId: info.sessionId, bounds });
+    const sources = store.readRegion({
+      sessionId: info.sessionId,
+      bounds,
+      minLevel: 0,
+    });
     doc.acceptCoverage(bounds, sources.tiles, info.sequence);
     doc.beginGesture(SCALING_REGION.brush);
-    doc.applyPoint(SCALING_REGION.brush.center);
+    doc.applyPoint(SCALING_REGION.brush.center, 1000);
     const change = doc.finishGesture();
     assert.ok(change);
     store.commit(change);

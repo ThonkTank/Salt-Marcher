@@ -19,18 +19,20 @@ function Atlas() {
   const canvas = useRef<HTMLCanvasElement>(null);
   const controller = useRef<EditorController | null>(null);
   const [state, setState] = useState<EditorState | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [mode, setMode] = useState("raise");
-  const [diameter, setDiameter] = useState(80);
-  const [amount, setAmount] = useState(20);
+  const [startupError, setStartupError] = useState<string | null>(null);
+  const [diameterDraft, setDiameterDraft] = useState<string | null>(null);
+  const [amountDraft, setAmountDraft] = useState<string | null>(null);
   const [x, setX] = useState("0");
   const [y, setY] = useState("0");
-  const [grid, setGrid] = useState(true);
+  const mode = state?.mode ?? "raise";
+  const diameter = state?.diameter ?? 80;
+  const amount = state?.amount ?? 20;
+  const diagnostics = window.atlasDesktop?.diagnostics ?? false;
 
   useEffect(() => {
     if (!canvas.current) return;
     if (!window.atlasDesktop) {
-      setError(
+      setStartupError(
         "Diese Geländestudie benötigt den Desktopstart mit Speicheranbindung.",
       );
       return;
@@ -41,10 +43,11 @@ function Atlas() {
     void editor
       .init()
       .then(() => {
-        window.atlasObserve = (points, options) =>
-          editor.observe(points, options);
+        if (diagnostics)
+          window.atlasObserve = (points, options) =>
+            editor.observe(points, options);
       })
-      .catch((e: unknown) => setError(String(e)));
+      .catch((e: unknown) => setStartupError(String(e)));
     return () => {
       delete window.atlasObserve;
       editor.destroy();
@@ -56,20 +59,10 @@ function Atlas() {
   ) => {
     const editor = controller.current;
     if (!editor) return;
-    setError(null);
-    try {
-      void Promise.resolve(operation(editor)).catch((e: unknown) =>
-        setError(e instanceof Error ? e.message : String(e)),
-      );
-    } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
-    }
+    editor.run(() => operation(editor));
   };
   const selectMode = (next: "raise" | "lower" | "pan") => {
-    setMode(next);
-    action((editor) => {
-      editor.mode = next;
-    });
+    action((editor) => editor.setMode(next));
   };
   const navigate = (event: Event, scale: number) =>
     action((editor) =>
@@ -148,30 +141,49 @@ function Atlas() {
             type="number"
             min="8"
             max="512"
-            value={diameter}
+            value={diameterDraft ?? diameter}
             onChange={(e) => {
-              const value = Number(e.target.value);
-              setDiameter(value);
-              action((editor) => editor.setBrush(value, amount));
+              setDiameterDraft(e.target.value);
+            }}
+            onBlur={() => {
+              if (diameterDraft !== null && diameterDraft.trim() !== "")
+                action((editor) =>
+                  editor.setBrush(Number(diameterDraft), editor.amount),
+                );
+              setDiameterDraft(null);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") e.currentTarget.blur();
             }}
           />
         </div>
         <div className="field">
           <label htmlFor="amount">
-            Höhenänderung <span>m</span>
+            Pinselstärke <span>m/s</span>
           </label>
           <input
             id="amount"
-            aria-label="Höhenänderung"
+            aria-label="Pinselstärke"
             type="number"
             min="0.03048"
             max="3048"
             step="1"
-            value={+(amount * 0.3048).toFixed(3)}
+            value={amountDraft ?? +(amount * 0.3048).toFixed(3)}
             onChange={(e) => {
-              const value = Number(e.target.value) / 0.3048;
-              setAmount(value);
-              action((editor) => editor.setBrush(diameter, value));
+              setAmountDraft(e.target.value);
+            }}
+            onBlur={() => {
+              if (amountDraft !== null && amountDraft.trim() !== "")
+                action((editor) =>
+                  editor.setBrush(
+                    editor.diameter,
+                    Number(amountDraft) / 0.3048,
+                  ),
+                );
+              setAmountDraft(null);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") e.currentTarget.blur();
             }}
           />
         </div>
@@ -205,13 +217,9 @@ function Atlas() {
         <label className="check">
           <input
             type="checkbox"
-            checked={grid}
+            checked={state?.grid ?? true}
             onChange={(e) => {
-              setGrid(e.target.checked);
-              action((editor) => {
-                editor.world.grid = e.target.checked;
-                editor.world.redraw();
-              });
+              action((editor) => editor.setGrid(e.target.checked));
             }}
           />
           Raster anzeigen
@@ -244,18 +252,20 @@ function Atlas() {
             Zum Ziel
           </button>
         </details>
-        <div className="experiment">
-          <p className="eyebrow">BELASTUNGSPRÜFUNG</p>
-          <button
-            disabled={state?.background}
-            onClick={() => action((e) => e.background())}
-          >
-            {state?.background
-              ? "Berechnung läuft …"
-              : "Hintergrundarbeit starten"}
-          </button>
-          <p>Währenddessen navigieren, malen und speichern.</p>
-        </div>
+        {diagnostics && (
+          <div className="experiment">
+            <p className="eyebrow">BELASTUNGSPRÜFUNG</p>
+            <button
+              disabled={state?.background}
+              onClick={() => action((e) => e.background())}
+            >
+              {state?.background
+                ? "Berechnung läuft …"
+                : "Hintergrundarbeit starten"}
+            </button>
+            <p>Währenddessen navigieren, malen und speichern.</p>
+          </div>
+        )}
         <p className="hint">
           Mausrad: Zoom · Mittlere Maustaste: Verschieben · Strg+Z: Rückgängig
         </p>
@@ -266,9 +276,9 @@ function Atlas() {
           <span>GELÄNDESTUDIE</span>
           <strong>Vom Detail zur Region</strong>
         </div>
-        {(error || state?.error) && (
+        {(startupError || state?.error) && (
           <div className="error-banner" role="alert">
-            {error || state?.error}
+            {startupError || state?.error}
           </div>
         )}
         <footer className="map-status">

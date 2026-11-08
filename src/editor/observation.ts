@@ -19,6 +19,8 @@ export class Observation {
   private serial = 0;
   dropped = 0;
 
+  constructor(readonly enabled = false) {}
+
   get eventCount(): number {
     return this.events.length;
   }
@@ -28,6 +30,7 @@ export class Observation {
   }
 
   event(kind: string, details: Record<string, unknown> = {}): void {
+    if (!this.enabled) return;
     if (this.events.length >= editorBudgets.observationEvents) {
       this.dropped++;
       return;
@@ -37,12 +40,14 @@ export class Observation {
 
   input(event: Event, kind: string): number {
     const id = ++this.serial;
+    if (!this.enabled) return id;
     // Event timestamps precede dispatch; handler-start-only timings hide queues.
     const createdAt =
       event.timeStamp > performance.timeOrigin
         ? event.timeStamp - performance.timeOrigin
         : event.timeStamp;
-    performance.mark(`atlas.input.${id}`);
+    if (this.events.length < editorBudgets.observationEvents)
+      performance.mark(`atlas.input.${id}`);
     this.event("input", {
       id,
       inputKind: kind,
@@ -53,7 +58,9 @@ export class Observation {
   }
 
   mark(kind: string, identity: string, details: Record<string, unknown>): void {
-    performance.mark(`atlas.${kind}.${identity}`);
+    if (!this.enabled) return;
+    if (this.events.length < editorBudgets.observationEvents)
+      performance.mark(`atlas.${kind}.${identity}`);
     this.event(kind, details);
   }
 

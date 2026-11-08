@@ -19,6 +19,8 @@ export const P0_FUNCTIONAL_CHECKS = Object.freeze([
   "pan-anchor",
   "continuous-stroke-live",
   "continuous-stroke-undo",
+  "held-dose-response",
+  "movement-duration-response",
   "cold-edit-content",
   "world-detail-roundtrip",
 ]);
@@ -96,6 +98,50 @@ export const P0_REQUIREMENTS = Object.freeze({
     },
   ],
 });
+
+/** One selection drives execution, fixtures, the run index and scoped checks. */
+export function selectP0Scope(selection = "all", scenarioId = null) {
+  if (!["all", "interactions", "collection", "scaling"].includes(selection))
+    throw new Error(`Unknown P0 selection: ${selection}`);
+  if (
+    scenarioId !== null &&
+    (selection !== "collection" ||
+      !P0_REQUIREMENTS.scenarios.some(
+        (spec) => spec.id === scenarioId && spec.kind !== "navigation",
+      ))
+  )
+    throw new Error(`Unknown collection selection: ${scenarioId}`);
+  const interactions = selection === "all" || selection === "interactions";
+  const collection = selection === "all" || selection === "collection";
+  const scenarios = P0_REQUIREMENTS.scenarios.filter(
+    (spec) =>
+      (spec.kind === "navigation" ? interactions : collection) &&
+      (scenarioId === null || spec.id === scenarioId),
+  );
+  const collectionChecks = new Set([
+    "cold-before-navigation",
+    "busy-worker-and-save",
+    "cold-edit-after-navigation",
+    "worker-and-save-executed",
+    "cold-edit-content",
+  ]);
+  return {
+    navigation: interactions,
+    workflow: interactions,
+    controls: interactions,
+    collection,
+    scaling: selection === "all" || selection === "scaling",
+    scenarios,
+    needsBaseFixture: interactions || collection,
+    needsBusyFixture:
+      collection && scenarios.some((spec) => spec.id.endsWith("-busy")),
+    requiredChecks: interactions
+      ? P0_FUNCTIONAL_CHECKS.filter(
+          (id) => collection || !collectionChecks.has(id),
+        )
+      : [],
+  };
+}
 
 const finite = (value) => typeof value === "number" && Number.isFinite(value);
 const nonempty = (value) => typeof value === "string" && value.length > 0;
@@ -352,7 +398,15 @@ export function extractEditSamples(events, inputIds, sessionId) {
   return inputIds.map((inputId) => {
     const input = events.find((e) => e.kind === "input" && e.id === inputId);
     const model = events.find(
-      (e) => (e.kind === "model" || e.kind === "commit") && e.input === inputId,
+      (e) =>
+        e.kind === (input?.inputKind === "pointerup" ? "commit" : "model") &&
+        e.input === inputId,
+    );
+    const noop = events.find(
+      (e) =>
+        e.kind === "noop" &&
+        e.input === inputId &&
+        (e.sessionId === undefined || e.sessionId === sessionId),
     );
     const edits = events.filter(
       (e) =>
@@ -367,6 +421,9 @@ export function extractEditSamples(events, inputIds, sessionId) {
           e.kind === "submit" &&
           e.frame === candidate.frame &&
           e.sessionId === sessionId &&
+          // edit-submit certifies this input's region. Other viewport regions
+          // may still be dirty, so a global exactRevision of -1 is not stale.
+          e.revision >= model?.revision &&
           e.at >= (model?.at ?? Infinity),
       ),
     );
@@ -385,6 +442,10 @@ export function extractEditSamples(events, inputIds, sessionId) {
       createdAt: input?.createdAt ?? null,
       handlerAt: input?.at ?? null,
       modelAt: model?.at ?? null,
+      modelChanged: model ? true : noop ? false : null,
+      noopAt: noop?.at ?? null,
+      accepted: model ? true : noop ? noop.accepted !== false : null,
+      noopReason: noop?.reason ?? null,
       revision: model?.revision ?? null,
       sequence: model?.sequence ?? null,
       submissionAt: submit?.at ?? null,
@@ -396,20 +457,582 @@ export function extractEditSamples(events, inputIds, sessionId) {
   });
 }
 
+/** An explicit processed no-op is complete input evidence, never an edit/submit. */
+export function isProcessedNoop(sample) {
+  return (
+    sample.modelChanged === false &&
+    nonempty(sample.sessionId) &&
+    [sample.createdAt, sample.handlerAt, sample.noopAt].every(finite) &&
+    sample.createdAt <= sample.handlerAt &&
+    sample.handlerAt <= sample.noopAt &&
+    !finite(sample.modelAt) &&
+    !finite(sample.submissionAt)
+  );
+}
+
+/** One unpublished dose per session, including across gesture boundaries. */
+export function evaluateBrushPublicationOrder(events, sessionId) {
+  const intervals = events.filter(
+    (e) =>
+      e.kind === "brush-interval" &&
+      (sessionId === undefined || e.sessionId === sessionId) &&
+      e.changed === true,
+  );
+  const issues = [],
+    steps = [];
+  const previousBySession = new Map();
+  for (const interval of intervals) {
+    const previous = previousBySession.get(interval.sessionId);
+    const receipts = events.filter(
+      (e) =>
+        e.kind === "brush-submit" &&
+        e.sessionId === interval.sessionId &&
+        e.gestureId === interval.gestureId &&
+        e.intervalId === interval.intervalId &&
+        e.revision === interval.revision,
+    );
+    const receipt = receipts.find((e) =>
+      events.some(
+        (frame) =>
+          frame.kind === "submit" &&
+          frame.sessionId === interval.sessionId &&
+          frame.frame === e.frame &&
+          frame.revision >= interval.revision &&
+          frame.at >= interval.at &&
+          frame.at <= e.at,
+      ),
+    );
+    const validBounds = (bounds) =>
+      Array.isArray(bounds) &&
+      bounds.length === 4 &&
+      bounds.every(finite) &&
+      bounds[0] < bounds[2] &&
+      bounds[1] < bounds[3];
+    const retired = events.find(
+      (e) =>
+        e.kind === "brush-feedback-obsolete" &&
+        e.sessionId === interval.sessionId &&
+        e.gestureId === interval.gestureId &&
+        e.intervalId === interval.intervalId &&
+        e.revision === interval.revision &&
+        e.reason === "outside-view" &&
+        Number.isSafeInteger(e.viewGeneration) &&
+        e.at >= interval.at &&
+        validBounds(e.bounds) &&
+        validBounds(e.viewBounds) &&
+        !(
+          e.bounds[0] < e.viewBounds[2] &&
+          e.bounds[2] > e.viewBounds[0] &&
+          e.bounds[1] < e.viewBounds[3] &&
+          e.bounds[3] > e.viewBounds[1]
+        ) &&
+        events.some(
+          (view, index) =>
+            index > events.indexOf(interval) &&
+            index < events.indexOf(e) &&
+            view.kind === "view-change" &&
+            view.sessionId === interval.sessionId &&
+            view.viewGeneration === e.viewGeneration &&
+            view.at <= e.at &&
+            validBounds(view.bounds) &&
+            view.bounds.every((value, i) => value === e.viewBounds[i]),
+        ),
+    );
+    const resolvedEvent = Math.min(
+      receipt ? events.indexOf(receipt) : Infinity,
+      retired ? events.indexOf(retired) : Infinity,
+    );
+    const step = {
+      intervalId: interval.intervalId,
+      gestureId: interval.gestureId,
+      sessionId: interval.sessionId,
+      modelAt: interval.at,
+      frameId: receipt?.frame ?? null,
+      submittedAt: receipt?.at ?? null,
+      retiredAt: retired?.at ?? null,
+      retiredReason: retired?.reason ?? null,
+      modelEvent: events.indexOf(interval),
+      submitEvent: receipt ? events.indexOf(receipt) : null,
+      resolvedEvent: Number.isFinite(resolvedEvent) ? resolvedEvent : null,
+    };
+    if (!receipt && !retired)
+      issues.push({
+        code: "BRUSH_STEP_SUBMISSION_MISSING",
+        intervalId: interval.intervalId,
+      });
+    if (
+      previous &&
+      (previous.resolvedEvent === null ||
+        previous.resolvedEvent >= step.modelEvent)
+    )
+      issues.push({
+        code: "MULTIPLE_UNPUBLISHED_BRUSH_STEPS",
+        intervalId: interval.intervalId,
+        previousIntervalId: previous.intervalId,
+      });
+    steps.push(step);
+    previousBySession.set(interval.sessionId, step);
+  }
+  return { passed: issues.length === 0, issues, steps };
+}
+
+/** Account for real accepted/discarded time; nominal press dose is separate. */
+export function evaluateBrushTime(events, inputIds, sessionId) {
+  const issues = [],
+    wanted = new Set(inputIds),
+    epsilon = 1e-6;
+  const inputs = events.filter((e) => e.kind === "input" && wanted.has(e.id));
+  const down = inputs.find((e) => e.inputKind === "edit");
+  const up = inputs.find((e) => e.inputKind === "pointerup");
+  const starts = events.filter(
+    (e) =>
+      e.kind === "brush-start" &&
+      e.sessionId === sessionId &&
+      e.input === down?.id,
+  );
+  const start = starts[0];
+  const own = (e) =>
+    e.sessionId === sessionId && e.gestureId === start?.gestureId;
+  const ends = events.filter((e) => e.kind === "brush-end" && own(e));
+  const end = ends[0];
+  const fail = (code, detail = {}) => issues.push({ code, ...detail });
+  if (starts.length !== 1 || ends.length !== 1)
+    fail("BRUSH_TIME_BOUNDARIES_MISSING");
+  if (!down || !up || end?.input !== up.id) fail("BRUSH_RELEASE_UNPROVEN");
+  if (
+    ![start?.startAt, end?.endAt, start?.inputAt, end?.inputAt].every(finite) ||
+    end.endAt < start.startAt ||
+    Math.abs(start.inputAt - down?.createdAt) > epsilon ||
+    Math.abs(end.inputAt - up?.createdAt) > epsilon ||
+    start.startAt < start.inputAt ||
+    end.endAt < end.inputAt
+  )
+    fail("INVALID_BRUSH_TIME_CLOCK");
+  const intervals = events.filter((e) => e.kind === "brush-interval" && own(e));
+  const discarded = events.filter(
+    (e) => ["brush-discard", "brush-pause"].includes(e.kind) && own(e),
+  );
+  if (!intervals.length) fail("BRUSH_DOSE_MISSING");
+  if (new Set(intervals.map((e) => e.intervalId)).size !== intervals.length)
+    fail("DUPLICATE_BRUSH_INTERVAL");
+  const point = (p) => Array.isArray(p) && p.length === 2 && p.every(finite);
+  const validIntervals = [],
+    spans = [],
+    submissions = [];
+  const publication = evaluateBrushPublicationOrder(events, sessionId);
+  issues.push(...publication.issues);
+  let acceptedMs = 0,
+    timedDoseMs = 0,
+    pressDoseMs = 0,
+    acceptedDoseFt = 0;
+  for (const interval of intervals) {
+    const detail = { intervalId: interval.intervalId };
+    const press = interval.cause === "press";
+    const valid =
+      [
+        interval.fromAt,
+        interval.toAt,
+        interval.acceptedElapsedMs,
+        interval.rawElapsedMs,
+        interval.rateFtPerSecond,
+        interval.at,
+      ].every(finite) &&
+      interval.toAt >= interval.fromAt &&
+      interval.fromAt >= start?.startAt - epsilon &&
+      interval.toAt <= end?.endAt + epsilon &&
+      interval.at >= interval.toAt &&
+      interval.acceptedElapsedMs > 0 &&
+      interval.acceptedElapsedMs <= 50 + epsilon &&
+      Number.isSafeInteger(interval.intervalId) &&
+      Number.isSafeInteger(interval.revision) &&
+      typeof interval.changed === "boolean" &&
+      interval.rateFtPerSecond === start?.rateFtPerSecond &&
+      point(interval.from) &&
+      point(interval.to) &&
+      Array.isArray(interval.inputIds) &&
+      interval.inputIds.every((id) => wanted.has(id)) &&
+      (press
+        ? interval.nominalDose === true &&
+          interval.fromAt === interval.toAt &&
+          interval.rawElapsedMs === 0 &&
+          Math.abs(interval.acceptedElapsedMs - 1000 / 60) < epsilon
+        : interval.nominalDose === false &&
+          ["hold", "move"].includes(interval.cause) &&
+          interval.rawElapsedMs + epsilon >= interval.acceptedElapsedMs &&
+          Math.abs(
+            interval.toAt - interval.fromAt - interval.acceptedElapsedMs,
+          ) < epsilon);
+    if (!valid) {
+      fail("INVALID_OR_EXCESSIVE_BRUSH_DOSE", detail);
+      continue;
+    }
+    if (
+      events.indexOf(interval) >= events.indexOf(end) ||
+      interval.at > end?.at + epsilon
+    )
+      fail("BRUSH_DOSE_AFTER_RELEASE", detail);
+    validIntervals.push(interval);
+    acceptedMs += interval.acceptedElapsedMs;
+    acceptedDoseFt +=
+      (interval.rateFtPerSecond * interval.acceptedElapsedMs) / 1000;
+    if (press) pressDoseMs += interval.acceptedElapsedMs;
+    else {
+      timedDoseMs += interval.acceptedElapsedMs;
+      spans.push(interval);
+    }
+    if (!interval.changed) continue;
+    const step = publication.steps.find(
+      (step) =>
+        step.intervalId === interval.intervalId &&
+        step.gestureId === interval.gestureId,
+    );
+    if (finite(step?.submittedAt))
+      submissions.push({
+        intervalId: interval.intervalId,
+        frame: step.frameId,
+        at: step.submittedAt,
+        elapsedMs: step.submittedAt - interval.at,
+      });
+  }
+  if (intervals.filter((e) => e.cause === "press").length > 1)
+    fail("DUPLICATE_PRESS_DOSE");
+  const discardMs = {};
+  for (const span of discarded) {
+    if (
+      ![span.fromAt, span.toAt].every(finite) ||
+      span.toAt < span.fromAt ||
+      span.fromAt < start?.startAt - epsilon ||
+      span.toAt > end?.endAt + epsilon ||
+      ![
+        "feedback",
+        "cap",
+        "sources",
+        "end",
+        "cancel",
+        "blur",
+        "visibility",
+        "project",
+        "destroy",
+        "error",
+        "pointerup",
+        "press",
+        "history",
+        "save",
+        "escape",
+        "input-limit",
+        "stale",
+        "navigation",
+      ].includes(span.reason)
+    ) {
+      fail("INVALID_BRUSH_DISCARD");
+      continue;
+    }
+    discardMs[span.reason] =
+      (discardMs[span.reason] ?? 0) + span.toAt - span.fromAt;
+    if (span.toAt > span.fromAt) spans.push(span);
+  }
+  let cursor = start?.startAt;
+  for (const span of spans.sort(
+    (a, b) => a.fromAt - b.fromAt || a.toAt - b.toAt,
+  )) {
+    if (span.fromAt - cursor > epsilon)
+      fail("UNEXPLAINED_BRUSH_TIME", { fromAt: cursor, toAt: span.fromAt });
+    if (cursor - span.fromAt > epsilon)
+      fail("OVERLAPPING_BRUSH_TIME", { fromAt: span.fromAt, toAt: cursor });
+    cursor = Math.max(cursor, span.toAt);
+  }
+  if (end?.endAt - cursor > epsilon)
+    fail("UNEXPLAINED_BRUSH_TIME", { fromAt: cursor, toAt: end.endAt });
+  const feedback = [
+    start?.startAt,
+    ...submissions.map((s) => s.at).filter((at) => at < end?.endAt),
+    end?.endAt,
+  ]
+    .filter(finite)
+    .sort((a, b) => a - b);
+  return {
+    passed: issues.length === 0,
+    issues,
+    gestureId: start?.gestureId ?? null,
+    inputQueueMs: {
+      down: start ? start.startAt - start.inputAt : null,
+      up: end ? end.endAt - end.inputAt : null,
+    },
+    startAt: start?.startAt ?? null,
+    endAt: end?.endAt ?? null,
+    heldMs: end && start ? end.endAt - start.startAt : null,
+    acceptedMs,
+    timedDoseMs,
+    pressDoseMs,
+    acceptedDoseFt,
+    discardMs,
+    maximumStepMs: Math.max(
+      0,
+      ...validIntervals.map((e) => e.acceptedElapsedMs),
+    ),
+    maximumRawStepMs: Math.max(0, ...validIntervals.map((e) => e.rawElapsedMs)),
+    intervalIds: intervals.map((e) => e.intervalId),
+    changedSteps: intervals.filter((e) => e.changed).length,
+    submittedSteps: submissions.length,
+    submissionMs: distribution(submissions.map((s) => s.elapsedMs)),
+    retiredSteps: publication.steps.filter(
+      (step) => step.gestureId === start?.gestureId && finite(step.retiredAt),
+    ).length,
+    maximumFeedbackGapMs: Math.max(
+      0,
+      ...feedback.slice(1).map((at, i) => at - feedback[i]),
+    ),
+    stationary:
+      point(start?.point) &&
+      intervals.every(
+        (e) =>
+          point(e.from) &&
+          point(e.to) &&
+          e.from.every((v, i) => Math.abs(v - start.point[i]) < epsilon) &&
+          e.to.every((v, i) => Math.abs(v - start.point[i]) < epsilon),
+      ),
+    interpretation:
+      "Accepted time and explicit discarded time; nominal press dose is additional. Input queue delay is never accumulated. Submission is not native presentation.",
+  };
+}
+
+/** Gesture-start pointerdown is not a camera change; wheel/move/click remain mandatory. */
+export function extractNavigationSamples(events) {
+  return events.flatMap((input, index) => {
+    if (
+      input.kind !== "input" ||
+      input.inputKind !== "navigation" ||
+      input.eventType === "pointerdown"
+    )
+      return [];
+    const cameras = events.filter(
+      (event) => event.kind === "camera" && event.input === input.id,
+    );
+    const camera = cameras[0];
+    const cameraIndex = camera ? events.indexOf(camera) : -1;
+    return [
+      {
+        inputId: input.id,
+        eventType: input.eventType,
+        createdAt: input.createdAt,
+        handlerAt: input.at,
+        cameraAt: camera?.at ?? null,
+        camera: camera?.camera ?? null,
+        cameraMatches: cameras.length,
+        cameraAfterInput: cameraIndex > index,
+        sourceCompletionsBeforeCamera:
+          cameraIndex < 0
+            ? null
+            : events
+                .slice(index + 1, cameraIndex)
+                .filter((event) => event.kind === "sources").length,
+        presentation: null,
+      },
+    ];
+  });
+}
+
+export function evaluateNavigationDiagnostics(samples) {
+  const issues = [],
+    latency = [],
+    handler = [];
+  if (!samples.length) issues.push({ code: "NO_NAVIGATION_SAMPLES" });
+  for (const sample of samples) {
+    const detail = { inputId: sample.inputId };
+    if (
+      !finite(sample.createdAt) ||
+      !finite(sample.handlerAt) ||
+      !finite(sample.cameraAt) ||
+      sample.handlerAt < sample.createdAt ||
+      sample.cameraAt < sample.handlerAt ||
+      sample.cameraMatches !== 1 ||
+      sample.cameraAfterInput !== true ||
+      ![sample.camera?.x, sample.camera?.y, sample.camera?.scale].every(
+        finite,
+      ) ||
+      sample.camera.scale <= 0
+    ) {
+      issues.push({ code: "MISSING_OR_INVALID_CAMERA_RESPONSE", ...detail });
+      continue;
+    }
+    // A source completion inside the input→camera interval is not silently
+    // accepted as an independent response. Reads after camera application are
+    // allowed and are reported separately from this chronology check.
+    if (sample.sourceCompletionsBeforeCamera !== 0)
+      issues.push({
+        code: "CAMERA_RESPONSE_AFTER_SOURCE_COMPLETION",
+        ...detail,
+      });
+    latency.push(sample.cameraAt - sample.createdAt);
+    handler.push(sample.cameraAt - sample.handlerAt);
+  }
+  return {
+    passed: !issues.length,
+    issues,
+    inputToCameraMs: distribution(latency),
+    handlerToCameraMs: distribution(handler),
+  };
+}
+
+/** Endpoints and pixels are checked after timing, against the restored baseline. */
+/** Actual store/worker overlap is independent of whether every input succeeded. */
+export function evaluateSaveOverlap({
+  sample,
+  timeOrigin,
+  sessionId,
+  intervals,
+  before,
+  observedWorker,
+  finished,
+}) {
+  const inputEpochMs =
+    finite(timeOrigin) && finite(sample?.createdAt)
+      ? timeOrigin + sample.createdAt
+      : null;
+  const modelEpochMs =
+    finite(timeOrigin) && finite(sample?.modelAt)
+      ? timeOrigin + sample.modelAt
+      : null;
+  const matches = (intervals ?? []).filter(
+    ({ start, end }) =>
+      sample?.accepted !== false &&
+      sample?.modelChanged !== false &&
+      finite(inputEpochMs) &&
+      finite(modelEpochMs) &&
+      modelEpochMs >= inputEpochMs &&
+      start.sessionId === sessionId &&
+      end?.sessionId === sessionId &&
+      end.token === start.token &&
+      end.kind === start.kind &&
+      end.success === true &&
+      inputEpochMs >= start.epochMs &&
+      modelEpochMs <= end.epochMs,
+  );
+  const workerProven = Boolean(
+    typeof sessionId === "string" &&
+    before?.sessionId === sessionId &&
+    before.background?.sessionId === sessionId &&
+    before.background.active === true &&
+    observedWorker?.sessionId === sessionId &&
+    observedWorker.background?.sessionId === sessionId &&
+    observedWorker.background.active === true &&
+    finished?.background?.sessionId === sessionId &&
+    finite(before.background.samples) &&
+    before.background.samples > 0 &&
+    finite(finished.background.samples) &&
+    finished.background.samples > before.background.samples,
+  );
+  return {
+    passed: matches.length > 0 && workerProven,
+    workerProven,
+    matches,
+    inputEpochMs,
+    modelEpochMs,
+  };
+}
+
+export function evaluateStrokeContent({
+  points,
+  before,
+  after,
+  undone,
+  changedPixels,
+  restoredPixels,
+} = {}) {
+  if (
+    !Array.isArray(points) ||
+    points.length < 2 ||
+    ![before, after, undone].every(
+      (values) => Array.isArray(values) && values.length === points.length,
+    )
+  )
+    return { passed: false, probes: [] };
+  const indices = [0, points.length - 1];
+  const probes = indices.map((index, probe) => ({
+    index,
+    point: points[index],
+    before: before[index],
+    after: after[index],
+    undone: undone[index],
+    heightChanged:
+      finite(before[index]) &&
+      finite(after[index]) &&
+      after[index] > before[index],
+    heightRestored:
+      finite(undone[index]) && Math.abs(undone[index] - before[index]) < 1e-7,
+    pixelsChanged:
+      Array.isArray(changedPixels?.[probe]) &&
+      Array.isArray(restoredPixels?.[probe]) &&
+      changedPixels[probe].length >= 3 &&
+      restoredPixels[probe].length >= 3 &&
+      changedPixels[probe].slice(0, 3).every(finite) &&
+      restoredPixels[probe].slice(0, 3).every(finite) &&
+      changedPixels[probe]
+        .slice(0, 3)
+        .some((channel, c) => channel !== restoredPixels[probe][c]),
+  }));
+  const distinct =
+    points.length >= 2 &&
+    Math.hypot(
+      points[0][0] - points.at(-1)[0],
+      points[0][1] - points.at(-1)[1],
+    ) > 0;
+  return {
+    passed:
+      distinct &&
+      probes.every(
+        (probe) =>
+          probe.heightChanged && probe.heightRestored && probe.pixelsChanged,
+      ),
+    probes,
+  };
+}
+
 /** Submission can disprove a deadline; submission alone can never prove visibility. */
 export function evaluateSubmissionDiagnostics(samples, limitMs = 50) {
   const issues = [];
   const values = [];
+  const byInputKind = new Map();
+  const outliers = [];
   if (!samples.length) issues.push({ code: "NO_INPUT_SAMPLES" });
   for (const sample of samples) {
     const detail = { inputId: sample.inputId };
-    if (!finite(sample.createdAt) || !finite(sample.modelAt))
+    if (sample.modelChanged === false) {
+      issues.push({
+        code: isProcessedNoop(sample)
+          ? sample.accepted === false
+            ? "INPUT_NOT_ACCEPTED"
+            : "EXPECTED_EDIT_NO_CHANGE"
+          : "INVALID_NOOP_RECEIPT",
+        modelChanged: false,
+        ...(sample.accepted === false
+          ? { accepted: false, reason: sample.noopReason }
+          : {}),
+        ...detail,
+      });
+      continue;
+    }
+    if (finite(sample.noopAt)) {
+      issues.push({ code: "CONFLICTING_EDIT_RESULT", ...detail });
+      continue;
+    }
+    if (!finite(sample.createdAt) || !finite(sample.modelAt)) {
       issues.push({ code: "MISSING_INPUT_OR_MODEL", ...detail });
+      continue;
+    }
     if (!finite(sample.submissionAt)) {
       issues.push({ code: "MISSING_SUBMISSION", ...detail });
       continue;
     }
     if (!finite(sample.createdAt)) continue;
+    if (
+      !nonempty(sample.sessionId) ||
+      !Number.isSafeInteger(sample.revision) ||
+      !Number.isSafeInteger(sample.frameId)
+    ) {
+      issues.push({ code: "MISSING_SUBMISSION_IDENTITY", ...detail });
+      continue;
+    }
     if (
       sample.submittedRevision !== sample.revision ||
       sample.submissionAt < sample.modelAt ||
@@ -420,20 +1043,53 @@ export function evaluateSubmissionDiagnostics(samples, limitMs = 50) {
     }
     const duration = sample.submissionAt - sample.createdAt;
     values.push(duration);
+    const kind = sample.inputKind ?? "unspecified";
+    if (!byInputKind.has(kind)) byInputKind.set(kind, []);
+    byInputKind.get(kind).push(duration);
     if (duration > limitMs)
-      issues.push({
-        code: "SUBMISSION_LOWER_BOUND_EXCEEDS_LIMIT",
+      outliers.push({
         milliseconds: duration,
         limitMs,
+        inputKind: kind,
         ...detail,
       });
   }
+  const inputToSubmissionMs = distribution(values);
+  const inputKinds = Object.fromEntries(
+    [...byInputKind].map(([kind, durations]) => [
+      kind,
+      distribution(durations),
+    ]),
+  );
+  for (const [inputKind, stats] of Object.entries({
+    all: inputToSubmissionMs,
+    ...inputKinds,
+  }))
+    if (stats.p95 > limitMs)
+      issues.push({
+        code: "SUBMISSION_LOWER_BOUND_EXCEEDS_LIMIT",
+        metric: "p95",
+        inputKind,
+        milliseconds: stats.p95,
+        limitMs,
+      });
   return {
     status: issues.length ? "FAIL" : "PROXY_ONLY",
     presentationProven: false,
     sampleCount: samples.length,
-    missing: samples.filter((s) => !finite(s.submissionAt)).length,
-    inputToSubmissionMs: distribution(values),
+    processedNoops: samples.filter(isProcessedNoop).length,
+    notAccepted: samples.filter(
+      (sample) => isProcessedNoop(sample) && sample.accepted === false,
+    ).length,
+    noopProcessingMs: distribution(
+      samples.filter(isProcessedNoop).map((s) => s.noopAt - s.createdAt),
+    ),
+    missing: samples.filter(
+      (s) => !isProcessedNoop(s) && !finite(s.submissionAt),
+    ).length,
+    inputToSubmissionMs,
+    inputKinds,
+    outliers,
     issues,
   };
 }
@@ -444,6 +1100,7 @@ export function evaluateColdSubmissionDiagnostics(samples) {
   const issues = [...base.issues];
   const readiness = [],
     submission = [];
+  const outliers = [];
   for (const sample of samples) {
     const detail = {
       inputId: sample.inputId,
@@ -451,8 +1108,9 @@ export function evaluateColdSubmissionDiagnostics(samples) {
     };
     if (sample.timeout === true)
       issues.push({ code: "SAMPLE_TIMEOUT", ...detail });
+    if (sample.coldBeforeNavigation !== true)
+      issues.push({ code: "COLD_SOURCE_STATE_UNPROVEN", ...detail });
     if (
-      sample.coldBeforeNavigation !== true ||
       !finite(sample.navigationAt) ||
       !finite(sample.readyAt) ||
       !finite(sample.createdAt) ||
@@ -465,7 +1123,7 @@ export function evaluateColdSubmissionDiagnostics(samples) {
     const readyMs = sample.readyAt - sample.navigationAt;
     readiness.push(readyMs);
     if (readyMs > 500)
-      issues.push({
+      outliers.push({
         code: "COLD_READINESS_TARGET_EXCEEDED",
         milliseconds: readyMs,
         limitMs: 500,
@@ -482,7 +1140,7 @@ export function evaluateColdSubmissionDiagnostics(samples) {
       const submissionMs = sample.submissionAt - sample.navigationAt;
       submission.push(submissionMs);
       if (submissionMs > 750)
-        issues.push({
+        outliers.push({
           code: "COLD_SUBMISSION_LOWER_BOUND_EXCEEDS_LIMIT",
           milliseconds: submissionMs,
           limitMs: 750,
@@ -497,17 +1155,487 @@ export function evaluateColdSubmissionDiagnostics(samples) {
         });
     }
   }
+  const navigationToReadyMs = distribution(readiness);
+  const navigationToSubmissionMs = distribution(submission);
+  if (navigationToReadyMs.p95 > 500)
+    issues.push({
+      code: "COLD_READINESS_TARGET_EXCEEDED",
+      metric: "p95",
+      milliseconds: navigationToReadyMs.p95,
+      limitMs: 500,
+    });
+  if (navigationToSubmissionMs.p95 > 750)
+    issues.push({
+      code: "COLD_SUBMISSION_LOWER_BOUND_EXCEEDS_LIMIT",
+      metric: "p95",
+      milliseconds: navigationToSubmissionMs.p95,
+      limitMs: 750,
+    });
   return {
     ...base,
     status: issues.length ? "FAIL" : "PROXY_ONLY",
     contract:
       "M10 cold: navigation to readiness 500 ms, navigation to exact presentation 750 ms; submission is only a lower bound",
-    navigationToReadyMs: distribution(readiness),
-    navigationToSubmissionMs: distribution(submission),
+    navigationToReadyMs,
+    navigationToSubmissionMs,
     inputToSubmissionInterpretation:
       "informational cold-edit duration; no warm 50-ms judgment",
     issues,
+    outliers,
   };
+}
+
+/** The same exact, revision-bound live criterion is used by collection and replay. */
+export function strokeEvidence(edit, requireBeforeRelease = true) {
+  const samples = edit.samples ?? [];
+  const live = samples.filter((sample) => sample.inputKind === "edit");
+  const up = samples.filter((sample) => sample.inputKind === "pointerup");
+  const releasedAt = up[0]?.createdAt;
+  const structural = evaluateSubmissionDiagnostics(samples, Infinity);
+  const invalidInputs = new Set(
+    structural.issues.map((issue) => issue.inputId),
+  );
+  const validSubmission = (sample) =>
+    !invalidInputs.has(sample.inputId) && finite(sample.submissionAt);
+  const processedNoops = samples.filter(isProcessedNoop);
+  const complete =
+    !edit.timedOut &&
+    live.length >= 3 &&
+    up.length === 1 &&
+    new Set(samples.map((sample) => sample.inputId)).size === samples.length &&
+    structural.issues.every((issue) =>
+      ["EXPECTED_EDIT_NO_CHANGE", "INPUT_NOT_ACCEPTED"].includes(issue.code),
+    );
+  const beforeRelease = live.filter(
+    (sample) => validSubmission(sample) && sample.submissionAt < releasedAt,
+  );
+  const beforeReleaseFrames = new Set(
+    beforeRelease.map((sample) => `${sample.sessionId}:${sample.frameId}`),
+  );
+  const startedAt = live[0]?.createdAt;
+  const relative = (at) =>
+    finite(at) && finite(startedAt) ? at - startedAt : null;
+  const timeline = samples.map((sample) => ({
+    inputId: sample.inputId,
+    inputKind: sample.inputKind,
+    inputMs: relative(sample.createdAt),
+    modelMs: relative(sample.modelAt),
+    modelChanged: sample.modelChanged ?? (finite(sample.modelAt) ? true : null),
+    accepted: sample.accepted ?? (finite(sample.modelAt) ? true : null),
+    noopReason: sample.noopReason ?? null,
+    noopMs: isProcessedNoop(sample) ? relative(sample.noopAt) : null,
+    processedNoop: isProcessedNoop(sample),
+    submittedMs: validSubmission(sample) ? relative(sample.submissionAt) : null,
+    frameId: validSubmission(sample) ? sample.frameId : null,
+    modeled: finite(sample.modelAt),
+    validSubmission: validSubmission(sample),
+  }));
+  const changes = live
+    .flatMap((sample) => [
+      { at: sample.createdAt, inputId: sample.inputId, input: true },
+      ...(validSubmission(sample)
+        ? [{ at: sample.submissionAt, inputId: sample.inputId, input: false }]
+        : isProcessedNoop(sample)
+          ? [{ at: sample.noopAt, inputId: sample.inputId, noop: true }]
+          : []),
+    ])
+    .filter((event) => finite(event.at) && event.at < releasedAt)
+    .sort(
+      (a, b) =>
+        a.at - b.at || Number(Boolean(b.input)) - Number(Boolean(a.input)),
+    );
+  const pending = new Set();
+  let pendingSince = null,
+    newInputs = 0,
+    maximumPendingGapMs = 0,
+    maximumMovingStallMs = 0;
+  const measureGap = (at) => {
+    if (pending.size && finite(pendingSince) && finite(at)) {
+      const gap = at - pendingSince;
+      maximumPendingGapMs = Math.max(maximumPendingGapMs, gap);
+      // A single delayed input is not a new 100-ms input deadline. This catches
+      // a pause in exact feedback while further movement inputs keep arriving.
+      if (newInputs >= 2)
+        maximumMovingStallMs = Math.max(maximumMovingStallMs, gap);
+    }
+  };
+  for (const event of changes) {
+    measureGap(event.at);
+    if (event.input) {
+      if (!pending.size) {
+        pendingSince = event.at;
+        newInputs = 0;
+      }
+      pending.add(event.inputId);
+      newInputs++;
+    } else if (event.noop) {
+      // Processing a no-op ends its queue residence, but is not visible progress.
+      pending.delete(event.inputId);
+      if (!pending.size) {
+        pendingSince = null;
+        newInputs = 0;
+      }
+    } else {
+      pending.delete(event.inputId);
+      pendingSince = pending.size ? event.at : null;
+      newInputs = 0;
+    }
+  }
+  measureGap(releasedAt);
+  // No-op movement can leave no queued work while the terrain still fails to
+  // advance. Preserve those real inter-submit gaps, separately from backlog.
+  // No-noop cases retain exactly the existing pending-input calculation.
+  const feedbackBoundaries = [
+    startedAt,
+    ...new Set(
+      beforeRelease.map((sample) => sample.submissionAt).sort((a, b) => a - b),
+    ),
+    releasedAt,
+  ];
+  const noChangeFeedbackGaps = [];
+  for (let i = 1; i < feedbackBoundaries.length; i++) {
+    const from = feedbackBoundaries[i - 1],
+      to = feedbackBoundaries[i];
+    const movement = live.filter(
+      (sample) => sample.createdAt >= from && sample.createdAt < to,
+    );
+    if (
+      finite(from) &&
+      finite(to) &&
+      movement.length >= 2 &&
+      movement.some(isProcessedNoop)
+    )
+      noChangeFeedbackGaps.push({
+        fromMs: relative(from),
+        toMs: relative(to),
+        milliseconds: to - from,
+        inputs: movement.length,
+        processedNoops: movement.filter(isProcessedNoop).length,
+      });
+  }
+  const maximumNoChangeFeedbackGapMs = Math.max(
+    0,
+    ...noChangeFeedbackGaps.map((gap) => gap.milliseconds),
+  );
+  maximumMovingStallMs = Math.max(
+    maximumMovingStallMs,
+    maximumNoChangeFeedbackGapMs,
+  );
+  const maximumInputBacklogMs = finite(releasedAt)
+    ? Math.max(
+        0,
+        ...live
+          .filter((sample) => finite(sample.createdAt))
+          .map((sample) =>
+            Math.max(
+              0,
+              Math.min(
+                isProcessedNoop(sample)
+                  ? sample.noopAt
+                  : validSubmission(sample)
+                    ? sample.submissionAt
+                    : Infinity,
+                releasedAt,
+              ) - sample.createdAt,
+            ),
+          ),
+      )
+    : null;
+  const continuous = maximumMovingStallMs <= 100;
+  return {
+    complete,
+    passed:
+      complete &&
+      processedNoops.length === 0 &&
+      (!requireBeforeRelease || (beforeReleaseFrames.size >= 2 && continuous)),
+    minimumFrameControlPassed: beforeReleaseFrames.size >= 2,
+    minimumFrameControlMeaning:
+      "Two distinct frames only establish the minimum live control; all input timings and feedback pauses are evaluated too.",
+    timeline,
+    continuity: {
+      enforced: requireBeforeRelease,
+      passed: !requireBeforeRelease || continuous,
+      startedAt,
+      releasedAt,
+      maximumPendingGapMs,
+      maximumMovingStallMs,
+      maximumNoChangeFeedbackGapMs,
+      noChangeFeedbackGaps,
+      maximumInputBacklogMs,
+      movingStallLimitMs: 100,
+      evidence:
+        "exact regional submission lower bound; native presentation remains unproven",
+    },
+    liveInputs: live.length,
+    processedNoops: processedNoops.length,
+    pointerups: up.length,
+    liveSubmissionsBeforeRelease: beforeRelease.length,
+    liveFramesBeforeRelease: beforeReleaseFrames.size,
+    releasedAt,
+    timedOut: edit.timedOut === true,
+  };
+}
+
+function strokesFromSamples(samples) {
+  const strokes = [];
+  let current = [];
+  for (const sample of [...samples].sort((a, b) => a.inputId - b.inputId)) {
+    current.push(sample);
+    if (sample.inputKind === "pointerup") {
+      strokes.push(current);
+      current = [];
+    }
+  }
+  if (current.length) strokes.push(current);
+  return strokes;
+}
+
+/** Evaluate the selected scenario now, independently of a later complete run. */
+export function evaluateScenario(scenario) {
+  const failures = [];
+  const missing = [];
+  const samples = scenario.samples ?? [];
+  const fail = (code, detail = {}) => failures.push({ code, ...detail });
+  if (scenario.droppedEvents !== 0)
+    fail("OBSERVATION_EVENTS_DROPPED_OR_UNKNOWN", {
+      droppedEvents: scenario.droppedEvents ?? null,
+    });
+  if (scenario.aborted || scenario.error)
+    fail("SCENARIO_ABORTED", { error: scenario.error });
+  if (scenario.kind === "navigation") {
+    if (scenario.collectionPassed === false) fail("NAVIGATION_BEHAVIOR_FAILED");
+    const navigation = evaluateNavigationDiagnostics(samples);
+    failures.push(...navigation.issues);
+    if (scenario.authorChanges !== 0) fail("NAVIGATION_CHANGED_DOCUMENT");
+    const cpuWorkMs = distribution(scenario.cpuWorkMs ?? []);
+    if (!cpuWorkMs.count) fail("NAVIGATION_CPU_SAMPLES_MISSING");
+    else if (cpuWorkMs.p95 > 8)
+      fail("NAVIGATION_CPU_P95_EXCEEDED", {
+        milliseconds: cpuWorkMs.p95,
+        limitMs: 8,
+      });
+    return {
+      status: failures.length ? "FAIL" : "PROXY_ONLY",
+      contentPassed: failures.length === 0,
+      presentationProven: false,
+      sampleCount: samples.length,
+      navigation,
+      cpuWorkMs,
+      rafFrameIntervalsMs: distribution(scenario.rafFrameIntervalsMs ?? []),
+      failures,
+      missing,
+      blockers: [{ code: "EXACT_NATIVE_PRESENTATION_UNPROVEN" }],
+    };
+  }
+  const attempts = scenario.attempts ?? [];
+  if (
+    scenario.requestedAttempts !== undefined &&
+    attempts.length !== scenario.requestedAttempts
+  )
+    missing.push({
+      code: "ATTEMPTS_MISSING",
+      requested: scenario.requestedAttempts,
+      observed: attempts.length,
+    });
+  for (const attempt of attempts)
+    if (attempt.passed !== true)
+      fail("CONTENT_OR_INTERACTION_FAILED", {
+        attempt: attempt.attempt,
+        error: attempt.error,
+      });
+    else if (
+      scenario.kind === "edit" &&
+      !evaluateStrokeContent({
+        ...attempt.content,
+        changedPixels: attempt.changedImage?.pixels,
+        restoredPixels: attempt.undoneImage?.pixels,
+      }).passed
+    )
+      fail("MOVING_STROKE_ENDPOINT_CONTENT_UNPROVEN", {
+        attempt: attempt.attempt,
+      });
+  if (scenario.contentObserved === false)
+    missing.push({ code: "CONTENT_CHECKS_UNAVAILABLE_FROM_JOURNAL" });
+  for (const attempt of attempts)
+    if (attempt.time && attempt.time.passed !== true)
+      failures.push(
+        ...(attempt.time.issues?.length
+          ? attempt.time.issues
+          : [{ code: "BRUSH_TIME_EVIDENCE_INVALID" }]
+        ).map((issue) => ({ ...issue, attempt: attempt.attempt })),
+      );
+  // M10 times its first edit against navigation. Its already-collected moving
+  // stroke still contains every later input, including discarded movement.
+  const live =
+    scenario.kind === "cold"
+      ? attempts.flatMap((attempt) =>
+          attempt.stroke
+            ? [{ attempt: attempt.attempt, ...attempt.stroke }]
+            : [],
+        )
+      : strokesFromSamples(samples).map((stroke, attempt) => ({
+          attempt,
+          ...strokeEvidence({ samples: stroke }),
+        }));
+  for (const stroke of live)
+    if (!stroke.passed) {
+      if (!stroke.continuity.passed)
+        fail("CONTINUOUS_SUBMISSION_STALL", {
+          attempt: stroke.attempt,
+          milliseconds: stroke.continuity.maximumMovingStallMs,
+          limitMs: 100,
+        });
+      if (scenario.kind === "cold") {
+        const noops = stroke.timeline.filter((entry) => entry.processedNoop);
+        for (const entry of noops)
+          fail(
+            entry.accepted === false
+              ? "INPUT_NOT_ACCEPTED"
+              : "EXPECTED_EDIT_NO_CHANGE",
+            {
+              attempt: stroke.attempt,
+              inputId: entry.inputId,
+              modelChanged: false,
+              accepted: entry.accepted,
+              reason: entry.noopReason,
+            },
+          );
+        if (!stroke.complete || !noops.length)
+          fail(
+            stroke.complete ? "COLD_MOVING_STROKE_FAILED" : "INCOMPLETE_STROKE",
+            {
+              attempt: stroke.attempt,
+            },
+          );
+        continue;
+      }
+      if (stroke.complete && stroke.minimumFrameControlPassed) continue;
+      fail(
+        stroke.complete ? "LIVE_EXACT_UPDATES_MISSING" : "INCOMPLETE_STROKE",
+        {
+          attempt: stroke.attempt,
+          liveSubmissionsBeforeRelease: stroke.liveSubmissionsBeforeRelease,
+          liveFramesBeforeRelease: stroke.liveFramesBeforeRelease,
+          required: 2,
+        },
+      );
+    }
+  const submission =
+    scenario.kind === "cold"
+      ? evaluateColdSubmissionDiagnostics(samples)
+      : evaluateSubmissionDiagnostics(samples);
+  failures.push(...submission.issues);
+  return {
+    status: failures.length
+      ? "FAIL"
+      : missing.length
+        ? "INCOMPLETE"
+        : "PROXY_ONLY",
+    contentPassed:
+      attempts.length > 0 &&
+      scenario.contentObserved !== false &&
+      attempts.every((attempt) =>
+        scenario.kind === "cold"
+          ? attempt.passed === true
+          : evaluateStrokeContent({
+              ...attempt.content,
+              changedPixels: attempt.changedImage?.pixels,
+              restoredPixels: attempt.undoneImage?.pixels,
+            }).passed,
+      ),
+    liveFeedback: {
+      status:
+        live.some((stroke) => !stroke.passed) || submission.status === "FAIL"
+          ? "FAIL"
+          : "SUBMISSION_ONLY",
+      presentationProven: false,
+      inputLatencyLimit:
+        "p95 <= 50 ms for all warm inputs and separately edit/pointerup; cold uses M10",
+      inputCount: live.reduce((sum, stroke) => sum + stroke.timeline.length, 0),
+      processedNoops: live.reduce(
+        (sum, stroke) => sum + stroke.processedNoops,
+        0,
+      ),
+      notAccepted: live.reduce(
+        (sum, stroke) =>
+          sum +
+          stroke.timeline.filter((entry) => entry.accepted === false).length,
+        0,
+      ),
+      maximumMovingStallMs: Math.max(
+        0,
+        ...live.map((stroke) => stroke.continuity.maximumMovingStallMs),
+      ),
+    },
+    presentationProven: false,
+    sampleCount: samples.length,
+    attempted: attempts.length || live.length,
+    live,
+    submission,
+    failures,
+    missing,
+    blockers: [{ code: "EXACT_NATIVE_PRESENTATION_UNPROVEN" }],
+  };
+}
+
+/** Re-evaluate saved raw observations without rerunning the product. */
+export function evaluateObservation(observation, { id, kind = "edit" } = {}) {
+  const events = observation.events ?? [];
+  const inputs = events.filter(
+    (event) =>
+      event.kind === "input" && ["edit", "pointerup"].includes(event.inputKind),
+  );
+  const samples = inputs.map((input) => {
+    const model = events.find(
+      (event) =>
+        ["model", "commit"].includes(event.kind) && event.input === input.id,
+    );
+    const submitted = events.find(
+      (event) =>
+        event.kind === "edit-submit" &&
+        event.input === input.id &&
+        event.revision === model?.revision,
+    );
+    return extractEditSamples(
+      events,
+      [input.id],
+      submitted?.sessionId ?? model?.sessionId ?? observation.sessionId,
+    )[0];
+  });
+  let selected = samples;
+  if (kind === "cold") {
+    const navigation = events.filter(
+      (event) => event.kind === "input" && event.inputKind === "navigation",
+    );
+    selected = navigation.map((event, index) => {
+      const first = samples.find(
+        (sample) =>
+          sample.inputKind === "edit" &&
+          sample.inputId > event.id &&
+          sample.inputId < (navigation[index + 1]?.id ?? Infinity),
+      );
+      const ready = events.find(
+        (entry) =>
+          ["ready", "input-ready"].includes(entry.kind) &&
+          entry.input === event.id,
+      );
+      return {
+        ...(first ?? {}),
+        navigationId: event.id,
+        navigationAt: event.createdAt,
+        readyAt: ready?.at ?? null,
+        // Readiness alone cannot prove the target was cold before navigation.
+        coldBeforeNavigation: ready?.cold === true,
+      };
+    });
+  }
+  return evaluateScenario({
+    id,
+    kind,
+    samples: selected,
+    droppedEvents: observation.droppedEvents,
+    contentObserved: false,
+  });
 }
 
 /** Pure fail-closed evaluator. The CLI always uses the fixed P0 requirements above. */
@@ -517,6 +1645,8 @@ export function evaluateAcceptance(report, requirements = P0_REQUIREMENTS) {
     groups = [];
   const fail = (code, detail = {}) => failures.push({ code, ...detail });
   const block = (code, detail = {}) => blockers.push({ code, ...detail });
+  if (report.selection && report.selection !== "all")
+    block("PARTIAL_EXECUTION_SCOPE", { selection: report.selection });
   const reference = report.reference ?? {};
   if (
     report.mode !== "native" ||
@@ -570,6 +1700,15 @@ export function evaluateAcceptance(report, requirements = P0_REQUIREMENTS) {
       const scenario = scenarios[0];
       if (scenario.collectionPassed === false || scenario.aborted === true)
         fail("SCENARIO_COLLECTION_FAILED", context);
+      if (requirements === P0_REQUIREMENTS && spec.kind !== "navigation") {
+        if (!Array.isArray(scenario.attempts) || !scenario.attempts.length)
+          fail("SCENARIO_CONTENT_EVIDENCE_MISSING", context);
+        const evaluated = evaluateScenario(scenario);
+        for (const issue of evaluated.failures)
+          fail(issue.code, { ...issue, ...context });
+        for (const issue of evaluated.missing)
+          fail(issue.code, { ...issue, ...context });
+      }
       const samples = Array.isArray(scenario.samples) ? scenario.samples : [];
       total += samples.length;
       if (samples.length < spec.minSamples)
@@ -611,6 +1750,17 @@ export function evaluateAcceptance(report, requirements = P0_REQUIREMENTS) {
           continue;
         }
         if (spec.kind !== "navigation") {
+          if (sample.modelChanged === false) {
+            fail(
+              isProcessedNoop(sample)
+                ? sample.accepted === false
+                  ? "INPUT_NOT_ACCEPTED"
+                  : "EXPECTED_EDIT_NO_CHANGE"
+                : "INVALID_NOOP_RECEIPT",
+              detail,
+            );
+            continue;
+          }
           if (!finite(sample.modelAt) || !finite(sample.submissionAt)) {
             fail("MISSING_MODEL_OR_SUBMISSION", detail);
             missing++;
@@ -740,11 +1890,10 @@ export function evaluateAcceptance(report, requirements = P0_REQUIREMENTS) {
           block("NAVIGATION_MEASUREMENT_MISSING", context);
         if (cpu.p95 > 8 || frames.p95 > 20 || frames.maximum > 100)
           fail("NAVIGATION_TARGET_EXCEEDED", context);
-        if (
-          scenario.authorChanges !== 0 ||
-          scenario.cameraBlockedOnStore !== false
-        )
-          fail("NAVIGATION_AUTHOR_OR_STORE_DEPENDENCY", context);
+        if (scenario.authorChanges !== 0)
+          fail("NAVIGATION_CHANGED_DOCUMENT", context);
+        for (const issue of evaluateNavigationDiagnostics(samples).issues)
+          fail(issue.code, { ...context, ...issue });
       }
       groups.push(result);
     }
@@ -765,6 +1914,106 @@ export function evaluateAcceptance(report, requirements = P0_REQUIREMENTS) {
   };
 }
 
+/** Selected execution and fixed native acceptance are separate, explicit claims. */
+export function evaluateRun(report) {
+  const selection = report.selection ?? "all";
+  const scope = selectP0Scope(
+    selection,
+    report.diagnosticSelection?.scenarioId ?? null,
+  );
+  const scopedRequirements = {
+    ...P0_REQUIREMENTS,
+    requiredChecks: scope.requiredChecks,
+    scaling: scope.scaling ? P0_REQUIREMENTS.scaling : undefined,
+    requiredFaultControls: scope.controls
+      ? P0_REQUIREMENTS.requiredFaultControls
+      : [],
+  };
+  const failures = [],
+    missing = [];
+  const functional = evaluateFunctional(
+    {
+      ...report,
+      errors: (report.errors ?? []).filter(
+        (error) => error.code !== "NO_NATIVE_DISPLAY",
+      ),
+    },
+    scopedRequirements,
+  );
+  for (const issue of functional.failures) {
+    const missingCheck =
+      issue.code === "FUNCTIONAL_CHECK_MISSING_OR_FAILED" &&
+      !(report.functional?.checks ?? []).some(
+        (check) =>
+          check.id === issue.check && check.independentRunId === issue.run,
+      );
+    const absent =
+      missingCheck ||
+      issue.code === "FUNCTIONAL_RUN_MISSING" ||
+      (issue.code === "FAULT_CONTROL_MISSING_OR_DUPLICATE" &&
+        !(report.negativeControls ?? []).some(
+          (control) => control.fault === issue.fault,
+        )) ||
+      (issue.code.startsWith("SCALING_") && !report.scaling) ||
+      ([
+        "SCALING_FAILED_OR_MISSING",
+        "SCALING_CASES_MISSING",
+        "SCALING_FIXTURE_TOO_SMALL",
+        "SCALING_SOURCE_BUDGET_NOT_EXERCISED",
+      ].includes(issue.code) &&
+        (report.scaling?.cases ?? []).length <
+          P0_REQUIREMENTS.scaling.minimumSourceTiles.length &&
+        !(report.scaling?.cases ?? []).some((entry) => entry.error));
+    (absent ? missing : failures).push(issue);
+  }
+  for (const run of report.runs ?? []) {
+    if (run.role === "control") continue;
+    for (const scenario of run.scenarios ?? []) {
+      const evaluated = evaluateScenario(scenario);
+      const detail = { run: run.id, scenario: scenario.id };
+      failures.push(
+        ...evaluated.failures.map((issue) => ({ ...issue, ...detail })),
+      );
+      missing.push(
+        ...evaluated.missing.map((issue) => ({ ...issue, ...detail })),
+      );
+    }
+  }
+  for (const entry of report.planned ?? [])
+    if (!["completed", "failed"].includes(entry.state))
+      missing.push({
+        code: "PLANNED_CASE_NOT_COMPLETED",
+        run: entry.run,
+        scenario: entry.id,
+        state: entry.state,
+      });
+  const acceptance = evaluateAcceptance(report);
+  const scopePassed = failures.length === 0 && missing.length === 0;
+  return {
+    purpose: report.purpose ?? "acceptance",
+    selection,
+    status: failures.length
+      ? "FAIL"
+      : missing.length
+        ? "INCOMPLETE"
+        : acceptance.passed
+          ? "PASS"
+          : "BLOCKED",
+    scopePassed,
+    passed: scopePassed && acceptance.passed,
+    failures,
+    missing,
+    blockers: acceptance.blockers,
+    nativeAcceptance: {
+      status: failures.length ? "FAIL" : acceptance.passed ? "PASS" : "BLOCKED",
+      passed: acceptance.passed,
+      // This fixed manifest is never reduced by --case or the short probe profile.
+      unmetRequirements: acceptance.failures,
+      groups: report.purpose === "acceptance" ? acceptance.groups : undefined,
+    },
+  };
+}
+
 if (
   process.argv[1] &&
   import.meta.url === pathToFileURL(process.argv[1]).href
@@ -772,20 +2021,32 @@ if (
   const file = process.argv[2];
   if (!file) {
     console.error(
-      "Usage: node scripts/atlas-p0-evaluate.mjs <report.json> [evaluation.json]",
+      "Usage: node scripts/atlas-p0-evaluate.mjs <report.json|observation.json> [evaluation.json] [--scenario scenario-id]",
     );
     process.exitCode = 2;
   } else {
     try {
-      const result = evaluateAcceptance(
-        JSON.parse(await readFile(file, "utf8")),
+      const source = JSON.parse(await readFile(file, "utf8"));
+      const scenarioIndex = process.argv.indexOf("--scenario");
+      const id = scenarioIndex < 0 ? null : process.argv[scenarioIndex + 1];
+      const spec = P0_REQUIREMENTS.scenarios.find(
+        (scenario) => scenario.id === id,
       );
-      if (process.argv[3])
+      if (Array.isArray(source.events) && !spec)
+        throw new Error(
+          "Raw observations require --scenario with a fixed P0 scenario ID",
+        );
+      const result = Array.isArray(source.events)
+        ? evaluateObservation(source, spec)
+        : source.schemaVersion >= 2
+          ? evaluateRun(source)
+          : evaluateAcceptance(source);
+      if (process.argv[3] && !process.argv[3].startsWith("--"))
         await writeFile(process.argv[3], JSON.stringify(result, null, 2));
       console.log(JSON.stringify(result, null, 2));
       process.exitCode = result.passed
         ? 0
-        : result.status === "BLOCKED"
+        : ["BLOCKED", "INCOMPLETE", "PROXY_ONLY"].includes(result.status)
           ? 2
           : 1;
     } catch (error) {

@@ -23,15 +23,45 @@ import type {
   SourceRead,
   StoreMetrics,
 } from "../src/editor/bridge";
-import type { Bounds, HeightTile } from "../src/editor/model";
+import {
+  HEIGHT_MAX_ACTION_TILES,
+  HEIGHT_OVERVIEW_BYTES,
+  MAX_HEIGHT_OVERVIEW_POWER,
+  applyPreparedHeightOverviewDelta,
+  assertHeightRenderPower,
+  createHeightOverviewTile,
+  heightOverviewDeltaKeys,
+  heightOverviewKeys,
+  minimumCoarseHeightLevel,
+  parseHeightOverviewKey,
+  prepareHeightOverviewDelta,
+  type Bounds,
+  type HeightOverviewDelta,
+  type HeightOverviewTile,
+  type HeightPresentationRead,
+  type HeightPresentationRequest,
+  type HeightTile,
+} from "../src/editor/model";
 
-export const PROJECT_FORMAT = 23 as const;
+export const PROJECT_FORMAT = 24 as const;
 export const MAX_TRANSFER_TILES = 512;
 const APPLICATION_ID = 0x5341544c;
 const TILE_VALUES = 64 * 64;
 const TILE_BYTES = TILE_VALUES * Float64Array.BYTES_PER_ELEMENT;
 const WORLD_LIMIT = 100_000_000;
-const SCHEMA_KIND = "atlas-p0-height-1";
+const SCHEMA_KIND = "atlas-p0-height-2";
+const OVERVIEW_ALGORITHM = "fine-cubic-centres-128-scale32-v1";
+const OVERVIEW_CACHE_TILES = 256;
+
+interface OverviewMetrics {
+  returnedOverviewTiles: number;
+  returnedOverviewBytes: number;
+  overviewUpdatedSamples: number;
+  overviewReadBytes: number;
+  overviewWriteBytes: number;
+  overviewCachePeakBytes: number;
+  maxCommitMs: number;
+}
 
 interface Metadata {
   projectId: string;
@@ -207,6 +237,118 @@ function decodeTile(row: StoredTile): HeightTile {
   };
 }
 
+const littleEndian = new Uint8Array(new Float64Array([1]).buffer)[7] === 63;
+
+function encodeOverview(values: Float64Array): Buffer {
+  check(
+    values.byteLength === HEIGHT_OVERVIEW_BYTES,
+    "Ungültige Übersichtslänge.",
+  );
+  if (littleEndian)
+    return Buffer.from(values.buffer, values.byteOffset, values.byteLength);
+  const buffer = Buffer.allocUnsafe(values.byteLength);
+  values.forEach((value, index) => buffer.writeDoubleLE(value, index * 8));
+  return buffer;
+}
+
+function decodeOverview(key: string, buffer: Buffer): HeightOverviewTile {
+  const at = parseHeightOverviewKey(key);
+  check(
+    Buffer.isBuffer(buffer) && buffer.byteLength === HEIGHT_OVERVIEW_BYTES,
+    "Beschädigte numerische Höhenübersicht.",
+  );
+  const tile = createHeightOverviewTile(at.power, at.tileX, at.tileY);
+  if (littleEndian) Buffer.from(tile.values.buffer).set(buffer);
+  else
+    for (let i = 0; i < tile.values.length; i++)
+      tile.values[i] = buffer.readDoubleLE(i * 8);
+  check(tile.values.every(Number.isFinite), "Nichtendliche Höhenübersicht.");
+  return tile;
+}
+
+/** A bounded transaction-local cache; its work depends on changed authors only. */
+function overviewWriter(database: Database.Database) {
+  const read = database.prepare(
+    "SELECT values_blob FROM height_overviews WHERE power=? AND tile_x=? AND tile_y=?",
+  );
+  const write = database.prepare(`
+    INSERT INTO height_overviews(power,tile_x,tile_y,values_blob) VALUES(?,?,?,?)
+    ON CONFLICT(power,tile_x,tile_y) DO UPDATE SET values_blob=excluded.values_blob
+  `);
+  const remove = database.prepare(
+    "DELETE FROM height_overviews WHERE power=? AND tile_x=? AND tile_y=?",
+  );
+  const cache = new Map<string, { tile: HeightOverviewTile; dirty: boolean }>();
+  const metrics = {
+    updatedSamples: 0,
+    readBytes: 0,
+    writeBytes: 0,
+    peakBytes: 0,
+  };
+  const flush = (key: string) => {
+    const entry = cache.get(key)!;
+    cache.delete(key);
+    if (!entry.dirty) return;
+    const { tile } = entry;
+    if (tile.values.every((value) => value === 0))
+      remove.run(tile.power, tile.tileX, tile.tileY);
+    else {
+      write.run(
+        tile.power,
+        tile.tileX,
+        tile.tileY,
+        encodeOverview(tile.values),
+      );
+      metrics.writeBytes += HEIGHT_OVERVIEW_BYTES;
+    }
+  };
+  const get = (key: string) => {
+    let entry = cache.get(key);
+    if (entry) {
+      cache.delete(key);
+      cache.set(key, entry);
+      return entry;
+    }
+    if (cache.size >= OVERVIEW_CACHE_TILES) flush(cache.keys().next().value!);
+    const at = parseHeightOverviewKey(key);
+    const row = read.get(at.power, at.tileX, at.tileY) as
+      { values_blob: Buffer } | undefined;
+    if (row) metrics.readBytes += row.values_blob.byteLength;
+    entry = {
+      tile: row
+        ? decodeOverview(key, row.values_blob)
+        : createHeightOverviewTile(at.power, at.tileX, at.tileY),
+      dirty: false,
+    };
+    cache.set(key, entry);
+    metrics.peakBytes = Math.max(
+      metrics.peakBytes,
+      cache.size * HEIGHT_OVERVIEW_BYTES,
+    );
+    return entry;
+  };
+  return {
+    apply(delta: HeightOverviewDelta) {
+      for (
+        let power = delta.level + 3;
+        power <= MAX_HEIGHT_OVERVIEW_POWER;
+        power++
+      ) {
+        for (const key of heightOverviewDeltaKeys(delta, power)) {
+          const entry = get(key);
+          const changed = applyPreparedHeightOverviewDelta(entry.tile, delta);
+          entry.dirty ||= changed > 0;
+          metrics.updatedSamples += changed;
+        }
+      }
+    },
+    finish() {
+      for (const key of cache.keys()) flush(key);
+      return metrics;
+    },
+  };
+}
+
 function configure(database: Database.Database) {
   database.pragma("journal_mode = WAL");
   database.pragma("synchronous = FULL");
@@ -239,7 +381,19 @@ function createDatabase(path: string): Database.Database {
         min_y REAL NOT NULL, max_y REAL NOT NULL,
         UNIQUE (level, tile_x, tile_y)
       ) STRICT;
-      CREATE VIRTUAL TABLE height_spatial USING rtree(id, min_x, max_x, min_y, max_y);
+      CREATE VIRTUAL TABLE height_spatial USING rtree(id, min_x, max_x, min_y, max_y, min_level, max_level);
+      CREATE TABLE height_overviews (
+        power INTEGER NOT NULL CHECK(power BETWEEN 3 AND ${MAX_HEIGHT_OVERVIEW_POWER}),
+        tile_x INTEGER NOT NULL,
+        tile_y INTEGER NOT NULL,
+        values_blob BLOB NOT NULL CHECK(length(values_blob) = ${HEIGHT_OVERVIEW_BYTES}),
+        PRIMARY KEY(power,tile_x,tile_y)
+      ) STRICT;
+      CREATE TABLE height_overview_state (
+        singleton INTEGER PRIMARY KEY CHECK(singleton=1),
+        algorithm TEXT NOT NULL,
+        sequence INTEGER NOT NULL CHECK(sequence>=0)
+      ) STRICT;
       CREATE TABLE transaction_receipts (
         sequence INTEGER PRIMARY KEY,
         transaction_id TEXT NOT NULL UNIQUE,
@@ -249,6 +403,9 @@ function createDatabase(path: string): Database.Database {
     database
       .prepare("INSERT INTO project_meta VALUES (1, ?, ?, ?, 0)")
       .run(SCHEMA_KIND, randomUUID(), "Neue Welt");
+    database
+      .prepare("INSERT INTO height_overview_state VALUES (1,?,0)")
+      .run(OVERVIEW_ALGORITHM);
     return database;
   } catch (error) {
     database.close();
@@ -260,7 +417,7 @@ function metadata(database: Database.Database): Metadata {
   check(
     database.pragma("application_id", { simple: true }) === APPLICATION_ID &&
       database.pragma("user_version", { simple: true }) === PROJECT_FORMAT,
-    "Diese Datei ist kein unterstütztes Atlas-Höhenprojekt (Format 23).",
+    "Diese Datei ist kein unterstütztes Atlas-Höhenprojekt (Format 24).",
   );
   const row = database
     .prepare(
@@ -282,6 +439,21 @@ function metadata(database: Database.Database): Metadata {
       finiteInteger(row.sequence, 0, Number.MAX_SAFE_INTEGER),
     "Ungültige Projektmetadaten oder nicht unterstütztes Projektschema.",
   );
+  const overview = database
+    .prepare(
+      "SELECT algorithm,sequence FROM height_overview_state WHERE singleton=1",
+    )
+    .get() as { algorithm: string; sequence: number } | undefined;
+  check(
+    overview?.algorithm === OVERVIEW_ALGORITHM &&
+      overview.sequence === row.sequence,
+    "Die numerische Höhenübersicht fehlt oder gehört zu einem alten Quellenstand.",
+  );
+  database
+    .prepare(
+      "SELECT power,tile_x,tile_y,values_blob FROM height_overviews LIMIT 0",
+    )
+    .all();
   return {
     projectId: row.project_id,
     title: row.title,
@@ -302,10 +474,10 @@ function rebuildSpatialIndex(database: Database.Database) {
       "Beschädigte Höhenkachelkennung.",
     );
     database.exec(
-      "DROP TABLE IF EXISTS height_spatial; CREATE VIRTUAL TABLE height_spatial USING rtree(id, min_x, max_x, min_y, max_y)",
+      "DROP TABLE IF EXISTS height_spatial; CREATE VIRTUAL TABLE height_spatial USING rtree(id, min_x, max_x, min_y, max_y, min_level, max_level)",
     );
     const index = database.prepare(
-      "INSERT INTO height_spatial VALUES (?, ?, ?, ?, ?)",
+      "INSERT INTO height_spatial VALUES (?, ?, ?, ?, ?, ?, ?)",
     );
     const bounds = database.prepare(
       "UPDATE height_tiles SET min_x=?, max_x=?, min_y=?, max_y=? WHERE id=?",
@@ -340,7 +512,7 @@ function rebuildSpatialIndex(database: Database.Database) {
         const minY = row.tile_y * span - 2 * step;
         const maxY = (row.tile_y + 1) * span + 2 * step;
         bounds.run(minX, maxX, minY, maxY, row.id);
-        index.run(row.id, minX, maxX, minY, maxY);
+        index.run(row.id, minX, maxX, minY, maxY, row.level, row.level);
         counts.set(row.level, (counts.get(row.level) ?? 0) + 1);
         lastId = row.id;
       }
@@ -349,17 +521,24 @@ function rebuildSpatialIndex(database: Database.Database) {
   return counts;
 }
 
-/** SQLite has exactly one owner, in the utility process. No drawing or terrain math here. */
+/** One SQLite owner; pure derived-index updates never make author decisions. */
 export class ProjectStore {
   private current: WorkingProject | null = null;
   private readonly snapshots = new Map<string, Snapshot>();
-  private readonly counters: StoreMetrics = {
+  private readonly counters: StoreMetrics & OverviewMetrics = {
     reads: 0,
     returnedTiles: 0,
     returnedBytes: 0,
     commits: 0,
     committedTiles: 0,
     snapshots: 0,
+    returnedOverviewTiles: 0,
+    returnedOverviewBytes: 0,
+    overviewUpdatedSamples: 0,
+    overviewReadBytes: 0,
+    overviewWriteBytes: 0,
+    overviewCachePeakBytes: 0,
+    maxCommitMs: 0,
   };
 
   constructor(
@@ -430,7 +609,7 @@ export class ProjectStore {
     };
   }
 
-  metrics(): StoreMetrics {
+  metrics(): StoreMetrics & OverviewMetrics {
     return { ...this.counters };
   }
 
@@ -557,13 +736,18 @@ export class ProjectStore {
   readRegion(request: ReadRegionRequest): RegionRead {
     const project = this.session(request.sessionId);
     validateBounds(request.bounds);
+    const minLevel = request.minLevel ?? 0;
+    check(finiteInteger(minLevel, 0, 22), "Ungültige benötigte Höhenstufe.");
     check(
-      request.level === undefined || finiteInteger(request.level, 0, 21),
+      request.level === undefined ||
+        (finiteInteger(request.level, 0, 21) && request.level >= minLevel),
       "Ungültige Höhenstufe.",
     );
     const [minX, minY, maxX, maxY] = request.bounds;
-    // The RTree can return Float32 rounding false positives. The exact REAL
-    // bounds check removes them; the support footprint includes the cubic halo.
+    // Filter the author level inside the RTree as well as the exact row. A
+    // coarse view must not enumerate every fine spatial hit just to reject it
+    // after the author lookup. REAL bounds remove Float32 false positives;
+    // the support footprint includes the cubic halo.
     const rows = project.database
       .prepare(
         `
@@ -571,8 +755,10 @@ export class ProjectStore {
       FROM height_spatial s JOIN height_tiles t ON t.id = s.id
       WHERE s.min_x < @maxX AND s.max_x > @minX
         AND s.min_y < @maxY AND s.max_y > @minY
+        AND s.min_level <= @maxLevel AND s.max_level >= @minLevel
         AND t.min_x < @maxX AND t.max_x > @minX
         AND t.min_y < @maxY AND t.max_y > @minY
+        AND t.level >= @minLevel
         ${request.level === undefined ? "" : "AND t.level = @level"}
       ORDER BY t.level, t.tile_x, t.tile_y LIMIT ${MAX_TRANSFER_TILES + 1}
     `,
@@ -582,6 +768,8 @@ export class ProjectStore {
         minY,
         maxX,
         maxY,
+        minLevel: request.level ?? minLevel,
+        maxLevel: request.level ?? 21,
         ...(request.level === undefined ? {} : { level: request.level }),
       }) as StoredTile[];
     return {
@@ -591,14 +779,53 @@ export class ProjectStore {
     };
   }
 
+  /** One sequence certifies both the numerical fine sum and the coarse authors. */
+  readPresentation(request: HeightPresentationRequest): HeightPresentationRead {
+    const project = this.session(request.sessionId);
+    validateBounds(request.bounds);
+    assertHeightRenderPower(request.power);
+    const overviewKeys = heightOverviewKeys(request.bounds, request.power);
+    const coarse = this.readRegion({
+      sessionId: request.sessionId,
+      bounds: request.bounds,
+      minLevel: minimumCoarseHeightLevel(request.power),
+    });
+    const select = project.database.prepare(
+      "SELECT values_blob FROM height_overviews WHERE power=? AND tile_x=? AND tile_y=?",
+    );
+    const overviews: HeightOverviewTile[] = [];
+    if (request.power >= 3) {
+      for (const key of overviewKeys) {
+        const at = parseHeightOverviewKey(key);
+        const row = select.get(at.power, at.tileX, at.tileY) as
+          { values_blob: Buffer } | undefined;
+        if (row) overviews.push(decodeOverview(key, row.values_blob));
+      }
+    }
+    const bytes = overviews.length * HEIGHT_OVERVIEW_BYTES;
+    this.counters.returnedOverviewTiles += overviews.length;
+    this.counters.returnedOverviewBytes += bytes;
+    this.counters.returnedBytes += bytes;
+    return {
+      sessionId: project.sessionId,
+      sequence: project.sequence,
+      bounds: [...request.bounds] as Bounds,
+      power: request.power,
+      tiles: coarse.tiles,
+      overviewKeys,
+      overviews,
+    };
+  }
+
   commit(request: CommitRequest): CommitReceipt {
+    const commitStartedAt = performance.now();
     validateBoundary(request);
     const project = this.session(request.sessionId);
     check(text(request.transactionId, 200), "Ungültige Transaktionskennung.");
     check(
       Array.isArray(request.patches) &&
         request.patches.length > 0 &&
-        request.patches.length <= MAX_TRANSFER_TILES,
+        request.patches.length <= HEIGHT_MAX_ACTION_TILES,
       "Ungültige oder zu große Quellenänderung.",
     );
     const seen = new Set<string>();
@@ -614,7 +841,7 @@ export class ProjectStore {
         patch.after === null ? null : encodeTile(patch.after, patch.key);
       hash.update(`${patch.key}\0${after?.revision ?? "absent"}\0`);
       if (after) hash.update(after.values);
-      return { ...at, after };
+      return { ...at, key: patch.key, source: patch.after, after };
     });
     const payloadHash = hash.digest("hex");
     const prior = project.database
@@ -646,7 +873,7 @@ export class ProjectStore {
     );
     const database = project.database;
     const existing = database.prepare(
-      "SELECT id FROM height_tiles WHERE level = ? AND tile_x = ? AND tile_y = ?",
+      "SELECT id,level,tile_x,tile_y,revision,values_blob AS 'values' FROM height_tiles WHERE level = ? AND tile_x = ? AND tile_y = ?",
     );
     const upsert = database.prepare(`
       INSERT INTO height_tiles(level, tile_x, tile_y, revision, values_blob, min_x, max_x, min_y, max_y)
@@ -654,13 +881,26 @@ export class ProjectStore {
       ON CONFLICT(level, tile_x, tile_y) DO UPDATE SET revision=excluded.revision, values_blob=excluded.values_blob
     `);
     const spatial = database.prepare(
-      "INSERT OR REPLACE INTO height_spatial VALUES (?, ?, ?, ?, ?)",
+      "INSERT OR REPLACE INTO height_spatial VALUES (?, ?, ?, ?, ?, ?, ?)",
     );
     const counts = new Map(project.levelCounts);
+    let derivedMetrics = {
+      updatedSamples: 0,
+      readBytes: 0,
+      writeBytes: 0,
+      peakBytes: 0,
+    };
     database.transaction(() => {
+      const overviews = overviewWriter(database);
       for (const patch of patches) {
         const previous = existing.get(patch.level, patch.tileX, patch.tileY) as
-          { id: number } | undefined;
+          (StoredTile & { id: number }) | undefined;
+        const delta = prepareHeightOverviewDelta({
+          key: patch.key,
+          before: previous ? decodeTile(previous) : null,
+          after: patch.source,
+        });
+        if (delta) overviews.apply(delta);
         if (patch.after) {
           upsert.run(patch.after);
           const row = existing.get(patch.level, patch.tileX, patch.tileY) as {
@@ -672,6 +912,8 @@ export class ProjectStore {
             patch.after.maxX,
             patch.after.minY,
             patch.after.maxY,
+            patch.level,
+            patch.level,
           );
           if (!previous)
             counts.set(patch.level, (counts.get(patch.level) ?? 0) + 1);
@@ -687,6 +929,12 @@ export class ProjectStore {
           else counts.delete(patch.level);
         }
       }
+      derivedMetrics = overviews.finish();
+      database
+        .prepare(
+          "UPDATE height_overview_state SET sequence=? WHERE singleton=1",
+        )
+        .run(request.sequence);
       database
         .prepare("UPDATE project_meta SET sequence = ? WHERE singleton = 1")
         .run(request.sequence);
@@ -697,6 +945,17 @@ export class ProjectStore {
         .prepare("DELETE FROM transaction_receipts WHERE sequence < ?")
         .run(request.sequence - 1024);
     })();
+    this.counters.overviewUpdatedSamples += derivedMetrics.updatedSamples;
+    this.counters.overviewReadBytes += derivedMetrics.readBytes;
+    this.counters.overviewWriteBytes += derivedMetrics.writeBytes;
+    this.counters.overviewCachePeakBytes = Math.max(
+      this.counters.overviewCachePeakBytes,
+      derivedMetrics.peakBytes,
+    );
+    this.counters.maxCommitMs = Math.max(
+      this.counters.maxCommitMs,
+      performance.now() - commitStartedAt,
+    );
     project.sequence = request.sequence;
     project.levelCounts = counts;
     this.counters.commits++;

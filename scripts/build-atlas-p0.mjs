@@ -89,12 +89,13 @@ async function sourceFiles(directory) {
   return files;
 }
 const sources = [
-  ...(await sourceFiles("src/editor")),
-  ...(await sourceFiles("desktop")),
-  ...(await readdir("scripts"))
-    .filter((file) => /atlas-p0/.test(file))
-    .map((file) => `scripts/${file}`),
+  ...(await sourceFiles("src/editor")).filter(
+    (file) => !file.includes("/performance/") && !/\.test\./.test(file),
+  ),
+  ...(await sourceFiles("desktop")).filter((file) => !/\.test\./.test(file)),
+  "scripts/build-atlas-p0.mjs",
   "vite.editor.config.ts",
+  "tsconfig.json",
   "tsconfig.editor.json",
   "forge.atlas.config.cjs",
   "package.json",
@@ -113,7 +114,9 @@ await writeFile(
     {
       commit: commit.stdout.trim(),
       dirty: Boolean(status.stdout),
+      sourceKind: "product-inputs-v1",
       sourceSha256: sourceHash.digest("hex"),
+      sourceFiles: sources,
       lockSha256: createHash("sha256")
         .update(readFileSync("package-lock.json"))
         .digest("hex"),

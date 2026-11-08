@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 // The executable evaluator is intentionally shared with the command-line runner.
 import {
@@ -8,10 +8,22 @@ import {
   extractEditSamples,
   checkBuildIdentity,
   evaluateFunctional,
+  evaluateObservation,
+  evaluateScenario,
+  evaluateRun,
+  strokeEvidence,
+  extractNavigationSamples,
+  evaluateNavigationDiagnostics,
+  evaluateStrokeContent,
+  selectP0Scope,
+  evaluateBrushTime,
+  evaluateBrushPublicationOrder,
+  evaluateSaveOverlap,
   P0_FUNCTIONAL_CHECKS,
   P0_REQUIREMENTS,
 } from "../../../scripts/atlas-p0-evaluate.mjs";
 import { analyzeTrace, parseTrace } from "../../../scripts/atlas-p0-trace.mjs";
+import { observeStroke } from "../../../scripts/atlas-p0-interactions.mjs";
 
 const oneCase = {
   scope: "evaluator-test-only",
@@ -207,6 +219,78 @@ function knownFunctional() {
     })),
   };
 }
+
+describe("explicit execution selection", () => {
+  it("limits interactions to navigation, the coast workflow and controls", () => {
+    const scope = selectP0Scope("interactions");
+    expect(scope).toMatchObject({
+      navigation: true,
+      workflow: true,
+      controls: true,
+      collection: false,
+      scaling: false,
+      needsBaseFixture: true,
+      needsBusyFixture: false,
+    });
+    expect(scope.scenarios.map((scenario) => scenario.id)).toEqual([
+      "M01-grid-on",
+      "M01-grid-off",
+    ]);
+    expect(scope.requiredChecks).toContain("empty-navigation-grid-on");
+    expect(scope.requiredChecks).toContain("save-reopen");
+    expect(scope.requiredChecks).not.toContain("busy-worker-and-save");
+    expect(scope.requiredChecks).not.toContain("cold-edit-content");
+  });
+  it("preserves full selection and creates busy fixtures only for selected busy cases", () => {
+    const all = selectP0Scope();
+    expect(all).toMatchObject({
+      navigation: true,
+      workflow: true,
+      controls: true,
+      collection: true,
+      scaling: true,
+      needsBaseFixture: true,
+      needsBusyFixture: true,
+    });
+    expect(all.scenarios).toEqual(P0_REQUIREMENTS.scenarios);
+    expect(all.requiredChecks).toEqual(P0_FUNCTIONAL_CHECKS);
+    const single = selectP0Scope("collection", "M03-height-small");
+    expect(single.scenarios.map((scenario) => scenario.id)).toEqual([
+      "M03-height-small",
+    ]);
+    expect(single).toMatchObject({
+      navigation: false,
+      workflow: false,
+      controls: false,
+      collection: true,
+      scaling: false,
+      needsBaseFixture: true,
+      needsBusyFixture: false,
+    });
+    expect(
+      selectP0Scope("collection", "M06-height-busy").needsBusyFixture,
+    ).toBe(true);
+    expect(selectP0Scope("scaling")).toMatchObject({
+      collection: false,
+      navigation: false,
+      workflow: false,
+      controls: false,
+      scaling: true,
+      needsBaseFixture: false,
+      needsBusyFixture: false,
+    });
+  });
+  it("never promotes an explicitly selected subset into complete native acceptance", () => {
+    const report = { ...knownGood(), selection: "interactions" };
+    const result = evaluateAcceptance(report, oneCase);
+    expect(result.status).toBe("BLOCKED");
+    expect(result.passed).toBe(false);
+    expect(result.blockers).toContainEqual({
+      code: "PARTIAL_EXECUTION_SCOPE",
+      selection: "interactions",
+    });
+  });
+});
 
 describe("representative functional evidence controls the aggregate", () => {
   it("accepts complete behavior, real source-size coverage, and fault recovery", () => {
@@ -770,6 +854,32 @@ describe("P0 acceptance cannot turn missing evidence into a pass", () => {
 });
 
 describe("independent negative-control evaluation", () => {
+  it("judges p95 per input kind and reports isolated overshoots separately", () => {
+    const samples = ["edit", "pointerup"].flatMap((inputKind, kind) =>
+      Array.from({ length: 100 }, (_, index) => {
+        const entry = sample(index + kind * 100);
+        return {
+          ...entry,
+          inputKind,
+          submissionAt: entry.createdAt + (index < 5 ? 80 : 4),
+        };
+      }),
+    );
+    const result = evaluateSubmissionDiagnostics(samples);
+    expect(result.status).toBe("PROXY_ONLY");
+    expect(result.outliers).toHaveLength(10);
+    expect(result.inputKinds.edit.p95).toBe(4);
+    expect(result.inputKinds.pointerup.p95).toBe(4);
+    samples[105].submissionAt = samples[105].createdAt + 80;
+    expect(evaluateSubmissionDiagnostics(samples).issues).toContainEqual(
+      expect.objectContaining({
+        code: "SUBMISSION_LOWER_BOUND_EXCEEDS_LIMIT",
+        inputKind: "pointerup",
+        metric: "p95",
+        milliseconds: 80,
+      }),
+    );
+  });
   it("detects a 250-ms render delay from its lower bound without inventing presentation", () => {
     const entry = { ...sample(0), submissionAt: 254, presentation: null };
     const result = evaluateSubmissionDiagnostics([entry]);
@@ -822,7 +932,896 @@ describe("independent negative-control evaluation", () => {
   });
 });
 
+describe("explicit processed no-op evidence", () => {
+  function journal(includeNoop = true) {
+    const events: Record<string, unknown>[] = [];
+    for (let index = 0; index < 4; index++) {
+      const input = index + 1,
+        createdAt = index * 24;
+      events.push({
+        kind: "input",
+        id: input,
+        inputKind: index === 3 ? "pointerup" : "edit",
+        createdAt,
+        at: createdAt + 1,
+      });
+      if (index === 1) {
+        if (includeNoop)
+          events.push({ kind: "noop", input, at: createdAt + 2 });
+      } else {
+        events.push({
+          kind: index === 3 ? "commit" : "model",
+          input,
+          revision: input,
+          at: createdAt + 2,
+        });
+        events.push({
+          kind: "submit",
+          sessionId: "session-a",
+          frame: input,
+          revision: input,
+          at: createdAt + 4,
+        });
+        events.push({
+          kind: "edit-submit",
+          input,
+          sessionId: "session-a",
+          revision: input,
+          frame: input,
+          at: createdAt + 4,
+        });
+      }
+    }
+    return {
+      events,
+      eventCount: events.length,
+      sessionId: "session-a",
+      droppedEvents: 0,
+      state: { error: null },
+    };
+  }
+  it("distinguishes processed no-change from missing evidence without inventing model or submit", () => {
+    const observation = journal();
+    const samples = extractEditSamples(
+      observation.events,
+      [1, 2, 3, 4],
+      observation.sessionId,
+    );
+    expect(samples[1]).toMatchObject({
+      modelChanged: false,
+      noopAt: 26,
+      modelAt: null,
+      submissionAt: null,
+      frameId: null,
+    });
+    const result = evaluateSubmissionDiagnostics(samples);
+    expect(result.status).toBe("FAIL");
+    expect(result.processedNoops).toBe(1);
+    expect(result.missing).toBe(0);
+    expect(result.issues).toContainEqual({
+      code: "EXPECTED_EDIT_NO_CHANGE",
+      inputId: 2,
+      modelChanged: false,
+    });
+    expect(
+      result.issues.some((issue) => issue.code === "MISSING_INPUT_OR_MODEL"),
+    ).toBe(false);
+    expect(
+      evaluateSubmissionDiagnostics([{ ...samples[1], noopAt: 0 }]).issues[0]
+        .code,
+    ).toBe("INVALID_NOOP_RECEIPT");
+    const stroke = strokeEvidence({ samples });
+    expect(stroke.complete).toBe(true);
+    expect(stroke.passed).toBe(false);
+    expect(stroke.processedNoops).toBe(1);
+    expect(stroke.continuity.maximumInputBacklogMs).toBe(4);
+  });
+  it.each([true, false])(
+    "settles only an explicit no-op; missing evidence still times out (noop=%s)",
+    async (includeNoop) => {
+      const observation = journal(includeNoop);
+      vi.stubGlobal("window", { atlasObserve: () => observation });
+      const page = {
+        evaluate: (fn: (argument: unknown) => unknown, argument: unknown) =>
+          fn(argument),
+        waitForFunction: async (
+          fn: (argument: unknown) => unknown,
+          argument: unknown,
+        ) => {
+          if (!fn(argument))
+            throw Object.assign(new Error("predicate never completed"), {
+              name: "TimeoutError",
+            });
+        },
+      };
+      try {
+        const observed = await observeStroke(
+          { page },
+          { eventCount: 0, lastInputId: 0 },
+          20,
+        );
+        expect(observed.timedOut).toBe(!includeNoop);
+        expect(observed.samples[1].modelChanged).toBe(
+          includeNoop ? false : null,
+        );
+        expect(observed.samples[1].submissionAt).toBeNull();
+      } finally {
+        vi.unstubAllGlobals();
+      }
+    },
+  );
+  it("preserves a real 169-ms feedback pause while completed no-ops leave the queue", () => {
+    const samples = Array.from({ length: 10 }, (_, index) => {
+      const createdAt = index * 24,
+        noop = index >= 2 && index <= 7;
+      return {
+        ...sample(index),
+        inputKind: index === 9 ? "pointerup" : "edit",
+        createdAt,
+        handlerAt: createdAt + 1,
+        modelAt: noop ? null : createdAt + 2,
+        modelChanged: !noop,
+        noopAt: noop ? createdAt + 2 : null,
+        submissionAt: noop ? null : createdAt + (index === 8 ? 5 : 4),
+        presentation: null,
+      };
+    });
+    const evidence = strokeEvidence({ samples });
+    expect(evidence.complete).toBe(true);
+    expect(evidence.processedNoops).toBe(6);
+    expect(evidence.timeline).toHaveLength(10);
+    expect(evidence.continuity.maximumInputBacklogMs).toBe(5);
+    expect(evidence.continuity.maximumNoChangeFeedbackGapMs).toBe(169);
+    expect(evidence.continuity.maximumMovingStallMs).toBe(169);
+    expect(evidence.passed).toBe(false);
+    expect(
+      evaluateScenario({ kind: "edit", samples, droppedEvents: 0 }).failures,
+    ).toContainEqual({
+      code: "CONTINUOUS_SUBMISSION_STALL",
+      attempt: 0,
+      milliseconds: 169,
+      limitMs: 100,
+    });
+  });
+});
+
+describe("bounded accepted brush time", () => {
+  function events(): Record<string, unknown>[] {
+    const base = { sessionId: "session-a", gestureId: 1 };
+    const dose = {
+      ...base,
+      from: [0, 0],
+      to: [0, 0],
+      rateFtPerSecond: 100,
+      changed: true,
+    };
+    return [
+      { kind: "input", id: 1, inputKind: "edit", createdAt: 0, at: 1 },
+      {
+        ...base,
+        kind: "brush-start",
+        input: 1,
+        startAt: 1,
+        inputAt: 0,
+        point: [0, 0],
+        rateFtPerSecond: 100,
+        at: 1,
+      },
+      {
+        ...dose,
+        kind: "brush-interval",
+        intervalId: 1,
+        revision: 1,
+        cause: "press",
+        nominalDose: true,
+        fromAt: 2,
+        toAt: 2,
+        acceptedElapsedMs: 1000 / 60,
+        rawElapsedMs: 0,
+        inputIds: [1],
+        at: 2.1,
+      },
+      {
+        ...base,
+        kind: "brush-discard",
+        fromAt: 1,
+        toAt: 10,
+        reason: "feedback",
+        at: 10,
+      },
+      { ...base, kind: "submit", frame: 1, revision: 1, at: 10.1 },
+      {
+        ...base,
+        kind: "brush-submit",
+        intervalId: 1,
+        revision: 1,
+        frame: 1,
+        at: 10.2,
+      },
+      {
+        ...dose,
+        kind: "brush-interval",
+        intervalId: 2,
+        revision: 2,
+        cause: "hold",
+        nominalDose: false,
+        fromAt: 10,
+        toAt: 30,
+        acceptedElapsedMs: 20,
+        rawElapsedMs: 20,
+        inputIds: [],
+        at: 30.1,
+      },
+      { ...base, kind: "submit", frame: 2, revision: 2, at: 40.1 },
+      {
+        ...base,
+        kind: "brush-submit",
+        intervalId: 2,
+        revision: 2,
+        frame: 2,
+        at: 40.2,
+      },
+      { kind: "input", id: 2, inputKind: "pointerup", createdAt: 49, at: 50 },
+      {
+        ...base,
+        kind: "brush-discard",
+        fromAt: 30,
+        toAt: 50,
+        reason: "pointerup",
+        at: 50.1,
+      },
+      {
+        ...base,
+        kind: "brush-end",
+        input: 2,
+        endAt: 50,
+        inputAt: 49,
+        reason: "pointerup",
+        at: 50.2,
+      },
+    ];
+  }
+  it("separates nominal press from accepted hold, rejected time and native input queue delay", () => {
+    const result = evaluateBrushTime(events(), [1, 2], "session-a");
+    expect(result.passed).toBe(true);
+    expect(result.acceptedMs).toBeCloseTo(1000 / 60 + 20);
+    expect(result.timedDoseMs).toBe(20);
+    expect(result.pressDoseMs).toBeCloseTo(1000 / 60);
+    expect(result.discardMs).toEqual({ feedback: 9, pointerup: 20 });
+    expect(result.maximumStepMs).toBe(20);
+    expect(result.stationary).toBe(true);
+  });
+  it.each(["gap", "overlap", "cap", "future-press"])(
+    "rejects invalid %s accounting without inventing dose",
+    (fault) => {
+      const journal = events();
+      if (fault === "gap") journal[10].fromAt = 40;
+      if (fault === "overlap") journal[10].fromAt = 20;
+      if (fault === "cap") journal[6].acceptedElapsedMs = 51;
+      if (fault === "future-press") journal[2].toAt = 2 + 1000 / 60;
+      const expected =
+        fault === "gap"
+          ? "UNEXPLAINED_BRUSH_TIME"
+          : fault === "overlap"
+            ? "OVERLAPPING_BRUSH_TIME"
+            : "INVALID_OR_EXCESSIVE_BRUSH_DOSE";
+      expect(
+        evaluateBrushTime(journal, [1, 2], "session-a").issues,
+      ).toContainEqual(expect.objectContaining({ code: expected }));
+    },
+  );
+  it("rejects another gesture's dose before the first gesture's real publication", () => {
+    const journal = events();
+    journal.splice(3, 0, {
+      ...journal[2],
+      intervalId: 3,
+      gestureId: 99,
+      revision: 2,
+      at: 4,
+    });
+    expect(evaluateBrushPublicationOrder(journal).issues).toContainEqual(
+      expect.objectContaining({
+        code: "MULTIPLE_UNPUBLISHED_BRUSH_STEPS",
+        intervalId: 3,
+        previousIntervalId: 1,
+      }),
+    );
+  });
+  it("retires only a truly changed offscreen view, including resize without camera input", () => {
+    const journal = events().filter(
+      (event) => !(event.kind === "brush-submit" && event.intervalId === 1),
+    );
+    journal.splice(
+      3,
+      0,
+      {
+        kind: "view-change",
+        sessionId: "session-a",
+        viewGeneration: 2,
+        bounds: [10, 10, 20, 20],
+        at: 7.9,
+      },
+      {
+        kind: "brush-feedback-obsolete",
+        sessionId: "session-a",
+        gestureId: 1,
+        intervalId: 1,
+        revision: 1,
+        reason: "outside-view",
+        bounds: [-1, -1, 1, 1],
+        viewBounds: [10, 10, 20, 20],
+        viewGeneration: 2,
+        at: 8,
+      },
+    );
+    const result = evaluateBrushPublicationOrder(journal);
+    expect(result.passed).toBe(true);
+    expect(result.steps[0]).toMatchObject({ submittedAt: null, retiredAt: 8 });
+    journal[3].viewGeneration = 3;
+    expect(evaluateBrushPublicationOrder(journal).passed).toBe(false);
+    journal[3].viewGeneration = 2;
+    journal[3].bounds = journal[4].viewBounds = [-0.5, -0.5, 0.5, 0.5];
+    expect(evaluateBrushPublicationOrder(journal).passed).toBe(false);
+  });
+  it("does not turn input-version coverage into a published brush step", () => {
+    const journal = events();
+    journal[5].kind = "brush-covered";
+    expect(evaluateBrushPublicationOrder(journal).issues).toContainEqual(
+      expect.objectContaining({
+        code: "BRUSH_STEP_SUBMISSION_MISSING",
+        intervalId: 1,
+      }),
+    );
+    expect(evaluateBrushTime([], [], "session-a").passed).toBe(false);
+  });
+  it("reports consciously skipped inputs distinctly from unknown or unchanged model work", () => {
+    const samples = extractEditSamples(
+      [
+        { kind: "input", id: 1, inputKind: "edit", createdAt: 1, at: 2 },
+        { kind: "noop", input: 1, accepted: false, reason: "feedback", at: 3 },
+      ],
+      [1],
+      "session-a",
+    );
+    expect(samples[0]).toMatchObject({
+      accepted: false,
+      noopReason: "feedback",
+      modelChanged: false,
+      modelAt: null,
+      submissionAt: null,
+    });
+    expect(evaluateSubmissionDiagnostics(samples).issues).toContainEqual({
+      code: "INPUT_NOT_ACCEPTED",
+      inputId: 1,
+      accepted: false,
+      reason: "feedback",
+      modelChanged: false,
+    });
+  });
+});
+
+describe("actual navigation response", () => {
+  const navigation = () => [
+    {
+      kind: "input",
+      id: 1,
+      inputKind: "navigation",
+      eventType: "wheel",
+      createdAt: 643,
+      at: 689,
+    },
+    {
+      kind: "camera",
+      input: 1,
+      at: 689.2,
+      camera: { x: 0, y: 0, scale: 0.216 },
+    },
+    { kind: "sources", at: 692.9, tiles: 0, bytes: 0 },
+    {
+      kind: "input",
+      id: 2,
+      inputKind: "navigation",
+      eventType: "pointerdown",
+      createdAt: 700,
+      at: 701,
+    },
+    {
+      kind: "input",
+      id: 3,
+      inputKind: "navigation",
+      eventType: "pointermove",
+      createdAt: 710,
+      at: 711,
+    },
+    {
+      kind: "camera",
+      input: 3,
+      at: 711.1,
+      camera: { x: -40, y: -23, scale: 0.216 },
+    },
+  ];
+  it("accepts the observed camera response before an asynchronous empty read", () => {
+    const samples = extractNavigationSamples(navigation());
+    expect(samples).toHaveLength(2);
+    const result = evaluateNavigationDiagnostics(samples);
+    expect(result.passed).toBe(true);
+    expect(result.handlerToCameraMs.maximum).toBeCloseTo(0.2);
+    const scenario = {
+      kind: "navigation",
+      samples,
+      droppedEvents: 0,
+      authorChanges: 0,
+      storeReads: 1,
+      returnedTiles: 0,
+      cpuWorkMs: [1, 2],
+    };
+    expect(evaluateScenario(scenario).status).toBe("PROXY_ONLY");
+    expect(evaluateScenario({ ...scenario, authorChanges: 1 }).status).toBe(
+      "FAIL",
+    );
+  });
+  it("retains missing, stale and read-before-camera responses as failures", () => {
+    const missing = navigation().filter((event) => event.kind !== "camera");
+    expect(
+      evaluateNavigationDiagnostics(extractNavigationSamples(missing)).passed,
+    ).toBe(false);
+    const afterRead = navigation();
+    [afterRead[1], afterRead[2]] = [afterRead[2], { ...afterRead[1], at: 693 }];
+    expect(
+      evaluateNavigationDiagnostics(extractNavigationSamples(afterRead)).issues,
+    ).toContainEqual({
+      code: "CAMERA_RESPONSE_AFTER_SOURCE_COMPLETION",
+      inputId: 1,
+    });
+    const stale = extractNavigationSamples(navigation());
+    stale[0].cameraAt = 640;
+    expect(evaluateNavigationDiagnostics(stale).passed).toBe(false);
+  });
+});
+
+describe("saved moving-stroke evidence and explicit probe scope", () => {
+  function stroke(delayed = false) {
+    return Array.from({ length: 5 }, (_, index) => ({
+      ...sample(index),
+      inputKind: index === 4 ? "pointerup" : "edit",
+      createdAt: index * 24,
+      handlerAt: index * 24 + 1,
+      modelAt: index * 24 + 2,
+      submissionAt: delayed ? 300 + index : index * 24 + 4,
+      presentation: null,
+    }));
+  }
+  function journal(delayed = false) {
+    const events = stroke(delayed).flatMap((sample) => [
+      {
+        kind: "input",
+        id: sample.inputId,
+        inputKind: sample.inputKind,
+        createdAt: sample.createdAt,
+        at: sample.handlerAt,
+      },
+      {
+        kind: sample.inputKind === "pointerup" ? "commit" : "model",
+        input: sample.inputId,
+        revision: sample.revision,
+        at: sample.modelAt,
+      },
+      {
+        kind: "edit-submit",
+        input: sample.inputId,
+        sessionId: sample.sessionId,
+        revision: sample.revision,
+        frame: sample.frameId,
+        at: sample.submissionAt,
+      },
+      {
+        kind: "submit",
+        sessionId: sample.sessionId,
+        frame: sample.frameId,
+        revision: sample.revision,
+        exactRevision: sample.revision,
+        at: sample.submissionAt,
+      },
+    ]);
+    // A partially uploaded frame is real, but cannot acknowledge an exact edit.
+    events.push({
+      kind: "submit",
+      sessionId: "session-a",
+      frame: 900,
+      exactRevision: -1,
+      at: 40,
+    } as (typeof events)[number]);
+    return { events, sessionId: "session-a", droppedEvents: 0 };
+  }
+  function scenario(delayed = false) {
+    return {
+      id: "M03-height-large",
+      kind: "edit",
+      samples: stroke(delayed),
+      droppedEvents: 0,
+      requestedAttempts: 1,
+      collectionPassed: true,
+      attempts: [
+        {
+          attempt: 0,
+          passed: true,
+          content: {
+            points: [
+              [-800, 0],
+              [-520, 0],
+              [-240, 0],
+              [40, 0],
+            ],
+            before: [-20, -6, 8, 22],
+            after: [80, 150, 160, 100],
+            undone: [-20, -6, 8, 22],
+          },
+          changedImage: {
+            pixels: [
+              [140, 156, 112],
+              [142, 157, 114],
+            ],
+          },
+          undoneImage: {
+            pixels: [
+              [90, 143, 163],
+              [134, 152, 105],
+            ],
+          },
+        },
+      ],
+    };
+  }
+  it("rejects the saved large-brush failure despite a claimed successful collection", () => {
+    const result = evaluateObservation(journal(true), {
+      id: "M03-height-large",
+    });
+    expect(result.status).toBe("FAIL");
+    expect(result.sampleCount).toBe(5);
+    expect(result.live[0].liveSubmissionsBeforeRelease).toBe(0);
+    expect(result.failures).toContainEqual(
+      expect.objectContaining({ code: "LIVE_EXACT_UPDATES_MISSING" }),
+    );
+    expect(result.missing).toContainEqual({
+      code: "CONTENT_CHECKS_UNAVAILABLE_FROM_JOURNAL",
+    });
+    expect(result.blockers).toContainEqual({
+      code: "EXACT_NATIVE_PRESENTATION_UNPROVEN",
+    });
+    expect(evaluateScenario(scenario(true)).contentPassed).toBe(true);
+    expect(evaluateScenario(scenario(true)).liveFeedback.status).toBe("FAIL");
+  });
+  it("accepts early exact submissions, while retaining missing or stale evidence as failures", () => {
+    expect(strokeEvidence({ samples: stroke() }).passed).toBe(true);
+    expect(strokeEvidence({ samples: stroke().slice(0, -1) }).passed).toBe(
+      false,
+    );
+    const regionExact = journal();
+    regionExact.events.find(
+      (event) => event.kind === "submit" && event.frame === 3,
+    )!.exactRevision = -1;
+    expect(evaluateObservation(regionExact).live[0].passed).toBe(true);
+    const partial = journal();
+    partial.events.find(
+      (event) => event.kind === "submit" && event.frame === 3,
+    )!.revision = -1;
+    expect(evaluateObservation(partial).failures).toContainEqual(
+      expect.objectContaining({ code: "MISSING_SUBMISSION", inputId: 1 }),
+    );
+    expect(evaluateObservation({ ...journal(), droppedEvents: 1 }).status).toBe(
+      "FAIL",
+    );
+  });
+  it("requires two distinct frames before release, not several inputs in one frame", () => {
+    const coalesced = stroke().map((entry) => ({ ...entry, frameId: 10 }));
+    const evidence = strokeEvidence({ samples: coalesced });
+    expect(evidence.liveSubmissionsBeforeRelease).toBe(4);
+    expect(evidence.liveFramesBeforeRelease).toBe(1);
+    expect(evidence.passed).toBe(false);
+  });
+  it("rejects a later movement stall despite early frames and an acceptable aggregate p95", () => {
+    const samples = Array.from({ length: 101 }, (_, index) => {
+      const createdAt = index * 24;
+      const paused = index >= 2 && index <= 8;
+      return {
+        ...sample(index),
+        inputKind: index === 100 ? "pointerup" : "edit",
+        createdAt,
+        handlerAt: createdAt + 1,
+        modelAt: createdAt + 2,
+        submissionAt: paused ? 200 : createdAt + 4,
+        frameId: paused ? 500 : 1000 + index,
+        presentation: null,
+      };
+    });
+    expect(evaluateSubmissionDiagnostics(samples).status).toBe("PROXY_ONLY");
+    const evidence = strokeEvidence({ samples });
+    expect(evidence.minimumFrameControlPassed).toBe(true);
+    expect(evidence.continuity.maximumMovingStallMs).toBe(152);
+    expect(evidence.timeline).toHaveLength(101);
+    expect(evidence.passed).toBe(false);
+    const result = evaluateScenario({ ...scenario(), samples });
+    expect(result.contentPassed).toBe(true);
+    expect(result.liveFeedback.status).toBe("FAIL");
+    expect(result.status).toBe("FAIL");
+    expect(result.failures).toContainEqual({
+      code: "CONTINUOUS_SUBMISSION_STALL",
+      attempt: 0,
+      milliseconds: 152,
+      limitMs: 100,
+    });
+  });
+  it("does not treat an idle held interval with no outstanding edit as a feedback stall", () => {
+    const samples = stroke().map((entry, index) => {
+      const createdAt = index * 24 + (index >= 2 ? 2000 : 0);
+      return {
+        ...entry,
+        createdAt,
+        handlerAt: createdAt + 1,
+        modelAt: createdAt + 2,
+        submissionAt: createdAt + 4,
+      };
+    });
+    const evidence = strokeEvidence({ samples });
+    expect(evidence.passed).toBe(true);
+    expect(evidence.continuity.maximumMovingStallMs).toBe(0);
+    expect(evidence.continuity.maximumPendingGapMs).toBe(4);
+  });
+  it("requires pointerup's own commit even when its revision was already submitted", () => {
+    const pending = journal();
+    pending.events.find((event) => event.kind === "commit")!.kind = "model";
+    expect(evaluateObservation(pending).failures).toContainEqual(
+      expect.objectContaining({
+        code: "MISSING_INPUT_OR_MODEL",
+        inputId: 5,
+      }),
+    );
+  });
+  it("requires canonical and visible changes at the first and last positions", () => {
+    const attempt = scenario().attempts[0];
+    const content = {
+      ...attempt.content,
+      changedPixels: attempt.changedImage.pixels,
+      restoredPixels: attempt.undoneImage.pixels,
+    };
+    expect(evaluateStrokeContent(content).passed).toBe(true);
+    const initialDabOnly = {
+      ...content,
+      after: [...content.after.slice(0, -1), content.before.at(-1)!],
+    };
+    expect(evaluateStrokeContent(initialDabOnly).passed).toBe(false);
+    expect(
+      evaluateStrokeContent({
+        ...content,
+        changedPixels: [content.changedPixels[0], content.restoredPixels[1]],
+      }).passed,
+    ).toBe(false);
+    expect(
+      evaluateStrokeContent({ ...content, changedPixels: [] }).passed,
+    ).toBe(false);
+  });
+  it("keeps a passing selected probe distinct from the fixed native manifest", () => {
+    const report = {
+      schemaVersion: 2,
+      purpose: "probe",
+      selection: "collection",
+      mode: "lab",
+      errors: [],
+      functional: { checks: [] },
+      planned: [{ run: "probe-1", id: "M03-height-large", state: "completed" }],
+      runs: [
+        {
+          id: "probe-large",
+          independentRunId: "probe-1",
+          instanceId: "one-process",
+          scenarios: [scenario()],
+        },
+      ],
+    };
+    const result = evaluateRun(report);
+    expect(result.scopePassed).toBe(true);
+    expect(result.passed).toBe(false);
+    expect(result.status).toBe("BLOCKED");
+    expect(result.nativeAcceptance.unmetRequirements).toContainEqual(
+      expect.objectContaining({ code: "INSUFFICIENT_INDEPENDENT_RUNS" }),
+    );
+    report.runs[0].scenarios = [scenario(true)];
+    const failed = evaluateRun(report);
+    expect(failed.status).toBe("FAIL");
+    expect(failed.blockers.length).toBeGreaterThan(0);
+    report.runs[0].scenarios = [scenario()];
+    report.planned.push({
+      run: "probe-1",
+      id: "M10-height-cold",
+      state: "planned",
+    });
+    expect(evaluateRun(report).status).toBe("INCOMPLETE");
+  });
+});
+
+describe("actual save and worker overlap", () => {
+  function evidence() {
+    const worker = { sessionId: "session-a", active: true, samples: 10 };
+    return {
+      sessionId: "session-a",
+      timeOrigin: 1000,
+      sample: { ...sample(1), inputKind: "edit" },
+      intervals: [
+        {
+          start: {
+            sessionId: "session-a",
+            kind: "snapshot",
+            token: "save-1",
+            epochMs: 1090,
+          },
+          end: {
+            sessionId: "session-a",
+            kind: "snapshot",
+            token: "save-1",
+            epochMs: 1300,
+            success: true,
+          },
+        },
+      ],
+      before: { sessionId: "session-a", background: worker },
+      observedWorker: { sessionId: "session-a", background: worker },
+      finished: { background: { ...worker, samples: 20 } },
+    };
+  }
+  it("keeps real overlap proven when a later input was explicitly discarded", () => {
+    const result = evaluateSaveOverlap(evidence());
+    expect(result.passed).toBe(true);
+    expect(result.matches).toHaveLength(1);
+    expect(result.inputEpochMs).toBe(1100);
+    expect(result.modelEpochMs).toBe(1102);
+    const discarded = {
+      ...sample(2),
+      inputKind: "edit",
+      modelChanged: false,
+      accepted: false,
+      noopReason: "stale",
+      noopAt: 203,
+      modelAt: null,
+      submissionAt: null,
+      frameId: null,
+    };
+    const strict = evaluateSubmissionDiagnostics([
+      evidence().sample,
+      discarded,
+    ]);
+    expect(strict.status).toBe("FAIL");
+    expect(strict.issues).toContainEqual(
+      expect.objectContaining({ code: "INPUT_NOT_ACCEPTED", inputId: 3 }),
+    );
+  });
+  it("requires actual model acceptance inside the same successful store window", () => {
+    const observed = evidence();
+    observed.sample.modelAt = 301;
+    expect(evaluateSaveOverlap(observed).passed).toBe(false);
+    observed.sample.modelAt = 102;
+    observed.intervals[0].end.success = false;
+    expect(evaluateSaveOverlap(observed).passed).toBe(false);
+    observed.intervals[0].end.success = true;
+    observed.intervals[0].end.sessionId = "old-session";
+    expect(evaluateSaveOverlap(observed).passed).toBe(false);
+  });
+  it("requires a current active worker and observed progress", () => {
+    const observed = evidence();
+    observed.finished.background.samples = 10;
+    expect(evaluateSaveOverlap(observed).passed).toBe(false);
+    observed.finished.background.samples = 20;
+    observed.observedWorker.background.active = false;
+    expect(evaluateSaveOverlap(observed).passed).toBe(false);
+  });
+});
+
 describe("M10 has its own navigation-based diagnostic contract", () => {
+  function coldStroke(discarded: boolean) {
+    const first = {
+      ...sample(0),
+      inputKind: "edit",
+      createdAt: 100,
+      handlerAt: 101,
+      modelAt: 102,
+      submissionAt: 300,
+      presentation: null,
+    };
+    const movement = Array.from({ length: 4 }, (_, index) => {
+      const createdAt = 124 + index * 24;
+      return {
+        ...first,
+        inputId: index + 2,
+        createdAt,
+        handlerAt: createdAt + 1,
+        modelAt: discarded ? null : createdAt + 2,
+        modelChanged: !discarded,
+        accepted: !discarded,
+        noopAt: discarded ? createdAt + 2 : null,
+        noopReason: discarded ? "feedback" : null,
+        submissionAt: discarded ? null : 300,
+        frameId: discarded ? null : first.frameId,
+      };
+    });
+    const up = {
+      ...first,
+      inputId: 6,
+      inputKind: "pointerup",
+      createdAt: 220,
+      handlerAt: 221,
+      modelAt: 222,
+      sequence: 1,
+    };
+    const stroke = strokeEvidence({ samples: [first, ...movement, up] }, false);
+    return {
+      kind: "cold",
+      droppedEvents: 0,
+      requestedAttempts: 1,
+      samples: [
+        {
+          ...first,
+          navigationId: 100,
+          navigationAt: 0,
+          readyAt: 80,
+          coldBeforeNavigation: true,
+        },
+      ],
+      attempts: [{ attempt: 0, passed: stroke.passed, stroke }],
+    };
+  }
+  it("reports every cold movement input and pause without timing them as warm edits", () => {
+    const result = evaluateScenario(coldStroke(true));
+    expect(result.status).toBe("FAIL");
+    expect(result.sampleCount).toBe(1);
+    expect(result.liveFeedback).toMatchObject({
+      status: "FAIL",
+      inputCount: 6,
+      processedNoops: 4,
+      notAccepted: 4,
+      maximumMovingStallMs: 120,
+    });
+    expect(result.live[0]).toMatchObject({
+      liveInputs: 5,
+      liveFramesBeforeRelease: 0,
+    });
+    expect(result.submission.inputToSubmissionMs.p95).toBe(200);
+    expect(result.submission.issues).toEqual([]);
+    expect(
+      result.failures.filter((issue) => issue.code === "INPUT_NOT_ACCEPTED"),
+    ).toHaveLength(4);
+  });
+  it("retains the existing M10 boundary for a complete cold stroke", () => {
+    const result = evaluateScenario(coldStroke(false));
+    expect(result.status).toBe("PROXY_ONLY");
+    expect(result.liveFeedback.inputCount).toBe(6);
+    expect(result.liveFeedback.processedNoops).toBe(0);
+    expect(result.submission.issues).toEqual([]);
+    expect(result.submission.inputToSubmissionMs.count).toBe(1);
+  });
+  it("keeps rare cold overshoots separate from p95 and enforces the absolute maximum", () => {
+    const samples = Array.from({ length: 100 }, (_, index) => {
+      const navigationAt = index * 3000;
+      return {
+        ...sample(index),
+        navigationId: index + 1000,
+        navigationAt,
+        readyAt: navigationAt + (index < 5 ? 600 : 20),
+        createdAt: navigationAt + 700,
+        handlerAt: navigationAt + 701,
+        modelAt: navigationAt + 702,
+        submissionAt: navigationAt + (index < 5 ? 800 : 704),
+        coldBeforeNavigation: true,
+      };
+    });
+    const result = evaluateColdSubmissionDiagnostics(samples);
+    expect(result.status).toBe("PROXY_ONLY");
+    expect(result.outliers).toHaveLength(10);
+    expect(result.navigationToReadyMs.p95).toBe(20);
+    expect(result.navigationToSubmissionMs.p95).toBe(704);
+    samples[6].submissionAt = samples[6].navigationAt + 2100;
+    expect(evaluateColdSubmissionDiagnostics(samples).issues).toContainEqual(
+      expect.objectContaining({ code: "COLD_MAXIMUM_EXCEEDED", inputId: 7 }),
+    );
+  });
   it("does not fail a 282.2-ms cold edit merely for exceeding the warm 50-ms budget", () => {
     const entry = {
       ...sample(5),

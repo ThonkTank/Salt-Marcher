@@ -1,5 +1,15 @@
-import { prepareHeightSampler, type Bounds, type HeightTile } from "../model";
-import { rasterize } from "./raster";
+import { prepareHeightGrid } from "../model/height-grid";
+import {
+  minimumCoarseHeightLevel,
+  heightOverviewKey,
+  type HeightOverviewTile,
+} from "../model/overview";
+import type { Bounds, HeightTile } from "../model/types";
+import {
+  MAX_RASTER_BATCH_PIXELS,
+  MAX_RASTER_BATCH_TILES,
+  rasterize,
+} from "./raster";
 
 export interface RasterTask {
   kind: "raster";
@@ -8,6 +18,7 @@ export interface RasterTask {
   key: string;
   token: number;
   revision: number;
+  power: number;
   bounds: Bounds;
   size: number;
   rect: [number, number, number, number];
@@ -18,43 +29,119 @@ export interface RasterResult extends Omit<RasterTask, "kind"> {
   cpuMs: number;
   samples: number;
 }
+export interface RasterBatch {
+  kind: "raster-batch";
+  id: number;
+  sessionId: string;
+  tasks: RasterTask[];
+}
+export interface RasterBatchResult {
+  kind: "raster-batch-result";
+  id: number;
+  sessionId: string;
+  results: RasterResult[];
+  cpuMs: number;
+}
 export type RasterMessage =
-  | RasterTask
+  | RasterBatch
   | {
       kind: "sources";
       sessionId: string;
       reset: boolean;
       tiles: HeightTile[];
       removed?: string[];
+      overviews?: HeightOverviewTile[];
+      overviewKeys?: string[];
     };
 
 // This is a read-only snapshot mirror, not a second mutable document.
 const sources = new Map<string, HeightTile>();
+const overviews = new Map<string, HeightOverviewTile>();
+const knownOverviews = new Set<string>();
+const grids = new Map<number, ReturnType<typeof prepareHeightGrid>>();
 let sessionId = "";
-let sample = prepareHeightSampler([]);
 
-self.onmessage = (event: MessageEvent<RasterMessage>) => {
-  const message = event.data;
-  if (message.kind === "sources") {
-    if (message.reset || sessionId !== message.sessionId) sources.clear();
-    sessionId = message.sessionId;
-    for (const key of message.removed ?? []) sources.delete(key);
-    for (const tile of message.tiles) sources.set(tile.key, tile);
-    sample = prepareHeightSampler([...sources.values()]);
-    return;
-  }
-  if (message.sessionId !== sessionId) return;
+function renderTask(message: RasterTask): RasterResult {
   const begin = performance.now();
   const [x0, y0, x1, y1] = message.rect;
   const width = x1 - x0,
     height = y1 - y0;
-  const pixels = rasterize(sample, message.bounds, message.size, message.rect);
-  const result: RasterResult = {
+  const span = message.size * 2 ** message.power;
+  const overviewKey = heightOverviewKey(
+    message.power,
+    Math.round(message.bounds[0] / span),
+    Math.round(message.bounds[1] / span),
+  );
+  if (!knownOverviews.has(overviewKey))
+    throw new Error("Nicht bestätigte Höhenübersicht im Darstellungsauftrag.");
+  const minimum = minimumCoarseHeightLevel(message.power);
+  let grid = grids.get(minimum);
+  if (!grid) {
+    grid = prepareHeightGrid(
+      [...sources.values()].filter((tile) => tile.level >= minimum),
+    );
+    grids.set(minimum, grid);
+  }
+  const pixels = rasterize(
+    grid(message.bounds, message.size, message.rect),
+    message.bounds,
+    message.size,
+    message.rect,
+    overviews.get(overviewKey)?.values,
+  );
+  return {
     ...message,
     kind: "raster-result",
     pixels,
     cpuMs: performance.now() - begin,
     samples: width * height,
   };
-  self.postMessage(result, { transfer: [pixels.buffer] });
+}
+
+self.onmessage = (event: MessageEvent<RasterMessage>) => {
+  const message = event.data;
+  if (message.kind === "sources") {
+    if (message.reset || sessionId !== message.sessionId) {
+      sources.clear();
+      overviews.clear();
+      knownOverviews.clear();
+    }
+    sessionId = message.sessionId;
+    for (const key of message.removed ?? []) sources.delete(key);
+    for (const tile of message.tiles) sources.set(tile.key, tile);
+    for (const key of message.overviewKeys ?? []) {
+      knownOverviews.add(key);
+      overviews.delete(key);
+    }
+    for (const tile of message.overviews ?? []) overviews.set(tile.key, tile);
+    grids.clear();
+    return;
+  }
+  if (message.sessionId !== sessionId) return;
+  const pixels = message.tasks.reduce(
+    (sum, task) =>
+      sum + (task.rect[2] - task.rect[0]) * (task.rect[3] - task.rect[1]),
+    0,
+  );
+  if (
+    !message.tasks.length ||
+    message.tasks.length > MAX_RASTER_BATCH_TILES ||
+    pixels > MAX_RASTER_BATCH_PIXELS ||
+    message.tasks.some((task) => task.sessionId !== sessionId)
+  )
+    throw new Error("Ungültiger oder zu großer Rasterauftrag.");
+  const begin = performance.now();
+  // One synchronous, bounded message uses one source version. Later source
+  // messages cannot split its tiles, and no main-thread redispatch is needed.
+  const results = message.tasks.map(renderTask);
+  const result: RasterBatchResult = {
+    kind: "raster-batch-result",
+    id: message.id,
+    sessionId,
+    results,
+    cpuMs: performance.now() - begin,
+  };
+  self.postMessage(result, {
+    transfer: results.map((tile) => tile.pixels.buffer),
+  });
 };

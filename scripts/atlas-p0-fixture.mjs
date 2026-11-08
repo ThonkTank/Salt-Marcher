@@ -32,6 +32,7 @@ async function inspect(file, origin = [0, 0]) {
   try {
     const project = await store.openProject(file);
     const read = store.readRegion({
+      minLevel: 0,
       sessionId: project.sessionId,
       bounds: [
         origin[0] - 2000,

@@ -1,7 +1,12 @@
 import { createHash } from "node:crypto";
 import { writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { extractEditSamples } from "./atlas-p0-evaluate.mjs";
+import {
+  extractEditSamples,
+  strokeEvidence,
+  evaluateBrushTime,
+  evaluateSubmissionDiagnostics,
+} from "./atlas-p0-evaluate.mjs";
 
 export const snapshot = (page, points = [], options = {}) =>
   page.evaluate(({ points, options }) => window.atlasObserve(points, options), {
@@ -13,12 +18,40 @@ export const stateSnapshot = (page, points = []) =>
 export const button = (page, name) =>
   page.getByRole("button", { name, exact: typeof name === "string" }).click();
 
+export const storeActivityPosition = (session) =>
+  session.app.evaluate(() => {
+    const observed = globalThis.__atlasHost.storeActivity({
+      sinceEvent: Number.MAX_SAFE_INTEGER,
+    });
+    if (observed.droppedEvents)
+      throw new Error("Store activity events were dropped");
+    return observed.eventCount;
+  });
+
+export const storeIntervalReference = ({ start, end, ...details }) => ({
+  token: start.token,
+  kind: start.kind,
+  sessionId: start.sessionId,
+  startEvent: start.index,
+  endEvent: end.index,
+  ...details,
+});
+
 /** Observe successful publication before starting another ordinary file action. */
 export async function waitForSaveCompletion(session, start) {
   return session.app.evaluate(async (_electron, start) => {
+    if (!start) throw new Error("No actual save start was observed");
     const deadline = performance.now() + 10_000;
+    let cursor = start.index;
+    const activity = [];
     while (performance.now() < deadline) {
-      const activity = globalThis.__atlasHost.storeActivity();
+      const observed = globalThis.__atlasHost.storeActivity({
+        sinceEvent: cursor,
+      });
+      if (observed.droppedEvents)
+        throw new Error("Store activity events were dropped");
+      activity.push(...observed.events);
+      cursor = observed.eventCount;
       const failed = activity.find(
         (event) =>
           event.token === start.token &&
@@ -41,30 +74,25 @@ export async function waitForSaveCompletion(session, start) {
   }, start);
 }
 
-export async function brush(page, diameter, amountFeet) {
+export async function brush(page, diameter, rateFeetPerSecond) {
   await page.getByLabel("Pinselgröße", { exact: true }).fill(String(diameter));
   await page
-    .getByLabel("Höhenänderung", { exact: true })
-    .fill(String(amountFeet * 0.3048));
+    .getByLabel("Pinselstärke", { exact: true })
+    .fill(String(rateFeetPerSecond * 0.3048));
   await button(page, /Anheben/);
 }
 export async function exact(page, timeout = 20_000) {
   await page.waitForFunction(
     () => {
-      const o = window.atlasObserve();
+      const o = window.atlasObserve([], { events: false });
       const error =
         o.state.error ??
         document.querySelector('[role="alert"]')?.textContent?.trim();
       if (error) throw new Error(error);
       return (
         !o.state.loading &&
-        o.events.some(
-          (e) =>
-            e.kind === "submit" &&
-            e.sessionId === o.sessionId &&
-            e.exactRevision === o.document.revision &&
-            e.cameraGeneration === o.renderer.viewGeneration,
-        )
+        o.renderer.submittedRevision === o.document.revision &&
+        o.renderer.submittedViewGeneration === o.renderer.viewGeneration
       );
     },
     null,
@@ -239,7 +267,10 @@ export async function heldStroke(session, prefix = "held-stroke") {
   const { page } = session;
   await button(page, "Nahansicht");
   await page.getByLabel("Raster anzeigen").uncheck();
-  await brush(page, 128, 120);
+  // Functional land/water oracle, separate from the unchanged timed M03 path.
+  // The explicit 10000 ft/s press dose already crosses the fixture's -100-ft
+  // water baseline; each probe also receives a declared 300-ms held phase.
+  await brush(page, 128, 10000);
   await exact(page);
   // Successive probes are farther apart than the complete brush support. A
   // first live dab cannot also satisfy the later moving-stroke pixel check.
@@ -264,30 +295,25 @@ export async function heldStroke(session, prefix = "held-stroke") {
         await page.mouse.move(p.x, p.y, { steps: 4 });
       }
       if (i < 2) {
+        await page.waitForTimeout(300);
+        const expected = await stateSnapshot(page, probes);
         let submitted = true;
         try {
           await page.waitForFunction(
-            ({ cutoff, revision, sinceEvent }) => {
+            ({ revision, sinceEvent }) => {
               const o = window.atlasObserve([], { sinceEvent });
               if (o.state.error) throw new Error(o.state.error);
               return (
                 o.document.active &&
                 o.gesture &&
-                !o.gesture.released &&
                 o.events.some(
-                  (e) =>
-                    e.kind === "edit-submit" &&
-                    e.input > cutoff &&
-                    e.revision > revision,
+                  (e) => e.kind === "brush-submit" && e.revision >= revision,
                 )
               );
             },
             {
-              cutoff: inputCutoff(i ? checkpoints[i - 1].state : before),
               sinceEvent: before.eventCount ?? 0,
-              revision: i
-                ? checkpoints[i - 1].state.document.revision
-                : before.document.revision,
+              revision: expected.document.revision,
             },
             { timeout: 1500 },
           );
@@ -304,7 +330,9 @@ export async function heldStroke(session, prefix = "held-stroke") {
   } finally {
     await page.mouse.up();
   }
-  await exact(page);
+  const completed = await observeStroke(session, before);
+  if (completed.timedOut)
+    failure ??= "Held stroke has no complete pointerup commit/submission";
   const after = await snapshot(page, probes, {
     sinceEvent: before.eventCount ?? 0,
   });
@@ -317,10 +345,12 @@ export async function heldStroke(session, prefix = "held-stroke") {
   const release = newInputs.find((e) => e.inputKind === "pointerup");
   const live = after.events.filter(
     (e) =>
-      e.kind === "edit-submit" &&
-      e.input > inputCutoff(before) &&
+      e.kind === "brush-submit" &&
+      e.gestureId === completed.time.gestureId &&
       e.at < (release?.createdAt ?? -Infinity),
   );
+  const samples = completed.samples;
+  const exactLive = strokeEvidence(completed);
   const passed =
     !failure &&
     checkpoints.length === 2 &&
@@ -330,14 +360,15 @@ export async function heldStroke(session, prefix = "held-stroke") {
         c.submitted &&
         c.state.document.active &&
         c.state.gesture &&
-        !c.state.gesture.released &&
         c.state.document.sequence === before.document.sequence &&
         c.state.samples[i] > 0 &&
         waterPixel(beforeImage.pixels[i]) &&
         landPixel(c.image.pixels[i]),
     ) &&
     newInputs.filter((e) => e.inputKind === "edit").length >= 4 &&
-    live.length >= 2;
+    new Set(live.map((event) => event.frame)).size >= 2 &&
+    completed.time.passed &&
+    completed.time.maximumFeedbackGapMs <= 100;
   const liveEvidence = {
     passed,
     failureCode: passed
@@ -354,6 +385,10 @@ export async function heldStroke(session, prefix = "held-stroke") {
     firstLiveAt: live[0]?.at ?? null,
     releasedAt: release?.createdAt ?? null,
     checkedIntermediateStates: checkpoints.length,
+    exactLive,
+    time: completed.time,
+    rateFtPerSecond: 10000,
+    heldMsPerProbe: 300,
     checkpoints: checkpoints.map(({ state, image, submitted }) => ({
       submitted,
       image,
@@ -387,13 +422,116 @@ export async function heldStroke(session, prefix = "held-stroke") {
   return {
     live: liveEvidence,
     undo,
-    samples: extractEditSamples(
-      after.events,
-      newInputs.map((e) => e.id),
-      after.sessionId,
-    ),
+    samples,
     actualFault: after.renderer.fault,
   };
+}
+
+/** Functional rate behavior; fixed native gestures, actual dose, images after Up. */
+export async function brushDoseBehavior(session) {
+  const { page } = session;
+  await button(page, "Nahansicht");
+  await page.getByLabel("Raster anzeigen").uncheck();
+  const rateFtPerSecond = 1000;
+  async function run(label, points, intervalMs) {
+    await brush(page, 128, rateFtPerSecond);
+    await exact(page);
+    const edit = await movingStroke(session, points, { intervalMs });
+    await exact(page);
+    const after = await stateSnapshot(page, points);
+    const probes = points.length === 1 ? points : [points[0], points.at(-1)];
+    const changedImage = await capture(session, `${label}-changed`, probes);
+    await button(page, /Rückgängig/);
+    await exact(page);
+    await page.waitForFunction(
+      () => !window.atlasObserve([], { events: false }).state.writing,
+    );
+    const undone = await stateSnapshot(page, points);
+    const undoneImage = await capture(session, `${label}-undone`, probes);
+    const deltas = after.samples.map(
+      (height, i) => height - edit.before.samples[i],
+    );
+    const pixelsChanged = changedImage.pixels.every(
+      (pixel, i) =>
+        pixel &&
+        undoneImage.pixels[i] &&
+        pixel
+          .slice(0, 3)
+          .some((channel, c) => channel !== undoneImage.pixels[i][c]),
+    );
+    return {
+      label,
+      requestedIntervalMs: intervalMs,
+      rateFtPerSecond,
+      points,
+      before: edit.before.samples,
+      after: after.samples,
+      undone: undone.samples,
+      deltas,
+      time: edit.time,
+      inputIds: edit.inputIds,
+      samples: edit.samples,
+      inputDiagnostics: evaluateSubmissionDiagnostics(edit.samples),
+      changedImage,
+      undoneImage,
+      passed:
+        !edit.timedOut &&
+        edit.time.passed &&
+        deltas.every((delta) => Number.isFinite(delta) && delta > 0) &&
+        edit.before.samples.every((height, i) =>
+          near(height, undone.samples[i], 1e-7),
+        ) &&
+        pixelsChanged,
+      presentationProven: false,
+    };
+  }
+  const point = [[-800, -600]];
+  const short = await run("held-dose-500", point, 500);
+  const long = await run("held-dose-1000", point, 1000);
+  const doseRatio = long.time.acceptedDoseFt / short.time.acceptedDoseFt;
+  const effectRatio = long.deltas[0] / short.deltas[0];
+  const held = {
+    passed:
+      short.passed &&
+      long.passed &&
+      short.time.stationary &&
+      long.time.stationary &&
+      doseRatio > 1 &&
+      effectRatio > 1 &&
+      near(
+        short.deltas[0] / short.time.acceptedDoseFt,
+        long.deltas[0] / long.time.acceptedDoseFt,
+        1e-7,
+      ),
+    requestedDurationRatio: 2,
+    doseRatio,
+    effectRatio,
+    short,
+    long,
+    interpretation:
+      "Longer responsive holding deepens terrain. Dose includes one declared nominal press; skipped feedback/capped time is not recovered.",
+  };
+  const path = [
+    [-800, -600],
+    [-680, -600],
+    [-560, -600],
+    [-440, -600],
+  ];
+  const fast = await run("move-dose-fast", path, 24);
+  const slow = await run("move-dose-slow", path, 48);
+  const total = (values) => values.reduce((sum, value) => sum + value, 0);
+  const movement = {
+    passed:
+      fast.passed &&
+      slow.passed &&
+      slow.time.acceptedDoseFt > fast.time.acceptedDoseFt &&
+      total(slow.deltas) > total(fast.deltas),
+    fast,
+    slow,
+    interpretation:
+      "The same path takes twice the nominal time; compare actual accepted dose and terrain effect, never a fabricated event-rate invariant.",
+  };
+  return { held, movement };
 }
 
 /** Ordinary native UI navigation; readiness is observed, never assigned by tests. */
@@ -460,9 +598,32 @@ export async function observeStroke(session, before, timeout = 5000) {
         return (
           ids.length > 0 &&
           ids.every((id) => {
+            const input = o.events.find(
+              (event) => event.kind === "input" && event.id === id,
+            );
+            // This input was processed, but produced no terrain change. Retain
+            // it as an explicit functional failure, not a five-second timeout.
+            if (
+              input &&
+              o.events.some(
+                (event) =>
+                  event.kind === "noop" &&
+                  event.input === id &&
+                  (event.sessionId === undefined ||
+                    event.sessionId === o.sessionId) &&
+                  [input.createdAt, input.at, event.at].every(
+                    Number.isFinite,
+                  ) &&
+                  input.createdAt <= input.at &&
+                  input.at <= event.at,
+              )
+            )
+              return true;
             const model = o.events.find(
               (e) =>
-                (e.kind === "model" || e.kind === "commit") && e.input === id,
+                e.kind ===
+                  (input?.inputKind === "pointerup" ? "commit" : "model") &&
+                e.input === id,
             );
             return (
               model &&
@@ -477,6 +638,7 @@ export async function observeStroke(session, before, timeout = 5000) {
                       frame.kind === "submit" &&
                       frame.frame === edit.frame &&
                       frame.sessionId === o.sessionId &&
+                      frame.revision >= model.revision &&
                       frame.at >= model.at,
                   ),
               )
@@ -507,22 +669,19 @@ export async function observeStroke(session, before, timeout = 5000) {
     missingInputKinds: ["edit", "pointerup"].filter(
       (kind) => !inputs.some((input) => input.inputKind === kind),
     ),
-    // A no-op or missing submission stays in this set and fails the same gate;
+    // A processed no-op or missing result stays in this set and fails the gate;
     // neither a formerly exact frame nor pointerup alone completes the gesture.
     samples: extractEditSamples(after.events, inputIds, after.sessionId).map(
       (sample) => ({ ...sample, timeout: timedOut }),
     ),
+    time: evaluateBrushTime(after.events, inputIds, after.sessionId),
   };
 }
 
 /** A measured multi-point stroke, retaining no-op and missing input results. */
-export async function movingStroke(
-  session,
-  points,
-  { intervalMs = 24, timeout = 5000 } = {},
-) {
+export async function prepareStroke(session, points) {
   const { page } = session;
-  const before = await stateSnapshot(page);
+  const before = await stateSnapshot(page, points);
   const canvas = await page.locator("canvas").boundingBox();
   if (!canvas) throw new Error("Stroke canvas unavailable");
   // The camera is fixed throughout this gesture. Resolve coordinates before
@@ -535,17 +694,59 @@ export async function movingStroke(
       canvas.height / 2 +
       (y - before.camera.y) * before.camera.scale,
   }));
-  const p = positions[0];
-  await page.mouse.move(p.x, p.y);
-  await page.mouse.down();
-  try {
-    for (const next of positions.slice(1)) {
-      await page.waitForTimeout(intervalMs);
-      await page.mouse.move(next.x, next.y);
-    }
-    await page.waitForTimeout(intervalMs);
-  } finally {
-    await page.mouse.up();
-  }
+  return { before, positions };
+}
+
+/** One fixed native gesture program, also dispatched inside observed save intervals. */
+export function strokeInputs(positions, intervalMs = 24) {
+  const points = positions.map(({ x, y }) => ({
+    x: Math.round(x),
+    y: Math.round(y),
+  }));
+  return [
+    { delayMs: 0, event: { type: "mouseMove", ...points[0] } },
+    {
+      delayMs: 0,
+      event: { type: "mouseDown", button: "left", clickCount: 1, ...points[0] },
+    },
+    ...points.slice(1).map((point) => ({
+      delayMs: intervalMs,
+      event: { type: "mouseMove", modifiers: ["leftButtonDown"], ...point },
+    })),
+    {
+      delayMs: intervalMs,
+      event: {
+        type: "mouseUp",
+        button: "left",
+        clickCount: 1,
+        ...points.at(-1),
+      },
+    },
+  ];
+}
+
+export async function movingStroke(
+  session,
+  points,
+  { intervalMs = 24, timeout = 5000 } = {},
+) {
+  const { before, positions } = await prepareStroke(session, points);
+  await session.app.evaluate(
+    async ({ BrowserWindow }, inputs) => {
+      const contents = BrowserWindow.getAllWindows()[0].webContents;
+      let released = false;
+      try {
+        for (const input of inputs) {
+          if (input.delayMs)
+            await new Promise((resolve) => setTimeout(resolve, input.delayMs));
+          contents.sendInputEvent(input.event);
+          if (input.event.type === "mouseUp") released = true;
+        }
+      } finally {
+        if (!released) contents.sendInputEvent(inputs.at(-1).event);
+      }
+    },
+    strokeInputs(positions, intervalMs),
+  );
   return observeStroke(session, before, timeout);
 }

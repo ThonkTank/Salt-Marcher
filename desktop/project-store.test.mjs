@@ -12,6 +12,9 @@ const { ProjectStore } = require("../desktop-dist/project-store.cjs");
 const {
   createCoastFixture,
   heightTilesFromControls,
+  heightTileKey,
+  heightFromScaledSum,
+  prepareScaledHeightSum,
 } = require("../desktop-dist/model.cjs");
 
 const stores = [];
@@ -45,6 +48,7 @@ function read(store, bounds, level) {
   return store.readRegion({
     sessionId: store.status().sessionId,
     bounds,
+    minLevel: 0,
     ...(level === undefined ? {} : { level }),
   });
 }
@@ -223,7 +227,7 @@ test("cancel and invalid opens keep the current document and source file intact"
   const database = new Database(legacy);
   database.pragma("user_version = 22");
   database.close();
-  await assert.rejects(store.openProject(legacy), /Format 23/);
+  await assert.rejects(store.openProject(legacy), /Format 24/);
   await assert.rejects(store.openProject(join(directory, "missing.saltatlas")));
   assert.deepEqual(store.status(), prior);
   assert.deepEqual(await readFile(valid), before);
@@ -293,4 +297,121 @@ test("oversized spatial results fail instead of certifying truncated data as abs
   );
   assert.equal(store.metrics().returnedTiles, 0);
   assert.equal(read(store, [-1, -1, 1, 1]).tiles.length, 1);
+});
+
+test("a dense overview reads exact fine sums without loading its 1024 fine authors", async () => {
+  const { store, directory } = await fresh();
+  let batch = [];
+  for (let y = 0; y < 32; y++)
+    for (let x = 0; x < 32; x++) {
+      batch.push({
+        key: heightTileKey(0, x, y),
+        level: 0,
+        tileX: x,
+        tileY: y,
+        revision: 1,
+        values: new Float64Array(4096).fill(180),
+      });
+      if (batch.length === 128) {
+        write(store, batch);
+        batch = [];
+      }
+    }
+  const bounds = [-1, -1, 10241, 10241];
+  assert.throws(() => read(store, bounds), /zu viele Höhenkacheln/);
+  const presentation = () =>
+    store.readPresentation({
+      sessionId: store.status().sessionId,
+      bounds,
+      power: 7,
+    });
+  const height = (view) => {
+    const tile = view.overviews.find(
+      (entry) => entry.tileX === 0 && entry.tileY === 0,
+    );
+    assert.ok(tile, "The real fine field must appear in the overview.");
+    return heightFromScaledSum(
+      prepareScaledHeightSum(view.tiles)(64, 64) + tile.values[0],
+    );
+  };
+  const beforeReads = store.metrics();
+  const before = presentation();
+  assert.equal(before.tiles.length, 0);
+  assert.equal(before.overviewKeys.length, 4);
+  assert.ok(Math.abs(height(before) - 80) < 1e-9);
+  assert.equal(store.metrics().returnedTiles - beforeReads.returnedTiles, 0);
+  assert.ok(
+    store.metrics().returnedBytes - beforeReads.returnedBytes <=
+      4 * 128 * 128 * 8,
+  );
+  const coarse = heightTilesFromControls(9, [[0, 0, 100]])[0];
+  const priorMetrics = store.metrics();
+  write(store, [coarse]);
+  const changed = presentation();
+  assert.equal(changed.tiles.length, 1);
+  assert.deepEqual(changed.overviews, before.overviews);
+  const t = 1 / 40; // 64 feet / level9's 2560-foot author spacing.
+  const weight = (3 * t ** 3 - 6 * t ** 2 + 4) / 6;
+  assert.ok(Math.abs(height(changed) - (80 + 100 * weight ** 2)) < 1e-9);
+  assert.equal(store.metrics().committedTiles - priorMetrics.committedTiles, 1);
+  assert.ok(
+    store.metrics().overviewUpdatedSamples -
+      priorMetrics.overviewUpdatedSamples <=
+      16,
+  );
+  assert.ok(store.metrics().overviewCachePeakBytes <= 32 * 1024 * 1024);
+  const file = join(directory, "dense.saltatlas");
+  await store.saveProject(store.status(), file);
+  await store.openProject(file);
+  assert.ok(Math.abs(height(presentation()) - height(changed)) < 1e-9);
+  const current = store.status();
+  store.commit({
+    sessionId: current.sessionId,
+    sequence: current.sequence + 1,
+    transactionId: "undo-coarse",
+    patches: [{ key: coarse.key, after: null }],
+  });
+  assert.ok(Math.abs(height(presentation()) - 80) < 1e-9);
+  assert.equal(store.status().sourceTiles, 1024);
+  write(store, [coarse]);
+  assert.ok(Math.abs(height(presentation()) - height(changed)) < 1e-9);
+
+  // Count actual author-header evaluation in the store's normal presentation
+  // query, independently of the returned payload count. Filtering level only
+  // after the spatial lookup would inspect all 1024 fine authors here.
+  const database = store.current.database;
+  let authorHeaderReads = 0;
+  database.function("count_author_level", (level) => {
+    authorHeaderReads++;
+    return level;
+  });
+  database.pragma("trusted_schema = ON");
+  database.exec(`
+    ALTER TABLE height_tiles RENAME TO height_author_rows;
+    CREATE VIEW height_tiles AS
+    SELECT id, count_author_level(level) AS level, tile_x, tile_y,
+      revision, values_blob, min_x, max_x, min_y, max_y
+    FROM height_author_rows;
+  `);
+  assert.equal(presentation().tiles.length, 1);
+  assert.ok(
+    authorHeaderReads > 0 && authorHeaderReads <= 3,
+    `A coarse read evaluated ${authorHeaderReads} author headers.`,
+  );
+});
+
+test("an incomplete overview is rejected instead of treated as empty terrain", async () => {
+  const { store, directory } = await fresh();
+  write(store, createCoastFixture());
+  const file = join(directory, "old-overview.saltatlas");
+  await store.saveProject(store.status(), file);
+  const database = new Database(file);
+  database.exec("UPDATE height_overview_state SET sequence=0");
+  database.close();
+  const prior = store.status();
+  await assert.rejects(
+    store.openProject(file),
+    /Höhenübersicht fehlt|alten Quellenstand/,
+  );
+  assert.deepEqual(store.status(), prior);
 });

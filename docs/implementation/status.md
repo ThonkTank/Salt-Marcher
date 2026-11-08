@@ -2,163 +2,176 @@
 
 Stand: 8. November 2026. Regulärer Produkteinstieg bleibt Atlas V7 mit
 Dateiformat 22 und Generierungsrezept 4. Der optionale Electron-/Pixi-Höhenversuch
-verwendet Dateiformat 23. [README](../../README.md) enthält Befehle,
-[Architektur](../architecture.md) Zuständigkeiten und
+verwendet Format 24 (`atlas-p0-height-2`). [README](../../README.md) enthält
+Befehle, [Architektur](../architecture.md) Zuständigkeiten und
 [Produktvertrag](../product-contract.md) Verhalten und Grenzen.
 
-## Aktueller Auftrag und Richtungsentscheidung
+## Ergebnis und Auftragsgrenze
 
-Aaron hat eine gründliche Aufräumplanung mit gleicher vereinbarter
-Nutzerfunktionalität beauftragt. Der vorhandene
-[Neubau- und Aufräumplan](atlas-rebuild-plan.md) bleibt der einzige Ausführungsplan.
-Er erhält F01–F19 mit den bereits vereinbarten D01–D09 und konkretisiert
-Reihenfolge, wenige Zuständigkeiten, Löschpflichten und gezielte Nachweise.
-Diese Überarbeitung betrifft ausschließlich Dokumentation: keine neuen
-Laufzeitänderungen, Messreihen oder Ausführung von P1–P9.
+Der vollständige [Aufräumplan](atlas-rebuild-plan.md) P0–P9 ist beauftragt.
+P0b/P0d/P0e sind strukturell umgesetzt. Die ausdrücklich ergänzte D10 ist
+implementiert und funktional geprüft: **Halten wirkt weiter, langsamere Züge
+wirken stärker, verzögerte Verarbeitung sammelt keine große Nachholdosis an.**
+Die frühere 512-Quellen-Sperre grober Ansichten ist durch numerische Übersichten
+behoben; 32, 1.024 und 9.000 echte Quellen bestehen den Funktionsrundlauf.
 
-**Den lokalen Kern beibehalten, zwei Datenwege gezielt korrigieren.**
-Der kleine Höhenfall belegt lokale Änderungen, Detailerhaltung, History und
-Dateirundlauf. Das unterstützt die Trennung von aktivem Modell, Darstellung,
-begrenzter Hintergrundarbeit und Speicher. Eine allgemeine Überlegenheit von
-Electron/Pixi gegenüber V7 ist damit nicht belegt.
+**P0 ist dennoch nicht abgeschlossen.** Große und kalte schnelle Gesten verfehlen
+im Software-Labor weiterhin Teile der strengen Live-/Reaktionsziele. Native
+Präsentation und qualifizierte Referenz fehlen. Der vollständige Ausbau P1–P9
+bleibt gemäß Plan am P0-Gate; F01–F19 ist im kleinen Höheneditor nicht vollständig
+umgesetzt. V7 bleibt der reguläre Einstieg. Eine generelle Überlegenheit von
+Electron/Pixi gegenüber V7 ist nicht belegt.
 
-Zwei voneinander unabhängige Schwächen verhindern eine positive Gesamtentscheidung:
+## Umgesetzter Kern
 
-1. **Großer bewegter Pinsel:** Im sauber gebauten Paket kommen exakt zugeordnete
-   aktuelle Änderungen deutlich verspätet beim Render-Submit an. Das tritt schon
-   in der kleinen Szene auf und ist nicht die 512-Quellen-Grenze.
-2. **Grobe Ansichten über vielen Feindaten:** Der räumliche Leser verlangt alle
-   berührten Quellenstufen. 1024 und 9000 Quellen scheitern bereits beim groben
-   Navigieren an der Grenze von 512 Quellkacheln. Die geplante maßstabsgerechte
-   Übersicht ist noch nicht implementiert.
+- Die reine Höhenmathematik integriert die ausdrücklich angenommene Zeit entlang
+  des Wegs mit dem bestehenden quartischen Kern. Ein gemeinsamer Controllerpfad
+  begrenzt jeden Schritt auf 50 ms und lässt höchstens eine ausstehende Dosis zu.
+  Ein kleiner nominaler Pressimpuls erhält Klicks. Quellen-/Darstellungspausen,
+  überschüssige Zeit und verspätete Eingaben erzeugen keinen späteren Auftrag.
+  Loslassen oder Abbruch beendet weitere Wirkung; der angenommene Strich ist
+  eine Undo-Aktion. Schnelle Klickfolgen, Ortswechsel und Resize sind abgesichert.
+- Quellenpatches ersetzen volle Kopien je Eingabe. Ein gemeinsamer Frameablauf
+  übernimmt und zeichnet fertige Ergebnisse vor der nächsten Dosis. Begrenzte
+  Rasterbatches und monotone sichtbare Revisionen verhindern fortwährendes
+  Verwerfen fertiger Arbeit. Versionsabdeckung und aktuell exakte Region bleiben
+  getrennt; keine Diagnosemeldung setzt eine Produktbereitschaft.
+- Numerische Übersichten erhalten feine Höhenbeiträge in grober Darstellung.
+  Exakte Reads begrenzen Raum und Stufe bereits im SQLite-RTree. Autoren und
+  Übersichtsvorfahren werden atomar geschrieben. Lokale Patches überbrücken noch
+  nicht bestätigte Sequenzen; Quellen-, History-, Pending- und Cachebudgets sind
+  begrenzt. Die Grenze von 512 Autorenkacheln je Aktion greift vor der Mutation.
+- Effektive Einstellungen liegen im Controller; React hält nur Zahltextentwürfe.
+  Der normale Start sammelt keine Atlas-Journale oder synthetische Last.
+  Die Prüfung verwendet gemeinsame echte Eingabeprogramme, ein Rohjournal je
+  Prozess, sofortige Ergebnisse und ausdrücklich erhaltene Fehl-/Teilversuche.
 
-Ein Host-/Sprachwechsel folgt aus diesen Befunden nicht. Der Plan priorisiert
-kurze gezielte Korrekturen dieser beiden Wege vor weiteren Fachwerkzeugen.
+## Identität und Nachweise
 
-## Identität und vorhandene Belege
+Die Hauptreihe der Produktproben stammt aus dem sauber gebauten Kandidaten:
 
-Der Laufzeitkandidat wurde aus sauberem Arbeitsbaum gebaut und als eigenständiges
-Forge-Paket gestartet. Nachfolgende Änderungen betreffen die Dokumentation.
+| Identität                      | Wert                                                               |
+| ------------------------------ | ------------------------------------------------------------------ |
+| Ausgeführter Codecommit        | `8849edf70424d06223da22e712c0eec55c5ace8d`                         |
+| Produktquellen SHA-256         | `441fad6ff6a5bc51815f8fc866a664974e92a8060f59c0b8a75c6330d252d333` |
+| Lockdatei SHA-256              | `8f90d72914d5d7599759b5d117e4c40457f883f4213f870940a1167db6a17839` |
+| Gebauter Programmstand SHA-256 | `36a3e4c65a9b4f4849283669b1d7e9b56e9e25f870b6b7bd654e09151c7a6755` |
 
-| Identität     | Wert                                                               |
-| ------------- | ------------------------------------------------------------------ |
-| Codecommit    | `442576ccb9bce95cb6d7c63758b4a2829f77af63`                         |
-| Quell-SHA-256 | `f8261ae209f3e1db73fc505b7d2befe356af2719cfc530bc16b20ce4fb5b74f4` |
-| Lock-SHA-256  | `8f90d72914d5d7599759b5d117e4c40457f883f4213f870940a1167db6a17839` |
-| Paket-SHA-256 | `3dd319c486e0e55056737539e29bead6869dc00a39af010c3de24a388568c165` |
+Zusätzlich wurde ein eigenständig startbares Linux-Anwendungsverzeichnis aus
+`43583f1667d11f6e6ab4234d0758f613a4a7b1e7` gebaut und tatsächlich ausgeführt.
+`packaged: true` und die aus dem ausgeführten ASAR gelesene Buildidentität wurden
+bestätigt; Produktquellen und Lockdatei sind identisch mit der Hauptreihe.
+Paket-SHA-256: `0c175285cd1fb62e9a435562932a6586fef6787be849e4abc9a81ba4b1c3f153`.
 
-| Prüfung                                                 | Nachweis und Grenze                                                                                                                                                                                       |
-| ------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| P0-Modell, Raster, Renderer, Beobachtung und Auswertung | 80 Tests bestanden am Codekandidaten.                                                                                                                                                                     |
-| SQLite-Store und Skalierungsfixtures                    | 12 Tests bestanden in Electrons tatsächlicher Laufzeit.                                                                                                                                                   |
-| TypeScript, Syntax und Format der damaligen Änderungen  | Bestanden am damaligen Kandidaten; kein Nachweis neuer Laufzeitänderungen.                                                                                                                                |
-| Gezielte Interaktionsvorprüfung                         | 17 Inhalts-/Interaktionschecks und fünf Fehlerkontrollen bestanden (`repair-interactions-5`); früherer Arbeitsstand, keine vollständige Prüfung des späteren Pakets.                                      |
-| Gezielte warme/kalte Lastsammler                        | 100 Striche mit 600 Eingaben bzw. 34 kalte Wechsel vollständig gesammelt, ohne Ereignisverlust (`repair-busy-series-2`, `repair-cold-busy-series-2`); Sammlung allein ist kein bestandenes Leistungsziel. |
-| Skalierungsvorprüfung                                   | 32 Quellen einschließlich Relief, History und Dateirundlauf bestanden; 1024 und 9000 Quellen an der weiterhin vorhandenen 512-Kachel-Grenze gescheitert (`repair-scaling-4`).                             |
-| Native Vorprüfung des Pakets                            | Exit 2, `NO_NATIVE_DISPLAY` (`representative-final/442576c-native-preflight`).                                                                                                                            |
+Nachfolgende Änderungen betreffen Prüfprogramm und Dokumentation; Produktquellen
+und Lockdatei bleiben identisch. Jeder Bericht nennt den tatsächlich ausgeführten
+Build und seinen jeweiligen Harnesshash. Der Lauf verwendet Electron 44.10.2
+mit ANGLE/SwiftShader im Headless-Modus, keinen qualifizierten nativen Bildschirm.
 
-Alle Belegpfade liegen unter dem ignorierten Verzeichnis `artifacts/atlas-rebuild/`.
-Vorprüfungen, deren fehlgeschlagene Vorläufer und Paketnachweise sind verschiedene
-Stände; sie werden nicht zu einer bestandenen Gesamtabnahme zusammengesetzt.
+| Prüfung                                               | Ergebnis und Aussagegrenze                                                                                                                                                     | Belegpfad                                                          |
+| ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------ |
+| Gemeinsame Modell-/Raster-/Renderer-/Auswerterprüfung | 165 Tests bestanden; Typen beider Einstiege, Format und Diff sauber.                                                                                                           | `src-tauri/target/diagnostics/cleanup-time-checks/unit-final.log`  |
+| SQLite und Skalierungsfixtures in Electron            | 14 Tests bestanden einschließlich atomarer Fehler, echter Datei und begrenztem Übersichtsread.                                                                                 | `cleanup-time-checks/store-build.log` unter demselben Diagnosepfad |
+| Tatsächlicher 500-ms-Renderer-Hänger                  | 26 Checks in zwei Fällen bestanden: Loslassen während des Hängers oder danach weiter halten; echte Ereignisse, Zeitbilanz, unabhängige Höhe, spätere Ruhe und ein Undo.        | `cleanup-stall-final/`                                             |
+| Normalstart ohne Diagnose                             | 14 Checks bestanden: Zahlentwürfe, echte Pinsel-/Historypixel, Speichern und Öffnen, keine Diagnose-API/-Marks.                                                                | `cleanup-normal-time-final-3/`                                     |
+| M01 und funktionaler Coastworkflow                    | 16 Checks und fünf Fehlerkontrollen bestanden; gehaltene Wirkung, längere Dauer, langsamer Weg, Detailrückkehr, History und Neustart.                                          | `time-behavior-final/`                                             |
+| 32 / 1.024 / 9.000 Quellen                            | Alle drei Fälle bestanden: Küsten-/Reliefpixel, Feindaten-Digest, exakte Werte, Undo/Redo, Save und Prozessneustart.                                                           | `time-scaling-final/`                                              |
+| Eigenständiges Anwendungspaket                        | Forge-Paket gebaut und tatsächlich gestartet; M03-small mit Inhalt, Undo und strengen Submission-Proxies bestanden. `PROXY_ONLY`, keine RPM-Installation oder native Freigabe. | `time-packaged-small/`                                             |
 
-## Aussage der vorhandenen Paketjournale
+Die kurzen Belegpfade der Funktionstests liegen unter
+`artifacts/atlas-rebuild/`. Die Normalstart-Vorläufer bleiben erhalten: Der
+Hilfsscript hatte vor der tatsächlichen Grid-off-Darstellung beziehungsweise
+vor dem letzten angenommenen Pinselschritt fotografiert. Der korrigierte reine
+Funktionscheck wartet auf stabile tatsächliche Pixel; Zeitmessungen wurden
+nicht verändert.
 
-Basis: `artifacts/atlas-rebuild/representative-final/442576c-packaged-full/`.
-Die Beobachtungen liegen jeweils in
-`release-1-release-1-<Szenario>/observation.json` beziehungsweise
-`release-2-release-2-<Szenario>/observation.json`.
+### Zeitabhängige Wirkung und Rückstau
 
-Die folgende Auswertung ordnet echte Eingabe, Modelländerung und `edit-submit`
-über Eingabe-ID, Session, Revision und tatsächlich übergebenen Frame zu.
-**Submission ist keine native Präsentationsmessung.** Der Lauf verwendet
-Softwaregrafik mit ANGLE/SwiftShader; die Displayfrequenz ist nicht qualifiziert.
+Beim wirklichen 500-ms-Hänger lag das native Loslassen mitten im blockierten
+Intervall; sein Handler kam erst rund 410,5 ms später an. **Keine der 500 ms wurde
+als Dosis angenommen.** Beim Weiterhalten wurden 49 ms dieses Hängers in einem
+auf insgesamt 50 ms begrenzten Schritt berücksichtigt und 451 ms verworfen.
+Es gab keine aufgestaute Folge von Nachholschritten. Die Höhen stimmten mit der
+unabhängig berechneten angenommenen Dosis überein; danach änderte sich 600 ms
+lang nichts mehr. Je ein Undo stellte Modell und Bild wieder her.
 
-| Warmes Szenario                   | Striche je Gruppe | Edit-Eingabe → exakter Submit, p95, Gruppe 1 / 2 | Pointerup → exakter Submit, p95, Gruppe 1 / 2 |
-| --------------------------------- | ----------------- | ------------------------------------------------ | --------------------------------------------- |
-| `M03-height-small`, 16 CSS-Pixel  | 100 / 100         | 33,7 / 34,1 ms                                   | 15,2 / 13,0 ms                                |
-| `M03-height-large`, 256 CSS-Pixel | 100 / 100         | 284,5 / 282,7 ms                                 | 145,2 / 146,7 ms                              |
-| `M04-coarse-fine`                 | 100 / 100         | 35,1 / 34,1 ms                                   | 16,8 / 15,3 ms                                |
-| `M06-height-busy`                 | 100 / 100         | 72,7 / 68,5 ms                                   | 55,5 / 50,8 ms                                |
+Bei 500/1000 ms normalem Halten betrug das Verhältnis angenommener Dosis und
+Höhenwirkung jeweils 2,095. Derselbe Weg mit 24/48 ms Abstand nahm 97,87/191,67 ms
+Dosis an; die Summe der vier geprüften Höhenänderungen war beim langsameren Zug
+1,875-mal so groß. Das sind gezielte funktionale Beispiele, keine Zusage exakt
+bildratenunabhängiger Wirkung. Die nominale Pressdosis wird separat bilanziert.
 
-Beim großen Pinsel besitzt in beiden Gruppen **0 von 100 Strichen** eine exakt
-zugeordnete Edit-Bestätigung vor Pointerup; gefordert sind mindestens zwei
-aktuelle inhaltliche Zwischenstände während der Bewegung. Teilflächen werden
-durchaus während der Geste hochgeladen und übergeben. Der Befund bedeutet daher
-nicht, dass bis Pointerup überhaupt kein Bildfortschritt stattfindet. Er belegt,
-dass der aktuelle genaue Änderungsbereich bei diesem Verlauf nicht rechtzeitig
-bestätigt wird. Ein kurzer Inhaltsvergleich muss außerdem abgrenzen, ob die
-Bestätigungsregion selbst zu weit gefasst ist.
+### Kurze Gesten und verbleibende Leistungslücken
 
-Der Ausgangsausschnitt der großen Probe lädt acht Quellen mit 262144 Byte. Eingabe → Modell
-liegt bei p95 20,2 / 20,4 ms, Modell → Submit bei 268,5 / 268,6 ms.
-Die meiste gemessene Verzögerung liegt damit nach der Modelländerung.
-Rasterarbeit, überholte Aufträge, Queue und Bestätigungsumfang sind noch nicht
-ursächlich getrennt. Weitere Frame-CPU-Optimierungen allein sind nicht begründet.
+Die kurzen Collectionfälle verwenden einheitlich **4.000 ft/s = 1.219,2 m/s**.
+Die bestehenden Eingabeprogramme bleiben unverändert: vier Punkte im warmen
+Fall, fünf im kalten Monitor, jeweils mit den bisherigen Intervallen. Die erste
+Probe mit 1.000 ft/s bleibt in `time-collection-final/` als FAIL erhalten: Das
+letzte kanonische Ziel lag bei +0,007 ft, sein tatsächliches Rasterzentrum aber
+bei −0,142 ft; dessen Wasserfarbe war korrekt unverändert. Eine unabhängige
+Nachrechnung begründet die feste höhere Prüf-Stärke. Weder Geometrie, Dauer,
+Vorwärmung, Inhaltsprüfung noch Zeitgrenze wurden zugunsten eines PASS geändert.
 
-| Kaltes Szenario                  | Vollständige Wechsel | Navigation → lokal bereit, p95 | Navigation → erster exakter Edit-Submit, p95 |
-| -------------------------------- | -------------------- | ------------------------------ | -------------------------------------------- |
-| `M10-height-cold`, Gruppe 1      | 34                   | 22,5 ms                        | 498,2 ms                                     |
-| `M10-height-cold`, Gruppe 2      | 34                   | 23,7 ms                        | 498,5 ms                                     |
-| `M10-height-cold-busy`, Gruppe 1 | 34                   | 353,2 ms                       | 828,0 ms                                     |
+Die folgenden Werte stammen aus je einer gezielten kurzen Probe. **Render-Submit
+ist nur ein unterer Zeitwert für Präsentation; dies sind keine nativen p95-Reihen.**
 
-Unter Last überschreiten 27 der 34 vollständigen kalten Fälle 750 ms bis zum
-Submit. Auch das ist ein konkretes Warnsignal, keine gemessene native
-Präsentationslatenz. Die zweite kalte Lastserie ist unvollständig und liefert
-keine vergleichbare vollständige Verteilung.
+| Fall                              | Beobachtetes Ergebnis                                                                                                                                                                                                                    | Belegpfad                              |
+| --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------- |
+| M03 klein, 16 px                  | Inhalt, Undo und Dosisbilanz bestanden; vier echte Zwischenframes. Eingabe → Submit p95 33,7 ms, Up → Submit 49,6 ms. `PROXY_ONLY`.                                                                                                      | `time-short-small/`                    |
+| M03 groß, 256 px                  | Inhalt, Undo und Dosisbilanz bestanden, zwei Zwischenframes. Ein Move während `feedback` nicht angenommen; Edit p95 100,9 ms, Up 51,0 ms. **FAIL**.                                                                                      | `time-short-large/`                    |
+| M04 grob über fein                | Inhalt, Undo und Dosisbilanz bestanden; drei Zwischenframes. Edit p95 37,4 ms, Up 6,9 ms. `PROXY_ONLY`.                                                                                                                                  | `time-coarse-fine/`                    |
+| M06 Bearbeitung unter realer Last | Im abschließenden einzelnen Strich echte Input-/Modell-/Save-/Worker-Überlappung, Inhalt, Undo und Zeitbilanz bestanden; drei Zwischenframes. Edit p95 37,3 ms, Up 9,0 ms. `PROXY_ONLY`. Früherer realer `stale`-Fehler bleibt erhalten. | `time-busy-final/`, zuvor `time-busy/` |
+| M10 kalter Ort                    | Bereitschaft nach 23,7 ms, erste Änderung nach 216,3 ms. Nur Pressdosis angenommen; vier Moves wegen ausstehender Darstellung verworfen, kein Zwischenframe vor Up. **FAIL**.                                                            | `time-cold/`                           |
+| M10 kalter Ort unter Last         | Bereitschaft nach 509,4 ms statt höchstens 500 ms; erste Änderung nach 690,5 ms. Ebenfalls vier verworfene Moves und kein Zwischenframe. **FAIL**.                                                                                       | `time-cold-busy/`                      |
 
-Last bedeutet reale Persistenz einer Datei mit 9008 Quellen sowie einen
-rechnenden Höhen-Sampling-Worker zusätzlich zum Rasterworker. Das beweist keine
-zwei späteren produktiven schweren Fachjobs und keine große sichtbare Übersicht.
-Kalte Ziele sind nach Projektöffnen ungeladen; ein geleerter Betriebssystem-
-Dateicache wird nicht behauptet.
+Alle Pfade dieser Tabelle liegen unter `artifacts/atlas-rebuild/`. Absichtlich
+verworfene Eingaben erhalten einen Grund und keinen erfundenen Modell-/Submit-
+Beleg. Die sichere Dosisbegrenzung macht die weiterhin langsamen Fälle nicht zu
+einer bestandenen Leistungsabnahme. Die beiden kalten Originalberichte enthalten
+den vollständigen fehlerhaften Verlauf im jeweiligen `attempt.stroke`;
+die M10-Latenz bezieht sich auf den ersten Input. Der abschließend korrigierte
+Auswerter verwendet für den Live-Verlauf alle gespeicherten Eingaben und trennt
+Lastüberlappung von vollständiger Input-/Submit-Abnahme. Eine bereits ausgelöste
+Geste wird nicht durch eine zusätzliche Rettungsgeste ersetzt. Die reine
+Neuauswertung lässt sämtliche bisherigen FAILs bestehen.
 
-Der Paketlauf wurde bewusst mit SIGINT/Exit 130 beendet. Vorhanden sind Log,
-`interrupted-metadata.json` und 19 abgeschlossene Beobachtungsdateien ohne
-verworfene Ereignisse. Zwei warme Gruppen und drei kalte Serien sind vollständig
-protokolliert. Gruppe 3 und nachgelagerte Kontrollen/Skalierungsfälle fehlen.
-Es gibt keinen abschließenden `report.json` und kein Gesamt-PASS.
+### Langer laufender Pinsel
 
-## Erhaltenswerte Korrekturen und offenes Aufräumen
+Die zusätzliche 41-Punkte-Geste mit unverändert 24 ms Abstand und 1.000 ft/s
+belegt im kleinen/großen Pinsel **41/37 tatsächlich eingereichte aktuelle
+Dosis-Zwischenframes vor Loslassen**. Endpunktbilder, alle 41 kanonischen
+Undo-Proben, Dosisbilanz und vollständige Journale bestehen. Die größte
+beobachtete Bewegungspause liegt bei 50,2/76,3 ms.
 
-Die Interaktionsprüfung trennt sichtbaren Zoom und Kameraanker. Bewegte Striche
-prüfen Modellwerte, Canvasinhalt, Renderübergaben und eine gemeinsame Undo-Aktion.
-Die Fehlerkontrollen erkennen ignorierten Zoom, Zeichnen erst nach Pointerup,
-verzögerte und fehlende Übergaben; der normale Pfad muss sich danach erholen.
-History hält eigene Patches nach Quellenauslagerung. Pointerup fordert nötigenfalls
-einen echten Frame an. Sessionwechsel setzt Hintergrundstatistik zurück.
-Diese Eigenschaften bleiben erhalten.
+Beide Fälle bleiben dennoch **FAIL**: 4/8 der 41 echten Edit-Eingaben wurden
+bewusst nicht angenommen; die übrigen erreichen Edit-p95 61,2/76,3 ms bis zum
+Submit. Beim großen Pinsel braucht Up 97,2 ms. Es gibt kein Gesamt-PASS und
+keinen Ersatz der kurzen Pflichtgeste. Beleg:
+`artifacts/atlas-rebuild/cleanup-continuous-time-final/`.
 
-Trotz bereits schlankerer Zustandsabfragen dupliziert der Prüfablauf noch Gesten,
-Szenarioergebnisse und vergangene Save-Aktivität. Ein vorhandener Bericht mit
-100 Laststrichen umfasst 17944269 Byte. Schon ein Szenariozweig enthält
-20304 Aktivitätseinträge für 404 unterschiedliche Ereignisse; derselbe Zweig
-wird nochmals serialisiert (`repair-busy-series-2/report.json`).
-Im normalen Start wird weiterhin Beobachtungsaktivität gesammelt.
-P0b plant einen gemeinsamen Ablauf, ein Journal pro Prozess, sofortige
-Szenarioauswertung und einen ausdrücklich aktivierten Diagnosebetrieb.
+Die numerische Übersicht meldet ihre Pflegekosten weiterhin mit: Die gesamte
+vierstufige grobe Navigation liest bei 32/1.024/9.000 Quellen
+5,625/9,125/20,75 MiB; die anschließende grobe Bearbeitung braucht keine weiteren
+Reads. Für Bearbeitung, Undo und Redo zusammen entstehen 3 Commits mit 12
+Autorenwrites, 2,75/3,875/5 MiB Übersichtsreads und 4,75/5/5,5 MiB
+Übersichtswrites. Der dabei beobachtete Schreibcache erreicht jeweils 2 MiB.
+Diese Summen sind nicht als Kosten eines einzelnen letzten Übersichtsreads
+zu verstehen.
 
-## Nächste Arbeit und verbleibende Abnahme
+Die erneute native Vorprüfung endet vor Fixtureerzeugung mit Exit 2 und
+`NO_NATIVE_DISPLAY`; Beleg `artifacts/atlas-rebuild/time-native-preflight/`.
 
-Der nächste Umsetzungsauftrag beginnt gemäß dem bestehenden Plan mit:
+## Offene Abnahme und Fortsetzung
 
-1. **P0b:** Bekannte Journale korrekt auswerten und denselben kurzen Szenarioablauf
-   für Richtungsprobe und spätere Vollabnahme verwenden.
-2. **P0d:** Den großen Pinsel einmal gezielt aufschlüsseln und seinen direkten
-   Änderungs-/Darstellungsweg vereinfachen; ersetzte Snapshot-/Dispatchpfade entfernen.
-3. **P0e:** Numerische Übersicht über 32, 1024 und 9000 echte Quellen beweisen:
-   begrenzte Reads und vollständige Pflegekosten, sichtbare grobe Änderungen,
-   genaue Detailrückkehr, Undo/Redo und Neustart. Keine erhöhte Transfergrenze als Ersatz.
-4. **P0-Abschluss:** Native Abnahme am ausgeführten Kandidaten; anschließend
-   Zustände und APIs konsolidieren und den vollständigen Funktionsumfang übernehmen.
+Die normale sowie die grobe Bearbeitung kann weiter auf dem lokalen Kern aufbauen.
+Für das P0-Abschlussgate fehlen die ausreichende Reaktion großer/kalter Gesten
+unter Last, die vollständige Stichprobe in drei unabhängigen Gruppen und die
+native Präsentationszuordnung auf einer qualifizierten Referenz. Softwaregrafik,
+RAF und Render-Submission ersetzen diesen Nachweis nicht. Bestehende 50-ms-Ziele,
+M10-Ziele und die 100-ms-Fortschrittsgrenze bleiben erhalten.
 
-Fehlender Displayzugriff verhindert unabhängige strukturelle Korrekturen nicht.
-Die formale native P0-Abnahme bleibt jedoch **blockiert**: Es fehlt die
-nachgewiesene Zuordnung von Atlas-Generation über die verbrauchte Canvasressource
-zum tatsächlich präsentierten Compositorframe und eine qualifizierte Referenz.
-Submission, RAF und Softwaregrafik ersetzen diesen Nachweis nicht. Einzelwerte
-über 50 ms sind außerdem von einem verfehlten p95-Ziel zu unterscheiden.
-
-Die V7-Vergleichsreihe, RPM-Installation und echte OS-Dateidialogbedienung bleiben
-offen. Ohne `cargo` konnten hier die Rust-Anteile der Gesamtprüfung nicht
-laufen. Die Teilnachweise ersetzen keine Freigabe durch
-`Candidate · exact-SHA aggregate`; der PR bleibt ein Draft.
+V7-Vergleich, Rust-Gesamtprüfung, RPM-Installation und echte OS-Dateidialogbedienung
+sind ebenfalls offen. Hier fehlen `cargo`, RPM-Werkzeuge und ein natives Display.
+Die Teilnachweise sind keine Freigabe durch `Candidate · exact-SHA aggregate`;
+PR #1469 bleibt ein Draft. Der vollständige Ausbau P1–P9 folgt erst auf das im
+bestehenden Plan festgelegte P0-Gate.

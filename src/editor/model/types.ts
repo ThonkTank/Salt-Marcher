@@ -5,6 +5,8 @@ export const HEIGHT_TILE_SIZE = 64;
 export const HEIGHT_TILE_CELLS = HEIGHT_TILE_SIZE * HEIGHT_TILE_SIZE;
 export const HEIGHT_TILE_BYTES =
   HEIGHT_TILE_CELLS * Float64Array.BYTES_PER_ELEMENT;
+/** A locally accepted action must fit the host/store's atomic commit boundary. */
+export const HEIGHT_MAX_ACTION_TILES = 512;
 export const HEIGHT_MAX_LEVEL = 21;
 export const HEIGHT_BASE = -100;
 export const HEIGHT_LIMIT = 100_000;
@@ -56,6 +58,7 @@ export interface HeightSnapshot {
   revision: number;
   sequence: number;
   bounds: Bounds;
+  levels: readonly number[];
   /** Owned copies: transferring these buffers cannot detach document sources. */
   tiles: HeightTile[];
   dependencies: SourceStamp[];
@@ -64,7 +67,7 @@ export interface HeightSnapshot {
 export interface HeightBrush {
   level: number;
   radius: number;
-  /** Signed additive height: negative values lower the selected author level. */
+  /** Signed feet per second: negative rates lower the selected author level. */
   amount: number;
   label?: string;
 }
