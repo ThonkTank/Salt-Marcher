@@ -1,13 +1,22 @@
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { heightTilesFromControls } from "../model/fixtures";
 import { heightOverviewKey } from "../model/overview";
-import { colour } from "./raster";
+import { HEIGHT_SUM_SCALE } from "../model/height";
+import { rasterize } from "./raster";
 import type {
   RasterBatch,
   RasterBatchResult,
   RasterMessage,
   RasterTask,
 } from "./raster.worker";
+
+const colour = (height: number) =>
+  rasterize(
+    new Float64Array([height / HEIGHT_SUM_SCALE]),
+    [0, 0, 1, 1],
+    1,
+    [0, 0, 1, 1],
+  ).subarray(0, 3);
 
 beforeEach(() => vi.resetModules());
 afterEach(() => vi.unstubAllGlobals());

@@ -544,16 +544,33 @@ gröberer Stufen. Raum und Stufe werden bereits im RTree begrenzt, vor der
 Enumeration feiner Treffer. Höchstens 512 Autorenkacheln werden geliefert;
 grobe Darstellung verlangt keine vollständige Feinquellenabdeckung.
 
-Quellenbereitschaft gehört zu Ausschnitt und Stufen. Das Modell unterscheidet
-`unknown`, vorhandene `ready`-Quellen und bestätigte Abwesenheit (`absent`).
-Laufende Reads und Ladefehler gehören zum Controller; sie erzeugen keine
-zusätzlichen Quellenzustände. Bestätigte entfernte Autoren sind verdrängbar;
-aktive und unbestätigte Änderungen nicht. Der gemeinsame
-Ladeablauf hält einen laufenden Read und den aktuellen Folgebedarf. Kamerabewegung
-und aktueller Werkzeugbedarf fordern Daten unabhängig von Modellgesten an.
+Quellenbereitschaft gehört zu Ausschnitt und Stufen. Das Modell hält vorhandene
+`ready`-Quellen und vorübergehend unbestätigte lokale Löschungen (`absent`).
+Regionale Flächenbelege bestätigen gelesene Abwesenheit; ein fehlender Schlüssel
+ohne Beleg ist `unknown` und benötigt keinen eigenen Metadateneintrag. Auch die
+bestätigte leere Neuanlage beginnt mit einem gewöhnlichen Ganzweltbeleg.
+
+Der Controller hält höchstens zwei Anforderungen aus Bereich und Mindeststufe:
+Darstellung und vollständiger aktueller Werkzeugbereich einschließlich Halo.
+Flächenbelege werden darauf geschnitten, bevor unbenötigte bestätigte Quellen
+entfallen. Jeder verbleibende Beleg setzt voraus, dass alle positiven Quellen
+seiner Stufen mit überlappendem kubischem Stützbereich noch resident sind.
+Herauszoomen gibt auch feinere Quellen innerhalb des Weltbereichs frei. Die
+entfernten Schlüssel werden zugleich aus Renderer und Worker entfernt; numerische
+Übersichten bleiben davon getrennt. Aktive und unbestätigte Änderungen bleiben
+gepinnt, bestätigte Löschmarker entfallen. Einträge und Flächenbelege sind in den
+Ressourcenmetriken sichtbar.
+
+Laufende Reads und Ladefehler gehören zum Controller. Der gemeinsame Ladeablauf
+hält einen laufenden Read und den aktuellen Folgebedarf. Kamerabewegung und
+aktueller Werkzeugbedarf fordern Daten unabhängig von Modellgesten an; ein während
+des Lesens veränderter Werkzeugbereich wird vor dem nächsten Read neu bestimmt.
 
 Beide Lesezwecke teilen `readCurrent` für Session-/Navigations- und Sequenzprüfung.
-Überholt ein Persistenz-Ack den gelesenen Stand, wird neu gelesen. Gültige Antworten
+Überholt ein Persistenz-Ack den gelesenen Stand, wird neu gelesen. Auch das Modell
+verwirft Antworten unterhalb seiner bestätigten Sequenz vor jeder Mutation;
+entfernte Einzelmetadaten müssen alte Reads deshalb nicht dauerhaft abwehren.
+Gültige Antworten
 werden synchron übernommen: Zwischen Prüfung, Übernahme und lokaler
 Patchprojektion liegt kein `await`, in dem das Ack benötigte Patches freigeben
 könnte. Eigene aktive/unbestätigte Patches werden auf den gelesenen Stand
@@ -580,8 +597,12 @@ Uhr, Begrenzung und Rückkopplung gehören zum Controller.
 Der gemeinsame Frameablauf übernimmt gültige Ergebnisse, zeichnet sie und
 bestätigt aktuelle Regionen. Erst danach nimmt er einen weiteren zulässigen
 Pinselschritt an und disponiert neue Rasterarbeit. Dadurch entwertet die nächste
-Änderung ein fertiges Ergebnis nicht vor dessen Darstellung. Kein zweiter
-Gesten-RAF oder Dispatch mitten in einem angenommenen Abschnitt.
+Änderung ein fertiges Ergebnis nicht vor dessen Darstellung. Restarbeit derselben
+angenommenen Revision darf nach Workerabschluss direkt weiterlaufen. Sie wartet
+nicht auf einen zusätzlichen Frame allein zur Disposition; Upload, Zeichnen und
+die nächste Dosis bleiben im gemeinsamen RAF. Ein laufender Batch und das
+gemeinsame Budget für fertige plus laufende Resultate begrenzen diese Fortsetzung.
+Kein zweiter Gesten-RAF und kein Zeichnen aus dem Worker-Nachrichtenhandler.
 
 Angenommene Abschnitte liefern eigene Patches nur für geänderte Quellen an
 Renderer und Worker. Vollständige Ausschnittskopien je Eingabe entfallen.
@@ -653,9 +674,10 @@ Produktfreigabe und Renderabschluss hängen nicht von Diagnose ab.
 
 Diagnosebatches erfassen Versand, Workerbeginn/-ende und Rendererempfang über
 `performance.timeOrigin + performance.now`. Der bestehende Journalpfad verbindet
-sie mit lokal erforderlichen Uploads und Submit. Die Zeitzerlegung verwendet den
-letzten erforderlichen Upload; frühere Batcharbeit bleibt in der Wartezeit vor
-dessen Dispatch enthalten. Fehlende oder widersprüchliche Zeitstempel bleiben
+sie mit lokal erforderlichen Uploads und Submit. Die Zeitzerlegung erfasst
+angenommene Eingaben, Halteschritte und Pointerup. Sie weist alle erforderlichen
+Batches mit Pixelzahl, Reihenfolge und Wartezeiten aus; die Strecke bis zum
+letzten Dispatch enthält auch vorherige Rasterarbeit. Fehlende oder widersprüchliche Zeitstempel bleiben
 als unvollständiger Nachweis sichtbar. Diese Uhren belegen keine native Präsentation.
 
 Zustandsabfragen übertragen kein Journal. Monotone Ereignis-/Storecursor und
@@ -664,6 +686,23 @@ werden nach jedem Szenario mit Auswertung gesichert; ein atomarer Laufindex
 enthält auch Fehler und fehlende Fälle. Produktquellen, Harness, Fixture und
 Build besitzen getrennte Identitäten. Vorprüfung erfolgt vor Fixtureerzeugung;
 Traces entstehen nur auf ausdrückliche Anforderung.
+
+Der Gestenbeobachter prüft Eingabevorhandensein und lokale Commit-Submission
+innerhalb derselben Rendererabfrage. Das Gestenjournal wird erst nach dieser
+Submission oder nach einem ausdrücklichen Timeout übertragen. Seine Serialisierung
+darf den noch ausstehenden Pointerup-Frame nicht selbst verzögern; fehlende
+Eingaben, No-ops und ausstehende Ergebnisse bleiben im Ergebnis erhalten.
+
+Der einzige Tracerecorder verwendet Electron Debugger/CDP und speichert den
+rohen JSON-Stream, bevor uint64-Framekennungen verlustfrei gelesen werden.
+Die kleine Präsentationsprobe aktiviert zusätzlich Chromium-Tracebilder.
+Screenshotquelle und Framefolge werden nur mit vollständigen Reportern des
+beobachteten Atlas-Renderers verglichen. Diese Verbindung bleibt ein Kandidat:
+die Trace liefert keine gemeinsame Identität für Screenshot und seinen
+Copy-/Refresh-Vorgang; die erste Präsentation einer exakten Terrainrevision ist
+damit nicht bewiesen. Drei unabhängige Terrainbereiche sowie Drop-/Delay-Kontrollen
+und Erholung prüfen den begrenzten Bildnachweis. Fehlende, mehrdeutige oder nur
+zeitlich benachbarte Verbindungen erzeugen keinen akzeptierten Präsentationswert.
 
 Smoke und Messsammlung teilen Prozessstart und Pixelerfassung. Der kurze CI-Smoke
 prüft Normalstart ohne Diagnose, reale Eingaben/Dateien, einen echten Rendererhänger

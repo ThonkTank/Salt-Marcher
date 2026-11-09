@@ -83,7 +83,7 @@ if (
     argv.includes("--runs"))
 )
   throw new Error("Native preflight/probe does not collect scenario samples");
-if ((preflightOnly || probeNative || referenceIndex >= 0) && !native)
+if ((preflightOnly || referenceIndex >= 0 || (probeNative && !lab)) && !native)
   throw new Error("Native preflight/reference options require --native");
 if (referenceIndex >= 0 && (!referencePath || referencePath.startsWith("--")))
   throw new Error("--reference requires a JSON reference profile");
@@ -140,7 +140,9 @@ const hash = (value) => createHash("sha256").update(value).digest("hex");
 const log = (message) => console.log(`[atlas-p0] ${message}`);
 if (preflightOnly || probeNative)
   log(
-    "Native preflight/investigation only; no fixture or scenario collection.",
+    probeNative
+      ? "Presentation investigation only: one small coast fixture, short traces and fault/recovery controls; no acceptance collection."
+      : "Native preflight only; no fixture or scenario collection.",
   );
 else if (full && only)
   log(
@@ -1024,29 +1026,43 @@ async function coastJourney(fixture) {
       );
       report.trace = await traceSummary(actualTracePath);
     }
-    check(
-      "coarse-exact-values",
+    const coarseSubmitted =
       !coarse.timedOut &&
-        coarse.time.passed &&
-        coarse.time.stationary &&
-        coarse.samples.length >= 2 &&
-        coarse.samples.every((s) => Number.isFinite(s.submissionAt)) &&
-        closeEnough(await values(session.page, points), doseExpected),
-      {
-        samples: await values(session.page, points),
-        expected: doseExpected,
-        time: coarse.time,
-        requestedHoldMs: 1000,
-        rateFtPerSecond: 200,
-        reference: {
-          rateFtPerSecond: fixture.expected.brush.amount,
-          acceptedMs: 1000,
-          expected: fixture.expected.afterCoarseDab,
-        },
+      coarse.time.passed &&
+      coarse.time.stationary &&
+      coarse.samples.length >= 2 &&
+      coarse.samples.every((s) => Number.isFinite(s.submissionAt));
+    const coarseDetails = {
+      coarseSamples: await values(session.page, points),
+      expected: doseExpected,
+      time: coarse.time,
+      requestedHoldMs: 1000,
+      rateFtPerSecond: 200,
+      reference: {
+        rateFtPerSecond: fixture.expected.brush.amount,
+        acceptedMs: 1000,
+        expected: fixture.expected.afterCoarseDab,
       },
-    );
+    };
+    // The coarse view may correctly release fine authors. Its submission
+    // evidence must stand before navigation; unknown full samples prove nothing.
+    if (!coarseSubmitted)
+      check("coarse-exact-values", false, {
+        ...coarseDetails,
+        reason: "Coarse gesture lacks complete time/submission evidence",
+      });
     await button(session.page, "Nahansicht");
     await exact(session.page);
+    const coarseAuthoredSamples = await values(session.page, points);
+    check(
+      "coarse-exact-values",
+      closeEnough(coarseAuthoredSamples, doseExpected),
+      {
+        ...coarseDetails,
+        samples: coarseAuthoredSamples,
+        samplesView: "required-detail-return-after-coarse-edit",
+      },
+    );
     const afterImage = await capture(session, "coast-after", [[-800, 0]]);
     const water = beforeImage.pixels[0],
       land = afterImage.pixels[0];
@@ -1257,6 +1273,8 @@ async function scalingJourney() {
   report.scaling = { manifest, cases: [], passed: false };
   const sourceFootprint = (observed) => ({
     documentSourceBytes: observed.document.sourceBytes,
+    documentSourceEntries: observed.document.sourceEntries,
+    documentCoverageRegions: observed.document.coverageRegions,
     rendererSourceBytes: observed.renderer.sourceBytes,
     workerSourceBytes: observed.renderer.workerSourceBytes,
   });
@@ -1270,8 +1288,14 @@ async function scalingJourney() {
   const assertSourceBudget = (footprint, reads) => {
     const maximum = P0_REQUIREMENTS.scaling.sourceBudgetBytes;
     if (
-      Object.values(footprint).some(
-        (bytes) => !Number.isFinite(bytes) || bytes < 0 || bytes > maximum,
+      ["documentSourceBytes", "rendererSourceBytes", "workerSourceBytes"].some(
+        (key) =>
+          !Number.isFinite(footprint[key]) ||
+          footprint[key] < 0 ||
+          footprint[key] > maximum,
+      ) ||
+      ["documentSourceEntries", "documentCoverageRegions"].some(
+        (key) => !Number.isSafeInteger(footprint[key]) || footprint[key] < 0,
       ) ||
       reads.returnedBytes > maximum ||
       reads.returnedTiles > maximum / P0_REQUIREMENTS.scaling.tileBytes
@@ -1518,12 +1542,13 @@ async function scalingJourney() {
 }
 
 try {
-  if (native) {
+  if (native || probeNative) {
     report.preflight = await nativePreflight({
       out,
       executablePath: packaged ? executablePath : undefined,
       profilePath: referencePath,
       probe: probeNative,
+      lab,
     });
     const observed = report.preflight.observed;
     report.reference = {
@@ -1555,7 +1580,7 @@ try {
           status: report.evaluation.status,
           blockers: report.preflight.blockers,
           errors: report.preflight.errors,
-          fixturesCreated: false,
+          fixturesCreated: report.preflight.fixturesCreated,
           report: join(out, "native-preflight.json"),
         }),
       );

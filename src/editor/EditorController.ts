@@ -586,13 +586,22 @@ export class EditorController {
     return this.viewRead;
   }
 
+  private retainViewSources(bounds: Bounds, minLevel: number): void {
+    const local = this.localReadiness();
+    const removed = this.doc.retainSources([
+      { bounds, minLevel },
+      { bounds: local.bounds, minLevel: local.brush.level },
+    ]);
+    this.world.forgetSources(removed);
+  }
+
   private async readView(): Promise<void> {
     const token = ++this.loadToken;
     const document = this.doc;
     const power = this.world.presentationPower();
     const minLevel = minimumCoarseHeightLevel(power);
     const bounds = this.world.sourceBounds();
-    document.evictConfirmedOutside(bounds);
+    this.retainViewSources(bounds, minLevel);
     if (!this.world.isPresentationReady(bounds, power)) {
       this.checkLocalReady();
       const loaded = await this.readCurrent(
@@ -644,6 +653,9 @@ export class EditorController {
     }
     if (this.disposed || token !== this.loadToken || document !== this.doc)
       return;
+    // Hover/brush settings may have changed during the presentation read. Keep
+    // the current complete tool halo before loading it, not the earlier one.
+    this.retainViewSources(bounds, minLevel);
     const { bounds: needed, brush } = this.localReadiness();
     await this.ensure(needed, brush.level);
     if (this.disposed || token !== this.loadToken || document !== this.doc)
@@ -998,6 +1010,7 @@ export class EditorController {
       level: gesture.brush.level,
       revision: this.doc.revision,
       changed: Boolean(update),
+      bounds: update?.bounds ?? null,
       inputIds: input === undefined ? [] : [input],
     });
     if (!update) {
@@ -1137,6 +1150,9 @@ export class EditorController {
           });
       this.observation.mark("commit", String(input), {
         input,
+        gestureId: gesture.id,
+        sessionId: this.doc.sessionId,
+        bounds: change.dirtyBounds,
         sequence: change.sequence,
         revision: change.revision,
       });

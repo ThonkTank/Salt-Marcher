@@ -171,7 +171,8 @@ export class WorldRenderer {
       const receivedAt = batch.timing
         ? performance.timeOrigin + performance.now()
         : undefined;
-      if (this.running?.id === batch.id) this.running = null;
+      const completed = this.running?.id === batch.id ? this.running : null;
+      if (completed) this.running = null;
       if (batch.sessionId !== this.sessionId) return;
       this.observation.event("raster-batch-result", {
         id: batch.id,
@@ -196,6 +197,7 @@ export class WorldRenderer {
           rect: result.rect,
           cpuMs: result.cpuMs,
           pixels: result.samples,
+          ...(result.stages ? { stages: result.stages } : {}),
         });
         this.maxRasterMs = Math.max(this.maxRasterMs, result.cpuMs);
         this.totalSamples += result.samples;
@@ -210,8 +212,19 @@ export class WorldRenderer {
       } else this.results.push(...batch.results);
       this.maxRasterBatchMs = Math.max(this.maxRasterBatchMs, batch.cpuMs);
       this.requestFrame = true;
-      // Apply completed rectangles before selecting the next batch, so newly
-      // dirty local regions outrank loading unrelated, previously blank tiles.
+      // A large accepted dose may span several bounded batches. Its remaining
+      // current-revision rectangles can run while completed pixels await RAF.
+      // Do not queue view loading here: RAF must first publish this result and
+      // admit any next local dose. Upload/render and input admission stay in tick.
+      if (
+        completed &&
+        (!this.faultArmed || this.fault === "none") &&
+        completed.tasks.every(
+          (task) =>
+            task.revision > 0 && task.revision === this.document.revision,
+        )
+      )
+        this.dispatch(this.document.revision);
     };
     this.raster.onerror = (event) => this.onError(new Error(event.message));
   }
@@ -320,6 +333,11 @@ export class WorldRenderer {
       overviews.map((tile) => ({ ...tile, values: tile.values.slice() })),
       [...overviewKeys],
     );
+  }
+
+  /** Drop only source copies the document no longer needs; keep numeric views. */
+  forgetSources(keys: readonly string[]): void {
+    if (keys.length) this.sendSources([], [...keys]);
   }
 
   /** History already owns complete changed sources, even after distant eviction. */
@@ -667,7 +685,7 @@ export class WorldRenderer {
     return this.fault === "pointerup-render" && Boolean(this.document?.active);
   }
 
-  private dispatch(): void {
+  private dispatch(continuationRevision?: number): void {
     if (
       this.running ||
       !this.document ||
@@ -702,7 +720,7 @@ export class WorldRenderer {
       Math.abs(tile.bounds[0] + tile.bounds[2] - center[0] - center[2]) +
       Math.abs(tile.bounds[1] + tile.bounds[3] - center[1] - center[3]);
     // Latest pending rectangle per tile replaces obsolete work, never source edits.
-    const candidates = [...this.tiles.values()]
+    const ready = [...this.tiles.values()]
       .filter(
         (tile) =>
           tile.visible &&
@@ -719,12 +737,25 @@ export class WorldRenderer {
     // A held brush can produce another local dose after every submitted frame.
     // Let one bounded remaining tile progress periodically, without trapping a
     // local result in the same batch or growing a second work queue.
-    const remaining = candidates.find((tile) => priority(tile) === 2);
+    const remaining = ready.find((tile) => priority(tile) === 2);
+    const candidates =
+      continuationRevision === undefined
+        ? ready
+        : ready.filter(
+            (tile) =>
+              tile.revision === continuationRevision && priority(tile) === 0,
+          );
     const viewProgress =
-      this.localBatches >= LOCAL_BATCHES_BEFORE_VIEW_PROGRESS && remaining;
+      continuationRevision === undefined &&
+      this.localBatches >= LOCAL_BATCHES_BEFORE_VIEW_PROGRESS &&
+      remaining;
     const selected = viewProgress ? [viewProgress] : candidates;
     const tasks: RasterTask[] = [];
     let pixels = 0;
+    const readyBytes = this.results.reduce(
+      (sum, result) => sum + result.pixels.byteLength,
+      0,
+    );
     const batchPriority = selected.length ? priority(selected[0]) : -1;
     for (const tile of selected) {
       if (tasks.length === MAX_RASTER_BATCH_TILES) break;
@@ -732,7 +763,11 @@ export class WorldRenderer {
       if (priority(tile) !== batchPriority) break;
       const rect = tile.dirty!;
       const count = (rect[2] - rect[0]) * (rect[3] - rect[1]);
-      if (pixels + count > MAX_RASTER_BATCH_PIXELS) break;
+      if (
+        pixels + count > MAX_RASTER_BATCH_PIXELS ||
+        readyBytes + (pixels + count) * 4 > editorBudgets.uploadBytesPerFrame
+      )
+        break;
       const task: RasterTask = {
         kind: "raster",
         id: ++this.jobId,
@@ -767,6 +802,7 @@ export class WorldRenderer {
       pixels,
       priority: batchPriority,
       viewProgress: Boolean(viewProgress),
+      continuation: continuationRevision !== undefined,
     });
     for (const task of tasks)
       this.observation.event("raster-start", {

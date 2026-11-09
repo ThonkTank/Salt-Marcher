@@ -1,7 +1,6 @@
 import {
   app,
   BrowserWindow,
-  contentTracing,
   dialog,
   ipcMain,
   Menu,
@@ -12,6 +11,7 @@ import {
 } from "electron";
 import { createHash } from "node:crypto";
 import { mkdtempSync, readFileSync } from "node:fs";
+import { open } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import type {
@@ -552,6 +552,96 @@ function registerDiagnostics() {
     buildProvenance.error =
       error instanceof Error ? error.message : String(error);
   }
+  let tracing = false;
+  const startTrace = async (options?: { screenshots?: boolean }) => {
+    if (tracing) throw new Error("Atlas trace is already running.");
+    const debugger_ = window.webContents.debugger;
+    if (debugger_.isAttached())
+      throw new Error("Atlas trace needs an unclaimed debugger connection.");
+    debugger_.attach("1.3");
+    try {
+      // DevTools' screenshot consumer is started by Tracing.start, not by
+      // contentTracing's category filter. Keep the original JSON bytes in a
+      // stream: decoding dataCollected here would round Chromium uint64 IDs.
+      await debugger_.sendCommand("Tracing.start", {
+        transferMode: "ReturnAsStream",
+        streamFormat: "json",
+        traceConfig: {
+          includedCategories: [
+            "blink.user_timing",
+            "input",
+            "latencyInfo",
+            "cc",
+            "viz",
+            "gpu",
+            "gpu.capture",
+            "benchmark",
+            "disabled-by-default-devtools.timeline",
+            "disabled-by-default-devtools.timeline.frame",
+            ...(options?.screenshots
+              ? ["disabled-by-default-devtools.screenshot"]
+              : []),
+          ],
+          recordMode: "recordUntilFull",
+        },
+      });
+      tracing = true;
+    } catch (error) {
+      debugger_.detach();
+      throw error;
+    }
+  };
+  const stopTrace = async (path: string) => {
+    if (!tracing) throw new Error("No Atlas trace is running.");
+    const debugger_ = window.webContents.debugger;
+    let listener: (
+      event: Electron.Event,
+      method: string,
+      params: { stream?: string; dataLossOccurred?: boolean },
+    ) => void;
+    let timeout: ReturnType<typeof setTimeout> | undefined;
+    try {
+      const completed = new Promise<string>((resolveTrace, rejectTrace) => {
+        listener = (_event, method, params) => {
+          if (method !== "Tracing.tracingComplete") return;
+          if (params.dataLossOccurred !== false || !params.stream)
+            rejectTrace(new Error("Atlas trace is incomplete or lost events."));
+          else resolveTrace(params.stream);
+        };
+        debugger_.on("message", listener);
+        timeout = setTimeout(
+          () => rejectTrace(new Error("Atlas trace did not finish.")),
+          10_000,
+        );
+      });
+      // Register completion before ending; a short trace may finish immediately.
+      const [handle] = await Promise.all([
+        completed,
+        debugger_.sendCommand("Tracing.end"),
+      ]);
+      const file = await open(path, "w");
+      try {
+        for (;;) {
+          const chunk = await debugger_.sendCommand("IO.read", { handle });
+          await file.writeFile(
+            chunk.base64Encoded
+              ? Buffer.from(chunk.data, "base64")
+              : Buffer.from(chunk.data, "utf8"),
+          );
+          if (chunk.eof) break;
+        }
+      } finally {
+        await file.close();
+        await debugger_.sendCommand("IO.close", { handle });
+      }
+      return path;
+    } finally {
+      if (timeout) clearTimeout(timeout);
+      debugger_.removeListener("message", listener!);
+      debugger_.detach();
+      tracing = false;
+    }
+  };
   // This is main-process test instrumentation. Nothing here is exposed to the
   // renderer, and these observations never create readiness or source changes.
   Object.assign(globalThis, {
@@ -579,22 +669,8 @@ function registerDiagnostics() {
       storeActivity: (options?: { sinceEvent?: number }) =>
         store.activity(options),
       fileActionPending: () => fileActionPending,
-      startTrace: () =>
-        contentTracing.startRecording({
-          included_categories: [
-            "blink.user_timing",
-            "input",
-            "latencyInfo",
-            "cc",
-            "viz",
-            "gpu",
-            "benchmark",
-            "disabled-by-default-devtools.timeline",
-            "disabled-by-default-devtools.timeline.frame",
-          ],
-          recording_mode: "record-until-full",
-        }),
-      stopTrace: (path: string) => contentTracing.stopRecording(path),
+      startTrace,
+      stopTrace,
     },
   });
 }

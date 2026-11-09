@@ -542,34 +542,21 @@ export async function observeStroke(session, before, timeout = 5000) {
       ({ cutoff, sinceEvent }) => {
         const o = window.atlasObserve([], { sinceEvent });
         if (o.state.error) throw new Error(o.state.error);
-        return ["edit", "pointerup"].every((kind) =>
-          o.events.some(
-            (e) => e.kind === "input" && e.id > cutoff && e.inputKind === kind,
-          ),
+        // Inspect IDs locally until the gesture is fully submitted. Sending
+        // the growing journal through Playwright before its last RAF blocks
+        // that publication and measures observer serialization as brush work.
+        const inputs = o.events.filter(
+          (e) =>
+            e.kind === "input" &&
+            e.id > cutoff &&
+            ["edit", "pointerup"].includes(e.inputKind),
         );
-      },
-      { cutoff, sinceEvent },
-      { timeout: remaining() },
-    );
-    const early = await snapshot(page, [], { sinceEvent });
-    const ids = early.events
-      .filter(
-        (e) =>
-          e.kind === "input" &&
-          e.id > cutoff &&
-          ["edit", "pointerup"].includes(e.inputKind),
-      )
-      .map((e) => e.id);
-    await page.waitForFunction(
-      ({ ids, sinceEvent }) => {
-        const o = window.atlasObserve([], { sinceEvent });
-        if (o.state.error) throw new Error(o.state.error);
         return (
-          ids.length > 0 &&
-          ids.every((id) => {
-            const input = o.events.find(
-              (event) => event.kind === "input" && event.id === id,
-            );
+          ["edit", "pointerup"].every((kind) =>
+            inputs.some((input) => input.inputKind === kind),
+          ) &&
+          inputs.every((input) => {
+            const id = input.id;
             // Retain a processed input without inventing an edit or waiting five
             // seconds. Its reason, gesture context and live result decide validity.
             if (
@@ -615,7 +602,7 @@ export async function observeStroke(session, before, timeout = 5000) {
           })
         );
       },
-      { ids, sinceEvent },
+      { cutoff, sinceEvent },
       { timeout: remaining() },
     );
   } catch (error) {

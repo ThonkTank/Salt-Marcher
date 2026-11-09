@@ -41,21 +41,29 @@ export interface HeightDocumentOptions {
 }
 
 interface Entry {
-  state: SourceState;
+  state: Exclude<SourceState, "unknown">;
   tile?: HeightTile;
   localSequence: number;
 }
 
-interface Coverage {
-  level: number | null;
-  minLevel?: number;
+/** Exact source requirement; the support halo belongs in bounds. */
+export interface SourceNeed {
   bounds: Bounds;
+  minLevel: number;
 }
 
-const coversLevel = (coverage: Coverage, level: number) =>
-  coverage.level === null
-    ? level >= (coverage.minLevel ?? 0)
-    : coverage.level === level;
+function assertSourceNeed(need: SourceNeed): void {
+  assertBounds(need.bounds);
+  if (
+    !Number.isInteger(need.minLevel) ||
+    need.minLevel < 0 ||
+    need.minLevel > HEIGHT_LEVELS.length
+  )
+    throw new RangeError("Ungültige untere Quellenstufe.");
+}
+
+const coversLevel = (coverage: SourceNeed, level: number) =>
+  level >= coverage.minLevel;
 
 export interface HeightUpdate {
   bounds: Bounds;
@@ -176,9 +184,9 @@ export class EditorDocument {
   generation = 0;
   sequence: number;
   persistedSequence: number;
-  private readonly options: Required<HeightDocumentOptions>;
+  private readonly options: Required<Omit<HeightDocumentOptions, "empty">>;
   private readonly entries = new Map<string, Entry>();
-  private coverage: Coverage[] = [];
+  private coverage: SourceNeed[] = [];
   private gesture: Gesture | null = null;
   private history: HistoryAction[] = [];
   private historyPosition = 0;
@@ -194,7 +202,6 @@ export class EditorDocument {
     if (!sessionId) throw new Error("Dokumentsitzung fehlt.");
     this.sessionId = sessionId;
     this.options = {
-      empty: options.empty ?? false,
       sequence: options.sequence ?? 0,
       maxSourceBytes: options.maxSourceBytes ?? 256 * 1024 * 1024,
       maxPendingBytes: options.maxPendingBytes ?? 32 * 1024 * 1024,
@@ -202,11 +209,8 @@ export class EditorDocument {
       maxHistoryActions: options.maxHistoryActions ?? 100,
       maxGestureCells: options.maxGestureCells ?? 100_000,
     };
-    for (const [key, value] of Object.entries(this.options)) {
-      if (
-        key !== "empty" &&
-        (!Number.isSafeInteger(value) || Number(value) < 0)
-      )
+    for (const value of Object.values(this.options)) {
+      if (!Number.isSafeInteger(value) || Number(value) < 0)
         throw new RangeError("Ungültiges Dokumentbudget oder Sequenznummer.");
     }
     if (this.options.maxHistoryActions < 1 || this.options.maxGestureCells < 1)
@@ -215,6 +219,11 @@ export class EditorDocument {
       );
     this.sequence = this.options.sequence;
     this.persistedSequence = this.sequence;
+    if (options.empty)
+      this.coverage.push({
+        bounds: [-WORLD_LIMIT, -WORLD_LIMIT, WORLD_LIMIT, WORLD_LIMIT],
+        minLevel: 0,
+      });
   }
 
   get active(): boolean {
@@ -235,6 +244,7 @@ export class EditorDocument {
       gestureCells: this.gesture?.cellCount ?? 0,
       historyActions: this.history.length,
       readyTiles: this.sourceBytes / HEIGHT_TILE_BYTES,
+      sourceEntries: this.entries.size,
       coverageRegions: this.coverage.length,
     };
   }
@@ -243,7 +253,6 @@ export class EditorDocument {
     const parsed = parseHeightTileKey(key);
     const entry = this.entries.get(key);
     if (entry) return entry.state;
-    if (this.options.empty) return "absent";
     const support = heightTileSupport(parsed);
     return this.coverage.some(
       (c) =>
@@ -251,14 +260,6 @@ export class EditorDocument {
     )
       ? "absent"
       : "unknown";
-  }
-
-  requiredSources(
-    bounds: Bounds,
-    levels: readonly number[] = HEIGHT_LEVELS,
-    maxKeys = 4096,
-  ): string[] {
-    return requiredHeightSources(bounds, levels, maxKeys);
   }
 
   /** Each supplied region is certified by a complete support-overlap store read. */
@@ -269,34 +270,13 @@ export class EditorDocument {
     sessionId = this.sessionId,
     minLevel = 0,
   ): void {
-    if (
-      !Number.isInteger(minLevel) ||
-      minLevel < 0 ||
-      minLevel > HEIGHT_LEVELS.length
-    )
-      throw new RangeError("Ungültige untere Quellenstufe.");
-    this.acceptRead(
-      { level: null, minLevel, bounds },
-      null,
-      tiles,
-      storeSequence,
-      sessionId,
-    );
-  }
-
-  acceptSources(
-    keys: readonly string[],
-    tiles: readonly HeightTile[],
-    storeSequence = this.persistedSequence,
-    sessionId = this.sessionId,
-  ): void {
-    keys.forEach(parseHeightTileKey);
-    this.acceptRead(null, new Set(keys), tiles, storeSequence, sessionId);
+    const coverage = { minLevel, bounds };
+    assertSourceNeed(coverage);
+    this.acceptRead(coverage, tiles, storeSequence, sessionId);
   }
 
   private acceptRead(
-    coverage: Coverage | null,
-    keys: Set<string> | null,
+    coverage: SourceNeed,
     tiles: readonly HeightTile[],
     storeSequence: number,
     sessionId: string,
@@ -309,15 +289,16 @@ export class EditorDocument {
       storeSequence > this.sequence
     )
       throw new Error("Ungültige Lesesequenz der Arbeitskopie.");
-    if (coverage) assertBounds(coverage.bounds);
-    const affects = (key: string) =>
-      keys
-        ? keys.has(key)
-        : coversLevel(coverage!, parseHeightTileKey(key).level) &&
-          intersectsBounds(
-            heightTileSupport(parseHeightTileKey(key)),
-            coverage!.bounds,
-          );
+    // Confirmed per-key markers may have been released. A read predating their
+    // ACK must not recreate old authors or certify old absence anywhere.
+    if (storeSequence < this.persistedSequence) return;
+    const affects = (key: string) => {
+      const tile = parseHeightTileKey(key);
+      return (
+        coversLevel(coverage, tile.level) &&
+        intersectsBounds(heightTileSupport(tile), coverage.bounds)
+      );
+    };
     const received = new Map<string, HeightTile>();
     for (const tile of tiles) {
       validateHeightTile(tile);
@@ -327,16 +308,14 @@ export class EditorDocument {
         );
       received.set(tile.key, tile);
     }
-    const affectedKeys = new Set(keys ?? received.keys());
-    if (coverage)
-      for (const key of this.entries.keys())
-        if (affects(key)) affectedKeys.add(key);
+    const affectedKeys = new Set(received.keys());
+    for (const key of this.entries.keys())
+      if (affects(key)) affectedKeys.add(key);
     const changes: [string, HeightTile | null][] = [];
     let nextBytes = this.sourceBytes;
     for (const key of affectedKeys) {
       const prior = this.entries.get(key);
-      // A store read can lag both an active gesture and an acknowledged local
-      // action. Compare its captured sequence, not the latest store ack.
+      // A valid store read can still lag an active or unacknowledged local edit.
       if (
         this.gesture?.before.has(key) ||
         (prior?.localSequence ?? 0) > storeSequence
@@ -354,71 +333,58 @@ export class EditorDocument {
       );
     for (const [key, tile] of changes) {
       const localSequence = this.entries.get(key)?.localSequence ?? 0;
-      this.entries.set(
-        key,
-        tile
-          ? { state: "ready", tile: cloneHeightTile(tile), localSequence }
-          : { state: "absent", localSequence },
-      );
+      if (tile)
+        this.entries.set(key, {
+          state: "ready",
+          tile: cloneHeightTile(tile),
+          localSequence,
+        });
+      else if (localSequence > this.persistedSequence)
+        this.entries.set(key, { state: "absent", localSequence });
+      else this.entries.delete(key);
       if (tile) this.revision = Math.max(this.revision, tile.revision);
     }
     this.sourceBytes = nextBytes;
-    if (coverage) {
-      const copy = {
-        level: coverage.level,
-        minLevel: coverage.minLevel,
-        bounds: [...coverage.bounds] as Bounds,
-      };
-      this.coverage = this.coverage.filter(
-        (old) =>
-          !(
-            (copy.level === null
-              ? old.level === null
-                ? (old.minLevel ?? 0) >= (copy.minLevel ?? 0)
-                : coversLevel(copy, old.level)
-              : copy.level === old.level) && contained(copy.bounds, old.bounds)
-          ),
-      );
-      this.coverage.push(copy);
-      // This only drops an absence proof. It cannot discard authors or turn an
-      // unknown source into ocean; the next view can request the region again.
-      if (this.coverage.length > 256) this.coverage.shift();
-    }
+    this.rememberCoverage(coverage);
     this.generation++;
+  }
+
+  private rememberCoverage(coverage: SourceNeed): void {
+    this.coverage = this.coverage.filter(
+      (old) =>
+        !(
+          old.minLevel >= coverage.minLevel &&
+          contained(coverage.bounds, old.bounds)
+        ),
+    );
+    this.coverage.push({
+      minLevel: coverage.minLevel,
+      bounds: [...coverage.bounds],
+    });
+    // Forgetting a proof can request another read, never invent absent authors.
+    if (this.coverage.length > 256) this.coverage.shift();
   }
 
   isReady(bounds: Bounds, levels: readonly number[] = HEIGHT_LEVELS): boolean {
     assertBounds(bounds);
     levels.forEach(assertLevel);
-    const requestedLevels = new Set(levels);
-    const coverageReady =
-      this.options.empty ||
-      levels.every((level) => {
-        let remaining: Bounds[] = [bounds];
-        for (const coverage of this.coverage) {
-          if (!coversLevel(coverage, level)) continue;
-          if (contained(coverage.bounds, bounds)) return true;
-          remaining = remaining.flatMap((area) =>
-            subtract(area, coverage.bounds),
-          );
-          if (!remaining.length) return true;
-        }
-        return false;
-      });
-    if (coverageReady) {
-      for (const [key, entry] of this.entries) {
-        if (entry.state === "ready" || entry.state === "absent") continue;
-        const tile = parseHeightTileKey(key);
-        if (
-          requestedLevels.has(tile.level) &&
-          intersectsBounds(heightTileSupport(tile), bounds)
-        )
-          return false;
+    const coverageReady = levels.every((level) => {
+      let remaining: Bounds[] = [bounds];
+      for (const coverage of this.coverage) {
+        if (!coversLevel(coverage, level)) continue;
+        if (contained(coverage.bounds, bounds)) return true;
+        remaining = remaining.flatMap((area) =>
+          subtract(area, coverage.bounds),
+        );
+        if (!remaining.length) return true;
       }
-      return true;
-    }
+      return false;
+    });
+    // Coverage survives only while every positive contributor remains resident.
+    // There is no exception dictionary of previously visited, evicted sources.
+    if (coverageReady) return true;
     try {
-      return this.requiredSources(bounds, levels).every((key) => {
+      return requiredHeightSources(bounds, levels).every((key) => {
         const state = this.sourceState(key);
         return state === "ready" || state === "absent";
       });
@@ -430,18 +396,6 @@ export class EditorDocument {
         return false;
       throw error;
     }
-  }
-
-  readSources(keys: readonly string[]): HeightTile[] {
-    const result: HeightTile[] = [];
-    for (const key of keys) {
-      const state = this.sourceState(key);
-      if (state !== "ready" && state !== "absent")
-        throw new Error("Höhenquelle ist nicht bereit.");
-      const tile = this.entries.get(key)?.tile;
-      if (tile) result.push(cloneHeightTile(tile));
-    }
-    return result;
   }
 
   snapshot(
@@ -483,43 +437,56 @@ export class EditorDocument {
     return prepareHeightSampler(this.snapshot(bounds))(x, y);
   }
 
-  evictSources(keys: readonly string[]): number {
-    let count = 0;
-    for (const key of keys) {
-      parseHeightTileKey(key);
-      const entry = this.entries.get(key);
+  /** Keep display/tool requirements and pinned edits; return discarded copies. */
+  retainSources(needs: readonly SourceNeed[]): string[] {
+    if (needs.length > 2)
+      throw new RangeError(
+        "Höchstens Darstellungs- und Werkzeugbedarf halten.",
+      );
+    needs.forEach(assertSourceNeed);
+    const clipped: SourceNeed[] = [];
+    for (const coverage of this.coverage)
+      for (const need of needs) {
+        const bounds: Bounds = [
+          Math.max(coverage.bounds[0], need.bounds[0]),
+          Math.max(coverage.bounds[1], need.bounds[1]),
+          Math.min(coverage.bounds[2], need.bounds[2]),
+          Math.min(coverage.bounds[3], need.bounds[3]),
+        ];
+        if (bounds[0] < bounds[2] && bounds[1] < bounds[3])
+          clipped.push({
+            bounds,
+            minLevel: Math.max(coverage.minLevel, need.minLevel),
+          });
+      }
+    // Revoke broad proofs before removing their positive contributors. In
+    // particular, a new world's original empty proof cannot outlive eviction.
+    this.coverage = [];
+    for (const coverage of clipped) this.rememberCoverage(coverage);
+    const removed: string[] = [];
+    for (const [key, entry] of this.entries) {
       if (
-        entry?.state !== "ready" ||
         entry.localSequence > this.persistedSequence ||
         this.gesture?.before.has(key)
       )
         continue;
-      this.entries.set(key, {
-        state: "unknown",
-        localSequence: entry.localSequence,
-      });
-      this.sourceBytes -= HEIGHT_TILE_BYTES;
-      count++;
-    }
-    if (count) this.generation++;
-    return count;
-  }
-
-  evictConfirmedSources(): number {
-    return this.evictSources([...this.entries.keys()]);
-  }
-
-  /** Keep the current sampling halo, active gestures and unacknowledged writes. */
-  evictConfirmedOutside(bounds: Bounds): number {
-    assertBounds(bounds);
-    const keys: string[] = [];
-    for (const [key, entry] of this.entries)
       if (
         entry.tile &&
-        !intersectsBounds(heightTileSupport(entry.tile), bounds)
+        needs.some(
+          (need) =>
+            coversLevel(need, entry.tile!.level) &&
+            intersectsBounds(heightTileSupport(entry.tile!), need.bounds),
+        )
       )
-        keys.push(key);
-    return this.evictSources(keys);
+        continue;
+      this.entries.delete(key);
+      if (entry.tile) {
+        this.sourceBytes -= HEIGHT_TILE_BYTES;
+        removed.push(key);
+      }
+    }
+    this.generation++;
+    return removed;
   }
 
   beginGesture(brush: HeightBrush): void {
@@ -917,6 +884,13 @@ export class EditorDocument {
         this.pending.delete(pendingSequence);
         this.pendingBytes -= bytes;
       }
+    for (const [key, entry] of this.entries)
+      if (
+        entry.state === "absent" &&
+        entry.localSequence <= sequence &&
+        !this.gesture?.before.has(key)
+      )
+        this.entries.delete(key);
   }
 
   /** Overlay only changes absent from this store read, then the current live action.

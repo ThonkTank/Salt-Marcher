@@ -6,10 +6,10 @@ import { pathToFileURL } from "node:url";
 // feedback: https://github.com/electron/electron/blob/v44.10.2/shell/browser/api/frame_subscriber.cc
 export const nativePresentationCapability = Object.freeze({
   status: "unsupported",
-  code: "NATIVE_PRESENTATION_ADAPTER_UNIMPLEMENTED",
+  code: "NATIVE_PRESENTATION_MAPPING_UNPROVEN",
   method: null,
   reason:
-    "The pinned Electron API/trace adapter does not yet join an Atlas canvas generation to the actual displayed frame. A reference profile, capturePage, frame subscription, RAF or the first following draw cannot supply that proof.",
+    "The pinned CDP probe captures terrain pixels and matches begin-frame IDs to presentation reporters, but cannot bind each bitmap to its CopyOutput/capture trigger or certify an arbitrary exact Atlas generation's first presentation. Screenshot predicates, estimated display time, callback/RAF time and the first matching captured frame are not an acceptance-grade mapping.",
   clock: Object.freeze({ calibrated: false }),
 });
 
@@ -31,7 +31,7 @@ export function parseTrace(text) {
   });
 }
 
-export function analyzeTrace(text) {
+export function analyzeTrace(text, { rendererPid } = {}) {
   const parsed = parseTrace(text);
   const events = (
     Array.isArray(parsed) ? parsed : (parsed.traceEvents ?? [])
@@ -115,12 +115,102 @@ export function analyzeTrace(text) {
         "diagnostic containment only; Canvas resource ownership unproven",
     };
   });
+  const rendererPids =
+    rendererPid === undefined
+      ? [...new Set(exactMarks.map((mark) => mark.pid))]
+      : [rendererPid];
+  // Chromium 152.0.7977.169's ChromeFrameReporter2 uses uint64 for
+  // frame_source/frame_sequence, but int64 for surface/display trace IDs:
+  // https://github.com/chromium/chromium/blob/152.0.7977.169/base/tracing/protos/chrome_track_event.proto
+  const id = (value, signed = false) => {
+    if (Number.isSafeInteger(value)) value = String(value);
+    if (typeof value !== "string" || !/^(?:-?\d+|0x[0-9a-f]+)$/i.test(value))
+      return null;
+    const integer = BigInt(value);
+    const minimum = signed ? -9223372036854775808n : 0n;
+    const maximum = signed ? 9223372036854775807n : 18446744073709551615n;
+    return integer >= minimum && integer <= maximum ? String(integer) : null;
+  };
+  const traceId = (value) => {
+    const result = id(value, true);
+    // BeginFrameArgs/BeginFrameAck initialize their unknown trace_id to -1.
+    return result === "-1" ? null : result;
+  };
+  const screenshots = events
+    .filter((event) => event.name === "Screenshot")
+    .map((event, index) => {
+      const source = id(event.args?.source_id);
+      const sequence = id(event.args?.frame_sequence);
+      const matching = reporters.filter(
+        (reporter) =>
+          source !== null &&
+          sequence !== null &&
+          rendererPids.length === 1 &&
+          reporter.pid === rendererPids[0] &&
+          id(reporter.frame_source) === source &&
+          id(reporter.frame_sequence) === sequence &&
+          reporter.state === "STATE_PRESENTED_ALL",
+      );
+      const complete = matching.filter(
+        (reporter) =>
+          reporter.has_missing_content === false &&
+          Number.isSafeInteger(reporter.layer_tree_host_id) &&
+          reporter.layer_tree_host_id > 0 &&
+          traceId(reporter.surface_frame_trace_id) !== null &&
+          traceId(reporter.display_trace_id) !== null &&
+          Number.isFinite(reporter.endTs),
+      );
+      const snapshot = event.args?.snapshot;
+      return {
+        index,
+        captureTs: event.ts,
+        sourceId: source,
+        frameSequence: sequence,
+        snapshotSha256:
+          typeof snapshot === "string" && snapshot.length > 0
+            ? createHash("sha256")
+                .update(Buffer.from(snapshot, "base64"))
+                .digest("hex")
+            : null,
+        imageStatus:
+          typeof snapshot === "string" && snapshot.length > 0
+            ? "encoded-image-unverified"
+            : "missing",
+        // This estimated field is retained solely to expose its difference
+        // from actual reporter end times. It never becomes a presentation time.
+        expectedDisplayTime: event.args?.expected_display_time ?? null,
+        reporterCandidates: matching,
+        frameIdentityStatus:
+          matching.length === 1 && complete.length === 1
+            ? "unique-reporter-candidate"
+            : matching.length > 1
+              ? "ambiguous"
+              : "unmapped",
+        presentationAt: null,
+      };
+    });
+  const captureEvents = events
+    .filter((event) => event.cat?.split(",").includes("gpu.capture"))
+    .map(({ name, ph, ts, dur, pid, tid, id, id2, args }) => ({
+      name,
+      ph,
+      ts,
+      dur,
+      pid,
+      tid,
+      id,
+      id2,
+      args,
+    }));
+  const captureStarts = captureEvents.filter(
+    (event) => event.name === "Capture" && event.ph === "b",
+  );
   return {
     sha256: createHash("sha256").update(text).digest("hex"),
     events: events.length,
     selectedEventCounts: Object.fromEntries(
       Object.entries(counts).filter(([name]) =>
-        /atlas\.|EventLatency|PipelineReporter|Graphics\.Pipeline|Presentation|SwapBuffers|DrawFrame/.test(
+        /atlas\.|Screenshot|EventLatency|PipelineReporter|Graphics\.Pipeline|Presentation|SwapBuffers|DrawFrame/.test(
           name,
         ),
       ),
@@ -131,6 +221,45 @@ export function analyzeTrace(text) {
     reporters,
     eventLatencies: latencies,
     exactSubmissionCandidates: candidates,
+    screenshots,
+    captureEvents,
+    copyOutputEvents: events.filter((event) =>
+      /::CopyOutput$/.test(event.name),
+    ),
+    screenshotMapping: {
+      rendererPids,
+      captured: screenshots.length,
+      uniqueReporterCandidates: screenshots.filter(
+        (frame) => frame.frameIdentityStatus === "unique-reporter-candidate",
+      ).length,
+      ambiguous: screenshots.filter(
+        (frame) => frame.frameIdentityStatus === "ambiguous",
+      ).length,
+      unmapped: screenshots.filter(
+        (frame) => frame.frameIdentityStatus === "unmapped",
+      ).length,
+      mappedPresentations: 0,
+      captureTriggers: Object.fromEntries(
+        [...new Set(captureStarts.map((event) => event.args?.trigger))]
+          .filter(Boolean)
+          .map((trigger) => [
+            trigger,
+            captureStarts.filter((event) => event.args?.trigger === trigger)
+              .length,
+          ]),
+      ),
+      screenshotsWithCaptureNumber: events.filter(
+        (event) =>
+          event.name === "Screenshot" && event.args?.frame_number !== undefined,
+      ).length,
+      capturesWithCompositorIdentity: captureStarts.filter(
+        (event) =>
+          event.args?.source_id !== undefined &&
+          event.args?.frame_sequence !== undefined,
+      ).length,
+      explanation:
+        "Frame IDs are diagnostic candidates only. The screenshot must certify the exact terrain generation, its copy/refresh provenance, and the first successful presentation before a timestamp can be accepted.",
+    },
     clockObservation: {
       markerCount: offsets.length,
       minimumOffsetMs: offsets.length ? Math.min(...offsets) : null,
@@ -140,8 +269,9 @@ export function analyzeTrace(text) {
         "Observed user-timing startTime to trace-ts offsets; no acceptance-grade clock calibration is inferred.",
     },
     mappingStatus: nativePresentationCapability.status,
-    missingEdge:
-      "Atlas semantic render generation -> the actual Canvas/shared-image resource consumed by this compositor frame. Mark containment and first subsequent draw are insufficient.",
+    missingEdge: screenshots.length
+      ? "Screenshot bitmap -> its actual CopyOutput/capture identity and trigger (compositor vs demand/refresh), then exact terrain generation -> first successful presentation. Begin-frame IDs and a unique reporter alone do not establish these edges."
+      : "Atlas semantic render generation -> the actual Canvas/shared-image resource consumed by this compositor frame. Mark containment and first subsequent draw are insufficient.",
     cautions: [
       "EventLatency may end at a cursor/partial frame before the exact terrain revision.",
       "A reported nominal vsync interval in headless traces does not establish a real reference display.",

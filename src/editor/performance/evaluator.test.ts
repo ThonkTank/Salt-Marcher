@@ -1086,6 +1086,48 @@ describe("explicit processed no-op evidence", () => {
       }
     },
   );
+  it("transfers the gesture journal only after its final matching publication", async () => {
+    const complete = journal();
+    const final = complete.events.filter(
+      (event) =>
+        (event.kind === "submit" && event.frame === 4) ||
+        (event.kind === "edit-submit" && event.input === 4),
+    );
+    const observation = {
+      ...complete,
+      events: complete.events.filter((event) => !final.includes(event)),
+    };
+    vi.stubGlobal("window", { atlasObserve: () => observation });
+    let transfers = 0;
+    const page = {
+      evaluate: (fn: (argument: unknown) => unknown, argument: unknown) => {
+        expect(observation.events).toContain(final[1]);
+        transfers++;
+        return fn(argument);
+      },
+      waitForFunction: async (
+        fn: (argument: unknown) => unknown,
+        argument: unknown,
+      ) => {
+        expect(fn(argument)).toBe(false);
+        expect(transfers).toBe(0);
+        observation.events.push(...final);
+        expect(fn(argument)).toBe(true);
+      },
+    };
+    try {
+      const observed = await observeStroke(
+        { page },
+        { eventCount: 0, lastInputId: 0 },
+        20,
+      );
+      expect(observed.timedOut).toBe(false);
+      expect(transfers).toBe(1);
+      expect(observed.samples.at(-1).submissionAt).not.toBeNull();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
   it("preserves a real 169-ms feedback pause while completed no-ops leave the queue", () => {
     const samples = Array.from({ length: 10 }, (_, index) => {
       const createdAt = index * 24,

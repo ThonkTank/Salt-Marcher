@@ -5,23 +5,23 @@ import type { RasterRect } from "../model/height-grid";
 export const MAX_RASTER_BATCH_TILES = 16;
 export const MAX_RASTER_BATCH_PIXELS = 128 * 1024;
 
-/** Exact height is sampled first; colour is a pure display classification. */
-export function colour(height: number): [number, number, number] {
+/** Exact height is classified directly into the image, without a tuple per pixel. */
+function writeColour(height: number, pixels: Uint8Array, offset: number): void {
   if (height < 0) {
     const depth = Math.min(1, -height / 300);
-    return [
-      Math.round(94 - 53 * depth),
-      Math.round(147 - 57 * depth),
-      Math.round(166 - 44 * depth),
-    ];
+    pixels[offset] = Math.round(94 - 53 * depth);
+    pixels[offset + 1] = Math.round(147 - 57 * depth);
+    pixels[offset + 2] = Math.round(166 - 44 * depth);
+  } else if (height < 12) {
+    pixels[offset] = 201;
+    pixels[offset + 1] = 192;
+    pixels[offset + 2] = 144;
+  } else {
+    const shade = Math.min(1, height / 600);
+    pixels[offset] = Math.round(132 + 60 * shade);
+    pixels[offset + 1] = Math.round(151 + 34 * shade);
+    pixels[offset + 2] = Math.round(103 + 64 * shade);
   }
-  if (height < 12) return [201, 192, 144];
-  const shade = Math.min(1, height / 600);
-  return [
-    Math.round(132 + 60 * shade),
-    Math.round(151 + 34 * shade),
-    Math.round(103 + 64 * shade),
-  ];
 }
 
 export function rasterize(
@@ -50,12 +50,11 @@ export function rasterize(
       // tile's sample spacing to fit its clipped drawable/query bounds.
       if (Math.abs(x) > WORLD_LIMIT || Math.abs(y) > WORLD_LIMIT) continue;
       const fine = fineHeights?.[(y0 + row) * size + x0 + column] ?? 0;
-      const rgb = colour(
+      writeColour(
         heightFromScaledSum(scaledHeights[row * width + column] + fine),
+        pixels,
+        i,
       );
-      pixels[i] = rgb[0];
-      pixels[i + 1] = rgb[1];
-      pixels[i + 2] = rgb[2];
       pixels[i + 3] = 255;
     }
   }

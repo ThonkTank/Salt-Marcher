@@ -28,6 +28,7 @@ export interface RasterResult extends Omit<RasterTask, "kind"> {
   pixels: Uint8Array;
   cpuMs: number;
   samples: number;
+  stages?: { sourceMs: number; sampleMs: number; colourMs: number };
 }
 export interface RasterBatch {
   kind: "raster-batch";
@@ -64,7 +65,7 @@ const knownOverviews = new Set<string>();
 const grids = new Map<number, ReturnType<typeof prepareHeightGrid>>();
 let sessionId = "";
 
-function renderTask(message: RasterTask): RasterResult {
+function renderTask(message: RasterTask, diagnostic: boolean): RasterResult {
   const begin = performance.now();
   const [x0, y0, x1, y1] = message.rect;
   const width = x1 - x0,
@@ -85,19 +86,32 @@ function renderTask(message: RasterTask): RasterResult {
     );
     grids.set(minimum, grid);
   }
+  const sourceAt = diagnostic ? performance.now() : 0;
+  const heights = grid(message.bounds, message.size, message.rect);
+  const sampledAt = diagnostic ? performance.now() : 0;
   const pixels = rasterize(
-    grid(message.bounds, message.size, message.rect),
+    heights,
     message.bounds,
     message.size,
     message.rect,
     overviews.get(overviewKey)?.values,
   );
+  const finishedAt = performance.now();
   return {
     ...message,
     kind: "raster-result",
     pixels,
-    cpuMs: performance.now() - begin,
+    cpuMs: finishedAt - begin,
     samples: width * height,
+    ...(diagnostic
+      ? {
+          stages: {
+            sourceMs: sourceAt - begin,
+            sampleMs: sampledAt - sourceAt,
+            colourMs: finishedAt - sampledAt,
+          },
+        }
+      : {}),
   };
 }
 
@@ -140,7 +154,9 @@ self.onmessage = (event: MessageEvent<RasterMessage>) => {
   const begin = performance.now();
   // One synchronous, bounded message uses one source version. Later source
   // messages cannot split its tiles, and no main-thread redispatch is needed.
-  const results = message.tasks.map(renderTask);
+  const results = message.tasks.map((task) =>
+    renderTask(task, message.sentAt !== undefined),
+  );
   const result: RasterBatchResult = {
     kind: "raster-batch-result",
     id: message.id,

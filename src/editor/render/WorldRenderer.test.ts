@@ -19,6 +19,7 @@ import {
   prepareHeightGrid,
   heightOverviewKeys,
   heightOverviewKey,
+  heightOverviewBounds,
   minimumCoarseHeightLevel,
   HEIGHT_SUM_SCALE,
   heightFromScaledSum,
@@ -38,9 +39,16 @@ import type {
 import {
   MAX_RASTER_BATCH_PIXELS,
   MAX_RASTER_BATCH_TILES,
-  colour,
   rasterize,
 } from "./raster";
+
+const colour = (height: number) =>
+  rasterize(
+    new Float64Array([height / HEIGHT_SUM_SCALE]),
+    [0, 0, 1, 1],
+    1,
+    [0, 0, 1, 1],
+  ).subarray(0, 3);
 
 const renderedSources = vi.hoisted(() => [] as Uint8Array[]);
 
@@ -125,7 +133,9 @@ it("mirrors coarse Undo/Redo after unrelated fine sources were evicted", () => {
   const lifted = document.sampleHeight(320, 0);
   expect(lifted).toBeGreaterThan(original);
 
-  expect(document.evictConfirmedOutside(detail)).toBeGreaterThan(0);
+  expect(
+    document.retainSources([{ bounds: detail, minLevel: 0 }]).length,
+  ).toBeGreaterThan(0);
   expect(document.sourceState(distant.key)).toBe("unknown");
   const world = new WorldRenderer(new Observation());
   world.reset(document);
@@ -588,6 +598,91 @@ it("finishes a large brush batch without main-thread redispatch and coalesces ne
       ),
     ).toBeLessThanOrEqual(MAX_RASTER_BATCH_PIXELS);
   }
+});
+
+it("continues a large accepted revision between frames without publishing or admitting another dose", async () => {
+  const { world, worker, frame, change, observation, document } =
+    await readyRenderer({
+      width: 640,
+      height: 640,
+      x: 0,
+      y: 0,
+    });
+  const update = change([0, 0], { level: 4, radius: 1024, amount: 40 });
+  world.setPriorityAreas(update.bounds, update.bounds);
+  frame();
+  const revision = document.revision;
+  const count = worker.batches.length;
+  const render = vi.spyOn(world.renderer, "render");
+  const advance = vi.spyOn(world, "advanceFrame");
+  worker.deliver();
+  expect(worker.batches).toHaveLength(count + 1);
+  expect(worker.completed).toHaveLength(1);
+  expect(
+    worker.batches.at(-1)!.tasks.every((task) => task.revision === revision),
+  ).toBe(true);
+  expect(render).not.toHaveBeenCalled();
+  expect(advance).not.toHaveBeenCalled();
+  expect(world.regionDisplayed(update.bounds)).toBe(false);
+  for (
+    let step = 0;
+    step < 10 && !world.regionDisplayed(update.bounds);
+    step++
+  ) {
+    if (worker.completed.length) worker.deliver();
+    frame();
+  }
+  expect(world.regionDisplayed(update.bounds)).toBe(true);
+  const continuations = observation
+    .read()
+    .filter(
+      (event) => event.kind === "raster-batch-start" && event.continuation,
+    );
+  expect(continuations.length).toBeGreaterThan(0);
+  expect(
+    continuations.every(
+      (event) =>
+        event.priority === 0 &&
+        typeof event.pixels === "number" &&
+        event.pixels <= MAX_RASTER_BATCH_PIXELS,
+    ),
+  ).toBe(true);
+  expect(document.revision).toBe(revision);
+});
+
+it("keeps outer view progress during repeated multi-batch local doses", async () => {
+  const { world, worker, frame, change, observation } = await readyRenderer({
+    width: 960,
+    height: 960,
+    x: 0,
+    y: 0,
+    rendered: false,
+  });
+  const focus: Bounds = [-1200, -1200, 1200, 1200];
+  world.setPriorityAreas(focus);
+  let previous: Bounds | null = null;
+  let accepted = 0;
+  let observationStart = 0;
+  world.advanceFrame = () => {
+    if (!world.regionDisplayed(previous ?? focus)) return;
+    if (!accepted) observationStart = observation.read().length;
+    previous = change([0, 0], { level: 4, radius: 1024, amount: 40 }).bounds;
+    world.setPriorityAreas(focus, previous);
+    accepted++;
+  };
+  frame();
+  for (let step = 0; step < 40; step++) {
+    // A whole accepted revision can finish before its single publication RAF.
+    while (worker.completed.length) worker.deliver();
+    frame();
+  }
+  const batches = observation
+    .read()
+    .slice(observationStart)
+    .filter((event) => event.kind === "raster-batch-start");
+  expect(accepted).toBeGreaterThan(4);
+  expect(batches.some((event) => event.continuation)).toBe(true);
+  expect(batches.some((event) => event.viewProgress)).toBe(true);
 });
 
 it("paints an older overlapping result completely without confirming the current region", async () => {
@@ -1508,6 +1603,78 @@ it("permits a partial edge footprint but ends before a captured pointer paints w
   controller.destroy();
 });
 
+it("retains the current full tool halo when size and hover change during a presentation read", async () => {
+  const { controller, bridge, frame, pointer, drainView } =
+    await readyController(1, { width: 512, height: 256 });
+  let resume!: (
+    reply: Awaited<ReturnType<typeof bridge.readPresentation>>,
+  ) => void;
+  bridge.readPresentation.mockImplementationOnce(
+    () => new Promise((resolve) => (resume = resolve)),
+  );
+  controller.goTo(new Event("navigate"), 100_000, 0, 1 / 64);
+  frame();
+  for (let step = 0; step < 8; step++) await Promise.resolve();
+  expect(resume).toBeTypeOf("function");
+  const presentation = bridge.readPresentation.mock.calls.at(-1)![0];
+  controller.setBrush(8, 400);
+  pointer("pointermove", 511, 128);
+  const requestedTool = controller.observe().readiness;
+  expect(requestedTool.bounds[2]).toBeGreaterThan(controller.world.bounds()[2]);
+  resume({
+    ...presentation,
+    sequence: 0,
+    tiles: [],
+    overviews: [],
+    overviewKeys: heightOverviewKeys(presentation.bounds, presentation.power),
+  });
+  await drainView();
+  expect(bridge.readRegion.mock.calls.at(-1)![0]).toMatchObject({
+    bounds: requestedTool.bounds,
+    minLevel: requestedTool.brush.level,
+  });
+  expect(controller.observe().readiness.ready).toBe(true);
+  expect(controller.state.error).toBeNull();
+  pointer("pointerdown", 511, 128);
+  pointer("pointerup", 511, 128);
+  expect(controller.observe().document!.revision).toBe(1);
+  controller.destroy();
+});
+
+it("releases unused fine worker copies while retaining their coarse visible contribution", async () => {
+  const { controller, worker, pointer, drainView } = await readyController(1, {
+    width: 1024,
+    height: 256,
+  });
+  controller.goTo(new Event("navigate"), 100_000, 0, 1 / 64);
+  controller.setBrush(8, 400);
+  pointer("pointermove", 100, 128);
+  await drainView();
+  pointer("pointerdown", 100, 128);
+  pointer("pointerup", 100, 128);
+  await drainView();
+  for (let step = 0; step < 8; step++) await Promise.resolve();
+  expect(controller.state.writing).toBe(false);
+  expect(worker.sources.size).toBeGreaterThan(0);
+  expect(controller.observe().renderer.workerSourceBytes).toBeGreaterThan(0);
+  const retainedOverview = [...worker.overviews.values()].find((tile) =>
+    tile.values.some((value) => value !== 0),
+  )!;
+  expect(retainedOverview).toBeDefined();
+  const before = retainedOverview.values.slice();
+
+  pointer("pointermove", 950, 128);
+  await drainView();
+  expect(controller.observe().readiness.ready).toBe(true);
+  expect(controller.observe().document!.sourceEntries).toBe(0);
+  expect(controller.observe().document!.sourceBytes).toBe(0);
+  expect(controller.observe().renderer.workerSourceBytes).toBe(0);
+  expect(worker.sources.size).toBe(0);
+  expect(worker.overviews.get(retainedOverview.key)!.values).toEqual(before);
+  expect(controller.state.canUndo).toBe(true);
+  controller.destroy();
+});
+
 it("rereads both source paths when an acknowledgement has already overtaken their sequence", async () => {
   const { controller, bridge, pointer, drainView } = await readyController(1);
   controller.setBrush(16, 400);
@@ -1628,13 +1795,29 @@ it.each(["presentation", "region"] as const)(
     expect(controller.state.writing).toBe(false);
     expect(controller.observe().readiness.ready).toBe(true);
     expect(controller.state.canUndo).toBe(true);
-    expect(controller.observe([point]).samples[0]).toBeCloseTo(expected, 10);
-    if (purpose === "presentation")
+    if (purpose === "presentation") {
+      // The coarse view releases fine authors after their ACK. Verify their
+      // exact contribution at a displayed overview sample, not a now-unknown
+      // arbitrary fine point that this view intentionally no longer retains.
+      expect(controller.observe([point]).samples[0]).toBeNull();
+      const overview = [...worker.overviews.values()].find((tile) =>
+        tile.values.some((value) => value !== 0),
+      )!;
+      expect(overview).toBeDefined();
+      const index = overview.values.findIndex((value) => value !== 0);
+      const bounds = heightOverviewBounds(overview);
+      const samplePoint: [number, number] = [
+        bounds[0] + ((index % 128) + 0.5) * 2 ** overview.power,
+        bounds[1] + (Math.floor(index / 128) + 0.5) * 2 ** overview.power,
+      ];
+      const expectedSample = prepareHeightSampler(
+        written.patches.flatMap((patch) => (patch.after ? [patch.after] : [])),
+      )(...samplePoint);
       expect(
-        [...worker.overviews.values()].some((tile) =>
-          tile.values.some((value) => value !== 0),
-        ),
-      ).toBe(true);
+        heightFromScaledSum(overview.values[index] - 100 / HEIGHT_SUM_SCALE),
+      ).toBeCloseTo(expectedSample, 10);
+    } else
+      expect(controller.observe([point]).samples[0]).toBeCloseTo(expected, 10);
     controller.destroy();
   },
 );

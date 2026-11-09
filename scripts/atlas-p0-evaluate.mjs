@@ -108,6 +108,12 @@ export const P0_REQUIREMENTS = Object.freeze({
       requiredInputKinds: ["edit", "pointerup"],
     },
     {
+      id: "M03-height-max",
+      kind: "edit",
+      minSamples: 100,
+      requiredInputKinds: ["edit", "pointerup"],
+    },
+    {
       id: "M04-coarse-fine",
       kind: "edit",
       minSamples: 100,
@@ -2316,7 +2322,11 @@ export function evaluateNativePreflight(preflight, runnerErrors = []) {
 
 /** Selected execution and fixed native acceptance are separate, explicit claims. */
 export function evaluateRun(report) {
-  if (report.mode === "native" && report.collectionStarted === false)
+  if (
+    report.collectionStarted === false &&
+    (report.mode === "native" ||
+      report.purpose === "native-presentation-investigation")
+  )
     return evaluateNativePreflight(report.preflight, report.errors);
   const selection = report.selection ?? "all";
   const scope = selectP0Scope(

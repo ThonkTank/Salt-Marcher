@@ -51,9 +51,15 @@ function values(tiles: HeightTile[]) {
     .map(({ key, values }) => ({ key, values: Array.from(values) }));
 }
 
+// Raw-author assertions need no product API that bypasses regional readiness.
+function author(doc: EditorDocument, key: string): HeightTile | undefined {
+  const tile = doc["entries"].get(key)?.tile;
+  return tile && cloneHeightTile(tile);
+}
+
 function control(doc: EditorDocument, x: number, y: number, level = 0) {
   const { key, index } = heightControlAddress(level, x, y);
-  return doc.readSources([key])[0]?.values[index] ?? 0;
+  return author(doc, key)?.values[index] ?? 0;
 }
 
 describe("canonical relative height reconstruction", () => {
@@ -154,18 +160,13 @@ describe("local source readiness and ownership", () => {
     expect(() => doc.sampleHeight(10_000, 0)).toThrow(SourcesNotReadyError);
   });
 
-  it("requires genuine confirmed absence even at coarser parent levels", () => {
+  it("does not infer finer absence from a confirmed parent-only region", () => {
     const doc = new EditorDocument("parents");
-    const keys = requiredHeightSources([-20, -20, 20, 20]);
-    doc.acceptSources(
-      keys.filter((k) => !k.startsWith("height:21:")),
-      [],
-    );
+    doc.acceptCoverage(LOCAL, [], 0, doc.sessionId, 21);
+    expect(doc.sourceState(heightTileKey(21, 0, 0))).toBe("absent");
+    expect(doc.sourceState(heightTileKey(20, 0, 0))).toBe("unknown");
     expect(doc.isReady([-20, -20, 20, 20])).toBe(false);
-    doc.acceptSources(
-      keys.filter((k) => k.startsWith("height:21:")),
-      [],
-    );
+    doc.acceptCoverage(LOCAL, []);
     expect(doc.isReady([-20, -20, 20, 20])).toBe(true);
     expect(requiredHeightSources([-0.1, -0.1, 0.1, 0.1], [0])).toEqual([
       "height:0:-1:-1",
@@ -195,10 +196,10 @@ describe("local source readiness and ownership", () => {
 
   it("keeps unknown data unready until a complete read proves absence", () => {
     const doc = new EditorDocument("read-retry");
-    const keys = doc.requiredSources([-20, -20, 20, 20]);
+    const keys = requiredHeightSources([-20, -20, 20, 20]);
     expect(doc.sourceState(keys[0])).toBe("unknown");
     expect(doc.isReady([-20, -20, 20, 20])).toBe(false);
-    doc.acceptSources(keys, []);
+    doc.acceptCoverage([-20, -20, 20, 20], []);
     expect(doc.sourceState(keys[0])).toBe("absent");
     expect(doc.isReady([-20, -20, 20, 20])).toBe(true);
   });
@@ -240,12 +241,14 @@ describe("local source readiness and ownership", () => {
     const doc = new EditorDocument("eviction", { empty: true });
     doc.beginGesture({ level: 0, amount: 10, radius: 20 });
     doc.applyPoint([100, 100], 1000);
-    expect(doc.evictConfirmedSources()).toBe(0);
-    const change = doc.finishGesture()!;
-    expect(doc.evictConfirmedSources()).toBe(0);
     const sample = doc.sampleHeight(100, 100);
+    expect(doc.retainSources([])).toEqual([]);
+    expect(control(doc, 20, 20)).toBe(10);
+    const change = doc.finishGesture()!;
+    expect(doc.retainSources([])).toEqual([]);
+    expect(control(doc, 20, 20)).toBe(10);
     doc.acceptPersistence(change.sequence);
-    expect(doc.evictConfirmedSources()).toBe(1);
+    expect(doc.retainSources([])).toEqual(["height:0:0:0"]);
     expect(doc.sourceState("height:0:0:0")).toBe("unknown");
     expect(() => doc.sampleHeight(100, 100)).toThrow(SourcesNotReadyError);
     doc.acceptCoverage(
@@ -265,21 +268,22 @@ describe("local source readiness and ownership", () => {
     const pending = stroke(doc, [[20_000, 20_000]]).change!;
     doc.beginGesture({ level: 0, radius: 20, amount: 10 });
     doc.applyPoint([30_000, 30_000], 1000);
-    const activeHeight = doc.sampleHeight(30_000, 30_000);
-    expect(doc.evictConfirmedOutside(LOCAL)).toBe(1);
+    const activeControl = control(doc, 6000, 6000);
+    expect(doc.retainSources([{ bounds: LOCAL, minLevel: 0 }])).toHaveLength(1);
     expect(doc.sampleHeight(100, 100)).toBeGreaterThan(-100);
-    expect(doc.sampleHeight(20_000, 20_000)).toBeGreaterThan(-100);
-    expect(doc.sampleHeight(30_000, 30_000)).toBe(activeHeight);
+    // Full remote readiness may be forgotten; accepted authors stay available.
+    expect(control(doc, 4000, 4000)).toBeGreaterThan(0);
+    expect(control(doc, 6000, 6000)).toBe(activeControl);
     expect(() => doc.sampleHeight(10_000, 10_000)).toThrow(
       SourcesNotReadyError,
     );
     doc.finishGesture();
     doc.acceptPersistence(pending.sequence);
-    expect(doc.evictConfirmedOutside(LOCAL)).toBe(1);
+    expect(doc.retainSources([{ bounds: LOCAL, minLevel: 0 }])).toHaveLength(1);
     expect(() => doc.sampleHeight(20_000, 20_000)).toThrow(
       SourcesNotReadyError,
     );
-    expect(doc.sampleHeight(30_000, 30_000)).toBe(activeHeight);
+    expect(control(doc, 6000, 6000)).toBe(activeControl);
   });
 
   it("keeps contributing halo sources when their author footprint is outside the view", () => {
@@ -289,8 +293,136 @@ describe("local source readiness and ownership", () => {
     const before = doc.sampleHeight(0, 100);
     expect(before).toBeGreaterThan(-100);
     // Author tile(-1,0) ends at x=0, but its cubic field contributes inside this view.
-    expect(doc.evictConfirmedOutside([0, 90, 5, 110])).toBe(0);
+    expect(
+      doc.retainSources([{ bounds: [0, 90, 5, 110], minLevel: 0 }]),
+    ).toEqual([]);
     expect(doc.sampleHeight(0, 100)).toBe(before);
+  });
+});
+
+describe("bounded resident sources and their readiness proofs", () => {
+  it("keeps the same active metadata after visiting 128, 1024 and 5120 populated sources", () => {
+    const doc = new EditorDocument("travel", {
+      maxSourceBytes: 128 * HEIGHT_TILE_BYTES,
+    });
+    const region = (batch: number): Bounds => {
+      const first = batch * 136;
+      return [first * 320 - 10, -10, (first + 128) * 320 + 10, 330];
+    };
+    const sources = (batch: number) =>
+      heightTilesFromControls(
+        0,
+        Array.from({ length: 128 }, (_, offset): [number, number, number] => [
+          (batch * 136 + offset) * 64 + 20,
+          20,
+          10,
+        ]),
+      );
+    const checkpoints: number[] = [];
+    for (let batch = 0; batch < 40; batch++) {
+      const bounds = region(batch);
+      doc.retainSources([{ bounds, minLevel: 0 }]);
+      doc.acceptCoverage(bounds, sources(batch));
+      expect(doc.isReady(bounds)).toBe(true);
+      if ([0, 7, 39].includes(batch)) {
+        checkpoints.push(doc.metrics.sourceEntries);
+        expect(doc.metrics.sourceBytes).toBe(128 * HEIGHT_TILE_BYTES);
+        expect(doc.metrics.coverageRegions).toBe(1);
+      }
+    }
+    expect(checkpoints).toEqual([128, 128, 128]);
+    expect(doc.sourceState(heightTileKey(0, 0, 0))).toBe("unknown");
+    expect(() => doc.sampleHeight(100, 100)).toThrow(SourcesNotReadyError);
+    doc.retainSources([{ bounds: region(0), minLevel: 0 }]);
+    doc.acceptCoverage(region(0), sources(0));
+    expect(doc.sampleHeight(100, 100)).toBeCloseTo(-100 + (10 * 4) / 9, 12);
+    expect(doc.metrics.sourceEntries).toBe(128);
+  });
+
+  it("releases fine sources inside a world view while retaining the exact current tool halo", () => {
+    const fine = heightTilesFromControls(0, [
+      [20, 20, 10],
+      [2020, 20, 20],
+    ]);
+    const coarse = heightTilesFromControls(8, [[0, 0, 200]]);
+    const doc = new EditorDocument("level-retention");
+    doc.acceptCoverage(ALL, [...fine, ...coarse]);
+    expect(doc.retainSources([{ bounds: ALL, minLevel: 8 }])).toEqual(
+      fine.map((tile) => tile.key),
+    );
+    expect(doc.sourceState(fine[0].key)).toBe("unknown");
+    expect(doc.isReady(LOCAL, [8, 9, 21])).toBe(true);
+    expect(doc.isReady(LOCAL)).toBe(false);
+    doc.retainSources([
+      { bounds: ALL, minLevel: 8 },
+      { bounds: LOCAL, minLevel: 0 },
+    ]);
+    doc.acceptCoverage(LOCAL, [fine[0], ...coarse]);
+    expect(doc.isReady(LOCAL)).toBe(true);
+    expect(doc.sourceState(fine[1].key)).toBe("unknown");
+    expect(doc.metrics.sourceEntries).toBe(2);
+    doc.retainSources([{ bounds: ALL, minLevel: 8 }]);
+    expect(doc.sourceState(fine[0].key)).toBe("unknown");
+    expect(doc.snapshot(LOCAL, [8]).tiles).toHaveLength(1);
+  });
+
+  it("never fills the gap between retained regions with the initial empty-world proof", () => {
+    const doc = new EditorDocument("empty-retention", { empty: true });
+    const far: Bounds = [9000, 9000, 11_000, 11_000];
+    doc.retainSources([
+      { bounds: LOCAL, minLevel: 0 },
+      { bounds: far, minLevel: 0 },
+    ]);
+    expect(doc.sampleHeight(100, 100)).toBe(-100);
+    expect(doc.sampleHeight(10_000, 10_000)).toBe(-100);
+    expect(() => doc.sampleHeight(5000, 5000)).toThrow(SourcesNotReadyError);
+    expect(doc.metrics.sourceEntries).toBe(0);
+    expect(doc.metrics.coverageRegions).toBe(2);
+  });
+
+  it("releases confirmed deletion markers without resurrecting authors or absence from old reads", () => {
+    const doc = new EditorDocument("deletion-read-floor", { empty: true });
+    const initial = stroke(doc, [[100, 100]]).change!;
+    const original = doc.sampleHeight(100, 100);
+    const authors = initial.patches.flatMap((patch) =>
+      patch.after ? [patch.after] : [],
+    );
+    const key = authors[0].key;
+    doc.acceptPersistence(initial.sequence);
+    doc.retainSources([]);
+    expect(doc.sourceState(key)).toBe("unknown");
+    expect(doc.metrics.sourceEntries).toBe(0);
+    const deletion = doc.undo()!;
+    doc.retainSources([]);
+    expect(doc.sourceState(key)).toBe("absent");
+    expect(doc.metrics.sourceEntries).toBe(1);
+    doc.acceptCoverage(LOCAL, authors, initial.sequence);
+    expect(doc.sampleHeight(100, 100)).toBe(-100);
+    doc.acceptPersistence(deletion.sequence);
+    expect(doc.metrics.sourceEntries).toBe(0);
+    doc.retainSources([]);
+    const beforeOldAuthorRead = { ...doc.metrics, generation: doc.generation };
+    doc.acceptCoverage(LOCAL, authors, initial.sequence);
+    expect({ ...doc.metrics, generation: doc.generation }).toEqual(
+      beforeOldAuthorRead,
+    );
+    expect(doc.sourceState(key)).toBe("unknown");
+
+    const restored = doc.redo()!;
+    doc.acceptCoverage(LOCAL, [], deletion.sequence);
+    expect(doc.sampleHeight(100, 100)).toBe(original);
+    doc.acceptPersistence(restored.sequence);
+    doc.retainSources([]);
+    doc.acceptCoverage(LOCAL, [], deletion.sequence);
+    expect(doc.sourceState(key)).toBe("unknown");
+    expect(() => doc.sampleHeight(100, 100)).toThrow(SourcesNotReadyError);
+    doc.acceptCoverage(
+      LOCAL,
+      restored.patches.flatMap((patch) => (patch.after ? [patch.after] : [])),
+      restored.sequence,
+    );
+    expect(doc.sampleHeight(100, 100)).toBe(original);
+    expect(doc.metrics.sourceEntries).toBe(1);
   });
 });
 
@@ -745,14 +877,14 @@ describe("local gestures, history and persistence patches", () => {
       doc.applyPoint([tile * 320, 0], 1000);
     const lastPoint: Point = [(HEIGHT_MAX_ACTION_TILES - 1) * 320, 0];
     const lastKey = heightTileKey(0, HEIGHT_MAX_ACTION_TILES - 1, 0);
-    const accepted = doc.readSources([lastKey])[0].values;
+    const accepted = author(doc, lastKey)!.values;
     const acceptedHeight = doc.sampleHeight(...lastPoint);
     const before = { metrics: doc.metrics, revision: doc.revision };
     expect(() =>
       doc.applyPoint([HEIGHT_MAX_ACTION_TILES * 320, 0], 1000),
     ).toThrow(/höchstens 512 Höhenkacheln/);
     expect({ metrics: doc.metrics, revision: doc.revision }).toEqual(before);
-    expect(doc.readSources([lastKey])[0].values).toEqual(accepted);
+    expect(author(doc, lastKey)!.values).toEqual(accepted);
     expect(doc.sourceState(heightTileKey(0, HEIGHT_MAX_ACTION_TILES, 0))).toBe(
       "absent",
     );

@@ -39,6 +39,7 @@ const cutoff = (state) =>
 const specs = [
   { id: "M03-height-small", kind: "edit", diameter: 16, amount: 4000 },
   { id: "M03-height-large", kind: "edit", diameter: 256, amount: 4000 },
+  { id: "M03-height-max", kind: "edit", diameter: 512, amount: 4000 },
   {
     id: "M04-coarse-fine",
     kind: "edit",
@@ -165,19 +166,26 @@ async function collectWarm(context, session, spec, scenario) {
         [320, 0],
         [960, 0],
       ]
-    : spec.diameter === 256
+    : spec.diameter === 512
       ? [
-          [-800, -300],
-          [-520, -300],
-          [-240, -300],
-          [40, -300],
+          [-1600, -300],
+          [-1040, -300],
+          [-480, -300],
+          [80, -300],
         ]
-      : [
-          [-800, -300],
-          [-680, -300],
-          [-560, -300],
-          [-440, -300],
-        ];
+      : spec.diameter === 256
+        ? [
+            [-800, -300],
+            [-520, -300],
+            [-240, -300],
+            [40, -300],
+          ]
+        : [
+            [-800, -300],
+            [-680, -300],
+            [-560, -300],
+            [-440, -300],
+          ];
   for (let attempt = 0; attempt < scenario.requestedAttempts; attempt++) {
     const record = { attempt, passed: false };
     scenario.attempts.push(record);

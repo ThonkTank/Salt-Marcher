@@ -15,8 +15,9 @@ Electron/Pixi und bietet bislang einen begrenzten Höheneditor.
 | [Neubauplan](docs/implementation/atlas-rebuild-plan.md) | Zielumfang F01–F19/D01–D11, offene Pakete und Abnahmekriterien  |
 
 Die vier Dokumente zum aktuellen Produkt werden aktualisiert, nicht als Chronik
-fortgeschrieben. Der Neubauplan beschreibt zusätzlich den beauftragten Zielzustand;
-sein aktueller Konsolidierungsauftrag aktiviert nicht den vollständigen Ausbau.
+fortgeschrieben. Der Neubauplan beschreibt zusätzlich den beauftragten Zielzustand.
+Die laufende P0-Fortsetzung behebt Quellen- und Latenzgrenzen und untersucht die
+Präsentationsmessung; der vollständige Ausbau bleibt an das native P0-Gate gebunden.
 Detailbelege liegen ignoriert unter `src-tauri/target/diagnostics/`,
 `src-tauri/target/cleanup/` oder `artifacts/atlas-rebuild/`.
 
@@ -121,13 +122,21 @@ bleiben ausdrücklich offen. Ein Paketstart ersetzt keine RPM-Installation.
 ```bash
 npm run p0:native -- --preflight --reference pfad/profil.json
 npm run p0:native -- --probe-native --out artifacts/atlas-rebuild/native-probe
+npm run p0:lab -- --probe-native --out artifacts/atlas-rebuild/lab-presentation-probe
 ```
 
-`--preflight` prüft Voraussetzungen; `--probe-native` sammelt zusätzlich eine kurze
-Navigationstrace und ihre Beobachtungen zur fehlenden Präsentationszuordnung.
+`--preflight` prüft Voraussetzungen und erzeugt keine Fixtures. `--probe-native`
+verwendet die kleine gespeicherte Küstenfixture für kurze echte Pinseleingaben:
+Normalfall, unterdrückte Terrainzeichnung bei bewegtem Overlay, verzögerte
+Terrainzeichnung und anschließende Erholung. Drei unabhängige Terrainbereiche
+werden in den Tracebildern geprüft; ihre Framekennungen werden mit den Reportern
+des tatsächlichen Atlas-Renderers verglichen.
 Beide sind von `--full` und Szenarioauswahl getrennt. Für einen vorhandenen
 Paketstand kann `--executable` ergänzt werden. Ohne natives Display wird vor
 Buildzugriff, Programmstart und Fixtureerzeugung ein Blockerbericht geschrieben.
+Nur die ausdrücklich gewählte Kombination `--lab --probe-native` führt denselben
+kleinen Messversuch mit Software-Rendering aus. Sie qualifiziert keine native
+Referenz und bleibt auch bei bestandenen Inhaltskontrollen `BLOCKED`.
 
 Auf einem nativen Display entsteht `reference-observed.json` mit leerer `id`.
 Eine bewusst ausgewählte Referenz erhält eine eindeutige ID und wird über
@@ -136,10 +145,14 @@ Architektur, OS, RAM, Display und Frequenz sowie 1440×960/DPR 1 müssen stimmen
 Hardwarebeschleunigung, sichtbares Fenster und Fokus müssen beobachtet sein.
 Die Vorlagen-Datei selbst nominiert noch keine Referenz.
 
-Eine passende Referenz beweist keine Präsentation. Der aktuelle Adapter kann
-Atlas-Generationen noch nicht sicher den tatsächlich präsentierten Frames
-zuordnen. Deshalb stoppen native Sammlungen vor Fixtures mit **BLOCKED / Exit 2**;
-Captures, RAF und Trace-Nachbarschaft werden nicht als Ersatz akzeptiert.
+Eine passende Referenz beweist keine Präsentation. Die Probe kann Bildkennungen
+mit erfolgreichen Compositor-Reportern verbinden. Die vollständige Zuordnung
+einer exakten Atlas-Generation zur ersten tatsächlichen Präsentation fehlt
+weiterhin: Copy-/Refresh-Aufnahme und Screenshot besitzen in der gepinnten Trace
+keine gemeinsame nachweisbare Identität; die getestete Vorher-/Nachher-Signatur
+unterscheidet zudem nicht jede Zwischenrevision. Deshalb stoppen native
+Sammlungen vor ihren Fixtures mit **BLOCKED / Exit 2**; Captures, RAF und
+Trace-Nachbarschaft werden nicht als Ersatz akzeptiert.
 Technische Vorprüfungsfehler bleiben **FAIL / Exit 1**. `native-preflight.json`,
 `report.json` und `run-index.json` halten diese Grenze fest; nicht ausgeführte
 Szenarien werden nicht als gemessene Fehler oder bestandene Abnahme ausgegeben.
