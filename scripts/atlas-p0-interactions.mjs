@@ -1158,7 +1158,7 @@ export async function movingStroke(
   return observeStroke(session, before, timeout);
 }
 
-async function sendStrokeInputs(session, inputs) {
+export async function sendStrokeInputs(session, inputs) {
   await session.app.evaluate(async ({ BrowserWindow }, inputs) => {
     const contents = BrowserWindow.getAllWindows()[0].webContents;
     let released = false;

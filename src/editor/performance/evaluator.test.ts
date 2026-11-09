@@ -112,6 +112,25 @@ function renderWorkEvents(): Record<string, any>[] {
 }
 
 describe("terrain packet work and GPU attribution", () => {
+  it("orders quantized zero-duration span boundaries without accepting a true overlap", () => {
+    const events = renderWorkEvents();
+    events[0].uploadSpans = [
+      { start: 1, end: 1, bytes: 512 },
+      { start: 1, end: 2, bytes: 512 },
+    ];
+    events[0].compositionSpans = [
+      { start: 1, end: 1, work: 0 },
+      { start: 2, end: 3, work: 128 },
+    ];
+    expect(evaluateRenderWork(events, { droppedEvents: 0 }).passed).toBe(true);
+    events[0].compositionSpans[0].end = 1.5;
+    expect(evaluateRenderWork(events, { droppedEvents: 0 }).issues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ code: "RENDER_PACKET_SPANS_OVERLAP" }),
+      ]),
+    );
+  });
+
   it("counts an upload-only packet while the canvas is occupied without double-counting copied draw work", () => {
     const events = renderWorkEvents();
     const upload = {
@@ -164,7 +183,12 @@ describe("terrain packet work and GPU attribution", () => {
     };
     expect(gpuWork([events[0], upload], [events[1]], timers)).toMatchObject({
       valid: true,
-      measuredTerrainPackets: 2,
+      observedTerrainPackets: 2,
+      measuredTerrainPackets: 1,
+      unmeasuredTerrainPackets: 1,
+      unmeasuredUploadOnlyPackets: 1,
+      packetBudgetProven: false,
+      coverage: "composition-draws-only",
       measuredFrames: 1,
       offscreenMsPerTerrainPacket: { count: 1, maximum: 0.4 },
       canvasMsPerFrame: { count: 1, maximum: 0.2 },

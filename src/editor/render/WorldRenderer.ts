@@ -1812,7 +1812,7 @@ export class WorldRenderer {
     tiles: GpuSubmission["tiles"],
     submission: FrameSubmission | null = null,
     renderReceipt: FrozenRenderReceipt | null = null,
-  ): void {
+  ): number | undefined {
     if (
       this.pendingGpu.length >= editorBudgets.glSubmissions ||
       this.pendingGpu.some((pending) => pending.kind === kind)
@@ -1836,6 +1836,7 @@ export class WorldRenderer {
       tiles,
       renderReceipt,
     });
+    return this.observation.gpuFence(sync, kind);
   }
 
   /** Each RAF selects first, then spends a bounded preparation and terrain packet. */
@@ -2116,7 +2117,7 @@ export class WorldRenderer {
           }
           if (terrainWork) {
             // Upload-only packets occupy the same terrain slot and always fence.
-            this.pinGpu(
+            const fenceId = this.pinGpu(
               "terrain",
               selected.map(({ tile, revision, preparation }) => ({
                 tile,
@@ -2126,6 +2127,7 @@ export class WorldRenderer {
             );
             this.sceneRequested = true;
             this.observation.event("height-terrain", {
+              fenceId,
               preparationFrame: this.preparationRecord?.id,
               packet: ++this.terrainPacketId,
               renderId: group.receipt.id,
@@ -2242,7 +2244,7 @@ export class WorldRenderer {
       at: submittedAt,
       uploadedBytes: uploaded,
     };
-    this.pinGpu(
+    const fenceId = this.pinGpu(
       "scene",
       visible.map((tile) => ({
         tile,
@@ -2264,6 +2266,7 @@ export class WorldRenderer {
     submittedAt = performance.now();
     submission.at = submittedAt;
     this.observation.event("height-draw", {
+      fenceId,
       preparationFrame: this.preparationRecord?.id,
       renderId: group?.receipt.id ?? null,
       sceneStart,

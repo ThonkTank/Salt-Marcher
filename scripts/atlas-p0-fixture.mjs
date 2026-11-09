@@ -166,11 +166,59 @@ if (command === "create" && argument) {
       }),
     ),
   );
+} else if (command === "create-dense-busy" && argument && extra.length === 2) {
+  // R4 retains real large-store Save work and local 22-level graphics content.
+  const directory = resolve(argument);
+  await mkdir(directory, { recursive: true });
+  const source = new ProjectStore(join(directory, "dense-source"));
+  const store = new ProjectStore(join(directory, "working"));
+  try {
+    const dense = await source.openProject(resolve(extra[1]));
+    const read = source.readRegion({
+      sessionId: dense.sessionId,
+      minLevel: 0,
+      bounds: [-3000, -3000, 3000, 3000],
+    });
+    const levels = [...new Set(read.tiles.map((tile) => tile.level))].sort(
+      (a, b) => a - b,
+    );
+    if (levels.length !== 22)
+      throw new Error(
+        "Dense R4 fixture must contain all 22 local source levels",
+      );
+    const initial = await store.openProject(resolve(extra[0]));
+    store.commit({
+      sessionId: initial.sessionId,
+      sequence: initial.sequence + 1,
+      transactionId: randomUUID(),
+      patches: read.tiles.map((after) => ({ key: after.key, after })),
+    });
+    const status = store.status();
+    const file = join(directory, "dense-busy.saltatlas");
+    await store.saveProject(
+      { sessionId: status.sessionId, sequence: status.sequence },
+      file,
+    );
+    console.log(
+      JSON.stringify({
+        file,
+        sha256: sha256(await readFile(file)),
+        sourceTiles: status.sourceTiles,
+        levels,
+        baseSourceTiles: initial.sourceTiles,
+        denseSourceTiles: read.tiles.length,
+        construction: "real busy project with local graphics-fixture sources",
+      }),
+    );
+  } finally {
+    source.close();
+    store.close();
+  }
 } else if (command === "digest-fine" && argument) {
   console.log(JSON.stringify(finePayloadDigest(argument)));
 } else {
   console.error(
-    "Usage: Electron-as-Node atlas-p0-fixture.mjs create <directory> | inspect <file> [originX originY] | create-scaling <directory> [baseline medium large] | create-busy <directory> [large-fixture-file] | inspect-scaling <file> | digest-fine <file>",
+    "Usage: Electron-as-Node atlas-p0-fixture.mjs create <directory> | inspect <file> [originX originY] | create-scaling <directory> [baseline medium large] | create-busy <directory> [large-fixture-file] | create-dense-busy <directory> <busy-file> <dense-file> | inspect-scaling <file> | digest-fine <file>",
   );
   process.exitCode = 2;
 }

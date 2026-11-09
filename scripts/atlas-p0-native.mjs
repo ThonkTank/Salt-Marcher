@@ -23,6 +23,18 @@ import {
 
 export { nativePresentationCapability };
 
+// R4 needs qualified visible terrain cadence, but not R5's exact association
+// with each original input. Neither capability is supplied by a screenshot,
+// RAF callback or completed GPU fence in the current runner.
+export const r4VisibleCadenceCapability = Object.freeze({
+  status: "unsupported",
+  code: "R4_VISIBLE_CADENCE_UNPROVEN",
+  method: null,
+  reason:
+    "The current runner has no time-qualified observation of each changed terrain generation on the real display. Draw queries, GPU fences, RAF and capturePage are not visible-result timestamps; the 20-ms cadence needs bounded presentation intervals including measurement uncertainty. R5's exact input-to-first-presentation mapping is a separate requirement.",
+  clock: { calibrated: false },
+});
+
 const knownIdentity = (value) =>
   typeof value === "string" &&
   value.trim().length > 0 &&
@@ -325,25 +337,35 @@ export function qualifyNativeReference(profile, observed = {}) {
 /**
  * Preflight creates no fixtures. An explicit probe uses one small existing
  * fixture; its optional laboratory mode never qualifies a native reference.
- * @param {{out: string, executablePath?: string, profilePath?: string, probe?: boolean, lab?: boolean, env?: NodeJS.ProcessEnv}} options
+ * Direction mode checks the same hardware/reference prerequisites while keeping
+ * R4's unqualified visible cadence separate from R5's exact latency mapping.
+ * @param {{out: string, executablePath?: string, profilePath?: string, probe?: boolean, direction?: boolean, lab?: boolean, env?: NodeJS.ProcessEnv}} options
  */
 export async function nativePreflight({
   out,
   executablePath,
   profilePath,
   probe = false,
+  direction = false,
   lab = false,
   env = process.env,
 }) {
   await mkdir(out, { recursive: true });
+  const presentation = direction
+    ? r4VisibleCadenceCapability
+    : nativePresentationCapability;
   const report = {
     schemaVersion: 1,
-    purpose: probe ? "native-presentation-investigation" : "native-preflight",
+    purpose: direction
+      ? "r4-hardware-preflight"
+      : probe
+        ? "native-presentation-investigation"
+        : "native-preflight",
     mode: lab ? "lab" : "native",
     status: "BLOCKED",
     fixturesCreated: false,
     qualification: { qualified: false, blockers: [] },
-    presentation: nativePresentationCapability,
+    presentation,
     blockers: [],
     errors: [],
   };
@@ -354,6 +376,10 @@ export async function nativePreflight({
   let desktop;
   const output = [];
   try {
+    if (direction && probe)
+      throw new Error(
+        "R4 hardware preflight does not run the R5 presentation investigation.",
+      );
     if (lab && !probe)
       throw new Error(
         "Laboratory mode is only available for the explicit presentation probe.",
@@ -496,8 +522,8 @@ export async function nativePreflight({
       }
     }
     report.blockers.push({
-      code: nativePresentationCapability.code,
-      reason: nativePresentationCapability.reason,
+      code: presentation.code,
+      reason: presentation.reason,
     });
     await writeFile(
       join(out, "native-preflight.json"),

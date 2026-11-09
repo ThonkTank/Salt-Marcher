@@ -40,6 +40,57 @@ const sample = (point: Point, at: number, input: number): BrushPoint => ({
   input,
 });
 
+describe("read-only R4 author observations", () => {
+  it("keeps unknown, reserved, applied and undone authors distinct", () => {
+    const doc = new EditorDocument("r4-content-observer");
+    const points: Point[] = [
+      [20, 20],
+      [25, 20],
+      [50, 50],
+    ];
+    const unknown = doc.observeBrushCoefficients(0, points);
+    expect(unknown.authors).toEqual([null, null, null]);
+    expect(doc.metrics.coverageRegions).toBe(0);
+    doc.acceptCoverage(ALL, []);
+    const metrics = doc.metrics;
+    doc.observeBrushCoefficients(0, points);
+    expect(doc.metrics).toEqual(metrics);
+    doc.beginPrepaidGesture(brush, context(doc));
+    doc.admitBrushBatch({
+      admissionId: 1,
+      path: { from: points[0], points: [points[0]], end: true },
+      time: [],
+      pointCount: 1,
+    });
+    const reserved = doc.observeBrushCoefficients(0, points);
+    expect(reserved.authors).toEqual([0, 0, 0]);
+    expect(reserved.minimum[0]).toBeCloseTo(1 / 60, 12);
+    expect(reserved.timeAccount).toEqual([0, 0, 0]);
+    expect(doc.revision).toBe(0);
+    drain(doc);
+    const applied = doc.observeBrushCoefficients(0, points);
+    expect(applied.authors[0]).toBeCloseTo(1 / 60, 12);
+    expect(applied.authors[2]).toBe(0);
+    doc.undo();
+    expect(doc.observeBrushCoefficients(0, points).authors).toEqual([0, 0, 0]);
+  });
+
+  it("rejects unbounded and off-grid probes without changing the document", () => {
+    const doc = new EditorDocument("r4-invalid-observer", { empty: true });
+    const before = { revision: doc.revision, metrics: doc.metrics };
+    expect(() =>
+      doc.observeBrushCoefficients(
+        0,
+        Array.from({ length: 257 }, (): Point => [0, 0]),
+      ),
+    ).toThrow(/256/);
+    expect(() => doc.observeBrushCoefficients(0, [[1, 0]])).toThrow(
+      /Stützstellengitter/,
+    );
+    expect({ revision: doc.revision, metrics: doc.metrics }).toEqual(before);
+  });
+});
+
 function drain(doc: EditorDocument, maxCells = 17): BrushAdvance[] {
   const steps: BrushAdvance[] = [];
   while (doc.brushWork?.pendingCells || doc.finishing) {

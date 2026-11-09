@@ -586,6 +586,45 @@ export class EditorDocument {
     return prepareHeightSampler(this.snapshot(bounds))(x, y);
   }
 
+  /** Bounded read-only diagnostic: real authors and the existing C1 account. */
+  observeBrushCoefficients(level: number, points: readonly Point[]) {
+    assertLevel(level);
+    if (points.length > 256)
+      throw new RangeError("Höchstens 256 diagnostische Autorenproben.");
+    const step = heightSpacing(level);
+    const values = points.map((point) => {
+      assertPoint(point);
+      if (point.some((axis) => !Number.isInteger(axis / step)))
+        throw new RangeError(
+          "Autorenproben müssen auf dem Stützstellengitter liegen.",
+        );
+      const address = heightControlAddress(
+        level,
+        point[0] / step,
+        point[1] / step,
+      );
+      const key = address.key;
+      const known = this.sourceState(key) !== "unknown";
+      const live = this.entries.get(key)?.tile;
+      const prior = this.gesture?.before.has(key)
+        ? this.gesture.before.get(key)
+        : live;
+      const account = this.prepaid?.account.valueAt(key, address.index);
+      return {
+        author: known ? (live?.values[address.index] ?? 0) : null,
+        before: known ? (prior?.values[address.index] ?? 0) : null,
+        minimum: account?.minimum ?? 0,
+        timeAccount: account?.timeAccount ?? 0,
+      };
+    });
+    return {
+      authors: values.map((value) => value.author),
+      before: values.map((value) => value.before),
+      minimum: values.map((value) => value.minimum),
+      timeAccount: values.map((value) => value.timeAccount),
+    };
+  }
+
   /** Accepted local source proofs remain valid while their contributors are pinned. */
   private retainedCoverage(): readonly SourceNeed[] {
     if (!this.gesture || !this.prepaid) return this.coverage;

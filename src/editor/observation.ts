@@ -1,5 +1,16 @@
 import { editorBudgets } from "./budgets";
-import type { Bounds } from "./model/types";
+import type { Bounds, Point } from "./model/types";
+
+declare global {
+  interface Window {
+    /** Temporary diagnostic binding to the actual sync, never a render command. */
+    atlasGraphicsFence?: (
+      sync: WebGLSync,
+      fenceId: number,
+      kind: "terrain" | "scene",
+    ) => void;
+  }
+}
 
 export interface ObservationEvent {
   kind: string;
@@ -14,6 +25,8 @@ export interface ObservationOptions {
   events?: boolean;
   /** Return entries starting at this zero-based journal index. */
   sinceEvent?: number;
+  /** Observe a planned path's existing readiness; never loads or prepares it. */
+  readinessPath?: Point[];
 }
 
 export interface ObservedSubmission {
@@ -70,6 +83,7 @@ export class Observation {
   private events: ObservationEvent[] = [];
   private pending: PendingReceipt[] = [];
   private lastSubmission: ObservedSubmission | null = null;
+  private nextGpuFenceId = 1;
   private navigationInput: {
     input: number;
     sessionId: string;
@@ -89,6 +103,24 @@ export class Observation {
     this.pending = [];
     this.lastSubmission = null;
     this.navigationInput = null;
+  }
+
+  /** The existing product fence binds all preceding GL work, including cleanup. */
+  gpuFence(sync: WebGLSync, kind: "terrain" | "scene"): number | undefined {
+    if (!this.enabled) return;
+    const fenceId = this.nextGpuFenceId++;
+    try {
+      if (typeof window !== "undefined")
+        window.atlasGraphicsFence?.(sync, fenceId, kind);
+    } catch (error) {
+      // A broken diagnostic cannot change ownership of already submitted work.
+      this.event("gpu-fence-observation-error", {
+        fenceId,
+        fenceKind: kind,
+        message: String(error),
+      });
+    }
+    return fenceId;
   }
 
   event(kind: string, details: Record<string, unknown> = {}): void {

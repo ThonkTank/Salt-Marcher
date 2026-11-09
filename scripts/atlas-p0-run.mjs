@@ -27,6 +27,7 @@ import {
   evaluateSaveOverlap,
   checkBuildIdentity,
   P0_REQUIREMENTS,
+  R4_REQUIREMENTS,
 } from "./atlas-p0-evaluate.mjs";
 import { analyzeTrace } from "./atlas-p0-trace.mjs";
 import {
@@ -72,11 +73,22 @@ const executablePath = packaged
 const lab = argv.includes("--lab"),
   native = argv.includes("--native");
 const full = argv.includes("--full") || argv.includes("--acceptance");
+const direction = argv.includes("--direction");
 const traceRequested = argv.includes("--trace");
 const preflightOnly = argv.includes("--preflight");
 const probeNative = argv.includes("--probe-native");
 const referenceIndex = argv.indexOf("--reference");
 const referencePath = referenceIndex < 0 ? undefined : argv[referenceIndex + 1];
+if (
+  direction &&
+  (full ||
+    preflightOnly ||
+    probeNative ||
+    ["--only", "--case", "--runs"].some((option) => argv.includes(option)))
+)
+  throw new Error(
+    "--direction uses the fixed R4 matrix and two fresh process groups; it cannot be combined with partial selections or native investigation",
+  );
 if (preflightOnly && probeNative)
   throw new Error("Choose either --preflight or --probe-native");
 if (
@@ -95,9 +107,11 @@ const purpose = preflightOnly
   ? "native-preflight"
   : probeNative
     ? "native-presentation-investigation"
-    : full
-      ? "acceptance"
-      : "probe";
+    : direction
+      ? "direction"
+      : full
+        ? "acceptance"
+        : "probe";
 const onlyIndex = argv.indexOf("--only");
 const only = onlyIndex < 0 ? null : argv[onlyIndex + 1];
 if (only && !["interactions", "scaling", "collection"].includes(only))
@@ -120,7 +134,19 @@ if (
   (!Number.isInteger(selectedRuns) || selectedRuns < 1 || selectedRuns > 3)
 )
   throw new Error("Diagnostic --runs must be 1, 2 or 3");
-const selectedScope = selectP0Scope(only ?? "all", scenarioId);
+const selectedScope = direction
+  ? {
+      navigation: false,
+      workflow: false,
+      controls: false,
+      collection: true,
+      scaling: false,
+      scenarios: R4_REQUIREMENTS.scenarios,
+      needsBaseFixture: false,
+      needsBusyFixture: false,
+      requiredChecks: [],
+    }
+  : selectP0Scope(only ?? "all", scenarioId);
 let independentRunId = "pilot-1";
 const outIndex = argv.indexOf("--out");
 const out = resolve(
@@ -135,7 +161,7 @@ const out = resolve(
 );
 if (lab === native) {
   console.error(
-    "Usage: node scripts/atlas-p0-run.mjs (--lab | --native) [--executable packaged-binary] [--reference profile.json] [--preflight|--probe-native] [--full] [--only interactions|scaling|collection] [--case collection-id --runs 1|2|3] [--out directory]",
+    "Usage: node scripts/atlas-p0-run.mjs (--lab | --native) [--executable packaged-binary] [--reference profile.json] [--direction|--preflight|--probe-native|--full] [--only interactions|scaling|collection] [--case collection-id --runs 1|2|3] [--out directory]",
   );
   process.exit(2);
 }
@@ -147,6 +173,10 @@ if (preflightOnly || probeNative)
     probeNative
       ? "Presentation investigation only: one small coast fixture, short traces and fault/recovery controls; no acceptance collection."
       : "Native preflight only; no fixture or scenario collection.",
+  );
+else if (direction)
+  log(
+    "R4 fixed direction matrix: two fresh process groups, 30 short gestures or at least 10 seconds continuously. Hardware, actual visible terrain cadence and complete GPU packet timing remain mandatory; laboratory diagnostics cannot grant R4 or native acceptance.",
   );
 else if (full && only)
   log(
@@ -168,15 +198,17 @@ const report = {
   scope:
     preflightOnly || probeNative
       ? "native prerequisites only; no scenario collection"
-      : only
-        ? `P0 partial ${only} diagnostics${scenarioId ? `: ${scenarioId}` : ""}`
-        : full
-          ? "P0 full scenario collection plus representative scaling"
-          : "P0 architecture probe; shared scenarios with one attempt each",
-  selection: only ?? "all",
+      : direction
+        ? "R4 fixed hardware direction matrix; no full P0 acceptance"
+        : only
+          ? `P0 partial ${only} diagnostics${scenarioId ? `: ${scenarioId}` : ""}`
+          : full
+            ? "P0 full scenario collection plus representative scaling"
+            : "P0 architecture probe; shared scenarios with one attempt each",
+  selection: direction ? "direction" : (only ?? "all"),
   diagnosticSelection: { scenarioId, selectedRuns },
   startedAt: new Date().toISOString(),
-  manifest: P0_REQUIREMENTS,
+  manifest: direction ? R4_REQUIREMENTS : P0_REQUIREMENTS,
   excluded: [
     "later P1-P9 tools and final scenario scope",
     "physical pixel timing",
@@ -199,10 +231,16 @@ const report = {
   negativeControls: [],
   errors: [],
 };
-const repetitions = selectedRuns ?? (full ? 3 : 1);
+const repetitions = direction
+  ? R4_REQUIREMENTS.independentRuns
+  : (selectedRuns ?? (full ? 3 : 1));
 report.planned = [];
 for (let run = 1; run <= repetitions; run++) {
-  const runId = full ? `release-${run}` : `probe-${run}`;
+  const runId = direction
+    ? `direction-${run}`
+    : full
+      ? `release-${run}`
+      : `probe-${run}`;
   if (selectedScope.workflow)
     report.planned.push({ run: runId, id: "coast-workflow", state: "planned" });
   for (const spec of selectedScope.scenarios)
@@ -259,6 +297,19 @@ function checkpoint() {
   return checkpointTask;
 }
 async function scenarioCompleted(scenario, resultFile) {
+  if (direction) {
+    progress(
+      scenario.id,
+      scenario.error ||
+        scenario.aborted ||
+        scenario.evaluation?.status === "FAIL"
+        ? "failed"
+        : "completed",
+      { resultFile },
+    );
+    await checkpoint();
+    return report.evaluation.failures.length === 0;
+  }
   const passed = scenario.evaluation.status === "PROXY_ONLY";
   const recordCheck = (id, valid) =>
     report.functional.checks.push({
@@ -366,9 +417,13 @@ const knownValuesAgree = (actual, expected) =>
   );
 
 function fixtureCommand(...args) {
+  return fixtureProcess("atlas-p0-fixture.mjs", ...args);
+}
+
+function fixtureProcess(script, ...args) {
   const result = spawnSync(
     runtimeExecutablePath,
-    [join(root, "scripts/atlas-p0-fixture.mjs"), ...args],
+    [join(root, "scripts", script), ...args],
     {
       cwd: root,
       env: { ...process.env, ELECTRON_RUN_AS_NODE: "1" },
@@ -382,6 +437,78 @@ function fixtureCommand(...args) {
       `Fixture process failed: ${result.error ?? result.stderr ?? result.status}`,
     );
   return JSON.parse(result.stdout.trim());
+}
+
+// Fixtures are created only when the selected next case needs them. A decisive
+// earlier failure never causes the large source database to be built anyway.
+const directionFixtures = new Map();
+async function directionFixtureFor(spec) {
+  const key = spec.sourceTiles
+    ? `scaling-${spec.sourceTiles}`
+    : spec.transition === "save"
+      ? `${spec.fixture}-save`
+      : spec.fixture;
+  if (directionFixtures.has(key)) return directionFixtures.get(key);
+  let fixture;
+  if (spec.fixture === "dense" && spec.transition === "save") {
+    const dense = await directionFixtureFor({ ...spec, transition: "none" });
+    const busy = await directionFixtureFor({ fixture: "busy" });
+    fixture = fixtureCommand(
+      "create-dense-busy",
+      join(out, "dense-busy-fixture"),
+      busy.file,
+      dense.file,
+    );
+  } else if (spec.sourceTiles) {
+    const id = { 32: "baseline", 1024: "medium", 9000: "large" }[
+      spec.sourceTiles
+    ];
+    if (!id) throw new Error(`Unknown R4 source count: ${spec.sourceTiles}`);
+    const manifest = fixtureCommand(
+      "create-scaling",
+      join(out, "scaling-fixtures"),
+      id,
+    );
+    fixture = {
+      ...manifest.fixtures[0],
+      region: manifest.region,
+      expected: manifest.expected,
+    };
+  } else if (spec.fixture === "empty" || spec.fixture === "coast") {
+    const manifest = fixtureCommand("create", join(out, "fixtures"));
+    directionFixtures.set("empty", {
+      ...manifest.empty,
+      file: manifest.files.empty,
+    });
+    directionFixtures.set("coast", {
+      ...manifest.coast,
+      file: manifest.files.coast,
+    });
+    fixture = directionFixtures.get(spec.fixture);
+  } else if (["dense", "many-levels"].includes(spec.fixture)) {
+    const manifest = fixtureProcess(
+      "atlas-p0-graphics-probe.mjs",
+      "--create",
+      join(out, "graphics-fixtures"),
+    );
+    fixture = manifest["many-levels"];
+    directionFixtures.set("dense", fixture);
+    directionFixtures.set("many-levels", fixture);
+  } else if (spec.fixture === "busy") {
+    const base = await directionFixtureFor({
+      fixture: "scaling",
+      sourceTiles: 9000,
+    });
+    fixture = fixtureCommand(
+      "create-busy",
+      join(out, "busy-fixture"),
+      base.file,
+    );
+  } else throw new Error(`Unknown R4 fixture: ${spec.fixture}`);
+  directionFixtures.set(key, fixture);
+  report.directionFixtures = Object.fromEntries(directionFixtures);
+  await checkpoint();
+  return fixture;
 }
 
 async function launch(project, label, fault = "none") {
@@ -559,6 +686,7 @@ async function launch(project, label, fault = "none") {
       closing = (async () => {
         try {
           const final = await snapshot(page);
+          if (direction) instance.events = final.events;
           instance.renderPackets = final.events.filter((event) =>
             ["height-terrain", "height-draw", "height-preparation"].includes(
               event.kind,
@@ -800,6 +928,18 @@ async function editDuringActualSave(session, points) {
       attempt,
       trigger,
       overlapProven,
+      overlapEvidence: {
+        sample: first,
+        timeOrigin: edit.after.timeOrigin,
+        sessionId: edit.after.sessionId,
+        intervals,
+        before: { sessionId: before.sessionId, background: before.background },
+        observedWorker: trigger.observedWorker,
+        finished: {
+          sessionId: finished.sessionId,
+          background: finished.background,
+        },
+      },
       inputSubmissionComplete,
       matches,
       storeRange: {
@@ -1573,6 +1713,7 @@ try {
       profilePath: referencePath,
       probe: probeNative,
       lab,
+      direction,
     });
     const observed = report.preflight.observed;
     report.reference = {
@@ -1590,7 +1731,8 @@ try {
           }
         : report.reference.hardware,
     };
-    report.presentationMapping = report.preflight.presentation;
+    if (direction) report.visibleCadence = report.preflight.presentation;
+    else report.presentationMapping = report.preflight.presentation;
     // Collection cannot prove native acceptance while the adapter is missing.
     // Preserve a BLOCKED preflight, not invented failures from unstarted scenarios.
     if (preflightOnly || probeNative || report.preflight.status !== "PASS") {
@@ -1616,7 +1758,7 @@ try {
     .filter(
       (file) =>
         /^atlas-p0.*\.mjs$/.test(file) &&
-        !/fixture|scaling|\.test\./.test(file),
+        !(direction ? /\.test\./ : /fixture|scaling|\.test\./).test(file),
     )
     .map((file) => `scripts/${file}`)
     .sort();
@@ -1724,16 +1866,23 @@ try {
     };
     for (let run = 1; run <= repetitions; run++) {
       if (interrupted) break;
-      independentRunId = full ? `release-${run}` : `probe-${run}`;
+      independentRunId = direction
+        ? `direction-${run}`
+        : full
+          ? `release-${run}`
+          : `probe-${run}`;
       if (selectedScope.navigation)
         await guarded("empty-navigation", () => emptyNavigation(fixture));
       if (selectedScope.workflow)
         await guarded("coast-workflow", () => coastJourney(fixture));
       if (selectedScope.collection && !interrupted) {
         await guarded("repeated-scenarios", async () => {
-          const { collectRepeatedScenarios } =
+          const { collectRepeatedScenarios, collectDirectionScenarios } =
             await import("./atlas-p0-collection.mjs");
-          const result = await collectRepeatedScenarios({
+          const collect = direction
+            ? collectDirectionScenarios
+            : collectRepeatedScenarios;
+          const result = await collect({
             launch,
             fixture,
             out,
@@ -1741,6 +1890,7 @@ try {
             fixtureCommand,
             editDuringActualSave,
             purpose,
+            fixtureFor: directionFixtureFor,
             onScenario: scenarioCompleted,
             beforeScenario: async (id) => {
               progress(id, "running");
@@ -1756,6 +1906,9 @@ try {
               errors: result.errors,
             });
         });
+        // R4 is a bounded direction decision, not a release soak. Preserve all
+        // remaining planned entries without repeating an already decisive red case.
+        if (direction && report.errors.length) break;
       }
     }
     if (selectedScope.controls) {
@@ -1805,7 +1958,7 @@ try {
   );
   process.exitCode = report.evaluation.failures.length
     ? 1
-    : report.evaluation.scopePassed && lab && !full
+    : report.evaluation.scopePassed && lab && !full && !direction
       ? 0
       : report.evaluation.passed
         ? 0

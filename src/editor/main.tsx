@@ -12,6 +12,7 @@ declare global {
       points?: Point[],
       options?: ObservationOptions,
     ) => ReturnType<EditorController["observe"]>;
+    atlasContentProbes?: EditorController["configureContentProbes"];
   }
 }
 
@@ -43,13 +44,17 @@ function Atlas() {
     void editor
       .init()
       .then(() => {
-        if (diagnostics)
+        if (diagnostics) {
           window.atlasObserve = (points, options) =>
             editor.observe(points, options);
+          window.atlasContentProbes = (probes) =>
+            editor.configureContentProbes(probes);
+        }
       })
       .catch((e: unknown) => setStartupError(String(e)));
     return () => {
       delete window.atlasObserve;
+      delete window.atlasContentProbes;
       editor.destroy();
     };
   }, []);

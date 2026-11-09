@@ -101,7 +101,7 @@ export function summarizeSubmissionTiming(events) {
         )
           return null;
       const all = [...packet.uploadSpans, ...packet.compositionSpans].sort(
-        (a, b) => a.start - b.start,
+        (a, b) => a.start - b.start || a.end - b.end,
       );
       if (
         all.some((span, i) => i > 0 && span.start < all[i - 1].end) ||

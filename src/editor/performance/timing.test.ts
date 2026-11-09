@@ -1,5 +1,10 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { summarizeSubmissionTiming } from "../../../scripts/atlas-p0-timing.mjs";
+import {
+  collectGpuTimers,
+  gpuWork,
+  installGpuTimers,
+} from "../../../scripts/atlas-p0-graphics-probe.mjs";
 import {
   extractEditSamples,
   evaluateSubmissionDiagnostics,
@@ -75,6 +80,404 @@ const journal = (): Record<string, any>[] => [
     compositionSpans: [{ start: 25, end: 35, work: 128 }],
   },
 ];
+
+describe("GPU timing coverage for the R4 terrain packet budget", () => {
+  const evidence = () => {
+    const events = journal();
+    const composed = { ...events[5], composedSamples: 128 };
+    const upload = {
+      ...composed,
+      packet: 2,
+      uploadStart: 41,
+      uploadedAt: 44,
+      submittedAt: 45,
+      uploadSpans: [{ start: 41, end: 44, bytes: 2048 }],
+      compositionSpans: [],
+      composedSamples: 0,
+      compositionWork: 0,
+      uploadedBytes: 2048,
+    };
+    const timers = {
+      enabled: true,
+      disjoint: false,
+      truncated: false,
+      droppedEvents: 0,
+      startedAt: 0,
+      stoppedAt: 50,
+      samples: [
+        { target: "offscreen", at: 30, available: true, gpuMs: 0.4 },
+        { target: "canvas", at: 37, available: true, gpuMs: 0.2 },
+      ],
+    };
+    return { packets: [composed, upload], draws: [events[2]], timers };
+  };
+
+  it("preserves upload-only work as unmeasured instead of inventing a zero-duration packet", () => {
+    const { packets, draws, timers } = evidence();
+    expect(gpuWork(packets, draws, timers)).toMatchObject({
+      available: true,
+      valid: true,
+      coverage: "composition-draws-only",
+      packetBudgetProven: false,
+      terrainPacketMs: null,
+      observedTerrainPackets: 2,
+      measuredTerrainPackets: 1,
+      unmeasuredTerrainPackets: 1,
+      unmeasuredUploadOnlyPackets: 1,
+      terrainPacketsWithoutFullTiming: 2,
+      offscreenMsPerTerrainPacket: { count: 1, maximum: 0.4 },
+    });
+  });
+
+  it("does not upgrade complete draw timing or a supplied claim into whole-packet coverage", () => {
+    const { packets, draws, timers } = evidence();
+    const measured = gpuWork(packets.slice(0, 1), draws, {
+      ...timers,
+      coverage: "whole-packet",
+      packetBudgetProven: true,
+    });
+    expect(measured).toMatchObject({
+      valid: true,
+      unmeasuredTerrainPackets: 0,
+      terrainPacketsWithoutFullTiming: 1,
+      packetBudgetProven: false,
+      terrainPacketMs: null,
+    });
+  });
+
+  it.each([
+    undefined,
+    { enabled: false },
+    { enabled: "true" },
+    { disjoint: true },
+    { disjoint: undefined },
+    { truncated: true },
+    { truncated: undefined },
+    { samples: [] },
+    { samples: [undefined] },
+    { droppedEvents: 1 },
+  ])(
+    "keeps absent or invalid queries from proving the budget: %j",
+    (override) => {
+      const { packets, draws, timers } = evidence();
+      const result = gpuWork(
+        packets,
+        draws,
+        override === undefined ? undefined : { ...timers, ...override },
+      );
+      expect(result.valid).toBe(false);
+      expect(result.packetBudgetProven).toBe(false);
+      expect(result.terrainPacketMs).toBeNull();
+    },
+  );
+});
+
+describe("whole-packet GPU observation at the existing product fence", () => {
+  afterEach(() => vi.unstubAllGlobals());
+  function context() {
+    const calls: string[] = [];
+    const events: Record<string, any>[] = [];
+    const listeners: Record<string, () => void> = {};
+    let query: { elapsed: number } | null = null;
+    let lost = false;
+    let nextFenceId = 0;
+    const costs = {
+      createTexture: 0.1,
+      deleteTexture: 0.1,
+      texImage2D: 1.1,
+      texSubImage2D: 0.4,
+      texStorage2D: 0.8,
+      bufferData: 0.2,
+      bufferSubData: 0.1,
+      copyTexSubImage2D: 0.5,
+      blitFramebuffer: 0.6,
+      clear: 0.3,
+      drawArrays: 1.2,
+      drawElements: 1.4,
+    };
+    const gl: Record<string, any> = {
+      DRAW_FRAMEBUFFER_BINDING: 1,
+      GPU_DISJOINT_EXT: 2,
+      QUERY_RESULT_AVAILABLE: 3,
+      getExtension: () => ({ TIME_ELAPSED_EXT: 4, GPU_DISJOINT_EXT: 2 }),
+      getParameter: () => false,
+      isContextLost: () => lost,
+      createQuery: () => ({ elapsed: 0 }),
+      beginQuery: (_target: unknown, value: { elapsed: number }) => {
+        calls.push("query-begin");
+        query = value;
+      },
+      endQuery: () => {
+        calls.push("query-end");
+        query = null;
+      },
+      fenceSync: () => {
+        calls.push("product-fence");
+        return {};
+      },
+      flush: () => {
+        calls.push("flush");
+      },
+      getQueryParameter: (value: { elapsed: number }, flag: number) =>
+        flag === 3 ? true : value.elapsed * 1e6,
+      deleteQuery: () => {
+        calls.push("query-deleted");
+      },
+      ...Object.fromEntries(
+        Object.entries(costs).map(([name, elapsed]) => [
+          name,
+          () => {
+            calls.push(name);
+            if (query) query.elapsed += elapsed;
+            return {};
+          },
+        ]),
+      ),
+    };
+    const originals = { ...gl };
+    const canvas = {
+      getContext: () => gl,
+      addEventListener: (name: string, listener: () => void) => {
+        listeners[name] = listener;
+      },
+      removeEventListener: (name: string) => {
+        delete listeners[name];
+      },
+    };
+    vi.stubGlobal("document", { querySelector: () => canvas });
+    vi.stubGlobal("window", {
+      atlasObserve: () => ({
+        eventCount: events.length,
+        droppedEvents: 0,
+        events,
+      }),
+    });
+    const page = {
+      evaluate: (callback: (argument: any) => any, argument?: any) =>
+        callback(argument),
+    };
+    const packet = (commands: string[], kind = "terrain", bindFence = true) => {
+      const start = performance.now();
+      for (const command of commands) gl[command]();
+      const sync = gl.fenceSync();
+      const fenceId = ++nextFenceId;
+      if (bindFence)
+        (globalThis as any).window.atlasGraphicsFence?.(sync, fenceId, kind);
+      gl.flush();
+      const end = performance.now();
+      const identity = events.length + 1;
+      events.push(
+        kind === "terrain"
+          ? {
+              kind: "height-terrain",
+              packet: identity,
+              fenceId,
+              uploadStart: start,
+              submittedAt: end,
+            }
+          : {
+              kind: "height-draw",
+              frame: identity,
+              fenceId,
+              sceneStart: start,
+              submittedAt: end,
+            },
+      );
+      return { sync, fenceId, kind };
+    };
+    return {
+      gl,
+      page,
+      calls,
+      originals,
+      packet,
+      events,
+      loseContext: () => {
+        lost = true;
+        listeners.webglcontextlost();
+        lost = false;
+      },
+    };
+  }
+
+  it.each([
+    ["createTexture", "texImage2D", "texSubImage2D"],
+    ["texStorage2D", "bufferData", "bufferSubData"],
+    ["copyTexSubImage2D", "blitFramebuffer", "clear"],
+    ["texSubImage2D", "drawArrays", "drawElements"],
+  ])(
+    "includes allocation, transfers and drawing in one existing packet: %j",
+    async (...commands) => {
+      const state = context();
+      await installGpuTimers(state.page, true, { coverage: "terrain-packets" });
+      state.packet(commands);
+      state.packet(["clear", "drawArrays"], "scene");
+      const measured = await collectGpuTimers(state.page);
+      expect(state.calls.slice(0, commands.length + 4)).toEqual([
+        "query-begin",
+        ...commands,
+        "query-end",
+        "product-fence",
+        "flush",
+      ]);
+      expect(measured.samples).toHaveLength(2);
+      expect(measured.samples[0]).toMatchObject({
+        target: "packet",
+        fenceId: state.events[0].fenceId,
+        fenceKind: "terrain",
+        commands: commands.length,
+        available: true,
+        fenced: true,
+      });
+      expect(measured.boundaryErrors).toEqual([]);
+      expect(
+        gpuWork([state.events[0]], [state.events[1]], measured),
+      ).toMatchObject({
+        valid: true,
+        packetBudgetProven: true,
+        terrainPacketMs: { count: 1 },
+      });
+      for (const [name, original] of Object.entries(state.originals))
+        expect(state.gl[name]).toBe(original);
+    },
+  );
+
+  it("detects a total packet over budget even when every separate draw is cheap", async () => {
+    const state = context();
+    await installGpuTimers(state.page, true, { coverage: "terrain-packets" });
+    state.gl.texImage2D();
+    state.gl.texImage2D();
+    state.gl.texImage2D();
+    state.packet(["drawArrays"]);
+    const measured = await collectGpuTimers(state.page);
+    expect(gpuWork(state.events, [], measured)).toMatchObject({
+      valid: true,
+      packetBudgetProven: false,
+      terrainPacketMs: { maximum: 4.5 },
+    });
+  });
+
+  it.each(["observation", "readback"])(
+    "releases every query and the global hook when %s fails",
+    async (fault) => {
+      const state = context();
+      await installGpuTimers(state.page, true, { coverage: "terrain-packets" });
+      state.packet(["texImage2D"]);
+      state.packet(["drawArrays"], "scene");
+      const browserWindow = (globalThis as any).window;
+      const originalObserve = browserWindow.atlasObserve;
+      if (fault === "observation")
+        browserWindow.atlasObserve = () => {
+          throw new Error("Injected observer failure");
+        };
+      else
+        state.gl.getQueryParameter = () => {
+          throw new Error("Injected query read failure");
+        };
+      await expect(collectGpuTimers(state.page)).rejects.toThrow("Injected");
+      expect(
+        state.calls.filter((call) => call === "query-deleted"),
+      ).toHaveLength(2);
+      expect(browserWindow.atlasGraphicsProbe).toBeUndefined();
+      expect(state.gl.texImage2D).toBe(state.originals.texImage2D);
+      expect(state.gl.fenceSync).toBe(state.originals.fenceSync);
+      browserWindow.atlasObserve = originalObserve;
+      state.gl.getQueryParameter = state.originals.getQueryParameter;
+      await installGpuTimers(state.page, true, { coverage: "terrain-packets" });
+      state.packet(["texSubImage2D"]);
+      expect((await collectGpuTimers(state.page)).boundaryErrors).toEqual([]);
+    },
+  );
+
+  it("includes cleanup before the product marker through the same real fence", async () => {
+    const state = context();
+    await installGpuTimers(state.page, true, { coverage: "terrain-packets" });
+    state.gl.deleteTexture();
+    state.packet(["drawArrays"]);
+    const measured = await collectGpuTimers(state.page);
+    expect(measured.samples[0].at).toBeLessThan(state.events[0].uploadStart);
+    expect(gpuWork(state.events, [], measured)).toMatchObject({
+      valid: true,
+      packetBudgetProven: true,
+      unmatchedCalls: 0,
+      terrainPacketMs: { count: 1, maximum: 1.3 },
+    });
+  });
+
+  it.each(["missing", "repeated", "foreign-sync", "forged-id", "forged-kind"])(
+    "rejects invalid actual WebGLSync binding: %s",
+    async (fault) => {
+      const state = context();
+      await installGpuTimers(state.page, true, { coverage: "terrain-packets" });
+      const fence = state.packet(["texImage2D"], "terrain", false);
+      const bind = (globalThis as any).window.atlasGraphicsFence;
+      if (fault === "repeated") {
+        bind(fence.sync, fence.fenceId, fence.kind);
+        bind(fence.sync, fence.fenceId, fence.kind);
+      }
+      if (fault === "foreign-sync") bind({}, fence.fenceId, fence.kind);
+      if (fault === "forged-id")
+        bind(fence.sync, fence.fenceId + 1, fence.kind);
+      if (fault === "forged-kind") bind(fence.sync, fence.fenceId, "scene");
+      const measured = await collectGpuTimers(state.page);
+      expect(gpuWork(state.events, [], measured)).toMatchObject({
+        valid: false,
+        packetBudgetProven: false,
+        terrainPacketMs: null,
+      });
+      expect((globalThis as any).window.atlasGraphicsFence).toBeUndefined();
+    },
+  );
+
+  it.each([
+    "missing-packet",
+    "duplicate-query",
+    "missing-coverage",
+    "query-unavailable",
+    "missing-fence",
+    "disjoint",
+    "missing-boundary-state",
+  ])("rejects incomplete whole-packet evidence: %s", async (fault) => {
+    const state = context();
+    await installGpuTimers(state.page, true, { coverage: "terrain-packets" });
+    state.packet(["texImage2D", "drawArrays"]);
+    const measured = await collectGpuTimers(state.page);
+    if (fault === "missing-packet") state.events.length = 0;
+    if (fault === "duplicate-query")
+      measured.samples.push({ ...measured.samples[0] });
+    if (fault === "missing-coverage") delete measured.wrappedCommands;
+    if (fault === "query-unavailable") measured.samples[0].available = false;
+    if (fault === "missing-fence") measured.samples[0].fenced = false;
+    if (fault === "disjoint") measured.disjoint = true;
+    if (fault === "missing-boundary-state") delete measured.boundaryErrors;
+    expect(gpuWork(state.events, [], measured)).toMatchObject({
+      valid: false,
+      packetBudgetProven: false,
+      terrainPacketMs: null,
+    });
+  });
+
+  it.each(["unfenced", "empty-fence", "context-loss", "wrapper-replaced"])(
+    "retains %s as invalid timing evidence",
+    async (fault) => {
+      const state = context();
+      await installGpuTimers(state.page, true, { coverage: "terrain-packets" });
+      state.packet(["texSubImage2D"]);
+      if (fault === "unfenced") state.gl.texImage2D();
+      if (fault === "empty-fence") state.gl.fenceSync();
+      if (fault === "context-loss") state.loseContext();
+      if (fault === "wrapper-replaced") state.gl.texImage2D = () => {};
+      const measured = await collectGpuTimers(state.page);
+      expect(gpuWork(state.events, [], measured)).toMatchObject({
+        valid: false,
+        packetBudgetProven: false,
+        terrainPacketMs: null,
+      });
+      if (fault === "context-loss") expect(measured.contextLost).toBe(true);
+      else expect(measured.boundaryErrors.length).toBeGreaterThan(0);
+    },
+  );
+});
 
 describe("numeric terrain submission diagnosis", () => {
   it("accounts for source upload and actual draw without claiming presentation", () => {

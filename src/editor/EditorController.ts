@@ -145,6 +145,7 @@ export class EditorController {
   private admissionId = 0;
   private intervalId = 0;
   private inputId = 0;
+  private contentProbes: { level: number; points: Point[] } | null = null;
   private animation = 0;
   private lastFrameAt = 0;
   private resizeObserver: ResizeObserver;
@@ -1283,6 +1284,11 @@ export class EditorController {
       cpuMs: performance.now() - startedAt,
       work: this.doc.brushWork,
     });
+    this.recordContentProbes(
+      "admission",
+      admission.toAt,
+      admission.admissionId,
+    );
     if (!result.reserved)
       for (const input of admission.inputIds)
         if (admission.cause !== "terminal")
@@ -1399,6 +1405,8 @@ export class EditorController {
         });
       for (const id of result.completedAdmissionIds) this.admissions.delete(id);
     }
+    if (result.applications.length || result.complete)
+      this.recordContentProbes(result.complete ? "complete" : "materialize");
     if (projectionError) {
       this.finishGesture(undefined, "projection-error");
       this.world.reset(this.doc);
@@ -1530,6 +1538,7 @@ export class EditorController {
     try {
       const change = redo ? this.doc.redo() : this.doc.undo();
       if (!change) return;
+      this.recordContentProbes(redo ? "redo" : "undo");
       // A broad history region can contain evicted, unchanged fine sources.
       // Transfer the authoritative changed tiles without reloading that region.
       this.world.updateSourcePatches(change.patches);
@@ -1679,7 +1688,68 @@ export class EditorController {
     }
   }
 
+  /** Configure bounded evidence only; this does not prepare sources or change readiness. */
+  configureContentProbes(probes: { level: number; points: Point[] } | null) {
+    if (!this.observation.enabled)
+      throw new Error(
+        "Autorenproben benötigen den ausdrücklichen Diagnosemodus.",
+      );
+    if (this.doc.active)
+      throw new Error("Autorenproben vor der Geste festlegen.");
+    if (probes) {
+      this.doc.observeBrushCoefficients(probes.level, probes.points);
+      this.contentProbes = {
+        level: probes.level,
+        points: probes.points.map((point) => [...point]),
+      };
+    } else this.contentProbes = null;
+    return this.contentProbes
+      ? this.doc.observeBrushCoefficients(
+          this.contentProbes.level,
+          this.contentProbes.points,
+        )
+      : null;
+  }
+
+  private recordContentProbes(
+    phase: string,
+    clock?: number,
+    admissionId?: number,
+  ): void {
+    if (!this.contentProbes || !this.observation.enabled) return;
+    const startedAt = performance.now();
+    const sampled = this.doc.observeBrushCoefficients(
+      this.contentProbes.level,
+      this.contentProbes.points,
+    );
+    this.observation.event("brush-content", {
+      phase,
+      clock,
+      admissionId,
+      sessionId: this.doc.sessionId,
+      gestureId: this.doc.brushWork?.context.gestureId,
+      level: this.contentProbes.level,
+      revision: this.doc.revision,
+      ...sampled,
+      cpuMs: performance.now() - startedAt,
+    });
+  }
+
   observe(points: Point[] = [], options: ObservationOptions = {}) {
+    const path = options.readinessPath;
+    if (path && (!path.length || path.length > 512))
+      throw new RangeError("Beobachteter Pinselweg benötigt 1 bis 512 Punkte.");
+    const pathBrush = path ? this.currentBrush() : null;
+    const pathRegions = path?.map((point, index) =>
+      heightBrushReadBounds(pathBrush!, path[Math.max(0, index - 1)], point),
+    );
+    const pathReadiness = pathRegions?.map((bounds) => ({
+      sourcesReady: this.doc.isReady(
+        bounds,
+        HEIGHT_LEVELS.slice(pathBrush!.level),
+      ),
+      terrain: this.world.inspectRegion(bounds).status,
+    }));
     let height: number | null = null;
     if (options.pointerHeight)
       try {
@@ -1709,6 +1779,14 @@ export class EditorController {
           }
         : null,
       readiness: this.localReadiness(),
+      pathReadiness: pathReadiness
+        ? {
+            ready: pathReadiness.every(
+              (region) => region.sourcesReady && region.terrain === "current",
+            ),
+            regions: pathReadiness,
+          }
+        : null,
       renderer: this.world.state(),
       background: { ...this.backgroundStats },
       compute: this.compute.metrics(),
@@ -1727,6 +1805,12 @@ export class EditorController {
       pointer: [...this.pointer],
       height,
       samples,
+      contentProbes: this.contentProbes
+        ? this.doc.observeBrushCoefficients(
+            this.contentProbes.level,
+            this.contentProbes.points,
+          )
+        : null,
       eventCount: this.observation.eventCount,
       lastInputId: this.inputId,
       events: this.observation.read(options),

@@ -1,6 +1,55 @@
-import { expect, it, vi } from "vitest";
+import { afterEach, expect, it, vi } from "vitest";
 import { editorBudgets } from "./budgets";
 import { Observation } from "./observation";
+
+afterEach(() => vi.unstubAllGlobals());
+
+it("binds the actual GPU sync with monotone diagnostic identities across document resets", () => {
+  const notify = vi.fn();
+  vi.stubGlobal("window", { atlasGraphicsFence: notify });
+  const observation = new Observation(true);
+  const terrain = Object.freeze({}) as WebGLSync;
+  const scene = Object.freeze({}) as WebGLSync;
+
+  expect(observation.gpuFence(terrain, "terrain")).toBe(1);
+  observation.reset();
+  expect(observation.gpuFence(scene, "scene")).toBe(2);
+  expect(notify).toHaveBeenNthCalledWith(1, terrain, 1, "terrain");
+  expect(notify).toHaveBeenNthCalledWith(2, scene, 2, "scene");
+  expect(observation.read()).toEqual([]);
+});
+
+it("never reads a graphics diagnostic hook in a normal start", () => {
+  const readHook = vi.fn(() => {
+    throw new Error("A normal start must not access the diagnostic hook");
+  });
+  vi.stubGlobal(
+    "window",
+    Object.defineProperty({}, "atlasGraphicsFence", { get: readHook }),
+  );
+  const observation = new Observation();
+  expect(observation.gpuFence({} as WebGLSync, "terrain")).toBeUndefined();
+  expect(readHook).not.toHaveBeenCalled();
+  expect(observation.read()).toEqual([]);
+});
+
+it("records a broken fence observer without interrupting submitted GPU ownership", () => {
+  vi.stubGlobal("window", {
+    atlasGraphicsFence: () => {
+      throw new Error("Injected observer failure");
+    },
+  });
+  const observation = new Observation(true);
+  expect(observation.gpuFence({} as WebGLSync, "scene")).toBe(1);
+  expect(observation.read()).toEqual([
+    expect.objectContaining({
+      kind: "gpu-fence-observation-error",
+      fenceId: 1,
+      fenceKind: "scene",
+      message: "Error: Injected observer failure",
+    }),
+  ]);
+});
 
 it("reads incremental observations without consuming the retained journal", () => {
   const observation = new Observation(true);

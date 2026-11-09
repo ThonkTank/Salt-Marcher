@@ -3754,6 +3754,32 @@ it("R3 publishes complete overview snapshots and coalesces changes across supers
   world.destroy();
 });
 
+it("R4 binds terrain and scene events to the actual existing product fences", async () => {
+  const { world, observation } = await readyRenderer({ rendered: false });
+  const gl = world.renderer.gl;
+  const notify = vi.fn();
+  vi.stubGlobal("window", { atlasGraphicsFence: notify });
+  const startEvent = observation.eventCount;
+
+  expect(world.renderFrame(performance.now())).not.toBeNull();
+  const packets = observation
+    .read({ sinceEvent: startEvent })
+    .filter((event) => ["height-terrain", "height-draw"].includes(event.kind));
+  expect(packets.map(({ kind, fenceId }) => ({ kind, fenceId }))).toEqual([
+    { kind: "height-terrain", fenceId: 1 },
+    { kind: "height-draw", fenceId: 2 },
+  ]);
+  const fences = vi.mocked(gl.fenceSync).mock.results.map(({ value }) => value);
+  expect(fences).toHaveLength(2);
+  expect(notify).toHaveBeenNthCalledWith(1, fences[0], 1, "terrain");
+  expect(notify).toHaveBeenNthCalledWith(2, fences[1], 2, "scene");
+  expect(gl.flush).toHaveBeenCalledTimes(2);
+  expect(world.state().gpuSubmissions).toBe(2);
+  world.pollCompletion();
+  expect(world.state().gpuSubmissions).toBe(0);
+  world.destroy();
+});
+
 it("R3 fences upload-only terrain and admits no further GL work with both slots occupied", async () => {
   const { world, field, frame } = await readyRenderer({ rendered: false });
   const gl = world.renderer.gl;

@@ -6,7 +6,15 @@ import {
   evaluateScenario,
   evaluateStrokeContent,
   extractColdSamples,
+  evaluateDirectionContent,
+  R4_REQUIREMENTS,
+  directionPoints,
+  directionProbes,
 } from "./atlas-p0-evaluate.mjs";
+import {
+  collectGpuTimers,
+  installGpuTimers,
+} from "./atlas-p0-graphics-probe.mjs";
 import {
   snapshot,
   stateSnapshot,
@@ -22,7 +30,11 @@ import {
   storeActivityPosition,
   storeIntervalReference,
   strokeInputs,
+  prepareStroke,
+  sendStrokeInputs,
 } from "./atlas-p0-interactions.mjs";
+
+export { directionPoints, directionProbes };
 
 const finite = (value) => typeof value === "number" && Number.isFinite(value);
 const near = (a, b) => finite(a) && finite(b) && Math.abs(a - b) < 1e-7;
@@ -388,17 +400,22 @@ export function startReadyStrokeMonitor(
     afterInputId,
     screenPoint,
     sessionId,
-    point,
+    point = /** @type {number[] | undefined} */ (undefined),
     probes = point ? [point] : [],
     sinceEvent = 0,
+    inputProgram = /** @type {ReturnType<typeof strokeInputs> | undefined} */ (
+      undefined
+    ),
   },
 ) {
-  const inputs = strokeInputs(
-    Array.from({ length: 5 }, (_, step) => ({
-      x: screenPoint.x + step * 32,
-      y: screenPoint.y + (step % 2) * 4,
-    })),
-  );
+  const inputs =
+    inputProgram ??
+    strokeInputs(
+      Array.from({ length: 5 }, (_, step) => ({
+        x: screenPoint.x + step * 32,
+        y: screenPoint.y + (step % 2) * 4,
+      })),
+    );
   return session.app.evaluate(
     async (
       { BrowserWindow },
@@ -1048,6 +1065,381 @@ export async function collectRepeatedScenarios(context) {
     if (context.purpose !== "acceptance" && result.errors.length) break;
   }
   result.missing = selectedSpecs
+    .filter((spec) => !result.completed.some((entry) => entry.id === spec.id))
+    .map((spec) => spec.id);
+  result.passed = result.errors.length === 0 && result.missing.length === 0;
+  return result;
+}
+
+/** Convert observed raw C1 facts; no candidate effect is used as its own reference. */
+export function directionContent(edit, manifest, before, after, undone) {
+  const events = edit.after.events;
+  const own = (event) =>
+    event.sessionId === edit.after.sessionId &&
+    event.gestureId === edit.time.gestureId;
+  const admissions = events.filter(
+    (event) => event.kind === "brush-accepted" && own(event),
+  );
+  const checkpoints = events.filter(
+    (event) =>
+      event.kind === "brush-content" &&
+      event.phase === "admission" &&
+      own(event),
+  );
+  const original = manifest.probes.map(
+    (_, index) =>
+      checkpoints.find((checkpoint) => finite(checkpoint.before?.[index]))
+        ?.before[index] ??
+      before?.authors[index] ??
+      null,
+  );
+  const complete = events.findLast(
+    (event) =>
+      event.kind === "brush-content" &&
+      event.phase === "complete" &&
+      own(event),
+  );
+  const content = {
+    input: edit.time.inputManifest,
+    ...manifest,
+    before: original,
+    after: complete?.authors ?? after?.authors ?? [],
+    undone: undone?.authors ?? [],
+    checkpoints,
+  };
+  return { content, admissions };
+}
+
+async function directionCamera(page, scale) {
+  await navigateTo(page, [0, 0]);
+  await button(page, scale === 0.000002 ? "Weltansicht" : "Nahansicht");
+  for (let step = 0; step < 20; step++) {
+    const observed = await stateSnapshot(page);
+    if (Math.abs(Math.log(observed.camera.scale / scale)) < 1e-8) return;
+    const canvas = await page.locator("canvas").boundingBox();
+    if (!canvas) throw new Error("R4 canvas unavailable");
+    await page.mouse.move(
+      canvas.x + canvas.width / 2,
+      canvas.y + canvas.height / 2,
+    );
+    const delta = Math.max(
+      -500,
+      Math.min(500, -Math.log(scale / observed.camera.scale) / 0.0018),
+    );
+    await page.mouse.wheel(0, delta);
+    await page.waitForFunction(
+      (prior) =>
+        window.atlasObserve([], { events: false }).camera.scale !== prior,
+      observed.camera.scale,
+    );
+  }
+  throw new Error("R4 scale did not reach its fixed target");
+}
+
+async function directionReady(page, point, path) {
+  const prepared = await prepareStroke({ page }, [point]);
+  await page.mouse.move(prepared.positions[0].x, prepared.positions[0].y);
+  await page.waitForFunction(
+    (path) => {
+      const observed = window.atlasObserve([], {
+        events: false,
+        ...(path ? { readinessPath: path } : {}),
+      });
+      if (observed.state.error) throw new Error(observed.state.error);
+      return (
+        observed.readiness.ready &&
+        !observed.document.active &&
+        (!path || observed.pathReadiness.ready)
+      );
+    },
+    path,
+    { timeout: 5000 },
+  );
+}
+
+async function directionGpuTimers(page) {
+  // The process journal is retained once in run.events. Only query facts belong
+  // in the per-gesture timer windows.
+  const { observation: _observation, ...timers } = await collectGpuTimers(page);
+  return timers;
+}
+
+/**
+ * The R4 subset reuses the actual desktop/input/store paths, with fresh processes.
+ * selectedSpecs only permits focused integration tests. The CLI always passes
+ * the fixed matrix; omitted/undersampled cases still fail the central R4 gate.
+ */
+export async function collectDirectionScenarios(
+  context,
+  selectedSpecs = R4_REQUIREMENTS.scenarios,
+) {
+  const result = {
+    independentRunId: context.independentRunId,
+    passed: false,
+    completed: [],
+    errors: [],
+    missing: [],
+  };
+  for (const spec of selectedSpecs) {
+    await context.beforeScenario?.(spec.id);
+    const scenario = {
+      id: spec.id,
+      kind: "edit",
+      purpose: "direction",
+      spec,
+      requestedAttempts: spec.minGestures,
+      attempts: [],
+      samples: [],
+      droppedEvents: 0,
+      aborted: false,
+    };
+    let session;
+    try {
+      const fixture = await context.fixtureFor(spec);
+      scenario.fixture = fixture;
+      const file = join(
+        context.out,
+        `${context.independentRunId}-${spec.id}.saltatlas`,
+      );
+      await copyFile(fixture.file, file);
+      session = await context.launch(file, spec.id);
+      session.instance.scenarios.push(scenario);
+      session.instance.gpuTimers = [];
+      const { page } = session;
+      await exact(page);
+      await page.getByLabel("Raster anzeigen").uncheck();
+      await directionCamera(page, spec.scale);
+      await brush(page, spec.diameter, R4_REQUIREMENTS.rateFtPerSecond);
+      const points = directionPoints(spec);
+      await directionReady(page, points[0]);
+      const selected = await stateSnapshot(page);
+      if (
+        selected.brush.level !== spec.level ||
+        Math.abs(selected.camera.scale / spec.scale - 1) > 1e-6
+      )
+        throw new Error(
+          "R4 actual author level/camera differs from fixed manifest",
+        );
+      scenario.observedBrush = selected.brush;
+      scenario.observedCamera = selected.camera;
+      for (let index = 0; index < spec.minGestures; index++) {
+        const record = {
+          attempt: index,
+          overlapRequired: spec.transition === "save",
+        };
+        scenario.attempts.push(record);
+        let timer;
+        try {
+          await waitForWrites(page);
+          const firstReady = spec.transition === "navigation-first-ready";
+          record.transition = { kind: spec.transition };
+          if (firstReady) {
+            await navigateTo(page, [40_000, 20_000]);
+          } else if (spec.transition === "navigation") {
+            await navigateTo(page, [4000, 2000]);
+            record.transition.navigation = await navigateTo(page, [0, 0]);
+          } else if (spec.transition === "level") {
+            await brush(page, 16, R4_REQUIREMENTS.rateFtPerSecond);
+            const previous = await stateSnapshot(page);
+            record.transition.previousLevel = previous.brush.level;
+            record.transition.before = previous;
+            await brush(page, spec.diameter, R4_REQUIREMENTS.rateFtPerSecond);
+          } else if (spec.transition === "undo") {
+            await directionReady(page, points[0]);
+            await movingStroke(session, points);
+            record.transition.beforeUndo = (await stateSnapshot(page)).document;
+            await button(page, /Rückgängig/);
+          }
+          if (!firstReady) await directionReady(page, points[0], points);
+          const prepared = await prepareStroke(session, points);
+          if (spec.transition === "level")
+            record.transition.after = prepared.before;
+          if (spec.transition === "undo")
+            record.transition.afterUndo = prepared.before.document;
+          const canvas = await page.locator("canvas").boundingBox();
+          if (firstReady)
+            prepared.positions = [
+              {
+                x: canvas.x + canvas.width / 2,
+                y: canvas.y + canvas.height / 2,
+              },
+            ];
+          const programCamera = firstReady
+            ? { ...prepared.before.camera, x: 0, y: 0 }
+            : prepared.before.camera;
+          const actualPoints = prepared.positions.map(({ x, y }) => [
+            programCamera.x +
+              (Math.round(x) - canvas.x - canvas.width / 2) /
+                prepared.before.camera.scale,
+            programCamera.y +
+              (Math.round(y) - canvas.y - canvas.height / 2) /
+                prepared.before.camera.scale,
+          ]);
+          record.requestedPath = [...actualPoints, actualPoints.at(-1)];
+          record.expectedInputCount = record.requestedPath.length;
+          const manifest = directionProbes(actualPoints, spec.level);
+          const before = await page.evaluate(
+            ({ level, probes }) =>
+              window.atlasContentProbes({ level, points: probes }),
+            { level: spec.level, probes: manifest.probes },
+          );
+          record.observationRange = { from: prepared.before.eventCount };
+          timer = await installGpuTimers(page, true, {
+            coverage: "terrain-packets",
+          });
+          let edit;
+          if (firstReady) {
+            const measuredBefore = await stateSnapshot(page);
+            const monitor = startReadyStrokeMonitor(session, {
+              afterInputId: measuredBefore.lastInputId,
+              sinceEvent: measuredBefore.eventCount,
+              sessionId: measuredBefore.sessionId,
+              screenPoint: prepared.positions[0],
+              probes: [],
+              inputProgram: strokeInputs(
+                prepared.positions,
+                R4_REQUIREMENTS.intervalMs,
+              ),
+            });
+            record.transition.navigation = await navigateTo(page, [0, 0]);
+            record.transition.readyTrigger = await monitor;
+            if (!record.transition.readyTrigger.dispatched)
+              throw new Error("R4 first ready local input was not dispatched");
+            edit = await observeStroke(session, measuredBefore);
+          } else if (spec.transition === "save") {
+            const overlap = await context.editDuringActualSave(session, points);
+            record.saveAttempts = overlap.attempts;
+            record.overlapProven = overlap.passed;
+            if (!overlap.edit)
+              throw new Error("R4 could not dispatch during an actual save");
+            edit = overlap.edit;
+          } else {
+            const intervalMs =
+              spec.gesture === "hold"
+                ? spec.minDurationMs
+                : R4_REQUIREMENTS.intervalMs;
+            const measuredBefore = await stateSnapshot(page);
+            await sendStrokeInputs(
+              session,
+              strokeInputs(prepared.positions, intervalMs),
+            );
+            edit = await observeStroke(session, measuredBefore);
+          }
+          record.inputIds = edit.inputIds;
+          record.sessionId = edit.after.sessionId;
+          record.gestureId = edit.time.gestureId;
+          record.time = edit.time;
+          record.startedAt = edit.time.startAt;
+          record.finishedAt = edit.time.completedAt;
+          record.timedOut = edit.timedOut;
+          record.observationRange.to = edit.after.eventCount;
+          record.droppedEvents = edit.after.droppedEvents;
+          retainSamples(scenario, edit.samples);
+          scenario.droppedEvents = edit.after.droppedEvents;
+          const after = await stateSnapshot(page);
+          if (timer.enabled) {
+            session.instance.gpuTimers.push(await directionGpuTimers(page));
+            timer = null;
+          } else session.instance.gpuTimers.push(timer);
+          await button(page, /Rückgängig/);
+          await directionReady(page, actualPoints[0]);
+          await waitForWrites(page);
+          const undone = await snapshot(page, [], {
+            sinceEvent: edit.after.eventCount,
+          });
+          const undoSnapshot = undone.events.findLast(
+            (event) =>
+              event.kind === "brush-content" &&
+              event.phase === "undo" &&
+              event.sessionId === record.sessionId &&
+              event.gestureId === record.gestureId,
+          );
+          const content = directionContent(
+            edit,
+            manifest,
+            before,
+            after.contentProbes,
+            undoSnapshot ?? undone.contentProbes,
+          );
+          record.content = content.content;
+          const evaluated = evaluateDirectionContent(
+            record.content,
+            content.admissions,
+          );
+          record.contentEvaluation = evaluated;
+          if (
+            evaluated.failures.length ||
+            !edit.time.passed ||
+            edit.timedOut ||
+            (record.overlapRequired && !record.overlapProven)
+          )
+            throw new Error(
+              `R4 stroke failed: ${[...new Set([...evaluated.failures.map((entry) => entry.code), ...edit.time.issues.map((entry) => entry.code), ...(edit.timedOut ? ["STROKE_TIMEOUT"] : []), ...(record.overlapRequired && !record.overlapProven ? ["SAVE_OVERLAP_UNPROVEN"] : [])])].join(", ")}`,
+            );
+          await page.evaluate(() => window.atlasContentProbes(null));
+          console.log(
+            `[atlas-p0] ${spec.id}: ${index + 1}/${spec.minGestures} R4 gestures`,
+          );
+        } catch (error) {
+          record.error = String(error);
+          scenario.aborted = true;
+          throw error;
+        } finally {
+          if (timer?.enabled)
+            session.instance.gpuTimers.push(
+              await directionGpuTimers(page).catch((error) => ({
+                enabled: true,
+                error: String(error),
+              })),
+            );
+        }
+      }
+    } catch (error) {
+      scenario.error = String(error);
+      scenario.aborted = true;
+      result.errors.push({ scenario: spec.id, error: String(error) });
+    } finally {
+      if (session) {
+        try {
+          await session.close();
+        } catch (error) {
+          scenario.error = String(error);
+          scenario.aborted = true;
+          result.errors.push({ scenario: spec.id, error: String(error) });
+        }
+      }
+    }
+    scenario.evaluation = {
+      status: scenario.aborted
+        ? "FAIL"
+        : scenario.attempts.some(
+              (attempt) => attempt.contentEvaluation?.blockers?.length,
+            )
+          ? "BLOCKED"
+          : "PROXY_ONLY",
+      contentPassed:
+        !scenario.aborted &&
+        scenario.attempts.length === spec.minGestures &&
+        scenario.attempts.every((attempt) => attempt.contentEvaluation?.passed),
+    };
+    const resultFile = join(
+      session?.directory ?? context.out,
+      `${spec.id}-result.json`,
+    );
+    await writeFile(resultFile, JSON.stringify(scenario, null, 2));
+    result.completed.push({
+      id: spec.id,
+      resultFile,
+      status: scenario.evaluation.status,
+    });
+    const continueCollection = await context.onScenario?.(scenario, resultFile);
+    if (continueCollection === false) {
+      result.decisiveFailure = spec.id;
+      break;
+    }
+    if (result.errors.length) break;
+  }
+  result.missing = R4_REQUIREMENTS.scenarios
     .filter((spec) => !result.completed.some((entry) => entry.id === spec.id))
     .map((spec) => spec.id);
   result.passed = result.errors.length === 0 && result.missing.length === 0;

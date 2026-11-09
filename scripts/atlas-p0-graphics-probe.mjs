@@ -21,9 +21,12 @@ import {
   distribution,
   strokeEvidence,
   evaluateRenderWork,
+  gpuWork,
 } from "./atlas-p0-evaluate.mjs";
 import { summarizeSubmissionTiming } from "./atlas-p0-timing.mjs";
 import { nativePresentationCapability, parseTrace } from "./atlas-p0-trace.mjs";
+
+export { gpuWork };
 
 const root = fileURLToPath(new URL("../", import.meta.url));
 const require = createRequire(import.meta.url);
@@ -40,135 +43,7 @@ const writeJson = (file, data) =>
   writeFile(file, JSON.stringify(data, null, 2) + "\n");
 const sha256 = (bytes) => createHash("sha256").update(bytes).digest("hex");
 
-/** Attribute every query to its actual terrain packet or canvas scene once. */
-export function gpuWork(packets, draws, timers) {
-  if (!timers.enabled) return { available: false };
-  const valid =
-    !timers.disjoint &&
-    !timers.truncated &&
-    timers.droppedEvents === 0 &&
-    Number.isFinite(timers.startedAt) &&
-    Number.isFinite(timers.stoppedAt) &&
-    timers.stoppedAt >= timers.startedAt &&
-    packets.every(
-      (packet) =>
-        Number.isSafeInteger(packet.packet) &&
-        packet.packet > 0 &&
-        Number.isFinite(packet.uploadStart) &&
-        Number.isFinite(packet.submittedAt) &&
-        packet.submittedAt >= packet.uploadStart &&
-        Array.isArray(packet.compositionSpans) &&
-        packet.compositionSpans.every(
-          (span) =>
-            Number.isFinite(span.start) &&
-            Number.isFinite(span.end) &&
-            span.start >= packet.uploadStart &&
-            span.end >= span.start &&
-            span.end <= packet.submittedAt,
-        ),
-    ) &&
-    draws.every(
-      (draw) =>
-        Number.isSafeInteger(draw.frame) &&
-        draw.frame > 0 &&
-        Number.isFinite(draw.sceneStart) &&
-        Number.isFinite(draw.submittedAt) &&
-        draw.submittedAt >= draw.sceneStart,
-    ) &&
-    Array.isArray(timers.samples) &&
-    timers.samples.length > 0 &&
-    timers.samples.every(
-      (sample) =>
-        sample.available &&
-        Number.isFinite(sample.gpuMs) &&
-        sample.gpuMs >= 0 &&
-        Number.isFinite(sample.at) &&
-        sample.at >= timers.startedAt &&
-        sample.at <= timers.stoppedAt &&
-        ["canvas", "offscreen"].includes(sample.target),
-    );
-  if (!valid)
-    return {
-      available: true,
-      valid: false,
-      reason: "invalid-packet-or-query-evidence",
-    };
-  const terrain = packets
-    .filter(
-      (packet) =>
-        packet.uploadStart >= timers.startedAt &&
-        packet.submittedAt <= timers.stoppedAt,
-    )
-    .map((packet) => ({
-      ...packet,
-      samples: timers.samples.filter(
-        (sample) =>
-          sample.target === "offscreen" &&
-          packet.compositionSpans.some(
-            (span) => sample.at >= span.start && sample.at <= span.end,
-          ),
-      ),
-    }));
-  const scenes = draws
-    .filter(
-      (draw) =>
-        draw.sceneStart >= timers.startedAt &&
-        draw.submittedAt <= timers.stoppedAt,
-    )
-    .map((draw) => ({
-      ...draw,
-      samples: timers.samples.filter(
-        (sample) =>
-          sample.target === "canvas" &&
-          sample.at >= draw.sceneStart &&
-          sample.at <= draw.submittedAt,
-      ),
-    }));
-  const assigned = [...terrain, ...scenes].flatMap((record) => record.samples);
-  const complete =
-    scenes.length > 0 &&
-    scenes.every((scene) => scene.samples.length > 0) &&
-    terrain.every(
-      (packet) => packet.compositionWork === 0 || packet.samples.length > 0,
-    ) &&
-    assigned.length === timers.samples.length &&
-    new Set(assigned).size === assigned.length;
-  const sum = (record) =>
-    record.samples.reduce((total, sample) => total + sample.gpuMs, 0);
-  const totalSamples = terrain.reduce(
-    (total, packet) => total + packet.composedSamples,
-    0,
-  );
-  return {
-    available: true,
-    valid: complete,
-    measuredTerrainPackets: terrain.length,
-    measuredFrames: scenes.length,
-    unmeasuredTerrainPackets: terrain.filter(
-      (packet) => packet.compositionWork > 0 && !packet.samples.length,
-    ).length,
-    unmeasuredFrames: scenes.filter((scene) => !scene.samples.length).length,
-    unmatchedCalls: timers.samples.filter(
-      (sample) => !assigned.includes(sample),
-    ).length,
-    offscreenMsPerTerrainPacket: complete
-      ? distribution(
-          terrain.filter((packet) => packet.compositionWork > 0).map(sum),
-        )
-      : null,
-    canvasMsPerFrame: complete ? distribution(scenes.map(sum)) : null,
-    offscreenMsPerMillionChangedSamples:
-      complete && totalSamples > 0
-        ? (terrain.reduce((total, packet) => total + sum(packet), 0) /
-            totalSamples) *
-          1e6
-        : null,
-    interpretation:
-      "Offscreen queries belong to recorded composition spans, including terrain-only packets while a scene is pending. Canvas queries belong only to scene spans. All queries are assigned exactly once; no GL call count proves pixels or native presentation.",
-  };
-}
-
-async function createFixtures(directory) {
+export async function createGraphicsFixtures(directory) {
   if (!process.versions.electron) throw new Error("Fixture needs Electron ABI");
   const { ProjectStore } = require(
     join(root, "desktop-dist/project-store.cjs"),
@@ -234,105 +109,273 @@ async function createFixtures(directory) {
   return result;
 }
 
-// Wrap draw calls only in the explicit instrumented diagnostic. Results are
-// read after QUERY_RESULT_AVAILABLE; no gl.finish, waiting fence or sync readback.
-async function installTimers(page, enabled) {
-  return page.evaluate((enabled) => {
-    const gl = document.querySelector("canvas")?.getContext("webgl2");
-    const extension = gl?.getExtension("EXT_disjoint_timer_query_webgl2");
-    const info = {
-      available: Boolean(extension),
-      enabled: Boolean(extension && enabled),
-    };
-    if (!info.enabled) return info;
-    // A faster 101-point stroke can exceed 4,096 calls with three passes per
-    // changed tile. Bound diagnostic storage independently of product budgets.
-    const queryLimit = 32_768;
-    let truncated = false;
-    const startedAt = performance.now();
-    const startEvent = window.atlasObserve([], { events: false }).eventCount;
-    const records = [],
-      originals = {};
-    let framebuffer = gl.getParameter(gl.DRAW_FRAMEBUFFER_BINDING);
-    originals.bindFramebuffer = gl.bindFramebuffer;
-    gl.bindFramebuffer = function (target, buffer) {
-      if (target === gl.FRAMEBUFFER || target === gl.DRAW_FRAMEBUFFER)
-        framebuffer = buffer;
-      return originals.bindFramebuffer.call(this, target, buffer);
-    };
-    for (const name of [
-      "drawArrays",
-      "drawElements",
-      "drawArraysInstanced",
-      "drawElementsInstanced",
-    ]) {
-      originals[name] = gl[name];
-      gl[name] = function (...args) {
-        if (records.length >= queryLimit) {
-          truncated = true;
-          return originals[name].apply(this, args);
-        }
-        const query = gl.createQuery();
-        const record = {
-          query,
-          target: framebuffer ? "offscreen" : "canvas",
-          at: performance.now(),
+// Explicit diagnostics only. Whole-packet mode follows the product's existing
+// fences; it neither adds a product fence nor waits for one synchronously.
+export async function installGpuTimers(
+  page,
+  enabled,
+  { coverage = "composition-draws-only" } = {},
+) {
+  if (!["composition-draws-only", "terrain-packets"].includes(coverage))
+    throw new Error("Unknown graphics timing coverage");
+  return page.evaluate(
+    ({ enabled, coverage }) => {
+      if (window.atlasGraphicsProbe || window.atlasGraphicsFence)
+        throw new Error("A graphics timer observation is already active");
+      const canvas = document.querySelector("canvas");
+      const gl = canvas?.getContext("webgl2");
+      const extension = gl?.getExtension("EXT_disjoint_timer_query_webgl2");
+      const info = {
+        available: Boolean(extension),
+        enabled: Boolean(extension && enabled),
+        coverage,
+        boundary:
+          coverage === "terrain-packets"
+            ? "first-command-to-product-fence"
+            : "draw-call",
+        packetBudgetProven: false,
+        ...(coverage === "terrain-packets"
+          ? { identity: "product-webgl-sync" }
+          : {}),
+      };
+      if (!info.enabled) return info;
+      // A faster 101-point stroke can exceed 4,096 calls with three passes per
+      // changed tile. Bound diagnostic storage independently of product budgets.
+      const queryLimit = 32_768;
+      let truncated = false;
+      const startedAt = performance.now();
+      const startEvent = window.atlasObserve([], { events: false }).eventCount;
+      const records = [],
+        originals = {},
+        wrappers = {};
+      const boundaryErrors = [];
+      const fenceRecords = new WeakMap();
+      let fenceObserver = null;
+      let lastFenceId = 0;
+      let active = null;
+      let contextLost = gl.isContextLost();
+      const lost = () => {
+        contextLost = true;
+      };
+      canvas.addEventListener("webglcontextlost", lost);
+      if (coverage === "terrain-packets") {
+        fenceObserver = (sync, fenceId, fenceKind) => {
+          const record =
+            sync && typeof sync === "object" ? fenceRecords.get(sync) : null;
+          if (!record) {
+            boundaryErrors.push("UNKNOWN_PRODUCT_FENCE");
+            return;
+          }
+          if (record.fenceId !== undefined) {
+            boundaryErrors.push("DUPLICATE_PRODUCT_FENCE_BINDING");
+            return;
+          }
+          if (
+            !Number.isSafeInteger(fenceId) ||
+            fenceId <= lastFenceId ||
+            !["terrain", "scene"].includes(fenceKind)
+          ) {
+            boundaryErrors.push("INVALID_PRODUCT_FENCE_BINDING");
+            return;
+          }
+          record.fenceId = fenceId;
+          record.fenceKind = fenceKind;
+          lastFenceId = fenceId;
         };
-        gl.beginQuery(extension.TIME_ELAPSED_EXT, query);
-        try {
-          return originals[name].apply(this, args);
-        } finally {
+        window.atlasGraphicsFence = fenceObserver;
+        // WebGL2's methods are inherited. Exclude only observational/query and
+        // fence-management calls; mutators added by the pinned renderer remain covered.
+        const names = new Set();
+        for (
+          let prototype = gl;
+          prototype && prototype !== Object.prototype;
+          prototype = Object.getPrototypeOf(prototype)
+        )
+          for (const name of Object.getOwnPropertyNames(prototype))
+            names.add(name);
+        const excluded =
+          /^(constructor|get(?!BufferSubData)|is|check|createQuery$|deleteQuery$|beginQuery$|endQuery$|fenceSync$|clientWaitSync$|deleteSync$|flush$)/;
+        const commands = [...names].filter(
+          (name) => typeof gl[name] === "function" && !excluded.test(name),
+        );
+        for (const name of commands) {
+          originals[name] = gl[name];
+          gl[name] = wrappers[name] = function (...args) {
+            if (!active && records.length < queryLimit) {
+              const at = performance.now(),
+                query = gl.createQuery();
+              if (query) {
+                active = {
+                  query,
+                  target: "packet",
+                  at,
+                  commands: 0,
+                  fenced: false,
+                };
+                gl.beginQuery(extension.TIME_ELAPSED_EXT, query);
+              } else boundaryErrors.push("QUERY_ALLOCATION_FAILED");
+            }
+            if (active) active.commands++;
+            else truncated = true;
+            return originals[name].apply(this, args);
+          };
+        }
+        originals.fenceSync = gl.fenceSync;
+        gl.fenceSync = wrappers.fenceSync = function (...args) {
+          const record = active;
+          if (record) {
+            gl.endQuery(extension.TIME_ELAPSED_EXT);
+            record.endAt = performance.now();
+            active = null;
+            records.push(record);
+          } else boundaryErrors.push("FENCE_WITHOUT_COMMANDS");
+          const fence = originals.fenceSync.apply(this, args);
+          if (record) record.fenced = Boolean(fence);
+          if (!fence) boundaryErrors.push("MISSING_PRODUCT_FENCE");
+          else if (record) {
+            if (fenceRecords.has(fence))
+              boundaryErrors.push("REUSED_PRODUCT_FENCE");
+            fenceRecords.set(fence, record);
+          }
+          return fence;
+        };
+        info.wrappedCommands = commands;
+      } else {
+        let framebuffer = gl.getParameter(gl.DRAW_FRAMEBUFFER_BINDING);
+        originals.bindFramebuffer = gl.bindFramebuffer;
+        gl.bindFramebuffer = function (target, buffer) {
+          if (target === gl.FRAMEBUFFER || target === gl.DRAW_FRAMEBUFFER)
+            framebuffer = buffer;
+          return originals.bindFramebuffer.call(this, target, buffer);
+        };
+        for (const name of [
+          "drawArrays",
+          "drawElements",
+          "drawArraysInstanced",
+          "drawElementsInstanced",
+        ]) {
+          originals[name] = gl[name];
+          gl[name] = function (...args) {
+            if (records.length >= queryLimit) {
+              truncated = true;
+              return originals[name].apply(this, args);
+            }
+            const query = gl.createQuery();
+            const record = {
+              query,
+              target: framebuffer ? "offscreen" : "canvas",
+              at: performance.now(),
+            };
+            gl.beginQuery(extension.TIME_ELAPSED_EXT, query);
+            try {
+              return originals[name].apply(this, args);
+            } finally {
+              gl.endQuery(extension.TIME_ELAPSED_EXT);
+              records.push(record);
+            }
+          };
+        }
+      }
+      window.atlasGraphicsProbe = async (points = []) => {
+        if (fenceObserver) {
+          if (window.atlasGraphicsFence !== fenceObserver)
+            boundaryErrors.push("REPLACED_FENCE_HOOK");
+          delete window.atlasGraphicsFence;
+        }
+        if (
+          Object.entries(wrappers).some(
+            ([name, wrapper]) => gl[name] !== wrapper,
+          )
+        )
+          boundaryErrors.push("REPLACED_COMMAND_WRAPPER");
+        for (const [name, original] of Object.entries(originals))
+          gl[name] = original;
+        if (active) {
           gl.endQuery(extension.TIME_ELAPSED_EXT);
-          records.push(record);
+          records.push({ ...active, endAt: performance.now() });
+          active = null;
+          boundaryErrors.push("UNFENCED_COMMANDS");
+        }
+        if (
+          fenceObserver &&
+          records.some((record) => record.fenceId === undefined)
+        )
+          boundaryErrors.push("UNBOUND_PRODUCT_FENCE");
+        contextLost ||= gl.isContextLost();
+        canvas.removeEventListener("webglcontextlost", lost);
+        const stoppedAt = performance.now();
+        // GL wrappers and this journal stop in one renderer task. Later frames
+        // during asynchronous query readback do not enter either measurement.
+        try {
+          const observation = window.atlasObserve(points, {
+            sinceEvent: startEvent,
+          });
+          if (
+            fenceObserver &&
+            observation.events.some(
+              (event) => event.kind === "gpu-fence-observation-error",
+            )
+          )
+            boundaryErrors.push("PRODUCT_FENCE_OBSERVATION_FAILED");
+          const deadline = performance.now() + 3000;
+          while (
+            records.some(
+              ({ query }) =>
+                !gl.getQueryParameter(query, gl.QUERY_RESULT_AVAILABLE),
+            ) &&
+            !contextLost &&
+            performance.now() < deadline
+          )
+            await new Promise((resolve) => setTimeout(resolve, 20));
+          const disjoint = Boolean(gl.getParameter(extension.GPU_DISJOINT_EXT));
+          const samples = records.map(({ query, ...record }) => {
+            const available =
+              !contextLost &&
+              Boolean(gl.getQueryParameter(query, gl.QUERY_RESULT_AVAILABLE));
+            const gpuMs =
+              !disjoint && available
+                ? gl.getQueryParameter(query, gl.QUERY_RESULT) / 1e6
+                : null;
+            return { ...record, available, gpuMs };
+          });
+          return {
+            ...info,
+            startedAt,
+            stoppedAt,
+            startEvent,
+            droppedEvents: observation.droppedEvents,
+            observation,
+            disjoint,
+            contextLost,
+            boundaryErrors,
+            queryLimit,
+            truncated,
+            samples,
+          };
+        } finally {
+          for (const { query } of records) {
+            try {
+              gl.deleteQuery(query);
+            } catch {
+              boundaryErrors.push("QUERY_CLEANUP_FAILED");
+            }
+          }
+          delete window.atlasGraphicsProbe;
         }
       };
-    }
-    window.atlasGraphicsProbe = async (points = []) => {
-      for (const [name, original] of Object.entries(originals))
-        gl[name] = original;
-      const stoppedAt = performance.now();
-      // GL wrappers and this journal stop in one renderer task. Later frames
-      // during asynchronous query readback do not enter either measurement.
-      const observation = window.atlasObserve(points, {
-        sinceEvent: startEvent,
-      });
-      const deadline = performance.now() + 3000;
-      while (
-        records.some(
-          ({ query }) =>
-            !gl.getQueryParameter(query, gl.QUERY_RESULT_AVAILABLE),
-        ) &&
-        performance.now() < deadline
-      )
-        await new Promise((resolve) => setTimeout(resolve, 20));
-      const disjoint = Boolean(gl.getParameter(extension.GPU_DISJOINT_EXT));
-      const samples = records.map(({ query, ...record }) => {
-        const available = Boolean(
-          gl.getQueryParameter(query, gl.QUERY_RESULT_AVAILABLE),
-        );
-        const gpuMs =
-          !disjoint && available
-            ? gl.getQueryParameter(query, gl.QUERY_RESULT) / 1e6
-            : null;
-        gl.deleteQuery(query);
-        return { ...record, available, gpuMs };
-      });
-      delete window.atlasGraphicsProbe;
-      return {
-        ...info,
-        startedAt,
-        stoppedAt,
-        startEvent,
-        droppedEvents: observation.droppedEvents,
-        observation,
-        disjoint,
-        queryLimit,
-        truncated,
-        samples,
-      };
-    };
-    return { ...info, startedAt, startEvent };
-  }, enabled);
+      return { ...info, startedAt, startEvent };
+    },
+    { enabled, coverage },
+  );
+}
+
+/** Stop an enabled observation and capture its complete journal in one task. */
+export async function collectGpuTimers(page, points = []) {
+  return page.evaluate((points) => {
+    if (typeof window.atlasGraphicsProbe !== "function")
+      throw new Error("No enabled graphics timer observation is active");
+    return window.atlasGraphicsProbe(points);
+  }, points);
 }
 
 async function runCase({ directory, name, fixture, lab, timers }) {
@@ -439,7 +482,7 @@ async function runCase({ directory, name, fixture, lab, timers }) {
       throw new Error(
         "Hardware window is not visible and focused; graphics timing would be unqualified",
       );
-    result.gpuTimers = await installTimers(page, timers);
+    result.gpuTimers = await installGpuTimers(page, timers);
     await app.evaluate(() => globalThis.__atlasHost.startTrace());
     tracing = true;
     if (name === "static-control") {
@@ -537,10 +580,7 @@ async function runCase({ directory, name, fixture, lab, timers }) {
       if (stroke.timedOut) throw new Error("Stroke observer timed out");
     }
     if (result.gpuTimers.enabled) {
-      const { observation, ...measured } = await page.evaluate(
-        (points) => window.atlasGraphicsProbe(points),
-        probes,
-      );
+      const { observation, ...measured } = await collectGpuTimers(page, probes);
       result.gpuTimers = measured;
       droppedEvents = observation.droppedEvents;
       renderEvents = observation.events;
@@ -626,7 +666,7 @@ if (
   import.meta.url === pathToFileURL(process.argv[1]).href
 ) {
   if (argv[0] === "--create") {
-    console.log(JSON.stringify(await createFixtures(resolve(argv[1]))));
+    console.log(JSON.stringify(await createGraphicsFixtures(resolve(argv[1]))));
   } else {
     const lab = argv.includes("--lab"),
       hardware = argv.includes("--hardware");

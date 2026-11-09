@@ -8,6 +8,7 @@ import {
   qualifyNativeReference,
   nativePreflight,
   nativePresentationCapability,
+  r4VisibleCadenceCapability,
 } from "../../../scripts/atlas-p0-native.mjs";
 import {
   evaluateNativePreflight,
@@ -343,6 +344,78 @@ describe("explicit native reference qualification", () => {
 });
 
 describe("native preflight evidence and result boundary", () => {
+  it.skipIf(process.platform !== "linux")(
+    "keeps R4 visible cadence distinct from R5 latency before launching without a display",
+    async () => {
+      const out = await mkdtemp(join(tmpdir(), "atlas-r4-no-display-"));
+      try {
+        const result = await nativePreflight({
+          out,
+          direction: true,
+          executablePath: "/does-not-exist",
+          env: {},
+        });
+        expect(
+          JSON.parse(
+            await readFile(join(out, "native-preflight.json"), "utf8"),
+          ),
+        ).toEqual(result);
+        expect(result).toMatchObject({
+          purpose: "r4-hardware-preflight",
+          status: "BLOCKED",
+          fixturesCreated: false,
+          errors: [],
+          presentation: r4VisibleCadenceCapability,
+        });
+        expect(
+          (result.blockers as { code: string }[]).map((issue) => issue.code),
+        ).toEqual(["NO_NATIVE_DISPLAY", "R4_VISIBLE_CADENCE_UNPROVEN"]);
+        expect(result.presentation.clock.calibrated).toBe(false);
+        expect(result.qualification.qualified).toBe(false);
+      } finally {
+        await rm(out, { recursive: true, force: true });
+      }
+    },
+  );
+
+  it("does not equate qualified hardware with qualified R4 visible terrain cadence", () => {
+    expect(qualifyNativeReference(profile(), observed()).qualified).toBe(true);
+    expect(r4VisibleCadenceCapability).toMatchObject({
+      status: "unsupported",
+      code: "R4_VISIBLE_CADENCE_UNPROVEN",
+      method: null,
+      clock: { calibrated: false },
+    });
+    expect(r4VisibleCadenceCapability.code).not.toBe(
+      nativePresentationCapability.code,
+    );
+  });
+
+  it("retains malformed R4 reference errors beside the cadence blocker before launch", async () => {
+    const out = await mkdtemp(join(tmpdir(), "atlas-r4-bad-profile-"));
+    const path = join(out, "invalid.json");
+    try {
+      await writeFile(path, "{invalid");
+      const result = await nativePreflight({
+        out,
+        direction: true,
+        executablePath: "/does-not-exist",
+        profilePath: path,
+        env: { DISPLAY: ":test" },
+      });
+      expect(result.status).toBe("FAIL");
+      expect(result.fixturesCreated).toBe(false);
+      expect(result.errors).toContainEqual(
+        expect.objectContaining({ code: "NATIVE_PREFLIGHT_ERROR" }),
+      );
+      expect(
+        (result.blockers as { code: string }[]).map((issue) => issue.code),
+      ).toEqual(["R4_VISIBLE_CADENCE_UNPROVEN"]);
+    } finally {
+      await rm(out, { recursive: true, force: true });
+    }
+  });
+
   it.each([
     { mode: "native", status: "BLOCKED", errors: [], exit: 2 },
     { mode: "lab", status: "BLOCKED", errors: [], exit: 2 },

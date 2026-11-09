@@ -168,6 +168,202 @@ export const P0_REQUIREMENTS = Object.freeze({
   ],
 });
 
+/** Fixed, deliberately small R4 matrix; never inferred from successful runs. */
+export const R4_REQUIREMENTS = Object.freeze({
+  scope: "R4-hardware-direction",
+  independentRuns: 2,
+  rateFtPerSecond: 4000,
+  intervalMs: 24,
+  limits: Object.freeze({
+    cpuP95Ms: 8,
+    preparationMs: 2,
+    terrainPacketMs: 4,
+    resultGapP95Ms: 20,
+    inputToSubmitP95Ms: 50,
+    maximumStallMs: 100,
+  }),
+  scenarios: Object.freeze(
+    [
+      {
+        id: "R4-small-L0-first-ready-click",
+        gesture: "click",
+        diameter: 16,
+        level: 0,
+        scale: 0.25,
+        fixture: "empty",
+        transition: "navigation-first-ready",
+      },
+      {
+        id: "R4-small-L0-navigation",
+        gesture: "swipe",
+        diameter: 16,
+        level: 0,
+        scale: 0.25,
+        fixture: "empty",
+        transition: "navigation",
+      },
+      {
+        id: "R4-large-L4-undo",
+        gesture: "swipe",
+        diameter: 512,
+        level: 4,
+        scale: 0.25,
+        fixture: "dense",
+        transition: "undo",
+      },
+      {
+        id: "R4-large-L9-below",
+        gesture: "swipe",
+        diameter: 512,
+        level: 9,
+        scale: 0.00999,
+        fixture: "empty",
+        transition: "none",
+      },
+      {
+        id: "R4-large-L9-above",
+        gesture: "swipe",
+        diameter: 512,
+        level: 9,
+        scale: 0.01001,
+        fixture: "dense",
+        transition: "level",
+      },
+      {
+        id: "R4-large-L21-world",
+        gesture: "swipe",
+        diameter: 512,
+        level: 21,
+        scale: 0.000002,
+        fixture: "empty",
+        transition: "none",
+      },
+      {
+        id: "R4-large-L4-curve-save",
+        gesture: "curve",
+        diameter: 512,
+        level: 4,
+        scale: 0.25,
+        fixture: "dense",
+        transition: "save",
+      },
+      {
+        id: "R4-small-L4-hold",
+        gesture: "hold",
+        diameter: 16,
+        level: 4,
+        scale: 0.01,
+        fixture: "empty",
+        transition: "none",
+      },
+      {
+        id: "R4-large-L9-hold",
+        gesture: "hold",
+        diameter: 512,
+        level: 9,
+        scale: 0.01,
+        fixture: "dense",
+        transition: "none",
+      },
+      ...[32, 1024, 9000].map((sourceTiles) => ({
+        id: `R4-scaling-${sourceTiles}`,
+        gesture: "swipe",
+        diameter: 512,
+        level: 9,
+        scale: 0.01,
+        fixture: "scaling",
+        sourceTiles,
+        transition: "none",
+      })),
+    ].map((spec) =>
+      Object.freeze({
+        ...spec,
+        kind: "edit",
+        minGestures: ["swipe", "click"].includes(spec.gesture) ? 30 : 1,
+        minDurationMs: ["swipe", "click"].includes(spec.gesture) ? 0 : 10_000,
+      }),
+    ),
+  ),
+});
+
+/** Fixed screen-space programs; model speed is never tuned after a measurement. */
+export function directionPoints(spec) {
+  if (["hold", "click"].includes(spec.gesture)) return [[0, 0]];
+  if (spec.level === 21)
+    return [-90_000_000, -30_000_000, 30_000_000, 90_000_000].map((x) => [
+      x,
+      0,
+    ]);
+  if (spec.gesture === "curve") {
+    const intervals = Math.ceil(
+      spec.minDurationMs / R4_REQUIREMENTS.intervalMs,
+    );
+    return Array.from({ length: intervals + 1 }, (_, index) => {
+      const t = index / intervals;
+      return [
+        (-300 + 600 * t) / spec.scale,
+        (150 * Math.sin(t * 2 * Math.PI)) / spec.scale,
+      ];
+    });
+  }
+  const width = spec.diameter === 16 ? 100 : 300;
+  return [-width, -width / 3, width / 3, width].map((x) => [x / spec.scale, 0]);
+}
+
+/** Fixed regions observe whole cubic stencils, including corners and endpoints. */
+export function directionProbes(points, level) {
+  const count = Math.min(7, points.length);
+  const centerline = Array.from(
+    { length: count },
+    (_, index) =>
+      points[
+        Math.round((index * (points.length - 1)) / Math.max(1, count - 1))
+      ],
+  );
+  const step = 5 * 2 ** level;
+  const probes = [];
+  const addresses = new Map();
+  const regions = centerline.map((point, region) => {
+    const indices = [];
+    for (
+      let y = Math.floor(point[1] / step) - 1;
+      y <= Math.floor(point[1] / step) + 2;
+      y++
+    )
+      for (
+        let x = Math.floor(point[0] / step) - 1;
+        x <= Math.floor(point[0] / step) + 2;
+        x++
+      ) {
+        const probe = [x * step, y * step];
+        if (probe.some((axis) => Math.abs(axis) > 100_000_000)) continue;
+        const key = probe.join(":");
+        if (!addresses.has(key)) {
+          addresses.set(key, probes.length);
+          probes.push(probe);
+        }
+        indices.push(addresses.get(key));
+      }
+    return { id: `path-${region}`, indices };
+  });
+  if (points.length > 7 && points.some((point) => point[1] !== points[0][1])) {
+    // The lower-left S-curve exterior is inside its straight chord's brush,
+    // but outside the actual swept path: extra shortcut painting must fail too.
+    const span = points.at(-1)[0] - points[0][0];
+    const point = [
+      Math.round((points[0][0] + span / 6) / step) * step,
+      Math.round((points[0][1] - 0.4 * Math.abs(span)) / step) * step,
+    ];
+    const key = point.join(":");
+    if (!addresses.has(key)) {
+      addresses.set(key, probes.length);
+      probes.push(point);
+    }
+    regions.push({ id: "shortcut-exterior", indices: [addresses.get(key)] });
+  }
+  return { probes, regions, centerline };
+}
+
 /**
  * One selection drives execution, fixtures, the run index and scoped checks.
  * @param {string} [selection]
@@ -434,7 +630,9 @@ export function evaluateRenderWork(events, { droppedEvents = null } = {}) {
       fail("RENDER_PACKET_TOTALS_INCONSISTENT", detail);
     if (uploadBytes !== null && composition !== null) {
       const all = [...event.uploadSpans, ...event.compositionSpans].sort(
-        (a, b) => a.start - b.start,
+        // Quantized zero-duration spans at a shared boundary precede a span
+        // starting there. Separately collected arrays do not preserve that tie.
+        (a, b) => a.start - b.start || a.end - b.end,
       );
       if (all.some((span, i) => i > 0 && span.start < all[i - 1].end))
         fail("RENDER_PACKET_SPANS_OVERLAP", detail);
@@ -2432,6 +2630,408 @@ export function evaluateC1StrokeContent(spec, observed) {
 }
 
 /**
+ * R4 compares real author/account observations with the independent C1 oracle.
+ * Full-second lower bounds use observations INSIDE each second. No interpolation
+ * or expected-as-observed decomposition can hide an unobserved weak interval.
+ */
+export function evaluateDirectionContent(content, admissions = []) {
+  const failures = [],
+    blockers = [];
+  const fail = (code, detail = {}) => failures.push({ code, ...detail });
+  const result = () => ({
+    passed: failures.length === 0 && blockers.length === 0,
+    status: failures.length ? "FAIL" : blockers.length ? "BLOCKED" : "PASS",
+    failures,
+    blockers,
+  });
+  const point = (value) =>
+    Array.isArray(value) && value.length === 2 && value.every(finite);
+  const probes = content?.probes;
+  const width = probes?.length ?? 0;
+  const vector = (values) =>
+    Array.isArray(values) && values.length === width && values.every(finite);
+  if (
+    !content ||
+    !Array.isArray(probes) ||
+    !width ||
+    !probes.every(point) ||
+    !Array.isArray(content.regions) ||
+    !content.regions.length ||
+    !Array.isArray(content.centerline) ||
+    !content.centerline.length ||
+    !content.centerline.every(point) ||
+    ![content.before, content.after, content.undone].every(vector) ||
+    !Array.isArray(content.checkpoints) ||
+    !content.checkpoints.length
+  ) {
+    fail("R4_CONTENT_EVIDENCE_MISSING");
+    return result();
+  }
+  let reference;
+  try {
+    reference = referenceC1Stroke(content.input, probes);
+  } catch (error) {
+    fail("R4_CONTENT_REFERENCE_INVALID", { reason: String(error) });
+    return result();
+  }
+  const { input } = content;
+  const sign = Math.sign(input.brush.amount) || 1;
+  const step = 5 * 2 ** input.brush.level;
+  const tolerance = (expected) =>
+    BRUSH_CONTENT_TOLERANCE.absolute +
+    BRUSH_CONTENT_TOLERANCE.relative * Math.abs(expected);
+  const compare = (
+    actual,
+    lower,
+    upper,
+    detail,
+    epsilon = tolerance(upper),
+  ) => {
+    if (
+      ![actual, lower, upper].every(finite) ||
+      actual < lower - epsilon ||
+      actual > upper + epsilon
+    )
+      fail("R4_CONTENT_OUTSIDE_REFERENCE", { ...detail, actual, lower, upper });
+  };
+  if (
+    probes.some((probe) =>
+      probe.some((axis) => !Number.isInteger(axis / step)),
+    ) ||
+    new Set(probes.map((probe) => probe.join(":"))).size !== width
+  )
+    fail("R4_AUTHOR_PROBES_INVALID");
+  const covered = new Set();
+  const names = new Set();
+  for (const region of content.regions) {
+    if (
+      !nonempty(region?.id) ||
+      names.has(region.id) ||
+      !Array.isArray(region.indices) ||
+      !region.indices.length ||
+      new Set(region.indices).size !== region.indices.length ||
+      region.indices.some(
+        (index) => !Number.isInteger(index) || index < 0 || index >= width,
+      )
+    ) {
+      fail("R4_CONTENT_REGION_INVALID");
+      continue;
+    }
+    names.add(region.id);
+    region.indices.forEach((index) => covered.add(index));
+  }
+  if (covered.size !== width) fail("R4_CONTENT_PROBE_UNCOVERED");
+  const checkVector = (actual, lower, upper, detail) => {
+    for (let index = 0; index < width; index++)
+      compare(actual[index], lower[index], upper[index], { ...detail, index });
+    for (const region of content.regions) {
+      if (
+        !Array.isArray(region.indices) ||
+        region.indices.some((index) => index < 0 || index >= width)
+      )
+        continue;
+      const sum = (values) =>
+        region.indices.reduce((total, index) => total + values[index], 0);
+      compare(
+        sum(actual),
+        sum(lower),
+        sum(upper),
+        { ...detail, region: region.id },
+        region.indices.reduce(
+          (total, index) => total + tolerance(upper[index]),
+          0,
+        ),
+      );
+    }
+  };
+  const ownAdmissions = admissions.filter(
+    (entry) => entry?.kind === "brush-accepted",
+  );
+  if (
+    ownAdmissions.length !== input.windows.length + 1 ||
+    ownAdmissions[0]?.cause !== "press"
+  )
+    fail("R4_CONTENT_ADMISSION_BINDING_MISSING");
+  const byAdmission = new Map(
+    ownAdmissions.map((entry, index) => [entry.admissionId, { entry, index }]),
+  );
+  const checkpoints = content.checkpoints.filter(
+    (checkpoint) => checkpoint?.phase === "admission",
+  );
+  if (checkpoints.length !== ownAdmissions.length || !checkpoints.length)
+    fail("R4_CONTENT_CHECKPOINTS_MISSING");
+  let previousClock = -Infinity;
+  let previousMinimum = Array(width).fill(0);
+  let previousTime = Array(width).fill(0);
+  const seenAdmissions = new Set();
+  for (const checkpoint of checkpoints) {
+    const bound = byAdmission.get(checkpoint.admissionId);
+    if (
+      !bound ||
+      seenAdmissions.has(checkpoint.admissionId) ||
+      !finite(checkpoint.clock) ||
+      checkpoint.clock < previousClock ||
+      checkpoint.clock !== bound.entry.toAt ||
+      !finite(checkpoint.at) ||
+      checkpoint.at < bound.entry.at ||
+      !vector(checkpoint.minimum) ||
+      !vector(checkpoint.timeAccount) ||
+      !Array.isArray(checkpoint.authors) ||
+      checkpoint.authors.length !== width ||
+      checkpoint.authors.some(
+        (value, index) =>
+          !finite(value) &&
+          !(
+            value === null &&
+            checkpoint.minimum[index] === 0 &&
+            checkpoint.timeAccount[index] === 0
+          ),
+      )
+    ) {
+      fail("R4_CONTENT_CHECKPOINT_INVALID", {
+        admissionId: checkpoint.admissionId,
+      });
+      continue;
+    }
+    seenAdmissions.add(checkpoint.admissionId);
+    for (let index = 0; index < width; index++) {
+      if (
+        checkpoint.minimum[index] + tolerance(checkpoint.minimum[index]) <
+          previousMinimum[index] ||
+        checkpoint.timeAccount[index] +
+          tolerance(checkpoint.timeAccount[index]) <
+          previousTime[index]
+      )
+        fail("R4_CONTENT_ACCOUNT_REGRESSED", {
+          admissionId: checkpoint.admissionId,
+          index,
+        });
+      if (checkpoint.authors[index] !== null) {
+        const applied =
+          sign * (checkpoint.authors[index] - content.before[index]);
+        compare(
+          applied,
+          0,
+          Math.max(checkpoint.minimum[index], checkpoint.timeAccount[index]),
+          {
+            scope: "materialized-at-admission",
+            admissionId: checkpoint.admissionId,
+            index,
+          },
+        );
+      }
+    }
+    previousClock = checkpoint.clock;
+    previousMinimum = checkpoint.minimum;
+    previousTime = checkpoint.timeAccount;
+  }
+  if (failures.length) return result();
+  // A closed, zero-length terminal sample lets the offline oracle inspect an
+  // actual accounting checkpoint. It does not add a new spatial/time effect.
+  const prefix = (checkpoint) => {
+    const index = byAdmission.get(checkpoint.admissionId)?.index;
+    if (index === undefined) throw new Error("Unbound accounting checkpoint");
+    const windows = input.windows
+      .slice(0, index)
+      .map((window) => ({ ...window, points: [...window.points] }));
+    if (index === input.windows.length) return input;
+    const last = windows.at(-1);
+    const latest =
+      windows.flatMap((window) => window.points).at(-1) ?? input.start;
+    const end = {
+      point: latest.point,
+      at: checkpoint.clock,
+      input: latest.input + 1,
+    };
+    if (last && last.points.length < 128) {
+      last.points.push(end);
+      last.end = true;
+    } else
+      windows.push({
+        at: Math.max(checkpoint.clock, last?.at ?? input.start.at),
+        points: [end],
+        end: true,
+      });
+    return { ...input, windows };
+  };
+  const selected = new Set([checkpoints[0], checkpoints.at(-1)]);
+  const windows = reference.timeWindows.map((window) => {
+    const left = checkpoints.find((entry) => entry.clock >= window.fromAt);
+    const right = [...checkpoints]
+      .reverse()
+      .find((entry) => entry.clock <= window.toAt);
+    const outerLeft = [...checkpoints]
+      .reverse()
+      .find((entry) => entry.clock <= window.fromAt);
+    const outerRight = checkpoints.find((entry) => entry.clock >= window.toAt);
+    if (
+      !left ||
+      !right ||
+      !outerLeft ||
+      !outerRight ||
+      left.clock > right.clock
+    ) {
+      blockers.push({
+        code: "R4_CONTENT_SECOND_UNOBSERVED",
+        fromAt: window.fromAt,
+        toAt: window.toAt,
+      });
+      return null;
+    }
+    selected.add(left);
+    selected.add(right);
+    selected.add(outerLeft);
+    selected.add(outerRight);
+    return { window, left, right, outerLeft, outerRight };
+  });
+  for (const checkpoint of selected) {
+    let expected;
+    try {
+      expected = referenceC1Stroke(prefix(checkpoint), probes);
+    } catch (error) {
+      fail("R4_CONTENT_CHECKPOINT_REFERENCE_INVALID", {
+        reason: String(error),
+      });
+      continue;
+    }
+    const floor = expected.floor.map((value) => sign * value);
+    checkVector(checkpoint.minimum, floor, floor, {
+      scope: "checkpoint",
+      channel: "minimum",
+      clock: checkpoint.clock,
+    });
+    checkVector(
+      checkpoint.timeAccount,
+      expected.uncappedTimeAccount.map((value) => 0.9 * sign * value),
+      expected.timeAccount.map((value) => sign * value),
+      { scope: "checkpoint", channel: "timeAccount", clock: checkpoint.clock },
+    );
+  }
+  for (const entry of windows) {
+    if (!entry) continue;
+    const { window, left, right, outerLeft, outerRight } = entry;
+    const lower = right.timeAccount.map(
+      (value, index) => value - left.timeAccount[index],
+    );
+    const upper = outerRight.timeAccount.map(
+      (value, index) => value - outerLeft.timeAccount[index],
+    );
+    const expectedMinimum = window.uncappedTimeAccount.map(
+      (value) => 0.9 * sign * value,
+    );
+    const expectedMaximum = window.timeAccount.map((value) => sign * value);
+    const assess = (indices, detail) => {
+      const sum = (values) =>
+        indices.reduce((total, index) => total + values[index], 0);
+      const minimum = sum(expectedMinimum),
+        maximum = sum(expectedMaximum);
+      const low = sum(lower),
+        high = sum(upper);
+      const epsilon = indices.reduce(
+        (total, index) => total + tolerance(expectedMaximum[index]),
+        0,
+      );
+      const scope = {
+        scope: "full-second",
+        fromAt: window.fromAt,
+        toAt: window.toAt,
+        channel: "timeAccount",
+        ...detail,
+      };
+      if (high < minimum - epsilon || low > maximum + epsilon)
+        fail("R4_CONTENT_SECOND_OUTSIDE_REFERENCE", {
+          ...scope,
+          lower: low,
+          upper: high,
+          minimum,
+          maximum,
+        });
+      else if (low < minimum - epsilon || high > maximum + epsilon)
+        blockers.push({
+          code: "R4_CONTENT_SECOND_INTERVAL_UNQUALIFIED",
+          ...scope,
+          lower: low,
+          upper: high,
+          minimum,
+          maximum,
+        });
+    };
+    for (let index = 0; index < width; index++) assess([index], { index });
+    for (const region of content.regions)
+      assess(region.indices, { region: region.id });
+  }
+  const last = checkpoints.at(-1);
+  const actual = content.after.map(
+    (value, index) => sign * (value - content.before[index]),
+  );
+  const finalAccount = last.minimum.map((value, index) =>
+    Math.max(value, last.timeAccount[index]),
+  );
+  checkVector(actual, finalAccount, finalAccount, {
+    scope: "materialized-complete",
+    channel: "total",
+  });
+  checkVector(
+    actual,
+    reference.uncappedTotal.map((value) => 0.9 * sign * value),
+    reference.total.map((value) => sign * value),
+    { scope: "gesture", channel: "total" },
+  );
+  for (let index = 0; index < width; index++)
+    if (
+      Math.abs(content.undone[index] - content.before[index]) >
+      tolerance(content.before[index])
+    )
+      fail("R4_CONTENT_UNDO_MISMATCH", { index });
+  const basis = (u) => [
+    (1 - u) ** 3 / 6,
+    (3 * u ** 3 - 6 * u ** 2 + 4) / 6,
+    (-3 * u ** 3 + 3 * u ** 2 + 3 * u + 1) / 6,
+    u ** 3 / 6,
+  ];
+  const probeIndex = new Map(
+    probes.map((probe, index) => [probe.join(":"), index]),
+  );
+  const surface = reconstructReferenceC1Stroke(input, content.centerline);
+  for (let index = 0; index < content.centerline.length; index++) {
+    const [x, y] = content.centerline[index].map((axis) => axis / step);
+    const cx = Math.floor(x),
+      cy = Math.floor(y),
+      wx = basis(x - cx),
+      wy = basis(y - cy);
+    let floor = 0,
+      complete = true;
+    for (let dy = 0; dy < 4; dy++)
+      for (let dx = 0; dx < 4; dx++) {
+        const weight = wx[dx] * wy[dy];
+        if (!weight) continue;
+        const address = [(cx + dx - 1) * step, (cy + dy - 1) * step];
+        if (address.some((axis) => Math.abs(axis) > 100_000_000)) continue;
+        const source = probeIndex.get(address.join(":"));
+        if (source === undefined) complete = false;
+        else floor += weight * last.minimum[source];
+      }
+    if (!complete) fail("R4_CENTERLINE_STENCIL_MISSING", { index });
+    else
+      compare(
+        floor,
+        Math.max(
+          0.5 * Math.abs(surface.click[index]),
+          sign * surface.floor[index],
+        ),
+        sign * surface.floor[index],
+        { scope: "centerline", index },
+      );
+  }
+  return {
+    ...result(),
+    fullSeconds: reference.timeWindows.length,
+    probes: width,
+    regions: content.regions.length,
+  };
+}
+
+/**
  * @param {{points?: readonly (readonly number[])[], before?: readonly number[], after?: readonly number[], undone?: readonly number[], changedPixels?: readonly (readonly number[])[], restoredPixels?: readonly (readonly number[])[]}} [evidence]
  */
 export function evaluateStrokeContent({
@@ -3624,8 +4224,1032 @@ export function evaluateNativePreflight(preflight, runnerErrors = []) {
   };
 }
 
+/**
+ * Attribute every draw query once. Uploads and allocations are outside these
+ * queries: even complete attribution cannot prove the whole terrain-packet time.
+ */
+export function gpuWork(packets, draws, timers) {
+  if (timers?.coverage === "terrain-packets")
+    return packetGpuWork(packets, draws, timers);
+  const coverage = {
+    coverage: "composition-draws-only",
+    packetBudgetProven: false,
+    terrainPacketMs: null,
+  };
+  if (timers?.enabled !== true)
+    return { ...coverage, available: false, valid: false };
+  const valid =
+    Array.isArray(packets) &&
+    Array.isArray(draws) &&
+    timers.disjoint === false &&
+    timers.truncated === false &&
+    timers.droppedEvents === 0 &&
+    Number.isFinite(timers.startedAt) &&
+    Number.isFinite(timers.stoppedAt) &&
+    timers.stoppedAt >= timers.startedAt &&
+    packets.every(
+      (packet) =>
+        typeof packet === "object" &&
+        packet !== null &&
+        Number.isSafeInteger(packet.packet) &&
+        packet.packet > 0 &&
+        Number.isFinite(packet.uploadStart) &&
+        Number.isFinite(packet.submittedAt) &&
+        packet.submittedAt >= packet.uploadStart &&
+        Array.isArray(packet.compositionSpans) &&
+        packet.compositionSpans.every(
+          (span) =>
+            typeof span === "object" &&
+            span !== null &&
+            Number.isFinite(span.start) &&
+            Number.isFinite(span.end) &&
+            span.start >= packet.uploadStart &&
+            span.end >= span.start &&
+            span.end <= packet.submittedAt,
+        ),
+    ) &&
+    draws.every(
+      (draw) =>
+        typeof draw === "object" &&
+        draw !== null &&
+        Number.isSafeInteger(draw.frame) &&
+        draw.frame > 0 &&
+        Number.isFinite(draw.sceneStart) &&
+        Number.isFinite(draw.submittedAt) &&
+        draw.submittedAt >= draw.sceneStart,
+    ) &&
+    Array.isArray(timers.samples) &&
+    timers.samples.length > 0 &&
+    timers.samples.every(
+      (sample) =>
+        typeof sample === "object" &&
+        sample !== null &&
+        sample.available === true &&
+        Number.isFinite(sample.gpuMs) &&
+        sample.gpuMs >= 0 &&
+        Number.isFinite(sample.at) &&
+        sample.at >= timers.startedAt &&
+        sample.at <= timers.stoppedAt &&
+        ["canvas", "offscreen"].includes(sample.target),
+    );
+  if (!valid)
+    return {
+      ...coverage,
+      available: true,
+      valid: false,
+      reason: "invalid-packet-or-query-evidence",
+    };
+  const terrain = packets
+    .filter(
+      (packet) =>
+        packet.uploadStart >= timers.startedAt &&
+        packet.submittedAt <= timers.stoppedAt,
+    )
+    .map((packet) => ({
+      ...packet,
+      samples: timers.samples.filter(
+        (sample) =>
+          sample.target === "offscreen" &&
+          packet.compositionSpans.some(
+            (span) => sample.at >= span.start && sample.at <= span.end,
+          ),
+      ),
+    }));
+  const scenes = draws
+    .filter(
+      (draw) =>
+        draw.sceneStart >= timers.startedAt &&
+        draw.submittedAt <= timers.stoppedAt,
+    )
+    .map((draw) => ({
+      ...draw,
+      samples: timers.samples.filter(
+        (sample) =>
+          sample.target === "canvas" &&
+          sample.at >= draw.sceneStart &&
+          sample.at <= draw.submittedAt,
+      ),
+    }));
+  const assigned = [...terrain, ...scenes].flatMap((record) => record.samples);
+  const complete =
+    scenes.length > 0 &&
+    scenes.every((scene) => scene.samples.length > 0) &&
+    terrain.every(
+      (packet) => packet.compositionWork === 0 || packet.samples.length > 0,
+    ) &&
+    assigned.length === timers.samples.length &&
+    new Set(assigned).size === assigned.length;
+  const sum = (record) =>
+    record.samples.reduce((total, sample) => total + sample.gpuMs, 0);
+  const totalSamples = terrain.reduce(
+    (total, packet) => total + packet.composedSamples,
+    0,
+  );
+  return {
+    ...coverage,
+    available: true,
+    valid: complete,
+    observedTerrainPackets: terrain.length,
+    measuredTerrainPackets: terrain.filter(
+      (packet) => packet.samples.length > 0,
+    ).length,
+    measuredFrames: scenes.length,
+    unmeasuredTerrainPackets: terrain.filter((packet) => !packet.samples.length)
+      .length,
+    unmeasuredCompositionPackets: terrain.filter(
+      (packet) => packet.compositionWork > 0 && !packet.samples.length,
+    ).length,
+    unmeasuredUploadOnlyPackets: terrain.filter(
+      (packet) => packet.compositionWork === 0 && !packet.samples.length,
+    ).length,
+    terrainPacketsWithoutFullTiming: terrain.length,
+    unmeasuredFrames: scenes.filter((scene) => !scene.samples.length).length,
+    unmatchedCalls: timers.samples.filter(
+      (sample) => !assigned.includes(sample),
+    ).length,
+    offscreenMsPerTerrainPacket: complete
+      ? distribution(
+          terrain.filter((packet) => packet.compositionWork > 0).map(sum),
+        )
+      : null,
+    canvasMsPerFrame: complete ? distribution(scenes.map(sum)) : null,
+    offscreenMsPerMillionChangedSamples:
+      complete && totalSamples > 0
+        ? (terrain.reduce((total, packet) => total + sum(packet), 0) /
+            totalSamples) *
+          1e6
+        : null,
+    interpretation:
+      "Offscreen queries measure only composition draws, not uploads, allocation or complete terrain packets. Upload-only packets have no GPU time sample and are never assigned zero elapsed time. Canvas queries belong only to scene draw spans. Complete attribution proves neither the terrain-packet budget nor native presentation.",
+  };
+}
+
+/** Join a complete command interval to the exact observed WebGLSync, once. */
+function packetGpuWork(packets, draws, timers) {
+  const result = {
+    available: timers?.enabled === true,
+    valid: false,
+    coverage: "terrain-packets",
+    packetBudgetProven: false,
+    terrainPacketMs: null,
+  };
+  const valid =
+    result.available &&
+    timers.boundary === "first-command-to-product-fence" &&
+    timers.identity === "product-webgl-sync" &&
+    timers.disjoint === false &&
+    timers.truncated === false &&
+    timers.contextLost === false &&
+    timers.droppedEvents === 0 &&
+    Array.isArray(timers.wrappedCommands) &&
+    timers.wrappedCommands.length > 0 &&
+    timers.wrappedCommands.every(
+      (name) => typeof name === "string" && name.length > 0,
+    ) &&
+    new Set(timers.wrappedCommands).size === timers.wrappedCommands.length &&
+    Array.isArray(timers.boundaryErrors) &&
+    timers.boundaryErrors.length === 0 &&
+    Number.isFinite(timers.startedAt) &&
+    Number.isFinite(timers.stoppedAt) &&
+    timers.stoppedAt >= timers.startedAt &&
+    Array.isArray(packets) &&
+    Array.isArray(draws) &&
+    Array.isArray(timers.samples) &&
+    timers.samples.length > 0 &&
+    timers.samples.every(
+      (sample) =>
+        sample &&
+        sample.target === "packet" &&
+        sample.available === true &&
+        sample.fenced === true &&
+        Number.isSafeInteger(sample.fenceId) &&
+        sample.fenceId > 0 &&
+        ["terrain", "scene"].includes(sample.fenceKind) &&
+        Number.isSafeInteger(sample.commands) &&
+        sample.commands > 0 &&
+        Number.isFinite(sample.at) &&
+        Number.isFinite(sample.endAt) &&
+        sample.at >= timers.startedAt &&
+        sample.endAt >= sample.at &&
+        sample.endAt <= timers.stoppedAt &&
+        Number.isFinite(sample.gpuMs) &&
+        sample.gpuMs >= 0,
+    );
+  if (!valid) return { ...result, reason: "invalid-packet-query-evidence" };
+  const entries = [
+    ...packets.map((packet) => ({
+      kind: "terrain",
+      id: packet?.packet,
+      fenceId: packet?.fenceId,
+      start: packet?.uploadStart,
+      end: packet?.submittedAt,
+    })),
+    ...draws.map((draw) => ({
+      kind: "scene",
+      id: draw?.frame,
+      fenceId: draw?.fenceId,
+      start: draw?.sceneStart,
+      end: draw?.submittedAt,
+    })),
+  ];
+  if (
+    !entries.every(
+      (entry) =>
+        Number.isSafeInteger(entry.id) &&
+        entry.id > 0 &&
+        Number.isSafeInteger(entry.fenceId) &&
+        entry.fenceId > 0 &&
+        Number.isFinite(entry.start) &&
+        Number.isFinite(entry.end) &&
+        entry.start >= timers.startedAt &&
+        entry.end >= entry.start &&
+        entry.end <= timers.stoppedAt,
+    )
+  )
+    return { ...result, reason: "invalid-product-fence-or-interval" };
+  const attributed = entries.map((entry) => ({
+    ...entry,
+    samples: timers.samples.filter(
+      (sample) =>
+        sample.fenceId === entry.fenceId && sample.fenceKind === entry.kind,
+    ),
+  }));
+  const assigned = attributed.flatMap((entry) => entry.samples);
+  // The diagnostic IDs follow actual product fence creation across both kinds.
+  // Time only validates the joined evidence; it never chooses an association.
+  const orderedEntries = [...entries].sort((a, b) => a.fenceId - b.fenceId);
+  const complete =
+    entries.length > 0 &&
+    new Set(entries.map((entry) => entry.fenceId)).size === entries.length &&
+    new Set(timers.samples.map((sample) => sample.fenceId)).size ===
+      timers.samples.length &&
+    [packets, draws].every((records) =>
+      records.every(
+        (record, index) =>
+          index === 0 || records[index - 1].fenceId < record.fenceId,
+      ),
+    ) &&
+    orderedEntries.every(
+      (entry, index) =>
+        index === 0 || orderedEntries[index - 1].end <= entry.start,
+    ) &&
+    timers.samples.every(
+      (sample, index) =>
+        index === 0 ||
+        (timers.samples[index - 1].fenceId < sample.fenceId &&
+          timers.samples[index - 1].endAt <= sample.at),
+    ) &&
+    new Set(entries.map((entry) => `${entry.kind}:${entry.id}`)).size ===
+      entries.length &&
+    attributed.every(
+      (entry) =>
+        entry.samples.length === 1 &&
+        entry.samples[0].endAt >= entry.start &&
+        entry.samples[0].endAt <= entry.end,
+    ) &&
+    assigned.length === timers.samples.length &&
+    new Set(assigned).size === assigned.length;
+  const terrain = attributed.filter((entry) => entry.kind === "terrain");
+  const terrainPacketMs =
+    complete && terrain.length
+      ? distribution(terrain.map((entry) => entry.samples[0].gpuMs))
+      : null;
+  return {
+    ...result,
+    valid: complete,
+    ...(complete ? {} : { reason: "incomplete-product-fence-attribution" }),
+    terrainPacketMs,
+    terrainQueries: complete
+      ? terrain.map((entry) => ({
+          packet: entry.id,
+          gpuMs: entry.samples[0].gpuMs,
+        }))
+      : [],
+    packetBudgetProven: Boolean(
+      terrainPacketMs &&
+      terrainPacketMs.maximum !== null &&
+      terrainPacketMs.maximum <= R4_REQUIREMENTS.limits.terrainPacketMs,
+    ),
+    observedTerrainPackets: terrain.length,
+    measuredTerrainPackets: terrain.filter(
+      (entry) => entry.samples.length === 1,
+    ).length,
+    unmatchedCalls: timers.samples.filter(
+      (sample) => !assigned.includes(sample),
+    ).length,
+    canvasMsPerFrame: complete
+      ? distribution(
+          attributed
+            .filter((entry) => entry.kind === "scene")
+            .map((entry) => entry.samples[0].gpuMs),
+        )
+      : null,
+    interpretation:
+      "Each elapsed query is bound once to the actual product WebGLSync by its diagnostic fence identity and kind. All observed WebGL mutation commands through that fence count, including cleanup before the product upload or scene marker. No query is shortened or assigned by timestamp proximity. CPU issue gaps may conservatively enlarge the interval; this is not native presentation.",
+  };
+}
+
+/** Raw asynchronous queries can disprove a budget without proving full coverage. */
+export function evaluateDirectionGpu(events, windows) {
+  const failures = [],
+    blockers = [],
+    measured = [];
+  const packets = events.filter((event) => event.kind === "height-terrain");
+  const draws = events.filter((event) => event.kind === "height-draw");
+  const fail = (code, details = {}) => failures.push({ code, ...details });
+  const blocked = (code) => {
+    if (!blockers.some((issue) => issue.code === code)) blockers.push({ code });
+  };
+  if (!Array.isArray(windows) || !windows.length) {
+    blocked("R4_GPU_TIMING_UNAVAILABLE");
+    return { failures, blockers, terrainPacketMs: distribution([]) };
+  }
+  const covered = new Set();
+  for (const window of windows) {
+    if (!window?.enabled || !window?.available) {
+      blocked("R4_GPU_TIMING_UNAVAILABLE");
+      continue;
+    }
+    const ownPackets = packets.filter(
+      (entry) =>
+        entry.uploadStart >= window.startedAt &&
+        entry.submittedAt <= window.stoppedAt,
+    );
+    const ownDraws = draws.filter(
+      (entry) =>
+        entry.sceneStart >= window.startedAt &&
+        entry.submittedAt <= window.stoppedAt,
+    );
+    const evaluated = gpuWork(ownPackets, ownDraws, window);
+    if (!evaluated.valid) {
+      fail("R4_GPU_QUERY_EVIDENCE_INVALID", {
+        reason:
+          "reason" in evaluated
+            ? evaluated.reason
+            : "incomplete packet/query attribution",
+      });
+      continue;
+    }
+    const full = evaluated.coverage === "terrain-packets";
+    const duration = full
+      ? evaluated.terrainPacketMs
+      : "offscreenMsPerTerrainPacket" in evaluated
+        ? evaluated.offscreenMsPerTerrainPacket
+        : null;
+    if (
+      duration?.maximum !== null &&
+      duration?.maximum !== undefined &&
+      duration.maximum > R4_REQUIREMENTS.limits.terrainPacketMs
+    )
+      fail("R4_GPU_PACKET_BUDGET_EXCEEDED", {
+        milliseconds: duration.maximum,
+        limitMs: 4,
+        coverage: evaluated.coverage,
+      });
+    if (!full) {
+      blocked("R4_TERRAIN_PACKET_TIMING_UNPROVEN");
+      continue;
+    }
+    for (const packet of ownPackets) {
+      if (covered.has(packet))
+        fail("R4_GPU_PACKET_COUNTED_TWICE", { packet: packet.packet });
+      covered.add(packet);
+    }
+    for (const packet of "terrainQueries" in evaluated
+      ? evaluated.terrainQueries
+      : [])
+      measured.push(packet.gpuMs);
+  }
+  if (!packets.length || packets.some((packet) => !covered.has(packet)))
+    blocked("R4_TERRAIN_PACKET_TIMING_UNPROVEN");
+  return { failures, blockers, terrainPacketMs: distribution(measured) };
+}
+
+/** CPU work retains handler work outside RAF, without counting nested work twice. */
+function directionCpu(events) {
+  const frames = events.filter((event) => event.kind === "frame");
+  const admissions = events.filter((event) =>
+    ["brush-accepted", "brush-content"].includes(event.kind),
+  );
+  const failures = [];
+  const values = frames.map((frame) => frame.cpuMs);
+  if (
+    !frames.length ||
+    !admissions.length ||
+    [...frames, ...admissions].some(
+      (event) => !finite(event.cpuMs) || event.cpuMs < 0 || !finite(event.at),
+    )
+  )
+    failures.push({ code: "R4_CPU_EVIDENCE_MISSING_OR_INVALID" });
+  let previousFrameAt = -Infinity;
+  for (let index = 0; index < frames.length; index++) {
+    const frame = frames[index];
+    const start = frame.at - frame.cpuMs;
+    const outside = admissions.filter(
+      (event) => event.at > previousFrameAt && event.at <= start,
+    );
+    values[index] += outside.reduce((sum, event) => sum + event.cpuMs, 0);
+    previousFrameAt = frame.at;
+  }
+  const tail = admissions.filter((event) => event.at > previousFrameAt);
+  if (tail.length)
+    values.push(tail.reduce((sum, event) => sum + event.cpuMs, 0));
+  const cpuWorkMs = distribution(values);
+  if (exceeds(cpuWorkMs.p95, 8))
+    failures.push({
+      code: "R4_CPU_P95_EXCEEDED",
+      milliseconds: cpuWorkMs.p95,
+      limitMs: 8,
+    });
+  return { cpuWorkMs, failures };
+}
+
+function directionTransition(spec, attempt, events, samples) {
+  const failures = [];
+  const fail = (code) => failures.push({ code, transition: spec.transition });
+  const transition = attempt.transition;
+  const first = samples.find((sample) => sample.inputKind === "edit");
+  let navigation = null;
+  if (spec.transition === "none") return { failures, navigation };
+  if (transition?.kind !== spec.transition)
+    fail("R4_TRANSITION_EVIDENCE_MISSING");
+  if (
+    spec.transition === "navigation" ||
+    spec.transition === "navigation-first-ready"
+  ) {
+    navigation = extractColdBoundary(
+      events,
+      transition?.navigation?.id,
+      attempt.sessionId,
+    );
+    if (
+      navigation.gateEvidence !== "local-terrain-submit-v1" ||
+      !first ||
+      !finite(navigation.gateAt) ||
+      first.createdAt < navigation.gateAt ||
+      !finite(navigation.navigationAt) ||
+      navigation.navigationAt > navigation.gateAt
+    )
+      fail("R4_NAVIGATION_GATE_BINDING_INVALID");
+    if (spec.transition === "navigation-first-ready") {
+      const trigger = transition?.readyTrigger;
+      if (
+        trigger?.dispatched !== true ||
+        trigger.observed?.gate?.input !== navigation.navigationId ||
+        trigger.observed?.gate?.frame !== navigation.gateFrameId ||
+        events.some(
+          (event) =>
+            event.kind === "input" &&
+            event.inputKind === "edit" &&
+            event.at > navigation.navigationAt &&
+            event.id < first?.inputId,
+        )
+      )
+        fail("R4_FIRST_READY_EDIT_UNPROVEN");
+    }
+  } else if (spec.transition === "level") {
+    const { before, after } = transition ?? {};
+    if (
+      !before ||
+      !after ||
+      before.sessionId !== attempt.sessionId ||
+      after.sessionId !== attempt.sessionId ||
+      !Number.isInteger(before.brush?.level) ||
+      before.brush.level === spec.level ||
+      after.brush?.level !== spec.level ||
+      !finite(before.eventCount) ||
+      !finite(after.eventCount) ||
+      after.eventCount < before.eventCount ||
+      after.readiness?.ready !== true
+    )
+      fail("R4_LEVEL_TRANSITION_UNPROVEN");
+  } else if (spec.transition === "undo") {
+    const before = transition?.beforeUndo,
+      after = transition?.afterUndo;
+    if (
+      !before ||
+      !after ||
+      before.canUndo !== true ||
+      after.canRedo !== true ||
+      !Number.isSafeInteger(before.revision) ||
+      after.revision <= before.revision ||
+      after.sequence !== before.sequence + 1 ||
+      after.active !== false ||
+      after.finishing !== false
+    )
+      fail("R4_UNDO_TRANSITION_UNPROVEN");
+  } else if (spec.transition === "save") {
+    const overlaps = (attempt.saveAttempts ?? []).filter(
+      (entry) =>
+        entry?.overlapEvidence?.sessionId === attempt.sessionId &&
+        entry.overlapEvidence.sample?.inputId === first?.inputId &&
+        entry.overlapEvidence.sample?.createdAt === first?.createdAt &&
+        entry.overlapEvidence.sample?.modelAt === first?.modelAt &&
+        evaluateSaveOverlap(entry.overlapEvidence).passed,
+    );
+    if (overlaps.length !== 1) fail("R4_SAVE_OVERLAP_UNPROVEN");
+  }
+  return { failures, navigation };
+}
+
+/**
+ * R4 is a bounded direction decision. It never grants native P0 acceptance.
+ * The current runtime has no qualified visible-cadence adapter: report flags,
+ * RAF, submission, capturePage, and two upper timestamps cannot invent one.
+ */
+export function evaluateDirection(report) {
+  const failures = [],
+    missing = [],
+    blockers = [],
+    groups = [];
+  const fail = (code, details = {}) => failures.push({ code, ...details });
+  const block = (code, details = {}) => blockers.push({ code, ...details });
+  const append = (target, issues, context) =>
+    target.push(...issues.map((issue) => ({ ...issue, ...context })));
+  const finish = () => ({
+    purpose: "direction",
+    selection: "direction",
+    scope: R4_REQUIREMENTS.scope,
+    status: failures.length
+      ? "FAIL"
+      : missing.length
+        ? "INCOMPLETE"
+        : blockers.length
+          ? "BLOCKED"
+          : "PASS",
+    passed:
+      failures.length === 0 && missing.length === 0 && blockers.length === 0,
+    allowNextPhase:
+      failures.length === 0 && missing.length === 0 && blockers.length === 0,
+    scopePassed: failures.length === 0 && missing.length === 0,
+    collectionStarted: report.collectionStarted === true,
+    failures,
+    missing,
+    blockers,
+    groups,
+    nativeAcceptance: {
+      status: "BLOCKED",
+      passed: false,
+      evaluated: false,
+      unmetRequirements: [],
+      groups: undefined,
+    },
+  });
+  append(failures, Array.isArray(report.errors) ? report.errors : [], {});
+  if (report.errors !== undefined && !Array.isArray(report.errors))
+    fail("R4_RUNNER_ERRORS_INVALID");
+  append(failures, report.preflight?.errors ?? [], {});
+  append(blockers, report.preflight?.blockers ?? [], {});
+  block("R4_VISIBLE_CADENCE_UNPROVEN", {
+    limitMs: 20,
+    reason:
+      "No qualified adapter binds changed terrain to conservative displayed-time intervals; report booleans cannot qualify this method.",
+  });
+  if (
+    report.mode !== "native" ||
+    report.reference?.qualified !== true ||
+    report.reference?.softwareRendering !== false
+  )
+    block("R4_HARDWARE_REFERENCE_UNQUALIFIED");
+  const reference = report.reference ?? {};
+  if (
+    !finite(reference.displayHz) ||
+    reference.displayHz < 59 ||
+    reference.viewport?.width !== 1440 ||
+    reference.viewport?.height !== 960 ||
+    reference.viewport?.dpr !== 1 ||
+    !nonempty(reference.hardware?.cpu) ||
+    !nonempty(reference.hardware?.gpu) ||
+    !nonempty(reference.hardware?.os) ||
+    !finite(reference.hardware?.ramBytes)
+  )
+    block("R4_REFERENCE_METADATA_UNQUALIFIED");
+  if (report.collectionStarted !== true) return finish();
+  const runs = (Array.isArray(report.runs) ? report.runs : []).filter(
+    (run) => run.role !== "control",
+  );
+  const processIds = new Set();
+  const processPids = new Set();
+  const runIds = new Set();
+  const cases = new Map();
+  const fixtureHashes = new Map();
+  for (const run of runs) {
+    const context = { process: run.id, run: run.independentRunId };
+    if (
+      !nonempty(run.instanceId) ||
+      processIds.has(run.instanceId) ||
+      !nonempty(run.independentRunId) ||
+      !Number.isSafeInteger(run.pid) ||
+      run.pid <= 0 ||
+      processPids.has(run.pid)
+    )
+      fail("R4_PROCESSES_NOT_INDEPENDENT", context);
+    processIds.add(run.instanceId);
+    processPids.add(run.pid);
+    runIds.add(run.independentRunId);
+    if (report.mode === "native") {
+      const expectedGpu =
+        report.preflight?.observed?.gpu ?? reference.hardware?.gpu;
+      const displayId = reference.profile?.displayId;
+      const display = (run.metadata?.displays ?? []).find(
+        (entry) => displayId == null || String(entry.id) === String(displayId),
+      );
+      if (
+        run.gpu?.available !== true ||
+        !nonempty(run.gpu?.renderer) ||
+        /swiftshader|llvmpipe|software|softpipe/i.test(run.gpu.renderer) ||
+        run.gpu.renderer !== expectedGpu ||
+        run.metadata?.gpuFeatures?.webgl !== "enabled" ||
+        run.metadata?.gpuFeatures?.gpu_compositing !== "enabled"
+      )
+        fail("R4_PROCESS_HARDWARE_MISMATCH", context);
+      if (
+        run.view?.width !== 1440 ||
+        run.view?.height !== 960 ||
+        run.view?.dpr !== 1 ||
+        run.view?.visible !== "visible" ||
+        run.view?.focused !== true ||
+        !finite(display?.displayFrequency) ||
+        display.displayFrequency < 59 ||
+        display.displayFrequency !== reference.displayHz
+      )
+        fail("R4_PROCESS_DISPLAY_UNQUALIFIED", context);
+      if (
+        reference.profile &&
+        (run.metadata?.platform !== reference.profile.platform ||
+          run.metadata?.architecture !== reference.profile.architecture)
+      )
+        fail("R4_PROCESS_PLATFORM_MISMATCH", context);
+    }
+    append(
+      failures,
+      checkBuildIdentity(
+        report.workspaceBuild ?? report.build,
+        run.executedBuild,
+        run.buildProvenance,
+      ).failures,
+      context,
+    );
+    const events = run.events;
+    if (!Array.isArray(events) || run.renderDroppedEvents !== 0) {
+      fail("R4_PROCESS_JOURNAL_MISSING_OR_DROPPED", context);
+      continue;
+    }
+    const render = evaluateRenderWork(events, {
+      droppedEvents: run.renderDroppedEvents,
+    });
+    append(failures, render.issues, context);
+    if (
+      report.mode === "native" &&
+      reference.qualified === true &&
+      reference.softwareRendering === false
+    )
+      append(
+        failures,
+        render.preparationTiming.overruns.map((issue) => ({
+          code: "R4_PREPARATION_BUDGET_EXCEEDED",
+          ...issue,
+        })),
+        context,
+      );
+    const publication = evaluateBrushPublicationOrder(events);
+    append(failures, publication.issues, context);
+    for (const scenario of run.scenarios ?? []) {
+      const spec = R4_REQUIREMENTS.scenarios.find(
+        (entry) => entry.id === scenario.id,
+      );
+      const detail = { ...context, scenario: scenario.id };
+      const key = `${run.independentRunId}:${scenario.id}`;
+      if (!spec || cases.has(key)) {
+        fail("R4_UNKNOWN_OR_DUPLICATE_SCENARIO", detail);
+        continue;
+      }
+      cases.set(key, scenario);
+      const fixture = scenario.fixture;
+      const expectedSources = "sourceTiles" in spec ? spec.sourceTiles : 0;
+      const fixtureKey = `${spec.fixture}:${expectedSources ?? ""}:${spec.transition === "save"}`;
+      if (
+        !/^[a-f0-9]{64}$/.test(fixture?.sha256 ?? "") ||
+        !Number.isSafeInteger(fixture?.sourceTiles) ||
+        fixture.sourceTiles < 0 ||
+        (fixtureHashes.has(fixtureKey) &&
+          fixtureHashes.get(fixtureKey) !== fixture.sha256)
+      )
+        fail("R4_FIXTURE_IDENTITY_MISSING_OR_CHANGED", detail);
+      else fixtureHashes.set(fixtureKey, fixture.sha256);
+      if (spec.fixture === "empty" && fixture?.sourceTiles !== 0)
+        fail("R4_EMPTY_FIXTURE_NOT_EMPTY", detail);
+      if (spec.fixture === "dense") {
+        const levels = Array.isArray(fixture?.levels)
+          ? fixture.levels.map((level) =>
+              typeof level === "number" ? level : level?.level,
+            )
+          : [];
+        if (
+          !(fixture?.sourceTiles > 0) ||
+          new Set(levels).size !== 22 ||
+          !Array.from({ length: 22 }, (_, level) => level).every((level) =>
+            levels.includes(level),
+          )
+        )
+          fail("R4_DENSE_FIXTURE_LEVELS_MISSING", detail);
+      }
+      if (
+        spec.fixture === "scaling" &&
+        (fixture?.sourceTiles !== expectedSources ||
+          fixture?.regionSourceTiles !== expectedSources ||
+          fixture?.decodedBytes !== expectedSources * 32_768 ||
+          fixture?.fineTiles !== expectedSources - 4 ||
+          fixture?.fineDigest?.denseTiles !== expectedSources - 8 ||
+          fixture?.fineDigest?.varyingTiles !== expectedSources - 4 ||
+          fixture?.region?.coarseCamera?.scale !== 0.01 ||
+          JSON.stringify(fixture?.region?.bounds) !==
+            "[-16000,-16000,16000,16000]")
+      )
+        fail("R4_SCALING_PAYLOAD_OR_REGION_INVALID", detail);
+      if (scenario.aborted || scenario.error)
+        fail("R4_SCENARIO_ABORTED", { ...detail, error: scenario.error });
+      const attempts = Array.isArray(scenario.attempts)
+        ? scenario.attempts
+        : [];
+      if (attempts.length < spec.minGestures)
+        missing.push({
+          code: "R4_INSUFFICIENT_GESTURES",
+          ...detail,
+          actual: attempts.length,
+          required: spec.minGestures,
+        });
+      const durations = [],
+        allSamples = [],
+        gestureEvents = [],
+        gestureRanges = [],
+        navigationReady = [],
+        navigationResponse = [],
+        claimedInputs = new Set();
+      for (const [index, attempt] of attempts.entries()) {
+        const own = { ...detail, attempt: index };
+        if (attempt.error || attempt.timedOut)
+          fail("R4_ATTEMPT_FAILED", { ...own, error: attempt.error });
+        const ids = attempt.inputIds;
+        if (
+          !Array.isArray(ids) ||
+          ids.length < 2 ||
+          ids.some((id) => claimedInputs.has(id))
+        ) {
+          fail("R4_INPUT_ASSIGNMENT_INVALID", own);
+          continue;
+        }
+        ids.forEach((id) => claimedInputs.add(id));
+        const sessionId = attempt.sessionId;
+        const time = evaluateBrushTime(events, ids, sessionId);
+        append(failures, time.issues, own);
+        const samples = extractEditSamples(events, ids, sessionId);
+        allSamples.push(...samples);
+        if (!time.inputManifest) {
+          fail("R4_INPUT_MANIFEST_MISSING", own);
+          continue;
+        }
+        const brush = time.inputManifest.brush;
+        if (
+          brush.level !== spec.level ||
+          Math.abs(brush.radius - spec.diameter / (2 * spec.scale)) >
+            Math.max(1e-7, brush.radius * 1e-6) ||
+          brush.amount !== R4_REQUIREMENTS.rateFtPerSecond
+        )
+          fail("R4_STIMULUS_CHANGED", own);
+        const vertices = [
+          time.inputManifest.start,
+          ...time.inputManifest.windows.flatMap((window) => window.points),
+        ].map((entry) => entry.point);
+        const plannedPath = directionPoints(spec);
+        const plannedVertices = [...plannedPath, plannedPath.at(-1)];
+        if (
+          vertices.length !== plannedVertices.length ||
+          vertices.some(
+            (point, at) =>
+              !plannedVertices[at] ||
+              Math.hypot(
+                point[0] - plannedVertices[at][0],
+                point[1] - plannedVertices[at][1],
+              ) >
+                (Math.SQRT2 * 0.501) / spec.scale,
+          )
+        )
+          fail("R4_FIXED_INPUT_PROGRAM_CHANGED", own);
+        if (
+          !Array.isArray(attempt.requestedPath) ||
+          attempt.requestedPath.length !== vertices.length ||
+          attempt.expectedInputCount !== vertices.length ||
+          vertices.some(
+            (point, at) => !samePoint(point, attempt.requestedPath[at]),
+          )
+        )
+          fail("R4_PATH_OR_INPUT_LOST", own);
+        if (
+          JSON.stringify(attempt.content?.input) !==
+          JSON.stringify(time.inputManifest)
+        )
+          fail("R4_CONTENT_INPUT_BINDING_INVALID", own);
+        const admissions = events.filter(
+          (event) =>
+            event.kind === "brush-accepted" &&
+            event.sessionId === sessionId &&
+            event.gestureId === time.gestureId,
+        );
+        const rawContent = events.filter(
+          (event) =>
+            event.kind === "brush-content" &&
+            event.phase === "admission" &&
+            event.sessionId === sessionId &&
+            event.gestureId === time.gestureId,
+        );
+        if (
+          JSON.stringify(rawContent) !==
+          JSON.stringify(attempt.content?.checkpoints)
+        )
+          fail("R4_CONTENT_JOURNAL_BINDING_INVALID", own);
+        const probeManifest = directionProbes(
+          vertices.slice(0, -1),
+          spec.level,
+        );
+        for (const field of ["probes", "regions", "centerline"])
+          if (
+            JSON.stringify(probeManifest[field]) !==
+            JSON.stringify(attempt.content?.[field])
+          )
+            fail("R4_FIXED_PROBE_MANIFEST_CHANGED", { ...own, field });
+        const ownContent = events.filter(
+          (event) =>
+            event.kind === "brush-content" &&
+            event.sessionId === sessionId &&
+            event.gestureId === time.gestureId,
+        );
+        const completedContent = ownContent.filter(
+          (event) => event.phase === "complete",
+        );
+        const undoneContent = ownContent.filter(
+          (event) => event.phase === "undo",
+        );
+        if (
+          completedContent.length !== 1 ||
+          undoneContent.length !== 1 ||
+          JSON.stringify(completedContent[0]?.authors) !==
+            JSON.stringify(attempt.content?.after) ||
+          JSON.stringify(undoneContent[0]?.authors) !==
+            JSON.stringify(attempt.content?.undone) ||
+          undoneContent[0]?.at < completedContent[0]?.at
+        )
+          fail("R4_FINAL_AUTHORS_OR_UNDO_UNBOUND", own);
+        const baseline = probeManifest.probes.map(
+          (_, probe) =>
+            rawContent.find((event) => finite(event.before?.[probe]))?.before[
+              probe
+            ] ?? null,
+        );
+        if (
+          baseline.some((value) => value === null) ||
+          JSON.stringify(baseline) !== JSON.stringify(attempt.content?.before)
+        )
+          fail("R4_BASELINE_AUTHORS_UNBOUND", own);
+        const content = evaluateDirectionContent(attempt.content, admissions);
+        append(failures, content.failures, own);
+        append(blockers, content.blockers, own);
+        const from = time.startAt;
+        const response = Math.max(
+          time.completedAt ?? 0,
+          ...samples.map((sample) => responseAt(sample) ?? 0),
+        );
+        const finalFrame = events.find(
+          (event) => event.kind === "frame" && event.at >= response,
+        );
+        const to = finalFrame?.at ?? response;
+        gestureRanges.push({ from, to });
+        const measured = events.filter(
+          (event) =>
+            finite(from) && finite(to) && event.at >= from && event.at <= to,
+        );
+        gestureEvents.push(...measured);
+        if (!finite(time.heldMs) || time.heldMs < spec.minDurationMs)
+          fail("R4_CONTINUOUS_DURATION_SHORT", {
+            ...own,
+            actual: time.heldMs,
+            required: spec.minDurationMs,
+          });
+        durations.push(time.heldMs);
+        const updates = [
+          ...new Set(
+            events
+              .filter(
+                (event) =>
+                  event.kind === "brush-submit" &&
+                  event.sessionId === sessionId &&
+                  event.gestureId === time.gestureId &&
+                  event.at < time.endAt,
+              )
+              .map((event) => event.frame),
+          ),
+        ];
+        if (spec.minDurationMs && updates.length < 2)
+          fail("R4_LIVE_RESULT_UPDATES_MISSING", own);
+        if (time.maximumFeedbackGapMs > 100)
+          fail("R4_CONTINUOUS_SUBMISSION_STALL", {
+            ...own,
+            milliseconds: time.maximumFeedbackGapMs,
+            limitMs: 100,
+          });
+        const pending = measured.filter(
+          (event) => event.kind === "height-terrain",
+        );
+        if (pending.some((event) => event.fallbackSamples !== 0))
+          fail("R4_NORMAL_CPU_FALLBACK", own);
+        const transition = directionTransition(spec, attempt, events, samples);
+        append(failures, transition.failures, own);
+        if (transition.navigation) {
+          const navigation = transition.navigation;
+          const first = samples.find((sample) => sample.inputKind === "edit");
+          if (finite(navigation.gateAt) && finite(navigation.navigationAt))
+            navigationReady.push(navigation.gateAt - navigation.navigationAt);
+          if (finite(first?.submissionAt) && finite(navigation.navigationAt))
+            navigationResponse.push(
+              first.submissionAt - navigation.navigationAt,
+            );
+        }
+      }
+      const submission = evaluateSubmissionDiagnostics(allSamples);
+      append(failures, submission.issues, detail);
+      if (!allSamples.length) fail("R4_SUBMISSION_SAMPLES_MISSING", detail);
+      const cpu = directionCpu([...new Set(gestureEvents)]);
+      append(failures, cpu.failures, detail);
+      const gpuEvents = events.filter(
+        (event) =>
+          ["height-terrain", "height-draw"].includes(event.kind) &&
+          ((run.gpuTimers ?? []).some(
+            (window) =>
+              (event.uploadStart ?? event.sceneStart) >= window.startedAt &&
+              event.submittedAt <= window.stoppedAt,
+          ) ||
+            gestureRanges.some(
+              (range) =>
+                (event.uploadStart ?? event.sceneStart) <= range.to &&
+                event.submittedAt >= range.from,
+            )),
+      );
+      const gpu = evaluateDirectionGpu(gpuEvents, run.gpuTimers);
+      append(failures, gpu.failures, detail);
+      append(blockers, gpu.blockers, detail);
+      const navigationToReadyMs = distribution(navigationReady),
+        navigationToSubmissionMs = distribution(navigationResponse);
+      if (
+        exceeds(navigationToReadyMs.p95, 500) ||
+        exceeds(navigationToSubmissionMs.p95, 750) ||
+        exceeds(navigationToReadyMs.maximum, 2000) ||
+        exceeds(navigationToSubmissionMs.maximum, 2000)
+      )
+        fail("R4_NAVIGATION_LOWER_BOUND_EXCEEDED", detail);
+      groups.push({
+        ...detail,
+        gestures: attempts.length,
+        durationMs: distribution(durations),
+        cpuWorkMs: cpu.cpuWorkMs,
+        preparationMs: render.preparationMs,
+        terrainPacketMs: gpu.terrainPacketMs,
+        inputToSubmissionMs: submission.inputToSubmissionMs,
+        pointerupToCompletionMs: submission.pointerupToCompletionMs,
+        navigationToReadyMs,
+        navigationToSubmissionMs,
+        visibleResultGapMs: null,
+        presentationProven: false,
+      });
+    }
+  }
+  if (runIds.size < R4_REQUIREMENTS.independentRuns)
+    missing.push({
+      code: "R4_INSUFFICIENT_FRESH_GROUPS",
+      actual: runIds.size,
+      required: 2,
+    });
+  for (let index = 1; index <= R4_REQUIREMENTS.independentRuns; index++)
+    for (const spec of R4_REQUIREMENTS.scenarios)
+      if (!cases.has(`direction-${index}:${spec.id}`))
+        missing.push({
+          code: "R4_REQUIRED_SCENARIO_MISSING",
+          run: `direction-${index}`,
+          scenario: spec.id,
+        });
+  for (const entry of report.planned ?? [])
+    if (!["completed", "failed"].includes(entry.state))
+      missing.push({
+        code: "R4_PLANNED_CASE_NOT_COMPLETED",
+        run: entry.run,
+        scenario: entry.id,
+        state: entry.state,
+      });
+  return finish();
+}
+
 /** Selected execution and fixed native acceptance are separate, explicit claims. */
 export function evaluateRun(report) {
+  if (report.purpose === "direction") return evaluateDirection(report);
   if (
     report.collectionStarted === false &&
     (report.mode === "native" ||

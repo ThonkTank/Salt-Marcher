@@ -851,6 +851,37 @@ Referenz, Präsentationszuordnung und Stichprobenumfang. Globale Vollständigkei
 für fehlende, doppelte und unzugeordnete Eingaben bleibt eine Pflichtprüfung.
 Historische rote Journale bleiben rot; alte Schemas erhalten keine neue Bedeutung.
 
+Der R4-Zweck desselben Runners verwendet eine feste kleine Matrix und zwei
+frische Prozessgruppen. Die Inhaltsprüfung beobachtet höchstens 256 vorher
+festgelegte Autorenstützstellen, ihre tatsächlichen Werte und die vorhandenen
+C1-Konten. Sie lädt keine Quellen, verändert keine Bereitschaft und bildet
+keinen zweiten Autorenstand. Annahme-, Materialisierungs-, Abschluss- und
+Undo-Belege bleiben an Session und Geste gebunden. Beobachtungsarbeit erhält
+eigene CPU-Zeiten und zählt im gemeinsamen Arbeitsbudget mit.
+
+Die unabhängige Referenz erhält den vollständigen normalisierten Eingabestrom
+und die beobachteten kausalen Fenster. Normale Zeitwirkung wird zusätzlich ohne
+50-ms-Kappung bewertet. Ganze Sekunden verwenden konservative Grenzen aus
+umgebenden Kontoständen. Belegen diese weder ausreichende Wirkung noch einen
+Fehler, bleibt der betreffende Nachweis offen; eine ungenaue Abtastung wird
+nicht als bewiesener Produktfehler ausgegeben. Der erste lokale Eingriff nach
+Navigation verwendet den vorhandenen Bereitschaftsmonitor. Normale längere
+Wege warten dagegen auf die tatsächlich vorhandene Bereitschaft ihrer ganzen
+Spur. Beide Beobachtungen bleiben getrennt.
+
+Die optionale GPU-Diagnose umschließt alle tatsächlich verwendeten WebGL-Befehle
+eines Pakets vom ersten Befehl bis unmittelbar vor dessen vorhandener Fence.
+Uploads, Allokationen, Freigaben und Kopien gehören damit zum selben Intervall
+wie die Draws. Ein Diagnosebeobachter bindet die Query über das tatsächlich
+erzeugte WebGLSync an die gleiche monotone Fence-ID wie das Terrain- oder
+Scene-Ereignis. So zählt auch GL-Arbeit vor dem CPU-Paketmarker vollständig;
+Zeitnähe ersetzt keine Identität. Queries werden erst nach Verfügbarkeit
+ausgelesen; es entstehen keine zusätzlichen Produkt-Fences oder synchronen
+GPU-Warteaufrufe. Die gemeinsame Auswertung verlangt eine eindeutige
+Zuordnung sämtlicher Queries und Produktpakete.
+Fehlende, mehrdeutige, unterbrochene oder doppelte Zuordnung liefert keinen
+Paketnachweis. Der ältere reine Draw-Modus bleibt ausdrücklich enger begrenzt.
+
 `height-draw` benennt Upload, tatsächlichen Submit und Arbeitsmengen getrennt:
 kanonische Samples, Deltasamples, unveränderte Basiskopien, warme Basisaufnahmen,
 kanonische Basisaufbauten, horizontale Samples, Farbsamples und zugelassene
@@ -869,6 +900,10 @@ behalten ihre Eingaben und Grenzwerte. Instrumentierung kann Laufzeiten verände
 Die native Traceanbindung bleibt offen: Der vorhandene Kandidat verbindet eine
 exakte Terrainrevision nicht nachweislich mit ihrer ersten tatsächlichen
 Präsentation. Vorprüfung und Auswertung bleiben deshalb fehlerschließend.
+R4s tatsächlich sichtbarer Ergebnistakt ist ein eigener offener Messnachweis;
+GPU-Paketzeit, RAF oder ein korrektes Endbild ersetzen ihn nicht. Das gemeinsame
+R4-Urteil gibt weder die native P0-Abnahme noch weitere Werkzeuge frei, solange
+ein erforderlicher Inhalt-, Zeit-, Ressourcen- oder Hardwarebeleg fehlt.
 Native Umgebung, Referenz und vollständige Stichprobe stehen im
 [Prüfvertrag](implementation/atlas-rebuild-plan.md#6-prüf--und-performancevertrag),
 aktuelle Ergebnisse ausschließlich im Status.
