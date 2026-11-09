@@ -307,30 +307,6 @@ describe("local source readiness and ownership", () => {
     expect(doc.sampleHeight(...TRENCH_POINT)).toBe(after);
   });
 
-  it("keeps one stable gesture anchor while live doses change and extend its sources", () => {
-    const doc = new EditorDocument("gesture-anchor", { empty: true });
-    stroke(doc, [[100, 100]]);
-    doc.beginGesture({ level: 0, radius: 20, amount: 10 });
-    const anchor = doc.activeHeightGesture()!;
-    expect(anchor.before.size).toBe(0);
-    doc.applySegment([100, 100], [100, 100], 20);
-    const key = heightTileKey(0, 0, 0);
-    const before = anchor.before.get(key)!;
-    expect(before).not.toBeNull();
-    const original = before!.values.slice();
-    doc.applySegment([100, 100], [100, 100], 40);
-    doc.applySegment([420, 100], [420, 100], 20);
-    expect(doc.activeHeightGesture()!.id).toBe(anchor.id);
-    expect(anchor.before.get(key)!.values).toEqual(original);
-    expect(anchor.before.get(heightTileKey(0, 1, 0))).toBeNull();
-    doc.finishGesture();
-    expect(doc.activeHeightGesture()).toBeNull();
-    doc.beginGesture({ level: 4, radius: 100, amount: 10 });
-    expect(doc.activeHeightGesture()!.id).toBeGreaterThan(anchor.id);
-    expect(doc.activeHeightGesture()!.level).toBe(4);
-    expect(doc.activeHeightGesture()!.before.size).toBe(0);
-  });
-
   it("shares one immutable accepted record for history, retry and projection", () => {
     const doc = new EditorDocument("accepted-journal", { empty: true });
     const change = stroke(doc, [[100, 100]]).change!;

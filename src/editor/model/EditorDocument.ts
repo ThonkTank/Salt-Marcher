@@ -90,7 +90,6 @@ interface HistoryAction {
 }
 
 interface Gesture {
-  id: number;
   brush: HeightBrush;
   before: Map<string, HeightTile | null>;
   cells: Map<string, Set<number>>;
@@ -98,13 +97,6 @@ interface Gesture {
   /** Reserved before/after payloads if this live action finishes now. */
   retainedBytes: number;
   bounds: Bounds | null;
-}
-
-/** Borrowed immutable before-images. Consumers must not mutate or transfer buffers. */
-export interface HeightGestureAnchor {
-  id: number;
-  level: number;
-  before: ReadonlyMap<string, HeightTile | null>;
 }
 
 export class SourcesNotReadyError extends Error {
@@ -206,7 +198,6 @@ export class EditorDocument {
   private readonly entries = new Map<string, Entry>();
   private coverage: SourceNeed[] = [];
   private gesture: Gesture | null = null;
-  private gestureId = 0;
   private history: HistoryAction[] = [];
   private historyPosition = 0;
   private readonly pending = new Map<
@@ -247,13 +238,6 @@ export class EditorDocument {
 
   get active(): boolean {
     return this.gesture !== null;
-  }
-
-  activeHeightGesture(): HeightGestureAnchor | null {
-    const gesture = this.gesture;
-    return gesture
-      ? { id: gesture.id, level: gesture.brush.level, before: gesture.before }
-      : null;
   }
 
   /** The one accepted-change journal, borrowed read-only by the ordered writer. */
@@ -556,7 +540,6 @@ export class EditorDocument {
         "Höhenpinsel zu groß; eine gröbere Autorenstufe wählen.",
       );
     this.gesture = {
-      id: ++this.gestureId,
       brush: { ...brush },
       before: new Map(),
       cells: new Map(),

@@ -1117,6 +1117,9 @@ gilt auch ohne Diagnosemodus. Die nötigen Quellen müssen vorhanden oder
 bestätigt leer sein; der sichtbare Wirkbereich muss zum aktuellen Ausschnitt
 passen und von der GPU fertig gezeichnet sein. Das bloße Einreichen eines Frames
 genügt für die nächste Dosis nicht; die Prüfung blockiert den Eingabethread nicht.
+Auch nach einer Änderung der Pinselstufe muss die passende lokale
+Darstellungsvorbereitung abgeschlossen sein. Währenddessen gilt dieselbe
+sichtbare Warteanzeige und Regel zum erneuten Drücken.
 Diese Rückmeldung ist kein Nachweis der ersten physischen Bildschirmpräsentation.
 Bei Bewegung gehört das angenommene
 Segment dazu. Eine reguläre numerische Übersicht auf dem gewählten Maßstab und

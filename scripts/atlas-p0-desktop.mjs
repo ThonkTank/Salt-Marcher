@@ -62,6 +62,12 @@ export async function launchAtlasDesktop({
   try {
     const page = await app.firstWindow();
     page.on("pageerror", (error) => errors.push(String(error)));
+    // Pixi reports GLSL compilation/link failures through the console without
+    // throwing a page error. Preserve those diagnostics alongside process output.
+    page.on("console", (message) => {
+      if (message.type() === "error")
+        output.push(`[renderer-error] ${message.text()}\n`);
+    });
     page.setDefaultTimeout(20_000);
     return { app, page, executablePath, packaged, args, errors, output, close };
   } catch (error) {

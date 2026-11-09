@@ -239,6 +239,7 @@ export class EditorController {
     this.work?.postMessage({ cancel: true });
     this.world.reset(this.doc);
     this.world.moveCamera({ x: 0, y: 0, scale: 0.25 });
+    this.prepareToolLevel();
     this.world.refresh();
     this.publish({
       title: info.title,
@@ -423,6 +424,7 @@ export class EditorController {
   /** One current demand, not a queue of camera/hover requests. */
   private scheduleLoad(): void {
     if (!this.doc || this.disposed) return;
+    this.prepareToolLevel();
     const local = this.localReadiness();
     const viewGeneration = this.world.state().viewGeneration;
     const power = this.world.presentationPower();
@@ -801,6 +803,7 @@ export class EditorController {
   }
 
   private checkLocalReady(): LocalReadiness {
+    this.prepareToolLevel();
     const readiness = this.localReadiness();
     if (this.world.cursor) {
       const waiting =
@@ -827,6 +830,13 @@ export class EditorController {
     const readiness = this.checkLocalReady();
     if (readiness.reason === "sources") this.scheduleLoad();
     this.world.redraw();
+  }
+
+  /** Imperative product demand; observation's localReadiness getter stays pure. */
+  private prepareToolLevel(): void {
+    this.world.setToolLevel(
+      this.stroke?.brush.level ?? this.currentBrush().level,
+    );
   }
 
   retryLoad(): void {
@@ -865,6 +875,7 @@ export class EditorController {
     this.brushState = { kind: "blocked", pointerId: event.pointerId };
     const brush = this.currentBrush();
     const point = this.worldPoint(event);
+    this.prepareToolLevel();
     const readiness = this.localReadiness(point, brush);
     if (!readiness.ready) {
       this.skipInput(input, readiness.reason!);

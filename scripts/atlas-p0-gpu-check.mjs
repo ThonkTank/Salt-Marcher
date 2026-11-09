@@ -486,6 +486,7 @@ async function run(directory) {
       });
     };
     const action = async (kind, point = [100, 100], diameter = 16) => {
+      const beforePreparation = await stateSnapshot(page);
       if (kind === "raise" || kind === "lower") {
         await brush(page, diameter, 4000);
         if (kind === "lower") await button(page, /Absenken/);
@@ -502,24 +503,42 @@ async function run(directory) {
           intervalMs: 64,
         });
       await settled();
-      const after = await snapshot(page, [], { sinceEvent: before.eventCount });
-      const draws = after.events.filter(
-        (event) => event.kind === "height-draw",
-      );
+      const after = await snapshot(page, [], {
+        sinceEvent: beforePreparation.eventCount,
+      });
+      const preparationEvents =
+        before.eventCount - beforePreparation.eventCount;
+      const draws = after.events
+        .slice(preparationEvents)
+        .filter((event) => event.kind === "height-draw");
+      const preparationDraws = after.events
+        .slice(0, preparationEvents)
+        .filter((event) => event.kind === "height-draw");
       const complete = draws.length > 0 && after.droppedEvents === 0;
-      const work = Object.fromEntries(
-        [
-          "canonicalSamples",
-          "deltaSamples",
-          "colourSamples",
-          "anchorCopySamples",
-        ].map((key) => [
-          key,
-          complete && draws.every((event) => Number.isFinite(event[key]))
-            ? draws.reduce((sum, event) => sum + event[key], 0)
-            : null,
-        ]),
-      );
+      const workOf = (observed, requireDraw) =>
+        Object.fromEntries(
+          [
+            "canonicalSamples",
+            "deltaSamples",
+            "horizontalSamples",
+            "projectionProducts",
+            "basisCaptureSamples",
+            "canonicalBasisBuilds",
+            "colourSamples",
+            "anchorCopySamples",
+          ].map((key) => [
+            key,
+            after.droppedEvents === 0 &&
+            (!requireDraw || observed.length > 0) &&
+            observed.every(
+              (event) => Number.isSafeInteger(event[key]) && event[key] >= 0,
+            )
+              ? observed.reduce((sum, event) => sum + event[key], 0)
+              : null,
+          ]),
+        );
+      const work = workOf(draws, true);
+      const preparationWork = workOf(preparationDraws, false);
       result.actions.push({
         kind,
         diameter,
@@ -528,11 +547,13 @@ async function run(directory) {
         draws: draws.length,
         droppedEvents: after.droppedEvents,
         work,
+        preparationWork,
         passed:
           complete &&
           after.document.sequence === before.document.sequence + 1 &&
           (!stroke || (!stroke.timedOut && stroke.time.passed)),
       });
+      return after;
     };
     if (fixture.id === "all-22-levels") {
       const points = [
@@ -545,7 +566,9 @@ async function run(directory) {
         [400, 100],
       ];
       await checkpoint("chain-initial", points);
-      for (let index = 0; index < 24; index++) {
+      // More than 32 real tool-level changes exercise the bounded warm captures,
+      // independently of the number of gestures and Undo/Redo transactions.
+      for (let index = 0; index < 40; index++) {
         await action(
           index % 2 ? "lower" : "raise",
           points[0],
@@ -557,7 +580,7 @@ async function run(directory) {
           await action("redo");
           await action("undo");
         }
-        if ([16, 32, 48, 64].includes(result.actions.length))
+        if ([16, 32, 48, 64, 80, 96, 106].includes(result.actions.length))
           await checkpoint(`chain-${result.actions.length}`, points);
       }
       result.chain = {
@@ -567,11 +590,99 @@ async function run(directory) {
           0,
         ),
         laterCanonicalSamples: result.actions
-          .slice(32)
-          .reduce((sum, entry) => sum + (entry.work.canonicalSamples ?? 0), 0),
+          .slice(64)
+          .reduce(
+            (sum, entry) =>
+              sum +
+              (entry.work.canonicalSamples ?? 0) +
+              (entry.preparationWork.canonicalSamples ?? 0),
+            0,
+          ),
+        laterCanonicalBasisBuilds: result.actions
+          .slice(64)
+          .reduce(
+            (sum, entry) =>
+              sum +
+              (entry.work.canonicalBasisBuilds ?? 0) +
+              (entry.preparationWork.canonicalBasisBuilds ?? 0),
+            0,
+          ),
         factsComplete: result.actions.every((entry) =>
-          Object.values(entry.work).every(Number.isFinite),
+          [
+            ...Object.values(entry.work),
+            ...Object.values(entry.preparationWork),
+          ].every(Number.isFinite),
         ),
+      };
+      const sameLevelStart = result.actions.length;
+      let sameLevelEventStart;
+      for (let index = 0; index < 32; index++) {
+        const edited = await action(
+          index % 2 ? "lower" : "raise",
+          points[0],
+          512,
+        );
+        if (index === 0) sameLevelEventStart = edited.eventCount;
+        if (index === 0 || index === 31)
+          await checkpoint(
+            `same-level-${index === 0 ? "first" : "last"}-edited`,
+            points,
+          );
+        await action("undo");
+        if ([8, 16, 24, 32].includes(index + 1))
+          await checkpoint(`same-level-${(index + 1) * 2}`, points);
+      }
+      const sameLevelActions = result.actions.slice(sameLevelStart);
+      // Include ordinary work triggered by checkpoint hover/reads between actions.
+      // A rebuild there must not disappear from the stable-basis claim.
+      const sameLevelObservation = await snapshot(page, [], {
+        sinceEvent: sameLevelEventStart,
+      });
+      const laterDraws = sameLevelObservation.events.filter(
+        (event) => event.kind === "height-draw",
+      );
+      const laterFactsComplete =
+        laterDraws.length > 0 &&
+        sameLevelObservation.droppedEvents === 0 &&
+        laterDraws.every((event) =>
+          [
+            "canonicalSamples",
+            "basisCaptureSamples",
+            "canonicalBasisBuilds",
+          ].every((key) => Number.isSafeInteger(event[key]) && event[key] >= 0),
+        );
+      result.sameLevelChain = {
+        transactions: sameLevelActions.length,
+        level: sameLevelActions[0].level,
+        sameLevel: sameLevelActions.every((entry) => entry.level === 4),
+        deltaSamples: sameLevelActions.reduce(
+          (sum, entry) => sum + (entry.work.deltaSamples ?? 0),
+          0,
+        ),
+        eventRange: [sameLevelEventStart, sameLevelObservation.eventCount],
+        laterCanonicalSamples: laterFactsComplete
+          ? laterDraws.reduce((sum, event) => sum + event.canonicalSamples, 0)
+          : null,
+        laterBasisCaptureSamples: laterFactsComplete
+          ? laterDraws.reduce(
+              (sum, event) => sum + event.basisCaptureSamples,
+              0,
+            )
+          : null,
+        laterCanonicalBasisBuilds: laterFactsComplete
+          ? laterDraws.reduce(
+              (sum, event) => sum + event.canonicalBasisBuilds,
+              0,
+            )
+          : null,
+        factsComplete:
+          laterFactsComplete &&
+          sameLevelActions.every((entry) =>
+            [
+              ...Object.values(entry.work),
+              ...Object.values(entry.preparationWork),
+            ].every(Number.isFinite),
+          ),
       };
       await action("lower", [-100, 100]);
       await checkpoint("zero-lowered", points);
@@ -698,12 +809,21 @@ async function run(directory) {
       result.checkpoints.every((entry) => entry.passed) &&
       result.fineOverview.every((entry) => entry.passed) &&
       (!result.chain ||
-        (result.chain.transactions === 64 &&
+        (result.chain.transactions === 106 &&
           result.chain.factsComplete &&
           result.chain.deltaSamples > 0 &&
           result.chain.laterCanonicalSamples > 0 &&
+          result.chain.laterCanonicalBasisBuilds > 0 &&
           result.chain.restoredPixels &&
-          result.chain.restoredAuthors));
+          result.chain.restoredAuthors)) &&
+      (!result.sameLevelChain ||
+        (result.sameLevelChain.transactions === 64 &&
+          result.sameLevelChain.sameLevel &&
+          result.sameLevelChain.factsComplete &&
+          result.sameLevelChain.deltaSamples > 0 &&
+          result.sameLevelChain.laterCanonicalSamples === 0 &&
+          result.sameLevelChain.laterBasisCaptureSamples === 0 &&
+          result.sameLevelChain.laterCanonicalBasisBuilds === 0));
     return result;
   }
   async function sourceIdentity(session, fixture, sessionId) {

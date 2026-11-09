@@ -603,59 +603,83 @@ Submit zu erfinden. Fehlende neue Quellen oder sichtbare Grundlage beenden die
 Geste und verlangen erneutes Drücken. Die genaue D10-/D11-Semantik steht allein
 im Produktvertrag.
 
-### Numerischer Anker und lokale Änderung
+### Feste numerische Basis und lokale Änderung
 
-Eine Darstellungskachel hält zwei numerische RG32F-Texturen und ihre Farbkachel.
-Die beiden Float32-Kanäle speichern hohen und niedrigen Anteil einer ungeklemmten,
-skalierten Gesamthöhe. Ein kalter Aufbau rekonstruiert die erforderlichen
-Autorenstufen und addiert Übersicht plus Grundwert. Der anschließende Farbpass
-begrenzt erst das vollständige Ergebnis und klassifiziert dessen Farbe.
+Eine Darstellungskachel hält zwei numerische RGBA32F-Texturen und ihre Farbkachel.
+Je zwei Float32-Kanäle speichern hohen und niedrigen Anteil der ungeklemmten,
+skalierten Gesamthöhe beziehungsweise des Beitrags der ausgewählten Autorenstufe.
+Ein kalter Aufbau rekonstruiert die erforderlichen Autorenstufen und addiert
+Übersicht plus Grundwert. Die aktive Stufe wird im selben Durchlauf als eigener
+Beitrag festgehalten. Der anschließende Farbpass begrenzt erst die vollständige
+Höhe und klassifiziert deren Farbe.
 
-Für eine warme Geste gilt `H_aktuell = H_anker + S(A_aktuell − A_anker)`.
-Der Gesamtanker gehört zum selben Stand wie die vom Dokument geliehenen
-unveränderlichen Vorherbilder. Jede Dosis wird erneut gegen diesen festen Stand
-berechnet, nicht auf die vorherige Dosis addiert. Die unveränderten übrigen Stufen
-werden im gewöhnlichen Deltaweg nicht erneut rekonstruiert. Auch eine bereits
-in der Übersicht enthaltene aktive Stufe geht nur mit ihrer Änderung ein.
+Für eine warme Kachel gilt `H_aktuell = H_basis + (C_aktuell − C_basis)`.
+`C` ist die Projektion der aktiven Autorenstufe. Gesamtstand und damaliger
+Stufenbeitrag gehören nachweislich zusammen. Jede Dosis und jedes gleichstufige
+Undo/Redo wird gegen dieselbe Basis berechnet. Die Basis wird weder pro Dosis
+noch pro Geste fortgeschrieben. Unveränderte Stufen werden dabei nicht erneut
+rekonstruiert. Eine bereits in der Übersicht enthaltene aktive Stufe geht nur
+mit ihrer Änderung ein. Die numerische Basis hält dafür keine Dokumentvorherbilder
+und benötigt keinen zweiten Atlas aus Differenzquellen.
 
-Anker werden erst beim ersten tatsächlichen Eingriff übernommen. Unberührte
-Kacheln fördern keinen unbenutzten Zielpuffer zum neuen Anker. Kalt während einer
-Geste aufgebaute Kacheln bleiben für diese Geste kanonisch; ihr späterer Gesamtstand
-wird nicht fälschlich mit Vorherbildern des Gestenbeginns kombiniert. Undo/Redo
-verwenden dieselben Vorher-/Nachherpatches und denselben Darstellungsweg.
-Pointerup erzwingt keinen zusätzlichen vollständigen Aufbau.
+Der Controller meldet die benötigte Autorenstufe vor der Eingabe imperativ an
+den Renderer. Bei einem Stufenwechsel kopiert eine warme Kachel ihre bereits
+aktuelle Gesamthöhe und projiziert nur den neuen Stufenbeitrag. Eine kalte oder
+ungültige Kachel baut Gesamthöhe und Beitrag kanonisch auf. Vorbereitung und
+Abschluss besitzen zusätzlich zur Dokumentrevision eine eigene monotone Kennung:
+Ein alter Fence derselben Revision bestätigt keine neue Werkzeugvorbereitung.
+`localReadiness` bleibt eine reine Abfrage. Eine noch fehlende Vorbereitung ist
+sichtbar wartend; abgewiesenes Down beginnt später keinen Strich automatisch.
+Auch der kanonische Fallback gilt nach seinem tatsächlichen GPU-Abschluss als
+vorbereitete Strategie. Pointerup erzeugt keinen Pflichtneuaufbau.
 
-Die Deltaabkürzung prüft den Wertebereich ihrer Differenzen unabhängig vom
-Autorenbereich. Ein konservatives Abweichungsbudget begrenzt Ankerübernahmen;
-spätestens nach 32 Übernahmen wird die betreffende Kachel kanonisch erneuert.
-Starke Auslöschung kann deshalb den vollständigen GPU-Pfad verwenden. Außerhalb
-des etablierten sicheren GPU-Zahlenbereichs bleibt der kanonische Float64-Fallback
-für die betroffene Kachel erhalten. Diese Auswahl verändert keine Autorenwerte.
+Die Zulassung berücksichtigt die absoluten Größen von Gesamthöhe, altem und
+neuem Beitrag sowie die Fehler ihrer Projektion, Subtraktion und Addition.
+Eine warme Übernahme behält das bisherige Fehlerbudget und zählt als tatsächlicher
+Basiswechsel. Nach höchstens 32 solchen Übernahmen wird die Kachel kanonisch
+erneuert; gleichstufige Gesten verbrauchen dieses Budget nicht. Starke Auslöschung
+kann früher den vollständigen GPU-Pfad benötigen. Außerhalb des sicheren
+GPU-Zahlenbereichs bleibt die kanonische Float64-Rekonstruktion erhalten.
+Diese Auswahl verändert keine Autorenwerte.
 
-Kubische Gewichte entstehen achsenweise in Float64. Quellatlas und Deltaatlas
-enthalten vollständige kubische Halos; beim feinen Delta darf die lokale
-Seitentabelle breiter als beim groben kanonischen Aufbau sein. Absolute
-Weltkoordinaten werden vor Float32-Transformationen relativ zur Kamera gebildet.
+Eine Basis darf den aktiven Beitrag aus einer residenten Teilmenge feiner Quellen
+halten; unveränderte übrige Feinanteile bleiben in der Gesamtübersicht enthalten.
+Die Teilmenge muss bis zur nächsten Aufnahme dieselbe bleiben. Import oder
+Verdrängung einer Quelle dieser Stufe entwertet die betroffene Basis. Das gilt
+auch für History, wenn ein vorhandener Vorherwert nicht mehr resident ist,
+einschließlich eines Löschpatches. Neue lokal angelegte Quellen mit bestätigtem
+Null-Vorherwert sind dagegen eine reguläre Änderung. Geänderte Übersichten und
+andere relevante Autorenstufen entwerten den betroffenen Gesamtstand.
 
-Dirtyrechtecke begrenzen die tatsächlich geschatteten Pixel. Beim ersten
-Delta-Draw einer Geste werden zusätzlich unveränderte Ankerpixel in das neue
-numerische Ziel übernommen. Weitere Dosen bearbeiten nur ihr Rechteck. Der
-Farbpass aktualisiert denselben Bereich; Kamera und Cursor zeichnen behaltene
-Sprites ohne Höhenrekonstruktion.
+Die kubische Projektion ist separierbar: Ein horizontaler Pass berechnet jede
+benötigte Viererzeile einmal in einer gepackten RG32F-Zwischentextur. Der vertikale
+Pass gewichtet deren vier Zeilen in derselben Reihenfolge wie die kanonische
+Rekonstruktion. Gewichte entstehen achsenweise in Float64; der Quellatlas enthält
+vollständige kubische Halos. Feine Stufen dürfen eine größere lokale Seitentabelle
+und mehr Zwischenzeilen benötigen. Absolute Weltkoordinaten werden vor
+Float32-Transformationen relativ zur Kamera gebildet.
 
-RG32F-Unterstützung wird mit Erweiterungsprüfung und echtem 1×1-Framebuffer
-einschließlich Wiederherstellung der GL-Bindings geprüft. Fehlende Unterstützung
-verwendet den vorhandenen CPU-Fallback. Kontextverlust entwertet Fence und
-Darstellungsbelege; Wiederherstellung überträgt Quellen und baut Bilder neu auf.
-Erst passend abgeschlossene Arbeit gibt Eingabe wieder frei.
+Dirtyrechtecke begrenzen die tatsächlich projizierten und gefärbten Pixel.
+Nur der erste Live-Draw nach einer Basisaufnahme übernimmt zusätzlich unveränderte
+Basispixel in das andere numerische Ziel. Spätere Dosen und gleichstufige Gesten
+verwenden dieses Ziel weiter. Ein warmer Werkzeugwechsel braucht keinen Farbpass;
+Kamera und Cursor zeichnen ebenfalls behaltene Sprites ohne Höhenrekonstruktion.
+
+RG32F und RGBA32F werden mit Erweiterungsprüfung und tatsächlichen
+1×1-Framebuffern einschließlich Wiederherstellung der GL-Bindings geprüft.
+Fehlende Unterstützung verwendet den bestehenden CPU-Fallback. Kontextverlust
+entwertet Fence und Darstellungsbelege; Wiederherstellung überträgt Quellen und
+baut Bilder neu auf. Erst passend abgeschlossene Arbeit gibt Eingabe wieder frei.
 
 Uploadbereitschaft folgt den wirklichen Seiten und Texturen der einzelnen
-Kachel. Entfernte ausstehende Uploads sperren keine fertige lokale Komposition.
-`budgets.ts` begrenzt Speicher, 4 MiB Upload pro Frame und Sample-/Stufenarbeit
-je Grafikpaket. Der aktuelle Werkzeugort wird zuerst bearbeitet. Die beiden
-numerischen 128²-Texturen kosten zusammen 256 KiB je Kachel; sie sind im
-GPU-Budget enthalten. Quellspiegel, Deltaatlas, Deskriptoren, Gewichte und
-Fallbackbilder sind ebenfalls erfasst.
+Kachel. Entfernte Uploads sperren keine fertige lokale Komposition. `budgets.ts`
+begrenzt Speicher, 4 MiB Upload pro Frame und Projektionsarbeit je Grafikpaket.
+Der Projektionsanteil bleibt auf 20 gewichtete Paarprodukte je historischer
+Arbeitseinheit normiert. Zusätzliche Basisadditionen, Farbe, Kopien und
+Capture-Lesezugriffe werden mitgezählt; das Paketlimit bleibt unverändert. Der aktuelle Werkzeugort wird
+zuerst bearbeitet. Die beiden numerischen 128²-Texturen kosten zusammen 512 KiB
+je Kachel, bei 96 Kacheln 48 MiB. Hinzu kommen die variabel großen Zwischenzeilen,
+Farbe, Quellspiegel, Deskriptoren, Gewichte und Fallbackbilder; alle sind erfasst.
 
 ### History, Persistenz und Datei
 
@@ -708,8 +732,11 @@ für fehlende, doppelte und unzugeordnete Eingaben bleibt eine Pflichtprüfung.
 Historische rote Journale bleiben rot; alte Schemas erhalten keine neue Bedeutung.
 
 `height-draw` benennt Upload, tatsächlichen Submit und Arbeitsmengen getrennt:
-kanonische Samples, Deltasamples, unveränderte Ankerkopien, Farbsamples und
-gewichtete Sample-/Stufenarbeit. GL-Drawanzahl ist keine Pixelanzahl.
+kanonische Samples, Deltasamples, unveränderte Basiskopien, warme Basisaufnahmen,
+kanonische Basisaufbauten, horizontale Samples, Farbsamples und zugelassene
+Projektionsprodukte. Der Produktzähler beschreibt geplante gewichtete Produkte,
+keine gemessene GPU-Instruktionszahl; leere Seiten dürfen Nullarbeit überspringen.
+GL-Drawanzahl ist keine Pixelanzahl.
 `gpu-completed` benennt den später abgefragten Abschluss mit derselben
 Frame-/Session-/Ansichtskennung. Keines dieser Ereignisse beweist native Präsentation.
 

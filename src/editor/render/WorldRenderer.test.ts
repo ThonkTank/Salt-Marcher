@@ -25,7 +25,10 @@ import {
   HEIGHT_SUM_SCALE,
   heightFromScaledSum,
   heightTileSupport,
+  intersectsBounds,
+  minimumCoarseHeightLevel,
   type Bounds,
+  type HeightPatch,
   type HeightOverviewTile,
   type HeightTile,
 } from "../model";
@@ -61,21 +64,30 @@ vi.mock("./HeightField", () => ({
     draws = 0;
     restores = 0;
     private changedBytes = 0;
-    private gestureId: number | string | null = null;
+    toolLevel = 0;
     private tiles = new Set<{
       bytes: number;
       dirty: boolean;
       pixels: number;
       needsPreparation: boolean;
+      bounds: Bounds;
+      power: number;
+      preparationVersion: number;
+      preparedVersion: number;
     }>();
     constructor() {
       fields.push(this);
     }
     init() {}
-    beginGesture(context: { id: number | string }) {
-      if (this.gestureId === context.id) return;
-      this.gestureId = context.id;
-      for (const tile of this.tiles) tile.needsPreparation = true;
+    setToolLevel(level: number) {
+      if (this.toolLevel === level) return false;
+      this.toolLevel = level;
+      for (const tile of this.tiles) {
+        tile.needsPreparation = true;
+        tile.preparationVersion++;
+        tile.dirty = true;
+      }
+      return true;
     }
     rebuildAfterContextRestore() {
       this.restores++;
@@ -86,6 +98,7 @@ vi.mock("./HeightField", () => ({
       for (const tile of this.tiles) {
         tile.bytes = 128 * 128 * 8;
         tile.dirty = true;
+        tile.preparationVersion++;
       }
     }
     drawDirty() {
@@ -95,11 +108,16 @@ vi.mock("./HeightField", () => ({
     updateSources(
       tiles: readonly HeightTile[],
       removed: readonly string[] = [],
+      local = false,
     ) {
       const changed: Bounds[] = [];
+      const changedSources: HeightTile[] = [];
       for (const key of removed) {
         const before = this.sources.get(key);
-        if (before) changed.push(heightTileSupport(before));
+        if (before) {
+          changed.push(heightTileSupport(before));
+          changedSources.push(before);
+        }
         this.sources.delete(key);
       }
       for (const tile of tiles) {
@@ -112,8 +130,31 @@ vi.mock("./HeightField", () => ({
         this.sources.set(tile.key, { ...tile, values: tile.values.slice() });
         this.changedBytes += tile.values.byteLength;
         changed.push(heightTileSupport(tile));
+        changedSources.push(tile);
       }
+      if (!local)
+        for (const tile of this.tiles) {
+          if (
+            changedSources.some(
+              (source) =>
+                (source.level >= minimumCoarseHeightLevel(tile.power) ||
+                  source.level === this.toolLevel) &&
+                intersectsBounds(heightTileSupport(source), tile.bounds),
+            )
+          ) {
+            tile.preparationVersion++;
+            tile.needsPreparation = true;
+            tile.dirty = true;
+          }
+        }
       return changed;
+    }
+    applySourcePatches(patches: readonly HeightPatch[]) {
+      return this.updateSources(
+        patches.flatMap((patch) => (patch.after ? [patch.after] : [])),
+        patches.filter((patch) => !patch.after).map((patch) => patch.key),
+        true,
+      );
     }
     createTile(bounds: Bounds, power: number, overview?: HeightOverviewTile) {
       const state = {
@@ -121,6 +162,10 @@ vi.mock("./HeightField", () => ({
         dirty: true,
         pixels: 128 * 128,
         needsPreparation: false,
+        bounds,
+        power,
+        preparationVersion: 0,
+        preparedVersion: -1,
       };
       this.tiles.add(state);
       const span = 128 * 2 ** power;
@@ -147,7 +192,24 @@ vi.mock("./HeightField", () => ({
       return {
         mesh: { position: { set() {} }, visible: false, destroy() {} },
         update,
-        invalidateAnchor() {},
+        invalidateTotal() {
+          state.preparationVersion++;
+          state.needsPreparation = true;
+          state.dirty = true;
+        },
+        markHeightChanged() {},
+        dependsOnAuthorLevel(level: number) {
+          return (
+            level >= minimumCoarseHeightLevel(power) ||
+            level === field.toolLevel
+          );
+        },
+        get preparationVersion() {
+          return state.preparationVersion;
+        },
+        get preparedVersion() {
+          return state.preparedVersion;
+        },
         get needsPreparation() {
           return state.needsPreparation;
         },
@@ -167,12 +229,17 @@ vi.mock("./HeightField", () => ({
             deltaSamples: 0,
             colourSamples: state.pixels,
             anchorCopySamples: 0,
+            basisCaptureSamples: 0,
+            canonicalBasisBuilds: 0,
+            horizontalSamples: 0,
+            projectionProducts: state.pixels * 20,
           };
         },
         drawDirty: () => {
           if (!state.dirty) return 0;
           this.drawDirty();
           state.dirty = false;
+          state.preparedVersion = state.preparationVersion;
           return state.pixels;
         },
         destroy: () => {
@@ -219,7 +286,6 @@ vi.mock("./HeightField", () => ({
       this.sources.clear();
       this.overviews.clear();
       this.changedBytes = 0;
-      this.gestureId = null;
       this.tiles.clear();
     }
     destroy() {
@@ -438,8 +504,49 @@ it("waits for GPU completion, keeps submission timestamps, and never queues a se
   expect(gl.deleteSync).toHaveBeenCalled();
 });
 
-it("reprepares a budget-queued tile when a new gesture releases its source bindings", async () => {
-  const { world, frame, change } = await readyRenderer({
+it("requires the captured preparation version across L1 to L2 to L1 while an older same-revision fence is pending", async () => {
+  const { world, document } = await readyRenderer();
+  const area: Bounds = [200, 200, 240, 240];
+  const revision = document.revision;
+  const gl = world.renderer.gl;
+  const wait = vi
+    .spyOn(gl, "clientWaitSync")
+    .mockReturnValue(gl.TIMEOUT_EXPIRED);
+  world.setToolLevel(1);
+  const first = world.renderFrame(performance.now())!;
+  expect(first.revision).toBe(revision);
+  expect(world.inspectRegion(area).status).toBe("stale");
+  world.setToolLevel(2);
+  world.setToolLevel(1);
+  expect(world.renderFrame(performance.now())).toBeNull();
+  wait.mockReturnValue(gl.ALREADY_SIGNALED);
+  expect(world.pollCompletion()).toBe(first);
+  expect(world.inspectRegion(area).status).toBe("stale");
+  const last = world.renderFrame(performance.now())!;
+  expect(last.frame).toBeGreaterThan(first.frame);
+  expect(last.revision).toBe(revision);
+  expect(world.inspectRegion(area).status).toBe("stale");
+  world.pollCompletion();
+  expect(world.inspectRegion(area).status).toBe("current");
+});
+
+it("does not let a pending preparation certify an author import at the same document revision", async () => {
+  const { world, document } = await readyRenderer();
+  const area: Bounds = [200, 200, 240, 240];
+  const revision = document.revision;
+  world.setToolLevel(1);
+  world.renderFrame(performance.now());
+  world.updatePresentation(heightTilesFromControls(1, [[20, 20, 100]]), [], []);
+  world.pollCompletion();
+  expect(document.revision).toBe(revision);
+  expect(world.inspectRegion(area).status).toBe("stale");
+  world.renderFrame(performance.now());
+  world.pollCompletion();
+  expect(world.inspectRegion(area).status).toBe("current");
+});
+
+it("reprepares a budget-queued tile when a tool change releases its source bindings", async () => {
+  const { world, frame } = await readyRenderer({
     width: 256,
     height: 128,
     x: 512,
@@ -458,9 +565,9 @@ it("reprepares a budget-queued tile when a new gesture releases its source bindi
   expect(queued.preparedRevision).toBe(queued.revision);
   expect(prepare).toHaveBeenCalledTimes(1);
   const previousRevision = queued.revision;
-  change([200, 200]);
+  world.setToolLevel(1);
   expect(queued.revision).toBe(previousRevision);
-  expect(queued.preparedRevision).toBe(previousRevision);
+  expect(queued.preparedRevision).toBe(-1);
   expect(queued.field.needsPreparation).toBe(true);
   frame();
   expect(prepare).toHaveBeenCalledTimes(2);
@@ -897,8 +1004,10 @@ it("keeps the same certified source area during a small camera move", async () =
 });
 
 it("keeps visible progress and the frame loop after a slow or failed brush decision", async () => {
-  const { controller, frame, pointer, advance } = await readyController();
+  const { drainView, controller, frame, pointer, advance } =
+    await readyController();
   controller.setBrush(16, 400);
+  await drainView();
   pointer("pointerdown", 20, 20);
   const decision = vi.spyOn(
     controller as unknown as { advanceHeldBrush(now: number): void },
@@ -1094,14 +1203,69 @@ async function readyController(
   };
 }
 
+it("rejects Down during tool preparation, never autostarts a held press, and keeps observation read-only", async () => {
+  const { controller, pointer, frame, drainView } = await readyController();
+  const prepare = vi.spyOn(controller.world, "setToolLevel");
+  const gl = controller.world.renderer.gl;
+  const wait = vi
+    .spyOn(gl, "clientWaitSync")
+    .mockReturnValue(gl.TIMEOUT_EXPIRED);
+  controller.setBrush(16, 400);
+  expect(controller.observe().readiness).toMatchObject({
+    ready: false,
+    reason: "terrain",
+  });
+  const calls = prepare.mock.calls.length;
+  const resources = controller.world.state();
+  controller.observe();
+  controller.observe();
+  expect(prepare).toHaveBeenCalledTimes(calls);
+  expect(controller.world.state()).toEqual(resources);
+  pointer("pointerdown", 20, 20);
+  frame();
+  frame();
+  expect(controller.observe().document!.revision).toBe(0);
+  expect(controller.state.needsPress).toBe(true);
+  wait.mockReturnValue(gl.ALREADY_SIGNALED);
+  await drainView();
+  pointer("pointermove", 24, 20);
+  frame();
+  expect(controller.observe().document!.revision).toBe(0);
+  pointer("pointerup", 24, 20);
+  pointer("pointerdown", 24, 20);
+  expect(controller.observe().document!.revision).toBe(1);
+  pointer("pointerup", 24, 20);
+  controller.destroy();
+});
+
+it("keeps the active stroke level prepared when settings change and prepares the new tool only after release", async () => {
+  const { controller, pointer, frame, drainView } = await readyController();
+  controller.setBrush(16, 400);
+  await drainView();
+  pointer("pointerdown", 20, 20);
+  const prepare = vi.spyOn(controller.world, "setToolLevel");
+  controller.setBrush(512, 400);
+  expect(prepare).toHaveBeenLastCalledWith(0);
+  expect(controller.observe().readiness.brush.level).toBe(0);
+  frame();
+  pointer("pointerup", 20, 20);
+  expect(prepare).toHaveBeenLastCalledWith(controller.currentBrush().level);
+  expect(controller.observe().readiness.ready).toBe(false);
+  await drainView();
+  expect(controller.observe().readiness.ready).toBe(true);
+  controller.destroy();
+});
+
 it.each([16, 512])(
   "keeps a %ipx short click and prevents invisible impulses from stacking across gestures",
   async (diameter) => {
-    const { controller, bridge, frame, pointer } = await readyController(0, {
-      width: 1180,
-      height: 894,
-    });
+    const { drainView, controller, bridge, frame, pointer } =
+      await readyController(0, {
+        width: 1180,
+        height: 894,
+      });
     controller.setBrush(diameter, 400);
+    await drainView();
     pointer("pointerdown", 20, 20);
     expect(controller.observe().document!.revision).toBe(1);
     pointer("pointerup", 20, 20);
@@ -1149,11 +1313,13 @@ it.each([16, 512])(
 it.each(["drop-render", "delay-render", "pointerup-render"] as const)(
   "keeps one accepted large dose through %s and never paints a waiting path after release",
   async (fault) => {
-    const { controller, frame, pointer, advance } = await readyController(0, {
-      width: 1180,
-      height: 894,
-    });
+    const { drainView, controller, frame, pointer, advance } =
+      await readyController(0, {
+        width: 1180,
+        height: 894,
+      });
     controller.setBrush(512, 400);
+    await drainView();
     controller.world.fault = fault;
     pointer("pointerdown", 190, 372);
     frame(24);
@@ -1204,6 +1370,7 @@ it("retains an accepted press and its dose fact when presentation projection fai
   const { controller, bridge, frame, pointer, drainView } =
     await readyController();
   controller.setBrush(16, 400);
+  await drainView();
   const original = controller.observe([[-48, -48]]).samples[0]!;
   const previousFrame = controller.world.state().lastSubmittedFrame;
   const projection = vi
@@ -1296,6 +1463,7 @@ it("ends without evaluating an unaccepted queued path", async () => {
 it("deepens while held only after each actual current frame, without synthetic pointer inputs or repeated UI state", async () => {
   const { controller, frame, pointer, drainView } = await readyController();
   controller.setBrush(16, 400);
+  await drainView();
   pointer("pointerdown", 20, 20);
   const pressHeight = controller.observe([[-48, -48]]).samples[0]!;
   controller.onChange = vi.fn();
@@ -1358,8 +1526,10 @@ it("deepens while held only after each actual current frame, without synthetic p
 });
 
 it("caps a stalled frame once and discards late movement without restoring an older anchor", async () => {
-  const { controller, frame, pointer, advance } = await readyController();
+  const { drainView, controller, frame, pointer, advance } =
+    await readyController();
   controller.setBrush(16, 400);
+  await drainView();
   pointer("pointerdown", 20, 20);
   const oldAt = Number(
     controller.observation.read().find((event) => event.kind === "brush-start")!
@@ -1445,8 +1615,9 @@ it("caps a stalled frame once and discards late movement without restoring an ol
 });
 
 it("accepts at most one bounded dose from many queued moves", async () => {
-  const { controller, frame, pointer } = await readyController();
+  const { drainView, controller, frame, pointer } = await readyController();
   controller.setBrush(16, 400);
+  await drainView();
   controller.world.fault = "drop-render";
   pointer("pointerdown", 20, 20);
   frame();
@@ -1476,6 +1647,7 @@ it("accepts at most one bounded dose from many queued moves", async () => {
 it("ends obsolete feedback only after navigating completely away, then waits for the new displayed basis", async () => {
   const { controller, frame, pointer, drainView } = await readyController();
   controller.setBrush(16, 400);
+  await drainView();
   pointer("pointerdown", 20, 20);
   pointer("pointerup", 20, 20);
   controller.goTo(new Event("navigate"), 4, 0, 0.25);
@@ -1511,6 +1683,7 @@ it("ends obsolete feedback only after navigating completely away, then waits for
 it("releases offscreen feedback on resize without accepting the not-yet-drawn view", async () => {
   const { controller, pointer, resize, drainView } = await readyController();
   controller.setBrush(8, 400);
+  await drainView();
   pointer("pointerdown", 2, 32);
   pointer("pointerup", 2, 32);
   resize(8);
@@ -1820,6 +1993,7 @@ it("ends a stroke before an unseen gap even when its two endpoints are visible",
   const { controller, bridge, frame, pointer, drainView } =
     await readyController(0, { width: 512 });
   controller.setBrush(16, 400);
+  await drainView();
   const inspect = controller.world.inspectRegion.bind(controller.world);
   const gap = vi
     .spyOn(controller.world, "inspectRegion")
@@ -1859,6 +2033,7 @@ it("permits a partial edge footprint but ends before a captured pointer paints w
   const { controller, bridge, pointer, frame, drainView } =
     await readyController();
   controller.setBrush(16, 400);
+  await drainView();
   pointer("pointerdown", 1, 32);
   expect(controller.observe().document!.revision).toBe(1);
   pointer("pointermove", 1000, 32);
@@ -1963,6 +2138,7 @@ it("releases unused fine numeric source copies while retaining their coarse visi
 it("rereads both source paths when an acknowledgement has already overtaken their sequence", async () => {
   const { controller, bridge, pointer, drainView } = await readyController(1);
   controller.setBrush(16, 400);
+  await drainView();
   pointer("pointerdown");
   pointer("pointerup");
   await drainView();
@@ -2003,6 +2179,7 @@ it.each(["presentation", "region"] as const)(
       await drainView();
     }
     controller.setBrush(purpose === "region" ? 80 : 32, 400);
+    await drainView();
     let acknowledge!: () => void;
     let written!: CommitRequest;
     bridge.commit.mockImplementationOnce(
@@ -2176,6 +2353,7 @@ it("ends a held stroke on resize instead of painting at a world point different 
   const { controller, pointer, resize, frame, drainView } =
     await readyController();
   controller.setBrush(16, 400);
+  await drainView();
   pointer("pointerdown", 32, 32);
   expect(controller.observe().document!.revision).toBe(1);
   resize(128);
@@ -2244,9 +2422,10 @@ it("projects fine source changes into a certified empty overview exactly once, i
 it.each([16, 512])(
   "accepts a ready final %ipx movement before pointerup between frames",
   async (diameter) => {
-    const { controller, bridge, pointer, frame, advance } =
+    const { drainView, controller, bridge, pointer, frame, advance } =
       await readyController(0, { width: 1180, height: 894 });
     controller.setBrush(diameter, 4000);
+    await drainView();
     const endX = diameter === 512 ? 610 : 230;
     const endpoint: [number, number] = [(endX - 590) / 0.25, -300];
     const original = controller.observe([endpoint]).samples[0]!;
@@ -2285,8 +2464,9 @@ it.each([16, 512])(
 );
 
 it("shows a newly accepted held dose in the same frame while preserving one pending dose", async () => {
-  const { controller, pointer, frame } = await readyController();
+  const { drainView, controller, pointer, frame } = await readyController();
   controller.setBrush(16, 400);
+  await drainView();
   const point: [number, number] = [-48, -48];
   pointer("pointerdown", 20, 20);
   frame(0);
@@ -2323,8 +2503,10 @@ it("shows a newly accepted held dose in the same frame while preserving one pend
 it.each(["pointerup", "pointercancel", "blur"])(
   "adds no dose on %s or later frames after a ready accepted move",
   async (end) => {
-    const { controller, pointer, frame, advance } = await readyController();
+    const { drainView, controller, pointer, frame, advance } =
+      await readyController();
     controller.setBrush(16, 400);
+    await drainView();
     pointer("pointerdown", 20, 20);
     frame(0);
     advance(16);
@@ -2356,11 +2538,10 @@ async function timedControllerStroke(
   durationMs = 1000,
   corner = false,
 ) {
-  const { controller, bridge, pointer, frame, advance } = await readyController(
-    0,
-    { width: 256, height: 128 },
-  );
+  const { drainView, controller, bridge, pointer, frame, advance } =
+    await readyController(0, { width: 256, height: 128 });
   controller.setBrush(64, 400);
+  await drainView();
   pointer("pointerdown", 64, 64);
   frame(0);
   const ticks = (durationMs * 120) / 1000;
@@ -2446,11 +2627,13 @@ it("keeps a timed corner comparable across 30, 60 and 120Hz pointer delivery", a
 });
 
 it("drops the old path and excess time after a stalled ready move", async () => {
-  const { controller, pointer, frame, advance } = await readyController(0, {
-    width: 256,
-    height: 128,
-  });
+  const { drainView, controller, pointer, frame, advance } =
+    await readyController(0, {
+      width: 256,
+      height: 128,
+    });
   controller.setBrush(16, 400);
+  await drainView();
   pointer("pointerdown", 48, 64);
   frame(0);
   advance(250);
@@ -2580,8 +2763,10 @@ it.each([
 );
 
 it("discards an overloaded point buffer explicitly and resumes only new time", async () => {
-  const { controller, pointer, advance, frame } = await readyController();
+  const { drainView, controller, pointer, advance, frame } =
+    await readyController();
   controller.setBrush(16, 400);
+  await drainView();
   pointer("pointerdown", 20, 20);
   for (let index = 0; index <= MAX_BRUSH_POINTS; index++) {
     advance(0.1);
@@ -2623,9 +2808,10 @@ it("discards an overloaded point buffer explicitly and resumes only new time", a
 it.each(["sources", "outside", "partial"] as const)(
   "validates every coalesced corner before accepting its path (%s)",
   async (kind) => {
-    const { controller, pointer, advance, frame, bridge } =
+    const { drainView, controller, pointer, advance, frame, bridge } =
       await readyController(0, { width: 256, height: 256 });
     controller.setBrush(16, 400);
+    await drainView();
     pointer("pointerdown", 64, 128);
     frame(0);
     if (kind === "sources") {
@@ -2658,9 +2844,10 @@ it.each(["sources", "outside", "partial"] as const)(
 );
 
 it("confirms release against already submitted terrain without waiting for another frame", async () => {
-  const { controller, pointer, frame, advance, bridge } =
+  const { drainView, controller, pointer, frame, advance, bridge } =
     await readyController();
   controller.setBrush(16, 400);
+  await drainView();
   pointer("pointerdown", 20, 20);
   frame(0);
   const before = controller.observation.read();
@@ -2690,8 +2877,10 @@ it("confirms release against already submitted terrain without waiting for anoth
 });
 
 it("keeps release unconfirmed until its outstanding dose actually draws", async () => {
-  const { controller, pointer, frame, advance } = await readyController();
+  const { drainView, controller, pointer, frame, advance } =
+    await readyController();
   controller.setBrush(16, 400);
+  await drainView();
   pointer("pointerdown", 20, 20);
   advance(4);
   pointer("pointerup", 20, 20);
@@ -2717,14 +2906,13 @@ it("keeps release unconfirmed until its outstanding dose actually draws", async 
 });
 
 it("preserves a normal queued corner when the GPU completes between input events", async () => {
-  const { controller, bridge, pointer, frame, advance } = await readyController(
-    0,
-    {
+  const { drainView, controller, bridge, pointer, frame, advance } =
+    await readyController(0, {
       width: 256,
       height: 256,
-    },
-  );
+    });
   controller.setBrush(16, 400);
+  await drainView();
   pointer("pointerdown", 64, 128);
   frame(0);
   const gl = controller.world.renderer.gl;
@@ -2777,8 +2965,10 @@ it("preserves a normal queued corner when the GPU completes between input events
 });
 
 it("never queues a second dose during GPU timeout and discards failed-frame travel without catch-up", async () => {
-  const { controller, pointer, frame, advance } = await readyController();
+  const { drainView, controller, pointer, frame, advance } =
+    await readyController();
   controller.setBrush(16, 400);
+  await drainView();
   pointer("pointerdown", 20, 20);
   frame(0);
   const gl = controller.world.renderer.gl;
@@ -2827,8 +3017,10 @@ it("never queues a second dose during GPU timeout and discards failed-frame trav
 it.each(["pointerdown", "pointermove", "pointerup"])(
   "reports a failed fence during %s without accepting that input or losing its prior dose",
   async (type) => {
-    const { controller, bridge, pointer, frame } = await readyController();
+    const { drainView, controller, bridge, pointer, frame } =
+      await readyController();
     controller.setBrush(16, 400);
+    await drainView();
     pointer("pointerdown", 20, 20);
     if (type === "pointerdown") pointer("pointerup", 20, 20);
     frame(0);

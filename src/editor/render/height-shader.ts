@@ -18,15 +18,19 @@ precision highp float;
 precision highp int;
 in vec2 vUV;
 out vec4 finalColor;
-uniform sampler2D uAuthors;
+uniform sampler2D uHorizontal;
 uniform sampler2D uDescriptor;
 uniform sampler2D uOverview;
 uniform sampler2D uWeights;
-uniform sampler2D uAnchor;
+uniform sampler2D uReference;
 uniform int uLevelCount;
 uniform int uHasOverview;
-uniform int uDelta;
+// 0: canonical H + active contribution, 1: fixed-basis live, 2: warm capture.
+uniform int uMode;
+uniform int uActiveLevel;
+uniform int uMinimumLevel;
 uniform int uPageStride;
+uniform int uPageColumns;
 uniform vec4 uDirty;
 uniform vec4 uClip;
 
@@ -68,12 +72,13 @@ void main() {
     finalColor = vec4(0.0);
     return;
   }
-  vec2 total = uDelta != 0 ? texelFetch(uAnchor, pixel, 0).rg : vec2(-3.125, 0.0);
-  if (uDelta != 0 && (float(pixel.x) < uDirty.x || float(pixel.y) < uDirty.y || float(pixel.x) >= uDirty.z || float(pixel.y) >= uDirty.w)) {
-    finalColor = vec4(total, 0.0, 1.0);
+  vec4 reference = uMode != 0 ? texelFetch(uReference, pixel, 0) : vec4(0.0);
+  if (uMode == 1 && (float(pixel.x) < uDirty.x || float(pixel.y) < uDirty.y || float(pixel.x) >= uDirty.z || float(pixel.y) >= uDirty.w)) {
+    finalColor = reference;
     return;
   }
-  int atlasWidth = textureSize(uAuthors, 0).x;
+  vec2 total = uMode == 0 ? vec2(-3.125, 0.0) : reference.rg;
+  vec2 activeContribution = vec2(0.0);
   for (int level = 0; level < 22; level++) {
     if (level >= uLevelCount) break;
     int ix = int(texelFetch(uWeights, ivec2(pixel.x * 5, level * 2), 0).r);
@@ -84,27 +89,66 @@ void main() {
     vec4 pages = texelFetch(uDescriptor, ivec2(tableIndex / 4, level), 0);
     int page = int(pages[tableIndex % 4]);
     if (page < 0) continue;
-    int localX = ix - pageX * 64;
-    int localY = iy - pageY * 64;
-    vec2 wx[4];
+    vec4 rows = texelFetch(uDescriptor, ivec2(uPageColumns, level), 0);
+    int authorLevel = int(rows.w);
     vec2 wy[4];
     for (int i = 0; i < 4; i++) {
-      wx[i] = texelFetch(uWeights, ivec2(pixel.x * 5 + i + 1, level * 2), 0).rg;
       wy[i] = texelFetch(uWeights, ivec2(pixel.y * 5 + i + 1, level * 2 + 1), 0).rg;
     }
     for (int y = 0; y < 4; y++) {
-      vec2 horizontal = vec2(0.0);
-      for (int x = 0; x < 4; x++) {
-        int offset = page * 4624 + (localY + y + 1) * 68 + localX + x + 1;
-        vec2 value = texelFetch(uAuthors, ivec2(offset % atlasWidth, offset / atlasWidth), 0).rg;
-        horizontal = addPair(horizontal, mulPair(value, wx[x]));
-      }
-      total = addPair(total, mulPair(horizontal, wy[y]));
+      int row = int(rows.y) + iy + y - 1 - int(rows.x);
+      vec2 horizontal = texelFetch(uHorizontal, ivec2(pixel.x, row), 0).rg;
+      vec2 contribution = mulPair(horizontal, wy[y]);
+      // Preserve the canonical coarse-to-fine, direct four-row accumulation.
+      if (uMode == 0 && authorLevel >= uMinimumLevel)
+        total = addPair(total, contribution);
+      if (authorLevel == uActiveLevel)
+        activeContribution = addPair(activeContribution, contribution);
     }
   }
   if (uHasOverview != 0)
     total = addPair(total, texelFetch(uOverview, pixel, 0).rg);
-  finalColor = vec4(total, 0.0, 1.0);
+  if (uMode == 1)
+    total = addPair(reference.rg, addPair(activeContribution, -reference.ba));
+  finalColor = vec4(total, activeContribution);
+}`;
+
+/** Compute each needed four-control horizontal sum once, retaining its two f32 parts. */
+export const heightHorizontalFragment = `#version 300 es
+precision highp float;
+precision highp int;
+in vec2 vUV;
+out vec4 finalColor;
+uniform sampler2D uAuthors;
+uniform sampler2D uDescriptor;
+uniform sampler2D uWeights;
+uniform int uPageStride;
+uniform int uPageColumns;
+${heightFragment.slice(heightFragment.indexOf("vec2 addPair"), heightFragment.indexOf("void main()"))}
+void main() {
+  int level = int(floor(vUV.y));
+  vec3 rows = texelFetch(uDescriptor, ivec2(uPageColumns, level), 0).rgb;
+  int row = int(rows.x) + int(floor(fract(vUV.y) * rows.z));
+  int pixelX = clamp(int(floor(vUV.x * 128.0)), 0, 127);
+  int ix = int(texelFetch(uWeights, ivec2(pixelX * 5, level * 2), 0).r);
+  int pageX = ix / 64;
+  // The first required row may be -1: it lives in page zero's existing halo.
+  int pageY = clamp(int(floor(float(row) / 64.0)), 0, uPageStride - 1);
+  int tableIndex = pageY * uPageStride + pageX;
+  vec4 pages = texelFetch(uDescriptor, ivec2(tableIndex / 4, level), 0);
+  int page = int(pages[tableIndex % 4]);
+  if (page < 0) { finalColor = vec4(0.0); return; }
+  int localX = ix - pageX * 64;
+  int localY = row - pageY * 64;
+  int atlasWidth = textureSize(uAuthors, 0).x;
+  vec2 horizontal = vec2(0.0);
+  for (int x = 0; x < 4; x++) {
+    int offset = page * 4624 + (localY + 2) * 68 + localX + x + 1;
+    vec2 value = texelFetch(uAuthors, ivec2(offset % atlasWidth, offset / atlasWidth), 0).rg;
+    vec2 weight = texelFetch(uWeights, ivec2(pixelX * 5 + x + 1, level * 2), 0).rg;
+    horizontal = addPair(horizontal, mulPair(value, weight));
+  }
+  finalColor = vec4(horizontal, 0.0, 1.0);
 }`;
 
 /** Colour classification is a separate cheap pass over the unclamped result. */

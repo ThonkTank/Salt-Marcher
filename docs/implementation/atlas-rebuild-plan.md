@@ -747,15 +747,20 @@ keine zweite Sammlung historischer Messergebnisse.
 #### Numerische Entscheidung und ihre Grenzen
 
 Für eine warme Kachel gilt
-`H_aktuell = H_anker + S(A_aktuell − A_anker)`. Der Anker enthält die gesamte
-ungeklemmte Höhe einschließlich Ozean, Übersicht und damaliger Autoren. Die
-Änderung bezieht sich auf die unveränderlichen Dokumentvorherbilder; nicht auf
-die letzte Dosis. Erst die vollständige Summe erhält Höhenlimit und Farbe.
-Eine in der Übersicht enthaltene aktive Stufe wird dadurch nicht doppelt addiert.
+`H_aktuell = H_basis + (C_aktuell − C_basis)`. Die Basis enthält die gesamte
+ungeklemmte Höhe einschließlich Ozean, Übersicht und damaliger Autoren sowie
+den zugehörigen projizierten Beitrag der aktiven Stufe. Die Änderung bezieht
+sich auf diese feste Projektion; nicht auf die letzte Dosis. Gleichstufige
+Gesten und Undo behalten dieselbe Basis. Erst die vollständige Summe erhält
+Höhenlimit und Farbe. Eine in der Übersicht enthaltene aktive Stufe wird
+dadurch nicht doppelt addiert.
 
 Neue Kacheln und ungültige Anker verwenden den kanonischen vollständigen Aufbau.
-Sichere Ankerübernahme, begrenzte numerische Abweichung und Wiederaufbau müssen
-am tatsächlichen Datenpfad geprüft werden. Außergewöhnliche Werte dürfen den
+Warme Stufenwechsel übernehmen die aktuelle Gesamthöhe und projizieren nur
+den neuen Beitrag. Ihre Fehler- und Übernahmetiefe bleiben begrenzt;
+Quellenresidenz und GPU-Abschluss müssen zur Basisversion passen. Sichere
+Übernahme und Wiederaufbau müssen am tatsächlichen Datenpfad geprüft werden.
+Außergewöhnliche Werte dürfen den
 kanonischen GPU- beziehungsweise Float64-Pfad verwenden; Daten werden dafür
 weder gerundet noch abgewiesen. Ein voller Neuaufbau nach jedem Pointerup ist
 nicht der gewöhnliche Abschlussweg. Erforderliche Wiederaufbauten bleiben
@@ -763,7 +768,8 @@ sichtbar beobachtete Arbeit innerhalb desselben Renderbudgets.
 
 Der Richtungsnachweis vergleicht denselben langen 512-Pixel-Strich auf einfachem
 und lokal mit 22 Stufen belegtem Terrain; statische Ausgabe bleibt die Kontrolle.
-Zusätzlich zählen tatsächliche kanonische Samples, Deltasamples, Ankerkopien,
+Zusätzlich zählen tatsächliche kanonische Samples, Deltasamples, horizontale
+Projektionsarbeit, warme Basisaufnahmen, kanonische Basisaufbauten, Basiskopien,
 Farbsamples und Uploadbytes. Unveränderte Stufen dürfen im warmen Deltaweg keine
 erneute vollständige Rekonstruktion auslösen. Coldstart, unmittelbarer
 Folgestrich, Maßstabswechsel, Rebase und Undo/Redo dürfen keine versteckte

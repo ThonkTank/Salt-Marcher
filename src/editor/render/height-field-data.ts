@@ -25,7 +25,8 @@ export const HEIGHT_ATLAS_WIDTH = 2048;
 export const HEIGHT_MAX_PAGES = Math.floor(
   HEIGHT_ATLAS_WIDTH ** 2 / HEIGHT_PAGE_TEXELS,
 );
-export const HEIGHT_DESCRIPTOR_WIDTH = 3;
+// Nine source-page slots plus one metadata texel for the separable row layout.
+export const HEIGHT_DESCRIPTOR_WIDTH = 4;
 export const HEIGHT_DESCRIPTOR_HEIGHT = HEIGHT_MAX_LEVEL + 1;
 
 // Rendering is a derived projection. Values outside this ordinary range retain
@@ -62,6 +63,8 @@ export interface HeightDescriptor {
   levels: number[];
   width: number;
   pageStride: number;
+  horizontalRows: number;
+  rows: { first: number; offset: number; count: number }[];
   /** Inclusive lower / exclusive upper sample indices, including the world edge. */
   clip: [number, number, number, number];
 }
@@ -165,18 +168,24 @@ export class HeightSourceAtlas {
     return bounds;
   }
 
-  safeIn(bounds: Bounds): boolean {
-    return ![...this.unsafeSources].some((key) =>
-      intersectsBounds(heightTileSupport(this.sources.get(key)!), bounds),
-    );
+  safeIn(bounds: Bounds, minimum = 0, maximum = HEIGHT_MAX_LEVEL): boolean {
+    return ![...this.unsafeSources].some((key) => {
+      const source = this.sources.get(key)!;
+      return (
+        source.level >= minimum &&
+        source.level <= maximum &&
+        intersectsBounds(heightTileSupport(source), bounds)
+      );
+    });
   }
 
   /** Positive normalized spline weights cannot exceed a level's coefficient maximum. */
-  magnitudeIn(bounds: Bounds, minimum = 0): number {
+  magnitudeIn(bounds: Bounds, minimum = 0, maximum = HEIGHT_MAX_LEVEL): number {
     const levels = new Map<number, number>();
     for (const source of this.sources.values()) {
       if (
         source.level < minimum ||
+        source.level > maximum ||
         !intersectsBounds(heightTileSupport(source), bounds)
       )
         continue;
@@ -274,13 +283,19 @@ export class HeightSourceAtlas {
     const spacing = heightSpacing(level);
     let unsafe = false;
     const start = page.slot * HEIGHT_PAGE_TEXELS * 2;
+    // A complete cubic page references only these nine source tiles. Do not
+    // rebuild a string key and hash-map lookup for every one of its 4,624 cells.
+    const neighbours: (HeightTile | undefined)[] = [];
+    for (let y = tileY - 1; y <= tileY + 1; y++)
+      for (let x = tileX - 1; x <= tileX + 1; x++)
+        neighbours.push(this.sources.get(heightTileKey(level, x, y)));
     for (let y = 0; y < HEIGHT_PAGE_SIZE; y++) {
       const cy = tileY * HEIGHT_TILE_SIZE + y - 2;
       const sy = Math.floor(cy / HEIGHT_TILE_SIZE);
       for (let x = 0; x < HEIGHT_PAGE_SIZE; x++) {
         const cx = tileX * HEIGHT_TILE_SIZE + x - 2;
         const sx = Math.floor(cx / HEIGHT_TILE_SIZE);
-        const source = this.sources.get(heightTileKey(level, sx, sy));
+        const source = neighbours[(sy - tileY + 1) * 3 + sx - tileX + 1];
         const value =
           source &&
           Math.abs(cx * spacing) <= WORLD_LIMIT &&
@@ -306,38 +321,46 @@ export class HeightSourceAtlas {
   descriptor(
     bounds: Bounds,
     power: number,
-    minimum = minimumCoarseHeightLevel(power),
+    selection: { minimum?: number; maximum?: number; include?: number } = {},
   ): HeightDescriptor {
+    const minimum = selection.minimum ?? minimumCoarseHeightLevel(power);
+    const maximum = selection.maximum ?? HEIGHT_MAX_LEVEL;
     const levels = [
       ...new Set(
         [...this.sources.values()]
           .filter(
             (tile) =>
-              tile.level >= minimum &&
+              ((tile.level >= minimum && tile.level <= maximum) ||
+                tile.level === selection.include) &&
               intersectsBounds(heightTileSupport(tile), bounds),
           )
           .map((tile) => tile.level),
       ),
     ].sort((a, b) => b - a);
     // A small brush may author below the presentation's coarse/fine split.
-    // Its delta still uses this exact output lattice, with as many source pages
+    // Its contribution uses this exact output lattice, with as many source pages
     // as its finer spacing requires; it must never be silently downsampled.
     const pageStride = Math.max(
       3,
-      Math.ceil(
-        (HEIGHT_OVERVIEW_SIZE * 2 ** power) /
-          (HEIGHT_TILE_SIZE *
-            heightSpacing(levels.at(-1) ?? Math.min(21, minimum))),
-      ) + 1,
+      levels.length
+        ? Math.ceil(
+            (HEIGHT_OVERVIEW_SIZE * 2 ** power) /
+              (HEIGHT_TILE_SIZE *
+                heightSpacing(levels.at(-1) ?? Math.min(21, minimum))),
+          ) + 1
+        : 3,
     );
     if (pageStride > 16)
       throw new RangeError(
-        "Der lokale Höhendelta benötigt zu viele Quellseiten.",
+        "Der lokale Höhenbeitrag benötigt zu viele Quellseiten.",
       );
-    const width = Math.ceil((pageStride * pageStride) / 4);
+    const pageColumns = Math.ceil((pageStride * pageStride) / 4);
+    const width = pageColumns + 1;
     const data = new Float32Array(width * HEIGHT_DESCRIPTOR_HEIGHT * 4);
     const pages: string[] = [];
     const step = 2 ** power;
+    const rows: HeightDescriptor["rows"] = [];
+    let horizontalRows = 0;
     let fallback = false;
     try {
       for (let index = 0; index < levels.length; index++) {
@@ -350,6 +373,18 @@ export class HeightSourceAtlas {
         const tx = Math.floor(ix / HEIGHT_TILE_SIZE);
         const ty = Math.floor(iy / HEIGHT_TILE_SIZE);
         const offset = index * width * 4;
+        const first = iy - ty * HEIGHT_TILE_SIZE - 1;
+        const last =
+          Math.floor((bounds[3] - step / 2) / spacing) -
+          ty * HEIGHT_TILE_SIZE +
+          2;
+        const count = last - first + 1;
+        rows.push({ first, offset: horizontalRows, count });
+        data.set(
+          [first, horizontalRows, count, level],
+          offset + pageColumns * 4,
+        );
+        horizontalRows += count;
         for (let py = 0; py < pageStride; py++)
           for (let px = 0; px < pageStride; px++) {
             const page = this.acquire(level, tx + px, ty + py);
@@ -382,6 +417,8 @@ export class HeightSourceAtlas {
       levels,
       width,
       pageStride,
+      horizontalRows,
+      rows,
       clip: [
         first(bounds[0]),
         first(bounds[1]),
@@ -442,6 +479,68 @@ export function createHeightAxes(
     }
   }
   return { data, width, height };
+}
+
+/** The exact horizontal stencil rows needed by a submitted output rectangle. */
+export function createHeightProjection(
+  descriptor: HeightDescriptor,
+  axes: ReturnType<typeof createHeightAxes>,
+  rect: readonly [number, number, number, number],
+): {
+  positions: Float32Array;
+  uvs: Float32Array;
+  indices: Uint32Array;
+  samples: number;
+} {
+  const positions: number[] = [],
+    uvs: number[] = [],
+    indices: number[] = [];
+  let samples = 0;
+  const [x0, y0, x1, y1] = rect;
+  if (x0 >= x1 || y0 >= y1)
+    return {
+      positions: new Float32Array(),
+      uvs: new Float32Array(),
+      indices: new Uint32Array(),
+      samples,
+    };
+  for (let level = 0; level < descriptor.levelCount; level++) {
+    const { first, offset, count } = descriptor.rows[level];
+    const axis = (level * 2 + 1) * axes.width * 2;
+    const from = axes.data[axis + y0 * 10] - 1 - first;
+    const to = axes.data[axis + (y1 - 1) * 10] + 3 - first;
+    const index = positions.length / 2;
+    positions.push(
+      x0 / 128,
+      (offset + from) / descriptor.horizontalRows,
+      x1 / 128,
+      (offset + from) / descriptor.horizontalRows,
+      x1 / 128,
+      (offset + to) / descriptor.horizontalRows,
+      x0 / 128,
+      (offset + to) / descriptor.horizontalRows,
+    );
+    // UV.y selects the level and its local control row. Each level is one quad,
+    // so the fragment needs one metadata fetch rather than a scan over levels.
+    uvs.push(
+      x0 / 128,
+      level + from / count,
+      x1 / 128,
+      level + from / count,
+      x1 / 128,
+      level + to / count,
+      x0 / 128,
+      level + to / count,
+    );
+    indices.push(index, index + 1, index + 2, index, index + 2, index + 3);
+    samples += (x1 - x0) * (to - from);
+  }
+  return {
+    positions: new Float32Array(positions),
+    uvs: new Float32Array(uvs),
+    indices: new Uint32Array(indices),
+    samples,
+  };
 }
 
 export function encodeHeightOverview(values?: Float64Array): {

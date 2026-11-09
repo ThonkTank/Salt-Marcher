@@ -42,6 +42,10 @@ function compositionWork(draws) {
   const names = [
     "canonicalSamples",
     "deltaSamples",
+    "horizontalSamples",
+    "projectionProducts",
+    "basisCaptureSamples",
+    "canonicalBasisBuilds",
     "colourSamples",
     "anchorCopySamples",
     "compositionWork",
@@ -51,8 +55,9 @@ function compositionWork(draws) {
       names.some(
         (name) => !Number.isSafeInteger(draw[name]) || draw[name] < 0,
       ) ||
-      draw.colourSamples !== draw.composedSamples ||
-      draw.canonicalSamples + draw.deltaSamples > draw.composedSamples
+      draw.colourSamples + draw.basisCaptureSamples !== draw.composedSamples ||
+      draw.canonicalSamples + draw.deltaSamples + draw.basisCaptureSamples >
+        draw.composedSamples
     )
       throw new Error("Missing or inconsistent numeric composition facts");
   }
@@ -155,7 +160,7 @@ function gpuWork(draws, timers) {
           1e6
         : null,
     interpretation:
-      "Offscreen includes numeric and colour passes plus any anchor copy; changed samples come from product facts, not GL call count. GPU completion is not native presentation.",
+      "Offscreen includes separable horizontal projection, numeric and colour passes plus any anchor copy; changed samples come from product facts, not GL call count. projectionProducts is the admitted product count before empty-page skips, not a GPU instruction counter. GPU completion is not native presentation.",
   };
 }
 
@@ -236,6 +241,10 @@ async function installTimers(page, enabled) {
       enabled: Boolean(extension && enabled),
     };
     if (!info.enabled) return info;
+    // A faster 101-point stroke can exceed 4,096 calls with three passes per
+    // changed tile. Bound diagnostic storage independently of product budgets.
+    const queryLimit = 32_768;
+    let truncated = false;
     const startedAt = performance.now();
     const startEvent = window.atlasObserve([], { events: false }).eventCount;
     const records = [],
@@ -255,7 +264,10 @@ async function installTimers(page, enabled) {
     ]) {
       originals[name] = gl[name];
       gl[name] = function (...args) {
-        if (records.length >= 4096) return originals[name].apply(this, args);
+        if (records.length >= queryLimit) {
+          truncated = true;
+          return originals[name].apply(this, args);
+        }
         const query = gl.createQuery();
         const record = {
           query,
@@ -310,7 +322,8 @@ async function installTimers(page, enabled) {
         droppedEvents: observation.droppedEvents,
         observation,
         disjoint,
-        truncated: records.length >= 4096,
+        queryLimit,
+        truncated,
         samples,
       };
     };

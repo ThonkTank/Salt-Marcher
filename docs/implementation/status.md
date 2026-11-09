@@ -8,187 +8,183 @@ Zuständigkeiten und [Produktvertrag](../product-contract.md) Verhalten und Gren
 
 ## Ergebnis und Auftragsgrenze
 
-**Der beauftragte Strukturumbau ist umgesetzt. Die Großpinselabnahme bleibt rot.**
-Dokument, Eingabe, Darstellung und Projektsitzung haben vier klar abgegrenzte
-Besitzer. Ein gemeinsames Journal ersetzt doppelte Schreibwarteschlangen.
-Lokale numerische Deltas ersetzen während eines warmen Strichs die erneute
-Rekonstruktion aller unveränderten Höhenstufen.
+**Die vier Besitzer und die feste numerische Stufenbasis sind umgesetzt und
+inhaltlich geprüft. Die Großpinselabnahme bleibt offen.** Dokument, Eingabe,
+Darstellung und Projektsitzung teilen ein Änderungsjournal. Der Renderer hält
+jetzt eine Basis über gleichstufige Gesten und Undo hinweg; ein Neuaufbau nach
+jeweils 32 Gestentransaktionen entfällt. Die kubische Projektion verwendet einen
+horizontalen Zwischenpass und berechnet anschließend die vertikalen Beiträge.
 
-Im unveränderten Softwarevergleich sinkt die Offscreen-GPU-Komposition bei 22
-belegten Stufen von zuvor **591,2–677,1 ms auf 35,9–39,4 ms Median je
-Terrain-Draw**. Alle sechs neuen Pinselprozesse komponieren im warmen Verlauf
-null kanonische Samples; die Arbeit besteht aus Deltas, Farbe und der anfänglichen
-Ankerkopie. Die maximale Rückmeldungspause der Mehrstufenfälle sinkt von
-683,7–766,4 ms auf 79,2–90,9 ms.
+Im unveränderten Softwarevergleich sinkt die Offscreen-Komposition auf dichtem
+22-Stufen-Gelände vom zuletzt veröffentlichten Stand mit **35,9–39,4 ms auf
+23,1–23,7 ms Median je Terrain-Draw**. Alle sechs instrumentierten Pinselprozesse
+bleiben nun unter 50 ms p95 bis zum Submit. Der normale lange 512-Pixel-Strich
+besteht mit **39,5 ms p95 und 56,3 ms maximaler Bewegungspause**.
 
-Das ist noch keine ausreichende Bedienleistung: Alle sechs instrumentierten
-Pinselprozesse überschreiten mit 53,4–58,4 ms p95 die 50-ms-Grenze bis zum Submit. Der normale lange
-Großpinsel erreicht **53,7 ms p95**, obwohl seine Kontinuität mit **81,7 ms** die
-100-ms-Grenze jetzt erfüllt. Auch die kurzen 512-Pixel-Fälle scheitern in der
-anschließenden Serie überwiegend; der periodische Neuaufbau legt einen
-zusätzlichen Engpass offen. Diese Fehler wurden weder wiederholt, bis sie
-verschwanden, noch durch andere Grenzen oder kleinere Pinsel ersetzt.
+Die kurzen 512er-Gesten sind trotzdem nicht zuverlässig: Von 300 angeforderten
+Versuchen werden **15 ausgeführt**, bevor alle drei Gruppen an einer fehlenden
+Endpunktwirkung abbrechen. Eine zusätzliche Serie auf dichtem Gelände bricht
+nach **53/100** ab. Die letzten Bewegungen werden wegen noch ausstehender
+Rückkopplung beim Up nicht mehr angenommen. Hier sind weder Basisneuaufbau noch
+Paketaufteilung die Ursache. Nachträgliches Malen oder andere Grenzwerte werden
+nicht als Reparatur verwendet.
 
-**P0 ist nicht freigegeben.** Hier fehlen natives Display und Hardwaregrafik;
-zusätzlich ist die Zuordnung einer Terrainrevision zur ersten tatsächlichen
-Präsentation noch nicht bewiesen. GPU-Abschluss, CPU-Submit und Bildschirmpräsentation
-bleiben verschieden. Der vollständige Atlas-Neubau und das spätere gemischte
-Landschafts-/Hausbeispiel behalten das bestehende native P0-Gate.
+**P0 ist nicht freigegeben.** Ein natives Display und qualifizierte Hardwaremessung
+fehlen; zusätzlich ist die Zuordnung zur ersten tatsächlichen Präsentation
+unbewiesen. GPU-Abschluss, CPU-Submit und Bildschirmpräsentation bleiben getrennt.
+Der vollständige Atlas-Neubau und das spätere Landschafts-/Hausbeispiel behalten
+das bestehende native P0-Gate. Dieser Auftrag aktiviert nicht den vollständigen
+P0–P9-Neubau.
 
 ## Implementierter Stand
 
-- `EditorDocument` besitzt Autoren, History und das geordnete Journal. History und
-  Pending teilen unveränderliche Vorher-/Nachherbilder. Nur die exakte Quittung
-  des ältesten offenen Eintrags gibt Retry- und Projektionsdaten gemeinsam frei.
-- `ProjectSession` besitzt eine Schreibpumpe, Projekt-/Savedmetadaten,
-  Dateivorgänge und Wiederherstellung. `EditorController` hält Eingabe und einen
-  aktuellen Quellenbedarf mit einem Lesezustand. Doppelte Schreibsammlungen,
-  Ladeflags und Navigationstoken entfallen.
-- `HeightField` ergänzt einen festen ungeklemmten numerischen Gesamtstand um die
-  Differenz zwischen aktuellem Autor und Gestenbeginn. Es berechnet tatsächliche
-  Teilrechtecke auf dem unveränderten 128²-Raster. Kalte, ungültige oder numerisch
-  ungeeignete Anker nutzen die kanonische GPU- beziehungsweise Float64-Rekonstruktion.
-  Begrenzte Ankerübernahmen und eine konservative Zulassungsregel verhindern eine
-  unbegrenzte Fortschreibung; sie sind kein universeller GLSL-Fehlerbeweis.
-- `WorldRenderer` übernimmt Quellen anhand ihres Inhalts und prüft die
-  Uploadbereitschaft pro Kachel. Eine nicht blockierend geprüfte GPU-Fence
-  verhindert ein zweites ausstehendes Zeichenpaket. Vorbereitete Kacheln werden
-  nach einem Kontextwechsel oder einer ungültigen Delta-Bindung erneut gebunden,
-  auch wenn ihre Dokumentrevision gleich geblieben ist.
-- Der Auswerter berechnet validierte Falldaten einmal und verwendet sie für
-  begrenzte und native Urteile. Fehlende, doppelte und unzugeordnete Evidenz bleibt
-  ein Fehler. GPU-Zeitabfragen und Produktfakten besitzen ein gemeinsames
-  vollständiges Messfenster; fehlende Messungen werden nicht als null Millisekunden
-  ausgegeben.
+- `EditorDocument` besitzt Autoren, History und das einzige Pendingjournal.
+  History und Pending teilen unveränderliche Vorher-/Nachherbilder; nur die
+  exakte Quittung des ältesten Eintrags gibt dessen Retry- und Projektionsdaten frei.
+- `ProjectSession` besitzt einen Writer, Dateiabläufe, Savedmetadaten und Recovery.
+  `EditorController` hält Eingabe, einen aktuellen Quellenbedarf und einen
+  Readzustand. Die zweite Schreibsammlung und zusätzliche Nachladeflags entfallen.
+- `HeightField` berechnet `H_basis + (C_aktuell − C_basis)`. Die Basis enthält
+  Gesamthöhe und damaligen Beitrag derselben Autorenstufe. Gleichstufige Gesten
+  und Undo verwenden sie weiter. Deltaatlas, geliehene Gestenanker und synthetische
+  History-Gesten im Renderer entfallen.
+- Ein warmer Stufenwechsel übernimmt gültiges H und projiziert nur den neuen
+  Beitrag. Fehlerbudget und tatsächliche Übernahmetiefe bleiben erhalten;
+  höchstens 32 warme Übernahmen führen zum kanonischen Neuaufbau. Unsichere Werte
+  behalten den kanonischen GPU-/Float64-Pfad. Die numerische Zulassung ist eine
+  konservative Schutzregel, kein universeller GLSL-Fehlerbeweis.
+- Quellenresidenz, Änderungen an Übersichten und nicht residente History-Patches
+  entwerten die betroffene Basis korrekt. Tatsächliche Änderungsrechtecke erhalten
+  unveränderte Kacheln. Die lokale Freigabe prüft zusätzlich eine monotone
+  Vorbereitungskennung im passenden GPU-Fence; ein alter Abschluss genügt nicht.
+- Die separable Projektion berechnet benötigte Viererzeilen einmal. Numerik und
+  Farbe bleiben getrennt; Produktbudgets sind unverändert. Die RGBA32F-Ziele
+  kosten zusammen 512 KiB je Kachel, bei 96 Kacheln 48 MiB, zusätzlich zum
+  variablen Zwischenraster und den übrigen gezählten Ressourcen.
+- Die echte GPU-Prüfung fand einen reservierten GLSL-Bezeichner und einen
+  unzureichenden Pixi-Blendzustand. Beide sind korrigiert; eine Regression verwendet
+  echte Pixi-Mesh-/RenderGroup-/MeshPipe-Logik. Console-Shaderfehler werden mitgesammelt.
+- Der V7-Resize-Test wartet zuerst auf zusammenpassende CSS-/Canvas-Dimensionen.
+  Die anschließenden Kamera-, Weltmittelpunkt- und Revisionsprüfungen bleiben streng.
 
-Autorenformat, Halten, langsam/stärker, tatsächliche Kurven, maximal 50 ms Dosis,
-Überlastabwurf, kurze freigegebene Down/Up- und Move/Up-Eingaben sowie der gemeinsame
-Undo-/Speicherabschluss bleiben erhalten. Neue Wirkung nach Loslassen ist weiterhin
-verboten. Keine Produkt- oder Abnahmegrenze wurde gelockert.
+Halten, langsam/stärker, Kurven, höchstens 50 ms je Dosis, Überlastabwurf,
+freigegebene kurze Down/Up- und Move/Up-Eingaben, History und Dateiabschluss bleiben
+im Produktvertrag unverändert. Beobachtungsabfragen treiben keine Vorbereitung an.
 
-## Verifikation am integrierten Stand
+## Verifikation des integrierten Kandidaten
 
-| Prüfung                               | Ergebnis                                                                                                                                                                                                     |
-| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Gesamter JavaScript-Testlauf          | **840 Tests in 54 Dateien bestanden.** Fünf V7-Transporttests konnten wegen fehlendem Cargo nicht starten; der Gesamtbefehl ist deshalb nicht grün.                                                          |
-| TypeScript                            | Allgemeine Typprüfung, Tool-Typprüfung und P0-Build bestanden.                                                                                                                                               |
-| Format und Diff                       | Repositoryweite Prettier-Prüfung sowie `git diff --check` bestanden. Rustformat-/Vertragsprüfung ist lokal mangels Cargo nicht ausführbar.                                                                   |
-| Electron-/SQLite-/Fixturetests        | **15/15 bestanden.**                                                                                                                                                                                         |
-| Desktop, Fehler und Dateilebenszyklus | **83/83 bestanden**, einschließlich echter Speichervorgänge und Neustart.                                                                                                                                    |
-| GPU-Inhalt                            | **5/5 Referenzfälle bestanden**, einschließlich aller 22 Stufen, Grenzen, Auslöschung, 64 Transaktionen, feiner Autoren unter Übersichten und Kontextwiederherstellung.                                      |
-| Normale Interaktionen                 | **19/20 bestanden**; der lange Großpinsel verfehlt 50 ms p95 und verwirft eine letzte Bewegung beim Loslassen. Geknickter Strich, Halten, langsam/stärker, echter Hänger, History und Dateiinhalte bestehen. |
-| Fehler-/Erholungskontrollen           | **5/5 bestanden.**                                                                                                                                                                                           |
-| Grafikmatrix                          | **9/9 Diagnosefälle vollständig**, gültige und eindeutig zugeordnete GPU-Abfragen. Alle sechs Pinselprozesse verfehlen die 50-ms-Grenze bis zum Submit.                                                      |
-| Quellen-/Residenzskalierung           | **32 / 1.024 / 9.000 Kacheln bestanden**, einschließlich grob/fein, Undo/Redo, Speichern und Neustart.                                                                                                       |
-| Kurze 512-Pixel-Serie                 | **FAIL:** drei Gruppen jeweils nach 17 von 100 angeforderten Versuchen abgebrochen; der 17. Versuch verfehlt die Endpunktwirkung.                                                                            |
-| Native Vorprüfung                     | **BLOCKED / Exit 2:** `NO_NATIVE_DISPLAY`, `NATIVE_PRESENTATION_MAPPING_UNPROVEN`; keine Fixtures und kein Programmstart.                                                                                    |
+| Prüfung                        | Ergebnis                                                                                                                                          |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| JavaScript                     | **855 Tests in 54 Dateien bestanden.** Fünf V7-Transporttests mangels Cargo nicht gestartet; der lokale Gesamtbefehl bleibt deshalb rot.          |
+| TypeScript / Format            | Vollständige Typprüfung, Tool-Typprüfung, P0-Build, repositoryweites Prettier und Diffprüfung bestanden. Rustprüfungen benötigen die CI-Umgebung. |
+| Electron-/SQLite-/Fixturetests | **15/15 bestanden.**                                                                                                                              |
+| Desktop / Fehler / Datei       | **83/83 bestanden**, einschließlich Save/Discard/Cancel, Wiederherstellung und Prozessneustart.                                                   |
+| GPU-Inhalt                     | **5/5 Fälle, 9/9 Ansichten, 182/182 Aktionen, 28/28 Live-Checkpoints bestanden.**                                                                 |
+| Normale Interaktionen          | **20/20 Funktionschecks und 5/5 Fehler-/Erholungskontrollen bestanden.** Langer 512er-Zeitlauf innerhalb beider Zeitgrenzen.                      |
+| Grafikmatrix                   | **9/9 vollständige Diagnosefälle**, alle sechs Submit-p95 unter 50 ms; **5/6 strenge Liveurteile** bestanden.                                     |
+| Kurze 512er-Serie              | **FAIL: 15/300 ausgeführt; 12/15 Endpunktbilder, 15/15 Undo, 7/15 Liveurteile bestanden.**                                                        |
+| Dichte 22-Stufen-Kurzserie     | **FAIL: 53/100 ausgeführt; 52/53 Endpunktbilder, 53/53 Undo, 38/53 Liveurteile bestanden.**                                                       |
+| Quellen-/Residenzskalierung    | **32 / 1.024 / 9.000 Kacheln bestanden**, einschließlich Inhalt, grob/fein, Undo/Redo, Speichern und Neustart.                                    |
+| Native Vorprüfung              | **BLOCKED / Exit 2:** `NO_NATIVE_DISPLAY`, `NATIVE_PRESENTATION_MAPPING_UNPROVEN`; keine Fixtures, kein Programmstart, keine technischen Fehler.  |
 
-Die 64er-GPU-Folge enthält 1.070.316 tatsächlich komponierte Deltasamples und
-32.768 spätere kanonische Samples. Pixel und gespeicherte Autoren stimmen an
-allen Checkpoints und nach Kontextwiederherstellung mit der CPU-Referenz überein.
-Die beiden feinen Übersichtsfälle treffen tatsächlich Power 3/Level 0 und
-Power 4/Level 1. Dies prüft Farbe und Float64-Autoren; es ist kein bitgleicher
-Readback aller numerischen GPU-Zwischenwerte.
+Die GPU-Wechselkette umfasst 106 Transaktionen mit 1.992.192 Deltasamples sowie
+späteren 1.310.720 kanonischen Samples und 80 kanonischen Basisaufbauten. Die
+anschließenden **64 gleichstufigen Transaktionen** enthalten 51.805.600 Deltasamples;
+im vollständigen späteren Ereignisfenster einschließlich Zwischenarbeiten bleiben
+kanonische Samples, Basis-Capture-Samples und kanonische Basisaufbauten jeweils **null**.
+Die exakte Übernahmegrenze wird zusätzlich gezielt geprüft.
 
-Die größte Skalierungsfixture enthält 294.912.000 Byte Autorendaten. Am geprüften
-Endzustand hält der Renderer 11.337.728 Byte Quellen und 49.893.120 Byte
-GPU-Ressourcen, ohne ausstehende Uploads oder Komposition. Der grobe Eingriff
-benötigt in allen drei Größen keine zusätzlichen Quellenreads.
+CPU-Referenz, Pixel und gespeicherte Autoren stimmen auch bei Level 0/Power 3,
+Level 1/Power 4 sowie nach Kontextwiederherstellung. Alle fünf Projektquellen bleiben
+unverändert. Das ist kein bitgleicher Readback sämtlicher GPU-Zwischenwerte.
 
-Die Skalierungsserie aktiviert nach dem groben Level-9-Eingriff allerdings den
-konservativen CPU-Fallback: winzige positive Randkoeffizienten von etwa
-`1,1–1,2 × 10^-29` Fuß fallen nach der Skalierung unter die bestehende
-GPU-Sicherheitsgrenze. Ihre großen Quellseiten betreffen am Ende alle 96
-Darstellungskacheln. Diese Serie belegt Quellenbegrenzung, Inhalt und Persistenz,
-keine Beschleunigung durch den GPU-Anker. Der Fallback bleibt damit auch bei
-bestimmten gewöhnlichen Grobpinseln eine reale Performancegrenze.
+## Grafik und Ressourcen
 
-## Grafikvergleich mit unveränderten Eingaben
+Drei frische Prozesse je Fall, Electron 44.10.2, 1440 × 960, DPR 1,
+ANGLE/Vulkan mit SwiftShader. Unverändert: 101 Positionen, 24-ms-Abstände,
+512 Pixel, 4.000 Fuß/Sekunde. Instrumentierung kann Laufzeiten beeinflussen.
 
-Drei Wiederholungen je Fall, jeweils frischer Prozess, Electron 44.10.2,
-1440 × 960, DPR 1, ANGLE/Vulkan mit SwiftShader. Der lange Strich behält 101
-Positionen, 24-ms-Abstände, 512 Pixel und 4.000 Fuß/Sekunde. Zusätzliche konstante
-Felder heben sich im Eingriffsbereich auf; das Ausgangsrelief bleibt vergleichbar.
+| Maß; Bereich der drei Wiederholungen             | Letzter veröffentlichter Stand | Aktueller Kandidat |
+| ------------------------------------------------ | -----------------------------: | -----------------: |
+| Einfache Karte: Offscreen-Median je Terrain-Draw |                   37,0–38,2 ms |       22,9–23,3 ms |
+| 22 Stufen: Offscreen-Median je Terrain-Draw      |                   35,9–39,4 ms |       23,1–23,7 ms |
+| 22 Stufen: Offscreen-p95 je Terrain-Draw         |                   40,3–43,9 ms |       28,1–29,7 ms |
+| Einfache Karte: Eingabe → Submit p95             |                   53,8–58,4 ms |       38,5–43,7 ms |
+| 22 Stufen: Eingabe → Submit p95                  |                   53,4–57,4 ms |       42,9–44,3 ms |
+| Einfache Karte: gezählte GPU-Ressourcen          |                28.331.456 Byte |    49.564.608 Byte |
+| 22 Stufen: gezählte GPU-Ressourcen               |                54.611.392 Byte |    67.898.304 Byte |
 
-| Maß; Bereich der drei Wiederholungen                 |             Vorher |    Neuer Stand |
-| ---------------------------------------------------- | -----------------: | -------------: |
-| Einfache Karte: Offscreen-GPU-Median je Terrain-Draw |       46,0–46,9 ms |   37,0–38,2 ms |
-| 22 Stufen: Offscreen-GPU-Median je Terrain-Draw      |     591,2–677,1 ms |   35,9–39,4 ms |
-| 22 Stufen: Offscreen-GPU-p95 je Terrain-Draw         |     886,4–889,7 ms |   40,3–43,9 ms |
-| 22 Stufen: GPU-Arbeit je 1 Mio komponierter Samples  | 1.754,6–1.778,0 ms | 113,8–124,2 ms |
-| 22 Stufen: maximale Bewegungspause                   |     683,7–766,4 ms |   79,2–90,9 ms |
-| 22 Stufen: aktuelle Eingabeframes vor Release        |          4 / 4 / 6 |   36 / 33 / 34 |
-| 22 Stufen: verworfene von 101 Edit-Eingaben          |       96 / 96 / 94 |   50 / 54 / 51 |
+Alle sechs warmen Striche haben null kanonische Samples und null Basisaufnahmen;
+alle Inhalte und Undo-Kontrollen bestehen. Ein einfacher Lauf verfehlt das
+Liveurteil mit 106,7 ms maximaler Bewegungspause und einem beim Up verworfenen Move.
+Die übrigen fünf bleiben bei 56,9–71,3 ms. Die drei statischen Kontrollen benötigen
+null Komposition und Uploads; ihre Canvas-Mediane liegen bei 17,5–18,5 ms.
+24.987 Timerabfragen sind 528 Frames vollständig zugeordnet, ohne Drops,
+Disjoint oder Truncation.
 
-Die neue Offscreen-Zeit umfasst numerische Projektion, Farbdarstellung und
-Ankerkopien. Die Normalisierung verwendet tatsächliche komponierte Samples,
-nicht GL-Aufrufzahl mal Kachelfläche. Die vollständige Rekonstruktion entfällt
-in allen sechs warmen Strichen. Statische Kontrollen haben jeweils null
-Komposition und Uploads bei unveränderten Autoren; ihre Canvas-Mediane bleiben
-bei 17,8–18,2 ms. Canvas-Mediane der Mehrstufenfälle liegen bei 16,1–17,7 ms.
+Die größte Skalierungsfixture enthält 294.912.000 Byte Autoren. Am geprüften
+Endzustand hält der Renderer 11.272.192 Byte Quellen und 83.702.528 Byte
+GPU-Ressourcen. Der grobe Eingriff benötigt in keiner Größe zusätzliche Reads.
+Alle drei Fälle haben null ausstehende Uploadbytes und null sichtbare Kacheln in
+der Queue, aber noch 16 nicht neu komponierte Cachekacheln. Der geprüfte lokale
+Bereich ist bereit und GPU-abgeschlossen. Dies ist kein Nullbefund sämtlicher
+Cachearbeit; sichtbarer Zustand, Inhalt und Budgets bestehen.
 
-Die alte Offscreen-Zuordnung ist vollständig. Ihre Canvas-Auswertung ließ einzelne
-Aufrufe am Rand des früheren Beobachtungsfensters unzugeordnet; der neue Runner
-erfasst das gemeinsame Fenster vollständig. Daraus wird kein scheinbar genauer
-Vorher-/Nachhervergleich sämtlicher Canvas-Aufrufe konstruiert.
+Der grobe Level-9-Eingriff aktiviert weiterhin den konservativen Float64-Fallback
+wegen winziger Randkoeffizienten unterhalb des sicheren skalierten GPU-Bereichs.
+Am Endzustand sind in allen drei Größen 96 Fallbackkacheln und 3.407.872 kumulierte
+Fallbacksamples gezählt. Die Skalierung belegt daher Quellenbegrenzung, Inhalt
+und Persistenz, keine Beschleunigung dieses Grobpinsels durch die feste Basis.
 
-Eingabe bis Submit überschreitet in allen sechs Pinselprozessen die unveränderten
-50 ms: einfache Karte **56,0 / 53,8 / 58,4 ms p95**, Mehrstufenkarte
-**53,4 / 54,7 / 57,4 ms p95**. Zwei Mehrstufenläufe verfehlen zusätzlich den
-separaten Livebefund wegen einer beim Loslassen nicht angenommenen letzten
-Bewegung. Die Kontinuität liegt in allen sechs Läufen unter 100 ms; alle
-Inhalts-/Undo-Kontrollen bestehen. Trace und GPU-Abfragen können die Laufzeit beeinflussen; die Zahlen
-belegen diesen Softwarevergleich, keine Zielhardwareleistung oder Präsentation.
+## Verbleibende kurze Endbewegung
 
-## Verbleibender Großpinselengpass
+Die drei kurzen Küstengruppen brechen nach 3, 3 und 9 Versuchen ab.
+Alle 15 Versuche haben zwei Submits vor Up und erfüllen die 100-ms-Kontinuität;
+die Gruppen-p95 liegen bei 39,1 / 36,2 / 39,1 ms. Acht beim Up verworfene
+Moveinputs erklären die acht roten Liveurteile. Die drei Inhaltsabbrüche
+ändern den Endpunkt nicht: 24 Fuß vorher/nachher, Delta null.
 
-Der normale lange Strich hat 50 angenommene und 51 verworfene Edit-Eingaben,
-35 aktuelle Eingabeframes, 27,1 ms Median / 53,7 ms p95 / 56,7 ms Maximum bis
-zum Submit und 2,2 ms bis zum Pointerup-Abschluss. Inhalt, History, Dosisbilanz
-und der getrennte echte 200-ms-Hänger bestehen. Die maximale Bewegungspause
-von 81,7 ms erfüllt jetzt die Kontinuitätsgrenze, die Latenzgrenze bleibt verfehlt.
-Zusätzlich hält der Auswerter die letzte, beim Loslassen nicht angenommene
-Bewegung als `INPUT_NOT_ACCEPTED` mit Grund `pointerup` fest.
+Alle 30 angenommenen Dosen werden vollständig in je einem Paket eingereicht.
+Es gibt weder kanonischen Neuaufbau, Basisaufnahme, Fallback noch ausstehende
+Komposition oder Uploads in diesen Draws. Die zweite GPU-Rückmeldung wird bei den
+Abbrüchen erst 9,1–19,8 ms nach Up beobachtet; Endbewegung und Up erreichen den
+Handler unmittelbar nacheinander. Eine Endpunktdosis wird nicht angenommen.
+Das ist kein Verlust einer bereits angenommenen Modelländerung.
 
-Die kurze Serie erhält dieselben vier Positionen und 24-ms-Abstände. In den
-48 Versuchen vor der Rebasegrenze bestehen nur fünf den Mindestnachweis zweier
-vollständiger Liveframes vor Up. Zehn zweite Dosen kommen als einzelnes Paket
-knapp nach Up; 33 benötigen zwei Kompositionspakete und einen zusätzlichen
-Rückkopplungszyklus. Die Endbilder und History dieser 48 Versuche sind korrekt.
+Die zusätzliche dichte Serie bestätigt dieselbe Grenze nach 53 Versuchen:
+107 angenommene Dosen jeweils in einem vollständigen Paket, weiterhin null
+kanonische Arbeit und Basisaufnahmen, aber 15 beim Up verworfene Moves und ein
+wirklich unveränderter Endpunkt. Ihre Submit-p95 von 36,6 ms und maximale
+Bewegungspause von 72,2 ms ersetzen diesen Inhaltsbefund nicht.
 
-Nach jeweils 32 Edit-/Undo-Transaktionen benötigt Versuch 17 einen kanonischen
-Neuaufbau. Seine Anfangsdosis verteilt 25 Kacheln auf 21 + 4 Kacheln. Die
-vollständige GPU-Rückmeldung liegt erst 114,4–124,0 ms nach Down vor, während Up
-nach 96,4–99,4 ms eintrifft. Deshalb wird keine Endpunktdosis mehr angenommen;
-alle drei Gruppen brechen am tatsächlich unveränderten Endpunkt ab. Nachträgliches
-Malen würde die Eingaberegel verletzen und wird nicht als Reparatur verwendet.
-
-Alle 135 untersuchten Draws haben keine ausstehenden Uploadbytes. Es gibt weder
-verlorene/falsch zugeordnete Completions noch einen zweiten Draw vor Abschluss
-des vorherigen Pakets; die abschließenden Submitted-/Completed-Frames stimmen.
-Der konkrete Engpass ist die Kombination aus begrenzten Kompositionspaketen und
-langsamer Grafik-/Browserrückkopplung. Deren beobachteter Abfragezeitpunkt ist
-keine native GPU-Zeitmessung. Die nächste Leistungsentscheidung benötigt einen
-qualifizierten Hardwarevergleich und denselben unveränderten Großpinsel inklusive
-Rebase; eine weitere allgemeine Besitzer- oder Autorenmigration ersetzt ihn nicht.
+Die normale lange Probe hat 77 angenommene und 24 ausdrücklich verworfene
+Editinputs, 51 Liveframes und keine Pointerup-Verwerfung. Ihr logischer Abschluss
+nach 1,1 ms ist kein Grafikabschluss: Der letzte Fence wird erst 42,5 ms nach Up
+beobachtet. Zeiten bis zur Fence-Abfrage sind keine isolierten Shaderzeiten.
+Der nächste P0-Nachweis benötigt denselben kurzen und langen Verlauf auf
+qualifizierter Hardware sowie eine belastbare Präsentationszuordnung.
 
 ## Identität und Belege
 
-Sauberer gemessener Produktbuild: `e45eae95892cb2d81eef2881690e11c2f0c9bf91`,
+Sauberer gemessener Produktbuild: `f196f99c5d1e888c84190f725ab691c9d6e25b16`,
 `dirty: false`. Produktquellhash:
-`e536c95255f07c90e86523a3812c29e206a2838e80701c578cbcb90c5d0fa3f0`.
+`ddc867acd33effd222cb8214a6d757134406ab852226e1efe047a3f4ead63148`.
 Lockhash: `b471b4a1da63f4226f95a28b60f3345aa03e51803f0ef1982624cd16a2d35bc2`.
-Die anschließende Statuspflege verändert keine Produkt- oder Prüfquellen.
+Die spätere Diagnose-/Statuspflege verändert keine Produktquellen.
 
-Aktuelle Belege liegen unter `src-tauri/target/diagnostics/structure-20261109/`:
-`tests-final.log`, `store-final.log`, `desktop-final/`, `gpu-final/`,
-`graphics-final/`, `interactions-final/`, `warm512-final/`, `scaling-final/`
-und `native-final/`. Gegenprüfungen der einmaligen Auswertung und absichtlich
-unvollständiger GPU-Evidenz liegen unter `structure-evaluator/`.
-Der erhaltene Vergleichsstand liegt unter `brush-path/graphics-final/`.
+Belege: `src-tauri/target/diagnostics/separable-20261109/basis-final/`, insbesondere
+`tests-fixed.log`, `store.log`, `smoke/`, `gpu-fixed/`, `interactions/`, `warm512/`,
+`graphics-complete/`, `scaling/` und `native/`. Die Zusatzserie liegt daneben unter
+`dense22-basis/`. Referenzvergleich: `structure-20261109/graphics-final/`.
 
-Der erforderliche Repositoryjob bleibt **Candidate · exact-SHA aggregate** für
-den veröffentlichten Head; sein aktueller Zustand und die Zuordnung zum geprüften
+Der fehlgeschlagene GPU-Vorlauf `gpu/` bleibt erhalten. Ebenso bleibt die erste
+Grafikmatrix `graphics/` sichtbar: Ein Fall erreichte die alte Diagnosegrenze von
+4.096 Timerabfragen und wurde korrekt als unvollständig verworfen. Die vollständige
+Matrix verwendet eine begrenzte Kapazität von 32.768; tatsächlicher Überlauf bleibt
+rot. Die Grenzfall- und Overflowprüfung erhält alle Draws und gibt alle Queries frei.
+Produktbudgets, Eingaben und Abnahmegrenzen sind unverändert.
+
+Erforderlicher Repositoryjob: **Candidate · exact-SHA aggregate** für den
+veröffentlichten Head. Sein aktueller Zustand und die Zuordnung zum geprüften
 Quellbaum stehen im PR. Installierte RPM-Bedienabnahme, qualifizierte Hardwaremessung
-und native Leistungsfreigabe bleiben offen. Dieser Auftrag aktiviert nicht den
-vollständigen Atlas-Neubau.
+und native Leistungsfreigabe bleiben offen.

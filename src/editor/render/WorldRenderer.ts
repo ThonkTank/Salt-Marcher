@@ -65,11 +65,14 @@ interface DisplayTile {
   revision: number;
   dirty: Rect | null;
   preparedRevision: number;
+  preparedIntent: number;
   paintedRevision: number;
   submittedRevision: number;
   submittedFrame: number;
   completedRevision: number;
   completedFrame: number;
+  submittedPreparation: number;
+  completedPreparation: number;
   visible: boolean;
   touched: number;
   field: HeightFieldTile;
@@ -135,9 +138,8 @@ export class WorldRenderer {
   private pendingGpu: {
     sync: WebGLSync;
     submission: FrameSubmission;
-    tiles: { tile: DisplayTile; revision: number }[];
+    tiles: { tile: DisplayTile; revision: number; preparation: number }[];
   } | null = null;
-  private historyContext = 0;
   camera: Camera = { x: 0, y: 0, scale: 0.25 };
   width = 1000;
   height = 760;
@@ -214,11 +216,14 @@ export class WorldRenderer {
     for (const tile of this.tiles.values()) {
       tile.dirty = [...WHOLE];
       tile.preparedRevision = -1;
+      tile.preparedIntent = -1;
       tile.paintedRevision = -1;
       tile.submittedRevision = -1;
       tile.submittedFrame = 0;
       tile.completedRevision = -1;
       tile.completedFrame = 0;
+      tile.submittedPreparation = -1;
+      tile.completedPreparation = -1;
       tile.field.mesh.visible = false;
     }
     this.requestFrame = true;
@@ -239,7 +244,6 @@ export class WorldRenderer {
     this.lastSubmittedViewGeneration = -1;
     this.lastCompletedFrame = 0;
     this.lastCompletedViewGeneration = -1;
-    this.historyContext = 0;
     this.faultArmed = false;
     this.delayUntil = 0;
     this.requestFrame = true;
@@ -306,7 +310,7 @@ export class WorldRenderer {
       else this.overviews.delete(key);
       const tile = this.tiles.get(key.slice("height-overview:".length));
       if (tile) {
-        tile.field.invalidateAnchor();
+        tile.field.invalidateTotal();
         tile.dirty = [...WHOLE];
         tile.preparedRevision = -1;
         tile.revision = this.document.revision;
@@ -331,25 +335,18 @@ export class WorldRenderer {
 
   /** History already owns complete changed sources, even after distant eviction. */
   updateSourcePatches(patches: readonly HeightPatch[]): void {
-    const gesture = this.document.activeHeightGesture();
-    if (gesture) this.field.beginGesture(gesture);
-    else if (patches.length) {
-      const levels = new Set(
-        patches.map((patch) => (patch.after ?? patch.before)!.level),
-      );
-      this.field.beginGesture({
-        id: `history:${++this.historyContext}`,
-        level: levels.size === 1 ? [...levels][0] : -1,
-        before: new Map(patches.map((patch) => [patch.key, patch.before])),
-      });
-    }
     const powers = new Set(
       [...this.knownOverviews].map((key) => parseHeightOverviewKey(key).power),
     );
     for (const patch of patches) {
+      const level = (patch.after ?? patch.before)!.level;
+      const finePowers = [...powers].filter(
+        (power) => level < minimumCoarseHeightLevel(power),
+      );
+      if (!finePowers.length) continue;
       const delta = prepareHeightOverviewDelta(patch);
       if (!delta) continue;
-      for (const power of powers)
+      for (const power of finePowers)
         for (const key of heightOverviewDeltaKeys(delta, power)) {
           if (!this.knownOverviews.has(key)) continue;
           const at = parseHeightOverviewKey(key);
@@ -362,10 +359,7 @@ export class WorldRenderer {
           }
         }
     }
-    this.field.updateSources(
-      patches.flatMap((patch) => (patch.after ? [patch.after] : [])),
-      patches.filter((patch) => !patch.after).map((patch) => patch.key),
-    );
+    this.field.applySourcePatches(patches);
     this.checkBudgets();
     this.requestFrame = true;
   }
@@ -402,6 +396,16 @@ export class WorldRenderer {
 
   presentationPower(): number {
     return this.tilePower();
+  }
+
+  /** Product tool demand prepares its render strategy before accepting a Down. */
+  setToolLevel(level: number): void {
+    if (!this.field.setToolLevel(level)) return;
+    for (const tile of this.tiles.values()) {
+      tile.dirty = [...WHOLE];
+      tile.preparedRevision = -1;
+    }
+    this.requestFrame = true;
   }
 
   isPresentationReady(bounds: Bounds, power = this.tilePower()): boolean {
@@ -467,11 +471,14 @@ export class WorldRenderer {
             revision: this.document.revision,
             dirty: [...WHOLE],
             preparedRevision: -1,
+            preparedIntent: -1,
             paintedRevision: -1,
             submittedRevision: -1,
             submittedFrame: 0,
             completedRevision: -1,
             completedFrame: 0,
+            submittedPreparation: -1,
+            completedPreparation: -1,
             visible: true,
             touched: performance.now(),
             field,
@@ -509,12 +516,13 @@ export class WorldRenderer {
     for (const tile of this.tiles.values()) {
       if (
         sourceLevel !== undefined &&
-        sourceLevel < minimumCoarseHeightLevel(tile.power)
+        !tile.field.dependsOnAuthorLevel(sourceLevel)
       )
         continue;
       if (!intersectsBounds(tile.bounds, bounds)) continue;
       const rect = pixelRect(tile, bounds);
       if (rect[0] >= rect[2] || rect[1] >= rect[3]) continue;
+      if (!sourcesChanged) tile.field.markHeightChanged();
       tile.dirty = tile.dirty ? merged(tile.dirty, rect) : rect;
       tile.revision = this.document.revision;
       if (sourcesChanged) tile.preparedRevision = -1;
@@ -570,10 +578,14 @@ export class WorldRenderer {
         ? tile.completedRevision
         : tile.submittedRevision;
       const tileFrame = completed ? tile.completedFrame : tile.submittedFrame;
+      const preparation = completed
+        ? tile.completedPreparation
+        : tile.submittedPreparation;
       if (revision < 0 || tileFrame !== frame) return result;
       const rect = pixelRect(tile, area);
       if (
         revision !== tile.paintedRevision ||
+        preparation !== tile.field.preparationVersion ||
         (tile.dirty && overlaps(tile.dirty, rect))
       )
         current = false;
@@ -599,6 +611,7 @@ export class WorldRenderer {
       fallbackSamples: metrics.fallbackSamples,
       anchoredTiles: metrics.anchoredTiles,
       anchorRebases: metrics.anchorRebases,
+      basisTransfers: metrics.basisTransfers,
       pendingUploadBytes: metrics.pendingUploadBytes,
       pendingCompositionTiles: metrics.pendingCompositionTiles,
       submittedRevision: this.submittedRevision,
@@ -658,6 +671,13 @@ export class WorldRenderer {
 
     const prepared: DisplayTile[] = [];
     for (const tile of this.tiles.values()) {
+      // A resident-subset or tool change can invalidate preparation without
+      // changing document revision or an already displayed colour tile.
+      if (
+        !tile.dirty &&
+        tile.field.preparedVersion !== tile.field.preparationVersion
+      )
+        tile.dirty = [...WHOLE];
       if (
         !tile.visible ||
         !tile.dirty ||
@@ -666,6 +686,7 @@ export class WorldRenderer {
         continue;
       if (
         tile.preparedRevision !== tile.revision ||
+        tile.preparedIntent !== tile.field.preparationVersion ||
         tile.field.needsPreparation
       ) {
         const overview =
@@ -676,6 +697,7 @@ export class WorldRenderer {
         );
         tile.overview = overview;
         tile.preparedRevision = tile.revision;
+        tile.preparedIntent = tile.field.preparationVersion;
       }
       prepared.push(tile);
     }
@@ -705,6 +727,10 @@ export class WorldRenderer {
       deltaSamples: 0,
       colourSamples: 0,
       anchorCopySamples: 0,
+      basisCaptureSamples: 0,
+      canonicalBasisBuilds: 0,
+      horizontalSamples: 0,
+      projectionProducts: 0,
     };
     // Cached GPU colour tiles remain safe to draw while new numeric resources
     // upload across frames. Only a complete resource set may replace them.
@@ -762,6 +788,7 @@ export class WorldRenderer {
       if (!tile.visible || tile.paintedRevision < 0) continue;
       tile.submittedRevision = tile.paintedRevision;
       tile.submittedFrame = this.frame;
+      tile.submittedPreparation = tile.field.preparedVersion;
     }
     const exact =
       this.preparedViewGeneration === this.viewGeneration &&
@@ -803,7 +830,11 @@ export class WorldRenderer {
       submission,
       tiles: [...this.tiles.values()]
         .filter((tile) => tile.visible && tile.paintedRevision >= 0)
-        .map((tile) => ({ tile, revision: tile.paintedRevision })),
+        .map((tile) => ({
+          tile,
+          revision: tile.paintedRevision,
+          preparation: tile.field.preparedVersion,
+        })),
     };
     return submission;
   }
@@ -825,9 +856,10 @@ export class WorldRenderer {
     const submission = pending.submission;
     this.lastCompletedFrame = submission.frame;
     this.lastCompletedViewGeneration = submission.viewGeneration;
-    for (const { tile, revision } of pending.tiles) {
+    for (const { tile, revision, preparation } of pending.tiles) {
       tile.completedRevision = revision;
       tile.completedFrame = submission.frame;
+      tile.completedPreparation = preparation;
     }
     this.observation.event("gpu-completed", {
       sessionId: submission.sessionId,

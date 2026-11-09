@@ -73,8 +73,9 @@ Kandidaten tatsächlich bestanden haben, steht im [Status](docs/implementation/s
 
 P0 startet einen eigenen Electron-44-Desktop mit PixiJS-8-Darstellung und SQLite
 im Utility-Prozess. Numerische Höhenquellen werden auf der GPU zusammengesetzt.
-Während eines Strichs ergänzt die aktuelle Autoränderung einen festen numerischen
-Ausgangsstand; beibehaltene Farbkacheln dienen der Kamera- und Cursorzeichnung.
+Gleichstufige Striche und Undo verwenden eine feste numerische Basis mit dem
+damaligen Stufenbeitrag. Nur der aktuelle Beitrag dieser Stufe wird neu projiziert;
+beibehaltene Farbkacheln dienen der Kamera- und Cursorzeichnung.
 Eine nicht blockierende GPU-Rückmeldung begrenzt ausstehende Zeichenarbeit. Der
 [P0-Produktvertrag](docs/product-contract.md#optionaler-atlas-p0-versuch)
 beschreibt Funktionen und Grenzen; die
@@ -156,8 +157,8 @@ node scripts/atlas-p0-graphics-probe.mjs --hardware --runs 3 --gpu-timers --out 
 frischen Prozess; der vorhandene lange Strich behält 101 Positionen mit
 24-ms-Abständen. Die Diagnose erhält alle Fallfehler, Quellen-/Buildidentität,
 Kompositionsarbeit und Swap-Spannen. Kanonisch rekonstruierte Samples, lokale
-Delta-Samples, Farbarbeit und Kopien des numerischen Ausgangsstands werden
-getrennt gezählt. Tatsächliche GPU-Zeit wird auf die gemeldeten geänderten Samples
+Delta-Samples, horizontale Zwischenarbeit, Basisaufnahmen, Farbarbeit und Kopien
+des numerischen Ausgangsstands werden getrennt gezählt. Tatsächliche GPU-Zeit wird auf die gemeldeten geänderten Samples
 bezogen; die Anzahl der GL-Aufrufe ist kein Ersatz für Pixelarbeit.
 Optionale asynchrone GPU-Zeitabfragen werden
 nur bei vorhandener Erweiterung ausgewertet; fehlende oder ungültige Ergebnisse

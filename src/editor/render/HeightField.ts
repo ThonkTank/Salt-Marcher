@@ -17,19 +17,24 @@ import {
   heightTileSupport,
   intersectsBounds,
   type Bounds,
+  type HeightPatch,
   type HeightTile,
 } from "../model/types";
 import {
   HEIGHT_ATLAS_WIDTH,
   HEIGHT_DESCRIPTOR_HEIGHT,
+  HEIGHT_DESCRIPTOR_WIDTH,
+  HEIGHT_GPU_MAX_SCALED_VALUE,
   HeightSourceAtlas,
   createHeightAxes,
+  createHeightProjection,
   encodeHeightOverview,
   type HeightDescriptor,
 } from "./height-field-data";
 import {
   heightColourFragment,
   heightFragment,
+  heightHorizontalFragment,
   heightVertex,
 } from "./height-shader";
 import { HeightAtlasSource } from "./height-atlas-upload";
@@ -37,9 +42,9 @@ import { DISPLAY_HEIGHT_BOUNDARY_EPSILON, rasterize } from "./raster";
 
 const SIZE = HEIGHT_OVERVIEW_SIZE;
 const WHOLE: RasterRect = [0, 0, SIZE, SIZE];
-/** Bound derived anchor chains; rebase from authors, never from clamped colours. */
-export const MAX_HEIGHT_ANCHOR_PROMOTIONS = 32;
-// Guard only the new anchor shortcut, not the established canonical GPU path.
+/** Only actual derived basis transfers count, never same-level gestures. */
+export const MAX_HEIGHT_BASIS_TRANSFERS = 32;
+// Guard only the fixed-basis shortcut, not the established canonical GPU path.
 // A projected level has twenty pair products and twenty pair additions. Reserve
 // 256 unit-roundoff-squared units against its absolute coefficient magnitude,
 // and eight for each anchor addition. This is an admission policy, not a proof
@@ -54,9 +59,14 @@ export interface HeightCompositionStats {
   deltaSamples: number;
   colourSamples: number;
   anchorCopySamples: number;
+  basisCaptureSamples: number;
+  canonicalBasisBuilds: number;
+  horizontalSamples: number;
+  /** Scheduled pair products; absent source pages may skip their zero products. */
+  projectionProducts: number;
 }
 
-/** Check the actual RG32F target and restore all touched GL bindings. */
+/** Check both actual float targets and restore all touched GL bindings. */
 export function supportsHeightNumericTargets(
   gl: WebGL2RenderingContext,
 ): boolean {
@@ -75,18 +85,36 @@ export function supportsHeightNumericTargets(
   try {
     if (!texture || !framebuffer) return false;
     gl.bindTexture(gl.TEXTURE_2D, texture);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RG32F, 1, 1, 0, gl.RG, gl.FLOAT, null);
     gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, framebuffer);
-    gl.framebufferTexture2D(
-      gl.DRAW_FRAMEBUFFER,
-      gl.COLOR_ATTACHMENT0,
-      gl.TEXTURE_2D,
-      texture,
-      0,
-    );
-    return (
-      gl.checkFramebufferStatus(gl.DRAW_FRAMEBUFFER) === gl.FRAMEBUFFER_COMPLETE
-    );
+    for (const [internal, format] of [
+      [gl.RG32F, gl.RG],
+      [gl.RGBA32F, gl.RGBA],
+    ]) {
+      gl.texImage2D(
+        gl.TEXTURE_2D,
+        0,
+        internal,
+        1,
+        1,
+        0,
+        format,
+        gl.FLOAT,
+        null,
+      );
+      gl.framebufferTexture2D(
+        gl.DRAW_FRAMEBUFFER,
+        gl.COLOR_ATTACHMENT0,
+        gl.TEXTURE_2D,
+        texture,
+        0,
+      );
+      if (
+        gl.checkFramebufferStatus(gl.DRAW_FRAMEBUFFER) !==
+        gl.FRAMEBUFFER_COMPLETE
+      )
+        return false;
+    }
+    return true;
   } catch {
     return false;
   } finally {
@@ -96,13 +124,6 @@ export function supportsHeightNumericTargets(
     if (framebuffer) gl.deleteFramebuffer(framebuffer);
     if (texture) gl.deleteTexture(texture);
   }
-}
-
-export interface HeightGestureContext {
-  id: number | string;
-  level: number;
-  /** Borrowed immutable document before-images; never mutate or transfer them. */
-  before: ReadonlyMap<string, HeightTile | null>;
 }
 
 function numericSource(
@@ -206,16 +227,20 @@ class AtlasTransport {
   }
 }
 
-/** Retained numeric sum plus a document-anchored, nonrecursive live delta. */
+/** Retained unclamped total and one fixed active-level projection basis. */
 export class HeightFieldTile {
   readonly mesh: Sprite;
   private numericMesh: Mesh<MeshGeometry, Shader>;
+  private horizontalMesh: Mesh<MeshGeometry, Shader>;
   private colourMesh: Mesh<MeshGeometry, Shader>;
   private colour: RenderTexture;
   private numeric: RenderTexture;
-  private anchor: RenderTexture;
+  private basis: RenderTexture;
+  private horizontal: RenderTexture;
+  private horizontalRows = 1;
+  private horizontalSamples = 0;
+  private axes = { data: new Float32Array(2), width: 1, height: 1 };
   private descriptor: HeightDescriptor | null = null;
-  private transport: AtlasTransport;
   private descriptorSource = numericSource(new Float32Array(4), 1, 1, true);
   private overviewSource = numericSource(new Float32Array(2), 1, 1);
   private weightSource = numericSource(new Float32Array(2), 1, 1);
@@ -229,6 +254,7 @@ export class HeightFieldTile {
     autoGarbageCollect: false,
   });
   private shader: Shader;
+  private horizontalShader: Shader;
   private colourShader: Shader;
   private overview?: HeightOverviewTile;
   private overviewEncoded?: HeightOverviewTile;
@@ -241,22 +267,40 @@ export class HeightFieldTile {
   private compositionDirty = true;
   private disposed = false;
   private rect: RasterRect = [...WHOLE];
+  private mode: "canonical" | "live" | "capture" = "canonical";
   private numericValid = false;
-  private anchorId: HeightGestureContext["id"] | null = null;
-  private delta = false;
-  private copyAnchor = false;
-  private pendingFreeze = false;
-  private promotions = 0;
+  // Source changes may leave a perfectly displayed preceding state, but that H
+  // must not be paired with C from the new state during a cheap basis capture.
+  private numericCurrent = false;
+  private currentIsBasis = true;
+  private basisValid = false;
+  private basisLevel = -1;
   private numericMagnitude = 0;
   private numericError = 0;
-  private anchorMagnitude = 0;
-  private anchorError = 0;
+  private numericDepth = 0;
+  private basisMagnitude = 0;
+  private basisError = 0;
+  private basisContribution = 0;
+  private basisDepth = 0;
+  private plannedMagnitude = 0;
+  private plannedError = 0;
+  private plannedContribution = 0;
+  private plannedBasis = false;
+  private plannedDepth = 0;
+  private plannedRebase = false;
+  /** These versions identify preparation independently of document revisions. */
+  preparationVersion = 0;
+  preparedVersion = -1;
   rebaseCount = 0;
   compositionStats: HeightCompositionStats = {
     canonicalSamples: 0,
     deltaSamples: 0,
     colourSamples: 0,
     anchorCopySamples: 0,
+    basisCaptureSamples: 0,
+    canonicalBasisBuilds: 0,
+    horizontalSamples: 0,
+    projectionProducts: 0,
   };
   fallback = false;
   fallbackSamples = 0;
@@ -267,19 +311,23 @@ export class HeightFieldTile {
     readonly power: number,
     overview?: HeightOverviewTile,
   ) {
-    this.transport = field.authors;
-    const target = (numeric = false) =>
+    const target = (
+      format: "rg32float" | "rgba32float" | "rgba8unorm",
+      height = SIZE,
+    ) =>
       RenderTexture.create({
         width: SIZE,
-        height: SIZE,
+        height,
         resolution: 1,
-        format: numeric ? "rg32float" : "rgba8unorm",
+        format,
         scaleMode: "nearest",
         antialias: false,
+        alphaMode: "no-premultiply-alpha",
       });
-    this.numeric = target(true);
-    this.anchor = target(true);
-    this.colour = target();
+    this.numeric = target("rgba32float");
+    this.basis = target("rgba32float");
+    this.horizontal = target("rg32float", 1);
+    this.colour = target("rgba8unorm");
     this.shader = new Shader({
       glProgram: GlProgram.from({
         name: "atlas-height-sum",
@@ -288,18 +336,38 @@ export class HeightFieldTile {
         preferredFragmentPrecision: "highp",
       }),
       resources: {
-        uAuthors: field.source,
+        uHorizontal: this.horizontal.source,
         uDescriptor: this.descriptorSource,
         uOverview: this.overviewSource,
         uWeights: this.weightSource,
-        uAnchor: this.anchor.source,
+        uReference: this.numeric.source,
         heightUniforms: {
           uLevelCount: { value: 0, type: "i32" },
           uHasOverview: { value: 0, type: "i32" },
-          uDelta: { value: 0, type: "i32" },
+          uMode: { value: 0, type: "i32" },
+          uActiveLevel: { value: 0, type: "i32" },
+          uMinimumLevel: { value: 0, type: "i32" },
           uPageStride: { value: 3, type: "i32" },
+          uPageColumns: { value: HEIGHT_DESCRIPTOR_WIDTH - 1, type: "i32" },
           uDirty: { value: new Float32Array(WHOLE), type: "vec4<f32>" },
           uClip: { value: new Float32Array(WHOLE), type: "vec4<f32>" },
+        },
+      },
+    });
+    this.horizontalShader = new Shader({
+      glProgram: GlProgram.from({
+        name: "atlas-height-horizontal",
+        vertex: heightVertex,
+        fragment: heightHorizontalFragment,
+        preferredFragmentPrecision: "highp",
+      }),
+      resources: {
+        uAuthors: field.source,
+        uDescriptor: this.descriptorSource,
+        uWeights: this.weightSource,
+        heightUniforms: {
+          uPageStride: { value: 3, type: "i32" },
+          uPageColumns: { value: HEIGHT_DESCRIPTOR_WIDTH - 1, type: "i32" },
         },
       },
     });
@@ -311,7 +379,7 @@ export class HeightFieldTile {
         preferredFragmentPrecision: "highp",
       }),
       resources: {
-        uHeights: this.numeric.source,
+        uHeights: this.basis.source,
         uFallbackPixels: this.fallbackSource,
         heightUniforms: {
           uFallback: { value: 0, type: "i32" },
@@ -320,15 +388,22 @@ export class HeightFieldTile {
       },
     });
     this.numericMesh = new Mesh({ geometry: geometry(), shader: this.shader });
+    this.horizontalMesh = new Mesh({
+      geometry: geometry(),
+      shader: this.horizontalShader,
+    });
     this.colourMesh = new Mesh({
       geometry: geometry(),
       shader: this.colourShader,
     });
     this.numericMesh.scale.set(SIZE);
     this.colourMesh.scale.set(SIZE);
-    // Numeric values are data; blending would destroy the signed low component.
-    this.numericMesh.blendMode = "none";
-    this.colourMesh.blendMode = "none";
+    // A directly rendered root keeps groupBlendMode="normal" in Pixi. Its
+    // Container.blendMode alone therefore does not disable MeshPipe blending.
+    // Alpha is a signed residual in the numeric targets: enforce actual state.
+    this.numericMesh.state.blend = false;
+    this.horizontalMesh.state.blend = false;
+    this.colourMesh.state.blend = false;
     this.mesh = new Sprite(this.colour);
     this.update(overview ?? null);
     this.initSources();
@@ -344,144 +419,230 @@ export class HeightFieldTile {
       this.field.initSource(source);
   }
 
-  /** Only a fully composed preceding state can anchor the next document action. */
-  beginGesture(id: HeightGestureContext["id"]): void {
-    const usable =
-      this.numericValid &&
-      !this.compositionDirty &&
-      !this.fallback &&
-      this.promotions < MAX_HEIGHT_ANCHOR_PROMOTIONS &&
-      this.numericError <= ANCHOR_ERROR_BUDGET;
-    if (this.numericValid && this.promotions >= MAX_HEIGHT_ANCHOR_PROMOTIONS)
-      this.rebaseCount++;
-    this.anchorId = usable ? id : null;
-    // Freeze lazily: an untouched tile must not promote its unused scratch
-    // target when the user starts a gesture somewhere else.
-    this.pendingFreeze = usable;
+  /** A changed strategy needs its own completed frame, even at the same revision. */
+  invalidateBasis(totalChanged = false): void {
+    if (totalChanged) this.numericCurrent = false;
+    this.basisValid = false;
+    this.preparationVersion++;
+    this.compositionDirty = true;
     this.releaseDescriptor();
   }
-
-  invalidateAnchor(): void {
-    this.anchorId = null;
-    this.pendingFreeze = false;
-    // A queued delta still binds the old baseline/source pages. Finished colour
-    // tiles remain usable; unfinished work must be prepared canonically again.
-    if (this.delta && this.compositionDirty) this.releaseDescriptor();
+  invalidateTotal(): void {
+    this.invalidateBasis(true);
   }
-
+  /** WorldRenderer owns the actual changed pixel area, not whole author pages. */
+  markHeightChanged(): void {
+    this.numericCurrent = false;
+  }
   dependsOnAuthorLevel(level: number): boolean {
     return (
       level >= minimumCoarseHeightLevel(this.power) ||
-      (this.delta && level === this.field.gesture?.level)
+      level === this.field.toolLevel
     );
   }
-
+  /** Local authors retain their fixed resident subset, including new zero-based sources. */
+  acceptLocalChanges(
+    changes: readonly { level: number; missingBefore: boolean }[],
+  ): void {
+    if (
+      changes.some(
+        ({ level, missingBefore }) =>
+          missingBefore || (this.basisValid && level !== this.basisLevel),
+      )
+    )
+      this.invalidateTotal();
+  }
   private releaseDescriptor(): void {
-    if (this.descriptor) this.transport.atlas.release(this.descriptor.pages);
+    if (this.descriptor) this.field.atlas.release(this.descriptor.pages);
     this.descriptor = null;
+  }
+
+  private liveError(
+    heightMagnitude: number,
+    heightError: number,
+    before: number,
+    current: number,
+  ): number {
+    // Independently projected C_before and C_current, their subtraction, then H+delta.
+    // This error is always measured against the fixed basis, never the last dose.
+    return (
+      heightError +
+      (before + current) * PAIR_PROJECTION_ERROR +
+      (before + current) * PAIR_ADD_ERROR +
+      (heightMagnitude + before + current) * PAIR_ADD_ERROR
+    );
+  }
+  private admitsBasis(
+    heightMagnitude: number,
+    heightError: number,
+    before: number,
+    current: number,
+  ): boolean {
+    return (
+      before + current <= HEIGHT_GPU_MAX_SCALED_VALUE * 32 &&
+      this.liveError(heightMagnitude, heightError, before, current) <=
+        ANCHOR_ERROR_BUDGET
+    );
   }
 
   update(overview?: HeightOverviewTile | null, rect: RasterRect = WHOLE): void {
     if (this.disposed) return;
     if (overview !== undefined) this.overview = overview ?? undefined;
-    this.rect = [...rect];
-    const gesture = this.field.gesture;
-    this.delta =
-      this.field.numericSupported &&
-      this.anchorId !== null &&
-      this.anchorId === gesture?.id &&
-      this.field.atlas.safeIn(this.bounds) &&
-      this.field.deltaSafe(this.bounds);
-    if (this.delta && this.pendingFreeze) {
-      [this.anchor, this.numeric] = [this.numeric, this.anchor];
-      this.shader.resources.uAnchor = this.anchor.source;
-      this.colourShader.resources.uHeights = this.numeric.source;
-      this.copyAnchor = true;
-      this.anchorMagnitude = this.numericMagnitude;
-      this.anchorError = this.numericError;
-      this.pendingFreeze = false;
-      this.promotions++;
-    }
-    if (this.delta) {
-      const deltaMagnitude = this.field.deltas.atlas.magnitudeIn(this.bounds);
-      this.numericMagnitude = this.anchorMagnitude + deltaMagnitude;
-      this.numericError =
-        this.anchorError +
-        deltaMagnitude * PAIR_PROJECTION_ERROR +
-        this.numericMagnitude * PAIR_ADD_ERROR;
-      if (this.numericError > ANCHOR_ERROR_BUDGET) {
-        this.delta = false;
-        this.rebaseCount++;
+    if (overview !== undefined || this.overviewEncoded !== this.overview)
+      this.encodeOverview();
+    const level = this.field.toolLevel;
+    const minimum = minimumCoarseHeightLevel(this.power);
+    const activeMagnitude = this.field.atlas.magnitudeIn(
+      this.bounds,
+      level,
+      level,
+    );
+    const activeSafe = this.field.atlas.safeIn(this.bounds, level, level);
+    const overviewMagnitude =
+      this.overview?.values.reduce(
+        (maximum, value) => Math.max(maximum, Math.abs(value) * 32),
+        0,
+      ) ?? 0;
+    const canonicalMagnitude =
+      100 +
+      this.field.atlas.magnitudeIn(this.bounds, minimum) +
+      overviewMagnitude;
+    const canonicalError = canonicalMagnitude * PAIR_PROJECTION_ERROR;
+    this.mode = "canonical";
+    this.plannedRebase = false;
+    if (this.field.numericSupported && activeSafe) {
+      if (
+        this.basisValid &&
+        this.basisLevel === level &&
+        this.admitsBasis(
+          this.basisMagnitude,
+          this.basisError,
+          this.basisContribution,
+          activeMagnitude,
+        )
+      ) {
+        this.mode = "live";
+      } else if (
+        !this.basisValid &&
+        this.numericValid &&
+        this.numericCurrent &&
+        this.numericDepth < MAX_HEIGHT_BASIS_TRANSFERS &&
+        this.admitsBasis(
+          this.numericMagnitude,
+          this.numericError,
+          activeMagnitude,
+          activeMagnitude,
+        )
+      ) {
+        this.mode = "capture";
       }
     }
-    if (!this.delta) {
-      const overviewMagnitude =
-        this.overview?.values.reduce(
-          (maximum, value) => Math.max(maximum, Math.abs(value) * 32),
-          0,
-        ) ?? 0;
-      this.numericMagnitude =
-        100 +
-        this.field.atlas.magnitudeIn(
-          this.bounds,
-          minimumCoarseHeightLevel(this.power),
-        ) +
-        overviewMagnitude;
-      this.numericError = this.numericMagnitude * PAIR_PROJECTION_ERROR;
+    const planCanonical = () => {
+      this.mode = "canonical";
+      this.plannedMagnitude = canonicalMagnitude;
+      this.plannedError = canonicalError;
+      this.plannedDepth = 0;
+      this.plannedBasis =
+        this.field.numericSupported &&
+        activeSafe &&
+        this.admitsBasis(
+          canonicalMagnitude,
+          canonicalError,
+          activeMagnitude,
+          activeMagnitude,
+        );
+      this.plannedRebase =
+        this.numericValid &&
+        this.numericCurrent &&
+        this.numericDepth >= MAX_HEIGHT_BASIS_TRANSFERS;
+    };
+    if (this.mode === "canonical") planCanonical();
+    else if (this.mode === "capture") {
+      this.plannedMagnitude = this.numericMagnitude;
+      this.plannedError = this.numericError;
+      this.plannedDepth = this.numericDepth + 1;
+      this.plannedBasis = true;
+    } else {
+      this.plannedMagnitude =
+        this.basisMagnitude + this.basisContribution + activeMagnitude;
+      this.plannedError = this.liveError(
+        this.basisMagnitude,
+        this.basisError,
+        this.basisContribution,
+        activeMagnitude,
+      );
+      this.plannedDepth = this.basisDepth;
+      this.plannedBasis = true;
     }
-    const nextTransport = this.delta ? this.field.deltas : this.field.authors;
+    this.plannedContribution = activeMagnitude;
     let next: HeightDescriptor;
     try {
-      next = nextTransport.atlas.descriptor(
+      next = this.field.atlas.descriptor(
         this.bounds,
         this.power,
-        this.delta ? gesture!.level : undefined,
+        this.mode === "canonical"
+          ? { include: this.plannedBasis ? level : undefined }
+          : { minimum: level, maximum: level },
       );
     } catch (error) {
-      if (!this.delta || !(error instanceof RangeError)) throw error;
-      // An unusual tiny-author/coarse-display combination still renders the
-      // canonical overview; do not change its display level or omit sources.
-      this.delta = false;
+      if (!(error instanceof RangeError)) throw error;
+      // A very fine tool on a coarse display keeps its canonical overview path.
+      planCanonical();
+      this.plannedBasis = false;
       next = this.field.atlas.descriptor(this.bounds, this.power);
     }
+    this.fallback =
+      !this.field.numericSupported ||
+      next.fallback ||
+      (this.mode === "canonical" && this.overviewFallback);
+    if (this.fallback && (this.mode !== "canonical" || this.plannedBasis)) {
+      this.field.atlas.release(next.pages);
+      planCanonical();
+      this.plannedBasis = false;
+      next = this.field.atlas.descriptor(this.bounds, this.power);
+      this.fallback =
+        !this.field.numericSupported || next.fallback || this.overviewFallback;
+    }
     this.releaseDescriptor();
-    this.transport = this.delta ? this.field.deltas : this.field.authors;
     this.descriptor = next;
     this.descriptorSource.resource = next.data;
     this.descriptorSource.resize(next.width, HEIGHT_DESCRIPTOR_HEIGHT);
     const weightsKey = next.levels.join(",");
     if (weightsKey !== this.weightsKey || this.weightSource.width === 1) {
-      const axes = createHeightAxes(this.bounds, this.power, next.levels);
-      this.weightSource.resource = axes.data;
-      this.weightSource.resize(axes.width, axes.height);
+      this.axes = createHeightAxes(this.bounds, this.power, next.levels);
+      this.weightSource.resource = this.axes.data;
+      this.weightSource.resize(this.axes.width, this.axes.height);
       this.weightsKey = weightsKey;
       this.weightsDirty = true;
     }
-    if (
-      !this.delta &&
-      (overview !== undefined || this.overviewEncoded !== this.overview)
-    )
-      this.encodeOverview();
-    this.fallback =
-      !this.field.numericSupported ||
-      next.fallback ||
-      (!this.delta && this.overviewFallback);
-    if (!this.delta) this.invalidateAnchor();
-    // Delta/anchor unsafe ranges retain the canonical path, including the
-    // Float64 order of large cancelling values. Never clamp transport values.
-    if (this.fallback && this.delta) {
-      this.anchorId = null;
-      this.update(undefined, rect);
-      return;
+    if (this.fallback) {
+      this.plannedBasis = false;
+      this.updateFallback();
     }
-    if (this.fallback) this.updateFallback();
-    if (!this.numericValid || !this.delta) this.rect = [...WHOLE];
-    this.shader.resources.uAuthors = this.transport.source;
+    this.rect = this.mode === "live" ? [...rect] : [...WHOLE];
+    // Fallback decisions precede the scratch layout: no canonical whole draw
+    // may read horizontal rows prepared only for the original dirty rectangle.
+    const projection = createHeightProjection(next, this.axes, this.rect);
+    this.horizontalRows = Math.max(1, next.horizontalRows);
+    this.horizontalSamples = this.fallback ? 0 : projection.samples;
+    this.horizontal.resize(SIZE, this.horizontalRows);
+    this.horizontalMesh.scale.set(SIZE, this.horizontalRows);
+    this.horizontalMesh.geometry.positions = projection.positions;
+    this.horizontalMesh.geometry.uvs = projection.uvs;
+    this.horizontalMesh.geometry.indices = projection.indices;
+    const horizontalUniforms =
+      this.horizontalShader.resources.heightUniforms.uniforms;
+    horizontalUniforms.uPageStride = next.pageStride;
+    horizontalUniforms.uPageColumns = next.width - 1;
     const uniforms = this.shader.resources.heightUniforms.uniforms;
     uniforms.uLevelCount = next.levelCount;
     uniforms.uPageStride = next.pageStride;
-    uniforms.uDelta = this.delta ? 1 : 0;
-    uniforms.uHasOverview = !this.delta && this.overview ? 1 : 0;
+    uniforms.uPageColumns = next.width - 1;
+    uniforms.uMode =
+      this.mode === "canonical" ? 0 : this.mode === "live" ? 1 : 2;
+    uniforms.uActiveLevel = level;
+    uniforms.uMinimumLevel = minimum;
+    uniforms.uHasOverview = this.mode === "canonical" && this.overview ? 1 : 0;
     uniforms.uClip = new Float32Array(next.clip);
     uniforms.uDirty = new Float32Array(this.rect);
     this.colourShader.resources.heightUniforms.uniforms.uFallback = this
@@ -507,10 +668,8 @@ export class HeightFieldTile {
     this.overviewEncoded = this.overview;
     this.overviewDirty = true;
   }
-
   private updateFallback(): void {
-    // The exceptional path recomputes canonical authors rather than applying a
-    // mathematically equivalent but numerically different extreme-value delta.
+    // Preserve the canonical Float64 reconstruction and summation order.
     const grid = prepareHeightGrid(
       [...this.field.atlas.sources.values()].filter(
         (tile) => tile.level >= minimumCoarseHeightLevel(this.power),
@@ -527,8 +686,6 @@ export class HeightFieldTile {
     this.fallbackSource.resource = pixels;
     this.fallbackSource.resize(SIZE, SIZE);
     this.fallbackDirty = true;
-    this.numericValid = false;
-    this.anchorId = null;
   }
 
   flush(maxBytes = Infinity): number {
@@ -559,48 +716,74 @@ export class HeightFieldTile {
     });
     return bytes;
   }
-
   invalidateGPU(): void {
     this.numericValid = false;
-    this.anchorId = null;
-    this.copyAnchor = false;
-    this.promotions = 0;
-    this.dirty = true;
-    this.overviewDirty = true;
-    this.weightsDirty = true;
-    this.fallbackDirty = true;
-    this.compositionDirty = true;
+    this.currentIsBasis = true;
+    this.numericDepth = 0;
+    this.invalidateTotal();
+    this.dirty =
+      this.overviewDirty =
+      this.weightsDirty =
+      this.fallbackDirty =
+        true;
     this.update(undefined, WHOLE);
   }
-
   get uploadReady(): boolean {
     return (
       this.descriptor !== null &&
       !this.pendingUploadBytes &&
-      (this.fallback || this.transport.ready(this.descriptor.pages))
+      (this.fallback || this.field.authors.ready(this.descriptor.pages))
     );
   }
-  /** A new gesture can release the sources of already queued composition. */
   get needsPreparation(): boolean {
     return this.descriptor === null;
   }
   get compositionWork(): number {
-    return this.compositionDirty
-      ? area(this.rect) * Math.max(1, this.descriptor?.levelCount ?? 1) +
-          Math.ceil(
-            (area(this.rect) +
-              (this.delta && this.copyAnchor
-                ? SIZE * SIZE - area(this.rect)
-                : 0)) /
-              16,
-          )
-      : 0;
+    if (!this.compositionDirty) return 0;
+    const copy =
+      this.mode === "live" && this.currentIsBasis
+        ? SIZE * SIZE - area(this.rect)
+        : 0;
+    const colour = this.mode === "capture" ? 0 : area(this.rect);
+    // Same twenty-pair-product unit as the original cubic budget. Capture
+    // reads and first-live copies are real work, separately included and counted.
+    const capture = this.mode === "capture" ? SIZE * SIZE : 0;
+    // Extra pair additions have no matching product: live subtracts C_basis
+    // and adds H_basis; canonical coarse capture also accumulates C separately.
+    // Charge each conservatively as another product-and-add work unit.
+    const basisAdds =
+      this.mode === "live"
+        ? 2 * area(this.rect)
+        : this.mode === "canonical" &&
+            this.field.toolLevel >= minimumCoarseHeightLevel(this.power) &&
+            this.descriptor?.levels.includes(this.field.toolLevel)
+          ? 4 * area(this.rect)
+          : 0;
+    return (
+      (this.fallback
+        ? area(this.rect) * Math.max(1, this.descriptor?.levelCount ?? 1)
+        : Math.ceil((this.projectionProducts + basisAdds) / 20)) +
+      Math.ceil((colour + copy + capture) / 16)
+    );
   }
   get compositionLevels(): number {
     return this.descriptor?.levelCount ?? 0;
   }
+  private get projectionProducts(): number {
+    return this.fallback
+      ? 0
+      : 4 *
+          (this.horizontalSamples +
+            area(this.rect) * (this.descriptor?.levelCount ?? 0));
+  }
   get usesAnchor(): boolean {
-    return this.delta;
+    return this.mode === "live";
+  }
+  get hasBasis(): boolean {
+    return this.basisValid;
+  }
+  get basisTransfers(): number {
+    return this.numericDepth;
   }
 
   drawDirty(renderer: WebGLRenderer): number {
@@ -610,38 +793,78 @@ export class HeightFieldTile {
         "Unvollständiger numerischer Höhenstand vor GPU-Zeichnung.",
       );
     const samples = area(this.rect);
-    const stats = {
-      canonicalSamples: !this.fallback && !this.delta ? samples : 0,
-      deltaSamples: !this.fallback && this.delta ? samples : 0,
-      colourSamples: samples,
+    const firstLive = this.mode === "live" && this.currentIsBasis;
+    const stats: HeightCompositionStats = {
+      canonicalSamples:
+        !this.fallback && this.mode === "canonical" ? samples : 0,
+      deltaSamples: !this.fallback && this.mode === "live" ? samples : 0,
+      colourSamples: this.mode === "capture" ? 0 : samples,
       anchorCopySamples:
-        !this.fallback && this.delta && this.copyAnchor
-          ? SIZE * SIZE - samples
+        !this.fallback && firstLive ? SIZE * SIZE - samples : 0,
+      basisCaptureSamples: this.mode === "capture" ? samples : 0,
+      canonicalBasisBuilds:
+        !this.fallback && this.mode === "canonical" && this.plannedBasis
+          ? 1
           : 0,
+      horizontalSamples: this.horizontalSamples,
+      projectionProducts: this.projectionProducts,
     };
     if (!this.fallback) {
+      if (this.horizontalSamples)
+        renderer.render({
+          container: this.horizontalMesh,
+          target: this.horizontal,
+          clear: false,
+        });
+      // The sampled texture is always distinct from this pass's attachment.
+      const swapAfterCapture = this.mode === "capture" && this.currentIsBasis;
+      const target =
+        this.mode === "live" || swapAfterCapture ? this.numeric : this.basis;
+      this.shader.resources.uReference =
+        this.mode === "live" || swapAfterCapture
+          ? this.basis.source
+          : this.numeric.source;
       setRect(
         this.numericMesh,
-        this.delta && !this.copyAnchor ? this.rect : WHOLE,
+        this.mode === "live" && !firstLive ? this.rect : WHOLE,
       );
       renderer.render({
         container: this.numericMesh,
-        target: this.numeric,
-        clear: !this.delta,
+        target,
+        clear: this.mode !== "live",
+      });
+      this.colourShader.resources.uHeights = target.source;
+      // Do not promote an unwritten target if the GL submission throws.
+      if (swapAfterCapture)
+        [this.basis, this.numeric] = [this.numeric, this.basis];
+    }
+    if (this.mode !== "capture") {
+      setRect(this.colourMesh, this.rect);
+      renderer.render({
+        container: this.colourMesh,
+        target: this.colour,
+        clear: samples === SIZE * SIZE,
       });
     }
-    setRect(this.colourMesh, this.rect);
-    renderer.render({
-      container: this.colourMesh,
-      target: this.colour,
-      clear: area(this.rect) === SIZE * SIZE,
-    });
     this.numericValid = !this.fallback;
-    if (!this.delta) this.promotions = 0;
-    this.copyAnchor = false;
+    this.numericCurrent = true;
+    this.numericMagnitude = this.plannedMagnitude;
+    this.numericError = this.plannedError;
+    this.numericDepth = this.plannedDepth;
+    if (this.mode !== "live") {
+      this.basisValid = this.plannedBasis && !this.fallback;
+      this.basisLevel = this.field.toolLevel;
+      this.basisMagnitude = this.plannedMagnitude;
+      this.basisError = this.plannedError;
+      this.basisContribution = this.plannedContribution;
+      this.basisDepth = this.plannedDepth;
+    }
+    this.currentIsBasis = this.mode !== "live";
+    if (this.plannedRebase) this.rebaseCount++;
+    this.preparedVersion = this.preparationVersion;
     this.compositionDirty = false;
     this.compositionStats = stats;
-    return area(this.rect);
+    return samples;
   }
   get needsComposition(): boolean {
     return this.compositionDirty;
@@ -663,22 +886,30 @@ export class HeightFieldTile {
     );
   }
   get numericBytes(): number {
-    return SIZE * SIZE * 8 * 2;
+    return SIZE * SIZE * 16 * 2 + SIZE * this.horizontalRows * 8;
   }
-
   destroy(): void {
     if (this.disposed) return;
     this.disposed = true;
     this.releaseDescriptor();
     this.mesh.destroy();
-    this.numericMesh.geometry.destroy(true);
-    this.numericMesh.destroy();
-    this.colourMesh.geometry.destroy(true);
-    this.colourMesh.destroy();
-    this.colour.destroy(true);
-    this.numeric.destroy(true);
-    this.anchor.destroy(true);
+    for (const mesh of [
+      this.numericMesh,
+      this.horizontalMesh,
+      this.colourMesh,
+    ]) {
+      mesh.geometry.destroy(true);
+      mesh.destroy();
+    }
+    for (const target of [
+      this.colour,
+      this.numeric,
+      this.horizontal,
+      this.basis,
+    ])
+      target.destroy(true);
     this.shader.destroy();
+    this.horizontalShader.destroy();
     this.colourShader.destroy();
     for (const source of [
       this.descriptorSource,
@@ -694,7 +925,6 @@ export class HeightFieldTile {
 /** GPU data are a replaceable projection; document authors remain authoritative. */
 export class HeightField {
   readonly authors = new AtlasTransport();
-  readonly deltas = new AtlasTransport();
   get atlas(): HeightSourceAtlas {
     return this.authors.atlas;
   }
@@ -702,114 +932,105 @@ export class HeightField {
     return this.authors.source;
   }
   readonly tiles = new Set<HeightFieldTile>();
-  gesture: HeightGestureContext | null = null;
+  toolLevel = 0;
   numericSupported = false;
-  private localUpdate = false;
-  private unsafeDelta = new Map<string, Bounds>();
   private renderer?: WebGLRenderer;
 
   init(renderer: WebGLRenderer): void {
     this.renderer = renderer;
-    // Tests retain the actual texture event boundary with a fake GL driver.
     this.numericSupported = renderer.gl
       ? supportsHeightNumericTargets(renderer.gl as WebGL2RenderingContext)
       : (renderer as WebGLRenderer & { atlasTestDriver?: boolean })
           .atlasTestDriver === true;
     this.initSource(this.source);
-    this.initSource(this.deltas.source);
     for (const tile of this.tiles) tile.initSources();
   }
   initSource(source: HeightAtlasSource): void {
     this.renderer?.texture.initSource(source);
   }
-
-  beginGesture(context: HeightGestureContext): void {
-    this.localUpdate = true;
-    if (this.gesture?.id === context.id) {
-      this.gesture = context;
-      return;
-    }
-    for (const tile of this.tiles) tile.beginGesture(context.id);
-    this.gesture = context;
-    this.deltas.reset();
-    this.unsafeDelta.clear();
+  setToolLevel(level: number): boolean {
+    if (!Number.isInteger(level) || level < 0 || level > 21)
+      throw new Error("Ungültige Werkzeugstufe.");
+    if (level === this.toolLevel) return false;
+    this.toolLevel = level;
+    for (const tile of this.tiles) tile.invalidateBasis();
+    return true;
   }
-
   rebuildAfterContextRestore(): void {
     if (this.renderer?.gl)
       this.numericSupported = supportsHeightNumericTargets(
         this.renderer.gl as WebGL2RenderingContext,
       );
     this.authors.invalidate();
-    this.deltas.invalidate();
     for (const tile of this.tiles) tile.invalidateGPU();
     this.initSource(this.source);
-    this.initSource(this.deltas.source);
     for (const tile of this.tiles) tile.initSources();
   }
 
+  /** Imports/evictions alter the resident subset used by a fixed contribution. */
   updateSources(
     tiles: readonly HeightTile[],
     removed: readonly string[] = [],
   ): Bounds[] {
-    const local = this.localUpdate;
-    this.localUpdate = false;
+    return this.mergeSources(tiles, removed);
+  }
+  /** Before-images are consulted synchronously only to distinguish history from new zero authors. */
+  applySourcePatches(patches: readonly HeightPatch[]): Bounds[] {
+    return this.mergeSources(
+      patches.flatMap((patch) => (patch.after ? [patch.after] : [])),
+      patches.filter((patch) => !patch.after).map((patch) => patch.key),
+      new Map(patches.map((patch) => [patch.key, patch])),
+    );
+  }
+  private mergeSources(
+    tiles: readonly HeightTile[],
+    removed: readonly string[],
+    patches?: ReadonlyMap<string, HeightPatch>,
+  ): Bounds[] {
     const previous = new Map(
       [...tiles.map((tile) => tile.key), ...removed].map((key) => [
         key,
         this.atlas.sources.get(key),
       ]),
     );
-    const changed = this.atlas.updateSources(tiles, removed);
-    if (!local) {
-      const changedSources = [...previous].flatMap(([key, before]) => {
-        const after = this.atlas.sources.get(key);
-        return before === after ? [] : [after ?? before!];
-      });
-      for (const tile of this.tiles)
-        if (
-          changedSources.some(
-            (source) =>
-              tile.dependsOnAuthorLevel(source.level) &&
-              intersectsBounds(heightTileSupport(source), tile.bounds),
-          )
-        )
-          tile.invalidateAnchor();
-      // Navigation may evict authors during a long gesture. Their deltas are
-      // replaceable projections too; the document still owns the before-images
-      // needed if a later local edit brings this source back into residency.
-      this.deltas.atlas.updateSources([], removed);
-      for (const key of removed) this.unsafeDelta.delete(key);
-      return changed;
-    }
-    const gesture = this.gesture!;
-    for (const key of new Set([...tiles.map((tile) => tile.key), ...removed])) {
-      const before = gesture.before.get(key);
+    const bounds = this.atlas.updateSources(tiles, removed);
+    const changes = [...previous].flatMap(([key, before]) => {
       const after = this.atlas.sources.get(key);
-      const template = after ?? before;
-      if (!template) continue;
-      const values = new Float64Array(template.values.length);
-      let unsafe = !gesture.before.has(key) || template.level !== gesture.level;
-      for (let i = 0; i < values.length; i++) {
-        const value = (after?.values[i] ?? 0) - (before?.values[i] ?? 0);
-        if (!Number.isFinite(value)) unsafe = true;
-        else values[i] = value;
+      const patchBefore = patches?.get(key)?.before;
+      const missingBefore = Boolean(patchBefore && !before);
+      // Undo may delete a fine author that only the overview represents. Its
+      // absent atlas entry is not evidence that its actual contribution was zero.
+      return before === after && !missingBefore
+        ? []
+        : [{ source: after ?? before ?? patchBefore!, missingBefore }];
+    });
+    for (const tile of this.tiles) {
+      const relevant = changes.filter(({ source }) =>
+        intersectsBounds(heightTileSupport(source), tile.bounds),
+      );
+      if (patches) {
+        if (relevant.length)
+          tile.acceptLocalChanges(
+            relevant.map(({ source, missingBefore }) => ({
+              level: source.level,
+              missingBefore,
+            })),
+          );
+      } else {
+        const dependencies = relevant.filter(({ source }) =>
+          tile.dependsOnAuthorLevel(source.level),
+        );
+        if (dependencies.length)
+          tile.invalidateBasis(
+            dependencies.some(
+              ({ source }) =>
+                source.level >= minimumCoarseHeightLevel(tile.power),
+            ),
+          );
       }
-      if (unsafe) this.unsafeDelta.set(key, heightTileSupport(template));
-      else this.unsafeDelta.delete(key);
-      this.deltas.atlas.updateSources([{ ...template, values }]);
     }
-    return changed;
+    return bounds;
   }
-  deltaSafe(bounds: Bounds): boolean {
-    return (
-      this.deltas.atlas.safeIn(bounds) &&
-      ![...this.unsafeDelta.values()].some((value) =>
-        intersectsBounds(value, bounds),
-      )
-    );
-  }
-
   createTile(
     bounds: Bounds,
     power: number,
@@ -819,11 +1040,8 @@ export class HeightField {
     this.tiles.add(tile);
     return tile;
   }
-
   flush(maxBytes = Infinity): number {
     let bytes = 0;
-    // Local deltas and tile descriptors precede unrelated cold author uploads.
-    bytes += this.deltas.flush(maxBytes);
     for (const tile of this.tiles) bytes += tile.flush(maxBytes - bytes);
     bytes += this.authors.flush(maxBytes - bytes);
     return bytes;
@@ -840,9 +1058,8 @@ export class HeightField {
   metrics() {
     const derived =
       this.authors.bytes +
-      this.deltas.bytes +
       [...this.tiles].reduce((sum, tile) => sum + tile.bytes, 0);
-    const sourceBytes = this.atlas.sourceBytes + this.deltas.atlas.sourceBytes;
+    const sourceBytes = this.atlas.sourceBytes;
     return {
       sourceBytes,
       gpuBytes:
@@ -853,7 +1070,7 @@ export class HeightField {
         ),
       cpuBytes: sourceBytes + derived,
       sourceCount: this.atlas.sources.size,
-      pages: this.atlas.pageCount + this.deltas.atlas.pageCount,
+      pages: this.atlas.pageCount,
       fallbackTiles: [...this.tiles].filter((tile) => tile.fallback).length,
       fallbackSamples: [...this.tiles].reduce(
         (sum, tile) => sum + tile.fallbackSamples,
@@ -861,29 +1078,27 @@ export class HeightField {
       ),
       pendingUploadBytes:
         this.authors.pendingBytes +
-        this.deltas.pendingBytes +
         [...this.tiles].reduce((sum, tile) => sum + tile.pendingUploadBytes, 0),
       pendingCompositionTiles: [...this.tiles].filter(
         (tile) => tile.needsComposition,
       ).length,
-      anchoredTiles: [...this.tiles].filter((tile) => tile.usesAnchor).length,
+      anchoredTiles: [...this.tiles].filter((tile) => tile.hasBasis).length,
       anchorRebases: [...this.tiles].reduce(
         (sum, tile) => sum + tile.rebaseCount,
         0,
+      ),
+      basisTransfers: Math.max(
+        0,
+        ...[...this.tiles].map((tile) => tile.basisTransfers),
       ),
     };
   }
   reset(): void {
     for (const tile of [...this.tiles]) tile.destroy();
     this.authors.reset();
-    this.deltas.reset();
-    this.gesture = null;
-    this.localUpdate = false;
-    this.unsafeDelta.clear();
   }
   destroy(): void {
     this.reset();
     this.source.destroy();
-    this.deltas.source.destroy();
   }
 }
