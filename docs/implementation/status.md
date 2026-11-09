@@ -8,13 +8,21 @@ Zuständigkeiten und [Produktvertrag](../product-contract.md) Verhalten und Gren
 
 ## Ergebnis und Auftragsgrenze
 
-Die [beauftragte Fortsetzung](atlas-rebuild-plan.md#p0-fortsetzung-und-nächster-produktnachweis)
-begrenzt nun Quellen einschließlich Metadaten und verbessert den Rasterablauf
+Die bisherige P0-Fortsetzung begrenzt nun Quellen einschließlich Metadaten und
+verbessert den Rasterablauf
 für große Pinsel. Der vorhandene Beobachter wurde an einem tatsächlich
 nachgewiesenen Messfehler korrigiert. Die kleine Präsentationsprobe ist
 implementiert und ausgeführt; sie beweist die erforderliche native Zuordnung
 weiterhin nicht. **P0 ist nicht freigegeben.** Der gemeinsame P1/P2/P3-Produktfall
 und der vollständige F01–F19-Ausbau bleiben gemäß Plan an dieses Gate gebunden.
+
+**Nächster Schritt nur geplant:** Der Nutzerauftrag vom 9. November verlangt vor
+weiterer Arbeit eine einfachere Implementation desselben P0-Verhaltens.
+[Abschnitt 5 des bestehenden Plans](atlas-rebuild-plan.md#p0-fortsetzung-und-nächster-produktnachweis)
+beschreibt dafür eindeutige Pinselzustände, explizite Abschnitte, gemeinsame lokale
+Submitfakten, einen gerichteten Frameablauf und passive Diagnose. Dieser
+Planungsstand verändert keinen Produkt- oder Prüfcode. Vereinfachung,
+Großpinselkorrektur und native Freigabe haben getrennte Abschlusskriterien.
 
 | Kriterium                                         | Implementierung                                                                                                     | Nachweis / Status                                                                |
 | ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |

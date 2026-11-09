@@ -1,11 +1,12 @@
 # Atlas-Neubau und Aufräumen: ausführbarer Implementierungsplan
 
 Dieser Plan erhält den vollständigen Zielumfang **F01–F19 mit D01–D11** und die
-Pakete P0–P9. Die **Fortsetzung vom 9. November 2026 in Abschnitt 5**
-konkretisiert die offenen P0-Probleme nach K1–K6 und den anschließenden gemeinsamen
-Produktversuch. Ihre Umsetzung ist beauftragt. Erreichter Implementierungs- und
-Nachweisstand stehen im Status; das native P0-Gate bleibt Voraussetzung für P1–P9.
-K1–K6 werden nicht erneut umgesetzt.
+Pakete P0–P9. Die **Planung vom 9. November 2026 in Abschnitt 5** beschreibt als
+nächsten begrenzten Schritt einen einfacheren P0-Ablauf bei gleichem Verhalten.
+Dieser neue Schritt ist geplant, noch nicht zur Umsetzung beauftragt. Er ersetzt
+die inzwischen ausgeführte Reparaturliste als nächsten Arbeitsvorschlag.
+Erreichter Implementierungs- und Nachweisstand stehen im Status; das native
+P0-Gate bleibt Voraussetzung für P1–P9. K1–K6 werden nicht erneut umgesetzt.
 
 [Status](status.md) nennt allein den geprüften Commit, Messergebnisse, offene
 Fehler und Umgebungsgrenzen. [Produktvertrag](../product-contract.md) und
@@ -457,9 +458,10 @@ lokale Ergebnisse vor unabhängigem Bildaufbau, versionierte Teilresultate und
 begrenzte Uploads. Keine zweite Vorschau-/Commitdarstellung. Angenommene
 Autorenänderungen dürfen nicht mit überholbaren Darstellungsaufträgen verwechselt werden.
 
-Der verbleibende Höhen-Leistungsfall wird im Konsolidierungspaket gezielt
-diagnostiziert. CPU-Rasterung bleibt zulässig; alternative Rasterung nur bei
-belegtem Rechenengpass erproben. Keine zweite Produktionsmathematik auf Vorrat.
+Die Vereinfachung aus Abschnitt 5 erhält den vorhandenen Rasterweg. Die danach
+gesondert begründete Großpinselreparatur bearbeitet einen belegten Engpass.
+CPU-Rasterung bleibt zulässig; alternative Rasterung nur bei belegtem Rechenengpass
+erproben. Keine zweite Produktionsmathematik auf Vorrat.
 
 Längere Fachjobs erhalten unveränderliche Eingaben und vollständige lokale
 Readsets: vorhandene Quellen, bestätigte Abwesenheit und räumliche Abfragen.
@@ -696,159 +698,253 @@ nur ihre tatsächlich betroffenen Nachweise.
 
 ### P0-Fortsetzung und nächster Produktnachweis
 
-Die folgende Reihenfolge behebt die im Review erkannten konkreten Grenzen.
-P0-Quellenreparatur, Großpinseldiagnose
-und die kleine native Messprobe sind getrennte Aufgaben. Fehlende native
-Hardware verhindert nicht die Quellenreparatur oder die Analyse vorhandener
-Submissiondaten. Sie darf aber keine native Leistungsfreigabe erzeugen.
-Nach dem bestandenen P0-Gate folgt unmittelbar der kleine P1/P2/P3-Produktfall.
+**Planungsauftrag vom 9. November 2026:** Vor weiterer Reparatur den vorhandenen
+P0-Ablauf mit denselben Bedienregeln einfacher und nachvollziehbarer machen.
+Dieser Abschnitt plant den Umbau; er erklärt ihn nicht für umgesetzt und aktiviert
+weder P1–P9 noch eine neue native Messmethode. Der Produktvertrag bleibt die
+Verhaltensautorität. Die folgende Zuordnung macht seine Regeln für diesen Umbau
+prüfbar, ohne einen zweiten Vertrag anzulegen.
 
-#### Quellenbestand einschließlich Metadaten begrenzen
+#### Ausgangspunkt und begrenztes Ziel
 
-**Nutzerergebnis:** Auch nach Reisen durch viele bearbeitete Gebiete hängt die
-lokale Arbeit am aktuellen Bedarf. Verdrängtes Gelände wird bei Rückkehr korrekt
-nachgeladen; angenommene Änderungen und History bleiben erhalten.
+Dokument, numerische Übersichten, begrenzter Quellenbestand, CPU-Rasterworker und
+SQLite-Dateipfad sind vorhandene Grundlagen. Die direkte Fortsetzung weiterer
+Rasterbatches derselben angenommenen Revision ist bereits implementiert. Diese
+Arbeit nicht erneut vorschlagen oder durch eine zusätzliche RAF-Wartezeit ersetzen.
+Die aktuelle Großpinselgrenze und die gescheiterte native Präsentationszuordnung
+stehen im [Status](status.md); der Umbau verspricht dafür keinen Zeitgewinn.
 
-1. In `EditorDocument` die dauerhaften `options.empty`-Abkürzungen durch einen
-   gewöhnlichen anfänglichen Ganzwelt-Flächenbeleg ersetzen. Eine bestätigte
-   Neuanlage kennt damit ihren Ozean, kann dieses Wissen aber regulär freigeben.
-2. Der Controller liefert höchstens zwei konkrete Bedürfnisse aus Bereich und
-   Mindeststufe: Darstellungsquellen und vollständiger aktueller Werkzeugbereich
-   einschließlich kubischem Halo. Bei Herauszoomen werden nicht mehr benötigte
-   Feinstufen auch innerhalb des nun größeren Ausschnitts freigegeben.
-3. Bestehende Flächenbelege auf diese Bedürfnisse schneiden, danach bestätigte
-   unbenötigte Einträge tatsächlich entfernen. Keine neue Abdeckung aus einem
-   bloß umschließenden Rechteck erzeugen; die bestehende Beleggrenze bleibt.
-   Ein erhaltener Beleg darf in seinen Stufen keinen kubischen Einflussbereich
-   einer verdrängten positiven Quelle überdecken.
-4. Benötigte oder gepinnte vorhandene Quellen behalten ihre Payloads.
-   Unbestätigte lokale Löschungen behalten einen expliziten Leer-Marker. Regionale Read-Abwesenheit wird allein
-   durch den Flächenbeleg ausgedrückt. Nach Ack dürfen bestätigte Löschmarker
-   verschwinden. Aktive und unbestätigte Änderungen bleiben gepinnt.
-5. `acceptRead` verwirft Antworten unterhalb von `persistedSequence` vor jeder
-   Mutation von Quellen oder Belegen. `readCurrent` führt weiterhin nötige
-   Neuleseversuche aus; Übernahme und Patchprojektion bleiben synchron zusammen.
-   So ersetzt die bestätigte Sequenzgrenze den Schutz alter Einzelmetadaten.
-6. Ohne dauerhaft gespeicherte `unknown`-Ausnahmen entfällt der Vollscan in
-   `isReady`. Die Zahl der Einträge wird in den vorhandenen Ressourcenmetriken
-   sichtbar. Produktionslose Schlüssel-Read-/Eviction-Hilfen samt Spiegeltests
-   nach Verbrauchersuche entfernen; keine zweite Cacheverwaltung dafür bauen.
+**Ziel:** Eingabezustand, angenommener Pinselabschnitt und tatsächlich eingereichtes
+lokales Bild haben jeweils genau einen Besitzer. Für eine Eingabe lässt sich an
+einer Stelle erklären, ob sie wirkt, nur den Ort aktualisiert, wartet oder die
+Geste beendet. Ersetzte Zustände, APIs und Diagnosewege entfallen im selben Umbau.
 
-**Betroffene Stellen:** `model/EditorDocument.ts`, `EditorController.ts`,
-bestehende Modell-/Rendererprüfungen. Die reine History besitzt bereits vollständige
-Patches und braucht dafür keinen Katalog aller früher besuchten Quellen.
+Die Höhenmathematik, Pinselparameter, numerischen Übersichten, Budgets,
+Quellen-/Readgrenzen, History und der gemeinsame Dateilebenszyklus bleiben Grundlage.
+GPU-Rasterung, weitere Worker, asynchrone Worker-Chunks, ein Hostwechsel und ein
+neuer allgemeiner Scheduler sind kein Bestandteil dieser Vereinfachung. Sie sind
+auch keine aus den bisherigen Zeitdaten bewiesene Reparatur.
 
-**Nachweis:** Der heute fehlschlagende Reiseversuch bleibt nach 128/1.024/5.120
-besuchten Quellen beim selben kleinen aktiven Bestand. Neue und geöffnete Welt,
-Rückkehr ohne Read, Halo, Zoom Detail→Welt, bestätigte Löschung mit verspätetem
-alten Read, aktive/unbestätigte Arbeit und Undo nach Verdrängung sind abgedeckt.
-Eine kurze Desktopfolge prüft die Einbindung, auch bei während eines Reads
-geändertem Werkzeugbedarf. Metadaten, Belege und Arbeit erreichen ein Plateau;
-eine konkrete Zeitersparnis wird daraus nicht ohne Messung abgeleitet.
+#### Verhalten, das der Umbau erhalten muss
 
-#### Den vorhandenen großen Pinsel kausal verbessern
+Die maßgeblichen Regeln stehen im
+[optionalen Atlas-P0-Vertrag](../product-contract.md#optionaler-atlas-p0-versuch).
 
-**Nutzerergebnis:** Auch der angebotene 512-Pixel-Pinsel erhält fortlaufende
-Rückmeldung innerhalb der unveränderten Zeitziele; Dosis und Inhalt bleiben gleich.
+| Situation                                               | Erhaltenes Verhalten                                                                                                                                                                                    |
+| ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Druck auf lokal bereitem, gezeichnetem Gelände          | Sofortige nominale Anfangsdosis von 1/60 Sekunde; auch Down und Up zwischen zwei Frames ergeben einen kleinen Klick.                                                                                    |
+| Druck vor Freigabe                                      | Keine Änderung und kein vorgemerkter Strich; gehaltenes Warten beginnt später nicht automatisch. Neuer Druck erforderlich.                                                                              |
+| Halten oder langsamer Zug                               | Weitere zeitabhängige Wirkung nach Rückmeldung; je Folgeschritt höchstens 50 ms angenommene Zeit. Pinselparameter und Höhenstufe bleiben für die Geste fest.                                            |
+| Eigene Dosis wartet noch auf ihr Bild                   | Keine weitere Dosis. Zeit und nicht angewandter Weg verfallen; der neueste Zeigerort wird als neuer Anker verfolgt.                                                                                     |
+| Neue Quellen oder gezeichnete Grundlage fehlen          | Den vollständigen Abschnitt einschließlich Halo prüfen, bevor ein Anker verschoben wird. Die aktive Geste endet vor dem ungesehenen Abschnitt; bereits angenommene Änderungen bleiben eine Undo-Aktion. |
+| Zeitsprung oder veraltete Eingabe                       | Verworfene Zeit und alte Wege werden nicht nachgetragen; bestehende D10-Grenzen bleiben wirksam.                                                                                                        |
+| Loslassen                                               | Keine neue Dosis und kein letzter erzwungener Endpunkt. Bereits angenommene Arbeit wird abgeschlossen und darf anschließend noch sichtbar werden.                                                       |
+| Escape, Fokusverlust, Pointercancel oder Kontextwechsel | Weitere Wirkung endet; angenommene Änderungen bleiben. Der physisch gehaltene Druck bleibt dort gesperrt, wo der bestehende Ablauf einen neuen Druck verlangt.                                          |
+| Schnelle Folgeklicks                                    | Solange die letzte angenommene Dosis noch nicht eingereicht ist, keine zweite unsichtbare Wirkung stapeln. Das gilt auch nach Abschluss der ersten Geste.                                               |
+| Lokaler Bereich bereit, ferner Bereich unfertig         | Lokale Bearbeitung bleibt möglich. Der vollständige fachliche Bereich samt Halo braucht Quellen; nur sein sichtbarer Teil braucht ein Bild.                                                             |
+| Vollständig weg navigieren                              | Die Rückmeldung für einen vollständig verlassenen Bereich darf als nicht mehr sichtbar erledigt werden; Änderungen bleiben erhalten. Das ist kein Submitnachweis.                                       |
+| Budget- oder Speicherfehler                             | Budgetprüfung vor Mutation; zuvor angenommene Arbeit bleibt erhalten. Vorhandene History-, Wiederherstellungs- und Save/Discard/Cancel-Grenzen bleiben wirksam.                                         |
 
-- Den bestehenden 512-Pixel-Skalierungsfall unverändert reproduzieren und in die
-  feste warme Messauswahl aufnehmen. Die Fälle 16/256 Pixel und die kalten Fälle
-  bleiben erhalten. Bestand, Maßstab, Dosis, Eingabefolge und Bildinhalt nicht
-  reduzieren, um die Reaktion schneller erscheinen zu lassen.
-- `summarizeSubmissionTiming` auf die bereits vorhandenen
-  `brush-interval`-/`brush-submit`-Kennungen und Pointerup erweitern.
-  Alle für einen lokalen Schritt erforderlichen Batches einschließlich Pixeln,
-  Reihenfolge, Priorität und Wartezeiten erklären. Die Zeit bis zum letzten
-  Dispatch enthält auch frühere Rasterarbeit und ist keine reine Queuezeit.
-- Erster zu prüfender Kandidat: Restarbeit **derselben angenommenen Revision**
-  nach Workerabschluss disponieren, ohne unnötig einen weiteren RAF abzuwarten.
-  Ein laufender Rasterbatch, begrenzte Resultate und genau ein RAF-Pfad für
-  Upload/Veröffentlichung bleiben erhalten. Die nächste Pinselwirkung beginnt
-  weiterhin erst nach Veröffentlichung. Das ist keine Rückkehr zum verworfenen
-  Rendern direkt aus dem Nachrichtenhandler.
-- Diesen Kandidaten nur nach vollständiger Zerlegung und mit bezifferter
-  erwarteter Einsparung umsetzen. Bleibt die tatsächliche Samplingarbeit dominant,
-  genau den gemessenen Kernel beziehungsweise vermeidbare Rasterarbeit bearbeiten.
-  Keine Worker, größeren Budgets oder zweite GPU-Fachmathematik auf Verdacht.
-- Einen zulässigen großen Commit durch den echten Utility-/SQLite-Pfad mit
-  unmittelbar anschließendem kalten Ortswechsel prüfen. Readblockade durch
-  synchrone Übersichtspflege getrennt von asynchronem Save messen. Eine zusätzliche
-  SQLite-Verbindung oder Queue erst aus einem belegten Bedarf ableiten.
+Der feste warme 512-Pixel-Fall behält Eingabefolge, Inhalt, Livekriterien und
+Zeitgrenzen. Ein nach Pointerup nachgemalter Endpunkt wäre eine Verhaltensänderung,
+keine gültige Reparatur dieses Falls.
 
-**Nachweis und Stoppregel:** Für denselben Fall Inhalt, Live-Verlauf, Halten,
-Abbruch, Pointerup, History und Budgets erhalten. Hypothese vor Änderung benennen;
-nach einem widerlegten Versuch neu entscheiden, statt Variationen desselben
-unbelegten Ansatzes durchzulaufen. Das funktionale `time.passed` bleibt von
-Reaktionslatenz und nativer Abnahme getrennt. Erst mit gültiger Präsentationsmessung
-die vorhandene vollständige Stichprobe einmal ausführen; keine allgemeine
-p95-Aussage aus einzelnen Strichen.
+#### Zielzuständigkeiten und konkrete Löschungen
 
-#### Native Präsentationszuordnung zunächst in einer kleinen Probe beweisen
+| Besitzer                        | Eigene Verantwortung                                                                                            | Entfallende Doppelung                                                                                          |
+| ------------------------------- | --------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| Pinselsteuerung im Controller   | Tasten-/Gestenzustand, eingefrorener Pinsel, Zeitfenster, letzter geometrischer Anker und neuester Zeigerpunkt. | Verstreute Interpretation von `gesture` und `editPointer`; Bewegungsanker im Fachmodell.                       |
+| `EditorDocument`                | Höhenwerte, atomare Budgetprüfung, angenommene Patches, Vorherbilder und eine Historytransaktion je Geste.      | `Gesture.previous`, Nullzeit-Aufrufe zur Ankersynchronisation und impliziter Ursprung in `readBoundsForPoint`. |
+| Controller als Framekoordinator | Reihenfolge von Resultatübernahme, Zeichnen, lokaler Freigabe, Folgedosis und Dispatch.                         | Renderer-Rückrufe `onSubmit`/`advanceFrame` in den Controller und eigener RAF-Besitz des Renderers.            |
+| `WorldRenderer`                 | Begrenzte Rasterarbeit, Texturen, tatsächliche Submitstempel und eine lokale Bildabfrage.                       | Separate Implementierungen von `regionDisplayed`, `regionExact` und diagnostischem `regionCoverage`.           |
+| Bestehender Store-/Dateipfad    | Bestätigte Sequenz, asynchroner Snapshot, neue/geöffnete Datei und Wiederherstellung.                           | Kein neuer Pfad; dieser Besitzer wird nicht umgebaut.                                                          |
+| Bestehender passiver Beobachter | Messzuordnung aus echten Eingabe-, Dosis-, Commit- und Submitfakten.                                            | Diagnosebuchhaltung im Produktcontroller und eigene Deutung von lokaler Bereitschaft.                          |
 
-**Konkreter Kandidat, noch unbewiesen:** Die gepinnte Chromium-Version kann
-DevTools-Tracebilder mit `frame_sequence` und `source_id` liefern.
-`PipelineReporter` enthält Frame-/Surface-/Displaykennungen und erfolgreiche
-Präsentationszustände. Zu prüfen ist die vollständige Verbindung:
-eindeutig erkannter Karteninhalt → tatsächlich kopierter Compositorframe →
-zugehörige erfolgreiche Präsentation. Quellbelege stehen in Abschnitt 9.
+**1. Vollständige Pinselabschnitte statt zweier Bewegungsanker.**
 
-1. Den bestehenden kurzen Tracepfad für diesen Versuch über Electrons Debugger/CDP
-   anbinden und eine einzige, etwa zwei bis drei Sekunden lange Trace aufzeichnen;
-   nicht parallel einen zweiten Tracerecorder bauen. Die Versionsbindung und die vorhandene uint64-sichere
-   ID-Verarbeitung erhalten.
-2. Bestehende Küsten-/Grabenfixture, feste Kamera und wenige reale Eingaben nutzen.
-   Mehrere räumlich getrennte Terrainbereiche außerhalb von Cursor/Overlay gegen
-   die unabhängigen Inhaltserwartungen prüfen. Kompression, Skalierung und
-   nicht unterscheidbare Zwischenstände berücksichtigen. Marker oder bloße zeitliche
-   Nähe allein zertifizieren keinen Karteninhalt.
-3. Zuerst am gepinnten Capturepfad klären, ob die Bildmetadaten tatsächlich zum
-   zurückgegebenen Frame gehören. Normale Aggregation und Refresh-/wiederverwendete
-   Captures unterscheiden. Framequelle, Zielrenderer, Sequenz, Surface und Display
-   müssen eindeutig zusammenpassen; `STATE_PRESENTED_ALL` allein genügt nicht.
-4. Erst aus dem passenden erfolgreichen Präsentationsnachweis die Zeit übernehmen.
-   `expected_display_time` ist ausdrücklich eine Schätzung. Capturecallback,
-   RAF, erster Folgeframe und Screenshot-Zeitstempel bleiben ungeeignete Ersatzzeiten.
-   Ausgelassene oder mehrdeutige Frames bleiben fehlend; die erste beobachtete
-   passende Aufnahme ist nicht automatisch die erste tatsächliche Präsentation.
-5. Die vorhandenen Fehlerkontrollen mit verworfener Terrainzeichnung bei bewegtem
-   Overlay sowie verzögerter Terrainzeichnung müssen fehlende beziehungsweise
-   verspätete Präsentation erkennen. Uhrbezug, Traceende und Beobachteraufwand
-   prüfen; fehlende Zuordnungen nicht aus der Stichprobe entfernen.
+Das Dokument erhält einen ausdrücklichen Abschnitt:
 
-**Entscheidung nach dieser Probe:** Nur eine belegte Verbindung in den vorhandenen
-Auswerter übernehmen und anschließend native Referenz/Stichprobe ausführen.
-Scheitert die Ressourcen-/Framebindung, den konkreten fehlenden Übergang nennen
-und diesen Messkandidaten verwerfen. Kein automatischer Electron-/Chromium-Fork,
-kein Hostwechsel und keine weitere allgemeine Trace-Infrastruktur. Eine alternative
-Methode muss dieselbe Inhalts- und Zeitbehauptung beweisen; bis dahin bleibt das
-native Gate offen. Zeitgrenzen und Produktumfang werden nicht abgeschwächt.
+```ts
+applySegment(from, to, elapsedMs);
+```
 
-#### Abschlussgrenzen der Fortsetzung
+Der Pinsel ist bereits durch `beginGesture(brush)` festgelegt. Eine reine
+Berechnung liefert den zugehörigen Quellbereich einschließlich kubischem Halo;
+Freigabe und fachliche Anwendung benutzen dieselbe Geometrie. Das Dokument
+validiert weiterhin Quellen und Budgets, bevor es Werte verändert. Quartisches
+Segmentintegral, additive Höhenwerte, Dirtybereich und History bleiben gleich.
 
-| Ergebnis                | Abschlussbedingung                                                                                                      |
-| ----------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| Quellenreparatur        | Aktiver Bestand und Metadaten begrenzt; Rückkehr, alte Reads, Dirty-Daten und History korrekt.                          |
-| Großpinselkorrektur     | Benannter Engpass verbessert; unveränderte Eingabe-/Inhaltsregeln bestehen; konkrete verbleibende Zeitgrenzen sichtbar. |
-| Messanbindung           | Tatsächlicher Karteninhalt eindeutig einer erfolgreichen Präsentation zugeordnet; Fehlerkontrollen bestehen.            |
-| P0-Freigabe             | Unverändertes P0-Gate einschließlich qualifizierter nativer Referenz und vollständiger Stichprobe erfüllt.              |
-| Gemeinsamer Produktkern | Anschließender P1/P2/P3-Fall verbindet Landschaft, Haus, Wasser, History, Speicherung und echte Konkurrenz.             |
+Nur die Pinselsteuerung verschiebt den Anker. Wird Wartezeit verworfen, ändern
+sich dort Ort und Uhr; das Dokument erhält dafür keinen wirkungslosen Aufruf.
+`applyPoint(point, 0)` und der versteckte Modellanker werden vollständig entfernt,
+auch aus Aufrufern und Prüfhelfern. Ein Abschnitt mit null Dauer ändert weder
+Höhenwerte noch einen versteckten Eingabezustand.
 
-Produktcode, Prüfcode und Messdaten gehören jeweils zum ausgeführten Stand.
-Bereits gültige unabhängige Nachweise bleiben gültig. Der vorhandene Status wird
-ersetzt; keine neuen Pläne, Berichtsserien oder Prüfframeworks anlegen.
+**2. Drei Pinselzustände und eine unabhängige ausstehende Dosis.**
+
+Der Pinselzustand lautet ausdrücklich `frei`, `gehalten/neu-drücken` oder `aktiv`.
+Im aktiven Zustand liegen Pinsel, Zeigeridentität, Anker, Uhr und neueste Position.
+Die vorhandene Kamerageste bleibt eine getrennte Eingabeaufgabe; tatsächliche
+Navigation beendet den Strich über denselben Abschlussweg. Bestehende
+Tasten-/Pointerpriorität nicht beiläufig ändern.
+
+Unabhängig davon existiert höchstens eine ausstehende lokale Dosis mit Session,
+Revision, betroffenem Bereich und Schrittidentität. Sie überlebt Pointerup und
+Gestenabschluss. Nur ein passender lokaler Submit oder der ausdrücklich getrennte
+Fall „vollständig außerhalb des sichtbaren Bereichs“ erledigt sie. Ein
+Dokumentwechsel verwirft nur die alte Sessionzuordnung, nicht unbestätigte Daten.
+
+Kleine reine Entscheidungsfunktionen verarbeiten normalisierte Eingaben,
+Zeit und die vom Modell/Renderer gelieferten Fakten. Sie bestimmen Ankerwechsel,
+Annahme, Ablehnung oder Abschluss. Dafür kein Zustandsautomaten-Framework,
+keine Effekt-Queue und keine Liste wartender Mauswege einführen. `needsPress`,
+Cursor und Warteanzeige werden aus dieser einen Entscheidung abgeleitet.
+Eingabe-/Schrittkennungen gehören dem Produktablauf; der Beobachter protokolliert
+sie und ist nicht mehr ihr Besitzer.
+
+**3. Ein tatsächlich eingereichtes lokales Bild als gemeinsame Grundlage.**
+
+Eine lesende regionale Abfrage verwendet die vorhandenen Kachel-/Submitstempel
+und unterscheidet `außerhalb`, `keine gezeichnete Grundlage`, `gezeichnet, aber
+lokal veraltet` und `vollständig lokal aktuell eingereicht`. Der letzte Zustand
+bezieht sich auf einen wirklichen Draw der richtigen Session und Ansicht samt
+Frame, nicht nur auf vorbereitete Texturen. Eine teilweise aktuelle Region
+qualifiziert nicht. Kein neuer historischer Kachelkatalog oder Texturkopien dafür.
+
+Die gemeinsame lokale Freigabe kombiniert diesen Bildzustand mit vollständigen
+Quellen, ausstehender eigener Dosis und vorhandenen Projekt-/Fehlergrenzen.
+Produktsteuerung, UI und Diagnose verwenden diese Fakten. Unterschiedliche
+Wartefolgen bleiben ausdrücklich erhalten: Eigene Rückmeldung pausiert den
+aktiven Strich; fehlende neue Grundlage beendet ihn.
+
+`regionCoverage`, `input-covered`, `brush-covered` und `PendingEdit.covered`
+entfallen: Für ihre Aussage über ältere, teilweise enthaltene Revisionen existiert
+kein positiver Produkt- oder Auswerteverbraucher. Sie werden nicht zur neuen
+öffentlichen Schnittstelle ausgebaut. Die vorhandene Negativprüfung bleibt als
+Aussage erhalten: Teilwirkung oder ein veralteter Frame ist kein vollständiger
+Submitbeleg. `regionExact` entfällt ebenfalls nach Umstellung aller Verbraucher;
+vorbereitete Pixel dürfen keinen tatsächlichen Submit vortäuschen.
+
+Modellrevision, Storesequenz, Ansichtsgeneration und Job-/Kacheltoken schützen
+unterschiedliche Grenzen und bleiben getrennt. Ein globales `exactRevision`
+oder `ready` ersetzt keine lokale Freigabe. Ein vollständig verlassener Bereich
+kann die Produktsperre lösen, erzeugt aber niemals einen angeblichen Bildbeleg.
+
+**4. Ein lesbarer Frameablauf; der Anfangsklick bleibt sofortig.**
+
+Der Controller besitzt den einzigen RAF und ruft den Renderer gerichtet auf:
+
+1. Gültige fertige Rasterresultate innerhalb des bestehenden Uploadbudgets übernehmen.
+2. Das benötigte Terrain-/Overlaybild tatsächlich einreichen.
+3. Die lokalen Submitfakten verarbeiten und Freigabe samt UI daraus ableiten.
+4. Für einen weiter gehaltenen aktiven Strich höchstens eine Folgedosis entscheiden,
+   anwenden und ihre Patches/Invalidierung weiterreichen.
+5. Die nächste erforderliche begrenzte Rasterarbeit disponieren.
+
+Der Renderer ruft währenddessen keine Pinselentscheidung im Controller auf.
+Die nominale Anfangsdosis bleibt beim gültigen Down sofort möglich, anhand des
+letzten gültigen lokalen Submit. Sie wird nicht auf einen späteren Frame vertagt:
+Ein Down/Up zwischen Frames darf weder verloren gehen noch nach Release nachwirken.
+
+Resultatnachrichten dürfen weiterhin erforderliche Restbatches **derselben bereits
+angenommenen Revision** direkt starten. Dabei entstehen keine neue Dosis, kein
+Renderaufruf und kein zweiter Framepfad. Ein laufender Batch, Pixel-/Bytegrenzen,
+Fairness und die Abweisung alter Session-/Ansichts-/Jobergebnisse bleiben erhalten.
+Die bisherige Framenummer im `lastSubmit`-Identitätsvergleich macht den Vergleich
+wirkungslos; nach Umstellung entfällt dieser Doppelzustand ebenfalls.
+
+**5. Wenige Messfakten, eine Zuordnung und ein Auswertungspfad.**
+
+Der vorhandene Beobachter bleibt passiv und begrenzt. Diagnosezuordnungen aus
+`pendingEdits`, `navInput`, `readyNavInput` und `sourcesNavInput` verlassen den
+Produktcontroller. Der tatsächliche Frame liefert die benötigten lokalen Fakten;
+der Beobachter hält nur bei eingeschalteter Diagnose seine offenen Messzuordnungen.
+Er kann weder Freigabe setzen noch eine Dosis oder Darstellung herstellen.
+
+Für die Wirkung genügt die vorhandene Beziehung Eingabe → `brush-interval` →
+`brush-submit` → tatsächlicher `submit`. Halten kann ohne neue Eingabe wirken;
+abgewiesene Eingaben haben keine Dosis. Pointerup behält seinen eigenen Commit
+und dessen Beleg. Dosisbezogene `model`-/`edit-submit`-Doppelungen entfallen,
+Commit-/Historybelege bleiben. Modelländerung und abgeschlossene Quellenprojektion
+sind bisher verschiedene Messzeitpunkte; beide benötigten Zeitgrenzen ausdrücklich
+im Dosisfakt erhalten, statt historische Millisekundenwerte umzudeuten.
+
+`atlas-p0-evaluate.mjs` und `atlas-p0-timing.mjs` beziehen dieselben Zuordnungen aus
+einer gemeinsamen reinen Extraktion. Sammler liefern Fakten und benutzen für ein
+sofortiges Szenariourteil denselben Auswerter wie der Abschlussbericht. Parallele
+veränderbare Urteile wie `attempt.passed`, `collectionPassed` und
+`scenario.evaluation` werden auf Fakten plus ein abgeleitetes Urteil zurückgeführt;
+Fehler oder Abbruch dürfen dabei nicht durch Wiederholung verschwinden.
+
+Aktuelle Belege erhalten ein eindeutiges Schema; ersetzte aktive Aliase und
+Rekonstruktionswege entfallen mit ihren Verbrauchern. Alte Rohbelege bleiben
+unverändert und durch den zugehörigen Harness-Commit auswertbar. Höhen-/Pixel-/
+Undo-Erwartungen bleiben unabhängig von der gemeinsamen Faktenextraktion.
+Fehlende Daten werden abgelehnt. Die Diagnose liefert keine Steuerentscheidungen.
+Bei identischen Eingaben, Zeitpunkten und Produktfakten bleiben Entscheidungen
+und Fachwerte mit und ohne Diagnose gleich; unterschiedliche Laufzeitkosten
+können reale zeitabhängige Läufe trotzdem beeinflussen. Teure Stichproben nur bei
+ausdrücklichem Bedarf erheben. Das große Journal wird weiterhin erst nach
+Abschluss-Submit oder Timeout übertragen.
+
+Der native Traceparser und seine Fehlerkontrollen werden in diesem Schnitt nicht
+neu gebaut oder pauschal entfernt. „Submit“ bleibt „Submit“: Der fehlende Beweis
+der ersten tatsächlichen Bildschirmpräsentation bleibt ausdrücklich blockiert.
+
+#### Umsetzung und gezielter Nachweis
+
+Bei einem späteren begrenzten Umsetzungsauftrag diesen Ablauf nacheinander
+ersetzen. Kein dauerhaft zweiter Pinsel-, Render- oder Diagnosepfad.
+
+| Phase                     | Änderung                                                                                                                                                           | Abschluss am integrierten Stand                                                                                                                                                                                                                         |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A — Eingabe und Modell    | Explizite Segmente, reine Abschnittsgrenzen und ausdrücklicher Pinselzustand. Bestehende Verhaltenstests den obigen Regeln zuordnen; nur konkrete Lücken ergänzen. | Nur ein Bewegungsanker; alte Nullzeit-Synchronisation entfernt. Kurzer Klick, Hold, langsam/schnell, Hänger, kalter Bereich und alle Abschlussfälle behalten Wirkung und History.                                                                       |
+| B — Bild und Ablauf       | Gemeinsame lokale Bildabfrage und gerichtete Framekoordination; sämtliche Produkt-, UI- und Prüfverbraucher umstellen.                                             | Alte regionale APIs und Callbackkreis entfernt. Lokale Freigabe funktioniert trotz ferner Arbeit; Folgeklicks bleiben bis Rückmeldung gesperrt, alte Resultate abgewiesen und Restbatches direkt fortgesetzt.                                           |
+| C — Diagnose              | Doppelte Dosis-/Inputbelege, historische Coverage-Logik, Controllerbuchhaltung und parallele Auswertung ablösen.                                                   | Ein Fakt je Dosis, eine Zuordnung zum echten Submit und ein Szenariourteil. Unabhängige Inhaltskontrollen sowie Drop/Delay/Recovery bleiben aussagekräftig; Diagnose an/aus ergibt bei gleichen Eingaben, Zeiten und Produktfakten dieselben Fachwerte. |
+| D — Gemeinsamer Abschluss | Gezielte bestehende Modell-/Controller-/Renderer-/Auswerterprüfungen und eine kurze tatsächliche Desktopintegration am endgültigen Stand.                          | Grob/Fein, lokale Bereitschaft, Release vor/nach Submit, Undo/Redo, Save/Neustart und Fehlerfälle geprüft; ersetzte Pfade samt Aufrufern und überholten Spiegeltests entfernt.                                                                          |
+
+Für D den unveränderten warmen 512-Pixel-Fall mit demselben Inhalt und
+Messzweck erneut ausführen und ehrlich bewerten. Das vorhandene Fehlerartefakt
+bleibt mit seinem zugehörigen Auswerter ein Fehler; neue Belege dürfen fehlende
+Endpunkte, Livebilder oder Zeitdaten nicht herausfiltern. Vorhandene unabhängige
+Fachprüfungen erhalten; keine vollständige native Dreifachreihe als bloßen
+Refactorabschluss beginnen. Gezielte Prüfungen belegen erhaltenes Verhalten,
+keine allgemeine Geschwindigkeitsverbesserung.
+
+Bei Umsetzung Architektur und Kurzstatus auf den tatsächlich erreichten Zustand
+bringen; den Produktvertrag nur ändern, wenn seine Beschreibung dadurch präziser
+wird, nicht um Verhalten oder Schwellen zu lockern. Quellcode, Prüfcode und
+Belege auf denselben Endstand beziehen. Danach diesen begrenzten Umbau abschließen,
+ohne weitere Aufräum- oder Optimierungsrunden anzuhängen.
+
+#### Drei getrennte Abschlussfragen
+
+| Ergebnis                          | Abschlussbedingung                                                                                                                                                                                              |
+| --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Einfacherer P0-Ablauf             | Die benannten Doppelzustände und Altwege sind entfernt; Bedien-, Inhalts-, History- und Dateiregeln bestehen am integrierten Stand. Das kann unabhängig von einem noch langsamen Großpinsel abgeschlossen sein. |
+| Großer Pinsel ausreichend schnell | Derselbe warme 512-Pixel-Fall erfüllt seine unveränderten Inhalts-/Live-/Zeitkriterien. Die strukturelle Vereinfachung allein belegt das nicht.                                                                 |
+| Native P0-Freigabe                | Tatsächlicher Inhalt ist seiner ersten erfolgreichen Präsentation eindeutig zugeordnet; qualifizierte Referenz und vollständige Stichprobe aus Abschnitt 6 bestehen. Ein schneller Submit ersetzt das nicht.    |
+
+Nach der Vereinfachung lässt sich eine gesonderte Großpinselreparatur am
+unveränderten Fall begründen: die dominierende vermeidbare Arbeit beziehungsweise
+Wartezeit benennen, eine begrenzte Änderung samt Widerlegungskriterium wählen und
+deren tatsächliche Wirkung prüfen. Keine GPU- oder Workerentscheidung auf Verdacht.
+Der bereits ungeeignete native Messkandidat wird nicht ohne neue konkrete
+Beweisidee wiederholt. Das bestehende P0-Gate und der daran anschließende gemeinsame
+P1/P2/P3-Produktfall bleiben in diesem Planungsauftrag unverändert.
 
 ### P0 — Vorhandene Grundlage und verbleibendes Gate
 
 P0a–P0f bezeichnen die Teile des Höhenversuchs, keinen erneuten Bauauftrag:
 
-| Teil | Vorhandene Grundlage                                                  | Verbleibende Verantwortung                                                                     |
-| ---- | --------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| P0a  | Nutzervertrag D01–D11 und enger Auftrag festgelegt.                   | Neue Befunde in Status und Restauftrag einordnen; keine obligatorische neue V7-Benchmarkreihe. |
-| P0b  | Gemeinsame lokale Freigabe und normaler Produkt-/Prüfpfad.            | Referenz/Vorprüfung nach K3; tatsächliche Präsentationszuordnung bis P0-Abschluss nachweisen.  |
-| P0c  | Höhenmodell, Graben, grobe Änderung, History und Dateirundlauf.       | Bei Änderungen relevante Funktionsbelege erhalten.                                             |
-| P0d  | Ein priorisierter begrenzter Rasterpfad mit Live-Zwischenständen.     | Auch den angebotenen 512-Pixel-Pinsel erklären und gegen die unveränderten Ziele prüfen.       |
-| P0e  | Numerische Übersicht, 32/1.024/9.000-Quellenfälle und Detailerhalt.   | Quellenmetadaten und Belege gemeinsam begrenzen; betroffene Rückkehr-/Historyfälle prüfen.     |
-| P0f  | Reine Reads während asynchroner Snapshots, gemeinsame Antwortprüfung. | Snapshot S, spätere Dirty-Änderungen und tatsächliche Read-/Save-Überlappung erhalten.         |
+| Teil | Vorhandene Grundlage                                                     | Verbleibende Verantwortung                                                                     |
+| ---- | ------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------- |
+| P0a  | Nutzervertrag D01–D11 und enger Auftrag festgelegt.                      | Neue Befunde in Status und Restauftrag einordnen; keine obligatorische neue V7-Benchmarkreihe. |
+| P0b  | Gemeinsame lokale Freigabe und normaler Produkt-/Prüfpfad.               | Referenz/Vorprüfung nach K3; tatsächliche Präsentationszuordnung bis P0-Abschluss nachweisen.  |
+| P0c  | Höhenmodell, Graben, grobe Änderung, History und Dateirundlauf.          | Bei Änderungen relevante Funktionsbelege erhalten.                                             |
+| P0d  | Ein priorisierter begrenzter Rasterpfad mit Live-Zwischenständen.        | Auch den angebotenen 512-Pixel-Pinsel erklären und gegen die unveränderten Ziele prüfen.       |
+| P0e  | Numerische Übersicht, begrenzte Quellen samt Metadaten und Detailerhalt. | Begrenzung, alte-Read-Schutz und Rückkehr-/Historyfälle beim Umbau erhalten.                   |
+| P0f  | Reine Reads während asynchroner Snapshots, gemeinsame Antwortprüfung.    | Snapshot S, spätere Dirty-Änderungen und tatsächliche Read-/Save-Überlappung erhalten.         |
 
 **P0-Abschluss:** M01 sowie Höhenanteile aus M03/M04/M10 mit D10/D11 bestehen
 im gebauten Kandidaten. Dazu gehören Inhalt, laufender Verlauf, History,
@@ -1360,19 +1456,19 @@ Nur Paketstatus und Verweise hier pflegen. Commit, Prüfzahlen, Messwerte und
 konkrete Fehler stehen ausschließlich im [Status](status.md). Historische
 Rohbelege werden nicht umgeschrieben.
 
-| Paket | Umfang                                                                | Status / Nachweis                                                                    |
-| ----- | --------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| K1–K6 | Begrenzte Konsolidierung aus Abschnitt 5.                             | Implementiert; genaue Nachweis-/CI-Grenze im Status.                                 |
-| P0    | Höhenversuch P0a–P0f, D10/D11 und native Höhenabnahme.                | Quellen-/Rasterreparatur implementiert; Gate offen, genaue Fehler/Blocker im Status. |
-| P1    | Gemeinsamer Kern für F01–F19, A02–A06/D01/D02.                        | Offen; nach P0 schrittweise mit P3 entwickeln.                                       |
-| P2    | F19, A07 und vollständige Projektdateien.                             | Offen; neue P3-Quellen sofort in den vorhandenen Dateipfad aufnehmen.                |
-| P3    | F01–F04/F18-Basis, Mehrskaligkeit, Konkurrenz, D03 und M10-Teilfälle. | Offen.                                                                               |
-| P4    | F04–F07, D01/D02 und komplette Flächenwerkzeuge.                      | Offen.                                                                               |
-| P5    | F08–F12/D04: Straßen, Parzellen und Außenhäuser.                      | Offen.                                                                               |
-| P6    | F02/F12–F14: hauslokale Innenräume.                                   | Offen.                                                                               |
-| P7    | F09/F16/F17/D03: Gewässer und Nachführung.                            | Offen.                                                                               |
-| P8    | F03/F15/F18: Regionen, Bedienung und Kartografie.                     | Offen.                                                                               |
-| P9    | F01–F19 integriert, M01–M10, RPM, Altpfadabbau und Doku.              | Offen.                                                                               |
+| Paket | Umfang                                                                | Status / Nachweis                                                                                                          |
+| ----- | --------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| K1–K6 | Begrenzte Konsolidierung aus Abschnitt 5.                             | Implementiert; genaue Nachweis-/CI-Grenze im Status.                                                                       |
+| P0    | Höhenversuch P0a–P0f, D10/D11 und native Höhenabnahme.                | Quellen-/Rasterreparatur implementiert; Vereinfachung in Abschnitt 5 geplant, Gate offen. Genaue Fehler/Blocker im Status. |
+| P1    | Gemeinsamer Kern für F01–F19, A02–A06/D01/D02.                        | Offen; nach P0 schrittweise mit P3 entwickeln.                                                                             |
+| P2    | F19, A07 und vollständige Projektdateien.                             | Offen; neue P3-Quellen sofort in den vorhandenen Dateipfad aufnehmen.                                                      |
+| P3    | F01–F04/F18-Basis, Mehrskaligkeit, Konkurrenz, D03 und M10-Teilfälle. | Offen.                                                                                                                     |
+| P4    | F04–F07, D01/D02 und komplette Flächenwerkzeuge.                      | Offen.                                                                                                                     |
+| P5    | F08–F12/D04: Straßen, Parzellen und Außenhäuser.                      | Offen.                                                                                                                     |
+| P6    | F02/F12–F14: hauslokale Innenräume.                                   | Offen.                                                                                                                     |
+| P7    | F09/F16/F17/D03: Gewässer und Nachführung.                            | Offen.                                                                                                                     |
+| P8    | F03/F15/F18: Regionen, Bedienung und Kartografie.                     | Offen.                                                                                                                     |
+| P9    | F01–F19 integriert, M01–M10, RPM, Altpfadabbau und Doku.              | Offen.                                                                                                                     |
 
 ## 8. Definition von „erledigt“
 
@@ -1465,8 +1561,10 @@ Diese Quellen belegen Bibliotheksfunktionen, keine SaltMarcher-Latenzen.
 ### Gepinnter Kandidat für die Präsentationsmessung
 
 Am 9. November 2026 gegen die tatsächlich installierte Laufzeit **Electron
-44.10.2 / Chromium 152.0.7977.169** geprüft. Die Quellen begründen den kleinen
-Versuch in Abschnitt 5, noch keine funktionierende Atlas-Zuordnung:
+44.10.2 / Chromium 152.0.7977.169** geprüft. Die Quellen begründeten den inzwischen
+ausgeführten kleinen Versuch. Seine fehlende Copy-/Generationsbindung steht im
+[Status](status.md#präsentationsprobe-und-tatsächlicher-blocker). Sie begründen keinen erneuten
+Versuch im jetzt geplanten Aufräumschritt und keine funktionierende Atlas-Zuordnung:
 
 - [Chromium: DevTools-Tracebilder](https://github.com/chromium/chromium/blob/152.0.7977.169/content/browser/devtools/protocol/tracing_handler.cc):
   Bild und Framekennungen; `expected_display_time` ist nur geschätzt.
