@@ -84,6 +84,7 @@ jobs:
             src-tauri/target/diagnostics/playwright-ci/report/
             src-tauri/target/diagnostics/playwright-ci/results/
             src-tauri/target/diagnostics/ci-logs/
+            src-tauri/target/diagnostics/atlas-gpu-reference/
             artifacts/atlas-rebuild/ci-smoke/
             artifacts/atlas-rebuild/ci-package/
             !**/*.db
