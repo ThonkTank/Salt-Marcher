@@ -517,6 +517,24 @@ Main und Preload besitzen Fenster, native Dialoge und die typisierte IPC-Brücke
 Der SQLite-Store liegt im Utility-Prozess. Context Isolation und Sandbox bleiben
 aktiv; der Renderer hat weder Node-Integration noch SQL-Zugriff.
 
+### R1-Auswahlmodell vor der Integration
+
+Die reinen Funktionen `beginTimedBrush`/`planTimedBrushWindow` in `brush.ts`
+fixieren die kausale Eingabeuhr, vollständige Polylinie, Zeitkappung und terminale
+Versiegelung. Ein terminales Fenster verlangt das tatsächliche Up-Sample samt
+Ereigniszeit, auch bei unveränderter Position; Handlerverzug erzeugt keine Haltezeit.
+Das isolierte `PrepaidBrush`-Modell berechnet das Maximum aus einer
+einmaligen räumlichen Mindestwirkung und kumulierter Zeitwirkung je Stützstelle.
+`BrushReservations` prüft angewandte plus reservierte Wirkung und versionsgebundene
+Quittungen. Die unabhängige Referenz im vorhandenen Prüfpfad importiert keinen
+Produktcode und kontrolliert Inhalt, Anrechnung und positive räumliche Stärke.
+
+Diese Modelle werden vom aktuellen Controller nicht aufgerufen. Der unten
+beschriebene aktive Frameablauf ist deshalb noch unverändert. R2 integriert
+Annahme, Fortsetzung und Receipt in dieselbe Dokumentgeste; das Auswahlmodell
+ist keine zweite Autorenautorität. Auswahlgrund, feste Regeln und verbleibende
+Leistungsnachweise stehen im [Neubauplan](implementation/atlas-rebuild-plan.md).
+
 ### Autoren, Übersicht und Quellenbedarf
 
 Höhenautoren sind sparse 64×64-Float64-Kacheln auf Stufen 0–21. Positive kubische

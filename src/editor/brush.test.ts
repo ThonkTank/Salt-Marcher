@@ -1,11 +1,149 @@
 import { describe, expect, it } from "vitest";
 import {
+  beginTimedBrush,
+  MAX_BRUSH_POINTS,
+  normalizeBrushTimestamp,
+  planTimedBrushWindow,
   brushTarget,
   brushPathBounds,
   decideBrushFrame,
   type BrushStroke,
   type BrushWaitReason,
 } from "./brush";
+
+describe("R1 causal input plan", () => {
+  const start = { point: [0, 0] as [number, number], at: 0, input: 0 };
+  const brush = { level: 0, radius: 40, amount: 60 };
+
+  it("retains equal-time corners and allocates only new time by arclength", () => {
+    const stroke = beginTimedBrush(brush, start);
+    const planned = planTimedBrushWindow(stroke, {
+      at: 40,
+      points: [
+        { point: [0, 40], at: 40, input: 1 },
+        { point: [120, 40], at: 40, input: 2 },
+      ],
+      end: true,
+    });
+    expect(planned.path.points).toEqual([
+      [0, 40],
+      [120, 40],
+    ]);
+    expect(planned.time).toEqual([
+      { from: [0, 0], to: [0, 40], elapsedMs: 10 },
+      { from: [0, 40], to: [120, 40], elapsedMs: 30 },
+    ]);
+    expect(stroke.clock).toBe(0);
+    expect(() =>
+      planTimedBrushWindow(planned.stroke, { at: 60, points: [] }),
+    ).toThrow();
+    const delayed = planTimedBrushWindow(stroke, {
+      at: 500,
+      points: [
+        { point: [0, 40], at: 250, input: 1 },
+        { point: [120, 40], at: 500, input: 2 },
+      ],
+      end: true,
+    });
+    expect(delayed.offeredTimeMs).toBe(500);
+    expect(delayed.time.map((segment) => segment.elapsedMs)).toEqual([25, 25]);
+    expect(delayed.stroke.clock).toBe(500);
+    expect(delayed.path.points).toEqual([
+      [0, 40],
+      [120, 40],
+    ]);
+  });
+
+  it("rejects ambiguous input atomically and reserves the128th point for Up", () => {
+    const stroke = beginTimedBrush(brush, start);
+    const points = Array.from({ length: MAX_BRUSH_POINTS }, (_, index) => ({
+      point: [index, 0] as [number, number],
+      at: index + 1,
+      input: index + 1,
+    }));
+    expect(
+      planTimedBrushWindow(stroke, { at: 128, points: points.slice(0, -1) })
+        .path.points,
+    ).toHaveLength(127);
+    expect(() => planTimedBrushWindow(stroke, { at: 128, points })).toThrow();
+    expect(
+      planTimedBrushWindow(stroke, { at: 128, points, end: true }).path.points,
+    ).toHaveLength(128);
+    expect(() =>
+      planTimedBrushWindow(stroke, {
+        at: 129,
+        points: [...points, { point: [129, 0], at: 129, input: 129 }],
+        end: true,
+      }),
+    ).toThrow();
+    for (const invalid of [
+      [{ point: [0, 0] as [number, number], at: NaN, input: 1 }],
+      [
+        { point: [0, 0] as [number, number], at: 10, input: 1 },
+        { point: [1, 0] as [number, number], at: 9, input: 2 },
+      ],
+      [
+        { point: [0, 0] as [number, number], at: 10, input: 1 },
+        { point: [1, 0] as [number, number], at: 11, input: 1 },
+      ],
+      [{ point: [0, 0] as [number, number], at: 200, input: 1 }],
+    ])
+      expect(() =>
+        planTimedBrushWindow(stroke, { at: 128, points: invalid }),
+      ).toThrow();
+    expect(stroke.point).toEqual([0, 0]);
+    expect(stroke.clock).toBe(0);
+    expect(stroke.sealed).toBe(false);
+  });
+
+  it("normalizes timestamps without turning delivery delay into hold time", () => {
+    const origin = 1_800_000_000_000;
+    expect(normalizeBrushTimestamp(115, 200, origin)).toBe(115);
+    expect(normalizeBrushTimestamp(origin + 115, 200, origin)).toBe(115);
+    for (const raw of [-1, 201, origin + 201, NaN, Infinity])
+      expect(() => normalizeBrushTimestamp(raw, 200, origin)).toThrow();
+    const stroke = beginTimedBrush(brush, start);
+    const planned = planTimedBrushWindow(stroke, {
+      at: 70,
+      points: [{ point: [160, 0], at: 20, input: 1 }],
+      end: true,
+    });
+    expect(planned.offeredTimeMs).toBe(20);
+    expect(planned.stroke.point).toEqual([160, 0]);
+  });
+
+  it("requires the actual Up sample and never substitutes its delayed arrival", () => {
+    const stroke = beginTimedBrush(brush, start);
+    const before = structuredClone(stroke);
+    expect(() =>
+      planTimedBrushWindow(stroke, { at: 70, points: [], end: true }),
+    ).toThrow("Pinselende benötigt seinen Eingabepunkt mit Zeitstempel.");
+    expect(stroke).toEqual(before);
+
+    const released = planTimedBrushWindow(stroke, {
+      at: 70,
+      points: [{ point: [0, 0], at: 20, input: 1 }],
+      end: true,
+    });
+    expect(released.time).toEqual([
+      { from: [0, 0], to: [0, 0], elapsedMs: 20 },
+    ]);
+    expect(released.offeredTimeMs).toBe(20);
+    expect(released.stroke.clock).toBe(20);
+    expect(released.stroke.sealed).toBe(true);
+
+    const held = planTimedBrushWindow(stroke, { at: 120, points: [] });
+    const lateRelease = planTimedBrushWindow(held.stroke, {
+      at: 140,
+      points: [{ point: [0, 0], at: 115, input: 1 }],
+      end: true,
+    });
+    expect(lateRelease.time).toEqual([]);
+    expect(lateRelease.offeredTimeMs).toBe(0);
+    expect(lateRelease.stroke.clock).toBe(120);
+    expect(lateRelease.stroke.sealed).toBe(true);
+  });
+});
 
 function stroke(overrides: Partial<BrushStroke> = {}): BrushStroke {
   return {

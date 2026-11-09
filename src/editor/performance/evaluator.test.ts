@@ -18,6 +18,7 @@ import {
   extractNavigationSamples,
   evaluateNavigationDiagnostics,
   evaluateStrokeContent,
+  evaluateC1StrokeContent,
   selectP0Scope,
   evaluateBrushTime,
   evaluateBrushPublicationOrder,
@@ -28,6 +29,11 @@ import {
 import { analyzeTrace, parseTrace } from "../../../scripts/atlas-p0-trace.mjs";
 import { observeStroke } from "../../../scripts/atlas-p0-interactions.mjs";
 import { startReadyStrokeMonitor } from "../../../scripts/atlas-p0-collection.mjs";
+import {
+  referenceC0Stroke,
+  referenceC1Stroke,
+  reconstructReferenceC1Stroke,
+} from "../../../scripts/atlas-p0-brush-reference.mjs";
 
 const oneCase = {
   scope: "evaluator-test-only",
@@ -2830,5 +2836,431 @@ describe("real Chromium trace identities", () => {
     ]);
     expect(result.mappingStatus).toBe("unsupported");
     expect(result.clockObservation.calibrated).toBe(false);
+  });
+});
+
+// These fixtures exercise the evaluator, not the candidate. Its positive input
+// comes from the independent oracle; deliberate corruption must fail the same
+// decisive result. Candidate/reference equality is tested separately in brush.
+type BrushContentSpec = Parameters<typeof evaluateC1StrokeContent>[0];
+
+function brushContentSpec(): BrushContentSpec {
+  const vertices = [
+    [0, 0],
+    ...Array.from({ length: 5 }, (_, index) => [0, (index + 1) * 20]),
+    ...Array.from({ length: 5 }, (_, index) => [(index + 1) * 20, 100]),
+  ];
+  return {
+    input: {
+      brush: { level: 0, radius: 20, amount: 60 },
+      start: { point: vertices[0], at: 0, input: 1 },
+      windows: vertices.slice(1).map((point, index) => ({
+        at: (index + 1) * 20,
+        points: [{ point, at: (index + 1) * 20, input: index + 2 }],
+        ...(index === vertices.length - 2 ? { end: true } : {}),
+      })),
+    },
+    mode: "normal",
+    probes: [...vertices, [50, 50]],
+    centerline: vertices,
+    regions: [
+      { id: "first-leg", indices: [0, 1, 2, 3, 4, 5] },
+      { id: "second-leg", indices: [5, 6, 7, 8, 9, 10] },
+      { id: "shortcut-exterior", indices: [11] },
+    ],
+  };
+}
+
+type C1Observation = Parameters<typeof evaluateC1StrokeContent>[1];
+
+function c1Observed(spec: BrushContentSpec): C1Observation {
+  const reference = referenceC1Stroke(spec.input, spec.probes);
+  const surface = reconstructReferenceC1Stroke(spec.input, spec.centerline);
+  const channels = (
+    value: Pick<
+      typeof reference,
+      "initial" | "spatial" | "time" | "total" | "floor" | "timeAccount"
+    >,
+  ) => ({
+    initial: [...value.initial],
+    spatial: [...value.spatial],
+    time: [...value.time],
+    total: [...value.total],
+    floor: [...value.floor],
+    timeAccount: [...value.timeAccount],
+  });
+  return {
+    ...channels(reference),
+    centerlineSpatial: [...surface.floor],
+    windows: reference.timeWindows.map((window) => ({
+      fromAt: window.fromAt,
+      toAt: window.toAt,
+      ...channels(window),
+    })),
+  };
+}
+
+function c1HeldSpec(duration = 3000): BrushContentSpec {
+  const count = duration / 20;
+  return {
+    input: {
+      brush: { level: 0, radius: 20, amount: 60 },
+      start: { point: [0, 0], at: 0, input: 1 },
+      windows: Array.from({ length: count }, (_, index) => ({
+        at: (index + 1) * 20,
+        points:
+          index === count - 1
+            ? [{ point: [0, 0], at: duration, input: 2 }]
+            : [],
+        ...(index === count - 1 ? { end: true } : {}),
+      })),
+    },
+    mode: "normal",
+    probes: [
+      [0, 0],
+      [5, 0],
+      [25, 0],
+    ],
+    centerline: [[0, 0]],
+    regions: [
+      { id: "hold", indices: [0, 1] },
+      { id: "outside", indices: [2] },
+    ],
+  };
+}
+
+// Deliberately reduce each complete window while preserving its internal
+// max(floor,time) accounting. The whole-stroke record remains unchanged until
+// the test explicitly reconciles it: this used to receive an unearned PASS.
+function reduceC1WindowTime(observed: C1Observation): void {
+  const width = observed.floor.length;
+  const cumulativeFloor = new Array<number>(width).fill(0);
+  const cumulativeTime = new Array<number>(width).fill(0);
+  const cumulativeTotal = new Array<number>(width).fill(0);
+  const cumulativeExtra = new Array<number>(width).fill(0);
+  for (const window of observed.windows) {
+    window.timeAccount = window.timeAccount.map((value) => 0.9 * value);
+    const totals: number[] = [];
+    const extras: number[] = [];
+    for (let index = 0; index < width; index++) {
+      cumulativeFloor[index] += window.floor[index];
+      cumulativeTime[index] += window.timeAccount[index];
+      const total = Math.max(cumulativeFloor[index], cumulativeTime[index]);
+      const extra = total - cumulativeFloor[index];
+      totals.push(total - cumulativeTotal[index]);
+      extras.push(extra - cumulativeExtra[index]);
+      cumulativeTotal[index] = total;
+      cumulativeExtra[index] = extra;
+    }
+    window.total = totals;
+    window.time = extras;
+  }
+}
+
+describe("single justified C1 content verdict", () => {
+  it("passes the fixed raw L-path with one credited spatial floor", () => {
+    const spec = brushContentSpec();
+    expect(evaluateC1StrokeContent(spec, c1Observed(spec))).toMatchObject({
+      scope: "R1-model-content",
+      candidate: "C1",
+      status: "PASS",
+      passed: true,
+      failures: [],
+    });
+  });
+
+  it("distinguishes the required C0 bound counterexample from C1's credited floor", () => {
+    const spec: BrushContentSpec = {
+      input: {
+        brush: { level: 0, radius: 20, amount: 1 },
+        start: { point: [20, 20], at: 0, input: 1 },
+        windows: [
+          { at: 20, points: [{ point: [60, 20], at: 20, input: 2 }] },
+          { at: 40, points: [{ point: [20, 20], at: 40, input: 3 }] },
+          {
+            at: 70,
+            points: [{ point: [60, 20], at: 70, input: 4 }],
+            end: true,
+          },
+        ],
+      },
+      mode: "overload",
+      probes: [
+        [20, 20],
+        [40, 20],
+        [60, 20],
+      ],
+      centerline: [
+        [20, 20],
+        [40, 20],
+        [60, 20],
+      ],
+      regions: [{ id: "same-tile-return-path", indices: [0, 1, 2] }],
+    };
+    const old = referenceC0Stroke(spec.input, spec.probes);
+    expect(old.spatial[1]).toBeCloseTo(0.0533203125, 12);
+    expect(old.spatial[1]).toBeGreaterThan(0.05);
+    const candidate = c1Observed(spec);
+    expect(candidate.floor).toEqual([1 / 60, 1 / 60, 1 / 60]);
+    expect(candidate.total.every((value) => value <= 0.05)).toBe(true);
+    expect(evaluateC1StrokeContent(spec, candidate).passed).toBe(true);
+  });
+
+  it("rejects charging an additive click again after prepaid time has consumed it", () => {
+    const spec = c1HeldSpec();
+    const observed = c1Observed(spec);
+    expect(observed.total[0]).toBeCloseTo(180, 10);
+    observed.total = observed.total.map(
+      (value, index) => value + observed.initial[index],
+    );
+    expect(evaluateC1StrokeContent(spec, observed).failures).toContainEqual(
+      expect.objectContaining({
+        code: "C1_CONTENT_OVER_TARGET",
+        channel: "total",
+      }),
+    );
+  });
+
+  it("cannot report enough height while omitting the credited temporal account", () => {
+    const spec = c1HeldSpec();
+    const observed = c1Observed(spec);
+    observed.timeAccount = observed.timeAccount.map(() => 0);
+    const result = evaluateC1StrokeContent(spec, observed);
+    expect(result.passed).toBe(false);
+    expect(result.failures).toContainEqual(
+      expect.objectContaining({
+        code: "C1_CONTENT_UNDER_TARGET",
+        channel: "timeAccount",
+      }),
+    );
+  });
+
+  it.each(["missing", "weak-time", "extra-credit", "wrong-order"])(
+    "rejects %s in a complete one-second window",
+    (kind) => {
+      const spec = c1HeldSpec();
+      const observed = c1Observed(spec);
+      expect(evaluateC1StrokeContent(spec, observed).passed).toBe(true);
+      if (kind === "missing") observed.windows = observed.windows.slice(1);
+      if (kind === "weak-time")
+        observed.windows[1].timeAccount = observed.windows[1].timeAccount.map(
+          (value) => 0.8 * value,
+        );
+      if (kind === "extra-credit")
+        observed.windows[1].total = observed.windows[1].total.map(
+          (value, index) => value + observed.floor[index],
+        );
+      if (kind === "wrong-order")
+        observed.windows = [
+          observed.windows[1],
+          observed.windows[0],
+          observed.windows[2],
+        ];
+      expect(evaluateC1StrokeContent(spec, observed).passed).toBe(false);
+    },
+  );
+
+  it.each([0.001, -1, 1.1])(
+    "rejects weak, reversed and excessive floor (factor %s)",
+    (factor) => {
+      const spec = brushContentSpec();
+      const observed = c1Observed(spec);
+      observed.floor = observed.floor.map((value) => value * factor);
+      observed.centerlineSpatial = observed.centerlineSpatial.map(
+        (value) => value * factor,
+      );
+      expect(evaluateC1StrokeContent(spec, observed).passed).toBe(false);
+    },
+  );
+
+  it("rejects an unchanged middle, corner and endpoint independently", () => {
+    for (const index of [3, 5, 10]) {
+      const spec = brushContentSpec();
+      const observed = c1Observed(spec);
+      (observed.floor as number[])[index] = 0;
+      (observed.total as number[])[index] = 0;
+      (observed.centerlineSpatial as number[])[index] = 0;
+      expect(evaluateC1StrokeContent(spec, observed).passed).toBe(false);
+    }
+  });
+
+  it("detects a shortcut at an independently fixed exterior probe", () => {
+    const spec = brushContentSpec();
+    const shortcut = structuredClone(spec);
+    shortcut.input.windows = [
+      { at: 20, points: [{ point: [100, 100], at: 20, input: 2 }], end: true },
+    ];
+    const observed = c1Observed(shortcut);
+    expect(observed.floor[11]).toBeGreaterThan(0);
+    expect(evaluateC1StrokeContent(spec, observed).failures).toContainEqual(
+      expect.objectContaining({
+        code: "C1_CONTENT_OVER_TARGET",
+        channel: "floor",
+        index: 11,
+      }),
+    );
+  });
+
+  it("keeps the unbounded normal time denominator when the observed window is capped", () => {
+    const spec = c1HeldSpec(500);
+    spec.input.windows = [
+      { at: 500, points: [{ point: [0, 0], at: 500, input: 2 }], end: true },
+    ];
+    const observed = c1Observed(spec);
+    expect(evaluateC1StrokeContent(spec, observed).passed).toBe(false);
+    spec.mode = "overload";
+    expect(evaluateC1StrokeContent(spec, observed).passed).toBe(true);
+  });
+
+  it("fails missing and nonfinite credit evidence rather than inferring it from height", () => {
+    const spec = brushContentSpec();
+    for (const kind of ["missing", "nan", "infinity"] as const) {
+      const observed = c1Observed(spec);
+      if (kind === "missing") observed.timeAccount = [];
+      if (kind === "nan") (observed.floor as number[])[3] = Number.NaN;
+      if (kind === "infinity") (observed.timeAccount as number[])[3] = Infinity;
+      expect(evaluateC1StrokeContent(spec, observed).failures).toContainEqual({
+        code: "C1_MISSING_OR_INVALID_OBSERVATION",
+      });
+    }
+  });
+
+  it("handles zero strength and a fixed lowering direction", () => {
+    for (const amount of [0, -60]) {
+      const spec = brushContentSpec();
+      spec.input.brush.amount = amount;
+      expect(evaluateC1StrokeContent(spec, c1Observed(spec)).passed).toBe(true);
+    }
+  });
+
+  it("reconciles exact full windows with the whole-stroke total", () => {
+    const spec = c1HeldSpec(2000);
+    const observed = c1Observed(spec);
+    reduceC1WindowTime(observed);
+    expect(
+      observed.windows.reduce(
+        (total, window) => total + window.timeAccount[0],
+        0,
+      ),
+    ).toBeCloseTo(108, 10);
+    expect(observed.timeAccount[0]).toBeCloseTo(120, 10);
+    const result = evaluateC1StrokeContent(spec, observed);
+    expect(result.passed).toBe(false);
+    expect(result.failures).toContainEqual(
+      expect.objectContaining({
+        code: "C1_WINDOW_TOTAL_MISMATCH",
+        channel: "timeAccount",
+      }),
+    );
+  });
+
+  it("cannot manufacture missing window effect in the incomplete final fraction", () => {
+    const spec = c1HeldSpec(2500);
+    const observed = c1Observed(spec);
+    reduceC1WindowTime(observed);
+    const result = evaluateC1StrokeContent(spec, observed);
+    expect(result.passed).toBe(false);
+    expect(result.failures).toContainEqual(
+      expect.objectContaining({
+        code: "C1_CONTENT_OVER_TARGET",
+        scope: "remaining",
+        channel: "timeAccount",
+      }),
+    );
+    // A genuinely reduced whole account is valid: 108 paid in the first two
+    // seconds plus the independent 30-foot final half-second. No extra credit.
+    const reference = referenceC1Stroke(spec.input, spec.probes);
+    const last = reference.timeWindows.at(-1)!.after;
+    observed.timeAccount = observed.timeAccount.map(
+      (_, index) =>
+        observed.windows.reduce(
+          (total, window) => total + window.timeAccount[index],
+          0,
+        ) +
+        reference.timeAccount[index] -
+        last.timeAccount[index],
+    );
+    observed.total = observed.timeAccount.map((value, index) =>
+      Math.max(value, observed.floor[index]),
+    );
+    observed.time = observed.total.map(
+      (value, index) => value - observed.floor[index],
+    );
+    expect(observed.timeAccount[0]).toBeCloseTo(138, 10);
+    expect(evaluateC1StrokeContent(spec, observed).passed).toBe(true);
+  });
+
+  it("fails missing reference input, region and path-vertex manifests", () => {
+    expect(
+      evaluateC1StrokeContent(undefined as never, undefined as never).passed,
+    ).toBe(false);
+    const original = brushContentSpec();
+    const observed = c1Observed(original);
+    const noCorner = structuredClone(original);
+    noCorner.centerline = noCorner.centerline.filter((_, index) => index !== 5);
+    expect(evaluateC1StrokeContent(noCorner, observed).failures).toContainEqual(
+      expect.objectContaining({ code: "C1_MISSING_PATH_VERTEX", input: 6 }),
+    );
+    const noRegion = structuredClone(original);
+    noRegion.regions = noRegion.regions.slice(0, -1);
+    expect(evaluateC1StrokeContent(noRegion, observed).failures).toContainEqual(
+      { code: "C1_UNCOVERED_AUTHOR_PROBE" },
+    );
+    const noInput = structuredClone(original);
+    noInput.input.windows = [];
+    expect(evaluateC1StrokeContent(noInput, observed).failures).toContainEqual(
+      expect.objectContaining({ code: "C1_INVALID_INPUT_REFERENCE" }),
+    );
+    const noRelease = structuredClone(original);
+    noRelease.input.windows.at(-1)!.points = [];
+    expect(
+      evaluateC1StrokeContent(noRelease, observed).failures,
+    ).toContainEqual(
+      expect.objectContaining({ code: "C1_INVALID_INPUT_REFERENCE" }),
+    );
+  });
+
+  it("keeps credit when late geometry reattributes previous time to a stronger floor", () => {
+    const spec: BrushContentSpec = {
+      input: {
+        brush: { level: 0, radius: 20, amount: 60 },
+        start: { point: [1, 0], at: 0, input: 1 },
+        windows: [
+          ...Array.from({ length: 50 }, (_, index) => ({
+            at: (index + 1) * 20,
+            points: [],
+          })),
+          { at: 1000, points: [{ point: [-100, 0], at: 1000, input: 2 }] },
+          ...Array.from({ length: 50 }, (_, index) => ({
+            at: 1000 + (index + 1) * 20,
+            points: [],
+          })),
+          {
+            at: 2000,
+            points: [{ point: [20, 0], at: 1500, input: 3 }],
+            end: true,
+          },
+        ],
+      },
+      mode: "normal",
+      probes: [
+        [20, 0],
+        [0, 0],
+        [-100, 0],
+      ],
+      centerline: [
+        [1, 0],
+        [-100, 0],
+        [20, 0],
+      ],
+      regions: [
+        { id: "old-credit", indices: [0] },
+        { id: "start", indices: [1] },
+        { id: "later-hold", indices: [2] },
+      ],
+    };
+    const observed = c1Observed(spec);
+    expect(observed.windows[1].time[0]).toBeLessThan(0);
+    expect(evaluateC1StrokeContent(spec, observed).passed).toBe(true);
   });
 });

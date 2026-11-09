@@ -7,9 +7,10 @@ Commit 96637b0e399fa9da73a73cd8bfb9dd6c8df10ba3.
 
 **Zielentscheidung nach der Recherche vom 9. November 2026:** Mehrskalenautoren,
 numerische Übersichten, feste Renderbasis und die vier Besitzer bleiben.
-Erster Pinselkandidat ist eine einfache räumliche Stempelverteilung mit
-ausdrücklich definierter Zeit-/Haltewirkung. Ein Vorschusskonto je Stützstelle
-ist nur ein begründungsbedürftiger Gegenkandidat. Eingabeende, vollständige
+R1 hat die einfache räumliche Stempelverteilung C0 mit unabhängiger
+Zeit-/Inhaltsreferenz geprüft. Der begrenzte Wiederbesuchsfall unten widerlegt
+C0 an der lokalen Wirkungsschranke. Der einzige Gegenkandidat C1 verwendet
+deshalb eine einmalige räumliche Mindestwirkung mit Anrechnung auf die Zeitwirkung. Eingabeende, vollständige
 Aktionsübernahme und Darstellung werden getrennt; angenommene Restarbeit darf
 in kurzen budgetierten Schritten fertig werden. Eine lokale Grenze umfasst
 bereits angewandte und angenommene, noch nicht angewandte Wirkung.
@@ -18,11 +19,12 @@ die Grafikarbeit. Normale Rundungsreste bleiben im GPU-Pfad.
 
 Die Vorbilder und ihre Beweisgrenzen stehen in Abschnitt 9. Sie stützen die
 gewählten Prinzipien, qualifizieren aber weder diesen PR noch die konkreten
-Zeitziele. R1 legt den einfachen Kandidaten und seine unabhängige Referenz fest;
-R2–R4 müssen gemeinsam Inhalt, normale Wirkung, Latenz und Ressourcen belegen.
+Zeitziele. R1 legt C1 und seine unabhängige Referenz für die nächste Integration
+fest; R2–R4 müssen gemeinsam Inhalt, normale Wirkung, Latenz und Ressourcen belegen.
 
-Dies ist ein **geplanter, noch nicht implementierter und nicht positiv
-qualifizierter Zielzustand**. Aktuelle Architektur und Produktvertrag beschreiben
+R1 ist als isoliertes Eingabe-/Reservierungsmodell mit unabhängiger Referenz
+umgesetzt. Der **integrierte Zielzustand bleibt geplant und nicht positiv
+qualifiziert**; R2–R5 sind offen. Aktuelle Architektur und Produktvertrag beschreiben
 bis zur Umsetzung weiter den laufenden Code. Abschnitt 2 benennt die bewusste
 Änderung des D10-Zielvertrags und der D11-Umsetzung. Abschnitt 6 trennt Korrektheit,
 begrenzte Hardware-Richtungsentscheidung und vollständige Freigabe.
@@ -51,8 +53,9 @@ Arbeit hängt von Ausschnitt, Maßstab und tatsächlich geänderten Daten ab.
 
 **Gleiche Nutzerfunktionalität bedeutet F01–F19 mit D01–D11.** Zeitabhängige
 Pinselwirkung, sichtbare lokale Grundlage und Schutz vor einer Nachholdosis
-bleiben erhalten. D10 beschreibt ausdrücklich eine räumliche Grundwirkung plus
-zusätzliche Zeitwirkung; die Eingabehäufigkeit erzeugt keine zusätzliche Dosis.
+bleiben erhalten. D10 beschreibt eine einmalige räumliche Mindestwirkung, die
+auf die kumulierte Zeitwirkung angerechnet wird; die Eingabehäufigkeit erzeugt
+keine zusätzliche Dosis.
 Das bisherige globale Warten zwischen Dosen wird durch getrennte Annahme,
 begrenzte Ausführung und lokale Wirkungsbegrenzung ersetzt. Gewöhnlicher Weg
 und Endpunkt dürfen wegen eigener ausstehender Darstellung nicht verschwinden.
@@ -164,7 +167,7 @@ Testanzahl und exakte Canvas-Antialiasingpixel müssen nicht erhalten werden.
 | D07 | Reine Altbestandstypen ohne aktuelles Erzeugungswerkzeug entfallen.                                                                                                                   | Die alten Materialpolygone und dekorativen Landschaftsstriche mit konkreten Assets werden nicht neu gebaut. Boden-/Felsfarbe und Landschaftsdeckung ersetzen sie vollständig. Entsprechende Legacy-Tests gezielt ausmustern; aktive Werkzeugfälle erhalten. |
 | D08 | Grafik wird fachlich und visuell gleichwertig auf der GPU dargestellt.                                                                                                                | Reihenfolge, Positionen, Löcher, Materialien, Lesbarkeit und Auswahl stimmen; alte Canvas-Pixelbilder sind keine bindende Rastervorgabe.                                                                                                                    |
 | D09 | Fachliche Einheiten und Weltumfang bleiben bestehen.                                                                                                                                  | Fuß als interne Längeneinheit, metrische Anzeige, 5-Fuß-Innenraster, vorhandene 14 Ansichten und maßstabsabhängige Werkzeugfreigaben. Kein zusätzlicher Produktumbau der Maßstäbe.                                                                          |
-| D10 | Der vollständig angenommene Pinselweg einschließlich Endpunkt bleibt erhalten. Halten und langsames Ziehen erzeugen zusätzliche Zeitwirkung; bei Hängern entsteht keine Nachholdosis. | Zuerst räumlich verteilte Stempel mit expliziter Zeitregel prüfen. Wiederholtes Überfahren darf erneut räumlich wirken. Annahme und nicht rückgemeldete Wirkung bleiben begrenzt; Eingabeende und Aktionsabschluss sind getrennt.                           |
+| D10 | Der vollständig angenommene Pinselweg einschließlich Endpunkt bleibt erhalten. Halten und langsames Ziehen erzeugen zusätzliche Zeitwirkung; bei Hängern entsteht keine Nachholdosis. | C1: einmalige Mindestwirkung je Stelle/Geste mit Anrechnung auf Zeit. Wiederbesuche verstärken durch Zeit, nicht durch erneute Mindestimpulse. Annahme und nicht rückgemeldete Wirkung bleiben begrenzt; Eingabeende und Aktionsabschluss sind getrennt.    |
 | D11 | Bearbeitung beginnt auf sichtbarem, lokal bereitem Gelände; fehlende Bereitschaft ist sichtbar.                                                                                       | Keine Eingriffe oder vorgemerkten Striche auf noch unsichtbarem Gelände. UI, Eingabeannahme und Beobachtung verwenden dieselbe lokale Freigabe. Nach einer abgewiesenen Geste ist ein neuer Gestenbeginn nötig.                                             |
 
 ### D10/D11: gezielte Änderung der Eingabeverarbeitung
@@ -174,13 +177,13 @@ beschreibt den aktuellen Code. Diese Planung ändert dessen künftige Dosierungs
 und Abschlussregel ausdrücklich. Die beobachtbaren Anforderungen stehen fest;
 ihre konkrete, möglichst einfache Umsetzung wird in R1–R4 positiv geprüft.
 
-| Aktueller Mechanismus                                                     | Geplanter Mechanismus                                                                                                                           |
-| ------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| Eine ausstehende Dosis sperrt jede weitere Annahme.                       | Erfasste Geometrie, angenommene Wirkung und Darstellung haben getrennte Fortschrittsgrenzen; die lokale unquittierte Wirkung bleibt begrenzt.   |
-| Jede Wirkung benötigt noch unverbrauchte Zeit.                            | Räumlich verteilte Stempel erhalten die Bahn auch ohne neue Zeit; ausdrücklich definierte Zeitwirkung erhält Halten und stärkere langsame Züge. |
-| Eine erfolglose Zeichenchance kann Weg und Zeit gemeinsam verwerfen.      | Der erfasste, zulässige Weg bleibt erhalten. Überschüssige Zeit verfällt; echte Kapazitätsgrenzen werden vor Annahme sichtbar.                  |
-| Pointerup verwirft einen wartenden Weg.                                   | Pointerup ergänzt den Endpunkt und versiegelt die Eingabe. Bereits angenommene Arbeit wird begrenzt als dieselbe Aktion fertiggestellt.         |
-| Eigene Änderungen machen die gesamte lokale Grafikfreigabe wieder falsch. | Neue Gesten verlangen aktuelle lokale Grundlage. Innerhalb einer Geste bleiben bekannte Grundlage und eigene kontrollierte Änderungen getrennt. |
+| Aktueller Mechanismus                                                     | Geplanter Mechanismus                                                                                                                                       |
+| ------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Eine ausstehende Dosis sperrt jede weitere Annahme.                       | Erfasste Geometrie, angenommene Wirkung und Darstellung haben getrennte Fortschrittsgrenzen; die lokale unquittierte Wirkung bleibt begrenzt.               |
+| Jede Wirkung benötigt noch unverbrauchte Zeit.                            | Ein einmaliger räumlicher Mindestauftrag erhält die Bahn auch ohne neue Zeit; die darauf angerechnete Zeitwirkung erhält Halten und stärkere langsame Züge. |
+| Eine erfolglose Zeichenchance kann Weg und Zeit gemeinsam verwerfen.      | Der erfasste, zulässige Weg bleibt erhalten. Überschüssige Zeit verfällt; echte Kapazitätsgrenzen werden vor Annahme sichtbar.                              |
+| Pointerup verwirft einen wartenden Weg.                                   | Pointerup ergänzt den Endpunkt und versiegelt die Eingabe. Bereits angenommene Arbeit wird begrenzt als dieselbe Aktion fertiggestellt.                     |
+| Eigene Änderungen machen die gesamte lokale Grafikfreigabe wieder falsch. | Neue Gesten verlangen aktuelle lokale Grundlage. Innerhalb einer Geste bleiben bekannte Grundlage und eigene kontrollierte Änderungen getrennt.             |
 
 D11 bleibt für unbekannte Quellen, noch nie dargestellte Bereiche, neue
 Ansichten, Kontextverlust und neue Gesten streng. Eine Geste darf nicht durch
@@ -189,24 +192,23 @@ Bewegung brauchen ebenfalls eine nachgewiesene sichtbare Grundlage und die
 vollständigen fachlichen Quellen einschließlich Halo. Nur die eigenen laufenden
 Änderungen dürfen diese Grundlage nicht ständig wieder sperren.
 
-**Bevorzugte D10-Semantik:** Einmaliger Klickimpuls, danach räumlich verteilte
-Wegwirkung plus zusätzliche Zeitwirkung. Erneutes Überfahren derselben Stelle
-kann erneut räumlich auftragen; Halten trägt weiter zeitlich auf. Dies unterscheidet
-sich bewusst vom zuvor geplanten Maximum aus kumulierter Zeitwirkung und einer
-einmaligen Mindestwirkung je Stelle/Geste. Stempelabstand und Wirkung werden vor
-der Produktionsintegration in R1 festgelegt. Eventanzahl, RAF-Grenzen und ein
-bloßer Abschluss dürfen keine weiteren vollen Stempel erzeugen.
-Die Stärke bleibt eine Zeitrate mit daraus fest abgeleitetem räumlichem Beitrag;
-kein neuer Nutzerregler ist für die Korrektur erforderlich.
+**Nach R1 gewählte D10-Semantik:** C1 hält je Stützstelle das Maximum aus
+kumuliertem angenommenem Zeitauftrag und einmaliger räumlicher Mindestwirkung
+der vollständigen erfassten Spur. Der Anfangsklick gehört zu dieser Mindestwirkung.
+Sie wird auf spätere Zeit angerechnet, nicht zusätzlich aufaddiert. Wiederholtes
+Überfahren mit gleicher oder bereits verbuchter Zeit erhöht die Mindestwirkung
+an einer schon vollständig erfassten Stelle nicht erneut. Neue Spurflächen,
+Halten und zeitlich langsamere Züge behalten ihre Wirkung. Die konkrete Änderung
+gegenüber dem verworfenen additiven C0 ist beabsichtigt und unten begründet.
 
-Die Ziele werden nicht durch eine einzige Formel als erledigt erklärt.
-Insbesondere sind schon verbuchte Haltezeit, verspätete Bewegungen, wiederholtes
-Überfahren und stockende Grafik gemeinsam zu prüfen. Neue Geometrie mit gleichem
-oder bereits abgerechnetem Zeitstempel darf ihren Wegbeitrag erhalten; daraus
-entsteht keine neue vergangene Haltezeit. Die ausdrücklich kausale Zeitregel
-behauptet keine Kenntnis noch nicht zugestellter Zwischenpositionen. Ein
-stützstellenweiser Mindestvorschuss ist erst zulässig, wenn ein benannter
-Gegenfall den einfacheren Kandidaten widerlegt und R1 den Zusatznutzen belegt.
+Die Ziele werden nicht durch die Formel als erledigt erklärt. Bereits verbuchte
+Haltezeit wird bei verspäteten Bewegungen weder neu erzeugt noch umverteilt.
+Die kausale Zeitregel kennt keine noch nicht zugestellten Zwischenpositionen.
+Der unabhängige Zeitnachweis zählt auch den durch die Mindestwirkung bereits
+vorausbezahlten Zeitanteil genau einmal. Ein bloßer Receipt oder Abschluss
+verändert weder Mindest-/Zeitkonto noch Autoren. Rate, Kernel, 50-%-Raumanker,
+90-%-Normalzeit, örtliche 50-ms-Grenze und sämtliche Zeitziele bleiben erhalten.
+Es gibt dafür keinen zusätzlichen Nutzerregler.
 
 Der bestehende 5-Fuß-Grundrastervertrag bleibt bestehen: Ein sehr kleiner Pinsel
 zwischen Stützstellen kann ohne Höhenwirkung bleiben. Weltradius und Rasterabstand
@@ -344,16 +346,14 @@ Nachweis im Status festhalten und die Zielstellen dieses Plans angleichen. Fehle
 ein Umgebungsblocker und kein Beweis gegen einen Stack. Ein alternativer Host muss
 dieselbe native Datei-, Paket- und Präsentationsabnahme ermöglichen.
 
-**Auswahl des Pinselverfahrens:** C0, die einfache Weg-/Zeitreferenz aus
-Abschnitt 5, wird zuerst geprüft. C0 und C1 bezeichnen unterschiedliche
-Dosierungsregeln. Die nötige Genauigkeit der Wirkungs- und Rückmeldebelege wird
-innerhalb des jeweiligen Kandidaten bestimmt; ihre Verfeinerung allein ist kein
-C1. Zusätzliche Zustände je Stützstelle gehören nicht vorab zur Architektur.
-Genau ein gezielter Gegenkandidat C1 ist nur nach einem benannten Pflichtfehler
-von C0 zulässig, den eine andere Dosierungsregel beheben soll. Derselbe Höhenkern
-und Renderpfad bleiben für diesen Vergleich fest. Besteht C0 alle Kriterien,
-entfällt C1.
-Eine bloß nicht gefundene Widerlegung gilt für keinen Kandidaten als Nachweis.
+**Auswahl des Pinselverfahrens:** R1 hat C0 am unten fixierten begrenzten
+GPU-/Wiederbesuchsfall widerlegt und genau einen Gegenkandidaten C1 geprüft.
+C1 ist für R2 ausgewählt. Verfeinerung der Rückmeldebelege allein war kein
+Dosierungswechsel: Schon der reine C0-Wegauftrag überschritt das feste Limit.
+Der gemeinsame Höhenkern, die positive Splineprojektion und der Renderpfad
+bleiben Grundlage. Die geprüften C1-Inhalts-/Reservierungsregeln sind noch keine
+integrierte oder native Leistungsfreigabe. Ein weiterer ungezielter Kandidat
+gehört nicht zum Auftrag; ein R2/R4-Fehler verlangt eine konkrete neue Entscheidung.
 
 Die Anwendung hat diese vier Besitzer, keine generische Serverarchitektur:
 
@@ -966,7 +966,7 @@ Einzelmetriken trotz unvollständiger Bearbeitung. Die Vorbilder rechtfertigen
 einen einfachen ersten Kandidaten, keine vorweggenommene Freigabe. Der aktuelle
 Prüfstand bleibt im [Status](status.md).
 
-#### C0 — Erster Kandidat und feste Referenz
+#### C0 — Geprüfte, verworfene Ausgangsregel
 
 C0 verbindet räumlich verteilte Stempel mit ausdrücklich definierter Zeitwirkung.
 Ein Bogenlängenrest bleibt über Eingabe- und Framegrenzen erhalten. Es gibt
@@ -974,8 +974,8 @@ zunächst kein Konto vorausbezahlter Mindestwirkung je Stützstelle. Quellen,
 angenommene Fortsetzung, Vorherbilder, History und persistierte Änderungen
 gehören weiter dem EditorDocument; der Controller besitzt die Eingabeuhr.
 
-R1 legt vor Produktionsintegration und Leistungsmessung genau eine C0-Referenz
-fest. Dafür gelten diese Ausgangspunkte:
+Die vor der Integration fixierte C0-Referenz bleibt zur Reproduktion des
+Gegenfalls erhalten. Ihre Ausgangspunkte waren:
 
 1. Autorenstufe, Radius R, Richtung und Höhenrate r bleiben je Geste fest.
    Bestehenden quartischen Pinselverlauf und Klickimpuls P = 1/60 Sekunde als
@@ -1021,8 +1021,8 @@ Die Referenzklicks werden separat auf dem Ausgangsterrain analytisch bestimmt;
 fachliche Nullfälle sind ausgeschlossen. R1 muss diesen Wert und die exakte
 C0-Referenz gemeinsam prüfen. Ein C1 bekommt keinen kleineren Stärkeanker.
 
-Wiederholtes Überfahren erzeugt bei C0 erneut Wegwirkung; das ist die gewählte
-D10-Änderung. Stationäres Halten und dieselbe langsamer durchlaufene Bahn müssen
+Wiederholtes Überfahren erzeugt bei C0 erneut Wegwirkung; diese Ausgangsannahme
+wird durch die unten begründete C1-Auswahl ersetzt. Stationäres Halten und dieselbe langsamer durchlaufene Bahn müssen
 zusätzliche Zeitwirkung liefern. Der reine Weganteil allein genügt nicht als
 normaler Erfolg. Batchinvarianz gilt für dieselbe normalisierte Folge von
 Geometrie- und Zeitbeiträgen. Bei anderer Zustellung noch unbekannter Bewegung
@@ -1042,15 +1042,14 @@ muss eine konservative Schranke seiner Wirkung feststehen. Quellenmaterialisieru
 verbraucht diese Reserve, statt dieselbe Wirkung zweimal zu zählen. Verfallene
 Zeit wird nicht als künftiger Auftrag gespeichert. Bei positiver normierter
 Splineprojektion begrenzt eine nachgewiesene Schranke je Stützstelle auch den
-rekonstruierten Höhenzuwachs; R1 muss die Voraussetzungen für C0 selbst belegen.
+rekonstruierten Höhenzuwachs; R1 belegt diese Voraussetzung für den gewählten
+C1 unabhängig von dessen Dosierungsformel.
 
-Die einfachste ausreichende Belegform wählen: etwa eine konservative regionale
-Schranke mit exakter Versionsbindung. Ein solcher Ansatz muss beweisen, dass
-ein gesättigter Bereich keinen notwendigen normalen Weg anderswo unterdrückt.
-Stützstellenweise Rückmeldewerte oder Masken sind zulässig, wenn gröbere Belege
-diesen Nachweis verfehlen. Diese Verfeinerung gehört zur Umsetzung des gewählten
-Dosierungskandidaten und zählt nicht als C1. Sie ist getrennt von einer anderen
-Dosierungsregel mit Mindestvorschusskonto zu bewerten.
+R1 verwendet genaue Reservierungen und Rückmeldewerte je Stützstelle mit
+exakter Versionsbindung. R2 bindet diese Belege an die tatsächlichen Quellen
+und Renderstände. Ein gesättigter Bereich darf keinen örtlich zulässigen Weg
+anderswo unterdrücken. Eine spätere Vereinfachung der Belegform muss dieselbe
+Garantie erhalten; sie ändert nicht die gewählte C1-Dosierungsregel.
 Höchstens 32 MiB für Wirkung-/Reservierungsbelege plus 256 KiB Masken;
 alle physischen Puffer zählen zusätzlich zum vorhandenen CPU-Gesamtbudget.
 Eine Geste bleibt auf höchstens 512 Autorenkacheln und die vorhandenen Zellgrenzen
@@ -1079,34 +1078,94 @@ Die Zeit bis zur tatsächlichen Anzeige wird getrennt nativ geprüft. Aus der
 bloßen Existenz einer Queue, eines Fences oder eines Vorbilds folgt weder diese
 Schranke noch das 50-ms-Latenzziel.
 
-#### C1 — Ein begrenzter Gegenkandidat nur bei belegtem Bedarf
+#### C1 — Ein begründeter Gegenkandidat und Auswahl für R2
 
-Besteht C0 die festen Anforderungen, wird C0 integriert und kein C1 gebaut.
-Verfehlt C0 eine benannte Anforderung trotz korrekter Umsetzung, vor einem
-weiteren Versuch Fehlerfall, Ursache, genau eine andere Dosierungsregel und
-erwarteten Zusatznutzen festhalten. Ein möglicher C1 ist ein stützstellenweise
-vorausbezahlter Mindestauftrag. Feinere Wirkungsbelege oder die Behebung eines
-Implementierungsfehlers bleiben Arbeit am jeweiligen Kandidaten; Fehler im
-gemeinsamen Höhenkern oder Renderpfad rechtfertigen keinen Dosierungswechsel.
-Keinen Gegenkandidaten vorsorglich als Pflichtarchitektur einführen.
+**Fixierter C0-Gegenfall:** Radius 20 Fuß, Rate 1 Fuß/s, Autorenstufe 0;
+A=(20,20), B=(60,20), Eingaben A bei 0 ms → B bei 20 ms → A bei 40 ms → Up
+bei B nach 70 ms. Die GPU quittiert erst bei 200 ms. A, B und der Prüfpunkt
+(40,20) liegen in derselben Autorenkachel. Es sind vier Punkte, keine
+Kapazitätsausnahme. Am Mittelpunkt verlangt schon die vollständige reine
+C0-Wegwirkung `0,0533203125`, während angewandte plus reservierte Wirkung
+höchstens `0,05` betragen darf. Selbst vollständiger Zeitverfall, feinere Belege
+oder spätere Materialisierung lösen diesen Widerspruch nicht. Dies ist der vor
+dem C1-Vergleich benannte Pflichtfehler; der Fall wird nicht nachträglich verkürzt.
 
-Ein Mindestvorschuss wäre eine andere Dosierungsregel: max(kumulierte
-Zeitwirkung, einmaliger räumlicher Mindestauftrag), wobei bereits aufgetragene
-Wirkung auf spätere Zeit angerechnet wird. Dafür fehlen direkte Vorbilder in
-der Recherche. Seine Batch-/Receipt-Invarianz, Wirkungsschranke, Ressourcen und
-der Nutzen gegenüber C0 sind eigenständig zu belegen. Abweichungen vom
-wiederholten räumlichen Auftrag ausdrücklich in D10 festhalten; keine
-Verhaltensgleichheit behaupten und keine schwächere Referenz still einsetzen.
+**Gewählte C1-Regel:** Für eine Stützstelle i sind die nichtnegativen Beträge
+`F_i = |r| × P × max(K_i(p))` über die vollständige gelieferte Polylinie und
+`T_i` die kumulierte angenommene kausale Zeitwirkung. Es gilt
+`V_i = max(F_i, T_i)`; das feste Vorzeichen wird erst auf den Autorenbeitrag
+angewandt. K ist weiterhin der quartische Kernel, P weiterhin 1/60 Sekunde.
+Das Maximum entlang eines geraden Teilstücks liegt an dessen nächstem Punkt
+zur Stützstelle. Ecken, Endpunkt und Wiederbesuche bleiben Teil der Geometrie;
+eine expandierte Liste räumlicher Stempel entfällt. Der Anfangsklick ist Teil
+von F. Nur Zeitwirkung oberhalb von F erzeugt weiteren Höhenauftrag.
 
-Beide Kandidaten verwenden dieselben Eingaben, Parameteranker, Nutzerkriterien,
-Höhenquellen und denselben Renderer. Unterscheidbare Dosierungsformeln erhalten
-je eine unabhängige exakte Referenz, zusätzlich dieselben festen Weg-, Halte-,
-Langsam-/Schnell-, Kapazitäts- und Zeitziele. C1 wird nur gewählt, wenn es den
-benannten Pflichtfehler behebt und alle übrigen Kriterien einschließlich
-Komplexität und Ressourcen trägt. Kein messbarer Vorteil: C1 entfernen.
-Scheitern beide, Richtungsentscheidung als offen/FAIL ausweisen und die konkrete
-unverträgliche Anforderung oder Kostenursache benennen; keine dritte ungezielte
-Variante und kein Ausbau auf weitere Werkzeuge.
+Eine neue räumliche Mindestwirkung passt immer in die örtliche Reserve:
+Unquittierte einschließlich reservierter Wirkung U ist höchstens der kumulierte
+Gestenbeitrag V. Für ein neues F' gilt F' ≤ |r|P < B. Ist V ≥ F', benötigt die
+Geometrie keine weitere Wirkung. Sonst gilt U + F' − V ≤ F' < B. Diese Aussage
+setzt monotone Gestenkonten voraus: Receipts setzen F/T niemals zurück.
+Zeit wird dagegen vor Annahme auf den verfügbaren örtlichen Rest begrenzt;
+verfallene Zeit wird ausdrücklich ausgewiesen und bei späterer Quittung nicht
+nachgeholt. Materialisierung verbraucht dieselbe Reserve, statt neu zu buchen.
+
+**Unabhängige Referenz und feste Eingaberegel:**
+
+- Eingabezeiten liegen auf der monotonen Browseruhr; epochbasierte Zeitstempel
+  werden einmal um `performance.timeOrigin` versetzt. Nichtendliche, zukünftige,
+  doppelt erfasste oder geometrisch rückwärts geordnete Eingaben werden vor
+  Mutation abgewiesen. Die fortlaufende Erfassungsnummer unterscheidet auch
+  Punkte mit gleichem Zeitstempel. Coalescing liefert entweder Einzelpunkte
+  oder das zusammenfassende Ereignis, nie beides.
+- Neue Geometrie wird vor weiterem Halten verarbeitet. Für eine Gruppe gleicher
+  Zeitstempel wird nur noch unverbuchte Zeit nach Teilstreckenlänge verteilt;
+  bei Nullstrecke liegt sie am letzten Punkt. Die gemeinsame Uhr T läuft über
+  verworfene Zeit hinweg weiter. Geometrie hinter T bleibt erhalten, erzeugt
+  aber keine neue vergangene Zeit. Das terminale Fenster enthält als letzten
+  Punkt das tatsächliche Up-Sample, auch bei unveränderter Position. Up verwendet
+  dessen Ereigniszeitpunkt, nicht die spätere Handlerankunft, und dreht T niemals
+  zurück. Ein terminales Fenster ohne Up-Sample ist ungültig.
+- Je beobachtetem Fenster bleiben höchstens 50 ms proportional verteilter
+  Zeitauftrag. Die Normalreferenz erhält zusätzlich das **ungekappte** Angebot.
+  Die örtliche Begrenzung zählt schon angenommene Restarbeit mit. 127 offene
+  Punkte lassen den 128. Platz für Up frei; ein terminales Fenster erlaubt
+  genau 128. Die gemeinsame wartende Menge ist in R2 daran zu binden.
+- `scripts/atlas-p0-brush-reference.mjs` berechnet Sollwerte ausschließlich aus
+  Rohpunkten und beobachteten Zeitfenstern. Es importiert keinen Produktcode.
+  Manifest und Prüfpositionen sind vor dem Kandidatenlauf festgelegt und gegen
+  Veränderung geschützt; auch die Referenzergebnisse stehen vor dessen Ausführung fest.
+  Eine kreisbeschnittene Drei-Punkt-Gaußintegration und eine getrennte kubische
+  Basis prüfen die produktive Quartikintegration und Rekonstruktion unabhängig.
+  Absolute Toleranz `1e-10` Fuß plus relative Toleranz `1e-9` sind vorab fest;
+  die Darstellungstoleranz bleibt separat unverändert.
+- Der Auswerter prüft den gesamten manifestierten Weg einschließlich Außenproben,
+  jede Region und jedes vollständige Einsekundenfenster. `timeAccount` enthält
+  auch bereits vorausbezahlte Zeit; `max(F,T)` wird vor der Splineprojektion
+  ausgewertet. Ein Fenster erhält nicht erneut denselben Mindestvorschuss.
+  Geometrie gehört erst ab dem verbuchten Ende ihres gelieferten Fensters zu
+  einem kumulierten Prüfstand; späte Punkte werden nicht rückwirkend auf frühere
+  Prüfstände projiziert. Ein später terminaler Beitrag bei derselben Uhr ergänzt
+  deren endgültigen Stand. Diese Buchungsgrenze ist kein Präsentationszeitpunkt.
+  Fehlende Mitte, Ecke, Endpunkt, Zeit, Fenster oder Proben sowie zu schwache,
+  zu starke und gegenläufige Ergebnisse müssen das gemeinsame Inhaltsurteil
+  scheitern lassen. Der 50-%-Klickanker bleibt zusätzlich bestehen.
+
+**Kosten und Integrationsgrenze:** `PrepaidBrush` hält zwei Float64-Konten je
+berührbarer Stützstelle; bei 100.000 Stellen zusammen 1.600.000 Byte. Zusammen
+mit den Reservierungs-/Receiptpuffern gilt weiterhin das Maximum von 32 MiB;
+Masken werden nicht benötigt. `BrushReservations` hält höchstens 512
+Kachelindizes, 100.000 Stellen, 128 Reservierungen und zwei eingefrorene Belege.
+Diese Grenzen sind gezählte Puffer und Strukturgrenzen, keine Messung des
+vollständigen JavaScript-Heaps oder der Laufzeit. R2 muss Annahme und
+Terminalreserve vor Handler-Rückkehr innerhalb des CPU-Budgets nachweisen;
+R3/R4 müssen Renderarbeit, Ergebnistakt und Hardwarekosten belegen. Auch die
+kurze zeitliche Plateauphase des vorausbezahlten Anfangs bleibt Gegenstand der
+unveränderten 20-/50-ms-Abnahme.
+
+Der verworfene C0 bleibt nur als unabhängige negative Inhaltsreferenz erhalten,
+nicht als zweiter Produktpfad. Der aktive Editor verwendet bis R2 weiterhin
+seinen bisherigen Vertrag. Die bestehenden Controller-, Datei- und
+Lifecycleprüfungen werden erst bei der tatsächlichen Integration ersetzt.
 
 #### Aufnahme, Zeitkonto und geordneter Abschluss
 
@@ -1172,7 +1231,7 @@ erfolgreichen Wechsel/Schließen nach A07; ein fehlgeschlagenes Open erhält sie
 
 **Endliche Arbeitsgrenze:** Höchstens 128 noch nicht abgearbeitete Punkte
 einschließlich versiegelter Restarbeit und reserviertem Endpunktplatz; keine
-zweite unbegrenzte Liste expandierter Stempel. Bogenlängenfortschritt erlaubt
+zweite unbegrenzte Liste expandierter Stempel. Fortschritt entlang der Spur erlaubt
 eine begrenzte schrittweise Enumeration. Quelle, Arbeit und Effekt werden vor
 Annahme reserviert, kleine Quellenupdates bleiben atomar.
 Lange diagonale Segmente enumerieren ihre Pinselspur statt eines riesigen
@@ -1182,7 +1241,7 @@ Abschnitt; angenommener Inhalt bleibt vollständig erhalten.
 Alle normalen Pflichtverläufe und die ausdrücklich begrenzten Überlastpfade
 müssen ihre vollständige räumliche Wirkung erhalten. Blockiert ein zu grober
 Wirkungsbeleg darin einen örtlich zulässigen Abschnitt, ist das ein Fehler der
-Belegform innerhalb des Kandidaten, kein automatischer Anlass für C1. Er darf
+Belegform innerhalb des Kandidaten, kein Anlass für einen weiteren Dosierungskandidaten. Er darf
 nicht als Kapazitätsausnahme umbenannt werden. Die sichtbare Ausnahme
 gilt für die gesonderten Fälle jenseits des vorher manifestierten Umfangs.
 Eine unbegrenzte Eingabemenge bei dauerhaft blockierter GPU ist keine zugesagte
@@ -1190,12 +1249,12 @@ Arbeitslast.
 
 #### Minimale Zustände und entfallende Mechanik
 
-| Besitzer                  | Geplanter Zustand                                                                                                             | Entfällt                                                                                                              |
-| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| EditorDocument            | Livequellen, Vorherbilder, eine aktive/abschließende Geste mit angenommener begrenzter Fortsetzung, History/Pending           | Kopien je Live-Dosis, soweit Gestenvorherbilder und unveränderliche Nachherstände sie ersetzen                        |
-| Controller mit brush.ts   | idle/active/finishing/blocked; Polylinie, Bogenlängenrest, feste Parameter, Zeitkonto und begrenzte Wirkungs-/Rückmeldebelege | awaitingDose als globale Eingabesperre, Wegverlust nach erfolgloser Zeichenrunde; kein obligatorisches Vorschusskonto |
-| WorldRenderer/HeightField | Neueste Quellen je Schlüssel, Dirtyunion, ein eingefrorener Stand, kleine Aufgaben, höchstens zwei GL-Slots                   | Ganze Vorbereitung aller dirty Tiles vor Budgetwahl, Renderjob pro Dosis, normale synchrone CPU-Rasterung             |
-| ProjectSession            | Ein geordneter Writer, Datei-/Saved-/Recoveryzustand und vorhandene Aktionsgrenze                                             | Keine neue Schreibqueue oder Autorenautorität                                                                         |
+| Besitzer                  | Geplanter Zustand                                                                                                                     | Entfällt                                                                                                              |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| EditorDocument            | Livequellen, Vorherbilder, eine aktive/abschließende Geste mit angenommener begrenzter Fortsetzung, History/Pending                   | Kopien je Live-Dosis, soweit Gestenvorherbilder und unveränderliche Nachherstände sie ersetzen                        |
+| Controller mit brush.ts   | idle/active/finishing/blocked; Polylinie, feste Parameter, kausale Uhr, C1-Mindest-/Zeitkonto und begrenzte Wirkungs-/Rückmeldebelege | awaitingDose als globale Eingabesperre, Wegverlust nach erfolgloser Zeichenrunde, Stempelrestkonto des verworfenen C0 |
+| WorldRenderer/HeightField | Neueste Quellen je Schlüssel, Dirtyunion, ein eingefrorener Stand, kleine Aufgaben, höchstens zwei GL-Slots                           | Ganze Vorbereitung aller dirty Tiles vor Budgetwahl, Renderjob pro Dosis, normale synchrone CPU-Rasterung             |
+| ProjectSession            | Ein geordneter Writer, Datei-/Saved-/Recoveryzustand und vorhandene Aktionsgrenze                                                     | Keine neue Schreibqueue oder Autorenautorität                                                                         |
 
 Unter src/editor/brush.ts bleiben reine Entscheidungen, unter model/ Integration
 und fachliche Grenzen. Der Fachkern erhält begrenzte erlaubte Wirkung, keine
@@ -1205,20 +1264,20 @@ erweitert, soweit die Abschlussbarriere es benötigt; keine zweite Pipeline.
 
 #### Arbeitspakete mit Liefergegenstand und Stopkriterium
 
-| Paket                                            | Konkrete Arbeit und Dateien                                                                                                                                                                                                                                                                                                    | Abschlussbeleg                                                                                                                                                                                                                               | Stopkriterium                                                                                                                                    |
-| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| R1 — Einfachen Kandidaten und Referenz festlegen | brush.ts/model-Tests und vorhandener Auswerter: C0 mit eingefrorener Weg-/Zeitregel, Normierung, lokalen Reservierungen und unabhängigen Raum-/Zeitreferenzen; nur bei benanntem Bedarf an anderer Dosierung genau ein C1. Unabhängige Inhaltsreferenz und ihre Fehlerkontrollen vor Ablösung alter Ablaufprüfungen festlegen. | Analytische Klick-/Halte-/Geradenfälle, gleicher Weg bei anderer Zustellung, wiederholte Besuche, Up-/Überlastfälle und absichtliche Fehlerkontrollen unterscheiden sich korrekt. Auswahl samt Kosten und offenen Hardwarebelegen begründet. | Kein weiterer Umbau bei widersprüchlicher Semantik oder selbst gesetztem schwächerem Soll; fehlende Widerlegung ist kein Erfolg.                 |
-| R2 — Einen vollständigen Höhenweg integrieren    | EditorController, brush.ts, EditorDocument, WorldRenderer/HeightField: ausgewählten Kandidaten, begrenzte Annahme/Fortsetzung, lokale Belege, eingefrorenen Renderstand und vollständigen Receipt zusammenführen.                                                                                                              | Weg/Endpunkt bei verzögerter GPU; keine neue Zeitwirkung nach Up; nach tatsächlichem Aktionsabschluss null späte Mutation. Reservierungen, ein Undo, Up→Save/Reopen, Abbruch und alte Receipts stimmen.                                      | Globales Dosisgate, verlorener normaler Endpunkt, unreservierte Restwirkung oder zweite Autorenautorität widerlegen den Kandidaten.              |
-| R3 — Normalen Renderpfad begrenzen               | height-field-data, HeightField, WorldRenderer, EditorController, budgets.ts: Kleinstwerte mit Fehlerbudget, Auswahl vor Vorbereitung, lokale Metadaten, 2 GL-Slots und kurze GPU-Pakete. Mit dem ersten produktiven Ausnahmejob die minimale gemeinsame Jobzulassung aus A06 einführen.                                        | Normaler Zoom-/Level-9-Fall hat null CPU-Fallback; alle 22 Stufen stimmen; Ressourcen, Contextloss, Snapshotüberholung und budgetierte Autorenfortsetzung sind geprüft; Abbruch gibt den Rechenslot erst nach tatsächlichem Ende frei.       | Normale Großpinsel erreichen Framedauer nur durch Weg-/Zeitverlust oder unteilbare Aufgaben überschreiten das Budget.                            |
-| R4 — Positive Hardware-Richtungsprobe            | Bestehende Collection-/Graphics-/Scaling-/Interaktionsrunner prüfen denselben gewählten Produktpfad mit kombiniertem Urteil.                                                                                                                                                                                                   | Feste kleine GPU-Matrix: vollständiger Weg, ≥90 % normale Referenzwirkung, sichtbarer Ergebnisabstand p95 ≤20 ms, CPU-/GPU-/Ressourcenbudgets; Input→Submit p95 ≤50 ms nur als notwendiger Proxy.                                            | Kein Werkzeugausbau bei rotem Normalfall. Kostenursache benennen; ein Verfahrenswechsel muss die bereits festgelegten Kriterien erneut bestehen. |
-| R5 — Gemeinsamer Fall und Freigabe               | Nur benötigte P1/P2-Schritte mit P3-Rundlauf verbinden; nativen Deadline-Nachweis qualifizieren, danach vollständige Pflichtstichprobe.                                                                                                                                                                                        | Höhe + Landschaft/Lichtung + Haus/Fundament + vorbereitete Wasserfläche bleiben gemeinsam korrekt und flüssig; native P0-Abnahme und P3-Gate bestehen.                                                                                       | Keine P4–P9-Übertragung bei weltweiter Nachführung, neuem Commitsonderweg oder fehlender gemeinsamer Zeitreserve.                                |
+| Paket                                                 | Konkrete Arbeit und Dateien                                                                                                                                                                                                                                                             | Abschlussbeleg                                                                                                                                                                                                                               | Stopkriterium                                                                                                                                    |
+| ----------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| R1 — Kandidatenwahl abgeschlossen; Nachweis im Status | brush.ts/model-Tests und vorhandener Auswerter: C0 am fixierten Wiederbesuchsfall widerlegt; C1 mit kausaler Eingabeuhr, lokalen Reservierungen und unabhängiger Inhaltsreferenz ausgewählt. C0 bleibt allein als negativer räumlicher Gegenbeweis.                                     | Analytische Klick-/Halte-/Geradenfälle, gleicher Weg bei anderer Zustellung, wiederholte Besuche, Up-/Überlastfälle und absichtliche Fehlerkontrollen unterscheiden sich korrekt. Auswahl samt Kosten und offenen Hardwarebelegen begründet. | Kein weiterer Umbau bei widersprüchlicher Semantik oder selbst gesetztem schwächerem Soll; fehlende Widerlegung ist kein Erfolg.                 |
+| R2 — Einen vollständigen Höhenweg integrieren         | EditorController, brush.ts, EditorDocument, WorldRenderer/HeightField: ausgewählten Kandidaten, begrenzte Annahme/Fortsetzung, lokale Belege, eingefrorenen Renderstand und vollständigen Receipt zusammenführen.                                                                       | Weg/Endpunkt bei verzögerter GPU; keine neue Zeitwirkung nach Up; nach tatsächlichem Aktionsabschluss null späte Mutation. Reservierungen, ein Undo, Up→Save/Reopen, Abbruch und alte Receipts stimmen.                                      | Globales Dosisgate, verlorener normaler Endpunkt, unreservierte Restwirkung oder zweite Autorenautorität widerlegen den Kandidaten.              |
+| R3 — Normalen Renderpfad begrenzen                    | height-field-data, HeightField, WorldRenderer, EditorController, budgets.ts: Kleinstwerte mit Fehlerbudget, Auswahl vor Vorbereitung, lokale Metadaten, 2 GL-Slots und kurze GPU-Pakete. Mit dem ersten produktiven Ausnahmejob die minimale gemeinsame Jobzulassung aus A06 einführen. | Normaler Zoom-/Level-9-Fall hat null CPU-Fallback; alle 22 Stufen stimmen; Ressourcen, Contextloss, Snapshotüberholung und budgetierte Autorenfortsetzung sind geprüft; Abbruch gibt den Rechenslot erst nach tatsächlichem Ende frei.       | Normale Großpinsel erreichen Framedauer nur durch Weg-/Zeitverlust oder unteilbare Aufgaben überschreiten das Budget.                            |
+| R4 — Positive Hardware-Richtungsprobe                 | Bestehende Collection-/Graphics-/Scaling-/Interaktionsrunner prüfen denselben gewählten Produktpfad mit kombiniertem Urteil.                                                                                                                                                            | Feste kleine GPU-Matrix: vollständiger Weg, ≥90 % normale Referenzwirkung, sichtbarer Ergebnisabstand p95 ≤20 ms, CPU-/GPU-/Ressourcenbudgets; Input→Submit p95 ≤50 ms nur als notwendiger Proxy.                                            | Kein Werkzeugausbau bei rotem Normalfall. Kostenursache benennen; ein Verfahrenswechsel muss die bereits festgelegten Kriterien erneut bestehen. |
+| R5 — Gemeinsamer Fall und Freigabe                    | Nur benötigte P1/P2-Schritte mit P3-Rundlauf verbinden; nativen Deadline-Nachweis qualifizieren, danach vollständige Pflichtstichprobe.                                                                                                                                                 | Höhe + Landschaft/Lichtung + Haus/Fundament + vorbereitete Wasserfläche bleiben gemeinsam korrekt und flüssig; native P0-Abnahme und P3-Gate bestehen.                                                                                       | Keine P4–P9-Übertragung bei weltweiter Nachführung, neuem Commitsonderweg oder fehlender gemeinsamer Zeitreserve.                                |
 
 R1 ist eine endliche Auswahl, kein neues Testframework und keine allgemeine
 Brush-Engine. R2 wird als ein vertikaler Kandidat integriert; Annahme ohne
 passende Ausführung und Rückmeldung gilt nicht isoliert als fertig.
 R3 kann parallel vorbereitet werden; gemeinsame Versionen und Integration
-haben einen Verantwortlichen. Nach Auswahl den unbenutzten Gegenkandidaten
-entfernen. Jeder Implementierungspaketabschluss aktualisiert die betroffenen
+haben einen Verantwortlichen. Es bleibt ein C1-Produktkandidat; C0 hat keinen
+Produktpfad und keinen allgemeinen Inhaltsauswerter mehr. Jeder Implementierungspaketabschluss aktualisiert die betroffenen
 aktuellen Produkt-/Architekturabschnitte und den Kurzstatus.
 
 R4 bleibt eine kurze Richtungsentscheidung. Fehlende Hardware ist ein benannter
@@ -1784,18 +1843,17 @@ nachträglich als Ausnahme deklariert werden.
   Weg-/Endpunktprüfung und Ergebnisfrequenz bleiben zusätzliche Pflichtkriterien.
   Räumliche und zeitliche Wirkung außerdem unabhängig prüfen: Eine isolierte
   Nullzeit-Polylinie muss die vorab analytisch bestimmte räumliche Sollwirkung
-  des festgelegten Kernels, Stempelabstands und Stärkeankers liefern; ein bloß
+  des quartischen Kernels und einmaligen C1-Mindestauftrags liefern; ein bloß
   positives Epsilon-Ergebnis genügt nicht. Zusätzlich gilt der gemeinsame
   Mindestwert von 50 % des isolierten Referenzklicks an jeder manifestierten
   Prüfposition aus R1, auch für C1 und die begrenzten Staufälle. Gerade, Ecken,
   Wiederbesuche und Endpunkt gehören dazu; Außenproben erkennen falsche Abkürzungen.
   Stationäres Halten mit zwei festen Dauern prüft die unveränderte Höhenrate;
-  Klickimpuls und ein fest definierter Quantisierungsrest werden getrennt
+  Anfangsklick und seine einmalige Anrechnung auf die Zeitwirkung werden getrennt
   ausgewiesen. Dieselbe schnelle/langsame Spur prüft den zeitdominierten Bereich.
   Mindestens 90 % des normalen Zeitauftrags müssen auch dort wirksam werden;
   reine Wegwirkung ersetzt diesen Nachweis nicht.
-  Bei einem ausdrücklich gewählten C1 mit anderer Dosierungsformel seine
-  Anrechnung einmalig korrekt über Regionen und Zeitfenster bilanzieren.
+  Die C1-Anrechnung wird einmalig korrekt über Regionen und Zeitfenster bilanziert.
   Die gemeinsamen Stärkeanker und Nutzerkriterien bleiben unverändert.
   Die Referenz erhält den vollständigen normalisierten Eingabestrom, die
   beobachteten Zeitfenster und die einmal festgelegte kausale Zeitregel; sie
@@ -1989,19 +2047,19 @@ Nur Paketstatus und Verweise hier pflegen. Commit, Prüfzahlen, Messwerte und
 konkrete Fehler stehen ausschließlich im [Status](status.md). Historische
 Rohbelege werden nicht umgeschrieben.
 
-| Paket | Umfang                                                                  | Status / Nachweis                                                                                                                                                                      |
-| ----- | ----------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| K1–K6 | Begrenzte Konsolidierung aus Abschnitt 5.                               | Implementiert; genaue Nachweis-/CI-Grenze im Status.                                                                                                                                   |
-| P0    | Höhenversuch P0a–P0f, Korrektur R1–R5, D10/D11 und native Höhenabnahme. | Einfache Weg-/Zeitreferenz, geordneter Abschluss und begrenzter Renderstand geplant; Kandidat noch nicht ausgewählt/implementiert. Großpinselbefund bleibt FAIL, native Abnahme offen. |
-| P1    | Gemeinsamer Kern für F01–F19, A02–A06/D01/D02.                          | Offen; nach positivem R4 nur benötigte P3-Erweiterungen, weiterer Ausbau erst nach P0 und P3.                                                                                          |
-| P2    | F19, A07 und vollständige Projektdateien.                               | Offen; neue P3-Quellen sofort in den vorhandenen Dateipfad aufnehmen.                                                                                                                  |
-| P3    | F01–F04/F18-Basis, Mehrskaligkeit, Konkurrenz, D03 und M10-Teilfälle.   | Offen.                                                                                                                                                                                 |
-| P4    | F04–F07, D01/D02 und komplette Flächenwerkzeuge.                        | Offen.                                                                                                                                                                                 |
-| P5    | F08–F12/D04: Straßen, Parzellen und Außenhäuser.                        | Offen.                                                                                                                                                                                 |
-| P6    | F02/F12–F14: hauslokale Innenräume.                                     | Offen.                                                                                                                                                                                 |
-| P7    | F09/F16/F17/D03: Gewässer und Nachführung.                              | Offen.                                                                                                                                                                                 |
-| P8    | F03/F15/F18: Regionen, Bedienung und Kartografie.                       | Offen.                                                                                                                                                                                 |
-| P9    | F01–F19 integriert, M01–M10, RPM, Altpfadabbau und Doku.                | Offen.                                                                                                                                                                                 |
+| Paket | Umfang                                                                  | Status / Nachweis                                                                                                                                          |
+| ----- | ----------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| K1–K6 | Begrenzte Konsolidierung aus Abschnitt 5.                               | Implementiert; genaue Nachweis-/CI-Grenze im Status.                                                                                                       |
+| P0    | Höhenversuch P0a–P0f, Korrektur R1–R5, D10/D11 und native Höhenabnahme. | R1: C0 widerlegt, C1 als isoliertes Modell mit unabhängiger Referenz gewählt. R2/R3-Integration offen; Großpinselbefund bleibt FAIL, native Abnahme offen. |
+| P1    | Gemeinsamer Kern für F01–F19, A02–A06/D01/D02.                          | Offen; nach positivem R4 nur benötigte P3-Erweiterungen, weiterer Ausbau erst nach P0 und P3.                                                              |
+| P2    | F19, A07 und vollständige Projektdateien.                               | Offen; neue P3-Quellen sofort in den vorhandenen Dateipfad aufnehmen.                                                                                      |
+| P3    | F01–F04/F18-Basis, Mehrskaligkeit, Konkurrenz, D03 und M10-Teilfälle.   | Offen.                                                                                                                                                     |
+| P4    | F04–F07, D01/D02 und komplette Flächenwerkzeuge.                        | Offen.                                                                                                                                                     |
+| P5    | F08–F12/D04: Straßen, Parzellen und Außenhäuser.                        | Offen.                                                                                                                                                     |
+| P6    | F02/F12–F14: hauslokale Innenräume.                                     | Offen.                                                                                                                                                     |
+| P7    | F09/F16/F17/D03: Gewässer und Nachführung.                              | Offen.                                                                                                                                                     |
+| P8    | F03/F15/F18: Regionen, Bedienung und Kartografie.                       | Offen.                                                                                                                                                     |
+| P9    | F01–F19 integriert, M01–M10, RPM, Altpfadabbau und Doku.                | Offen.                                                                                                                                                     |
 
 ## 8. Definition von „erledigt“
 

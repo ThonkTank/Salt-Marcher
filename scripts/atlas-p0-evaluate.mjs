@@ -1,5 +1,9 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { pathToFileURL } from "node:url";
+import {
+  referenceC1Stroke,
+  reconstructReferenceC1Stroke,
+} from "./atlas-p0-brush-reference.mjs";
 
 /**
  * The executable evaluator owns its contracts. Optional report fields remain
@@ -1432,6 +1436,336 @@ export function evaluateSaveOverlap({
     inputEpochMs,
     modelEpochMs,
   };
+}
+
+/** Fixed before candidate measurement; these are height values in feet. */
+export const BRUSH_CONTENT_TOLERANCE = Object.freeze({
+  absolute: 1e-10,
+  relative: 1e-9,
+});
+
+/**
+ * @typedef {{point: readonly number[], at: number, input: number}} BrushInputPoint
+ * @typedef {{brush: {level: number, radius: number, amount: number}, start: BrushInputPoint, windows: readonly {at: number, points: readonly BrushInputPoint[], end?: boolean}[]}} BrushInputManifest
+ * @typedef {{input: BrushInputManifest, mode: "normal" | "overload", probes: readonly (readonly number[])[], centerline: readonly (readonly number[])[], regions: readonly {id: string, indices: readonly number[]}[]}} BrushContentSpec
+ * @typedef {{initial: readonly number[], spatial: readonly number[], time: readonly number[], total: readonly number[]}} BrushObservedChannels
+ */
+
+/**
+ * @typedef {BrushObservedChannels & {floor: readonly number[], timeAccount: readonly number[]}} C1ObservedChannels
+ * @typedef {C1ObservedChannels & {centerlineSpatial: readonly number[], windows: readonly (C1ObservedChannels & {fromAt:number,toAt:number})[]}} C1ContentObservation
+ */
+
+/**
+ * The single justified C1 comparison keeps the same input and strength anchors.
+ * Credit is counted in the cumulative time account, never as a second source
+ * increment: per author coefficient H = max(floor, accepted temporal offer).
+ * This equation must be checked before positive cubic surface reconstruction.
+ * @param {BrushContentSpec} spec
+ * @param {C1ContentObservation} observed
+ */
+export function evaluateC1StrokeContent(spec, observed) {
+  /** @type {EvaluationIssue[]} */
+  const failures = [];
+  const fail = (code, details = {}) => failures.push({ code, ...details });
+  const result = () => ({
+    scope: "R1-model-content",
+    candidate: "C1",
+    status: failures.length ? "FAIL" : "PASS",
+    passed: failures.length === 0,
+    failures,
+  });
+  const point = (value) =>
+    Array.isArray(value) && value.length === 2 && value.every(finite);
+  if (
+    !spec ||
+    !["normal", "overload"].includes(spec.mode) ||
+    !Array.isArray(spec.probes) ||
+    !spec.probes.length ||
+    !spec.probes.every(point) ||
+    !Array.isArray(spec.centerline) ||
+    !spec.centerline.length ||
+    !spec.centerline.every(point) ||
+    !Array.isArray(spec.regions) ||
+    !spec.regions.length
+  ) {
+    fail("C1_INVALID_CONTENT_MANIFEST");
+    return result();
+  }
+  let expected;
+  let surface;
+  try {
+    expected = referenceC1Stroke(spec.input, spec.probes);
+    surface = reconstructReferenceC1Stroke(spec.input, spec.centerline);
+  } catch (error) {
+    fail("C1_INVALID_INPUT_REFERENCE", { reason: String(error) });
+    return result();
+  }
+  const width = spec.probes.length;
+  const step = 5 * 2 ** spec.input.brush.level;
+  if (
+    spec.probes.some((probe) =>
+      probe.some((axis) => !Number.isInteger(axis / step)),
+    )
+  )
+    fail("C1_NON_AUTHOR_PROBE");
+  for (const input of [
+    spec.input.start,
+    ...spec.input.windows.flatMap((window) => window.points),
+  ])
+    if (
+      !spec.centerline.some(
+        (probe) => probe[0] === input.point[0] && probe[1] === input.point[1],
+      )
+    )
+      fail("C1_MISSING_PATH_VERTEX", { input: input.input });
+  const ids = new Set();
+  const covered = new Set();
+  for (const region of spec.regions) {
+    if (
+      !region ||
+      typeof region.id !== "string" ||
+      !region.id ||
+      ids.has(region.id) ||
+      !Array.isArray(region.indices) ||
+      !region.indices.length ||
+      new Set(region.indices).size !== region.indices.length ||
+      region.indices.some(
+        (index) => !Number.isInteger(index) || index < 0 || index >= width,
+      )
+    ) {
+      fail("C1_INVALID_REGION_MANIFEST");
+      continue;
+    }
+    ids.add(region.id);
+    for (const index of region.indices) covered.add(index);
+  }
+  if (covered.size !== width) fail("C1_UNCOVERED_AUTHOR_PROBE");
+  const channels = /** @type {const} */ ([
+    "initial",
+    "spatial",
+    "time",
+    "total",
+    "floor",
+    "timeAccount",
+  ]);
+  const vector = (values, length) =>
+    Array.isArray(values) && values.length === length && values.every(finite);
+  if (
+    !observed ||
+    channels.some((channel) => !vector(observed[channel], width)) ||
+    !vector(observed.centerlineSpatial, spec.centerline.length) ||
+    !Array.isArray(observed.windows) ||
+    observed.windows.length !== expected.timeWindows.length ||
+    observed.windows.some(
+      (window, index) =>
+        !window ||
+        window.fromAt !== expected.timeWindows[index].fromAt ||
+        window.toAt !== expected.timeWindows[index].toAt ||
+        channels.some((channel) => !vector(window[channel], width)),
+    )
+  )
+    fail("C1_MISSING_OR_INVALID_OBSERVATION");
+  if (failures.length) return result();
+
+  const sign = Math.sign(spec.input.brush.amount) || 1;
+  const tolerance = (value) =>
+    BRUSH_CONTENT_TOLERANCE.absolute +
+    BRUSH_CONTENT_TOLERANCE.relative * Math.abs(value);
+  const compare = (actual, minimum, maximum, epsilon, details) => {
+    if (![actual, minimum, maximum, epsilon].every(finite)) {
+      fail("C1_NONFINITE_REFERENCE_OR_AGGREGATE", details);
+      return;
+    }
+    if (sign * actual < -epsilon) fail("C1_WRONG_SIGN", details);
+    if (sign * actual + epsilon < sign * minimum)
+      fail("C1_CONTENT_UNDER_TARGET", { ...details, actual, minimum });
+    if (sign * actual - epsilon > sign * maximum)
+      fail("C1_CONTENT_OVER_TARGET", { ...details, actual, maximum });
+  };
+  const checkVector = (actual, minimum, maximum, channel, scope) => {
+    for (let index = 0; index < width; index++)
+      compare(
+        actual[index],
+        minimum[index],
+        maximum[index],
+        tolerance(maximum[index]),
+        { scope, channel, index },
+      );
+    for (const region of [
+      { id: "whole-probe-set", indices: spec.probes.map((_, index) => index) },
+      ...spec.regions,
+    ]) {
+      const sum = (values) =>
+        region.indices.reduce((total, index) => total + values[index], 0);
+      const epsilon = region.indices.reduce(
+        (total, index) => total + tolerance(maximum[index]),
+        0,
+      );
+      compare(sum(actual), sum(minimum), sum(maximum), epsilon, {
+        scope,
+        channel,
+        region: region.id,
+      });
+    }
+  };
+  const checkAccount = (actual, reference, scope) => {
+    const lower = reference.uncappedTimeAccount.map((value) =>
+      spec.mode === "normal" ? 0.9 * value : 0,
+    );
+    checkVector(
+      actual.timeAccount,
+      lower,
+      reference.timeAccount,
+      "timeAccount",
+      scope,
+    );
+    checkVector(actual.floor, reference.floor, reference.floor, "floor", scope);
+  };
+  checkAccount(observed, expected, "gesture");
+  for (const channel of ["initial", "spatial"])
+    checkVector(
+      observed[channel],
+      expected[channel],
+      expected[channel],
+      channel,
+      "gesture",
+    );
+  for (let index = 0; index < width; index++) {
+    const total =
+      sign *
+      Math.max(
+        sign * observed.floor[index],
+        sign * observed.timeAccount[index],
+      );
+    const extra = total - observed.floor[index];
+    compare(observed.total[index], total, total, tolerance(total), {
+      scope: "gesture",
+      channel: "total",
+      index,
+    });
+    compare(observed.time[index], extra, extra, tolerance(extra), {
+      scope: "gesture",
+      channel: "time",
+      index,
+    });
+    if (
+      Math.abs(
+        observed.initial[index] +
+          observed.spatial[index] -
+          observed.floor[index],
+      ) > tolerance(expected.floor[index])
+    )
+      fail("C1_INCONSISTENT_FLOOR", { index });
+  }
+
+  // Window source changes use the carried credit. Recomputing max from each
+  // window's increments would charge the same floor again at every boundary.
+  const cumulative = {
+    floor: new Array(width).fill(0),
+    timeAccount: new Array(width).fill(0),
+    total: new Array(width).fill(0),
+    initial: new Array(width).fill(0),
+    spatial: new Array(width).fill(0),
+    time: new Array(width).fill(0),
+  };
+  for (
+    let windowIndex = 0;
+    windowIndex < expected.timeWindows.length;
+    windowIndex++
+  ) {
+    const actual = observed.windows[windowIndex];
+    const reference = expected.timeWindows[windowIndex];
+    const scope = `window-${windowIndex}`;
+    checkAccount(actual, reference, scope);
+    for (const channel of ["initial", "spatial"])
+      checkVector(
+        actual[channel],
+        reference[channel],
+        reference[channel],
+        channel,
+        scope,
+      );
+    for (let index = 0; index < width; index++) {
+      cumulative.floor[index] += actual.floor[index];
+      cumulative.timeAccount[index] += actual.timeAccount[index];
+      const total =
+        sign *
+        Math.max(
+          sign * cumulative.floor[index],
+          sign * cumulative.timeAccount[index],
+        );
+      const increment = total - cumulative.total[index];
+      compare(actual.total[index], increment, increment, tolerance(total), {
+        scope,
+        channel: "total",
+        index,
+      });
+      cumulative.total[index] = total;
+      for (const channel of ["initial", "spatial", "time"])
+        cumulative[channel][index] += actual[channel][index];
+      // Final-decomposition time can decrease as newly observed geometry
+      // reattributes old source effect to the floor. It is not another debit.
+      const extra = total - cumulative.floor[index];
+      if (Math.abs(cumulative.time[index] - extra) > tolerance(total))
+        fail("C1_INCONSISTENT_WINDOW_CREDIT", { scope, index });
+    }
+  }
+  for (let index = 0; index < width; index++)
+    for (const channel of ["floor", "timeAccount", "total"])
+      if (
+        sign * cumulative[channel][index] >
+        sign * observed[channel][index] + tolerance(observed[channel][index])
+      )
+        fail("C1_WINDOW_EXCEEDS_GESTURE", { channel, index });
+
+  // The whole-stroke result must reconcile with its complete windows. Only the
+  // independently known remainder may explain additional temporal credit;
+  // otherwise a forged whole total could hide missing effects in the windows.
+  const lastCheckpoint = expected.timeWindows.at(-1)?.after;
+  const coversWholeStroke =
+    expected.timeWindows.length > 0 && expected.durationMs % 1000 === 0;
+  for (let index = 0; index < width; index++) {
+    const floorRemainder =
+      expected.floor[index] - (lastCheckpoint?.floor[index] ?? 0);
+    const timeRemainder =
+      expected.timeAccount[index] - (lastCheckpoint?.timeAccount[index] ?? 0);
+    compare(
+      observed.floor[index] - cumulative.floor[index],
+      floorRemainder,
+      floorRemainder,
+      tolerance(expected.floor[index]),
+      { scope: "remaining", channel: "floor", index },
+    );
+    compare(
+      observed.timeAccount[index] - cumulative.timeAccount[index],
+      0,
+      timeRemainder,
+      tolerance(expected.timeAccount[index]),
+      { scope: "remaining", channel: "timeAccount", index },
+    );
+    if (coversWholeStroke)
+      for (const channel of channels)
+        if (
+          Math.abs(observed[channel][index] - cumulative[channel][index]) >
+          tolerance(expected[channel][index])
+        )
+          fail("C1_WINDOW_TOTAL_MISMATCH", { channel, index });
+  }
+
+  for (let index = 0; index < spec.centerline.length; index++) {
+    const floor = surface.floor[index];
+    compare(observed.centerlineSpatial[index], floor, floor, tolerance(floor), {
+      scope: "centerline",
+      index,
+    });
+    if (
+      sign * observed.centerlineSpatial[index] + tolerance(floor) <
+      0.5 * Math.abs(surface.click[index])
+    )
+      fail("C1_SPATIAL_CLICK_ANCHOR", { index });
+  }
+  return result();
 }
 
 /**

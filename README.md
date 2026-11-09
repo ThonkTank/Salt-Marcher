@@ -16,14 +16,14 @@ Electron/Pixi und bietet bislang einen begrenzten Höheneditor.
 
 Die vier Dokumente zum aktuellen Produkt werden aktualisiert, nicht als Chronik
 fortgeschrieben. Der Neubauplan beschreibt zusätzlich den beauftragten Zielzustand.
-Die geplante P0-Korrektur erhält diese vier Zuständigkeiten. R1–R5 im Neubauplan
-prüfen zuerst eine einfache Weg-/Zeit-Pinselreferenz, einen geordneten Abschluss
-angenommener Arbeit und begrenzte Renderarbeit. Eine lokale Wirkungsschranke
-umfasst auch reservierte Restarbeit; ein Vorschusskonto je Höhenwert ist nur
-ein begründeter Gegenkandidat. Primärquellen, Auswahl und positive Nachweise
-stehen im selben Plan. Nach der Hardware-Richtungsprobe
-ist nur ein kleiner gemeinsamer Landschafts-/Hausfall zulässig; der weitere
-Ausbau bleibt an die vollständige P0- und P3-Abnahme gebunden.
+Die geplante P0-Korrektur erhält diese vier Zuständigkeiten. R1 im Neubauplan
+hat den ersten additiven Pinselkandidaten an einem begrenzten Wiederbesuchsfall
+widerlegt. Der ausgewählte Gegenkandidat verrechnet eine einmalige räumliche
+Mindestwirkung mit kumulierter Zeitwirkung und besitzt eine unabhängige
+Inhaltsreferenz samt lokalen Reservierungsprüfungen. Er ist noch nicht in den
+aktiven Editor integriert; R2/R3 folgen. Nach der Hardware-Richtungsprobe ist
+nur ein kleiner gemeinsamer Landschafts-/Hausfall zulässig; der weitere Ausbau
+bleibt an die vollständige P0- und P3-Abnahme gebunden.
 Detailbelege liegen ignoriert unter `src-tauri/target/diagnostics/`,
 `src-tauri/target/cleanup/` oder `artifacts/atlas-rebuild/`.
 

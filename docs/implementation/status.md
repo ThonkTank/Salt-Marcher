@@ -13,27 +13,76 @@ Testzuordnung im selben versionierten Stand dieser Übergabe auf dem PR-Branch
 
 ## Übergabe und nächster Schritt
 
-**P0 ist nicht freigegeben.** Die vier Besitzer, das gemeinsame Änderungsjournal,
-die feste numerische Stufenbasis und die separable GPU-Projektion sind umgesetzt.
-Kurze Großpinselgesten verlieren weiterhin Endpunktwirkung; normale kleine
-Koeffizienten können den synchronen CPU-Fallback auslösen. Native Leistungs- und
-Paketabnahme bleiben offen. Die Korrektur R1–R5 im
-[Neubauplan](atlas-rebuild-plan.md) ist **geplant, noch nicht implementiert**.
-Die Planungs- und Vorbereitungsschritte belegen keine neue Produktmessung.
+**R1 ist umgesetzt; C1 ist für R2 ausgewählt. P0 bleibt nicht freigegeben.**
+Der aktive Editor wurde durch diese Auswahlprüfung nicht auf die neue Regel
+umgestellt. Endpunktverlust bei kurzen Großpinselgesten, normaler CPU-Fallback
+und native Leistungs-/Paketabnahme bleiben offen. R2–R5 sind nicht implementiert.
 
-**Nächster Umsetzungsschritt ist R1:** Die einfache Weg-/Zeitreferenz C0 mit festen
-Eingaben, Normierung und unabhängiger Inhaltsreferenz prüfen. Analytische Klick-,
-Halte- und Geradenfälle, andere Zustellung desselben Wegs, Wiederbesuche sowie
-Up-/Überlastfälle müssen die Sollwirkung unabhängig vom Kandidaten bestimmen.
-Die alte Freigabe nach einer einzelnen Dosis darf dabei nicht das neue Soll
-vorgeben. Genau ein Gegenkandidat C1 mit anderer Dosierungsregel ist nur bei
-einem benannten Pflichtfehler zulässig; Auswahl und Szenarien stehen im Plan.
+C0 wurde an einem kleinen, vor dem Gegenvergleich festgelegten Fall widerlegt:
+Radius 20, Rate 1, Stufe 0; A=(20,20) → B=(60,20) → A → B bei
+0/20/40/70 ms, Up bei B, GPU-Rückmeldung erst bei 200 ms. Nur vier Punkte in
+derselben Autorenkachel. Am Mittelpunkt erzeugt schon der reine C0-Wegauftrag
+0,0533203125 Fuß; erlaubt sind höchstens 0,05 Fuß angewandte **plus reservierte**
+unquittierte Wirkung. Weniger Zeitannahme oder feinere Belege lösen das nicht.
+Die vollständige Eingabe und Stärkeanker wurden für C1 beibehalten.
 
-Erst danach folgen der vollständige Höhenweg und die begrenzte Renderarbeit in
-R2/R3, dann die Hardware-Richtungsprobe R4. Eine positive Richtungsprobe erlaubt
-nur die benötigten P1/P2-Erweiterungen für den gemeinsamen P3-Fall und R5.
-P4–P9 bleiben bis zur vollständigen nativen P0- und gemeinsamen P3-Abnahme gesperrt.
-Vorbereitungsarbeit allein aktiviert keine Produktimplementierung.
+C1 erhält deshalb je Stützstelle eine einmalige räumliche Mindestwirkung und
+rechnet sie auf die kumulierte Zeitwirkung an: `V = max(F, T)`.
+Halten und langsamere Züge vertiefen weiter; wiederholte Nullzeitbesuche stapeln
+keine neuen Mindestimpulse. Dies ist die ausdrücklich gewählte D10-Änderung,
+keine behauptete Gleichheit mit C0. Der Anfangsklick bleibt 1/60 Sekunde der
+festen Rate. Die Normalzeitreferenz, der 50-%-Klickanker und alle Zeitbudgets
+wurden nicht abgeschwächt.
+
+Die Bereinigung vor R2 entfernt ungenutzte C0-Zeit-/Rekonstruktionsausgaben und
+veraltete Stempelrest-Vorgaben; der räumliche Gegenbeweis bleibt ausführbar.
+Testeingaben und Prüfpositionen sind vor dem Kandidatenlauf unveränderlich
+festgelegt, die unabhängigen Sollwerte stehen vorher fest. Ein terminales
+Eingabefenster verlangt ausdrücklich das tatsächliche Up-Sample, auch ohne
+Positionsänderung. Leere Endfenster werden abgewiesen; verspätete Handler
+erzeugen keine zusätzliche Haltezeit.
+
+**Nächster Umsetzungsschritt ist R2:** Den ausgewählten C1 in einen vollständigen
+Höhenweg integrieren: lokale D11-/Quellenprüfung, Reservierung vor Annahme,
+begrenzte Fortsetzung nach Up, ein vollständiger Undo-/Save-Abschluss und
+nachweislich passende Render-Receipts. Dabei die bestehenden Besitzer erhalten.
+Das isolierte Auswahlmodell darf keine zweite Autorenautorität werden.
+R3 begrenzt danach beziehungsweise gemeinsam damit den Renderpfad; R4 prüft
+Ergebnistakt und Hardwarekosten. Erst ein positives R4 erlaubt die nötigen
+P1/P2-Erweiterungen für den gemeinsamen P3-Fall/R5. P4–P9 bleiben gesperrt.
+
+## R1: Umsetzung und Nachweis dieses Standes
+
+| Kriterium                       | Umsetzung                                                                                                                                               | Nachweis                                                                                                                                                                                                                    | Status                        |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------- |
+| Festes Eingabeverhalten         | `brush.ts`: vollständige Polylinie, kausale Uhr, gleiche/verspätete Zeitstempel, proportionaler Zeitverfall, terminaler Endpunkt und 128-Punkte-Grenze. | Analytische Gruppen, 30/60/120-Hz-Zustellung, RAF-Phasen, Up ohne letzten Move, Halten bis 120 mit Move110/Up115 und späte Geometrie über eine Sekundengrenze.                                                              | Verifiziert im reinen Modell. |
+| Begrenzte Wirkung               | `BrushReservations` zählt angewandte und reservierte Beiträge gemeinsam; `PrepaidBrush` erhält Mindest-/Zeitkonto über Quittungen hinweg.               | Gleiche Kachel A/B, falsche/alte/doppelte Receipts, ausstehende Materialisierung, Zeitverfall ohne Replay; exakte Kapazität und ein Eintrag darüber. Positive Splinegewichte übertragen die Stützstellenschranke auf Höhen. | Verifiziert im reinen Modell. |
+| Unabhängiger Sollinhalt         | `atlas-p0-brush-reference.mjs` importiert keinen Produktcode; eigene Quadratur, Pfadmaxima und kubische Rekonstruktion.                                 | Tatsächliche Kandidatenkoeffizienten und daraus rekonstruierte Höhen: Klick, zwei Haltedauern, Gerade, Ecken, Schleife, Umkehr, Wiederbesuche, Null-/Negativrate und alle 22 Stufen.                                        | Verifiziert.                  |
+| Entscheidender Inhaltsauswerter | `evaluateC1StrokeContent` prüft jede Region, räumliche Mindestwirkung und vollständige Einsekundenfenster einschließlich Anrechnung.                    | 20 neue Fehlerkontrollen im vorhandenen Auswertertest; fehlende Mitte/Ecke/Ende, falsche Abkürzung, zu wenig/zu viel Wirkung, fehlende/nichtendliche Werte und inkonsistente Fenstersummen scheitern.                       | Verifiziert.                  |
+| Begründete Auswahl              | C0-Widerspruch reproduzierbar; genau ein C1 behebt ihn bei denselben Eingaben.                                                                          | C1-Vergleich über 153 Autorenpositionen ohne Zwischenquittung; zusätzliche unabhängige Inhalts- und Kapazitätsprüfungen. C0 bleibt nur als negative Referenz.                                                               | C1 für R2 gewählt.            |
+
+Die R1-Prüfung umfasst **495/495 P0-JavaScript-Tests in 16 Dateien**, darunter
+alle 129 Auswertertests, sowie die vollständige TypeScript- und Tool-Typprüfung,
+den P0-Build, Prettier und die Diffprüfung.
+Die bisherigen aktiven Controller-, History-, Datei- und Rendererregeln bleiben
+weiterhin geprüft. Relevante Quellen, Tests und Dokumente gehören zum selben
+versionierten Stand; die Rohprotokolle liegen unter
+`src-tauri/target/diagnostics/r1-selection-20261109/`.
+
+Die neuen Modelle sind vom aktiven Controller nicht aufgerufen. C1 hält zwei
+Float64-Konten pro Stützstelle; bei 100.000 Stellen sind das 1.600.000 Byte.
+Diese sind in die gemeinsamen höchstens 32 MiB Reservierungs-/Receiptpuffer
+eingerechnet. Hinzu kommt begrenzter JavaScript-Verwaltungsaufwand, dessen
+Laufzeit und Gesamt-Heap hier nicht gemessen wurden. Keine neue Aussage zu
+CPU-/GPU-Zeit, 20-ms-Ergebnistakt, nativer Präsentation oder installierter RPM.
+Die tatsächlichen Quellen-/Renderbelege und die gemeinsamen Abschlussbarrieren
+müssen erst R2 herstellen. Auch ein kurzer Anfang ohne zusätzliche Zeitwirkung
+während des vorausbezahlten Klickanteils bleibt Teil der unveränderten R4-Abnahme.
+
+Für den veröffentlichten Head gilt der verpflichtende Check
+**Candidate · exact-SHA aggregate** auf [PR #1469](https://github.com/ThonkTank/Salt-Marcher/pull/1469/checks).
+Das historische grüne Gate der Produktbasis unten wird nicht auf spätere Commits
+übertragen. Ein neuer CI-Status ist jeweils gegen den exakten Head zu lesen.
 
 ## Geprüfter Bestand
 
