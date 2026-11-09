@@ -1,6 +1,6 @@
 import {
   HEIGHT_SUM_SCALE,
-  prepareScaledHeightSum,
+  prepareScaledHeightSumSteps,
   splineWeights,
 } from "./height";
 import {
@@ -29,10 +29,25 @@ interface GridLevel {
  * sixteen map lookups and both cubic bases for every pixel. Values stay scaled
  * and unclamped so finer overview contributions can be added before one clamp.
  */
-export function prepareHeightGrid(
+type HeightGrid = (
+  bounds: Bounds,
+  size: number,
+  rect: RasterRect,
+) => Float64Array;
+
+export function prepareHeightGrid(tiles: readonly HeightTile[]): HeightGrid {
+  const setup = prepareHeightGridSteps(tiles);
+  let next = setup.next();
+  while (!next.done) next = setup.next();
+  return next.value;
+}
+
+/** The shared raster setup can yield between its bounded source validations. */
+export function* prepareHeightGridSteps(
   tiles: readonly HeightTile[],
-): (bounds: Bounds, size: number, rect: RasterRect) => Float64Array {
+): Generator<void, HeightGrid> {
   const indexed = new Map<number, GridLevel>();
+  let hasExtreme = false;
   for (const tile of tiles) {
     validateHeightTile(tile);
     const support = heightTileSupport(tile);
@@ -56,16 +71,16 @@ export function prepareHeightGrid(
     if (!row) level.rows.set(tile.tileY, (row = new Map()));
     if (row.has(tile.tileX)) throw new Error("Doppelte Höhenkachel im Raster.");
     row.set(tile.tileX, tile.values);
+    hasExtreme ||= tile.values.some((value) => Math.abs(value) > 1e290);
+    yield;
   }
   const levels = [...indexed.entries()]
     .sort(([a], [b]) => b - a)
     .map(([, level]) => level);
   // Extreme cancelling coefficients must retain the canonical accumulation
   // order: regrouping those values can change even the final saturated sign.
-  const exceptional = tiles.some((tile) =>
-    tile.values.some((value) => Math.abs(value) > 1e290),
-  )
-    ? prepareScaledHeightSum(tiles)
+  const exceptional = hasExtreme
+    ? yield* prepareScaledHeightSumSteps(tiles)
     : null;
 
   return (bounds, size, rect) => {

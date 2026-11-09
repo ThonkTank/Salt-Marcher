@@ -1,17 +1,24 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { HEIGHT_SUM_SCALE, prepareHeightSampler } from "../model/height";
 import {
   HEIGHT_TILE_SIZE,
   WORLD_LIMIT,
+  heightSpacing,
+  heightTileSupport,
   heightTileKey,
+  intersectsBounds,
   type Bounds,
   type HeightTile,
 } from "../model/types";
 import {
   HEIGHT_PAGE_SIZE,
   HEIGHT_PAGE_TEXELS,
+  HEIGHT_GPU_MIN_SCALED_VALUE,
+  HEIGHT_GPU_PROJECTION_ZERO_ERROR,
+  HEIGHT_GPU_VALUE_ZERO_ERROR,
   HeightSourceAtlas,
   createHeightAxes,
+  createHeightAxesSteps,
   createHeightProjection,
   encodeHeightOverview,
   splitHeightFloat,
@@ -349,11 +356,16 @@ describe("retained numeric height sources", () => {
     const right = source(0, 0, 0, 80);
     const atlas = new HeightSourceAtlas();
     atlas.updateSources([left, right]);
-    const descriptor = atlas.descriptor([-256, 0, 256, 512], 2);
+    let descriptor = atlas.descriptor([-256, 0, 256, 512], 2);
     const axes = createHeightAxes([-256, 0, 256, 512], 2, descriptor.levels);
     atlas.takeUpdates();
     const changed = source(0, 0, 0, 240);
     atlas.updateSources([changed]);
+    expect(atlas.pagesPending(descriptor.pages)).toBe(true);
+    // Changed pages stay stale until selected display preparation encodes them.
+    const previous = descriptor;
+    descriptor = atlas.descriptor([-256, 0, 256, 512], 2);
+    atlas.release(previous.pages);
     const updates = atlas.takeUpdates();
     expect(updates.allocation).toBe(false);
     expect(updates.ranges.reduce((sum, [a, b]) => sum + b - a, 0)).toBeLessThan(
@@ -365,6 +377,9 @@ describe("retained numeric height sources", () => {
       9,
     );
     atlas.updateSources([], [changed.key]);
+    const changedDescriptor = descriptor;
+    descriptor = atlas.descriptor([-256, 0, 256, 512], 2);
+    atlas.release(changedDescriptor.pages);
     expect(samplePacked(atlas, descriptor, 64, 20, axes)).toBeCloseTo(
       prepareHeightSampler([left])(2, 82),
       9,
@@ -420,6 +435,189 @@ describe("retained numeric height sources", () => {
     const overview = new Float64Array(128 ** 2);
     overview[0] = -1e300;
     expect(encodeHeightOverview(overview).fallback).toBe(true);
+  });
+
+  it("drops only strictly sub-threshold derived values and reports their error in feet", () => {
+    const threshold = HEIGHT_GPU_MIN_SCALED_VALUE;
+    const values = Float64Array.from([
+      Number.MIN_VALUE,
+      threshold * 0.999999,
+      -threshold * 0.999999,
+      threshold,
+      -threshold,
+      threshold * 1.000001,
+      -threshold * 1.000001,
+      0,
+    ]);
+    const before = values.slice();
+    const result = encodeHeightOverview(values);
+    expect(result.fallback).toBe(false);
+    expect(result.encodingError).toBe(HEIGHT_GPU_VALUE_ZERO_ERROR);
+    expect(HEIGHT_GPU_PROJECTION_ZERO_ERROR).toBe(22 * 32 * threshold);
+    expect(result.magnitude).toBe(threshold * 1.000001 * HEIGHT_SUM_SCALE);
+    for (let i = 0; i < values.length; i++) {
+      const encoded = result.data[i * 2] + result.data[i * 2 + 1];
+      if (Math.abs(values[i]) < threshold) expect(encoded).toBe(0);
+      else {
+        expect(encoded).not.toBe(0);
+        expect(Math.abs(encoded - values[i])).toBeLessThan(threshold * 1e-12);
+      }
+    }
+    expect(values).toEqual(before);
+    expect(encodeHeightOverview(Float64Array.of(threshold)).encodingError).toBe(
+      0,
+    );
+  });
+
+  it("keeps tiny coefficients on all 22 levels on the GPU without changing authors", () => {
+    const tiles = Array.from({ length: 22 }, (_, level) =>
+      source(
+        level,
+        0,
+        0,
+        (level % 2 ? -1 : 1) * HEIGHT_GPU_MIN_SCALED_VALUE * 16,
+      ),
+    );
+    const atlas = new HeightSourceAtlas();
+    atlas.updateSources(tiles);
+    const descriptor = atlas.descriptor([0, 0, 512, 512], 2);
+    expect(descriptor.levels).toHaveLength(22);
+    expect(descriptor.fallback).toBe(false);
+    expect(atlas.safeIn([0, 0, 512, 512])).toBe(true);
+    for (const tile of tiles)
+      expect(atlas.sources.get(tile.key)?.values).toEqual(tile.values);
+    for (const [start, end] of atlas.pageRanges(descriptor.pages))
+      expect(
+        atlas.data.subarray(start * 2, end * 2).every((value) => value === 0),
+      ).toBe(true);
+    // The sum of absolute discarded coefficients bounds every convex spline
+    // projection, independently of the transport's page order and zero pattern.
+    const discarded = tiles.reduce(
+      (sum, tile) => sum + Math.abs(tile.values[0]),
+      0,
+    );
+    expect(discarded).toBeLessThan(HEIGHT_GPU_PROJECTION_ZERO_ERROR);
+  });
+
+  it("queries only local indexed metadata and refreshes it on replacement and removal", () => {
+    const tiles = Array.from({ length: 176 }, (_, index) => {
+      const level = index % 22;
+      const far = Math.min(
+        5,
+        Math.floor(WORLD_LIMIT / (64 * heightSpacing(level))),
+      );
+      const offset = index < 22 ? 0 : index % 2 ? -far : far;
+      return source(level, offset, offset, index + 1);
+    });
+    const unique = [...new Map(tiles.map((tile) => [tile.key, tile])).values()];
+    const atlas = new HeightSourceAtlas();
+    atlas.updateSources(unique);
+    const bounds: Bounds = [-32, -64, 128, 256];
+    const expected = unique.filter((tile) =>
+      intersectsBounds(heightTileSupport(tile), bounds),
+    );
+    // Iterating resident sources would make display cost depend on the whole
+    // loaded world; the public local query must work without that iteration.
+    const scan = vi.spyOn(atlas.sources, "values").mockImplementation(() => {
+      throw new Error("Unrelated resident source scan");
+    });
+    expect(
+      atlas
+        .sourcesIn(bounds)
+        .map((tile) => tile.key)
+        .sort(),
+    ).toEqual(expected.map((tile) => tile.key).sort());
+    const expectedMagnitude = [
+      ...new Set(expected.map((tile) => tile.level)),
+    ].reduce(
+      (sum, level) =>
+        sum +
+        Math.max(
+          ...expected
+            .filter((tile) => tile.level === level)
+            .map((tile) => Math.abs(tile.values[0])),
+        ),
+      0,
+    );
+    expect(atlas.magnitudeIn(bounds)).toBe(expectedMagnitude);
+    expect(atlas.safeIn(bounds)).toBe(true);
+    expect(atlas.descriptor(bounds, 0).fallback).toBe(false);
+    const enormous = source(0, 0, 0, Number.MAX_VALUE);
+    atlas.updateSources([enormous]);
+    expect(atlas.safeIn(bounds, 0, 0)).toBe(false);
+    expect(atlas.magnitudeIn(bounds, 0, 0)).toBe(Number.MAX_VALUE);
+    atlas.updateSources([source(0, 0, 0, 7)]);
+    expect(atlas.safeIn(bounds, 0, 0)).toBe(true);
+    expect(atlas.magnitudeIn(bounds, 0, 0)).toBe(7);
+    atlas.updateSources([], [enormous.key]);
+    expect(atlas.sourcesIn(bounds, 0, 0)).toEqual([]);
+    expect(atlas.magnitudeIn(bounds, 0, 0)).toBe(0);
+    expect(atlas.safeIn(bounds, 0, 0)).toBe(true);
+    scan.mockRestore();
+  });
+
+  it("cancels unpublished descriptor refs and resumes one bounded atlas growth copy", () => {
+    const atlas = new HeightSourceAtlas();
+    atlas.updateSources(
+      Array.from({ length: 22 }, (_, level) => source(level, 0, 0, level + 1)),
+    );
+    const steps = atlas.descriptorSteps([0, 0, 512, 512], 2);
+    const initial = atlas.data;
+    let turns = 0;
+    while (atlas.preparationBytes <= initial.byteLength) {
+      expect(steps.next().done).toBe(false);
+      expect(++turns).toBeLessThan(300);
+    }
+    expect(atlas.data).toBe(initial);
+    expect(atlas.preparationBytes).toBeGreaterThan(initial.byteLength);
+    const allocated = atlas.preparationBytes;
+    expect(steps.next().done).toBe(false);
+    expect(atlas.data).toBe(initial);
+    expect(atlas.preparationBytes).toBe(allocated);
+    steps.return(undefined as never);
+    expect(atlas.pageCount).toBe(0);
+    const descriptor = atlas.descriptor([0, 0, 512, 512], 2);
+    expect(atlas.preparationBytes).toBe(0);
+    expect(descriptor.levels).toHaveLength(22);
+    expect(descriptor.fallback).toBe(false);
+    const axes = createHeightAxesSteps([0, 0, 512, 512], 2, descriptor.levels);
+    let axisTurns = 0;
+    let axisStep = axes.next();
+    while (!axisStep.done) {
+      axisTurns++;
+      axisStep = axes.next();
+    }
+    expect(axisTurns).toBe(22 * 2 * (128 / 16));
+    expect(axisStep.value).toEqual(
+      createHeightAxes([0, 0, 512, 512], 2, descriptor.levels),
+    );
+    atlas.release(descriptor.pages);
+    expect(atlas.pageCount).toBe(0);
+  });
+
+  it("publishes complete encoded pages atomically and releases a cancelled partial page", () => {
+    const atlas = new HeightSourceAtlas();
+    atlas.updateSources([source(0, 0, 0, 50)]);
+    const previous = atlas.descriptor([0, 0, 512, 512], 2);
+    atlas.takeUpdates();
+    const before = atlas.data.slice();
+    const count = atlas.pageCount;
+    atlas.updateSources([source(0, 0, 0, 100)]);
+    const partial = atlas.descriptorSteps([0, 0, 512, 512], 2);
+    expect(partial.next().done).toBe(false);
+    expect(atlas.preparationBytes).toBe(HEIGHT_PAGE_TEXELS * 8);
+    expect(atlas.data).toEqual(before);
+    expect(atlas.takeUpdates().ranges).toEqual([]);
+    partial.return(undefined as never);
+    expect(atlas.preparationBytes).toBe(0);
+    expect(atlas.pageCount).toBe(count);
+    expect(atlas.pagesPending(previous.pages)).toBe(true);
+    const complete = atlas.descriptor([0, 0, 512, 512], 2);
+    const axes = createHeightAxes([0, 0, 512, 512], 2, complete.levels);
+    expect(samplePacked(atlas, complete, 20, 20, axes)).toBeCloseTo(0, 9);
+    atlas.release(previous.pages);
+    atlas.release(complete.pages);
+    expect(atlas.pageCount).toBe(0);
   });
 });
 

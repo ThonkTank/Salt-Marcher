@@ -4,11 +4,10 @@ import "pixi.js/unsafe-eval";
 import { editorBudgets } from "../budgets";
 import {
   clipBounds,
-  cloneHeightTile,
   HEIGHT_LEVELS,
+  heightSpacing,
   heightTileSupport,
   intersectsBounds,
-  parseHeightTileKey,
   type Bounds,
   type EditorDocument,
   type HeightPatch,
@@ -19,16 +18,17 @@ import {
   HEIGHT_OVERVIEW_SIZE,
   applyPreparedHeightOverviewDelta,
   createHeightOverviewTile,
-  heightOverviewDeltaKeys,
   heightOverviewBounds,
   heightOverviewKeys,
   minimumCoarseHeightLevel,
   parseHeightOverviewKey,
   prepareHeightOverviewDelta,
-  validateHeightOverviewTile,
+  type HeightOverviewDelta,
   type HeightOverviewTile,
 } from "../model/overview";
 import { Observation } from "../observation";
+import type { HeightProjectionService } from "./HeightProjectionService";
+import { CursorOverlay } from "./CursorOverlay";
 import {
   HeightField,
   type HeightCompositionStats,
@@ -82,15 +82,58 @@ interface FrozenTarget {
 }
 
 interface FrozenRender {
+  kind: "local" | "background";
   receipt: FrozenRenderReceipt;
   targets: FrozenTarget[];
   overviews: Map<string, HeightOverviewTile>;
+}
+
+interface GpuSubmission {
+  kind: "terrain" | "scene";
+  sync: WebGLSync;
+  field: HeightField;
+  submission: FrameSubmission | null;
+  tiles: { tile: DisplayTile; revision: number; preparation: number }[];
+  renderReceipt: FrozenRenderReceipt | null;
 }
 
 interface QueuedSource {
   before: HeightTile | null;
   after: HeightTile | null;
   local: boolean;
+  foreign: boolean;
+  /** Latest complete local snapshot; reads may return an identical owned state. */
+  localCandidate?: HeightTile | null;
+  /** A controller read rebased through the active document's pinned sources. */
+  trustedFoundation?: RegionFoundation;
+  bounds: Bounds;
+}
+
+interface OverviewPlan {
+  base: HeightOverviewTile | null;
+  deltas: Map<string, HeightPatch>;
+}
+
+interface QueuedOverview extends OverviewPlan {
+  replacement: boolean;
+  trustedFoundation?: RegionFoundation;
+  localCandidate?: OverviewPlan;
+  version: number;
+  bounds: Bounds;
+}
+
+interface OverviewResult {
+  tile: HeightOverviewTile | null;
+  changed: boolean;
+  foreign?: boolean;
+}
+
+interface OverviewWork {
+  key: string;
+  request: QueuedOverview;
+  version: number;
+  buffers: Set<ArrayBufferLike>;
+  steps: Generator<void, OverviewResult, void>;
 }
 
 interface FoundationTile {
@@ -122,6 +165,11 @@ interface DisplayTile {
   touched: number;
   field: HeightFieldTile;
   overview: HeightOverviewTile | null;
+  failedPreparation?: {
+    revision: number;
+    contentVersion: number;
+    preparation: number;
+  };
 }
 const SIZE = HEIGHT_OVERVIEW_SIZE;
 const WHOLE: Rect = [0, 0, SIZE, SIZE];
@@ -199,7 +247,8 @@ export class WorldRenderer {
   private terrain = new Container();
   private overlay = new Graphics();
   private tiles = new Map<string, DisplayTile>();
-  private field = new HeightField();
+  private field: HeightField;
+  private readonly retiredFields = new Set<HeightField>();
   private overviews = new Map<string, HeightOverviewTile>();
   private knownOverviews = new Set<string>();
   private document!: EditorDocument;
@@ -212,7 +261,13 @@ export class WorldRenderer {
   private delayUntil = 0;
   private destroyed = false;
   private canvas?: HTMLCanvasElement;
+  private cursorOverlay?: CursorOverlay;
+  private resizePending = false;
+  private pendingDisplayTiles = false;
   private contextLost = false;
+  private graphicsFailed = false;
+  private unfencedWork = false;
+  private unfencedField: HeightField | null = null;
   private submittedRevision = -1;
   private submittedViewGeneration = -1;
   private lastCompletedFrame = 0;
@@ -224,14 +279,33 @@ export class WorldRenderer {
     tiles: Map<DisplayTile, FoundationTile>;
   } | null = null;
   private frozen: FrozenRender | null = null;
+  /** One worker-owned exception snapshot never occupies the normal terrain group. */
+  private exceptionTarget: {
+    receipt: FrozenRenderReceipt;
+    target: FrozenTarget;
+    overview: HeightOverviewTile | null;
+  } | null = null;
   private completedRender: FrozenRenderReceipt | null = null;
   private readonly queuedSources = new Map<string, QueuedSource>();
-  private readonly queuedOverviewInvalidations = new Set<string>();
-  private pendingGpu: {
-    sync: WebGLSync;
-    submission: FrameSubmission;
-    tiles: { tile: DisplayTile; revision: number; preparation: number }[];
-    renderReceipt: FrozenRenderReceipt | null;
+  private readonly queuedOverviews = new Map<string, QueuedOverview>();
+  private overviewWork: OverviewWork | null = null;
+  /** FIFO command order, with one terrain and one scene slot at most. */
+  private readonly pendingGpu: GpuSubmission[] = [];
+  private sceneRequested = true;
+  private interruptBackground = false;
+  private preparationDeadline = 0;
+  private preparationSteps = 0;
+  private preparationStarted = 0;
+  private framePrepared = false;
+  private wantedInfluence: Bounds[] | null = null;
+  private terrainPacketId = 0;
+  private preparationSerial = 0;
+  private preparationRecord: {
+    id: number;
+    at: number;
+    ms: number;
+    steps: number;
+    sourceSteps: number;
   } | null = null;
   camera: Camera = { x: 0, y: 0, scale: 0.25 };
   width = 1000;
@@ -252,9 +326,20 @@ export class WorldRenderer {
   private faultArmed = false;
   onError: (error: Error) => void = () => {};
 
-  constructor(private observation: Observation) {
+  constructor(
+    private observation: Observation,
+    private projections?: HeightProjectionService,
+    private extraComputeBytes: () => number = () => 0,
+  ) {
+    this.field = this.newField();
     this.stage.addChild(this.terrain, this.overlay);
     this.terrain.sortableChildren = true;
+  }
+
+  private newField(): HeightField {
+    return new HeightField(this.projections, () => {
+      this.requestFrame = true;
+    });
   }
 
   async init(canvas: HTMLCanvasElement): Promise<void> {
@@ -269,6 +354,7 @@ export class WorldRenderer {
     });
     this.field.init(this.renderer);
     this.canvas = canvas;
+    this.cursorOverlay = new CursorOverlay(canvas);
     canvas.addEventListener("webglcontextlost", this.handleContextLost);
     canvas.addEventListener("webglcontextrestored", this.handleContextRestored);
   }
@@ -290,6 +376,8 @@ export class WorldRenderer {
       this.field.rebuildAfterContextRestore();
       this.invalidateGpuSubmission();
       this.contextLost = false;
+      this.graphicsFailed = false;
+      this.unfencedWork = false;
       this.observation.event("graphics-context-restored", {
         sessionId: this.sessionId,
       });
@@ -299,10 +387,9 @@ export class WorldRenderer {
     }
   };
 
-  private invalidateGpuSubmission(): void {
-    this.releaseFence();
+  private invalidateGpuSubmission(release = true): void {
+    if (release) this.releaseFence();
     this.invalidateProofs();
-    this.applyQueuedSources();
     this.lastSubmittedViewGeneration = -1;
     this.lastCompletedFrame = 0;
     this.lastCompletedViewGeneration = -1;
@@ -322,18 +409,28 @@ export class WorldRenderer {
       tile.field.mesh.visible = false;
     }
     this.requestFrame = true;
+    this.sceneRequested = true;
   }
 
   reset(document: EditorDocument): void {
-    this.releaseFence();
     this.invalidateProofs();
-    this.queuedSources.clear();
-    this.queuedOverviewInvalidations.clear();
+    this.resetSourceQueue();
     this.document = document;
     this.sessionId = document.sessionId;
-    for (const tile of this.tiles.values()) this.destroyTile(tile);
+    for (const tile of this.tiles.values())
+      this.terrain.removeChild(tile.field.mesh);
+    if (
+      this.unfencedField === this.field ||
+      this.pendingGpu.some((pending) => pending.field === this.field)
+    ) {
+      // Outstanding commands keep their exact textures/pages alive. A session
+      // change invalidates their results, not the commands already submitted.
+      this.retiredFields.add(this.field);
+      const numericSupported = this.field.numericSupported;
+      this.field = this.newField();
+      if (this.canvas) this.field.init(this.renderer, numericSupported);
+    } else this.field.reset();
     this.tiles.clear();
-    this.field.reset();
     this.overviews.clear();
     this.knownOverviews.clear();
     this.submittedRevision = -1;
@@ -345,12 +442,13 @@ export class WorldRenderer {
     this.faultArmed = false;
     this.delayUntil = 0;
     this.requestFrame = true;
+    this.sceneRequested = true;
   }
 
   resize(width: number, height: number): void {
     this.width = Math.max(1, width);
     this.height = Math.max(1, height);
-    this.renderer.resize(this.width, this.height, devicePixelRatio);
+    this.resizePending = true;
     this.moveCamera(this.camera);
   }
 
@@ -376,110 +474,127 @@ export class WorldRenderer {
       camera: { ...this.camera },
     });
     this.requestFrame = true;
+    this.sceneRequested = true;
     this.positionTiles();
-    if (!this.pendingGpu) this.applyQueuedSources();
   }
 
-  /** A read changes only its actual sources; identical warm regions stay current. */
+  /**
+   * Inputs are immutable document snapshots / projected read results. Admission
+   * retains them; validation, copying and publication run in the shared RAF budget.
+   */
   updatePresentation(
     tiles: readonly HeightTile[],
     overviews: readonly HeightOverviewTile[],
     overviewKeys: readonly string[],
+    foundation?: RegionFoundation,
   ): void {
+    const ownRead =
+      foundation &&
+      this.document.active &&
+      this.foundation?.receipt === foundation
+        ? foundation
+        : undefined;
     const incoming = new Map(overviews.map((tile) => [tile.key, tile]));
-    for (const tile of overviews) {
-      validateHeightOverviewTile(tile);
-      if (!overviewKeys.includes(tile.key))
+    const certified = new Set(overviewKeys);
+    for (const tile of overviews)
+      if (!certified.has(tile.key))
         throw new Error("Nicht bestätigte Höhenübersicht.");
-    }
     for (const key of overviewKeys) {
-      parseHeightOverviewKey(key);
-      const before = this.overviews.get(key);
-      const after = incoming.get(key);
-      const changed =
-        Boolean(before) !== Boolean(after) ||
-        Boolean(
-          before &&
-          after &&
-          before.values.some((value, i) => value !== after.values[i]),
-        );
+      const at = parseHeightOverviewKey(key);
       this.knownOverviews.add(key);
-      if (!changed) continue;
-      if (after)
-        this.overviews.set(key, { ...after, values: after.values.slice() });
-      else this.overviews.delete(key);
-      const tile = this.tiles.get(key.slice("height-overview:".length));
-      if (tile) {
-        tile.foundationVersion++;
-        tile.contentVersion++;
-        if (this.sourcesFrozen) this.queuedOverviewInvalidations.add(key);
-        else tile.field.invalidateTotal();
-        tile.dirty = [...WHOLE];
-        tile.preparedRevision = -1;
-        tile.revision = this.document.revision;
-      }
+      const after = incoming.get(key) ?? null;
+      if (!after && !this.overviews.has(key) && !this.queuedOverviews.has(key))
+        continue;
+      const pending = this.queuedOverviews.get(key);
+      const candidate = pending?.localCandidate
+        ? {
+            base: pending.localCandidate.base,
+            deltas: new Map(pending.localCandidate.deltas),
+          }
+        : pending && !pending.replacement
+          ? { base: pending.base, deltas: new Map(pending.deltas) }
+          : undefined;
+      this.queuedOverviews.set(key, {
+        base: after,
+        replacement: true,
+        deltas: new Map(),
+        localCandidate: candidate,
+        trustedFoundation: ownRead,
+        version: 0,
+        bounds: heightOverviewBounds(at),
+      });
     }
-    if (this.sourcesFrozen) {
-      for (const tile of tiles) this.queueSource(tile.key, tile, false);
-    } else {
-      for (const bounds of this.field.updateSources(tiles))
-        this.invalidateTiles(bounds, true);
+    for (const tile of tiles) {
+      this.queueSource(tile.key, tile, false);
+      const queued = this.queuedSources.get(tile.key);
+      if (queued && ownRead) queued.trustedFoundation = ownRead;
     }
     this.pruneOverviews(overviewKeys);
+    for (const key of this.queuedOverviews.keys())
+      if (!this.knownOverviews.has(key)) this.queuedOverviews.delete(key);
     this.checkBudgets();
     this.requestFrame = true;
   }
 
-  /** Remove derived copies when the document releases author sources. */
+  /** Eviction is a renderer residency change, never an author deletion. */
   forgetSources(keys: readonly string[]): void {
-    if (!keys.length) return;
-    if (this.sourcesFrozen) {
-      for (const key of keys) this.queueSource(key, null, false);
-      return;
-    }
-    this.field.updateSources([], keys);
-    for (const key of keys) {
-      const at = parseHeightTileKey(key);
-      this.invalidateTiles(heightTileSupport(at), true, at.level);
-    }
+    for (const key of keys) this.queueSource(key, null, false);
   }
 
-  /** History already owns complete changed sources, even after distant eviction. */
+  /** Published patches are immutable, including a missing resident before-image. */
   updateSourcePatches(patches: readonly HeightPatch[]): void {
-    const powers = new Set(
-      [...this.knownOverviews].map((key) => parseHeightOverviewKey(key).power),
-    );
     for (const patch of patches) {
-      const level = (patch.after ?? patch.before)!.level;
-      const finePowers = [...powers].filter(
-        (power) => level < minimumCoarseHeightLevel(power),
-      );
-      if (!finePowers.length) continue;
-      const delta = prepareHeightOverviewDelta(patch);
-      if (!delta) continue;
-      for (const power of finePowers)
-        for (const key of heightOverviewDeltaKeys(delta, power)) {
-          if (!this.knownOverviews.has(key)) continue;
-          const at = parseHeightOverviewKey(key);
-          const previous = this.overviews.get(key);
-          const tile = previous
-            ? { ...previous, values: previous.values.slice() }
-            : createHeightOverviewTile(at.power, at.tileX, at.tileY);
-          if (applyPreparedHeightOverviewDelta(tile, delta)) {
-            this.overviews.set(key, tile);
-          }
+      const source = patch.after ?? patch.before;
+      if (!source) continue;
+      this.queueSource(patch.key, patch.after, true, patch.before);
+      const support = heightTileSupport(source);
+      for (const key of this.knownOverviews) {
+        const at = parseHeightOverviewKey(key);
+        if (source.level >= minimumCoarseHeightLevel(at.power)) continue;
+        const bounds = heightOverviewBounds(at);
+        if (!intersectsBounds(bounds, support)) continue;
+        let queued = this.queuedOverviews.get(key);
+        if (!queued) {
+          queued = {
+            base: this.overviews.get(key) ?? null,
+            replacement: false,
+            deltas: new Map(),
+            version: 0,
+            bounds,
+          };
+          this.queuedOverviews.set(key, queued);
         }
+        const previous = queued.deltas.get(patch.key);
+        queued.deltas.set(patch.key, {
+          key: patch.key,
+          before: previous ? previous.before : patch.before,
+          after: patch.after,
+        });
+        if (queued.localCandidate) {
+          const candidate = queued.localCandidate.deltas.get(patch.key);
+          queued.localCandidate.deltas.set(patch.key, {
+            key: patch.key,
+            before: candidate ? candidate.before : patch.before,
+            after: patch.after,
+          });
+        }
+        queued.version++;
+      }
     }
-    if (this.sourcesFrozen) {
-      for (const patch of patches)
-        this.queueSource(patch.key, patch.after, true, patch.before);
-    } else this.field.applySourcePatches(patches);
     this.checkBudgets();
     this.requestFrame = true;
   }
 
   private get sourcesFrozen(): boolean {
-    return this.frozen !== null || this.pendingGpu !== null;
+    return this.frozen !== null || this.terrainPending;
+  }
+
+  private get terrainPending(): boolean {
+    return this.pendingGpu.some((pending) => pending.kind === "terrain");
+  }
+
+  private get scenePending(): boolean {
+    return this.pendingGpu.some((pending) => pending.kind === "scene");
   }
 
   private queueSource(
@@ -492,58 +607,412 @@ export class WorldRenderer {
     const current = queued
       ? queued.after
       : (this.field.readSource(key) ?? null);
-    if (
-      (current === after && !(local && !current && before)) ||
-      (current &&
-        after &&
-        current.values.every((value, i) => value === after.values[i]))
-    )
-      return;
+    if (current === after && !(local && !current && before)) return;
     const source = after ?? current ?? before;
     if (!source) return;
     this.queuedSources.set(key, {
-      before: queued
-        ? queued.before
-        : (this.field.readSource(key) ?? before ?? null),
-      after: after ? (local ? after : cloneHeightTile(after)) : null,
-      local: (queued?.local ?? true) && local,
+      // A late History deletion can require a before-image which the renderer
+      // never kept resident. Preserve that proof even after a queued eviction.
+      before: queued?.before ?? this.field.readSource(key) ?? before ?? null,
+      after,
+      local,
+      foreign: !local,
+      localCandidate: local ? after : queued?.localCandidate,
+      bounds: heightTileSupport(source),
     });
-    if (!local)
-      this.invalidateTiles(heightTileSupport(source), true, source.level);
     this.requestFrame = true;
   }
 
-  private applyQueuedSources(): void {
-    if (this.sourcesFrozen) return;
-    const local: HeightPatch[] = [];
-    const imported: HeightTile[] = [];
-    const removed: string[] = [];
-    for (const [key, source] of this.queuedSources) {
-      if (source.local)
-        local.push({ key, before: source.before, after: source.after });
-      else if (source.after) imported.push(source.after);
-      else removed.push(key);
-    }
-    if (imported.length || removed.length)
-      for (const bounds of this.field.updateSources(imported, removed))
-        this.invalidateTiles(bounds, true);
-    if (local.length) this.field.applySourcePatches(local);
+  private resetSourceQueue(): void {
+    this.overviewWork?.steps.return({ tile: null, changed: false });
+    this.overviewWork = null;
     this.queuedSources.clear();
-    for (const key of this.queuedOverviewInvalidations) {
-      const tile = this.tiles.get(key.slice("height-overview:".length));
-      tile?.field.invalidateTotal();
+    this.queuedOverviews.clear();
+  }
+
+  /** Pending dependencies prevent a descriptor from observing a partial cohort. */
+  private hasQueuedSourcesFor(bounds: readonly Bounds[]): boolean {
+    const power = this.tilePower();
+    const minimum = minimumCoarseHeightLevel(power);
+    for (const source of this.queuedSources.values())
+      if (
+        (source.after ?? source.before)!.level >= minimum ||
+        (source.after ?? source.before)!.level === this.field.toolLevel
+      )
+        if (bounds.some((area) => intersectsBounds(area, source.bounds)))
+          return true;
+    for (const [key, overview] of this.queuedOverviews)
+      if (
+        parseHeightOverviewKey(key).power === power &&
+        bounds.some((area) => intersectsBounds(area, overview.bounds))
+      )
+        return true;
+    return false;
+  }
+
+  private hasQueuedImportsFor(
+    bounds: readonly Bounds[],
+    foundation?: RegionFoundation,
+  ): boolean {
+    const ownRead =
+      foundation && this.foundation?.receipt === foundation
+        ? foundation
+        : undefined;
+    const power = this.tilePower();
+    const minimum = minimumCoarseHeightLevel(power);
+    for (const source of this.queuedSources.values())
+      if (
+        source.foreign &&
+        !(ownRead && source.trustedFoundation === ownRead) &&
+        ((source.after ?? source.before)!.level >= minimum ||
+          (source.after ?? source.before)!.level === this.field.toolLevel) &&
+        bounds.some((area) => intersectsBounds(area, source.bounds))
+      )
+        return true;
+    for (const [key, overview] of this.queuedOverviews)
+      if (
+        overview.replacement &&
+        !(ownRead && overview.trustedFoundation === ownRead) &&
+        parseHeightOverviewKey(key).power === power &&
+        bounds.some((area) => intersectsBounds(area, overview.bounds))
+      )
+        return true;
+    return false;
+  }
+
+  /** Unique physical pending inputs and unpublished numeric work for accounting. */
+  private queuedSourceBuffers(): ArrayBufferLike[] {
+    const buffers = new Set<ArrayBufferLike>();
+    const add = (
+      source: HeightTile | HeightOverviewTile | null | undefined,
+    ) => {
+      if (source) buffers.add(source.values.buffer);
+    };
+    for (const source of this.queuedSources.values()) {
+      add(source.before);
+      add(source.after);
+      add(source.localCandidate);
     }
-    this.queuedOverviewInvalidations.clear();
-    for (const tile of this.tiles.values())
-      if (tile.dirty) tile.field.markHeightChanged();
+    const addOverview = (overview: OverviewPlan) => {
+      add(overview.base);
+      for (const patch of overview.deltas.values()) {
+        add(patch.before);
+        add(patch.after);
+      }
+    };
+    for (const overview of this.queuedOverviews.values()) {
+      addOverview(overview);
+      if (overview.localCandidate) addOverview(overview.localCandidate);
+    }
+    if (this.overviewWork) {
+      addOverview(this.overviewWork.request);
+      if (this.overviewWork.request.localCandidate)
+        addOverview(this.overviewWork.request.localCandidate);
+    }
+    for (const buffer of this.overviewWork?.buffers ?? []) buffers.add(buffer);
+    return [...buffers];
+  }
+
+  private sourceDistance(bounds: Bounds): number {
+    const x =
+      this.camera.x +
+      ((this.cursor?.x ?? this.width / 2) - this.width / 2) / this.camera.scale;
+    const y =
+      this.camera.y +
+      ((this.cursor?.y ?? this.height / 2) - this.height / 2) /
+        this.camera.scale;
+    const distance = Math.hypot(
+      Math.max(bounds[0] - x, 0, x - bounds[2]),
+      Math.max(bounds[1] - y, 0, y - bounds[3]),
+    );
+    return this.wantedInfluence?.some((area) => intersectsBounds(area, bounds))
+      ? distance - 1e12
+      : distance;
+  }
+
+  private sourcePreparationFits(bytes: number): boolean {
+    const metrics = this.resourceMetrics();
+    return (
+      metrics.cpuBytes + this.retainedBufferBytes() + bytes <=
+      editorBudgets.presentationBytes
+    );
+  }
+
+  /** Sole source/overview publisher. Each step is one source or a small raster slice. */
+  private drainSources(deadline: number, maxSteps: number): number {
+    if (this.sourcesFrozen || maxSteps <= 0) return 0;
+    let steps = 0;
+    const sources = [...this.queuedSources].sort(
+      (a, b) =>
+        this.sourceDistance(a[1].bounds) - this.sourceDistance(b[1].bounds),
+    );
+    const overviews = [...this.queuedOverviews].sort(
+      (a, b) =>
+        this.sourceDistance(a[1].bounds) - this.sourceDistance(b[1].bounds),
+    );
+    while (steps < maxSteps && performance.now() < deadline) {
+      const work = this.overviewWork;
+      const nearest = sources.find(
+        ([key, request]) => this.queuedSources.get(key) === request,
+      );
+      const localTakesPriority =
+        work &&
+        nearest?.[1].local &&
+        !work.request.deltas.has(nearest[0]) &&
+        (parseHeightOverviewKey(work.key).power !== this.tilePower() ||
+          this.sourceDistance(nearest[1].bounds) <
+            this.sourceDistance(work.request.bounds));
+      if (
+        work &&
+        (localTakesPriority ||
+          this.queuedOverviews.get(work.key) !== work.request ||
+          work.request.version !== work.version)
+      ) {
+        work.steps.return({ tile: null, changed: false });
+        this.overviewWork = null;
+      }
+      if (this.overviewWork) {
+        const active = this.overviewWork;
+        steps++;
+        let next: IteratorResult<void, OverviewResult>;
+        try {
+          next = active.steps.next();
+        } catch (error) {
+          this.overviewWork = null;
+          throw error;
+        }
+        if (!next.done) continue;
+        this.overviewWork = null;
+        if (
+          this.queuedOverviews.get(active.key) !== active.request ||
+          active.request.version !== active.version
+        )
+          continue;
+        this.queuedOverviews.delete(active.key);
+        if (next.value.changed) {
+          if (next.value.tile) this.overviews.set(active.key, next.value.tile);
+          else this.overviews.delete(active.key);
+          const tile = this.tiles.get(
+            active.key.slice("height-overview:".length),
+          );
+          if (tile) {
+            tile.contentVersion++;
+            if (next.value.foreign ?? active.request.replacement) {
+              tile.foundationVersion++;
+              tile.field.invalidateTotal();
+              tile.dirty = [...WHOLE];
+            } else {
+              tile.field.markHeightChanged();
+              tile.dirty ??= [...WHOLE];
+            }
+            tile.preparedRevision = -1;
+            tile.revision = this.document.revision;
+          }
+        }
+        continue;
+      }
+      const source = sources.find(
+        ([key, request]) => this.queuedSources.get(key) === request,
+      );
+      const overview = source
+        ? overviews.find(
+            ([key, request]) =>
+              this.queuedOverviews.get(key) === request &&
+              request.deltas.has(source[0]) &&
+              parseHeightOverviewKey(key).power === this.tilePower(),
+          )
+        : overviews.find(
+            ([key, request]) => this.queuedOverviews.get(key) === request,
+          );
+      if (overview) {
+        // One cloned overview plus one 64² delta; prior output/input buffers are
+        // separately retained. Never allocate the operation's peak speculatively.
+        if (
+          !this.sourcePreparationFits(
+            HEIGHT_OVERVIEW_BYTES * (overview[1].localCandidate ? 2 : 1) +
+              64 * 64 * 8,
+          )
+        )
+          break;
+        const [key, request] = overview;
+        const buffers = new Set<ArrayBufferLike>();
+        this.overviewWork = {
+          key,
+          request,
+          version: request.version,
+          buffers,
+          steps: this.prepareOverview(key, request, buffers),
+        };
+        continue;
+      }
+      if (!source) break;
+      const [key, request] = source;
+      if (
+        request.after &&
+        !this.sourcePreparationFits(request.after.values.byteLength)
+      )
+        break;
+      steps++;
+      const candidate = request.localCandidate;
+      const identicalLocal =
+        candidate !== undefined &&
+        (candidate === request.after ||
+          Boolean(
+            candidate &&
+            request.after &&
+            candidate.values.length === request.after.values.length &&
+            candidate.values.every(
+              (value, index) => value === request.after!.values[index],
+            ),
+          ));
+      const changed =
+        request.local || identicalLocal
+          ? this.field.applySourcePatches([
+              { key, before: request.before, after: request.after },
+            ])
+          : this.field.updateSources(
+              request.after ? [request.after] : [],
+              request.after ? [] : [key],
+            );
+      if (request.foreign && !identicalLocal)
+        for (const bounds of changed) this.invalidateTiles(bounds, true);
+      this.queuedSources.delete(key);
+    }
     this.checkBudgets();
+    return steps;
+  }
+
+  private *prepareOverview(
+    key: string,
+    request: QueuedOverview,
+    buffers: Set<ArrayBufferLike>,
+  ): Generator<void, OverviewResult, void> {
+    const at = parseHeightOverviewKey(key);
+    const base = request.base;
+    const previous = this.overviews.get(key) ?? null;
+    const patches = [...request.deltas.values()];
+    if (base) buffers.add(base.values.buffer);
+    for (const patch of patches) {
+      if (patch.before) buffers.add(patch.before.values.buffer);
+      if (patch.after) buffers.add(patch.after.values.buffer);
+    }
+    if (!base && !patches.length && !request.localCandidate)
+      return { tile: null, changed: previous !== null };
+    if (
+      base &&
+      (base.key !== key ||
+        base.power !== at.power ||
+        base.tileX !== at.tileX ||
+        base.tileY !== at.tileY ||
+        !(base.values instanceof Float64Array) ||
+        base.values.length !== SIZE * SIZE)
+    )
+      throw new RangeError("Beschädigte numerische Höhenübersicht.");
+    const result = createHeightOverviewTile(at.power, at.tileX, at.tileY);
+    buffers.add(result.values.buffer);
+    if (base)
+      for (
+        let from = 0;
+        from < base.values.length;
+        from += editorBudgets.heightOverviewSamplesPerStep
+      ) {
+        const to = Math.min(
+          base.values.length,
+          from + editorBudgets.heightOverviewSamplesPerStep,
+        );
+        for (let index = from; index < to; index++) {
+          const value = base.values[index];
+          if (!Number.isFinite(value))
+            throw new RangeError("Beschädigte numerische Höhenübersicht.");
+          result.values[index] = value;
+        }
+        yield;
+      }
+    let delta: HeightOverviewDelta | null = null;
+    try {
+      for (const patch of patches) {
+        delta = prepareHeightOverviewDelta(patch);
+        if (!delta) {
+          yield;
+          continue;
+        }
+        buffers.add(delta.values.buffer);
+        yield;
+        for (let row = 0; row < SIZE; row += 8) {
+          applyPreparedHeightOverviewDelta(result, delta, [
+            row,
+            Math.min(SIZE, row + 8),
+          ]);
+          yield;
+        }
+        buffers.delete(delta.values.buffer);
+        delta = null;
+      }
+      let changed = Boolean(previous) !== Boolean(base);
+      let nonzero = false;
+      for (
+        let from = 0;
+        from < result.values.length;
+        from += editorBudgets.heightOverviewSamplesPerStep
+      ) {
+        const to = Math.min(
+          result.values.length,
+          from + editorBudgets.heightOverviewSamplesPerStep,
+        );
+        for (let index = from; index < to; index++) {
+          nonzero ||= result.values[index] !== 0;
+          changed ||= result.values[index] !== (previous?.values[index] ?? 0);
+        }
+        yield;
+      }
+      let foreign = request.replacement;
+      if (request.replacement && request.localCandidate) {
+        const expected = yield* this.prepareOverview(
+          key,
+          {
+            ...request.localCandidate,
+            replacement: false,
+            version: 0,
+            bounds: request.bounds,
+          },
+          buffers,
+        );
+        foreign = false;
+        for (
+          let from = 0;
+          from < result.values.length;
+          from += editorBudgets.heightOverviewSamplesPerStep
+        ) {
+          const to = Math.min(
+            result.values.length,
+            from + editorBudgets.heightOverviewSamplesPerStep,
+          );
+          for (let index = from; index < to; index++)
+            foreign ||=
+              result.values[index] !== (expected.tile?.values[index] ?? 0);
+          yield;
+        }
+        if (expected.tile) buffers.delete(expected.tile.values.buffer);
+      }
+      return { tile: !base && !nonzero ? null : result, changed, foreign };
+    } finally {
+      if (delta) buffers.delete(delta.values.buffer);
+    }
   }
 
   private retainedBufferBytes(): number {
     const buffers = new Set<ArrayBufferLike>();
+    const sourceBuffers = new Set<ArrayBufferLike>();
+    for (const field of [this.field, ...this.retiredFields])
+      for (const source of field.atlas.sources.values())
+        sourceBuffers.add(source.values.buffer);
     const add = (values: Float64Array) => buffers.add(values.buffer);
     for (const tile of this.overviews.values()) add(tile.values);
+    for (const tile of this.tiles.values())
+      if (tile.overview) add(tile.overview.values);
     for (const tile of this.frozen?.overviews.values() ?? []) add(tile.values);
+    if (this.exceptionTarget?.overview)
+      add(this.exceptionTarget.overview.values);
     for (const [key, queued] of this.queuedSources) {
       const held = this.field.readSource(key)?.values.buffer;
       if (queued.before && queued.before.values.buffer !== held)
@@ -551,6 +1020,13 @@ export class WorldRenderer {
       if (queued.after && queued.after.values.buffer !== held)
         add(queued.after.values);
     }
+    for (const buffer of this.projections?.metrics().retainedInputBuffers ?? [])
+      if (!sourceBuffers.has(buffer)) buffers.add(buffer);
+    for (const field of [this.field, ...this.retiredFields])
+      for (const buffer of field.retainedSourceBuffers())
+        if (!sourceBuffers.has(buffer)) buffers.add(buffer);
+    for (const buffer of this.queuedSourceBuffers())
+      if (!sourceBuffers.has(buffer)) buffers.add(buffer);
     let bytes = 0;
     for (const buffer of buffers) bytes += buffer.byteLength;
     for (const proof of this.foundation?.tiles.values() ?? [])
@@ -561,12 +1037,23 @@ export class WorldRenderer {
   private invalidateProofs(): void {
     this.preparationId++;
     this.foundation = null;
-    this.frozen = null;
+    this.wantedInfluence = null;
+    this.abandonFrozen();
+    this.exceptionTarget?.target.tile.field.cancelPreparation();
+    this.exceptionTarget = null;
     this.completedRender = null;
   }
 
+  private abandonFrozen(): void {
+    if (this.frozen)
+      for (const target of this.frozen.targets)
+        if (!target.painted) target.tile.field.cancelPreparation();
+    this.frozen = null;
+    this.interruptBackground = false;
+  }
+
   private checkBudgets(): void {
-    const metrics = this.field.metrics();
+    const metrics = this.resourceMetrics();
     if (metrics.sourceBytes > editorBudgets.sourceBytes)
       throw new Error(
         "Die Darstellungsquellen überschreiten das Speicherbudget.",
@@ -604,7 +1091,6 @@ export class WorldRenderer {
     if (this.field.toolLevel === level) return;
     this.invalidateProofs();
     if (!this.field.setToolLevel(level)) return;
-    if (!this.pendingGpu) this.applyQueuedSources();
     for (const tile of this.tiles.values()) {
       tile.dirty = [...WHOLE];
       tile.preparedRevision = -1;
@@ -642,6 +1128,7 @@ export class WorldRenderer {
     const power = this.tilePower();
     const span = SIZE * 2 ** power;
     const view = this.bounds();
+    const specifications: { key: string; bounds: Bounds }[] = [];
     const current = new Set<string>();
     for (
       let y = Math.floor(view[1] / span);
@@ -660,42 +1147,64 @@ export class WorldRenderer {
           (y + 1) * span,
         ];
         const key = `${power}:${x}:${y}`;
+        if (!intersection(bounds, view)) continue;
         current.add(key);
-        let tile = this.tiles.get(key);
-        if (!tile) {
-          const field = this.field.createTile(
-            bounds,
-            power,
-            this.overviews.get(`height-overview:${key}`),
-          );
-          tile = {
-            key,
-            bounds,
-            power,
-            revision: this.document.revision,
-            dirty: [...WHOLE],
-            preparedRevision: -1,
-            preparedIntent: -1,
-            paintedRevision: -1,
-            submittedRevision: -1,
-            submittedFrame: 0,
-            completedRevision: -1,
-            completedFrame: 0,
-            submittedPreparation: -1,
-            completedPreparation: -1,
-            foundationVersion: 0,
-            contentVersion: 0,
-            visible: true,
-            touched: performance.now(),
-            field,
-            overview: this.overviews.get(`height-overview:${key}`) ?? null,
-          };
-          this.tiles.set(key, tile);
-          this.terrain.addChild(field.mesh);
-        }
-        tile.visible = true;
-        tile.touched = performance.now();
+        specifications.push({ key, bounds });
       }
+    }
+    for (const tile of this.tiles.values())
+      tile.visible = current.has(tile.key);
+    this.pendingDisplayTiles = false;
+    for (const { key, bounds } of specifications) {
+      if (
+        !this.tiles.has(key) &&
+        this.tiles.size >= editorBudgets.retainedTiles
+      ) {
+        const cold = [...this.tiles.values()]
+          .filter((tile) => !tile.visible && !this.tilePinned(tile))
+          .sort((a, b) => a.touched - b.touched)[0];
+        if (cold) {
+          this.tiles.delete(cold.key);
+          this.destroyTile(cold);
+        } else {
+          this.pendingDisplayTiles = true;
+          continue;
+        }
+      }
+      let tile = this.tiles.get(key);
+      if (!tile) {
+        const field = this.field.createTile(
+          bounds,
+          power,
+          this.overviews.get(`height-overview:${key}`),
+        );
+        tile = {
+          key,
+          bounds,
+          power,
+          revision: this.document.revision,
+          dirty: [...WHOLE],
+          preparedRevision: -1,
+          preparedIntent: -1,
+          paintedRevision: -1,
+          submittedRevision: -1,
+          submittedFrame: 0,
+          completedRevision: -1,
+          completedFrame: 0,
+          submittedPreparation: -1,
+          completedPreparation: -1,
+          foundationVersion: 0,
+          contentVersion: 0,
+          visible: true,
+          touched: performance.now(),
+          field,
+          overview: this.overviews.get(`height-overview:${key}`) ?? null,
+        };
+        this.tiles.set(key, tile);
+        this.terrain.addChild(field.mesh);
+      }
+      tile.visible = true;
+      tile.touched = performance.now();
     }
     for (const tile of this.tiles.values()) {
       tile.visible = current.has(tile.key);
@@ -740,7 +1249,34 @@ export class WorldRenderer {
   }
 
   redraw(): void {
+    this.redrawCursor();
     this.requestFrame = true;
+    this.sceneRequested = true;
+  }
+
+  redrawCursor(): void {
+    this.cursorOverlay?.update(this.cursor);
+  }
+
+  /** Explicit retry keeps failed remote work out of ordinary scheduling meanwhile. */
+  retryPreparation(): void {
+    for (const tile of this.tiles.values()) {
+      if (!tile.failedPreparation) continue;
+      tile.failedPreparation = undefined;
+      tile.preparedRevision = -1;
+      tile.preparedIntent = -1;
+    }
+    this.requestFrame = true;
+  }
+
+  private preparationFailed(tile: DisplayTile): boolean {
+    const failed = tile.failedPreparation;
+    return Boolean(
+      failed &&
+      failed.revision === tile.revision &&
+      failed.contentVersion === tile.contentVersion &&
+      failed.preparation === tile.field.preparationVersion,
+    );
   }
 
   /**
@@ -754,8 +1290,49 @@ export class WorldRenderer {
   }
 
   /** CPU submission evidence remains separate from completed GPU work. */
-  inspectSubmittedRegion(bounds: Bounds): RegionInspection {
-    return this.inspect(bounds, false);
+  inspectSubmittedRegion(
+    bounds: Bounds,
+    minimumRevision?: number,
+  ): RegionInspection {
+    const result = this.inspect(bounds, false);
+    if (result.status === "current" || minimumRevision === undefined)
+      return result;
+    if (
+      !Number.isSafeInteger(minimumRevision) ||
+      minimumRevision < 0 ||
+      this.contextLost ||
+      this.graphicsFailed ||
+      this.destroyed
+    )
+      return result;
+    const scene = this.pendingGpu.find(
+      (pending) =>
+        pending.kind === "scene" &&
+        pending.submission?.frame === result.frame &&
+        pending.submission.sessionId === result.sessionId,
+    );
+    const receipt = scene?.renderReceipt;
+    if (
+      !receipt ||
+      receipt !== this.frozen?.receipt ||
+      receipt.sessionId !== this.sessionId ||
+      receipt.viewGeneration !== this.viewGeneration ||
+      receipt.preparationId !== this.preparationId ||
+      receipt.revision < minimumRevision
+    )
+      return result;
+    const area = intersection(bounds, this.bounds());
+    if (!area) return result;
+    // This is read-only timing correlation for the submitted immutable R, not
+    // readiness of the newest document. A full Scene receipt certifies only
+    // its complete visible influence; an unrelated region or partial packet
+    // cannot publish an input merely because its revision is older.
+    let uncovered: Rect[] = [area];
+    for (const covered of receipt.bounds) {
+      uncovered = uncovered.flatMap((part) => outsideRect(part, covered));
+      if (!uncovered.length) return { ...result, status: "current" };
+    }
+    return result;
   }
 
   /** Capture actually completed pixels; later own edits may reuse this baseline. */
@@ -815,6 +1392,8 @@ export class WorldRenderer {
       };
     const area = intersection(bounds, this.bounds());
     if (!area) return result;
+    if (this.hasQueuedImportsFor([area], receipt))
+      return { ...result, status: "missing" };
     let covered = false;
     for (const tile of this.tiles.values()) {
       if (!tile.visible || !intersectsBounds(tile.bounds, area)) continue;
@@ -874,22 +1453,33 @@ export class WorldRenderer {
   freezeRender(
     influence: Bounds | readonly Bounds[],
   ): FrozenRenderReceipt | null {
-    if (
-      this.destroyed ||
-      this.contextLost ||
-      this.sourcesFrozen ||
-      this.preparedViewGeneration !== this.viewGeneration
-    )
-      return null;
-    this.applyQueuedSources();
-    const bounds: Bounds[] =
+    const requested: Bounds[] =
       typeof influence[0] === "number"
         ? [[...(influence as Bounds)]]
         : (influence as readonly Bounds[]).map((area) => [...area]);
+    this.wantedInfluence = requested;
+    if (this.frozen?.kind === "background") {
+      // A new local gesture takes over after the already submitted terrain
+      // packet. Unsubmitted work stays in the same dirty union.
+      this.interruptBackground = true;
+      if (this.terrainPending) return null;
+      this.abandonFrozen();
+    }
+    if (
+      this.destroyed ||
+      this.contextLost ||
+      this.graphicsFailed ||
+      this.sourcesFrozen ||
+      this.hasQueuedSourcesFor(requested) ||
+      this.preparedViewGeneration !== this.viewGeneration
+    )
+      return null;
+    const bounds: Bounds[] = requested;
     const areas = bounds
       .map((area) => intersection(area, this.bounds()))
       .filter((area): area is Bounds => area !== null);
     if (!areas.length) return null;
+    if (areas.some((area) => !this.hasDisplayCoverage(area))) return null;
     const targets: FrozenTarget[] = [];
     for (const tile of this.tiles.values()) {
       if (
@@ -913,6 +1503,7 @@ export class WorldRenderer {
       });
     }
     if (!targets.length) return null;
+    this.wantedInfluence = null;
     const receipt = Object.freeze({
       id: this.nextProofId++,
       sessionId: this.sessionId,
@@ -933,7 +1524,12 @@ export class WorldRenderer {
       });
       return receipt;
     }
-    this.frozen = { receipt, targets, overviews: new Map(this.overviews) };
+    this.frozen = {
+      kind: "local",
+      receipt,
+      targets,
+      overviews: new Map(this.overviews),
+    };
     this.checkBudgets();
     this.requestFrame = true;
     return receipt;
@@ -947,6 +1543,7 @@ export class WorldRenderer {
       receipt.viewGeneration !== this.viewGeneration ||
       receipt.preparationId !== this.preparationId ||
       this.contextLost ||
+      this.graphicsFailed ||
       this.destroyed
     )
       return "invalid";
@@ -971,9 +1568,12 @@ export class WorldRenderer {
     if (
       this.contextLost ||
       this.preparedViewGeneration !== this.viewGeneration ||
-      view !== this.viewGeneration
+      this.graphicsFailed ||
+      view !== this.viewGeneration ||
+      !this.hasDisplayCoverage(area)
     )
       return result;
+    if (this.hasQueuedImportsFor([area])) return result;
     let covered = false;
     let current = true;
     for (const tile of this.tiles.values()) {
@@ -999,8 +1599,21 @@ export class WorldRenderer {
     return result;
   }
 
+  private hasDisplayCoverage(bounds: Bounds): boolean {
+    return heightOverviewKeys(bounds, this.tilePower()).every((key) => {
+      const area = heightOverviewBounds(parseHeightOverviewKey(key));
+      return (
+        !intersection(bounds, area) ||
+        Boolean(this.tiles.get(key.slice("height-overview:".length))?.visible)
+      );
+    });
+  }
+
   state() {
-    const metrics = this.field.metrics();
+    const metrics = this.resourceMetrics();
+    const preparing = this.observation.enabled
+      ? this.frozen?.targets.find((target) => !target.painted)
+      : undefined;
     return {
       tiles: this.tiles.size,
       presentationPower: this.tilePower(),
@@ -1025,12 +1638,28 @@ export class WorldRenderer {
       viewGeneration: this.viewGeneration,
       lastCompletedFrame: this.lastCompletedFrame,
       lastCompletedViewGeneration: this.lastCompletedViewGeneration,
-      gpuPending: this.pendingGpu !== null,
+      gpuPending: this.pendingGpu.length > 0,
+      gpuSubmissions: this.pendingGpu.length,
+      terrainPending: this.terrainPending,
+      scenePending: this.scenePending,
+      retiredFields: this.retiredFields.size,
+      projectionJobs: this.projections?.metrics().active ?? 0,
+      projectionPending: this.projections?.metrics().pending ?? 0,
       preparationId: this.preparationId,
       frozenRevision: this.frozen?.receipt.revision ?? null,
+      ...(preparing && {
+        frozenPreparation: {
+          key: preparing.tile.key,
+          kind: this.frozen?.kind,
+          ...preparing.tile.field.preparationState(),
+        },
+      }),
       queuedSourceTiles: this.queuedSources.size,
+      queuedOverviewTiles: this.queuedOverviews.size,
+      pendingDisplayTiles: this.pendingDisplayTiles,
       fault: this.fault,
       contextLost: this.contextLost,
+      graphicsFailed: this.graphicsFailed,
       heldForPointerup: this.heldForPointerup,
     };
   }
@@ -1057,17 +1686,220 @@ export class WorldRenderer {
     }
   }
 
-  /** Upload accepted numeric changes and draw once; only a successful draw is a receipt. */
+  private prioritizedTargets(): FrozenTarget[] {
+    const x =
+      this.camera.x +
+      ((this.cursor?.x ?? this.width / 2) - this.width / 2) / this.camera.scale;
+    const y =
+      this.camera.y +
+      ((this.cursor?.y ?? this.height / 2) - this.height / 2) /
+        this.camera.scale;
+    const distance = ({ tile }: FrozenTarget) =>
+      Math.hypot(
+        Math.max(tile.bounds[0] - x, 0, x - tile.bounds[2]),
+        Math.max(tile.bounds[1] - y, 0, y - tile.bounds[3]),
+      );
+    return (this.frozen?.targets ?? [])
+      .filter((target) => !target.painted)
+      .sort((a, b) => distance(a) - distance(b));
+  }
+
+  /** Selection is metadata-only; no descriptor, raster or page is prepared here. */
+  private freezeBackground(): void {
+    if (
+      this.sourcesFrozen ||
+      this.preparedViewGeneration !== this.viewGeneration
+    )
+      return;
+    if (this.wantedInfluence && this.hasQueuedSourcesFor(this.wantedInfluence))
+      return;
+    const spacing = heightSpacing(this.field.toolLevel);
+    const localX =
+      this.camera.x +
+      ((this.cursor?.x ?? this.width / 2) - this.width / 2) / this.camera.scale;
+    const localY =
+      this.camera.y +
+      ((this.cursor?.y ?? this.height / 2) - this.height / 2) /
+        this.camera.scale;
+    const radius =
+      (this.cursor ? this.cursor.radius / this.camera.scale : 8 * spacing) +
+      2 * spacing;
+    if (
+      this.hasQueuedSourcesFor([
+        clipBounds([
+          localX - radius,
+          localY - radius,
+          localX + radius,
+          localY + radius,
+        ]),
+      ])
+    )
+      return;
+    const exception = this.exceptionTarget;
+    if (exception) {
+      const { target, receipt, overview } = exception;
+      if (target.preparation !== target.tile.field.preparationVersion) {
+        this.exceptionTarget = null;
+      } else if (
+        !target.tile.field.waitingProjection ||
+        !target.tile.field.hasProjectionTask
+      ) {
+        this.frozen = {
+          kind: "background",
+          receipt,
+          targets: [target],
+          overviews: new Map(overview ? [[overview.key, overview]] : []),
+        };
+        this.exceptionTarget = null;
+        return;
+      }
+    }
+    const targets: FrozenTarget[] = [];
+    for (const tile of this.tiles.values()) {
+      if (!tile.visible) continue;
+      if (this.preparationFailed(tile)) continue;
+      if (
+        this.exceptionTarget?.target.tile === tile ||
+        (this.exceptionTarget && tile.field.fallback) ||
+        (tile.field.waitingProjection &&
+          (this.projections?.metrics().active ?? 0) > 0)
+      )
+        continue;
+      if (
+        !tile.dirty &&
+        tile.field.preparedVersion !== tile.field.preparationVersion
+      )
+        tile.dirty = [...WHOLE];
+      if (
+        !tile.dirty ||
+        !this.isPresentationReady(tile.bounds, tile.power) ||
+        this.hasQueuedSourcesFor([tile.bounds])
+      )
+        continue;
+      targets.push({
+        tile,
+        revision: tile.revision,
+        contentVersion: tile.contentVersion,
+        preparation: tile.field.preparationVersion,
+        dirty: [...tile.dirty],
+        painted: false,
+      });
+    }
+    if (!targets.length) return;
+    // Finish one local background target before freezing any remote work.
+    targets.sort(
+      (a, b) =>
+        this.sourceDistance(a.tile.bounds) - this.sourceDistance(b.tile.bounds),
+    );
+    targets.splice(1);
+    this.frozen = {
+      kind: "background",
+      receipt: Object.freeze({
+        id: this.nextProofId++,
+        sessionId: this.sessionId,
+        viewGeneration: this.viewGeneration,
+        preparationId: this.preparationId,
+        revision: this.document.revision,
+        bounds: Object.freeze(targets.map(({ tile }) => tile.bounds)),
+      }),
+      targets,
+      overviews: new Map(this.overviews),
+    };
+  }
+
+  private pinGpu(
+    kind: GpuSubmission["kind"],
+    tiles: GpuSubmission["tiles"],
+    submission: FrameSubmission | null = null,
+    renderReceipt: FrozenRenderReceipt | null = null,
+  ): void {
+    if (
+      this.pendingGpu.length >= editorBudgets.glSubmissions ||
+      this.pendingGpu.some((pending) => pending.kind === kind)
+    )
+      throw new Error("Das Grafik-Arbeitspaket hat keinen freien Platz.");
+    const gl = this.renderer.gl;
+    const sync = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0);
+    if (!sync) {
+      this.graphicsFailed = true;
+      this.unfencedWork = true;
+      this.unfencedField = this.field;
+      this.invalidateGpuSubmission(false);
+      throw new Error("Der Grafikabschluss konnte nicht verfolgt werden.");
+    }
+    gl.flush();
+    this.pendingGpu.push({
+      kind,
+      sync,
+      field: this.field,
+      submission,
+      tiles,
+      renderReceipt,
+    });
+  }
+
+  /** Each RAF selects first, then spends a bounded preparation and terrain packet. */
+  prepareFrame(): boolean {
+    this.preparationStarted = performance.now();
+    this.preparationDeadline =
+      this.preparationStarted + editorBudgets.preparationMsPerFrame;
+    this.preparationSteps =
+      this.contextLost || this.graphicsFailed || this.destroyed
+        ? 0
+        : this.drainSources(
+            this.preparationDeadline,
+            editorBudgets.preparationStepsPerFrame,
+          );
+    this.preparationRecord = {
+      id: ++this.preparationSerial,
+      at: this.preparationStarted,
+      ms: performance.now() - this.preparationStarted,
+      steps: this.preparationSteps,
+      sourceSteps: this.preparationSteps,
+    };
+    this.framePrepared = true;
+    return this.preparationSteps > 0;
+  }
+
+  /** Also records source-only / preparation-only RAFs; none disappear from the gate. */
+  finishFrame(): void {
+    const record = this.preparationRecord;
+    if (!record) return;
+    if (!this.observation.enabled) {
+      this.preparationRecord = null;
+      return;
+    }
+    const resources = this.resourceMetrics();
+    this.observation.event("height-preparation", {
+      sessionId: this.sessionId,
+      preparationFrame: record.id,
+      preparationStart: record.at,
+      preparationMs: record.ms,
+      preparationSteps: record.steps,
+      sourceSteps: record.sourceSteps,
+      ...resources,
+      presentationBytes: resources.cpuBytes + this.retainedBufferBytes(),
+    });
+    this.preparationRecord = null;
+  }
+
+  private recordPreparation(ms: number, steps: number): void {
+    if (!this.preparationRecord) return;
+    this.preparationRecord.ms = ms;
+    this.preparationRecord.steps = steps;
+  }
+
   renderFrame(now: number): FrameSubmission | null {
+    if (!this.framePrepared) this.prepareFrame();
+    this.framePrepared = false;
     if (
       this.destroyed ||
       this.contextLost ||
+      this.graphicsFailed ||
       !this.document ||
-      !this.requestFrame ||
-      this.pendingGpu
+      (!this.requestFrame && !this.sceneRequested)
     )
       return null;
-    // Fault controls delay the actual terrain draw, never fabricate readiness.
     if (
       this.heldForPointerup ||
       (this.faultArmed &&
@@ -1075,70 +1907,21 @@ export class WorldRenderer {
           (this.fault === "delay-render" && now < this.delayUntil)))
     )
       return null;
-
-    const group = this.frozen;
-    const frozenTargets = new Map(
-      group?.targets.map((target) => [target.tile, target]),
-    );
-    const prepared: DisplayTile[] = [];
-    for (const tile of group ? frozenTargets.keys() : this.tiles.values()) {
-      const target = frozenTargets.get(tile);
-      if (target?.painted) continue;
-      // A resident-subset or tool change can invalidate preparation without
-      // changing document revision or an already displayed colour tile.
-      if (
-        !target &&
-        !tile.dirty &&
-        tile.field.preparedVersion !== tile.field.preparationVersion
-      )
-        tile.dirty = [...WHOLE];
-      if (
-        !tile.visible ||
-        !(target?.dirty ?? tile.dirty) ||
-        (!target && !this.isPresentationReady(tile.bounds, tile.power))
-      )
-        continue;
-      if (
-        tile.preparedRevision !== (target?.revision ?? tile.revision) ||
-        tile.preparedIntent !==
-          (target?.preparation ?? tile.field.preparationVersion) ||
-        tile.field.needsPreparation
-      ) {
-        const overview =
-          (group?.overviews ?? this.overviews).get(
-            `height-overview:${tile.key}`,
-          ) ?? null;
-        tile.field.update(
-          overview === tile.overview ? undefined : overview,
-          (target?.dirty ?? tile.dirty)!,
-        );
-        tile.overview = overview;
-        tile.preparedRevision = target?.revision ?? tile.revision;
-        tile.preparedIntent = tile.field.preparationVersion;
-      }
-      prepared.push(tile);
+    if (this.interruptBackground && !this.terrainPending) {
+      this.abandonFrozen();
     }
-    // Complete the actual tool footprint before spending cold work elsewhere.
-    // Every visible tile remains queued; this changes order, never readiness.
-    const targetX =
-      this.camera.x +
-      ((this.cursor?.x ?? this.width / 2) - this.width / 2) / this.camera.scale;
-    const targetY =
-      this.camera.y +
-      ((this.cursor?.y ?? this.height / 2) - this.height / 2) /
-        this.camera.scale;
-    const distance = (tile: DisplayTile) =>
-      Math.hypot(
-        Math.max(tile.bounds[0] - targetX, 0, targetX - tile.bounds[2]),
-        Math.max(tile.bounds[1] - targetY, 0, targetY - tile.bounds[3]),
-      );
-    prepared.sort((a, b) => distance(a) - distance(b));
-    this.checkBudgets();
-    const uploadStart = performance.now();
-    const uploaded = this.field.flush(editorBudgets.uploadBytesPerFrame);
-    const uploadedAt = performance.now();
-    const pending = this.field.metrics().pendingUploadBytes > 0;
+    this.freezeBackground();
+    const group = this.frozen;
+    let uploaded = 0;
     let composedSamples = 0;
+    let work = 0;
+    let preparationSteps = this.preparationSteps;
+    let preparationMs = performance.now() - this.preparationStarted;
+    let updatedTiles = 0;
+    let uploadStart = performance.now();
+    let uploadedAt = uploadStart;
+    const uploadSpans: { start: number; end: number; bytes: number }[] = [];
+    const compositionSpans: { start: number; end: number; work: number }[] = [];
     const composition: HeightCompositionStats = {
       canonicalSamples: 0,
       deltaSamples: 0,
@@ -1149,72 +1932,297 @@ export class WorldRenderer {
       horizontalSamples: 0,
       projectionProducts: 0,
     };
-    // Cached GPU colour tiles remain safe to draw while new numeric resources
-    // upload across frames. Only a complete resource set may replace them.
-    let work = 0;
-    const drawable = prepared.filter((tile) => {
-      if (!tile.field.uploadReady) return false;
-      const cost = tile.field.compositionWork;
-      if (cost > editorBudgets.compositionWorkPerFrame)
-        throw new Error(
-          "Eine Höhenkachel überschreitet das Grafik-Arbeitspaket.",
-        );
-      if (work + cost > editorBudgets.compositionWorkPerFrame) return false;
-      work += cost;
-      return true;
-    });
-    prepared.splice(0, prepared.length, ...drawable);
-    for (const tile of prepared) {
-      const samples = tile.field.drawDirty(this.renderer);
-      composedSamples += samples;
-      if (samples) {
-        for (const key of Object.keys(
-          composition,
-        ) as (keyof HeightCompositionStats)[])
-          composition[key] += tile.field.compositionStats[key];
+
+    if (
+      !this.terrainPending &&
+      this.pendingGpu.length < editorBudgets.glSubmissions &&
+      group
+    ) {
+      const preparationStart = this.preparationStarted;
+      const deadline = this.preparationDeadline;
+      const selected: FrozenTarget[] = [];
+      for (const target of this.prioritizedTargets()) {
+        const tile = target.tile;
+        if (
+          performance.now() >= deadline ||
+          preparationSteps >= editorBudgets.preparationStepsPerFrame
+        )
+          break;
+        if (
+          tile.preparedRevision !== target.revision ||
+          tile.preparedIntent !== target.preparation
+        ) {
+          const overview =
+            group.overviews.get(`height-overview:${tile.key}`) ?? null;
+          tile.field.update(
+            overview === tile.overview ? undefined : overview,
+            target.dirty ?? WHOLE,
+            group.kind === "local" ? "local" : "background",
+          );
+          tile.overview = overview;
+          tile.preparedRevision = target.revision;
+          tile.preparedIntent = target.preparation;
+        }
+        // Consecutive synchronous generator steps share the same peak reserve.
+        // Recheck on every changed requirement (notably atlas growth / worker
+        // hydration), another tile or RAF. No job callback can interleave here.
+        let reserved: { cpuBytes: number; gpuBytes: number } | null = null;
+        let failed = false;
+        while (
+          tile.field.needsPreparation &&
+          performance.now() < deadline &&
+          preparationSteps < editorBudgets.preparationStepsPerFrame
+        ) {
+          const nextReserve = tile.field.nextPreparationBytes;
+          if (
+            !reserved ||
+            nextReserve?.cpuBytes !== reserved.cpuBytes ||
+            nextReserve?.gpuBytes !== reserved.gpuBytes
+          ) {
+            if (!this.reservePreparation(tile, nextReserve)) break;
+            reserved = nextReserve;
+          }
+          preparationSteps++;
+          try {
+            if (!tile.field.prepareStep()) break;
+          } catch (error) {
+            if (group.kind !== "background") throw error;
+            // An unrelated failed exception must not hold the frozen sources
+            // needed to prepare a new local foundation. Keep its dirty work,
+            // and retry only changed inputs or the explicit retry action.
+            tile.failedPreparation = {
+              revision: target.revision,
+              contentVersion: target.contentVersion,
+              preparation: target.preparation,
+            };
+            tile.field.cancelPreparation();
+            tile.preparedRevision = -1;
+            tile.preparedIntent = -1;
+            group.targets = group.targets.filter(
+              (candidate) => candidate !== target,
+            );
+            if (!group.targets.length && this.frozen === group)
+              this.frozen = null;
+            this.onError(
+              error instanceof Error ? error : new Error(String(error)),
+            );
+            failed = true;
+            break;
+          }
+        }
+        if (failed) continue;
+        if (group.kind === "background" && tile.field.waitingProjection) {
+          if (tile.field.hasProjectionTask && !this.exceptionTarget)
+            this.exceptionTarget = {
+              target,
+              overview:
+                group.overviews.get(`height-overview:${tile.key}`) ?? null,
+              receipt: Object.freeze({
+                ...group.receipt,
+                bounds: Object.freeze([tile.bounds]),
+              }),
+            };
+          else if (this.exceptionTarget?.target !== target) {
+            tile.field.cancelPreparation();
+            tile.preparedRevision = -1;
+            tile.preparedIntent = -1;
+          }
+          group.targets = group.targets.filter(
+            (candidate) => candidate !== target,
+          );
+          if (!group.targets.length) this.frozen = null;
+          continue;
+        }
+        if (!tile.field.needsPreparation) selected.push(target);
+      }
+      preparationMs = performance.now() - preparationStart;
+      this.recordPreparation(preparationMs, preparationSteps);
+      this.checkBudgets();
+      if (selected.length) {
+        try {
+          uploadStart = performance.now();
+          uploaded = this.field.flush(
+            editorBudgets.uploadBytesPerFrame,
+            selected.map((target) => target.tile.field),
+          );
+          uploadedAt = performance.now();
+          uploadSpans.push({
+            start: uploadStart,
+            end: uploadedAt,
+            bytes: uploaded,
+          });
+          let terrainWork = this.field.lastFlushHadWork || uploaded > 0;
+          for (const target of selected) {
+            const tile = target.tile;
+            while (tile.field.uploadReady && tile.field.needsComposition) {
+              const cost = tile.field.compositionWork;
+              if (cost > editorBudgets.compositionWorkPerFrame)
+                throw new Error(
+                  "Ein Höhen-Teilschritt überschreitet das Grafik-Arbeitspaket.",
+                );
+              if (work + cost > editorBudgets.compositionWorkPerFrame) break;
+              work += cost;
+              const compositionStart = performance.now();
+              const samples = tile.field.drawDirty(this.renderer);
+              compositionSpans.push({
+                start: compositionStart,
+                end: performance.now(),
+                work: cost,
+              });
+              composedSamples += samples;
+              terrainWork ||= cost > 0;
+              for (const key of Object.keys(
+                composition,
+              ) as (keyof HeightCompositionStats)[])
+                composition[key] += tile.field.compositionStats[key];
+              if (
+                !tile.field.needsComposition &&
+                !tile.field.needsPreparation
+              ) {
+                tile.paintedRevision = target.revision;
+                target.painted = true;
+                if (target.contentVersion === tile.contentVersion)
+                  tile.dirty = null;
+                tile.field.mesh.visible = true;
+                updatedTiles++;
+                break;
+              }
+              if (
+                preparationMs >= editorBudgets.preparationMsPerFrame ||
+                preparationSteps >= editorBudgets.preparationStepsPerFrame
+              )
+                break;
+              const stepStart = performance.now();
+              if (!this.reservePreparation(tile)) break;
+              preparationSteps++;
+              const progressed = tile.field.prepareStep();
+              preparationMs += performance.now() - stepStart;
+              this.recordPreparation(preparationMs, preparationSteps);
+              if (!progressed || tile.field.needsPreparation) break;
+              const nextUploadStart = performance.now();
+              const nextUploaded = this.field.flush(
+                editorBudgets.uploadBytesPerFrame - uploaded,
+                [tile.field],
+              );
+              uploaded += nextUploaded;
+              terrainWork ||= this.field.lastFlushHadWork;
+              uploadedAt = performance.now();
+              uploadSpans.push({
+                start: nextUploadStart,
+                end: uploadedAt,
+                bytes: nextUploaded,
+              });
+            }
+          }
+          if (terrainWork) {
+            // Upload-only packets occupy the same terrain slot and always fence.
+            this.pinGpu(
+              "terrain",
+              selected.map(({ tile, revision, preparation }) => ({
+                tile,
+                revision,
+                preparation,
+              })),
+            );
+            this.sceneRequested = true;
+            this.observation.event("height-terrain", {
+              preparationFrame: this.preparationRecord?.id,
+              packet: ++this.terrainPacketId,
+              renderId: group.receipt.id,
+              uploadStart,
+              uploadedAt,
+              submittedAt: performance.now(),
+              uploadSpans,
+              compositionSpans,
+              updatedTiles,
+              gpuSubmissions: this.pendingGpu.length,
+              terrainSubmissions: Number(this.terrainPending),
+              sceneSubmissions: Number(this.scenePending),
+              ...this.resourceMetrics(),
+              presentationBytes:
+                this.resourceMetrics().cpuBytes + this.retainedBufferBytes(),
+              sessionId: this.sessionId,
+              viewGeneration: this.viewGeneration,
+              revision: group.receipt.revision,
+              preparationMs,
+              preparationSteps,
+              uploadedBytes: uploaded,
+              composedSamples,
+              compositionWork: work,
+              ...composition,
+            });
+          }
+        } catch (error) {
+          // A failed upload/draw may already have submitted a prefix. Keep its
+          // resources and terrain slot until that real prefix has ended.
+          if (!this.terrainPending && !this.graphicsFailed)
+            this.pinGpu(
+              "terrain",
+              selected.map(({ tile, revision, preparation }) => ({
+                tile,
+                revision,
+                preparation,
+              })),
+            );
+          throw error;
+        }
       }
     }
-    // Preparation/upload alone cannot change local readiness. Leave dirty state
-    // intact if GL drawing fails; an unchanged retry uses these same sources.
-    for (const tile of prepared) tile.field.mesh.visible = true;
-    this.drawOverlay(new Set(prepared));
-    this.renderer.render(this.stage);
-    const gl = this.renderer.gl;
-    const sync = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0);
-    if (!sync) {
-      this.invalidateGpuSubmission();
-      throw new Error("Der Grafikabschluss konnte nicht verfolgt werden.");
-    }
-    gl.flush();
-    const submittedAt = performance.now();
-    this.frame++;
-    this.lastSubmittedViewGeneration = this.viewGeneration;
-    for (const tile of prepared) {
-      const target = frozenTargets.get(tile);
-      tile.paintedRevision = target?.revision ?? tile.revision;
-      if (target) target.painted = true;
-      if (!target || target.contentVersion === tile.contentVersion)
-        tile.dirty = null;
-    }
     this.requestFrame =
-      pending ||
-      Boolean(group?.targets.some((target) => !target.painted)) ||
+      Boolean(this.frozen) ||
       this.queuedSources.size > 0 ||
+      this.queuedOverviews.size > 0 ||
       [...this.tiles.values()].some(
         (tile) =>
           tile.visible &&
           tile.dirty &&
+          !this.preparationFailed(tile) &&
           this.isPresentationReady(tile.bounds, tile.power),
       );
-    for (const tile of this.tiles.values()) {
-      if (!tile.visible || tile.paintedRevision < 0) continue;
+    // Camera-only draws can use complete cached colour while the terrain slot waits.
+    if (
+      this.scenePending ||
+      this.pendingGpu.length >= editorBudgets.glSubmissions ||
+      !this.sceneRequested
+    )
+      return null;
+    const sceneStart = performance.now();
+    try {
+      if (this.resizePending) {
+        this.renderer.resize(this.width, this.height, devicePixelRatio);
+        this.resizePending = false;
+      }
+      this.drawOverlay();
+      this.renderer.render(this.stage);
+    } catch (error) {
+      if (!this.scenePending && !this.graphicsFailed)
+        this.pinGpu(
+          "scene",
+          [...this.tiles.values()]
+            .filter((tile) => tile.visible && tile.paintedRevision >= 0)
+            .map((tile) => ({
+              tile,
+              revision: tile.paintedRevision,
+              preparation: tile.field.preparedVersion,
+            })),
+        );
+      throw error;
+    }
+    let submittedAt = performance.now();
+    this.frame++;
+    this.lastSubmittedViewGeneration = this.viewGeneration;
+    this.sceneRequested = false;
+    const visible = [...this.tiles.values()].filter(
+      (tile) => tile.visible && tile.paintedRevision >= 0,
+    );
+    for (const tile of visible) {
       tile.submittedRevision = tile.paintedRevision;
       tile.submittedFrame = this.frame;
       tile.submittedPreparation = tile.field.preparedVersion;
     }
     const exact =
-      this.queuedSources.size === 0 &&
-      (!group || group.receipt.revision === this.document.revision) &&
+      !this.hasQueuedSourcesFor([this.bounds()]) &&
+      this.hasDisplayCoverage(this.bounds()) &&
       this.preparedViewGeneration === this.viewGeneration &&
       [...this.tiles.values()]
         .filter((tile) => tile.visible)
@@ -1225,21 +2233,6 @@ export class WorldRenderer {
       this.submittedRevision = exactRevision;
       this.submittedViewGeneration = this.viewGeneration;
     }
-    this.observation.event("height-draw", {
-      sessionId: this.sessionId,
-      frame: this.frame,
-      viewGeneration: this.viewGeneration,
-      revision: group?.receipt.revision ?? this.document.revision,
-      uploadStart,
-      uploadedAt,
-      submittedAt,
-      uploadedBytes: uploaded,
-      updatedTiles: prepared.length,
-      composedSamples,
-      ...composition,
-      compositionWork: work,
-      ...this.field.metrics(),
-    });
     const submission: FrameSubmission = {
       sessionId: this.sessionId,
       frame: this.frame,
@@ -1249,75 +2242,183 @@ export class WorldRenderer {
       at: submittedAt,
       uploadedBytes: uploaded,
     };
-    this.pendingGpu = {
-      sync,
+    this.pinGpu(
+      "scene",
+      visible.map((tile) => ({
+        tile,
+        revision: tile.paintedRevision,
+        preparation: tile.field.preparedVersion,
+      })),
       submission,
-      tiles: [...this.tiles.values()]
-        .filter((tile) => tile.visible && tile.paintedRevision >= 0)
-        .map((tile) => ({
-          tile,
-          revision: tile.paintedRevision,
-          preparation: tile.field.preparedVersion,
-        })),
-      renderReceipt:
-        group &&
+      group &&
+        this.frozen === group &&
+        group.targets.length > 0 &&
         group.targets.every(
           (target) =>
             target.painted &&
             target.tile.field.preparedVersion === target.preparation,
         )
-          ? group.receipt
-          : null,
-    };
-    return submission;
-  }
-
-  /** Poll once on a later animation frame. Never wait or spin on the GPU. */
-  pollCompletion(): FrameSubmission | null {
-    const pending = this.pendingGpu;
-    if (!pending || this.contextLost || this.destroyed) return null;
-    const gl = this.renderer.gl;
-    const status = gl.clientWaitSync(pending.sync, 0, 0);
-    if (status === gl.TIMEOUT_EXPIRED) return null;
-    this.releaseFence();
-    if (status !== gl.ALREADY_SIGNALED && status !== gl.CONDITION_SATISFIED) {
-      this.invalidateGpuSubmission();
-      throw new Error(
-        "Der Grafikabschluss ist fehlgeschlagen; Darstellung wird neu aufgebaut.",
-      );
-    }
-    const submission = pending.submission;
-    this.lastCompletedFrame = submission.frame;
-    this.lastCompletedViewGeneration = submission.viewGeneration;
-    for (const { tile, revision, preparation } of pending.tiles) {
-      tile.completedRevision = revision;
-      tile.completedFrame = submission.frame;
-      tile.completedPreparation = preparation;
-    }
-    const completedReceipt =
-      pending.renderReceipt && this.frozen?.receipt === pending.renderReceipt
-        ? pending.renderReceipt
-        : null;
-    if (completedReceipt) {
-      this.completedRender = completedReceipt;
-      this.frozen = null;
-    }
-    this.applyQueuedSources();
-    this.observation.event("gpu-completed", {
-      sessionId: submission.sessionId,
-      frame: submission.frame,
-      viewGeneration: submission.viewGeneration,
+        ? group.receipt
+        : null,
+    );
+    submittedAt = performance.now();
+    submission.at = submittedAt;
+    this.observation.event("height-draw", {
+      preparationFrame: this.preparationRecord?.id,
+      renderId: group?.receipt.id ?? null,
+      sceneStart,
+      gpuSubmissions: this.pendingGpu.length,
+      terrainSubmissions: Number(this.terrainPending),
+      sceneSubmissions: Number(this.scenePending),
+      sessionId: this.sessionId,
+      frame: this.frame,
+      viewGeneration: this.viewGeneration,
       revision: submission.revision,
-      submittedAt: submission.at,
-      renderReceipt: completedReceipt,
+      uploadStart,
+      uploadedAt,
+      submittedAt,
+      uploadedBytes: uploaded,
+      updatedTiles,
+      composedSamples,
+      ...composition,
+      compositionWork: work,
+      preparationMs,
+      preparationSteps,
+      ...this.field.metrics(),
     });
     return submission;
   }
 
+  private reservePreparation(
+    tile: DisplayTile,
+    reserve = tile.field.nextPreparationBytes,
+  ): boolean {
+    if (!reserve) return true;
+    const metrics = this.resourceMetrics();
+    if (
+      metrics.cpuBytes + this.retainedBufferBytes() + reserve.cpuBytes <=
+        editorBudgets.presentationBytes &&
+      metrics.gpuBytes + reserve.gpuBytes <= editorBudgets.gpuBytes
+    )
+      return true;
+    // Evict only unreferenced cold representations. Accepted author work stays owned by the document.
+    for (const cold of [...this.tiles.values()]
+      .filter((candidate) => !candidate.visible && !this.tilePinned(candidate))
+      .sort((a, b) => a.touched - b.touched)) {
+      this.tiles.delete(cold.key);
+      this.destroyTile(cold);
+      const after = this.resourceMetrics();
+      if (
+        after.cpuBytes + this.retainedBufferBytes() + reserve.cpuBytes <=
+          editorBudgets.presentationBytes &&
+        after.gpuBytes + reserve.gpuBytes <= editorBudgets.gpuBytes
+      )
+        return true;
+    }
+    return false;
+  }
+
+  private resourceMetrics() {
+    const metrics = this.field.metrics();
+    for (const field of this.retiredFields) {
+      const held = field.metrics();
+      metrics.cpuBytes += held.cpuBytes;
+      metrics.gpuBytes += held.gpuBytes;
+      metrics.sourceBytes += held.sourceBytes;
+    }
+    if (this.projections) metrics.cpuBytes += this.projections.metrics().bytes;
+    metrics.cpuBytes += this.extraComputeBytes();
+    return metrics;
+  }
+
+  private tilePinned(tile: DisplayTile): boolean {
+    return (
+      this.unfencedField === this.field ||
+      this.exceptionTarget?.target.tile === tile ||
+      Boolean(this.frozen?.targets.some((target) => target.tile === tile)) ||
+      this.pendingGpu.some((pending) =>
+        pending.tiles.some((reference) => reference.tile === tile),
+      )
+    );
+  }
+
+  /** FIFO, zero-timeout polls: a cancelled result never frees still-running GPU work. */
+  pollCompletion(): FrameSubmission | null {
+    if (this.contextLost || this.destroyed) return null;
+    let completed: FrameSubmission | null = null;
+    const gl = this.renderer.gl;
+    while (this.pendingGpu.length) {
+      const pending = this.pendingGpu[0];
+      const status = gl.clientWaitSync(pending.sync, 0, 0);
+      if (status === gl.TIMEOUT_EXPIRED) break;
+      if (status !== gl.ALREADY_SIGNALED && status !== gl.CONDITION_SATISFIED) {
+        this.graphicsFailed = true;
+        this.invalidateGpuSubmission(false);
+        throw new Error(
+          "Der Grafikabschluss ist fehlgeschlagen; Darstellung wird neu aufgebaut.",
+        );
+      }
+      gl.deleteSync(pending.sync);
+      this.pendingGpu.shift();
+      const submission = pending.submission;
+      if (
+        !submission ||
+        submission.sessionId !== this.sessionId ||
+        this.graphicsFailed
+      )
+        continue;
+      completed = submission;
+      this.lastCompletedFrame = submission.frame;
+      this.lastCompletedViewGeneration = submission.viewGeneration;
+      for (const { tile, revision, preparation } of pending.tiles) {
+        tile.completedRevision = revision;
+        tile.completedFrame = submission.frame;
+        tile.completedPreparation = preparation;
+      }
+      const receipt =
+        pending.renderReceipt && this.frozen?.receipt === pending.renderReceipt
+          ? pending.renderReceipt
+          : null;
+      if (receipt) {
+        if (this.frozen?.kind === "local") this.completedRender = receipt;
+        this.frozen = null;
+      }
+      this.observation.event("gpu-completed", {
+        sessionId: submission.sessionId,
+        frame: submission.frame,
+        viewGeneration: submission.viewGeneration,
+        revision: submission.revision,
+        submittedAt: submission.at,
+        renderReceipt: receipt,
+      });
+    }
+    for (const field of this.retiredFields) {
+      if (field === this.unfencedField) continue;
+      if (this.pendingGpu.some((pending) => pending.field === field)) continue;
+      field.destroy();
+      this.retiredFields.delete(field);
+    }
+    if (this.graphicsFailed && !this.unfencedWork && !this.pendingGpu.length) {
+      for (const tile of this.tiles.values()) tile.field.invalidateGPU();
+      this.graphicsFailed = false;
+      this.requestFrame = true;
+      this.sceneRequested = true;
+    }
+    if (this.interruptBackground && !this.terrainPending) this.abandonFrozen();
+    this.prune();
+    if (this.pendingDisplayTiles) this.refresh();
+    return completed;
+  }
+
+  /** Only context loss/destruction invalidates the actual commands as well. */
   private releaseFence(): void {
-    if (!this.pendingGpu) return;
-    this.renderer.gl.deleteSync(this.pendingGpu.sync);
-    this.pendingGpu = null;
+    for (const pending of this.pendingGpu)
+      this.renderer.gl.deleteSync(pending.sync);
+    this.pendingGpu.length = 0;
+    this.unfencedField = null;
+    this.unfencedWork = false;
+    for (const field of this.retiredFields) field.destroy();
+    this.retiredFields.clear();
   }
 
   private drawOverlay(prepared: ReadonlySet<DisplayTile> = new Set()): void {
@@ -1365,26 +2466,21 @@ export class WorldRenderer {
       }
       this.overlay.stroke({ color: 0xe7dec9, width: 1, alpha: 0.13 });
     }
-    if (this.cursor)
-      this.overlay
-        .circle(this.cursor.x, this.cursor.y, this.cursor.radius)
-        .stroke({
-          color: this.cursor.waiting ? 0xc9d2d4 : 0xf1d49c,
-          width: 1.2,
-          alpha: this.cursor.waiting ? 0.45 : 0.9,
-        });
   }
 
   private prune(): void {
     const removable = [...this.tiles.values()]
-      .filter((tile) => !tile.visible)
+      .filter((tile) => !tile.visible && !this.tilePinned(tile))
       .sort((a, b) => a.touched - b.touched);
     while (this.tiles.size > editorBudgets.retainedTiles && removable.length) {
       const tile = removable.shift()!;
       this.tiles.delete(tile.key);
       this.destroyTile(tile);
     }
-    if (this.tiles.size > editorBudgets.retainedTiles)
+    if (
+      [...this.tiles.values()].filter((tile) => tile.visible).length >
+      editorBudgets.retainedTiles
+    )
       this.onError(
         new Error(
           "Der sichtbare Ausschnitt überschreitet das Darstellungsbudget.",
@@ -1405,15 +2501,16 @@ export class WorldRenderer {
   }
 
   private destroyTile(tile: DisplayTile): void {
+    this.terrain.removeChild(tile.field.mesh);
     tile.field.destroy();
   }
 
   destroy(): void {
     this.releaseFence();
     this.invalidateProofs();
-    this.queuedSources.clear();
-    this.queuedOverviewInvalidations.clear();
+    this.resetSourceQueue();
     this.destroyed = true;
+    this.cursorOverlay?.destroy();
     this.canvas?.removeEventListener(
       "webglcontextlost",
       this.handleContextLost,

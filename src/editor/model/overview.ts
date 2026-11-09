@@ -239,15 +239,23 @@ interface AxisSample {
 export function applyPreparedHeightOverviewDelta(
   tile: HeightOverviewTile,
   delta: HeightOverviewDelta,
+  rows: readonly [number, number] = [0, HEIGHT_OVERVIEW_SIZE],
 ): number {
+  if (
+    !rows.every(Number.isInteger) ||
+    rows[0] < 0 ||
+    rows[1] < rows[0] ||
+    rows[1] > HEIGHT_OVERVIEW_SIZE
+  )
+    throw new RangeError("Ungültiger Arbeitsabschnitt der Höhenübersicht.");
   if (delta.level >= minimumCoarseHeightLevel(tile.power)) return 0;
   const window = deltaWindow(delta, tile.power);
   const ox = tile.tileX * HEIGHT_OVERVIEW_SIZE;
   const oy = tile.tileY * HEIGHT_OVERVIEW_SIZE;
   const x0 = Math.max(ox, window[0]);
-  const y0 = Math.max(oy, window[1]);
+  const y0 = Math.max(oy + rows[0], window[1]);
   const x1 = Math.min(ox + HEIGHT_OVERVIEW_SIZE - 1, window[2]);
-  const y1 = Math.min(oy + HEIGHT_OVERVIEW_SIZE - 1, window[3]);
+  const y1 = Math.min(oy + rows[1] - 1, window[3]);
   if (x0 > x1 || y0 > y1) return 0;
   const spacing = heightSpacing(delta.level);
   const step = 2 ** tile.power;

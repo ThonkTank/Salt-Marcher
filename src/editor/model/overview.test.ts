@@ -7,6 +7,7 @@ import {
 import { heightTilesFromControls } from "./fixtures";
 import {
   applyHeightPatchesToOverview,
+  applyPreparedHeightOverviewDelta,
   createHeightOverviewTile,
   heightOverviewBounds,
   heightOverviewDeltaKeys,
@@ -69,6 +70,31 @@ describe("exact numerical height overviews", () => {
       900 * ((1 / 5) ** 3 / 6) * (106 / 375),
       11,
     );
+  });
+
+  it("projects bounded row slices with the same complete canonical content", () => {
+    const authored = source(0, 300);
+    const delta = prepareHeightOverviewDelta({
+      key: authored.key,
+      before: null,
+      after: authored,
+    })!;
+    const whole = createHeightOverviewTile(3, 0, 0);
+    const sliced = createHeightOverviewTile(3, 0, 0);
+    applyPreparedHeightOverviewDelta(whole, delta);
+    applyPreparedHeightOverviewDelta(sliced, delta, [0, 8]);
+    expect(sliced.values.slice(0, 8 * 128)).toEqual(
+      whole.values.slice(0, 8 * 128),
+    );
+    expect(sliced.values.slice(8 * 128).every((value) => value === 0)).toBe(
+      true,
+    );
+    for (let row = 8; row < 128; row += 8)
+      applyPreparedHeightOverviewDelta(sliced, delta, [row, row + 8]);
+    expect(sliced.values).toEqual(whole.values);
+    expect(() =>
+      applyPreparedHeightOverviewDelta(sliced, delta, [0, 129]),
+    ).toThrow();
   });
 
   it("adds coarse authors before clipping and reclassifying a coast", () => {

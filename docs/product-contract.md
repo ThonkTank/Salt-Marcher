@@ -1112,6 +1112,12 @@ Farbentscheidungen unmittelbar an einer Bandgrenze werden auf dieser
 Höhengenauigkeit verglichen. Die Regel betrifft ausschließlich die Darstellung; Autorenwerte, exakte
 Höhenabfragen, Undo und gespeicherte Daten behalten ihre `Float64`-Werte.
 
+Normale Rundungsreste bleiben auf der GPU: ausschließlich skalierte Beträge
+unter `1e-30` dürfen in der Darstellung als null erscheinen. Die obige
+Darstellungstoleranz bleibt unverändert. Echte numerische Ausnahmefälle werden
+mit unveränderlichen lokalen Eingaben außerhalb des UI-Threads berechnet;
+ungefertigte Flächen bleiben sichtbar wartend.
+
 **Bearbeitung beginnt auf sichtbarem, lokal bereitem Gelände.** Diese Freigabe
 gilt auch ohne Diagnosemodus. Die nötigen Quellen müssen vorhanden oder
 bestätigt leer sein; der sichtbare Wirkbereich muss zur aktuellen Ansicht und
@@ -1129,6 +1135,12 @@ lokalen Ort nicht. Noch ungezeichnete Flächen sind schraffiert. Pinsel und Stat
 zeigen fehlende Bereitschaft; Fehler bieten einen erneuten Ladeversuch an.
 Navigation bleibt bedienbar. Der lokale Quellenbedarf folgt auch dem Zeiger und
 Änderungen der Pinselgröße ohne aktive Geste.
+
+Terrainarbeit und das Zeichnen fertiger Bilder haben getrennte, begrenzte
+Grafikplätze. Eine neue Kamerabewegung ersetzt einen noch nicht gezeichneten
+älteren Kamerawunsch. Der Pinselkreis bewegt sich unabhängig davon als
+Oberflächenanzeige; er bestätigt niemals eine Geländeänderung. Teilweise
+vorbereitete Kacheln und bloße Uploads geben keine neue Pinselwirkung frei.
 
 Ein Druck vor Freigabe wird abgewiesen. Er erzeugt keine Modelländerung, keinen
 Undo-Schritt und keine vorgemerkte Wirkung. Auch wenn die Taste bis nach dem

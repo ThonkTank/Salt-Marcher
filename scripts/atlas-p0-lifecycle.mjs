@@ -3,6 +3,7 @@ import { createRequire } from "node:module";
 import { access, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { exact } from "./atlas-p0-interactions.mjs";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
 const require = createRequire(import.meta.url);
@@ -17,6 +18,19 @@ const exists = (file) =>
     () => true,
     () => false,
   );
+
+async function captureFailure(session, evidence, error) {
+  evidence.error = String(error);
+  try {
+    // Capture before teardown closes/seals the gesture. This distinguishes an
+    // unready fixture path from lost accepted terminal work at the file boundary.
+    evidence.failure = await session.page.evaluate(() =>
+      window.atlasObserve(window.__atlasLifecycleProbes ?? [[0, 0]]),
+    );
+  } catch (captureError) {
+    evidence.failureCaptureError = String(captureError);
+  }
+}
 
 async function ready(page) {
   await page.waitForFunction(
@@ -49,6 +63,18 @@ async function settledFileAction(app) {
 
 /** The terminal path and boundary command run in one turn, before any RAF drain. */
 async function beginFinishingPaint(page) {
+  // This scenario examines already accepted terminal work at a file boundary.
+  // Local cursor readiness alone does not prepare the later 80/160px path:
+  // let the ordinary renderer finish its visible baseline before starting Down.
+  await exact(page);
+  await page.waitForFunction(() => {
+    const { renderer } = window.atlasObserve([], { events: false });
+    return (
+      !renderer.gpuPending &&
+      renderer.lastCompletedFrame === renderer.lastSubmittedFrame &&
+      renderer.lastCompletedViewGeneration === renderer.viewGeneration
+    );
+  });
   await page.evaluate(() => {
     document.querySelector("canvas").addEventListener(
       "pointerdown",
@@ -385,6 +411,9 @@ export async function runLifecycleScenarios({ launch, out, recordCheck }) {
           session.errors.length === 0,
           session.errors,
         );
+      } catch (error) {
+        await captureFailure(session, evidence, error);
+        throw error;
       } finally {
         await writeFile(
           join(session.directory, "lifecycle.json"),
@@ -539,6 +568,9 @@ export async function runLifecycleScenarios({ launch, out, recordCheck }) {
         session.errors.length === 0,
         session.errors,
       );
+    } catch (error) {
+      await captureFailure(session, evidence, error);
+      throw error;
     } finally {
       await writeFile(
         join(session.directory, "lifecycle.json"),

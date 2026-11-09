@@ -33,12 +33,16 @@ export const HEIGHT_DESCRIPTOR_HEIGHT = HEIGHT_MAX_LEVEL + 1;
 // the canonical Float64 projection; they are never clamped or rejected as data.
 export const HEIGHT_GPU_MAX_SCALED_VALUE = 1_000_000 / HEIGHT_SUM_SCALE;
 export const HEIGHT_GPU_MIN_SCALED_VALUE = 1e-30;
+/** Additional absolute error, in feet, from zeroing one projected level. */
+export const HEIGHT_GPU_VALUE_ZERO_ERROR =
+  HEIGHT_GPU_MIN_SCALED_VALUE * HEIGHT_SUM_SCALE;
+/** Positive normalized cubic weights bound the complete 22-level sum. */
+export const HEIGHT_GPU_PROJECTION_ZERO_ERROR =
+  (HEIGHT_MAX_LEVEL + 1) * HEIGHT_GPU_VALUE_ZERO_ERROR;
 
 export function heightGpuValueSafe(value: number): boolean {
   return (
-    Number.isFinite(value) &&
-    Math.abs(value) <= HEIGHT_GPU_MAX_SCALED_VALUE &&
-    (value === 0 || Math.abs(value) >= HEIGHT_GPU_MIN_SCALED_VALUE)
+    Number.isFinite(value) && Math.abs(value) <= HEIGHT_GPU_MAX_SCALED_VALUE
   );
 }
 
@@ -48,11 +52,47 @@ export function splitHeightFloat(value: number): [number, number] {
   return [high, Math.fround(value - high)];
 }
 
+/** Only the derived height transport drops tiny values; authors remain Float64. */
+export function encodeHeightValue(value: number): [number, number] {
+  return Math.abs(value) < HEIGHT_GPU_MIN_SCALED_VALUE
+    ? [0, 0]
+    : splitHeightFloat(value);
+}
+
 interface SourcePage {
   key: string;
   slot: number;
   references: number;
   unsafe: boolean;
+  needsEncoding: boolean;
+}
+
+interface SourceMetadata {
+  source: HeightTile;
+  bounds: Bounds;
+  magnitude: number;
+  safe: boolean;
+}
+
+interface SourceRow {
+  columns: number[];
+  sources: Map<number, SourceMetadata>;
+}
+
+interface SourceLevel {
+  rows: number[];
+  sources: Map<number, SourceRow>;
+}
+
+function lowerBound(values: readonly number[], value: number): number {
+  let low = 0;
+  let high = values.length;
+  while (low < high) {
+    const middle = (low + high) >>> 1;
+    if (values[middle] < value) low = middle + 1;
+    else high = middle;
+  }
+  return low;
 }
 
 export interface HeightDescriptor {
@@ -76,13 +116,19 @@ export interface HeightDescriptor {
  */
 export class HeightSourceAtlas {
   readonly sources = new Map<string, HeightTile>();
-  private unsafeSources = new Set<string>();
-  private magnitudes = new Map<string, number>();
+  /** Sorted local index; source validation and coefficient scans happen on writes. */
+  private levels = new Map<number, SourceLevel>();
   private pages = new Map<string, SourcePage>();
   private slots = new Map<number, SourcePage>();
   private free: number[] = [];
   private nextSlot = 0;
   private capacity = 16;
+  private growth: {
+    data: Float32Array;
+    capacity: number;
+    copied: number;
+  } | null = null;
+  private pageEncodingBytes = 0;
   private dirty = new Set<number>();
   private allocation = true;
   data = new Float32Array(
@@ -101,6 +147,30 @@ export class HeightSourceAtlas {
 
   get pageCount(): number {
     return this.pages.size;
+  }
+
+  /** Both old and replacement buffers are live until a growth copy is complete. */
+  get preparationBytes(): number {
+    return (this.growth?.data.byteLength ?? 0) + this.pageEncodingBytes;
+  }
+
+  /** Additional peak CPU reserve required before the next page can start. */
+  get nextPageAllocationBytes(): number {
+    const pageBytes = HEIGHT_PAGE_TEXELS * 8;
+    if (
+      this.growth ||
+      this.free.length ||
+      this.nextSlot < this.capacity ||
+      this.nextSlot >= HEIGHT_MAX_PAGES
+    )
+      return pageBytes;
+    const capacity = Math.min(HEIGHT_MAX_PAGES, this.capacity * 2);
+    return (
+      HEIGHT_ATLAS_WIDTH *
+        Math.ceil((capacity * HEIGHT_PAGE_TEXELS) / HEIGHT_ATLAS_WIDTH) *
+        8 +
+      pageBytes
+    );
   }
 
   get pendingTexels(): number {
@@ -124,8 +194,7 @@ export class HeightSourceAtlas {
       const previous = this.sources.get(key);
       if (!previous) continue;
       this.sources.delete(key);
-      this.unsafeSources.delete(key);
-      this.magnitudes.delete(key);
+      this.removeMetadata(previous);
       changed.add(key);
       bounds.push(heightTileSupport(previous));
     }
@@ -137,21 +206,9 @@ export class HeightSourceAtlas {
         previous.values.every((value, i) => value === tile.values[i])
       )
         continue;
-      this.sources.set(tile.key, cloneHeightTile(tile));
-      this.magnitudes.set(
-        tile.key,
-        tile.values.reduce(
-          (maximum, value) => Math.max(maximum, Math.abs(value)),
-          0,
-        ),
-      );
-      if (
-        tile.values.some(
-          (value) => !heightGpuValueSafe(value / HEIGHT_SUM_SCALE),
-        )
-      )
-        this.unsafeSources.add(tile.key);
-      else this.unsafeSources.delete(tile.key);
+      const owned = cloneHeightTile(tile);
+      this.sources.set(tile.key, owned);
+      this.writeMetadata(owned);
       changed.add(tile.key);
       bounds.push(heightTileSupport(tile));
     }
@@ -164,37 +221,117 @@ export class HeightSourceAtlas {
           if (page) affected.add(page);
         }
     }
-    for (const page of affected) this.writePage(page);
+    // Encoding belongs to selected display preparation, never to an unbounded
+    // eager re-projection of every resident page touched by an author batch.
+    for (const page of affected) page.needsEncoding = true;
     return bounds;
   }
 
-  safeIn(bounds: Bounds, minimum = 0, maximum = HEIGHT_MAX_LEVEL): boolean {
-    return ![...this.unsafeSources].some((key) => {
-      const source = this.sources.get(key)!;
-      return (
-        source.level >= minimum &&
-        source.level <= maximum &&
-        intersectsBounds(heightTileSupport(source), bounds)
+  private writeMetadata(source: HeightTile): void {
+    let level = this.levels.get(source.level);
+    if (!level) {
+      level = { rows: [], sources: new Map() };
+      this.levels.set(source.level, level);
+    }
+    let row = level.sources.get(source.tileY);
+    if (!row) {
+      row = { columns: [], sources: new Map() };
+      level.sources.set(source.tileY, row);
+      level.rows.splice(lowerBound(level.rows, source.tileY), 0, source.tileY);
+    }
+    if (!row.sources.has(source.tileX))
+      row.columns.splice(
+        lowerBound(row.columns, source.tileX),
+        0,
+        source.tileX,
       );
+    let magnitude = 0;
+    let safe = true;
+    for (const value of source.values) {
+      magnitude = Math.max(magnitude, Math.abs(value));
+      safe &&= heightGpuValueSafe(value / HEIGHT_SUM_SCALE);
+    }
+    row.sources.set(source.tileX, {
+      source,
+      bounds: heightTileSupport(source),
+      magnitude,
+      safe,
     });
+  }
+
+  private removeMetadata(source: HeightTile): void {
+    const level = this.levels.get(source.level)!;
+    const row = level.sources.get(source.tileY)!;
+    row.sources.delete(source.tileX);
+    row.columns.splice(lowerBound(row.columns, source.tileX), 1);
+    if (row.columns.length) return;
+    level.sources.delete(source.tileY);
+    level.rows.splice(lowerBound(level.rows, source.tileY), 1);
+    if (!level.rows.length) this.levels.delete(source.level);
+  }
+
+  private *metadataIn(
+    bounds: Bounds,
+    minimum: number,
+    maximum: number,
+  ): Generator<SourceMetadata> {
+    for (
+      let at = Math.max(0, Math.ceil(minimum));
+      at <= Math.min(HEIGHT_MAX_LEVEL, maximum);
+      at++
+    ) {
+      const level = this.levels.get(at);
+      if (!level) continue;
+      const spacing = heightSpacing(at);
+      const span = HEIGHT_TILE_SIZE * spacing;
+      // Include cubic support on both sides, then use the exact intersection
+      // predicate at boundaries. Binary search skips every unrelated row/column.
+      const x0 = Math.floor((bounds[0] - 2 * spacing) / span);
+      const x1 = Math.floor((bounds[2] + 2 * spacing) / span);
+      const y0 = Math.floor((bounds[1] - 2 * spacing) / span);
+      const y1 = Math.floor((bounds[3] + 2 * spacing) / span);
+      for (let y = lowerBound(level.rows, y0); y < level.rows.length; y++) {
+        const tileY = level.rows[y];
+        if (tileY > y1) break;
+        const row = level.sources.get(tileY)!;
+        for (let x = lowerBound(row.columns, x0); x < row.columns.length; x++) {
+          const tileX = row.columns[x];
+          if (tileX > x1) break;
+          const metadata = row.sources.get(tileX)!;
+          if (intersectsBounds(metadata.bounds, bounds)) yield metadata;
+        }
+      }
+    }
+  }
+
+  /** Immutable local inputs for the exceptional Float64 projection. */
+  sourcesIn(
+    bounds: Bounds,
+    minimum = 0,
+    maximum = HEIGHT_MAX_LEVEL,
+  ): HeightTile[] {
+    return [...this.metadataIn(bounds, minimum, maximum)].map(
+      ({ source }) => source,
+    );
+  }
+
+  safeIn(bounds: Bounds, minimum = 0, maximum = HEIGHT_MAX_LEVEL): boolean {
+    for (const metadata of this.metadataIn(bounds, minimum, maximum))
+      if (!metadata.safe) return false;
+    return true;
   }
 
   /** Positive normalized spline weights cannot exceed a level's coefficient maximum. */
   magnitudeIn(bounds: Bounds, minimum = 0, maximum = HEIGHT_MAX_LEVEL): number {
     const levels = new Map<number, number>();
-    for (const source of this.sources.values()) {
-      if (
-        source.level < minimum ||
-        source.level > maximum ||
-        !intersectsBounds(heightTileSupport(source), bounds)
-      )
-        continue;
+    for (const { source, magnitude } of this.metadataIn(
+      bounds,
+      minimum,
+      maximum,
+    )) {
       levels.set(
         source.level,
-        Math.max(
-          levels.get(source.level) ?? 0,
-          this.magnitudes.get(source.key) ?? 0,
-        ),
+        Math.max(levels.get(source.level) ?? 0, magnitude),
       );
     }
     return [...levels.values()].reduce((sum, magnitude) => sum + magnitude, 0);
@@ -219,7 +356,7 @@ export class HeightSourceAtlas {
       this.allocation ||
       keys.some((key) => {
         const page = this.pages.get(key);
-        return !page || this.dirty.has(page.slot);
+        return !page || page.needsEncoding || this.dirty.has(page.slot);
       })
     );
   }
@@ -231,40 +368,69 @@ export class HeightSourceAtlas {
     return false;
   }
 
-  private acquire(
+  private *acquireSteps(
     level: number,
     tileX: number,
     tileY: number,
-  ): SourcePage | null {
+  ): Generator<void, SourcePage | null, void> {
     if (!this.hasSupport(level, tileX, tileY)) return null;
     const key = heightTileKey(level, tileX, tileY);
-    let page = this.pages.get(key);
-    if (!page) {
-      const slot = this.free.pop() ?? this.nextSlot++;
-      if (slot >= HEIGHT_MAX_PAGES)
-        throw new Error(
-          "Die sichtbaren Höhenquellen überschreiten das GPU-Budget.",
-        );
-      if (slot >= this.capacity) {
-        this.capacity = Math.min(HEIGHT_MAX_PAGES, this.capacity * 2);
-        const grown = new Float32Array(
-          HEIGHT_ATLAS_WIDTH *
-            Math.ceil(
-              (this.capacity * HEIGHT_PAGE_TEXELS) / HEIGHT_ATLAS_WIDTH,
-            ) *
-            2,
-        );
-        grown.set(this.data);
-        this.data = grown;
-        this.allocation = true;
+    for (;;) {
+      // No page can write to the old buffer midway through this copy. Multiple
+      // interrupted descriptors resume the same one replacement, never fork it.
+      if (this.growth) {
+        const growth = this.growth;
+        const end = Math.min(this.data.length, growth.copied + 16_384);
+        growth.data.set(this.data.subarray(growth.copied, end), growth.copied);
+        growth.copied = end;
+        if (end === this.data.length) {
+          this.data = growth.data;
+          this.capacity = growth.capacity;
+          this.growth = null;
+          this.allocation = true;
+        }
+        yield;
+        continue;
       }
-      page = { key, slot, references: 0, unsafe: false };
-      this.pages.set(key, page);
-      this.slots.set(slot, page);
-      this.writePage(page);
+      let page = this.pages.get(key);
+      if (!page) {
+        const slot = this.free.at(-1) ?? this.nextSlot;
+        if (slot >= HEIGHT_MAX_PAGES)
+          throw new Error(
+            "Die sichtbaren Höhenquellen überschreiten das GPU-Budget.",
+          );
+        if (slot >= this.capacity) {
+          const capacity = Math.min(HEIGHT_MAX_PAGES, this.capacity * 2);
+          this.growth = {
+            data: new Float32Array(
+              HEIGHT_ATLAS_WIDTH *
+                Math.ceil(
+                  (capacity * HEIGHT_PAGE_TEXELS) / HEIGHT_ATLAS_WIDTH,
+                ) *
+                2,
+            ),
+            capacity,
+            copied: 0,
+          };
+          yield;
+          continue;
+        }
+        if (this.free.length) this.free.pop();
+        else this.nextSlot++;
+        page = { key, slot, references: 0, unsafe: false, needsEncoding: true };
+        this.pages.set(key, page);
+        this.slots.set(slot, page);
+      }
+      page.references++;
+      let completed = false;
+      try {
+        if (page.needsEncoding) yield* this.writePageSteps(page);
+        completed = true;
+        return page;
+      } finally {
+        if (!completed) this.release([page.key]);
+      }
     }
-    page.references++;
-    return page;
   }
 
   release(keys: readonly string[]): void {
@@ -278,44 +444,56 @@ export class HeightSourceAtlas {
     }
   }
 
-  private writePage(page: SourcePage): void {
+  private *writePageSteps(page: SourcePage): Generator<void, void, void> {
     const { level, tileX, tileY } = parseHeightTileKey(page.key);
     const spacing = heightSpacing(level);
     let unsafe = false;
-    const start = page.slot * HEIGHT_PAGE_TEXELS * 2;
+    const encoded = new Float32Array(HEIGHT_PAGE_TEXELS * 2);
+    this.pageEncodingBytes += encoded.byteLength;
     // A complete cubic page references only these nine source tiles. Do not
     // rebuild a string key and hash-map lookup for every one of its 4,624 cells.
     const neighbours: (HeightTile | undefined)[] = [];
     for (let y = tileY - 1; y <= tileY + 1; y++)
       for (let x = tileX - 1; x <= tileX + 1; x++)
         neighbours.push(this.sources.get(heightTileKey(level, x, y)));
-    for (let y = 0; y < HEIGHT_PAGE_SIZE; y++) {
-      const cy = tileY * HEIGHT_TILE_SIZE + y - 2;
-      const sy = Math.floor(cy / HEIGHT_TILE_SIZE);
-      for (let x = 0; x < HEIGHT_PAGE_SIZE; x++) {
-        const cx = tileX * HEIGHT_TILE_SIZE + x - 2;
-        const sx = Math.floor(cx / HEIGHT_TILE_SIZE);
-        const source = neighbours[(sy - tileY + 1) * 3 + sx - tileX + 1];
-        const value =
-          source &&
-          Math.abs(cx * spacing) <= WORLD_LIMIT &&
-          Math.abs(cy * spacing) <= WORLD_LIMIT
-            ? source.values[
-                (cy - sy * HEIGHT_TILE_SIZE) * HEIGHT_TILE_SIZE +
-                  cx -
-                  sx * HEIGHT_TILE_SIZE
-              ] / HEIGHT_SUM_SCALE
-            : 0;
-        const safe = heightGpuValueSafe(value);
-        if (!safe) unsafe = true;
-        const offset = start + (y * HEIGHT_PAGE_SIZE + x) * 2;
-        const pair = safe ? splitHeightFloat(value) : [0, 0];
-        this.data[offset] = pair[0];
-        this.data[offset + 1] = pair[1];
+    try {
+      for (let y = 0; y < HEIGHT_PAGE_SIZE; y++) {
+        const cy = tileY * HEIGHT_TILE_SIZE + y - 2;
+        const sy = Math.floor(cy / HEIGHT_TILE_SIZE);
+        for (let x = 0; x < HEIGHT_PAGE_SIZE; x++) {
+          const cx = tileX * HEIGHT_TILE_SIZE + x - 2;
+          const sx = Math.floor(cx / HEIGHT_TILE_SIZE);
+          const source = neighbours[(sy - tileY + 1) * 3 + sx - tileX + 1];
+          const value =
+            source &&
+            Math.abs(cx * spacing) <= WORLD_LIMIT &&
+            Math.abs(cy * spacing) <= WORLD_LIMIT
+              ? source.values[
+                  (cy - sy * HEIGHT_TILE_SIZE) * HEIGHT_TILE_SIZE +
+                    cx -
+                    sx * HEIGHT_TILE_SIZE
+                ] / HEIGHT_SUM_SCALE
+              : 0;
+          const safe = heightGpuValueSafe(value);
+          if (!safe) unsafe = true;
+          if (safe && Math.abs(value) >= HEIGHT_GPU_MIN_SCALED_VALUE) {
+            const offset = (y * HEIGHT_PAGE_SIZE + x) * 2;
+            const high = Math.fround(value);
+            encoded[offset] = high;
+            encoded[offset + 1] = Math.fround(value - high);
+          }
+        }
+        if (y % 8 === 7) yield;
       }
+      // A partial page never replaces the last complete transport or receives an
+      // upload receipt. Publish its one small buffer only after all rows finish.
+      this.data.set(encoded, page.slot * HEIGHT_PAGE_TEXELS * 2);
+      page.unsafe = unsafe;
+      page.needsEncoding = false;
+      this.dirty.add(page.slot);
+    } finally {
+      this.pageEncodingBytes -= encoded.byteLength;
     }
-    page.unsafe = unsafe;
-    this.dirty.add(page.slot);
   }
 
   descriptor(
@@ -323,20 +501,28 @@ export class HeightSourceAtlas {
     power: number,
     selection: { minimum?: number; maximum?: number; include?: number } = {},
   ): HeightDescriptor {
+    return finishPreparation(this.descriptorSteps(bounds, power, selection));
+  }
+
+  /** One bounded page encoding per step; cancellation releases unpublished refs. */
+  *descriptorSteps(
+    bounds: Bounds,
+    power: number,
+    selection: { minimum?: number; maximum?: number; include?: number } = {},
+  ): Generator<void, HeightDescriptor, void> {
     const minimum = selection.minimum ?? minimumCoarseHeightLevel(power);
     const maximum = selection.maximum ?? HEIGHT_MAX_LEVEL;
-    const levels = [
-      ...new Set(
-        [...this.sources.values()]
-          .filter(
-            (tile) =>
-              ((tile.level >= minimum && tile.level <= maximum) ||
-                tile.level === selection.include) &&
-              intersectsBounds(heightTileSupport(tile), bounds),
-          )
-          .map((tile) => tile.level),
-      ),
-    ].sort((a, b) => b - a);
+    const selected = new Set<number>();
+    for (const { source } of this.metadataIn(bounds, minimum, maximum))
+      selected.add(source.level);
+    if (selection.include !== undefined)
+      for (const { source } of this.metadataIn(
+        bounds,
+        selection.include,
+        selection.include,
+      ))
+        selected.add(source.level);
+    const levels = [...selected].sort((a, b) => b - a);
     // A small brush may author below the presentation's coarse/fine split.
     // Its contribution uses this exact output lattice, with as many source pages
     // as its finer spacing requires; it must never be silently downsampled.
@@ -362,6 +548,7 @@ export class HeightSourceAtlas {
     const rows: HeightDescriptor["rows"] = [];
     let horizontalRows = 0;
     let fallback = false;
+    let completed = false;
     try {
       for (let index = 0; index < levels.length; index++) {
         const level = levels[index];
@@ -387,45 +574,46 @@ export class HeightSourceAtlas {
         horizontalRows += count;
         for (let py = 0; py < pageStride; py++)
           for (let px = 0; px < pageStride; px++) {
-            const page = this.acquire(level, tx + px, ty + py);
+            const page = yield* this.acquireSteps(level, tx + px, ty + py);
             data[offset + py * pageStride + px] = page?.slot ?? -1;
             if (page) {
               pages.push(page.key);
               fallback ||= page.unsafe;
             }
+            yield;
           }
       }
-    } catch (error) {
-      this.release(pages);
-      throw error;
+      const first = (origin: number) =>
+        Math.max(
+          0,
+          Math.min(128, Math.ceil((-WORLD_LIMIT - origin) / step - 0.5)),
+        );
+      const last = (origin: number) =>
+        Math.max(
+          0,
+          Math.min(128, Math.floor((WORLD_LIMIT - origin) / step - 0.5) + 1),
+        );
+      completed = true;
+      return {
+        data,
+        levelCount: levels.length,
+        pages,
+        fallback,
+        levels,
+        width,
+        pageStride,
+        horizontalRows,
+        rows,
+        clip: [
+          first(bounds[0]),
+          first(bounds[1]),
+          last(bounds[0]),
+          last(bounds[1]),
+        ],
+      };
+    } finally {
+      if (!completed) this.release(pages);
     }
-    const first = (origin: number) =>
-      Math.max(
-        0,
-        Math.min(128, Math.ceil((-WORLD_LIMIT - origin) / step - 0.5)),
-      );
-    const last = (origin: number) =>
-      Math.max(
-        0,
-        Math.min(128, Math.floor((WORLD_LIMIT - origin) / step - 0.5) + 1),
-      );
-    return {
-      data,
-      levelCount: levels.length,
-      pages,
-      fallback,
-      levels,
-      width,
-      pageStride,
-      horizontalRows,
-      rows,
-      clip: [
-        first(bounds[0]),
-        first(bounds[1]),
-        last(bounds[0]),
-        last(bounds[1]),
-      ],
-    };
   }
 
   /** Merged linear texel ranges. An allocation uploads its complete new buffer. */
@@ -446,16 +634,34 @@ export class HeightSourceAtlas {
   }
 }
 
+function finishPreparation<T>(steps: Generator<void, T, void>): T {
+  for (;;) {
+    const step = steps.next();
+    if (step.done) return step.value;
+  }
+}
+
+interface HeightAxes {
+  data: Float32Array;
+  width: number;
+  height: number;
+}
+
 /** Source-independent cubic weights, shared by all pixels of each raster row/column. */
 export function createHeightAxes(
   bounds: Bounds,
   power: number,
   levels: readonly number[],
-): {
-  data: Float32Array;
-  width: number;
-  height: number;
-} {
+): HeightAxes {
+  return finishPreparation(createHeightAxesSteps(bounds, power, levels));
+}
+
+/** Pure preparation; never calculate an entire dense 22-level transport at once. */
+export function* createHeightAxesSteps(
+  bounds: Bounds,
+  power: number,
+  levels: readonly number[],
+): Generator<void, HeightAxes, void> {
   const width = levels.length ? HEIGHT_OVERVIEW_SIZE * 5 : 1;
   const height = Math.max(1, levels.length * 2);
   const data = new Float32Array(width * height * 2);
@@ -475,6 +681,7 @@ export function createHeightAxes(
         data[offset] = index - controlOrigin;
         for (let weight = 0; weight < 4; weight++)
           data.set(splitHeightFloat(weights[weight]), offset + 2 + weight * 2);
+        if (pixel % 16 === 15) yield;
       }
     }
   }
@@ -546,13 +753,24 @@ export function createHeightProjection(
 export function encodeHeightOverview(values?: Float64Array): {
   data: Float32Array;
   fallback: boolean;
+  /** Absolute magnitude and extra tiny-value transport error, both in feet. */
+  magnitude: number;
+  encodingError: number;
 } {
   const data = new Float32Array(HEIGHT_OVERVIEW_SIZE ** 2 * 2);
   let fallback = false;
+  let magnitude = 0;
+  let encodingError = 0;
   if (values)
     for (let i = 0; i < values.length; i++) {
-      if (!heightGpuValueSafe(values[i])) fallback = true;
-      else data.set(splitHeightFloat(values[i]), i * 2);
+      const value = values[i];
+      magnitude = Math.max(magnitude, Math.abs(value) * HEIGHT_SUM_SCALE);
+      if (!heightGpuValueSafe(value)) fallback = true;
+      else {
+        data.set(encodeHeightValue(value), i * 2);
+        if (value !== 0 && Math.abs(value) < HEIGHT_GPU_MIN_SCALED_VALUE)
+          encodingError = HEIGHT_GPU_VALUE_ZERO_ERROR;
+      }
     }
-  return { data, fallback };
+  return { data, fallback, magnitude, encodingError };
 }

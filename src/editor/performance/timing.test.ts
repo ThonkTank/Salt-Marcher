@@ -26,6 +26,7 @@ const journal = (): Record<string, any>[] => [
   },
   {
     kind: "height-draw",
+    renderId: 1,
     sessionId: "a",
     revision: 2,
     frame: 9,
@@ -34,6 +35,7 @@ const journal = (): Record<string, any>[] => [
     uploadStart: 20,
     uploadedAt: 25,
     submittedAt: 39,
+    sceneStart: 35,
     uploadedBytes: 4096,
     updatedTiles: 2,
     fallbackSamples: 0,
@@ -55,6 +57,22 @@ const journal = (): Record<string, any>[] => [
     frame: 9,
     sessionId: "a",
     revision: 2,
+  },
+  {
+    kind: "height-terrain",
+    sessionId: "a",
+    revision: 2,
+    viewGeneration: 1,
+    packet: 1,
+    renderId: 1,
+    uploadStart: 20,
+    uploadedAt: 25,
+    submittedAt: 35,
+    uploadedBytes: 4096,
+    updatedTiles: 2,
+    compositionWork: 128,
+    uploadSpans: [{ start: 20, end: 25, bytes: 4096 }],
+    compositionSpans: [{ start: 25, end: 35, work: 128 }],
   },
 ];
 
@@ -153,7 +171,7 @@ describe("numeric terrain submission diagnosis", () => {
     expect(missing.incomplete[0].reason).toBe("missing-causal-draw");
     expect(missing.brushModelToSubmitMs.count).toBe(1);
     const events = journal();
-    events[2].uploadedAt = 19;
+    events[2].sceneStart = 40;
     expect(summarizeSubmissionTiming(events).incomplete[0].reason).toBe(
       "invalid-clock-order",
     );
@@ -162,6 +180,59 @@ describe("numeric terrain submission diagnosis", () => {
     expect(summarizeSubmissionTiming(resources).incomplete[0].reason).toBe(
       "missing-resource-evidence",
     );
+  });
+  it("includes earlier terrain-only strips and actual interleaved upload spans", () => {
+    const events = journal();
+    // The final scene carries only its same-RAF upload copy. The first packet
+    // completed while another scene occupied the canvas slot.
+    const first = events.find((event) => event.kind === "height-terrain")!;
+    Object.assign(first, {
+      uploadedAt: 22,
+      submittedAt: 24,
+      uploadedBytes: 1024,
+      updatedTiles: 0,
+      uploadSpans: [{ start: 20, end: 22, bytes: 1024 }],
+      compositionSpans: [{ start: 22, end: 23, work: 128 }],
+    });
+    events.push({
+      ...first,
+      packet: 2,
+      uploadStart: 27,
+      uploadedAt: 31,
+      submittedAt: 34,
+      uploadedBytes: 3072,
+      updatedTiles: 2,
+      compositionWork: 256,
+      uploadSpans: [
+        { start: 27, end: 28, bytes: 1024 },
+        { start: 30, end: 31, bytes: 2048 },
+      ],
+      compositionSpans: [
+        { start: 28, end: 30, work: 128 },
+        { start: 31, end: 33, work: 128 },
+      ],
+    });
+    events[2].uploadedBytes = 3072;
+    const result = summarizeSubmissionTiming(events);
+    expect(result.incomplete).toEqual([]);
+    expect(result.samples[0]).toMatchObject({
+      packetIds: [1, 2],
+      uploadedBytes: 4096,
+      updatedTiles: 2,
+      uploadMs: 4,
+      compositionMs: 5,
+      sceneMs: 4,
+      drawMs: 9,
+      betweenWorkMs: 6,
+      inputToSubmitMs: 29,
+    });
+    const absent = events.filter((event) => event.kind !== "height-terrain");
+    const missing = summarizeSubmissionTiming(absent);
+    expect(missing.samples).toEqual([]);
+    expect(missing.incomplete[0].reason).toBe(
+      "missing-or-invalid-terrain-packets",
+    );
+    expect(missing.distributions.inputToSubmitMs.count).toBe(1);
   });
   it("includes stationary hold doses and pointerup without manufacturing another dose", () => {
     const events = journal().filter((e) => e.kind !== "input");

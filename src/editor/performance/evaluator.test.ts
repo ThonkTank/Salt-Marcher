@@ -14,6 +14,7 @@ import {
   evaluateObservation,
   evaluateScenario,
   evaluateRun,
+  evaluateRenderWork,
   strokeEvidence,
   extractNavigationSamples,
   evaluateNavigationDiagnostics,
@@ -37,6 +38,230 @@ import {
   referenceC1Stroke,
   reconstructReferenceC1Stroke,
 } from "../../../scripts/atlas-p0-brush-reference.mjs";
+import { gpuWork } from "../../../scripts/atlas-p0-graphics-probe.mjs";
+
+function renderWorkEvents(): Record<string, any>[] {
+  const identity = {
+    sessionId: "session-a",
+    preparationFrame: 1,
+    renderId: 1,
+    revision: 2,
+    viewGeneration: 1,
+  };
+  const resources = {
+    cpuBytes: 4096,
+    presentationBytes: 8192,
+    gpuBytes: 16384,
+    sourceBytes: 32768,
+  };
+  return [
+    {
+      ...identity,
+      ...resources,
+      kind: "height-terrain",
+      at: 3.2,
+      packet: 1,
+      uploadStart: 1,
+      uploadedAt: 2,
+      submittedAt: 3.1,
+      uploadSpans: [{ start: 1, end: 2, bytes: 1024 }],
+      compositionSpans: [{ start: 2, end: 3, work: 128 }],
+      gpuSubmissions: 1,
+      terrainSubmissions: 1,
+      sceneSubmissions: 0,
+      uploadedBytes: 1024,
+      updatedTiles: 1,
+      composedSamples: 128,
+      canonicalSamples: 128,
+      deltaSamples: 0,
+      horizontalSamples: 0,
+      projectionProducts: 128,
+      basisCaptureSamples: 0,
+      canonicalBasisBuilds: 0,
+      colourSamples: 128,
+      anchorCopySamples: 0,
+      compositionWork: 128,
+      fallbackSamples: 0,
+    },
+    {
+      ...identity,
+      kind: "height-draw",
+      at: 5.1,
+      frame: 1,
+      sceneStart: 4,
+      submittedAt: 5,
+      gpuSubmissions: 2,
+      terrainSubmissions: 1,
+      sceneSubmissions: 1,
+      // Kept by the product for old reports, never added to the packet's work.
+      uploadedBytes: 1024,
+      composedSamples: 128,
+      compositionWork: 128,
+    },
+    {
+      ...identity,
+      ...resources,
+      kind: "height-preparation",
+      at: 6,
+      preparationStart: 0,
+      preparationMs: 0.5,
+      preparationSteps: 2,
+      sourceSteps: 1,
+    },
+  ];
+}
+
+describe("terrain packet work and GPU attribution", () => {
+  it("counts an upload-only packet while the canvas is occupied without double-counting copied draw work", () => {
+    const events = renderWorkEvents();
+    const upload = {
+      ...events[0],
+      packet: 2,
+      preparationFrame: 2,
+      at: 9.2,
+      uploadStart: 8,
+      uploadedAt: 9,
+      submittedAt: 9.1,
+      uploadSpans: [{ start: 8, end: 9, bytes: 2048 }],
+      compositionSpans: [],
+      gpuSubmissions: 2,
+      sceneSubmissions: 1,
+      uploadedBytes: 2048,
+      updatedTiles: 0,
+      composedSamples: 0,
+      canonicalSamples: 0,
+      colourSamples: 0,
+      projectionProducts: 0,
+      compositionWork: 0,
+    };
+    events.push(upload, {
+      ...events[2],
+      preparationFrame: 2,
+      preparationStart: 7,
+      at: 10,
+    });
+    const result = evaluateRenderWork(events, { droppedEvents: 0 });
+    expect(result).toMatchObject({
+      passed: true,
+      terrainPackets: 2,
+      uploadOnlyPackets: 1,
+      scenes: 1,
+      preparationFrames: 2,
+      totalUploadedBytes: 3072,
+      composition: { compositionWork: { total: 128 } },
+    });
+    const timers = {
+      enabled: true,
+      disjoint: false,
+      truncated: false,
+      droppedEvents: 0,
+      startedAt: 0,
+      stoppedAt: 11,
+      samples: [
+        { target: "offscreen", at: 2.5, available: true, gpuMs: 0.4 },
+        { target: "canvas", at: 4.5, available: true, gpuMs: 0.2 },
+      ],
+    };
+    expect(gpuWork([events[0], upload], [events[1]], timers)).toMatchObject({
+      valid: true,
+      measuredTerrainPackets: 2,
+      measuredFrames: 1,
+      offscreenMsPerTerrainPacket: { count: 1, maximum: 0.4 },
+      canvasMsPerFrame: { count: 1, maximum: 0.2 },
+    });
+    // A query in a gap is never assigned by pretending a scene covered the packet.
+    timers.samples.push({
+      target: "offscreen",
+      at: 7.5,
+      available: true,
+      gpuMs: 1,
+    });
+    expect(gpuWork([events[0], upload], [events[1]], timers)).toMatchObject({
+      valid: false,
+      unmatchedCalls: 1,
+    });
+  });
+  it("allows genuinely static canvas frames with no invented terrain work", () => {
+    const events = renderWorkEvents().slice(1);
+    Object.assign(events[0], {
+      renderId: null,
+      uploadedBytes: 0,
+      compositionWork: 0,
+      composedSamples: 0,
+      gpuSubmissions: 1,
+      terrainSubmissions: 0,
+    });
+    expect(evaluateRenderWork(events, { droppedEvents: 0 })).toMatchObject({
+      passed: true,
+      terrainPackets: 0,
+      totalUploadedBytes: 0,
+    });
+    expect(
+      gpuWork([], [events[0]], {
+        enabled: true,
+        disjoint: false,
+        truncated: false,
+        droppedEvents: 0,
+        startedAt: 0,
+        stoppedAt: 7,
+        samples: [{ target: "canvas", at: 4.5, available: true, gpuMs: 0.2 }],
+      }),
+    ).toMatchObject({ valid: true, measuredTerrainPackets: 0 });
+  });
+  it("keeps uncapped preparation overruns visible and requires qualified native timing", () => {
+    const report = knownGood();
+    report.runs[0].renderPackets[2].preparationMs = 3;
+    expect(
+      evaluateRenderWork(report.runs[0].renderPackets, { droppedEvents: 0 }),
+    ).toMatchObject({
+      passed: true,
+      preparationMs: { maximum: 3 },
+      preparationTiming: {
+        met: false,
+        overruns: [{ milliseconds: 3, limitMs: 2 }],
+      },
+    });
+    expect(evaluateAcceptance(report, oneCase).failures).toContainEqual(
+      expect.objectContaining({ code: "RENDER_PREPARATION_TIME_EXCEEDED" }),
+    );
+    report.mode = "lab";
+    const result = evaluateAcceptance(report, oneCase);
+    expect(result.passed).toBe(false);
+    expect(
+      result.failures.some(
+        (issue) => issue.code === "RENDER_PREPARATION_TIME_EXCEEDED",
+      ),
+    ).toBe(false);
+    expect(result.blockers).toContainEqual({
+      code: "NATIVE_REFERENCE_UNQUALIFIED",
+    });
+  });
+  it("rejects malformed spans as evidence instead of throwing or filling them in", () => {
+    for (const spans of [undefined, {}, [null]]) {
+      const events = renderWorkEvents();
+      events[0].uploadSpans = spans;
+      expect(evaluateRenderWork(events, { droppedEvents: 0 }).passed).toBe(
+        false,
+      );
+    }
+  });
+  it("cannot split one RAF's excessive upload into individually passing packets", () => {
+    const events = renderWorkEvents();
+    events[0].uploadedBytes = events[0].uploadSpans[0].bytes = 3 * 1024 * 1024;
+    events.push({ ...events[0], packet: 2 });
+    const result = evaluateRenderWork(events, { droppedEvents: 0 });
+    expect(result.passed).toBe(false);
+    expect(result.issues).toContainEqual(
+      expect.objectContaining({
+        code: "RENDER_UPLOAD_BUDGET_EXCEEDED",
+        bytes: 6 * 1024 * 1024,
+      }),
+    );
+    expect(result.issues).toContainEqual(
+      expect.objectContaining({ code: "RENDER_FRAME_PACKETS_DUPLICATED" }),
+    );
+  });
+});
 
 const oneCase = {
   scope: "evaluator-test-only",
@@ -199,6 +424,8 @@ function knownGood() {
         id: "release-1",
         independentRunId: "release-1",
         instanceId: "process-1",
+        renderPackets: renderWorkEvents(),
+        renderDroppedEvents: 0,
         scenarios: [
           {
             id: "warm",
@@ -219,6 +446,8 @@ function knownFunctional() {
         id: "workflow",
         independentRunId: "release-1",
         instanceId: "workflow-1",
+        renderPackets: renderWorkEvents(),
+        renderDroppedEvents: 0,
         role: "scenario",
         scenarios: [],
       },
@@ -1944,7 +2173,7 @@ describe("saved moving-stroke evidence and explicit probe scope", () => {
     }));
   }
   function journal(delayed = false) {
-    const events: Record<string, any>[] = [];
+    const events: Record<string, any>[] = renderWorkEvents();
     const base = { sessionId: "session-a", gestureId: 1, viewGeneration: 1 };
     for (const [index, sample] of stroke(delayed).entries()) {
       const first = index === 0,
@@ -2164,6 +2393,8 @@ describe("saved moving-stroke evidence and explicit probe scope", () => {
           id: "probe-large",
           independentRunId: "probe-1",
           instanceId: "one-process",
+          renderPackets: renderWorkEvents(),
+          renderDroppedEvents: 0,
           scenarios: [collected],
         },
       ],
@@ -2328,6 +2559,101 @@ describe("saved moving-stroke evidence and explicit probe scope", () => {
       state: "planned",
     });
     expect(evaluateRun(report).status).toBe("INCOMPLETE");
+  });
+  it.each([
+    [
+      "packet metric missing",
+      "RENDER_COMPOSITION_EVIDENCE_INVALID",
+      (events: Record<string, any>[]) => {
+        delete events[0].projectionProducts;
+      },
+    ],
+    [
+      "terrain-only upload exceeds cap",
+      "RENDER_UPLOAD_BUDGET_EXCEEDED",
+      (events: Record<string, any>[]) => {
+        events[0].uploadedBytes = events[0].uploadSpans[0].bytes =
+          4 * 1024 * 1024 + 1;
+        events[1].uploadedBytes = 0;
+      },
+    ],
+    [
+      "composition exceeds cap",
+      "RENDER_COMPOSITION_BUDGET_EXCEEDED",
+      (events: Record<string, any>[]) => {
+        events[0].compositionWork = events[0].compositionSpans[0].work =
+          23 * 128 * 128 + 1;
+      },
+    ],
+    [
+      "third GPU submission",
+      "RENDER_SUBMISSION_BUDGET_EXCEEDED",
+      (events: Record<string, any>[]) => {
+        events[0].gpuSubmissions = 3;
+        events[0].sceneSubmissions = 2;
+      },
+    ],
+    [
+      "retained CPU allocation exceeds cap",
+      "RENDER_RESOURCE_BUDGET_EXCEEDED",
+      (events: Record<string, any>[]) => {
+        events[0].presentationBytes = 128 * 1024 * 1024 + 1;
+      },
+    ],
+    [
+      "preparation-only RAF exceeds step cap",
+      "RENDER_PREPARATION_STEP_BUDGET_EXCEEDED",
+      (events: Record<string, any>[]) => {
+        events.push({
+          ...events[2],
+          preparationFrame: 2,
+          preparationStart: 7,
+          at: 8,
+          preparationSteps: 129,
+        });
+      },
+    ],
+    [
+      "missing preparation link",
+      "RENDER_PREPARATION_LINK_INVALID",
+      (events: Record<string, any>[]) => {
+        delete events[0].preparationFrame;
+      },
+    ],
+    [
+      "missing terrain packet",
+      "RENDER_TERRAIN_PACKET_MISSING",
+      (events: Record<string, any>[]) => {
+        events.splice(0, 1);
+      },
+    ],
+  ] as const)(
+    "fails the combined gate for %s even with passing content",
+    (_name, code, corrupt) => {
+      const report = probeReport();
+      expect(evaluateRun(report).scopePassed).toBe(true);
+      corrupt(report.runs[0].renderPackets);
+      expect(evaluateRun(report)).toMatchObject({
+        status: "FAIL",
+        scopePassed: false,
+        failures: expect.arrayContaining([expect.objectContaining({ code })]),
+      });
+    },
+  );
+  it("requires raw work facts and event completeness instead of trusting a saved PASS", () => {
+    const report: any = probeReport();
+    report.runs[0].renderWork = { passed: true };
+    delete report.runs[0].renderPackets;
+    expect(evaluateRun(report).failures).toContainEqual(
+      expect.objectContaining({ code: "RENDER_WORK_JOURNAL_MISSING" }),
+    );
+    report.runs[0].renderPackets = renderWorkEvents();
+    report.runs[0].renderDroppedEvents = 1;
+    expect(evaluateRun(report).failures).toContainEqual(
+      expect.objectContaining({
+        code: "RENDER_WORK_EVENTS_DROPPED_OR_UNKNOWN",
+      }),
+    );
   });
   it("fails the aggregate for a missing draw or input, without accepting a stale cached result", () => {
     const report = probeReport();

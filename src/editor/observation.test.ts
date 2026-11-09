@@ -137,6 +137,35 @@ it("requires the actual current local submission and never publishes an outside 
   ).toBe(false);
 });
 
+it("asks the renderer for each fact's revision without certifying newer pending facts", () => {
+  const observation = new Observation(true);
+  observation.dose({ ...dose, intervalId: 1, revision: 6 });
+  observation.dose(dose);
+  observation.dose({ ...dose, intervalId: 3, revision: 8 });
+  const inspect = vi.fn(
+    (_bounds: typeof dose.bounds, minimumRevision: number) =>
+      minimumRevision <= submission.revision
+        ? current
+        : { ...current, status: "missing" as const },
+  );
+  observation.submitted(submission, inspect);
+  expect(inspect.mock.calls).toEqual([
+    [dose.bounds, 6],
+    [dose.bounds, 7],
+  ]);
+  expect(
+    observation.read().filter((event) => event.kind === "brush-submit"),
+  ).toMatchObject([
+    { intervalId: 1, revision: 6, frame: 3 },
+    { intervalId: 2, revision: 7, frame: 3 },
+  ]);
+  observation.commit(commit, inspect);
+  expect(inspect).toHaveBeenLastCalledWith(commit.bounds[0], commit.revision);
+  expect(
+    observation.read().filter((event) => event.kind === "edit-submit"),
+  ).toHaveLength(1);
+});
+
 it("requires every commit region and retains pointerup separately from held doses", () => {
   const observation = new Observation(true);
   observation.dose({ ...dose, inputIds: [] });

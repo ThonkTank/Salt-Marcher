@@ -5,6 +5,8 @@ import type {
   SourceBoundary,
 } from "./bridge";
 import { editorBudgets } from "./budgets";
+import { ComputeJobs, type ComputeHandle } from "./ComputeJobs";
+import { WorkerHeightProjectionService } from "./render/HeightProjectionService";
 import { ProjectSession } from "./ProjectSession";
 import {
   brushTarget,
@@ -146,7 +148,17 @@ export class EditorController {
   private animation = 0;
   private lastFrameAt = 0;
   private resizeObserver: ResizeObserver;
+  private readonly compute = new ComputeJobs();
+  private readonly projections = new WorkerHeightProjectionService(
+    this.compute,
+  );
   private work: Worker | null = null;
+  private nextWorkId = 0;
+  private backgroundJob: ComputeHandle<void> | null = null;
+  private workCompletions = new Map<
+    number,
+    { resolve(): void; reject(error: unknown): void }
+  >();
   private disposed = false;
   private pointer: Point = [0, 0];
   private backgroundStats: Record<string, unknown> = { active: false };
@@ -181,7 +193,13 @@ export class EditorController {
     private bridge: AtlasDesktop,
   ) {
     this.observation = new Observation(bridge.diagnostics);
-    this.world = new WorldRenderer(this.observation);
+    this.world = new WorldRenderer(this.observation, this.projections, () => {
+      const work = this.compute.metrics();
+      return Math.max(
+        0,
+        work.activeBytes + work.pendingBytes - this.projections.metrics().bytes,
+      );
+    });
     this.session = new ProjectSession(bridge, {
       changed: () => this.publish(),
       persisted: (receipt) =>
@@ -221,15 +239,48 @@ export class EditorController {
       );
     if (this.work)
       this.work.onmessage = (event: MessageEvent<Record<string, unknown>>) => {
-        if (event.data.sessionId !== this.doc?.sessionId) return;
-        const active = event.data.kind !== "finished";
+        const id = Number(event.data.id);
+        if (event.data.kind === "finished" || event.data.kind === "failed") {
+          const completion = this.workCompletions.get(id);
+          this.workCompletions.delete(id);
+          if (event.data.kind === "failed")
+            completion?.reject(new Error(String(event.data.error)));
+          else completion?.resolve();
+          if (this.disposed && !this.workCompletions.size) {
+            this.work?.terminate();
+            this.work = null;
+          }
+        }
+        // Slot release precedes session filtering: old cancelled work must ACK
+        // even after a new project has replaced its observation context.
+        if (
+          this.disposed ||
+          event.data.sessionId !== this.doc?.sessionId ||
+          id !== this.nextWorkId
+        )
+          return;
+        const active =
+          event.data.kind !== "finished" && event.data.kind !== "failed";
         this.backgroundStats = { ...event.data, active };
         this.observation.event("background", this.backgroundStats);
         if (active !== this.state.background)
           this.publish({ background: active });
       };
     if (this.work)
-      this.work.onerror = (event) => this.fail(new Error(event.message));
+      this.work.onerror = (event) => {
+        this.work?.terminate();
+        this.work = null;
+        // An older cancelled run may still occupy a slot while its successor
+        // waits. Never drain that successor into this now terminated worker.
+        this.backgroundJob?.cancel();
+        this.backgroundStats = { active: false, waiting: false };
+        this.publish({ background: false });
+        const error = new Error(event.message);
+        for (const completion of this.workCompletions.values())
+          completion.reject(error);
+        this.workCompletions.clear();
+        this.fail(error);
+      };
   }
 
   async init(): Promise<void> {
@@ -274,7 +325,10 @@ export class EditorController {
     this.session.attach(this.doc, info);
     previous?.invalidateContinuation();
     this.backgroundStats = { active: false };
-    this.work?.postMessage({ cancel: true });
+    this.backgroundJob?.cancel();
+    this.backgroundJob = null;
+    this.projections.setSession(info.sessionId);
+    this.compute.cancelAll();
     this.world.reset(this.doc);
     this.world.moveCamera({ x: 0, y: 0, scale: 0.25 });
     this.prepareToolLevel();
@@ -346,7 +400,9 @@ export class EditorController {
                   ? "Zum Bearbeiten loslassen und erneut drücken"
                   : this.session.changingProject
                     ? "Projekt wird geöffnet …"
-                    : "Bereit";
+                    : this.backgroundStats.waiting === true
+                      ? "Hintergrundarbeit benötigt freien Darstellungsspeicher"
+                      : "Bereit";
     if (
       (Object.keys(this.state) as (keyof EditorState)[]).some(
         (key) => !Object.is(previous[key], this.state[key]),
@@ -514,11 +570,12 @@ export class EditorController {
       if (read) void read.catch(this.fail);
       this.advanceHeldBrush(performance.now());
       this.advanceAction();
+      if (this.world.prepareFrame()) this.checkLocalReady();
       this.freezeBrushRender();
       const submission = this.world.renderFrame(now);
       if (submission) {
-        this.observation.submitted(submission, (bounds) =>
-          this.world.inspectSubmittedRegion(bounds),
+        this.observation.submitted(submission, (bounds, revision) =>
+          this.world.inspectSubmittedRegion(bounds, revision),
         );
         this.releaseCompletedEffect();
         this.checkLocalReady();
@@ -526,6 +583,7 @@ export class EditorController {
     } catch (error) {
       this.fail(error);
     } finally {
+      this.world.finishFrame();
       if (this.lastFrameAt)
         this.observation.event("frame", {
           interval: now - this.lastFrameAt,
@@ -748,6 +806,7 @@ export class EditorController {
               document.snapshot(bounds, HEIGHT_LEVELS.slice(minLevel)).tiles,
               projected,
               reply.overviewKeys,
+              document.active ? (this.foundation ?? undefined) : undefined,
             );
             this.observation.event("sources", {
               sessionId: reply.sessionId,
@@ -907,7 +966,7 @@ export class EditorController {
       const waiting = !readiness.ready;
       if (Boolean(this.world.cursor.waiting) !== waiting) {
         this.world.cursor.waiting = waiting;
-        this.world.redraw();
+        this.world.redrawCursor();
       }
     }
     if (this.doc)
@@ -926,7 +985,7 @@ export class EditorController {
   private updateToolNeed(): void {
     const readiness = this.checkLocalReady();
     if (readiness.reason === "sources") this.scheduleLoad();
-    this.world.redraw();
+    this.world.redrawCursor();
   }
 
   /** Imperative product demand; observation's localReadiness getter stays pure. */
@@ -940,6 +999,7 @@ export class EditorController {
     if (this.readState.kind !== "loading") this.readState = { kind: "idle" };
     this.publish({ error: null });
     this.scheduleLoad();
+    this.world.retryPreparation();
     this.world.refresh();
     this.updateToolNeed();
   }
@@ -1050,7 +1110,7 @@ export class EditorController {
         ? this.stroke.brush.radius * this.world.camera.scale
         : this.diameter / 2,
     };
-    this.world.redraw();
+    this.world.redrawCursor();
   }
 
   private move = (event: PointerEvent): void => {
@@ -1373,7 +1433,8 @@ export class EditorController {
           sequence: result.change.sequence,
           revision: result.change.revision,
         },
-        (bounds) => this.world.inspectSubmittedRegion(bounds),
+        (bounds, revision) =>
+          this.world.inspectSubmittedRegion(bounds, revision),
       );
     else if (state.input !== undefined)
       this.skipInput(state.input, "no-change");
@@ -1382,6 +1443,7 @@ export class EditorController {
         ? { kind: "idle" }
         : { kind: "blocked", pointerId: state.blockedPointerId };
     this.foundation = null;
+    this.updateToolNeed();
     this.persist();
   }
 
@@ -1550,15 +1612,66 @@ export class EditorController {
         if (!(await this.ensure(bounds, 0))) return;
       }
       if (document !== this.doc || this.disposed) return;
+      // A conservative preflight reserves the complete resident source upper
+      // bound before snapshot() creates copies. Diagnostic work may wait; it
+      // never competes for the reserve needed to finish an accepted gesture.
+      if (
+        document.metrics.sourceBytes >
+        editorBudgets.presentationBytes - this.world.state().presentationBytes
+      ) {
+        this.backgroundStats = { active: false, waiting: true };
+        this.publish();
+        return;
+      }
       const snapshot = document.snapshot(bounds);
-      this.work.postMessage(
-        {
-          sessionId: document.sessionId,
-          tiles: snapshot.tiles,
-          bounds: snapshot.bounds,
-          milliseconds: 10000,
+      this.backgroundStats = { active: false, waiting: false };
+      const bytes = snapshot.tiles.reduce(
+        (sum, tile) => sum + tile.values.byteLength,
+        0,
+      );
+      const worker = this.work;
+      const id = ++this.nextWorkId;
+      const job = this.compute.request(
+        "background",
+        "background",
+        bytes,
+        () => {
+          const ended = new Promise<void>((resolve, reject) => {
+            this.workCompletions.set(id, { resolve, reject });
+          });
+          try {
+            worker.postMessage(
+              {
+                id,
+                sessionId: document.sessionId,
+                tiles: snapshot.tiles,
+                bounds: snapshot.bounds,
+                milliseconds: 10000,
+              },
+              snapshot.tiles.map((tile) => tile.values.buffer as ArrayBuffer),
+            );
+          } catch (error) {
+            this.workCompletions.get(id)?.reject(error);
+            this.workCompletions.delete(id);
+          }
+          return {
+            ended,
+            cancel: () => worker.postMessage({ cancel: true, id }),
+          };
         },
-        snapshot.tiles.map((tile) => tile.values.buffer as ArrayBuffer),
+      );
+      this.backgroundJob = job;
+      void job.result.then(
+        () => {
+          if (this.backgroundJob === job) {
+            this.backgroundJob = null;
+            if (document === this.doc && !this.disposed)
+              this.publish({ background: false });
+          }
+        },
+        (error) => {
+          if (document === this.doc && !this.disposed) this.fail(error);
+        },
       );
       this.publish({ background: true });
     } finally {
@@ -1598,6 +1711,7 @@ export class EditorController {
       readiness: this.localReadiness(),
       renderer: this.world.state(),
       background: { ...this.backgroundStats },
+      compute: this.compute.metrics(),
       document: this.doc
         ? {
             revision: this.doc.revision,
@@ -1685,7 +1799,12 @@ export class EditorController {
     this.resizeObserver.disconnect();
     this.releaseFileAction();
     this.world.destroy();
-    this.work?.terminate();
+    this.backgroundJob?.cancel();
+    this.projections.dispose();
+    this.compute.dispose();
+    // Let cooperative cancellation acknowledge actual completion before the
+    // shared admission drops a slot. No new work is accepted after disposal.
+    if (!this.workCompletions.size) this.work?.terminate();
     this.canvas.removeEventListener("pointerdown", this.down);
     this.canvas.removeEventListener("pointermove", this.move);
     this.canvas.removeEventListener("pointerup", this.up);

@@ -143,7 +143,7 @@ export class Observation {
 
   commit(
     details: CommitFact,
-    inspect?: (bounds: Bounds) => ObservedRegion,
+    inspect?: (bounds: Bounds, minimumRevision: number) => ObservedRegion,
   ): void {
     if (!this.enabled) return;
     const committedAt = performance.now();
@@ -212,7 +212,7 @@ export class Observation {
   /** Read-only correlation after a real draw; outside-view is never a receipt. */
   submitted(
     submission: ObservedSubmission,
-    inspect: (bounds: Bounds) => ObservedRegion,
+    inspect: (bounds: Bounds, minimumRevision: number) => ObservedRegion,
   ): void {
     if (!this.enabled) return;
     this.lastSubmission = { ...submission };
@@ -231,13 +231,16 @@ export class Observation {
   private publishReceipt(
     entry: PendingReceipt,
     submission: ObservedSubmission,
-    inspect: (bounds: Bounds) => ObservedRegion,
+    inspect: (bounds: Bounds, minimumRevision: number) => ObservedRegion,
   ): boolean {
     if (
       entry.sessionId !== submission.sessionId ||
       entry.revision > submission.revision ||
       !entry.bounds.every((bounds) => {
-        const region = inspect(bounds);
+        // Ask for the recorded fact's revision. A completed local render group
+        // can prove that older fact while newer author changes remain pending;
+        // only the renderer can supply that exact scene/region evidence.
+        const region = inspect(bounds, entry.revision);
         return (
           region.status === "current" &&
           region.sessionId === submission.sessionId &&

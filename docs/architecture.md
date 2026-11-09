@@ -625,14 +625,16 @@ weiterhin derselben Dokumentaktion. Ihr Status ist sichtbar.
 
 Der einzige Frameablauf ist gerichtet:
 
-1. Den ausstehenden GPU-Fence ohne Wartezeit prüfen und vollständige passende
-   Rückmeldung übernehmen; geänderte Darstellungsidentität synchronisieren.
+1. Die höchstens zwei ausstehenden GPU-Fences in Einreichungsreihenfolge ohne
+   Wartezeit prüfen und vollständige passende Rückmeldung übernehmen.
 2. Den nächsten fehlenden Quellenread starten.
 3. Ein kausales Haltefenster annehmen und höchstens eine begrenzte Autorenscheibe
    materialisieren.
-4. Den vollständigen sichtbaren Einfluss eines aktuellen Renderstands einfrieren,
-   begrenzte Uploads/Komposition ausführen und die Szene zeichnen.
-5. Submitfakten, eventuellen Aktionsabschluss und abgeleitete Anzeige aktualisieren.
+4. Priorisierte Quellen und Übersichten in kleinen Schritten übernehmen. Erst
+   vollständige Abhängigkeiten erlauben den eingefrorenen Renderstand.
+5. Innerhalb desselben Vorbereitungsbudgets Deskriptoren und Projektionsstreifen
+   vorbereiten, begrenzte Terrainpakete einreichen und fertige Farbe zeichnen.
+6. Submitfakten, eventuellen Aktionsabschluss und abgeleitete Anzeige aktualisieren.
 
 `freezeRender` hält einen unveränderlichen Quellen-/Übersichtsstand R bis zur
 vollständigen Komposition und dem Fence der gezeichneten Szene. Neuere Änderungen
@@ -647,9 +649,39 @@ Die lokale Wirkungsschranke ersetzt das frühere globale Dosisgate.
 Ein ausgeschöpfter Ort darf einen anderen zulässigen Ort derselben Autorenkachel
 nicht verwerfen. Bereits angenommene Arbeit geht bei GPU-Verzug nicht verloren.
 `clientWaitSync(..., 0, 0)` fragt nur ab; es gibt keine Warteschleife oder `gl.finish`.
-Ein einzelner GL-Platz bleibt in R2 bestehen. Zwei getrennte Plätze und die
-Auswahl vor teurer Vorbereitung gehören zu R3; Hardwarelatenz ist damit noch
-nicht nachgewiesen.
+Es gibt einen Terrainplatz und einen Sceneplatz. Uploads, Allokationen und
+Kopien belegen ebenfalls den Terrainplatz und erhalten Fence und Flush.
+Eine Kamerabewegung kann fertige Farbkacheln verwenden, während das Terrainpaket
+noch läuft; bei zwei belegten Plätzen bleibt nur der neueste Kamerawunsch stehen.
+Der letzte Scene-Draw darf unmittelbar hinter dem letzten Terrainpaket stehen.
+Erst sein Fence bestätigt den vollständigen lokalen Einfluss. Ein fehlgeschlagener
+Poll gibt belegte Ressourcen nicht frei; ein späterer tatsächlicher Abschluss
+oder Kontextverlust ermöglicht ihren Wiederaufbau. Sessionwechsel und Verdrängung
+halten benutzte Ressourcen bis zu ihrem letzten Fence.
+
+Die Diagnose ordnet eine angenommene Änderung ihrem tatsächlich vollständig
+eingereichten Renderstand zu. Dafür prüft der Renderer die echte Scene-Receipt,
+deren Revision und die vollständige sichtbare Bereichsabdeckung. Ein bereits
+wartendes R+1 verhindert die Messung von R nicht; Teilpakete oder fremde Bereiche
+liefern weiterhin keinen Beleg. Die normale Bereitschaftsprüfung verlangt
+unverändert den neuesten passenden Inhalt.
+
+Quellen und Übersichten werden vor teurer Vorbereitung räumlich ausgewählt.
+Ein RAF teilt sein 2-ms-Vorbereitungsbudget und höchstens 128 Arbeitsschritte
+zwischen Quellenübernahme, Übersichtsdeltas, Deskriptoren und Projektion auf.
+Zeitprüfungen liegen zwischen kleinen Einheiten; Laufzeit- und GC-Ausreißer bleiben
+Messgegenstände. Veraltete ungefertigte Übersichten werden vollständig verworfen;
+ihre Basisversion wird erst nach atomarer Veröffentlichung fortgeschrieben.
+Eine durch die gepinnten Autoren der aktiven Geste abgeglichene Rücklesung
+erhält deren bereits belegte Grundlage; neue Bereiche bleiben bis zur begrenzten
+Übernahme gesperrt. Gleichwertige eigene Inhalte entwerten bei dieser Übernahme
+keine Grundlage. Entfernte Quellenfehler sperren keine
+unabhängige lokale Gruppe. Hintergrundgruppen bearbeiten je eine vollständige
+lokale Kachel und geben den Quellenstand danach wieder frei.
+
+Der Pinselkreis ist ein DOM-Overlay. Seine Bewegung erzeugt keine Atlas-GL-Arbeit
+und liefert keinen Terrainnachweis. Die begrenzten Zustände belegen noch keine
+Hardwarelatenz.
 
 ### Feste numerische Basis und lokale Änderung
 
@@ -690,6 +722,14 @@ kann früher den vollständigen GPU-Pfad benötigen. Außerhalb des sicheren
 GPU-Zahlenbereichs bleibt die kanonische Float64-Rekonstruktion erhalten.
 Diese Auswahl verändert keine Autorenwerte.
 
+Nur abgeleitete skalierte Beträge unter `1e-30` werden beim GPU-Encoding zu null.
+Bei 22 Stufen und Rückskalierung 32 beträgt der zusätzliche kanonische Fehler
+höchstens `7,04e-28` Fuß. Basis- und beide Beitragsfehler werden beim warmen Weg
+mitgeführt; tatsächliche Basiswechsel übernehmen das Budget bis zum spätestens
+nach 32 Wechseln erforderlichen Neubau. Die Darstellungstoleranz bleibt `1e-6`
+Fuß. Räumliche Stufen-/Zeilen-/Spaltenmetadaten und lokale Magnituden werden bei
+Quellenänderungen gepflegt; eine Displaykachel scannt nicht alle residenten Quellen.
+
 Eine Basis darf den aktiven Beitrag aus einer residenten Teilmenge feiner Quellen
 halten; unveränderte übrige Feinanteile bleiben in der Gesamtübersicht enthalten.
 Die Teilmenge muss bis zur nächsten Aufnahme dieselbe bleiben. Import oder
@@ -710,12 +750,31 @@ Float32-Transformationen relativ zur Kamera gebildet.
 Dirtyrechtecke begrenzen die tatsächlich projizierten und gefärbten Pixel.
 Nur der erste Live-Draw nach einer Basisaufnahme übernimmt zusätzlich unveränderte
 Basispixel in das andere numerische Ziel. Spätere Dosen und gleichstufige Gesten
-verwenden dieses Ziel weiter. Ein warmer Werkzeugwechsel braucht keinen Farbpass;
-Kamera und Cursor zeichnen ebenfalls behaltene Sprites ohne Höhenrekonstruktion.
+verwenden dieses Ziel weiter. Ein warmer Werkzeugwechsel braucht keinen Farbpass.
+Die Kamera zeichnet behaltene Sprites ohne Höhenrekonstruktion; der Cursor
+aktualisiert ausschließlich sein DOM-Overlay.
 
 RG32F und RGBA32F werden mit Erweiterungsprüfung und tatsächlichen
 1×1-Framebuffern einschließlich Wiederherstellung der GL-Bindings geprüft.
-Fehlende Unterstützung verwendet den bestehenden CPU-Fallback. Kontextverlust
+Fehlende Unterstützung und tatsächlich unsichere Zahlen verwenden den
+kanonischen Float64-Weg in einem Worker. Der Controller besitzt `ComputeJobs`: zwei
+aktive rechenintensive Jobs insgesamt, höchstens eine Ausnahmeprojektion und
+pro Jobart nur den neuesten wartenden Wunsch. Lokale Arbeit hat Vorrang.
+Abbruch entwertet das Resultat sofort; der Rechenplatz und seine Reserve bleiben
+bis zum tatsächlichen Ende oder zur Abbruchbestätigung belegt.
+
+Die Ausnahmeprojektion erhält unveränderliche lokale Quellen in bestätigten
+32-KiB-Transfers. Aufbau und Rasterberechnung arbeiten in kleinen Abschnitten.
+Ein weiterhin benötigter älterer Stand darf übernommen werden, während R+1
+wartet; Session, Ansicht und konkrete Vorbereitungsidentität müssen stimmen.
+Eine entfernte wartende Ausnahme belegt keine normale Rendergruppe. Ihre
+Eingabepuffer, Worker-Kopien, Zwischenpuffer und Ergebnisse sind im gemeinsamen
+Darstellungsbudget reserviert. Der diagnostische Lastworker verwendet dieselbe
+Jobzulassung. Scheitert eine entfernte Vorbereitung, gibt sie ihre Rendergruppe
+frei und behält ihre Dirtykennung. Derselbe fehlgeschlagene Eingabestand wird
+nicht automatisch wiederholt; geänderte Abhängigkeiten oder „Erneut laden“
+erlauben einen neuen Versuch. Andere lokale Quellen und Darstellungen laufen
+weiter. Kontextverlust
 entwertet Fence und Darstellungsbelege; Wiederherstellung überträgt Quellen und
 baut Bilder neu auf. Erst passend abgeschlossene Arbeit gibt Eingabe wieder frei.
 
@@ -724,8 +783,12 @@ Kachel. Entfernte Uploads sperren keine fertige lokale Komposition. `budgets.ts`
 begrenzt Speicher, 4 MiB Upload pro Frame und Projektionsarbeit je Grafikpaket.
 Der Projektionsanteil bleibt auf 20 gewichtete Paarprodukte je historischer
 Arbeitseinheit normiert. Zusätzliche Basisadditionen, Farbe, Kopien und
-Capture-Lesezugriffe werden mitgezählt; das Paketlimit bleibt unverändert. Der aktuelle Werkzeugort wird
-zuerst bearbeitet. Die beiden numerischen 128²-Texturen kosten zusammen 512 KiB
+Capture-Lesezugriffe werden mitgezählt; das Paketlimit bleibt unverändert. CPU-Quellseiten entstehen in achtzeiligen Abschnitten; Atlaswachstum kopiert
+64 KiB je Schritt. GPU-Teilschritte umfassen höchstens 16 Pixelzeilen und jeweils
+die vollständige Folge horizontal → numerisch → Farbe. Mehrere solche Schritte
+dürfen innerhalb derselben unveränderten Arbeits- und Uploadgrenze liegen.
+Ein Teilstreifen veröffentlicht keine neue Gesamtbasis oder vollständige
+Renderbestätigung. Der aktuelle Werkzeugort wird zuerst bearbeitet. Die beiden numerischen 128²-Texturen kosten zusammen 512 KiB
 je Kachel, bei 96 Kacheln 48 MiB. Hinzu kommen die variabel großen Zwischenzeilen,
 Farbe, Quellspiegel, Deskriptoren, Gewichte und Fallbackbilder; alle sind erfasst.
 

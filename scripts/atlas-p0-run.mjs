@@ -559,6 +559,12 @@ async function launch(project, label, fault = "none") {
       closing = (async () => {
         try {
           const final = await snapshot(page);
+          instance.renderPackets = final.events.filter((event) =>
+            ["height-terrain", "height-draw", "height-preparation"].includes(
+              event.kind,
+            ),
+          );
+          instance.renderDroppedEvents = final.droppedEvents;
           const timing = summarizeSubmissionTiming(final.events);
           const timingFile = join(sessionDirectory, "submission-timing.json");
           await writeFile(timingFile, JSON.stringify(timing, null, 2));

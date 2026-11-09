@@ -22,9 +22,10 @@ räumliche Mindestwirkung mit Anrechnung auf kumulierte Zeitwirkung, Reservierun
 vor Annahme und begrenzte Fortsetzung bis zum vollständigen Aktionsabschluss.
 Undo und Dateiaktionen warten auf diesen gemeinsamen Abschluss. Die unabhängige
 Inhaltsreferenz und die festen Leistungsziele bleiben erhalten.
-**P0 ist weiterhin nicht freigegeben.** Die genaue R2-Abnahme und die offene
-CPU-Grenze stehen im Status. R3 begrenzt danach den normalen Renderpfad;
-R4/R5 müssen Hardware- und Präsentationsziele belegen. Erst nach positiver
+**P0 ist weiterhin nicht freigegeben.** Die aktuelle R2/R3-Abnahme und die offene
+CPU-Grenze stehen im Status. R3 begrenzt Quellenübernahme, Vorbereitung und
+GPU-Pakete; numerische Ausnahmefälle laufen über die gemeinsame Jobzulassung
+im Worker. R4/R5 müssen Hardware- und Präsentationsziele belegen. Erst nach positiver
 Hardware-Richtungsprobe ist der kleine gemeinsame Landschafts-/Hausfall zulässig;
 der weitere Ausbau bleibt an die vollständige P0- und P3-Abnahme gebunden.
 Detailbelege liegen ignoriert unter `src-tauri/target/diagnostics/`,

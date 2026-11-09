@@ -222,6 +222,356 @@ const finite = (value) => typeof value === "number" && Number.isFinite(value);
 /** @param {unknown} value @returns {value is string} */
 const nonempty = (value) => typeof value === "string" && value.length > 0;
 
+export const HEIGHT_COMPOSITION_FACTS = Object.freeze([
+  "canonicalSamples",
+  "deltaSamples",
+  "horizontalSamples",
+  "projectionProducts",
+  "basisCaptureSamples",
+  "canonicalBasisBuilds",
+  "colourSamples",
+  "anchorCopySamples",
+  "compositionWork",
+]);
+
+/**
+ * Work belongs to actual terrain packets, including upload-only packets while a
+ * scene fence is pending. Scene records are never counted again as terrain work.
+ * Preparation is observed once per RAF, including RAFs which submit no GL work.
+ * These facts do not identify a presented frame or manufacture an input receipt.
+ * @param {unknown} events
+ * @param {{droppedEvents?: number | null}} [options]
+ */
+export function evaluateRenderWork(events, { droppedEvents = null } = {}) {
+  /** @type {EvaluationIssue[]} */
+  const issues = [];
+  const fail = (code, detail = {}) => issues.push({ code, ...detail });
+  const integer = (value) => Number.isSafeInteger(value) && value >= 0;
+  const positive = (value) => integer(value) && value > 0;
+  const ordered = (values) =>
+    values.every(
+      (value, i) => finite(value) && (i === 0 || value >= values[i - 1]),
+    );
+  if (!Array.isArray(events)) fail("RENDER_WORK_JOURNAL_MISSING");
+  if (droppedEvents !== 0)
+    fail("RENDER_WORK_EVENTS_DROPPED_OR_UNKNOWN", { droppedEvents });
+  const recorded = Array.isArray(events)
+    ? events.filter((event) => event && typeof event === "object")
+    : [];
+  if (Array.isArray(events) && recorded.length !== events.length)
+    fail("RENDER_WORK_EVENT_INVALID");
+  const packets = recorded.filter((event) => event.kind === "height-terrain");
+  const scenes = recorded.filter((event) => event.kind === "height-draw");
+  const preparation = recorded.filter(
+    (event) => event.kind === "height-preparation",
+  );
+  if (!scenes.length) fail("RENDER_SCENE_EVIDENCE_MISSING");
+  if (!preparation.length) fail("RENDER_PREPARATION_EVIDENCE_MISSING");
+  const key = (event, field) => `${event.sessionId}:${event[field]}`;
+  const byPreparation = (records) => {
+    const grouped = new Map();
+    for (const record of records) {
+      const identity = key(record, "preparationFrame");
+      const own = grouped.get(identity) ?? [];
+      own.push(record);
+      grouped.set(identity, own);
+    }
+    return grouped;
+  };
+  const packetsByPreparation = byPreparation(packets);
+  const scenesByPreparation = byPreparation(scenes);
+  const prepByFrame = new Map();
+  const packetIds = new Set();
+  const sceneIds = new Set();
+  const resources = (event, detail) => {
+    const names = ["cpuBytes", "presentationBytes", "gpuBytes", "sourceBytes"];
+    if (
+      names.some((name) => !integer(event[name])) ||
+      event.cpuBytes > event.presentationBytes
+    )
+      fail("RENDER_RESOURCE_EVIDENCE_INVALID", detail);
+    for (const [field, limitBytes] of [
+      ["presentationBytes", 128 * 1024 * 1024],
+      ["gpuBytes", 256 * 1024 * 1024],
+      ["sourceBytes", 256 * 1024 * 1024],
+    ])
+      if (integer(event[field]) && event[field] > limitBytes)
+        fail("RENDER_RESOURCE_BUDGET_EXCEEDED", {
+          ...detail,
+          field,
+          bytes: event[field],
+          limitBytes,
+        });
+  };
+  const slots = (event, detail) => {
+    const {
+      gpuSubmissions: total,
+      terrainSubmissions: terrain,
+      sceneSubmissions: scene,
+    } = event;
+    if (
+      ![total, terrain, scene].every(integer) ||
+      total !== terrain + scene ||
+      (event.kind === "height-terrain" ? terrain !== 1 : scene !== 1)
+    )
+      fail("RENDER_SUBMISSION_EVIDENCE_INVALID", detail);
+    if (total > 2 || terrain > 1 || scene > 1)
+      fail("RENDER_SUBMISSION_BUDGET_EXCEEDED", {
+        ...detail,
+        total,
+        terrain,
+        scene,
+      });
+  };
+  for (const event of preparation) {
+    const detail = {
+      sessionId: event.sessionId,
+      preparationFrame: event.preparationFrame,
+    };
+    const identity = key(event, "preparationFrame");
+    if (
+      !nonempty(event.sessionId) ||
+      !positive(event.preparationFrame) ||
+      prepByFrame.has(identity) ||
+      !ordered([event.preparationStart, event.at]) ||
+      !finite(event.preparationMs) ||
+      event.preparationMs < 0 ||
+      !integer(event.preparationSteps) ||
+      !integer(event.sourceSteps) ||
+      event.sourceSteps > event.preparationSteps
+    )
+      fail("RENDER_PREPARATION_EVIDENCE_INVALID", detail);
+    if (event.preparationSteps > 128)
+      fail("RENDER_PREPARATION_STEP_BUDGET_EXCEEDED", {
+        ...detail,
+        steps: event.preparationSteps,
+        limitSteps: 128,
+      });
+    prepByFrame.set(identity, event);
+    resources(event, detail);
+  }
+  const linkedPreparation = (event, detail) => {
+    const prepared = prepByFrame.get(key(event, "preparationFrame"));
+    if (
+      !positive(event.preparationFrame) ||
+      !prepared ||
+      !ordered([
+        prepared?.preparationStart,
+        event.submittedAt,
+        event.at,
+        prepared?.at,
+      ])
+    )
+      fail("RENDER_PREPARATION_LINK_INVALID", detail);
+  };
+  const spans = (event, name, measure, detail) => {
+    const values = event[name];
+    if (
+      !Array.isArray(values) ||
+      (name === "uploadSpans" && !values.length) ||
+      values.some(
+        (span, i) =>
+          !ordered([
+            event.uploadStart,
+            span?.start,
+            span?.end,
+            event.submittedAt,
+          ]) ||
+          !integer(span?.[measure]) ||
+          (i > 0 && span.start < values[i - 1].end),
+      )
+    ) {
+      fail("RENDER_PACKET_SPANS_INVALID", { ...detail, field: name });
+      return null;
+    }
+    return values.reduce((sum, span) => sum + span[measure], 0);
+  };
+  for (const event of packets) {
+    const detail = { sessionId: event.sessionId, packet: event.packet };
+    const identity = key(event, "packet");
+    if (
+      !nonempty(event.sessionId) ||
+      !positive(event.packet) ||
+      packetIds.has(identity) ||
+      !positive(event.renderId) ||
+      !integer(event.revision) ||
+      !integer(event.viewGeneration) ||
+      !ordered([
+        event.uploadStart,
+        event.uploadedAt,
+        event.submittedAt,
+        event.at,
+      ])
+    )
+      fail("RENDER_PACKET_IDENTITY_OR_CLOCK_INVALID", detail);
+    packetIds.add(identity);
+    linkedPreparation(event, detail);
+    slots(event, detail);
+    resources(event, detail);
+    if (
+      [
+        ...HEIGHT_COMPOSITION_FACTS,
+        "uploadedBytes",
+        "updatedTiles",
+        "composedSamples",
+        "fallbackSamples",
+      ].some((name) => !integer(event[name])) ||
+      event.colourSamples + event.basisCaptureSamples !==
+        event.composedSamples ||
+      event.canonicalSamples + event.deltaSamples + event.basisCaptureSamples >
+        event.composedSamples
+    )
+      fail("RENDER_COMPOSITION_EVIDENCE_INVALID", detail);
+    const uploadBytes = spans(event, "uploadSpans", "bytes", detail);
+    const composition = spans(event, "compositionSpans", "work", detail);
+    if (
+      uploadBytes !== event.uploadedBytes ||
+      composition !== event.compositionWork ||
+      !Array.isArray(event.uploadSpans) ||
+      event.uploadSpans[0]?.start !== event.uploadStart ||
+      event.uploadSpans.at(-1)?.end !== event.uploadedAt
+    )
+      fail("RENDER_PACKET_TOTALS_INCONSISTENT", detail);
+    if (uploadBytes !== null && composition !== null) {
+      const all = [...event.uploadSpans, ...event.compositionSpans].sort(
+        (a, b) => a.start - b.start,
+      );
+      if (all.some((span, i) => i > 0 && span.start < all[i - 1].end))
+        fail("RENDER_PACKET_SPANS_OVERLAP", detail);
+    }
+    if (event.uploadedBytes > 4 * 1024 * 1024)
+      fail("RENDER_UPLOAD_BUDGET_EXCEEDED", {
+        ...detail,
+        bytes: event.uploadedBytes,
+        limitBytes: 4 * 1024 * 1024,
+      });
+    if (event.compositionWork > 23 * 128 * 128)
+      fail("RENDER_COMPOSITION_BUDGET_EXCEEDED", {
+        ...detail,
+        work: event.compositionWork,
+        limitWork: 23 * 128 * 128,
+      });
+  }
+  for (const event of scenes) {
+    const detail = { sessionId: event.sessionId, frame: event.frame };
+    const identity = key(event, "frame");
+    if (
+      !nonempty(event.sessionId) ||
+      !positive(event.frame) ||
+      sceneIds.has(identity) ||
+      !integer(event.revision) ||
+      !integer(event.viewGeneration) ||
+      (event.renderId !== null && !positive(event.renderId)) ||
+      !ordered([event.sceneStart, event.submittedAt, event.at])
+    )
+      fail("RENDER_SCENE_IDENTITY_OR_CLOCK_INVALID", detail);
+    sceneIds.add(identity);
+    linkedPreparation(event, detail);
+    slots(event, detail);
+    // Legacy copied scene counters cannot substitute for a missing packet.
+    if (
+      (event.uploadedBytes > 0 || event.compositionWork > 0) &&
+      !(packetsByPreparation.get(key(event, "preparationFrame")) ?? []).some(
+        (packet) =>
+          packet.sessionId === event.sessionId &&
+          packet.preparationFrame === event.preparationFrame &&
+          packet.submittedAt <= event.sceneStart,
+      )
+    )
+      fail("RENDER_TERRAIN_PACKET_MISSING", detail);
+  }
+  // The caps apply to a RAF, not separately to each claimed packet. Reject a
+  // duplicated packet/frame instead of allowing a report to split excess work.
+  for (const [identity, prepared] of prepByFrame) {
+    const own = packetsByPreparation.get(identity) ?? [];
+    const canvas = scenesByPreparation.get(identity) ?? [];
+    const detail = {
+      sessionId: prepared.sessionId,
+      preparationFrame: prepared.preparationFrame,
+    };
+    if (own.length > 1 || canvas.length > 1)
+      fail("RENDER_FRAME_PACKETS_DUPLICATED", {
+        ...detail,
+        terrainPackets: own.length,
+        scenes: canvas.length,
+      });
+    const bytes = own.reduce(
+      (sum, packet) =>
+        sum + (integer(packet.uploadedBytes) ? packet.uploadedBytes : 0),
+      0,
+    );
+    const work = own.reduce(
+      (sum, packet) =>
+        sum + (integer(packet.compositionWork) ? packet.compositionWork : 0),
+      0,
+    );
+    if (own.length > 1 && bytes > 4 * 1024 * 1024)
+      fail("RENDER_UPLOAD_BUDGET_EXCEEDED", {
+        ...detail,
+        bytes,
+        limitBytes: 4 * 1024 * 1024,
+      });
+    if (own.length > 1 && work > 23 * 128 * 128)
+      fail("RENDER_COMPOSITION_BUDGET_EXCEEDED", {
+        ...detail,
+        work,
+        limitWork: 23 * 128 * 128,
+      });
+  }
+  const preparationMs = distribution(
+    preparation.map((event) => event.preparationMs),
+  );
+  const overruns = preparation
+    .filter((event) => finite(event.preparationMs) && event.preparationMs > 2)
+    .map((event) => ({
+      sessionId: event.sessionId,
+      preparationFrame: event.preparationFrame,
+      milliseconds: event.preparationMs,
+      limitMs: 2,
+    }));
+  return {
+    passed: issues.length === 0,
+    issues,
+    terrainPackets: packets.length,
+    uploadOnlyPackets: packets.filter((event) => event.compositionWork === 0)
+      .length,
+    scenes: scenes.length,
+    preparationFrames: preparation.length,
+    uploadedBytes: distribution(packets.map((event) => event.uploadedBytes)),
+    totalUploadedBytes: packets.reduce(
+      (sum, event) =>
+        sum + (integer(event.uploadedBytes) ? event.uploadedBytes : 0),
+      0,
+    ),
+    composedSamples: distribution(
+      packets.map((event) => event.composedSamples),
+    ),
+    composition: Object.fromEntries(
+      HEIGHT_COMPOSITION_FACTS.map((name) => [
+        name,
+        {
+          total: packets.reduce(
+            (sum, event) => sum + (integer(event[name]) ? event[name] : 0),
+            0,
+          ),
+          perPacket: distribution(packets.map((event) => event[name])),
+        },
+      ]),
+    ),
+    preparationMs,
+    preparationTiming: {
+      limitMs: 2,
+      met:
+        preparationMs.count > 0 &&
+        preparationMs.invalid === 0 &&
+        overruns.length === 0,
+      overruns,
+    },
+    interpretation:
+      "Actual terrain packets and per-RAF preparation only; copied scene work is excluded. CPU timing is uncapped and requires qualified native hardware for an acceptance claim. GL submission is not native presentation.",
+  };
+}
+
 /** Missing measurements are handled by their evidence check, not a numeric limit.
  * @param {number | null} value
  * @param {number} limit
@@ -269,6 +619,25 @@ function functionalFacts(report) {
   for (const error of Array.isArray(report.errors) ? report.errors : [])
     fail("RUNNER_OR_PRODUCT_FAILURE", { error });
   const runs = releaseRuns(report, fail);
+  const renderWork = (Array.isArray(report.runs) ? report.runs : [])
+    .filter((run) => run.role !== "control")
+    .map((run) => ({
+      run: run.id,
+      ...evaluateRenderWork(run.renderPackets, {
+        droppedEvents: run.renderDroppedEvents,
+      }),
+    }));
+  for (const result of renderWork)
+    for (const issue of result.issues)
+      fail(issue.code, { ...issue, run: result.run });
+  if (
+    report.mode === "native" &&
+    report.reference?.qualified === true &&
+    report.reference?.softwareRendering === false
+  )
+    for (const work of renderWork)
+      for (const overrun of work.preparationTiming.overruns)
+        fail("RENDER_PREPARATION_TIME_EXCEEDED", { ...overrun, run: work.run });
   const checks = Array.isArray(report.functional?.checks)
     ? report.functional.checks
     : [];
@@ -311,6 +680,7 @@ function functionalFacts(report) {
     checksByIdentity,
     controls,
     scaling: report.scaling,
+    renderWork,
   };
 }
 
@@ -2809,6 +3179,9 @@ export function evaluateObservation(observation, { id, kind = "edit" } = {}) {
     contentObserved: false,
   });
   const publication = evaluateBrushPublicationOrder(events);
+  const renderWork = evaluateRenderWork(events, {
+    droppedEvents: observation.droppedEvents,
+  });
   const gestures = events
     .filter((event) => event.kind === "brush-start")
     .map((start) => {
@@ -2846,9 +3219,10 @@ export function evaluateObservation(observation, { id, kind = "edit" } = {}) {
   const issues = [...unique.values()];
   return {
     ...scenario,
-    status: issues.length ? "FAIL" : scenario.status,
-    failures: [...scenario.failures, ...issues],
+    status: issues.length || !renderWork.passed ? "FAIL" : scenario.status,
+    failures: [...scenario.failures, ...issues, ...renderWork.issues],
     brushWork: { passed: issues.length === 0, issues, gestures },
+    renderWork,
   };
 }
 
@@ -3358,6 +3732,7 @@ export function evaluateRun(report) {
     failures,
     missing,
     blockers: acceptance.blockers,
+    renderWork: facts.renderWork,
     nativeAcceptance: {
       status: failures.length ? "FAIL" : acceptance.passed ? "PASS" : "BLOCKED",
       passed: acceptance.passed,

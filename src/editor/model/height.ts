@@ -137,6 +137,17 @@ export function prepareScaledHeightSum(
   source: readonly HeightTile[] | HeightSnapshot,
   bounds?: Bounds,
 ): (x: number, y: number) => number {
+  const setup = prepareScaledHeightSumSteps(source, bounds);
+  let next = setup.next();
+  while (!next.done) next = setup.next();
+  return next.value;
+}
+
+/** Same canonical sampler, with a cancellation/yield point after each source. */
+export function* prepareScaledHeightSumSteps(
+  source: readonly HeightTile[] | HeightSnapshot,
+  bounds?: Bounds,
+): Generator<void, (x: number, y: number) => number> {
   const tiles: readonly HeightTile[] = Array.isArray(source)
     ? source
     : (source as HeightSnapshot).tiles;
@@ -169,6 +180,7 @@ export function prepareScaledHeightSum(
     if (row.has(tile.tileX))
       throw new Error("Doppelte Höhenkachel im Snapshot.");
     row.set(tile.tileX, tile.values);
+    yield;
   }
   // Coarse-to-fine order is deterministic; clamp only after the complete sum.
   const levels = [...indexed.entries()]

@@ -6,7 +6,7 @@ import { spawnSync } from "node:child_process";
 import { createRequire } from "node:module";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { launchAtlasDesktop } from "./atlas-p0-desktop.mjs";
 import {
   brush,
@@ -17,7 +17,11 @@ import {
   snapshot,
   stateSnapshot,
 } from "./atlas-p0-interactions.mjs";
-import { distribution, strokeEvidence } from "./atlas-p0-evaluate.mjs";
+import {
+  distribution,
+  strokeEvidence,
+  evaluateRenderWork,
+} from "./atlas-p0-evaluate.mjs";
 import { summarizeSubmissionTiming } from "./atlas-p0-timing.mjs";
 import { nativePresentationCapability, parseTrace } from "./atlas-p0-trace.mjs";
 
@@ -36,44 +40,8 @@ const writeJson = (file, data) =>
   writeFile(file, JSON.stringify(data, null, 2) + "\n");
 const sha256 = (bytes) => createHash("sha256").update(bytes).digest("hex");
 
-function compositionWork(draws) {
-  if (!draws.length)
-    throw new Error("Missing actual terrain draw observations");
-  const names = [
-    "canonicalSamples",
-    "deltaSamples",
-    "horizontalSamples",
-    "projectionProducts",
-    "basisCaptureSamples",
-    "canonicalBasisBuilds",
-    "colourSamples",
-    "anchorCopySamples",
-    "compositionWork",
-  ];
-  for (const draw of draws) {
-    if (
-      names.some(
-        (name) => !Number.isSafeInteger(draw[name]) || draw[name] < 0,
-      ) ||
-      draw.colourSamples + draw.basisCaptureSamples !== draw.composedSamples ||
-      draw.canonicalSamples + draw.deltaSamples + draw.basisCaptureSamples >
-        draw.composedSamples
-    )
-      throw new Error("Missing or inconsistent numeric composition facts");
-  }
-  return Object.fromEntries(
-    names.map((name) => [
-      name,
-      {
-        total: draws.reduce((sum, draw) => sum + draw[name], 0),
-        perDraw: distribution(draws.map((draw) => draw[name])),
-      },
-    ]),
-  );
-}
-
-/** Attribute all measured GL calls to actual draws; never infer pixels from call count. */
-function gpuWork(draws, timers) {
+/** Attribute every query to its actual terrain packet or canvas scene once. */
+export function gpuWork(packets, draws, timers) {
   if (!timers.enabled) return { available: false };
   const valid =
     !timers.disjoint &&
@@ -82,14 +50,32 @@ function gpuWork(draws, timers) {
     Number.isFinite(timers.startedAt) &&
     Number.isFinite(timers.stoppedAt) &&
     timers.stoppedAt >= timers.startedAt &&
+    packets.every(
+      (packet) =>
+        Number.isSafeInteger(packet.packet) &&
+        packet.packet > 0 &&
+        Number.isFinite(packet.uploadStart) &&
+        Number.isFinite(packet.submittedAt) &&
+        packet.submittedAt >= packet.uploadStart &&
+        Array.isArray(packet.compositionSpans) &&
+        packet.compositionSpans.every(
+          (span) =>
+            Number.isFinite(span.start) &&
+            Number.isFinite(span.end) &&
+            span.start >= packet.uploadStart &&
+            span.end >= span.start &&
+            span.end <= packet.submittedAt,
+        ),
+    ) &&
     draws.every(
       (draw) =>
         Number.isSafeInteger(draw.frame) &&
         draw.frame > 0 &&
-        Number.isFinite(draw.uploadStart) &&
+        Number.isFinite(draw.sceneStart) &&
         Number.isFinite(draw.submittedAt) &&
-        draw.submittedAt >= draw.uploadStart,
+        draw.submittedAt >= draw.sceneStart,
     ) &&
+    Array.isArray(timers.samples) &&
     timers.samples.length > 0 &&
     timers.samples.every(
       (sample) =>
@@ -101,66 +87,84 @@ function gpuWork(draws, timers) {
         sample.at <= timers.stoppedAt &&
         ["canvas", "offscreen"].includes(sample.target),
     );
-  const frames = draws
+  if (!valid)
+    return {
+      available: true,
+      valid: false,
+      reason: "invalid-packet-or-query-evidence",
+    };
+  const terrain = packets
+    .filter(
+      (packet) =>
+        packet.uploadStart >= timers.startedAt &&
+        packet.submittedAt <= timers.stoppedAt,
+    )
+    .map((packet) => ({
+      ...packet,
+      samples: timers.samples.filter(
+        (sample) =>
+          sample.target === "offscreen" &&
+          packet.compositionSpans.some(
+            (span) => sample.at >= span.start && sample.at <= span.end,
+          ),
+      ),
+    }));
+  const scenes = draws
     .filter(
       (draw) =>
-        draw.uploadStart >= timers.startedAt &&
+        draw.sceneStart >= timers.startedAt &&
         draw.submittedAt <= timers.stoppedAt,
     )
     .map((draw) => ({
-      frame: draw.frame,
-      composedSamples: draw.composedSamples,
+      ...draw,
       samples: timers.samples.filter(
         (sample) =>
-          sample.at >= draw.uploadStart && sample.at <= draw.submittedAt,
+          sample.target === "canvas" &&
+          sample.at >= draw.sceneStart &&
+          sample.at <= draw.submittedAt,
       ),
     }));
-  const assigned = frames.flatMap((frame) => frame.samples);
-  const covered = (frame) =>
-    frame.samples.some((sample) => sample.target === "canvas") &&
-    (frame.composedSamples === 0 ||
-      frame.samples.some((sample) => sample.target === "offscreen"));
+  const assigned = [...terrain, ...scenes].flatMap((record) => record.samples);
   const complete =
-    frames.length > 0 &&
-    frames.every(covered) &&
+    scenes.length > 0 &&
+    scenes.every((scene) => scene.samples.length > 0) &&
+    terrain.every(
+      (packet) => packet.compositionWork === 0 || packet.samples.length > 0,
+    ) &&
     assigned.length === timers.samples.length &&
     new Set(assigned).size === assigned.length;
-  const sum = (frame, target) =>
-    frame.samples
-      .filter((sample) => sample.target === target)
-      .reduce((total, sample) => total + (sample.gpuMs ?? 0), 0);
-  const changed = frames.filter((frame) => frame.composedSamples > 0);
-  const totalSamples = changed.reduce(
-    (total, frame) => total + frame.composedSamples,
+  const sum = (record) =>
+    record.samples.reduce((total, sample) => total + sample.gpuMs, 0);
+  const totalSamples = terrain.reduce(
+    (total, packet) => total + packet.composedSamples,
     0,
   );
   return {
     available: true,
-    valid: valid && complete,
-    measuredFrames: frames.length,
-    unmeasuredFrames: frames.filter((frame) => !covered(frame)).length,
+    valid: complete,
+    measuredTerrainPackets: terrain.length,
+    measuredFrames: scenes.length,
+    unmeasuredTerrainPackets: terrain.filter(
+      (packet) => packet.compositionWork > 0 && !packet.samples.length,
+    ).length,
+    unmeasuredFrames: scenes.filter((scene) => !scene.samples.length).length,
     unmatchedCalls: timers.samples.filter(
       (sample) => !assigned.includes(sample),
     ).length,
-    offscreenMsPerTerrainDraw:
-      valid && complete
-        ? distribution(changed.map((frame) => sum(frame, "offscreen")))
-        : null,
-    canvasMsPerFrame:
-      valid && complete
-        ? distribution(frames.map((frame) => sum(frame, "canvas")))
-        : null,
+    offscreenMsPerTerrainPacket: complete
+      ? distribution(
+          terrain.filter((packet) => packet.compositionWork > 0).map(sum),
+        )
+      : null,
+    canvasMsPerFrame: complete ? distribution(scenes.map(sum)) : null,
     offscreenMsPerMillionChangedSamples:
-      valid && complete && totalSamples > 0
-        ? (changed.reduce(
-            (total, frame) => total + sum(frame, "offscreen"),
-            0,
-          ) /
+      complete && totalSamples > 0
+        ? (terrain.reduce((total, packet) => total + sum(packet), 0) /
             totalSamples) *
           1e6
         : null,
     interpretation:
-      "Offscreen includes separable horizontal projection, numeric and colour passes plus any anchor copy; changed samples come from product facts, not GL call count. projectionProducts is the admitted product count before empty-page skips, not a GPU instruction counter. GPU completion is not native presentation.",
+      "Offscreen queries belong to recorded composition spans, including terrain-only packets while a scene is pending. Canvas queries belong only to scene spans. All queries are assigned exactly once; no GL call count proves pixels or native presentation.",
   };
 }
 
@@ -348,7 +352,9 @@ async function runCase({ directory, name, fixture, lab, timers }) {
     nativePresentation: false,
   };
   let tracing = false;
-  let terrainDraws = [];
+  let renderEvents = [];
+  let terrainPackets = [];
+  let sceneDraws = [];
   let droppedEvents;
   const tracePath = join(directory, "chromium-trace.json");
   try {
@@ -458,13 +464,21 @@ async function runCase({ directory, name, fixture, lab, timers }) {
           .map((e) => e.interval),
       );
       const draws = observed.events.filter((e) => e.kind === "height-draw");
-      terrainDraws = draws;
+      sceneDraws = draws;
+      renderEvents = observed.events;
+      terrainPackets = renderEvents.filter(
+        (event) => event.kind === "height-terrain",
+      );
       droppedEvents = observed.droppedEvents;
       result.staticControl = {
         draws: draws.length,
-        updatedTiles: draws.reduce((n, e) => n + e.updatedTiles, 0),
-        composedSamples: draws.reduce((n, e) => n + e.composedSamples, 0),
-        uploadedBytes: draws.reduce((n, e) => n + e.uploadedBytes, 0),
+        terrainPackets: terrainPackets.length,
+        updatedTiles: terrainPackets.reduce((n, e) => n + e.updatedTiles, 0),
+        composedSamples: terrainPackets.reduce(
+          (n, e) => n + e.composedSamples,
+          0,
+        ),
+        uploadedBytes: terrainPackets.reduce((n, e) => n + e.uploadedBytes, 0),
         pendingBefore: {
           uploadBytes: result.before.renderer.pendingUploadBytes,
           compositionTiles: result.before.renderer.pendingCompositionTiles,
@@ -501,13 +515,23 @@ async function runCase({ directory, name, fixture, lab, timers }) {
       };
       result.submission = summarizeSubmissionTiming(stroke.after.events);
       const draws = stroke.after.events.filter((e) => e.kind === "height-draw");
-      terrainDraws = draws;
+      sceneDraws = draws;
+      renderEvents = stroke.after.events;
+      terrainPackets = renderEvents.filter(
+        (event) => event.kind === "height-terrain",
+      );
       droppedEvents = stroke.after.droppedEvents;
       result.work = {
         draws: draws.length,
-        updatedTiles: distribution(draws.map((e) => e.updatedTiles)),
-        composedSamples: distribution(draws.map((e) => e.composedSamples)),
-        totalComposedSamples: draws.reduce((n, e) => n + e.composedSamples, 0),
+        terrainPackets: terrainPackets.length,
+        updatedTiles: distribution(terrainPackets.map((e) => e.updatedTiles)),
+        composedSamples: distribution(
+          terrainPackets.map((e) => e.composedSamples),
+        ),
+        totalComposedSamples: terrainPackets.reduce(
+          (n, e) => n + e.composedSamples,
+          0,
+        ),
       };
       await writeJson(join(directory, "observation.json"), stroke.after);
       if (stroke.timedOut) throw new Error("Stroke observer timed out");
@@ -519,20 +543,24 @@ async function runCase({ directory, name, fixture, lab, timers }) {
       );
       result.gpuTimers = measured;
       droppedEvents = observation.droppedEvents;
-      terrainDraws = observation.events.filter(
-        (event) =>
-          event.kind === "height-draw" &&
-          event.uploadStart >= measured.startedAt &&
-          event.submittedAt <= measured.stoppedAt,
+      renderEvents = observation.events;
+      terrainPackets = renderEvents.filter(
+        (event) => event.kind === "height-terrain",
       );
+      sceneDraws = renderEvents.filter((event) => event.kind === "height-draw");
       // Keep the complete journal underlying timer attribution, including any
       // final cursor/terrain draw after the stroke's own submission snapshot.
       await writeJson(join(directory, "observation.json"), observation);
     }
     if (droppedEvents !== 0)
       throw new Error("Graphics observation journal is incomplete");
-    result.composition = compositionWork(terrainDraws);
-    result.gpuWork = gpuWork(terrainDraws, result.gpuTimers);
+    result.renderWork = evaluateRenderWork(renderEvents, { droppedEvents });
+    if (!result.renderWork.passed)
+      throw new Error(
+        `Invalid terrain packet evidence: ${JSON.stringify(result.renderWork.issues)}`,
+      );
+    result.composition = result.renderWork.composition;
+    result.gpuWork = gpuWork(terrainPackets, sceneDraws, result.gpuTimers);
     if (result.gpuWork.available && !result.gpuWork.valid)
       throw new Error(
         "GPU queries are incomplete or cannot be assigned to actual terrain draws",
@@ -593,120 +621,125 @@ async function runCase({ directory, name, fixture, lab, timers }) {
   return result;
 }
 
-if (argv[0] === "--create") {
-  console.log(JSON.stringify(await createFixtures(resolve(argv[1]))));
-} else {
-  const lab = argv.includes("--lab"),
-    hardware = argv.includes("--hardware");
-  const out = value("--out"),
-    runs = Number(value("--runs") ?? 3);
-  if (
-    lab === hardware ||
-    !out ||
-    !Number.isInteger(runs) ||
-    runs < 1 ||
-    runs > 3
-  )
-    throw new Error(
-      "Usage: --lab|--hardware --out <new directory> [--runs 1|2|3] [--gpu-timers]",
-    );
-  const directory = resolve(out);
-  await mkdir(dirname(directory), { recursive: true });
-  await mkdir(directory); // Earlier evidence is never overwritten.
-  const report = {
-    purpose: "bounded-graphics-diagnosis",
-    driverSha256: sha256(await readFile(self)),
-    acceptance: false,
-    nativePresentation: false,
-    mode: lab ? "software-laboratory" : "hardware-diagnostic",
-    runs,
-    plannedCases: Array.from({ length: runs }, (_, index) =>
-      ["simple", "many-levels", "static-control"].map((name) => ({
-        run: index + 1,
-        name,
-      })),
-    ).flat(),
-    presentation: nativePresentationCapability,
-    limitation:
-      "Tracing and optional per-draw GPU queries perturb timings. Offscreen draw time excludes compositor/presentation; inclusive SwapBuffers spans include waiting. Static control uses real hover input and cached terrain, not brush edits. No measurement upgrades the native gate.",
-    stimulus: {
-      diameterPx: 512,
-      rateFtPerSecond: 4000,
-      positions: 101,
-      intervalMs: 24,
-    },
-    cases: [],
-  };
-  if (
-    hardware &&
-    process.platform === "linux" &&
-    !process.env.DISPLAY &&
-    !process.env.WAYLAND_DISPLAY
-  ) {
-    report.status = "BLOCKED";
-    report.blocker = "NO_NATIVE_DISPLAY";
-    process.exitCode = 2;
+if (
+  process.argv[1] &&
+  import.meta.url === pathToFileURL(process.argv[1]).href
+) {
+  if (argv[0] === "--create") {
+    console.log(JSON.stringify(await createFixtures(resolve(argv[1]))));
   } else {
-    const built = JSON.parse(
-      await readFile(join(root, "desktop-dist/build.json"), "utf8"),
-    );
-    report.build = built;
-    if (built.dirty)
-      throw new Error("Build must record a clean product source tree");
-    const created = spawnSync(
-      require("electron"),
-      [self, "--create", join(directory, "fixtures")],
-      {
-        env: { ...process.env, ELECTRON_RUN_AS_NODE: "1" },
-        encoding: "utf8",
-        timeout: 120000,
-      },
-    );
-    if (created.error || created.status !== 0)
-      throw new Error(`Fixture failed: ${created.error ?? created.stderr}`);
-    report.fixtures = JSON.parse(created.stdout);
-    for (let run = 1; run <= runs; run++) {
-      for (const name of ["simple", "many-levels", "static-control"]) {
-        const options = {
-          directory: join(directory, `${run}-${name}`),
+    const lab = argv.includes("--lab"),
+      hardware = argv.includes("--hardware");
+    const out = value("--out"),
+      runs = Number(value("--runs") ?? 3);
+    if (
+      lab === hardware ||
+      !out ||
+      !Number.isInteger(runs) ||
+      runs < 1 ||
+      runs > 3
+    )
+      throw new Error(
+        "Usage: --lab|--hardware --out <new directory> [--runs 1|2|3] [--gpu-timers]",
+      );
+    const directory = resolve(out);
+    await mkdir(dirname(directory), { recursive: true });
+    await mkdir(directory); // Earlier evidence is never overwritten.
+    const report = {
+      purpose: "bounded-graphics-diagnosis",
+      driverSha256: sha256(await readFile(self)),
+      acceptance: false,
+      nativePresentation: false,
+      mode: lab ? "software-laboratory" : "hardware-diagnostic",
+      runs,
+      plannedCases: Array.from({ length: runs }, (_, index) =>
+        ["simple", "many-levels", "static-control"].map((name) => ({
+          run: index + 1,
           name,
-          fixture:
-            report.fixtures[name === "static-control" ? "many-levels" : name],
-          lab,
-          timers: argv.includes("--gpu-timers"),
-        };
-        let result;
-        try {
-          result = await runCase(options);
-        } catch (error) {
-          result = {
+        })),
+      ).flat(),
+      presentation: nativePresentationCapability,
+      limitation:
+        "Tracing and optional per-draw GPU queries perturb timings. Offscreen draw time excludes compositor/presentation; inclusive SwapBuffers spans include waiting. Static control uses real hover input and cached terrain, not brush edits. No measurement upgrades the native gate.",
+      stimulus: {
+        diameterPx: 512,
+        rateFtPerSecond: 4000,
+        positions: 101,
+        intervalMs: 24,
+      },
+      cases: [],
+    };
+    if (
+      hardware &&
+      process.platform === "linux" &&
+      !process.env.DISPLAY &&
+      !process.env.WAYLAND_DISPLAY
+    ) {
+      report.status = "BLOCKED";
+      report.blocker = "NO_NATIVE_DISPLAY";
+      process.exitCode = 2;
+    } else {
+      const built = JSON.parse(
+        await readFile(join(root, "desktop-dist/build.json"), "utf8"),
+      );
+      report.build = built;
+      if (built.dirty)
+        throw new Error("Build must record a clean product source tree");
+      const created = spawnSync(
+        require("electron"),
+        [self, "--create", join(directory, "fixtures")],
+        {
+          env: { ...process.env, ELECTRON_RUN_AS_NODE: "1" },
+          encoding: "utf8",
+          timeout: 120000,
+        },
+      );
+      if (created.error || created.status !== 0)
+        throw new Error(`Fixture failed: ${created.error ?? created.stderr}`);
+      report.fixtures = JSON.parse(created.stdout);
+      for (let run = 1; run <= runs; run++) {
+        for (const name of ["simple", "many-levels", "static-control"]) {
+          const options = {
+            directory: join(directory, `${run}-${name}`),
             name,
-            status: "ERROR",
-            error: String(error.stack ?? error),
+            fixture:
+              report.fixtures[name === "static-control" ? "many-levels" : name],
+            lab,
+            timers: argv.includes("--gpu-timers"),
           };
+          let result;
+          try {
+            result = await runCase(options);
+          } catch (error) {
+            result = {
+              name,
+              status: "ERROR",
+              error: String(error.stack ?? error),
+            };
+          }
+          if (
+            result.host?.build?.sourceSha256 !== built.sourceSha256 ||
+            result.host?.build?.lockSha256 !== built.lockSha256
+          ) {
+            result.status = "ERROR";
+            result.identityError =
+              "Runtime build identity differs from requested build";
+          }
+          report.cases.push({ run, ...result });
+          await writeJson(join(directory, "report.json"), report);
+          console.log(`[atlas-p0-graphics] ${run} ${name}: ${result.status}`);
+          if (result.status === "ERROR") process.exitCode = 1;
         }
-        if (
-          result.host?.build?.sourceSha256 !== built.sourceSha256 ||
-          result.host?.build?.lockSha256 !== built.lockSha256
-        ) {
-          result.status = "ERROR";
-          result.identityError =
-            "Runtime build identity differs from requested build";
-        }
-        report.cases.push({ run, ...result });
-        await writeJson(join(directory, "report.json"), report);
-        console.log(`[atlas-p0-graphics] ${run} ${name}: ${result.status}`);
-        if (result.status === "ERROR") process.exitCode = 1;
       }
+      report.status =
+        report.cases.length === runs * 3 &&
+        report.cases.every((c) => c.status === "DIAGNOSTIC")
+          ? "DIAGNOSTIC"
+          : "ERROR";
     }
-    report.status =
-      report.cases.length === runs * 3 &&
-      report.cases.every((c) => c.status === "DIAGNOSTIC")
-        ? "DIAGNOSTIC"
-        : "ERROR";
+    await writeJson(join(directory, "report.json"), report);
+    console.log(
+      JSON.stringify({ status: report.status, directory, acceptance: false }),
+    );
   }
-  await writeJson(join(directory, "report.json"), report);
-  console.log(
-    JSON.stringify({ status: report.status, directory, acceptance: false }),
-  );
 }

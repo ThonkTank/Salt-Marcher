@@ -6,10 +6,15 @@ import { createHeightOverviewTile } from "../model/overview";
 import { heightTileKey, type HeightTile } from "../model/types";
 import {
   HeightField,
+  type HeightFieldTile,
+  type HeightCompositionStats,
   MAX_HEIGHT_BASIS_TRANSFERS,
   supportsHeightNumericTargets,
 } from "./HeightField";
 import type { HeightAtlasSource } from "./height-atlas-upload";
+import type { HeightProjectionService } from "./HeightProjectionService";
+import { prepareHeightGrid } from "../model/height-grid";
+import { rasterize } from "./raster";
 
 interface Uploader {
   id: string;
@@ -177,19 +182,58 @@ afterEach(() => {
   for (const field of fields.splice(0)) field.destroy();
 });
 
-function setup() {
-  const field = new HeightField();
+function setup(override?: HeightProjectionService) {
+  const projections: HeightProjectionService = {
+    request: (input) => {
+      let cancelled = false;
+      return {
+        bytes: 0,
+        cancel: () => {
+          cancelled = true;
+        },
+        promise: Promise.resolve().then(() =>
+          cancelled
+            ? null
+            : rasterize(
+                prepareHeightGrid(input.sources)(input.bounds, input.size, [
+                  0,
+                  0,
+                  input.size,
+                  input.size,
+                ]),
+                input.bounds,
+                input.size,
+                [0, 0, input.size, input.size],
+                input.overview,
+              ),
+        ),
+      };
+    },
+    metrics: () => ({
+      active: 0,
+      pending: 0,
+      cancelling: 0,
+      bytes: 0,
+      retainedInputBuffers: [],
+      completed: 0,
+      maxChunkMs: 0,
+    }),
+    cancelAll() {},
+    dispose() {},
+  };
+  const field = new HeightField(override ?? projections);
   fields.push(field);
   const gpu = recordingRenderer();
   field.init(gpu.renderer);
   return { field, gpu };
 }
 
-function drain(
+async function drain(
   field: HeightField,
   gpu: ReturnType<typeof recordingRenderer>,
   budget = 256 * 1024,
 ) {
+  await prepare(field);
   let frames = 0;
   while (field.metrics().pendingUploadBytes && frames++ < 100) {
     const before = gpu.bytes();
@@ -200,6 +244,47 @@ function drain(
   }
   expect(field.metrics().pendingUploadBytes).toBe(0);
   return frames;
+}
+
+/** Test driver explicitly advances scheduled CPU work; production uses its RAF deadline. */
+async function prepare(field: HeightField): Promise<void> {
+  for (const tile of field.tiles) {
+    let steps = 0;
+    while (tile.needsPreparation && steps++ < 20_000) {
+      if (!tile.prepareStep()) await Promise.resolve();
+    }
+    expect(tile.needsPreparation).toBe(false);
+  }
+}
+
+function compose(
+  tile: HeightFieldTile,
+  gpu: ReturnType<typeof recordingRenderer>,
+): number {
+  let samples = 0;
+  let stats: HeightCompositionStats | undefined;
+  do {
+    samples += tile.drawDirty(gpu.renderer);
+    if (!stats) stats = { ...tile.compositionStats };
+    else
+      for (const key of Object.keys(stats) as (keyof HeightCompositionStats)[])
+        stats[key] += tile.compositionStats[key];
+    if (tile.needsComposition) {
+      while (tile.needsPreparation && tile.prepareStep()) {}
+    }
+  } while (tile.needsComposition);
+  if (samples && stats) tile.compositionStats = stats;
+  return samples;
+}
+function composeField(
+  field: HeightField,
+  gpu: ReturnType<typeof recordingRenderer>,
+): number {
+  if (
+    [...field.tiles].some((tile) => tile.needsComposition && !tile.uploadReady)
+  )
+    throw new Error("Höhenbild wartet noch auf numerische GPU-Daten.");
+  return [...field.tiles].reduce((sum, tile) => sum + compose(tile, gpu), 0);
 }
 
 function expectUploaded(
@@ -228,8 +313,8 @@ it("disables actual Pixi blend state for directly rendered numeric meshes even w
   const { field, gpu } = setup();
   field.updateSources([author(0, 100)]);
   const tile = field.createTile([0, 0, 512, 512], 2);
-  drain(field, gpu);
-  tile.drawDirty(gpu.renderer);
+  await drain(field, gpu);
+  compose(tile, gpu);
   const checked: boolean[] = [];
   const pipe = new actual.MeshPipe(gpu.renderer, {
     init() {},
@@ -248,10 +333,11 @@ it("disables actual Pixi blend state for directly rendered numeric meshes even w
     expect(mesh.groupBlendMode).toBe("normal");
     pipe.execute(mesh);
   }
-  expect(checked).toEqual([false, false, false]);
+  expect(checked.length).toBeGreaterThanOrEqual(3);
+  expect(checked.every((blend) => blend === false)).toBe(true);
 });
 
-it("registers cold resources without payload and transfers each frame's actual bytes within its budget", () => {
+it("registers cold resources without payload and transfers each frame's actual bytes within its budget", async () => {
   const { field, gpu } = setup();
   field.updateSources(heightTilesFromControls(4, [[0, 0, 120]]));
   for (let x = 0; x < 40; x++) {
@@ -259,32 +345,38 @@ it("registers cold resources without payload and transfers each frame's actual b
     overview.values.fill((x + 1) / 32);
     field.createTile([x * 8192, 0, (x + 1) * 8192, 8192], 6, overview);
   }
-  expect(gpu.allocations.length).toBeGreaterThan(40);
+  expect(gpu.allocations.length).toBe(0);
+  await prepare(field);
+  expect(gpu.allocations.length).toBe(0);
   expect(gpu.allocations.every((allocation) => allocation.bytes === 0)).toBe(
     true,
   );
   expect(gpu.bytes()).toBe(0);
   expect(field.metrics().pendingUploadBytes).toBeGreaterThan(4 * 1024 * 1024);
-  expect(() => field.drawDirty(gpu.renderer)).toThrow(/GPU-Daten/);
-  expect(drain(field, gpu, 4 * 1024 * 1024)).toBeGreaterThan(1);
+  expect(() => composeField(field, gpu)).toThrow(/GPU-Daten/);
+  expect(await drain(field, gpu, 4 * 1024 * 1024)).toBeGreaterThan(1);
   for (const source of gpu.sources.keys()) expectUploaded(gpu, source);
   const transferred = gpu.bytes();
-  expect(field.drawDirty(gpu.renderer)).toBe(40 * 128 * 128);
+  expect(composeField(field, gpu)).toBe(40 * 128 * 128);
   expect(gpu.bytes()).toBe(transferred);
   // A numeric total and its colour projection are separate retained passes.
-  expect(gpu.render).toHaveBeenCalledTimes(81);
-  expect(field.drawDirty(gpu.renderer)).toBe(0);
-  expect(gpu.render).toHaveBeenCalledTimes(81);
+  expect(gpu.render).toHaveBeenCalledTimes(
+    81 * (128 / editorBudgets.heightCompositionRowsPerStep),
+  );
+  expect(composeField(field, gpu)).toBe(0);
+  expect(gpu.render).toHaveBeenCalledTimes(
+    81 * (128 / editorBudgets.heightCompositionRowsPerStep),
+  );
 });
 
-it("uploads changed author windows while retaining unchanged axes and fine overview data", () => {
+it("uploads changed author windows while retaining unchanged axes and fine overview data", async () => {
   const { field, gpu } = setup();
   field.updateSources(heightTilesFromControls(4, [[0, 0, 120]]));
   const overview = createHeightOverviewTile(6, 0, 0);
   overview.values.fill(0.5);
   const tile = field.createTile([0, 0, 8192, 8192], 6, overview);
-  drain(field, gpu);
-  field.drawDirty(gpu.renderer);
+  await drain(field, gpu);
+  composeField(field, gpu);
   const initial = gpu.bytes();
   const retained = [...gpu.sources.keys()].filter(
     (source) => source !== field.source && source.format === "rg32float",
@@ -296,10 +388,10 @@ it("uploads changed author windows while retaining unchanged axes and fine overv
   for (const value of [240, 360]) {
     field.updateSources(heightTilesFromControls(4, [[0, 0, value]]));
     tile.update();
-    drain(field, gpu);
+    await drain(field, gpu);
     expectUploaded(gpu, field.source);
-    expect(field.drawDirty(gpu.renderer)).toBe(128 * 128);
-    expect(field.drawDirty(gpu.renderer)).toBe(0);
+    expect(composeField(field, gpu)).toBe(128 * 128);
+    expect(composeField(field, gpu)).toBe(0);
   }
   expect(gpu.bytes() - initial).toBeLessThan(field.atlas.data.byteLength);
   expect(
@@ -312,13 +404,13 @@ it("uploads changed author windows while retaining unchanged axes and fine overv
 
 it.each(["author", "overview"] as const)(
   "preserves pending %s transfer intent after failure and retries the latest values",
-  (kind) => {
+  async (kind) => {
     const { field, gpu } = setup();
     field.updateSources(heightTilesFromControls(4, [[0, 0, 120]]));
     const overview = createHeightOverviewTile(6, 0, 0);
     overview.values.fill(0.5);
     const tile = field.createTile([0, 0, 8192, 8192], 6, overview);
-    drain(field, gpu);
+    await drain(field, gpu);
     const target =
       kind === "author"
         ? field.source
@@ -330,11 +422,12 @@ it.each(["author", "overview"] as const)(
       overview.values.fill(0.75);
       tile.update(overview);
     }
+    await prepare(field);
     gpu.failNext((source) => source === target);
     expect(() => field.flush()).toThrow("Injected numeric transfer failure");
     expect((target as HeightAtlasSource).range).toBeNull();
     expect(field.metrics().pendingUploadBytes).toBeGreaterThan(0);
-    expect(() => field.drawDirty(gpu.renderer)).toThrow(/GPU-Daten/);
+    expect(() => composeField(field, gpu)).toThrow(/GPU-Daten/);
     // A newer accepted revision may arrive before retrying the failed range.
     if (kind === "author") {
       field.updateSources(heightTilesFromControls(4, [[0, 0, 360]]));
@@ -343,18 +436,18 @@ it.each(["author", "overview"] as const)(
       overview.values.fill(1.25);
       tile.update(overview);
     }
-    drain(field, gpu);
+    await drain(field, gpu);
     expectUploaded(gpu, target);
-    expect(field.drawDirty(gpu.renderer)).toBe(128 * 128);
+    expect(composeField(field, gpu)).toBe(128 * 128);
   },
 );
 
-it("destroys cached tile resources and overwrites old source payload after reset", () => {
+it("destroys cached tile resources and overwrites old source payload after reset", async () => {
   const { field, gpu } = setup();
   field.updateSources(heightTilesFromControls(4, [[0, 0, 120]]));
   const tile = field.createTile([0, 0, 8192, 8192], 6);
-  drain(field, gpu);
-  field.drawDirty(gpu.renderer);
+  await drain(field, gpu);
+  composeField(field, gpu);
   const released = [...gpu.sources.keys()].filter(
     (source) => source !== field.source,
   );
@@ -367,17 +460,17 @@ it("destroys cached tile resources and overwrites old source payload after reset
   });
   expect(released.every((source) => !gpu.sources.has(source))).toBe(true);
   const empty = field.createTile([0, 0, 8192, 8192], 6);
-  drain(field, gpu);
+  await drain(field, gpu);
   expect(
     gpu.sources.get(field.source)!.memory.every((value) => value === 0),
   ).toBe(true);
-  expect(empty.drawDirty(gpu.renderer)).toBe(128 * 128);
-  expect(empty.drawDirty(gpu.renderer)).toBe(0);
+  expect(compose(empty, gpu)).toBe(128 * 128);
+  expect(compose(empty, gpu)).toBe(0);
 });
 
 it.each([120, Number.MAX_VALUE])(
   "rebuilds lost GPU resources within the frame budget while retaining author value %s",
-  (value) => {
+  async (value) => {
     const { field, gpu } = setup();
     const author = heightTilesFromControls(4, [[0, 0, value]])[0];
     field.updateSources([author]);
@@ -386,8 +479,8 @@ it.each([120, Number.MAX_VALUE])(
       overview.values.fill((x + 1) / 32);
       field.createTile([x * 8192, 0, (x + 1) * 8192, 8192], 6, overview);
     }
-    drain(field, gpu, 4 * 1024 * 1024);
-    field.drawDirty(gpu.renderer);
+    await drain(field, gpu, 4 * 1024 * 1024);
+    composeField(field, gpu);
     expect(field.metrics().pendingCompositionTiles).toBe(0);
     const copied = field.atlas.sources.get(author.key)!.values.slice();
     const uploadedBeforeLoss = gpu.bytes();
@@ -396,7 +489,7 @@ it.each([120, Number.MAX_VALUE])(
     expect(gpu.sources.size).toBe(0);
     field.rebuildAfterContextRestore();
     expect(gpu.bytes()).toBe(uploadedBeforeLoss);
-    expect(gpu.allocations.length).toBeGreaterThan(allocationsBeforeLoss);
+    expect(gpu.allocations.length).toBe(allocationsBeforeLoss);
     expect(
       gpu.allocations
         .slice(allocationsBeforeLoss)
@@ -404,13 +497,14 @@ it.each([120, Number.MAX_VALUE])(
     ).toBe(true);
     expect(field.metrics().pendingUploadBytes).toBeGreaterThan(4 * 1024 * 1024);
     expect(field.metrics().pendingCompositionTiles).toBe(40);
-    expect(() => field.drawDirty(gpu.renderer)).toThrow(/GPU-Daten/);
-    expect(drain(field, gpu, 4 * 1024 * 1024)).toBeGreaterThan(1);
+    expect(() => composeField(field, gpu)).toThrow(/GPU-Daten/);
+    expect(await drain(field, gpu, 4 * 1024 * 1024)).toBeGreaterThan(1);
+    expect(gpu.allocations.length).toBeGreaterThan(allocationsBeforeLoss);
     for (const source of gpu.sources.keys()) expectUploaded(gpu, source);
     const uploadedBeforeDraw = gpu.bytes();
-    expect(field.drawDirty(gpu.renderer)).toBe(40 * 128 * 128);
+    expect(composeField(field, gpu)).toBe(40 * 128 * 128);
     expect(gpu.bytes()).toBe(uploadedBeforeDraw);
-    expect(field.drawDirty(gpu.renderer)).toBe(0);
+    expect(composeField(field, gpu)).toBe(0);
     expect(
       field.atlas.sources
         .get(author.key)!
@@ -433,21 +527,21 @@ function change(
   for (const tile of field.tiles) tile.markHeightChanged();
 }
 
-it("reconstructs only the active level and dirty pixels against a fixed total-and-contribution basis", () => {
+it("reconstructs only the active level and dirty pixels against a fixed total-and-contribution basis", async () => {
   const { field, gpu } = setup();
   const sources = Array.from({ length: 22 }, (_, level) => author(level, 10));
   field.updateSources(sources);
   const tile = field.createTile([0, 0, 512, 512], 2);
-  drain(field, gpu);
-  tile.drawDirty(gpu.renderer);
+  await drain(field, gpu);
+  compose(tile, gpu);
   expect(tile.compositionLevels).toBe(22);
   expect(tile.compositionStats.canonicalBasisBuilds).toBe(1);
   change(field, sources[0], author(0, 11));
   tile.update(undefined, [8, 10, 12, 15]);
-  drain(field, gpu);
+  await drain(field, gpu);
   expect(tile.usesAnchor).toBe(true);
   expect(tile.compositionLevels).toBe(1);
-  expect(tile.drawDirty(gpu.renderer)).toBe(20);
+  expect(compose(tile, gpu)).toBe(20);
   expect(tile.compositionStats).toEqual({
     canonicalSamples: 0,
     deltaSamples: 20,
@@ -460,59 +554,59 @@ it("reconstructs only the active level and dirty pixels against a fixed total-an
   });
   change(field, author(0, 11), author(0, 12.5));
   tile.update(undefined, [8, 10, 12, 15]);
-  drain(field, gpu);
+  await drain(field, gpu);
   expect(field.atlas.sources.get(sources[0].key)!.values[0]).toBe(12.5);
   expect(sources[0].values[0]).toBe(10);
-  expect(tile.drawDirty(gpu.renderer)).toBe(20);
+  expect(compose(tile, gpu)).toBe(20);
   expect(tile.compositionStats.anchorCopySamples).toBe(0);
 });
 
-it("captures H and active C at the same cold state, then reuses that state within the ongoing action", () => {
+it("captures H and active C at the same cold state, then reuses that state within the ongoing action", async () => {
   const { field, gpu } = setup();
   const before = author(0, 100);
   field.updateSources([before]);
   change(field, before, author(0, 101));
   const tile = field.createTile([0, 0, 512, 512], 2);
-  drain(field, gpu);
-  tile.drawDirty(gpu.renderer);
+  await drain(field, gpu);
+  compose(tile, gpu);
   expect(tile.compositionStats.canonicalBasisBuilds).toBe(1);
   change(field, author(0, 101), author(0, 102));
   tile.update(undefined, [0, 0, 8, 8]);
-  drain(field, gpu);
+  await drain(field, gpu);
   expect(tile.usesAnchor).toBe(true);
-  expect(tile.drawDirty(gpu.renderer)).toBe(64);
+  expect(compose(tile, gpu)).toBe(64);
   expect(tile.basisTransfers).toBe(0);
 });
 
-it("rebinds queued composition after a tool change even at the same document revision", () => {
+it("rebinds queued composition after a tool change even at the same document revision", async () => {
   const { field, gpu } = setup();
   field.updateSources([author(0, 100), author(1, 200)]);
   const tile = field.createTile([0, 0, 512, 512], 2);
-  drain(field, gpu);
+  await drain(field, gpu);
   const version = tile.preparationVersion;
   field.setToolLevel(1);
   expect(tile.preparationVersion).toBe(version + 1);
   expect(tile.needsPreparation).toBe(true);
   expect(tile.uploadReady).toBe(false);
-  expect(() => tile.drawDirty(gpu.renderer)).toThrow(/Unvollständiger/);
+  expect(() => compose(tile, gpu)).toThrow(/Unvollständiger/);
   tile.update();
-  drain(field, gpu);
+  await drain(field, gpu);
   expect(tile.preparedVersion).toBe(-1);
-  tile.drawDirty(gpu.renderer);
+  compose(tile, gpu);
   expect(tile.compositionStats.canonicalBasisBuilds).toBe(1);
   expect(tile.compositionStats.basisCaptureSamples).toBe(0);
   expect(tile.preparedVersion).toBe(tile.preparationVersion);
 });
 
-it("keeps overview-contained active authors on the same lattice and captures their contribution separately", () => {
+it("keeps overview-contained active authors on the same lattice and captures their contribution separately", async () => {
   const { field, gpu } = setup();
   const fine = author(0, 100);
   field.updateSources([fine, author(1, 20)]);
   const overview = createHeightOverviewTile(3, 0, 0);
   overview.values.fill(100 / 32);
   const tile = field.createTile([0, 0, 1024, 1024], 3, overview);
-  drain(field, gpu);
-  tile.drawDirty(gpu.renderer);
+  await drain(field, gpu);
+  compose(tile, gpu);
   // The canonical descriptor contains active L0 for C, while H still starts at L1.
   expect(tile.compositionLevels).toBe(2);
   expect(tile.compositionStats.canonicalBasisBuilds).toBe(1);
@@ -522,14 +616,14 @@ it("keeps overview-contained active authors on the same lattice and captures the
     values: overview.values.slice().fill(101 / 32),
   };
   tile.update(updated, [0, 0, 16, 16]);
-  drain(field, gpu);
+  await drain(field, gpu);
   expect(tile.power).toBe(3);
   expect(tile.usesAnchor).toBe(true);
   expect(tile.compositionLevels).toBe(1);
-  expect(tile.drawDirty(gpu.renderer)).toBe(256);
+  expect(compose(tile, gpu)).toBe(256);
 });
 
-it("keeps one basis through 100 same-level changes and undo without periodic work or extra author copies", () => {
+it("keeps one basis through 100 same-level changes and undo without periodic work or extra author copies", async () => {
   const { field, gpu } = setup();
   let current = author(0, 100);
   field.updateSources([
@@ -537,8 +631,8 @@ it("keeps one basis through 100 same-level changes and undo without periodic wor
     ...Array.from({ length: 21 }, (_, i) => author(i + 1, 10)),
   ]);
   const tile = field.createTile([0, 0, 512, 512], 2);
-  drain(field, gpu);
-  tile.drawDirty(gpu.renderer);
+  await drain(field, gpu);
+  compose(tile, gpu);
   const bytes = field.metrics().gpuBytes;
   for (let action = 0; action < 100; action++) {
     const next = author(0, action % 2 ? 100 : 100.1);
@@ -546,8 +640,8 @@ it("keeps one basis through 100 same-level changes and undo without periodic wor
     current = next;
     expect(field.setToolLevel(0)).toBe(false);
     tile.update(undefined, [4, 4, 8, 8]);
-    drain(field, gpu);
-    tile.drawDirty(gpu.renderer);
+    await drain(field, gpu);
+    compose(tile, gpu);
     expect(tile.compositionStats).toMatchObject({
       canonicalSamples: 0,
       deltaSamples: 16,
@@ -561,12 +655,12 @@ it("keeps one basis through 100 same-level changes and undo without periodic wor
   expect(field.metrics().anchorRebases).toBe(0);
 });
 
-it("captures only one new level from valid H before editing, and bounds actual derived transfers", () => {
+it("captures only one new level from valid H before editing, and bounds actual derived transfers", async () => {
   const { field, gpu } = setup();
   field.updateSources([author(0, 100), author(1, 10), author(20, 10)]);
   const tile = field.createTile([0, 0, 512, 512], 2);
-  drain(field, gpu);
-  tile.drawDirty(gpu.renderer);
+  await drain(field, gpu);
+  compose(tile, gpu);
   for (
     let transfer = 1;
     transfer <= MAX_HEIGHT_BASIS_TRANSFERS + 1;
@@ -574,8 +668,8 @@ it("captures only one new level from valid H before editing, and bounds actual d
   ) {
     field.setToolLevel(transfer % 2);
     tile.update();
-    drain(field, gpu);
-    tile.drawDirty(gpu.renderer);
+    await drain(field, gpu);
+    compose(tile, gpu);
     const rebase = transfer > MAX_HEIGHT_BASIS_TRANSFERS;
     expect(tile.compositionStats).toMatchObject({
       basisCaptureSamples: rebase ? 0 : 128 ** 2,
@@ -589,25 +683,25 @@ it("captures only one new level from valid H before editing, and bounds actual d
     const before = field.atlas.sources.get(heightTileKey(level, 0, 0))!;
     change(field, before, author(level, before.values[0] + 0.001));
     tile.update(undefined, [4, 4, 8, 8]);
-    drain(field, gpu);
-    tile.drawDirty(gpu.renderer);
+    await drain(field, gpu);
+    compose(tile, gpu);
     expect(tile.compositionStats.deltaSamples).toBe(16);
   }
   expect(field.metrics().anchorRebases).toBe(1);
 });
 
-it("does not pair an old numeric total with new authors when a level change overtakes a queued edit", () => {
+it("does not pair an old numeric total with new authors when a level change overtakes a queued edit", async () => {
   const { field, gpu } = setup();
   field.updateSources([author(0, 100), author(1, 10)]);
   const tile = field.createTile([0, 0, 512, 512], 2);
-  drain(field, gpu);
-  tile.drawDirty(gpu.renderer);
+  await drain(field, gpu);
+  compose(tile, gpu);
   change(field, author(0, 100), author(0, 101));
   tile.update(undefined, [4, 4, 8, 8]);
   field.setToolLevel(1);
   tile.update();
-  drain(field, gpu);
-  tile.drawDirty(gpu.renderer);
+  await drain(field, gpu);
+  compose(tile, gpu);
   expect(tile.compositionStats).toMatchObject({
     canonicalSamples: 128 ** 2,
     basisCaptureSamples: 0,
@@ -615,7 +709,7 @@ it("does not pair an old numeric total with new authors when a level change over
   });
 });
 
-it("retains current H outside the actual dirty rectangle of a broad author page", () => {
+it("retains current H outside the actual dirty rectangle of a broad author page", async () => {
   const { field, gpu } = setup();
   field.setToolLevel(4);
   field.updateSources(
@@ -623,8 +717,8 @@ it("retains current H outside the actual dirty rectangle of a broad author page"
   );
   const changed = field.createTile([0, 0, 512, 512], 2);
   const unchanged = field.createTile([2048, 0, 2560, 512], 2);
-  drain(field, gpu);
-  field.drawDirty(gpu.renderer);
+  await drain(field, gpu);
+  composeField(field, gpu);
   const before = field.atlas.sources.get(heightTileKey(4, 0, 0))!;
   const after = { ...before, values: before.values.slice() };
   after.values[0] += 1;
@@ -633,12 +727,12 @@ it("retains current H outside the actual dirty rectangle of a broad author page"
   // inside this source page's broad support, but the remote H is still current.
   changed.markHeightChanged();
   changed.update(undefined, [0, 0, 60, 60]);
-  drain(field, gpu);
-  changed.drawDirty(gpu.renderer);
+  await drain(field, gpu);
+  compose(changed, gpu);
   field.setToolLevel(5);
   unchanged.update();
-  drain(field, gpu);
-  unchanged.drawDirty(gpu.renderer);
+  await drain(field, gpu);
+  compose(unchanged, gpu);
   expect(unchanged.compositionStats).toMatchObject({
     canonicalSamples: 0,
     basisCaptureSamples: 128 ** 2,
@@ -647,16 +741,16 @@ it("retains current H outside the actual dirty rectangle of a broad author page"
   expect(unchanged.compositionLevels).toBe(1);
 });
 
-it("captures from the last complete H into a distinct target and can retry an interrupted capture", () => {
+it("captures from the last complete H into a distinct target and can retry an interrupted capture", async () => {
   const { field, gpu } = setup();
   field.updateSources([author(0, 100), author(1, 10)]);
   const tile = field.createTile([0, 0, 512, 512], 2);
-  drain(field, gpu);
-  tile.drawDirty(gpu.renderer);
+  await drain(field, gpu);
+  compose(tile, gpu);
   const initialTarget = gpu.render.mock.calls[1][0].target!;
   field.setToolLevel(1);
   tile.update();
-  drain(field, gpu);
+  await drain(field, gpu);
   const original = gpu.render.getMockImplementation()!;
   const references: unknown[] = [],
     targets: unknown[] = [];
@@ -676,16 +770,21 @@ it("captures from the last complete H into a distinct target and can retry an in
     }
     original(request);
   });
-  expect(() => tile.drawDirty(gpu.renderer)).toThrow("Interrupted capture");
+  expect(() => compose(tile, gpu)).toThrow("Interrupted capture");
   expect(tile.preparedVersion).not.toBe(tile.preparationVersion);
-  tile.drawDirty(gpu.renderer);
-  expect(references).toEqual([initialTarget.source, initialTarget.source]);
+  compose(tile, gpu);
+  expect(references.length).toBe(
+    1 + 128 / editorBudgets.heightCompositionRowsPerStep,
+  );
+  expect(references.every((source) => source === initialTarget.source)).toBe(
+    true,
+  );
   expect(targets[0]).toBe(targets[1]);
   expect(targets[0]).not.toBe(initialTarget);
   expect(tile.compositionStats.basisCaptureSamples).toBe(128 ** 2);
 });
 
-it("fits a complete ordinary 25-tile canonical build inside the unchanged product budget", () => {
+it("fits a complete ordinary 25-tile canonical build inside the unchanged product budget", async () => {
   const { field, gpu } = setup();
   field.setToolLevel(4);
   const sources: HeightTile[] = [];
@@ -703,14 +802,15 @@ it("fits a complete ordinary 25-tile canonical build inside the unchanged produc
       tiles.push(
         field.createTile([x * 512, y * 512, (x + 1) * 512, (y + 1) * 512], 2),
       );
+  await prepare(field);
   expect(
     tiles.every((tile) => tile.compositionLevels === 1 && !tile.usesAnchor),
   ).toBe(true);
   expect(
     tiles.reduce((sum, tile) => sum + tile.compositionWork, 0),
   ).toBeLessThanOrEqual(editorBudgets.compositionWorkPerFrame);
-  drain(field, gpu);
-  for (const tile of tiles) tile.drawDirty(gpu.renderer);
+  await drain(field, gpu);
+  for (const tile of tiles) compose(tile, gpu);
   const pixels = tiles.length * 128 ** 2;
   expect(
     tiles.reduce(
@@ -726,7 +826,7 @@ it("fits a complete ordinary 25-tile canonical build inside the unchanged produc
   ).toBe(pixels);
 });
 
-it("retains a warm overview basis when unrelated fine residency is forgotten", () => {
+it("retains a warm overview basis when unrelated fine residency is forgotten", async () => {
   const { field, gpu } = setup();
   field.setToolLevel(2);
   const fine = author(0, 10),
@@ -735,12 +835,12 @@ it("retains a warm overview basis when unrelated fine residency is forgotten", (
   const overview = createHeightOverviewTile(4, 0, 0);
   overview.values.fill(10 / 32);
   const tile = field.createTile([0, 0, 2048, 2048], 4, overview);
-  drain(field, gpu);
-  tile.drawDirty(gpu.renderer);
+  await drain(field, gpu);
+  compose(tile, gpu);
   change(field, coarse, author(2, 101));
   tile.update(undefined, [0, 0, 8, 8]);
-  drain(field, gpu);
-  tile.drawDirty(gpu.renderer);
+  await drain(field, gpu);
+  compose(tile, gpu);
   const version = tile.preparationVersion;
   field.updateSources([], [fine.key]);
   expect(tile.preparationVersion).toBe(version);
@@ -749,30 +849,32 @@ it("retains a warm overview basis when unrelated fine residency is forgotten", (
   expect(tile.usesAnchor).toBe(true);
   field.updateSources([author(3, 5)]);
   tile.update();
+  await prepare(field);
   expect(tile.usesAnchor).toBe(false);
 });
 
-it("reprepares an unfinished fine live update after a change to its resident subset", () => {
+it("reprepares an unfinished fine live update after a change to its resident subset", async () => {
   const { field, gpu } = setup();
   const fine = author(0, 100);
   field.updateSources([fine, author(1, 20)]);
   const overview = createHeightOverviewTile(3, 0, 0);
   overview.values.fill(100 / 32);
   const tile = field.createTile([0, 0, 1024, 1024], 3, overview);
-  drain(field, gpu);
-  tile.drawDirty(gpu.renderer);
+  await drain(field, gpu);
+  compose(tile, gpu);
   change(field, fine, author(0, 101));
   tile.update(
     { ...overview, values: overview.values.slice().fill(101 / 32) },
     [0, 0, 16, 16],
   );
+  await prepare(field);
   expect(tile.usesAnchor).toBe(true);
   field.updateSources([], [fine.key]);
   expect(tile.needsPreparation).toBe(true);
   expect(tile.uploadReady).toBe(false);
   tile.update();
-  drain(field, gpu);
-  tile.drawDirty(gpu.renderer);
+  await drain(field, gpu);
+  compose(tile, gpu);
   expect(tile.compositionStats).toMatchObject({
     canonicalSamples: 128 ** 2,
     basisCaptureSamples: 0,
@@ -781,14 +883,14 @@ it("reprepares an unfinished fine live update after a change to its resident sub
 
 it.each(["restore", "delete"] as const)(
   "invalidates a nonresident history %s even when the fine overview already holds its old contribution",
-  (kind) => {
+  async (kind) => {
     const { field, gpu } = setup();
     const fine = author(0, 100);
     const overview = createHeightOverviewTile(3, 0, 0);
     overview.values.fill(100 / 32);
     const tile = field.createTile([0, 0, 1024, 1024], 3, overview);
-    drain(field, gpu);
-    tile.drawDirty(gpu.renderer);
+    await drain(field, gpu);
+    compose(tile, gpu);
     const version = tile.preparationVersion;
     change(field, fine, kind === "restore" ? author(0, 101) : null);
     expect(tile.preparationVersion).toBeGreaterThan(version);
@@ -799,8 +901,8 @@ it.each(["restore", "delete"] as const)(
       },
       [0, 0, 16, 16],
     );
-    drain(field, gpu);
-    tile.drawDirty(gpu.renderer);
+    await drain(field, gpu);
+    compose(tile, gpu);
     expect(tile.compositionStats).toMatchObject({
       canonicalSamples: 128 ** 2,
       deltaSamples: 0,
@@ -809,18 +911,18 @@ it.each(["restore", "delete"] as const)(
   },
 );
 
-it("recaptures a changed fine resident subset cheaply only when the total is still current", () => {
+it("recaptures a changed fine resident subset cheaply only when the total is still current", async () => {
   const { field, gpu } = setup();
   const fine = author(0, 100);
   const overview = createHeightOverviewTile(3, 0, 0);
   overview.values.fill(100 / 32);
   const tile = field.createTile([0, 0, 1024, 1024], 3, overview);
-  drain(field, gpu);
-  tile.drawDirty(gpu.renderer);
+  await drain(field, gpu);
+  compose(tile, gpu);
   field.updateSources([fine]);
   tile.update();
-  drain(field, gpu);
-  tile.drawDirty(gpu.renderer);
+  await drain(field, gpu);
+  compose(tile, gpu);
   expect(tile.compositionStats).toMatchObject({
     basisCaptureSamples: 128 ** 2,
     canonicalSamples: 0,
@@ -829,59 +931,60 @@ it("recaptures a changed fine resident subset cheaply only when the total is sti
   expect(tile.basisTransfers).toBe(1);
   change(field, fine, author(0, 101));
   tile.update(undefined, [0, 0, 8, 8]);
-  drain(field, gpu);
-  tile.drawDirty(gpu.renderer);
+  await drain(field, gpu);
+  compose(tile, gpu);
   expect(tile.compositionStats.deltaSamples).toBe(64);
 });
 
-it("keeps ordinary large cancellation on the canonical GPU path and marks the strategy prepared", () => {
+it("keeps ordinary large cancellation on the canonical GPU path and marks the strategy prepared", async () => {
   const { field, gpu } = setup();
   const sources = Array.from({ length: 22 }, (_, level) =>
     author(level, level % 2 ? 900_000 : -900_000),
   );
   field.updateSources(sources);
   const tile = field.createTile([0, 0, 512, 512], 2);
-  drain(field, gpu);
-  tile.drawDirty(gpu.renderer);
+  await drain(field, gpu);
+  compose(tile, gpu);
   change(field, sources[0], author(0, -899_999));
   tile.update(undefined, [0, 0, 8, 8]);
   expect(tile.usesAnchor).toBe(false);
   expect(tile.fallback).toBe(false);
   expect(tile.compositionLevels).toBe(22);
-  drain(field, gpu);
-  tile.drawDirty(gpu.renderer);
+  await drain(field, gpu);
+  compose(tile, gpu);
   expect(tile.preparedVersion).toBe(tile.preparationVersion);
   expect(tile.hasBasis).toBe(false);
   expect(tile.needsComposition).toBe(false);
 });
 
-it("admits finite endpoints only with an independent difference bound and retains extreme Float64 authors", () => {
+it("admits finite endpoints only with an independent difference bound and retains extreme Float64 authors", async () => {
   const { field, gpu } = setup();
   const before = author(0, -1_000_000);
   field.updateSources([before]);
   const tile = field.createTile([0, 0, 512, 512], 2);
-  drain(field, gpu);
-  tile.drawDirty(gpu.renderer);
+  await drain(field, gpu);
+  compose(tile, gpu);
   change(field, before, author(0, 1_000_000));
   tile.update();
   expect(tile.usesAnchor).toBe(false);
   expect(tile.fallback).toBe(false);
   change(field, author(0, 1_000_000), author(0, Number.MAX_VALUE));
   tile.update();
+  await prepare(field);
   expect(tile.fallback).toBe(true);
   expect(field.atlas.sources.get(before.key)!.values[0]).toBe(Number.MAX_VALUE);
-  drain(field, gpu);
-  tile.drawDirty(gpu.renderer);
+  await drain(field, gpu);
+  compose(tile, gpu);
   expect(tile.preparedVersion).toBe(tile.preparationVersion);
 });
 
-it("allows a prepared Float64 strategy without numeric framebuffer support", () => {
+it("allows a prepared Float64 strategy without numeric framebuffer support", async () => {
   const { field, gpu } = setup();
   field.numericSupported = false;
   field.updateSources([author(0, 100)]);
   const tile = field.createTile([0, 0, 512, 512], 2);
-  drain(field, gpu);
-  tile.drawDirty(gpu.renderer);
+  await drain(field, gpu);
+  compose(tile, gpu);
   expect(tile.fallback).toBe(true);
   expect(tile.preparedVersion).toBe(tile.preparationVersion);
   expect(tile.needsPreparation).toBe(false);
@@ -889,18 +992,18 @@ it("allows a prepared Float64 strategy without numeric framebuffer support", () 
   expect(tile.needsComposition).toBe(false);
   change(field, author(0, 100), author(0, 101));
   tile.update();
-  drain(field, gpu);
-  tile.drawDirty(gpu.renderer);
+  await drain(field, gpu);
+  compose(tile, gpu);
   expect(tile.compositionStats.colourSamples).toBe(128 ** 2);
 });
 
-it("does not upload or invalidate identical author content", () => {
+it("does not upload or invalidate identical author content", async () => {
   const { field, gpu } = setup();
   const before = author(0, 100);
   field.updateSources([before]);
   const tile = field.createTile([0, 0, 512, 512], 2);
-  drain(field, gpu);
-  tile.drawDirty(gpu.renderer);
+  await drain(field, gpu);
+  compose(tile, gpu);
   const copy = field.atlas.sources.get(before.key),
     version = tile.preparationVersion;
   expect(field.updateSources([{ ...author(0, 100), revision: 20 }])).toEqual(
@@ -911,21 +1014,22 @@ it("does not upload or invalidate identical author content", () => {
   expect(tile.preparationVersion).toBe(version);
 });
 
-it("admits a locally ready tile while an unrelated numeric source still awaits transfer", () => {
+it("admits a locally ready tile while an unrelated numeric source still awaits transfer", async () => {
   const { field, gpu } = setup();
   field.updateSources([author(0, 100), author(0, 200, 100)]);
   const ready = field.createTile([0, 0, 512, 512], 2);
   const pending = field.createTile([32000, 0, 32512, 512], 2);
-  drain(field, gpu);
-  field.drawDirty(gpu.renderer);
+  await drain(field, gpu);
+  composeField(field, gpu);
   field.updateSources([author(0, 201, 100)]);
   pending.update();
   ready.update();
+  await prepare(field);
   ready.flush();
   expect(field.metrics().pendingUploadBytes).toBeGreaterThan(0);
   expect(ready.uploadReady).toBe(true);
   expect(pending.uploadReady).toBe(false);
-  expect(ready.drawDirty(gpu.renderer)).toBe(128 ** 2);
+  expect(compose(ready, gpu)).toBe(128 ** 2);
 });
 
 it.each(["both", "neither", "rg-only"] as const)(
@@ -983,10 +1087,187 @@ it.each(["both", "neither", "rg-only"] as const)(
   },
 );
 
-it("does not assume RG32F support when the extension is absent", () => {
+it("does not assume RG32F support when the extension is absent", async () => {
   expect(
     supportsHeightNumericTargets({
       getExtension: () => null,
     } as unknown as WebGL2RenderingContext),
   ).toBe(false);
+});
+
+it("selects and prepares queued tiles before any GPU allocation, upload or canonical projection", async () => {
+  const { field, gpu } = setup();
+  field.updateSources(
+    Array.from({ length: 22 }, (_, level) => author(level, 1)),
+  );
+  const overview = createHeightOverviewTile(2, 0, 0);
+  const tiles = [0, 1, 2].map((x) =>
+    field.createTile([x * 512, 0, (x + 1) * 512, 512], 2, overview),
+  );
+  expect(field.atlas.pageCount).toBe(0);
+  expect(gpu.allocations).toHaveLength(0);
+  expect(gpu.render).not.toHaveBeenCalled();
+  let steps = 0;
+  while (tiles[0].needsPreparation && steps++ < 20_000)
+    expect(tiles[0].prepareStep()).toBe(true);
+  expect(steps).toBeGreaterThan(22);
+  expect(tiles[1].compositionLevels).toBe(0);
+  expect(tiles[2].compositionLevels).toBe(0);
+  expect(gpu.allocations).toHaveLength(0);
+  expect(gpu.bytes()).toBe(0);
+  const bytes = field.flush(editorBudgets.uploadBytesPerFrame, [tiles[0]]);
+  expect(bytes).toBeGreaterThan(0);
+  expect(field.lastFlushHadWork).toBe(true);
+  expect(gpu.bytes()).toBe(bytes);
+  expect(tiles[0].uploadReady).toBe(true);
+  expect(tiles[1].uploadReady).toBe(false);
+  expect(tiles[2].uploadReady).toBe(false);
+});
+
+it("publishes a numerical basis only after complete bounded strips and reuses their horizontal rows", async () => {
+  const { field, gpu } = setup();
+  field.updateSources(
+    Array.from({ length: 22 }, (_, level) => author(level, 1)),
+  );
+  const tile = field.createTile([0, 0, 512, 512], 2);
+  await drain(field, gpu);
+  let samples = 0,
+    steps = 0;
+  while (tile.needsComposition) {
+    while (tile.needsPreparation) expect(tile.prepareStep()).toBe(true);
+    expect(tile.compositionWork).toBeLessThanOrEqual(
+      editorBudgets.compositionWorkPerFrame,
+    );
+    const drawn = tile.drawDirty(gpu.renderer);
+    expect(drawn).toBeLessThanOrEqual(
+      128 * editorBudgets.heightCompositionRowsPerStep,
+    );
+    samples += drawn;
+    steps++;
+    if (tile.needsComposition) {
+      expect(tile.preparedVersion).toBe(-1);
+      expect(tile.hasBasis).toBe(false);
+      expect(tile.compositionStats.canonicalBasisBuilds).toBe(0);
+    }
+  }
+  expect(samples).toBe(128 ** 2);
+  expect(steps).toBeGreaterThan(1);
+  expect(tile.preparedVersion).toBe(tile.preparationVersion);
+  expect(tile.hasBasis).toBe(true);
+});
+
+it("cancels a partially composed target without promoting it or pairing it with a newer source state", async () => {
+  const { field, gpu } = setup();
+  field.updateSources([author(0, 100)]);
+  const tile = field.createTile([0, 0, 512, 512], 2);
+  await drain(field, gpu);
+  tile.drawDirty(gpu.renderer);
+  expect(tile.needsComposition).toBe(true);
+  tile.cancelPreparation();
+  field.updateSources([author(0, 200)]);
+  tile.update();
+  await drain(field, gpu);
+  expect(tile.usesAnchor).toBe(false);
+  expect(tile.hasBasis).toBe(false);
+  compose(tile, gpu);
+  expect(tile.compositionStats.canonicalSamples).toBe(128 ** 2);
+  expect(tile.basisTransfers).toBe(0);
+  expect(tile.hasBasis).toBe(true);
+});
+
+it("keeps normal tiny values on the GPU across the level-9 zoom sequence without changing authors", async () => {
+  const { field, gpu } = setup();
+  const sources = Array.from({ length: 22 }, (_, level) =>
+    author(level, level % 2 ? 1e-45 : -1e-45),
+  );
+  field.updateSources(sources);
+  field.setToolLevel(9);
+  for (const power of [6, 7, 8, 9, 8, 7, 6]) {
+    const span = 128 * 2 ** power;
+    const tile = field.createTile([0, 0, span, span], power);
+    await drain(field, gpu);
+    expect(tile.fallback).toBe(false);
+    compose(tile, gpu);
+    expect(tile.fallbackSamples).toBe(0);
+    tile.destroy();
+  }
+  expect(field.metrics().fallbackSamples).toBe(0);
+  for (const source of sources)
+    expect(field.atlas.sources.get(source.key)?.values).toEqual(source.values);
+});
+
+it("restarts a cancelled background exception when selected again without a new source revision", async () => {
+  const { field, gpu } = setup();
+  field.numericSupported = false;
+  field.updateSources([author(0, 100)]);
+  const tile = field.createTile([0, 0, 512, 512], 2);
+  while (tile.prepareStep()) {}
+  expect(tile.hasProjectionTask).toBe(true);
+  tile.cancelPreparation();
+  expect(tile.hasProjectionTask).toBe(false);
+  await drain(field, gpu);
+  compose(tile, gpu);
+  expect(tile.fallbackSamples).toBe(128 ** 2);
+  expect(tile.needsComposition).toBe(false);
+  expect(tile.preparedVersion).toBe(tile.preparationVersion);
+});
+
+it("reserves worker snapshots before launch and rejects a superseded exception result", async () => {
+  const requests: {
+    resolve: (pixels: Uint8Array | null) => void;
+    cancel: ReturnType<typeof vi.fn>;
+  }[] = [];
+  const service: HeightProjectionService = {
+    request: vi.fn(() => {
+      let resolve!: (pixels: Uint8Array | null) => void;
+      const promise = new Promise<Uint8Array | null>((done) => {
+        resolve = done;
+      });
+      const cancel = vi.fn();
+      requests.push({ resolve, cancel });
+      return { promise, cancel, bytes: 0 };
+    }),
+    metrics: () => ({
+      active: requests.length,
+      pending: 0,
+      cancelling: 0,
+      bytes: 0,
+      retainedInputBuffers: [],
+      completed: 0,
+      maxChunkMs: 0,
+    }),
+    cancelAll() {},
+    dispose() {},
+  };
+  const { field, gpu } = setup(service);
+  field.updateSources([author(0, Number.MAX_VALUE)]);
+  const tile = field.createTile([0, 0, 512, 512], 2);
+  let reserveBeforeLaunch = 0;
+  for (let steps = 0; !requests.length && steps < 20_000; steps++) {
+    reserveBeforeLaunch = tile.nextPreparationBytes.cpuBytes;
+    tile.prepareStep();
+  }
+  expect(requests).toHaveLength(1);
+  expect(reserveBeforeLaunch).toBeGreaterThan(64 ** 2 * 8 + 128 ** 2 * 4);
+  expect(tile.waitingProjection).toBe(true);
+  expect(tile.uploadReady).toBe(false);
+  expect(tile.fallbackSamples).toBe(0);
+  field.updateSources([author(0, -Number.MAX_VALUE)]);
+  tile.update();
+  expect(requests[0].cancel).toHaveBeenCalledOnce();
+  for (let steps = 0; requests.length < 2 && steps < 20_000; steps++)
+    tile.prepareStep();
+  requests[0].resolve(new Uint8Array(128 ** 2 * 4).fill(1));
+  await Promise.resolve();
+  expect(tile.fallbackSamples).toBe(0);
+  expect(tile.waitingProjection).toBe(true);
+  requests[1].resolve(new Uint8Array(128 ** 2 * 4).fill(2));
+  await Promise.resolve();
+  expect(tile.fallbackSamples).toBe(128 ** 2);
+  await drain(field, gpu);
+  compose(tile, gpu);
+  expect(tile.preparedVersion).toBe(tile.preparationVersion);
+  expect(field.atlas.sources.values().next().value?.values[0]).toBe(
+    -Number.MAX_VALUE,
+  );
 });

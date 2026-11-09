@@ -116,6 +116,29 @@ async function createFixtures(directory) {
       fallback: false,
     },
     {
+      id: "normal-zoom-level9",
+      center: [0, 0],
+      points: [
+        [-320, 0],
+        [0, 0],
+        [320, 0],
+      ],
+      // Ordinary coarse terrain plus finite rounding-sized author values. The
+      // latter remain exact in storage and must not force a Float64 raster job.
+      tiles: [
+        ...field(
+          9,
+          [-80_000, -80_000, 80_000, 80_000],
+          (x, y) => 100 + 20 * Math.sin(x / 30_000) + 10 * Math.cos(y / 25_000),
+        ),
+        ...field(8, [-80_000, -80_000, 80_000, 80_000], (x) =>
+          x < 0 ? -1e-45 : 1e-45,
+        ),
+      ],
+      regional: false,
+      fallback: false,
+    },
+    {
       id: "all-22-levels",
       center: [0, 0],
       points: [
@@ -511,10 +534,14 @@ async function run(directory) {
       const draws = after.events
         .slice(preparationEvents)
         .filter((event) => event.kind === "height-draw");
-      const preparationDraws = after.events
+      const terrain = after.events
+        .slice(preparationEvents)
+        .filter((event) => event.kind === "height-terrain");
+      const preparationTerrain = after.events
         .slice(0, preparationEvents)
-        .filter((event) => event.kind === "height-draw");
-      const complete = draws.length > 0 && after.droppedEvents === 0;
+        .filter((event) => event.kind === "height-terrain");
+      const complete =
+        draws.length > 0 && terrain.length > 0 && after.droppedEvents === 0;
       const workOf = (observed, requireDraw) =>
         Object.fromEntries(
           [
@@ -537,14 +564,15 @@ async function run(directory) {
               : null,
           ]),
         );
-      const work = workOf(draws, true);
-      const preparationWork = workOf(preparationDraws, false);
+      const work = workOf(terrain, true);
+      const preparationWork = workOf(preparationTerrain, false);
       result.actions.push({
         kind,
         diameter,
         level: before.brush.level,
         sequence: after.document.sequence,
         draws: draws.length,
+        terrainPackets: terrain.length,
         droppedEvents: after.droppedEvents,
         work,
         preparationWork,
@@ -555,7 +583,81 @@ async function run(directory) {
       });
       return after;
     };
-    if (fixture.id === "all-22-levels") {
+    if (fixture.id === "normal-zoom-level9") {
+      const points = [
+        [-15_000, 4_000],
+        [0, 4_000],
+        [15_000, 4_000],
+      ];
+      const startEvent = (await stateSnapshot(page)).eventCount;
+      result.zoomSequence = [];
+      for (const scale of [0.011, 0.01, 0.009, 0.01]) {
+        const before = await stateSnapshot(page);
+        const at = await position(page, [before.camera.x, before.camera.y]);
+        await page.mouse.move(at.x, at.y);
+        // The editor bounds each native wheel event to ±500. Wait for each
+        // ordinary event before calculating the next step from the real camera.
+        for (let step = 0; step < 8; step++) {
+          const current = await stateSnapshot(page);
+          if (Math.abs(current.camera.scale - scale) < 1e-7) break;
+          const delta = Math.max(
+            -500,
+            Math.min(500, Math.log(current.camera.scale / scale) / 0.0018),
+          );
+          const nextScale = current.camera.scale * Math.exp(-delta * 0.0018);
+          await page.mouse.wheel(0, delta);
+          await page.waitForFunction(
+            (expected) =>
+              Math.abs(
+                window.atlasObserve([], { events: false }).camera.scale -
+                  expected,
+              ) < 1e-7,
+            nextScale,
+          );
+        }
+        await page.waitForFunction(
+          (scale) =>
+            Math.abs(
+              window.atlasObserve([], { events: false }).camera.scale - scale,
+            ) < 1e-7,
+          scale,
+        );
+        await action("raise", [0, 4_000], 512);
+        const state = await stateSnapshot(page);
+        result.zoomSequence.push({
+          targetScale: scale,
+          scale: state.camera.scale,
+          level: state.brush.level,
+          fallbackTiles: state.renderer.fallbackTiles,
+          fallbackSamples: state.renderer.fallbackSamples,
+          passed:
+            Math.abs(state.camera.scale - scale) < 1e-7 &&
+            state.brush.level === 9 &&
+            state.renderer.fallbackTiles === 0 &&
+            state.renderer.fallbackSamples === 0,
+        });
+        await checkpoint(`zoom-${result.zoomSequence.length}-raised`, points);
+        await action("undo");
+        await checkpoint(`zoom-${result.zoomSequence.length}-undone`, points);
+      }
+      const observed = await snapshot(page, [], { sinceEvent: startEvent });
+      const draws = observed.events.filter(
+        (event) => event.kind === "height-draw",
+      );
+      result.normalGpuPath = {
+        draws: draws.length,
+        droppedEvents: observed.droppedEvents,
+        fallbackDraws: draws.filter(
+          (event) => event.fallbackTiles !== 0 || event.fallbackSamples !== 0,
+        ).length,
+        passed:
+          observed.droppedEvents === 0 &&
+          draws.length > 0 &&
+          draws.every(
+            (event) => event.fallbackTiles === 0 && event.fallbackSamples === 0,
+          ),
+      };
+    } else if (fixture.id === "all-22-levels") {
       const points = [
         [100, 100],
         [84, 100],
@@ -638,8 +740,10 @@ async function run(directory) {
       const sameLevelObservation = await snapshot(page, [], {
         sinceEvent: sameLevelEventStart,
       });
+      // Terrain packets have their own slot and may precede a later scene.
+      // Count them once even when that RAF cannot submit a scene draw.
       const laterDraws = sameLevelObservation.events.filter(
-        (event) => event.kind === "height-draw",
+        (event) => event.kind === "height-terrain",
       );
       const laterFactsComplete =
         laterDraws.length > 0 &&
@@ -808,6 +912,10 @@ async function run(directory) {
       result.actions.every((entry) => entry.passed) &&
       result.checkpoints.every((entry) => entry.passed) &&
       result.fineOverview.every((entry) => entry.passed) &&
+      (!result.zoomSequence ||
+        (result.zoomSequence.length === 4 &&
+          result.zoomSequence.every((entry) => entry.passed) &&
+          result.normalGpuPath?.passed === true)) &&
       (!result.chain ||
         (result.chain.transactions === 106 &&
           result.chain.factsComplete &&
@@ -1096,9 +1204,21 @@ async function run(directory) {
           "all-22-levels",
           "ordinary-22-level-cancellation",
           "thresholds-negative-seams",
+          "normal-zoom-level9",
         ].includes(fixture.id)
       )
         result.live = await mutations(session, fixture);
+      if (fixture.id === "normal-zoom-level9") {
+        const state = await stateSnapshot(session.page);
+        result.sourceIdentity = await sourceIdentity(
+          session,
+          fixture,
+          state.sessionId,
+        );
+        result.sourcesUnchanged =
+          result.sourceIdentity.sha256 === fixture.sourceSha256 &&
+          result.sourceIdentity.sourceTiles === fixture.sourceTiles;
+      }
       result.fileUnchanged =
         sha256(await readFile(fixture.file)) === fixture.fileSha256;
       result.passed =
@@ -1106,10 +1226,21 @@ async function run(directory) {
         (fixture.id !== "thresholds-negative-seams" ||
           result.contextRestore?.passed === true) &&
         (!result.live || result.live.passed) &&
+        result.sourcesUnchanged !== false &&
         result.fileUnchanged &&
         session.errors.length === 0;
     } catch (error) {
       result.error = String(error);
+      try {
+        result.failureState = await stateSnapshot(session.page);
+        result.failureEvents = (
+          await snapshot(session.page, [], {
+            sinceEvent: Math.max(0, result.failureState.eventCount - 500),
+          })
+        ).events;
+      } catch (observationError) {
+        result.failureObservationError = String(observationError);
+      }
     } finally {
       result.pageErrors = session.errors;
       await session.close();

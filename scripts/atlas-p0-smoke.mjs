@@ -247,6 +247,8 @@ const overlap = (a, b, c, d) => Math.max(0, Math.min(b, d) - Math.max(a, c));
 async function rendererStall(continueHolding) {
   const label = continueHolding ? "stall-held" : "stall-release";
   const session = await launch({ label, diagnostics: true });
+  let sinceEvent = 0;
+  let phase = "initial readiness";
   try {
     const { page } = session;
     await brush(page, 128, 4000);
@@ -258,8 +260,10 @@ async function rendererStall(continueHolding) {
       () => window.atlasObserve([], { events: false }).readiness.ready,
     );
     const before = await snapshot(page, [[0, 0]]);
+    sinceEvent = before.eventCount;
     await capture(session, "before", [[0, 0]]);
     await page.mouse.down();
+    phase = "first brush submission before artificial stall";
     await page.waitForFunction(
       (sinceEvent) =>
         window
@@ -267,6 +271,7 @@ async function rendererStall(continueHolding) {
           .events.some((e) => e.kind === "brush-submit"),
       before.eventCount,
     );
+    phase = "artificial stall and release";
     const stall = await session.app.evaluate(
       async ({ BrowserWindow }, { at, continueHolding }) => {
         const contents = BrowserWindow.getAllWindows()[0].webContents;
@@ -309,6 +314,7 @@ async function rendererStall(continueHolding) {
       if (o.state.error) throw new Error(o.state.error);
       return !o.gesture && !o.state.writing;
     });
+    phase = "completed action and content verification";
     await exact(page);
     const after = await snapshot(page, [[0, 0]], {
       sinceEvent: before.eventCount,
@@ -397,6 +403,31 @@ async function rendererStall(continueHolding) {
       join(session.directory, "observation.json"),
       JSON.stringify(after, null, 2),
     );
+  } catch (error) {
+    // Preserve the live scheduler/brush state before fixture teardown seals the
+    // gesture. A stalled prerequisite must remain distinguishable from the
+    // artificial stall and from a failed final-content assertion.
+    try {
+      await writeFile(
+        join(session.directory, "failure.json"),
+        JSON.stringify(
+          {
+            phase,
+            error: String(error),
+            observation: await snapshot(session.page, [[0, 0]], { sinceEvent }),
+            rendererErrors: session.errors,
+          },
+          null,
+          2,
+        ),
+      );
+    } catch (captureError) {
+      report.errors.push({
+        scenario: `${label}: failure capture`,
+        error: String(captureError),
+      });
+    }
+    throw error;
   } finally {
     await session.close();
   }

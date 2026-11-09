@@ -7,7 +7,9 @@ import {
   Sprite,
   type WebGLRenderer,
 } from "pixi.js";
-import { prepareHeightGrid, type RasterRect } from "../model/height-grid";
+import type { RasterRect } from "../model/height-grid";
+import { editorBudgets } from "../budgets";
+import type { ComputePriority } from "../ComputeJobs";
 import {
   HEIGHT_OVERVIEW_SIZE,
   minimumCoarseHeightLevel,
@@ -25,10 +27,13 @@ import {
   HEIGHT_DESCRIPTOR_HEIGHT,
   HEIGHT_DESCRIPTOR_WIDTH,
   HEIGHT_GPU_MAX_SCALED_VALUE,
+  HEIGHT_GPU_PROJECTION_ZERO_ERROR,
+  HEIGHT_GPU_VALUE_ZERO_ERROR,
   HeightSourceAtlas,
-  createHeightAxes,
+  createHeightAxesSteps,
   createHeightProjection,
-  encodeHeightOverview,
+  encodeHeightValue,
+  heightGpuValueSafe,
   type HeightDescriptor,
 } from "./height-field-data";
 import {
@@ -38,7 +43,13 @@ import {
   heightVertex,
 } from "./height-shader";
 import { HeightAtlasSource } from "./height-atlas-upload";
-import { DISPLAY_HEIGHT_BOUNDARY_EPSILON, rasterize } from "./raster";
+import { DISPLAY_HEIGHT_BOUNDARY_EPSILON } from "./raster";
+import {
+  estimateHeightProjectionBytes,
+  type HeightProjectionInput,
+  type HeightProjectionService,
+  type HeightProjectionTask,
+} from "./HeightProjectionService";
 
 const SIZE = HEIGHT_OVERVIEW_SIZE;
 const WHOLE: RasterRect = [0, 0, SIZE, SIZE];
@@ -158,6 +169,16 @@ function setRect(mesh: Mesh<MeshGeometry, Shader>, rect: RasterRect): void {
 function area(rect: RasterRect): number {
   return (rect[2] - rect[0]) * (rect[3] - rect[1]);
 }
+function intersectRect(a: RasterRect, b: RasterRect): RasterRect {
+  const x0 = Math.max(a[0], b[0]),
+    y0 = Math.max(a[1], b[1]);
+  return [
+    x0,
+    y0,
+    Math.max(x0, Math.min(a[2], b[2])),
+    Math.max(y0, Math.min(a[3], b[3])),
+  ];
+}
 
 /** One numeric atlas and its bounded transfers, shared by dependent tiles only. */
 class AtlasTransport {
@@ -168,8 +189,14 @@ class AtlasTransport {
     this.atlas.height,
   );
   private pending: [number, number][] = [];
+  lastFlushHadWork = false;
   get bytes(): number {
-    return this.atlas.data.byteLength;
+    return (
+      this.atlas.data.byteLength +
+      (this.source.resource === this.atlas.data
+        ? 0
+        : this.source.resource.byteLength)
+    );
   }
   get pendingBytes(): number {
     return (
@@ -187,6 +214,7 @@ class AtlasTransport {
     );
   }
   flush(maxBytes: number): number {
+    this.lastFlushHadWork = false;
     const update = this.atlas.takeUpdates();
     this.source.resource = this.atlas.data;
     if (update.allocation) this.pending = update.ranges;
@@ -202,6 +230,11 @@ class AtlasTransport {
         else this.pending.push([...range]);
       }
     }
+    if (
+      this.source.width !== HEIGHT_ATLAS_WIDTH ||
+      this.source.height !== this.atlas.height
+    )
+      this.lastFlushHadWork = true;
     this.source.resize(HEIGHT_ATLAS_WIDTH, this.atlas.height);
     let bytes = 0;
     while (this.pending.length && bytes + 8 <= maxBytes) {
@@ -211,6 +244,7 @@ class AtlasTransport {
         range[0] + Math.floor((maxBytes - bytes) / 8),
       );
       this.source.uploadRange(range[0], end);
+      this.lastFlushHadWork = true;
       bytes += (end - range[0]) * 8;
       if (end === range[1]) this.pending.shift();
       else range[0] = end;
@@ -223,6 +257,7 @@ class AtlasTransport {
   }
   reset(): void {
     this.atlas = new HeightSourceAtlas();
+    this.source.resource = this.atlas.data;
     this.pending = [];
   }
 }
@@ -238,7 +273,11 @@ export class HeightFieldTile {
   private basis: RenderTexture;
   private horizontal: RenderTexture;
   private horizontalRows = 1;
+  private allocatedHorizontalRows = 1;
   private horizontalSamples = 0;
+  private horizontalCompletedRows: number[] = [];
+  private horizontalPlannedRows: number[] = [];
+  private peakGeometryBytes = 0;
   private axes = { data: new Float32Array(2), width: 1, height: 1 };
   private descriptor: HeightDescriptor | null = null;
   private descriptorSource = numericSource(new Float32Array(4), 1, 1, true);
@@ -259,6 +298,7 @@ export class HeightFieldTile {
   private overview?: HeightOverviewTile;
   private overviewEncoded?: HeightOverviewTile;
   private overviewFallback = false;
+  private overviewMagnitude = 0;
   private weightsKey = "";
   private dirty = true;
   private overviewDirty = true;
@@ -267,6 +307,24 @@ export class HeightFieldTile {
   private compositionDirty = true;
   private disposed = false;
   private rect: RasterRect = [...WHOLE];
+  private operationRect: RasterRect = [...WHOLE];
+  private stepRect: RasterRect = [...WHOLE];
+  private projectionRect: RasterRect = [...WHOLE];
+  private nextRow = 0;
+  private stepReady = false;
+  private drawStarted = false;
+  private preparation: Generator<void, void, void> | null = null;
+  private preparationPhase = "queued";
+  private preparationSteps = 0;
+  private restartPreparation = false;
+  private preparationReservedBytes = 0;
+  private generation = 0;
+  private projectionTask: HeightProjectionTask | null = null;
+  private projectionInput: HeightProjectionInput | null = null;
+  private projectionPriority: ComputePriority = "background";
+  private fallbackReady = false;
+  private fallbackError: Error | null = null;
+  private sourceSizes = new Map<HeightAtlasSource, readonly [number, number]>();
   private mode: "canonical" | "live" | "capture" = "canonical";
   private numericValid = false;
   // Source changes may leave a perfectly displayed preceding state, but that H
@@ -406,21 +464,11 @@ export class HeightFieldTile {
     this.colourMesh.state.blend = false;
     this.mesh = new Sprite(this.colour);
     this.update(overview ?? null);
-    this.initSources();
-  }
-
-  initSources(): void {
-    for (const source of [
-      this.descriptorSource,
-      this.overviewSource,
-      this.weightSource,
-      this.fallbackSource,
-    ])
-      this.field.initSource(source);
   }
 
   /** A changed strategy needs its own completed frame, even at the same revision. */
   invalidateBasis(totalChanged = false): void {
+    this.cancelPreparation();
     if (totalChanged) this.numericCurrent = false;
     this.basisValid = false;
     this.preparationVersion++;
@@ -467,6 +515,7 @@ export class HeightFieldTile {
     // This error is always measured against the fixed basis, never the last dose.
     return (
       heightError +
+      2 * HEIGHT_GPU_VALUE_ZERO_ERROR +
       (before + current) * PAIR_PROJECTION_ERROR +
       (before + current) * PAIR_ADD_ERROR +
       (heightMagnitude + before + current) * PAIR_ADD_ERROR
@@ -485,11 +534,188 @@ export class HeightFieldTile {
     );
   }
 
-  update(overview?: HeightOverviewTile | null, rect: RasterRect = WHOLE): void {
+  /** Queue intent only. Descriptor pages, weights and raster jobs start after selection. */
+  update(
+    overview?: HeightOverviewTile | null,
+    rect: RasterRect = WHOLE,
+    priority: ComputePriority = "background",
+  ): void {
     if (this.disposed) return;
+    this.cancelPreparation();
+    this.projectionPriority = priority;
     if (overview !== undefined) this.overview = overview ?? undefined;
-    if (overview !== undefined || this.overviewEncoded !== this.overview)
-      this.encodeOverview();
+    this.compositionDirty = true;
+    this.preparation = this.prepare(overview !== undefined, [...rect]);
+    this.preparationPhase = "queued";
+    this.preparationSteps = 0;
+    this.restartPreparation = false;
+  }
+
+  /** An obsolete partial target never becomes a new numerical basis. */
+  cancelPreparation(): void {
+    this.generation++;
+    this.preparation?.return();
+    this.preparation = null;
+    this.restartPreparation = true;
+    this.preparationPhase = "cancelled";
+    this.preparationReservedBytes = 0;
+    this.projectionTask?.cancel();
+    this.projectionTask = null;
+    this.projectionInput = null;
+    this.fallbackReady = false;
+    this.fallbackError = null;
+    this.stepReady = false;
+    if (this.drawStarted && this.compositionDirty) {
+      this.numericValid = false;
+      this.numericCurrent = false;
+      this.basisValid = false;
+    }
+    this.drawStarted = false;
+  }
+
+  /** One bounded CPU unit. False means no CPU progress, including an awaited job. */
+  prepareStep(): boolean {
+    if (this.disposed || !this.compositionDirty) return false;
+    this.preparationSteps++;
+    if (this.fallbackError) throw this.fallbackError;
+    if (!this.preparation && (!this.descriptor || this.restartPreparation)) {
+      this.preparation = this.prepare(false, [...WHOLE]);
+      this.restartPreparation = false;
+    }
+    if (this.preparation) {
+      this.preparationReservedBytes = 512 * 1024;
+      if (!this.preparation.next().done) return true;
+      this.preparation = null;
+      this.preparationReservedBytes = 0;
+    }
+    if (this.fallback && !this.fallbackReady) {
+      this.preparationPhase = "projection-wait";
+      if (!this.projectionTask) this.requestFallback();
+      return false;
+    }
+    if (this.stepReady) return false;
+    this.prepareStrip();
+    return true;
+  }
+
+  get waitingProjection(): boolean {
+    return this.fallback && !this.fallbackReady && !this.preparation;
+  }
+  get hasProjectionTask(): boolean {
+    return this.projectionTask !== null;
+  }
+  /** Read-only facts for the current selected target, never a readiness signal. */
+  preparationState() {
+    return {
+      phase: this.preparationPhase,
+      steps: this.preparationSteps,
+      generation: this.generation,
+      generator: Boolean(this.preparation),
+      restart: this.restartPreparation,
+      descriptor: this.descriptor?.levelCount ?? null,
+      descriptorPages: this.descriptor?.pages.length ?? 0,
+      weightsKey: this.weightsKey,
+      nextRow: this.nextRow,
+      stepReady: this.stepReady,
+      mode: this.mode,
+      compositionDirty: this.compositionDirty,
+      fallback: this.fallback,
+      fallbackReady: this.fallbackReady,
+      projection: this.hasProjectionTask,
+      projectionInput: Boolean(this.projectionInput),
+      sourceResizes: this.sourceSizes.size,
+      preparedVersion: this.preparedVersion,
+      preparationVersion: this.preparationVersion,
+      currentIsBasis: this.currentIsBasis,
+      basisValid: this.basisValid,
+      numericCurrent: this.numericCurrent,
+      plannedBasis: this.plannedBasis,
+      plannedError: this.plannedError,
+      plannedDepth: this.plannedDepth,
+      numericDepth: this.numericDepth,
+      next: this.nextPreparationBytes,
+    };
+  }
+  retainedSourceBuffers(): readonly ArrayBufferLike[] {
+    return [
+      ...(this.overview ? [this.overview.values.buffer] : []),
+      ...(this.projectionInput?.sources.map((source) => source.values.buffer) ??
+        []),
+      ...(this.projectionInput?.overview
+        ? [this.projectionInput.overview.buffer]
+        : []),
+    ];
+  }
+
+  /** Peak reserves precede allocation; buffers already held are counted in bytes. */
+  get nextPreparationBytes(): { cpuBytes: number; gpuBytes: number } {
+    if (!this.needsPreparation) return { cpuBytes: 0, gpuBytes: 0 };
+    // At most 22 axes, one descriptor, overview and worker image. The finest
+    // admitted contribution spans <=16 source pages per axis; coarser levels
+    // form a geometric series of horizontal rows plus their cubic halos.
+    const workerBytes =
+      this.fallback &&
+      !this.fallbackReady &&
+      !this.projectionTask &&
+      this.projectionInput
+        ? estimateHeightProjectionBytes(this.projectionInput)
+        : 0;
+    const dataBytes = 512 * 1024 + this.field.atlas.nextPageAllocationBytes;
+    const cpuBytes = dataBytes - this.preparationReservedBytes + workerBytes;
+    const horizontalBytes = SIZE * (2 * 16 * 64 + 22 * 4) * 8;
+    return { cpuBytes, gpuBytes: dataBytes + horizontalBytes };
+  }
+
+  private stageSource(
+    source: HeightAtlasSource,
+    width: number,
+    height: number,
+  ): void {
+    this.sourceSizes.set(source, [width, height]);
+  }
+
+  private *prepare(
+    forceOverview: boolean,
+    rect: RasterRect,
+  ): Generator<void, void, void> {
+    this.preparationPhase = "overview";
+    if (forceOverview || this.overviewEncoded !== this.overview) {
+      const values = this.overview?.values;
+      const data = new Float32Array(values ? SIZE * SIZE * 2 : 2);
+      let fallback = false;
+      let magnitude = 0;
+      if (values) {
+        for (
+          let from = 0;
+          from < values.length;
+          from += editorBudgets.heightOverviewSamplesPerStep
+        ) {
+          const to = Math.min(
+            values.length,
+            from + editorBudgets.heightOverviewSamplesPerStep,
+          );
+          for (let i = from; i < to; i++) {
+            const value = values[i];
+            magnitude = Math.max(magnitude, Math.abs(value) * 32);
+            if (!heightGpuValueSafe(value)) fallback = true;
+            else data.set(encodeHeightValue(value), i * 2);
+          }
+          yield;
+        }
+      }
+      this.overviewSource.resource = data;
+      this.stageSource(
+        this.overviewSource,
+        values ? SIZE : 1,
+        values ? SIZE : 1,
+      );
+      this.overviewFallback = fallback;
+      this.overviewMagnitude = magnitude;
+      this.overviewEncoded = this.overview;
+      this.overviewDirty = true;
+      yield;
+    }
+    this.preparationPhase = "strategy";
     const level = this.field.toolLevel;
     const minimum = minimumCoarseHeightLevel(this.power);
     const activeMagnitude = this.field.atlas.magnitudeIn(
@@ -498,16 +724,13 @@ export class HeightFieldTile {
       level,
     );
     const activeSafe = this.field.atlas.safeIn(this.bounds, level, level);
-    const overviewMagnitude =
-      this.overview?.values.reduce(
-        (maximum, value) => Math.max(maximum, Math.abs(value) * 32),
-        0,
-      ) ?? 0;
     const canonicalMagnitude =
       100 +
       this.field.atlas.magnitudeIn(this.bounds, minimum) +
-      overviewMagnitude;
-    const canonicalError = canonicalMagnitude * PAIR_PROJECTION_ERROR;
+      this.overviewMagnitude;
+    const canonicalError =
+      canonicalMagnitude * PAIR_PROJECTION_ERROR +
+      HEIGHT_GPU_PROJECTION_ZERO_ERROR;
     this.mode = "canonical";
     this.plannedRebase = false;
     if (this.field.numericSupported && activeSafe) {
@@ -576,8 +799,9 @@ export class HeightFieldTile {
     }
     this.plannedContribution = activeMagnitude;
     let next: HeightDescriptor;
+    this.preparationPhase = "descriptor";
     try {
-      next = this.field.atlas.descriptor(
+      next = yield* this.field.atlas.descriptorSteps(
         this.bounds,
         this.power,
         this.mode === "canonical"
@@ -589,7 +813,7 @@ export class HeightFieldTile {
       // A very fine tool on a coarse display keeps its canonical overview path.
       planCanonical();
       this.plannedBasis = false;
-      next = this.field.atlas.descriptor(this.bounds, this.power);
+      next = yield* this.field.atlas.descriptorSteps(this.bounds, this.power);
     }
     this.fallback =
       !this.field.numericSupported ||
@@ -599,97 +823,197 @@ export class HeightFieldTile {
       this.field.atlas.release(next.pages);
       planCanonical();
       this.plannedBasis = false;
-      next = this.field.atlas.descriptor(this.bounds, this.power);
+      next = yield* this.field.atlas.descriptorSteps(this.bounds, this.power);
       this.fallback =
         !this.field.numericSupported || next.fallback || this.overviewFallback;
     }
-    this.releaseDescriptor();
-    this.descriptor = next;
-    this.descriptorSource.resource = next.data;
-    this.descriptorSource.resize(next.width, HEIGHT_DESCRIPTOR_HEIGHT);
-    const weightsKey = next.levels.join(",");
-    if (weightsKey !== this.weightsKey || this.weightSource.width === 1) {
-      this.axes = createHeightAxes(this.bounds, this.power, next.levels);
-      this.weightSource.resource = this.axes.data;
-      this.weightSource.resize(this.axes.width, this.axes.height);
-      this.weightsKey = weightsKey;
-      this.weightsDirty = true;
+
+    let published = false;
+    try {
+      const weightsKey = next.levels.join(",");
+      this.preparationPhase = "axes";
+      if (weightsKey !== this.weightsKey || this.weightSource.width === 1) {
+        this.axes = yield* createHeightAxesSteps(
+          this.bounds,
+          this.power,
+          next.levels,
+        );
+        this.weightSource.resource = this.axes.data;
+        this.stageSource(this.weightSource, this.axes.width, this.axes.height);
+        this.weightsKey = weightsKey;
+        this.weightsDirty = true;
+      }
+      this.releaseDescriptor();
+      this.preparationPhase = "publish";
+      this.descriptor = next;
+      published = true;
+      this.descriptorSource.resource = next.data;
+      this.stageSource(
+        this.descriptorSource,
+        next.width,
+        HEIGHT_DESCRIPTOR_HEIGHT,
+      );
+      this.rect = this.mode === "live" ? [...rect] : [...WHOLE];
+      this.operationRect =
+        this.mode === "live" && !this.currentIsBasis
+          ? [...this.rect]
+          : [...WHOLE];
+      this.nextRow = this.operationRect[1];
+      this.horizontalRows = Math.max(1, next.horizontalRows);
+      this.horizontalCompletedRows = [];
+      this.horizontalPlannedRows = [];
+      const horizontalUniforms =
+        this.horizontalShader.resources.heightUniforms.uniforms;
+      horizontalUniforms.uPageStride = next.pageStride;
+      horizontalUniforms.uPageColumns = next.width - 1;
+      const uniforms = this.shader.resources.heightUniforms.uniforms;
+      uniforms.uLevelCount = next.levelCount;
+      uniforms.uPageStride = next.pageStride;
+      uniforms.uPageColumns = next.width - 1;
+      uniforms.uMode =
+        this.mode === "canonical" ? 0 : this.mode === "live" ? 1 : 2;
+      uniforms.uActiveLevel = level;
+      uniforms.uMinimumLevel = minimum;
+      uniforms.uHasOverview =
+        this.mode === "canonical" && this.overview ? 1 : 0;
+      uniforms.uClip = new Float32Array(next.clip);
+      uniforms.uDirty = new Float32Array(this.rect);
+      this.colourShader.resources.heightUniforms.uniforms.uFallback = this
+        .fallback
+        ? 1
+        : 0;
+      this.colourShader.resources.heightUniforms.uniforms.uClip =
+        new Float32Array(next.clip);
+      this.dirty = true;
+      if (this.fallback) {
+        this.plannedBasis = false;
+        this.projectionInput = {
+          sources: this.field.atlas.sourcesIn(
+            this.bounds,
+            minimumCoarseHeightLevel(this.power),
+          ),
+          overview: this.overview?.values,
+          bounds: this.bounds,
+          size: SIZE,
+        };
+        // The next selected step reserves this exact worker snapshot and output.
+        yield;
+      }
+    } finally {
+      if (!published) this.field.atlas.release(next.pages);
     }
-    if (this.fallback) {
-      this.plannedBasis = false;
-      this.updateFallback();
+  }
+
+  private prepareStrip(): void {
+    if (!this.descriptor) return;
+    this.stepRect = [
+      this.operationRect[0],
+      this.nextRow,
+      this.operationRect[2],
+      Math.min(
+        this.operationRect[3],
+        this.nextRow + editorBudgets.heightCompositionRowsPerStep,
+      ),
+    ];
+    this.projectionRect = intersectRect(this.stepRect, this.rect);
+    const projection = createHeightProjection(
+      this.descriptor,
+      this.axes,
+      this.projectionRect,
+    );
+    this.horizontalPlannedRows = [...this.horizontalCompletedRows];
+    if (area(this.projectionRect)) {
+      for (let level = 0; level < this.descriptor.levelCount; level++) {
+        const rows = this.descriptor.rows[level];
+        const axis = (level * 2 + 1) * this.axes.width * 2;
+        const from =
+          this.axes.data[axis + this.projectionRect[1] * 10] - 1 - rows.first;
+        const to =
+          this.axes.data[axis + (this.projectionRect[3] - 1) * 10] +
+          3 -
+          rows.first;
+        const next = Math.min(
+          to,
+          Math.max(from, this.horizontalCompletedRows[level] ?? from),
+        );
+        this.horizontalPlannedRows[level] = to;
+        projection.samples -=
+          (this.projectionRect[2] - this.projectionRect[0]) * (next - from);
+        projection.positions[level * 8 + 1] = projection.positions[
+          level * 8 + 3
+        ] = (rows.offset + next) / this.descriptor.horizontalRows;
+        projection.uvs[level * 8 + 1] = projection.uvs[level * 8 + 3] =
+          level + next / rows.count;
+      }
     }
-    this.rect = this.mode === "live" ? [...rect] : [...WHOLE];
-    // Fallback decisions precede the scratch layout: no canonical whole draw
-    // may read horizontal rows prepared only for the original dirty rectangle.
-    const projection = createHeightProjection(next, this.axes, this.rect);
-    this.horizontalRows = Math.max(1, next.horizontalRows);
     this.horizontalSamples = this.fallback ? 0 : projection.samples;
-    this.horizontal.resize(SIZE, this.horizontalRows);
-    this.horizontalMesh.scale.set(SIZE, this.horizontalRows);
     this.horizontalMesh.geometry.positions = projection.positions;
     this.horizontalMesh.geometry.uvs = projection.uvs;
     this.horizontalMesh.geometry.indices = projection.indices;
-    const horizontalUniforms =
-      this.horizontalShader.resources.heightUniforms.uniforms;
-    horizontalUniforms.uPageStride = next.pageStride;
-    horizontalUniforms.uPageColumns = next.width - 1;
-    const uniforms = this.shader.resources.heightUniforms.uniforms;
-    uniforms.uLevelCount = next.levelCount;
-    uniforms.uPageStride = next.pageStride;
-    uniforms.uPageColumns = next.width - 1;
-    uniforms.uMode =
-      this.mode === "canonical" ? 0 : this.mode === "live" ? 1 : 2;
-    uniforms.uActiveLevel = level;
-    uniforms.uMinimumLevel = minimum;
-    uniforms.uHasOverview = this.mode === "canonical" && this.overview ? 1 : 0;
-    uniforms.uClip = new Float32Array(next.clip);
-    uniforms.uDirty = new Float32Array(this.rect);
-    this.colourShader.resources.heightUniforms.uniforms.uFallback = this
-      .fallback
-      ? 1
-      : 0;
-    this.colourShader.resources.heightUniforms.uniforms.uClip =
-      new Float32Array(next.clip);
-    this.dirty = true;
-    this.compositionDirty = true;
+    this.peakGeometryBytes = Math.max(
+      this.peakGeometryBytes,
+      this.geometryBytes,
+    );
+    this.stepReady = true;
+    this.preparationPhase = "strip-ready";
   }
 
-  private encodeOverview(): void {
-    const encoded = this.overview
-      ? encodeHeightOverview(this.overview.values)
-      : { data: new Float32Array(2), fallback: false };
-    this.overviewSource.resource = encoded.data;
-    this.overviewSource.resize(
-      this.overview ? SIZE : 1,
-      this.overview ? SIZE : 1,
+  private requestFallback(): void {
+    if (
+      !this.field.projections ||
+      !this.projectionInput ||
+      this.projectionTask ||
+      this.disposed
+    )
+      return;
+    const generation = this.generation;
+    const task = this.field.projections.request(
+      this.projectionInput,
+      this.projectionPriority,
     );
-    this.overviewFallback = encoded.fallback;
-    this.overviewEncoded = this.overview;
-    this.overviewDirty = true;
-  }
-  private updateFallback(): void {
-    // Preserve the canonical Float64 reconstruction and summation order.
-    const grid = prepareHeightGrid(
-      [...this.field.atlas.sources.values()].filter(
-        (tile) => tile.level >= minimumCoarseHeightLevel(this.power),
-      ),
+    this.projectionTask = task;
+    task.promise.then(
+      (pixels) => {
+        if (
+          this.disposed ||
+          generation !== this.generation ||
+          this.projectionTask !== task
+        )
+          return;
+        this.projectionTask = null;
+        if (pixels) {
+          this.projectionInput = null;
+          this.fallbackSource.resource = pixels;
+          this.stageSource(this.fallbackSource, SIZE, SIZE);
+          this.fallbackSamples += SIZE * SIZE;
+          this.fallbackDirty = true;
+          this.fallbackReady = true;
+        }
+        this.field.wake();
+      },
+      (error: unknown) => {
+        if (
+          this.disposed ||
+          generation !== this.generation ||
+          this.projectionTask !== task
+        )
+          return;
+        this.projectionTask = null;
+        this.projectionInput = null;
+        this.fallbackError =
+          error instanceof Error ? error : new Error(String(error));
+        this.field.wake();
+      },
     );
-    const pixels = rasterize(
-      grid(this.bounds, SIZE, WHOLE),
-      this.bounds,
-      SIZE,
-      WHOLE,
-      this.overview?.values,
-    );
-    this.fallbackSamples += SIZE * SIZE;
-    this.fallbackSource.resource = pixels;
-    this.fallbackSource.resize(SIZE, SIZE);
-    this.fallbackDirty = true;
   }
 
   flush(maxBytes = Infinity): number {
-    if (this.disposed) return 0;
+    if (
+      this.disposed ||
+      this.preparation ||
+      (this.fallback && !this.fallbackReady)
+    )
+      return 0;
     let bytes = 0;
     const upload = (
       source: HeightAtlasSource,
@@ -698,6 +1022,14 @@ export class HeightFieldTile {
     ) => {
       const values = source.resource as Float32Array | Uint8Array;
       if (!needed || bytes + values.byteLength > maxBytes) return;
+      const size = this.sourceSizes.get(source);
+      if (size) {
+        if (source.width !== size[0] || source.height !== size[1])
+          this.field.markGpuWork();
+        source.resize(size[0], size[1]);
+        this.sourceSizes.delete(source);
+      }
+      this.field.initSource(source);
       source.uploadRange(0, source.width * source.height);
       bytes += values.byteLength;
       done();
@@ -731,39 +1063,37 @@ export class HeightFieldTile {
   get uploadReady(): boolean {
     return (
       this.descriptor !== null &&
+      this.stepReady &&
       !this.pendingUploadBytes &&
       (this.fallback || this.field.authors.ready(this.descriptor.pages))
     );
   }
   get needsPreparation(): boolean {
-    return this.descriptor === null;
+    return this.compositionDirty && !this.stepReady;
   }
   get compositionWork(): number {
-    if (!this.compositionDirty) return 0;
-    const copy =
+    if (!this.compositionDirty || !this.stepReady) return 0;
+    const projected = area(this.projectionRect);
+    const copied =
       this.mode === "live" && this.currentIsBasis
-        ? SIZE * SIZE - area(this.rect)
+        ? area(this.stepRect) - projected
         : 0;
-    const colour = this.mode === "capture" ? 0 : area(this.rect);
-    // Same twenty-pair-product unit as the original cubic budget. Capture
-    // reads and first-live copies are real work, separately included and counted.
-    const capture = this.mode === "capture" ? SIZE * SIZE : 0;
-    // Extra pair additions have no matching product: live subtracts C_basis
-    // and adds H_basis; canonical coarse capture also accumulates C separately.
-    // Charge each conservatively as another product-and-add work unit.
+    const colour = this.mode === "capture" ? 0 : projected;
+    const capture = this.mode === "capture" ? area(this.stepRect) : 0;
     const basisAdds =
       this.mode === "live"
-        ? 2 * area(this.rect)
+        ? 2 * projected
         : this.mode === "canonical" &&
             this.field.toolLevel >= minimumCoarseHeightLevel(this.power) &&
             this.descriptor?.levels.includes(this.field.toolLevel)
-          ? 4 * area(this.rect)
+          ? 4 * projected
           : 0;
+    // A completed worker image needs only its bounded colour pass on the GPU.
     return (
       (this.fallback
-        ? area(this.rect) * Math.max(1, this.descriptor?.levelCount ?? 1)
+        ? 0
         : Math.ceil((this.projectionProducts + basisAdds) / 20)) +
-      Math.ceil((colour + copy + capture) / 16)
+      Math.ceil((colour + copied + capture) / 16)
     );
   }
   get compositionLevels(): number {
@@ -774,7 +1104,7 @@ export class HeightFieldTile {
       ? 0
       : 4 *
           (this.horizontalSamples +
-            area(this.rect) * (this.descriptor?.levelCount ?? 0));
+            area(this.projectionRect) * (this.descriptor?.levelCount ?? 0));
   }
   get usesAnchor(): boolean {
     return this.mode === "live";
@@ -786,37 +1116,46 @@ export class HeightFieldTile {
     return this.numericDepth;
   }
 
+  /** Submit one complete horizontal → numeric → colour strip. */
   drawDirty(renderer: WebGLRenderer): number {
     if (!this.compositionDirty || this.disposed) return 0;
     if (!this.uploadReady)
       throw new Error(
         "Unvollständiger numerischer Höhenstand vor GPU-Zeichnung.",
       );
-    const samples = area(this.rect);
+    const samples = area(this.projectionRect);
     const firstLive = this.mode === "live" && this.currentIsBasis;
+    const complete = this.stepRect[3] === this.operationRect[3];
     const stats: HeightCompositionStats = {
       canonicalSamples:
         !this.fallback && this.mode === "canonical" ? samples : 0,
       deltaSamples: !this.fallback && this.mode === "live" ? samples : 0,
       colourSamples: this.mode === "capture" ? 0 : samples,
       anchorCopySamples:
-        !this.fallback && firstLive ? SIZE * SIZE - samples : 0,
-      basisCaptureSamples: this.mode === "capture" ? samples : 0,
+        !this.fallback && firstLive ? area(this.stepRect) - samples : 0,
+      basisCaptureSamples: this.mode === "capture" ? area(this.stepRect) : 0,
       canonicalBasisBuilds:
-        !this.fallback && this.mode === "canonical" && this.plannedBasis
+        complete &&
+        !this.fallback &&
+        this.mode === "canonical" &&
+        this.plannedBasis
           ? 1
           : 0,
       horizontalSamples: this.horizontalSamples,
       projectionProducts: this.projectionProducts,
     };
+    this.drawStarted = true;
     if (!this.fallback) {
+      // Resizing an existing GPU target is itself terrain work, never preparation.
+      this.horizontal.resize(SIZE, this.horizontalRows);
+      this.allocatedHorizontalRows = this.horizontalRows;
+      this.horizontalMesh.scale.set(SIZE, this.horizontalRows);
       if (this.horizontalSamples)
         renderer.render({
           container: this.horizontalMesh,
           target: this.horizontal,
           clear: false,
         });
-      // The sampled texture is always distinct from this pass's attachment.
       const swapAfterCapture = this.mode === "capture" && this.currentIsBasis;
       const target =
         this.mode === "live" || swapAfterCapture ? this.numeric : this.basis;
@@ -824,28 +1163,28 @@ export class HeightFieldTile {
         this.mode === "live" || swapAfterCapture
           ? this.basis.source
           : this.numeric.source;
-      setRect(
-        this.numericMesh,
-        this.mode === "live" && !firstLive ? this.rect : WHOLE,
-      );
-      renderer.render({
-        container: this.numericMesh,
-        target,
-        clear: this.mode !== "live",
-      });
+      setRect(this.numericMesh, this.stepRect);
+      renderer.render({ container: this.numericMesh, target, clear: false });
       this.colourShader.resources.uHeights = target.source;
-      // Do not promote an unwritten target if the GL submission throws.
-      if (swapAfterCapture)
+      // A capture target becomes the basis only after all of its strips exist.
+      if (complete && swapAfterCapture)
         [this.basis, this.numeric] = [this.numeric, this.basis];
     }
-    if (this.mode !== "capture") {
-      setRect(this.colourMesh, this.rect);
+    if (this.mode !== "capture" && samples) {
+      setRect(this.colourMesh, this.projectionRect);
       renderer.render({
         container: this.colourMesh,
         target: this.colour,
-        clear: samples === SIZE * SIZE,
+        clear: false,
       });
     }
+    this.drawStarted = true;
+    this.nextRow = this.stepRect[3];
+    this.horizontalCompletedRows = this.horizontalPlannedRows;
+    this.stepReady = false;
+    this.preparationPhase = complete ? "complete" : "next-strip";
+    this.compositionStats = stats;
+    if (!complete) return samples;
     this.numericValid = !this.fallback;
     this.numericCurrent = true;
     this.numericMagnitude = this.plannedMagnitude;
@@ -863,7 +1202,7 @@ export class HeightFieldTile {
     if (this.plannedRebase) this.rebaseCount++;
     this.preparedVersion = this.preparationVersion;
     this.compositionDirty = false;
-    this.compositionStats = stats;
+    this.drawStarted = false;
     return samples;
   }
   get needsComposition(): boolean {
@@ -879,18 +1218,59 @@ export class HeightFieldTile {
   }
   get bytes(): number {
     return (
+      this.preparationReservedBytes +
+      this.geometryBytes +
       this.descriptorSource.resource.byteLength +
       this.overviewSource.resource.byteLength +
       this.weightSource.resource.byteLength +
       this.fallbackSource.resource.byteLength
     );
   }
+  private get geometryBytes(): number {
+    return [this.numericMesh, this.horizontalMesh, this.colourMesh].reduce(
+      (sum, mesh) =>
+        sum +
+        mesh.geometry.positions.byteLength +
+        mesh.geometry.uvs.byteLength +
+        mesh.geometry.indices.byteLength,
+      0,
+    );
+  }
+  get gpuSourceBytes(): number {
+    return (
+      Math.max(this.geometryBytes, this.peakGeometryBytes) +
+      [
+        this.descriptorSource,
+        this.overviewSource,
+        this.weightSource,
+        this.fallbackSource,
+      ].reduce(
+        (sum, source) =>
+          sum +
+          Math.max(
+            source.resource.byteLength,
+            source.width *
+              source.height *
+              (source === this.descriptorSource
+                ? 16
+                : source === this.fallbackSource
+                  ? 4
+                  : 8),
+          ),
+        0,
+      )
+    );
+  }
   get numericBytes(): number {
-    return SIZE * SIZE * 16 * 2 + SIZE * this.horizontalRows * 8;
+    return (
+      SIZE * SIZE * 16 * 2 +
+      SIZE * Math.max(this.horizontalRows, this.allocatedHorizontalRows) * 8
+    );
   }
   destroy(): void {
     if (this.disposed) return;
     this.disposed = true;
+    this.cancelPreparation();
     this.releaseDescriptor();
     this.mesh.destroy();
     for (const mesh of [
@@ -916,8 +1296,10 @@ export class HeightFieldTile {
       this.overviewSource,
       this.weightSource,
       this.fallbackSource,
-    ])
+    ]) {
       source.destroy();
+      this.field.forgetSource(source);
+    }
     this.field.tiles.delete(this);
   }
 }
@@ -935,18 +1317,41 @@ export class HeightField {
   toolLevel = 0;
   numericSupported = false;
   private renderer?: WebGLRenderer;
+  private initializedSources = new Set<HeightAtlasSource>();
+  lastFlushHadWork = false;
 
-  init(renderer: WebGLRenderer): void {
+  constructor(
+    readonly projections?: HeightProjectionService,
+    readonly wake: () => void = () => {},
+  ) {}
+
+  init(renderer: WebGLRenderer, numericSupported?: boolean): void {
     this.renderer = renderer;
-    this.numericSupported = renderer.gl
-      ? supportsHeightNumericTargets(renderer.gl as WebGL2RenderingContext)
-      : (renderer as WebGLRenderer & { atlasTestDriver?: boolean })
-          .atlasTestDriver === true;
-    this.initSource(this.source);
-    for (const tile of this.tiles) tile.initSources();
+    this.numericSupported =
+      numericSupported ??
+      (renderer.gl
+        ? supportsHeightNumericTargets(renderer.gl as WebGL2RenderingContext)
+        : (renderer as WebGLRenderer & { atlasTestDriver?: boolean })
+            .atlasTestDriver === true);
   }
   initSource(source: HeightAtlasSource): void {
-    this.renderer?.texture.initSource(source);
+    if (!this.renderer || this.initializedSources.has(source)) return;
+    this.renderer.texture.initSource(source);
+    this.initializedSources.add(source);
+    this.markGpuWork();
+  }
+  markGpuWork(): void {
+    this.lastFlushHadWork = true;
+  }
+  retainedSourceBuffers(): readonly ArrayBufferLike[] {
+    return [
+      ...new Set(
+        [...this.tiles].flatMap((tile) => [...tile.retainedSourceBuffers()]),
+      ),
+    ];
+  }
+  forgetSource(source: HeightAtlasSource): void {
+    this.initializedSources.delete(source);
   }
   setToolLevel(level: number): boolean {
     if (!Number.isInteger(level) || level < 0 || level > 21)
@@ -962,9 +1367,8 @@ export class HeightField {
         this.renderer.gl as WebGL2RenderingContext,
       );
     this.authors.invalidate();
+    this.initializedSources.clear();
     for (const tile of this.tiles) tile.invalidateGPU();
-    this.initSource(this.source);
-    for (const tile of this.tiles) tile.initSources();
   }
 
   /** Immutable renderer source used to coalesce updates while a draw is frozen. */
@@ -1045,20 +1449,17 @@ export class HeightField {
     this.tiles.add(tile);
     return tile;
   }
-  flush(maxBytes = Infinity): number {
+  flush(
+    maxBytes = Infinity,
+    selected: Iterable<HeightFieldTile> = this.tiles,
+  ): number {
+    this.lastFlushHadWork = false;
     let bytes = 0;
-    for (const tile of this.tiles) bytes += tile.flush(maxBytes - bytes);
+    for (const tile of selected) bytes += tile.flush(maxBytes - bytes);
+    this.initSource(this.source);
     bytes += this.authors.flush(maxBytes - bytes);
+    this.lastFlushHadWork ||= this.authors.lastFlushHadWork || bytes > 0;
     return bytes;
-  }
-  drawDirty(renderer: WebGLRenderer): number {
-    if (
-      [...this.tiles].some((tile) => tile.needsComposition && !tile.uploadReady)
-    )
-      throw new Error("Höhenbild wartet noch auf numerische GPU-Daten.");
-    let pixels = 0;
-    for (const tile of this.tiles) pixels += tile.drawDirty(renderer);
-    return pixels;
   }
   metrics() {
     const derived =
@@ -1068,12 +1469,17 @@ export class HeightField {
     return {
       sourceBytes,
       gpuBytes:
-        derived +
+        Math.max(
+          this.atlas.data.byteLength,
+          this.source.width * this.source.height * 8,
+        ) +
         [...this.tiles].reduce(
-          (sum, tile) => sum + tile.numericBytes + SIZE * SIZE * 4,
+          (sum, tile) =>
+            sum + tile.gpuSourceBytes + tile.numericBytes + SIZE * SIZE * 4,
           0,
         ),
-      cpuBytes: sourceBytes + derived,
+      cpuBytes: sourceBytes + derived + this.atlas.preparationBytes,
+      projectionBytes: this.projections?.metrics().bytes ?? 0,
       sourceCount: this.atlas.sources.size,
       pages: this.atlas.pageCount,
       fallbackTiles: [...this.tiles].filter((tile) => tile.fallback).length,
