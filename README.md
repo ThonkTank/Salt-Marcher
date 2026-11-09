@@ -16,9 +16,14 @@ Electron/Pixi und bietet bislang einen begrenzten Höheneditor.
 
 Die vier Dokumente zum aktuellen Produkt werden aktualisiert, nicht als Chronik
 fortgeschrieben. Der Neubauplan beschreibt zusätzlich den beauftragten Zielzustand.
-Die P0-Fortsetzung bündelt Dokument, Eingabe, Darstellung und Projektsitzung in
-vier Zuständigkeiten und begrenzt die laufende Höhenkomposition auf lokale
-Änderungen. Der vollständige Ausbau bleibt an das native P0-Gate gebunden.
+Die geplante P0-Korrektur erhält diese vier Zuständigkeiten. R1–R5 im Neubauplan
+prüfen zuerst eine einfache Weg-/Zeit-Pinselreferenz, einen geordneten Abschluss
+angenommener Arbeit und begrenzte Renderarbeit. Eine lokale Wirkungsschranke
+umfasst auch reservierte Restarbeit; ein Vorschusskonto je Höhenwert ist nur
+ein begründeter Gegenkandidat. Primärquellen, Auswahl und positive Nachweise
+stehen im selben Plan. Nach der Hardware-Richtungsprobe
+ist nur ein kleiner gemeinsamer Landschafts-/Hausfall zulässig; der weitere
+Ausbau bleibt an die vollständige P0- und P3-Abnahme gebunden.
 Detailbelege liegen ignoriert unter `src-tauri/target/diagnostics/`,
 `src-tauri/target/cleanup/` oder `artifacts/atlas-rebuild/`.
 
