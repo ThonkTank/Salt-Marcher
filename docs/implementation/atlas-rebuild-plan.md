@@ -4,7 +4,9 @@ Dieser Plan erhält den vollständigen Zielumfang **F01–F19 mit D01–D11** un
 Pakete P0–P9. Die **begrenzte Vereinfachung vom 9. November 2026 in Abschnitt 5**
 ist umgesetzt und am integrierten Stand geprüft. Sie erhält das P0-Verhalten
 mit eindeutigen Besitzern für Pinselzustand, lokale Darstellung und Diagnose.
-Großpinselgeschwindigkeit und native Freigabe bleiben eigene offene Abschlüsse.
+Die anschließende Großpinselreparatur führt numerische Quellen direkt in einen
+GPU-Darstellungscache; ihr Leistungsnachweis und die native Freigabe bleiben
+getrennte Abschlüsse.
 Erreichter Implementierungs- und Nachweisstand stehen im Status; das native
 P0-Gate bleibt Voraussetzung für P1–P9. K1–K6 werden nicht erneut umgesetzt.
 
@@ -55,7 +57,7 @@ bleiben erhalten; kein globales `fresh`-Flag und keine Hüllen allein wegen Date
 
 Bereits umgesetzt sind ein effektiver Controllerzustand mit React-Feldentwürfen,
 maßstabsgerechte Reads, Quellenpatches statt Vollkopien, lokale sichtbare Freigabe,
-begrenzte Dosis, priorisierter Rasterablauf und Reads während asynchroner Saves.
+begrenzte Dosis, gerichteter Frameablauf und Reads während asynchroner Saves.
 Diese Grundlagen erweitern und gezielt absichern; nicht erneut als offene
 Aufräumprojekte beginnen. Aktuelle Restarbeit steht ausschließlich in Abschnitt 5.
 Zwei Hosts und Prüfpfade bleiben bis zur vollständigen Ablösung in P9 nötig.
@@ -451,17 +453,29 @@ wartet nicht auf SQL und rasterisiert nicht bei jeder Bewegung die ganze Szene.
 Grobere vorhandene Darstellung darf überbrücken; sie ist weder exakte
 Bearbeitungsquelle noch Inhalt einer anderen Projektsession.
 
-Der vorhandene Quellenpatch-, Raster- und lokale Submitpfad ist in der
+Der vorhandene Quellenpatch-, GPU- und lokale Submitpfad ist in der
 [Architektur](../architecture.md#lokale-freigabe-und-frameablauf) beschrieben.
-Diesen auf neue Schichten erweitern: begrenzte eigene Quellkopien, aktuelle
-lokale Ergebnisse vor unabhängigem Bildaufbau, versionierte Teilresultate und
-begrenzte Uploads. Keine zweite Vorschau-/Commitdarstellung. Angenommene
-Autorenänderungen dürfen nicht mit überholbaren Darstellungsaufträgen verwechselt werden.
+Diesen auf neue Schichten erweitern: `EditorDocument` bleibt einzige
+Autorenautorität; der Controller besitzt den einzigen Frameablauf. Eigene
+numerische Patches aktualisieren abgeleitete GPU-Quellen samt kubischem Halo und
+numerischer Feinübersicht. Alle benötigten Autorenstufen werden zusammengesetzt,
+auch nach mehreren Gesten mit unterschiedlicher Auflösung. Betroffene
+128×128-Farbkacheln werden auf der GPU erneuert und für Navigation, Cursor und
+Overlays beibehalten. Unveränderte Bilder wiederholen keine Höhenrekonstruktion.
 
-Die Vereinfachung aus Abschnitt 5 erhält den vorhandenen Rasterweg. Die danach
-gesondert begründete Großpinselreparatur bearbeitet einen belegten Engpass.
-CPU-Rasterung bleibt zulässig; alternative Rasterung nur bei belegtem Rechenengpass
-erproben. Keine zweite Produktionsmathematik auf Vorrat.
+Der Großpinsel benötigt damit keine normale CPU-Rasterwarteschlange,
+Worker-Roundtrips oder zweite Vorschau-/Commitdarstellung. Uploads und sämtliche
+residenten Darstellungen bleiben budgetiert. Eine ausstehende Ressource wird
+nicht als aktueller lokaler Bildstand bestätigt. Angenommene Autorenänderungen
+bleiben unabhängig von der Lebensdauer abgeleiteter Darstellung erhalten.
+
+Für extreme endliche Koeffizienten und Auslöschung bleibt der kanonische
+`Float64`-Darstellungsfallback auf die betroffenen Kacheln begrenzt. Die gemeinsame
+CPU-/GPU-Farbklassifikation setzt Werte innerhalb `1e-6` Fuß von 0 oder 12 Fuß
+auf die Grenze; Autoren, exakte Abfragen und Dateiwerte bleiben unverändert.
+Der Vergleich prüft Werte im Band sowie beide Seiten bei mindestens doppeltem
+Grenzabstand. Die Darstellungsgenauigkeit verlangt keine bitgleichen
+Farbentscheidungen bei beliebig kleinen Abständen von einer Bandgrenze.
 
 Längere Fachjobs erhalten unveränderliche Eingaben und vollständige lokale
 Readsets: vorhandene Quellen, bestätigte Abwesenheit und räumliche Abfragen.
@@ -698,22 +712,24 @@ nur ihre tatsächlich betroffenen Nachweise.
 
 ### P0-Fortsetzung und nächster Produktnachweis
 
-**Begrenzter Umsetzungsauftrag vom 9. November 2026, abgeschlossen:** Der vorhandene
-P0-Ablauf ist mit denselben Bedienregeln vereinfacht. Der Schnitt und seine
-Abschlusskriterien stehen hier; aktuelle Zuständigkeiten beschreibt die Architektur,
-den geprüften Endstand und die weiterhin offenen Leistungsgrenzen der Status.
-Dieser Auftrag aktiviert weder P1–P9 noch eine neue native Messmethode. Der
+**P0-Steuerung und Großpinsel:** Die begrenzte Vereinfachung vom 9. November 2026
+hat eindeutige Besitzer für Eingabe, Dosis und lokale Darstellung hergestellt.
+Die beauftragte Großpinselreparatur ersetzt den CPU-Rasterworker durch den
+numerischen GPU-Pfad aus A06 samt beibehaltenen Farbkacheln. Der tatsächliche
+Nachweisstand beider Schnitte steht allein im [Status](status.md).
+Diese Arbeit aktiviert weder P1–P9 noch eine neue native Messmethode. Der
 Produktvertrag bleibt die Verhaltensautorität; die Zuordnung unten erhält seine
 prüfbaren Grenzen für weitere Arbeit.
 
 #### Ausgangspunkt und begrenztes Ziel
 
-Dokument, numerische Übersichten, begrenzter Quellenbestand, CPU-Rasterworker und
-SQLite-Dateipfad sind vorhandene Grundlagen. Die direkte Fortsetzung weiterer
-Rasterbatches derselben angenommenen Revision ist bereits implementiert. Diese
-Arbeit nicht erneut vorschlagen oder durch eine zusätzliche RAF-Wartezeit ersetzen.
-Die aktuelle Großpinselgrenze und die gescheiterte native Präsentationszuordnung
-stehen im [Status](status.md); der Umbau verspricht dafür keinen Zeitgewinn.
+Dokument, numerische Übersichten, begrenzter Quellenbestand, zeitabhängige
+Pinselsteuerung und SQLite-Dateipfad bleiben Grundlage. Die wiederholte
+CPU-Höhenabtastung pro Darstellungspixel und ihre seriellen Übergänge entfallen
+im gewöhnlichen Pinselpfad. Ein Shader komponiert betroffene Farbkacheln direkt
+aus den numerischen Quellen; weitere Kamera-/Cursorframes verwenden den Cache.
+Die Geschwindigkeit muss am unveränderten Großpinselfall belegt werden.
+Die gesondert fehlende native Präsentationszuordnung bleibt ausdrücklich offen.
 
 **Ziel:** Eingabezustand, angenommener Pinselabschnitt und tatsächlich eingereichtes
 lokales Bild haben jeweils genau einen Besitzer. Für eine Eingabe lässt sich an
@@ -722,9 +738,10 @@ Geste beendet. Ersetzte Zustände, APIs und Diagnosewege entfallen im selben Umb
 
 Die Höhenmathematik, Pinselparameter, numerischen Übersichten, Budgets,
 Quellen-/Readgrenzen, History und der gemeinsame Dateilebenszyklus bleiben Grundlage.
-GPU-Rasterung, weitere Worker, asynchrone Worker-Chunks, ein Hostwechsel und ein
-neuer allgemeiner Scheduler sind kein Bestandteil dieser Vereinfachung. Sie sind
-auch keine aus den bisherigen Zeitdaten bewiesene Reparatur.
+Die kleine Farbgrenzenstabilisierung steht ausdrücklich im Produktvertrag.
+Weitere Worker, ein Hostwechsel und ein allgemeiner Scheduler gehören nicht zum
+Auftrag. Die entfernte Raster-Batchsteuerung wird nicht als Pflichtarchitektur
+oder paralleler gewöhnlicher Renderpfad erhalten.
 
 #### Verhalten, das der Umbau erhalten muss
 
@@ -752,14 +769,14 @@ keine gültige Reparatur dieses Falls.
 
 #### Zuständigkeiten und entfallene Altwege
 
-| Besitzer                        | Eigene Verantwortung                                                                                            | Entfallende Doppelung                                                                                          |
-| ------------------------------- | --------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| Pinselsteuerung im Controller   | Tasten-/Gestenzustand, eingefrorener Pinsel, Zeitfenster, letzter geometrischer Anker und neuester Zeigerpunkt. | Verstreute Interpretation von `gesture` und `editPointer`; Bewegungsanker im Fachmodell.                       |
-| `EditorDocument`                | Höhenwerte, atomare Budgetprüfung, angenommene Patches, Vorherbilder und eine Historytransaktion je Geste.      | `Gesture.previous`, Nullzeit-Aufrufe zur Ankersynchronisation und impliziter Ursprung in `readBoundsForPoint`. |
-| Controller als Framekoordinator | Reihenfolge von Resultatübernahme, Zeichnen, lokaler Freigabe, Folgedosis und Dispatch.                         | Renderer-Rückrufe `onSubmit`/`advanceFrame` in den Controller und eigener RAF-Besitz des Renderers.            |
-| `WorldRenderer`                 | Begrenzte Rasterarbeit, Texturen, tatsächliche Submitstempel und eine lokale Bildabfrage.                       | Separate Implementierungen von `regionDisplayed`, `regionExact` und diagnostischem `regionCoverage`.           |
-| Bestehender Store-/Dateipfad    | Bestätigte Sequenz, asynchroner Snapshot, neue/geöffnete Datei und Wiederherstellung.                           | Kein neuer Pfad; dieser Besitzer wird nicht umgebaut.                                                          |
-| Bestehender passiver Beobachter | Messzuordnung aus echten Eingabe-, Dosis-, Commit- und Submitfakten.                                            | Diagnosebuchhaltung im Produktcontroller und eigene Deutung von lokaler Bereitschaft.                          |
+| Besitzer                          | Eigene Verantwortung                                                                                            | Entfallende Doppelung                                                                                          |
+| --------------------------------- | --------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| Pinselsteuerung im Controller     | Tasten-/Gestenzustand, eingefrorener Pinsel, Zeitfenster, letzter geometrischer Anker und neuester Zeigerpunkt. | Verstreute Interpretation von `gesture` und `editPointer`; Bewegungsanker im Fachmodell.                       |
+| `EditorDocument`                  | Höhenwerte, atomare Budgetprüfung, angenommene Patches, Vorherbilder und eine Historytransaktion je Geste.      | `Gesture.previous`, Nullzeit-Aufrufe zur Ankersynchronisation und impliziter Ursprung in `readBoundsForPoint`. |
+| Controller als Framekoordinator   | Reihenfolge von Ressourcenübernahme, Zeichnen, lokaler Freigabe und Folgedosis.                                 | Renderer-Rückrufe `onSubmit`/`advanceFrame`, zweiter RAF und Raster-Dispatchsteuerung.                         |
+| `WorldRenderer` mit `HeightField` | Numerisches GPU-Abbild, beibehaltene Farbkacheln, tatsächliche Submitstempel und eine lokale Bildabfrage.       | Gewöhnliche CPU-Rasterbatches und getrennte `regionDisplayed`-/`regionExact`-/`regionCoverage`-Deutungen.      |
+| Bestehender Store-/Dateipfad      | Bestätigte Sequenz, asynchroner Snapshot, neue/geöffnete Datei und Wiederherstellung.                           | Kein neuer Pfad; dieser Besitzer wird nicht umgebaut.                                                          |
+| Bestehender passiver Beobachter   | Messzuordnung aus echten Eingabe-, Dosis-, Commit- und Submitfakten.                                            | Diagnosebuchhaltung im Produktcontroller und eigene Deutung von lokaler Bereitschaft.                          |
 
 **1. Vollständige Pinselabschnitte statt zweier Bewegungsanker.**
 
@@ -835,24 +852,22 @@ kann die Produktsperre lösen, erzeugt aber niemals einen angeblichen Bildbeleg.
 
 Der Controller besitzt den einzigen RAF und ruft den Renderer gerichtet auf:
 
-1. Gültige fertige Rasterresultate innerhalb des bestehenden Uploadbudgets übernehmen.
-2. Das benötigte Terrain-/Overlaybild tatsächlich einreichen.
+1. Geänderte numerische Ressourcen innerhalb des bestehenden Uploadbudgets übernehmen.
+2. Betroffene GPU-Farbkacheln komponieren und das Terrain-/Overlaybild tatsächlich einreichen.
 3. Die lokalen Submitfakten verarbeiten und Freigabe samt UI daraus ableiten.
 4. Für einen weiter gehaltenen aktiven Strich höchstens eine Folgedosis entscheiden,
    anwenden und ihre Patches/Invalidierung weiterreichen.
-5. Die nächste erforderliche begrenzte Rasterarbeit disponieren.
 
 Der Renderer ruft währenddessen keine Pinselentscheidung im Controller auf.
 Die nominale Anfangsdosis bleibt beim gültigen Down sofort möglich, anhand des
 letzten gültigen lokalen Submit. Sie wird nicht auf einen späteren Frame vertagt:
 Ein Down/Up zwischen Frames darf weder verloren gehen noch nach Release nachwirken.
 
-Resultatnachrichten dürfen weiterhin erforderliche Restbatches **derselben bereits
-angenommenen Revision** direkt starten. Dabei entstehen keine neue Dosis, kein
-Renderaufruf und kein zweiter Framepfad. Ein laufender Batch, Pixel-/Bytegrenzen,
-Fairness und die Abweisung alter Session-/Ansichts-/Jobergebnisse bleiben erhalten.
-Der wirkungslose `lastSubmit`-Identitätsvergleich mit ohnehin neuer Framenummer
-und sein Doppelzustand sind entfernt.
+Noch nicht vollständig hochgeladene numerische Ressourcen halten den betroffenen
+Bildstand veraltet; bisherige Farbkacheln bleiben sichtbar. Es gibt keine
+Rasterworkerantwort, die einen zweiten Framepfad oder eine neue Dosis starten
+könnte. Session-, Quellen- und Ansichtsgültigkeit bleiben erforderlich. Der
+wirkungslose `lastSubmit`-Identitätsvergleich und sein Doppelzustand bleiben entfernt.
 
 **5. Wenige Messfakten, eine Zuordnung und ein Auswertungspfad.**
 
@@ -877,7 +892,7 @@ veränderbare Urteile wie `attempt.passed`, `collectionPassed` und
 `scenario.evaluation` sind durch Fakten plus abgeleitete Bewertungen ersetzt;
 Fehler oder Abbruch dürfen dabei nicht durch Wiederholung verschwinden.
 
-Aktuelle Belege erhalten ein eindeutiges Schema; ersetzte aktive Aliase und
+Aktuelle Belege verwenden Schema 4; ersetzte aktive Aliase und
 Rekonstruktionswege entfallen mit ihren Verbrauchern. Alte Rohbelege bleiben
 unverändert und werden mit dem erhaltenen Auswerter ihres Schemas bewertet.
 Die Provenienzgrenze des historischen Gesamtharness steht beim Beleg und im Status.
@@ -895,31 +910,38 @@ der ersten tatsächlichen Bildschirmpräsentation bleibt ausdrücklich blockiert
 
 #### Umsetzung und gezielter Nachweis
 
-Die vier Phasen sind umgesetzt und am integrierten Stand geprüft. Ihre
-Abschlusskriterien bleiben unten nachvollziehbar; konkrete Prüfzahlen und
-Messergebnisse stehen ausschließlich im [Status](status.md). Ein zweiter Pinsel-,
-Render- oder Diagnosepfad ist nicht erhalten geblieben.
+Die vier Phasen der Steuerungsvereinfachung bleiben Grundlage der Prüfung des
+GPU-Umbaus. Ihre Abschlusskriterien stehen unten; konkrete Prüfzahlen,
+Messergebnisse und noch offene Fälle gehören ausschließlich in den
+[Status](status.md). Ein paralleler gewöhnlicher Pinsel-, Render- oder
+Diagnosepfad ist nicht vorgesehen.
 
 | Phase                     | Änderung                                                                                                                                                           | Abschluss am integrierten Stand                                                                                                                                                                                                                         |
 | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | A — Eingabe und Modell    | Explizite Segmente, reine Abschnittsgrenzen und ausdrücklicher Pinselzustand. Bestehende Verhaltenstests den obigen Regeln zuordnen; nur konkrete Lücken ergänzen. | Nur ein Bewegungsanker; alte Nullzeit-Synchronisation entfernt. Kurzer Klick, Hold, langsam/schnell, Hänger, kalter Bereich und alle Abschlussfälle behalten Wirkung und History.                                                                       |
-| B — Bild und Ablauf       | Gemeinsame lokale Bildabfrage und gerichtete Framekoordination; sämtliche Produkt-, UI- und Prüfverbraucher umstellen.                                             | Alte regionale APIs und Callbackkreis entfernt. Lokale Freigabe funktioniert trotz ferner Arbeit; Folgeklicks bleiben bis Rückmeldung gesperrt, alte Resultate abgewiesen und Restbatches direkt fortgesetzt.                                           |
+| B — Bild und Ablauf       | Gemeinsame lokale Bildabfrage, gerichtete Framekoordination und numerischer GPU-Pfad mit beibehaltenen Farbkacheln.                                                | Alte regionale APIs, Callbackkreis und Rasterwarteschlange entfernt. Lokale Freigabe folgt tatsächlichem Draw; Folgeklicks bleiben bis Rückmeldung gesperrt, alte Quellen-/Sessionstände werden abgewiesen.                                             |
 | C — Diagnose              | Doppelte Dosis-/Inputbelege, historische Coverage-Logik, Controllerbuchhaltung und parallele Auswertung ablösen.                                                   | Ein Fakt je Dosis, eine Zuordnung zum echten Submit und ein Szenariourteil. Unabhängige Inhaltskontrollen sowie Drop/Delay/Recovery bleiben aussagekräftig; Diagnose an/aus ergibt bei gleichen Eingaben, Zeiten und Produktfakten dieselben Fachwerte. |
 | D — Gemeinsamer Abschluss | Gezielte bestehende Modell-/Controller-/Renderer-/Auswerterprüfungen und eine kurze tatsächliche Desktopintegration am endgültigen Stand.                          | Grob/Fein, lokale Bereitschaft, Release vor/nach Submit, Undo/Redo, Save/Neustart und Fehlerfälle geprüft; ersetzte Pfade samt Aufrufern und überholten Spiegeltests entfernt.                                                                          |
 
 Der Nachweis für D umfasst den unveränderten warmen 512-Pixel-Fall mit demselben
-Inhalt und Messzweck. Sein erneutes Scheitern bleibt im Status sichtbar; fehlende
-Livebilder oder Zeitdaten wurden nicht herausgefiltert. Das alte Fehlerartefakt
+Inhalt und Messzweck. Fehlende Livebilder oder Zeitdaten bleiben Fehler. Ergänzend
+prüfen mehrere Sekunden lange 512-Pixel-Züge, Halten, langsame/schnelle Wege und
+ein Hänger den fortlaufenden Verlauf; aufeinanderfolgende feine/grobe Gesten
+prüfen die Zusammensetzung aller betroffenen Quellen. Die GPU-Inhaltsprüfung
+vergleicht echte Editorpixel mit der CPU-Referenz: alle 22 Stufen, numerische
+Übersichten, negative Kachelgrenzen, Weltrand, die beiden Seiten der Farbgrenzen
+einschließlich ihres expliziten Bands und endliche numerische Ausnahmefälle.
+Autorenwerte, Undo und Dateiinhalte dürfen nicht gerundet werden. Das alte Fehlerartefakt
 bleibt unter dem verifizierten alten Schema-2-Auswerter ein Fehler; der aktuelle
 CLI lehnt alte Schemata ausdrücklich ab. Die Provenienzgrenze des historischen
 Gesamtharness steht beim Beleg, kein Latenzvergleich wird daraus abgeleitet.
 Unabhängige Fachprüfungen bleiben erhalten. Die gezielten Prüfungen belegen das
 Verhalten des Umbaus, keine allgemeine Beschleunigung oder native Dreifachabnahme.
 
-Architektur und Kurzstatus beschreiben den erreichten Zustand; Produktvertrag und
-Schwellen wurden nicht gelockert. Produkt-, Prüfcode und Belege sind dem geprüften
-Stand zugeordnet. Der begrenzte Aufräumschnitt ist abgeschlossen; weitere
-Optimierung gehört zu den getrennten offenen Aufgaben unten.
+Architektur und Kurzstatus beschreiben den erreichten Zustand. Die explizite
+Darstellungsregel im Produktvertrag ändert keine Autorenwerte oder Zeitziele.
+Produkt-, Prüfcode und Belege müssen dem geprüften Stand zugeordnet sein; ein
+abgeschlossener Aufräumschnitt ersetzt keinen noch offenen Leistungsnachweis.
 
 #### Drei getrennte Abschlussfragen
 
@@ -929,10 +951,10 @@ Optimierung gehört zu den getrennten offenen Aufgaben unten.
 | Großer Pinsel ausreichend schnell | Derselbe warme 512-Pixel-Fall erfüllt seine unveränderten Inhalts-/Live-/Zeitkriterien. Die strukturelle Vereinfachung allein belegt das nicht.                                                                 |
 | Native P0-Freigabe                | Tatsächlicher Inhalt ist seiner ersten erfolgreichen Präsentation eindeutig zugeordnet; qualifizierte Referenz und vollständige Stichprobe aus Abschnitt 6 bestehen. Ein schneller Submit ersetzt das nicht.    |
 
-Nach der Vereinfachung lässt sich eine gesonderte Großpinselreparatur am
-unveränderten Fall begründen: die dominierende vermeidbare Arbeit beziehungsweise
-Wartezeit benennen, eine begrenzte Änderung samt Widerlegungskriterium wählen und
-deren tatsächliche Wirkung prüfen. Keine GPU- oder Workerentscheidung auf Verdacht.
+Die Großpinselreparatur muss die Wirkung der aus A06 entfernten CPU-Abtastung und
+Übergänge am unveränderten Fall belegen. Zusätzliche Optimierung benötigt einen
+konkreten verbleibenden Engpass und ein Widerlegungskriterium; keine neue allgemeine
+Worker- oder Schedulerarchitektur auf Vorrat.
 Der bereits ungeeignete native Messkandidat wird nicht ohne neue konkrete
 Beweisidee wiederholt. Das bestehende P0-Gate und der daran anschließende gemeinsame
 P1/P2/P3-Produktfall bleiben durch diesen begrenzten Umsetzungsauftrag unverändert.
@@ -941,14 +963,14 @@ P1/P2/P3-Produktfall bleiben durch diesen begrenzten Umsetzungsauftrag unveränd
 
 P0a–P0f bezeichnen die Teile des Höhenversuchs, keinen erneuten Bauauftrag:
 
-| Teil | Vorhandene Grundlage                                                     | Verbleibende Verantwortung                                                                     |
-| ---- | ------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------- |
-| P0a  | Nutzervertrag D01–D11 und enger Auftrag festgelegt.                      | Neue Befunde in Status und Restauftrag einordnen; keine obligatorische neue V7-Benchmarkreihe. |
-| P0b  | Gemeinsame lokale Freigabe und normaler Produkt-/Prüfpfad.               | Referenz/Vorprüfung nach K3; tatsächliche Präsentationszuordnung bis P0-Abschluss nachweisen.  |
-| P0c  | Höhenmodell, Graben, grobe Änderung, History und Dateirundlauf.          | Bei Änderungen relevante Funktionsbelege erhalten.                                             |
-| P0d  | Ein priorisierter begrenzter Rasterpfad mit Live-Zwischenständen.        | Auch den angebotenen 512-Pixel-Pinsel erklären und gegen die unveränderten Ziele prüfen.       |
-| P0e  | Numerische Übersicht, begrenzte Quellen samt Metadaten und Detailerhalt. | Begrenzung, alte-Read-Schutz und Rückkehr-/Historyfälle beim Umbau erhalten.                   |
-| P0f  | Reine Reads während asynchroner Snapshots, gemeinsame Antwortprüfung.    | Snapshot S, spätere Dirty-Änderungen und tatsächliche Read-/Save-Überlappung erhalten.         |
+| Teil | Vorhandene Grundlage                                                     | Verbleibende Verantwortung                                                                       |
+| ---- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------ |
+| P0a  | Nutzervertrag D01–D11 und enger Auftrag festgelegt.                      | Neue Befunde in Status und Restauftrag einordnen; keine obligatorische neue V7-Benchmarkreihe.   |
+| P0b  | Gemeinsame lokale Freigabe und normaler Produkt-/Prüfpfad.               | Referenz/Vorprüfung nach K3; tatsächliche Präsentationszuordnung bis P0-Abschluss nachweisen.    |
+| P0c  | Höhenmodell, Graben, grobe Änderung, History und Dateirundlauf.          | Bei Änderungen relevante Funktionsbelege erhalten.                                               |
+| P0d  | Numerisches GPU-Abbild und beibehaltene Farbkacheln mit lokalem Submit.  | 512-Pixel-Pinsel, fortlaufende Wirkung, numerische Bildtreue und unveränderte Zeitziele belegen. |
+| P0e  | Numerische Übersicht, begrenzte Quellen samt Metadaten und Detailerhalt. | Begrenzung, alte-Read-Schutz und Rückkehr-/Historyfälle beim Umbau erhalten.                     |
+| P0f  | Reine Reads während asynchroner Snapshots, gemeinsame Antwortprüfung.    | Snapshot S, spätere Dirty-Änderungen und tatsächliche Read-/Save-Überlappung erhalten.           |
 
 **P0-Abschluss:** M01 sowie Höhenanteile aus M03/M04/M10 mit D10/D11 bestehen
 im gebauten Kandidaten. Dazu gehören Inhalt, laufender Verlauf, History,
@@ -1460,19 +1482,19 @@ Nur Paketstatus und Verweise hier pflegen. Commit, Prüfzahlen, Messwerte und
 konkrete Fehler stehen ausschließlich im [Status](status.md). Historische
 Rohbelege werden nicht umgeschrieben.
 
-| Paket | Umfang                                                                | Status / Nachweis                                                                                                                        |
-| ----- | --------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| K1–K6 | Begrenzte Konsolidierung aus Abschnitt 5.                             | Implementiert; genaue Nachweis-/CI-Grenze im Status.                                                                                     |
-| P0    | Höhenversuch P0a–P0f, D10/D11 und native Höhenabnahme.                | Quellen-/Rasterreparatur implementiert; Vereinfachung in Abschnitt 5 umgesetzt und geprüft; Gate offen. Genaue Fehler/Blocker im Status. |
-| P1    | Gemeinsamer Kern für F01–F19, A02–A06/D01/D02.                        | Offen; nach P0 schrittweise mit P3 entwickeln.                                                                                           |
-| P2    | F19, A07 und vollständige Projektdateien.                             | Offen; neue P3-Quellen sofort in den vorhandenen Dateipfad aufnehmen.                                                                    |
-| P3    | F01–F04/F18-Basis, Mehrskaligkeit, Konkurrenz, D03 und M10-Teilfälle. | Offen.                                                                                                                                   |
-| P4    | F04–F07, D01/D02 und komplette Flächenwerkzeuge.                      | Offen.                                                                                                                                   |
-| P5    | F08–F12/D04: Straßen, Parzellen und Außenhäuser.                      | Offen.                                                                                                                                   |
-| P6    | F02/F12–F14: hauslokale Innenräume.                                   | Offen.                                                                                                                                   |
-| P7    | F09/F16/F17/D03: Gewässer und Nachführung.                            | Offen.                                                                                                                                   |
-| P8    | F03/F15/F18: Regionen, Bedienung und Kartografie.                     | Offen.                                                                                                                                   |
-| P9    | F01–F19 integriert, M01–M10, RPM, Altpfadabbau und Doku.              | Offen.                                                                                                                                   |
+| Paket | Umfang                                                                | Status / Nachweis                                                                                                                |
+| ----- | --------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| K1–K6 | Begrenzte Konsolidierung aus Abschnitt 5.                             | Implementiert; genaue Nachweis-/CI-Grenze im Status.                                                                             |
+| P0    | Höhenversuch P0a–P0f, D10/D11 und native Höhenabnahme.                | Numerischer GPU-Renderweg und Steuerungsvereinfachung implementiert; Großpinsel-/P0-Gate offen. Genaue Fehler/Blocker im Status. |
+| P1    | Gemeinsamer Kern für F01–F19, A02–A06/D01/D02.                        | Offen; nach P0 schrittweise mit P3 entwickeln.                                                                                   |
+| P2    | F19, A07 und vollständige Projektdateien.                             | Offen; neue P3-Quellen sofort in den vorhandenen Dateipfad aufnehmen.                                                            |
+| P3    | F01–F04/F18-Basis, Mehrskaligkeit, Konkurrenz, D03 und M10-Teilfälle. | Offen.                                                                                                                           |
+| P4    | F04–F07, D01/D02 und komplette Flächenwerkzeuge.                      | Offen.                                                                                                                           |
+| P5    | F08–F12/D04: Straßen, Parzellen und Außenhäuser.                      | Offen.                                                                                                                           |
+| P6    | F02/F12–F14: hauslokale Innenräume.                                   | Offen.                                                                                                                           |
+| P7    | F09/F16/F17/D03: Gewässer und Nachführung.                            | Offen.                                                                                                                           |
+| P8    | F03/F15/F18: Regionen, Bedienung und Kartografie.                     | Offen.                                                                                                                           |
+| P9    | F01–F19 integriert, M01–M10, RPM, Altpfadabbau und Doku.              | Offen.                                                                                                                           |
 
 ## 8. Definition von „erledigt“
 

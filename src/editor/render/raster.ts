@@ -2,11 +2,18 @@ import { heightFromScaledSum } from "../model/height";
 import { WORLD_LIMIT, type Bounds } from "../model/types";
 import type { RasterRect } from "../model/height-grid";
 
-export const MAX_RASTER_BATCH_TILES = 16;
-export const MAX_RASTER_BATCH_PIXELS = 128 * 1024;
+/** Display classification only; document values and exact queries stay Float64. */
+export const DISPLAY_HEIGHT_BOUNDARY_EPSILON = 1e-6;
+
+export function stabilizeDisplayHeight(height: number): number {
+  if (Math.abs(height) <= DISPLAY_HEIGHT_BOUNDARY_EPSILON) return 0;
+  if (Math.abs(height - 12) <= DISPLAY_HEIGHT_BOUNDARY_EPSILON) return 12;
+  return height;
+}
 
 /** Exact height is classified directly into the image, without a tuple per pixel. */
 function writeColour(height: number, pixels: Uint8Array, offset: number): void {
+  height = stabilizeDisplayHeight(height);
   if (height < 0) {
     const depth = Math.min(1, -height / 300);
     pixels[offset] = Math.round(94 - 53 * depth);

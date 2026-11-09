@@ -1,271 +1,98 @@
-// Explains renderer submission latency. These clocks do not prove display
-// presentation and this diagnostic cannot turn a native acceptance gate green.
+// Diagnose the real numeric-source/draw path. A GL submission is not native
+// presentation; this report never upgrades that separate acceptance gate.
 import {
   distribution as summarizeDistribution,
   extractSubmissionEvidence,
 } from "./atlas-p0-evaluate.mjs";
-const stages = [
-  "inputToModelMs",
-  "modelToDispatchMs",
-  "dispatchToWorkerMs",
-  "workerMs",
-  "workerToMainMs",
-  "mainToUploadMs",
-  "uploadToSubmitMs",
-];
-const overlaps = (a, b) =>
-  a?.length === 4 &&
-  b?.length === 4 &&
-  a[0] < b[2] &&
-  a[2] > b[0] &&
-  a[1] < b[3] &&
-  a[3] > b[1];
 
-function rasterBounds(task) {
-  if (task.bounds?.length !== 4 || task.rect?.length !== 4 || !(task.size > 0))
-    return null;
-  const [x0, y0, x1, y1] = task.bounds;
-  const stepX = (x1 - x0) / task.size;
-  const stepY = (y1 - y0) / task.size;
-  return [
-    x0 + task.rect[0] * stepX,
-    y0 + task.rect[1] * stepY,
-    x0 + task.rect[2] * stepX,
-    y0 + task.rect[3] * stepY,
-  ];
-}
-
+const stages = ["inputToModelMs", "modelToUploadMs", "uploadMs", "drawMs"];
 function distribution(values) {
-  const result = summarizeDistribution(values);
+  const value = summarizeDistribution(values);
   return {
-    count: result.count,
-    invalid: result.invalid,
-    median: result.p50,
-    p95: result.p95,
-    max: result.maximum,
+    count: value.count,
+    invalid: value.invalid,
+    median: value.p50,
+    p95: value.p95,
+    max: value.maximum,
   };
 }
-
 export function summarizeSubmissionTiming(events) {
   const evidence = extractSubmissionEvidence(events);
   const { inputs, doses: intervals } = evidence;
-  const batches = new Map();
-  const batchStarts = new Map();
-  const tasks = new Map();
-  const taskResults = new Map();
-  const discardedTasks = new Set();
-  const uploads = new Map();
-  const commits = new Map(
-    evidence.commits.map((commit) => [commit.input, commit]),
-  );
-  for (const event of events) {
-    if (event.kind === "raster-batch-start") batchStarts.set(event.id, event);
-    if (event.kind === "raster-batch-result" && event.timing)
-      batches.set(event.id, event.timing);
-    if (event.kind === "raster-start") tasks.set(event.id, event);
-    if (event.kind === "raster-result") taskResults.set(event.id, event);
-    if (event.kind === "raster-discard") discardedTasks.add(event.id);
-    if (event.kind === "raster-upload") uploads.set(event.id, event);
-  }
-  const samples = [];
-  const brushIntervals = [];
-  const pointerups = [];
-  const submissionLatencies = [];
-  const incomplete = [];
-  let pointerupCount = 0;
-  const invalidBatchClock = (batch) => {
-    const clock = [
-      batch.dispatchAt,
-      batch.startedAt,
-      batch.finishedAt,
-      batch.receivedAt,
-      batch.lastUploadAt,
-    ];
-    return clock.some(
-      (value, i) => !Number.isFinite(value) || (i > 0 && value < clock[i - 1]),
+  const draws = events.filter((event) => event.kind === "height-draw");
+  const samples = [],
+    brushIntervals = [],
+    pointerups = [];
+  const submissionLatencies = [],
+    incomplete = [];
+  const ordered = (clock) =>
+    clock.every(
+      (value, i) =>
+        Number.isFinite(value) && (i === 0 || value >= clock[i - 1]),
     );
-  };
-  const batchPath = (candidates, stepAt) => {
-    const ids = [...new Set(candidates.map((task) => task.batchId))];
-    let previousReceived = null;
-    return ids
-      .sort(
-        (a, b) =>
-          (batches.get(a)?.sentAt ?? Infinity) -
-          (batches.get(b)?.sentAt ?? Infinity),
-      )
-      .map((id, order) => {
-        const start = batchStarts.get(id);
-        const timing = batches.get(id);
-        const required = candidates.filter((task) => task.batchId === id);
-        const pixels = (task) =>
-          task.pixels ??
-          (task.rect[2] - task.rect[0]) * (task.rect[3] - task.rect[1]);
-        const dispatchAt = timing && timing.sentAt - timing.timeOrigin;
-        const receivedAt = timing && timing.receivedAt - timing.timeOrigin;
-        const result = {
-          id,
-          order,
-          priority: start?.priority ?? null,
-          viewProgress: start?.viewProgress ?? null,
-          batchPixels: start?.pixels ?? null,
-          requiredPixels: required.reduce((sum, task) => sum + pixels(task), 0),
-          tasks: required.map((task) => ({
-            id: task.id,
-            key: task.key,
-            rect: task.rect,
-            pixels: pixels(task),
-            stages: taskResults.get(task.id)?.stages ?? null,
-          })),
-          dispatchAt: dispatchAt ?? null,
-          startedAt: timing ? timing.startedAt - timing.timeOrigin : null,
-          finishedAt: timing ? timing.finishedAt - timing.timeOrigin : null,
-          receivedAt: receivedAt ?? null,
-          lastUploadAt: Math.max(
-            ...required.map((task) => uploads.get(task.id).at),
-          ),
-          gapBeforeDispatchMs:
-            dispatchAt === undefined
-              ? null
-              : dispatchAt - (previousReceived ?? stepAt),
-          workerMs: timing ? timing.finishedAt - timing.startedAt : null,
-          workerToMainMs: timing ? timing.receivedAt - timing.finishedAt : null,
-        };
-        previousReceived = receivedAt ?? previousReceived;
-        return result;
-      });
-  };
-  const diagnose = (model, input, published, identity) => {
+  const matchingDraw = (frame) =>
+    draws.find(
+      (draw) =>
+        draw.sessionId === frame.sessionId &&
+        draw.frame === frame.frame &&
+        draw.viewGeneration === frame.viewGeneration &&
+        draw.revision === frame.revision,
+    );
+
+  function diagnose(model, input, published, identity) {
     if (!published) {
-      incomplete.push({
-        ...identity,
-        reason: "missing-matching-submission",
-      });
+      incomplete.push({ ...identity, reason: "missing-matching-submission" });
       return null;
     }
-    const { receipt: submit, frame } = published;
+    const { receipt: receipt, frame } = published;
     if (
-      !Array.isArray(model.bounds) ||
-      model.bounds.length !== 4 ||
-      !model.bounds.every(Number.isFinite)
+      !ordered([input?.createdAt ?? model.at, model.at, frame.at, receipt.at])
     ) {
-      incomplete.push({ ...identity, reason: "missing-changed-bounds" });
+      incomplete.push({ ...identity, reason: "invalid-renderer-clock-order" });
       return null;
     }
-    // These endpoints share the renderer clock. Keep them even if worker/main
-    // clock disagreement later makes the causal stage split incomplete.
-    const rendererClock = [
-      input?.createdAt ?? model.at,
-      model.at,
-      frame.at,
-      submit.at,
-    ];
-    if (
-      rendererClock.some(
-        (value, i) =>
-          !Number.isFinite(value) || (i > 0 && value < rendererClock[i - 1]),
-      )
-    ) {
-      incomplete.push({
-        ...identity,
-        reason: "invalid-renderer-clock-order",
-        clock: rendererClock,
-      });
-      return null;
-    }
-    submissionLatencies.push({
+    const latency = {
       ...identity,
       revision: model.revision,
-      frame: submit.frame,
-      inputToSubmitMs: input ? submit.at - input.createdAt : null,
-      modelToSubmitMs: submit.at - model.at,
-    });
-    // The final required uploaded tile is this input's limiting raster path.
-    // Earlier batches are included in its model-to-dispatch wait, not hidden.
-    const required = [...tasks.values()].filter(
-      (task) =>
-        task.sessionId === model.sessionId &&
-        task.revision === model.revision &&
-        task.at >= model.at &&
-        task.at <= frame.at &&
-        !discardedTasks.has(task.id) &&
-        overlaps(rasterBounds(task), model.bounds),
-    );
-    if (
-      required.some((task) => {
-        const upload = uploads.get(task.id);
-        return (
-          !upload ||
-          upload.sessionId !== model.sessionId ||
-          upload.paintedRevision !== task.revision ||
-          upload.at > frame.at
-        );
-      })
-    ) {
-      incomplete.push({ ...identity, reason: "missing-causal-upload" });
-      return null;
-    }
-    const candidates = required.sort(
-      (a, b) => uploads.get(b.id).at - uploads.get(a.id).at,
-    );
-    const task = candidates[0];
-    const timing = task && batches.get(task.batchId);
-    const upload = task && uploads.get(task.id);
-    if (
-      !submit ||
-      !timing ||
-      !upload ||
-      candidates.some((task) => !batches.has(task.batchId))
-    ) {
-      incomplete.push({ ...identity, reason: "missing-causal-timing" });
+      frame: frame.frame,
+      inputToSubmitMs: input ? frame.at - input.createdAt : null,
+      modelToSubmitMs: frame.at - model.at,
+    };
+    submissionLatencies.push(latency);
+    const draw = matchingDraw(frame);
+    if (!draw) {
+      incomplete.push({ ...identity, reason: "missing-causal-draw" });
       return null;
     }
     const clock = [
       input?.createdAt ?? model.at,
       model.at,
-      timing.sentAt - timing.timeOrigin,
-      timing.startedAt - timing.timeOrigin,
-      timing.finishedAt - timing.timeOrigin,
-      timing.receivedAt - timing.timeOrigin,
-      upload.at,
-      submit.at,
+      draw.uploadStart,
+      draw.uploadedAt,
+      draw.submittedAt,
     ];
-    if (
-      clock.some(
-        (value, i) =>
-          !Number.isFinite(value) || (i > 0 && value < clock[i - 1]),
-      )
-    ) {
-      incomplete.push({
-        ...identity,
-        reason: "invalid-clock-order",
-        clock,
-      });
+    if (!ordered(clock) || draw.submittedAt !== frame.at) {
+      incomplete.push({ ...identity, reason: "invalid-clock-order", clock });
       return null;
     }
-    const rasterBatches = batchPath(candidates, model.at);
-    if (rasterBatches.some(invalidBatchClock)) {
-      incomplete.push({
-        ...identity,
-        reason: "invalid-batch-clock-order",
-        rasterBatches,
-      });
+    if (
+      ![draw.uploadedBytes, draw.updatedTiles, draw.fallbackSamples].every(
+        (value) => Number.isSafeInteger(value) && value >= 0,
+      )
+    ) {
+      incomplete.push({ ...identity, reason: "missing-resource-evidence" });
       return null;
     }
     return {
-      ...identity,
-      revision: model.revision,
-      task: task.id,
-      batch: task.batchId,
-      frame: submit.frame,
+      ...latency,
       ...Object.fromEntries(
         stages.map((name, i) => [name, clock[i + 1] - clock[i]]),
       ),
-      inputToSubmitMs: input ? submit.at - input.createdAt : null,
-      modelToSubmitMs: submit.at - model.at,
-      rasterBatches,
+      uploadedBytes: draw.uploadedBytes,
+      updatedTiles: draw.updatedTiles,
+      fallbackSamples: draw.fallbackSamples,
     };
-  };
+  }
   const modelEvents = intervals.flatMap((interval) =>
     (interval.inputIds ?? []).map((input) => ({
       ...interval,
@@ -284,23 +111,20 @@ export function summarizeSubmissionTiming(events) {
       });
       continue;
     }
-    const sample = diagnose(
+    const value = diagnose(
       model,
       input,
       evidence.publication(evidence.changesByInput.get(model.input)),
-      {
-        input: model.input,
-        kind: "input",
-      },
+      { input: model.input, kind: "input" },
     );
-    if (sample)
+    if (value)
       samples.push({
-        ...sample,
+        ...value,
         appliedToProjectedMs: model.at - model.appliedAt,
       });
   }
   for (const interval of intervals) {
-    const sample = diagnose(
+    const value = diagnose(
       interval,
       inputs.get(interval.inputIds?.[0]),
       evidence.publication(interval),
@@ -309,156 +133,89 @@ export function summarizeSubmissionTiming(events) {
         gestureId: interval.gestureId,
         cause: interval.cause,
         kind: "brush-interval",
-        boundsSource: "changed-source-bounds",
       },
     );
-    if (sample) brushIntervals.push(sample);
+    if (value) brushIntervals.push(value);
   }
+  const commits = new Map(
+    evidence.commits.map((commit) => [commit.input, commit]),
+  );
+  let pointerupCount = 0;
   for (const end of events.filter(
     (event) =>
       event.kind === "brush-end" &&
       event.reason === "pointerup" &&
       event.input !== null,
   )) {
-    const input = inputs.get(end.input);
-    const commit = commits.get(end.input);
-    const published = evidence.publication(commit);
-    const submit = published?.receipt;
-    const gestureIntervals = intervals.filter(
+    const gesture = intervals.filter(
       (interval) =>
         interval.sessionId === end.sessionId &&
         interval.gestureId === end.gestureId,
     );
-    if (!gestureIntervals.length) continue; // Deliberately rejected/no-op gesture.
+    if (!gesture.length) continue;
     pointerupCount++;
-    const latest = gestureIntervals.at(-1);
+    const input = inputs.get(end.input);
+    const commit = commits.get(end.input);
+    const published = evidence.publication(commit);
     const frame = published?.frame;
     if (
       !input ||
       !frame ||
-      submit.sessionId !== end.sessionId ||
-      submit.revision !== latest.revision ||
-      frame.at < end.at ||
-      frame.at > submit.at ||
-      frame.revision < latest.revision
+      !ordered([input.createdAt, end.endAt, end.at, frame.at])
     ) {
       incomplete.push({
-        input: end.input,
         kind: "pointerup",
+        input: end.input,
         reason: "missing-matching-submission",
       });
       continue;
     }
-    const clock = [input.createdAt, end.endAt, end.at, frame.at, submit.at];
-    if (
-      clock.some(
-        (value, i) =>
-          !Number.isFinite(value) || (i > 0 && value < clock[i - 1]),
-      )
-    ) {
-      incomplete.push({
-        input: end.input,
-        kind: "pointerup",
-        reason: "invalid-clock-order",
-        clock,
-      });
-      continue;
-    }
-    submissionLatencies.push({
+    const latency = {
       kind: "pointerup",
       input: end.input,
       gestureId: end.gestureId,
-      revision: latest.revision,
-      frame: submit.frame,
-      inputToSubmitMs: submit.at - input.createdAt,
-    });
-    // Pointerup creates no new dose. Only still outstanding work for its last
-    // accepted revision belongs here, including batches started before release.
-    const dirtyBounds = commit?.bounds;
-    if (!Array.isArray(dirtyBounds) || !dirtyBounds.length) {
-      incomplete.push({
-        input: end.input,
-        kind: "pointerup",
-        reason: "missing-changed-bounds",
-      });
-      continue;
-    }
-    const outstanding = [...tasks.values()].filter((task) => {
-      const upload = uploads.get(task.id);
-      return (
-        task.sessionId === end.sessionId &&
-        task.revision === latest.revision &&
-        task.at >= latest.at &&
-        task.at <= frame.at &&
-        !discardedTasks.has(task.id) &&
-        dirtyBounds.some((bounds) => overlaps(rasterBounds(task), bounds)) &&
-        (!upload || upload.at >= input.createdAt)
-      );
-    });
+      revision: commit.revision,
+      frame: frame.frame,
+      inputToSubmitMs: frame.at - input.createdAt,
+      inputToHandledMs: end.endAt - input.createdAt,
+      handledToSubmitMs: frame.at - end.endAt,
+    };
+    submissionLatencies.push(latency);
+    const draw = matchingDraw(frame);
     if (
-      outstanding.some((task) => {
-        const upload = uploads.get(task.id);
-        return (
-          !upload ||
-          upload.sessionId !== end.sessionId ||
-          upload.paintedRevision !== latest.revision ||
-          upload.at > frame.at
-        );
-      })
+      !draw ||
+      !ordered([draw.uploadStart, draw.uploadedAt, draw.submittedAt]) ||
+      draw.submittedAt !== frame.at
     ) {
       incomplete.push({
-        input: end.input,
         kind: "pointerup",
-        reason: "missing-causal-upload",
-      });
-      continue;
-    }
-    if (outstanding.some((task) => !batches.has(task.batchId))) {
-      incomplete.push({
         input: end.input,
-        kind: "pointerup",
-        reason: "missing-causal-timing",
-      });
-      continue;
-    }
-    const rasterBatches = batchPath(outstanding, input.createdAt);
-    if (rasterBatches.some(invalidBatchClock)) {
-      incomplete.push({
-        input: end.input,
-        kind: "pointerup",
-        reason: "invalid-batch-clock-order",
-        rasterBatches,
+        reason: "missing-causal-draw",
       });
       continue;
     }
     pointerups.push({
-      input: end.input,
-      gestureId: end.gestureId,
-      revision: latest.revision,
-      frame: submit.frame,
-      inputToSubmitMs: submit.at - input.createdAt,
-      inputToHandledMs: end.endAt - input.createdAt,
-      handledToSubmitMs: submit.at - end.endAt,
-      rasterBatches,
+      ...latency,
+      uploadedBytes: draw.uploadedBytes,
       interpretation:
-        "Work still awaiting upload at release may have started before pointerup; no new brush dose.",
+        "Pointerup confirms accepted data; it never creates a further dose.",
     });
   }
   return {
     kind: "renderer-submission-diagnostic",
-    scope:
-      "accepted input IDs, every changed brush interval including holds, and pointerup; distributions remain separate",
     nativePresentation: false,
+    path: "accepted numeric sources -> resource upload -> actual terrain draw",
+    scope:
+      "accepted input IDs, every changed interval including holds, and pointerup",
     clock:
-      "performance.timeOrigin + performance.now across renderer and worker",
-    path: "all required raster batches with priority, pixels and dispatch gaps; limiting uploaded tile for the causal stage split",
+      "renderer performance.now; GPU execution and native presentation are not measured",
     samples,
     brushIntervals,
     pointerups,
     submissionLatencies,
     incomplete,
     latencyPolicy:
-      "Renderer-only endpoint durations include paths with incomplete worker timing; missing/invalid causal clocks remain reported without correction.",
+      "Endpoint durations retain otherwise valid evidence when detailed draw timing is missing.",
     coverage: {
       inputs: {
         expected: modelEvents.length,
@@ -482,21 +239,21 @@ export function summarizeSubmissionTiming(events) {
         distribution(
           stage === "inputToSubmitMs"
             ? submissionLatencies
-                .filter((sample) => sample.kind === "input")
-                .map((sample) => sample.inputToSubmitMs)
-            : samples.map((sample) => sample[stage]),
+                .filter((value) => value.kind === "input")
+                .map((value) => value.inputToSubmitMs)
+            : samples.map((value) => value[stage]),
         ),
       ]),
     ),
     brushModelToSubmitMs: distribution(
       submissionLatencies
-        .filter((sample) => sample.kind === "brush-interval")
-        .map((sample) => sample.modelToSubmitMs),
+        .filter((value) => value.kind === "brush-interval")
+        .map((value) => value.modelToSubmitMs),
     ),
     pointerupToSubmitMs: distribution(
       submissionLatencies
-        .filter((sample) => sample.kind === "pointerup")
-        .map((sample) => sample.inputToSubmitMs),
+        .filter((value) => value.kind === "pointerup")
+        .map((value) => value.inputToSubmitMs),
     ),
   };
 }

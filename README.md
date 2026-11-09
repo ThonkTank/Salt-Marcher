@@ -71,7 +71,8 @@ Kandidaten tatsächlich bestanden haben, steht im [Status](docs/implementation/s
 ## Optionaler Atlas-P0-Versuch
 
 P0 startet einen eigenen Electron-44-Desktop mit PixiJS-8-Darstellung und SQLite
-im Utility-Prozess. Es ersetzt die V7-Befehle nicht. Der
+im Utility-Prozess. Numerische Höhenquellen werden auf der GPU zusammengesetzt;
+beibehaltene Farbkacheln dienen der laufenden Kamera- und Cursorzeichnung. Der
 [P0-Produktvertrag](docs/product-contract.md#optionaler-atlas-p0-versuch)
 beschreibt Funktionen und Grenzen; die
 [Architektur](docs/architecture.md#optionaler-atlas-p0-versuch) die Zuständigkeiten.
@@ -81,22 +82,23 @@ Node.js bleibt durch `.node-version` vorgegeben; Forge benötigt mindestens
 in der gepinnten Electron-Laufzeit und führt bei unpassender ABI
 `@electron/rebuild` aus. Dafür können C++-Buildwerkzeuge und Python nötig sein.
 
-| Befehl                                                     | Zweck                                                                                                                               |
-| ---------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| `npm run build:atlas-p0`                                   | P0-Typen prüfen, Renderer/Desktop bauen und SQLite-ABI vorbereiten.                                                                 |
-| `npm run desktop:atlas-p0`                                 | P0 bauen und im eigenen Electron-Fenster starten.                                                                                   |
-| `npm run test:atlas-p0`                                    | Modell-, Raster-, Renderer-, Auswerter- und native Vorprüfungstests ausführen.                                                      |
-| `npm run typecheck:p0-tools`                               | Ausführbaren Auswerter anhand seiner eigenen JSDoc-Verträge prüfen.                                                                 |
-| `npm run test:atlas-p0:smoke`                              | Gebauten Electron-Start mit echter Prozess-/SQLite-Anbindung prüfen; `--only normal`, `stall` oder `lifecycle` begrenzt den Umfang. |
-| `npm run check:atlas-p0`                                   | Tool-Typen, Build, Store-/Fixturetests und echten Electron-Smoke prüfen.                                                            |
-| `npm run p0:lab`                                           | Den zuvor gebauten Stand als kurze softwaregerenderte Architekturprobe prüfen.                                                      |
-| `npm run p0:native`                                        | Native Vorprüfung ausführen und nur bei erfüllten Voraussetzungen Szenarien sammeln.                                                |
-| `npm run p0:lab -- --full`                                 | Vollständige P0-Stichprobe im Labor sammeln.                                                                                        |
-| `npm run p0:native -- --full --reference pfad/profil.json` | Native Vollsammlung anfordern; fehlende Präsentationsanbindung blockiert vor Fixtures.                                              |
-| `npm run p0:evaluate -- pfad/zum/report.json`              | Einen Bericht gegen die festen Anforderungen auswerten.                                                                             |
-| `npm run package:atlas-p0`                                 | Mit Forge ein startbares Anwendungsverzeichnis erzeugen.                                                                            |
-| `npm run make:atlas-p0`                                    | RPM-/ZIP-Artefakte erzeugen; RPM benötigt die Paketbauwerkzeuge.                                                                    |
-| `npm run check:atlas-p0:package`                           | Paket bauen, ASAR-Inhalt prüfen und den ausgelieferten Einstieg mit Dateirundlauf starten.                                          |
+| Befehl                                                                                       | Zweck                                                                                                                                  |
+| -------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm run build:atlas-p0`                                                                     | P0-Typen prüfen, Renderer/Desktop bauen und SQLite-ABI vorbereiten.                                                                    |
+| `npm run desktop:atlas-p0`                                                                   | P0 bauen und im eigenen Electron-Fenster starten.                                                                                      |
+| `npm run test:atlas-p0`                                                                      | Modell-, Raster-, Renderer-, Auswerter- und native Vorprüfungstests ausführen.                                                         |
+| `npm run typecheck:p0-tools`                                                                 | Ausführbaren Auswerter anhand seiner eigenen JSDoc-Verträge prüfen.                                                                    |
+| `npm run test:atlas-p0:smoke`                                                                | Gebauten Electron-Start mit echter Prozess-/SQLite-Anbindung prüfen; `--only normal`, `stall` oder `lifecycle` begrenzt den Umfang.    |
+| `npm run check:atlas-p0`                                                                     | Tool-Typen, Build, Store-/Fixturetests, echten Electron-Smoke und GPU-Pixelreferenz einschließlich Kontextwiederherstellung prüfen.    |
+| `npm run p0:lab`                                                                             | Den zuvor gebauten Stand als kurze softwaregerenderte Architekturprobe prüfen.                                                         |
+| `npm run p0:native`                                                                          | Native Vorprüfung ausführen und nur bei erfüllten Voraussetzungen Szenarien sammeln.                                                   |
+| `npm run p0:lab -- --full`                                                                   | Vollständige P0-Stichprobe im Labor sammeln.                                                                                           |
+| `npm run p0:native -- --full --reference pfad/profil.json`                                   | Native Vollsammlung anfordern; fehlende Präsentationsanbindung blockiert vor Fixtures.                                                 |
+| `npm run p0:evaluate -- pfad/zum/report.json`                                                | Einen Bericht gegen die festen Anforderungen auswerten.                                                                                |
+| `node scripts/atlas-p0-gpu-check.mjs --out src-tauri/target/diagnostics/atlas-gpu-reference` | Den gebauten Editor gegen die CPU-Höhenreferenz prüfen: echte Pixel, 22 Stufen, Übersichten, Weltgrenzen und numerische Ausnahmefälle. |
+| `npm run package:atlas-p0`                                                                   | Mit Forge ein startbares Anwendungsverzeichnis erzeugen.                                                                               |
+| `npm run make:atlas-p0`                                                                      | RPM-/ZIP-Artefakte erzeugen; RPM benötigt die Paketbauwerkzeuge.                                                                       |
+| `npm run check:atlas-p0:package`                                                             | Paket bauen, ASAR-Inhalt prüfen und den ausgelieferten Einstieg mit Dateirundlauf starten.                                             |
 
 Die Runner schreiben nach jedem Szenario Ergebnisse unter
 `artifacts/atlas-rebuild/runs/`; der Laufindex erhält fehlgeschlagene und noch
@@ -113,10 +115,17 @@ Kurze Probe und vollständige Sammlung verwenden dieselben Eingaben und
 Inhaltsprüfer. Die Auswahl verkleinert nicht den Abnahmeumfang. Pflichtfälle,
 Stichproben, Fehlerkontrollen und Zeitgrenzen stehen einmal im
 [Prüfvertrag](docs/implementation/atlas-rebuild-plan.md#6-prüf--und-performancevertrag).
-Aktuelle Runnerberichte verwenden Schema 3. `p0:evaluate` akzeptiert nur dieses
+Aktuelle Runnerberichte verwenden Schema 4. `p0:evaluate` akzeptiert nur dieses
 Schema; historische Rohbelege bleiben unverändert und benötigen ihren zugehörigen
-Auswerterstand. Eine alte Dosis-/Submitzuordnung wird nicht stillschweigend
-rekonstruiert.
+Auswerterstand. Schema 3 beschreibt den früheren Rasterpfad; dessen Workerzeiten
+werden nicht als Upload-/Drawzeiten des GPU-Pfads umgedeutet.
+
+`--only interactions` umfasst auch einen mehrere Sekunden gezogenen
+512-Pixel-Pinsel, getrennte Live-Pixelproben, Halten, langsame/schnelle Züge,
+einen echten UI-Hänger und aufeinanderfolgende feine/grobe Gesten. Der unveränderte
+kurze 512-Pixel-Fall bleibt über `--only collection --case M03-height-max --runs 1`
+anwählbar. Die GPU-Referenzprüfung verwendet denselben gebauten Editor und echte
+Projektdateien; ihre Pixelbilder belegen Inhalt, keine Präsentationslatenz.
 
 Ein Headless-Funktionslauf belegt keine native Leistung; Submission und RAF sind
 keine Präsentationszeitpunkte. Fehlende Messanbindung und Umgebungsqualifizierung

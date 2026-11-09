@@ -1,16 +1,8 @@
-import {
-  BufferImageSource,
-  Container,
-  Graphics,
-  Sprite,
-  Texture,
-  WebGLRenderer,
-} from "pixi.js";
+import { Container, Graphics, WebGLRenderer } from "pixi.js";
 // Pixi's static uniform-sync implementation works with the strict desktop CSP.
 import "pixi.js/unsafe-eval";
 import { editorBudgets } from "../budgets";
 import {
-  cloneHeightTile,
   clipBounds,
   HEIGHT_LEVELS,
   intersectsBounds,
@@ -34,14 +26,7 @@ import {
   type HeightOverviewTile,
 } from "../model/overview";
 import { Observation } from "../observation";
-import { MAX_RASTER_BATCH_PIXELS, MAX_RASTER_BATCH_TILES } from "./raster";
-import type {
-  RasterBatch,
-  RasterBatchResult,
-  RasterMessage,
-  RasterResult,
-  RasterTask,
-} from "./raster.worker";
+import { HeightField, type HeightFieldTile } from "./HeightField";
 
 export interface Camera {
   x: number;
@@ -67,29 +52,23 @@ export interface RegionInspection {
 }
 
 type Rect = [number, number, number, number];
-interface RasterTile {
+interface DisplayTile {
   key: string;
   bounds: Bounds;
   power: number;
-  token: number;
   revision: number;
   dirty: Rect | null;
-  pending: RasterTask | null;
-  lastJob: number;
-  /** Whole-tile prefix: every changed rectangle through this revision is painted. */
+  preparedRevision: number;
   paintedRevision: number;
-  /** Uploaded content actually included in a renderer submission. */
   submittedRevision: number;
   submittedFrame: number;
   visible: boolean;
   touched: number;
-  source: BufferImageSource;
-  sprite: Sprite;
-  pixels: Uint8Array;
+  field: HeightFieldTile;
+  overview: HeightOverviewTile | null;
 }
 const SIZE = HEIGHT_OVERVIEW_SIZE;
 const WHOLE: Rect = [0, 0, SIZE, SIZE];
-const LOCAL_BATCHES_BEFORE_VIEW_PROGRESS = 4;
 const merged = (a: Rect, b: Rect): Rect => [
   Math.min(a[0], b[0]),
   Math.min(a[1], b[1]),
@@ -109,7 +88,7 @@ function intersection(a: Bounds, b: Bounds): Bounds | null {
   return area[0] < area[2] && area[1] < area[3] ? area : null;
 }
 
-function pixelRect(tile: RasterTile, bounds: Bounds): Rect {
+function pixelRect(tile: DisplayTile, bounds: Bounds): Rect {
   const stepX = (tile.bounds[2] - tile.bounds[0]) / SIZE;
   const stepY = (tile.bounds[3] - tile.bounds[1]) / SIZE;
   return [
@@ -126,29 +105,21 @@ export class WorldRenderer {
   private stage = new Container();
   private terrain = new Container();
   private overlay = new Graphics();
-  private tiles = new Map<string, RasterTile>();
-  private raster = new Worker(new URL("./raster.worker.ts", import.meta.url), {
-    type: "module",
-  });
-  private results: RasterResult[] = [];
-  private running: RasterBatch | null = null;
-  private sourceSizes = new Map<string, number>();
+  private tiles = new Map<string, DisplayTile>();
+  private field = new HeightField();
   private overviews = new Map<string, HeightOverviewTile>();
   private knownOverviews = new Set<string>();
-  private jobId = 0;
-  private tileToken = 0;
   private document!: EditorDocument;
   private sessionId = "";
   private frame = 0;
   private viewGeneration = 0;
   private preparedViewGeneration = -1;
   private lastSubmittedViewGeneration = -1;
-  private focusBounds: Bounds | null = null;
-  private feedbackBounds: Bounds | null = null;
-  private localBatches = 0;
   private requestFrame = true;
-  private pendingDelay = new Set<number>();
+  private delayUntil = 0;
   private destroyed = false;
+  private canvas?: HTMLCanvasElement;
+  private contextLost = false;
   private submittedRevision = -1;
   private submittedViewGeneration = -1;
   camera: Camera = { x: 0, y: 0, scale: 0.25 };
@@ -168,78 +139,11 @@ export class WorldRenderer {
     | "ignore-zoom"
     | "pointerup-render" = "none";
   private faultArmed = false;
-  maxRasterMs = 0;
-  maxRasterBatchMs = 0;
-  sourceBytes = 0;
-  workerSourceBytes = 0;
-  totalSamples = 0;
   onError: (error: Error) => void = () => {};
 
   constructor(private observation: Observation) {
     this.stage.addChild(this.terrain, this.overlay);
     this.terrain.sortableChildren = true;
-    this.raster.onmessage = (event: MessageEvent<RasterBatchResult>) => {
-      const batch = event.data;
-      const receivedAt = batch.timing
-        ? performance.timeOrigin + performance.now()
-        : undefined;
-      const completed = this.running?.id === batch.id ? this.running : null;
-      if (completed) this.running = null;
-      if (batch.sessionId !== this.sessionId) return;
-      this.observation.event("raster-batch-result", {
-        id: batch.id,
-        tiles: batch.results.length,
-        cpuMs: batch.cpuMs,
-        ...(batch.timing
-          ? {
-              timing: {
-                ...batch.timing,
-                receivedAt,
-                // Translate worker/main timestamps to this journal's clock.
-                timeOrigin: performance.timeOrigin,
-              },
-            }
-          : {}),
-      });
-      for (const result of batch.results) {
-        this.observation.event("raster-result", {
-          id: result.id,
-          batchId: batch.id,
-          key: result.key,
-          rect: result.rect,
-          cpuMs: result.cpuMs,
-          pixels: result.samples,
-          ...(result.stages ? { stages: result.stages } : {}),
-        });
-        this.maxRasterMs = Math.max(this.maxRasterMs, result.cpuMs);
-        this.totalSamples += result.samples;
-      }
-      if (this.faultArmed && this.fault === "delay-render") {
-        const timer = window.setTimeout(() => {
-          this.pendingDelay.delete(timer);
-          this.results.push(...batch.results);
-          this.requestFrame = true;
-        }, 250);
-        this.pendingDelay.add(timer);
-      } else this.results.push(...batch.results);
-      this.maxRasterBatchMs = Math.max(this.maxRasterBatchMs, batch.cpuMs);
-      this.requestFrame = true;
-      // A large accepted dose may span several bounded batches. Its remaining
-      // current-revision rectangles can run while completed pixels await RAF.
-      // Do not queue view loading here: RAF must first publish this result and
-      // admit any next local dose. Upload/render and input admission stay in the
-      // controller's frame coordinator.
-      if (
-        completed &&
-        (!this.faultArmed || this.fault === "none") &&
-        completed.tasks.every(
-          (task) =>
-            task.revision > 0 && task.revision === this.document.revision,
-        )
-      )
-        this.dispatch(this.document.revision);
-    };
-    this.raster.onerror = (event) => this.onError(new Error(event.message));
   }
 
   async init(canvas: HTMLCanvasElement): Promise<void> {
@@ -252,6 +156,51 @@ export class WorldRenderer {
       antialias: false,
       background: 0x294e63,
     });
+    this.field.init(this.renderer);
+    this.canvas = canvas;
+    canvas.addEventListener("webglcontextlost", this.handleContextLost);
+    canvas.addEventListener("webglcontextrestored", this.handleContextRestored);
+  }
+
+  private handleContextLost = (event: Event): void => {
+    event.preventDefault();
+    this.contextLost = true;
+    this.invalidateGpuSubmission();
+    this.observation.event("graphics-context-lost", {
+      sessionId: this.sessionId,
+    });
+  };
+
+  private handleContextRestored = (): void => {
+    if (this.destroyed) return;
+    try {
+      // Pixi has already recreated its context before this listener runs. Its
+      // empty texture allocations are not a reconstruction of our GPU caches.
+      this.field.rebuildAfterContextRestore();
+      this.invalidateGpuSubmission();
+      this.contextLost = false;
+      this.observation.event("graphics-context-restored", {
+        sessionId: this.sessionId,
+      });
+    } catch (error) {
+      this.contextLost = true;
+      this.onError(error instanceof Error ? error : new Error(String(error)));
+    }
+  };
+
+  private invalidateGpuSubmission(): void {
+    this.lastSubmittedViewGeneration = -1;
+    this.submittedRevision = -1;
+    this.submittedViewGeneration = -1;
+    for (const tile of this.tiles.values()) {
+      tile.dirty = [...WHOLE];
+      tile.preparedRevision = -1;
+      tile.paintedRevision = -1;
+      tile.submittedRevision = -1;
+      tile.submittedFrame = 0;
+      tile.field.mesh.visible = false;
+    }
+    this.requestFrame = true;
   }
 
   reset(document: EditorDocument): void {
@@ -259,27 +208,15 @@ export class WorldRenderer {
     this.sessionId = document.sessionId;
     for (const tile of this.tiles.values()) this.destroyTile(tile);
     this.tiles.clear();
-    this.results = [];
-    this.running = null;
-    this.sourceSizes.clear();
+    this.field.reset();
     this.overviews.clear();
     this.knownOverviews.clear();
-    this.sourceBytes = 0;
-    this.workerSourceBytes = 0;
     this.submittedRevision = -1;
     this.submittedViewGeneration = -1;
     this.preparedViewGeneration = -1;
     this.lastSubmittedViewGeneration = -1;
-    this.focusBounds = null;
-    this.feedbackBounds = null;
-    this.localBatches = 0;
     this.faultArmed = false;
-    this.raster.postMessage({
-      kind: "sources",
-      reset: true,
-      sessionId: this.sessionId,
-      tiles: [],
-    } satisfies RasterMessage);
+    this.delayUntil = 0;
     this.requestFrame = true;
   }
 
@@ -304,7 +241,6 @@ export class WorldRenderer {
   moveCamera(camera: Camera): void {
     this.camera = { ...camera };
     this.viewGeneration++;
-    this.localBatches = 0;
     this.observation.event("view-change", {
       sessionId: this.sessionId,
       viewGeneration: this.viewGeneration,
@@ -315,7 +251,7 @@ export class WorldRenderer {
     this.positionTiles();
   }
 
-  /** Sources and numeric overview share one raster path and one certified mesh. */
+  /** Numeric sources are retained; a draw reconstructs the canonical sample lattice. */
   updatePresentation(
     tiles: readonly HeightTile[],
     overviews: readonly HeightOverviewTile[],
@@ -337,23 +273,26 @@ export class WorldRenderer {
         throw new Error("Nicht bestätigte Höhenübersicht.");
       this.overviews.set(tile.key, { ...tile, values: tile.values.slice() });
     }
-    this.sendSources(
-      tiles.map(cloneHeightTile),
-      [],
-      replace,
-      overviews.map((tile) => ({ ...tile, values: tile.values.slice() })),
-      [...overviewKeys],
-    );
+    if (replace) this.field.replaceSources(tiles);
+    else this.field.updateSources(tiles);
+    // A read may replace atlas slots or certify an empty fine overview. Retained
+    // descriptors become current only after rebinding and drawing these sources.
+    for (const tile of this.tiles.values()) {
+      tile.dirty = [...WHOLE];
+      tile.preparedRevision = -1;
+      tile.revision = this.document.revision;
+    }
+    this.checkBudgets();
+    this.requestFrame = true;
   }
 
-  /** Drop only source copies the document no longer needs; keep numeric views. */
+  /** Remove derived copies when the document releases author sources. */
   forgetSources(keys: readonly string[]): void {
-    if (keys.length) this.sendSources([], [...keys]);
+    if (keys.length) this.field.updateSources([], keys);
   }
 
   /** History already owns complete changed sources, even after distant eviction. */
   updateSourcePatches(patches: readonly HeightPatch[]): void {
-    const changed = new Set<string>();
     const powers = new Set(
       [...this.knownOverviews].map((key) => parseHeightOverviewKey(key).power),
     );
@@ -364,75 +303,40 @@ export class WorldRenderer {
         for (const key of heightOverviewDeltaKeys(delta, power)) {
           if (!this.knownOverviews.has(key)) continue;
           const at = parseHeightOverviewKey(key);
-          const tile =
-            this.overviews.get(key) ??
-            createHeightOverviewTile(at.power, at.tileX, at.tileY);
+          const previous = this.overviews.get(key);
+          const tile = previous
+            ? { ...previous, values: previous.values.slice() }
+            : createHeightOverviewTile(at.power, at.tileX, at.tileY);
           if (applyPreparedHeightOverviewDelta(tile, delta)) {
             this.overviews.set(key, tile);
-            changed.add(key);
           }
         }
     }
-    this.sendSources(
-      patches.flatMap((patch) =>
-        patch.after ? [cloneHeightTile(patch.after)] : [],
-      ),
+    this.field.updateSources(
+      patches.flatMap((patch) => (patch.after ? [patch.after] : [])),
       patches.filter((patch) => !patch.after).map((patch) => patch.key),
-      false,
-      [...changed].map((key) => {
-        const tile = this.overviews.get(key)!;
-        return { ...tile, values: tile.values.slice() };
-      }),
-      [...changed],
     );
+    this.checkBudgets();
+    this.requestFrame = true;
   }
 
-  private sendSources(
-    tiles: HeightTile[],
-    removed: string[] = [],
-    replace = false,
-    overviews: HeightOverviewTile[] = [],
-    overviewKeys: string[] = [],
-  ): void {
-    if (replace) this.sourceSizes.clear();
-    for (const key of removed) this.sourceSizes.delete(key);
-    for (const tile of tiles)
-      this.sourceSizes.set(tile.key, tile.values.byteLength);
-    this.sourceBytes = tiles.reduce(
-      (total, tile) => total + tile.values.byteLength,
-      0,
-    );
-    this.workerSourceBytes = [...this.sourceSizes.values()].reduce(
-      (sum, size) => sum + size,
-      0,
-    );
-    if (this.workerSourceBytes > editorBudgets.sourceBytes)
+  private checkBudgets(): void {
+    const metrics = this.field.metrics();
+    if (metrics.sourceBytes > editorBudgets.sourceBytes)
       throw new Error(
         "Die Darstellungsquellen überschreiten das Speicherbudget.",
       );
     if (
-      this.overviews.size * HEIGHT_OVERVIEW_BYTES * 2 +
-        this.tiles.size * SIZE * SIZE * 4 >
+      metrics.cpuBytes + this.overviews.size * HEIGHT_OVERVIEW_BYTES >
       editorBudgets.presentationBytes
     )
       throw new Error(
         "Die Höhenübersichten überschreiten das Darstellungsbudget.",
       );
-    this.raster.postMessage(
-      {
-        kind: "sources",
-        reset: replace,
-        sessionId: this.sessionId,
-        tiles,
-        removed,
-        overviews,
-        overviewKeys,
-      } satisfies RasterMessage,
-      [
-        ...tiles.map((tile) => tile.values.buffer as ArrayBuffer),
-        ...overviews.map((tile) => tile.values.buffer as ArrayBuffer),
-      ],
-    );
+    if (metrics.gpuBytes > editorBudgets.gpuBytes)
+      throw new Error(
+        "Die numerischen Texturen überschreiten das Grafikbudget.",
+      );
   }
 
   private tilePower(): number {
@@ -501,36 +405,28 @@ export class WorldRenderer {
         current.add(key);
         let tile = this.tiles.get(key);
         if (!tile) {
-          const pixels = new Uint8Array(SIZE * SIZE * 4);
-          const source = new BufferImageSource({
-            resource: pixels,
-            width: SIZE,
-            height: SIZE,
-            format: "rgba8unorm",
-            alphaMode: "no-premultiply-alpha",
-            scaleMode: "nearest",
-          });
-          const sprite = new Sprite(new Texture({ source }));
+          const field = this.field.createTile(
+            bounds,
+            power,
+            this.overviews.get(`height-overview:${key}`),
+          );
           tile = {
             key,
             bounds,
             power,
-            token: ++this.tileToken,
             revision: this.document.revision,
             dirty: [...WHOLE],
-            pending: null,
-            lastJob: 0,
+            preparedRevision: -1,
             paintedRevision: -1,
             submittedRevision: -1,
             submittedFrame: 0,
             visible: true,
             touched: performance.now(),
-            pixels,
-            source,
-            sprite,
+            field,
+            overview: this.overviews.get(`height-overview:${key}`) ?? null,
           };
           this.tiles.set(key, tile);
-          this.terrain.addChild(sprite);
+          this.terrain.addChild(field.mesh);
         }
         tile.visible = true;
         tile.touched = performance.now();
@@ -538,7 +434,7 @@ export class WorldRenderer {
     }
     for (const tile of this.tiles.values()) {
       tile.visible = current.has(tile.key);
-      tile.sprite.zIndex = tile.visible ? 1 : 0;
+      tile.field.mesh.zIndex = tile.visible ? 1 : 0;
     }
     this.prune();
     this.preparedViewGeneration = this.viewGeneration;
@@ -548,6 +444,8 @@ export class WorldRenderer {
 
   invalidate(bounds: Bounds): void {
     this.faultArmed = true;
+    if (this.fault === "delay-render")
+      this.delayUntil = performance.now() + 250;
     for (const tile of this.tiles.values()) {
       if (!intersectsBounds(tile.bounds, bounds)) continue;
       const rect = pixelRect(tile, bounds);
@@ -560,12 +458,6 @@ export class WorldRenderer {
 
   redraw(): void {
     this.requestFrame = true;
-  }
-
-  /** Scheduling hints only; readiness is derived from sources and submitted tiles. */
-  setPriorityAreas(focus: Bounds | null, feedback: Bounds | null = null): void {
-    this.focusBounds = focus ? [...focus] : null;
-    this.feedbackBounds = feedback ? [...feedback] : null;
   }
 
   /**
@@ -585,6 +477,7 @@ export class WorldRenderer {
     if (!area) return result;
     result.status = "missing";
     if (
+      this.contextLost ||
       this.preparedViewGeneration !== this.viewGeneration ||
       this.lastSubmittedViewGeneration !== this.viewGeneration
     )
@@ -599,8 +492,7 @@ export class WorldRenderer {
       const rect = pixelRect(tile, area);
       if (
         tile.submittedRevision !== tile.paintedRevision ||
-        (tile.dirty && overlaps(tile.dirty, rect)) ||
-        (tile.pending && overlaps(tile.pending.rect, rect))
+        (tile.dirty && overlaps(tile.dirty, rect))
       )
         current = false;
     }
@@ -609,30 +501,29 @@ export class WorldRenderer {
   }
 
   state() {
+    const metrics = this.field.metrics();
     return {
       tiles: this.tiles.size,
-      cpuRasterBytes:
-        this.tiles.size * SIZE * SIZE * 4 +
-        this.results.reduce((n, r) => n + r.pixels.byteLength, 0) +
-        this.overviews.size * HEIGHT_OVERVIEW_BYTES * 2,
-      gpuBytes: this.tiles.size * SIZE * SIZE * 4,
-      sourceBytes: this.sourceBytes,
-      workerSourceBytes: this.workerSourceBytes,
+      presentationPower: this.tilePower(),
+      presentationBytes:
+        metrics.cpuBytes + this.overviews.size * HEIGHT_OVERVIEW_BYTES,
+      gpuBytes: metrics.gpuBytes,
+      sourceBytes: metrics.sourceBytes,
+      sourceCount: metrics.sourceCount,
       overviewBytes: this.overviews.size * HEIGHT_OVERVIEW_BYTES,
-      workerOverviewBytes: this.overviews.size * HEIGHT_OVERVIEW_BYTES,
-      queuedTiles: [...this.tiles.values()].filter(
-        (t) => t.visible && (t.dirty || t.pending),
-      ).length,
-      running: Boolean(this.running),
-      maxRasterMs: this.maxRasterMs,
-      maxRasterBatchMs: this.maxRasterBatchMs,
-      totalSamples: this.totalSamples,
+      queuedTiles: [...this.tiles.values()].filter((t) => t.visible && t.dirty)
+        .length,
+      fallbackTiles: metrics.fallbackTiles,
+      fallbackSamples: metrics.fallbackSamples,
+      pendingUploadBytes: metrics.pendingUploadBytes,
+      pendingCompositionTiles: metrics.pendingCompositionTiles,
       submittedRevision: this.submittedRevision,
       submittedViewGeneration: this.submittedViewGeneration,
       lastSubmittedFrame: this.lastSubmittedViewGeneration < 0 ? 0 : this.frame,
       lastSubmittedViewGeneration: this.lastSubmittedViewGeneration,
       viewGeneration: this.viewGeneration,
       fault: this.fault,
+      contextLost: this.contextLost,
       heldForPointerup: this.heldForPointerup,
     };
   }
@@ -641,268 +532,137 @@ export class WorldRenderer {
     return this.fault === "pointerup-render" && Boolean(this.document?.active);
   }
 
-  dispatch(continuationRevision?: number): void {
-    if (
-      this.running ||
-      !this.document ||
-      this.destroyed ||
-      this.heldForPointerup
-    )
-      return;
-    const view = this.bounds();
-    const feedback =
-      this.feedbackBounds && intersection(this.feedbackBounds, view);
-    const halfPixel = 0.5 / this.camera.scale;
-    const focus =
-      (this.focusBounds && intersection(this.focusBounds, view)) ??
-      ([
-        this.camera.x - halfPixel,
-        this.camera.y - halfPixel,
-        this.camera.x + halfPixel,
-        this.camera.y + halfPixel,
-      ] as Bounds);
-    const priority = (tile: RasterTile): number => {
-      // With no live dose, previously drawn dirty tiles are still accepted
-      // changes (for example Undo). Initial loading never dirties drawn tiles.
-      if (
-        (feedback && overlaps(tile.dirty!, pixelRect(tile, feedback))) ||
-        (!feedback && tile.paintedRevision >= 0)
-      )
-        return 0;
-      return overlaps(tile.dirty!, pixelRect(tile, focus)) ? 1 : 2;
-    };
-    const center = feedback ?? focus;
-    const distance = (tile: RasterTile): number =>
-      Math.abs(tile.bounds[0] + tile.bounds[2] - center[0] - center[2]) +
-      Math.abs(tile.bounds[1] + tile.bounds[3] - center[1] - center[3]);
-    // Latest pending rectangle per tile replaces obsolete work, never source edits.
-    const ready = [...this.tiles.values()]
-      .filter(
-        (tile) =>
-          tile.visible &&
-          tile.dirty &&
-          !tile.pending &&
-          this.isPresentationReady(tile.bounds, tile.power),
-      )
-      .sort(
-        (a, b) =>
-          priority(a) - priority(b) ||
-          a.lastJob - b.lastJob ||
-          distance(a) - distance(b),
-      );
-    // A held brush can produce another local dose after every submitted frame.
-    // Let one bounded remaining tile progress periodically, without trapping a
-    // local result in the same batch or growing a second work queue.
-    const remaining = ready.find((tile) => priority(tile) === 2);
-    const candidates =
-      continuationRevision === undefined
-        ? ready
-        : ready.filter(
-            (tile) =>
-              tile.revision === continuationRevision && priority(tile) === 0,
-          );
-    const viewProgress =
-      continuationRevision === undefined &&
-      this.localBatches >= LOCAL_BATCHES_BEFORE_VIEW_PROGRESS &&
-      remaining;
-    const selected = viewProgress ? [viewProgress] : candidates;
-    const tasks: RasterTask[] = [];
-    let pixels = 0;
-    const readyBytes = this.results.reduce(
-      (sum, result) => sum + result.pixels.byteLength,
-      0,
-    );
-    const batchPriority = selected.length ? priority(selected[0]) : -1;
-    for (const tile of selected) {
-      if (tasks.length === MAX_RASTER_BATCH_TILES) break;
-      // A local result is returned without waiting for unrelated view loading.
-      if (priority(tile) !== batchPriority) break;
-      const rect = tile.dirty!;
-      const count = (rect[2] - rect[0]) * (rect[3] - rect[1]);
-      if (
-        pixels + count > MAX_RASTER_BATCH_PIXELS ||
-        readyBytes + (pixels + count) * 4 > editorBudgets.uploadBytesPerFrame
-      )
-        break;
-      const task: RasterTask = {
-        kind: "raster",
-        id: ++this.jobId,
-        sessionId: this.sessionId,
-        key: tile.key,
-        token: tile.token,
-        revision: tile.revision,
-        power: tile.power,
-        bounds: tile.bounds,
-        size: SIZE,
-        rect: [...rect],
-      };
-      tasks.push(task);
-      pixels += count;
-      tile.pending = task;
-      tile.dirty = null;
-      tile.lastJob = task.id;
-    }
-    if (!tasks.length) return;
-    const batch: RasterBatch = {
-      kind: "raster-batch",
-      id: tasks[0].id,
-      sessionId: this.sessionId,
-      tasks,
-    };
-    this.running = batch;
-    this.localBatches =
-      batchPriority < 2 && remaining ? this.localBatches + 1 : 0;
-    this.observation.event("raster-batch-start", {
-      id: batch.id,
-      tiles: tasks.length,
-      pixels,
-      priority: batchPriority,
-      viewProgress: Boolean(viewProgress),
-      continuation: continuationRevision !== undefined,
-    });
-    for (const task of tasks)
-      this.observation.event("raster-start", {
-        id: task.id,
-        batchId: batch.id,
-        sessionId: task.sessionId,
-        key: task.key,
-        bounds: task.bounds,
-        size: task.size,
-        rect: task.rect,
-        revision: task.revision,
-        pixels: (task.rect[2] - task.rect[0]) * (task.rect[3] - task.rect[1]),
-      });
-    if (this.observation.enabled)
-      batch.sentAt = performance.timeOrigin + performance.now();
-    this.raster.postMessage(batch);
-  }
-
   private positionTiles(): void {
     for (const tile of this.tiles.values()) {
       // Subtract world origin in doubles before Pixi's Float32 GPU transforms.
-      tile.sprite.position.set(
+      tile.field.mesh.position.set(
         (tile.bounds[0] - this.camera.x) * this.camera.scale + this.width / 2,
         (tile.bounds[1] - this.camera.y) * this.camera.scale + this.height / 2,
       );
-      tile.sprite.width = (tile.bounds[2] - tile.bounds[0]) * this.camera.scale;
-      tile.sprite.height =
+      tile.field.mesh.width =
+        (tile.bounds[2] - tile.bounds[0]) * this.camera.scale;
+      tile.field.mesh.height =
         (tile.bounds[3] - tile.bounds[1]) * this.camera.scale;
-      tile.sprite.visible =
+      tile.field.mesh.visible =
+        tile.visible &&
         tile.paintedRevision >= 0 &&
         intersectsBounds(tile.bounds, this.bounds());
     }
   }
 
-  /** Consume bounded results and draw once; the controller owns the frame loop. */
-  renderFrame(_now: number): FrameSubmission | null {
-    if (this.destroyed) return null;
-    const resultStart = performance.now();
-    let uploaded = 0;
-    while (
-      !this.heldForPointerup &&
-      !(this.faultArmed && this.fault === "drop-render") &&
-      this.results.length &&
-      performance.now() - resultStart < editorBudgets.resultCpuMs
-    ) {
-      const result = this.results.shift()!;
-      const tile = this.tiles.get(result.key);
+  /** Upload accepted numeric changes and draw once; only a successful draw is a receipt. */
+  renderFrame(now: number): FrameSubmission | null {
+    if (
+      this.destroyed ||
+      this.contextLost ||
+      !this.document ||
+      !this.requestFrame
+    )
+      return null;
+    // Fault controls delay the actual terrain draw, never fabricate readiness.
+    if (
+      this.heldForPointerup ||
+      (this.faultArmed &&
+        (this.fault === "drop-render" ||
+          (this.fault === "delay-render" && now < this.delayUntil)))
+    )
+      return null;
+
+    const prepared: DisplayTile[] = [];
+    for (const tile of this.tiles.values()) {
       if (
-        result.sessionId !== this.sessionId ||
-        !tile ||
-        tile.token !== result.token ||
-        tile.pending?.id !== result.id ||
-        result.revision < tile.paintedRevision
-      ) {
-        this.observation.event("raster-discard", {
-          id: result.id,
-          reason: "session-tile-or-revision",
-        });
+        !tile.visible ||
+        !tile.dirty ||
+        !this.isPresentationReady(tile.bounds, tile.power)
+      )
         continue;
+      if (tile.preparedRevision !== tile.revision) {
+        const overview =
+          this.overviews.get(`height-overview:${tile.key}`) ?? null;
+        tile.field.update(overview === tile.overview ? undefined : overview);
+        tile.overview = overview;
+        tile.preparedRevision = tile.revision;
       }
-      const bytes = SIZE * SIZE * 4;
-      if (uploaded + bytes > editorBudgets.uploadBytesPerFrame) {
-        this.results.unshift(result);
-        break;
-      }
-      const [x0, y0, x1, y1] = result.rect;
-      for (let row = y0; row < y1; row++) {
-        const offset = (row - y0) * (x1 - x0) * 4;
-        tile.pixels.set(
-          result.pixels.subarray(offset, offset + (x1 - x0) * 4),
-          (row * SIZE + x0) * 4,
-        );
-      }
-      tile.source.update();
-      uploaded += bytes;
-      // One pending task contains all accumulated changes through its revision.
-      // Paint it completely; later changes remain dirty for the follow-up task.
-      tile.paintedRevision = result.revision;
-      tile.pending = null;
-      tile.sprite.visible = intersectsBounds(tile.bounds, this.bounds());
-      this.observation.event("raster-upload", {
-        id: result.id,
-        sessionId: result.sessionId,
-        key: result.key,
-        paintedRevision: tile.paintedRevision,
-        requiredRevision: tile.revision,
-        acceptedPixels: (x1 - x0) * (y1 - y0),
-        supersededPixels: 0,
-        remainingDirty: tile.dirty,
-      });
-      this.requestFrame = true;
+      prepared.push(tile);
     }
-    if (this.requestFrame && this.document) {
-      // Later readiness decisions may request the next overlay frame.
-      this.requestFrame = false;
-      this.drawOverlay();
-      const exact =
-        this.preparedViewGeneration === this.viewGeneration &&
-        [...this.tiles.values()]
-          .filter((tile) => tile.visible)
-          .every(
-            (tile) =>
-              tile.paintedRevision >= tile.revision &&
-              !tile.dirty &&
-              !tile.pending,
-          );
-      const exactRevision =
-        exact && this.tiles.size ? this.document.revision : -1;
-      this.renderer.render(this.stage);
-      const submittedAt = performance.now();
-      this.frame++;
-      this.lastSubmittedViewGeneration = this.viewGeneration;
-      for (const tile of this.tiles.values())
-        if (tile.visible && tile.paintedRevision >= 0) {
-          tile.submittedRevision = tile.paintedRevision;
-          tile.submittedFrame = this.frame;
-        }
-      if (exactRevision >= 0) {
-        this.submittedRevision = exactRevision;
-        this.submittedViewGeneration = this.viewGeneration;
-      }
-      return {
-        sessionId: this.sessionId,
-        frame: this.frame,
-        viewGeneration: this.viewGeneration,
-        revision: this.document.revision,
-        exactRevision,
-        at: submittedAt,
-        uploadedBytes: uploaded,
-      };
+    this.checkBudgets();
+    const uploadStart = performance.now();
+    const uploaded = this.field.flush(editorBudgets.uploadBytesPerFrame);
+    const uploadedAt = performance.now();
+    const pending = this.field.metrics().pendingUploadBytes > 0;
+    let composedSamples = 0;
+    // Cached GPU colour tiles remain safe to draw while new numeric resources
+    // upload across frames. Only a complete resource set may replace them.
+    if (pending) prepared.length = 0;
+    else
+      for (const tile of prepared)
+        composedSamples += tile.field.drawDirty(this.renderer);
+    // Preparation/upload alone cannot change local readiness. Leave dirty state
+    // intact if GL drawing fails; an unchanged retry uses these same sources.
+    for (const tile of prepared) tile.field.mesh.visible = true;
+    this.drawOverlay(new Set(prepared));
+    this.renderer.render(this.stage);
+    const submittedAt = performance.now();
+    this.frame++;
+    this.lastSubmittedViewGeneration = this.viewGeneration;
+    this.requestFrame = pending;
+    for (const tile of prepared) {
+      tile.paintedRevision = tile.revision;
+      tile.dirty = null;
     }
-    return null;
+    for (const tile of this.tiles.values()) {
+      if (!tile.visible || tile.paintedRevision < 0) continue;
+      tile.submittedRevision = tile.paintedRevision;
+      tile.submittedFrame = this.frame;
+    }
+    const exact =
+      this.preparedViewGeneration === this.viewGeneration &&
+      [...this.tiles.values()]
+        .filter((tile) => tile.visible)
+        .every((tile) => tile.paintedRevision >= tile.revision && !tile.dirty);
+    const exactRevision =
+      exact && this.tiles.size ? this.document.revision : -1;
+    if (exactRevision >= 0) {
+      this.submittedRevision = exactRevision;
+      this.submittedViewGeneration = this.viewGeneration;
+    }
+    this.observation.event("height-draw", {
+      sessionId: this.sessionId,
+      frame: this.frame,
+      viewGeneration: this.viewGeneration,
+      revision: this.document.revision,
+      uploadStart,
+      uploadedAt,
+      submittedAt,
+      uploadedBytes: uploaded,
+      updatedTiles: prepared.length,
+      composedSamples,
+      ...this.field.metrics(),
+    });
+    return {
+      sessionId: this.sessionId,
+      frame: this.frame,
+      viewGeneration: this.viewGeneration,
+      revision: this.document.revision,
+      exactRevision,
+      at: submittedAt,
+      uploadedBytes: uploaded,
+    };
   }
 
-  private drawOverlay(): void {
+  private drawOverlay(prepared: ReadonlySet<DisplayTile> = new Set()): void {
     this.overlay.clear();
-    // Missing current-scale terrain remains visibly loading, even if retained
-    // coarser tiles are underneath it or the pointer is outside the map.
+    // Missing current-scale terrain remains visibly loading until its complete
+    // resource set has been uploaded and composed, even without a pointer.
     const view = this.bounds();
     const loading =
       this.preparedViewGeneration !== this.viewGeneration
         ? [view]
         : [...this.tiles.values()]
-            .filter((tile) => tile.visible && tile.paintedRevision < 0)
+            .filter(
+              (tile) =>
+                tile.visible && tile.paintedRevision < 0 && !prepared.has(tile),
+            )
             .map((tile) => intersection(tile.bounds, view))
             .filter((area): area is Bounds => area !== null);
     for (const area of loading) {
@@ -962,15 +722,22 @@ export class WorldRenderer {
       );
   }
 
-  private destroyTile(tile: RasterTile): void {
-    tile.sprite.destroy({ texture: true, textureSource: true });
+  private destroyTile(tile: DisplayTile): void {
+    tile.field.destroy();
   }
 
   destroy(): void {
     this.destroyed = true;
-    for (const timer of this.pendingDelay) clearTimeout(timer);
-    this.raster.terminate();
+    this.canvas?.removeEventListener(
+      "webglcontextlost",
+      this.handleContextLost,
+    );
+    this.canvas?.removeEventListener(
+      "webglcontextrestored",
+      this.handleContextRestored,
+    );
     for (const tile of this.tiles.values()) this.destroyTile(tile);
+    this.field.destroy();
     this.renderer.destroy();
   }
 }

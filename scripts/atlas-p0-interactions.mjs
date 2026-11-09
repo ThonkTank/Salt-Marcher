@@ -397,26 +397,37 @@ export async function heldStroke(session, prefix = "held-stroke") {
 }
 
 /** Functional rate behavior; fixed native gestures, actual dose, images after Up. */
-export async function brushDoseBehavior(session) {
+export async function brushDoseBehavior(
+  session,
+  { diameter = 128, prefix = "" } = {},
+) {
   const { page } = session;
   await button(page, "Nahansicht");
   await page.getByLabel("Raster anzeigen").uncheck();
   const rateFtPerSecond = 1000;
   async function run(label, points, intervalMs) {
-    await brush(page, 128, rateFtPerSecond);
+    await brush(page, diameter, rateFtPerSecond);
     await exact(page);
     const edit = await movingStroke(session, points, { intervalMs });
     await exact(page);
     const after = await stateSnapshot(page, points);
     const probes = points.length === 1 ? points : [points[0], points.at(-1)];
-    const changedImage = await capture(session, `${label}-changed`, probes);
+    const changedImage = await capture(
+      session,
+      `${prefix}${label}-changed`,
+      probes,
+    );
     await button(page, /Rückgängig/);
     await exact(page);
     await page.waitForFunction(
       () => !window.atlasObserve([], { events: false }).state.writing,
     );
     const undone = await stateSnapshot(page, points);
-    const undoneImage = await capture(session, `${label}-undone`, probes);
+    const undoneImage = await capture(
+      session,
+      `${prefix}${label}-undone`,
+      probes,
+    );
     const deltas = after.samples.map(
       (height, i) => height - edit.before.samples[i],
     );
@@ -430,6 +441,7 @@ export async function brushDoseBehavior(session) {
     );
     return {
       label,
+      diameterPx: diameter,
       requestedIntervalMs: intervalMs,
       rateFtPerSecond,
       points,
@@ -480,12 +492,15 @@ export async function brushDoseBehavior(session) {
     interpretation:
       "Longer responsive holding deepens terrain. Dose includes one declared nominal press; skipped feedback/capped time is not recovered.",
   };
-  const path = [
-    [-800, -600],
-    [-680, -600],
-    [-560, -600],
-    [-440, -600],
-  ];
+  const path =
+    diameter === 512
+      ? Array.from({ length: 41 }, (_, index) => [-800, -1200 + index * 60])
+      : [
+          [-800, -600],
+          [-680, -600],
+          [-560, -600],
+          [-440, -600],
+        ];
   const fast = await run("move-dose-fast", path, 24);
   const slow = await run("move-dose-slow", path, 48);
   const total = (values) => values.reduce((sum, value) => sum + value, 0);
@@ -501,6 +516,360 @@ export async function brushDoseBehavior(session) {
       "The same path takes twice the nominal time; compare actual accepted dose and terrain effect, never a fabricated event-rate invariant.",
   };
   return { held, movement };
+}
+
+/** A sustained real 512-pixel stroke, with a separate unpaced pixel-content replay. */
+async function sustainedLargeStroke(session) {
+  const { page } = session;
+  await button(page, "Nahansicht");
+  await page.getByLabel("Raster anzeigen").uncheck();
+  await brush(page, 512, 4000);
+  await exact(page);
+  const points = Array.from({ length: 101 }, (_, index) => [
+    -800,
+    -1250 + index * 25,
+  ]);
+  // The probes are farther apart than the level-4 brush's radius plus halo.
+  // Neither the first dab nor merely recoloring one area can satisfy all three.
+  const probes = [points[0], points[50], points[100]];
+  const baseline = await stateSnapshot(page, probes);
+  const beforeImage = await capture(session, "large-live-before", probes);
+
+  // This replay has no screenshots or growing-journal transfers during input.
+  const timed = await movingStroke(session, points);
+  const timeline = strokeEvidence(timed);
+  const timings = evaluateSubmissionDiagnostics(timed.samples);
+  const afterTimed = await stateSnapshot(page, probes);
+  await button(page, /Rückgängig/);
+  await exact(page);
+  const undoneTimed = await stateSnapshot(page, probes);
+
+  const prepared = await prepareStroke(session, points);
+  const startedAt = performance.now();
+  const drawing = sendStrokeInputs(session, strokeInputs(prepared.positions));
+  const checkpoints = [];
+  let failure, stall;
+  try {
+    for (const [index, atMs] of [400, 1200, 2200].entries()) {
+      await new Promise((resolve) =>
+        setTimeout(resolve, Math.max(0, startedAt + atMs - performance.now())),
+      );
+      const before = await stateSnapshot(page, probes);
+      const image = await capture(
+        session,
+        `large-live-held-${index + 1}`,
+        probes,
+      );
+      const after = await stateSnapshot(page, probes);
+      checkpoints.push({
+        index,
+        requestedAtMs: atMs,
+        activeBefore: Boolean(before.document.active && before.gesture),
+        activeAfter: Boolean(after.document.active && after.gesture),
+        sequence: after.document.sequence,
+        heights: after.samples,
+        image,
+      });
+      if (index === 0)
+        stall = await page.evaluate(() => {
+          const fromAt = performance.now();
+          while (performance.now() - fromAt < 200) {
+            // Deliberately stall this disposable editor's UI thread. The native
+            // input program continues in Electron's main process throughout.
+          }
+          return { fromAt, toAt: performance.now() };
+        });
+    }
+  } catch (error) {
+    failure = String(error);
+  } finally {
+    await drawing;
+  }
+  const content = await observeStroke(session, prepared.before);
+  const changed = await stateSnapshot(page, probes);
+  await page.waitForTimeout(120);
+  const settled = await snapshot(page, probes, {
+    sinceEvent: content.after.eventCount,
+  });
+  const discardedDuringStall = stall
+    ? content.after.events
+        .filter(
+          (event) =>
+            event.kind === "brush-discard" &&
+            event.gestureId === content.time.gestureId,
+        )
+        .reduce(
+          (total, event) =>
+            total +
+            Math.max(
+              0,
+              Math.min(event.toAt, stall.toAt) -
+                Math.max(event.fromAt, stall.fromAt),
+            ),
+          0,
+        )
+    : 0;
+  const stallPassed =
+    Boolean(stall) &&
+    stall.toAt - stall.fromAt >= 200 &&
+    discardedDuringStall + 50 + 1e-6 >= stall.toAt - stall.fromAt &&
+    content.time.passed &&
+    content.time.maximumStepMs <= 50 + 1e-6 &&
+    settled.document.sequence === changed.document.sequence &&
+    changed.samples.every((value, index) =>
+      near(value, settled.samples[index], 1e-7),
+    ) &&
+    !settled.events.some((event) => event.kind === "brush-interval");
+  await button(page, /Rückgängig/);
+  await exact(page);
+  const undone = await stateSnapshot(page, probes);
+  await button(page, /Wiederholen/);
+  await exact(page);
+  const redone = await stateSnapshot(page, probes);
+  await button(page, /Rückgängig/);
+  await exact(page);
+
+  const contentPassed =
+    !failure &&
+    !content.timedOut &&
+    content.time.passed &&
+    checkpoints.length === 3 &&
+    beforeImage.pixels.every(waterPixel) &&
+    // The final probe is still water early in the gesture, then becomes land.
+    waterPixel(checkpoints[0]?.image.pixels[2]) &&
+    checkpoints.every(
+      (checkpoint, index) =>
+        checkpoint.activeBefore &&
+        checkpoint.activeAfter &&
+        checkpoint.sequence === prepared.before.document.sequence &&
+        checkpoint.heights[index] > baseline.samples[index] &&
+        landPixel(checkpoint.image.pixels[index]),
+    );
+  const historyPassed =
+    afterTimed.document.sequence === baseline.document.sequence + 1 &&
+    changed.document.sequence === prepared.before.document.sequence + 1 &&
+    baseline.samples.every(
+      (value, index) =>
+        near(value, undoneTimed.samples[index], 1e-7) &&
+        near(value, undone.samples[index], 1e-7) &&
+        near(changed.samples[index], redone.samples[index], 1e-7),
+    );
+  return {
+    passed:
+      contentPassed &&
+      historyPassed &&
+      stallPassed &&
+      timed.time.passed &&
+      timed.time.maximumFeedbackGapMs <= 100 &&
+      timeline.passed &&
+      timings.issues.length === 0,
+    diameterPx: 512,
+    intervalMs: 24,
+    pathPoints: points.length,
+    nominalDurationMs: points.length * 24,
+    presentationProven: false,
+    method:
+      "Fixed native inputs; uncaptured replay for submission timing, independent concurrent captures plus a 200-ms UI stall for live content and D10. Captures never pace the input program.",
+    contentPassed,
+    historyPassed,
+    stall: { ...stall, discardedDuringStall, passed: stallPassed },
+    timeline,
+    timings,
+    time: timed.time,
+    samples: timed.samples,
+    contentTime: content.time,
+    beforeImage,
+    checkpoints,
+    before: baseline.samples,
+    after: changed.samples,
+    undone: undone.samples,
+    redone: redone.samples,
+    failure,
+  };
+}
+
+/** Different author levels must compose immediately, including after Undo/Redo. */
+async function consecutiveAuthorLevels(session) {
+  const { page } = session;
+  await button(page, "Nahansicht");
+  await page.getByLabel("Raster anzeigen").uncheck();
+  await exact(page);
+  const point = [-800, -600];
+  const probes = [point, [-700, -600], [-800, -500]];
+  async function contentImage(name) {
+    await exact(page);
+    const before = await stateSnapshot(page);
+    // capturePage can still copy the preceding compositor surface after the
+    // correct GL submission. Only this non-timed final-state probe gives that
+    // surface two RAF opportunities to settle; this is not presentation timing.
+    const settling = await page.evaluate(async () => {
+      const states = [];
+      for (let frame = 0; frame < 2; frame++) {
+        await new Promise((resolve) => requestAnimationFrame(resolve));
+        states.push(window.atlasObserve([], { events: false }));
+      }
+      return states;
+    });
+    const image = await capture(session, name, probes);
+    const after = await stateSnapshot(page);
+    const unchanged = [before, ...settling, after].every(
+      (state) =>
+        state.sessionId === before.sessionId &&
+        state.document.revision === before.document.revision &&
+        state.document.sequence === before.document.sequence &&
+        !state.document.active &&
+        !state.gesture &&
+        state.renderer.viewGeneration === before.renderer.viewGeneration &&
+        state.renderer.submittedRevision === before.document.revision &&
+        state.renderer.submittedViewGeneration ===
+          before.renderer.viewGeneration &&
+        JSON.stringify(state.camera) === JSON.stringify(before.camera),
+    );
+    return {
+      ...image,
+      contentSettle: {
+        passed: unchanged,
+        animationFrames: 2,
+        sessionId: before.sessionId,
+        revision: before.document.revision,
+        sequence: before.document.sequence,
+        viewGeneration: before.renderer.viewGeneration,
+        observedSubmitFrames: [before, ...settling, after].map(
+          (state) => state.renderer.lastSubmittedFrame,
+        ),
+        method:
+          "Two RAF opportunities after exact submission, with unchanged model/session/view; non-timed content stabilization, not presentation evidence",
+      },
+    };
+  }
+  const initial = await stateSnapshot(page, probes);
+  const initialImage = await contentImage("levels-before");
+  // Keep all three stages in the palette's varying range so actual pixel
+  // changes can distinguish a missing author level from colour saturation.
+  const rateFtPerSecond = 1000;
+  const stages = [];
+  for (const diameter of [16, 512, 16]) {
+    await brush(page, diameter, rateFtPerSecond);
+    await exact(page);
+    const edit = await movingStroke(session, [point], { intervalMs: 120 });
+    const state = await stateSnapshot(page, probes);
+    const start = edit.after.events.find(
+      (event) =>
+        event.kind === "brush-start" && event.gestureId === edit.time.gestureId,
+    );
+    const image = await contentImage(`levels-${stages.length + 1}-changed`);
+    const previousImage = stages.at(-1)?.image ?? initialImage;
+    stages.push({
+      diameterPx: diameter,
+      rateFtPerSecond,
+      authorLevel: start?.level ?? null,
+      time: edit.time,
+      timedOut: edit.timedOut,
+      sequence: state.document.sequence,
+      heights: state.samples,
+      image,
+      pixelsChanged: image.pixels.some(
+        (pixel, index) =>
+          pixel &&
+          previousImage.pixels[index] &&
+          pixel
+            .slice(0, 3)
+            .some((channel, c) => channel !== previousImage.pixels[index][c]),
+      ),
+    });
+  }
+  const undos = [];
+  for (let index = 2; index >= 0; index--) {
+    await button(page, /Rückgängig/);
+    await exact(page);
+    const state = await stateSnapshot(page, probes);
+    const expected = index ? stages[index - 1].heights : initial.samples;
+    const image = await contentImage(`levels-${index + 1}-undone`);
+    undos.push({
+      passed:
+        image.contentSettle.passed &&
+        state.samples.every((value, pointIndex) =>
+          near(value, expected[pointIndex], 1e-7),
+        ),
+      heights: state.samples,
+      image,
+      ...(index
+        ? {
+            pixelsRestored:
+              JSON.stringify(image.pixels) ===
+              JSON.stringify(stages[index - 1].image.pixels),
+          }
+        : {}),
+    });
+  }
+  const redos = [];
+  for (const [index, stage] of stages.entries()) {
+    await button(page, /Wiederholen/);
+    await exact(page);
+    const state = await stateSnapshot(page, probes);
+    const image = await contentImage(`levels-${index + 1}-redone`);
+    redos.push({
+      passed:
+        image.contentSettle.passed &&
+        state.samples.every((value, pointIndex) =>
+          near(value, stage.heights[pointIndex], 1e-7),
+        ),
+      pixelsRestored:
+        JSON.stringify(image.pixels) === JSON.stringify(stage.image.pixels),
+      heights: state.samples,
+      image,
+    });
+  }
+  for (const _stage of stages) {
+    await button(page, /Rückgängig/);
+    await exact(page);
+  }
+  const [fine, coarse, finer] = stages;
+  return {
+    passed:
+      initialImage.contentSettle.passed &&
+      stages.every(
+        (stage, index) =>
+          !stage.timedOut &&
+          stage.time.passed &&
+          stage.image.contentSettle.passed &&
+          stage.pixelsChanged &&
+          stage.sequence === initial.document.sequence + index + 1,
+      ) &&
+      fine.authorLevel === 0 &&
+      coarse.authorLevel === 4 &&
+      finer.authorLevel === 0 &&
+      fine.heights[0] > initial.samples[0] &&
+      coarse.heights[0] > fine.heights[0] &&
+      finer.heights[0] > coarse.heights[0] &&
+      [1, 2].every(
+        (index) =>
+          near(fine.heights[index], initial.samples[index], 1e-7) &&
+          coarse.heights[index] > fine.heights[index] &&
+          near(finer.heights[index], coarse.heights[index], 1e-7),
+      ) &&
+      undos.every((step) => step.passed && step.pixelsRestored !== false) &&
+      redos.every((step) => step.passed && step.pixelsRestored),
+    initial: initial.samples,
+    initialImage,
+    stages,
+    undos,
+    redos,
+  };
+}
+
+export async function largeBrushBehavior(session) {
+  const live = await sustainedLargeStroke(session);
+  const dose = await brushDoseBehavior(session, {
+    diameter: 512,
+    prefix: "large-",
+  });
+  const levels = await consecutiveAuthorLevels(session);
+  return {
+    live,
+    dose: { ...dose, passed: dose.held.passed && dose.movement.passed },
+    levels,
+  };
 }
 
 /** Ordinary native UI navigation; readiness is observed, never assigned by tests. */
@@ -696,22 +1065,23 @@ export async function movingStroke(
   { intervalMs = 24, timeout = 5000 } = {},
 ) {
   const { before, positions } = await prepareStroke(session, points);
-  await session.app.evaluate(
-    async ({ BrowserWindow }, inputs) => {
-      const contents = BrowserWindow.getAllWindows()[0].webContents;
-      let released = false;
-      try {
-        for (const input of inputs) {
-          if (input.delayMs)
-            await new Promise((resolve) => setTimeout(resolve, input.delayMs));
-          contents.sendInputEvent(input.event);
-          if (input.event.type === "mouseUp") released = true;
-        }
-      } finally {
-        if (!released) contents.sendInputEvent(inputs.at(-1).event);
-      }
-    },
-    strokeInputs(positions, intervalMs),
-  );
+  await sendStrokeInputs(session, strokeInputs(positions, intervalMs));
   return observeStroke(session, before, timeout);
+}
+
+async function sendStrokeInputs(session, inputs) {
+  await session.app.evaluate(async ({ BrowserWindow }, inputs) => {
+    const contents = BrowserWindow.getAllWindows()[0].webContents;
+    let released = false;
+    try {
+      for (const input of inputs) {
+        if (input.delayMs)
+          await new Promise((resolve) => setTimeout(resolve, input.delayMs));
+        contents.sendInputEvent(input.event);
+        if (input.event.type === "mouseUp") released = true;
+      }
+    } finally {
+      if (!released) contents.sendInputEvent(inputs.at(-1).event);
+    }
+  }, inputs);
 }

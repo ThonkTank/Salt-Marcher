@@ -1104,6 +1104,14 @@ die feineren Restwerte unverändert; an den Höhenlimits kann die abschließende
 Begrenzung Relief abschneiden. Küsten folgen der zusammengesetzten Oberfläche,
 sie besitzen keine getrennten Höhenautoren.
 
+Für die Farbdarstellung werden Höhen höchstens `0,000001` Fuß von den
+Klassengrenzen 0 oder 12 Fuß entfernt auf die jeweilige Grenze gesetzt. Dieses
+Band von rund 0,3 Mikrometern stabilisiert Farbklassen bei abweichender
+CPU-/GPU-Rundung. Es beschreibt die numerische Toleranz der Darstellung;
+Farbentscheidungen unmittelbar an einer Bandgrenze werden auf dieser
+Höhengenauigkeit verglichen. Die Regel betrifft ausschließlich die Darstellung; Autorenwerte, exakte
+Höhenabfragen, Undo und gespeicherte Daten behalten ihre `Float64`-Werte.
+
 **Bearbeitung beginnt auf sichtbarem, lokal bereitem Gelände.** Diese Freigabe
 gilt auch ohne Diagnosemodus. Die nötigen Quellen müssen vorhanden oder
 bestätigt leer sein; der sichtbare Wirkbereich muss zum aktuellen Ausschnitt

@@ -70,6 +70,9 @@ export const P0_FUNCTIONAL_CHECKS = Object.freeze([
   "continuous-stroke-undo",
   "held-dose-response",
   "movement-duration-response",
+  "large-brush-live",
+  "large-brush-dose",
+  "consecutive-author-levels",
   "cold-edit-content",
   "cold-blocked-inputs",
   "world-detail-roundtrip",
@@ -337,7 +340,7 @@ export function evaluateFunctional(report, requirements = P0_REQUIREMENTS) {
         for (const field of [
           "documentSourceBytes",
           "rendererSourceBytes",
-          "workerSourceBytes",
+          "rendererGpuBytes",
         ]) {
           const bytes = entry[stage]?.[field];
           if (!finite(bytes) || bytes < 0)
@@ -984,6 +987,9 @@ export function evaluateBrushTime(events, inputIds, sessionId) {
     e.sessionId === sessionId && e.gestureId === start?.gestureId;
   const ends = events.filter((e) => e.kind === "brush-end" && own(e));
   const end = ends[0];
+  // Input facts precede the handler's effects. Tie this release to this
+  // gesture's end; a final dose inside the release handler is already too late.
+  const releaseEvent = up && end?.input === up.id ? events.indexOf(up) : -1;
   const fail = (code, detail = {}) => issues.push({ code, ...detail });
   if (starts.length !== 1 || ends.length !== 1)
     fail("BRUSH_TIME_BOUNDARIES_MISSING");
@@ -1054,10 +1060,19 @@ export function evaluateBrushTime(events, inputIds, sessionId) {
       continue;
     }
     if (
+      (releaseEvent >= 0 && events.indexOf(interval) > releaseEvent) ||
       events.indexOf(interval) >= events.indexOf(end) ||
       interval.at > end?.at + epsilon
     )
       fail("BRUSH_DOSE_AFTER_RELEASE", detail);
+    if (
+      !press &&
+      interval.rawElapsedMs > 50 + epsilon &&
+      interval.from.some(
+        (value, index) => Math.abs(value - interval.to[index]) > epsilon,
+      )
+    )
+      fail("BRUSH_CAPPED_PATH_REPLAY", detail);
     validIntervals.push(interval);
     acceptedMs += interval.acceptedElapsedMs;
     acceptedDoseFt +=
@@ -2520,9 +2535,9 @@ if (
         throw new Error(
           "Raw observations require --scenario with a fixed P0 scenario ID",
         );
-      if (source.schemaVersion !== 3)
+      if (source.schemaVersion !== 4)
         throw new Error(
-          "Expected current P0 schema 3; evaluate historical evidence with its recorded harness commit",
+          "Expected current P0 schema 4; evaluate historical evidence with its recorded harness commit",
         );
       const result = Array.isArray(source.events)
         ? evaluateObservation(source, spec)

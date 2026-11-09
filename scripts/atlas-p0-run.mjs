@@ -45,6 +45,7 @@ import {
   zoomAndPan,
   heldStroke,
   brushDoseBehavior,
+  largeBrushBehavior,
   waitForSaveCompletion,
   storeActivityPosition,
   storeIntervalReference,
@@ -158,7 +159,7 @@ else if (native)
     "Native pilot only; use --full for the required repetitions. Acceptance still requires a qualified display and proven exact-frame presentation mapping.",
   );
 const report = {
-  schemaVersion: 3,
+  schemaVersion: 4,
   purpose,
   mode: lab ? "lab" : "native",
   collectionStarted: false,
@@ -241,7 +242,7 @@ function checkpoint() {
     report.evaluation = evaluateRun(report);
     await atomicJson(join(out, "report.json"), report);
     await atomicJson(join(out, "run-index.json"), {
-      schemaVersion: 3,
+      schemaVersion: 4,
       purpose,
       selection: report.selection,
       startedAt: report.startedAt,
@@ -978,6 +979,17 @@ async function coastJourney(fixture) {
       rateBehavior.movement.passed,
       rateBehavior.movement,
     );
+    const largeBehavior = await largeBrushBehavior(session);
+    // These independent probes have already completed and restored the fixture.
+    // Retain every result, including a timing failure, so it cannot hide the
+    // dose/history evidence or prevent the following file/region checks. The
+    // common evaluator still fails the run for any unsuccessful check.
+    for (const [id, result] of [
+      ["large-brush-live", largeBehavior.live],
+      ["large-brush-dose", largeBehavior.dose],
+      ["consecutive-author-levels", largeBehavior.levels],
+    ])
+      report.functional.checks.push({ id, independentRunId, ...result });
     await button(session.page, "Weltansicht");
     await exact(session.page);
     const world = await snapshot(session.page);
@@ -1280,7 +1292,7 @@ async function scalingJourney() {
     documentSourceEntries: observed.document.sourceEntries,
     documentCoverageRegions: observed.document.coverageRegions,
     rendererSourceBytes: observed.renderer.sourceBytes,
-    workerSourceBytes: observed.renderer.workerSourceBytes,
+    rendererGpuBytes: observed.renderer.gpuBytes,
   });
   const readDelta = (before, after) =>
     Object.fromEntries(
@@ -1292,7 +1304,7 @@ async function scalingJourney() {
   const assertSourceBudget = (footprint, reads) => {
     const maximum = P0_REQUIREMENTS.scaling.sourceBudgetBytes;
     if (
-      ["documentSourceBytes", "rendererSourceBytes", "workerSourceBytes"].some(
+      ["documentSourceBytes", "rendererSourceBytes", "rendererGpuBytes"].some(
         (key) =>
           !Number.isFinite(footprint[key]) ||
           footprint[key] < 0 ||

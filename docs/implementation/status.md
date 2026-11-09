@@ -8,128 +8,149 @@ Zuständigkeiten und [Produktvertrag](../product-contract.md) Verhalten und Gren
 
 ## Ergebnis und Auftragsgrenze
 
-Die beauftragte [Vereinfachung des P0-Ablaufs](atlas-rebuild-plan.md#p0-fortsetzung-und-nächster-produktnachweis)
-ist implementiert und am integrierten Stand geprüft. Das Dokument erhält
-vollständige Pinselabschnitte. Ein ausdrücklicher Pinselzustand und ein gerichteter
-Frameablauf ersetzen gekoppelte Zustände und Rückrufe. Produkt und Diagnose
-verwenden denselben tatsächlichen lokalen Darstellungsbefund.
+Der beauftragte numerische GPU-Renderweg für den Großpinsel ist implementiert.
+Der gewöhnliche Höhenpfad überträgt geänderte Koeffizienten und numerische
+Übersichten; die GPU rekonstruiert daraus beibehaltene Farbkacheln. Der bisherige
+CPU-Rasterworker, seine Aufträge/Antworten und die zugehörige Diagnose sind entfernt.
 
-**Der Aufräumschnitt ist abgeschlossen; P0 ist weiterhin nicht freigegeben.**
-Der unveränderte warme 512-Pixel-Fall verfehlt seine Live-/Zeitkriterien. Die erste
-native Präsentation des tatsächlichen Karteninhalts bleibt nicht zugeordnet.
-Der gemeinsame P1/P2/P3-Produktfall und F01–F19 bleiben gemäß Plan an das bestehende
-P0-Gate gebunden. Diese Arbeit ist keine GPU-, Worker-, Host- oder Messmethodenablösung.
+**Die Rendererumstellung ist umgesetzt; die Großpinsel-Abnahme bleibt FAIL.**
+Alle drei unveränderten kurzen 512-Pixel-Proben scheitern im verfügbaren
+SwiftShader-Labor an Inhalt, Livewirkung oder Zeitgrenzen. Der lange Verlauf
+zeigt tatsächliche Terrainänderungen, verfehlt aber ebenfalls den Zeitvertrag.
+Die native Abnahme bleibt zusätzlich blockiert. P0 ist nicht freigegeben;
+P1/P2/P3 und der vollständige F01–F19-Umfang behalten ihr bestehendes Gate.
 
-| Kriterium                             | Umsetzung                                                                                                            | Nachweis am integrierten Stand                                                                                                                    | Status      |
-| ------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
-| Ein Besitzer des Pinselwegs           | `applySegment(from, to, elapsedMs)` und gemeinsame reine Abschnittsgrenzen; kein Modellanker oder Nullzeit-Abgleich. | Numerische Segment-, Halo-, Budget-, getrennte Abschnitts- und Historyprüfungen.                                                                  | Verifiziert |
-| Eindeutiger Eingabezustand            | Frei, gehalten/neu-drücken oder aktiv; ausstehende Dosis bleibt unabhängig über Up bestehen.                         | Kurzer Klick zwischen Frames, Hold, verworfene Zeit/Wege, neue kalte Fläche und Abschlussfälle.                                                   | Verifiziert |
-| Gerichteter Frame und lokale Freigabe | Controller besitzt RAF und gebündelten Ladebedarf; Renderer liefert tatsächliche Submits und eine regionale Abfrage. | Lokale Freigabe, alte Antworten, Uploadbudget, Fairness und direkte Restbatchfortsetzung.                                                         | Verifiziert |
-| Passive gemeinsame Diagnose           | Ein Dosisfakt, gemeinsamer Submitbezug, reine Faktenextraktion und zentrale Versuchs-/Szenariobewertung; Schema 3.   | Fehlende/falsche Belege scheitern; Diagnose an/aus bei identischen Eingaben, Zeiten und Produktfakten ergibt dieselben Werte und Commit-Payloads. | Verifiziert |
-| Integration und Fehler                | Vorhandene Mathematik, Quellenbegrenzung, Store und Dateilebenszyklus bleiben Grundlage.                             | Echte Electron-/SQLite-Prüfungen, normaler Start, Hänger, Dateirundläufe und reale Interaktionen mit Fehlerkontrollen.                            | Verifiziert |
-| Warmer großer Pinsel                  | Eingabefolge, Inhalt, D10/D11 und Grenzen unverändert.                                                               | Inhalt und Undo bestehen in der neuen Einzelprobe; ein aktueller Liveframe vor Release, Rückmeldung zu spät.                                      | FAIL        |
-| Native P0-Abnahme                     | Bestehende fehlerschließende Vorprüfung und Inhaltskontrollen erhalten.                                              | Kein natives Display und weiterhin keine bewiesene erste Präsentationszuordnung.                                                                  | Blockiert   |
+## Implementierter Stand
 
-## Vereinfachte Zuständigkeiten
+- `EditorDocument` bleibt alleiniger Besitzer der Float64-Autoren. Der begrenzte
+  GPU-Atlas enthält abgeleitete Kopien samt kubischem Nachbarrand. High-/Low-Paare
+  bewahren Koeffizienten, Achsengewichte und Übersichten über alle 22 Stufen.
+- Der Shader berechnet geänderte 128×128-Farbkacheln. Kamera, Cursor und Overlay
+  verwenden die vorhandenen GPU-Farbkacheln. Die CPU berechnet die unveränderten
+  kubischen Achsengewichte einmal; gewöhnliche Pinseländerungen erzeugen keine
+  CPU-RGBA-Rasterbilder. Endliche numerische Ausnahmefälle behalten den kanonischen
+  Float64-Rasterweg für die betroffenen Darstellungskacheln.
+- Speicherallokation und tatsächliche Uploads sind getrennt. Auch kalte Texturen
+  und Wiederherstellungen halten das 4-MiB-Uploadbudget je Frame ein. Fehlgeschlagene
+  Uploads bleiben wiederholbar. Kontextverlust entwertet sämtliche Bildbelege;
+  erneute Übertragung und Komposition müssen vor einer neuen lokalen Freigabe bestehen.
+- Der bestehende Controller besitzt weiterhin den Frameablauf und den einzigen
+  Pinselanker. Lokale Freigabe folgt einem tatsächlichen Draw. Dosis entsteht
+  höchstens für 50 ms je Folgeschritt; blockierte Zeit und Wege werden verworfen.
+  Loslassen fügt keine neue Dosis hinzu. Undo und Persistenz verwenden dieselben Autoren.
+- Die gemeinsame Darstellung stabilisiert die Farbgrenzen bei 0 und 12 Fuß mit
+  einem Band von `1e-6` Fuß. Modellwerte, genaue Abfragen und Dateidaten bleiben
+  unverändert. Beliebig nahe an einer Bandgrenze ist keine Bitgleichheit versprochen.
 
-`brush.ts` enthält die ausdrücklichen Zustandsformen und reine Entscheidungen
-über angenommene beziehungsweise verworfene Zeit. Nur der Controller besitzt den
-Bewegungsanker. Der Fachkern prüft Quellen und Budgets vor Mutation und führt
-Werte, Vorherbilder und eine Undo-Aktion je Geste. Der sofortige nominale Klickimpuls
-bleibt erhalten; Loslassen fügt keine Dosis hinzu.
+Aktuelle Berichte verwenden Schema 4. `height-draw` verbindet numerischen Upload
+und tatsächlichen Draw mit Session, Ansicht, Revision und Frame. Alte Rasterzeiten
+werden nicht als GPU-Zeiten umgedeutet. Auswerter und Zeitzerlegung teilen dieselben
+Belege. Die drei neuen Großpinsel-/Stufenprüfungen sind Pflichtbestandteile;
+fehlende, doppelte oder fehlgeschlagene Ergebnisse werden abgelehnt.
 
-Der Controller übernimmt fertige Rasterteile, lässt das Bild tatsächlich zeichnen,
-verarbeitet die lokale Rückmeldung, entscheidet höchstens eine Folgedosis und
-disponiert anschließend Arbeit. Restbatches derselben bereits angenommenen Revision
-dürfen weiterhin direkt nach Workerabschluss starten. Ein laufender Batch,
-Pixel-/Bytegrenzen und Fairness bleiben wirksam.
+## Verifikation
 
-`inspectRegion` unterscheidet außerhalb, fehlende Grundlage, veraltetes lokales
-Bild und vollständig aktuell eingereichtes Bild. Ein außerhalb liegender Bereich
-kann die Produktsperre lösen, erzeugt aber keinen Submitbeleg. Unveränderte ältere
-Kachelrevisionen bleiben lokal gültig; ferne Arbeit sperrt keinen bereiten Pinselort.
+| Prüfung                                                     | Ergebnis                                                                                                                                                                                          |
+| ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Editor-, Modell-, Controller-, Renderer- und Auswertertests | **314 Tests in zwölf Dateien bestanden.**                                                                                                                                                         |
+| Allgemeine TypeScript-Prüfung und Tool-Typen                | Beide bestanden.                                                                                                                                                                                  |
+| `npm run check:atlas-p0`                                    | Sauberer Build; **15** echte Electron-/SQLite-/Fixturetests, **83** Start-/Hänger-/Lifecyclechecks und **fünf** GPU-Referenzfälle bestanden.                                                      |
+| GPU-Inhalt                                                  | Küsten-/Kachelgrenzen, alle 22 Stufen, große gewöhnliche Auslöschung ohne CPU-Fallback, Weltrand und extreme endliche Auslöschung mit Fallback bestanden.                                         |
+| Echter WebGL-Kontextverlust                                 | Freigabe verloren, Ressourcen neu aufgebaut, neues Bild eingereicht; vollständige Canvas-PNG, Pixelproben, Autorenhash und Projektdatei unverändert.                                              |
+| Reale Interaktionen                                         | **18 von 19** Funktionsprüfungen bestanden. Der lange Großpinsel scheitert am Zeit-/Kontinuitätsvertrag; dessen Inhalt, History, Dosis und Stallbilanz bestehen.                                  |
+| Fehlerkontrollen                                            | Ignorierter Zoom, Darstellung erst nach Pointerup, Verzögerung und verworfener Draw werden erkannt. Die abschließende ungestörte Erholungsprobe verfehlt die Zeit-/Eingabekriterien; siehe unten. |
+| Skalierung                                                  | **32, 1.024 und 9.000** echte Quellkacheln bestanden, einschließlich Grob-/Feinerhalt, Undo/Redo, Save/Reopen und Prozessneustart.                                                                |
+| Unveränderter warmer 512-Pixel-Fall                         | **Drei unabhängige kurze Proben: alle FAIL.**                                                                                                                                                     |
+| Native Vorprüfung                                           | **BLOCKED / Exit 2**; keine Fixtures oder Programmstarts.                                                                                                                                         |
 
-`Observation` ordnet echte Eingabe-, Dosis-, Commit- und Submitfakten zu. Es besitzt
-keinen Produktzustand oder Eingabezähler. `at` und `projectedAt` trennen
-Modellannahme und Quellenprojektion. Scheitert die Projektion nach Annahme,
-bleibt genau ein Dosisfakt mit `projectedAt: null`; daraus entsteht kein erfolgreicher
-Bildbeleg. Modellwerte, Undo und geordnete Persistenz bleiben erhalten.
-Der entsprechende Fehler wurde durch einen werfenden Projektionsaufruf geprüft.
+Der große Skalierungsfall enthält 294.912.000 dekodierte Autorenbytes und
+überschreitet damit tatsächlich das 256-MiB-Quellenbudget. Im groben Ausschnitt
+werden diese feinen Autoren nicht geladen. Nach dem groben Eingriff halten
+Dokument und Renderer jeweils vier Autorenkacheln mit 131.072 Bytes;
+der GPU-Bestand beträgt rund 10,4 MiB. Die gespeicherten feinen Daten bleiben
+identisch. Nach Rückkehr in die Detailansicht beträgt der Rendererbestand
+rund 21,8 MiB CPU und 17,0 MiB GPU und bleibt innerhalb der Grenzen.
 
-Entfernt sind `Gesture.previous`, `applyPoint`, `readBoundsForPoint`, die
-`regionDisplayed`-/`regionExact`-/`regionCoverage`-Doppelung, Renderer-RAF und
-Controller-Rückrufe, unbenutzte Coverage-Ereignisse, doppelte Dosis-/Inputbelege,
-Diagnoselisten im Controller und parallele gespeicherte Erfolgsflags. Historische
-Journal-Aliase werden nicht mehr im aktiven Auswerter rekonstruiert. Der große
-Journaltransfer bleibt nach Abschluss-Submit oder Timeout; Zeigerhöhenproben
-werden nur ausdrücklich angefordert.
+## Unveränderte Großpinsel-Abnahme
 
-## Verifikation und Identität
+Die kurzen Proben verwenden jeweils vier Positionen, 24-ms-Eingabeabstände und
+512 Pixel Durchmesser. Umgebung: Electron 44.10.2, 1.440 × 960, DPR 1,
+ANGLE/Vulkan mit SwiftShader. Alle Ergebnisse bleiben erhalten.
 
-Der saubere lokale Integrationsbuild ist
-`cdf026571cfd7b1201b0744ea1b383c2d1b6b3ce` (`dirty: false`). Produktquellhash:
-`5c2c5aa88ff2db6637faf82d089cc63dd9ee09b8e84a84b3ba552a66300c387d`;
+| Probe | Down → Submit | Größter angenommener Input einschließlich Up → Submit | Aktuelle Eingabeframes vor Release | Inhalt einschließlich Endpunkt | Ergebnis |
+| ----- | ------------: | ----------------------------------------------------: | ---------------------------------: | ------------------------------ | -------- |
+| 1     |       12,5 ms |                                               65,9 ms |                                  1 | Bestanden                      | FAIL     |
+| 2     |       13,5 ms |                                               22,7 ms |                                  2 | Endpunkt nicht belegt          | FAIL     |
+| 3     |       23,6 ms |                                               76,2 ms |                                  2 | Endpunkt nicht belegt          | FAIL     |
+
+Die D10-Zeitbilanz und begrenzte Dosis bestehen in allen drei Proben. Eine
+abgewiesene letzte Bewegung wird nicht nach Release nachgemalt. Zwei Liveframes
+allein ersetzen weder den Endpunkt- noch den Zeitnachweis.
+
+Der zusätzliche 2,424-s-Verlauf verwendet 101 Positionen und dieselben
+24-ms-Abstände. Im letzten ungestörten Zeitlauf liegen **36** aktuelle
+Eingabeframes vor Release vor. Die 38 angenommenen Eingabe-/Up-Belege erreichen
+**109,1 ms p95**, maximal **121,4 ms** bis zur Zeicheneinreichung; die längste
+bewertete Bewegungspause beträgt **133,4 ms**. Damit sind sowohl 50 ms als auch
+die 100-ms-Pausengrenze verfehlt. Das sind Submission-Untergrenzen einer
+Laborprobe, keine native Präsentationsmessung oder vollständige P0-Stichprobe.
+
+Der getrennte Inhaltslauf zeigt frühen, mittleren und späten Terrainfortschritt
+während derselben gehaltenen Geste. Nach einem tatsächlichen 207-ms-Stall werden
+159,1 ms verworfen; kein Folgeschritt nimmt mehr als 50 ms an oder zeichnet einen
+alten gedeckelten Weg nach. Längeres Halten, langsameres Ziehen, fehlende Nachdosis,
+Undo/Redo und die Stufenfolge 0 → 4 → 0 bestehen.
+
+Auch die abschließende ungestörte Erholungsprobe mit 16-Pixel-Pinsel bleibt im
+letzten Lauf **FAIL**: eine angenommene Bewegung benötigt 62,7 ms, die letzte
+Bewegung wird bei Pointerup verworfen. Die vorherige integrierte Probe desselben
+Produktquellstands hatte diese Kontrolle bestanden. Der Fehler wird nicht durch
+einen ausgewählten erfolgreichen Wiederholungslauf ersetzt.
+
+## Inhaltsaufnahme und Präsentationsgrenze
+
+`capturePage` kann nach einem vollständigen GL-Submit noch die vorherige
+Compositoroberfläche liefern. Eine gezielte Probe zeigte alte Farben nach der
+letzten Dosis und anschließend korrekte Farben bei unveränderten Modellwerten.
+Der dazwischenliegende Overlayframe übertrug keine Daten und komponierte keine
+Höhenkacheln. Dieser Befund ist in den Diagnoseartefakten erhalten.
+
+Ausschließlich die ungestörte Stufen-/Undo-/Redo-Inhaltsprobe wartet deshalb nach
+vollständigem Submit zwei RAF-Gelegenheiten. Session, Revision, Sequenz, Ansicht,
+Kamera und beendete Geste müssen dabei unverändert bleiben; alle echten Pixel-
+und Höhenvergleiche bleiben verpflichtend. Diese Phase wird ausdrücklich als
+Inhaltsstabilisierung protokolliert. Warm512, Langzug, Fehlerkontrollen und
+sämtliche Zeitmessungen erhalten keine zusätzliche Wartezeit.
+
+Die native Vorprüfung nennt `NO_NATIVE_DISPLAY` und
+`NATIVE_PRESENTATION_MAPPING_UNPROVEN`. Die Bindung des tatsächlichen Karteninhalts
+an seine erste Präsentation bleibt offen. Eine qualifizierte GPU-Messung und
+diese Präsentationszuordnung sind vor der nativen Freigabe notwendig.
+Die bekannten Laborfehler bleiben bis zu einer begründeten Lösung Fehler;
+die Umstellung allein belegt keine ausreichende Beschleunigung.
+
+## Identität und Belegpfade
+
+Sauberer Produktbuild: `e31b3f0813816d6088a3eec0e2c055fa5f135032`, `dirty: false`.
+Produktquellhash: `d4b93c955c84a6b2aa42f94c711f3753beefd301c45f7e6ac165a256a038b5b4`.
 Lockhash: `b471b4a1da63f4226f95a28b60f3345aa03e51803f0ef1982624cd16a2d35bc2`.
-Alle folgenden Desktopläufe benutzen diesen Produktbuild. Die nachfolgende
-Dokumentation ändert weder Produkt- noch Prüfcode.
+Alle genannten Desktopläufe verwenden diesen identischen Produktquellstand.
+Der nachfolgende Commit `b76f314` ändert ausschließlich die beschriebene
+nicht zeitgemessene Stufenaufnahme; dessen integrierter Lauf ist maßgeblich für die
+19 Interaktionsprüfungen und die letzte Erholungsprobe. Produktquellen,
+Warm512-Eingaben und Zeitregeln bleiben identisch.
 
-| Prüfung                                                  | Ergebnis                                                                                                                      |
-| -------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| `npm run test:atlas-p0`                                  | 288 Tests in elf Dateien bestanden.                                                                                           |
-| `npm run typecheck`, `npm run typecheck:p0-tools`        | Beide bestanden.                                                                                                              |
-| `npm run check:atlas-p0`                                 | Toolprüfung und sauberer Build; 15 echte Electron-/SQLite-/Fixturetests sowie 83 Start-/Hänger-/Lifecyclechecks bestanden.    |
-| `--lab --only interactions`                              | Alle 16 Funktionsprüfungen und fünf Fehlerkontrollen bestanden; ausgewählter Umfang besteht, native Vollabnahme bleibt offen. |
-| `--lab --only collection --case M03-height-max --runs 1` | Ein unveränderter warmer Großpinselfall tatsächlich ausgeführt; FAIL bei Livewirkung und Submissiongrenzen.                   |
-| `--native --preflight`                                   | BLOCKED / Exit 2; keine Fixtures und kein Programmstart.                                                                      |
+Belege liegen unter:
 
-Die echten Fehlerkontrollen erkennen ignorierten Zoom, erst nach Pointerup
-gezeichnetes Terrain sowie verzögerte und verworfene Darstellung; die zugehörige
-Erholung besteht. Die gemeinsamen Auswerter akzeptieren weder fehlende
-Projektionszeiten noch falsche Session-/Frame-/Ansichtsbezüge oder unvollständige
-lokale Commitbereiche. Ein grüner Beobachtungsbeleg ersetzt keine unabhängige
-Höhen-, Pixel- oder Undo-Prüfung.
+- `src-tauri/target/diagnostics/gpu-final-unit.log` und `gpu-final-desktop.log`;
+- `src-tauri/target/diagnostics/atlas-gpu-reference/report.json`;
+- `artifacts/atlas-rebuild/smoke-2026-11-09T01-27-52.736Z/`;
+- `artifacts/atlas-rebuild/gpu-final-warm512/` und `gpu-verified-interactions/`;
+- `artifacts/atlas-rebuild/gpu-final-scaling/` und `gpu-final-native-preflight/`;
+- `src-tauri/target/diagnostics/gpu-stage-capture-journal/`.
 
-Belege liegen unter `artifacts/atlas-rebuild/smoke-2026-11-09T00-48-02.360Z/`,
-`simplification-interactions/`, `simplification-warm512/` und
-`simplification-native-preflight/`. Der erforderliche Repositorycheck bleibt
-`Candidate · exact-SHA aggregate`; seinen aktuellen Zustand zeigt der PR.
-Eine frühere CI-Freigabe wird nicht auf einen neuen Commit übertragen.
-
-## Warmer 512-Pixel-Fall
-
-Ein Fall mit unveränderten 24-ms-Eingaben, Electron 44.10.2, 1.440 × 960, DPR 1
-und SwiftShader. Der Anfangsimpuls wird nach rund **76,6 ms** eingereicht;
-der Commit nach Pointerup nach **68,3 ms**. Vor Release liegt **ein** aktueller
-Liveframe statt der geforderten mindestens zwei vor. Die Zeitbilanz nach D10
-besteht; kein Folgeschritt nimmt mehr als **21,6 ms** an. Inhalt einschließlich
-Endpunkten und Undo besteht in diesem Lauf.
-
-Damit bleibt der Fall **FAIL**. Die Zahlen sind einzelne Submissionbeobachtungen,
-keine allgemeine p95-Aussage, keine native Präsentationszeit und kein Beleg einer
-Beschleunigung. Die drei während ausstehender Rückmeldung eingetroffenen Moves
-werden gemäß Vertrag verworfen. Nach Release wird kein Endpunkt nachgemalt.
-Die konkrete nächste Performanceentscheidung bleibt gesonderte Arbeit.
-
-Das alte Schema-2-Fehlerartefakt bleibt unverändert. Der verifizierte Auswerter aus
-`89737a4` erkennt weiterhin dieselbe Fehlerliste; der aktuelle CLI lehnt Schema 2 ab.
-Der im historischen Bericht gespeicherte Gesamthash des Harness passt nicht zum
-erhaltenen Skriptbestand, und der Bericht bezeichnet seinen Produktbuild als dirty.
-Daraus wird kein exakter Vorher-/Nachher-Latenzvergleich abgeleitet.
-Hashes und Nachbewertung stehen unter
-`src-tauri/target/diagnostics/p0-simplification/old-warm-evaluation.json`.
-
-## Native Freigabe und verbleibende Grenzen
-
-Die reine Vorprüfung meldet `NO_NATIVE_DISPLAY` und
-`NATIVE_PRESENTATION_MAPPING_UNPROVEN`. Die fehlende Verbindung zwischen
-aufgenommenem Karteninhalt, tatsächlichem Copy-/Refresh-Vorgang und erster
-Präsentation der exakten Revision ist durch den Aufräumschnitt nicht behoben.
-Andere Hardware allein schließt diese Methodenlücke nicht. Submissionzeiten
-werden weiterhin nicht als native Präsentationszeiten ausgegeben.
-
-Die frühere begrenzte Messprobe wird nicht ohne neue konkrete Beweisidee wiederholt.
-Vor P1 bleiben der warme Großpinselfall, tatsächliche Präsentationszuordnung und
-vollständige native Stichprobe auf qualifizierter Referenz zu schließen. Auch die
-Bedienabnahme einer installierten RPM bleibt offen; lokale Cargo-/RPM-Werkzeuge
-stehen nicht zur Verfügung. Der gezielte Aufräumschnitt verändert diese Gates
-und den vollständigen Produktumfang nicht.
+Der erforderliche Repositoryjob bleibt **Candidate · exact-SHA aggregate** für
+den veröffentlichten Head; sein Zustand steht im PR. Frühere CI-Läufe ersetzen
+ihn nicht. Installierte RPM-Bedienabnahme und native Leistungsfreigabe bleiben
+eigene offene Kriterien. Der aktuelle Umsetzungsauftrag aktiviert weder den
+vollständigen Atlas-Neubau noch dessen spätere Produktpakete.

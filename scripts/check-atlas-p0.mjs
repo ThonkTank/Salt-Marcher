@@ -28,3 +28,8 @@ run(
   },
 );
 run(process.execPath, ["scripts/atlas-p0-smoke.mjs"]);
+run(process.execPath, [
+  "scripts/atlas-p0-gpu-check.mjs",
+  "--out",
+  "src-tauri/target/diagnostics/atlas-gpu-reference",
+]);

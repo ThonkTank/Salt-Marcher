@@ -234,12 +234,12 @@ function knownFunctional() {
         coarseReadiness: {
           documentSourceBytes: 32_768,
           rendererSourceBytes: 32_768,
-          workerSourceBytes: 32_768,
+          rendererGpuBytes: 32_768,
         },
         coarseEdit: {
           documentSourceBytes: 65_536,
           rendererSourceBytes: 65_536,
-          workerSourceBytes: 65_536,
+          rendererGpuBytes: 65_536,
         },
         stageReadDeltas: {
           coarseReadiness: {
@@ -279,6 +279,13 @@ describe("explicit execution selection", () => {
     ]);
     expect(scope.requiredChecks).toContain("empty-navigation-grid-on");
     expect(scope.requiredChecks).toContain("save-reopen");
+    expect(scope.requiredChecks).toEqual(
+      expect.arrayContaining([
+        "large-brush-live",
+        "large-brush-dose",
+        "consecutive-author-levels",
+      ]),
+    );
     expect(scope.requiredChecks).not.toContain("busy-worker-and-save");
     expect(scope.requiredChecks).not.toContain("cold-edit-content");
   });
@@ -347,6 +354,9 @@ describe("representative functional evidence controls the aggregate", () => {
     "pan-anchor",
     "continuous-stroke-live",
     "continuous-stroke-undo",
+    "large-brush-live",
+    "large-brush-dose",
+    "consecutive-author-levels",
     "cold-edit-content",
     "world-detail-roundtrip",
   ])("rejects a missing, duplicate, or failed %s check", (id) => {
@@ -463,7 +473,7 @@ describe("representative functional evidence controls the aggregate", () => {
       for (const field of [
         "documentSourceBytes",
         "rendererSourceBytes",
-        "workerSourceBytes",
+        "rendererGpuBytes",
       ] as const) {
         for (const invalid of [
           undefined,
@@ -1314,6 +1324,68 @@ describe("bounded accepted brush time", () => {
     expect(result.maximumStepMs).toBe(20);
     expect(result.stationary).toBe(true);
   });
+  it("rejects a dose created in the release handler before brush-end", () => {
+    const journal = events();
+    const [release] = journal.splice(9, 1);
+    release.createdAt = 29;
+    release.at = 30;
+    journal.at(-1)!.inputAt = 29;
+    journal.splice(6, 0, release);
+    const result = evaluateBrushTime(journal, [1, 2], "session-a");
+    expect(result.issues).toEqual([
+      { code: "BRUSH_DOSE_AFTER_RELEASE", intervalId: 2 },
+    ]);
+    expect(result.passed).toBe(false);
+  });
+  it("accepts a pre-release dose whose real frame is submitted after release", () => {
+    const journal = events();
+    const [frame, receipt] = journal.splice(7, 2);
+    frame.at = 60.1;
+    receipt.at = 60.2;
+    journal.push(frame, receipt);
+    const result = evaluateBrushTime(journal, [1, 2], "session-a");
+    expect(result.passed).toBe(true);
+    expect(result.submittedSteps).toBe(2);
+  });
+  it.each([false, true])(
+    "checks that a capped stall remainder does not replay an old path (moving=%s)",
+    (moving) => {
+      const journal = events();
+      Object.assign(journal[6], {
+        fromAt: 210,
+        toAt: 260,
+        acceptedElapsedMs: 50,
+        rawElapsedMs: 250,
+        to: moving ? [10, 0] : [0, 0],
+        cause: moving ? "move" : "hold",
+        at: 260.1,
+        projectedAt: 260.1,
+      });
+      journal[7].at = 270.1;
+      journal[8].at = 270.2;
+      Object.assign(journal[9], { createdAt: 279, at: 280 });
+      Object.assign(journal[10], { fromAt: 260, toAt: 280, at: 280.1 });
+      Object.assign(journal[11], {
+        endAt: 280,
+        inputAt: 279,
+        at: 280.2,
+      });
+      journal.splice(6, 0, {
+        kind: "brush-discard",
+        sessionId: "session-a",
+        gestureId: 1,
+        fromAt: 10,
+        toAt: 210,
+        reason: "cap",
+        at: 260,
+      });
+      const result = evaluateBrushTime(journal, [1, 2], "session-a");
+      expect(result.passed).toBe(!moving);
+      expect(result.issues).toEqual(
+        moving ? [{ code: "BRUSH_CAPPED_PATH_REPLAY", intervalId: 2 }] : [],
+      );
+    },
+  );
   it.each(["gap", "overlap", "cap", "future-press"])(
     "rejects invalid %s accounting without inventing dose",
     (fault) => {
@@ -1752,7 +1824,7 @@ describe("saved moving-stroke evidence and explicit probe scope", () => {
   });
   it("keeps a passing selected probe distinct from the fixed native manifest", () => {
     const report = {
-      schemaVersion: 3,
+      schemaVersion: 4,
       purpose: "probe",
       selection: "collection",
       mode: "lab",

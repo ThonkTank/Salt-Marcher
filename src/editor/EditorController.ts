@@ -418,7 +418,7 @@ export class EditorController {
     this.loadRequested = true;
   }
 
-  /** One owner orders accepted pixels, local feedback, the next dose and dispatch. */
+  /** One owner orders the actual draw, local feedback and the next bounded dose. */
   private frame = (now: number): void => {
     if (this.disposed) return;
     const start = performance.now();
@@ -446,7 +446,6 @@ export class EditorController {
       } catch (error) {
         this.fail(error);
       }
-      if (!this.disposed) this.world.dispatch();
     } catch (error) {
       this.fail(error);
     } finally {
@@ -677,7 +676,6 @@ export class EditorController {
 
   private checkLocalReady(): LocalReadiness {
     const readiness = this.localReadiness();
-    this.world.setPriorityAreas(readiness.bounds, this.awaitingDose?.bounds);
     if (this.world.cursor) {
       const waiting =
         !readiness.ready && !(readiness.reason === "feedback" && this.stroke);
@@ -1340,7 +1338,7 @@ export class EditorController {
       }
     });
     return {
-      schemaVersion: 3,
+      schemaVersion: 4,
       sessionId: this.doc?.sessionId,
       state: { ...this.state },
       camera: { ...this.world.camera },

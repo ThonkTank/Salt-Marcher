@@ -498,17 +498,18 @@ Bedienverhalten, Format und Grenzen. Ausbau und Abnahme stehen im
 [Neubauplan](implementation/atlas-rebuild-plan.md), aktuelle Ergebnisse im
 [Status](implementation/status.md).
 
-| Besitzer                                           | Verantwortung                                                                                                                                            |
-| -------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `EditorController`                                 | Effektive Einstellungen, normalisierte Eingaben, Kamera, lokale Freigabe, Gesten, ausstehende Dosis und geordnete Persistenz; einziger Framekoordinator. |
-| `brush.ts`                                         | Drei Gestenzustände und reine Entscheidung über Zielpunkt, Zeitverbrauch, Warten und nächste Folgedosis.                                                 |
-| `model/EditorDocument`                             | Aktive Autoren, ausdrücklich übergebene Segmente, Gestentransaktionen, eigene Patches, lokale History, Quellenbereitschaft und Speicherbudgets.          |
-| `model/height.ts`, `height-grid.ts`, `overview.ts` | Gemeinsame Höhenmathematik und Lesebereiche, regelmäßiges Abtastraster und numerische Übersicht.                                                         |
-| `render/WorldRenderer`                             | Beibehaltene Pixi-Kacheln, lokale Invalidierung, priorisierte Rasteraufträge, begrenzte Ergebnisübernahme und tatsächliche Submitbelege.                 |
-| `render/raster.worker.ts`                          | Rasterberechnung aus eigenen Quellkopien; keine zweite Dokumentautorität.                                                                                |
-| `observation.ts`                                   | Optionales Journal und lesende Zuordnung von Eingaben, Dosen, Commit und tatsächlichen Submits.                                                          |
-| `desktop/main.ts`, `preload.ts`                    | Fenster, native Dialoge, Session-/Dateigrenzen und typisierte IPC-Brücke.                                                                                |
-| `desktop/store-process.ts`, `project-store.ts`     | SQLite-Arbeitskopie, räumliche Reads, Autoren-/Übersichtstransaktionen und Dateisnapshots im Utility-Prozess.                                            |
+| Besitzer                                                   | Verantwortung                                                                                                                                            |
+| ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `EditorController`                                         | Effektive Einstellungen, normalisierte Eingaben, Kamera, lokale Freigabe, Gesten, ausstehende Dosis und geordnete Persistenz; einziger Framekoordinator. |
+| `brush.ts`                                                 | Drei Gestenzustände und reine Entscheidung über Zielpunkt, Zeitverbrauch, Warten und nächste Folgedosis.                                                 |
+| `model/EditorDocument`                                     | Aktive Autoren, ausdrücklich übergebene Segmente, Gestentransaktionen, eigene Patches, lokale History, Quellenbereitschaft und Speicherbudgets.          |
+| `model/height.ts`, `height-grid.ts`, `overview.ts`         | Kanonische Höhenmathematik und Lesebereiche, numerische Übersicht sowie CPU-Referenz für numerische Ausnahmefälle.                                       |
+| `render/WorldRenderer`                                     | Beibehaltene Pixi-Kacheln, lokale Invalidierung, begrenzte Ressourcenübernahme und tatsächliche Submitbelege.                                            |
+| `render/HeightField`, `height-field-data`, `height-shader` | Abgeleiteter numerischer GPU-Atlas, Kacheldeskriptoren samt kubischem Halo und gecachte GPU-Farbkacheln.                                                 |
+| `render/height-atlas-upload`, `raster.ts`                  | Begrenzte Teiluploads des Höhenatlas sowie kanonischer Float64-Darstellungsfallback und gemeinsame Farbgrenzenregel.                                     |
+| `observation.ts`                                           | Optionales Journal und lesende Zuordnung von Eingaben, Dosen, Commit und tatsächlichen Submits.                                                          |
+| `desktop/main.ts`, `preload.ts`                            | Fenster, native Dialoge, Session-/Dateigrenzen und typisierte IPC-Brücke.                                                                                |
+| `desktop/store-process.ts`, `project-store.ts`             | SQLite-Arbeitskopie, räumliche Reads, Autoren-/Übersichtstransaktionen und Dateisnapshots im Utility-Prozess.                                            |
 
 React hält nur noch nicht übernommene Texte numerischer Felder; Blur oder Enter
 übernimmt sie in den Controller. Werkzeugmodus, Größe, Stärke, Raster und
@@ -525,13 +526,13 @@ Höhenautoren sind sparse 64×64-`Float64`-Kacheln mit relativen Restwerten auf
 Stufen 0–21. Der gemeinsame Sampler rekonstruiert die positiven kubischen
 B-Spline-Restfelder, addiert sie zum Ozean-Grundwert und begrenzt erst die fertige
 Summe. Grobe Striche ändern ausschließlich ihre Autorenstufe. `height-grid.ts`
-verwendet dieselbe Mathematik, teilt horizontale Beiträge zwischen Rasterzeilen
-und erhält die kanonische Akkumulationsreihenfolge bei Extremwerten.
+bleibt die CPU-Referenz für Darstellungswerte und den numerischen Ausnahmefallback;
+bei Extremwerten erhält es die kanonische Akkumulationsreihenfolge.
 
 `readPresentation` liefert benötigte grobe Autoren und numerische Übersichten
 feinerer Beiträge. Deren 128×128 Weltabtastpunkte folgen dem Darstellungsraster,
 auch am Weltrand ohne Stauchung. Sie speichern unbeschnittene, durch 32 skalierte
-relative Beiträge; weder Farben noch Ozeangrundwert. Erst Rasterisierung addiert
+relative Beiträge; weder Farben noch Ozeangrundwert. Erst die Darstellung addiert
 grobe Autoren und Grundwert und begrenzt die Summe. Quellen und Übersichten sind
 verschiedene Typen.
 
@@ -558,7 +559,7 @@ Flächenbelege werden darauf geschnitten, bevor unbenötigte bestätigte Quellen
 entfallen. Jeder verbleibende Beleg setzt voraus, dass alle positiven Quellen
 seiner Stufen mit überlappendem kubischem Stützbereich noch resident sind.
 Herauszoomen gibt auch feinere Quellen innerhalb des Weltbereichs frei. Die
-entfernten Schlüssel werden zugleich aus Renderer und Worker entfernt; numerische
+entfernten Schlüssel werden zugleich aus dem numerischen GPU-Abbild entfernt; numerische
 Übersichten bleiben davon getrennt. Aktive und unbestätigte Änderungen bleiben
 gepinnt, bestätigte Löschmarker entfallen. Einträge und Flächenbelege sind in den
 Ressourcenmetriken sichtbar.
@@ -618,40 +619,57 @@ kennt weder Uhr noch Frameplanung. Controller und Modell verwenden dieselbe
 reine Funktion `heightBrushReadBounds` für Segment und Quellenhalo.
 
 Der einzige RAF gehört dem Controller. Er startet zusammengefassten Ladebedarf
-und ruft `WorldRenderer.renderFrame` auf. Diese Methode übernimmt gültige
-Ergebnisse im bestehenden Budget, zeichnet bei Bedarf und gibt ausschließlich
-nach einer tatsächlichen Zeichnung einen `FrameSubmission` zurück. Der Controller
+und ruft `WorldRenderer.renderFrame` auf. Diese Methode lädt geänderte numerische
+Ressourcen im bestehenden Budget hoch, komponiert betroffene Farbkacheln und
+zeichnet die Szene. Ausschließlich nach der tatsächlichen Zeichnung gibt sie
+einen `FrameSubmission` zurück. Der Controller
 übergibt den Beleg an die Beobachtung, löst passende Rückkopplung und berechnet die
 lokale Freigabe. Erst danach entscheidet er über die nächste Halte-/Bewegungsdosis
-und ruft `dispatch` auf. Dadurch entwertet die nächste Änderung ein fertiges
-Ergebnis nicht vor dessen Darstellung. Der Renderer besitzt weder einen eigenen
-RAF noch einen Callback zur Eingabefreigabe.
+und reicht deren Patches weiter. Dadurch entwertet die nächste Änderung einen
+fertigen Stand nicht vor dessen Darstellung. Der Renderer besitzt weder einen
+eigenen RAF noch einen Callback zur Eingabefreigabe. Ein Rasterworker und seine
+Batch-/Resultatwarteschlange gehören nicht mehr zum interaktiven Höhenpfad.
 
-Restarbeit derselben angenommenen Revision darf nach Workerabschluss direkt
-weiterlaufen. Sie wartet nicht auf einen zusätzlichen Frame allein zur
-Disposition; Upload, Zeichnen und die nächste Folgedosis bleiben im gemeinsamen
-RAF. Ein laufender Batch und das gemeinsame Budget für fertige plus laufende
-Resultate begrenzen diese Fortsetzung. Der Worker-Nachrichtenhandler zeichnet
-nicht.
+Angenommene Abschnitte liefern eigene Patches nur für geänderte Quellen. Der
+numerische Atlas ist ein abgeleitetes GPU-Abbild; `EditorDocument` bleibt der
+einzige Besitzer bearbeiteter Werte. Quellen werden einschließlich ihres
+kubischen Nachbarrands gepackt. Zwei `Float32`-Anteile bewahren den hohen und
+niedrigen Anteil von Koeffizienten, Splinegewichten und Übersichtswerten.
+Deskriptoren wählen für eine Darstellungskachel alle relevanten der 22 Stufen.
+Die CPU berechnet die kubischen Gewichte der 128 Positionen jeder Achse einmal
+in `Float64`; der Shader verwendet diese lokalen Indizes und Gewichte. Absolute
+Weltkoordinaten und eine erneute kubische Gewichtsauswertung je Pixel entfallen
+im Shader. Die Addition und einmalige Höhenbegrenzung folgen derselben
+Felddefinition wie Modell und numerische Übersichten.
 
-Angenommene Abschnitte liefern eigene Patches nur für geänderte Quellen an
-Renderer und Worker. Vollständige Ausschnittskopien je Eingabe entfallen.
-Lokale Dirtybereiche begrenzen Rasterarbeit und Uploads. Der Dispatcher ordnet
-angenommene lokale Änderung, Bildaufbau zur lokalen Freigabe und übrige sichtbare
-Kacheln; Werkzeugort beziehungsweise Ansichtsmitte priorisieren kalte Kacheln.
-Bedarf wird ersetzt statt als weitere Queue angehängt. Nach vier konkurrierenden
-lokalen Batches darf eine Restkachel ein eigenes begrenztes Paket erhalten.
+Dirtybereiche bestimmen die betroffenen Darstellungskacheln. Der Shader komponiert
+deren 128×128-Farbbild in eine beibehaltene GPU-Textur; Kamera-, Cursor- und
+Overlayframes zeichnen anschließend diese Sprites. Ein unveränderter Bildinhalt
+führt deshalb nicht erneut alle kubischen Höhenabfragen aus. Geänderte Atlaszeilen,
+Deskriptoren und Übersichten werden innerhalb des Uploadbudgets übertragen.
+Solange notwendige Ressourcen noch fehlen, bleibt das bisherige Farbbild bestehen;
+es erhält keinen aktuellen lokalen Submitstempel. Ressourcen und numerische
+Abbilder sind keine zusätzliche Vorschau oder spätere Autorenübernahme.
 
-Ein Worker verarbeitet höchstens einen synchronen Batch mit 16 Kacheln und
-131.072 Pixeln. Aufgaben teilen denselben Quellstand; kein `await` mischt neuere
-Quellen unter alte Revisionsangaben. Je Kachel existiert höchstens ein laufender
-Auftrag plus zusammengefasster neuer Dirtybedarf. Ein gültiges fertiges Rechteck
-wird vollständig übernommen, auch bei neueren Eingaben; sein Stand darf nicht
-älter als der bereits angezeigte sein. Neuere Änderungen bleiben für Folgearbeit
-vorgemerkt. Session und monotone Tokens schützen vor überholten Ergebnissen.
+Ein verlorener WebGL-Kontext entwertet sofort alle Darstellungsbelege und sperrt
+neue Zeichnungen. Nach Wiederherstellung werden sämtliche numerischen Ressourcen
+erneut innerhalb des Uploadbudgets übertragen und alle Farbkacheln neu aufgebaut.
+Erst ein erfolgreicher neuer Draw gibt den jeweiligen Bereich wieder frei.
+Die CPU-Autorenwerte und gespeicherten Quellen bleiben dabei erhalten.
+
+Für endliche Werte außerhalb des sicher auf der GPU darstellbaren Zahlenbereichs
+verwendet allein die betroffene Farbkachel den kanonischen `Float64`-Sampler und
+`rasterize`. Das bewahrt insbesondere die Akkumulationsreihenfolge extrem großer,
+sich aufhebender Beiträge. Der Fallback schreibt keine Autoren, und gewöhnliche
+Pinseländerungen durchlaufen keinen zusätzlichen CPU-Rasterpfad. Dieselbe
+Darstellungsregel in CPU-Fallback und Shader setzt Höhen innerhalb `1e-6` Fuß
+der Farbgrenzen 0 und 12 auf die Grenze. Die GPU-Auswertung ist auf dieser
+Höhengenauigkeit mit der CPU-Referenz zu vergleichen; beliebig nahe an einer
+Bandgrenze können unterschiedliche Rundungen die Farbentscheidung beeinflussen.
+Exakte Abfragen und gespeicherte Werte werden dadurch nicht gerundet.
 
 Ein aktueller lokaler Submit verlangt den vollständigen sichtbaren Prüfbereich.
-Offene Dirty-/Pendingrechtecke zählen nur, soweit sie diesen Bereich überlappen;
+Offene Dirtyrechtecke zählen nur, soweit sie diesen Bereich überlappen;
 unveränderte Kacheln dürfen einen älteren Revisionsstempel behalten. Frame,
 Session und Ansicht müssen zum tatsächlichen Submit gehören. `exactRevision`
 bezeichnet eine in diesem Submit vollständig aktuelle Ansicht;
@@ -659,7 +677,7 @@ bezeichnet eine in diesem Submit vollständig aktuelle Ansicht;
 bereits eine aktuelle Teilansicht belegen. Geänderte Freigabe und Pointerup können
 einen Overlayframe anfordern, auch ohne neue Modellrevision. Kameraoffsets werden vor der
 GPU-Übergabe abgezogen. `budgets.ts` begrenzt Quellen, History, Pendingdaten,
-CPU-/GPU-Darstellungen und Arbeit pro Frame.
+CPU-/GPU-Darstellungen und Uploadbytes je Frame.
 
 ### History, Persistenz und Datei
 
@@ -717,7 +735,7 @@ Die Beobachtung liest regionale
 Submitbelege und abgeleitete Bereitschaft, verändert aber weder Produktzustand
 noch Frameplanung.
 
-Journal und Laufberichte verwenden Schema 3. `extractSubmissionEvidence` in
+Journal und Laufberichte verwenden Schema 4. `extractSubmissionEvidence` in
 `scripts/atlas-p0-evaluate.mjs` verbindet Eingabe, Dosis oder Commit, lokalen
 Beleg und tatsächlichen Frame. Sammler, Wiederholung gespeicherter Journale und
 Zeitzerlegung verwenden diese Extraktion; Navigation und kalte Freigabe teilen
@@ -725,16 +743,16 @@ ebenfalls eine Extraktion. `evaluateAttempt` und `evaluateScenario` besitzen die
 gemeinsamen Versuchs- und Szenarioregeln. `scenario.evaluation` hält das eine
 abgeleitete Szenariourteil; Inhalts- und Messfakten bleiben davon getrennt.
 Fehlende Eingaben, Identitäten, Bereiche oder Zeitstempel werden als fehlende
-Nachweise erhalten. Historische Journale werden mit ihrem damaligen Harnessstand
-ausgewertet.
+Nachweise erhalten. Historische Journale einschließlich Schema 3 werden mit ihrem
+damaligen Harnessstand ausgewertet; ihre Rasterworker-Messgrößen erhalten keine
+Kompatibilitätsdeutung als aktuelle GPU-Zeitstufen.
 
-Diagnosebatches erfassen Versand, Workerbeginn/-ende und Rendererempfang über
-`performance.timeOrigin + performance.now`. Der bestehende Journalpfad verbindet
-sie mit lokal erforderlichen Uploads und Submit. Die Zeitzerlegung erfasst
-angenommene Eingaben, Halteschritte und Pointerup. Sie weist alle erforderlichen
-Batches mit Pixelzahl, Reihenfolge und Wartezeiten aus; die Strecke bis zum
-letzten Dispatch enthält auch vorherige Rasterarbeit. Fehlende oder widersprüchliche Zeitstempel bleiben
-als unvollständiger Nachweis sichtbar. Diese Uhren belegen keine native Präsentation.
+`height-draw` erfasst Uploadbeginn, Uploadende und den tatsächlichen Szenen-Submit
+in derselben Rendereruhr samt hochgeladenen Bytes, betroffenen Kacheln und
+Fallback-Samples. Die Zeitzerlegung verbindet diese Fakten mit Eingaben,
+Halteschritten und Pointerup. Sie erfindet keine Workerzeiten für den ersetzten
+Rasterweg. Fehlende oder widersprüchliche Zeitstempel bleiben als unvollständiger
+Nachweis sichtbar. Diese Uhren belegen keine native Präsentation.
 
 Zustandsabfragen übertragen kein Journal. Monotone Ereignis-/Storecursor und
 referenzierte Intervalle vermeiden Journalvollkopien pro Versuch. Ergebnisse
@@ -775,6 +793,16 @@ enthalten keine Screenshot-/Warmup-Pausen. Analytische Werte, räumlich getrennt
 Pixelproben, History und gespeicherte Feindaten ergänzen den Inhaltstest.
 Lastnachweise verlangen echte Sessionfortschritte und Überlappung mit erfolgreich
 beendeten Dateioperationen. Der synthetische Worker ersetzt keine späteren Fachjobs.
+
+`atlas-p0-gpu-check.mjs` prüft tatsächliche Editorpixel gegen die vorhandene
+CPU-Rekonstruktion einschließlich gespeicherter numerischer Übersicht. Fälle an
+beiden Farbgrenzen, an negativen Kachel- und Weltgrenzen, mit allen 22 Stufen und
+extremer endlicher Auslöschung ergänzen die normalen Bedienprüfungen. Die
+Autorenabfragen bleiben unverändert; die gemeinsame kleine Farbgrenzenregel wird
+innerhalb und außerhalb ihres Bands geprüft. Ein separater 512-Pixel-Verlauf
+prüft lange Bewegung, tatsächliche Zwischenbilder, Haltewirkung, Hänger und
+abwechselnd feinere/grobere Autorenstufen. Der feste kurze 512-Pixel-Zeitfall und
+seine Ziele werden dadurch nicht ersetzt.
 
 Das verbindliche Szenarienmanifest, Stichproben, Fehlerkontrollen und native
 Präsentationsanforderungen stehen im

@@ -7,10 +7,7 @@ export const editorBudgets = Object.freeze({
   historyActions: 100,
   pendingWriteBytes: 32 * 1024 * 1024,
   computeWorkers: 2,
-  resultCpuMs: 2,
   uploadBytesPerFrame: 4 * 1024 * 1024,
-  // Raster jobs are deliberately small, leaving the other worker to long work.
-  rasterPixelsPerJob: 128 * 128,
   retainedTiles: 96,
   observationEvents: 120_000,
 });

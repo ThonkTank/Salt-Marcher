@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { Graphics } from "pixi.js";
 import { EditorController } from "../EditorController";
+import { editorBudgets } from "../budgets";
 import type {
   AtlasDesktop,
   CommitRequest,
@@ -16,11 +17,9 @@ import {
   createCoastFixture,
   heightTilesFromControls,
   prepareHeightSampler,
-  prepareHeightGrid,
   heightOverviewKeys,
   heightOverviewKey,
   heightOverviewBounds,
-  minimumCoarseHeightLevel,
   HEIGHT_SUM_SCALE,
   heightFromScaledSum,
   type Bounds,
@@ -29,39 +28,132 @@ import {
 } from "../model";
 import { Observation } from "../observation";
 import { WorldRenderer } from "./WorldRenderer";
-import type {
-  RasterBatch,
-  RasterBatchResult,
-  RasterMessage,
-  RasterResult,
-  RasterTask,
-} from "./raster.worker";
 import {
-  MAX_RASTER_BATCH_PIXELS,
-  MAX_RASTER_BATCH_TILES,
-  rasterize,
-} from "./raster";
+  HEIGHT_DESCRIPTOR_HEIGHT,
+  HEIGHT_DESCRIPTOR_WIDTH,
+} from "./height-field-data";
 
-const colour = (height: number) =>
-  rasterize(
-    new Float64Array([height / HEIGHT_SUM_SCALE]),
-    [0, 0, 1, 1],
-    1,
-    [0, 0, 1, 1],
-  ).subarray(0, 3);
+interface NumericFieldMirror {
+  sources: Map<string, HeightTile>;
+  overviews: Map<string, HeightOverviewTile>;
+  uploads: number;
+  updates: number;
+  draws: number;
+  restores: number;
+  drawDirty(): number;
+  flush(maxBytes?: number): number;
+  rebuildAfterContextRestore(): void;
+}
+const fields = vi.hoisted(() => [] as NumericFieldMirror[]);
 
-const renderedSources = vi.hoisted(() => [] as Uint8Array[]);
-
-// This regression exercises source ownership and transfer, without a GL context.
-vi.mock("pixi.js", () => ({
-  BufferImageSource: class {
-    constructor(options: { resource: Uint8Array }) {
-      renderedSources.push(options.resource);
+// Only the GL resource boundary is mocked. The real controller, source projection,
+// local-ready gate, fault handling, frame submission and observation stay active.
+// Numeric/shader equivalence is tested separately against actual GPU rendering.
+vi.mock("./HeightField", () => ({
+  HeightField: class {
+    sources = new Map<string, HeightTile>();
+    overviews = new Map<string, HeightOverviewTile>();
+    uploads = 0;
+    updates = 0;
+    draws = 0;
+    restores = 0;
+    private changedBytes = 0;
+    private tileCount = 0;
+    constructor() {
+      fields.push(this);
     }
-    update() {}
+    init() {}
+    rebuildAfterContextRestore() {
+      this.restores++;
+      this.changedBytes =
+        [...this.sources.values()].reduce(
+          (bytes, tile) => bytes + tile.values.byteLength,
+          0,
+        ) +
+        this.tileCount * 128 * 128 * 2 * 4;
+    }
+    drawDirty() {
+      this.draws++;
+      return 128 * 128;
+    }
+    replaceSources(tiles: readonly HeightTile[]) {
+      this.sources.clear();
+      this.updateSources(tiles);
+    }
+    updateSources(
+      tiles: readonly HeightTile[],
+      removed: readonly string[] = [],
+    ) {
+      for (const key of removed) this.sources.delete(key);
+      for (const tile of tiles) {
+        this.sources.set(tile.key, { ...tile, values: tile.values.slice() });
+        this.changedBytes += tile.values.byteLength;
+      }
+    }
+    createTile(bounds: Bounds, power: number, overview?: HeightOverviewTile) {
+      this.tileCount++;
+      const span = 128 * 2 ** power;
+      const key = heightOverviewKey(power, bounds[0] / span, bounds[1] / span);
+      const update = (next?: HeightOverviewTile | null) => {
+        this.updates++;
+        if (next)
+          this.overviews.set(key, { ...next, values: next.values.slice() });
+        else if (next === null) this.overviews.delete(key);
+        this.changedBytes +=
+          HEIGHT_DESCRIPTOR_WIDTH * HEIGHT_DESCRIPTOR_HEIGHT * 4 * 4;
+        if (next !== undefined) this.changedBytes += 128 * 128 * 2 * 4;
+      };
+      update(overview ?? null);
+      return {
+        mesh: { position: { set() {} }, visible: false, destroy() {} },
+        update,
+        drawDirty: () => this.drawDirty(),
+        destroy: () => {
+          this.tileCount--;
+          this.overviews.delete(key);
+        },
+      };
+    }
+    flush(maxBytes = Infinity) {
+      const bytes = Math.min(this.changedBytes, maxBytes);
+      this.uploads++;
+      this.changedBytes -= bytes;
+      return bytes;
+    }
+    metrics() {
+      const sourceBytes = [...this.sources.values()].reduce(
+        (total, tile) => total + tile.values.byteLength,
+        0,
+      );
+      const overviewBytes = [...this.overviews.values()].reduce(
+        (total, tile) => total + tile.values.byteLength,
+        0,
+      );
+      return {
+        sourceBytes,
+        sourceCount: this.sources.size,
+        gpuBytes: sourceBytes + overviewBytes,
+        cpuBytes: sourceBytes + overviewBytes,
+        fallbackTiles: 0,
+        fallbackSamples: 0,
+        pendingUploadBytes: this.changedBytes,
+      };
+    }
+    reset() {
+      this.sources.clear();
+      this.overviews.clear();
+      this.changedBytes = 0;
+      this.tileCount = 0;
+    }
+    destroy() {
+      this.reset();
+    }
   },
+}));
+vi.mock("pixi.js", () => ({
   Container: class {
     addChild() {}
+    removeChild() {}
   },
   Graphics: class {
     clear() {
@@ -80,11 +172,6 @@ vi.mock("pixi.js", () => ({
       return this;
     }
   },
-  Sprite: class {
-    position = { set() {} };
-    destroy() {}
-  },
-  Texture: class {},
   WebGLRenderer: class {
     canvas: HTMLCanvasElement | undefined;
     async init(options: { canvas: HTMLCanvasElement }) {
@@ -102,24 +189,10 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 beforeEach(() => {
-  renderedSources.length = 0;
+  fields.length = 0;
 });
 
 it("mirrors coarse Undo/Redo after unrelated fine sources were evicted", () => {
-  const mirror = new Map<string, HeightTile>();
-  vi.stubGlobal(
-    "Worker",
-    class {
-      postMessage(message: RasterMessage, transfer: ArrayBuffer[] = []) {
-        // Real transfer semantics catch accidental detachment of history/store data.
-        const received = structuredClone(message, { transfer });
-        if (received.kind !== "sources") return;
-        if (received.reset) mirror.clear();
-        for (const key of received.removed ?? []) mirror.delete(key);
-        for (const tile of received.tiles) mirror.set(tile.key, tile);
-      }
-    },
-  );
   const broad: Bounds = [-20_000, -20_000, 20_000, 20_000];
   const detail: Bounds = [-3000, -2000, 3000, 2000];
   const distant = heightTilesFromControls(0, [[2000, 0, 25]])[0];
@@ -132,31 +205,31 @@ it("mirrors coarse Undo/Redo after unrelated fine sources were evicted", () => {
   document.acceptPersistence(edit.sequence);
   const lifted = document.sampleHeight(320, 0);
   expect(lifted).toBeGreaterThan(original);
-
   expect(
     document.retainSources([{ bounds: detail, minLevel: 0 }]).length,
   ).toBeGreaterThan(0);
   expect(document.sourceState(distant.key)).toBe("unknown");
   const world = new WorldRenderer(new Observation());
   world.reset(document);
+  const field = fields.at(-1)!;
   world.updatePresentation(
     document.snapshot(detail).tiles,
     [],
     heightOverviewKeys(detail, world.presentationPower()),
     true,
   );
-  const rendered = () => prepareHeightSampler([...mirror.values()])(320, 0);
+  const rendered = () =>
+    prepareHeightSampler([...field.sources.values()])(320, 0);
   expect(rendered()).toBeCloseTo(lifted, 10);
-
   const undone = document.undo()!;
-  // This is the old failure: history's full dirty region still has unknown data.
   expect(() => document.snapshot(undone.dirtyBounds[0])).toThrow(
     SourcesNotReadyError,
   );
   world.updateSourcePatches(undone.patches);
   expect(rendered()).toBeCloseTo(original, 10);
-  expect(undone.patches.every((patch) => !mirror.has(patch.key))).toBe(true);
-
+  expect(undone.patches.every((patch) => !field.sources.has(patch.key))).toBe(
+    true,
+  );
   const redone = document.redo()!;
   world.updateSourcePatches(redone.patches);
   expect(rendered()).toBeCloseTo(lifted, 10);
@@ -170,95 +243,14 @@ it("mirrors coarse Undo/Redo after unrelated fine sources were evicted", () => {
   expect(document.isReady(redone.dirtyBounds[0])).toBe(false);
 });
 
-/** Worker computation is immediate; delivery waits so later input can overtake it. */
-class RasterWorker {
-  onmessage: ((event: MessageEvent<RasterBatchResult>) => void) | null = null;
-  sources = new Map<string, HeightTile>();
-  overviews = new Map<string, HeightOverviewTile>();
-  completed: RasterBatchResult[] = [];
-  batches: RasterBatch[] = [];
-  tasks: RasterTask[] = [];
-
-  postMessage(message: RasterMessage, transfer: ArrayBuffer[] = []) {
-    const copy = structuredClone(message, { transfer });
-    if (copy.kind === "sources") {
-      if (copy.reset) {
-        this.sources.clear();
-        this.overviews.clear();
-      }
-      for (const key of copy.removed ?? []) this.sources.delete(key);
-      for (const tile of copy.tiles) this.sources.set(tile.key, tile);
-      for (const key of copy.overviewKeys ?? []) this.overviews.delete(key);
-      for (const tile of copy.overviews ?? [])
-        this.overviews.set(tile.key, tile);
-      return;
-    }
-    this.batches.push(copy);
-    const results = copy.tasks.map((task) => this.render(task));
-    this.completed.push({
-      kind: "raster-batch-result",
-      id: copy.id,
-      sessionId: copy.sessionId,
-      results,
-      cpuMs: results.length,
-    });
-  }
-
-  private render(copy: RasterTask): RasterResult {
-    this.tasks.push(copy);
-    const span = copy.size * 2 ** copy.power;
-    const key = heightOverviewKey(
-      copy.power,
-      copy.bounds[0] / span,
-      copy.bounds[1] / span,
-    );
-    const grid = prepareHeightGrid(
-      [...this.sources.values()].filter(
-        (tile) => tile.level >= minimumCoarseHeightLevel(copy.power),
-      ),
-    );
-    return {
-      ...copy,
-      kind: "raster-result",
-      pixels: rasterize(
-        grid(copy.bounds, copy.size, copy.rect),
-        copy.bounds,
-        copy.size,
-        copy.rect,
-        this.overviews.get(key)?.values,
-      ),
-      cpuMs: 1,
-      samples: (copy.rect[2] - copy.rect[0]) * (copy.rect[3] - copy.rect[1]),
-    };
-  }
-
-  deliver(): RasterBatchResult {
-    const result = this.completed.shift();
-    if (!result) throw new Error("No actual raster result to deliver");
-    this.onmessage?.({ data: result } as MessageEvent<RasterBatchResult>);
-    return result;
-  }
-
-  terminate() {}
-}
-
 async function readyRenderer({
   width = 64,
   height = 64,
   x = 256,
   y = 256,
+  scale = 0.25,
   rendered = true,
 } = {}) {
-  let worker!: RasterWorker;
-  vi.stubGlobal(
-    "Worker",
-    class extends RasterWorker {
-      constructor() {
-        super();
-        worker = this;
-      }
-    },
-  );
   vi.stubGlobal("devicePixelRatio", 1);
   const document = new EditorDocument("render-progress", { empty: true });
   const observation = new Observation(true);
@@ -266,20 +258,21 @@ async function readyRenderer({
   world.width = width;
   world.height = height;
   world.grid = false;
-  await world.init({} as HTMLCanvasElement);
+  const canvas = new EventTarget();
+  await world.init(canvas as HTMLCanvasElement);
   world.reset(document);
-  world.moveCamera({ x, y, scale: 0.25 });
+  const field = fields.at(-1)!;
+  world.moveCamera({ x, y, scale });
   world.updatePresentation(
     [],
     [],
-    heightOverviewKeys(world.sourceBounds(), 2),
+    heightOverviewKeys(world.sourceBounds(), world.presentationPower()),
     true,
   );
   world.refresh();
-  const frame = (beforeDispatch?: () => void) => {
+  const frame = (afterSubmit?: () => void) => {
     const submitted = world.renderFrame(performance.now());
-    beforeDispatch?.();
-    world.dispatch();
+    afterSubmit?.();
     return submitted;
   };
   if (rendered) {
@@ -287,10 +280,8 @@ async function readyRenderer({
       let step = 0;
       step < 100 && world.inspectRegion(world.bounds()).status !== "current";
       step++
-    ) {
-      if (worker.completed.length) worker.deliver();
+    )
       frame();
-    }
     expect(world.inspectRegion(world.bounds()).status).toBe("current");
   }
   const change = (
@@ -304,44 +295,20 @@ async function readyRenderer({
     document.finishGesture();
     return update;
   };
-  return { document, observation, world, worker, frame, change };
+  return { document, observation, world, field, frame, change, canvas };
 }
 
-it("confirms a current edited region while another part of its tile still renders", async () => {
-  const { world, worker, frame, change, document } = await readyRenderer();
-  const first = change([160, 160]);
-  frame();
-  const second = change([352, 352]);
-  expect(world.inspectRegion(first.bounds).status).not.toBe("current");
-  worker.deliver();
-  frame();
-  expect(world.inspectRegion(first.bounds).status).toBe("current");
-  expect(world.inspectRegion(second.bounds).status).not.toBe("current");
-  const offset = (39 * 128 + 39) * 4;
-  expect([...renderedSources[0].slice(offset, offset + 4)]).toEqual([
-    ...colour(document.sampleHeight(158, 158)),
-    255,
-  ]);
-  worker.deliver();
-  frame();
-  expect(world.inspectRegion(second.bounds).status).toBe("current");
-  expect(world.state().submittedViewGeneration).toBe(
-    world.state().viewGeneration,
-  );
-});
-
-it("requires an actual local submission, not only source readiness or uploaded pixels", async () => {
-  const { world, worker, frame } = await readyRenderer({ rendered: false });
+it("requires the actual local draw after numeric data are ready and uploaded", async () => {
+  const { world, field, frame } = await readyRenderer({ rendered: false });
   const area: Bounds = [200, 200, 240, 240];
   expect(world.isPresentationReady(area)).toBe(true);
   expect(world.inspectRegion(area).status).toBe("missing");
-  frame();
-  worker.deliver();
+  field.flush();
   expect(world.inspectRegion(area).status).toBe("missing");
   const render = vi
     .spyOn(world.renderer, "render")
     .mockImplementationOnce(() => {
-      // The upload is complete, but this call has not submitted it yet.
+      expect(field.uploads).toBeGreaterThan(0);
       expect(world.inspectRegion(area).status).toBe("missing");
     });
   const receipt = frame();
@@ -357,6 +324,156 @@ it("requires an actual local submission, not only source readiness or uploaded p
     frame: receipt!.frame,
     viewGeneration: receipt!.viewGeneration,
   });
+});
+
+it.each(["upload", "compose", "draw"] as const)(
+  "never certifies a %s failure and recovers without losing the edit",
+  async (failure) => {
+    const { world, field, frame, change, document } = await readyRenderer();
+    const update = change([200, 200]);
+    const previous = world.state().lastSubmittedFrame;
+    const error = new Error(`${failure} failed`);
+    if (failure === "upload")
+      vi.spyOn(field, "flush").mockImplementationOnce(() => {
+        throw error;
+      });
+    else if (failure === "compose")
+      vi.spyOn(field, "drawDirty").mockImplementationOnce(() => {
+        throw error;
+      });
+    else
+      vi.spyOn(world.renderer, "render").mockImplementationOnce(() => {
+        throw error;
+      });
+    expect(frame).toThrow(error);
+    expect(world.inspectRegion(update.bounds).status).not.toBe("current");
+    expect(world.state().lastSubmittedFrame).toBe(previous);
+    expect(world.state().submittedRevision).toBe(0);
+    frame();
+    expect(world.inspectRegion(update.bounds).status).toBe("current");
+    expect(world.state().submittedRevision).toBe(document.revision);
+  },
+);
+
+it("keeps partial numeric uploads visibly incomplete and resumes without rebuilding their data", async () => {
+  const { world, field, frame } = await readyRenderer({
+    width: 1180,
+    height: 894,
+    rendered: false,
+  });
+  const first = frame()!;
+  expect(first.uploadedBytes).toBeLessThanOrEqual(
+    editorBudgets.uploadBytesPerFrame,
+  );
+  expect(world.state().pendingUploadBytes).toBeGreaterThan(0);
+  expect(field.draws).toBe(0);
+  expect(first.exactRevision).toBe(-1);
+  expect(world.inspectRegion(world.bounds()).status).toBe("missing");
+  const updates = field.updates;
+  for (
+    let step = 0;
+    step < 20 && world.state().pendingUploadBytes > 0;
+    step++
+  ) {
+    const receipt = frame()!;
+    expect(receipt.uploadedBytes).toBeLessThanOrEqual(
+      editorBudgets.uploadBytesPerFrame,
+    );
+    expect(field.updates).toBe(updates);
+    if (world.state().pendingUploadBytes > 0) {
+      expect(field.draws).toBe(0);
+      expect(world.inspectRegion(world.bounds()).status).not.toBe("current");
+    }
+  }
+  expect(world.state().pendingUploadBytes).toBe(0);
+  expect(field.draws).toBeGreaterThan(0);
+  expect(world.inspectRegion(world.bounds()).status).toBe("current");
+});
+
+it("reuses composed terrain for overlay redraws and camera moves inside retained tiles", async () => {
+  const { world, field, frame } = await readyRenderer();
+  const draws = field.draws;
+  world.redraw();
+  frame();
+  expect(field.draws).toBe(draws);
+  world.moveCamera({ ...world.camera, x: world.camera.x + 4 });
+  world.refresh();
+  frame();
+  expect(field.draws).toBe(draws);
+  expect(world.inspectRegion(world.bounds()).status).toBe("current");
+});
+
+it("invalidates lost GPU submissions and requires bounded uploads plus a new draw after restoration", async () => {
+  const { world, field, frame, canvas, change, document } = await readyRenderer(
+    {
+      width: 1180,
+      height: 894,
+    },
+  );
+  const update = change([200, 200]);
+  frame();
+  const previous = world.inspectRegion(update.bounds);
+  expect(previous.status).toBe("current");
+  const height = document.sampleHeight(200, 200);
+  const revision = document.revision;
+  const sourceCopies = [...field.sources.values()].map((tile) => ({
+    key: tile.key,
+    values: tile.values.slice(),
+  }));
+  const render = vi.spyOn(world.renderer, "render");
+  const uploaded = field.uploads;
+  const composed = field.draws;
+  const lost = new Event("webglcontextlost", { cancelable: true });
+  canvas.dispatchEvent(lost);
+  expect(lost.defaultPrevented).toBe(true);
+  expect(world.inspectRegion(update.bounds).status).toBe("missing");
+  expect(world.state()).toMatchObject({
+    contextLost: true,
+    submittedRevision: -1,
+    lastSubmittedFrame: 0,
+  });
+  world.redraw();
+  expect(frame()).toBeNull();
+  expect(render).not.toHaveBeenCalled();
+  expect(field.uploads).toBe(uploaded);
+  canvas.dispatchEvent(new Event("webglcontextrestored"));
+  expect(field.restores).toBe(1);
+  expect(world.inspectRegion(update.bounds).status).toBe("missing");
+  expect(world.state().contextLost).toBe(false);
+  const partial = frame()!;
+  expect(partial.uploadedBytes).toBeLessThanOrEqual(
+    editorBudgets.uploadBytesPerFrame,
+  );
+  expect(partial.exactRevision).toBe(-1);
+  expect(field.draws).toBe(composed);
+  expect(world.inspectRegion(update.bounds).status).toBe("missing");
+  for (let step = 0; step < 20 && world.state().pendingUploadBytes; step++) {
+    const receipt = frame()!;
+    expect(receipt.uploadedBytes).toBeLessThanOrEqual(
+      editorBudgets.uploadBytesPerFrame,
+    );
+    if (world.state().pendingUploadBytes)
+      expect(world.inspectRegion(update.bounds).status).toBe("missing");
+  }
+  expect(world.inspectRegion(update.bounds).status).toBe("current");
+  expect(world.inspectRegion(update.bounds).frame).toBeGreaterThan(
+    previous.frame,
+  );
+  expect(field.draws).toBeGreaterThan(composed);
+  expect(document.revision).toBe(revision);
+  expect(document.sampleHeight(200, 200)).toBe(height);
+  for (const source of sourceCopies)
+    expect(
+      field.sources
+        .get(source.key)!
+        .values.every((value, index) => value === source.values[index]),
+    ).toBe(true);
+  world.destroy();
+  const afterDestroy = new Event("webglcontextlost", { cancelable: true });
+  canvas.dispatchEvent(afterDestroy);
+  canvas.dispatchEvent(new Event("webglcontextrestored"));
+  expect(afterDestroy.defaultPrevented).toBe(false);
+  expect(field.restores).toBe(1);
 });
 
 it("requires a new submitted view after camera changes, resize and session replacement", async () => {
@@ -404,8 +521,7 @@ it("preserves a readiness overlay redraw requested after an actual submit", asyn
   const { world, frame } = await readyRenderer();
   const render = vi.spyOn(world.renderer, "render");
   world.redraw();
-  const receipt = frame(() => world.redraw());
-  expect(receipt).not.toBeNull();
+  expect(frame(() => world.redraw())).not.toBeNull();
   expect(render).toHaveBeenCalledTimes(1);
   frame();
   expect(render).toHaveBeenCalledTimes(2);
@@ -413,39 +529,60 @@ it("preserves a readiness overlay redraw requested after an actual submit", asyn
   expect(render).toHaveBeenCalledTimes(2);
 });
 
-it("keeps a drawn foundation during its own pending edit without confirming the new content", async () => {
-  const { world, worker, frame, change } = await readyRenderer();
+it("refreshes retained numeric tiles when a presentation read replaces sources or certifies an empty overview", async () => {
+  const { world, field, frame } = await readyRenderer();
+  const key = heightOverviewKey(2, 0, 0);
+  const overview: HeightOverviewTile = {
+    key,
+    power: 2,
+    tileX: 0,
+    tileY: 0,
+    values: new Float64Array(128 * 128).fill(2),
+  };
+  world.updatePresentation([], [overview], [key], true);
+  expect(world.inspectRegion([200, 200, 240, 240]).status).not.toBe("current");
+  frame();
+  expect(field.overviews.get(key)?.values[0]).toBe(2);
+  expect(world.inspectRegion([200, 200, 240, 240]).status).toBe("current");
+  world.updatePresentation([], [], [key], true);
+  expect(world.inspectRegion([200, 200, 240, 240]).status).not.toBe("current");
+  frame();
+  expect(field.overviews.has(key)).toBe(false);
+  expect(world.inspectRegion([200, 200, 240, 240]).status).toBe("current");
+});
+
+it("keeps a drawn foundation stale until the new numeric terrain is actually drawn", async () => {
+  const { world, field, frame, change } = await readyRenderer();
   const update = change([200, 200]);
   expect(world.inspectRegion(update.bounds).status).toBe("stale");
-  frame();
-  worker.deliver();
-  expect(world.inspectRegion(update.bounds).status).not.toBe("current");
+  field.flush();
+  expect(world.inspectRegion(update.bounds).status).toBe("stale");
   frame();
   expect(world.inspectRegion(update.bounds).status).toBe("current");
 });
 
-it("checks the entire visible swept area without waiting for unrelated screen tiles", async () => {
-  const { world, worker, frame } = await readyRenderer({
+it("checks the entire visible sweep without requiring unrelated unavailable tiles", async () => {
+  const { world, frame, change } = await readyRenderer({
     width: 320,
     x: 768,
     rendered: false,
   });
   const left: Bounds = [240, 240, 272, 272];
   const right: Bounds = [1264, 240, 1296, 272];
-  world.setPriorityAreas(left);
-  frame();
-  worker.deliver();
-  world.setPriorityAreas(right);
-  frame();
-  expect(world.inspectRegion(left).status).toBe("current");
-  expect(world.inspectRegion(right).status).toBe("missing");
-  worker.deliver();
+  world.updatePresentation(
+    [],
+    [],
+    [heightOverviewKey(2, 0, 0), heightOverviewKey(2, 2, 0)],
+    true,
+  );
   frame();
   expect(world.inspectRegion(left).status).toBe("current");
   expect(world.inspectRegion(right).status).toBe("current");
-  expect(world.inspectRegion(world.bounds()).status).not.toBe("current");
-  // Both endpoints are drawn; the unpainted middle still prohibits this sweep.
   expect(world.inspectRegion([240, 240, 1296, 272]).status).toBe("missing");
+  const update = change([256, 256]);
+  frame();
+  expect(world.inspectRegion(update.bounds).status).toBe("current");
+  expect(world.inspectRegion(world.bounds()).status).toBe("missing");
 });
 
 it("does not require offscreen brush or halo pixels even inside a partially visible tile", async () => {
@@ -456,363 +593,99 @@ it("does not require offscreen brush or halo pixels even inside a partially visi
   expect(world.inspectRegion(offscreen).status).toBe("outside");
 });
 
-it("loads the current local focus before unrelated cold tiles without queueing old focus areas", async () => {
-  const { world, worker, frame } = await readyRenderer({
-    width: 320,
-    height: 320,
-    x: 0,
-    y: 0,
-    rendered: false,
+it("draws the complete warm 512px footprint in one eligible frame from changed numeric sources", async () => {
+  const { world, frame, change, document, field, observation } =
+    await readyRenderer({ width: 1180, height: 894, x: 0, y: 0 });
+  const update = change([-1600, -300], {
+    level: 4,
+    radius: 1024,
+    amount: 4000,
   });
-  const focus: Bounds = [560, 560, 600, 600];
-  world.setPriorityAreas([-600, -600, -560, -560]);
-  world.setPriorityAreas(focus);
-  frame();
-  expect(worker.batches[0].tasks.map((task) => task.key)).toEqual(["2:1:1"]);
-  expect(worker.batches[0].tasks[0].rect).toEqual([0, 0, 128, 128]);
-  expect(world.inspectRegion(focus).status).toBe("missing");
-  worker.deliver();
-  frame();
-  expect(world.inspectRegion(focus).status).toBe("current");
-  expect(world.inspectRegion(world.bounds()).status).not.toBe("current");
-});
-
-it("returns an accepted local edit before loading a newly requested cold focus", async () => {
-  const { world, worker, frame, change } = await readyRenderer({
-    width: 320,
-    height: 320,
-    x: 0,
-    y: 0,
-    rendered: false,
-  });
-  const first: Bounds = [-600, -600, -560, -560];
-  const next: Bounds = [560, 560, 600, 600];
-  world.setPriorityAreas(first);
-  frame();
-  worker.deliver();
-  let changed: Bounds | null = null;
-  frame(() => {
-    changed = change([-580, -580]).bounds;
-    world.setPriorityAreas(next, changed);
-  });
-  expect(world.inspectRegion(first).status).toBe("stale");
-  expect(world.inspectRegion(changed!).status).not.toBe("current");
-  expect(worker.batches[1].tasks.map((task) => task.key)).toEqual(["2:-2:-2"]);
-  worker.deliver();
-  frame();
-  expect(world.inspectRegion(changed!).status).toBe("current");
-  expect(world.inspectRegion(next).status).toBe("missing");
-  expect(worker.batches[2].tasks.map((task) => task.key)).toEqual(["2:1:1"]);
-});
-
-it("continues loading the rest of the view during sustained local edits", async () => {
-  const { world, worker, frame, change, observation } = await readyRenderer({
-    width: 320,
-    height: 320,
-    x: 0,
-    y: 0,
-    rendered: false,
-  });
-  const focus: Bounds = [-600, -600, -560, -560];
-  let previous: Bounds | null = null;
-  let accepted = 0;
-  world.setPriorityAreas(focus);
-  const advance = () => {
-    if (world.inspectRegion(previous ?? focus).status !== "current") return;
-    previous = change([-580, -580]).bounds;
-    world.setPriorityAreas(focus, previous);
-    accepted++;
-  };
-  frame(advance);
-  for (let step = 0; step < 20; step++) {
-    if (worker.completed.length) worker.deliver();
-    frame(advance);
-  }
-  expect(accepted).toBeGreaterThan(4);
-  expect(
-    observation
-      .read()
-      .some(
-        (event) => event.kind === "raster-upload" && event.key !== "2:-2:-2",
-      ),
-  ).toBe(true);
-});
-
-it("finishes a large brush batch without main-thread redispatch and coalesces newer inputs", async () => {
-  const { world, worker, frame, change, document } = await readyRenderer({
-    width: 320,
-    height: 320,
-    x: -800,
-    y: -300,
-  });
-  // Initial full tiles must also obey the total pixel cap, not only tile count.
-  expect(worker.batches[0].tasks).toHaveLength(1);
-  expect(worker.batches.some((batch) => batch.tasks.length === 8)).toBe(true);
-  const before = worker.batches.length;
-  const brush = { level: 3, radius: 512, amount: 40 };
-  const first = change([-800, -300], brush);
-  frame();
-  const firstSample = prepareHeightSampler(
-    document.snapshot(world.sourceBounds()),
-  );
-  const batch = worker.batches.at(-1)!;
-  expect(batch.tasks).toHaveLength(9);
-  expect(
-    batch.tasks.reduce(
-      (sum, task) =>
-        sum + (task.rect[2] - task.rect[0]) * (task.rect[3] - task.rect[1]),
-      0,
-    ),
-  ).toBe(81200);
-  // All nine real computations finish without returning control to the main
-  // renderer. Withholding delivery models the previously observed 42 ms gap.
-  expect(worker.completed).toHaveLength(1);
-  expect(worker.completed[0].results).toHaveLength(9);
-  change([-520, -300], brush);
-  change([-240, -300], brush);
-  expect(worker.batches).toHaveLength(before + 1);
-  for (const result of worker.completed[0].results) {
-    const x = result.bounds[0] + (result.rect[0] + 0.5) * 4;
-    const y = result.bounds[1] + (result.rect[1] + 0.5) * 4;
-    expect([...result.pixels.slice(0, 4)]).toEqual([
-      ...colour(firstSample(x, y)),
-      255,
-    ]);
-  }
-  worker.deliver();
-  frame();
-  expect(world.inspectRegion(first.bounds).status).not.toBe("current");
-  expect(worker.batches).toHaveLength(before + 2);
-  worker.deliver();
-  frame();
-  expect(world.inspectRegion(world.bounds()).status).toBe("current");
-  expect(worker.batches).toHaveLength(before + 2);
-  for (const batch of worker.batches) {
-    expect(batch.tasks.length).toBeLessThanOrEqual(MAX_RASTER_BATCH_TILES);
-    expect(
-      batch.tasks.reduce(
-        (sum, task) =>
-          sum + (task.rect[2] - task.rect[0]) * (task.rect[3] - task.rect[1]),
-        0,
-      ),
-    ).toBeLessThanOrEqual(MAX_RASTER_BATCH_PIXELS);
-  }
-});
-
-it("continues a large accepted revision between frames without publishing or admitting another dose", async () => {
-  const { world, worker, frame, change, observation, document } =
-    await readyRenderer({
-      width: 640,
-      height: 640,
-      x: 0,
-      y: 0,
-    });
-  const update = change([0, 0], { level: 4, radius: 1024, amount: 40 });
-  world.setPriorityAreas(update.bounds, update.bounds);
-  frame();
+  expect(world.inspectRegion(update.bounds).status).toBe("stale");
   const revision = document.revision;
-  const count = worker.batches.length;
   const render = vi.spyOn(world.renderer, "render");
-  worker.deliver();
-  expect(worker.batches).toHaveLength(count + 1);
-  expect(worker.completed).toHaveLength(1);
-  expect(
-    worker.batches.at(-1)!.tasks.every((task) => task.revision === revision),
-  ).toBe(true);
-  expect(render).not.toHaveBeenCalled();
-  expect(world.inspectRegion(update.bounds).status).not.toBe("current");
-  for (
-    let step = 0;
-    step < 10 && world.inspectRegion(update.bounds).status !== "current";
-    step++
-  ) {
-    if (worker.completed.length) worker.deliver();
-    frame();
-  }
-  expect(world.inspectRegion(update.bounds).status).toBe("current");
-  const continuations = observation
-    .read()
-    .filter(
-      (event) => event.kind === "raster-batch-start" && event.continuation,
-    );
-  expect(continuations.length).toBeGreaterThan(0);
-  expect(
-    continuations.every(
-      (event) =>
-        event.priority === 0 &&
-        typeof event.pixels === "number" &&
-        event.pixels <= MAX_RASTER_BATCH_PIXELS,
-    ),
-  ).toBe(true);
-  expect(document.revision).toBe(revision);
-});
-
-it("keeps outer view progress during repeated multi-batch local doses", async () => {
-  const { world, worker, frame, change, observation } = await readyRenderer({
-    width: 960,
-    height: 960,
-    x: 0,
-    y: 0,
-    rendered: false,
-  });
-  const focus: Bounds = [-1200, -1200, 1200, 1200];
-  world.setPriorityAreas(focus);
-  let previous: Bounds | null = null;
-  let accepted = 0;
-  let observationStart = 0;
-  const advance = () => {
-    if (world.inspectRegion(previous ?? focus).status !== "current") return;
-    if (!accepted) observationStart = observation.read().length;
-    previous = change([0, 0], { level: 4, radius: 1024, amount: 40 }).bounds;
-    world.setPriorityAreas(focus, previous);
-    accepted++;
-  };
-  frame(advance);
-  for (let step = 0; step < 40; step++) {
-    // A whole accepted revision can finish before its single publication RAF.
-    while (worker.completed.length) worker.deliver();
-    frame(advance);
-  }
-  const batches = observation
-    .read()
-    .slice(observationStart)
-    .filter((event) => event.kind === "raster-batch-start");
-  expect(accepted).toBeGreaterThan(4);
-  expect(batches.some((event) => event.continuation)).toBe(true);
-  expect(batches.some((event) => event.viewProgress)).toBe(true);
-});
-
-it("paints an older overlapping result completely without confirming the current region", async () => {
-  const { world, worker, frame, change, observation, document } =
-    await readyRenderer();
-  const first = change([160, 160]);
-  const firstSample = prepareHeightSampler(
-    document.snapshot(world.sourceBounds()),
-  );
-  frame();
-  change([172, 160]);
-  const result = worker.deliver().results[0];
   const receipt = frame();
-  const upload = observation
-    .read()
-    .filter((event) => event.kind === "raster-upload")
-    .at(-1)!;
-  expect(upload.acceptedPixels).toBe(result.samples);
-  expect(upload.supersededPixels).toBe(0);
-  expect(upload.paintedRevision).toBe(1);
-  expect(upload.requiredRevision).toBe(2);
-  const offset = (39 * 128 + 39) * 4;
-  expect([...renderedSources[0].slice(offset, offset + 4)]).toEqual([
-    ...colour(firstSample(158, 158)),
-    255,
-  ]);
-  expect(world.inspectRegion(first.bounds).status).not.toBe("current");
-  expect(world.state().submittedRevision).toBe(0);
-  expect(receipt!.exactRevision).toBe(-1);
-  worker.deliver();
-  frame();
-  expect(world.inspectRegion(first.bounds).status).toBe("current");
-  expect(world.state().submittedRevision).toBe(2);
-  expect([...renderedSources[0].slice(offset, offset + 4)]).toEqual([
-    ...colour(document.sampleHeight(158, 158)),
-    255,
-  ]);
+  expect(render).toHaveBeenCalledOnce();
+  expect(world.inspectRegion(update.bounds).status).toBe("current");
+  expect(receipt!.exactRevision).toBe(revision);
+  expect(document.revision).toBe(revision);
+  expect(field.sources.size).toBeGreaterThan(0);
+  expect(
+    observation.read().some((event) => event.kind.startsWith("raster-")),
+  ).toBe(false);
 });
 
-it("does not call mixed tile prefixes a current exact region", async () => {
-  const { world, worker, frame, change, observation } = await readyRenderer({
-    width: 128,
-    x: 0,
-  });
-  const first = change([0, 160]);
-  frame();
-  expect(worker.completed[0].results).toHaveLength(2);
-  change([4, 160]);
-  worker.deliver();
-  frame();
-  worker.deliver();
-  // Model the real result CPU cap: one tile uploads this frame, one next frame.
-  let now = performance.now();
-  const clock = vi.spyOn(performance, "now").mockImplementation(() => now);
-  const originalEvent = observation.event.bind(observation);
-  const events = vi
-    .spyOn(observation, "event")
-    .mockImplementation((kind, details) => {
-      originalEvent(kind, details);
-      if (kind === "raster-upload") now += 3;
-    });
-  frame();
-  events.mockRestore();
-  clock.mockRestore();
-  expect(world.inspectRegion(first.bounds).status).not.toBe("current");
-  expect(world.state().submittedRevision).toBe(0);
-  frame();
-  expect(world.inspectRegion(first.bounds).status).toBe("current");
-});
-
-it("keeps painted execution revisions monotone through Undo, Redo and late duplicate replies", async () => {
-  const { world, worker, frame, change, document, observation } =
-    await readyRenderer();
+it("publishes only the latest complete numeric revision through Undo and Redo", async () => {
+  const { world, frame, change, document, field } = await readyRenderer();
   const first = change([160, 160]);
-  const firstSample = prepareHeightSampler(
-    document.snapshot(world.sourceBounds()),
-  );
   frame();
+  const firstHeight = document.sampleHeight(160, 160);
   change([172, 160]);
   const undone = document.undo()!;
   world.updateSourcePatches(undone.patches);
   for (const bounds of undone.dirtyBounds) world.invalidate(bounds);
-  const older = worker.deliver();
-  frame();
-  expect(world.inspectRegion(first.bounds).status).not.toBe("current");
-  const undoResult = worker.deliver();
+  expect(world.inspectRegion(first.bounds).status).toBe("stale");
   frame();
   expect(world.state().submittedRevision).toBe(3);
-  const offset = (39 * 128 + 39) * 4;
-  const paintedUndo = [...renderedSources[0].slice(offset, offset + 4)];
-  expect(paintedUndo).toEqual([...colour(firstSample(158, 158)), 255]);
+  expect(
+    prepareHeightSampler([...field.sources.values()])(160, 160),
+  ).toBeCloseTo(firstHeight, 10);
   const redone = document.redo()!;
   world.updateSourcePatches(redone.patches);
   for (const bounds of redone.dirtyBounds) world.invalidate(bounds);
-  frame();
-  worker.onmessage!({ data: older } as MessageEvent<RasterBatchResult>);
-  worker.onmessage!({ data: undoResult } as MessageEvent<RasterBatchResult>);
-  worker.onmessage!({
-    data: { ...older, sessionId: "foreign-session" },
-  } as MessageEvent<RasterBatchResult>);
-  frame();
-  expect([...renderedSources[0].slice(offset, offset + 4)]).toEqual(
-    paintedUndo,
-  );
-  expect(world.inspectRegion(first.bounds).status).not.toBe("current");
-  expect(world.state().submittedRevision).toBe(3);
-  worker.deliver();
+  expect(world.inspectRegion(first.bounds).status).toBe("stale");
   frame();
   expect(world.inspectRegion(first.bounds).status).toBe("current");
   expect(world.state().submittedRevision).toBe(4);
-  expect([...renderedSources[0].slice(offset, offset + 4)]).toEqual([
-    ...colour(document.sampleHeight(158, 158)),
-    255,
-  ]);
   expect(
-    observation
-      .read()
-      .filter((event) => event.kind === "raster-upload")
-      .map((event) => event.paintedRevision),
-  ).toEqual([0, 1, 3, 4]);
+    prepareHeightSampler([...field.sources.values()])(160, 160),
+  ).toBeCloseTo(document.sampleHeight(160, 160), 10);
 });
 
-it("keeps drop-render negative control and recovers through the same real raster path", async () => {
-  const { world, worker, frame, change } = await readyRenderer();
+it("never certifies dropped rendering and recovers through the ordinary numeric draw", async () => {
+  const { world, frame, change } = await readyRenderer();
   world.fault = "drop-render";
   const update = change([160, 160]);
-  frame();
-  worker.deliver();
-  frame();
-  expect(world.inspectRegion(update.bounds).status).not.toBe("current");
+  const submitted = world.state().lastSubmittedFrame;
+  for (let i = 0; i < 5; i++) frame();
+  expect(world.inspectRegion(update.bounds).status).toBe("stale");
+  expect(world.state().submittedRevision).toBe(0);
+  expect(world.state().lastSubmittedFrame).toBe(submitted);
   world.fault = "none";
   frame();
   expect(world.inspectRegion(update.bounds).status).toBe("current");
+});
+
+it("holds delayed terrain until its deadline and does not mislabel a redraw", async () => {
+  const { world, frame, change } = await readyRenderer();
+  let now = 1000;
+  vi.spyOn(performance, "now").mockImplementation(() => now);
+  world.fault = "delay-render";
+  const update = change([160, 160]);
+  frame();
+  now += 249;
+  world.redraw();
+  frame();
+  expect(world.inspectRegion(update.bounds).status).toBe("stale");
+  now += 1;
+  frame();
+  expect(world.inspectRegion(update.bounds).status).toBe("current");
+});
+
+it("holds terrain during pointerup control then displays the already accepted dose after release", async () => {
+  const { world, frame, document } = await readyRenderer();
+  world.fault = "pointerup-render";
+  document.beginGesture({ level: 0, radius: 20, amount: 400 });
+  const update = document.applySegment([160, 160], [160, 160], 16)!;
+  world.updateSourcePatches(update.patches);
+  world.invalidate(update.bounds);
+  frame();
+  expect(world.inspectRegion(update.bounds).status).toBe("stale");
+  expect(document.revision).toBe(1);
+  document.finishGesture();
+  frame();
+  expect(world.inspectRegion(update.bounds).status).toBe("current");
+  expect(document.revision).toBe(1);
 });
 
 it("keeps the same certified source area during a small camera move", async () => {
@@ -827,9 +700,8 @@ it("keeps the same certified source area during a small camera move", async () =
   expect(world.inspectRegion(world.bounds()).status).toBe("current");
 });
 
-it("keeps result progress and the controller frame loop after a slow or failed brush decision", async () => {
-  const { controller, worker, frame, pointer, advance } =
-    await readyController();
+it("keeps visible progress and the frame loop after a slow or failed brush decision", async () => {
+  const { controller, frame, pointer, advance } = await readyController();
   controller.setBrush(16, 400);
   pointer("pointerdown", 20, 20);
   const decision = vi.spyOn(
@@ -841,8 +713,6 @@ it("keeps result progress and the controller frame loop after a slow or failed b
   });
   frame();
   expect(controller.state.error).toBe("input failed");
-  worker.deliver();
-  // Later input work cannot exhaust the already completed upload's CPU budget.
   decision.mockImplementation(() => advance(5));
   frame();
   expect(controller.world.inspectRegion(controller.world.bounds()).status).toBe(
@@ -863,7 +733,6 @@ async function readyController(
     height?: number;
   } = {},
 ) {
-  let worker!: RasterWorker;
   let nextFrame = 0;
   let now = 1000;
   let width = options.width ?? 64;
@@ -896,14 +765,9 @@ async function readyController(
   );
   vi.stubGlobal(
     "Worker",
-    class extends RasterWorker {
-      constructor(url: URL) {
-        super();
-        if (url.pathname.endsWith("/raster.worker.ts")) worker = this;
-      }
-      postMessage(message: RasterMessage, transfer: ArrayBuffer[] = []) {
-        if ("kind" in message) super.postMessage(message, transfer);
-      }
+    class {
+      postMessage() {}
+      terminate() {}
     },
   );
   class Canvas extends EventTarget {
@@ -973,7 +837,6 @@ async function readyController(
   const drainView = async () => {
     for (let step = 0; step < 100; step++) {
       await Promise.resolve();
-      if (worker.completed.length) worker.deliver();
       frame();
       if (
         !controller.state.loading &&
@@ -982,7 +845,7 @@ async function readyController(
       )
         return;
     }
-    throw new Error("Actual raster view did not finish");
+    throw new Error("Actual numeric terrain view did not finish");
   };
   const pointer = (type: string, x = 32, y = 32, at = now) => {
     const event = new Event(type);
@@ -1010,7 +873,6 @@ async function readyController(
   return {
     controller,
     bridge,
-    worker,
     callbacks,
     frame,
     pointer,
@@ -1020,53 +882,109 @@ async function readyController(
   };
 }
 
-it("keeps a short click and prevents invisible impulses from stacking across gestures", async () => {
-  const { controller, bridge, worker, frame, pointer } =
-    await readyController();
-  controller.setBrush(16, 400);
-  pointer("pointerdown", 20, 20);
-  expect(controller.observe().document!.revision).toBe(1);
-  pointer("pointerup", 20, 20);
-  pointer("pointerdown", 20, 20);
-  pointer("pointerup", 20, 20);
-  expect(controller.observe().document!.revision).toBe(1);
-  await Promise.resolve();
-  expect(bridge.commit).toHaveBeenCalledOnce();
-  const intervals = controller.observation
-    .read()
-    .filter((event) => event.kind === "brush-interval");
-  expect(intervals).toHaveLength(1);
-  expect(intervals[0]).toMatchObject({
-    cause: "press",
-    nominalDose: true,
-    acceptedElapsedMs: 1000 / 60,
-    rawElapsedMs: 0,
-  });
-  expect(intervals[0].fromAt).toBe(intervals[0].toAt);
-  frame();
-  worker.deliver();
-  frame();
-  for (let step = 0; step < 3; step++) frame(50);
-  expect(controller.observe().document!.revision).toBe(1);
-  expect(
-    controller.observation
+it.each([16, 512])(
+  "keeps a %ipx short click and prevents invisible impulses from stacking across gestures",
+  async (diameter) => {
+    const { controller, bridge, frame, pointer } = await readyController(0, {
+      width: 1180,
+      height: 894,
+    });
+    controller.setBrush(diameter, 400);
+    pointer("pointerdown", 20, 20);
+    expect(controller.observe().document!.revision).toBe(1);
+    pointer("pointerup", 20, 20);
+    pointer("pointerdown", 20, 20);
+    pointer("pointerup", 20, 20);
+    expect(controller.observe().document!.revision).toBe(1);
+    await Promise.resolve();
+    expect(bridge.commit).toHaveBeenCalledOnce();
+    const intervals = controller.observation
       .read()
-      .filter((event) => event.kind === "brush-submit"),
-  ).toHaveLength(1);
-  expect(
-    controller.observation
-      .read()
-      .filter((event) => event.kind === "edit-submit")
-      .map((event) => event.input),
-  ).toEqual([2]);
-  expect(
-    controller.observation
-      .read()
-      .filter((event) => event.kind === "noop")
-      .map((event) => event.input),
-  ).toEqual([3, 4]);
-  controller.destroy();
-});
+      .filter((event) => event.kind === "brush-interval");
+    expect(intervals).toHaveLength(1);
+    expect(intervals[0]).toMatchObject({
+      cause: "press",
+      nominalDose: true,
+      acceptedElapsedMs: 1000 / 60,
+      rawElapsedMs: 0,
+    });
+    expect(intervals[0].fromAt).toBe(intervals[0].toAt);
+    frame();
+    frame();
+    for (let step = 0; step < 3; step++) frame(50);
+    expect(controller.observe().document!.revision).toBe(1);
+    expect(
+      controller.observation
+        .read()
+        .filter((event) => event.kind === "brush-submit"),
+    ).toHaveLength(1);
+    expect(
+      controller.observation
+        .read()
+        .filter((event) => event.kind === "edit-submit")
+        .map((event) => event.input),
+    ).toEqual([2]);
+    expect(
+      controller.observation
+        .read()
+        .filter((event) => event.kind === "noop")
+        .map((event) => event.input),
+    ).toEqual([3, 4]);
+    controller.destroy();
+  },
+);
+
+it.each(["drop-render", "delay-render", "pointerup-render"] as const)(
+  "keeps one accepted large dose through %s and never paints a waiting path after release",
+  async (fault) => {
+    const { controller, frame, pointer, advance } = await readyController(0, {
+      width: 1180,
+      height: 894,
+    });
+    controller.setBrush(512, 400);
+    controller.world.fault = fault;
+    pointer("pointerdown", 190, 372);
+    frame(24);
+    advance(24);
+    pointer("pointermove", 330, 372);
+    frame(24);
+    advance(24);
+    pointer("pointermove", 610, 372);
+    frame(24);
+    expect(controller.observe().document!.revision).toBe(1);
+    expect(
+      controller.observation
+        .read()
+        .filter((event) => event.kind === "brush-submit"),
+    ).toHaveLength(0);
+    pointer("pointerup", 610, 372);
+    const values = controller.observe([
+      [-1600, -300],
+      [80, -300],
+    ]).samples;
+    controller.world.fault = "none";
+    frame(1000);
+    expect(controller.observe().document!.revision).toBe(1);
+    expect(
+      controller.observe([
+        [-1600, -300],
+        [80, -300],
+      ]).samples,
+    ).toEqual(values);
+    expect(
+      controller.observation
+        .read()
+        .filter((event) => event.kind === "brush-interval"),
+    ).toHaveLength(1);
+    expect(
+      controller.observation
+        .read()
+        .filter((event) => event.kind === "brush-submit"),
+    ).toHaveLength(1);
+    expect(controller.observe().readiness.ready).toBe(true);
+    controller.destroy();
+  },
+);
 
 it("retains an accepted press and its dose fact when presentation projection fails", async () => {
   const { controller, bridge, frame, pointer, drainView } =
@@ -1162,14 +1080,12 @@ it("ends without evaluating an unaccepted queued path", async () => {
 });
 
 it("deepens while held only after each actual current frame, without synthetic pointer inputs or repeated UI state", async () => {
-  const { controller, worker, frame, pointer, drainView } =
-    await readyController();
+  const { controller, frame, pointer, drainView } = await readyController();
   controller.setBrush(16, 400);
   pointer("pointerdown", 20, 20);
   const pressHeight = controller.observe([[-48, -48]]).samples[0]!;
   controller.onChange = vi.fn();
   for (let step = 0; step < 8; step++) {
-    if (worker.completed.length) worker.deliver();
     frame(16);
   }
   expect(controller.onChange).not.toHaveBeenCalled();
@@ -1178,7 +1094,7 @@ it("deepens while held only after each actual current frame, without synthetic p
   );
   const events = controller.observation.read();
   const intervals = events.filter((event) => event.kind === "brush-interval");
-  expect(intervals.length).toBeGreaterThanOrEqual(6);
+  expect(intervals).toHaveLength(9);
   expect(
     intervals
       .slice(1)
@@ -1219,15 +1135,16 @@ it("deepens while held only after each actual current frame, without synthetic p
 });
 
 it("caps a stalled frame once and discards late movement without restoring an older anchor", async () => {
-  const { controller, worker, frame, pointer } = await readyController();
+  const { controller, frame, pointer } = await readyController();
   controller.setBrush(16, 400);
+  controller.world.fault = "drop-render";
   pointer("pointerdown", 20, 20);
   const oldAt = Number(
     controller.observation.read().find((event) => event.kind === "brush-start")!
       .inputAt,
   );
   frame(16);
-  worker.deliver();
+  controller.world.fault = "none";
   frame(1000);
   let intervals = controller.observation
     .read()
@@ -1249,6 +1166,7 @@ it("caps a stalled frame once and discards late movement without restoring an ol
       ),
   ).toBe(true);
   // A fresh position is tracked during feedback wait; an older event cannot undo it.
+  controller.world.fault = "drop-render";
   pointer("pointermove", 44, 20);
   frame();
   pointer("pointermove", 10, 20, oldAt);
@@ -1258,7 +1176,7 @@ it("caps a stalled frame once and discards late movement without restoring an ol
       .read()
       .filter((event) => event.kind === "brush-interval"),
   ).toHaveLength(2);
-  worker.deliver();
+  controller.world.fault = "none";
   frame();
   intervals = controller.observation
     .read()
@@ -1270,7 +1188,6 @@ it("caps a stalled frame once and discards late movement without restoring an ol
   });
   // The same late event after result receipt is rejected by the consumed window.
   pointer("pointermove", 10, 20, oldAt);
-  worker.deliver();
   frame();
   expect(
     controller.observation
@@ -1300,12 +1217,13 @@ it("caps a stalled frame once and discards late movement without restoring an ol
 });
 
 it("accepts at most one bounded dose from many queued moves", async () => {
-  const { controller, worker, frame, pointer } = await readyController();
+  const { controller, frame, pointer } = await readyController();
   controller.setBrush(16, 400);
+  controller.world.fault = "drop-render";
   pointer("pointerdown", 20, 20);
   frame();
   for (let x = 21; x <= 40; x++) pointer("pointermove", x, 20);
-  worker.deliver();
+  controller.world.fault = "none";
   frame(500);
   const intervals = controller.observation
     .read()
@@ -1430,7 +1348,7 @@ it.each(["pointerup", "cancel", "blur", "visibility", "escape", "destroy"])(
 );
 
 it("never resumes a held early press; release and a new press are required after sources arrive", async () => {
-  const { controller, bridge, worker, frame, pointer, drainView, advance } =
+  const { controller, bridge, frame, pointer, drainView, advance } =
     await readyController(1);
   controller.goTo(new Event("navigate"), 10_000, 0, 1 / 64);
   await drainView();
@@ -1484,7 +1402,6 @@ it("never resumes a held early press; release and a new press are required after
     rawElapsedMs: 0,
   });
   pointer("pointerup");
-  if (worker.completed.length) worker.deliver();
   frame(200);
   expect(controller.observe().document!.revision).toBe(1);
   controller.destroy();
@@ -1531,7 +1448,7 @@ it("keeps input decisions, terrain and history identical with diagnostics enable
   const apply = vi.spyOn(EditorDocument.prototype, "applySegment");
   const replay = async (diagnostics: boolean) => {
     apply.mockClear();
-    const { controller, bridge, worker, pointer, frame, drainView } =
+    const { controller, bridge, pointer, frame, drainView } =
       await readyController(0, { diagnostics, ready: false });
     controller.setBrush(16, 400);
     const states: unknown[] = [];
@@ -1559,12 +1476,13 @@ it("keeps input decisions, terrain and history identical with diagnostics enable
     expect(controller.state.needsPress).toBe(true);
     pointer("pointerup", 24, 20);
 
+    controller.world.fault = "drop-render";
     pointer("pointerdown", 24, 20);
     pointer("pointermove", 32, 20);
     frame(24);
     capture();
     expect(controller.observe().document!.revision).toBe(1);
-    worker.deliver();
+    controller.world.fault = "none";
     frame(16);
     capture();
     expect(controller.observe().document!.revision).toBe(2);
@@ -1768,8 +1686,8 @@ it("retains the current full tool halo when size and hover change during a prese
   controller.destroy();
 });
 
-it("releases unused fine worker copies while retaining their coarse visible contribution", async () => {
-  const { controller, worker, pointer, drainView } = await readyController(1, {
+it("releases unused fine numeric source copies while retaining their coarse visible contribution", async () => {
+  const { controller, pointer, drainView } = await readyController(1, {
     width: 1024,
     height: 256,
   });
@@ -1782,9 +1700,9 @@ it("releases unused fine worker copies while retaining their coarse visible cont
   await drainView();
   for (let step = 0; step < 8; step++) await Promise.resolve();
   expect(controller.state.writing).toBe(false);
-  expect(worker.sources.size).toBeGreaterThan(0);
-  expect(controller.observe().renderer.workerSourceBytes).toBeGreaterThan(0);
-  const retainedOverview = [...worker.overviews.values()].find((tile) =>
+  expect(fields.at(-1)!.sources.size).toBeGreaterThan(0);
+  expect(controller.observe().renderer.sourceBytes).toBeGreaterThan(0);
+  const retainedOverview = [...fields.at(-1)!.overviews.values()].find((tile) =>
     tile.values.some((value) => value !== 0),
   )!;
   expect(retainedOverview).toBeDefined();
@@ -1795,9 +1713,11 @@ it("releases unused fine worker copies while retaining their coarse visible cont
   expect(controller.observe().readiness.ready).toBe(true);
   expect(controller.observe().document!.sourceEntries).toBe(0);
   expect(controller.observe().document!.sourceBytes).toBe(0);
-  expect(controller.observe().renderer.workerSourceBytes).toBe(0);
-  expect(worker.sources.size).toBe(0);
-  expect(worker.overviews.get(retainedOverview.key)!.values).toEqual(before);
+  expect(controller.observe().renderer.sourceBytes).toBe(0);
+  expect(fields.at(-1)!.sources.size).toBe(0);
+  expect(fields.at(-1)!.overviews.get(retainedOverview.key)!.values).toEqual(
+    before,
+  );
   expect(controller.state.canUndo).toBe(true);
   controller.destroy();
 });
@@ -1838,8 +1758,7 @@ it("rereads both source paths when an acknowledgement has already overtaken thei
 it.each(["presentation", "region"] as const)(
   "consumes a %s read atomically before an acknowledgement microtask releases its patches",
   async (purpose) => {
-    const { controller, bridge, worker, pointer, drainView } =
-      await readyController(1);
+    const { controller, bridge, pointer, drainView } = await readyController(1);
     const point: [number, number] = purpose === "region" ? [10_000, 0] : [0, 0];
     if (purpose === "region") {
       controller.goTo(new Event("navigate"), point[0], point[1], 1 / 16);
@@ -1927,7 +1846,7 @@ it.each(["presentation", "region"] as const)(
       // exact contribution at a displayed overview sample, not a now-unknown
       // arbitrary fine point that this view intentionally no longer retains.
       expect(controller.observe([point]).samples[0]).toBeNull();
-      const overview = [...worker.overviews.values()].find((tile) =>
+      const overview = [...fields.at(-1)!.overviews.values()].find((tile) =>
         tile.values.some((value) => value !== 0),
       )!;
       expect(overview).toBeDefined();
@@ -1950,8 +1869,7 @@ it.each(["presentation", "region"] as const)(
 );
 
 it("edits a submitted warm local area while the outer presentation read is still pending", async () => {
-  const { controller, bridge, worker, frame, pointer } =
-    await readyController(1);
+  const { controller, bridge, frame, pointer } = await readyController(1);
   controller.setBrush(16, 400);
   let resume!: (
     reply: Awaited<ReturnType<typeof bridge.readPresentation>>,
@@ -1976,7 +1894,6 @@ it("edits a submitted warm local area while the outer presentation read is still
   pointer("pointerup");
   expect(controller.observe().document!.revision).toBe(1);
   for (let step = 0; step < 6; step++) {
-    if (worker.completed.length) worker.deliver();
     frame();
     await Promise.resolve();
   }
@@ -2041,37 +1958,29 @@ it("ends a held stroke on resize instead of painting at a world point different 
   controller.destroy();
 });
 
-it("projects fine source changes into a certified empty overview exactly once, including history", () => {
-  let worker!: RasterWorker;
-  vi.stubGlobal(
-    "Worker",
-    class extends RasterWorker {
-      constructor() {
-        super();
-        worker = this;
-      }
-    },
-  );
-  const document = new EditorDocument("numeric-overview-transfer", {
-    empty: true,
+it("projects fine source changes into a certified empty overview exactly once, including history", async () => {
+  const { document, world, field, frame } = await readyRenderer({
+    width: 1,
+    height: 1,
+    x: 32,
+    y: 32,
+    scale: 1 / 64,
   });
-  const world = new WorldRenderer(new Observation());
-  world.reset(document);
   const key = heightOverviewKey(6, 0, 0);
-  const bounds: Bounds = [0, 0, 8192, 8192];
-  expect(world.isPresentationReady(bounds, 6)).toBe(false);
-  world.updatePresentation([], [], [key], true);
-  expect(world.isPresentationReady(bounds, 6)).toBe(true);
   const rendered = () =>
     heightFromScaledSum(
-      -100 / HEIGHT_SUM_SCALE + (worker.overviews.get(key)?.values[0] ?? 0),
+      -100 / HEIGHT_SUM_SCALE + (field.overviews.get(key)?.values[0] ?? 0),
     );
   document.beginGesture({ level: 0, radius: 20, amount: 400 });
   const first = document.applySegment([32, 32], [32, 32], 1000)!;
   world.updateSourcePatches(first.patches);
+  world.invalidate(first.bounds);
+  frame();
   expect(rendered()).toBeCloseTo(document.sampleHeight(32, 32), 10);
   const second = document.applySegment([48, 32], [48, 32], 1000)!;
   world.updateSourcePatches(second.patches);
+  world.invalidate(second.bounds);
+  frame();
   expect(rendered()).toBeCloseTo(document.sampleHeight(32, 32), 10);
   expect(
     second.patches.every(
@@ -2081,8 +1990,12 @@ it("projects fine source changes into a certified empty overview exactly once, i
   document.finishGesture();
   const undone = document.undo()!;
   world.updateSourcePatches(undone.patches);
+  for (const bounds of undone.dirtyBounds) world.invalidate(bounds);
+  frame();
   expect(rendered()).toBeCloseTo(-100, 10);
   const redone = document.redo()!;
   world.updateSourcePatches(redone.patches);
+  for (const bounds of redone.dirtyBounds) world.invalidate(bounds);
+  frame();
   expect(rendered()).toBeCloseTo(document.sampleHeight(32, 32), 10);
 });
