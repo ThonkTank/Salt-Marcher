@@ -476,6 +476,44 @@ export function distribution(values) {
   };
 }
 
+const pointValid = (point) =>
+  Array.isArray(point) && point.length === 2 && point.every(finite);
+const samePoint = (a, b) =>
+  pointValid(a) &&
+  pointValid(b) &&
+  a.every((value, index) => Math.abs(value - b[index]) <= 1e-6);
+
+/** Schema 5 records the complete accepted polyline, including zero-time anchors. */
+function validBrushGeometry(interval) {
+  const segments = interval?.segments;
+  if (
+    !pointValid(interval?.from) ||
+    !pointValid(interval?.to) ||
+    !finite(interval?.acceptedElapsedMs) ||
+    !Array.isArray(segments) ||
+    !segments.length
+  )
+    return false;
+  let previous = interval.from;
+  let elapsedMs = 0;
+  for (const segment of segments) {
+    if (
+      !pointValid(segment?.from) ||
+      !pointValid(segment?.to) ||
+      !samePoint(previous, segment.from) ||
+      !finite(segment?.elapsedMs) ||
+      segment.elapsedMs < 0
+    )
+      return false;
+    previous = segment.to;
+    elapsedMs += segment.elapsedMs;
+  }
+  return (
+    samePoint(previous, interval.to) &&
+    Math.abs(elapsedMs - interval.acceptedElapsedMs) <= 1e-6
+  );
+}
+
 /** One interpretation of input -> dose/commit -> local receipt -> real draw. */
 export function extractSubmissionEvidence(events) {
   const inputs = new Map();
@@ -518,6 +556,7 @@ export function extractSubmissionEvidence(events) {
       change.kind === "brush-interval"
         ? !Number.isSafeInteger(change.intervalId) ||
           !Array.isArray(change.inputIds) ||
+          !validBrushGeometry(change) ||
           !boundsValid(change.bounds)
         : !Number.isSafeInteger(change.sequence) ||
           !Array.isArray(change.bounds) ||
@@ -546,6 +585,19 @@ export function extractSubmissionEvidence(events) {
       )
         continue;
       const frame = frames.get(`${receipt.sessionId}/${receipt.frame}`);
+      const completion =
+        change.kind === "commit" &&
+        receipt.completionEvidence === "commit-current-terrain-v1" &&
+        receipt.gestureId === change.gestureId &&
+        receipt.submittedAt === frame?.at &&
+        finite(receipt.completedAt) &&
+        receipt.completedAt === Math.max(change.at, frame?.at) &&
+        receipt.completedAt <= receipt.at;
+      const ordinarySubmission =
+        receipt.completionEvidence === undefined &&
+        receipt.completedAt === undefined &&
+        receipt.submittedAt === undefined &&
+        frame?.at >= projectedAt;
       if (
         frame &&
         Number.isSafeInteger(frame.frame) &&
@@ -554,11 +606,15 @@ export function extractSubmissionEvidence(events) {
         frame.viewGeneration >= 0 &&
         receipt.viewGeneration === frame.viewGeneration &&
         frame.revision >= change.revision &&
-        frame.at >= projectedAt &&
+        (completion || ordinarySubmission) &&
         finite(receipt.at) &&
         frame.at <= receipt.at
       )
-        return { receipt, frame };
+        return {
+          receipt,
+          frame,
+          completedAt: completion ? receipt.completedAt : null,
+        };
     }
     return null;
   };
@@ -625,12 +681,36 @@ export function extractEditSamples(
       revision: model?.revision ?? null,
       sequence: model?.sequence ?? null,
       submissionAt: submit?.at ?? null,
+      completedAt: published?.completedAt ?? null,
+      completionEvidence: edit?.completionEvidence ?? null,
+      completionObservedAt:
+        published?.completedAt === null ? null : (edit?.at ?? null),
       frameId: edit?.frame ?? null,
       submittedRevision: edit?.revision ?? null,
       presentation: null,
       presentationStatus: "unproven",
     };
   });
+}
+
+/** A commit can finish on an earlier actual draw; an edit never can. */
+function responseAt(sample) {
+  if (sample.completionEvidence == null && sample.completedAt == null)
+    return sample.submissionAt;
+  if (
+    sample.inputKind !== "pointerup" ||
+    sample.completionEvidence !== "commit-current-terrain-v1" ||
+    ![
+      sample.modelAt,
+      sample.submissionAt,
+      sample.completedAt,
+      sample.completionObservedAt,
+    ].every(finite) ||
+    sample.completedAt !== Math.max(sample.modelAt, sample.submissionAt) ||
+    sample.completionObservedAt < sample.completedAt
+  )
+    return null;
+  return sample.completedAt;
 }
 
 /** One navigation/gate extraction for collection, failed trials and journal replay. */
@@ -784,7 +864,7 @@ function isD10Discard(sample) {
     sample.eventType === "pointermove" &&
     Number.isSafeInteger(sample.gestureId) &&
     sample.discardedDuringGesture === true &&
-    ["coalesced", "stale", "feedback"].includes(sample.noopReason)
+    ["coalesced", "stale", "feedback", "overflow"].includes(sample.noopReason)
   );
 }
 
@@ -1040,8 +1120,7 @@ export function evaluateBrushTime(events, inputIds, sessionId) {
       Number.isSafeInteger(interval.revision) &&
       typeof interval.changed === "boolean" &&
       interval.rateFtPerSecond === start?.rateFtPerSecond &&
-      point(interval.from) &&
-      point(interval.to) &&
+      validBrushGeometry(interval) &&
       Array.isArray(interval.inputIds) &&
       interval.inputIds.every((id) => wanted.has(id)) &&
       (press
@@ -1068,9 +1147,7 @@ export function evaluateBrushTime(events, inputIds, sessionId) {
     if (
       !press &&
       interval.rawElapsedMs > 50 + epsilon &&
-      interval.from.some(
-        (value, index) => Math.abs(value - interval.to[index]) > epsilon,
-      )
+      interval.segments.some((segment) => !samePoint(segment.from, segment.to))
     )
       fail("BRUSH_CAPPED_PATH_REPLAY", detail);
     validIntervals.push(interval);
@@ -1123,6 +1200,7 @@ export function evaluateBrushTime(events, inputIds, sessionId) {
         "escape",
         "input-limit",
         "stale",
+        "overflow",
         "navigation",
       ].includes(span.reason)
     ) {
@@ -1186,12 +1264,13 @@ export function evaluateBrushTime(events, inputIds, sessionId) {
     ),
     stationary:
       point(start?.point) &&
-      intervals.every(
-        (e) =>
-          point(e.from) &&
-          point(e.to) &&
-          e.from.every((v, i) => Math.abs(v - start.point[i]) < epsilon) &&
-          e.to.every((v, i) => Math.abs(v - start.point[i]) < epsilon),
+      validIntervals.length === intervals.length &&
+      intervals.every((e) =>
+        e.segments.every(
+          (segment) =>
+            samePoint(segment.from, start.point) &&
+            samePoint(segment.to, start.point),
+        ),
       ),
     interpretation:
       "Accepted time and explicit discarded time; nominal press dose is additional. Input queue delay is never accumulated. Submission is not native presentation.",
@@ -1399,6 +1478,8 @@ export function evaluateSubmissionDiagnostics(samples, limitMs = 50) {
   /** @type {EvaluationIssue[]} */
   const issues = [];
   const values = [];
+  const submissionValues = [];
+  const completionValues = [];
   const byInputKind = new Map();
   /** @type {TimingOutlier[]} */
   const outliers = [];
@@ -1442,17 +1523,21 @@ export function evaluateSubmissionDiagnostics(samples, limitMs = 50) {
       issues.push({ code: "MISSING_SUBMISSION_IDENTITY", ...detail });
       continue;
     }
+    const completedAt = responseAt(sample);
     if (
       sample.submittedRevision !== sample.revision ||
-      sample.submissionAt < sample.modelAt ||
+      !finite(completedAt) ||
+      completedAt < sample.modelAt ||
       sample.modelAt < sample.createdAt
     ) {
       issues.push({ code: "STALE_OR_INVALID_SUBMISSION", ...detail });
       continue;
     }
-    const duration = sample.submissionAt - sample.createdAt;
+    const duration = completedAt - sample.createdAt;
     values.push(duration);
     const kind = sample.inputKind ?? "unspecified";
+    if (kind === "pointerup") completionValues.push(duration);
+    else submissionValues.push(duration);
     if (!byInputKind.has(kind)) byInputKind.set(kind, []);
     byInputKind.get(kind).push(duration);
     if (duration > limitMs)
@@ -1463,7 +1548,9 @@ export function evaluateSubmissionDiagnostics(samples, limitMs = 50) {
         ...detail,
       });
   }
-  const inputToSubmissionMs = distribution(values);
+  const inputToResponseMs = distribution(values);
+  const inputToSubmissionMs = distribution(submissionValues);
+  const pointerupToCompletionMs = distribution(completionValues);
   const inputKinds = Object.fromEntries(
     [...byInputKind].map(([kind, durations]) => [
       kind,
@@ -1471,7 +1558,7 @@ export function evaluateSubmissionDiagnostics(samples, limitMs = 50) {
     ]),
   );
   for (const [inputKind, stats] of Object.entries({
-    all: inputToSubmissionMs,
+    all: inputToResponseMs,
     ...inputKinds,
   }))
     if (stats.p95 > limitMs)
@@ -1498,6 +1585,12 @@ export function evaluateSubmissionDiagnostics(samples, limitMs = 50) {
       (s) => !isProcessedNoop(s) && !finite(s.submissionAt),
     ).length,
     inputToSubmissionMs,
+    pointerupToCompletionMs,
+    inputToResponseMs,
+    latencyEndpoints: {
+      edit: "actual terrain submission",
+      pointerup: "commit completed on its current actual terrain submission",
+    },
     inputKinds,
     outliers,
     issues,
@@ -2185,7 +2278,8 @@ export function evaluateAcceptance(report, requirements = P0_REQUIREMENTS) {
             missing++;
           } else if (
             sample.modelAt < sample.createdAt ||
-            sample.submissionAt < sample.modelAt ||
+            !finite(responseAt(sample)) ||
+            responseAt(sample) < sample.modelAt ||
             sample.submittedRevision !== sample.revision
           )
             fail("STALE_OR_INVALID_SUBMISSION", detail);
@@ -2256,12 +2350,18 @@ export function evaluateAcceptance(report, requirements = P0_REQUIREMENTS) {
         if (
           !finite(sample.submissionAt) ||
           p.at < sample.submissionAt ||
-          p.at < sample.createdAt
+          (p.at < sample.createdAt &&
+            sample.completionEvidence !== "commit-current-terrain-v1")
         ) {
           fail("INVALID_PRESENTATION_CLOCK", detail);
           continue;
         }
-        const duration = p.at - sample.createdAt;
+        // A final frame already presented before Up remains valid only with
+        // the separately proven commit/current-frame completion association.
+        const duration =
+          (sample.completionEvidence === "commit-current-terrain-v1"
+            ? Math.max(sample.modelAt, p.at)
+            : p.at) - sample.createdAt;
         latency.push(duration);
         const kindSamples = byInputKind.get(sample.inputKind) ?? [];
         kindSamples.push(duration);
@@ -2535,9 +2635,9 @@ if (
         throw new Error(
           "Raw observations require --scenario with a fixed P0 scenario ID",
         );
-      if (source.schemaVersion !== 4)
+      if (source.schemaVersion !== 5)
         throw new Error(
-          "Expected current P0 schema 4; evaluate historical evidence with its recorded harness commit",
+          "Expected current P0 schema 5; evaluate historical evidence with its recorded harness commit",
         );
       const result = Array.isArray(source.events)
         ? evaluateObservation(source, spec)

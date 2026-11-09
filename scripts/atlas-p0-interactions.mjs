@@ -973,7 +973,13 @@ export async function observeStroke(session, before, timeout = 5000) {
                       frame.sessionId === o.sessionId &&
                       frame.viewGeneration === edit.viewGeneration &&
                       frame.revision >= model.revision &&
-                      frame.at >= (model.projectedAt ?? model.at),
+                      (input.inputKind === "pointerup" &&
+                      edit.completionEvidence === "commit-current-terrain-v1"
+                        ? edit.submittedAt === frame.at &&
+                          edit.gestureId === model.gestureId &&
+                          edit.completedAt === Math.max(model.at, frame.at) &&
+                          edit.at >= edit.completedAt
+                        : frame.at >= (model.projectedAt ?? model.at)),
                   ),
               )
             );

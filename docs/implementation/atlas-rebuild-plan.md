@@ -754,7 +754,7 @@ Die maßgeblichen Regeln stehen im
 | Druck vor Freigabe                                      | Keine Änderung und kein vorgemerkter Strich; gehaltenes Warten beginnt später nicht automatisch. Neuer Druck erforderlich.                                                                              |
 | Halten oder langsamer Zug                               | Weitere zeitabhängige Wirkung nach Rückmeldung; je Folgeschritt höchstens 50 ms angenommene Zeit. Pinselparameter und Höhenstufe bleiben für die Geste fest.                                            |
 | Bereite Bewegung vor Loslassen                          | Die gemeinsame Dosisentscheidung nimmt die Bewegung sofort an, sofern keine eigene Dosis aussteht. Move/Up zwischen Frames erhält diese Wirkung.                                                        |
-| Eigene Dosis wartet noch auf ihr Bild                   | Keine weitere Dosis. Bis zur nächsten Zeichenchance nur den jüngsten Kandidaten halten; scheitert diese Chance, Wartezeit und nicht angewandten Weg verwerfen und den Anker nachführen.                 |
+| Eigene Dosis wartet noch auf ihr Bild                   | Keine weitere Dosis. Einen begrenzten zeitgestempelten Verlauf erhalten; scheitert die Zeichenchance, Wartezeit und nicht angewandten Weg verwerfen und den Anker nachführen.                           |
 | Neue Quellen oder gezeichnete Grundlage fehlen          | Den vollständigen Abschnitt einschließlich Halo prüfen, bevor ein Anker verschoben wird. Die aktive Geste endet vor dem ungesehenen Abschnitt; bereits angenommene Änderungen bleiben eine Undo-Aktion. |
 | Zeitsprung oder veraltete Eingabe                       | Verworfene Zeit und alte Wege werden nicht nachgetragen; bestehende D10-Grenzen bleiben wirksam.                                                                                                        |
 | Loslassen                                               | Keine neue Dosis und kein letzter erzwungener Endpunkt. Bereits angenommene Arbeit wird abgeschlossen und darf anschließend noch sichtbar werden.                                                       |
@@ -781,17 +781,20 @@ keine gültige Reparatur dieses Falls.
 
 **1. Vollständige Pinselabschnitte statt zweier Bewegungsanker.**
 
-Das Dokument erhält einen ausdrücklichen Abschnitt:
+Das Dokument erhält die vollständigen Teilstrecken eines Dosisfensters:
 
 ```ts
-applySegment(from, to, elapsedMs);
+applySegments(segments);
 ```
 
 Der Pinsel ist bereits durch `beginGesture(brush)` festgelegt. Eine reine
 Berechnung liefert den zugehörigen Quellbereich einschließlich kubischem Halo;
 Freigabe und fachliche Anwendung benutzen dieselbe Geometrie. Das Dokument
-validiert weiterhin Quellen und Budgets, bevor es Werte verändert. Quartisches
-Segmentintegral, additive Höhenwerte, Dirtybereich und History bleiben gleich.
+validiert weiterhin Quellen und Budgets für das gesamte Fenster, bevor es Werte
+verändert. Ein gemeinsamer Integrator summiert die zeitlichen Teilstrecken und
+erzeugt einen Patchsatz sowie eine Revision. Der bestehende Einzelabschnitt
+`applySegment(from, to, elapsedMs)` delegiert an ihn. Quartisches Segmentintegral,
+additive Höhenwerte, Dirtybereich und History bleiben gleich.
 
 Nur die Pinselsteuerung verschiebt den Anker. Wird Wartezeit verworfen, ändern
 sich dort Ort und Uhr; das Dokument erhält dafür keinen wirkungslosen Aufruf.
@@ -802,7 +805,12 @@ Höhenwerte noch einen versteckten Eingabezustand.
 **2. Drei Pinselzustände und eine unabhängige ausstehende Dosis.**
 
 Der Pinselzustand lautet ausdrücklich `frei`, `gehalten/neu-drücken` oder `aktiv`.
-Im aktiven Zustand liegen Pinsel, Zeigeridentität, Anker, Uhr und neueste Position.
+Im aktiven Zustand liegen Pinsel, Zeigeridentität, Anker, Uhr und höchstens
+128 zeitgestempelte Bewegungspunkte. Normales Zusammenfassen erhält Ecken und
+Aufenthaltszeiten; es ersetzt keinen geknickten Weg durch eine Gerade. Die
+Restzeit nach dem letzten Punkt wirkt stationär an dessen Ort. Ein Überlauf
+verwirft den überlasteten Verlauf ausdrücklich. Zeit- und Wegverwerfen nach
+einem Hänger behalten die bestehenden Grenzen.
 Die vorhandene Kamerageste bleibt eine getrennte Eingabeaufgabe; tatsächliche
 Navigation beendet den Strich über denselben Abschlussweg. Bestehende
 Tasten-/Pointerpriorität nicht beiläufig ändern.
@@ -816,7 +824,7 @@ Dokumentwechsel verwirft nur die alte Sessionzuordnung, nicht unbestätigte Date
 Kleine reine Entscheidungsfunktionen verarbeiten normalisierte Eingaben,
 Zeit und die vom Modell/Renderer gelieferten Fakten. Sie bestimmen Ankerwechsel,
 Annahme, Ablehnung oder Abschluss. Dafür kein Zustandsautomaten-Framework,
-keine Effekt-Queue und keine Liste wartender Mauswege einführen. `needsPress`,
+keine Effekt-Queue und keine unbegrenzte Nachholwarteschlange einführen. `needsPress`,
 Cursor und Warteanzeige werden aus dieser einen Entscheidung abgeleitet.
 Eingabe-/Schrittkennungen gehören dem Produktablauf; der Beobachter protokolliert
 sie und ist nicht mehr ihr Besitzer.
@@ -887,7 +895,11 @@ Er kann weder Freigabe setzen noch eine Dosis oder Darstellung herstellen.
 Für die Wirkung genügt die vorhandene Beziehung Eingabe → `brush-interval` →
 `brush-submit` → tatsächlicher `submit`. Halten kann ohne neue Eingabe wirken;
 abgewiesene Eingaben haben keine Dosis. Pointerup behält seinen eigenen Commit
-und dessen Beleg. Dosisbezogene `model`-/`edit-submit`-Doppelungen entfallen,
+und dessen Beleg. Ein weiterhin vollständig aktueller Endzustand darf den letzten
+tatsächlichen Frame derselben Session und Ansicht verwenden. Submitzeit und
+Abschlusszeit bleiben getrennt; ein früheres Bild erhält keinen erfundenen neuen
+Renderzeitpunkt. Veraltete oder unvollständige Bereiche warten auf ihren passenden
+Submit. Dosisbezogene `model`-/`edit-submit`-Doppelungen entfallen,
 Commit-/Historybelege bleiben. Modelländerung und abgeschlossene Quellenprojektion
 sind bisher verschiedene Messzeitpunkte; beide benötigten Zeitgrenzen ausdrücklich
 im Dosisfakt erhalten, statt historische Millisekundenwerte umzudeuten.
@@ -899,7 +911,7 @@ veränderbare Urteile wie `attempt.passed`, `collectionPassed` und
 `scenario.evaluation` sind durch Fakten plus abgeleitete Bewertungen ersetzt;
 Fehler oder Abbruch dürfen dabei nicht durch Wiederholung verschwinden.
 
-Aktuelle Belege verwenden Schema 4; ersetzte aktive Aliase und
+Aktuelle Belege verwenden Schema 5; ersetzte aktive Aliase und
 Rekonstruktionswege entfallen mit ihren Verbrauchern. Alte Rohbelege bleiben
 unverändert und werden mit dem erhaltenen Auswerter ihres Schemas bewertet.
 Die Provenienzgrenze des historischen Gesamtharness steht beim Beleg und im Status.
@@ -914,6 +926,22 @@ Abschluss-Submit oder Timeout übertragen.
 Der native Traceparser und seine Fehlerkontrollen werden in diesem Schnitt nicht
 neu gebaut oder pauschal entfernt. „Submit“ bleibt „Submit“: Der fehlende Beweis
 der ersten tatsächlichen Bildschirmpräsentation bleibt ausdrücklich blockiert.
+
+**Nächste Richtungsentscheidung:** Nach Korrektur von Bewegungsverlauf und
+Abschlusszuordnung vergleicht `scripts/atlas-p0-graphics-probe.mjs` denselben langen
+512-Pixel-Strich auf einfachem und lokal mehrstufigem Terrain mit einer reinen
+Ausgabekontrolle aus bereits komponierten Kacheln. GPU-Komposition, Swap-Warten,
+Eingabe und tatsächliche Sichtbarkeit bleiben getrennte Fragen. Softwaregrafik
+und fehlende Präsentationszuordnung liefern keine native Freigabe. Der Driver
+verändert weder Produktgrenzen noch den vollständigen Abnahmeumfang.
+
+| Befund auf geeigneter Zielhardware                             | Folgende Entscheidung                                                                            |
+| -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| Echter Pinsel besteht auch bei vielen belegten Höhenstufen     | Grundlage für diesen Umfang gestützt; verbleibende P0-Abnahme abschließen.                       |
+| Höhenrekonstruktion dominiert, reine Ausgabe bleibt schnell    | Den Rekonstruktionspfad gezielt verkürzen; Autorenmodell, History und Datei behalten.            |
+| Bereits die statische Ausgabekontrolle stockt                  | Grafikbackend und Ausgabe untersuchen.                                                           |
+| Grafikarbeit ist kurz, Eingabe oder Rückkopplung stockt weiter | Eingabeannahme und Rückmeldung gezielt korrigieren.                                              |
+| Geeignete Umgebung oder Messzuordnung fehlt                    | Leistungsentscheidung bleibt blockiert; weitere allgemeine Umbauten ersetzen den Nachweis nicht. |
 
 #### Umsetzung und gezielter Nachweis
 

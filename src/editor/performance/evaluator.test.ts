@@ -36,6 +36,13 @@ const oneCase = {
   scenarios: [{ id: "warm", kind: "edit", minSamples: 100 }],
 };
 
+const geometry = (elapsedMs: number, from = [0, 0], to = from) => ({
+  from,
+  to,
+  acceptedElapsedMs: elapsedMs,
+  segments: [{ from, to, elapsedMs }],
+});
+
 describe("executed package provenance", () => {
   const workspace = {
     commit: "workspace",
@@ -697,6 +704,49 @@ describe("P0 acceptance cannot turn missing evidence into a pass", () => {
     );
   });
 
+  it("keeps prior-frame pointerup completion separate from native presentation proof", () => {
+    const report = knownGood();
+    const requirements = {
+      ...oneCase,
+      scenarios: [
+        {
+          ...oneCase.scenarios[0],
+          minSamples: 1,
+          requiredInputKinds: ["pointerup"],
+        },
+      ],
+    };
+    const up = report.runs[0].scenarios[0].samples[50];
+    Object.assign(up, {
+      inputKind: "pointerup",
+      submissionAt: 4990,
+      completedAt: 5002,
+      completionObservedAt: 5002.1,
+      completionEvidence: "commit-current-terrain-v1",
+    });
+    up.presentation.at = 4995;
+    const proven = evaluateAcceptance(report, requirements);
+    expect(proven.status).toBe("PASS");
+    expect(
+      proven.groups[0].inputKinds?.pointerup.inputToPresentationMs.maximum,
+    ).toBe(2);
+
+    Object.assign(up, { presentation: null });
+    const unproven = evaluateAcceptance(report, requirements);
+    expect(unproven.status).toBe("BLOCKED");
+    expect(unproven.failures).toEqual([]);
+    expect(unproven.blockers).toContainEqual(
+      expect.objectContaining({ code: "MISSING_PRESENTATION", inputId: 51 }),
+    );
+    Object.assign(up, { completedAt: 4990 });
+    expect(evaluateAcceptance(report, requirements).failures).toContainEqual(
+      expect.objectContaining({
+        code: "STALE_OR_INVALID_SUBMISSION",
+        inputId: 51,
+      }),
+    );
+  });
+
   it.each(["frameId", "revision", "inputId", "sessionId"])(
     "rejects a stale or unrelated %s",
     (key) => {
@@ -961,6 +1011,7 @@ describe("independent negative-control evaluation", () => {
         sessionId: "session-a",
         revision: 5,
         bounds: [0, 0, 1, 1],
+        ...geometry(2),
         at: 15,
         projectedAt: 15,
       },
@@ -1026,6 +1077,7 @@ describe("explicit processed no-op evidence", () => {
       } else {
         events.push({
           kind: index === 3 ? "commit" : "brush-interval",
+          ...geometry(2),
           input,
           inputIds: [input],
           intervalId: input,
@@ -1247,7 +1299,7 @@ describe("bounded accepted brush time", () => {
         nominalDose: true,
         fromAt: 2,
         toAt: 2,
-        acceptedElapsedMs: 1000 / 60,
+        ...geometry(1000 / 60),
         rawElapsedMs: 0,
         inputIds: [1],
         at: 2.1,
@@ -1279,7 +1331,7 @@ describe("bounded accepted brush time", () => {
         nominalDose: false,
         fromAt: 10,
         toAt: 30,
-        acceptedElapsedMs: 20,
+        ...geometry(20),
         rawElapsedMs: 20,
         inputIds: [],
         at: 30.1,
@@ -1324,6 +1376,131 @@ describe("bounded accepted brush time", () => {
     expect(result.maximumStepMs).toBe(20);
     expect(result.stationary).toBe(true);
   });
+  it("recognizes a closed moving path even when its first and last positions agree", () => {
+    const journal = events();
+    Object.assign(journal[6], {
+      cause: "move",
+      segments: [
+        { from: [0, 0], to: [10, 10], elapsedMs: 10 },
+        { from: [10, 10], to: [0, 0], elapsedMs: 10 },
+      ],
+    });
+    const result = evaluateBrushTime(journal, [1, 2], "session-a");
+    expect(result.passed).toBe(true);
+    expect(result.stationary).toBe(false);
+    expect(result.timedDoseMs).toBe(20);
+  });
+  it.each([
+    "missing",
+    "duration",
+    "disconnected",
+    "nonfinite",
+    "negative",
+    "endpoint",
+  ])(
+    "rejects %s path geometry in both time and real-frame evidence",
+    (fault) => {
+      const journal = events();
+      const segments = [
+        { from: [0, 0], to: [10, 10], elapsedMs: 10 },
+        { from: [10, 10], to: [0, 0], elapsedMs: 10 },
+      ];
+      journal[6].segments = segments;
+      if (fault === "missing") delete journal[6].segments;
+      if (fault === "duration") segments[1].elapsedMs = 11;
+      if (fault === "disconnected") segments[1].from = [11, 10];
+      if (fault === "nonfinite") segments[0].to[0] = NaN;
+      if (fault === "negative") segments[0].elapsedMs = -10;
+      if (fault === "endpoint") segments[1].to = [1, 0];
+      const result = evaluateBrushTime(journal, [1, 2], "session-a");
+      expect(result.passed).toBe(false);
+      expect(result.stationary).toBe(false);
+      expect(result.issues).toContainEqual({
+        code: "INVALID_OR_EXCESSIVE_BRUSH_DOSE",
+        intervalId: 2,
+      });
+      expect(evaluateBrushPublicationOrder(journal).issues).toContainEqual({
+        code: "BRUSH_STEP_SUBMISSION_MISSING",
+        intervalId: 2,
+      });
+    },
+  );
+  it("accounts for explicit overflow time and inputs without accepting invented discard reasons", () => {
+    const journal = events();
+    journal[3].reason = "overflow";
+    journal.splice(
+      3,
+      0,
+      {
+        kind: "input",
+        id: 3,
+        inputKind: "edit",
+        eventType: "pointermove",
+        createdAt: 4,
+        at: 4.1,
+      },
+      {
+        kind: "input",
+        id: 4,
+        inputKind: "edit",
+        eventType: "pointermove",
+        createdAt: 5,
+        at: 5.1,
+      },
+      {
+        kind: "noop",
+        input: 3,
+        sessionId: "session-a",
+        accepted: false,
+        reason: "overflow",
+        at: 10,
+      },
+      {
+        kind: "noop",
+        input: 4,
+        sessionId: "session-a",
+        accepted: false,
+        reason: "overflow",
+        at: 10,
+      },
+    );
+    const time = evaluateBrushTime(journal, [1, 3, 4, 2], "session-a");
+    expect(time.passed).toBe(true);
+    expect(time.discardMs).toEqual({ overflow: 9, pointerup: 20 });
+    expect(time.timedDoseMs).toBe(20);
+    const noops = extractEditSamples(journal, [3, 4], "session-a");
+    const measured = evaluateSubmissionDiagnostics(noops);
+    expect(measured).toMatchObject({
+      status: "PROXY_ONLY",
+      d10DiscardedInputs: 2,
+      notAccepted: 2,
+    });
+    expect(measured.inputToResponseMs.count).toBe(0);
+    expect(
+      noops.every(
+        (sample: { submissionAt: number | null; modelAt: number | null }) =>
+          sample.submissionAt === null && sample.modelAt === null,
+      ),
+    ).toBe(true);
+    expect(
+      evaluateSubmissionDiagnostics([{ ...noops[0], eventType: "pointerdown" }])
+        .status,
+    ).toBe("FAIL");
+
+    journal.find((event) => event.kind === "brush-discard")!.reason =
+      "invented";
+    journal.find((event) => event.kind === "noop")!.reason = "invented";
+    expect(
+      evaluateBrushTime(journal, [1, 3, 4, 2], "session-a").issues,
+    ).toContainEqual({ code: "INVALID_BRUSH_DISCARD" });
+    expect(
+      evaluateSubmissionDiagnostics(
+        extractEditSamples(journal, [3, 4], "session-a"),
+      ).issues,
+    ).toContainEqual(
+      expect.objectContaining({ code: "INPUT_NOT_ACCEPTED", inputId: 3 }),
+    );
+  });
   it("rejects a dose created in the release handler before brush-end", () => {
     const journal = events();
     const [release] = journal.splice(9, 1);
@@ -1354,7 +1531,7 @@ describe("bounded accepted brush time", () => {
       Object.assign(journal[6], {
         fromAt: 210,
         toAt: 260,
-        acceptedElapsedMs: 50,
+        ...geometry(50, [0, 0], moving ? [10, 0] : [0, 0]),
         rawElapsedMs: 250,
         to: moving ? [10, 0] : [0, 0],
         cause: moving ? "move" : "hold",
@@ -1601,6 +1778,7 @@ describe("saved moving-stroke evidence and explicit probe scope", () => {
       },
       {
         kind: sample.inputKind === "pointerup" ? "commit" : "brush-interval",
+        ...geometry(2),
         input: sample.inputId,
         inputIds: [sample.inputId],
         intervalId: sample.inputId,
@@ -1824,7 +2002,7 @@ describe("saved moving-stroke evidence and explicit probe scope", () => {
   });
   it("keeps a passing selected probe distinct from the fixed native manifest", () => {
     const report = {
-      schemaVersion: 4,
+      schemaVersion: 5,
       purpose: "probe",
       selection: "collection",
       mode: "lab",
@@ -2178,7 +2356,9 @@ describe("D11/M10 uses a real local gate and the ordinary edit contract", () => 
     assert(result.submission, "A cold edit must expose submission diagnostics");
     assert(result.live, "A cold edit must expose live evidence");
     expect(result.liveFeedback.inputCount).toBe(6);
-    expect(result.submission.inputToSubmissionMs.count).toBe(6);
+    expect(result.submission.inputToResponseMs.count).toBe(6);
+    expect(result.submission.inputToSubmissionMs.count).toBe(5);
+    expect(result.submission.pointerupToCompletionMs.count).toBe(1);
     expect(result.live[0].passed).toBe(true);
     expect(evaluateScenario({ ...cold, kind: "edit" }).live).toEqual(
       result.live,
@@ -2200,7 +2380,7 @@ describe("D11/M10 uses a real local gate and the ordinary edit contract", () => 
     });
     expect(evaluateScenario(scenario).status).toBe("PROXY_ONLY");
     expect(
-      evaluateSubmissionDiagnostics(scenario.samples).inputToSubmissionMs.count,
+      evaluateSubmissionDiagnostics(scenario.samples).inputToResponseMs.count,
     ).toBe(5);
     Object.assign(scenario.samples[2], { eventType: "pointerdown" });
     expect(evaluateScenario(scenario).failures).toContainEqual(

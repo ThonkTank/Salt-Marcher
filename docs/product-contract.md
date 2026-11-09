@@ -1149,9 +1149,13 @@ als großer Auftrag nachgeholt. Eine Bewegung auf freigegebenem Gelände wird
 bereits beim Eintreffen angenommen, sofern keine eigene Dosis aussteht; ein
 unmittelbares Loslassen verwirft diese angenommene Wirkung nicht. Bewegung und
 Halten rechnen verstrichene Zeit gemeinsam genau einmal an. Normales
-Zusammenfassen mehrerer Mausereignisse vor der nächsten Zeichenchance setzt
-dieses Zeitkonto nicht bei jedem Ereignis zurück. Eine erfolglose Zeichenrunde
-verwirft dagegen ihre Wartezeit und den nicht angewandten Weg.
+Zusammenfassen mehrerer Mausereignisse vor der nächsten Zeichenchance erhält
+ihren zeitgestempelten Verlauf. Richtungswechsel werden nicht durch eine Gerade
+zwischen Anfang und Ende ersetzt; die Restzeit nach dem letzten Bewegungspunkt
+wirkt an dessen Ort. Das gemeinsame Zeitkonto wird dabei einmal verbucht.
+Der wartende Verlauf ist auf 128 Punkte begrenzt. Ein Überlauf verwirft den
+überlasteten Verlauf ausdrücklich, statt eine Abkürzung zu malen. Eine erfolglose
+Zeichenrunde verwirft ebenfalls ihre Wartezeit und den nicht angewandten Weg.
 Der reine Fachkern integriert die ausdrücklich
 angenommene Zeit und den Weg. Jeder angenommene Abschnitt wirkt live. Eine noch
 ausstehende Darstellung der eigenen Dosis pausiert nur weitere Wirkung; der
@@ -1160,7 +1164,9 @@ Verlässt er dagegen seine sichtbar bereite Grundlage oder fehlen neu benötigte
 Quellen, endet er vor dem unzulässigen Abschnitt. Die bereits angenommenen
 Änderungen bleiben ein gemeinsamer Undo-Schritt; zum Weiterarbeiten ist ein neuer
 Druck nötig. Pointerup fasst ebenfalls den angenommenen Strich zu einem
-Undo-Schritt zusammen. Escape,
+Undo-Schritt zusammen. Ist dessen vollständiger Endzustand bereits gezeichnet,
+verlangt der Abschluss keinen zusätzlichen identischen Terrainframe. Eine noch
+ausstehende Darstellung bleibt ausstehend. Escape,
 Fokusverlust, Pointercancel und ein ausdrücklicher Ansichtwechsel beenden die
 laufende Einwirkung und erhalten bereits angenommene Änderungen. Fehlende lokale
 Daten bleiben als Wartezustand sichtbar und werden nicht als leeres Gelände behandelt.

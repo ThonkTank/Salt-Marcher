@@ -2,6 +2,8 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { Graphics } from "pixi.js";
 import { EditorController } from "../EditorController";
 import { editorBudgets } from "../budgets";
+import { MAX_BRUSH_POINTS } from "../brush";
+import { evaluateBrushTime } from "../../../scripts/atlas-p0-evaluate.mjs";
 import type {
   AtlasDesktop,
   CommitRequest,
@@ -847,14 +849,26 @@ async function readyController(
     }
     throw new Error("Actual numeric terrain view did not finish");
   };
-  const pointer = (type: string, x = 32, y = 32, at = now) => {
+  const pointer = (
+    type: string,
+    x = 32,
+    y = 32,
+    at = now,
+    coalesced: { x: number; y: number; at: number }[] = [],
+  ) => {
     const event = new Event(type);
     Object.assign(event, {
       button: 0,
       pointerId: 1,
       clientX: x,
       clientY: y,
-      getCoalescedEvents: () => [],
+      getCoalescedEvents: () =>
+        coalesced.map((sample) => ({
+          clientX: sample.x,
+          clientY: sample.y,
+          timeStamp: sample.at,
+          type,
+        })),
     });
     Object.defineProperty(event, "timeStamp", { value: at });
     canvas.dispatchEvent(event);
@@ -1194,14 +1208,20 @@ it("caps a stalled frame once and discards late movement without restoring an ol
     to: [80, -48],
     acceptedElapsedMs: 32,
   });
-  // The same late event after result receipt is rejected by the consumed window.
+  // A late event cannot move the anchor or suppress current held-time work.
   pointer("pointermove", 10, 20, oldAt);
   frame();
   expect(
     controller.observation
       .read()
       .filter((event) => event.kind === "brush-interval"),
-  ).toHaveLength(intervals.length);
+  ).toHaveLength(intervals.length + 1);
+  expect(
+    controller.observation
+      .read()
+      .filter((event) => event.kind === "brush-interval")
+      .at(-1),
+  ).toMatchObject({ from: [80, -48], to: [80, -48], acceptedElapsedMs: 16 });
   expect(
     controller.observation
       .read()
@@ -1247,7 +1267,7 @@ it("accepts at most one bounded dose from many queued moves", async () => {
   expect(
     controller.observation
       .read()
-      .filter((event) => event.kind === "noop" && event.reason === "coalesced"),
+      .filter((event) => event.kind === "noop" && event.reason === "stale"),
   ).toHaveLength(19);
   pointer("pointerup");
   controller.destroy();
@@ -1455,7 +1475,7 @@ it("uses the displayed-terrain gate in normal startup without diagnostic callbac
 });
 
 it("keeps input decisions, terrain and history identical with diagnostics enabled or disabled", async () => {
-  const apply = vi.spyOn(EditorDocument.prototype, "applySegment");
+  const apply = vi.spyOn(EditorDocument.prototype, "applySegments");
   const replay = async (diagnostics: boolean) => {
     apply.mockClear();
     const { controller, bridge, pointer, frame, drainView, advance } =
@@ -2126,6 +2146,7 @@ it.each(["pointerup", "pointercancel", "blur"])(
 async function timedControllerStroke(
   inputHz: 30 | 60 | 120,
   durationMs = 1000,
+  corner = false,
 ) {
   const { controller, bridge, pointer, frame, advance } = await readyController(
     0,
@@ -2138,7 +2159,11 @@ async function timedControllerStroke(
   for (let tick = 1; tick <= ticks; tick++) {
     advance(1000 / 120);
     if (tick % (120 / inputHz) === 0)
-      pointer("pointermove", 64 + (128 * tick) / ticks, 64);
+      pointer(
+        "pointermove",
+        64 + (128 * tick) / ticks,
+        64 - (corner ? 64 * Math.min(tick / ticks, 1 - tick / ticks) : 0),
+      );
     if (tick % 2 === 0) frame(0);
   }
   // Every replay remains physically held for the same final frame. This isolates
@@ -2148,7 +2173,7 @@ async function timedControllerStroke(
   frame(0);
   const observed = controller.observe([
     [-128, 0],
-    [0, 0],
+    [0, corner ? -128 : 0],
     [128, 0],
   ]);
   expect(observed.renderer.submittedRevision).toBe(observed.document!.revision);
@@ -2197,6 +2222,21 @@ it("makes the same drawn path stronger when moved more slowly", async () => {
     expect(slow.heights[index] / fast.heights[index]).toBeCloseTo(2, 1);
 });
 
+it("keeps a timed corner comparable across 30, 60 and 120Hz pointer delivery", async () => {
+  const results = [];
+  for (const inputHz of [30, 60, 120] as const)
+    results.push(await timedControllerStroke(inputHz, 1000, true));
+  for (const result of results)
+    expect(result.acceptedMs).toBeCloseTo(1000 + 1000 / 60, 7);
+  const masses = results.map((result) => result.mass);
+  expect(Math.max(...masses) / Math.min(...masses)).toBeLessThan(1.01);
+  for (let index = 0; index < 3; index++) {
+    const heights = results.map((result) => result.heights[index]);
+    expect(Math.min(...heights)).toBeGreaterThan(0);
+    expect(Math.max(...heights) / Math.min(...heights)).toBeLessThan(1.05);
+  }
+});
+
 it("drops the old path and excess time after a stalled ready move", async () => {
   const { controller, pointer, frame, advance } = await readyController(0, {
     width: 256,
@@ -2235,5 +2275,235 @@ it("drops the old path and excess time after a stalled ready move", async () => 
       [320, 0],
     ]).samples,
   ).toEqual(observed.samples);
+  controller.destroy();
+});
+
+it.each([
+  [16, false],
+  [512, false],
+  [16, true],
+  [512, true],
+] as const)(
+  "keeps the complete %ipx corner and dwell during normal pending drawing (browser coalescing: %s)",
+  async (diameter, coalesced) => {
+    const width = diameter === 16 ? 256 : 1200;
+    const height = diameter === 16 ? 256 : 1000;
+    const offset = diameter === 16 ? 64 : 200;
+    const { controller, bridge, pointer, advance, frame, drainView } =
+      await readyController(0, { width, height });
+    controller.setBrush(diameter, 400);
+    pointer("pointermove", width / 2 - offset, height / 2);
+    await drainView();
+    const from: [number, number] = [-offset * 4, 0];
+    const corner: [number, number] = [0, -offset * 4];
+    const to: [number, number] = [offset * 4, 0];
+    const probes: [number, number][] = [corner, [0, 0], from, to];
+    const reference = new EditorDocument("corner-reference", { empty: true });
+    reference.beginGesture(controller.currentBrush());
+    reference.applySegment(from, from, 1000 / 60);
+    reference.applySegment(from, corner, 8);
+    reference.applySegment(corner, to, 8);
+    reference.applySegment(to, to, 16);
+    reference.finishGesture();
+
+    expect(controller.observe().readiness.ready).toBe(true);
+    pointer("pointerdown", width / 2 - offset, height / 2);
+    if (coalesced) {
+      advance(16);
+      pointer(
+        "pointermove",
+        width / 2 + offset,
+        height / 2,
+        performance.now(),
+        [
+          { x: width / 2, y: height / 2 - offset, at: performance.now() - 8 },
+          { x: width / 2 + offset, y: height / 2, at: performance.now() },
+        ],
+      );
+    } else {
+      advance(8);
+      pointer("pointermove", width / 2, height / 2 - offset);
+      advance(8);
+      pointer("pointermove", width / 2 + offset, height / 2);
+    }
+    frame(0);
+    frame(16);
+    pointer("pointerup", width / 2 + offset, height / 2);
+    frame(0);
+    await Promise.resolve();
+
+    expect(controller.state.error).toBeNull();
+    expect(controller.world.fault).toBe("none");
+    expect(bridge.commit).toHaveBeenCalledOnce();
+    const actual = prepareHeightSampler(
+      bridge.commit.mock.calls[0][0].patches.flatMap((patch) =>
+        patch.after ? [patch.after] : [],
+      ),
+    );
+    for (const point of probes)
+      expect(actual(...point)).toBeCloseTo(
+        reference.sampleHeight(...point),
+        10,
+      );
+    const observed = controller.observe();
+    expect(observed.document!.historyActions).toBe(1);
+    expect(observed.renderer.submittedRevision).toBe(
+      observed.document!.revision,
+    );
+    expect(
+      observed.events.filter((event) => event.kind === "brush-discard"),
+    ).toHaveLength(0);
+    const time = evaluateBrushTime(
+      observed.events,
+      observed.events
+        .filter((event) => event.kind === "input")
+        .map((event) => event.id),
+      observed.sessionId,
+    );
+    expect(time.passed).toBe(true);
+    expect(time.timedDoseMs).toBe(32);
+    expect(
+      observed.events.filter(
+        (event) => event.kind === "noop" && event.reason === "coalesced",
+      ),
+    ).toHaveLength(0);
+    controller.destroy();
+  },
+);
+
+it("discards an overloaded point buffer explicitly and resumes only new time", async () => {
+  const { controller, pointer, advance, frame } = await readyController();
+  controller.setBrush(16, 400);
+  pointer("pointerdown", 20, 20);
+  for (let index = 0; index <= MAX_BRUSH_POINTS; index++) {
+    advance(0.1);
+    pointer("pointermove", 20 + (index % 2), 20);
+  }
+  expect(controller.observe().document!.revision).toBe(1);
+  frame(3.1);
+  frame(16);
+  pointer("pointerup", 20, 20);
+  frame(0);
+  const observed = controller.observe();
+  expect(
+    observed.events.filter(
+      (event) => event.kind === "noop" && event.reason === "overflow",
+    ),
+  ).toHaveLength(MAX_BRUSH_POINTS + 1);
+  const time = evaluateBrushTime(
+    observed.events,
+    observed.events
+      .filter((event) => event.kind === "input")
+      .map((event) => event.id),
+    observed.sessionId,
+  );
+  expect(time.passed).toBe(true);
+  expect((time.discardMs as Record<string, number>).overflow).toBeCloseTo(
+    12.9,
+    7,
+  );
+  expect(time.timedDoseMs).toBeCloseTo(19.1, 7);
+  const dose = observed.events
+    .filter((event) => event.kind === "brush-interval")
+    .at(-1)!;
+  expect(dose.segments).toEqual([
+    { from: [-48, -48], to: [-48, -48], elapsedMs: time.timedDoseMs },
+  ]);
+  controller.destroy();
+});
+
+it.each(["sources", "outside", "partial"] as const)(
+  "validates every coalesced corner before accepting its path (%s)",
+  async (kind) => {
+    const { controller, pointer, advance, frame, bridge } =
+      await readyController(0, { width: 256, height: 256 });
+    controller.setBrush(16, 400);
+    pointer("pointerdown", 64, 128);
+    frame(0);
+    if (kind === "sources") {
+      const doc = controller["doc"];
+      const ready = doc.isReady.bind(doc);
+      vi.spyOn(doc, "isReady").mockImplementation(
+        (bounds, levels) => bounds[1] >= -200 && ready(bounds, levels),
+      );
+    }
+    advance(16);
+    pointer("pointermove", 192, 128, performance.now(), [
+      {
+        x: 128,
+        y: kind === "sources" ? 64 : kind === "outside" ? -50 : -4,
+        at: performance.now() - 8,
+      },
+      { x: 192, y: 128, at: performance.now() },
+    ]);
+    expect(controller.state.error).toBeNull();
+    expect(controller.observe().document!.revision).toBe(
+      kind === "partial" ? 2 : 1,
+    );
+    expect(controller.state.needsPress).toBe(kind !== "partial");
+    pointer("pointerup", 192, 128);
+    frame(0);
+    await Promise.resolve();
+    expect(bridge.commit).toHaveBeenCalledOnce();
+    controller.destroy();
+  },
+);
+
+it("confirms release against already submitted terrain without waiting for another frame", async () => {
+  const { controller, pointer, frame, advance, bridge } =
+    await readyController();
+  controller.setBrush(16, 400);
+  pointer("pointerdown", 20, 20);
+  frame(0);
+  const before = controller.observation.read();
+  const submit = before.filter((event) => event.kind === "submit").at(-1)!;
+  advance(4);
+  pointer("pointerup", 20, 20);
+  const events = controller.observation.read();
+  const commit = events.find((event) => event.kind === "commit")!;
+  expect(events.filter((event) => event.kind === "edit-submit")).toMatchObject([
+    {
+      frame: submit.frame,
+      revision: submit.revision,
+      submittedAt: submit.at,
+      completedAt: commit.at,
+    },
+  ]);
+  expect(events.filter((event) => event.kind === "submit")).toHaveLength(
+    before.filter((event) => event.kind === "submit").length,
+  );
+  expect(
+    events.filter((event) => event.kind === "brush-interval"),
+  ).toHaveLength(1);
+  expect(controller.observe().document!.historyActions).toBe(1);
+  await Promise.resolve();
+  expect(bridge.commit).toHaveBeenCalledOnce();
+  controller.destroy();
+});
+
+it("keeps release unconfirmed until its outstanding dose actually draws", async () => {
+  const { controller, pointer, frame, advance } = await readyController();
+  controller.setBrush(16, 400);
+  pointer("pointerdown", 20, 20);
+  advance(4);
+  pointer("pointerup", 20, 20);
+  expect(
+    controller.observation
+      .read()
+      .filter((event) => event.kind === "edit-submit"),
+  ).toHaveLength(0);
+  frame(16);
+  const events = controller.observation.read();
+  const submit = events.filter((event) => event.kind === "submit").at(-1)!;
+  expect(events.filter((event) => event.kind === "edit-submit")).toMatchObject([
+    {
+      frame: submit.frame,
+      submittedAt: submit.at,
+      completedAt: submit.at,
+    },
+  ]);
+  expect(
+    events.filter((event) => event.kind === "brush-interval"),
+  ).toHaveLength(1);
   controller.destroy();
 });

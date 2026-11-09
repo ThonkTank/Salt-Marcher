@@ -62,12 +62,14 @@ interface PendingReceipt {
   intervalId?: number;
   input?: number;
   sequence?: number;
+  committedAt?: number;
 }
 
 /** Observes the product. It cannot complete a render, make sources ready, or edit. */
 export class Observation {
   private events: ObservationEvent[] = [];
   private pending: PendingReceipt[] = [];
+  private lastSubmission: ObservedSubmission | null = null;
   private navigationInput: {
     input: number;
     sessionId: string;
@@ -85,6 +87,7 @@ export class Observation {
   /** A document switch invalidates associations, not the retained evidence. */
   reset(): void {
     this.pending = [];
+    this.lastSubmission = null;
     this.navigationInput = null;
   }
 
@@ -138,21 +141,35 @@ export class Observation {
     this.event("brush-interval", details);
   }
 
-  commit(details: CommitFact): void {
+  commit(
+    details: CommitFact,
+    inspect?: (bounds: Bounds) => ObservedRegion,
+  ): void {
     if (!this.enabled) return;
+    const committedAt = performance.now();
+    this.mark("commit", String(details.input), { ...details, at: committedAt });
     if (
       this.events.length < editorBudgets.observationEvents &&
       details.bounds.length
-    )
-      this.pending.push({
+    ) {
+      const entry: PendingReceipt = {
         sessionId: details.sessionId,
         gestureId: details.gestureId,
         input: details.input,
         revision: details.revision,
         sequence: details.sequence,
         bounds: details.bounds,
-      });
-    this.mark("commit", String(details.input), details);
+        committedAt,
+      };
+      // Finishing history does not change terrain. Reuse the actual last draw
+      // only while every local region still certifies that same view/frame.
+      if (
+        !inspect ||
+        !this.lastSubmission ||
+        !this.publishReceipt(entry, this.lastSubmission, inspect)
+      )
+        this.pending.push(entry);
+    }
   }
 
   navigation(
@@ -198,6 +215,7 @@ export class Observation {
     inspect: (bounds: Bounds) => ObservedRegion,
   ): void {
     if (!this.enabled) return;
+    this.lastSubmission = { ...submission };
     this.mark(
       "submit",
       `${submission.sessionId}.${submission.frame}.${submission.viewGeneration}`,
@@ -205,13 +223,20 @@ export class Observation {
         ...submission,
       },
     );
-    this.pending = this.pending.filter((entry) => {
-      if (
-        entry.sessionId !== submission.sessionId ||
-        entry.revision > submission.revision
-      )
-        return true;
-      const current = entry.bounds.every((bounds) => {
+    this.pending = this.pending.filter(
+      (entry) => !this.publishReceipt(entry, submission, inspect),
+    );
+  }
+
+  private publishReceipt(
+    entry: PendingReceipt,
+    submission: ObservedSubmission,
+    inspect: (bounds: Bounds) => ObservedRegion,
+  ): boolean {
+    if (
+      entry.sessionId !== submission.sessionId ||
+      entry.revision > submission.revision ||
+      !entry.bounds.every((bounds) => {
         const region = inspect(bounds);
         return (
           region.status === "current" &&
@@ -219,28 +244,31 @@ export class Observation {
           region.frame === submission.frame &&
           region.viewGeneration === submission.viewGeneration
         );
-      });
-      if (!current) return true;
-      const details = {
-        sessionId: entry.sessionId,
-        frame: submission.frame,
-        viewGeneration: submission.viewGeneration,
-        revision: entry.revision,
-        gestureId: entry.gestureId,
-      };
-      if (entry.intervalId !== undefined)
-        this.mark("brush-submit", `${entry.intervalId}.${submission.frame}`, {
-          ...details,
-          intervalId: entry.intervalId,
-        });
-      else
-        this.mark("edit-submit", `${entry.input}.${submission.frame}`, {
-          ...details,
-          input: entry.input,
-          sequence: entry.sequence,
-        });
+      })
+    )
       return false;
-    });
+    const details = {
+      sessionId: entry.sessionId,
+      frame: submission.frame,
+      viewGeneration: submission.viewGeneration,
+      revision: entry.revision,
+      gestureId: entry.gestureId,
+    };
+    if (entry.intervalId !== undefined)
+      this.mark("brush-submit", `${entry.intervalId}.${submission.frame}`, {
+        ...details,
+        intervalId: entry.intervalId,
+      });
+    else
+      this.mark("edit-submit", `${entry.input}.${submission.frame}`, {
+        ...details,
+        input: entry.input,
+        sequence: entry.sequence,
+        submittedAt: submission.at,
+        completedAt: Math.max(entry.committedAt!, submission.at),
+        completionEvidence: "commit-current-terrain-v1",
+      });
+    return true;
   }
 
   mark(kind: string, identity: string, details: Record<string, unknown>): void {

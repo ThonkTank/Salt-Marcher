@@ -159,7 +159,7 @@ else if (native)
     "Native pilot only; use --full for the required repetitions. Acceptance still requires a qualified display and proven exact-frame presentation mapping.",
   );
 const report = {
-  schemaVersion: 4,
+  schemaVersion: 5,
   purpose,
   mode: lab ? "lab" : "native",
   collectionStarted: false,
@@ -242,7 +242,7 @@ function checkpoint() {
     report.evaluation = evaluateRun(report);
     await atomicJson(join(out, "report.json"), report);
     await atomicJson(join(out, "run-index.json"), {
-      schemaVersion: 4,
+      schemaVersion: 5,
       purpose,
       selection: report.selection,
       startedAt: report.startedAt,

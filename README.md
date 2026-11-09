@@ -115,10 +115,13 @@ Kurze Probe und vollständige Sammlung verwenden dieselben Eingaben und
 Inhaltsprüfer. Die Auswahl verkleinert nicht den Abnahmeumfang. Pflichtfälle,
 Stichproben, Fehlerkontrollen und Zeitgrenzen stehen einmal im
 [Prüfvertrag](docs/implementation/atlas-rebuild-plan.md#6-prüf--und-performancevertrag).
-Aktuelle Runnerberichte verwenden Schema 4. `p0:evaluate` akzeptiert nur dieses
+Aktuelle Runnerberichte verwenden Schema 5. `p0:evaluate` akzeptiert nur dieses
 Schema; historische Rohbelege bleiben unverändert und benötigen ihren zugehörigen
-Auswerterstand. Schema 3 beschreibt den früheren Rasterpfad; dessen Workerzeiten
-werden nicht als Upload-/Drawzeiten des GPU-Pfads umgedeutet.
+Auswerterstand. Schema 5 erhält den zeitlichen Bewegungsverlauf und trennt
+Eingabe bis Zeicheneinreichung von Pointerup bis Abschluss auf bereits aktuellem
+Terrain. Schema 4 verwendete noch einen nachfolgenden Abschlussframe; Schema 3
+beschreibt den früheren Rasterpfad. Historische Messgrößen werden nicht als neue
+Abschluss-, Upload- oder Drawzeiten umgedeutet.
 
 `--only interactions` umfasst auch einen mehrere Sekunden gezogenen
 512-Pixel-Pinsel, getrennte Live-Pixelproben, Halten, langsame/schnelle Züge,
@@ -130,6 +133,28 @@ Projektdateien; ihre Pixelbilder belegen Inhalt, keine Präsentationslatenz.
 Ein Headless-Funktionslauf belegt keine native Leistung; Submission und RAF sind
 keine Präsentationszeitpunkte. Fehlende Messanbindung und Umgebungsqualifizierung
 bleiben ausdrücklich offen. Ein Paketstart ersetzt keine RPM-Installation.
+
+### Begrenzte Grafikdiagnose
+
+Nach einem sauberen Build vergleicht derselbe Driver einen echten 512-Pixel-Strich
+auf einfachem und auf lokal mit 22 Höhenstufen belegtem Terrain. Eine dritte
+Kontrolle bewegt den Zeiger über bereits komponierte Kacheln ohne Bearbeitung.
+Sie trennt die allgemeine Bildausgabe von der laufenden Höhenrekonstruktion:
+
+```bash
+node scripts/atlas-p0-graphics-probe.mjs --hardware --runs 3 --gpu-timers --out src-tauri/target/diagnostics/graphics-hardware
+```
+
+`--lab` verwendet ausdrücklich Softwaregrafik. Jeder Fall startet in einem
+frischen Prozess; der vorhandene lange Strich behält 101 Positionen mit
+24-ms-Abständen. Die Diagnose erhält alle Fallfehler, Quellen-/Buildidentität,
+Kompositionsarbeit und Swap-Spannen. Optionale asynchrone GPU-Zeitabfragen werden
+nur bei vorhandener Erweiterung ausgewertet; fehlende oder ungültige Ergebnisse
+bleiben offen. Trace und Zeitabfragen können die Laufzeit beeinflussen.
+
+Auch auf Hardware ist dieser Vergleich keine native Abnahme und beweist keinen
+ersten sichtbaren Terrainframe. Die statische Kontrolle ist keine Pinselprüfung.
+Die formale Präsentationszuordnung und die festen P0-Grenzen bleiben erforderlich.
 
 ### Native Referenz und Vorprüfung
 

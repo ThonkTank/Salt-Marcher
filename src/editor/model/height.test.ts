@@ -26,6 +26,64 @@ import {
 const ALL: Bounds = [-WORLD_LIMIT, -WORLD_LIMIT, WORLD_LIMIT, WORLD_LIMIT];
 const LOCAL: Bounds = [-1000, -1000, 1000, 1000];
 
+describe("atomic timed height paths", () => {
+  it("matches sequential geometry while publishing one revision and one history action", () => {
+    const path = [
+      { from: [0, 0] as Point, to: [0, 80] as Point, elapsedMs: 8 },
+      { from: [0, 80] as Point, to: [80, 0] as Point, elapsedMs: 8 },
+      { from: [80, 0] as Point, to: [80, 0] as Point, elapsedMs: 16 },
+    ];
+    const atomic = new EditorDocument("atomic", { empty: true });
+    const sequential = new EditorDocument("sequential", { empty: true });
+    for (const doc of [atomic, sequential])
+      doc.beginGesture({ level: 0, radius: 20, amount: 400 });
+    for (const segment of path)
+      sequential.applySegment(segment.from, segment.to, segment.elapsedMs);
+    const update = atomic.applySegments(path)!;
+    expect(atomic.revision).toBe(1);
+    expect(update.patches.length).toBeGreaterThan(0);
+    expect(values(atomic.snapshot(LOCAL).tiles)).toEqual(
+      values(sequential.snapshot(LOCAL).tiles),
+    );
+    atomic.finishGesture();
+    expect(atomic.metrics.historyActions).toBe(1);
+    atomic.undo();
+    expect(atomic.sampleHeight(0, 80)).toBe(-100);
+  });
+
+  it("rejects a missing later corner before any earlier segment can mutate", () => {
+    const doc = new EditorDocument("partial-path");
+    doc.acceptCoverage([-100, -100, 100, 100], []);
+    doc.beginGesture({ level: 0, radius: 20, amount: 400 });
+    expect(() =>
+      doc.applySegments([
+        { from: [0, 0], to: [40, 0], elapsedMs: 8 },
+        { from: [40, 0], to: [40, 2000], elapsedMs: 8 },
+      ]),
+    ).toThrow(SourcesNotReadyError);
+    expect(doc.revision).toBe(0);
+    expect(doc.sampleHeight(0, 0)).toBe(-100);
+    expect(doc.finishGesture()).toBeNull();
+  });
+
+  it("rejects the combined cell budget before any segment can mutate", () => {
+    const doc = new EditorDocument("path-budget", {
+      empty: true,
+      maxGestureCells: 1,
+    });
+    doc.beginGesture({ level: 0, radius: 3, amount: 400 });
+    expect(() =>
+      doc.applySegments([
+        { from: [0, 0], to: [0, 0], elapsedMs: 8 },
+        { from: [100, 0], to: [100, 0], elapsedMs: 8 },
+      ]),
+    ).toThrow(/Höhenpunkte/);
+    expect(doc.revision).toBe(0);
+    expect(doc.sampleHeight(0, 0)).toBe(-100);
+    expect(doc.finishGesture()).toBeNull();
+  });
+});
+
 function constant(level: number, value: number): HeightTile[] {
   const controls: [number, number, number][] = [];
   for (let y = -3; y <= 3; y++)

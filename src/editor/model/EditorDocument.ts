@@ -69,6 +69,13 @@ function assertSourceNeed(need: SourceNeed): void {
 const coversLevel = (coverage: SourceNeed, level: number) =>
   level >= coverage.minLevel;
 
+/** One timed part of an atomically accepted brush path. */
+export interface HeightSegment {
+  from: Point;
+  to: Point;
+  elapsedMs: number;
+}
+
 export interface HeightUpdate {
   bounds: Bounds;
   /** Owned changed sources only; unrelated fine sources are never copied. */
@@ -518,100 +525,115 @@ export class EditorDocument {
     };
   }
 
-  /** Apply one explicit timed segment; zero duration never changes the gesture. */
+  /** Existing single-segment callers share the atomic path integrator. */
   applySegment(from: Point, to: Point, elapsedMs: number): HeightUpdate | null {
+    return this.applySegments([{ from, to, elapsedMs }]);
+  }
+
+  /** Validate the whole path and its budgets before mutating any author value. */
+  applySegments(segments: readonly HeightSegment[]): HeightUpdate | null {
     const gesture = this.gesture;
     if (!gesture) throw new Error("Keine aktive Höhengeste.");
-    assertPoint(from);
-    assertPoint(to);
-    if (!Number.isFinite(elapsedMs) || elapsedMs < 0)
-      throw new RangeError(
-        "Die Pinselzeit muss endlich und nichtnegativ sein.",
-      );
     const { brush } = gesture;
     const step = heightSpacing(brush.level);
-    const dx = to[0] - from[0];
-    const dy = to[1] - from[1];
-    const length = Math.hypot(dx, dy);
-    if (elapsedMs === 0 || brush.amount === 0) return null;
-    const sampleBounds = heightBrushReadBounds(brush, from, to);
     const levels = HEIGHT_LEVELS.slice(brush.level);
-    if (!this.isReady(sampleBounds, levels))
-      throw new SourcesNotReadyError(sampleBounds);
-    const minX = Math.max(
-      Math.ceil(-WORLD_LIMIT / step),
-      Math.ceil((Math.min(from[0], to[0]) - brush.radius) / step),
-    );
-    const minY = Math.max(
-      Math.ceil(-WORLD_LIMIT / step),
-      Math.ceil((Math.min(from[1], to[1]) - brush.radius) / step),
-    );
-    const maxX = Math.min(
-      Math.floor(WORLD_LIMIT / step),
-      Math.floor((Math.max(from[0], to[0]) + brush.radius) / step),
-    );
-    const maxY = Math.min(
-      Math.floor(WORLD_LIMIT / step),
-      Math.floor((Math.max(from[1], to[1]) + brush.radius) / step),
-    );
-    if ((maxX - minX + 1) * (maxY - minY + 1) > 400_000)
-      throw new RangeError(
-        "Pinselabschnitt ist zu groß für die direkte lokale Bearbeitung.",
+    let examinedCells = 0;
+    const prepared = segments.flatMap(({ from, to, elapsedMs }) => {
+      assertPoint(from);
+      assertPoint(to);
+      if (!Number.isFinite(elapsedMs) || elapsedMs < 0)
+        throw new RangeError(
+          "Die Pinselzeit muss endlich und nichtnegativ sein.",
+        );
+      if (elapsedMs === 0 || brush.amount === 0) return [];
+      const sampleBounds = heightBrushReadBounds(brush, from, to);
+      if (!this.isReady(sampleBounds, levels))
+        throw new SourcesNotReadyError(sampleBounds);
+      const minX = Math.max(
+        Math.ceil(-WORLD_LIMIT / step),
+        Math.ceil((Math.min(from[0], to[0]) - brush.radius) / step),
       );
-    const directionX = length ? dx / length : 0;
-    const directionY = length ? dy / length : 0;
+      const minY = Math.max(
+        Math.ceil(-WORLD_LIMIT / step),
+        Math.ceil((Math.min(from[1], to[1]) - brush.radius) / step),
+      );
+      const maxX = Math.min(
+        Math.floor(WORLD_LIMIT / step),
+        Math.floor((Math.max(from[0], to[0]) + brush.radius) / step),
+      );
+      const maxY = Math.min(
+        Math.floor(WORLD_LIMIT / step),
+        Math.floor((Math.max(from[1], to[1]) + brush.radius) / step),
+      );
+      examinedCells += (maxX - minX + 1) * (maxY - minY + 1);
+      if (examinedCells > 400_000)
+        throw new RangeError(
+          "Pinselabschnitt ist zu groß für die direkte lokale Bearbeitung.",
+        );
+      return [{ from, to, elapsedMs, minX, minY, maxX, maxY }];
+    });
     const updates = new Map<
       string,
       { tileX: number; tileY: number; values: Map<number, number> }
     >();
     let newCells = 0;
     let dirty: Bounds | null = null;
-    for (let y = minY; y <= maxY; y++)
-      for (let x = minX; x <= maxX; x++) {
-        const qx = x * step - from[0];
-        const qy = y * step - from[1];
-        let weight: number;
-        if (length > 0) {
-          weight =
-            quarticBrushSegmentIntegral(
-              qx * directionX + qy * directionY,
-              qx * directionY - qy * directionX,
-              length,
-              brush.radius,
-            ) / length;
-        } else {
-          const d2 = (qx / brush.radius) ** 2 + (qy / brush.radius) ** 2;
-          weight = d2 < 1 ? (1 - d2) ** 2 : 0;
-        }
-        if (weight === 0) continue;
-        const { key, tileX, tileY, index } = heightControlAddress(
-          brush.level,
-          x,
-          y,
-        );
-        let update = updates.get(key);
-        if (!update)
-          updates.set(key, (update = { tileX, tileY, values: new Map() }));
-        const old = this.entries.get(key)?.tile?.values[index] ?? 0;
-        const value = old + brush.amount * ((elapsedMs / 1000) * weight);
-        if (!Number.isFinite(value))
-          throw new RangeError("Relative Höhe ist nicht endlich.");
-        if (value === old) continue;
-        if (!gesture.cells.get(key)?.has(index) && !update.values.has(index))
-          newCells++;
-        if (gesture.cellCount + newCells > this.options.maxGestureCells)
-          throw new RangeError(
-            "Höchstens 100.000 Höhenpunkte je Aktion; einen kürzeren Strich malen.",
+    for (const { from, to, elapsedMs, minX, minY, maxX, maxY } of prepared) {
+      const dx = to[0] - from[0];
+      const dy = to[1] - from[1];
+      const length = Math.hypot(dx, dy);
+      const directionX = length ? dx / length : 0;
+      const directionY = length ? dy / length : 0;
+      for (let y = minY; y <= maxY; y++)
+        for (let x = minX; x <= maxX; x++) {
+          const qx = x * step - from[0];
+          const qy = y * step - from[1];
+          let weight: number;
+          if (length > 0) {
+            weight =
+              quarticBrushSegmentIntegral(
+                qx * directionX + qy * directionY,
+                qx * directionY - qy * directionX,
+                length,
+                brush.radius,
+              ) / length;
+          } else {
+            const d2 = (qx / brush.radius) ** 2 + (qy / brush.radius) ** 2;
+            weight = d2 < 1 ? (1 - d2) ** 2 : 0;
+          }
+          if (weight === 0) continue;
+          const { key, tileX, tileY, index } = heightControlAddress(
+            brush.level,
+            x,
+            y,
           );
-        update.values.set(index, value);
-        const changed: Bounds = [
-          x * step - 2 * step,
-          y * step - 2 * step,
-          x * step + 2 * step,
-          y * step + 2 * step,
-        ];
-        dirty = dirty ? unionBounds(dirty, changed) : changed;
-      }
+          let update = updates.get(key);
+          if (!update)
+            updates.set(key, (update = { tileX, tileY, values: new Map() }));
+          const old =
+            update.values.get(index) ??
+            this.entries.get(key)?.tile?.values[index] ??
+            0;
+          const value = old + brush.amount * ((elapsedMs / 1000) * weight);
+          if (!Number.isFinite(value))
+            throw new RangeError("Relative Höhe ist nicht endlich.");
+          if (value === old) continue;
+          if (!gesture.cells.get(key)?.has(index) && !update.values.has(index))
+            newCells++;
+          if (gesture.cellCount + newCells > this.options.maxGestureCells)
+            throw new RangeError(
+              "Höchstens 100.000 Höhenpunkte je Aktion; einen kürzeren Strich malen.",
+            );
+          update.values.set(index, value);
+          const changed: Bounds = [
+            x * step - 2 * step,
+            y * step - 2 * step,
+            x * step + 2 * step,
+            y * step + 2 * step,
+          ];
+          dirty = dirty ? unionBounds(dirty, changed) : changed;
+        }
+    }
     for (const [key, update] of updates)
       if (!update.values.size) updates.delete(key);
     if (!updates.size) return null;

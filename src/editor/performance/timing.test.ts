@@ -3,6 +3,7 @@ import { summarizeSubmissionTiming } from "../../../scripts/atlas-p0-timing.mjs"
 import {
   extractEditSamples,
   evaluateSubmissionDiagnostics,
+  strokeEvidence,
 } from "../../../scripts/atlas-p0-evaluate.mjs";
 
 const journal = (): Record<string, any>[] => [
@@ -18,6 +19,10 @@ const journal = (): Record<string, any>[] => [
     sessionId: "a",
     revision: 2,
     bounds: [0, 0, 10, 10],
+    from: [0, 0],
+    to: [1, 1],
+    acceptedElapsedMs: 2,
+    segments: [{ from: [0, 0], to: [1, 1], elapsedMs: 2 }],
   },
   {
     kind: "height-draw",
@@ -75,6 +80,36 @@ describe("numeric terrain submission diagnosis", () => {
       },
     ]);
     expect(result.brushIntervals[0].modelToSubmitMs).toBe(25);
+  });
+  it("keeps each input's latency when one path dose reaches one real frame", () => {
+    const events = journal();
+    events[1].inputIds = [1, 2, 3];
+    events.splice(
+      1,
+      0,
+      { kind: "input", id: 2, inputKind: "edit", at: 13, createdAt: 11 },
+      { kind: "input", id: 3, inputKind: "edit", at: 13.5, createdAt: 12 },
+    );
+    const samples = extractEditSamples(events, [1, 2, 3], "a");
+    const report = summarizeSubmissionTiming(events);
+    expect(report.samples.map((sample) => sample.inputToSubmitMs)).toEqual([
+      29, 28, 27,
+    ]);
+    expect(report.brushIntervals).toHaveLength(1);
+    expect(report.coverage.inputs).toEqual({
+      expected: 3,
+      complete: 3,
+      incomplete: 0,
+    });
+    const live = strokeEvidence({
+      samples: [
+        ...samples,
+        { inputId: 4, inputKind: "pointerup", createdAt: 60 },
+      ],
+    });
+    expect(live.liveSubmissionsBeforeRelease).toBe(3);
+    expect(live.liveFramesBeforeRelease).toBe(1);
+    expect(live.minimumFrameControlPassed).toBe(false);
   });
   it.each(["frame", "viewGeneration", "sessionId", "revision"])(
     "rejects a draw from a different %s",
@@ -173,9 +208,9 @@ describe("numeric terrain submission diagnosis", () => {
     expect(result.pointerups).toMatchObject([
       {
         input: 9,
-        inputToSubmitMs: 7,
+        inputToCompletionMs: 7,
         inputToHandledMs: 1,
-        handledToSubmitMs: 6,
+        handledToCompletionMs: 6,
       },
     ]);
     expect(result.coverage).toEqual({
@@ -183,5 +218,154 @@ describe("numeric terrain submission diagnosis", () => {
       brushIntervals: { expected: 1, complete: 1, incomplete: 0 },
       pointerups: { expected: 1, complete: 1, incomplete: 0 },
     });
+  });
+
+  function alreadyDrawnCommit() {
+    return [
+      ...journal(),
+      { kind: "input", id: 9, inputKind: "pointerup", createdAt: 60, at: 61 },
+      {
+        kind: "brush-end",
+        gestureId: 1,
+        input: 9,
+        sessionId: "a",
+        reason: "pointerup",
+        endAt: 61,
+        at: 61,
+      },
+      {
+        kind: "commit",
+        input: 9,
+        sequence: 1,
+        gestureId: 1,
+        sessionId: "a",
+        revision: 2,
+        bounds: [[0, 0, 10, 10]],
+        at: 62,
+      },
+      {
+        kind: "edit-submit",
+        input: 9,
+        sequence: 1,
+        gestureId: 1,
+        sessionId: "a",
+        revision: 2,
+        frame: 9,
+        viewGeneration: 1,
+        submittedAt: 39,
+        completedAt: 62,
+        completionEvidence: "commit-current-terrain-v1",
+        at: 62.1,
+      },
+    ] as Record<string, any>[];
+  }
+
+  it("retains the prior draw time and separately measures pointerup completion", () => {
+    const events = alreadyDrawnCommit();
+    const samples = extractEditSamples(events, [1, 9], "a");
+    expect(samples[1]).toMatchObject({
+      submissionAt: 39,
+      modelAt: 62,
+      completedAt: 62,
+      frameId: 9,
+      presentation: null,
+    });
+    const evaluated = evaluateSubmissionDiagnostics(samples);
+    expect(evaluated.status).toBe("PROXY_ONLY");
+    expect(evaluated.presentationProven).toBe(false);
+    expect(evaluated.inputToSubmissionMs).toMatchObject({
+      count: 1,
+      maximum: 29,
+    });
+    expect(evaluated.pointerupToCompletionMs).toMatchObject({
+      count: 1,
+      maximum: 2,
+    });
+    const result = summarizeSubmissionTiming(events);
+    expect(result.incomplete).toEqual([]);
+    expect(result.pointerups).toMatchObject([
+      {
+        submittedAt: 39,
+        completedAt: 62,
+        reusedSubmission: true,
+        inputToCompletionMs: 2,
+        handledToCompletionMs: 1,
+      },
+    ]);
+    expect(result.pointerupToCompletionMs).toMatchObject({ count: 1, max: 2 });
+    expect(events.filter((event) => event.kind === "submit")).toHaveLength(1);
+  });
+
+  it.each([
+    [
+      "unproven prior draw",
+      (events: Record<string, any>[]) => {
+        delete events.at(-1)!.completionEvidence;
+      },
+    ],
+    [
+      "wrong original draw time",
+      (events: Record<string, any>[]) => {
+        events.at(-1)!.submittedAt = 38;
+      },
+    ],
+    [
+      "invented completion time",
+      (events: Record<string, any>[]) => {
+        events.at(-1)!.completedAt = 61;
+      },
+    ],
+    [
+      "receipt predates commit",
+      (events: Record<string, any>[]) => {
+        events.at(-1)!.at = 61;
+      },
+    ],
+    [
+      "wrong gesture",
+      (events: Record<string, any>[]) => {
+        events.at(-1)!.gestureId = 2;
+      },
+    ],
+    [
+      "wrong frame",
+      (events: Record<string, any>[]) => {
+        events.at(-1)!.frame = 10;
+      },
+    ],
+    [
+      "wrong view",
+      (events: Record<string, any>[]) => {
+        events.at(-1)!.viewGeneration = 2;
+      },
+    ],
+    [
+      "old terrain",
+      (events: Record<string, any>[]) => {
+        events[3].revision = 1;
+      },
+    ],
+    [
+      "missing draw",
+      (events: Record<string, any>[]) => {
+        events.splice(3, 1);
+      },
+    ],
+  ] as const)(
+    "rejects %s instead of acknowledging a pointerup",
+    (_name, mutate) => {
+      const events = alreadyDrawnCommit();
+      mutate(events);
+      const samples = extractEditSamples(events, [9], "a");
+      expect(evaluateSubmissionDiagnostics(samples).status).toBe("FAIL");
+      expect(summarizeSubmissionTiming(events).pointerups).toEqual([]);
+    },
+  );
+
+  it("does not let a completion receipt turn a previous frame into a new edit", () => {
+    const events = alreadyDrawnCommit();
+    const samples = extractEditSamples(events, [9], "a");
+    const invalidEdit = { ...samples[0], inputKind: "edit" };
+    expect(evaluateSubmissionDiagnostics([invalidEdit]).status).toBe("FAIL");
   });
 });

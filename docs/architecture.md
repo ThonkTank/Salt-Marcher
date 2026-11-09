@@ -600,26 +600,33 @@ Gesten- und Wartesemantik steht im Produktvertrag.
 Kameraänderungen und Resize bereiten die neue Kachelauswahl synchron vor.
 Quellenantworten beginnen oder reaktivieren keine Geste. `BrushState` unterscheidet
 `idle`, `blocked` mit physisch noch gehaltener Taste und `active` mit einem
-`BrushStroke`. Der Strich hält Segmentanker, jüngste Zeigerposition und letzten
-untersuchten Zeitpunkt. `brushTarget` wählt den zu prüfenden Zielpunkt;
+`BrushStroke`. Der Strich hält Segmentanker, einen begrenzten zeitgestempelten
+Bewegungsverlauf und den letzten untersuchten Zeitpunkt. Die lokale Freigabe
+umfasst den vollständigen Verlauf einschließlich seiner Richtungswechsel.
 `decideBrushFrame` liefert rein die nächste begrenzte Dosis oder Warteentscheidung.
 Eine gültige Down-Eingabe wendet die nominale Press-Dosis synchron an. Eine
 Bewegung auf lokal bereitem Gelände versucht ebenfalls sofort dieselbe
 Dosisentscheidung. Dadurch behalten Down/Up und bereit angenommene Move/Up
 zwischen zwei Frames ihre Wirkung. Solange eine eigene Dosis aussteht, werden
-Bewegungen nur zum jüngsten Kandidaten zusammengefasst; sie verbrauchen nicht
-einzeln die Dosisuhr. Erst eine erfolglose Zeichenrunde verwirft die untersuchte
-Wartezeit und den Weg und folgt dem jüngsten Ort als neuem Anker. Fehlende Quellen
-oder Terrain beenden die Geste; der Controller erhält die Sperre bis zum Loslassen.
+Bewegungen mit ihren Zeitstempeln gesammelt; sie verbrauchen nicht einzeln die
+Dosisuhr. Die nächste Dosis integriert ihre Teilstrecken bis zur jeweiligen
+Ereigniszeit und die verbleibende Haltezeit am letzten Ort. Höchstens 128 Punkte
+warten auf Annahme. Überlauf, ein gedeckelter Zeitsprung oder eine erfolglose
+Zeichenrunde verwerfen den alten Verlauf ausdrücklich; es entsteht keine
+nachgeholte Abkürzung. Fehlende Quellen oder Terrain beenden die Geste; der
+Controller erhält die Sperre bis zum Loslassen.
 
 Der Controller hält die noch nicht dargestellte Dosis unabhängig vom Gestenzustand
 in `awaitingDose`. Sie überlebt Pointerup und verhindert weitere unsichtbare
 Dosen. Ein aktueller lokaler Submit gibt sie frei; vollständiges Verlassen der
 Ansicht macht sie für die Rückkopplung gegenstandslos, ohne einen Submit zu
-behaupten. Das Modell erhält ausschließlich
-`applySegment(from, to, elapsedMs)`. Es führt keinen eigenen Segmentanker und
-kennt weder Uhr noch Frameplanung. Controller und Modell verwenden dieselbe
-reine Funktion `heightBrushReadBounds` für Segment und Quellenhalo.
+behaupten. Das Modell erhält vollständige zeitliche Segmente über
+`applySegments(segments)`; `applySegment(from, to, elapsedMs)` delegiert an
+denselben Integrator. Sämtliche Beiträge einer Dosis werden vor der Mutation
+gesammelt und gemeinsam auf Quellen- und Speichergrenzen geprüft. Eine Dosis
+erzeugt einen Patchsatz und eine Revision. Das Modell führt keinen eigenen
+Segmentanker und kennt weder Uhr noch Frameplanung. Controller und Modell
+verwenden dieselbe Geometrie für Teilstrecken und Quellenhalo.
 
 Der einzige RAF gehört dem Controller. Er startet zusammengefassten Ladebedarf
 und entscheidet auf der zuletzt gezeichneten lokalen Grundlage über höchstens
@@ -736,12 +743,17 @@ bleibt mit `projectedAt: null` sichtbar und erhält keinen Dosis-Submitbeleg.
 `brush-submit` verbindet eine erfolgreich projizierte Dosis über
 Session, Geste, Intervall und Revision mit einem tatsächlichen `submit` derselben
 Ansicht und desselben Frames. Der Abschluss einer geänderten Geste per Pointerup
-liefert `commit`; dessen `edit-submit` bindet auch die Dokumentsequenz.
+liefert `commit`; dessen `edit-submit` bindet auch die Dokumentsequenz. Ist der
+vollständige lokale Endzustand im letzten tatsächlichen Submit derselben Session
+und Ansicht bereits enthalten und weiterhin aktuell, kann der Abschluss diesen
+Frame unmittelbar anerkennen. Der ursprüngliche Submitzeitpunkt bleibt erhalten;
+der Abschlusszeitpunkt liegt frühestens beim Commit. Ausstehendes, veraltetes oder
+unvollständiges Terrain wartet weiter auf einen tatsächlichen passenden Submit.
 Die Beobachtung liest regionale
 Submitbelege und abgeleitete Bereitschaft, verändert aber weder Produktzustand
 noch Frameplanung.
 
-Journal und Laufberichte verwenden Schema 4. `extractSubmissionEvidence` in
+Journal und Laufberichte verwenden Schema 5. `extractSubmissionEvidence` in
 `scripts/atlas-p0-evaluate.mjs` verbindet Eingabe, Dosis oder Commit, lokalen
 Beleg und tatsächlichen Frame. Sammler, Wiederholung gespeicherter Journale und
 Zeitzerlegung verwenden diese Extraktion; Navigation und kalte Freigabe teilen
@@ -749,14 +761,16 @@ ebenfalls eine Extraktion. `evaluateAttempt` und `evaluateScenario` besitzen die
 gemeinsamen Versuchs- und Szenarioregeln. `scenario.evaluation` hält das eine
 abgeleitete Szenariourteil; Inhalts- und Messfakten bleiben davon getrennt.
 Fehlende Eingaben, Identitäten, Bereiche oder Zeitstempel werden als fehlende
-Nachweise erhalten. Historische Journale einschließlich Schema 3 werden mit ihrem
+Nachweise erhalten. Historische Journale einschließlich Schema 3 und 4 werden mit ihrem
 damaligen Harnessstand ausgewertet; ihre Rasterworker-Messgrößen erhalten keine
 Kompatibilitätsdeutung als aktuelle GPU-Zeitstufen.
 
 `height-draw` erfasst Uploadbeginn, Uploadende und den tatsächlichen Szenen-Submit
 in derselben Rendereruhr samt hochgeladenen Bytes, betroffenen Kacheln und
 Fallback-Samples. Die Zeitzerlegung verbindet diese Fakten mit Eingaben,
-Halteschritten und Pointerup. Sie erfindet keine Workerzeiten für den ersetzten
+Halteschritten und Pointerup. Eingabe bis Submit und Pointerup bis Abschluss sind
+verschiedene Messgrößen; ein bereits früher eingereichter Endzustand erhält keinen
+erfundenen neuen Renderzeitpunkt. Sie erfindet keine Workerzeiten für den ersetzten
 Rasterweg. Fehlende oder widersprüchliche Zeitstempel bleiben als unvollständiger
 Nachweis sichtbar. Diese Uhren belegen keine native Präsentation.
 

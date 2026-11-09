@@ -1,4 +1,11 @@
-import type { HeightBrush, Point } from "./model";
+import {
+  heightBrushReadBounds,
+  unionBounds,
+  type Bounds,
+  type HeightBrush,
+  type HeightSegment,
+  type Point,
+} from "./model";
 
 export interface BrushPoint {
   point: Point;
@@ -13,7 +20,7 @@ export interface BrushStroke {
   point: Point;
   pointAt: number;
   clock: number;
-  latest: BrushPoint | null;
+  path: BrushPoint[];
 }
 
 export type BrushState =
@@ -31,36 +38,47 @@ export type BrushFrameDecision = { stroke: BrushStroke } & (
       fromAt: number;
       toAt: number;
       reason: BrushWaitReason;
-      input?: number;
+      inputs: number[];
       end: boolean;
     }
-  | { kind: "stale"; fromAt: number; toAt: number; input: number }
+  | { kind: "stale"; fromAt: number; toAt: number; inputs: number[] }
   | {
       kind: "dose";
-      point: Point;
+      segments: HeightSegment[];
       fromAt: number;
       toAt: number;
       rawElapsedMs: number;
       cause: "move" | "hold";
-      input?: number;
+      inputs: number[];
+      discardedInputs: number[];
       discardedFrom?: number;
     }
 );
 
 export const PRESS_DOSE_MS = 1000 / 60;
+export const MAX_BRUSH_POINTS = 128;
 const MAX_DOSE_MS = 50;
 
-/** Target for the complete readiness check, before changing the stroke anchor. */
 export function brushTarget(stroke: BrushStroke): Point {
-  const latest = stroke.latest;
+  const latest = stroke.path.at(-1);
   return latest && latest.at >= stroke.pointAt ? latest.point : stroke.point;
 }
 
-/**
- * Accept a ready time window, or discard a genuinely unsuccessful draw cycle.
- * Pending feedback before that draw keeps the one clock and latest candidate;
- * ordinary event coalescing must not consume the next visible dose's time.
- */
+/** Corners belong to the readiness area, even when the final point comes back. */
+export function brushPathBounds(stroke: BrushStroke): Bounds {
+  let point = stroke.point;
+  let bounds = heightBrushReadBounds(stroke.brush, point, point);
+  for (const sample of stroke.path) {
+    bounds = unionBounds(
+      bounds,
+      heightBrushReadBounds(stroke.brush, point, sample.point),
+    );
+    point = sample.point;
+  }
+  return bounds;
+}
+
+/** One bounded time window retains sampled travel and dwell until its draw. */
 export function decideBrushFrame(
   stroke: BrushStroke,
   now: number,
@@ -75,8 +93,9 @@ export function decideBrushFrame(
 
   const fromAt = stroke.clock;
   const toAt = Math.max(fromAt, now);
-  const next = { ...stroke, clock: toAt };
-  const latest = stroke.latest;
+  const next: BrushStroke = { ...stroke, clock: toAt, path: [] };
+  const latest = stroke.path.at(-1);
+  const inputs = stroke.path.map((sample) => sample.input);
   const trackLatest = () => {
     if (latest && latest.at >= stroke.pointAt) {
       next.point = [...latest.point];
@@ -84,10 +103,7 @@ export function decideBrushFrame(
     }
   };
 
-  // Readiness applies even when the clock did not advance. Only unsuccessful
-  // feedback waits permit continuation after discarding their time and path.
   if (reason !== null) {
-    next.latest = null;
     if (reason === "feedback") trackLatest();
     return {
       kind: "wait",
@@ -95,35 +111,72 @@ export function decideBrushFrame(
       fromAt,
       toAt,
       reason,
-      input: latest?.input,
+      inputs,
       end: reason !== "feedback",
     };
   }
 
   const rawElapsedMs = toAt - fromAt;
-  if (rawElapsedMs <= 0) return { kind: "none", stroke: next };
-  next.latest = null;
+  if (rawElapsedMs <= 0) return { kind: "none", stroke };
   if (latest && latest.at < fromAt) {
     trackLatest();
-    return { kind: "stale", stroke: next, fromAt, toAt, input: latest.input };
+    return { kind: "stale", stroke: next, fromAt, toAt, inputs };
   }
 
-  const point = brushTarget(stroke);
   const acceptedFrom = toAt - Math.min(rawElapsedMs, MAX_DOSE_MS);
-  // A long pause discards its old path as well as its time: the bounded remainder
-  // is a stationary dose at the current target, never a catch-up segment.
-  if (acceptedFrom > fromAt) next.point = [...point];
-  const moving = point[0] !== next.point[0] || point[1] !== next.point[1];
+  if (acceptedFrom > fromAt) {
+    // A real stall discards its path. It never becomes a catch-up polyline.
+    const point = brushTarget(stroke);
+    trackLatest();
+    next.point = [...point];
+    return {
+      kind: "dose",
+      stroke: next,
+      segments: [{ from: point, to: point, elapsedMs: toAt - acceptedFrom }],
+      fromAt: acceptedFrom,
+      toAt,
+      rawElapsedMs,
+      cause: "hold",
+      inputs: latest ? [latest.input] : [],
+      discardedInputs: inputs.slice(0, -1),
+      discardedFrom: fromAt,
+    };
+  }
+
+  let point = stroke.point;
+  let at = fromAt;
+  const segments: HeightSegment[] = [];
+  const accepted: number[] = [];
+  const discardedInputs: number[] = [];
+  for (const sample of stroke.path) {
+    if (sample.at < fromAt) {
+      discardedInputs.push(sample.input);
+      if (sample.at >= stroke.pointAt) point = sample.point;
+      continue;
+    }
+    const endAt = Math.max(at, Math.min(toAt, sample.at));
+    segments.push({ from: point, to: sample.point, elapsedMs: endAt - at });
+    accepted.push(sample.input);
+    point = sample.point;
+    at = endAt;
+  }
+  if (toAt > at)
+    segments.push({ from: point, to: point, elapsedMs: toAt - at });
   if (latest) next.pointAt = latest.at;
   return {
     kind: "dose",
     stroke: next,
-    point,
-    fromAt: acceptedFrom,
+    segments,
+    fromAt,
     toAt,
     rawElapsedMs,
-    cause: moving ? "move" : "hold",
-    input: latest?.input,
-    ...(acceptedFrom > fromAt ? { discardedFrom: fromAt } : {}),
+    cause: segments.some(
+      ({ from, to, elapsedMs }) =>
+        elapsedMs > 0 && (from[0] !== to[0] || from[1] !== to[1]),
+    )
+      ? "move"
+      : "hold",
+    inputs: accepted,
+    discardedInputs,
   };
 }

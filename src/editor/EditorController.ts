@@ -8,6 +8,8 @@ import type {
 import { editorBudgets } from "./budgets";
 import {
   brushTarget,
+  brushPathBounds,
+  MAX_BRUSH_POINTS,
   decideBrushFrame,
   PRESS_DOSE_MS,
   type BrushPoint,
@@ -24,6 +26,7 @@ import {
   type Bounds,
   type ChangeSet,
   type HeightBrush,
+  type HeightSegment,
   type Point,
 } from "./model";
 import {
@@ -629,18 +632,31 @@ export class EditorController {
     point = this.toolPoint(),
     brush = this.stroke?.brush ?? this.currentBrush(),
   ): LocalReadiness {
-    const inWorld = point.every(
-      (value) => Number.isFinite(value) && Math.abs(value) <= 100_000_000,
+    const points = this.stroke
+      ? [
+          this.stroke.point,
+          ...this.stroke.path.map((sample) => sample.point),
+          point,
+        ]
+      : [point];
+    const inWorld = points.every((candidate) =>
+      candidate.every(
+        (value) => Number.isFinite(value) && Math.abs(value) <= 100_000_000,
+      ),
     );
     const bounds = inWorld
-      ? heightBrushReadBounds(brush, this.stroke?.point ?? point, point)
+      ? this.stroke
+        ? brushPathBounds(this.stroke)
+        : heightBrushReadBounds(brush, point, point)
       : brushBounds(point, brush.radius + 2 * heightSpacing(brush.level));
     const view = this.world.bounds();
-    const visible =
-      Math.hypot(
-        Math.max(view[0] - point[0], 0, point[0] - view[2]),
-        Math.max(view[1] - point[1], 0, point[1] - view[3]),
-      ) < brush.radius;
+    const visible = points.every(
+      (candidate) =>
+        Math.hypot(
+          Math.max(view[0] - candidate[0], 0, candidate[0] - view[2]),
+          Math.max(view[1] - candidate[1], 0, candidate[1] - view[3]),
+        ) < brush.radius,
+    );
     const sourcesReady = Boolean(
       inWorld && this.doc?.isReady(bounds, HEIGHT_LEVELS.slice(brush.level)),
     );
@@ -753,7 +769,7 @@ export class EditorController {
       point: [...point],
       pointAt: this.inputTime(event),
       clock: now,
-      latest: null,
+      path: [],
     };
     this.brushState = { kind: "active", stroke: gesture };
     this.observation.event("brush-start", {
@@ -770,7 +786,15 @@ export class EditorController {
     try {
       this.doc.beginGesture(brush);
       // A valid down/up between frames must keep its small immediate click dose.
-      this.applyDose(gesture, point, now, now, 0, "press", input);
+      this.applyDose(
+        gesture,
+        [{ from: point, to: point, elapsedMs: PRESS_DOSE_MS }],
+        now,
+        now,
+        0,
+        "press",
+        [input],
+      );
     } catch (error) {
       this.gestureFailure(error);
     }
@@ -811,16 +835,25 @@ export class EditorController {
           input: this.input(e, "edit"),
           at: this.inputTime(e),
         };
-        if (this.stroke.latest && latest.at < this.stroke.latest.at) {
+        const stroke = this.stroke!;
+        const previousAt = stroke.path.at(-1)?.at ?? stroke.pointAt;
+        if (latest.at < previousAt) {
           this.skipInput(latest.input, "stale");
           continue;
         }
-        if (this.stroke.latest)
-          this.skipInput(this.stroke.latest.input, "coalesced");
-        this.stroke.latest = latest;
+        if (stroke.path.length === MAX_BRUSH_POINTS) {
+          // Explicit overload, never a shortcut across the discarded curve.
+          const now = performance.now();
+          this.discardTime(stroke, stroke.clock, now, "overflow");
+          this.skipPath(stroke, "overflow");
+          this.skipInput(latest.input, "overflow");
+          stroke.point = [...latest.point];
+          stroke.pointAt = latest.at;
+          stroke.clock = now;
+        } else stroke.path.push(latest);
       }
       // Ready movement is accepted before a following pointerup can close the
-      // gesture. Pending feedback only coalesces candidates until the draw.
+      // gesture. Pending feedback retains the timestamped path until the draw.
       this.advanceHeldBrush(performance.now());
     } else {
       if (this.brushState.kind === "blocked")
@@ -915,24 +948,27 @@ export class EditorController {
     });
   }
 
-  private skipLatest(gesture: BrushStroke, reason: string): void {
-    const latest = gesture.latest;
-    gesture.latest = null;
-    if (latest) this.skipInput(latest.input, reason);
+  private skipPath(gesture: BrushStroke, reason: string): void {
+    for (const sample of gesture.path) this.skipInput(sample.input, reason);
+    gesture.path = [];
   }
 
   private applyDose(
     gesture: BrushStroke,
-    point: Point,
+    segments: HeightSegment[],
     fromAt: number,
     toAt: number,
     rawElapsedMs: number,
     cause: "press" | "move" | "hold",
-    input?: number,
+    inputs: number[],
   ): void {
-    const from: Point = [...gesture.point];
-    const acceptedElapsedMs = cause === "press" ? PRESS_DOSE_MS : toAt - fromAt;
-    const update = this.doc.applySegment(from, point, acceptedElapsedMs);
+    const from: Point = [...segments[0].from];
+    const point = segments.at(-1)!.to;
+    const acceptedElapsedMs = segments.reduce(
+      (sum, segment) => sum + segment.elapsedMs,
+      0,
+    );
+    const update = this.doc.applySegments(segments);
     const appliedAt = performance.now();
     gesture.point = [...point];
     const intervalId = ++this.intervalId;
@@ -971,11 +1007,12 @@ export class EditorController {
         revision: this.doc.revision,
         changed: Boolean(update),
         bounds: update?.bounds ?? null,
-        inputIds: input === undefined ? [] : [input],
+        segments,
+        inputIds: inputs,
       });
     }
     if (!update) {
-      if (input !== undefined) this.skipInput(input, "no-change");
+      for (const input of inputs) this.skipInput(input, "no-change");
       return;
     }
     this.checkLocalReady();
@@ -1010,8 +1047,7 @@ export class EditorController {
           reason,
         );
         accountedTo = decision.toAt;
-        if (decision.input !== undefined)
-          this.skipInput(decision.input, reason);
+        for (const input of decision.inputs) this.skipInput(input, reason);
         if (decision.kind === "wait" && decision.end) {
           this.finishGesture(undefined, reason);
           this.updateToolNeed();
@@ -1027,14 +1063,16 @@ export class EditorController {
         );
         accountedTo = decision.fromAt;
       }
+      for (const input of decision.discardedInputs)
+        this.skipInput(input, "stale");
       this.applyDose(
         decision.stroke,
-        decision.point,
+        decision.segments,
         decision.fromAt,
         decision.toAt,
         decision.rawElapsedMs,
         decision.cause,
-        decision.input,
+        decision.inputs,
       );
     } catch (error) {
       // An examined window can never become backlog, even if validation fails.
@@ -1060,7 +1098,7 @@ export class EditorController {
     if (!gesture) return;
     const endAt = performance.now();
     this.discardTime(gesture, gesture.clock, endAt, reason);
-    this.skipLatest(gesture, reason);
+    this.skipPath(gesture, reason);
     this.brushState = released
       ? { kind: "idle" }
       : { kind: "blocked", pointerId: gesture.pointerId };
@@ -1079,15 +1117,19 @@ export class EditorController {
       return;
     }
     if (input !== undefined)
-      this.observation.commit({
-        input,
-        gestureId: gesture.id,
-        sessionId: this.doc.sessionId,
-        bounds: change.dirtyBounds,
-        sequence: change.sequence,
-        revision: change.revision,
-      });
-    this.world.redraw();
+      this.observation.commit(
+        {
+          input,
+          gestureId: gesture.id,
+          sessionId: this.doc.sessionId,
+          bounds: change.dirtyBounds,
+          sequence: change.sequence,
+          revision: change.revision,
+        },
+        (bounds) => this.world.inspectRegion(bounds),
+      );
+    // Applied terrain already requests its own draw. Finalizing unchanged
+    // pixels needs no extra frame; pending terrain and cursor changes still do.
     this.persist(change);
   }
 
@@ -1344,7 +1386,7 @@ export class EditorController {
       }
     });
     return {
-      schemaVersion: 4,
+      schemaVersion: 5,
       sessionId: this.doc?.sessionId,
       state: { ...this.state },
       camera: { ...this.world.camera },
@@ -1352,7 +1394,7 @@ export class EditorController {
       gesture: this.stroke
         ? {
             active: this.doc.active,
-            pendingInput: this.stroke.latest !== null,
+            pendingInput: this.stroke.path.length > 0,
             brush: { ...this.stroke.brush },
           }
         : null,

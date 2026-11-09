@@ -158,10 +158,11 @@ export function summarizeSubmissionTiming(events) {
     const commit = commits.get(end.input);
     const published = evidence.publication(commit);
     const frame = published?.frame;
+    const completedAt = published?.completedAt ?? frame?.at;
     if (
       !input ||
       !frame ||
-      !ordered([input.createdAt, end.endAt, end.at, frame.at])
+      !ordered([input.createdAt, end.endAt, end.at, commit?.at, completedAt])
     ) {
       incomplete.push({
         kind: "pointerup",
@@ -176,9 +177,12 @@ export function summarizeSubmissionTiming(events) {
       gestureId: end.gestureId,
       revision: commit.revision,
       frame: frame.frame,
-      inputToSubmitMs: frame.at - input.createdAt,
+      submittedAt: frame.at,
+      completedAt,
+      inputToCompletionMs: completedAt - input.createdAt,
       inputToHandledMs: end.endAt - input.createdAt,
-      handledToSubmitMs: frame.at - end.endAt,
+      handledToCompletionMs: completedAt - end.endAt,
+      reusedSubmission: frame.at < commit.at,
     };
     submissionLatencies.push(latency);
     const draw = matchingDraw(frame);
@@ -198,7 +202,7 @@ export function summarizeSubmissionTiming(events) {
       ...latency,
       uploadedBytes: draw.uploadedBytes,
       interpretation:
-        "Pointerup confirms accepted data; it never creates a further dose.",
+        "Completion uses the actual current terrain draw and commit time; the original submission may precede pointerup. Neither is native presentation.",
     });
   }
   return {
@@ -250,10 +254,10 @@ export function summarizeSubmissionTiming(events) {
         .filter((value) => value.kind === "brush-interval")
         .map((value) => value.modelToSubmitMs),
     ),
-    pointerupToSubmitMs: distribution(
+    pointerupToCompletionMs: distribution(
       submissionLatencies
         .filter((value) => value.kind === "pointerup")
-        .map((value) => value.inputToSubmitMs),
+        .map((value) => value.inputToCompletionMs),
     ),
   };
 }

@@ -166,6 +166,98 @@ it("requires every commit region and retains pointerup separately from held dose
   ).toMatchObject([{ input: 22, sequence: 5, frame: 3 }]);
 });
 
+const commit = {
+  input: 22,
+  sessionId: "a",
+  gestureId: 1,
+  revision: 7,
+  sequence: 5,
+  bounds: [[0, 0, 1, 1]] as [number, number, number, number][],
+};
+
+it("finishes on already drawn terrain without manufacturing another frame", () => {
+  const clock = vi.spyOn(performance, "now").mockReturnValue(10);
+  try {
+    const observation = new Observation(true);
+    observation.dose(dose);
+    observation.submitted(submission, () => current);
+    clock.mockReturnValue(20);
+    observation.commit(commit, () => current);
+    const events = observation.read();
+    expect(events.filter((event) => event.kind === "submit")).toHaveLength(1);
+    expect(
+      events.filter((event) => event.kind === "edit-submit"),
+    ).toMatchObject([
+      {
+        at: 20,
+        input: 22,
+        frame: 3,
+        revision: 7,
+        submittedAt: 10,
+        completedAt: 20,
+        completionEvidence: "commit-current-terrain-v1",
+      },
+    ]);
+    observation.submitted({ ...submission, frame: 4, at: 30 }, () => ({
+      ...current,
+      frame: 4,
+    }));
+    expect(
+      observation.read().filter((event) => event.kind === "edit-submit"),
+    ).toHaveLength(1);
+  } finally {
+    clock.mockRestore();
+  }
+});
+
+it.each([
+  { ...current, status: "outside" as const },
+  { ...current, status: "missing" as const },
+  { ...current, status: "stale" as const },
+  { ...current, sessionId: "old" },
+  { ...current, frame: 2 },
+  { ...current, viewGeneration: 1 },
+])("does not reuse an old draw for an unproven commit region: %o", (region) => {
+  const observation = new Observation(true);
+  observation.submitted(submission, () => current);
+  observation.commit(commit, () => region);
+  expect(observation.read().some((event) => event.kind === "edit-submit")).toBe(
+    false,
+  );
+});
+
+it("keeps changed terrain pending and clears cached associations on document switches", () => {
+  const clock = vi.spyOn(performance, "now").mockReturnValue(20);
+  try {
+    const observation = new Observation(true);
+    observation.submitted(submission, () => current);
+    observation.commit({ ...commit, revision: 8 }, () => current);
+    expect(
+      observation.read().some((event) => event.kind === "edit-submit"),
+    ).toBe(false);
+    clock.mockReturnValue(30);
+    observation.submitted(
+      { ...submission, frame: 4, revision: 8, at: 30 },
+      () => ({
+        ...current,
+        frame: 4,
+      }),
+    );
+    expect(
+      observation.read().filter((event) => event.kind === "edit-submit"),
+    ).toMatchObject([
+      { frame: 4, revision: 8, submittedAt: 30, completedAt: 30 },
+    ]);
+    observation.reset();
+    observation.commit({ ...commit, input: 23 }, () => current);
+    expect(
+      observation.read().filter((event) => event.kind === "edit-submit"),
+    ).toHaveLength(1);
+  } finally {
+    clock.mockRestore();
+  }
+});
+
 it("retains an applied dose after projection failure without inventing its submission", () => {
   const observation = new Observation(true);
   observation.dose({ ...dose, projectedAt: null });
@@ -211,6 +303,7 @@ it("observes navigation milestones once and does not query or retain work while 
   const inspect = vi.fn(() => current);
   disabled.dose(dose);
   disabled.submitted(submission, inspect);
+  disabled.commit(commit, inspect);
   disabled.navigation(4, { sessionId: "a", camera: {} });
   disabled.readiness(ready);
   expect(inspect).not.toHaveBeenCalled();
