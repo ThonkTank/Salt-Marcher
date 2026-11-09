@@ -1145,7 +1145,14 @@ sehr kurze Klicks. Weitere Schritte folgen dem tatsächlichen
 Darstellungsfortschritt und enthalten jeweils höchstens 50 ms Dosis. Höchstens
 ein Schritt darf noch auf seine Darstellung warten. Bei langsamer Verarbeitung
 wirkt der Pinsel entsprechend schwächer; verworfene Wartezeit wird nicht später
-als großer Auftrag nachgeholt. Der reine Fachkern integriert die ausdrücklich
+als großer Auftrag nachgeholt. Eine Bewegung auf freigegebenem Gelände wird
+bereits beim Eintreffen angenommen, sofern keine eigene Dosis aussteht; ein
+unmittelbares Loslassen verwirft diese angenommene Wirkung nicht. Bewegung und
+Halten rechnen verstrichene Zeit gemeinsam genau einmal an. Normales
+Zusammenfassen mehrerer Mausereignisse vor der nächsten Zeichenchance setzt
+dieses Zeitkonto nicht bei jedem Ereignis zurück. Eine erfolglose Zeichenrunde
+verwirft dagegen ihre Wartezeit und den nicht angewandten Weg.
+Der reine Fachkern integriert die ausdrücklich
 angenommene Zeit und den Weg. Jeder angenommene Abschnitt wirkt live. Eine noch
 ausstehende Darstellung der eigenen Dosis pausiert nur weitere Wirkung; der
 gehaltene Strich kann nach dieser Rückmeldung am aktuellen Ort weitergehen.

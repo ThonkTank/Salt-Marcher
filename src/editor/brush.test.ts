@@ -53,7 +53,7 @@ describe("brush frame decisions", () => {
 
   it("discards feedback wait time and travel before continuing at the latest position", () => {
     const held = stroke({ latest: { point: [60, 0], at: 170, input: 2 } });
-    const waiting = decideBrushFrame(held, 180, "feedback");
+    const waiting = decideBrushFrame(held, 180, "feedback", "after-draw");
     expect(waiting.kind).toBe("wait");
     if (waiting.kind !== "wait") throw new Error("Expected feedback wait.");
     expect(waiting.end).toBe(false);
@@ -71,6 +71,73 @@ describe("brush frame decisions", () => {
     expect(resumed.fromAt).toBe(180);
     expect(resumed.toAt - resumed.fromAt).toBe(20);
     expect(resumed.discardedFrom).toBeUndefined();
+  });
+
+  it("keeps normal pending time through repeated input and the successful draw", () => {
+    let held = stroke();
+    for (const at of [102, 104, 108, 112, 116]) {
+      held = { ...held, latest: { point: [at - 100, 0], at, input: at } };
+      const pending = decideBrushFrame(held, at, "feedback");
+      expect(pending.kind).toBe("none");
+      expect(pending.stroke.clock).toBe(100);
+      expect(pending.stroke.latest).toEqual(held.latest);
+      held = pending.stroke;
+    }
+    // Submission only releases the pending dose. It neither spends this time
+    // nor starts an extra dose after drawing the frame.
+    const drawn = decideBrushFrame(held, 120, null, "after-draw");
+    expect(drawn.kind).toBe("none");
+    expect(drawn.stroke.clock).toBe(100);
+    expect(drawn.stroke.latest).toEqual(held.latest);
+
+    const next = decideBrushFrame(drawn.stroke, 124, null);
+    expect(next.kind).toBe("dose");
+    if (next.kind !== "dose") throw new Error("Expected the ready interval.");
+    expect(next.fromAt).toBe(100);
+    expect(next.toAt - next.fromAt).toBe(24);
+    expect(next.point).toEqual([16, 0]);
+  });
+
+  it("accounts one blocked draw cycle once, then accepts only new time and travel", () => {
+    const held = stroke({ latest: { point: [80, 0], at: 120, input: 2 } });
+    const pending = decideBrushFrame(held, 125, "feedback");
+    expect(pending.stroke.clock).toBe(100);
+    const blocked = decideBrushFrame(
+      pending.stroke,
+      140,
+      "feedback",
+      "after-draw",
+    );
+    expect(blocked.kind).toBe("wait");
+    expect(blocked.stroke.clock).toBe(140);
+    expect(blocked.stroke.point).toEqual([80, 0]);
+    expect(blocked.stroke.latest).toBeNull();
+
+    const drawn = decideBrushFrame(blocked.stroke, 144, null, "after-draw");
+    const resumed = decideBrushFrame(
+      { ...drawn.stroke, latest: { point: [90, 0], at: 150, input: 3 } },
+      155,
+      null,
+    );
+    expect(resumed.kind).toBe("dose");
+    if (resumed.kind !== "dose") throw new Error("Expected a fresh move.");
+    expect(resumed.fromAt).toBe(140);
+    expect(resumed.toAt - resumed.fromAt).toBe(15);
+    expect(resumed.stroke.point).toEqual([80, 0]);
+    expect(resumed.point).toEqual([90, 0]);
+  });
+
+  it("still ends missing terrain and sources before a pending draw", () => {
+    const held = stroke({ latest: { point: [80, 0], at: 110, input: 2 } });
+    for (const reason of ["sources", "terrain", "busy", "outside"] as const) {
+      const rejected = decideBrushFrame(held, 120, reason);
+      expect(rejected.kind).toBe("wait");
+      if (rejected.kind !== "wait") throw new Error("Expected rejection.");
+      expect(rejected.end).toBe(true);
+      expect(rejected.stroke.clock).toBe(120);
+      expect(rejected.stroke.latest).toBeNull();
+      expect(rejected.stroke.point).toEqual([0, 0]);
+    }
   });
 
   it("ends an unavailable segment without moving its anchor, even in a zero-time window", () => {
@@ -120,7 +187,12 @@ describe("brush frame decisions", () => {
     });
     expect(brushTarget(held)).toEqual([50, 0]);
     for (const reason of [null, "feedback"] as const) {
-      const rejected = decideBrushFrame(held, 120, reason);
+      const rejected = decideBrushFrame(
+        held,
+        120,
+        reason,
+        reason === null ? "accept" : "after-draw",
+      );
       expect(rejected.kind).toBe(reason === null ? "stale" : "wait");
       expect(rejected.stroke.point).toEqual([50, 0]);
       expect(rejected.stroke.pointAt).toBe(80);

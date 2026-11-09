@@ -8,149 +8,149 @@ Zuständigkeiten und [Produktvertrag](../product-contract.md) Verhalten und Gren
 
 ## Ergebnis und Auftragsgrenze
 
-Der beauftragte numerische GPU-Renderweg für den Großpinsel ist implementiert.
-Der gewöhnliche Höhenpfad überträgt geänderte Koeffizienten und numerische
-Übersichten; die GPU rekonstruiert daraus beibehaltene Farbkacheln. Der bisherige
-CPU-Rasterworker, seine Aufträge/Antworten und die zugehörige Diagnose sind entfernt.
+Die Korrektur von Eingabeannahme, Zeitrechnung und Framefolge ist umgesetzt und
+fachlich verifiziert. Bereite Bewegungen werden vor einem unmittelbar folgenden
+Pointerup angenommen. Haltedosen entstehen vor ihrem Draw; nach dem Draw entsteht
+keine weitere Dosis. Die zusätzliche Framewartezeit eines bereits fertig
+projizierten Pinselstands ist im gemessenen Langzug beseitigt.
 
-**Die Rendererumstellung ist umgesetzt; die Großpinsel-Abnahme bleibt FAIL.**
-Alle drei unveränderten kurzen 512-Pixel-Proben scheitern im verfügbaren
-SwiftShader-Labor an Inhalt, Livewirkung oder Zeitgrenzen. Der lange Verlauf
-zeigt tatsächliche Terrainänderungen, verfehlt aber ebenfalls den Zeitvertrag.
-Die native Abnahme bleibt zusätzlich blockiert. P0 ist nicht freigegeben;
+**Der große Pinsel bleibt insgesamt FAIL.** Alle drei kurzen 512-Pixel-Proben
+bestehen jetzt Inhalt, Endpunkt und Undo; eine besteht zusätzlich ihre lokalen
+Live-/Zeitkriterien. Zwei scheitern weiterhin an Livefortschritt beziehungsweise
+Abschlusslatenz. Der lange Verlauf verfehlt weiterhin Kontinuität und Pointerup-
+Latenz. Die native Abnahme bleibt zusätzlich blockiert. P0 ist nicht freigegeben;
 P1/P2/P3 und der vollständige F01–F19-Umfang behalten ihr bestehendes Gate.
 
 ## Implementierter Stand
 
-- `EditorDocument` bleibt alleiniger Besitzer der Float64-Autoren. Der begrenzte
-  GPU-Atlas enthält abgeleitete Kopien samt kubischem Nachbarrand. High-/Low-Paare
-  bewahren Koeffizienten, Achsengewichte und Übersichten über alle 22 Stufen.
-- Der Shader berechnet geänderte 128×128-Farbkacheln. Kamera, Cursor und Overlay
-  verwenden die vorhandenen GPU-Farbkacheln. Die CPU berechnet die unveränderten
-  kubischen Achsengewichte einmal; gewöhnliche Pinseländerungen erzeugen keine
-  CPU-RGBA-Rasterbilder. Endliche numerische Ausnahmefälle behalten den kanonischen
-  Float64-Rasterweg für die betroffenen Darstellungskacheln.
-- Speicherallokation und tatsächliche Uploads sind getrennt. Auch kalte Texturen
-  und Wiederherstellungen halten das 4-MiB-Uploadbudget je Frame ein. Fehlgeschlagene
-  Uploads bleiben wiederholbar. Kontextverlust entwertet sämtliche Bildbelege;
-  erneute Übertragung und Komposition müssen vor einer neuen lokalen Freigabe bestehen.
-- Der bestehende Controller besitzt weiterhin den Frameablauf und den einzigen
-  Pinselanker. Lokale Freigabe folgt einem tatsächlichen Draw. Dosis entsteht
-  höchstens für 50 ms je Folgeschritt; blockierte Zeit und Wege werden verworfen.
-  Loslassen fügt keine neue Dosis hinzu. Undo und Persistenz verwenden dieselben Autoren.
-- Die gemeinsame Darstellung stabilisiert die Farbgrenzen bei 0 und 12 Fuß mit
-  einem Band von `1e-6` Fuß. Modellwerte, genaue Abfragen und Dateidaten bleiben
-  unverändert. Beliebig nahe an einer Bandgrenze ist keine Bitgleichheit versprochen.
+- `EditorDocument` bleibt die einzige Float64-Autorität. Numerischer GPU-Atlas,
+  High-/Low-Rekonstruktion, 22 mögliche Stufen, Übersicht, 4-MiB-Uploadbudget und
+  beibehaltene Farbkacheln bleiben erhalten. Der gewöhnliche CPU-Rasterworker ist
+  weiterhin entfernt; der numerische Ausnahmefallback bleibt unverändert.
+- Down nimmt seinen kleinen Anfangsimpuls sofort an. Move verwendet dieselbe
+  Dosisentscheidung unmittelbar auf der zuletzt tatsächlich gezeichneten lokalen
+  Grundlage. Der RAF nimmt höchstens eine bereite Dosis an und zeichnet sie im
+  selben Callback. Höchstens eine eigene Dosis darf auf Darstellung warten.
+- Bewegung und Halten besitzen weiterhin genau ein Zeitkonto. Zusätzliche
+  Mausereignisse während einer normalen ausstehenden Darstellung setzen es nicht
+  zurück. Erst eine erfolglose Zeichenrunde verwirft Wartezeit und nicht angewandten
+  Weg; diese Nach-Draw-Phase kann selbst keine Dosis erzeugen.
+- Die 50-ms-Begrenzung, das Verwerfen alter Wege bei Hängern und die Freigabe für
+  Quellen und tatsächlich gezeichnetes Terrain bleiben wirksam. Loslassen oder
+  Abbruch erzeugen keine weitere Wirkung. Bereits angenommene Änderungen bleiben
+  ein gemeinsamer Undo-Schritt und verwenden denselben Speicherpfad.
+- Eine während ausstehendem Feedback noch nicht angenommene letzte Bewegung wird
+  bei Up weiterhin verworfen. Die gewöhnlichen Prüffälle müssen schnell genug
+  laufen, damit dieser Schutz dort nicht zum Ersatz für funktionierende Eingabe
+  wird. Auswerter, 24-ms-Eingabefolge, 512-Pixel-Größe und Zeitgrenzen sind unverändert.
 
-Aktuelle Berichte verwenden Schema 4. `height-draw` verbindet numerischen Upload
-und tatsächlichen Draw mit Session, Ansicht, Revision und Frame. Alte Rasterzeiten
-werden nicht als GPU-Zeiten umgedeutet. Auswerter und Zeitzerlegung teilen dieselben
-Belege. Die drei neuen Großpinsel-/Stufenprüfungen sind Pflichtbestandteile;
-fehlende, doppelte oder fehlgeschlagene Ergebnisse werden abgelehnt.
+## Verifikation am Produktquellstand
 
-## Verifikation
+| Prüfung                                              | Ergebnis                                                                                                                                                                                                           |
+| ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Editor-/Modell-/Controller-/Renderer-/Auswertertests | **326 Tests in zwölf Dateien bestanden**, darunter 65 Renderer-/Controllerfälle.                                                                                                                                   |
+| Aussagekraft der neuen Regressionen                  | Drei gezielte Fälle scheitern gegen den alten Stand `68c55e0`: bereites Move/Up mit 16 und 512 Pixeln verliert den Endpunkt; Halten zeichnet eine ältere Revision. Dieselben Fälle bestehen mit der Korrektur.     |
+| Gemeinsame Zeitrechnung                              | Gleicher Weg und gleiche Dauer bei 30/60/120-Hz-Eingaben und 60-Hz-Rendering behalten dieselbe angenommene Zeit und vergleichbare Terrainwirkung. Halten, langsamer/stärker und Stall ohne alten Restweg bestehen. |
+| TypeScript und Format                                | Allgemeine Typprüfung, Tool-Typen, betroffene Formatprüfung und `git diff --check` bestanden.                                                                                                                      |
+| `npm run check:atlas-p0`                             | Sauberer Build; **15** echte Electron-/SQLite-/Fixturetests, **83** Desktop-/Hänger-/Lifecyclechecks und **fünf** GPU-Pixelreferenzfälle bestanden.                                                                |
+| Reale Interaktionen                                  | **18 von 19** Funktionsprüfungen bestanden. Nur der lange Großpinsel scheitert am Zeit-/Kontinuitätsvertrag; Inhalt, History, Dosis, Stall und fein/grob/fein bestehen.                                            |
+| Fehler-/Erholungskontrollen                          | **Alle fünf bestanden**, einschließlich der ungestörten abschließenden Erholung.                                                                                                                                   |
+| Native Vorprüfung                                    | **BLOCKED / Exit 2**, ohne Fixtures oder Programmstart.                                                                                                                                                            |
 
-| Prüfung                                                     | Ergebnis                                                                                                                                                                                          |
-| ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Editor-, Modell-, Controller-, Renderer- und Auswertertests | **314 Tests in zwölf Dateien bestanden.**                                                                                                                                                         |
-| Allgemeine TypeScript-Prüfung und Tool-Typen                | Beide bestanden.                                                                                                                                                                                  |
-| `npm run check:atlas-p0`                                    | Sauberer Build; **15** echte Electron-/SQLite-/Fixturetests, **83** Start-/Hänger-/Lifecyclechecks und **fünf** GPU-Referenzfälle bestanden.                                                      |
-| GPU-Inhalt                                                  | Küsten-/Kachelgrenzen, alle 22 Stufen, große gewöhnliche Auslöschung ohne CPU-Fallback, Weltrand und extreme endliche Auslöschung mit Fallback bestanden.                                         |
-| Echter WebGL-Kontextverlust                                 | Freigabe verloren, Ressourcen neu aufgebaut, neues Bild eingereicht; vollständige Canvas-PNG, Pixelproben, Autorenhash und Projektdatei unverändert.                                              |
-| Reale Interaktionen                                         | **18 von 19** Funktionsprüfungen bestanden. Der lange Großpinsel scheitert am Zeit-/Kontinuitätsvertrag; dessen Inhalt, History, Dosis und Stallbilanz bestehen.                                  |
-| Fehlerkontrollen                                            | Ignorierter Zoom, Darstellung erst nach Pointerup, Verzögerung und verworfener Draw werden erkannt. Die abschließende ungestörte Erholungsprobe verfehlt die Zeit-/Eingabekriterien; siehe unten. |
-| Skalierung                                                  | **32, 1.024 und 9.000** echte Quellkacheln bestanden, einschließlich Grob-/Feinerhalt, Undo/Redo, Save/Reopen und Prozessneustart.                                                                |
-| Unveränderter warmer 512-Pixel-Fall                         | **Drei unabhängige kurze Proben: alle FAIL.**                                                                                                                                                     |
-| Native Vorprüfung                                           | **BLOCKED / Exit 2**; keine Fixtures oder Programmstarts.                                                                                                                                         |
+Die GPU-Referenz enthält tatsächliche Pixel, Farb-/Kachelgrenzen, alle 22 Stufen,
+gewöhnliche große Auslöschung, Weltrand, extreme endliche Auslöschung und
+Kontextverlust mit Wiederherstellung. Der Daten-, Store- und Übersichtspfad wurde
+nicht verändert; die frühere separate Skalierungsserie 32/1.024/9.000 wurde in
+diesem Eingabeschnitt nicht als neuer Nachweis wiederholt.
 
-Der große Skalierungsfall enthält 294.912.000 dekodierte Autorenbytes und
-überschreitet damit tatsächlich das 256-MiB-Quellenbudget. Im groben Ausschnitt
-werden diese feinen Autoren nicht geladen. Nach dem groben Eingriff halten
-Dokument und Renderer jeweils vier Autorenkacheln mit 131.072 Bytes;
-der GPU-Bestand beträgt rund 10,4 MiB. Die gespeicherten feinen Daten bleiben
-identisch. Nach Rückkehr in die Detailansicht beträgt der Rendererbestand
-rund 21,8 MiB CPU und 17,0 MiB GPU und bleibt innerhalb der Grenzen.
+## Unveränderte kurze Großpinsel-Proben
 
-## Unveränderte Großpinsel-Abnahme
-
-Die kurzen Proben verwenden jeweils vier Positionen, 24-ms-Eingabeabstände und
-512 Pixel Durchmesser. Umgebung: Electron 44.10.2, 1.440 × 960, DPR 1,
+Drei unabhängige Starts, jeweils vier Positionen mit 24-ms-Abständen und
+512 Pixel Durchmesser. Electron 44.10.2, 1.440 × 960, DPR 1,
 ANGLE/Vulkan mit SwiftShader. Alle Ergebnisse bleiben erhalten.
 
-| Probe | Down → Submit | Größter angenommener Input einschließlich Up → Submit | Aktuelle Eingabeframes vor Release | Inhalt einschließlich Endpunkt | Ergebnis |
-| ----- | ------------: | ----------------------------------------------------: | ---------------------------------: | ------------------------------ | -------- |
-| 1     |       12,5 ms |                                               65,9 ms |                                  1 | Bestanden                      | FAIL     |
-| 2     |       13,5 ms |                                               22,7 ms |                                  2 | Endpunkt nicht belegt          | FAIL     |
-| 3     |       23,6 ms |                                               76,2 ms |                                  2 | Endpunkt nicht belegt          | FAIL     |
+| Probe | Down → Submit | Größter angenommener Edit → Submit | Up → Submit | Aktuelle Eingabeframes vor Release | Inhalt, Endpunkt, Undo | Ergebnis                               |
+| ----- | ------------: | ---------------------------------: | ----------: | ---------------------------------: | ---------------------- | -------------------------------------- |
+| 1     |       12,8 ms |                            24,7 ms |      5,2 ms |                                  1 | Bestanden              | FAIL: Live-Mindestkontrolle            |
+| 2     |       15,0 ms |                            25,7 ms |      6,2 ms |                                  2 | Bestanden              | PROXY_ONLY: lokale Kriterien bestanden |
+| 3     |       16,2 ms |                            21,6 ms |     80,0 ms |                                  3 | Bestanden              | FAIL: Abschlusslatenz                  |
 
-Die D10-Zeitbilanz und begrenzte Dosis bestehen in allen drei Proben. Eine
-abgewiesene letzte Bewegung wird nicht nach Release nachgemalt. Zwei Liveframes
-allein ersetzen weder den Endpunkt- noch den Zeitnachweis.
+Alle drei D10-Zeitbilanzen bestehen. In Probe 1 erreichen zwei frühere Bewegungen
+den Handler erst nach 59,3 beziehungsweise 35,3 ms und werden zusammengefasst;
+der letzte angenommene Move wird 0,4 ms nach dem physischen Release eingereicht.
+In Probe 3 war die letzte Terraindosis schon vor dem Up-Handler gezeichnet.
+Die anschließende Bestätigung wartet trotzdem auf den nächsten Frame; dieser
+überträgt null Bytes und verändert keine Terrainkachel.
 
-Der zusätzliche 2,424-s-Verlauf verwendet 101 Positionen und dieselben
-24-ms-Abstände. Im letzten ungestörten Zeitlauf liegen **36** aktuelle
-Eingabeframes vor Release vor. Die 38 angenommenen Eingabe-/Up-Belege erreichen
-**109,1 ms p95**, maximal **121,4 ms** bis zur Zeicheneinreichung; die längste
-bewertete Bewegungspause beträgt **133,4 ms**. Damit sind sowohl 50 ms als auch
-die 100-ms-Pausengrenze verfehlt. Das sind Submission-Untergrenzen einer
-Laborprobe, keine native Präsentationsmessung oder vollständige P0-Stichprobe.
+## Langer Strich und beseitigte Zusatzwartezeit
 
-Der getrennte Inhaltslauf zeigt frühen, mittleren und späten Terrainfortschritt
-während derselben gehaltenen Geste. Nach einem tatsächlichen 207-ms-Stall werden
-159,1 ms verworfen; kein Folgeschritt nimmt mehr als 50 ms an oder zeichnet einen
-alten gedeckelten Weg nach. Längeres Halten, langsameres Ziehen, fehlende Nachdosis,
-Undo/Redo und die Stufenfolge 0 → 4 → 0 bestehen.
+Der ungestörte Langzug behält 101 Positionen und 24-ms-Abstände. Seine 33
+angenommenen Edit-Eingaben erreichen **20,3 ms Median, 36,2 ms p95 und 37,3 ms
+Maximum** bis zur Zeicheneinreichung. Der separate Up-Beleg benötigt **136,8 ms**;
+die längste bewertete Bewegungspause beträgt **191,0 ms**. 33 aktuelle
+Eingabeframes liegen vor Release, 68 Eingaben werden zusammengefasst. Inhalt,
+History und Zeitbilanz bestehen; der Gesamtfall bleibt FAIL.
 
-Auch die abschließende ungestörte Erholungsprobe mit 16-Pixel-Pinsel bleibt im
-letzten Lauf **FAIL**: eine angenommene Bewegung benötigt 62,7 ms, die letzte
-Bewegung wird bei Pointerup verworfen. Die vorherige integrierte Probe desselben
-Produktquellstands hatte diese Kontrolle bestanden. Der Fehler wird nicht durch
-einen ausgewählten erfolgreichen Wiederholungslauf ersetzt.
+Im vorherigen einzelnen Lauf desselben Szenarios lagen die angenommenen Edits
+bei 80,8 ms Median und 109,1 ms p95. Die Wartezeit vom fertig projizierten Stand
+bis zum Upload sinkt im Vergleich dieser beiden Proben von **59,1 auf 0,9 ms
+Median**. Die verbleibenden Pausen werden dadurch nicht zum Erfolg: vorher waren
+es 36 aktuelle Eingabeframes, 133,4 ms maximale Bewegungspause und 10,2 ms für Up.
+Das ist ein Vergleich einzelner SwiftShader-Läufe, keine allgemeine
+Beschleunigungs- oder Regressionsaussage für qualifizierte Hardware. Die
+Modellarbeit findet jetzt meist im Inputhandler statt; die geringere CPU-Zeit
+innerhalb des RAF ist deshalb kein Nachweis eingesparter Modellberechnung.
 
-## Inhaltsaufnahme und Präsentationsgrenze
+Der getrennte Inhaltslauf zeigt frühe, mittlere und späte Terrainänderungen
+während derselben Geste. Ein tatsächlicher 200-ms-Hänger verwirft 150,6 ms seiner
+Zeit; keine Folgedosis überschreitet 50 ms oder malt einen alten gedeckelten Weg.
+Undo/Redo und die vorhandene Stufenfolge bestehen.
 
-`capturePage` kann nach einem vollständigen GL-Submit noch die vorherige
-Compositoroberfläche liefern. Eine gezielte Probe zeigte alte Farben nach der
-letzten Dosis und anschließend korrekte Farben bei unveränderten Modellwerten.
-Der dazwischenliegende Overlayframe übertrug keine Daten und komponierte keine
-Höhenkacheln. Dieser Befund ist in den Diagnoseartefakten erhalten.
+## Verbleibender Grafik-/Swap-Rückstau
 
-Ausschließlich die ungestörte Stufen-/Undo-/Redo-Inhaltsprobe wartet deshalb nach
-vollständigem Submit zwei RAF-Gelegenheiten. Session, Revision, Sequenz, Ansicht,
-Kamera und beendete Geste müssen dabei unverändert bleiben; alle echten Pixel-
-und Höhenvergleiche bleiben verpflichtend. Diese Phase wird ausdrücklich als
-Inhaltsstabilisierung protokolliert. Warm512, Langzug, Fehlerkontrollen und
-sämtliche Zeitmessungen erhalten keine zusätzliche Wartezeit.
+Eine zusätzliche einzelne Chromium-Aufzeichnung verwendet dieselbe lange
+Eingabefolge in einem frischen Prozess. Sie ist ausdrücklich Diagnose, enthält
+keine Screenshotaufnahmen im Zeitlauf und ersetzt keine Abnahme.
 
-Die native Vorprüfung nennt `NO_NATIVE_DISPLAY` und
-`NATIVE_PRESENTATION_MAPPING_UNPROVEN`. Die Bindung des tatsächlichen Karteninhalts
-an seine erste Präsentation bleibt offen. Eine qualifizierte GPU-Messung und
-diese Präsentationszuordnung sind vor der nativen Freigabe notwendig.
-Die bekannten Laborfehler bleiben bis zu einer begründeten Lösung Fehler;
-die Umstellung allein belegt keine ausreichende Beschleunigung.
+Der GPU-Prozess verbringt in 38 `SkiaOutputSurfaceImplOnGpu::SwapBuffers`-Spannen
+**70,5 ms Median, 92,4 ms p95 und 94,1 ms Maximum**. Die eigene erfasste CPU-Zeit
+dieses Threads beträgt dabei nur 1,6 ms Median. 47 ausdrückliche
+`Swap throttled`-Ereignisse melden eine ausstehende bei höchstens einer erlaubten
+Bildausgabe. Rund 96 % der Lücken zwischen den Framecallbacks überlappen diese
+Swap-Spannen. Der längste erfasste Renderer-Mainthread-Task beträgt 21,8 ms.
+
+Damit ist die lange inklusive Wartephase im Software-Grafikausgabe-/Swap-Pfad
+eingegrenzt. Die Messung isoliert weder die Shaderkosten noch die Ursache
+innerhalb von SwiftShader/Vulkan/Swap-Warten. Sie beweist keine gleichlange
+Berechnung auf einer echten GPU. Ein weiterer Umbau des Autorenmodells oder ein
+zusätzliches Cache-System ist durch diesen Befund nicht begründet.
+
+Der nächste technische Nachweis betrifft genau diesen Rückstau und die
+Abschlussbestätigung, mit einer echten GPU als Vergleich. In dieser Umgebung
+fehlen Display und Hardware-GPU-Gerät. Die native Vorprüfung nennt weiterhin
+`NO_NATIVE_DISPLAY` und `NATIVE_PRESENTATION_MAPPING_UNPROVEN`; die Zuordnung einer
+exakten Terrainrevision zu ihrer ersten tatsächlichen Präsentation bleibt eine
+eigene offene Abnahme. Die Laborfehler werden dadurch nicht nachträglich bestanden.
 
 ## Identität und Belegpfade
 
-Sauberer Produktbuild: `e31b3f0813816d6088a3eec0e2c055fa5f135032`, `dirty: false`.
-Produktquellhash: `d4b93c955c84a6b2aa42f94c711f3753beefd301c45f7e6ac165a256a038b5b4`.
+Sauberer Produktbuild: `102c5302d2668e06736ef9fb93c849b163de6626`, `dirty: false`.
+Produktquellhash: `4d2b31fef795a2c1bda8dad22dbe8984c416bc7a263308ac9db6fa8ccd5a3002`.
 Lockhash: `b471b4a1da63f4226f95a28b60f3345aa03e51803f0ef1982624cd16a2d35bc2`.
-Alle genannten Desktopläufe verwenden diesen identischen Produktquellstand.
-Der nachfolgende Commit `b76f314` ändert ausschließlich die beschriebene
-nicht zeitgemessene Stufenaufnahme; dessen integrierter Lauf ist maßgeblich für die
-19 Interaktionsprüfungen und die letzte Erholungsprobe. Produktquellen,
-Warm512-Eingaben und Zeitregeln bleiben identisch.
+Die anschließende Statuspflege ändert keine Produkt- oder Prüfquellen.
 
-Belege liegen unter:
-
-- `src-tauri/target/diagnostics/gpu-final-unit.log` und `gpu-final-desktop.log`;
+- `src-tauri/target/diagnostics/brush-flow/desktop-check.log`;
 - `src-tauri/target/diagnostics/atlas-gpu-reference/report.json`;
-- `artifacts/atlas-rebuild/smoke-2026-11-09T01-27-52.736Z/`;
-- `artifacts/atlas-rebuild/gpu-final-warm512/` und `gpu-verified-interactions/`;
-- `artifacts/atlas-rebuild/gpu-final-scaling/` und `gpu-final-native-preflight/`;
-- `src-tauri/target/diagnostics/gpu-stage-capture-journal/`.
+- `artifacts/atlas-rebuild/smoke-2026-11-09T06-58-49.488Z/`;
+- `artifacts/atlas-rebuild/brush-flow-warm512/` und `brush-flow-interactions/`;
+- `artifacts/atlas-rebuild/brush-flow-native-preflight/native-preflight.json`;
+- `src-tauri/target/diagnostics/brush-flow/long-stroke-trace/`;
+- temporärer Diagnose-Driver unter `src-tauri/target/cleanup/brush-flow-trace/`.
 
 Der erforderliche Repositoryjob bleibt **Candidate · exact-SHA aggregate** für
-den veröffentlichten Head; sein Zustand steht im PR. Frühere CI-Läufe ersetzen
-ihn nicht. Installierte RPM-Bedienabnahme und native Leistungsfreigabe bleiben
-eigene offene Kriterien. Der aktuelle Umsetzungsauftrag aktiviert weder den
-vollständigen Atlas-Neubau noch dessen spätere Produktpakete.
+den veröffentlichten Head; sein aktueller Zustand steht im PR. Der vorherige
+Head `68c55e0` scheiterte separat im V7-Browsertest `house-lod.spec.ts` an einer
+Canvas-/Viewportabweichung nach Größenänderung. Dieser Eingabeschnitt verändert
+diesen unabhängigen V7-Pfad nicht. Installierte RPM-Bedienabnahme und native
+Leistungsfreigabe bleiben offen. Der begrenzte Auftrag aktiviert nicht den
+vollständigen Atlas-Neubau.

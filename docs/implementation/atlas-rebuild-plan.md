@@ -753,7 +753,8 @@ Die maßgeblichen Regeln stehen im
 | Druck auf lokal bereitem, gezeichnetem Gelände          | Sofortige nominale Anfangsdosis von 1/60 Sekunde; auch Down und Up zwischen zwei Frames ergeben einen kleinen Klick.                                                                                    |
 | Druck vor Freigabe                                      | Keine Änderung und kein vorgemerkter Strich; gehaltenes Warten beginnt später nicht automatisch. Neuer Druck erforderlich.                                                                              |
 | Halten oder langsamer Zug                               | Weitere zeitabhängige Wirkung nach Rückmeldung; je Folgeschritt höchstens 50 ms angenommene Zeit. Pinselparameter und Höhenstufe bleiben für die Geste fest.                                            |
-| Eigene Dosis wartet noch auf ihr Bild                   | Keine weitere Dosis. Zeit und nicht angewandter Weg verfallen; der neueste Zeigerort wird als neuer Anker verfolgt.                                                                                     |
+| Bereite Bewegung vor Loslassen                          | Die gemeinsame Dosisentscheidung nimmt die Bewegung sofort an, sofern keine eigene Dosis aussteht. Move/Up zwischen Frames erhält diese Wirkung.                                                        |
+| Eigene Dosis wartet noch auf ihr Bild                   | Keine weitere Dosis. Bis zur nächsten Zeichenchance nur den jüngsten Kandidaten halten; scheitert diese Chance, Wartezeit und nicht angewandten Weg verwerfen und den Anker nachführen.                 |
 | Neue Quellen oder gezeichnete Grundlage fehlen          | Den vollständigen Abschnitt einschließlich Halo prüfen, bevor ein Anker verschoben wird. Die aktive Geste endet vor dem ungesehenen Abschnitt; bereits angenommene Änderungen bleiben eine Undo-Aktion. |
 | Zeitsprung oder veraltete Eingabe                       | Verworfene Zeit und alte Wege werden nicht nachgetragen; bestehende D10-Grenzen bleiben wirksam.                                                                                                        |
 | Loslassen                                               | Keine neue Dosis und kein letzter erzwungener Endpunkt. Bereits angenommene Arbeit wird abgeschlossen und darf anschließend noch sichtbar werden.                                                       |
@@ -848,20 +849,26 @@ unterschiedliche Grenzen und bleiben getrennt. Ein globales `exactRevision`
 oder `ready` ersetzt keine lokale Freigabe. Ein vollständig verlassener Bereich
 kann die Produktsperre lösen, erzeugt aber niemals einen angeblichen Bildbeleg.
 
-**4. Ein lesbarer Frameablauf; der Anfangsklick bleibt sofortig.**
+**4. Dosis vor Zeichnung; bereite Eingaben bleiben vor Loslassen erhalten.**
 
 Der Controller besitzt den einzigen RAF und ruft den Renderer gerichtet auf:
 
-1. Geänderte numerische Ressourcen innerhalb des bestehenden Uploadbudgets übernehmen.
-2. Betroffene GPU-Farbkacheln komponieren und das Terrain-/Overlaybild tatsächlich einreichen.
-3. Die lokalen Submitfakten verarbeiten und Freigabe samt UI daraus ableiten.
-4. Für einen weiter gehaltenen aktiven Strich höchstens eine Folgedosis entscheiden,
-   anwenden und ihre Patches/Invalidierung weiterreichen.
+1. Auf der zuletzt gezeichneten lokalen Grundlage höchstens eine Folgedosis
+   entscheiden und anwenden, sofern keine eigene Dosis aussteht.
+2. Geänderte numerische Ressourcen innerhalb des bestehenden Uploadbudgets übernehmen.
+3. Betroffene GPU-Farbkacheln komponieren und diesen angenommenen Stand einreichen.
+4. Die lokalen Submitfakten verarbeiten und Freigabe samt UI daraus ableiten.
+   Bleibt eigene Rückmeldung ausstehend, den erfolglosen Wartezyklus verwerfen.
+   Nach dem Draw keine neue Dosis erzeugen.
 
 Der Renderer ruft währenddessen keine Pinselentscheidung im Controller auf.
 Die nominale Anfangsdosis bleibt beim gültigen Down sofort möglich, anhand des
-letzten gültigen lokalen Submit. Sie wird nicht auf einen späteren Frame vertagt:
-Ein Down/Up zwischen Frames darf weder verloren gehen noch nach Release nachwirken.
+letzten gültigen lokalen Submit. Bereite Bewegungen versuchen ebenfalls sofort
+dieselbe Dosisentscheidung. Bereits vor Up angenommene Down-/Move-Wirkung darf
+anschließend gezeichnet werden; ein bloß vorgemerkter Restweg wird nicht nachgemalt.
+Bewegung und Halten besitzen ein gemeinsames Zeitkonto. Zusätzliche Mausereignisse
+während einer normalen ausstehenden Dosis setzen es nicht wiederholt zurück;
+tatsächlich erfolglose Wartezyklen und alte gedeckelte Wege bleiben verworfen.
 
 Noch nicht vollständig hochgeladene numerische Ressourcen halten den betroffenen
 Bildstand veraltet; bisherige Farbkacheln bleiben sichtbar. Es gibt keine
@@ -927,7 +934,10 @@ Der Nachweis für D umfasst den unveränderten warmen 512-Pixel-Fall mit demselb
 Inhalt und Messzweck. Fehlende Livebilder oder Zeitdaten bleiben Fehler. Ergänzend
 prüfen mehrere Sekunden lange 512-Pixel-Züge, Halten, langsame/schnelle Wege und
 ein Hänger den fortlaufenden Verlauf; aufeinanderfolgende feine/grobe Gesten
-prüfen die Zusammensetzung aller betroffenen Quellen. Die GPU-Inhaltsprüfung
+prüfen die Zusammensetzung aller betroffenen Quellen. Gezielte Controllerfälle
+prüfen bereites Move/Up zwischen Frames, Zeichnung derselben im RAF angenommenen
+Dosis, höchstens eine ausstehende Dosis und die gemeinsame Zeitbilanz bei
+unterschiedlicher Häufigkeit der Mausereignisse. Die GPU-Inhaltsprüfung
 vergleicht echte Editorpixel mit der CPU-Referenz: alle 22 Stufen, numerische
 Übersichten, negative Kachelgrenzen, Weltrand, die beiden Seiten der Farbgrenzen
 einschließlich ihres expliziten Bands und endliche numerische Ausnahmefälle.
@@ -1589,7 +1599,7 @@ Diese Quellen belegen Bibliotheksfunktionen, keine SaltMarcher-Latenzen.
 Am 9. November 2026 gegen die tatsächlich installierte Laufzeit **Electron
 44.10.2 / Chromium 152.0.7977.169** geprüft. Die Quellen begründeten den inzwischen
 ausgeführten kleinen Versuch. Seine fehlende Copy-/Generationsbindung steht im
-[Status](status.md#native-freigabe-und-verbleibende-grenzen). Sie begründen keinen erneuten
+[Status](status.md). Sie begründen keinen erneuten
 Versuch im abgeschlossenen Aufräumschritt und keine funktionierende Atlas-Zuordnung:
 
 - [Chromium: DevTools-Tracebilder](https://github.com/chromium/chromium/blob/152.0.7977.169/content/browser/devtools/protocol/tracing_handler.cc):

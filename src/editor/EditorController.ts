@@ -418,7 +418,7 @@ export class EditorController {
     this.loadRequested = true;
   }
 
-  /** One owner orders the actual draw, local feedback and the next bounded dose. */
+  /** Apply at most one ready dose before drawing it in this same frame. */
   private frame = (now: number): void => {
     if (this.disposed) return;
     const start = performance.now();
@@ -427,6 +427,7 @@ export class EditorController {
         this.loadRequested = false;
         void this.loadView().catch(this.fail);
       }
+      this.advanceHeldBrush(performance.now());
       const submission = this.world.renderFrame(now);
       if (submission) {
         this.observation.submitted(submission, (bounds) =>
@@ -440,15 +441,14 @@ export class EditorController {
           this.awaitingDose = null;
         this.checkLocalReady();
       }
-      // Use the current clock after upload/draw, just as the previous dose path did.
-      try {
-        this.advanceHeldBrush(performance.now());
-      } catch (error) {
-        this.fail(error);
-      }
     } catch (error) {
       this.fail(error);
     } finally {
+      // A normal pending dose may draw on this attempt without losing its next
+      // interval to pointer-event frequency. Only an unsuccessful draw consumes
+      // waiting time and travel; this phase can never create another dose.
+      if (this.awaitingDose)
+        this.advanceHeldBrush(performance.now(), "after-draw");
       if (this.lastFrameAt)
         this.observation.event("frame", {
           interval: now - this.lastFrameAt,
@@ -819,6 +819,9 @@ export class EditorController {
           this.skipInput(this.stroke.latest.input, "coalesced");
         this.stroke.latest = latest;
       }
+      // Ready movement is accepted before a following pointerup can close the
+      // gesture. Pending feedback only coalesces candidates until the draw.
+      this.advanceHeldBrush(performance.now());
     } else {
       if (this.brushState.kind === "blocked")
         this.skipInput(this.input(event, "edit"), "new-press-required");
@@ -978,7 +981,10 @@ export class EditorController {
     this.checkLocalReady();
   }
 
-  private advanceHeldBrush = (now: number): void => {
+  private advanceHeldBrush = (
+    now: number,
+    phase: "accept" | "after-draw" = "accept",
+  ): void => {
     const gesture = this.stroke;
     if (this.disposed || !gesture) return;
     const fromAt = gesture.clock;
@@ -991,7 +997,7 @@ export class EditorController {
         brushTarget(gesture),
         gesture.brush,
       );
-      const decision = decideBrushFrame(gesture, now, readiness.reason);
+      const decision = decideBrushFrame(gesture, now, readiness.reason, phase);
       this.brushState = { kind: "active", stroke: decision.stroke };
       if (readiness.ready) this.awaitingDose = null;
       if (decision.kind === "none") return;

@@ -1094,17 +1094,26 @@ it("deepens while held only after each actual current frame, without synthetic p
   );
   const events = controller.observation.read();
   const intervals = events.filter((event) => event.kind === "brush-interval");
-  expect(intervals).toHaveLength(9);
+  expect(intervals.length).toBeGreaterThan(2);
   expect(
     intervals
       .slice(1)
       .every(
         (event) =>
           event.cause === "hold" &&
-          event.acceptedElapsedMs === 16 &&
+          Number(event.acceptedElapsedMs) > 0 &&
+          Number(event.acceptedElapsedMs) <= 50 &&
           (event.inputIds as number[]).length === 0,
       ),
   ).toBe(true);
+  expect(
+    intervals
+      .slice(1)
+      .reduce((total, event) => total + Number(event.acceptedElapsedMs), 0),
+  ).toBe(128);
+  expect(controller.observe().renderer.submittedRevision).toBe(
+    controller.observe().document!.revision,
+  );
   expect(
     events.filter(
       (event) => event.kind === "input" && event.inputKind === "edit",
@@ -1135,16 +1144,14 @@ it("deepens while held only after each actual current frame, without synthetic p
 });
 
 it("caps a stalled frame once and discards late movement without restoring an older anchor", async () => {
-  const { controller, frame, pointer } = await readyController();
+  const { controller, frame, pointer, advance } = await readyController();
   controller.setBrush(16, 400);
-  controller.world.fault = "drop-render";
   pointer("pointerdown", 20, 20);
   const oldAt = Number(
     controller.observation.read().find((event) => event.kind === "brush-start")!
       .inputAt,
   );
-  frame(16);
-  controller.world.fault = "none";
+  frame(0);
   frame(1000);
   let intervals = controller.observation
     .read()
@@ -1167,24 +1174,25 @@ it("caps a stalled frame once and discards late movement without restoring an ol
   ).toBe(true);
   // A fresh position is tracked during feedback wait; an older event cannot undo it.
   controller.world.fault = "drop-render";
+  advance(16);
   pointer("pointermove", 44, 20);
+  const accepted = controller.observe().document!.revision;
+  pointer("pointermove", 52, 20);
   frame();
   pointer("pointermove", 10, 20, oldAt);
   frame();
-  expect(
-    controller.observation
-      .read()
-      .filter((event) => event.kind === "brush-interval"),
-  ).toHaveLength(2);
+  expect(controller.observe().document!.revision).toBe(accepted);
   controller.world.fault = "none";
+  frame();
+  expect(controller.observe().document!.revision).toBe(accepted);
   frame();
   intervals = controller.observation
     .read()
     .filter((event) => event.kind === "brush-interval");
   expect(intervals.at(-1)).toMatchObject({
-    from: [48, -48],
-    to: [48, -48],
-    acceptedElapsedMs: 16,
+    from: [80, -48],
+    to: [80, -48],
+    acceptedElapsedMs: 32,
   });
   // The same late event after result receipt is rejected by the consumed window.
   pointer("pointermove", 10, 20, oldAt);
@@ -1193,7 +1201,7 @@ it("caps a stalled frame once and discards late movement without restoring an ol
     controller.observation
       .read()
       .filter((event) => event.kind === "brush-interval"),
-  ).toHaveLength(3);
+  ).toHaveLength(intervals.length);
   expect(
     controller.observation
       .read()
@@ -1204,14 +1212,14 @@ it("caps a stalled frame once and discards late movement without restoring an ol
           event.accepted === false,
       ),
   ).toBe(true);
-  pointer("pointermove", 52, 20);
-  frame();
+  advance(16);
+  pointer("pointermove", 56, 20);
   expect(
     controller.observation
       .read()
       .filter((event) => event.kind === "brush-interval")
       .at(-1),
-  ).toMatchObject({ from: [48, -48], to: [80, -48], acceptedElapsedMs: 16 });
+  ).toMatchObject({ from: [80, -48], to: [96, -48], acceptedElapsedMs: 16 });
   pointer("pointerup");
   controller.destroy();
 });
@@ -1225,6 +1233,8 @@ it("accepts at most one bounded dose from many queued moves", async () => {
   for (let x = 21; x <= 40; x++) pointer("pointermove", x, 20);
   controller.world.fault = "none";
   frame(500);
+  expect(controller.observe().document!.revision).toBe(1);
+  frame(16);
   const intervals = controller.observation
     .read()
     .filter((event) => event.kind === "brush-interval");
@@ -1448,7 +1458,7 @@ it("keeps input decisions, terrain and history identical with diagnostics enable
   const apply = vi.spyOn(EditorDocument.prototype, "applySegment");
   const replay = async (diagnostics: boolean) => {
     apply.mockClear();
-    const { controller, bridge, pointer, frame, drainView } =
+    const { controller, bridge, pointer, frame, drainView, advance } =
       await readyController(0, { diagnostics, ready: false });
     controller.setBrush(16, 400);
     const states: unknown[] = [];
@@ -1484,6 +1494,10 @@ it("keeps input decisions, terrain and history identical with diagnostics enable
     expect(controller.observe().document!.revision).toBe(1);
     controller.world.fault = "none";
     frame(16);
+    capture();
+    expect(controller.observe().document!.revision).toBe(1);
+    advance(16);
+    pointer("pointermove", 36, 20);
     capture();
     expect(controller.observe().document!.revision).toBe(2);
 
@@ -1998,4 +2012,228 @@ it("projects fine source changes into a certified empty overview exactly once, i
   for (const bounds of redone.dirtyBounds) world.invalidate(bounds);
   frame();
   expect(rendered()).toBeCloseTo(document.sampleHeight(32, 32), 10);
+});
+
+// Controller regressions use the real author model and presentation readiness.
+// Only the existing GL boundary is mocked; a revision alone is not a draw receipt.
+it.each([16, 512])(
+  "accepts a ready final %ipx movement before pointerup between frames",
+  async (diameter) => {
+    const { controller, bridge, pointer, frame, advance } =
+      await readyController(0, { width: 1180, height: 894 });
+    controller.setBrush(diameter, 4000);
+    const endX = diameter === 512 ? 610 : 230;
+    const endpoint: [number, number] = [(endX - 590) / 0.25, -300];
+    const original = controller.observe([endpoint]).samples[0]!;
+    pointer("pointerdown", 190, 372);
+    frame(0);
+    expect(controller.observe().readiness.ready).toBe(true);
+
+    advance(24);
+    pointer("pointermove", endX, 372);
+    const accepted = controller.observe([endpoint]);
+    expect(accepted.samples[0]).toBeGreaterThan(original);
+    pointer("pointerup", endX, 372);
+    expect(controller.observe([endpoint]).samples).toEqual(accepted.samples);
+    frame(16);
+    frame(200);
+    const completed = controller.observe([endpoint]);
+    expect(completed.samples).toEqual(accepted.samples);
+    expect(completed.document!.revision).toBe(accepted.document!.revision);
+    expect(completed.renderer.submittedRevision).toBe(
+      completed.document!.revision,
+    );
+    expect(completed.document!.historyActions).toBe(1);
+    await Promise.resolve();
+    expect(bridge.commit).toHaveBeenCalledOnce();
+    const stored = prepareHeightSampler(
+      bridge.commit.mock.calls[0][0].patches.flatMap((patch) =>
+        patch.after ? [patch.after] : [],
+      ),
+    );
+    expect(stored(...endpoint)).toBeCloseTo(accepted.samples[0]!, 10);
+    controller.destroy();
+  },
+);
+
+it("shows a newly accepted held dose in the same frame while preserving one pending dose", async () => {
+  const { controller, pointer, frame } = await readyController();
+  controller.setBrush(16, 400);
+  const point: [number, number] = [-48, -48];
+  pointer("pointerdown", 20, 20);
+  frame(0);
+  const press = controller.observe([point]);
+
+  frame(16);
+  const held = controller.observe([point]);
+  expect(held.samples[0]).toBeGreaterThan(press.samples[0]!);
+  expect(held.renderer.submittedRevision).toBe(held.document!.revision);
+  expect(held.readiness.ready).toBe(true);
+
+  controller.world.fault = "drop-render";
+  frame(16);
+  const waiting = controller.observe([point]);
+  expect(waiting.samples[0]).toBeGreaterThan(held.samples[0]!);
+  for (let index = 0; index < 5; index++) {
+    pointer("pointermove", 20 + index, 20);
+    frame(16);
+  }
+  expect(controller.observe([point]).samples).toEqual(waiting.samples);
+  expect(controller.observe().document!.revision).toBe(
+    waiting.document!.revision,
+  );
+  pointer("pointerup", 24, 20);
+  controller.world.fault = "none";
+  frame(200);
+  expect(controller.observe([point]).samples).toEqual(waiting.samples);
+  expect(controller.observe().renderer.submittedRevision).toBe(
+    waiting.document!.revision,
+  );
+  controller.destroy();
+});
+
+it.each(["pointerup", "pointercancel", "blur"])(
+  "adds no dose on %s or later frames after a ready accepted move",
+  async (end) => {
+    const { controller, pointer, frame, advance } = await readyController();
+    controller.setBrush(16, 400);
+    pointer("pointerdown", 20, 20);
+    frame(0);
+    advance(16);
+    pointer("pointermove", 40, 20);
+    const beforeEnd = controller.observe([
+      [-48, -48],
+      [32, -48],
+    ]);
+    advance(200);
+    if (end === "blur") window.dispatchEvent(new Event("blur"));
+    else pointer(end, 40, 20);
+    frame(1000);
+    frame(1000);
+    const afterEnd = controller.observe([
+      [-48, -48],
+      [32, -48],
+    ]);
+    expect(afterEnd.gesture).toBeNull();
+    expect(afterEnd.samples).toEqual(beforeEnd.samples);
+    expect(afterEnd.document!.revision).toBe(beforeEnd.document!.revision);
+    expect(afterEnd.document!.historyActions).toBe(1);
+    controller.destroy();
+  },
+);
+
+/** Same physical motion and 60Hz rendering, with independent pointer delivery. */
+async function timedControllerStroke(
+  inputHz: 30 | 60 | 120,
+  durationMs = 1000,
+) {
+  const { controller, bridge, pointer, frame, advance } = await readyController(
+    0,
+    { width: 256, height: 128 },
+  );
+  controller.setBrush(64, 400);
+  pointer("pointerdown", 64, 64);
+  frame(0);
+  const ticks = (durationMs * 120) / 1000;
+  for (let tick = 1; tick <= ticks; tick++) {
+    advance(1000 / 120);
+    if (tick % (120 / inputHz) === 0)
+      pointer("pointermove", 64 + (128 * tick) / ticks, 64);
+    if (tick % 2 === 0) frame(0);
+  }
+  // Every replay remains physically held for the same final frame. This isolates
+  // dose rate from the separately tested Move→Up boundary between frames.
+  frame(1000 / 60);
+  pointer("pointerup", 192, 64);
+  frame(0);
+  const observed = controller.observe([
+    [-128, 0],
+    [0, 0],
+    [128, 0],
+  ]);
+  expect(observed.renderer.submittedRevision).toBe(observed.document!.revision);
+  expect(controller.state.error).toBeNull();
+  const intervals = observed.events.filter(
+    (event) => event.kind === "brush-interval" && event.cause !== "press",
+  );
+  await Promise.resolve();
+  expect(bridge.commit).toHaveBeenCalledOnce();
+  const mass = bridge.commit.mock.calls[0][0].patches.reduce(
+    (sum, patch) =>
+      sum +
+      (patch.after?.values.reduce((total, value) => total + value, 0) ?? 0),
+    0,
+  );
+  controller.destroy();
+  return {
+    mass,
+    heights: observed.samples.map((height) => height! + 100),
+    acceptedMs: intervals.reduce(
+      (sum, event) => sum + Number(event.acceptedElapsedMs),
+      0,
+    ),
+  };
+}
+
+it("keeps stroke strength tied to elapsed time for 30, 60 and 120Hz pointer delivery", async () => {
+  const results = [];
+  for (const inputHz of [30, 60, 120] as const)
+    results.push(await timedControllerStroke(inputHz));
+  for (const result of results)
+    expect(result.acceptedMs).toBeCloseTo(1000 + 1000 / 60, 7);
+  const masses = results.map((result) => result.mass);
+  expect(Math.max(...masses) / Math.min(...masses)).toBeLessThan(1.01);
+  for (let index = 0; index < 3; index++) {
+    const heights = results.map((result) => result.heights[index]);
+    expect(Math.min(...heights)).toBeGreaterThan(0);
+    expect(Math.max(...heights) / Math.min(...heights)).toBeLessThan(1.05);
+  }
+});
+
+it("makes the same drawn path stronger when moved more slowly", async () => {
+  const fast = await timedControllerStroke(60, 600);
+  const slow = await timedControllerStroke(60, 1200);
+  for (let index = 0; index < 3; index++)
+    expect(slow.heights[index] / fast.heights[index]).toBeCloseTo(2, 1);
+});
+
+it("drops the old path and excess time after a stalled ready move", async () => {
+  const { controller, pointer, frame, advance } = await readyController(0, {
+    width: 256,
+    height: 128,
+  });
+  controller.setBrush(16, 400);
+  pointer("pointerdown", 48, 64);
+  frame(0);
+  advance(250);
+  pointer("pointermove", 208, 64);
+  frame(0);
+  const observed = controller.observe([
+    [0, 0],
+    [320, 0],
+  ]);
+  expect(observed.samples[0]).toBe(-100);
+  expect(observed.samples[1]).toBeGreaterThan(-100);
+  const last = observed.events
+    .filter((event) => event.kind === "brush-interval")
+    .at(-1)!;
+  expect(last).toMatchObject({
+    from: [320, 0],
+    to: [320, 0],
+    acceptedElapsedMs: 50,
+    rawElapsedMs: 250,
+  });
+  const discarded = observed.events
+    .filter((event) => event.kind === "brush-discard")
+    .reduce((sum, event) => sum + Number(event.toAt) - Number(event.fromAt), 0);
+  expect(discarded).toBe(200);
+  pointer("pointerup", 208, 64);
+  frame(1000);
+  expect(
+    controller.observe([
+      [0, 0],
+      [320, 0],
+    ]).samples,
+  ).toEqual(observed.samples);
+  controller.destroy();
 });

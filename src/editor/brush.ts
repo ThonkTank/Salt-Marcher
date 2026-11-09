@@ -56,12 +56,23 @@ export function brushTarget(stroke: BrushStroke): Point {
   return latest && latest.at >= stroke.pointAt ? latest.point : stroke.point;
 }
 
-/** Consume one examined time window without retaining rejected time or paths. */
+/**
+ * Accept a ready time window, or discard a genuinely unsuccessful draw cycle.
+ * Pending feedback before that draw keeps the one clock and latest candidate;
+ * ordinary event coalescing must not consume the next visible dose's time.
+ */
 export function decideBrushFrame(
   stroke: BrushStroke,
   now: number,
   reason: BrushWaitReason | null,
+  phase: "accept" | "after-draw" = "accept",
 ): BrushFrameDecision {
+  if (
+    (phase === "accept" && reason === "feedback") ||
+    (phase === "after-draw" && reason === null)
+  )
+    return { kind: "none", stroke };
+
   const fromAt = stroke.clock;
   const toAt = Math.max(fromAt, now);
   const next = { ...stroke, clock: toAt };
@@ -73,8 +84,8 @@ export function decideBrushFrame(
     }
   };
 
-  // Readiness applies even when the clock did not advance. Only waiting for our
-  // own accepted dose permits the next ready window to continue this stroke.
+  // Readiness applies even when the clock did not advance. Only unsuccessful
+  // feedback waits permit continuation after discarding their time and path.
   if (reason !== null) {
     next.latest = null;
     if (reason === "feedback") trackLatest();

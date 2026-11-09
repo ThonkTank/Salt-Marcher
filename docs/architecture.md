@@ -603,11 +603,14 @@ Quellenantworten beginnen oder reaktivieren keine Geste. `BrushState` unterschei
 `BrushStroke`. Der Strich hält Segmentanker, jüngste Zeigerposition und letzten
 untersuchten Zeitpunkt. `brushTarget` wählt den zu prüfenden Zielpunkt;
 `decideBrushFrame` liefert rein die nächste begrenzte Dosis oder Warteentscheidung.
-Bei eigenem Feedback aktualisiert die Entscheidung den Anker, verbraucht aber
-Wartezeit und Weg ohne spätere Nachholung. Fehlende Quellen oder Terrain beenden
-die Geste; der Controller erhält die Sperre bis zum Loslassen. Eine gültige
-Down-Eingabe wendet die nominale Press-Dosis synchron an, damit Down/Up zwischen
-zwei Frames einen kurzen Klick behalten.
+Eine gültige Down-Eingabe wendet die nominale Press-Dosis synchron an. Eine
+Bewegung auf lokal bereitem Gelände versucht ebenfalls sofort dieselbe
+Dosisentscheidung. Dadurch behalten Down/Up und bereit angenommene Move/Up
+zwischen zwei Frames ihre Wirkung. Solange eine eigene Dosis aussteht, werden
+Bewegungen nur zum jüngsten Kandidaten zusammengefasst; sie verbrauchen nicht
+einzeln die Dosisuhr. Erst eine erfolglose Zeichenrunde verwirft die untersuchte
+Wartezeit und den Weg und folgt dem jüngsten Ort als neuem Anker. Fehlende Quellen
+oder Terrain beenden die Geste; der Controller erhält die Sperre bis zum Loslassen.
 
 Der Controller hält die noch nicht dargestellte Dosis unabhängig vom Gestenzustand
 in `awaitingDose`. Sie überlebt Pointerup und verhindert weitere unsichtbare
@@ -619,16 +622,19 @@ kennt weder Uhr noch Frameplanung. Controller und Modell verwenden dieselbe
 reine Funktion `heightBrushReadBounds` für Segment und Quellenhalo.
 
 Der einzige RAF gehört dem Controller. Er startet zusammengefassten Ladebedarf
-und ruft `WorldRenderer.renderFrame` auf. Diese Methode lädt geänderte numerische
+und entscheidet auf der zuletzt gezeichneten lokalen Grundlage über höchstens
+eine Halte-/Bewegungsdosis, sofern keine eigene Dosis aussteht. Erst danach ruft
+er `WorldRenderer.renderFrame` auf. Diese Methode lädt geänderte numerische
 Ressourcen im bestehenden Budget hoch, komponiert betroffene Farbkacheln und
-zeichnet die Szene. Ausschließlich nach der tatsächlichen Zeichnung gibt sie
-einen `FrameSubmission` zurück. Der Controller
-übergibt den Beleg an die Beobachtung, löst passende Rückkopplung und berechnet die
-lokale Freigabe. Erst danach entscheidet er über die nächste Halte-/Bewegungsdosis
-und reicht deren Patches weiter. Dadurch entwertet die nächste Änderung einen
-fertigen Stand nicht vor dessen Darstellung. Der Renderer besitzt weder einen
-eigenen RAF noch einen Callback zur Eingabefreigabe. Ein Rasterworker und seine
-Batch-/Resultatwarteschlange gehören nicht mehr zum interaktiven Höhenpfad.
+zeichnet denselben angenommenen Stand. Ausschließlich nach der tatsächlichen
+Zeichnung gibt sie einen `FrameSubmission` zurück. Der Controller übergibt den
+Beleg an die Beobachtung, löst passende Rückkopplung und berechnet die lokale
+Freigabe. Bleibt die eigene Dosis nach dieser Zeichenchance ausstehend, wird
+die untersuchte Wartezeit verworfen; nach dem Draw entsteht keine weitere Dosis.
+Bewegung und Halten verwenden dieselbe Uhr und dieselbe 50-ms-Begrenzung. Der
+Renderer besitzt weder einen eigenen RAF noch einen Callback zur Eingabefreigabe.
+Ein Rasterworker und seine Batch-/Resultatwarteschlange gehören nicht mehr zum
+interaktiven Höhenpfad.
 
 Angenommene Abschnitte liefern eigene Patches nur für geänderte Quellen. Der
 numerische Atlas ist ein abgeleitetes GPU-Abbild; `EditorDocument` bleibt der
